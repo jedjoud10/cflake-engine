@@ -1,10 +1,12 @@
+use std::iter::once;
+
 use slotmap::SlotMap;
 use time::Time;
 use world::{Events, Init, Stage, Update, World};
 
 use crate::{
     archetype::remove_bundle_unchecked, entity::Entity, Archetype, EntityLinkings,
-    EntryMut, EntryRef, Mask, MaskHashMap, Bundle, BundleError
+    EntryMut, EntryRef, Mask, MaskHashMap, Bundle
 };
 
 pub type EntitySet = SlotMap<Entity, EntityLinkings>;
@@ -25,23 +27,25 @@ impl Default for Scene {
     fn default() -> Self {
         Self {
             entities: Default::default(),
-            archetypes: MaskHashMap::from_iter(std::iter::once((Mask::zero(), Archetype::empty()))),
+            archetypes: MaskHashMap::from_iter(once((Mask::zero(), Archetype::empty()))),
         }
     }
 }
 
 impl Scene {
     // Spawn an entity with specific components
-    pub fn insert<B: Bundle>(&mut self, components: B) -> Result<Entity, BundleError> {
-        self.extend_from_iter(std::iter::once(components)).map(|s| s[0])
+    pub fn insert<B: Bundle>(&mut self, components: B) -> Entity {
+        assert!(B::is_valid(), "Bundle is not valid, check the bundle for component collisions");
+        self.extend_from_iter(once(components))[0]
     }
 
     // Spawn a batch of entities with specific components from an iterator
     pub fn extend_from_iter<B: Bundle>(
         &mut self,
         iter: impl IntoIterator<Item = B>,
-    ) -> Result<&[Entity], BundleError> {
-
+    ) -> &[Entity] {
+        assert!(B::is_valid(), "Bundle is not valid, check the bundle for component collisions");
+        
         // Try to get the archetype, and create a default one if it does not exist
         let mask = B::reduce(|a, b| a | b);
         let archetype = self
@@ -56,12 +60,12 @@ impl Scene {
 
     // Remove an entity, and discard it's components
     pub fn remove(&mut self, entity: Entity) -> Option<()> {
-        self.remove_from_iter(std::iter::once(entity))
+        self.remove_from_iter(once(entity))
     }
 
     // Remove an entity, and fetch it's removed components as a new bundle
-    pub fn remove_then<B: Bundle>(&mut self, entity: Entity) -> Result<B, BundleError> {
-        self.remove_from_iter_then::<B>(std::iter::once(entity))
+    pub fn remove_then<B: Bundle>(&mut self, entity: Entity) -> Option<B> {
+        self.remove_from_iter_then::<B>(once(entity))
             .map(|mut vec| vec.pop().unwrap())
     }
 
@@ -81,8 +85,6 @@ impl Scene {
         &mut self,
         iter: impl IntoIterator<Item = Entity>,
     ) -> Option<Vec<B>> {
-        assert!(B::is_valid());
-
         iter.into_iter()
             .map(|entity| {
                 // Move the entity from it's current archetype to the unit archetype

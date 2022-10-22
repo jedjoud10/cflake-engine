@@ -13,10 +13,9 @@ mod tests {
         #[derive(Component, Debug, Clone, Copy)]
         struct Ammo(u32);
 
-
-
-        manager.insert((Name("Red"), Health(100))).unwrap();
-
+        let entity = manager.insert((Name("Red"), Health(100)));
+        let mut entry = manager.entry_mut(entity).unwrap();
+        dbg!(entry.get_mut::<Name>().unwrap().0);
         /*
 
 

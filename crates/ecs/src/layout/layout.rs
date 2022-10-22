@@ -1,6 +1,6 @@
 use std::alloc::Layout;
 
-use crate::{Archetype, QueryItem, LayoutAccess, QueryError, Mask};
+use crate::{Archetype, QueryItem, LayoutAccess, Mask};
 
 // A query layout is a combination of multiple query items 
 pub trait QueryLayout<'s, 'i> {
@@ -17,11 +17,31 @@ pub trait QueryLayout<'s, 'i> {
     
     // Get a combined layout access mask by running a lambda on each layout
     fn reduce(lambda: impl FnMut(LayoutAccess, LayoutAccess) -> LayoutAccess) -> LayoutAccess;
+    
+    // This checks if the layout is valid (no collisions, no ref-mut collisions)
+    fn is_valid() -> bool {
+        let combined = Self::reduce(|a, b| a | b);
+        let a = combined.shared() & combined.unique() == Mask::zero();
+        dbg!(a);
+        let mut_items = (0..Self::items()).into_iter().filter(|i| Self::access(*i).unwrap().unique() != Mask::zero()).count() as u64;
+        let enabled: u64 = combined.unique().into();
+        let b = mut_items == enabled.count_ones() as u64;  
+        dbg!(b);
+        a && b
+    }
+
+    // Check if the query layout contains any mutable items
+    fn is_mutable() -> bool {
+        let combined = Self::reduce(|a, b| a | b);
+        combined.unique() != Mask::zero()
+    }
 
     // Check if the layout is valid for usage for any case
+    /*
     fn is_valid() -> Result<(), QueryError> {
         let combined = Self::reduce(|a, b| a | b);
         
+        /*
         // Check if we have any missing components from the archetype
         if combined.both() & archetype.mask() != combined.both()  {
             let on = LayoutAccess::new(archetype.mask(), archetype.mask());
@@ -32,6 +52,7 @@ pub trait QueryLayout<'s, 'i> {
             }).unwrap();
             return Err(QueryError::MissingArchetypeTable(Self::name(index).unwrap()));
         }
+        */
 
         // Check if we have any components that have duplicate mutable access
         // TODO: Fix this
@@ -52,7 +73,9 @@ pub trait QueryLayout<'s, 'i> {
 
         Ok(())        
     }
+    */
 
+    /*
     // Get the query layout slice tuple from the corresponding archetypes
     fn slices_from_archetype(archetype: &Archetype) -> Result<Self::SliceTuple, QueryError> {
         let index = (0..Self::items())
@@ -74,6 +97,7 @@ pub trait QueryLayout<'s, 'i> {
     fn slices_from_mut_archetype(archetype: &mut Archetype) -> Result<Self::SliceTuple, QueryError> {
         Self::is_valid(archetype).map(|_| unsafe { Self::slices_from_mut_archetype_unchecked(archetype) })
     }
+    */
 
     // Get the query layout slice tuple from the corresponding archetypes without checking for safety
     unsafe fn slices_from_archetype_unchecked(archetype: &Archetype) -> Self::SliceTuple;

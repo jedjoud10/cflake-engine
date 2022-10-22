@@ -62,7 +62,7 @@ impl<'s: 'i, 'i, T: Component> QueryItem<'s, 'i> for &'i mut T {
     }
     
     unsafe fn ptr_from_archetype_unchecked(archetype: &Archetype) -> Self::Ptr {
-        panic!("This should've never happened wtf did you do jed")
+        panic!("Jed is shit at writing code")
     }
 
     unsafe fn ptr_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::Ptr {

@@ -1,6 +1,6 @@
 use crate::{
     entity::{Entity, EntityLinkings},
-    mask, ArchetypeSet, Bundle, Component, ComponentTable, EntitySet, Mask, MaskHashMap, StateRow, QueryLayout, QueryError, BundleError,
+    mask, ArchetypeSet, Bundle, Component, ComponentTable, EntitySet, Mask, MaskHashMap, StateRow, QueryLayout,
 };
 use std::{cell::RefCell, rc::Rc};
 
@@ -17,7 +17,7 @@ impl Archetype {
     // This assumes that B is a valid bundle
     pub(crate) fn from_table_accessor<B: Bundle>() -> Self {
         Self {
-            mask: B::combined(),
+            mask: B::reduce(|a, b| a | b),
             tables: B::default_tables(),
             states: Rc::new(RefCell::new(Vec::new())),
             entities: Vec::new(),
@@ -40,12 +40,10 @@ impl Archetype {
         &mut self,
         entities: &mut EntitySet,
         components: Vec<B>,
-    ) -> Result<&[Entity], BundleError> {
-        if !B::is_valid() {
-            return Err(BundleError::DuplicateComponent(B::))
-        }
+    ) -> &[Entity] {
+        debug_assert_eq!(self.mask(), B::reduce(|a, b| a | b));
+        assert!(B::is_valid(), "Bundle is not valid, check the bundle for component collisions");
 
-        debug_assert_eq!(B::combined(), self.mask);
         self.reserve(entities.len());
         let old_len = self.entities.len();
 
@@ -70,7 +68,7 @@ impl Archetype {
         drop(storages);
 
         // Return the newly added entity IDs
-        Some(&self.entities[old_len..])
+        &self.entities[old_len..]
     }
 
     // Reserve enough memory space to be able to fit all the new entities in one allocation
@@ -113,18 +111,6 @@ impl Archetype {
     pub fn table_mut<T: Component>(&mut self) -> Option<&mut Vec<T>> {
         let boxed = self.tables.get_mut(&mask::<T>())?;
         Some(boxed.as_any_mut().downcast_mut().unwrap())
-    }
-    
-    // Try to get immutable slices from the archetype
-    // This will return Err if some of the slices are non existant or if they are mutable
-    pub fn table_layout<'s, 'i, L: QueryLayout<'s, 'i>>(&self) -> Result<L::SliceTuple, QueryError> {
-        L::slices_from_archetype(self)
-    }
-
-    // Try to get the corresponding slices from the archetype
-    // This will return none if some of the slices are non existant
-    pub fn table_layout_mut<'s, 'i, L: QueryLayout<'s, 'i>>(&mut self) -> Result<L::SliceTuple, QueryError> {
-        L::slices_from_mut_archetype(self)
     }
     
     // Remove an entity that is stored within this archetype using it's index
@@ -172,16 +158,17 @@ fn split(set: &mut ArchetypeSet, mask1: Mask, mask2: Mask) -> (&mut Archetype, &
 }
 
 // Add some new components onto an entity, forcing it to switch archetypes
-// This assumes that the OwnedBundle type is valid for this use case
 pub(crate) fn add_bundle_unchecked<B: Bundle>(
     archetypes: &mut ArchetypeSet,
     entity: Entity,
     entities: &mut EntitySet,
     bundle: B,
 ) -> Option<()> {
+    assert!(B::is_valid(), "Bundle is not valid, check the bundle for component collisions");
+
     // Get the old and new masks
     let old = entities[entity].mask;
-    let new = entities[entity].mask | B::combined();
+    let new = entities[entity].mask | B::reduce(|a, b| a | b);
 
     // Nothing changed, don't execute
     if new == old {
@@ -248,9 +235,12 @@ pub(crate) fn remove_bundle_unchecked<B: Bundle>(
     entity: Entity,
     entities: &mut EntitySet,
 ) -> Option<B> {
+    assert!(B::is_valid(), "Bundle is not valid");
+
     // Get the old and new masks
     let old = entities[entity].mask;
-    let new = entities[entity].mask & !B::combined();
+    let combined = B::reduce(|a, b| a | b);
+    let new = entities[entity].mask & !combined;
 
     // Create the new target archetype if needed
     if archetypes.contains_key(&new) {
@@ -296,7 +286,7 @@ pub(crate) fn remove_bundle_unchecked<B: Bundle>(
     target
         .states
         .borrow_mut()
-        .push(StateRow::new(target.mask, B::combined(), target.mask));
+        .push(StateRow::new(target.mask, combined, target.mask));
     target.entities.push(entity);
     linkings.index = target.len() - 1;
     linkings.mask = target.mask;

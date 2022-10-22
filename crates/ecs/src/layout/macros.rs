@@ -1,4 +1,4 @@
-use crate::{QueryLayout, QueryItem, QueryError, LayoutAccess, Archetype, OwnedBundle, Component, Mask, mask, ComponentTable, MaskHashMap, };
+use crate::{QueryLayout, QueryItem, LayoutAccess, Archetype, OwnedBundle, Component, Mask, mask, name, ComponentTable, MaskHashMap, };
 use casey::lower;
 use seq_macro::seq;
 
@@ -7,12 +7,23 @@ macro_rules! tuple_impls {
         impl<'a, $($name: Component),+> OwnedBundle<'a> for ($($name,)+) {
             type Storages = ($(&'a mut Vec<$name>),+);
 
-            fn combined() -> Mask {
-                ($(mask::<$name>())|+)
+            fn items() -> usize {
+                $max
             }
-
-            fn is_valid() -> bool {
-                ($(mask::<$name>())&+) == Mask::zero()
+        
+            fn name(index: usize) -> Option<&'static str> {
+                let names = [$(name::<$name>()),+];
+                names.get(index).cloned()
+            }
+            
+            fn mask(index: usize) -> Option<Mask> {
+                let masks = [$(mask::<$name>()),+];
+                masks.get(index).cloned()
+            }
+        
+            fn reduce(mut lambda: impl FnMut(Mask, Mask) -> Mask) -> Mask {
+                let masks = [$(mask::<$name>()),+];
+                masks[..].into_iter().cloned().reduce(|a, b| lambda(a, b)).unwrap()
             }
 
             fn prepare(archetype: &'a mut Archetype) -> Option<Self::Storages> {
@@ -75,7 +86,7 @@ macro_rules! tuple_impls {
         
             fn reduce(mut lambda: impl FnMut(LayoutAccess, LayoutAccess) -> LayoutAccess) -> LayoutAccess {
                 let layouts = [$($name::access()),+];
-                layouts[1..].into_iter().cloned().reduce(|a, b| lambda(a, b)).unwrap()
+                layouts[..].into_iter().cloned().reduce(|a, b| lambda(a, b)).unwrap()
             }
 
             unsafe fn slices_from_archetype_unchecked(archetype: &Archetype) -> Self::SliceTuple {
