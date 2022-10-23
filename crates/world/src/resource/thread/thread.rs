@@ -91,8 +91,9 @@ impl ThreadPool {
         threadpool
     }
 
-    // Given an immutable slice of elements, run a function over all of them elements in parallel
-    pub fn for_each<'a, I: for<'i> SliceTuple<'i>>(
+    // Given an immutable/mutable slice of elements, run a function over all of them elements in parallel
+    // Warning: This will not wait till all the threads have finished executing their specific functions
+    pub(crate) fn for_each_async<'a, I: for<'i> SliceTuple<'i>>(
         &'a mut self,
         mut list: I,
         function: impl Fn(<I as SliceTuple<'_>>::ItemTuple) + Send + Sync + 'a,
@@ -107,7 +108,7 @@ impl ThreadPool {
         let batch_size = batch_size.max(1);        
         let num_threads_to_use = (length as f32 / batch_size as f32).ceil() as usize;
         let remaining = length % batch_size;
-        
+
         // Run the code in a single thread if needed
         if num_threads_to_use == 1 {
             for x in 0..length {
@@ -122,7 +123,7 @@ impl ThreadPool {
             let offset = entry.batch_offset;        
             let ptrs = entry.base.downcast::<I::PtrTuple>().ok();
             let mut ptrs= ptrs.map(|ptrs| I::from_ptrs(&*ptrs, entry.batch_length, offset)).unwrap();
-
+        
             for i in 0..entry.batch_length {
                 function(I::get_unchecked(&mut ptrs, i));
             }
@@ -149,8 +150,17 @@ impl ThreadPool {
                 function: function.clone(),
             });
         }
+    }
 
-        // We must manually join the sheize
+    // Given an immutable/mutable slice of elements, run a function over all of them elements in parallel
+    // This function will wait untill all of the threads have finished executing their tasks 
+    pub fn for_each<'a, I: for<'i> SliceTuple<'i>>(
+        &'a mut self,
+        list: I,
+        function: impl Fn(<I as SliceTuple<'_>>::ItemTuple) + Send + Sync + 'a,
+        batch_size: usize,
+    ) {
+        self.for_each_async(list, function, batch_size);
         self.join();
     }
 

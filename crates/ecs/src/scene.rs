@@ -6,7 +6,7 @@ use world::{Events, Init, Stage, Update, World};
 
 use crate::{
     archetype::remove_bundle_unchecked, entity::Entity, Archetype, EntityLinkings,
-    EntryMut, EntryRef, Mask, MaskHashMap, Bundle
+    EntryMut, EntryRef, Mask, MaskHashMap, Bundle, QueryLayoutRef
 };
 
 pub type EntitySet = SlotMap<Entity, EntityLinkings>;
@@ -132,56 +132,6 @@ impl Scene {
     pub fn entities_mut(&mut self) -> &mut EntitySet {
         &mut self.entities
     }
-
-    // Create a new mutable query iterator.
-    /*
-    pub fn query<'c: 'ar, 'ar: 's, 's: 'l, 'l, L: MutQueryLayout<'s, 'l>>(
-        &'c mut self,
-    ) -> Option<impl Iterator<Item = L> + 'l> {
-        //crate::query_mut(&mut self.archetypes).map(|iter| iter.map(|(t, _)| t))
-    }
-    */
-
-    /*
-    // Create a new mutable query iterator with a filter
-    pub fn query_with_filter<'c: 'ar, 'ar: 's, 's: 'l, 'l, L: MutQueryLayout<'ar, 's, 'l>>(
-        &'c mut self,
-        filter: impl Evaluate,
-    ) -> Option<impl Iterator<Item = L> + 'l> {
-        crate::query_mut_filter_marked(&mut self.archetypes, filter)
-            .map(|iter| iter.map(|(t, _)| t))
-    }
-    */
-    /*
-    // Create a new mutable raw query iterator
-    pub fn query_raw<'c: 'ar, 'ar: 's, 's: 'l, 'l, L: MutQueryLayout<'ar, 's, 'l>>(
-        &'c mut self,
-    ) -> Option<impl Iterator<Item = MutQueryItemResult<'l, L>> + 'l> {
-        crate::query_mut_raw(&mut self.archetypes)
-    }
-
-    // Create a new immutable query iterator
-    pub fn view<'c: 'a, 'a, L: RefQueryLayout<'a>>(
-        &'c self,
-    ) -> Option<impl Iterator<Item = L> + 'a> {
-        crate::query_ref_marked(&self.archetypes).map(|iter| iter.map(|(t, _)| t))
-    }
-
-    // Create a new immutable query iterator with a filter
-    pub fn view_with_filter<'c: 'a, 'a, L: RefQueryLayout<'a>>(
-        &'c self,
-        filter: impl Evaluate,
-    ) -> Option<impl Iterator<Item = L> + 'a> {
-        crate::query_ref_filter_marked(&self.archetypes, filter).map(|iter| iter.map(|(t, _)| t))
-    }
-
-    // Create a new immutable raw query iterator
-    pub fn view_raw<'c: 'a, 'a, L: RefQueryLayout<'a>>(
-        &'c mut self,
-    ) -> Option<impl Iterator<Item = RefQueryItemResult<'a, L>> + 'a> {
-        crate::query_ref_raw(&mut self.archetypes)
-    }
-    */
 }
 
 // The ECS system will manually insert the ECS resource and will clean it at the start of each frame (except the first frame)

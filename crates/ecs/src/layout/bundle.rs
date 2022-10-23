@@ -7,25 +7,18 @@ where
 {
     type Storages: 'a;
 
-    // Get the number of components that this bundle contains
-    fn items() -> usize;
-
-    // Get the debug name of a specific component
-    fn name(index: usize) -> Option<&'static str>;
-
-    // Get the layout accesses of a specific component
-    fn mask(index: usize) -> Option<Mask>;
-    
     // Get a combined  mask by running a lambda on each mask
     fn reduce(lambda: impl FnMut(Mask, Mask) -> Mask) -> Mask;
 
     // Checks if this bundle is valid
     fn is_valid() -> bool {
-        let mask = Self::reduce(|a, b| a | b);
-        dbg!(mask);
+        let mut count = 0;
+        let mask = Self::reduce(|a, b| {
+            count += 1;
+            a | b
+        });
         let converted: u64 = mask.into();
-        dbg!(Self::items());
-        converted.count_ones() == Self::items() as u32
+        converted.count_ones() == count as u32
     }
 
     // Get the storage tables once and for all
@@ -51,18 +44,6 @@ impl<T: for<'a> OwnedBundle<'a>> Bundle for T {}
 // Implement the owned bundle for single component
 impl<'a, T: Component> OwnedBundle<'a> for T {
     type Storages = &'a mut Vec<T>;
-
-    fn items() -> usize {
-        1
-    }
-
-    fn name(index: usize) -> Option<&'static str> {
-        (index == 0).then(|| name::<T>())
-    }
-
-    fn mask(index: usize) -> Option<Mask> {
-        (index == 0).then(|| mask::<T>())
-    }
 
     fn reduce(lambda: impl FnMut(Mask, Mask) -> Mask) -> Mask {
         std::iter::once(mask::<T>()).into_iter().reduce(lambda).unwrap()

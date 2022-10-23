@@ -1,7 +1,7 @@
 use super::Entity;
 use crate::{
     registry::{mask, name},
-    Archetype, Component, EntityLinkings, Scene, StateRow, QueryLayout,
+    Archetype, Component, EntityLinkings, Scene, StateRow, QueryLayoutRef,
 };
 
 // Immutable entity entries allow the user to be able to read and get some data about a specific entity
@@ -58,11 +58,9 @@ impl<'a> EntryRef<'a> {
         self.archetype().mask().contains(mask::<T>())
     }
 
+    /*
     // Read certain components from the entry as if they were used in an immutable query
-    pub fn as_view<L: for<'s, 'i> QueryLayout<'s, 'i>>(&self) -> Option<L> {
-        assert!(L::is_valid(), "Query layout is not valid, check the layout for component collisions");
-        assert!(!L::is_mutable(), "Query layout is mutable, cannot fetch layout from immutable reference of entry");
-
+    pub fn as_view<L: for<'s, 'i> QueryLayoutRef<'s, 'i>>(&self) -> Option<L> {
         // Make sure the layout can be fetched from the archetype
         let combined = L::reduce(|a, b| a | b).both();
         if combined & self.archetype().mask() != combined {
@@ -75,4 +73,5 @@ impl<'a> EntryRef<'a> {
         let layout = unsafe { L::get_unchecked(ptrs, index) };
         Some(layout)
     }
+    */
 }

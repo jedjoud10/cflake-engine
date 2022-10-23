@@ -15,6 +15,7 @@ mod tests {
 
         let entity = manager.insert((Name("Red"), Health(100)));
         let mut entry = manager.entry_mut(entity).unwrap();
+        //let view = entry.as_query::<&mut Name>().unwrap();
         dbg!(entry.get_mut::<Name>().unwrap().0);
         /*
 

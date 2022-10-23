@@ -1,4 +1,4 @@
-use crate::{QueryLayout, QueryItem, LayoutAccess, Archetype, OwnedBundle, Component, Mask, mask, name, ComponentTable, MaskHashMap, };
+use crate::{QueryLayoutRef, QueryLayoutMut, QueryItemMut, QueryItemRef, LayoutAccess, Archetype, OwnedBundle, Component, Mask, mask, name, ComponentTable, MaskHashMap, };
 use casey::lower;
 use seq_macro::seq;
 
@@ -6,20 +6,6 @@ macro_rules! tuple_impls {
     ( $( $name:ident )+, $max:tt ) => {       
         impl<'a, $($name: Component),+> OwnedBundle<'a> for ($($name,)+) {
             type Storages = ($(&'a mut Vec<$name>),+);
-
-            fn items() -> usize {
-                $max
-            }
-        
-            fn name(index: usize) -> Option<&'static str> {
-                let names = [$(name::<$name>()),+];
-                names.get(index).cloned()
-            }
-            
-            fn mask(index: usize) -> Option<Mask> {
-                let masks = [$(mask::<$name>()),+];
-                masks.get(index).cloned()
-            }
         
             fn reduce(mut lambda: impl FnMut(Mask, Mask) -> Mask) -> Mask {
                 let masks = [$(mask::<$name>()),+];
@@ -67,22 +53,9 @@ macro_rules! tuple_impls {
             }
         }
         
-        impl<'s: 'i, 'i, $($name: QueryItem<'s, 'i>, )+> QueryLayout<'s, 'i> for ($($name,)+) {
+        impl<'s: 'i, 'i, $($name: QueryItemRef<'s, 'i>, )+> QueryLayoutRef<'s, 'i> for ($($name,)+) {
             type SliceTuple = ($($name::Slice,)+);
-        
-            fn items() -> usize {
-                $max
-            }
-        
-            fn name(index: usize) -> Option<&'static str> {
-                let names = [$($name::name()),+];
-                names.get(index).cloned()
-            }
-            
-            fn access(index: usize) -> Option<LayoutAccess> {
-                let accesses = [$($name::access()),+];
-                accesses.get(index).cloned()
-            }
+            type OwnedTuple = ($($name::Owned,)+);
         
             fn reduce(mut lambda: impl FnMut(LayoutAccess, LayoutAccess) -> LayoutAccess) -> LayoutAccess {
                 let layouts = [$($name::access()),+];
@@ -100,6 +73,26 @@ macro_rules! tuple_impls {
                 ),+,)
             }
         
+            unsafe fn get_unchecked<'a: 'i>(slices: &'a Self::SliceTuple, index: usize) -> Self {
+                seq!(N in 0..$max {
+                    let c~N = C~N::get_unchecked(&slices.N, index);
+                });
+
+                ($(
+                    lower!($name)
+                ),+,)
+            }
+        }
+
+        impl<'s: 'i, 'i, $($name: QueryItemMut<'s, 'i> + 'i, )+> QueryLayoutMut<'s, 'i> for ($($name,)+) {
+            type SliceTuple = ($($name::Slice,)+);
+            type OwnedTuple = ($($name::Owned,)+);
+        
+            fn reduce(mut lambda: impl FnMut(LayoutAccess, LayoutAccess) -> LayoutAccess) -> LayoutAccess {
+                let layouts = [$($name::access()),+];
+                layouts[..].into_iter().cloned().reduce(|a, b| lambda(a, b)).unwrap()
+            }
+
             unsafe fn slices_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::SliceTuple {
                 seq!(N in 0..$max {
                     let ptr~N = C~N::ptr_from_mut_archetype_unchecked(archetype);
@@ -111,9 +104,9 @@ macro_rules! tuple_impls {
                 ),+,)
             }
         
-            unsafe fn get_unchecked(slice: Self::SliceTuple, index: usize) -> Self {
+            unsafe fn get_mut_unchecked<'a: 'i>(slices: &'a mut Self::SliceTuple, index: usize) -> Self {
                 seq!(N in 0..$max {
-                    let c~N = C~N::get_unchecked(slice.N, index);
+                    let c~N = C~N::get_mut_unchecked(&mut slices.N, index);
                 });
 
                 ($(
