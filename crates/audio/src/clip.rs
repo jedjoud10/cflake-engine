@@ -19,6 +19,13 @@ impl Asset<'static> for AudioClip {
             // Decode an MP3 file into the appropriate format
             "mp3" => {
                 let mut decoded = minimp3::Decoder::new(data.bytes());
+                let mut frames = Vec::<minimp3::Frame>::new();
+
+                // Load the frames in
+                while let Ok(frame) = decoded.next_frame() {
+                    frames.push(frame);
+                }
+
                 let first = decoded.next_frame().unwrap();
                 let minimp3::Frame { data, sample_rate, channels, layer, bitrate } = first;
             },

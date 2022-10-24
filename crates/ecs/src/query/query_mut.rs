@@ -18,7 +18,7 @@ impl<'a, 's, L: for<'i> QueryLayoutMut<'s, 'i>> QueryMut<'a, 's, L> {
     pub fn for_each(mut self, threadpool: &mut world::ThreadPool, function: impl Fn(L) + Send + Sync, batch_size: usize) {
         for archetype in self.archetypes_mut() {
             let mut slices = unsafe { L::slices_from_mut_archetype_unchecked(archetype) };
-            let tuple = unsafe { L::get_mut_unchecked(&mut slices, 0) };
+            //let tuple = unsafe { L::get_mut_unchecked(&mut slices, 0) };
 
             /*
             for i in 0..archetype.len() {
