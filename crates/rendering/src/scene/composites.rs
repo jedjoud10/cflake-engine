@@ -8,13 +8,13 @@ use crate::{
     buffer::{BufferMode, ShaderBuffer, UniformBuffer},
     context::{Context, Window},
     display::Display,
-    material::{AlbedoMap, MaskMap, NormalMap, Sky, Standard, IntegrationMap},
+    material::{AlbedoMap, IntegrationMap, MaskMap, NormalMap, Sky, Standard},
     mesh::Mesh,
     others::Comparison,
     painter::Painter,
     prelude::{
-        Depth, Filter, MipMapSetting, Ranged, Sampling, Shader, Texture, Texture2D, TextureMode,
-        Wrap, RGB, RG, TextureImportSettings,
+        Depth, Filter, MipMapSetting, Ranged, Sampling, Shader, Texture, Texture2D,
+        TextureImportSettings, TextureMode, Wrap, RG, RGB,
     },
     shader::{ComputeShader, FragmentStage, Processor, ShaderCompiler, VertexStage},
 };
@@ -144,11 +144,23 @@ impl ClusteredShading {
         .unwrap();
 
         // Load the BRDF integration map
-        let brdf_integration_map = assets.load_with::<IntegrationMap>("engine/textures/integration.png", (ctx, TextureImportSettings {
-            sampling: Sampling { filter: Filter::Linear, wrap: Wrap::ClampToEdge, ..Default::default() },
-            mode: TextureMode::Static,
-            mipmaps: MipMapSetting::Disabled,
-        })).unwrap();
+        let brdf_integration_map = assets
+            .load_with::<IntegrationMap>(
+                "engine/textures/integration.png",
+                (
+                    ctx,
+                    TextureImportSettings {
+                        sampling: Sampling {
+                            filter: Filter::Linear,
+                            wrap: Wrap::ClampToEdge,
+                            ..Default::default()
+                        },
+                        mode: TextureMode::Static,
+                        mipmaps: MipMapSetting::Disabled,
+                    },
+                ),
+            )
+            .unwrap();
 
         // Create the default pipelines
         ctx.register_material::<Standard>(shaders, assets);

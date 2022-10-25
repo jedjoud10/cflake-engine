@@ -15,7 +15,7 @@ use crate::{
     shader::{Shader, Uniforms},
 };
 
-use super::{AlbedoMap, MaskMap, NormalMap, IntegrationMap};
+use super::{AlbedoMap, IntegrationMap, MaskMap, NormalMap};
 
 // These are the default resources that we pass to any/each material
 #[derive(Clone, Copy)]

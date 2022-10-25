@@ -60,7 +60,10 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Painter<C, D
     // Given the three untyped attachment vectors/options from the painter, we must select a single one based on the given bitmask location
     fn select_untyped_attachment(&self, location: u32) -> Option<UntypedAttachment> {
         match location {
-            0..=29 => self.untyped_color_attachments.as_ref().map(|vec| vec[location as usize]),
+            0..=29 => self
+                .untyped_color_attachments
+                .as_ref()
+                .map(|vec| vec[location as usize]),
             30 => self.untyped_depth_attachment,
             31 => self.untyped_stencil_attachment,
             _ => panic!(),
@@ -88,10 +91,9 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Painter<C, D
         let untyped_stencil = stencil.as_target().map(|target| target.untyped);
 
         // Check if we modified the painter in any way
-        let changed = 
-            untyped_color != self.untyped_color_attachments ||
-            untyped_depth != self.untyped_depth_attachment ||
-            untyped_stencil != self.untyped_stencil_attachment;
+        let changed = untyped_color != self.untyped_color_attachments
+            || untyped_depth != self.untyped_depth_attachment
+            || untyped_stencil != self.untyped_stencil_attachment;
 
         // Simple struct to help us bind the attachments to the painter
         struct Attachment {
@@ -142,7 +144,7 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Painter<C, D
                 code: gl::STENCIL_ATTACHMENT,
             });
             self.bitmask |= 1 << 31;
-        }        
+        }
 
         // Bind the texture layers/levels to the proper attachments
         for attachment in attachments.iter() {

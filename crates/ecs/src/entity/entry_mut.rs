@@ -1,9 +1,7 @@
 use super::Entity;
 use crate::{
-    add_bundle_unchecked,
-    registry::{mask},
-    remove_bundle_unchecked, Archetype, ArchetypeSet, Bundle, Component, EntityLinkings, EntitySet,
-    Scene, StateRow, name, QueryLayoutRef, QueryLayoutMut,
+    add_bundle_unchecked, name, registry::mask, remove_bundle_unchecked, Archetype, ArchetypeSet,
+    Bundle, Component, EntityLinkings, EntitySet, QueryLayoutMut, QueryLayoutRef, Scene, StateRow,
 };
 
 // Mutable entity entries allow the user to be able to modify components that are linked to the entity
@@ -77,12 +75,13 @@ impl<'a> EntryMut<'a> {
         self.get_mut_silent::<T>()
     }
 
-
-
     // Add a new component bundle to the entity, forcing it to switch archetypes
     // This will fail if we try to add some components that were already added
     pub fn insert_bundle<B: Bundle>(&mut self, bundle: B) -> Option<()> {
-        assert!(B::is_valid(), "Bundle is not valid, check the bundle for component collisions");
+        assert!(
+            B::is_valid(),
+            "Bundle is not valid, check the bundle for component collisions"
+        );
         add_bundle_unchecked(self.archetypes, self.entity, self.entities, bundle)?;
         self.linkings = self.entities[self.entity];
         Some(())
@@ -90,7 +89,10 @@ impl<'a> EntryMut<'a> {
 
     // Remove an old component bundle from the entity, forcing it to switch archetypes
     pub fn remove_bundle<B: Bundle>(&mut self) -> Option<B> {
-        assert!(B::is_valid(), "Bundle is not valid, check the bundle for component collisions");
+        assert!(
+            B::is_valid(),
+            "Bundle is not valid, check the bundle for component collisions"
+        );
         let bundle = remove_bundle_unchecked(self.archetypes, self.entity, self.entities)?;
         self.linkings = self.entities[self.entity];
         Some(bundle)
@@ -119,7 +121,7 @@ impl<'a> EntryMut<'a> {
         if combined & self.archetype().mask() != combined {
             return None;
         }
-        
+
         // Fetch the layout from the archetype
         let index = self.linkings().index;
         let ptrs = unsafe { L::slices_from_archetype_unchecked(self.archetype()) };

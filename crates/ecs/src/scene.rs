@@ -5,8 +5,8 @@ use time::Time;
 use world::{Events, Init, Stage, Update, World};
 
 use crate::{
-    archetype::remove_bundle_unchecked, entity::Entity, Archetype, EntityLinkings,
-    EntryMut, EntryRef, Mask, MaskHashMap, Bundle, QueryLayoutRef
+    archetype::remove_bundle_unchecked, entity::Entity, Archetype, Bundle, EntityLinkings,
+    EntryMut, EntryRef, Mask, MaskHashMap, QueryLayoutRef,
 };
 
 pub type EntitySet = SlotMap<Entity, EntityLinkings>;
@@ -35,17 +35,20 @@ impl Default for Scene {
 impl Scene {
     // Spawn an entity with specific components
     pub fn insert<B: Bundle>(&mut self, components: B) -> Entity {
-        assert!(B::is_valid(), "Bundle is not valid, check the bundle for component collisions");
+        assert!(
+            B::is_valid(),
+            "Bundle is not valid, check the bundle for component collisions"
+        );
         self.extend_from_iter(once(components))[0]
     }
 
     // Spawn a batch of entities with specific components from an iterator
-    pub fn extend_from_iter<B: Bundle>(
-        &mut self,
-        iter: impl IntoIterator<Item = B>,
-    ) -> &[Entity] {
-        assert!(B::is_valid(), "Bundle is not valid, check the bundle for component collisions");
-        
+    pub fn extend_from_iter<B: Bundle>(&mut self, iter: impl IntoIterator<Item = B>) -> &[Entity] {
+        assert!(
+            B::is_valid(),
+            "Bundle is not valid, check the bundle for component collisions"
+        );
+
         // Try to get the archetype, and create a default one if it does not exist
         let mask = B::reduce(|a, b| a | b);
         let archetype = self

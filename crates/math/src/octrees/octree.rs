@@ -1,4 +1,4 @@
-use super::{node::Node};
+use super::node::Node;
 use crate::AABB;
 use slotmap::{Key, SlotMap};
 
@@ -37,12 +37,12 @@ pub struct Octree {
 
     // Stored per node
     children: Vec<[u32; 8]>,
-    
+
     // Stored per node group
     shared_location: Vec<vek::Vec3<i64>>,
-    shared_parent: Vec<u32>, 
-    shared_depth: Vec<u32>, 
-    
+    shared_parent: Vec<u32>,
+    shared_depth: Vec<u32>,
+
     // Max octree depth, and root node size
     depth: u8,
     size: u64,

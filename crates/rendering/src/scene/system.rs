@@ -8,7 +8,9 @@ use crate::{
     display::{Display, PrimitiveMode, RasterSettings},
     material::{AlbedoMap, MaskMap, NormalMap, Sky, Standard, HDRI},
     mesh::{Mesh, Surface},
-    prelude::{FragmentStage, Processor, ShaderCompiler, Texture, VertexStage, CubeMapConvolutor2D},
+    prelude::{
+        CubeMapConvolutor2D, FragmentStage, Processor, ShaderCompiler, Texture, VertexStage,
+    },
     shader::Shader,
 };
 

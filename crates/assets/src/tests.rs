@@ -2,7 +2,7 @@
 mod tests {
     use std::time::Instant;
 
-    use crate::{Assets, persistent};
+    use crate::{persistent, Assets};
 
     #[test]
     fn test() {

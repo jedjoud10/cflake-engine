@@ -8,7 +8,7 @@ use std::{
 // Implmented for immutable and mutable slice references
 pub trait Slice<'i> {
     type Item: 'i;
-    type OwnedItem: 'static;
+    type OwnedItem: 'static + Sync + Send;
     type Ptr: Any + Send + Sync + Copy + 'static;
 
     fn len(&self) -> Option<usize>;
@@ -19,7 +19,7 @@ pub trait Slice<'i> {
 }
 
 // Slice impl for immutable slices
-impl<'i, T: 'static> Slice<'i> for &[T] {
+impl<'i, T: 'static + Sync + Send> Slice<'i> for &[T] {
     type Item = &'i T;
     type OwnedItem = T;
     type Ptr = SendPtr<T>;
@@ -47,7 +47,7 @@ impl<'i, T: 'static> Slice<'i> for &[T] {
 }
 
 // Slice impl for Option immutable slices
-impl<'i, T: 'static> Slice<'i> for Option<&[T]> {
+impl<'i, T: 'static + Sync + Send> Slice<'i> for Option<&[T]> {
     type Item = Option<&'i T>;
     type OwnedItem = Option<T>;
     type Ptr = Option<SendPtr<T>>;
@@ -78,7 +78,7 @@ impl<'i, T: 'static> Slice<'i> for Option<&[T]> {
 }
 
 // Slice impl for mutable slices
-impl<'i, T: 'static> Slice<'i> for &mut [T] {
+impl<'i, T: 'static + Sync + Send> Slice<'i> for &mut [T] {
     type Item = &'i mut T;
     type OwnedItem = T;
     type Ptr = SendMutPtr<T>;
@@ -106,7 +106,7 @@ impl<'i, T: 'static> Slice<'i> for &mut [T] {
 }
 
 // RefSlice impl for Option mutable slices
-impl<'i, T: 'static> Slice<'i> for Option<&mut [T]> {
+impl<'i, T: 'static + Sync + Send> Slice<'i> for Option<&mut [T]> {
     type Item = Option<&'i mut T>;
     type OwnedItem = Option<T>;
     type Ptr = Option<SendMutPtr<T>>;

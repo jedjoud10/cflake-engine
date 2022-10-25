@@ -8,7 +8,7 @@ use crate::{
     context::Context,
     display::Display,
     mesh::{EnabledAttributes, Surface},
-    prelude::{CubeMap2D, TextureImportSettings, R, RGBA, SRGBA, RG},
+    prelude::{CubeMap2D, TextureImportSettings, R, RG, RGBA, SRGBA},
     scene::{ClusteredShading, Renderer, ShadowMapping},
     shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
     texture::{Ranged, Texture, Texture2D, RGB},
@@ -53,7 +53,7 @@ impl Default for Standard {
             ambient_occlusion: 0.5,
             metallic: 0.2,
             tint: vek::Rgb::white(),
-            scale: vek::Vec2::broadcast(1.0)
+            scale: vek::Vec2::broadcast(1.0),
         }
     }
 }
@@ -138,19 +138,15 @@ impl<'w> Material<'w> for Standard {
         uniforms.set_scalar("point_lights_num", main.point_lights.len() as u32);
         uniforms.set_shader_storage_buffer("point_lights", &main.point_lights);
 
-        let (_,
-            _,
-            _,
-            hdris,
-            _,
-            irradiance,
-            specular
-        ) = resources;
+        let (_, _, _, hdris, _, irradiance, specular) = resources;
 
         let irradiance_env_map = hdris.get(&irradiance);
         let specular_env_map = hdris.get(&specular);
         uniforms.set_sampler("irradiance_environment_map", irradiance_env_map);
-        uniforms.set_scalar("specular_environment_map_levels", specular_env_map.levels() as u32);
+        uniforms.set_scalar(
+            "specular_environment_map_levels",
+            specular_env_map.levels() as u32,
+        );
         uniforms.set_sampler("specular_environment_map", specular_env_map);
         uniforms.set_sampler("brdf_integration_map", main.integration);
     }
@@ -170,11 +166,7 @@ impl<'w> Material<'w> for Standard {
         resources: &mut Self::Resources,
         instance: &Self,
     ) {
-        let (albedo_maps,
-            normal_maps,
-            mask_maps,
-            ..,
-        ) = resources;
+        let (albedo_maps, normal_maps, mask_maps, ..) = resources;
 
         uniforms.set_vec3("tint", instance.tint);
         uniforms.set_scalar("bumpiness", instance.bumpiness);

@@ -1,6 +1,7 @@
 use crate::{
     entity::{Entity, EntityLinkings},
-    mask, ArchetypeSet, Bundle, Component, ComponentTable, EntitySet, Mask, MaskHashMap, StateRow, QueryLayoutRef,
+    mask, ArchetypeSet, Bundle, Component, ComponentTable, EntitySet, Mask, MaskHashMap,
+    QueryLayoutRef, StateRow,
 };
 use std::{cell::RefCell, rc::Rc};
 
@@ -42,7 +43,10 @@ impl Archetype {
         components: Vec<B>,
     ) -> &[Entity] {
         debug_assert_eq!(self.mask(), B::reduce(|a, b| a | b));
-        assert!(B::is_valid(), "Bundle is not valid, check the bundle for component collisions");
+        assert!(
+            B::is_valid(),
+            "Bundle is not valid, check the bundle for component collisions"
+        );
 
         self.reserve(entities.len());
         let old_len = self.entities.len();
@@ -112,7 +116,7 @@ impl Archetype {
         let boxed = self.tables.get_mut(&mask::<T>())?;
         Some(boxed.as_any_mut().downcast_mut().unwrap())
     }
-    
+
     // Remove an entity that is stored within this archetype using it's index
     // This will return the entity's old linkings if successful
     pub(crate) fn remove(
@@ -164,7 +168,10 @@ pub(crate) fn add_bundle_unchecked<B: Bundle>(
     entities: &mut EntitySet,
     bundle: B,
 ) -> Option<()> {
-    assert!(B::is_valid(), "Bundle is not valid, check the bundle for component collisions");
+    assert!(
+        B::is_valid(),
+        "Bundle is not valid, check the bundle for component collisions"
+    );
 
     // Get the old and new masks
     let old = entities[entity].mask;

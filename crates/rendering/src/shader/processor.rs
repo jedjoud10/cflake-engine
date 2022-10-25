@@ -96,7 +96,11 @@ impl<'a> Processor<'a> {
 
                     // Load the path from the asset manager
                     let path = pathbuf.as_os_str().to_str().unwrap();
-                    let raw = unsafe { self.loader.load_with_unchecked::<String>(path, ()).expect(&format!("File '{name}' could not be loaded in")) };
+                    let raw = unsafe {
+                        self.loader
+                            .load_with_unchecked::<String>(path, ())
+                            .expect(&format!("File '{name}' could not be loaded in"))
+                    };
                     output = raw;
                 } else {
                     // Don't overwrite really, and skip to the next line

@@ -23,10 +23,10 @@ use super::{UntypedMutPtr, UntypedPtr};
 type BoxedPtrTuple = Arc<dyn Any + Send + Sync + 'static>;
 
 // Certified moment
-pub(super) struct ThreadFuncEntry {
-    base: BoxedPtrTuple,
-    batch_length: usize,
-    batch_offset: usize,
+pub struct ThreadFuncEntry {
+    pub(super) base: BoxedPtrTuple,
+    pub(super) batch_length: usize,
+    pub(super) batch_offset: usize,
 }
 
 // Shared arc that represents a shared function
@@ -105,7 +105,7 @@ impl ThreadPool {
         let length = length.unwrap();
 
         // Create the scheduler config
-        let batch_size = batch_size.max(1);        
+        let batch_size = batch_size.max(1);
         let num_threads_to_use = (length as f32 / batch_size as f32).ceil() as usize;
         let remaining = length % batch_size;
 
@@ -118,21 +118,22 @@ impl ThreadPool {
         }
 
         // Box the function into an arc
-        type ArcFn<'b> = Arc<dyn Fn(ThreadFuncEntry) + Send + Sync + 'b>; 
+        type ArcFn<'b> = Arc<dyn Fn(ThreadFuncEntry) + Send + Sync + 'b>;
         let function: ArcFn<'a> = Arc::new(move |entry: ThreadFuncEntry| unsafe {
-            let offset = entry.batch_offset;        
+            let offset = entry.batch_offset;
             let ptrs = entry.base.downcast::<I::PtrTuple>().ok();
-            let mut ptrs= ptrs.map(|ptrs| I::from_ptrs(&*ptrs, entry.batch_length, offset)).unwrap();
-        
+            let mut ptrs = ptrs
+                .map(|ptrs| I::from_ptrs(&*ptrs, entry.batch_length, offset))
+                .unwrap();
+
             for i in 0..entry.batch_length {
                 function(I::get_unchecked(&mut ptrs, i));
             }
         });
 
         // Convert the lifetimed arc into a static arc
-        let function: ArcFn<'static> = unsafe { 
-            std::mem::transmute::<ArcFn<'a>, ArcFn<'static>>(function)
-        };
+        let function: ArcFn<'static> =
+            unsafe { std::mem::transmute::<ArcFn<'a>, ArcFn<'static>>(function) };
 
         // Run the function in mutliple threads
         let base: Arc<dyn Any + Send + Sync> = Arc::new(list.as_ptrs());
@@ -153,7 +154,7 @@ impl ThreadPool {
     }
 
     // Given an immutable/mutable slice of elements, run a function over all of them elements in parallel
-    // This function will wait untill all of the threads have finished executing their tasks 
+    // This function will wait untill all of the threads have finished executing their tasks
     pub fn for_each<'a, I: for<'i> SliceTuple<'i>>(
         &'a mut self,
         list: I,
@@ -178,9 +179,7 @@ impl ThreadPool {
 
     // Create a scope that we can use to send multiple commands to the threads
     pub fn scope<'a>(&'a mut self, function: impl FnOnce(&mut ThreadPoolScope<'a>)) {
-        let mut scope = ThreadPoolScope {
-            pool: self,
-        };
+        let mut scope = ThreadPoolScope { pool: self };
 
         function(&mut scope);
         drop(scope);

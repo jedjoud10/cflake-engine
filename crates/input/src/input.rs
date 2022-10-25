@@ -1,7 +1,16 @@
-use std::{path::Path, fs::File, io::{BufReader, Read, Write}, borrow::Cow, collections::BTreeMap};
-use serde::{*, ser::{SerializeMap, SerializeStruct}};
 use ahash::AHashMap;
 use glutin::event::ElementState;
+use serde::{
+    ser::{SerializeMap, SerializeStruct},
+    *,
+};
+use std::{
+    borrow::Cow,
+    collections::BTreeMap,
+    fs::File,
+    io::{BufReader, Read, Write},
+    path::Path,
+};
 
 // The virtual keycodes that the window will receive (as a form of events)
 pub type Key = glutin::event::VirtualKeyCode;
@@ -64,7 +73,7 @@ pub enum Axis {
 // This keyboard struct will be responsible for all key events and state handling for the keyboard
 pub struct Input {
     // Key and axis bindings
-   pub(crate) bindings: InputUserBindings,
+    pub(crate) bindings: InputUserBindings,
 
     // Key::W -> State::Pressed
     pub(crate) keys: AHashMap<Key, KeyState>,
@@ -73,13 +82,13 @@ pub struct Input {
     pub(crate) axii: AHashMap<Axis, f32>,
 }
 
-// User input bindings are basically 
+// User input bindings are basically
 #[derive(Default, Clone, Serialize, Deserialize)]
 // TODO: Sort by string name
 pub struct InputUserBindings {
     // "forward_key_bind" -> Key::W
     pub(crate) key_bindings: AHashMap<Cow<'static, str>, Key>,
-    
+
     // "camera rotation" -> Axis:MousePositionX,
     pub(crate) axis_bindings: AHashMap<Cow<'static, str>, Axis>,
 }
@@ -178,7 +187,9 @@ impl Input {
 
     // Create a new axis binding using a name and a unique axis
     pub fn bind_axis(&mut self, name: &'static str, axis: Axis) {
-        self.bindings.axis_bindings.insert(Cow::Borrowed(name), axis);
+        self.bindings
+            .axis_bindings
+            .insert(Cow::Borrowed(name), axis);
     }
 
     // Get the state of a button mapping or a key mapping

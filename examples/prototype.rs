@@ -11,12 +11,26 @@ fn main() {
 }
 fn init(world: &mut World) {
     let mut ctx = world.get_mut::<Context>().unwrap();
-    let assets = world.get::<Assets>().unwrap();        
-    
+    let assets = world.get::<Assets>().unwrap();
+
     // Load the BRDF integration map
-    let brdf_integration_map = assets.load_with::<IntegrationMap>("engine/textures/integration.png", (&mut ctx, TextureImportSettings {
-            sampling: Sampling { filter: Filter::Linear, wrap: Wrap::ClampToEdge, ..Default::default() },
-            mode: TextureMode::Resizable,
-            mipmaps: MipMapSetting::Manual { levels: NonZeroU8::new(3).unwrap() },
-    })).unwrap();
+    let brdf_integration_map = assets
+        .load_with::<IntegrationMap>(
+            "engine/textures/integration.png",
+            (
+                &mut ctx,
+                TextureImportSettings {
+                    sampling: Sampling {
+                        filter: Filter::Linear,
+                        wrap: Wrap::ClampToEdge,
+                        ..Default::default()
+                    },
+                    mode: TextureMode::Resizable,
+                    mipmaps: MipMapSetting::Manual {
+                        levels: NonZeroU8::new(3).unwrap(),
+                    },
+                },
+            ),
+        )
+        .unwrap();
 }

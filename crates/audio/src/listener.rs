@@ -1,4 +1,4 @@
-use cpal::traits::{HostTrait, DeviceTrait};
+use cpal::traits::{DeviceTrait, HostTrait};
 
 // This is a component that will be able to playback any type of audio to a specific cpal device
 // We can technically have multiple audio listenenrs in the same scene, although that would be pretty pointless

@@ -1,5 +1,5 @@
 use hdrldr::Image as HdrImage;
-use image::{DynamicImage, ImageFormat, GenericImageView};
+use image::{DynamicImage, GenericImageView, ImageFormat};
 
 use super::{Depth, Element, Ranged, Stencil, Texel, R, RG, RGB, RGBA, SRGB, SRGBA};
 
@@ -31,23 +31,23 @@ impl IntermediateImage {
     // Create an intermediate image from it's raw bytes
     pub fn new(bytes: &[u8]) -> Self {
         let guessed = image::guess_format(bytes).unwrap();
-            match guessed {
-                ImageFormat::Png | ImageFormat::Jpeg => {
-                    let loaded = image::load_from_memory_with_format(bytes, guessed).unwrap();
-                    loaded.flipv();
-                    Self::Image(loaded)
-                },
-                ImageFormat::Hdr => {
-                    let mut loaded = hdrldr::load(bytes).unwrap();
-                    // TODO: Optimize this flip bro
-                    let rows = loaded.data.chunks(loaded.width as usize);
-                    let flipped = rows
-                        .rev()
-                        .flat_map(|row| row.iter().cloned())
-                        .collect::<Vec<hdrldr::RGB>>();
-                    loaded.data = flipped;
-                    Self::Hdr(loaded)
-                },
+        match guessed {
+            ImageFormat::Png | ImageFormat::Jpeg => {
+                let loaded = image::load_from_memory_with_format(bytes, guessed).unwrap();
+                loaded.flipv();
+                Self::Image(loaded)
+            }
+            ImageFormat::Hdr => {
+                let mut loaded = hdrldr::load(bytes).unwrap();
+                // TODO: Optimize this flip bro
+                let rows = loaded.data.chunks(loaded.width as usize);
+                let flipped = rows
+                    .rev()
+                    .flat_map(|row| row.iter().cloned())
+                    .collect::<Vec<hdrldr::RGB>>();
+                loaded.data = flipped;
+                Self::Hdr(loaded)
+            }
             _ => panic!("Not tested/supported yet"),
         }
     }
@@ -73,7 +73,9 @@ impl IntermediateImage {
     // Get the resolution of the intermediate image
     pub fn dimensions(&self) -> vek::Extent2<u16> {
         match self {
-            IntermediateImage::Image(i) => vek::Extent2::new(i.dimensions().0, i.dimensions().1).as_::<u16>(),
+            IntermediateImage::Image(i) => {
+                vek::Extent2::new(i.dimensions().0, i.dimensions().1).as_::<u16>()
+            }
             IntermediateImage::Hdr(i) => vek::Extent2::new(i.width, i.height).as_::<u16>(),
         }
     }
@@ -86,78 +88,133 @@ pub trait ImageTexel: Texel {
 }
 
 impl ImageTexel for R<Ranged<u8>> {
-
     fn read(loaded: IntermediateImage) -> Vec<Self::Storage> {
-        loaded.as_image().unwrap().into_rgba8().chunks(4).map(|val| val[0]).collect()
+        loaded
+            .as_image()
+            .unwrap()
+            .into_rgba8()
+            .chunks(4)
+            .map(|val| val[0])
+            .collect()
     }
 }
 
 impl ImageTexel for RG<Ranged<u8>> {
-
     fn read(loaded: IntermediateImage) -> Vec<Self::Storage> {
-        loaded.as_image().unwrap().into_rgba8().chunks(4).map(vek::Vec2::from_slice).collect()
+        loaded
+            .as_image()
+            .unwrap()
+            .into_rgba8()
+            .chunks(4)
+            .map(vek::Vec2::from_slice)
+            .collect()
     }
 }
 
 impl ImageTexel for RGB<Ranged<u8>> {
-
     fn read(loaded: IntermediateImage) -> Vec<Self::Storage> {
-        loaded.as_image().unwrap().into_rgb8().chunks(3).map(vek::Vec3::from_slice).collect()
+        loaded
+            .as_image()
+            .unwrap()
+            .into_rgb8()
+            .chunks(3)
+            .map(vek::Vec3::from_slice)
+            .collect()
     }
 }
 
 impl ImageTexel for RGBA<Ranged<u8>> {
-
     fn read(loaded: IntermediateImage) -> Vec<Self::Storage> {
-        loaded.as_image().unwrap().into_rgba8().chunks(4).map(vek::Vec4::from_slice).collect()
+        loaded
+            .as_image()
+            .unwrap()
+            .into_rgba8()
+            .chunks(4)
+            .map(vek::Vec4::from_slice)
+            .collect()
     }
 }
 
 impl ImageTexel for SRGBA<Ranged<u8>> {
-
     fn read(loaded: IntermediateImage) -> Vec<Self::Storage> {
-        loaded.as_image().unwrap().into_rgba8().chunks(4).map(vek::Vec4::from_slice).collect()
+        loaded
+            .as_image()
+            .unwrap()
+            .into_rgba8()
+            .chunks(4)
+            .map(vek::Vec4::from_slice)
+            .collect()
     }
 }
 
 impl ImageTexel for SRGB<Ranged<u8>> {
-
     fn read(loaded: IntermediateImage) -> Vec<Self::Storage> {
-        loaded.as_image().unwrap().into_rgb8().chunks(4).map(vek::Vec3::from_slice).collect()
+        loaded
+            .as_image()
+            .unwrap()
+            .into_rgb8()
+            .chunks(4)
+            .map(vek::Vec3::from_slice)
+            .collect()
     }
 }
 
 impl ImageTexel for R<Ranged<u16>> {
-
     fn read(loaded: IntermediateImage) -> Vec<Self::Storage> {
-        loaded.as_image().unwrap().into_rgba16().chunks(4).map(|val| val[0]).collect()
+        loaded
+            .as_image()
+            .unwrap()
+            .into_rgba16()
+            .chunks(4)
+            .map(|val| val[0])
+            .collect()
     }
 }
 
 impl ImageTexel for RG<Ranged<u16>> {
-
     fn read(loaded: IntermediateImage) -> Vec<Self::Storage> {
-        loaded.as_image().unwrap().into_rgba16().chunks(4).map(vek::Vec2::from_slice).collect()
+        loaded
+            .as_image()
+            .unwrap()
+            .into_rgba16()
+            .chunks(4)
+            .map(vek::Vec2::from_slice)
+            .collect()
     }
 }
 
 impl ImageTexel for RGB<Ranged<u16>> {
-
     fn read(loaded: IntermediateImage) -> Vec<Self::Storage> {
-        loaded.as_image().unwrap().into_rgb16().chunks(3).map(vek::Vec3::from_slice).collect()
+        loaded
+            .as_image()
+            .unwrap()
+            .into_rgb16()
+            .chunks(3)
+            .map(vek::Vec3::from_slice)
+            .collect()
     }
 }
 
 impl ImageTexel for RGBA<Ranged<u16>> {
-
     fn read(loaded: IntermediateImage) -> Vec<Self::Storage> {
-        loaded.as_image().unwrap().into_rgba16().chunks(4).map(vek::Vec4::from_slice).collect()
+        loaded
+            .as_image()
+            .unwrap()
+            .into_rgba16()
+            .chunks(4)
+            .map(vek::Vec4::from_slice)
+            .collect()
     }
 }
 
 impl ImageTexel for RGB<f32> {
-
     fn read(loaded: IntermediateImage) -> Vec<Self::Storage> {
-        loaded.as_hdr().unwrap().data.into_iter().map(|rgb| vek::Vec3::new(rgb.r, rgb.g, rgb.b)).collect()
+        loaded
+            .as_hdr()
+            .unwrap()
+            .data
+            .into_iter()
+            .map(|rgb| vek::Vec3::new(rgb.r, rgb.g, rgb.b))
+            .collect()
     }
 }

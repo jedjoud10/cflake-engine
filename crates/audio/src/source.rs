@@ -28,7 +28,7 @@ impl AudioSource {
     }
 
     // Check if the audio source is currently playing
-    pub fn is_playing(&self) -> bool { 
+    pub fn is_playing(&self) -> bool {
         self.stream.is_some() && self.playing
     }
 
@@ -47,7 +47,7 @@ impl AudioSource {
             stream.play().unwrap();
         }
     }
-    
+
     // Set the volume of the audio source
     pub fn set_volume(&mut self, volume: f32) {
         self.volume = volume;

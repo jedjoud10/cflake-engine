@@ -4,8 +4,7 @@ mod tests {
 
     use crate::ThreadPool;
 
-    fn task(integer: &mut u128) {
-    }
+    fn task(integer: &mut u128) {}
 
     #[test]
     fn test() {
@@ -21,19 +20,31 @@ mod tests {
         */
         let mut vec = (0..=64).into_iter().collect::<Vec<u128>>();
         let shared = 4;
-        
+
         threadpool.scope(|scope| {
-            scope.execute(|| { dbg!(shared); });
-            scope.execute(|| { dbg!(shared); });
+            scope.execute(|| {
+                dbg!(shared);
+            });
+            scope.execute(|| {
+                dbg!(shared);
+            });
         });
 
-        threadpool.for_each(vec.as_mut_slice(), |mutable: &mut u128| {
-            dbg!(shared);
-        }, 128);
+        threadpool.for_each(
+            vec.as_mut_slice(),
+            |mutable: &mut u128| {
+                dbg!(shared);
+            },
+            128,
+        );
 
-        threadpool.for_each(vec.as_mut_slice(), |mutable: &mut u128| {
-            dbg!(shared);
-        }, 128);
+        threadpool.for_each(
+            vec.as_mut_slice(),
+            |mutable: &mut u128| {
+                dbg!(shared);
+            },
+            128,
+        );
 
         /*
         let item = slice.fetch(0).unwrap();

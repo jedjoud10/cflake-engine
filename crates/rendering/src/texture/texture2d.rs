@@ -2,8 +2,8 @@ use assets::Asset;
 use image::ImageFormat;
 
 use super::{
-    DepthTexel, ImageTexel, MipMapDescriptor, Region, SingleLayerTexture, Texel, Texture,
-    TextureImportSettings, TextureMode, IntermediateImage,
+    DepthTexel, ImageTexel, IntermediateImage, MipMapDescriptor, Region, SingleLayerTexture, Texel,
+    Texture, TextureImportSettings, TextureMode,
 };
 use crate::{
     context::{Context, ToGlName, ToGlTarget},
@@ -251,7 +251,7 @@ impl<'a, T: ImageTexel> Asset<'a> for Texture2D<T> {
     }
 
     fn deserialize(data: assets::Data, args: Self::Args) -> Self {
-        let (ctx, settings) = args;    
+        let (ctx, settings) = args;
         let intermediate = IntermediateImage::new(data.bytes());
         let dimensions = intermediate.dimensions();
         let texels = T::read(intermediate);

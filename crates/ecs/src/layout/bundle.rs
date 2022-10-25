@@ -1,4 +1,4 @@
-use crate::{Archetype, ComponentTable, Mask, MaskHashMap, Component, mask, name};
+use crate::{mask, name, Archetype, Component, ComponentTable, Mask, MaskHashMap};
 
 // An owned layout trait will be implemented for owned tuples that contain a set of components
 pub trait OwnedBundle<'a>
@@ -46,7 +46,10 @@ impl<'a, T: Component> OwnedBundle<'a> for T {
     type Storages = &'a mut Vec<T>;
 
     fn reduce(lambda: impl FnMut(Mask, Mask) -> Mask) -> Mask {
-        std::iter::once(mask::<T>()).into_iter().reduce(lambda).unwrap()
+        std::iter::once(mask::<T>())
+            .into_iter()
+            .reduce(lambda)
+            .unwrap()
     }
 
     fn prepare(archetype: &'a mut Archetype) -> Option<Self::Storages> {

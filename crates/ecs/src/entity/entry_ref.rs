@@ -1,7 +1,7 @@
 use super::Entity;
 use crate::{
     registry::{mask, name},
-    Archetype, Component, EntityLinkings, Scene, StateRow, QueryLayoutRef,
+    Archetype, Component, EntityLinkings, QueryLayoutRef, Scene, StateRow,
 };
 
 // Immutable entity entries allow the user to be able to read and get some data about a specific entity
@@ -66,7 +66,7 @@ impl<'a> EntryRef<'a> {
         if combined & self.archetype().mask() != combined {
             return None;
         }
-        
+
         // Fetch the layout from the archetype
         let index = self.linkings().index;
         let ptrs = unsafe { L::slices_from_archetype_unchecked(self.archetype()) };
