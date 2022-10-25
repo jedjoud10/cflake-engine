@@ -137,7 +137,7 @@ impl Scene {
     }
 
     // Create a new mutable query from this scene
-    pub fn query_mut<'a, L: for<'i> QueryLayoutMut<'i>>(&'a mut self) -> QueryMut<'a, L> {
+    pub fn query_mut<'a, L: for<'i> QueryLayoutMut<'i>>(&'a mut self) -> QueryMut<'a, '_, '_, '_, L> {
         QueryMut::new(self)
     }
 }

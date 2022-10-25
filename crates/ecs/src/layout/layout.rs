@@ -4,7 +4,7 @@ use crate::{Archetype, LayoutAccess, Mask, QuerySliceMut, QuerySliceRef};
 
 // A query layout ref is a combination of multiple immutable query items
 // I separated mutable and immutable query for the sake of type safety
-pub trait QueryLayoutRef<'i> {
+pub trait QueryLayoutRef<'i>: 'i {
     type OwnedTuple: 'static;
     type ItemTuple: 'i;
 
@@ -19,9 +19,8 @@ pub trait QueryLayoutRef<'i> {
 }
 
 // A query layout mut is a combination of multiple mutable/immutable query items
-pub trait QueryLayoutMut<'i> {
+pub trait QueryLayoutMut<'i>: 'i {
     type OwnedTuple: 'static;
-    type PtrTuple: 'static + Copy;
     type ItemTuple: 'i;
 
     // Get a combined layout access mask by running a lambda on each layout
@@ -47,11 +46,10 @@ pub trait QueryLayoutMut<'i> {
     }
 
     // Get the query layout slices from a mutable archetype
-    unsafe fn ptrs_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::PtrTuple;
-    unsafe fn from_raw_parts(ptrs: Self::PtrTuple, length: usize) -> Self;
+    unsafe fn slices_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self;
 
-    // Unsafe stuff, only used within query iterators
-    unsafe fn read_mut_unchecked(ptrs: Self::PtrTuple, index: usize) -> Self::ItemTuple;
+    // Read from the valid slice tuple
+    unsafe fn get_mut_unchecked<'a: 'i>(slices: &'a mut Self, index: usize) -> Self::ItemTuple;
 }
 
 impl<'i, I: QuerySliceRef<'i> + 'i> QueryLayoutRef<'i> for I {
@@ -78,7 +76,6 @@ impl<'i, I: QuerySliceRef<'i> + 'i> QueryLayoutRef<'i> for I {
 impl<'i, I: QuerySliceMut<'i> + 'i> QueryLayoutMut<'i> for I {
     type OwnedTuple = I::Owned;
     type ItemTuple = I::Item;
-    type PtrTuple = I::Ptr;
 
     fn reduce(lambda: impl FnMut(LayoutAccess, LayoutAccess) -> LayoutAccess) -> LayoutAccess {
         std::iter::once(I::access())
@@ -87,15 +84,12 @@ impl<'i, I: QuerySliceMut<'i> + 'i> QueryLayoutMut<'i> for I {
             .unwrap()
     }
 
-    unsafe fn ptrs_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::PtrTuple {
-        I::ptr_from_mut_archetype_unchecked(archetype)
+    unsafe fn slices_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self {
+        let ptr = I::ptr_from_mut_archetype_unchecked(archetype);
+        I::from_raw_parts(ptr, archetype.len())
     }
 
-    unsafe fn from_raw_parts(ptrs: Self::PtrTuple, length: usize) -> Self {
-        I::from_raw_parts(ptrs, length)
-    }
-
-    unsafe fn read_mut_unchecked(ptrs: Self::PtrTuple, index: usize) -> Self::ItemTuple {
-        I::read
+    unsafe fn get_mut_unchecked<'a: 'i>(slice: &'a mut Self, index: usize) -> Self::ItemTuple {
+        <I as QuerySliceMut<'i>>::get_mut_unchecked(slice, index)
     }
 }

@@ -96,7 +96,7 @@ impl ThreadPool {
     pub(crate) fn for_each_async<'a, I: for<'i> SliceTuple<'i>>(
         &'a mut self,
         mut list: I,
-        function: impl Fn(<I as SliceTuple<'_>>::ItemTuple) + Send + Sync + Copy + 'a,
+        function: impl Fn(<I as SliceTuple<'_>>::ItemTuple) + Send + Sync + 'a,
         batch_size: usize,
     ) {
         // If the slices have different lengths, we must abort
@@ -158,7 +158,7 @@ impl ThreadPool {
     pub fn for_each<'a, I: for<'i> SliceTuple<'i>>(
         &'a mut self,
         list: I,
-        function: impl Fn(<I as SliceTuple<'_>>::ItemTuple) + Send + Sync + Copy + 'a,
+        function: impl Fn(<I as SliceTuple<'_>>::ItemTuple) + Send + Sync + 'a,
         batch_size: usize,
     ) {
         self.for_each_async(list, function, batch_size);

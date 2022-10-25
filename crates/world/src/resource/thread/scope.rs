@@ -30,7 +30,7 @@ impl<'a> ThreadPoolScope<'a> {
     pub fn for_each<I: for<'i> SliceTuple<'i>>(
         &mut self,
         list: I,
-        function: impl Fn(<I as SliceTuple<'_>>::ItemTuple) + Send + Sync + Copy + 'a,
+        function: impl Fn(<I as SliceTuple<'_>>::ItemTuple) + Send + Sync + 'a,
         batch_size: usize,
     ) {
         self.pool.for_each_async(list, function, batch_size)
