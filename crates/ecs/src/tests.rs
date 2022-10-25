@@ -14,6 +14,7 @@ mod tests {
         struct Ammo(u32);
 
         let entity = manager.insert((Name("Red"), Health(100)));
+        let mut query = manager.query_mut::<(&mut [Name])>();
         let mut entry = manager.entry_mut(entity).unwrap();
         //let view = entry.as_query::<&mut Name>().unwrap();
         dbg!(entry.get_mut::<Name>().unwrap().0);

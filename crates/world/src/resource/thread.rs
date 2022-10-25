@@ -1,11 +1,9 @@
-mod function;
 mod layout;
 mod macros;
 mod ptr;
 mod scope;
 mod slice;
 mod thread;
-pub use function::*;
 pub use layout::*;
 pub use macros::*;
 pub use ptr::*;
