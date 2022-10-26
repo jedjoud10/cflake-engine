@@ -29,7 +29,11 @@ macro_rules! impl_tuple {
                     }
                 });
 
-                (vec.is_empty()).then(|| vec).map(|vec| vec.windows(2).all(|a| a[0] == a[1]).then(|| vec[0])).flatten()
+                (!vec.is_empty()).then(|| vec).map(|vec| {
+                    let first = vec[0];
+                    let others = vec.iter().all(|l| *l == first);
+                    others.then_some(first)
+                }).unwrap_or_default()
             }
 
             unsafe fn from_ptrs(ptrs: &Self::PtrTuple, length: usize, offset: usize) -> Self {
