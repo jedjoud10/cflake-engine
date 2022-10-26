@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests {
+    /*
     use world::ThreadPool;
 
     use crate::*;
@@ -46,6 +47,7 @@ mod tests {
         let query = manager.query_mut_with::<(&[Name], &mut [Health])>(filter);
         
     }
+    */
 }
 
 

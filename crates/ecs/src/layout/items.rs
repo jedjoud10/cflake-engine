@@ -1,8 +1,8 @@
 use crate::{mask, Archetype, Component, Entity, LayoutAccess, Mask};
 
 // Immutable query slice that will be fetched from each archetype
-pub trait QuerySliceRef<'i>: Sized {
-    type Item: 'i;
+pub trait QueryItemRef<'s>: Sized {
+    type Slice: 's;
     type Ptr: 'static + Copy;
     type Owned: 'static;
 
@@ -12,14 +12,16 @@ pub trait QuerySliceRef<'i>: Sized {
     // Get a pointer immutable archetypes
     unsafe fn ptr_from_archetype_unchecked(archetype: &Archetype) -> Self::Ptr;
 
-    // Convert the pointer into a slice, and read from said slice
-    unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self;
-    unsafe fn get_unchecked<'a: 'i>(slice: &'a Self, index: usize) -> Self::Item;
+    // Convert the pointer into a slice
+    unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self::Slice;
+
+    // Read from a raw pointer directly
+    unsafe fn read_unchecked(ptr: Self::Ptr, index: usize) -> Self;
 }
 
 // Mutable query slice that will be fetched from each archetype
-pub trait QuerySliceMut<'i>: Sized {
-    type Item: 'i;
+pub trait QueryItemMut<'s>: Sized {
+    type Slice: 's;
     type Ptr: 'static + Copy;
     type Owned: 'static;
 
@@ -30,12 +32,14 @@ pub trait QuerySliceMut<'i>: Sized {
     unsafe fn ptr_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::Ptr;
 
     // Convert the pointer into a slice, and read from said slice
-    unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self;
-    unsafe fn get_mut_unchecked<'a: 'i>(slice: &'a mut Self, index: usize) -> Self::Item;
+    unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self::Slice;
+
+    // Read from a raw pointer directly
+    unsafe fn read_mut_unchecked(ptr: Self::Ptr, index: usize) -> Self;
 }
 
-impl<'i, T: Component> QuerySliceRef<'i> for &[T] {
-    type Item = &'i T;
+impl<'s, T: Component> QueryItemRef<'s> for &T {
+    type Slice = &'s [T];
     type Ptr = *const T;
     type Owned = T;
 
@@ -51,17 +55,17 @@ impl<'i, T: Component> QuerySliceRef<'i> for &[T] {
             .as_ptr()
     }
 
-    unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self {
+    unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self::Slice {
         std::slice::from_raw_parts(ptr, length)
     }
 
-    unsafe fn get_unchecked<'a: 'i>(slice: &'a Self, index: usize) -> Self::Item {
-        slice.get_unchecked(index)
+    unsafe fn read_unchecked(ptr: Self::Ptr, index: usize) -> Self {
+        &*ptr.add(index)
     }
 }
 
-impl<'i, T: Component> QuerySliceRef<'i> for Option<&'i [T]> {
-    type Item = Option<&'i T>;
+impl<'s, T: Component> QueryItemRef<'s> for Option<&T> {
+    type Slice = Option<&'s [T]>;
     type Ptr = Option<*const T>;
     type Owned = T;
 
@@ -73,17 +77,17 @@ impl<'i, T: Component> QuerySliceRef<'i> for Option<&'i [T]> {
         archetype.table::<T>().map(|vec| vec.as_slice().as_ptr())
     }
 
-    unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self {
+    unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self::Slice {
         ptr.map(|ptr| std::slice::from_raw_parts(ptr, length))
     }
 
-    unsafe fn get_unchecked<'a: 'i>(slice: &'a Self, index: usize) -> Self::Item {
-        slice.map(|slice| slice.get_unchecked(index))
+    unsafe fn read_unchecked(ptr: Self::Ptr, index: usize) -> Self {
+        ptr.map(|ptr| &*ptr.add(index))
     }
 }
 
-impl<'i> QuerySliceRef<'i> for &[Entity] {
-    type Item = &'i Entity;
+impl<'s> QueryItemRef<'s> for &Entity {
+    type Slice = &'s [Entity];
     type Ptr = *const Entity;
     type Owned = Entity;
 
@@ -95,17 +99,17 @@ impl<'i> QuerySliceRef<'i> for &[Entity] {
         archetype.entities().as_ptr()
     }
 
-    unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self {
+    unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self::Slice {
         std::slice::from_raw_parts(ptr, length)
     }
 
-    unsafe fn get_unchecked<'a: 'i>(slice: &'a Self, index: usize) -> Self::Item {
-        slice.get_unchecked(index)
+    unsafe fn read_unchecked(ptr: Self::Ptr, index: usize) -> Self {
+        &*ptr.add(index)
     }
 }
 
-impl<'i, T: Component> QuerySliceMut<'i> for &[T] {
-    type Item = &'i T;
+impl<'s, T: Component> QueryItemMut<'s> for &T {
+    type Slice = &'s [T];
     type Ptr = *const T;
     type Owned = T;
 
@@ -121,17 +125,17 @@ impl<'i, T: Component> QuerySliceMut<'i> for &[T] {
             .as_ptr()
     }
 
-    unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self {
+    unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self::Slice{
         std::slice::from_raw_parts(ptr, length)
     }
 
-    unsafe fn get_mut_unchecked<'a: 'i>(slice: &'a mut Self, index: usize) -> Self::Item {
-        slice.get_unchecked(index)
+    unsafe fn read_mut_unchecked(ptr: Self::Ptr, index: usize) -> Self {
+        &*ptr.add(index)
     }
 }
 
-impl<'i, T: Component> QuerySliceMut<'i> for Option<&[T]> {
-    type Item = Option<&'i T>;
+impl<'s, T: Component> QueryItemMut<'s> for Option<&T> {
+    type Slice = Option<&'s [T]>;
     type Ptr = Option<*const T>;
     type Owned = T;
 
@@ -143,17 +147,17 @@ impl<'i, T: Component> QuerySliceMut<'i> for Option<&[T]> {
         archetype.table::<T>().map(|vec| vec.as_slice().as_ptr())
     }
 
-    unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self {
+    unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self::Slice {
         ptr.map(|ptr| std::slice::from_raw_parts(ptr, length))
     }
 
-    unsafe fn get_mut_unchecked<'a: 'i>(slice: &'a mut Self, index: usize) -> Self::Item {
-        slice.map(|slice| slice.get_unchecked(index))
+    unsafe fn read_mut_unchecked(ptr: Self::Ptr, index: usize) -> Self {
+        ptr.map(|ptr| &*ptr.add(index))
     }
 }
 
-impl<'i, T: Component> QuerySliceMut<'i> for &mut [T] {
-    type Item = &'i mut T;
+impl<'s, T: Component> QueryItemMut<'s> for &mut T {
+    type Slice = &'s mut [T];
     type Ptr = *mut T;
     type Owned = T;
 
@@ -169,17 +173,17 @@ impl<'i, T: Component> QuerySliceMut<'i> for &mut [T] {
             .as_mut_ptr()
     }
 
-    unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self {
+    unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self::Slice {
         std::slice::from_raw_parts_mut(ptr, length)
     }
 
-    unsafe fn get_mut_unchecked<'a: 'i>(slice: &'a mut Self, index: usize) -> Self::Item {
-        slice.get_unchecked_mut(index)
+    unsafe fn read_mut_unchecked(ptr: Self::Ptr, index: usize) -> Self {
+        &mut *ptr.add(index)
     }
 }
 
-impl<'i, T: Component> QuerySliceMut<'i> for Option<&mut [T]> {
-    type Item = Option<&'i mut T>;
+impl<'s, T: Component> QueryItemMut<'s> for Option<&mut T> {
+    type Slice = Option<&'s mut [T]>;
     type Ptr = Option<*mut T>;
     type Owned = T;
 
@@ -193,19 +197,17 @@ impl<'i, T: Component> QuerySliceMut<'i> for Option<&mut [T]> {
             .map(|vec| vec.as_mut_slice().as_mut_ptr())
     }
 
-    unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self {
+    unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self::Slice {
         ptr.map(|ptr| std::slice::from_raw_parts_mut(ptr, length))
     }
 
-    unsafe fn get_mut_unchecked<'a: 'i>(slice: &'a mut Self, index: usize) -> Self::Item {
-        slice
-            .as_mut()
-            .map(|slice| <[T]>::get_unchecked_mut(slice, index))
+    unsafe fn read_mut_unchecked(ptr: Self::Ptr, index: usize) -> Self {
+        ptr.map(|ptr| &mut *ptr.add(index))
     }
 }
 
-impl<'i> QuerySliceMut<'i> for &[Entity] {
-    type Item = &'i Entity;
+impl<'s> QueryItemMut<'s> for &Entity {
+    type Slice = &'s [Entity];
     type Ptr = *const Entity;
     type Owned = Entity;
 
@@ -217,11 +219,11 @@ impl<'i> QuerySliceMut<'i> for &[Entity] {
         archetype.entities().as_ptr()
     }
 
-    unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self {
+    unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self::Slice {
         std::slice::from_raw_parts(ptr, length)
     }
 
-    unsafe fn get_mut_unchecked<'a: 'i>(slice: &'a mut Self, index: usize) -> Self::Item {
-        slice.get_unchecked(index)
+    unsafe fn read_mut_unchecked(ptr: Self::Ptr, index: usize) -> Self {
+        &*ptr.add(index)
     }
 }
