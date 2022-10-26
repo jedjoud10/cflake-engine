@@ -12,7 +12,7 @@ where
 
     // Checks if this bundle is valid
     fn is_valid() -> bool {
-        let mut count = 0;
+        let mut count = 1;
         let mask = Self::reduce(|a, b| {
             count += 1;
             a | b

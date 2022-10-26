@@ -56,19 +56,19 @@ macro_rules! tuple_impls {
             }
         }
 
-        impl<'i, $($name: QuerySliceRef<'i> + 'i, )+> QueryLayoutRef<'i> for ($($name,)+) {
+        impl<'i, $($name: QueryItemRef<'i> + 'i, )+> QueryLayoutRef<'i> for ($($name,)+) {
             type OwnedTuple = ($($name::Owned,)+);
-            type ItemTuple = ($($name::Item,)+);
+            type PtrTuple = ($($name::Ptr,)+);
+            type SliceTuple = ($($name::Slice,)+);
 
             fn reduce(mut lambda: impl FnMut(LayoutAccess, LayoutAccess) -> LayoutAccess) -> LayoutAccess {
                 let layouts = [$($name::access()),+];
                 layouts[..].into_iter().cloned().reduce(|a, b| lambda(a, b)).unwrap()
             }
 
-            unsafe fn slices_from_archetype_unchecked(archetype: &Archetype) -> Self {
+            unsafe fn ptrs_from_archetype_unchecked(archetype: &Archetype) -> Self::PtrTuple {
                 seq!(N in 0..$max {
-                    let ptr~N = C~N::ptr_from_archetype_unchecked(archetype);
-                    let c~N = C~N::from_raw_parts(ptr~N, archetype.len());
+                    let c~N = C~N::ptr_from_archetype_unchecked(archetype);
                 });
 
                 ($(
@@ -76,9 +76,19 @@ macro_rules! tuple_impls {
                 ),+,)
             }
 
-            unsafe fn get_unchecked<'a: 'i>(slices: &'a Self, index: usize) -> Self::ItemTuple {
+            unsafe fn from_raw_parts(ptrs: Self::PtrTuple, length: usize) -> Self::SliceTuple {
                 seq!(N in 0..$max {
-                    let c~N = C~N::get_unchecked(&slices.N, index);
+                    let c~N = C~N::from_raw_parts(ptrs.N, length);
+                });
+
+                ($(
+                    lower!($name)
+                ),+,)
+            }
+
+            unsafe fn read_unchecked(ptrs: Self::PtrTuple, index: usize) -> Self {
+                seq!(N in 0..$max {
+                    let c~N = <C~N as QueryItemRef<'i>>::read_unchecked(ptrs.N, index);
                 });
 
                 ($(
@@ -87,19 +97,19 @@ macro_rules! tuple_impls {
             }
         }
 
-        impl<'i, $($name: QuerySliceMut<'i> + 'i, )+> QueryLayoutMut<'i> for ($($name,)+) {
+        impl<'i, $($name: QueryItemMut<'i> + 'i, )+> QueryLayoutMut<'i> for ($($name,)+) {
             type OwnedTuple = ($($name::Owned,)+);
-            type ItemTuple = ($($name::Item,)+);
+            type PtrTuple = ($($name::Ptr,)+);
+            type SliceTuple = ($($name::Slice,)+);
 
             fn reduce(mut lambda: impl FnMut(LayoutAccess, LayoutAccess) -> LayoutAccess) -> LayoutAccess {
                 let layouts = [$($name::access()),+];
                 layouts[..].into_iter().cloned().reduce(|a, b| lambda(a, b)).unwrap()
             }
 
-            unsafe fn slices_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self {
+            unsafe fn ptrs_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::PtrTuple {
                 seq!(N in 0..$max {
-                    let ptr~N = C~N::ptr_from_mut_archetype_unchecked(archetype);
-                    let c~N = C~N::from_raw_parts(ptr~N, archetype.len());
+                    let c~N = C~N::ptr_from_mut_archetype_unchecked(archetype);
                 });
 
                 ($(
@@ -107,9 +117,19 @@ macro_rules! tuple_impls {
                 ),+,)
             }
 
-            unsafe fn get_mut_unchecked<'a: 'i>(slices: &'a mut Self, index: usize) -> Self::ItemTuple {
+            unsafe fn from_raw_parts(ptrs: Self::PtrTuple, length: usize) -> Self::SliceTuple {
                 seq!(N in 0..$max {
-                    let c~N = C~N::get_mut_unchecked(&mut slices.N, index);
+                    let c~N = C~N::from_raw_parts(ptrs.N, length);
+                });
+
+                ($(
+                    lower!($name)
+                ),+,)
+            }
+
+            unsafe fn read_mut_unchecked(ptrs: Self::PtrTuple, index: usize) -> Self {
+                seq!(N in 0..$max {
+                    let c~N = <C~N as QueryItemMut<'i>>::read_mut_unchecked(ptrs.N, index);
                 });
 
                 ($(
@@ -120,7 +140,6 @@ macro_rules! tuple_impls {
     };
 }
 
-/*
 tuple_impls! { C0 C1, 2 }
 tuple_impls! { C0 C1 C2, 3 }
 tuple_impls! { C0 C1 C2 C3, 4 }
@@ -130,4 +149,3 @@ tuple_impls! { C0 C1 C2 C3 C4 C5 C6, 7 }
 tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7, 8 }
 tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8, 9 }
 tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9, 10 }
-*/
