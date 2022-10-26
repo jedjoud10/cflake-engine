@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use smallvec::SmallVec;
 
 use crate::{Archetype, Mask, QueryLayoutMut, Scene, StateRow, QueryFilter};
@@ -50,13 +51,16 @@ impl<'a: 'b, 'b, 'i, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 'i, L> {
 
         let cached = F::prepare();
         let mask = mask;
-        archetypes.iter().map(|archetype| {
+        /*
+        let enabled = archetypes.iter().map(|archetype| {
             let states = archetype.states();
             let states = states.borrow();
             let iter = states.iter().cloned().map(|state| F::eval(&cached, state, mask));
-            //iter
-            todo!()
-        }).flatten();
+            let chunks = iter.chunks(128);
+            let chunks = chunks.into_iter();
+            chunks.map(|chunk| chunk.fold(0, |accum, current| accum << 1 | (current as u128)))
+        }).collect::<Vec<_>>();
+        */
 
         Self {
             archetypes,
