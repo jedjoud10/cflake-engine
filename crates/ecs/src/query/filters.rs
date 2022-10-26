@@ -5,7 +5,7 @@ use crate::{
 use std::marker::PhantomData;
 
 // Basic evaluator that will be implemented for the filter sources and modifiers
-pub trait Evaluate: 'static {
+pub trait QueryFilter: 'static {
     // Cached data for fast traversal
     type Cached;
 
@@ -26,12 +26,12 @@ pub struct Always(());
 pub struct Never(());
 
 // Modifiers
-pub struct And<A: Evaluate, B: Evaluate>(A, B);
-pub struct Or<A: Evaluate, B: Evaluate>(A, B);
-pub struct Not<A: Evaluate>(A);
+pub struct And<A: QueryFilter, B: QueryFilter>(A, B);
+pub struct Or<A: QueryFilter, B: QueryFilter>(A, B);
+pub struct Not<A: QueryFilter>(A);
 
 // Trait implementations for sources
-impl<T: Component> Evaluate for Added<T> {
+impl<T: Component> QueryFilter for Added<T> {
     type Cached = Mask;
 
     fn prepare() -> Self::Cached {
@@ -43,7 +43,7 @@ impl<T: Component> Evaluate for Added<T> {
     }
 }
 
-impl<T: Component> Evaluate for Modified<T> {
+impl<T: Component> QueryFilter for Modified<T> {
     type Cached = Mask;
 
     fn prepare() -> Self::Cached {
@@ -55,7 +55,7 @@ impl<T: Component> Evaluate for Modified<T> {
     }
 }
 
-impl<T: Component> Evaluate for Contains<T> {
+impl<T: Component> QueryFilter for Contains<T> {
     type Cached = Mask;
 
     fn prepare() -> Self::Cached {
@@ -67,7 +67,7 @@ impl<T: Component> Evaluate for Contains<T> {
     }
 }
 
-impl Evaluate for Always {
+impl QueryFilter for Always {
     type Cached = ();
 
     fn prepare() -> Self::Cached {}
@@ -77,7 +77,7 @@ impl Evaluate for Always {
     }
 }
 
-impl Evaluate for Never {
+impl QueryFilter for Never {
     type Cached = ();
 
     fn prepare() -> Self::Cached {}
@@ -88,7 +88,7 @@ impl Evaluate for Never {
 }
 
 // Trait implementations for modifiers
-impl<A: Evaluate, B: Evaluate> Evaluate for And<A, B> {
+impl<A: QueryFilter, B: QueryFilter> QueryFilter for And<A, B> {
     type Cached = (A::Cached, B::Cached);
 
     fn prepare() -> Self::Cached {
@@ -100,7 +100,7 @@ impl<A: Evaluate, B: Evaluate> Evaluate for And<A, B> {
     }
 }
 
-impl<A: Evaluate, B: Evaluate> Evaluate for Or<A, B> {
+impl<A: QueryFilter, B: QueryFilter> QueryFilter for Or<A, B> {
     type Cached = (A::Cached, B::Cached);
 
     fn prepare() -> Self::Cached {
@@ -112,7 +112,7 @@ impl<A: Evaluate, B: Evaluate> Evaluate for Or<A, B> {
     }
 }
 
-impl<A: Evaluate> Evaluate for Not<A> {
+impl<A: QueryFilter> QueryFilter for Not<A> {
     type Cached = A::Cached;
 
     fn prepare() -> Self::Cached {
@@ -144,12 +144,12 @@ pub fn never() -> Never {
 }
 
 // Modifiers
-pub fn and<A: Evaluate, B: Evaluate>(a: A, b: B) -> And<A, B> {
+pub fn and<A: QueryFilter, B: QueryFilter>(a: A, b: B) -> And<A, B> {
     And(a, b)
 }
-pub fn or<A: Evaluate, B: Evaluate>(a: A, b: B) -> Or<A, B> {
+pub fn or<A: QueryFilter, B: QueryFilter>(a: A, b: B) -> Or<A, B> {
     Or(a, b)
 }
-pub fn not<A: Evaluate>(a: A) -> Not<A> {
+pub fn not<A: QueryFilter>(a: A) -> Not<A> {
     Not(a)
 }

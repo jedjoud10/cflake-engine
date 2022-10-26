@@ -93,6 +93,10 @@ impl ThreadPool {
 
     // Given an immutable/mutable slice of elements, run a function over all of them elements in parallel
     // Warning: This will not wait till all the threads have finished executing their specific functions
+    // This will use the given bitfield to check wether or not we can execute a specific entry
+
+    // Given an immutable/mutable slice of elements, run a function over all of them elements in parallel
+    // Warning: This will not wait till all the threads have finished executing their specific functions
     pub(crate) fn for_each_async<'a, I: for<'i> SliceTuple<'i>>(
         &'a mut self,
         mut list: I,
