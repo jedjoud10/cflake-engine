@@ -41,16 +41,11 @@ mod tests {
         let query = manager.query_mut::<(&Name, &mut Health)>();
         query.for_each(&mut threadpool, |(_, health)| {
             health.0 += 100;
-        }, 32);        
-        /*
+        }, 32);    
 
         for health in manager.query_mut::<&Health>() {
             assert_eq!(health.0, 200)
         }
-
-        //let query = manager.query_mut_with::<(&Name, &mut Health)>(filter);
-        */
-        
     }
 }
 

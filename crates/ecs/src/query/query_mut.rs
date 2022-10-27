@@ -167,7 +167,7 @@ impl<'b, 's, L: QueryLayoutMut<'s>> Iterator for QueryMutIter<'b, 's, L> {
         // Update the mask for the current entity
         let states = self.chunk.as_mut().unwrap().archetype.states();
         let mut vec = states.borrow_mut();
-        vec[self.index].update(|_, _, update| *update = *update | self.mask);
+        vec[self.index-1].update(|_, _, update| *update = *update | self.mask);
 
         Some(items)
     }
