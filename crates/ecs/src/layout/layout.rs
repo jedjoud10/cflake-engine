@@ -31,9 +31,9 @@ pub trait QueryLayoutMut<'s> {
     fn is_valid() -> bool {
         let combined = Self::reduce(|a, b| a | b);
         let refmut_collisions = combined.shared() & combined.unique() != Mask::zero();
-        let mut mut_collisions = false; 
+        let mut mut_collisions = false;
         Self::reduce(|a, b| {
-            mut_collisions |= (a & b) == b;            
+            mut_collisions |= (a & b) == b;
             a | b
         });
         dbg!(refmut_collisions);

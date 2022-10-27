@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use smallvec::SmallVec;
 
-use crate::{Archetype, Mask, QueryLayoutMut, Scene, StateRow, QueryFilter};
+use crate::{Archetype, Mask, QueryFilter, QueryLayoutMut, Scene, StateRow};
 use std::marker::PhantomData;
 
 // This is a query that will be fetched from the main scene that we can use to get components out of entries with a specific layout
@@ -22,7 +22,9 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
         let archetypes = scene
             .archetypes_mut()
             .iter_mut()
-            .filter_map(move |(&archetype_mask, archetype)| archetype_mask.contains(mask).then_some(archetype))
+            .filter_map(move |(&archetype_mask, archetype)| {
+                archetype_mask.contains(mask).then_some(archetype)
+            })
             .collect::<Vec<_>>();
         (mask, archetypes)
     }
@@ -72,10 +74,13 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
     pub fn for_each(
         mut self,
         threadpool: &mut world::ThreadPool,
-        function: impl Fn(<<L as QueryLayoutMut<'_>>::SliceTuple as world::SliceTuple<'_>>::ItemTuple) + Send + Sync + Clone,
+        function: impl Fn(<<L as QueryLayoutMut<'_>>::SliceTuple as world::SliceTuple<'_>>::ItemTuple)
+            + Send
+            + Sync
+            + Clone,
         batch_size: usize,
-    ) where for<'it, 's2>
-        <L as QueryLayoutMut<'it>>::SliceTuple: world::SliceTuple<'s2>,
+    ) where
+        for<'it, 's2> <L as QueryLayoutMut<'it>>::SliceTuple: world::SliceTuple<'s2>,
     {
         threadpool.scope(|scope| {
             for archetype in self.archetypes.iter_mut() {
@@ -88,7 +93,7 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
                 let mask = self.mask;
                 let states = archetype.states();
                 let mut borrowed = states.borrow_mut();
-                
+
                 // Update the mutable state masks
                 for state in borrowed.iter_mut() {
                     StateRow::update(state, |_, _, mutated| *mutated = *mutated | mask);
@@ -146,7 +151,13 @@ impl<'b, 's, L: QueryLayoutMut<'s>> Iterator for QueryMutIter<'b, 's, L> {
 
     fn next(&mut self) -> Option<Self::Item> {
         // Hop onto the next archetype if we are done iterating through the current one
-        if (self.index + 1) > self.chunk.as_ref().map(|chunk| chunk.length).unwrap_or_default() {
+        if (self.index + 1)
+            > self
+                .chunk
+                .as_ref()
+                .map(|chunk| chunk.length)
+                .unwrap_or_default()
+        {
             let archetype = self.archetypes.pop()?;
             let ptrs = unsafe { L::ptrs_from_mut_archetype_unchecked(archetype) };
             let length = archetype.len();
@@ -167,7 +178,7 @@ impl<'b, 's, L: QueryLayoutMut<'s>> Iterator for QueryMutIter<'b, 's, L> {
         // Update the mask for the current entity
         let states = self.chunk.as_mut().unwrap().archetype.states();
         let mut vec = states.borrow_mut();
-        vec[self.index-1].update(|_, _, update| *update = *update | self.mask);
+        vec[self.index - 1].update(|_, _, update| *update = *update | self.mask);
 
         Some(items)
     }

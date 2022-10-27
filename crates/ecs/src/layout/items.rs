@@ -125,7 +125,7 @@ impl<'s, T: Component> QueryItemMut<'s> for &T {
             .as_ptr()
     }
 
-    unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self::Slice{
+    unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self::Slice {
         std::slice::from_raw_parts(ptr, length)
     }
 

@@ -1,6 +1,6 @@
 use crate::{
     mask, name, Archetype, Component, ComponentTable, LayoutAccess, Mask, MaskHashMap, OwnedBundle,
-    QueryLayoutMut, QueryLayoutRef, QueryItemMut, QueryItemRef,
+    QueryItemMut, QueryItemRef, QueryLayoutMut, QueryLayoutRef,
 };
 use casey::lower;
 use seq_macro::seq;

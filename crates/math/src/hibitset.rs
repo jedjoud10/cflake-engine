@@ -1,4 +1,4 @@
-use std::ops::{RangeInclusive, Range};
+use std::ops::{Range, RangeInclusive};
 
 // Hierchical bitset. Heavily inspired from the hibitset crate
 // This hiearchichal bitset is mostly used in the world crate and ECS crate
@@ -9,13 +9,17 @@ pub struct HiBitSet([Vec<u16>; 8]);
 
 // Only used for counting
 pub enum Direction {
-    Left, Right
+    Left,
+    Right,
 }
 
 impl HiBitSet {
     // Create a new empty hierchichal bit set
     pub fn new() -> Self {
-        let vector = (0..8).into_iter().map(|i| vec![0u16; 16usize.pow(i)]).collect::<Vec<Vec<u16>>>();
+        let vector = (0..8)
+            .into_iter()
+            .map(|i| vec![0u16; 16usize.pow(i)])
+            .collect::<Vec<Vec<u16>>>();
         Self(vector.try_into().unwrap())
     }
 
@@ -38,12 +42,12 @@ impl HiBitSet {
     pub fn get(&self, index: u32) -> bool {
         todo!()
     }
-    
+
     // Count the number of zeros till we reach a valid one starting from an index
     pub fn count_zeros_until_one(&self, index: u32, direction: Direction) -> u32 {
         todo!()
     }
-    
+
     // Count the number of ones till we reach a valid zero starting from an index
     pub fn count_ones_until_zero(&self, index: u32, direction: Direction) -> u32 {
         todo!()

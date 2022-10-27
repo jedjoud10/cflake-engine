@@ -5,8 +5,9 @@ use time::Time;
 use world::{Events, Init, Stage, Update, World};
 
 use crate::{
-    archetype::remove_bundle_unchecked, entity::Entity, Archetype, Bundle, EntityLinkings,
-    EntryMut, EntryRef, Mask, MaskHashMap, QueryLayoutRef, QueryMut, QueryLayoutMut, QueryFilter, query::Always,
+    archetype::remove_bundle_unchecked, entity::Entity, query::Always, Archetype, Bundle,
+    EntityLinkings, EntryMut, EntryRef, Mask, MaskHashMap, QueryFilter, QueryLayoutMut,
+    QueryLayoutRef, QueryMut,
 };
 
 pub type EntitySet = SlotMap<Entity, EntityLinkings>;
@@ -142,7 +143,10 @@ impl Scene {
     }
 
     // Create a new mutable query from this scene using a filter
-    pub fn query_mut_with<'a, L: for<'i> QueryLayoutMut<'i>>(&'a mut self, filter: impl QueryFilter) -> QueryMut<'a, '_, '_, L> {
+    pub fn query_mut_with<'a, L: for<'i> QueryLayoutMut<'i>>(
+        &'a mut self,
+        filter: impl QueryFilter,
+    ) -> QueryMut<'a, '_, '_, L> {
         QueryMut::new_with_filter(self, filter)
     }
 }
