@@ -68,9 +68,8 @@ impl<'a> EntryMut<'a> {
     pub fn get_mut<T: Component>(&mut self) -> Option<&mut T> {
         self.table_mut::<T>()?;
         let index = self.linkings().index();
-        let states = self.archetype_mut().states();
-        let mut slice = states.borrow_mut();
-        let row = &mut slice[index];
+        let states = self.archetype_mut().states_mut();
+        let row = &mut states[index];
         row.update(|_added, _removed, mutated| mutated.set(mask::<T>().offset(), true));
         self.get_mut_silent::<T>()
     }
@@ -103,7 +102,6 @@ impl<'a> EntryMut<'a> {
         *self
             .archetype()
             .states()
-            .borrow()
             .get(self.linkings().index())
             .unwrap()
     }
@@ -113,9 +111,8 @@ impl<'a> EntryMut<'a> {
         self.archetype().mask().contains(mask::<T>())
     }
 
-    /*
     // Read certain components from the entry as if they were used in an immutable query
-    pub fn as_view<'s: 'i, 'i, L: QueryLayoutRef<'s, 'i>>(&self) -> Option<L> {
+    pub fn as_view<L: for<'s> QueryLayoutRef<'s>>(&self) -> Option<L> {
         // Make sure the layout can be fetched from the archetype
         let combined = L::reduce(|a, b| a | b).both();
         if combined & self.archetype().mask() != combined {
@@ -124,26 +121,30 @@ impl<'a> EntryMut<'a> {
 
         // Fetch the layout from the archetype
         let index = self.linkings().index;
-        let ptrs = unsafe { L::slices_from_archetype_unchecked(self.archetype()) };
-        let layout = unsafe { L::get_unchecked(ptrs, index) };
+        let ptrs = unsafe { L::ptrs_from_archetype_unchecked(self.archetype()) };
+        let layout = unsafe { L::read_unchecked(ptrs, index) };
         Some(layout)
     }
 
     // Read certain components from the entry as if they were used in an mutable query
-    pub fn as_query<'s: 'i, 'i, L: QueryLayoutMut<'s, 'i>>(&mut self) -> Option<L> {
+    pub fn as_query<L: for<'s> QueryLayoutMut<'s>>(&mut self) -> Option<L> {
         assert!(L::is_valid(), "Query layout is not valid, check the layout for component collisions");
 
         // Make sure the layout can be fetched from the archetype
-        let combined = L::reduce(|a, b| a | b).both();
+        let access = L::reduce(|a, b| a | b);
+        let mutability = access.unique();
+        let combined = access.both();
         if combined & self.archetype().mask() != combined {
             return None;
         }
 
         // Fetch the layout from the archetype
         let index = self.linkings().index;
-        let ptrs = unsafe { L::slices_from_mut_archetype_unchecked(self.archetype_mut()) };
-        let layout = unsafe { L::get_unchecked(ptrs, index) };
+        let ptrs = unsafe { L::ptrs_from_mut_archetype_unchecked(self.archetype_mut()) };
+        let layout = unsafe { L::read_mut_unchecked(ptrs, index) };
+        
+        // Update the state row
+        self.archetype_mut().states_mut()[index].update(|_, _, update| *update = *update | mutability);
         Some(layout)
     }
-    */
 }

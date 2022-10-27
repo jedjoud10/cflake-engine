@@ -155,14 +155,11 @@ impl Scene {
 pub fn system(events: &mut Events) {
     // Late update event that will cleanup the ECS manager states
     fn cleanup(world: &mut World) {
-        let ecs = world.get_mut::<Scene>().unwrap();
-        let _time = world.get::<Time>().unwrap();
+        let mut ecs = world.get_mut::<Scene>().unwrap();
 
         // Clear all the archetype states that were set last frame
-        for (_, archetype) in ecs.archetypes() {
-            let cloned = archetype.states();
-            let mut states = cloned.borrow_mut();
-            for state in states.iter_mut() {
+        for (_, archetype) in ecs.archetypes_mut() {
+            for state in archetype.states_mut().iter_mut() {
                 state.update(|added, removed, mutated| {
                     *added = Mask::zero();
                     *mutated = Mask::zero();

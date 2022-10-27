@@ -48,7 +48,6 @@ impl<'a> EntryRef<'a> {
         *self
             .archetype()
             .states()
-            .borrow()
             .get(self.linkings().index())
             .unwrap()
     }
@@ -58,9 +57,8 @@ impl<'a> EntryRef<'a> {
         self.archetype().mask().contains(mask::<T>())
     }
 
-    /*
     // Read certain components from the entry as if they were used in an immutable query
-    pub fn as_view<L: for<'s, 'i> QueryLayoutRef<'s, 'i>>(&self) -> Option<L> {
+    pub fn as_view<L: for<'s> QueryLayoutRef<'s>>(&self) -> Option<L> {
         // Make sure the layout can be fetched from the archetype
         let combined = L::reduce(|a, b| a | b).both();
         if combined & self.archetype().mask() != combined {
@@ -69,9 +67,8 @@ impl<'a> EntryRef<'a> {
 
         // Fetch the layout from the archetype
         let index = self.linkings().index;
-        let ptrs = unsafe { L::slices_from_archetype_unchecked(self.archetype()) };
-        let layout = unsafe { L::get_unchecked(ptrs, index) };
+        let ptrs = unsafe { L::ptrs_from_archetype_unchecked(self.archetype()) };
+        let layout = unsafe { L::read_unchecked(ptrs, index) };
         Some(layout)
     }
-    */
 }

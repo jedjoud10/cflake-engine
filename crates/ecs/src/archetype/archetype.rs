@@ -9,7 +9,7 @@ use std::{cell::RefCell, rc::Rc};
 pub struct Archetype {
     mask: Mask,
     tables: MaskHashMap<Box<dyn ComponentTable>>,
-    states: Rc<RefCell<Vec<StateRow>>>,
+    states: Vec<StateRow>,
     entities: Vec<Entity>,
 }
 
@@ -20,7 +20,7 @@ impl Archetype {
         Self {
             mask: B::reduce(|a, b| a | b),
             tables: B::default_tables(),
-            states: Rc::new(RefCell::new(Vec::new())),
+            states: Vec::new(),
             entities: Vec::new(),
         }
     }
@@ -59,7 +59,6 @@ impl Archetype {
             };
             let entity = entities.insert(linkings);
             self.states
-                .borrow_mut()
                 .push(StateRow::new(self.mask, Mask::zero(), self.mask));
             self.entities.push(entity);
         }
@@ -78,7 +77,7 @@ impl Archetype {
     // Reserve enough memory space to be able to fit all the new entities in one allocation
     pub fn reserve(&mut self, additional: usize) {
         self.entities.reserve(additional);
-        self.states.borrow_mut().reserve(additional);
+        self.states.reserve(additional);
 
         for (_, table) in &mut self.tables {
             table.reserve(additional);
@@ -100,9 +99,14 @@ impl Archetype {
         self.mask
     }
 
-    // Get a copy of the archetype states
-    pub fn states(&self) -> Rc<RefCell<Vec<StateRow>>> {
-        self.states.clone()
+    // Get an immutable reference to the archetype states
+    pub fn states(&self) -> &Vec<StateRow> {
+        &self.states
+    }
+
+    // Get a mutable reference to the archetype states
+    pub fn states_mut(&mut self) -> &mut Vec<StateRow> {
+        &mut self.states
     }
 
     // Try to get an immutable reference to the table for a specific component
@@ -135,7 +139,7 @@ impl Archetype {
 
         // Remove the entity and get the entity that was swapped with it
         self.entities.swap_remove(index);
-        self.states.borrow_mut().swap_remove(index);
+        self.states.swap_remove(index);
         let entity = self.entities.get(index).cloned();
 
         // Swap might've failed if we swapped with the last element in the vector
@@ -216,7 +220,7 @@ pub(crate) fn add_bundle_unchecked<B: Bundle>(
 
     // Handle swap-remove logic in the current archetype
     current.entities.swap_remove(index);
-    current.states.borrow_mut().swap_remove(index);
+    current.states.swap_remove(index);
     if let Some(entity) = current.entities.get(index).cloned() {
         let swapped = entities.get_mut(entity).unwrap();
         swapped.index = index;
@@ -226,7 +230,6 @@ pub(crate) fn add_bundle_unchecked<B: Bundle>(
     let linkings = entities.get_mut(entity).unwrap();
     target
         .states
-        .borrow_mut()
         .push(StateRow::new(target.mask, Mask::zero(), target.mask));
     target.entities.push(entity);
     linkings.index = target.len() - 1;
@@ -282,7 +285,7 @@ pub(crate) fn remove_bundle_unchecked<B: Bundle>(
 
     // Handle swap-remove logic in the current archetype
     current.entities.swap_remove(index);
-    current.states.borrow_mut().swap_remove(index);
+    current.states.swap_remove(index);
     if let Some(entity) = current.entities.get(index).cloned() {
         let swapped = entities.get_mut(entity).unwrap();
         swapped.index = index;
@@ -292,7 +295,6 @@ pub(crate) fn remove_bundle_unchecked<B: Bundle>(
     let linkings = entities.get_mut(entity).unwrap();
     target
         .states
-        .borrow_mut()
         .push(StateRow::new(target.mask, combined, target.mask));
     target.entities.push(entity);
     linkings.index = target.len() - 1;

@@ -23,8 +23,7 @@ mod tests {
         let mask = registry::mask::<Name>() | registry::mask::<Health>();
         let archetype = manager.archetypes().get(&mask).unwrap();
         let states = archetype.states();
-        let borrow = states.borrow();
-        let state = borrow.get(0).unwrap();
+        let state = states.get(0).unwrap();
         assert_eq!(state.mutated(), mask);
 
         let entry = manager.entry(entity).unwrap();

@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use smallvec::SmallVec;
 
-use crate::{Archetype, Mask, QueryFilter, QueryLayoutMut, Scene, StateRow};
+use crate::{Archetype, Mask, QueryFilter, QueryLayoutMut, Scene, StateRow, LayoutAccess};
 use std::marker::PhantomData;
 
 // This is a query that will be fetched from the main scene that we can use to get components out of entries with a specific layout
@@ -9,6 +9,7 @@ use std::marker::PhantomData;
 pub struct QueryMut<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> {
     archetypes: Vec<&'a mut Archetype>,
     mask: Mask,
+    mutability: Mask,
     enabled: Option<Vec<u128>>,
     _phantom1: PhantomData<&'b ()>,
     _phantom2: PhantomData<&'s ()>,
@@ -17,13 +18,13 @@ pub struct QueryMut<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> {
 
 impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
     // Get the archetypes and layout mask. Used internally only
-    fn archetypes_mut(scene: &mut Scene) -> (Mask, Vec<&mut Archetype>) {
-        let mask = L::reduce(|a, b| a | b).both();
+    fn archetypes_mut(scene: &mut Scene) -> (LayoutAccess, Vec<&mut Archetype>) {
+        let mask = L::reduce(|a, b| a | b);
         let archetypes = scene
             .archetypes_mut()
             .iter_mut()
             .filter_map(move |(&archetype_mask, archetype)| {
-                archetype_mask.contains(mask).then_some(archetype)
+                archetype_mask.contains(mask.both()).then_some(archetype)
             })
             .collect::<Vec<_>>();
         (mask, archetypes)
@@ -32,12 +33,15 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
     // Create a new mut query from the scene
     pub fn new(scene: &'a mut Scene) -> Self {
         let (mask, archetypes) = Self::archetypes_mut(scene);
+        let mutability = mask.unique();
+        let mask = mask.both();
 
         Self {
             archetypes,
             enabled: None,
             _phantom3: PhantomData,
             mask,
+            mutability,
             _phantom1: PhantomData,
             _phantom2: PhantomData,
         }
@@ -48,7 +52,8 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
         let (mask, archetypes) = Self::archetypes_mut(scene);
 
         let cached = F::prepare();
-        let mask = mask;
+        let mutability = mask.unique();
+        let mask = mask.both();
         /*
         let enabled = archetypes.iter().map(|archetype| {
             let states = archetype.states();
@@ -63,6 +68,7 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
         Self {
             archetypes,
             mask,
+            mutability,
             enabled: None,
             _phantom3: PhantomData,
             _phantom1: PhantomData,
@@ -83,6 +89,7 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
         for<'it, 's2> <L as QueryLayoutMut<'it>>::SliceTuple: world::SliceTuple<'s2>,
     {
         threadpool.scope(|scope| {
+            let mutability = self.mutability;
             for archetype in self.archetypes.iter_mut() {
                 // Send the archetype slices to multiple threads to be able to compute them
                 let ptrs = unsafe { L::ptrs_from_mut_archetype_unchecked(archetype) };
@@ -90,13 +97,8 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
                 scope.for_each(slices, function.clone(), batch_size);
 
                 // We don't have to worry about doing this since the entry disabled/enabled mask is already computed when the query was created
-                let mask = self.mask;
-                let states = archetype.states();
-                let mut borrowed = states.borrow_mut();
-
-                // Update the mutable state masks
-                for state in borrowed.iter_mut() {
-                    StateRow::update(state, |_, _, mutated| *mutated = *mutated | mask);
+                for state in archetype.states_mut().iter_mut() {
+                    StateRow::update(state, |_, _, mutated| *mutated = *mutated | mutability);
                 }
             }
         });
@@ -122,7 +124,7 @@ impl<'a: 'b, 'b, 'it, L: for<'s> QueryLayoutMut<'s>> IntoIterator for QueryMut<'
             archetypes: self.archetypes,
             chunk: None,
             index: 0,
-            mask: self.mask,
+            mutability: self.mutability,
             _phantom1: PhantomData,
             _phantom2: PhantomData,
         }
@@ -141,7 +143,7 @@ pub struct QueryMutIter<'b, 's, L: QueryLayoutMut<'s>> {
     archetypes: Vec<&'b mut Archetype>,
     chunk: Option<Chunk<'b, 's, L>>,
     index: usize,
-    mask: Mask,
+    mutability: Mask,
     _phantom1: PhantomData<&'s ()>,
     _phantom2: PhantomData<L>,
 }
@@ -176,9 +178,8 @@ impl<'b, 's, L: QueryLayoutMut<'s>> Iterator for QueryMutIter<'b, 's, L> {
         self.index += 1;
 
         // Update the mask for the current entity
-        let states = self.chunk.as_mut().unwrap().archetype.states();
-        let mut vec = states.borrow_mut();
-        vec[self.index - 1].update(|_, _, update| *update = *update | self.mask);
+        let states = self.chunk.as_mut().unwrap().archetype.states_mut();
+        states[self.index - 1].update(|_, _, update| *update = *update | self.mutability);
 
         Some(items)
     }
