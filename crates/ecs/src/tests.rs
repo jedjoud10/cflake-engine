@@ -50,4 +50,9 @@ mod tests {
             assert_eq!(health.0, 200)
         }
     }
+
+    #[test]
+    fn filter() {
+        let filter = contains::<Health>() & modified::<Ammo>();
+    }
 }

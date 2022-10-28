@@ -295,6 +295,7 @@ pub(crate) fn remove_bundle_unchecked<B: Bundle>(
     let linkings = entities.get_mut(entity).unwrap();
     target
         .states
+        // TODO: check if target.mask is suitable here
         .push(StateRow::new(target.mask, combined, target.mask));
     target.entities.push(entity);
     linkings.index = target.len() - 1;

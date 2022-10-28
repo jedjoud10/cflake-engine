@@ -1,12 +1,12 @@
 mod bounds;
-mod hibitset;
+mod hop;
 mod intersect;
 mod octrees;
 mod shapes;
 mod tests;
 mod transform;
 pub use bounds::*;
-pub use hibitset::*;
+pub use hop::*;
 pub use intersect::*;
 pub use octrees::*;
 pub use shapes::*;
