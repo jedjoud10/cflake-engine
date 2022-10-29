@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use math::BitSet;
+
 use super::ThreadedTask;
 use crate::{SliceTuple, ThreadPool};
 
@@ -33,7 +35,19 @@ impl<'a> ThreadPoolScope<'a> {
         function: impl Fn(<I as SliceTuple<'_>>::ItemTuple) + Send + Sync + 'a,
         batch_size: usize,
     ) {
-        self.pool.for_each_async(list, function, batch_size)
+        self.pool.for_each_async(list, function, None, batch_size)
+    }
+
+    // Given an immutable/mutable slice of elements, run a function over certain elements in parallel
+    // This function will not wait unti all the threads have finished executing
+    pub fn for_each_filtered<I: for<'i> SliceTuple<'i>>(
+        &mut self,
+        list: I,
+        function: impl Fn(<I as SliceTuple<'_>>::ItemTuple) + Send + Sync + 'a,
+        bitset: Arc<BitSet>,
+        batch_size: usize,
+    ) {
+        self.pool.for_each_async(list, function, Some(bitset), batch_size)
     }
 
     // Wait till all the threads finished executing

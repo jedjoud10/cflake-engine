@@ -1465,6 +1465,7 @@ version = "0.0.1"
 dependencies = [
  "ahash",
  "arrayvec",
+ "itertools",
  "slotmap",
  "smallvec",
  "vek",

@@ -86,6 +86,24 @@ impl From<Rotation> for vek::Quaternion<f32> {
     }
 }
 
+impl From<&Rotation> for vek::Quaternion<f32> {
+    fn from(value: &Rotation) -> Self {
+        value.0
+    }
+}
+
+impl From<vek::Quaternion<f32>> for Rotation {
+    fn from(q: vek::Quaternion<f32>) -> Self {
+        Self(q)
+    }
+}
+
+impl From<&vek::Quaternion<f32>> for Rotation {
+    fn from(q: &vek::Quaternion<f32>) -> Self {
+        Self(*q)
+    }
+}
+
 impl From<Rotation> for vek::Mat4<f32> {
     fn from(value: Rotation) -> Self {
         value.0.into()
@@ -98,12 +116,6 @@ impl From<Rotation> for vek::Mat3<f32> {
     }
 }
 
-impl From<vek::Quaternion<f32>> for Rotation {
-    fn from(q: vek::Quaternion<f32>) -> Self {
-        Self(q)
-    }
-}
-
 impl From<&Rotation> for vek::Mat4<f32> {
     fn from(value: &Rotation) -> Self {
         value.0.into()
@@ -113,12 +125,6 @@ impl From<&Rotation> for vek::Mat4<f32> {
 impl From<&Rotation> for vek::Mat3<f32> {
     fn from(value: &Rotation) -> Self {
         value.0.into()
-    }
-}
-
-impl From<&vek::Quaternion<f32>> for Rotation {
-    fn from(q: &vek::Quaternion<f32>) -> Self {
-        Self(*q)
     }
 }
 

@@ -30,16 +30,6 @@ impl Scale {
     pub fn scale_xyz(x: f32, y: f32, z: f32) -> Self {
         Self(vek::Vec3::new(x, y, z))
     }
-
-    // Convert to 3x3 matrix
-    pub fn into_mat3(self) -> vek::Mat3<f32> {
-        vek::Mat3::<f32>::scaling_3d(self.0)
-    }
-
-    // Convert to 4x4 matrix
-    pub fn into_mat4(self) -> vek::Mat4<f32> {
-        vek::Mat4::<f32>::scaling_3d(self.0)
-    }
 }
 
 
@@ -69,26 +59,50 @@ impl AsMut<vek::Vec3<f32>> for Scale {
     }
 }
 
-impl Into<vek::Vec3<f32>> for Scale {
-    fn into(self) -> vek::Vec3<f32> {
-        self.0
+impl From<Scale> for vek::Vec3<f32> {
+    fn from(value: Scale) -> Self {
+        value.0
     }
 }
 
-impl Into<(f32, f32, f32)> for Scale {
-    fn into(self) -> (f32, f32, f32) {
-        self.0.into_tuple()
+impl From<&Scale> for vek::Vec3<f32> {
+    fn from(value: &Scale) -> Self {
+        value.0
     }
 }
 
 impl From<vek::Vec3<f32>> for Scale {
-    fn from(l: vek::Vec3<f32>) -> Self {
-        Self(l)
+    fn from(value: vek::Vec3<f32>) -> Self {
+        Self(value)
     }
 }
 
-impl From<(f32, f32, f32)> for Scale {
-    fn from(l: (f32, f32, f32)) -> Self {
-        Self(l.into())
+impl From<&vek::Vec3<f32>> for Scale {
+    fn from(value: &vek::Vec3<f32>) -> Self {
+        Self(*value)
+    }
+}
+
+impl From<Scale> for vek::Mat4<f32> {
+    fn from(value: Scale) -> Self {
+        vek::Mat4::scaling_3d(value.0)
+    }
+}
+
+impl From<Scale> for vek::Mat3<f32> {
+    fn from(value: Scale) -> Self {
+        vek::Mat3::scaling_3d(value.0)
+    }
+}
+
+impl From<&Scale> for vek::Mat4<f32> {
+    fn from(value: &Scale) -> Self {
+        vek::Mat4::scaling_3d(value.0)
+    }
+}
+
+impl From<&Scale> for vek::Mat3<f32> {
+    fn from(value: &Scale) -> Self {
+        vek::Mat3::scaling_3d(value.0)
     }
 }

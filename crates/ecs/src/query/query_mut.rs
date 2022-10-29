@@ -1,8 +1,9 @@
 use itertools::Itertools;
+use math::BitSet;
 use smallvec::SmallVec;
 
 use crate::{Archetype, Mask, QueryFilter, QueryLayoutMut, Scene, StateRow, LayoutAccess, Wrap};
-use std::marker::PhantomData;
+use std::{marker::PhantomData, sync::Arc};
 
 // This is a query that will be fetched from the main scene that we can use to get components out of entries with a specific layout
 // Even though I define the 'it, 'b, and 's lfietimes, I don't use them in this query, I only use them in the query iterator
@@ -10,7 +11,7 @@ pub struct QueryMut<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> {
     archetypes: Vec<&'a mut Archetype>,
     mask: Mask,
     mutability: Mask,
-    enabled: Option<Vec<u128>>,
+    bitset: Option<Arc<BitSet>>,
     _phantom1: PhantomData<&'b ()>,
     _phantom2: PhantomData<&'s ()>,
     _phantom3: PhantomData<L>,
@@ -38,7 +39,7 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
 
         Self {
             archetypes,
-            enabled: None,
+            bitset: None,
             _phantom3: PhantomData,
             mask,
             mutability,
@@ -48,28 +49,27 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
     }
 
     // Create a new mut query from the scene, but make it have a specific entry enable/disable masks
-    pub fn new_with_filter<F: QueryFilter>(scene: &'a mut Scene, filter: Wrap<F>) -> Self {
+    pub fn new_with_filter<F: QueryFilter>(scene: &'a mut Scene, _: Wrap<F>) -> Self {
         let (mask, archetypes) = Self::archetypes_mut(scene);
 
+        // Filter each archetype first
         let cached = F::prepare();
+        let archetypes: Vec<&mut Archetype> = archetypes.into_iter().filter(|a| F::eval_archetype(&cached, a)).collect();
+
+        // Filter the entries by iterating the archetype state rows
         let mutability = mask.unique();
         let mask = mask.both();
-        /*
-        let enabled = archetypes.iter().map(|archetype| {
+        let iterator = archetypes.iter().flat_map(|archetype| {
             let states = archetype.states();
-            let states = states.borrow();
-            let iter = states.iter().cloned().map(|state| F::eval(&cached, state, mask));
-            let chunks = iter.chunks(128);
-            let chunks = chunks.into_iter();
-            chunks.map(|chunk| chunk.fold(0, |accum, current| accum << 1 | (current as u128)))
-        }).collect::<Vec<_>>();
-        */
+            states.iter().map(|state| F::eval_entry(&cached, *state))            
+        });
+        let bitset = BitSet::from_iter(iterator);
 
         Self {
             archetypes,
             mask,
             mutability,
-            enabled: None,
+            bitset: Some(Arc::new(bitset)),
             _phantom3: PhantomData,
             _phantom1: PhantomData,
             _phantom2: PhantomData,
@@ -94,7 +94,13 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
                 // Send the archetype slices to multiple threads to be able to compute them
                 let ptrs = unsafe { L::ptrs_from_mut_archetype_unchecked(archetype) };
                 let slices = unsafe { L::from_raw_parts(ptrs, archetype.len()) };
-                scope.for_each(slices, function.clone(), batch_size);
+
+                // Should we use per entry filtering?
+                if let Some(bitset) = &self.bitset {
+                    scope.for_each_filtered(slices, function.clone(), bitset.clone(), batch_size);
+                } else {
+                    scope.for_each(slices, function.clone(), batch_size);
+                }
 
                 // We don't have to worry about doing this since the entry disabled/enabled mask is already computed when the query was created
                 for state in archetype.states_mut().iter_mut() {

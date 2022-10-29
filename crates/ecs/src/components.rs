@@ -1,6 +1,6 @@
-//mod location;
+mod location;
 mod rotation;
-//mod scale;
-//pub use location::*;
+mod scale;
+pub use location::*;
 pub use rotation::*;
-//pub use scale::*;
+pub use scale::*;

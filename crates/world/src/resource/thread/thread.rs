@@ -1,3 +1,4 @@
+use math::BitSet;
 use parking_lot::{Condvar, Mutex, RwLock};
 use std::{
     any::Any,
@@ -44,12 +45,6 @@ pub(super) enum ThreadedTask {
     },
 }
 
-// Task handle allows us to fetch the results of specific tasks
-pub struct AsyncTaskHandle<T: Send + 'static> {
-    id: u64,
-    _phantom: PhantomData<T>,
-}
-
 // A single threadpool that contains multiple worker threads that are ready to be executed in parallel
 pub struct ThreadPool {
     // Task sender and receiver
@@ -92,15 +87,13 @@ impl ThreadPool {
     }
 
     // Given an immutable/mutable slice of elements, run a function over all of them elements in parallel
-    // Warning: This will not wait till all the threads have finished executing their specific functions
-    // This will use the given bitfield to check wether or not we can execute a specific entry
-
-    // Given an immutable/mutable slice of elements, run a function over all of them elements in parallel
+    // If specified, this will use a bitset to hop over useless entries 
     // Warning: This will not wait till all the threads have finished executing their specific functions
     pub(crate) fn for_each_async<'a, I: for<'i> SliceTuple<'i>>(
         &'a mut self,
         mut list: I,
         function: impl Fn(<I as SliceTuple<'_>>::ItemTuple) + Send + Sync + 'a,
+        hop: Option<Arc<BitSet>>,
         batch_size: usize,
     ) {
         // If the slices have different lengths, we must abort
@@ -124,13 +117,20 @@ impl ThreadPool {
         // Box the function into an arc
         type ArcFn<'b> = Arc<dyn Fn(ThreadFuncEntry) + Send + Sync + 'b>;
         let function: ArcFn<'a> = Arc::new(move |entry: ThreadFuncEntry| unsafe {
+            let hop = hop.clone();
             let offset = entry.batch_offset;
             let ptrs = entry.base.downcast::<I::PtrTuple>().ok();
             let mut ptrs = ptrs
                 .map(|ptrs| I::from_ptrs(&*ptrs, entry.batch_length, offset))
                 .unwrap();
 
-            for i in 0..entry.batch_length {
+            for i in 0..entry.batch_length {  
+                if let Some(hop) = &hop {
+                    if !hop.get(i + offset) {
+                        continue;
+                    }                    
+                }
+
                 function(I::get_unchecked(&mut ptrs, i));
             }
         });
@@ -165,7 +165,21 @@ impl ThreadPool {
         function: impl Fn(<I as SliceTuple<'_>>::ItemTuple) + Send + Sync + 'a,
         batch_size: usize,
     ) {
-        self.for_each_async(list, function, batch_size);
+        self.for_each_async(list, function, None, batch_size);
+        self.join();
+    }
+
+    
+    // Given an immutable/mutable slice of elements, run a function over certain elements in parallel
+    // This function will wait untill all of the threads have finished executing their tasks
+    pub fn for_each_filtered<'a, I: for<'i> SliceTuple<'i>>(
+        &'a mut self,
+        list: I,
+        function: impl Fn(<I as SliceTuple<'_>>::ItemTuple) + Send + Sync + 'a,
+        bitset: BitSet,
+        batch_size: usize,
+    ) {
+        self.for_each_async(list, function, Some(Arc::new(bitset)), batch_size);
         self.join();
     }
 
