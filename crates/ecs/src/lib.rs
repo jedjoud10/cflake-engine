@@ -6,6 +6,8 @@ mod mask;
 mod query;
 mod registry;
 mod scene;
+mod components;
+pub use components::*;
 pub use archetype::*;
 pub use entity::*;
 pub use layout::*;

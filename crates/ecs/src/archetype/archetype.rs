@@ -285,7 +285,7 @@ pub(crate) fn remove_bundle_unchecked<B: Bundle>(
 
     // Handle swap-remove logic in the current archetype
     current.entities.swap_remove(index);
-    current.states.swap_remove(index);
+    let old_state = current.states.swap_remove(index);
     if let Some(entity) = current.entities.get(index).cloned() {
         let swapped = entities.get_mut(entity).unwrap();
         swapped.index = index;
@@ -295,8 +295,7 @@ pub(crate) fn remove_bundle_unchecked<B: Bundle>(
     let linkings = entities.get_mut(entity).unwrap();
     target
         .states
-        // TODO: check if target.mask is suitable here
-        .push(StateRow::new(target.mask, combined, target.mask));
+        .push(StateRow::new(old_state.added(), old_state.removed() | combined, old_state.mutated()));
     target.entities.push(entity);
     linkings.index = target.len() - 1;
     linkings.mask = target.mask;

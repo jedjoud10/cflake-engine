@@ -17,6 +17,8 @@ smallvec = "1.8.0"
 ahash = "0.7.6"
 rayon = "1.5.1"
 time = { path = "../time" }
+math = { path = "../math" }
+vek = "0.15.6"
 ecs-derive = { path = "./ecs-derive"  }
 seq-macro = "0.3.0"
 paste = "1.0.7"

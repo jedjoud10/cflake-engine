@@ -1,24 +1,24 @@
-use crate::IntoMatrix;
-use ecs::Component;
+use crate::Component;
 use std::ops::{Deref, DerefMut, Mul};
 
 #[derive(Default, Clone, Copy, Component)]
+#[repr(transparent)]
 pub struct Rotation(vek::Quaternion<f32>);
 
 impl Rotation {
     // Calculate the forward vector (-Z)
     pub fn forward(&self) -> vek::Vec3<f32> {
-        self.into_matrix().mul_point(-vek::Vec3::unit_z())
+        vek::Mat4::from(self).mul_point(-vek::Vec3::unit_z())
     }
 
     // Calculate the up vector (+Y)
     pub fn up(&self) -> vek::Vec3<f32> {
-        self.into_matrix().mul_point(vek::Vec3::unit_y())
+        vek::Mat4::from(self).mul_point(vek::Vec3::unit_y())
     }
 
     // Calculate the right vector (+X)
     pub fn right(&self) -> vek::Vec3<f32> {
-        self.into_matrix().mul_point(vek::Vec3::unit_x())
+        vek::Mat4::from(self).mul_point(vek::Vec3::unit_x())
     }
 
     // Construct a rotation using an X rotation (radians)
@@ -54,12 +54,6 @@ impl Rotation {
     */
 }
 
-impl IntoMatrix for Rotation {
-    fn into_matrix(self) -> vek::Mat4<f32> {
-        self.0.into()
-    }
-}
-
 impl Deref for Rotation {
     type Target = vek::Quaternion<f32>;
 
@@ -86,15 +80,45 @@ impl AsMut<vek::Quaternion<f32>> for Rotation {
     }
 }
 
-impl Into<vek::Quaternion<f32>> for Rotation {
-    fn into(self) -> vek::Quaternion<f32> {
-        self.0
+impl From<Rotation> for vek::Quaternion<f32> {
+    fn from(value: Rotation) -> Self {
+        value.0
+    }
+}
+
+impl From<Rotation> for vek::Mat4<f32> {
+    fn from(value: Rotation) -> Self {
+        value.0.into()
+    }
+}
+
+impl From<Rotation> for vek::Mat3<f32> {
+    fn from(value: Rotation) -> Self {
+        value.0.into()
     }
 }
 
 impl From<vek::Quaternion<f32>> for Rotation {
     fn from(q: vek::Quaternion<f32>) -> Self {
         Self(q)
+    }
+}
+
+impl From<&Rotation> for vek::Mat4<f32> {
+    fn from(value: &Rotation) -> Self {
+        value.0.into()
+    }
+}
+
+impl From<&Rotation> for vek::Mat3<f32> {
+    fn from(value: &Rotation) -> Self {
+        value.0.into()
+    }
+}
+
+impl From<&vek::Quaternion<f32>> for Rotation {
+    fn from(q: &vek::Quaternion<f32>) -> Self {
+        Self(*q)
     }
 }
 

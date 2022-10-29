@@ -800,6 +800,7 @@ dependencies = [
  "ecs-derive",
  "itertools",
  "lazy_static",
+ "math",
  "nohash-hasher",
  "parking_lot 0.12.1",
  "paste",
@@ -809,6 +810,7 @@ dependencies = [
  "smallvec",
  "time",
  "tinyvec",
+ "vek",
  "world",
 ]
 
@@ -1463,7 +1465,6 @@ version = "0.0.1"
 dependencies = [
  "ahash",
  "arrayvec",
- "ecs",
  "slotmap",
  "smallvec",
  "vek",
@@ -3409,6 +3410,7 @@ dependencies = [
  "arrayvec",
  "casey",
  "glutin",
+ "math",
  "num_cpus",
  "parking_lot 0.12.1",
  "paste",

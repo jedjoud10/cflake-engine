@@ -1,5 +1,4 @@
-use crate::IntoMatrix;
-use ecs::Component;
+use crate::Component;
 use std::ops::{Add, Deref, DerefMut};
 
 #[derive(Default, Clone, Copy, Component)]
@@ -25,11 +24,15 @@ impl Location {
     pub fn at_xyz(x: f32, y: f32, z: f32) -> Self {
         Self::from((x, y, z))
     }
-}
 
-impl IntoMatrix for Location {
-    fn into_matrix(self) -> vek::Mat4<f32> {
-        vek::Mat4::<f32>::translation_3d(self.0)
+    // Convert to 3x3 matrix
+    pub fn into_mat3(self) -> vek::Mat3<f32> {
+        vek::Mat3::translation_3d(self.0)
+    }
+
+    // Convert to 4x4 matrix
+    pub fn into_mat4(self) -> vek::Mat4<f32> {
+        vek::Mat4::translation_3d(self.0)
     }
 }
 

@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use smallvec::SmallVec;
 
-use crate::{Archetype, Mask, QueryFilter, QueryLayoutMut, Scene, StateRow, LayoutAccess};
+use crate::{Archetype, Mask, QueryFilter, QueryLayoutMut, Scene, StateRow, LayoutAccess, Wrap};
 use std::marker::PhantomData;
 
 // This is a query that will be fetched from the main scene that we can use to get components out of entries with a specific layout
@@ -48,7 +48,7 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
     }
 
     // Create a new mut query from the scene, but make it have a specific entry enable/disable masks
-    pub fn new_with_filter<F: QueryFilter>(scene: &'a mut Scene, filter: F) -> Self {
+    pub fn new_with_filter<F: QueryFilter>(scene: &'a mut Scene, filter: Wrap<F>) -> Self {
         let (mask, archetypes) = Self::archetypes_mut(scene);
 
         let cached = F::prepare();

@@ -1,5 +1,4 @@
-use crate::IntoMatrix;
-use ecs::Component;
+use crate::Component;
 use std::ops::{Deref, DerefMut};
 
 #[derive(Clone, Copy, Component)]
@@ -31,13 +30,18 @@ impl Scale {
     pub fn scale_xyz(x: f32, y: f32, z: f32) -> Self {
         Self(vek::Vec3::new(x, y, z))
     }
-}
 
-impl IntoMatrix for Scale {
-    fn into_matrix(self) -> vek::Mat4<f32> {
+    // Convert to 3x3 matrix
+    pub fn into_mat3(self) -> vek::Mat3<f32> {
+        vek::Mat3::<f32>::scaling_3d(self.0)
+    }
+
+    // Convert to 4x4 matrix
+    pub fn into_mat4(self) -> vek::Mat4<f32> {
         vek::Mat4::<f32>::scaling_3d(self.0)
     }
 }
+
 
 impl Deref for Scale {
     type Target = vek::Vec3<f32>;
