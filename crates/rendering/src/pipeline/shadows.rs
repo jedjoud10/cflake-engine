@@ -41,23 +41,28 @@ pub(crate) fn render_shadows<M: for<'w> Material<'w>>(world: &mut World) {
     let settings = RasterSettings {
         depth_test: Some(Comparison::Less),
         scissor_test: None,
-        primitive: PrimitiveMode::Triangles { cull: Some(FaceCullMode::Front(true)) },
+        primitive: PrimitiveMode::Triangles {
+            cull: Some(FaceCullMode::Front(true)),
+        },
         srgb: false,
         blend: None,
     };
 
     // Filter the proper render entities
-    let query = ecs.view::<(&Renderer, &Surface<M>)>().unwrap().filter(|(renderer, surface)| {
-        // Check if the renderer is even enabled and if it should cast shadows
-        let enabled = renderer.visible && surface.visible && surface.shadow_caster;
+    let query = ecs
+        .view::<(&Renderer, &Surface<M>)>()
+        .unwrap()
+        .filter(|(renderer, surface)| {
+            // Check if the renderer is even enabled and if it should cast shadows
+            let enabled = renderer.visible && surface.visible && surface.shadow_caster;
 
-        // Check if the mesh meets the material requirements
-        let mesh = meshes.get(&surface.mesh);
-        let buffers =
-            mesh.vertices().layout().contains(M::requirements()) && mesh.vertices().len().is_some();
+            // Check if the mesh meets the material requirements
+            let mesh = meshes.get(&surface.mesh);
+            let buffers = mesh.vertices().layout().contains(M::requirements())
+                && mesh.vertices().len().is_some();
 
-        enabled && buffers
-    });
+            enabled && buffers
+        });
 
     // Create a scoped painter and it's rasterizer
     let mut scoped = painter

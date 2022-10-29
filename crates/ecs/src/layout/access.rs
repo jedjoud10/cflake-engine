@@ -1,5 +1,5 @@
 use crate::Mask;
-use std::ops::{BitAnd, BitOr};
+use std::ops::{BitAnd, BitOr, BitXor};
 
 // Layout access that contain the shared access mask and unique access mask
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -31,6 +31,11 @@ impl LayoutAccess {
     pub fn unique(&self) -> Mask {
         self.unique
     }
+
+    // Or the shared and unique masks
+    pub fn both(&self) -> Mask {
+        self.shared | self.unique
+    }
 }
 
 impl BitOr for LayoutAccess {
@@ -51,6 +56,17 @@ impl BitAnd for LayoutAccess {
         Self {
             shared: self.shared & rhs.shared,
             unique: self.unique & rhs.unique,
+        }
+    }
+}
+
+impl BitXor for LayoutAccess {
+    type Output = Self;
+
+    fn bitxor(self, rhs: Self) -> Self::Output {
+        Self {
+            shared: self.shared ^ rhs.shared,
+            unique: self.unique ^ rhs.unique,
         }
     }
 }

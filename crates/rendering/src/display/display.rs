@@ -25,7 +25,7 @@ pub trait Display: Sized {
 
     // Get the framebuffer name of this display
     fn name(&self) -> u32;
-    
+
     // Create a new rasterizer from this display
     fn rasterizer<'shader: 'uniforms, 'display, 'context, 'uniforms>(
         &'display mut self,

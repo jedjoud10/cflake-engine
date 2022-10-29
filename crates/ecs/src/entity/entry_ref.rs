@@ -1,7 +1,7 @@
 use super::Entity;
 use crate::{
     registry::{mask, name},
-    Archetype, Component, EntityLinkings, EntryError, RefQueryLayout, Scene, StateRow,
+    Archetype, Component, EntityLinkings, QueryLayoutRef, Scene, StateRow,
 };
 
 // Immutable entity entries allow the user to be able to read and get some data about a specific entity
@@ -34,15 +34,13 @@ impl<'a> EntryRef<'a> {
     }
 
     // Get an immutable reference to a table
-    pub fn table<T: Component>(&self) -> Result<&Vec<T>, EntryError> {
-        self.archetype()
-            .table::<T>()
-            .ok_or_else(|| EntryError::MissingComponent(name::<T>()))
+    pub fn table<T: Component>(&self) -> Option<&Vec<T>> {
+        self.archetype().table::<T>()
     }
 
     // Get an immutable reference to a linked component
-    pub fn get<T: Component>(&self) -> Result<&T, EntryError> {
-        self.table::<T>().map(|vec| &vec[self.linkings().index()])
+    pub fn get<T: Component>(&self) -> Option<&T> {
+        self.table::<T>().map(|vec| &vec[self.linkings.index])
     }
 
     // Get the current state row of our entity
@@ -50,7 +48,6 @@ impl<'a> EntryRef<'a> {
         *self
             .archetype()
             .states()
-            .borrow()
             .get(self.linkings().index())
             .unwrap()
     }
@@ -61,10 +58,17 @@ impl<'a> EntryRef<'a> {
     }
 
     // Read certain components from the entry as if they were used in an immutable query
-    pub fn as_view<'b, L: RefQueryLayout<'b>>(&self) -> Option<L> {
+    pub fn as_view<L: for<'s> QueryLayoutRef<'s>>(&self) -> Option<L> {
+        // Make sure the layout can be fetched from the archetype
+        let combined = L::reduce(|a, b| a | b).both();
+        if combined & self.archetype().mask() != combined {
+            return None;
+        }
+
+        // Fetch the layout from the archetype
         let index = self.linkings().index;
-        let ptrs = L::prepare(self.archetype)?;
-        let layout = unsafe { L::read(ptrs, index) };
+        let ptrs = unsafe { L::ptrs_from_archetype_unchecked(self.archetype()) };
+        let layout = unsafe { L::read_unchecked(ptrs, index) };
         Some(layout)
     }
 }

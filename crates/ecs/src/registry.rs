@@ -14,7 +14,7 @@ where
 
 // Registered components
 lazy_static! {
-    static ref NEXT: Mutex<Mask> = Mutex::new(Mask::one());
+    static ref NEXT: Mutex<Mask> = Mutex::new(Mask::from(2u64));
     static ref REGISTERED: RwLock<AHashMap<TypeId, Mask>> = RwLock::new(AHashMap::new());
 }
 
@@ -31,6 +31,7 @@ pub fn mask<T: Component>() -> Mask {
         register::<T>()
     }
 }
+
 // Registers the component manually
 pub fn register<T: Component>() -> Mask {
     let mut locked = REGISTERED.write();
@@ -42,10 +43,12 @@ pub fn register<T: Component>() -> Mask {
     *bit = *bit << 1;
     copy
 }
+
 // Get the name of a component
 pub fn name<T: Component>() -> &'static str {
     type_name::<T>()
 }
+
 // Get the number of registered components
 pub fn count() -> usize {
     REGISTERED.read().len()

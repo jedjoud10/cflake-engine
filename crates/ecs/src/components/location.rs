@@ -1,5 +1,4 @@
-use crate::IntoMatrix;
-use ecs::Component;
+use crate::Component;
 use std::ops::{Add, Deref, DerefMut};
 
 #[derive(Default, Clone, Copy, Component)]
@@ -23,13 +22,7 @@ impl Location {
 
     // Construct a scale at the given X, Y, Z position
     pub fn at_xyz(x: f32, y: f32, z: f32) -> Self {
-        Self::from((x, y, z))
-    }
-}
-
-impl IntoMatrix for Location {
-    fn into_matrix(self) -> vek::Mat4<f32> {
-        vek::Mat4::<f32>::translation_3d(self.0)
+        Self((x, y, z).into())
     }
 }
 
@@ -59,39 +52,39 @@ impl AsMut<vek::Vec3<f32>> for Location {
     }
 }
 
-impl Into<vek::Vec3<f32>> for Location {
-    fn into(self) -> vek::Vec3<f32> {
-        self.0
+impl From<Location> for vek::Vec3<f32> {
+    fn from(value: Location) -> Self {
+        value.0
     }
 }
 
-impl Into<(f32, f32, f32)> for Location {
-    fn into(self) -> (f32, f32, f32) {
-        self.0.into_tuple()
-    }
-}
-
-impl Into<vek::Vec3<f32>> for &'_ Location {
-    fn into(self) -> vek::Vec3<f32> {
-        self.0
-    }
-}
-
-impl Into<(f32, f32, f32)> for &'_ Location {
-    fn into(self) -> (f32, f32, f32) {
-        self.0.into_tuple()
+impl From<&Location> for vek::Vec3<f32> {
+    fn from(value: &Location) -> Self {
+        value.0
     }
 }
 
 impl From<vek::Vec3<f32>> for Location {
-    fn from(l: vek::Vec3<f32>) -> Self {
-        Self(l)
+    fn from(value: vek::Vec3<f32>) -> Self {
+        Self(value)
     }
 }
 
-impl From<(f32, f32, f32)> for Location {
-    fn from(l: (f32, f32, f32)) -> Self {
-        Self(l.into())
+impl From<&vek::Vec3<f32>> for Location {
+    fn from(value: &vek::Vec3<f32>) -> Self {
+        Self(*value)
+    }
+}
+
+impl From<Location> for vek::Mat4<f32> {
+    fn from(value: Location) -> Self {
+        vek::Mat4::translation_3d(value.0)
+    }
+}
+
+impl From<&Location> for vek::Mat4<f32> {
+    fn from(value: &Location) -> Self {
+        vek::Mat4::translation_3d(value.0)
     }
 }
 

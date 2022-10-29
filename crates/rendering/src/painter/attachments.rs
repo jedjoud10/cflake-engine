@@ -112,7 +112,10 @@ pub trait SingleLayerIntoTarget<T: Texel>: Sized {
 // Convert single layered mip level into a writable/readable target
 impl<'a, T: SingleLayerTexture> SingleLayerIntoTarget<T::T> for MipLevelMut<'a, T> {
     fn target(self) -> Target<T::T, Self> {
-        assert!(self.texture().mode().write_permission(), "Cannot use a MipLevelMut as a writable painter target because the texture is static");
+        assert!(
+            self.texture().mode().write_permission(),
+            "Cannot use a MipLevelMut as a writable painter target because the texture is static"
+        );
 
         Target {
             untyped: UntypedAttachment::TextureLevel {

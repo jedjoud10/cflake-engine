@@ -30,6 +30,7 @@ pub fn point_sphere(point: &vek::Vec3<f32>, sphere: &Sphere) -> bool {
     point.distance(sphere.center) < sphere.radius
 }
 
+/*
 // Check if some shapes intersect an octree, and if they do, return the node indices for the nodes that intersect the shapes
 pub fn shapes_octree<'a>(shapes: &[&dyn Shape], octree: &'a Octree) -> Vec<&'a Node> {
     octree.recurse(|node| {
@@ -39,3 +40,4 @@ pub fn shapes_octree<'a>(shapes: &[&dyn Shape], octree: &'a Octree) -> Vec<&'a N
             .any(|bound| aabb_aabb(&node.aabb(), &bound))
     })
 }
+*/

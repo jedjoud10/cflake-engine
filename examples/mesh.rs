@@ -165,19 +165,43 @@ fn init(world: &mut World) {
     let mut convolutor = world.get_mut::<CubeMapConvolutor2D>().unwrap();
 
     // Load the equirectangular map
-    let equirectangular = assets.load_with::<Texture2D<RGB<f32>>>(
-        "user/ignored/cubemap.hdr",
-        (&mut ctx, TextureImportSettings::default()),
-    ).unwrap();
+    let equirectangular = assets
+        .load_with::<Texture2D<RGB<f32>>>(
+            "user/ignored/cubemap.hdr",
+            (&mut ctx, TextureImportSettings::default()),
+        )
+        .unwrap();
 
     // Load up the HDRi cubemap (not convoluted)
-    let hdri = hdris.insert(convolutor.from_equirectangular(&mut ctx, &equirectangular, TextureImportSettings::default()).unwrap());
+    let hdri = hdris.insert(
+        convolutor
+            .from_equirectangular(&mut ctx, &equirectangular, TextureImportSettings::default())
+            .unwrap(),
+    );
 
     // Load up the HDRi cubemap (for diffuse irradiance)
-    let irradiance = hdris.insert(convolutor.convoluted_from_requirectangular(&mut ctx, &equirectangular, TextureImportSettings::default(), CubeMapConvolutionMode::DiffuseIrradiance).unwrap());
+    let irradiance = hdris.insert(
+        convolutor
+            .convoluted_from_requirectangular(
+                &mut ctx,
+                &equirectangular,
+                TextureImportSettings::default(),
+                CubeMapConvolutionMode::DiffuseIrradiance,
+            )
+            .unwrap(),
+    );
 
     // Load up the HDRi cubemap (for specular IBL)
-    let specular =  hdris.insert(convolutor.convoluted_from_requirectangular(&mut ctx, &equirectangular, TextureImportSettings::default(), CubeMapConvolutionMode::SpecularIBL).unwrap());
+    let specular = hdris.insert(
+        convolutor
+            .convoluted_from_requirectangular(
+                &mut ctx,
+                &equirectangular,
+                TextureImportSettings::default(),
+                CubeMapConvolutionMode::SpecularIBL,
+            )
+            .unwrap(),
+    );
     // Create the default sky material
     let material = Sky {
         cubemap: hdri,

@@ -10,6 +10,8 @@ assets = { path = "../assets" }
 world = { path = "../world" }
 math = { path = "../math" }
 ecs = { path = "../ecs" }
-rodio = "0.15.0"
+cpal = "0.14.0"
+hrtf = "0.8.0"
+wav = "1.0.0"
+minimp3 = "0.5.1"
 vek = "0.15.6"
-enum-as-inner = "0.4.0"

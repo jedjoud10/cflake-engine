@@ -1,16 +1,24 @@
 use crate::Asset;
 use ahash::AHashMap;
 use parking_lot::RwLock;
-use slotmap::{SlotMap, DefaultKey, Key};
+use slotmap::{DefaultKey, Key, SlotMap};
 use threadpool::ThreadPool;
 
 use std::{
-    cell::{RefCell, Cell},
+    any::Any,
+    cell::{Cell, RefCell},
     ffi::OsStr,
+    marker::PhantomData,
     path::{Path, PathBuf},
     rc::Rc,
     str::FromStr,
-    sync::{Arc, atomic::{AtomicU32, Ordering}, mpsc::{Receiver, Sender}}, thread::Thread, marker::PhantomData, any::Any, time::Instant,
+    sync::{
+        atomic::{AtomicU32, Ordering},
+        mpsc::{Receiver, Sender},
+        Arc,
+    },
+    thread::Thread,
+    time::Instant,
 };
 
 // This is a handle to a specific asset that we are currently loading in
@@ -37,23 +45,19 @@ pub struct Assets {
 
     // Path that references the main user assets
     user: Option<PathBuf>,
-
-    // Lil threadpool for async loading
-    threadpool: ThreadPool,
 }
 
 impl Assets {
     // Create a new asset loader using a path to the user defined asset folder (if there is one)
     pub fn new(user: Option<PathBuf>) -> Self {
         let (sender, receiver) = std::sync::mpsc::channel::<DefaultKey>();
-        
+
         Self {
             assets: Default::default(),
             bytes: Default::default(),
             loaded: Default::default(),
             receiver,
             sender,
-            threadpool: ThreadPool::with_name("asset-loading".to_string(), 2),
             user,
         }
     }
@@ -66,7 +70,11 @@ impl Assets {
     ) -> Option<A> {
         // All this does is that it ensures that the bytes are valid before we actually deserialize the asset
         let path = PathBuf::from_str(path).unwrap();
-        let (name, extension) = path.file_name().and_then(OsStr::to_str)?.split_once('.').unwrap();
+        let (name, extension) = path
+            .file_name()
+            .and_then(OsStr::to_str)?
+            .split_once('.')
+            .unwrap();
         let bytes = if self.bytes.read().contains_key(&path) {
             self.bytes.read().get(&path).unwrap().clone()
         } else {
@@ -114,10 +122,11 @@ impl Assets {
         &self,
         path: &str,
         args: A::Args,
+        threadpool: &mut world::ThreadPool,
     ) -> AsyncHandle<'static, A>
     where
-        A::Args: Send + Sync
-    {   
+        A::Args: Send + Sync,
+    {
         // Clone the things that must be sent to the thread
         let assets = self.assets.clone();
         let bytes = self.bytes.clone();
@@ -133,9 +142,14 @@ impl Assets {
 
         // Create a multithreaded loading task bozoo
         let path = PathBuf::from_str(path).unwrap();
-        self.threadpool.execute(move || {
+        threadpool.execute(move || {
             // All this does is that it ensures that the bytes are valid before we actually deserialize the asset
-            let (name, extension) = path.file_name().and_then(OsStr::to_str).unwrap().split_once('.').unwrap();
+            let (name, extension) = path
+                .file_name()
+                .and_then(OsStr::to_str)
+                .unwrap()
+                .split_once('.')
+                .unwrap();
             let bytes = if bytes.read().contains_key(&path) {
                 bytes.read().get(&path).unwrap().clone()
             } else {
@@ -169,40 +183,70 @@ impl Assets {
     }
 
     // Load an asset using some explicit loading arguments in another thread
-    pub fn threaded_load_with<A: Asset<'static> + Send + Sync>(&self, path: &str, args: A::Args) -> AsyncHandle<'static, A>
+    pub fn threaded_load_with<A: Asset<'static> + Send + Sync>(
+        &self,
+        path: &str,
+        args: A::Args,
+        threadpool: &mut world::ThreadPool,
+    ) -> AsyncHandle<'static, A>
     where
-        A::Args: Send + Sync
+        A::Args: Send + Sync,
     {
         let pathbuf = PathBuf::from_str(path).unwrap();
-        let (_, extension) = pathbuf.file_name().and_then(OsStr::to_str).unwrap().split_once('.').unwrap();
-        ((A::extensions().contains(&extension)) || A::extensions().is_empty()).then_some(()).unwrap();
-        unsafe { self.threaded_load_with_unchecked(path, args) }
+        let (_, extension) = pathbuf
+            .file_name()
+            .and_then(OsStr::to_str)
+            .unwrap()
+            .split_once('.')
+            .unwrap();
+        ((A::extensions().contains(&extension)) || A::extensions().is_empty())
+            .then_some(())
+            .unwrap();
+        unsafe { self.threaded_load_with_unchecked(path, args, threadpool) }
     }
 
     // Load an asset using some default loading arguments in another thread
-    pub fn threaded_load<A: Asset<'static> + Send + Sync>(&self, path: &str) -> AsyncHandle<'static, A>
+    pub fn threaded_load<A: Asset<'static> + Send + Sync>(
+        &self,
+        path: &str,
+        threadpool: &mut world::ThreadPool,
+    ) -> AsyncHandle<'static, A>
     where
         A::Args: Default + Send + Sync,
     {
-        self.threaded_load_with(path, Default::default())
+        self.threaded_load_with(path, Default::default(), threadpool)
     }
 
     // This will check if the asset loader finished loading a specific asset using it's handle
-    pub fn was_loaded<A: Asset<'static> + Send + Sync>(&self, handle: &AsyncHandle<'static, A>) -> bool where A::Args: Send + Sync {
+    pub fn was_loaded<A: Asset<'static> + Send + Sync>(
+        &self,
+        handle: &AsyncHandle<'static, A>,
+    ) -> bool
+    where
+        A::Args: Send + Sync,
+    {
         self.loaded.borrow_mut().extend(self.receiver.try_iter());
         self.loaded.borrow().contains(&handle.key)
     }
 
     // This will wait until the asset referenced by this handle has finished loading
-    pub fn wait<A: Asset<'static> + Send + Sync>(&self, handle: AsyncHandle<'static, A>) -> A where A::Args: Send + Sync {
+    pub fn wait<A: Asset<'static> + Send + Sync>(&self, handle: AsyncHandle<'static, A>) -> A
+    where
+        A::Args: Send + Sync,
+    {
         while !self.was_loaded(&handle) {}
         let mut assets = self.assets.write();
         let boxed = assets.remove(handle.key).unwrap();
         let asset = boxed.unwrap().downcast::<A>().unwrap();
-        let location = self.loaded.borrow().iter().position(|k| k == &handle.key).unwrap();
+        let location = self
+            .loaded
+            .borrow()
+            .iter()
+            .position(|k| k == &handle.key)
+            .unwrap();
         self.loaded.borrow_mut().swap_remove(location);
         return *asset;
-    } 
+    }
 
     // Import a persistent asset using it's global asset path and it's raw bytes
     pub fn import(&self, path: impl AsRef<Path>, bytes: Vec<u8>) {

@@ -1,4 +1,4 @@
-use super::{node::Node, NodeKey};
+use super::node::Node;
 use crate::AABB;
 use slotmap::{Key, SlotMap};
 
@@ -32,24 +32,25 @@ pub enum OctreeHeuristic {
 
 // A simple octree, no incremental generation what so ever
 pub struct Octree {
-    // The old target point
+    // Last update frame target
     target: Option<vek::Vec3<f32>>,
 
-    // The total nodes in the octree
-    nodes: SlotMap<NodeKey, Node>,
-    root: NodeKey,
+    // Stored per node
+    children: Vec<[u32; 8]>,
 
-    // The depth of the tree
+    // Stored per node group
+    shared_location: Vec<vek::Vec3<i64>>,
+    shared_parent: Vec<u32>,
+    shared_depth: Vec<u32>,
+
+    // Max octree depth, and root node size
     depth: u8,
-
-    // The size factor for each node, must be a power of two
     size: u64,
-
-    // Some specific heuristic settings
     heuristic: BoxedHeuriticFunc,
 }
 
 impl Octree {
+    /*
     // Create a new octree with a specific depth and pass function
     pub fn new(depth: u8, size: u64, heuristic: OctreeHeuristic) -> Self {
         let mut nodes = SlotMap::<NodeKey, Node>::default();
@@ -89,7 +90,9 @@ impl Octree {
             heuristic,
         }
     }
+    */
 
+    /*
     // Get the nodes immutably
     pub fn nodes(&self) -> &SlotMap<NodeKey, Node> {
         &self.nodes
@@ -188,4 +191,5 @@ impl Octree {
 
         passed
     }
+    */
 }

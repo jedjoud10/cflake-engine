@@ -1,38 +1,73 @@
 #[cfg(test)]
 mod tests {
+    use world::ThreadPool;
+
     use crate::*;
 
+    #[derive(Component, Debug, PartialEq, Eq)]
+    struct Name(&'static str);
+    #[derive(Component, Debug, PartialEq, Eq)]
+    struct Health(i32);
+    #[derive(Component, Debug, Clone, Copy)]
+    struct Ammo(u32);
+
     #[test]
-    fn test() {
-        let _manager = Scene::default();
+    fn entries() {
+        let mut manager = Scene::default();
 
-        #[derive(Component, Debug)]
-        struct Name(&'static str);
-        #[derive(Component, Debug)]
-        struct Health(i32);
-        #[derive(Component, Debug)]
-        struct Ammo(u32);
+        let entity = manager.insert((Name("Basic"), Health(100)));
+        let mut entry = manager.entry_mut(entity).unwrap();
+        assert_eq!(entry.get_mut::<Name>(), Some(&mut Name("Basic")));
+        assert!(entry.get_mut::<Ammo>().is_none());
 
-        //manager.insert((Name("Red"), Health(100)));
+        let mask = registry::mask::<Name>() | registry::mask::<Health>();
+        let archetype = manager.archetypes().get(&mask).unwrap();
+        let states = archetype.states();
+        let state = states.get(0).unwrap();
+        assert_eq!(state.mutated(), mask);
 
-        /*
+        let entry = manager.entry(entity).unwrap();
+        assert_eq!(entry.get::<Name>(), Some(&Name("Basic")));
+        assert!(entry.get::<Ammo>().is_none());
+    }
 
+    #[test]
+    fn queries() {
+        let mut manager = Scene::default();
+        let mut threadpool = ThreadPool::new();
+        let iter = (0..4096).map(|_| (Name("Person"), Health(100)));
+        let entity = manager.extend_from_iter(iter);
+        let query = manager.query_mut::<(&Name, &mut Health)>();
+        query.for_each(
+            &mut threadpool,
+            |(_, health)| {
+                health.0 += 100;
+            },
+            32,
+        );
 
-        manager.insert((Name("Red"), Health(100))).unwrap();
-        manager.insert((Name("Green"), Health(100))).unwrap();
-        manager.insert((Name("Blue"), Health(100))).unwrap();
+        for health in manager.query_mut::<&Health>() {
+            assert_eq!(health.0, 200)
+        }
+    }
 
-        let modifier = manager.modify(entity);
-        modifier.insert::<>()
+    #[test]
+    fn filter() {
+        let mut manager = Scene::default();
+        let mut threadpool = ThreadPool::new();
+        let iter = (0..4096).map(|_| (Name("Person"), Health(100)));
+        let entity = manager.extend_from_iter(iter);
+        let query = manager.query_mut_with::<(&Name, &mut Health)>(always());
+        query.for_each(
+            &mut threadpool,
+            |(_, health)| {
+                health.0 += 100;
+            },
+            32,
+        );
 
-        let success = manager.query::<(&mut Name, &Health)>();
-        assert_eq!(success.is_some(), true);
-        assert_eq!(success.unwrap().len(), 3);
-        let fail = manager.query::<(&mut Name, &mut Name)>();
-        assert_eq!(fail.is_some(), false);
-        drop(fail);
-        let success2 = manager.view::<(&Name, &Health, &Name)>();
-        assert_eq!(success2.len(), 3);
-        */
+        for health in manager.query_mut::<&Health>() {
+            assert_eq!(health.0, 200)
+        }
     }
 }

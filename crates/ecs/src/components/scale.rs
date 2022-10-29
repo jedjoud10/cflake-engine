@@ -1,5 +1,4 @@
-use crate::IntoMatrix;
-use ecs::Component;
+use crate::Component;
 use std::ops::{Deref, DerefMut};
 
 #[derive(Clone, Copy, Component)]
@@ -33,11 +32,6 @@ impl Scale {
     }
 }
 
-impl IntoMatrix for Scale {
-    fn into_matrix(self) -> vek::Mat4<f32> {
-        vek::Mat4::<f32>::scaling_3d(self.0)
-    }
-}
 
 impl Deref for Scale {
     type Target = vek::Vec3<f32>;
@@ -65,26 +59,50 @@ impl AsMut<vek::Vec3<f32>> for Scale {
     }
 }
 
-impl Into<vek::Vec3<f32>> for Scale {
-    fn into(self) -> vek::Vec3<f32> {
-        self.0
+impl From<Scale> for vek::Vec3<f32> {
+    fn from(value: Scale) -> Self {
+        value.0
     }
 }
 
-impl Into<(f32, f32, f32)> for Scale {
-    fn into(self) -> (f32, f32, f32) {
-        self.0.into_tuple()
+impl From<&Scale> for vek::Vec3<f32> {
+    fn from(value: &Scale) -> Self {
+        value.0
     }
 }
 
 impl From<vek::Vec3<f32>> for Scale {
-    fn from(l: vek::Vec3<f32>) -> Self {
-        Self(l)
+    fn from(value: vek::Vec3<f32>) -> Self {
+        Self(value)
     }
 }
 
-impl From<(f32, f32, f32)> for Scale {
-    fn from(l: (f32, f32, f32)) -> Self {
-        Self(l.into())
+impl From<&vek::Vec3<f32>> for Scale {
+    fn from(value: &vek::Vec3<f32>) -> Self {
+        Self(*value)
+    }
+}
+
+impl From<Scale> for vek::Mat4<f32> {
+    fn from(value: Scale) -> Self {
+        vek::Mat4::scaling_3d(value.0)
+    }
+}
+
+impl From<Scale> for vek::Mat3<f32> {
+    fn from(value: Scale) -> Self {
+        vek::Mat3::scaling_3d(value.0)
+    }
+}
+
+impl From<&Scale> for vek::Mat4<f32> {
+    fn from(value: &Scale) -> Self {
+        vek::Mat4::scaling_3d(value.0)
+    }
+}
+
+impl From<&Scale> for vek::Mat3<f32> {
+    fn from(value: &Scale) -> Self {
+        vek::Mat3::scaling_3d(value.0)
     }
 }

@@ -1,11 +1,13 @@
+use std::iter::once;
+
 use slotmap::SlotMap;
 use time::Time;
 use world::{Events, Init, Stage, Update, World};
 
 use crate::{
-    archetype::remove_bundle_unchecked, entity::Entity, Archetype, Bundle, EntityLinkings,
-    EntryMut, EntryRef, Evaluate, Mask, MaskHashMap, MutQueryItemResult, MutQueryLayout,
-    RefQueryItemResult, RefQueryLayout,
+    archetype::remove_bundle_unchecked, entity::Entity, query::Always, Archetype, Bundle,
+    EntityLinkings, EntryMut, EntryRef, Mask, MaskHashMap, QueryFilter, QueryLayoutMut,
+    QueryLayoutRef, QueryMut, Wrap, QueryRef,
 };
 
 pub type EntitySet = SlotMap<Entity, EntityLinkings>;
@@ -26,7 +28,7 @@ impl Default for Scene {
     fn default() -> Self {
         Self {
             entities: Default::default(),
-            archetypes: MaskHashMap::from_iter(std::iter::once((Mask::zero(), Archetype::empty()))),
+            archetypes: MaskHashMap::from_iter(once((Mask::zero(), Archetype::empty()))),
         }
     }
 }
@@ -34,19 +36,22 @@ impl Default for Scene {
 impl Scene {
     // Spawn an entity with specific components
     pub fn insert<B: Bundle>(&mut self, components: B) -> Entity {
-        assert!(B::is_valid());
-        self.insert_from_iter(std::iter::once(components))[0]
+        assert!(
+            B::is_valid(),
+            "Bundle is not valid, check the bundle for component collisions"
+        );
+        self.extend_from_iter(once(components))[0]
     }
 
-    // Spawn a batch of entities with specific components
-    pub fn insert_from_iter<B: Bundle>(
-        &mut self,
-        iter: impl IntoIterator<Item = B>,
-    ) -> Vec<Entity> {
-        assert!(B::is_valid());
+    // Spawn a batch of entities with specific components from an iterator
+    pub fn extend_from_iter<B: Bundle>(&mut self, iter: impl IntoIterator<Item = B>) -> &[Entity] {
+        assert!(
+            B::is_valid(),
+            "Bundle is not valid, check the bundle for component collisions"
+        );
 
         // Try to get the archetype, and create a default one if it does not exist
-        let mask = B::combined();
+        let mask = B::reduce(|a, b| a | b);
         let archetype = self
             .archetypes
             .entry(mask)
@@ -59,13 +64,12 @@ impl Scene {
 
     // Remove an entity, and discard it's components
     pub fn remove(&mut self, entity: Entity) -> Option<()> {
-        self.remove_from_iter(std::iter::once(entity))
+        self.remove_from_iter(once(entity))
     }
 
     // Remove an entity, and fetch it's removed components as a new bundle
     pub fn remove_then<B: Bundle>(&mut self, entity: Entity) -> Option<B> {
-        assert!(B::is_valid());
-        self.remove_from_iter_then::<B>(std::iter::once(entity))
+        self.remove_from_iter_then::<B>(once(entity))
             .map(|mut vec| vec.pop().unwrap())
     }
 
@@ -85,8 +89,6 @@ impl Scene {
         &mut self,
         iter: impl IntoIterator<Item = Entity>,
     ) -> Option<Vec<B>> {
-        assert!(B::is_valid());
-
         iter.into_iter()
             .map(|entity| {
                 // Move the entity from it's current archetype to the unit archetype
@@ -135,79 +137,32 @@ impl Scene {
         &mut self.entities
     }
 
-    // Create a new mutable query iterator
-    pub fn query<'c: 'a, 'a, L: MutQueryLayout<'a>>(
-        &'c mut self,
-    ) -> Option<impl Iterator<Item = L> + 'a> {
-        crate::query_mut_marked(&mut self.archetypes).map(|iter| iter.map(|(t, _)| t))
+    // Create a new mutable query from this scene (with no filter)
+    pub fn query_mut<'a, L: for<'i> QueryLayoutMut<'i>>(&'a mut self) -> QueryMut<'a, '_, '_, L> {
+        assert!(L::is_valid(), "Query layout is not valid, check the layout for component collisions");
+        QueryMut::new(self)
     }
 
-    // Create a new mutable marked query iterator
-    pub fn query_with_id<'c: 'a, 'a, L: MutQueryLayout<'a>>(
-        &'c mut self,
-    ) -> Option<impl Iterator<Item = (L, Entity)> + 'a> {
-        crate::query_mut_marked(&mut self.archetypes)
+    // Create a new mutable query from this scene using a filter
+    pub fn query_mut_with<'a, L: for<'i> QueryLayoutMut<'i>>(
+        &'a mut self,
+        filter: Wrap<impl QueryFilter>,
+    ) -> QueryMut<'a, '_, '_, L> {
+        assert!(L::is_valid(), "Query layout is not valid, check the layout for component collisions");
+        QueryMut::new_with_filter(self, filter)
     }
 
-    // Create a new mutable query iterator with a filter
-    pub fn query_with_filter<'c: 'a, 'a, L: MutQueryLayout<'a>>(
-        &'c mut self,
-        filter: impl Evaluate,
-    ) -> Option<impl Iterator<Item = L> + 'a> {
-        crate::query_mut_filter_marked(&mut self.archetypes, filter)
-            .map(|iter| iter.map(|(t, _)| t))
+    // Create a new immutable query from this scene (with no filter)
+    pub fn query<'a, L: for<'i> QueryLayoutRef<'i>>(&'a mut self) -> QueryRef<'a, '_, '_, L> {
+        QueryRef::new(self)
     }
 
-    // Create a new mutable query iterator with a filter and entity ids
-    pub fn query_with_filter_with_id<'c: 'a, 'a, L: MutQueryLayout<'a>>(
-        &'c mut self,
-        filter: impl Evaluate,
-    ) -> Option<impl Iterator<Item = (L, Entity)> + 'a> {
-        crate::query_mut_filter_marked(&mut self.archetypes, filter)
-    }
-
-    // Create a new mutable raw query iterator
-    pub fn query_raw<'c: 'a, 'a, L: MutQueryLayout<'a>>(
-        &'c mut self,
-    ) -> Option<impl Iterator<Item = MutQueryItemResult<'a, L>> + 'a> {
-        crate::query_mut_raw(&mut self.archetypes)
-    }
-
-    // Create a new immutable query iterator
-    pub fn view<'c: 'a, 'a, L: RefQueryLayout<'a>>(
-        &'c self,
-    ) -> Option<impl Iterator<Item = L> + 'a> {
-        crate::query_ref_marked(&self.archetypes).map(|iter| iter.map(|(t, _)| t))
-    }
-
-    // Create a new immutable marked query iterator
-    pub fn view_with_id<'c: 'a, 'a, L: RefQueryLayout<'a>>(
-        &'c self,
-    ) -> Option<impl Iterator<Item = (L, Entity)> + 'a> {
-        crate::query_ref_marked(&self.archetypes)
-    }
-
-    // Create a new immutable query iterator with a filter
-    pub fn view_with_filter<'c: 'a, 'a, L: RefQueryLayout<'a>>(
-        &'c self,
-        filter: impl Evaluate,
-    ) -> Option<impl Iterator<Item = L> + 'a> {
-        crate::query_ref_filter_marked(&self.archetypes, filter).map(|iter| iter.map(|(t, _)| t))
-    }
-
-    // Create a new immutable query iterator with a filter and an entity id
-    pub fn view_with_filter_with_id<'c: 'a, 'a, L: RefQueryLayout<'a>>(
-        &'c self,
-        filter: impl Evaluate,
-    ) -> Option<impl Iterator<Item = (L, Entity)> + 'a> {
-        crate::query_ref_filter_marked(&self.archetypes, filter)
-    }
-
-    // Create a new immutable raw query iterator
-    pub fn view_raw<'c: 'a, 'a, L: RefQueryLayout<'a>>(
-        &'c mut self,
-    ) -> Option<impl Iterator<Item = RefQueryItemResult<'a, L>> + 'a> {
-        crate::query_ref_raw(&mut self.archetypes)
+    // Create a new immutable query from this scene using a filter
+    pub fn query_with<'a, L: for<'i> QueryLayoutRef<'i>>(
+        &'a mut self,
+        filter: Wrap<impl QueryFilter>,
+    ) -> QueryRef<'a, '_, '_, L> {
+        QueryRef::new_with_filter(self, filter)
     }
 }
 
@@ -215,14 +170,11 @@ impl Scene {
 pub fn system(events: &mut Events) {
     // Late update event that will cleanup the ECS manager states
     fn cleanup(world: &mut World) {
-        let ecs = world.get_mut::<Scene>().unwrap();
-        let _time = world.get::<Time>().unwrap();
+        let mut ecs = world.get_mut::<Scene>().unwrap();
 
         // Clear all the archetype states that were set last frame
-        for (_, archetype) in ecs.archetypes() {
-            let cloned = archetype.states();
-            let mut states = cloned.borrow_mut();
-            for state in states.iter_mut() {
+        for (_, archetype) in ecs.archetypes_mut() {
+            for state in archetype.states_mut().iter_mut() {
                 state.update(|added, removed, mutated| {
                     *added = Mask::zero();
                     *mutated = Mask::zero();

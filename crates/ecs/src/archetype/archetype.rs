@@ -1,6 +1,7 @@
 use crate::{
     entity::{Entity, EntityLinkings},
-    mask, ArchetypeSet, Bundle, Component, ComponentTable, EntitySet, Mask, MaskHashMap, StateRow,
+    mask, ArchetypeSet, Bundle, Component, ComponentTable, EntitySet, Mask, MaskHashMap,
+    QueryLayoutRef, StateRow,
 };
 use std::{cell::RefCell, rc::Rc};
 
@@ -8,7 +9,7 @@ use std::{cell::RefCell, rc::Rc};
 pub struct Archetype {
     mask: Mask,
     tables: MaskHashMap<Box<dyn ComponentTable>>,
-    states: Rc<RefCell<Vec<StateRow>>>,
+    states: Vec<StateRow>,
     entities: Vec<Entity>,
 }
 
@@ -17,9 +18,9 @@ impl Archetype {
     // This assumes that B is a valid bundle
     pub(crate) fn from_table_accessor<B: Bundle>() -> Self {
         Self {
-            mask: B::combined(),
+            mask: B::reduce(|a, b| a | b),
             tables: B::default_tables(),
-            states: Rc::new(RefCell::new(Vec::new())),
+            states: Vec::new(),
             entities: Vec::new(),
         }
     }
@@ -40,11 +41,15 @@ impl Archetype {
         &mut self,
         entities: &mut EntitySet,
         components: Vec<B>,
-    ) -> Vec<Entity> {
-        assert!(B::is_valid());
-        assert_eq!(B::combined(), self.mask);
+    ) -> &[Entity] {
+        debug_assert_eq!(self.mask(), B::reduce(|a, b| a | b));
+        assert!(
+            B::is_valid(),
+            "Bundle is not valid, check the bundle for component collisions"
+        );
+
         self.reserve(entities.len());
-        let mut output = Vec::new();
+        let old_len = self.entities.len();
 
         // Add the entities internally and externally
         for _ in 0..components.len() {
@@ -54,10 +59,8 @@ impl Archetype {
             };
             let entity = entities.insert(linkings);
             self.states
-                .borrow_mut()
                 .push(StateRow::new(self.mask, Mask::zero(), self.mask));
             self.entities.push(entity);
-            output.push(entity)
         }
 
         // Add the storage bundles to their respective tables
@@ -65,15 +68,16 @@ impl Archetype {
         for set in components {
             B::push(&mut storages, set);
         }
+        drop(storages);
 
         // Return the newly added entity IDs
-        output
+        &self.entities[old_len..]
     }
 
     // Reserve enough memory space to be able to fit all the new entities in one allocation
     pub fn reserve(&mut self, additional: usize) {
         self.entities.reserve(additional);
-        self.states.borrow_mut().reserve(additional);
+        self.states.reserve(additional);
 
         for (_, table) in &mut self.tables {
             table.reserve(additional);
@@ -95,9 +99,14 @@ impl Archetype {
         self.mask
     }
 
-    // Get a copy of the archetype states
-    pub fn states(&self) -> Rc<RefCell<Vec<StateRow>>> {
-        self.states.clone()
+    // Get an immutable reference to the archetype states
+    pub fn states(&self) -> &Vec<StateRow> {
+        &self.states
+    }
+
+    // Get a mutable reference to the archetype states
+    pub fn states_mut(&mut self) -> &mut Vec<StateRow> {
+        &mut self.states
     }
 
     // Try to get an immutable reference to the table for a specific component
@@ -107,7 +116,7 @@ impl Archetype {
     }
 
     // Try to get a mutable reference to the table for a specific component
-    pub(crate) fn table_mut<T: Component>(&mut self) -> Option<&mut Vec<T>> {
+    pub fn table_mut<T: Component>(&mut self) -> Option<&mut Vec<T>> {
         let boxed = self.tables.get_mut(&mask::<T>())?;
         Some(boxed.as_any_mut().downcast_mut().unwrap())
     }
@@ -130,7 +139,7 @@ impl Archetype {
 
         // Remove the entity and get the entity that was swapped with it
         self.entities.swap_remove(index);
-        self.states.borrow_mut().swap_remove(index);
+        self.states.swap_remove(index);
         let entity = self.entities.get(index).cloned();
 
         // Swap might've failed if we swapped with the last element in the vector
@@ -157,16 +166,20 @@ fn split(set: &mut ArchetypeSet, mask1: Mask, mask2: Mask) -> (&mut Archetype, &
 }
 
 // Add some new components onto an entity, forcing it to switch archetypes
-// This assumes that the OwnedBundle type is valid for this use case
 pub(crate) fn add_bundle_unchecked<B: Bundle>(
     archetypes: &mut ArchetypeSet,
     entity: Entity,
     entities: &mut EntitySet,
     bundle: B,
 ) -> Option<()> {
+    assert!(
+        B::is_valid(),
+        "Bundle is not valid, check the bundle for component collisions"
+    );
+
     // Get the old and new masks
     let old = entities[entity].mask;
-    let new = entities[entity].mask | B::combined();
+    let new = entities[entity].mask | B::reduce(|a, b| a | b);
 
     // Nothing changed, don't execute
     if new == old {
@@ -207,7 +220,7 @@ pub(crate) fn add_bundle_unchecked<B: Bundle>(
 
     // Handle swap-remove logic in the current archetype
     current.entities.swap_remove(index);
-    current.states.borrow_mut().swap_remove(index);
+    current.states.swap_remove(index);
     if let Some(entity) = current.entities.get(index).cloned() {
         let swapped = entities.get_mut(entity).unwrap();
         swapped.index = index;
@@ -217,7 +230,6 @@ pub(crate) fn add_bundle_unchecked<B: Bundle>(
     let linkings = entities.get_mut(entity).unwrap();
     target
         .states
-        .borrow_mut()
         .push(StateRow::new(target.mask, Mask::zero(), target.mask));
     target.entities.push(entity);
     linkings.index = target.len() - 1;
@@ -233,9 +245,12 @@ pub(crate) fn remove_bundle_unchecked<B: Bundle>(
     entity: Entity,
     entities: &mut EntitySet,
 ) -> Option<B> {
+    assert!(B::is_valid(), "Bundle is not valid");
+
     // Get the old and new masks
     let old = entities[entity].mask;
-    let new = entities[entity].mask & !B::combined();
+    let combined = B::reduce(|a, b| a | b);
+    let new = entities[entity].mask & !combined;
 
     // Create the new target archetype if needed
     if archetypes.contains_key(&new) {
@@ -270,7 +285,7 @@ pub(crate) fn remove_bundle_unchecked<B: Bundle>(
 
     // Handle swap-remove logic in the current archetype
     current.entities.swap_remove(index);
-    current.states.borrow_mut().swap_remove(index);
+    let old_state = current.states.swap_remove(index);
     if let Some(entity) = current.entities.get(index).cloned() {
         let swapped = entities.get_mut(entity).unwrap();
         swapped.index = index;
@@ -280,8 +295,7 @@ pub(crate) fn remove_bundle_unchecked<B: Bundle>(
     let linkings = entities.get_mut(entity).unwrap();
     target
         .states
-        .borrow_mut()
-        .push(StateRow::new(target.mask, B::combined(), target.mask));
+        .push(StateRow::new(old_state.added(), old_state.removed() | combined, old_state.mutated()));
     target.entities.push(entity);
     linkings.index = target.len() - 1;
     linkings.mask = target.mask;
