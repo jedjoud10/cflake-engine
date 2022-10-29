@@ -11,7 +11,7 @@ pub struct QueryMut<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> {
     archetypes: Vec<&'a mut Archetype>,
     mask: Mask,
     mutability: Mask,
-    bitset: Option<Arc<BitSet>>,
+    bitset: Option<BitSet>,
     _phantom1: PhantomData<&'b ()>,
     _phantom2: PhantomData<&'s ()>,
     _phantom3: PhantomData<L>,
@@ -69,7 +69,7 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
             archetypes,
             mask,
             mutability,
-            bitset: Some(Arc::new(bitset)),
+            bitset: Some(bitset),
             _phantom3: PhantomData,
             _phantom1: PhantomData,
             _phantom2: PhantomData,
@@ -90,14 +90,15 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
     {
         threadpool.scope(|scope| {
             let mutability = self.mutability;
+            let bitset = self.bitset.map(|bitset| Arc::new(bitset));
             for archetype in self.archetypes.iter_mut() {
                 // Send the archetype slices to multiple threads to be able to compute them
                 let ptrs = unsafe { L::ptrs_from_mut_archetype_unchecked(archetype) };
                 let slices = unsafe { L::from_raw_parts(ptrs, archetype.len()) };
 
                 // Should we use per entry filtering?
-                if let Some(bitset) = &self.bitset {
-                    scope.for_each_filtered(slices, function.clone(), bitset.clone(), batch_size);
+                if let Some(bitset) = bitset.clone() {
+                    scope.for_each_filtered(slices, function.clone(), bitset, batch_size);
                 } else {
                     scope.for_each(slices, function.clone(), batch_size);
                 }
@@ -129,6 +130,7 @@ impl<'a: 'b, 'b, 'it, L: for<'s> QueryLayoutMut<'s>> IntoIterator for QueryMut<'
         QueryMutIter {
             archetypes: self.archetypes,
             chunk: None,
+            bitset: self.bitset,
             index: 0,
             mutability: self.mutability,
             _phantom1: PhantomData,
@@ -150,6 +152,7 @@ pub struct QueryMutIter<'b, 's, L: QueryLayoutMut<'s>> {
     chunk: Option<Chunk<'b, 's, L>>,
     index: usize,
     mutability: Mask,
+    bitset: Option<BitSet>,
     _phantom1: PhantomData<&'s ()>,
     _phantom2: PhantomData<L>,
 }
@@ -175,6 +178,14 @@ impl<'b, 's, L: QueryLayoutMut<'s>> Iterator for QueryMutIter<'b, 's, L> {
                 ptrs,
                 length,
             });
+        }
+
+        // Skip the archetype if we are using a filter
+        if let Some(bitset) = &self.bitset {
+            if !bitset.get(self.index) {
+                self.index += 1;
+                return None;
+            }
         }
 
         // I have to do this since iterators cannot return data that they are referencing, but in this case, it is safe to do so
