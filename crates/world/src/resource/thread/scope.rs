@@ -57,5 +57,7 @@ impl<'a> ThreadPoolScope<'a> {
 }
 
 impl<'a> Drop for ThreadPoolScope<'a> {
-    fn drop(&mut self) {}
+    fn drop(&mut self) {
+        self.join();
+    }
 }

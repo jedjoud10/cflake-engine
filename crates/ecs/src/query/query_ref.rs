@@ -106,7 +106,11 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutRef<'it>> QueryRef<'a, 'b, 's, L> {
 
     // Get the number of entries that we will have to iterate through
     pub fn len(&self) -> usize {
-        self.archetypes.iter().map(|a| a.len()).sum()
+        if let Some(bitset) = &self.bitset {
+            bitset.count_ones()
+        } else {
+            self.archetypes.iter().map(|a| a.len()).sum()
+        }
     }
 }
 
@@ -175,7 +179,7 @@ impl<'b, 's, L: QueryLayoutRef<'s>> Iterator for QueryRefIter<'b, 's, L> {
         // I have to do this since iterators cannot return data that they are referencing, but in this case, it is safe to do so
         self.chunk.as_mut()?;
         let ptrs = self.chunk.as_ref().unwrap().ptrs;
-        let items = unsafe { L::read_unchecked(ptrs, 0) };
+        let items = unsafe { L::read_unchecked(ptrs, self.index) };
         self.index += 1;
 
         Some(items)
