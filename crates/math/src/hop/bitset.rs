@@ -57,4 +57,14 @@ impl BitSet {
         let (chunk, location) = Self::coords(index);
         (self.0[chunk] >> location) & 1 == 1
     }
+
+    // Count the number of zeros in this bitset
+    pub fn count_zeros(&self) -> usize {
+        self.0.iter().map(|chunk| chunk.count_zeros() as usize).sum()
+    }
+
+    // Count the number of ones in this bitset
+    pub fn count_ones(&self) -> usize {
+        self.0.iter().map(|chunk| chunk.count_ones() as usize).sum()
+    }
 }

@@ -191,7 +191,7 @@ impl<'b, 's, L: QueryLayoutMut<'s>> Iterator for QueryMutIter<'b, 's, L> {
         // I have to do this since iterators cannot return data that they are referencing, but in this case, it is safe to do so
         self.chunk.as_mut()?;
         let ptrs = self.chunk.as_ref().unwrap().ptrs;
-        let items = unsafe { L::read_mut_unchecked(ptrs, 0) };
+        let items = unsafe { L::read_mut_unchecked(ptrs, self.index) };
         self.index += 1;
 
         // Update the mask for the current entity

@@ -1,15 +1,30 @@
 use crate::Component;
 use std::ops::{Deref, DerefMut};
 
+
+// 2D location support
+#[cfg(not(feature = "two-dim"))]
+type Target = vek::Vec3<f32>;
+#[cfg(feature = "two-dim")]
+type Target = vek::Vec2<f32>;
+
+// 2D matrix support
+#[cfg(not(feature = "two-dim"))]
+type Matrix = vek::Mat4<f32>;
+#[cfg(feature = "two-dim")]
+type Matrix = vek::Mat3<f32>;
+
 #[derive(Clone, Copy, Component)]
-pub struct Scale(vek::Vec3<f32>);
+#[repr(transparent)]
+pub struct Scale(Target);
 
 impl Default for Scale {
     fn default() -> Self {
-        Self(vek::Vec3::one())
+        Self(Target::one())
     }
 }
 
+#[cfg(not(feature = "two-dim"))]
 impl Scale {
     // Construct a scale using an X width
     pub fn scale_x(width: f32) -> Self {
@@ -32,9 +47,27 @@ impl Scale {
     }
 }
 
+#[cfg(feature = "two-dim")]
+impl Scale {
+    // Construct a scale using an X width
+    pub fn scale_x(width: f32) -> Self {
+        Self(vek::Vec2::new(width, 1.0))
+    }
+
+    // Construct a scale using a Y height
+    pub fn scale_y(height: f32) -> Self {
+        Self(vek::Vec2::new(1.0, height))
+    }
+
+    // Construct a scale with it's raw data
+    pub fn scale_xy(x: f32, y: f32) -> Self {
+        Self(vek::Vec2::new(x, y))
+    }
+}
+
 
 impl Deref for Scale {
-    type Target = vek::Vec3<f32>;
+    type Target = Target;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -47,62 +80,53 @@ impl DerefMut for Scale {
     }
 }
 
-impl AsRef<vek::Vec3<f32>> for Scale {
-    fn as_ref(&self) -> &vek::Vec3<f32> {
+impl AsRef<Target> for Scale {
+    fn as_ref(&self) -> &Target {
         &self.0
     }
 }
 
-impl AsMut<vek::Vec3<f32>> for Scale {
-    fn as_mut(&mut self) -> &mut vek::Vec3<f32> {
+impl AsMut<Target> for Scale {
+    fn as_mut(&mut self) -> &mut Target {
         &mut self.0
     }
 }
 
-impl From<Scale> for vek::Vec3<f32> {
+impl From<Scale> for Target {
     fn from(value: Scale) -> Self {
         value.0
     }
 }
 
-impl From<&Scale> for vek::Vec3<f32> {
+impl From<&Scale> for Target {
     fn from(value: &Scale) -> Self {
         value.0
     }
 }
 
-impl From<vek::Vec3<f32>> for Scale {
-    fn from(value: vek::Vec3<f32>) -> Self {
+impl From<Target> for Scale {
+    fn from(value: Target) -> Self {
         Self(value)
     }
 }
 
-impl From<&vek::Vec3<f32>> for Scale {
-    fn from(value: &vek::Vec3<f32>) -> Self {
+impl From<&Target> for Scale {
+    fn from(value: &Target) -> Self {
         Self(*value)
     }
 }
 
-impl From<Scale> for vek::Mat4<f32> {
+impl From<Scale> for Matrix {
     fn from(value: Scale) -> Self {
         vek::Mat4::scaling_3d(value.0)
     }
 }
 
-impl From<Scale> for vek::Mat3<f32> {
-    fn from(value: Scale) -> Self {
-        vek::Mat3::scaling_3d(value.0)
-    }
-}
-
-impl From<&Scale> for vek::Mat4<f32> {
+impl From<&Scale> for Matrix {
     fn from(value: &Scale) -> Self {
-        vek::Mat4::scaling_3d(value.0)
-    }
-}
-
-impl From<&Scale> for vek::Mat3<f32> {
-    fn from(value: &Scale) -> Self {
-        vek::Mat3::scaling_3d(value.0)
+        #[cfg(not(feature = "two-dim"))]
+        return vek::Mat4::scaling_3d(value.0);
+        #[cfg(feature = "two-dim")]
+        return vek::Mat3::scaling_2d(value.0);
     }
 }

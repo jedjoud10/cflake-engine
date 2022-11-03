@@ -36,8 +36,6 @@ pub trait QueryLayoutMut<'s> {
             mut_collisions |= (a & b) == b;
             a | b
         });
-        dbg!(refmut_collisions);
-        dbg!(mut_collisions);
         !refmut_collisions && !mut_collisions
     }
 
