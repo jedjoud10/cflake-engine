@@ -128,7 +128,10 @@ impl<'a> EntryMut<'a> {
 
     // Read certain components from the entry as if they were used in an mutable query
     pub fn as_query<L: for<'s> QueryLayoutMut<'s>>(&mut self) -> Option<L> {
-        assert!(L::is_valid(), "Query layout is not valid, check the layout for component collisions");
+        assert!(
+            L::is_valid(),
+            "Query layout is not valid, check the layout for component collisions"
+        );
 
         // Make sure the layout can be fetched from the archetype
         let access = L::reduce(|a, b| a | b);
@@ -142,9 +145,10 @@ impl<'a> EntryMut<'a> {
         let index = self.linkings().index;
         let ptrs = unsafe { L::ptrs_from_mut_archetype_unchecked(self.archetype_mut()) };
         let layout = unsafe { L::read_mut_unchecked(ptrs, index) };
-        
+
         // Update the state row
-        self.archetype_mut().states_mut()[index].update(|_, _, update| *update = *update | mutability);
+        self.archetype_mut().states_mut()[index]
+            .update(|_, _, update| *update = *update | mutability);
         Some(layout)
     }
 }

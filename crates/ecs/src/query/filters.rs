@@ -1,6 +1,6 @@
 use crate::{
     registry::{self},
-    Component, Mask, StateRow, Archetype,
+    Archetype, Component, Mask, StateRow,
 };
 use std::{marker::PhantomData, ops::BitAnd};
 
@@ -9,10 +9,12 @@ use std::{marker::PhantomData, ops::BitAnd};
 pub trait QueryFilter: 'static {
     // Cached data for fast traversal
     type Cached;
-    
+
     // Caching, archetype deletion, and entry evaluation
     fn prepare() -> Self::Cached;
-    fn eval_archetype(_: &Self::Cached, _: &Archetype) -> bool { true }
+    fn eval_archetype(_: &Self::Cached, _: &Archetype) -> bool {
+        true
+    }
     fn eval_entry(cached: &Self::Cached, states: StateRow) -> bool;
 }
 
@@ -34,7 +36,6 @@ pub struct And<A: QueryFilter, B: QueryFilter>(PhantomData<A>, PhantomData<B>);
 pub struct Or<A: QueryFilter, B: QueryFilter>(PhantomData<A>, PhantomData<B>);
 pub struct Xor<A: QueryFilter, B: QueryFilter>(PhantomData<A>, PhantomData<B>);
 pub struct Not<A: QueryFilter>(PhantomData<A>);
-
 
 impl<T: Component> QueryFilter for Added<T> {
     type Cached = Mask;
@@ -78,7 +79,6 @@ impl<T: Component> QueryFilter for Contains<T> {
     fn prepare() -> Self::Cached {
         registry::mask::<T>()
     }
-
 
     fn eval_archetype(cached: &Self::Cached, archetype: &Archetype) -> bool {
         archetype.mask().contains(*cached)
@@ -174,16 +174,16 @@ impl<A: QueryFilter> QueryFilter for Not<A> {
 
 // Functions to create the sources and modifiers
 pub fn modified<T: Component>() -> Wrap<Modified<T>> {
-    Wrap::<Modified::<T>>(PhantomData)
+    Wrap::<Modified<T>>(PhantomData)
 }
 pub fn removed<T: Component>() -> Wrap<Removed<T>> {
-    Wrap::<Removed::<T>>(PhantomData)
+    Wrap::<Removed<T>>(PhantomData)
 }
 pub fn added<T: Component>() -> Wrap<Added<T>> {
-    Wrap::<Added::<T>>(PhantomData)
+    Wrap::<Added<T>>(PhantomData)
 }
 pub fn contains<T: Component>() -> Wrap<Contains<T>> {
-    Wrap::<Contains::<T>>(PhantomData)
+    Wrap::<Contains<T>>(PhantomData)
 }
 
 // Constant sources

@@ -3,6 +3,7 @@ use ahash::AHashMap;
 use parking_lot::RwLock;
 use slotmap::{DefaultKey, Key, SlotMap};
 use threadpool::ThreadPool;
+use world::ThreadPool;
 
 use std::{
     any::Any,
@@ -117,12 +118,26 @@ impl Assets {
         self.load_with(path, Default::default())
     }
 
+    // Load multiple assets using some explicit loading arguments
+    pub fn load_batch_with<'args, A: Asset<'args>>(&self, path: &[&str], args: A::Args) -> Vec<Option<A>> {
+        todo!()
+    }
+
+    // Load multiple assets using some default loading argument
+    pub fn load_batch<'args, A: Asset<'args>>(&self, path: &str) -> Option<A>
+    where
+        A::Args: Default,
+    {
+        todo!()
+    }
+
+
     // Load an asset using some explicit loading arguments without checking it's extensions in another thread
     pub unsafe fn threaded_load_with_unchecked<A: Asset<'static> + Send + Sync>(
         &self,
         path: &str,
         args: A::Args,
-        threadpool: &mut world::ThreadPool,
+        threadpool: &mut ThreadPool,
     ) -> AsyncHandle<'static, A>
     where
         A::Args: Send + Sync,
@@ -187,7 +202,7 @@ impl Assets {
         &self,
         path: &str,
         args: A::Args,
-        threadpool: &mut world::ThreadPool,
+        threadpool: &mut ThreadPool,
     ) -> AsyncHandle<'static, A>
     where
         A::Args: Send + Sync,
@@ -209,13 +224,40 @@ impl Assets {
     pub fn threaded_load<A: Asset<'static> + Send + Sync>(
         &self,
         path: &str,
-        threadpool: &mut world::ThreadPool,
+        threadpool: &mut ThreadPool,
     ) -> AsyncHandle<'static, A>
     where
         A::Args: Default + Send + Sync,
     {
         self.threaded_load_with(path, Default::default(), threadpool)
     }
+
+    // Load multiple assets using some default loading arguments in other threads
+    pub fn threaded_load_batch_with<A: Asset<'static> + Send + Sync>(
+        &self,
+        paths: &[&str],
+        args: &[A::Args],
+        threadpool: &mut ThreadPool,
+    ) -> Vec<AsyncHandle<'static, A>>
+    where
+        A::Args: Send + Sync,
+    {
+        todo!()
+    }
+    
+
+    // Load multiple assets using some default loading arguments in other threads
+    pub fn threaded_load_batch<A: Asset<'static> + Send + Sync>(
+        &self,
+        paths: &[&str],
+        threadpool: &mut ThreadPool,
+    ) -> Vec<AsyncHandle<'static, A>>
+    where
+        A::Args: Default + Send + Sync,
+    {
+        todo!()
+    }
+    
 
     // This will check if the asset loader finished loading a specific asset using it's handle
     pub fn was_loaded<A: Asset<'static> + Send + Sync>(

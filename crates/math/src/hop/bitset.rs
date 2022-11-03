@@ -14,9 +14,9 @@ impl BitSet {
     // Create a bitset from an iterator of booleans
     pub fn from_iter(iter: impl Iterator<Item = bool>) -> Self {
         let chunks = iter.chunks(usize::BITS as usize);
-        let chunks = chunks.into_iter().map(|chunk| {
-            chunk.fold(0, |accum, bit| accum << 1 | ((bit as usize)))
-        });
+        let chunks = chunks
+            .into_iter()
+            .map(|chunk| chunk.fold(0, |accum, bit| accum << 1 | (bit as usize)));
         let small: SmallVec<[usize; 2]> = chunks.collect();
         Self(small, false)
     }
@@ -32,7 +32,7 @@ impl BitSet {
     pub fn set(&mut self, index: usize) {
         let (chunk, location) = Self::coords(index);
         let chunk = &mut self.0[chunk];
-        *chunk |= 1usize << location; 
+        *chunk |= 1usize << location;
     }
 
     // Set the whole bitset to a single value
@@ -49,7 +49,7 @@ impl BitSet {
     pub fn remove(&mut self, index: usize) {
         let (chunk, location) = Self::coords(index);
         let chunk = &mut self.0[chunk];
-        *chunk &= !(1usize << location); 
+        *chunk &= !(1usize << location);
     }
 
     // Get a bit value from the bitset
@@ -60,7 +60,10 @@ impl BitSet {
 
     // Count the number of zeros in this bitset
     pub fn count_zeros(&self) -> usize {
-        self.0.iter().map(|chunk| chunk.count_zeros() as usize).sum()
+        self.0
+            .iter()
+            .map(|chunk| chunk.count_zeros() as usize)
+            .sum()
     }
 
     // Count the number of ones in this bitset

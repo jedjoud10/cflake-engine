@@ -47,7 +47,8 @@ impl<'a> ThreadPoolScope<'a> {
         bitset: Arc<BitSet>,
         batch_size: usize,
     ) {
-        self.pool.for_each_async(list, function, Some(bitset), batch_size)
+        self.pool
+            .for_each_async(list, function, Some(bitset), batch_size)
     }
 
     // Wait till all the threads finished executing

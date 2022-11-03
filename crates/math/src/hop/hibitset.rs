@@ -26,7 +26,8 @@ impl HiBitSet {
         let vector = (0..LAYER_COUNT)
             .into_iter()
             .map(|i| {
-                let len = (DEFAULT_BASE_CHUNK_CAPACITY as f32 * usize::BITS as f32) / (usize::BITS.saturating_pow(i as u32) as f32);
+                let len = (DEFAULT_BASE_CHUNK_CAPACITY as f32 * usize::BITS as f32)
+                    / (usize::BITS.saturating_pow(i as u32) as f32);
                 let len = len.ceil() as usize;
                 vec![0usize; len]
             })
@@ -49,7 +50,9 @@ impl HiBitSet {
         let threshold = usize::BITS.saturating_pow(layer as u32 + 1) as usize;
         let chunk = index / threshold;
 
-        let location = if layer == 0 { index % threshold } else {
+        let location = if layer == 0 {
+            index % threshold
+        } else {
             index / usize::BITS.saturating_pow(index as u32) as usize
         };
         (chunk, location)
@@ -60,10 +63,10 @@ impl HiBitSet {
         let splat = if self.1 { usize::MAX } else { usize::MIN };
         for i in 0..LAYER_COUNT {
             let layer = self.layer_mut(i);
-            let (chunk, location) = Self::coords(index, i);           
+            let (chunk, location) = Self::coords(index, i);
 
             // Extend the layer if needed (this bitset is dynamic)
-            if chunk >= (layer.len() * usize::BITS as usize) {                
+            if chunk >= (layer.len() * usize::BITS as usize) {
                 let num = chunk - layer.len();
                 layer.extend(std::iter::repeat(splat).take(num));
             }
@@ -79,7 +82,7 @@ impl HiBitSet {
         for i in 0..LAYER_COUNT {
             let layer = self.layer_mut(i);
             for bits in layer {
-                *bits = if value { usize::MAX } else { usize::MIN }; 
+                *bits = if value { usize::MAX } else { usize::MIN };
             }
         }
 
@@ -89,7 +92,7 @@ impl HiBitSet {
 
     // Remove a bit value from the hibitset
     pub fn remove(&mut self, index: usize) {
-        for i in (0..(LAYER_COUNT-1)).rev() {
+        for i in (0..(LAYER_COUNT - 1)).rev() {
             if i == 0 {
                 let layer = self.layer_mut(i);
                 let (chunk, location) = Self::coords(index, i);
@@ -104,7 +107,7 @@ impl HiBitSet {
                 *bits &= !(1 << location);
             } else {
                 // Get the parent layer index and location
-                let threshold = usize::BITS.saturating_pow((i+2) as u32) as usize;
+                let threshold = usize::BITS.saturating_pow((i + 2) as u32) as usize;
                 let parent_chunk = index / threshold;
                 let parent_location = index % threshold;
 
@@ -114,13 +117,12 @@ impl HiBitSet {
 
                 // Update the parent of the current layer
                 let current_layer = self.layer(i);
-                let set = current_layer
-                    [current_start..current_end]
+                let set = current_layer[current_start..current_end]
                     .iter()
                     .any(|bitmask| *bitmask != usize::MIN);
-                
+
                 // Update the parent layer
-                let parent_layer = self.layer_mut(i+1);
+                let parent_layer = self.layer_mut(i + 1);
                 let parent_bits = &mut parent_layer[parent_chunk];
 
                 // Update the bitmask
@@ -138,10 +140,11 @@ impl HiBitSet {
         !(0..LAYER_COUNT).any(|i| {
             let layer = self.layer(i);
             let (chunk, location) = Self::coords(index, i);
-            layer.get(chunk).map(|bits| {
-                ((*bits >> location) & 1) == 0
-            }).unwrap_or_default()
-        }) 
+            layer
+                .get(chunk)
+                .map(|bits| ((*bits >> location) & 1) == 0)
+                .unwrap_or_default()
+        })
     }
 }
 

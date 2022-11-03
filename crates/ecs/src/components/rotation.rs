@@ -68,7 +68,6 @@ impl Rotation {
     */
 }
 
-
 #[cfg(feature = "two-dim")]
 impl Rotation {
     // Calculate the forward vector (-Z)

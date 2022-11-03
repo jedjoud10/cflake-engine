@@ -1,7 +1,6 @@
 use crate::Component;
 use std::ops::{Add, Deref, DerefMut};
 
-
 // 2D location support
 #[cfg(not(feature = "two-dim"))]
 type Target = vek::Vec3<f32>;

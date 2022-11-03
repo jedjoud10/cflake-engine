@@ -1,7 +1,6 @@
 use crate::Component;
 use std::ops::{Deref, DerefMut};
 
-
 // 2D location support
 #[cfg(not(feature = "two-dim"))]
 type Target = vek::Vec3<f32>;
@@ -64,7 +63,6 @@ impl Scale {
         Self(vek::Vec2::new(x, y))
     }
 }
-
 
 impl Deref for Scale {
     type Target = Target;

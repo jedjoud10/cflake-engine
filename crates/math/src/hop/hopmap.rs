@@ -14,10 +14,7 @@ impl HopMap {
         current.sort();
         target.sort();
 
-        Self {
-            current,
-            target,
-        }
+        Self { current, target }
     }
 
     // Create an empty hop map (placeholder)
@@ -30,7 +27,10 @@ impl HopMap {
 
     // Given an index, get the next hop index it hop at (if possible)
     pub fn hop_to(&self, index: usize) -> Option<usize> {
-        self.current.iter().position(|i| index > *i).map(|index| self.target[index])
+        self.current
+            .iter()
+            .position(|i| index > *i)
+            .map(|index| self.target[index])
     }
 }
 

@@ -2,7 +2,10 @@ use itertools::Itertools;
 use math::BitSet;
 use smallvec::SmallVec;
 
-use crate::{Archetype, Mask, QueryFilter, QueryLayoutMut, Scene, StateRow, LayoutAccess, Wrap, QueryLayoutRef};
+use crate::{
+    Archetype, LayoutAccess, Mask, QueryFilter, QueryLayoutMut, QueryLayoutRef, Scene, StateRow,
+    Wrap,
+};
 use std::{marker::PhantomData, sync::Arc};
 
 // This is a query that will be fetched from the main scene that we can use to get components out of entries with a specific layout
@@ -51,12 +54,15 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutRef<'it>> QueryRef<'a, 'b, 's, L> {
 
         // Filter each archetype first
         let cached = F::prepare();
-        let archetypes: Vec<&Archetype> = archetypes.into_iter().filter(|a| F::eval_archetype(&cached, a)).collect();
+        let archetypes: Vec<&Archetype> = archetypes
+            .into_iter()
+            .filter(|a| F::eval_archetype(&cached, a))
+            .collect();
 
         // Filter the entries by iterating the archetype state rows
         let iterator = archetypes.iter().flat_map(|archetype| {
             let states = archetype.states();
-            states.iter().map(|state| F::eval_entry(&cached, *state))            
+            states.iter().map(|state| F::eval_entry(&cached, *state))
         });
         let bitset = BitSet::from_iter(iterator);
 
@@ -162,10 +168,7 @@ impl<'b, 's, L: QueryLayoutRef<'s>> Iterator for QueryRefIter<'b, 's, L> {
             let ptrs = unsafe { L::ptrs_from_archetype_unchecked(archetype) };
             let length = archetype.len();
             self.index = 0;
-            self.chunk = Some(Chunk {
-                ptrs,
-                length,
-            });
+            self.chunk = Some(Chunk { ptrs, length });
         }
 
         // Skip the archetype if we are using a filter

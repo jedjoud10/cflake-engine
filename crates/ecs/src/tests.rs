@@ -94,7 +94,7 @@ mod tests {
 
         let mut entry = manager.entry_mut(e1).unwrap();
         entry.get_mut::<Health>().unwrap();
-        
+
         let query = manager.query_with::<&Health>(modified::<Health>());
         assert_eq!(query.len(), 1);
     }

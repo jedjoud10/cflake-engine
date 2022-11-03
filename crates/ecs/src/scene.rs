@@ -7,7 +7,7 @@ use world::{Events, Init, Stage, Update, World};
 use crate::{
     archetype::remove_bundle_unchecked, entity::Entity, query::Always, Archetype, Bundle,
     EntityLinkings, EntryMut, EntryRef, Mask, MaskHashMap, QueryFilter, QueryLayoutMut,
-    QueryLayoutRef, QueryMut, Wrap, QueryRef,
+    QueryLayoutRef, QueryMut, QueryRef, Wrap,
 };
 
 pub type EntitySet = SlotMap<Entity, EntityLinkings>;
@@ -139,7 +139,10 @@ impl Scene {
 
     // Create a new mutable query from this scene (with no filter)
     pub fn query_mut<'a, L: for<'i> QueryLayoutMut<'i>>(&'a mut self) -> QueryMut<'a, '_, '_, L> {
-        assert!(L::is_valid(), "Query layout is not valid, check the layout for component collisions");
+        assert!(
+            L::is_valid(),
+            "Query layout is not valid, check the layout for component collisions"
+        );
         QueryMut::new(self)
     }
 
@@ -148,7 +151,10 @@ impl Scene {
         &'a mut self,
         filter: Wrap<impl QueryFilter>,
     ) -> QueryMut<'a, '_, '_, L> {
-        assert!(L::is_valid(), "Query layout is not valid, check the layout for component collisions");
+        assert!(
+            L::is_valid(),
+            "Query layout is not valid, check the layout for component collisions"
+        );
         QueryMut::new_with_filter(self, filter)
     }
 

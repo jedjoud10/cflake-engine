@@ -293,9 +293,11 @@ pub(crate) fn remove_bundle_unchecked<B: Bundle>(
 
     // Insert the new entity in the target archetype
     let linkings = entities.get_mut(entity).unwrap();
-    target
-        .states
-        .push(StateRow::new(old_state.added(), old_state.removed() | combined, old_state.mutated()));
+    target.states.push(StateRow::new(
+        old_state.added(),
+        old_state.removed() | combined,
+        old_state.mutated(),
+    ));
     target.entities.push(entity);
     linkings.index = target.len() - 1;
     linkings.mask = target.mask;

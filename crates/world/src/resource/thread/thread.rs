@@ -87,7 +87,7 @@ impl ThreadPool {
     }
 
     // Given an immutable/mutable slice of elements, run a function over all of them elements in parallel
-    // If specified, this will use a bitset to hop over useless entries 
+    // If specified, this will use a bitset to hop over useless entries
     // Warning: This will not wait till all the threads have finished executing their specific functions
     pub(crate) fn for_each_async<'a, I: for<'i> SliceTuple<'i>>(
         &'a mut self,
@@ -124,11 +124,11 @@ impl ThreadPool {
                 .map(|ptrs| I::from_ptrs(&*ptrs, entry.batch_length, offset))
                 .unwrap();
 
-            for i in 0..entry.batch_length {  
+            for i in 0..entry.batch_length {
                 if let Some(hop) = &hop {
                     if !hop.get(i + offset) {
                         continue;
-                    }                    
+                    }
                 }
 
                 function(I::get_unchecked(&mut ptrs, i));
@@ -169,7 +169,6 @@ impl ThreadPool {
         self.join();
     }
 
-    
     // Given an immutable/mutable slice of elements, run a function over certain elements in parallel
     // This function will wait untill all of the threads have finished executing their tasks
     pub fn for_each_filtered<'a, I: for<'i> SliceTuple<'i>>(

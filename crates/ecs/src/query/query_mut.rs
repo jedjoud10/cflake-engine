@@ -2,7 +2,7 @@ use itertools::Itertools;
 use math::BitSet;
 use smallvec::SmallVec;
 
-use crate::{Archetype, Mask, QueryFilter, QueryLayoutMut, Scene, StateRow, LayoutAccess, Wrap};
+use crate::{Archetype, LayoutAccess, Mask, QueryFilter, QueryLayoutMut, Scene, StateRow, Wrap};
 use std::{marker::PhantomData, sync::Arc};
 
 // This is a query that will be fetched from the main scene that we can use to get components out of entries with a specific layout
@@ -54,14 +54,17 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
 
         // Filter each archetype first
         let cached = F::prepare();
-        let archetypes: Vec<&mut Archetype> = archetypes.into_iter().filter(|a| F::eval_archetype(&cached, a)).collect();
+        let archetypes: Vec<&mut Archetype> = archetypes
+            .into_iter()
+            .filter(|a| F::eval_archetype(&cached, a))
+            .collect();
 
         // Filter the entries by iterating the archetype state rows
         let mutability = mask.unique();
         let mask = mask.both();
         let iterator = archetypes.iter().flat_map(|archetype| {
             let states = archetype.states();
-            states.iter().map(|state| F::eval_entry(&cached, *state))            
+            states.iter().map(|state| F::eval_entry(&cached, *state))
         });
         let bitset = BitSet::from_iter(iterator);
 
