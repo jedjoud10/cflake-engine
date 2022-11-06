@@ -2,7 +2,6 @@ use crate::Asset;
 use ahash::AHashMap;
 use parking_lot::RwLock;
 use slotmap::{DefaultKey, Key, SlotMap};
-use threadpool::ThreadPool;
 use world::ThreadPool;
 
 use std::{
@@ -63,8 +62,8 @@ impl Assets {
         }
     }
 
-    // Load an asset using some explicit loading arguments without checking it's extensions
-    pub unsafe fn load_with_unchecked<'args, A: Asset<'args>>(
+    // Load an asset using some explicit/implicit loading arguments without checking it's extensions
+    pub unsafe fn load_unchecked<'args, A: Asset<'args>>(
         &self,
         path: &str,
         args: A::Args,
@@ -99,6 +98,7 @@ impl Assets {
         ))
     }
 
+    /*
     // Load an asset using some explicit loading arguments
     pub fn load_with<'args, A: Asset<'args>>(&self, path: &str, args: A::Args) -> Option<A> {
         // Check if the extension is valid
@@ -232,45 +232,6 @@ impl Assets {
         self.threaded_load_with(path, Default::default(), threadpool)
     }
 
-    // Load multiple assets using some default loading arguments in other threads
-    pub fn threaded_load_batch_with<A: Asset<'static> + Send + Sync>(
-        &self,
-        paths: &[&str],
-        args: &[A::Args],
-        threadpool: &mut ThreadPool,
-    ) -> Vec<AsyncHandle<'static, A>>
-    where
-        A::Args: Send + Sync,
-    {
-        todo!()
-    }
-    
-
-    // Load multiple assets using some default loading arguments in other threads
-    pub fn threaded_load_batch<A: Asset<'static> + Send + Sync>(
-        &self,
-        paths: &[&str],
-        threadpool: &mut ThreadPool,
-    ) -> Vec<AsyncHandle<'static, A>>
-    where
-        A::Args: Default + Send + Sync,
-    {
-        todo!()
-    }
-    
-
-    // This will check if the asset loader finished loading a specific asset using it's handle
-    pub fn was_loaded<A: Asset<'static> + Send + Sync>(
-        &self,
-        handle: &AsyncHandle<'static, A>,
-    ) -> bool
-    where
-        A::Args: Send + Sync,
-    {
-        self.loaded.borrow_mut().extend(self.receiver.try_iter());
-        self.loaded.borrow().contains(&handle.key)
-    }
-
     // This will wait until the asset referenced by this handle has finished loading
     pub fn wait<A: Asset<'static> + Send + Sync>(&self, handle: AsyncHandle<'static, A>) -> A
     where
@@ -289,6 +250,7 @@ impl Assets {
         self.loaded.borrow_mut().swap_remove(location);
         return *asset;
     }
+    */
 
     // Import a persistent asset using it's global asset path and it's raw bytes
     pub fn import(&self, path: impl AsRef<Path>, bytes: Vec<u8>) {

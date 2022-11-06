@@ -6,7 +6,6 @@ use std::{
     marker::PhantomData,
     mem::size_of,
     num,
-    os::windows::thread,
     slice::SliceIndex,
     sync::{
         atomic::{AtomicBool, AtomicU32, Ordering},

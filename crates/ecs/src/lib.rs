@@ -1,4 +1,3 @@
-#![feature(int_roundings)]
 mod archetype;
 mod components;
 mod entity;

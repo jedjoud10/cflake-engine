@@ -6,6 +6,7 @@ mod tests {
 
     #[test]
     fn test() {
+        /*
         let mut threadpool = world::ThreadPool::new();
         let loader = Assets::new(None);
         persistent!(loader, "test/text.txt");
@@ -29,5 +30,6 @@ mod tests {
             let string = loader.load::<String>("test/text.txt").unwrap();
         }
         dbg!(i.elapsed().as_millis());
+        */
     }
 }
