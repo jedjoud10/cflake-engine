@@ -14,8 +14,8 @@ pub struct ThreadPoolScope<'a> {
 impl<'a> ThreadPoolScope<'a> {
     // Add a new task to execute in the threadpool. This task will run in the background
     // All tasks that have been sent will be completed before the current scope exits
-    pub fn execute(&mut self, function: impl FnOnce() + Send + Sync + 'a) {
-        type BoxFn<'b> = Box<dyn FnOnce() + Send + Sync + 'b>;
+    pub fn execute(&mut self, function: impl FnOnce() + Send + 'a) {
+        type BoxFn<'b> = Box<dyn FnOnce() + Send + 'b>;
         let function: BoxFn<'a> = Box::new(function);
 
         // Convert the lifetimed box into a static box

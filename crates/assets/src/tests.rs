@@ -6,7 +6,6 @@ mod tests {
 
     #[test]
     fn test() {
-        /*
         let mut threadpool = world::ThreadPool::new();
         let loader = Assets::new(None);
         persistent!(loader, "test/text.txt");
@@ -14,7 +13,7 @@ mod tests {
         dbg!("Loading 100 async assets");
         let mut vec = Vec::new();
         for x in 0..100 {
-            let handle = loader.threaded_load::<String>("test/text.txt", &mut threadpool);
+            let handle = loader.async_load::<String>("test/text.txt", &mut threadpool).unwrap();
             vec.push(handle);
         }
 
@@ -30,6 +29,5 @@ mod tests {
             let string = loader.load::<String>("test/text.txt").unwrap();
         }
         dbg!(i.elapsed().as_millis());
-        */
     }
 }

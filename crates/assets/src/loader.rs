@@ -62,7 +62,7 @@ impl Assets {
         }
     }
 
-    // Load an asset using some explicit/implicit loading arguments without checking it's extensions
+    // Load an asset using some explicit/default loading arguments without checking it's extensions
     pub unsafe fn load_unchecked<'s, 'args, A: Asset>(
         &self,
         input: impl AssetInput<'s, 'args, A>,
@@ -99,49 +99,26 @@ impl Assets {
         ))
     }
 
-    /*
-    // Load an asset using some explicit loading arguments
-    pub fn load_with<'args, A: Asset<'args>>(&self, path: &str, args: A::Args) -> Option<A> {
+    // Load an asset using some explicit/default loading arguments
+    pub fn load<'s, 'args, A: Asset>(&self, input: impl AssetInput<'s, 'args, A>) -> Option<A> {
         // Check if the extension is valid
-        let _path = PathBuf::from_str(path).unwrap();
-        let (_, extension) = _path.file_name().and_then(OsStr::to_str)?.split_once('.')?;
-
+        let path = PathBuf::from_str(input.path()).unwrap();
+        let (_, extension) = path.file_name().and_then(OsStr::to_str)?.split_once('.')?;
+    
         // If the asset has no extensions, we shall not check
         ((A::extensions().contains(&extension)) || A::extensions().is_empty()).then_some(())?;
-        unsafe { self.load_with_unchecked(path, args) }
+        unsafe { self.load_unchecked(input) }
     }
 
-    // Load an asset using some default loading arguments
-    pub fn load<'args, A: Asset<'args>>(&self, path: &str) -> Option<A>
-    where
-        A::Args: Default,
-    {
-        self.load_with(path, Default::default())
-    }
-
-    // Load multiple assets using some explicit loading arguments
-    pub fn load_batch_with<'args, A: Asset<'args>>(&self, path: &[&str], args: A::Args) -> Vec<Option<A>> {
-        todo!()
-    }
-
-    // Load multiple assets using some default loading argument
-    pub fn load_batch<'args, A: Asset<'args>>(&self, path: &str) -> Option<A>
-    where
-        A::Args: Default,
-    {
-        todo!()
-    }
-
-
-    // Load an asset using some explicit loading arguments without checking it's extensions in another thread
-    pub unsafe fn threaded_load_with_unchecked<A: Asset<'static> + Send + Sync>(
+    // Load an asset using some explicit/default loading arguments without checking it's extensions in another thread
+    // This requires the arguments of the asset to live as long as 'static
+    pub unsafe fn async_load_unchecked<'s, A: Asset + Send + Sync>(
         &self,
-        path: &str,
-        args: A::Args,
+        input: impl AssetInput<'s, 'static, A>,
         threadpool: &mut ThreadPool,
-    ) -> AsyncHandle<'static, A>
+    ) -> AsyncHandle<A>
     where
-        A::Args: Send + Sync,
+        A::Args<'static>: Send + Sync,
     {
         // Clone the things that must be sent to the thread
         let assets = self.assets.clone();
@@ -155,6 +132,9 @@ impl Assets {
             _phantom: PhantomData,
             key,
         };
+        
+        // Get the path and arguments
+        let (path, args) = input.split();
 
         // Create a multithreaded loading task bozoo
         let path = PathBuf::from_str(path).unwrap();
@@ -198,45 +178,42 @@ impl Assets {
         return handle;
     }
 
-    // Load an asset using some explicit loading arguments in another thread
-    pub fn threaded_load_with<A: Asset<'static> + Send + Sync>(
+    // Load an asset using some explicit/default loading arguments in another thread
+    // This requires the arguments of the asset to live as long as 'static
+    pub fn async_load<'s, A: Asset + Send + Sync>(
         &self,
-        path: &str,
-        args: A::Args,
+        input: impl AssetInput<'s, 'static, A>,
         threadpool: &mut ThreadPool,
-    ) -> AsyncHandle<'static, A>
+    ) -> Option<AsyncHandle<A>>
     where
-        A::Args: Send + Sync,
+        A::Args<'static>: Send + Sync,
     {
-        let pathbuf = PathBuf::from_str(path).unwrap();
+        let pathbuf = PathBuf::from_str(input.path()).unwrap();
         let (_, extension) = pathbuf
             .file_name()
-            .and_then(OsStr::to_str)
-            .unwrap()
-            .split_once('.')
-            .unwrap();
+            .and_then(OsStr::to_str)?
+            .split_once('.')?;
         ((A::extensions().contains(&extension)) || A::extensions().is_empty())
-            .then_some(())
-            .unwrap();
-        unsafe { self.threaded_load_with_unchecked(path, args, threadpool) }
+            .then_some(())?;
+        Some(unsafe { self.async_load_unchecked(input, threadpool) })
     }
 
-    // Load an asset using some default loading arguments in another thread
-    pub fn threaded_load<A: Asset<'static> + Send + Sync>(
+    // This will check if the asset loader finished loading a specific asset using it's handle
+    // This requires the arguments of the asset to live as long as 'static
+    pub fn was_loaded<A: Asset + Send + Sync>(
         &self,
-        path: &str,
-        threadpool: &mut ThreadPool,
-    ) -> AsyncHandle<'static, A>
-    where
-        A::Args: Default + Send + Sync,
+        handle: &AsyncHandle<A>,
+    ) -> bool
+    where A::Args<'static>: Send + Sync,
     {
-        self.threaded_load_with(path, Default::default(), threadpool)
+        self.loaded.borrow_mut().extend(self.receiver.try_iter());
+        self.loaded.borrow().contains(&handle.key)
     }
 
     // This will wait until the asset referenced by this handle has finished loading
-    pub fn wait<A: Asset<'static> + Send + Sync>(&self, handle: AsyncHandle<'static, A>) -> A
-    where
-        A::Args: Send + Sync,
+    // This requires the arguments of the asset to live as long as 'static
+    pub fn wait<A: Asset + Send + Sync>(&self, handle: AsyncHandle<A>) -> A
+    where A::Args<'static>: Send + Sync,
     {
         while !self.was_loaded(&handle) {}
         let mut assets = self.assets.write();
@@ -251,7 +228,102 @@ impl Assets {
         self.loaded.borrow_mut().swap_remove(location);
         return *asset;
     }
-    */
+
+    // Load multiple assets that have the same type in multiple threads at the same time without checking their extensions
+    // This does *not* require the arguments of the asset to live as long as 'static
+    pub unsafe fn batch_async_load_unchecked<'s, 'args, A: Asset + Send + Sync>(
+        &self,
+        inputs: Vec<impl AssetInput<'s, 'args, A> + Send + Sync>,
+        threadpool: &mut ThreadPool,
+    ) -> Vec<A>
+    where
+        A::Args<'args>: Send + Sync,
+    {
+        // Create specialized sender/receiver channel just for this asset
+        let (tx, rx) = std::sync::mpsc::channel::<(usize, A)>();
+        let bytes = self.bytes.clone();
+        let user = Arc::new(self.user.clone());
+
+        // Create a temporary threadpool scope for these assets only
+        threadpool.scope(move |scope| {
+            for (i, input) in inputs.into_iter().enumerate() {
+                // These must be sent to other threads
+                let tx = tx.clone();
+                let user = user.clone();
+                let bytes = bytes.clone();
+                
+                scope.execute(move || {
+                    // All this does is that it ensures that the bytes are valid before we actually deserialize the asset
+                    let (path, args) = input.split();
+                    let path = PathBuf::from_str(path).unwrap();
+                    let (name, extension) = path
+                        .file_name()
+                        .and_then(OsStr::to_str)
+                        .unwrap()
+                        .split_once('.')
+                        .unwrap();
+                    let bytes = if bytes.read().contains_key(&path) {
+                        bytes.read().get(&path).unwrap().clone()
+                    } else {
+                        // TODO: Proper error logging
+                        let mut write = bytes.write();
+                        let bytes = super::raw::read(&path, user.as_ref().as_ref().unwrap()).unwrap();
+                        let arc: Arc<[u8]> = Arc::from(bytes);
+                        write.insert(path.clone(), arc.clone());
+                        arc
+                    };
+                    
+                    // Deserialize the asset and send it back
+                    tx.send((i, A::deserialize(
+                        crate::Data {
+                            name,
+                            extension,
+                            bytes,
+                            path: path.as_path(),
+                        },
+                        args,
+                    ))).unwrap();
+                });
+            }
+        });
+
+        // Sort the assets that were given from the other threads in the original order they were in
+        let mut vec = rx.into_iter().collect::<Vec<(usize, A)>>();
+        vec.sort_unstable_by(|(i1, _), (i2, _)| usize::cmp(i1, i2));
+        vec.into_iter().map(|(_, a)| a).collect::<Vec<A>>()
+    }
+
+    // Load multiple assets that have the same type in multiple threads at the same time
+    // This does *not* require the arguments of the asset to live as long as 'static
+    pub fn batch_async_load_<'s, 'args, A: Asset + Send + Sync>(
+        &self,
+        mut input: Vec<impl AssetInput<'s, 'args, A> + Send + Sync>,
+        threadpool: &mut ThreadPool,
+    ) -> Vec<Option<A>>
+    where
+        A::Args<'args>: Send + Sync,
+    {
+        // Closure that must be called for each asset before we load it in another thread
+        let closure = |path: &str| {
+            let pathbuf = PathBuf::from_str(path).unwrap();
+            let (_, extension) = pathbuf
+            .file_name()
+            .and_then(OsStr::to_str)?
+            .split_once('.')?;
+            ((A::extensions().contains(&extension)) || A::extensions().is_empty())
+            .then_some(())?;
+            Some(())
+        };
+
+        // Filter out invalid assets because of their extensions
+        input.retain(|input| {
+            closure(input.path()).is_some()
+        });
+
+        // Remap Asset to Option<Asset>
+        unsafe { self.batch_async_load_unchecked(input, threadpool) }.into_iter().map(Some).collect()
+    }
+    
 
     // Import a persistent asset using it's global asset path and it's raw bytes
     pub fn import(&self, path: impl AsRef<Path>, bytes: Vec<u8>) {

@@ -11,14 +11,14 @@ use std::{
 #[derive(Clone)]
 pub struct AudioClip(Arc<dyn AudioSamples>);
 
-impl Asset<'static> for AudioClip {
-    type Args = ();
+impl Asset for AudioClip {
+    type Args<'args> = ();
 
     fn extensions() -> &'static [&'static str] {
         &["mp3", "wav"]
     }
 
-    fn deserialize(data: assets::Data, args: Self::Args) -> Self {
+    fn deserialize(data: assets::Data, args: Self::Args<'_>) -> Self {
         match data.extension() {
             // Decode an MP3 file into the appropriate format
             "mp3" => {
