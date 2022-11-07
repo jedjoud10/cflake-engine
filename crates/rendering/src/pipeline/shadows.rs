@@ -9,8 +9,7 @@ use crate::{
     shader::Shader,
 };
 
-use ecs::Scene;
-use math::Rotation;
+use ecs::{Scene, Rotation};
 use world::{Storage, World};
 
 // Render to the main global shadow map if the material is a shadow caster
@@ -50,8 +49,8 @@ pub(crate) fn render_shadows<M: for<'w> Material<'w>>(world: &mut World) {
 
     // Filter the proper render entities
     let query = ecs
-        .view::<(&Renderer, &Surface<M>)>()
-        .unwrap()
+        .query::<(&Renderer, &Surface<M>)>()
+        .into_iter()
         .filter(|(renderer, surface)| {
             // Check if the renderer is even enabled and if it should cast shadows
             let enabled = renderer.visible && surface.visible && surface.shadow_caster;

@@ -69,14 +69,14 @@ macro_rules! impl_stage_traits {
             }
         }
 
-        impl Asset<'static> for $t {
-            type Args = ();
+        impl Asset for $t {
+            type Args<'args> = ();
 
             fn extensions() -> &'static [&'static str] {
                 &[$ext]
             }
 
-            fn deserialize(data: assets::Data, _args: Self::Args) -> Self {
+            fn deserialize(data: assets::Data, _args: Self::Args<'_>) -> Self {
                 Self {
                     source: String::from_utf8(data.bytes().to_vec()).unwrap(),
                     name: data

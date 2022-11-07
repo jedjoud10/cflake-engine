@@ -284,14 +284,14 @@ impl Drop for Mesh {
     }
 }
 
-impl<'a> Asset<'a> for Mesh {
-    type Args = (&'a mut Context, MeshImportSettings);
+impl Asset for Mesh {
+    type Args<'a> = (&'a mut Context, MeshImportSettings);
 
     fn extensions() -> &'static [&'static str] {
         &["obj"]
     }
 
-    fn deserialize(data: assets::Data, args: Self::Args) -> Self {
+    fn deserialize(data: assets::Data, args: Self::Args<'_>) -> Self {
         let (ctx, settings) = args;
 
         // Load the .Obj mesh

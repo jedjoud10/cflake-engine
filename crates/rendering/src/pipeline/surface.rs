@@ -11,8 +11,8 @@ use crate::{
     shader::Uniforms,
 };
 
-use ecs::Scene;
-use math::{Location, Rotation, SharpVertices, AABB};
+use ecs::{Scene, Location, Rotation};
+use math::{SharpVertices, AABB};
 
 use prelude::{CommonTextures, Comparison};
 use world::{Handle, Read, Storage, World, Write};
@@ -52,8 +52,8 @@ fn get_surfaces_query<'a, M: for<'w> Material<'w>>(
 ) -> impl Iterator<Item = (&'a Renderer, &'a Surface<M>)> + 'a {
     let planes = planes.clone();
     let query =
-        ecs.view::<(&Renderer, &Surface<M>)>()
-            .unwrap()
+        ecs.query::<(&Renderer, &Surface<M>)>()
+            .into_iter()
             .filter(move |(renderer, surface)| {
                 // Check if the renderer is even enabled
                 let enabled = renderer.visible;

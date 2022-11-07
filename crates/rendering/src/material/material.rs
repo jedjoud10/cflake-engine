@@ -1,8 +1,7 @@
 use std::marker::PhantomData;
 
 use assets::Assets;
-
-use math::{Location, Rotation};
+use ecs::{Location, Rotation};
 use world::World;
 
 use crate::{

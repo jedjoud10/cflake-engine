@@ -15,9 +15,9 @@ use crate::{
 };
 
 use assets::Assets;
-use ecs::Scene;
+use ecs::{Scene, contains, Entity};
 use glutin::{event::WindowEvent, event_loop::EventLoop};
-use math::{IntoMatrix, Location, Rotation, Scale};
+use ecs::{Location, Rotation, Scale};
 use time::Time;
 use world::{Events, Init, Stage, Storage, Update, World};
 
@@ -115,7 +115,7 @@ fn update_matrices(world: &mut World) {
     let f2 = modified::<Rotation>();
     let f3 = modified::<Scale>();
     let f4 = added::<Renderer>();
-    let filter = or(or(f1, f2), or(f3, f4));
+    let filter = f1 | f2 | f3 | f4;
     let query = ecs
         .query_with_filter::<(
             &mut Renderer,
@@ -282,91 +282,6 @@ fn swap(world: &mut World) {
 
 // Update event that will set/update the main perspective camera
 fn main_camera(world: &mut World) {
-    let mut ecs = world.get_mut::<Scene>().unwrap();
-    let mut shading = world.get_mut::<ClusteredShading>().unwrap();
-
-    // Fetch the main perspective camera from the scene renderer
-    if let Some(entity) = shading.main_camera {
-        // Disable the entity in the resource if it got removed
-        let mut entry = if let Some(entry) = ecs.entry_mut(entity) {
-            entry
-        } else {
-            shading.main_camera = None;
-            return;
-        };
-
-        // Fetch it's components,and update them
-        let (camera, location, rotation) = entry
-            .as_query::<(&mut Camera, &Location, &Rotation)>()
-            .unwrap();
-        camera.update(location, rotation);
-    } else {
-        // Set the main camera if we did not find one
-        let mut query = ecs
-            .view_with_id::<(&Camera, &Location, &Rotation)>()
-            .unwrap();
-        if let Some((_, entity)) = query.next() {
-            shading.main_camera = Some(entity);
-        }
-    }
-}
-
-// Update event that will set the main directional light
-fn main_directional_light(world: &mut World) {
-    let ecs = world.get_mut::<Scene>().unwrap();
-    let mut shading = world.get_mut::<ClusteredShading>().unwrap();
-
-    // Fetch the main directional light
-    if let Some(entity) = shading.main_directional_light {
-        // Disable the main directional shading light if it got removed
-        if !ecs.contains(entity) {
-            shading.main_directional_light = None;
-        }
-    } else {
-        // Set the main directional light if we did not find one
-        let mut query = ecs
-            .view_with_id::<(&Rotation, &DirectionalLight)>()
-            .unwrap();
-        if let Some((_, entity)) = query.next() {
-            shading.main_directional_light = Some(entity);
-        }
-    }
-}
-
-// Update event that will set the main skysphere
-fn main_sky_sphere(world: &mut World) {
-    let ecs = world.get_mut::<Scene>().unwrap();
-    let mut shading = world.get_mut::<ClusteredShading>().unwrap();
-
-    // Fetch the main sky sphere from the scene renderer
-    if let Some(entity) = shading.skysphere_entity {
-        // Disable the main directional shading light if it got removed
-        if !ecs.contains(entity) {
-            shading.skysphere_entity = None;
-        }
-    } else {
-        // Set the main sky sphere if we did not find one
-        let mut query = ecs.view_with_id::<(&Renderer, &Surface<Sky>)>().unwrap();
-        if let Some((_, entity)) = query.next() {
-            shading.skysphere_entity = Some(entity);
-        }
-    }
-}
-
-// Update the light positions inside the shadow mapper
-fn shadow_map(world: &mut World) {
-    let ecs = world.get::<Scene>().unwrap();
-    let shading = world.get::<ClusteredShading>().unwrap();
-    let main_light = shading.main_directional_light;
-    let main_light_entry = main_light.map(|id| ecs.entry(id)).flatten();
-
-    if let Some(entry) = main_light_entry {
-        if let Ok(rotation) = entry.get::<Rotation>() {
-            let mut shadow = world.get_mut::<ShadowMapping>().unwrap();
-            shadow.view_matrix =
-                vek::Mat4::look_at_rh(vek::Vec3::zero(), -rotation.forward(), -rotation.up());
-        }
-    }
 }
 
 // Main rendering/graphics system that will register the appropriate events

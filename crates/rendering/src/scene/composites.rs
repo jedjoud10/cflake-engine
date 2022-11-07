@@ -1,6 +1,5 @@
 use assets::Assets;
-use ecs::Entity;
-use math::Location;
+use ecs::{Entity, Location};
 use vek::FrustumPlanes;
 use world::{Handle, Storage};
 

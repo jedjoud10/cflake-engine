@@ -243,14 +243,14 @@ impl<T: Texel> Texture for Texture2D<T> {
 
 impl<T: Texel> SingleLayerTexture for Texture2D<T> {}
 
-impl<'a, T: ImageTexel> Asset<'a> for Texture2D<T> {
-    type Args = (&'a mut Context, TextureImportSettings);
+impl<T: ImageTexel> Asset for Texture2D<T> {
+    type Args<'a> = (&'a mut Context, TextureImportSettings);
 
     fn extensions() -> &'static [&'static str] {
         &["png", "jpg", "hdr"]
     }
 
-    fn deserialize(data: assets::Data, args: Self::Args) -> Self {
+    fn deserialize(data: assets::Data, args: Self::Args<'_>) -> Self {
         let (ctx, settings) = args;
         let intermediate = IntermediateImage::new(data.bytes());
         let dimensions = intermediate.dimensions();
