@@ -1,7 +1,5 @@
 use std::{path::Path, rc::Rc, sync::Arc};
-
 use crate::Assets;
-
 // File data is what will be given to assets whenever we try to deserialize them
 // We will assume that all assets are files
 // TODO: add the loader back again
@@ -36,25 +34,20 @@ impl<'a> Data<'a> {
 
 // An asset that will be loaded from a single unique file
 // Each asset has some extra data that can be used to construct the object
-pub trait Asset<'args>: Sized + 'static {
-    // Extra data that can be used to construct the object
-    type Args: 'args;
-
-    // The extensions supported by this asset
+pub trait Asset: Sized + 'static {
+    type Args<'args>;
     fn extensions() -> &'static [&'static str];
-
-    // Deserialize asset bytes, assuming that the given bytes are already in the valid format to deserialize
-    fn deserialize(data: Data, args: Self::Args) -> Self;
+    fn deserialize<'args>(data: Data, args: Self::Args<'args>) -> Self;
 }
 
-impl Asset<'static> for String {
-    type Args = ();
+impl Asset for String {
+    type Args<'args> = ();
 
     fn extensions() -> &'static [&'static str] {
         &["txt"]
     }
 
-    fn deserialize(data: Data, _args: Self::Args) -> Self {
+    fn deserialize<'args>(data: Data, _args: Self::Args<'args>) -> Self {
         std::thread::sleep(std::time::Duration::from_millis(1));
         String::from_utf8(data.bytes().to_vec()).unwrap()
     }

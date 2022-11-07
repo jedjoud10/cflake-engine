@@ -1,4 +1,4 @@
-use crate::Asset;
+use crate::{Asset, AssetInput};
 use ahash::AHashMap;
 use parking_lot::RwLock;
 use slotmap::{DefaultKey, Key, SlotMap};
@@ -22,8 +22,8 @@ use std::{
 };
 
 // This is a handle to a specific asset that we are currently loading in
-pub struct AsyncHandle<'a, A: Asset<'a>> {
-    _phantom: PhantomData<&'a A>,
+pub struct AsyncHandle<A: Asset> {
+    _phantom: PhantomData<A>,
     key: DefaultKey,
 }
 
@@ -63,11 +63,12 @@ impl Assets {
     }
 
     // Load an asset using some explicit/implicit loading arguments without checking it's extensions
-    pub unsafe fn load_unchecked<'args, A: Asset<'args>>(
+    pub unsafe fn load_unchecked<'s, 'args, A: Asset>(
         &self,
-        path: &str,
-        args: A::Args,
+        input: impl AssetInput<'s, 'args, A>,
     ) -> Option<A> {
+        let (path, args) = input.split();
+        
         // All this does is that it ensures that the bytes are valid before we actually deserialize the asset
         let path = PathBuf::from_str(path).unwrap();
         let (name, extension) = path
