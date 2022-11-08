@@ -14,7 +14,7 @@ Currently, cFlake engine is under heavy development (***very*** WIP), but pull r
 
 # Thanks to:
 * Logan McLennan 
-* Skythedragon (@Dimev)
+* Dimev (Skythedragon)
 
 # LICENSE
 Dual-Licensed under
