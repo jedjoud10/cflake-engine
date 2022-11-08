@@ -12,6 +12,10 @@ Currently, cFlake engine is under heavy development (***very*** WIP), but pull r
 * [YouTube Development Channel](https://www.youtube.com/channel/UCaeZjQFw4QIi5vdfonAmsvA)
 * [Trello dashboard](https://trello.com/b/9FsDb6Z1/cflake)
 
+# Thanks to:
+* Logan McLennan 
+* Skythedragon (@Dimev)
+
 # LICENSE
 Dual-Licensed under
  * Apache License, Version 2.0
