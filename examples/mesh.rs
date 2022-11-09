@@ -70,7 +70,7 @@ fn init(world: &mut World) {
     /*
     // Load the albedo map texture
     let albedo_map = assets
-        .load_with::<AlbedoMap>(
+        .load::<AlbedoMap>(
             "user/ignored/diffuse.png",
             (&mut ctx, TextureImportSettings::default()),
         )
@@ -79,7 +79,7 @@ fn init(world: &mut World) {
 
     // Load the normal map texture
     let normal_map = assets
-        .load_with::<NormalMap>(
+        .load::<NormalMap>(
             "user/ignored/normal.png",
             (&mut ctx, TextureImportSettings::default()),
         )
@@ -88,7 +88,7 @@ fn init(world: &mut World) {
 
     // Load the mask map texture
     let mask_map = assets
-        .load_with::<MaskMap>(
+        .load::<MaskMap>(
             "user/ignored/mask.png",
             (&mut ctx, TextureImportSettings::default()),
         )
@@ -99,7 +99,7 @@ fn init(world: &mut World) {
     // Create the default cube primitive mesh
     let cube = meshes.insert(
         assets
-            .load_with::<Mesh>(
+            .load::<Mesh>(
                 "engine/meshes/cube.obj",
                 (&mut ctx, MeshImportSettings::default()),
             )
@@ -109,7 +109,7 @@ fn init(world: &mut World) {
     // Create the default sphere primitive mesh
     let sphere = meshes.insert(
         assets
-            .load_with::<Mesh>(
+            .load::<Mesh>(
                 "user/ignored/untitled.obj",
                 (&mut ctx, MeshImportSettings::default()),
             )
@@ -166,7 +166,7 @@ fn init(world: &mut World) {
 
     // Load the equirectangular map
     let equirectangular = assets
-        .load_with::<Texture2D<RGB<f32>>>(
+        .load::<Texture2D<RGB<f32>>>(
             "user/ignored/cubemap.hdr",
             (&mut ctx, TextureImportSettings::default()),
         )
@@ -216,7 +216,7 @@ fn init(world: &mut World) {
     let pipeid = ctx.material_id::<Sky>().unwrap();
     let renderer = Renderer::default();
     let sphere = assets
-        .load_with::<Mesh>(
+        .load::<Mesh>(
             "engine/meshes/sphere.obj",
             (
                 &mut ctx,

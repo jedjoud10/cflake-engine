@@ -340,15 +340,15 @@ impl CubeMapConvolutor2D {
 
         // Load in a unit cube that is inside out
         let cube = assets
-            .load_with::<Mesh>(
-                "engine/meshes/cube.obj",
+            .load::<Mesh>(
+                ("engine/meshes/cube.obj",
                 (
                     ctx,
                     MeshImportSettings {
                         invert_triangle_ordering: true,
                         ..Default::default()
                     },
-                ),
+                ),)
             )
             .unwrap();
 

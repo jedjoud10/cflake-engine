@@ -117,20 +117,19 @@ fn update_matrices(world: &mut World) {
     let f4 = added::<Renderer>();
     let filter = f1 | f2 | f3 | f4;
     let query = ecs
-        .query_with_filter::<(
+        .query_mut_with::<(
             &mut Renderer,
             Option<&Location>,
             Option<&Rotation>,
             Option<&Scale>,
-        )>(filter)
-        .unwrap();
+        )>(filter);
 
     // Update the matrices of objects that might contain location, rotation, or scale
     for (renderer, location, rotation, scale) in query {
         let mut matrix = vek::Mat4::<f32>::identity();
-        matrix = location.map_or(matrix, |l| matrix * l.into_matrix());
-        matrix *= rotation.map_or(matrix, |r| matrix * r.into_matrix());
-        matrix *= scale.map_or(matrix, |s| matrix * s.into_matrix());
+        matrix = location.map_or(matrix, |l| matrix * vek::Mat4::from(l));
+        matrix *= rotation.map_or(matrix, |r| matrix * vek::Mat4::from(r));
+        matrix *= scale.map_or(matrix, |s| matrix * vek::Mat4::from(s));
         renderer.matrix = matrix;
     }
 }
@@ -139,8 +138,7 @@ fn update_matrices(world: &mut World) {
 fn light_clustering(world: &mut World) {
     let mut shading = world.get_mut::<ClusteredShading>().unwrap();
     let ecs = world.get::<Scene>().unwrap();
-
-    let query = ecs.view::<(&Location, &PointLight)>().unwrap();
+    let query = ecs.query::<(&Location, &PointLight)>().into_iter();
 
     // Update the lights buffer with the lights in the scene
     let lights = &mut shading.point_lights;
@@ -280,8 +278,94 @@ fn swap(world: &mut World) {
     ctx.raw().swap_buffers().unwrap();
 }
 
+
 // Update event that will set/update the main perspective camera
 fn main_camera(world: &mut World) {
+    let mut ecs = world.get_mut::<Scene>().unwrap();
+    let mut shading = world.get_mut::<ClusteredShading>().unwrap();
+
+    // Fetch the main perspective camera from the scene renderer
+    if let Some(entity) = shading.main_camera {
+        // Disable the entity in the resource if it got removed
+        let mut entry = if let Some(entry) = ecs.entry_mut(entity) {
+            entry
+        } else {
+            shading.main_camera = None;
+            return;
+        };
+
+        // Fetch it's components,and update them
+        let (camera, location, rotation) = entry
+            .as_query::<(&mut Camera, &Location, &Rotation)>()
+            .unwrap();
+        camera.update(location, rotation);
+    } else {
+        // Set the main camera if we did not find one
+        let mut query = ecs
+            .query::<(&Camera, &Location, &Rotation, &Entity)>()
+            .into_iter();
+        if let Some((_, _, _, &entity)) = query.next() {
+            shading.main_camera = Some(entity);
+        }
+    }
+}
+
+// Update event that will set the main directional light
+fn main_directional_light(world: &mut World) {
+    let ecs = world.get_mut::<Scene>().unwrap();
+    let mut shading = world.get_mut::<ClusteredShading>().unwrap();
+
+    // Fetch the main directional light
+    if let Some(entity) = shading.main_directional_light {
+        // Disable the main directional shading light if it got removed
+        if !ecs.contains(entity) {
+            shading.main_directional_light = None;
+        }
+    } else {
+        // Set the main directional light if we did not find one
+        let mut query = ecs
+            .query::<(&Rotation, &DirectionalLight, &Entity)>()
+            .into_iter();
+        if let Some((_, _, &entity)) = query.next() {
+            shading.main_directional_light = Some(entity);
+        }
+    }
+}
+
+// Update event that will set the main skysphere
+fn main_sky_sphere(world: &mut World) {
+    let ecs = world.get_mut::<Scene>().unwrap();
+    let mut shading = world.get_mut::<ClusteredShading>().unwrap();
+
+    // Fetch the main sky sphere from the scene renderer
+    if let Some(entity) = shading.skysphere_entity {
+        // Disable the main directional shading light if it got removed
+        if !ecs.contains(entity) {
+            shading.skysphere_entity = None;
+        }
+    } else {
+        // Set the main sky sphere if we did not find one
+        let mut query = ecs.query::<(&Renderer, &Surface<Sky>, &Entity)>().into_iter();
+        if let Some((_, _, &entity)) = query.next() {
+            shading.skysphere_entity = Some(entity);
+        }
+    }
+}
+
+// Update the light positions inside the shadow mapper
+fn shadow_map(world: &mut World) {
+    let ecs = world.get::<Scene>().unwrap();
+    let shading = world.get::<ClusteredShading>().unwrap();
+    let main_light = shading.main_directional_light;
+    let main_light_entry = main_light.map(|id| ecs.entry(id)).flatten();
+
+    if let Some(entry) = main_light_entry {
+        if let Some(rotation) = entry.get::<Rotation>() {
+            let mut shadow = world.get_mut::<ShadowMapping>().unwrap();
+            shadow.view_matrix =
+                vek::Mat4::look_at_rh(vek::Vec3::zero(), -rotation.forward(), -rotation.up());
+        }
+    }
 }
 
 // Main rendering/graphics system that will register the appropriate events

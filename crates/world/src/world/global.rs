@@ -13,12 +13,11 @@ pub fn setup() -> (World, Events) {
             World(Default::default()),
             // Create a single instance of the events
             Events {
-                /*
                 window: Default::default(),
                 device: Default::default(),
                 init: Default::default(),
                 update: Default::default(),
-                */
+                exit: Default::default(),
             },
         )
     } else {

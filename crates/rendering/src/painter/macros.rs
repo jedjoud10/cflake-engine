@@ -1,18 +1,20 @@
 use super::{AsTarget, ColorTupleTargets, MaybeColorLayout, UntypedTarget};
 use crate::prelude::ColorTexel;
 use seq_macro::seq;
-use std::concat_idents;
+use paste::paste;
 
 macro_rules! tuple_impls_color_layout {
     ( $( $name:ident )+, $max:tt, $( $name2:ident )+) => {
-        impl<$($name: ColorTexel),+> MaybeColorLayout for ($($name,)+) {}
-        impl<$($name: ColorTexel),+, $($name2: AsTarget<concat_idents!(T, $name2)>),+> ColorTupleTargets<($($name),+)> for ($($name2),+) {
-            fn untyped_targets(self) -> Option<Vec<UntypedTarget>> {
-                let mut vec = Vec::with_capacity($max);
-                seq!(N in 0..$max {
-                    vec.push(AsTarget::as_untyped_target(self.N).unwrap());
-                });
-                Some(vec)
+        paste! {
+            impl<$($name: ColorTexel),+> MaybeColorLayout for ($($name,)+) {}
+            impl<$($name: ColorTexel),+, $($name2: AsTarget<[< T $name2 >]>),+> ColorTupleTargets<($($name),+)> for ($($name2),+) {
+                fn untyped_targets(self) -> Option<Vec<UntypedTarget>> {
+                    let mut vec = Vec::with_capacity($max);
+                    seq!(N in 0..$max {
+                        vec.push(AsTarget::as_untyped_target(self.N).unwrap());
+                    });
+                    Some(vec)
+                }
             }
         }
     }

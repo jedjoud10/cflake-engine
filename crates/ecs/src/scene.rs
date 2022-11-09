@@ -159,13 +159,13 @@ impl Scene {
     }
 
     // Create a new immutable query from this scene (with no filter)
-    pub fn query<'a, L: for<'i> QueryLayoutRef<'i>>(&'a mut self) -> QueryRef<'a, '_, '_, L> {
+    pub fn query<'a, L: for<'i> QueryLayoutRef<'i>>(&'a self) -> QueryRef<'a, '_, '_, L> {
         QueryRef::new(self)
     }
 
     // Create a new immutable query from this scene using a filter
     pub fn query_with<'a, L: for<'i> QueryLayoutRef<'i>>(
-        &'a mut self,
+        &'a self,
         filter: Wrap<impl QueryFilter>,
     ) -> QueryRef<'a, '_, '_, L> {
         QueryRef::new_with_filter(self, filter)

@@ -144,8 +144,8 @@ impl ClusteredShading {
 
         // Load the BRDF integration map
         let brdf_integration_map = assets
-            .load_with::<IntegrationMap>(
-                "engine/textures/integration.png",
+            .load::<IntegrationMap>(
+                ("engine/textures/integration.png",
                 (
                     ctx,
                     TextureImportSettings {
@@ -157,7 +157,7 @@ impl ClusteredShading {
                         mode: TextureMode::Static,
                         mipmaps: MipMapSetting::Disabled,
                     },
-                ),
+                )),
             )
             .unwrap();
 

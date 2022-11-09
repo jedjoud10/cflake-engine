@@ -44,6 +44,7 @@ pub fn intersects_frustum(planes: &[FrustumPlane; 6], aabb: AABB, matrix: &vek::
     })
 }
 
+/*
 // Gets an ECS query of all the visible surfaces and their renderers
 fn get_surfaces_query<'a, M: for<'w> Material<'w>>(
     ecs: &'a Scene,
@@ -75,6 +76,7 @@ fn get_surfaces_query<'a, M: for<'w> Material<'w>>(
             });
     query
 }
+*/
 
 // Render all the surfaces that are part of the Z-prepass ECS query
 fn render_prepass_query_surfaces<'a, M: for<'w> Material<'w>>(
@@ -224,7 +226,29 @@ pub(crate) fn render_surfaces<M: for<'w> Material<'w>>(world: &mut World, shader
     M::set_static_properties(&mut uniforms, &main, &mut property_block_resources);
 
     // Render the surfaces that are part of the query
-    let query = get_surfaces_query::<M>(&ecs, &meshes, planes);
+    let planes = planes.clone();
+    let query =
+        ecs.query::<(&Renderer, &Surface<M>)>()
+            .into_iter()
+            .filter(|(renderer, surface)| {
+                // Check if the renderer is even enabled
+                let enabled = renderer.visible;
+
+                // Check if the mesh meets the material requirements
+                let mesh = meshes.get(&surface.mesh);
+                let buffers = mesh.vertices().layout().contains(M::requirements())
+                    && mesh.vertices().len().is_some();
+
+                // Check if the surface is visible inside the camera's frustum
+                let aabb = !M::should_use_frustum_culling()
+                    || if let Some(aabb) = mesh.aabb() {
+                        intersects_frustum(&planes, aabb, &renderer.matrix)
+                    } else {
+                        false
+                    };
+
+                enabled && buffers && aabb
+            });
     render_query_surfaces(
         query,
         stats,

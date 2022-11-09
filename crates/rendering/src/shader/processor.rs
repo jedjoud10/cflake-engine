@@ -98,7 +98,7 @@ impl<'a> Processor<'a> {
                     let path = pathbuf.as_os_str().to_str().unwrap();
                     let raw = unsafe {
                         self.loader
-                            .load_with_unchecked::<String>(path, ())
+                            .load_unchecked::<String>(path)
                             .expect(&format!("File '{name}' could not be loaded in"))
                     };
                     output = raw;
