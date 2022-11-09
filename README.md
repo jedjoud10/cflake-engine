@@ -13,7 +13,8 @@ Currently, cFlake engine is under heavy development (***very*** WIP), but pull r
 * [Trello dashboard](https://trello.com/b/9FsDb6Z1/cflake)
 
 # Thanks to:
-* Logan McLennan 
+* Lionel Stanway (MoldyToeMan)
+* Logan McLennan (PigSteel)
 * Dimev (Skythedragon)
 
 # LICENSE
