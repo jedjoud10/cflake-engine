@@ -3,10 +3,10 @@ use glutin::{
     event::{DeviceEvent, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
-use gui::egui::util::id_type_map::TypeId;
+//use gui::egui::util::id_type_map::TypeId;
 use mimalloc::MiMalloc;
-use rendering::prelude::{FrameRateLimit, GraphicsSetupSettings};
-use std::path::PathBuf;
+//use rendering::prelude::{FrameRateLimit, GraphicsSetupSettings};
+use std::{path::PathBuf, any::TypeId};
 use world::{Event, Events, Init, State, System, Update, World};
 
 #[global_allocator]
@@ -18,7 +18,6 @@ pub struct App {
     title: String,
     screensize: vek::Extent2<u16>,
     fullscreen: bool,
-    limit: Option<FrameRateLimit>,
 
     // Asset and IO
     user_assets_folder: Option<PathBuf>,
@@ -38,7 +37,7 @@ impl Default for App {
             title: "Default title".to_string(),
             screensize: vek::Extent2::new(1280, 720),
             fullscreen: false,
-            limit: None,
+            //limit: None,
             user_assets_folder: None,
             events,
             systems: Default::default(),
@@ -64,12 +63,6 @@ impl App {
     // Set window fullscreen mode
     pub fn set_window_fullscreen(mut self, toggled: bool) -> Self {
         self.fullscreen = toggled;
-        self
-    }
-
-    // Set the window's frame limiter
-    pub fn set_framerate_limit(mut self, limit: Option<FrameRateLimit>) -> Self {
-        self.limit = limit;
         self
     }
 
@@ -121,7 +114,6 @@ impl App {
         // Insert all the builtin systems dataless
         self = self
             .insert_system(input::system)
-            .insert_system(gui::system)
             .insert_system(ecs::system)
             .insert_system(time::system)
             .insert_system(world::system);
@@ -130,19 +122,10 @@ impl App {
         let user = self.user_assets_folder.take();
         self = self.insert_system(|e: &mut Events| assets::system(e, user));
 
-        // Insert the graphics pipeline and everything rendering related
-        let settings = GraphicsSetupSettings {
-            title: self.title.clone(),
-            size: self.screensize,
-            fullscreen: self.fullscreen,
-            limit: self.limit,
-        };
-        self = self.insert_system(|e: &mut Events| rendering::scene::system(e, settings));
-
         // Sort & execute the init events
         let reg = self.events.registry::<Init>();
         reg.sort().unwrap();
-        self.events.execute::<Init>((&mut self.world, &self.el));
+        self.events.registry::<Init>().execute((&mut self.world, &self.el));
 
         // Decompose the app
         let mut events = self.events;
@@ -154,26 +137,16 @@ impl App {
         events.registry::<WindowEvent>().sort().unwrap();
         events.registry::<DeviceEvent>().sort().unwrap();
 
-        // Create the spin sleeper for frame limiting
-        let builder = spin_sleep::LoopHelper::builder();
-        let mut sleeper = if let Some(FrameRateLimit::Limited(limit)) = self.limit {
-            builder.build_with_target_rate(limit)
-        } else {
-            builder.build_without_target_rate()
-        };
-
         // We must now start the game engine (start the glutin event loop)
         el.run(move |event, _, cf| match event {
             // Call the update events
             glutin::event::Event::MainEventsCleared => {
-                sleeper.loop_start();
-                events.execute::<Update>(&mut world);
+                events.registry::<Update>().execute(&mut world);
 
                 if let State::Stopped = *world.get::<State>().unwrap() {
                     *cf = ControlFlow::Exit;
                 }
 
-                sleeper.loop_sleep();
             }
 
             // Call the window events
@@ -181,7 +154,7 @@ impl App {
                 window_id: _,
                 mut event,
             } => {
-                events.execute::<WindowEvent>((&mut world, &mut event));
+                events.registry::<WindowEvent>().execute((&mut world, &mut event));
             }
 
             // Call the device events
@@ -189,7 +162,7 @@ impl App {
                 device_id: _,
                 event,
             } => {
-                events.execute::<DeviceEvent>((&mut world, &event));
+                events.registry::<DeviceEvent>().execute((&mut world, &event));
             }
             _ => {}
         });
