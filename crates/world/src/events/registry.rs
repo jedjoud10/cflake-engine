@@ -1,4 +1,4 @@
-use crate::{Event, RegistrySortingError, Rule, Stage, StageError, StageKey, Caller, RegistryVec};
+use crate::{Event, RegistrySortingError, Rule, Stage, StageError, StageKey, Caller};
 use ahash::{AHashMap, AHashSet};
 use std::{rc::Rc, time::Duration};
 
@@ -13,12 +13,12 @@ pub const RESERVED: &[&str] = &["user", "post user"];
 
 // A registry is what will contain all the different stages, alongside the events
 // Each type of event contains one registry associated with it
-pub struct Registry<M: Caller + 'static> {
+pub struct Registry<C: Caller + 'static> {
     // Name of the stage -> rules
     pub(super) map: AHashMap<StageKey, Vec<Rule>>,
 
     // Name of the stage -> underlying event + duration
-    pub(super) events: Box<dyn RegistryVec<M>>,
+    pub(super) events: Box<Vec<(StageKey, Box<C::DynFn>)>>,
 
     // Incremented procedural name
     counter: u64,
@@ -34,20 +34,20 @@ impl<D: Caller + 'static> Default for Registry<D> {
     }
 }
 
-impl<M: Caller> Registry<M> {
+impl<C: Caller> Registry<C> {
     /*
     // Insert a new event that will be executed after the "user" stage and before the "post user" stage
-    pub fn insert<P>(&mut self, event: impl Event<M, P>) {
+    pub fn insert<'a, E: Event<'a, C>>(&mut self, event: E) {
         let name = Rc::from(format!("event-{}", self.counter));
         let stage = Stage::new(name).after("user").before("post user");
         self.counter += 1;
-        self.insert_with::<P>(event, stage).unwrap();
+        self.insert_with::<E>(event, stage).unwrap();
     }
 
     // Insert a new stage-event tuple into the registry (faillible)
-    pub fn insert_with<P>(
+    pub fn insert_with<'a, E: Event<'a, C>>(
         &mut self,
-        event: impl Event<M, P>,
+        event: E,
         stage: Stage,
     ) -> Result<(), StageError> {
         // We can only have one event per stage and one stage per event
@@ -79,6 +79,11 @@ impl<M: Caller> Registry<M> {
 
         // 3x POUNCES ON YOU UWU YOU'RE SO WARM
         Ok(())
+    }
+
+    // Execute all the events that are stored in this registry
+    pub fn execute<'a, E: Event<'a, C>>(&mut self, args: E::Args<'_>) {
+        
     }
     */
 }

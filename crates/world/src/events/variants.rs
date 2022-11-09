@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{Event, Events, Registry, World, Caller, RegistryVec, StageKey};
+use crate::{Event, Events, Registry, World, Caller, StageKey};
 use glutin::{
     event::{DeviceEvent, WindowEvent},
     event_loop::EventLoop,
@@ -16,18 +16,22 @@ pub struct Update(());
 pub struct Exit(());
 
 impl Caller for WindowEvent<'static> {
-}
+    type DynFn = dyn FnMut(&mut World, &mut WindowEvent<'_>);
 
-impl<'a, F: FnMut(&mut World, &mut WindowEvent<'_>)> Event<'a, WindowEvent<'static>> for F {
-    type Args<'p> = (&'p mut World, &'p mut WindowEvent<'a>) where 'a: 'p;
-
-    fn call<'p>(&mut self, args: &mut Self::Args<'p>) where 'a: 'p {
-        let world = &mut args.0;
-        let event = &mut args.1;
-        self(world, event);
+    fn registry(events: &mut Events) -> &mut Registry<Self> {
+        &mut events.window
     }
 }
 
-impl<'a, C: Caller, E: Event<'a, C>> RegistryVec<C> for Vec<(StageKey, E)> {
+impl<'a, F: FnMut(&mut World, &mut WindowEvent<'_>) + 'static> Event<'a, WindowEvent<'static>> for F {
+    type Args<'p> = (&'p mut World, &'p mut WindowEvent<'a>) where 'a: 'p;
 
-} 
+    fn call<'p>(boxed: &Box<<WindowEvent<'static> as Caller>::DynFn>, args: &mut Self::Args<'p>) where 'a: 'p {
+        let desr = &**boxed;
+        desr(&mut args.0, &mut args.1);
+    }
+
+    fn boxed(self) -> Box<<WindowEvent<'static> as Caller>::DynFn> {
+        Box::new(self)
+    }
+}

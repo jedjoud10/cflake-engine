@@ -1,4 +1,7 @@
+use std::any::{TypeId, Any};
+
 use crate::{Init, Registry, Update};
+use ahash::AHashMap;
 use glutin::event::{DeviceEvent, WindowEvent};
 
 // An event is something that can be stored within a Registry and can be called
@@ -6,37 +9,35 @@ use glutin::event::{DeviceEvent, WindowEvent};
 // F: Fn(&mut World, &mut WindowEvent)
 pub trait Event<'a, C: Caller> {
     type Args<'p> where 'a: 'p;
-    fn call<'p>(&mut self, args: &mut Self::Args<'p>) where 'a: 'p;
+    fn call<'p>(boxed: &Box<C::DynFn>, args: &mut Self::Args<'p>) where 'a: 'p;
+    fn boxed(self) -> Box<C::DynFn>;
 }
 
 // Callers are trait wrappers around events that allows to use registries
 // WindowEvent<'_>
-pub trait Caller: 'static {    }
+pub trait Caller: 'static + Sized { 
+    type DynFn: ?Sized + 'static;
 
-
-// Implemented for any type of Vector that contains (StageKey, Event)
-pub trait RegistryVec<C: Caller> {
-
+    // Note for future self: Implemented this because having the user have the ability write 
+    // their own events is completely useless since they cannot call them anyways
+    fn registry(events: &mut Events) -> &mut Registry<Self>;
 }
 
 
 // This is the main event struct that contains all the registries
 // We store all the registries in their own boxed type, but they can be casted to using Any
 pub struct Events {
+    pub(crate) window: Registry<WindowEvent<'static>>,
+    /*
+    pub(crate) device: Registry<DeviceEvent>,
+    pub(crate) init: Registry<Init>,
+    pub(crate) update: Registry<Update>,
+    */
 }
 
 impl Events {
-    /*
-    // Get the registry of a specific descriptor from within the global events
-    // This is the only way we can interface with the values stored within the event manager
-    pub fn registry<M: Descriptor>(&mut self) -> &mut Registry<M> {
-        M::registry(self)
+    // Get a specific registry mutably using it's unique caller
+    pub fn registry_mut<C: Caller>(&mut self) -> &mut Registry<C> {
+        C::registry(self)
     }
-
-    // This will execute the events of a specific type
-    // I cannot have this function inside the Registry since we have lifetime issue
-    pub fn execute<'p, M: Descriptor + Caller>(&mut self, params: M::Params<'_>) {
-        M::call(self, params)
-    }
-    */
 }
