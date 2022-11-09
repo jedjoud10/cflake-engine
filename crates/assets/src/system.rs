@@ -7,7 +7,7 @@ use world::{Events, Init, Stage, World};
 pub fn system(events: &mut Events, user: Option<PathBuf>) {
     // Insert the asset loader and load the default assets
     events
-        .registry::<Init>()
+        .registry_mut::<Init>()
         .insert_with(
             move |world: &mut World| {
                 // Create a new asset loader / cacher

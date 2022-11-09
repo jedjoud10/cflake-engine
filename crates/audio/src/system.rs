@@ -6,5 +6,5 @@ fn update(world: &mut World) {}
 
 // Simple audio system tbh
 pub fn system(events: &mut Events) {
-    events.registry::<Update>().insert(update);
+    events.registry_mut::<Update>().insert(update);
 }

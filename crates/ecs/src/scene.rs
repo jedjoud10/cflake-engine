@@ -197,11 +197,11 @@ pub fn system(events: &mut Events) {
 
     // Register the events
     events
-        .registry::<Init>()
+        .registry_mut::<Init>()
         .insert_with(init, Stage::new("ecs insert").before("user"))
         .unwrap();
     events
-        .registry::<Update>()
+        .registry_mut::<Update>()
         .insert_with(
             cleanup,
             Stage::new("ecs cleanup")

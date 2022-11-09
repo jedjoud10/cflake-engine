@@ -39,14 +39,12 @@ pub struct Events {
 
 impl Events {
     // Get a specific registry mutably using it's unique caller
-    pub fn registry<C: Caller>(&mut self) -> &mut Registry<C> {
+    pub fn registry_mut<C: Caller>(&mut self) -> &mut Registry<C> {
         C::registry_mut(self)
     }
 
-    /*
     // Get a specific registry immutably using it's unique caller
     pub fn registry<C: Caller>(&self) -> &Registry<C> {
         C::registry(self)
     }
-    */
 }

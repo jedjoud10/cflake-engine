@@ -82,11 +82,11 @@ pub fn system(events: &mut Events) {
 
     // Register the events
     events
-        .registry::<Init>()
+        .registry_mut::<Init>()
         .insert_with(init, Stage::new("time insert").before("user"))
         .unwrap();
     events
-        .registry::<Update>()
+        .registry_mut::<Update>()
         .insert_with(update, Stage::new("time update").before("user"))
         .unwrap();
 }

@@ -82,15 +82,15 @@ pub fn system(events: &mut Events) {
 
     // Register the events
     events
-        .registry::<Init>()
+        .registry_mut::<Init>()
         .insert_with(init, Stage::new("input insert").before("user"))
         .unwrap();
     events
-        .registry::<DeviceEvent>()
+        .registry_mut::<DeviceEvent>()
         .insert_with(event, Stage::new("input").before("user"))
         .unwrap();
     events
-        .registry::<Update>()
+        .registry_mut::<Update>()
         .insert_with(
             update,
             Stage::new("keyboard update states").after("post user"),
