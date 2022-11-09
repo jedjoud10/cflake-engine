@@ -1,4 +1,4 @@
-use crate::{Descriptor, Event, RegistrySortingError, Rule, Stage, StageError, StageKey};
+use crate::{Event, RegistrySortingError, Rule, Stage, StageError, StageKey, Caller, RegistryVec};
 use ahash::{AHashMap, AHashSet};
 use std::{rc::Rc, time::Duration};
 
@@ -13,28 +13,29 @@ pub const RESERVED: &[&str] = &["user", "post user"];
 
 // A registry is what will contain all the different stages, alongside the events
 // Each type of event contains one registry associated with it
-pub struct Registry<M: Descriptor + 'static> {
+pub struct Registry<M: Caller + 'static> {
     // Name of the stage -> rules
     pub(super) map: AHashMap<StageKey, Vec<Rule>>,
 
     // Name of the stage -> underlying event + duration
-    pub(super) events: Vec<(StageKey, Box<M::DynFunc>)>,
+    pub(super) events: Box<dyn RegistryVec<M>>,
 
     // Incremented procedural name
     counter: u64,
 }
 
-impl<D: Descriptor + 'static> Default for Registry<D> {
+impl<D: Caller + 'static> Default for Registry<D> {
     fn default() -> Self {
         Self {
             map: Default::default(),
-            events: Default::default(),
+            events: todo!(),
             counter: 0,
         }
     }
 }
 
-impl<M: Descriptor> Registry<M> {
+impl<M: Caller> Registry<M> {
+    /*
     // Insert a new event that will be executed after the "user" stage and before the "post user" stage
     pub fn insert<P>(&mut self, event: impl Event<M, P>) {
         let name = Rc::from(format!("event-{}", self.counter));
@@ -79,6 +80,7 @@ impl<M: Descriptor> Registry<M> {
         // 3x POUNCES ON YOU UWU YOU'RE SO WARM
         Ok(())
     }
+    */
 }
 
 // Sort a hashmap containing multiple stage rules that depend upon each other

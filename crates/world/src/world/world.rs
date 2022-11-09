@@ -76,8 +76,10 @@ pub fn system(events: &mut Events) {
     }
 
     // Register the init state event
+    /*
     events
         .registry::<Init>()
         .insert_with(insert, Stage::new("state insert").before("user"))
         .unwrap();
+    */
 }
