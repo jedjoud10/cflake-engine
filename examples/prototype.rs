@@ -1,3 +1,4 @@
+/*
 use std::num::NonZeroU8;
 
 use cflake_engine::prelude::*;
@@ -34,3 +35,6 @@ fn init(world: &mut World) {
         )
         .unwrap();
 }
+*/
+
+fn main() {}

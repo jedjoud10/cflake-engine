@@ -18,7 +18,7 @@ pub struct Registry<C: Caller + 'static> {
     pub(super) map: AHashMap<StageKey, Vec<Rule>>,
 
     // Name of the stage -> underlying event + duration
-    pub(super) events: Box<Vec<(StageKey, Box<C::DynFn>)>>,
+    pub(super) events: Vec<(StageKey, Box<C::DynFn>)>,
 
     // Incremented procedural name
     counter: u64,
@@ -80,9 +80,11 @@ impl<C: Caller> Registry<C> {
         Ok(())
     }
 
-    // Execute all the events that are stored in this registry
-    pub fn execute<ID, E: Event<C, ID>>(&mut self, args: E::Args<'_, '_>) {
-        
+    // Execute all the events that are stored in this registry using specific arguments
+    pub fn execute(&mut self, mut args: C::Args<'_, '_>) {
+        for (_, event) in self.events.iter_mut() {
+            C::call(event, &mut args);
+        }
     }
 }
 

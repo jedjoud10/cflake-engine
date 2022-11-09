@@ -9,6 +9,7 @@ use glutin::{
 // Device event called when there is a new device / device change
 impl Caller for DeviceEvent {
     type DynFn = dyn FnMut(&mut World, &DeviceEvent);
+    type Args<'a, 'p> = (&'p mut World, &'p DeviceEvent) where 'a: 'p;
 
     fn registry(events: &Events) -> &Registry<Self> {
         &events.device
@@ -17,14 +18,16 @@ impl Caller for DeviceEvent {
     fn registry_mut(events: &mut Events) -> &mut Registry<Self> {
         &mut events.device
     }
+
+    fn call<'a, 'p>(boxed: &mut Box<<DeviceEvent as Caller>::DynFn>, args: &mut Self::Args<'a, 'p>) where 'a: 'p {
+        boxed(&mut args.0, &args.1);
+    }
 }
 
 impl<F: FnMut(&mut World, &DeviceEvent) + 'static> Event<DeviceEvent, ()> for F {
     type Args<'a, 'p> = (&'p mut World, &'p DeviceEvent) where 'a: 'p;
 
-    fn call<'a, 'p>(boxed: &mut Box<<DeviceEvent as Caller>::DynFn>, args: &mut Self::Args<'a, 'p>) where 'a: 'p {
-        boxed(&mut args.0, &args.1);
-    }
+    
 
     fn boxed(self) -> Box<<DeviceEvent as Caller>::DynFn> {
         Box::new(self)
@@ -34,6 +37,7 @@ impl<F: FnMut(&mut World, &DeviceEvent) + 'static> Event<DeviceEvent, ()> for F 
 // Window event called when there is a change that occured to the window
 impl Caller for WindowEvent<'static> {
     type DynFn = dyn FnMut(&mut World, &mut WindowEvent<'_>);
+    type Args<'a, 'p> = (&'p mut World, &'p mut WindowEvent<'a>) where 'a: 'p;
 
     fn registry(events: &Events) -> &Registry<Self> {
         &events.window
@@ -42,15 +46,16 @@ impl Caller for WindowEvent<'static> {
     fn registry_mut(events: &mut Events) -> &mut Registry<Self> {
         &mut events.window
     }
+
+    fn call<'a, 'p>(boxed: &mut Box<<WindowEvent<'static> as Caller>::DynFn>, args: &mut Self::Args<'a, 'p>) where 'a: 'p {
+        boxed(&mut args.0, &mut args.1);
+    }
 }
 
 impl<F: FnMut(&mut World, &mut WindowEvent<'_>) + 'static> Event<WindowEvent<'static>, ()> for F {
     type Args<'a, 'p> = (&'p mut World, &'p mut WindowEvent<'a>) where 'a: 'p;
 
-    fn call<'a, 'p>(boxed: &mut Box<<WindowEvent<'static> as Caller>::DynFn>, args: &mut Self::Args<'a, 'p>) where 'a: 'p {
-        boxed(&mut args.0, &mut args.1);
-    }
-
+    
     fn boxed(self) -> Box<<WindowEvent<'static> as Caller>::DynFn> {
         Box::new(self)
     }
@@ -61,6 +66,7 @@ pub struct Init(());
 
 impl Caller for Init {
     type DynFn = dyn FnOnce(&mut World, &EventLoop<()>);
+    type Args<'a, 'p> = (&'p mut World, &'p EventLoop<()>) where 'a: 'p;
 
     fn registry(events: &Events) -> &Registry<Self> {
         &events.init
@@ -69,15 +75,15 @@ impl Caller for Init {
     fn registry_mut(events: &mut Events) -> &mut Registry<Self> {
         &mut events.init
     }
-}
-
-impl<F: FnOnce(&mut World) + 'static> Event<Init, ()> for F {
-    type Args<'a, 'p> = (&'p mut World, &'p EventLoop<()>) where 'a: 'p;
 
     fn call<'a, 'p>(boxed: &mut Box<<Init as Caller>::DynFn>, args: &mut Self::Args<'a, 'p>) where 'a: 'p {
         let boxed = std::mem::replace(boxed, Box::new(|_, _| {}));
         boxed(args.0, args.1)
     }
+}
+
+impl<F: FnOnce(&mut World) + 'static> Event<Init, ()> for F {
+    type Args<'a, 'p> = (&'p mut World, &'p EventLoop<()>) where 'a: 'p;
 
     fn boxed(self) -> Box<<Init as Caller>::DynFn> {
         Box::new(|world: &mut World, _| {
@@ -89,11 +95,6 @@ impl<F: FnOnce(&mut World) + 'static> Event<Init, ()> for F {
 impl<F: FnOnce(&mut World, &EventLoop<()>) + 'static> Event<Init, (&mut World, &EventLoop<()>)> for F {
     type Args<'a, 'p> = (&'p mut World, &'p EventLoop<()>) where 'a: 'p;
 
-    fn call<'a, 'p>(boxed: &mut Box<<Init as Caller>::DynFn>, args: &mut Self::Args<'a, 'p>) where 'a: 'p {
-        let boxed = std::mem::replace(boxed, Box::new(|_, _| {}));
-        boxed(args.0, args.1)
-    }
-
     fn boxed(self) -> Box<<Init as Caller>::DynFn> {
         Box::new(self)
     }
@@ -104,6 +105,7 @@ pub struct Update(());
 
 impl Caller for Update {
     type DynFn = dyn FnMut(&mut World);
+    type Args<'a, 'p> = (&'p mut World) where 'a: 'p;
 
     fn registry(events: &Events) -> &Registry<Self> {
         &events.update
@@ -112,14 +114,16 @@ impl Caller for Update {
     fn registry_mut(events: &mut Events) -> &mut Registry<Self> {
         &mut events.update
     }
+
+    fn call<'a, 'p>(boxed: &mut Box<<Update as Caller>::DynFn>, args: &mut Self::Args<'a, 'p>) where 'a: 'p {
+        boxed(args)
+    }
 }
 
 impl<F: FnMut(&mut World) + 'static> Event<Update, ()> for F {
     type Args<'a, 'p> = &'p mut World where 'a: 'p;
 
-    fn call<'a, 'p>(boxed: &mut Box<<Update as Caller>::DynFn>, args: &mut Self::Args<'a, 'p>) where 'a: 'p {
-        boxed(args)
-    }
+    
 
     fn boxed(self) -> Box<<Update as Caller>::DynFn> {
         Box::new(self)
@@ -131,6 +135,7 @@ pub struct Exit(());
 
 impl Caller for Exit {
     type DynFn = dyn FnMut(&mut World);
+    type Args<'a, 'p> = (&'p mut World) where 'a: 'p;
 
     fn registry(events: &Events) -> &Registry<Self> {
         &events.exit
@@ -139,14 +144,16 @@ impl Caller for Exit {
     fn registry_mut(events: &mut Events) -> &mut Registry<Self> {
         &mut events.exit
     }
+
+    fn call<'a, 'p>(boxed: &mut Box<<Exit as Caller>::DynFn>, args: &mut Self::Args<'a, 'p>) where 'a: 'p {
+        boxed(args)
+    }
 }
 
 impl<F: FnMut(&mut World) + 'static> Event<Exit, ()> for F {
     type Args<'a, 'p> = &'p mut World where 'a: 'p;
 
-    fn call<'a, 'p>(boxed: &mut Box<<Exit as Caller>::DynFn>, args: &mut Self::Args<'a, 'p>) where 'a: 'p {
-        boxed(args)
-    }
+    
 
     fn boxed(self) -> Box<<Exit as Caller>::DynFn> {
         Box::new(self)

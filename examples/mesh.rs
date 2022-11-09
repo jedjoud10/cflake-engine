@@ -1,3 +1,4 @@
+/*
 use cflake_engine::prelude::*;
 
 const ASSETS_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/examples/assets/");
@@ -367,3 +368,5 @@ fn update(world: &mut World) {
             * vek::Quaternion::rotation_x(-pos_y as f32 * SENSIVITY);
     }
 }
+*/
+fn main() {}

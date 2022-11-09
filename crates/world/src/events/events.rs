@@ -9,19 +9,21 @@ use glutin::event::{DeviceEvent, WindowEvent};
 // F: Fn(&mut World, &mut WindowEvent)
 pub trait Event<C: Caller, ID> {
     type Args<'a, 'p> where 'a: 'p;
-    fn call<'a, 'p>(boxed: &mut Box<C::DynFn>, args: &mut Self::Args<'a, 'p>) where 'a: 'p;
     fn boxed(self) -> Box<C::DynFn>;
 }
 
 // Callers are trait wrappers around events that allows to use registries
 // WindowEvent<'_>
 pub trait Caller: 'static + Sized { 
+    type Args<'a, 'p> where 'a: 'p;
     type DynFn: ?Sized + 'static;
-
+    
     // Note for future self: Implemented this because having the user have the ability write 
     // their own events is completely useless since they cannot call them anyways
     fn registry(events: &Events) -> &Registry<Self>;
     fn registry_mut(events: &mut Events) -> &mut Registry<Self>;
+    
+    fn call<'a, 'p>(boxed: &mut Box<Self::DynFn>, args: &mut Self::Args<'a, 'p>) where 'a: 'p;
 }
 
 
