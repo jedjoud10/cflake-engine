@@ -2212,13 +2212,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "86f0b0d4bf799edbc74508c1e8bf170ff5f41238e5f8225603ca7caaae2b7860"
 
 [[package]]
-name = "opengl"
-version = "0.1.0"
-dependencies = [
- "gl_generator",
-]
-
-[[package]]
 name = "ordered-multimap"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2625,7 +2618,6 @@ dependencies = [
  "nohash-hasher",
  "num",
  "obj-rs",
- "opengl",
  "parking_lot 0.12.1",
  "paste",
  "rayon",
