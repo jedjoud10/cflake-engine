@@ -2,7 +2,7 @@ use std::any::{TypeId, Any};
 
 use crate::{Init, Registry, Update, Shutdown};
 use ahash::AHashMap;
-use glutin::event::{DeviceEvent, WindowEvent};
+use winit::event::{DeviceEvent, WindowEvent};
 
 // An event is something that can be stored within a Registry and can be called
 // Events of the same type get all executed at the same time
@@ -34,7 +34,7 @@ pub struct Events {
     pub(crate) device: Registry<DeviceEvent>,
     pub(crate) init: Registry<Init>,
     pub(crate) update: Registry<Update>,
-    pub(crate) exit: Registry<Shutdown>,
+    pub(crate) shutdown: Registry<Shutdown>,
 }
 
 impl Events {

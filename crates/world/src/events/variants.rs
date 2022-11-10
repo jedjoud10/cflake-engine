@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use crate::{Event, Events, Registry, World, Caller, StageKey};
-use glutin::{
+use winit::{
     event::{DeviceEvent, WindowEvent},
     event_loop::EventLoop,
 };
@@ -138,11 +138,11 @@ impl Caller for Shutdown {
     type Args<'a, 'p> = (&'p mut World) where 'a: 'p;
 
     fn registry(events: &Events) -> &Registry<Self> {
-        &events.exit
+        &events.shutdown
     }
 
     fn registry_mut(events: &mut Events) -> &mut Registry<Self> {
-        &mut events.exit
+        &mut events.shutdown
     }
 
     fn call<'a, 'p>(boxed: &mut Box<<Shutdown as Caller>::DynFn>, args: &mut Self::Args<'a, 'p>) where 'a: 'p {

@@ -28,7 +28,7 @@ impl<D: Caller + 'static> Default for Registry<D> {
     fn default() -> Self {
         Self {
             map: Default::default(),
-            events: todo!(),
+            events: Default::default(),
             counter: 0,
         }
     }

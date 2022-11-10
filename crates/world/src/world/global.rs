@@ -17,7 +17,7 @@ pub fn setup() -> (World, Events) {
                 device: Default::default(),
                 init: Default::default(),
                 update: Default::default(),
-                exit: Default::default(),
+                shutdown: Default::default(),
             },
         )
     } else {

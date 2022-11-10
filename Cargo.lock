@@ -3410,13 +3410,13 @@ dependencies = [
  "ahash",
  "arrayvec 0.7.2",
  "casey",
- "glutin",
  "math",
  "num_cpus",
  "parking_lot 0.12.1",
  "paste",
  "seq-macro",
  "slotmap",
+ "winit 0.27.5",
 ]
 
 [[package]]
