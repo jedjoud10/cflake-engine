@@ -1,5 +1,5 @@
 use crate::{Axis, Input, KeyState};
-use glutin::event::{DeviceEvent, ElementState};
+use winit::event::{DeviceEvent, ElementState};
 use world::{Events, Init, Stage, Update, World};
 
 // This system will automatically insert the input resource and update it each frame using the window events
@@ -31,8 +31,8 @@ pub fn system(events: &mut Events) {
             // Update mouse wheel delta and summed value
             DeviceEvent::MouseWheel { delta } => {
                 let delta = match delta {
-                    glutin::event::MouseScrollDelta::LineDelta(_, y) => *y,
-                    glutin::event::MouseScrollDelta::PixelDelta(physical) => physical.x as f32,
+                    winit::event::MouseScrollDelta::LineDelta(_, y) => *y,
+                    winit::event::MouseScrollDelta::PixelDelta(physical) => physical.x as f32,
                 };
 
                 input.axii.insert(Axis::MouseScrollDelta, delta);

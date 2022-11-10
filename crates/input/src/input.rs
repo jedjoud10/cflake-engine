@@ -1,5 +1,5 @@
 use ahash::AHashMap;
-use glutin::event::ElementState;
+use winit::event::ElementState;
 use serde::{
     ser::{SerializeMap, SerializeStruct},
     *,
@@ -13,7 +13,7 @@ use std::{
 };
 
 // The virtual keycodes that the window will receive (as a form of events)
-pub type Key = glutin::event::VirtualKeyCode;
+pub type Key = winit::event::VirtualKeyCode;
 
 // The current state of any key
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -83,7 +83,7 @@ pub struct Input {
 }
 
 // User input bindings are basically
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Serialize, Deserialize)]
 // TODO: Sort by string name
 pub struct InputUserBindings {
     // "forward_key_bind" -> Key::W
@@ -138,7 +138,6 @@ impl InputAxisId for &'static str {
 }
 
 impl Input {
-    /*
     // Load the bindings from the user binding struct
     // If there are conflicting bindings, they will get overwritten
     pub fn read_bindings_from_user_bindings(&mut self, user: InputUserBindings) {
@@ -180,7 +179,6 @@ impl Input {
         file.write_all(json.as_bytes()).ok()?;
         Some(())
     }
-    */
 
     // Create a new button binding using a name and a unique key
     pub fn bind_key(&mut self, name: &'static str, key: Key) {
