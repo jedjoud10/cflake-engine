@@ -1,6 +1,6 @@
 use std::any::{TypeId, Any};
 
-use crate::{Init, Registry, Update, Exit};
+use crate::{Init, Registry, Update, Shutdown};
 use ahash::AHashMap;
 use glutin::event::{DeviceEvent, WindowEvent};
 
@@ -34,7 +34,7 @@ pub struct Events {
     pub(crate) device: Registry<DeviceEvent>,
     pub(crate) init: Registry<Init>,
     pub(crate) update: Registry<Update>,
-    pub(crate) exit: Registry<Exit>,
+    pub(crate) exit: Registry<Shutdown>,
 }
 
 impl Events {

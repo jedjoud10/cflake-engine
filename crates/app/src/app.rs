@@ -5,9 +5,9 @@ use glutin::{
 };
 //use gui::egui::util::id_type_map::TypeId;
 use mimalloc::MiMalloc;
-//use rendering::prelude::{FrameRateLimit, GraphicsSetupSettings};
+use rendering::prelude::{FrameRateLimit};
 use std::{path::PathBuf, any::TypeId};
-use world::{Event, Events, Init, State, System, Update, World, Exit};
+use world::{Event, Events, Init, State, System, Update, World, Shutdown};
 
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
@@ -16,7 +16,7 @@ static GLOBAL: MiMalloc = MiMalloc;
 pub struct App {
     // Window settings for the graphics
     title: String,
-    screensize: vek::Extent2<u16>,
+    limit: FrameRateLimit,
     fullscreen: bool,
 
     // Asset and IO
@@ -35,9 +35,8 @@ impl Default for App {
 
         Self {
             title: "Default title".to_string(),
-            screensize: vek::Extent2::new(1280, 720),
+            limit: FrameRateLimit::Umlimited,
             fullscreen: false,
-            //limit: None,
             user_assets_folder: None,
             events,
             systems: Default::default(),
@@ -54,9 +53,9 @@ impl App {
         self
     }
 
-    // Set the window starting screensize
-    pub fn set_window_size(mut self, size: vek::Extent2<u16>) -> Self {
-        self.screensize = size;
+    // Set the window framerate limit
+    pub fn set_frame_rate_limit(mut self, limit: FrameRateLimit) -> Self {
+        self.limit = limit;
         self
     }
 
@@ -110,8 +109,8 @@ impl App {
     }
 
     // Insert a single exit event
-    pub fn insert_exit<ID>(mut self, exit: impl Event<Exit, ID>) -> Self {
-        self.events.registry_mut::<Exit>().insert(exit);
+    pub fn insert_exit<ID>(mut self, exit: impl Event<Shutdown, ID>) -> Self {
+        self.events.registry_mut::<Shutdown>().insert(exit);
         self
     }
 
@@ -143,16 +142,24 @@ impl App {
         events.registry_mut::<WindowEvent>().sort().unwrap();
         events.registry_mut::<DeviceEvent>().sort().unwrap();
 
+        // Create the spin sleeper for frame limiting
+        let builder = spin_sleep::LoopHelper::builder();
+        let mut sleeper = if let FrameRateLimit::Limited(limit) = self.limit {
+            builder.build_with_target_rate(limit)
+        } else {
+            builder.build_without_target_rate()
+        };
+
         // We must now start the game engine (start the glutin event loop)
         el.run(move |event, _, cf| match event {
             // Call the update events
             glutin::event::Event::MainEventsCleared => {
+                sleeper.loop_start();
                 events.registry_mut::<Update>().execute(&mut world);
-
                 if let State::Stopped = *world.get::<State>().unwrap() {
                     *cf = ControlFlow::Exit;
                 }
-
+                sleeper.loop_sleep();
             }
 
             // Call the window events

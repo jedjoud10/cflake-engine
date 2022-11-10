@@ -131,9 +131,9 @@ impl<F: FnMut(&mut World) + 'static> Event<Update, ()> for F {
 }
 
 // Exit event marker (called at the end of the game)
-pub struct Exit(());
+pub struct Shutdown(());
 
-impl Caller for Exit {
+impl Caller for Shutdown {
     type DynFn = dyn FnMut(&mut World);
     type Args<'a, 'p> = (&'p mut World) where 'a: 'p;
 
@@ -145,17 +145,17 @@ impl Caller for Exit {
         &mut events.exit
     }
 
-    fn call<'a, 'p>(boxed: &mut Box<<Exit as Caller>::DynFn>, args: &mut Self::Args<'a, 'p>) where 'a: 'p {
+    fn call<'a, 'p>(boxed: &mut Box<<Shutdown as Caller>::DynFn>, args: &mut Self::Args<'a, 'p>) where 'a: 'p {
         boxed(args)
     }
 }
 
-impl<F: FnMut(&mut World) + 'static> Event<Exit, ()> for F {
+impl<F: FnMut(&mut World) + 'static> Event<Shutdown, ()> for F {
     type Args<'a, 'p> = &'p mut World where 'a: 'p;
 
     
 
-    fn boxed(self) -> Box<<Exit as Caller>::DynFn> {
+    fn boxed(self) -> Box<<Shutdown as Caller>::DynFn> {
         Box::new(self)
     }
 }
