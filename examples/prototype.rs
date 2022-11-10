@@ -1,3 +1,4 @@
+/*
 use std::num::NonZeroU8;
 
 use cflake_engine::prelude::*;
@@ -15,7 +16,7 @@ fn init(world: &mut World) {
 
     // Load the BRDF integration map
     let brdf_integration_map = assets
-        .load_with::<IntegrationMap>(
+        .load::<IntegrationMap>(
             "engine/textures/integration.png",
             (
                 &mut ctx,
@@ -34,3 +35,6 @@ fn init(world: &mut World) {
         )
         .unwrap();
 }
+*/
+
+fn main() {}

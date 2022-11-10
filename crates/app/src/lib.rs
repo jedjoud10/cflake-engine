@@ -18,7 +18,7 @@ pub mod prelude {
     pub use crate::gui::*;
     pub use crate::input::*;
     pub use crate::math::*;
-    pub use crate::rendering::prelude::*;
+    //pub use crate::rendering::prelude::*;
     pub use crate::time::*;
     pub use crate::world::*;
     pub use vek;

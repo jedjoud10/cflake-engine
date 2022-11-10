@@ -3,11 +3,11 @@ use glutin::{
     event::{DeviceEvent, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
-use gui::egui::util::id_type_map::TypeId;
+//use gui::egui::util::id_type_map::TypeId;
 use mimalloc::MiMalloc;
-use rendering::prelude::{FrameRateLimit, GraphicsSetupSettings};
-use std::path::PathBuf;
-use world::{Event, Events, Init, State, System, Update, World};
+use rendering::prelude::{FrameRateLimit};
+use std::{path::PathBuf, any::TypeId};
+use world::{Event, Events, Init, State, System, Update, World, Shutdown};
 
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
@@ -16,9 +16,8 @@ static GLOBAL: MiMalloc = MiMalloc;
 pub struct App {
     // Window settings for the graphics
     title: String,
-    screensize: vek::Extent2<u16>,
+    limit: FrameRateLimit,
     fullscreen: bool,
-    limit: Option<FrameRateLimit>,
 
     // Asset and IO
     user_assets_folder: Option<PathBuf>,
@@ -36,9 +35,8 @@ impl Default for App {
 
         Self {
             title: "Default title".to_string(),
-            screensize: vek::Extent2::new(1280, 720),
+            limit: FrameRateLimit::Umlimited,
             fullscreen: false,
-            limit: None,
             user_assets_folder: None,
             events,
             systems: Default::default(),
@@ -55,21 +53,15 @@ impl App {
         self
     }
 
-    // Set the window starting screensize
-    pub fn set_window_size(mut self, size: vek::Extent2<u16>) -> Self {
-        self.screensize = size;
+    // Set the window framerate limit
+    pub fn set_frame_rate_limit(mut self, limit: FrameRateLimit) -> Self {
+        self.limit = limit;
         self
     }
 
     // Set window fullscreen mode
     pub fn set_window_fullscreen(mut self, toggled: bool) -> Self {
         self.fullscreen = toggled;
-        self
-    }
-
-    // Set the window's frame limiter
-    pub fn set_framerate_limit(mut self, limit: Option<FrameRateLimit>) -> Self {
-        self.limit = limit;
         self
     }
 
@@ -93,26 +85,32 @@ impl App {
     }
 
     // Insert a single update event
-    pub fn insert_update<P>(mut self, update: impl Event<Update, P>) -> Self {
-        self.events.registry::<Update>().insert(update);
+    pub fn insert_update<ID>(mut self, update: impl Event<Update, ID>) -> Self {
+        self.events.registry_mut::<Update>().insert(update);
         self
     }
 
     // Insert a single init event
-    pub fn insert_init<P>(mut self, update: impl Event<Init, P>) -> Self {
-        self.events.registry::<Init>().insert(update);
+    pub fn insert_init<ID>(mut self, update: impl Event<Init, ID>) -> Self {
+        self.events.registry_mut::<Init>().insert(update);
         self
     }
 
     // Insert a single window event
-    pub fn insert_window<P>(mut self, update: impl Event<WindowEvent<'static>, P>) -> Self {
-        self.events.registry::<WindowEvent>().insert(update);
+    pub fn insert_window<ID>(mut self, update: impl Event<WindowEvent<'static>, ID>) -> Self {
+        self.events.registry_mut::<WindowEvent>().insert(update);
         self
     }
 
     // Insert a single device event
-    pub fn insert_device<P>(mut self, update: impl Event<DeviceEvent, P>) -> Self {
-        self.events.registry::<DeviceEvent>().insert(update);
+    pub fn insert_device<ID>(mut self, update: impl Event<DeviceEvent, ID>) -> Self {
+        self.events.registry_mut::<DeviceEvent>().insert(update);
+        self
+    }
+
+    // Insert a single exit event
+    pub fn insert_exit<ID>(mut self, exit: impl Event<Shutdown, ID>) -> Self {
+        self.events.registry_mut::<Shutdown>().insert(exit);
         self
     }
 
@@ -121,7 +119,6 @@ impl App {
         // Insert all the builtin systems dataless
         self = self
             .insert_system(input::system)
-            .insert_system(gui::system)
             .insert_system(ecs::system)
             .insert_system(time::system)
             .insert_system(world::system);
@@ -130,19 +127,10 @@ impl App {
         let user = self.user_assets_folder.take();
         self = self.insert_system(|e: &mut Events| assets::system(e, user));
 
-        // Insert the graphics pipeline and everything rendering related
-        let settings = GraphicsSetupSettings {
-            title: self.title.clone(),
-            size: self.screensize,
-            fullscreen: self.fullscreen,
-            limit: self.limit,
-        };
-        self = self.insert_system(|e: &mut Events| rendering::scene::system(e, settings));
-
         // Sort & execute the init events
-        let reg = self.events.registry::<Init>();
+        let reg = self.events.registry_mut::<Init>();
         reg.sort().unwrap();
-        self.events.execute::<Init>((&mut self.world, &self.el));
+        self.events.registry_mut::<Init>().execute((&mut self.world, &self.el));
 
         // Decompose the app
         let mut events = self.events;
@@ -150,13 +138,13 @@ impl App {
         let el = self.el;
 
         // Sort the remaining events registries
-        events.registry::<Update>().sort().unwrap();
-        events.registry::<WindowEvent>().sort().unwrap();
-        events.registry::<DeviceEvent>().sort().unwrap();
+        events.registry_mut::<Update>().sort().unwrap();
+        events.registry_mut::<WindowEvent>().sort().unwrap();
+        events.registry_mut::<DeviceEvent>().sort().unwrap();
 
         // Create the spin sleeper for frame limiting
         let builder = spin_sleep::LoopHelper::builder();
-        let mut sleeper = if let Some(FrameRateLimit::Limited(limit)) = self.limit {
+        let mut sleeper = if let FrameRateLimit::Limited(limit) = self.limit {
             builder.build_with_target_rate(limit)
         } else {
             builder.build_without_target_rate()
@@ -167,12 +155,10 @@ impl App {
             // Call the update events
             glutin::event::Event::MainEventsCleared => {
                 sleeper.loop_start();
-                events.execute::<Update>(&mut world);
-
+                events.registry_mut::<Update>().execute(&mut world);
                 if let State::Stopped = *world.get::<State>().unwrap() {
                     *cf = ControlFlow::Exit;
                 }
-
                 sleeper.loop_sleep();
             }
 
@@ -181,7 +167,7 @@ impl App {
                 window_id: _,
                 mut event,
             } => {
-                events.execute::<WindowEvent>((&mut world, &mut event));
+                events.registry_mut::<WindowEvent>().execute((&mut world, &mut event));
             }
 
             // Call the device events
@@ -189,7 +175,7 @@ impl App {
                 device_id: _,
                 event,
             } => {
-                events.execute::<DeviceEvent>((&mut world, &event));
+                events.registry_mut::<DeviceEvent>().execute((&mut world, &event));
             }
             _ => {}
         });

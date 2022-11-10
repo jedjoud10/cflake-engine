@@ -1,30 +1,31 @@
-use crate::{Init, Registry, Update};
+use std::any::{TypeId, Any};
+
+use crate::{Init, Registry, Update, Shutdown};
+use ahash::AHashMap;
 use glutin::event::{DeviceEvent, WindowEvent};
 
-// Descriptors simply tell us how we should box the function
-pub trait Descriptor: Sized {
-    // DynFunc which is the dynamic unsized value that we will box
-    // Ex. dyn FnOnce()
-    type DynFunc: ?Sized;
-
-    // This will fetch the appropriate registry for this specific marker from the main events
-    fn registry(events: &mut Events) -> &mut Registry<Self>;
+// An event is something that can be stored within a Registry and can be called
+// Events of the same type get all executed at the same time
+// F: Fn(&mut World, &mut WindowEvent)
+pub trait Event<C: Caller, ID> {
+    type Args<'a, 'p> where 'a: 'p;
+    fn boxed(self) -> Box<C::DynFn>;
 }
 
-// Callers will be implemented for all marker types. This is what will execute the events specifically
-pub trait Caller<'p>: Descriptor {
-    // Parameters needed to execute the descriptor
-    type Params: 'p;
-
-    // Execute all the events that are contained from within the registry
-    fn call(events: &mut Events, params: Self::Params);
+// Callers are trait wrappers around events that allows to use registries
+// WindowEvent<'_>
+pub trait Caller: 'static + Sized { 
+    type Args<'a, 'p> where 'a: 'p;
+    type DynFn: ?Sized + 'static;
+    
+    // Note for future self: Implemented this because having the user have the ability write 
+    // their own events is completely useless since they cannot call them anyways
+    fn registry(events: &Events) -> &Registry<Self>;
+    fn registry_mut(events: &mut Events) -> &mut Registry<Self>;
+    
+    fn call<'a, 'p>(boxed: &mut Box<Self::DynFn>, args: &mut Self::Args<'a, 'p>) where 'a: 'p;
 }
 
-// This trat will be implemented for closures that take in "P" arguments and that are used by the "M" marker descriptor
-pub trait Event<M: Descriptor, P> {
-    // Box the underlying event into it's proper DynFn dynamic trait object
-    fn boxed(self) -> Box<M::DynFunc>;
-}
 
 // This is the main event struct that contains all the registries
 // We store all the registries in their own boxed type, but they can be casted to using Any
@@ -33,24 +34,17 @@ pub struct Events {
     pub(crate) device: Registry<DeviceEvent>,
     pub(crate) init: Registry<Init>,
     pub(crate) update: Registry<Update>,
-    pub(crate) should_time: bool,
+    pub(crate) exit: Registry<Shutdown>,
 }
 
 impl Events {
-    // Get the registry of a specific descriptor from within the global events
-    // This is the only way we can interface with the values stored within the event manager
-    pub fn registry<M: Descriptor>(&mut self) -> &mut Registry<M> {
-        M::registry(self)
+    // Get a specific registry mutably using it's unique caller
+    pub fn registry_mut<C: Caller>(&mut self) -> &mut Registry<C> {
+        C::registry_mut(self)
     }
 
-    // This will execute the events of a specific type
-    // I cannot have this function inside the Registry since we have lifetime issue
-    pub fn execute<'p, M: Descriptor + Caller<'p>>(&mut self, params: M::Params) {
-        M::call(self, params)
-    }
-
-    // Return if event timings are enabled or not
-    pub fn are_timings_enabled(&self) -> bool {
-        self.should_time
+    // Get a specific registry immutably using it's unique caller
+    pub fn registry<C: Caller>(&self) -> &Registry<C> {
+        C::registry(self)
     }
 }

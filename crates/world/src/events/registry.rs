@@ -1,4 +1,4 @@
-use crate::{Descriptor, Event, RegistrySortingError, Rule, Stage, StageError, StageKey};
+use crate::{Event, RegistrySortingError, Rule, Stage, StageError, StageKey, Caller};
 use ahash::{AHashMap, AHashSet};
 use std::{rc::Rc, time::Duration};
 
@@ -13,40 +13,40 @@ pub const RESERVED: &[&str] = &["user", "post user"];
 
 // A registry is what will contain all the different stages, alongside the events
 // Each type of event contains one registry associated with it
-pub struct Registry<M: Descriptor + 'static> {
+pub struct Registry<C: Caller + 'static> {
     // Name of the stage -> rules
     pub(super) map: AHashMap<StageKey, Vec<Rule>>,
 
     // Name of the stage -> underlying event + duration
-    pub(super) events: Vec<(StageKey, Box<M::DynFunc>)>,
+    pub(super) events: Vec<(StageKey, Box<C::DynFn>)>,
 
     // Incremented procedural name
     counter: u64,
 }
 
-impl<D: Descriptor + 'static> Default for Registry<D> {
+impl<D: Caller + 'static> Default for Registry<D> {
     fn default() -> Self {
         Self {
             map: Default::default(),
-            events: Default::default(),
+            events: todo!(),
             counter: 0,
         }
     }
 }
 
-impl<M: Descriptor> Registry<M> {
+impl<C: Caller> Registry<C> {
     // Insert a new event that will be executed after the "user" stage and before the "post user" stage
-    pub fn insert<P>(&mut self, event: impl Event<M, P>) {
+    pub fn insert<ID>(&mut self, event: impl Event<C, ID>) {
         let name = Rc::from(format!("event-{}", self.counter));
         let stage = Stage::new(name).after("user").before("post user");
         self.counter += 1;
-        self.insert_with::<P>(event, stage).unwrap();
+        self.insert_with::<ID>(event, stage).unwrap();
     }
 
     // Insert a new stage-event tuple into the registry (faillible)
-    pub fn insert_with<P>(
+    pub fn insert_with<ID>(
         &mut self,
-        event: impl Event<M, P>,
+        event: impl Event<C, ID>,
         stage: Stage,
     ) -> Result<(), StageError> {
         // We can only have one event per stage and one stage per event
@@ -78,6 +78,13 @@ impl<M: Descriptor> Registry<M> {
 
         // 3x POUNCES ON YOU UWU YOU'RE SO WARM
         Ok(())
+    }
+
+    // Execute all the events that are stored in this registry using specific arguments
+    pub fn execute(&mut self, mut args: C::Args<'_, '_>) {
+        for (_, event) in self.events.iter_mut() {
+            C::call(event, &mut args);
+        }
     }
 }
 

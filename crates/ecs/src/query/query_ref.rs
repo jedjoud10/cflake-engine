@@ -34,7 +34,7 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutRef<'it>> QueryRef<'a, 'b, 's, L> {
     }
 
     // Create a new mut query from the scene
-    pub fn new(scene: &'a mut Scene) -> Self {
+    pub fn new(scene: &'a Scene) -> Self {
         let (mask, archetypes) = Self::archetypes(scene);
         let mask = mask.both();
 
