@@ -187,7 +187,7 @@ pub(crate) fn add_bundle_unchecked<B: Bundle>(
     }
 
     // Create the new target archetype if needed
-    if archetypes.contains_key(&new) {
+    if !archetypes.contains_key(&new) {
         let current = archetypes.get_mut(&old).unwrap();
         let tables = current
             .tables
@@ -204,7 +204,7 @@ pub(crate) fn add_bundle_unchecked<B: Bundle>(
 
     // Get the current and target archetypes that we will modify
     let (current, target) = split(archetypes, old, new);
-    let linkings = entities.remove(entity)?;
+    let linkings = entities.get(entity)?;
     let index = linkings.index();
 
     // Move the components from one archetype to the other
@@ -253,7 +253,7 @@ pub(crate) fn remove_bundle_unchecked<B: Bundle>(
     let new = entities[entity].mask & !combined;
 
     // Create the new target archetype if needed
-    if archetypes.contains_key(&new) {
+    if !archetypes.contains_key(&new) {
         let current = archetypes.get_mut(&old).unwrap();
         let tables = current
             .tables
@@ -271,7 +271,7 @@ pub(crate) fn remove_bundle_unchecked<B: Bundle>(
 
     // Get the current and target archetypes that we will modify
     let (current, target) = split(archetypes, old, new);
-    let linkings = entities.remove(entity)?;
+    let linkings = entities.get(entity)?;
     let index = linkings.index();
 
     // Move the components from one archetype to the other (swapped)
