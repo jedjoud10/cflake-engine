@@ -18,7 +18,7 @@ macro_rules! tuple_impls {
             fn prepare(archetype: &'a mut Archetype) -> Option<Self::Storages> {
                 assert!(Self::is_valid());
                 seq!(N in 0..$max {
-                    let table = archetype.table_mut::<C~N>()?;
+                    let table = archetype.components_mut::<C~N>()?;
                     let ptr = table as *mut Vec<C~N>;
                     let c~N = unsafe { &mut *ptr };
                 });

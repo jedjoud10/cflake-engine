@@ -49,7 +49,7 @@ impl<'s, T: Component> QueryItemRef<'s> for &T {
 
     unsafe fn ptr_from_archetype_unchecked(archetype: &Archetype) -> Self::Ptr {
         archetype
-            .table::<T>()
+            .components::<T>()
             .unwrap_unchecked()
             .as_slice()
             .as_ptr()
@@ -74,7 +74,7 @@ impl<'s, T: Component> QueryItemRef<'s> for Option<&T> {
     }
 
     unsafe fn ptr_from_archetype_unchecked(archetype: &Archetype) -> Self::Ptr {
-        archetype.table::<T>().map(|vec| vec.as_slice().as_ptr())
+        archetype.components::<T>().map(|vec| vec.as_slice().as_ptr())
     }
 
     unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self::Slice {
@@ -119,7 +119,7 @@ impl<'s, T: Component> QueryItemMut<'s> for &T {
 
     unsafe fn ptr_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::Ptr {
         archetype
-            .table::<T>()
+            .components::<T>()
             .unwrap_unchecked()
             .as_slice()
             .as_ptr()
@@ -144,7 +144,7 @@ impl<'s, T: Component> QueryItemMut<'s> for Option<&T> {
     }
 
     unsafe fn ptr_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::Ptr {
-        archetype.table::<T>().map(|vec| vec.as_slice().as_ptr())
+        archetype.components::<T>().map(|vec| vec.as_slice().as_ptr())
     }
 
     unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self::Slice {
@@ -167,7 +167,7 @@ impl<'s, T: Component> QueryItemMut<'s> for &mut T {
 
     unsafe fn ptr_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::Ptr {
         archetype
-            .table_mut::<T>()
+            .components_mut::<T>()
             .unwrap_unchecked()
             .as_mut_slice()
             .as_mut_ptr()
@@ -193,7 +193,7 @@ impl<'s, T: Component> QueryItemMut<'s> for Option<&mut T> {
 
     unsafe fn ptr_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::Ptr {
         archetype
-            .table_mut::<T>()
+            .components_mut::<T>()
             .map(|vec| vec.as_mut_slice().as_mut_ptr())
     }
 

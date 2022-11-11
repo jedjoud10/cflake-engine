@@ -3,12 +3,12 @@ use smallvec::SmallVec;
 
 // Simple bitset that allocates using u64 chunks
 // This bitset contains a specific number of elements per chunk
-pub struct BitSet(SmallVec<[usize; 2]>, bool);
+pub struct BitSet(Vec<usize>, bool);
 
 impl BitSet {
     // Create a new empty bit set
     pub fn new() -> Self {
-        Self(SmallVec::default(), false)
+        Self(Vec::default(), false)
     }
 
     // Create a bitset from an iterator of booleans
@@ -17,8 +17,7 @@ impl BitSet {
         let chunks = chunks
             .into_iter()
             .map(|chunk| chunk.fold(0, |accum, bit| accum << 1 | (bit as usize)));
-        let small: SmallVec<[usize; 2]> = chunks.collect();
-        Self(small, false)
+        Self(chunks.collect(), false)
     }
 
     // Get the chunk and bitmask location for a specific chunk

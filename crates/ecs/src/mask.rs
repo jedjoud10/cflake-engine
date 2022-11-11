@@ -63,6 +63,19 @@ impl Mask {
     pub fn contains(&self, other: Self) -> bool {
         *self & other == other
     }
+
+    // Iterate through the bits of this mask immutably
+    pub fn bits(&self) -> impl Iterator<Item = bool> {
+        let raw = self.0;
+        (0..(u64::BITS as usize)).into_iter().map(move |i| (raw >> i) & 1 == 1)
+    }
+
+    // Iterate through the unit masks given from this main mask
+    // This will split the current mask into it's raw components that return itself when ORed together
+    pub fn units(&self) -> impl Iterator<Item = Mask> {
+        let raw = self.0;
+        (0..(u64::BITS as usize)).into_iter().filter_map(move |i| ((raw >> i) & 1 == 1).then(|| Mask::one() << i as usize))
+    }
 }
 
 // Convert to raw bitfield

@@ -182,12 +182,9 @@ pub fn system(events: &mut Events) {
 
         // Clear all the archetype states that were set last frame
         for (_, archetype) in ecs.archetypes_mut() {
-            for state in archetype.states_mut().iter_mut() {
-                state.update(|added, removed, mutated| {
-                    *added = Mask::zero();
-                    *mutated = Mask::zero();
-                    *removed = Mask::zero();
-                });
+            archetype.states_mut();
+            for (_, states) in archetype.states_mut().iter_mut() {
+                states.clear();
             }
         }
     }

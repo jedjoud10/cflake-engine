@@ -1,4 +1,4 @@
-use crate::{mask, name, Archetype, Component, ComponentTable, Mask, MaskHashMap, ArchetypeColumn};
+use crate::{mask, name, Archetype, Component, ComponentTable, Mask, MaskHashMap};
 
 // An owned layout trait will be implemented for owned tuples that contain a set of components
 pub trait OwnedBundle<'a>
@@ -28,7 +28,7 @@ where
     fn push(storages: &mut Self::Storages, bundle: Self);
 
     // Get the default tables for this owned bundle
-    fn default_tables() -> MaskHashMap<ArchetypeColumn>;
+    fn default_tables() -> MaskHashMap<Box<dyn ComponentTable>>;
 
     // Try to remove and element from the tables, and try to return the cast element
     fn try_swap_remove(
@@ -53,7 +53,7 @@ impl<'a, T: Component> OwnedBundle<'a> for T {
     }
 
     fn prepare(archetype: &'a mut Archetype) -> Option<Self::Storages> {
-        archetype.table_mut::<T>()
+        archetype.components_mut::<T>()
     }
 
     fn push(storages: &mut Self::Storages, bundle: Self) {

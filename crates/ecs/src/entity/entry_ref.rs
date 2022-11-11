@@ -35,7 +35,7 @@ impl<'a> EntryRef<'a> {
 
     // Get an immutable reference to a tableStateRow
     pub fn table<T: Component>(&self) -> Option<&Vec<T>> {
-        self.archetype().table::<T>()
+        self.archetype().components::<T>()
     }
 
     // Get an immutable reference to a linked component
