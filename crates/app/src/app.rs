@@ -1,5 +1,5 @@
 use ahash::AHashSet;
-use glutin::{
+use winit::{
     event::{DeviceEvent, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
@@ -150,10 +150,10 @@ impl App {
             builder.build_without_target_rate()
         };
 
-        // We must now start the game engine (start the glutin event loop)
+        // We must now start the game engine (start the winit event loop)
         el.run(move |event, _, cf| match event {
             // Call the update events
-            glutin::event::Event::MainEventsCleared => {
+            winit::event::Event::MainEventsCleared => {
                 sleeper.loop_start();
                 events.registry_mut::<Update>().execute(&mut world);
                 if let State::Stopped = *world.get::<State>().unwrap() {
@@ -163,7 +163,7 @@ impl App {
             }
 
             // Call the window events
-            glutin::event::Event::WindowEvent {
+            winit::event::Event::WindowEvent {
                 window_id: _,
                 mut event,
             } => {
@@ -171,7 +171,7 @@ impl App {
             }
 
             // Call the device events
-            glutin::event::Event::DeviceEvent {
+            winit::event::Event::DeviceEvent {
                 device_id: _,
                 event,
             } => {
