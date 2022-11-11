@@ -5,9 +5,9 @@ use time::Time;
 use world::{Events, Init, Stage, Update, World};
 
 use crate::{
-    archetype::remove_bundle_unchecked, entity::Entity, query::Always, Archetype, Bundle,
-    EntityLinkings, EntryMut, EntryRef, Mask, MaskHashMap, QueryFilter, QueryLayoutMut,
-    QueryLayoutRef, QueryMut, QueryRef, Wrap,
+    archetype::remove_bundle_unchecked, entity::Entity, Archetype, Bundle,
+    EntityLinkings, EntryMut, EntryRef, Mask, MaskHashMap, QueryLayoutMut,
+    QueryLayoutRef,
 };
 
 pub type EntitySet = SlotMap<Entity, EntityLinkings>;
@@ -137,6 +137,7 @@ impl Scene {
         &mut self.entities
     }
 
+    /*
     // Create a new mutable query from this scene (with no filter)
     pub fn query_mut<'a, L: for<'i> QueryLayoutMut<'i>>(&'a mut self) -> QueryMut<'a, '_, '_, L> {
         assert!(
@@ -170,6 +171,7 @@ impl Scene {
     ) -> QueryRef<'a, '_, '_, L> {
         QueryRef::new_with_filter(self, filter)
     }
+    */
 }
 
 // The ECS system will manually insert the ECS resource and will clean it at the start of each frame (except the first frame)

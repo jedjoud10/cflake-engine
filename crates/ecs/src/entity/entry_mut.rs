@@ -1,7 +1,7 @@
 use super::Entity;
 use crate::{
     add_bundle_unchecked, name, registry::mask, remove_bundle_unchecked, Archetype, ArchetypeSet,
-    Bundle, Component, EntityLinkings, EntitySet, QueryLayoutMut, QueryLayoutRef, Scene, StateRow,
+    Bundle, Component, EntityLinkings, EntitySet, QueryLayoutMut, QueryLayoutRef, Scene,
 };
 
 // Mutable entity entries allow the user to be able to modify components that are linked to the entity
@@ -97,6 +97,7 @@ impl<'a> EntryMut<'a> {
         Some(bundle)
     }
 
+    /*
     // Get the current state row of our entity
     pub fn states(&self) -> StateRow {
         *self
@@ -105,6 +106,7 @@ impl<'a> EntryMut<'a> {
             .get(self.linkings().index())
             .unwrap()
     }
+    */
 
     // Check if the entity has a component linked to it
     pub fn contains<T: Component>(&self) -> bool {

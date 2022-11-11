@@ -1,6 +1,6 @@
 use crate::{
     registry::{self},
-    Archetype, Component, Mask, StateRow,
+    Archetype, Component, Mask,
 };
 use std::{marker::PhantomData, ops::BitAnd};
 
@@ -8,14 +8,11 @@ use std::{marker::PhantomData, ops::BitAnd};
 // These filters allow users to discard certain entries when iterating
 pub trait QueryFilter: 'static {
     // Cached data for fast traversal
-    type Cached;
+    type Cached<'a>: 'a;
 
     // Caching, archetype deletion, and entry evaluation
-    fn prepare() -> Self::Cached;
-    fn eval_archetype(_: &Self::Cached, _: &Archetype) -> bool {
-        true
-    }
-    fn eval_entry(cached: &Self::Cached, states: StateRow) -> bool;
+    fn eval_archetype(cached: &Self::Cached, archetype: &Archetype) -> bool;
+    fn eval_chunk(chunks: &Self::Cached, index: usize) -> u64;
 }
 
 // We need a wrapper to be able to implemented the rust bitwise operators

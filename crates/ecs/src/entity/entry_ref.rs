@@ -1,7 +1,7 @@
 use super::Entity;
 use crate::{
     registry::{mask, name},
-    Archetype, Component, EntityLinkings, QueryLayoutRef, Scene, StateRow,
+    Archetype, Component, EntityLinkings, QueryLayoutRef, Scene,
 };
 
 // Immutable entity entries allow the user to be able to read and get some data about a specific entity
@@ -33,7 +33,7 @@ impl<'a> EntryRef<'a> {
         self.archetype
     }
 
-    // Get an immutable reference to a table
+    // Get an immutable reference to a tableStateRow
     pub fn table<T: Component>(&self) -> Option<&Vec<T>> {
         self.archetype().table::<T>()
     }
@@ -43,6 +43,7 @@ impl<'a> EntryRef<'a> {
         self.table::<T>().map(|vec| &vec[self.linkings.index])
     }
 
+    /*
     // Get the current state row of our entity
     pub fn states(&self) -> StateRow {
         *self
@@ -51,6 +52,7 @@ impl<'a> EntryRef<'a> {
             .get(self.linkings().index())
             .unwrap()
     }
+    */
 
     // Check if the entity has a component linked to it
     pub fn contains<T: Component>(&self) -> bool {

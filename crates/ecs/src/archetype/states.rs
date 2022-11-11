@@ -1,5 +1,12 @@
 use crate::Mask;
 
+// A single chunk that will be contained within the archetype component column
+struct StateColumnChunk {
+    added: u64,
+    removed: u64,
+    modified: u64,
+}
+
 // Component state chunk that contains the component states for a bundle
 // TODO: Description
 #[derive(Clone, Copy, Debug)]
