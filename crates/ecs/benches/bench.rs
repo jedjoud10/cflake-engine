@@ -11,6 +11,10 @@ struct Ammo(u32);
 #[derive(Component, Debug, Clone, Copy, Default)]
 struct Placeholder();
 
+fn filtering_init(ecs: &mut Scene) {
+    let filter = added::<Placeholder>() & removed::<Name>();
+    ecs.query_mut_with::<(&mut Health, &Ammo)>(filter);
+}
 
 fn filtering(ecs: &mut Scene) {
     let filter = added::<Placeholder>() & removed::<Name>();
@@ -63,9 +67,8 @@ fn criterion_benchmark(c: &mut Criterion) {
     let mut threadpool = ThreadPool::new();
 
     let mut group = c.benchmark_group("test");
-    // TODO: Fix
-    for i in (1..20usize) {
-        let num = 1000usize * i;
+    for i in (1..15usize) {
+        let num = 5000usize * i;
         let (mut scene, entities) = init::<(Name, Health, Ammo)>(num);
     
         group.throughput(Throughput::Elements(num as u64));
@@ -92,7 +95,6 @@ fn criterion_benchmark(c: &mut Criterion) {
             }
         }
 
-        /*
         group.bench_with_input(
             BenchmarkId::new("Filtering Single-threaded", num),
             &(num as u64), |b, &size| {
@@ -106,7 +108,13 @@ fn criterion_benchmark(c: &mut Criterion) {
                 b.iter(|| filtering_threaded(&mut scene, &mut threadpool));
             }
         );
-        */
+
+        group.bench_with_input(
+            BenchmarkId::new("Filtering BitSet Init", num),
+            &(num as u64), |b, &size| {
+                b.iter(|| filtering_init(&mut scene));
+            }
+        );
     }
 }
 

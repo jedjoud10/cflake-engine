@@ -52,7 +52,7 @@ fn moving() {
 #[test]
 fn queries() {
     let mut manager = Scene::default();
-    let iter = (0..128).map(|_| (Name("Person"), Health(100)));
+    let iter = (0..130).map(|_| (Name("Person"), Health(100)));
     manager.extend_from_iter(iter);
 
     let query = manager.query_mut::<(&Name, &mut Health)>();
@@ -85,7 +85,7 @@ fn queries() {
 }
 
 #[test]
-fn filter() {
+fn filter_ref() {
     let mut manager = Scene::default();
     let e1 = manager.insert(Health(100));
     let e2 = manager.insert((Health(100), Ammo(30)));
@@ -103,10 +103,36 @@ fn filter() {
 
     let mut entry = manager.entry_mut(e1).unwrap();
     entry.get_mut::<Health>().unwrap();
-    dbg!(entry.states());
 
+    
     let query = manager.query_with::<&Health>(modified::<Health>());
-    dbg!("begin");
+    assert_eq!(query.len(), 1);
+    assert_eq!(query.into_iter().count(), 1);
+}
+
+
+#[test]
+fn filter_mut() {
+    let mut manager = Scene::default();
+    let e1 = manager.insert(Health(100));
+    let e2 = manager.insert((Health(100), Ammo(30)));
+    let query = manager.query_mut_with::<&mut Health>(contains::<Ammo>());
+    assert_eq!(query.len(), 1);
+    assert_eq!(query.into_iter().count(), 1);
+    let query = manager.query_mut::<&mut Health>();
+    assert_eq!(query.len(), 2);
+    assert_eq!(query.into_iter().count(), 2);
+    cleanup(&mut manager);
+
+    let query = manager.query_mut_with::<&mut Health>(modified::<Health>());
+    assert_eq!(query.len(), 0);
+    assert_eq!(query.into_iter().count(), 0);
+
+    let mut entry = manager.entry_mut(e1).unwrap();
+    entry.get_mut::<Health>().unwrap();
+
+    
+    let query = manager.query_mut_with::<&mut Health>(modified::<Health>());
     assert_eq!(query.len(), 1);
     assert_eq!(query.into_iter().count(), 1);
 }

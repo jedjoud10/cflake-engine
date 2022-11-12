@@ -110,6 +110,11 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutRef<'it>> QueryRef<'a, 'b, 's, L> {
         self.mask
     }
 
+    // Get the intenally stored bitset that will be used for filtering
+    pub fn bitset(&self) -> Option<&BitSet> {
+        self.bitset.as_ref()
+    }
+
     // Get the number of entries that we will have to iterate through
     pub fn len(&self) -> usize {
         if let Some(bitset) = &self.bitset {
@@ -182,21 +187,15 @@ impl<'b, 's, L: QueryLayoutRef<'s>> Iterator for QueryRefIter<'b, 's, L> {
         // Check if we should hop chunks
         self.check_hop_chunk()?;
 
-        // Skip the archetype if we are using a filter
+        // Skip the entry if we are using a filter
         if let Some(bitset) = self.bitset.clone() {
             // Increment the local index and global index until we find a set bit
-            dbg!(self.global_index);
-            dbg!(self.local_index);
             let mut bit = bitset.get(self.global_index);
-            dbg!(bit);
             while !bit {
                 self.local_index += 1;
                 self.global_index += 1;
-                dbg!(self.chunk.as_ref().unwrap().length);
                 self.check_hop_chunk()?;
-                dbg!(self.chunk.as_ref().unwrap().length);
                 bit = bitset.get(self.global_index);
-                dbg!(bit);
             }
         }
 

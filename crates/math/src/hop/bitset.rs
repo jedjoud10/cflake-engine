@@ -34,7 +34,7 @@ impl BitSet {
     // Get the chunk and bitmask location for a specific chunk
     fn coords(index: usize) -> (usize, usize) {
         let chunk = index / (usize::BITS as usize);
-        let location = chunk % (usize::BITS as usize);
+        let location = index % (usize::BITS as usize);
         (chunk, location)
     }
 

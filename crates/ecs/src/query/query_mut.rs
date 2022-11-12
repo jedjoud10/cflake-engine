@@ -121,7 +121,11 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
 
     // Get the number of entries that we will have to iterate through
     pub fn len(&self) -> usize {
-        self.archetypes.iter().map(|a| a.len()).sum()
+        if let Some(bitset) = &self.bitset {
+            bitset.count_ones()
+        } else {
+            self.archetypes.iter().map(|a| a.len()).sum()
+        }
     }
 }
 
@@ -218,8 +222,8 @@ impl<'b, 's, L: QueryLayoutMut<'s>> Iterator for QueryMutIter<'b, 's, L> {
             while !bit {
                 self.local_index += 1;
                 self.global_index += 1;
-                bit = bitset.get(self.global_index);
                 self.check_hop_chunk()?;
+                bit = bitset.get(self.global_index);
             }
         }
 
