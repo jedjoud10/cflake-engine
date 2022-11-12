@@ -70,7 +70,7 @@ impl<'a> EntryMut<'a> {
         let index = self.linkings().index();
         let states = self.archetype_mut().states_mut();
         let row = &mut states[index];
-        row.update(|_added, _removed, mutated| mutated.set(mask::<T>().offset(), true));
+        row.update(|_added, _removed, mutated| *mutated = *mutated | mask::<T>());
         self.get_mut_silent::<T>()
     }
 

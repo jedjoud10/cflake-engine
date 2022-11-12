@@ -91,16 +91,22 @@ fn filter() {
     let e2 = manager.insert((Health(100), Ammo(30)));
     let query = manager.query_with::<&Health>(contains::<Ammo>());
     assert_eq!(query.len(), 1);
+    assert_eq!(query.into_iter().count(), 1);
     let query = manager.query::<&Health>();
     assert_eq!(query.len(), 2);
+    assert_eq!(query.into_iter().count(), 2);
     cleanup(&mut manager);
 
     let query = manager.query_with::<&Health>(modified::<Health>());
     assert_eq!(query.len(), 0);
+    assert_eq!(query.into_iter().count(), 0);
 
     let mut entry = manager.entry_mut(e1).unwrap();
     entry.get_mut::<Health>().unwrap();
+    dbg!(entry.states());
 
     let query = manager.query_with::<&Health>(modified::<Health>());
+    dbg!("begin");
     assert_eq!(query.len(), 1);
+    assert_eq!(query.into_iter().count(), 1);
 }

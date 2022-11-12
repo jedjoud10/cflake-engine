@@ -21,6 +21,16 @@ impl BitSet {
         Self(small, false)
     }
 
+    // Get an immutable reference to the stored chunks
+    pub fn chunks(&self) -> &[usize] {
+        self.0.as_slice()
+    }
+    
+    // Get a mutable reference to the stored chunks
+    pub fn chunks_mut(&mut self) -> &mut [usize] {
+        self.0.as_mut_slice()
+    }
+
     // Get the chunk and bitmask location for a specific chunk
     fn coords(index: usize) -> (usize, usize) {
         let chunk = index / (usize::BITS as usize);

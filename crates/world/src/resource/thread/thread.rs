@@ -102,11 +102,11 @@ impl ThreadPool {
 
         // Create the scheduler config
         let batch_size = batch_size.max(1);
-        let num_threads_to_use = (length as f32 / batch_size as f32).ceil() as usize;
+        let num_tasks = (length as f32 / batch_size as f32).ceil() as usize;
         let remaining = length % batch_size;
 
         // Run the code in a single thread if needed
-        if num_threads_to_use == 1 {
+        if num_tasks == 1 {
             for x in 0..length {
                 function(unsafe { I::get_unchecked(&mut list, x) });
             }
@@ -140,11 +140,11 @@ impl ThreadPool {
 
         // Run the function in mutliple threads
         let base: Arc<dyn Any + Send + Sync> = Arc::new(list.as_ptrs());
-        for batch_index in 0..num_threads_to_use {
+        for batch_index in 0..num_tasks {
             self.append(ThreadedTask::ForEachBatch {
                 entry: ThreadFuncEntry {
                     base: base.clone(),
-                    batch_length: if batch_index == (num_threads_to_use - 1) && remaining != 0 {
+                    batch_length: if batch_index == (num_tasks - 1) && remaining > 0 {
                         remaining
                     } else {
                         batch_size

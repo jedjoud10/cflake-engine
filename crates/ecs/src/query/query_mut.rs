@@ -3,7 +3,7 @@ use math::BitSet;
 use smallvec::SmallVec;
 
 use crate::{Archetype, LayoutAccess, Mask, QueryFilter, QueryLayoutMut, Scene, StateRow, Wrap};
-use std::{marker::PhantomData, sync::Arc};
+use std::{marker::PhantomData, sync::Arc, rc::Rc};
 
 // This is a query that will be fetched from the main scene that we can use to get components out of entries with a specific layout
 // Even though I define the 'it, 'b, and 's lfietimes, I don't use them in this query, I only use them in the query iterator
@@ -56,7 +56,7 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
         let cached = F::prepare();
         let archetypes: Vec<&mut Archetype> = archetypes
             .into_iter()
-            .filter(|a| F::eval_archetype(&cached, a))
+            .filter(|a| a.len() > 0 && F::eval_archetype(&cached, a))
             .collect();
 
         // Filter the entries by iterating the archetype state rows
@@ -133,8 +133,9 @@ impl<'a: 'b, 'b, 'it, L: for<'s> QueryLayoutMut<'s>> IntoIterator for QueryMut<'
         QueryMutIter {
             archetypes: self.archetypes,
             chunk: None,
-            bitset: self.bitset,
-            index: 0,
+            bitset: self.bitset.map(Rc::new),
+            local_index: 0,
+            global_index: 0,
             mutability: self.mutability,
             _phantom1: PhantomData,
             _phantom2: PhantomData,
@@ -153,19 +154,46 @@ struct Chunk<'b, 's, L: QueryLayoutMut<'s>> {
 pub struct QueryMutIter<'b, 's, L: QueryLayoutMut<'s>> {
     archetypes: Vec<&'b mut Archetype>,
     chunk: Option<Chunk<'b, 's, L>>,
-    index: usize,
+    local_index: usize,
+    global_index: usize,
     mutability: Mask,
-    bitset: Option<BitSet>,
+    bitset: Option<Rc<BitSet>>,
     _phantom1: PhantomData<&'s ()>,
     _phantom2: PhantomData<L>,
 }
+
+
+impl<'b, 's, L: QueryLayoutMut<'s>> QueryMutIter<'b, 's, L> {
+    // Hop onto the next archetype if we are done iterating through the current one
+    fn check_hop_chunk(&mut self) -> Option<()> {
+        let len = self
+            .chunk
+            .as_ref()
+            .map(|chunk| chunk.length)
+            .unwrap_or_default();
+
+        if self.local_index + 1 > len {
+            let archetype = self.archetypes.pop()?;
+            let ptrs = unsafe { L::ptrs_from_mut_archetype_unchecked(archetype) };
+            let length = archetype.len();
+            self.local_index = 0;
+            self.chunk = Some(Chunk {
+                archetype,
+                ptrs,
+                length,
+            });
+        }
+
+        Some(())
+    }
+} 
 
 impl<'b, 's, L: QueryLayoutMut<'s>> Iterator for QueryMutIter<'b, 's, L> {
     type Item = L;
 
     fn next(&mut self) -> Option<Self::Item> {
         // Hop onto the next archetype if we are done iterating through the current one
-        if (self.index + 1)
+        if (self.local_index + 1)
             > self
                 .chunk
                 .as_ref()
@@ -175,7 +203,7 @@ impl<'b, 's, L: QueryLayoutMut<'s>> Iterator for QueryMutIter<'b, 's, L> {
             let archetype = self.archetypes.pop()?;
             let ptrs = unsafe { L::ptrs_from_mut_archetype_unchecked(archetype) };
             let length = archetype.len();
-            self.index = 0;
+            self.local_index = 0;
             self.chunk = Some(Chunk {
                 archetype,
                 ptrs,
@@ -184,22 +212,27 @@ impl<'b, 's, L: QueryLayoutMut<'s>> Iterator for QueryMutIter<'b, 's, L> {
         }
 
         // Skip the archetype if we are using a filter
-        if let Some(bitset) = &self.bitset {
-            if !bitset.get(self.index) {
-                self.index += 1;
-                return None;
+        if let Some(bitset) = self.bitset.clone() {
+            // Increment the local index and global index until we find a set bit
+            let mut bit = bitset.get(self.global_index);
+            while !bit {
+                self.local_index += 1;
+                self.global_index += 1;
+                bit = bitset.get(self.global_index);
+                self.check_hop_chunk()?;
             }
         }
 
         // I have to do this since iterators cannot return data that they are referencing, but in this case, it is safe to do so
         self.chunk.as_mut()?;
         let ptrs = self.chunk.as_ref().unwrap().ptrs;
-        let items = unsafe { L::read_mut_unchecked(ptrs, self.index) };
-        self.index += 1;
+        let items = unsafe { L::read_mut_unchecked(ptrs, self.local_index) };
+        self.local_index += 1;
+        self.global_index += 1;
 
         // Update the mask for the current entity
         let states = self.chunk.as_mut().unwrap().archetype.states_mut();
-        states[self.index - 1].update(|_, _, update| *update = *update | self.mutability);
+        states[self.local_index - 1].update(|_, _, update| *update = *update | self.mutability);
 
         Some(items)
     }
