@@ -1,18 +1,29 @@
 use crate::{
     registry::{self},
-    Archetype, Component, Mask,
+    Archetype, Component, Mask, StateColumn,
 };
 use std::{marker::PhantomData, ops::BitAnd};
 
 // Basic evaluator that will be implemented for the filter sources and modifiers
 // These filters allow users to discard certain entries when iterating
 pub trait QueryFilter: 'static {
-    // Cached data for fast traversal
-    type Cached<'a>: 'a;
+    // Cached data for fast traversal (only stores the bitmask of a specific component)
+    type Cached: 'static + Clone + Copy;
 
-    // Caching, archetype deletion, and entry evaluation
-    fn eval_archetype(cached: &Self::Cached, archetype: &Archetype) -> bool;
-    fn eval_chunk(chunks: &Self::Cached, index: usize) -> u64;
+    // Cached chunks that we fetch from an archetypes
+    type Chunks<'a>: 'a + Clone + Copy;
+
+    // Create the permanent cached data
+    fn prepare() -> Self::Cached;
+
+    // Evaluate a single archetype to check if it passes the filter
+    fn eval_archetype(cached: Self::Cached, archetype: &Archetype) -> bool;
+
+    // Cache the state columns of a specific archetype
+    fn cache_chunks<'a>(cached: Self::Cached, archetype: &'a Archetype) -> Self::Chunks<'a>;
+    
+    // Evaluate a single chunk to check if all the entries within it pass the filter
+    fn eval_chunk(chunks: Self::Chunks<'_>, index: usize) -> u64;
 }
 
 // We need a wrapper to be able to implemented the rust bitwise operators
@@ -36,71 +47,127 @@ pub struct Not<A: QueryFilter>(PhantomData<A>);
 
 impl<T: Component> QueryFilter for Added<T> {
     type Cached = Mask;
+    type Chunks<'a> = &'a StateColumn;
 
     fn prepare() -> Self::Cached {
         registry::mask::<T>()
     }
 
-    fn eval_entry(cached: &Self::Cached, states: StateRow) -> bool {
-        states.added().get(cached.offset())
+    fn eval_archetype(cached: Self::Cached, archetype: &Archetype) -> bool {
+        true
+    }
+
+    fn cache_chunks<'a>(cached: Self::Cached, archetype: &'a Archetype) -> Self::Chunks<'a> {
+        archetype.state_table().get(&cached).unwrap()
+    }
+
+    fn eval_chunk(chunks: Self::Chunks<'_>, index: usize) -> u64 {
+        chunks.get(index).unwrap().added
     }
 }
 
 impl<T: Component> QueryFilter for Removed<T> {
     type Cached = Mask;
+    type Chunks<'a> = &'a StateColumn;
 
     fn prepare() -> Self::Cached {
         registry::mask::<T>()
     }
 
-    fn eval_entry(cached: &Self::Cached, states: StateRow) -> bool {
-        states.removed().get(cached.offset())
+    fn eval_archetype(cached: Self::Cached, archetype: &Archetype) -> bool {
+        true
+    }
+
+    fn cache_chunks<'a>(cached: Self::Cached, archetype: &'a Archetype) -> Self::Chunks<'a> {
+        archetype.state_table().get(&cached).unwrap()
+    }
+
+    fn eval_chunk(chunks: Self::Chunks<'_>, index: usize) -> u64 {
+        chunks.get(index).unwrap().removed
     }
 }
 
 impl<T: Component> QueryFilter for Modified<T> {
     type Cached = Mask;
+    type Chunks<'a> = &'a StateColumn;
 
     fn prepare() -> Self::Cached {
         registry::mask::<T>()
     }
 
-    fn eval_entry(cached: &Self::Cached, states: StateRow) -> bool {
-        states.mutated().get(cached.offset())
+    fn eval_archetype(cached: Self::Cached, archetype: &Archetype) -> bool {
+        true
+    }
+
+    fn cache_chunks<'a>(cached: Self::Cached, archetype: &'a Archetype) -> Self::Chunks<'a> {
+        archetype.state_table().get(&cached).unwrap()
+    }
+
+    fn eval_chunk(chunks: Self::Chunks<'_>, index: usize) -> u64 {
+        chunks.get(index).unwrap().modified
     }
 }
 
 impl<T: Component> QueryFilter for Contains<T> {
     type Cached = Mask;
+    type Chunks<'a> = &'a StateColumn;
 
     fn prepare() -> Self::Cached {
         registry::mask::<T>()
     }
 
-    fn eval_archetype(cached: &Self::Cached, archetype: &Archetype) -> bool {
-        archetype.mask().contains(*cached)
+    fn eval_archetype(cached: Self::Cached, archetype: &Archetype) -> bool {
+        archetype.mask().contains(cached)
     }
 
-    fn eval_entry(_: &Self::Cached, _states: StateRow) -> bool {
-        true
+    fn cache_chunks<'a>(cached: Self::Cached, archetype: &'a Archetype) -> Self::Chunks<'a> {
+        panic!()
+    }
+
+    fn eval_chunk(chunks: Self::Chunks<'_>, index: usize) -> u64 {
+        panic!()
     }
 }
 
 impl QueryFilter for Always {
     type Cached = ();
+    type Chunks<'a> = ();
 
-    fn prepare() -> Self::Cached {}
-    fn eval_entry(_cached: &Self::Cached, _states: StateRow) -> bool {
+    fn prepare() -> Self::Cached {
+        ()
+    }
+
+    fn eval_archetype(cached: Self::Cached, archetype: &Archetype) -> bool {
         true
+    }
+
+    fn cache_chunks<'a>(cached: Self::Cached, archetype: &'a Archetype) -> Self::Chunks<'a> {
+        ()
+    }
+
+    fn eval_chunk(chunks: Self::Chunks<'_>, index: usize) -> u64 {
+        u64::MAX
     }
 }
 
 impl QueryFilter for Never {
     type Cached = ();
+    type Chunks<'a> = ();
 
-    fn prepare() -> Self::Cached {}
-    fn eval_entry(_cached: &Self::Cached, _states: StateRow) -> bool {
+    fn prepare() -> Self::Cached {
+        ()
+    }
+
+    fn eval_archetype(cached: Self::Cached, archetype: &Archetype) -> bool {
         false
+    }
+
+    fn cache_chunks<'a>(cached: Self::Cached, archetype: &'a Archetype) -> Self::Chunks<'a> {
+        panic!()
+    }
+
+    fn eval_chunk(chunks: Self::Chunks<'_>, index: usize) -> u64 {
+        panic!()
     }
 }
 
@@ -168,7 +235,9 @@ impl<A: QueryFilter> QueryFilter for Not<A> {
         !A::eval_entry(cached, states)
     }
 }
+*/
 
+/*
 // Functions to create the sources and modifiers
 pub fn modified<T: Component>() -> Wrap<Modified<T>> {
     Wrap::<Modified<T>>(PhantomData)
@@ -222,3 +291,4 @@ impl<A: QueryFilter> std::ops::Not for Wrap<A> {
         Wrap(PhantomData)
     }
 }
+*/

@@ -11,6 +11,8 @@ struct Ammo(u32);
 #[derive(Component, Debug, Clone, Copy, Default)]
 struct Placeholder();
 
+/*
+
 fn filtering_init(ecs: &mut Scene) {
     let filter = added::<Placeholder>() & removed::<Name>();
     ecs.query_mut_with::<(&mut Health, &Ammo)>(filter);
@@ -61,9 +63,10 @@ fn cleanup(ecs: &mut Scene) {
         }
     }
 }
-
+*/
 
 fn criterion_benchmark(c: &mut Criterion) {
+    /*
     let mut threadpool = ThreadPool::new();
 
     let mut group = c.benchmark_group("test");
@@ -116,6 +119,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             }
         );
     }
+    */
 }
 
 criterion_group!(benches, criterion_benchmark);

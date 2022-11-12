@@ -1,5 +1,5 @@
 use crate::{
-    mask, name, Archetype, Component, ComponentTable, LayoutAccess, Mask, MaskHashMap, OwnedBundle,
+    mask, name, Archetype, Component, ComponentColumn, LayoutAccess, Mask, MaskHashMap, OwnedBundle,
     QueryItemMut, QueryItemRef, QueryLayoutMut, QueryLayoutRef,
 };
 use casey::lower;
@@ -35,15 +35,15 @@ macro_rules! tuple_impls {
                 });
             }
 
-            fn default_tables() -> MaskHashMap<Box<dyn ComponentTable>> {
-                let mut map = MaskHashMap::<Box<dyn ComponentTable>>::default();
+            fn default_tables() -> MaskHashMap<Box<dyn ComponentColumn>> {
+                let mut map = MaskHashMap::<Box<dyn ComponentColumn>>::default();
                 ($(
                     map.insert(mask::<$name>(), Box::new(Vec::<$name>::new()))
                 ),+);
                 map
             }
 
-            fn try_swap_remove(tables: &mut MaskHashMap<Box<dyn ComponentTable>>, index: usize) -> Option<Self> {
+            fn try_swap_remove(tables: &mut MaskHashMap<Box<dyn ComponentColumn>>, index: usize) -> Option<Self> {
                 seq!(N in 0..$max {
                     let boxed = tables.get_mut(&mask::<C~N>())?;
                     let vec = boxed.as_any_mut().downcast_mut::<Vec<C~N>>().unwrap();

@@ -3,9 +3,9 @@ use crate::Mask;
 // A single chunk that will be contained within the archetype component column
 #[derive(Default, Clone, Copy)]
 pub struct StateColumnChunk {
-    added: u64,
-    removed: u64,
-    modified: u64,
+    pub added: u64,
+    pub removed: u64,
+    pub modified: u64,
 }
 
 // Returned from the Vec<StateColumnChunk>
@@ -118,6 +118,16 @@ impl StateColumn {
         set_bit(&mut chunk.added, index, flags.added);
         set_bit(&mut chunk.modified, index, flags.modified);
         set_bit(&mut chunk.removed, index, flags.removed);
+    }
+
+    // Get a specific state column chunk immutably
+    pub(crate) fn get(&self, index: usize) -> Option<&StateColumnChunk> {
+        self.0.get(index)
+    }
+
+    // Get a specific state column chunk mutably
+    pub(crate) fn get_mut(&mut self, index: usize) -> Option<&mut StateColumnChunk> {
+        self.0.get_mut(index)
     }
 
     // Clear all the states from within this column
