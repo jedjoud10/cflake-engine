@@ -68,9 +68,8 @@ impl<'a> EntryMut<'a> {
     pub fn get_mut<T: Component>(&mut self) -> Option<&mut T> {
         self.table_mut::<T>()?;
         let index = self.linkings().index();
-        let states = self.archetype_mut().states_mut();
-        let state = states.get_mut(&mask::<T>())?;
-        state.update(index, |flags| flags.modified = true);
+        let states = self.archetype_mut().states_mut::<T>()?;
+        states.update(index, |flags| flags.modified = true);
         self.get_mut_silent::<T>()
     }
 
@@ -150,9 +149,9 @@ impl<'a> EntryMut<'a> {
 
         // Update the states based on the layout mask
         for unit in mutability.units() {
-            let states = self.archetype_mut().states_mut();
-            let state = states.get_mut(&unit).unwrap();
-            state.update(index, |flags| flags.modified = true);
+            let table = self.archetype_mut().state_table_mut();
+            let states = table.get_mut(&unit).unwrap();
+            states.update(index, |flags| flags.modified = true);
         }
 
         Some(layout)

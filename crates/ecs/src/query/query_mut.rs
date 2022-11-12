@@ -1,8 +1,7 @@
 use itertools::Itertools;
 use math::BitSet;
 use smallvec::SmallVec;
-
-use crate::{Archetype, LayoutAccess, Mask, QueryFilter, QueryLayoutMut, Scene, StateRow, Wrap};
+use crate::{Archetype, LayoutAccess, Mask, QueryFilter, QueryLayoutMut, Scene, Wrap};
 use std::{marker::PhantomData, sync::Arc, rc::Rc};
 
 // This is a query that will be fetched from the main scene that we can use to get components out of entries with a specific layout
@@ -56,17 +55,24 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
         let cached = F::prepare();
         let archetypes: Vec<&mut Archetype> = archetypes
             .into_iter()
-            .filter(|a| a.len() > 0 && F::eval_archetype(&cached, a))
+            .filter(|a| F::evaluate_archetype(cached, a))
             .collect();
 
         // Filter the entries by iterating the archetype state rows
         let mutability = mask.unique();
         let mask = mask.both();
+
+
+        // Filter the entries by chunks of 64 entries at a time
         let iterator = archetypes.iter().flat_map(|archetype| {
-            let states = archetype.states();
-            states.iter().map(|state| F::eval_entry(&cached, *state))
+            let columns = F::cache_columns(cached, archetype);
+            let chunks = archetype.entities().len() as f32 / usize::BITS as f32;
+            let chunks = chunks.ceil() as usize;
+            (0..chunks).into_iter().map(move |i| 
+                F::evaluate_chunk(columns, i)
+            )
         });
-        let bitset = BitSet::from_iter(iterator);
+        let bitset = BitSet::from_chunks_iter(iterator);
 
         Self {
             archetypes,
@@ -94,10 +100,32 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
         threadpool.scope(|scope| {
             let mutability = self.mutability;
             let bitset = self.bitset.map(|bitset| Arc::new(bitset));
+            
+            // Keep track of the last archetype length rounded up to a 'usize' multiple
+            // Only used when we need to deal with the filtered bitset chunks
+            let chunk_length_inv_offset = 0;
+
             for archetype in self.archetypes.iter_mut() {
                 // Send the archetype slices to multiple threads to be able to compute them
                 let ptrs = unsafe { L::ptrs_from_mut_archetype_unchecked(archetype) };
                 let slices = unsafe { L::from_raw_parts(ptrs, archetype.len()) };
+
+                // Update all states chunks of the current archetype before iterating
+                let table = archetype.state_table_mut();
+                for mask in mutability.units() {
+                    let column = table.get_mut(&mask).unwrap();
+                    
+                    // Update all the chunks that are stored in the column
+                    for (i, output) in column.chunks_mut().iter_mut().enumerate() {
+                        // Check if we need to read from the bitset first
+                        if let Some(bitset) = &bitset {
+                            let input = bitset.chunks()[i - chunk_length_inv_offset];
+                            output.modified = input;
+                        } else {
+                            output.modified = usize::MAX;
+                        }
+                    }
+                } 
 
                 // Should we use per entry filtering?
                 if let Some(bitset) = bitset.clone() {
@@ -106,10 +134,8 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
                     scope.for_each(slices, function.clone(), batch_size);
                 }
 
-                // We don't have to worry about doing this since the entry disabled/enabled mask is already computed when the query was created
-                for state in archetype.states_mut().iter_mut() {
-                    StateRow::update(state, |_, _, mutated| *mutated = *mutated | mutability);
-                }
+                // Add the chunk size to the sum
+                chunk_length_inv_offset += (archetype.len() as f32 / usize::BITS as f32).ceil() as usize;
             }
         });
     }
@@ -134,6 +160,8 @@ impl<'a: 'b, 'b, 'it, L: for<'s> QueryLayoutMut<'s>> IntoIterator for QueryMut<'
     type IntoIter = QueryMutIter<'b, 'it, L>;
 
     fn into_iter(self) -> Self::IntoIter {
+        // TODO: Update all states chunks of the current archetype before iterating
+
         QueryMutIter {
             archetypes: self.archetypes,
             chunk: None,
@@ -233,10 +261,6 @@ impl<'b, 's, L: QueryLayoutMut<'s>> Iterator for QueryMutIter<'b, 's, L> {
         let items = unsafe { L::read_mut_unchecked(ptrs, self.local_index) };
         self.local_index += 1;
         self.global_index += 1;
-
-        // Update the mask for the current entity
-        let states = self.chunk.as_mut().unwrap().archetype.states_mut();
-        states[self.local_index - 1].update(|_, _, update| *update = *update | self.mutability);
 
         Some(items)
     }

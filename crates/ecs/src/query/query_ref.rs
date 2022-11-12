@@ -3,7 +3,7 @@ use math::BitSet;
 use smallvec::SmallVec;
 
 use crate::{
-    Archetype, LayoutAccess, Mask, QueryFilter, QueryLayoutMut, QueryLayoutRef, Scene, StateRow,
+    Archetype, LayoutAccess, Mask, QueryFilter, QueryLayoutMut, QueryLayoutRef, Scene,
     Wrap,
 };
 use std::{marker::PhantomData, sync::Arc, rc::Rc};
@@ -56,15 +56,18 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutRef<'it>> QueryRef<'a, 'b, 's, L> {
         let cached = F::prepare();
         let archetypes: Vec<&Archetype> = archetypes
             .into_iter()
-            .filter(|a| F::eval_archetype(&cached, a))
+            .filter(|a| F::evaluate_archetype(cached, a))
             .collect();
 
-        // Filter the entries by iterating the archetype state rows
+        // Filter the entries by chunks of 64 entries at a time
         let iterator = archetypes.iter().flat_map(|archetype| {
-            let states = archetype.states();
-            states.iter().map(|state| F::eval_entry(&cached, *state))
+            let columns = F::cache_columns(cached, archetype);
+            let chunks = archetype.entities().len() / usize::BITS as usize;
+            (0..chunks).into_iter().map(move |i| 
+                F::evaluate_chunk(columns, i)
+            )
         });
-        let bitset = BitSet::from_iter(iterator);
+        let bitset = BitSet::from_chunks_iter(iterator);
 
         Self {
             archetypes,

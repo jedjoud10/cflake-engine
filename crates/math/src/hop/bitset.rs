@@ -11,6 +11,11 @@ impl BitSet {
         Self(Vec::default(), false)
     }
 
+    // Create a bitset from an iterator of chunks
+    pub fn from_chunks_iter(iter: impl Iterator<Item = usize>) -> Self {
+        Self(iter.collect(), false)
+    }
+
     // Create a bitset from an iterator of booleans
     pub fn from_iter(iter: impl Iterator<Item = bool>) -> Self {
         let chunks = iter.chunks(usize::BITS as usize);
