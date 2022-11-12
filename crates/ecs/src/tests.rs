@@ -41,6 +41,15 @@ fn entries() {
 }
 
 #[test]
+fn moving() {
+    let mut manager = Scene::default();
+    let entity = manager.insert((Name(""), Health(100)));
+    let mut entry = manager.entry_mut(entity).unwrap();
+    entry.remove_bundle::<Health>().unwrap();
+    entry.insert_bundle::<Ammo>(Ammo(0)).unwrap();
+}
+
+#[test]
 fn queries() {
     let mut manager = Scene::default();
     let iter = (0..128).map(|_| (Name("Person"), Health(100)));

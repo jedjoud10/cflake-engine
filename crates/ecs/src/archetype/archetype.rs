@@ -189,13 +189,15 @@ pub(crate) fn add_bundle_unchecked<B: Bundle>(
     // Create the new target archetype if needed
     if !archetypes.contains_key(&new) {
         let current = archetypes.get_mut(&old).unwrap();
-        let tables = current
+        let mut tables = current
             .tables
             .iter()
             .map(|(mask, table)| (*mask, table.clone_default()));
+        let mut extra = B::default_tables();
+        extra.extend(tables);
         let archetype = Archetype {
             mask: new,
-            tables: MaskHashMap::from_iter(tables),
+            tables: extra,
             states: Default::default(),
             entities: Default::default(),
         };
@@ -204,7 +206,7 @@ pub(crate) fn add_bundle_unchecked<B: Bundle>(
 
     // Get the current and target archetypes that we will modify
     let (current, target) = split(archetypes, old, new);
-    let linkings = entities.get(entity)?;
+    let linkings = entities.get(entity).unwrap();
     let index = linkings.index();
 
     // Move the components from one archetype to the other
@@ -214,7 +216,7 @@ pub(crate) fn add_bundle_unchecked<B: Bundle>(
     }
 
     // Add the extra components as well
-    let mut storages = B::prepare(target)?;
+    let mut storages = B::prepare(target).unwrap();
     B::push(&mut storages, bundle);
     drop(storages);
 
@@ -249,8 +251,12 @@ pub(crate) fn remove_bundle_unchecked<B: Bundle>(
 
     // Get the old and new masks
     let old = entities[entity].mask;
+    // 0110
+    
     let combined = B::reduce(|a, b| a | b);
     let new = entities[entity].mask & !combined;
+
+    // 0010
 
     // Create the new target archetype if needed
     if !archetypes.contains_key(&new) {
@@ -258,7 +264,9 @@ pub(crate) fn remove_bundle_unchecked<B: Bundle>(
         let tables = current
             .tables
             .iter()
+            .filter(|(mask, _)| new.contains(**mask))
             .map(|(mask, table)| (*mask, table.clone_default()));
+        
         let filtered = tables.filter(|(mask, _)| Mask::contains(&new, *mask));
         let archetype = Archetype {
             mask: new,
