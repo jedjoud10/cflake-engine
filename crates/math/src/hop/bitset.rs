@@ -3,6 +3,7 @@ use smallvec::SmallVec;
 
 // Simple bitset that allocates using u64 chunks
 // This bitset contains a specific number of elements per chunk
+#[derive(Default, Clone)]
 pub struct BitSet(Vec<usize>, bool);
 
 impl BitSet {

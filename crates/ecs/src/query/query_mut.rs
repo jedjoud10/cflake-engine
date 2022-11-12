@@ -10,7 +10,7 @@ pub struct QueryMut<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> {
     archetypes: Vec<&'a mut Archetype>,
     mask: Mask,
     mutability: Mask,
-    bitset: Option<BitSet>,
+    bitsets: Option<Vec<BitSet>>,
     _phantom1: PhantomData<&'b ()>,
     _phantom2: PhantomData<&'s ()>,
     _phantom3: PhantomData<L>,
@@ -38,7 +38,7 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
 
         Self {
             archetypes,
-            bitset: None,
+            bitsets: None,
             _phantom3: PhantomData,
             mask,
             mutability,
@@ -64,21 +64,23 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
 
 
         // Filter the entries by chunks of 64 entries at a time
-        let iterator = archetypes.iter().flat_map(|archetype| {
+        let iterator = archetypes.iter().map(|archetype| {
             let columns = F::cache_columns(cached, archetype);
             let chunks = archetype.entities().len() as f32 / usize::BITS as f32;
             let chunks = chunks.ceil() as usize;
-            (0..chunks).into_iter().map(move |i| 
+            BitSet::from_chunks_iter((0..chunks).into_iter().map(move |i| 
                 F::evaluate_chunk(columns, i)
-            )
+            ))
         });
-        let bitset = BitSet::from_chunks_iter(iterator);
+
+        // Create a unique hop bitset for each archetype
+        let bitsets = Vec::from_iter(iterator);
 
         Self {
             archetypes,
             mask,
             mutability,
-            bitset: Some(bitset),
+            bitsets: Some(bitsets),
             _phantom3: PhantomData,
             _phantom1: PhantomData,
             _phantom2: PhantomData,
@@ -99,16 +101,14 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
     {
         threadpool.scope(|scope| {
             let mutability = self.mutability;
-            let bitset = self.bitset.map(|bitset| Arc::new(bitset));
-            
-            // Keep track of the last archetype length rounded up to a 'usize' multiple
-            // Only used when we need to deal with the filtered bitset chunks
-            let chunk_length_inv_offset = 0;
-
-            for archetype in self.archetypes.iter_mut() {
+            for (i, archetype) in self.archetypes.iter_mut().enumerate() {
                 // Send the archetype slices to multiple threads to be able to compute them
                 let ptrs = unsafe { L::ptrs_from_mut_archetype_unchecked(archetype) };
                 let slices = unsafe { L::from_raw_parts(ptrs, archetype.len()) };
+
+                // Convert the archetype bitset to a thread-shareable bitset
+                // TODO: Reverse the order of the archetypes to avoid cloning the bitset here
+                let bitset = self.bitsets.as_ref().map(|bitset| Arc::new(bitset[i].clone()));
 
                 // Update all states chunks of the current archetype before iterating
                 let table = archetype.state_table_mut();
@@ -116,13 +116,14 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
                     let column = table.get_mut(&mask).unwrap();
                     
                     // Update all the chunks that are stored in the column
-                    for (i, output) in column.chunks_mut().iter_mut().enumerate() {
-                        // Check if we need to read from the bitset first
-                        if let Some(bitset) = &bitset {
-                            let input = bitset.chunks()[i - chunk_length_inv_offset];
-                            output.modified = input;
-                        } else {
-                            output.modified = usize::MAX;
+                    if let Some(bitset) = &bitset {
+                        let chunks = bitset.chunks();
+                        for (i, output) in column.chunks_mut().iter_mut().enumerate() {
+                            output.modified = chunks[i];
+                        }
+                    } else {
+                        for chunk in column.chunks_mut().iter_mut() {
+                            chunk.modified = usize::MAX;
                         }
                     }
                 } 
@@ -133,9 +134,6 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
                 } else {
                     scope.for_each(slices, function.clone(), batch_size);
                 }
-
-                // Add the chunk size to the sum
-                chunk_length_inv_offset += (archetype.len() as f32 / usize::BITS as f32).ceil() as usize;
             }
         });
     }
@@ -147,8 +145,8 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
 
     // Get the number of entries that we will have to iterate through
     pub fn len(&self) -> usize {
-        if let Some(bitset) = &self.bitset {
-            bitset.count_ones()
+        if let Some(bitsets) = &self.bitsets {
+            bitsets.iter().map(|b| b.count_ones()).sum()
         } else {
             self.archetypes.iter().map(|a| a.len()).sum()
         }
@@ -164,10 +162,9 @@ impl<'a: 'b, 'b, 'it, L: for<'s> QueryLayoutMut<'s>> IntoIterator for QueryMut<'
 
         QueryMutIter {
             archetypes: self.archetypes,
+            bitsets: self.bitsets,
             chunk: None,
-            bitset: self.bitset.map(Rc::new),
-            local_index: 0,
-            global_index: 0,
+            index: 0,
             mutability: self.mutability,
             _phantom1: PhantomData,
             _phantom2: PhantomData,
@@ -178,18 +175,21 @@ impl<'a: 'b, 'b, 'it, L: for<'s> QueryLayoutMut<'s>> IntoIterator for QueryMut<'
 // Currently loaded chunk in the mutable query iterator
 struct Chunk<'b, 's, L: QueryLayoutMut<'s>> {
     archetype: &'b mut Archetype,
+    bitset: Option<BitSet>,
     ptrs: L::PtrTuple,
     length: usize,
 }
 
 // This is a mutable query iterator that will iterate through all the query entries in arbitrary order
 pub struct QueryMutIter<'b, 's, L: QueryLayoutMut<'s>> {
+    // Inputs from the query
     archetypes: Vec<&'b mut Archetype>,
+    bitsets: Option<Vec<BitSet>>,
+
+    // Unique to the iterator
     chunk: Option<Chunk<'b, 's, L>>,
-    local_index: usize,
-    global_index: usize,
+    index: usize,
     mutability: Mask,
-    bitset: Option<Rc<BitSet>>,
     _phantom1: PhantomData<&'s ()>,
     _phantom2: PhantomData<L>,
 }
@@ -204,13 +204,15 @@ impl<'b, 's, L: QueryLayoutMut<'s>> QueryMutIter<'b, 's, L> {
             .map(|chunk| chunk.length)
             .unwrap_or_default();
 
-        if self.local_index + 1 > len {
+        if self.index + 1 > len {
             let archetype = self.archetypes.pop()?;
+            let bitset = self.bitsets.as_mut().map(|vec| vec.pop().unwrap());
             let ptrs = unsafe { L::ptrs_from_mut_archetype_unchecked(archetype) };
             let length = archetype.len();
-            self.local_index = 0;
+            self.index = 0;
             self.chunk = Some(Chunk {
                 archetype,
+                bitset,
                 ptrs,
                 length,
             });
@@ -224,43 +226,20 @@ impl<'b, 's, L: QueryLayoutMut<'s>> Iterator for QueryMutIter<'b, 's, L> {
     type Item = L;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // Hop onto the next archetype if we are done iterating through the current one
-        if (self.local_index + 1)
-            > self
-                .chunk
-                .as_ref()
-                .map(|chunk| chunk.length)
-                .unwrap_or_default()
-        {
-            let archetype = self.archetypes.pop()?;
-            let ptrs = unsafe { L::ptrs_from_mut_archetype_unchecked(archetype) };
-            let length = archetype.len();
-            self.local_index = 0;
-            self.chunk = Some(Chunk {
-                archetype,
-                ptrs,
-                length,
-            });
-        }
+        self.check_hop_chunk()?;
 
         // Skip the archetype if we are using a filter
-        if let Some(bitset) = self.bitset.clone() {
-            // Increment the local index and global index until we find a set bit
-            let mut bit = bitset.get(self.global_index);
-            while !bit {
-                self.local_index += 1;
-                self.global_index += 1;
-                self.check_hop_chunk()?;
-                bit = bitset.get(self.global_index);
+        if let Some(chunk) = &self.chunk {
+            if let Some(bitset) = &chunk.bitset {
+                // TODO: Implement bitset hopping
             }
         }
 
         // I have to do this since iterators cannot return data that they are referencing, but in this case, it is safe to do so
         self.chunk.as_mut()?;
         let ptrs = self.chunk.as_ref().unwrap().ptrs;
-        let items = unsafe { L::read_mut_unchecked(ptrs, self.local_index) };
-        self.local_index += 1;
-        self.global_index += 1;
+        let items = unsafe { L::read_mut_unchecked(ptrs, self.index) };
+        self.index += 1;
 
         Some(items)
     }
