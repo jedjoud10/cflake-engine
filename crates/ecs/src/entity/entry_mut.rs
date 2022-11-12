@@ -1,7 +1,7 @@
 use super::Entity;
 use crate::{
     add_bundle_unchecked, name, registry::mask, remove_bundle_unchecked, Archetype, ArchetypeSet,
-    Bundle, Component, EntityLinkings, EntitySet, QueryLayoutMut, QueryLayoutRef, Scene, StateRow,
+    Bundle, Component, EntityLinkings, EntitySet, QueryLayoutMut, QueryLayoutRef, Scene,
 };
 
 // Mutable entity entries allow the user to be able to modify components that are linked to the entity
@@ -45,12 +45,12 @@ impl<'a> EntryMut<'a> {
 
     // Get an immutable reference to a table
     pub fn table<T: Component>(&self) -> Option<&Vec<T>> {
-        self.archetype().table::<T>()
+        self.archetype().components::<T>()
     }
 
     // Get a mutable reference to a table
     pub fn table_mut<T: Component>(&mut self) -> Option<&mut Vec<T>> {
-        self.archetype_mut().table_mut::<T>()
+        self.archetype_mut().components_mut::<T>()
     }
 
     // Get an immutable reference to a linked component
@@ -69,8 +69,8 @@ impl<'a> EntryMut<'a> {
         self.table_mut::<T>()?;
         let index = self.linkings().index();
         let states = self.archetype_mut().states_mut();
-        let row = &mut states[index];
-        row.update(|_added, _removed, mutated| *mutated = *mutated | mask::<T>());
+        let state = states.get_mut(&mask::<T>())?;
+        state.update(index, |flags| flags.modified = true);
         self.get_mut_silent::<T>()
     }
 
@@ -97,6 +97,7 @@ impl<'a> EntryMut<'a> {
         Some(bundle)
     }
 
+    /*
     // Get the current state row of our entity
     pub fn states(&self) -> StateRow {
         *self
@@ -105,6 +106,7 @@ impl<'a> EntryMut<'a> {
             .get(self.linkings().index())
             .unwrap()
     }
+    */
 
     // Check if the entity has a component linked to it
     pub fn contains<T: Component>(&self) -> bool {
@@ -146,9 +148,13 @@ impl<'a> EntryMut<'a> {
         let ptrs = unsafe { L::ptrs_from_mut_archetype_unchecked(self.archetype_mut()) };
         let layout = unsafe { L::read_mut_unchecked(ptrs, index) };
 
-        // Update the state row
-        self.archetype_mut().states_mut()[index]
-            .update(|_, _, update| *update = *update | mutability);
+        // Update the states based on the layout mask
+        for unit in mutability.units() {
+            let states = self.archetype_mut().states_mut();
+            let state = states.get_mut(&unit).unwrap();
+            state.update(index, |flags| flags.modified = true);
+        }
+
         Some(layout)
     }
 }

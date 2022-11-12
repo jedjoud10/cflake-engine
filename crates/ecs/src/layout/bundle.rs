@@ -53,7 +53,7 @@ impl<'a, T: Component> OwnedBundle<'a> for T {
     }
 
     fn prepare(archetype: &'a mut Archetype) -> Option<Self::Storages> {
-        archetype.table_mut::<T>()
+        archetype.components_mut::<T>()
     }
 
     fn push(storages: &mut Self::Storages, bundle: Self) {

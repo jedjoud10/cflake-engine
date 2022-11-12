@@ -19,6 +19,9 @@ pub trait ComponentTable {
     // Reserve some allocation space for the storage
     fn reserve(&mut self, additional: usize);
 
+    // Get the length of the vector
+    fn len(&self) -> usize;
+
     // This will create an empty ComponentTable vector using another one (to keep the trait object safe)
     fn clone_default(&self) -> Box<dyn ComponentTable>;
 }
@@ -47,7 +50,11 @@ impl<T: Component> ComponentTable for Vec<T> {
     }
 
     fn reserve(&mut self, additional: usize) {
-        self.reserve(additional);
+        Vec::reserve(self, additional);
+    }
+
+    fn len(&self) -> usize {
+        Vec::len(self)
     }
 
     fn clone_default(&self) -> Box<dyn ComponentTable> {
