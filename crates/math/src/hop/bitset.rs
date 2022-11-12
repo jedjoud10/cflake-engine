@@ -106,22 +106,43 @@ impl BitSet {
             .enumerate()
             .skip(start_chunk)
             .filter(|(_, chunk)| **chunk != 0)
-            .map(|(i, &chunk)| {
+            .filter_map(|(i, &chunk)| {
                 let offset = i * usize::BITS as usize;
-                if i == start_chunk {
+                let result = if i == start_chunk {
                     // Starting chunk, take start_location in consideration
                     let inverted = !((1 << start_location) - 1);
                     (chunk & inverted).trailing_zeros() as usize + offset
                 } else {
                     // Dont care, start at 0 as index
                     chunk.trailing_zeros() as usize + offset
-                }
+                };
+
+                (result != usize::BITS as usize).then_some(result)
             }).next()  
     }
 
     // Starting from a specific index, read forward and check if there is any unset bits
     // Returns None if it could not find an unset bit, returns Some with it's index if it did
-    pub fn read_till_zero(&self, index: usize) -> Option<usize> {
-        todo!()
+    pub fn find_zero_from(&self, index: usize) -> Option<usize> {
+        let (start_chunk, start_location) = Self::coords(index);
+        self
+            .chunks()
+            .iter()
+            .enumerate()
+            .skip(start_chunk)
+            .filter(|(_, chunk)| **chunk != 0)
+            .filter_map(|(i, &chunk)| {
+                let offset = i * usize::BITS as usize;
+                let result = if i == start_chunk {
+                    // Starting chunk, take start_location in consideration
+                    let inverted = ((1 << start_location) - 1);
+                    (chunk | inverted).trailing_ones() as usize + offset
+                } else {
+                    // Dont care, start at 0 as index
+                    chunk.trailing_ones() as usize + offset
+                };
+
+                (result != usize::BITS as usize).then_some(result)
+            }).next()  
     }
 }

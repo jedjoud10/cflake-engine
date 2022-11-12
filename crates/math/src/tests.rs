@@ -22,18 +22,32 @@ mod bitset {
     }
 
     #[test]
-    fn counting() {
+    fn counting_ones() {
         let mut bitset = BitSet::new();
         bitset.set(0);
         bitset.set(10);
-
         assert_eq!(bitset.count_ones(), 2);
         assert_eq!(bitset.find_one_from(0), Some(0));
         assert_eq!(bitset.find_one_from(1), Some(10));
-        
+
         bitset.set(4096);
         assert_eq!(bitset.find_one_from(10), Some(10));
         assert_eq!(bitset.find_one_from(11), Some(4096));
+    }
+
+
+    #[test]
+    fn counting_zeros() {
+        let mut bitset = BitSet::new();
+        bitset.set(0);
+        bitset.set(10);
+        assert_eq!(bitset.count_zeros(), usize::BITS as usize - 2);
+        assert_eq!(bitset.find_zero_from(0), Some(1));
+        assert_eq!(bitset.find_zero_from(1), Some(1));
+
+        bitset.set(4096);
+        assert_eq!(bitset.find_zero_from(10), Some(11));
+        assert_eq!(bitset.find_zero_from(11), Some(11));
     }
 }
 
