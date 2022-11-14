@@ -71,7 +71,6 @@ impl Archetype {
 
         // Add the state bits if needed
         for (_, column)  in self.states.iter_mut() {
-            println!("extend {additional}");
             column.extend_with_flags(additional, StateFlags {
                 added: true,
                 removed: false,

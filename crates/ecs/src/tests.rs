@@ -87,13 +87,15 @@ fn filter_ref() {
     let e2 = manager.insert((Health(100), Ammo(30)));
     let query = manager.query_with::<&Health>(contains::<Ammo>());
     assert_eq!(query.len(), 1);
+    dbg!("test");
     assert_eq!(query.into_iter().count(), 1);
     let query = manager.query::<&Health>();
     assert_eq!(query.len(), 2);
     assert_eq!(query.into_iter().count(), 2);
+    dbg!("pre cleanup");
     cleanup(&mut manager);
-
     let query = manager.query_with::<&Health>(modified::<Health>());
+    dbg!("post cleanup");
     assert_eq!(query.len(), 0);
     assert_eq!(query.into_iter().count(), 0);
 

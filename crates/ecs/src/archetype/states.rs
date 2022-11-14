@@ -60,7 +60,6 @@ impl StateColumn {
         let iter = iter.take(new_len_chunks - self.0.len() + 1);
         self.0.extend(iter);
         self.1 = new_len;
-        dbg!(new_len - old_len);
 
         // Update the chunk bits
         for (i, chunk) in self.0.iter_mut().enumerate() {
@@ -69,8 +68,6 @@ impl StateColumn {
             let local_end = usize::saturating_sub(new_len, start);
 
             // Bit magic that will enable all the bits between local_start and local_end;
-            dbg!(local_start);
-            dbg!(local_end);
             let range = enable_in_range(local_start, local_end);
             chunk.added |= range & (flags.added as usize);
             chunk.modified |= range & (flags.modified as usize);

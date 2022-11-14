@@ -211,6 +211,7 @@ impl<'b, 's, L: QueryLayoutMut<'s>> Iterator for QueryMutIter<'b, 's, L> {
                     // Check the next entry that is valid (that passed the filter)
                     if let Some(hop) = bitset.find_one_from(self.index) {
                         self.index = hop;
+                        breakl
                     } else {
                         // Hop to the next archetype if we could not find one
                         break;
