@@ -1,11 +1,11 @@
 mod bounds;
-mod hop;
+mod bitset;
 mod intersect;
 mod octrees;
 mod shapes;
 mod tests;
 pub use bounds::*;
-pub use hop::*;
+pub use bitset::*;
 pub use intersect::*;
 pub use octrees::*;
 pub use shapes::*;

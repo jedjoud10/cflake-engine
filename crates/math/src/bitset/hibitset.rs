@@ -1,5 +1,3 @@
-use std::ops::{Range, RangeInclusive};
-
 // Number of layers when usize is a 32 bit integer
 #[cfg(target_pointer_width = "32")]
 const LAYER_COUNT: usize = 5;

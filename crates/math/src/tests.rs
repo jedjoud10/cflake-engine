@@ -29,10 +29,12 @@ mod bitset {
         assert_eq!(bitset.count_ones(), 2);
         assert_eq!(bitset.find_one_from(0), Some(0));
         assert_eq!(bitset.find_one_from(1), Some(10));
-
-        bitset.set(4096);
+        assert_eq!(bitset.find_one_from(11), None);
         assert_eq!(bitset.find_one_from(10), Some(10));
+        
+        bitset.set(4096);
         assert_eq!(bitset.find_one_from(11), Some(4096));
+        assert_eq!(bitset.find_one_from(4098), None);
     }
 
 

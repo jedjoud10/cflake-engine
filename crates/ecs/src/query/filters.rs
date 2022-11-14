@@ -1,6 +1,8 @@
+use math::BitSet;
+
 use crate::{
     registry::{self},
-    Archetype, Component, Mask, StateColumn,
+    Archetype, Component, Mask, StateColumn, Scene, LayoutAccess, QueryLayoutMut, QueryItemRef, QueryLayoutRef,
 };
 use std::{marker::PhantomData, ops::BitAnd};
 
@@ -25,6 +27,58 @@ pub trait QueryFilter: 'static {
     // Evaluate a single chunk to check if all the entries within it pass the filter
     // When the bit is set, it means that the entry passed. If it's not set, then the entry didn't pass the filter
     fn evaluate_chunk(columns: Self::Columns<'_>, index: usize) -> usize;
+}
+
+// Given a scene and a specific filter, filter out the archetypes
+// This will also prepare the filter for later by caching required data
+// Only used internally by the mutable query
+pub(super) fn archetypes_mut<'s, L: QueryLayoutMut<'s>, F: QueryFilter>(scene: &mut Scene) -> (LayoutAccess, Vec<&mut Archetype>, F::Cached) {
+    let mask = L::reduce(|a, b| a | b);
+    let cached = F::prepare();
+    let archetypes = scene
+        .archetypes_mut()
+        .iter_mut()
+        .filter_map(move |(&archetype_mask, archetype)| {
+            (archetype.len() > 0 && archetype_mask.contains(mask.both())).then_some(archetype)
+        })
+        .filter(|a| F::evaluate_archetype(cached, a))
+        .collect::<Vec<_>>();
+
+    (mask, archetypes, cached)
+}
+
+// Given a scene and a specific filter, filter out the archetypes
+// This will also prepare the filter for later by caching required data
+// Only used internally by the immutable query
+pub(super) fn archetypes<'s, L: QueryLayoutRef<'s>, F: QueryFilter>(scene: &Scene) -> (Mask, Vec<&Archetype>, F::Cached) {
+    let mask = L::reduce(|a, b| a | b);
+    let cached = F::prepare();
+    let archetypes = scene
+        .archetypes()
+        .iter()
+        .filter_map(move |(&archetype_mask, archetype)| {
+            (archetype.len() > 0 && archetype_mask.contains(mask.shared())).then_some(archetype)
+        })
+        .filter(|a| F::evaluate_archetype(cached, a))
+        .collect::<Vec<_>>();
+
+    (mask.shared(), archetypes, cached)
+}
+
+// Create a vector of bitsets in case we are using query filtering
+pub(super) fn generate_bitset_chunks<'a, F: QueryFilter>(archetypes: impl Iterator<Item = &'a Archetype>, cached: F::Cached) -> Vec<BitSet> {
+    // Filter the entries by chunks of 64 entries at a time
+    let iterator = archetypes.map(|archetype| {
+        let columns = F::cache_columns(cached, archetype);
+        let chunks = archetype.entities().len() as f32 / usize::BITS as f32;
+        let chunks = chunks.ceil() as usize;
+        BitSet::from_chunks_iter((0..chunks).into_iter().map(move |i| 
+            F::evaluate_chunk(columns, i)
+        ))
+    });
+
+    // Create a unique hop bitset for each archetype
+    Vec::from_iter(iterator)
 }
 
 // We need a wrapper to be able to implemented the rust bitwise operators
@@ -111,7 +165,7 @@ impl<T: Component> QueryFilter for Modified<T> {
 
 impl<T: Component> QueryFilter for Contains<T> {
     type Cached = Mask;
-    type Columns<'a> = &'a StateColumn;
+    type Columns<'a> = ();
 
     fn prepare() -> Self::Cached {
         registry::mask::<T>()
@@ -122,11 +176,11 @@ impl<T: Component> QueryFilter for Contains<T> {
     }
 
     fn cache_columns<'a>(cached: Self::Cached, archetype: &'a Archetype) -> Self::Columns<'a> {
-        panic!()
+        ()
     }
 
     fn evaluate_chunk(columns: Self::Columns<'_>, index: usize) -> usize {
-        panic!()
+        usize::MAX
     }
 }
 

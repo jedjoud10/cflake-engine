@@ -69,7 +69,9 @@ impl<'a> EntryMut<'a> {
         self.table_mut::<T>()?;
         let index = self.linkings().index();
         let states = self.archetype_mut().states_mut::<T>()?;
+        dbg!(index);
         states.update(index, |flags| flags.modified = true);
+        dbg!("ok");
         self.get_mut_silent::<T>()
     }
 

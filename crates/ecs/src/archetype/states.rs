@@ -33,6 +33,21 @@ fn set_bit(bitmask: &mut usize, index: usize, value: bool) -> bool {
     return copy;
 }
 
+// Enable all the bits between "start" and "end" in the binary representation of a usize
+// This will automatically clamp the values to 64 or 32
+fn enable_in_range(mut start: usize, mut end: usize) -> usize {
+    start = start.min(usize::BITS as usize);
+    end = end.min(usize::BITS as usize);
+
+    if end == usize::BITS as usize {
+        (1usize << (start)) - 1usize
+    } else if start == usize::BITS as usize {
+        0
+    } else {
+        ((1usize << (start)) - 1usize) ^ ((1usize << end) - 1usize)
+    }
+}
+
 impl StateColumn {
     // Add new n number of entries that all contain the same state flags
     // This requires the old_len and new_len calculated within the extend_from_slice method inside the Archetype
@@ -40,18 +55,23 @@ impl StateColumn {
         // Make sure the states have enough chunks to deal with
         let old_len = self.1;
         let new_len = self.1 + additional;
+        let new_len_chunks = new_len / usize::BITS as usize;
         let iter = std::iter::repeat(StateColumnChunk::default());
-        let iter = iter.take(additional / usize::BITS as usize);
+        let iter = iter.take(new_len_chunks - self.0.len() + 1);
         self.0.extend(iter);
+        self.1 = new_len;
+        dbg!(new_len - old_len);
 
         // Update the chunk bits
         for (i, chunk) in self.0.iter_mut().enumerate() {
             let start = i * usize::BITS as usize;
-            let local_start = usize::saturating_sub(old_len, start).min(usize::BITS as usize);
-            let local_end = usize::saturating_sub(new_len, start).min(usize::BITS as usize);
+            let local_start = usize::saturating_sub(old_len, start);
+            let local_end = usize::saturating_sub(new_len, start);
 
             // Bit magic that will enable all the bits between local_start and local_end;
-            let range = ((1usize << (local_start + 1)) - 1usize) ^ ((1usize << local_end) - 1usize);
+            dbg!(local_start);
+            dbg!(local_end);
+            let range = enable_in_range(local_start, local_end);
             chunk.added |= range & (flags.added as usize);
             chunk.modified |= range & (flags.modified as usize);
             chunk.removed |= range & (flags.removed as usize);
@@ -70,13 +90,19 @@ impl StateColumn {
 
     // Remove a specific element and replace it's current location with the last element
     pub(crate) fn swap_remove(&mut self, index: usize) -> Option<StateFlags> {
+        // Cannot remove non-existant index
+        if index >= self.1 {
+            return None;
+        }
+
         // Fetch the values of the last element
         let last = self.0.last().map(|chunk| {
-          StateFlags {
-            added: chunk.added >> (self.1-1) & 1 == 1,
-            removed: chunk.removed >> (self.1-1) & 1 == 1,
-            modified: chunk.modified >> (self.1-1) & 1 == 1,
-          }
+            let last_local_index = self.1 % usize::BITS as usize;
+            StateFlags {
+                added: (chunk.added >> last_local_index) & 1 == 1,
+                removed: (chunk.removed >> last_local_index) & 1 == 1,
+                modified: (chunk.modified >> last_local_index) & 1 == 1,
+            }
         });
 
         // Replace the entry at "index" with "last"
@@ -99,7 +125,7 @@ impl StateColumn {
         let removed = self.swap_remove(index);
 
         if let Some(removed) = removed {
-            other.extend_with_flags(1, removed);
+            other.extend_with_flags(1, removed);    
         }
     }
 
@@ -109,9 +135,9 @@ impl StateColumn {
         let location = index % usize::BITS as usize;
         let chunk = &mut self.0[chunk];
         let mut flags = StateFlags {
-            added: chunk.added >> (self.1-1) & 1 == 1,
-            modified: chunk.modified >> (self.1-1) & 1 == 1,
-            removed: chunk.removed >> (self.1-1) & 1 == 1,
+            added: (chunk.added >> location) & 1 == 1,
+            modified: (chunk.modified >> location) & 1 == 1,
+            removed: (chunk.removed >> location) & 1 == 1,
         };
         update(&mut flags);
 

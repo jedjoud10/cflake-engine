@@ -1,5 +1,4 @@
 use itertools::Itertools;
-use smallvec::SmallVec;
 
 // Simple bitset that allocates using u64 chunks
 // This bitset contains a specific number of elements per chunk
@@ -117,7 +116,7 @@ impl BitSet {
                     chunk.trailing_zeros() as usize + offset
                 };
 
-                (result != usize::BITS as usize).then_some(result)
+                (result != (offset + 64)).then_some(result)
             }).next()  
     }
 
@@ -135,14 +134,14 @@ impl BitSet {
                 let offset = i * usize::BITS as usize;
                 let result = if i == start_chunk {
                     // Starting chunk, take start_location in consideration
-                    let inverted = ((1 << start_location) - 1);
+                    let inverted = (1 << start_location) - 1;
                     (chunk | inverted).trailing_ones() as usize + offset
                 } else {
                     // Dont care, start at 0 as index
                     chunk.trailing_ones() as usize + offset
                 };
 
-                (result != usize::BITS as usize).then_some(result)
+                (result != (offset + 64)).then_some(result)
             }).next()  
     }
 }

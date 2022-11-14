@@ -10,12 +10,8 @@ struct Ammo(u32);
 
 fn cleanup(ecs: &mut Scene) {
     for (_, archetype) in ecs.archetypes_mut() {
-        for state in archetype.states_mut().iter_mut() {
-            state.update(|added, removed, mutated| {
-                *added = Mask::zero();
-                *mutated = Mask::zero();
-                *removed = Mask::zero();
-            });
+        for (_, column) in archetype.state_table_mut().iter_mut() {
+            column.clear();
         }
     }
 }
@@ -31,9 +27,8 @@ fn entries() {
 
     let mask = registry::mask::<Name>() | registry::mask::<Health>();
     let archetype = manager.archetypes().get(&mask).unwrap();
-    let states = archetype.states();
-    let state = states.get(0).unwrap();
-    assert_eq!(state.mutated(), mask);
+    let column = archetype.states::<Name>().unwrap();
+    assert!(column.get(0).unwrap().modified == 1);
 
     let entry = manager.entry(entity).unwrap();
     assert_eq!(entry.get::<Name>(), Some(&Name("Basic")));
@@ -86,6 +81,7 @@ fn queries() {
 
 #[test]
 fn filter_ref() {
+    // TODO: Fix infinite loop
     let mut manager = Scene::default();
     let e1 = manager.insert(Health(100));
     let e2 = manager.insert((Health(100), Ammo(30)));

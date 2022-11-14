@@ -4,7 +4,7 @@ use smallvec::SmallVec;
 
 use crate::{
     Archetype, LayoutAccess, Mask, QueryFilter, QueryLayoutMut, QueryLayoutRef, Scene,
-    Wrap,
+    Wrap, Always,
 };
 use std::{marker::PhantomData, sync::Arc, rc::Rc};
 
@@ -13,34 +13,19 @@ use std::{marker::PhantomData, sync::Arc, rc::Rc};
 pub struct QueryRef<'a: 'b, 'b, 's, L: for<'it> QueryLayoutRef<'it>> {
     archetypes: Vec<&'a Archetype>,
     mask: Mask,
-    bitset: Option<BitSet>,
+    bitsets: Option<Vec<BitSet>>,
     _phantom1: PhantomData<&'b ()>,
     _phantom2: PhantomData<&'s ()>,
     _phantom3: PhantomData<L>,
 }
 
 impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutRef<'it>> QueryRef<'a, 'b, 's, L> {
-    // Get the archetypes and layout mask. Used internally only
-    fn archetypes(scene: &Scene) -> (LayoutAccess, Vec<&Archetype>) {
-        let mask = L::reduce(|a, b| a | b);
-        let archetypes = scene
-            .archetypes()
-            .iter()
-            .filter_map(move |(&archetype_mask, archetype)| {
-                (archetype.len() > 0 && archetype_mask.contains(mask.both())).then_some(archetype)
-            })
-            .collect::<Vec<_>>();
-        (mask, archetypes)
-    }
-
     // Create a new mut query from the scene
     pub fn new(scene: &'a Scene) -> Self {
-        let (mask, archetypes) = Self::archetypes(scene);
-        let mask = mask.both();
-
+        let (mask, archetypes, _) = super::archetypes::<L, Always>(scene);
         Self {
             archetypes,
-            bitset: None,
+            bitsets: None,
             _phantom3: PhantomData,
             mask,
             _phantom1: PhantomData,
@@ -50,29 +35,14 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutRef<'it>> QueryRef<'a, 'b, 's, L> {
 
     // Create a new mut query from the scene, but make it have a specific entry enable/disable masks
     pub fn new_with_filter<F: QueryFilter>(scene: &'a Scene, _: Wrap<F>) -> Self {
-        let (mask, archetypes) = Self::archetypes(scene);
-
-        // Filter each archetype first
-        let cached = F::prepare();
-        let archetypes: Vec<&Archetype> = archetypes
-            .into_iter()
-            .filter(|a| F::evaluate_archetype(cached, a))
-            .collect();
-
-        // Filter the entries by chunks of 64 entries at a time
-        let iterator = archetypes.iter().flat_map(|archetype| {
-            let columns = F::cache_columns(cached, archetype);
-            let chunks = archetype.entities().len() / usize::BITS as usize;
-            (0..chunks).into_iter().map(move |i| 
-                F::evaluate_chunk(columns, i)
-            )
-        });
-        let bitset = BitSet::from_chunks_iter(iterator);
+        // Filter out the archetypes then create the bitsets
+        let (mask, archetypes, cached) = super::archetypes::<L, F>(scene);
+        let bitsets = super::generate_bitset_chunks::<F>(archetypes.iter().map(|a| &**a), cached);
 
         Self {
             archetypes,
-            mask: mask.both(),
-            bitset: Some(bitset),
+            mask,
+            bitsets: Some(bitsets),
             _phantom3: PhantomData,
             _phantom1: PhantomData,
             _phantom2: PhantomData,
@@ -92,8 +62,15 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutRef<'it>> QueryRef<'a, 'b, 's, L> {
         for<'it, 's2> <L as QueryLayoutRef<'it>>::SliceTuple: world::SliceTuple<'s2>,
     {
         threadpool.scope(|scope| {
-            let bitset = self.bitset.map(|bitset| Arc::new(bitset));
-            for archetype in self.archetypes.iter() {
+            for (i, archetype) in self.archetypes.iter().enumerate() {
+                // Send the archetype slices to multiple threads to be able to compute them
+                let ptrs = unsafe { L::ptrs_from_archetype_unchecked(archetype) };
+                let slices = unsafe { L::from_raw_parts(ptrs, archetype.len()) };
+
+                // Convert the archetype bitset to a thread-shareable bitset
+                // TODO: Reverse the order of the archetypes to avoid cloning the bitset here
+                let bitset = self.bitsets.as_ref().map(|bitset| Arc::new(bitset[i].clone()));
+
                 // Send the archetype slices to multiple threads to be able to compute them
                 let ptrs = unsafe { L::ptrs_from_archetype_unchecked(archetype) };
                 let slices = unsafe { L::from_raw_parts(ptrs, archetype.len()) };
@@ -113,15 +90,11 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutRef<'it>> QueryRef<'a, 'b, 's, L> {
         self.mask
     }
 
-    // Get the intenally stored bitset that will be used for filtering
-    pub fn bitset(&self) -> Option<&BitSet> {
-        self.bitset.as_ref()
-    }
-
     // Get the number of entries that we will have to iterate through
     pub fn len(&self) -> usize {
-        if let Some(bitset) = &self.bitset {
-            bitset.count_ones()
+        if let Some(bitsets) = &self.bitsets {
+            // TODO: Does this actually work
+            bitsets.iter().zip(self.archetypes.iter()).map(|(b, a)| b.count_ones().min(a.len())).sum()
         } else {
             self.archetypes.iter().map(|a| a.len()).sum()
         }
@@ -135,10 +108,9 @@ impl<'a: 'b, 'b, 'it, L: for<'s> QueryLayoutRef<'s>> IntoIterator for QueryRef<'
     fn into_iter(self) -> Self::IntoIter {
         QueryRefIter {
             archetypes: self.archetypes,
+            bitsets: self.bitsets,
             chunk: None,
-            bitset: self.bitset.map(Rc::new),
-            local_index: 0,
-            global_index: 0,
+            index: 0,
             _phantom1: PhantomData,
             _phantom2: PhantomData,
         }
@@ -148,16 +120,19 @@ impl<'a: 'b, 'b, 'it, L: for<'s> QueryLayoutRef<'s>> IntoIterator for QueryRef<'
 // Currently loaded chunk in the immutable query iterator
 struct Chunk<'s, L: QueryLayoutRef<'s>> {
     ptrs: L::PtrTuple,
+    bitset: Option<BitSet>,
     length: usize,
 }
 
 // This is a immutable query iterator that will iterate through all the query entries in arbitrary order
 pub struct QueryRefIter<'b, 's, L: QueryLayoutRef<'s>> {
+    // Inputs from the query
     archetypes: Vec<&'b Archetype>,
+    bitsets: Option<Vec<BitSet>>,
+
+    // Unique to the iterator
     chunk: Option<Chunk<'s, L>>,
-    local_index: usize,
-    global_index: usize,
-    bitset: Option<Rc<BitSet>>,
+    index: usize,
     _phantom1: PhantomData<&'s ()>,
     _phantom2: PhantomData<L>,
 }
@@ -171,12 +146,17 @@ impl<'b, 's, L: QueryLayoutRef<'s>> QueryRefIter<'b, 's, L> {
             .map(|chunk| chunk.length)
             .unwrap_or_default();
         
-        if self.local_index + 1 > len {
+        if self.index + 1 > len {
             let archetype = self.archetypes.pop()?;
+            let bitset = self.bitsets.as_mut().map(|vec| vec.pop().unwrap());
             let ptrs = unsafe { L::ptrs_from_archetype_unchecked(archetype) };
             let length = archetype.len();
-            self.local_index = 0;
-            self.chunk = Some(Chunk { ptrs, length });
+            self.index = 0;
+            self.chunk = Some(Chunk {
+                ptrs,
+                bitset,
+                length
+            });
         }
 
         Some(())
@@ -187,27 +167,33 @@ impl<'b, 's, L: QueryLayoutRef<'s>> Iterator for QueryRefIter<'b, 's, L> {
     type Item = L;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // Check if we should hop chunks
-        self.check_hop_chunk()?;
+        loop {
+            // Always hop to the next chunk at the start of the hop iteration / normal iteration 
+            self.check_hop_chunk()?;
 
-        // Skip the entry if we are using a filter
-        if let Some(bitset) = self.bitset.clone() {
-            // Increment the local index and global index until we find a set bit
-            let mut bit = bitset.get(self.global_index);
-            while !bit {
-                self.local_index += 1;
-                self.global_index += 1;
-                self.check_hop_chunk()?;
-                bit = bitset.get(self.global_index);
+            if let Some(chunk) = &self.chunk {
+                // Check for bitset
+                if let Some(bitset) = &chunk.bitset {
+                    // Check the next entry that is valid (that passed the filter)
+                    if let Some(hop) = bitset.find_one_from(self.index) {
+                        self.index = hop;
+                    } else {
+                        // Hop to the next archetype if we could not find one
+                        break;
+                    }
+            
+                } else {
+                    // If we do not have a bitset, don't do anything
+                    break;
+                }
             }
         }
 
         // I have to do this since iterators cannot return data that they are referencing, but in this case, it is safe to do so
         self.chunk.as_mut()?;
         let ptrs = self.chunk.as_ref().unwrap().ptrs;
-        let items = unsafe { L::read_unchecked(ptrs, self.local_index) };
-        self.local_index += 1;
-        self.global_index += 1;
+        let items = unsafe { L::read_unchecked(ptrs, self.index) };
+        self.index += 1;
 
         Some(items)
     }
