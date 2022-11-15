@@ -11,7 +11,6 @@ struct Ammo(u32);
 #[derive(Component, Debug, Clone, Copy, Default)]
 struct Placeholder();
 
-/*
 
 fn filtering_init(ecs: &mut Scene) {
     let filter = added::<Placeholder>() & removed::<Name>();
@@ -54,19 +53,13 @@ fn init<B: Bundle + Default + Clone>(count: usize) -> (Scene, Vec<Entity>) {
 
 fn cleanup(ecs: &mut Scene) {
     for (_, archetype) in ecs.archetypes_mut() {
-        for state in archetype.states_mut().iter_mut() {
-            state.update(|added, removed, mutated| {
-                *added = Mask::zero();
-                *mutated = Mask::zero();
-                *removed = Mask::zero();
-            });
+        for (_, column) in archetype.state_table_mut().iter_mut() {
+            column.clear();
         }
     }
 }
-*/
 
 fn criterion_benchmark(c: &mut Criterion) {
-    /*
     let mut threadpool = ThreadPool::new();
 
     let mut group = c.benchmark_group("test");
@@ -119,7 +112,6 @@ fn criterion_benchmark(c: &mut Criterion) {
             }
         );
     }
-    */
 }
 
 criterion_group!(benches, criterion_benchmark);

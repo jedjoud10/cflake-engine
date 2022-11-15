@@ -7,6 +7,8 @@ use std::{
 
 use nohash_hasher::{IsEnabled, NoHashHasher};
 
+use crate::{QueryLayoutMut, QueryLayoutRef, Bundle};
+
 // A mask is a simple 64 bit integer that tells us what components are enabled / disabled from within an entity
 // The ECS registry system uses masks to annotate each different type that might be a component, so in total
 // In total, there is only 64 different components that can be implemented using this ECS implementation
@@ -15,6 +17,21 @@ pub struct Mask(u64);
 impl IsEnabled for Mask {}
 
 impl Mask {
+    // Create a mask from a bundle
+    pub fn from_bundle<B: Bundle>() -> Self {
+        B::reduce(|a, b| a | b)
+    }
+
+    // Create a mask from a ref layout
+    pub fn from_ref_layout<'s, L: QueryLayoutRef<'s>>() -> Self {
+        L::reduce(|a, b| a | b).both()
+    }
+    
+    // Create a mask from a mut layout
+    pub fn from_mut_layout<'s, L: QueryLayoutMut<'s>>() -> Self {
+        L::reduce(|a, b| a | b).both()
+    }
+
     // Create a mask that has it's bitfield set to one
     pub fn one() -> Mask {
         Mask(0b1)

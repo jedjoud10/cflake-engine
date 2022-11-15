@@ -102,7 +102,7 @@ pub struct Not<A: QueryFilter>(PhantomData<A>);
 
 impl<T: Component> QueryFilter for Added<T> {
     type Cached = Mask;
-    type Columns<'a> = &'a StateColumn;
+    type Columns<'a> = Option<&'a StateColumn>;
 
     fn prepare() -> Self::Cached {
         registry::mask::<T>()
@@ -113,17 +113,17 @@ impl<T: Component> QueryFilter for Added<T> {
     }
 
     fn cache_columns<'a>(cached: Self::Cached, archetype: &'a Archetype) -> Self::Columns<'a> {
-        archetype.state_table().get(&cached).unwrap()
+        archetype.state_table().get(&cached)
     }
 
     fn evaluate_chunk(columns: Self::Columns<'_>, index: usize) -> usize {
-        columns.get(index).unwrap().added
+        columns.map(|c| c.get(index).unwrap().added).unwrap_or_default()
     }
 }
 
 impl<T: Component> QueryFilter for Removed<T> {
     type Cached = Mask;
-    type Columns<'a> = &'a StateColumn;
+    type Columns<'a> = Option<&'a StateColumn>;
 
     fn prepare() -> Self::Cached {
         registry::mask::<T>()
@@ -134,17 +134,17 @@ impl<T: Component> QueryFilter for Removed<T> {
     }
 
     fn cache_columns<'a>(cached: Self::Cached, archetype: &'a Archetype) -> Self::Columns<'a> {
-        archetype.state_table().get(&cached).unwrap()
+        archetype.state_table().get(&cached)
     }
 
     fn evaluate_chunk(columns: Self::Columns<'_>, index: usize) -> usize {
-        columns.get(index).unwrap().removed
+        columns.map(|c| c.get(index).unwrap().removed).unwrap_or_default()
     }
 }
 
 impl<T: Component> QueryFilter for Modified<T> {
     type Cached = Mask;
-    type Columns<'a> = &'a StateColumn;
+    type Columns<'a> = Option<&'a StateColumn>;
 
     fn prepare() -> Self::Cached {
         registry::mask::<T>()
@@ -155,11 +155,11 @@ impl<T: Component> QueryFilter for Modified<T> {
     }
 
     fn cache_columns<'a>(cached: Self::Cached, archetype: &'a Archetype) -> Self::Columns<'a> {
-        archetype.state_table().get(&cached).unwrap()
+        archetype.state_table().get(&cached)
     }
 
     fn evaluate_chunk(columns: Self::Columns<'_>, index: usize) -> usize {
-        columns.get(index).unwrap().modified
+        columns.map(|c| c.get(index).unwrap().modified).unwrap_or_default()
     }
 }
 

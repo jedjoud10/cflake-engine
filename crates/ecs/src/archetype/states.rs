@@ -1,5 +1,3 @@
-use crate::Mask;
-
 // A single chunk that will be contained within the archetype component column
 #[derive(Default, Clone, Copy)]
 pub struct StateColumnChunk {
@@ -35,12 +33,15 @@ fn set_bit(bitmask: &mut usize, index: usize, value: bool) -> bool {
 
 // Enable all the bits between "start" and "end" in the binary representation of a usize
 // This will automatically clamp the values to 64 or 32
-fn enable_in_range(mut start: usize, mut end: usize) -> usize {
+// Start is inclusive, end is exclusive
+pub(crate) fn enable_in_range(mut start: usize, mut end: usize) -> usize {
     start = start.min(usize::BITS as usize);
     end = end.min(usize::BITS as usize);
 
+    dbg!(start);
+    dbg!(end);
     if end == usize::BITS as usize {
-        (1usize << (start)) - 1usize
+        !((1usize << (start)) - 1usize)
     } else if start == usize::BITS as usize {
         0
     } else {
@@ -57,9 +58,14 @@ impl StateColumn {
         let new_len = self.1 + additional;
         let new_len_chunks = new_len / usize::BITS as usize;
         let iter = std::iter::repeat(StateColumnChunk::default());
-        let iter = iter.take(new_len_chunks - self.0.len() + 1);
+        let iter = iter.take((new_len_chunks + 1) - self.0.len());
         self.0.extend(iter);
         self.1 = new_len;
+
+        // Convert the flags into masks
+        let added = flags.added as usize * usize::MAX;
+        let modified = flags.modified as usize * usize::MAX;
+        let removed = flags.removed as usize * usize::MAX;
 
         // Update the chunk bits
         for (i, chunk) in self.0.iter_mut().enumerate() {
@@ -69,9 +75,9 @@ impl StateColumn {
 
             // Bit magic that will enable all the bits between local_start and local_end;
             let range = enable_in_range(local_start, local_end);
-            chunk.added |= range & (flags.added as usize);
-            chunk.modified |= range & (flags.modified as usize);
-            chunk.removed |= range & (flags.removed as usize);
+            chunk.added |= range & added;
+            chunk.modified |= range & modified;
+            chunk.removed |= range & removed;
         }
     } 
 
@@ -164,7 +170,7 @@ impl StateColumn {
     }
 
     // Clear all the states from within this column
-    pub(crate) fn clear(&mut self) {
+    pub fn clear(&mut self) {
         for chunk in self.0.iter_mut() {
             chunk.added = 0usize;
             chunk.modified = 0usize;

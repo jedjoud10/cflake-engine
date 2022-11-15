@@ -75,7 +75,7 @@ impl Archetype {
                 added: true,
                 removed: false,
                 modified: true,
-            })
+            });
         }
         
         // Add the storage bundles to their respective columns
@@ -158,7 +158,7 @@ impl Archetype {
     }
 
     // Get the state table mutably
-    pub(crate) fn state_table_mut(&mut self) -> &mut StateTable {
+    pub fn state_table_mut(&mut self) -> &mut StateTable {
         &mut self.states
     }
 

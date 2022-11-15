@@ -99,7 +99,7 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
     // Get the number of entries that we will have to iterate through
     pub fn len(&self) -> usize {
         if let Some(bitsets) = &self.bitsets {
-            bitsets.iter().map(|b| b.count_ones()).sum()
+            bitsets.iter().zip(self.archetypes.iter()).map(|(b, a)| b.count_ones().min(a.len())).sum()
         } else {
             self.archetypes.iter().map(|a| a.len()).sum()
         }
@@ -211,10 +211,12 @@ impl<'b, 's, L: QueryLayoutMut<'s>> Iterator for QueryMutIter<'b, 's, L> {
                     // Check the next entry that is valid (that passed the filter)
                     if let Some(hop) = bitset.find_one_from(self.index) {
                         self.index = hop;
-                        breakl
+                        break;
                     } else {
                         // Hop to the next archetype if we could not find one
-                        break;
+                        // This will force the iterator to hop to the next archetype
+                        self.index = chunk.length;                        
+                        continue;
                     }
             
                 } else {

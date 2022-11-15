@@ -1,11 +1,12 @@
 use crate::*;
 use world::ThreadPool;
 
-#[derive(Component, Debug, PartialEq, Eq, Clone)]
+
+#[derive(Component, Debug, PartialEq, Eq, Clone, Default)]
 struct Name(&'static str);
-#[derive(Component, Debug, PartialEq, Eq, Clone)]
+#[derive(Component, Debug, PartialEq, Eq, Clone, Default)]
 struct Health(i32);
-#[derive(Component, Debug, Clone, Copy)]
+#[derive(Component, Debug, Clone, Copy, Default)]
 struct Ammo(u32);
 
 fn cleanup(ecs: &mut Scene) {
@@ -36,12 +37,68 @@ fn entries() {
 }
 
 #[test]
+fn bit_range_setter() {
+    let r01 = enable_in_range(0, 1);
+    assert_eq!(r01, 1);
+    assert_eq!(r01.count_ones(), 1);
+
+    let r23 = enable_in_range(2, 3);
+    assert_eq!(r23, 1 << 2);
+    assert_eq!(r23.count_ones(), 1);
+
+    let all = enable_in_range(0, usize::BITS as usize);
+    assert_eq!(all, usize::MAX);
+    assert_eq!(all.count_ones(), usize::BITS as u32);
+
+    let none = enable_in_range(0, 0);
+    assert_eq!(none, usize::MIN);
+    assert_eq!(none.count_ones(), 0);
+
+    let half = enable_in_range(usize::BITS as usize / 2, usize::BITS as usize);
+    assert_eq!(half.count_ones(), usize::BITS as u32 / 2);
+    assert_eq!(half.count_zeros(), usize::BITS as u32 / 2);
+}
+
+#[test]
+fn states() {
+    let mut manager = Scene::default();
+
+    manager.extend_from_iter(std::iter::repeat(Name("Test")).take(32)); 
+
+    let mask = Mask::from_bundle::<Name>();
+    let archetype = manager.archetypes().get(&mask).unwrap();
+    let states = archetype.states::<Name>().unwrap();
+    let chunk = states.chunks()[0];
+    assert_eq!(chunk.added, (1 << 32) - 1);
+    assert_eq!(chunk.modified, (1 << 32) - 1);
+    assert_eq!(chunk.added.count_ones(), 32);
+    assert_eq!(chunk.modified.count_ones(), 32);
+}
+
+#[test]
 fn moving() {
     let mut manager = Scene::default();
     let entity = manager.insert((Name(""), Health(100)));
     let mut entry = manager.entry_mut(entity).unwrap();
     entry.remove_bundle::<Health>().unwrap();
     entry.insert_bundle::<Ammo>(Ammo(0)).unwrap();
+}
+
+#[test]
+fn moving_batch() {
+    let mut scene = Scene::default();
+    let entities = scene.extend_from_iter(std::iter::repeat(<(Name, Ammo)>::default()).take(4096)).to_vec();
+    for (i, id) in entities.into_iter().enumerate() {
+        if i % 2 == 0 {
+            let mut entry = scene.entry_mut(id).unwrap();
+            //entry.remove_bundle::<Name>().unwrap();
+            entry.insert_bundle::<Health>(Health(100)).unwrap();
+        }
+    }
+
+    let filter = added::<Health>();
+    let query = scene.query_mut_with::<(&mut Health, &Ammo)>(filter);
+    assert_eq!(query.len(), 4096 / 2);
 }
 
 #[test]
@@ -81,21 +138,17 @@ fn queries() {
 
 #[test]
 fn filter_ref() {
-    // TODO: Fix infinite loop
     let mut manager = Scene::default();
     let e1 = manager.insert(Health(100));
     let e2 = manager.insert((Health(100), Ammo(30)));
     let query = manager.query_with::<&Health>(contains::<Ammo>());
     assert_eq!(query.len(), 1);
-    dbg!("test");
     assert_eq!(query.into_iter().count(), 1);
     let query = manager.query::<&Health>();
     assert_eq!(query.len(), 2);
     assert_eq!(query.into_iter().count(), 2);
-    dbg!("pre cleanup");
     cleanup(&mut manager);
     let query = manager.query_with::<&Health>(modified::<Health>());
-    dbg!("post cleanup");
     assert_eq!(query.len(), 0);
     assert_eq!(query.into_iter().count(), 0);
 
@@ -104,10 +157,14 @@ fn filter_ref() {
 
     
     let query = manager.query_with::<&Health>(modified::<Health>());
+    let mask = Mask::from_bundle::<Health>();
+    let archetype = manager.archetypes().get(&mask).unwrap();
+    let states = archetype.states::<Health>().unwrap();
+    assert_eq!(states.chunks()[0].modified, 1);
+
     assert_eq!(query.len(), 1);
     assert_eq!(query.into_iter().count(), 1);
 }
-
 
 #[test]
 fn filter_mut() {
@@ -129,8 +186,13 @@ fn filter_mut() {
     let mut entry = manager.entry_mut(e1).unwrap();
     entry.get_mut::<Health>().unwrap();
 
+
+    let query = manager.query_with::<&Health>(modified::<Health>());
+    let mask = Mask::from_bundle::<Health>();
+    let archetype = manager.archetypes().get(&mask).unwrap();
+    let states = archetype.states::<Health>().unwrap();
+    assert_eq!(states.chunks()[0].modified, 1);
     
-    let query = manager.query_mut_with::<&mut Health>(modified::<Health>());
     assert_eq!(query.len(), 1);
     assert_eq!(query.into_iter().count(), 1);
 }

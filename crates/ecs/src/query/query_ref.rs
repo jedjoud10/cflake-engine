@@ -71,10 +71,6 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutRef<'it>> QueryRef<'a, 'b, 's, L> {
                 // TODO: Reverse the order of the archetypes to avoid cloning the bitset here
                 let bitset = self.bitsets.as_ref().map(|bitset| Arc::new(bitset[i].clone()));
 
-                // Send the archetype slices to multiple threads to be able to compute them
-                let ptrs = unsafe { L::ptrs_from_archetype_unchecked(archetype) };
-                let slices = unsafe { L::from_raw_parts(ptrs, archetype.len()) };
-
                 // Should we use per entry filtering?
                 if let Some(bitset) = bitset.clone() {
                     scope.for_each_filtered(slices, function.clone(), bitset, batch_size);
@@ -180,7 +176,9 @@ impl<'b, 's, L: QueryLayoutRef<'s>> Iterator for QueryRefIter<'b, 's, L> {
                         break;
                     } else {
                         // Hop to the next archetype if we could not find one
-                        break;
+                        // This will force the iterator to hop to the next archetype
+                        self.index = chunk.length;                        
+                        continue;
                     }
             
                 } else {
