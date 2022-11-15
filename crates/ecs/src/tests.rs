@@ -78,7 +78,28 @@ fn states() {
     assert_eq!(chunk.modified, (1 << 32) - 1);
     assert_eq!(chunk.added.count_ones(), 32);
     assert_eq!(chunk.modified.count_ones(), 32);
-    cleanup(&mut manager)
+    cleanup(&mut manager);
+
+    manager.extend_from_iter(std::iter::repeat((Name("Test 2"), Health(100))).take(64)); 
+    let query = manager.query_with::<&Entity>(added::<Name>() & added::<Health>());
+    assert_eq!(query.len(), 64);
+
+    let mask = Mask::from_bundle::<(Name, Health)>();
+    let archetype = manager.archetypes().get(&mask).unwrap();
+    let states = archetype.states::<Name>().unwrap();
+    let sum1: u32 = states.chunks().iter().map(|c| c.added.count_ones()).sum();
+    let states2 = archetype.states::<Health>().unwrap();
+    let sum2: u32 = states2.chunks().iter().map(|c| c.added.count_ones()).sum();
+    assert_eq!(sum1, 64);
+    assert_eq!(sum2, 64);
+
+    assert_eq!(states.chunks()[0].added, usize::MAX);
+    assert_eq!(states2.chunks()[0].added, usize::MAX);
+
+    cleanup(&mut manager);
+    manager.extend_from_iter(std::iter::repeat((Name("Test 2"), Health(100))).take(64)); 
+    let query = manager.query_with::<&Entity>(contains::<Name>() & contains::<Health>());
+    assert_eq!(query.len(), 128);
 }
 
 #[test]
@@ -93,18 +114,27 @@ fn moving() {
 #[test]
 fn moving_batch() {
     let mut scene = Scene::default();
-    let entities = scene.extend_from_iter(std::iter::repeat(<(Name, Ammo)>::default()).take(5000)).to_vec();
+    let entities = scene.extend_from_iter(std::iter::repeat((Name::default(), Health(50), Ammo(100))).take(5000)).to_vec();
     cleanup(&mut scene);
-    for (i, id) in entities.into_iter().enumerate() {
+    for (i, id) in entities.iter().enumerate() {
         if i % 10 == 0 {
-            let mut entry = scene.entry_mut(id).unwrap();
-            //entry.remove_bundle::<Name>().unwrap();
-            entry.insert_bundle::<Health>(Health::default()).unwrap();
+            let mut entry = scene.entry_mut(*id).unwrap();
+            entry.remove_bundle::<Name>().unwrap();
+            entry.insert_bundle::<Placeholder>(Placeholder()).unwrap();
         }
     }
 
-    let filter = added::<Placeholder>();
-    for ammo in scene.query_mut_with::<(&mut Ammo)>(filter) {
+    let filter = added::<Placeholder>() & removed::<Name>();
+    for (health, ammo) in scene.query_mut_with::<(&mut Health, &Ammo)>(filter) {
+        health.0 += ammo.0 as i32;
+    }
+
+    for (i, id) in entities.iter().enumerate() {
+        if i % 10 == 0 {
+            let mut entry = scene.entry_mut(*id).unwrap();
+            let data = entry.get::<Health>();
+            assert_eq!(data, Some(&Health(150)));
+        }
     }
 }
 

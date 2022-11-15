@@ -104,12 +104,9 @@ impl StateColumn {
 
     // Reserve a specific amount of entries within the state column
     pub(crate) fn reserve(&mut self, additional: usize) {
-        let current = self.0.capacity() * usize::BITS as usize;
-        let new = self.0.capacity() + usize::BITS as usize + additional;
-        let current_num_chunks = (current as f32 / usize::BITS as f32).ceil() as usize;
-        let new_num_chunks = (new as f32 / usize::BITS as f32).ceil() as usize;
-        let additional_chunks =  new_num_chunks - current_num_chunks;
-        self.0.reserve(additional_chunks);
+        let current = self.0.len();
+        let new = (self.1 + additional) / usize::BITS as usize;
+        self.0.reserve(current - new);
     }
 
     // Remove a specific element and replace it's current location with the last element

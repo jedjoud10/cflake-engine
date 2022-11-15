@@ -92,7 +92,7 @@ impl<'s> QueryItemRef<'s> for &Entity {
     type Owned = Entity;
 
     fn access() -> LayoutAccess {
-        LayoutAccess::new(Mask::one(), Mask::zero())
+        LayoutAccess::new(Mask::zero(), Mask::zero())
     }
 
     unsafe fn ptr_from_archetype_unchecked(archetype: &Archetype) -> Self::Ptr {
@@ -212,7 +212,7 @@ impl<'s> QueryItemMut<'s> for &Entity {
     type Owned = Entity;
 
     fn access() -> LayoutAccess {
-        LayoutAccess::new(Mask::one(), Mask::zero())
+        LayoutAccess::new(Mask::zero(), Mask::zero())
     }
 
     unsafe fn ptr_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::Ptr {
