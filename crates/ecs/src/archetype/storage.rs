@@ -19,6 +19,9 @@ pub trait ComponentColumn {
     // Reserve some allocation space for the storage
     fn reserve(&mut self, additional: usize);
 
+    // Shrink the memory allocation so it takes less space
+    fn shrink_to_fit(&mut self);
+
     // Get the length of the vector
     fn len(&self) -> usize;
 
@@ -51,6 +54,10 @@ impl<T: Component> ComponentColumn for Vec<T> {
 
     fn reserve(&mut self, additional: usize) {
         Vec::reserve(self, additional);
+    }
+
+    fn shrink_to_fit(&mut self) {
+        Vec::shrink_to_fit(self);
     }
 
     fn len(&self) -> usize {

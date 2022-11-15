@@ -7,7 +7,7 @@ use std::{cell::RefCell, rc::Rc};
 
 // We store two different column-major tables within the archetypes
 pub type ComponentTable = MaskHashMap<Box<dyn ComponentColumn>>;
-pub type StateTable = MaskHashMap<StateColumn>;
+pub(crate) type StateTable = MaskHashMap<StateColumn>;
 
 // An archetype is a special structure that contains multiple entities of the same layout
 // Archetypes are used in archetypal ECSs to improve iteration and insertion/removal performance
@@ -73,7 +73,6 @@ impl Archetype {
         for (_, column)  in self.states.iter_mut() {
             column.extend_with_flags(additional, StateFlags {
                 added: true,
-                removed: false,
                 modified: true,
             });
         }
@@ -95,13 +94,30 @@ impl Archetype {
         self.states.reserve(additional);
 
         // Reserve more memory for the components columns
-        for (_, column) in &mut self.components {
+        for (_, column) in self.components.iter_mut(){
             column.reserve(additional);
         }
         
         // Reserve more memory for the state columns
-        for (_, column) in &mut self.states {
+        for (_, column) in self.states.iter_mut() {
             column.reserve(additional);
+        }
+    }
+
+    // Shrink the memory allocation used by this archetype
+    pub fn shrink(&mut self) {
+        self.entities.shrink_to_fit();
+        self.states.shrink_to_fit();
+        self.components.shrink_to_fit();
+
+        // Shrink the component columns
+        for (_, column) in self.components.iter_mut() {
+            column.shrink_to_fit();
+        }
+        
+        // Shrink the state columns
+        for (_, column) in self.states.iter_mut() {
+            column.shrink_to_fit();
         }
     }
 
@@ -121,7 +137,7 @@ impl Archetype {
     }
 
     // Try to get an immutable reference to the table for a specific component
-    pub fn components<T: Component>(&self) -> Option<&Vec<T>> {
+    pub(crate) fn components<T: Component>(&self) -> Option<&Vec<T>> {
         let boxed = &self.components.get(&mask::<T>())?;
         Some(boxed.as_any().downcast_ref().unwrap())
     }
@@ -133,7 +149,7 @@ impl Archetype {
     }
 
     // Try to get an immutable reference to the state table for a specific component
-    pub fn states<T: Component>(&self) -> Option<&StateColumn> {
+    pub(crate) fn states<T: Component>(&self) -> Option<&StateColumn> {
         self.states.get(&mask::<T>())
     }
 
@@ -143,7 +159,7 @@ impl Archetype {
     }
     
     // Get the component table immutably
-    pub fn component_table(&self) -> &ComponentTable {
+    pub(crate) fn component_table(&self) -> &ComponentTable {
         &self.components
     }
     
@@ -153,12 +169,12 @@ impl Archetype {
     }
 
     // Get the state table immutably
-    pub fn state_table(&self) -> &StateTable {
+    pub(crate) fn state_table(&self) -> &StateTable {
         &self.states
     }
 
     // Get the state table mutably
-    pub fn state_table_mut(&mut self) -> &mut StateTable {
+    pub(crate) fn state_table_mut(&mut self) -> &mut StateTable {
         &mut self.states
     }
 
@@ -286,7 +302,6 @@ pub(crate) fn add_bundle_unchecked<B: Bundle>(
         output.extend_with_flags(1, StateFlags {
             added: true,
             modified: true,
-            removed: false
         })
     }
 

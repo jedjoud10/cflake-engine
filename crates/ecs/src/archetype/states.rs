@@ -1,17 +1,15 @@
 // A single chunk that will be contained within the archetype component column
 #[derive(Default, Clone, Copy)]
-pub struct StateColumnChunk {
+pub(crate) struct StateColumnChunk {
     pub added: usize,
-    pub removed: usize,
     pub modified: usize,
 }
 
 // Returned from the Vec<StateColumnChunk>
 #[derive(Default, Clone, Copy)]
-pub struct StateFlags {
+pub(crate) struct StateFlags {
     pub added: bool,
     pub modified: bool,
-    pub removed: bool,
 }
 
 // A single column of archetype entity states
@@ -68,7 +66,6 @@ impl StateColumn {
         // Convert the flags into masks
         let added = flags.added as usize * usize::MAX;
         let modified = flags.modified as usize * usize::MAX;
-        let removed = flags.removed as usize * usize::MAX;
 
         // Update the chunk bits
         //dbg!(self.0.len());
@@ -98,7 +95,6 @@ impl StateColumn {
             let range = enable_in_range(local_start, local_end);
             chunk.added |= range & added;
             chunk.modified |= range & modified;
-            chunk.removed |= range & removed;
         }
     } 
 
@@ -107,6 +103,11 @@ impl StateColumn {
         let current = self.0.len();
         let new = (self.1 + additional) / usize::BITS as usize;
         self.0.reserve(current - new);
+    }
+
+    // Shrink the memory allocation so it takes less space
+    pub(crate) fn shrink_to_fit(&mut self) {
+        self.0.shrink_to_fit();
     }
 
     // Remove a specific element and replace it's current location with the last element
@@ -121,7 +122,6 @@ impl StateColumn {
             let last_local_index = self.1 % usize::BITS as usize;
             StateFlags {
                 added: (chunk.added >> last_local_index) & 1 == 1,
-                removed: (chunk.removed >> last_local_index) & 1 == 1,
                 modified: (chunk.modified >> last_local_index) & 1 == 1,
             }
         });
@@ -135,8 +135,7 @@ impl StateColumn {
 
             let added = set_bit(&mut chunk.added, local, flags.added);
             let modified = set_bit(&mut chunk.modified, local, flags.modified);
-            let removed = set_bit(&mut chunk.removed, local, flags.removed);        
-            StateFlags { added, removed, modified }
+            StateFlags { added, modified }
         })
     }
 
@@ -158,13 +157,11 @@ impl StateColumn {
         let mut flags = StateFlags {
             added: (chunk.added >> location) & 1 == 1,
             modified: (chunk.modified >> location) & 1 == 1,
-            removed: (chunk.removed >> location) & 1 == 1,
         };
         update(&mut flags);
 
         set_bit(&mut chunk.added, location, flags.added);
         set_bit(&mut chunk.modified, location, flags.modified);
-        set_bit(&mut chunk.removed, location, flags.removed);
     }
 
     // Get an immutable slice over all the chunks
@@ -192,7 +189,6 @@ impl StateColumn {
         for chunk in self.0.iter_mut() {
             chunk.added = 0usize;
             chunk.modified = 0usize;
-            chunk.removed = 0usize;
         }
     }
 }

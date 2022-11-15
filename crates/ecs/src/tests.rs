@@ -201,6 +201,14 @@ fn filter_ref() {
 
     assert_eq!(query.len(), 1);
     assert_eq!(query.into_iter().count(), 1);
+
+    let query = manager.query_with::<&Health>(always());
+    assert_eq!(query.len(), 2);
+    assert_eq!(query.into_iter().count(), 2);
+
+    let query = manager.query_with::<&Health>(never());
+    assert_eq!(query.len(), 0);
+    assert_eq!(query.into_iter().count(), 0);
 }
 
 #[test]
@@ -224,12 +232,19 @@ fn filter_mut() {
     entry.get_mut::<Health>().unwrap();
 
 
-    let query = manager.query_with::<&Health>(modified::<Health>());
+    let query = manager.query_mut_with::<&Health>(modified::<Health>());
     let mask = Mask::from_bundle::<Health>();
+    assert_eq!(query.len(), 1);
+    assert_eq!(query.into_iter().count(), 1);
     let archetype = manager.archetypes().get(&mask).unwrap();
     let states = archetype.states::<Health>().unwrap();
     assert_eq!(states.chunks()[0].modified, 1);
-    
-    assert_eq!(query.len(), 1);
-    assert_eq!(query.into_iter().count(), 1);
+
+    let query = manager.query_mut_with::<&Health>(always());
+    assert_eq!(query.len(), 2);
+    assert_eq!(query.into_iter().count(), 2);
+
+    let query = manager.query_mut_with::<&Health>(never());
+    assert_eq!(query.len(), 0);
+    assert_eq!(query.into_iter().count(), 0);
 }
