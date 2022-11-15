@@ -124,7 +124,7 @@ fn moving_batch() {
         }
     }
 
-    let filter = added::<Placeholder>() & removed::<Name>();
+    let filter = added::<Placeholder>();
     for (health, ammo) in scene.query_mut_with::<(&mut Health, &Ammo)>(filter) {
         health.0 += ammo.0 as i32;
     }

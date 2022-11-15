@@ -13,19 +13,19 @@ struct Placeholder();
 
 
 fn filtering_init(ecs: &mut Scene) {
-    let filter = added::<Placeholder>() & removed::<Name>();
+    let filter = added::<Placeholder>();
     ecs.query_mut_with::<(&mut Health, &Ammo)>(filter);
 }
 
 fn filtering(ecs: &mut Scene) {
-    let filter = added::<Placeholder>() & removed::<Name>();
+    let filter = added::<Placeholder>();
     for (health, ammo) in ecs.query_mut_with::<(&mut Health, &Ammo)>(filter) {
         health.0 += ammo.0 as i32;
     }
 }
 
 fn filtering_threaded(ecs: &mut Scene, threadpool: &mut ThreadPool) {
-    let filter = added::<Placeholder>() & removed::<Name>();
+    let filter = added::<Placeholder>();
     ecs.query_mut_with::<(&mut Health, &Ammo)>(filter).for_each(threadpool, |(health, ammo)| {
         health.0 += ammo.0 as i32;
     }, 4096);
@@ -71,14 +71,14 @@ fn criterion_benchmark(c: &mut Criterion) {
         group.bench_with_input(
             BenchmarkId::new("Single-threaded", num),
             &(num as u64), |b, &size| {
-                b.iter(|| iteration(&mut scene));
+                b.iter(|| iteration(black_box(&mut scene)));
             }
         );
 
         group.bench_with_input(
             BenchmarkId::new("Multi-threaded", num),
             &(num as u64), |b, &size| {
-                b.iter(|| iteration_threaded(&mut scene, &mut threadpool));
+                b.iter(|| iteration_threaded(black_box(&mut scene), &mut threadpool));
             }
         );
 
@@ -94,7 +94,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         group.bench_with_input(
             BenchmarkId::new("Filtering Single-threaded", num),
             &(num as u64), |b, &size| {
-                b.iter(|| filtering(&mut scene));
+                b.iter(|| filtering(black_box(&mut scene)));
             }
         );
 
@@ -108,7 +108,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         group.bench_with_input(
             BenchmarkId::new("Filtering BitSet Init", num),
             &(num as u64), |b, &size| {
-                b.iter(|| filtering_init(&mut scene));
+                b.iter(|| filtering_init(black_box(&mut scene)));
             }
         );
     }

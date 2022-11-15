@@ -363,19 +363,6 @@ pub(crate) fn remove_bundle_unchecked<B: Bundle>(
         input.swap_remove_move(index, output);
     }
 
-    // Add the "removed" state column since we switched archetypes
-    for mask in combined.units() {
-        // TODO: Handle removed archetype states
-        /*
-        let column = target.states.entry(mask).or_insert();
-        column.extend_with_flags(1, StateFlags {
-            added: false,
-            modified: false,
-            removed: true,
-        })
-        */
-    }
-
     // Create the return bundle
     let bundle = B::try_swap_remove(&mut current.components, index);
 

@@ -121,27 +121,6 @@ impl<T: Component> QueryFilter for Added<T> {
     }
 }
 
-impl<T: Component> QueryFilter for Removed<T> {
-    type Cached = Mask;
-    type Columns<'a> = Option<&'a StateColumn>;
-
-    fn prepare() -> Self::Cached {
-        registry::mask::<T>()
-    }
-
-    fn evaluate_archetype(cached: Self::Cached, archetype: &Archetype) -> bool {
-        true
-    }
-
-    fn cache_columns<'a>(cached: Self::Cached, archetype: &'a Archetype) -> Self::Columns<'a> {
-        archetype.state_table().get(&cached)
-    }
-
-    fn evaluate_chunk(columns: Self::Columns<'_>, index: usize) -> usize {
-        columns.map(|c| c.get(index).unwrap().removed).unwrap_or_default()
-    }
-}
-
 impl<T: Component> QueryFilter for Modified<T> {
     type Cached = Mask;
     type Columns<'a> = Option<&'a StateColumn>;
@@ -315,9 +294,6 @@ impl<A: QueryFilter> QueryFilter for Not<A> {
 // Functions to create the sources and modifiers
 pub fn modified<T: Component>() -> Wrap<Modified<T>> {
     Wrap::<Modified<T>>(PhantomData)
-}
-pub fn removed<T: Component>() -> Wrap<Removed<T>> {
-    Wrap::<Removed<T>>(PhantomData)
 }
 pub fn added<T: Component>() -> Wrap<Added<T>> {
     Wrap::<Added<T>>(PhantomData)
