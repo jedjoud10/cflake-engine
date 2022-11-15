@@ -9,11 +9,17 @@ use nohash_hasher::{IsEnabled, NoHashHasher};
 
 use crate::{QueryLayoutMut, QueryLayoutRef, Bundle};
 
+// RawBitMask bitmask value
+#[cfg(not(feature = "extended-bitmasks"))]
+pub type RawBitMask = u32;
+#[cfg(feature = "extended-bitmasks")]
+pub type RawBitMask = u64;
+
 // A mask is a simple 64 bit integer that tells us what components are enabled / disabled from within an entity
 // The ECS registry system uses masks to annotate each different type that might be a component, so in total
 // In total, there is only 64 different components that can be implemented using this ECS implementation
 #[derive(Clone, Copy, Hash, Eq, PartialEq, PartialOrd, Ord)]
-pub struct Mask(u64);
+pub struct Mask(RawBitMask);
 impl IsEnabled for Mask {}
 
 impl Mask {
@@ -44,7 +50,7 @@ impl Mask {
 
     // Create a mask that has all of it's bits set
     pub fn all() -> Mask {
-        Mask(u64::MAX)
+        Mask(RawBitMask::MAX)
     }
 
     // Get the offset of this mask, assuming that it is a unit mask
@@ -93,18 +99,28 @@ impl Mask {
         let raw = self.0;
         (0..(u64::BITS as usize)).into_iter().filter_map(move |i| ((raw >> i) & 1 == 1).then(|| Mask::one() << i as usize))
     }
+
+    // Count the number of set bits in this mask
+    pub fn count_ones(&self) -> u32 {
+        self.0.count_ones()
+    }
+
+    // Count the number of unset bits in this mask
+    pub fn count_zeros(&self) -> u32 {
+        self.0.count_zeros()
+    }
 }
 
 // Convert to raw bitfield
-impl Into<u64> for Mask {
-    fn into(self) -> u64 {
-        self.0
+impl From<Mask> for RawBitMask {
+    fn from(mask: Mask) -> RawBitMask {
+        mask.0
     }
 }
 
 // Convert from raw bitfield
-impl From<u64> for Mask {
-    fn from(bits: u64) -> Self {
+impl From<RawBitMask> for Mask {
+    fn from(bits: RawBitMask) -> Self {
         Self(bits)
     }
 }

@@ -140,12 +140,23 @@ macro_rules! tuple_impls {
     };
 }
 
+
 tuple_impls! { C0 C1, 2 }
 tuple_impls! { C0 C1 C2, 3 }
 tuple_impls! { C0 C1 C2 C3, 4 }
 tuple_impls! { C0 C1 C2 C3 C4, 5 }
 tuple_impls! { C0 C1 C2 C3 C4 C5, 6 }
-tuple_impls! { C0 C1 C2 C3 C4 C5 C6, 7 }
-tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7, 8 }
-tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8, 9 }
-tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9, 10 }
+
+#[cfg(feature = "extended-tuples")]
+mod extend {
+    use crate::{
+        mask, name, Archetype, Component, ComponentColumn, LayoutAccess, Mask, MaskHashMap, OwnedBundle,
+        QueryItemMut, QueryItemRef, QueryLayoutMut, QueryLayoutRef,
+    };
+    use casey::lower;
+    use seq_macro::seq;
+    tuple_impls! { C0 C1 C2 C3 C4 C5 C6, 7 }
+    tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7, 8 }
+    tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8, 9 }
+    tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9, 10 }
+}

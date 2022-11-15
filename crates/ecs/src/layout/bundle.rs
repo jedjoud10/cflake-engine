@@ -17,8 +17,7 @@ where
             count += 1;
             a | b
         });
-        let converted: u64 = mask.into();
-        converted.count_ones() == count as u32
+        mask.count_ones() == count as u32
     }
 
     // Get the storage tables once and for all
