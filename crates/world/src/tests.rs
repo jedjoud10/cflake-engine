@@ -1,5 +1,5 @@
 #[cfg(test)]
-mod tests {
+mod threadpool {
     use crate::ThreadPool;
     #[test]
     fn test() {

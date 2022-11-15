@@ -4,4 +4,4 @@ mod tests;
 mod world;
 pub use events::*;
 pub use resource::*;
-pub use world::*;
+pub use crate::world::*;

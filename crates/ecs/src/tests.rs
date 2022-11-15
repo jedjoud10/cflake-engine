@@ -1,3 +1,5 @@
+use std::{thread::Thread, time::Instant};
+
 use crate::*;
 use world::ThreadPool;
 
@@ -130,11 +132,31 @@ fn moving_batch() {
     }
 
     for (i, id) in entities.iter().enumerate() {
+        let entry = scene.entry_mut(*id).unwrap();
+        let data = entry.get::<Health>();
         if i % 10 == 0 {
-            let mut entry = scene.entry_mut(*id).unwrap();
-            let data = entry.get::<Health>();
             assert_eq!(data, Some(&Health(150)));
+        } else {
+            assert_eq!(data, Some(&Health(50)));
         }
+    }
+}
+
+#[test]
+fn threaded() {
+    let mut scene = Scene::default();
+    let mut threadpool = ThreadPool::with(16);
+
+    scene.extend_from_iter(std::iter::repeat((Name::default(), Health(50), Ammo(100))).take(4096)).to_vec();
+    
+    scene.query_mut::<(&mut Ammo, &mut Health)>().for_each(&mut threadpool, |(ammo, health)| {
+        ammo.0 += 100;
+        health.0 -= 50;
+    }, 512);
+
+    for (ammo, health) in scene.query_mut::<(&Ammo, &Health)>() {
+        assert_eq!(ammo.0, 200);
+        assert_eq!(health.0, 0);
     }
 }
 
