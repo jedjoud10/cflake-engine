@@ -8,6 +8,8 @@ struct Name(&'static str);
 struct Health(i32);
 #[derive(Component, Debug, Clone, Copy, Default)]
 struct Ammo(u32);
+#[derive(Component, Debug, Clone, Copy, Default)]
+struct Placeholder();
 
 fn cleanup(ecs: &mut Scene) {
     for (_, archetype) in ecs.archetypes_mut() {
@@ -57,6 +59,9 @@ fn bit_range_setter() {
     let half = enable_in_range(usize::BITS as usize / 2, usize::BITS as usize);
     assert_eq!(half.count_ones(), usize::BITS as u32 / 2);
     assert_eq!(half.count_zeros(), usize::BITS as u32 / 2);
+
+    let test = enable_in_range(usize::BITS as usize-1, usize::BITS as usize);
+    assert_eq!(test, 1 << (usize::BITS as usize - 1));
 }
 
 #[test]
@@ -73,6 +78,7 @@ fn states() {
     assert_eq!(chunk.modified, (1 << 32) - 1);
     assert_eq!(chunk.added.count_ones(), 32);
     assert_eq!(chunk.modified.count_ones(), 32);
+    cleanup(&mut manager)
 }
 
 #[test]
@@ -87,24 +93,25 @@ fn moving() {
 #[test]
 fn moving_batch() {
     let mut scene = Scene::default();
-    let entities = scene.extend_from_iter(std::iter::repeat(<(Name, Ammo)>::default()).take(4096)).to_vec();
+    let entities = scene.extend_from_iter(std::iter::repeat(<(Name, Ammo)>::default()).take(5000)).to_vec();
+    cleanup(&mut scene);
     for (i, id) in entities.into_iter().enumerate() {
-        if i % 2 == 0 {
+        if i % 10 == 0 {
             let mut entry = scene.entry_mut(id).unwrap();
             //entry.remove_bundle::<Name>().unwrap();
-            entry.insert_bundle::<Health>(Health(100)).unwrap();
+            entry.insert_bundle::<Health>(Health::default()).unwrap();
         }
     }
 
-    let filter = added::<Health>();
-    let query = scene.query_mut_with::<(&mut Health, &Ammo)>(filter);
-    assert_eq!(query.len(), 4096 / 2);
+    let filter = added::<Placeholder>();
+    for ammo in scene.query_mut_with::<(&mut Ammo)>(filter) {
+    }
 }
 
 #[test]
 fn queries() {
     let mut manager = Scene::default();
-    let iter = (0..130).map(|_| (Name("Person"), Health(100)));
+    let iter = (0..4096).map(|_| (Name("Person"), Health(100)));
     manager.extend_from_iter(iter);
 
     let query = manager.query_mut::<(&Name, &mut Health)>();

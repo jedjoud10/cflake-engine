@@ -18,7 +18,7 @@ fn filtering_init(ecs: &mut Scene) {
 }
 
 fn filtering(ecs: &mut Scene) {
-    let filter = added::<Placeholder>() & removed::<Name>();
+    let filter = added::<Placeholder>();
     for (health, ammo) in ecs.query_mut_with::<(&mut Health, &Ammo)>(filter) {
         health.0 += ammo.0 as i32;
     }
@@ -63,7 +63,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     let mut threadpool = ThreadPool::new();
 
     let mut group = c.benchmark_group("test");
-    for i in (1..15usize) {
+    for i in (1..2usize) {
         let num = 5000usize * i;
         let (mut scene, entities) = init::<(Name, Health, Ammo)>(num);
     
@@ -86,7 +86,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         for (i, id) in entities.into_iter().enumerate() {
             if i % 10 == 0 {
                 let mut entry = scene.entry_mut(id).unwrap();
-                entry.remove_bundle::<Name>().unwrap();
+                //entry.remove_bundle::<Name>().unwrap();
                 entry.insert_bundle::<Placeholder>(Placeholder()).unwrap();
             }
         }

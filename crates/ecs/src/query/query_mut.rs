@@ -7,7 +7,7 @@ use std::{marker::PhantomData, sync::Arc, rc::Rc};
 // This is a query that will be fetched from the main scene that we can use to get components out of entries with a specific layout
 // Even though I define the 'it, 'b, and 's lfietimes, I don't use them in this query, I only use them in the query iterator
 pub struct QueryMut<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> {
-    archetypes: Vec<&'a mut Archetype>,
+    pub(crate) archetypes: Vec<&'a mut Archetype>,
     mask: Mask,
     mutability: Mask,
     bitsets: Option<Vec<BitSet>>,
@@ -39,7 +39,7 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
         // Filter out the archetypes then create the bitsets
         let (mask, archetypes, cached) = super::archetypes_mut::<L, F>(scene);
         let bitsets = super::generate_bitset_chunks::<F>(archetypes.iter().map(|a| &**a), cached);
-
+        
         // Separate the masks
         let mutability = mask.unique();
         let mask = mask.both();
@@ -113,9 +113,8 @@ fn apply_mutability_states(archetype: &mut Archetype, mutability: Mask, bitset: 
         let column = table.get_mut(&unit).unwrap();
         
         if let Some(bitset) = bitset {
-            let bitset_chunks = bitset.chunks();
-            for (i, out_states) in column.chunks_mut().into_iter().enumerate() {
-                out_states.modified = bitset_chunks[i];
+            for (out_states, in_states) in column.chunks_mut().into_iter().zip(bitset.chunks().into_iter()) {
+                out_states.modified = *in_states;
             }
         } else {
             for out in column.chunks_mut() {

@@ -20,6 +20,7 @@ pub struct StateColumn(Vec<StateColumnChunk>, usize);
 
 // Update a value in a specific bitmask, though return the unwritten value first
 fn set_bit(bitmask: &mut usize, index: usize, value: bool) -> bool {
+    //dbg!(index);
     let copy = (*bitmask >> index) & 1 == 1;
 
     if value {
@@ -35,11 +36,13 @@ fn set_bit(bitmask: &mut usize, index: usize, value: bool) -> bool {
 // This will automatically clamp the values to 64 or 32
 // Start is inclusive, end is exclusive
 pub(crate) fn enable_in_range(mut start: usize, mut end: usize) -> usize {
-    start = start.min(usize::BITS as usize);
+    start = start.min(usize::BITS as usize-1);
     end = end.min(usize::BITS as usize);
 
+    /*
     dbg!(start);
     dbg!(end);
+    */
     if end == usize::BITS as usize {
         !((1usize << (start)) - 1usize)
     } else if start == usize::BITS as usize {
@@ -68,10 +71,28 @@ impl StateColumn {
         let removed = flags.removed as usize * usize::MAX;
 
         // Update the chunk bits
+        //dbg!(self.0.len());
         for (i, chunk) in self.0.iter_mut().enumerate() {
             let start = i * usize::BITS as usize;
+            let end = (i + 1) * usize::BITS as usize;
+
+            // Skip this chunk if it won't be modified
+            if old_len > end || new_len < start {
+                continue;
+            }
+
+            // Create start and end ranges that will be clamped to old_len and new_len respectively
             let local_start = usize::saturating_sub(old_len, start);
             let local_end = usize::saturating_sub(new_len, start);
+
+            /*
+            dbg!(start);
+            dbg!(old_len);
+            dbg!(new_len);
+
+            dbg!(local_start);
+            dbg!(local_end);
+            */
 
             // Bit magic that will enable all the bits between local_start and local_end;
             let range = enable_in_range(local_start, local_end);
@@ -122,7 +143,7 @@ impl StateColumn {
         })
     }
 
-    // Remvoe a speciifc element and replace it's current location with the last element
+    // Remove a specific element and replace it's current location with the last element
     // This will also insert the removed element as a new entry into another state column
     pub(crate) fn swap_remove_move(&mut self, index: usize, other: &mut Self) {
         let removed = self.swap_remove(index);
@@ -144,9 +165,9 @@ impl StateColumn {
         };
         update(&mut flags);
 
-        set_bit(&mut chunk.added, index, flags.added);
-        set_bit(&mut chunk.modified, index, flags.modified);
-        set_bit(&mut chunk.removed, index, flags.removed);
+        set_bit(&mut chunk.added, location, flags.added);
+        set_bit(&mut chunk.modified, location, flags.modified);
+        set_bit(&mut chunk.removed, location, flags.removed);
     }
 
     // Get an immutable slice over all the chunks
