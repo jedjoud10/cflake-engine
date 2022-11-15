@@ -1,13 +1,13 @@
 use std::iter::once;
 
 use slotmap::SlotMap;
-use time::Time;
+
 use world::{Events, Init, Stage, Update, World};
 
 use crate::{
-    archetype::remove_bundle_unchecked, entity::Entity, Archetype, Bundle,
-    EntityLinkings, EntryMut, EntryRef, Mask, MaskHashMap, QueryLayoutMut,
-    QueryLayoutRef, QueryMut, QueryRef, Wrap, QueryFilter
+    archetype::remove_bundle_unchecked, entity::Entity, Archetype, Bundle, EntityLinkings,
+    EntryMut, EntryRef, Mask, MaskHashMap, QueryFilter, QueryLayoutMut, QueryLayoutRef, QueryMut,
+    QueryRef, Wrap,
 };
 
 pub type EntitySet = SlotMap<Entity, EntityLinkings>;

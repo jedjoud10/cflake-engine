@@ -29,7 +29,7 @@ impl BitSet {
     pub fn chunks(&self) -> &[usize] {
         self.0.as_slice()
     }
-    
+
     // Get a mutable reference to the stored chunks
     pub fn chunks_mut(&mut self) -> &mut [usize] {
         self.0.as_mut_slice()
@@ -52,7 +52,7 @@ impl BitSet {
             let num = chunk - self.0.len();
             self.0.extend(std::iter::repeat(splat).take(num + 1));
         }
-        
+
         // Set the bit value specified in the chunk
         let chunk = &mut self.0[chunk];
         *chunk |= 1usize << location;
@@ -79,7 +79,10 @@ impl BitSet {
     pub fn get(&self, index: usize) -> bool {
         let (chunk, location) = Self::coords(index);
 
-        self.0.get(chunk).map(|chunk| (chunk >> location) & 1 == 1).unwrap_or_default()
+        self.0
+            .get(chunk)
+            .map(|chunk| (chunk >> location) & 1 == 1)
+            .unwrap_or_default()
     }
 
     // Count the number of zeros in this bitset
@@ -99,8 +102,7 @@ impl BitSet {
     // Returns None if it could not find an set bit, returns Some with it's index if it did
     pub fn find_one_from(&self, index: usize) -> Option<usize> {
         let (start_chunk, start_location) = Self::coords(index);
-        self
-            .chunks()
+        self.chunks()
             .iter()
             .enumerate()
             .skip(start_chunk)
@@ -117,15 +119,15 @@ impl BitSet {
                 };
 
                 (result != (offset + 64)).then_some(result)
-            }).next()  
+            })
+            .next()
     }
 
     // Starting from a specific index, read forward and check if there is any unset bits
     // Returns None if it could not find an unset bit, returns Some with it's index if it did
     pub fn find_zero_from(&self, index: usize) -> Option<usize> {
         let (start_chunk, start_location) = Self::coords(index);
-        self
-            .chunks()
+        self.chunks()
             .iter()
             .enumerate()
             .skip(start_chunk)
@@ -142,6 +144,7 @@ impl BitSet {
                 };
 
                 (result != (offset + 64)).then_some(result)
-            }).next()  
+            })
+            .next()
     }
 }

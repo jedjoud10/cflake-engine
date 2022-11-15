@@ -2,18 +2,14 @@ mod system;
 pub use system::*;
 
 use ahash::AHashMap;
-use winit::event::ElementState;
-use serde::{
-    ser::{SerializeMap, SerializeStruct},
-    *,
-};
+use serde::*;
 use std::{
     borrow::Cow,
-    collections::BTreeMap,
     fs::File,
     io::{BufReader, Read, Write},
     path::Path,
 };
+use winit::event::ElementState;
 
 // The virtual keycodes that the window will receive (as a form of events)
 pub type Key = winit::event::VirtualKeyCode;

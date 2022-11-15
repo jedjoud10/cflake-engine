@@ -1,12 +1,7 @@
-use itertools::Itertools;
 use math::BitSet;
-use smallvec::SmallVec;
 
-use crate::{
-    Archetype, LayoutAccess, Mask, QueryFilter, QueryLayoutMut, QueryLayoutRef, Scene,
-    Wrap, Always,
-};
-use std::{marker::PhantomData, sync::Arc, rc::Rc};
+use crate::{Always, Archetype, Mask, QueryFilter, QueryLayoutMut, QueryLayoutRef, Scene, Wrap};
+use std::{marker::PhantomData, sync::Arc};
 
 // This is a query that will be fetched from the main scene that we can use to get components out of entries with a specific layout
 // Even though I define the 'it, 'b, and 's lfietimes, I don't use them in this query, I only use them in the query iterator
@@ -69,7 +64,10 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutRef<'it>> QueryRef<'a, 'b, 's, L> {
 
                 // Convert the archetype bitset to a thread-shareable bitset
                 // TODO: Reverse the order of the archetypes to avoid cloning the bitset here
-                let bitset = self.bitsets.as_ref().map(|bitset| Arc::new(bitset[i].clone()));
+                let bitset = self
+                    .bitsets
+                    .as_ref()
+                    .map(|bitset| Arc::new(bitset[i].clone()));
 
                 // Should we use per entry filtering?
                 if let Some(bitset) = bitset.clone() {
@@ -90,7 +88,11 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutRef<'it>> QueryRef<'a, 'b, 's, L> {
     pub fn len(&self) -> usize {
         if let Some(bitsets) = &self.bitsets {
             // TODO: Does this actually work
-            bitsets.iter().zip(self.archetypes.iter()).map(|(b, a)| b.count_ones().min(a.len())).sum()
+            bitsets
+                .iter()
+                .zip(self.archetypes.iter())
+                .map(|(b, a)| b.count_ones().min(a.len()))
+                .sum()
         } else {
             self.archetypes.iter().map(|a| a.len()).sum()
         }
@@ -141,7 +143,7 @@ impl<'b, 's, L: QueryLayoutRef<'s>> QueryRefIter<'b, 's, L> {
             .as_ref()
             .map(|chunk| chunk.length)
             .unwrap_or_default();
-        
+
         if self.index + 1 > len {
             let archetype = self.archetypes.pop()?;
             let bitset = self.bitsets.as_mut().map(|vec| vec.pop().unwrap());
@@ -151,20 +153,20 @@ impl<'b, 's, L: QueryLayoutRef<'s>> QueryRefIter<'b, 's, L> {
             self.chunk = Some(Chunk {
                 ptrs,
                 bitset,
-                length
+                length,
             });
         }
 
         Some(())
     }
-} 
+}
 
 impl<'b, 's, L: QueryLayoutRef<'s>> Iterator for QueryRefIter<'b, 's, L> {
     type Item = L;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            // Always hop to the next chunk at the start of the hop iteration / normal iteration 
+            // Always hop to the next chunk at the start of the hop iteration / normal iteration
             self.check_hop_chunk()?;
 
             if let Some(chunk) = &self.chunk {
@@ -177,10 +179,9 @@ impl<'b, 's, L: QueryLayoutRef<'s>> Iterator for QueryRefIter<'b, 's, L> {
                     } else {
                         // Hop to the next archetype if we could not find one
                         // This will force the iterator to hop to the next archetype
-                        self.index = chunk.length;                        
+                        self.index = chunk.length;
                         continue;
                     }
-            
                 } else {
                     // If we do not have a bitset, don't do anything
                     break;

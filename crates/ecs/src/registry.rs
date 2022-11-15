@@ -30,7 +30,7 @@ pub fn mask<T: Component>() -> Mask {
         // Register the component
         let mut locked = REGISTERED.write();
         let mut bit = NEXT.lock();
-    
+
         // Le bitshifting
         let copy = *bit;
         locked.insert(TypeId::of::<T>(), copy);

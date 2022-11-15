@@ -1,8 +1,5 @@
-use std::{thread::Thread, time::Instant};
-
 use crate::*;
 use world::ThreadPool;
-
 
 #[derive(Component, Debug, PartialEq, Eq, Clone, Default)]
 struct Name(&'static str);
@@ -62,7 +59,7 @@ fn bit_range_setter() {
     assert_eq!(half.count_ones(), usize::BITS as u32 / 2);
     assert_eq!(half.count_zeros(), usize::BITS as u32 / 2);
 
-    let test = enable_in_range(usize::BITS as usize-1, usize::BITS as usize);
+    let test = enable_in_range(usize::BITS as usize - 1, usize::BITS as usize);
     assert_eq!(test, 1 << (usize::BITS as usize - 1));
 }
 
@@ -70,7 +67,7 @@ fn bit_range_setter() {
 fn states() {
     let mut manager = Scene::default();
 
-    manager.extend_from_iter(std::iter::repeat(Name("Test")).take(32)); 
+    manager.extend_from_iter(std::iter::repeat(Name("Test")).take(32));
 
     let mask = Mask::from_bundle::<Name>();
     let archetype = manager.archetypes().get(&mask).unwrap();
@@ -82,7 +79,7 @@ fn states() {
     assert_eq!(chunk.modified.count_ones(), 32);
     cleanup(&mut manager);
 
-    manager.extend_from_iter(std::iter::repeat((Name("Test 2"), Health(100))).take(64)); 
+    manager.extend_from_iter(std::iter::repeat((Name("Test 2"), Health(100))).take(64));
     let query = manager.query_with::<&Entity>(added::<Name>() & added::<Health>());
     assert_eq!(query.len(), 64);
 
@@ -99,7 +96,7 @@ fn states() {
     assert_eq!(states2.chunks()[0].added, usize::MAX);
 
     cleanup(&mut manager);
-    manager.extend_from_iter(std::iter::repeat((Name("Test 2"), Health(100))).take(64)); 
+    manager.extend_from_iter(std::iter::repeat((Name("Test 2"), Health(100))).take(64));
     let query = manager.query_with::<&Entity>(contains::<Name>() & contains::<Health>());
     assert_eq!(query.len(), 128);
 }
@@ -116,7 +113,9 @@ fn moving() {
 #[test]
 fn moving_batch() {
     let mut scene = Scene::default();
-    let entities = scene.extend_from_iter(std::iter::repeat((Name::default(), Health(50), Ammo(100))).take(5000)).to_vec();
+    let entities = scene
+        .extend_from_iter(std::iter::repeat((Name::default(), Health(50), Ammo(100))).take(5000))
+        .to_vec();
     cleanup(&mut scene);
     for (i, id) in entities.iter().enumerate() {
         if i % 10 == 0 {
@@ -147,12 +146,18 @@ fn threaded() {
     let mut scene = Scene::default();
     let mut threadpool = ThreadPool::with(16);
 
-    scene.extend_from_iter(std::iter::repeat((Name::default(), Health(50), Ammo(100))).take(4096)).to_vec();
-    
-    scene.query_mut::<(&mut Ammo, &mut Health)>().for_each(&mut threadpool, |(ammo, health)| {
-        ammo.0 += 100;
-        health.0 -= 50;
-    }, 512);
+    scene
+        .extend_from_iter(std::iter::repeat((Name::default(), Health(50), Ammo(100))).take(4096))
+        .to_vec();
+
+    scene.query_mut::<(&mut Ammo, &mut Health)>().for_each(
+        &mut threadpool,
+        |(ammo, health)| {
+            ammo.0 += 100;
+            health.0 -= 50;
+        },
+        512,
+    );
 
     for (ammo, health) in scene.query_mut::<(&Ammo, &Health)>() {
         assert_eq!(ammo.0, 200);
@@ -214,7 +219,6 @@ fn filter_ref() {
     let mut entry = manager.entry_mut(e1).unwrap();
     entry.get_mut::<Health>().unwrap();
 
-    
     let query = manager.query_with::<&Health>(modified::<Health>());
     let mask = Mask::from_bundle::<Health>();
     let archetype = manager.archetypes().get(&mask).unwrap();
@@ -252,7 +256,6 @@ fn filter_mut() {
 
     let mut entry = manager.entry_mut(e1).unwrap();
     entry.get_mut::<Health>().unwrap();
-
 
     let query = manager.query_mut_with::<&Health>(modified::<Health>());
     let mask = Mask::from_bundle::<Health>();

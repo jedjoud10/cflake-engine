@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod bitset {
-    use crate::{BitSet};    
+    use crate::BitSet;
 
     #[test]
     fn bitset() {
@@ -31,12 +31,11 @@ mod bitset {
         assert_eq!(bitset.find_one_from(1), Some(10));
         assert_eq!(bitset.find_one_from(11), None);
         assert_eq!(bitset.find_one_from(10), Some(10));
-        
+
         bitset.set(4096);
         assert_eq!(bitset.find_one_from(11), Some(4096));
         assert_eq!(bitset.find_one_from(4098), None);
     }
-
 
     #[test]
     fn counting_zeros() {
@@ -55,7 +54,7 @@ mod bitset {
 
 #[cfg(test)]
 mod hibitset {
-    use crate::{HiBitSet};
+    use crate::HiBitSet;
 
     #[test]
     fn hibitset() {

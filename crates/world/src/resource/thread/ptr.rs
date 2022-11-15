@@ -1,4 +1,4 @@
-use std::any::{Any, TypeId};
+use std::any::TypeId;
 
 // Unsafe ref pointer that we can send to other threads
 pub struct SendPtr<T>(*const T);
@@ -7,7 +7,7 @@ unsafe impl<T> Send for SendPtr<T> {}
 
 impl<T> Clone for SendPtr<T> {
     fn clone(&self) -> Self {
-        Self(self.0.clone())
+        Self(self.0)
     }
 }
 impl<T> Copy for SendPtr<T> {}
@@ -31,7 +31,7 @@ unsafe impl<T> Send for SendMutPtr<T> {}
 
 impl<T> Clone for SendMutPtr<T> {
     fn clone(&self) -> Self {
-        Self(self.0.clone())
+        Self(self.0)
     }
 }
 impl<T> Copy for SendMutPtr<T> {}

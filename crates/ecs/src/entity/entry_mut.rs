@@ -1,7 +1,7 @@
 use super::Entity;
 use crate::{
-    add_bundle_unchecked, name, registry::mask, remove_bundle_unchecked, Archetype, ArchetypeSet,
-    Bundle, Component, EntityLinkings, EntitySet, QueryLayoutMut, QueryLayoutRef, Scene,
+    add_bundle_unchecked, registry::mask, remove_bundle_unchecked, Archetype, ArchetypeSet, Bundle,
+    Component, EntityLinkings, EntitySet, QueryLayoutMut, QueryLayoutRef, Scene,
 };
 
 // Mutable entity entries allow the user to be able to modify components that are linked to the entity

@@ -5,9 +5,9 @@ use winit::{
 };
 //use gui::egui::util::id_type_map::TypeId;
 use mimalloc::MiMalloc;
-use rendering::prelude::{FrameRateLimit};
-use std::{path::PathBuf, any::TypeId};
-use world::{Event, Events, Init, State, System, Update, World, Shutdown};
+use rendering::prelude::FrameRateLimit;
+use std::{any::TypeId, path::PathBuf};
+use world::{Event, Events, Init, Shutdown, State, System, Update, World};
 
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
@@ -130,7 +130,9 @@ impl App {
         // Sort & execute the init events
         let reg = self.events.registry_mut::<Init>();
         reg.sort().unwrap();
-        self.events.registry_mut::<Init>().execute((&mut self.world, &self.el));
+        self.events
+            .registry_mut::<Init>()
+            .execute((&mut self.world, &self.el));
 
         // Decompose the app
         let mut events = self.events;
@@ -167,7 +169,9 @@ impl App {
                 window_id: _,
                 mut event,
             } => {
-                events.registry_mut::<WindowEvent>().execute((&mut world, &mut event));
+                events
+                    .registry_mut::<WindowEvent>()
+                    .execute((&mut world, &mut event));
             }
 
             // Call the device events
@@ -175,7 +179,9 @@ impl App {
                 device_id: _,
                 event,
             } => {
-                events.registry_mut::<DeviceEvent>().execute((&mut world, &event));
+                events
+                    .registry_mut::<DeviceEvent>()
+                    .execute((&mut world, &event));
             }
             _ => {}
         });

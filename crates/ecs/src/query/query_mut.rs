@@ -1,8 +1,8 @@
 use itertools::Itertools;
 use math::BitSet;
-use smallvec::SmallVec;
-use crate::{Archetype, LayoutAccess, Mask, QueryFilter, QueryLayoutMut, Scene, Wrap, Always};
-use std::{marker::PhantomData, sync::Arc, rc::Rc};
+
+use crate::{Always, Archetype, Mask, QueryFilter, QueryLayoutMut, Scene, Wrap};
+use std::{marker::PhantomData, sync::Arc};
 
 // This is a query that will be fetched from the main scene that we can use to get components out of entries with a specific layout
 // Even though I define the 'it, 'b, and 's lfietimes, I don't use them in this query, I only use them in the query iterator
@@ -39,7 +39,7 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
         // Filter out the archetypes then create the bitsets
         let (mask, archetypes, cached) = super::archetypes_mut::<L, F>(scene);
         let bitsets = super::generate_bitset_chunks::<F>(archetypes.iter().map(|a| &**a), cached);
-        
+
         // Separate the masks
         let mutability = mask.unique();
         let mask = mask.both();
@@ -76,10 +76,13 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
 
                 // Convert the archetype bitset to a thread-shareable bitset
                 // TODO: Reverse the order of the archetypes to avoid cloning the bitset here
-                let bitset = self.bitsets.as_ref().map(|bitset| Arc::new(bitset[i].clone()));
+                let bitset = self
+                    .bitsets
+                    .as_ref()
+                    .map(|bitset| Arc::new(bitset[i].clone()));
 
                 // Update all states chunks of the current archetype before iterating
-                apply_mutability_states(archetype, mutability, bitset.as_ref().map(|arc| &**arc));
+                apply_mutability_states(archetype, mutability, bitset.as_deref());
 
                 // Should we use per entry filtering?
                 if let Some(bitset) = bitset.clone() {
@@ -99,7 +102,11 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
     // Get the number of entries that we will have to iterate through
     pub fn len(&self) -> usize {
         if let Some(bitsets) = &self.bitsets {
-            bitsets.iter().zip(self.archetypes.iter()).map(|(b, a)| b.count_ones().min(a.len())).sum()
+            bitsets
+                .iter()
+                .zip(self.archetypes.iter())
+                .map(|(b, a)| b.count_ones().min(a.len()))
+                .sum()
         } else {
             self.archetypes.iter().map(|a| a.len()).sum()
         }
@@ -111,9 +118,11 @@ fn apply_mutability_states(archetype: &mut Archetype, mutability: Mask, bitset: 
     let table = archetype.state_table_mut();
     for unit in mutability.units() {
         let column = table.get_mut(&unit).unwrap();
-        
+
         if let Some(bitset) = bitset {
-            for (out_states, in_states) in column.chunks_mut().into_iter().zip(bitset.chunks().into_iter()) {
+            for (out_states, in_states) in
+                column.chunks_mut().iter_mut().zip(bitset.chunks().iter())
+            {
                 out_states.modified = *in_states;
             }
         } else {
@@ -168,7 +177,6 @@ pub struct QueryMutIter<'b, 's, L: QueryLayoutMut<'s>> {
     _phantom2: PhantomData<L>,
 }
 
-
 impl<'b, 's, L: QueryLayoutMut<'s>> QueryMutIter<'b, 's, L> {
     // Hop onto the next archetype if we are done iterating through the current one
     fn check_hop_chunk(&mut self) -> Option<()> {
@@ -194,14 +202,14 @@ impl<'b, 's, L: QueryLayoutMut<'s>> QueryMutIter<'b, 's, L> {
 
         Some(())
     }
-} 
+}
 
 impl<'b, 's, L: QueryLayoutMut<'s>> Iterator for QueryMutIter<'b, 's, L> {
     type Item = L;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            // Always hop to the next chunk at the start of the hop iteration / normal iteration 
+            // Always hop to the next chunk at the start of the hop iteration / normal iteration
             self.check_hop_chunk()?;
 
             if let Some(chunk) = &self.chunk {
@@ -214,17 +222,16 @@ impl<'b, 's, L: QueryLayoutMut<'s>> Iterator for QueryMutIter<'b, 's, L> {
                     } else {
                         // Hop to the next archetype if we could not find one
                         // This will force the iterator to hop to the next archetype
-                        self.index = chunk.length;                        
+                        self.index = chunk.length;
                         continue;
                     }
-            
                 } else {
                     // If we do not have a bitset, don't do anything
                     break;
                 }
             }
         }
-        
+
         // I have to do this since iterators cannot return data that they are referencing, but in this case, it is safe to do so
         self.chunk.as_mut()?;
         let ptrs = self.chunk.as_ref().unwrap().ptrs;

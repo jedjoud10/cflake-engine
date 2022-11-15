@@ -1,6 +1,6 @@
-use crate::{Event, RegistrySortingError, Rule, Stage, StageError, StageKey, Caller};
+use crate::{Caller, Event, RegistrySortingError, Rule, Stage, StageError, StageKey};
 use ahash::{AHashMap, AHashSet};
-use std::{rc::Rc, time::Duration};
+use std::rc::Rc;
 
 // Number of maximum iterations allowed before we detect a cyclic reference from within the rules
 pub const CYCLIC_REFERENCE_RULES_THRESHOLD: usize = 8;

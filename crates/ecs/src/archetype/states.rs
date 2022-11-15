@@ -27,14 +27,14 @@ fn set_bit(bitmask: &mut usize, index: usize, value: bool) -> bool {
         *bitmask &= !(1 << index);
     }
 
-    return copy;
+    copy
 }
 
 // Enable all the bits between "start" and "end" in the binary representation of a usize
 // This will automatically clamp the values to 64 or 32
 // Start is inclusive, end is exclusive
 pub(crate) fn enable_in_range(mut start: usize, mut end: usize) -> usize {
-    start = start.min(usize::BITS as usize-1);
+    start = start.min(usize::BITS as usize - 1);
     end = end.min(usize::BITS as usize);
 
     /*
@@ -96,7 +96,7 @@ impl StateColumn {
             chunk.added |= range & added;
             chunk.modified |= range & modified;
         }
-    } 
+    }
 
     // Reserve a specific amount of entries within the state column
     pub(crate) fn reserve(&mut self, additional: usize) {
@@ -145,7 +145,7 @@ impl StateColumn {
         let removed = self.swap_remove(index);
 
         if let Some(removed) = removed {
-            other.extend_with_flags(1, removed);    
+            other.extend_with_flags(1, removed);
         }
     }
 
@@ -168,7 +168,7 @@ impl StateColumn {
     pub(crate) fn chunks(&self) -> &[StateColumnChunk] {
         &self.0
     }
-    
+
     // Get a mutable slice over all the chunks
     pub(crate) fn chunks_mut(&mut self) -> &mut [StateColumnChunk] {
         &mut self.0

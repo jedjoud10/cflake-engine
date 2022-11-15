@@ -3,7 +3,6 @@ use crate::{
     mask, ArchetypeSet, Bundle, Component, ComponentColumn, EntitySet, Mask, MaskHashMap,
     QueryLayoutRef, StateColumn, StateFlags,
 };
-use std::{cell::RefCell, rc::Rc};
 
 // We store two different column-major tables within the archetypes
 pub type ComponentTable = MaskHashMap<Box<dyn ComponentColumn>>;
@@ -70,13 +69,16 @@ impl Archetype {
         }
 
         // Add the state bits if needed
-        for (_, column)  in self.states.iter_mut() {
-            column.extend_with_flags(additional, StateFlags {
-                added: true,
-                modified: true,
-            });
+        for (_, column) in self.states.iter_mut() {
+            column.extend_with_flags(
+                additional,
+                StateFlags {
+                    added: true,
+                    modified: true,
+                },
+            );
         }
-        
+
         // Add the storage bundles to their respective columns
         let mut storages = B::prepare(self).unwrap();
         for set in components {
@@ -94,10 +96,10 @@ impl Archetype {
         self.states.reserve(additional);
 
         // Reserve more memory for the components columns
-        for (_, column) in self.components.iter_mut(){
+        for (_, column) in self.components.iter_mut() {
             column.reserve(additional);
         }
-        
+
         // Reserve more memory for the state columns
         for (_, column) in self.states.iter_mut() {
             column.reserve(additional);
@@ -114,7 +116,7 @@ impl Archetype {
         for (_, column) in self.components.iter_mut() {
             column.shrink_to_fit();
         }
-        
+
         // Shrink the state columns
         for (_, column) in self.states.iter_mut() {
             column.shrink_to_fit();
@@ -157,12 +159,12 @@ impl Archetype {
     pub(crate) fn states_mut<T: Component>(&mut self) -> Option<&mut StateColumn> {
         self.states.get_mut(&mask::<T>())
     }
-    
+
     // Get the component table immutably
     pub(crate) fn component_table(&self) -> &ComponentTable {
         &self.components
     }
-    
+
     // Get the component table mutably
     pub(crate) fn component_table_mut(&mut self) -> &mut ComponentTable {
         &mut self.components
@@ -257,13 +259,14 @@ pub(crate) fn add_bundle_unchecked<B: Bundle>(
             .map(|(mask, table)| (*mask, table.clone_default()));
         let mut components = B::default_tables();
         components.extend(base);
-        
+
         let base = current
             .states
             .iter()
             .map(|(mask, _)| (*mask, StateColumn::default()));
         let mask = B::reduce(|a, b| a | b);
-        let mut states = MaskHashMap::from_iter(mask.units().map(|mask| (mask, StateColumn::default())));
+        let mut states =
+            MaskHashMap::from_iter(mask.units().map(|mask| (mask, StateColumn::default())));
         states.extend(base);
 
         let archetype = Archetype {
@@ -298,11 +301,18 @@ pub(crate) fn add_bundle_unchecked<B: Bundle>(
     drop(storages);
 
     // Add the extra states as well
-    for (_, output) in target.state_table_mut().iter_mut().filter(|(mask, _)| additional.contains(**mask)) {
-        output.extend_with_flags(1, StateFlags {
-            added: true,
-            modified: true,
-        })
+    for (_, output) in target
+        .state_table_mut()
+        .iter_mut()
+        .filter(|(mask, _)| additional.contains(**mask))
+    {
+        output.extend_with_flags(
+            1,
+            StateFlags {
+                added: true,
+                modified: true,
+            },
+        )
     }
 
     // Handle swap-remove logic in the current archetype
@@ -351,7 +361,7 @@ pub(crate) fn remove_bundle_unchecked<B: Bundle>(
             .filter(|(mask, _)| Mask::contains(&new, **mask))
             .filter(|(mask, _)| new.contains(**mask))
             .map(|(mask, _)| (*mask, StateColumn::default()));
-        
+
         let archetype = Archetype {
             mask: new,
             components: MaskHashMap::from_iter(components),

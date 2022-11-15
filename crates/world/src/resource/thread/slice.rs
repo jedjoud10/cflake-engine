@@ -2,7 +2,6 @@ use crate::{SendMutPtr, SendPtr};
 use std::{
     any::Any,
     slice::{from_raw_parts, from_raw_parts_mut},
-    sync::Arc,
 };
 
 // Implmented for immutable and mutable slice references

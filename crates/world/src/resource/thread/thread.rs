@@ -1,23 +1,17 @@
 use math::BitSet;
-use parking_lot::{Condvar, Mutex, RwLock};
+use parking_lot::Mutex;
 use std::{
     any::Any,
-    ffi::c_void,
-    marker::PhantomData,
-    mem::size_of,
-    num,
     slice::SliceIndex,
     sync::{
-        atomic::{AtomicBool, AtomicU32, Ordering},
+        atomic::{AtomicU32, Ordering},
         mpsc::{Receiver, Sender},
-        Arc, Barrier,
+        Arc,
     },
-    thread::{JoinHandle, ThreadId},
+    thread::JoinHandle,
 };
 
 use crate::{SliceTuple, ThreadPoolScope};
-
-use super::{UntypedMutPtr, UntypedPtr};
 
 // Shared arc that represents a pointer tuple
 type BoxedPtrTuple = Arc<dyn Any + Send + Sync + 'static>;
@@ -83,7 +77,7 @@ impl ThreadPool {
 
         threadpool
     }
-    
+
     // Create a new thread pool with the default number of threads
     pub fn new() -> Self {
         Self::with(num_cpus::get() * 8)
@@ -124,7 +118,7 @@ impl ThreadPool {
             let offset = entry.batch_offset;
             let ptrs = entry.base.downcast::<I::PtrTuple>().ok();
             let mut ptrs = ptrs
-                .map(|ptrs| I::from_ptrs(&*ptrs, entry.batch_length, offset))
+                .map(|ptrs| I::from_ptrs(&ptrs, entry.batch_length, offset))
                 .unwrap();
 
             for i in 0..entry.batch_length {

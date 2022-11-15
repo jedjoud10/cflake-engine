@@ -1,4 +1,4 @@
-use crate::{mask, name, Archetype, Component, ComponentColumn, Mask, MaskHashMap};
+use crate::{mask, Archetype, Component, ComponentColumn, Mask, MaskHashMap};
 
 // An owned layout trait will be implemented for owned tuples that contain a set of components
 pub trait OwnedBundle<'a>
