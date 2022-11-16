@@ -50,6 +50,20 @@ mod bitset {
         assert_eq!(bitset.find_zero_from(10), Some(11));
         assert_eq!(bitset.find_zero_from(11), Some(11));
     }
+
+    #[test]
+    fn pattern() {
+        let mut bitset = BitSet::new();
+        bitset.set(0);
+        bitset.set(2);
+        bitset.set(4);
+
+        assert_eq!(bitset.count_ones(), 3);
+        assert_eq!(bitset.find_one_from(0), Some(0));
+        assert_eq!(bitset.find_one_from(1), Some(2));
+        assert_eq!(bitset.find_one_from(2), Some(2));
+        assert_eq!(bitset.find_one_from(3), Some(4));
+    }
 }
 
 #[cfg(test)]

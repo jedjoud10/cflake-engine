@@ -90,7 +90,7 @@ impl ThreadPool {
         &'a mut self,
         mut list: I,
         function: impl Fn(<I as SliceTuple<'_>>::ItemTuple) + Send + Sync + 'a,
-        hop: Option<Arc<BitSet>>,
+        bitset: Option<BitSet>,
         batch_size: usize,
     ) {
         // If the slices have different lengths, we must abort
@@ -103,33 +103,56 @@ impl ThreadPool {
         let num_tasks = (length as f32 / batch_size as f32).ceil() as usize;
         let remaining = length % batch_size;
 
+        // Internal function that is either used in a single thread or in multiple threads
+        let internal = move |mut ptrs: &mut I, length: usize, offset: usize, bitset: Option<&BitSet>| {
+            if let Some(bitset) = &bitset {
+                // With a bitset filter
+                let mut i = 0;
+                while i < length {                       
+                    // Check the next entry that is valid (that passed the filter)
+                    if let Some(hop) = bitset.find_one_from(i + offset) {
+                        i = hop;
+                    } else {
+                        return;
+                    }
+                    
+                    function(unsafe { I::get_unchecked(&mut ptrs, i) });
+                    i += 1;
+                } 
+            } else {
+                // Without a bitset filter
+                for i in 0..length {
+                    function(unsafe { I::get_unchecked(&mut ptrs, i) });
+                }
+            }
+        };
+
         // Run the code in a single thread if needed
         if num_tasks == 1 {
-            for x in 0..length {
-                function(unsafe { I::get_unchecked(&mut list, x) });
-            }
+            internal(&mut list, length, 0, bitset.as_ref());
             return;
         }
 
         // Box the function into an arc
         type ArcFn<'b> = Arc<dyn Fn(ThreadFuncEntry) + Send + Sync + 'b>;
+        
+        // The bitset is going to be a shareable bitset instead
+        let bitset = bitset.map(|b| Arc::new(b));
+
         let function: ArcFn<'a> = Arc::new(move |entry: ThreadFuncEntry| unsafe {
-            let hop = hop.clone();
+            // Optionally, the user might specify a specific bitset
+            let bitset = bitset.clone();
+
+            // Decompose the thread entry into it's raw components
             let offset = entry.batch_offset;
             let ptrs = entry.base.downcast::<I::PtrTuple>().ok();
-            let mut ptrs = ptrs
+            let length = entry.batch_length;
+            let mut slices = ptrs
                 .map(|ptrs| I::from_ptrs(&ptrs, entry.batch_length, offset))
                 .unwrap();
 
-            for i in 0..entry.batch_length {
-                if let Some(hop) = &hop {
-                    if !hop.get(i + offset) {
-                        continue;
-                    }
-                }
-
-                function(I::get_unchecked(&mut ptrs, i));
-            }
+            // Call the internal function
+            internal(&mut slices, length, offset, bitset.as_ref().map(|b| &**b));
         });
 
         // Convert the lifetimed arc into a static arc
@@ -175,7 +198,7 @@ impl ThreadPool {
         bitset: BitSet,
         batch_size: usize,
     ) {
-        self.for_each_async(list, function, Some(Arc::new(bitset)), batch_size);
+        self.for_each_async(list, function, Some(bitset), batch_size);
         self.join();
     }
 

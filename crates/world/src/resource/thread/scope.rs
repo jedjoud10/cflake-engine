@@ -44,7 +44,7 @@ impl<'a> ThreadPoolScope<'a> {
         &mut self,
         list: I,
         function: impl Fn(<I as SliceTuple<'_>>::ItemTuple) + Send + Sync + 'a,
-        bitset: Arc<BitSet>,
+        bitset: BitSet,
         batch_size: usize,
     ) {
         self.pool

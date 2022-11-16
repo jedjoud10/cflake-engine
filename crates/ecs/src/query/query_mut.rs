@@ -79,10 +79,10 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> QueryMut<'a, 'b, 's, L> {
                 let bitset = self
                     .bitsets
                     .as_ref()
-                    .map(|bitset| Arc::new(bitset[i].clone()));
+                    .map(|bitset| bitset[i].clone());
 
                 // Update all states chunks of the current archetype before iterating
-                apply_mutability_states(archetype, mutability, bitset.as_deref());
+                apply_mutability_states(archetype, mutability, bitset.as_ref());
 
                 // Should we use per entry filtering?
                 if let Some(bitset) = bitset.clone() {

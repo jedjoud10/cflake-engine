@@ -67,7 +67,7 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutRef<'it>> QueryRef<'a, 'b, 's, L> {
                 let bitset = self
                     .bitsets
                     .as_ref()
-                    .map(|bitset| Arc::new(bitset[i].clone()));
+                    .map(|bitset| bitset[i].clone());
 
                 // Should we use per entry filtering?
                 if let Some(bitset) = bitset.clone() {

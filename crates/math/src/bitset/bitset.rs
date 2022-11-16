@@ -1,3 +1,5 @@
+use std::fmt::Display;
+use std::fmt::Debug;
 use itertools::Itertools;
 
 // Simple bitset that allocates using u64 chunks
@@ -23,6 +25,12 @@ impl BitSet {
             .into_iter()
             .map(|chunk| chunk.fold(0, |accum, bit| accum << 1 | (bit as usize)));
         Self(chunks.collect(), false)
+    }
+
+    // Create a bitset using a specific function and the number of elements
+    pub fn from_pattern(mut callback: impl FnMut(usize) -> bool, count: usize) -> Self {
+        let iter = (0..count).into_iter().map(|i| callback(i));
+        Self::from_iter(iter)
     }
 
     // Get an immutable reference to the stored chunks
@@ -146,5 +154,21 @@ impl BitSet {
                 (result != (offset + 64)).then_some(result)
             })
             .next()
+    }
+}
+
+impl Display for BitSet {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for chunk in self.0.iter() {
+            write!(f, "{:b}", *chunk)?;
+        }
+
+        std::fmt::Result::Ok(())
+    }
+}
+
+impl Debug for BitSet {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Display::fmt(self, f)
     }
 }
