@@ -1,20 +1,20 @@
-use crate::StageKey;
+use crate::StageId;
 
 // Error that gets thrown whenever we fail to sort the event stages
 pub enum RegistrySortingError {
     CyclicReference,
-    CyclicRuleReference(StageKey),
-    MissingStage(StageKey, StageKey),
+    CyclicRuleReference(StageId),
+    MissingStage(StageId, StageId),
 }
 
 impl std::fmt::Debug for RegistrySortingError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             RegistrySortingError::CyclicReference => write!(f, "Detected a cyclic reference when trying to sort stages"),
-            RegistrySortingError::CyclicRuleReference(name) => {
+            RegistrySortingError::CyclicRuleReference((_, name)) => {
                 write!(f, "Detcted a cyclic reference for rules of stage '{name}'")
             }
-            RegistrySortingError::MissingStage(current, name) => write!(f, "Stage '{current}' tried to reference stage '{name}', but the latter does not exist"),
+            RegistrySortingError::MissingStage((_, current), (_, name)) => write!(f, "Stage '{current}' tried to reference stage '{name}', but the latter does not exist"),
         }
     }
 }

@@ -1,5 +1,5 @@
 use std::time::{Duration, Instant};
-use world::{Events, Init, Stage, Update, World};
+use world::{Events, Init, Stage, Update, World, System};
 
 // Global resource that defines the time since the start of the engine and the current frame data
 pub struct Time {
@@ -59,34 +59,28 @@ impl Time {
     }
 }
 
+// Init event (called once at the start of program)
+fn init(world: &mut World) {
+    world.insert(Time {
+        delta: Duration::ZERO,
+        frame_count: 0,
+        startup: Instant::now(),
+        frame_start: Instant::now(),
+    });
+}
+
+// Update event (called per frame)
+fn update(world: &mut World) {
+    let mut time = world.get_mut::<Time>().unwrap();
+    let now = Instant::now();
+    time.delta = now - time.frame_start;
+    time.frame_start = now;
+    time.frame_count += 1;
+}
+
 // The timer system will automatically insert the Time resource and will update it at the start of each frame
-pub fn system(events: &mut Events) {
-    // Init event (called once at the start of program)
-    fn init(world: &mut World) {
-        world.insert(Time {
-            delta: Duration::ZERO,
-            frame_count: 0,
-            startup: Instant::now(),
-            frame_start: Instant::now(),
-        });
-    }
-
-    // Update event (called per frame)
-    fn update(world: &mut World) {
-        let mut time = world.get_mut::<Time>().unwrap();
-        let now = Instant::now();
-        time.delta = now - time.frame_start;
-        time.frame_start = now;
-        time.frame_count += 1;
-    }
-
-    // Register the events
-    events
-        .registry_mut::<Init>()
-        .insert_with(init, Stage::new("time insert").before("user"))
-        .unwrap();
-    events
-        .registry_mut::<Update>()
-        .insert_with(update, Stage::new("time update").before("user"))
-        .unwrap();
+pub fn system() -> System {
+    System::default()
+        .insert_init((init, Stage::new().before(user)))
+        .insert_init((update, Stage::new().before(user)))
 }

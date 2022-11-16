@@ -22,3 +22,7 @@ gui = { path = "../gui" }
 audio = { path = "../audio" }
 time = { path = "../time" }
 
+[features]
+two-dim = ["ecs/two-dim", "rendering/two-dim"]
+extended-tuples = ["ecs/extended-tuples"]
+extended-bitmasks = ["ecs/extended-bitmasks"]
