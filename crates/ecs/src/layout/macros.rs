@@ -1,5 +1,5 @@
 use crate::{
-    mask, name, Archetype, Component, ComponentTable, LayoutAccess, Mask, MaskHashMap, OwnedBundle,
+    mask, Archetype, Component, ComponentColumn, LayoutAccess, Mask, MaskHashMap, OwnedBundle,
     QueryItemMut, QueryItemRef, QueryLayoutMut, QueryLayoutRef,
 };
 use casey::lower;
@@ -35,15 +35,15 @@ macro_rules! tuple_impls {
                 });
             }
 
-            fn default_tables() -> MaskHashMap<Box<dyn ComponentTable>> {
-                let mut map = MaskHashMap::<Box<dyn ComponentTable>>::default();
+            fn default_tables() -> MaskHashMap<Box<dyn ComponentColumn>> {
+                let mut map = MaskHashMap::<Box<dyn ComponentColumn>>::default();
                 ($(
                     map.insert(mask::<$name>(), Box::new(Vec::<$name>::new()))
                 ),+);
                 map
             }
 
-            fn try_swap_remove(tables: &mut MaskHashMap<Box<dyn ComponentTable>>, index: usize) -> Option<Self> {
+            fn try_swap_remove(tables: &mut MaskHashMap<Box<dyn ComponentColumn>>, index: usize) -> Option<Self> {
                 seq!(N in 0..$max {
                     let boxed = tables.get_mut(&mask::<C~N>())?;
                     let vec = boxed.as_any_mut().downcast_mut::<Vec<C~N>>().unwrap();
@@ -145,7 +145,17 @@ tuple_impls! { C0 C1 C2, 3 }
 tuple_impls! { C0 C1 C2 C3, 4 }
 tuple_impls! { C0 C1 C2 C3 C4, 5 }
 tuple_impls! { C0 C1 C2 C3 C4 C5, 6 }
-tuple_impls! { C0 C1 C2 C3 C4 C5 C6, 7 }
-tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7, 8 }
-tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8, 9 }
-tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9, 10 }
+
+#[cfg(feature = "extended-tuples")]
+mod extend {
+    use crate::{
+        mask, name, Archetype, Component, ComponentColumn, LayoutAccess, Mask, MaskHashMap,
+        OwnedBundle, QueryItemMut, QueryItemRef, QueryLayoutMut, QueryLayoutRef,
+    };
+    use casey::lower;
+    use seq_macro::seq;
+    tuple_impls! { C0 C1 C2 C3 C4 C5 C6, 7 }
+    tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7, 8 }
+    tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8, 9 }
+    tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9, 10 }
+}

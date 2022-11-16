@@ -1,23 +1,17 @@
 use math::BitSet;
-use parking_lot::{Condvar, Mutex, RwLock};
+use parking_lot::Mutex;
 use std::{
     any::Any,
-    ffi::c_void,
-    marker::PhantomData,
-    mem::size_of,
-    num,
     slice::SliceIndex,
     sync::{
-        atomic::{AtomicBool, AtomicU32, Ordering},
+        atomic::{AtomicU32, Ordering},
         mpsc::{Receiver, Sender},
-        Arc, Barrier,
+        Arc,
     },
-    thread::{JoinHandle, ThreadId},
+    thread::JoinHandle,
 };
 
 use crate::{SliceTuple, ThreadPoolScope};
-
-use super::{UntypedMutPtr, UntypedPtr};
 
 // Shared arc that represents a pointer tuple
 type BoxedPtrTuple = Arc<dyn Any + Send + Sync + 'static>;
@@ -61,12 +55,11 @@ pub struct ThreadPool {
 }
 
 impl ThreadPool {
-    // Create a new thread pool with the default number of threads
-    pub fn new() -> Self {
+    // Create a new thread pool with a specific number of threads
+    pub fn with(num: usize) -> Self {
         let (task_sender, task_receiver) = std::sync::mpsc::channel::<ThreadedTask>();
 
         // Create a simple threadpool
-        let num = num_cpus::get() * 8;
         let mut threadpool = Self {
             active: Arc::new(AtomicU32::new(0)),
             joins: Default::default(),
@@ -85,6 +78,11 @@ impl ThreadPool {
         threadpool
     }
 
+    // Create a new thread pool with the default number of threads
+    pub fn new() -> Self {
+        Self::with(num_cpus::get() * 8)
+    }
+
     // Given an immutable/mutable slice of elements, run a function over all of them elements in parallel
     // If specified, this will use a bitset to hop over useless entries
     // Warning: This will not wait till all the threads have finished executing their specific functions
@@ -92,7 +90,7 @@ impl ThreadPool {
         &'a mut self,
         mut list: I,
         function: impl Fn(<I as SliceTuple<'_>>::ItemTuple) + Send + Sync + 'a,
-        hop: Option<Arc<BitSet>>,
+        bitset: Option<BitSet>,
         batch_size: usize,
     ) {
         // If the slices have different lengths, we must abort
@@ -102,36 +100,59 @@ impl ThreadPool {
 
         // Create the scheduler config
         let batch_size = batch_size.max(1);
-        let num_threads_to_use = (length as f32 / batch_size as f32).ceil() as usize;
+        let num_tasks = (length as f32 / batch_size as f32).ceil() as usize;
         let remaining = length % batch_size;
 
-        // Run the code in a single thread if needed
-        if num_threads_to_use == 1 {
-            for x in 0..length {
-                function(unsafe { I::get_unchecked(&mut list, x) });
+        // Internal function that is either used in a single thread or in multiple threads
+        let internal = move |mut ptrs: &mut I, length: usize, offset: usize, bitset: Option<&BitSet>| {
+            if let Some(bitset) = &bitset {
+                // With a bitset filter
+                let mut i = 0;
+                while i < length {                       
+                    // Check the next entry that is valid (that passed the filter)
+                    if let Some(hop) = bitset.find_one_from(i + offset) {
+                        i = hop;
+                    } else {
+                        return;
+                    }
+                    
+                    function(unsafe { I::get_unchecked(&mut ptrs, i) });
+                    i += 1;
+                } 
+            } else {
+                // Without a bitset filter
+                for i in 0..length {
+                    function(unsafe { I::get_unchecked(&mut ptrs, i) });
+                }
             }
+        };
+
+        // Run the code in a single thread if needed
+        if num_tasks == 1 {
+            internal(&mut list, length, 0, bitset.as_ref());
             return;
         }
 
         // Box the function into an arc
         type ArcFn<'b> = Arc<dyn Fn(ThreadFuncEntry) + Send + Sync + 'b>;
+        
+        // The bitset is going to be a shareable bitset instead
+        let bitset = bitset.map(|b| Arc::new(b));
+
         let function: ArcFn<'a> = Arc::new(move |entry: ThreadFuncEntry| unsafe {
-            let hop = hop.clone();
+            // Optionally, the user might specify a specific bitset
+            let bitset = bitset.clone();
+
+            // Decompose the thread entry into it's raw components
             let offset = entry.batch_offset;
             let ptrs = entry.base.downcast::<I::PtrTuple>().ok();
-            let mut ptrs = ptrs
-                .map(|ptrs| I::from_ptrs(&*ptrs, entry.batch_length, offset))
+            let length = entry.batch_length;
+            let mut slices = ptrs
+                .map(|ptrs| I::from_ptrs(&ptrs, entry.batch_length, offset))
                 .unwrap();
 
-            for i in 0..entry.batch_length {
-                if let Some(hop) = &hop {
-                    if !hop.get(i + offset) {
-                        continue;
-                    }
-                }
-
-                function(I::get_unchecked(&mut ptrs, i));
-            }
+            // Call the internal function
+            internal(&mut slices, length, offset, bitset.as_ref().map(|b| &**b));
         });
 
         // Convert the lifetimed arc into a static arc
@@ -140,11 +161,11 @@ impl ThreadPool {
 
         // Run the function in mutliple threads
         let base: Arc<dyn Any + Send + Sync> = Arc::new(list.as_ptrs());
-        for batch_index in 0..num_threads_to_use {
+        for batch_index in 0..num_tasks {
             self.append(ThreadedTask::ForEachBatch {
                 entry: ThreadFuncEntry {
                     base: base.clone(),
-                    batch_length: if batch_index == (num_threads_to_use - 1) && remaining != 0 {
+                    batch_length: if batch_index == (num_tasks - 1) && remaining > 0 {
                         remaining
                     } else {
                         batch_size
@@ -177,7 +198,7 @@ impl ThreadPool {
         bitset: BitSet,
         batch_size: usize,
     ) {
-        self.for_each_async(list, function, Some(Arc::new(bitset)), batch_size);
+        self.for_each_async(list, function, Some(bitset), batch_size);
         self.join();
     }
 

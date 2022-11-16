@@ -1,19 +1,15 @@
-use crate::Mask;
-
 // A single chunk that will be contained within the archetype component column
 #[derive(Default, Clone, Copy)]
-pub struct StateColumnChunk {
-    added: u64,
-    removed: u64,
-    modified: u64,
+pub(crate) struct StateColumnChunk {
+    pub added: usize,
+    pub modified: usize,
 }
 
 // Returned from the Vec<StateColumnChunk>
 #[derive(Default, Clone, Copy)]
-pub struct StateFlags {
+pub(crate) struct StateFlags {
     pub added: bool,
     pub modified: bool,
-    pub removed: bool,
 }
 
 // A single column of archetype entity states
@@ -21,7 +17,8 @@ pub struct StateFlags {
 pub struct StateColumn(Vec<StateColumnChunk>, usize);
 
 // Update a value in a specific bitmask, though return the unwritten value first
-fn set_bit(bitmask: &mut u64, index: usize, value: bool) -> bool {
+fn set_bit(bitmask: &mut usize, index: usize, value: bool) -> bool {
+    //dbg!(index);
     let copy = (*bitmask >> index) & 1 == 1;
 
     if value {
@@ -30,7 +27,27 @@ fn set_bit(bitmask: &mut u64, index: usize, value: bool) -> bool {
         *bitmask &= !(1 << index);
     }
 
-    return copy;
+    copy
+}
+
+// Enable all the bits between "start" and "end" in the binary representation of a usize
+// This will automatically clamp the values to 64 or 32
+// Start is inclusive, end is exclusive
+pub(crate) fn enable_in_range(mut start: usize, mut end: usize) -> usize {
+    start = start.min(usize::BITS as usize - 1);
+    end = end.min(usize::BITS as usize);
+
+    /*
+    dbg!(start);
+    dbg!(end);
+    */
+    if end == usize::BITS as usize {
+        !((1usize << (start)) - 1usize)
+    } else if start == usize::BITS as usize {
+        0
+    } else {
+        ((1usize << (start)) - 1usize) ^ ((1usize << end) - 1usize)
+    }
 }
 
 impl StateColumn {
@@ -40,60 +57,89 @@ impl StateColumn {
         // Make sure the states have enough chunks to deal with
         let old_len = self.1;
         let new_len = self.1 + additional;
+        let new_len_chunks = new_len / usize::BITS as usize;
         let iter = std::iter::repeat(StateColumnChunk::default());
-        let iter = iter.take(additional / u64::BITS as usize);
+        let iter = iter.take((new_len_chunks + 1) - self.0.len());
         self.0.extend(iter);
+        self.1 = new_len;
+
+        // Convert the flags into masks
+        let added = flags.added as usize * usize::MAX;
+        let modified = flags.modified as usize * usize::MAX;
 
         // Update the chunk bits
+        //dbg!(self.0.len());
         for (i, chunk) in self.0.iter_mut().enumerate() {
-            let start = i * u64::BITS as usize;
-            let local_start = usize::saturating_sub(old_len, start).min(u64::BITS as usize);
-            let local_end = usize::saturating_sub(new_len, start).min(u64::BITS as usize);
+            let start = i * usize::BITS as usize;
+            let end = (i + 1) * usize::BITS as usize;
+
+            // Skip this chunk if it won't be modified
+            if old_len > end || new_len < start {
+                continue;
+            }
+
+            // Create start and end ranges that will be clamped to old_len and new_len respectively
+            let local_start = usize::saturating_sub(old_len, start);
+            let local_end = usize::saturating_sub(new_len, start);
+
+            /*
+            dbg!(start);
+            dbg!(old_len);
+            dbg!(new_len);
+
+            dbg!(local_start);
+            dbg!(local_end);
+            */
 
             // Bit magic that will enable all the bits between local_start and local_end;
-            let range = ((1u64 << (local_start + 1)) - 1u64) ^ ((1u64 << local_end) - 1u64);
-            chunk.added |= range & (flags.added as u64);
-            chunk.modified |= range & (flags.modified as u64);
-            chunk.removed |= range & (flags.removed as u64);
+            let range = enable_in_range(local_start, local_end);
+            chunk.added |= range & added;
+            chunk.modified |= range & modified;
         }
-    } 
+    }
 
     // Reserve a specific amount of entries within the state column
     pub(crate) fn reserve(&mut self, additional: usize) {
-        let current = self.0.capacity() * u64::BITS as usize;
-        let new = self.0.capacity() + u64::BITS as usize + additional;
-        let current_num_chunks = (current as f32 / u64::BITS as f32).ceil() as usize;
-        let new_num_chunks = (new as f32 / u64::BITS as f32).ceil() as usize;
-        let additional_chunks =  new_num_chunks - current_num_chunks;
-        self.0.reserve(additional_chunks);
+        let current = self.0.len();
+        let new = (self.1 + additional) / usize::BITS as usize;
+        self.0.reserve(current - new);
+    }
+
+    // Shrink the memory allocation so it takes less space
+    pub(crate) fn shrink_to_fit(&mut self) {
+        self.0.shrink_to_fit();
     }
 
     // Remove a specific element and replace it's current location with the last element
     pub(crate) fn swap_remove(&mut self, index: usize) -> Option<StateFlags> {
+        // Cannot remove non-existant index
+        if index >= self.1 {
+            return None;
+        }
+
         // Fetch the values of the last element
         let last = self.0.last().map(|chunk| {
-          StateFlags {
-            added: chunk.added >> (self.1-1) & 1 == 1,
-            removed: chunk.removed >> (self.1-1) & 1 == 1,
-            modified: chunk.modified >> (self.1-1) & 1 == 1,
-          }
+            let last_local_index = self.1 % usize::BITS as usize;
+            StateFlags {
+                added: (chunk.added >> last_local_index) & 1 == 1,
+                modified: (chunk.modified >> last_local_index) & 1 == 1,
+            }
         });
 
         // Replace the entry at "index" with "last"
         last.map(|flags| {
-            let chunk = index / u64::BITS as usize;
-            let local = index % u64::BITS as usize;
+            let chunk = index / usize::BITS as usize;
+            let local = index % usize::BITS as usize;
             let chunk = &mut self.0[chunk];
             self.1 -= 1;
 
             let added = set_bit(&mut chunk.added, local, flags.added);
             let modified = set_bit(&mut chunk.modified, local, flags.modified);
-            let removed = set_bit(&mut chunk.removed, local, flags.removed);        
-            StateFlags { added, removed, modified }
+            StateFlags { added, modified }
         })
     }
 
-    // Remvoe a speciifc element and replace it's current location with the last element
+    // Remove a specific element and replace it's current location with the last element
     // This will also insert the removed element as a new entry into another state column
     pub(crate) fn swap_remove_move(&mut self, index: usize, other: &mut Self) {
         let removed = self.swap_remove(index);
@@ -103,29 +149,46 @@ impl StateColumn {
         }
     }
 
-    // Update a specific entry using a callback
+    // Update a specific entry using a callback and it's index
     pub(crate) fn update(&mut self, index: usize, update: impl FnOnce(&mut StateFlags)) {
-        let chunk = index / u64::BITS as usize;
-        let location = index % u64::BITS as usize;
+        let chunk = index / usize::BITS as usize;
+        let location = index % usize::BITS as usize;
         let chunk = &mut self.0[chunk];
         let mut flags = StateFlags {
-            added: chunk.added >> (self.1-1) & 1 == 1,
-            modified: chunk.modified >> (self.1-1) & 1 == 1,
-            removed: chunk.removed >> (self.1-1) & 1 == 1,
+            added: (chunk.added >> location) & 1 == 1,
+            modified: (chunk.modified >> location) & 1 == 1,
         };
         update(&mut flags);
 
-        set_bit(&mut chunk.added, index, flags.added);
-        set_bit(&mut chunk.modified, index, flags.modified);
-        set_bit(&mut chunk.removed, index, flags.removed);
+        set_bit(&mut chunk.added, location, flags.added);
+        set_bit(&mut chunk.modified, location, flags.modified);
+    }
+
+    // Get an immutable slice over all the chunks
+    pub(crate) fn chunks(&self) -> &[StateColumnChunk] {
+        &self.0
+    }
+
+    // Get a mutable slice over all the chunks
+    pub(crate) fn chunks_mut(&mut self) -> &mut [StateColumnChunk] {
+        &mut self.0
+    }
+
+    // Get a specific state column chunk immutably
+    pub(crate) fn get(&self, index: usize) -> Option<&StateColumnChunk> {
+        self.0.get(index)
+    }
+
+    // Get a specific state column chunk mutably
+    pub(crate) fn get_mut(&mut self, index: usize) -> Option<&mut StateColumnChunk> {
+        self.0.get_mut(index)
     }
 
     // Clear all the states from within this column
-    pub(crate) fn clear(&mut self) {
+    pub fn clear(&mut self) {
         for chunk in self.0.iter_mut() {
-            chunk.added = 0u64;
-            chunk.modified = 0u64;
-            chunk.removed = 0u64;
+            chunk.added = 0usize;
+            chunk.modified = 0usize;
         }
     }
 }

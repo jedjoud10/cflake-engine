@@ -1,5 +1,3 @@
-use std::alloc::Layout;
-
 use crate::{Archetype, LayoutAccess, Mask, QueryItemMut, QueryItemRef};
 
 // A query layout ref is a combination of multiple immutable query items

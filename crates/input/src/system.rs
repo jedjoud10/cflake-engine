@@ -13,7 +13,7 @@ pub fn system(events: &mut Events) {
         });
     }
 
-    // Glutin window event (called by handler when needed)
+    // Winit window event (called by handler when needed)
     fn event(world: &mut World, ev: &DeviceEvent) {
         let mut input = world.get_mut::<Input>().unwrap();
         match ev {

@@ -1,7 +1,6 @@
 use super::slice::*;
-use crate::SendPtr;
-use seq_macro::seq;
-use std::{any::Any, slice::from_raw_parts, sync::Arc};
+
+use std::any::Any;
 
 // A ref/mut layout contains one or more ref/mut slices that will be iterated through in other threads
 pub trait SliceTuple<'i>: Sized {

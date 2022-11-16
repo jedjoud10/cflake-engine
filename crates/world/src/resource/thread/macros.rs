@@ -2,7 +2,6 @@ use super::*;
 use arrayvec::ArrayVec;
 use casey::lower;
 use seq_macro::seq;
-use std::slice::from_raw_parts;
 
 macro_rules! impl_tuple {
     ($( $name:ident )+, $max:tt) => {

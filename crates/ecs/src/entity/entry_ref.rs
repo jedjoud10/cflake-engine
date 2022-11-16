@@ -1,8 +1,5 @@
 use super::Entity;
-use crate::{
-    registry::{mask, name},
-    Archetype, Component, EntityLinkings, QueryLayoutRef, Scene,
-};
+use crate::{registry::mask, Archetype, Component, EntityLinkings, QueryLayoutRef, Scene};
 
 // Immutable entity entries allow the user to be able to read and get some data about a specific entity
 // This data can represent the archetype of the entity or even an immutable reference to a component

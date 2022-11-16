@@ -74,7 +74,9 @@ impl<'s, T: Component> QueryItemRef<'s> for Option<&T> {
     }
 
     unsafe fn ptr_from_archetype_unchecked(archetype: &Archetype) -> Self::Ptr {
-        archetype.components::<T>().map(|vec| vec.as_slice().as_ptr())
+        archetype
+            .components::<T>()
+            .map(|vec| vec.as_slice().as_ptr())
     }
 
     unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self::Slice {
@@ -92,7 +94,7 @@ impl<'s> QueryItemRef<'s> for &Entity {
     type Owned = Entity;
 
     fn access() -> LayoutAccess {
-        LayoutAccess::new(Mask::one(), Mask::zero())
+        LayoutAccess::new(Mask::zero(), Mask::zero())
     }
 
     unsafe fn ptr_from_archetype_unchecked(archetype: &Archetype) -> Self::Ptr {
@@ -144,7 +146,9 @@ impl<'s, T: Component> QueryItemMut<'s> for Option<&T> {
     }
 
     unsafe fn ptr_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::Ptr {
-        archetype.components::<T>().map(|vec| vec.as_slice().as_ptr())
+        archetype
+            .components::<T>()
+            .map(|vec| vec.as_slice().as_ptr())
     }
 
     unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self::Slice {
@@ -212,7 +216,7 @@ impl<'s> QueryItemMut<'s> for &Entity {
     type Owned = Entity;
 
     fn access() -> LayoutAccess {
-        LayoutAccess::new(Mask::one(), Mask::zero())
+        LayoutAccess::new(Mask::zero(), Mask::zero())
     }
 
     unsafe fn ptr_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::Ptr {

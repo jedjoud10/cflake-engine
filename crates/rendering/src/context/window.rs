@@ -20,7 +20,6 @@ pub struct Window {
     raw: winit::window::Window,
 }
 
-
 // Create a new window using an event loop and it's settings
 pub(crate) fn new<T>(el: &EventLoop<T>, settings: WindowSettings) -> Window {
     todo!()
