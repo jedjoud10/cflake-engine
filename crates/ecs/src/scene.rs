@@ -1,8 +1,6 @@
-use std::iter::once;
-
+use std::{iter::once};
 use slotmap::SlotMap;
-
-use world::{Events, Init, Stage, Update, World};
+use world::{Init, Update, World, System, user, post_user};
 
 use crate::{
     archetype::remove_bundle_unchecked, entity::Entity, Archetype, Bundle, EntityLinkings,
@@ -172,37 +170,25 @@ impl Scene {
     }
 }
 
-// The ECS system will manually insert the ECS resource and will clean it at the start of each frame (except the first frame)
-pub fn system(events: &mut Events) {
-    // Late update event that will cleanup the ECS manager states
-    fn cleanup(world: &mut World) {
-        let mut ecs = world.get_mut::<Scene>().unwrap();
+// Late update event that will cleanup the ECS manager states
+fn cleanup(world: &mut World) {
+    let mut ecs = world.get_mut::<Scene>().unwrap();
 
-        // Clear all the archetype states that were set last frame
-        for (_, archetype) in ecs.archetypes_mut() {
-            for (_, column) in archetype.state_table_mut().iter_mut() {
-                column.clear();
-            }
+    // Clear all the archetype states that were set last frame
+    for (_, archetype) in ecs.archetypes_mut() {
+        for (_, column) in archetype.state_table_mut().iter_mut() {
+            column.clear();
         }
     }
+}
 
-    // Init event that will insert the ECS resource
-    fn init(world: &mut World) {
-        world.insert(Scene::default());
-    }
+// Init event that will insert the ECS resource
+fn init(world: &mut World) {
+    world.insert(Scene::default());
+}
 
-    // Register the events
-    events
-        .registry_mut::<Init>()
-        .insert_with(init, Stage::new("ecs insert").before("user"))
-        .unwrap();
-    events
-        .registry_mut::<Update>()
-        .insert_with(
-            cleanup,
-            Stage::new("ecs cleanup")
-                .after("time update")
-                .after("post user"),
-        )
-        .unwrap();
+// The ECS system will manually insert the ECS resource and will clean it at the start of each frame (except the first frame)
+pub fn system(system: &mut System) {
+    system.insert_init(init).before(user);
+    system.insert_update(cleanup).after(post_user);
 }

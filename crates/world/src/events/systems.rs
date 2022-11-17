@@ -1,6 +1,5 @@
 use std::{rc::Rc, marker::PhantomData, any::{TypeId, Any}};
-
-use ahash::AHashMap;
+use ahash::AHashSet;
 use winit::event::{DeviceEvent, WindowEvent};
 use crate::{Init, Shutdown, Update, Caller, Event, Registry, Rule};
 
@@ -9,13 +8,32 @@ use crate::{Init, Shutdown, Update, Caller, Event, Registry, Rule};
 // Systems can be added onto the current app using the insert method
 // This system struct will only contain the event registries of all combined systems
 pub struct Systems {
-    pub(crate) init: Registry<Init>,
-    pub(crate) update: Registry<Update>,
-    pub(crate) shutdown: Registry<Shutdown>,
-    pub(crate) window: Registry<WindowEvent<'static>>,
-    pub(crate) device: Registry<DeviceEvent>,
+    pub(crate) hashset: AHashSet<TypeId>,
+    pub init: Registry<Init>,
+    pub update: Registry<Update>,
+    pub shutdown: Registry<Shutdown>,
+    pub window: Registry<WindowEvent<'static>>,
+    pub device: Registry<DeviceEvent>,
 }
 
+impl Systems {
+    // Add a system to the systems using a callback function
+    // This will not add duplicate systems
+    pub fn insert<F: FnOnce(&mut System) + 'static>(&mut self, callback: F) {
+        let id = TypeId::of::<F>();
+        if !self.hashset.contains(&id) {
+            self.hashset.insert(id);
+            let mut system = System {
+                init: &mut self.init,
+                update: &mut self.update,
+                shutdown: &mut self.shutdown,
+                window: &mut self.window,
+                device: &mut self.device,
+            };
+            callback(&mut system);
+        }
+    }
+}
 
 // This is a mutable refernece to an event that was added to the system
 // This allows us to specifiy the ordering of the specific event

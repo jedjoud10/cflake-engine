@@ -7,7 +7,7 @@ use winit::{
 use mimalloc::MiMalloc;
 use rendering::prelude::FrameRateLimit;
 use std::{any::TypeId, path::PathBuf};
-use world::{Event, Events, Init, Shutdown, State, System, Update, World};
+use world::{Event, Systems, Init, Shutdown, State, System, Update, World};
 
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
@@ -23,23 +23,21 @@ pub struct App {
     user_assets_folder: Option<PathBuf>,
 
     // Main app resources
-    events: Events,
-    systems: AHashSet<TypeId>,
+    systems: Systems,
     world: World,
     el: EventLoop<()>,
 }
 
 impl Default for App {
     fn default() -> Self {
-        let (world, events) = world::setup();
+        let (world, systems) = world::setup();
 
         Self {
             title: "Default title".to_string(),
             limit: FrameRateLimit::Umlimited,
             fullscreen: false,
             user_assets_folder: None,
-            events,
-            systems: Default::default(),
+            systems,
             el: EventLoop::new(),
             world,
         }
@@ -77,12 +75,14 @@ impl App {
 
     // Insert a new system into the app and execute it immediately
     // This will register all the necessary events automatically
-    pub fn insert_system<S: System>(mut self, system: S) -> Self {
-        if self.systems.insert(TypeId::of::<S>()) {
-            system.insert(&mut self.events);
-        }
+    pub fn insert_system(mut self, callback: impl FnOnce(&mut System)) -> Self {
+        self.systems.insert(callback);
         self
     }
+
+    /*
+
+
 
     // Insert a single update event
     pub fn insert_update<ID>(mut self, update: impl Event<Update, ID>) -> Self {
@@ -113,6 +113,7 @@ impl App {
         self.events.registry_mut::<Shutdown>().insert(exit);
         self
     }
+    */
 
     // Consume the App builder, and start the engine window
     pub fn execute(mut self) {
