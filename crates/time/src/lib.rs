@@ -1,5 +1,5 @@
 use std::time::{Duration, Instant};
-use world::{Events, Init, Stage, Update, World, System};
+use world::{Init, Update, World, System, user};
 
 // Global resource that defines the time since the start of the engine and the current frame data
 pub struct Time {
@@ -79,8 +79,7 @@ fn update(world: &mut World) {
 }
 
 // The timer system will automatically insert the Time resource and will update it at the start of each frame
-pub fn system() -> System {
-    System::default()
-        .insert_init((init, Stage::new().before(user)))
-        .insert_init((update, Stage::new().before(user)))
+pub fn system(system: &mut System) {
+    system.insert_init(init).before(&user);
+    system.insert_update(update).before(&user);
 }

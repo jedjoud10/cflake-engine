@@ -9,13 +9,16 @@ pub enum RegistrySortingError {
 
 impl std::fmt::Debug for RegistrySortingError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        todo!()
+        /*
         match self {
             RegistrySortingError::CyclicReference => write!(f, "Detected a cyclic reference when trying to sort stages"),
-            RegistrySortingError::CyclicRuleReference((_, name)) => {
+            RegistrySortingError::CyclicRuleReference((name, _)) => {
                 write!(f, "Detcted a cyclic reference for rules of stage '{name}'")
             }
-            RegistrySortingError::MissingStage((_, current), (_, name)) => write!(f, "Stage '{current}' tried to reference stage '{name}', but the latter does not exist"),
+            RegistrySortingError::MissingStage((current, _), (name, _)) => write!(f, "Stage '{current}' tried to reference stage '{name}', but the latter does not exist"),
         }
+        */
     }
 }
 

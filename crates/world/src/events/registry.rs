@@ -1,6 +1,7 @@
-use crate::{Caller, Event, RegistrySortingError, Rule, Stage, StageError, StageId, id, user, post_user};
+use crate::{Caller, Event, RegistrySortingError, Rule, StageError, StageId, id, user, post_user};
 use ahash::{AHashMap, AHashSet};
 use std::{rc::Rc, mem::MaybeUninit, any::TypeId};
+use lazy_static::lazy_static;
 
 // Number of maximum iterations allowed before we detect a cyclic reference from within the rules
 pub const CYCLIC_REFERENCE_RULES_THRESHOLD: usize = 8;
@@ -9,7 +10,14 @@ pub const CYCLIC_REFERENCE_RULES_THRESHOLD: usize = 8;
 pub const CYCLIC_REFERENCE_THRESHOLD: usize = 50;
 
 // Reference point stages that we will use to insert more events into the registry
-pub const RESERVED: &[StageId] = &[id(user).0, id(post_user).0];
+lazy_static! {
+    pub static ref RESERVED: Vec<StageId> = {
+        let mut vec = Vec::new();
+        vec.push(id(user).0);
+        vec.push(id(post_user).0);
+        vec
+    };
+}
 
 // A registry is what will contain all the different stages, alongside the events
 // Each type of event contains one registry associated with it
@@ -32,32 +40,16 @@ impl<D: Caller + 'static> Default for Registry<D> {
 
 impl<C: Caller> Registry<C> {
     // Insert a new event that will be executed after the "user" stage and before the "post user" stage
-    pub fn insert<ID>(&mut self, event: impl Event<C, ID>) {
-        let mut stage = Stage::<C>::new();
+    pub(crate) fn insert<ID>(&mut self, event: impl Event<C, ID> + 'static) -> Result<&mut Vec<Rule>, StageError> {
         let (id, event) = super::id(event);
-        stage.rules = super::default_rules();
-        stage.name = Some(id);
-        self.insert_with::<ID>(event, stage).unwrap();
-    }
-
-    // Insert a new stage-event tuple into the registry (faillible)
-    pub fn insert_with<ID>(
-        &mut self,
-        event: impl Event<C, ID>,
-        mut stage: Stage<C>,
-    ) -> Result<(), StageError> {
-        // Always set the name since it is unset
-        let (id, event) = super::id(event);
-        stage.name = Some(id);
-
+        let rules = super::default_rules::<C>();
+    
         // We can only have one event per stage and one stage per event
-        if self.map.contains_key(&stage.name()) {
+        if self.map.contains_key(&id) {
             Err(StageError::Overlapping)
         } else {
             // Check if the stage is valid
-            if stage.rules.is_empty() {
-                return Err(StageError::MissingRules);
-            } else if RESERVED.contains(&stage.name()) {
+            if RESERVED.contains(&id) {
                 return Err(StageError::InvalidName);
             }
 
@@ -65,12 +57,14 @@ impl<C: Caller> Registry<C> {
             let boxed = event.boxed();
 
             // Insert the stage into the valid map
-            let name = stage.name();
-            self.map.insert(name.clone(), stage.into_rules());
+            let rules = self
+                .map
+                .entry(id)
+                .or_insert(rules);
 
             // Then insert the event
-            self.events.push((name, boxed));
-            Ok(())
+            self.events.push((id, boxed));
+            Ok(rules)
         }
     }
 
