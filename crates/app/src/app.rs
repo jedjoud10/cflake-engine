@@ -5,7 +5,7 @@ use winit::{
 };
 //use gui::egui::util::id_type_map::TypeId;
 use mimalloc::MiMalloc;
-use rendering::prelude::FrameRateLimit;
+use graphics::prelude::{FrameRateLimit, WindowSettings, GraphicsSettings};
 use std::{any::TypeId, path::PathBuf};
 use world::{Event, Init, Shutdown, State, System, Systems, Update, World};
 
@@ -15,9 +15,8 @@ static GLOBAL: MiMalloc = MiMalloc;
 // An app is just a world builder. It uses the builder pattern to construct a world object and the corresponding game engine window
 pub struct App {
     // Window settings for the graphics
-    title: String,
-    limit: FrameRateLimit,
-    fullscreen: bool,
+    window: WindowSettings,
+    graphics: GraphicsSettings,
 
     // Asset and IO
     user_assets_folder: Option<PathBuf>,
@@ -33,9 +32,12 @@ impl Default for App {
         let (world, systems) = world::setup();
 
         Self {
-            title: "Default title".to_string(),
-            limit: FrameRateLimit::Umlimited,
-            fullscreen: false,
+            window: WindowSettings {
+                title: "Default title".to_string(),
+                limit: FrameRateLimit::Umlimited,
+                fullscreen: false,
+            },
+            graphics: GraphicsSettings {  },
             user_assets_folder: None,
             systems,
             el: EventLoop::new(),
@@ -47,19 +49,19 @@ impl Default for App {
 impl App {
     // Set the window title
     pub fn set_window_title(mut self, title: impl ToString) -> Self {
-        self.title = title.to_string();
+        self.window.title = title.to_string();
         self
     }
 
     // Set the window framerate limit
     pub fn set_frame_rate_limit(mut self, limit: FrameRateLimit) -> Self {
-        self.limit = limit;
+        self.window.limit = limit;
         self
     }
 
     // Set window fullscreen mode
     pub fn set_window_fullscreen(mut self, toggled: bool) -> Self {
-        self.fullscreen = toggled;
+        self.window.fullscreen = toggled;
         self
     }
 
@@ -131,6 +133,12 @@ impl App {
         let user = self.user_assets_folder.take();
         self = self.insert_system(|system: &mut System| assets::system(system, user));
 
+        // Insert the graphics API
+        let window = self.window.clone();
+        let graphics = self.graphics.clone();
+        self = self.insert_system(move |system: &mut System| graphics::scene::system(system, window, graphics));
+
+
         // Sort & execute the init events
         self.systems.init.sort().unwrap();
         self.systems.init.execute((&mut self.world, &self.el));
@@ -148,7 +156,7 @@ impl App {
 
         // Create the spin sleeper for frame limiting
         let builder = spin_sleep::LoopHelper::builder();
-        let mut sleeper = if let FrameRateLimit::Limited(limit) = self.limit {
+        let mut sleeper = if let FrameRateLimit::Limited(limit) = self.window.limit {
             builder.build_with_target_rate(limit)
         } else {
             builder.build_without_target_rate()

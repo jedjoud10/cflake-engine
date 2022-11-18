@@ -75,12 +75,12 @@ dependencies = [
  "assets",
  "audio",
  "ecs",
+ "graphics",
  "gui",
  "input",
  "lazy_static",
  "math",
  "mimalloc",
- "rendering",
  "spin_sleep",
  "time",
  "vek",
@@ -1192,16 +1192,30 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b919933a397b79c37e33b77bb2aa3dc8eb6e165ad809e58ff75bc7db2e34574"
 
 [[package]]
+name = "graphics"
+version = "0.1.0"
+dependencies = [
+ "assets",
+ "ecs",
+ "math",
+ "nohash-hasher",
+ "raw-window-handle 0.5.0",
+ "time",
+ "winit 0.27.5",
+ "world",
+]
+
+[[package]]
 name = "gui"
 version = "0.1.0"
 dependencies = [
  "assets",
  "egui",
  "egui-winit",
+ "graphics",
  "math",
  "nohash-hasher",
  "parking_lot 0.12.1",
- "rendering",
  "vek",
  "world",
 ]
@@ -2183,20 +2197,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3acd125665422973a33ac9d3dd2df85edad0f4ae9b00dafb1a05e43a9f5ef8e7"
 dependencies = [
  "winapi",
-]
-
-[[package]]
-name = "rendering"
-version = "0.1.0"
-dependencies = [
- "assets",
- "ecs",
- "math",
- "nohash-hasher",
- "raw-window-handle 0.5.0",
- "time",
- "winit 0.27.5",
- "world",
 ]
 
 [[package]]
