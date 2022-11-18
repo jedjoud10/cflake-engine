@@ -6,7 +6,7 @@ mod tests {
 
     #[test]
     fn test() {
-        let mut threadpool = world::ThreadPool::new();
+        let mut threadpool = world::ThreadPool::default();
         let loader = Assets::new(None);
         persistent!(loader, "test/text.txt");
         let i = Instant::now();

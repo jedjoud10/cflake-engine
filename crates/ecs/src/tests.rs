@@ -6,9 +6,9 @@ use crate::*;
 struct Name(&'static str);
 #[derive(Component, Debug, PartialEq, Eq, Clone, Default)]
 struct Health(i32);
-#[derive(Component, Debug, Clone, Copy, Default)]
+#[derive(Component, Debug, PartialEq, Eq, Clone, Copy, Default)]
 struct Ammo(u32);
-#[derive(Component, Debug, Clone, Copy, Default)]
+#[derive(Component, Debug, PartialEq, Eq, Clone, Copy, Default)]
 struct Placeholder();
 
 fn cleanup(ecs: &mut Scene) {
@@ -196,10 +196,63 @@ fn queries() {
         32,
     );
 
+    assert_eq!(manager.query_mut::<&Health>().len(), 4096);
     for health in manager.query_mut::<&Health>() {
         assert_eq!(health.0, 200)
     }
 }
+
+#[test]
+fn optional_queries() {
+    let mut manager = Scene::default();
+    let iter = (0..4096).map(|_| (Name("Person"), Health(100)));
+    manager.extend_from_iter(iter);
+    assert_eq!(manager.query_mut::<&Health>().len(), 4096);
+    assert_eq!(manager.query_mut::<&Health>().into_iter().count(), 4096);
+
+
+    let query = manager.query_mut::<(&Name, &mut Health, Option<&Ammo>)>();
+    assert_eq!(query.len(), 4096);
+    for (name, health, ammo) in query {
+        assert_eq!(name.0, "Person");
+        assert_eq!(health.0, 100);
+        assert_eq!(ammo, None);
+        health.0 -= 100;
+    }
+
+    let query = manager.query_mut::<(&Name, &mut Health, Option<&Ammo>)>();
+    assert_eq!(query.len(), 4096);
+    for (name, health, ammo) in query {
+        assert_eq!(name.0, "Person");
+        assert_eq!(health.0, 0);
+        assert_eq!(ammo, None);
+        health.0 += 100;
+    }
+
+    assert_eq!(manager.query_mut::<&Health>().len(), 4096);
+    assert_eq!(manager.query_mut::<&Health>().into_iter().count(), 4096);
+    for health in manager.query_mut::<&Health>() {
+        assert_eq!(health.0, 100)
+    }
+
+    let mut threadpool = ThreadPool::default();
+    let query = manager.query_mut::<(&Name, &mut Health, Option<&Ammo>)>();
+    query.for_each(
+        &mut threadpool,
+        |(_, health, ammo)| {
+            health.0 += 100;
+            assert_eq!(ammo, None);
+        },
+        32,
+    );
+
+    assert_eq!(manager.query_mut::<&Health>().len(), 4096);
+    assert_eq!(manager.query_mut::<&Health>().into_iter().count(), 4096);
+    for health in manager.query_mut::<&Health>() {
+        assert_eq!(health.0, 200)
+    }
+}
+
 
 #[test]
 fn filter_ref() {

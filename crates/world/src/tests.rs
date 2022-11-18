@@ -6,7 +6,7 @@ mod threadpool {
 
     #[test]
     fn data() {
-        let mut threadpool = ThreadPool::new();
+        let mut threadpool = ThreadPool::default();
         let mut vec = (0..64).into_iter().collect::<Vec<u64>>();
 
         threadpool.for_each(
@@ -24,7 +24,7 @@ mod threadpool {
 
     #[test]
     fn hop() {
-        let mut threadpool = ThreadPool::new();
+        let mut threadpool = ThreadPool::default();
         let mut vec = (0..64).into_iter().map(|_| 100).collect::<Vec<u64>>();
         let bitset = BitSet::from_pattern(|x| x % 2 == 0, 64);
         dbg!(&bitset);
@@ -49,7 +49,7 @@ mod threadpool {
 
     #[test]
     fn count() {
-        let mut threadpool = ThreadPool::new();
+        let mut threadpool = ThreadPool::default();
         dbg!(threadpool.num_threads());
         let mut vec = (0..=64).into_iter().collect::<Vec<u128>>();
         let mut vec2 = (0..=64).into_iter().collect::<Vec<u128>>();
