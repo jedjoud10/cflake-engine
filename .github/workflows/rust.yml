@@ -2,9 +2,9 @@ name: Rust
 
 on:
   push:
-    branches: [ main, dev, proto ]
+    branches: [ main, dev, proto, vulkan-renderer ]
   pull_request:
-    branches: [ main, dev, proto ]
+    branches: [ main, dev, proto, vulkan-renderer ]
 
 env:
   CARGO_TERM_COLOR: always
