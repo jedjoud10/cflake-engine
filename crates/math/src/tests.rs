@@ -74,13 +74,13 @@ mod hibitset {
     fn hibitset() {
         let mut hibitset = HiBitSet::new();
         hibitset.set(0);
-        assert_eq!(hibitset.get(0), true);
-        assert_eq!(hibitset.get(1), false);
-        assert_eq!(hibitset.get(0), true);
+        assert!(hibitset.get(0));
+        assert!(!hibitset.get(1));
+        assert!(hibitset.get(0));
         hibitset.remove(0);
-        assert_eq!(hibitset.get(0), false);
+        assert!(!hibitset.get(0));
 
         hibitset.set(4095);
-        assert_eq!(hibitset.get(4095), true);
+        assert!(hibitset.get(4095));
     }
 }

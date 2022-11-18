@@ -41,7 +41,7 @@ pub(super) fn archetypes_mut<'s, L: QueryLayoutMut<'s>, F: QueryFilter>(
         .archetypes_mut()
         .iter_mut()
         .filter_map(move |(&archetype_mask, archetype)| {
-            (archetype.len() > 0 && archetype_mask.contains(mask.both())).then_some(archetype)
+            (!archetype.is_empty() && archetype_mask.contains(mask.both())).then_some(archetype)
         })
         .filter(|a| F::evaluate_archetype(cached, a))
         .collect::<Vec<_>>();
@@ -61,7 +61,7 @@ pub(super) fn archetypes<'s, L: QueryLayoutRef<'s>, F: QueryFilter>(
         .archetypes()
         .iter()
         .filter_map(move |(&archetype_mask, archetype)| {
-            (archetype.len() > 0 && archetype_mask.contains(mask.shared())).then_some(archetype)
+            (!archetype.is_empty() && archetype_mask.contains(mask.shared())).then_some(archetype)
         })
         .filter(|a| F::evaluate_archetype(cached, a))
         .collect::<Vec<_>>();

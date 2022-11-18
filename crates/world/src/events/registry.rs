@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use crate::{Caller, Event, RegistrySortingError, Rule, StageError, StageId, id, user, post_user};
 use ahash::{AHashMap, AHashSet};
 
@@ -182,12 +184,10 @@ fn sort(
             indices.insert(key, location);
 
             // Insert the new updated stage at it's correct location
-            if location == vec.len() {
-                vec.push(rules);
-            } else if location < vec.len() {
-                vec.insert(location, rules);
-            } else if location > vec.len() {
-                panic!("{} {}", location, vec.len());
+            match vec.len().cmp(&location) {
+                Ordering::Less => panic!("{} {}", location, vec.len()),
+                Ordering::Equal => vec.insert(location, rules),
+                Ordering::Greater => vec.push(rules),
             }
 
             // Update the indices of all the values that are after the current stage (since they were shifted to the right)

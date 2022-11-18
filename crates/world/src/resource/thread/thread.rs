@@ -54,6 +54,12 @@ pub struct ThreadPool {
     joins: Vec<JoinHandle<()>>,
 }
 
+impl Default for ThreadPool {
+    fn default() -> Self {
+        Self::with(num_cpus::get() * 8)
+    }
+}
+
 impl ThreadPool {
     // Create a new thread pool with a specific number of threads
     pub fn with(num: usize) -> Self {
@@ -76,11 +82,6 @@ impl ThreadPool {
         threadpool.joins = joins;
 
         threadpool
-    }
-
-    // Create a new thread pool with the default number of threads
-    pub fn new() -> Self {
-        Self::with(num_cpus::get() * 8)
     }
 
     // Given an immutable/mutable slice of elements, run a function over all of them elements in parallel
