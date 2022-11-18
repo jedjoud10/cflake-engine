@@ -1,4 +1,4 @@
-use std::{rc::Rc, marker::PhantomData, any::{TypeId, Any}};
+use std::{marker::PhantomData, any::{TypeId}};
 use ahash::AHashSet;
 use winit::event::{DeviceEvent, WindowEvent};
 use crate::{Init, Shutdown, Update, Caller, Event, Registry, Rule};

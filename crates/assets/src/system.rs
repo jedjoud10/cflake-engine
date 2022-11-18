@@ -1,11 +1,11 @@
 use crate::{persistent, Assets};
-use std::path::{PathBuf, Path};
-use world::{Init, World, System, user};
+use std::path::{PathBuf};
+use world::{World, System, user};
 
 // Initialize a load and add it to the world
 fn init(world: &mut World, user: Option<PathBuf>) {
     // Create a new asset loader / cacher
-    let loader = Assets::new(user.clone());
+    let loader = Assets::new(user);
 
     // Load the default shaders
     persistent!(loader, "engine/shaders/scene/pbr/models.func.glsl");

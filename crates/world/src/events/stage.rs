@@ -1,6 +1,6 @@
-use std::{marker::PhantomData, any::TypeId, mem::MaybeUninit, rc::Rc};
+use std::{any::TypeId};
 
-use crate::{StageError, RESERVED, Caller, Event};
+use crate::{Caller};
 
 // Names are shared around since we clone them frequently
 pub type StageId = (&'static str, TypeId);
@@ -19,8 +19,8 @@ impl Rule {
     // Get the current parent of the current strict node
     pub(super) fn parent(&self) -> StageId {
         match self {
-            Rule::Before(p) => p.clone(),
-            Rule::After(p) => p.clone(),
+            Rule::Before(p) => *p,
+            Rule::After(p) => *p,
         }
     }
 }
@@ -28,7 +28,7 @@ impl Rule {
 // Get the StageId of given linked stage event function cause type_name_of_val is unstable
 // TODO: Watch quintuplets movie
 pub(crate) fn id<E: 'static>(event: E) -> (StageId, E) {
-    let id = (TypeId::of::<E>());
+    let id = TypeId::of::<E>();
     let name = std::any::type_name::<E>();
     ((name, id), event)
 }

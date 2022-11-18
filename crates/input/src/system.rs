@@ -1,6 +1,6 @@
 use crate::{Axis, Input, KeyState};
 use winit::event::{DeviceEvent, ElementState};
-use world::{Init, Update, World, System, user, post_user};
+use world::{World, System, user, post_user};
 
 // Init event (called once at the start of program)
 fn init(world: &mut World) {
@@ -44,10 +44,7 @@ fn event(world: &mut World, ev: &DeviceEvent) {
                 match input.keys.entry(keycode) {
                     std::collections::hash_map::Entry::Occupied(mut current) => {
                         // Check if the key is "down" (either pressed or held)
-                        let down = match *current.get() {
-                            KeyState::Pressed | KeyState::Held => true,
-                            _ => false,
-                        };
+                        let down = matches!(*current.get(), KeyState::Pressed | KeyState::Held);
 
                         // If the key is pressed while it is currently down, it repeated itself, and we must ignore it
                         if down ^ (key.state == ElementState::Pressed) {

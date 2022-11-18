@@ -1,6 +1,6 @@
 use crate::{Caller, Event, RegistrySortingError, Rule, StageError, StageId, id, user, post_user};
 use ahash::{AHashMap, AHashSet};
-use std::{rc::Rc, mem::MaybeUninit, any::TypeId};
+
 use lazy_static::lazy_static;
 
 // Number of maximum iterations allowed before we detect a cyclic reference from within the rules
@@ -127,7 +127,7 @@ fn sort(
         if dedupped.contains_key(&key) {
             // We must insert the stage into the main vector
             let rules = dedupped.remove(&key).unwrap();
-            current_tree.insert(key.clone());
+            current_tree.insert(key);
 
             // Restrict the index of the stage based on it's rules
             let mut changed = true;
@@ -143,13 +143,13 @@ fn sort(
                     // Get the location of the parent stage
                     let parent = rule.parent();
                     let l = calc(
-                        parent.clone(),
+                        parent,
                         indices,
                         dedupped,
                         current_tree,
                         vec,
                         iter + 1,
-                        Some(key.clone()),
+                        Some(key),
                     )?;
 
                     match rule {
@@ -179,7 +179,7 @@ fn sort(
             }
 
             // Insert the name -> index reference
-            indices.insert(key.clone(), location);
+            indices.insert(key, location);
 
             // Insert the new updated stage at it's correct location
             if location == vec.len() {

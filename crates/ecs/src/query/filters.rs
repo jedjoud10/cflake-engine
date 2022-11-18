@@ -121,7 +121,7 @@ impl<T: Component> QueryFilter for Added<T> {
         true
     }
 
-    fn cache_columns<'a>(cached: Self::Cached, archetype: &'a Archetype) -> Self::Columns<'a> {
+    fn cache_columns(cached: Self::Cached, archetype: &Archetype) -> Self::Columns<'_> {
         archetype.state_table().get(&cached)
     }
 
@@ -144,7 +144,7 @@ impl<T: Component> QueryFilter for Modified<T> {
         true
     }
 
-    fn cache_columns<'a>(cached: Self::Cached, archetype: &'a Archetype) -> Self::Columns<'a> {
+    fn cache_columns(cached: Self::Cached, archetype: &Archetype) -> Self::Columns<'_> {
         archetype.state_table().get(&cached)
     }
 
@@ -167,7 +167,7 @@ impl<T: Component> QueryFilter for Contains<T> {
         archetype.mask().contains(cached)
     }
 
-    fn cache_columns<'a>(_cached: Self::Cached, _archetype: &'a Archetype) -> Self::Columns<'a> {}
+    fn cache_columns(_cached: Self::Cached, _archetype: &Archetype) -> Self::Columns<'_> {}
 
     fn evaluate_chunk(_columns: Self::Columns<'_>, _index: usize) -> usize {
         usize::MAX
@@ -184,7 +184,7 @@ impl QueryFilter for Always {
         true
     }
 
-    fn cache_columns<'a>(_cached: Self::Cached, _archetype: &'a Archetype) -> Self::Columns<'a> {}
+    fn cache_columns(_cached: Self::Cached, _archetype: &Archetype) -> Self::Columns<'_> {}
 
     fn evaluate_chunk(_columns: Self::Columns<'_>, _index: usize) -> usize {
         usize::MAX
@@ -201,7 +201,7 @@ impl QueryFilter for Never {
         false
     }
 
-    fn cache_columns<'a>(_cached: Self::Cached, _archetype: &'a Archetype) -> Self::Columns<'a> {
+    fn cache_columns(_cached: Self::Cached, _archetype: &Archetype) -> Self::Columns<'_> {
         panic!()
     }
 
@@ -223,7 +223,7 @@ impl<A: QueryFilter, B: QueryFilter> QueryFilter for And<A, B> {
         A::evaluate_archetype(cached.0, archetype) && B::evaluate_archetype(cached.1, archetype)
     }
 
-    fn cache_columns<'a>(cached: Self::Cached, archetype: &'a Archetype) -> Self::Columns<'a> {
+    fn cache_columns(cached: Self::Cached, archetype: &Archetype) -> Self::Columns<'_> {
         (
             A::cache_columns(cached.0, archetype),
             B::cache_columns(cached.1, archetype),
@@ -247,7 +247,7 @@ impl<A: QueryFilter, B: QueryFilter> QueryFilter for Or<A, B> {
         A::evaluate_archetype(cached.0, archetype) || B::evaluate_archetype(cached.1, archetype)
     }
 
-    fn cache_columns<'a>(cached: Self::Cached, archetype: &'a Archetype) -> Self::Columns<'a> {
+    fn cache_columns(cached: Self::Cached, archetype: &Archetype) -> Self::Columns<'_> {
         (
             A::cache_columns(cached.0, archetype),
             B::cache_columns(cached.1, archetype),
@@ -271,7 +271,7 @@ impl<A: QueryFilter, B: QueryFilter> QueryFilter for Xor<A, B> {
         A::evaluate_archetype(cached.0, archetype) ^ B::evaluate_archetype(cached.1, archetype)
     }
 
-    fn cache_columns<'a>(cached: Self::Cached, archetype: &'a Archetype) -> Self::Columns<'a> {
+    fn cache_columns(cached: Self::Cached, archetype: &Archetype) -> Self::Columns<'_> {
         (
             A::cache_columns(cached.0, archetype),
             B::cache_columns(cached.1, archetype),
@@ -295,7 +295,7 @@ impl<A: QueryFilter> QueryFilter for Not<A> {
         !A::evaluate_archetype(cached, archetype)
     }
 
-    fn cache_columns<'a>(cached: Self::Cached, archetype: &'a Archetype) -> Self::Columns<'a> {
+    fn cache_columns(cached: Self::Cached, archetype: &Archetype) -> Self::Columns<'_> {
         A::cache_columns(cached, archetype)
     }
 

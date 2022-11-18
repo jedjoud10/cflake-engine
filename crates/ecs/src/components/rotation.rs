@@ -1,5 +1,5 @@
 use crate::Component;
-use std::{ops::{Deref, DerefMut, Mul}, fmt::{Display, Debug}};
+use std::{ops::{Deref, DerefMut, Mul}, fmt::{Debug}};
 
 // 2D rotation support
 #[cfg(not(feature = "two-dim"))]

@@ -1,6 +1,6 @@
-use std::marker::PhantomData;
 
-use crate::{Caller, Event, Registry, World};
+
+use crate::{Caller, Event, World};
 use winit::{
     event::{DeviceEvent, WindowEvent},
     event_loop::EventLoop,
