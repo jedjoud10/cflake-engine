@@ -142,7 +142,7 @@ impl<'s, T: Component> QueryItemMut<'s> for Option<&T> {
     type Owned = T;
 
     fn access() -> LayoutAccess {
-        LayoutAccess::new(mask::<T>(), Mask::zero())
+        LayoutAccess::none()
     }
 
     unsafe fn ptr_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::Ptr {
@@ -192,7 +192,7 @@ impl<'s, T: Component> QueryItemMut<'s> for Option<&mut T> {
     type Owned = T;
 
     fn access() -> LayoutAccess {
-        LayoutAccess::new(Mask::zero(), mask::<T>())
+        LayoutAccess::none()
     }
 
     unsafe fn ptr_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::Ptr {
@@ -216,7 +216,7 @@ impl<'s> QueryItemMut<'s> for &Entity {
     type Owned = Entity;
 
     fn access() -> LayoutAccess {
-        LayoutAccess::new(Mask::zero(), Mask::zero())
+        LayoutAccess::none()
     }
 
     unsafe fn ptr_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::Ptr {

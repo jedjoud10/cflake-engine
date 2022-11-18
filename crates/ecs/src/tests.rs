@@ -210,7 +210,6 @@ fn optional_queries() {
     assert_eq!(manager.query_mut::<&Health>().len(), 4096);
     assert_eq!(manager.query_mut::<&Health>().into_iter().count(), 4096);
 
-
     let query = manager.query_mut::<(&Name, &mut Health, Option<&Ammo>)>();
     assert_eq!(query.len(), 4096);
     for (name, health, ammo) in query {
