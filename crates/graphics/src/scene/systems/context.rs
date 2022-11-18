@@ -31,7 +31,8 @@ fn event(world: &mut World, event: &mut WindowEvent) {
 
 // Destroy everything
 fn shutdown(world: &mut World) {
-    let graphics = world.remove::<crate::context::Graphics>();
+    let graphics = world.remove::<crate::context::Graphics>().unwrap();
+    unsafe { graphics.destroy() };
 }
 
 
