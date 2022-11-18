@@ -5,7 +5,7 @@ Currently, cFlake engine is under heavy development (***very*** WIP), but pull r
 
 # Main features of cFlake:
 * Custom World Event, Systems, and Resources
-* Archetypal ECS built to be used in conjunction with the World Events and Systems (**WIP, improving performance by switching to column based states **)
+* Archetypal ECS built to be used in conjunction with the World Events and Systems (**WIP, improving performance by switching to column based states**)
 * Custom Renderer built on OpenGL and Glutin (**WIP, currently switching to Vulkan (Ash) and Winit**)
 * GPU Voxel generation and Octree Terrain (disabled temporarily)
 * Asynchronous asset loader and utility thread pool
