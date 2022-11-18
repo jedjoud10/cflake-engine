@@ -5,7 +5,7 @@ use winit::event::{DeviceEvent, WindowEvent};
 // An event is something that can be stored within a Registry and can be called
 // Events of the same type get all executed at the same time
 // F: Fn(&mut World, &mut WindowEvent)
-pub trait Event<C: Caller, ID> {
+pub trait Event<C: Caller, ID>: 'static {
     type Args<'a, 'p>
     where
         'a: 'p;

@@ -75,45 +75,45 @@ impl App {
 
     // Insert a new system into the app and execute it immediately
     // This will register all the necessary events automatically
-    pub fn insert_system(mut self, callback: impl FnOnce(&mut System)) -> Self {
+    pub fn insert_system(mut self, callback: impl FnOnce(&mut System) + 'static) -> Self {
         self.systems.insert(callback);
         self
     }
 
-    /*
-
-
-
+    // Insert a single init event
+    pub fn insert_init<ID>(mut self, init: impl Event<Init, ID> + 'static) -> Self {
+        self.insert_system(move |system: &mut System| {
+            system.insert_init(init);
+        })
+    }
+    
     // Insert a single update event
-    pub fn insert_update<ID>(mut self, update: impl Event<Update, ID>) -> Self {
-        self.events.registry_mut::<Update>().insert(update);
-        self
+    pub fn insert_update<ID>(mut self, update: impl Event<Update, ID> + 'static) -> Self {
+        self.insert_system(move |system: &mut System| { 
+            system.insert_update(update);
+        })
     }
 
-    // Insert a single init event
-    pub fn insert_init<ID>(mut self, update: impl Event<Init, ID>) -> Self {
-        self.events.registry_mut::<Init>().insert(update);
-        self
+    // Insert a single shutdown event
+    pub fn insert_shutdown<ID>(mut self, shutdown: impl Event<Shutdown, ID> + 'static) -> Self {
+        self.insert_system(move |system: &mut System| {
+            system.insert_shutdown(shutdown);
+        })
     }
 
     // Insert a single window event
-    pub fn insert_window<ID>(mut self, update: impl Event<WindowEvent<'static>, ID>) -> Self {
-        self.events.registry_mut::<WindowEvent>().insert(update);
-        self
+    pub fn insert_window<ID>(mut self, event: impl Event<WindowEvent<'static>, ID> + 'static) -> Self {
+        self.insert_system(move |system: &mut System| {
+            system.insert_window(event);
+        })
     }
 
     // Insert a single device event
-    pub fn insert_device<ID>(mut self, update: impl Event<DeviceEvent, ID>) -> Self {
-        self.events.registry_mut::<DeviceEvent>().insert(update);
-        self
+    pub fn insert_device<ID>(mut self, event: impl Event<DeviceEvent, ID> + 'static) -> Self {
+        self.insert_system(move |system: &mut System| {
+            system.insert_device(event);
+        })
     }
-
-    // Insert a single exit event
-    pub fn insert_exit<ID>(mut self, exit: impl Event<Shutdown, ID>) -> Self {
-        self.events.registry_mut::<Shutdown>().insert(exit);
-        self
-    }
-    */
 
     // Consume the App builder, and start the engine window
     pub fn execute(mut self) {
@@ -126,24 +126,22 @@ impl App {
 
         // Insert the asset loader
         let user = self.user_assets_folder.take();
-        self = self.insert_system(|e: &mut Events| assets::system(e, user));
+        self = self.insert_system(|system: &mut System| assets::system(system, user));
 
         // Sort & execute the init events
-        let reg = self.events.registry_mut::<Init>();
-        reg.sort().unwrap();
-        self.events
-            .registry_mut::<Init>()
-            .execute((&mut self.world, &self.el));
+        self.systems.init.sort().unwrap();
+        self.systems.init.execute((&mut self.world, &self.el));
 
         // Decompose the app
-        let mut events = self.events;
         let mut world = self.world;
         let el = self.el;
+        let mut systems = self.systems;
 
         // Sort the remaining events registries
-        events.registry_mut::<Update>().sort().unwrap();
-        events.registry_mut::<WindowEvent>().sort().unwrap();
-        events.registry_mut::<DeviceEvent>().sort().unwrap();
+        systems.update.sort().unwrap();
+        systems.shutdown.sort().unwrap();
+        systems.window.sort().unwrap();
+        systems.device.sort().unwrap();
 
         // Create the spin sleeper for frame limiting
         let builder = spin_sleep::LoopHelper::builder();
@@ -158,11 +156,16 @@ impl App {
             // Call the update events
             winit::event::Event::MainEventsCleared => {
                 sleeper.loop_start();
-                events.registry_mut::<Update>().execute(&mut world);
+                systems.update.execute(&mut world);
                 if let State::Stopped = *world.get::<State>().unwrap() {
                     *cf = ControlFlow::Exit;
                 }
                 sleeper.loop_sleep();
+            }
+
+            // Call the shutdown events
+            winit::event::Event::LoopDestroyed => {
+                systems.shutdown.execute(&mut world);
             }
 
             // Call the window events
@@ -170,9 +173,7 @@ impl App {
                 window_id: _,
                 mut event,
             } => {
-                events
-                    .registry_mut::<WindowEvent>()
-                    .execute((&mut world, &mut event));
+                systems.window.execute((&mut world, &mut event));
             }
 
             // Call the device events
@@ -180,9 +181,7 @@ impl App {
                 device_id: _,
                 event,
             } => {
-                events
-                    .registry_mut::<DeviceEvent>()
-                    .execute((&mut world, &event));
+                systems.device.execute((&mut world, &event));
             }
             _ => {}
         });

@@ -82,8 +82,7 @@ pub struct System<'a> {
 macro_rules! insert {
     ($self:ident, $event:ident, $name:ident) => {
         {
-            let boxed = $event.boxed();
-            let rules = $self.$name.insert(boxed).unwrap();
+            let rules = $self.$name.insert($event).unwrap();
             
             EventMut {
                 rules,

@@ -3,7 +3,7 @@ use std::{marker::PhantomData, any::TypeId, mem::MaybeUninit, rc::Rc};
 use crate::{StageError, RESERVED, Caller, Event};
 
 // Names are shared around since we clone them frequently
-pub type StageId = (TypeId);
+pub type StageId = (&'static str, TypeId);
 
 // A rule that depicts the arrangement and the location of the stages relative to other stages
 #[derive(Clone, Debug)]
@@ -29,7 +29,8 @@ impl Rule {
 // TODO: Watch quintuplets movie
 pub(crate) fn id<E: 'static>(event: E) -> (StageId, E) {
     let id = (TypeId::of::<E>());
-    (id, event)
+    let name = std::any::type_name::<E>();
+    ((name, id), event)
 }
 
 // Default functions

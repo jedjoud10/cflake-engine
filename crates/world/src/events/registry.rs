@@ -70,7 +70,6 @@ impl<C: Caller> Registry<C> {
 
     // Sort all the events stored in the registry using the stages
     pub fn sort(&mut self) -> Result<(), RegistrySortingError> {
-        let _i = std::time::Instant::now();
         let indices = sort(&mut self.map)?;
 
         // We do quite a considerable amount of mental trickery and mockery who are unfortunate enough to fall victim to our dever little trap of social teasing

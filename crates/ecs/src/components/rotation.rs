@@ -1,5 +1,5 @@
 use crate::Component;
-use std::ops::{Deref, DerefMut, Mul};
+use std::{ops::{Deref, DerefMut, Mul}, fmt::{Display, Debug}};
 
 // 2D rotation support
 #[cfg(not(feature = "two-dim"))]
@@ -112,6 +112,20 @@ impl Rotation {
         let a = self.0;
         let b = self.1;
         a * t + (b * (1.0 - t))
+    }
+}
+
+
+impl Debug for Rotation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Debug::fmt(&self.0, f)
+    }
+}
+
+#[cfg(feature = "two-dim")]
+impl Display for Rotation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Display::fmt(&self.0, f)
     }
 }
 

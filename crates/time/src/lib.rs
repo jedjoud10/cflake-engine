@@ -80,6 +80,6 @@ fn update(world: &mut World) {
 
 // The timer system will automatically insert the Time resource and will update it at the start of each frame
 pub fn system(system: &mut System) {
-    system.insert_init(init).before(&user);
-    system.insert_update(update).before(&user);
+    system.insert_init(init).before(user);
+    system.insert_update(update).before(user);
 }
