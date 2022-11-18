@@ -24,9 +24,11 @@ pub struct Scene {
 
 impl Default for Scene {
     fn default() -> Self {
+        let mut empty = Archetype::empty();
+        empty.shrink();
         Self {
             entities: Default::default(),
-            archetypes: MaskHashMap::from_iter(once((Mask::zero(), Archetype::empty()))),
+            archetypes: MaskHashMap::from_iter(once((Mask::zero(), empty))),
         }
     }
 }

@@ -36,4 +36,14 @@ impl Window {
             raw: window,
         }    
     }
+
+    // Get access to the internal settings this window used during initialization
+    pub fn settings(&self) -> &WindowSettings {
+        &self.settings
+    }
+
+    // Get access to the internal raw winit window
+    pub fn raw(&self) -> &winit::window::Window {
+        &self.raw
+    }
 }

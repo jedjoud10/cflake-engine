@@ -1,5 +1,5 @@
 use winit::{event_loop::EventLoop, event::WindowEvent};
-use world::{System, user, World, State};
+use world::{System, user, World, State, post_user};
 use crate::prelude::{WindowSettings, GraphicsSettings};
 
 
@@ -14,7 +14,7 @@ fn init(
     let window = crate::context::Window::new(el, window);
 
     // Create a new Vulkan context
-    let graphics = crate::context::Graphics::new(&window, graphics);
+    let graphics = unsafe { crate::context::Graphics::new(&window, graphics) };
 
     // Add the resources into the world
     world.insert(window);
@@ -29,6 +29,11 @@ fn event(world: &mut World, event: &mut WindowEvent) {
     }
 }
 
+// Destroy everything
+fn shutdown(world: &mut World) {
+    let graphics = world.remove::<crate::context::Graphics>();
+}
+
 
 // Context system will just register the Vulkan context and create a simple window
 // This system will also handle window events like exiting
@@ -38,4 +43,6 @@ pub fn system(system: &mut System, window: WindowSettings, graphics: GraphicsSet
     ).before(user);
 
     system.insert_window(event);
+
+    system.insert_shutdown(shutdown).after(post_user);
 }

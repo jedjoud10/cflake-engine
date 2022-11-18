@@ -57,6 +57,16 @@ impl World {
         })
     }
 
+    // Remove a specific resource from the world
+    pub fn remove<R: Resource>(&mut self) -> Option<R> {
+        self.0.remove(&TypeId::of::<R>()).map(|cell| {
+            let boxed = cell.into_inner();
+            let any = boxed.into_any();
+            let downcasted = any.downcast::<R>().unwrap();
+            *downcasted
+        })
+    }
+
     // Check if a resource is present in the world
     pub fn contains<R: Resource>(&self) -> bool {
         self.0.contains_key(&TypeId::of::<R>())

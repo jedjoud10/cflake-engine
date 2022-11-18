@@ -19,6 +19,23 @@ pub trait SharpVertices {
     fn points(&self) -> Self::Points;
 }
 
+// Implemented for shapes that have implicit points / corners
+pub trait ImplicitVertices {
+    type Points: 'static + Clone;
+    type Settings: 'static;
+    fn points(&self, settings: Self::Settings) -> Self::Points;
+}
+
+// Auto implement implicit for explicit
+impl<T: SharpVertices> ImplicitVertices for T {
+    type Points = <T as SharpVertices>::Points;
+    type Settings = ();
+
+    fn points(&self, _: Self::Settings) -> Self::Points {
+        <T as SharpVertices>::points(&self)
+    }
+}
+
 // Implemented for shapes that have concrete bounds
 pub trait Boundable {
     fn bounds(&self) -> AABB;

@@ -37,7 +37,7 @@ impl Default for App {
                 limit: FrameRateLimit::Umlimited,
                 fullscreen: false,
             },
-            graphics: GraphicsSettings {  },
+            graphics: GraphicsSettings::default(),
             user_assets_folder: None,
             systems,
             el: EventLoop::new(),
