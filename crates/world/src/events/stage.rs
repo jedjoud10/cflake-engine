@@ -1,6 +1,6 @@
-use std::{any::TypeId};
+use std::any::TypeId;
 
-use crate::{Caller};
+use crate::Caller;
 
 // Names are shared around since we clone them frequently
 pub type StageId = (&'static str, TypeId);

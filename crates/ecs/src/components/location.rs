@@ -1,5 +1,8 @@
 use crate::Component;
-use std::{ops::{Add, Deref, DerefMut}, fmt::{Debug, Display}};
+use std::{
+    fmt::{Debug, Display},
+    ops::{Add, Deref, DerefMut},
+};
 
 // 2D location support
 #[cfg(not(feature = "two-dim"))]

@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 
-use crate::{Caller, Event, RegistrySortingError, Rule, StageError, StageId, id, user, post_user};
+use crate::{id, post_user, user, Caller, Event, RegistrySortingError, Rule, StageError, StageId};
 use ahash::{AHashMap, AHashSet};
 
 use lazy_static::lazy_static;
@@ -42,10 +42,13 @@ impl<D: Caller + 'static> Default for Registry<D> {
 
 impl<C: Caller> Registry<C> {
     // Insert a new event that will be executed after the "user" stage and before the "post user" stage
-    pub(crate) fn insert<ID>(&mut self, event: impl Event<C, ID> + 'static) -> Result<&mut Vec<Rule>, StageError> {
+    pub(crate) fn insert<ID>(
+        &mut self,
+        event: impl Event<C, ID> + 'static,
+    ) -> Result<&mut Vec<Rule>, StageError> {
         let (id, event) = super::id(event);
         let rules = super::default_rules::<C>();
-    
+
         // We can only have one event per stage and one stage per event
         if self.map.contains_key(&id) {
             Err(StageError::Overlapping)
@@ -59,10 +62,7 @@ impl<C: Caller> Registry<C> {
             let boxed = event.boxed();
 
             // Insert the stage into the valid map
-            let rules = self
-                .map
-                .entry(id)
-                .or_insert(rules);
+            let rules = self.map.entry(id).or_insert(rules);
 
             // Then insert the event
             self.events.push((id, boxed));

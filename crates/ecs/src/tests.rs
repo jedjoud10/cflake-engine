@@ -1,9 +1,6 @@
-
-
 use world::ThreadPool;
 
 use crate::*;
-
 
 #[derive(Component, Debug, PartialEq, Eq, Clone, Default)]
 struct Name(&'static str);

@@ -19,7 +19,7 @@ pub fn setup() -> (World, Systems) {
                 shutdown: Default::default(),
                 window: Default::default(),
                 device: Default::default(),
-            }
+            },
         )
     } else {
         // We've already created the world and event manager, so we must panic

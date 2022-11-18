@@ -1,4 +1,4 @@
-use crate::{Read, Resource, Write, System, user};
+use crate::{user, Read, Resource, System, Write};
 use ahash::AHashMap;
 use std::{
     any::TypeId,
@@ -71,7 +71,9 @@ pub trait FromWorld {
 
 // Global world system for cleaning and handling world state
 pub fn system(system: &mut System) {
-    system.insert_init(|world: &mut World| {
-        world.insert(State::Initializing);
-    }).before(user);
+    system
+        .insert_init(|world: &mut World| {
+            world.insert(State::Initializing);
+        })
+        .before(user);
 }

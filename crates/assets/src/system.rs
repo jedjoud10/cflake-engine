@@ -1,6 +1,6 @@
 use crate::{persistent, Assets};
-use std::path::{PathBuf};
-use world::{World, System, user};
+use std::path::PathBuf;
+use world::{user, System, World};
 
 // Initialize a load and add it to the world
 fn init(world: &mut World, user: Option<PathBuf>) {
@@ -42,5 +42,7 @@ fn init(world: &mut World, user: Option<PathBuf>) {
 // This system will add the asset loader resource into the world and automatically pre-load the default assets as well
 // This system will also insert the GlobalPaths resource into the world
 pub fn system(system: &mut System, path: Option<PathBuf>) {
-    system.insert_init(move |world: &mut World| init(world, path)).before(user);
+    system
+        .insert_init(move |world: &mut World| init(world, path))
+        .before(user);
 }

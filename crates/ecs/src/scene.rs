@@ -1,6 +1,6 @@
-use std::{iter::once};
 use slotmap::SlotMap;
-use world::{World, System, user, post_user};
+use std::iter::once;
+use world::{post_user, user, System, World};
 
 use crate::{
     archetype::remove_bundle_unchecked, entity::Entity, Archetype, Bundle, EntityLinkings,

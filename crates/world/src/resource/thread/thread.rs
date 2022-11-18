@@ -105,28 +105,29 @@ impl ThreadPool {
         let remaining = length % batch_size;
 
         // Internal function that is either used in a single thread or in multiple threads
-        let internal = move |ptrs: &mut I, length: usize, offset: usize, bitset: Option<&BitSet>| {
-            if let Some(bitset) = &bitset {
-                // With a bitset filter
-                let mut i = 0;
-                while i < length {                       
-                    // Check the next entry that is valid (that passed the filter)
-                    if let Some(hop) = bitset.find_one_from(i + offset) {
-                        i = hop;
-                    } else {
-                        return;
+        let internal =
+            move |ptrs: &mut I, length: usize, offset: usize, bitset: Option<&BitSet>| {
+                if let Some(bitset) = &bitset {
+                    // With a bitset filter
+                    let mut i = 0;
+                    while i < length {
+                        // Check the next entry that is valid (that passed the filter)
+                        if let Some(hop) = bitset.find_one_from(i + offset) {
+                            i = hop;
+                        } else {
+                            return;
+                        }
+
+                        function(unsafe { I::get_unchecked(ptrs, i) });
+                        i += 1;
                     }
-                    
-                    function(unsafe { I::get_unchecked(ptrs, i) });
-                    i += 1;
-                } 
-            } else {
-                // Without a bitset filter
-                for i in 0..length {
-                    function(unsafe { I::get_unchecked(ptrs, i) });
+                } else {
+                    // Without a bitset filter
+                    for i in 0..length {
+                        function(unsafe { I::get_unchecked(ptrs, i) });
+                    }
                 }
-            }
-        };
+            };
 
         // Run the code in a single thread if needed
         if num_tasks == 1 {
@@ -136,7 +137,7 @@ impl ThreadPool {
 
         // Box the function into an arc
         type ArcFn<'b> = Arc<dyn Fn(ThreadFuncEntry) + Send + Sync + 'b>;
-        
+
         // The bitset is going to be a shareable bitset instead
         let bitset = bitset.map(Arc::new);
 

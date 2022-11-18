@@ -1,6 +1,6 @@
 use crate::{Axis, Input, KeyState};
 use winit::event::{DeviceEvent, ElementState};
-use world::{World, System, user, post_user};
+use world::{post_user, user, System, World};
 
 // Init event (called once at the start of program)
 fn init(world: &mut World) {

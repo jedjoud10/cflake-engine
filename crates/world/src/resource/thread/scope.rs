@@ -1,5 +1,3 @@
-
-
 use math::BitSet;
 
 use super::ThreadedTask;

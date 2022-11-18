@@ -7,7 +7,7 @@ use winit::{
 use mimalloc::MiMalloc;
 use rendering::prelude::FrameRateLimit;
 use std::{any::TypeId, path::PathBuf};
-use world::{Event, Systems, Init, Shutdown, State, System, Update, World};
+use world::{Event, Init, Shutdown, State, System, Systems, Update, World};
 
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
@@ -86,10 +86,10 @@ impl App {
             system.insert_init(init);
         })
     }
-    
+
     // Insert a single update event
     pub fn insert_update<ID>(mut self, update: impl Event<Update, ID> + 'static) -> Self {
-        self.insert_system(move |system: &mut System| { 
+        self.insert_system(move |system: &mut System| {
             system.insert_update(update);
         })
     }
@@ -102,7 +102,10 @@ impl App {
     }
 
     // Insert a single window event
-    pub fn insert_window<ID>(mut self, event: impl Event<WindowEvent<'static>, ID> + 'static) -> Self {
+    pub fn insert_window<ID>(
+        mut self,
+        event: impl Event<WindowEvent<'static>, ID> + 'static,
+    ) -> Self {
         self.insert_system(move |system: &mut System| {
             system.insert_window(event);
         })

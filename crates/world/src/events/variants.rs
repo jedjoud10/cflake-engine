@@ -1,5 +1,3 @@
-
-
 use crate::{Caller, Event, World};
 use winit::{
     event::{DeviceEvent, WindowEvent},
@@ -19,7 +17,9 @@ impl Caller for DeviceEvent {
     }
 }
 
-impl<F: FnMut(&mut World, &DeviceEvent) + 'static> Event<DeviceEvent, (&mut World, &DeviceEvent)> for F {
+impl<F: FnMut(&mut World, &DeviceEvent) + 'static> Event<DeviceEvent, (&mut World, &DeviceEvent)>
+    for F
+{
     type Args<'a, 'p> = (&'p mut World, &'p DeviceEvent) where 'a: 'p;
 
     fn boxed(self) -> Box<<DeviceEvent as Caller>::DynFn> {
@@ -50,7 +50,9 @@ impl Caller for WindowEvent<'static> {
     }
 }
 
-impl<F: FnMut(&mut World, &mut WindowEvent<'_>) + 'static> Event<WindowEvent<'static>, (&mut World, &mut WindowEvent<'_>)> for F {
+impl<F: FnMut(&mut World, &mut WindowEvent<'_>) + 'static>
+    Event<WindowEvent<'static>, (&mut World, &mut WindowEvent<'_>)> for F
+{
     type Args<'a, 'p> = (&'p mut World, &'p mut WindowEvent<'a>) where 'a: 'p;
 
     fn boxed(self) -> Box<<WindowEvent<'static> as Caller>::DynFn> {

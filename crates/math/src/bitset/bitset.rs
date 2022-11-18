@@ -1,6 +1,6 @@
-use std::fmt::Display;
-use std::fmt::Debug;
 use itertools::Itertools;
+use std::fmt::Debug;
+use std::fmt::Display;
 
 // Simple bitset that allocates using u64 chunks
 // This bitset contains a specific number of elements per chunk

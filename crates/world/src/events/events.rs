@@ -1,7 +1,3 @@
-
-
-
-
 // An event is something that can be stored within a Registry and can be called
 // Events of the same type get all executed at the same time
 // F: Fn(&mut World, &mut WindowEvent)
@@ -18,7 +14,7 @@ pub trait Caller: 'static + Sized {
     type Args<'a, 'p>
     where
         'a: 'p;
-    type DynFn: ?Sized + 'static;   
+    type DynFn: ?Sized + 'static;
 
     fn call<'a, 'p>(boxed: &mut Box<Self::DynFn>, args: &mut Self::Args<'a, 'p>)
     where

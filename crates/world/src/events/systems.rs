@@ -1,8 +1,7 @@
-use std::{marker::PhantomData, any::{TypeId}};
+use crate::{Caller, Event, Init, Registry, Rule, Shutdown, Update};
 use ahash::AHashSet;
+use std::{any::TypeId, marker::PhantomData};
 use winit::event::{DeviceEvent, WindowEvent};
-use crate::{Init, Shutdown, Update, Caller, Event, Registry, Rule};
-
 
 // Systems are collections of multiple events that we insert onto the world
 // Systems can be added onto the current app using the insert method
@@ -38,9 +37,9 @@ impl Systems {
 // This is a mutable refernece to an event that was added to the system
 // This allows us to specifiy the ordering of the specific event
 pub struct EventMut<'a, C: Caller> {
-    rules: &'a mut Vec<Rule>, 
+    rules: &'a mut Vec<Rule>,
     default: bool,
-    _phantom: PhantomData<C>
+    _phantom: PhantomData<C>,
 }
 
 impl<'a, C: Caller> EventMut<'a, C> {
@@ -55,7 +54,7 @@ impl<'a, C: Caller> EventMut<'a, C> {
         self.rules.push(Rule::Before(id));
         self
     }
-    
+
     // Tell the event to execute after another event
     pub fn after<ID>(mut self, other: impl Event<C, ID> + 'static) -> Self {
         if self.default {
@@ -80,17 +79,15 @@ pub struct System<'a> {
 }
 
 macro_rules! insert {
-    ($self:ident, $event:ident, $name:ident) => {
-        {
-            let rules = $self.$name.insert($event).unwrap();
-            
-            EventMut {
-                rules,
-                default: true,
-                _phantom: PhantomData,
-            }
+    ($self:ident, $event:ident, $name:ident) => {{
+        let rules = $self.$name.insert($event).unwrap();
+
+        EventMut {
+            rules,
+            default: true,
+            _phantom: PhantomData,
         }
-    };
+    }};
 }
 
 impl<'a> System<'a> {
@@ -103,19 +100,25 @@ impl<'a> System<'a> {
     pub fn insert_update<ID>(&mut self, event: impl Event<Update, ID>) -> EventMut<Update> {
         insert!(self, event, update)
     }
-    
+
     // Insert a shutdown event and return a mut event
     pub fn insert_shutdown<ID>(&mut self, event: impl Event<Shutdown, ID>) -> EventMut<Shutdown> {
         insert!(self, event, shutdown)
     }
 
     // Insert a device event and return a mut event
-    pub fn insert_device<ID>(&mut self, event: impl Event<DeviceEvent, ID>) -> EventMut<DeviceEvent> {
+    pub fn insert_device<ID>(
+        &mut self,
+        event: impl Event<DeviceEvent, ID>,
+    ) -> EventMut<DeviceEvent> {
         insert!(self, event, device)
     }
 
     // Insert a window event and return a mut event
-    pub fn insert_window<ID>(&mut self, event: impl Event<WindowEvent<'static>, ID>) -> EventMut<WindowEvent<'static>> {
+    pub fn insert_window<ID>(
+        &mut self,
+        event: impl Event<WindowEvent<'static>, ID>,
+    ) -> EventMut<WindowEvent<'static>> {
         insert!(self, event, window)
     }
 }

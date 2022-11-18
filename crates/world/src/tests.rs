@@ -3,16 +3,20 @@ mod threadpool {
     use math::BitSet;
 
     use crate::ThreadPool;
-    
+
     #[test]
     fn data() {
         let mut threadpool = ThreadPool::new();
         let mut vec = (0..64).into_iter().collect::<Vec<u64>>();
 
-        threadpool.for_each(vec.as_mut_slice(), |value| {
-            *value += *value;
-        }, 8);
-    
+        threadpool.for_each(
+            vec.as_mut_slice(),
+            |value| {
+                *value += *value;
+            },
+            8,
+        );
+
         for (i, x) in vec.iter().enumerate() {
             assert_eq!(2 * i as u64, *x)
         }
@@ -25,9 +29,14 @@ mod threadpool {
         let bitset = BitSet::from_pattern(|x| x % 2 == 0, 64);
         dbg!(&bitset);
 
-        threadpool.for_each_filtered(vec.as_mut_slice(), |value| {
-            *value = 0;
-        }, bitset, 128);
+        threadpool.for_each_filtered(
+            vec.as_mut_slice(),
+            |value| {
+                *value = 0;
+            },
+            bitset,
+            128,
+        );
 
         for (i, x) in vec.iter().enumerate() {
             if i % 2 == 0 {
@@ -38,7 +47,6 @@ mod threadpool {
         }
     }
 
-    
     #[test]
     fn count() {
         let mut threadpool = ThreadPool::new();

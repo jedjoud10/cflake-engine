@@ -1,7 +1,7 @@
 use math::BitSet;
 
 use crate::{Always, Archetype, Mask, QueryFilter, QueryLayoutMut, QueryLayoutRef, Scene, Wrap};
-use std::{marker::PhantomData};
+use std::marker::PhantomData;
 
 // This is a query that will be fetched from the main scene that we can use to get components out of entries with a specific layout
 // Even though I define the 'it, 'b, and 's lfietimes, I don't use them in this query, I only use them in the query iterator
@@ -64,10 +64,7 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutRef<'it>> QueryRef<'a, 'b, 's, L> {
 
                 // Convert the archetype bitset to a thread-shareable bitset
                 // TODO: Reverse the order of the archetypes to avoid cloning the bitset here
-                let bitset = self
-                    .bitsets
-                    .as_ref()
-                    .map(|bitset| bitset[i].clone());
+                let bitset = self.bitsets.as_ref().map(|bitset| bitset[i].clone());
 
                 // Should we use per entry filtering?
                 if let Some(bitset) = bitset.clone() {

@@ -330,6 +330,9 @@ impl Assets {
             .strip_prefix("./assets/")
             .unwrap()
             .to_path_buf();
-        self.bytes.write().entry(path).or_insert_with(|| Arc::from(bytes));
+        self.bytes
+            .write()
+            .entry(path)
+            .or_insert_with(|| Arc::from(bytes));
     }
 }
