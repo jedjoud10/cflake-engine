@@ -128,6 +128,11 @@ impl Archetype {
         self.entities.len()
     }
 
+    // Check if the archetype is empty
+    pub fn is_empty(&self) -> bool {
+        self.entities.is_empty()
+    }
+
     // Get the entity slice immutably
     pub fn entities(&self) -> &[Entity] {
         &self.entities

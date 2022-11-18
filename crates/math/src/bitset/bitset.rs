@@ -1,6 +1,6 @@
-use std::fmt::Display;
-use std::fmt::Debug;
 use itertools::Itertools;
+use std::fmt::Debug;
+use std::fmt::Display;
 
 // Simple bitset that allocates using u64 chunks
 // This bitset contains a specific number of elements per chunk
@@ -28,8 +28,8 @@ impl BitSet {
     }
 
     // Create a bitset using a specific function and the number of elements
-    pub fn from_pattern(mut callback: impl FnMut(usize) -> bool, count: usize) -> Self {
-        let iter = (0..count).into_iter().map(|i| callback(i));
+    pub fn from_pattern(callback: impl FnMut(usize) -> bool, count: usize) -> Self {
+        let iter = (0..count).into_iter().map(callback);
         Self::from_iter(iter)
     }
 

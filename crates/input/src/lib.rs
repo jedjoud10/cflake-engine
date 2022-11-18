@@ -35,26 +35,17 @@ impl From<ElementState> for KeyState {
 impl KeyState {
     // This checks if the state is equal to State::Pressed
     pub fn pressed(&self) -> bool {
-        match self {
-            KeyState::Pressed => true,
-            _ => false,
-        }
+        matches!(self, KeyState::Pressed)
     }
 
     // This checks if the state is equal to State::Released
     pub fn released(&self) -> bool {
-        match self {
-            KeyState::Released => true,
-            _ => false,
-        }
+        matches!(self, KeyState::Released)
     }
 
     // This checks if the State is equal to State::Held
     pub fn held(&self) -> bool {
-        match self {
-            KeyState::Held => true,
-            _ => false,
-        }
+        matches!(self, KeyState::Held)
     }
 }
 

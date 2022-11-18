@@ -14,5 +14,6 @@ num_cpus = "1.13.1"
 seq-macro = "0.3.0"
 paste = "1.0.7"
 casey = "0.3.3"
+lazy_static = "1.4.0"
 arrayvec = "0.7.2"
 math = { path = "../math" }

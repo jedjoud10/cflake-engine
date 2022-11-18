@@ -3276,6 +3276,7 @@ dependencies = [
  "ahash",
  "arrayvec 0.7.2",
  "casey",
+ "lazy_static",
  "math",
  "num_cpus",
  "parking_lot 0.12.1",

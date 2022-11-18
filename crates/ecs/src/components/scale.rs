@@ -1,5 +1,8 @@
 use crate::Component;
-use std::ops::{Deref, DerefMut};
+use std::{
+    fmt::{Debug, Display},
+    ops::{Deref, DerefMut},
+};
 
 // 2D location support
 #[cfg(not(feature = "two-dim"))]
@@ -61,6 +64,18 @@ impl Scale {
     // Construct a scale with it's raw data
     pub fn scale_xy(x: f32, y: f32) -> Self {
         Self(vek::Vec2::new(x, y))
+    }
+}
+
+impl Debug for Scale {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Debug::fmt(&self.0, f)
+    }
+}
+
+impl Display for Scale {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Display::fmt(&self.0, f)
     }
 }
 

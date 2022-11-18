@@ -1,5 +1,6 @@
-use crate::*;
 use world::ThreadPool;
+
+use crate::*;
 
 #[derive(Component, Debug, PartialEq, Eq, Clone, Default)]
 struct Name(&'static str);
@@ -185,7 +186,7 @@ fn queries() {
         health.0 += 100;
     }
 
-    let mut threadpool = ThreadPool::new();
+    let mut threadpool = ThreadPool::default();
     let query = manager.query_mut::<(&Name, &mut Health)>();
     query.for_each(
         &mut threadpool,

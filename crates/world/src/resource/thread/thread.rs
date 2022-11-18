@@ -54,6 +54,12 @@ pub struct ThreadPool {
     joins: Vec<JoinHandle<()>>,
 }
 
+impl Default for ThreadPool {
+    fn default() -> Self {
+        Self::with(num_cpus::get() * 8)
+    }
+}
+
 impl ThreadPool {
     // Create a new thread pool with a specific number of threads
     pub fn with(num: usize) -> Self {
@@ -78,11 +84,6 @@ impl ThreadPool {
         threadpool
     }
 
-    // Create a new thread pool with the default number of threads
-    pub fn new() -> Self {
-        Self::with(num_cpus::get() * 8)
-    }
-
     // Given an immutable/mutable slice of elements, run a function over all of them elements in parallel
     // If specified, this will use a bitset to hop over useless entries
     // Warning: This will not wait till all the threads have finished executing their specific functions
@@ -104,28 +105,29 @@ impl ThreadPool {
         let remaining = length % batch_size;
 
         // Internal function that is either used in a single thread or in multiple threads
-        let internal = move |mut ptrs: &mut I, length: usize, offset: usize, bitset: Option<&BitSet>| {
-            if let Some(bitset) = &bitset {
-                // With a bitset filter
-                let mut i = 0;
-                while i < length {                       
-                    // Check the next entry that is valid (that passed the filter)
-                    if let Some(hop) = bitset.find_one_from(i + offset) {
-                        i = hop;
-                    } else {
-                        return;
+        let internal =
+            move |ptrs: &mut I, length: usize, offset: usize, bitset: Option<&BitSet>| {
+                if let Some(bitset) = &bitset {
+                    // With a bitset filter
+                    let mut i = 0;
+                    while i < length {
+                        // Check the next entry that is valid (that passed the filter)
+                        if let Some(hop) = bitset.find_one_from(i + offset) {
+                            i = hop;
+                        } else {
+                            return;
+                        }
+
+                        function(unsafe { I::get_unchecked(ptrs, i) });
+                        i += 1;
                     }
-                    
-                    function(unsafe { I::get_unchecked(&mut ptrs, i) });
-                    i += 1;
-                } 
-            } else {
-                // Without a bitset filter
-                for i in 0..length {
-                    function(unsafe { I::get_unchecked(&mut ptrs, i) });
+                } else {
+                    // Without a bitset filter
+                    for i in 0..length {
+                        function(unsafe { I::get_unchecked(ptrs, i) });
+                    }
                 }
-            }
-        };
+            };
 
         // Run the code in a single thread if needed
         if num_tasks == 1 {
@@ -135,9 +137,9 @@ impl ThreadPool {
 
         // Box the function into an arc
         type ArcFn<'b> = Arc<dyn Fn(ThreadFuncEntry) + Send + Sync + 'b>;
-        
+
         // The bitset is going to be a shareable bitset instead
-        let bitset = bitset.map(|b| Arc::new(b));
+        let bitset = bitset.map(Arc::new);
 
         let function: ArcFn<'a> = Arc::new(move |entry: ThreadFuncEntry| unsafe {
             // Optionally, the user might specify a specific bitset
@@ -152,7 +154,7 @@ impl ThreadPool {
                 .unwrap();
 
             // Call the internal function
-            internal(&mut slices, length, offset, bitset.as_ref().map(|b| &**b));
+            internal(&mut slices, length, offset, bitset.as_deref());
         });
 
         // Convert the lifetimed arc into a static arc
