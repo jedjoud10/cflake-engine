@@ -1,7 +1,7 @@
 use std::ffi::{CStr, CString};
 
 use super::Window;
-use ash::{extensions::{ext::DebugUtils, khr::Swapchain}, vk, Entry, Instance};
+use ash::{extensions::{ext::DebugUtils, khr::{Swapchain, Surface}}, vk, Entry, Instance};
 use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
 use world::Resource;
 
@@ -20,7 +20,7 @@ impl Default for GraphicSettings {
                 "VK_LAYER_KHRONOS_validation".to_owned(),
             )
             .unwrap()],
-            instance_extensions: vec![DebugUtils::name().to_owned()],
+            instance_extensions: vec![DebugUtils::name().to_owned(), Surface::name().to_owned()],
             logical_device_extensions: vec![Swapchain::name().to_owned()]
         }
     }

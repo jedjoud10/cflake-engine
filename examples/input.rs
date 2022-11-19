@@ -11,8 +11,8 @@ fn main() {
 // Map some input buttons
 fn init(world: &mut World) {
     let mut input = world.get_mut::<Input>().unwrap();
-    input.bind_button("forward", Button::GamePadDPadUp);
-    input.bind_button("backward", Button::GamePadDPadDown);
+    input.bind_button("forward", Button::W);
+    input.bind_button("backward", Button::S);
 }
 
 // Read from the mappings

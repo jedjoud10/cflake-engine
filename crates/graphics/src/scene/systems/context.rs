@@ -22,7 +22,7 @@ fn init(
     };
 
     // Instantiate a new window wrapper
-    let window = unsafe {
+    let mut window = unsafe {
         crate::context::Window::new(
             window_settings,
             raw,
@@ -41,6 +41,17 @@ fn init(
             window.surface()
         )
     };
+
+    // Create the swapchain
+    unsafe {
+        crate::context::Window::create_swapchain(
+            &mut window,
+            graphics.instance(), 
+            graphics.entry(),
+            device.physical_device(),
+            device.logical_device(),
+        );
+    }
 
     // Add the resources into the world
     world.insert(window);
@@ -65,8 +76,8 @@ fn shutdown(world: &mut World) {
     let device = 
         world.remove::<crate::context::Device>().unwrap();
 
+    unsafe { window.destroy(device.physical_device(), device.logical_device()) };
     unsafe { device.destroy() };
-    unsafe { window.destroy() };
     unsafe { graphics.destroy() };
 }
 

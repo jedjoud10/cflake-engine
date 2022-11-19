@@ -120,6 +120,16 @@ impl Device {
         self.physical_device_properties.api_version
     } 
 
+    // Access the chosen physical device
+    pub fn physical_device(&self) -> &vk::PhysicalDevice {
+        &self.physical_device
+    }
+
+    // Access the created logical device
+    pub fn logical_device(&self) -> &ash::Device {
+        &self.logical_device
+    }
+
     // Destroy the physical device and logical device and queues and memory AAA
     pub(crate) unsafe fn destroy(self) {
         self.logical_device.destroy_device(None);
