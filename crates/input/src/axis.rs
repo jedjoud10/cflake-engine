@@ -28,14 +28,14 @@ pub enum Axis {
     MouseScrollDelta,
 
     // Gamepad axii
-    LeftStickX = AXIS_LSTICKX,
-    LeftStickY = AXIS_LSTICKY,
-    LeftZ = AXIS_LEFTZ,
-    RightStickX = AXIS_RSTICKX,
-    RightStickY = AXIS_RSTICKY,
-    RightZ = AXIS_RIGHTZ,
-    DPadX = AXIS_DPADX,
-    DPadY = AXIS_DPADY,
+    GamePadLeftStickX = AXIS_LSTICKX,
+    GamePadLeftStickY = AXIS_LSTICKY,
+    GamePadLeftZ = AXIS_LEFTZ,
+    GamePadRightStickX = AXIS_RSTICKX,
+    GamePadRightStickY = AXIS_RSTICKY,
+    GamePadRightZ = AXIS_RIGHTZ,
+    GamePadDPadX = AXIS_DPADX,
+    GamePadDPadY = AXIS_DPADY,
 }
 
 // Axis code mappings copied from gilrs source code
