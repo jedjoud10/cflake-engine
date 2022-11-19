@@ -4,8 +4,8 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
 };
 //use gui::egui::util::id_type_map::TypeId;
+use graphics::prelude::{FrameRateLimit, GraphicsSettings, WindowSettings};
 use mimalloc::MiMalloc;
-use graphics::prelude::{FrameRateLimit, WindowSettings, GraphicsSettings};
 use std::{any::TypeId, path::PathBuf};
 use world::{Event, Init, Shutdown, State, System, Systems, Update, World};
 
@@ -136,8 +136,9 @@ impl App {
         // Insert the graphics API
         let window = self.window.clone();
         let graphics = self.graphics.clone();
-        self = self.insert_system(move |system: &mut System| graphics::scene::system(system, window, graphics));
-
+        self = self.insert_system(move |system: &mut System| {
+            graphics::scene::system(system, window, graphics)
+        });
 
         // Sort & execute the init events
         self.systems.init.sort().unwrap();

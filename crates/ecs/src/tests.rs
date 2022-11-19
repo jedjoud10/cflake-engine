@@ -252,7 +252,6 @@ fn optional_queries() {
     }
 }
 
-
 #[test]
 fn filter_ref() {
     let mut manager = Scene::default();

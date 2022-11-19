@@ -1,6 +1,19 @@
-use std::{ffi::{c_void, CStr}, borrow::Cow};
-
+use std::{
+    borrow::Cow,
+    ffi::{c_void, CStr},
+};
 use ash::vk;
+use winit::{window::{WindowBuilder, Fullscreen}, event_loop::EventLoop};
+use super::WindowSettings;
+
+// Create the raw winit windowl
+pub(crate) fn new_winit_window(el: &EventLoop<()>, window_settings: &WindowSettings) -> winit::window::Window {
+    WindowBuilder::default()
+        .with_fullscreen(window_settings.fullscreen.then_some(Fullscreen::Borderless(None)))
+        .with_title(&window_settings.title)
+        .build(&el)
+        .unwrap()
+}
 
 // Debug callback that is invoked from the debug messenger
 pub(super) unsafe extern "system" fn debug_callback(

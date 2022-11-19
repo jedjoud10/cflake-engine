@@ -1,6 +1,6 @@
 mod graphics;
-mod window;
 mod utils;
-pub use utils::*;
+mod window;
 pub use graphics::*;
+pub use utils::*;
 pub use window::*;

@@ -3,10 +3,10 @@ pub mod app;
 pub use assets;
 pub use audio;
 pub use ecs;
+pub use graphics;
 pub use gui;
 pub use input;
 pub use math;
-pub use graphics;
 pub use time;
 pub use world;
 
@@ -15,10 +15,10 @@ pub mod prelude {
     pub use crate::assets::*;
     pub use crate::audio::*;
     pub use crate::ecs::*;
+    pub use crate::graphics::prelude::*;
     pub use crate::gui::*;
     pub use crate::input::*;
     pub use crate::math::*;
-    pub use crate::graphics::prelude::*;
     pub use crate::time::*;
     pub use crate::world::*;
     pub use vek;
