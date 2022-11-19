@@ -1,6 +1,8 @@
 mod system;
 mod ids;
 mod button;
+mod axis;
+pub use axis::*;
 pub use system::*;
 pub use ids::*;
 pub use button::*;

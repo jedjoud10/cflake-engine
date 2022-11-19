@@ -36,6 +36,28 @@ impl ButtonState {
     }
 }
 
+// Convert a winit VirtualKeyCode to an input button
+pub fn from_winit_vkc(vkc: winit::event::VirtualKeyCode) -> Button {
+    unsafe {
+        let code = std::mem::transmute::<winit::event::VirtualKeyCode, u32>(vkc);
+        std::mem::transmute::<u32, crate::Button>(code)
+    }
+}
+
+// Convert a gilrs Button to an input button
+// This is faillible since Gilrs can give us an Unknown button code
+pub fn from_gilrs_button(button: gilrs::Button) -> Option<Button> {
+    if matches!(button, gilrs::Button::Unknown) {
+        return None;
+    }
+
+    unsafe {
+        let mut code = std::mem::transmute::<gilrs::Button, u16>(button) as u32;
+        code += OFFSET;
+        Some(std::mem::transmute::<u32, crate::Button>(code))
+    }
+}
+
 
 // The virtual keycodes that the window will receive (as a form of events)
 // These will also sometimes represent buttons that are pressed by gamepads
@@ -45,7 +67,7 @@ impl ButtonState {
 #[repr(u32)]
 pub enum Button {
     /// The '1' key over the letters.
-    Key1,
+    Key1 = 0,
     /// The '2' key over the letters.
     Key2,
     /// The '3' key over the letters.
@@ -244,31 +266,58 @@ pub enum Button {
     // Gamepad support from gilrs
     // Also copied from gilrs source code
     // Action Pad
-    GamePadSouth,
-    GamePadEast,
-    GamePadNorth,
-    GamePadWest,
-    GamePadC,
-    GamePadZ,
-    
+    GamePadSouth = BTN_SOUTH,
+    GamePadEast = BTN_EAST,
+    GamePadNorth = BTN_NORTH,
+    GamePadWest = BTN_WEST,
+    GamePadC = BTN_C,
+    GamePadZ = BTN_Z,
+
     // Triggers
-    GamePadLeftTrigger,
-    GamePadLeftTrigger2,
-    GamePadRightTrigger,
-    GamePadRightTrigger2,
-    
-    // Menu Pad
-    GamePadSelect,
-    GamePadStart,
-    GamePadMode,
+    GamePadLeftTrigger = BTN_LT,
+    GamePadLeftTrigger2 = BTN_LT2,
+    GamePadRightTrigger = BTN_RT,
+    GamePadRightTrigger2 = BTN_RT2,
+
+    // Menu pad
+    GamePadSelect = BTN_SELECT,
+    GamePadStart = BTN_START,
+    GamePadMode = BTN_MODE,
     
     // Sticks
-    GamePadLeftThumb,
-    GamePadRightThumb,
+    GamePadLeftThumb = BTN_LTHUMB,
+    GamePadRightThumb = BTN_RTHUMB,
     
     // D-Pad
-    GamePadDPadUp,
-    GamePadDPadDown,
-    GamePadDPadLeft,
-    GamePadDPadRight,   
+    GamePadDPadUp = BTN_DPAD_UP,
+    GamePadDPadDown = BTN_DPAD_DOWN,
+    GamePadDPadLeft = BTN_DPAD_LEFT,
+    GamePadDPadRight = BTN_DPAD_RIGHT,  
 }
+
+
+// GamePad mappings from gilrs source code
+pub const OFFSET: u32 = 0xA2;
+
+// Button code mappings
+pub const BTN_SOUTH: u32 = 1 + OFFSET;
+pub const BTN_EAST: u32 = 2 + OFFSET;
+pub const BTN_C: u32 = 3 + OFFSET;
+pub const BTN_NORTH: u32 = 4 + OFFSET;
+pub const BTN_WEST: u32 = 5 + OFFSET;
+pub const BTN_Z: u32 = 6 + OFFSET;
+pub const BTN_LT: u32 = 7 + OFFSET;
+pub const BTN_RT: u32 = 8 + OFFSET;
+pub const BTN_LT2: u32 = 9 + OFFSET;
+pub const BTN_RT2: u32 = 10 + OFFSET;
+pub const BTN_SELECT: u32 = 11 + OFFSET;
+pub const BTN_START: u32 = 12 + OFFSET;
+pub const BTN_MODE: u32 = 13 + OFFSET;
+pub const BTN_LTHUMB: u32 = 14 + OFFSET;
+pub const BTN_RTHUMB: u32 = 15 + OFFSET;
+
+// Dpad code mappings
+pub const BTN_DPAD_UP: u32 = 16 + OFFSET;
+pub const BTN_DPAD_DOWN: u32 = 17 + OFFSET;
+pub const BTN_DPAD_LEFT: u32 = 18 + OFFSET;
+pub const BTN_DPAD_RIGHT: u32 = 19 + OFFSET;

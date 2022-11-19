@@ -1,28 +1,5 @@
 use serde::*;
-
-use crate::{Input, ButtonState, Button};
-
-// An axis can be mapped to a specific binding to be able to fetch it using a user defined name
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize,
-)]
-pub enum Axis {
-    // Mouse axii
-    MousePositionX,
-    MousePositionY,
-    MouseScroll,
-    MousePositionDeltaX,
-    MousePositionDeltaY,
-    MouseScrollDelta,
-
-    // Gamepad axii
-    LeftStickX,
-    LeftStickY,
-    RightStickX,
-    RightStickY,
-    DPadX,
-    DPadY,
-}
+use crate::{Input, ButtonState, Button, Axis};
 
 // Trait implemented for structs that allow us to fetch the key state from the main input handler
 pub trait InputButtonId {
