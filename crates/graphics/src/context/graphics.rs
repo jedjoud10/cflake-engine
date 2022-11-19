@@ -1,18 +1,19 @@
 use std::ffi::{CStr, CString};
 
 use super::Window;
-use ash::{extensions::ext::DebugUtils, vk, Entry, Instance};
+use ash::{extensions::{ext::DebugUtils, khr::Swapchain}, vk, Entry, Instance};
 use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
 use world::Resource;
 
 // Graphical settings that we will use to create the graphical context
 #[derive(Clone)]
-pub struct GraphicsSettings {
+pub struct GraphicSettings {
     pub validation_layers: Vec<CString>,
     pub instance_extensions: Vec<CString>,
+    pub logical_device_extensions: Vec<CString>,
 }
 
-impl Default for GraphicsSettings {
+impl Default for GraphicSettings {
     fn default() -> Self {
         Self {
             validation_layers: vec![CString::new(
@@ -20,6 +21,7 @@ impl Default for GraphicsSettings {
             )
             .unwrap()],
             instance_extensions: vec![DebugUtils::name().to_owned()],
+            logical_device_extensions: vec![Swapchain::name().to_owned()]
         }
     }
 }
@@ -31,10 +33,6 @@ pub struct Graphics {
     instance: Instance,
     debug_utils: DebugUtils,
     debug_messenger: vk::DebugUtilsMessengerEXT,
-    /*
-    physical: vk::PhysicalDevice,
-    logical: vk::Device,
-    */
 }
 
 impl Graphics {
@@ -42,7 +40,7 @@ impl Graphics {
     pub(crate) unsafe fn new(
         title: &str,
         window: &winit::window::Window,
-        graphic_settings: GraphicsSettings,
+        graphic_settings: &GraphicSettings,
     ) -> Graphics {
         // Load the loading functions
         let entry = Entry::load().unwrap();

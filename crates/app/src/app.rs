@@ -5,7 +5,7 @@ use winit::{
 };
 //use gui::egui::util::id_type_map::TypeId;
 use graphics::prelude::{
-    FrameRateLimit, GraphicsSettings, WindowSettings,
+    FrameRateLimit, GraphicSettings, WindowSettings,
 };
 use mimalloc::MiMalloc;
 use std::{any::TypeId, path::PathBuf};
@@ -20,7 +20,7 @@ static GLOBAL: MiMalloc = MiMalloc;
 pub struct App {
     // Window settings for the graphics
     window: WindowSettings,
-    graphics: GraphicsSettings,
+    graphics: GraphicSettings,
 
     // Asset and IO
     user_assets_folder: Option<PathBuf>,
@@ -41,7 +41,7 @@ impl Default for App {
                 limit: FrameRateLimit::Umlimited,
                 fullscreen: false,
             },
-            graphics: GraphicsSettings::default(),
+            graphics: GraphicSettings::default(),
             user_assets_folder: None,
             systems,
             el: EventLoop::new(),

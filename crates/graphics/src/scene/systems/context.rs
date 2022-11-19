@@ -1,4 +1,4 @@
-use crate::prelude::{GraphicsSettings, WindowSettings};
+use crate::prelude::{GraphicSettings, WindowSettings};
 use winit::{event::WindowEvent, event_loop::EventLoop};
 use world::{post_user, user, State, System, World};
 
@@ -7,7 +7,7 @@ fn init(
     world: &mut World,
     el: &EventLoop<()>,
     window_settings: WindowSettings,
-    graphic_settings: GraphicsSettings,
+    graphic_settings: GraphicSettings,
 ) {
     // Create the winit window
     let raw = crate::context::new_winit_window(el, &window_settings);
@@ -17,14 +17,13 @@ fn init(
         crate::context::Graphics::new(
             &window_settings.title,
             &raw,
-            graphic_settings,
+            &graphic_settings,
         )
     };
 
     // Instantiate a new window wrapper
     let window = unsafe {
         crate::context::Window::new(
-            el,
             window_settings,
             raw,
             graphics.instance(),
@@ -32,9 +31,21 @@ fn init(
         )
     };
 
+    // Instantiate a new logical device
+    let device = unsafe {
+        crate::context::Device::new(
+            &graphic_settings,
+            graphics.instance(), 
+            graphics.entry(),
+            window.surface_loader(),
+            window.surface()
+        )
+    };
+
     // Add the resources into the world
     world.insert(window);
     world.insert(graphics);
+    world.insert(device);
 }
 
 // Handle window quitting
@@ -49,7 +60,12 @@ fn event(world: &mut World, event: &mut WindowEvent) {
 fn shutdown(world: &mut World) {
     let graphics =
         world.remove::<crate::context::Graphics>().unwrap();
-    let window = world.remove::<crate::context::Window>().unwrap();
+    let window = 
+        world.remove::<crate::context::Window>().unwrap();
+    let device = 
+        world.remove::<crate::context::Device>().unwrap();
+
+    unsafe { device.destroy() };
     unsafe { window.destroy() };
     unsafe { graphics.destroy() };
 }
@@ -59,7 +75,7 @@ fn shutdown(world: &mut World) {
 pub fn system(
     system: &mut System,
     window_settings: WindowSettings,
-    graphic_settings: GraphicsSettings,
+    graphic_settings: GraphicSettings,
 ) {
     system
         .insert_init(move |world: &mut World, el: &EventLoop<()>| {

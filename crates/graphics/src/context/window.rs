@@ -31,13 +31,12 @@ pub struct Window {
 
 impl Window {
     // Create a new window using an event loop and it's settings
-    pub(crate) unsafe fn new<T>(
-        el: &EventLoop<T>,
+    pub(crate) unsafe fn new(
         window_settings: WindowSettings,
         raw: winit::window::Window,
         instance: &ash::Instance,
         entry: &ash::Entry,
-    ) -> Window {
+    ) -> Self {
         // Get a window and display handle to the winit window
         let display_handle = raw.raw_display_handle();
         let window_handle = raw.raw_window_handle();
@@ -70,6 +69,16 @@ impl Window {
     // Get access to the internal raw winit window
     pub fn raw(&self) -> &winit::window::Window {
         &self.raw
+    }
+
+    // Get access to the raw KHR surface
+    pub fn surface(&self) -> &ash::vk::SurfaceKHR {
+        &self.surface
+    } 
+
+    // Get access to the raw KHR surface loader
+    pub fn surface_loader(&self) -> &ash::extensions::khr::Surface {
+        &self.surface_loader
     }
 
     // Destroy the window after we've done using it
