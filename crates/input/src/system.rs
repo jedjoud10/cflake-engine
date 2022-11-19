@@ -1,4 +1,4 @@
-use crate::{Axis, Input, KeyState};
+use crate::{Axis, Input, ButtonState};
 use winit::event::{DeviceEvent, ElementState};
 use world::{post_user, user, System, World};
 
@@ -8,10 +8,12 @@ fn init(world: &mut World) {
         bindings: Default::default(),
         keys: Default::default(),
         axii: Default::default(),
+        gilrs: gilrs::Gilrs::new().unwrap(),
+        gamepad: None,
     });
 }
 
-// Winit window event (called by handler when needed)
+// Winit device event (called by handler when needed)
 fn event(world: &mut World, ev: &DeviceEvent) {
     let mut input = world.get_mut::<Input>().unwrap();
     match ev {
@@ -46,6 +48,12 @@ fn event(world: &mut World, ev: &DeviceEvent) {
         // Update keyboard key states
         DeviceEvent::Key(key) => {
             if let Some(keycode) = key.virtual_keycode {
+                // Sorry :(
+                let keycode = unsafe {
+                    let id = std::mem::transmute::<winit::event::VirtualKeyCode, u32>(keycode);
+                    std::mem::transmute::<u32, crate::Button>(id)
+                };
+
                 match input.keys.entry(keycode) {
                     std::collections::hash_map::Entry::Occupied(
                         mut current,
@@ -53,7 +61,7 @@ fn event(world: &mut World, ev: &DeviceEvent) {
                         // Check if the key is "down" (either pressed or held)
                         let down = matches!(
                             *current.get(),
-                            KeyState::Pressed | KeyState::Held
+                            ButtonState::Pressed | ButtonState::Held
                         );
 
                         // If the key is pressed while it is currently down, it repeated itself, and we must ignore it
@@ -74,16 +82,34 @@ fn event(world: &mut World, ev: &DeviceEvent) {
 }
 
 // Update event that will change the state of the keyboard keys (some states are sticky while others are not sticky)
+// This will also read the state from gamepads using gilrs
 fn update(world: &mut World) {
-    let mut keyboard = world.get_mut::<Input>().unwrap();
-    for (_, state) in keyboard.keys.iter_mut() {
+    let mut input = world.get_mut::<Input>().unwrap();
+    for (_, state) in input.keys.iter_mut() {
         *state = match state {
-            crate::KeyState::Pressed => KeyState::Held,
-            crate::KeyState::Released => KeyState::None,
-            crate::KeyState::Held => KeyState::Held,
-            crate::KeyState::None => KeyState::None,
+            crate::ButtonState::Pressed => ButtonState::Held,
+            crate::ButtonState::Released => ButtonState::None,
+            crate::ButtonState::Held => ButtonState::Held,
+            crate::ButtonState::None => ButtonState::None,
         };
     }
+
+
+    // Set the current gamepad if it's not set yet
+    if let Some((new, _)) = input.gilrs.gamepads().next() {
+        input.gamepad.get_or_insert(new);
+    }
+
+    // Update the gamepad axii and buttson
+    if let Some(id) = input.gamepad {
+        if let Some(gamepad) = input.gilrs.connected_gamepad(id) {
+            // TODO: This
+        } else {
+            input.gamepad = None;
+        }
+    } 
+
+    // TODO: Write gamepad support using gilrs
 }
 
 // This system will automatically insert the input resource and update it each frame using the window events

@@ -7,6 +7,7 @@ fn init(world: &mut World, user: Option<PathBuf>) {
     // Create a new asset loader / cacher
     let loader = Assets::new(user);
 
+    /*
     // Load the default shaders
     persistent!(loader, "engine/shaders/scene/pbr/models.func.glsl");
     persistent!(loader, "engine/shaders/scene/pbr/pbr.vrtx.glsl");
@@ -40,6 +41,7 @@ fn init(world: &mut World, user: Option<PathBuf>) {
 
     // Load the default texutres
     persistent!(loader, "engine/textures/integration.png");
+    */
 
     // Insert the loader
     world.insert(loader);
