@@ -1,4 +1,6 @@
-use crate::{mask, Archetype, Component, ComponentColumn, Mask, MaskHashMap};
+use crate::{
+    mask, Archetype, Component, ComponentColumn, Mask, MaskHashMap,
+};
 
 // An owned layout trait will be implemented for owned tuples that contain a set of components
 pub trait OwnedBundle<'a>
@@ -21,7 +23,9 @@ where
     }
 
     // Get the storage tables once and for all
-    fn prepare(archetype: &'a mut Archetype) -> Option<Self::Storages>;
+    fn prepare(
+        archetype: &'a mut Archetype,
+    ) -> Option<Self::Storages>;
 
     // Push an element into those tables
     fn push(storages: &mut Self::Storages, bundle: Self);
@@ -51,7 +55,9 @@ impl<'a, T: Component> OwnedBundle<'a> for T {
             .unwrap()
     }
 
-    fn prepare(archetype: &'a mut Archetype) -> Option<Self::Storages> {
+    fn prepare(
+        archetype: &'a mut Archetype,
+    ) -> Option<Self::Storages> {
         archetype.components_mut::<T>()
     }
 
@@ -60,7 +66,8 @@ impl<'a, T: Component> OwnedBundle<'a> for T {
     }
 
     fn default_tables() -> MaskHashMap<Box<dyn ComponentColumn>> {
-        let boxed: Box<dyn ComponentColumn> = Box::new(Vec::<T>::new());
+        let boxed: Box<dyn ComponentColumn> =
+            Box::new(Vec::<T>::new());
         let mask = mask::<T>();
         MaskHashMap::from_iter(std::iter::once((mask, boxed)))
     }
@@ -70,7 +77,8 @@ impl<'a, T: Component> OwnedBundle<'a> for T {
         index: usize,
     ) -> Option<Self> {
         let boxed = tables.get_mut(&mask::<T>())?;
-        let vec = boxed.as_any_mut().downcast_mut::<Vec<T>>().unwrap();
+        let vec =
+            boxed.as_any_mut().downcast_mut::<Vec<T>>().unwrap();
         Some(vec.swap_remove(index))
     }
 }

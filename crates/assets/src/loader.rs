@@ -28,7 +28,14 @@ pub struct AsyncHandle<A: Asset> {
 pub struct Assets {
     // Keep track of the assets that were sucessfully loaded
     // The value corresponding to each key might be None in the case that the asset did not load
-    assets: Arc<RwLock<SlotMap<DefaultKey, Option<Box<dyn Any + Send + Sync + Sync>>>>>,
+    assets: Arc<
+        RwLock<
+            SlotMap<
+                DefaultKey,
+                Option<Box<dyn Any + Send + Sync + Sync>>,
+            >,
+        >,
+    >,
 
     // Keep track of the bytes that were loaded in other threads
     // The value might be none in the case that the bytes were not loaded
@@ -46,7 +53,8 @@ pub struct Assets {
 impl Assets {
     // Create a new asset loader using a path to the user defined asset folder (if there is one)
     pub fn new(user: Option<PathBuf>) -> Self {
-        let (sender, receiver) = std::sync::mpsc::channel::<DefaultKey>();
+        let (sender, receiver) =
+            std::sync::mpsc::channel::<DefaultKey>();
 
         Self {
             assets: Default::default(),
@@ -96,13 +104,21 @@ impl Assets {
     }
 
     // Load an asset using some explicit/default loading arguments
-    pub fn load<'s, 'args, A: Asset>(&self, input: impl AssetInput<'s, 'args, A>) -> Option<A> {
+    pub fn load<'s, 'args, A: Asset>(
+        &self,
+        input: impl AssetInput<'s, 'args, A>,
+    ) -> Option<A> {
         // Check if the extension is valid
         let path = PathBuf::from_str(input.path()).unwrap();
-        let (_, extension) = path.file_name().and_then(OsStr::to_str)?.split_once('.')?;
+        let (_, extension) = path
+            .file_name()
+            .and_then(OsStr::to_str)?
+            .split_once('.')?;
 
         // If the asset has no extensions, we shall not check
-        ((A::extensions().contains(&extension)) || A::extensions().is_empty()).then_some(())?;
+        ((A::extensions().contains(&extension))
+            || A::extensions().is_empty())
+        .then_some(())?;
         unsafe { self.load_unchecked(input) }
     }
 
@@ -147,7 +163,9 @@ impl Assets {
             } else {
                 // TODO: Proper error logging
                 let mut write = bytes.write();
-                let bytes = super::raw::read(&path, user.as_ref().unwrap()).unwrap();
+                let bytes =
+                    super::raw::read(&path, user.as_ref().unwrap())
+                        .unwrap();
                 let arc: Arc<[u8]> = Arc::from(bytes);
                 write.insert(path.clone(), arc.clone());
                 arc
@@ -189,13 +207,18 @@ impl Assets {
             .file_name()
             .and_then(OsStr::to_str)?
             .split_once('.')?;
-        ((A::extensions().contains(&extension)) || A::extensions().is_empty()).then_some(())?;
+        ((A::extensions().contains(&extension))
+            || A::extensions().is_empty())
+        .then_some(())?;
         Some(unsafe { self.async_load_unchecked(input, threadpool) })
     }
 
     // This will check if the asset loader finished loading a specific asset using it's handle
     // This requires the arguments of the asset to live as long as 'static
-    pub fn was_loaded<A: Asset + Send + Sync>(&self, handle: &AsyncHandle<A>) -> bool
+    pub fn was_loaded<A: Asset + Send + Sync>(
+        &self,
+        handle: &AsyncHandle<A>,
+    ) -> bool
     where
         A::Args<'static>: Send + Sync,
     {
@@ -205,7 +228,10 @@ impl Assets {
 
     // This will wait until the asset referenced by this handle has finished loading
     // This requires the arguments of the asset to live as long as 'static
-    pub fn wait<A: Asset + Send + Sync>(&self, handle: AsyncHandle<A>) -> A
+    pub fn wait<A: Asset + Send + Sync>(
+        &self,
+        handle: AsyncHandle<A>,
+    ) -> A
     where
         A::Args<'static>: Send + Sync,
     {
@@ -225,7 +251,11 @@ impl Assets {
 
     // Load multiple assets that have the same type in multiple threads at the same time without checking their extensions
     // This does *not* require the arguments of the asset to live as long as 'static
-    pub unsafe fn batch_async_load_unchecked<'s, 'args, A: Asset + Send + Sync>(
+    pub unsafe fn batch_async_load_unchecked<
+        's,
+        'args,
+        A: Asset + Send + Sync,
+    >(
         &self,
         inputs: Vec<impl AssetInput<'s, 'args, A> + Send + Sync>,
         threadpool: &mut ThreadPool,
@@ -261,8 +291,11 @@ impl Assets {
                     } else {
                         // TODO: Proper error logging
                         let mut write = bytes.write();
-                        let bytes =
-                            super::raw::read(&path, user.as_ref().as_ref().unwrap()).unwrap();
+                        let bytes = super::raw::read(
+                            &path,
+                            user.as_ref().as_ref().unwrap(),
+                        )
+                        .unwrap();
                         let arc: Arc<[u8]> = Arc::from(bytes);
                         write.insert(path.clone(), arc.clone());
                         arc
@@ -309,7 +342,9 @@ impl Assets {
                 .file_name()
                 .and_then(OsStr::to_str)?
                 .split_once('.')?;
-            ((A::extensions().contains(&extension)) || A::extensions().is_empty()).then_some(())?;
+            ((A::extensions().contains(&extension))
+                || A::extensions().is_empty())
+            .then_some(())?;
             Some(())
         };
 

@@ -2,7 +2,8 @@ use math::BitSet;
 
 use crate::{
     registry::{self},
-    Archetype, Component, LayoutAccess, Mask, QueryLayoutMut, QueryLayoutRef, Scene, StateColumn,
+    Archetype, Component, LayoutAccess, Mask, QueryLayoutMut,
+    QueryLayoutRef, Scene, StateColumn,
 };
 use std::marker::PhantomData;
 
@@ -19,20 +20,33 @@ pub trait QueryFilter: 'static {
     fn prepare() -> Self::Cached;
 
     // Evaluate a single archetype to check if it passes the filter
-    fn evaluate_archetype(cached: Self::Cached, archetype: &Archetype) -> bool;
+    fn evaluate_archetype(
+        cached: Self::Cached,
+        archetype: &Archetype,
+    ) -> bool;
 
     // Cache the state columns of a specific archetype
-    fn cache_columns<'a>(cached: Self::Cached, archetype: &'a Archetype) -> Self::Columns<'a>;
+    fn cache_columns<'a>(
+        cached: Self::Cached,
+        archetype: &'a Archetype,
+    ) -> Self::Columns<'a>;
 
     // Evaluate a single chunk to check if all the entries within it pass the filter
     // When the bit is set, it means that the entry passed. If it's not set, then the entry didn't pass the filter
-    fn evaluate_chunk(columns: Self::Columns<'_>, index: usize) -> usize;
+    fn evaluate_chunk(
+        columns: Self::Columns<'_>,
+        index: usize,
+    ) -> usize;
 }
 
 // Given a scene and a specific filter, filter out the archetypes
 // This will also prepare the filter for later by caching required data
 // Only used internally by the mutable query
-pub(super) fn archetypes_mut<'s, L: QueryLayoutMut<'s>, F: QueryFilter>(
+pub(super) fn archetypes_mut<
+    's,
+    L: QueryLayoutMut<'s>,
+    F: QueryFilter,
+>(
     scene: &mut Scene,
 ) -> (LayoutAccess, Vec<&mut Archetype>, F::Cached) {
     let mask = L::reduce(|a, b| a | b);
@@ -41,7 +55,9 @@ pub(super) fn archetypes_mut<'s, L: QueryLayoutMut<'s>, F: QueryFilter>(
         .archetypes_mut()
         .iter_mut()
         .filter_map(move |(&archetype_mask, archetype)| {
-            (!archetype.is_empty() && archetype_mask.contains(mask.both())).then_some(archetype)
+            (!archetype.is_empty()
+                && archetype_mask.contains(mask.both()))
+            .then_some(archetype)
         })
         .filter(|a| F::evaluate_archetype(cached, a))
         .collect::<Vec<_>>();
@@ -52,7 +68,11 @@ pub(super) fn archetypes_mut<'s, L: QueryLayoutMut<'s>, F: QueryFilter>(
 // Given a scene and a specific filter, filter out the archetypes
 // This will also prepare the filter for later by caching required data
 // Only used internally by the immutable query
-pub(super) fn archetypes<'s, L: QueryLayoutRef<'s>, F: QueryFilter>(
+pub(super) fn archetypes<
+    's,
+    L: QueryLayoutRef<'s>,
+    F: QueryFilter,
+>(
     scene: &Scene,
 ) -> (Mask, Vec<&Archetype>, F::Cached) {
     let mask = L::reduce(|a, b| a | b);
@@ -61,7 +81,9 @@ pub(super) fn archetypes<'s, L: QueryLayoutRef<'s>, F: QueryFilter>(
         .archetypes()
         .iter()
         .filter_map(move |(&archetype_mask, archetype)| {
-            (!archetype.is_empty() && archetype_mask.contains(mask.shared())).then_some(archetype)
+            (!archetype.is_empty()
+                && archetype_mask.contains(mask.shared()))
+            .then_some(archetype)
         })
         .filter(|a| F::evaluate_archetype(cached, a))
         .collect::<Vec<_>>();
@@ -77,7 +99,8 @@ pub(super) fn generate_bitset_chunks<'a, F: QueryFilter>(
     // Filter the entries by chunks of 64 entries at a time
     let iterator = archetypes.map(|archetype| {
         let columns = F::cache_columns(cached, archetype);
-        let chunks = archetype.entities().len() as f32 / usize::BITS as f32;
+        let chunks =
+            archetype.entities().len() as f32 / usize::BITS as f32;
         let chunks = chunks.ceil() as usize;
         BitSet::from_chunks_iter(
             (0..chunks)
@@ -95,7 +118,6 @@ pub struct Wrap<T: QueryFilter>(PhantomData<T>);
 
 // Filter sources based on components
 pub struct Added<T: Component>(PhantomData<T>);
-pub struct Removed<T: Component>(PhantomData<T>);
 pub struct Modified<T: Component>(PhantomData<T>);
 pub struct Contains<T: Component>(PhantomData<T>);
 
@@ -104,9 +126,18 @@ pub struct Always(());
 pub struct Never(());
 
 // Query filter operators
-pub struct And<A: QueryFilter, B: QueryFilter>(PhantomData<A>, PhantomData<B>);
-pub struct Or<A: QueryFilter, B: QueryFilter>(PhantomData<A>, PhantomData<B>);
-pub struct Xor<A: QueryFilter, B: QueryFilter>(PhantomData<A>, PhantomData<B>);
+pub struct And<A: QueryFilter, B: QueryFilter>(
+    PhantomData<A>,
+    PhantomData<B>,
+);
+pub struct Or<A: QueryFilter, B: QueryFilter>(
+    PhantomData<A>,
+    PhantomData<B>,
+);
+pub struct Xor<A: QueryFilter, B: QueryFilter>(
+    PhantomData<A>,
+    PhantomData<B>,
+);
 pub struct Not<A: QueryFilter>(PhantomData<A>);
 
 impl<T: Component> QueryFilter for Added<T> {
@@ -117,15 +148,24 @@ impl<T: Component> QueryFilter for Added<T> {
         registry::mask::<T>()
     }
 
-    fn evaluate_archetype(_cached: Self::Cached, _archetype: &Archetype) -> bool {
+    fn evaluate_archetype(
+        _cached: Self::Cached,
+        _archetype: &Archetype,
+    ) -> bool {
         true
     }
 
-    fn cache_columns(cached: Self::Cached, archetype: &Archetype) -> Self::Columns<'_> {
+    fn cache_columns(
+        cached: Self::Cached,
+        archetype: &Archetype,
+    ) -> Self::Columns<'_> {
         archetype.state_table().get(&cached)
     }
 
-    fn evaluate_chunk(columns: Self::Columns<'_>, index: usize) -> usize {
+    fn evaluate_chunk(
+        columns: Self::Columns<'_>,
+        index: usize,
+    ) -> usize {
         columns
             .map(|c| c.get(index).unwrap().added)
             .unwrap_or_default()
@@ -140,15 +180,24 @@ impl<T: Component> QueryFilter for Modified<T> {
         registry::mask::<T>()
     }
 
-    fn evaluate_archetype(_cached: Self::Cached, _archetype: &Archetype) -> bool {
+    fn evaluate_archetype(
+        _cached: Self::Cached,
+        _archetype: &Archetype,
+    ) -> bool {
         true
     }
 
-    fn cache_columns(cached: Self::Cached, archetype: &Archetype) -> Self::Columns<'_> {
+    fn cache_columns(
+        cached: Self::Cached,
+        archetype: &Archetype,
+    ) -> Self::Columns<'_> {
         archetype.state_table().get(&cached)
     }
 
-    fn evaluate_chunk(columns: Self::Columns<'_>, index: usize) -> usize {
+    fn evaluate_chunk(
+        columns: Self::Columns<'_>,
+        index: usize,
+    ) -> usize {
         columns
             .map(|c| c.get(index).unwrap().modified)
             .unwrap_or_default()
@@ -163,13 +212,23 @@ impl<T: Component> QueryFilter for Contains<T> {
         registry::mask::<T>()
     }
 
-    fn evaluate_archetype(cached: Self::Cached, archetype: &Archetype) -> bool {
+    fn evaluate_archetype(
+        cached: Self::Cached,
+        archetype: &Archetype,
+    ) -> bool {
         archetype.mask().contains(cached)
     }
 
-    fn cache_columns(_cached: Self::Cached, _archetype: &Archetype) -> Self::Columns<'_> {}
+    fn cache_columns(
+        _cached: Self::Cached,
+        _archetype: &Archetype,
+    ) -> Self::Columns<'_> {
+    }
 
-    fn evaluate_chunk(_columns: Self::Columns<'_>, _index: usize) -> usize {
+    fn evaluate_chunk(
+        _columns: Self::Columns<'_>,
+        _index: usize,
+    ) -> usize {
         usize::MAX
     }
 }
@@ -180,13 +239,23 @@ impl QueryFilter for Always {
 
     fn prepare() -> Self::Cached {}
 
-    fn evaluate_archetype(_cached: Self::Cached, _archetype: &Archetype) -> bool {
+    fn evaluate_archetype(
+        _cached: Self::Cached,
+        _archetype: &Archetype,
+    ) -> bool {
         true
     }
 
-    fn cache_columns(_cached: Self::Cached, _archetype: &Archetype) -> Self::Columns<'_> {}
+    fn cache_columns(
+        _cached: Self::Cached,
+        _archetype: &Archetype,
+    ) -> Self::Columns<'_> {
+    }
 
-    fn evaluate_chunk(_columns: Self::Columns<'_>, _index: usize) -> usize {
+    fn evaluate_chunk(
+        _columns: Self::Columns<'_>,
+        _index: usize,
+    ) -> usize {
         usize::MAX
     }
 }
@@ -197,15 +266,24 @@ impl QueryFilter for Never {
 
     fn prepare() -> Self::Cached {}
 
-    fn evaluate_archetype(_cached: Self::Cached, _archetype: &Archetype) -> bool {
+    fn evaluate_archetype(
+        _cached: Self::Cached,
+        _archetype: &Archetype,
+    ) -> bool {
         false
     }
 
-    fn cache_columns(_cached: Self::Cached, _archetype: &Archetype) -> Self::Columns<'_> {
+    fn cache_columns(
+        _cached: Self::Cached,
+        _archetype: &Archetype,
+    ) -> Self::Columns<'_> {
         panic!()
     }
 
-    fn evaluate_chunk(_columns: Self::Columns<'_>, _index: usize) -> usize {
+    fn evaluate_chunk(
+        _columns: Self::Columns<'_>,
+        _index: usize,
+    ) -> usize {
         panic!()
     }
 }
@@ -219,19 +297,30 @@ impl<A: QueryFilter, B: QueryFilter> QueryFilter for And<A, B> {
         (A::prepare(), B::prepare())
     }
 
-    fn evaluate_archetype(cached: Self::Cached, archetype: &Archetype) -> bool {
-        A::evaluate_archetype(cached.0, archetype) && B::evaluate_archetype(cached.1, archetype)
+    fn evaluate_archetype(
+        cached: Self::Cached,
+        archetype: &Archetype,
+    ) -> bool {
+        A::evaluate_archetype(cached.0, archetype)
+            && B::evaluate_archetype(cached.1, archetype)
     }
 
-    fn cache_columns(cached: Self::Cached, archetype: &Archetype) -> Self::Columns<'_> {
+    fn cache_columns(
+        cached: Self::Cached,
+        archetype: &Archetype,
+    ) -> Self::Columns<'_> {
         (
             A::cache_columns(cached.0, archetype),
             B::cache_columns(cached.1, archetype),
         )
     }
 
-    fn evaluate_chunk(columns: Self::Columns<'_>, index: usize) -> usize {
-        A::evaluate_chunk(columns.0, index) & B::evaluate_chunk(columns.1, index)
+    fn evaluate_chunk(
+        columns: Self::Columns<'_>,
+        index: usize,
+    ) -> usize {
+        A::evaluate_chunk(columns.0, index)
+            & B::evaluate_chunk(columns.1, index)
     }
 }
 
@@ -243,19 +332,30 @@ impl<A: QueryFilter, B: QueryFilter> QueryFilter for Or<A, B> {
         (A::prepare(), B::prepare())
     }
 
-    fn evaluate_archetype(cached: Self::Cached, archetype: &Archetype) -> bool {
-        A::evaluate_archetype(cached.0, archetype) || B::evaluate_archetype(cached.1, archetype)
+    fn evaluate_archetype(
+        cached: Self::Cached,
+        archetype: &Archetype,
+    ) -> bool {
+        A::evaluate_archetype(cached.0, archetype)
+            || B::evaluate_archetype(cached.1, archetype)
     }
 
-    fn cache_columns(cached: Self::Cached, archetype: &Archetype) -> Self::Columns<'_> {
+    fn cache_columns(
+        cached: Self::Cached,
+        archetype: &Archetype,
+    ) -> Self::Columns<'_> {
         (
             A::cache_columns(cached.0, archetype),
             B::cache_columns(cached.1, archetype),
         )
     }
 
-    fn evaluate_chunk(columns: Self::Columns<'_>, index: usize) -> usize {
-        A::evaluate_chunk(columns.0, index) | B::evaluate_chunk(columns.1, index)
+    fn evaluate_chunk(
+        columns: Self::Columns<'_>,
+        index: usize,
+    ) -> usize {
+        A::evaluate_chunk(columns.0, index)
+            | B::evaluate_chunk(columns.1, index)
     }
 }
 
@@ -267,19 +367,30 @@ impl<A: QueryFilter, B: QueryFilter> QueryFilter for Xor<A, B> {
         (A::prepare(), B::prepare())
     }
 
-    fn evaluate_archetype(cached: Self::Cached, archetype: &Archetype) -> bool {
-        A::evaluate_archetype(cached.0, archetype) ^ B::evaluate_archetype(cached.1, archetype)
+    fn evaluate_archetype(
+        cached: Self::Cached,
+        archetype: &Archetype,
+    ) -> bool {
+        A::evaluate_archetype(cached.0, archetype)
+            ^ B::evaluate_archetype(cached.1, archetype)
     }
 
-    fn cache_columns(cached: Self::Cached, archetype: &Archetype) -> Self::Columns<'_> {
+    fn cache_columns(
+        cached: Self::Cached,
+        archetype: &Archetype,
+    ) -> Self::Columns<'_> {
         (
             A::cache_columns(cached.0, archetype),
             B::cache_columns(cached.1, archetype),
         )
     }
 
-    fn evaluate_chunk(columns: Self::Columns<'_>, index: usize) -> usize {
-        A::evaluate_chunk(columns.0, index) ^ B::evaluate_chunk(columns.1, index)
+    fn evaluate_chunk(
+        columns: Self::Columns<'_>,
+        index: usize,
+    ) -> usize {
+        A::evaluate_chunk(columns.0, index)
+            ^ B::evaluate_chunk(columns.1, index)
     }
 }
 
@@ -291,15 +402,24 @@ impl<A: QueryFilter> QueryFilter for Not<A> {
         A::prepare()
     }
 
-    fn evaluate_archetype(cached: Self::Cached, archetype: &Archetype) -> bool {
+    fn evaluate_archetype(
+        cached: Self::Cached,
+        archetype: &Archetype,
+    ) -> bool {
         !A::evaluate_archetype(cached, archetype)
     }
 
-    fn cache_columns(cached: Self::Cached, archetype: &Archetype) -> Self::Columns<'_> {
+    fn cache_columns(
+        cached: Self::Cached,
+        archetype: &Archetype,
+    ) -> Self::Columns<'_> {
         A::cache_columns(cached, archetype)
     }
 
-    fn evaluate_chunk(columns: Self::Columns<'_>, index: usize) -> usize {
+    fn evaluate_chunk(
+        columns: Self::Columns<'_>,
+        index: usize,
+    ) -> usize {
         !A::evaluate_chunk(columns, index)
     }
 }
@@ -323,7 +443,9 @@ pub fn never() -> Wrap<Never> {
     Wrap::<Never>(PhantomData)
 }
 
-impl<A: QueryFilter, B: QueryFilter> std::ops::BitAnd<Wrap<B>> for Wrap<A> {
+impl<A: QueryFilter, B: QueryFilter> std::ops::BitAnd<Wrap<B>>
+    for Wrap<A>
+{
     type Output = Wrap<And<A, B>>;
 
     fn bitand(self, _: Wrap<B>) -> Self::Output {
@@ -331,7 +453,9 @@ impl<A: QueryFilter, B: QueryFilter> std::ops::BitAnd<Wrap<B>> for Wrap<A> {
     }
 }
 
-impl<A: QueryFilter, B: QueryFilter> std::ops::BitOr<Wrap<B>> for Wrap<A> {
+impl<A: QueryFilter, B: QueryFilter> std::ops::BitOr<Wrap<B>>
+    for Wrap<A>
+{
     type Output = Wrap<Or<A, B>>;
 
     fn bitor(self, _: Wrap<B>) -> Self::Output {
@@ -339,7 +463,9 @@ impl<A: QueryFilter, B: QueryFilter> std::ops::BitOr<Wrap<B>> for Wrap<A> {
     }
 }
 
-impl<A: QueryFilter, B: QueryFilter> std::ops::BitXor<Wrap<B>> for Wrap<A> {
+impl<A: QueryFilter, B: QueryFilter> std::ops::BitXor<Wrap<B>>
+    for Wrap<A>
+{
     type Output = Wrap<Or<A, B>>;
 
     fn bitxor(self, _: Wrap<B>) -> Self::Output {

@@ -14,7 +14,10 @@ mod tests {
         let mut vec = Vec::new();
         for _x in 0..100 {
             let handle = loader
-                .async_load::<String>("test/text.txt", &mut threadpool)
+                .async_load::<String>(
+                    "test/text.txt",
+                    &mut threadpool,
+                )
                 .unwrap();
             vec.push(handle);
         }
@@ -28,7 +31,8 @@ mod tests {
         dbg!("Loading 100 sync assets");
         let i = Instant::now();
         for _x in 0..100 {
-            let _string = loader.load::<String>("test/text.txt").unwrap();
+            let _string =
+                loader.load::<String>("test/text.txt").unwrap();
         }
         dbg!(i.elapsed().as_millis());
     }

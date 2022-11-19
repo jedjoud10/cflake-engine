@@ -4,10 +4,14 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
 };
 //use gui::egui::util::id_type_map::TypeId;
-use graphics::prelude::{FrameRateLimit, GraphicsSettings, WindowSettings};
+use graphics::prelude::{
+    FrameRateLimit, GraphicsSettings, WindowSettings,
+};
 use mimalloc::MiMalloc;
 use std::{any::TypeId, path::PathBuf};
-use world::{Event, Init, Shutdown, State, System, Systems, Update, World};
+use world::{
+    Event, Init, Shutdown, State, System, Systems, Update, World,
+};
 
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
@@ -54,7 +58,10 @@ impl App {
     }
 
     // Set the window framerate limit
-    pub fn set_frame_rate_limit(mut self, limit: FrameRateLimit) -> Self {
+    pub fn set_frame_rate_limit(
+        mut self,
+        limit: FrameRateLimit,
+    ) -> Self {
         self.window.limit = limit;
         self
     }
@@ -66,7 +73,10 @@ impl App {
     }
 
     // Set the assets folder for the user defined assets
-    pub fn set_user_assets_folder_path(mut self, path: impl TryInto<PathBuf>) -> Self {
+    pub fn set_user_assets_folder_path(
+        mut self,
+        path: impl TryInto<PathBuf>,
+    ) -> Self {
         self.user_assets_folder = Some(
             path.try_into()
                 .ok()
@@ -77,27 +87,39 @@ impl App {
 
     // Insert a new system into the app and execute it immediately
     // This will register all the necessary events automatically
-    pub fn insert_system(mut self, callback: impl FnOnce(&mut System) + 'static) -> Self {
+    pub fn insert_system(
+        mut self,
+        callback: impl FnOnce(&mut System) + 'static,
+    ) -> Self {
         self.systems.insert(callback);
         self
     }
 
     // Insert a single init event
-    pub fn insert_init<ID>(mut self, init: impl Event<Init, ID> + 'static) -> Self {
+    pub fn insert_init<ID>(
+        mut self,
+        init: impl Event<Init, ID> + 'static,
+    ) -> Self {
         self.insert_system(move |system: &mut System| {
             system.insert_init(init);
         })
     }
 
     // Insert a single update event
-    pub fn insert_update<ID>(mut self, update: impl Event<Update, ID> + 'static) -> Self {
+    pub fn insert_update<ID>(
+        mut self,
+        update: impl Event<Update, ID> + 'static,
+    ) -> Self {
         self.insert_system(move |system: &mut System| {
             system.insert_update(update);
         })
     }
 
     // Insert a single shutdown event
-    pub fn insert_shutdown<ID>(mut self, shutdown: impl Event<Shutdown, ID> + 'static) -> Self {
+    pub fn insert_shutdown<ID>(
+        mut self,
+        shutdown: impl Event<Shutdown, ID> + 'static,
+    ) -> Self {
         self.insert_system(move |system: &mut System| {
             system.insert_shutdown(shutdown);
         })
@@ -114,7 +136,10 @@ impl App {
     }
 
     // Insert a single device event
-    pub fn insert_device<ID>(mut self, event: impl Event<DeviceEvent, ID> + 'static) -> Self {
+    pub fn insert_device<ID>(
+        mut self,
+        event: impl Event<DeviceEvent, ID> + 'static,
+    ) -> Self {
         self.insert_system(move |system: &mut System| {
             system.insert_device(event);
         })
@@ -131,7 +156,9 @@ impl App {
 
         // Insert the asset loader
         let user = self.user_assets_folder.take();
-        self = self.insert_system(|system: &mut System| assets::system(system, user));
+        self = self.insert_system(|system: &mut System| {
+            assets::system(system, user)
+        });
 
         // Insert the graphics API
         let window = self.window.clone();
@@ -157,7 +184,9 @@ impl App {
 
         // Create the spin sleeper for frame limiting
         let builder = spin_sleep::LoopHelper::builder();
-        let mut sleeper = if let FrameRateLimit::Limited(limit) = self.window.limit {
+        let mut sleeper = if let FrameRateLimit::Limited(limit) =
+            self.window.limit
+        {
             builder.build_with_target_rate(limit)
         } else {
             builder.build_without_target_rate()
@@ -169,7 +198,8 @@ impl App {
             winit::event::Event::MainEventsCleared => {
                 sleeper.loop_start();
                 systems.update.execute(&mut world);
-                if let State::Stopped = *world.get::<State>().unwrap() {
+                if let State::Stopped = *world.get::<State>().unwrap()
+                {
                     *cf = ControlFlow::Exit;
                 }
                 sleeper.loop_sleep();

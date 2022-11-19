@@ -1,7 +1,8 @@
 use crate::{
     entity::{Entity, EntityLinkings},
-    mask, ArchetypeSet, Bundle, Component, ComponentColumn, EntitySet, Mask, MaskHashMap,
-    QueryLayoutRef, StateColumn, StateFlags,
+    mask, ArchetypeSet, Bundle, Component, ComponentColumn,
+    EntitySet, Mask, MaskHashMap, QueryLayoutRef, StateColumn,
+    StateFlags,
 };
 
 // We store two different column-major tables within the archetypes
@@ -25,7 +26,10 @@ impl Archetype {
         Self {
             mask,
             components: B::default_tables(),
-            states: MaskHashMap::from_iter(mask.units().map(|mask| (mask, StateColumn::default()))),
+            states: MaskHashMap::from_iter(
+                mask.units()
+                    .map(|mask| (mask, StateColumn::default())),
+            ),
             entities: Vec::new(),
         }
     }
@@ -150,18 +154,24 @@ impl Archetype {
     }
 
     // Try to get a mutable reference to the table for a specific component
-    pub(crate) fn components_mut<T: Component>(&mut self) -> Option<&mut Vec<T>> {
+    pub(crate) fn components_mut<T: Component>(
+        &mut self,
+    ) -> Option<&mut Vec<T>> {
         let boxed = self.components.get_mut(&mask::<T>())?;
         Some(boxed.as_any_mut().downcast_mut().unwrap())
     }
 
     // Try to get an immutable reference to the state table for a specific component
-    pub(crate) fn states<T: Component>(&self) -> Option<&StateColumn> {
+    pub(crate) fn states<T: Component>(
+        &self,
+    ) -> Option<&StateColumn> {
         self.states.get(&mask::<T>())
     }
 
     // Try to get a mutable reference to the state table for a specific component
-    pub(crate) fn states_mut<T: Component>(&mut self) -> Option<&mut StateColumn> {
+    pub(crate) fn states_mut<T: Component>(
+        &mut self,
+    ) -> Option<&mut StateColumn> {
         self.states.get_mut(&mask::<T>())
     }
 
@@ -171,7 +181,9 @@ impl Archetype {
     }
 
     // Get the component table mutably
-    pub(crate) fn component_table_mut(&mut self) -> &mut ComponentTable {
+    pub(crate) fn component_table_mut(
+        &mut self,
+    ) -> &mut ComponentTable {
         &mut self.components
     }
 
@@ -222,7 +234,11 @@ impl Archetype {
 
 // This will get two different archetypes using their masks
 // This assumes that the archetypes exist already in the set, and that we are using different masks
-fn split(set: &mut ArchetypeSet, mask1: Mask, mask2: Mask) -> (&mut Archetype, &mut Archetype) {
+fn split(
+    set: &mut ArchetypeSet,
+    mask1: Mask,
+    mask2: Mask,
+) -> (&mut Archetype, &mut Archetype) {
     assert_ne!(mask1, mask2);
     let a1 = set.get_mut(&mask1).unwrap() as *mut Archetype;
     let a2 = set.get_mut(&mask2).unwrap() as *mut Archetype;
@@ -270,8 +286,9 @@ pub(crate) fn add_bundle_unchecked<B: Bundle>(
             .iter()
             .map(|(mask, _)| (*mask, StateColumn::default()));
         let mask = B::reduce(|a, b| a | b);
-        let mut states =
-            MaskHashMap::from_iter(mask.units().map(|mask| (mask, StateColumn::default())));
+        let mut states = MaskHashMap::from_iter(
+            mask.units().map(|mask| (mask, StateColumn::default())),
+        );
         states.extend(base);
 
         let archetype = Archetype {

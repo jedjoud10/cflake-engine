@@ -50,7 +50,9 @@ impl KeyState {
 }
 
 // An axis can be mapped to a specific binding to be able to fetch it using a user defined name
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize,
+)]
 pub enum Axis {
     MousePositionX,
     MousePositionY,
@@ -130,14 +132,20 @@ impl InputAxisId for &'static str {
 impl Input {
     // Load the bindings from the user binding struct
     // If there are conflicting bindings, they will get overwritten
-    pub fn read_bindings_from_user_bindings(&mut self, user: InputUserBindings) {
+    pub fn read_bindings_from_user_bindings(
+        &mut self,
+        user: InputUserBindings,
+    ) {
         self.bindings.axis_bindings.extend(user.axis_bindings);
         self.bindings.key_bindings.extend(user.key_bindings);
     }
 
     // Load the bindings from a file
     // If there are conflicting bindings, they will get overwritten
-    pub fn read_bindings_from_file<P: AsRef<Path>>(&mut self, path: P) -> Option<()> {
+    pub fn read_bindings_from_file<P: AsRef<Path>>(
+        &mut self,
+        path: P,
+    ) -> Option<()> {
         let mut options = File::options();
         options.read(true);
         let mut string = String::new();
@@ -157,7 +165,10 @@ impl Input {
 
     // Write the bindings to a file
     // If the file does not exist, create it
-    pub fn write_bindings_to_file<P: AsRef<Path>>(&self, path: P) -> Option<()> {
+    pub fn write_bindings_to_file<P: AsRef<Path>>(
+        &self,
+        path: P,
+    ) -> Option<()> {
         let mut options = File::options();
         options.read(true);
         options.write(true);

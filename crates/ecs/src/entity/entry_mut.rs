@@ -1,7 +1,8 @@
 use super::Entity;
 use crate::{
-    add_bundle_unchecked, registry::mask, remove_bundle_unchecked, Archetype, ArchetypeSet, Bundle,
-    Component, EntityLinkings, EntitySet, QueryLayoutMut, QueryLayoutRef, Scene,
+    add_bundle_unchecked, registry::mask, remove_bundle_unchecked,
+    Archetype, ArchetypeSet, Bundle, Component, EntityLinkings,
+    EntitySet, QueryLayoutMut, QueryLayoutRef, Scene,
 };
 
 // Mutable entity entries allow the user to be able to modify components that are linked to the entity
@@ -15,7 +16,10 @@ pub struct EntryMut<'a> {
 
 impl<'a> EntryMut<'a> {
     // Create a mutable entry from the ecs manager and an entity
-    pub(crate) fn new(manager: &'a mut Scene, entity: Entity) -> Option<Self> {
+    pub(crate) fn new(
+        manager: &'a mut Scene,
+        entity: Entity,
+    ) -> Option<Self> {
         let linkings = *manager.entities.get(entity)?;
         let archetypes = &mut manager.archetypes;
         let entities = &mut manager.entities;
@@ -77,12 +81,20 @@ impl<'a> EntryMut<'a> {
 
     // Add a new component bundle to the entity, forcing it to switch archetypes
     // This will fail if we try to add some components that were already added
-    pub fn insert_bundle<B: Bundle>(&mut self, bundle: B) -> Option<()> {
+    pub fn insert_bundle<B: Bundle>(
+        &mut self,
+        bundle: B,
+    ) -> Option<()> {
         assert!(
             B::is_valid(),
             "Bundle is not valid, check the bundle for component collisions"
         );
-        add_bundle_unchecked(self.archetypes, self.entity, self.entities, bundle)?;
+        add_bundle_unchecked(
+            self.archetypes,
+            self.entity,
+            self.entities,
+            bundle,
+        )?;
         self.linkings = self.entities[self.entity];
         Some(())
     }
@@ -93,21 +105,14 @@ impl<'a> EntryMut<'a> {
             B::is_valid(),
             "Bundle is not valid, check the bundle for component collisions"
         );
-        let bundle = remove_bundle_unchecked(self.archetypes, self.entity, self.entities)?;
+        let bundle = remove_bundle_unchecked(
+            self.archetypes,
+            self.entity,
+            self.entities,
+        )?;
         self.linkings = self.entities[self.entity];
         Some(bundle)
     }
-
-    /*
-    // Get the current state row of our entity
-    pub fn states(&self) -> StateRow {
-        *self
-            .archetype()
-            .states()
-            .get(self.linkings().index())
-            .unwrap()
-    }
-    */
 
     // Check if the entity has a component linked to it
     pub fn contains<T: Component>(&self) -> bool {
@@ -115,7 +120,9 @@ impl<'a> EntryMut<'a> {
     }
 
     // Read certain components from the entry as if they were used in an immutable query
-    pub fn as_view<L: for<'s> QueryLayoutRef<'s>>(&self) -> Option<L> {
+    pub fn as_view<L: for<'s> QueryLayoutRef<'s>>(
+        &self,
+    ) -> Option<L> {
         // Make sure the layout can be fetched from the archetype
         let combined = L::reduce(|a, b| a | b).both();
         if combined & self.archetype().mask() != combined {
@@ -124,13 +131,17 @@ impl<'a> EntryMut<'a> {
 
         // Fetch the layout from the archetype
         let index = self.linkings().index;
-        let ptrs = unsafe { L::ptrs_from_archetype_unchecked(self.archetype()) };
+        let ptrs = unsafe {
+            L::ptrs_from_archetype_unchecked(self.archetype())
+        };
         let layout = unsafe { L::read_unchecked(ptrs, index) };
         Some(layout)
     }
 
     // Read certain components from the entry as if they were used in an mutable query
-    pub fn as_query<L: for<'s> QueryLayoutMut<'s>>(&mut self) -> Option<L> {
+    pub fn as_query<L: for<'s> QueryLayoutMut<'s>>(
+        &mut self,
+    ) -> Option<L> {
         assert!(
             L::is_valid(),
             "Query layout is not valid, check the layout for component collisions"
@@ -146,7 +157,9 @@ impl<'a> EntryMut<'a> {
 
         // Fetch the layout from the archetype
         let index = self.linkings().index;
-        let ptrs = unsafe { L::ptrs_from_mut_archetype_unchecked(self.archetype_mut()) };
+        let ptrs = unsafe {
+            L::ptrs_from_mut_archetype_unchecked(self.archetype_mut())
+        };
         let layout = unsafe { L::read_mut_unchecked(ptrs, index) };
 
         // Update the states based on the layout mask

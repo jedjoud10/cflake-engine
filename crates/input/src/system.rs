@@ -20,9 +20,11 @@ fn event(world: &mut World, ev: &DeviceEvent) {
             let delta = vek::Vec2::<f64>::from(*delta).as_::<f32>();
             input.axii.insert(Axis::MousePositionDeltaX, delta.x);
             input.axii.insert(Axis::MousePositionDeltaY, delta.y);
-            let x = input.axii.entry(Axis::MousePositionX).or_insert(0.0);
+            let x =
+                input.axii.entry(Axis::MousePositionX).or_insert(0.0);
             *x += delta.x;
-            let y = input.axii.entry(Axis::MousePositionY).or_insert(0.0);
+            let y =
+                input.axii.entry(Axis::MousePositionY).or_insert(0.0);
             *y += delta.y;
         }
 
@@ -30,11 +32,14 @@ fn event(world: &mut World, ev: &DeviceEvent) {
         DeviceEvent::MouseWheel { delta } => {
             let delta = match delta {
                 winit::event::MouseScrollDelta::LineDelta(_, y) => *y,
-                winit::event::MouseScrollDelta::PixelDelta(physical) => physical.x as f32,
+                winit::event::MouseScrollDelta::PixelDelta(
+                    physical,
+                ) => physical.x as f32,
             };
 
             input.axii.insert(Axis::MouseScrollDelta, delta);
-            let scroll = input.axii.entry(Axis::MouseScroll).or_insert(0.0);
+            let scroll =
+                input.axii.entry(Axis::MouseScroll).or_insert(0.0);
             *scroll += delta;
         }
 
@@ -42,12 +47,18 @@ fn event(world: &mut World, ev: &DeviceEvent) {
         DeviceEvent::Key(key) => {
             if let Some(keycode) = key.virtual_keycode {
                 match input.keys.entry(keycode) {
-                    std::collections::hash_map::Entry::Occupied(mut current) => {
+                    std::collections::hash_map::Entry::Occupied(
+                        mut current,
+                    ) => {
                         // Check if the key is "down" (either pressed or held)
-                        let down = matches!(*current.get(), KeyState::Pressed | KeyState::Held);
+                        let down = matches!(
+                            *current.get(),
+                            KeyState::Pressed | KeyState::Held
+                        );
 
                         // If the key is pressed while it is currently down, it repeated itself, and we must ignore it
-                        if down ^ (key.state == ElementState::Pressed) {
+                        if down ^ (key.state == ElementState::Pressed)
+                        {
                             current.insert(key.state.into());
                         }
                     }

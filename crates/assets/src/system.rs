@@ -19,8 +19,14 @@ fn init(world: &mut World, user: Option<PathBuf>) {
     persistent!(loader, "engine/shaders/projection.vrtx.glsl");
     persistent!(loader, "engine/shaders/depth.frag.glsl");
     persistent!(loader, "engine/shaders/scene/shadow.func.glsl");
-    persistent!(loader, "engine/shaders/scene/clustered/clustered.func.glsl");
-    persistent!(loader, "engine/shaders/scene/clustered/clustered.cmpt.glsl");
+    persistent!(
+        loader,
+        "engine/shaders/scene/clustered/clustered.func.glsl"
+    );
+    persistent!(
+        loader,
+        "engine/shaders/scene/clustered/clustered.cmpt.glsl"
+    );
     persistent!(loader, "engine/shaders/hdri/panorama.frag.glsl");
     persistent!(loader, "engine/shaders/hdri/diffuse.frag.glsl");
     persistent!(loader, "engine/shaders/hdri/specular.frag.glsl");

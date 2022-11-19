@@ -37,7 +37,10 @@ impl<'a> Data<'a> {
 pub trait Asset: Sized + 'static {
     type Args<'args>;
     fn extensions() -> &'static [&'static str];
-    fn deserialize<'args>(data: Data, args: Self::Args<'args>) -> Self;
+    fn deserialize<'args>(
+        data: Data,
+        args: Self::Args<'args>,
+    ) -> Self;
 }
 
 impl Asset for String {
@@ -47,7 +50,10 @@ impl Asset for String {
         &["txt"]
     }
 
-    fn deserialize<'args>(data: Data, _args: Self::Args<'args>) -> Self {
+    fn deserialize<'args>(
+        data: Data,
+        _args: Self::Args<'args>,
+    ) -> Self {
         std::thread::sleep(std::time::Duration::from_millis(1));
         String::from_utf8(data.bytes().to_vec()).unwrap()
     }

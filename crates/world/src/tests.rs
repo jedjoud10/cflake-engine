@@ -25,7 +25,8 @@ mod threadpool {
     #[test]
     fn hop() {
         let mut threadpool = ThreadPool::default();
-        let mut vec = (0..64).into_iter().map(|_| 100).collect::<Vec<u64>>();
+        let mut vec =
+            (0..64).into_iter().map(|_| 100).collect::<Vec<u64>>();
         let bitset = BitSet::from_pattern(|x| x % 2 == 0, 64);
         dbg!(&bitset);
 

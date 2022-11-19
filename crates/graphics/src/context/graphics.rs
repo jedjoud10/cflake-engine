@@ -1,7 +1,7 @@
 use std::ffi::{CStr, CString};
 
 use super::Window;
-use ash::{extensions::ext::DebugUtils, vk, Instance, Entry};
+use ash::{extensions::ext::DebugUtils, vk, Entry, Instance};
 use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
 use world::Resource;
 
@@ -15,7 +15,10 @@ pub struct GraphicsSettings {
 impl Default for GraphicsSettings {
     fn default() -> Self {
         Self {
-            validation_layers: vec![CString::new("VK_LAYER_KHRONOS_validation".to_owned()).unwrap()],
+            validation_layers: vec![CString::new(
+                "VK_LAYER_KHRONOS_validation".to_owned(),
+            )
+            .unwrap()],
             instance_extensions: vec![DebugUtils::name().to_owned()],
         }
     }
@@ -43,7 +46,8 @@ impl Graphics {
     ) -> Graphics {
         // Load the loading functions
         let entry = Entry::load().unwrap();
-        let version = entry.try_enumerate_instance_version().unwrap().unwrap();
+        let version =
+            entry.try_enumerate_instance_version().unwrap().unwrap();
 
         // Get a window and display handle to the winit window
         let display_handle = window.raw_display_handle();
@@ -73,10 +77,16 @@ impl Graphics {
             .pfn_user_callback(Some(super::debug_callback));
 
         // Get the required instance extensions from the handle
-        let mut extension_names_ptrs = ash_window::enumerate_required_extensions(display_handle)
-            .unwrap()
-            .to_vec();
-        extension_names_ptrs.extend(graphic_settings.instance_extensions.iter().map(|s| s.as_ptr()));
+        let mut extension_names_ptrs =
+            ash_window::enumerate_required_extensions(display_handle)
+                .unwrap()
+                .to_vec();
+        extension_names_ptrs.extend(
+            graphic_settings
+                .instance_extensions
+                .iter()
+                .map(|s| s.as_ptr()),
+        );
 
         // Get the required validation layers
         let validation_ptrs = graphic_settings
@@ -93,12 +103,17 @@ impl Graphics {
             .push_next(&mut debug_messenger_create_info);
 
         // Create the instance
-        let instance = entry.create_instance(&instance_create_info, None).unwrap();
+        let instance = entry
+            .create_instance(&instance_create_info, None)
+            .unwrap();
 
         // Create the debug messenger and the debug utils
         let debug_utils = DebugUtils::new(&entry, &instance);
         let debug_messenger = debug_utils
-            .create_debug_utils_messenger(&debug_messenger_create_info, None)
+            .create_debug_utils_messenger(
+                &debug_messenger_create_info,
+                None,
+            )
             .unwrap();
 
         Self {
@@ -121,8 +136,10 @@ impl Graphics {
 
     // Destroy the context after we've done using it
     pub(crate) unsafe fn destroy(self) {
-        self.debug_utils
-            .destroy_debug_utils_messenger(self.debug_messenger, None);
+        self.debug_utils.destroy_debug_utils_messenger(
+            self.debug_messenger,
+            None,
+        );
         self.instance.destroy_instance(None);
     }
 }

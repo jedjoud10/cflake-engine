@@ -11,7 +11,8 @@ pub fn aabb_aabb(aabb: &AABB, other: &AABB) -> bool {
 
 // Check if a point is inside an AABB
 pub fn point_aabb(point: &vek::Vec3<f32>, aabb: &AABB) -> bool {
-    aabb.min.partial_cmple(point).reduce_and() && aabb.max.partial_cmpgt(point).reduce_and()
+    aabb.min.partial_cmple(point).reduce_and()
+        && aabb.max.partial_cmpgt(point).reduce_and()
 }
 
 // Check if an AABB is intersecting a sphere
@@ -22,7 +23,8 @@ pub fn aabb_sphere(aabb: &AABB, sphere: &Sphere) -> bool {
 
 // Check if a sphere is intersecting a sphere
 pub fn sphere_sphere(first: &Sphere, second: &Sphere) -> bool {
-    vek::Vec3::distance(second.center, second.center) < (first.radius + second.radius)
+    vek::Vec3::distance(second.center, second.center)
+        < (first.radius + second.radius)
 }
 
 // Check if a point is inside a sphere

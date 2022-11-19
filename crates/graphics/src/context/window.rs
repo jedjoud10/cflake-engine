@@ -43,12 +43,23 @@ impl Window {
         let window_handle = raw.raw_window_handle();
 
         // Create a surface loader and the surface itself
-        let surface =
-            ash_window::create_surface(&entry, &instance, display_handle, window_handle, None)
-                .unwrap();
-        let surface_loader = ash::extensions::khr::Surface::new(&entry, &instance);
+        let surface = ash_window::create_surface(
+            &entry,
+            &instance,
+            display_handle,
+            window_handle,
+            None,
+        )
+        .unwrap();
+        let surface_loader =
+            ash::extensions::khr::Surface::new(&entry, &instance);
 
-        Self { settings: window_settings, raw, surface, surface_loader }
+        Self {
+            settings: window_settings,
+            raw,
+            surface,
+            surface_loader,
+        }
     }
 
     // Get access to the internal settings this window used during initialization

@@ -1,4 +1,6 @@
-use crate::{Boundable, Movable, SharpVertices, SurfaceArea, Volume, AABB};
+use crate::{
+    Boundable, Movable, SharpVertices, SurfaceArea, Volume, AABB,
+};
 
 // A 3D cuboid that is defined by it's center and it's extent
 #[derive(Clone, Copy)]
@@ -55,8 +57,10 @@ impl SharpVertices for Cuboid {
 
     // http://paulbourke.net/geometry/polygonise/
     fn points(&self) -> Self::Points {
-        let max = self.center + vek::Vec3::<f32>::from(self.extent / 2.0);
-        let min = self.center - vek::Vec3::<f32>::from(self.extent / 2.0);
+        let max =
+            self.center + vek::Vec3::<f32>::from(self.extent / 2.0);
+        let min =
+            self.center - vek::Vec3::<f32>::from(self.extent / 2.0);
 
         [
             min,

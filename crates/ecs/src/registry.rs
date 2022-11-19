@@ -15,7 +15,8 @@ where
 // Registered components
 lazy_static! {
     static ref NEXT: Mutex<Mask> = Mutex::new(Mask::one());
-    static ref REGISTERED: RwLock<AHashMap<TypeId, Mask>> = RwLock::new(AHashMap::new());
+    static ref REGISTERED: RwLock<AHashMap<TypeId, Mask>> =
+        RwLock::new(AHashMap::new());
 }
 
 // Return the registered mask of the component (or register it if needed)
@@ -36,7 +37,8 @@ pub fn mask<T: Component>() -> Mask {
         locked.insert(TypeId::of::<T>(), copy);
         const ERR: &str = "Ran out of component bits to use!
         Use the 'extended-bitmasks' feature to add more bits in the bitmask if needed";
-        *bit = RawBitMask::from(copy).checked_shl(1).expect(ERR).into();
+        *bit =
+            RawBitMask::from(copy).checked_shl(1).expect(ERR).into();
         copy
     }
 }

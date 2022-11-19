@@ -14,21 +14,26 @@ impl BitSet {
     }
 
     // Create a bitset from an iterator of chunks
-    pub fn from_chunks_iter(iter: impl Iterator<Item = usize>) -> Self {
+    pub fn from_chunks_iter(
+        iter: impl Iterator<Item = usize>,
+    ) -> Self {
         Self(iter.collect(), false)
     }
 
     // Create a bitset from an iterator of booleans
     pub fn from_iter(iter: impl Iterator<Item = bool>) -> Self {
         let chunks = iter.chunks(usize::BITS as usize);
-        let chunks = chunks
-            .into_iter()
-            .map(|chunk| chunk.fold(0, |accum, bit| accum << 1 | (bit as usize)));
+        let chunks = chunks.into_iter().map(|chunk| {
+            chunk.fold(0, |accum, bit| accum << 1 | (bit as usize))
+        });
         Self(chunks.collect(), false)
     }
 
     // Create a bitset using a specific function and the number of elements
-    pub fn from_pattern(callback: impl FnMut(usize) -> bool, count: usize) -> Self {
+    pub fn from_pattern(
+        callback: impl FnMut(usize) -> bool,
+        count: usize,
+    ) -> Self {
         let iter = (0..count).into_iter().map(callback);
         Self::from_iter(iter)
     }
@@ -120,7 +125,8 @@ impl BitSet {
                 let result = if i == start_chunk {
                     // Starting chunk, take start_location in consideration
                     let inverted = !((1 << start_location) - 1);
-                    (chunk & inverted).trailing_zeros() as usize + offset
+                    (chunk & inverted).trailing_zeros() as usize
+                        + offset
                 } else {
                     // Dont care, start at 0 as index
                     chunk.trailing_zeros() as usize + offset
@@ -145,7 +151,8 @@ impl BitSet {
                 let result = if i == start_chunk {
                     // Starting chunk, take start_location in consideration
                     let inverted = (1 << start_location) - 1;
-                    (chunk | inverted).trailing_ones() as usize + offset
+                    (chunk | inverted).trailing_ones() as usize
+                        + offset
                 } else {
                     // Dont care, start at 0 as index
                     chunk.trailing_ones() as usize + offset
@@ -158,7 +165,10 @@ impl BitSet {
 }
 
 impl Display for BitSet {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+    ) -> std::fmt::Result {
         for chunk in self.0.iter() {
             write!(f, "{:b}", *chunk)?;
         }
@@ -168,7 +178,10 @@ impl Display for BitSet {
 }
 
 impl Debug for BitSet {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+    ) -> std::fmt::Result {
         Display::fmt(self, f)
     }
 }

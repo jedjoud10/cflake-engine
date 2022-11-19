@@ -8,7 +8,10 @@ pub enum RegistrySortingError {
 }
 
 impl std::fmt::Debug for RegistrySortingError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+    ) -> std::fmt::Result {
         match self {
             RegistrySortingError::CyclicReference => write!(f, "Detected a cyclic reference when trying to sort stages"),
             RegistrySortingError::CyclicRuleReference((name, _)) => {
@@ -20,7 +23,10 @@ impl std::fmt::Debug for RegistrySortingError {
 }
 
 impl std::fmt::Display for RegistrySortingError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+    ) -> std::fmt::Result {
         std::fmt::Debug::fmt(&self, f)
     }
 }
@@ -35,7 +41,10 @@ pub enum StageError {
 }
 
 impl std::fmt::Debug for StageError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+    ) -> std::fmt::Result {
         match self {
             StageError::InvalidName => write!(f, "The given stage has an invalid name"),
             StageError::MissingRules => {
@@ -50,7 +59,10 @@ impl std::fmt::Debug for StageError {
 }
 
 impl std::fmt::Display for StageError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+    ) -> std::fmt::Result {
         std::fmt::Debug::fmt(&self, f)
     }
 }

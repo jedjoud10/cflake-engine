@@ -14,7 +14,11 @@ pub trait ComponentColumn {
 
     // Remove a component from the storage, and insert the return value into another component storage
     // This assumes that "other" is of the same type as Self
-    fn swap_remove_move(&mut self, index: usize, other: &mut dyn ComponentColumn);
+    fn swap_remove_move(
+        &mut self,
+        index: usize,
+        other: &mut dyn ComponentColumn,
+    );
 
     // Reserve some allocation space for the storage
     fn reserve(&mut self, additional: usize);
@@ -46,9 +50,14 @@ impl<T: Component> ComponentColumn for Vec<T> {
     }
 
     // Calls to Vec::swap_remove, and inserts the result into another storage
-    fn swap_remove_move(&mut self, index: usize, other: &mut dyn ComponentColumn) {
+    fn swap_remove_move(
+        &mut self,
+        index: usize,
+        other: &mut dyn ComponentColumn,
+    ) {
         let removed = self.swap_remove(index);
-        let other = other.as_any_mut().downcast_mut::<Self>().unwrap();
+        let other =
+            other.as_any_mut().downcast_mut::<Self>().unwrap();
         other.push(removed);
     }
 

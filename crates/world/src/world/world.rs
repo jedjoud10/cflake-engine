@@ -7,7 +7,9 @@ use std::{
 
 // The world is a unique container for multiple resources like ECS and assets
 // Each World can be created using the builder pattern with the help of an App
-pub struct World(pub(crate) AHashMap<TypeId, RefCell<Box<dyn Resource>>>);
+pub struct World(
+    pub(crate) AHashMap<TypeId, RefCell<Box<dyn Resource>>>,
+);
 
 // This is the main world state that the user can manually update to force the engine to stop running
 pub enum State {
@@ -25,7 +27,8 @@ impl World {
     // Insert a new resource into the world
     pub fn insert<R: Resource>(&mut self, resource: R) {
         let id = TypeId::of::<R>();
-        let returned = self.0.insert(id, RefCell::new(Box::new(resource)));
+        let returned =
+            self.0.insert(id, RefCell::new(Box::new(resource)));
         assert!(returned.is_none());
     }
 
@@ -51,7 +54,11 @@ impl World {
         self.0.get(&TypeId::of::<R>()).map(|cell| {
             let borrowed = cell.borrow_mut();
             let borrowed = RefMut::map(borrowed, |boxed| {
-                boxed.as_mut().as_any_mut().downcast_mut::<R>().unwrap()
+                boxed
+                    .as_mut()
+                    .as_any_mut()
+                    .downcast_mut::<R>()
+                    .unwrap()
             });
             Write(borrowed)
         })

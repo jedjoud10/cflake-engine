@@ -19,7 +19,9 @@ where
     }
 }
 
-impl<'s, 'args, A: Asset> AssetInput<'s, 'args, A> for (&'s str, A::Args<'args>) {
+impl<'s, 'args, A: Asset> AssetInput<'s, 'args, A>
+    for (&'s str, A::Args<'args>)
+{
     fn split(self) -> (&'s str, <A as Asset>::Args<'args>) {
         self
     }

@@ -5,7 +5,10 @@ pub use cuboid::*;
 pub use sphere::*;
 
 // A shape is a 3D geometrical object that takes space
-pub trait Shape: Movable + Boundable + Volume + SurfaceArea + Sync + Send {}
+pub trait Shape:
+    Movable + Boundable + Volume + SurfaceArea + Sync + Send
+{
+}
 
 // Shapes that have a concrete positions
 pub trait Movable {

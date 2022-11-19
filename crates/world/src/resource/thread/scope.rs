@@ -17,8 +17,9 @@ impl<'a> ThreadPoolScope<'a> {
         let function: BoxFn<'a> = Box::new(function);
 
         // Convert the lifetimed box into a static box
-        let function: BoxFn<'static> =
-            unsafe { std::mem::transmute::<BoxFn<'a>, BoxFn<'static>>(function) };
+        let function: BoxFn<'static> = unsafe {
+            std::mem::transmute::<BoxFn<'a>, BoxFn<'static>>(function)
+        };
 
         // Execute the task
         let task = ThreadedTask::Execute(function);
@@ -30,7 +31,10 @@ impl<'a> ThreadPoolScope<'a> {
     pub fn for_each<I: for<'i> SliceTuple<'i>>(
         &mut self,
         list: I,
-        function: impl Fn(<I as SliceTuple<'_>>::ItemTuple) + Send + Sync + 'a,
+        function: impl Fn(<I as SliceTuple<'_>>::ItemTuple)
+            + Send
+            + Sync
+            + 'a,
         batch_size: usize,
     ) {
         self.pool.for_each_async(list, function, None, batch_size)
@@ -41,12 +45,19 @@ impl<'a> ThreadPoolScope<'a> {
     pub fn for_each_filtered<I: for<'i> SliceTuple<'i>>(
         &mut self,
         list: I,
-        function: impl Fn(<I as SliceTuple<'_>>::ItemTuple) + Send + Sync + 'a,
+        function: impl Fn(<I as SliceTuple<'_>>::ItemTuple)
+            + Send
+            + Sync
+            + 'a,
         bitset: BitSet,
         batch_size: usize,
     ) {
-        self.pool
-            .for_each_async(list, function, Some(bitset), batch_size)
+        self.pool.for_each_async(
+            list,
+            function,
+            Some(bitset),
+            batch_size,
+        )
     }
 
     // Wait till all the threads finished executing

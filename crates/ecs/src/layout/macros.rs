@@ -1,6 +1,7 @@
 use crate::{
-    mask, Archetype, Component, ComponentColumn, LayoutAccess, Mask, MaskHashMap, OwnedBundle,
-    QueryItemMut, QueryItemRef, QueryLayoutMut, QueryLayoutRef,
+    mask, Archetype, Component, ComponentColumn, LayoutAccess, Mask,
+    MaskHashMap, OwnedBundle, QueryItemMut, QueryItemRef,
+    QueryLayoutMut, QueryLayoutRef,
 };
 use casey::lower;
 use seq_macro::seq;
@@ -149,8 +150,9 @@ tuple_impls! { C0 C1 C2 C3 C4 C5, 6 }
 #[cfg(feature = "extended-tuples")]
 mod extend {
     use crate::{
-        mask, name, Archetype, Component, ComponentColumn, LayoutAccess, Mask, MaskHashMap,
-        OwnedBundle, QueryItemMut, QueryItemRef, QueryLayoutMut, QueryLayoutRef,
+        mask, name, Archetype, Component, ComponentColumn,
+        LayoutAccess, Mask, MaskHashMap, OwnedBundle, QueryItemMut,
+        QueryItemRef, QueryLayoutMut, QueryLayoutRef,
     };
     use casey::lower;
     use seq_macro::seq;
