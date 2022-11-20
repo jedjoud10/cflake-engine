@@ -27,6 +27,7 @@ pub(crate) struct Swapchain {
     swapchain: vk::SwapchainKHR,
     swapchain_images: Vec<vk::Image>,
     swapchain_image_views: Vec<vk::ImageView>,
+    swapchain_command_buffers: Vec<vk::CommandBuffer>,
     image_index: u32,
     image_available_semaphore: vk::Semaphore,
     image_available_fence: vk::Fence,
@@ -85,6 +86,7 @@ impl Window {
         physical_device: &vk::PhysicalDevice,
         logical_device: &ash::Device,
         command_pool: &vk::CommandPool,
+        graphics_family_index: u32,
         command_buffers: &mut Vec<vk::CommandBuffer>,
     ) {
         // Get the supported surface formats khr
@@ -114,7 +116,7 @@ impl Window {
             .image_array_layers(1)
             .pre_transform(vk::SurfaceTransformFlagsKHR::IDENTITY)
             .composite_alpha(vk::CompositeAlphaFlagsKHR::OPAQUE)
-            .image_usage(vk::ImageUsageFlags::COLOR_ATTACHMENT) 
+            .image_usage(vk::ImageUsageFlags::COLOR_ATTACHMENT | vk::ImageUsageFlags::TRANSFER_DST) 
             .clipped(true)
             .image_sharing_mode(vk::SharingMode::EXCLUSIVE)
             .old_swapchain(vk::SwapchainKHR::null())
@@ -185,8 +187,6 @@ impl Window {
             let command_buffer = swapchain_command_buffers[i];
             let image_view = swapchain_image_views[i];
             let image = swapchain_images[i];
-            let image_layout = vk::ImageLayout::GENERAL;
-
             
             // Record the command buffer and set the clear frame
             let command_buffer_begin_info = vk::CommandBufferBeginInfo::builder()
@@ -195,17 +195,15 @@ impl Window {
             // Start recording the command buffer
             logical_device.begin_command_buffer(command_buffer, &command_buffer_begin_info).unwrap();
 
-            // Set the clear color of the image view
-            let mut clear_color_value = vk::ClearColorValue::default();
-            clear_color_value.float32 = [1.0, 1.0, 1.0, 1.0];
-
             let subresource_range = vk::ImageSubresourceRange::builder()
                 .aspect_mask(vk::ImageAspectFlags::COLOR)
                 .level_count(1)
                 .layer_count(1);
 
-            // Command to record
-            logical_device.cmd_clear_color_image(command_buffer, image, image_layout, &clear_color_value, &[*subresource_range]);
+            // Set the clear color of the image view
+            let mut clear_color_value = vk::ClearColorValue::default();
+            clear_color_value.float32 = [1.0, 1.0, 1.0, 1.0];
+            logical_device.cmd_clear_color_image(command_buffer, image, vk::ImageLayout::TRANSFER_DST_OPTIMAL, &clear_color_value, &[*subresource_range]);
 
             // Stop recording the command buffer
             logical_device.end_command_buffer(command_buffer).unwrap();
@@ -220,7 +218,31 @@ impl Window {
             image_index: 0,
             image_available_semaphore,
             image_available_fence,
+            swapchain_command_buffers,
         })
+    }
+
+    // Draw the main window swapchain sheize
+    pub(crate) unsafe fn draw(
+        &mut self,
+        device: &super::Device,
+    ) {
+        if let Some(swapchain) = &mut self.swapchain {
+            let (image_index, b) = swapchain.swapchain_loader.acquire_next_image(swapchain.swapchain, u64::MAX, vk::Semaphore::null(), vk::Fence::null()).unwrap();
+        
+            let command_buffer = swapchain.swapchain_command_buffers[image_index as usize];
+            let submit_info = *vk::SubmitInfo::builder()
+                .command_buffers(&[command_buffer]);
+
+            let queue = device.logical_device.get_device_queue(device.graphics_queue_index, 0);
+            device.logical_device.queue_submit(queue, &[submit_info], vk::Fence::null()).unwrap();
+
+            let present_info = *vk::PresentInfoKHR::builder()
+                .swapchains(&[swapchain.swapchain])
+                .image_indices(&[image_index]);
+
+            swapchain.swapchain_loader.queue_present(queue, &present_info).unwrap();
+        }
     }
 
     // Destroy the window after we've done using it
@@ -230,6 +252,8 @@ impl Window {
         logical_device: &ash::Device
     ) {
         let swapchain = self.swapchain.take().unwrap();
+        logical_device.destroy_semaphore(swapchain.image_available_semaphore, None);
+        logical_device.destroy_fence(swapchain.image_available_fence, None);
         swapchain.swapchain_loader.destroy_swapchain(swapchain.swapchain, None);
         for image_view in swapchain.swapchain_image_views {
             logical_device.destroy_image_view(image_view, None);

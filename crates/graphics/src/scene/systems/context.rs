@@ -51,6 +51,7 @@ fn init(
             &device.physical_device,
             &device.logical_device,
             &device.command_pool,
+            device.graphics_queue_index,
             &mut device.command_buffers,
         );
     }
@@ -83,6 +84,15 @@ fn shutdown(world: &mut World) {
     unsafe { graphics.destroy() };
 }
 
+fn update(world: &mut World) {
+    /*
+    let device = world.get_mut::<crate::context::Device>().unwrap();
+    let mut window = world.get_mut::<crate::context::Window>().unwrap();
+
+    unsafe { window.draw(&device) }
+    */
+}
+
 // Context system will just register the Vulkan context and create a simple window
 // This system will also handle window events like exiting
 pub fn system(
@@ -97,6 +107,7 @@ pub fn system(
         .before(user);
 
     system.insert_window(event);
+    system.insert_update(update);
 
     system.insert_shutdown(shutdown).after(post_user);
 }

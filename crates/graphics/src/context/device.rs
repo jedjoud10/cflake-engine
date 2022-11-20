@@ -10,6 +10,7 @@ pub struct Device {
     pub(crate) physical_device_memory_properties: PhysicalDeviceMemoryProperties,
     pub(crate) physical_device_features: PhysicalDeviceFeatures,
     pub(crate) physical_device_properties: PhysicalDeviceProperties,
+    pub(crate) graphics_queue_index: u32,
     pub(crate) command_buffers: Vec<vk::CommandBuffer>,
     pub(crate) command_pool: vk::CommandPool,
 }
@@ -72,7 +73,7 @@ impl Device {
             instance.get_physical_device_queue_family_properties(physical_device);
 
         // Find the index for the graphics queue family
-        let graphics_queue_index = queues
+        let graphics_family_index = queues
             .iter()
             .enumerate()
             .position(|(i, props)| {
@@ -86,7 +87,7 @@ impl Device {
         // Specify the logical device's queue info
         let queue_create_info = DeviceQueueCreateInfo::builder()
             .queue_priorities(&[1.0f32])
-            .queue_family_index(graphics_queue_index);
+            .queue_family_index(graphics_family_index);
         let infos = [queue_create_info.build()];
 
         // Create logical device create info
@@ -103,7 +104,7 @@ impl Device {
 
         // Create a command pool for rendering
         let command_pool_create_info = vk::CommandPoolCreateInfo::builder()
-            .queue_family_index(graphics_queue_index);
+            .queue_family_index(graphics_family_index);
         let command_pool = logical_device.create_command_pool(&command_pool_create_info, None).unwrap();
         Self { 
             logical_device,
@@ -111,6 +112,7 @@ impl Device {
             physical_device_memory_properties,
             physical_device_features,
             physical_device_properties,
+            graphics_queue_index: graphics_family_index,
             command_pool,
             command_buffers: Vec::default(),
         }
