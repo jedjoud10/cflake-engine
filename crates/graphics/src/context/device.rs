@@ -41,7 +41,9 @@ impl Device {
             < caps.max_image_count;
         let max = graphic_settings.frames_in_swapchain
             > caps.min_image_count;
-        min && max
+        let discrete = physical_device_properties.device_type == vk::PhysicalDeviceType::DISCRETE_GPU;
+
+        min && max && discrete
     }
 
     // Create a new logical device and pick a physical device
@@ -91,16 +93,17 @@ impl Device {
             .get_physical_device_memory_properties(physical_device);
 
         // Get the queue family from this physical device
-        let queues = instance
+        let queue_families = instance
             .get_physical_device_queue_family_properties(
                 physical_device,
             );
 
         // Find the index for the graphics queue family
-        let graphics_family_index = queues
+        let graphics_family_index = queue_families
             .iter()
             .enumerate()
             .position(|(i, props)| {
+                dbg!(props.queue_count);
                 props.queue_flags.contains(vk::QueueFlags::GRAPHICS)
                     && surface_loader
                         .get_physical_device_surface_support(

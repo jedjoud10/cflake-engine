@@ -38,7 +38,7 @@ impl Default for App {
         Self {
             window: WindowSettings {
                 title: "Default title".to_string(),
-                limit: FrameRateLimit::Umlimited,
+                limit: FrameRateLimit::default(),
                 fullscreen: false,
             },
             graphics: GraphicSettings::default(),

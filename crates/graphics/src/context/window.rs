@@ -6,11 +6,13 @@ use winit::{
 };
 
 // Frame rate limit of the window (can be disabled by selecting Unlimited)
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Default, Clone, Copy, PartialEq, Eq)]
 pub enum FrameRateLimit {
     VSync,
     Limited(u32),
-    Umlimited,
+
+    #[default]
+    Unlimited,
 }
 
 // Window setting that will tell Winit how to create the window
@@ -30,6 +32,7 @@ pub(crate) struct Swapchain {
     swapchain_command_buffers: Vec<vk::CommandBuffer>,
     image_index: u32,
     rendering_finished_semaphore: vk::Semaphore,
+    rendering_finished_fence: vk::Fence,
     image_available_semaphore: vk::Semaphore,
 }
 
@@ -112,6 +115,19 @@ impl Window {
             .height(self.raw.inner_size().height)
             .width(self.raw.inner_size().width);
 
+        // Pick the most appropriate present mode
+        let present = self
+            .surface_loader
+            .get_physical_device_surface_present_modes(*physical_device, self.surface)
+            .unwrap()
+            .into_iter()
+            .find(|&mode| if matches!(self.settings.limit, FrameRateLimit::VSync) {
+                mode == vk::PresentModeKHR::FIFO
+            } else {
+                mode == vk::PresentModeKHR::MAILBOX
+            })
+            .unwrap_or(vk::PresentModeKHR::IMMEDIATE);
+
         // Create the swap chain create info
         let swapchain_create_info =
             vk::SwapchainCreateInfoKHR::builder()
@@ -130,7 +146,7 @@ impl Window {
                 .clipped(true)
                 .image_sharing_mode(vk::SharingMode::EXCLUSIVE)
                 .old_swapchain(vk::SwapchainKHR::null())
-                .present_mode(vk::PresentModeKHR::IMMEDIATE);
+                .present_mode(present);
 
         // Create the loader and the actual swapchain
         let swapchain_loader = ash::extensions::khr::Swapchain::new(
@@ -178,6 +194,7 @@ impl Window {
             })
             .collect::<Vec<_>>();
 
+        // Semaphore that is signaled whenever we have a new available image
         let image_available_semaphore_create_info =
             vk::SemaphoreCreateInfo::builder();
         let image_available_semaphore = logical_device
@@ -187,10 +204,18 @@ impl Window {
             )
             .unwrap();
 
+        // Semaphore that is signaled when we finished rendering
         let rendering_finished_semaphore_create_info =
             vk::SemaphoreCreateInfo::builder();
         let rendering_finished_semaphore = logical_device
             .create_semaphore(&rendering_finished_semaphore_create_info, None)
+            .unwrap();
+
+        // Fence that is signaled when we finished rendering
+        let rendering_finished_fence_create_info =
+            vk::FenceCreateInfo::builder();
+        let rendering_finished_fence = logical_device
+            .create_fence(&rendering_finished_fence_create_info, None)
             .unwrap();
 
         // Create a multiple command buffer
@@ -233,6 +258,7 @@ impl Window {
                     .level_count(1)
                     .layer_count(1);
 
+            // Reset the presented image layout to be able to clear it
             let present_to_clear = vk::ImageMemoryBarrier::builder()
                 .src_access_mask(vk::AccessFlags::MEMORY_READ)
                 .dst_access_mask(vk::AccessFlags::TRANSFER_WRITE)
@@ -243,6 +269,7 @@ impl Window {
                 .image(image)
                 .subresource_range(*subresource_range);
 
+            // Convert the clear image layout to be able to present it
             let clear_to_present = vk::ImageMemoryBarrier::builder()
                 .src_access_mask(vk::AccessFlags::TRANSFER_WRITE)
                 .dst_access_mask(vk::AccessFlags::MEMORY_READ)
@@ -256,8 +283,9 @@ impl Window {
             // Set the clear color of the image view
             let mut clear_color_value =
                 vk::ClearColorValue::default();
-            clear_color_value.float32 = [1.0, 1.0, 1.0, 1.0];
+            clear_color_value.float32 = [1.0; 4];
 
+            // Convert image layouts and wait
             logical_device.cmd_pipeline_barrier(
                 command_buffer,
                 vk::PipelineStageFlags::TRANSFER,
@@ -268,6 +296,8 @@ impl Window {
                 &[*present_to_clear],
             );
 
+            // Clear the color of the image
+            /*
             logical_device.cmd_clear_color_image(
                 command_buffer,
                 image,
@@ -275,7 +305,28 @@ impl Window {
                 &clear_color_value,
                 &[*subresource_range],
             );
+            */
 
+            let copy = vk::BufferImageCopy::builder()
+                .buffer_image_height(extent.height)
+                .buffer_row_length(extent.width)
+                .image_extent(vk::Extent3D::from(extent))
+                .image_subresource(*vk::ImageSubresourceLayers::builder()
+                    .base_array_layer(0)
+                    .mip_level(0)
+                    .aspect_mask(vk::ImageAspectFlags::COLOR)
+                );
+
+            // Copy the contents of the buffer to the image
+            logical_device.cmd_copy_buffer_to_image(
+                command_buffer,
+                buffer,
+                image,
+                vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+                &[copy],
+            );
+
+            // Convert image layouts and wait
             logical_device.cmd_pipeline_barrier(
                 command_buffer,
                 vk::PipelineStageFlags::TRANSFER,
@@ -301,13 +352,15 @@ impl Window {
             image_available_semaphore,
             rendering_finished_semaphore,
             swapchain_command_buffers,
+            rendering_finished_fence,
         })
     }
 
     // Draw the main window swapchain sheize
     pub(crate) unsafe fn draw(&mut self, device: &super::Device) {
         if let Some(swapchain) = &mut self.swapchain {
-            let (image_index, b) = swapchain
+            // Get the next free image and render to it
+            let (image_index, _) = swapchain
                 .swapchain_loader
                 .acquire_next_image(
                     swapchain.swapchain,
@@ -316,15 +369,18 @@ impl Window {
                     vk::Fence::null(),
                 )
                 .unwrap();
+            swapchain.image_index = image_index;
 
             let command_buffer = swapchain.swapchain_command_buffers
                 [image_index as usize];
+            // Wait until we have a presentable image we can write to
             let submit_info = *vk::SubmitInfo::builder()
                 .wait_semaphores(&[swapchain.image_available_semaphore])
                 .signal_semaphores(&[swapchain.rendering_finished_semaphore])
                 .wait_dst_stage_mask(&[vk::PipelineStageFlags::TRANSFER])
                 .command_buffers(&[command_buffer]);
 
+            // Submit the command buffers
             let queue = device
                 .logical_device
                 .get_device_queue(device.graphics_queue_index, 0);
@@ -333,19 +389,25 @@ impl Window {
                 .queue_submit(
                     queue,
                     &[submit_info],
-                    vk::Fence::null(),
+                    swapchain.rendering_finished_fence,
                 )
                 .unwrap();
 
+            // Wait until the command buffers finished executing so we can present the image
             let present_info = *vk::PresentInfoKHR::builder()
                 .swapchains(&[swapchain.swapchain])
                 .wait_semaphores(&[swapchain.rendering_finished_semaphore])
                 .image_indices(&[image_index]);
-
+            
+            // Present the image to the screen
             swapchain
                 .swapchain_loader
                 .queue_present(queue, &present_info)
                 .unwrap();
+
+            // Wait till the last frame finished rendering
+            device.logical_device.wait_for_fences(&[swapchain.rendering_finished_fence], true, u64::MAX).unwrap();
+            device.logical_device.reset_fences(&[swapchain.rendering_finished_fence]).unwrap();
         }
     }
 
@@ -363,6 +425,10 @@ impl Window {
         );
         device.logical_device.destroy_semaphore(
             swapchain.rendering_finished_semaphore,
+            None
+        );
+        device.logical_device.destroy_fence(
+            swapchain.rendering_finished_fence,
             None
         );
         swapchain
