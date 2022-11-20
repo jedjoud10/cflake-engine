@@ -39,7 +39,10 @@ impl ButtonState {
 // Convert a winit VirtualKeyCode to an input button
 pub fn from_winit_vkc(vkc: winit::event::VirtualKeyCode) -> Button {
     unsafe {
-        let code = std::mem::transmute::<winit::event::VirtualKeyCode, u32>(vkc);
+        let code = std::mem::transmute::<
+            winit::event::VirtualKeyCode,
+            u32,
+        >(vkc);
         std::mem::transmute::<u32, crate::Button>(code)
     }
 }
@@ -52,18 +55,28 @@ pub fn from_gilrs_button(button: gilrs::Button) -> Option<Button> {
     }
 
     unsafe {
-        let mut code = std::mem::transmute::<gilrs::Button, u16>(button) as u32;
+        let mut code =
+            std::mem::transmute::<gilrs::Button, u16>(button) as u32;
         code += OFFSET;
         Some(std::mem::transmute::<u32, crate::Button>(code))
     }
 }
 
-
 // The virtual keycodes that the window will receive (as a form of events)
 // These will also sometimes represent buttons that are pressed by gamepads
 // Stolen directly from the winit source code
-#[derive(Serialize, Deserialize)]
-#[derive(Debug, Hash, Ord, PartialOrd, PartialEq, Eq, Clone, Copy)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Debug,
+    Hash,
+    Ord,
+    PartialOrd,
+    PartialEq,
+    Eq,
+    Clone,
+    Copy,
+)]
 #[repr(u32)]
 pub enum Button {
     /// The '1' key over the letters.
@@ -283,18 +296,17 @@ pub enum Button {
     GamePadSelect = BTN_SELECT,
     GamePadStart = BTN_START,
     GamePadMode = BTN_MODE,
-    
+
     // Sticks
     GamePadLeftThumb = BTN_LTHUMB,
     GamePadRightThumb = BTN_RTHUMB,
-    
+
     // D-Pad
     GamePadDPadUp = BTN_DPAD_UP,
     GamePadDPadDown = BTN_DPAD_DOWN,
     GamePadDPadLeft = BTN_DPAD_LEFT,
-    GamePadDPadRight = BTN_DPAD_RIGHT,  
+    GamePadDPadRight = BTN_DPAD_RIGHT,
 }
-
 
 // GamePad mappings from gilrs source code
 pub const OFFSET: u32 = 0xA2;

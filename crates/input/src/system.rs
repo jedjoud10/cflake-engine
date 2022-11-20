@@ -1,6 +1,6 @@
 use std::collections::hash_map::Entry;
 
-use crate::{Axis, Input, ButtonState};
+use crate::{Axis, ButtonState, Input};
 use winit::event::{DeviceEvent, ElementState};
 use world::{post_user, user, System, World};
 
@@ -52,9 +52,7 @@ fn event(world: &mut World, ev: &DeviceEvent) {
             if let Some(keycode) = key.virtual_keycode {
                 let button = crate::from_winit_vkc(keycode);
                 match input.keys.entry(button) {
-                    Entry::Occupied(
-                        mut current,
-                    ) => {
+                    Entry::Occupied(mut current) => {
                         // Check if the key is "down" (either pressed or held)
                         let down = matches!(
                             *current.get(),
@@ -94,42 +92,56 @@ fn update(world: &mut World) {
     // Update the gamepad axii and buttson
     while let Some(event) = input.gilrs.next_event() {
         // Skip if we already have a main controller and it isn't it
-        if input.gamepad.map(|main| main != event.id).unwrap_or_default() {
+        if input
+            .gamepad
+            .map(|main| main != event.id)
+            .unwrap_or_default()
+        {
             return;
         }
 
         match event.event {
             // Button pressed event
             gilrs::EventType::ButtonPressed(button, _) => {
-                if let Some(button) = crate::from_gilrs_button(button) {
-                    let state = input.keys.entry(button).or_insert(ButtonState::Pressed);
+                if let Some(button) = crate::from_gilrs_button(button)
+                {
+                    let state = input
+                        .keys
+                        .entry(button)
+                        .or_insert(ButtonState::Pressed);
                     *state = ButtonState::Pressed;
                 }
-            },
-            
+            }
+
             // Button released event
             gilrs::EventType::ButtonReleased(button, _) => {
-                if let Some(button) = crate::from_gilrs_button(button) {
-                    let state = input.keys.entry(button).or_insert(ButtonState::Released);
+                if let Some(button) = crate::from_gilrs_button(button)
+                {
+                    let state = input
+                        .keys
+                        .entry(button)
+                        .or_insert(ButtonState::Released);
                     *state = ButtonState::Released;
                 }
-            },
-            
+            }
+
             // Axis changed event
             gilrs::EventType::AxisChanged(axis, value, _) => {
                 if let Some(axis) = crate::from_gilrs_axis(axis) {
                     input.axii.insert(axis, value);
                 }
-            },
-            
+            }
+
             // Add the main gamepad controller
-            gilrs::EventType::Connected => { input.gamepad.get_or_insert(event.id); },
+            gilrs::EventType::Connected => {
+                input.gamepad.get_or_insert(event.id);
+            }
 
             // Remove the main gamepad controller
             gilrs::EventType::Disconnected => input.gamepad = None,
             _ => (),
         }
-    } 
+    }
 }
 
 // This system will automatically insert the input resource and update it each frame using the window events

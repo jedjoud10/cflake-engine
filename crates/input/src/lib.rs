@@ -1,11 +1,11 @@
-mod system;
-mod ids;
-mod button;
 mod axis;
+mod button;
+mod ids;
+mod system;
 pub use axis::*;
-pub use system::*;
-pub use ids::*;
 pub use button::*;
+pub use ids::*;
+pub use system::*;
 
 use ahash::AHashMap;
 use serde::*;
@@ -43,7 +43,6 @@ pub struct InputUserBindings {
     // "camera rotation" -> Axis:MousePositionX,
     pub(crate) axis_bindings: AHashMap<Cow<'static, str>, Axis>,
 }
-
 
 impl Input {
     // Load the bindings from the user binding struct

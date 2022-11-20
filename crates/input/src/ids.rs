@@ -1,5 +1,5 @@
+use crate::{Axis, Button, ButtonState, Input};
 use serde::*;
-use crate::{Input, ButtonState, Button, Axis};
 
 // Trait implemented for structs that allow us to fetch the key state from the main input handler
 pub trait InputButtonId {

@@ -35,10 +35,10 @@ fn init(
     let mut device = unsafe {
         crate::context::Device::new(
             &graphic_settings,
-            &graphics.instance, 
+            &graphics.instance,
             &graphics.entry,
             &window.surface_loader,
-            &window.surface
+            &window.surface,
         )
     };
 
@@ -46,7 +46,7 @@ fn init(
     unsafe {
         crate::context::Window::create_swapchain(
             &mut window,
-            &graphics.instance, 
+            &graphics.instance,
             &graphics.entry,
             &device.physical_device,
             &device.logical_device,
@@ -74,23 +74,22 @@ fn event(world: &mut World, event: &mut WindowEvent) {
 fn shutdown(world: &mut World) {
     let graphics =
         world.remove::<crate::context::Graphics>().unwrap();
-    let window = 
-        world.remove::<crate::context::Window>().unwrap();
-    let device = 
-        world.remove::<crate::context::Device>().unwrap();
+    let window = world.remove::<crate::context::Window>().unwrap();
+    let device = world.remove::<crate::context::Device>().unwrap();
 
-    unsafe { window.destroy(&device.physical_device, &device.logical_device) };
+    unsafe {
+        window.destroy(&device)
+    };
     unsafe { device.destroy() };
     unsafe { graphics.destroy() };
 }
 
 fn update(world: &mut World) {
-    /*
     let device = world.get_mut::<crate::context::Device>().unwrap();
-    let mut window = world.get_mut::<crate::context::Window>().unwrap();
+    let mut window =
+        world.get_mut::<crate::context::Window>().unwrap();
 
     unsafe { window.draw(&device) }
-    */
 }
 
 // Context system will just register the Vulkan context and create a simple window
