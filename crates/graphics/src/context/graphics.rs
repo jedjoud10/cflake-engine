@@ -11,6 +11,7 @@ pub struct GraphicSettings {
     pub validation_layers: Vec<CString>,
     pub instance_extensions: Vec<CString>,
     pub logical_device_extensions: Vec<CString>,
+    pub frames_in_swapchain: u32,
 }
 
 impl Default for GraphicSettings {
@@ -21,7 +22,8 @@ impl Default for GraphicSettings {
             )
             .unwrap()],
             instance_extensions: vec![DebugUtils::name().to_owned(), Surface::name().to_owned()],
-            logical_device_extensions: vec![Swapchain::name().to_owned()]
+            logical_device_extensions: vec![Swapchain::name().to_owned()],
+            frames_in_swapchain: 3,
         }
     }
 }
@@ -29,8 +31,8 @@ impl Default for GraphicSettings {
 // Graphical context that we will wrap around the Vulkan instance
 // This will also wrap the logical device that we will select
 pub struct Graphics {
-    entry: Entry,
-    instance: Instance,
+    pub(crate) entry: Entry,
+    pub(crate) instance: Instance,
     debug_utils: DebugUtils,
     debug_messenger: vk::DebugUtilsMessengerEXT,
 }
@@ -120,16 +122,6 @@ impl Graphics {
             debug_utils,
             debug_messenger,
         }
-    }
-
-    // Get access to the internal raw instance
-    pub fn instance(&self) -> &Instance {
-        &self.instance
-    }
-
-    // Get access to the internal raw entry
-    pub fn entry(&self) -> &Entry {
-        &self.entry
     }
 
     // Destroy the context after we've done using it

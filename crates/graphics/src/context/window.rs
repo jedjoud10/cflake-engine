@@ -22,27 +22,25 @@ pub struct WindowSettings {
 }
 
 // Internal swapchain data wrapper
-struct Swapchain {
+pub(crate) struct Swapchain {
     swapchain_loader: ash::extensions::khr::Swapchain,
     swapchain: vk::SwapchainKHR,
     swapchain_images: Vec<vk::Image>,
     swapchain_image_views: Vec<vk::ImageView>,
-    /*
     image_index: u32,
     image_available_semaphore: vk::Semaphore,
     image_available_fence: vk::Fence,
-    */
 }
 
 // A window is what we will draw to at the end of each frame
 pub struct Window {
-    settings: WindowSettings,
-    raw: winit::window::Window,
-    surface: vk::SurfaceKHR,
-    surface_loader: ash::extensions::khr::Surface,
+    pub(crate) settings: WindowSettings,
+    pub(crate) raw: winit::window::Window,
+    pub(crate) surface: vk::SurfaceKHR,
+    pub(crate) surface_loader: ash::extensions::khr::Surface,
 
     // Swapchain for rendering
-    swapchain: Option<Swapchain>,
+    pub(crate) swapchain: Option<Swapchain>,
 }
 
 impl Window {
@@ -86,6 +84,8 @@ impl Window {
         entry: &ash::Entry,
         physical_device: &vk::PhysicalDevice,
         logical_device: &ash::Device,
+        command_pool: &vk::CommandPool,
+        command_buffers: &mut Vec<vk::CommandBuffer>,
     ) {
         // Get the supported surface formats khr
         let format = self
@@ -114,7 +114,10 @@ impl Window {
             .image_array_layers(1)
             .pre_transform(vk::SurfaceTransformFlagsKHR::IDENTITY)
             .composite_alpha(vk::CompositeAlphaFlagsKHR::OPAQUE)
-            .image_usage(vk::ImageUsageFlags::COLOR_ATTACHMENT)
+            .image_usage(vk::ImageUsageFlags::COLOR_ATTACHMENT) 
+            .clipped(true)
+            .image_sharing_mode(vk::SharingMode::EXCLUSIVE)
+            .old_swapchain(vk::SwapchainKHR::null())
             .present_mode(vk::PresentModeKHR::IMMEDIATE);
 
         // Create the loader and the actual swapchain
@@ -155,33 +158,69 @@ impl Window {
                 logical_device.create_image_view(&image_view_create_info, None).unwrap()
             })
             .collect::<Vec<_>>();
+        
+        // Create a semaphore for swapchain presentation
+        let image_available_semaphore_create_info = vk::SemaphoreCreateInfo::builder();
+        let image_available_semaphore = logical_device
+            .create_semaphore(&image_available_semaphore_create_info, None)
+            .unwrap();
+
+        // Create a fence for swapchain presentation
+        let image_available_fence_create_info = vk::FenceCreateInfo::builder();
+        let image_available_fence = logical_device
+            .create_fence(&image_available_fence_create_info, None)
+            .unwrap();
+
+        // Create a multiple command buffer
+        let command_buffer_allocation_info = vk::CommandBufferAllocateInfo::builder()
+            .command_pool(*command_pool)
+            .command_buffer_count(swapchain_image_views.len() as u32)
+            .level(vk::CommandBufferLevel::PRIMARY);
+        let swapchain_command_buffers = logical_device.allocate_command_buffers(&command_buffer_allocation_info).unwrap();
+        command_buffers.extend(swapchain_command_buffers.clone());
+
+        // Record each command buffer separately
+        for i in 0..swapchain_image_views.len() {
+            // Get command buffer for the correspoding image view
+            let command_buffer = swapchain_command_buffers[i];
+            let image_view = swapchain_image_views[i];
+            let image = swapchain_images[i];
+            let image_layout = vk::ImageLayout::GENERAL;
+
+            
+            // Record the command buffer and set the clear frame
+            let command_buffer_begin_info = vk::CommandBufferBeginInfo::builder()
+                .flags(vk::CommandBufferUsageFlags::SIMULTANEOUS_USE);
+            
+            // Start recording the command buffer
+            logical_device.begin_command_buffer(command_buffer, &command_buffer_begin_info).unwrap();
+
+            // Set the clear color of the image view
+            let mut clear_color_value = vk::ClearColorValue::default();
+            clear_color_value.float32 = [1.0, 1.0, 1.0, 1.0];
+
+            let subresource_range = vk::ImageSubresourceRange::builder()
+                .aspect_mask(vk::ImageAspectFlags::COLOR)
+                .level_count(1)
+                .layer_count(1);
+
+            // Command to record
+            logical_device.cmd_clear_color_image(command_buffer, image, image_layout, &clear_color_value, &[*subresource_range]);
+
+            // Stop recording the command buffer
+            logical_device.end_command_buffer(command_buffer).unwrap();
+        }
+        
 
         self.swapchain = Some(Swapchain {
             swapchain_loader,
             swapchain,
             swapchain_images,
-            swapchain_image_views
+            swapchain_image_views,
+            image_index: 0,
+            image_available_semaphore,
+            image_available_fence,
         })
-    }
-
-    // Get access to the internal settings this window used during initialization
-    pub fn settings(&self) -> &WindowSettings {
-        &self.settings
-    }
-
-    // Get access to the internal raw winit window
-    pub fn raw(&self) -> &winit::window::Window {
-        &self.raw
-    }
-
-    // Get access to the raw KHR surface
-    pub fn surface(&self) -> &ash::vk::SurfaceKHR {
-        &self.surface
-    } 
-
-    // Get access to the raw KHR surface loader
-    pub fn surface_loader(&self) -> &ash::extensions::khr::Surface {
-        &self.surface_loader
     }
 
     // Destroy the window after we've done using it

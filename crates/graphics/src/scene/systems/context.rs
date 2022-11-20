@@ -26,19 +26,19 @@ fn init(
         crate::context::Window::new(
             window_settings,
             raw,
-            graphics.instance(),
-            graphics.entry(),
+            &graphics.instance,
+            &graphics.entry,
         )
     };
 
     // Instantiate a new logical device
-    let device = unsafe {
+    let mut device = unsafe {
         crate::context::Device::new(
             &graphic_settings,
-            graphics.instance(), 
-            graphics.entry(),
-            window.surface_loader(),
-            window.surface()
+            &graphics.instance, 
+            &graphics.entry,
+            &window.surface_loader,
+            &window.surface
         )
     };
 
@@ -46,10 +46,12 @@ fn init(
     unsafe {
         crate::context::Window::create_swapchain(
             &mut window,
-            graphics.instance(), 
-            graphics.entry(),
-            device.physical_device(),
-            device.logical_device(),
+            &graphics.instance, 
+            &graphics.entry,
+            &device.physical_device,
+            &device.logical_device,
+            &device.command_pool,
+            &mut device.command_buffers,
         );
     }
 
@@ -76,7 +78,7 @@ fn shutdown(world: &mut World) {
     let device = 
         world.remove::<crate::context::Device>().unwrap();
 
-    unsafe { window.destroy(device.physical_device(), device.logical_device()) };
+    unsafe { window.destroy(&device.physical_device, &device.logical_device) };
     unsafe { device.destroy() };
     unsafe { graphics.destroy() };
 }

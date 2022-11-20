@@ -1,33 +1,34 @@
 use std::ffi::CStr;
-use ash::vk::{self, PhysicalDeviceProperties, PhysicalDeviceFeatures, PhysicalDeviceMemoryProperties, PhysicalDevice, DeviceQueueCreateInfo, DeviceCreateInfo};
+use ash::vk::{self, PhysicalDeviceProperties, PhysicalDeviceFeatures, PhysicalDeviceMemoryProperties, PhysicalDevice, DeviceQueueCreateInfo, DeviceCreateInfo, PhysicalDeviceType};
 use super::GraphicSettings;
-
-// Wrapper around API and Driver version for physical devices and
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub struct DeviceVersion {
-    pub api: u32,
-    pub driver: u32,
-}
 
 // This is a wrapper resource around a Vulkan physical device and a logical device
 // This will also contain all the queues that we must use when creating something 
 pub struct Device {
-    logical_device: ash::Device,
-    physical_device: PhysicalDevice,
-    physical_device_memory_properties: PhysicalDeviceMemoryProperties,
-    physical_device_features: PhysicalDeviceFeatures,
-    physical_device_properties: PhysicalDeviceProperties,
+    pub(crate) logical_device: ash::Device,
+    pub(crate) physical_device: PhysicalDevice,
+    pub(crate) physical_device_memory_properties: PhysicalDeviceMemoryProperties,
+    pub(crate) physical_device_features: PhysicalDeviceFeatures,
+    pub(crate) physical_device_properties: PhysicalDeviceProperties,
+    pub(crate) command_buffers: Vec<vk::CommandBuffer>,
+    pub(crate) command_pool: vk::CommandPool,
 }
 
 impl Device {
     // Function that will be called per physical device to check if we can use it
     unsafe fn find_physical_device(
+        surface_loader: &ash::extensions::khr::Surface,
+        surface: &ash::vk::SurfaceKHR,
+        instance: &ash::Instance,
         physical_device: &PhysicalDevice,
-        feature: &PhysicalDeviceFeatures,
-        properties: &PhysicalDeviceProperties,
+        physical_device_features: &PhysicalDeviceFeatures,
+        physical_device_properties: &PhysicalDeviceProperties,
         graphic_settings: &GraphicSettings
     ) -> bool {
-        properties.device_type == vk::PhysicalDeviceType::DISCRETE_GPU
+        let caps = surface_loader.get_physical_device_surface_capabilities(*physical_device, *surface).unwrap();
+        let min = graphic_settings.frames_in_swapchain < caps.max_image_count;
+        let max = graphic_settings.frames_in_swapchain > caps.min_image_count;
+        min && max
     }
 
     // Create a new logical device and pick a physical device
@@ -50,8 +51,16 @@ impl Device {
                 let properties = instance.get_physical_device_properties(*device);
                 (*device, features, properties)
             })
-            .find(|(a, b, c)| 
-                Self::find_physical_device(a, b, c, graphic_settings))
+            .find(|(physical_device, physical_device_features, physical_device_properties)| 
+                Self::find_physical_device(
+                    surface_loader,
+                    surface, 
+                    instance,
+                    physical_device,
+                    physical_device_features,
+                    physical_device_properties,
+                    graphic_settings
+            ))
             .expect("Could not find a suitable GPU to use!");
 
         // Get physical device memory properties
@@ -92,46 +101,24 @@ impl Device {
             .create_device(physical_device, &logical_device_create_info, None)
             .expect("Could not create the logical device");
 
+        // Create a command pool for rendering
+        let command_pool_create_info = vk::CommandPoolCreateInfo::builder()
+            .queue_family_index(graphics_queue_index);
+        let command_pool = logical_device.create_command_pool(&command_pool_create_info, None).unwrap();
         Self { 
             logical_device,
             physical_device,
             physical_device_memory_properties,
             physical_device_features,
             physical_device_properties,
+            command_pool,
+            command_buffers: Vec::default(),
         }
-    }
-
-    // Get the name of the chosen physical device
-    pub fn name(&self) -> &str {
-        unsafe { 
-            CStr::from_ptr(self.physical_device_properties.device_name.as_ptr())
-                .to_str()
-                .unwrap()
-        }
-    }
-    
-    // Get the driver version of the physical device
-    pub fn driver_version(&self) -> u32 {
-        self.physical_device_properties.driver_version
-    }
-
-    // Get the API version of the physical device
-    pub fn api_version(&self) -> u32 {
-        self.physical_device_properties.api_version
-    } 
-
-    // Access the chosen physical device
-    pub fn physical_device(&self) -> &vk::PhysicalDevice {
-        &self.physical_device
-    }
-
-    // Access the created logical device
-    pub fn logical_device(&self) -> &ash::Device {
-        &self.logical_device
     }
 
     // Destroy the physical device and logical device and queues and memory AAA
     pub(crate) unsafe fn destroy(self) {
+        self.logical_device.destroy_command_pool(self.command_pool, None);
         self.logical_device.destroy_device(None);
     }
 }
