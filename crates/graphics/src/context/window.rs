@@ -1,5 +1,3 @@
-use ash::vk;
-use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
 use winit::{
     event_loop::EventLoop,
     window::{Fullscreen, WindowBuilder},
@@ -24,7 +22,6 @@ pub struct WindowSettings {
 }
 
 
-
 // A window is what we will draw to at the end of each frame
 pub struct Window {
     pub(crate) settings: WindowSettings,
@@ -35,8 +32,18 @@ impl Window {
     // Create a new window using an event loop and it's settings
     pub(crate) unsafe fn new(
         window_settings: WindowSettings,
-        raw: winit::window::Window,
+        el: &EventLoop<()>,
     ) -> Self {
+        let raw = WindowBuilder::default()
+            .with_fullscreen(
+                window_settings
+                    .fullscreen
+                    .then_some(Fullscreen::Borderless(None)),
+            )
+            .with_title(&window_settings.title)
+            .build(&el)
+            .unwrap();
+
         Self {
             settings: window_settings,
             raw,

@@ -1,4 +1,5 @@
 use crate::prelude::{GraphicSettings, WindowSettings};
+use pollster::FutureExt;
 use winit::{event::WindowEvent, event_loop::EventLoop};
 use world::{post_user, user, State, System, World};
 
@@ -9,26 +10,20 @@ fn init(
     window_settings: WindowSettings,
     graphic_settings: GraphicSettings,
 ) {
-    // Create the winit window
-    let raw = crate::context::new_winit_window(el, &window_settings);
-
-    // Create a new Vulkan context
-    let graphics = unsafe {
-        crate::context::Graphics::new(
-            &window_settings.title,
-            &raw,
-            &graphic_settings,
-            &window_settings,
-        )
-    };
-
     // Instantiate a new window wrapper
-    let mut window = unsafe {
+    let window = unsafe {
         crate::context::Window::new(
-            window_settings,
-            raw,
+            window_settings.clone(),
+            el,
         )
     };
+
+    // Create a new wgpu context
+    let graphics = crate::context::Graphics::new(
+        &window.raw,
+        &graphic_settings,
+        &window_settings,
+    );
 
     // Add the resources into the world
     world.insert(window);
@@ -51,12 +46,13 @@ fn shutdown(world: &mut World) {
     unsafe { graphics.destroy() };
 }
 
+// Executed each frame at the start to clear the window
 fn update(world: &mut World) {
     let mut context = world.get_mut::<crate::context::Graphics>().unwrap();
     unsafe { context.draw() }
 }
 
-// Context system will just register the Vulkan context and create a simple window
+// Context system will just register the wgpu context and create a simple window
 // This system will also handle window events like exiting
 pub fn system(
     system: &mut System,

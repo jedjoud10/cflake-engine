@@ -16,7 +16,7 @@ pub fn from_gilrs_axis(axis: gilrs::Axis) -> Option<Axis> {
 
 // An axis can be mapped to a specific binding to be able to fetch it using a user defined name
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize,
+    Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize
 )]
 #[repr(u32)]
 pub enum Axis {
