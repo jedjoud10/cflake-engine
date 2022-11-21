@@ -1,99 +1,152 @@
-use crate::{Axis, Input, KeyState};
-use glutin::event::{DeviceEvent, ElementState};
-use world::{Events, Init, Stage, Update, World};
+use std::collections::hash_map::Entry;
 
-// This system will automatically insert the input resource and update it each frame using the window events
-pub fn system(events: &mut Events) {
-    // Init event (called once at the start of program)
-    fn init(world: &mut World) {
-        world.insert(Input {
-            bindings: Default::default(),
-            keys: Default::default(),
-            axii: Default::default(),
-        });
-    }
+use crate::{Axis, ButtonState, Input};
+use winit::event::{DeviceEvent, ElementState};
+use world::{post_user, user, System, World};
 
-    // Glutin window event (called by handler when needed)
-    fn event(world: &mut World, ev: &DeviceEvent) {
-        let mut input = world.get_mut::<Input>().unwrap();
-        match ev {
-            // Update mouse position delta and summed  pos
-            DeviceEvent::MouseMotion { delta } => {
-                let delta = vek::Vec2::<f64>::from(*delta).as_::<f32>();
-                input.axii.insert(Axis::MousePositionDeltaX, delta.x);
-                input.axii.insert(Axis::MousePositionDeltaY, delta.y);
-                let x = input.axii.entry(Axis::MousePositionX).or_insert(0.0);
-                *x += delta.x;
-                let y = input.axii.entry(Axis::MousePositionY).or_insert(0.0);
-                *y += delta.y;
-            }
+// Init event (called once at the start of program)
+fn init(world: &mut World) {
+    world.insert(Input {
+        bindings: Default::default(),
+        keys: Default::default(),
+        axii: Default::default(),
+        gilrs: gilrs::Gilrs::new().unwrap(),
+        gamepad: None,
+    });
+}
 
-            // Update mouse wheel delta and summed value
-            DeviceEvent::MouseWheel { delta } => {
-                let delta = match delta {
-                    glutin::event::MouseScrollDelta::LineDelta(_, y) => *y,
-                    glutin::event::MouseScrollDelta::PixelDelta(physical) => physical.x as f32,
-                };
+// Winit device event (called by handler when needed)
+fn event(world: &mut World, ev: &DeviceEvent) {
+    let mut input = world.get_mut::<Input>().unwrap();
+    match ev {
+        // Update mouse position delta and summed  pos
+        DeviceEvent::MouseMotion { delta } => {
+            let delta = vek::Vec2::<f64>::from(*delta).as_::<f32>();
+            input.axii.insert(Axis::MousePositionDeltaX, delta.x);
+            input.axii.insert(Axis::MousePositionDeltaY, delta.y);
+            let x =
+                input.axii.entry(Axis::MousePositionX).or_insert(0.0);
+            *x += delta.x;
+            let y =
+                input.axii.entry(Axis::MousePositionY).or_insert(0.0);
+            *y += delta.y;
+        }
 
-                input.axii.insert(Axis::MouseScrollDelta, delta);
-                let scroll = input.axii.entry(Axis::MouseScroll).or_insert(0.0);
-                *scroll += delta;
-            }
+        // Update mouse wheel delta and summed value
+        DeviceEvent::MouseWheel { delta } => {
+            let delta = match delta {
+                winit::event::MouseScrollDelta::LineDelta(_, y) => *y,
+                winit::event::MouseScrollDelta::PixelDelta(
+                    physical,
+                ) => physical.x as f32,
+            };
 
-            // Update keyboard key states
-            DeviceEvent::Key(key) => {
-                if let Some(keycode) = key.virtual_keycode {
-                    match input.keys.entry(keycode) {
-                        std::collections::hash_map::Entry::Occupied(mut current) => {
-                            // Check if the key is "down" (either pressed or held)
-                            let down = match *current.get() {
-                                KeyState::Pressed | KeyState::Held => true,
-                                _ => false,
-                            };
+            input.axii.insert(Axis::MouseScrollDelta, delta);
+            let scroll =
+                input.axii.entry(Axis::MouseScroll).or_insert(0.0);
+            *scroll += delta;
+        }
 
-                            // If the key is pressed while it is currently down, it repeated itself, and we must ignore it
-                            if down ^ (key.state == ElementState::Pressed) {
-                                current.insert(key.state.into());
-                            }
+        // Update keyboard key states
+        DeviceEvent::Key(key) => {
+            if let Some(keycode) = key.virtual_keycode {
+                let button = crate::from_winit_vkc(keycode);
+                match input.keys.entry(button) {
+                    Entry::Occupied(mut current) => {
+                        // Check if the key is "down" (either pressed or held)
+                        let down = matches!(
+                            *current.get(),
+                            ButtonState::Pressed | ButtonState::Held
+                        );
+
+                        // If the key is pressed while it is currently down, it repeated itself, and we must ignore it
+                        if down ^ (key.state == ElementState::Pressed)
+                        {
+                            current.insert(key.state.into());
                         }
-                        std::collections::hash_map::Entry::Vacant(v) => {
-                            v.insert(key.state.into());
-                        }
+                    }
+                    Entry::Vacant(v) => {
+                        v.insert(key.state.into());
                     }
                 }
             }
-
-            _ => {}
         }
+
+        _ => {}
+    }
+}
+
+// Update event that will change the state of the keyboard keys (some states are sticky while others are not sticky)
+// This will also read the state from gamepads using gilrs
+fn update(world: &mut World) {
+    let mut input = world.get_mut::<Input>().unwrap();
+    for (_, state) in input.keys.iter_mut() {
+        *state = match state {
+            crate::ButtonState::Pressed => ButtonState::Held,
+            crate::ButtonState::Released => ButtonState::None,
+            crate::ButtonState::Held => ButtonState::Held,
+            crate::ButtonState::None => ButtonState::None,
+        };
     }
 
-    // Update event that will change the state of the keyboard keys (some states are sticky while others are not sticky)
-    fn update(world: &mut World) {
-        let mut keyboard = world.get_mut::<Input>().unwrap();
-        for (_, state) in keyboard.keys.iter_mut() {
-            *state = match state {
-                crate::KeyState::Pressed => KeyState::Held,
-                crate::KeyState::Released => KeyState::None,
-                crate::KeyState::Held => KeyState::Held,
-                crate::KeyState::None => KeyState::None,
-            };
+    // Update the gamepad axii and buttson
+    while let Some(event) = input.gilrs.next_event() {
+        // Skip if we already have a main controller and it isn't it
+        if input
+            .gamepad
+            .map(|main| main != event.id)
+            .unwrap_or_default()
+        {
+            return;
+        }
+
+        match event.event {
+            // Button pressed event
+            gilrs::EventType::ButtonPressed(button, _) => {
+                if let Some(button) = crate::from_gilrs_button(button)
+                {
+                    let state = input
+                        .keys
+                        .entry(button)
+                        .or_insert(ButtonState::Pressed);
+                    *state = ButtonState::Pressed;
+                }
+            }
+
+            // Button released event
+            gilrs::EventType::ButtonReleased(button, _) => {
+                if let Some(button) = crate::from_gilrs_button(button)
+                {
+                    let state = input
+                        .keys
+                        .entry(button)
+                        .or_insert(ButtonState::Released);
+                    *state = ButtonState::Released;
+                }
+            }
+
+            // Axis changed event
+            gilrs::EventType::AxisChanged(axis, value, _) => {
+                if let Some(axis) = crate::from_gilrs_axis(axis) {
+                    input.axii.insert(axis, value);
+                }
+            }
+
+            // Add the main gamepad controller
+            gilrs::EventType::Connected => {
+                input.gamepad.get_or_insert(event.id);
+            }
+
+            // Remove the main gamepad controller
+            gilrs::EventType::Disconnected => input.gamepad = None,
+            _ => (),
         }
     }
+}
 
-    // Register the events
-    events
-        .registry::<Init>()
-        .insert_with(init, Stage::new("input insert").before("user"))
-        .unwrap();
-    events
-        .registry::<DeviceEvent>()
-        .insert_with(event, Stage::new("input").before("user"))
-        .unwrap();
-    events
-        .registry::<Update>()
-        .insert_with(
-            update,
-            Stage::new("keyboard update states").after("post user"),
-        )
-        .unwrap();
+// This system will automatically insert the input resource and update it each frame using the window events
+pub fn system(system: &mut System) {
+    system.insert_init(init).before(user);
+    system.insert_device(event).before(user);
+    system.insert_update(update).after(post_user);
 }

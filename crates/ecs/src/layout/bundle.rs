@@ -1,4 +1,6 @@
-use crate::{mask, name, Archetype, Component, ComponentTable, Mask, MaskHashMap};
+use crate::{
+    mask, Archetype, Component, ComponentColumn, Mask, MaskHashMap,
+};
 
 // An owned layout trait will be implemented for owned tuples that contain a set of components
 pub trait OwnedBundle<'a>
@@ -17,22 +19,23 @@ where
             count += 1;
             a | b
         });
-        let converted: u64 = mask.into();
-        converted.count_ones() == count as u32
+        mask.count_ones() == count as u32
     }
 
     // Get the storage tables once and for all
-    fn prepare(archetype: &'a mut Archetype) -> Option<Self::Storages>;
+    fn prepare(
+        archetype: &'a mut Archetype,
+    ) -> Option<Self::Storages>;
 
     // Push an element into those tables
     fn push(storages: &mut Self::Storages, bundle: Self);
 
     // Get the default tables for this owned bundle
-    fn default_tables() -> MaskHashMap<Box<dyn ComponentTable>>;
+    fn default_tables() -> MaskHashMap<Box<dyn ComponentColumn>>;
 
     // Try to remove and element from the tables, and try to return the cast element
     fn try_swap_remove(
-        tables: &mut MaskHashMap<Box<dyn ComponentTable>>,
+        tables: &mut MaskHashMap<Box<dyn ComponentColumn>>,
         index: usize,
     ) -> Option<Self>;
 }
@@ -52,26 +55,30 @@ impl<'a, T: Component> OwnedBundle<'a> for T {
             .unwrap()
     }
 
-    fn prepare(archetype: &'a mut Archetype) -> Option<Self::Storages> {
-        archetype.table_mut::<T>()
+    fn prepare(
+        archetype: &'a mut Archetype,
+    ) -> Option<Self::Storages> {
+        archetype.components_mut::<T>()
     }
 
     fn push(storages: &mut Self::Storages, bundle: Self) {
         storages.push(bundle)
     }
 
-    fn default_tables() -> MaskHashMap<Box<dyn ComponentTable>> {
-        let boxed: Box<dyn ComponentTable> = Box::new(Vec::<T>::new());
+    fn default_tables() -> MaskHashMap<Box<dyn ComponentColumn>> {
+        let boxed: Box<dyn ComponentColumn> =
+            Box::new(Vec::<T>::new());
         let mask = mask::<T>();
         MaskHashMap::from_iter(std::iter::once((mask, boxed)))
     }
 
     fn try_swap_remove(
-        tables: &mut MaskHashMap<Box<dyn ComponentTable>>,
+        tables: &mut MaskHashMap<Box<dyn ComponentColumn>>,
         index: usize,
     ) -> Option<Self> {
         let boxed = tables.get_mut(&mask::<T>())?;
-        let vec = boxed.as_any_mut().downcast_mut::<Vec<T>>().unwrap();
+        let vec =
+            boxed.as_any_mut().downcast_mut::<Vec<T>>().unwrap();
         Some(vec.swap_remove(index))
     }
 }

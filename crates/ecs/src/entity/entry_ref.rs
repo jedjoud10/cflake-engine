@@ -1,7 +1,7 @@
 use super::Entity;
 use crate::{
-    registry::{mask, name},
-    Archetype, Component, EntityLinkings, QueryLayoutRef, Scene, StateRow,
+    registry::mask, Archetype, Component, EntityLinkings,
+    QueryLayoutRef, Scene,
 };
 
 // Immutable entity entries allow the user to be able to read and get some data about a specific entity
@@ -13,9 +13,13 @@ pub struct EntryRef<'a> {
 
 impl<'a> EntryRef<'a> {
     // Create an immutable entity entry from the ecs manager and an entity
-    pub(crate) fn new(manager: &'a Scene, entity: Entity) -> Option<Self> {
+    pub(crate) fn new(
+        manager: &'a Scene,
+        entity: Entity,
+    ) -> Option<Self> {
         let linkings = *manager.entities.get(entity)?;
-        let archetype = manager.archetypes.get(&linkings.mask()).unwrap();
+        let archetype =
+            manager.archetypes.get(&linkings.mask()).unwrap();
 
         Some(Self {
             archetype,
@@ -33,23 +37,14 @@ impl<'a> EntryRef<'a> {
         self.archetype
     }
 
-    // Get an immutable reference to a table
+    // Get an immutable reference to a tableStateRow
     pub fn table<T: Component>(&self) -> Option<&Vec<T>> {
-        self.archetype().table::<T>()
+        self.archetype().components::<T>()
     }
 
     // Get an immutable reference to a linked component
     pub fn get<T: Component>(&self) -> Option<&T> {
         self.table::<T>().map(|vec| &vec[self.linkings.index])
-    }
-
-    // Get the current state row of our entity
-    pub fn states(&self) -> StateRow {
-        *self
-            .archetype()
-            .states()
-            .get(self.linkings().index())
-            .unwrap()
     }
 
     // Check if the entity has a component linked to it
@@ -58,7 +53,9 @@ impl<'a> EntryRef<'a> {
     }
 
     // Read certain components from the entry as if they were used in an immutable query
-    pub fn as_view<L: for<'s> QueryLayoutRef<'s>>(&self) -> Option<L> {
+    pub fn as_view<L: for<'s> QueryLayoutRef<'s>>(
+        &self,
+    ) -> Option<L> {
         // Make sure the layout can be fetched from the archetype
         let combined = L::reduce(|a, b| a | b).both();
         if combined & self.archetype().mask() != combined {
@@ -67,7 +64,9 @@ impl<'a> EntryRef<'a> {
 
         // Fetch the layout from the archetype
         let index = self.linkings().index;
-        let ptrs = unsafe { L::ptrs_from_archetype_unchecked(self.archetype()) };
+        let ptrs = unsafe {
+            L::ptrs_from_archetype_unchecked(self.archetype())
+        };
         let layout = unsafe { L::read_unchecked(ptrs, index) };
         Some(layout)
     }

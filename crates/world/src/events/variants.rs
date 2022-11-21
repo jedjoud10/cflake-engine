@@ -1,143 +1,188 @@
-use crate::{Caller, Descriptor, Event, Events, Registry, World};
-use glutin::{
+use crate::{Caller, Event, World};
+use winit::{
     event::{DeviceEvent, WindowEvent},
     event_loop::EventLoop,
 };
 
-// Window event marker (called by glutin handler)
-impl<'a> Descriptor for WindowEvent<'a> {
-    type DynFunc = dyn Fn(&mut World, &mut WindowEvent);
+// Device event called when there is a new device / device change
+impl Caller for DeviceEvent {
+    type DynFn = dyn FnMut(&mut World, &DeviceEvent);
+    type Args<'a, 'p> = (&'p mut World, &'p DeviceEvent) where 'a: 'p;
 
-    fn registry(events: &mut Events) -> &mut Registry<Self> {
-        &mut events.window
+    fn call<'a, 'p>(
+        boxed: &mut Box<<DeviceEvent as Caller>::DynFn>,
+        args: &mut Self::Args<'a, 'p>,
+    ) where
+        'a: 'p,
+    {
+        boxed(args.0, args.1);
     }
 }
 
-impl<'b, 'p> Caller<'p> for WindowEvent<'b>
-where
-    'b: 'p,
+impl<F: FnMut(&mut World, &DeviceEvent) + 'static>
+    Event<DeviceEvent, (&mut World, &DeviceEvent)> for F
 {
-    type Params = (&'p mut World, &'p mut WindowEvent<'b>);
+    type Args<'a, 'p> = (&'p mut World, &'p DeviceEvent) where 'a: 'p;
 
-    fn call(events: &mut Events, params: Self::Params) {
-        let world = params.0;
-        let event = params.1;
-
-        for (_, func) in events.window.events.iter() {
-            func(world, event);
-        }
-    }
-}
-
-impl<'a, F: Fn(&mut World, &mut WindowEvent<'_>) + 'static>
-    Event<WindowEvent<'a>, (&mut World, &mut WindowEvent<'_>)> for F
-{
-    fn boxed(self) -> Box<<WindowEvent<'a> as Descriptor>::DynFunc> {
+    fn boxed(self) -> Box<<DeviceEvent as Caller>::DynFn> {
         Box::new(self)
     }
 }
 
-impl<'a, F: Fn(&mut World, &WindowEvent<'_>) + 'static>
-    Event<WindowEvent<'a>, (&mut World, &WindowEvent<'_>)> for F
-{
-    fn boxed(self) -> Box<<WindowEvent<'a> as Descriptor>::DynFunc> {
-        Box::new(move |world, event| self(world, event))
+impl<F: FnMut() + 'static> Event<DeviceEvent, ()> for F {
+    type Args<'a, 'p> = (&'p mut World, &'p DeviceEvent) where 'a: 'p;
+
+    fn boxed(mut self) -> Box<<DeviceEvent as Caller>::DynFn> {
+        Box::new(move |_, _| self())
     }
 }
 
-// Device event marker (called by glutin handler)
-impl Descriptor for DeviceEvent {
-    type DynFunc = dyn Fn(&mut World, &DeviceEvent);
+// Window event called when there is a change that occured to the window
+impl Caller for WindowEvent<'static> {
+    type DynFn = dyn FnMut(&mut World, &mut WindowEvent<'_>);
+    type Args<'a, 'p> = (&'p mut World, &'p mut WindowEvent<'a>) where 'a: 'p;
 
-    fn registry(events: &mut Events) -> &mut Registry<Self> {
-        &mut events.device
+    fn call<'a, 'p>(
+        boxed: &mut Box<<WindowEvent<'static> as Caller>::DynFn>,
+        args: &mut Self::Args<'a, 'p>,
+    ) where
+        'a: 'p,
+    {
+        boxed(args.0, args.1);
     }
 }
 
-impl<'p> Caller<'p> for DeviceEvent {
-    type Params = (&'p mut World, &'p DeviceEvent);
-
-    fn call(events: &mut Events, params: Self::Params) {
-        let world = params.0;
-        let event = params.1;
-
-        for (_, func) in events.device.events.iter() {
-            func(world, event);
-        }
-    }
-}
-
-impl<F: Fn(&mut World, &DeviceEvent) + 'static> Event<DeviceEvent, (&mut World, &DeviceEvent)>
+impl<F: FnMut(&mut World, &mut WindowEvent<'_>) + 'static>
+    Event<WindowEvent<'static>, (&mut World, &mut WindowEvent<'_>)>
     for F
 {
-    fn boxed(self) -> Box<<DeviceEvent as Descriptor>::DynFunc> {
+    type Args<'a, 'p> = (&'p mut World, &'p mut WindowEvent<'a>) where 'a: 'p;
+
+    fn boxed(self) -> Box<<WindowEvent<'static> as Caller>::DynFn> {
         Box::new(self)
+    }
+}
+
+impl<F: FnMut() + 'static> Event<WindowEvent<'static>, ()> for F {
+    type Args<'a, 'p> = (&'p mut World, &'p mut WindowEvent<'a>) where 'a: 'p;
+
+    fn boxed(
+        mut self,
+    ) -> Box<<WindowEvent<'static> as Caller>::DynFn> {
+        Box::new(move |_, _| self())
     }
 }
 
 // Init event marker(FnOnce, called at the start of the engine)
 pub struct Init(());
 
-impl Descriptor for Init {
-    type DynFunc = dyn FnOnce(&mut World, &EventLoop<()>);
+impl Caller for Init {
+    type DynFn = dyn FnOnce(&mut World, &EventLoop<()>);
+    type Args<'a, 'p> = (&'p mut World, &'p EventLoop<()>) where 'a: 'p;
 
-    fn registry(events: &mut Events) -> &mut Registry<Self> {
-        &mut events.init
-    }
-}
-
-impl<'p> Caller<'p> for Init {
-    type Params = (&'p mut World, &'p EventLoop<()>);
-
-    fn call(events: &mut Events, params: Self::Params) {
-        let world = params.0;
-        let el = params.1;
-
-        let take = std::mem::take(&mut events.init.events);
-
-        for (_, func) in take {
-            func(world, el)
-        }
+    fn call<'a, 'p>(
+        boxed: &mut Box<<Init as Caller>::DynFn>,
+        args: &mut Self::Args<'a, 'p>,
+    ) where
+        'a: 'p,
+    {
+        let boxed = std::mem::replace(boxed, Box::new(|_, _| {}));
+        boxed(args.0, args.1)
     }
 }
 
 impl<F: FnOnce(&mut World) + 'static> Event<Init, &mut World> for F {
-    fn boxed(self) -> Box<<Init as Descriptor>::DynFunc> {
-        Box::new(|world, _| self(world))
+    type Args<'a, 'p> = (&'p mut World, &'p EventLoop<()>) where 'a: 'p;
+
+    fn boxed(self) -> Box<<Init as Caller>::DynFn> {
+        Box::new(|world: &mut World, _| {
+            self(world);
+        })
     }
 }
 
-impl<F: FnOnce(&mut World, &EventLoop<()>) + 'static> Event<Init, (&mut World, &EventLoop<()>)>
-    for F
+impl<F: FnOnce(&mut World, &EventLoop<()>) + 'static>
+    Event<Init, (&mut World, &EventLoop<()>)> for F
 {
-    fn boxed(self) -> Box<<Init as Descriptor>::DynFunc> {
+    type Args<'a, 'p> = (&'p mut World, &'p EventLoop<()>) where 'a: 'p;
+
+    fn boxed(self) -> Box<<Init as Caller>::DynFn> {
         Box::new(self)
+    }
+}
+
+impl<F: FnOnce() + 'static> Event<Init, ()> for F {
+    type Args<'a, 'p> = (&'p mut World, &'p EventLoop<()>) where 'a: 'p;
+
+    fn boxed(self) -> Box<<Init as Caller>::DynFn> {
+        Box::new(move |_, _| self())
     }
 }
 
 // Update event marker (called each frame)
 pub struct Update(());
 
-impl Descriptor for Update {
-    type DynFunc = dyn Fn(&mut World);
+impl Caller for Update {
+    type DynFn = dyn FnMut(&mut World);
+    type Args<'a, 'p> = &'p mut World where 'a: 'p;
 
-    fn registry(events: &mut Events) -> &mut Registry<Self> {
-        &mut events.update
+    fn call<'a, 'p>(
+        boxed: &mut Box<<Update as Caller>::DynFn>,
+        args: &mut Self::Args<'a, 'p>,
+    ) where
+        'a: 'p,
+    {
+        boxed(args)
     }
 }
 
-impl<'p> Caller<'p> for Update {
-    type Params = &'p mut World;
+impl<F: FnMut(&mut World) + 'static> Event<Update, &mut World> for F {
+    type Args<'a, 'p> = &'p mut World where 'a: 'p;
 
-    fn call(events: &mut Events, params: Self::Params) {
-        for (_, func) in events.update.events.iter() {
-            func(params)
-        }
-    }
-}
-
-impl<F: Fn(&mut World) + 'static> Event<Update, &mut World> for F {
-    fn boxed(self) -> Box<<Update as Descriptor>::DynFunc> {
+    fn boxed(self) -> Box<<Update as Caller>::DynFn> {
         Box::new(self)
+    }
+}
+
+impl<F: FnMut() + 'static> Event<Update, ()> for F {
+    type Args<'a, 'p> = &'p mut World where 'a: 'p;
+
+    fn boxed(mut self) -> Box<<Update as Caller>::DynFn> {
+        Box::new(move |_| self())
+    }
+}
+
+// Exit event marker (called at the end of the game)
+pub struct Shutdown(());
+
+impl Caller for Shutdown {
+    type DynFn = dyn FnMut(&mut World);
+    type Args<'a, 'p> = &'p mut World where 'a: 'p;
+
+    fn call<'a, 'p>(
+        boxed: &mut Box<<Shutdown as Caller>::DynFn>,
+        args: &mut Self::Args<'a, 'p>,
+    ) where
+        'a: 'p,
+    {
+        boxed(args)
+    }
+}
+
+impl<F: FnMut(&mut World) + 'static> Event<Shutdown, &mut World>
+    for F
+{
+    type Args<'a, 'p> = &'p mut World where 'a: 'p;
+
+    fn boxed(self) -> Box<<Shutdown as Caller>::DynFn> {
+        Box::new(self)
+    }
+}
+
+impl<F: FnMut() + 'static> Event<Shutdown, ()> for F {
+    type Args<'a, 'p> = &'p mut World where 'a: 'p;
+
+    fn boxed(mut self) -> Box<<Shutdown as Caller>::DynFn> {
+        Box::new(move |_| self())
     }
 }

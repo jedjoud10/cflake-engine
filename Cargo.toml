@@ -17,8 +17,7 @@ members = [
     "crates/gui",
     "crates/input",
     "crates/math",
-    "crates/rendering",
-    "crates/opengl",
+    "crates/graphics",
     "crates/world",
 ]
 

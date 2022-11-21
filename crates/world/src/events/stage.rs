@@ -1,80 +1,45 @@
-use std::rc::Rc;
+use std::any::TypeId;
 
-use crate::{StageError, RESERVED};
+use crate::Caller;
 
 // Names are shared around since we clone them frequently
-pub type StageKey = Rc<str>;
+pub type StageId = (&'static str, TypeId);
 
 // A rule that depicts the arrangement and the location of the stages relative to other stages
 #[derive(Clone, Debug)]
 pub enum Rule {
     // This hints that the stage should be executed before other
-    Before(StageKey),
+    Before(StageId),
 
     // This hints that the stage should be executed after other
-    After(StageKey),
+    After(StageId),
 }
 
 impl Rule {
     // Get the current parent of the current strict node
-    pub(super) fn parent(&self) -> StageKey {
+    pub(super) fn parent(&self) -> StageId {
         match self {
-            Rule::Before(p) => p.clone(),
-            Rule::After(p) => p.clone(),
+            Rule::Before(p) => *p,
+            Rule::After(p) => *p,
         }
     }
 }
 
-// Stages are are a way for us to sort and prioritize certain events before others
-// Stages will be converted to Nodes whenever they get inserted into a pipeline
-#[derive(Clone)]
-pub struct Stage {
-    // The user defined name of the current stage
-    name: StageKey,
-
-    // The direction of this rule compared to other rules
-    rules: Vec<Rule>,
+// Get the StageId of given linked stage event function cause type_name_of_val is unstable
+// TODO: Watch quintuplets movie
+pub(crate) fn id<E: 'static>(event: E) -> (StageId, E) {
+    let id = TypeId::of::<E>();
+    let name = std::any::type_name::<E>();
+    ((name, id), event)
 }
 
-impl Stage {
-    // Create a new empty stage with no rules (invalid)
-    pub fn new(name: impl Into<StageKey>) -> Self {
-        Self {
-            name: name.into(),
-            rules: Vec::new(),
-        }
-    }
+// Default functions
+pub fn user() {}
+pub fn post_user() {}
 
-    // Get a copy of the underlying stage name
-    pub fn name(&self) -> StageKey {
-        self.name.clone()
-    }
-
-    // Add a "before" rule to the current stage
-    pub fn before(mut self, other: impl Into<StageKey>) -> Self {
-        self.rules.push(Rule::Before(other.into()));
-        self
-    }
-
-    // Add a "after" rule to the current stage
-    pub fn after(mut self, other: impl Into<StageKey>) -> Self {
-        self.rules.push(Rule::After(other.into()));
-        self
-    }
-
-    // Check if the stage is valid, and if it isn't, return the proper error
-    pub(super) fn validate(self) -> Result<Self, StageError> {
-        if self.rules.is_empty() {
-            return Err(StageError::MissingRules);
-        } else if self.name.is_empty() || RESERVED.contains(&self.name.as_ref()) {
-            return Err(StageError::InvalidName);
-        }
-
-        Ok(self)
-    }
-
-    // Convert the stage into a set of rules
-    pub(super) fn into_rules(self) -> Vec<Rule> {
-        self.rules
-    }
+// Create the default rules for a default node
+pub(super) fn default_rules<C: Caller>() -> Vec<Rule> {
+    let post = id(post_user).0;
+    let user = id(user).0;
+    vec![Rule::Before(post), Rule::After(user)]
 }

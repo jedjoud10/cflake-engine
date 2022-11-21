@@ -1,4 +1,4 @@
-use crate::{Events, Init, Read, Resource, Stage, Write};
+use crate::{user, Read, Resource, System, Write};
 use ahash::AHashMap;
 use std::{
     any::TypeId,
@@ -7,7 +7,9 @@ use std::{
 
 // The world is a unique container for multiple resources like ECS and assets
 // Each World can be created using the builder pattern with the help of an App
-pub struct World(pub(crate) AHashMap<TypeId, RefCell<Box<dyn Resource>>>);
+pub struct World(
+    pub(crate) AHashMap<TypeId, RefCell<Box<dyn Resource>>>,
+);
 
 // This is the main world state that the user can manually update to force the engine to stop running
 pub enum State {
@@ -25,7 +27,8 @@ impl World {
     // Insert a new resource into the world
     pub fn insert<R: Resource>(&mut self, resource: R) {
         let id = TypeId::of::<R>();
-        let returned = self.0.insert(id, RefCell::new(Box::new(resource)));
+        let returned =
+            self.0.insert(id, RefCell::new(Box::new(resource)));
         assert!(returned.is_none());
     }
 
@@ -51,9 +54,23 @@ impl World {
         self.0.get(&TypeId::of::<R>()).map(|cell| {
             let borrowed = cell.borrow_mut();
             let borrowed = RefMut::map(borrowed, |boxed| {
-                boxed.as_mut().as_any_mut().downcast_mut::<R>().unwrap()
+                boxed
+                    .as_mut()
+                    .as_any_mut()
+                    .downcast_mut::<R>()
+                    .unwrap()
             });
             Write(borrowed)
+        })
+    }
+
+    // Remove a specific resource from the world
+    pub fn remove<R: Resource>(&mut self) -> Option<R> {
+        self.0.remove(&TypeId::of::<R>()).map(|cell| {
+            let boxed = cell.into_inner();
+            let any = boxed.into_any();
+            let downcasted = any.downcast::<R>().unwrap();
+            *downcasted
         })
     }
 
@@ -70,14 +87,10 @@ pub trait FromWorld {
 }
 
 // Global world system for cleaning and handling world state
-pub fn system(events: &mut Events) {
-    fn insert(world: &mut World) {
-        world.insert(State::Initializing);
-    }
-
-    // Register the init state event
-    events
-        .registry::<Init>()
-        .insert_with(insert, Stage::new("state insert").before("user"))
-        .unwrap();
+pub fn system(system: &mut System) {
+    system
+        .insert_init(|world: &mut World| {
+            world.insert(State::Initializing);
+        })
+        .before(user);
 }

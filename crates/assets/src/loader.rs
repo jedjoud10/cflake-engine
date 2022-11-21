@@ -1,24 +1,20 @@
 use crate::{Asset, AssetInput};
 use ahash::AHashMap;
 use parking_lot::RwLock;
-use slotmap::{DefaultKey, Key, SlotMap};
+use slotmap::{DefaultKey, SlotMap};
 use world::ThreadPool;
 
 use std::{
     any::Any,
-    cell::{Cell, RefCell},
+    cell::RefCell,
     ffi::OsStr,
     marker::PhantomData,
     path::{Path, PathBuf},
-    rc::Rc,
     str::FromStr,
     sync::{
-        atomic::{AtomicU32, Ordering},
         mpsc::{Receiver, Sender},
         Arc,
     },
-    thread::Thread,
-    time::Instant,
 };
 
 // This is a handle to a specific asset that we are currently loading in
@@ -32,7 +28,14 @@ pub struct AsyncHandle<A: Asset> {
 pub struct Assets {
     // Keep track of the assets that were sucessfully loaded
     // The value corresponding to each key might be None in the case that the asset did not load
-    assets: Arc<RwLock<SlotMap<DefaultKey, Option<Box<dyn Any + Send + Sync + Sync>>>>>,
+    assets: Arc<
+        RwLock<
+            SlotMap<
+                DefaultKey,
+                Option<Box<dyn Any + Send + Sync + Sync>>,
+            >,
+        >,
+    >,
 
     // Keep track of the bytes that were loaded in other threads
     // The value might be none in the case that the bytes were not loaded
@@ -50,7 +53,8 @@ pub struct Assets {
 impl Assets {
     // Create a new asset loader using a path to the user defined asset folder (if there is one)
     pub fn new(user: Option<PathBuf>) -> Self {
-        let (sender, receiver) = std::sync::mpsc::channel::<DefaultKey>();
+        let (sender, receiver) =
+            std::sync::mpsc::channel::<DefaultKey>();
 
         Self {
             assets: Default::default(),
@@ -68,7 +72,7 @@ impl Assets {
         input: impl AssetInput<'s, 'args, A>,
     ) -> Option<A> {
         let (path, args) = input.split();
-        
+
         // All this does is that it ensures that the bytes are valid before we actually deserialize the asset
         let path = PathBuf::from_str(path).unwrap();
         let (name, extension) = path
@@ -100,13 +104,21 @@ impl Assets {
     }
 
     // Load an asset using some explicit/default loading arguments
-    pub fn load<'s, 'args, A: Asset>(&self, input: impl AssetInput<'s, 'args, A>) -> Option<A> {
+    pub fn load<'s, 'args, A: Asset>(
+        &self,
+        input: impl AssetInput<'s, 'args, A>,
+    ) -> Option<A> {
         // Check if the extension is valid
         let path = PathBuf::from_str(input.path()).unwrap();
-        let (_, extension) = path.file_name().and_then(OsStr::to_str)?.split_once('.')?;
-    
+        let (_, extension) = path
+            .file_name()
+            .and_then(OsStr::to_str)?
+            .split_once('.')?;
+
         // If the asset has no extensions, we shall not check
-        ((A::extensions().contains(&extension)) || A::extensions().is_empty()).then_some(())?;
+        ((A::extensions().contains(&extension))
+            || A::extensions().is_empty())
+        .then_some(())?;
         unsafe { self.load_unchecked(input) }
     }
 
@@ -132,7 +144,7 @@ impl Assets {
             _phantom: PhantomData,
             key,
         };
-        
+
         // Get the path and arguments
         let (path, args) = input.split();
 
@@ -151,7 +163,9 @@ impl Assets {
             } else {
                 // TODO: Proper error logging
                 let mut write = bytes.write();
-                let bytes = super::raw::read(&path, user.as_ref().unwrap()).unwrap();
+                let bytes =
+                    super::raw::read(&path, user.as_ref().unwrap())
+                        .unwrap();
                 let arc: Arc<[u8]> = Arc::from(bytes);
                 write.insert(path.clone(), arc.clone());
                 arc
@@ -175,7 +189,7 @@ impl Assets {
         });
 
         // Return the async handle
-        return handle;
+        handle
     }
 
     // Load an asset using some explicit/default loading arguments in another thread
@@ -193,8 +207,9 @@ impl Assets {
             .file_name()
             .and_then(OsStr::to_str)?
             .split_once('.')?;
-        ((A::extensions().contains(&extension)) || A::extensions().is_empty())
-            .then_some(())?;
+        ((A::extensions().contains(&extension))
+            || A::extensions().is_empty())
+        .then_some(())?;
         Some(unsafe { self.async_load_unchecked(input, threadpool) })
     }
 
@@ -204,7 +219,8 @@ impl Assets {
         &self,
         handle: &AsyncHandle<A>,
     ) -> bool
-    where A::Args<'static>: Send + Sync,
+    where
+        A::Args<'static>: Send + Sync,
     {
         self.loaded.borrow_mut().extend(self.receiver.try_iter());
         self.loaded.borrow().contains(&handle.key)
@@ -212,8 +228,12 @@ impl Assets {
 
     // This will wait until the asset referenced by this handle has finished loading
     // This requires the arguments of the asset to live as long as 'static
-    pub fn wait<A: Asset + Send + Sync>(&self, handle: AsyncHandle<A>) -> A
-    where A::Args<'static>: Send + Sync,
+    pub fn wait<A: Asset + Send + Sync>(
+        &self,
+        handle: AsyncHandle<A>,
+    ) -> A
+    where
+        A::Args<'static>: Send + Sync,
     {
         while !self.was_loaded(&handle) {}
         let mut assets = self.assets.write();
@@ -226,12 +246,16 @@ impl Assets {
             .position(|k| k == &handle.key)
             .unwrap();
         self.loaded.borrow_mut().swap_remove(location);
-        return *asset;
+        *asset
     }
 
     // Load multiple assets that have the same type in multiple threads at the same time without checking their extensions
     // This does *not* require the arguments of the asset to live as long as 'static
-    pub unsafe fn batch_async_load_unchecked<'s, 'args, A: Asset + Send + Sync>(
+    pub unsafe fn batch_async_load_unchecked<
+        's,
+        'args,
+        A: Asset + Send + Sync,
+    >(
         &self,
         inputs: Vec<impl AssetInput<'s, 'args, A> + Send + Sync>,
         threadpool: &mut ThreadPool,
@@ -251,7 +275,7 @@ impl Assets {
                 let tx = tx.clone();
                 let user = user.clone();
                 let bytes = bytes.clone();
-                
+
                 scope.execute(move || {
                     // All this does is that it ensures that the bytes are valid before we actually deserialize the asset
                     let (path, args) = input.split();
@@ -267,22 +291,30 @@ impl Assets {
                     } else {
                         // TODO: Proper error logging
                         let mut write = bytes.write();
-                        let bytes = super::raw::read(&path, user.as_ref().as_ref().unwrap()).unwrap();
+                        let bytes = super::raw::read(
+                            &path,
+                            user.as_ref().as_ref().unwrap(),
+                        )
+                        .unwrap();
                         let arc: Arc<[u8]> = Arc::from(bytes);
                         write.insert(path.clone(), arc.clone());
                         arc
                     };
-                    
+
                     // Deserialize the asset and send it back
-                    tx.send((i, A::deserialize(
-                        crate::Data {
-                            name,
-                            extension,
-                            bytes,
-                            path: path.as_path(),
-                        },
-                        args,
-                    ))).unwrap();
+                    tx.send((
+                        i,
+                        A::deserialize(
+                            crate::Data {
+                                name,
+                                extension,
+                                bytes,
+                                path: path.as_path(),
+                            },
+                            args,
+                        ),
+                    ))
+                    .unwrap();
                 });
             }
         });
@@ -307,23 +339,24 @@ impl Assets {
         let closure = |path: &str| {
             let pathbuf = PathBuf::from_str(path).unwrap();
             let (_, extension) = pathbuf
-            .file_name()
-            .and_then(OsStr::to_str)?
-            .split_once('.')?;
-            ((A::extensions().contains(&extension)) || A::extensions().is_empty())
+                .file_name()
+                .and_then(OsStr::to_str)?
+                .split_once('.')?;
+            ((A::extensions().contains(&extension))
+                || A::extensions().is_empty())
             .then_some(())?;
             Some(())
         };
 
         // Filter out invalid assets because of their extensions
-        input.retain(|input| {
-            closure(input.path()).is_some()
-        });
+        input.retain(|input| closure(input.path()).is_some());
 
         // Remap Asset to Option<Asset>
-        unsafe { self.batch_async_load_unchecked(input, threadpool) }.into_iter().map(Some).collect()
+        unsafe { self.batch_async_load_unchecked(input, threadpool) }
+            .into_iter()
+            .map(Some)
+            .collect()
     }
-    
 
     // Import a persistent asset using it's global asset path and it's raw bytes
     pub fn import(&self, path: impl AsRef<Path>, bytes: Vec<u8>) {
@@ -332,6 +365,9 @@ impl Assets {
             .strip_prefix("./assets/")
             .unwrap()
             .to_path_buf();
-        self.bytes.write().entry(path).or_insert(Arc::from(bytes));
+        self.bytes
+            .write()
+            .entry(path)
+            .or_insert_with(|| Arc::from(bytes));
     }
 }

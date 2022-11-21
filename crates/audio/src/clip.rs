@@ -42,7 +42,8 @@ impl Asset for AudioClip {
 
             // Decode a WAV file into the appropriate format
             "wav" => {
-                let mut read = BufReader::new(Cursor::new(data.bytes()));
+                let mut read =
+                    BufReader::new(Cursor::new(data.bytes()));
                 let (header, data) = wav::read(&mut read).unwrap();
             }
             _ => panic!(),

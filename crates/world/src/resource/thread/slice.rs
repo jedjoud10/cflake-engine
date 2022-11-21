@@ -2,7 +2,6 @@ use crate::{SendMutPtr, SendPtr};
 use std::{
     any::Any,
     slice::{from_raw_parts, from_raw_parts_mut},
-    sync::Arc,
 };
 
 // Implmented for immutable and mutable slice references
@@ -12,10 +11,14 @@ pub trait Slice<'i> {
     type Ptr: Any + Send + Sync + Copy + 'static;
 
     fn len(&self) -> Option<usize>;
+    fn is_empty(&self) -> Option<bool>;
     fn as_ptr(&mut self) -> Self::Ptr;
     unsafe fn from_raw_parts(ptr: Self::Ptr, len: usize) -> Self;
     unsafe fn offset_ptr(ptr: Self::Ptr, offset: usize) -> Self::Ptr;
-    unsafe fn get_unchecked<'a: 'i>(&'a mut self, index: usize) -> Self::Item;
+    unsafe fn get_unchecked<'a: 'i>(
+        &'a mut self,
+        index: usize,
+    ) -> Self::Item;
 }
 
 // Slice impl for immutable slices
@@ -26,6 +29,10 @@ impl<'i, T: 'static + Sync + Send> Slice<'i> for &[T] {
 
     fn len(&self) -> Option<usize> {
         Some(<[T]>::len(self))
+    }
+
+    fn is_empty(&self) -> Option<bool> {
+        Some(<[T]>::is_empty(self))
     }
 
     fn as_ptr(&mut self) -> Self::Ptr {
@@ -41,7 +48,10 @@ impl<'i, T: 'static + Sync + Send> Slice<'i> for &[T] {
         SendPtr::from(ptr.add(offset))
     }
 
-    unsafe fn get_unchecked<'a: 'i>(&'a mut self, index: usize) -> Self::Item {
+    unsafe fn get_unchecked<'a: 'i>(
+        &'a mut self,
+        index: usize,
+    ) -> Self::Item {
         <[T]>::get_unchecked(self, index)
     }
 }
@@ -53,7 +63,11 @@ impl<'i, T: 'static + Sync + Send> Slice<'i> for Option<&[T]> {
     type Ptr = Option<SendPtr<T>>;
 
     fn len(&self) -> Option<usize> {
-        None
+        self.map(|s| <[T]>::len(s))
+    }
+
+    fn is_empty(&self) -> Option<bool> {
+        self.map(|s| <[T]>::is_empty(s))
     }
 
     fn as_ptr(&mut self) -> Self::Ptr {
@@ -71,7 +85,10 @@ impl<'i, T: 'static + Sync + Send> Slice<'i> for Option<&[T]> {
         })
     }
 
-    unsafe fn get_unchecked<'a: 'i>(&'a mut self, index: usize) -> Self::Item {
+    unsafe fn get_unchecked<'a: 'i>(
+        &'a mut self,
+        index: usize,
+    ) -> Self::Item {
         self.as_ref()
             .map(|slice| <[T]>::get_unchecked(slice, index))
     }
@@ -87,6 +104,10 @@ impl<'i, T: 'static + Sync + Send> Slice<'i> for &mut [T] {
         Some(<[T]>::len(self))
     }
 
+    fn is_empty(&self) -> Option<bool> {
+        Some(<[T]>::is_empty(self))
+    }
+
     fn as_ptr(&mut self) -> Self::Ptr {
         <[T]>::as_mut_ptr(self).into()
     }
@@ -100,7 +121,10 @@ impl<'i, T: 'static + Sync + Send> Slice<'i> for &mut [T] {
         SendMutPtr::from(ptr.add(offset))
     }
 
-    unsafe fn get_unchecked<'a: 'i>(&'a mut self, index: usize) -> Self::Item {
+    unsafe fn get_unchecked<'a: 'i>(
+        &'a mut self,
+        index: usize,
+    ) -> Self::Item {
         <[T]>::get_unchecked_mut(self, index)
     }
 }
@@ -112,7 +136,11 @@ impl<'i, T: 'static + Sync + Send> Slice<'i> for Option<&mut [T]> {
     type Ptr = Option<SendMutPtr<T>>;
 
     fn len(&self) -> Option<usize> {
-        None
+        self.as_ref().map(|s| <[T]>::len(s))
+    }
+
+    fn is_empty(&self) -> Option<bool> {
+        self.as_ref().map(|s| <[T]>::is_empty(s))
     }
 
     fn as_ptr(&mut self) -> Self::Ptr {
@@ -130,7 +158,10 @@ impl<'i, T: 'static + Sync + Send> Slice<'i> for Option<&mut [T]> {
         })
     }
 
-    unsafe fn get_unchecked<'a: 'i>(&'a mut self, index: usize) -> Self::Item {
+    unsafe fn get_unchecked<'a: 'i>(
+        &'a mut self,
+        index: usize,
+    ) -> Self::Item {
         self.as_mut()
             .map(|slice| <[T]>::get_unchecked_mut(slice, index))
     }

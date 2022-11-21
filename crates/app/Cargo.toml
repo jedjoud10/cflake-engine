@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-glutin = "0.28.0"
+winit = "0.27.5" 
 lazy_static = "1.4.0"
 spin_sleep = "1.1.0"
 ahash = "0.7.6"
@@ -14,7 +14,7 @@ vek = "0.15.6"
 mimalloc = "0.1.28"
 input = { path = "../input" }
 ecs = { path = "../ecs" }
-rendering = { path = "../rendering" }
+graphics = { path = "../graphics" }
 world = { path = "../world" }
 assets = { path = "../assets" }
 math = { path = "../math" }
@@ -22,3 +22,7 @@ gui = { path = "../gui" }
 audio = { path = "../audio" }
 time = { path = "../time" }
 
+[features]
+two-dim = ["ecs/two-dim", "graphics/two-dim"]
+extended-tuples = ["ecs/extended-tuples"]
+extended-bitmasks = ["ecs/extended-bitmasks"]

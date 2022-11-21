@@ -4,16 +4,19 @@ Currently, cFlake engine is under heavy development (***very*** WIP), but pull r
 
 
 # Main features of cFlake:
-* Custom Event and Systems
-* Custom Entity Component System
-* Custom Renderer built on OpenGL and Glutin (switching to Vulkan)
-
+* Custom World Event, Systems, and Resources
+* Archetypal ECS built to be used in conjunction with the World Events and Systems (**WIP, improving performance by switching to column based states**)
+* Custom Renderer built on OpenGL and Glutin (**WIP, currently switching to Vulkan (Ash) and Winit**)
+* GPU Voxel generation and Octree Terrain (disabled temporarily)
+* Asynchronous asset loader and utility thread pool
+* Input mapping (serde feature disabled temporarily)
 # Main links
 * [YouTube Development Channel](https://www.youtube.com/channel/UCaeZjQFw4QIi5vdfonAmsvA)
 * [Trello dashboard](https://trello.com/b/9FsDb6Z1/cflake)
 
 # Thanks to:
-* Logan McLennan 
+* Lionel Stanway (MoldyToeMan)
+* Logan McLennan (PigSteel)
 * Dimev (Skythedragon)
 
 # LICENSE

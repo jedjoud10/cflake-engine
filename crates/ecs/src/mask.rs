@@ -7,14 +7,37 @@ use std::{
 
 use nohash_hasher::{IsEnabled, NoHashHasher};
 
+use crate::{Bundle, QueryLayoutMut, QueryLayoutRef};
+
+// RawBitMask bitmask value
+#[cfg(not(feature = "extended-bitmasks"))]
+pub type RawBitMask = u32;
+#[cfg(feature = "extended-bitmasks")]
+pub type RawBitMask = u64;
+
 // A mask is a simple 64 bit integer that tells us what components are enabled / disabled from within an entity
 // The ECS registry system uses masks to annotate each different type that might be a component, so in total
 // In total, there is only 64 different components that can be implemented using this ECS implementation
 #[derive(Clone, Copy, Hash, Eq, PartialEq, PartialOrd, Ord)]
-pub struct Mask(u64);
+pub struct Mask(RawBitMask);
 impl IsEnabled for Mask {}
 
 impl Mask {
+    // Create a mask from a bundle
+    pub fn from_bundle<B: Bundle>() -> Self {
+        B::reduce(|a, b| a | b)
+    }
+
+    // Create a mask from a ref layout
+    pub fn from_ref_layout<'s, L: QueryLayoutRef<'s>>() -> Self {
+        L::reduce(|a, b| a | b).both()
+    }
+
+    // Create a mask from a mut layout
+    pub fn from_mut_layout<'s, L: QueryLayoutMut<'s>>() -> Self {
+        L::reduce(|a, b| a | b).both()
+    }
+
     // Create a mask that has it's bitfield set to one
     pub fn one() -> Mask {
         Mask(0b1)
@@ -27,7 +50,7 @@ impl Mask {
 
     // Create a mask that has all of it's bits set
     pub fn all() -> Mask {
-        Mask(u64::MAX)
+        Mask(RawBitMask::MAX)
     }
 
     // Get the offset of this mask, assuming that it is a unit mask
@@ -63,18 +86,45 @@ impl Mask {
     pub fn contains(&self, other: Self) -> bool {
         *self & other == other
     }
+
+    // Iterate through the bits of this mask immutably
+    pub fn bits(&self) -> impl Iterator<Item = bool> {
+        let raw = self.0;
+        (0..(u64::BITS as usize))
+            .into_iter()
+            .map(move |i| (raw >> i) & 1 == 1)
+    }
+
+    // Iterate through the unit masks given from this main mask
+    // This will split the current mask into it's raw components that return itself when ORed together
+    pub fn units(&self) -> impl Iterator<Item = Mask> {
+        let raw = self.0;
+        (0..(u64::BITS as usize)).into_iter().filter_map(move |i| {
+            ((raw >> i) & 1 == 1).then(|| Mask::one() << i as usize)
+        })
+    }
+
+    // Count the number of set bits in this mask
+    pub fn count_ones(&self) -> u32 {
+        self.0.count_ones()
+    }
+
+    // Count the number of unset bits in this mask
+    pub fn count_zeros(&self) -> u32 {
+        self.0.count_zeros()
+    }
 }
 
 // Convert to raw bitfield
-impl Into<u64> for Mask {
-    fn into(self) -> u64 {
-        self.0
+impl From<Mask> for RawBitMask {
+    fn from(mask: Mask) -> RawBitMask {
+        mask.0
     }
 }
 
 // Convert from raw bitfield
-impl From<u64> for Mask {
-    fn from(bits: u64) -> Self {
+impl From<RawBitMask> for Mask {
+    fn from(bits: RawBitMask) -> Self {
         Self(bits)
     }
 }
@@ -133,13 +183,19 @@ impl Shr<usize> for Mask {
 }
 
 impl Display for Mask {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+    ) -> std::fmt::Result {
         write!(f, "m{:b}", self.0)
     }
 }
 
 impl Debug for Mask {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+    ) -> std::fmt::Result {
         write!(f, "m{:b}", self.0)
     }
 }
