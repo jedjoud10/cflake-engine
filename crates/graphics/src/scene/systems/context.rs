@@ -18,6 +18,7 @@ fn init(
             &window_settings.title,
             &raw,
             &graphic_settings,
+            &window_settings,
         )
     };
 
@@ -26,40 +27,12 @@ fn init(
         crate::context::Window::new(
             window_settings,
             raw,
-            &graphics.instance,
-            &graphics.entry,
         )
     };
-
-    // Instantiate a new logical device
-    let mut device = unsafe {
-        crate::context::Device::new(
-            &graphic_settings,
-            &graphics.instance,
-            &graphics.entry,
-            &window.surface_loader,
-            &window.surface,
-        )
-    };
-
-    // Create the swapchain
-    unsafe {
-        crate::context::Window::create_swapchain(
-            &mut window,
-            &graphics.instance,
-            &graphics.entry,
-            &device.physical_device,
-            &device.logical_device,
-            &device.command_pool,
-            device.graphics_queue_index,
-            &mut device.command_buffers,
-        );
-    }
 
     // Add the resources into the world
     world.insert(window);
     world.insert(graphics);
-    world.insert(device);
 }
 
 // Handle window quitting
@@ -74,22 +47,13 @@ fn event(world: &mut World, event: &mut WindowEvent) {
 fn shutdown(world: &mut World) {
     let graphics =
         world.remove::<crate::context::Graphics>().unwrap();
-    let window = world.remove::<crate::context::Window>().unwrap();
-    let device = world.remove::<crate::context::Device>().unwrap();
-
-    unsafe {
-        window.destroy(&device)
-    };
-    unsafe { device.destroy() };
+    
     unsafe { graphics.destroy() };
 }
 
 fn update(world: &mut World) {
-    let device = world.get_mut::<crate::context::Device>().unwrap();
-    let mut window =
-        world.get_mut::<crate::context::Window>().unwrap();
-
-    unsafe { window.draw(&device) }
+    let mut context = world.get_mut::<crate::context::Graphics>().unwrap();
+    unsafe { context.draw() }
 }
 
 // Context system will just register the Vulkan context and create a simple window
