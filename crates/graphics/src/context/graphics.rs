@@ -101,8 +101,6 @@ impl Graphics {
     ) -> Graphics {
         // Load the loading functions
         let entry = Entry::load().unwrap();
-        let version =
-            entry.try_enumerate_instance_version().unwrap().unwrap();
 
         // Get a window and display handle to the winit window
         let display_handle = window.raw_display_handle();
@@ -255,21 +253,10 @@ impl Graphics {
             swapchain_loader.get_swapchain_images(swapchain).unwrap();
 
         // Semaphore that is signaled whenever we have a new available image
-        let image_available_semaphore_create_info =
-            vk::SemaphoreCreateInfo::builder();
-        let image_available_semaphore = device
-            .create_semaphore(
-                &image_available_semaphore_create_info,
-                None,
-            )
-            .unwrap();
+        let image_available_semaphore = create_semaphore(&device);
 
         // Semaphore that is signaled when we finished rendering
-        let rendering_finished_semaphore_create_info =
-            vk::SemaphoreCreateInfo::builder();
-        let rendering_finished_semaphore = device
-            .create_semaphore(&rendering_finished_semaphore_create_info, None)
-            .unwrap();
+        let rendering_finished_semaphore = create_semaphore(&device);
 
         // Fence that is signaled when we finished rendering
         let rendering_finished_fence_create_info =
@@ -302,15 +289,7 @@ impl Graphics {
                 vk::CommandBufferBeginInfo::builder().flags(
                     vk::CommandBufferUsageFlags::SIMULTANEOUS_USE,
                 );
-
-            // Start recording the command buffer
-            device
-                .begin_command_buffer(
-                    command_buffer,
-                    &command_buffer_begin_info,
-                )
-                .unwrap();
-
+            
             // Image subresource range
             let subresource_range =
                 vk::ImageSubresourceRange::builder()
@@ -340,10 +319,13 @@ impl Graphics {
                 .image(image)
                 .subresource_range(*subresource_range);
 
-            // Set the clear color of the image view
-            let mut clear_color_value =
-                vk::ClearColorValue::default();
-            clear_color_value.float32 = [1.0; 4];
+            // Start recording the command buffer
+            device
+                .begin_command_buffer(
+                    command_buffer,
+                    &command_buffer_begin_info,
+                )
+                .unwrap();
 
             // Convert image layouts and wait
             device.cmd_pipeline_barrier(
@@ -356,6 +338,14 @@ impl Graphics {
                 &[*present_to_clear],
             );
 
+
+            // Set the clear color of the image view
+            let mut clear_color_value =
+                vk::ClearColorValue::default();
+            clear_color_value.float32 = [1.0; 4];
+
+
+
             // Clear the color of the image
             device.cmd_clear_color_image(
                 command_buffer,
@@ -365,6 +355,7 @@ impl Graphics {
                 &[*subresource_range],
             );
             
+
             // Convert image layouts and wait
             device.cmd_pipeline_barrier(
                 command_buffer,
@@ -477,6 +468,7 @@ impl Graphics {
     pub(crate) unsafe fn destroy(mut self) {
         self.device.device_wait_idle().unwrap();
 
+        // Destroy swapchain
         let swapchain = self.swapchain.take().unwrap();
         self.device.destroy_semaphore(
             swapchain.image_available_semaphore,
@@ -494,18 +486,29 @@ impl Graphics {
             .loader
             .destroy_swapchain(swapchain.raw, None);
 
+        // Destroy device
         self.device.device_wait_idle().unwrap();
         self.device.free_command_buffers(self.command_pool, self.command_buffers.as_slice());
         self.device
             .destroy_command_pool(self.command_pool, None);
         self.device.destroy_device(None);
 
+        // Destroy context
         self.surface_loader.destroy_surface(self.surface, None);
-
         self.debug_utils.destroy_debug_utils_messenger(
             self.debug_messenger,
             None,
         );
         self.instance.destroy_instance(None);
     }
+}
+
+unsafe fn create_semaphore(device: &ash::Device) -> vk::Semaphore {
+    let image_available_semaphore = device
+        .create_semaphore(
+            &vk::SemaphoreCreateInfo::default(),
+            None,
+        )
+        .unwrap();
+    image_available_semaphore
 }
