@@ -15,6 +15,7 @@ mimalloc = "0.1.28"
 input = { path = "../input" }
 ecs = { path = "../ecs" }
 graphics = { path = "../graphics" }
+rendering = { path = "../rendering" }
 world = { path = "../world" }
 assets = { path = "../assets" }
 math = { path = "../math" }
@@ -23,6 +24,6 @@ audio = { path = "../audio" }
 time = { path = "../time" }
 
 [features]
-two-dim = ["ecs/two-dim", "graphics/two-dim"]
+two-dim = ["ecs/two-dim", "rendering/two-dim"]
 extended-tuples = ["ecs/extended-tuples"]
 extended-bitmasks = ["ecs/extended-bitmasks"]

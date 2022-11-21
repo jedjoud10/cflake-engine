@@ -40,12 +40,12 @@ pub enum Axis {
 }
 
 // Axis code mappings copied from gilrs source code
-pub const OFFSET: u32 = 5;
-pub const AXIS_LSTICKX: u32 = 1 + OFFSET;
-pub const AXIS_LSTICKY: u32 = 2 + OFFSET;
-pub const AXIS_LEFTZ: u32 = 3 + OFFSET;
-pub const AXIS_RSTICKX: u32 = 4 + OFFSET;
-pub const AXIS_RSTICKY: u32 = 5 + OFFSET;
-pub const AXIS_RIGHTZ: u32 = 6 + OFFSET;
-pub const AXIS_DPADX: u32 = 7 + OFFSET;
-pub const AXIS_DPADY: u32 = 8 + OFFSET;
+const OFFSET: u32 = 5;
+const AXIS_LSTICKX: u32 = 1 + OFFSET;
+const AXIS_LSTICKY: u32 = 2 + OFFSET;
+const AXIS_LEFTZ: u32 = 3 + OFFSET;
+const AXIS_RSTICKX: u32 = 4 + OFFSET;
+const AXIS_RSTICKY: u32 = 5 + OFFSET;
+const AXIS_RIGHTZ: u32 = 6 + OFFSET;
+const AXIS_DPADX: u32 = 7 + OFFSET;
+const AXIS_DPADY: u32 = 8 + OFFSET;

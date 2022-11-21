@@ -30,7 +30,7 @@ pub struct Window {
 
 impl Window {
     // Create a new window using an event loop and it's settings
-    pub(crate) unsafe fn new(
+    pub(crate) fn new(
         window_settings: WindowSettings,
         el: &EventLoop<()>,
     ) -> Self {

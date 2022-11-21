@@ -90,6 +90,7 @@ dependencies = [
  "lazy_static",
  "math",
  "mimalloc",
+ "rendering",
  "spin_sleep",
  "time",
  "vek",
@@ -1374,7 +1375,6 @@ version = "0.1.0"
 dependencies = [
  "assets",
  "bytemuck",
- "ecs",
  "env_logger",
  "log",
  "math",
@@ -2501,6 +2501,14 @@ name = "renderdoc-sys"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1382d1f0a252c4bf97dc20d979a2fdd05b024acd7c2ed0f7595d7817666a157"
+
+[[package]]
+name = "rendering"
+version = "0.1.0"
+dependencies = [
+ "ecs",
+ "graphics",
+]
 
 [[package]]
 name = "riff"

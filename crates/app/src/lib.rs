@@ -4,6 +4,7 @@ pub use assets;
 pub use audio;
 pub use ecs;
 pub use graphics;
+pub use rendering;
 pub use gui;
 pub use input;
 pub use math;
@@ -15,7 +16,8 @@ pub mod prelude {
     pub use crate::assets::*;
     pub use crate::audio::*;
     pub use crate::ecs::*;
-    pub use crate::graphics::prelude::*;
+    pub use crate::graphics::*;
+    pub use crate::rendering::*;
     pub use crate::gui::*;
     pub use crate::input::*;
     pub use crate::math::*;

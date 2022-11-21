@@ -4,7 +4,7 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
 };
 //use gui::egui::util::id_type_map::TypeId;
-use graphics::prelude::{
+use graphics::{
     FrameRateLimit, GraphicSettings, WindowSettings,
 };
 use mimalloc::MiMalloc;
@@ -164,7 +164,7 @@ impl App {
         let window = self.window.clone();
         let graphics = self.graphics.clone();
         self = self.insert_system(move |system: &mut System| {
-            graphics::scene::system(system, window, graphics)
+            graphics::system(system, window, graphics)
         });
 
         // Sort & execute the init events

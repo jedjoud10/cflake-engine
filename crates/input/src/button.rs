@@ -309,27 +309,27 @@ pub enum Button {
 }
 
 // GamePad mappings from gilrs source code
-pub const OFFSET: u32 = 0xA2;
+const OFFSET: u32 = 0xA2;
 
 // Button code mappings
-pub const BTN_SOUTH: u32 = 1 + OFFSET;
-pub const BTN_EAST: u32 = 2 + OFFSET;
-pub const BTN_C: u32 = 3 + OFFSET;
-pub const BTN_NORTH: u32 = 4 + OFFSET;
-pub const BTN_WEST: u32 = 5 + OFFSET;
-pub const BTN_Z: u32 = 6 + OFFSET;
-pub const BTN_LT: u32 = 7 + OFFSET;
-pub const BTN_RT: u32 = 8 + OFFSET;
-pub const BTN_LT2: u32 = 9 + OFFSET;
-pub const BTN_RT2: u32 = 10 + OFFSET;
-pub const BTN_SELECT: u32 = 11 + OFFSET;
-pub const BTN_START: u32 = 12 + OFFSET;
-pub const BTN_MODE: u32 = 13 + OFFSET;
-pub const BTN_LTHUMB: u32 = 14 + OFFSET;
-pub const BTN_RTHUMB: u32 = 15 + OFFSET;
+const BTN_SOUTH: u32 = 1 + OFFSET;
+const BTN_EAST: u32 = 2 + OFFSET;
+const BTN_C: u32 = 3 + OFFSET;
+const BTN_NORTH: u32 = 4 + OFFSET;
+const BTN_WEST: u32 = 5 + OFFSET;
+const BTN_Z: u32 = 6 + OFFSET;
+const BTN_LT: u32 = 7 + OFFSET;
+const BTN_RT: u32 = 8 + OFFSET;
+const BTN_LT2: u32 = 9 + OFFSET;
+const BTN_RT2: u32 = 10 + OFFSET;
+const BTN_SELECT: u32 = 11 + OFFSET;
+const BTN_START: u32 = 12 + OFFSET;
+const BTN_MODE: u32 = 13 + OFFSET;
+const BTN_LTHUMB: u32 = 14 + OFFSET;
+const BTN_RTHUMB: u32 = 15 + OFFSET;
 
 // Dpad code mappings
-pub const BTN_DPAD_UP: u32 = 16 + OFFSET;
-pub const BTN_DPAD_DOWN: u32 = 17 + OFFSET;
-pub const BTN_DPAD_LEFT: u32 = 18 + OFFSET;
-pub const BTN_DPAD_RIGHT: u32 = 19 + OFFSET;
+const BTN_DPAD_UP: u32 = 16 + OFFSET;
+const BTN_DPAD_DOWN: u32 = 17 + OFFSET;
+const BTN_DPAD_LEFT: u32 = 18 + OFFSET;
+const BTN_DPAD_RIGHT: u32 = 19 + OFFSET;

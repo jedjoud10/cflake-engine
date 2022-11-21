@@ -1,6 +1,4 @@
 pub mod context;
-pub mod scene;
-pub mod prelude {
-    pub use super::context::*;
-    pub use super::scene::*;
-}
+pub mod system;
+pub use context::*;
+pub use system::*;
