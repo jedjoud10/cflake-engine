@@ -1,7 +1,7 @@
-use std::{marker::PhantomData, ops::RangeBounds, mem::size_of};
+use std::{marker::PhantomData, ops::RangeBounds, mem::{size_of, MaybeUninit}};
 use wgpu::util::DeviceExt;
 
-use crate::Graphics;
+use crate::{Graphics, BufferSettings, BufferMapping};
 use super::BufferMode;
 
 
@@ -19,23 +19,28 @@ pub type StorageBuffer<T> = Buffer<T, STORAGE>;
 pub type UniformBuffer<T> = Buffer<T, UNIFORM>;
 pub type IndirectBuffer<T> = Buffer<T, INDIRECT>;
 
+// Plain old data type internally used by buffers
+pub trait Content: Clone + Copy + Sync + Send + 'static {}
+impl<T: Clone + Copy + Sync + Send + 'static> Content for T {}
+
 // An abstraction layer over a valid OpenGL buffer
 // This takes a valid OpenGL type and an element type, though the user won't be able make the buffer directly
 // This also takes a constant that represents it's OpenGL target
-pub struct Buffer<T, const TYPE: u32> {
+pub struct Buffer<T: Content, const TYPE: u32> {
     buffer: wgpu::Buffer,
     length: usize,
     capacity: usize,
-    mode: BufferMode,
+    settings: BufferSettings,
+    graphics: Graphics,
     _phantom: PhantomData<T>,
 }
 
-impl<T, const TYPE: u32> Buffer<T, TYPE> {
+impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     // Create a buffer using a slice of elements 
     // (will return none if we try to create a zero length Static, Dynamic, or Partial buffer)
-    pub fn from_slice(graphics: &Graphics, slice: &[T], mode: BufferMode) -> Option<Self> {
+    pub fn from_slice(graphics: &Graphics, slice: &[T], settings: BufferSettings) -> Option<Self> {
         // Return none if we try to make a null buffer
-        if slice.is_empty() && mode.reallocate_permission() {
+        if slice.is_empty() && !matches!(settings.mode, BufferMode::Resizable) {
             return None;
         } 
 
@@ -43,17 +48,22 @@ impl<T, const TYPE: u32> Buffer<T, TYPE> {
         let stride = size_of::<T>();
         let size = u64::try_from(stride * slice.len()).unwrap();
         
-        /*
-        let size = ((size as f32) / (wgpu::COPY_BUFFER_ALIGNMENT as f32)).ceil() as u64 * wgpu::COPY_BUFFER_ALIGNMENT;
-        dbg!(size);
-        */
+        // If we use persistent mapping we shall align the size
+        let size = if settings.mapping.persistent {
+            let frac = size as f32 / wgpu::COPY_BUFFER_ALIGNMENT as f32;
+            let ceiled = frac.ceil() as u64;
+            wgpu::COPY_BUFFER_ALIGNMENT * ceiled
+        } else { size };
 
         // Cast slice to appropriate raw data
         let data = if slice.is_empty() {
             &[]
         } else {
-            // TODO: Handle conversions and COPY_BUFFER_ALIGNMENT
-            todo!()
+            if settings.mapping.persistent {
+                todo!()
+            } else {
+                unsafe { std::slice::from_raw_parts(slice.as_ptr() as *const u8, size as usize) }
+            }
         };
 
         // Create the buffer usage flags
@@ -71,12 +81,9 @@ impl<T, const TYPE: u32> Buffer<T, TYPE> {
             let mapping = read | write;
 
             // Get type usage
-            let _type = wgpu::BufferUsages::from_bits(TYPE).unwrap();
             mapping | _type | wgpu::BufferUsages::COPY_DST
             */
-            todo!()
-
-            // Since wgpu does not allow mapping whilst differe
+            wgpu::BufferUsages::from_bits(TYPE).unwrap() | wgpu::BufferUsages::COPY_DST
         };
 
         // Create buffer description
@@ -84,7 +91,7 @@ impl<T, const TYPE: u32> Buffer<T, TYPE> {
             label: None,
             size,
             usage,
-            mapped_at_creation: mode.map_persistent_permission(),
+            mapped_at_creation: settings.mapping.persistent,
         };
 
         // Create the raw buffer
@@ -99,28 +106,28 @@ impl<T, const TYPE: u32> Buffer<T, TYPE> {
     
 
     // Create an empty buffer if we can (resizable)
-    pub fn empty(graphics: &Graphics, mode: BufferMode) -> Option<Self> {
-        Self::from_slice(graphics, &[], mode)
+    pub fn empty(graphics: &Graphics, settings: BufferSettings) -> Option<Self> {
+        Self::from_slice(graphics, &[], settings)
     }
 
     // Get the current length of the buffer
     pub fn len(&self) -> usize {
-        todo!()
+        self.length
     }
 
     // Check if the buffer is empty
     pub fn is_empty(&self) -> bool {
-        todo!()
+        self.length == 0
     }
 
     // Get the current capacity of the buffer
     pub fn capacity(&self) -> usize {
-        todo!()
+        self.capacity
     }
 
-    // Get the buffer mode that we used to initialize this buffer
-    pub fn mode(&self) -> BufferMode {
-        todo!()
+    // Get the buffer settings
+    pub fn settings(&self) -> BufferSettings {
+        self.settings
     }
 
     // Convert a range bounds type into the range indices
@@ -169,23 +176,16 @@ impl<T, const TYPE: u32> Buffer<T, TYPE> {
         todo!()
     }
 
-    /*
-    // Get an untyped buffer reference of the current buffer
-    pub fn untyped_format(&self) -> UntypedBufferFormat {
-        todo!()
-    }
-    */
-
     // Get the buffer's stride (length of each element)
     pub fn stride(&self) -> usize {
-        todo!()
+        size_of::<T>()
     }
 
     // Copy the data from another buffer's range into this buffer's range
-    pub fn copy_range_from<const OTHER: u32>(
+    pub fn copy_range_from<const OTHER_TYPE: u32>(
         &mut self,
         range: impl RangeBounds<usize>,
-        other: &Buffer<T, OTHER>,
+        other: &Buffer<T, OTHER_TYPE>,
         offset: usize,
     ) {
         todo!()
@@ -213,7 +213,7 @@ impl<T, const TYPE: u32> Buffer<T, TYPE> {
 
     /*
     // Create a new ranged buffer reader that can read from the buffer
-    pub fn as_view_ranged(&self, range: impl RangeBounds<usize>) -> Option<BufferView<T, TARGET>> {
+    pub fn as_view_ranged(&self, range: impl RangeBounds<usize>) -> Option<BufferView<T>> {
         todo!()
     }
 
@@ -221,15 +221,18 @@ impl<T, const TYPE: u32> Buffer<T, TYPE> {
     pub fn as_view_ranged_mut(
         &mut self,
         range: impl RangeBounds<usize>,
-    ) -> Option<BufferViewMut<T, TARGET>> {
+    ) -> Option<BufferViewMut<T>> {
+        todo!()
     }
 
     // Create a buffer reader that uses the whole buffer
-    pub fn as_view(&self) -> Option<BufferView<T, TARGET>> {
+    pub fn as_view(&self) -> Option<BufferView<T>> {
+        todo!()
     }
 
     // Create a buffer writer that uses the whole buffer
-    pub fn as_mut_view(&mut self) -> Option<BufferViewMut<T, TARGET>> {
+    pub fn as_mut_view(&mut self) -> Option<BufferViewMut<T>> {
+        todo!()
     }
     */
 }

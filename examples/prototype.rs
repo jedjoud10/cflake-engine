@@ -1,3 +1,5 @@
+use std::mem::size_of;
+
 use cflake_engine::prelude::*;
 
 // Prototype example game window
@@ -12,7 +14,9 @@ fn main() {
 // Executed at the start
 fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
-    let buffer = UniformBuffer::from_slice(&graphics, &[1i32, 2, 3], BufferMode::default());
+    let buffer = UniformBuffer::from_slice(&graphics, &[1i32, 2, 3], BufferSettings::default());
+    let size = size_of::<UniformBuffer<i32>>();
+    dbg!(size);
     drop(graphics);
     world.insert(buffer);
 }
