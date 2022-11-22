@@ -235,18 +235,24 @@ impl Assets {
     where
         A::Args<'static>: Send + Sync,
     {
+        // Spin lock whilst whilst waiting for an asset to load
         while !self.was_loaded(&handle) {}
+
+        // Get the global asset queue and find the index of the handle key 
         let mut assets = self.assets.write();
-        let boxed = assets.remove(handle.key).unwrap();
-        let asset = boxed.unwrap().downcast::<A>().unwrap();
         let location = self
             .loaded
             .borrow()
             .iter()
             .position(|k| k == &handle.key)
             .unwrap();
+
+        // Remove the key
         self.loaded.borrow_mut().swap_remove(location);
-        *asset
+
+        // Remove the asset from the global queue and return it
+        let boxed = assets.remove(handle.key).unwrap();
+        *boxed.unwrap().downcast::<A>().unwrap()
     }
 
     // Load multiple assets that have the same type in multiple threads at the same time without checking their extensions
@@ -327,7 +333,7 @@ impl Assets {
 
     // Load multiple assets that have the same type in multiple threads at the same time
     // This does *not* require the arguments of the asset to live as long as 'static
-    pub fn batch_async_load_<'s, 'args, A: Asset + Send + Sync>(
+    pub fn batch_async_load<'s, 'args, A: Asset + Send + Sync>(
         &self,
         mut input: Vec<impl AssetInput<'s, 'args, A> + Send + Sync>,
         threadpool: &mut ThreadPool,

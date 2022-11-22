@@ -5,8 +5,18 @@ fn main() {
     App::default()
         .set_window_title("cflake engine prototype example")
         .insert_update(update)
+        .insert_init(init)
         .execute();
 }
+
+// Executed at the start
+fn init(world: &mut World) {
+    let graphics = world.get::<Graphics>().unwrap();
+    let buffer = UniformBuffer::from_slice(&graphics, &[1i32, 2, 3], BufferMode::default());
+    drop(graphics);
+    world.insert(buffer);
+}
+
 
 // Executed each frame
 fn update(world: &mut World) {

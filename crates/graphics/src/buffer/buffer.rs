@@ -1,22 +1,9 @@
-use std::{marker::PhantomData, ops::RangeBounds};
+use std::{marker::PhantomData, ops::RangeBounds, mem::size_of};
+use wgpu::util::DeviceExt;
+
 use crate::Graphics;
+use super::BufferMode;
 
-// Some settings that tell us how exactly we should create the buffer
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
-pub enum BufferMode {
-    // Static buffers are only created once, and they can never be modified ever again
-    Static,
-
-    // Dynamic buffers are like static buffers, but they allow the user to mutate each element
-    Dynamic,
-
-    // Partial buffer have a fixed capacity, but a dynamic length
-    Parital,
-
-    // Resizable buffers can be resized to whatever length needed
-    #[default]
-    Resizable,
-}
 
 // Bitmask from WGPU BufferUsages
 const VERTEX: u32 = wgpu::BufferUsages::VERTEX.bits();
@@ -37,6 +24,8 @@ pub type IndirectBuffer<T> = Buffer<T, INDIRECT>;
 // This also takes a constant that represents it's OpenGL target
 pub struct Buffer<T, const TYPE: u32> {
     buffer: wgpu::Buffer,
+    length: usize,
+    capacity: usize,
     mode: BufferMode,
     _phantom: PhantomData<T>,
 }
@@ -45,12 +34,73 @@ impl<T, const TYPE: u32> Buffer<T, TYPE> {
     // Create a buffer using a slice of elements 
     // (will return none if we try to create a zero length Static, Dynamic, or Partial buffer)
     pub fn from_slice(graphics: &Graphics, slice: &[T], mode: BufferMode) -> Option<Self> {
+        // Return none if we try to make a null buffer
+        if slice.is_empty() && mode.reallocate_permission() {
+            return None;
+        } 
+
+        // Convert the array length to byte size
+        let stride = size_of::<T>();
+        let size = u64::try_from(stride * slice.len()).unwrap();
+        
+        /*
+        let size = ((size as f32) / (wgpu::COPY_BUFFER_ALIGNMENT as f32)).ceil() as u64 * wgpu::COPY_BUFFER_ALIGNMENT;
+        dbg!(size);
+        */
+
+        // Cast slice to appropriate raw data
+        let data = if slice.is_empty() {
+            &[]
+        } else {
+            // TODO: Handle conversions and COPY_BUFFER_ALIGNMENT
+            todo!()
+        };
+
+        // Create the buffer usage flags
+        let usage = {
+            /*
+            // Get map read permissions
+            let read = wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST;
+            let read = if mode.map_read_permission() { read } else { wgpu::BufferUsages::empty() };
+
+            // Get map write permissions
+            let write = wgpu::BufferUsages::MAP_WRITE | wgpu::BufferUsages::COPY_SRC;
+            let write = if mode.map_write_permission() { write } else { wgpu::BufferUsages::empty() };
+
+            // Get mapping permissions
+            let mapping = read | write;
+
+            // Get type usage
+            let _type = wgpu::BufferUsages::from_bits(TYPE).unwrap();
+            mapping | _type | wgpu::BufferUsages::COPY_DST
+            */
+            todo!()
+
+            // Since wgpu does not allow mapping whilst differe
+        };
+
+        // Create buffer description
+        let description = wgpu::BufferDescriptor {
+            label: None,
+            size,
+            usage,
+            mapped_at_creation: mode.map_persistent_permission(),
+        };
+
+        // Create the raw buffer
+        let buffer = graphics.device().create_buffer(&description);
+
+        // Write to the buffer
+        let queue  = graphics.queue();
+        queue.write_buffer(&buffer, 0, data);
+        queue.submit([]);
         None
     }
+    
 
     // Create an empty buffer if we can (resizable)
     pub fn empty(graphics: &Graphics, mode: BufferMode) -> Option<Self> {
-        todo!()
+        Self::from_slice(graphics, &[], mode)
     }
 
     // Get the current length of the buffer
