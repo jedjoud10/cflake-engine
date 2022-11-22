@@ -22,17 +22,42 @@ fn init(
         &graphic_settings,
         &window_settings,
     );
-
+    
     // Add the resources into the world
     world.insert(window);
     world.insert(graphics);
 }
 
-// Handle window quitting
+// Handle window quitting and resizing
 fn event(world: &mut World, event: &mut WindowEvent) {
+    match event {
+        // Window has been resized
+        WindowEvent::Resized(size) => {
+            // Check if the size is valid
+            if size.height == 0 || size.height == 0 {
+                return;
+            } 
+
+            // Resize the window by re-configuring WGPU 
+            let graphics = world.get::<crate::context::Graphics>().unwrap();
+            let config = graphics.config();
+            let mut lock = config.lock();
+            lock.width = size.width;
+            lock.height = size.height;
+            graphics.surface().configure(graphics.device(), &*lock);
+        }
+
+        // Close requested, set the world state to "Stopped"
+        WindowEvent::CloseRequested => {
+            let mut state = world.get_mut::<State>().unwrap();
+            *state = State::Stopped;
+        },
+
+        _ => (),
+    }
+    
     if matches!(event, WindowEvent::CloseRequested) {
-        let mut state = world.get_mut::<State>().unwrap();
-        *state = State::Stopped;
+
     }
 }
 
