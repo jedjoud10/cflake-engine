@@ -4,7 +4,7 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
 };
 //use gui::egui::util::id_type_map::TypeId;
-use graphics::{FrameRateLimit, GraphicSettings, WindowSettings};
+use graphics::{FrameRateLimit, GraphicSettings, WindowSettings, BufferingMode};
 use mimalloc::MiMalloc;
 use std::{any::TypeId, path::PathBuf};
 use world::{
@@ -37,6 +37,7 @@ impl Default for App {
             window: WindowSettings {
                 title: "Default title".to_string(),
                 limit: FrameRateLimit::default(),
+                buffering: BufferingMode::default(),
                 fullscreen: false,
             },
             graphics: GraphicSettings::default(),
@@ -95,7 +96,7 @@ impl App {
 
     // Insert a single init event
     pub fn insert_init<ID>(
-        mut self,
+        self,
         init: impl Event<Init, ID> + 'static,
     ) -> Self {
         self.insert_system(move |system: &mut System| {
@@ -105,7 +106,7 @@ impl App {
 
     // Insert a single update event
     pub fn insert_update<ID>(
-        mut self,
+        self,
         update: impl Event<Update, ID> + 'static,
     ) -> Self {
         self.insert_system(move |system: &mut System| {
@@ -115,7 +116,7 @@ impl App {
 
     // Insert a single shutdown event
     pub fn insert_shutdown<ID>(
-        mut self,
+        self,
         shutdown: impl Event<Shutdown, ID> + 'static,
     ) -> Self {
         self.insert_system(move |system: &mut System| {
@@ -125,7 +126,7 @@ impl App {
 
     // Insert a single window event
     pub fn insert_window<ID>(
-        mut self,
+        self,
         event: impl Event<WindowEvent<'static>, ID> + 'static,
     ) -> Self {
         self.insert_system(move |system: &mut System| {
@@ -135,7 +136,7 @@ impl App {
 
     // Insert a single device event
     pub fn insert_device<ID>(
-        mut self,
+        self,
         event: impl Event<DeviceEvent, ID> + 'static,
     ) -> Self {
         self.insert_system(move |system: &mut System| {

@@ -21,6 +21,7 @@ use winit::{
 };
 
 // Debug callback that is invoked from the debug messenger
+#[cfg(debug_assertions)]
 pub(super) unsafe extern "system" fn debug_callback(
     message_severity: vk::DebugUtilsMessageSeverityFlagsEXT,
     message_type: vk::DebugUtilsMessageTypeFlagsEXT,

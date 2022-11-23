@@ -17,7 +17,7 @@ fn init(
     let graphics = unsafe {
         crate::context::Graphics::new(
             &window_settings.title,
-            &window.raw,
+            &window.window(),
             &graphic_settings,
             &window_settings,
         )

@@ -31,10 +31,12 @@ pub struct GraphicSettings {
 impl Default for GraphicSettings {
     fn default() -> Self {
         Self {
+            #[cfg(debug_assertions)]
             validation_layers: vec![CString::new(
                 "VK_LAYER_KHRONOS_validation".to_owned(),
-            )
-            .unwrap()],
+            ).unwrap()],
+            #[cfg(not(debug_assertions))]
+            validation_layers: vec![],
             instance_extensions: vec![
                 DebugUtils::name().to_owned(),
                 Surface::name().to_owned(),
@@ -69,6 +71,8 @@ struct SwapchainWrapper {
     rendering_finished_semaphore: vk::Semaphore,
     rendering_finished_fence: vk::Fence,
     image_available_semaphore: vk::Semaphore,
+    format: vk::SurfaceFormatKHR,
+
 }
 
 // Graphical context that we will wrap around the WGPU instance
@@ -77,7 +81,10 @@ pub struct Graphics {
     // Context related
     pub(crate) entry: Entry,
     pub(crate) instance: Instance,
+
+    #[cfg(debug_assertions)]
     debug_utils: DebugUtils,
+    #[cfg(debug_assertions)]
     debug_messenger: vk::DebugUtilsMessengerEXT,
 
     // Physical and logical devices
@@ -134,6 +141,7 @@ impl Graphics {
             .engine_name(&engine_name);
 
         // Create the debug messenger create info
+        #[cfg(debug_assertions)]
         let mut debug_messenger_create_info =
             super::create_debug_messenger_create_info();
 
@@ -156,20 +164,33 @@ impl Graphics {
             .map(|cstr| cstr.as_ptr())
             .collect::<Vec<_>>();
 
-        // Setup the instance create info
+        // Setup the instance create info (with debug info)
+        #[cfg(debug_assertions)]
         let instance_create_info = *vk::InstanceCreateInfo::builder()
             .application_info(&app_info)
             .enabled_layer_names(&validation_ptrs)
             .enabled_extension_names(&extension_names_ptrs)
             .push_next(&mut debug_messenger_create_info);
 
+
+        // Setup the instance create info (without debug info)
+        #[cfg(not(debug_assertions))]
+        let instance_create_info = *vk::InstanceCreateInfo::builder()
+            .application_info(&app_info)
+            .enabled_layer_names(&validation_ptrs)
+            .enabled_extension_names(&extension_names_ptrs);
+
         // Create the instance
         let instance = entry
             .create_instance(&instance_create_info, None)
             .unwrap();
 
-        // Create the debug messenger and the debug utils
+        // Create the debug utils
+        #[cfg(debug_assertions)]
         let debug_utils = DebugUtils::new(&entry, &instance);
+
+        // Create the debug messenger
+        #[cfg(debug_assertions)]
         let debug_messenger = debug_utils
             .create_debug_utils_messenger(
                 &debug_messenger_create_info,
@@ -264,7 +285,7 @@ impl Graphics {
             .unwrap();
 
         // Vector that will store the logical device command buffers
-        let mut command_buffers = Vec::<vk::CommandBuffer>::new();
+        let command_buffers = Vec::<vk::CommandBuffer>::new();
 
         // Get the supported surface formats khr
         let format = super::pick_surface_format(
@@ -321,7 +342,11 @@ impl Graphics {
         Self {
             entry,
             instance,
+
+            #[cfg(debug_assertions)]
             debug_utils,
+
+            #[cfg(debug_assertions)]
             debug_messenger,
 
             device: device,
@@ -349,6 +374,7 @@ impl Graphics {
                 rendering_finished_semaphore,
                 rendering_finished_fence,
                 image_available_semaphore,
+                format,
             }),
         }
     }
@@ -384,48 +410,43 @@ impl Graphics {
             // Get command buffer for the correspoding image view
             let image = swapchain.images[image_index as usize];
 
-            // Record the command buffer and set the clear frame
+            // Record the command buffer
             let command_buffer_begin_info =
                 vk::CommandBufferBeginInfo::builder().flags(
                     vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT,
                 );
+            self.device.begin_command_buffer(command_buffer, &command_buffer_begin_info).unwrap();
 
             // Image subresource range
             let subresource_range =
-                vk::ImageSubresourceRange::builder()
-                    .aspect_mask(vk::ImageAspectFlags::COLOR)
-                    .level_count(1)
-                    .layer_count(1);
-
-            // Reset the presented image layout to be able to clear it
+            vk::ImageSubresourceRange::builder()
+                .aspect_mask(vk::ImageAspectFlags::COLOR)
+                .level_count(1)
+                .layer_count(1);
+    
+        
+            
+            // Create a pipeline barrier to convert the image to clear it
             let present_to_clear = vk::ImageMemoryBarrier::builder()
-                .src_access_mask(vk::AccessFlags::MEMORY_READ)
-                .dst_access_mask(vk::AccessFlags::TRANSFER_WRITE)
                 .old_layout(vk::ImageLayout::UNDEFINED)
                 .new_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
+                .dst_access_mask(vk::AccessFlags::TRANSFER_WRITE)
+                .src_access_mask(vk::AccessFlags::MEMORY_READ)
                 .src_queue_family_index(self.graphics_family_index)
                 .dst_queue_family_index(self.graphics_family_index)
                 .image(image)
                 .subresource_range(*subresource_range);
 
-            // Convert the clear image layout to be able to present it
+            // Create a pipeline barrier to convert the cleared image to present it
             let clear_to_present = vk::ImageMemoryBarrier::builder()
-                .src_access_mask(vk::AccessFlags::TRANSFER_WRITE)
-                .dst_access_mask(vk::AccessFlags::MEMORY_READ)
                 .old_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
                 .new_layout(vk::ImageLayout::PRESENT_SRC_KHR)
+                .dst_access_mask(vk::AccessFlags::MEMORY_READ)
+                .src_access_mask(vk::AccessFlags::TRANSFER_WRITE)
                 .src_queue_family_index(self.graphics_family_index)
                 .dst_queue_family_index(self.graphics_family_index)
                 .image(image)
                 .subresource_range(*subresource_range);
-
-            // Start recording the command buffer
-            self.device
-                .begin_command_buffer(
-                    command_buffer,
-                    &command_buffer_begin_info,
-                )
-                .unwrap();
 
             // Convert image layouts and wait
             self.device.cmd_pipeline_barrier(
@@ -463,7 +484,6 @@ impl Graphics {
                 &[*clear_to_present],
             );
 
-            // Stop recording the command buffer
             self.device.end_command_buffer(command_buffer).unwrap();
 
             // Wait until we have a presentable image we can write to
@@ -548,10 +568,13 @@ impl Graphics {
 
         // Destroy context
         self.surface_loader.destroy_surface(self.surface, None);
+
+        #[cfg(debug_assertions)]
         self.debug_utils.destroy_debug_utils_messenger(
             self.debug_messenger,
             None,
         );
+
         self.instance.destroy_instance(None);
     }
 }
