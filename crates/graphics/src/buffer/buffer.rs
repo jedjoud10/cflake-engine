@@ -186,12 +186,87 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
 
     // Extent the current buffer using data from an iterator
     pub fn extend_from_iterator<I: Iterator<Item = T>>(&mut self, iterator: I) {
-        todo!()
+        let collected = iterator.collect::<Vec<_>>();
+        self.extend_from_slice(&collected);
     }
 
     // Extend the current buffer using data from a new slice
     pub fn extend_from_slice(&mut self, slice: &[T]) {
-        todo!()
+        assert!(
+            matches!(self.mode, BufferMode::Resizable) | 
+            matches!(self.mode, BufferMode::Parital),
+            "Cannot extend buffer, missing permission"
+        );
+
+        // Can't do nothing
+        if slice.is_empty() {
+            return;
+        }
+
+        // Allocate the buffer for the first time
+        if self.length == 0 && self.capacity == 0 {
+            // Create buffer description
+            let description = wgpu::util::BufferInitDescriptor {
+                label: None,
+                contents: bytemuck::cast_slice(slice),
+                usage: self.buffer.usage(),
+            };
+
+            // Create the raw buffer and initialize it
+            self.buffer = self.graphics.device().create_buffer_init(&description);
+            self.length = slice.len();
+            self.capacity = slice.len();
+        } else if slice.len() + self.length > self.capacity {
+            // Calculate the new capacity and length
+            let new_capacity = (self.capacity + slice.len()) * 2;
+            let new_length = self.length + slice.len();
+            let new_capacity_byte_size = u64::try_from(new_capacity * self.stride()).unwrap();
+            let old_capacity_byte_size = u64::try_from(self.capacity * self.stride()).unwrap();
+
+            // Create description of new buffer
+            let desc = &wgpu::BufferDescriptor {
+                label: None,
+                size: new_capacity_byte_size as u64,
+                usage: self.buffer.usage(),
+                mapped_at_creation: false,
+            };
+
+            // Create the new buffer
+            let buffer = self.graphics.device().create_buffer(&desc);
+
+            // Copy old buffer to new buffer
+            let mut encoder = self.graphics.device().create_command_encoder(
+                &Default::default()
+            );
+
+            // Record the copy command
+            encoder.copy_buffer_to_buffer(
+                &self.buffer,
+                0,
+                &buffer,
+                0,
+                old_capacity_byte_size);
+
+            // Submit the command 
+            let index = self.graphics.queue().submit([encoder.finish()]);
+            self.graphics.device().poll(wgpu::Maintain::WaitForSubmissionIndex(index));
+
+            // Modify the internal buffer
+            self.capacity = new_capacity;
+            self.length = new_length;
+            self.buffer = buffer;
+        } else {
+            // Convert to bytes
+            let offset = u64::try_from(self.stride() * self.length).unwrap();    
+
+            // Write to the buffer
+            self.graphics.queue().write_buffer(
+                &self.buffer,
+                offset,
+                bytemuck::cast_slice(slice),
+            );
+            self.length += slice.len();
+        }
     }
 
     // Overwrite a region of the buffer using a slice and a range
@@ -216,6 +291,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
             offset,
             bytemuck::cast_slice(slice),
         );
+        dbg!("written");
     }
 
     // Read a region of the buffer into a mutable slice immediately
@@ -227,20 +303,21 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         };
 
         // Convert to bytes
+        dbg!(offset);
+        dbg!(size);
         let offset = u64::try_from(self.stride() * offset).unwrap(); 
         let size = u64::try_from(self.stride() * size).unwrap();
 
         // Create the staging buffer's descriptor
         let desc = wgpu::BufferDescriptor {
             label: None,
-            size: self.buffer.size(),
+            size,
             usage: BufferUsages::COPY_DST | BufferUsages::MAP_READ,
             mapped_at_creation: false,
         };
 
         // Create a temporary staging buffer
         let staging = self.graphics.device().create_buffer(&desc);
-
 
         // Create a command encoder
         let mut encoder = self.graphics.device().create_command_encoder(
@@ -257,15 +334,15 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
 
         // Submit the encoder to the queue
         self.graphics.queue().submit([encoder.finish()]);
-        self.graphics.device().poll(wgpu::Maintain::Wait);
 
         // Map the buffer asnychronously
         type MapResult = Result<(), wgpu::BufferAsyncError>;
         let (tx, rx) = 
-            std::sync::mpsc::sync_channel::<MapResult>(1);
+            std::sync::mpsc::channel::<MapResult>();
         let staging_slice = staging.slice(..);
         staging_slice.map_async(wgpu::MapMode::Read, move |res| tx.send(res).unwrap());
-            
+        self.graphics.device().poll(wgpu::Maintain::Wait);
+
         // Wait for the buffer mapping
         if let Ok(value) = rx.recv() {
             value.unwrap();
