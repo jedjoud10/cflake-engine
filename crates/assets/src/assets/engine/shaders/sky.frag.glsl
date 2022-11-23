@@ -11,24 +11,13 @@ uniform float sun_intensity;
 uniform float sun_size;
 uniform vec3 sun_dir;
 
-// Heheheha
+// Scene params
 uniform vec3 camera;
+
+// Given from the last vertex shader
 in vec2 m_tex_coord;
 in vec3 m_position;
 
-
 void main() {
-    /*
-    // Get the main sky color
-    float offset = (sun_dir.y + 1.0) / 2.0;
-    vec3 color = texture(gradient, vec2(0.99, m_tex_coord.y)).rgb; 
-
-    // Add the sun as a bright circle
-    float size = dot(sun_dir, normalize(m_position)) + ((sun_size - 1) / 90.0);
-    float circle = max(pow(size, 15 * sun_intensity), 0); 
-    color = mix(color, vec3(1.0), circle);
-    frag = color;
-    */
-    vec3 color = texture(cubemap, normalize(m_position - camera)).xyz;
-    frag = color;
+    frag = vec4(1.0);
 }

@@ -1,5 +1,6 @@
 use crate::{GraphicSettings, WindowSettings};
 use pollster::FutureExt;
+use wgpu::RenderPassDescriptor;
 use winit::{event::WindowEvent, event_loop::EventLoop};
 use world::{post_user, user, State, System, World};
 
@@ -55,10 +56,44 @@ fn event(world: &mut World, event: &mut WindowEvent) {
 
         _ => (),
     }
-    
-    if matches!(event, WindowEvent::CloseRequested) {
+}
 
-    }
+// Clear the window at the start of every frame
+fn update(world: &mut World) {
+    let graphics = world.get::<crate::context::Graphics>().unwrap();
+    let time = world.get::<time::Time>().unwrap();
+
+    // Get the current texture we will write to
+    let texture = graphics.surface().get_current_texture().unwrap();
+    let view = texture.texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+    // Default clear color
+    let color = wgpu::Color::default();
+
+    // Create a simple command encoder 
+    let mut encoder = graphics.device().create_command_encoder(&Default::default());
+
+    // Create a render pass to clear the image
+    let render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
+        label: None,
+        color_attachments: &[
+            Some(wgpu::RenderPassColorAttachment {
+                view: &view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(color),
+                    store: true,
+                },
+            })
+        ],
+        depth_stencil_attachment: None,
+    });
+    drop(render_pass);
+
+    // Submit the render pass and present the image
+    graphics.queue().submit([encoder.finish()]);
+    graphics.instance().poll_all(false);
+    texture.present();
 }
 
 // Context system will just register the wgpu context and create a simple window
@@ -74,5 +109,6 @@ pub fn system(
         })
         .before(user);
 
+    system.insert_update(update).before(user);
     system.insert_window(event);
 }

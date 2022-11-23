@@ -13,7 +13,7 @@ math = { path = "../math" }
 winit = "0.27.5"
 nohash-hasher = "0.2.0"
 bytemuck = "1.12.3"
-wgpu = "0.14.0"
+wgpu = { version = "0.14.0", features = ["trace"] }
 parking_lot = "0.12.0"
 env_logger = "0.9"
 log = "0.4"

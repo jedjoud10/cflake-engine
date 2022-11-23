@@ -1,4 +1,4 @@
-use crate::{user, Read, Resource, System, Write};
+use crate::{user, Read, Resource, System, Write, ThreadPool};
 use ahash::AHashMap;
 use std::{
     any::TypeId,
@@ -12,8 +12,10 @@ pub struct World(
 );
 
 // This is the main world state that the user can manually update to force the engine to stop running
+#[derive(Default, Clone, Copy, PartialEq, Eq)]
 pub enum State {
     // This is the default state for frame 0
+    #[default]
     Initializing,
 
     // This is the default state from frame 1 to frame n
@@ -90,7 +92,8 @@ pub trait FromWorld {
 pub fn system(system: &mut System) {
     system
         .insert_init(|world: &mut World| {
-            world.insert(State::Initializing);
+            world.insert(State::default());
+            world.insert(ThreadPool::default());
         })
         .before(user);
 }

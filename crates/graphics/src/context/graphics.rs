@@ -1,23 +1,22 @@
 use std::{ffi::{CStr, CString}, sync::{Arc}};
 use super::{Window, FrameRateLimit, WindowSettings};
+use bytemuck::{Zeroable, Pod};
 use parking_lot::Mutex;
-use wgpu::{*, util::*};
+use wgpu::{*, util::*, Instance};
 use world::Resource;
 
 // Graphical settings that we will use to create the graphical context
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct GraphicSettings {
 }
 
-impl Default for GraphicSettings {
-    fn default() -> Self {
-        Self {
-        }
-    }
-}
+// Plain old data type internally used by buffers and other types
+pub trait Content: Zeroable + Pod + Clone + Copy + Sync + Send + 'static {}
+impl<T: Clone + Copy + Sync + Send + Zeroable + Pod + 'static> Content for T {}
 
 // Internal context so we don't make multiple allocations
 struct Internal {
+    instance: Instance,
     surface: Surface,
     device: Device,
     queue: Queue,
@@ -37,6 +36,7 @@ impl Graphics {
         window_settings: &WindowSettings,
     ) -> Graphics {
         // Create the wgpu instance and main surface
+        env_logger::init();
         let instance = Instance::new(Backends::all());
         let surface = unsafe { instance.create_surface(&window) };
 
@@ -76,11 +76,17 @@ impl Graphics {
         surface.configure(&device, &config);
 
         Self(Arc::new(Internal {
+            instance,
             surface,
             device,
             queue,
             config: Mutex::new(config),
         }))
+    }
+
+    // Get access to the underlying instance
+    pub fn instance(&self) -> &Instance {
+        &self.0.instance
     }
 
     // Get access to the underlying surface
