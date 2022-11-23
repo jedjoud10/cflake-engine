@@ -14,20 +14,20 @@ fn main() {
 // Executed at the start
 fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap().clone();
-    
+
     // Create a uniform buffer
     let mut buffer = UniformBuffer::from_slice(
         &graphics,
         &[1i32, 2, 3],
-        BufferMode::Resizable
-    ).unwrap();
+        BufferMode::Resizable,
+    )
+    .unwrap();
 
     buffer.extend_from_slice(&[4]);
 
     let vec = buffer.read_to_vec();
     dbg!(vec);
 }
-
 
 // Executed each frame
 fn update(world: &mut World) {

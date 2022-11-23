@@ -21,7 +21,6 @@ pub struct WindowSettings {
     pub limit: FrameRateLimit,
 }
 
-
 // A window is what we will draw to at the end of each frame
 pub struct Window {
     pub(crate) settings: WindowSettings,

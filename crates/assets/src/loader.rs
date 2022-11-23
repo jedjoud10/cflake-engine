@@ -238,7 +238,7 @@ impl Assets {
         // Spin lock whilst whilst waiting for an asset to load
         while !self.was_loaded(&handle) {}
 
-        // Get the global asset queue and find the index of the handle key 
+        // Get the global asset queue and find the index of the handle key
         let mut assets = self.assets.write();
         let location = self
             .loaded

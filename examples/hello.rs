@@ -4,7 +4,6 @@ use cflake_engine::prelude::*;
 fn main() {
     App::default()
         .insert_init(init)
-        .set_frame_rate_limit(FrameRateLimit::Limited(2))
         .set_window_title("Hello World!")
         .execute();
 }

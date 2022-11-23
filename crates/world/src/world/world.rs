@@ -1,4 +1,4 @@
-use crate::{user, Read, Resource, System, Write, ThreadPool};
+use crate::{user, Read, Resource, System, ThreadPool, Write};
 use ahash::AHashMap;
 use std::{
     any::TypeId,

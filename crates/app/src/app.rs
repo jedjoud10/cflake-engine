@@ -4,9 +4,7 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
 };
 //use gui::egui::util::id_type_map::TypeId;
-use graphics::{
-    FrameRateLimit, GraphicSettings, WindowSettings,
-};
+use graphics::{FrameRateLimit, GraphicSettings, WindowSettings};
 use mimalloc::MiMalloc;
 use std::{any::TypeId, path::PathBuf};
 use world::{
