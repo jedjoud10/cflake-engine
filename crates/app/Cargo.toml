@@ -9,8 +9,6 @@ edition = "2021"
 winit = "0.27.5" 
 lazy_static = "1.4.0"
 spin_sleep = "1.1.0"
-ahash = "0.7.6"
-vek = "0.15.6"
 mimalloc = "0.1.28"
 input = { path = "../input" }
 ecs = { path = "../ecs" }
@@ -23,7 +21,9 @@ gui = { path = "../gui" }
 audio = { path = "../audio" }
 time = { path = "../time" }
 env_logger = "0.9"
-log = "0.4.17"
+log = { workspace = true }
+vek = { workspace = true }
+ahash = { workspace = true }
 
 [features]
 two-dim = ["ecs/two-dim", "rendering/two-dim"]

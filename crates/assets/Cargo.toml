@@ -6,9 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-lazy_static = "1.4.0"
-ahash = "0.7.6"
-parking_lot = "0.12.0"
-threadpool = "1.8.1"
+lazy_static = { workspace = true }
+ahash = { workspace = true }
+parking_lot = { workspace = true }
 slotmap = "1.0.6"
 world = { path = "../world" }

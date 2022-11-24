@@ -22,5 +22,12 @@ members = [
     "crates/world",
 ]
 
+[workspace.dependencies]
+log = "0.4.17"
+vek = "0.15.6"
+ahash = "0.7.6"
+parking_lot = "0.12.0"
+lazy_static = "1.4.0"
+
 [profile.dev]
 opt-level = 3
