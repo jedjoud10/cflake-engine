@@ -24,14 +24,8 @@ use winit::{
 
 // Queues and their families that will be used by the logical device
 pub(crate) struct Queues {
-    // Main queue families
     pub(crate) families: Vec<u32>,
-
-    // Queue priorities (used in init)
     pub(crate) priorities: Vec<Vec<f32>>,
-
-    // Main queues
-    pub(crate) queues: Vec<Vec<vk::Queue>>,
 }
 
 impl Queues {
@@ -81,7 +75,6 @@ pub(crate) unsafe fn create_queues(
     Queues {
         families,
         priorities,
-        queues: Vec::new(),
     }
 }
 

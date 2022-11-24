@@ -41,7 +41,7 @@ impl Device {
 pub(crate) unsafe fn create_device(
     instance: &Instance,
     adapter: &Adapter,
-    queues: &Queues,
+    queues: &mut Queues,
     graphic_settings: &GraphicSettings,
 ) -> Device {
     // Create the queue create infos

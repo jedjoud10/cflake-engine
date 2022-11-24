@@ -48,16 +48,20 @@ impl Default for GraphicSettings {
     }
 }
 
+// Internal graphics context that will be shared with other threads
+pub(crate) struct InternalGraphics {
+    instance: super::Instance,
+    adapter: super::Adapter,
+    device: super::Device,
+    queues: super::Queues,
+    surface: super::Surface,
+    swapchain: super::Swapchain,
+}
+
 // Graphical context that we will wrap around the WGPU instance
 // This context must be shareable between threads to allow for multithreading
-pub struct Graphics {
-    instance: super::wrapper::Instance,
-    adapter: super::wrapper::Adapter,
-    device: super::wrapper::Device,
-    queues: super::wrapper::Queues,
-    surface: super::wrapper::Surface,
-    swapchain: super::wrapper::Swapchain,
-}
+#[derive(Clone)]
+pub struct Graphics(Arc<InternalGraphics>);
 
 impl Graphics {
     // Create a new Vulkan graphics context based on the window wrapper
@@ -69,31 +73,57 @@ impl Graphics {
         window_settings: &WindowSettings,
     ) -> Graphics {
         // Create the Vulkan entry and instance
-        let instance = super::wrapper::create_instance(window, graphic_settings, window_settings);
+        let instance = super::create_instance(window, graphic_settings, window_settings);
 
         // Create a surface from the KHR extension
-        let surface = super::wrapper::create_surface(&instance);
+        let surface = super::create_surface(&instance);
 
         // Pick a physical device (adapter)
-        let adapter = super::wrapper::pick_adapter(&instance, &surface, graphic_settings);
+        let adapter = super::pick_adapter(&instance, &surface, graphic_settings);
 
         // Create the queues that we will instantiate
-        let queues = super::wrapper::create_queues(&adapter, &surface, &instance);
+        let mut queues = super::create_queues(&adapter, &surface, &instance);
 
         // Create a new device with those queues
-        let device = super::wrapper::create_device(&instance, &adapter, &queues, graphic_settings);
+        let device = super::create_device(&instance, &adapter, &mut queues, graphic_settings);
 
         // Create a swapchain we can render to
-        let swapchain = super::wrapper::create_swapchain(&adapter, &surface, &device, &instance, window, window_settings);
+        let swapchain = super::create_swapchain(&adapter, &surface, &device, &instance, window, window_settings);
 
-        Self {
+        Self(Arc::new(InternalGraphics {
             instance,
             adapter,
             device,
             queues,
             surface,
             swapchain,
-        }
+        }))
+    }
+
+    // Get the instance
+    // Get the adapter
+    pub(crate) fn adapter(&self) -> &super::Adapter {
+        &self.0.adapter
+    }
+
+    // Get the device
+    pub(crate) fn device(&self) -> &super::Device {
+        &self.0.device
+    }
+
+    // Get the queues
+    pub(crate) fn queues(&self) -> &super::Queues {
+        &self.0.queues
+    }
+
+    // Get the surface
+    pub(crate) fn surface(&self) -> &super::Surface {
+        &self.0.surface
+    }
+    
+    // Get the swapchain
+    pub(crate) fn swapchain(&self) -> &super::Swapchain {
+        &self.0.swapchain
     }
 
     // Draw the main window swapchain sheize
@@ -162,9 +192,11 @@ impl Graphics {
 
     // Destroy the context after we've done using it
     pub(crate) unsafe fn destroy(mut self) {
+        /*
         self.swapchain.destroy(&self.device);
         self.device.destroy();
         self.surface.destroy();
         self.instance.destroy();
+        */
     }
 }
