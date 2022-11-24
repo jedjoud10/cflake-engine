@@ -57,11 +57,16 @@ pub struct ThreadPool {
 
 impl Default for ThreadPool {
     fn default() -> Self {
-        Self::with(num_cpus::get() * 8)
+        Self::with(Self::default_thread_count())
     }
 }
 
 impl ThreadPool {
+    // Calculate the default thread count
+    pub fn default_thread_count() -> usize {
+        num_cpus::get() * 8
+    }
+
     // Create a new thread pool with a specific number of threads
     pub fn with(num: usize) -> Self {
         let (task_sender, task_receiver) =

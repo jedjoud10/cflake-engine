@@ -77,14 +77,13 @@ pub(crate) unsafe fn create_swapchain(
         swapchain_loader.get_swapchain_images(swapchain).unwrap();
 
     // Semaphore that is signaled whenever we have a new available image
-    let image_available_semaphore = super::create_semaphore(device);
+    let image_available_semaphore = device.create_semaphore();
 
     // Semaphore that is signaled when we finished rendering
-    let rendering_finished_semaphore =
-        super::create_semaphore(device);
+    let rendering_finished_semaphore = device.create_semaphore();
 
     // Fence that is signaled when we finished rendering
-    let rendering_finished_fence = super::create_fence(device);
+    let rendering_finished_fence = device.create_fence();
 
     Swapchain {
         loader: swapchain_loader,

@@ -48,22 +48,17 @@ pub(super) struct BufferBounds {
     size: usize,
 }
 
-// Multiple ways of writing to a buffer
-// 1. Create a staging buffer, writing to it, then copy
-// 2. Create a staging buffer, mapping it and writing to it, then copy
-// 3. Write to buffer directly
-
-// Multiple ways of reading from a buffer
-// 1. Create a staging buffer as copy dst, copy, then map
-
 impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     // Create a buffer using a slice of elements
     // (will return none if we try to create a zero length Static, Dynamic, or Partial buffer)
     pub fn from_slice(
-        _graphics: &Graphics,
+        graphics: &Graphics,
         _slice: &[T],
         _mode: BufferMode,
     ) -> Option<Self> {
+        unsafe {
+            graphics.device().create_buffer(4, ash::vk::BufferUsageFlags::VERTEX_BUFFER);
+        }
         None
     }
 

@@ -11,4 +11,6 @@ fn main() {
 // First function that gets executed when the engine starts
 fn init(_: &mut World) {
     println!("Hello World!");
+    let size = std::mem::size_of::<Graphics>();
+    dbg!(size);
 }

@@ -20,13 +20,14 @@ fn init(world: &mut World) {
         &graphics,
         &[1i32, 2, 3],
         BufferMode::Resizable,
-    )
-    .unwrap();
+    );
 
+    /*
     buffer.extend_from_slice(&[4]);
 
     let vec = buffer.read_to_vec();
     dbg!(vec);
+    */
 }
 
 // Executed each frame

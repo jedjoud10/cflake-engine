@@ -67,10 +67,10 @@ impl Graphics {
         );
 
         // Create a surface from the KHR extension
-        let surface = super::create_surface(&instance);
+        let surface = super::Surface::new(&instance);
 
         // Pick a physical device (adapter)
-        let adapter = super::pick_adapter(
+        let adapter = super::Adapter::pick(
             &instance,
             &surface,
             graphic_settings,
@@ -81,7 +81,7 @@ impl Graphics {
             super::create_queues(&adapter, &surface, &instance);
 
         // Create a new device with those queues
-        let device = super::create_device(
+        let device = super::Device::new(
             &instance,
             &adapter,
             &mut queues,
@@ -109,6 +109,10 @@ impl Graphics {
     }
 
     // Get the instance
+    pub(crate) fn instance(&self) -> &super::Instance {
+        &self.0.instance
+    }
+
     // Get the adapter
     pub(crate) fn adapter(&self) -> &super::Adapter {
         &self.0.adapter
@@ -199,12 +203,14 @@ impl Graphics {
     }
 
     // Destroy the context after we've done using it
+    // Only destroy the context when we are sure we have no shared state
     pub(crate) unsafe fn destroy(self) {
         /*
-        self.swapchain.destroy(&self.device);
-        self.device.destroy();
-        self.surface.destroy();
-        self.instance.destroy();
+        internal.swapchain.destroy(&internal.device);
+        internal.queues.destroy(&internal.device);
+        internal.device.destroy();
+        internal.surface.destroy();
+        internal.instance.destroy();
         */
     }
 }
