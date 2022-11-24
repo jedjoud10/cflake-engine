@@ -1,6 +1,9 @@
-use ash::vk::{PhysicalDeviceMemoryProperties, PhysicalDevice, PhysicalDeviceFeatures, PhysicalDeviceProperties, self};
+use ash::vk::{
+    self, PhysicalDevice, PhysicalDeviceFeatures,
+    PhysicalDeviceMemoryProperties, PhysicalDeviceProperties,
+};
 
-use crate::{Surface, Instance, GraphicSettings};
+use crate::{GraphicSettings, Instance, Surface};
 
 // Wrapper around a physical device
 pub(crate) struct Adapter {
@@ -14,24 +17,30 @@ pub(crate) struct Adapter {
 // Pick a physical device from the Vulkan instance
 pub(crate) unsafe fn pick_adapter(
     instance: &Instance,
-    surface: &Surface,
-    graphic_settings: &GraphicSettings,
+    _surface: &Surface,
+    _graphic_settings: &GraphicSettings,
 ) -> Adapter {
-    let devices = instance.instance.enumerate_physical_devices().unwrap();
+    let devices =
+        instance.instance.enumerate_physical_devices().unwrap();
     devices
         .iter()
         .map(|&physical_device| {
             // Get the features of the physical device
-            let physical_device_features =
-                instance.instance.get_physical_device_features(physical_device);
+            let physical_device_features = instance
+                .instance
+                .get_physical_device_features(physical_device);
 
             // Get the properties of the physical device
-            let physical_device_properties =
-                instance.instance.get_physical_device_properties(physical_device);
+            let physical_device_properties = instance
+                .instance
+                .get_physical_device_properties(physical_device);
 
             // Get the memory properties of the physical device
-            let physical_device_memory_properties =
-                instance.instance.get_physical_device_memory_properties(physical_device);
+            let physical_device_memory_properties = instance
+                .instance
+                .get_physical_device_memory_properties(
+                    physical_device,
+                );
 
             // Convert the values to a simple adapter
             Adapter {
@@ -47,7 +56,8 @@ pub(crate) unsafe fn pick_adapter(
 
 // Check wether or not a physical device is suitable for rendering
 pub(crate) unsafe fn is_physical_device_suitable(
-    adapter: &Adapter
+    adapter: &Adapter,
 ) -> bool {
-    adapter.physical_device_properties.device_type == vk::PhysicalDeviceType::DISCRETE_GPU
+    adapter.physical_device_properties.device_type
+        == vk::PhysicalDeviceType::DISCRETE_GPU
 }

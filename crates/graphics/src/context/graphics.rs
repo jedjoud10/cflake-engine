@@ -1,24 +1,10 @@
-use super::{FrameRateLimit, Window, WindowSettings};
-use ash::{
-    extensions::{
-        ext::DebugUtils,
-        khr::{Surface, Swapchain},
-    },
-    vk::{
-        self, DeviceCreateInfo, DeviceQueueCreateInfo,
-        PhysicalDevice, PhysicalDeviceFeatures,
-        PhysicalDeviceMemoryProperties, PhysicalDeviceProperties,
-    },
-    Entry, Instance,
+use super::WindowSettings;
+use ash::extensions::{
+    ext::DebugUtils,
+    khr::{Surface, Swapchain},
 };
-use bytemuck::{Pod, Zeroable};
-use parking_lot::Mutex;
-use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
-use std::{
-    ffi::{CStr, CString},
-    sync::Arc,
-};
-use world::Resource;
+
+use std::{ffi::CString, sync::Arc};
 
 // Graphical settings that we will use to create the graphical context
 #[derive(Clone)]
@@ -34,7 +20,8 @@ impl Default for GraphicSettings {
             #[cfg(debug_assertions)]
             validation_layers: vec![CString::new(
                 "VK_LAYER_KHRONOS_validation".to_owned(),
-            ).unwrap()],
+            )
+            .unwrap()],
             #[cfg(not(debug_assertions))]
             validation_layers: vec![],
             instance_extensions: vec![
@@ -73,22 +60,43 @@ impl Graphics {
         window_settings: &WindowSettings,
     ) -> Graphics {
         // Create the Vulkan entry and instance
-        let instance = super::create_instance(window, graphic_settings, window_settings);
+        let instance = super::create_instance(
+            window,
+            graphic_settings,
+            window_settings,
+        );
 
         // Create a surface from the KHR extension
         let surface = super::create_surface(&instance);
 
         // Pick a physical device (adapter)
-        let adapter = super::pick_adapter(&instance, &surface, graphic_settings);
+        let adapter = super::pick_adapter(
+            &instance,
+            &surface,
+            graphic_settings,
+        );
 
         // Create the queues that we will instantiate
-        let mut queues = super::create_queues(&adapter, &surface, &instance);
+        let mut queues =
+            super::create_queues(&adapter, &surface, &instance);
 
         // Create a new device with those queues
-        let device = super::create_device(&instance, &adapter, &mut queues, graphic_settings);
+        let device = super::create_device(
+            &instance,
+            &adapter,
+            &mut queues,
+            graphic_settings,
+        );
 
         // Create a swapchain we can render to
-        let swapchain = super::create_swapchain(&adapter, &surface, &device, &instance, window, window_settings);
+        let swapchain = super::create_swapchain(
+            &adapter,
+            &surface,
+            &device,
+            &instance,
+            window,
+            window_settings,
+        );
 
         Self(Arc::new(InternalGraphics {
             instance,
@@ -120,14 +128,14 @@ impl Graphics {
     pub(crate) fn surface(&self) -> &super::Surface {
         &self.0.surface
     }
-    
+
     // Get the swapchain
     pub(crate) fn swapchain(&self) -> &super::Swapchain {
         &self.0.swapchain
     }
 
     // Draw the main window swapchain sheize
-    pub(crate) unsafe fn draw(&mut self, value: f32) {
+    pub(crate) unsafe fn draw(&mut self, _value: f32) {
         /*
         // Get the next free image and render to it
         let (image_index, _) = self.swapchain
@@ -191,7 +199,7 @@ impl Graphics {
     }
 
     // Destroy the context after we've done using it
-    pub(crate) unsafe fn destroy(mut self) {
+    pub(crate) unsafe fn destroy(self) {
         /*
         self.swapchain.destroy(&self.device);
         self.device.destroy();

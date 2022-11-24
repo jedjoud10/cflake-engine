@@ -1,26 +1,7 @@
-use crate::{FrameRateLimit, GraphicSettings, WindowSettings, Instance};
-use ash::{
-    extensions::{
-        ext::DebugUtils,
-    },
-    vk::{
-        self, DeviceCreateInfo, DeviceQueueCreateInfo,
-        PhysicalDevice, PhysicalDeviceFeatures,
-        PhysicalDeviceMemoryProperties, PhysicalDeviceProperties,
-    },
-    Entry,
-};
-use bytemuck::{Zeroable, Pod};
-use gpu_allocator::{vulkan::{AllocationCreateDesc, Allocation, AllocatorCreateDesc, Allocator}, MemoryLocation};
-use raw_window_handle::{HasRawWindowHandle, HasRawDisplayHandle, RawWindowHandle, RawDisplayHandle};
-use std::{
-    borrow::Cow,
-    ffi::{c_void, CStr, CString},
-};
-use winit::{
-    event_loop::EventLoop,
-    window::{Fullscreen, WindowBuilder},
-};
+use crate::Instance;
+use ash::vk::{self};
+
+use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
 
 // Wrapper around the temporary surface loader
 pub(crate) struct Surface {
@@ -29,7 +10,7 @@ pub(crate) struct Surface {
 }
 
 impl Surface {
-    pub(crate) unsafe fn destroy(mut self) {
+    pub(crate) unsafe fn destroy(self) {
         self.surface_loader.destroy_surface(self.surface, None);
     }
 }
@@ -45,8 +26,10 @@ pub(crate) unsafe fn create_surface(instance: &Instance) -> Surface {
         None,
     )
     .unwrap();
-    let surface_loader =
-        ash::extensions::khr::Surface::new(&instance.entry, &instance.instance);
+    let surface_loader = ash::extensions::khr::Surface::new(
+        &instance.entry,
+        &instance.instance,
+    );
 
     Surface {
         surface_loader,

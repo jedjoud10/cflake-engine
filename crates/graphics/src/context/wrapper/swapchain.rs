@@ -1,26 +1,8 @@
-use crate::{FrameRateLimit, GraphicSettings, WindowSettings, Adapter, Surface, Device, Instance};
-use ash::{
-    extensions::{
-        ext::DebugUtils,
-    },
-    vk::{
-        self, DeviceCreateInfo, DeviceQueueCreateInfo,
-        PhysicalDevice, PhysicalDeviceFeatures,
-        PhysicalDeviceMemoryProperties, PhysicalDeviceProperties,
-    },
-    Entry,
+use crate::{
+    Adapter, Device, FrameRateLimit, Instance, Surface,
+    WindowSettings,
 };
-use bytemuck::{Zeroable, Pod};
-use gpu_allocator::{vulkan::{AllocationCreateDesc, Allocation, AllocatorCreateDesc, Allocator}, MemoryLocation};
-use raw_window_handle::{HasRawWindowHandle, HasRawDisplayHandle, RawWindowHandle, RawDisplayHandle};
-use std::{
-    borrow::Cow,
-    ffi::{c_void, CStr, CString},
-};
-use winit::{
-    event_loop::EventLoop,
-    window::{Fullscreen, WindowBuilder},
-};
+use ash::vk::{self};
 
 // Wrapper around the vulkan swapchain
 pub(crate) struct Swapchain {
@@ -36,22 +18,21 @@ pub(crate) struct Swapchain {
 }
 
 impl Swapchain {
-    pub(crate) unsafe fn destroy(mut self, device: &Device) {
+    pub(crate) unsafe fn destroy(self, device: &Device) {
         device.device.device_wait_idle().unwrap();
-        device.device.destroy_semaphore(
-            self.image_available_semaphore,
-            None,
-        );
+        device
+            .device
+            .destroy_semaphore(self.image_available_semaphore, None);
         device.device.destroy_semaphore(
             self.rendering_finished_semaphore,
             None,
         );
-        device.device
+        device
+            .device
             .destroy_fence(self.rendering_finished_fence, None);
-            self.loader.destroy_swapchain(self.raw, None);
+        self.loader.destroy_swapchain(self.raw, None);
     }
 }
-
 
 // Create the image swapchain that we will present to the screen
 pub(crate) unsafe fn create_swapchain(
@@ -60,7 +41,7 @@ pub(crate) unsafe fn create_swapchain(
     device: &Device,
     instance: &Instance,
     window: &winit::window::Window,
-    window_settings: &WindowSettings
+    window_settings: &WindowSettings,
 ) -> Swapchain {
     // Get the supported surface formats khr
     let format = pick_surface_format(surface, adapter);
@@ -71,16 +52,22 @@ pub(crate) unsafe fn create_swapchain(
         .width(window.inner_size().width);
 
     // Pick the most appropriate present mode
-    let present_mode = pick_presentation_mode(surface, adapter, window_settings);
+    let present_mode =
+        pick_presentation_mode(surface, adapter, window_settings);
 
     // Create the swap chain create info
     let swapchain_create_info = create_swapchain_create_info(
-        surface, format, extent, present_mode,
+        surface,
+        format,
+        extent,
+        present_mode,
     );
 
     // Create the loader and the actual swapchain
-    let swapchain_loader =
-        ash::extensions::khr::Swapchain::new(&instance.instance, &device.device);
+    let swapchain_loader = ash::extensions::khr::Swapchain::new(
+        &instance.instance,
+        &device.device,
+    );
     let swapchain = swapchain_loader
         .create_swapchain(&swapchain_create_info, None)
         .expect("Could not create the swapchain");
@@ -90,16 +77,14 @@ pub(crate) unsafe fn create_swapchain(
         swapchain_loader.get_swapchain_images(swapchain).unwrap();
 
     // Semaphore that is signaled whenever we have a new available image
-    let image_available_semaphore =
-        super::create_semaphore(&device);
+    let image_available_semaphore = super::create_semaphore(device);
 
     // Semaphore that is signaled when we finished rendering
     let rendering_finished_semaphore =
-        super::create_semaphore(&device);
+        super::create_semaphore(device);
 
     // Fence that is signaled when we finished rendering
-    let rendering_finished_fence = 
-        super::create_fence(&device);
+    let rendering_finished_fence = super::create_fence(device);
 
     Swapchain {
         loader: swapchain_loader,
@@ -113,7 +98,6 @@ pub(crate) unsafe fn create_swapchain(
         present_mode,
     }
 }
-
 
 // Create the swapchain create info
 fn create_swapchain_create_info(
@@ -148,7 +132,8 @@ unsafe fn pick_presentation_mode(
     window_settings: &WindowSettings,
 ) -> vk::PresentModeKHR {
     // Fetch all the present modes
-    let modes = surface.surface_loader
+    let modes = surface
+        .surface_loader
         .get_physical_device_surface_present_modes(
             adapter.physical_device,
             surface.surface,
@@ -166,9 +151,7 @@ unsafe fn pick_presentation_mode(
             )
     } else {
         // No VSYNC = Immediate
-        modes.into_iter()
-            .filter(|m| *m == vk::PresentModeKHR::IMMEDIATE)
-            .next()
+        modes.into_iter().find(|m| *m == vk::PresentModeKHR::IMMEDIATE)
             .expect("Could not find an appropriate NON-VSYNC present mode")
     }
 }
@@ -178,8 +161,12 @@ unsafe fn pick_surface_format(
     surface: &Surface,
     adapter: &Adapter,
 ) -> vk::SurfaceFormatKHR {
-    surface.surface_loader
-        .get_physical_device_surface_formats(adapter.physical_device, surface.surface)
+    surface
+        .surface_loader
+        .get_physical_device_surface_formats(
+            adapter.physical_device,
+            surface.surface,
+        )
         .unwrap()
         .into_iter()
         .find(|surface_format| {

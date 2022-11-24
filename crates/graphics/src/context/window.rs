@@ -3,10 +3,10 @@ use winit::{
     window::{Fullscreen, WindowBuilder},
 };
 
-// Window buffering mode 
+// Window buffering mode
 #[derive(Default, Clone, Copy, PartialEq, Eq)]
 pub enum BufferingMode {
-    Double, 
+    Double,
 
     #[default]
     Triple,
@@ -51,7 +51,7 @@ impl Window {
                     .then_some(Fullscreen::Borderless(None)),
             )
             .with_title(&window_settings.title)
-            .build(&el)
+            .build(el)
             .unwrap();
 
         Self {
@@ -64,10 +64,9 @@ impl Window {
     pub fn settings(&self) -> &WindowSettings {
         &self.settings
     }
-    
+
     // Get the raw winit window
     pub fn window(&self) -> &winit::window::Window {
         &self.raw
     }
 }
-

@@ -1,25 +1,17 @@
-use crate::{FrameRateLimit, GraphicSettings, WindowSettings};
+use crate::{GraphicSettings, WindowSettings};
 use ash::{
-    extensions::{
-        ext::DebugUtils,
-    },
-    vk::{
-        self, DeviceCreateInfo, DeviceQueueCreateInfo,
-        PhysicalDevice, PhysicalDeviceFeatures,
-        PhysicalDeviceMemoryProperties, PhysicalDeviceProperties,
-    },
+    extensions::ext::DebugUtils,
+    vk::{self},
     Entry,
 };
-use bytemuck::{Zeroable, Pod};
-use gpu_allocator::{vulkan::{AllocationCreateDesc, Allocation, AllocatorCreateDesc, Allocator}, MemoryLocation};
-use raw_window_handle::{HasRawWindowHandle, HasRawDisplayHandle, RawWindowHandle, RawDisplayHandle};
+
+use raw_window_handle::{
+    HasRawDisplayHandle, HasRawWindowHandle, RawDisplayHandle,
+    RawWindowHandle,
+};
 use std::{
     borrow::Cow,
     ffi::{c_void, CStr, CString},
-};
-use winit::{
-    event_loop::EventLoop,
-    window::{Fullscreen, WindowBuilder},
 };
 
 // Wrapper around Vulkan entry and Vulkan instance
@@ -29,7 +21,7 @@ pub struct Instance {
     pub(crate) instance: ash::Instance,
     pub(crate) raw_display_handle: RawDisplayHandle,
     pub(crate) raw_window_handle: RawWindowHandle,
-    
+
     // Only enable validation and message logging in debug mode
     #[cfg(debug_assertions)]
     debug_utils: DebugUtils,
@@ -38,7 +30,7 @@ pub struct Instance {
 }
 
 impl Instance {
-    pub(crate) unsafe fn destroy(mut self) {
+    pub(crate) unsafe fn destroy(self) {
         #[cfg(debug_assertions)]
         self.debug_utils.destroy_debug_utils_messenger(
             self.debug_messenger,
@@ -47,7 +39,7 @@ impl Instance {
 
         self.instance.destroy_instance(None);
     }
-} 
+}
 
 // Create the main Vulkan instance
 pub(crate) unsafe fn create_instance(
@@ -63,7 +55,8 @@ pub(crate) unsafe fn create_instance(
     let raw_window_handle = window.raw_window_handle();
 
     // Create the app info
-    let app_name = CString::new(window_settings.title.clone()).unwrap();
+    let app_name =
+        CString::new(window_settings.title.clone()).unwrap();
     let engine_name = CString::new("cFlake engine").unwrap();
     let app_info = *vk::ApplicationInfo::builder()
         .application_name(&app_name)
@@ -104,7 +97,6 @@ pub(crate) unsafe fn create_instance(
         .enabled_extension_names(&extension_names_ptrs)
         .push_next(&mut debug_messenger_create_info);
 
-
     // Setup the instance create info (without debug info)
     #[cfg(not(debug_assertions))]
     let instance_create_info = *vk::InstanceCreateInfo::builder()
@@ -113,9 +105,8 @@ pub(crate) unsafe fn create_instance(
         .enabled_extension_names(&extension_names_ptrs);
 
     // Create the instance
-    let instance = entry
-        .create_instance(&instance_create_info, None)
-        .unwrap();
+    let instance =
+        entry.create_instance(&instance_create_info, None).unwrap();
 
     // Create the debug utils
     #[cfg(debug_assertions)]
@@ -138,7 +129,7 @@ pub(crate) unsafe fn create_instance(
         raw_display_handle,
         raw_window_handle,
     }
-} 
+}
 
 // Create the debug utils create info
 pub(super) unsafe fn create_debug_messenger_create_info(
@@ -156,14 +147,13 @@ pub(super) unsafe fn create_debug_messenger_create_info(
         .pfn_user_callback(Some(debug_callback))
 }
 
-
 // Debug callback that is invoked from the debug messenger
 #[cfg(debug_assertions)]
 pub(super) unsafe extern "system" fn debug_callback(
     message_severity: vk::DebugUtilsMessageSeverityFlagsEXT,
     message_type: vk::DebugUtilsMessageTypeFlagsEXT,
     p_callback_data: *const vk::DebugUtilsMessengerCallbackDataEXT,
-    cvoid: *mut c_void,
+    _cvoid: *mut c_void,
 ) -> u32 {
     let callback_data = *p_callback_data;
     let message_id_number: i32 =

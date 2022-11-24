@@ -16,7 +16,7 @@ fn init(
     // Create a new wgpu context
     let graphics = unsafe {
         crate::context::Graphics::new(
-            &window.window(),
+            window.window(),
             &graphic_settings,
             &window_settings,
         )
@@ -38,7 +38,7 @@ fn event(world: &mut World, event: &mut WindowEvent) {
             }
 
             // Resize the window by re-configuring WGPU
-            let graphics =
+            let _graphics =
                 world.get::<crate::context::Graphics>().unwrap();
             //graphics.resize()
             /*
@@ -72,8 +72,11 @@ fn update(world: &mut World) {
 
 // Destroy the Vulkan context
 fn destroy(world: &mut World) {
-    let graphics = world.remove::<crate::context::Graphics>().unwrap();
-    unsafe { graphics.destroy(); }
+    let graphics =
+        world.remove::<crate::context::Graphics>().unwrap();
+    unsafe {
+        graphics.destroy();
+    }
     world.remove::<crate::context::Window>().unwrap();
 }
 

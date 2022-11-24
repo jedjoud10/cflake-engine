@@ -1,26 +1,5 @@
-use crate::{FrameRateLimit, GraphicSettings, WindowSettings, Instance, Surface, Adapter};
-use ash::{
-    extensions::{
-        ext::DebugUtils,
-    },
-    vk::{
-        self, DeviceCreateInfo, DeviceQueueCreateInfo,
-        PhysicalDevice, PhysicalDeviceFeatures,
-        PhysicalDeviceMemoryProperties, PhysicalDeviceProperties,
-    },
-    Entry,
-};
-use bytemuck::{Zeroable, Pod};
-use gpu_allocator::{vulkan::{AllocationCreateDesc, Allocation, AllocatorCreateDesc, Allocator}, MemoryLocation};
-use raw_window_handle::{HasRawWindowHandle, HasRawDisplayHandle, RawWindowHandle, RawDisplayHandle};
-use std::{
-    borrow::Cow,
-    ffi::{c_void, CStr, CString},
-};
-use winit::{
-    event_loop::EventLoop,
-    window::{Fullscreen, WindowBuilder},
-};
+use crate::{Adapter, Instance, Surface};
+use ash::vk::{self};
 
 // Queues and their families that will be used by the logical device
 pub(crate) struct Queues {
@@ -29,8 +8,7 @@ pub(crate) struct Queues {
 }
 
 impl Queues {
-    pub(super) unsafe fn destroy(mut self) {
-    }
+    pub(super) unsafe fn destroy(self) {}
 }
 
 // Get the required queues from a logical device
@@ -39,26 +17,28 @@ pub(crate) unsafe fn create_queues(
     surface: &Surface,
     instance: &Instance,
 ) -> Queues {
-    let families = instance.instance.get_physical_device_queue_family_properties(
-        adapter.physical_device,
-    );
+    let families = instance
+        .instance
+        .get_physical_device_queue_family_properties(
+            adapter.physical_device,
+        );
 
     // Get the present queue family
-    let present =pick_queue_family(
+    let present = pick_queue_family(
         &families,
-        &surface,
-        &adapter,
+        surface,
+        adapter,
         true,
-        vk::QueueFlags::empty()
+        vk::QueueFlags::empty(),
     );
 
     // Get the graphics queue family
     let graphics = pick_queue_family(
         &families,
-        &surface,
-        &adapter,
+        surface,
+        adapter,
         false,
-        vk::QueueFlags::GRAPHICS
+        vk::QueueFlags::GRAPHICS,
     );
 
     // Convert to vector
@@ -81,7 +61,7 @@ pub(crate) unsafe fn create_queues(
 // Find a queue that supports the specific flags
 pub(super) unsafe fn pick_queue_family(
     queue_families: &[vk::QueueFamilyProperties],
-    surface: &Surface, 
+    surface: &Surface,
     adapter: &Adapter,
     supports_presenting: bool,
     flags: vk::QueueFlags,
@@ -95,7 +75,8 @@ pub(super) unsafe fn pick_queue_family(
 
             // If the queue we must fetch must support presenting, fetch the physical device properties
             let presenting = !supports_presenting
-                || surface.surface_loader
+                || surface
+                    .surface_loader
                     .get_physical_device_surface_support(
                         adapter.physical_device,
                         i as u32,

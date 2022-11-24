@@ -1,7 +1,7 @@
-use std::{marker::PhantomData, ops::RangeBounds, mem::{size_of, MaybeUninit}, iter::repeat};
-use ash::vk::BufferUsageFlags;
-use bytemuck::{Pod, Zeroable};
-use crate::{Graphics, Content};
+use std::{marker::PhantomData, mem::size_of, ops::RangeBounds};
+
+use crate::{Content, Graphics};
+use bytemuck::Zeroable;
 
 // Some settings that tell us how exactly we should create the buffer
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
@@ -57,15 +57,21 @@ pub(super) struct BufferBounds {
 // 1. Create a staging buffer as copy dst, copy, then map
 
 impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
-    // Create a buffer using a slice of elements 
+    // Create a buffer using a slice of elements
     // (will return none if we try to create a zero length Static, Dynamic, or Partial buffer)
-    pub fn from_slice(graphics: &Graphics, slice: &[T], mode: BufferMode) -> Option<Self> {
+    pub fn from_slice(
+        _graphics: &Graphics,
+        _slice: &[T],
+        _mode: BufferMode,
+    ) -> Option<Self> {
         None
     }
-    
 
     // Create an empty buffer if we can (resizable)
-    pub fn empty(graphics: &Graphics, mode: BufferMode) -> Option<Self> {
+    pub fn empty(
+        graphics: &Graphics,
+        mode: BufferMode,
+    ) -> Option<Self> {
         Self::from_slice(graphics, &[], mode)
     }
 
@@ -96,7 +102,10 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
 
     // Convert a range bounds type into the range indices
     // This will return None if the returning indices have a length of 0
-    fn convert_range_bounds(&self, range: impl RangeBounds<usize>) -> Option<BufferBounds> {
+    fn convert_range_bounds(
+        &self,
+        range: impl RangeBounds<usize>,
+    ) -> Option<BufferBounds> {
         let start = match range.start_bound() {
             std::ops::Bound::Included(start) => *start,
             std::ops::Bound::Excluded(_) => panic!(),
@@ -127,16 +136,21 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     }
 
     // Fills a range in the buffer with a constant value
-    pub fn splat_range(&mut self, val: T, range: impl RangeBounds<usize>) {
-        if let Some(BufferBounds {
-            offset, size 
-        }) = self.convert_range_bounds(range) {
-
-        }
+    pub fn splat_range(
+        &mut self,
+        _val: T,
+        range: impl RangeBounds<usize>,
+    ) {
+        if let Some(BufferBounds { offset: _, size: _ }) =
+            self.convert_range_bounds(range)
+        {}
     }
 
     // Extent the current buffer using data from an iterator
-    pub fn extend_from_iterator<I: Iterator<Item = T>>(&mut self, iterator: I) {
+    pub fn extend_from_iterator<I: Iterator<Item = T>>(
+        &mut self,
+        iterator: I,
+    ) {
         let collected = iterator.collect::<Vec<_>>();
         self.extend_from_slice(&collected);
     }
@@ -144,8 +158,8 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     // Extend the current buffer using data from a new slice
     pub fn extend_from_slice(&mut self, slice: &[T]) {
         assert!(
-            matches!(self.mode, BufferMode::Resizable) | 
-            matches!(self.mode, BufferMode::Parital),
+            matches!(self.mode, BufferMode::Resizable)
+                | matches!(self.mode, BufferMode::Parital),
             "Cannot extend buffer, missing permission"
         );
 
@@ -167,9 +181,13 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     }
 
     // Overwrite a region of the buffer using a slice and a range
-    pub fn write_range(&mut self, slice: &[T], range: impl RangeBounds<usize>) {
+    pub fn write_range(
+        &mut self,
+        slice: &[T],
+        range: impl RangeBounds<usize>,
+    ) {
         let Some(BufferBounds {
-            offset, size 
+            offset: _, size 
         }) = self.convert_range_bounds(range) else {
             return;
         };
@@ -183,18 +201,25 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     }
 
     // Read a region of the buffer into a mutable slice immediately
-    pub fn read_range(&self, slice: &mut [T], range: impl RangeBounds<usize>) {
+    pub fn read_range(
+        &self,
+        _slice: &mut [T],
+        range: impl RangeBounds<usize>,
+    ) {
         let Some(BufferBounds {
-            offset, size 
+            offset: _, size: _ 
         }) = self.convert_range_bounds(range) else {
             return;
         };
-        
+
         // TODO: read from current buffer
     }
 
     // Read a region of the buffer into a new vector
-    pub fn read_range_as_vec(&self, range: impl RangeBounds<usize> + Copy) -> Vec<T> {
+    pub fn read_range_as_vec(
+        &self,
+        range: impl RangeBounds<usize> + Copy,
+    ) -> Vec<T> {
         let Some(BufferBounds {
             size, .. 
         }) = self.convert_range_bounds(range) else {
@@ -203,10 +228,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
 
         // Create a vec and read into it
         let mut vec = vec![T::zeroed(); size];
-        self.read_range(
-            &mut vec,
-            range,
-        );
+        self.read_range(&mut vec, range);
         vec
     }
 
@@ -218,7 +240,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     // Clear the buffer contents, resetting the buffer's length down to zero
     pub fn clear(&mut self) {
         // TODO: write to current buffer
-        self.length = 0;        
+        self.length = 0;
     }
 
     // Copy the data from another buffer's range into this buffer's range
@@ -226,15 +248,18 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     // src_range refers to the range of 'other'
     pub fn copy_range_from<const OTHER_TYPE: u32>(
         &mut self,
-        src_range: impl RangeBounds<usize>,
-        other: &Buffer<T, OTHER_TYPE>,
-        dst_offset: usize,
+        _src_range: impl RangeBounds<usize>,
+        _other: &Buffer<T, OTHER_TYPE>,
+        _dst_offset: usize,
     ) {
         todo!()
     }
 
     // Copy the data from another buffer into this buffer
-    pub fn copy_from<const OTHER: u32>(&mut self, other: &Buffer<T, OTHER>) {
+    pub fn copy_from<const OTHER: u32>(
+        &mut self,
+        other: &Buffer<T, OTHER>,
+    ) {
         assert_eq!(
             self.len(),
             other.len(),
