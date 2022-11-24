@@ -16,7 +16,6 @@ fn init(
     // Create a new wgpu context
     let graphics = unsafe {
         crate::context::Graphics::new(
-            &window_settings.title,
             &window.window(),
             &graphic_settings,
             &window_settings,
@@ -71,6 +70,13 @@ fn update(world: &mut World) {
     }
 }
 
+// Destroy the Vulkan context
+fn destroy(world: &mut World) {
+    let graphics = world.remove::<crate::context::Graphics>().unwrap();
+    unsafe { graphics.destroy(); }
+    world.remove::<crate::context::Window>().unwrap();
+}
+
 // Context system will just register the wgpu context and create a simple window
 // This system will also handle window events like exiting
 pub fn system(
@@ -85,5 +91,6 @@ pub fn system(
         .before(user);
 
     system.insert_update(update).before(user);
+    system.insert_shutdown(destroy).after(post_user);
     system.insert_window(event);
 }

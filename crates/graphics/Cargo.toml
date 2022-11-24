@@ -17,4 +17,5 @@ parking_lot = "0.12.0"
 ash = "0.37.0+1.3.209"
 raw-window-handle = "0.5.0"
 ash-window = "0.12.0"
+gpu-allocator = { version = "0.21.0", features = ["vulkan"] }
 vek = "0.15.6"
