@@ -6,8 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ecs = { path = "../ecs" }
-graphics = { path = "../graphics" }
+#ecs = { path = "../ecs" }
+#graphics = { path = "../graphics" }
 
 [features]
-two-dim = ["ecs/two-dim"]
+two-dim = []

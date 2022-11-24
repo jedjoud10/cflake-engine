@@ -115,31 +115,40 @@ impl Device {
             .unwrap()
     }
 
-    // Create a buffer with the proper flags and size
+    // Create raw buffer with no memory
     pub(crate) unsafe fn create_buffer(
         &self,
         size: u64,
-        usage: vk::BufferUsageFlags,
-    ) -> (vk::Buffer, Allocation) {
+        usage: vk::BufferUsageFlags
+    ) -> vk::Buffer {
         // Setup vulkan info
         let vk_info = vk::BufferCreateInfo::builder()
             .size(size)
+            .flags(vk::BufferCreateFlags::empty())
             .sharing_mode(vk::SharingMode::EXCLUSIVE)
             .usage(usage);
 
         // Create the buffer and fetch requirements
-        let buffer = self.device.create_buffer(&vk_info, None).unwrap();
-        let requirements =
-        self.device.get_buffer_memory_requirements(buffer);
+        self.device.create_buffer(&vk_info, None).unwrap()
+    }
+
+    // Create the underlying memory for a buffer
+    pub(crate) unsafe fn create_buffer_memory(
+        &self,
+        buffer: vk::Buffer,
+        location: MemoryLocation,
+    ) -> Allocation {
+        // Get memory requirements
+        let requirements = self.device.get_buffer_memory_requirements(buffer);
 
         // Create gpu-allocator allocation
         let allocation = self
             .allocator
             .lock()
             .allocate(&AllocationCreateDesc {
-                name: "BufferTest",
+                name: "",
                 requirements,
-                location: MemoryLocation::CpuToGpu,
+                location,
                 linear: true, // Buffers are always linear
             })
             .unwrap();
@@ -155,11 +164,8 @@ impl Device {
                 )
                 .unwrap()
         };
-
-        // Return the newly made buffer and it's allocation
-        (buffer, allocation)
+        allocation
     }
-
 
     // Destroy the logical device
     pub(crate) unsafe fn destroy(self) {

@@ -1,5 +1,6 @@
 use crate::{Adapter, Instance, Surface, Device};
 use ash::vk;
+use parking_lot::Mutex;
 use world::ThreadPool;
 
 // A single command pool abstraction
@@ -9,7 +10,7 @@ pub(crate) struct Pool {
     pub(crate) alloc: vk::CommandPool,
     
     // All the command buffers allocated in this command pool
-    pub(crate) buffers: Vec<vk::CommandBuffer>,
+    pub(crate) buffers: Mutex<Vec<vk::CommandBuffer>>,
 }
 
 // A single queue family abstraction
@@ -38,7 +39,7 @@ impl Queues {
         device.device.device_wait_idle().unwrap();
         for family in self.families {
             for pool in family.pools {
-                device.device.free_command_buffers(pool.alloc, pool.buffers.as_slice());
+                device.device.free_command_buffers(pool.alloc, pool.buffers.lock().as_slice());
                 device.device.destroy_command_pool(pool.alloc, None);
             } 
         }

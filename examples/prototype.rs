@@ -14,19 +14,34 @@ fn main() {
 // Executed at the start
 fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap().clone();
+    let mut threadpool = world.get_mut::<ThreadPool>().unwrap();    
 
-    // Create a uniform buffer
-    let mut buffer = UniformBuffer::from_slice(
-        &graphics,
-        &[1i32, 2, 3],
-        BufferMode::Resizable,
-    );
+    threadpool.execute(move || {
+        let current = std::thread::current();
+        let name = current.name().unwrap();
+        dbg!(name);
+
+        // Create a uniform buffer
+        let mut buffer = UniformBuffer::from_slice(
+            &graphics.clone(),
+            &[1i32, 2, 3],
+            BufferMode::Dynamic,
+            BufferUsage {
+                hint_device_write: false,
+                hint_device_read: true,
+                host_write: true,
+                host_read: true,
+            },
+        ).unwrap();
+
+        let vec = buffer.read_to_vec().unwrap();
+        dbg!(vec);
+    });
+    
 
     /*
     buffer.extend_from_slice(&[4]);
 
-    let vec = buffer.read_to_vec();
-    dbg!(vec);
     */
 }
 

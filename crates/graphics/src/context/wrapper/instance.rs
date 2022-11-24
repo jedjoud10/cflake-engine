@@ -29,6 +29,9 @@ pub struct Instance {
     debug_messenger: vk::DebugUtilsMessengerEXT,
 }
 
+unsafe impl Sync for Instance {}
+unsafe impl Send for Instance {}
+
 impl Instance {
     pub(crate) unsafe fn destroy(self) {
         #[cfg(debug_assertions)]
