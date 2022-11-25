@@ -1,6 +1,6 @@
 use std::{marker::PhantomData, mem::size_of, ops::RangeBounds};
 
-use crate::{Content, Graphics, BufferError, InvalidModeError, InvalidUsageError};
+use crate::{Content, Graphics, BufferError, InvalidModeError, InvalidUsageError, Recorder, CommandId};
 use super::BufferLayouts;
 use ash::vk;
 use bytemuck::Zeroable;
@@ -106,19 +106,19 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         dbg!(&layout);
 
         // Create the actual buffer
-        let src_buffer = unsafe { graphics.device().create_buffer(size, layout.src_buffer_usage_flags) };
+        let src_buffer = unsafe { graphics.device().create_buffer(size, layout.src_buffer_usage_flags, graphics.queues()) };
         let mut src_memory = unsafe { graphics.device().create_buffer_memory(src_buffer, layout.src_buffer_memory_location) };
 
         // Optional init staging buffer
         let tmp_init_staging = layout.init_staging_buffer_memory_location.map(|memory| unsafe {
-            let buffer = graphics.device().create_buffer(size, layout.init_staging_buffer_usage_flags.unwrap());
+            let buffer = graphics.device().create_buffer(size, layout.init_staging_buffer_usage_flags.unwrap(), graphics.queues());
             let memory = graphics.device().create_buffer_memory(buffer, memory);
             (buffer, memory)
         });
 
         // Cached staging buffer
         let cached_staging = layout.cached_staging_buffer_memory_location.map(|memory| unsafe {
-            let buffer = graphics.device().create_buffer(size, layout.init_staging_buffer_usage_flags.unwrap());
+            let buffer = graphics.device().create_buffer(size, layout.init_staging_buffer_usage_flags.unwrap(), graphics.queues());
             let memory = graphics.device().create_buffer_memory(buffer, memory);
             (buffer, memory)
         });
@@ -292,7 +292,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         }
 
         // Check if we can write to the buffer
-        if !self.usage.host_read {
+        if !self.usage.host_write {
             return Err(BufferError::InvalidUsage(
                 InvalidUsageError::IllegalHostWrite
             ));
@@ -359,9 +359,10 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     }
 
     // Clear the buffer contents, resetting the buffer's length down to zero
-    pub fn clear(&mut self) {
+    pub fn clear(&mut self, recorder: &Recorder) {
         // TODO: write to current buffer
         self.length = 0;
+        todo!()
     }
 
     // Copy the data from another buffer's range into this buffer's range

@@ -12,6 +12,8 @@ use gpu_allocator::{
 };
 use parking_lot::Mutex;
 
+use super::queues;
+
 // Wrapper around a logical device
 pub(crate) struct Device {
     pub(crate) physical_device: PhysicalDevice,
@@ -95,7 +97,7 @@ impl Device {
             };
 
         // Finish the queue creation
-        super::complete_queue_creation(&device, queues);
+        queues.complete_queue_creation(&device);
         device
     }
 
@@ -119,13 +121,17 @@ impl Device {
     pub(crate) unsafe fn create_buffer(
         &self,
         size: u64,
-        usage: vk::BufferUsageFlags
+        usage: vk::BufferUsageFlags,
+        queues: &Queues,
     ) -> vk::Buffer {
         // Setup vulkan info
+        let graphics = &queues.families[queues.graphics];
+        let indices = [graphics.family_index];
         let vk_info = vk::BufferCreateInfo::builder()
             .size(size)
             .flags(vk::BufferCreateFlags::empty())
             .sharing_mode(vk::SharingMode::EXCLUSIVE)
+            .queue_family_indices(&indices)
             .usage(usage);
 
         // Create the buffer and fetch requirements
@@ -149,7 +155,7 @@ impl Device {
                 name: "",
                 requirements,
                 location,
-                linear: true, // Buffers are always linear
+                linear: true,
             })
             .unwrap();
 

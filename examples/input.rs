@@ -13,6 +13,7 @@ fn init(world: &mut World) {
     let mut input = world.get_mut::<Input>().unwrap();
     input.bind_button("forward", Button::GamePadDPadUp);
     input.bind_button("backward", Button::GamePadDPadDown);
+    //input.enable_sentence_recording();
 }
 
 // Read from the mappings
@@ -32,4 +33,6 @@ fn update(world: &mut World) {
     if input.axis(Axis::GamePadLeftStickX) != 0.0 {
         println!("{}", input.axis(Axis::GamePadLeftStickX));
     }
+
+    //dbg!(input.get_sentence());
 }

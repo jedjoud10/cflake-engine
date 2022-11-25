@@ -24,4 +24,5 @@ pub mod prelude {
     pub use crate::time::*;
     pub use crate::world::*;
     pub use vek;
+    pub use winit;
 }

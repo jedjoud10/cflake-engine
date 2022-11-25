@@ -16,27 +16,27 @@ fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap().clone();
     let mut threadpool = world.get_mut::<ThreadPool>().unwrap();    
 
-    threadpool.execute(move || {
-        let current = std::thread::current();
-        let name = current.name().unwrap();
-        dbg!(name);
-
+    // Create a buffer in a new thread
+    let array = [1, 2, 3, 4, 5u32];
+    threadpool.for_each::<&[u32]>(&array, move |_| {
         // Create a uniform buffer
         let mut buffer = UniformBuffer::from_slice(
             &graphics.clone(),
             &[1i32, 2, 3],
             BufferMode::Dynamic,
             BufferUsage {
-                hint_device_write: false,
+                hint_device_write: true,
                 hint_device_read: true,
                 host_write: true,
                 host_read: true,
             },
         ).unwrap();
 
+        buffer.write(&[3, 3, 3]).unwrap();
+
         let vec = buffer.read_to_vec().unwrap();
         dbg!(vec);
-    });
+    }, 1);
     
 
     /*

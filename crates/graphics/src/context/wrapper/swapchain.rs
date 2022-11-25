@@ -1,6 +1,6 @@
 use crate::{
     Adapter, Device, FrameRateLimit, Instance, Surface,
-    WindowSettings,
+    WindowSettings, BufferingMode,
 };
 use ash::vk::{self};
 
@@ -61,6 +61,7 @@ pub(crate) unsafe fn create_swapchain(
         format,
         extent,
         present_mode,
+        window_settings,
     );
 
     // Create the loader and the actual swapchain
@@ -104,10 +105,15 @@ fn create_swapchain_create_info(
     format: vk::SurfaceFormatKHR,
     extent: vk::Extent2D,
     present: vk::PresentModeKHR,
+    settings: &WindowSettings,
 ) -> vk::SwapchainCreateInfoKHR {
     *vk::SwapchainCreateInfoKHR::builder()
         .surface(surface.surface)
-        .min_image_count(2)
+        .min_image_count(match settings.buffering {
+            BufferingMode::Double => 2,
+            BufferingMode::Triple => 3,
+            BufferingMode::Quadruple => 4,
+        })
         .image_format(format.format)
         .image_color_space(format.color_space)
         .image_extent(extent)

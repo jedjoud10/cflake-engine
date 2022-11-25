@@ -1,8 +1,8 @@
 use super::WindowSettings;
-use ash::extensions::{
+use ash::{extensions::{
     ext::DebugUtils,
     khr::{Surface, Swapchain},
-};
+}, vk};
 
 use std::{ffi::CString, sync::Arc};
 
@@ -78,7 +78,7 @@ impl Graphics {
 
         // Create the queues that we will instantiate
         let mut queues =
-            super::create_queues(&adapter, &surface, &instance);
+            super::Queues::new(&adapter, &surface, &instance);
 
         // Create a new device with those queues
         let device = super::Device::new(
@@ -212,5 +212,41 @@ impl Graphics {
         internal.surface.destroy();
         internal.instance.destroy();
         */
+    }
+}
+
+
+// Vulkan sheize
+impl Graphics {
+    // Fetch a free command buffer and begin recording
+    pub unsafe fn record(&self) -> super::Recorder {
+        /*
+        
+        // TODO: Instead of creating a new command pool for each thread, create
+        // a round robin buffer that contains a dynamic amount of unused command pools
+        // Get the current thread command pool
+        let pool = self.0.queues.get_free_command_pool();
+        
+        // TODO: Instead of creating a new command buffer each time, create 
+        // a round robin buffer that contains a specific set of buffers
+        let command_buffer_allocate_info = vk::CommandBufferAllocateInfo::builder()
+            .command_buffer_count(1)
+            .command_pool(self.)
+        
+        let buffer = self.0.device.device.allocate_command_buffers(
+            &command_buffer_allocate_info
+        );
+
+        super::Recorder {
+            buffer,
+            graphics: self,
+        }
+        */
+        todo!()
+    }
+
+    // Submit a recorder and start executing the underlying command buffer commands
+    pub unsafe fn submit(&self, recorder: super::Recorder) {
+        todo!()
     }
 }
