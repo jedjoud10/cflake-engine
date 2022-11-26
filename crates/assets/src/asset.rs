@@ -43,6 +43,11 @@ pub trait Asset: Sized + 'static {
     ) -> Self;
 }
 
+// Just for convience's sake
+pub trait AsyncAsset: Asset + Sync + Send {}
+impl<T: Asset + Send + Sync> AsyncAsset for T where T::Args<'static>: 'static +Send + Sync {}
+
+
 impl Asset for String {
     type Args<'args> = ();
 

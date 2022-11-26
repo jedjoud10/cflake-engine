@@ -6,6 +6,7 @@ pub trait AssetInput<'s, 'args, A: Asset> {
     fn path(&self) -> &'s str;
 }
 
+// No custom arguments, assuming that they can be created using Default
 impl<'s, 'args, A: Asset> AssetInput<'s, 'args, A> for &'s str
 where
     A::Args<'args>: Default,
@@ -19,6 +20,7 @@ where
     }
 }
 
+// Tuple containing the default arguments
 impl<'s, 'args, A: Asset> AssetInput<'s, 'args, A>
     for (&'s str, A::Args<'args>)
 {

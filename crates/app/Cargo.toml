@@ -30,3 +30,4 @@ ahash = { workspace = true }
 two-dim = ["ecs/two-dim", "rendering/two-dim"]
 extended-tuples = ["ecs/extended-tuples"]
 extended-bitmasks = ["ecs/extended-bitmasks"]
+sentence-recording = ["input/sentence-recording"]
