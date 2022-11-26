@@ -3,10 +3,10 @@ use ash::vk::{
     PhysicalDeviceMemoryProperties, PhysicalDeviceProperties,
 };
 
-use crate::{GraphicSettings, Instance, Surface};
+use crate::{Instance};
 
 // Wrapper around a physical device
-pub(crate) struct Adapter {
+pub struct Adapter {
     pub(crate) physical_device: PhysicalDevice,
     pub(crate) physical_device_memory_properties:
         PhysicalDeviceMemoryProperties,
@@ -16,10 +16,8 @@ pub(crate) struct Adapter {
 
 impl Adapter {
     // Pick a physical device from the Vulkan instance
-    pub(crate) unsafe fn pick(
+    pub unsafe fn pick(
         instance: &Instance,
-        _surface: &Surface,
-        _graphic_settings: &GraphicSettings,
     ) -> Adapter {
         let devices =
             instance.instance.enumerate_physical_devices().unwrap();

@@ -17,7 +17,7 @@ fn init(world: &mut World) {
     let mut threadpool = world.get_mut::<ThreadPool>().unwrap();    
 
     // Create a buffer in a new thread
-    let array = [1, 2, 3, 4, 5u32];
+    let array = (0..4).into_iter().collect::<Vec<_>>();
     threadpool.for_each::<&[u32]>(&array, move |_| {
         // Create a uniform buffer
         let mut buffer = UniformBuffer::from_slice(
@@ -28,16 +28,11 @@ fn init(world: &mut World) {
                 hint_device_write: true,
                 hint_device_read: true,
                 host_write: true,
-                host_read: true,
+                host_read: false,
             },
         ).unwrap();
+    }, 32);
 
-        buffer.write(&[3, 3, 3]).unwrap();
-
-        let vec = buffer.read_to_vec().unwrap();
-        dbg!(vec);
-    }, 1);
-    
 
     /*
     buffer.extend_from_slice(&[4]);

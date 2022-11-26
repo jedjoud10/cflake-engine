@@ -12,6 +12,7 @@ spin_sleep = "1.1.0"
 mimalloc = "0.1.28"
 input = { path = "../input" }
 ecs = { path = "../ecs" }
+vulkan = { path = "../vulkan" }
 graphics = { path = "../graphics" }
 rendering = { path = "../rendering" }
 world = { path = "../world" }

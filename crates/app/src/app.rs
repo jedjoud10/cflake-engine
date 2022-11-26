@@ -4,7 +4,7 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
 };
 //use gui::egui::util::id_type_map::TypeId;
-use graphics::{FrameRateLimit, GraphicSettings, WindowSettings, BufferingMode};
+use graphics::{FrameRateLimit, WindowSettings, BufferingMode};
 use mimalloc::MiMalloc;
 use std::{any::TypeId, path::PathBuf};
 use world::{
@@ -18,7 +18,6 @@ static GLOBAL: MiMalloc = MiMalloc;
 pub struct App {
     // Window settings for the graphics
     window: WindowSettings,
-    graphics: GraphicSettings,
 
     // Asset and IO
     user_assets_folder: Option<PathBuf>,
@@ -40,7 +39,6 @@ impl Default for App {
                 buffering: BufferingMode::default(),
                 fullscreen: false,
             },
-            graphics: GraphicSettings::default(),
             user_assets_folder: None,
             systems,
             el: EventLoop::new(),
@@ -147,9 +145,9 @@ impl App {
     // Consume the App builder, and start the engine window
     pub fn execute(mut self) {
         // Enable the environment logger
-        log::set_max_level(log::LevelFilter::Warn);
+        log::set_max_level(log::LevelFilter::Trace);
         let logger = env_logger::builder()
-            .filter_level(log::LevelFilter::Warn)
+            .filter_level(log::LevelFilter::Trace)
             .build();
         log::set_boxed_logger(Box::new(logger)).unwrap();
         
@@ -168,9 +166,8 @@ impl App {
 
         // Insert the graphics API
         let window = self.window.clone();
-        let graphics = self.graphics.clone();
         self = self.insert_system(move |system: &mut System| {
-            graphics::system(system, window, graphics)
+            graphics::system(system, window)
         });
 
         // Sort & execute the init events

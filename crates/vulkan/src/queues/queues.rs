@@ -1,56 +1,19 @@
-use std::{marker::PhantomData, cell::RefCell, sync::Arc};
-use crate::{Adapter, Instance, Surface, Device, Graphics};
+use std::{marker::PhantomData, cell::RefCell, sync::Arc, collections::HashMap};
+use crate::{Adapter, Instance, Surface, Device};
 use ash::vk;
-use math::BitSet;
 use parking_lot::{Mutex, RwLock};
-use world::ThreadPool;
+use super::family::{Family, FamilyType};
 
-// Command buffer that has started recording
-pub struct Recorder<'a> {
-    pub(crate) buffer: vk::CommandBuffer,
-    pub(crate) graphics: &'a Graphics,
-}
-
-// Recorded commands inside a recorder
-pub struct CommandId<'a> {
-    recorder: Recorder<'a>,
-    buffer: vk::CommandBuffer,
-}
-
-// A single command pool abstraction
-// We technically should have one pool per thread
-pub(crate) struct Pool {
-    // Raw vulkan command pool
-    pub(crate) alloc: vk::CommandPool,
-    
-    // All the command buffers allocated in this command pool
-    pub(crate) buffers: Mutex<Vec<vk::CommandBuffer>>,
-}
-
-// A single queue family abstraction
-pub(crate) struct Family {
-    // Queue flags of the current family
-    pub(crate) family_queue_flags: vk::QueueFlags,
-    pub(crate) family_index: u32,
-
-    // Current command pools of this family (multiple command pools per family)
-    // TODO: Dynamic pools?
-    pub(crate) pools: Vec<Pool>,
-
-    // TODO: We should be able to have multiple queues per family but mkay
-    pub(crate) queue: vk::Queue,
-}
-
-// Queues and their families that will be used by the logical device
+// Queues families and their queues that will be used by the logical device
 pub struct Queues {
-    pub(crate) families: Vec<Family>,
-    pub(crate) graphics: usize,
-    pub(crate) present: usize,
-} 
+    families: Vec<Family>,
+    graphics: usize,
+    present: usize,
+}
 
 impl Queues {
     // Get the required queues from a logical device
-    pub(crate) unsafe fn new(
+    pub unsafe fn new(
         adapter: &Adapter,
         surface: &Surface,
         instance: &Instance,
@@ -104,6 +67,8 @@ impl Queues {
                 }
             })
             .collect::<Vec<_>>();
+
+        
         Queues {
             families,
             graphics,
@@ -112,56 +77,22 @@ impl Queues {
     }
 
     // Update the queues after we've made the device
-    pub(super) unsafe fn complete_queue_creation(
+    pub(crate) unsafe fn complete_queue_creation(
         &mut self,
         device: &Device,
     ) {
         // Get the graphics family index
-        let graphics = &mut self.families[self.graphics];
+        let graphics = self.family_mut(FamilyType::Graphics);
 
         // Create the multiple command pools for multithreaded use only for the graphics family
         // TODO: Fix this and dynmacially allocate thread pools if needed
-        let pools = (0..ThreadPool::default_thread_count())
-            .into_iter()
-            .map(|_| {
-                // Create a new command pool create info
-                let command_pool_create_info = vk::CommandPoolCreateInfo::builder()
-                    .flags(vk::CommandPoolCreateFlags::empty())
-                    .queue_family_index(graphics.family_index);
+        for _ in 0..64 {
+            graphics.insert_new_pool(device, Default::default());
+        }
 
-                // Create the command pool
-                let alloc = device.device.create_command_pool(
-                    &command_pool_create_info,
-                    None
-                ).unwrap();
-
-                // Structify
-                Pool {
-                    alloc,
-                    buffers: Default::default(),
-                }
-            })
-            .collect();
-        graphics.pools = pools;    
-
-        // Get the present family index
-        let present = &mut self.families[self.present];
-
-        // Create one command pool for the present family
-        // Create a new command pool create info
-        let command_pool_create_info = vk::CommandPoolCreateInfo::builder()
-            .flags(vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER)
-            .queue_family_index(present.family_index);
-
-        // Create the command pool
-        let alloc = device.device.create_command_pool(
-            &command_pool_create_info,
-            None
-        ).unwrap();
-        present.pools = vec![Pool {
-            alloc,
-            buffers: Default::default(),
-        }];
+        // Get the present family index and create ONE pool for it (single threaded present)
+        let present = self.family_mut(FamilyType::Present);
+        present.insert_new_pool(device, Default::default())
     }
 
     // Find a queue that supports the specific flags
@@ -195,16 +126,8 @@ impl Queues {
             .expect("Could not find the graphics queue") as u32
     }
 
-    // Get a free command pool for the current thread
-    pub(crate) unsafe fn get_free_command_pool(&self, family: usize) -> &Pool {
-        let family = &self.families[family];
-        
-        // TODO: HANDLE
-        &family.pools[0]
-    } 
-
     // Destroy all pools and command buffers
-    pub(crate) unsafe fn destroy(self, device: &Device) {
+    pub unsafe fn destroy(self, device: &Device) {
         device.device.device_wait_idle().unwrap();
         for family in self.families {
             for pool in family.pools {
@@ -212,5 +135,33 @@ impl Queues {
                 device.device.destroy_command_pool(pool.alloc, None);
             } 
         }
+    }
+}
+
+impl Queues {
+    // Get a family immutably using it's type
+    pub fn family(&self, _type: FamilyType) -> &Family {
+        &self.families[match _type {
+            FamilyType::Graphics => self.graphics,
+            FamilyType::Present => self.present,
+        }]
+    }
+
+    // Get a family mutably using it's type
+    pub fn family_mut(&mut self, _type: FamilyType) -> &mut Family {
+        &mut self.families[match _type {
+            FamilyType::Graphics => self.graphics,
+            FamilyType::Present => self.present,
+        }]
+    }
+
+    // Iterate over all the families immutably
+    pub fn families(&self) -> impl Iterator<Item = &Family> {
+        self.families.iter()
+    }
+    
+    // Iterate over all the families mutably
+    pub fn families_mut(&mut self) -> impl Iterator<Item = &mut Family> {
+        self.families.iter_mut()
     }
 }

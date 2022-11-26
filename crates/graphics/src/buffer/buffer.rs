@@ -1,6 +1,6 @@
-use std::{marker::PhantomData, mem::size_of, ops::RangeBounds};
+use std::{marker::PhantomData, mem::{size_of, ManuallyDrop}, ops::RangeBounds};
 
-use crate::{Content, Graphics, BufferError, InvalidModeError, InvalidUsageError, Recorder, CommandId};
+use crate::{Content, Graphics, BufferError, InvalidModeError, InvalidUsageError};
 use super::BufferLayouts;
 use ash::vk;
 use bytemuck::Zeroable;
@@ -68,7 +68,7 @@ pub type IndirectBuffer<T> = Buffer<T, INDIRECT>;
 // This also takes a constant that represents it's OpenGL target
 pub struct Buffer<T: Content, const TYPE: u32> {
     buffer: vk::Buffer,
-    memory: Allocation,
+    memory: ManuallyDrop<Allocation>,
     length: usize,
     capacity: usize,
     usage: BufferUsage,
@@ -91,7 +91,6 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         slice: &[T],
         mode: BufferMode,
         usage: BufferUsage,
-        
     ) -> Option<Self> {
         // Cannot create a zero sized slice for non-resizable buffers
         if slice.is_empty() && !matches!(mode, BufferMode::Resizable) {
@@ -123,10 +122,14 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
             (buffer, memory)
         });
 
-        // Write to the buffer memory
-        let dst = bytemuck::cast_slice_mut::<u8, T>(src_memory.mapped_slice_mut().unwrap());
-        let len = slice.len();
-        dst[..len].copy_from_slice(slice);
+        if let Some(staging) = tmp_init_staging {
+            // Write to the buffer memory using the recorder
+        } else {
+            // Write to the buffer memory by mapping it directly
+            let dst = bytemuck::cast_slice_mut::<u8, T>(src_memory.mapped_slice_mut().unwrap());
+            let len = slice.len();
+            dst[..len].copy_from_slice(slice);
+        }
 
         // Create the struct and return it
         Some(Self {
@@ -137,7 +140,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
             graphics: graphics.clone(),
             _phantom: PhantomData,
             buffer: src_buffer,
-            memory: src_memory,
+            memory: ManuallyDrop::new(src_memory),
         })
     }
 
@@ -359,7 +362,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     }
 
     // Clear the buffer contents, resetting the buffer's length down to zero
-    pub fn clear(&mut self, recorder: &Recorder) {
+    pub fn clear(&mut self) {
         // TODO: write to current buffer
         self.length = 0;
         todo!()
@@ -430,4 +433,13 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         todo!()
     }
     */
+}
+
+impl<T: Content, const TYPE: u32> Drop for Buffer<T, TYPE> {
+    fn drop(&mut self) {
+        unsafe {
+            let allocation = ManuallyDrop::take(&mut self.memory);
+            self.graphics.device().destroy_buffer(self.buffer, allocation);
+        }
+    }
 }

@@ -1,4 +1,4 @@
-use crate::{GraphicSettings, WindowSettings};
+use crate::{WindowSettings};
 use winit::{event::WindowEvent, event_loop::EventLoop};
 use world::{post_user, user, State, System, World};
 
@@ -7,7 +7,6 @@ fn init(
     world: &mut World,
     el: &EventLoop<()>,
     window_settings: WindowSettings,
-    graphic_settings: GraphicSettings,
 ) {
     // Instantiate a new window wrapper
     let window =
@@ -17,7 +16,6 @@ fn init(
     let graphics = unsafe {
         crate::context::Graphics::new(
             window.window(),
-            &graphic_settings,
             &window_settings,
         )
     };
@@ -85,11 +83,10 @@ fn destroy(world: &mut World) {
 pub fn system(
     system: &mut System,
     window_settings: WindowSettings,
-    graphic_settings: GraphicSettings,
 ) {
     system
         .insert_init(move |world: &mut World, el: &EventLoop<()>| {
-            init(world, el, window_settings, graphic_settings)
+            init(world, el, window_settings)
         })
         .before(user);
 

@@ -1,4 +1,6 @@
-use crate::{Adapter, GraphicSettings, Instance, Queues};
+use std::ffi::CString;
+
+use crate::{Adapter, Instance, Queues, FamilyType};
 use ash::vk::{
     self, DeviceCreateInfo, DeviceQueueCreateInfo, PhysicalDevice,
 };
@@ -12,37 +14,35 @@ use gpu_allocator::{
 };
 use parking_lot::Mutex;
 
-use super::queues;
-
-// Wrapper around a logical device
-pub(crate) struct Device {
-    pub(crate) physical_device: PhysicalDevice,
+// Wrapper around a Vulkan logical device
+pub struct Device {
+    // Ash logical device
     pub(crate) device: ash::Device,
+
+    // Memory allocator that will suballocate when needed
     pub(crate) allocator: Mutex<gpu_allocator::vulkan::Allocator>,
 }
 
 impl Device {
     // Create a logical Vulkan device using the queues
-    pub(crate) unsafe fn new(
+    pub unsafe fn new(
         instance: &Instance,
         adapter: &Adapter,
         queues: &mut Queues,
-        graphic_settings: &GraphicSettings,
+        device_extensions: Vec<CString>,
     ) -> Device {
         // Create the queue create infos
         let create_infos = queues
-            .families
-            .iter()
-            .map(|index| {
+            .families()
+            .map(|family| {
                 *DeviceQueueCreateInfo::builder()
                     .queue_priorities(&[1.0])
-                    .queue_family_index(index.family_index)
+                    .queue_family_index(family.family_index)
             })
                 .collect::<Vec<_>>();
 
         // Create logical device create info
-        let logical_device_extensions = graphic_settings
-            .logical_device_extensions
+        let logical_device_extensions = device_extensions
             .iter()
             .map(|s| s.as_ptr())
             .collect::<Vec<_>>();
@@ -91,18 +91,25 @@ impl Device {
 
         // Le logical device
         let device = Device {
-            physical_device: adapter.physical_device,
             device,
             allocator: Mutex::new(allocator),
-            };
+        };
 
         // Finish the queue creation
         queues.complete_queue_creation(&device);
         device
     }
 
+    // Destroy the logical device
+    pub unsafe fn destroy(self) {
+        self.device.device_wait_idle().unwrap();
+        self.device.destroy_device(None);
+    }
+}
+
+impl Device {
     // Create a single simple semaphore
-    pub(crate) unsafe fn create_semaphore(&self) -> vk::Semaphore {
+    pub unsafe fn create_semaphore(&self) -> vk::Semaphore {
         self
             .device
             .create_semaphore(&Default::default(), None)
@@ -110,7 +117,7 @@ impl Device {
     }
 
     // Create a single simple fence
-    pub(crate) unsafe fn create_fence(&self) -> vk::Fence {
+    pub unsafe fn create_fence(&self) -> vk::Fence {
         self
             .device
             .create_fence(&Default::default(), None)
@@ -118,14 +125,14 @@ impl Device {
     }
 
     // Create raw buffer with no memory
-    pub(crate) unsafe fn create_buffer(
+    pub unsafe fn create_buffer(
         &self,
         size: u64,
         usage: vk::BufferUsageFlags,
         queues: &Queues,
     ) -> vk::Buffer {
         // Setup vulkan info
-        let graphics = &queues.families[queues.graphics];
+        let graphics = queues.family(FamilyType::Graphics);
         let indices = [graphics.family_index];
         let vk_info = vk::BufferCreateInfo::builder()
             .size(size)
@@ -139,7 +146,7 @@ impl Device {
     }
 
     // Create the underlying memory for a buffer
-    pub(crate) unsafe fn create_buffer_memory(
+    pub unsafe fn create_buffer_memory(
         &self,
         buffer: vk::Buffer,
         location: MemoryLocation,
@@ -171,13 +178,19 @@ impl Device {
                 .unwrap()
         };
         allocation
-    }
+    }    
 
-    // Destroy the logical device
-    pub(crate) unsafe fn destroy(self) {
-        self.device.device_wait_idle().unwrap();
-        self.device.destroy_device(None);
+    // Free a buffer and it's allocation
+    pub unsafe fn destroy_buffer(
+        &self,
+        buffer: vk::Buffer,
+        allocation: Allocation,
+    ) {
+        // Deallocate the underlying memory
+        self.allocator.lock().free(allocation).unwrap();
+        
+        // Delete the Vulkan buffer
+        let buffer = buffer;
+        self.device.destroy_buffer(buffer, None);
     }
 }
-
-

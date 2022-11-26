@@ -1,12 +1,12 @@
 mod adapter;
 mod device;
-mod instance;
 mod queues;
+mod instance;
 mod surface;
-mod swapchain;
+mod entry;
+pub use entry::*;
 pub use adapter::*;
 pub use device::*;
-pub use instance::*;
 pub use queues::*;
+pub use instance::*;
 pub use surface::*;
-pub use swapchain::*;

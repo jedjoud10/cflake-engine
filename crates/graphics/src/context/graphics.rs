@@ -1,48 +1,17 @@
+use crate::FrameRateLimit;
+
 use super::WindowSettings;
-use ash::{extensions::{
-    ext::DebugUtils,
-    khr::{Surface, Swapchain},
-}, vk};
-
 use std::{ffi::CString, sync::Arc};
-
-// Graphical settings that we will use to create the graphical context
-#[derive(Clone)]
-pub struct GraphicSettings {
-    pub validation_layers: Vec<CString>,
-    pub instance_extensions: Vec<CString>,
-    pub logical_device_extensions: Vec<CString>,
-}
-
-impl Default for GraphicSettings {
-    fn default() -> Self {
-        Self {
-            #[cfg(debug_assertions)]
-            validation_layers: vec![CString::new(
-                "VK_LAYER_KHRONOS_validation".to_owned(),
-            )
-            .unwrap()],
-            #[cfg(not(debug_assertions))]
-            validation_layers: vec![],
-            instance_extensions: vec![
-                DebugUtils::name().to_owned(),
-                Surface::name().to_owned(),
-            ],
-            logical_device_extensions: vec![
-                Swapchain::name().to_owned()
-            ],
-        }
-    }
-}
+use vulkan::*;
 
 // Internal graphics context that will be shared with other threads
 pub(crate) struct InternalGraphics {
-    instance: super::Instance,
-    adapter: super::Adapter,
-    device: super::Device,
-    queues: super::Queues,
-    surface: super::Surface,
-    swapchain: super::Swapchain,
+    instance: Instance,
+    adapter: Adapter,
+    device: Device,
+    queues: Queues,
+    surface: Surface,
+    swapchain: Swapchain,
 }
 
 // Graphical context that we will wrap around the WGPU instance
@@ -56,46 +25,49 @@ impl Graphics {
     // It will then create the swapchain and setup the swapchain images
     pub(crate) unsafe fn new(
         window: &winit::window::Window,
-        graphic_settings: &GraphicSettings,
         window_settings: &WindowSettings,
     ) -> Graphics {
+        let validation_layers = vulkan::required_validation_layers();
+        let instance_extensions = vulkan::required_instance_extensions();
+        let device_extensions = vulkan::required_device_extensions();
+
         // Create the Vulkan entry and instance
-        let instance = super::create_instance(
+        let instance = Instance::new(
             window,
-            graphic_settings,
-            window_settings,
+            instance_extensions,
+            validation_layers,
+            window_settings.title.clone(),
+            "cFlake Engine".to_owned()
         );
 
         // Create a surface from the KHR extension
-        let surface = super::Surface::new(&instance);
+        let surface = Surface::new(&instance);
 
         // Pick a physical device (adapter)
-        let adapter = super::Adapter::pick(
-            &instance,
-            &surface,
-            graphic_settings,
+        let adapter = Adapter::pick(
+            &instance
         );
 
         // Create the queues that we will instantiate
-        let mut queues =
-            super::Queues::new(&adapter, &surface, &instance);
+        let mut queues = Queues::new(&adapter, &surface, &instance);
 
         // Create a new device with those queues
-        let device = super::Device::new(
+        let device = Device::new(
             &instance,
             &adapter,
             &mut queues,
-            graphic_settings,
+            device_extensions,
         );
 
         // Create a swapchain we can render to
-        let swapchain = super::create_swapchain(
+        let vsync = matches!(window_settings.limit, FrameRateLimit::VSync);
+        let swapchain = Swapchain::new(
             &adapter,
             &surface,
             &device,
             &instance,
             window,
-            window_settings,
+            vsync,
         );
 
         Self(Arc::new(InternalGraphics {
@@ -109,32 +81,32 @@ impl Graphics {
     }
 
     // Get the instance
-    pub(crate) fn instance(&self) -> &super::Instance {
+    pub(crate) fn instance(&self) -> &Instance {
         &self.0.instance
     }
 
     // Get the adapter
-    pub(crate) fn adapter(&self) -> &super::Adapter {
+    pub(crate) fn adapter(&self) -> &Adapter {
         &self.0.adapter
     }
 
     // Get the device
-    pub(crate) fn device(&self) -> &super::Device {
+    pub(crate) fn device(&self) -> &Device {
         &self.0.device
     }
 
     // Get the queues
-    pub(crate) fn queues(&self) -> &super::Queues {
+    pub(crate) fn queues(&self) -> &Queues {
         &self.0.queues
     }
 
     // Get the surface
-    pub(crate) fn surface(&self) -> &super::Surface {
+    pub(crate) fn surface(&self) -> &Surface {
         &self.0.surface
     }
 
     // Get the swapchain
-    pub(crate) fn swapchain(&self) -> &super::Swapchain {
+    pub(crate) fn swapchain(&self) -> &Swapchain {
         &self.0.swapchain
     }
 
@@ -212,41 +184,5 @@ impl Graphics {
         internal.surface.destroy();
         internal.instance.destroy();
         */
-    }
-}
-
-
-// Vulkan sheize
-impl Graphics {
-    // Fetch a free command buffer and begin recording
-    pub unsafe fn record(&self) -> super::Recorder {
-        /*
-        
-        // TODO: Instead of creating a new command pool for each thread, create
-        // a round robin buffer that contains a dynamic amount of unused command pools
-        // Get the current thread command pool
-        let pool = self.0.queues.get_free_command_pool();
-        
-        // TODO: Instead of creating a new command buffer each time, create 
-        // a round robin buffer that contains a specific set of buffers
-        let command_buffer_allocate_info = vk::CommandBufferAllocateInfo::builder()
-            .command_buffer_count(1)
-            .command_pool(self.)
-        
-        let buffer = self.0.device.device.allocate_command_buffers(
-            &command_buffer_allocate_info
-        );
-
-        super::Recorder {
-            buffer,
-            graphics: self,
-        }
-        */
-        todo!()
-    }
-
-    // Submit a recorder and start executing the underlying command buffer commands
-    pub unsafe fn submit(&self, recorder: super::Recorder) {
-        todo!()
     }
 }
