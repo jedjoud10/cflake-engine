@@ -2,7 +2,19 @@ use crate::FrameRateLimit;
 
 use super::WindowSettings;
 use std::{ffi::CString, sync::Arc};
+use bytemuck::{Zeroable, Pod};
 use vulkan::*;
+
+// Plain old data type internally used by buffers and other types
+pub trait Content:
+    Zeroable + Pod + Clone + Copy + Sync + Send + 'static
+{
+}
+impl<T: Clone + Copy + Sync + Send + Zeroable + Pod + 'static> Content
+    for T
+{
+}
+
 
 // Internal graphics context that will be shared with other threads
 pub(crate) struct InternalGraphics {
@@ -83,32 +95,32 @@ impl Graphics {
     }
 
     // Get the instance
-    pub(crate) fn instance(&self) -> &Instance {
+    pub fn instance(&self) -> &Instance {
         &self.0.instance
     }
 
     // Get the adapter
-    pub(crate) fn adapter(&self) -> &Adapter {
+    pub fn adapter(&self) -> &Adapter {
         &self.0.adapter
     }
 
     // Get the device
-    pub(crate) fn device(&self) -> &Device {
+    pub fn device(&self) -> &Device {
         &self.0.device
     }
 
     // Get the queues
-    pub(crate) fn queues(&self) -> &Queues {
+    pub fn queues(&self) -> &Queues {
         &self.0.queues
     }
 
     // Get the surface
-    pub(crate) fn surface(&self) -> &Surface {
+    pub fn surface(&self) -> &Surface {
         &self.0.surface
     }
 
     // Get the swapchain
-    pub(crate) fn swapchain(&self) -> &Swapchain {
+    pub fn swapchain(&self) -> &Swapchain {
         &self.0.swapchain
     }
 
@@ -130,5 +142,35 @@ impl Graphics {
         internal.surface.destroy();
         internal.instance.destroy();
         */
+    }
+}
+
+impl Graphics {
+    // Get a recorder from the graphics family
+    pub fn aquire_recorder(&self, implicit: bool) -> Recorder {
+        unsafe {
+            self.
+                queues()
+                .family(FamilyType::Present)
+                .aquire_pool()
+                .aquire_recorder(self.device(), Default::default(), implicit)
+        }
+    }
+
+    // Submit a recorder to the graphics context and start executing it
+    pub fn submit_recorder(&self, recorder: Recorder) {
+        unsafe {
+            self
+                .queues()
+                .family(FamilyType::Graphics)
+                .aquire_pool()
+                .submit_recorder(
+                    self.device(),
+                    recorder,
+                    &[],
+                    &[],
+                    &[],
+                );
+        }        
     }
 }

@@ -1,5 +1,6 @@
 use ash::vk;
-use parking_lot::Mutex;
+use math::BitSet;
+use parking_lot::{Mutex, MutexGuard};
 use crate::{Device};
 
 use super::pool::Pool;
@@ -21,8 +22,13 @@ pub struct Family {
     pub(super) family_index: u32,
 
     // Current command pools of this family (multiple command pools per family)
-    // TODO: Dynamic pools?
-    pub(super) pools: Vec<Pool>,
+    // Each thread will have it's own command pool that it can acces and submit to
+
+    // If a thread notices that a pool is not in use (no locks) it will aquire the lock
+    // And start submitting to the pool as if it were it's own
+
+    // If a thread does not find a free pool, it will simply allocate a new one for itself
+    pub(super) pools: Vec<Mutex<Pool>>,
 
     // TODO: We should be able to have multiple queues per family but mkay
     pub(super) queue: vk::Queue,
@@ -39,20 +45,15 @@ impl Family {
         self.family_index
     }
 
-    // Get the pool for the current thread immutably
-    pub fn pool(&self) -> &Pool {
-        &self.pools[0]
-    }
-
     // Get the pool for the current thread mutably
-    pub fn pool_mut(&mut self) -> &mut Pool {
-        &mut self.pools[0]
+    pub fn pool_mut(&mut self) -> MutexGuard<Pool> {
+        self.pools[0].lock()
     }
 
     // Get a free pool that we can use directly
-    pub fn aquire_pool(&self) -> &Pool {
+    pub fn aquire_pool(&self) -> MutexGuard<Pool> {
         // TODO: actually write this
-        &self.pools[0]
+        self.pools[0].lock()
     }
 }
 
@@ -74,12 +75,13 @@ impl Family {
         let pool = Pool { 
             alloc,
             buffers: Mutex::new(Vec::new()),
-            queue: self.queue
+            fences: Mutex::new(Vec::new()),
+            queue: self.queue,
         };
 
         // Allocate a singular command buffer
-        pool.allocate_command_buffers(device, 1, false);
+        //pool.allocate_command_buffers(device, 1, false);
 
-        self.pools.push(pool);
+        self.pools.push(Mutex::new(pool));
     }
 }

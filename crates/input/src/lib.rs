@@ -115,12 +115,12 @@ impl Input {
     }
 
     // Get the state of a button mapping or a key mapping
-    pub fn button<B: InputButtonId>(&self, button: B) -> ButtonState {
+    pub fn get_button<B: InputButtonId>(&self, button: B) -> ButtonState {
         B::get(button, self)
     }
 
     // Get the state of a unique axis or an axis mapping
-    pub fn axis<A: InputAxisId>(&self, axis: A) -> f32 {
+    pub fn get_axis<A: InputAxisId>(&self, axis: A) -> f32 {
         A::get(axis, self)
     }
 }

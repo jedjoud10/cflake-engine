@@ -72,12 +72,8 @@ pub(super) fn find_optimal_layout(
         return BufferLayouts {
             src_buffer_memory_location: MemoryLocation::GpuOnly,
             src_buffer_usage_flags: vk::BufferUsageFlags::TRANSFER_DST | base,
-            /*
             init_staging_buffer_memory_location: Some(MemoryLocation::CpuToGpu),
             init_staging_buffer_usage_flags: Some(vk::BufferUsageFlags::TRANSFER_SRC),
-            */
-            init_staging_buffer_memory_location: None,
-            init_staging_buffer_usage_flags: None,
             cached_staging_buffer_memory_location: None,
             cached_staging_buffer_usage_flags: None,
         }

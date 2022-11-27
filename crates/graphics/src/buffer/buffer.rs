@@ -5,6 +5,7 @@ use super::BufferLayouts;
 use ash::vk;
 use bytemuck::Zeroable;
 use gpu_allocator::{MemoryLocation, vulkan::Allocation};
+use vulkan::{FamilyType, Recorder};
 
 // Some settings that tell us how exactly we should create the buffer
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
@@ -91,11 +92,16 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         slice: &[T],
         mode: BufferMode,
         usage: BufferUsage,
+        recorder: &Recorder,
     ) -> Option<Self> {
         // Cannot create a zero sized slice for non-resizable buffers
         if slice.is_empty() && !matches!(mode, BufferMode::Resizable) {
             return None;
         }
+
+        // Decompose graphics
+        let device = graphics.device();
+        let queues = graphics.queues();
 
         // Calculate the byte size of the buffer
         let size = u64::try_from(size_of::<T>() * slice.len()).unwrap();
@@ -104,25 +110,33 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         let layout = super::find_optimal_layout(mode, usage, TYPE);
 
         // Create the actual buffer
-        let src_buffer = unsafe { graphics.device().create_buffer(size, layout.src_buffer_usage_flags, graphics.queues()) };
-        let mut src_memory = unsafe { graphics.device().create_buffer_memory(src_buffer, layout.src_buffer_memory_location) };
+        let src_buffer = unsafe { device.create_buffer(size, layout.src_buffer_usage_flags, graphics.queues()) };
+        let mut src_memory = unsafe { device.create_buffer_memory(src_buffer, layout.src_buffer_memory_location) };
 
         // Optional init staging buffer
         let tmp_init_staging = layout.init_staging_buffer_memory_location.map(|memory| unsafe {
-            let buffer = graphics.device().create_buffer(size, layout.init_staging_buffer_usage_flags.unwrap(), graphics.queues());
-            let memory = graphics.device().create_buffer_memory(buffer, memory);
+            let buffer = device.create_buffer(size, layout.init_staging_buffer_usage_flags.unwrap(), graphics.queues());
+            let memory = device.create_buffer_memory(buffer, memory);
             (buffer, memory)
         });
 
         // Cached staging buffer
         let cached_staging = layout.cached_staging_buffer_memory_location.map(|memory| unsafe {
-            let buffer = graphics.device().create_buffer(size, layout.init_staging_buffer_usage_flags.unwrap(), graphics.queues());
-            let memory = graphics.device().create_buffer_memory(buffer, memory);
+            let buffer = device.create_buffer(size, layout.init_staging_buffer_usage_flags.unwrap(), graphics.queues());
+            let memory = device.create_buffer_memory(buffer, memory);
             (buffer, memory)
         });
 
+        // Check if we need to make a staging buffer
         if let Some((buffer, allocation)) = tmp_init_staging {
             unsafe {
+                dbg!("setting up staging buffer");
+                /*
+                let family = queues.family(FamilyType::Graphics);
+                let pool = family.aquire_pool();
+                pool.aquire_recorder(device, vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT);
+                */
+                
                 // Record the copy command
                 // Setup a finished callback for the recorder
             }
@@ -151,8 +165,9 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         graphics: &Graphics,
         mode: BufferMode,
         usage: BufferUsage,
+        recorder: &Recorder,
     ) -> Option<Self> {
-        Self::from_slice(graphics, &[], mode, usage)
+        Self::from_slice(graphics, &[], mode, usage, recorder)
     }
 
     // Get the current length of the buffer
@@ -220,23 +235,29 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         &mut self,
         _val: T,
         range: impl RangeBounds<usize>,
-    ) {
-        if let Some(BufferBounds { offset: _, size: _ }) =
-            self.convert_range_bounds(range)
-        {}
+        recorder: &Recorder,
+    ) -> Result<(), BufferError> {
+        let Some(BufferBounds {
+            offset, size 
+        }) = self.convert_range_bounds(range) else {
+            return Ok(());
+        };
+
+        todo!()
     }
 
     // Extent the current buffer using data from an iterator
     pub fn extend_from_iterator<I: Iterator<Item = T>>(
         &mut self,
         iterator: I,
+        recorder: &Recorder,
     ) -> Result<(), BufferError> {
         let collected = iterator.collect::<Vec<_>>();
-        self.extend_from_slice(&collected)
+        self.extend_from_slice(&collected, recorder)
     }
 
     // Extend the current buffer using data from a new slice
-    pub fn extend_from_slice(&mut self, slice: &[T]) -> Result<(), BufferError> {
+    pub fn extend_from_slice(&mut self, slice: &[T], recorder: &Recorder) -> Result<(), BufferError> {
         // Don't do anything
         if slice.is_empty() {
             return Ok(());
@@ -284,6 +305,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         &mut self,
         src: &[T],
         range: impl RangeBounds<usize>,
+        recorder: &Recorder,
     ) -> Result<(), BufferError> {
         let Some(BufferBounds {
             offset, size 
@@ -315,6 +337,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         &self,
         dst: &mut [T],
         range: impl RangeBounds<usize>,
+        recorder: &Recorder,
     ) -> Result<(), BufferError> {
         let Some(BufferBounds {
             offset, size
@@ -345,6 +368,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     pub fn read_range_as_vec(
         &self,
         range: impl RangeBounds<usize> + Copy,
+        recorder: &Recorder,
     ) -> Result<Vec<T>, BufferError> {
         let Some(BufferBounds {
             size, .. 
@@ -354,13 +378,13 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
 
         // Create a vec and read into it
         let mut vec = vec![T::zeroed(); size];
-        self.read_range(&mut vec, range)?;
+        self.read_range(&mut vec, range, recorder)?;
         Ok(vec)
     }
 
     // Read the whole buffer into a new vector
-    pub fn read_to_vec(&self) -> Result<Vec<T>, BufferError> {
-        self.read_range_as_vec(..)
+    pub fn read_to_vec(&self, recorder: &Recorder,) -> Result<Vec<T>, BufferError> {
+        self.read_range_as_vec(.., recorder)
     }
 
     // Clear the buffer contents, resetting the buffer's length down to zero
@@ -378,6 +402,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         _src_range: impl RangeBounds<usize>,
         _other: &Buffer<T, OTHER_TYPE>,
         _dst_offset: usize,
+        recorder: &Recorder,
     ) {
         todo!()
     }
@@ -386,6 +411,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     pub fn copy_from<const OTHER: u32>(
         &mut self,
         other: &Buffer<T, OTHER>,
+        recorder: &Recorder,
     ) {
         assert_eq!(
             self.len(),
@@ -393,22 +419,22 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
             "Cannot copy from buffer, length mismatch"
         );
 
-        self.copy_range_from(.., other, 0);
+        self.copy_range_from(.., other, 0, recorder);
     }
 
     // Fills the whole buffer with a constant value
-    pub fn splat(&mut self, val: T) {
-        self.splat_range(val, ..)
+    pub fn splat(&mut self, val: T, recorder: &Recorder,) -> Result<(), BufferError> {
+        self.splat_range(val, .., recorder)
     }
 
     // Overwrite the whole buffer using a slice
-    pub fn write(&mut self, slice: &[T]) -> Result<(), BufferError> {
-        self.write_range(slice, ..)
+    pub fn write(&mut self, slice: &[T], recorder: &Recorder,) -> Result<(), BufferError> {
+        self.write_range(slice, .., recorder)
     }
 
     // Read the whole buffer into a mutable slice
-    pub fn read(&self, slice: &mut [T]) -> Result<(), BufferError> {
-        self.read_range(slice, ..)
+    pub fn read(&self, slice: &mut [T], recorder: &Recorder,) -> Result<(), BufferError> {
+        self.read_range(slice, .., recorder)
     }
 
     /*

@@ -801,6 +801,7 @@ dependencies = [
  "assets",
  "bytemuck",
  "gpu-allocator",
+ "log",
  "math",
  "nohash-hasher",
  "parking_lot",
@@ -2030,11 +2031,13 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 name = "vulkan"
 version = "0.1.0"
 dependencies = [
+ "ahash",
  "ash",
  "ash-window",
  "bytemuck",
  "gpu-allocator",
  "log",
+ "math",
  "parking_lot",
  "raw-window-handle 0.5.0",
  "winit",

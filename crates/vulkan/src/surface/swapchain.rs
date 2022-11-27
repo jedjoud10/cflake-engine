@@ -1,6 +1,7 @@
 use std::{num::NonZeroU8, cell::Cell};
 
 use ash::vk::{self};
+use parking_lot::Mutex;
 use crate::{Device, Adapter, Surface, Instance, Queues, FamilyType};
 
 // Wrapper around the vulkan swapchain
@@ -15,7 +16,7 @@ pub struct Swapchain {
 
     // Synchronization
     pub(super) rendering_finished_semaphore: vk::Semaphore,
-    pub(super) rendering_finished_fence: vk::Fence,
+    pub(super) rendering_finished_fence: Mutex<vk::Fence>,
     pub(super) image_available_semaphore: vk::Semaphore,
 
     // Format and present mode
@@ -84,7 +85,7 @@ impl Swapchain {
             images: swapchain_images,
             extent,
             rendering_finished_semaphore,
-            rendering_finished_fence,
+            rendering_finished_fence: Mutex::new(vk::Fence::null()),
             image_available_semaphore,
             format,
             present_mode,
@@ -149,16 +150,19 @@ impl Swapchain {
     // Destroy the swapchain
     pub unsafe fn destroy(self, device: &Device) {
         device.device.device_wait_idle().unwrap();
-        device
-            .device
-            .destroy_semaphore(self.image_available_semaphore, None);
+        device.device.destroy_semaphore(
+            self.image_available_semaphore,
+            None
+        );
+
         device.device.destroy_semaphore(
             self.rendering_finished_semaphore,
             None,
         );
+
         device
             .device
-            .destroy_fence(self.rendering_finished_fence, None);
+            .destroy_fence(*self.rendering_finished_fence.lock(), None);
         self.loader.destroy_swapchain(self.raw, None);
     }
 }
@@ -187,7 +191,7 @@ impl Swapchain {
         let present = queues.family(FamilyType::Present);
         let pool = present.aquire_pool();
         pool.reset(device);
-        let cmd = pool.aquire_recorder(device, vk::CommandBufferUsageFlags::SIMULTANEOUS_USE);
+        let cmd = pool.aquire_cmd_buffer(device, vk::CommandBufferUsageFlags::SIMULTANEOUS_USE);
 
         // Image subresource range
         let subresource_range =
@@ -254,13 +258,13 @@ impl Swapchain {
             &[*clear_to_present],
         );
 
-        pool.submit_recorder_from_iter(
+        *self.rendering_finished_fence.lock() = pool.submit_cmd_buffers_from_iter(
             device,
             &[cmd],
             &[self.rendering_finished_semaphore],
             &[self.image_available_semaphore],
             &[],
-            self.rendering_finished_fence
+            //self.rendering_finished_fence
         );
     }
 
@@ -323,14 +327,18 @@ impl Swapchain {
             .unwrap();
 
         // Wait till the last frame finished rendering
+        log::warn!("Waiting for fences...");
         device.device.wait_for_fences(
-            &[self.rendering_finished_fence],
+            &[*self.rendering_finished_fence.lock()],
             true,
             u64::MAX,
         ).unwrap();
+        log::warn!("Swapchain done");
 
+        /*
         device.device
-            .reset_fences(&[self.rendering_finished_fence])
+            .reset_fences(&[*self.rendering_finished_fence.lock()])
             .unwrap();
+        */
     }
 }

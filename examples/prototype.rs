@@ -17,8 +17,12 @@ fn init(world: &mut World) {
     let mut threadpool = world.get_mut::<ThreadPool>().unwrap();    
 
     // Create a buffer in a new thread
-    let array = (0..4).into_iter().collect::<Vec<_>>();
+    let array = (0..32).into_iter().collect::<Vec<_>>();
     threadpool.for_each::<&[u32]>(&array, move |_| {
+        // Create a command recorder just for this buffer
+        log::warn!("Executing on thread {:?}", std::thread::current().name());
+        let recorder = graphics.aquire_recorder(false);
+
         // Create a uniform buffer
         let mut buffer = UniformBuffer::from_slice(
             &graphics.clone(),
@@ -30,8 +34,13 @@ fn init(world: &mut World) {
                 host_write: true,
                 host_read: false,
             },
+            &recorder,
         ).unwrap();
-    }, 32);
+
+        graphics.submit_recorder(recorder);
+    }, 1);
+
+    std::thread::sleep(std::time::Duration::from_secs(10));
 
 
     /*
@@ -45,7 +54,7 @@ fn update(world: &mut World) {
     let input = world.get::<Input>().unwrap();
     let time = world.get::<Time>().unwrap();
 
-    if input.button(Button::P).pressed() {
+    if input.get_button(Button::P).pressed() {
         println!("{}", 1.0f32 / time.delta_f32());
     }
 }

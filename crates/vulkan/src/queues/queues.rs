@@ -97,7 +97,7 @@ impl Queues {
         // Create the multiple command pools for multithreaded use only for the graphics family
         // TODO: Fix this and dynmacially allocate thread pools if needed
         for _ in 0..64 {
-            graphics.insert_new_pool(device, Default::default());
+            graphics.insert_new_pool(device, vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER);
         }
 
         // Get the present family index and create ONE pool for it (single threaded present)
@@ -131,8 +131,8 @@ impl Queues {
         device.device.device_wait_idle().unwrap();
         for family in self.families {
             for pool in family.pools {
-                device.device.free_command_buffers(pool.alloc, pool.buffers.lock().as_slice());
-                device.device.destroy_command_pool(pool.alloc, None);
+                //device.device.free_command_buffers(pool.alloc, pool.buffers.lock().as_slice());
+                device.device.destroy_command_pool(pool.lock().alloc, None);
             } 
         }
     }
