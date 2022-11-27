@@ -102,7 +102,6 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         
         // Get location and staging buffer location
         let layout = super::find_optimal_layout(mode, usage, TYPE);
-        dbg!(&layout);
 
         // Create the actual buffer
         let src_buffer = unsafe { graphics.device().create_buffer(size, layout.src_buffer_usage_flags, graphics.queues()) };
@@ -122,8 +121,11 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
             (buffer, memory)
         });
 
-        if let Some(staging) = tmp_init_staging {
-            // Write to the buffer memory using the recorder
+        if let Some((buffer, allocation)) = tmp_init_staging {
+            unsafe {
+                // Record the copy command
+                // Setup a finished callback for the recorder
+            }
         } else {
             // Write to the buffer memory by mapping it directly
             let dst = bytemuck::cast_slice_mut::<u8, T>(src_memory.mapped_slice_mut().unwrap());

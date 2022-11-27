@@ -1,12 +1,12 @@
 use crate::Instance;
-use ash::vk::{self};
+use ash::{vk::{self}, extensions::khr};
 
 use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
 
 // Wrapper around the temporary surface loader
 pub struct Surface {
-    pub(crate) surface_loader: ash::extensions::khr::Surface,
-    pub(crate) surface: vk::SurfaceKHR,
+    pub(super) surface_loader: khr::Surface,
+    pub(super) surface: vk::SurfaceKHR,
 }
 
 impl Surface {
@@ -21,7 +21,7 @@ impl Surface {
             None,
         )
         .unwrap();
-        let surface_loader = ash::extensions::khr::Surface::new(
+        let surface_loader = khr::Surface::new(
             &instance.entry,
             &instance.instance,
         );
@@ -36,6 +36,15 @@ impl Surface {
     pub unsafe fn destroy(self) {
         self.surface_loader.destroy_surface(self.surface, None);
     }
-}
 
+    // Get the internal surface loader
+    pub fn surface_loader(&self) -> &khr::Surface {
+        &self.surface_loader
+    }
+    
+    // Get the internal surface
+    pub fn surface(&self) -> vk::SurfaceKHR {
+        self.surface
+    }
+}
 

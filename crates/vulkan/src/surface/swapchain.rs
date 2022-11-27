@@ -1,19 +1,26 @@
-use std::num::NonZeroU8;
+use std::{num::NonZeroU8, cell::Cell};
 
 use ash::vk::{self};
-use crate::{Device, Adapter, Surface, Instance};
+use crate::{Device, Adapter, Surface, Instance, Queues, FamilyType};
 
 // Wrapper around the vulkan swapchain
 pub struct Swapchain {
-    pub(crate) loader: ash::extensions::khr::Swapchain,
-    pub(crate) raw: vk::SwapchainKHR,
-    pub(crate) images: Vec<vk::Image>,
-    pub(crate) extent: vk::Extent2D,
-    pub(crate) rendering_finished_semaphore: vk::Semaphore,
-    pub(crate) rendering_finished_fence: vk::Fence,
-    pub(crate) image_available_semaphore: vk::Semaphore,
-    pub(crate) format: vk::SurfaceFormatKHR,
-    pub(crate) present_mode: vk::PresentModeKHR,
+    // Swapchain
+    pub(super) loader: ash::extensions::khr::Swapchain,
+    pub(super) raw: vk::SwapchainKHR,
+
+    // Image data
+    pub(super) images: Vec<vk::Image>,
+    pub(super) extent: vk::Extent2D,
+
+    // Synchronization
+    pub(super) rendering_finished_semaphore: vk::Semaphore,
+    pub(super) rendering_finished_fence: vk::Fence,
+    pub(super) image_available_semaphore: vk::Semaphore,
+
+    // Format and present mode
+    pub(super) format: vk::SurfaceFormatKHR,
+    pub(super) present_mode: vk::PresentModeKHR,
 }
 
 impl Swapchain {
@@ -27,7 +34,9 @@ impl Swapchain {
         vsync: bool,
     ) -> Swapchain {
         // Get the supported surface formats khr
-        let format = Self::pick_surface_format(surface, adapter);
+        let format = *vk::SurfaceFormatKHR::builder()
+            .format(vk::Format::B8G8R8A8_SRGB)
+            .color_space(vk::ColorSpaceKHR::SRGB_NONLINEAR);
 
         // Create the swapchain image size
         let extent = *vk::Extent2D::builder()
@@ -58,6 +67,7 @@ impl Swapchain {
         // Create the image handles
         let swapchain_images =
             swapchain_loader.get_swapchain_images(swapchain).unwrap();
+        log::debug!("Swapchain contains {} images. {} more than the minimum", swapchain_images.len(), swapchain_images.len() - 2);
 
         // Semaphore that is signaled whenever we have a new available image
         let image_available_semaphore = device.create_semaphore();
@@ -128,39 +138,13 @@ impl Swapchain {
                 .into_iter()
                 .filter(|m| *m != vk::PresentModeKHR::IMMEDIATE)
                 .min_by_key(|mode| *mode)
-                .expect(
-                    "Could not find an appropriate VSYNC present mode",
-                )
+                .unwrap()
         } else {
             // No VSYNC = Immediate
             modes.into_iter().find(|m| *m == vk::PresentModeKHR::IMMEDIATE)
-                .expect("Could not find an appropriate NON-VSYNC present mode")
+                .unwrap()
         }
     }
-
-    // Pick the proper surface format for presenting
-    unsafe fn pick_surface_format(
-        surface: &Surface,
-        adapter: &Adapter,
-    ) -> vk::SurfaceFormatKHR {
-        surface
-            .surface_loader
-            .get_physical_device_surface_formats(
-                adapter.physical_device,
-                surface.surface,
-            )
-            .unwrap()
-            .into_iter()
-            .find(|surface_format| {
-                let fmt =
-                    surface_format.format == vk::Format::B8G8R8A8_SRGB;
-                let cs = surface_format.color_space
-                    == vk::ColorSpaceKHR::SRGB_NONLINEAR;
-                fmt && cs
-            })
-            .expect("Could not find an appropriate present format!")
-    }
-
 
     // Destroy the swapchain
     pub unsafe fn destroy(self, device: &Device) {
@@ -176,5 +160,177 @@ impl Swapchain {
             .device
             .destroy_fence(self.rendering_finished_fence, None);
         self.loader.destroy_swapchain(self.raw, None);
+    }
+}
+
+impl Swapchain {
+    // Get the next free image that we can render to
+    pub unsafe fn aquire(&self) -> (u32, vk::Image) {
+        let (index, _) = self
+            .loader
+            .acquire_next_image(
+                self.raw,
+                u64::MAX,
+                self.image_available_semaphore,
+                vk::Fence::null(),
+            )
+            .unwrap();
+        (index, self.images[index as usize])
+    }
+
+    // Execute some commands on the specific image
+    pub unsafe fn render(&self, 
+        device: &Device,
+        queues: &Queues,
+        image: (u32, vk::Image)
+    ) {
+        let present = queues.family(FamilyType::Present);
+        let pool = present.aquire_pool();
+        pool.reset(device);
+        let cmd = pool.aquire_recorder(device, vk::CommandBufferUsageFlags::SIMULTANEOUS_USE);
+
+        // Image subresource range
+        let subresource_range =
+            vk::ImageSubresourceRange::builder()
+                .aspect_mask(vk::ImageAspectFlags::COLOR)
+                .level_count(1)
+                .layer_count(1);
+
+        // Reset the presented image layout to be able to clear it
+        let present_to_clear = vk::ImageMemoryBarrier::builder()
+            .src_access_mask(vk::AccessFlags::MEMORY_READ)
+            .dst_access_mask(vk::AccessFlags::TRANSFER_WRITE)
+            .old_layout(vk::ImageLayout::UNDEFINED)
+            .new_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
+            .src_queue_family_index(present.index())
+            .dst_queue_family_index(present.index())
+            .image(image.1)
+            .subresource_range(*subresource_range);
+
+        // Convert the clear image layout to be able to present it
+        let clear_to_present = vk::ImageMemoryBarrier::builder()
+            .src_access_mask(vk::AccessFlags::TRANSFER_WRITE)
+            .dst_access_mask(vk::AccessFlags::MEMORY_READ)
+            .old_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
+            .new_layout(vk::ImageLayout::PRESENT_SRC_KHR)
+            .src_queue_family_index(present.index())
+            .dst_queue_family_index(present.index())
+            .image(image.1)
+            .subresource_range(*subresource_range);
+
+        // Set the clear color of the image view
+        let mut clear_color_value =
+            vk::ClearColorValue::default();
+        clear_color_value.float32 = [1.0; 4];
+
+        // Convert image layouts and wait
+        device.device.cmd_pipeline_barrier(
+            cmd,
+            vk::PipelineStageFlags::TRANSFER,
+            vk::PipelineStageFlags::TRANSFER,
+            vk::DependencyFlags::empty(),
+            &[],
+            &[],
+            &[*present_to_clear],
+        );
+
+        // Clear the color of the image
+        device.device.cmd_clear_color_image(
+            cmd,
+            image.1,
+            vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+            &clear_color_value,
+            &[*subresource_range],
+        );
+        
+        // Convert image layouts and wait
+        device.device.cmd_pipeline_barrier(
+            cmd,
+            vk::PipelineStageFlags::TRANSFER,
+            vk::PipelineStageFlags::BOTTOM_OF_PIPE,
+            vk::DependencyFlags::empty(),
+            &[],
+            &[],
+            &[*clear_to_present],
+        );
+
+        pool.submit_recorder_from_iter(
+            device,
+            &[cmd],
+            &[self.rendering_finished_semaphore],
+            &[self.image_available_semaphore],
+            &[],
+            self.rendering_finished_fence
+        );
+    }
+
+
+        /*
+        // Wait until we have a presentable image we can write to
+        let submit_info = *vk::SubmitInfo::builder()
+            .wait_semaphores(&[
+                self.swapchain.image_available_semaphore
+            ])
+            .signal_semaphores(&[
+                self.swapchain.rendering_finished_semaphore
+            ]);
+
+        // Submit the command buffers
+        let queue = self
+            .device
+            .device
+            .get_device_queue(self.queues.graphics(), 0);
+        self.device
+            .queue_submit(
+                queue,
+                &[submit_info],
+                swapchain.rendering_finished_fence,
+            )
+            .unwrap();
+
+        // Wait until the command buffers finished executing so we can present the image
+        let present_info = *vk::PresentInfoKHR::builder()
+            .swapchains(&[self.swapchain.raw])
+            .wait_semaphores(&[
+                self.swapchain.rendering_finished_semaphore
+            ])
+            .image_indices(&[image_index]);
+
+        // Present the image to the screen
+        self.swapchain
+            .loader
+            .queue_present(queue, &present_info)
+            .unwrap();
+
+        */
+
+    // Present the given image (assuming it was already stored)
+    // This will wait until rendering has completed
+    pub unsafe fn present(&self, device: &Device, queues: &Queues, image: (u32, vk::Image)) {
+        let present_info = *vk::PresentInfoKHR::builder()
+            .swapchains(&[self.raw])
+            .wait_semaphores(&[self.rendering_finished_semaphore])
+            .image_indices(&[image.0]);
+
+        // Get the present queue
+        let queue = queues
+            .family(FamilyType::Present)
+            .queue();
+
+        // Present the image to the screen
+        let suboptimal = self.loader
+            .queue_present(queue, &present_info)
+            .unwrap();
+
+        // Wait till the last frame finished rendering
+        device.device.wait_for_fences(
+            &[self.rendering_finished_fence],
+            true,
+            u64::MAX,
+        ).unwrap();
+
+        device.device
+            .reset_fences(&[self.rendering_finished_fence])
+            .unwrap();
     }
 }

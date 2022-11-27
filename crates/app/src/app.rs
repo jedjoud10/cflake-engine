@@ -145,11 +145,13 @@ impl App {
     // Consume the App builder, and start the engine window
     pub fn execute(mut self) {
         // Enable the environment logger
+        /*
         log::set_max_level(log::LevelFilter::Trace);
         let logger = env_logger::builder()
             .filter_level(log::LevelFilter::Trace)
             .build();
-        log::set_boxed_logger(Box::new(logger)).unwrap();
+            log::set_boxed_logger(Box::new(logger)).unwrap();
+        */
         
         // Insert all the builtin systems dataless
         self = self

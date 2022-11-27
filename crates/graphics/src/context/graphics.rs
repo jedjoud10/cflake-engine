@@ -45,11 +45,13 @@ impl Graphics {
 
         // Pick a physical device (adapter)
         let adapter = Adapter::pick(
-            &instance
+            &instance,
+            false,
+            &surface,
         );
 
         // Create the queues that we will instantiate
-        let mut queues = Queues::new(&adapter, &surface, &instance);
+        let mut queues = Queues::new(&adapter, &instance);
 
         // Create a new device with those queues
         let device = Device::new(
@@ -112,66 +114,10 @@ impl Graphics {
 
     // Draw the main window swapchain sheize
     pub(crate) unsafe fn draw(&mut self, _value: f32) {
-        /*
-        // Get the next free image and render to it
-        let (image_index, _) = self.swapchain
-            .loader
-            .acquire_next_image(
-                self.swapchain.raw,
-                u64::MAX,
-                self.swapchain.image_available_semaphore,
-                vk::Fence::null(),
-            )
-            .unwrap();
-
-        // Wait until we have a presentable image we can write to
-        let submit_info = *vk::SubmitInfo::builder()
-            .wait_semaphores(&[
-                self.swapchain.image_available_semaphore
-            ])
-            .signal_semaphores(&[
-                self.swapchain.rendering_finished_semaphore
-            ]);
-
-        // Submit the command buffers
-        let queue = self
-            .device
-            .device
-            .get_device_queue(self.queues.graphics(), 0);
-        self.device
-            .queue_submit(
-                queue,
-                &[submit_info],
-                swapchain.rendering_finished_fence,
-            )
-            .unwrap();
-
-        // Wait until the command buffers finished executing so we can present the image
-        let present_info = *vk::PresentInfoKHR::builder()
-            .swapchains(&[self.swapchain.raw])
-            .wait_semaphores(&[
-                self.swapchain.rendering_finished_semaphore
-            ])
-            .image_indices(&[image_index]);
-
-        // Present the image to the screen
-        self.swapchain
-            .loader
-            .queue_present(queue, &present_info)
-            .unwrap();
-
-        // Wait till the last frame finished rendering
-        self.device
-            .wait_for_fences(
-                &[swapchain.rendering_finished_fence],
-                true,
-                u64::MAX,
-            )
-            .unwrap();
-        self.device
-            .reset_fences(&[swapchain.rendering_finished_fence])
-            .unwrap();
-        */
+        // Get the next free image
+        let image = self.swapchain().aquire(); 
+        self.swapchain().render(self.device(), self.queues(), image);
+        self.swapchain().present(self.device(),self.queues(), image);
     }
 
     // Destroy the context after we've done using it

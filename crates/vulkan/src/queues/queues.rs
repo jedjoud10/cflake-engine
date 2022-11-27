@@ -7,7 +7,11 @@ use super::family::{Family, FamilyType};
 // Queues families and their queues that will be used by the logical device
 pub struct Queues {
     families: Vec<Family>,
+
+    // The index of the graphics queue family
     graphics: usize,
+ 
+    // The index of the present queue family
     present: usize,
 }
 
@@ -15,7 +19,6 @@ impl Queues {
     // Get the required queues from a logical device
     pub unsafe fn new(
         adapter: &Adapter,
-        surface: &Surface,
         instance: &Instance,
     ) -> Queues {
         let families_properties = instance
@@ -27,7 +30,6 @@ impl Queues {
         // Get the present queue family
         let present = Self::pick_queue_family(
             &families_properties,
-            surface,
             adapter,
             true,
             vk::QueueFlags::empty(),
@@ -36,7 +38,6 @@ impl Queues {
         // Get the graphics queue family
         let graphics = Self::pick_queue_family(
             &families_properties,
-            surface,
             adapter,
             false,
             vk::QueueFlags::GRAPHICS,
@@ -81,6 +82,15 @@ impl Queues {
         &mut self,
         device: &Device,
     ) {
+        // Update the queue handle for the graphics family
+        let graphics = self.family_mut(FamilyType::Graphics);
+        graphics.queue = device.device.get_device_queue(graphics.family_index, 0);
+
+        // Update the queue handle for the present family
+        let present = self.family_mut(FamilyType::Present);
+        present.queue = device.device.get_device_queue(present.family_index, 0);
+    
+    
         // Get the graphics family index
         let graphics = self.family_mut(FamilyType::Graphics);
 
@@ -92,13 +102,12 @@ impl Queues {
 
         // Get the present family index and create ONE pool for it (single threaded present)
         let present = self.family_mut(FamilyType::Present);
-        present.insert_new_pool(device, Default::default())
+        present.insert_new_pool(device, Default::default());
     }
 
     // Find a queue that supports the specific flags
     unsafe fn pick_queue_family(
         family_properties: &[vk::QueueFamilyProperties],
-        surface: &Surface,
         adapter: &Adapter,
         supports_presenting: bool,
         flags: vk::QueueFlags,
@@ -111,19 +120,10 @@ impl Queues {
                 let flags = props.queue_flags.contains(flags);
 
                 // If the queue we must fetch must support presenting, fetch the physical device properties
-                let presenting = !supports_presenting
-                    || surface
-                        .surface_loader
-                        .get_physical_device_surface_support(
-                            adapter.physical_device,
-                            i as u32,
-                            surface.surface,
-                        )
-                        .unwrap();
-
+                let presenting = !supports_presenting || adapter.physical_device_queue_family_surface_supported[i];
                 flags && presenting
             })
-            .expect("Could not find the graphics queue") as u32
+            .unwrap() as u32
     }
 
     // Destroy all pools and command buffers

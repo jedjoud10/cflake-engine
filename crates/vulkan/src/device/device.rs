@@ -37,7 +37,7 @@ impl Device {
             .map(|family| {
                 *DeviceQueueCreateInfo::builder()
                     .queue_priorities(&[1.0])
-                    .queue_family_index(family.family_index)
+                    .queue_family_index(family.index())
             })
                 .collect::<Vec<_>>();
 
@@ -68,10 +68,10 @@ impl Device {
         let debug_settings = gpu_allocator::AllocatorDebugSettings {
             log_memory_information: true,
             log_leaks_on_shutdown: true,
-            store_stack_traces: true,
+            store_stack_traces: false,
             log_allocations: true,
             log_frees: true,
-            log_stack_traces: true,
+            log_stack_traces: false,
             };
 
         // No debugging
@@ -133,7 +133,7 @@ impl Device {
     ) -> vk::Buffer {
         // Setup vulkan info
         let graphics = queues.family(FamilyType::Graphics);
-        let indices = [graphics.family_index];
+        let indices = [graphics.index()];
         let vk_info = vk::BufferCreateInfo::builder()
             .size(size)
             .flags(vk::BufferCreateFlags::empty())
@@ -142,6 +142,7 @@ impl Device {
             .usage(usage);
 
         // Create the buffer and fetch requirements
+        log::debug!("Creating buffer with size {} and usage {:?}", size, usage);
         self.device.create_buffer(&vk_info, None).unwrap()
     }
 
@@ -152,6 +153,7 @@ impl Device {
         location: MemoryLocation,
     ) -> Allocation {
         // Get memory requirements
+        log::debug!("Creating buffer memory for buffer {:?}", buffer);
         let requirements = self.device.get_buffer_memory_requirements(buffer);
 
         // Create gpu-allocator allocation
@@ -187,10 +189,12 @@ impl Device {
         allocation: Allocation,
     ) {
         // Deallocate the underlying memory
+        log::debug!("Freeing allocation {:?}", allocation.mapped_ptr());
         self.allocator.lock().free(allocation).unwrap();
         
         // Delete the Vulkan buffer
         let buffer = buffer;
+        log::debug!("Freeing buffer {:?}", buffer);
         self.device.destroy_buffer(buffer, None);
     }
 }

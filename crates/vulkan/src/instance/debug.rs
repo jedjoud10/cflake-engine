@@ -27,7 +27,6 @@ pub(super) unsafe extern "system" fn debug_callback(
     p_callback_data: *const vk::DebugUtilsMessengerCallbackDataEXT,
     _cvoid: *mut c_void,
 ) -> u32 {
-
     let callback_data = *p_callback_data;
     let message_id_number: i32 =
         callback_data.message_id_number as i32;
@@ -46,14 +45,42 @@ pub(super) unsafe extern "system" fn debug_callback(
         CStr::from_ptr(callback_data.p_message).to_string_lossy()
     };
 
-    println!(
-        "{:?}:\n{:?} [{} ({})] : {}\n",
-        message_severity,
-        message_type,
-        message_id_name,
-        &message_id_number.to_string(),
-        message,
-    );
+    pub const VERBOSE: u32 = 0b1;
+    pub const INFO: u32 = 0b1_0000;
+    pub const WARNING: u32 = 0b1_0000_0000;
+    pub const ERROR: u32 = 0b1_0000_0000_0000;
+
+    match message_severity.as_raw() {
+        VERBOSE => log::debug!(
+            "{:?} [{} ({})] : {}\n",
+            message_type,
+            message_id_name,
+            &message_id_number.to_string(),
+            message,
+        ),
+        INFO => log::info!(
+            "{:?} [{} ({})] : {}\n",
+            message_type,
+            message_id_name,
+            &message_id_number.to_string(),
+            message,
+        ),
+        WARNING => log::warn!(
+            "{:?} [{} ({})] : {}\n",
+            message_type,
+            message_id_name,
+            &message_id_number.to_string(),
+            message,
+        ),
+        ERROR => log::error!(
+            "{:?} [{} ({})] : {}\n",
+            message_type,
+            message_id_name,
+            &message_id_number.to_string(),
+            message,
+        ),
+        _ => {}
+    }
 
     vk::FALSE
 }
