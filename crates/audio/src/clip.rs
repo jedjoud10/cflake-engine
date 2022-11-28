@@ -1,7 +1,6 @@
 use crate::AudioSamples;
 use assets::Asset;
 use std::{
-    any::Any,
     io::{BufReader, Cursor},
     sync::Arc,
 };
@@ -18,7 +17,10 @@ impl Asset for AudioClip {
         &["mp3", "wav"]
     }
 
-    fn deserialize(data: assets::Data, args: Self::Args<'_>) -> Self {
+    fn deserialize(
+        data: assets::Data,
+        _args: Self::Args<'_>,
+    ) -> Self {
         match data.extension() {
             // Decode an MP3 file into the appropriate format
             "mp3" => {
@@ -32,11 +34,11 @@ impl Asset for AudioClip {
 
                 let first = decoded.next_frame().unwrap();
                 let minimp3::Frame {
-                    data,
-                    sample_rate,
-                    channels,
-                    layer,
-                    bitrate,
+                    data: _,
+                    sample_rate: _,
+                    channels: _,
+                    layer: _,
+                    bitrate: _,
                 } = first;
             }
 
@@ -44,7 +46,7 @@ impl Asset for AudioClip {
             "wav" => {
                 let mut read =
                     BufReader::new(Cursor::new(data.bytes()));
-                let (header, data) = wav::read(&mut read).unwrap();
+                let (_header, _data) = wav::read(&mut read).unwrap();
             }
             _ => panic!(),
         }

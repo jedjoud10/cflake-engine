@@ -1,6 +1,6 @@
 use ash::vk;
 
-use crate::{Device, Pool, Queues};
+use crate::{Device, Pool};
 
 // A recorder is a command buffer that is currently recording commands
 // Recorders will automatically put semaphores and fences when necessar
@@ -22,18 +22,18 @@ impl<'d, 'p> Recorder<'d, 'p> {
     // Copy buffer contents to another buffer's contents'
     pub unsafe fn copy_buffer(
         &self,
-        src: vk::Buffer,
-        dst: vk::Buffer,
-        regions: &[vk::BufferCopy],
+        _src: vk::Buffer,
+        _dst: vk::Buffer,
+        _regions: &[vk::BufferCopy],
     ) {
     }
 
     // Clear the buffer "src"
     pub unsafe fn clear_buffer(
         &self,
-        src: vk::Buffer,
-        offset: u32,
-        size: u32,
+        _src: vk::Buffer,
+        _offset: u32,
+        _size: u32,
     ) {
     }
 }

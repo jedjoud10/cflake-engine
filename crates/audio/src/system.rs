@@ -1,8 +1,7 @@
-use crate::AudioListener;
-use world::{System, Update, World};
+use world::{System, World};
 
 // Main audio update event that will play the audio clips to the audio stream and sheize
-fn update(world: &mut World) {}
+fn update(_world: &mut World) {}
 
 // Simple audio system tbh
-pub fn system(system: &mut System) {}
+pub fn system(_system: &mut System) {}

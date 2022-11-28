@@ -1,10 +1,6 @@
-use super::family::Family;
 use crate::{Device, Recorder};
 use ash::vk;
 use parking_lot::Mutex;
-use std::marker::PhantomData;
-use utils::BitSet;
-use winit::platform::unix::x11::util::FrameExtents;
 
 // A single command pool abstraction
 // We technically should have one pool per thread
@@ -224,7 +220,7 @@ impl Pool {
             cmd: self.aquire_cmd_buffer(device, flag),
             device,
             implicit,
-            pool: &self,
+            pool: self,
         }
     }
 
@@ -253,7 +249,7 @@ impl Pool {
         command_buffers: &[vk::CommandBuffer],
         signal: &[vk::Semaphore],
         wait: &[vk::Semaphore],
-        masks: &[vk::PipelineStageFlags],
+        _masks: &[vk::PipelineStageFlags],
     ) -> vk::Fence {
         // Stop recording the command buffers
         for buffer in command_buffers.iter() {

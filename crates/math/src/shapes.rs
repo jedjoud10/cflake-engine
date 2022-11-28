@@ -35,7 +35,7 @@ impl<T: SharpVertices> ImplicitVertices for T {
     type Settings = ();
 
     fn points(&self, _: Self::Settings) -> Self::Points {
-        <T as SharpVertices>::points(&self)
+        <T as SharpVertices>::points(self)
     }
 }
 

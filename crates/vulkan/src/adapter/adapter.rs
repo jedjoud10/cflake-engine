@@ -107,9 +107,7 @@ impl Adapter {
                     physical_device_queue_family_properties,
                     physical_device_queue_family_surface_supported,
                 }
-            })
-            .filter(|adapter| adapter.is_physical_device_suitable(integrated))
-            .next()
+            }).find(|adapter| adapter.is_physical_device_suitable(integrated))
             .expect("Could not find a suitable GPU to use!")
     }
 

@@ -1,9 +1,7 @@
 use std::ffi::CString;
 
 use crate::{Adapter, FamilyType, Instance, Queues};
-use ash::vk::{
-    self, DeviceCreateInfo, DeviceQueueCreateInfo, PhysicalDevice,
-};
+use ash::vk::{self, DeviceCreateInfo, DeviceQueueCreateInfo};
 
 use gpu_allocator::{
     vulkan::{

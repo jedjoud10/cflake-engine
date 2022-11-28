@@ -1,8 +1,6 @@
-use std::sync::Arc;
-
 use crate::Device;
 use ash::vk;
-use parking_lot::{Mutex, MutexGuard};
+use parking_lot::Mutex;
 use utils::BitSet;
 
 use super::pool::Pool;
@@ -52,7 +50,7 @@ impl Family {
     // This will never create a new pool if needed
     pub unsafe fn aquire_specific_pool(
         &self,
-        index: usize,
+        _index: usize,
     ) -> Option<&Pool> {
         todo!()
     }
@@ -60,14 +58,14 @@ impl Family {
     // Get a free pool that we can use directly
     pub fn aquire_pool(
         &self,
-        device: &Device,
-        flags: vk::CommandPoolCreateFlags,
+        _device: &Device,
+        _flags: vk::CommandPoolCreateFlags,
     ) -> &Pool {
         todo!()
     }
 
     // Unlock a specific pool and return it to the family
-    pub fn unlock_pool(&self, pool: &Pool) {}
+    pub fn unlock_pool(&self, _pool: &Pool) {}
 }
 
 impl Family {
@@ -83,7 +81,7 @@ impl Family {
                 .queue_family_index(self.family_index);
 
         // Create the command pool
-        let alloc = device
+        let _alloc = device
             .device
             .create_command_pool(&command_pool_create_info, None)
             .unwrap();

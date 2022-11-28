@@ -1,7 +1,7 @@
 use std::collections::hash_map::Entry;
 
 use crate::{Axis, ButtonState, Input};
-use winit::event::{DeviceEvent, ElementState, WindowEvent};
+use winit::event::{DeviceEvent, ElementState};
 use world::{post_user, user, System, World};
 
 // Init event (called once at the start of program)

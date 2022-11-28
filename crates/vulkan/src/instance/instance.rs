@@ -8,10 +8,7 @@ use raw_window_handle::{
     HasRawDisplayHandle, HasRawWindowHandle, RawDisplayHandle,
     RawWindowHandle,
 };
-use std::{
-    borrow::Cow,
-    ffi::{c_void, CStr, CString},
-};
+use std::ffi::CString;
 
 // Wrapper around Vulkan entry and Vulkan instance
 pub struct Instance {
@@ -49,7 +46,7 @@ impl Instance {
         let raw_window_handle = window.raw_window_handle();
 
         // Create the app info
-        let app_name = CString::new(app_title.clone()).unwrap();
+        let app_name = CString::new(app_title).unwrap();
         let engine_name = CString::new(engine_title).unwrap();
         let app_info = *vk::ApplicationInfo::builder()
             .application_name(&app_name)

@@ -3,7 +3,7 @@ use crate::FrameRateLimit;
 use super::WindowSettings;
 use ash::vk;
 use bytemuck::{Pod, Zeroable};
-use std::{ffi::CString, sync::Arc};
+use std::sync::Arc;
 use vulkan::*;
 
 // Plain old data type internally used by buffers and other types

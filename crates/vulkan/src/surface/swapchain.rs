@@ -1,5 +1,3 @@
-use std::{cell::Cell, num::NonZeroU8};
-
 use crate::{Adapter, Device, FamilyType, Instance, Queues, Surface};
 use ash::vk::{self};
 use parking_lot::Mutex;
@@ -335,7 +333,7 @@ impl Swapchain {
         let queue = queues.family(FamilyType::Present).queue();
 
         // Present the image to the screen
-        let suboptimal =
+        let _suboptimal =
             self.loader.queue_present(queue, &present_info).unwrap();
 
         // Wait till the last frame finished rendering

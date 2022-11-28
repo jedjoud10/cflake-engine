@@ -15,7 +15,6 @@ use std::{
     io::{BufReader, Read, Write},
     path::Path,
 };
-use winit::event::ElementState;
 
 // This keyboard struct will be responsible for all key events and state handling for the keyboard
 pub struct Input {

@@ -1,4 +1,4 @@
-use crate::{persistent, Assets};
+use crate::Assets;
 use std::path::PathBuf;
 use world::{user, System, World};
 

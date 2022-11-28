@@ -41,7 +41,7 @@ MemoryLocation::GpuOnly => vk::MemoryPropertyFlags::DEVICE_LOCAL,
 // This will ignore invalid use cases
 // (og location, cached staging buffer, init staging buffer)
 pub(super) fn find_optimal_layout(
-    mode: BufferMode,
+    _mode: BufferMode,
     usage: BufferUsage,
     _type: u32,
 ) -> BufferLayouts {

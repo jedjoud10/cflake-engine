@@ -15,7 +15,6 @@ use std::{
         mpsc::{Receiver, Sender},
         Arc,
     },
-    time::Instant,
 };
 
 // This is a handle to a specific asset that we are currently loading in

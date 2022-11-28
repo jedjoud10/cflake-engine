@@ -1,11 +1,8 @@
 use super::family::{Family, FamilyType};
-use crate::{Adapter, Device, Instance, Surface};
+use crate::{Adapter, Device, Instance};
 use ash::vk;
-use parking_lot::{Mutex, RwLock};
-use std::{
-    cell::RefCell, collections::HashMap, marker::PhantomData,
-    sync::Arc,
-};
+use parking_lot::Mutex;
+
 use utils::BitSet;
 
 // Queues families and their queues that will be used by the logical device

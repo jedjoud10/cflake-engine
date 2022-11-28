@@ -1,5 +1,3 @@
-use utils::ThreadPool;
-
 use crate::*;
 
 #[derive(Component, Debug, PartialEq, Eq, Clone, Default)]
