@@ -225,7 +225,7 @@ impl Swapchain {
         // Set the clear color of the image view
         let mut clear_color_value =
             vk::ClearColorValue::default();
-        clear_color_value.float32 = [1.0; 4];
+        clear_color_value.float32 = [0.1; 4];
 
         // Convert image layouts and wait
         device.device.cmd_pipeline_barrier(
@@ -302,6 +302,7 @@ impl Swapchain {
 
         // Present the image to the screen
         self.swapchain
+        device
             .loader
             .queue_present(queue, &present_info)
             .unwrap();
@@ -334,6 +335,11 @@ impl Swapchain {
             u64::MAX,
         ).unwrap();
         log::warn!("Swapchain done");
+
+        let present = queues.family(FamilyType::Present);
+        let pool = present.aquire_pool();
+        pool.reset(device);
+
 
         /*
         device.device

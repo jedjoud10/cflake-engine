@@ -8,7 +8,7 @@ pub fn required_validation_layers() -> Vec<CString> {
 
 // No validation layers when we disable debug assertions
 #[cfg(not(debug_assertions))]
-pub fn required_get_validation_layers() -> Vec<CString> {
+pub fn required_validation_layers() -> Vec<CString> {
     vec![]
 }
 

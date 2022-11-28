@@ -17,7 +17,7 @@ fn init(world: &mut World) {
     let mut threadpool = world.get_mut::<ThreadPool>().unwrap();    
 
     // Create a buffer in a new thread
-    let array = (0..32).into_iter().collect::<Vec<_>>();
+    let array = (0..64).into_iter().collect::<Vec<_>>();
     threadpool.for_each::<&[u32]>(&array, move |_| {
         // Create a command recorder just for this buffer
         log::warn!("Executing on thread {:?}", std::thread::current().name());
@@ -40,7 +40,7 @@ fn init(world: &mut World) {
         graphics.submit_recorder(recorder);
     }, 1);
 
-    std::thread::sleep(std::time::Duration::from_secs(10));
+    //std::thread::sleep(std::time::Duration::from_secs(10));
 
 
     /*

@@ -115,8 +115,13 @@ impl Instance {
         Instance {
             entry,
             instance,
+
+            #[cfg(debug_assertions)]
             debug_utils,
+
+            #[cfg(debug_assertions)]
             debug_messenger,
+            
             raw_display_handle,
             raw_window_handle,
         }

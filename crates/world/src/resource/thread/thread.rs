@@ -40,6 +40,7 @@ pub(super) enum ThreadedTask {
 }
 
 // A single threadpool that contains multiple worker threads that are ready to be executed in parallel
+// TODO: Maybe move this to another crate, like a "utils" crate?
 pub struct ThreadPool {
     // Task sender and receiver
     task_sender: Option<Sender<ThreadedTask>>,
