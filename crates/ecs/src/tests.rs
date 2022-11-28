@@ -1,4 +1,5 @@
 use crate::*;
+use utils::ThreadPool;
 
 #[derive(Component, Debug, PartialEq, Eq, Clone, Default)]
 struct Name(&'static str);

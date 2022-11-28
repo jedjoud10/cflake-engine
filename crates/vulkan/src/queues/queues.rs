@@ -3,7 +3,7 @@ use crate::{Adapter, Device, Instance};
 use ash::vk;
 use parking_lot::Mutex;
 
-use utils::BitSet;
+use utils::{BitSet, ImmutableVec};
 
 // Queues families and their queues that will be used by the logical device
 pub struct Queues {
@@ -68,7 +68,7 @@ impl Queues {
                     family_queue_flags: flags,
                     family_index: i,
                     queue: vk::Queue::null(),
-                    pools: Vec::new(),
+                    pools: ImmutableVec::new(),
                     free: Mutex::new(BitSet::new()),
                 }
             })
@@ -98,7 +98,7 @@ impl Queues {
 
         // Get the present family index and create ONE pool for it (single threaded present)
         let present = self.family_mut(FamilyType::Present);
-        present.insert_new_pool(device, Default::default());
+        present.insert_new_pool(device, vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER);
     }
 
     // Find a queue that supports the specific flags

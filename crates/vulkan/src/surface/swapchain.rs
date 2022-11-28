@@ -45,6 +45,7 @@ impl Swapchain {
         // Pick the most appropriate present mode
         let present_mode =
             Self::pick_presentation_mode(surface, adapter, vsync);
+        log::info!("Picked the presentation mode {:?}", present_mode);
 
         // Create the swap chain create info
         let swapchain_create_info =
@@ -67,7 +68,7 @@ impl Swapchain {
         // Create the image handles
         let swapchain_images =
             swapchain_loader.get_swapchain_images(swapchain).unwrap();
-        log::debug!(
+        log::info!(
             "Swapchain contains {} images. {} more than the minimum",
             swapchain_images.len(),
             swapchain_images.len() - 2
@@ -196,7 +197,6 @@ impl Swapchain {
             device,
             vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER,
         );
-        pool.reset(device);
         let cmd = pool.aquire_cmd_buffer(
             device,
             vk::CommandBufferUsageFlags::SIMULTANEOUS_USE,
@@ -274,6 +274,7 @@ impl Swapchain {
                 &[],
                 //self.rendering_finished_fence
             );
+        present.unlock_pool(pool);
     }
 
     /*
@@ -337,7 +338,6 @@ impl Swapchain {
             self.loader.queue_present(queue, &present_info).unwrap();
 
         // Wait till the last frame finished rendering
-        log::warn!("Waiting for fences...");
         device
             .device
             .wait_for_fences(
@@ -346,12 +346,12 @@ impl Swapchain {
                 u64::MAX,
             )
             .unwrap();
-        log::warn!("Swapchain done");
 
+        /*
         let present = queues.family(FamilyType::Present);
         let pool = present.aquire_specific_pool(0).unwrap();
         pool.reset(device);
-
+        */
         /*
         device.device
             .reset_fences(&[*self.rendering_finished_fence.lock()])

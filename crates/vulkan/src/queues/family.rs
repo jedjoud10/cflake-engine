@@ -1,7 +1,7 @@
 use crate::Device;
 use ash::vk;
 use parking_lot::Mutex;
-use utils::BitSet;
+use utils::{BitSet, ImmutableVec};
 
 use super::pool::Pool;
 
@@ -28,7 +28,7 @@ pub struct Family {
     // And start submitting to the pool as if it were it's own
 
     // If a thread does not find a free pool, it will simply allocate a new one for itself
-    pub(super) pools: Vec<Pool>,
+    pub(super) pools: ImmutableVec<Pool>,
     pub(crate) free: Mutex<BitSet>,
 
     // TODO: We should be able to have multiple queues per family but mkay
@@ -50,22 +50,36 @@ impl Family {
     // This will never create a new pool if needed
     pub unsafe fn aquire_specific_pool(
         &self,
-        _index: usize,
+        index: usize,
     ) -> Option<&Pool> {
-        todo!()
+        self.pools.get(index)
     }
 
     // Get a free pool that we can use directly
     pub fn aquire_pool(
         &self,
-        _device: &Device,
-        _flags: vk::CommandPoolCreateFlags,
+        device: &Device,
+        flags: vk::CommandPoolCreateFlags,
     ) -> &Pool {
-        todo!()
+        // Check if we have a free pool
+        let mut bitset = self.free.lock();
+        if let Some(index) = bitset.find_one_from(0) {
+            bitset.remove(index);
+            log::debug!("Found a free command pool at index {index}");
+            self.pools.get(index).unwrap()
+        } else {
+            // Allocate a new pool
+            log::debug!("Could not find free command pool, allocating a new one");
+            drop(bitset);
+            unsafe { self.insert_new_pool(device, flags) }
+        }
     }
 
     // Unlock a specific pool and return it to the family
-    pub fn unlock_pool(&self, _pool: &Pool) {}
+    pub fn unlock_pool(&self, pool: &Pool) {
+        let mut bitset = self.free.lock();
+        bitset.set(pool.index);
+    }
 }
 
 impl Family {
@@ -81,26 +95,21 @@ impl Family {
                 .queue_family_index(self.family_index);
 
         // Create the command pool
-        let _alloc = device
+        let alloc = device
             .device
             .create_command_pool(&command_pool_create_info, None)
             .unwrap();
-        log::debug!(
+        device.device.device_wait_idle().unwrap();
+        log::warn!(
             "Inserted new pool inside family of index {}",
             self.family_index
         );
 
-        /*
-        // Create the pool
-        let mut pools = self.pools.lock();
-        let mut bitset = self.free.lock();
-
         // Insert the pool and set it to be free
-        let pool = Pool::new(pools.len(), self.queue, alloc);
-        let arc = Arc::new(pool);
-        bitset.set(pools.len());
-        pools.push(arc.clone());
-        */
-        todo!()
+        let mut bitset = self.free.lock();
+        let pool = Pool::new(self.pools.len(), flags, self.queue, alloc);
+        bitset.set(self.pools.len());
+        self.pools.push(pool);
+        self.pools.last().unwrap()
     }
 }

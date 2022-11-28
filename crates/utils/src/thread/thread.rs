@@ -1,4 +1,4 @@
-use crate::BitSet;
+use crate::{BitSet};
 use parking_lot::Mutex;
 use std::{
     any::Any,

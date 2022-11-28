@@ -5,6 +5,9 @@ use parking_lot::Mutex;
 // A single command pool abstraction
 // We technically should have one pool per thread
 pub struct Pool {
+    // Command pool creation flags
+    pub(super) flags: vk::CommandPoolCreateFlags,
+
     // Index of the pool in the family
     pub(super) index: usize,
 
@@ -27,11 +30,13 @@ impl Pool {
     // Create a new pool from a queue and an allocator
     pub(super) unsafe fn new(
         index: usize,
+        flags: vk::CommandPoolCreateFlags,
         queue: vk::Queue,
         alloc: vk::CommandPool,
     ) -> Self {
         Pool {
             index,
+            flags,
             alloc,
             buffers: Mutex::new(Vec::new()),
             fences: Mutex::new(Vec::new()),
@@ -40,6 +45,7 @@ impl Pool {
     }
 
     // Reset the pool and reset all of the command buffers
+    /*
     pub unsafe fn reset(&self, device: &Device) {
         self.refresh_fence_signals(device);
         device
@@ -47,6 +53,7 @@ impl Pool {
             .reset_command_pool(self.alloc, Default::default())
             .unwrap();
     }
+    */
 
     // Refresh the bitset states based on the fences and reset them
     pub unsafe fn refresh_fence_signals(&self, device: &Device) {
@@ -114,12 +121,18 @@ impl Pool {
         for free in indices {
             // Also reset the command buffer
             let (cmd, using, index) = &mut buffers[free];
-            device
-                .device
-                .reset_command_buffer(*cmd, Default::default())
-                .unwrap();
-            log::debug!("Resetting command buffer {:?} that has fence index {index}", cmd);
-
+            
+            // Check if we can reset manually
+            if self.flags.contains(vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER) {
+                device
+                    .device
+                    .reset_command_buffer(*cmd, Default::default())
+                    .unwrap();
+                log::debug!("Resetting command buffer {:?} that has fence index {index}", cmd);
+            } else {
+                log::error!("Command pool cannot reset individual command buffers!");
+            }
+            
             // Reset the fence index of this command buffer until we submit it again
             // This means that the command buffer can be used and it is reset
             *index = usize::MAX;
