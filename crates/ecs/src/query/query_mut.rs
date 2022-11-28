@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use math::BitSet;
+use utils::BitSet;
 
 use crate::{
     Always, Archetype, Mask, QueryFilter, QueryLayoutMut, Scene, Wrap,
@@ -70,15 +70,15 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>>
     // Iterate through the query entries and execute a function for each one of them in another thread
     pub fn for_each(
         mut self,
-        threadpool: &mut world::ThreadPool,
-        function: impl Fn(<<L as QueryLayoutMut<'_>>::SliceTuple as world::SliceTuple<'_>>::ItemTuple)
+        threadpool: &mut utils::ThreadPool,
+        function: impl Fn(<<L as QueryLayoutMut<'_>>::SliceTuple as utils::SliceTuple<'_>>::ItemTuple)
             + Send
             + Sync
             + Clone,
         batch_size: usize,
     ) where
         for<'it, 's2> <L as QueryLayoutMut<'it>>::SliceTuple:
-            world::SliceTuple<'s2>,
+            utils::SliceTuple<'s2>,
     {
         threadpool.scope(|scope| {
             let mutability = self.mutability;

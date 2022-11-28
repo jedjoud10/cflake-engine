@@ -2,7 +2,8 @@ use std::ffi::CStr;
 
 use ash::vk::{
     self, PhysicalDevice, PhysicalDeviceFeatures,
-    PhysicalDeviceMemoryProperties, PhysicalDeviceProperties, SurfaceCapabilitiesKHR, PresentModeKHR, SurfaceFormatKHR,
+    PhysicalDeviceMemoryProperties, PhysicalDeviceProperties,
+    PresentModeKHR, SurfaceCapabilitiesKHR, SurfaceFormatKHR,
 };
 
 use crate::{Instance, Surface};
@@ -14,11 +15,14 @@ pub struct Adapter {
         PhysicalDeviceMemoryProperties,
     pub(crate) physical_device_features: PhysicalDeviceFeatures,
     pub(crate) physical_device_properties: PhysicalDeviceProperties,
-    pub(crate) physical_device_surface_capabilities: SurfaceCapabilitiesKHR,
+    pub(crate) physical_device_surface_capabilities:
+        SurfaceCapabilitiesKHR,
     pub(crate) physical_device_present_modes: Vec<PresentModeKHR>,
-    pub(crate) physical_device_present_formats: Vec<SurfaceFormatKHR>, 
-    pub(crate) physical_device_queue_family_properties: Vec<vk::QueueFamilyProperties>,
-    pub(crate) physical_device_queue_family_surface_supported: Vec<bool>,
+    pub(crate) physical_device_present_formats: Vec<SurfaceFormatKHR>,
+    pub(crate) physical_device_queue_family_properties:
+        Vec<vk::QueueFamilyProperties>,
+    pub(crate) physical_device_queue_family_surface_supported:
+        Vec<bool>,
 }
 
 impl Adapter {
@@ -30,7 +34,7 @@ impl Adapter {
     ) -> Adapter {
         let devices =
             instance.instance.enumerate_physical_devices().unwrap();
-        
+
         devices
             .iter()
             .map(|physical_device| {
@@ -111,7 +115,10 @@ impl Adapter {
 
     // Check wether or not a physical device is suitable for rendering
     // This checks the minimum requirements that we need to achieve to be able to render
-    unsafe fn is_physical_device_suitable(&self, integrated: bool) -> bool {
+    unsafe fn is_physical_device_suitable(
+        &self,
+        integrated: bool,
+    ) -> bool {
         use vk::PhysicalDeviceType;
         let name = self.physical_device_properties.device_name;
         let _type = self.physical_device_properties.device_type;
@@ -122,23 +129,40 @@ impl Adapter {
         log::debug!("Checking if adapter {} is suitable..", name);
 
         // Check if double buffering is supported
-        let double_buffering_supported = surface.min_image_count <= 2 && surface.max_image_count >= 2;
-        log::debug!("Adapter Double Buffering: {}", double_buffering_supported);
+        let double_buffering_supported = surface.min_image_count <= 2
+            && surface.max_image_count >= 2;
+        log::debug!(
+            "Adapter Double Buffering: {}",
+            double_buffering_supported
+        );
 
         // Check if the present format is supported
-        let format_supported = formats.iter().find(|format| {
-            let format_ = format.format == vk::Format::B8G8R8A8_SRGB;
-            let color_space_ = format.color_space == vk::ColorSpaceKHR::SRGB_NONLINEAR;
-            format_ && color_space_
-        }).is_some();
-        log::debug!("Adapter Swapchain Format Supported: {}", format_supported);
+        let format_supported = formats
+            .iter()
+            .find(|format| {
+                let format_ =
+                    format.format == vk::Format::B8G8R8A8_SRGB;
+                let color_space_ = format.color_space
+                    == vk::ColorSpaceKHR::SRGB_NONLINEAR;
+                format_ && color_space_
+            })
+            .is_some();
+        log::debug!(
+            "Adapter Swapchain Format Supported: {}",
+            format_supported
+        );
 
         // Check if the minimum required present mode is supported
-        let present_supported = modes.iter().find(|&&present| {
-            let relaxed = present == vk::PresentModeKHR::FIFO_RELAXED;
-            let immediate = present == vk::PresentModeKHR::IMMEDIATE;
-            relaxed || immediate 
-        }).is_some();
+        let present_supported = modes
+            .iter()
+            .find(|&&present| {
+                let relaxed =
+                    present == vk::PresentModeKHR::FIFO_RELAXED;
+                let immediate =
+                    present == vk::PresentModeKHR::IMMEDIATE;
+                relaxed || immediate
+            })
+            .is_some();
 
         // Check the device type
         let device_type_okay = if integrated {
@@ -149,9 +173,11 @@ impl Adapter {
         log::debug!("Adapter Device Type: {:?}", _type);
 
         // All the checks must pass
-        double_buffering_supported && format_supported
-        && present_supported && device_type_okay 
-        && self.is_physical_device_suitable_additional()
+        double_buffering_supported
+            && format_supported
+            && present_supported
+            && device_type_okay
+            && self.is_physical_device_suitable_additional()
     }
 
     // Additional requirements the adapter must meet to be able to use it properly
@@ -159,4 +185,3 @@ impl Adapter {
         true
     }
 }
-

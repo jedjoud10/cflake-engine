@@ -16,7 +16,8 @@ pub(super) struct BufferLayouts {
 
     // Used for staging buffer that is stored alongside the original buffer
     pub cached_staging_buffer_memory_location: Option<MemoryLocation>,
-    pub cached_staging_buffer_usage_flags: Option<vk::BufferUsageFlags>,
+    pub cached_staging_buffer_usage_flags:
+        Option<vk::BufferUsageFlags>,
 }
 
 /*
@@ -71,16 +72,25 @@ pub(super) fn find_optimal_layout(
     if device && !host {
         return BufferLayouts {
             src_buffer_memory_location: MemoryLocation::GpuOnly,
-            src_buffer_usage_flags: vk::BufferUsageFlags::TRANSFER_DST | base,
-            init_staging_buffer_memory_location: Some(MemoryLocation::CpuToGpu),
-            init_staging_buffer_usage_flags: Some(vk::BufferUsageFlags::TRANSFER_SRC),
+            src_buffer_usage_flags: vk::BufferUsageFlags::TRANSFER_DST
+                | base,
+            init_staging_buffer_memory_location: Some(
+                MemoryLocation::CpuToGpu,
+            ),
+            init_staging_buffer_usage_flags: Some(
+                vk::BufferUsageFlags::TRANSFER_SRC,
+            ),
             cached_staging_buffer_memory_location: None,
             cached_staging_buffer_usage_flags: None,
-        }
+        };
     }
-    
+
     // if host_read and hint_device_write, GPUToCPU
-    if host_read && hint_device_write && !host_write && !hint_device_read {
+    if host_read
+        && hint_device_write
+        && !host_write
+        && !hint_device_read
+    {
         return BufferLayouts {
             src_buffer_memory_location: MemoryLocation::GpuToCpu,
             src_buffer_usage_flags: base,
@@ -88,11 +98,15 @@ pub(super) fn find_optimal_layout(
             init_staging_buffer_usage_flags: None,
             cached_staging_buffer_memory_location: None,
             cached_staging_buffer_usage_flags: None,
-        }
+        };
     }
-    
+
     // if host_write and hint_device_read, CPUToGPU
-    if host_write && hint_device_read && !host_read && !hint_device_write {
+    if host_write
+        && hint_device_read
+        && !host_read
+        && !hint_device_write
+    {
         return BufferLayouts {
             src_buffer_memory_location: MemoryLocation::CpuToGpu,
             src_buffer_usage_flags: base,
@@ -100,9 +114,9 @@ pub(super) fn find_optimal_layout(
             init_staging_buffer_usage_flags: None,
             cached_staging_buffer_memory_location: None,
             cached_staging_buffer_usage_flags: None,
-        }
+        };
     }
-    
+
     // This always works
     BufferLayouts {
         src_buffer_memory_location: MemoryLocation::CpuToGpu,

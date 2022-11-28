@@ -1,6 +1,6 @@
 use std::ffi::CString;
 
-use crate::{Adapter, Instance, Queues, FamilyType};
+use crate::{Adapter, FamilyType, Instance, Queues};
 use ash::vk::{
     self, DeviceCreateInfo, DeviceQueueCreateInfo, PhysicalDevice,
 };
@@ -39,7 +39,7 @@ impl Device {
                     .queue_priorities(&[1.0])
                     .queue_family_index(family.index())
             })
-                .collect::<Vec<_>>();
+            .collect::<Vec<_>>();
 
         // Create logical device create info
         let logical_device_extensions = device_extensions
@@ -49,7 +49,7 @@ impl Device {
         let logical_device_create_info = DeviceCreateInfo::builder()
             .queue_create_infos(&create_infos)
             .enabled_extension_names(&logical_device_extensions)
-                .enabled_features(&adapter.physical_device_features);
+            .enabled_features(&adapter.physical_device_features);
 
         // Create the logical device
         let device = instance
@@ -59,9 +59,7 @@ impl Device {
                 &logical_device_create_info,
                 None,
             )
-                .expect("Could not create the logical device");
-
-        
+            .expect("Could not create the logical device");
 
         // Pick allocator debug settings
         #[cfg(debug_assertions)]
@@ -72,12 +70,12 @@ impl Device {
             log_allocations: true,
             log_frees: true,
             log_stack_traces: false,
-            };
+        };
 
         // No debugging
         #[cfg(not(debug_assertions))]
         let debug_settings =
-                gpu_allocator::AllocatorDebugSettings::default();
+            gpu_allocator::AllocatorDebugSettings::default();
 
         // Create a memory allocator (gpu_allocator)
         let allocator = Allocator::new(&AllocatorCreateDesc {
@@ -87,7 +85,7 @@ impl Device {
             debug_settings,
             buffer_device_address: false,
         })
-            .unwrap();
+        .unwrap();
 
         // Le logical device
         let device = Device {
@@ -110,18 +108,14 @@ impl Device {
 impl Device {
     // Create a single simple semaphore
     pub unsafe fn create_semaphore(&self) -> vk::Semaphore {
-        self
-            .device
+        self.device
             .create_semaphore(&Default::default(), None)
             .unwrap()
     }
 
     // Create a single simple fence
     pub unsafe fn create_fence(&self) -> vk::Fence {
-        self
-            .device
-            .create_fence(&Default::default(), None)
-            .unwrap()
+        self.device.create_fence(&Default::default(), None).unwrap()
     }
 
     // Create raw buffer with no memory
@@ -142,7 +136,11 @@ impl Device {
             .usage(usage);
 
         // Create the buffer and fetch requirements
-        log::debug!("Creating buffer with size {} and usage {:?}", size, usage);
+        log::debug!(
+            "Creating buffer with size {} and usage {:?}",
+            size,
+            usage
+        );
         self.device.create_buffer(&vk_info, None).unwrap()
     }
 
@@ -154,7 +152,8 @@ impl Device {
     ) -> Allocation {
         // Get memory requirements
         log::debug!("Creating buffer memory for buffer {:?}", buffer);
-        let requirements = self.device.get_buffer_memory_requirements(buffer);
+        let requirements =
+            self.device.get_buffer_memory_requirements(buffer);
 
         // Create gpu-allocator allocation
         let allocation = self
@@ -170,8 +169,7 @@ impl Device {
 
         // Bind memory to the buffer
         unsafe {
-            self
-                .device
+            self.device
                 .bind_buffer_memory(
                     buffer,
                     allocation.memory(),
@@ -180,7 +178,7 @@ impl Device {
                 .unwrap()
         };
         allocation
-    }    
+    }
 
     // Free a buffer and it's allocation
     pub unsafe fn destroy_buffer(
@@ -189,9 +187,12 @@ impl Device {
         allocation: Allocation,
     ) {
         // Deallocate the underlying memory
-        log::debug!("Freeing allocation {:?}", allocation.mapped_ptr());
+        log::debug!(
+            "Freeing allocation {:?}",
+            allocation.mapped_ptr()
+        );
         self.allocator.lock().free(allocation).unwrap();
-        
+
         // Delete the Vulkan buffer
         let buffer = buffer;
         log::debug!("Freeing buffer {:?}", buffer);

@@ -6,7 +6,9 @@ pub enum InvalidModeError {
     #[error("Missing change length permission (BufferMode::Resizable or BufferMode::Partial)")]
     IllegalChangeLength,
 
-    #[error("Missing reallocation permission (BufferMode::Resizable)")]
+    #[error(
+        "Missing reallocation permission (BufferMode::Resizable)"
+    )]
     IllegalReallocation,
 }
 
@@ -17,7 +19,7 @@ pub enum InvalidUsageError {
     IllegalHostRead,
 
     #[error("Cannot write to buffer since BufferUsages:host_write is false")]
-    IllegalHostWrite
+    IllegalHostWrite,
 }
 
 // Buffer error that is returned from each buffer command
@@ -29,9 +31,13 @@ pub enum BufferError {
     #[error("{0}")]
     InvalidUsage(InvalidUsageError),
 
-    #[error("Tried accessing slice of size {0} with range of size {1}")]
+    #[error(
+        "Tried accessing slice of size {0} with range of size {1}"
+    )]
     SliceLengthRangeMistmatch(usize, usize),
 
-    #[error("Tried accessing buffer of size {0} with range of size {1}")]
-    BufferLengthMismatch(usize, usize)
+    #[error(
+        "Tried accessing buffer of size {0} with range of size {1}"
+    )]
+    BufferLengthMismatch(usize, usize),
 }

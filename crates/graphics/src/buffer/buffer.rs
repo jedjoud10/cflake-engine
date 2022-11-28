@@ -1,10 +1,17 @@
-use std::{marker::PhantomData, mem::{size_of, ManuallyDrop}, ops::RangeBounds};
+use std::{
+    marker::PhantomData,
+    mem::{size_of, ManuallyDrop},
+    ops::RangeBounds,
+};
 
-use crate::{Content, Graphics, BufferError, InvalidModeError, InvalidUsageError};
 use super::BufferLayouts;
+use crate::{
+    BufferError, Content, Graphics, InvalidModeError,
+    InvalidUsageError,
+};
 use ash::vk;
 use bytemuck::Zeroable;
-use gpu_allocator::{MemoryLocation, vulkan::Allocation};
+use gpu_allocator::{vulkan::Allocation, MemoryLocation};
 use vulkan::{FamilyType, Recorder};
 
 // Some settings that tell us how exactly we should create the buffer
@@ -95,7 +102,8 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         recorder: &Recorder,
     ) -> Option<Self> {
         // Cannot create a zero sized slice for non-resizable buffers
-        if slice.is_empty() && !matches!(mode, BufferMode::Resizable) {
+        if slice.is_empty() && !matches!(mode, BufferMode::Resizable)
+        {
             return None;
         }
 
@@ -104,28 +112,54 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         let queues = graphics.queues();
 
         // Calculate the byte size of the buffer
-        let size = u64::try_from(size_of::<T>() * slice.len()).unwrap();
-        
+        let size =
+            u64::try_from(size_of::<T>() * slice.len()).unwrap();
+
         // Get location and staging buffer location
         let layout = super::find_optimal_layout(mode, usage, TYPE);
 
         // Create the actual buffer
-        let src_buffer = unsafe { device.create_buffer(size, layout.src_buffer_usage_flags, graphics.queues()) };
-        let mut src_memory = unsafe { device.create_buffer_memory(src_buffer, layout.src_buffer_memory_location) };
+        let src_buffer = unsafe {
+            device.create_buffer(
+                size,
+                layout.src_buffer_usage_flags,
+                graphics.queues(),
+            )
+        };
+        let mut src_memory = unsafe {
+            device.create_buffer_memory(
+                src_buffer,
+                layout.src_buffer_memory_location,
+            )
+        };
 
         // Optional init staging buffer
-        let tmp_init_staging = layout.init_staging_buffer_memory_location.map(|memory| unsafe {
-            let buffer = device.create_buffer(size, layout.init_staging_buffer_usage_flags.unwrap(), graphics.queues());
-            let memory = device.create_buffer_memory(buffer, memory);
-            (buffer, memory)
-        });
+        let tmp_init_staging = layout
+            .init_staging_buffer_memory_location
+            .map(|memory| unsafe {
+                let buffer = device.create_buffer(
+                    size,
+                    layout.init_staging_buffer_usage_flags.unwrap(),
+                    graphics.queues(),
+                );
+                let memory =
+                    device.create_buffer_memory(buffer, memory);
+                (buffer, memory)
+            });
 
         // Cached staging buffer
-        let cached_staging = layout.cached_staging_buffer_memory_location.map(|memory| unsafe {
-            let buffer = device.create_buffer(size, layout.init_staging_buffer_usage_flags.unwrap(), graphics.queues());
-            let memory = device.create_buffer_memory(buffer, memory);
-            (buffer, memory)
-        });
+        let cached_staging = layout
+            .cached_staging_buffer_memory_location
+            .map(|memory| unsafe {
+                let buffer = device.create_buffer(
+                    size,
+                    layout.init_staging_buffer_usage_flags.unwrap(),
+                    graphics.queues(),
+                );
+                let memory =
+                    device.create_buffer_memory(buffer, memory);
+                (buffer, memory)
+            });
 
         // Check if we need to make a staging buffer
         if let Some((buffer, allocation)) = tmp_init_staging {
@@ -136,13 +170,15 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
                 let pool = family.aquire_pool();
                 pool.aquire_recorder(device, vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT);
                 */
-                
+
                 // Record the copy command
                 // Setup a finished callback for the recorder
             }
         } else {
             // Write to the buffer memory by mapping it directly
-            let dst = bytemuck::cast_slice_mut::<u8, T>(src_memory.mapped_slice_mut().unwrap());
+            let dst = bytemuck::cast_slice_mut::<u8, T>(
+                src_memory.mapped_slice_mut().unwrap(),
+            );
             let len = slice.len();
             dst[..len].copy_from_slice(slice);
         }
@@ -257,7 +293,11 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     }
 
     // Extend the current buffer using data from a new slice
-    pub fn extend_from_slice(&mut self, slice: &[T], recorder: &Recorder) -> Result<(), BufferError> {
+    pub fn extend_from_slice(
+        &mut self,
+        slice: &[T],
+        recorder: &Recorder,
+    ) -> Result<(), BufferError> {
         // Don't do anything
         if slice.is_empty() {
             return Ok(());
@@ -265,26 +305,26 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
 
         // Check if we are allowed to change the length of the buffer
         if !matches!(self.mode, BufferMode::Resizable)
-        && !matches!(self.mode, BufferMode::Parital) {
+            && !matches!(self.mode, BufferMode::Parital)
+        {
             return Err(BufferError::InvalidMode(
-                InvalidModeError::IllegalChangeLength
+                InvalidModeError::IllegalChangeLength,
             ));
         }
 
         // Check if we can write to the buffer
         if !self.usage.host_write {
             return Err(BufferError::InvalidUsage(
-                InvalidUsageError::IllegalHostWrite
+                InvalidUsageError::IllegalHostWrite,
             ));
         }
 
         // Check if we can read from the buffer
         if !self.usage.host_read {
             return Err(BufferError::InvalidUsage(
-                InvalidUsageError::IllegalHostRead
+                InvalidUsageError::IllegalHostRead,
             ));
         }
-
 
         // Allocate the buffer for the first time
         if self.length == 0 && self.capacity == 0 {
@@ -315,13 +355,16 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
 
         // Check if the given slice matches with the range
         if size != src.len() {
-            return Err(BufferError::SliceLengthRangeMistmatch(src.len(), size));
+            return Err(BufferError::SliceLengthRangeMistmatch(
+                src.len(),
+                size,
+            ));
         }
 
         // Check if we can write to the buffer
         if !self.usage.host_write {
             return Err(BufferError::InvalidUsage(
-                InvalidUsageError::IllegalHostWrite
+                InvalidUsageError::IllegalHostWrite,
             ));
         }
 
@@ -347,13 +390,16 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
 
         // Check if the given slice matches with the range
         if size != dst.len() {
-            return Err(BufferError::SliceLengthRangeMistmatch(dst.len(), size));
+            return Err(BufferError::SliceLengthRangeMistmatch(
+                dst.len(),
+                size,
+            ));
         }
 
         // Check if we can read from the buffer
         if !self.usage.host_read {
             return Err(BufferError::InvalidUsage(
-                InvalidUsageError::IllegalHostRead
+                InvalidUsageError::IllegalHostRead,
             ));
         }
 
@@ -383,7 +429,10 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     }
 
     // Read the whole buffer into a new vector
-    pub fn read_to_vec(&self, recorder: &Recorder,) -> Result<Vec<T>, BufferError> {
+    pub fn read_to_vec(
+        &self,
+        recorder: &Recorder,
+    ) -> Result<Vec<T>, BufferError> {
         self.read_range_as_vec(.., recorder)
     }
 
@@ -423,17 +472,29 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     }
 
     // Fills the whole buffer with a constant value
-    pub fn splat(&mut self, val: T, recorder: &Recorder,) -> Result<(), BufferError> {
+    pub fn splat(
+        &mut self,
+        val: T,
+        recorder: &Recorder,
+    ) -> Result<(), BufferError> {
         self.splat_range(val, .., recorder)
     }
 
     // Overwrite the whole buffer using a slice
-    pub fn write(&mut self, slice: &[T], recorder: &Recorder,) -> Result<(), BufferError> {
+    pub fn write(
+        &mut self,
+        slice: &[T],
+        recorder: &Recorder,
+    ) -> Result<(), BufferError> {
         self.write_range(slice, .., recorder)
     }
 
     // Read the whole buffer into a mutable slice
-    pub fn read(&self, slice: &mut [T], recorder: &Recorder,) -> Result<(), BufferError> {
+    pub fn read(
+        &self,
+        slice: &mut [T],
+        recorder: &Recorder,
+    ) -> Result<(), BufferError> {
         self.read_range(slice, .., recorder)
     }
 
@@ -467,7 +528,9 @@ impl<T: Content, const TYPE: u32> Drop for Buffer<T, TYPE> {
     fn drop(&mut self) {
         unsafe {
             let allocation = ManuallyDrop::take(&mut self.memory);
-            self.graphics.device().destroy_buffer(self.buffer, allocation);
+            self.graphics
+                .device()
+                .destroy_buffer(self.buffer, allocation);
         }
     }
 }

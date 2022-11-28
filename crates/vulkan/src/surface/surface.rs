@@ -1,5 +1,8 @@
 use crate::Instance;
-use ash::{vk::{self}, extensions::khr};
+use ash::{
+    extensions::khr,
+    vk::{self},
+};
 
 use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
 
@@ -21,10 +24,8 @@ impl Surface {
             None,
         )
         .unwrap();
-        let surface_loader = khr::Surface::new(
-            &instance.entry,
-            &instance.instance,
-        );
+        let surface_loader =
+            khr::Surface::new(&instance.entry, &instance.instance);
 
         Surface {
             surface_loader,
@@ -41,10 +42,9 @@ impl Surface {
     pub fn surface_loader(&self) -> &khr::Surface {
         &self.surface_loader
     }
-    
+
     // Get the internal surface
     pub fn surface(&self) -> vk::SurfaceKHR {
         self.surface
     }
 }
-

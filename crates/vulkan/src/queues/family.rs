@@ -1,7 +1,9 @@
+use std::sync::Arc;
+
+use crate::Device;
 use ash::vk;
-use math::BitSet;
 use parking_lot::{Mutex, MutexGuard};
-use crate::{Device};
+use utils::BitSet;
 
 use super::pool::Pool;
 
@@ -10,7 +12,7 @@ use super::pool::Pool;
 pub enum FamilyType {
     // The graphics family will be responsible of handling graphics command
     Graphics,
-    
+
     // The present family will be responsible of presenting the images to the screen
     Present,
 }
@@ -28,7 +30,8 @@ pub struct Family {
     // And start submitting to the pool as if it were it's own
 
     // If a thread does not find a free pool, it will simply allocate a new one for itself
-    pub(super) pools: Vec<Mutex<Pool>>,
+    pub(super) pools: Vec<Pool>,
+    pub(crate) free: Mutex<BitSet>,
 
     // TODO: We should be able to have multiple queues per family but mkay
     pub(super) queue: vk::Queue,
@@ -45,43 +48,61 @@ impl Family {
         self.family_index
     }
 
-    // Get the pool for the current thread mutably
-    pub fn pool_mut(&mut self) -> MutexGuard<Pool> {
-        self.pools[0].lock()
+    // Get a specific pool, even though it is currently in use
+    // This will never create a new pool if needed
+    pub unsafe fn aquire_specific_pool(
+        &self,
+        index: usize,
+    ) -> Option<&Pool> {
+        todo!()
     }
 
     // Get a free pool that we can use directly
-    pub fn aquire_pool(&self) -> MutexGuard<Pool> {
-        // TODO: actually write this
-        self.pools[0].lock()
+    pub fn aquire_pool(
+        &self,
+        device: &Device,
+        flags: vk::CommandPoolCreateFlags,
+    ) -> &Pool {
+        todo!()
     }
+
+    // Unlock a specific pool and return it to the family
+    pub fn unlock_pool(&self, pool: &Pool) {}
 }
 
 impl Family {
     // Create a new pool inside this family
-    pub unsafe fn insert_new_pool(&mut self, device: &Device, flags: vk::CommandPoolCreateFlags) {
-        let command_pool_create_info = vk::CommandPoolCreateInfo::builder()
-            .flags(flags)
-            .queue_family_index(self.family_index);
+    pub unsafe fn insert_new_pool(
+        &self,
+        device: &Device,
+        flags: vk::CommandPoolCreateFlags,
+    ) -> &Pool {
+        let command_pool_create_info =
+            vk::CommandPoolCreateInfo::builder()
+                .flags(flags)
+                .queue_family_index(self.family_index);
 
         // Create the command pool
-        let alloc = device.device.create_command_pool(
-            &command_pool_create_info,
-            None
-        ).unwrap();
-        log::debug!("Inserted new pool inside family of index {}", self.family_index);
+        let alloc = device
+            .device
+            .create_command_pool(&command_pool_create_info, None)
+            .unwrap();
+        log::debug!(
+            "Inserted new pool inside family of index {}",
+            self.family_index
+        );
 
+        /*
         // Create the pool
-        let pool = Pool { 
-            alloc,
-            buffers: Mutex::new(Vec::new()),
-            fences: Mutex::new(Vec::new()),
-            queue: self.queue,
-        };
+        let mut pools = self.pools.lock();
+        let mut bitset = self.free.lock();
 
-        // Allocate a singular command buffer
-        //pool.allocate_command_buffers(device, 1, false);
-
-        self.pools.push(Mutex::new(pool));
+        // Insert the pool and set it to be free
+        let pool = Pool::new(pools.len(), self.queue, alloc);
+        let arc = Arc::new(pool);
+        bitset.set(pools.len());
+        pools.push(arc.clone());
+        */
+        todo!()
     }
 }

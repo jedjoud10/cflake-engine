@@ -1,11 +1,10 @@
-use math::BitSet;
-
 use crate::{
     registry::{self},
     Archetype, Component, LayoutAccess, Mask, QueryLayoutMut,
     QueryLayoutRef, Scene, StateColumn,
 };
 use std::marker::PhantomData;
+use utils::BitSet;
 
 // Basic evaluator that will be implemented for the filter sources and modifiers
 // These filters allow users to discard certain entries when iterating

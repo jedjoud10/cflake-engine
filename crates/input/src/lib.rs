@@ -115,7 +115,10 @@ impl Input {
     }
 
     // Get the state of a button mapping or a key mapping
-    pub fn get_button<B: InputButtonId>(&self, button: B) -> ButtonState {
+    pub fn get_button<B: InputButtonId>(
+        &self,
+        button: B,
+    ) -> ButtonState {
         B::get(button, self)
     }
 
@@ -131,19 +134,22 @@ impl Input {
     pub fn enable_sentence_recording(&mut self) {
         self.sentence = Some(String::new());
     }
-    
+
     // Disable sentence recording
     pub fn disable_sentence_recording(&mut self) {
         self.sentence.take();
     }
-    
+
     // Get the current sentence
     pub fn get_sentence(&self) -> Option<&str> {
         self.sentence.as_ref().map(|s| s.as_str())
     }
-    
+
     // Action that should be done whenever we press enter
-    pub fn set_sentence_new_line_action(&mut self, action: NewLineAction) {
+    pub fn set_sentence_new_line_action(
+        &mut self,
+        action: NewLineAction,
+    ) {
         self.sentence_nl_action = action;
     }
 }

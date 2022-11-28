@@ -1,8 +1,12 @@
-use std::{marker::PhantomData, cell::RefCell, sync::Arc, collections::HashMap};
-use crate::{Adapter, Instance, Surface, Device};
+use super::family::{Family, FamilyType};
+use crate::{Adapter, Device, Instance, Surface};
 use ash::vk;
 use parking_lot::{Mutex, RwLock};
-use super::family::{Family, FamilyType};
+use std::{
+    cell::RefCell, collections::HashMap, marker::PhantomData,
+    sync::Arc,
+};
+use utils::BitSet;
 
 // Queues families and their queues that will be used by the logical device
 pub struct Queues {
@@ -10,7 +14,7 @@ pub struct Queues {
 
     // The index of the graphics queue family
     graphics: usize,
- 
+
     // The index of the present queue family
     present: usize,
 }
@@ -49,15 +53,18 @@ impl Queues {
         families.dedup();
 
         // Find indices AGAIN
-        let graphics = families.iter().position(|&i| i == graphics).unwrap();
-        let present = families.iter().position(|&i| i == present).unwrap();
+        let graphics =
+            families.iter().position(|&i| i == graphics).unwrap();
+        let present =
+            families.iter().position(|&i| i == present).unwrap();
 
         // Create placeholder families
         let families = families
             .into_iter()
             .map(|i| {
                 // Get the family queue flags again
-                let flags = families_properties[i as usize].queue_flags;
+                let flags =
+                    families_properties[i as usize].queue_flags;
 
                 // Create placeholder family value
                 Family {
@@ -65,11 +72,11 @@ impl Queues {
                     family_index: i,
                     queue: vk::Queue::null(),
                     pools: Vec::new(),
+                    free: Mutex::new(BitSet::new()),
                 }
             })
             .collect::<Vec<_>>();
 
-        
         Queues {
             families,
             graphics,
@@ -84,21 +91,13 @@ impl Queues {
     ) {
         // Update the queue handle for the graphics family
         let graphics = self.family_mut(FamilyType::Graphics);
-        graphics.queue = device.device.get_device_queue(graphics.family_index, 0);
+        graphics.queue =
+            device.device.get_device_queue(graphics.family_index, 0);
 
         // Update the queue handle for the present family
         let present = self.family_mut(FamilyType::Present);
-        present.queue = device.device.get_device_queue(present.family_index, 0);
-    
-    
-        // Get the graphics family index
-        let graphics = self.family_mut(FamilyType::Graphics);
-
-        // Create the multiple command pools for multithreaded use only for the graphics family
-        // TODO: Fix this and dynmacially allocate thread pools if needed
-        for _ in 0..64 {
-            graphics.insert_new_pool(device, vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER);
-        }
+        present.queue =
+            device.device.get_device_queue(present.family_index, 0);
 
         // Get the present family index and create ONE pool for it (single threaded present)
         let present = self.family_mut(FamilyType::Present);
@@ -129,12 +128,14 @@ impl Queues {
     // Destroy all pools and command buffers
     pub unsafe fn destroy(self, device: &Device) {
         device.device.device_wait_idle().unwrap();
+        /*/
         for family in self.families {
             for pool in family.pools {
                 //device.device.free_command_buffers(pool.alloc, pool.buffers.lock().as_slice());
-                device.device.destroy_command_pool(pool.lock().alloc, None);
-            } 
+                device.device.destroy_command_pool(pool.alloc, None);
+            }
         }
+        */
     }
 }
 
@@ -159,9 +160,11 @@ impl Queues {
     pub fn families(&self) -> impl Iterator<Item = &Family> {
         self.families.iter()
     }
-    
+
     // Iterate over all the families mutably
-    pub fn families_mut(&mut self) -> impl Iterator<Item = &mut Family> {
+    pub fn families_mut(
+        &mut self,
+    ) -> impl Iterator<Item = &mut Family> {
         self.families.iter_mut()
     }
 }

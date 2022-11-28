@@ -1,21 +1,23 @@
-use std::marker::PhantomData;
-use ash::vk;
-use math::BitSet;
-use parking_lot::Mutex;
-use winit::platform::unix::x11::util::FrameExtents;
-use crate::{Device, Recorder};
 use super::family::Family;
-
+use crate::{Device, Recorder};
+use ash::vk;
+use parking_lot::Mutex;
+use std::marker::PhantomData;
+use utils::BitSet;
+use winit::platform::unix::x11::util::FrameExtents;
 
 // A single command pool abstraction
 // We technically should have one pool per thread
 pub struct Pool {
+    // Index of the pool in the family
+    pub(super) index: usize,
+
     // Handle to the parent queue
     pub(super) queue: vk::Queue,
 
     // Raw vulkan command pool
     pub(super) alloc: vk::CommandPool,
-    
+
     // All the command buffers allocated in this command pool
     pub(super) buffers: Mutex<Vec<(vk::CommandBuffer, bool, usize)>>,
 
@@ -26,10 +28,28 @@ pub struct Pool {
 }
 
 impl Pool {
+    // Create a new pool from a queue and an allocator
+    pub(super) unsafe fn new(
+        index: usize,
+        queue: vk::Queue,
+        alloc: vk::CommandPool,
+    ) -> Self {
+        Pool {
+            index,
+            alloc,
+            buffers: Mutex::new(Vec::new()),
+            fences: Mutex::new(Vec::new()),
+            queue,
+        }
+    }
+
     // Reset the pool and reset all of the command buffers
     pub unsafe fn reset(&self, device: &Device) {
         self.refresh_fence_signals(device);
-        device.device.reset_command_pool(self.alloc, Default::default()).unwrap();
+        device
+            .device
+            .reset_command_pool(self.alloc, Default::default())
+            .unwrap();
     }
 
     // Refresh the bitset states based on the fences and reset them
@@ -37,7 +57,7 @@ impl Pool {
         log::debug!("Refresh fence signals locks aquired");
         let mut buffers = self.buffers.lock();
         let mut fences = self.fences.lock();
-        
+
         // Indices of the command buffers
         let mut indices = Vec::<usize>::new();
 
@@ -45,9 +65,12 @@ impl Pool {
         let mut signaled = Vec::<vk::Fence>::new();
 
         // Update all the fences
-        for (fence, fence_in_use, fence_cpu_signaled) in fences.iter_mut() {
-            let fence_gpu_signaled = device.device.get_fence_status(*fence).unwrap();
-            
+        for (fence, fence_in_use, fence_cpu_signaled) in
+            fences.iter_mut()
+        {
+            let fence_gpu_signaled =
+                device.device.get_fence_status(*fence).unwrap();
+
             if *fence_in_use {
                 *fence_cpu_signaled = fence_gpu_signaled;
             }
@@ -60,13 +83,20 @@ impl Pool {
             }
 
             // Check if the fence is signaled
-            let (fence, fence_in_use, fence_cpu_signaled) = &mut fences[*index];
+            let (fence, fence_in_use, fence_cpu_signaled) =
+                &mut fences[*index];
 
             // Keep track of free fences and their indices
-            if *fence_cpu_signaled && *fence_in_use && !signaled.contains(fence) {
+            if *fence_cpu_signaled
+                && *fence_in_use
+                && !signaled.contains(fence)
+            {
                 signaled.push(*fence);
                 indices.push(i);
-                log::debug!("Fence {:?} was signaled, so we must reset it", fence)
+                log::debug!(
+                    "Fence {:?} was signaled, so we must reset it",
+                    fence
+                )
             }
         }
 
@@ -78,7 +108,8 @@ impl Pool {
             // Unsignal on the CPU side (correspodning reset_fences)
             for &index in indices.iter() {
                 let (_, _, index) = buffers[index];
-                let (_, fence_in_use, fence_cpu_signaled) = &mut fences[index];
+                let (_, fence_in_use, fence_cpu_signaled) =
+                    &mut fences[index];
                 *fence_cpu_signaled = false;
                 *fence_in_use = false;
             }
@@ -87,7 +118,10 @@ impl Pool {
         for free in indices {
             // Also reset the command buffer
             let (cmd, using, index) = &mut buffers[free];
-            device.device.reset_command_buffer(*cmd, Default::default()).unwrap();
+            device
+                .device
+                .reset_command_buffer(*cmd, Default::default())
+                .unwrap();
             log::debug!("Resetting command buffer {:?} that has fence index {index}", cmd);
 
             // Reset the fence index of this command buffer until we submit it again
@@ -98,24 +132,34 @@ impl Pool {
     }
 
     // Allocate N number of command pools for this pool
-    pub unsafe fn allocate_command_buffers(pool: vk::CommandPool, buffers: &mut Vec<(vk::CommandBuffer, bool, usize)>, device: &Device, number: usize, secondary: bool) {
+    pub unsafe fn allocate_command_buffers(
+        pool: vk::CommandPool,
+        buffers: &mut Vec<(vk::CommandBuffer, bool, usize)>,
+        device: &Device,
+        number: usize,
+        secondary: bool,
+    ) {
         let level = if secondary {
             vk::CommandBufferLevel::SECONDARY
-        } else { 
+        } else {
             vk::CommandBufferLevel::PRIMARY
         };
 
-        // Create the command buffers         
+        // Create the command buffers
         let create_info = vk::CommandBufferAllocateInfo::builder()
             .command_pool(pool)
             .command_buffer_count(number as u32)
             .level(level);
-        let new = device.device.allocate_command_buffers(&create_info).unwrap();
+        let new = device
+            .device
+            .allocate_command_buffers(&create_info)
+            .unwrap();
 
         // Combine command buffers and fence indices
-        let new = new.into_iter().map(|cmd| {
-            (cmd, false, usize::MAX)
-        }).collect::<Vec<_>>();
+        let new = new
+            .into_iter()
+            .map(|cmd| (cmd, false, usize::MAX))
+            .collect::<Vec<_>>();
 
         // Add the command buffers to our pool
         buffers.extend(new);
@@ -123,22 +167,35 @@ impl Pool {
     }
 
     // Aquire a free command buffer as a recorder
-    pub unsafe fn aquire_cmd_buffer(&self, device: &Device, flags: vk::CommandBufferUsageFlags) -> vk::CommandBuffer {
+    pub unsafe fn aquire_cmd_buffer(
+        &self,
+        device: &Device,
+        flags: vk::CommandBufferUsageFlags,
+    ) -> vk::CommandBuffer {
         self.refresh_fence_signals(device);
         let mut buffers = self.buffers.lock();
 
         // Try to find the index of a free command buffers
-        let free = buffers.iter().position(|(_, using, fence)| 
+        let free = buffers.iter().position(|(_, using, fence)| {
             *fence == usize::MAX && !using
-        );
+        });
 
         // Allocate new buffer if we don't have one available
         let cmd_index = if free.is_none() {
             log::warn!("Could not find free command buffer, allocating a new buffer");
-            Self::allocate_command_buffers(self.alloc, &mut buffers, device, 1, false);
+            Self::allocate_command_buffers(
+                self.alloc,
+                &mut buffers,
+                device,
+                1,
+                false,
+            );
             buffers.len() - 1
         } else {
-            log::debug!("Found free command buffer at index {}", free.unwrap());
+            log::debug!(
+                "Found free command buffer at index {}",
+                free.unwrap()
+            );
             free.unwrap()
         };
 
@@ -146,18 +203,28 @@ impl Pool {
         let (buffer, old_using_state, _) = &mut buffers[cmd_index];
         *old_using_state = true;
 
-        let begin_info = vk::CommandBufferBeginInfo::builder()
-            .flags(flags);
-        device.device.begin_command_buffer(*buffer, &begin_info).unwrap();    
-        log::debug!("Begin recording command buffer {:?}", buffer); 
+        let begin_info =
+            vk::CommandBufferBeginInfo::builder().flags(flags);
+        device
+            .device
+            .begin_command_buffer(*buffer, &begin_info)
+            .unwrap();
+        log::debug!("Begin recording command buffer {:?}", buffer);
         *buffer
     }
 
     // Aquire an actual (free) recorder that we can use
-    pub unsafe fn aquire_recorder<'a>(&self, device: &'a Device, flag: vk::CommandBufferUsageFlags, implicit: bool) -> Recorder<'a> {
+    pub unsafe fn aquire_recorder<'p>(
+        &'p self,
+        device: &'p Device,
+        flag: vk::CommandBufferUsageFlags,
+        implicit: bool,
+    ) -> Recorder<'p, 'p> {
         Recorder {
             cmd: self.aquire_cmd_buffer(device, flag),
             device,
+            implicit,
+            pool: &self,
         }
     }
 
@@ -175,7 +242,7 @@ impl Pool {
             &[recorder.cmd],
             signal,
             wait,
-            masks
+            masks,
         )
     }
 
@@ -190,7 +257,7 @@ impl Pool {
     ) -> vk::Fence {
         // Stop recording the command buffers
         for buffer in command_buffers.iter() {
-            log::debug!("Stop recording command buffer {:?}", buffer); 
+            log::debug!("Stop recording command buffer {:?}", buffer);
             device.device.end_command_buffer(*buffer).unwrap();
         }
 
@@ -222,16 +289,29 @@ impl Pool {
             *using = true;
         }
 
-        log::debug!("Submitting {} command buffers to queue {:?}", command_buffers.len(), self.queue); 
-        device.device.queue_submit(self.queue, &[*submit], fence).unwrap();
+        log::debug!(
+            "Submitting {} command buffers to queue {:?}",
+            command_buffers.len(),
+            self.queue
+        );
+        device
+            .device
+            .queue_submit(self.queue, &[*submit], fence)
+            .unwrap();
         fence
     }
 
     // Find a free fence
-    unsafe fn find_free_fence(&self, device: &Device) -> (vk::Fence, usize) {
+    unsafe fn find_free_fence(
+        &self,
+        device: &Device,
+    ) -> (vk::Fence, usize) {
         // Fetch a free fence that we can use
         self.refresh_fence_signals(device);
-        log::debug!("Fence counts: {}. Looking for free fence...", self.fences.lock().len());
+        log::debug!(
+            "Fence counts: {}. Looking for free fence...",
+            self.fences.lock().len()
+        );
         let fence = self
             .fences
             .lock()
@@ -254,12 +334,14 @@ impl Pool {
 
         // If we don't find a free fence, create a new one
         fence.unwrap_or_else(|| unsafe {
-            log::warn!("Could not find a free fence, allocating a new one");
+            log::warn!(
+                "Could not find a free fence, allocating a new one"
+            );
             let data = (device.create_fence(), false, false);
             log::debug!("Allocated new fence {:?}", data.0);
             let mut fences = self.fences.lock();
             fences.push(data);
-            (data.0, fences.len()-1) 
+            (data.0, fences.len() - 1)
         })
     }
 }

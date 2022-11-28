@@ -1,4 +1,4 @@
-use math::BitSet;
+use utils::BitSet;
 
 use crate::{
     Always, Archetype, Mask, QueryFilter, QueryLayoutMut,
@@ -60,15 +60,15 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutRef<'it>>
     // Iterate through the query entries and execute a function for each one of them in another thread
     pub fn for_each(
         self,
-        threadpool: &mut world::ThreadPool,
-        function: impl Fn(<<L as QueryLayoutRef<'_>>::SliceTuple as world::SliceTuple<'_>>::ItemTuple)
+        threadpool: &mut utils::ThreadPool,
+        function: impl Fn(<<L as QueryLayoutRef<'_>>::SliceTuple as utils::SliceTuple<'_>>::ItemTuple)
             + Send
             + Sync
             + Clone,
         batch_size: usize,
     ) where
         for<'it, 's2> <L as QueryLayoutRef<'it>>::SliceTuple:
-            world::SliceTuple<'s2>,
+            utils::SliceTuple<'s2>,
     {
         threadpool.scope(|scope| {
             for (i, archetype) in self.archetypes.iter().enumerate() {

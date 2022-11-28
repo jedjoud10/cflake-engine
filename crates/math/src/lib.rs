@@ -1,10 +1,8 @@
-mod bitset;
 mod bounds;
 mod intersect;
 mod octrees;
 mod shapes;
 mod tests;
-pub use bitset::*;
 pub use bounds::*;
 pub use intersect::*;
 pub use octrees::*;

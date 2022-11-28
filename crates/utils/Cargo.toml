@@ -1,14 +1,16 @@
 [package]
-name = "assets"
+name = "utils"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-lazy_static = { workspace = true }
-ahash = { workspace = true }
-parking_lot = { workspace = true }
-slotmap = "1.0.6"
+num_cpus = "1.13.1"
+seq-macro = "0.3.0"
+paste = "1.0.7"
+casey = "0.3.3"
+arrayvec = "0.7.2"
+itertools = "0.10.3"
 world = { path = "../world" }
-utils = { path = "../utils" }
+parking_lot = { workspace = true }

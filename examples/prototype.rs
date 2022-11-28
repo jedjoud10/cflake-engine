@@ -14,34 +14,41 @@ fn main() {
 // Executed at the start
 fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap().clone();
-    let mut threadpool = world.get_mut::<ThreadPool>().unwrap();    
+    let mut threadpool = world.get_mut::<ThreadPool>().unwrap();
 
     // Create a buffer in a new thread
     let array = (0..64).into_iter().collect::<Vec<_>>();
-    threadpool.for_each::<&[u32]>(&array, move |_| {
-        // Create a command recorder just for this buffer
-        log::warn!("Executing on thread {:?}", std::thread::current().name());
-        let recorder = graphics.aquire_recorder(false);
+    threadpool.for_each::<&[u32]>(
+        &array,
+        move |_| {
+            // Create a command recorder just for this buffer
+            log::warn!(
+                "Executing on thread {:?}",
+                std::thread::current().name()
+            );
+            let recorder = graphics.aquire_recorder(false);
 
-        // Create a uniform buffer
-        let mut buffer = UniformBuffer::from_slice(
-            &graphics.clone(),
-            &[1i32, 2, 3],
-            BufferMode::Dynamic,
-            BufferUsage {
-                hint_device_write: true,
-                hint_device_read: true,
-                host_write: true,
-                host_read: false,
-            },
-            &recorder,
-        ).unwrap();
+            // Create a uniform buffer
+            let mut buffer = UniformBuffer::from_slice(
+                &graphics.clone(),
+                &[1i32, 2, 3],
+                BufferMode::Dynamic,
+                BufferUsage {
+                    hint_device_write: true,
+                    hint_device_read: true,
+                    host_write: true,
+                    host_read: false,
+                },
+                &recorder,
+            )
+            .unwrap();
 
-        graphics.submit_recorder(recorder);
-    }, 1);
+            graphics.submit_recorder(recorder);
+        },
+        1,
+    );
 
     //std::thread::sleep(std::time::Duration::from_secs(10));
-
 
     /*
     buffer.extend_from_slice(&[4]);

@@ -1,6 +1,5 @@
-use math::BitSet;
-
 use super::ThreadedTask;
+use crate::BitSet;
 use crate::{SliceTuple, ThreadPool};
 
 // A threadpool scope is a helper struct that allows us to send functions to execute on other threads

@@ -1,6 +1,6 @@
 mod buffer;
-mod layout;
 mod error;
+mod layout;
+pub use buffer::*;
 pub use error::*;
 pub use layout::*;
-pub use buffer::*;

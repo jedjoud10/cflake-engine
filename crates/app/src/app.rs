@@ -4,7 +4,7 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
 };
 //use gui::egui::util::id_type_map::TypeId;
-use graphics::{FrameRateLimit, WindowSettings, BufferingMode};
+use graphics::{BufferingMode, FrameRateLimit, WindowSettings};
 use mimalloc::MiMalloc;
 use std::{any::TypeId, path::PathBuf};
 use world::{
@@ -153,13 +153,14 @@ impl App {
             log::set_boxed_logger(Box::new(logger)).unwrap();
         */
         env_logger::init();
-        
+
         // Insert all the builtin systems dataless
         self = self
             .insert_system(input::system)
             .insert_system(ecs::system)
             .insert_system(time::system)
-            .insert_system(world::system);
+            .insert_system(world::system)
+            .insert_system(utils::system);
 
         // Insert the asset loader
         let user = self.user_assets_folder.take();

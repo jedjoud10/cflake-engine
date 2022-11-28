@@ -1,4 +1,4 @@
-use crate::{user, Read, Resource, System, ThreadPool, Write};
+use crate::{user, Read, Resource, System, Write};
 use ahash::AHashMap;
 use std::{
     any::TypeId,
@@ -93,7 +93,6 @@ pub fn system(system: &mut System) {
     system
         .insert_init(|world: &mut World| {
             world.insert(State::default());
-            world.insert(ThreadPool::default());
         })
         .before(user);
 }

@@ -14,5 +14,6 @@ raw-window-handle = "0.5.0"
 ash-window = "0.12.0"
 gpu-allocator = { version = "0.21.0", features = ["vulkan"] }
 math = { path = "../math" }
+utils = { path = "../utils" }
 log = { workspace = true }
 ahash = { workspace = true }

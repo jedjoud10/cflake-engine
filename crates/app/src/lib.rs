@@ -7,13 +7,13 @@ pub use gui;
 pub use input;
 pub use math;
 pub use time;
+pub use utils;
 pub use world;
 
-
 // Gfx related
-pub use vulkan;
 pub use graphics;
 pub use rendering;
+pub use vulkan;
 pub mod prelude {
     pub use crate::app::*;
     pub use crate::assets::*;
@@ -23,15 +23,16 @@ pub mod prelude {
     pub use crate::input::*;
     pub use crate::math::*;
     pub use crate::time::*;
+    pub use crate::utils::*;
     pub use crate::world::*;
-    
+
     // Re-exports
+    pub use log;
     pub use vek;
     pub use winit;
-    pub use log;
-    
+
     // Gfx related
-    pub use crate::vulkan::*;
     pub use crate::graphics::*;
     pub use crate::rendering::*;
+    pub use crate::vulkan::*;
 }

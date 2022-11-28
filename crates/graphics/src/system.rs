@@ -1,4 +1,4 @@
-use crate::{WindowSettings};
+use crate::WindowSettings;
 use winit::{event::WindowEvent, event_loop::EventLoop};
 use world::{post_user, user, State, System, World};
 
@@ -80,10 +80,7 @@ fn destroy(world: &mut World) {
 
 // Context system will just register the wgpu context and create a simple window
 // This system will also handle window events like exiting
-pub fn system(
-    system: &mut System,
-    window_settings: WindowSettings,
-) {
+pub fn system(system: &mut System, window_settings: WindowSettings) {
     system
         .insert_init(move |world: &mut World, el: &EventLoop<()>| {
             init(world, el, window_settings)

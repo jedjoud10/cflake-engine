@@ -49,8 +49,7 @@ impl Instance {
         let raw_window_handle = window.raw_window_handle();
 
         // Create the app info
-        let app_name =
-            CString::new(app_title.clone()).unwrap();
+        let app_name = CString::new(app_title.clone()).unwrap();
         let engine_name = CString::new(engine_title).unwrap();
         let app_info = *vk::ApplicationInfo::builder()
             .application_name(&app_name)
@@ -66,13 +65,13 @@ impl Instance {
 
         // Get the required instance extensions from the handle
         let mut extension_names_ptrs =
-            ash_window::enumerate_required_extensions(raw_display_handle)
-                .unwrap()
-                .to_vec();
-        extension_names_ptrs.extend(instance_extensions
-            .iter()
-            .map(|s| s.as_ptr())
-        );
+            ash_window::enumerate_required_extensions(
+                raw_display_handle,
+            )
+            .unwrap()
+            .to_vec();
+        extension_names_ptrs
+            .extend(instance_extensions.iter().map(|s| s.as_ptr()));
 
         // Get the required validation layers
         let validation_ptrs = validation_layers
@@ -96,8 +95,9 @@ impl Instance {
             .enabled_extension_names(&extension_names_ptrs);
 
         // Create the instance
-        let instance =
-            entry.create_instance(&instance_create_info, None).unwrap();
+        let instance = entry
+            .create_instance(&instance_create_info, None)
+            .unwrap();
 
         // Create the debug utils
         #[cfg(debug_assertions)]
@@ -121,7 +121,7 @@ impl Instance {
 
             #[cfg(debug_assertions)]
             debug_messenger,
-            
+
             raw_display_handle,
             raw_window_handle,
         }

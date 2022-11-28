@@ -79,6 +79,7 @@ dependencies = [
  "rendering",
  "spin_sleep",
  "time",
+ "utils",
  "vek",
  "vulkan",
  "winit",
@@ -140,6 +141,7 @@ dependencies = [
  "lazy_static",
  "parking_lot",
  "slotmap",
+ "utils",
  "world",
 ]
 
@@ -164,6 +166,7 @@ dependencies = [
  "hrtf",
  "math",
  "minimp3",
+ "utils",
  "vek",
  "wav",
  "world",
@@ -601,6 +604,7 @@ dependencies = [
  "smallvec",
  "time",
  "tinyvec",
+ "utils",
  "vek",
  "world",
 ]
@@ -1996,6 +2000,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6ceab39d59e4c9499d4e5a8ee0e2735b891bb7308ac83dfb4e80cad195c9f6f3"
 
 [[package]]
+name = "utils"
+version = "0.1.0"
+dependencies = [
+ "arrayvec 0.7.2",
+ "casey",
+ "itertools",
+ "num_cpus",
+ "parking_lot",
+ "paste",
+ "seq-macro",
+ "world",
+]
+
+[[package]]
 name = "uuid"
 version = "1.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2040,6 +2058,7 @@ dependencies = [
  "math",
  "parking_lot",
  "raw-window-handle 0.5.0",
+ "utils",
  "winit",
 ]
 

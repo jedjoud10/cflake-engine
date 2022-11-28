@@ -81,12 +81,22 @@ fn event(world: &mut World, ev: &DeviceEvent) {
                 {
                     let action = input.sentence_nl_action;
                     if let Some(sentence) = &mut input.sentence {
-                        if matches!(keycode, winit::event::VirtualKeyCode::Back) {
+                        if matches!(
+                            keycode,
+                            winit::event::VirtualKeyCode::Back
+                        ) {
                             sentence.pop();
-                        } else if matches!(keycode, winit::event::VirtualKeyCode::Return) {
+                        } else if matches!(
+                            keycode,
+                            winit::event::VirtualKeyCode::Return
+                        ) {
                             match action {
-                                crate::NewLineAction::Clear => sentence.clear(),
-                                crate::NewLineAction::NewLine => sentence.push('\n'),
+                                crate::NewLineAction::Clear => {
+                                    sentence.clear()
+                                }
+                                crate::NewLineAction::NewLine => {
+                                    sentence.push('\n')
+                                }
                             }
                         }
                     }

@@ -1,8 +1,9 @@
 use crate::FrameRateLimit;
 
 use super::WindowSettings;
+use ash::vk;
+use bytemuck::{Pod, Zeroable};
 use std::{ffi::CString, sync::Arc};
-use bytemuck::{Zeroable, Pod};
 use vulkan::*;
 
 // Plain old data type internally used by buffers and other types
@@ -14,7 +15,6 @@ impl<T: Clone + Copy + Sync + Send + Zeroable + Pod + 'static> Content
     for T
 {
 }
-
 
 // Internal graphics context that will be shared with other threads
 pub(crate) struct InternalGraphics {
@@ -40,7 +40,8 @@ impl Graphics {
         window_settings: &WindowSettings,
     ) -> Graphics {
         let validation_layers = vulkan::required_validation_layers();
-        let instance_extensions = vulkan::required_instance_extensions();
+        let instance_extensions =
+            vulkan::required_instance_extensions();
         let device_extensions = vulkan::required_device_extensions();
 
         // Create the Vulkan entry and instance
@@ -49,18 +50,14 @@ impl Graphics {
             instance_extensions,
             validation_layers,
             window_settings.title.clone(),
-            "cFlake Engine".to_owned()
+            "cFlake Engine".to_owned(),
         );
 
         // Create a surface from the KHR extension
         let surface = Surface::new(&instance);
 
         // Pick a physical device (adapter)
-        let adapter = Adapter::pick(
-            &instance,
-            false,
-            &surface,
-        );
+        let adapter = Adapter::pick(&instance, false, &surface);
 
         // Create the queues that we will instantiate
         let mut queues = Queues::new(&adapter, &instance);
@@ -74,14 +71,10 @@ impl Graphics {
         );
 
         // Create a swapchain we can render to
-        let vsync = matches!(window_settings.limit, FrameRateLimit::VSync);
+        let vsync =
+            matches!(window_settings.limit, FrameRateLimit::VSync);
         let swapchain = Swapchain::new(
-            &adapter,
-            &surface,
-            &device,
-            &instance,
-            window,
-            vsync,
+            &adapter, &surface, &device, &instance, window, vsync,
         );
 
         Self(Arc::new(InternalGraphics {
@@ -127,9 +120,10 @@ impl Graphics {
     // Draw the main window swapchain sheize
     pub(crate) unsafe fn draw(&mut self, _value: f32) {
         // Get the next free image
-        let image = self.swapchain().aquire(); 
+        let image = self.swapchain().aquire();
         self.swapchain().render(self.device(), self.queues(), image);
-        self.swapchain().present(self.device(),self.queues(), image);
+        self.swapchain()
+            .present(self.device(), self.queues(), image);
     }
 
     // Destroy the context after we've done using it
@@ -147,23 +141,31 @@ impl Graphics {
 
 impl Graphics {
     // Get a recorder from the graphics family
-    pub fn aquire_recorder(&self, implicit: bool) -> Recorder {
+    pub fn aquire_recorder<'a>(
+        &'a self,
+        implicit: bool,
+    ) -> Recorder<'a, 'a> {
         unsafe {
-            self.
-                queues()
-                .family(FamilyType::Present)
-                .aquire_pool()
-                .aquire_recorder(self.device(), Default::default(), implicit)
+            let family = self.queues().family(FamilyType::Present);
+
+            let device = self.device();
+            let flag =
+                vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER;
+            let pool = family.aquire_pool(device, flag);
+            pool.aquire_recorder(device, Default::default(), implicit)
         }
     }
 
     // Submit a recorder to the graphics context and start executing it
     pub fn submit_recorder(&self, recorder: Recorder) {
         unsafe {
-            self
-                .queues()
+            let device = self.device();
+            let flag =
+                vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER;
+
+            self.queues()
                 .family(FamilyType::Graphics)
-                .aquire_pool()
+                .aquire_pool(device, flag)
                 .submit_recorder(
                     self.device(),
                     recorder,
@@ -171,6 +173,6 @@ impl Graphics {
                     &[],
                     &[],
                 );
-        }        
+        }
     }
 }

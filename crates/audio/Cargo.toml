@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 assets = { path = "../assets" }
+utils = { path = "../utils" }
 world = { path = "../world" }
 math = { path = "../math" }
 ecs = { path = "../ecs" }

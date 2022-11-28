@@ -2,7 +2,7 @@ use crate::{Asset, AssetInput, AsyncAsset};
 use ahash::AHashMap;
 use parking_lot::RwLock;
 use slotmap::{DefaultKey, SlotMap};
-use world::ThreadPool;
+use utils::ThreadPool;
 
 use std::{
     any::Any,
@@ -14,7 +14,8 @@ use std::{
     sync::{
         mpsc::{Receiver, Sender},
         Arc,
-    }, time::Instant,
+    },
+    time::Instant,
 };
 
 // This is a handle to a specific asset that we are currently loading in
@@ -134,15 +135,15 @@ impl Assets {
         ))
     }
 
-
     // Load multiple assets using some explicit/default loading arguments
     pub fn load_from_iter<'s, 'args, A: Asset>(
         &self,
         inputs: impl IntoIterator<Item = impl AssetInput<'s, 'args, A>>,
     ) -> Vec<Option<A>> {
-        inputs.into_iter().map(|input| {
-            self.load(input)
-        }).collect::<Vec<Option<A>>>()
+        inputs
+            .into_iter()
+            .map(|input| self.load(input))
+            .collect::<Vec<Option<A>>>()
     }
 }
 
@@ -216,12 +217,14 @@ impl Assets {
         });
         Some(handle)
     }
-    
+
     // Load multiple assets using some explicit/default loading arguments in another thread
     // This returns handle(s) that we can wait for and fetch later on
     pub fn async_load_from_iter<'s, A: AsyncAsset>(
         &self,
-        inputs: impl IntoIterator<Item = impl AssetInput<'s, 'static, A> + Send>,
+        inputs: impl IntoIterator<
+            Item = impl AssetInput<'s, 'static, A> + Send,
+        >,
         threadpool: &mut ThreadPool,
     ) -> Vec<Option<AsyncHandle<A>>> {
         // Create a temporary threadpool scope for these assets only
@@ -248,7 +251,7 @@ impl Assets {
                     _phantom: PhantomData,
                     key,
                 };
-                reference.push(Some(handle));                
+                reference.push(Some(handle));
 
                 scope.execute(move || {
                     // All this does is that it ensures that the bytes are valid before we actually deserialize the asset
@@ -284,7 +287,7 @@ impl Assets {
                         },
                         args,
                     );
-        
+
                     // Add the deserialized back to the loader
                     let mut write = assets.write();
                     let opt = write.get_mut(key).unwrap();
@@ -303,16 +306,13 @@ impl Assets {
     ) -> bool {
         // Poll and update
         self.loaded.borrow_mut().extend(self.receiver.try_iter());
-        
+
         // Check
         self.loaded.borrow().contains(&handle.key)
     }
 
     // This will wait until the asset referenced by this handle has finished loading
-    pub fn wait<A: AsyncAsset>(
-        &self,
-        handle: AsyncHandle<A>,
-    ) -> A {
+    pub fn wait<A: AsyncAsset>(&self, handle: AsyncHandle<A>) -> A {
         // Spin lock whilst whilst waiting for an asset to load
         while !self.has_finished_loading(&handle) {}
 
@@ -336,10 +336,11 @@ impl Assets {
     // This will wait until all the assets reference by these handles have finished loading
     pub fn wait_from_iter<A: AsyncAsset>(
         &self,
-        handles: impl IntoIterator<Item = AsyncHandle<A>>
-    ) -> Vec<A> {   
-        handles.into_iter().map(|handle| {
-            self.wait(handle)
-        }).collect::<Vec<_>>()        
+        handles: impl IntoIterator<Item = AsyncHandle<A>>,
+    ) -> Vec<A> {
+        handles
+            .into_iter()
+            .map(|handle| self.wait(handle))
+            .collect::<Vec<_>>()
     }
 }

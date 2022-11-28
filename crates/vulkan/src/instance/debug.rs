@@ -1,11 +1,13 @@
 use ash::vk;
-use std::{borrow::Cow, ffi::{CStr, c_void}};
+use std::{
+    borrow::Cow,
+    ffi::{c_void, CStr},
+};
 
 // Create the debug utils create info
 #[cfg(debug_assertions)]
 pub(super) unsafe fn create_debug_messenger_create_info(
 ) -> vk::DebugUtilsMessengerCreateInfoEXT {
-
     *vk::DebugUtilsMessengerCreateInfoEXT::builder()
         .message_severity(
             vk::DebugUtilsMessageSeverityFlagsEXT::WARNING
