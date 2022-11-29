@@ -176,11 +176,11 @@ impl Pool {
     }
 
     // Aquire a free command buffer as a recorder
-    pub unsafe fn aquire_cmd_buffer(
-        &self,
-        device: &Device,
+    pub unsafe fn aquire_recorder<'a, 'b>(
+        &'a self,
+        device: &'b Device,
         flags: vk::CommandBufferUsageFlags,
-    ) -> vk::CommandBuffer {
+    ) -> Recorder<'b, 'a> {
         self.refresh_fence_signals(device);
         let mut buffers = self.buffers.lock();
 
@@ -208,10 +208,11 @@ impl Pool {
             free.unwrap()
         };
 
-        // Begin recording the command buffer
+        // Update the usage state of the command buffer
         let (buffer, old_using_state, _) = &mut buffers[cmd_index];
         *old_using_state = true;
 
+        // Start recording the command buffer
         let begin_info =
             vk::CommandBufferBeginInfo::builder().flags(flags);
         device
@@ -219,55 +220,31 @@ impl Pool {
             .begin_command_buffer(*buffer, &begin_info)
             .unwrap();
         log::debug!("Begin recording command buffer {:?}", buffer);
-        *buffer
-    }
-
-    // Aquire an actual (free) recorder that we can use
-    pub unsafe fn aquire_recorder<'p>(
-        &'p self,
-        device: &'p Device,
-        flag: vk::CommandBufferUsageFlags,
-        implicit: bool,
-    ) -> Recorder<'p, 'p> {
+        
+        // Create the recorder
         Recorder {
-            cmd: self.aquire_cmd_buffer(device, flag),
+            cmd: *buffer,
+            index: cmd_index,
             device,
-            implicit,
             pool: self,
         }
     }
 
-    // Explcitly submit a recorder
-    pub unsafe fn submit_recorder(
-        &self,
-        device: &Device,
-        recorder: Recorder,
-        signal: &[vk::Semaphore],
-        wait: &[vk::Semaphore],
-        masks: &[vk::PipelineStageFlags],
-    ) -> vk::Fence {
-        self.submit_cmd_buffers_from_iter(
-            device,
-            &[recorder.cmd],
-            signal,
-            wait,
-            masks,
-        )
-    }
-
     // Submit multiple recorders command buffers to the pool for execution
-    pub unsafe fn submit_cmd_buffers_from_iter(
+    pub unsafe fn submit_recorders_from_iter(
         &self,
         device: &Device,
-        command_buffers: &[vk::CommandBuffer],
+        command_buffers: &[Recorder],
         signal: &[vk::Semaphore],
         wait: &[vk::Semaphore],
         _masks: &[vk::PipelineStageFlags],
     ) -> vk::Fence {
         // Stop recording the command buffers
+        let mut cmds = Vec::<vk::CommandBuffer>::new();
         for buffer in command_buffers.iter() {
-            log::debug!("Stop recording command buffer {:?}", buffer);
-            device.device.end_command_buffer(*buffer).unwrap();
+            log::debug!("Stop recording command buffer {:?}", buffer.cmd);
+            device.device.end_command_buffer(buffer.cmd).unwrap();
+            cmds.push(buffer.cmd);
         }
 
         // Create the command buffers submit data
@@ -275,7 +252,7 @@ impl Pool {
             .signal_semaphores(signal)
             .wait_semaphores(wait)
             //.wait_dst_stage_mask(masks)
-            .command_buffers(command_buffers);
+            .command_buffers(&cmds);
 
         // Find an unsignaled fence that we can use
         let (_, index) = self.find_free_fence(device);
@@ -292,7 +269,7 @@ impl Pool {
         let mut locked = self.buffers.lock();
         let iter = locked
             .iter_mut()
-            .filter(|(cmd, _, _)| command_buffers.contains(cmd));
+            .filter(|(cmd, _, _)| cmds.contains(cmd));
         for (_, using, old) in iter {
             *old = index;
             *using = true;

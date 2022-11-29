@@ -1,7 +1,6 @@
 use crate::Device;
 use ash::vk;
-use parking_lot::Mutex;
-use utils::{BitSet, ImmutableVec};
+use utils::ThreadPool;
 
 use super::pool::Pool;
 
@@ -21,15 +20,8 @@ pub struct Family {
     pub(super) family_queue_flags: vk::QueueFlags,
     pub(super) family_index: u32,
 
-    // Current command pools of this family (multiple command pools per family)
-    // Each thread will have it's own command pool that it can acces and submit to
-
-    // If a thread notices that a pool is not in use (no locks) it will aquire the lock
-    // And start submitting to the pool as if it were it's own
-
-    // If a thread does not find a free pool, it will simply allocate a new one for itself
-    pub(super) pools: ImmutableVec<Pool>,
-    pub(crate) free: Mutex<BitSet>,
+    // One command pool per thread
+    pub(super) pools: Vec<Pool>,
 
     // TODO: We should be able to have multiple queues per family but mkay
     pub(super) queue: vk::Queue,
@@ -55,37 +47,18 @@ impl Family {
         self.pools.get(index)
     }
 
-    // Get a free pool that we can use directly
+    // Get the command pool for the current thread
     pub fn aquire_pool(
         &self,
-        device: &Device,
-        flags: vk::CommandPoolCreateFlags,
     ) -> &Pool {
-        // Check if we have a free pool
-        let mut bitset = self.free.lock();
-        if let Some(index) = bitset.find_one_from(0) {
-            bitset.remove(index);
-            log::debug!("Found a free command pool at index {index}");
-            self.pools.get(index).unwrap()
-        } else {
-            // Allocate a new pool
-            log::debug!("Could not find free command pool, allocating a new one");
-            drop(bitset);
-            unsafe { self.insert_new_pool(device, flags) }
-        }
-    }
-
-    // Unlock a specific pool and return it to the family
-    pub fn unlock_pool(&self, pool: &Pool) {
-        let mut bitset = self.free.lock();
-        bitset.set(pool.index);
+        &self.pools[ThreadPool::current()]
     }
 }
 
 impl Family {
     // Create a new pool inside this family
     pub unsafe fn insert_new_pool(
-        &self,
+        &mut self,
         device: &Device,
         flags: vk::CommandPoolCreateFlags,
     ) -> &Pool {
@@ -106,9 +79,7 @@ impl Family {
         );
 
         // Insert the pool and set it to be free
-        let mut bitset = self.free.lock();
         let pool = Pool::new(self.pools.len(), flags, self.queue, alloc);
-        bitset.set(self.pools.len());
         self.pools.push(pool);
         self.pools.last().unwrap()
     }

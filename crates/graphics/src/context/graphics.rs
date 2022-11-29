@@ -3,6 +3,7 @@ use crate::FrameRateLimit;
 use super::WindowSettings;
 use ash::vk;
 use bytemuck::{Pod, Zeroable};
+use utils::ThreadPool;
 use std::sync::Arc;
 use vulkan::*;
 
@@ -143,7 +144,6 @@ impl Graphics {
     // Get a recorder from the graphics family
     pub fn aquire_recorder<'a>(
         &'a self,
-        implicit: bool,
     ) -> Recorder<'a, 'a> {
         unsafe {
             let family = self.queues().family(FamilyType::Present);
@@ -151,8 +151,8 @@ impl Graphics {
             let device = self.device();
             let flag =
                 vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER;
-            let pool = family.aquire_pool(device, flag);
-            pool.aquire_recorder(device, Default::default(), implicit)
+            let pool = family.aquire_pool();
+            pool.aquire_recorder(device, Default::default())
         }
     }
 
@@ -165,10 +165,10 @@ impl Graphics {
 
             self.queues()
                 .family(FamilyType::Graphics)
-                .aquire_pool(device, flag)
-                .submit_recorder(
+                .aquire_pool()
+                .submit_recorders_from_iter(
                     self.device(),
-                    recorder,
+                    &[recorder],
                     &[],
                     &[],
                     &[],

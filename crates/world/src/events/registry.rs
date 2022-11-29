@@ -1,8 +1,8 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, any::TypeId};
 
 use crate::{
-    id, post_user, user, Caller, Event, RegistrySortingError, Rule,
-    StageError, StageId,
+    post_user, user, Caller, Event, RegistrySortingError, Rule,
+    StageError, StageId, SystemId, CallerId,
 };
 use ahash::{AHashMap, AHashSet};
 
@@ -16,11 +16,23 @@ pub const CYCLIC_REFERENCE_THRESHOLD: usize = 50;
 
 // Reference point stages that we will use to insert more events into the registry
 lazy_static! {
-    pub static ref RESERVED: Vec<StageId> = {
-        let mut vec = Vec::new();
-        vec.push(id(user).0);
-        vec.push(id(post_user).0);
-        vec
+    pub static ref RESERVED_CALLER_TYPE_IDS: Vec<CallerId> = {
+        vec![
+            super::fetch_caller_id::<crate::Init>(),
+            super::fetch_caller_id::<crate::Update>(),
+            super::fetch_caller_id::<crate::Shutdown>(),
+            super::fetch_caller_id::<winit::event::DeviceEvent>(),
+            super::fetch_caller_id::<winit::event::WindowEvent>()
+        ]
+    };
+
+    pub static ref RESERVED_STAGE_IDS: Vec<StageId> = {
+        let mut reserved: Vec<StageId> = Vec::new();
+        let system = super::fetch_system_id(&crate::user);
+
+
+        reserved.push(super::combine_ids(&system, caller))
+        Vec::new()
     };
 }
 
@@ -30,15 +42,19 @@ pub struct Registry<C: Caller + 'static> {
     // Name of the stage -> rules
     pub(super) map: AHashMap<StageId, Vec<Rule>>,
 
-    // Name of the stage -> underlying event + duration
+    // Name of the stage -> underlying event
     pub(super) events: Vec<(StageId, Box<C::DynFn>)>,
+
+    // Cached caller ID
+    pub(super) caller: CallerId,
 }
 
-impl<D: Caller + 'static> Default for Registry<D> {
+impl<C: Caller + 'static> Default for Registry<C> {
     fn default() -> Self {
         Self {
             map: Default::default(),
             events: Default::default(),
+            caller: super::fetch_caller_id::<C>(),
         }
     }
 }
@@ -48,16 +64,17 @@ impl<C: Caller> Registry<C> {
     pub(crate) fn insert<ID>(
         &mut self,
         event: impl Event<C, ID> + 'static,
+        system: SystemId,
     ) -> Result<&mut Vec<Rule>, StageError> {
-        let (id, event) = super::id(event);
         let rules = super::default_rules::<C>();
+        let stage = super::combine_ids(&system, &self.caller);
 
         // We can only have one event per stage and one stage per event
-        if self.map.contains_key(&id) {
+        if self.map.contains_key(&stage) {
             Err(StageError::Overlapping)
         } else {
             // Check if the stage is valid
-            if RESERVED.contains(&id) {
+            if RESERVED_STAGE_IDS.contains(&stage) {
                 return Err(StageError::InvalidName);
             }
 
@@ -65,13 +82,14 @@ impl<C: Caller> Registry<C> {
             let boxed = event.boxed();
 
             // Insert the stage into the valid map
-            let rules = self.map.entry(id).or_insert(rules);
+            let rules = self.map.entry(stage).or_insert(rules);
 
             // Then insert the event
-            self.events.push((id, boxed));
+            self.events.push((stage, boxed));
             Ok(rules)
         }
     }
+    
 
     // Sort all the events stored in the registry using the stages
     pub fn sort(&mut self) -> Result<(), RegistrySortingError> {
@@ -110,7 +128,7 @@ fn sort(
     let mut vec = Vec::<Vec<Rule>>::default();
 
     // Insert the reserved stages, since we use them as reference points
-    for reserved in RESERVED.iter() {
+    for reserved in RESERVED_STAGE_IDS.iter() {
         vec.push(Vec::default());
         indices.insert(*reserved, vec.len() - 1);
     }

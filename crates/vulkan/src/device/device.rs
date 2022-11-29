@@ -11,6 +11,7 @@ use gpu_allocator::{
     MemoryLocation,
 };
 use parking_lot::Mutex;
+use utils::ThreadPool;
 
 // Wrapper around a Vulkan logical device
 pub struct Device {

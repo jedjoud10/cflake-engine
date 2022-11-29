@@ -8,7 +8,7 @@ use std::{
         mpsc::{Receiver, Sender},
         Arc,
     },
-    thread::JoinHandle,
+    thread::JoinHandle, cell::Cell,
 };
 
 use crate::{SliceTuple, ThreadPoolScope};
@@ -16,8 +16,8 @@ use crate::{SliceTuple, ThreadPoolScope};
 // Shared arc that represents a pointer tuple
 type BoxedPtrTuple = Arc<dyn Any + Send + Sync + 'static>;
 
-// Certified moment
-pub struct ThreadFuncEntry {
+// Data passed to each thread
+pub(super) struct ThreadFuncEntry {
     pub(super) base: BoxedPtrTuple,
     pub(super) batch_length: usize,
     pub(super) batch_offset: usize,
@@ -37,6 +37,11 @@ pub(super) enum ThreadedTask {
         entry: ThreadFuncEntry,
         function: BoxedFunction,
     },
+}
+
+// Keeps track of the index of the thread we are currently running on
+thread_local! {
+    static CURRENT: Cell<usize> = Cell::new(0);
 }
 
 // A single threadpool that contains multiple worker threads that are ready to be executed in parallel
@@ -300,6 +305,11 @@ impl ThreadPool {
             std::hint::spin_loop();
         }
     }
+
+    // Get the index of the current thread
+    pub fn current() -> usize {
+        CURRENT.with(|current| current.get())
+    }
 }
 
 impl Drop for ThreadPool {
@@ -323,6 +333,9 @@ fn spawn(threadpool: &ThreadPool, index: usize) -> JoinHandle<()> {
     std::thread::Builder::new()
         .name(name)
         .spawn(move || {
+            // Set the thread index at the start
+            CURRENT.with(|current| current.set(index));
+
             loop {
                 // No task, block so we shall wait
                 let task =

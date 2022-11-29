@@ -85,6 +85,7 @@ pub fn system(system: &mut System, window_settings: WindowSettings) {
         .insert_init(move |world: &mut World, el: &EventLoop<()>| {
             init(world, el, window_settings)
         })
+        .after(utils::system)
         .before(user);
 
     system.insert_update(update).before(user);

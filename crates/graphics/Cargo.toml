@@ -10,6 +10,7 @@ world = { path = "../world" }
 assets = { path = "../assets" }
 time = { path = "../time" }
 math = { path = "../math" }
+utils = { path = "../utils" } 
 vulkan = { path = "../vulkan" }
 winit = "0.27.5"
 nohash-hasher = "0.2.0"

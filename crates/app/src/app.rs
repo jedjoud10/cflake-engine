@@ -155,12 +155,14 @@ impl App {
         env_logger::init();
 
         // Insert all the builtin systems dataless
+        /*
         self = self
             .insert_system(input::system)
             .insert_system(ecs::system)
             .insert_system(time::system)
             .insert_system(world::system)
             .insert_system(utils::system);
+        
 
         // Insert the asset loader
         let user = self.user_assets_folder.take();
@@ -173,6 +175,7 @@ impl App {
         self = self.insert_system(move |system: &mut System| {
             graphics::system(system, window)
         });
+        */
 
         // Sort & execute the init events
         self.systems.init.sort().unwrap();
@@ -205,10 +208,12 @@ impl App {
             winit::event::Event::MainEventsCleared => {
                 sleeper.loop_start();
                 systems.update.execute(&mut world);
+                /*
                 if let State::Stopped = *world.get::<State>().unwrap()
                 {
                     *cf = ControlFlow::Exit;
                 }
+                */
                 sleeper.loop_sleep();
             }
 

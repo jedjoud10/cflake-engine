@@ -193,11 +193,12 @@ impl Swapchain {
         image: (u32, vk::Image),
     ) {
         let present = queues.family(FamilyType::Present);
-        let pool = present.aquire_pool(
-            device,
-            vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER,
-        );
-        let cmd = pool.aquire_cmd_buffer(
+
+        // Fetch the command pool of the current thread
+        let pool = present.aquire_pool();
+
+        // Create a new recorder (or fetches an current one)
+        let recorder = pool.aquire_recorder(
             device,
             vk::CommandBufferUsageFlags::SIMULTANEOUS_USE,
         );
@@ -236,7 +237,7 @@ impl Swapchain {
 
         // Convert image layouts and wait
         device.device.cmd_pipeline_barrier(
-            cmd,
+            recorder.cmd,
             vk::PipelineStageFlags::TRANSFER,
             vk::PipelineStageFlags::TRANSFER,
             vk::DependencyFlags::empty(),
@@ -247,7 +248,7 @@ impl Swapchain {
 
         // Clear the color of the image
         device.device.cmd_clear_color_image(
-            cmd,
+            recorder.cmd,
             image.1,
             vk::ImageLayout::TRANSFER_DST_OPTIMAL,
             &clear_color_value,
@@ -256,7 +257,7 @@ impl Swapchain {
 
         // Convert image layouts and wait
         device.device.cmd_pipeline_barrier(
-            cmd,
+            recorder.cmd,
             vk::PipelineStageFlags::TRANSFER,
             vk::PipelineStageFlags::BOTTOM_OF_PIPE,
             vk::DependencyFlags::empty(),
@@ -266,15 +267,14 @@ impl Swapchain {
         );
 
         *self.rendering_finished_fence.lock() = pool
-            .submit_cmd_buffers_from_iter(
+            .submit_recorders_from_iter(
                 device,
-                &[cmd],
+                &[recorder],
                 &[self.rendering_finished_semaphore],
                 &[self.image_available_semaphore],
                 &[],
                 //self.rendering_finished_fence
             );
-        present.unlock_pool(pool);
     }
 
     /*

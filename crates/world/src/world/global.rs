@@ -13,7 +13,6 @@ pub fn setup() -> (World, Systems) {
             World(Default::default()),
             // Create a single instance of the systems
             Systems {
-                hashset: Default::default(),
                 init: Default::default(),
                 update: Default::default(),
                 shutdown: Default::default(),

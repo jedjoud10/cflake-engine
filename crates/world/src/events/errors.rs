@@ -14,10 +14,13 @@ impl std::fmt::Debug for RegistrySortingError {
     ) -> std::fmt::Result {
         match self {
             RegistrySortingError::CyclicReference => write!(f, "Detected a cyclic reference when trying to sort stages"),
-            RegistrySortingError::CyclicRuleReference((name, _)) => {
-                write!(f, "Detcted a cyclic reference for rules of stage '{name}'")
+            RegistrySortingError::CyclicRuleReference(id) => {
+                write!(f, "Detcted a cyclic reference for rules of event '{}' from system '{}'", id.caller.name, id.system.name)
             }
-            RegistrySortingError::MissingStage((current, _), (name, _)) => write!(f, "Stage '{current}' tried to reference stage '{name}', but the latter does not exist"),
+            RegistrySortingError::MissingStage(current, other) => write!(f, 
+                "Stage '{}' from system '{}' tried to reference stage '{}' from system '{}', but the latter stage does not exist",
+                current.caller.name, current.system.name, other.caller.name, other.system.name
+            ),
         }
     }
 }
