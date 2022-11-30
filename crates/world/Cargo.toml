@@ -18,3 +18,4 @@ math = { path = "../math" }
 
 ahash = { workspace = true }
 parking_lot = { workspace = true }
+log = { workspace = true }

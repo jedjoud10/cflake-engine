@@ -15,7 +15,7 @@ impl std::fmt::Debug for RegistrySortingError {
         match self {
             RegistrySortingError::CyclicReference => write!(f, "Detected a cyclic reference when trying to sort stages"),
             RegistrySortingError::CyclicRuleReference(id) => {
-                write!(f, "Detcted a cyclic reference for rules of event '{}' from system '{}'", id.caller.name, id.system.name)
+                write!(f, "Detected a cyclic reference for rules of event '{}' from system '{}'", id.caller.name, id.system.name)
             }
             RegistrySortingError::MissingStage(current, other) => write!(f, 
                 "Stage '{}' from system '{}' tried to reference stage '{}' from system '{}', but the latter stage does not exist",

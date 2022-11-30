@@ -2466,6 +2466,7 @@ dependencies = [
  "arrayvec 0.7.2",
  "casey",
  "lazy_static",
+ "log",
  "math",
  "num_cpus",
  "parking_lot",

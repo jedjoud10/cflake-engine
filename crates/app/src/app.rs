@@ -154,8 +154,7 @@ impl App {
         */
         env_logger::init();
 
-        // Insert all the builtin systems dataless
-        /*
+        // Insert all the builtin systems
         self = self
             .insert_system(input::system)
             .insert_system(ecs::system)
@@ -175,7 +174,6 @@ impl App {
         self = self.insert_system(move |system: &mut System| {
             graphics::system(system, window)
         });
-        */
 
         // Sort & execute the init events
         self.systems.init.sort().unwrap();
@@ -208,12 +206,10 @@ impl App {
             winit::event::Event::MainEventsCleared => {
                 sleeper.loop_start();
                 systems.update.execute(&mut world);
-                /*
-                if let State::Stopped = *world.get::<State>().unwrap()
-                {
+                let state = *world.get::<State>().unwrap();
+                if matches!(state, State::Stopped) {
                     *cf = ControlFlow::Exit;
                 }
-                */
                 sleeper.loop_sleep();
             }
 

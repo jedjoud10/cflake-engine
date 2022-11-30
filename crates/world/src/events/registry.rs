@@ -16,23 +16,49 @@ pub const CYCLIC_REFERENCE_THRESHOLD: usize = 50;
 
 // Reference point stages that we will use to insert more events into the registry
 lazy_static! {
-    pub static ref RESERVED_CALLER_TYPE_IDS: Vec<CallerId> = {
+    pub static ref RESERVED_CALLER_TYPE_IDS: Vec<TypeId> = {
+        // Custom reserved callers
+        let init = TypeId::of::<crate::Init>();
+        let update = TypeId::of::<crate::Update>();
+        let shutdown = TypeId::of::<crate::Shutdown>();
+
+        // Winit reserved callers
+        let device = TypeId::of::<winit::event::DeviceEvent>();
+        let window = TypeId::of::<winit::event::WindowEvent>();
+
+        vec![init, update, shutdown, device, window]
+    };
+
+    pub static ref RESERVED_CALLER_IDS: Vec<CallerId> = {
         vec![
+            // Custom reserved callers
             super::fetch_caller_id::<crate::Init>(),
             super::fetch_caller_id::<crate::Update>(),
             super::fetch_caller_id::<crate::Shutdown>(),
+
+            // Winit reserved callers
             super::fetch_caller_id::<winit::event::DeviceEvent>(),
             super::fetch_caller_id::<winit::event::WindowEvent>()
         ]
     };
+    
 
     pub static ref RESERVED_STAGE_IDS: Vec<StageId> = {
         let mut reserved: Vec<StageId> = Vec::new();
+
+        // Create the reserved stage ID for all the user type callers
         let system = super::fetch_system_id(&crate::user);
+        for caller in RESERVED_CALLER_IDS.iter() {
+            reserved.push(super::combine_ids(&system, &caller));
+        }
 
+        // Create the reserved stage ID for all the post user type callers
+        let system = super::fetch_system_id(&crate::post_user);
+        for caller in RESERVED_CALLER_IDS.iter() {
+            reserved.push(super::combine_ids(&system, &caller));
+        }
 
-        reserved.push(super::combine_ids(&system, caller))
-        Vec::new()
+        reserved
     };
 }
 
@@ -93,12 +119,13 @@ impl<C: Caller> Registry<C> {
 
     // Sort all the events stored in the registry using the stages
     pub fn sort(&mut self) -> Result<(), RegistrySortingError> {
-        let indices = sort(&mut self.map)?;
+        let indices = sort(&mut self.map, self.caller)?;
 
         // We do quite a considerable amount of mental trickery and mockery who are unfortunate enough to fall victim to our dever little trap of social teasing
         self.events.sort_unstable_by(|(a, _), (b, _)| {
             usize::cmp(&indices[a], &indices[b])
         });
+        log::debug!("Sorted {} events for {} registry", self.events.len(), self.caller.name);
 
         // 3x POUNCES ON YOU UWU YOU'RE SO WARM
         Ok(())
@@ -116,6 +143,7 @@ impl<C: Caller> Registry<C> {
 // This returns a hashmap containing the new indices of the sorted stages
 fn sort(
     map: &AHashMap<StageId, Vec<Rule>>,
+    cid: CallerId,
 ) -> Result<AHashMap<StageId, usize>, RegistrySortingError> {
     // Keep a hashmap containing the key -> indices and the global vector for our sorted stages (now converted to just rules)
     let mut map: AHashMap<StageId, Vec<Rule>> = map.clone();
@@ -128,7 +156,11 @@ fn sort(
     let mut vec = Vec::<Vec<Rule>>::default();
 
     // Insert the reserved stages, since we use them as reference points
-    for reserved in RESERVED_STAGE_IDS.iter() {
+    let iter = RESERVED_STAGE_IDS
+        .iter()
+        .filter(|r| r.caller == cid);
+    
+    for reserved in iter {
         vec.push(Vec::default());
         indices.insert(*reserved, vec.len() - 1);
     }

@@ -20,7 +20,10 @@ pub struct CallerId {
     // Shutdown = 2
     // Device event = 3
     // Window event = 4
-    pub id: usize,
+    pub index: usize,
+
+    // Used tp find said index
+    pub id: TypeId,
 } 
 
 // System id that contains the name and type ID of the system
@@ -44,7 +47,8 @@ pub(crate) fn fetch_caller_id<C: Caller>() -> CallerId {
         .position(|current| *current == id).unwrap();
     CallerId {
         name: type_name::<C>(),
-        id: index
+        id: id,
+        index
     }
 }
 
@@ -99,16 +103,16 @@ pub fn post_user(system: &mut System) {
 pub(super) fn default_rules<C: Caller>() -> Vec<Rule> {
     let caller = fetch_caller_id::<C>();
 
-    // Create the default before rule
+    // Create the default after rule
     let system = fetch_system_id(&user);
     let stage = combine_ids(&system, &caller);
-    let before = Rule::Before(stage);
+    let after = Rule::After(stage);
 
 
-    // Create the default after rule
+    // Create the default before rule
     let system = fetch_system_id(&post_user);
     let stage = combine_ids(&system, &caller);
-    let after = Rule::After(stage);
+    let before = Rule::Before(stage);
 
     // Combine both rules
     vec![before, after]

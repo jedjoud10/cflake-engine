@@ -48,7 +48,7 @@ fn init(world: &mut World) {
         1,
     );
 
-    //std::thread::sleep(std::time::Duration::from_secs(10));
+    std::thread::sleep(std::time::Duration::from_secs(10));
 
     /*
     buffer.extend_from_slice(&[4]);
