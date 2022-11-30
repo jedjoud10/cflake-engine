@@ -17,7 +17,7 @@ fn init(world: &mut World) {
     let mut threadpool = world.get_mut::<ThreadPool>().unwrap();
 
     // Create a buffer in a new thread
-    let array = (0..64).into_iter().collect::<Vec<_>>();
+    let array = (0..1).into_iter().collect::<Vec<_>>();
     threadpool.for_each::<&[u32]>(
         &array,
         move |_| {
@@ -42,18 +42,12 @@ fn init(world: &mut World) {
                 &recorder,
             )
             .unwrap();
-
-            graphics.submit_recorder(recorder);
         },
         1,
     );
 
     std::thread::sleep(std::time::Duration::from_secs(10));
 
-    /*
-    buffer.extend_from_slice(&[4]);
-
-    */
 }
 
 // Executed each frame

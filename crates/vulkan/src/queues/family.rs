@@ -79,7 +79,7 @@ impl Family {
         );
 
         // Insert the pool and set it to be free
-        let pool = Pool::new(self.pools.len(), flags, self.queue, alloc);
+        let pool = Pool::new(flags, self.queue, alloc);
         self.pools.push(pool);
         self.pools.last().unwrap()
     }

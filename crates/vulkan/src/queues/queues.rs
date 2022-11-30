@@ -85,17 +85,6 @@ impl Queues {
         &mut self,
         device: &Device,
     ) {
-        // Update the queue handle for the graphics family
-        let graphics = self.family_mut(FamilyType::Graphics);
-        graphics.queue =
-            device.device.get_device_queue(graphics.family_index, 0);
-
-        // Create the multiple command pools for multithreaded use only for the graphics family
-        // TODO: Fix this and dynmacially allocate thread pools if needed
-        for _ in 0..64 {
-            graphics.insert_new_pool(device, Default::default());
-        }
-
         // Update the queue handle for the present family
         let present = self.family_mut(FamilyType::Present);
         present.queue =
@@ -104,6 +93,17 @@ impl Queues {
         // Get the present family index and create ONE pool for it (single threaded present)
         let present = self.family_mut(FamilyType::Present);
         present.insert_new_pool(device, vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER);
+    
+        // Update the queue handle for the graphics family
+        let graphics = self.family_mut(FamilyType::Graphics);
+        graphics.queue =
+            device.device.get_device_queue(graphics.family_index, 0);
+        
+        // Create the multiple command pools for multithreaded use only for the graphics family
+        // TODO: Fix this and dynmacially allocate thread pools if needed
+        for _ in 0..1 {
+            graphics.insert_new_pool(device, Default::default());
+        }
     }
 
     // Find a queue that supports the specific flags

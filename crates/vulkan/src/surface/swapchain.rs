@@ -45,12 +45,13 @@ impl Swapchain {
         // Pick the most appropriate present mode
         let present_mode =
             Self::pick_presentation_mode(surface, adapter, vsync);
-        log::info!("Picked the presentation mode {:?}", present_mode);
+        log::debug!("Picked the presentation mode {:?}", present_mode);
 
         // Create the swap chain create info
         let swapchain_create_info =
             Self::create_swapchain_create_info(
                 surface,
+                adapter,
                 format,
                 extent,
                 present_mode,
@@ -68,10 +69,11 @@ impl Swapchain {
         // Create the image handles
         let swapchain_images =
             swapchain_loader.get_swapchain_images(swapchain).unwrap();
-        log::info!(
+        let min = adapter.physical_device_surface_capabilities.min_image_count as usize;
+        log::debug!(
             "Swapchain contains {} images. {} more than the minimum",
             swapchain_images.len(),
-            swapchain_images.len() - 2
+            swapchain_images.len() - min
         );
 
         // Semaphore that is signaled whenever we have a new available image
@@ -96,13 +98,14 @@ impl Swapchain {
     // Create the swapchain create info
     fn create_swapchain_create_info(
         surface: &Surface,
+        adapter: &Adapter,
         format: vk::SurfaceFormatKHR,
         extent: vk::Extent2D,
         present: vk::PresentModeKHR,
     ) -> vk::SwapchainCreateInfoKHR {
         *vk::SwapchainCreateInfoKHR::builder()
             .surface(surface.surface)
-            .min_image_count(2)
+            .min_image_count(adapter.physical_device_surface_capabilities.min_image_count)
             .image_format(format.format)
             .image_color_space(format.color_space)
             .image_extent(extent)
@@ -195,7 +198,7 @@ impl Swapchain {
         let present = queues.family(FamilyType::Present);
 
         // Fetch the command pool of the current thread
-        let pool = present.aquire_pool();
+        let pool = present.aquire_specific_pool(0).unwrap();
 
         // Create a new recorder (or fetches an current one)
         let recorder = pool.aquire_recorder(
@@ -266,6 +269,7 @@ impl Swapchain {
             &[*clear_to_present],
         );
 
+        /*
         *self.rendering_finished_fence.lock() = pool
             .submit_recorders_from_iter(
                 device,
@@ -275,6 +279,7 @@ impl Swapchain {
                 &[],
                 //self.rendering_finished_fence
             );
+        */
     }
 
     /*

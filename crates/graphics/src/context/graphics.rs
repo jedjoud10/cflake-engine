@@ -146,11 +146,8 @@ impl Graphics {
         &'a self,
     ) -> Recorder<'a, 'a> {
         unsafe {
-            let family = self.queues().family(FamilyType::Present);
-
+            let family = self.queues().family(FamilyType::Graphics);
             let device = self.device();
-            let flag =
-                vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER;
             let pool = family.aquire_pool();
             pool.aquire_recorder(device, Default::default())
         }
@@ -163,6 +160,7 @@ impl Graphics {
             let flag =
                 vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER;
 
+            /*
             self.queues()
                 .family(FamilyType::Graphics)
                 .aquire_pool()
@@ -173,6 +171,7 @@ impl Graphics {
                     &[],
                     &[],
                 );
+            */
         }
     }
 }

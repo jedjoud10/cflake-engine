@@ -29,6 +29,7 @@ pub mod prelude {
     // Re-exports
     pub use log;
     pub use vek;
+    pub use vek::{Vec2, Vec3, Vec4, Quaternion, Extent2, Extent3};
     pub use winit;
 
     // Gfx related

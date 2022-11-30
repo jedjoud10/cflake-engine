@@ -179,6 +179,15 @@ impl Device {
         allocation
     }
 
+    // Get the device address of a buffer
+    pub unsafe fn buffer_device_address(
+        &self,
+        buffer: vk::Buffer
+    ) -> vk::DeviceAddress {
+        let builder = vk::BufferDeviceAddressInfo::builder().buffer(buffer);
+        self.device.get_buffer_device_address(&*builder)
+    }
+
     // Free a buffer and it's allocation
     pub unsafe fn destroy_buffer(
         &self,

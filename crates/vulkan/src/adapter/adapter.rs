@@ -124,11 +124,11 @@ impl Adapter {
         let modes = self.physical_device_present_modes.as_slice();
         let formats = self.physical_device_present_formats.as_slice();
         let name = CStr::from_ptr(name.as_ptr()).to_str().unwrap();
-        log::info!("Checking if adapter {} is suitable..", name);
+        log::debug!("Checking if adapter {} is suitable..", name);
 
         // Check if double buffering is supported
         let double_buffering_supported = surface.min_image_count == 2;
-        log::info!(
+        log::debug!(
             "Adapter Double Buffering: {}",
             double_buffering_supported
         );
@@ -144,7 +144,7 @@ impl Adapter {
                 format_ && color_space_
             })
             .is_some();
-        log::info!(
+        log::debug!(
             "Adapter Swapchain Format Supported: {}",
             format_supported
         );
@@ -167,7 +167,7 @@ impl Adapter {
         } else {
             _type == PhysicalDeviceType::DISCRETE_GPU
         };
-        log::info!("Adapter Device Type: {:?}", _type);
+        log::debug!("Adapter Device Type: {:?}", _type);
 
         // All the checks must pass
         double_buffering_supported

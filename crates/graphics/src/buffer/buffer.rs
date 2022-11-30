@@ -11,7 +11,7 @@ use crate::{
 use ash::vk;
 use bytemuck::Zeroable;
 use gpu_allocator::vulkan::Allocation;
-use vulkan::Recorder;
+use vulkan::{Recorder, FamilyType};
 
 // Some settings that tell us how exactly we should create the buffer
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
@@ -75,7 +75,7 @@ pub type IndirectBuffer<T> = Buffer<T, INDIRECT>;
 // This also takes a constant that represents it's OpenGL target
 pub struct Buffer<T: Content, const TYPE: u32> {
     buffer: vk::Buffer,
-    memory: ManuallyDrop<Allocation>,
+    allocation: ManuallyDrop<Allocation>,
     length: usize,
     capacity: usize,
     usage: BufferUsage,
@@ -161,17 +161,20 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
             });
 
         // Check if we need to make a staging buffer
-        if let Some((_buffer, _allocation)) = tmp_init_staging {
+        if let Some((buffer, allocation)) = tmp_init_staging {
             unsafe {
-                dbg!("setting up staging buffer");
-                /*
-                let family = queues.family(FamilyType::Graphics);
+                let family = graphics.queues().family(FamilyType::Graphics);
                 let pool = family.aquire_pool();
-                pool.aquire_recorder(device, vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT);
-                */
-
+                let recorder = pool.aquire_recorder(device, vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT);
+                let regions = [*vk::BufferCopy::builder().dst_offset(0).size(size).src_offset(0)];
+                
                 // Record the copy command
+                recorder.copy_buffer(buffer, src_buffer, &regions);
+
                 // Setup a finished callback for the recorder
+                recorder.set_temp_resources_drop(|graphics| {
+                    graphics.device().destroy_buffer(buffer, allocation)
+                });
             }
         } else {
             // Write to the buffer memory by mapping it directly
@@ -191,7 +194,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
             graphics: graphics.clone(),
             _phantom: PhantomData,
             buffer: src_buffer,
-            memory: ManuallyDrop::new(src_memory),
+            allocation: ManuallyDrop::new(src_memory),
         })
     }
 
@@ -228,6 +231,12 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     // Get the buffer's stride (length of each element)
     pub fn stride(&self) -> usize {
         size_of::<T>()
+    }
+
+    // Get the underlying allocation for this buffer
+    // Get the device address for this buffer
+    pub unsafe fn address(&self) -> vk::DeviceAddress {
+        self.graphics.device().buffer_device_address(self.buffer)
     }
 
     // Convert a range bounds type into the range indices
@@ -368,7 +377,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         }
 
         // Get the mapped pointer and write to it the given slice
-        let dst = self.memory.mapped_slice_mut().unwrap();
+        let dst = self.allocation.mapped_slice_mut().unwrap();
         let dst = bytemuck::cast_slice_mut::<u8, T>(dst);
         dst[offset..size].copy_from_slice(src);
         Ok(())
@@ -403,7 +412,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         }
 
         // Get the mapped pointer and write to it the given slice
-        let src = self.memory.mapped_slice().unwrap();
+        let src = self.allocation.mapped_slice().unwrap();
         let src = bytemuck::cast_slice::<u8, T>(src);
         dst.copy_from_slice(&src[offset..size]);
         Ok(())
@@ -526,7 +535,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
 impl<T: Content, const TYPE: u32> Drop for Buffer<T, TYPE> {
     fn drop(&mut self) {
         unsafe {
-            let allocation = ManuallyDrop::take(&mut self.memory);
+            let allocation = ManuallyDrop::take(&mut self.allocation);
             self.graphics
                 .device()
                 .destroy_buffer(self.buffer, allocation);

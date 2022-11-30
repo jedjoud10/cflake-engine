@@ -60,7 +60,7 @@ pub(super) unsafe extern "system" fn debug_callback(
             &message_id_number.to_string(),
             message,
         ),
-        INFO => log::info!(
+        INFO => log::debug!(
             "{:?} [{} ({})] : {}\n",
             message_type,
             message_id_name,

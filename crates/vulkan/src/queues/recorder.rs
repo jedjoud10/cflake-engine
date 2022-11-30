@@ -1,10 +1,12 @@
 use ash::vk;
-
 use crate::{Device, Pool};
+
+// Saved states that allow use to combine multiple recorders implicitly
+#[derive(Default, Clone, Copy)]
+pub(crate) struct State {}
 
 // A recorder is a command buffer that is currently recording commands
 // Recorders will automatically put semaphores and fences when necessary
-
 // This will keep track of the operations done on specific buffers and
 // automatically put semaphores between operations that affect the same object
 pub struct Recorder<'d, 'p> {
@@ -13,8 +15,16 @@ pub struct Recorder<'d, 'p> {
     pub(crate) index: usize,
 
     // Data related to context
+    pub(crate) state: State,
     pub(crate) device: &'d Device,
     pub(crate) pool: &'p Pool,
+}
+
+impl<'d, 'p> Drop for Recorder<'d, 'p> {
+    fn drop(&mut self) {
+        let taken = std::mem::take(&mut self.state);
+        self.pool.update_recorder_state(self.index, taken);
+    }
 }
 
 // Image commands

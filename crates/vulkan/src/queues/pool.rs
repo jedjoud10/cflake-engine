@@ -2,14 +2,19 @@ use crate::{Device, Recorder};
 use ash::vk;
 use parking_lot::Mutex;
 
+// Command buffer abstraction
+pub(crate) struct CommandBuffer {
+    raw: vk::CommandBuffer,
+    state: super::State,
+    recording: bool,
+    fence: usize,
+}
+
 // A single command pool abstraction
 // We technically should have one pool per thread
 pub struct Pool {
     // Command pool creation flags
     pub(super) flags: vk::CommandPoolCreateFlags,
-
-    // Index of the pool in the family
-    pub(super) index: usize,
 
     // Handle to the parent queue
     pub(super) queue: vk::Queue,
@@ -18,7 +23,7 @@ pub struct Pool {
     pub(super) alloc: vk::CommandPool,
 
     // All the command buffers allocated in this command pool
-    pub(super) buffers: Mutex<Vec<(vk::CommandBuffer, bool, usize)>>,
+    pub(super) buffers: Mutex<Vec<CommandBuffer>>,
 
     // Fences that are signaled after we submit command buffers
     // First bool tells us if the fence is currently in use
@@ -29,13 +34,11 @@ pub struct Pool {
 impl Pool {
     // Create a new pool from a queue and an allocator
     pub(super) unsafe fn new(
-        index: usize,
         flags: vk::CommandPoolCreateFlags,
         queue: vk::Queue,
         alloc: vk::CommandPool,
     ) -> Self {
         Pool {
-            index,
             flags,
             alloc,
             buffers: Mutex::new(Vec::new()),
@@ -44,8 +47,8 @@ impl Pool {
         }
     }
 
-    // Reset the pool and reset all of the command buffers
     /*
+    // Reset the pool and reset all of the command buffers
     pub unsafe fn reset(&self, device: &Device) {
         self.refresh_fence_signals(device);
         device
@@ -79,15 +82,15 @@ impl Pool {
             }
         }
 
-        for (i, (_, using, index)) in buffers.iter().enumerate() {
+        for (i, cmd) in buffers.iter().enumerate() {
             // Skip command buffers that are not submitted
-            if *index == usize::MAX || !*using {
+            if cmd.fence == usize::MAX || !cmd.recording {
                 continue;
             }
 
             // Check if the fence is signaled
             let (fence, fence_in_use, fence_cpu_signaled) =
-                &mut fences[*index];
+                &mut fences[cmd.fence];
 
             // Keep track of free fences and their indices
             if *fence_cpu_signaled
@@ -110,9 +113,9 @@ impl Pool {
 
             // Unsignal on the CPU side (correspodning reset_fences)
             for &index in indices.iter() {
-                let (_, _, index) = buffers[index];
+                let cmd = &buffers[index];
                 let (_, fence_in_use, fence_cpu_signaled) =
-                    &mut fences[index];
+                    &mut fences[cmd.fence];
                 *fence_cpu_signaled = false;
                 *fence_in_use = false;
             }
@@ -120,30 +123,34 @@ impl Pool {
 
         for free in indices {
             // Also reset the command buffer
-            let (cmd, using, index) = &mut buffers[free];
+            let cmd = &mut buffers[free];
             
             // Check if we can reset manually
             if self.flags.contains(vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER) {
                 device
                     .device
-                    .reset_command_buffer(*cmd, Default::default())
+                    .reset_command_buffer(cmd.raw, Default::default())
                     .unwrap();
-                log::debug!("Resetting command buffer {:?} that has fence index {index}", cmd);
+                log::debug!("Resetting command buffer {:?} that has fence index {}", cmd.raw, cmd.fence);
             } else {
-                log::error!("Command pool cannot reset individual command buffers!");
+                log::warn!("Command pool cannot reset individual command buffers!");
+                device
+                    .device
+                    .reset_command_pool(self.alloc, Default::default())
+                    .unwrap();
             }
             
             // Reset the fence index of this command buffer until we submit it again
             // This means that the command buffer can be used and it is reset
-            *index = usize::MAX;
-            *using = false;
+            cmd.fence = usize::MAX;
+            cmd.recording = false;
         }
     }
 
     // Allocate N number of command pools for this pool
-    pub unsafe fn allocate_command_buffers(
+    pub(crate) unsafe fn allocate_command_buffers(
         pool: vk::CommandPool,
-        buffers: &mut Vec<(vk::CommandBuffer, bool, usize)>,
+        buffers: &mut Vec<CommandBuffer>,
         device: &Device,
         number: usize,
         secondary: bool,
@@ -167,7 +174,12 @@ impl Pool {
         // Combine command buffers and fence indices
         let new = new
             .into_iter()
-            .map(|cmd| (cmd, false, usize::MAX))
+            .map(|cmd| CommandBuffer {
+                raw: cmd,
+                recording: false,
+                state: super::State::default(),
+                fence: usize::MAX,
+            })
             .collect::<Vec<_>>();
 
         // Add the command buffers to our pool
@@ -175,7 +187,8 @@ impl Pool {
         log::debug!("Allocated {number} new commands buffers of type {:?} for pool {:?}", level, pool);
     }
 
-    // Aquire a free command buffer as a recorder
+    // Aquire a free command buffer as a recorder and begin recording
+    // Note: This might return a command buffer that was already recording to begin with
     pub unsafe fn aquire_recorder<'a, 'b>(
         &'a self,
         device: &'b Device,
@@ -185,8 +198,8 @@ impl Pool {
         let mut buffers = self.buffers.lock();
 
         // Try to find the index of a free command buffers
-        let free = buffers.iter().position(|(_, using, fence)| {
-            *fence == usize::MAX && !using
+        let free = buffers.iter().position(|cmd| {
+            cmd.fence == usize::MAX
         });
 
         // Allocate new buffer if we don't have one available
@@ -209,27 +222,37 @@ impl Pool {
         };
 
         // Update the usage state of the command buffer
-        let (buffer, old_using_state, _) = &mut buffers[cmd_index];
-        *old_using_state = true;
+        let cmd = &mut buffers[cmd_index];
+        cmd.recording = true;
 
         // Start recording the command buffer
         let begin_info =
             vk::CommandBufferBeginInfo::builder().flags(flags);
         device
             .device
-            .begin_command_buffer(*buffer, &begin_info)
+            .begin_command_buffer(cmd.raw, &begin_info)
             .unwrap();
-        log::debug!("Begin recording command buffer {:?}", buffer);
+        log::debug!("Begin recording command buffer {:?}", cmd.raw);
         
         // Create the recorder
         Recorder {
-            cmd: *buffer,
+            cmd: cmd.raw,
+            state: cmd.state,
             index: cmd_index,
             device,
             pool: self,
         }
     }
 
+    // Submit all the recorders that have finished recording
+    pub unsafe fn submit_pending_recorders(
+        &self,
+        device: &Device,
+    ) {
+
+    }
+
+    /*
     // Submit multiple recorders command buffers to the pool for execution
     pub unsafe fn submit_recorders_from_iter(
         &self,
@@ -269,10 +292,10 @@ impl Pool {
         let mut locked = self.buffers.lock();
         let iter = locked
             .iter_mut()
-            .filter(|(cmd, _, _)| cmds.contains(cmd));
-        for (_, using, old) in iter {
-            *old = index;
-            *using = true;
+            .filter(|cmd| cmds.contains(&cmd.raw));
+        for cmd in iter {
+            cmd.fence = index;
+            cmd.using = true;
         }
 
         log::debug!(
@@ -286,6 +309,7 @@ impl Pool {
             .unwrap();
         fence
     }
+    */
 
     // Find a free fence
     unsafe fn find_free_fence(
@@ -329,5 +353,11 @@ impl Pool {
             fences.push(data);
             (data.0, fences.len() - 1)
         })
+    }
+
+    // Update the recorder state of a specific command buffer
+    pub(crate) fn update_recorder_state(&self, index: usize, state: super::State) {
+        let buffer = &mut self.buffers.lock()[index];
+        buffer.state = state;
     }
 }
