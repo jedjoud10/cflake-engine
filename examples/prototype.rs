@@ -47,7 +47,6 @@ fn init(world: &mut World) {
     );
 
     std::thread::sleep(std::time::Duration::from_secs(10));
-
 }
 
 // Executed each frame

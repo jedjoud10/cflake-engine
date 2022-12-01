@@ -79,7 +79,6 @@ dependencies = [
  "rendering",
  "serde",
  "spin_sleep",
- "time",
  "utils",
  "vek",
  "vulkan",
@@ -630,7 +629,6 @@ dependencies = [
  "seq-macro",
  "slotmap",
  "smallvec",
- "time",
  "tinyvec",
  "utils",
  "vek",
@@ -839,7 +837,6 @@ dependencies = [
  "parking_lot",
  "raw-window-handle 0.5.0",
  "thiserror",
- "time",
  "utils",
  "vek",
  "vulkan",
@@ -1998,13 +1995,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "time"
-version = "0.1.0"
-dependencies = [
- "world",
-]
-
-[[package]]
 name = "tiny-skia"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2124,6 +2114,7 @@ dependencies = [
  "math",
  "parking_lot",
  "raw-window-handle 0.5.0",
+ "smallvec",
  "utils",
  "winit",
 ]

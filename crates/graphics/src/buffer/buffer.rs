@@ -11,7 +11,7 @@ use crate::{
 use ash::vk;
 use bytemuck::Zeroable;
 use gpu_allocator::vulkan::Allocation;
-use vulkan::{Recorder, FamilyType};
+use vulkan::Recorder;
 
 // Some settings that tell us how exactly we should create the buffer
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
@@ -118,39 +118,22 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         let layout = super::find_optimal_layout(mode, usage, TYPE);
 
         // Create the actual buffer
-        let src_buffer = unsafe {
+        let (src_buffer, src_allocation) = unsafe {
             device.create_buffer(
                 size,
                 layout.src_buffer_usage_flags,
+                layout.src_buffer_memory_location,
                 graphics.queues(),
             )
         };
-        let mut src_memory = unsafe {
-            device.create_buffer_memory(
-                src_buffer,
-                layout.src_buffer_memory_location,
-            )
-        };
+
+        /*
 
         // Optional init staging buffer
         let tmp_init_staging = layout
             .init_staging_buffer_memory_location
             .map(|memory| unsafe {
-                let buffer = device.create_buffer(
-                    size,
-                    layout.init_staging_buffer_usage_flags.unwrap(),
-                    graphics.queues(),
-                );
-                let memory =
-                    device.create_buffer_memory(buffer, memory);
-                (buffer, memory)
-            });
-
-        // Cached staging buffer
-        let _cached_staging = layout
-            .cached_staging_buffer_memory_location
-            .map(|memory| unsafe {
-                let buffer = device.create_buffer(
+                let buffe = device.create_buffer(
                     size,
                     layout.init_staging_buffer_usage_flags.unwrap(),
                     graphics.queues(),
@@ -167,7 +150,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         } else {
             // Write to the buffer memory by mapping it directly
             let dst = bytemuck::cast_slice_mut::<u8, T>(
-                src_memory.mapped_slice_mut().unwrap(),
+                src_allocation.mapped_slice_mut().unwrap(),
             );
             let len = slice.len();
             dst[..len].copy_from_slice(slice);
@@ -182,8 +165,10 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
             graphics: graphics.clone(),
             _phantom: PhantomData,
             buffer: src_buffer,
-            allocation: ManuallyDrop::new(src_memory),
+            allocation: ManuallyDrop::new(src_allocation),
         })
+        */
+        todo!()
     }
 
     // Create an empty buffer if we can (resizable)

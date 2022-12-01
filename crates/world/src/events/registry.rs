@@ -1,8 +1,8 @@
-use std::{cmp::Ordering, any::TypeId};
+use std::{any::TypeId, cmp::Ordering};
 
 use crate::{
-    post_user, user, Caller, Event, RegistrySortingError, Rule,
-    StageError, StageId, SystemId, CallerId,
+    post_user, user, Caller, CallerId, Event, RegistrySortingError,
+    Rule, StageError, StageId, SystemId,
 };
 use ahash::{AHashMap, AHashSet};
 
@@ -41,7 +41,7 @@ lazy_static! {
             super::fetch_caller_id::<winit::event::WindowEvent>()
         ]
     };
-    
+
 
     pub static ref RESERVED_STAGE_IDS: Vec<StageId> = {
         let mut reserved: Vec<StageId> = Vec::new();
@@ -115,7 +115,6 @@ impl<C: Caller> Registry<C> {
             Ok(rules)
         }
     }
-    
 
     // Sort all the events stored in the registry using the stages
     pub fn sort(&mut self) -> Result<(), RegistrySortingError> {
@@ -125,7 +124,11 @@ impl<C: Caller> Registry<C> {
         self.events.sort_unstable_by(|(a, _), (b, _)| {
             usize::cmp(&indices[a], &indices[b])
         });
-        log::debug!("Sorted {} events for {} registry", self.events.len(), self.caller.name);
+        log::debug!(
+            "Sorted {} events for {} registry",
+            self.events.len(),
+            self.caller.name
+        );
 
         // 3x POUNCES ON YOU UWU YOU'RE SO WARM
         Ok(())
@@ -156,10 +159,8 @@ fn sort(
     let mut vec = Vec::<Vec<Rule>>::default();
 
     // Insert the reserved stages, since we use them as reference points
-    let iter = RESERVED_STAGE_IDS
-        .iter()
-        .filter(|r| r.caller == cid);
-    
+    let iter = RESERVED_STAGE_IDS.iter().filter(|r| r.caller == cid);
+
     for reserved in iter {
         vec.push(Vec::default());
         indices.insert(*reserved, vec.len() - 1);

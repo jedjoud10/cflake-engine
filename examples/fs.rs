@@ -20,9 +20,13 @@ struct SimpleStruct {
 fn init(world: &mut World) {
     let file = world.get_mut::<FileManager>().unwrap();
 
-    // Write to the config JSON file 
-    file.serialize(&SimpleStruct {
-        name: "Test name".to_owned(),
-        value: 50,
-    }, "config.json").unwrap();
+    // Write to the config JSON file
+    file.serialize(
+        &SimpleStruct {
+            name: "Test name".to_owned(),
+            value: 50,
+        },
+        "config.json",
+    )
+    .unwrap();
 }

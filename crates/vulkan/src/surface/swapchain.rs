@@ -45,7 +45,10 @@ impl Swapchain {
         // Pick the most appropriate present mode
         let present_mode =
             Self::pick_presentation_mode(surface, adapter, vsync);
-        log::debug!("Picked the presentation mode {:?}", present_mode);
+        log::debug!(
+            "Picked the presentation mode {:?}",
+            present_mode
+        );
 
         // Create the swap chain create info
         let swapchain_create_info =
@@ -69,7 +72,8 @@ impl Swapchain {
         // Create the image handles
         let swapchain_images =
             swapchain_loader.get_swapchain_images(swapchain).unwrap();
-        let min = adapter.physical_device_surface_capabilities.min_image_count as usize;
+        let min =
+            adapter.surface_capabilities.min_image_count as usize;
         log::debug!(
             "Swapchain contains {} images. {} more than the minimum",
             swapchain_images.len(),
@@ -105,7 +109,9 @@ impl Swapchain {
     ) -> vk::SwapchainCreateInfoKHR {
         *vk::SwapchainCreateInfoKHR::builder()
             .surface(surface.surface)
-            .min_image_count(adapter.physical_device_surface_capabilities.min_image_count)
+            .min_image_count(
+                adapter.surface_capabilities.min_image_count,
+            )
             .image_format(format.format)
             .image_color_space(format.color_space)
             .image_extent(extent)
@@ -132,7 +138,7 @@ impl Swapchain {
         let modes = surface
             .surface_loader
             .get_physical_device_surface_present_modes(
-                adapter.physical_device,
+                adapter.raw,
                 surface.surface,
             )
             .unwrap();
@@ -195,12 +201,17 @@ impl Swapchain {
         queues: &Queues,
         image: (u32, vk::Image),
     ) {
-        /*
         // Get a recorder for the present family
-        
+        let cmd = queues.aquire(
+            false,
+            vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER,
+            vk::CommandBufferUsageFlags::default(),
+        );
+        /*
         let present = queues.family(FamilyType::Present);
 
-        
+
+
         let pool = present.aquire_pool();
 
         // Create a new recorder (or fetches an current one)

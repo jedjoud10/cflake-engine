@@ -7,6 +7,8 @@ fn init(
     world: &mut World,
     el: &EventLoop<()>,
     window_settings: WindowSettings,
+    app_name: String,
+    engine_name: String,
 ) {
     // Instantiate a new window wrapper
     let window =
@@ -17,6 +19,8 @@ fn init(
         crate::context::Graphics::new(
             window.window(),
             &window_settings,
+            app_name,
+            engine_name,
         )
     };
 
@@ -62,7 +66,7 @@ fn event(world: &mut World, event: &mut WindowEvent) {
 fn update(world: &mut World) {
     let mut graphics =
         world.get_mut::<crate::context::Graphics>().unwrap();
-    let time = world.get::<time::Time>().unwrap();
+    let time = world.get::<utils::Time>().unwrap();
     unsafe {
         graphics.draw(time.secs_since_startup_f32().sin().abs());
     }
@@ -80,10 +84,15 @@ fn destroy(world: &mut World) {
 
 // Context system will just register the wgpu context and create a simple window
 // This system will also handle window events like exiting
-pub fn system(system: &mut System, window_settings: WindowSettings) {
+pub fn system(
+    system: &mut System,
+    window_settings: WindowSettings,
+    app_name: String,
+    engine_name: String,
+) {
     system
         .insert_init(move |world: &mut World, el: &EventLoop<()>| {
-            init(world, el, window_settings)
+            init(world, el, window_settings, app_name, engine_name)
         })
         .after(utils::threadpool)
         .before(user);

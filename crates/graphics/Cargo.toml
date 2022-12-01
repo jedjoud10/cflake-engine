@@ -8,7 +8,6 @@ edition = "2021"
 [dependencies]
 world = { path = "../world" }
 assets = { path = "../assets" }
-time = { path = "../time" }
 math = { path = "../math" }
 utils = { path = "../utils" } 
 vulkan = { path = "../vulkan" }
@@ -24,3 +23,6 @@ log = { workspace = true }
 thiserror = { workspace = true }
 ahash = { workspace = true } 
 vek = { workspace = true }
+
+[features]
+headless = ["vulkan/headless"]

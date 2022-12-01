@@ -3,8 +3,8 @@ use crate::FrameRateLimit;
 use super::WindowSettings;
 use ash::vk;
 use bytemuck::{Pod, Zeroable};
-use utils::ThreadPool;
 use std::sync::Arc;
+use utils::ThreadPool;
 use vulkan::*;
 
 // Plain old data type internally used by buffers and other types
@@ -39,6 +39,8 @@ impl Graphics {
     pub(crate) unsafe fn new(
         window: &winit::window::Window,
         window_settings: &WindowSettings,
+        app_name: String,
+        engine_name: String,
     ) -> Graphics {
         let validation_layers = vulkan::required_validation_layers();
         let instance_extensions =
@@ -50,8 +52,8 @@ impl Graphics {
             window,
             instance_extensions,
             validation_layers,
-            window_settings.title.clone(),
-            "cFlake Engine".to_owned(),
+            app_name,
+            engine_name,
         );
 
         // Create a surface from the KHR extension
@@ -61,7 +63,7 @@ impl Graphics {
         let adapter = Adapter::pick(&instance, false, &surface);
 
         // Create the queues that we will instantiate
-        let mut queues = Queues::new(&adapter, &instance);
+        let mut queues = todo!();
 
         // Create a new device with those queues
         let device = Device::new(
@@ -141,6 +143,7 @@ impl Graphics {
 }
 
 impl Graphics {
+    /*
     // Get a recorder from the graphics family
     pub fn aquire_recorder<'a>(
         &'a self,
@@ -174,4 +177,5 @@ impl Graphics {
             */
         }
     }
+    */
 }

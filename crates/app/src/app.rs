@@ -23,6 +23,7 @@ pub struct App {
     user_assets_folder: Option<PathBuf>,
     author_name: String,
     app_name: String,
+    engine_name: String,
 
     // Main app resources
     systems: Systems,
@@ -43,6 +44,7 @@ impl Default for App {
             },
             author_name: "cFlake Dev".to_string(),
             app_name: "cFlake Prototype Game".to_string(),
+            engine_name: "cFlake Game Engine".to_string(),
             user_assets_folder: None,
             systems,
             el: EventLoop::new(),
@@ -91,7 +93,7 @@ impl App {
         self.app_name = name.to_string();
         self
     }
-    
+
     // Set the app name
     pub fn set_name(mut self, name: &str) -> Self {
         self.app_name = name.to_string();
@@ -174,10 +176,9 @@ impl App {
         self = self
             .insert_system(input::system)
             .insert_system(ecs::system)
-            .insert_system(time::system)
             .insert_system(world::system)
             .insert_system(utils::threadpool);
-        
+
         // Insert the IO manager
         let author = self.author_name.clone();
         let app = self.app_name.clone();
@@ -214,7 +215,6 @@ impl App {
         let mut world = self.world;
         let el = self.el;
         let mut systems = self.systems;
-
 
         // Create the spin sleeper for frame limiting
         let builder = spin_sleep::LoopHelper::builder();

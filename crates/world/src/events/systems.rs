@@ -1,5 +1,8 @@
-use crate::{Caller, Event, Init, Registry, Rule, Shutdown, Update, StageId, CallerId, SystemId};
-use ahash::{AHashSet, AHashMap};
+use crate::{
+    Caller, CallerId, Event, Init, Registry, Rule, Shutdown, StageId,
+    SystemId, Update,
+};
+use ahash::{AHashMap, AHashSet};
 use std::{any::TypeId, marker::PhantomData};
 use winit::event::{DeviceEvent, WindowEvent};
 
@@ -29,7 +32,7 @@ impl Systems {
             shutdown: &mut self.shutdown,
             window: &mut self.window,
             device: &mut self.device,
-            system: super::fetch_system_id(&callback)
+            system: super::fetch_system_id(&callback),
         };
 
         // This will run a function over the system that will mutate the registries
@@ -61,7 +64,7 @@ impl<'a, C: Caller> EventMut<'a, C> {
         // Get the stage ID of the other system's event
         let system = super::fetch_system_id(&other);
         let stage = super::combine_ids(&system, &self.caller);
-        
+
         // Create a rule based on that ID
         let rule = Rule::Before(stage);
 
@@ -73,7 +76,7 @@ impl<'a, C: Caller> EventMut<'a, C> {
     // Tell the event to execute after another system's matching event
     pub fn after(
         mut self,
-        other: impl FnOnce(&mut System)+ 'static,
+        other: impl FnOnce(&mut System) + 'static,
     ) -> Self {
         if self.default {
             self.rules.clear();
@@ -83,7 +86,7 @@ impl<'a, C: Caller> EventMut<'a, C> {
         // Get the stage ID of the other system's event
         let system = super::fetch_system_id(&other);
         let stage = super::combine_ids(&system, &self.caller);
-        
+
         // Create a rule based on that ID
         let rule = Rule::After(stage);
 
@@ -120,7 +123,7 @@ macro_rules! insert {
             default: true,
             caller,
             _phantom: PhantomData,
-        }    
+        }
     }};
 }
 

@@ -11,13 +11,19 @@ fn main() {
 
 // System that will inserted placeholder events (System A)
 fn first(system: &mut System) {
-    system.insert_init(|_: &mut World| { dbg!("System A post-user"); })
+    system
+        .insert_init(|_: &mut World| {
+            dbg!("System A post-user");
+        })
         .after(post_user);
 }
 
 // Another system (System B)
 fn second(system: &mut System) {
-    system.insert_init(|_: &mut World| { dbg!("System B pre-user"); })
+    system
+        .insert_init(|_: &mut World| {
+            dbg!("System B pre-user");
+        })
         .before(user);
 }
 

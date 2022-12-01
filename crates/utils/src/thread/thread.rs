@@ -1,14 +1,15 @@
-use crate::{BitSet};
+use crate::BitSet;
 use parking_lot::Mutex;
 use std::{
     any::Any,
+    cell::Cell,
     slice::SliceIndex,
     sync::{
         atomic::{AtomicU32, Ordering},
         mpsc::{Receiver, Sender},
         Arc,
     },
-    thread::JoinHandle, cell::Cell,
+    thread::JoinHandle,
 };
 
 use crate::{SliceTuple, ThreadPoolScope};
@@ -334,7 +335,7 @@ fn spawn(threadpool: &ThreadPool, index: usize) -> JoinHandle<()> {
         .name(name)
         .spawn(move || {
             // Set the thread index at the start
-            CURRENT.with(|current| current.set(index+1));
+            CURRENT.with(|current| current.set(index + 1));
 
             loop {
                 // No task, block so we shall wait

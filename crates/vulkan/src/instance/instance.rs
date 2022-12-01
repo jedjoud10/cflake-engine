@@ -35,8 +35,8 @@ impl Instance {
         window: &winit::window::Window,
         instance_extensions: Vec<CString>,
         validation_layers: Vec<CString>,
-        app_title: String,
-        engine_title: String,
+        app_name: String,
+        engine_name: String,
     ) -> Instance {
         // Load the loading functions
         let entry = Entry::load().unwrap();
@@ -46,8 +46,8 @@ impl Instance {
         let raw_window_handle = window.raw_window_handle();
 
         // Create the app info
-        let app_name = CString::new(app_title).unwrap();
-        let engine_name = CString::new(engine_title).unwrap();
+        let app_name = CString::new(app_name).unwrap();
+        let engine_name = CString::new(engine_name).unwrap();
         let app_info = *vk::ApplicationInfo::builder()
             .application_name(&app_name)
             .api_version(vk::API_VERSION_1_3)

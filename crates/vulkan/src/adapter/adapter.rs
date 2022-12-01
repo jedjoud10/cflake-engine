@@ -10,19 +10,23 @@ use crate::{Instance, Surface};
 
 // Wrapper around a physical device
 pub struct Adapter {
-    pub(crate) physical_device: PhysicalDevice,
-    pub(crate) physical_device_memory_properties:
-        PhysicalDeviceMemoryProperties,
-    pub(crate) physical_device_features: PhysicalDeviceFeatures,
-    pub(crate) physical_device_properties: PhysicalDeviceProperties,
-    pub(crate) physical_device_surface_capabilities:
-        SurfaceCapabilitiesKHR,
-    pub(crate) physical_device_present_modes: Vec<PresentModeKHR>,
-    pub(crate) physical_device_present_formats: Vec<SurfaceFormatKHR>,
-    pub(crate) physical_device_queue_family_properties:
+    // Raw physical device
+    pub(crate) raw: PhysicalDevice,
+
+    // Properties
+    pub(crate) memory_properties: PhysicalDeviceMemoryProperties,
+    pub(crate) features: PhysicalDeviceFeatures,
+    pub(crate) properties: PhysicalDeviceProperties,
+    pub(crate) surface_capabilities: SurfaceCapabilitiesKHR,
+
+    // Swapchain related
+    pub(crate) present_modes: Vec<PresentModeKHR>,
+    pub(crate) present_formats: Vec<SurfaceFormatKHR>,
+
+    // Related to queue families
+    pub(crate) queue_family_properties:
         Vec<vk::QueueFamilyProperties>,
-    pub(crate) physical_device_queue_family_surface_supported:
-        Vec<bool>,
+    pub(crate) queue_family_surface_supported: Vec<bool>,
 }
 
 impl Adapter {
@@ -97,15 +101,15 @@ impl Adapter {
 
                 // Convert the values to a simple adapter
                 Adapter {
-                    physical_device,
-                    physical_device_memory_properties,
-                    physical_device_features,
-                    physical_device_properties,
-                    physical_device_surface_capabilities,
-                    physical_device_present_modes,
-                    physical_device_present_formats,
-                    physical_device_queue_family_properties,
-                    physical_device_queue_family_surface_supported,
+                    raw: physical_device,
+                    memory_properties: physical_device_memory_properties,
+                    features: physical_device_features,
+                    properties: physical_device_properties,
+                    surface_capabilities: physical_device_surface_capabilities,
+                    present_modes: physical_device_present_modes,
+                    present_formats: physical_device_present_formats,
+                    queue_family_properties: physical_device_queue_family_properties,
+                    queue_family_surface_supported: physical_device_queue_family_surface_supported,
                 }
             }).find(|adapter| adapter.is_physical_device_suitable(integrated))
             .expect("Could not find a suitable GPU to use!")
@@ -118,11 +122,11 @@ impl Adapter {
         integrated: bool,
     ) -> bool {
         use vk::PhysicalDeviceType;
-        let name = self.physical_device_properties.device_name;
-        let _type = self.physical_device_properties.device_type;
-        let surface = self.physical_device_surface_capabilities;
-        let modes = self.physical_device_present_modes.as_slice();
-        let formats = self.physical_device_present_formats.as_slice();
+        let name = self.properties.device_name;
+        let _type = self.properties.device_type;
+        let surface = self.surface_capabilities;
+        let modes = self.present_modes.as_slice();
+        let formats = self.present_formats.as_slice();
         let name = CStr::from_ptr(name.as_ptr()).to_str().unwrap();
         log::debug!("Checking if adapter {} is suitable..", name);
 
