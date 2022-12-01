@@ -3,6 +3,8 @@ mod system;
 mod tests;
 mod thread;
 mod immut;
+mod file;
+pub use file::*;
 pub use immut::*;
 pub use bitset::*;
 pub use system::*;

@@ -21,6 +21,8 @@ pub struct App {
 
     // Asset and IO
     user_assets_folder: Option<PathBuf>,
+    author_name: String,
+    app_name: String,
 
     // Main app resources
     systems: Systems,
@@ -39,6 +41,8 @@ impl Default for App {
                 buffering: BufferingMode::default(),
                 fullscreen: false,
             },
+            author_name: "cFlake Dev".to_string(),
+            app_name: "cFlake Prototype Game".to_string(),
             user_assets_folder: None,
             systems,
             el: EventLoop::new(),
@@ -79,6 +83,18 @@ impl App {
                 .ok()
                 .expect("Input path failed to convert into PathBuf"),
         );
+        self
+    }
+
+    // Set the author name of the app
+    pub fn set_author_name(mut self, name: &str) -> Self {
+        self.app_name = name.to_string();
+        self
+    }
+    
+    // Set the app name
+    pub fn set_name(mut self, name: &str) -> Self {
+        self.app_name = name.to_string();
         self
     }
 
@@ -160,8 +176,14 @@ impl App {
             .insert_system(ecs::system)
             .insert_system(time::system)
             .insert_system(world::system)
-            .insert_system(utils::system);
+            .insert_system(utils::threadpool);
         
+        // Insert the IO manager
+        let author = self.author_name.clone();
+        let app = self.app_name.clone();
+        self = self.insert_system(move |system: &mut System| {
+            utils::io(system, author, app)
+        });
 
         // Insert the asset loader
         let user = self.user_assets_folder.take();
@@ -170,10 +192,12 @@ impl App {
         });
 
         // Insert the graphics API
+        /*
         let window = self.window.clone();
         self = self.insert_system(move |system: &mut System| {
             graphics::system(system, window)
         });
+        */
 
         // Sort & execute the init events
         self.systems.init.sort().unwrap();

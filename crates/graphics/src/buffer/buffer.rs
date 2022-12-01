@@ -163,18 +163,6 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         // Check if we need to make a staging buffer
         if let Some((buffer, allocation)) = tmp_init_staging {
             unsafe {
-                let family = graphics.queues().family(FamilyType::Graphics);
-                let pool = family.aquire_pool();
-                let recorder = pool.aquire_recorder(device, vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT);
-                let regions = [*vk::BufferCopy::builder().dst_offset(0).size(size).src_offset(0)];
-                
-                // Record the copy command
-                recorder.copy_buffer(buffer, src_buffer, &regions);
-
-                // Setup a finished callback for the recorder
-                recorder.set_temp_resources_drop(|graphics| {
-                    graphics.device().destroy_buffer(buffer, allocation)
-                });
             }
         } else {
             // Write to the buffer memory by mapping it directly
