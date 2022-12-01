@@ -18,3 +18,4 @@ serde_json = "1.0.85"
 serde = "1.0.145"  
 world = { path = "../world" }
 parking_lot = { workspace = true }
+log = { workspace = true }

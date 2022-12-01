@@ -31,6 +31,8 @@ pub mod prelude {
     pub use vek;
     pub use vek::{Vec2, Vec3, Vec4, Quaternion, Extent2, Extent3};
     pub use winit;
+    pub use serde::{Serialize, Deserialize};
+    pub use serde;
 
     // Gfx related
     pub use crate::graphics::*;

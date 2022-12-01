@@ -199,8 +199,15 @@ impl App {
         });
         */
 
-        // Sort & execute the init events
+        // Sort all the stages first
+        log::debug!("Sorting engine stages...");
         self.systems.init.sort().unwrap();
+        self.systems.update.sort().unwrap();
+        self.systems.shutdown.sort().unwrap();
+        self.systems.window.sort().unwrap();
+        self.systems.device.sort().unwrap();
+
+        // Sort & execute the init events
         self.systems.init.execute((&mut self.world, &self.el));
 
         // Decompose the app
@@ -208,11 +215,6 @@ impl App {
         let el = self.el;
         let mut systems = self.systems;
 
-        // Sort the remaining events registries
-        systems.update.sort().unwrap();
-        systems.shutdown.sort().unwrap();
-        systems.window.sort().unwrap();
-        systems.device.sort().unwrap();
 
         // Create the spin sleeper for frame limiting
         let builder = spin_sleep::LoopHelper::builder();

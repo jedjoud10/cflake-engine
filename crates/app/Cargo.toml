@@ -23,6 +23,7 @@ audio = { path = "../audio" }
 time = { path = "../time" }
 utils = { path = "../utils" }
 env_logger = "0.9"
+serde = "1.0.145"  
 log = { workspace = true }
 vek = { workspace = true }
 ahash = { workspace = true }

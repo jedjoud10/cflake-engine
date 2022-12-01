@@ -1,6 +1,8 @@
-use std::{path::{PathBuf, Path}, str::FromStr, io::{BufReader, BufWriter}, fs::{File, OpenOptions}};
+use std::{path::{PathBuf, Path}, str::FromStr, io::{BufReader, BufWriter, Read}, fs::{File, OpenOptions}};
 
 use platform_dirs::AppDirs;
+
+use crate::ImmutableVec;
 
 // Simple input output manager that can read and write from files
 // This is very helpful in reducing boilerplate code when reading from config files
@@ -9,7 +11,7 @@ pub struct FileManager {
     dirs: AppDirs,
 
     // Contains all the strings that we have loaded from files
-    strings: Vec<String>
+    strings: ImmutableVec<String>
 }
 
 impl FileManager {
@@ -28,7 +30,7 @@ impl FileManager {
 
         Self {
             dirs,
-            strings: Vec::new(),
+            strings: ImmutableVec::new(),
         }
     }
 
@@ -50,30 +52,86 @@ impl FileManager {
 
     // Create a buf reader for a file
     // PS: This will automatically create the file if needed
-    pub fn read(&self, path: impl AsRef<Path>) -> std::io::Result<BufReader<File>> {
+    pub fn read(&self, path: impl AsRef<Path>) -> Option<BufReader<File>> {
         // Create the global path 
+        log::debug!("Reading from file {:?}...", path.as_ref());
         let mut global = self.dirs.config_dir.clone();
         global.push(path);
-        Self::initialize_file(&global)?;
+        
+        // Check if there was a file creation error
+        let file = Self::initialize_file(&global);
+        let Ok(mut file) = file else {
+            log::error!("{}", file.err().unwrap());
+            return None;
+        };
 
         // Create a file reader
-        let options = OpenOptions::new().read(true).open(global)?;
-        Ok(BufReader::new(options))
+        let options = OpenOptions::new()
+            .read(true)
+            .open(global);
+
+        // Check if there was a file options error
+        let Ok(file) = options else {
+            log::error!("{}", options.err().unwrap());
+            return None;
+        };
+
+        Some(BufReader::new(file))
     }
 
     // Creat a buf write and write data to a file
     // PS: This will automatically create the file if needed
-    pub fn write(&self, path: impl AsRef<Path>) -> std::io::Result<BufWriter<File>> {
+    pub fn write(&self, path: impl AsRef<Path>) -> Option<BufWriter<File>> {
         // Create the global path 
+        log::debug!("Writing to file {:?}...", path.as_ref());
         let mut global = self.dirs.config_dir.clone();
         global.push(path);      
-        Self::initialize_file(&global)?;
+
+        // Check if there was a file creation error
+        let file = Self::initialize_file(&global);
+        let Ok(file) = file else {
+            log::error!("{}", file.err().unwrap());
+            return None;
+        };
+
+        // Create a file write
+        let options = OpenOptions::new()
+            .write(true)
+            .truncate(true)
+            .open(global);
+
+        // Check if there was a file write error
+        let Ok(file) = options else {
+            log::error!("{}", options.err().unwrap());
+            return None;
+        };
 
         // Create a file reader
-        let options = OpenOptions::new().write(true).append(true).open(global)?;
-        Ok(BufWriter::new(options))
+        Some(BufWriter::new(file))
     }
 
     // Deserialize a file using Serde
+    pub fn deserialize<'a, T: serde::Deserialize<'a>>(&'a self, path: impl AsRef<Path>) -> Option<T> {
+        // Read the file into a string and then add it internally
+        log::debug!("Deserializing to file {:?}...", path.as_ref());
+        let mut reader = self.read(&path)?;
+        let mut string = String::new();
+        reader.read_to_string(&mut string).ok()?;
+        self.strings.push(string);
+
+        // Deserialize the struct
+        let last = self.strings.last().unwrap();
+        let value = serde_json::from_str(last.as_str()).unwrap();
+        log::debug!("Deserialized data from {:?} successfully!", path.as_ref());
+        Some(value)
+    }
+
     // Serialize a struct into a file using Serde
+    pub fn serialize<T: serde::Serialize>(&self, value: &T, path: impl AsRef<Path>) -> Option<()> {
+        log::debug!("Serializing to file {:?}...", path.as_ref());
+        let writer = self.write(&path)?;
+        serde_json::to_writer_pretty(writer, value).ok()?;
+        log::debug!("Serialized data into {:?} successfully!", path.as_ref());
+        Some(())
+    }
 }

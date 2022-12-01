@@ -60,45 +60,9 @@ impl Input {
         self.bindings.key_bindings.extend(user.key_bindings);
     }
 
-    // Load the bindings from a file
-    // If there are conflicting bindings, they will get overwritten
-    pub fn read_bindings_from_file<P: AsRef<Path>>(
-        &mut self,
-        path: P,
-    ) -> Option<()> {
-        let mut options = File::options();
-        options.read(true);
-        let mut string = String::new();
-        let mut reader = BufReader::new(options.open(path).ok()?);
-        reader.read_to_string(&mut string).unwrap();
-        let cow = Cow::from(string);
-
-        let bindings = serde_json::from_str(&cow).ok()?;
-        self.read_bindings_from_user_bindings(bindings);
-        Some(())
-    }
-
     // Convert the bindings to a user binding struct
     pub fn as_user_binding(&self) -> InputUserBindings {
         self.bindings.clone()
-    }
-
-    // Write the bindings to a file
-    // If the file does not exist, create it
-    pub fn write_bindings_to_file<P: AsRef<Path>>(
-        &self,
-        path: P,
-    ) -> Option<()> {
-        let mut options = File::options();
-        options.read(true);
-        options.write(true);
-        options.truncate(true);
-        options.create_new(true);
-        let mut file = options.open(path).ok()?;
-        let data = self.as_user_binding();
-        let json = serde_json::to_string_pretty(&data).ok()?;
-        file.write_all(json.as_bytes()).ok()?;
-        Some(())
     }
 
     // Create a new button binding using a name and a unique key

@@ -3,7 +3,7 @@ use std::{mem::MaybeUninit, sync::atomic::{AtomicUsize, Ordering}, cell::UnsafeC
 use parking_lot::{Mutex, RwLock};
 
 // Number of elements per page
-pub const ELEMENTS_PER_PAGE: usize = 16;
+pub const ELEMENTS_PER_PAGE: usize = 32;
 
 // A page of an immutable vector
 pub struct Page<T> {
@@ -74,6 +74,7 @@ impl<T> ImmutableVec<T> {
         unsafe { std::ptr::write(ptr, MaybeUninit::new(value)) }
     }
 
+    /*
     // Remove the last element
     pub fn pop(&self) -> Option<T> {
         let index = self.index.load(Ordering::Relaxed).checked_sub(1)?;
@@ -95,6 +96,7 @@ impl<T> ImmutableVec<T> {
         };
         Some(inner)
     }
+    */
     
     // Get the element at index i
     pub fn get(&self, i: usize) -> Option<&T> {

@@ -157,45 +157,4 @@ mod immutable {
     use std::sync::Arc;
     use crate::{ImmutableVec, ThreadPool};
 
-    #[test]
-    fn single() {
-        let immut = ImmutableVec::<u32>::new();
-        assert_eq!(immut.pop(), None);
-        assert_eq!(immut.get(0), None);
-        immut.push(52);
-        assert_eq!(immut.get(0), Some(&52));
-        assert_eq!(immut.pop(), Some(52));
-        assert_eq!(immut.pop(), None);
-        immut.push(20);
-        immut.push(30);
-        assert_eq!(immut.get(0), Some(&20));
-        assert_eq!(immut.get(1), Some(&30));
-        assert_eq!(immut.pop(), Some(30));
-        assert_eq!(immut.pop(), Some(20));
-        assert_eq!(immut.pop(), None);
-
-        for x in 0..64 {
-            immut.push(0);
-        }
-    }
-
-    #[test]
-    fn threaded() {
-        /*
-        let mut pool = ThreadPool::default();
-        let immut = Arc::new(ImmutableVec::<u32>::new());
-    
-        pool.scope(|scope| {
-            let immut = immut.clone();
-            let list = [0, 1, 2, 3];
-            scope.for_each::<&[u32]>(list.as_slice(), move |i| {
-               immut.clone().push(*i); 
-            }, 1);
-        });
-
-        for x in 0..4 {
-            dbg!(immut.get(x).unwrap());
-        }
-        */
-    }
 }
