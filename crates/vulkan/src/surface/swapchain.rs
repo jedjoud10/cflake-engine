@@ -1,4 +1,4 @@
-use crate::{Adapter, Device, FamilyType, Instance, Queues, Surface};
+use crate::{Adapter, Device, Instance, Queues, Surface};
 use ash::vk::{self};
 use parking_lot::Mutex;
 
@@ -195,10 +195,13 @@ impl Swapchain {
         queues: &Queues,
         image: (u32, vk::Image),
     ) {
+        /*
+        // Get a recorder for the present family
+        
         let present = queues.family(FamilyType::Present);
 
-        // Fetch the command pool of the current thread
-        let pool = present.aquire_specific_pool(0).unwrap();
+        
+        let pool = present.aquire_pool();
 
         // Create a new recorder (or fetches an current one)
         let recorder = pool.aquire_recorder(
@@ -280,6 +283,7 @@ impl Swapchain {
                 //self.rendering_finished_fence
             );
         */
+        */
     }
 
     /*
@@ -330,6 +334,7 @@ impl Swapchain {
         queues: &Queues,
         image: (u32, vk::Image),
     ) {
+        /*
         let present_info = *vk::PresentInfoKHR::builder()
             .swapchains(&[self.raw])
             .wait_semaphores(&[self.rendering_finished_semaphore])
@@ -352,7 +357,6 @@ impl Swapchain {
             )
             .unwrap();
 
-        /*
         let present = queues.family(FamilyType::Present);
         let pool = present.aquire_specific_pool(0).unwrap();
         pool.reset(device);

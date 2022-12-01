@@ -1,6 +1,6 @@
 use std::ffi::CString;
 
-use crate::{Adapter, FamilyType, Instance, Queues};
+use crate::{Adapter, Instance, Queues};
 use ash::vk::{self, DeviceCreateInfo, DeviceQueueCreateInfo};
 
 use gpu_allocator::{
@@ -30,6 +30,7 @@ impl Device {
         queues: &mut Queues,
         device_extensions: Vec<CString>,
     ) -> Device {
+        /*
         // Create the queue create infos
         let create_infos = queues
             .families()
@@ -39,6 +40,7 @@ impl Device {
                     .queue_family_index(family.index())
             })
             .collect::<Vec<_>>();
+        */
 
         // Create logical device create info
         let logical_device_extensions = device_extensions
@@ -46,7 +48,7 @@ impl Device {
             .map(|s| s.as_ptr())
             .collect::<Vec<_>>();
         let logical_device_create_info = DeviceCreateInfo::builder()
-            .queue_create_infos(&create_infos)
+            //.queue_create_infos(&create_infos)
             .enabled_extension_names(&logical_device_extensions)
             .enabled_features(&adapter.physical_device_features);
 
@@ -92,8 +94,6 @@ impl Device {
             allocator: Mutex::new(allocator),
         };
 
-        // Finish the queue creation
-        queues.complete_queue_creation(&device);
         device
     }
 
@@ -125,14 +125,16 @@ impl Device {
         queues: &Queues,
     ) -> vk::Buffer {
         // Setup vulkan info
-        let graphics = queues.family(FamilyType::Graphics);
-        let indices = [graphics.index()];
+        //let graphics = queues.family(FamilyType::Graphics);
+        //let indices = [graphics.index()];
+        /*
         let vk_info = vk::BufferCreateInfo::builder()
             .size(size)
             .flags(vk::BufferCreateFlags::empty())
             .sharing_mode(vk::SharingMode::EXCLUSIVE)
             .queue_family_indices(&indices)
             .usage(usage);
+        
 
         // Create the buffer and fetch requirements
         log::debug!(
@@ -141,6 +143,8 @@ impl Device {
             usage
         );
         self.device.create_buffer(&vk_info, None).unwrap()
+        */
+        todo!()
     }
 
     // Create the underlying memory for a buffer
