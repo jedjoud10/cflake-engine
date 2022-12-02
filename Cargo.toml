@@ -17,7 +17,6 @@ members = [
     "crates/gui",
     "crates/input",
     "crates/math",
-    "crates/vulkan",
     "crates/graphics",
     "crates/rendering",
     "crates/world",

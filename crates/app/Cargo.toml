@@ -12,7 +12,6 @@ spin_sleep = "1.1.0"
 mimalloc = "0.1.28"
 input = { path = "../input" }
 ecs = { path = "../ecs" }
-vulkan = { path = "../vulkan" }
 graphics = { path = "../graphics" }
 rendering = { path = "../rendering" }
 world = { path = "../world" }
@@ -32,4 +31,4 @@ two-dim = ["ecs/two-dim", "rendering/two-dim"]
 extended-tuples = ["ecs/extended-tuples"]
 extended-bitmasks = ["ecs/extended-bitmasks"]
 sentence-recording = ["input/sentence-recording"]
-headless = ["vulkan/headless", "graphics/headless"]
+headless = ["graphics/headless"]
