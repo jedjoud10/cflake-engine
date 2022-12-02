@@ -5,17 +5,18 @@ use crate::Device;
 
 // CPU Side commands that can sort through and remove redundent commands
 pub(super) enum Command {
+    // Copy multiple buffer regions to another buffer
     BufferCopy {
         src: vk::Buffer,
         dst: vk::Buffer,
-        size: u64,
         regions: Vec<vk::BufferCopy>,
     },
 
+    // Fill a buffer with some data
     BufferFill {
         src: vk::Buffer,
-        offset: u32,
-        size: u32,
+        offset: u64,
+        size: u64,
         data: u32,
     },
 }
@@ -29,40 +30,31 @@ impl State {
     fn sort_and_merge(&mut self) {
         // Contains lists of batched commands
         let groups: Vec<Command> = Vec::new();
-
-
     }
 
     // Write a single command to a command buffer
-    fn encode_command(
+    unsafe fn encode_command(
         command: Command,
         buffer: vk::CommandBuffer,
         device: &Device,
     ) {
-        /*
         match command {
-            Command::BufferCopy {
-                src,
-                dst,
-                size,
-                src_offset,
-                dst_offset,
-            } => {
-                device.device.cmd_copy_buffer(command_buffer, src_buffer, dst_buffer, regions)
-            },
+            Command::BufferCopy { src, dst, regions } => {
+                device
+                    .device
+                    .cmd_copy_buffer(buffer, src, dst, &regions);
+            }
             Command::BufferFill {
                 src,
                 offset,
                 size,
                 data,
             } => {
-
-            },
-            Command::BufferClear { src, offset, size } => {
-
-            },
+                device
+                    .device
+                    .cmd_fill_buffer(buffer, src, offset, size, data);
+            }
         }
-        */
     }
 
     // Convert the CPU commands to actual vulkan commands and write them to the given buffer
@@ -75,7 +67,10 @@ impl State {
     ) {
         self.sort_and_merge();
 
-        device.device.begin_command_buffer(buffer, &begin_info).unwrap();
+        device
+            .device
+            .begin_command_buffer(buffer, &begin_info)
+            .unwrap();
 
         for command in self.0 {
             Self::encode_command(command, buffer, device);

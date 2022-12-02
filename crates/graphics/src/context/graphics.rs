@@ -42,16 +42,9 @@ impl Graphics {
         app_name: String,
         engine_name: String,
     ) -> Graphics {
-        let validation_layers = vulkan::required_validation_layers();
-        let instance_extensions =
-            vulkan::required_instance_extensions();
-        let device_extensions = vulkan::required_device_extensions();
-
         // Create the Vulkan entry and instance
         let instance = Instance::new(
             window,
-            instance_extensions,
-            validation_layers,
             app_name,
             engine_name,
         );
@@ -62,16 +55,11 @@ impl Graphics {
         // Pick a physical device (adapter)
         let adapter = Adapter::pick(&instance, false, &surface);
 
-        // Create the queues that we will instantiate
-        let mut queues = todo!();
-
         // Create a new device with those queues
-        let device = Device::new(
-            &instance,
-            &adapter,
-            &mut queues,
-            device_extensions,
-        );
+        let device = Device::new(&instance, &adapter);
+
+        // Create the queues that we will instantiate
+        let queues = Queues::new(&instance, &device, &adapter);
 
         // Create a swapchain we can render to
         let vsync =
@@ -122,11 +110,7 @@ impl Graphics {
 
     // Draw the main window swapchain sheize
     pub(crate) unsafe fn draw(&mut self, _value: f32) {
-        // Get the next free image
-        let image = self.swapchain().aquire();
-        self.swapchain().render(self.device(), self.queues(), image);
-        self.swapchain()
-            .present(self.device(), self.queues(), image);
+        self.swapchain().render(self.queues(), self.device());
     }
 
     // Destroy the context after we've done using it

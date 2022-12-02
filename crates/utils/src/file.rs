@@ -7,7 +7,7 @@ use std::{
 
 use platform_dirs::AppDirs;
 
-use crate::ImmutableVec;
+use crate::SharedVec;
 
 // Simple input output manager that can read and write from files
 // This is very helpful in reducing boilerplate code when reading from config files
@@ -16,7 +16,7 @@ pub struct FileManager {
     dirs: AppDirs,
 
     // Contains all the strings that we have loaded from files
-    strings: ImmutableVec<String>,
+    strings: SharedVec<String>,
 }
 
 impl FileManager {
@@ -35,7 +35,7 @@ impl FileManager {
 
         Self {
             dirs,
-            strings: ImmutableVec::new(),
+            strings: SharedVec::new(),
         }
     }
 

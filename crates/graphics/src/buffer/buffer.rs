@@ -98,7 +98,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         slice: &[T],
         mode: BufferMode,
         usage: BufferUsage,
-        _recorder: &Recorder,
+        recorder: &Recorder,
     ) -> Option<Self> {
         // Cannot create a zero sized slice for non-resizable buffers
         if slice.is_empty() && !matches!(mode, BufferMode::Resizable)
@@ -118,7 +118,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         let layout = super::find_optimal_layout(mode, usage, TYPE);
 
         // Create the actual buffer
-        let (src_buffer, src_allocation) = unsafe {
+        let (buffer, allocation) = unsafe {
             device.create_buffer(
                 size,
                 layout.src_buffer_usage_flags,

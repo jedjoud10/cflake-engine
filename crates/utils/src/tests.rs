@@ -151,9 +151,3 @@ mod hibitset {
         assert!(hibitset.get(4095));
     }
 }
-
-#[cfg(test)]
-mod immutable {
-    use crate::{ImmutableVec, ThreadPool};
-    use std::sync::Arc;
-}

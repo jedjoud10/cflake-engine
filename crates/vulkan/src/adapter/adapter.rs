@@ -111,13 +111,13 @@ impl Adapter {
                     queue_family_properties: physical_device_queue_family_properties,
                     queue_family_surface_supported: physical_device_queue_family_surface_supported,
                 }
-            }).find(|adapter| adapter.is_physical_device_suitable(integrated))
+            }).find(|adapter| adapter.is_physical_device_suitable_base(integrated))
             .expect("Could not find a suitable GPU to use!")
     }
 
     // Check wether or not a physical device is suitable for rendering
     // This checks the minimum requirements that we need to achieve to be able to render
-    unsafe fn is_physical_device_suitable(
+    unsafe fn is_physical_device_suitable_base(
         &self,
         integrated: bool,
     ) -> bool {

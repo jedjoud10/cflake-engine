@@ -26,7 +26,7 @@ fn init(world: &mut World) {
                 "Executing on thread {:?}",
                 std::thread::current().name()
             );
-            let recorder = graphics.aquire_recorder();
+            let mut recorder = graphics.aquire_recorder();
 
             // Create a uniform buffer
             let mut buffer = UniformBuffer::from_slice(
@@ -39,7 +39,7 @@ fn init(world: &mut World) {
                     host_write: true,
                     host_read: false,
                 },
-                &recorder,
+                &mut recorder,
             )
             .unwrap();
         },

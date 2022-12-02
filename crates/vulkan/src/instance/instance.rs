@@ -33,8 +33,6 @@ impl Instance {
     // Create the main Vulkan instance
     pub unsafe fn new(
         window: &winit::window::Window,
-        instance_extensions: Vec<CString>,
-        validation_layers: Vec<CString>,
         app_name: String,
         engine_name: String,
     ) -> Instance {
@@ -67,14 +65,19 @@ impl Instance {
             )
             .unwrap()
             .to_vec();
-        extension_names_ptrs
-            .extend(instance_extensions.iter().map(|s| s.as_ptr()));
+        let required_instance_extensions = crate::global::required_instance_extensions();
+        extension_names_ptrs.extend(
+            required_instance_extensions
+                .iter()
+                .map(|s| s.as_ptr()),
+        );
 
         // Get the required validation layers
-        let validation_ptrs = validation_layers
-            .iter()
-            .map(|cstr| cstr.as_ptr())
-            .collect::<Vec<_>>();
+        let required_validation_layers = crate::global::required_validation_layers();
+        let validation_ptrs = required_validation_layers
+                .iter()
+                .map(|cstr| cstr.as_ptr())
+                .collect::<Vec<_>>();
 
         // Setup the instance create info (with debug info)
         #[cfg(debug_assertions)]
@@ -108,6 +111,10 @@ impl Instance {
                 None,
             )
             .unwrap();
+
+        // Drop the cstrings
+        drop(required_instance_extensions);
+        drop(required_validation_layers);
 
         Instance {
             entry,

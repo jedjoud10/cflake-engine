@@ -27,28 +27,25 @@ impl Device {
     pub unsafe fn new(
         instance: &Instance,
         adapter: &Adapter,
-        queues: &Queues,
-        device_extensions: Vec<CString>,
     ) -> Device {
         // Create the queue create infos
-        /*
-        let create_infos = queues
-            .fa
+        let create_infos = Queues::indices(adapter)
+            .into_iter()
             .map(|family| {
                 *DeviceQueueCreateInfo::builder()
                     .queue_priorities(&[1.0])
-                    .queue_family_index(family.index())
+                    .queue_family_index(family)
             })
             .collect::<Vec<_>>();
-        */
 
         // Create logical device create info
-        let logical_device_extensions = device_extensions
-            .iter()
-            .map(|s| s.as_ptr())
-            .collect::<Vec<_>>();
+        let required_device_extensions =  crate::global::required_device_extensions();
+        let logical_device_extensions = required_device_extensions
+                .iter()
+                .map(|s| s.as_ptr())
+                .collect::<Vec<_>>();
         let logical_device_create_info = DeviceCreateInfo::builder()
-            //.queue_create_infos(&create_infos)
+            .queue_create_infos(&create_infos)
             .enabled_extension_names(&logical_device_extensions)
             .enabled_features(&adapter.features);
 
@@ -87,6 +84,9 @@ impl Device {
             buffer_device_address: false,
         })
         .unwrap();
+
+        // Drop the cstrings
+        drop(required_device_extensions);
 
         // Le logical device
         let device = Device {

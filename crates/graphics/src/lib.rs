@@ -1,6 +1,8 @@
-pub mod buffer;
-pub mod context;
-pub mod system;
+mod buffer;
+mod context;
+mod shader;
+mod system;
 pub use buffer::*;
 pub use context::*;
+pub use shader::*;
 pub use system::*;

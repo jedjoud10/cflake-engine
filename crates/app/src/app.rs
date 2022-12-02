@@ -16,7 +16,7 @@ static GLOBAL: MiMalloc = MiMalloc;
 
 // An app is just a world builder. It uses the builder pattern to construct a world object and the corresponding game engine window
 pub struct App {
-    // Window settings for the graphics
+    // Graphical settings
     window: WindowSettings,
 
     // Asset and IO
@@ -163,13 +163,6 @@ impl App {
     // Consume the App builder, and start the engine window
     pub fn execute(mut self) {
         // Enable the environment logger
-        /*
-        log::set_max_level(log::LevelFilter::Debug);
-        let logger = env_logger::builder()
-            .filter_level(log::LevelFilter::Debug)
-            .build();
-            log::set_boxed_logger(Box::new(logger)).unwrap();
-        */
         env_logger::init();
 
         // Insert all the builtin systems
@@ -177,7 +170,8 @@ impl App {
             .insert_system(input::system)
             .insert_system(ecs::system)
             .insert_system(world::system)
-            .insert_system(utils::threadpool);
+            .insert_system(utils::threadpool)
+            .insert_system(utils::time);
 
         // Insert the IO manager
         let author = self.author_name.clone();
@@ -193,12 +187,12 @@ impl App {
         });
 
         // Insert the graphics API
-        /*
         let window = self.window.clone();
+        let app = self.app_name.clone();
+        let engine = self.engine_name.clone();
         self = self.insert_system(move |system: &mut System| {
-            graphics::system(system, window)
+            graphics::system(system, window, app, engine);
         });
-        */
 
         // Sort all the stages first
         log::debug!("Sorting engine stages...");
@@ -221,8 +215,10 @@ impl App {
         let mut sleeper = if let FrameRateLimit::Limited(limit) =
             self.window.limit
         {
+            log::debug!("Created sleeper with a target rate of {limit}");
             builder.build_with_target_rate(limit)
         } else {
+            log::debug!("Created sleeper without a target rate");
             builder.build_without_target_rate()
         };
 

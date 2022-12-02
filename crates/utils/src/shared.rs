@@ -1,7 +1,7 @@
 use std::{
     cell::UnsafeCell,
     mem::MaybeUninit,
-    sync::atomic::{AtomicUsize, Ordering},
+    sync::atomic::{AtomicUsize, Ordering}, ops::Index,
 };
 
 use parking_lot::{Mutex, RwLock};
@@ -19,12 +19,12 @@ unsafe impl<T> Send for Page<T> {}
 
 // An immutable vector that can grow and shrink in size
 // However, it cannot mutate any of it's components
-pub struct ImmutableVec<T> {
+pub struct SharedVec<T> {
     pages: RwLock<Vec<Page<T>>>,
     index: AtomicUsize,
 }
 
-impl<T> ImmutableVec<T> {
+impl<T> SharedVec<T> {
     // Create a new immutable vector
     pub fn new() -> Self {
         Self {
@@ -34,8 +34,8 @@ impl<T> ImmutableVec<T> {
     }
 
     // Add multiple items from an iterator
-    pub fn extend(&self, iterator: impl Iterator<Item = T>) {
-        for element in iterator {
+    pub fn extend(&self, iterator: impl IntoIterator<Item = T>) {
+        for element in iterator.into_iter() {
             self.push(element);
         }
     }
@@ -106,7 +106,7 @@ impl<T> ImmutableVec<T> {
     }
     */
 
-    // Get the element at index i
+    // Get the element at index i immutably
     pub fn get(&self, i: usize) -> Option<&T> {
         let len = self.index.load(Ordering::Relaxed);
 
@@ -137,5 +137,13 @@ impl<T> ImmutableVec<T> {
     // Get the number of elements
     pub fn len(&self) -> usize {
         self.index.load(Ordering::Relaxed)
+    }
+}
+
+impl<T> Index<usize> for &SharedVec<T> {
+    type Output = T;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        self.get(index).unwrap()
     }
 }
