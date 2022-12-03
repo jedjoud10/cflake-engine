@@ -18,4 +18,14 @@ impl AudioListener {
             device,
         })
     }
+
+    // Set the volume of the audio listener
+    pub fn set_volume(&mut self, volume: f32) {
+        self.volume = volume
+    }
+    
+    // Get the volume of the audio listener
+    pub fn volume(&self) -> f32 {
+        self.volume
+    }
 }

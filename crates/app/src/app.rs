@@ -14,6 +14,54 @@ use world::{
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
 
+// Bitfield that contains the default systems that we should activate
+pub struct EnabledSystems {
+    input: bool,
+    ecs: bool,
+    world: bool,
+    threadpool: bool,
+    time: bool,
+    io: bool,
+    assets: bool,
+    graphics: bool
+}
+
+impl EnabledSystems {
+    // Enable all the systems
+    pub fn all() -> Self {
+        Self {
+            input: true,
+            ecs: true,
+            world: true,
+            threadpool: true,
+            time: true,
+            io: true,
+            assets: true,
+            graphics: true,
+        }
+    }
+
+    // Disable all the systems
+    pub fn none() -> Self {
+        Self {
+            input: false,
+            ecs: false,
+            world: false,
+            threadpool: false,
+            time: false,
+            io: false,
+            assets: false,
+            graphics: false,
+        }
+    }
+}
+
+impl Default for EnabledSystems {
+    fn default() -> Self {
+        Self::all()
+    }
+}
+
 // An app is just a world builder. It uses the builder pattern to construct a world object and the corresponding game engine window
 pub struct App {
     // Graphical settings
@@ -26,6 +74,7 @@ pub struct App {
     engine_name: String,
 
     // Main app resources
+    enabled: EnabledSystems,
     systems: Systems,
     world: World,
     el: EventLoop<()>,
@@ -45,6 +94,7 @@ impl Default for App {
             app_name: "cFlake Prototype Game".to_string(),
             engine_name: "cFlake Game Engine".to_string(),
             user_assets_folder: None,
+            enabled: EnabledSystems::default(),
             systems,
             el: EventLoop::new(),
             world,
@@ -71,6 +121,12 @@ impl App {
     // Set window fullscreen mode
     pub fn set_window_fullscreen(mut self, toggled: bool) -> Self {
         self.window.fullscreen = toggled;
+        self
+    }
+
+    // Set what default systems we wish to use
+    pub fn set_enabled_systems(mut self, enabled: EnabledSystems) -> Self {
+        self.enabled = enabled;
         self
     }
 
@@ -108,7 +164,7 @@ impl App {
         self.systems.insert(callback);
         self
     }
-
+    
     // Insert a single init event
     pub fn insert_init<ID>(
         self,
@@ -164,36 +220,10 @@ impl App {
         // Enable the environment logger
         env_logger::init();
 
-        // Insert all the builtin systems
-        self = self
-            .insert_system(input::system)
-            .insert_system(ecs::system)
-            .insert_system(world::system)
-            .insert_system(utils::threadpool)
-            .insert_system(utils::time);
+        // Insert the default systems
+        self = self.insert_default_systems();
 
-        // Insert the IO manager
-        let author = self.author_name.clone();
-        let app = self.app_name.clone();
-        self = self.insert_system(move |system: &mut System| {
-            utils::io(system, author, app)
-        });
-
-        // Insert the asset loader
-        let user = self.user_assets_folder.take();
-        self = self.insert_system(|system: &mut System| {
-            assets::system(system, user)
-        });
-
-        // Insert the graphics API
-        let window = self.window.clone();
-        let app = self.app_name.clone();
-        let engine = self.engine_name.clone();
-        self = self.insert_system(move |system: &mut System| {
-            graphics::system(system, window, app, engine);
-        });
-
-        // Sort all the stages first
+        // Sort all the stages
         log::debug!("Sorting engine stages...");
         self.systems.init.sort().unwrap();
         self.systems.update.sort().unwrap();
@@ -227,10 +257,11 @@ impl App {
             winit::event::Event::MainEventsCleared => {
                 sleeper.loop_start();
                 systems.update.execute(&mut world);
-                let state = *world.get::<State>().unwrap();
-                if matches!(state, State::Stopped) {
+                
+                if let Some(State::Stopped) = world.get::<State>().map(|x| *x) {
                     *cf = ControlFlow::Exit;
                 }
+
                 sleeper.loop_sleep();
             }
 
@@ -256,5 +287,50 @@ impl App {
             }
             _ => {}
         });
+    }
+
+    // Insert the required default systems (if specified by the EnabledSystems struct)
+    fn insert_default_systems(mut self) -> Self {
+        if self.enabled.input {
+            self = self.insert_system(input::system);
+        }
+        if self.enabled.ecs {
+            self = self.insert_system(ecs::system);
+        }
+        if self.enabled.world {
+            self = self.insert_system(world::system);
+        }
+        if self.enabled.threadpool {
+            self = self.insert_system(utils::threadpool);
+        }
+        if self.enabled.time {
+            self = self.insert_system(utils::time);
+        }
+        // Insert the IO manager
+        if self.enabled.io {
+            let author = self.author_name.clone();
+            let app = self.app_name.clone();
+            self = self.insert_system(move |system: &mut System| {
+                utils::io(system, author, app)
+            });
+        }
+        // Insert the asset loader
+        if self.enabled.assets {
+            let user = self.user_assets_folder.take();
+            self = self.insert_system(|system: &mut System| {
+                assets::system(system, user)
+            });
+        }
+        // Insert the graphics API if needed
+        if self.enabled.graphics {
+            let window = self.window.clone();
+            let app = self.app_name.clone();
+            let engine = self.engine_name.clone();
+            self = self.insert_system(move |system: &mut System| {
+                graphics::system(system, window, app, engine);
+            });
+        }
+
+        self
     }
 }

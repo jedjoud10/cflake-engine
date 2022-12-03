@@ -1,7 +1,8 @@
 use crate::FrameRateLimit;
 use super::WindowSettings;
 use bytemuck::{Pod, Zeroable};
-use vulkano::{instance::{Instance, InstanceCreateInfo}, device::{physical::PhysicalDevice, Device, Queue}, VulkanLibrary, swapchain::Swapchain, image::SwapchainImage, memory::allocator::{GenericMemoryAllocator, StandardMemoryAllocator}, command_buffer::allocator::{CommandBufferAllocator, StandardCommandBufferAlloc, StandardCommandBufferAllocator}};
+use log_err::LogErrResult;
+use vulkano::{instance::{Instance, InstanceCreateInfo}, device::{physical::PhysicalDevice, Device, Queue}, VulkanLibrary, swapchain::Swapchain, image::SwapchainImage, memory::allocator::{GenericMemoryAllocator, StandardMemoryAllocator}, command_buffer::{allocator::{CommandBufferAllocator, StandardCommandBufferAlloc, StandardCommandBufferAllocator}, PrimaryAutoCommandBuffer, AutoCommandBufferBuilder}};
 use std::sync::Arc;
 use utils::ThreadPool;
 
@@ -28,6 +29,17 @@ pub struct Graphics {
     // Allocator types
     pub(crate) memory_allocator: Arc<StandardMemoryAllocator>,
     pub(crate) cmd_buffer_allocator: Arc<StandardCommandBufferAllocator>,
+}
+
+impl Graphics {
+    // Create a command buffer builder
+    pub fn recorder(&self) -> AutoCommandBufferBuilder<PrimaryAutoCommandBuffer> {
+        AutoCommandBufferBuilder::primary(
+            self.cmd_buffer_allocator(),
+            self.queue().queue_family_index(),
+            vulkano::command_buffer::CommandBufferUsage::SimultaneousUse
+        ).log_unwrap()
+    }
 }
 
 impl Graphics {

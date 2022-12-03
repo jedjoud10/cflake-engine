@@ -1,6 +1,6 @@
 use std::mem::size_of;
 
-use cflake_engine::prelude::*;
+use cflake_engine::prelude::{*, vulkano::sync};
 
 // Prototype example game window
 fn main() {
@@ -16,20 +16,29 @@ fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap().clone();
     let mut threadpool = world.get_mut::<ThreadPool>().unwrap();
 
-    log::warn!(
-        "Executing on thread {:?}",
-        std::thread::current().name()
-    );
+    threadpool.execute(move || {
+        // Create a command buffer just for this buffer
+        let mut builder = graphics.recorder();
+
+        // Create a simple buffer
+        let mut buffer = UniformBuffer::from_slice(
+            &graphics,
+            &[0, 1, 2],
+            Default::default(),
+            Default::default(),
+            &mut builder,
+        ).unwrap();
+
+        let mut dst = [0; 3];
+        buffer.read_range(&mut dst, 0..3).unwrap();
+        dbg!(dst);
+
+        buffer.write_range(&[2, 3, 4], 0..3).unwrap();
+
+        buffer.read_range(&mut dst, 0..3).unwrap();
+        dbg!(dst);
+    });
     
-    // Create a command buffer just for this buffer
-    let builder = vulkano::command_buffer::AutoCommandBufferBuilder::primary(
-        graphics.cmd_buffer_allocator(),
-        graphics.queue().queue_family_index(),
-        vulkano::command_buffer::CommandBufferUsage::SimultaneousUse
-    ).unwrap();
-
-
-
 
     /*
     let array = (0..1).into_iter().collect::<Vec<_>>();

@@ -1,4 +1,9 @@
-use crate::{BufferMode, BufferUsage};
+use std::mem::size_of;
+
+use log_err::LogErrResult;
+use vulkano::buffer::{DeviceLocalBuffer, BufferContents, CpuAccessibleBuffer};
+
+use crate::{BufferMode, BufferUsage, Graphics};
 
 // What type of buffer should we create
 #[derive(Debug)]
@@ -103,5 +108,62 @@ pub(super) fn find_optimal_layout(
         init_usage: None,
         cached_usage: None,
         cached_host_cached: None,
+    }
+}
+
+// Convert the buffer type int to a Vulkano usage that we can add onto src_usage
+pub(super) fn apply_buffer_type(layout: &mut BufferLayouts, _type: u32) {
+    match _type {
+        super::VERTEX => layout.src_usage = layout.src_usage.union(&vulkano::buffer::BufferUsage {
+            vertex_buffer: true,
+            ..Default::default()
+        }),
+        
+        super::INDEX => layout.src_usage = layout.src_usage.union(&vulkano::buffer::BufferUsage {
+            index_buffer: true,
+            ..Default::default()
+        }),
+
+        super::STORAGE => layout.src_usage = layout.src_usage.union(&vulkano::buffer::BufferUsage {
+            storage_buffer: true,
+            ..Default::default()
+        }),
+
+        super::UNIFORM => layout.src_usage = layout.src_usage.union(&vulkano::buffer::BufferUsage {
+            uniform_buffer: true,
+            ..Default::default()
+        }),
+
+        super::INDIRECT => layout.src_usage = layout.src_usage.union(&vulkano::buffer::BufferUsage {
+            indirect_buffer: true,
+            ..Default::default()
+        }),
+        
+        _ => ()
+    }
+}
+
+// Create an empty buffer for a specific buffer type kind
+pub(super) fn initialize_buffer<T: BufferContents>(graphics: &Graphics, length: usize, src_buffer_usage: vulkano::buffer::BufferUsage, src_host_cached: bool, kind: UniqueBufferLayoutKind) -> super::BufferKind<T> where [T]: BufferContents {
+    match kind {
+        UniqueBufferLayoutKind::DeviceLocal => {
+            let buffer = DeviceLocalBuffer::<[T]>::array(
+                graphics.memory_allocator(),
+                length as u64,
+                src_buffer_usage,
+                [graphics.queue().queue_family_index()]
+            ).log_expect("Could not create device local buffer");
+            
+            super::BufferKind::DeviceLocal(buffer)
+        },
+        UniqueBufferLayoutKind::CpuAccessible => unsafe {
+            let buffer = CpuAccessibleBuffer::<[T]>::uninitialized_array(
+                graphics.memory_allocator(),
+                length as u64,
+                src_buffer_usage,
+                src_host_cached,
+            ).log_expect("Could not create CPU accessible buffer");
+            super::BufferKind::CpuAccessible(buffer)
+        },
     }
 }

@@ -1,14 +1,14 @@
 use std::{
     marker::PhantomData,
     mem::{size_of, ManuallyDrop},
-    ops::RangeBounds,
+    ops::RangeBounds, sync::Arc,
 };
 
 use crate::{
     BufferError, Graphics, InvalidModeError,
     InvalidUsageError,
 };
-use bytemuck::Zeroable;
+use bytemuck::{Zeroable, Pod};
 use vulkano::{buffer::{DeviceLocalBuffer, BufferContents, CpuAccessibleBuffer}, command_buffer::{AutoCommandBufferBuilder, PrimaryCommandBufferAbstract, PrimaryAutoCommandBuffer}};
 
 // Some settings that tell us how exactly we should create the buffer
@@ -40,20 +40,23 @@ pub struct BufferUsage {
 impl Default for BufferUsage {
     fn default() -> Self {
         Self {
-            hint_device_write: false,
+            hint_device_write: true,
             hint_device_read: true,
-            permission_host_write: false,
-            permission_host_read: false,
+            permission_host_write: true,
+            permission_host_read: true,
         }
     }
 }
 
+pub trait Contents: BufferContents + Pod + Zeroable where [Self]: BufferContents {}
+impl<T: BufferContents+ Pod + Zeroable> Contents for T where [T]: BufferContents {}
+
 // Bitmask from WGPU BufferUsages
-const VERTEX: u32 = 0;
-const INDEX: u32 = 1;
-const STORAGE: u32 = 2;
-const UNIFORM: u32 = 3;
-const INDIRECT: u32 = 4;
+pub(super) const VERTEX: u32 = 0;
+pub(super) const INDEX: u32 = 1;
+pub(super) const STORAGE: u32 = 2;
+pub(super) const UNIFORM: u32 = 3;
+pub(super) const INDIRECT: u32 = 4;
 
 // Common buffer types
 pub type VertexBuffer<T> = Buffer<T, VERTEX>;
@@ -63,16 +66,16 @@ pub type UniformBuffer<T> = Buffer<T, UNIFORM>;
 pub type IndirectBuffer<T> = Buffer<T, INDIRECT>;
 
 // Internal buffer type since we might use either one
-pub enum BufferKind<T: BufferContents> {
-    DeviceLocal(DeviceLocalBuffer<T>),
-    CpuAccessible(CpuAccessibleBuffer<T>),
+pub enum BufferKind<T: BufferContents + Sized> where [T]: BufferContents {
+    DeviceLocal(Arc<DeviceLocalBuffer<[T]>>),
+    CpuAccessible(Arc<CpuAccessibleBuffer<[T]>>),
 }
 
 // An abstraction layer over a valid OpenGL buffer
 // This takes a valid OpenGL type and an element type, though the user won't be able make the buffer directly
 // This also takes a constant that represents it's OpenGL target
-pub struct Buffer<T: BufferContents, const TYPE: u32> {
-    buffer: BufferKind<T>,
+pub struct Buffer<T: Contents, const TYPE: u32> {
+    inner: BufferKind<T>,
     length: usize,
     capacity: usize,
     usage: BufferUsage,
@@ -82,21 +85,21 @@ pub struct Buffer<T: BufferContents, const TYPE: u32> {
 }
 
 // Internal bounds used by the buffer
+#[derive(Debug, Clone, Copy)]
 pub(super) struct BufferBounds {
     offset: usize,
     size: usize,
 }
 
-impl<T: BufferContents, const TYPE: u32> Buffer<T, TYPE> {
+impl<T: Contents, const TYPE: u32> Buffer<T, TYPE> {
     // Create a buffer using a slice of elements
     // (will return none if we try to create a zero length Static, Dynamic, or Partial buffer)
-    pub fn from_slice(
+    pub fn from_slice<L>(
         graphics: &Graphics,
         slice: &[T],
         mode: BufferMode,
         usage: BufferUsage,
-        cmd: &mut AutoCommandBufferBuilder<PrimaryAutoCommandBuffer>,
-        //recorder: &Recorder,
+        cmd: &mut AutoCommandBufferBuilder<L>,
     ) -> Option<Self> {
         // Cannot create a zero sized slice for non-resizable buffers or a zero sized buffer in general
         let invalid = slice.is_empty() && !matches!(mode, BufferMode::Resizable);
@@ -111,76 +114,31 @@ impl<T: BufferContents, const TYPE: u32> Buffer<T, TYPE> {
 
         // Get location and staging buffer location
         log::debug!("Creating buffer with {} elements, stride: {}", slice.len(), size_of::<T>());
-        let layout = super::find_optimal_layout(mode, usage);
-        log::debug!("Given buffer layout {:?}, optimal layout {:?}", usage, layout);
-
+        let mut layout = super::find_optimal_layout(mode, usage);
+        super::apply_buffer_type(&mut layout, TYPE);
+        log::debug!("Given buffer layout {:#?}", usage);
+        log::debug!("Optimal layout: {:#?}", layout);
         
-        todo!()
-        /*
+        // Create the src buffer
+        let inner = super::initialize_buffer::<T>(
+            graphics,
+            slice.len(),
+            layout.src_usage,
+            layout.src_host_cached,
+            layout.src_kind,
+        );
 
-        // Decompose graphics
-        let device = graphics.device();
-        let _queues = graphics.queues();
-
-        // Calculate the byte size of the buffer
-        let size =
-            u64::try_from(size_of::<T>() * slice.len()).unwrap();
-
-
-
-        // Create the actual buffer
-        let (buffer, allocation) = unsafe {
-            device.create_buffer(
-                size,
-                layout.src_buffer_usage_flags,
-                layout.src_buffer_memory_location,
-                graphics.queues(),
-            )
-        };
-
-        /*
-
-        // Optional init staging buffer
-        let tmp_init_staging = layout
-            .init_staging_buffer_memory_location
-            .map(|memory| unsafe {
-                let buffe = device.create_buffer(
-                    size,
-                    layout.init_staging_buffer_usage_flags.unwrap(),
-                    graphics.queues(),
-                );
-                let memory =
-                    device.create_buffer_memory(buffer, memory);
-                (buffer, memory)
-            });
-
-        // Check if we need to make a staging buffer
-        if let Some((buffer, allocation)) = tmp_init_staging {
-            unsafe {
-            }
-        } else {
-            // Write to the buffer memory by mapping it directly
-            let dst = bytemuck::cast_slice_mut::<u8, T>(
-                src_allocation.mapped_slice_mut().unwrap(),
-            );
-            let len = slice.len();
-            dst[..len].copy_from_slice(slice);
-        }
-
-        // Create the struct and return it
+        // Create a buffer instance
         Some(Self {
+            inner,
             length: slice.len(),
             capacity: slice.len(),
             mode,
             usage,
             graphics: graphics.clone(),
             _phantom: PhantomData,
-            buffer: src_buffer,
-            allocation: ManuallyDrop::new(src_allocation),
         })
-        */
-        todo!()
-        */
+        
     }
 
     /*
@@ -220,8 +178,6 @@ impl<T: BufferContents, const TYPE: u32> Buffer<T, TYPE> {
         size_of::<T>()
     }
 
-    /*
-
     // Convert a range bounds type into the range indices
     // This will return None if the returning indices have a length of 0
     fn convert_range_bounds(
@@ -257,6 +213,86 @@ impl<T: BufferContents, const TYPE: u32> Buffer<T, TYPE> {
         })
     }
 
+    // Read a region of the buffer into a mutable slice immediately
+    pub fn read_range(
+        &self,
+        dst: &mut [T],
+        range: impl RangeBounds<usize>,
+    ) -> Result<(), BufferError> {
+        let Some(bounds) = self.convert_range_bounds(range) else {
+            return Ok(());
+        };
+
+        // Check if the given slice matches with the range
+        if bounds.size != dst.len() {
+            return Err(BufferError::SliceLengthRangeMistmatch(
+                dst.len(),
+                bounds.size,
+            ));
+        }
+
+        // Check if we can read from the buffer
+        if !self.usage.permission_host_read {
+            return Err(BufferError::InvalidUsage(
+                InvalidUsageError::IllegalHostRead,
+            ));
+        }
+
+        // Get the mapped pointer and read from it
+        match &self.inner {
+            BufferKind::DeviceLocal(_) => todo!(),
+            BufferKind::CpuAccessible(buffer) => {
+                let read = buffer.read().unwrap();
+                let BufferBounds { offset, size } = bounds;
+                let src = &read[offset..(offset + size)];
+                dst.copy_from_slice(src);
+                log::debug!("Reading range: {:?} from cpu accessible buffer", bounds);
+            },
+        }
+        Ok(())
+    }
+    
+    // Overwrite a region of the buffer using a slice and a range
+    pub fn write_range(
+        &mut self,
+        src: &[T],
+        range: impl RangeBounds<usize>,
+    ) -> Result<(), BufferError> {
+        let Some(bounds) = self.convert_range_bounds(range) else {
+            return Ok(());
+        };
+
+        // Check if the given slice matches with the range
+        if bounds.size != src.len() {
+            return Err(BufferError::SliceLengthRangeMistmatch(
+                src.len(),
+                bounds.size,
+            ));
+        }
+
+        // Check if we can write to the buffer
+        if !self.usage.permission_host_write {
+            return Err(BufferError::InvalidUsage(
+                InvalidUsageError::IllegalHostWrite,
+            ));
+        }
+
+        // Get the mapped pointer and write to it the given slice
+        match &self.inner {
+            BufferKind::DeviceLocal(_) => todo!(),
+            BufferKind::CpuAccessible(buffer) => {
+                let mut write = buffer.write().unwrap();
+                let BufferBounds { offset, size } = bounds;
+                let dst = &mut write[offset..(offset + size)];
+                dst.copy_from_slice(src);
+                log::debug!("Writing range {:?} to cpu accessible buffer", bounds);
+            },
+        }
+        Ok(())
+    }
+
+
+    /*
     // Fills a range in the buffer with a constant value
     pub fn splat_range(
         &mut self,
@@ -356,39 +392,6 @@ impl<T: BufferContents, const TYPE: u32> Buffer<T, TYPE> {
         if !self.usage.permission_host_write {
             return Err(BufferError::InvalidUsage(
                 InvalidUsageError::IllegalHostWrite,
-            ));
-        }
-
-        // Get the mapped pointer and write to it the given slice
-        todo!()
-        Ok(())
-    }
-
-    // Read a region of the buffer into a mutable slice immediately
-    pub fn read_range(
-        &self,
-        dst: &mut [T],
-        range: impl RangeBounds<usize>,
-        _recorder: &Recorder,
-    ) -> Result<(), BufferError> {
-        let Some(BufferBounds {
-            offset, size
-        }) = self.convert_range_bounds(range) else {
-            return Ok(());
-        };
-
-        // Check if the given slice matches with the range
-        if size != dst.len() {
-            return Err(BufferError::SliceLengthRangeMistmatch(
-                dst.len(),
-                size,
-            ));
-        }
-
-        // Check if we can read from the buffer
-        if !self.usage.permission_host_read {
-            return Err(BufferError::InvalidUsage(
-                InvalidUsageError::IllegalHostRead,
             ));
         }
 

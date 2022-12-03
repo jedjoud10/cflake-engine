@@ -3,6 +3,7 @@ use crate::{
     SystemId, Update,
 };
 use ahash::{AHashMap, AHashSet};
+use log_err::LogErrResult;
 use std::{any::TypeId, marker::PhantomData};
 use winit::event::{DeviceEvent, WindowEvent};
 
@@ -92,6 +93,7 @@ impl<'a, C: Caller> EventMut<'a, C> {
 
         // Insert the rule internally
         self.rules.push(rule);
+        let t = Some(0u32);
         self
     }
 }
@@ -113,7 +115,7 @@ macro_rules! insert {
         let registry = &mut $self.$name;
 
         // Push the event into the registry
-        let rules = registry.insert($event, $self.system).unwrap();
+        let rules = registry.insert($event, $self.system).log_unwrap();
 
         // Create the caller ID
         let caller = super::fetch_caller_id::<$C>();
