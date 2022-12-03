@@ -18,7 +18,7 @@ winit = "0.27.5"
 bytemuck = "1.12.3"
 vulkano-win = "0.32.0"
 vulkano-shaders = "0.32.0"
-
+log_err = "1.1.1"
 
 log = { workspace = true }
 thiserror = { workspace = true }

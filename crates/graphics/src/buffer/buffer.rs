@@ -5,13 +5,11 @@ use std::{
 };
 
 use crate::{
-    BufferError, Content, Graphics, InvalidModeError,
+    BufferError, Graphics, InvalidModeError,
     InvalidUsageError,
 };
-use ash::vk;
 use bytemuck::Zeroable;
-use gpu_allocator::vulkan::Allocation;
-use vulkan::Recorder;
+use vulkano::{buffer::{DeviceLocalBuffer, BufferContents, CpuAccessibleBuffer}, command_buffer::{AutoCommandBufferBuilder, PrimaryCommandBufferAbstract, PrimaryAutoCommandBuffer}};
 
 // Some settings that tell us how exactly we should create the buffer
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
@@ -27,22 +25,16 @@ pub enum BufferMode {
     Resizable,
 }
 
-// How we shall access the buffer
-// These buffer usages do not count the initial buffer creation phase
-// Anything related to the device access is a hint since you can always access stuff
+// How we shall access the buffer on the CPU and GPU
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct BufferUsage {
-    // Specifies that the device can write to the buffer
+    // Only optimization hints, we don't *actually* need them
     pub hint_device_write: bool,
-
-    // Specifies that the device can read from the buffer
     pub hint_device_read: bool,
 
-    // Specifies that the host can write to the buffer
-    pub host_write: bool,
-
-    // Specifies that the host can read from the buffer
-    pub host_read: bool,
+    // **REQUIRED** if we wish to use the buffer on the CPU side 
+    pub permission_host_write: bool,
+    pub permission_host_read: bool,
 }
 
 impl Default for BufferUsage {
@@ -50,8 +42,8 @@ impl Default for BufferUsage {
         Self {
             hint_device_write: false,
             hint_device_read: true,
-            host_write: true,
-            host_read: false,
+            permission_host_write: false,
+            permission_host_read: false,
         }
     }
 }
@@ -70,12 +62,17 @@ pub type StorageBuffer<T> = Buffer<T, STORAGE>;
 pub type UniformBuffer<T> = Buffer<T, UNIFORM>;
 pub type IndirectBuffer<T> = Buffer<T, INDIRECT>;
 
+// Internal buffer type since we might use either one
+pub enum BufferKind<T: BufferContents> {
+    DeviceLocal(DeviceLocalBuffer<T>),
+    CpuAccessible(CpuAccessibleBuffer<T>),
+}
+
 // An abstraction layer over a valid OpenGL buffer
 // This takes a valid OpenGL type and an element type, though the user won't be able make the buffer directly
 // This also takes a constant that represents it's OpenGL target
-pub struct Buffer<T: Content, const TYPE: u32> {
-    buffer: vk::Buffer,
-    allocation: ManuallyDrop<Allocation>,
+pub struct Buffer<T: BufferContents, const TYPE: u32> {
+    buffer: BufferKind<T>,
     length: usize,
     capacity: usize,
     usage: BufferUsage,
@@ -90,7 +87,7 @@ pub(super) struct BufferBounds {
     size: usize,
 }
 
-impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
+impl<T: BufferContents, const TYPE: u32> Buffer<T, TYPE> {
     // Create a buffer using a slice of elements
     // (will return none if we try to create a zero length Static, Dynamic, or Partial buffer)
     pub fn from_slice(
@@ -98,13 +95,28 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         slice: &[T],
         mode: BufferMode,
         usage: BufferUsage,
-        recorder: &Recorder,
+        cmd: &mut AutoCommandBufferBuilder<PrimaryAutoCommandBuffer>,
+        //recorder: &Recorder,
     ) -> Option<Self> {
-        // Cannot create a zero sized slice for non-resizable buffers
-        if slice.is_empty() && !matches!(mode, BufferMode::Resizable)
-        {
+        // Cannot create a zero sized slice for non-resizable buffers or a zero sized buffer in general
+        let invalid = slice.is_empty() && !matches!(mode, BufferMode::Resizable);
+        let zero = size_of::<T>() == 0;
+        if invalid || zero {
             return None;
         }
+
+        // Decompose graphics
+        let device = graphics.logical();
+        let queue = graphics.queue();
+
+        // Get location and staging buffer location
+        log::debug!("Creating buffer with {} elements, stride: {}", slice.len(), size_of::<T>());
+        let layout = super::find_optimal_layout(mode, usage);
+        log::debug!("Given buffer layout {:?}, optimal layout {:?}", usage, layout);
+
+        
+        todo!()
+        /*
 
         // Decompose graphics
         let device = graphics.device();
@@ -114,8 +126,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         let size =
             u64::try_from(size_of::<T>() * slice.len()).unwrap();
 
-        // Get location and staging buffer location
-        let layout = super::find_optimal_layout(mode, usage, TYPE);
+
 
         // Create the actual buffer
         let (buffer, allocation) = unsafe {
@@ -169,8 +180,10 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         })
         */
         todo!()
+        */
     }
 
+    /*
     // Create an empty buffer if we can (resizable)
     pub fn empty(
         graphics: &Graphics,
@@ -180,6 +193,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     ) -> Option<Self> {
         Self::from_slice(graphics, &[], mode, usage, recorder)
     }
+    */
 
     // Get the current length of the buffer
     pub fn len(&self) -> usize {
@@ -206,11 +220,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         size_of::<T>()
     }
 
-    // Get the underlying allocation for this buffer
-    // Get the device address for this buffer
-    pub unsafe fn address(&self) -> vk::DeviceAddress {
-        self.graphics.device().buffer_device_address(self.buffer)
-    }
+    /*
 
     // Convert a range bounds type into the range indices
     // This will return None if the returning indices have a length of 0
@@ -294,14 +304,14 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         }
 
         // Check if we can write to the buffer
-        if !self.usage.host_write {
+        if !self.usage.permission_host_write {
             return Err(BufferError::InvalidUsage(
                 InvalidUsageError::IllegalHostWrite,
             ));
         }
 
         // Check if we can read from the buffer
-        if !self.usage.host_read {
+        if !self.usage.permission_host_read {
             return Err(BufferError::InvalidUsage(
                 InvalidUsageError::IllegalHostRead,
             ));
@@ -343,16 +353,14 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         }
 
         // Check if we can write to the buffer
-        if !self.usage.host_write {
+        if !self.usage.permission_host_write {
             return Err(BufferError::InvalidUsage(
                 InvalidUsageError::IllegalHostWrite,
             ));
         }
 
         // Get the mapped pointer and write to it the given slice
-        let dst = self.allocation.mapped_slice_mut().unwrap();
-        let dst = bytemuck::cast_slice_mut::<u8, T>(dst);
-        dst[offset..size].copy_from_slice(src);
+        todo!()
         Ok(())
     }
 
@@ -378,16 +386,14 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         }
 
         // Check if we can read from the buffer
-        if !self.usage.host_read {
+        if !self.usage.permission_host_read {
             return Err(BufferError::InvalidUsage(
                 InvalidUsageError::IllegalHostRead,
             ));
         }
 
         // Get the mapped pointer and write to it the given slice
-        let src = self.allocation.mapped_slice().unwrap();
-        let src = bytemuck::cast_slice::<u8, T>(src);
-        dst.copy_from_slice(&src[offset..size]);
+        todo!()
         Ok(())
     }
 
@@ -478,6 +484,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     ) -> Result<(), BufferError> {
         self.read_range(slice, .., recorder)
     }
+    */
 
     /*
     // Create a new ranged buffer reader that can read from the buffer
@@ -503,15 +510,4 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         todo!()
     }
     */
-}
-
-impl<T: Content, const TYPE: u32> Drop for Buffer<T, TYPE> {
-    fn drop(&mut self) {
-        unsafe {
-            let allocation = ManuallyDrop::take(&mut self.allocation);
-            self.graphics
-                .device()
-                .destroy_buffer(self.buffer, allocation);
-        }
-    }
 }

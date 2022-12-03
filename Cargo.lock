@@ -825,6 +825,7 @@ dependencies = [
  "assets",
  "bytemuck",
  "log",
+ "log_err",
  "math",
  "nohash-hasher",
  "parking_lot",
@@ -1061,6 +1062,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "abb12e687cfb44aa40f41fc3978ef76448f9b6038cad6aef4259d3c095a2382e"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "log_err"
+version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e2829e80508da18227e53a791bbe19018306f3f400bba439bc9959e9faa860f7"
+dependencies = [
+ "log",
 ]
 
 [[package]]

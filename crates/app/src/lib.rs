@@ -12,7 +12,6 @@ pub use world;
 // Gfx related
 pub use graphics;
 pub use rendering;
-pub use vulkan;
 pub mod prelude {
     pub use crate::app::*;
     pub use crate::assets::*;
@@ -35,5 +34,4 @@ pub mod prelude {
     // Gfx related
     pub use crate::graphics::*;
     pub use crate::rendering::*;
-    pub use crate::vulkan::*;
 }

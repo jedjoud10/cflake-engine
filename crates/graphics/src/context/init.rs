@@ -1,9 +1,9 @@
 use std::sync::Arc;
 use log_err::{LogErrResult, LogErrOption};
-use vulkano::{instance::{Instance, InstanceCreateInfo}, device::{physical::{PhysicalDevice, PhysicalDeviceType}, Device, DeviceExtensions, QueueFamilyProperties, DeviceCreateInfo, QueueCreateInfo, Queue}, VulkanLibrary, swapchain::{Surface, Swapchain, SwapchainCreateInfo}, image::SwapchainImage};
+use vulkano::{instance::{Instance, InstanceCreateInfo}, device::{physical::{PhysicalDevice, PhysicalDeviceType}, Device, DeviceExtensions, QueueFamilyProperties, DeviceCreateInfo, QueueCreateInfo, Queue, Features}, VulkanLibrary, swapchain::{Surface, Swapchain, SwapchainCreateInfo, PresentMode}, image::{SwapchainImage, ImageUsage}, memory::allocator::StandardMemoryAllocator, command_buffer::allocator::{StandardCommandBufferAllocator, StandardCommandBufferAllocatorCreateInfo}};
 use vulkano_win::VkSurfaceBuild;
 use winit::{window::{Fullscreen, WindowBuilder}, event_loop::EventLoop};
-use crate::{WindowSettings, Window, Graphics};
+use crate::{WindowSettings, Window, Graphics, FrameRateLimit};
 
 
 // Create the Vulkan context wrapper and a Window wrapper
@@ -29,7 +29,19 @@ pub(crate) fn init_context_and_window(
     let (device, queue) = create_logical_device(physical.clone(), queue);
 
     // Create a rendering swapchain
-    let (swapchain, images) = create_swapchain(device.clone(), surface.clone(), &settings);
+    let window = surface.object().unwrap().downcast_ref::<winit::window::Window>().unwrap();
+    let (swapchain, images) = create_swapchain(
+        device.clone(),
+        surface.clone(),
+        window, physical.clone(),
+        &settings
+    );
+
+    // Create a memory allocator
+    let memory_allocator = create_allocator(&device);    
+
+    // Create a command buffer allocator
+    let cmd_buffer_allocator = create_cmd_allocator(&device);
 
     // Create the graphics wrapper
     let graphics = Graphics {
@@ -39,6 +51,8 @@ pub(crate) fn init_context_and_window(
         device,
         swapchain,
         images,
+        memory_allocator,
+        cmd_buffer_allocator,
     };
 
     // Create the window wrapper
@@ -48,6 +62,22 @@ pub(crate) fn init_context_and_window(
     };
 
     (graphics, window)
+}
+
+// Create a memory allocator
+fn create_allocator(device: &Arc<Device>) -> Arc<StandardMemoryAllocator> {
+    log::debug!("Initializing the standard memory allocator");
+    Arc::new(StandardMemoryAllocator::new_default(device.clone()))
+}
+
+// Create a command buffer allocator
+fn create_cmd_allocator(device: &Arc<Device>) -> Arc<StandardCommandBufferAllocator> {
+    log::debug!("Initializing the standard command buffer allocator");
+
+    let create_info = 
+        StandardCommandBufferAllocatorCreateInfo::default();
+
+    Arc::new(StandardCommandBufferAllocator::new(device.clone(), create_info))
 }
 
 // Init a Vulkan surface (winit window)
@@ -77,14 +107,26 @@ fn load_instance(app_name: String, engine_name: String) -> Arc<Instance> {
     Instance::new(library, create_info).log_expect("Cock")
 }
 
-// Iterate through all physical devices and pick an optimal
-fn pick_physical_device(instance: Arc<Instance>) -> Arc<PhysicalDevice> {
-    // Device extensions that we *must* support
-    let extensions = DeviceExtensions {
+// List of device extensions that we will use
+fn device_extensions() -> DeviceExtensions {
+    DeviceExtensions {
         khr_swapchain: true,
         ..Default::default()
-    };
+    }
+}
 
+// List of device features that we will use
+fn device_features() -> Features {
+    Features {
+        tessellation_shader: true,
+        multi_draw: true,
+        multi_draw_indirect: true,
+        ..Default::default()
+    }
+}
+
+// Iterate through all physical devices and pick an optimal
+fn pick_physical_device(instance: Arc<Instance>) -> Arc<PhysicalDevice> {
     // Find the best GPU that supports the extensions
     let adapter = instance
         .enumerate_physical_devices()
@@ -93,14 +135,18 @@ fn pick_physical_device(instance: Arc<Instance>) -> Arc<PhysicalDevice> {
             log::debug!("Checking if {} is suitable...", p.properties().device_name);
             
             // Check if the extensions are supported
-            let supported = p.supported_extensions().contains(&extensions);
-            log::debug!("Supported extensions: {}", supported);
+            let extensions = p.supported_extensions().contains(&device_extensions());
+            log::debug!("Supported extensions: {}", extensions);
+
+            // Check if the features are supported
+            let features = p.supported_features().contains(&device_features());
+            log::debug!("Supported features: {}", features);
 
             // Check if the device type matches
             let optimal = matches!(p.properties().device_type, PhysicalDeviceType::DiscreteGpu);
             log::debug!("Is device type optimal: {}", optimal);
 
-            supported && optimal
+            features && optimal
         })
         .log_expect("Could not pick a physical device");
     log::debug!("Chose the {} as the physical device", adapter.properties().device_name);
@@ -133,6 +179,8 @@ fn create_logical_device(physical: Arc<PhysicalDevice>, queue_family_index: u32)
     // Logical device create info where we can also specify extensions
     let info = DeviceCreateInfo {
         queue_create_infos: vec![QueueCreateInfo { queue_family_index, ..Default::default() }],
+        enabled_extensions: device_extensions(),
+        enabled_features: device_features(),
         ..Default::default()
     };
 
@@ -149,26 +197,51 @@ fn create_logical_device(physical: Arc<PhysicalDevice>, queue_family_index: u32)
 fn create_swapchain(
     device: Arc<Device>,
     surface: Arc<Surface>,
+    window: &winit::window::Window,
+    physical: Arc<PhysicalDevice>,
     window_settings: &WindowSettings,
 ) -> (Arc<Swapchain>, Vec<Arc<SwapchainImage>>) {
-       
+    // Get surface capabilities
+    let capabilites = physical.surface_capabilities(
+        &surface,
+        Default::default()
+    ).unwrap();
+
+    // Get supported image formats
+    let formats = physical.surface_formats(
+        &surface,
+        Default::default()
+    ).unwrap();
+
+    // Get supported present modes
+    let modes = physical
+        .surface_present_modes(&surface)
+        .unwrap()
+        .collect::<Vec<_>>();
+
+    // Get supported present modes
+    let mode = if matches!(window_settings.limit, FrameRateLimit::VSync) {
+        if modes.contains(&PresentMode::Mailbox) {
+            PresentMode::Mailbox
+        } else {
+            PresentMode::Fifo
+        }
+    } else {
+        PresentMode::Immediate
+    };
+    log::debug!("Chose the present mode {:?}", mode);
 
     // Create the swapchain create info
     let create_info = SwapchainCreateInfo {
-        min_image_count: todo!(),
-        image_format: todo!(),
-        image_color_space: todo!(),
-        image_extent: todo!(),
-        image_array_layers: todo!(),
-        image_usage: todo!(),
-        image_sharing: todo!(),
-        pre_transform: todo!(),
-        composite_alpha: todo!(),
-        present_mode: todo!(),
-        clipped: todo!(),
-        full_screen_exclusive: todo!(),
-        win32_monitor: todo!(),
-        _ne: todo!(),
+        min_image_count: capabilites.min_image_count,
+        image_format: Some(formats[0].0),
+        image_extent: window.inner_size().into(),
+        present_mode: mode,
+        image_usage: ImageUsage {
+            color_attachment: true,
+            ..ImageUsage::empty()
+        },
+        ..Default::default()
     };
 
     // Create the swapchain

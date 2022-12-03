@@ -10,19 +10,13 @@ fn init(
     app_name: String,
     engine_name: String,
 ) {
-    // Instantiate a new window wrapper
-    let window =
-        crate::context::Window::new(window_settings.clone(), el);
-
-    // Create a new wgpu context
-    let graphics = unsafe {
-        crate::context::Graphics::new(
-            window.window(),
-            &window_settings,
-            app_name,
-            engine_name,
-        )
-    };
+    // Initialize the Vulkan context and create a winit Window
+    let (graphics, window) = crate::context::init_context_and_window(
+        app_name,
+        engine_name,
+        el,
+        window_settings.clone()
+    );
 
     // Add the resources into the world
     world.insert(window);
@@ -67,19 +61,6 @@ fn update(world: &mut World) {
     let mut graphics =
         world.get_mut::<crate::context::Graphics>().unwrap();
     let time = world.get::<utils::Time>().unwrap();
-    unsafe {
-        graphics.draw(time.secs_since_startup_f32().sin().abs());
-    }
-}
-
-// Destroy the Vulkan context
-fn destroy(world: &mut World) {
-    let graphics =
-        world.remove::<crate::context::Graphics>().unwrap();
-    unsafe {
-        graphics.destroy();
-    }
-    world.remove::<crate::context::Window>().unwrap();
 }
 
 // Context system will just register the wgpu context and create a simple window
@@ -98,6 +79,5 @@ pub fn system(
         .before(user);
 
     system.insert_update(update).before(user);
-    system.insert_shutdown(destroy).after(post_user);
     system.insert_window(event);
 }

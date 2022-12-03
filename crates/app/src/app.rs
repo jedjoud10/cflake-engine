@@ -4,7 +4,7 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
 };
 //use gui::egui::util::id_type_map::TypeId;
-use graphics::{BufferingMode, FrameRateLimit, WindowSettings};
+use graphics::{FrameRateLimit, WindowSettings};
 use mimalloc::MiMalloc;
 use std::{any::TypeId, path::PathBuf};
 use world::{
@@ -39,7 +39,6 @@ impl Default for App {
             window: WindowSettings {
                 title: "Default title".to_string(),
                 limit: FrameRateLimit::default(),
-                buffering: BufferingMode::default(),
                 fullscreen: false,
             },
             author_name: "cFlake Dev".to_string(),

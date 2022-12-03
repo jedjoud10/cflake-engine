@@ -16,37 +16,43 @@ fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap().clone();
     let mut threadpool = world.get_mut::<ThreadPool>().unwrap();
 
-    // Create a buffer in a new thread
+    log::warn!(
+        "Executing on thread {:?}",
+        std::thread::current().name()
+    );
+    
+    // Create a command buffer just for this buffer
+    let builder = vulkano::command_buffer::AutoCommandBufferBuilder::primary(
+        graphics.cmd_buffer_allocator(),
+        graphics.queue().queue_family_index(),
+        vulkano::command_buffer::CommandBufferUsage::SimultaneousUse
+    ).unwrap();
+
+
+
+
+    /*
     let array = (0..1).into_iter().collect::<Vec<_>>();
     threadpool.for_each::<&[u32]>(
         &array,
         move |_| {
-            // Create a command recorder just for this buffer
             log::warn!(
                 "Executing on thread {:?}",
                 std::thread::current().name()
             );
-            let mut recorder = graphics.aquire_recorder();
-
-            // Create a uniform buffer
-            let mut buffer = UniformBuffer::from_slice(
-                &graphics.clone(),
-                &[1i32, 2, 3],
-                BufferMode::Dynamic,
-                BufferUsage {
-                    hint_device_write: true,
-                    hint_device_read: true,
-                    host_write: true,
-                    host_read: false,
-                },
-                &mut recorder,
-            )
-            .unwrap();
+            
+            // Create a command buffer just for this buffer
+            let builder = vulkano::command_buffer::AutoCommandBufferBuilder::primary(
+                graphics.cmd_buffer_allocator(),
+                graphics.queue().queue_family_index(),
+                vulkano::command_buffer::CommandBufferUsage::SimultaneousUse
+            ).unwrap();
         },
         1,
     );
+    */
 
-    std::thread::sleep(std::time::Duration::from_secs(10));
+    //std::thread::sleep(std::time::Duration::from_secs(10));
 }
 
 // Executed each frame

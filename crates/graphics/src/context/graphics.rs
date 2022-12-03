@@ -1,165 +1,69 @@
 use crate::FrameRateLimit;
-
 use super::WindowSettings;
-use ash::vk;
 use bytemuck::{Pod, Zeroable};
+use vulkano::{instance::{Instance, InstanceCreateInfo}, device::{physical::PhysicalDevice, Device, Queue}, VulkanLibrary, swapchain::Swapchain, image::SwapchainImage, memory::allocator::{GenericMemoryAllocator, StandardMemoryAllocator}, command_buffer::allocator::{CommandBufferAllocator, StandardCommandBufferAlloc, StandardCommandBufferAllocator}};
 use std::sync::Arc;
 use utils::ThreadPool;
-use vulkan::*;
-
-// Plain old data type internally used by buffers and other types
-pub trait Content:
-    Zeroable + Pod + Clone + Copy + Sync + Send + 'static
-{
-}
-impl<T: Clone + Copy + Sync + Send + Zeroable + Pod + 'static> Content
-    for T
-{
-}
-
-// Internal graphics context that will be shared with other threads
-pub(crate) struct InternalGraphics {
-    instance: Instance,
-    adapter: Adapter,
-    device: Device,
-    queues: Queues,
-    surface: Surface,
-    swapchain: Swapchain,
-}
 
 // Graphical context that we will wrap around the WGPU instance
 // This context must be shareable between threads to allow for multithreading
 #[derive(Clone)]
-pub struct Graphics(Arc<InternalGraphics>);
+pub struct Graphics {
+    // Main vulkan instance entry point
+    pub(crate) instance: Arc<Instance>,
 
-impl Graphics {
-    // Create a new Vulkan graphics context based on the window wrapper
-    // This will create the window surface, then pick out a physical device
-    // It will then create the swapchain and setup the swapchain images
-    pub(crate) unsafe fn new(
-        window: &winit::window::Window,
-        window_settings: &WindowSettings,
-        app_name: String,
-        engine_name: String,
-    ) -> Graphics {
-        // Create the Vulkan entry and instance
-        let instance = Instance::new(
-            window,
-            app_name,
-            engine_name,
-        );
+    // Physical graphics card that will crate the logical one
+    pub(crate) physical: Arc<PhysicalDevice>,
 
-        // Create a surface from the KHR extension
-        let surface = Surface::new(&instance);
+    // Main logical device that will handle command and submitions
+    pub(crate) device: Arc<Device>,
 
-        // Pick a physical device (adapter)
-        let adapter = Adapter::pick(&instance, false, &surface);
+    // The graphics and presentable queue
+    pub(crate) queue: Arc<Queue>,
 
-        // Create a new device with those queues
-        let device = Device::new(&instance, &adapter);
+    // Swapchain that we must render to and it's images
+    pub(crate) swapchain: Arc<Swapchain>,
+    pub(crate) images: Vec<Arc<SwapchainImage>>,
 
-        // Create the queues that we will instantiate
-        let queues = Queues::new(&instance, &device, &adapter);
-
-        // Create a swapchain we can render to
-        let vsync =
-            matches!(window_settings.limit, FrameRateLimit::VSync);
-        let swapchain = Swapchain::new(
-            &adapter, &surface, &device, &instance, window, vsync,
-        );
-
-        Self(Arc::new(InternalGraphics {
-            instance,
-            adapter,
-            device,
-            queues,
-            surface,
-            swapchain,
-        }))
-    }
-
-    // Get the instance
-    pub fn instance(&self) -> &Instance {
-        &self.0.instance
-    }
-
-    // Get the adapter
-    pub fn adapter(&self) -> &Adapter {
-        &self.0.adapter
-    }
-
-    // Get the device
-    pub fn device(&self) -> &Device {
-        &self.0.device
-    }
-
-    // Get the queues
-    pub fn queues(&self) -> &Queues {
-        &self.0.queues
-    }
-
-    // Get the surface
-    pub fn surface(&self) -> &Surface {
-        &self.0.surface
-    }
-
-    // Get the swapchain
-    pub fn swapchain(&self) -> &Swapchain {
-        &self.0.swapchain
-    }
-
-    // Draw the main window swapchain sheize
-    pub(crate) unsafe fn draw(&mut self, _value: f32) {
-        self.swapchain().render(self.queues(), self.device());
-    }
-
-    // Destroy the context after we've done using it
-    // Only destroy the context when we are sure we have no shared state
-    pub(crate) unsafe fn destroy(self) {
-        /*
-        internal.swapchain.destroy(&internal.device);
-        internal.queues.destroy(&internal.device);
-        internal.device.destroy();
-        internal.surface.destroy();
-        internal.instance.destroy();
-        */
-    }
+    // Allocator types
+    pub(crate) memory_allocator: Arc<StandardMemoryAllocator>,
+    pub(crate) cmd_buffer_allocator: Arc<StandardCommandBufferAllocator>,
 }
 
 impl Graphics {
-    /*
-    // Get a recorder from the graphics family
-    pub fn aquire_recorder<'a>(
-        &'a self,
-    ) -> Recorder<'a, 'a> {
-        unsafe {
-            let family = self.queues().family(FamilyType::Graphics);
-            let device = self.device();
-            let pool = family.aquire_pool();
-            pool.aquire_recorder(device, Default::default())
-        }
+    // Get the instance
+    pub fn instance(&self) -> &Instance {
+        &self.instance
     }
 
-    // Submit a recorder to the graphics context and start executing it
-    pub fn submit_recorder(&self, recorder: Recorder) {
-        unsafe {
-            let device = self.device();
-            let flag =
-                vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER;
-
-            /*
-            self.queues()
-                .family(FamilyType::Graphics)
-                .aquire_pool()
-                .submit_recorders_from_iter(
-                    self.device(),
-                    &[recorder],
-                    &[],
-                    &[],
-                    &[],
-                );
-            */
-        }
+    // Get the adapter (physical device)
+    pub fn physical(&self) -> &PhysicalDevice {
+        &self.physical
     }
-    */
+
+    // Get the logical device
+    pub fn logical(&self) -> &Device {
+        &self.device
+    }
+
+    // Get the main graphics + present queue
+    pub fn queue(&self) -> &Queue {
+        &self.queue
+    }
+
+    // Get the swapchain and it's images
+    pub fn swapchain(&self) -> (&Swapchain, &[Arc<SwapchainImage>]) {
+        (&self.swapchain, self.images.as_slice())
+    }
+
+    // Get the memory allocator
+    pub fn memory_allocator(&self) -> &StandardMemoryAllocator {
+        &self.memory_allocator
+    }
+
+    // Get the command buffer allocator
+    pub fn cmd_buffer_allocator(&self) -> &StandardCommandBufferAllocator {
+        &self.cmd_buffer_allocator
+    }
+
 }
