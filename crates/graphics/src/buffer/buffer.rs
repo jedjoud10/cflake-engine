@@ -6,10 +6,11 @@ use std::{
 
 use crate::{
     BufferError, Graphics, InvalidModeError,
-    InvalidUsageError,
+    InvalidUsageError, Recorder,
 };
 use bytemuck::{Zeroable, Pod};
-use vulkano::{buffer::{DeviceLocalBuffer, BufferContents, CpuAccessibleBuffer}, command_buffer::{AutoCommandBufferBuilder, PrimaryCommandBufferAbstract, PrimaryAutoCommandBuffer}};
+use log_err::LogErrResult;
+use vulkano::{buffer::{DeviceLocalBuffer, BufferContents, CpuAccessibleBuffer, BufferAccess, BufferAccessObject}, command_buffer::{AutoCommandBufferBuilder, PrimaryCommandBufferAbstract, PrimaryAutoCommandBuffer, CopyBufferInfo}};
 
 // Some settings that tell us how exactly we should create the buffer
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
@@ -66,9 +67,41 @@ pub type UniformBuffer<T> = Buffer<T, UNIFORM>;
 pub type IndirectBuffer<T> = Buffer<T, INDIRECT>;
 
 // Internal buffer type since we might use either one
-pub enum BufferKind<T: BufferContents + Sized> where [T]: BufferContents {
+pub(super) enum BufferKind<T: BufferContents + Sized> where [T]: BufferContents {
     DeviceLocal(Arc<DeviceLocalBuffer<[T]>>),
     CpuAccessible(Arc<CpuAccessibleBuffer<[T]>>),
+}
+
+impl<T: BufferContents + Sized> Clone for BufferKind<T> where [T]: BufferContents {
+    fn clone(&self) -> Self {
+        match self {
+            Self::DeviceLocal(arg0) => Self::DeviceLocal(arg0.clone()),
+            Self::CpuAccessible(arg0) => Self::CpuAccessible(arg0.clone()),
+        }
+    }
+}
+
+impl<T: BufferContents + Sized> BufferKind<T> where [T]: BufferContents {
+    fn as_buffer_access_object(&self) -> Arc<dyn BufferAccess> {
+        match &self {
+            BufferKind::DeviceLocal(x) => x.as_buffer_access_object(),
+            BufferKind::CpuAccessible(x) => x.as_buffer_access_object(),
+        }
+    }
+
+    fn as_device_local(&self) -> Arc<DeviceLocalBuffer<[T]>> {
+        match self {
+            BufferKind::DeviceLocal(x) => x.clone(),
+            BufferKind::CpuAccessible(_) => panic!(),
+        }
+    }
+
+    fn as_cpu_accessible(&self) -> Arc<CpuAccessibleBuffer<[T]>> {
+        match self {
+            BufferKind::DeviceLocal(_) => panic!(),
+            BufferKind::CpuAccessible(x) => x.clone(),
+        }
+    }
 }
 
 // An abstraction layer over a valid OpenGL buffer
@@ -94,12 +127,12 @@ pub(super) struct BufferBounds {
 impl<T: Contents, const TYPE: u32> Buffer<T, TYPE> {
     // Create a buffer using a slice of elements
     // (will return none if we try to create a zero length Static, Dynamic, or Partial buffer)
-    pub fn from_slice<L>(
+    pub fn from_slice(
         graphics: &Graphics,
         slice: &[T],
         mode: BufferMode,
         usage: BufferUsage,
-        cmd: &mut AutoCommandBufferBuilder<L>,
+        recorder: &mut Recorder,
     ) -> Option<Self> {
         // Cannot create a zero sized slice for non-resizable buffers or a zero sized buffer in general
         let invalid = slice.is_empty() && !matches!(mode, BufferMode::Resizable);
@@ -127,6 +160,35 @@ impl<T: Contents, const TYPE: u32> Buffer<T, TYPE> {
             layout.src_host_cached,
             layout.src_kind,
         );
+
+        // If we need to create a temporary staging buffer, do so
+        if let Some(usage) = layout.init_usage {
+            unsafe {
+                // Create a staging buffer if needed
+                let staging = CpuAccessibleBuffer::<[T]>::uninitialized_array(
+                    graphics.memory_allocator(),
+                    slice.len() as u64,
+                    usage,
+                    false,
+                ).expect("Could not create CPU accessible staging buffer");
+
+                // Write to the staging buffer
+                let mut write = staging.write().unwrap();
+                write.copy_from_slice(slice);
+
+                // Get the main's buffer access
+                let dst = inner.as_buffer_access_object();
+
+                // Copy the staging buffer to the main buffer
+                let info = CopyBufferInfo::buffers(staging.clone(), dst);
+                recorder.internal.copy_buffer(info).unwrap();
+            }
+        } else {
+            // If not, we must write directly to the buffer
+            let src = inner.as_cpu_accessible();
+            let mut write = src.write().unwrap();
+            write.copy_from_slice(slice);
+        }
 
         // Create a buffer instance
         Some(Self {
@@ -238,19 +300,53 @@ impl<T: Contents, const TYPE: u32> Buffer<T, TYPE> {
             ));
         }
 
-        // Get the mapped pointer and read from it
         match &self.inner {
-            BufferKind::DeviceLocal(_) => todo!(),
+            BufferKind::DeviceLocal(buffer) => {
+                // Use the staging buffer that we created to read back from the buffer
+            },
             BufferKind::CpuAccessible(buffer) => {
+                // Get a read lock on the buffer
                 let read = buffer.read().unwrap();
                 let BufferBounds { offset, size } = bounds;
                 let src = &read[offset..(offset + size)];
+                
+                // Read from the CPU accessible buffer
                 dst.copy_from_slice(src);
+                
+                // Logging
                 log::debug!("Reading range: {:?} from cpu accessible buffer", bounds);
             },
         }
         Ok(())
     }
+
+    /*
+    // Read a region of the buffer into a new vector
+    pub fn read_range_as_vec(
+        &self,
+        range: impl RangeBounds<usize> + Copy,
+        recorder: &Recorder,
+    ) -> Result<Vec<T>, BufferError> {
+        let Some(BufferBounds {
+            size, .. 
+        }) = self.convert_range_bounds(range) else {
+            return Ok(Vec::new());
+        };
+
+        // Create a vec and read into it
+        let mut vec = vec![T::zeroed(); size];
+        self.read_range(&mut vec, range, recorder)?;
+        Ok(vec)
+    }
+
+    // Read the whole buffer into a new vector
+    pub fn read_to_vec(
+        &self,
+        recorder: &Recorder,
+    ) -> Result<Vec<T>, BufferError> {
+        self.read_range_as_vec(.., recorder)
+    }
+    */
     
     // Overwrite a region of the buffer using a slice and a range
     pub fn write_range(
@@ -365,65 +461,6 @@ impl<T: Contents, const TYPE: u32> Buffer<T, TYPE> {
         }
 
         Ok(())
-    }
-
-    // Overwrite a region of the buffer using a slice and a range
-    pub fn write_range(
-        &mut self,
-        src: &[T],
-        range: impl RangeBounds<usize>,
-        _recorder: &Recorder,
-    ) -> Result<(), BufferError> {
-        let Some(BufferBounds {
-            offset, size 
-        }) = self.convert_range_bounds(range) else {
-            return Ok(());
-        };
-
-        // Check if the given slice matches with the range
-        if size != src.len() {
-            return Err(BufferError::SliceLengthRangeMistmatch(
-                src.len(),
-                size,
-            ));
-        }
-
-        // Check if we can write to the buffer
-        if !self.usage.permission_host_write {
-            return Err(BufferError::InvalidUsage(
-                InvalidUsageError::IllegalHostWrite,
-            ));
-        }
-
-        // Get the mapped pointer and write to it the given slice
-        todo!()
-        Ok(())
-    }
-
-    // Read a region of the buffer into a new vector
-    pub fn read_range_as_vec(
-        &self,
-        range: impl RangeBounds<usize> + Copy,
-        recorder: &Recorder,
-    ) -> Result<Vec<T>, BufferError> {
-        let Some(BufferBounds {
-            size, .. 
-        }) = self.convert_range_bounds(range) else {
-            return Ok(Vec::new());
-        };
-
-        // Create a vec and read into it
-        let mut vec = vec![T::zeroed(); size];
-        self.read_range(&mut vec, range, recorder)?;
-        Ok(vec)
-    }
-
-    // Read the whole buffer into a new vector
-    pub fn read_to_vec(
-        &self,
-        recorder: &Recorder,
-    ) -> Result<Vec<T>, BufferError> {
-        self.read_range_as_vec(.., recorder)
     }
 
     // Clear the buffer contents, resetting the buffer's length down to zero

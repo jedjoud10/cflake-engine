@@ -18,22 +18,36 @@ fn init(world: &mut World) {
 
     threadpool.execute(move || {
         // Create a command buffer just for this buffer
-        let mut builder = graphics.recorder();
+        let mut recorder = graphics.acquire();
+
+        // Create the buffer usage
+        let usage = BufferUsage {
+            hint_device_write: true,
+            hint_device_read: false,
+            permission_host_write: false,
+            permission_host_read: true,
+        };
 
         // Create a simple buffer
         let mut buffer = UniformBuffer::from_slice(
             &graphics,
             &[0, 1, 2],
             Default::default(),
-            Default::default(),
-            &mut builder,
+            usage,
+            &mut recorder,
         ).unwrap();
 
+        
         let mut dst = [0; 3];
         buffer.read_range(&mut dst, 0..3).unwrap();
         dbg!(dst);
 
         buffer.write_range(&[2, 3, 4], 0..3).unwrap();
+
+        buffer.read_range(&mut dst, 0..3).unwrap();
+        dbg!(dst);
+
+        graphics.submit(recorder);
 
         buffer.read_range(&mut dst, 0..3).unwrap();
         dbg!(dst);
@@ -70,6 +84,6 @@ fn update(world: &mut World) {
     let time = world.get::<Time>().unwrap();
 
     if input.get_button(Button::P).pressed() {
-        println!("{}", 1.0f32 / time.delta_f32());
+        println!("{}", time.average_fps());
     }
 }

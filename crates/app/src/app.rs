@@ -220,6 +220,13 @@ impl App {
         // Enable the environment logger
         env_logger::init();
 
+        // Pass the panics to the LOG crate
+        let orig_hook = std::panic::take_hook();
+        std::panic::set_hook(Box::new(move |panic_info| {
+            log::error!("{:?}", panic_info.to_string());
+            orig_hook(panic_info);
+        }));
+
         // Insert the default systems
         self = self.insert_default_systems();
 

@@ -9,7 +9,7 @@ use std::{
         mpsc::{Receiver, Sender},
         Arc,
     },
-    thread::JoinHandle,
+    thread::{JoinHandle, ThreadId},
 };
 
 use crate::{SliceTuple, ThreadPoolScope};
@@ -57,6 +57,7 @@ pub struct ThreadPool {
 
     // Number of active threads currently working
     active: Arc<AtomicU32>,
+    panicked: Arc<Mutex<Option<usize>>>,
 
     // Join handles for the OS threads
     joins: Vec<JoinHandle<()>>,
@@ -86,6 +87,7 @@ impl ThreadPool {
             waiting: Arc::new(AtomicU32::new(0)),
             task_sender: Some(task_sender),
             task_receiver: Arc::new(Mutex::new(task_receiver)),
+            panicked: Arc::new(Mutex::new(None)),
         };
 
         // Spawn the worker threads
@@ -288,6 +290,11 @@ impl ThreadPool {
         self.joins.len()
     }
 
+    // Check if any of the threads have panicked, and return the thread ID
+    pub fn check_any_panicked(&self) -> Option<usize> {
+        *self.panicked.lock()
+    }
+
     // Get the number of jobs that are waiting to get executed
     pub fn num_idling_jobs(&self) -> usize {
         self.waiting.load(Ordering::Relaxed) as usize
@@ -315,6 +322,10 @@ impl ThreadPool {
 
 impl Drop for ThreadPool {
     fn drop(&mut self) {
+        if self.check_any_panicked().is_some() {
+            return;
+        }
+
         self.task_sender.take().unwrap();
         self.join();
 
@@ -331,11 +342,24 @@ fn spawn(threadpool: &ThreadPool, index: usize) -> JoinHandle<()> {
     let waiting = threadpool.waiting.clone();
     let name = format!("WorkerThread-{index}");
 
+    // Used to check if a thread has panicked
+    struct Hook(usize, Arc<Mutex<Option<usize>>>);
+    impl Drop for Hook {
+        fn drop(&mut self) {
+            if std::thread::panicking() {
+                let mut locked = self.1.lock();
+                *locked = Some(self.0);
+            }
+        }
+    }
+    let hook = Hook(index, threadpool.panicked.clone());
+
     std::thread::Builder::new()
         .name(name)
         .spawn(move || {
             // Set the thread index at the start
             CURRENT.with(|current| current.set(index + 1));
+            let _hook = hook;
 
             loop {
                 // No task, block so we shall wait

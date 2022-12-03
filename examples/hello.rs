@@ -4,6 +4,7 @@ use cflake_engine::prelude::*;
 fn main() {
     App::default()
         .insert_init(init)
+        .set_enabled_systems(EnabledSystems::none())
         .set_window_title("Hello World!")
         .execute();
 }

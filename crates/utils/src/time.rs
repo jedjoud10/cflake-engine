@@ -14,17 +14,9 @@ pub struct Time {
 
     // The start of the current frame
     pub(crate) frame_start: Instant,
-}
 
-impl Default for Time {
-    fn default() -> Self {
-        Self {
-            delta: Default::default(),
-            frame_count: Default::default(),
-            startup: Instant::now(),
-            frame_start: Instant::now(),
-        }
-    }
+    // FPS counter buffer
+    pub(crate) average_delta: f32,
 }
 
 impl Time {
@@ -56,5 +48,15 @@ impl Time {
     // Get the moment the current frame started
     pub fn frame_start(&self) -> Instant {
         self.frame_start
+    }
+
+    // Get the current smoothed FPS
+    pub fn average_fps(&self) -> f32 {
+        1.0f32 / self.average_delta
+    }
+
+    // Get the current smoothed delta
+    pub fn average_delta(&self) -> f32 {
+        self.average_delta
     }
 }

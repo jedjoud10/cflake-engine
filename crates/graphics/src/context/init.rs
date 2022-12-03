@@ -1,5 +1,6 @@
 use std::sync::Arc;
 use log_err::{LogErrResult, LogErrOption};
+use parking_lot::Mutex;
 use vulkano::{instance::{Instance, InstanceCreateInfo}, device::{physical::{PhysicalDevice, PhysicalDeviceType}, Device, DeviceExtensions, QueueFamilyProperties, DeviceCreateInfo, QueueCreateInfo, Queue, Features}, VulkanLibrary, swapchain::{Surface, Swapchain, SwapchainCreateInfo, PresentMode}, image::{SwapchainImage, ImageUsage}, memory::allocator::StandardMemoryAllocator, command_buffer::allocator::{StandardCommandBufferAllocator, StandardCommandBufferAllocatorCreateInfo}};
 use vulkano_win::VkSurfaceBuild;
 use winit::{window::{Fullscreen, WindowBuilder}, event_loop::EventLoop};
@@ -53,6 +54,7 @@ pub(crate) fn init_context_and_window(
         images,
         memory_allocator,
         cmd_buffer_allocator,
+        recreate: Arc::new(Mutex::new(false)),
     };
 
     // Create the window wrapper
@@ -95,7 +97,7 @@ fn init_surface(instance: Arc<Instance>, el: &EventLoop<()>, settings: &WindowSe
 
 // Create the Vulkan instance
 fn load_instance(app_name: String, engine_name: String) -> Arc<Instance> {
-    let library = VulkanLibrary::new().log_expect("Cock");
+    let library = VulkanLibrary::new().expect("Cock");
     let required_extensions = vulkano_win::required_extensions(&library);
     let create_info = InstanceCreateInfo {
         application_name: Some(app_name),
@@ -104,7 +106,7 @@ fn load_instance(app_name: String, engine_name: String) -> Arc<Instance> {
         enumerate_portability: true,
         ..Default::default()
     };
-    Instance::new(library, create_info).log_expect("Cock")
+    Instance::new(library, create_info).expect("Cock")
 }
 
 // List of device extensions that we will use
@@ -130,7 +132,7 @@ fn pick_physical_device(instance: Arc<Instance>) -> Arc<PhysicalDevice> {
     // Find the best GPU that supports the extensions
     let adapter = instance
         .enumerate_physical_devices()
-        .log_expect("Could not enumerate physical devices")
+        .expect("Could not enumerate physical devices")
         .find(|p| {
             log::debug!("Checking if {} is suitable...", p.properties().device_name);
             
@@ -148,7 +150,7 @@ fn pick_physical_device(instance: Arc<Instance>) -> Arc<PhysicalDevice> {
 
             features && optimal
         })
-        .log_expect("Could not pick a physical device");
+        .expect("Could not pick a physical device");
     log::debug!("Chose the {} as the physical device", adapter.properties().device_name);
     adapter
 }
@@ -171,7 +173,7 @@ fn find_presentable_queue_family(physical: Arc<PhysicalDevice>, surface: Arc<Sur
         .iter()
         .enumerate()
         .position(|(i, q)| check_queue(q, physical.clone(), i, surface.clone()))
-        .log_expect("couldn't find a graphical queue family") as u32
+        .expect("couldn't find a graphical queue family") as u32
 }
 
 // Create a logical device from a physical device and the main queue family index
@@ -187,7 +189,7 @@ fn create_logical_device(physical: Arc<PhysicalDevice>, queue_family_index: u32)
     //Create the logical device and fetch the queue
     let (device, queues) = 
         Device::new(physical,info)
-        .log_expect("Could not create the logical device");
+        .expect("Could not create the logical device");
     let queues = queues.collect::<Vec<_>>();
     log::debug!("Created a logical device with {} queue(s)", queues.len());
     return (device, queues[0].clone());
@@ -239,6 +241,7 @@ fn create_swapchain(
         present_mode: mode,
         image_usage: ImageUsage {
             color_attachment: true,
+            transfer_dst: true,
             ..ImageUsage::empty()
         },
         ..Default::default()
@@ -249,5 +252,5 @@ fn create_swapchain(
         device,
         surface,
         create_info
-    ).log_expect("Could not create the swapchain")
+    ).expect("Could not create the swapchain")
 }

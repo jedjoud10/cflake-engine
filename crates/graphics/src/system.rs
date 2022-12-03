@@ -1,4 +1,5 @@
 use crate::WindowSettings;
+use vulkano::{sync::GpuFuture, NonExhaustive, command_buffer::ClearColorImageInfo, format::ClearColorValue};
 use winit::{event::WindowEvent, event_loop::EventLoop};
 use world::{post_user, user, State, System, World};
 
@@ -33,8 +34,8 @@ fn event(world: &mut World, event: &mut WindowEvent) {
                 return;
             }
 
-            // Resize the window by re-configuring WGPU
-            let _graphics =
+            // Resize the window by recreating the swapchain
+            let graphics =
                 world.get::<crate::context::Graphics>().unwrap();
             //graphics.resize()
             /*
@@ -58,9 +59,52 @@ fn event(world: &mut World, event: &mut WindowEvent) {
 
 // Clear the window at the start of every frame
 fn update(world: &mut World) {
-    let mut graphics =
+    let graphics =
         world.get_mut::<crate::context::Graphics>().unwrap();
     let time = world.get::<utils::Time>().unwrap();
+    
+    // Aquire the next available image in the swapchain
+    let (swapchain, images) = graphics.swapchain();
+    let (index, suboptimal, future) = 
+        match vulkano::swapchain::acquire_next_image(graphics.swapchain.clone(), None) {
+        Ok(r) => r,
+        Err(vulkano::swapchain::AcquireError::OutOfDate) => {
+            return;
+        },
+        Err(e) => panic!("Failed to acquire next image: {:?}", e),
+    };
+    
+    // Get a command buffer recorder from the context
+    let mut recorder = graphics.acquire();
+
+    // Record the clear color image command
+    let mut clear = ClearColorImageInfo::image(images[index as usize].clone());
+    clear.clear_value = ClearColorValue::Float([1.0; 4]);
+    recorder.internal.clear_color_image(clear).unwrap();
+
+    
+    let primary = recorder.internal.build().unwrap();
+
+    let execution = vulkano::sync::now(graphics.device.clone())
+        .join(future)
+        .then_execute(graphics.queue.clone(), primary)
+        .unwrap()
+        .then_swapchain_present(
+            graphics.queue.clone(),
+            vulkano::swapchain::SwapchainPresentInfo::swapchain_image_index(
+                graphics.swapchain.clone(), index),
+        )
+        .then_signal_fence_and_flush();
+
+    match execution {
+        Ok(future) => {
+            future.wait(None).unwrap(); 
+        }
+        Err(e) => {
+            println!("Failed to flush future: {:?}", e);
+        }
+    }
+
 }
 
 // Context system will just register the wgpu context and create a simple window

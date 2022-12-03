@@ -1,8 +1,9 @@
-use crate::FrameRateLimit;
+use crate::{FrameRateLimit, Recorder, Submission};
 use super::WindowSettings;
 use bytemuck::{Pod, Zeroable};
 use log_err::LogErrResult;
-use vulkano::{instance::{Instance, InstanceCreateInfo}, device::{physical::PhysicalDevice, Device, Queue}, VulkanLibrary, swapchain::Swapchain, image::SwapchainImage, memory::allocator::{GenericMemoryAllocator, StandardMemoryAllocator}, command_buffer::{allocator::{CommandBufferAllocator, StandardCommandBufferAlloc, StandardCommandBufferAllocator}, PrimaryAutoCommandBuffer, AutoCommandBufferBuilder}};
+use parking_lot::Mutex;
+use vulkano::{instance::{Instance, InstanceCreateInfo}, device::{physical::PhysicalDevice, Device, Queue}, VulkanLibrary, swapchain::Swapchain, image::SwapchainImage, memory::allocator::{GenericMemoryAllocator, StandardMemoryAllocator}, command_buffer::{allocator::{CommandBufferAllocator, StandardCommandBufferAlloc, StandardCommandBufferAllocator}, PrimaryAutoCommandBuffer, AutoCommandBufferBuilder}, sync::GpuFuture};
 use std::sync::Arc;
 use utils::ThreadPool;
 
@@ -25,20 +26,40 @@ pub struct Graphics {
     // Swapchain that we must render to and it's images
     pub(crate) swapchain: Arc<Swapchain>,
     pub(crate) images: Vec<Arc<SwapchainImage>>,
+    pub(crate) recreate: Arc<Mutex<bool>>,
 
     // Allocator types
     pub(crate) memory_allocator: Arc<StandardMemoryAllocator>,
     pub(crate) cmd_buffer_allocator: Arc<StandardCommandBufferAllocator>,
 }
 
-impl Graphics {
-    // Create a command buffer builder
-    pub fn recorder(&self) -> AutoCommandBufferBuilder<PrimaryAutoCommandBuffer> {
-        AutoCommandBufferBuilder::primary(
+impl Graphics {    
+    // Create a command recorder that will cache command buffer builders
+    pub fn acquire(&self) -> Recorder {
+        let builder = AutoCommandBufferBuilder::primary(
             self.cmd_buffer_allocator(),
             self.queue().queue_family_index(),
             vulkano::command_buffer::CommandBufferUsage::SimultaneousUse
-        ).log_unwrap()
+        ).log_unwrap();
+
+        Recorder {
+            internal: builder,
+        }
+    }
+
+    // Submit a command buffer recorder for execution
+    // This will internally cached the built command buffer
+    pub fn submit(&self, recorder: Recorder) -> Submission {
+        let fence = vulkano::sync::now(self.device.clone())
+            .then_execute(self.queue.clone(), recorder.internal.build().unwrap())
+            .unwrap()
+            .then_signal_fence_and_flush()
+            .unwrap();
+        fence.wait(None).unwrap();
+
+        Submission {
+
+        }
     }
 }
 

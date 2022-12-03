@@ -152,7 +152,7 @@ pub(super) fn initialize_buffer<T: BufferContents>(graphics: &Graphics, length: 
                 length as u64,
                 src_buffer_usage,
                 [graphics.queue().queue_family_index()]
-            ).log_expect("Could not create device local buffer");
+            ).expect("Could not create device local buffer");
             
             super::BufferKind::DeviceLocal(buffer)
         },
@@ -162,7 +162,7 @@ pub(super) fn initialize_buffer<T: BufferContents>(graphics: &Graphics, length: 
                 length as u64,
                 src_buffer_usage,
                 src_host_cached,
-            ).log_expect("Could not create CPU accessible buffer");
+            ).expect("Could not create CPU accessible buffer");
             super::BufferKind::CpuAccessible(buffer)
         },
     }
