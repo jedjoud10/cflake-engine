@@ -2,6 +2,7 @@ use crate::{Asset, AssetInput, AsyncAsset};
 use ahash::AHashMap;
 use parking_lot::RwLock;
 use slotmap::{DefaultKey, SlotMap};
+use thiserror::Error;
 use utils::ThreadPool;
 
 use std::{
@@ -23,23 +24,43 @@ pub struct AsyncHandle<A: Asset> {
     key: DefaultKey,
 }
 
+// Error that occurs when we try to load an asset
+#[derive(Error, Debug)]
+pub enum AssetLoadError {
+    #[error("Invalid '{0}' extension in file path")]
+    InvalidExtension(String),
+
+    #[error("Cannot find file at path '{0}'")]
+    DynamicNotFound(String),
+
+    #[error("Could not convert to OS str")]
+    InvalidOsStr,
+
+    #[error("Missing extension in file path")]
+    MissingExtension,
+
+    #[error("User asset path was not specified")]
+    UserPathNotSpecified,
+}
+
+// Used for async asset loading
+type AsyncSlotMap = SlotMap<DefaultKey, Option<Box<dyn Any + Send + Sync + Sync>>>;
+type AsyncLoadedAssets = Arc<RwLock<AsyncSlotMap>>;
+type AsyncLoadedBytes = Arc<RwLock<AHashMap<PathBuf, Arc<[u8]>>>>;
+
+// Dynamic Asset Path specified by the user 
+type UserPath = Option<Arc<Path>>;
+
 // This is the main asset manager resource that will load & cache newly loaded assets
 // This asset manager will also contain the persistent assets that are included by default into the engine executable
 pub struct Assets {
     // Keep track of the assets that were sucessfully loaded
     // The value corresponding to each key might be None in the case that the asset did not load
-    assets: Arc<
-        RwLock<
-            SlotMap<
-                DefaultKey,
-                Option<Box<dyn Any + Send + Sync + Sync>>,
-            >,
-        >,
-    >,
+    assets: AsyncLoadedAssets,
 
     // Keep track of the bytes that were loaded in other threads
     // The value might be none in the case that the bytes were not loaded
-    bytes: Arc<RwLock<AHashMap<PathBuf, Arc<[u8]>>>>,
+    bytes: AsyncLoadedBytes,
 
     // This receiver and vec keep track of the key IDs of items that were loaded in
     receiver: Receiver<DefaultKey>,
@@ -47,7 +68,7 @@ pub struct Assets {
     loaded: RefCell<Vec<DefaultKey>>,
 
     // Path that references the main user assets
-    user: Option<PathBuf>,
+    user: UserPath,
 }
 
 impl Assets {
@@ -55,6 +76,8 @@ impl Assets {
     pub fn new(user: Option<PathBuf>) -> Self {
         let (sender, receiver) =
             std::sync::mpsc::channel::<DefaultKey>();
+
+        let user = user.map(|p| p.into());
 
         Self {
             assets: Default::default(),
@@ -80,50 +103,76 @@ impl Assets {
     }
 }
 
-// Synchronous loading
+// Helper functions
 impl Assets {
     // Check if the extension of a file is valid
-    fn is_extension_valid<A: Asset>(path: &PathBuf) -> Option<()> {
+    fn validate<'a, A: Asset>(path: &'a Path) -> Result<(), AssetLoadError> {
         let (_, extension) = path
             .file_name()
-            .and_then(OsStr::to_str)?
-            .split_once('.')?;
+            .and_then(OsStr::to_str).ok_or(AssetLoadError::InvalidOsStr)?
+            .split_once('.').ok_or(AssetLoadError::MissingExtension)?;
 
         // If the asset has no extensions, we shall not check
         ((A::extensions().contains(&extension))
             || A::extensions().is_empty())
         .then_some(())
+        .ok_or_else(|| AssetLoadError::InvalidExtension(extension.to_owned()))
     }
 
+    // Load bytes either dynamically or load cached bytes 
+    fn load_bytes(bytes: &AsyncLoadedBytes, user: &UserPath, owned: PathBuf) -> Result<Arc<[u8]>, AssetLoadError> {
+        let bytes = if bytes.read().contains_key(&owned) {
+            Self::load_cached_bytes(bytes, &owned)
+        } else {
+            Self::load_bytes_dynamically(bytes, user, owned)?
+        };
+        Ok(bytes)
+    }
+
+    // Load the already cached bytes
+    fn load_cached_bytes(bytes: &AsyncLoadedBytes, path: &Path) -> Arc<[u8]> {
+        log::debug!("Loaded asset from path {:?} from cached bytes", path);
+        bytes.read().get(path).unwrap().clone()
+    }
+
+    // Load the bytes for an asset dynamically and store them within self
+    fn load_bytes_dynamically(bytes: &AsyncLoadedBytes, user: &UserPath, owned: PathBuf) -> Result<Arc<[u8]>, AssetLoadError> {
+        log::debug!("Loading asset bytes from path {:?} dynamically...", &owned);
+        let mut write = self.bytes.write();
+        let user = self.user.as_ref().ok_or(AssetLoadError::UserPathNotSpecified)?;
+        let bytes = super::raw::read(&owned, user)?;
+        let arc: Arc<[u8]> = Arc::from(bytes);
+        write.insert(owned.clone(), arc.clone());
+        log::debug!("Successfully loaded asset bytes from path {:?}", &owned);
+        Ok(arc)
+    }
+}
+
+// Synchronous loading
+impl Assets {
     // Load an asset using some explicit/default loading arguments
     pub fn load<'s, 'args, A: Asset>(
         &self,
         input: impl AssetInput<'s, 'args, A>,
-    ) -> Option<A> {
+    ) -> Result<A, AssetLoadError> {
         // Check if the extension is valid
         let (path, args) = input.split();
-        let path = PathBuf::from_str(path).unwrap();
-        Self::is_extension_valid::<A>(&path)?;
+        let path = Path::new(OsStr::new(path));
+        let owned = path.to_owned();
+        Self::validate::<A>(&path)?;
 
         // All this does is that it ensures that the bytes are valid before we actually deserialize the asset
         let (name, extension) = path
             .file_name()
-            .and_then(OsStr::to_str)?
+            .and_then(OsStr::to_str)
+            .unwrap()
             .split_once('.')
             .unwrap();
-        let bytes = if self.bytes.read().contains_key(&path) {
-            self.bytes.read().get(&path).unwrap().clone()
-        } else {
-            // TODO: Proper error logging
-            let mut write = self.bytes.write();
-            let bytes = super::raw::read(&path, self.user.as_ref()?)?;
-            let arc: Arc<[u8]> = Arc::from(bytes);
-            write.insert(path.clone(), arc.clone());
-            arc
-        };
+        
+        let bytes = Self::load_bytes(&self.bytes, &self.user, owned)?;
 
         // Deserialize the asset file
-        Some(A::deserialize(
+        Ok(A::deserialize(
             crate::Data {
                 name,
                 extension,
@@ -138,11 +187,11 @@ impl Assets {
     pub fn load_from_iter<'s, 'args, A: Asset>(
         &self,
         inputs: impl IntoIterator<Item = impl AssetInput<'s, 'args, A>>,
-    ) -> Vec<Option<A>> {
+    ) -> Vec<Result<A, AssetLoadError>> {
         inputs
             .into_iter()
             .map(|input| self.load(input))
-            .collect::<Vec<Option<A>>>()
+            .collect::<Vec<Result<A, AssetLoadError>>>()
     }
 }
 
@@ -153,14 +202,15 @@ impl Assets {
         &self,
         input: impl AssetInput<'s, 'static, A>,
         threadpool: &mut ThreadPool,
-    ) -> Option<AsyncHandle<A>>
+    ) -> Result<AsyncHandle<A>, AssetLoadError>
     where
         A::Args<'static>: Send + Sync,
     {
         // Get the path and arguments
         let (path, args) = input.split();
-        let path = PathBuf::from_str(path).unwrap();
-        Self::is_extension_valid::<A>(&path)?;
+        let path = Path::new(OsStr::new(path));
+        let owned = path.to_owned();
+        Self::validate::<A>(&path)?;
 
         // Clone the things that must be sent to the thread
         let assets = self.assets.clone();
@@ -178,23 +228,23 @@ impl Assets {
         // Create a new task that will load this asset
         threadpool.execute(move || {
             // All this does is that it ensures that the bytes are valid before we actually deserialize the asset
-            let (name, extension) = path
+            let (name, extension) = owned
                 .file_name()
                 .and_then(OsStr::to_str)
                 .unwrap()
                 .split_once('.')
                 .unwrap();
 
-            let bytes = if bytes.read().contains_key(&path) {
-                bytes.read().get(&path).unwrap().clone()
+            let bytes = if bytes.read().contains_key(&owned) {
+                bytes.read().get(&owned).unwrap().clone()
             } else {
                 // TODO: Proper error logging
                 let mut write = bytes.write();
                 let bytes =
-                    super::raw::read(&path, user.as_ref().unwrap())
+                    super::raw::read(&owned, user.as_ref().unwrap())
                         .unwrap();
                 let arc: Arc<[u8]> = Arc::from(bytes);
-                write.insert(path.clone(), arc.clone());
+                write.insert(owned.clone(), arc.clone());
                 arc
             };
 
@@ -203,7 +253,7 @@ impl Assets {
                     name,
                     extension,
                     bytes,
-                    path: path.as_path(),
+                    path: owned.as_path(),
                 },
                 args,
             );
@@ -214,7 +264,7 @@ impl Assets {
             *opt = Some(Box::new(asset));
             sender.send(key).unwrap();
         });
-        Some(handle)
+        Ok(handle)
     }
 
     // Load multiple assets using some explicit/default loading arguments in another thread
@@ -233,7 +283,7 @@ impl Assets {
             for input in inputs.into_iter() {
                 // Check the extension on a per file basis
                 let path = PathBuf::from_str(input.path()).unwrap();
-                if Self::is_extension_valid::<A>(&path).is_none() {
+                if Self::validate::<A>(&path).is_err() {
                     reference.push(None);
                     continue;
                 }

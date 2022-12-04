@@ -1,14 +1,15 @@
 use cpal::traits::StreamTrait;
-
+use ecs::Component;
 use crate::AudioClip;
 
-// An audio source is an entity that produces sound
-// Each audio source is a cpal stream that will be played
+// An audio source is a component that produces sound
+// Each audio source is a CPAL stream that will be played
+#[derive(Component)]
 pub struct AudioSource {
-    clip: AudioClip,
-    volume: f32,
+    pub(crate) clip: AudioClip,
+    pub(crate) volume: f32,
     pub(crate) stream: Option<cpal::Stream>,
-    playing: bool,
+    pub(crate) playing: bool,
 }
 
 impl AudioSource {

@@ -23,6 +23,7 @@ pub struct EnabledSystems {
     time: bool,
     io: bool,
     assets: bool,
+    audio: bool,
     graphics: bool
 }
 
@@ -37,6 +38,7 @@ impl EnabledSystems {
             time: true,
             io: true,
             assets: true,
+            audio: true,
             graphics: true,
         }
     }
@@ -51,6 +53,7 @@ impl EnabledSystems {
             time: false,
             io: false,
             assets: false,
+            audio: false,
             graphics: false,
         }
     }
@@ -315,6 +318,10 @@ impl App {
         if self.enabled.time {
             self = self.insert_system(utils::time);
         }
+        if self.enabled.audio {
+            self = self.insert_system(audio::system);
+        }
+
         // Insert the IO manager
         if self.enabled.io {
             let author = self.author_name.clone();

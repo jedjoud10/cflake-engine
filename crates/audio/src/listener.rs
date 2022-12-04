@@ -4,6 +4,7 @@ use cpal::traits::HostTrait;
 // We can technically have multiple audio listenenrs in the same scene, although that would be pretty pointless
 pub struct AudioListener {
     pub(crate) device: cpal::Device,
+    pub(crate) host: cpal::Host,
     volume: f32,
 }
 
@@ -14,8 +15,9 @@ impl AudioListener {
         let device = host.default_output_device()?;
 
         Some(Self {
-            volume: 1.0,
+            host,
             device,
+            volume: 1.0,
         })
     }
 

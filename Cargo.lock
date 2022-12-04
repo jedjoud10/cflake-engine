@@ -109,8 +109,10 @@ version = "0.1.0"
 dependencies = [
  "ahash",
  "lazy_static",
+ "log",
  "parking_lot",
  "slotmap",
+ "thiserror",
  "utils",
  "world",
 ]
@@ -134,6 +136,7 @@ dependencies = [
  "cpal",
  "ecs",
  "hrtf",
+ "log",
  "math",
  "minimp3",
  "utils",

@@ -9,6 +9,8 @@ edition = "2021"
 lazy_static = { workspace = true }
 ahash = { workspace = true }
 parking_lot = { workspace = true }
+thiserror = { workspace = true }
+log = { workspace = true }
 slotmap = "1.0.6"
 world = { path = "../world" }
 utils = { path = "../utils" }
