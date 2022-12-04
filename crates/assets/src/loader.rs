@@ -14,7 +14,7 @@ use std::{
     sync::{
         mpsc::{Receiver, Sender},
         Arc,
-    },
+    }, error::Error,
 };
 
 // This is a handle to a specific asset that we are currently loading in
@@ -40,10 +40,13 @@ pub enum AssetLoadError {
 
     #[error("User asset path was not specified")]
     UserPathNotSpecified,
+
+    #[error("Deserialization error {0}")]
+    BoxedDeserialization(Box<dyn Error + Send + Sync>),
 }
 
 // Used for async asset loading
-type AsyncBoxedResult = Result<Box<dyn Any + Send + Sync + Sync>, AssetLoadError>;
+type AsyncBoxedResult = Result<Box<dyn Any + Send + Sync>, AssetLoadError>;
 type AsyncSlotMap = SlotMap<DefaultKey, Option<AsyncBoxedResult>>;
 type AsyncLoadedAssets = Arc<RwLock<AsyncSlotMap>>;
 type AsyncLoadedBytes = Arc<RwLock<AHashMap<PathBuf, Arc<[u8]>>>>;
@@ -159,7 +162,7 @@ impl Assets {
     }
 
     // Load an asset asynchronously and automatically add it to the loaded assets
-    // TODO: Rewrite this singular function
+    // TODO: Rewrite this function
     fn async_load_inner<A: AsyncAsset>(
         owned: PathBuf,
         bytes: AsyncLoadedBytes,
@@ -169,14 +172,18 @@ impl Assets {
         key: DefaultKey,
         sender: Sender<DefaultKey>
     ) {
-        if let Err(err) = Self::validate::<A>(&owned) {
-            Self::async_insert_inner::<A>(assets, key, Err(err), sender);
-            return;
-        }
+        // Smaller scope so we can use ? internally
+        let result = move || {
+            // Validate the path and extensions
+            Self::validate::<A>(&owned)?;
 
-        let bytes = Self::load_bytes(&bytes, &user, owned.clone());
-        let result = bytes.map(|bytes| {
+            // Load the bytes dynamically or from cache
+            let bytes =  Self::load_bytes(&bytes, &user, owned.clone())?;
+
+            // Split the path into it's name and extension
             let (name, extension) = Self::decompose_path(&owned);
+
+            // Deserialize the asset
             let asset = A::deserialize(
                 crate::Data {
                     name,
@@ -185,20 +192,17 @@ impl Assets {
                     path: owned.as_path(),
                 },
                 args,
-            );
+            ).map_err(|err| AssetLoadError::BoxedDeserialization(Box::new(err)))?;
 
-            let boxed: Box<dyn Any + Send + Sync + Sync> = Box::new(asset);
-            boxed
-        });
+            // Box the asset
+            let boxed: Box<dyn Any + Send + Sync + 'static> = Box::new(asset);
+            Ok(boxed)
+        };
 
-        Self::async_insert_inner::<A>(assets, key, result, sender);
-    }
-
-    // Add a boxed async asset result to the required mutexes and locks
-    fn async_insert_inner<A: AsyncAsset>(assets: AsyncLoadedAssets, key: DefaultKey, result: AsyncBoxedResult, sender: Sender<DefaultKey>) {
+        // Send the result to the main thread
         let mut write = assets.write();
         let opt = write.get_mut(key).unwrap();
-        *opt = Some(result);
+        *opt = Some(result());
         sender.send(key).unwrap();
     }
 }
@@ -223,7 +227,7 @@ impl Assets {
         let bytes = Self::load_bytes(&self.bytes, &self.user, owned)?;
 
         // Deserialize the asset file
-        Ok(A::deserialize(
+        A::deserialize(
             crate::Data {
                 name,
                 extension,
@@ -231,7 +235,7 @@ impl Assets {
                 path: &path,
             },
             args,
-        ))
+        ).map_err(|err| AssetLoadError::BoxedDeserialization(Box::new(err)))
     }
 
     // Load multiple assets using some explicit/default loading arguments
@@ -292,7 +296,7 @@ impl Assets {
         threadpool: &mut ThreadPool,
     ) -> Vec<AsyncHandle<A>>
     where
-        A::Args<'static>: Send + Sync,
+        A::Args<'static>: Send + Sync
     {
         // Create a temporary threadpool scope for these assets only
         let mut outer = Vec::<AsyncHandle<A>>::new();

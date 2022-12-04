@@ -139,6 +139,7 @@ dependencies = [
  "log",
  "math",
  "minimp3",
+ "thiserror",
  "utils",
  "vek",
  "wav",

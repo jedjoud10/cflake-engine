@@ -1,4 +1,4 @@
-use crate::AudioSamples;
+use crate::{AudioSamples, AudioClipError};
 use assets::Asset;
 use std::{
     io::{BufReader, Cursor},
@@ -12,6 +12,7 @@ pub struct AudioClip(Arc<dyn AudioSamples>);
 
 impl Asset for AudioClip {
     type Args<'args> = ();
+    type Err = AudioClipError;
 
     fn extensions() -> &'static [&'static str] {
         &["mp3", "wav"]
@@ -20,7 +21,7 @@ impl Asset for AudioClip {
     fn deserialize(
         data: assets::Data,
         _args: Self::Args<'_>,
-    ) -> Self {
+    ) -> Result<Self, Self::Err> {
         match data.extension() {
             // Decode an MP3 file into the appropriate format
             "mp3" => {
@@ -32,7 +33,7 @@ impl Asset for AudioClip {
                     frames.push(frame);
                 }
 
-                let first = decoded.next_frame().unwrap();
+                let first = decoded.next_frame().map_err(AudioClipError::MP3)?;
                 let minimp3::Frame {
                     data: _,
                     sample_rate: _,

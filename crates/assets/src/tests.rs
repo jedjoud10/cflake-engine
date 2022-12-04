@@ -18,6 +18,14 @@ mod tests {
     }
 
     #[test]
+    fn parse_error() {
+        let loader = Assets::new(None);
+        persistent!(loader, "test/invalid.txt");
+        let string = loader.load::<String>("test/invalid.txt");
+        assert!(string.is_err());
+    }
+
+    #[test]
     fn read_iter() {
         let loader = Assets::new(None);
         persistent!(loader, "test/text.txt");

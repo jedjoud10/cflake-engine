@@ -3,6 +3,8 @@ mod listener;
 mod sample;
 mod source;
 mod system;
+mod error;
+pub use error::*;
 pub use clip::*;
 pub use listener::*;
 pub use sample::*;

@@ -36,24 +36,32 @@ impl<'a> Data<'a> {
 // Each asset has some extra data that can be used to construct the object
 pub trait Asset: Sized + 'static {
     type Args<'args>;
-    type Result;
+
+    // Possible error that we might return
+    type Err: std::error::Error + Send + Sync + 'static;
+
+    // Possible extensions that are supported
+    // If this is of 0 length, then all extensions are supported
     fn extensions() -> &'static [&'static str];
+
+    // Deserialize the asset and possibly return an error
     fn deserialize<'args>(
         data: Data,
         args: Self::Args<'args>,
-    ) -> Self::Result;
+    ) -> Result<Self, Self::Err>;
 }
 
 // Just for convience's sake
-pub trait AsyncAsset: Asset + Sync + Send {}
+pub trait AsyncAsset: Asset + Send + Sync where Self::Err: Send {}
 impl<T: Asset + Send + Sync> AsyncAsset for T where
-    T::Args<'static>: 'static + Send + Sync
+    T::Args<'static>: 'static + Send + Sync,
+    T::Err: 'static + Send + Sync,
 {
 }
 
 impl Asset for String {
     type Args<'args> = ();
-    type Result = Result<Self, std::string::FromUtf8Error>;
+    type Err = std::string::FromUtf8Error;
 
     fn extensions() -> &'static [&'static str] {
         &["txt"]
@@ -62,7 +70,7 @@ impl Asset for String {
     fn deserialize<'args>(
         data: Data,
         _args: Self::Args<'args>,
-    ) -> Self::Result {
+    ) -> Result<Self, Self::Err> {
         std::thread::sleep(std::time::Duration::from_millis(1));
         String::from_utf8(data.bytes().to_vec())
     }
