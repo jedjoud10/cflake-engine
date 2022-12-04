@@ -29,8 +29,7 @@ fn update(world: &mut World) {
         println!("Going backward!");
     }
 
-    // Read from the game pad input (defaults to 0.0 if there is no input at all)
-    if input.get_axis(Axis::GamePadLeftStickX) != 0.0 {
-        println!("{}", input.get_axis(Axis::GamePadLeftStickX));
+    if input.get_axis(Axis::MousePositionDeltaX) != 0.0 {
+        println!("{}", input.get_axis(Axis::MousePositionDeltaX));
     }
 }

@@ -1,7 +1,4 @@
 use std::sync::Arc;
-
-use vulkano::{instance::Instance, swapchain::Surface};
-use vulkano_win::VkSurfaceBuild;
 use winit::{
     event_loop::EventLoop,
     window::{Fullscreen, WindowBuilder},
@@ -28,7 +25,7 @@ pub struct WindowSettings {
 // A window is what we will draw to at the end of each frame
 pub struct Window {
     pub(crate) settings: WindowSettings,
-    pub(crate) surface: Arc<Surface>,
+    pub(crate) raw: winit::window::Window,
 }
 
 impl Window {
@@ -39,6 +36,6 @@ impl Window {
 
     // Get the raw winit window
     pub fn window(&self) -> &winit::window::Window {
-        self.surface.object().unwrap().downcast_ref::<winit::window::Window>().unwrap()
+        &self.raw
     }
 }

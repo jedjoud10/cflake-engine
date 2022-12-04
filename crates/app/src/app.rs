@@ -221,10 +221,10 @@ impl App {
         env_logger::init();
 
         // Pass the panics to the LOG crate
-        let orig_hook = std::panic::take_hook();
+        let hook = std::panic::take_hook();
         std::panic::set_hook(Box::new(move |panic_info| {
             log::error!("{:?}", panic_info.to_string());
-            orig_hook(panic_info);
+            hook(panic_info);
         }));
 
         // Insert the default systems
@@ -265,8 +265,10 @@ impl App {
                 sleeper.loop_start();
                 systems.update.execute(&mut world);
                 
+                // Handle app shutdown
                 if let Some(State::Stopped) = world.get::<State>().map(|x| *x) {
                     *cf = ControlFlow::Exit;
+                    systems.shutdown.execute(&mut world);
                 }
 
                 sleeper.loop_sleep();
