@@ -341,7 +341,9 @@ impl Assets {
     // This will wait until the asset referenced by this handle has finished loading
     pub fn wait<A: AsyncAsset>(&self, handle: AsyncHandle<A>) -> Result<A, AssetLoadError> {
         // Spin lock whilst whilst waiting for an asset to load
-        while !self.has_finished_loading(&handle) {}
+        while !self.has_finished_loading(&handle) {
+            std::hint::spin_loop();
+        }
 
         // Get the global asset queue and find the index of the handle key
         let mut assets = self.assets.write();

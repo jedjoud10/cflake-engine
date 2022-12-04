@@ -7,8 +7,21 @@ use crate::{Boundable, Movable, Shape, SurfaceArea, Volume, AABB};
 // A simple sphere that is represented by it's center and radius
 #[derive(Clone, Copy)]
 pub struct Sphere {
+    // Center of the sphere
     pub center: vek::Vec3<f32>,
+    
+    // Radius of the sphere
     pub radius: f32,
+}
+
+impl Sphere {
+    // Create a new sphere from a center and radius
+    pub fn new(center: vek::Vec3<f32>, radius: f32) -> Self {
+        Self {
+            center,
+            radius,
+        }
+    }
 }
 
 impl Movable for Sphere {

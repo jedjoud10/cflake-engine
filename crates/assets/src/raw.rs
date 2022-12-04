@@ -30,5 +30,6 @@ pub fn read(path: &Path, asset_dir_path: &Path) -> Result<Vec<u8>, AssetLoadErro
 // If we are in Release, we read the bytes from the cacher directly since they are embedded into the binary
 #[cfg(not(debug_assertions))]
 pub fn read(path: &Path, _asset_dir_path: &Path) -> Result<Vec<u8>, AssetLoadError> {
+    let path = path.as_os_str().to_str().unwrap().to_owned();
     Err(AssetLoadError::DynamicNotFound(path))
 }

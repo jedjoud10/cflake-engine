@@ -5,8 +5,30 @@ use crate::{
 // A 3D cuboid that is defined by it's center and it's extent
 #[derive(Clone, Copy)]
 pub struct Cuboid {
+    // Center of the cuboid
     pub center: vek::Vec3<f32>,
+
+    // Full extent of the cubeoid
     pub extent: vek::Extent3<f32>,
+}
+
+impl Cuboid {
+    // Create a cube from a center and an extent
+    pub fn cube(center: vek::Vec3<f32>, extent: f32) -> Self {
+        Self {
+            center,
+            extent: vek::Extent3::broadcast(extent),
+        }
+    }
+}
+
+impl From<AABB> for Cuboid {
+    fn from(aabb: AABB) -> Self {
+        Self {
+            center: (aabb.max + aabb.min) / 2.0,
+            extent: vek::Extent3::from(aabb.max - aabb.min),
+        }
+    }
 }
 
 impl Movable for Cuboid {
@@ -21,10 +43,9 @@ impl Movable for Cuboid {
 
 impl Boundable for Cuboid {
     fn bounds(&self) -> AABB {
-        let half_extent = vek::Vec3::<f32>::from(self.extent) / 2.0;
         AABB {
-            min: self.center - half_extent,
-            max: self.center + half_extent,
+            min: self.center - self.extent / 2.0,
+            max: self.center + self.extent / 2.0,
         }
     }
 
