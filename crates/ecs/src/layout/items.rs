@@ -10,10 +10,15 @@ pub trait QueryItemRef<'s>: Sized {
     fn access() -> LayoutAccess;
 
     // Get a pointer immutable archetypes
-    unsafe fn ptr_from_archetype_unchecked(archetype: &Archetype) -> Self::Ptr;
+    unsafe fn ptr_from_archetype_unchecked(
+        archetype: &Archetype,
+    ) -> Self::Ptr;
 
     // Convert the pointer into a slice
-    unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self::Slice;
+    unsafe fn from_raw_parts(
+        ptr: Self::Ptr,
+        length: usize,
+    ) -> Self::Slice;
 
     // Read from a raw pointer directly
     unsafe fn read_unchecked(ptr: Self::Ptr, index: usize) -> Self;
@@ -29,13 +34,21 @@ pub trait QueryItemMut<'s>: Sized {
     fn access() -> LayoutAccess;
 
     // Get a pointer from mutable archetypes
-    unsafe fn ptr_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::Ptr;
+    unsafe fn ptr_from_mut_archetype_unchecked(
+        archetype: &mut Archetype,
+    ) -> Self::Ptr;
 
     // Convert the pointer into a slice, and read from said slice
-    unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self::Slice;
+    unsafe fn from_raw_parts(
+        ptr: Self::Ptr,
+        length: usize,
+    ) -> Self::Slice;
 
     // Read from a raw pointer directly
-    unsafe fn read_mut_unchecked(ptr: Self::Ptr, index: usize) -> Self;
+    unsafe fn read_mut_unchecked(
+        ptr: Self::Ptr,
+        index: usize,
+    ) -> Self;
 }
 
 impl<'s, T: Component> QueryItemRef<'s> for &T {
@@ -47,15 +60,20 @@ impl<'s, T: Component> QueryItemRef<'s> for &T {
         LayoutAccess::new(mask::<T>(), Mask::zero())
     }
 
-    unsafe fn ptr_from_archetype_unchecked(archetype: &Archetype) -> Self::Ptr {
+    unsafe fn ptr_from_archetype_unchecked(
+        archetype: &Archetype,
+    ) -> Self::Ptr {
         archetype
-            .table::<T>()
+            .components::<T>()
             .unwrap_unchecked()
             .as_slice()
             .as_ptr()
     }
 
-    unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self::Slice {
+    unsafe fn from_raw_parts(
+        ptr: Self::Ptr,
+        length: usize,
+    ) -> Self::Slice {
         std::slice::from_raw_parts(ptr, length)
     }
 
@@ -73,11 +91,18 @@ impl<'s, T: Component> QueryItemRef<'s> for Option<&T> {
         LayoutAccess::new(mask::<T>(), Mask::zero())
     }
 
-    unsafe fn ptr_from_archetype_unchecked(archetype: &Archetype) -> Self::Ptr {
-        archetype.table::<T>().map(|vec| vec.as_slice().as_ptr())
+    unsafe fn ptr_from_archetype_unchecked(
+        archetype: &Archetype,
+    ) -> Self::Ptr {
+        archetype
+            .components::<T>()
+            .map(|vec| vec.as_slice().as_ptr())
     }
 
-    unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self::Slice {
+    unsafe fn from_raw_parts(
+        ptr: Self::Ptr,
+        length: usize,
+    ) -> Self::Slice {
         ptr.map(|ptr| std::slice::from_raw_parts(ptr, length))
     }
 
@@ -92,14 +117,19 @@ impl<'s> QueryItemRef<'s> for &Entity {
     type Owned = Entity;
 
     fn access() -> LayoutAccess {
-        LayoutAccess::new(Mask::one(), Mask::zero())
+        LayoutAccess::new(Mask::zero(), Mask::zero())
     }
 
-    unsafe fn ptr_from_archetype_unchecked(archetype: &Archetype) -> Self::Ptr {
+    unsafe fn ptr_from_archetype_unchecked(
+        archetype: &Archetype,
+    ) -> Self::Ptr {
         archetype.entities().as_ptr()
     }
 
-    unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self::Slice {
+    unsafe fn from_raw_parts(
+        ptr: Self::Ptr,
+        length: usize,
+    ) -> Self::Slice {
         std::slice::from_raw_parts(ptr, length)
     }
 
@@ -117,19 +147,27 @@ impl<'s, T: Component> QueryItemMut<'s> for &T {
         LayoutAccess::new(mask::<T>(), Mask::zero())
     }
 
-    unsafe fn ptr_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::Ptr {
+    unsafe fn ptr_from_mut_archetype_unchecked(
+        archetype: &mut Archetype,
+    ) -> Self::Ptr {
         archetype
-            .table::<T>()
+            .components::<T>()
             .unwrap_unchecked()
             .as_slice()
             .as_ptr()
     }
 
-    unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self::Slice {
+    unsafe fn from_raw_parts(
+        ptr: Self::Ptr,
+        length: usize,
+    ) -> Self::Slice {
         std::slice::from_raw_parts(ptr, length)
     }
 
-    unsafe fn read_mut_unchecked(ptr: Self::Ptr, index: usize) -> Self {
+    unsafe fn read_mut_unchecked(
+        ptr: Self::Ptr,
+        index: usize,
+    ) -> Self {
         &*ptr.add(index)
     }
 }
@@ -140,18 +178,28 @@ impl<'s, T: Component> QueryItemMut<'s> for Option<&T> {
     type Owned = T;
 
     fn access() -> LayoutAccess {
-        LayoutAccess::new(mask::<T>(), Mask::zero())
+        LayoutAccess::none()
     }
 
-    unsafe fn ptr_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::Ptr {
-        archetype.table::<T>().map(|vec| vec.as_slice().as_ptr())
+    unsafe fn ptr_from_mut_archetype_unchecked(
+        archetype: &mut Archetype,
+    ) -> Self::Ptr {
+        archetype
+            .components::<T>()
+            .map(|vec| vec.as_slice().as_ptr())
     }
 
-    unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self::Slice {
+    unsafe fn from_raw_parts(
+        ptr: Self::Ptr,
+        length: usize,
+    ) -> Self::Slice {
         ptr.map(|ptr| std::slice::from_raw_parts(ptr, length))
     }
 
-    unsafe fn read_mut_unchecked(ptr: Self::Ptr, index: usize) -> Self {
+    unsafe fn read_mut_unchecked(
+        ptr: Self::Ptr,
+        index: usize,
+    ) -> Self {
         ptr.map(|ptr| &*ptr.add(index))
     }
 }
@@ -165,19 +213,27 @@ impl<'s, T: Component> QueryItemMut<'s> for &mut T {
         LayoutAccess::new(Mask::zero(), mask::<T>())
     }
 
-    unsafe fn ptr_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::Ptr {
+    unsafe fn ptr_from_mut_archetype_unchecked(
+        archetype: &mut Archetype,
+    ) -> Self::Ptr {
         archetype
-            .table_mut::<T>()
+            .components_mut::<T>()
             .unwrap_unchecked()
             .as_mut_slice()
             .as_mut_ptr()
     }
 
-    unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self::Slice {
+    unsafe fn from_raw_parts(
+        ptr: Self::Ptr,
+        length: usize,
+    ) -> Self::Slice {
         std::slice::from_raw_parts_mut(ptr, length)
     }
 
-    unsafe fn read_mut_unchecked(ptr: Self::Ptr, index: usize) -> Self {
+    unsafe fn read_mut_unchecked(
+        ptr: Self::Ptr,
+        index: usize,
+    ) -> Self {
         &mut *ptr.add(index)
     }
 }
@@ -188,20 +244,28 @@ impl<'s, T: Component> QueryItemMut<'s> for Option<&mut T> {
     type Owned = T;
 
     fn access() -> LayoutAccess {
-        LayoutAccess::new(Mask::zero(), mask::<T>())
+        LayoutAccess::none()
     }
 
-    unsafe fn ptr_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::Ptr {
+    unsafe fn ptr_from_mut_archetype_unchecked(
+        archetype: &mut Archetype,
+    ) -> Self::Ptr {
         archetype
-            .table_mut::<T>()
+            .components_mut::<T>()
             .map(|vec| vec.as_mut_slice().as_mut_ptr())
     }
 
-    unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self::Slice {
+    unsafe fn from_raw_parts(
+        ptr: Self::Ptr,
+        length: usize,
+    ) -> Self::Slice {
         ptr.map(|ptr| std::slice::from_raw_parts_mut(ptr, length))
     }
 
-    unsafe fn read_mut_unchecked(ptr: Self::Ptr, index: usize) -> Self {
+    unsafe fn read_mut_unchecked(
+        ptr: Self::Ptr,
+        index: usize,
+    ) -> Self {
         ptr.map(|ptr| &mut *ptr.add(index))
     }
 }
@@ -212,18 +276,26 @@ impl<'s> QueryItemMut<'s> for &Entity {
     type Owned = Entity;
 
     fn access() -> LayoutAccess {
-        LayoutAccess::new(Mask::one(), Mask::zero())
+        LayoutAccess::none()
     }
 
-    unsafe fn ptr_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::Ptr {
+    unsafe fn ptr_from_mut_archetype_unchecked(
+        archetype: &mut Archetype,
+    ) -> Self::Ptr {
         archetype.entities().as_ptr()
     }
 
-    unsafe fn from_raw_parts(ptr: Self::Ptr, length: usize) -> Self::Slice {
+    unsafe fn from_raw_parts(
+        ptr: Self::Ptr,
+        length: usize,
+    ) -> Self::Slice {
         std::slice::from_raw_parts(ptr, length)
     }
 
-    unsafe fn read_mut_unchecked(ptr: Self::Ptr, index: usize) -> Self {
+    unsafe fn read_mut_unchecked(
+        ptr: Self::Ptr,
+        index: usize,
+    ) -> Self {
         &*ptr.add(index)
     }
 }

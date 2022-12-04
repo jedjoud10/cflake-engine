@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 assets = { path = "../assets" }
+utils = { path = "../utils" }
 world = { path = "../world" }
 math = { path = "../math" }
 ecs = { path = "../ecs" }
@@ -14,4 +15,4 @@ cpal = "0.14.0"
 hrtf = "0.8.0"
 wav = "1.0.0"
 minimp3 = "0.5.1"
-vek = "0.15.6"
+vek = { workspace = true }

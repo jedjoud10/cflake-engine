@@ -1,80 +1,139 @@
-use std::rc::Rc;
+use crate::{Caller, System, World};
+use std::any::{type_name, TypeId};
+use winit::event::{DeviceEvent, WindowEvent};
 
-use crate::{StageError, RESERVED};
+// Stage ID that depicts the current location and ordering of a specific event and or stage
+#[derive(
+    Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq, Debug,
+)]
+pub struct StageId {
+    pub caller: CallerId,
+    pub system: SystemId,
+}
 
-// Names are shared around since we clone them frequently
-pub type StageKey = Rc<str>;
+// Single int to depict what caller we are using
+#[derive(
+    Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq, Debug,
+)]
+pub struct CallerId {
+    // TODO: Use conditial compilation
+    pub name: &'static str,
+
+    // Init = 0
+    // Update = 1
+    // Shutdown = 2
+    // Device event = 3
+    // Window event = 4
+    pub index: usize,
+
+    // Used tp find said index
+    pub id: TypeId,
+}
+
+// System id that contains the name and type ID of the system
+#[derive(
+    Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq, Debug,
+)]
+pub struct SystemId {
+    // TODO: Use conditial compilation to disable this when we don't need to
+    pub name: &'static str,
+
+    pub id: TypeId,
+}
+
+// Combine two types of IDS
+pub(crate) fn combine_ids(
+    system: &SystemId,
+    caller: &CallerId,
+) -> StageId {
+    StageId {
+        caller: *caller,
+        system: *system,
+    }
+}
+
+// Get the caller ID of a specific caller type
+pub(crate) fn fetch_caller_id<C: Caller>() -> CallerId {
+    let id = TypeId::of::<C>();
+    let index = crate::RESERVED_CALLER_TYPE_IDS
+        .iter()
+        .position(|current| *current == id)
+        .unwrap();
+    CallerId {
+        name: type_name::<C>(),
+        id: id,
+        index,
+    }
+}
+
+// Get the system ID of a specific system (simple generic function)
+pub(crate) fn fetch_system_id<S: FnOnce(&mut System) + 'static>(
+    _: &S,
+) -> SystemId {
+    SystemId {
+        name: type_name::<S>(),
+        id: TypeId::of::<S>(),
+    }
+}
 
 // A rule that depicts the arrangement and the location of the stages relative to other stages
 #[derive(Clone, Debug)]
 pub enum Rule {
     // This hints that the stage should be executed before other
-    Before(StageKey),
+    Before(StageId),
 
     // This hints that the stage should be executed after other
-    After(StageKey),
+    After(StageId),
 }
 
 impl Rule {
     // Get the current parent of the current strict node
-    pub(super) fn parent(&self) -> StageKey {
+    pub(super) fn parent(&self) -> StageId {
         match self {
-            Rule::Before(p) => p.clone(),
-            Rule::After(p) => p.clone(),
+            Rule::Before(p) => *p,
+            Rule::After(p) => *p,
         }
     }
 }
 
-// Stages are are a way for us to sort and prioritize certain events before others
-// Stages will be converted to Nodes whenever they get inserted into a pipeline
-#[derive(Clone)]
-pub struct Stage {
-    // The user defined name of the current stage
-    name: StageKey,
-
-    // The direction of this rule compared to other rules
-    rules: Vec<Rule>,
+// Default user system and default events
+pub fn user(system: &mut System) {
+    system.insert_init(|world: &mut World| {});
+    system.insert_update(|world: &mut World| {});
+    system.insert_shutdown(|world: &mut World| {});
+    system
+        .insert_device(|world: &mut World, device: &DeviceEvent| {});
+    system.insert_window(
+        |world: &mut World, window: &mut WindowEvent| {},
+    );
 }
 
-impl Stage {
-    // Create a new empty stage with no rules (invalid)
-    pub fn new(name: impl Into<StageKey>) -> Self {
-        Self {
-            name: name.into(),
-            rules: Vec::new(),
-        }
-    }
+// Default post user system and default events
+pub fn post_user(system: &mut System) {
+    system.insert_init(|world: &mut World| {});
+    system.insert_update(|world: &mut World| {});
+    system.insert_shutdown(|world: &mut World| {});
+    system
+        .insert_device(|world: &mut World, device: &DeviceEvent| {});
+    system.insert_window(
+        |world: &mut World, window: &mut WindowEvent| {},
+    );
+}
 
-    // Get a copy of the underlying stage name
-    pub fn name(&self) -> StageKey {
-        self.name.clone()
-    }
+// Create the default rules for a default node
+pub(super) fn default_rules<C: Caller>() -> Vec<Rule> {
+    let caller = fetch_caller_id::<C>();
 
-    // Add a "before" rule to the current stage
-    pub fn before(mut self, other: impl Into<StageKey>) -> Self {
-        self.rules.push(Rule::Before(other.into()));
-        self
-    }
+    // Create the default after rule
+    let system = fetch_system_id(&user);
+    let stage = combine_ids(&system, &caller);
+    let after = Rule::After(stage);
 
-    // Add a "after" rule to the current stage
-    pub fn after(mut self, other: impl Into<StageKey>) -> Self {
-        self.rules.push(Rule::After(other.into()));
-        self
-    }
+    // Create the default before rule
+    let system = fetch_system_id(&post_user);
+    let stage = combine_ids(&system, &caller);
+    let before = Rule::Before(stage);
 
-    // Check if the stage is valid, and if it isn't, return the proper error
-    pub(super) fn validate(self) -> Result<Self, StageError> {
-        if self.rules.is_empty() {
-            return Err(StageError::MissingRules);
-        } else if self.name.is_empty() || RESERVED.contains(&self.name.as_ref()) {
-            return Err(StageError::InvalidName);
-        }
-
-        Ok(self)
-    }
-
-    // Convert the stage into a set of rules
-    pub(super) fn into_rules(self) -> Vec<Rule> {
-        self.rules
-    }
+    // Combine both rules
+    vec![before, after]
 }

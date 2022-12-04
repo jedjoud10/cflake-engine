@@ -1,5 +1,8 @@
 use crate::Component;
-use std::ops::{Add, Deref, DerefMut};
+use std::{
+    fmt::{Debug, Display},
+    ops::{Add, Deref, DerefMut},
+};
 
 // 2D location support
 #[cfg(not(feature = "two-dim"))]
@@ -55,6 +58,24 @@ impl Location {
     // Construct a scale at the given X, Y position
     pub fn at_xy(x: f32, y: f32) -> Self {
         Self((x, y).into())
+    }
+}
+
+impl Debug for Location {
+    fn fmt(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+    ) -> std::fmt::Result {
+        Debug::fmt(&self.0, f)
+    }
+}
+
+impl Display for Location {
+    fn fmt(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+    ) -> std::fmt::Result {
+        Display::fmt(&self.0, f)
     }
 }
 

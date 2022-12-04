@@ -1,47 +1,101 @@
 use ahash::AHashSet;
-use glutin::{
+use winit::{
     event::{DeviceEvent, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
-use gui::egui::util::id_type_map::TypeId;
+//use gui::egui::util::id_type_map::TypeId;
+use graphics::{FrameRateLimit, WindowSettings};
 use mimalloc::MiMalloc;
-use rendering::prelude::{FrameRateLimit, GraphicsSetupSettings};
-use std::path::PathBuf;
-use world::{Event, Events, Init, State, System, Update, World};
+use std::{any::TypeId, path::PathBuf};
+use world::{
+    Event, Init, Shutdown, State, System, Systems, Update, World,
+};
 
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
 
+// Bitfield that contains the default systems that we should activate
+pub struct EnabledSystems {
+    input: bool,
+    ecs: bool,
+    world: bool,
+    threadpool: bool,
+    time: bool,
+    io: bool,
+    assets: bool,
+    graphics: bool
+}
+
+impl EnabledSystems {
+    // Enable all the systems
+    pub fn all() -> Self {
+        Self {
+            input: true,
+            ecs: true,
+            world: true,
+            threadpool: true,
+            time: true,
+            io: true,
+            assets: true,
+            graphics: true,
+        }
+    }
+
+    // Disable all the systems
+    pub fn none() -> Self {
+        Self {
+            input: false,
+            ecs: false,
+            world: false,
+            threadpool: false,
+            time: false,
+            io: false,
+            assets: false,
+            graphics: false,
+        }
+    }
+}
+
+impl Default for EnabledSystems {
+    fn default() -> Self {
+        Self::all()
+    }
+}
+
 // An app is just a world builder. It uses the builder pattern to construct a world object and the corresponding game engine window
 pub struct App {
-    // Window settings for the graphics
-    title: String,
-    screensize: vek::Extent2<u16>,
-    fullscreen: bool,
-    limit: Option<FrameRateLimit>,
+    // Graphical settings
+    window: WindowSettings,
 
     // Asset and IO
     user_assets_folder: Option<PathBuf>,
+    author_name: String,
+    app_name: String,
+    engine_name: String,
 
     // Main app resources
-    events: Events,
-    systems: AHashSet<TypeId>,
+    enabled: EnabledSystems,
+    systems: Systems,
     world: World,
     el: EventLoop<()>,
 }
 
 impl Default for App {
     fn default() -> Self {
-        let (world, events) = world::setup();
+        let (world, systems) = world::setup();
 
         Self {
-            title: "Default title".to_string(),
-            screensize: vek::Extent2::new(1280, 720),
-            fullscreen: false,
-            limit: None,
+            window: WindowSettings {
+                title: "Default title".to_string(),
+                limit: FrameRateLimit::default(),
+                fullscreen: false,
+            },
+            author_name: "cFlake Dev".to_string(),
+            app_name: "cFlake Prototype Game".to_string(),
+            engine_name: "cFlake Game Engine".to_string(),
             user_assets_folder: None,
-            events,
-            systems: Default::default(),
+            enabled: EnabledSystems::default(),
+            systems,
             el: EventLoop::new(),
             world,
         }
@@ -51,30 +105,36 @@ impl Default for App {
 impl App {
     // Set the window title
     pub fn set_window_title(mut self, title: impl ToString) -> Self {
-        self.title = title.to_string();
+        self.window.title = title.to_string();
         self
     }
 
-    // Set the window starting screensize
-    pub fn set_window_size(mut self, size: vek::Extent2<u16>) -> Self {
-        self.screensize = size;
+    // Set the window framerate limit
+    pub fn set_frame_rate_limit(
+        mut self,
+        limit: FrameRateLimit,
+    ) -> Self {
+        self.window.limit = limit;
         self
     }
 
     // Set window fullscreen mode
     pub fn set_window_fullscreen(mut self, toggled: bool) -> Self {
-        self.fullscreen = toggled;
+        self.window.fullscreen = toggled;
         self
     }
 
-    // Set the window's frame limiter
-    pub fn set_framerate_limit(mut self, limit: Option<FrameRateLimit>) -> Self {
-        self.limit = limit;
+    // Set what default systems we wish to use
+    pub fn set_enabled_systems(mut self, enabled: EnabledSystems) -> Self {
+        self.enabled = enabled;
         self
     }
 
     // Set the assets folder for the user defined assets
-    pub fn set_user_assets_folder_path(mut self, path: impl TryInto<PathBuf>) -> Self {
+    pub fn set_user_assets_folder_path(
+        mut self,
+        path: impl TryInto<PathBuf>,
+    ) -> Self {
         self.user_assets_folder = Some(
             path.try_into()
                 .ok()
@@ -83,115 +143,203 @@ impl App {
         self
     }
 
+    // Set the author name of the app
+    pub fn set_author_name(mut self, name: &str) -> Self {
+        self.app_name = name.to_string();
+        self
+    }
+
+    // Set the app name
+    pub fn set_name(mut self, name: &str) -> Self {
+        self.app_name = name.to_string();
+        self
+    }
+
     // Insert a new system into the app and execute it immediately
     // This will register all the necessary events automatically
-    pub fn insert_system<S: System>(mut self, system: S) -> Self {
-        if self.systems.insert(TypeId::of::<S>()) {
-            system.insert(&mut self.events);
-        }
+    pub fn insert_system(
+        mut self,
+        callback: impl FnOnce(&mut System) + 'static,
+    ) -> Self {
+        self.systems.insert(callback);
         self
+    }
+    
+    // Insert a single init event
+    pub fn insert_init<ID>(
+        self,
+        init: impl Event<Init, ID> + 'static,
+    ) -> Self {
+        self.insert_system(move |system: &mut System| {
+            system.insert_init(init);
+        })
     }
 
     // Insert a single update event
-    pub fn insert_update<P>(mut self, update: impl Event<Update, P>) -> Self {
-        self.events.registry::<Update>().insert(update);
-        self
+    pub fn insert_update<ID>(
+        self,
+        update: impl Event<Update, ID> + 'static,
+    ) -> Self {
+        self.insert_system(move |system: &mut System| {
+            system.insert_update(update);
+        })
     }
 
-    // Insert a single init event
-    pub fn insert_init<P>(mut self, update: impl Event<Init, P>) -> Self {
-        self.events.registry::<Init>().insert(update);
-        self
+    // Insert a single shutdown event
+    pub fn insert_shutdown<ID>(
+        self,
+        shutdown: impl Event<Shutdown, ID> + 'static,
+    ) -> Self {
+        self.insert_system(move |system: &mut System| {
+            system.insert_shutdown(shutdown);
+        })
     }
 
     // Insert a single window event
-    pub fn insert_window<P>(mut self, update: impl Event<WindowEvent<'static>, P>) -> Self {
-        self.events.registry::<WindowEvent>().insert(update);
-        self
+    pub fn insert_window<ID>(
+        self,
+        event: impl Event<WindowEvent<'static>, ID> + 'static,
+    ) -> Self {
+        self.insert_system(move |system: &mut System| {
+            system.insert_window(event);
+        })
     }
 
     // Insert a single device event
-    pub fn insert_device<P>(mut self, update: impl Event<DeviceEvent, P>) -> Self {
-        self.events.registry::<DeviceEvent>().insert(update);
-        self
+    pub fn insert_device<ID>(
+        self,
+        event: impl Event<DeviceEvent, ID> + 'static,
+    ) -> Self {
+        self.insert_system(move |system: &mut System| {
+            system.insert_device(event);
+        })
     }
 
     // Consume the App builder, and start the engine window
     pub fn execute(mut self) {
-        // Insert all the builtin systems dataless
-        self = self
-            .insert_system(input::system)
-            .insert_system(gui::system)
-            .insert_system(ecs::system)
-            .insert_system(time::system)
-            .insert_system(world::system);
+        // Enable the environment logger
+        env_logger::init();
 
-        // Insert the asset loader
-        let user = self.user_assets_folder.take();
-        self = self.insert_system(|e: &mut Events| assets::system(e, user));
+        // Pass the panics to the LOG crate
+        let hook = std::panic::take_hook();
+        std::panic::set_hook(Box::new(move |panic_info| {
+            log::error!("{:?}", panic_info.to_string());
+            hook(panic_info);
+        }));
 
-        // Insert the graphics pipeline and everything rendering related
-        let settings = GraphicsSetupSettings {
-            title: self.title.clone(),
-            size: self.screensize,
-            fullscreen: self.fullscreen,
-            limit: self.limit,
-        };
-        self = self.insert_system(|e: &mut Events| rendering::scene::system(e, settings));
+        // Insert the default systems
+        self = self.insert_default_systems();
+
+        // Sort all the stages
+        log::debug!("Sorting engine stages...");
+        self.systems.init.sort().unwrap();
+        self.systems.update.sort().unwrap();
+        self.systems.shutdown.sort().unwrap();
+        self.systems.window.sort().unwrap();
+        self.systems.device.sort().unwrap();
 
         // Sort & execute the init events
-        let reg = self.events.registry::<Init>();
-        reg.sort().unwrap();
-        self.events.execute::<Init>((&mut self.world, &self.el));
+        self.systems.init.execute((&mut self.world, &self.el));
 
         // Decompose the app
-        let mut events = self.events;
         let mut world = self.world;
         let el = self.el;
-
-        // Sort the remaining events registries
-        events.registry::<Update>().sort().unwrap();
-        events.registry::<WindowEvent>().sort().unwrap();
-        events.registry::<DeviceEvent>().sort().unwrap();
+        let mut systems = self.systems;
 
         // Create the spin sleeper for frame limiting
         let builder = spin_sleep::LoopHelper::builder();
-        let mut sleeper = if let Some(FrameRateLimit::Limited(limit)) = self.limit {
+        let mut sleeper = if let FrameRateLimit::Limited(limit) =
+            self.window.limit
+        {
+            log::debug!("Created sleeper with a target rate of {limit}");
             builder.build_with_target_rate(limit)
         } else {
+            log::debug!("Created sleeper without a target rate");
             builder.build_without_target_rate()
         };
 
-        // We must now start the game engine (start the glutin event loop)
+        // We must now start the game engine (start the winit event loop)
         el.run(move |event, _, cf| match event {
             // Call the update events
-            glutin::event::Event::MainEventsCleared => {
+            winit::event::Event::MainEventsCleared => {
                 sleeper.loop_start();
-                events.execute::<Update>(&mut world);
-
-                if let State::Stopped = *world.get::<State>().unwrap() {
+                systems.update.execute(&mut world);
+                
+                // Handle app shutdown
+                if let Some(State::Stopped) = world.get::<State>().map(|x| *x) {
                     *cf = ControlFlow::Exit;
+                    systems.shutdown.execute(&mut world);
                 }
 
                 sleeper.loop_sleep();
             }
 
+            // Call the shutdown events
+            winit::event::Event::LoopDestroyed => {
+                systems.shutdown.execute(&mut world);
+            }
+
             // Call the window events
-            glutin::event::Event::WindowEvent {
+            winit::event::Event::WindowEvent {
                 window_id: _,
                 mut event,
             } => {
-                events.execute::<WindowEvent>((&mut world, &mut event));
+                systems.window.execute((&mut world, &mut event));
             }
 
             // Call the device events
-            glutin::event::Event::DeviceEvent {
+            winit::event::Event::DeviceEvent {
                 device_id: _,
                 event,
             } => {
-                events.execute::<DeviceEvent>((&mut world, &event));
+                systems.device.execute((&mut world, &event));
             }
             _ => {}
         });
+    }
+
+    // Insert the required default systems (if specified by the EnabledSystems struct)
+    fn insert_default_systems(mut self) -> Self {
+        if self.enabled.input {
+            self = self.insert_system(input::system);
+        }
+        if self.enabled.ecs {
+            self = self.insert_system(ecs::system);
+        }
+        if self.enabled.world {
+            self = self.insert_system(world::system);
+        }
+        if self.enabled.threadpool {
+            self = self.insert_system(utils::threadpool);
+        }
+        if self.enabled.time {
+            self = self.insert_system(utils::time);
+        }
+        // Insert the IO manager
+        if self.enabled.io {
+            let author = self.author_name.clone();
+            let app = self.app_name.clone();
+            self = self.insert_system(move |system: &mut System| {
+                utils::io(system, author, app)
+            });
+        }
+        // Insert the asset loader
+        if self.enabled.assets {
+            let user = self.user_assets_folder.take();
+            self = self.insert_system(|system: &mut System| {
+                assets::system(system, user)
+            });
+        }
+        // Insert the graphics API if needed
+        if self.enabled.graphics {
+            let window = self.window.clone();
+            let app = self.app_name.clone();
+            let engine = self.engine_name.clone();
+            self = self.insert_system(move |system: &mut System| {
+                graphics::system(system, window, app, engine);
+            });
+        }
+
+        self
     }
 }

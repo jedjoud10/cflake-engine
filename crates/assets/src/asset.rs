@@ -1,5 +1,5 @@
-use std::{path::Path, rc::Rc, sync::Arc};
-use crate::Assets;
+use std::{path::Path, sync::Arc};
+
 // File data is what will be given to assets whenever we try to deserialize them
 // We will assume that all assets are files
 // TODO: add the loader back again
@@ -37,7 +37,17 @@ impl<'a> Data<'a> {
 pub trait Asset: Sized + 'static {
     type Args<'args>;
     fn extensions() -> &'static [&'static str];
-    fn deserialize<'args>(data: Data, args: Self::Args<'args>) -> Self;
+    fn deserialize<'args>(
+        data: Data,
+        args: Self::Args<'args>,
+    ) -> Self;
+}
+
+// Just for convience's sake
+pub trait AsyncAsset: Asset + Sync + Send {}
+impl<T: Asset + Send + Sync> AsyncAsset for T where
+    T::Args<'static>: 'static + Send + Sync
+{
 }
 
 impl Asset for String {
@@ -47,7 +57,10 @@ impl Asset for String {
         &["txt"]
     }
 
-    fn deserialize<'args>(data: Data, _args: Self::Args<'args>) -> Self {
+    fn deserialize<'args>(
+        data: Data,
+        _args: Self::Args<'args>,
+    ) -> Self {
         std::thread::sleep(std::time::Duration::from_millis(1));
         String::from_utf8(data.bytes().to_vec()).unwrap()
     }

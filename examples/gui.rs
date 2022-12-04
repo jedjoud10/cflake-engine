@@ -1,3 +1,4 @@
+/*
 use cflake_engine::prelude::*;
 use egui::{FontFamily, FontId, RichText, TextStyle};
 
@@ -39,3 +40,6 @@ fn update(world: &mut World) {
         });
     });
 }
+*/
+
+fn main() {}

@@ -1,0 +1,21 @@
+[package]
+name = "utils"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+num_cpus = "1.13.1"
+seq-macro = "0.3.0"
+paste = "1.0.7"
+casey = "0.3.3"
+arrayvec = "0.7.2"
+itertools = "0.10.3"
+platform-dirs = "0.3.0"
+ron = "0.8"
+serde_json = "1.0.85"
+serde = "1.0.145"  
+world = { path = "../world" }
+parking_lot = { workspace = true }
+log = { workspace = true }

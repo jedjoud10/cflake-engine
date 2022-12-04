@@ -6,10 +6,12 @@ pub use ecs;
 pub use gui;
 pub use input;
 pub use math;
-pub use rendering;
-pub use time;
+pub use utils;
 pub use world;
 
+// Gfx related
+pub use graphics;
+pub use rendering;
 pub mod prelude {
     pub use crate::app::*;
     pub use crate::assets::*;
@@ -18,8 +20,18 @@ pub mod prelude {
     pub use crate::gui::*;
     pub use crate::input::*;
     pub use crate::math::*;
-    pub use crate::rendering::prelude::*;
-    pub use crate::time::*;
+    pub use crate::utils::*;
     pub use crate::world::*;
+
+    // Re-exports
+    pub use log;
+    pub use serde;
+    pub use serde::{Deserialize, Serialize};
     pub use vek;
+    pub use vek::{Extent2, Extent3, Quaternion, Vec2, Vec3, Vec4};
+    pub use winit;
+
+    // Gfx related
+    pub use crate::graphics::*;
+    pub use crate::rendering::*;
 }
