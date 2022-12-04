@@ -11,7 +11,6 @@ use std::{
     ffi::OsStr,
     marker::PhantomData,
     path::{Path, PathBuf},
-    str::FromStr,
     sync::{
         mpsc::{Receiver, Sender},
         Arc,
@@ -44,7 +43,8 @@ pub enum AssetLoadError {
 }
 
 // Used for async asset loading
-type AsyncSlotMap = SlotMap<DefaultKey, Option<Box<dyn Any + Send + Sync + Sync>>>;
+type AsyncBoxedResult = Result<Box<dyn Any + Send + Sync + Sync>, AssetLoadError>;
+type AsyncSlotMap = SlotMap<DefaultKey, Option<AsyncBoxedResult>>;
 type AsyncLoadedAssets = Arc<RwLock<AsyncSlotMap>>;
 type AsyncLoadedBytes = Arc<RwLock<AHashMap<PathBuf, Arc<[u8]>>>>;
 
@@ -55,7 +55,7 @@ type UserPath = Option<Arc<Path>>;
 // This asset manager will also contain the persistent assets that are included by default into the engine executable
 pub struct Assets {
     // Keep track of the assets that were sucessfully loaded
-    // The value corresponding to each key might be None in the case that the asset did not load
+    // The value corresponding to each key might be None in the case that the asset did not load (yet)
     assets: AsyncLoadedAssets,
 
     // Keep track of the bytes that were loaded in other threads
@@ -106,7 +106,7 @@ impl Assets {
 // Helper functions
 impl Assets {
     // Check if the extension of a file is valid
-    fn validate<'a, A: Asset>(path: &'a Path) -> Result<(), AssetLoadError> {
+    fn validate<A: Asset>(path: &Path) -> Result<(), AssetLoadError> {
         let (_, extension) = path
             .file_name()
             .and_then(OsStr::to_str).ok_or(AssetLoadError::InvalidOsStr)?
@@ -117,6 +117,17 @@ impl Assets {
             || A::extensions().is_empty())
         .then_some(())
         .ok_or_else(|| AssetLoadError::InvalidExtension(extension.to_owned()))
+    }
+
+    // Convert a path to it's raw name and extension
+    fn decompose_path(path: &Path) -> (&str, &str) {
+        let (name, extension) = path
+            .file_name()
+            .and_then(OsStr::to_str)
+            .unwrap()
+            .split_once('.')
+            .unwrap();
+        (name, extension)
     }
 
     // Load bytes either dynamically or load cached bytes 
@@ -138,13 +149,57 @@ impl Assets {
     // Load the bytes for an asset dynamically and store them within self
     fn load_bytes_dynamically(bytes: &AsyncLoadedBytes, user: &UserPath, owned: PathBuf) -> Result<Arc<[u8]>, AssetLoadError> {
         log::debug!("Loading asset bytes from path {:?} dynamically...", &owned);
-        let mut write = self.bytes.write();
-        let user = self.user.as_ref().ok_or(AssetLoadError::UserPathNotSpecified)?;
+        let mut write = bytes.write();
+        let user = user.as_ref().ok_or(AssetLoadError::UserPathNotSpecified)?;
         let bytes = super::raw::read(&owned, user)?;
         let arc: Arc<[u8]> = Arc::from(bytes);
         write.insert(owned.clone(), arc.clone());
         log::debug!("Successfully loaded asset bytes from path {:?}", &owned);
         Ok(arc)
+    }
+
+    // Load an asset asynchronously and automatically add it to the loaded assets
+    // TODO: Rewrite this singular function
+    fn async_load_inner<A: AsyncAsset>(
+        owned: PathBuf,
+        bytes: AsyncLoadedBytes,
+        user: UserPath,
+        args: <A as Asset>::Args<'_>,
+        assets: AsyncLoadedAssets,
+        key: DefaultKey,
+        sender: Sender<DefaultKey>
+    ) {
+        if let Err(err) = Self::validate::<A>(&owned) {
+            Self::async_insert_inner::<A>(assets, key, Err(err), sender);
+            return;
+        }
+
+        let bytes = Self::load_bytes(&bytes, &user, owned.clone());
+        let result = bytes.map(|bytes| {
+            let (name, extension) = Self::decompose_path(&owned);
+            let asset = A::deserialize(
+                crate::Data {
+                    name,
+                    extension,
+                    bytes,
+                    path: owned.as_path(),
+                },
+                args,
+            );
+
+            let boxed: Box<dyn Any + Send + Sync + Sync> = Box::new(asset);
+            boxed
+        });
+
+        Self::async_insert_inner::<A>(assets, key, result, sender);
+    }
+
+    // Add a boxed async asset result to the required mutexes and locks
+    fn async_insert_inner<A: AsyncAsset>(assets: AsyncLoadedAssets, key: DefaultKey, result: AsyncBoxedResult, sender: Sender<DefaultKey>) {
+        let mut write = assets.write();
+        let opt = write.get_mut(key).unwrap();
+        *opt = Some(result);
+        sender.send(key).unwrap();
     }
 }
 
@@ -162,13 +217,9 @@ impl Assets {
         Self::validate::<A>(&path)?;
 
         // All this does is that it ensures that the bytes are valid before we actually deserialize the asset
-        let (name, extension) = path
-            .file_name()
-            .and_then(OsStr::to_str)
-            .unwrap()
-            .split_once('.')
-            .unwrap();
+        let (name, extension) = Self::decompose_path(path);
         
+        // Load the asset bytes (either dynamically or fetch cached bytes)
         let bytes = Self::load_bytes(&self.bytes, &self.user, owned)?;
 
         // Deserialize the asset file
@@ -202,7 +253,7 @@ impl Assets {
         &self,
         input: impl AssetInput<'s, 'static, A>,
         threadpool: &mut ThreadPool,
-    ) -> Result<AsyncHandle<A>, AssetLoadError>
+    ) -> AsyncHandle<A>
     where
         A::Args<'static>: Send + Sync,
     {
@@ -210,7 +261,6 @@ impl Assets {
         let (path, args) = input.split();
         let path = Path::new(OsStr::new(path));
         let owned = path.to_owned();
-        Self::validate::<A>(&path)?;
 
         // Clone the things that must be sent to the thread
         let assets = self.assets.clone();
@@ -227,44 +277,9 @@ impl Assets {
 
         // Create a new task that will load this asset
         threadpool.execute(move || {
-            // All this does is that it ensures that the bytes are valid before we actually deserialize the asset
-            let (name, extension) = owned
-                .file_name()
-                .and_then(OsStr::to_str)
-                .unwrap()
-                .split_once('.')
-                .unwrap();
-
-            let bytes = if bytes.read().contains_key(&owned) {
-                bytes.read().get(&owned).unwrap().clone()
-            } else {
-                // TODO: Proper error logging
-                let mut write = bytes.write();
-                let bytes =
-                    super::raw::read(&owned, user.as_ref().unwrap())
-                        .unwrap();
-                let arc: Arc<[u8]> = Arc::from(bytes);
-                write.insert(owned.clone(), arc.clone());
-                arc
-            };
-
-            let asset = A::deserialize(
-                crate::Data {
-                    name,
-                    extension,
-                    bytes,
-                    path: owned.as_path(),
-                },
-                args,
-            );
-
-            // Add the deserialized back to the loader
-            let mut write = assets.write();
-            let opt = write.get_mut(key).unwrap();
-            *opt = Some(Box::new(asset));
-            sender.send(key).unwrap();
+            Self::async_load_inner::<A>(owned, bytes, user, args, assets, key, sender);
         });
-        Ok(handle)
+        handle
     }
 
     // Load multiple assets using some explicit/default loading arguments in another thread
@@ -275,18 +290,19 @@ impl Assets {
             Item = impl AssetInput<'s, 'static, A> + Send,
         >,
         threadpool: &mut ThreadPool,
-    ) -> Vec<Option<AsyncHandle<A>>> {
+    ) -> Vec<AsyncHandle<A>>
+    where
+        A::Args<'static>: Send + Sync,
+    {
         // Create a temporary threadpool scope for these assets only
-        let mut outer = Vec::<Option<AsyncHandle<A>>>::new();
+        let mut outer = Vec::<AsyncHandle<A>>::new();
         let reference = &mut outer;
         threadpool.scope(move |scope| {
             for input in inputs.into_iter() {
                 // Check the extension on a per file basis
-                let path = PathBuf::from_str(input.path()).unwrap();
-                if Self::validate::<A>(&path).is_err() {
-                    reference.push(None);
-                    continue;
-                }
+                let (path, args) = input.split();
+                let path = Path::new(OsStr::new(path));
+                let owned = path.to_owned();
 
                 // Clone the things that must be sent to the thread
                 let assets = self.assets.clone();
@@ -296,52 +312,13 @@ impl Assets {
 
                 // Create the handle's key and insert it
                 let key = self.assets.write().insert(None);
-                let handle = AsyncHandle::<A> {
+                reference.push(AsyncHandle::<A> {
                     _phantom: PhantomData,
                     key,
-                };
-                reference.push(Some(handle));
+                });
 
                 scope.execute(move || {
-                    // All this does is that it ensures that the bytes are valid before we actually deserialize the asset
-                    let (path, args) = input.split();
-                    let path = PathBuf::from_str(path).unwrap();
-                    let (name, extension) = path
-                        .file_name()
-                        .and_then(OsStr::to_str)
-                        .unwrap()
-                        .split_once('.')
-                        .unwrap();
-                    let bytes = if bytes.read().contains_key(&path) {
-                        bytes.read().get(&path).unwrap().clone()
-                    } else {
-                        // TODO: Proper error logging
-                        let mut write = bytes.write();
-                        let bytes = super::raw::read(
-                            &path,
-                            user.as_ref().as_ref().unwrap(),
-                        )
-                        .unwrap();
-                        let arc: Arc<[u8]> = Arc::from(bytes);
-                        write.insert(path.clone(), arc.clone());
-                        arc
-                    };
-
-                    let asset = A::deserialize(
-                        crate::Data {
-                            name,
-                            extension,
-                            bytes,
-                            path: path.as_path(),
-                        },
-                        args,
-                    );
-
-                    // Add the deserialized back to the loader
-                    let mut write = assets.write();
-                    let opt = write.get_mut(key).unwrap();
-                    *opt = Some(Box::new(asset));
-                    sender.send(key).unwrap();
+                    Self::async_load_inner::<A>(owned, bytes, user, args, assets, key, sender);
                 });
             }
         });
@@ -353,15 +330,12 @@ impl Assets {
         &self,
         handle: &AsyncHandle<A>,
     ) -> bool {
-        // Poll and update
         self.loaded.borrow_mut().extend(self.receiver.try_iter());
-
-        // Check
         self.loaded.borrow().contains(&handle.key)
     }
 
     // This will wait until the asset referenced by this handle has finished loading
-    pub fn wait<A: AsyncAsset>(&self, handle: AsyncHandle<A>) -> A {
+    pub fn wait<A: AsyncAsset>(&self, handle: AsyncHandle<A>) -> Result<A, AssetLoadError> {
         // Spin lock whilst whilst waiting for an asset to load
         while !self.has_finished_loading(&handle) {}
 
@@ -379,14 +353,14 @@ impl Assets {
 
         // Remove the asset from the global queue and return it
         let boxed = assets.remove(handle.key).unwrap();
-        *boxed.unwrap().downcast::<A>().unwrap()
+        boxed.unwrap().map(|b| *b.downcast::<A>().unwrap())
     }
 
     // This will wait until all the assets reference by these handles have finished loading
     pub fn wait_from_iter<A: AsyncAsset>(
         &self,
         handles: impl IntoIterator<Item = AsyncHandle<A>>,
-    ) -> Vec<A> {
+    ) -> Vec<Result<A, AssetLoadError>> {
         handles
             .into_iter()
             .map(|handle| self.wait(handle))

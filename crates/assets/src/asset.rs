@@ -36,11 +36,12 @@ impl<'a> Data<'a> {
 // Each asset has some extra data that can be used to construct the object
 pub trait Asset: Sized + 'static {
     type Args<'args>;
+    type Result;
     fn extensions() -> &'static [&'static str];
     fn deserialize<'args>(
         data: Data,
         args: Self::Args<'args>,
-    ) -> Self;
+    ) -> Self::Result;
 }
 
 // Just for convience's sake
@@ -52,6 +53,7 @@ impl<T: Asset + Send + Sync> AsyncAsset for T where
 
 impl Asset for String {
     type Args<'args> = ();
+    type Result = Result<Self, std::string::FromUtf8Error>;
 
     fn extensions() -> &'static [&'static str] {
         &["txt"]
@@ -60,8 +62,8 @@ impl Asset for String {
     fn deserialize<'args>(
         data: Data,
         _args: Self::Args<'args>,
-    ) -> Self {
+    ) -> Self::Result {
         std::thread::sleep(std::time::Duration::from_millis(1));
-        String::from_utf8(data.bytes().to_vec()).unwrap()
+        String::from_utf8(data.bytes().to_vec())
     }
 }
