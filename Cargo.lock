@@ -139,6 +139,7 @@ dependencies = [
  "log",
  "math",
  "minimp3",
+ "parking_lot",
  "thiserror",
  "utils",
  "vek",

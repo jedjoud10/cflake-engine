@@ -5,4 +5,7 @@ use thiserror::Error;
 pub enum AudioClipError {
     #[error("MiniMP3 deserialization error {0}")]
     MP3(minimp3::Error),
+
+    #[error("Wav IO error {0}")]
+    Wav(std::io::Error),
 }

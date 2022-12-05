@@ -1,14 +1,24 @@
+use std::sync::Arc;
+
 use cpal::traits::StreamTrait;
 use ecs::Component;
-use crate::AudioClip;
+use parking_lot::Mutex;
+use crate::{AudioClip, AudioSamplesSettings};
 
 // An audio source is a component that produces sound
 // Each audio source is a CPAL stream that will be played
 #[derive(Component)]
 pub struct AudioSource {
+    // Audio clip that the user wishes to play
     pub(crate) clip: AudioClip,
-    pub(crate) volume: f32,
+    
+    // Volume and effects applied to the audio samples
+    pub(crate) settings: AudioSamplesSettings,
+
+    // These two fields get validated whenever we start playing the audio stream
     pub(crate) stream: Option<cpal::Stream>,
+    
+    // Is the audio stream currently playing?
     pub(crate) playing: bool,
 }
 
@@ -17,7 +27,10 @@ impl AudioSource {
     pub fn new(clip: AudioClip) -> Self {
         Self {
             clip,
-            volume: 1.0,
+            settings: AudioSamplesSettings {
+                volume: Arc::new(Mutex::new(1.0f32)),
+                callback: None,
+            },
             stream: None,
             playing: true,
         }
@@ -51,11 +64,11 @@ impl AudioSource {
 
     // Set the volume of the audio source
     pub fn set_volume(&mut self, volume: f32) {
-        self.volume = volume;
+        *self.settings.volume.lock() = volume;
     }
 
     // Get the volume of the audio source
     pub fn volume(&self) -> f32 {
-        self.volume
+        *self.settings.volume.lock()
     }
 }

@@ -18,3 +18,4 @@ minimp3 = "0.5.1"
 vek = { workspace = true }
 log = { workspace = true }
 thiserror = { workspace = true }
+parking_lot = { workspace = true }

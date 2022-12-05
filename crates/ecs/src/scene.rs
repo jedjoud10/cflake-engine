@@ -192,6 +192,22 @@ impl Scene {
     ) -> QueryRef<'a, '_, '_, L> {
         QueryRef::new_with_filter(self, filter)
     }
+
+    // Find the first layout ref from a query
+    pub fn first<'a, L: for<'i> QueryLayoutRef<'i>>(
+        &'a self
+    ) -> Option<L> {
+        let mut iterator = QueryRef::<L>::new(self).into_iter();
+        iterator.next()
+    }
+
+    // Find the first layout mut from a query
+    pub fn first_mut<'a, L: for<'i> QueryLayoutMut<'i>>(
+        &'a mut self
+    ) -> Option<L> {
+        let mut iterator = QueryMut::<L>::new(self).into_iter();
+        iterator.next()
+    }
 }
 
 // Late update event that will cleanup the ECS manager states
