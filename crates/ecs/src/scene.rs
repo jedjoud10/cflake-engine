@@ -193,20 +193,20 @@ impl Scene {
         QueryRef::new_with_filter(self, filter)
     }
 
-    // Find the first layout ref from a query
-    pub fn first<'a, L: for<'i> QueryLayoutRef<'i>>(
+    // Find the a layout ref (if it's the only one that exists in the scene)
+    pub fn find<'a, L: for<'i> QueryLayoutRef<'i>>(
         &'a self
     ) -> Option<L> {
-        let mut iterator = QueryRef::<L>::new(self).into_iter();
-        iterator.next()
+        let mut iterator = QueryRef::<L>::new(self).into_iter().fuse();
+        iterator.next().xor(iterator.next())
     }
 
-    // Find the first layout mut from a query
-    pub fn first_mut<'a, L: for<'i> QueryLayoutMut<'i>>(
+    // Find the a layout mut (if it's the only one that exists in the scene)
+    pub fn find_mut<'a, L: for<'i> QueryLayoutMut<'i>>(
         &'a mut self
     ) -> Option<L> {
-        let mut iterator = QueryMut::<L>::new(self).into_iter();
-        iterator.next()
+        let mut iterator = QueryMut::<L>::new(self).into_iter().fuse();
+        iterator.next().xor(iterator.next())
     }
 }
 

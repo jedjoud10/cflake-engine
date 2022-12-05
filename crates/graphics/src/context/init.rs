@@ -17,7 +17,7 @@ pub(crate) fn init_context_and_window(
     };
 
     // Create a winit window
-    let raw = init_surface(el, &settings);
+    let raw = init_window(el, &settings);
 
     // Create the window wrapper
     let window = Window {
@@ -29,7 +29,7 @@ pub(crate) fn init_context_and_window(
 }
 
 // Init a winit window
-fn init_surface(el: &EventLoop<()>, settings: &WindowSettings) -> winit::window::Window {
+fn init_window(el: &EventLoop<()>, settings: &WindowSettings) -> winit::window::Window {
     WindowBuilder::default()
         .with_fullscreen(
             settings

@@ -582,6 +582,7 @@ dependencies = [
  "ecs-derive",
  "itertools",
  "lazy_static",
+ "log",
  "math",
  "nohash-hasher",
  "parking_lot",

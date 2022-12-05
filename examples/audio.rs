@@ -24,11 +24,12 @@ fn init(world: &mut World) {
     let clip1 = assets.load::<AudioClip>("user/ignored/nicolas.mp3").unwrap();
     let clip2 = assets.load::<AudioClip>("user/ignored/bruh.mp3").unwrap();
 
-    // Create an audio source for the first clip
-    let mut source = AudioSource::new(clip1);
-    source.set_volume(0.1);
-    scene.insert(source);
+    // Create audio sources for the clips
+    let mut source1 = AudioSource::new(clip1);
+    source1.set_volume(0.5f32);
+    let mut source2 = AudioSource::new(clip2);
+    source2.set_volume(0.6f32);
 
-    // Create an audio source for the second clip
-    scene.insert(AudioSource::new(clip2));
+    // Insert both audio sources
+    scene.extend_from_iter([source1, source2]);
 }

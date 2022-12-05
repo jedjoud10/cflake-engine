@@ -96,6 +96,7 @@ impl ThreadPool {
             .map(|i| spawn(&threadpool, i))
             .collect::<Vec<_>>();
         threadpool.joins = joins;
+        log::debug!("Created a thread pool with {num} threads");
 
         threadpool
     }

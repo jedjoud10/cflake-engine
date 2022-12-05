@@ -35,6 +35,7 @@ impl AudioSamplesDescriptor {
 }
 
 // Audio settings that can be applied to audio samples to affect how they sound
+// TODO: Optimize this??
 pub struct AudioSamplesSettings {
     // Volume of the audio samples 
     pub(crate) volume: Arc<Mutex<f32>>,
@@ -80,13 +81,18 @@ impl<T: Sample + Send + Sync + 'static> PlayableAudioSamples for (Arc<[T]>, Audi
 }
 
 // Internal function that actually builds the CPAL stream
-fn build_output_stream<T: Sample + Send + Sync + 'static>(src: Arc<[T]>, config: StreamConfig, settings: &AudioSamplesSettings, device: &cpal::Device) -> Result<Stream, BuildStreamError> {
+fn build_output_stream<T: Sample + Send + Sync + 'static>(
+    src: Arc<[T]>,
+    config: StreamConfig,
+    settings: &AudioSamplesSettings,
+    device: &cpal::Device
+) -> Result<Stream, BuildStreamError> {
     // Create and clone necessary data
     let channels = config.channels as usize;
     let volume = settings.volume.clone();
     let callback = settings.callback.clone();
     let mut index = 0;
-    
+
     device.build_output_stream(
         &config,
         move |dst: &mut [f32], _: &cpal::OutputCallbackInfo| {

@@ -2,8 +2,8 @@
 mod shapes {
     #[cfg(test)]
     mod cuboid {
-        use vek::Vec3;
-        use crate::{Cuboid, Volume, SurfaceArea, AABB, Boundable};
+        use vek::{Vec3, Extent3};
+        use crate::{Cuboid, Volume, SurfaceArea, AABB, Boundable, Movable};
 
         #[test]
         fn volume() {
@@ -23,25 +23,42 @@ mod shapes {
 
         #[test]
         fn bounds() {
-            let cuboid = Cuboid::cube(Vec3::zero(), 1.0);
+            let mut cuboid = Cuboid::cube(Vec3::zero(), 1.0);
             let aabb: AABB = cuboid.bounds();
             assert_eq!(aabb.min, Vec3::broadcast(-0.5f32));
             assert_eq!(aabb.max, Vec3::broadcast(0.5f32));
+            cuboid.expand_by(1.0);
+            let aabb: AABB = cuboid.bounds();
+            assert_eq!(cuboid.extent, Extent3::broadcast(2.0f32));
+            assert_eq!(aabb.min, Vec3::broadcast(-1f32));
+            assert_eq!(aabb.max, Vec3::broadcast(1f32));
 
-            let cuboid = Cuboid::cube(Vec3::zero(), 2.0);
+            let mut cuboid = Cuboid::cube(Vec3::zero(), 2.0);
             let aabb: AABB = cuboid.bounds();
             assert_eq!(aabb.min, Vec3::broadcast(-1f32));
             assert_eq!(aabb.max, Vec3::broadcast(1f32));
+            cuboid.expand_by(1.0);
+            let aabb: AABB = cuboid.bounds();
+            assert_eq!(cuboid.extent, Extent3::broadcast(3.0f32));
+            assert_eq!(aabb.min, Vec3::broadcast(-1.5f32));
+            assert_eq!(aabb.max, Vec3::broadcast(1.5f32));
         }
 
         #[test]
-        fn center() {}
+        fn center() {
+            let mut cuboid = Cuboid::cube(Vec3::zero(), 1.0);
+            assert_eq!(cuboid.center(), Vec3::zero());
+
+            cuboid.set_center(Vec3::one());
+
+            assert_eq!(cuboid.center(), Vec3::one());
+        }
     }
 
     #[cfg(test)]
     mod sphere {
         use vek::Vec3;
-        use crate::{Sphere, Volume, SurfaceArea, AABB, Boundable};
+        use crate::{Sphere, Volume, SurfaceArea, AABB, Boundable, Movable};
 
         #[test]
         fn volume() {
@@ -73,6 +90,13 @@ mod shapes {
         }
 
         #[test]
-        fn center() {}
+        fn center() {
+            let mut sphere = Sphere::new(Vec3::zero(), 1.0);
+            assert_eq!(sphere.center(), Vec3::zero());
+
+            sphere.set_center(Vec3::one());
+
+            assert_eq!(sphere.center(), Vec3::one());
+        }
     }
 }

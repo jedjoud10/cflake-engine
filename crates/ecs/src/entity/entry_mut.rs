@@ -120,7 +120,7 @@ impl<'a> EntryMut<'a> {
     }
 
     // Read certain components from the entry as if they were used in an immutable query
-    pub fn as_view<L: for<'s> QueryLayoutRef<'s>>(
+    pub fn as_query<L: for<'s> QueryLayoutRef<'s>>(
         &self,
     ) -> Option<L> {
         // Make sure the layout can be fetched from the archetype
@@ -139,7 +139,7 @@ impl<'a> EntryMut<'a> {
     }
 
     // Read certain components from the entry as if they were used in an mutable query
-    pub fn as_query<L: for<'s> QueryLayoutMut<'s>>(
+    pub fn as_query_mut<L: for<'s> QueryLayoutMut<'s>>(
         &mut self,
     ) -> Option<L> {
         assert!(

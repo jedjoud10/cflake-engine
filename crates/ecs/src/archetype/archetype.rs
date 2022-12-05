@@ -58,7 +58,7 @@ impl Archetype {
         );
 
         // Reserve and calculate difference
-        self.reserve(entities.len());
+        self.reserve(components.len());
         let old_len = self.entities.len();
         let additional = components.len();
 
@@ -89,6 +89,7 @@ impl Archetype {
             B::push(&mut storages, set);
         }
         drop(storages);
+        log::debug!("Extended archetype {} with {} new elements", self.mask, additional);
 
         // Return the newly added entity IDs
         &self.entities[old_len..]
@@ -96,6 +97,7 @@ impl Archetype {
 
     // Reserve enough memory space to be able to fit all the new entities in one allocation
     pub fn reserve(&mut self, additional: usize) {
+        log::debug!("Reserving {} additional elements for archetype {}", additional, self.mask);
         self.entities.reserve(additional);
         self.states.reserve(additional);
 
@@ -298,6 +300,7 @@ pub(crate) fn add_bundle_unchecked<B: Bundle>(
             entities: Default::default(),
         };
         archetypes.insert(new, archetype);
+        log::warn!("Created new archetype with mask {} (added bundle)", new);
     }
 
     // Get the current and target archetypes that we will modify
@@ -391,6 +394,7 @@ pub(crate) fn remove_bundle_unchecked<B: Bundle>(
             entities: Default::default(),
         };
         archetypes.insert(new, archetype);
+        log::warn!("Created new archetype with mask {} (removed bundle)", new);
     }
 
     // Get the current and target archetypes that we will modify

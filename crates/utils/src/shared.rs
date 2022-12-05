@@ -82,30 +82,6 @@ impl<T> SharedVec<T> {
         unsafe { std::ptr::write(ptr, MaybeUninit::new(value)) }
     }
 
-    /*
-    // Remove the last element
-    pub fn pop(&self) -> Option<T> {
-        let index = self.index.load(Ordering::Relaxed).checked_sub(1)?;
-        self.index.fetch_sub(1, Ordering::Relaxed);
-        let location = index % ELEMENTS_PER_PAGE;
-        let mut locked = self.pages.write();
-        let last_page = locked.last_mut()?;
-
-        // __Please__ don't look at this
-        let ptr = &mut last_page.chunk[location];
-        let uninit = ptr.get_mut();
-
-        // Read from the pointer and return the old value
-        let inner = unsafe {
-            std::ptr::replace(
-                uninit,
-                MaybeUninit::uninit()
-            ).assume_init()
-        };
-        Some(inner)
-    }
-    */
-
     // Get the element at index i immutably
     pub fn get(&self, i: usize) -> Option<&T> {
         let len = self.index.load(Ordering::Relaxed);

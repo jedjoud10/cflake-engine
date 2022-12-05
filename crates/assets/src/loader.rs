@@ -151,7 +151,7 @@ impl Assets {
 
     // Load the bytes for an asset dynamically and store them within self
     fn load_bytes_dynamically(bytes: &AsyncLoadedBytes, user: &UserPath, owned: PathBuf) -> Result<Arc<[u8]>, AssetLoadError> {
-        log::debug!("Loading asset bytes from path {:?} dynamically...", &owned);
+        log::warn!("Loading asset bytes from path {:?} dynamically...", &owned);
         let mut write = bytes.write();
         let user = user.as_ref().ok_or(AssetLoadError::UserPathNotSpecified)?;
         let bytes = super::raw::read(&owned, user)?;

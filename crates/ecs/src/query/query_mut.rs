@@ -4,7 +4,7 @@ use utils::BitSet;
 use crate::{
     Always, Archetype, Mask, QueryFilter, QueryLayoutMut, Scene, Wrap,
 };
-use std::marker::PhantomData;
+use std::{marker::PhantomData, iter::FusedIterator};
 
 // This is a query that will be fetched from the main scene that we can use to get components out of entries with a specific layout
 // Even though I define the 'it, 'b, and 's lfietimes, I don't use them in this query, I only use them in the query iterator
@@ -133,15 +133,7 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>>
 
     // Get the number of entries that we will have to iterate through
     pub fn len(&self) -> usize {
-        if let Some(bitsets) = &self.bitsets {
-            bitsets
-                .iter()
-                .zip(self.archetypes.iter())
-                .map(|(b, a)| b.count_ones().min(a.len()))
-                .sum()
-        } else {
-            self.archetypes.iter().map(|a| a.len()).sum()
-        }
+        len(&self.archetypes, &self.bitsets)
     }
 
     // Check if the query is empty
@@ -173,6 +165,20 @@ fn apply_mutability_states(
                 out.modified = usize::MAX;
             }
         }
+    }
+}
+
+// Calculate the number of elements there are in the archetypes, but also take in consideration
+// the bitsets (if specified)
+fn len(archetypes: &[&mut Archetype], bitsets: &Option<Vec<BitSet>>) -> usize {
+    if let Some(bitsets) = bitsets {
+        bitsets
+            .iter()
+            .zip(archetypes.iter())
+            .map(|(b, a)| b.count_ones().min(a.len()))
+            .sum()
+    } else {
+        archetypes.iter().map(|a| a.len()).sum()
     }
 }
 
@@ -262,6 +268,11 @@ impl<'b, 's, L: QueryLayoutMut<'s>> Iterator
 {
     type Item = L;
 
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let len = len(&self.archetypes, &self.bitsets);
+        (len, Some(len))
+    }
+
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             // Always hop to the next chunk at the start of the hop iteration / normal iteration
@@ -298,4 +309,14 @@ impl<'b, 's, L: QueryLayoutMut<'s>> Iterator
 
         Some(items)
     }
+}
+
+impl<'b, 's, L: QueryLayoutMut<'s>> ExactSizeIterator
+    for QueryMutIter<'b, 's, L>
+{
+}
+
+impl<'b, 's, L: QueryLayoutMut<'s>> FusedIterator
+    for QueryMutIter<'b, 's, L>
+{
 }

@@ -7,9 +7,13 @@ use winit::{
 // Frame rate limit of the window (can be disabled by selecting Unlimited)
 #[derive(Default, Clone, Copy, PartialEq, Eq)]
 pub enum FrameRateLimit {
+    // Limit the FPS to the screen refresh rate and use VSync
     VSync,
+
+    // Limit the FPS to a specific value
     Limited(u32),
 
+    // There is no FPS cap
     #[default]
     Unlimited,
 }

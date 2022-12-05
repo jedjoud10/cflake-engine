@@ -6,7 +6,7 @@ pub use sphere::*;
 
 // A shape is a 3D geometrical object that takes space
 pub trait Shape:
-    Movable + Boundable + Volume + SurfaceArea + Sync + Send
+    Movable + Boundable + Volume + SurfaceArea
 {
 }
 

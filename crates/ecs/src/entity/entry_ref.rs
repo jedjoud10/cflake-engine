@@ -53,7 +53,7 @@ impl<'a> EntryRef<'a> {
     }
 
     // Read certain components from the entry as if they were used in an immutable query
-    pub fn as_view<L: for<'s> QueryLayoutRef<'s>>(
+    pub fn as_query<L: for<'s> QueryLayoutRef<'s>>(
         &self,
     ) -> Option<L> {
         // Make sure the layout can be fetched from the archetype

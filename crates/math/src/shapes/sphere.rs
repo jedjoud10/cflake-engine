@@ -64,21 +64,3 @@ impl SurfaceArea for Sphere {
 }
 
 impl Shape for Sphere {}
-
-// TODO: Should this be stored within the rendering crate or math crate??
-// A mesh UV sphere that has vertical and horizontal subdivisions
-#[derive(Clone, Copy)]
-pub struct UvSphere {
-    pub center: vek::Vec3<f32>,
-    pub radius: f32,
-    pub horizontal_subdivions: u32,
-    pub vertical_subdivisions: u32,
-}
-
-// A mesh ICO sphere that is built using multiple triangles
-#[derive(Clone, Copy)]
-pub struct IcoSphere {
-    pub center: vek::Vec3<f32>,
-    pub radius: f32,
-    pub subdivisions: u32,
-}

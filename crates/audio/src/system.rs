@@ -9,7 +9,7 @@ use crate::{AudioListener, AudioSource};
 // Main audio update event that will play the audio clips
 fn update(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
-    let listener = scene.first::<&AudioListener>().unwrap();
+    let listener = scene.find::<&AudioListener>().unwrap();
     
     // Iterate through all the audio sources that have been changed
     for source in scene.query_mut::<&mut AudioSource>() {
