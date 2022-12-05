@@ -14,20 +14,21 @@ fn init(world: &mut World) {
     // Get the required resources
     let mut assets = world.get_mut::<Assets>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
-    asset!(&mut assets, "assets/user/ignored/bruh.mp3");
-    let clip = assets.load::<AudioClip>("user/ignored/bruh.mp3").unwrap();
     scene.insert(AudioListener::new().unwrap());
 
-    // Create an audio source
-    let mut source = AudioSource::new(clip);
-    source.set_volume(0.7);
+    // Register the assets
+    asset!(&mut assets, "assets/user/ignored/nicolas.mp3");
+    asset!(&mut assets, "assets/user/ignored/bruh.mp3");
+
+    // Load the clips
+    let clip1 = assets.load::<AudioClip>("user/ignored/nicolas.mp3").unwrap();
+    let clip2 = assets.load::<AudioClip>("user/ignored/bruh.mp3").unwrap();
+
+    // Create an audio source for the first clip
+    let mut source = AudioSource::new(clip1);
+    source.set_volume(0.1);
     scene.insert(source);
 
-    /*
-    // Load an audio file
-    let audio = assets.load::<AudioClip>("test.ogg").unwrap();
-
-    // Play the audio file
-    scene.insert(AudioSource::new(audio));    
-    */
+    // Create an audio source for the second clip
+    scene.insert(AudioSource::new(clip2));
 }

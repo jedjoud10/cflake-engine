@@ -1,4 +1,4 @@
-use crate::{AudioSamples, AudioClipError, AudioSamplesDescriptor};
+use crate::{PlayableAudioSamples, AudioClipError, AudioSamplesDescriptor};
 use assets::Asset;
 use std::{
     io::{BufReader, Cursor},
@@ -8,7 +8,7 @@ use std::{
 // This is an audio clip that we can import from an mp3/wav file
 // Audio clips must be clonable since we should be able to clone them to reuse them instead of loading new ones every time
 #[derive(Clone)]
-pub struct AudioClip(pub(crate) Arc<dyn AudioSamples>);
+pub struct AudioClip(pub(crate) Arc<dyn PlayableAudioSamples>);
 
 impl Asset for AudioClip {
     type Args<'args> = ();
@@ -57,7 +57,7 @@ impl Asset for AudioClip {
                 let arc: Arc<[i16]> = samples.into();
 
                 // Create the samples trait object
-                let to: Arc<dyn AudioSamples> = Arc::new((arc, descriptor));
+                let to: Arc<dyn PlayableAudioSamples> = Arc::new((arc, descriptor));
                 to                
             }
 
