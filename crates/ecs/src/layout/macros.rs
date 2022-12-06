@@ -160,4 +160,12 @@ mod extend {
     tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7, 8 }
     tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8, 9 }
     tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9, 10 }
+    tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10, 11 }
+    tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10 C11, 12 }
+    tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10 C11 C12, 13 }
+    tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10 C11 C12 C13, 14 }
+    tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10 C11 C12 C13 C14, 15 }
 }
+
+#[cfg(feature = "extended-tuples")]
+use extend::*;

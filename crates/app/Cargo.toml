@@ -28,7 +28,7 @@ ahash = { workspace = true }
 
 [features]
 two-dim = ["ecs/two-dim", "rendering/two-dim"]
-extended-tuples = ["ecs/extended-tuples"]
+extended-tuples = ["ecs/extended-tuples", "utils/extended-tuples"]
 extended-bitmasks = ["ecs/extended-bitmasks"]
 sentence-recording = ["input/sentence-recording"]
 headless = ["graphics/headless"]
