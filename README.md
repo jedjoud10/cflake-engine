@@ -14,6 +14,30 @@ Currently, cFlake engine is under heavy development (***very*** WIP), but pull r
 * [YouTube Development Channel](https://www.youtube.com/channel/UCaeZjQFw4QIi5vdfonAmsvA)
 * [Trello dashboard](https://trello.com/b/9FsDb6Z1/cflake)
 
+# Examples
+Examples are in the **examples** foldder, but here is a quick and dirty setup to get you started (literally just the ``hello`` example)
+```rs
+use cflake_engine::prelude::*;
+
+// An empty game window
+fn main() {
+    App::default()
+        .insert_init(init)
+        .insert_update(update)
+        .execute();
+}
+
+// Function that gets executed when the engine starts
+fn init(world: &mut World) {
+    println!("Hello World!");
+}
+
+// Function that gets executed every frame
+fn update(world: &mut World) {
+    println!("Hello Frame!");
+}
+``` 
+
 # Thanks to:
 * Lionel Stanway (MoldyToeMan)
 * Logan McLennan (PigSteel)
