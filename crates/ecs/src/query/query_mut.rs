@@ -82,8 +82,15 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>>
     {
         threadpool.scope(|scope| {
             let mutability = self.mutability;
-            for (i, archetype) in
-                self.archetypes.iter_mut().enumerate()
+            // Convert the optional bitset vector to an iterator that returns None if it is None
+            let bitsets = self
+                .bitsets
+                .into_iter()
+                .flatten()
+                .map(|b| Some(b))
+                .chain(std::iter::repeat(None));
+            for (archetype, bitset) in
+                self.archetypes.iter_mut().zip(bitsets)
             {
                 // Send the archetype slices to multiple threads to be able to compute them
                 let ptrs = unsafe {
@@ -93,13 +100,6 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>>
                     L::from_raw_parts(ptrs, archetype.len())
                 };
 
-                // Convert the archetype bitset to a thread-shareable bitset
-                // TODO: Reverse the order of the archetypes to avoid cloning the bitset here
-                let bitset = self
-                    .bitsets
-                    .as_ref()
-                    .map(|bitset| bitset[i].clone());
-
                 // Update all states chunks of the current archetype before iterating
                 apply_mutability_states(
                     archetype,
@@ -108,7 +108,7 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>>
                 );
 
                 // Should we use per entry filtering?
-                if let Some(bitset) = bitset.clone() {
+                if let Some(bitset) = bitset {
                     scope.for_each_filtered(
                         slices,
                         function.clone(),

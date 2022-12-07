@@ -1,4 +1,4 @@
-use crate::{user, Read, Resource, System, Write};
+use crate::{user, Read, Resource, System, Write, Entry};
 use ahash::AHashMap;
 use std::{
     any::TypeId,
@@ -34,12 +34,6 @@ impl World {
         assert!(returned.is_none());
     }
 
-    // Insert a new resource into the world, by instantiating it *using* the world
-    pub fn insert_with_world<R: Resource + FromWorld>(&mut self) {
-        let resource = R::from_world(self);
-        self.insert(resource)
-    }
-
     // Get an immutable reference (read guard) to a resource
     pub fn get<R: Resource>(&self) -> Option<Read<R>> {
         self.0.get(&TypeId::of::<R>()).map(|cell| {
@@ -66,6 +60,14 @@ impl World {
         })
     }
 
+    // Get an entry for a specific resource
+    pub fn entry<'a, R: Resource>(&'a mut self) -> Entry<'a, R> {
+        Entry {
+            world: self,
+            _phantom: std::marker::PhantomData,
+        }
+    }
+
     // Remove a specific resource from the world
     pub fn remove<R: Resource>(&mut self) -> Option<R> {
         self.0.remove(&TypeId::of::<R>()).map(|cell| {
@@ -80,12 +82,6 @@ impl World {
     pub fn contains<R: Resource>(&self) -> bool {
         self.0.contains_key(&TypeId::of::<R>())
     }
-}
-
-// This trait will be implemented for types that can be instantiated from the world
-// An example of this would be the storage resources, since we require the world to create them and insert them
-pub trait FromWorld {
-    fn from_world(world: &mut World) -> Self;
 }
 
 // Global world system for cleaning and handling world state

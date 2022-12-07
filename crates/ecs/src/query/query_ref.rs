@@ -71,7 +71,15 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutRef<'it>>
             utils::SliceTuple<'s2>,
     {
         threadpool.scope(|scope| {
-            for (i, archetype) in self.archetypes.iter().enumerate() {
+            // Convert the optional bitset vector to an iterator that returns None if it is None
+            let bitsets = self
+                .bitsets
+                .into_iter()
+                .flatten()
+                .map(|b| Some(b))
+                .chain(std::iter::repeat(None));
+
+            for (archetype, bitset) in self.archetypes.iter().zip(bitsets) {
                 // Send the archetype slices to multiple threads to be able to compute them
                 let ptrs = unsafe {
                     L::ptrs_from_archetype_unchecked(archetype)
@@ -80,15 +88,8 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutRef<'it>>
                     L::from_raw_parts(ptrs, archetype.len())
                 };
 
-                // Convert the archetype bitset to a thread-shareable bitset
-                // TODO: Reverse the order of the archetypes to avoid cloning the bitset here
-                let bitset = self
-                    .bitsets
-                    .as_ref()
-                    .map(|bitset| bitset[i].clone());
-
                 // Should we use per entry filtering?
-                if let Some(bitset) = bitset.clone() {
+                if let Some(bitset) = bitset {
                     scope.for_each_filtered(
                         slices,
                         function.clone(),

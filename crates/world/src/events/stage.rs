@@ -3,20 +3,15 @@ use std::any::{type_name, TypeId};
 use winit::event::{DeviceEvent, WindowEvent};
 
 // Stage ID that depicts the current location and ordering of a specific event and or stage
-#[derive(
-    Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq, Debug,
-)]
+#[derive(Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq, Debug)]
 pub struct StageId {
     pub caller: CallerId,
     pub system: SystemId,
 }
 
 // Single int to depict what caller we are using
-#[derive(
-    Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq, Debug,
-)]
+#[derive(Clone, Copy, Eq, Ord, Debug)]
 pub struct CallerId {
-    // TODO: Use conditial compilation
     pub name: &'static str,
 
     // Init = 0
@@ -30,15 +25,48 @@ pub struct CallerId {
     pub id: TypeId,
 }
 
-// System id that contains the name and type ID of the system
-#[derive(
-    Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq, Debug,
-)]
-pub struct SystemId {
-    // TODO: Use conditial compilation to disable this when we don't need to
-    pub name: &'static str,
+impl std::hash::Hash for CallerId {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.index.hash(state);
+        self.id.hash(state);
+    }
+}
 
+impl PartialEq for CallerId {
+    fn eq(&self, other: &Self) -> bool {
+        self.index == other.index && self.id == other.id
+    }
+}
+
+impl PartialOrd for CallerId {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.id.partial_cmp(&other.id)
+    }
+}
+
+// System id that contains the name and type ID of the system
+#[derive(Clone, Copy, Eq, Ord, Debug)]
+pub struct SystemId {
+    pub name: &'static str,
     pub id: TypeId,
+}
+
+impl std::hash::Hash for SystemId {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+    }
+}
+
+impl PartialEq for SystemId {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+
+impl PartialOrd for SystemId {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.id.partial_cmp(&other.id)
+    }
 }
 
 // Combine two types of IDS
@@ -61,7 +89,7 @@ pub(crate) fn fetch_caller_id<C: Caller>() -> CallerId {
         .unwrap();
     CallerId {
         name: type_name::<C>(),
-        id: id,
+        id,
         index,
     }
 }

@@ -40,13 +40,7 @@ pub(super) enum ThreadedTask {
     },
 }
 
-// Keeps track of the index of the thread we are currently running on
-thread_local! {
-    static CURRENT: Cell<usize> = Cell::new(0);
-}
-
 // A single threadpool that contains multiple worker threads that are ready to be executed in parallel
-// TODO: Maybe move this to another crate, like a "utils" crate?
 pub struct ThreadPool {
     // Task sender and receiver
     task_sender: Option<Sender<ThreadedTask>>,
@@ -314,11 +308,6 @@ impl ThreadPool {
             std::hint::spin_loop();
         }
     }
-
-    // Get the index of the current thread
-    pub fn current() -> usize {
-        CURRENT.with(|current| current.get())
-    }
 }
 
 impl Drop for ThreadPool {
@@ -358,8 +347,6 @@ fn spawn(threadpool: &ThreadPool, index: usize) -> JoinHandle<()> {
     std::thread::Builder::new()
         .name(name)
         .spawn(move || {
-            // Set the thread index at the start
-            CURRENT.with(|current| current.set(index + 1));
             let _hook = hook;
 
             loop {

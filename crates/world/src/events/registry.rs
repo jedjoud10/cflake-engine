@@ -9,10 +9,10 @@ use ahash::{AHashMap, AHashSet};
 use lazy_static::lazy_static;
 
 // Number of maximum iterations allowed before we detect a cyclic reference from within the rules
-pub const CYCLIC_REFERENCE_RULES_THRESHOLD: usize = 8;
+const CYCLIC_REFERENCE_RULES_THRESHOLD: usize = 8;
 
 // Number of maximum iterations allowed before we detect a cyclic reference when recursing through the calc event
-pub const CYCLIC_REFERENCE_THRESHOLD: usize = 50;
+const CYCLIC_REFERENCE_THRESHOLD: usize = 50;
 
 // Reference point stages that we will use to insert more events into the registry
 lazy_static! {
@@ -121,7 +121,7 @@ impl<C: Caller> Registry<C> {
         let indices = sort(&mut self.map, self.caller)?;
 
         // We do quite a considerable amount of mental trickery and mockery who are unfortunate enough to fall victim to our dever little trap of social teasing
-        self.events.sort_unstable_by(|(a, _), (b, _)| {
+        self.events.sort_by(|(a, _), (b, _)| {
             usize::cmp(&indices[a], &indices[b])
         });
         log::debug!(
