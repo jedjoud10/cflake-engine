@@ -30,19 +30,20 @@ fn set_bit(bitmask: &mut usize, index: usize, value: bool) -> bool {
     copy
 }
 
+// Number of bits in a usize as an usize
+const BITS: usize = usize::BITS as usize;
+
 // Enable all the bits between "start" and "end" in the binary representation of a usize
-// This will automatically clamp the values to 64 or 32
 // Start is inclusive, end is exclusive
 pub(crate) fn enable_in_range(
-    mut start: usize,
-    mut end: usize,
+    start: usize,
+    end: usize,
 ) -> usize {
-    start = start.min(usize::BITS as usize - 1);
-    end = end.min(usize::BITS as usize);
+    assert!(end >= start);
 
-    if end == usize::BITS as usize {
+    if end == BITS {
         !((1usize << (start)) - 1usize)
-    } else if start == usize::BITS as usize {
+    } else if start == BITS {
         0
     } else {
         ((1usize << (start)) - 1usize) ^ ((1usize << end) - 1usize)
@@ -60,7 +61,7 @@ impl StateColumn {
         // Make sure the states have enough chunks to deal with
         let old_len = self.1;
         let new_len = self.1 + additional;
-        let new_len_chunks = new_len / usize::BITS as usize;
+        let new_len_chunks = new_len / BITS;
         let iter = std::iter::repeat(StateColumnChunk::default());
         let iter = iter.take((new_len_chunks + 1) - self.0.len());
         self.0.extend(iter);
@@ -72,8 +73,8 @@ impl StateColumn {
 
         // Update the chunk bits
         for (i, chunk) in self.0.iter_mut().enumerate() {
-            let start = i * usize::BITS as usize;
-            let end = (i + 1) * usize::BITS as usize;
+            let start = i * BITS;
+            let end = (i + 1) * BITS;
 
             // Skip this chunk if it won't be modified
             if old_len > end || new_len < start {
@@ -81,8 +82,10 @@ impl StateColumn {
             }
 
             // Create start and end ranges that will be clamped to old_len and new_len respectively
-            let local_start = usize::saturating_sub(old_len, start);
-            let local_end = usize::saturating_sub(new_len, start);
+            let local_start = usize::saturating_sub(old_len, start)
+                .min(BITS - 1);
+            let local_end = usize::saturating_sub(new_len, start)
+                .min(BITS);
 
             // Bit magic that will enable all the bits between local_start and local_end;
             let range = enable_in_range(local_start, local_end);
@@ -94,8 +97,8 @@ impl StateColumn {
     // Reserve a specific amount of entries within the state column
     pub(crate) fn reserve(&mut self, additional: usize) {
         let current = self.0.len();
-        let new = (self.1 + additional) / usize::BITS as usize;
-        self.0.reserve(current - new);
+        let new = (self.1 + additional) / BITS;
+        self.0.reserve(new - current);
     }
 
     // Shrink the memory allocation so it takes less space
@@ -115,7 +118,7 @@ impl StateColumn {
 
         // Fetch the values of the last element
         let last = self.0.last().map(|chunk| {
-            let last_local_index = self.1 % usize::BITS as usize;
+            let last_local_index = self.1 % BITS;
             StateFlags {
                 added: (chunk.added >> last_local_index) & 1 == 1,
                 modified: (chunk.modified >> last_local_index) & 1
@@ -125,8 +128,8 @@ impl StateColumn {
 
         // Replace the entry at "index" with "last"
         last.map(|flags| {
-            let chunk = index / usize::BITS as usize;
-            let local = index % usize::BITS as usize;
+            let chunk = index / BITS;
+            let local = index % BITS;
             let chunk = &mut self.0[chunk];
             self.1 -= 1;
 
@@ -157,8 +160,8 @@ impl StateColumn {
         index: usize,
         update: impl FnOnce(&mut StateFlags),
     ) {
-        let chunk = index / usize::BITS as usize;
-        let location = index % usize::BITS as usize;
+        let chunk = index / BITS;
+        let location = index % BITS;
         let chunk = &mut self.0[chunk];
         let mut flags = StateFlags {
             added: (chunk.added >> location) & 1 == 1,

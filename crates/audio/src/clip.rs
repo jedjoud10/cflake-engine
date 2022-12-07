@@ -75,7 +75,19 @@ impl Asset for AudioClip {
                     channels: header.channel_count,
                 };
 
-                todo!()
+                // Convert to samples
+                let samples: Arc<dyn PlayableAudioSamples> = match data {
+                    wav::BitDepth::Sixteen(values) => {
+                        let arc: Arc<[i16]> = values.into();
+                        Arc::new((arc, descriptor))
+                    },
+                    wav::BitDepth::ThirtyTwoFloat(values) => {
+                        let arc: Arc<[f32]> = values.into();
+                        Arc::new((arc, descriptor))
+                    },
+                    _ => panic!("BitDepth not supported"),
+                };
+                samples
             }
             _ => panic!(),
         };

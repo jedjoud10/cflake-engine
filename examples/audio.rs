@@ -18,15 +18,15 @@ fn init(world: &mut World) {
 
     // Register the assets
     asset!(&mut assets, "assets/user/ignored/nicolas.mp3");
-    asset!(&mut assets, "assets/user/ignored/bruh.mp3");
+    asset!(&mut assets, "assets/user/ignored/bruh.wav");
 
     // Load the clips
     let clip1 = assets.load::<AudioClip>("user/ignored/nicolas.mp3").unwrap();
-    let clip2 = assets.load::<AudioClip>("user/ignored/bruh.mp3").unwrap();
+    let clip2 = assets.load::<AudioClip>("user/ignored/bruh.wav").unwrap();
 
     // Create audio sources for the clips
     let mut source1 = AudioSource::new(clip1);
-    source1.set_volume(0.5f32);
+    source1.set_volume(0.0f32);
     let mut source2 = AudioSource::new(clip2);
     source2.set_volume(0.6f32);
 

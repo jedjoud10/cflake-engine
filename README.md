@@ -10,6 +10,7 @@ Currently, cFlake engine is under heavy development (***very*** WIP), but pull r
 * GPU Voxel generation and Octree Terrain (disabled temporarily)
 * Asynchronous asset loader and utility thread pool
 * Input handling with gamepad support (gilrs) and keybinding serialization / deserialization
+* Custom sound support through CPAL and directional audio through HRTF (TODO)
 # Main links
 * [YouTube Development Channel](https://www.youtube.com/channel/UCaeZjQFw4QIi5vdfonAmsvA)
 * [Trello dashboard](https://trello.com/b/9FsDb6Z1/cflake)
