@@ -176,7 +176,6 @@ pub enum Button {
     Down,
 
     /// The Backspace key, right over Enter.
-    // TODO: rename
     Back,
     /// The Enter key.
     Return,
