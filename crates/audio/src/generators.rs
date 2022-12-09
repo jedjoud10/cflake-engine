@@ -1,26 +1,28 @@
 use std::marker::PhantomData;
 use crate::Sample;
 
-use crate::traits::{AudioNode, AudioGenerator};
+use crate::traits::{AudioNode, AudioContext};
 
 // Simple sine wave generator
-pub struct SineWave<T: Sample> {
-    _phantom: PhantomData<T>,
-    frequency: f32,
-    amplitude: f32,
-    phase: f32,
+pub struct SineWave<S: Sample> {
+    _phantom: PhantomData<S>,
+    pub frequency: f32,
+    pub amplitude: f32,
+    pub phase: f32,
 }
 
-impl<T: Sample> AudioNode<T> for SineWave<T> {}
-impl<T: Sample> AudioGenerator<T> for SineWave<T> {}
+impl<S: Sample> AudioNode for SineWave<S> {
+    type S = S;
+}
 
 // Simple square wave generator
-pub struct SquareWave<T: Sample> {
-    _phantom: PhantomData<T>,
-    frequency: f32,
-    amplitude: f32,
-    phase: f32,
+pub struct SquareWave<S: Sample> {
+    _phantom: PhantomData<S>,
+    pub frequency: f32,
+    pub amplitude: f32,
+    pub phase: f32,
 }
 
-impl<T: Sample> AudioNode<T> for SquareWave<T> {}
-impl<T: Sample> AudioGenerator<T> for SquareWave<T> {}
+impl<S: Sample> AudioNode for SquareWave<S> {
+    type S = S;
+}

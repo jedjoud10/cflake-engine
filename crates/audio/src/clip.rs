@@ -1,4 +1,4 @@
-use crate::{AudioClipError, traits::{AudioNode, AudioGenerator}, stream::OutputStreamBuilder, Sample};
+use crate::{AudioClipError, traits::{AudioNode, AudioContext}, stream::OutputStreamBuilder, Sample};
 use assets::Asset;
 use std::{
     io::{BufReader, Cursor},
@@ -8,8 +8,8 @@ use std::{
 // This is an audio clip that we can import from an mp3/wav file
 // Audio clips must be clonable since we should be able to clone them to reuse them instead of loading new ones every time
 #[derive(Clone)]
-pub struct AudioClip<T: Sample> {
-    _phantom: PhantomData<T>,
+pub struct AudioClip<S: Sample> {
+    _phantom: PhantomData<S>,
     samples: Arc<dyn OutputStreamBuilder>,
     descriptor: AudioClipDescriptor,
 }
@@ -51,9 +51,11 @@ impl AudioClipDescriptor {
     }
 }
 
-impl<T: Sample> AudioNode<T> for AudioClip<T> {}
+impl<S: Sample> AudioNode for AudioClip<S> {
+    type S = S;
+}
 
-impl<T: Sample> Asset for AudioClip<T> {
+impl<S: Sample> Asset for AudioClip<S> {
     type Args<'args> = ();
     type Err = AudioClipError;
 
@@ -97,7 +99,7 @@ impl<T: Sample> Asset for AudioClip<T> {
                     bitrate: frames[0].bitrate as u32,
                     sample_rate: frames[0].sample_rate as u32,
                     channels: frames[0].channels as u16,
-                    format: T::format(),
+                    format: S::format(),
                     duration,
                 };
 
@@ -137,7 +139,7 @@ impl<T: Sample> Asset for AudioClip<T> {
                     bitrate: (header.bytes_per_second / 1000) as u32,
                     sample_rate: header.sampling_rate as u32,
                     channels: header.channel_count as u16,
-                    format: T::format(),
+                    format: S::format(),
                     duration,
                 };
 

@@ -1,8 +1,6 @@
-use std::{ops::Range, time::Duration};
+use std::{ops::Range, time::Duration, marker::PhantomData};
 use cpal::{Stream, BuildStreamError};
-
-use crate::{Sample, AudioPlayer};
-
+use crate::{Sample, AudioPlayer, Volume, Blend};
 
 // Audio input data passed to modifiers / generators / mixers
 pub struct AudioContext {
@@ -32,20 +30,29 @@ impl AudioContext {
 }
 
 // An audio node is anything that makes sound and that can be turned into a stream
-pub trait AudioNode<T: Sample>: Sync + Send + 'static {
-    fn build_output_stream(
-        &self,
-        listener: &AudioPlayer,
-    ) -> Result<Stream, BuildStreamError> {
-        todo!()
+pub trait AudioNode: Sized + Sync + Send + 'static {
+    // Sample type that we are using
+    type S: Sample;
+    
+    // Fill a buffer with the next sound
+    fn next(&self, dst: &mut [Self::S], context: &AudioContext) {}
+
+    // Apply a volume modifier on this audio node
+    fn volume(self, volume: f32) -> Volume<Self> {
+        Volume {
+            input: self,
+            volume,
+        }
+    }
+
+    // Apply a positional modifier on this audio node
+    
+    // Blend this node with another node
+    fn blend<Other: AudioNode<S = Self::S>>(self, other: Other, mix: f32) -> Blend<Self, Other> {
+        Blend {
+            input1: self,
+            input2: other,
+            mix,
+        }
     }
 }
-
-// Audio generators create new sound by reading from a file or creating it using a wave type
-pub trait AudioGenerator<T: Sample>: AudioNode<T> {}
-
-// Audio modifiers change how audio outputs sound
-pub trait AudioModifier<T: Sample>: AudioNode<T> {}
-
-// Audio mixers simply combine 2 or more audio outputs together
-pub trait AudioMixer<T: Sample>: AudioNode<T> {}

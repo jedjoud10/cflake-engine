@@ -1,7 +1,7 @@
 use std::{any::Any, sync::Arc, time::{Instant, Duration}, marker::PhantomData};
 use cpal::{traits::DeviceTrait, StreamConfig, Stream, BuildStreamError};
 use parking_lot::{RwLock, Mutex};
-use crate::{AudioPlayer, Sample, traits::AudioNode};
+use crate::{AudioPlayer, Sample};
 
 pub trait OutputStreamBuilder: Any + Sync + Send {
     fn build_output_stream(
