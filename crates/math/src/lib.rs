@@ -3,6 +3,8 @@ mod intersect;
 mod octrees;
 mod shapes;
 mod tests;
+mod common;
+pub use common::*;
 pub use bounds::*;
 pub use intersect::*;
 pub use octrees::*;

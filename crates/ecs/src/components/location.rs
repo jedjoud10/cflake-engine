@@ -4,17 +4,8 @@ use std::{
     ops::{Add, Deref, DerefMut},
 };
 
-// 2D location support
-#[cfg(not(feature = "two-dim"))]
-type Target = vek::Vec3<f32>;
-#[cfg(feature = "two-dim")]
-type Target = vek::Vec2<f32>;
-
-// 2D matrix support
-#[cfg(not(feature = "two-dim"))]
-type Matrix = vek::Mat4<f32>;
-#[cfg(feature = "two-dim")]
-type Matrix = vek::Mat3<f32>;
+// Our target is the raw point (either 3D or 2D)
+type Target = math::RawPoint;
 
 #[derive(Default, Clone, Copy, Component)]
 #[repr(transparent)]
@@ -129,7 +120,7 @@ impl From<&Target> for Location {
     }
 }
 
-impl From<Location> for Matrix {
+impl From<Location> for math::RawMatrix {
     fn from(value: Location) -> Self {
         #[cfg(not(feature = "two-dim"))]
         return vek::Mat4::translation_3d(value.0);

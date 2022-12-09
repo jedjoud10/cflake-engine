@@ -4,17 +4,8 @@ use std::{
     ops::{Deref, DerefMut, Mul},
 };
 
-// 2D rotation support
-#[cfg(not(feature = "two-dim"))]
-type Target = vek::Quaternion<f32>;
-#[cfg(feature = "two-dim")]
-type Target = f32;
-
-// 2D matrix support
-#[cfg(not(feature = "two-dim"))]
-type Matrix = vek::Mat4<f32>;
-#[cfg(feature = "two-dim")]
-type Matrix = vek::Mat3<f32>;
+// Our target is the raw rotation (either 3D or 2D)
+type Target = math::RawRotation;
 
 #[derive(Default, Clone, Copy, Component)]
 #[repr(transparent)]
@@ -187,13 +178,13 @@ impl From<&Target> for Rotation {
     }
 }
 
-impl From<Rotation> for Matrix {
+impl From<Rotation> for math::RawMatrix {
     fn from(value: Rotation) -> Self {
         value.0.into()
     }
 }
 
-impl From<&Rotation> for Matrix {
+impl From<&Rotation> for math::RawMatrix {
     fn from(value: &Rotation) -> Self {
         value.0.into()
     }

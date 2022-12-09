@@ -4,14 +4,14 @@ use ecs::Component;
 // This is a component that will be able to playback any type of audio to a specific cpal device
 // We can technically have multiple audio listenenrs in the same scene, although that would be pretty pointless
 #[derive(Component)]
-pub struct AudioListener {
+pub struct AudioPlayer {
     pub(crate) device: cpal::Device,
     pub(crate) host: cpal::Host,
     pub(crate) supported_output_configs: Vec<cpal::SupportedStreamConfigRange>,
     volume: f32,
 }
 
-impl AudioListener {
+impl AudioPlayer {
     // Create an audio listener that uses the default host device
     pub fn new() -> Option<Self> {
         // Fetch the CPAL device

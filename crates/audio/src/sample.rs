@@ -1,7 +1,7 @@
-use std::{any::Any, sync::Arc};
+use std::{any::Any, sync::Arc, time::{Instant, Duration}};
 use cpal::{traits::DeviceTrait, StreamConfig, Stream, BuildStreamError, Sample};
 use parking_lot::{RwLock, Mutex};
-use crate::AudioListener;
+use crate::{AudioPlayer};
 
 
 // Sound samples descriptors contain basic information about the sound samples
@@ -34,15 +34,34 @@ impl AudioSamplesDescriptor {
     }
 }
 
-// Audio settings that can be applied to audio samples to affect how they sound
-// TODO: Optimize this??
-pub struct AudioSamplesSettings {
-    // Volume of the audio samples 
-    pub(crate) volume: Arc<Mutex<f32>>,
 
-    // Callback function that executes over each frame of audio
-    pub(crate) callback: Option<Arc<dyn Fn(&mut [f32]) + Send + Sync>>,
+// Audio input data passed to modifiers / generators / mixers
+pub struct AudioContext {
+    // Current time the audio's been playing
+    pub(crate) time_since_start: Duration,
+    pub(crate) clip_duration: Option<Duration>,
+
+    // Current frame index from CPAL 'dst'
+    pub(crate) frame_index: usize,
 }
+
+impl AudioContext {
+    // Get the current time since stream creation
+    pub fn time_since_creation(&self) -> Duration {
+        self.time_since_start
+    }
+    
+    // Get the total audio generator duration (None if infinite)
+    pub fn clip_duration(&self) -> Option<Duration> {
+        self.clip_duration
+    }
+    
+    // Get the current frame index
+    pub fn frame_index(&self) -> usize {
+        self.frame_index
+    }
+}
+
 
 // Sound samples that can be played
 pub trait PlayableAudioSamples: Any + Sync + Send {
@@ -52,8 +71,7 @@ pub trait PlayableAudioSamples: Any + Sync + Send {
     // Play the audio samples to a specific listener
     fn build_output_stream(
         &self,
-        listener: &AudioListener,
-        settings: &AudioSamplesSettings,
+        listener: &AudioPlayer,
     ) -> Result<Stream, BuildStreamError>;
 }
 
@@ -65,8 +83,7 @@ impl<T: Sample + Send + Sync + 'static> PlayableAudioSamples for (Arc<[T]>, Audi
 
     fn build_output_stream(
         &self,
-        listener: &AudioListener,
-        settings: &AudioSamplesSettings
+        listener: &AudioPlayer,
     ) -> Result<Stream, BuildStreamError> {
         let descriptor = self.descriptor();        
         let device = &listener.device;
@@ -74,7 +91,6 @@ impl<T: Sample + Send + Sync + 'static> PlayableAudioSamples for (Arc<[T]>, Audi
         build_output_stream::<T>(
             self.0.clone(),
             config,
-            settings,
             device
         )
     }
@@ -84,20 +100,16 @@ impl<T: Sample + Send + Sync + 'static> PlayableAudioSamples for (Arc<[T]>, Audi
 fn build_output_stream<T: Sample + Send + Sync + 'static>(
     src: Arc<[T]>,
     config: StreamConfig,
-    settings: &AudioSamplesSettings,
     device: &cpal::Device
 ) -> Result<Stream, BuildStreamError> {
-    // Create and clone necessary data
     let channels = config.channels as usize;
-    let volume = settings.volume.clone();
-    let callback = settings.callback.clone();
     let mut index = 0;
 
+    log::debug!("Building CPAL audio stream...");
     device.build_output_stream(
         &config,
         move |dst: &mut [f32], _: &cpal::OutputCallbackInfo| {
             // Split the stream dst variable into 'frames' that contain 'channels' n number of elements
-            let volume = *volume.lock();
             for frame in dst.chunks_mut(channels) {
                 // Stop the stream if we reached the end of the source data
                 if (index+1) >= src.len() {
@@ -107,19 +119,7 @@ fn build_output_stream<T: Sample + Send + Sync + 'static>(
                     return;
                 }
 
-                // Write the destination channels using the source channel
-                for (channel, channel_dst) in frame.iter_mut().enumerate() {
-                    let src = src[index + channel].to_f32() * volume;
-
-                    // Apply audio filters here...
-
-                    *channel_dst = src;            
-                }
-
-                // Execute the callback function
-                if let Some(callback) = callback.clone() {
-                    callback(frame);
-                }
+                // Magic occurs here...
 
                 // Offset the index to continue playing the next segment
                 index += channels;

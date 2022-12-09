@@ -26,7 +26,6 @@ log = { workspace = true }
 parking_lot = { workspace = true }
 
 [features]
-default = ["extended-bitmasks"]
-two-dim = []
+two-dim = ["math/two-dim"]
 extended-tuples = []
 extended-bitmasks = []
