@@ -1,132 +1,70 @@
-use std::{any::Any, sync::Arc, time::{Instant, Duration}};
-use cpal::{traits::DeviceTrait, StreamConfig, Stream, BuildStreamError, Sample};
-use parking_lot::{RwLock, Mutex};
-use crate::{AudioPlayer};
+use cpal::SampleFormat;
 
+// My own implementation of the cpal::Sample trait that is a bit more restrictive
+// Literally 100% of this implementation is stolen from cpal::Sample lol
+pub trait Sample: 'static + Send + Sync + Clone {
+    // Get the cpal format of this sample
+    fn format() -> SampleFormat;
 
-// Sound samples descriptors contain basic information about the sound samples
-#[derive(Debug, Clone, Copy)]
-pub struct AudioSamplesDescriptor {
-    // Bitrate of the audio samples in kb/s
-    pub(crate) bitrate: u32,
+    // Convert to f32, i16, u16
+    fn to_f32(&self) -> f32;
+    fn to_i16(&self) -> i16;
 
-    // Sample rate of the audio samples in hertz
-    pub(crate) sample_rate: u32,
-
-    // Number of channels in the audio samples
-    pub(crate) channels: u16,
+    // Amplify this sample
+    fn amplify(self, factor: f32) -> Self;
+    fn zero() -> Self;
 }
 
-impl AudioSamplesDescriptor {
-    // Get the bitrate of the audio samples in kb/s
-    pub fn bitrate(&self) -> u32 {
-        self.bitrate
+impl Sample for i16 {
+    fn format() -> SampleFormat {
+        SampleFormat::I16
     }
 
-    // Get the sample rate of the audio samples in hertz
-    pub fn sampler_rate(&self) -> u32 {
-        self.sample_rate
+    fn to_f32(&self) -> f32 {
+        if *self < 0 {
+            *self as f32 / -(i16::MIN as f32)
+        } else {
+            *self as f32 / i16::MAX as f32
+        }
     }
-    
-    // Get the number of channels in the audio samples
-    pub fn channels(&self) -> u16 {
-        self.channels
+
+    fn to_i16(&self) -> i16 {
+        *self
     }
-}
 
-
-// Audio input data passed to modifiers / generators / mixers
-pub struct AudioContext {
-    // Current time the audio's been playing
-    pub(crate) time_since_start: Duration,
-    pub(crate) clip_duration: Option<Duration>,
-
-    // Current frame index from CPAL 'dst'
-    pub(crate) frame_index: usize,
-}
-
-impl AudioContext {
-    // Get the current time since stream creation
-    pub fn time_since_creation(&self) -> Duration {
-        self.time_since_start
+    fn amplify(self, factor: f32) -> Self {
+        let out = (self as f32 / i16::MAX as f32) * factor;
+        ((out * factor) * i16::MAX as f32) as i16
     }
-    
-    // Get the total audio generator duration (None if infinite)
-    pub fn clip_duration(&self) -> Option<Duration> {
-        self.clip_duration
-    }
-    
-    // Get the current frame index
-    pub fn frame_index(&self) -> usize {
-        self.frame_index
+
+    fn zero() -> Self {
+        0
     }
 }
 
-
-// Sound samples that can be played
-pub trait PlayableAudioSamples: Any + Sync + Send {
-    // Descriptor related to these audio samples
-    fn descriptor(&self) -> AudioSamplesDescriptor;
-
-    // Play the audio samples to a specific listener
-    fn build_output_stream(
-        &self,
-        listener: &AudioPlayer,
-    ) -> Result<Stream, BuildStreamError>;
-}
-
-// Audio samples for T (where T is a CPAL sample)
-impl<T: Sample + Send + Sync + 'static> PlayableAudioSamples for (Arc<[T]>, AudioSamplesDescriptor) {
-    fn descriptor(&self) -> AudioSamplesDescriptor {
-        self.1
+const F32_TO_16BIT_INT_MULTIPLIER: f32 = u16::MAX as f32 * 0.5;
+impl Sample for f32 {
+    fn format() -> SampleFormat {
+        SampleFormat::I16
     }
 
-    fn build_output_stream(
-        &self,
-        listener: &AudioPlayer,
-    ) -> Result<Stream, BuildStreamError> {
-        let descriptor = self.descriptor();        
-        let device = &listener.device;
-        let config = listener.find_audio_stream_config(descriptor.channels, descriptor.sample_rate).unwrap();
-        build_output_stream::<T>(
-            self.0.clone(),
-            config,
-            device
-        )
+    fn to_f32(&self) -> f32 {
+        *self
     }
-}
 
-// Internal function that actually builds the CPAL stream
-fn build_output_stream<T: Sample + Send + Sync + 'static>(
-    src: Arc<[T]>,
-    config: StreamConfig,
-    device: &cpal::Device
-) -> Result<Stream, BuildStreamError> {
-    let channels = config.channels as usize;
-    let mut index = 0;
+    fn to_i16(&self) -> i16 {
+        if *self >= 0.0 {
+            (*self * i16::MAX as f32) as i16
+        } else {
+            (-*self * i16::MIN as f32) as i16
+        }
+    }
 
-    log::debug!("Building CPAL audio stream...");
-    device.build_output_stream(
-        &config,
-        move |dst: &mut [f32], _: &cpal::OutputCallbackInfo| {
-            // Split the stream dst variable into 'frames' that contain 'channels' n number of elements
-            for frame in dst.chunks_mut(channels) {
-                // Stop the stream if we reached the end of the source data
-                if (index+1) >= src.len() {
-                    for dst_channel in frame {
-                        *dst_channel = 0.0f32;
-                    }
-                    return;
-                }
+    fn amplify(self, factor: f32) -> Self {
+        self * factor
+    }
 
-                // Magic occurs here...
-
-                // Offset the index to continue playing the next segment
-                index += channels;
-            }
-        },
-        move |err| {
-            log::error!("{}", err);
-        },
-    )
+    fn zero() -> Self {
+        0.0f32
+    }
 }

@@ -1,3 +1,5 @@
+use std::sync::{atomic::{AtomicU32, Ordering}, Arc};
+
 use cpal::{traits::{HostTrait, DeviceTrait}, StreamConfig};
 use ecs::Component;
 
@@ -8,16 +10,16 @@ pub struct AudioPlayer {
     pub(crate) device: cpal::Device,
     pub(crate) host: cpal::Host,
     pub(crate) supported_output_configs: Vec<cpal::SupportedStreamConfigRange>,
-    volume: f32,
+    volume: Arc<AtomicU32>,
 }
 
 impl AudioPlayer {
-    // Create an audio listener that uses the default host device
+    // Create an audio player that uses the default host device
     pub fn new() -> Option<Self> {
         // Fetch the CPAL device
         let host = cpal::default_host();
         let device = host.default_output_device()?;        
-        log::debug!("Using device {:?} as the default device for the audio listener",
+        log::debug!("Using device {:?} as the default device for the audio player",
             device.name().unwrap()
         );
 
@@ -30,7 +32,7 @@ impl AudioPlayer {
         Some(Self {
             host,
             device,
-            volume: 1.0,
+            volume: Arc::new(AtomicU32::new(u32::MAX)),
             supported_output_configs,
         })
     }
@@ -44,13 +46,17 @@ impl AudioPlayer {
             ).map(|p| p.clone().with_sample_rate(cpal::SampleRate(sample_rate)).config())
     }
 
-    // Set the volume of the audio listener
+    // Set the volume of the audio player as a percentage
+    // Panics if the value is higher than 1.0
     pub fn set_volume(&mut self, volume: f32) {
-        self.volume = volume
+        assert!(volume <= 1.0);
+        let value = volume / (u32::MAX as f32);
+        self.volume.store(value as u32, Ordering::Relaxed);
     }
     
-    // Get the volume of the audio listener
+    // Get the volume of the audio player
     pub fn volume(&self) -> f32 {
-        self.volume
+        let value = self.volume.load(Ordering::Relaxed);
+        value as f32 / (u32::MAX as f32)
     }
 }
