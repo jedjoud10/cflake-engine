@@ -84,25 +84,13 @@ impl<T: Sample> Asset for AudioClip<T> {
                 while let Some(frame) = decode(decoded.next_frame())? {
                     frames.push(frame);
                 }
-
-                // Caclulate the bitrate of this MP3, and check if it's a VBR file
-                let (bitrate, vbr) = {
-                    if frames.iter().any(|x| x.bitrate != frames[0].bitrate) {
-                        let bitrate = frames.iter().map(|f| f.data.len() as u128).sum::<u128>();
-                        let bitrate = bitrate as f32 / frames.len() as f32;
-                        (bitrate as u32, true)
-                    } else {
-                        (frames[0].bitrate as u32, false)
-                    }
-                };
-
-                // https://chunminchang.github.io/blog/post/estimation-of-mp3-duration                
-                let seconds = {
-                    let samples_per_frame = frames[0].data.len() as f32 / frames[0].channels as f32;
-                    let total_frames = frames.len() as f32;
-                    let sample_rate = frames[0].sample_rate as f32;
-                    samples_per_frame * (total_frames / sample_rate)
-                };
+            
+                // Calculate the duration of this clip
+                let duration = calculate_clip_duration_secs_from_frames(
+                    frames.len(),
+                    frames[0].channels,
+                    frames[0].sample_rate as usize
+                );
 
                 // Create a clpi descriptor from the first frame
                 let descriptor = AudioClipDescriptor {
@@ -110,12 +98,11 @@ impl<T: Sample> Asset for AudioClip<T> {
                     sample_rate: frames[0].sample_rate as u32,
                     channels: frames[0].channels as u16,
                     format: T::format(),
-                    duration: Duration::from_secs(seconds as u64),
+                    duration,
                 };
 
-                log::debug!("Loaded {} frames from the MP3 file {:?}", frames.len(), data.path());
-                log::debug!("Duration of audio file: {:?}", descriptor.duration);
-                todo!()
+                log::debug!("Loaded {} frames ({} seconds) from the MP3 file {:?}", frames.len(), descriptor.duration.as_secs(), data.path());
+
                 /*
                 
 
@@ -129,14 +116,32 @@ impl<T: Sample> Asset for AudioClip<T> {
                 let to: Arc<dyn PlayableAudioSamples> = Arc::new((arc, descriptor));
                 to                
                 */
+                todo!()
             }
 
             // Decode a WAV file into the appropriate format
             "wav" => {
                 let mut read =
                     BufReader::new(Cursor::new(data.bytes()));
-                let (header, data) = wav::read(&mut read)
+                let (header, bitdepth) = wav::read(&mut read)
                     .map_err(AudioClipError::Wav)?;
+
+                // Calculate the duration of the audio clip
+                let duration = calculate_clip_duration_secs_from_size(
+                    data.bytes().len(),
+                    header.bytes_per_second as usize,
+                );
+
+                // Create a clpi descriptor from the first frame
+                let descriptor = AudioClipDescriptor {
+                    bitrate: (header.bytes_per_second / 1000) as u32,
+                    sample_rate: header.sampling_rate as u32,
+                    channels: header.channel_count as u16,
+                    format: T::format(),
+                    duration,
+                };
+
+                log::debug!("Loaded {} seconds from the WAV file {:?}", descriptor.duration.as_secs(), data.path());
 
                 /*
                 // Create a samples descriptor
@@ -171,4 +176,20 @@ impl<T: Sample> Asset for AudioClip<T> {
             _phantom: PhantomData,
         })
     }
+}
+
+// Calculate the clip duration knowing the number of frames, channels and sample rate
+// https://chunminchang.github.io/blog/post/estimation-of-mp3-duration    
+fn calculate_clip_duration_secs_from_frames(frames: usize, channels: usize, sample_rate: usize) -> Duration {
+    let samples_per_frame = frames as f32 / channels as f32;
+    let total_frames = frames as f32;
+    let sample_rate = sample_rate as f32;
+    Duration::from_secs((samples_per_frame * (total_frames / sample_rate)) as u64)
+}
+
+// Calculate the clip duration using the file size and bytes per second
+fn calculate_clip_duration_secs_from_size(file_size: usize, bytes_per_second: usize) -> Duration {
+    let file_size = file_size as f32;
+    let bytes_per_second = bytes_per_second as f32;
+    return Duration::from_secs((file_size / bytes_per_second) as u64)
 }

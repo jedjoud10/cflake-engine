@@ -1,5 +1,7 @@
 use std::{ops::Range, time::Duration};
-use crate::Sample;
+use cpal::{Stream, BuildStreamError};
+
+use crate::{Sample, AudioPlayer};
 
 
 // Audio input data passed to modifiers / generators / mixers
@@ -29,8 +31,15 @@ impl AudioContext {
     }
 }
 
-// An audio node is ANYTHING that makes sound
-pub trait AudioNode<T: Sample> {}
+// An audio node is anything that makes sound and that can be turned into a stream
+pub trait AudioNode<T: Sample>: Sync + Send + 'static {
+    fn build_output_stream(
+        &self,
+        listener: &AudioPlayer,
+    ) -> Result<Stream, BuildStreamError> {
+        todo!()
+    }
+}
 
 // Audio generators create new sound by reading from a file or creating it using a wave type
 pub trait AudioGenerator<T: Sample>: AudioNode<T> {}

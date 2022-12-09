@@ -21,7 +21,7 @@ fn init(world: &mut World) {
     asset!(&mut assets, "assets/user/ignored/bruh.wav");
 
     // Load the clips
-    let clip1 = assets.load::<AudioClip<f32>>("user/ignored/nicolas.mp3").unwrap();
+    //let clip1 = assets.load::<AudioClip<f32>>("user/ignored/nicolas.mp3").unwrap();
     let clip2 = assets.load::<AudioClip<f32>>("user/ignored/bruh.wav").unwrap();
 
     /*
