@@ -245,6 +245,7 @@ impl ThreadPool {
         self.append(task);
     }
 
+
     // Create a scope that we can use to send multiple commands to the threads
     pub fn scope<'a>(
         &'a mut self,

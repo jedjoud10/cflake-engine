@@ -1,23 +1,31 @@
 use itertools::Itertools;
+use parking_lot::MappedRwLockReadGuard;
+use parking_lot::MappedRwLockWriteGuard;
+use parking_lot::RwLock;
+use parking_lot::RwLockReadGuard;
+use parking_lot::RwLockWriteGuard;
 use std::fmt::Debug;
 use std::fmt::Display;
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::AtomicUsize;
+use std::sync::atomic::Ordering;
 
-// Simple bitset that allocates using usize chunks
-// This bitset contains a specific number of elements per chunk
-#[derive(Default, Clone)]
-pub struct BitSet(Vec<usize>, bool);
+// Simple atomic bitset that allocates using usize chunks
+// This bitset contains a specific number of elements per chunk that we can share in multiple threads
+#[derive(Default)]
+pub struct AtomicBitSet(RwLock<Vec<AtomicUsize>>, AtomicBool);
 
-impl BitSet {
+impl AtomicBitSet {
     // Create a new empty bit set
     pub fn new() -> Self {
-        Self(Vec::default(), false)
+        Self(RwLock::new(Vec::default()), AtomicBool::new(false))
     }
 
     // Create a bitset from an iterator of chunks
     pub fn from_chunks_iter(
         iter: impl Iterator<Item = usize>,
     ) -> Self {
-        Self(iter.collect(), false)
+        Self(RwLock::new(iter.map(|s| AtomicUsize::new(s)).collect()), AtomicBool::new(false))
     }
 
     // Create a bitset from an iterator of booleans
@@ -39,13 +47,13 @@ impl BitSet {
     }
 
     // Get an immutable reference to the stored chunks
-    pub fn chunks(&self) -> &[usize] {
-        self.0.as_slice()
+    pub fn chunks(&self) -> MappedRwLockReadGuard<[AtomicUsize]> {
+        RwLockReadGuard::map(self.0.read(), |s| s.as_slice())
     }
 
     // Get a mutable reference to the stored chunks
-    pub fn chunks_mut(&mut self) -> &mut [usize] {
-        self.0.as_mut_slice()
+    pub fn chunks_mut(&self) -> MappedRwLockWriteGuard<[AtomicUsize]> {
+        RwLockWriteGuard::map(self.0.write(), |s| s.as_mut_slice())
     }
 
     // Get the chunk and bitmask location for a specific chunk
@@ -56,71 +64,75 @@ impl BitSet {
     }
 
     // Set a bit value in the bitset
-    pub fn set(&mut self, index: usize) {
+    pub fn set(&self, index: usize, order: Ordering) {
         let (chunk, location) = Self::coords(index);
 
         // Extend the layer if needed (this bitset is dynamic)
-        if chunk >= self.0.len() {
-            let splat = if self.1 { usize::MAX } else { usize::MIN };
-            let num = chunk - self.0.len();
-            self.0.extend(std::iter::repeat(splat).take(num + 1));
+        let len = self.0.read().len();
+        if chunk >= len {
+            let splat = if self.1.load(Ordering::Relaxed) { usize::MAX } else { usize::MIN };
+            let num = chunk - len;
+            self.0.write().extend((0..(num + 1)).into_iter().map(|_| AtomicUsize::new(splat)));
         }
 
         // Set the bit value specified in the chunk
-        let chunk = &mut self.0[chunk];
-        *chunk |= 1usize << location;
+        let chunk = &self.0.read()[chunk];
+        chunk.fetch_or(1usize << location, order);
     }
 
     // Set the whole bitset to a single value
-    pub fn splat(&mut self, value: bool) {
-        for chunk in self.0.iter_mut() {
-            *chunk = if value { usize::MAX } else { usize::MIN };
+    pub fn splat(&self, value: bool, order: Ordering) {
+        for chunk in &*self.chunks() {
+            chunk.store(if value { usize::MAX } else { usize::MIN }, order);
         }
 
         // We must store the value of the splat because we might allocate new chunks
-        self.1 = value;
+        self.1.store(value, Ordering::Relaxed);
     }
 
     // Remove a bit value from the bitset
-    pub fn remove(&mut self, index: usize) {
+    pub fn remove(&self, index: usize, order: Ordering) {
         let (chunk, location) = Self::coords(index);
-        let chunk = &mut self.0[chunk];
-        *chunk &= !(1usize << location);
+        let chunk = &self.0.read()[chunk];
+        chunk.fetch_and(!(1usize << location), order);
     }
 
     // Get a bit value from the bitset
-    pub fn get(&self, index: usize) -> bool {
+    pub fn get(&self, index: usize, order: Ordering) -> bool {
         let (chunk, location) = Self::coords(index);
 
         self.0
+            .read()
             .get(chunk)
-            .map(|chunk| (chunk >> location) & 1 == 1)
+            .map(|chunk| (chunk.load(order) >> location) & 1 == 1)
             .unwrap_or_default()
     }
 
     // Count the number of zeros in this bitset
-    pub fn count_zeros(&self) -> usize {
+    pub fn count_zeros(&self, order: Ordering) -> usize {
         self.0
+            .read()
             .iter()
-            .map(|chunk| chunk.count_zeros() as usize)
+            .map(|chunk| chunk.load(Ordering::Relaxed).count_zeros() as usize)
             .sum()
     }
 
     // Count the number of ones in this bitset
-    pub fn count_ones(&self) -> usize {
-        self.0.iter().map(|chunk| chunk.count_ones() as usize).sum()
+    pub fn count_ones(&self, order: Ordering) -> usize {
+        self.0.read().iter().map(|chunk| chunk.load(Ordering::Relaxed).count_ones() as usize).sum()
     }
 
     // Starting from a specific index, read forward and check if there is any set bits
     // Returns None if it could not find an set bit, returns Some with it's index if it did
-    pub fn find_one_from(&self, index: usize) -> Option<usize> {
+    pub fn find_one_from(&self, index: usize, order: Ordering) -> Option<usize> {
         let (start_chunk, start_location) = Self::coords(index);
         self.chunks()
             .iter()
             .enumerate()
             .skip(start_chunk)
-            .filter(|(_, chunk)| **chunk != 0)
-            .filter_map(|(i, &chunk)| {
+            .map(|(i, chunk)| (i, chunk.load(order)))
+            .filter(|(_, chunk)| *chunk != 0)
+            .filter_map(|(i, chunk)| {
                 let offset = i * usize::BITS as usize;
                 let result = if i == start_chunk {
                     // Starting chunk, take start_location in consideration
@@ -139,14 +151,15 @@ impl BitSet {
 
     // Starting from a specific index, read forward and check if there is any unset bits
     // Returns None if it could not find an unset bit, returns Some with it's index if it did
-    pub fn find_zero_from(&self, index: usize) -> Option<usize> {
+    pub fn find_zero_from(&self, index: usize, order: Ordering) -> Option<usize> {
         let (start_chunk, start_location) = Self::coords(index);
         self.chunks()
             .iter()
             .enumerate()
             .skip(start_chunk)
-            .filter(|(_, chunk)| **chunk != 0)
-            .filter_map(|(i, &chunk)| {
+            .map(|(i, chunk)| (i, chunk.load(order)))
+            .filter(|(_, chunk)| *chunk != 0)
+            .filter_map(|(i, chunk)| {
                 let offset = i * usize::BITS as usize;
                 let result = if i == start_chunk {
                     // Starting chunk, take start_location in consideration
@@ -164,20 +177,20 @@ impl BitSet {
     }
 }
 
-impl Display for BitSet {
+impl Display for AtomicBitSet {
     fn fmt(
         &self,
         f: &mut std::fmt::Formatter<'_>,
     ) -> std::fmt::Result {
-        for chunk in self.0.iter() {
-            write!(f, "{:b}", *chunk)?;
+        for chunk in &*self.chunks() {
+            write!(f, "{:b}", chunk.load(Ordering::Relaxed))?;
         }
 
         std::fmt::Result::Ok(())
     }
 }
 
-impl Debug for BitSet {
+impl Debug for AtomicBitSet {
     fn fmt(
         &self,
         f: &mut std::fmt::Formatter<'_>,
