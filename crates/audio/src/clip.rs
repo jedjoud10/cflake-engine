@@ -1,4 +1,4 @@
-use crate::{AudioClipError, traits::{AudioNode, AudioContext}, stream::OutputStreamBuilder, Sample};
+use crate::{AudioClipError, graph::{AudioContext}, stream::OutputStreamBuilder, Sample};
 use assets::Asset;
 use std::{
     io::{BufReader, Cursor},
@@ -10,7 +10,7 @@ use std::{
 #[derive(Clone)]
 pub struct AudioClip<S: Sample> {
     _phantom: PhantomData<S>,
-    samples: Arc<dyn OutputStreamBuilder>,
+    pub samples: Arc<dyn OutputStreamBuilder>,
     descriptor: AudioClipDescriptor,
 }
 
@@ -49,10 +49,6 @@ impl AudioClipDescriptor {
     pub fn duration(&self) -> Duration {
         self.duration
     }
-}
-
-impl<S: Sample> AudioNode for AudioClip<S> {
-    type S = S;
 }
 
 impl<S: Sample> Asset for AudioClip<S> {
@@ -102,11 +98,8 @@ impl<S: Sample> Asset for AudioClip<S> {
                     format: S::format(),
                     duration,
                 };
-
                 log::debug!("Loaded {} frames ({} seconds) from the MP3 file {:?}", frames.len(), descriptor.duration.as_secs(), data.path());
 
-                /*
-                
 
                 // Convert to samples
                 let samples = frames.into_iter().flat_map(|frame| {
@@ -114,10 +107,6 @@ impl<S: Sample> Asset for AudioClip<S> {
                 }).collect::<Vec<i16>>();
                 let arc: Arc<[i16]> = samples.into();
 
-                // Create the samples trait object
-                let to: Arc<dyn PlayableAudioSamples> = Arc::new((arc, descriptor));
-                to                
-                */
                 todo!()
             }
 
@@ -142,17 +131,10 @@ impl<S: Sample> Asset for AudioClip<S> {
                     format: S::format(),
                     duration,
                 };
-
                 log::debug!("Loaded {} seconds from the WAV file {:?}", descriptor.duration.as_secs(), data.path());
 
-                /*
-                // Create a samples descriptor
-                let descriptor = AudioSamplesDescriptor {
-                    bitrate: header.bytes_per_second / 1000,
-                    sample_rate: header.sampling_rate,
-                    channels: header.channel_count,
-                };
 
+                /*
                 // Convert to samples
                 let samples: Arc<dyn PlayableAudioSamples> = match data {
                     wav::BitDepth::Sixteen(values) => {

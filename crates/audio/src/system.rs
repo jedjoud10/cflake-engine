@@ -15,6 +15,8 @@ fn update(world: &mut World) {
     for source in scene.query_mut::<&mut AudioSource>() {
         if source.stream.is_none() && source.playing {            
             let builder = source.builder().clone();
+            let stream = builder.build_output_stream(listener).unwrap();
+            source.stream = Some(stream);
         }
     }
 }

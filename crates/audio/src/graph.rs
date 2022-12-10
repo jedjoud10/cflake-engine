@@ -1,6 +1,6 @@
 use std::{ops::Range, time::Duration, marker::PhantomData};
 use cpal::{Stream, BuildStreamError};
-use crate::{Sample, AudioPlayer, Volume, Blend};
+use crate::{Sample, AudioPlayer};
 
 // Audio input data passed to modifiers / generators / mixers
 pub struct AudioContext {
@@ -29,30 +29,8 @@ impl AudioContext {
     }
 }
 
-// An audio node is anything that makes sound and that can be turned into a stream
-pub trait AudioNode: Sized + Sync + Send + 'static {
-    // Sample type that we are using
-    type S: Sample;
-    
-    // Fill a buffer with the next sound
-    fn next(&self, dst: &mut [Self::S], context: &AudioContext) {}
-
-    // Apply a volume modifier on this audio node
-    fn volume(self, volume: f32) -> Volume<Self> {
-        Volume {
-            input: self,
-            volume,
-        }
-    }
-
-    // Apply a positional modifier on this audio node
-    
-    // Blend this node with another node
-    fn blend<Other: AudioNode<S = Self::S>>(self, other: Other, mix: f32) -> Blend<Self, Other> {
-        Blend {
-            input1: self,
-            input2: other,
-            mix,
-        }
-    }
+// An audio node is anything that can make sound
+trait AudioNode {
+    fn next(&self);
+    fn volume(&self)
 }

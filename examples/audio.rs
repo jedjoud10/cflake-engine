@@ -21,20 +21,7 @@ fn init(world: &mut World) {
     asset!(&mut assets, "assets/user/ignored/bruh.wav");
 
     // Load the clips
-    //let clip1 = assets.load::<AudioClip<f32>>("user/ignored/nicolas.mp3").unwrap();
-    let clip2 = assets.load::<AudioClip<f32>>("user/ignored/bruh.wav").unwrap();
-
-    /*
-    let graph = AudioGraph::new(&clip1);
-
-    // Create audio sources for the clips
-    let mut source1 = AudioSource::new(clip1);
-
-    //source1.set_volume(0.0f32);
-    let mut source2 = AudioSource::new(clip2);
-    //source2.set_volume(0.6f32);
-
-    // Insert both audio sources
-    scene.extend_from_iter([source1, source2]);
-    */
+    let clip1 = assets.load::<AudioClip<f32>>("user/ignored/nicolas.mp3").unwrap();
+    let source = AudioSource::new(clip1.samples.clone()); 
+    scene.insert(source);
 }

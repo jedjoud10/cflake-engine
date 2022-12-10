@@ -3,11 +3,22 @@ use cpal::{traits::DeviceTrait, StreamConfig, Stream, BuildStreamError};
 use parking_lot::{RwLock, Mutex};
 use crate::{AudioPlayer, Sample};
 
+// This will build an output stream with the given data
+// This will be later replaced with the new audio API
 pub trait OutputStreamBuilder: Any + Sync + Send {
     fn build_output_stream(
         &self,
         listener: &AudioPlayer,
     ) -> Result<Stream, BuildStreamError>;
+}
+
+impl<T: Sample> OutputStreamBuilder for Arc<[T]> {
+    fn build_output_stream(
+        &self,
+        listener: &AudioPlayer,
+    ) -> Result<Stream, BuildStreamError> {
+        todo!()
+    }
 }
 
 
