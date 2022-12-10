@@ -8,7 +8,7 @@ mod threadpool {
     #[test]
     fn data() {
         let mut threadpool = ThreadPool::default();
-        let mut vec = (0..1024).into_iter().collect::<Vec<u64>>();
+        let mut vec = (0..64).into_iter().collect::<Vec<u64>>();
 
         let test = Instant::now();
         threadpool.for_each(
@@ -16,7 +16,7 @@ mod threadpool {
             |value| {
                 *value += *value;
             },
-            32,
+            8,
         );
         dbg!(test.elapsed());
 

@@ -2,12 +2,11 @@ use std::{
     fs::{File, OpenOptions},
     io::{BufReader, BufWriter, Read},
     path::{Path, PathBuf},
-    str::FromStr,
+    str::FromStr, any::TypeId,
 };
 
+use ahash::AHashMap;
 use platform_dirs::AppDirs;
-
-use crate::SharedVec;
 
 // Simple input output manager that can read and write from files
 // This is very helpful in reducing boilerplate code when reading from config files
@@ -15,8 +14,8 @@ pub struct FileManager {
     // App directories that contain the current app data
     dirs: AppDirs,
 
-    // Contains all the strings that we have loaded from files
-    strings: SharedVec<String>,
+    // Contains all the strings that contain Deserialized data (because serde's a bit weird)
+    strings: AHashMap<TypeId, String>,
 }
 
 impl FileManager {
@@ -35,7 +34,7 @@ impl FileManager {
 
         Self {
             dirs,
-            strings: SharedVec::new(),
+            strings: Default::default(),
         }
     }
 
@@ -92,7 +91,7 @@ impl FileManager {
     // Creat a buf write and write data to a file
     // PS: This will automatically create the file if needed
     pub fn write(
-        &self,
+        &mut self,
         path: impl AsRef<Path>,
     ) -> Option<BufWriter<File>> {
         // Create the global path
@@ -124,8 +123,8 @@ impl FileManager {
     }
 
     // Deserialize a file using Serde
-    pub fn deserialize<'a, T: serde::Deserialize<'a>>(
-        &'a self,
+    pub fn deserialize<'a, T: serde::Deserialize<'a> + 'static>(
+        &'a mut self,
         path: impl AsRef<Path>,
     ) -> Option<T> {
         // Read the file into a string and then add it internally
@@ -133,10 +132,8 @@ impl FileManager {
         let mut reader = self.read(&path)?;
         let mut string = String::new();
         reader.read_to_string(&mut string).ok()?;
-        self.strings.push(string);
-
-        // Deserialize the struct
-        let last = self.strings.last().unwrap();
+        self.strings.insert(TypeId::of::<T>(), string);
+        let last = self.strings.get(&TypeId::of::<T>()).unwrap();
         let value = serde_json::from_str(last.as_str()).unwrap();
         log::debug!(
             "Deserialized data from {:?} successfully!",
@@ -147,7 +144,7 @@ impl FileManager {
 
     // Serialize a struct into a file using Serde
     pub fn serialize<T: serde::Serialize>(
-        &self,
+        &mut self,
         value: &T,
         path: impl AsRef<Path>,
     ) -> Option<()> {

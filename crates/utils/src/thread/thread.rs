@@ -32,12 +32,6 @@ pub struct ThreadPool {
 
     // Join handles for the OS threads
     joins: Vec<JoinHandle<()>>,
-    /*
-    stealers: Vec<Stealer<ThreadedTask>>,
-    workers: Vec<Worker<ThreadedTask>>,
-    global: Injector<ThreadedTask>,
-    */
-
 }
 
 impl Default for ThreadPool {

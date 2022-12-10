@@ -19,6 +19,7 @@ serde = "1.0.145"
 world = { path = "../world" }
 crossbeam-deque = "0.8.2"
 parking_lot = { workspace = true }
+ahash = { workspace = true }
 log = { workspace = true }
 
 [features]
