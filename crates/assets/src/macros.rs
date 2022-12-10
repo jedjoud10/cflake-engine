@@ -9,7 +9,7 @@ macro_rules! asset {
         }
         // Don't do anything in debug since it'll read it from the file system
         {
-            let x = &mut $assets; 
+            let x = &mut $assets;
         }
     };
 }

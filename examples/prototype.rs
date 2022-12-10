@@ -12,8 +12,7 @@ fn main() {
 // Executed at the start
 fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap().clone();
-    let mut threadpool = world.get_mut::<ThreadPool>().unwrap();    
-
+    let mut threadpool = world.get_mut::<ThreadPool>().unwrap();
 }
 
 // Executed each frame

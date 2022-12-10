@@ -7,7 +7,10 @@ mod tests {
         let loader = Assets::new(None);
         persistent!(loader, "test/text.txt");
         let string = loader.load::<String>("test/text.txt");
-        assert_eq!(string.unwrap(), "this is a test file\n1234567890");
+        assert_eq!(
+            string.unwrap(),
+            "this is a test file\n1234567890"
+        );
     }
 
     #[test]
@@ -32,14 +35,17 @@ mod tests {
         let mut strings =
             loader.load_from_iter::<String>(["test/text.txt"]);
         let string = strings.pop().unwrap();
-        assert_eq!(string.unwrap(), "this is a test file\n1234567890");
+        assert_eq!(
+            string.unwrap(),
+            "this is a test file\n1234567890"
+        );
     }
 
     #[test]
     fn not_found_iter() {
         let loader = Assets::new(None);
         let mut strings =
-        loader.load_from_iter::<String>(["test/text.txt"]);
+            loader.load_from_iter::<String>(["test/text.txt"]);
         let string = strings.pop().unwrap();
         assert!(string.is_err());
     }

@@ -3,7 +3,9 @@ use std::any::{type_name, TypeId};
 use winit::event::{DeviceEvent, WindowEvent};
 
 // Stage ID that depicts the current location and ordering of a specific event and or stage
-#[derive(Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq, Debug)]
+#[derive(
+    Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq, Debug,
+)]
 pub struct StageId {
     pub caller: CallerId,
     pub system: SystemId,
@@ -39,7 +41,10 @@ impl PartialEq for CallerId {
 }
 
 impl PartialOrd for CallerId {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(
+        &self,
+        other: &Self,
+    ) -> Option<std::cmp::Ordering> {
         self.id.partial_cmp(&other.id)
     }
 }
@@ -64,7 +69,10 @@ impl PartialEq for SystemId {
 }
 
 impl PartialOrd for SystemId {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(
+        &self,
+        other: &Self,
+    ) -> Option<std::cmp::Ordering> {
         self.id.partial_cmp(&other.id)
     }
 }

@@ -1,7 +1,8 @@
 use std::{
     cell::UnsafeCell,
     mem::MaybeUninit,
-    sync::atomic::{AtomicUsize, Ordering}, ops::Index,
+    ops::Index,
+    sync::atomic::{AtomicUsize, Ordering},
 };
 
 use parking_lot::{Mutex, RwLock};

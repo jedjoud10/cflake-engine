@@ -2,8 +2,10 @@
 mod shapes {
     #[cfg(test)]
     mod cuboid {
-        use vek::{Vec3, Extent3};
-        use crate::{Cuboid, Volume, SurfaceArea, AABB, Boundable, Movable};
+        use crate::{
+            Boundable, Cuboid, Movable, SurfaceArea, Volume, AABB,
+        };
+        use vek::{Extent3, Vec3};
 
         #[test]
         fn volume() {
@@ -12,7 +14,7 @@ mod shapes {
             let cuboid = Cuboid::cube(Vec3::zero(), 2.0);
             assert_eq!(cuboid.volume(), 8.0f32);
         }
-        
+
         #[test]
         fn surface_area() {
             let cuboid = Cuboid::cube(Vec3::zero(), 1.0);
@@ -57,8 +59,10 @@ mod shapes {
 
     #[cfg(test)]
     mod sphere {
+        use crate::{
+            Boundable, Movable, Sphere, SurfaceArea, Volume, AABB,
+        };
         use vek::Vec3;
-        use crate::{Sphere, Volume, SurfaceArea, AABB, Boundable, Movable};
 
         #[test]
         fn volume() {
@@ -67,7 +71,7 @@ mod shapes {
             let sphere = Sphere::new(Vec3::zero(), 2.0);
             assert_eq!(sphere.volume(), 33.51032164f32);
         }
-        
+
         #[test]
         fn surface_area() {
             let sphere = Sphere::new(Vec3::zero(), 1.0);

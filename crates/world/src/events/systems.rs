@@ -115,7 +115,8 @@ macro_rules! insert {
         let registry = &mut $self.$name;
 
         // Push the event into the registry
-        let rules = registry.insert($event, $self.system).log_unwrap();
+        let rules =
+            registry.insert($event, $self.system).log_unwrap();
 
         // Create the caller ID
         let caller = super::fetch_caller_id::<$C>();

@@ -99,9 +99,12 @@ impl Mask {
     // This will split the current mask into it's raw components that return itself when ORed together
     pub fn units(&self) -> impl Iterator<Item = Mask> {
         let raw = self.0;
-        (0..(RawBitMask::BITS as usize)).into_iter().filter_map(move |i| {
-            ((raw >> i) & 1 == 1).then(|| Mask::one() << i as usize)
-        })
+        (0..(RawBitMask::BITS as usize)).into_iter().filter_map(
+            move |i| {
+                ((raw >> i) & 1 == 1)
+                    .then(|| Mask::one() << i as usize)
+            },
+        )
     }
 
     // Count the number of set bits in this mask

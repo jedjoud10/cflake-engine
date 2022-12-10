@@ -1,8 +1,8 @@
 mod graphics;
-mod window;
 mod init;
 mod recorder;
-pub use recorder::*;
-pub use init::*;
+mod window;
 pub use self::graphics::*;
+pub use init::*;
+pub use recorder::*;
 pub use window::*;

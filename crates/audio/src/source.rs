@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
+use crate::{stream::OutputStreamBuilder, AudioClip};
 use cpal::traits::StreamTrait;
 use ecs::Component;
 use parking_lot::Mutex;
-use crate::{AudioClip, stream::OutputStreamBuilder};
 
 // An audio source is a component that produces sound
 // Each audio source is a CPAL stream that will be played

@@ -1,20 +1,24 @@
 #[cfg(test)]
 mod threadpool {
+    use std::time::Instant;
+
     use crate::BitSet;
     use crate::ThreadPool;
 
     #[test]
     fn data() {
         let mut threadpool = ThreadPool::default();
-        let mut vec = (0..64).into_iter().collect::<Vec<u64>>();
+        let mut vec = (0..1024).into_iter().collect::<Vec<u64>>();
 
+        let test = Instant::now();
         threadpool.for_each(
             vec.as_mut_slice(),
             |value| {
                 *value += *value;
             },
-            8,
+            32,
         );
+        dbg!(test.elapsed());
 
         for (i, x) in vec.iter().enumerate() {
             assert_eq!(2 * i as u64, *x)

@@ -15,7 +15,7 @@ fn init(
         app_name,
         engine_name,
         el,
-        window_settings.clone()
+        window_settings.clone(),
     );
 
     // Add the resources into the world

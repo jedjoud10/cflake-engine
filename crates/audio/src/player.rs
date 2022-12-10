@@ -1,6 +1,12 @@
-use std::sync::{atomic::{AtomicU32, Ordering}, Arc};
+use std::sync::{
+    atomic::{AtomicU32, Ordering},
+    Arc,
+};
 
-use cpal::{traits::{HostTrait, DeviceTrait}, StreamConfig};
+use cpal::{
+    traits::{DeviceTrait, HostTrait},
+    StreamConfig,
+};
 use ecs::Component;
 
 // This is a component that will be able to playback any type of audio to a specific cpal device
@@ -9,7 +15,8 @@ use ecs::Component;
 pub struct AudioPlayer {
     pub(crate) device: cpal::Device,
     pub(crate) host: cpal::Host,
-    pub(crate) supported_output_configs: Vec<cpal::SupportedStreamConfigRange>,
+    pub(crate) supported_output_configs:
+        Vec<cpal::SupportedStreamConfigRange>,
     volume: Arc<AtomicU32>,
 }
 
@@ -18,7 +25,7 @@ impl AudioPlayer {
     pub fn new() -> Option<Self> {
         // Fetch the CPAL device
         let host = cpal::default_host();
-        let device = host.default_output_device()?;        
+        let device = host.default_output_device()?;
         log::debug!("Using device {:?} as the default device for the audio player",
             device.name().unwrap()
         );
@@ -27,7 +34,7 @@ impl AudioPlayer {
         let supported_output_configs = device
             .supported_output_configs()
             .ok()?
-            .collect::<Vec<_>>(); 
+            .collect::<Vec<_>>();
 
         Some(Self {
             host,
@@ -38,12 +45,23 @@ impl AudioPlayer {
     }
 
     // Try to find an audio stream config that supports the given sample rate and given channels
-    pub fn find_audio_stream_config(&self, channels: u16, sample_rate: u32,) -> Option<StreamConfig> {
-        self.supported_output_configs.iter().find(|config_range| 
+    pub fn find_audio_stream_config(
+        &self,
+        channels: u16,
+        sample_rate: u32,
+    ) -> Option<StreamConfig> {
+        self.supported_output_configs
+            .iter()
+            .find(|config_range| {
                 config_range.channels() == channels
-                && config_range.max_sample_rate().0 > sample_rate
-                && config_range.min_sample_rate().0 < sample_rate
-            ).map(|p| p.clone().with_sample_rate(cpal::SampleRate(sample_rate)).config())
+                    && config_range.max_sample_rate().0 > sample_rate
+                    && config_range.min_sample_rate().0 < sample_rate
+            })
+            .map(|p| {
+                p.clone()
+                    .with_sample_rate(cpal::SampleRate(sample_rate))
+                    .config()
+            })
     }
 
     // Set the volume of the audio player as a percentage
@@ -53,7 +71,7 @@ impl AudioPlayer {
         let value = volume / (u32::MAX as f32);
         self.volume.store(value as u32, Ordering::Relaxed);
     }
-    
+
     // Get the volume of the audio player
     pub fn volume(&self) -> f32 {
         let value = self.volume.load(Ordering::Relaxed);

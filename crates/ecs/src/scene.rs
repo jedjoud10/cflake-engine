@@ -195,17 +195,19 @@ impl Scene {
 
     // Find the a layout ref (if it's the only one that exists in the scene)
     pub fn find<'a, L: for<'i> QueryLayoutRef<'i>>(
-        &'a self
+        &'a self,
     ) -> Option<L> {
-        let mut iterator = QueryRef::<L>::new(self).into_iter().fuse();
+        let mut iterator =
+            QueryRef::<L>::new(self).into_iter().fuse();
         iterator.next().xor(iterator.next())
     }
 
     // Find the a layout mut (if it's the only one that exists in the scene)
     pub fn find_mut<'a, L: for<'i> QueryLayoutMut<'i>>(
-        &'a mut self
+        &'a mut self,
     ) -> Option<L> {
-        let mut iterator = QueryMut::<L>::new(self).into_iter().fuse();
+        let mut iterator =
+            QueryMut::<L>::new(self).into_iter().fuse();
         iterator.next().xor(iterator.next())
     }
 }

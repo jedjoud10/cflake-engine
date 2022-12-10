@@ -52,8 +52,13 @@ pub trait Asset: Sized + 'static {
 }
 
 // Just for convience's sake
-pub trait AsyncAsset: Asset + Send + Sync where Self::Err: Send {}
-impl<T: Asset + Send + Sync> AsyncAsset for T where
+pub trait AsyncAsset: Asset + Send + Sync
+where
+    Self::Err: Send,
+{
+}
+impl<T: Asset + Send + Sync> AsyncAsset for T
+where
     T::Args<'static>: 'static + Send + Sync,
     T::Err: 'static + Send + Sync,
 {

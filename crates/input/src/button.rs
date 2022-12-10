@@ -37,7 +37,9 @@ impl ButtonState {
 }
 
 // Convert a winit VirtualKeyCode to an input button
-pub(crate) fn from_winit_vkc(vkc: winit::event::VirtualKeyCode) -> Button {
+pub(crate) fn from_winit_vkc(
+    vkc: winit::event::VirtualKeyCode,
+) -> Button {
     unsafe {
         let code = std::mem::transmute::<
             winit::event::VirtualKeyCode,
@@ -49,7 +51,9 @@ pub(crate) fn from_winit_vkc(vkc: winit::event::VirtualKeyCode) -> Button {
 
 // Convert a gilrs Button to an input button
 // This is faillible since Gilrs can give us an Unknown button code
-pub(crate) fn from_gilrs_button(button: gilrs::Button) -> Option<Button> {
+pub(crate) fn from_gilrs_button(
+    button: gilrs::Button,
+) -> Option<Button> {
     if matches!(button, gilrs::Button::Unknown) {
         return None;
     }

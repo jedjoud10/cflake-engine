@@ -24,7 +24,7 @@ pub struct EnabledSystems {
     io: bool,
     assets: bool,
     audio: bool,
-    graphics: bool
+    graphics: bool,
 }
 
 impl EnabledSystems {
@@ -128,7 +128,10 @@ impl App {
     }
 
     // Set what default systems we wish to use
-    pub fn set_enabled_systems(mut self, enabled: EnabledSystems) -> Self {
+    pub fn set_enabled_systems(
+        mut self,
+        enabled: EnabledSystems,
+    ) -> Self {
         self.enabled = enabled;
         self
     }
@@ -167,7 +170,7 @@ impl App {
         self.systems.insert(callback);
         self
     }
-    
+
     // Insert a single init event
     pub fn insert_init<ID>(
         self,
@@ -254,7 +257,9 @@ impl App {
         let mut sleeper = if let FrameRateLimit::Limited(limit) =
             self.window.limit
         {
-            log::debug!("Created sleeper with a target rate of {limit}");
+            log::debug!(
+                "Created sleeper with a target rate of {limit}"
+            );
             builder.build_with_target_rate(limit)
         } else {
             log::debug!("Created sleeper without a target rate");
@@ -267,9 +272,11 @@ impl App {
             winit::event::Event::MainEventsCleared => {
                 sleeper.loop_start();
                 systems.update.execute(&mut world);
-                
+
                 // Handle app shutdown
-                if let Some(State::Stopped) = world.get::<State>().map(|x| *x) {
+                if let Some(State::Stopped) =
+                    world.get::<State>().map(|x| *x)
+                {
                     *cf = ControlFlow::Exit;
                     systems.shutdown.execute(&mut world);
                 }

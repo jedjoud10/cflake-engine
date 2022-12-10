@@ -1,7 +1,14 @@
-use std::{any::Any, sync::Arc, time::{Instant, Duration}, marker::PhantomData};
-use cpal::{traits::DeviceTrait, StreamConfig, Stream, BuildStreamError};
-use parking_lot::{RwLock, Mutex};
 use crate::{AudioPlayer, Sample};
+use cpal::{
+    traits::DeviceTrait, BuildStreamError, Stream, StreamConfig,
+};
+use parking_lot::{Mutex, RwLock};
+use std::{
+    any::Any,
+    marker::PhantomData,
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
 // This will build an output stream with the given data
 // This will be later replaced with the new audio API
@@ -21,11 +28,10 @@ impl<T: Sample> OutputStreamBuilder for Arc<[T]> {
     }
 }
 
-
 // Internal function that actually builds the CPAL stream
 fn build_output_stream<T: Sample>(
     config: StreamConfig,
-    device: &cpal::Device
+    device: &cpal::Device,
 ) -> Result<Stream, BuildStreamError> {
     let channels = config.channels as usize;
     let mut index = 0;
@@ -46,5 +52,9 @@ fn build_output_stream<T: Sample>(
 }
 
 // Write to the destination channels
-fn write_data<T: Sample>(dst: &mut [T], channels: usize, index: usize) {
+fn write_data<T: Sample>(
+    dst: &mut [T],
+    channels: usize,
+    index: usize,
+) {
 }

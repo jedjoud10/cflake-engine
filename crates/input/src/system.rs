@@ -66,7 +66,8 @@ fn event(world: &mut World, ev: &DeviceEvent) {
                         );
 
                         // If the key is pressed while it is currently down, it repeated itself, and we must ignore it
-                        if down ^ (key.state == ElementState::Pressed) {
+                        if down ^ (key.state == ElementState::Pressed)
+                        {
                             current.insert(key.state.into());
                         }
                     }

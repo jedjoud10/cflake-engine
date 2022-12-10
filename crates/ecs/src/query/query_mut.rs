@@ -4,7 +4,7 @@ use utils::BitSet;
 use crate::{
     Always, Archetype, Mask, QueryFilter, QueryLayoutMut, Scene, Wrap,
 };
-use std::{marker::PhantomData, iter::FusedIterator};
+use std::{iter::FusedIterator, marker::PhantomData};
 
 // This is a query that will be fetched from the main scene that we can use to get components out of entries with a specific layout
 // Even though I define the 'it, 'b, and 's lfietimes, I don't use them in this query, I only use them in the query iterator
@@ -170,7 +170,10 @@ fn apply_mutability_states(
 
 // Calculate the number of elements there are in the archetypes, but also take in consideration
 // the bitsets (if specified)
-fn len(archetypes: &[&mut Archetype], bitsets: &Option<Vec<BitSet>>) -> usize {
+fn len(
+    archetypes: &[&mut Archetype],
+    bitsets: &Option<Vec<BitSet>>,
+) -> usize {
     if let Some(bitsets) = bitsets {
         bitsets
             .iter()

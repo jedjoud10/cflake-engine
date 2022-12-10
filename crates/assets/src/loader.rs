@@ -8,13 +8,14 @@ use utils::ThreadPool;
 use std::{
     any::Any,
     cell::RefCell,
+    error::Error,
     ffi::OsStr,
     marker::PhantomData,
     path::{Path, PathBuf},
     sync::{
         mpsc::{Receiver, Sender},
         Arc,
-    }, error::Error,
+    },
 };
 
 // This is a handle to a specific asset that we are currently loading in
@@ -46,12 +47,13 @@ pub enum AssetLoadError {
 }
 
 // Used for async asset loading
-type AsyncBoxedResult = Result<Box<dyn Any + Send + Sync>, AssetLoadError>;
+type AsyncBoxedResult =
+    Result<Box<dyn Any + Send + Sync>, AssetLoadError>;
 type AsyncSlotMap = SlotMap<DefaultKey, Option<AsyncBoxedResult>>;
 type AsyncLoadedAssets = Arc<RwLock<AsyncSlotMap>>;
 type AsyncLoadedBytes = Arc<RwLock<AHashMap<PathBuf, Arc<[u8]>>>>;
 
-// Dynamic Asset Path specified by the user 
+// Dynamic Asset Path specified by the user
 type UserPath = Option<Arc<Path>>;
 
 // This is the main asset manager resource that will load & cache newly loaded assets
@@ -112,14 +114,18 @@ impl Assets {
     fn validate<A: Asset>(path: &Path) -> Result<(), AssetLoadError> {
         let (_, extension) = path
             .file_name()
-            .and_then(OsStr::to_str).ok_or(AssetLoadError::InvalidOsStr)?
-            .split_once('.').ok_or(AssetLoadError::MissingExtension)?;
+            .and_then(OsStr::to_str)
+            .ok_or(AssetLoadError::InvalidOsStr)?
+            .split_once('.')
+            .ok_or(AssetLoadError::MissingExtension)?;
 
         // If the asset has no extensions, we shall not check
         ((A::extensions().contains(&extension))
             || A::extensions().is_empty())
         .then_some(())
-        .ok_or_else(|| AssetLoadError::InvalidExtension(extension.to_owned()))
+        .ok_or_else(|| {
+            AssetLoadError::InvalidExtension(extension.to_owned())
+        })
     }
 
     // Convert a path to it's raw name and extension
@@ -133,8 +139,12 @@ impl Assets {
         (name, extension)
     }
 
-    // Load bytes either dynamically or load cached bytes 
-    fn load_bytes(bytes: &AsyncLoadedBytes, user: &UserPath, owned: PathBuf) -> Result<Arc<[u8]>, AssetLoadError> {
+    // Load bytes either dynamically or load cached bytes
+    fn load_bytes(
+        bytes: &AsyncLoadedBytes,
+        user: &UserPath,
+        owned: PathBuf,
+    ) -> Result<Arc<[u8]>, AssetLoadError> {
         let bytes = if bytes.read().contains_key(&owned) {
             Self::load_cached_bytes(bytes, &owned)
         } else {
@@ -144,20 +154,38 @@ impl Assets {
     }
 
     // Load the already cached bytes
-    fn load_cached_bytes(bytes: &AsyncLoadedBytes, path: &Path) -> Arc<[u8]> {
-        log::debug!("Loaded asset from path {:?} from cached bytes", path);
+    fn load_cached_bytes(
+        bytes: &AsyncLoadedBytes,
+        path: &Path,
+    ) -> Arc<[u8]> {
+        log::debug!(
+            "Loaded asset from path {:?} from cached bytes",
+            path
+        );
         bytes.read().get(path).unwrap().clone()
     }
 
     // Load the bytes for an asset dynamically and store them within self
-    fn load_bytes_dynamically(bytes: &AsyncLoadedBytes, user: &UserPath, owned: PathBuf) -> Result<Arc<[u8]>, AssetLoadError> {
-        log::warn!("Loading asset bytes from path {:?} dynamically...", &owned);
+    fn load_bytes_dynamically(
+        bytes: &AsyncLoadedBytes,
+        user: &UserPath,
+        owned: PathBuf,
+    ) -> Result<Arc<[u8]>, AssetLoadError> {
+        log::warn!(
+            "Loading asset bytes from path {:?} dynamically...",
+            &owned
+        );
         let mut write = bytes.write();
-        let user = user.as_ref().ok_or(AssetLoadError::UserPathNotSpecified)?;
+        let user = user
+            .as_ref()
+            .ok_or(AssetLoadError::UserPathNotSpecified)?;
         let bytes = super::raw::read(&owned, user)?;
         let arc: Arc<[u8]> = Arc::from(bytes);
         write.insert(owned.clone(), arc.clone());
-        log::debug!("Successfully loaded asset bytes from path {:?}", &owned);
+        log::debug!(
+            "Successfully loaded asset bytes from path {:?}",
+            &owned
+        );
         Ok(arc)
     }
 
@@ -170,7 +198,7 @@ impl Assets {
         args: <A as Asset>::Args<'_>,
         assets: AsyncLoadedAssets,
         key: DefaultKey,
-        sender: Sender<DefaultKey>
+        sender: Sender<DefaultKey>,
     ) {
         // Smaller scope so we can use ? internally
         let result = move || {
@@ -178,7 +206,8 @@ impl Assets {
             Self::validate::<A>(&owned)?;
 
             // Load the bytes dynamically or from cache
-            let bytes =  Self::load_bytes(&bytes, &user, owned.clone())?;
+            let bytes =
+                Self::load_bytes(&bytes, &user, owned.clone())?;
 
             // Split the path into it's name and extension
             let (name, extension) = Self::decompose_path(&owned);
@@ -192,10 +221,14 @@ impl Assets {
                     path: owned.as_path(),
                 },
                 args,
-            ).map_err(|err| AssetLoadError::BoxedDeserialization(Box::new(err)))?;
+            )
+            .map_err(|err| {
+                AssetLoadError::BoxedDeserialization(Box::new(err))
+            })?;
 
             // Box the asset
-            let boxed: Box<dyn Any + Send + Sync + 'static> = Box::new(asset);
+            let boxed: Box<dyn Any + Send + Sync + 'static> =
+                Box::new(asset);
             Ok(boxed)
         };
 
@@ -222,7 +255,7 @@ impl Assets {
 
         // All this does is that it ensures that the bytes are valid before we actually deserialize the asset
         let (name, extension) = Self::decompose_path(path);
-        
+
         // Load the asset bytes (either dynamically or fetch cached bytes)
         let bytes = Self::load_bytes(&self.bytes, &self.user, owned)?;
 
@@ -235,7 +268,10 @@ impl Assets {
                 path: &path,
             },
             args,
-        ).map_err(|err| AssetLoadError::BoxedDeserialization(Box::new(err)))
+        )
+        .map_err(|err| {
+            AssetLoadError::BoxedDeserialization(Box::new(err))
+        })
     }
 
     // Load multiple assets using some explicit/default loading arguments
@@ -281,7 +317,9 @@ impl Assets {
 
         // Create a new task that will load this asset
         threadpool.execute(move || {
-            Self::async_load_inner::<A>(owned, bytes, user, args, assets, key, sender);
+            Self::async_load_inner::<A>(
+                owned, bytes, user, args, assets, key, sender,
+            );
         });
         handle
     }
@@ -296,7 +334,7 @@ impl Assets {
         threadpool: &mut ThreadPool,
     ) -> Vec<AsyncHandle<A>>
     where
-        A::Args<'static>: Send + Sync
+        A::Args<'static>: Send + Sync,
     {
         // Create a temporary threadpool scope for these assets only
         let mut outer = Vec::<AsyncHandle<A>>::new();
@@ -322,7 +360,9 @@ impl Assets {
                 });
 
                 scope.execute(move || {
-                    Self::async_load_inner::<A>(owned, bytes, user, args, assets, key, sender);
+                    Self::async_load_inner::<A>(
+                        owned, bytes, user, args, assets, key, sender,
+                    );
                 });
             }
         });
@@ -339,7 +379,10 @@ impl Assets {
     }
 
     // This will wait until the asset referenced by this handle has finished loading
-    pub fn wait<A: AsyncAsset>(&self, handle: AsyncHandle<A>) -> Result<A, AssetLoadError> {
+    pub fn wait<A: AsyncAsset>(
+        &self,
+        handle: AsyncHandle<A>,
+    ) -> Result<A, AssetLoadError> {
         // Spin lock whilst whilst waiting for an asset to load
         while !self.has_finished_loading(&handle) {
             std::hint::spin_loop();

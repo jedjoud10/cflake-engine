@@ -4,7 +4,7 @@ use crate::{
     Always, Archetype, Mask, QueryFilter, QueryLayoutMut,
     QueryLayoutRef, Scene, Wrap,
 };
-use std::{marker::PhantomData, iter::FusedIterator};
+use std::{iter::FusedIterator, marker::PhantomData};
 
 // This is a query that will be fetched from the main scene that we can use to get components out of entries with a specific layout
 // Even though I define the 'it, 'b, and 's lfietimes, I don't use them in this query, I only use them in the query iterator
@@ -79,7 +79,9 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutRef<'it>>
                 .map(|b| Some(b))
                 .chain(std::iter::repeat(None));
 
-            for (archetype, bitset) in self.archetypes.iter().zip(bitsets) {
+            for (archetype, bitset) in
+                self.archetypes.iter().zip(bitsets)
+            {
                 // Send the archetype slices to multiple threads to be able to compute them
                 let ptrs = unsafe {
                     L::ptrs_from_archetype_unchecked(archetype)
@@ -125,7 +127,10 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutRef<'it>>
 
 // Calculate the number of elements there are in the archetypes, but also take in consideration
 // the bitsets (if specified)
-fn len(archetypes: &[&Archetype], bitsets: &Option<Vec<BitSet>>) -> usize {
+fn len(
+    archetypes: &[&Archetype],
+    bitsets: &Option<Vec<BitSet>>,
+) -> usize {
     if let Some(bitsets) = bitsets {
         bitsets
             .iter()

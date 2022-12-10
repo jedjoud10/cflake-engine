@@ -65,7 +65,6 @@ impl_tuple! { C0 C1 C2 C3, 4 }
 impl_tuple! { C0 C1 C2 C3 C4, 5 }
 impl_tuple! { C0 C1 C2 C3 C4 C5, 6 }
 
-
 #[cfg(feature = "extended-tuples")]
 mod extend {
     use super::*;
@@ -83,7 +82,6 @@ mod extend {
     tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10 C11 C12 C13, 14 }
     tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10 C11 C12 C13 C14, 15 }
 }
-
 
 #[cfg(feature = "extended-tuples")]
 use extend::*;

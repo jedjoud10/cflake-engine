@@ -1,7 +1,10 @@
-use std::{time::{Duration, Instant}, thread::Thread};
+use std::{
+    thread::Thread,
+    time::{Duration, Instant},
+};
 
 use crate::{FileManager, ThreadPool, Time};
-use world::{user, System, World, post_user};
+use world::{post_user, user, System, World};
 
 // Add the threadpool resource to the world
 pub fn threadpool(system: &mut System) {
@@ -11,7 +14,7 @@ pub fn threadpool(system: &mut System) {
             world.insert(ThreadPool::default())
         })
         .before(user);
-    
+
     // Update event that check if any of the threads panicked
     system
         .insert_update(|world: &mut World| {
@@ -56,7 +59,8 @@ pub fn time(system: &mut System) {
             time.frame_start = now;
             time.frame_count += 1;
             let delta = time.delta.as_secs_f32();
-            time.average_delta = time.average_delta * 0.8 + delta * 0.2;
+            time.average_delta =
+                time.average_delta * 0.8 + delta * 0.2;
         })
         .before(user);
 }

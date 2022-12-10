@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use cflake_engine::prelude::*;
 
 // An empty game window
@@ -18,10 +20,17 @@ fn init(world: &mut World) {
 
     // Register the assets
     asset!(&mut assets, "assets/user/ignored/nicolas.mp3");
+    asset!(&mut assets, "assets/user/ignored/bruh.mp3");
     asset!(&mut assets, "assets/user/ignored/bruh.wav");
 
-    // Load the clips
-    let clip1 = assets.load::<AudioClip<f32>>("user/ignored/nicolas.mp3").unwrap();
-    let source = AudioSource::new(clip1.samples.clone()); 
-    scene.insert(source);
+    // Load the clips from their relative paths
+    let clip1 = assets
+        .load::<AudioClip<i16>>("user/ignored/bruh.mp3")
+        .unwrap();
+    let clip2 = assets
+        .load::<AudioClip<i16>>("user/ignored/bruh.wav")
+        .unwrap();
+    let clip3 = assets
+        .load::<AudioClip<i16>>("user/ignored/nicolas.mp3")
+        .unwrap();
 }

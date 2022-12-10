@@ -35,10 +35,7 @@ const BITS: usize = usize::BITS as usize;
 
 // Enable all the bits between "start" and "end" in the binary representation of a usize
 // Start is inclusive, end is exclusive
-pub(crate) fn enable_in_range(
-    start: usize,
-    end: usize,
-) -> usize {
+pub(crate) fn enable_in_range(start: usize, end: usize) -> usize {
     assert!(end >= start);
 
     if end == BITS {
@@ -82,10 +79,10 @@ impl StateColumn {
             }
 
             // Create start and end ranges that will be clamped to old_len and new_len respectively
-            let local_start = usize::saturating_sub(old_len, start)
-                .min(BITS - 1);
-            let local_end = usize::saturating_sub(new_len, start)
-                .min(BITS);
+            let local_start =
+                usize::saturating_sub(old_len, start).min(BITS - 1);
+            let local_end =
+                usize::saturating_sub(new_len, start).min(BITS);
 
             // Bit magic that will enable all the bits between local_start and local_end;
             let range = enable_in_range(local_start, local_end);

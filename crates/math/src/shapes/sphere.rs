@@ -9,7 +9,7 @@ use crate::{Boundable, Movable, Shape, SurfaceArea, Volume, AABB};
 pub struct Sphere {
     // Center of the sphere
     pub center: vek::Vec3<f32>,
-    
+
     // Radius of the sphere
     pub radius: f32,
 }
@@ -17,10 +17,7 @@ pub struct Sphere {
 impl Sphere {
     // Create a new sphere from a center and radius
     pub fn new(center: vek::Vec3<f32>, radius: f32) -> Self {
-        Self {
-            center,
-            radius,
-        }
+        Self { center, radius }
     }
 }
 

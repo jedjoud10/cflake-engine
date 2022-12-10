@@ -1,5 +1,5 @@
-use std::marker::PhantomData;
 use crate::{Resource, World, Write};
+use std::marker::PhantomData;
 
 // A resource entry is another way for the user to access unique resources from the world
 // Entries allow us to insert default values if the actual underlying resource is missing
@@ -18,7 +18,10 @@ impl<'a, R: Resource> Entry<'a, R> {
 
     // This will return a mutable reference to the underlying resource if it exists
     // If the resource is missing, this will call the given function and insert the resource into the world
-    pub fn or_insert_with<F: FnOnce(&World) -> R>(self, default: F) -> Write<'a, R> {
+    pub fn or_insert_with<F: FnOnce(&World) -> R>(
+        self,
+        default: F,
+    ) -> Write<'a, R> {
         if self.world.contains::<R>() {
             self.world.get_mut::<R>().unwrap()
         } else {
@@ -30,7 +33,10 @@ impl<'a, R: Resource> Entry<'a, R> {
 
     // This will return a mutable reference to the underlying resource if it exists
     // If the resource is missing, this will automatically call the Default implementation of the resource and instantiate it, then insert it into the world
-    pub fn or_default(self) -> Write<'a, R> where R: Default {
+    pub fn or_default(self) -> Write<'a, R>
+    where
+        R: Default,
+    {
         self.or_insert_with(|_| Default::default())
     }
 }

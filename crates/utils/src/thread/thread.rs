@@ -1,4 +1,5 @@
 use crate::BitSet;
+use crossbeam_deque::{Stealer, Injector, Worker};
 use parking_lot::Mutex;
 use std::{
     any::Any,
@@ -14,31 +15,7 @@ use std::{
 
 use crate::{SliceTuple, ThreadPoolScope};
 
-// Shared arc that represents a pointer tuple
-type BoxedPtrTuple = Arc<dyn Any + Send + Sync + 'static>;
-
-// Data passed to each thread
-pub(super) struct ThreadFuncEntry {
-    pub(super) base: BoxedPtrTuple,
-    pub(super) batch_length: usize,
-    pub(super) batch_offset: usize,
-}
-
-// Shared arc that represents a shared function
-pub(super) type BoxedFunction =
-    Arc<dyn Fn(ThreadFuncEntry) + Send + Sync + 'static>;
-
-// Represents a single task that will be executed by multiple threads
-pub(super) enum ThreadedTask {
-    // This is a single task that will be executed on a single thread
-    Execute(Box<dyn FnOnce() + Send>),
-
-    // Executed in multiple threads
-    ForEachBatch {
-        entry: ThreadFuncEntry,
-        function: BoxedFunction,
-    },
-}
+use super::{ArcFn, ThreadFuncEntry, ThreadedTask};
 
 // A single threadpool that contains multiple worker threads that are ready to be executed in parallel
 pub struct ThreadPool {
@@ -55,6 +32,12 @@ pub struct ThreadPool {
 
     // Join handles for the OS threads
     joins: Vec<JoinHandle<()>>,
+    /*
+    stealers: Vec<Stealer<ThreadedTask>>,
+    workers: Vec<Worker<ThreadedTask>>,
+    global: Injector<ThreadedTask>,
+    */
+
 }
 
 impl Default for ThreadPool {
@@ -122,55 +105,53 @@ impl ThreadPool {
             (length as f32 / batch_size as f32).ceil() as usize;
         let remaining = length % batch_size;
 
-        // Internal function that is either used in a single thread or in multiple threads
-        let internal =
-            move |ptrs: &mut I,
-                  length: usize,
-                  offset: usize,
-                  bitset: Option<&BitSet>| {
-                if let Some(bitset) = &bitset {
-                    // With a bitset filter
-                    let mut i = 0;
-                    while i < length {
-                        // Check the next entry that is valid (that passed the filter)
-                        if let Some(hop) =
-                            bitset.find_one_from(i + offset)
-                        {
-                            i = hop;
-                        } else {
-                            return;
-                        }
+        // Internal function that will be wrapped within a closure and executed on the main thread / other threads
+        // This will simply loop over all the elements specified by 'ptrs', 'length', and 'offset'
+        fn iterate<
+            I: for<'i> SliceTuple<'i>,
+            F: Fn(<I as SliceTuple>::ItemTuple) + Send + Sync,
+        >(
+            ptrs: &mut I,
+            length: usize,
+            offset: usize,
+            function: &F,
+            bitset: Option<&BitSet>,
+        ) {
+            if let Some(bitset) = &bitset {
+                // With a bitset filter
+                let mut i = 0;
+                while i < length {
+                    // Check the next entry that is valid (that passed the filter)
+                    if let Some(hop) =
+                        bitset.find_one_from(i + offset)
+                    {
+                        i = hop;
+                    } else {
+                        return;
+                    }
 
-                        function(unsafe {
-                            I::get_unchecked(ptrs, i)
-                        });
-                        i += 1;
-                    }
-                } else {
-                    // Without a bitset filter
-                    for i in 0..length {
-                        function(unsafe {
-                            I::get_unchecked(ptrs, i)
-                        });
-                    }
+                    function(unsafe { I::get_unchecked(ptrs, i) });
+                    i += 1;
                 }
-            };
+            } else {
+                // Without a bitset filter
+                for i in 0..length {
+                    function(unsafe { I::get_unchecked(ptrs, i) });
+                }
+            }
+        }
 
         // Run the code in a single thread if needed
         if num_tasks == 1 {
-            internal(&mut list, length, 0, bitset.as_ref());
+            iterate(&mut list, length, 0, &function, bitset.as_ref());
             return;
         }
-
-        // Box the function into an arc
-        type ArcFn<'b> =
-            Arc<dyn Fn(ThreadFuncEntry) + Send + Sync + 'b>;
 
         // The bitset is going to be a shareable bitset instead
         let bitset = bitset.map(Arc::new);
 
         let function: ArcFn<'a> =
-            Arc::new(move |entry: ThreadFuncEntry| unsafe {
+            Arc::new(move |entry: ThreadFuncEntry| {
                 // Optionally, the user might specify a specific bitset
                 let bitset = bitset.clone();
 
@@ -179,7 +160,7 @@ impl ThreadPool {
                 let ptrs = entry.base.downcast::<I::PtrTuple>().ok();
                 let length = entry.batch_length;
                 let mut slices = ptrs
-                    .map(|ptrs| {
+                    .map(|ptrs| unsafe {
                         I::from_ptrs(
                             &ptrs,
                             entry.batch_length,
@@ -189,10 +170,11 @@ impl ThreadPool {
                     .unwrap();
 
                 // Call the internal function
-                internal(
+                iterate(
                     &mut slices,
                     length,
                     offset,
+                    &function,
                     bitset.as_deref(),
                 );
             });
@@ -360,16 +342,7 @@ fn spawn(threadpool: &ThreadPool, index: usize) -> JoinHandle<()> {
 
                 // The thread woke up, so we must fetch the highest priority task now
                 active.fetch_add(1, Ordering::Relaxed);
-                match task {
-                    // Execute a single task in another thread
-                    ThreadedTask::Execute(f) => f(),
-
-                    // Execute the same function over and over again on the same slice, but at different indices (no overrun)
-                    ThreadedTask::ForEachBatch {
-                        entry,
-                        function,
-                    } => function(entry),
-                }
+                super::execute(task);
 
                 // Update the active thread atomic and waiting task atomic
                 waiting.fetch_sub(1, Ordering::Relaxed);
