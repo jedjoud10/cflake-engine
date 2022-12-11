@@ -18,10 +18,10 @@ struct SimpleStruct {
 
 // First function that gets executed when the engine starts
 fn init(world: &mut World) {
-    let file = world.get_mut::<FileManager>().unwrap();
+    let mut fm = world.get_mut::<FileManager>().unwrap();
 
     // Write to the config JSON file
-    file.serialize(
+    fm.serialize(
         &SimpleStruct {
             name: "Test name".to_owned(),
             value: 50,

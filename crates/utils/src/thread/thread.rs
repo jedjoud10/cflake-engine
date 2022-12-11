@@ -12,9 +12,7 @@ use std::{
     },
     thread::{JoinHandle, ThreadId},
 };
-
 use crate::{SliceTuple, ThreadPoolScope};
-
 use super::{ArcFn, ThreadFuncEntry, ThreadedTask};
 
 // A single threadpool that contains multiple worker threads that are ready to be executed in parallel
@@ -36,16 +34,11 @@ pub struct ThreadPool {
 
 impl Default for ThreadPool {
     fn default() -> Self {
-        Self::with(Self::default_thread_count())
+        Self::with(num_cpus::get())
     }
 }
 
 impl ThreadPool {
-    // Calculate the default thread count
-    pub fn default_thread_count() -> usize {
-        num_cpus::get() * 8
-    }
-
     // Create a new thread pool with a specific number of threads
     pub fn with(num: usize) -> Self {
         let (task_sender, task_receiver) =
@@ -67,7 +60,7 @@ impl ThreadPool {
             .map(|i| spawn(&threadpool, i))
             .collect::<Vec<_>>();
         threadpool.joins = joins;
-        log::debug!("Created a thread pool with {num} threads");
+        log::debug!("Initialized a new thread pool with {num} thread(s)");
 
         threadpool
     }
@@ -263,7 +256,7 @@ impl ThreadPool {
     }
 
     // Check if any of the threads have panicked, and return the thread ID
-    pub fn check_any_panicked(&self) -> Option<usize> {
+    pub(crate) fn check_any_panicked(&self) -> Option<usize> {
         *self.panicked.lock()
     }
 

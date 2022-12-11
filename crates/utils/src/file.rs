@@ -101,8 +101,8 @@ impl FileManager {
 
         // Check if there was a file creation error
         let file = Self::initialize_file(&global);
-        let Ok(file) = file else {
-            log::error!("{}", file.err().unwrap());
+        if let Err(err) = file {
+            log::error!("{}", err);
             return None;
         };
 

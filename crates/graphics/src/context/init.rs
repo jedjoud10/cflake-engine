@@ -14,7 +14,7 @@ pub(crate) fn init_context_and_window(
     settings: WindowSettings,
 ) -> (Graphics, Window) {
     // Create the graphics wrapper
-    let graphics = Graphics {};
+    let graphics = todo!();
 
     // Create a winit window
     let raw = init_window(el, &settings);
