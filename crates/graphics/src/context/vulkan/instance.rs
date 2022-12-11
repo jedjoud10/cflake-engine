@@ -9,7 +9,7 @@ use std::ffi::CString;
 use winit::window::Window;
 
 // This is a Vulkan instance that gets loaded in
-pub struct Instance {
+pub(crate) struct Instance {
     // Context related
     pub(crate) entry: Entry,
     pub(crate) instance: ash::Instance,
@@ -55,14 +55,14 @@ impl Instance {
             .unwrap()
             .to_vec();
         let required_instance_extensions =
-            crate::global::required_instance_extensions();
+            crate::required_instance_extensions();
         extension_names_ptrs.extend(
             required_instance_extensions.iter().map(|s| s.as_ptr()),
         );
 
         // Get the required validation layers
         let required_validation_layers =
-            crate::global::required_validation_layers();
+            crate::required_validation_layers();
         let validation_ptrs = required_validation_layers
             .iter()
             .map(|cstr| cstr.as_ptr())

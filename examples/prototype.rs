@@ -13,6 +13,8 @@ fn main() {
 fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap().clone();
     let mut threadpool = world.get_mut::<ThreadPool>().unwrap();
+    let recorder = graphics.acquire();
+    graphics.submit(recorder);
 }
 
 // Executed each frame

@@ -3,7 +3,7 @@ use ash::vk;
 
 // This will be the main queue that we will access and submit data into
 // For now I only support a single queue cause I am a bit dumb
-pub struct Queue {
+pub(crate) struct Queue {
     // Queue family index
     pub(crate) qfi: u32,
 
@@ -84,7 +84,7 @@ impl Queue {
     // This might return a command buffer that is already in the recording state*
     pub unsafe fn acquire(
         &self,
-        _device: &Device,
+        device: &Device,
         force: bool,
     ) -> Recorder {
         // Get the current thread's command pool
@@ -98,8 +98,10 @@ impl Queue {
         Recorder {
             force,
             index,
+            pool: 0,
             state,
-            raw: buffer,
+            raw_command_buffer: buffer,
+            raw_command_pool: pool.pool,
         }
     }
 
@@ -133,11 +135,9 @@ impl Queue {
     }
 
     // Destroy the queue and the command pools
-    pub unsafe fn destroy(&self) {
-        log::warn!("Destroyng Queue...");
-
+    pub unsafe fn destroy(&self, device: &Device) {
         for pool in &self.pools {
-            pool.destroy();
+            pool.destroy(device);
         }
     }
 }

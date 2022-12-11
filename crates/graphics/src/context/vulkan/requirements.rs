@@ -1,35 +1,29 @@
+use std::ffi::CString;
 use ash::vk::{
     self, PresentModeKHR, SurfaceCapabilitiesKHR, SurfaceFormatKHR,
 };
-
 use vk::PhysicalDeviceType;
 
-impl super::Adapter {
-    // Check wether or not a physical device is suitable for rendering
-    // This checks the minimum requirements that we need to achieve to be able to render
-    pub(super) unsafe fn is_physical_device_suitable(&self) -> bool {
-        let _type = self.properties.device_type;
-        let surface = self.surface_capabilities;
-        let modes = self.present_modes.as_slice();
-        let formats = self.present_formats.as_slice();
-        log::debug!(
-            "Checking if adapter {} is suitable...",
-            self.name
-        );
+// Check wether or not a physical device is suitable for rendering
+// This checks the minimum requirements that we need to achieve to be able to render
+pub(super) fn is_physical_device_suitable(name: &str, _type: vk::PhysicalDeviceType, surface_capabilities: vk::SurfaceCapabilitiesKHR, modes: &[vk::PresentModeKHR], formats: &[vk::SurfaceFormatKHR]) -> bool {
+    log::debug!(
+        "Checking if adapter {} is suitable...",
+        name
+    );
 
-        // Check all the requirements that are needed for us to use this Adapter
-        let double_buffering_supported =
-            is_double_buffering_supported(surface);
-        let format_supported = is_surface_format_supported(formats);
-        let present_supported = is_present_mode_supported(modes);
-        let device_type_okay = is_device_type_optimal(_type);
+    // Check all the requirements that are needed for us to use this Adapter
+    let double_buffering_supported =
+        is_double_buffering_supported(surface_capabilities);
+    let format_supported = is_surface_format_supported(formats);
+    let present_supported = is_present_mode_supported(modes);
+    let device_type_okay = is_device_type_optimal(_type);
 
-        // All the checks must pass
-        double_buffering_supported
-            && format_supported
-            && present_supported
-            && device_type_okay
-    }
+    // All the checks must pass
+    double_buffering_supported
+        && format_supported
+        && present_supported
+        && device_type_okay
 }
 
 // Check if the Adapter is optimal (dGPU)

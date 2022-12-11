@@ -5,7 +5,7 @@ use winit::window::Window;
 use crate::Instance;
 
 // This is a surface that matches up with the Vulkan surface KHR extension
-pub struct Surface {
+pub(crate) struct Surface {
     pub(crate) surface_loader: khr::Surface,
     pub(crate) surface: vk::SurfaceKHR,
 }

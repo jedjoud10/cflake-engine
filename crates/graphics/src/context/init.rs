@@ -1,4 +1,4 @@
-use crate::{FrameRateLimit, Graphics, Window, WindowSettings};
+use crate::{FrameRateLimit, Graphics, Window, WindowSettings, Surface, Adapter, Device, Queue, Swapchain, Instance};
 use parking_lot::Mutex;
 use std::sync::Arc;
 use winit::{
@@ -7,20 +7,37 @@ use winit::{
 };
 
 // Create the Vulkan context wrapper and a Window wrapper
-pub(crate) fn init_context_and_window(
+pub(crate) unsafe fn init_context_and_window(
     app_name: String,
     engine_name: String,
     el: &EventLoop<()>,
     settings: WindowSettings,
 ) -> (Graphics, Window) {
-    // Create the graphics wrapper
-    let graphics = todo!();
-
     // Create a winit window
-    let raw = init_window(el, &settings);
+    let window = init_window(el, &settings);
+
+    // Create the low-level mid wrappers around raw Vulkan objects
+    let instance = Instance::new(&window, app_name, engine_name);
+    let surface = Surface::new(&instance, &window);
+    let adapter = Adapter::pick(&instance, &surface);
+    let device = Device::new(&instance, &adapter);
+    let queue = Queue::new(&instance, &device, &adapter);
+    let swapchain = Swapchain::new(
+        &adapter, &surface, &device, &instance, &window, false,
+    );
+
+    // Create the graphics wrapper
+    let graphics = Graphics::new(
+        instance,
+        surface,
+        adapter,
+        device,
+        queue,
+        swapchain
+    );
 
     // Create the window wrapper
-    let window = Window { settings, raw };
+    let window = Window { settings, raw: window };
 
     (graphics, window)
 }

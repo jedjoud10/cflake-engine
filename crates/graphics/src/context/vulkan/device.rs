@@ -1,12 +1,11 @@
-use crate::{Adapter, Instance};
+use crate::{Adapter, Instance, Queue};
 use ash::vk::{self, DeviceCreateInfo, DeviceQueueCreateInfo};
-
-use gpu_allocator::vulkan::{Allocator, AllocatorCreateDesc};
+use gpu_allocator::vulkan::{Allocator, AllocatorCreateDesc, Allocation, AllocationCreateDesc};
 use parking_lot::Mutex;
 
 // This is a logical device that can run multiple commands and that can create Vulkan objects
-pub struct Device {
-    pub device: ash::Device,
+pub(crate) struct Device {
+    pub(crate) device: ash::Device,
     pub(crate) allocator: Mutex<Allocator>,
 }
 
@@ -35,7 +34,7 @@ impl Device {
 
         // Create logical device create info
         let required_device_extensions =
-            crate::global::required_device_extensions();
+            super::required_device_extensions();
         let logical_device_extensions = required_device_extensions
             .iter()
             .map(|s| s.as_ptr())
@@ -97,7 +96,7 @@ impl Device {
     }
 
     // Destroy the logical device
-    pub unsafe fn destroy(self) {
+    pub unsafe fn destroy(&self) {
         self.device.device_wait_idle().unwrap();
         self.device.destroy_device(None);
     }

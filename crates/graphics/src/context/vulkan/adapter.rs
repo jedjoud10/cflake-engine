@@ -6,11 +6,11 @@ use ash::vk::{
     SurfaceCapabilitiesKHR, SurfaceFormatKHR,
 };
 
-use crate::{Instance, Surface};
+use super::{Instance, Surface};
 
 // An adapter is a physical device that was chosen manually by the user
 // For now, this Vulkan abstraction library can only handle one adapter per instance
-pub struct Adapter {
+pub(crate) struct Adapter {
     // Raw physical device
     pub(crate) raw: PhysicalDevice,
     pub(crate) name: String,
@@ -97,9 +97,14 @@ impl Adapter {
                     physical_device,
                     surface,
                 );
-                adapter
-                    .is_physical_device_suitable()
-                    .then_some(adapter)
+
+                super::is_physical_device_suitable(
+                    &adapter.name,
+                    adapter.properties.device_type,
+                    adapter.surface_capabilities,
+                    &adapter.present_modes,
+                    &adapter.present_formats)
+                .then_some(adapter)
             })
             .expect("Could not find a suitable GPU to use!");
 

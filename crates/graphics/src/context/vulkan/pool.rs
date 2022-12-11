@@ -167,7 +167,8 @@ impl Pool {
     }
 
     // Destroy the command pool
-    pub(super) unsafe fn destroy(&self) {
-        log::warn!("Destroyng Command Pool...");
+    pub(super) unsafe fn destroy(&self, device: &Device) {
+        device.device.device_wait_idle().unwrap();
+        device.device.destroy_command_pool(self.pool, None);
     } 
 }

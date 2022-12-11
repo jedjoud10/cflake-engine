@@ -2,7 +2,7 @@ use crate::{Adapter, Device, Instance, Surface};
 use ash::vk::{self};
 
 // Wrapper around the vulkan swapchain
-pub struct Swapchain {
+pub(crate) struct Swapchain {
     // Swapchain
     pub(super) loader: ash::extensions::khr::Swapchain,
     pub(super) raw: vk::SwapchainKHR,
@@ -162,7 +162,7 @@ impl Swapchain {
     }
 
     // Destroy the swapchain
-    pub unsafe fn destroy(self, device: &Device) {
+    pub unsafe fn destroy(&self, device: &Device) {
         device.device.device_wait_idle().unwrap();
 
         device
