@@ -17,11 +17,23 @@ struct InternalGraphics {
 impl Drop for InternalGraphics {
     fn drop(&mut self) {
         unsafe {
+            log::warn!("Dropping internal graphics handler...");
+
+            log::warn!("Destroying swapchain...");
             self.swapchain.destroy(&self.device);
+
+            log::warn!("Destroying queue...");
             self.queue.destroy(&self.device);
+
+            log::warn!("Destroying surface...");
             self.surface.destroy();
+
+            log::warn!("Destroying logical device...");
             self.device.destroy();
+
+            log::warn!("Destroying Vulkan Instance...");
             self.instance.destroy();
+            log::warn!("We did it guys, Vulkan is no more");
         }
     }
 }
@@ -52,38 +64,38 @@ impl Graphics {
     }
 
     // Get the instance
-    pub(crate) fn instance(&self) -> &Instance {
+    pub fn instance(&self) -> &Instance {
         &self.0.instance
     }
 
     // Get the adapter
-    pub(crate) fn adapter(&self) -> &Adapter {
+    pub fn adapter(&self) -> &Adapter {
         &self.0.adapter
     }
 
     // Get the device
-    pub(crate) fn device(&self) -> &Device {
+    pub fn device(&self) -> &Device {
         &self.0.device
     }
 
     // Get the main queues
-    pub(crate) fn queue(&self) -> &Queue {
+    pub fn queue(&self) -> &Queue {
         &self.0.queue
     }
 
     // Get the surface
-    pub(crate) fn surface(&self) -> &Surface {
+    pub fn surface(&self) -> &Surface {
         &self.0.surface
     }
 
     // Get the swapchain
-    pub(crate)fn swapchain(&self) -> &Swapchain {
+    pub fn swapchain(&self) -> &Swapchain {
         &self.0.swapchain
     }
 
     // Aquire a new free command recorder that we can use to record commands
     pub fn acquire(&self) -> Recorder {
-        unsafe { self.queue().acquire(self.device(), false) }
+        unsafe { self.queue().acquire(self.device(), true) }
     }
 
     // Submit the command buffer and start executing the underlying commands

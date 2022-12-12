@@ -3,19 +3,20 @@ use std::ffi::CStr;
 use ash::vk::{
     self, PhysicalDevice, PhysicalDeviceFeatures,
     PhysicalDeviceLimits, PhysicalDeviceProperties, PresentModeKHR,
-    SurfaceCapabilitiesKHR, SurfaceFormatKHR,
+    SurfaceCapabilitiesKHR, SurfaceFormatKHR, PhysicalDeviceType,
 };
 
 use super::{Instance, Surface};
 
 // An adapter is a physical device that was chosen manually by the user
 // For now, this Vulkan abstraction library can only handle one adapter per instance
-pub(crate) struct Adapter {
+pub struct Adapter {
     // Raw physical device
-    pub(crate) raw: PhysicalDevice,
-    pub(crate) name: String,
-    pub(crate) device_id: u32,
-    pub(crate) vendor_id: u32,
+    raw: PhysicalDevice,
+    name: String,
+    device_type: PhysicalDeviceType,
+    device_id: u32,
+    vendor_id: u32,
 
     // Properties
     pub(crate) limits: PhysicalDeviceLimits,
@@ -65,6 +66,7 @@ impl Adapter {
         Adapter {
             raw: physical_device,
             name,
+            device_type: properties.device_type,
             device_id: properties.device_id,
             vendor_id: properties.vendor_id,
             limits,
@@ -102,6 +104,7 @@ impl Adapter {
                     &adapter.name,
                     adapter.properties.device_type,
                     adapter.surface_capabilities,
+                    adapter.features,
                     &adapter.present_modes,
                     &adapter.present_formats)
                 .then_some(adapter)
@@ -110,6 +113,31 @@ impl Adapter {
 
         log::debug!("Using the adpater {:?}", adapter.name);
         adapter
+    }
+
+    // Get the underlying physical device
+    pub fn physical_device(&self) -> vk::PhysicalDevice {
+        self.raw
+    }
+
+    // Get the name of the adapter
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    // Get the device type of the adapter
+    pub fn device_type(&self) -> vk::PhysicalDeviceType {
+        self.device_type
+    }
+    
+    // Get the device ID as a u32
+    pub fn device_id(&self) -> u32 {
+        self.device_id
+    }
+
+    // Get the vendor ID as a u32
+    pub fn vendor_id(&self) -> u32 {
+        self.vendor_id
     }
 }
 
@@ -126,11 +154,11 @@ unsafe fn get_queue_family_properties(
         .len())
         .map(|i| {
             surface
-                .surface_loader
+                .surface_loader()
                 .get_physical_device_surface_support(
                     physical_device,
                     i as u32,
-                    surface.surface,
+                    surface.surface(),
                 )
                 .unwrap()
         })
@@ -144,17 +172,17 @@ unsafe fn get_swapchain_modes(
     physical_device: PhysicalDevice,
 ) -> (Vec<PresentModeKHR>, Vec<SurfaceFormatKHR>) {
     let present_modes = surface
-        .surface_loader
+        .surface_loader()
         .get_physical_device_surface_present_modes(
             physical_device,
-            surface.surface,
+            surface.surface(),
         )
         .unwrap();
     let present_formats = surface
-        .surface_loader
+        .surface_loader()
         .get_physical_device_surface_formats(
             physical_device,
-            surface.surface,
+            surface.surface(),
         )
         .unwrap();
     (present_modes, present_formats)
@@ -180,10 +208,10 @@ unsafe fn get_capabilities(
         .get_physical_device_properties(physical_device);
     let limits = properties.limits;
     let surface_capabilities = surface
-        .surface_loader
+        .surface_loader()
         .get_physical_device_surface_capabilities(
             physical_device,
-            surface.surface,
+            surface.surface(),
         )
         .unwrap();
     let name = CStr::from_ptr(properties.device_name.as_ptr())

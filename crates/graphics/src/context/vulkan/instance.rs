@@ -9,7 +9,7 @@ use std::ffi::CString;
 use winit::window::Window;
 
 // This is a Vulkan instance that gets loaded in
-pub(crate) struct Instance {
+pub struct Instance {
     // Context related
     pub(crate) entry: Entry,
     pub(crate) instance: ash::Instance,

@@ -253,18 +253,7 @@ impl App {
         let mut systems = self.systems;
 
         // Create the spin sleeper for frame limiting
-        let builder = spin_sleep::LoopHelper::builder();
-        let mut sleeper = if let FrameRateLimit::Limited(limit) =
-            self.window.limit
-        {
-            log::debug!(
-                "Created sleeper with a target rate of {limit}"
-            );
-            builder.build_with_target_rate(limit)
-        } else {
-            log::debug!("Created sleeper without a target rate");
-            builder.build_without_target_rate()
-        };
+        let mut sleeper = Self::create_sleeper(self.window.limit);
 
         // We must now start the game engine (start the winit event loop)
         el.run(move |event, _, cf| match event {
@@ -306,6 +295,23 @@ impl App {
             }
             _ => {}
         });
+    }
+
+    // Create a loop sleeper using the given window frame rate limit
+    fn create_sleeper(limit: FrameRateLimit) -> spin_sleep::LoopHelper {
+        let builder = spin_sleep::LoopHelper::builder();
+        let sleeper = if let FrameRateLimit::Limited(limit) = limit {
+            builder.build_with_target_rate(limit)
+        } else {
+            builder.build_without_target_rate()
+        };
+
+        match limit {
+            FrameRateLimit::Limited(limit) => log::debug!("Created sleeper with a target rate of {limit}"),
+            FrameRateLimit::VSync => log::debug!("Created sleeper without a target rate (VSync on)"),
+            FrameRateLimit::Unlimited => log::debug!("Created sleeper without a target rate (VSync off)"),
+        }
+        sleeper
     }
 
     // Insert the required default systems (if specified by the EnabledSystems struct)

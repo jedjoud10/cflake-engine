@@ -1,39 +1,74 @@
 use super::Recorder;
+use ahash::AHashMap;
 use ash::vk;
 
+
+// Recorder state that is stored within the recorders that is dynamically bound to command buffers
+#[derive(Default)]
+pub(super) struct State {
+    pub(super) commands: Vec<Command>,
+    pub(super) access: Vec<(Access, usize)>,
+}
+
+// A finished command buffer state is what allows us to directly record Vulkan commands
+pub(super) struct CompletedState {
+    groups: Vec<(Vec<Command>, Option<Barrier>)> 
+}
+
+// Command pipeline barrier abstraction
+// This helps automatically synchronizing vulkan commands
+pub(super) struct Barrier {
+    src_stage_mask: vk::PipelineStageFlags,
+    dst_stage_mask: vk::PipelineStageFlags,
+    dependency_flags: vk::DependencyFlags,
+    memory_barriers: Vec<vk::MemoryBarrier>,
+    buffer_memory_barriers: Vec<vk::BufferMemoryBarrier>,
+    image_memory_barriers: Vec<vk::ImageMemoryBarrier>,
+}
+
 // Any type of command that can be applied
-pub(crate) enum Command {
+pub(super) enum Command {
     Buffer(BufferCommand),
 }
 
-// A type of access
-pub(crate) enum Access {
+// Any type of command access
+pub(super) enum Access {
     Buffer(BufferAccess),
 }
 
-// Records the commands in the actual command buffer
-pub(crate) trait InsertVkCommand {
-    // Record the commands into the given command buffer
-    unsafe fn insert(
+impl CompletedState {
+    pub(super) unsafe fn insert(
         self,
         device: &ash::Device,
-        buffer: vk::CommandBuffer,
-    );
-}
-
-impl InsertVkCommand for Command {
-    unsafe fn insert(
-        self,
-        device: &ash::Device,
-        buffer: vk::CommandBuffer,
+        cmd: vk::CommandBuffer,
     ) {
-        match self {
-            Command::Buffer(x) => x.insert(device, buffer),
+        for group in self.groups {
+            let commands = group.0;
+            let barrier = group.1;
+
+            for command in commands {
+                match command {
+                    Command::Buffer(command) => command.insert(device, cmd),
+                }
+            }
+
+            if let Some(barrier) = barrier {
+                device.cmd_pipeline_barrier(
+                    cmd,
+                    barrier.src_stage_mask,
+                    barrier.dst_stage_mask,
+                    barrier.dependency_flags,
+                    &barrier.memory_barriers,
+                    &barrier.buffer_memory_barriers,
+                    &barrier.image_memory_barriers,
+                );
+            }
         }
     }
 }
 
 // Enum that contains all the types of commands that can be applied to buffers
+#[derive(Debug)]
 pub(crate) enum BufferCommand {
     BindIndexBuffer {
         buffer: vk::Buffer,
@@ -71,24 +106,20 @@ pub(crate) enum BufferCommand {
 }
 
 // Enum that tells us how a buffer is accessed
-#[derive(Debug)]
-pub(crate) struct BufferAccess {
-    pub(crate) buffer: vk::Buffer,
-    pub(crate) mutable: bool,
-    pub(crate) size: u64,
-    pub(crate) offset: u64,
+pub(super) struct BufferAccess {
+    buffer: vk::Buffer,
+    mutable: bool,
+    size: u64,
+    offset: u64,
 }
 
 // Buffer commands
 impl Recorder {
     // Add a new buffer command internally
-    unsafe fn push_buffer_cmd(&mut self, cmd: BufferCommand) {
+    unsafe fn push_buffer_cmd(&mut self, cmd: BufferCommand, access: impl IntoIterator<Item = BufferAccess>) {
+        log::debug!("Recorder::push_buffer_cmd {:?}", &cmd);
         self.state.commands.push(Command::Buffer(cmd));
-    }
-
-    // Add a new buffer access internally
-    unsafe fn push_buffer_access(&mut self, access: BufferAccess) {
-        self.state.access.push(Access::Buffer(access));
+        self.state.access.extend(access.into_iter().map(|a| (Access::Buffer(a), 0)));
     }
 
     // Bind an index buffer to the command buffer render pass
@@ -102,13 +133,12 @@ impl Recorder {
             buffer,
             offset,
             index_type,
-        });
-        self.push_buffer_access(BufferAccess {
+        }, Some(BufferAccess {
             buffer,
             mutable: false,
             size: vk::WHOLE_SIZE,
             offset,
-        });
+        }));
     }
 
     // Bind vertex buffers to the command buffer render pass
@@ -118,19 +148,16 @@ impl Recorder {
         buffers: Vec<vk::Buffer>,
         offsets: Vec<vk::DeviceSize>,
     ) {
-        for (i, &buffer) in buffers.iter().enumerate() {
-            self.push_buffer_access(BufferAccess {
-                buffer,
-                mutable: false,
-                size: vk::WHOLE_SIZE,
-                offset: offsets[i],
-            });
-        }
         self.push_buffer_cmd(BufferCommand::BindVertexBuffer {
             first_binding,
-            buffers,
-            offsets,
-        });
+            buffers: buffers.clone(),
+            offsets: offsets.clone(),
+        }, buffers.into_iter().enumerate().map(|(i, buffer)| BufferAccess {
+            buffer,
+            mutable: false,
+            size: vk::WHOLE_SIZE,
+            offset: offsets[i],
+        }));
     }
 
     // Copy a buffer to another buffer in GPU memory
@@ -140,25 +167,21 @@ impl Recorder {
         dst: vk::Buffer,
         regions: Vec<vk::BufferCopy>,
     ) {
-        for buffer_copy in regions.iter() {
-            self.push_buffer_access(BufferAccess {
-                buffer: src,
-                mutable: false,
-                size: buffer_copy.size,
-                offset: buffer_copy.src_offset,
-            });
-            self.push_buffer_access(BufferAccess {
-                buffer: dst,
-                mutable: true,
-                size: buffer_copy.size,
-                offset: buffer_copy.dst_offset,
-            });
-        }
         self.push_buffer_cmd(BufferCommand::CopyBuffer {
             src,
             dst,
-            regions,
-        });
+            regions: regions.clone(),
+        }, regions.into_iter().flat_map(|buffer_copy| vec![BufferAccess {
+            buffer: src,
+            mutable: false,
+            size: buffer_copy.size,
+            offset: buffer_copy.src_offset,
+        }, BufferAccess {
+            buffer: dst,
+            mutable: true,
+            size: buffer_copy.size,
+            offset: buffer_copy.dst_offset,
+        }]));
     }
 
     // Copy an image to a buffer in GPU memory
@@ -178,7 +201,7 @@ impl Recorder {
             src: image,
             layout,
             regions,
-        });
+        }, None);
     }
 
     // Clear a buffer to zero
@@ -193,13 +216,12 @@ impl Recorder {
             offset,
             size,
             data: 0,
-        });
-        self.push_buffer_access(BufferAccess {
+        }, Some(BufferAccess {
             buffer,
             mutable: true,
             size,
             offset,
-        });
+        }));
     }
 
     // Update the buffer using memory that is directly stored within the command buffer
@@ -215,17 +237,16 @@ impl Recorder {
             offset,
             size,
             data,
-        });
-        self.push_buffer_access(BufferAccess {
+        }, Some(BufferAccess {
             buffer,
             mutable: true,
             size,
             offset,
-        });
+        }));
     }
 }
 
-impl super::InsertVkCommand for BufferCommand {
+impl BufferCommand {
     unsafe fn insert(
         self,
         device: &ash::Device,
@@ -273,5 +294,26 @@ impl super::InsertVkCommand for BufferCommand {
                 data,
             } => device.cmd_update_buffer(cmd, src, offset, &data),
         }
+    }
+}
+
+// Convert the locally stored command to local groups that automatically place barriers within them
+pub(super) fn complete(state: State) -> CompletedState {
+    // Keep track of what buffers have mutable access and what stage needs mutable access
+    let mut exclusive_buffer_access = AHashMap::<usize, vk::AccessFlags>::new();
+
+    // Iterate over all the accesses
+    for (access, index) in state.access {
+        match access {
+            Access::Buffer(_) => todo!(),
+        }
+    }
+
+
+    let commands = state.commands;
+
+
+    CompletedState {
+        groups: vec![(commands, None)],
     }
 }

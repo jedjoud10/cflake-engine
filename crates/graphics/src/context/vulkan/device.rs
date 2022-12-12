@@ -1,12 +1,12 @@
-use crate::{Adapter, Instance, Queue};
+use crate::{Adapter, Instance, Queue, required_features};
 use ash::vk::{self, DeviceCreateInfo, DeviceQueueCreateInfo};
 use gpu_allocator::vulkan::{Allocator, AllocatorCreateDesc, Allocation, AllocationCreateDesc};
 use parking_lot::Mutex;
 
 // This is a logical device that can run multiple commands and that can create Vulkan objects
-pub(crate) struct Device {
-    pub(crate) device: ash::Device,
-    pub(crate) allocator: Mutex<Allocator>,
+pub struct Device {
+    device: ash::Device,
+    allocator: Mutex<Allocator>,
 }
 
 impl Device {
@@ -39,16 +39,17 @@ impl Device {
             .iter()
             .map(|s| s.as_ptr())
             .collect::<Vec<_>>();
-        let logical_device_create_info = DeviceCreateInfo::builder()
+        let enabled_features = required_features();
+            let logical_device_create_info = DeviceCreateInfo::builder()
             .queue_create_infos(&create_infos)
             .enabled_extension_names(&logical_device_extensions)
-            .enabled_features(&adapter.features);
+            .enabled_features(&enabled_features);
 
         // Create the logical device
         let device = instance
             .instance
             .create_device(
-                adapter.raw,
+                adapter.physical_device(),
                 &logical_device_create_info,
                 None,
             )
@@ -75,13 +76,13 @@ impl Device {
         let allocator = Allocator::new(&AllocatorCreateDesc {
             instance: instance.instance.clone(),
             device: device.clone(),
-            physical_device: adapter.raw,
+            physical_device: adapter.physical_device(),
             debug_settings,
             buffer_device_address: false,
         })
         .unwrap();
         log::debug!(
-            "Created the Vulkan memory allocator using gpu-allocator"
+            "Created the Vulkan memory allocator"
         );
 
         // Drop the cstrings
@@ -93,6 +94,16 @@ impl Device {
             device,
             allocator: Mutex::new(allocator),
         }
+    }
+
+    // Get the underlying raw device
+    pub fn raw(&self) -> &ash::Device {
+        &self.device
+    }
+
+    // Lock the GPU allocator
+    pub fn allocator(&self) -> &Mutex<Allocator> {
+        &self.allocator
     }
 
     // Destroy the logical device

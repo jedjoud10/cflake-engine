@@ -5,9 +5,9 @@ use winit::window::Window;
 use crate::Instance;
 
 // This is a surface that matches up with the Vulkan surface KHR extension
-pub(crate) struct Surface {
-    pub(crate) surface_loader: khr::Surface,
-    pub(crate) surface: vk::SurfaceKHR,
+pub struct Surface {
+    surface_loader: khr::Surface,
+    surface: vk::SurfaceKHR,
 }
 
 impl Surface {
@@ -33,6 +33,16 @@ impl Surface {
             surface_loader,
             surface,
         }
+    }
+
+    // Get the underlying raw surface loader
+    pub fn surface_loader(&self) -> &khr::Surface {
+        &self.surface_loader
+    }
+    
+    // Get the underlying raw surface
+    pub fn surface(&self) -> vk::SurfaceKHR {
+        self.surface
     }
 
     // Destroy the surface

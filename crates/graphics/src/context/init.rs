@@ -22,8 +22,9 @@ pub(crate) unsafe fn init_context_and_window(
     let adapter = Adapter::pick(&instance, &surface);
     let device = Device::new(&instance, &adapter);
     let queue = Queue::new(&instance, &device, &adapter);
+    let vsync = matches!(settings.limit, FrameRateLimit::VSync);
     let swapchain = Swapchain::new(
-        &adapter, &surface, &device, &instance, &window, false,
+        &adapter, &surface, &device, &instance, &window, vsync,
     );
 
     // Create the graphics wrapper

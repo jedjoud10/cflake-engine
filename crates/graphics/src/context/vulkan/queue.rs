@@ -1,25 +1,26 @@
-use crate::{Adapter, Device, Instance, Pool, Recorder, Submission};
+use crate::{Adapter, Device, Instance, Recorder, Submission};
+use super::{Pool};
 use ash::vk;
 
 // This will be the main queue that we will access and submit data into
 // For now I only support a single queue cause I am a bit dumb
-pub(crate) struct Queue {
+pub struct Queue {
     // Queue family index
-    pub(crate) qfi: u32,
+    pub(super) qfi: u32,
 
     // Queue family properties
-    pub(crate) properties: vk::QueueFamilyProperties,
+    pub(super) properties: vk::QueueFamilyProperties,
 
     // Command pools that we can use
-    pub(crate) pools: Vec<Pool>,
+    pub(super) pools: Vec<Pool>,
 
     // Main queue that we submit command buffers to
-    pub(crate) queue: vk::Queue,
+    pub(super) queue: vk::Queue,
 }
 
 impl Queue {
     // Create the queue families, queues, and default pools
-    pub unsafe fn new(
+    pub(crate) unsafe fn new(
         _instance: &Instance,
         device: &Device,
         adapter: &Adapter,
@@ -44,7 +45,7 @@ impl Queue {
             .unwrap() as u32;
 
         // Get the queue from the device
-        let queue = device.device.get_device_queue(family, 0);
+        let queue = device.raw().get_device_queue(family, 0);
         log::debug!(
             "Created the default graphics-present queue successfully"
         );
@@ -59,7 +60,7 @@ impl Queue {
     }
 
     // Find a queue that supports the specific flags
-    pub(crate) unsafe fn pick_queue_family(
+    pub(super) unsafe fn pick_queue_family(
         family_properties: &[vk::QueueFamilyProperties],
         adapter: &Adapter,
         supports_presenting: bool,
@@ -78,6 +79,21 @@ impl Queue {
                 flags && presenting
             })
             .unwrap() as u32
+    }
+
+    // Get the queue family index of this queue
+    pub fn queue_family_index(&self) -> u32 {
+        self.qfi
+    }
+
+    // Get the queue's index within it's family
+    pub fn queue_index(&self) -> u32 {
+        0
+    }
+
+    // Get the queue properties and it's supported modes
+    pub fn flags(&self) -> vk::QueueFlags {
+        self.properties.queue_flags
     }
 
     // Aquire a new free command recorder that we can use to record commands
@@ -135,7 +151,7 @@ impl Queue {
     }
 
     // Destroy the queue and the command pools
-    pub unsafe fn destroy(&self, device: &Device) {
+    pub(crate) unsafe fn destroy(&self, device: &Device) {
         for pool in &self.pools {
             pool.destroy(device);
         }

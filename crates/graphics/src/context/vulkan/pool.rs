@@ -1,9 +1,10 @@
-use crate::{Device, InsertVkCommand, State};
+use crate::Device;
+use super::State;
 use ash::vk;
 use parking_lot::Mutex;
 
 bitflags::bitflags! {
-    pub(crate) struct CommandBufferTags: u32 {
+    pub(super) struct CommandBufferTags: u32 {
         // The command buffer is currently in use by the CPU
         const LOCKED = 1;
 
@@ -13,35 +14,35 @@ bitflags::bitflags! {
 }
 
 // Abstraction around a Vulkan command buffer
-pub(crate) struct CommandBuffer {
+pub(super) struct CommandBuffer {
     // Underlying command buffer
-    pub(crate) raw: vk::CommandBuffer,
+    pub(super) raw: vk::CommandBuffer,
 
     // State of the command buffer
-    pub(crate) state: Mutex<Option<State>>,
+    pub(super) state: Mutex<Option<State>>,
 
     // Tags that are applied to this command buffer
-    pub(crate) tags: Mutex<CommandBufferTags>,
+    pub(super) tags: Mutex<CommandBufferTags>,
 }
 
 // Abstraction around a Vulkan command pool
-pub(crate) struct Pool {
+pub(super) struct Pool {
     // Underlying pool
-    pub(crate) pool: vk::CommandPool,
+    pub(super) pool: vk::CommandPool,
 
     // All the buffers that we allocated
-    pub(crate) buffers: Vec<CommandBuffer>,
+    pub(super) buffers: Vec<CommandBuffer>,
 }
 
 impl Pool {
     // Create a new command pool and pre-allocate it
-    pub(crate) unsafe fn new(device: &Device, qfi: u32) -> Self {
+    pub(super) unsafe fn new(device: &Device, qfi: u32) -> Self {
         // Create the raw Vulkan command pool
         let pool_create_info = vk::CommandPoolCreateInfo::builder()
             .flags(vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER)
             .queue_family_index(qfi);
         let command_pool = device
-            .device
+            .raw()
             .create_command_pool(&pool_create_info, None)
             .unwrap();
 
@@ -51,7 +52,7 @@ impl Pool {
             .command_pool(command_pool)
             .level(vk::CommandBufferLevel::PRIMARY);
         let buffers = device
-            .device
+            .raw()
             .allocate_command_buffers(&allocate_info)
             .unwrap()
             .into_iter()
@@ -68,7 +69,7 @@ impl Pool {
     }
 
     // Get a free command buffer from this pool and lock it for usage
-    pub(crate) unsafe fn find_free_and_lock(
+    pub(super) unsafe fn find_free_and_lock(
         &self,
     ) -> (usize, vk::CommandBuffer, State) {
         let index = self
@@ -121,6 +122,8 @@ impl Pool {
         state: State,
     ) {
         let buffer = &self.buffers[index];
+        self.unlock(index, state);
+        let state = self.buffers[index].state.lock().take().unwrap();
         self.record(device, buffer, state);
 
         let bufs = [buffer.raw];
@@ -133,10 +136,10 @@ impl Pool {
             buffer.raw
         );
         device
-            .device
+            .raw()
             .queue_submit(queue, &[*info], vk::Fence::null())
             .unwrap();
-        device.device.queue_wait_idle(queue).unwrap();
+        device.raw().queue_wait_idle(queue).unwrap();
     }
 
     // Record a command buffer using it's given state
@@ -146,29 +149,21 @@ impl Pool {
         buffer: &CommandBuffer,
         state: State,
     ) {
-        let converted = crate::complete(state);
+        let converted = super::complete(state);
         device
-            .device
+            .raw()
             .begin_command_buffer(
                 buffer.raw,
                 &vk::CommandBufferBeginInfo::default(),
             )
             .unwrap();
-        for group in converted {
-            for command in group.commands {
-                command.insert(&device.device, buffer.raw);
-            }
-
-            if let Some(barrier) = group.barrier {
-                barrier.insert(&device.device, buffer.raw);
-            }
-        }
-        device.device.end_command_buffer(buffer.raw).unwrap();
+        converted.insert(device.raw(), buffer.raw);
+        device.raw().end_command_buffer(buffer.raw).unwrap();
     }
 
     // Destroy the command pool
     pub(super) unsafe fn destroy(&self, device: &Device) {
-        device.device.device_wait_idle().unwrap();
-        device.device.destroy_command_pool(self.pool, None);
+        device.raw().device_wait_idle().unwrap();
+        device.raw().destroy_command_pool(self.pool, None);
     } 
 }

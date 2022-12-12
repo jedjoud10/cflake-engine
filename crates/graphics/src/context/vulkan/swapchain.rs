@@ -2,7 +2,7 @@ use crate::{Adapter, Device, Instance, Surface};
 use ash::vk::{self};
 
 // Wrapper around the vulkan swapchain
-pub(crate) struct Swapchain {
+pub struct Swapchain {
     // Swapchain
     pub(super) loader: ash::extensions::khr::Swapchain,
     pub(super) raw: vk::SwapchainKHR,
@@ -62,7 +62,7 @@ impl Swapchain {
         // Create the loader and the actual swapchain
         let swapchain_loader = ash::extensions::khr::Swapchain::new(
             &instance.instance,
-            &device.device,
+            &device.raw(),
         );
         let swapchain = swapchain_loader
             .create_swapchain(&swapchain_create_info, None)
@@ -110,7 +110,7 @@ impl Swapchain {
         present: vk::PresentModeKHR,
     ) -> vk::SwapchainCreateInfoKHR {
         *vk::SwapchainCreateInfoKHR::builder()
-            .surface(surface.surface)
+            .surface(surface.surface())
             .min_image_count(
                 adapter.surface_capabilities.min_image_count,
             )
@@ -138,10 +138,10 @@ impl Swapchain {
     ) -> vk::PresentModeKHR {
         // Fetch all the present modes
         let modes = surface
-            .surface_loader
+            .surface_loader()
             .get_physical_device_surface_present_modes(
-                adapter.raw,
-                surface.surface,
+                adapter.physical_device(),
+                surface.surface(),
             )
             .unwrap();
 
@@ -163,17 +163,17 @@ impl Swapchain {
 
     // Destroy the swapchain
     pub unsafe fn destroy(&self, device: &Device) {
-        device.device.device_wait_idle().unwrap();
+        device.raw().device_wait_idle().unwrap();
 
         device
-            .device
+            .raw()
             .destroy_semaphore(self.image_available_semaphore, None);
-        device.device.destroy_semaphore(
+        device.raw().destroy_semaphore(
             self.rendering_finished_semaphore,
             None,
         );
         device
-            .device
+            .raw()
             .destroy_fence(self.rendering_finished_fence, None);
         self.loader.destroy_swapchain(self.raw, None);
     }
@@ -254,7 +254,7 @@ impl Swapchain {
         clear_color_value.float32 = [0.1; 4];
 
         // Convert image layouts and wait
-        device.device.cmd_pipeline_barrier(
+        device.raw().cmd_pipeline_barrier(
             recorder.cmd,
             vk::PipelineStageFlags::TRANSFER,
             vk::PipelineStageFlags::TRANSFER,
@@ -265,7 +265,7 @@ impl Swapchain {
         );
 
         // Clear the color of the image
-        device.device.cmd_clear_color_image(
+        device.raw().cmd_clear_color_image(
             recorder.cmd,
             image.1,
             vk::ImageLayout::TRANSFER_DST_OPTIMAL,
@@ -274,7 +274,7 @@ impl Swapchain {
         );
 
         // Convert image layouts and wait
-        device.device.cmd_pipeline_barrier(
+        device.raw().cmd_pipeline_barrier(
             recorder.cmd,
             vk::PipelineStageFlags::TRANSFER,
             vk::PipelineStageFlags::BOTTOM_OF_PIPE,
@@ -308,10 +308,10 @@ impl Swapchain {
 
         // Submit the command buffers
         let queue = self
-            .device
-            .device
+            .raw()
+            .raw()
             .get_device_queue(self.queues.graphics(), 0);
-        self.device
+        self.raw()
             .queue_submit(
                 queue,
                 &[submit_info],
@@ -353,7 +353,7 @@ impl Swapchain {
 
         // Wait till the last frame finished rendering
         device
-            .device
+            .raw()
             .wait_for_fences(
                 &[*self.rendering_finished_fences.lock()],
                 true,
@@ -365,7 +365,7 @@ impl Swapchain {
         let pool = present.aquire_specific_pool(0).unwrap();
         pool.reset(device);
         device
-            .device
+            .raw()
             .reset_fences(&[*self.rendering_finished_fences.lock()])
             .unwrap();
 
