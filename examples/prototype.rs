@@ -14,7 +14,6 @@ fn main() {
 fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap().clone();
     let mut threadpool = world.get_mut::<ThreadPool>().unwrap();
-    //let mut recorder = graphics.acquire();
 
     unsafe {
         let device = graphics.device();
@@ -25,25 +24,28 @@ fn init(world: &mut World) {
             .src_offset(0)
             .dst_offset(0)
             .size(4);
+        let copy2 = *cflake_engine::graphics::vk::BufferCopy::builder()
+            .src_offset(2)
+            .dst_offset(2)
+            .size(2);
         let loc = cflake_engine::graphics::MemoryLocation::CpuToGpu;
 
-        let (buffer, allocation) = device.create_buffer(4, usage, loc, queue);
-        //let (buffer2, allocation2) = device.create_buffer(4, usage, loc, queue);
-        //let (buffer3, allocation3) = device.create_buffer(4, usage, loc, queue);
+        let (buffer, mut allocation) = device.create_buffer(4, usage, loc, queue);
+        let ptr = allocation.mapped_slice_mut().unwrap();
+        ptr[0] = 5;
+        let (buffer2, allocation2) = device.create_buffer(4, usage, loc, queue);
+        let (buffer3, allocation3) = device.create_buffer(4, usage, loc, queue);
         
-        // &mut buffer2, &buffer
-        // read buffer, write buffer2
-        //recorder.copy_buffer(buffer, buffer2, vec![copy]);
-
-        // barrier should be automatically placed here
-
-        // &mut buffer3, &buffer2
-        //recorder.copy_buffer(buffer2, buffer, vec![copy]);
-        //graphics.submit(recorder);
+        let mut recorder = graphics.acquire();
+        recorder.cmd_clear_buffer(buffer, 0, 4);
+        let submission = graphics.submit(recorder);
+        submission.flush(device);
+        
+        let data = allocation2.mapped_slice().unwrap()[0];
 
         device.destroy_buffer(buffer, allocation);
-        //device.destroy_buffer(buffer2, allocation2);
-        //device.destroy_buffer(buffer3, allocation3);
+        device.destroy_buffer(buffer2, allocation2);
+        device.destroy_buffer(buffer3, allocation3);
     }
 
 }

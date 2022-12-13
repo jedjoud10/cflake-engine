@@ -2,24 +2,37 @@ use ahash::AHashMap;
 use ash::vk;
 use crate::{Access, BufferAccess, State, CompletedState, Barrier};
 
-// proto-barrier for mut access of buffer2
-// proto-barrier for ref access of buffer1
-// vkCopyBuffer(src = buffer1, dst = buffer2)
-// vkDispatch
-// vkCopyImageToBuffer(src = image1, dst = buffer 3)
+// Flags for either an image or a buffer
+struct Flags {
+    access: vk::AccessFlags2,
+    pipeline: vk::PipelineStageFlags2,
+}
 
-// proto-barrier for mut access of buffer1
-// proto-barrier for ref access of buffer2
-// vkCopyBuffer(src = buffer2, dst = buffer1)
+// Buffer identifier for a specific buffer and a specific range
+#[derive(Hash, PartialEq, Eq)]
+struct BufferId {
+    buffer: vk::Buffer,
+    offset: u64,
+    size: u64,
+}
+
+// Image identifier for a specific image and a specific range
+#[derive(Hash, PartialEq, Eq)]
+struct ImageId {
+    image: vk::Image,
+}
+
+type BufferTrackers = AHashMap::<BufferId, Flags>;
+type ImageTrackers = AHashMap::<BufferId, Flags>;
+type OutBarriers = AHashMap::<usize, Vec<Barrier>>;
 
 // Create a prototype barrier for a specific access BEFORE the command
-fn prototype(access: &Access, states: &mut AHashMap::<vk::Buffer, (vk::AccessFlags2, vk::PipelineStageFlags2)>) -> Barrier {
+fn prototype(access: &Access, trackers: &mut BufferTrackers) -> Barrier {
     match access {
         Access::Buffer(buffer) => {
-            // Get the old state and access of the buffer
-            //let (old_access_flags, old_stage_flags) = states.get(&buffer.buffer).unwrap();
             let BufferAccess { flags, stage, buffer, mutable, size, offset } = buffer;
 
+            // This barrier will be placed BEFORE the command
             let barrier = vk::BufferMemoryBarrier2::builder()
                 .buffer(*buffer)
                 .dst_access_mask(*flags)
@@ -27,14 +40,16 @@ fn prototype(access: &Access, states: &mut AHashMap::<vk::Buffer, (vk::AccessFla
                 .size(*size)
                 .offset(*offset);
 
-            let barrier = if let Some((flags, state)) = states.get(&buffer) {
-                barrier.src_access_mask(*flags).src_stage_mask(*state)
+            // Update the barrier src fields if the buffer was already tracked
+            let id = BufferId { buffer: *buffer, offset: *offset, size: *size  };
+            let barrier = if let Some(Flags { access, pipeline }) = trackers.get(&id) {
+                barrier.src_access_mask(*flags).src_stage_mask(*pipeline)
             } else {
                 barrier
             };
 
-            dbg!(&*barrier);
-            states.insert(*buffer, (*flags, *stage));
+            // Update the tracked buffer values
+            trackers.insert(id, Flags { access: *flags, pipeline: *stage });
 
             Barrier {
                 dependency_flags: vk::DependencyFlags::empty(),
@@ -48,34 +63,33 @@ fn prototype(access: &Access, states: &mut AHashMap::<vk::Buffer, (vk::AccessFla
 
 // Convert the locally stored command to local groups that automatically place barriers within them
 pub(super) fn complete(state: State) -> CompletedState {
-    // Keep track of what buffers have mutable access and what stage needs mutable access
-    let mut exclusive_buffer_access = AHashMap::<vk::Buffer, (vk::AccessFlags2, vk::PipelineStageFlags2)>::new();
-
-    // Pipeline barrier that must be placed before commands
-    let mut commands_test = AHashMap::<usize, Barrier>::new();
+    let mut buffers = BufferTrackers::new();
+    let mut images = ImageTrackers::new();
+    let mut barriers = OutBarriers::new();
 
     // Create a prototype barrier for each access
     for (access, command) in &state.access {
-        let other = prototype(access, &mut exclusive_buffer_access);
+        let other = prototype(access, &mut buffers);
 
-        match commands_test.entry(*command) {
+        match barriers.entry(*command) {
             std::collections::hash_map::Entry::Occupied(mut current) => {
-                current.get_mut().combine(other); 
+                current.get_mut().push(other); 
             },
-            std::collections::hash_map::Entry::Vacant(empty) => { empty.insert(other); },
+            std::collections::hash_map::Entry::Vacant(empty) => { empty.insert(vec![other]); },
         }
     }
 
-    let commands = state
+    // Create the command groups and their barriers
+    let groups = state
         .commands
         .into_iter()
         .enumerate()
-        .map(|(i, command)| (vec![command], Some(commands_test.remove(&i).unwrap())));
-
+        .map(|(i, command)| (vec![command], barriers.remove(&i).unwrap()))
+        .collect::<Vec<_>>();
         
 
 
     CompletedState {
-        groups: commands.collect(),
+        groups,
     }
 }

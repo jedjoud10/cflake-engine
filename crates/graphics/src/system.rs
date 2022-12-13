@@ -49,6 +49,13 @@ fn event(world: &mut World, event: &mut WindowEvent) {
 // Clear the window at the start of every frame
 fn update(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
+    let queue = graphics.queue();
+    let swapchain = graphics.swapchain();
+
+    unsafe { 
+        //let (index, image) = swapchain.acquire_next_image();
+        //swapchain.present(queue, (index, image));
+    }
 }
 
 // Context system will just register the wgpu context and create a simple window

@@ -1,4 +1,4 @@
-use crate::{Adapter, Device, Instance, Surface};
+use crate::{Adapter, Device, Instance, Surface, Queue};
 use ash::vk::{self};
 
 // Wrapper around the vulkan swapchain
@@ -180,9 +180,8 @@ impl Swapchain {
 }
 
 impl Swapchain {
-    /*
     // Get the next free image that we can render to
-    pub unsafe fn acquire_next_image(&self) -> u32 {
+    pub unsafe fn acquire_next_image(&self) -> (u32, vk::Image) {
         let (index, _) = self
             .loader
             .acquire_next_image(
@@ -191,185 +190,22 @@ impl Swapchain {
                 self.image_available_semaphore,
                 vk::Fence::null(),
             ).unwrap();
-        index
+        (index, self.images[index as usize])
     }
 
-    // Execute some commands on the specific image
-    // Present the given image (assuming it was already stored)
-    pub unsafe fn render(&self, queue: &Queue, device: &Device) {
-        let (index, _) = self
-            .loader
-            .acquire_next_image(
-                self.raw,
-                u64::MAX,
-                self.image_available_semaphore,
-                vk::Fence::null(),
-            )
-            .unwrap();
-
-        // Get a recorder for the present family
-        let cmd = queue.aquire(device);
-
-        /*
-
-
-        let pool = present.aquire_pool();
-
-        // Create a new recorder (or fetches an current one)
-        let recorder = pool.aquire_recorder(
-            device,
-            vk::CommandBufferUsageFlags::SIMULTANEOUS_USE,
-        );
-
-        // Image subresource range
-        let subresource_range = vk::ImageSubresourceRange::builder()
-            .aspect_mask(vk::ImageAspectFlags::COLOR)
-            .level_count(1)
-            .layer_count(1);
-
-        // Reset the presented image layout to be able to clear it
-        let present_to_clear = vk::ImageMemoryBarrier::builder()
-            .src_access_mask(vk::AccessFlags::MEMORY_READ)
-            .dst_access_mask(vk::AccessFlags::TRANSFER_WRITE)
-            .old_layout(vk::ImageLayout::UNDEFINED)
-            .new_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
-            .src_queue_family_index(present.index())
-            .dst_queue_family_index(present.index())
-            .image(image.1)
-            .subresource_range(*subresource_range);
-
-        // Convert the clear image layout to be able to present it
-        let clear_to_present = vk::ImageMemoryBarrier::builder()
-            .src_access_mask(vk::AccessFlags::TRANSFER_WRITE)
-            .dst_access_mask(vk::AccessFlags::MEMORY_READ)
-            .old_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
-            .new_layout(vk::ImageLayout::PRESENT_SRC_KHR)
-            .src_queue_family_index(present.index())
-            .dst_queue_family_index(present.index())
-            .image(image.1)
-            .subresource_range(*subresource_range);
-
-        // Set the clear color of the image view
-        let mut clear_color_value = vk::ClearColorValue::default();
-        clear_color_value.float32 = [0.1; 4];
-
-        // Convert image layouts and wait
-        device.raw().cmd_pipeline_barrier(
-            recorder.cmd,
-            vk::PipelineStageFlags::TRANSFER,
-            vk::PipelineStageFlags::TRANSFER,
-            vk::DependencyFlags::empty(),
-            &[],
-            &[],
-            &[*present_to_clear],
-        );
-
-        // Clear the color of the image
-        device.raw().cmd_clear_color_image(
-            recorder.cmd,
-            image.1,
-            vk::ImageLayout::TRANSFER_DST_OPTIMAL,
-            &clear_color_value,
-            &[*subresource_range],
-        );
-
-        // Convert image layouts and wait
-        device.raw().cmd_pipeline_barrier(
-            recorder.cmd,
-            vk::PipelineStageFlags::TRANSFER,
-            vk::PipelineStageFlags::BOTTOM_OF_PIPE,
-            vk::DependencyFlags::empty(),
-            &[],
-            &[],
-            &[*clear_to_present],
-        );
-
-        /*
-        *self.rendering_finished_fence.lock() = pool
-            .submit_recorders_from_iter(
-                device,
-                &[recorder],
-                &[self.rendering_finished_semaphore],
-                &[self.image_available_semaphore],
-                &[],
-                //self.rendering_finished_fence
-            );
-        */
-
-        /*
-        // Wait until we have a presentable image we can write to
-        let submit_info = *vk::SubmitInfo::builder()
-            .wait_semaphores(&[
-                self.swapchain.image_available_semaphore
-            ])
-            .signal_semaphores(&[
-                self.swapchain.rendering_finished_semaphore
-            ]);
-
-        // Submit the command buffers
-        let queue = self
-            .raw()
-            .raw()
-            .get_device_queue(self.queues.graphics(), 0);
-        self.raw()
-            .queue_submit(
-                queue,
-                &[submit_info],
-                swapchain.rendering_finished_fence,
-            )
-            .unwrap();
-
+    // Present an image to the swapchain and make sure it will wait on the correspoding semaphore
+    pub unsafe fn present(&self, queue: &Queue, index: (u32, vk::Image)) {        
         // Wait until the command buffers finished executing so we can present the image
         let present_info = *vk::PresentInfoKHR::builder()
-            .swapchains(&[self.swapchain.raw])
-            .wait_semaphores(&[
-                self.swapchain.rendering_finished_semaphore
-            ])
-            .image_indices(&[image_index]);
-
-        // Present the image to the screen
-        self.swapchain
-        device
-            .loader
-            .queue_present(queue, &present_info)
-            .unwrap();
-
-        */
-        */
-
-        /*
-        let present_info = *vk::PresentInfoKHR::builder()
             .swapchains(&[self.raw])
-            .wait_semaphores(&[self.rendering_finished_semaphores])
-            .image_indices(&[image.0]);
-
-        // Get the present queue
-        let family = queues.family(vk::QueueFlags::empty(), true);
-        let queue = family.queue();
+            .wait_semaphores(&[
+                self.image_available_semaphore
+            ])
+            .image_indices(&[index.0]);
 
         // Present the image to the screen
-        let _suboptimal =
-            self.loader.queue_present(queue, &present_info).unwrap();
-
-        // Wait till the last frame finished rendering
-        device
-            .raw()
-            .wait_for_fences(
-                &[*self.rendering_finished_fences.lock()],
-                true,
-                u64::MAX,
-            )
+        self.loader
+            .queue_present(queue.queue, &present_info)
             .unwrap();
-
-        let present = queues.family(FamilyType::Present);
-        let pool = present.aquire_specific_pool(0).unwrap();
-        pool.reset(device);
-        device
-            .raw()
-            .reset_fences(&[*self.rendering_finished_fences.lock()])
-            .unwrap();
-
-            */
     }
-    */
 }

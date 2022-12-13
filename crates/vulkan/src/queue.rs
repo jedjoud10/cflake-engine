@@ -1,4 +1,4 @@
-use crate::{Adapter, Device, Instance, Recorder, Submission};
+use crate::{Adapter, Device, Instance, Recorder, Submission, CommandBufferTags};
 use super::{Pool};
 use ash::vk;
 
@@ -95,23 +95,22 @@ impl Queue {
         self.properties.queue_flags
     }
 
+    // Get the underlying raw queue
+    pub fn queue(&self) -> vk::Queue {
+        self.queue
+    }
+
     // Aquire a new free command recorder that we can use to record commands
     // This might return a command buffer that is already in the recording state*
     pub unsafe fn acquire(
         &self,
         device: &Device,
-        force: bool,
     ) -> Recorder {
-        // Get the current thread's command pool
-        // Allocate new one if not
         let pool = &self.pools[0];
-
-        // Get a free command buffer
         let (index, buffer, state) = pool.find_free_and_lock();
 
         // Create the recorder
         Recorder {
-            force,
             index,
             pool: 0,
             state,
@@ -135,7 +134,8 @@ impl Queue {
 
         let pool = &self.pools[0];
         let index = recorder.index;
-        if recorder.force {
+        let force = recorder.state.commands.len() > 8 && !recorder.state.commands.is_empty();
+        if force {
             pool.submit(
                 self.queue,
                 device,
@@ -143,10 +143,20 @@ impl Queue {
                 recorder.state,
             );
         } else {
+            if recorder.state.commands.is_empty() {
+                log::warn!("The command buffer is empty");
+            }
+ 
             pool.unlock(recorder.index, recorder.state);
         }
 
-        Submission { index }
+        Submission { queue: self.queue, index, pool }
+    }
+
+    // Flush unsubmitted command buffers to this queue
+    pub unsafe fn flush(&self, device: &Device) {
+        let pool = &self.pools[0];
+        pool.flush_all(self.queue, device);
     }
 
     // Destroy the queue and the command pools

@@ -1,3 +1,5 @@
+use crate::{Device, Pool};
+
 use super::State;
 use ash::vk;
 
@@ -8,7 +10,6 @@ pub struct Recorder {
     pub(super) index: usize,
     pub(super) pool: usize,
     pub(super) state: State,
-    pub(super) force: bool,
 
     // Raw command buffer
     pub(super) raw_command_buffer: vk::CommandBuffer,
@@ -30,11 +31,13 @@ impl Recorder {
 
 // This is a submission of a command recorder
 // The underlying command buffer might've not been submitted yet
-pub struct Submission {
+pub struct Submission<'a> {
     pub(crate) index: usize,
+    pub(crate) queue: vk::Queue,
+    pub(crate) pool: &'a Pool,
 }
 
-impl Submission {
+impl<'a> Submission<'a> {
     // Check if the submission has completed
     pub fn has_completed(&self) -> bool {
         todo!()
@@ -43,5 +46,11 @@ impl Submission {
     // Wait until the submission completes
     pub fn wait(&self) {
         todo!()
+    }
+
+    // Force an immediate flush of the buffer
+    pub fn flush(&self, device: &Device) {
+        log::warn!("Flusing submission {} from queue {:?}", self.index, self.queue);
+        unsafe { self.pool.flush_specific(self.queue, device, self.index) };
     }
 }

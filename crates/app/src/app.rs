@@ -156,7 +156,7 @@ impl App {
     }
 
     // Set the app name
-    pub fn set_name(mut self, name: &str) -> Self {
+    pub fn set_app_name(mut self, name: &str) -> Self {
         self.app_name = name.to_string();
         self
     }

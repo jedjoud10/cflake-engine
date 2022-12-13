@@ -161,6 +161,52 @@ impl Pool {
         device.raw().end_command_buffer(buffer.raw).unwrap();
     }
 
+    // Flush unsubmitted command buffers to the given queue
+    pub(crate) unsafe fn flush_all(
+        &self,
+        queue: vk::Queue,
+        device: &Device,
+    ) {
+        let mut should_flush = Vec::<usize>::new();
+        log::warn!("Explicit call to flush queue");
+        for (index, buffer) in self.buffers.iter().enumerate() {
+            let state = buffer.state.lock();
+            if let Some(state) = &*state {
+                if !state.commands.is_empty() {
+                    should_flush.push(index);
+                }
+            }
+        }
+
+        log::warn!("Manually flushing {} cmd buffers", should_flush.len());
+        for index in should_flush {
+            let state = self.buffers[index].state.lock().take().unwrap();
+            self.submit(queue, device, index, state);
+        }
+    }
+
+    // Flush a specific command buffer (no-op if it was already flushed)
+    pub(crate) unsafe fn flush_specific(
+        &self,
+        queue: vk::Queue,
+        device: &Device,
+        index: usize
+    ) {
+        let buffer = &self.buffers[index];
+        let state = buffer.state.lock();
+        let mut should_flush = false;
+        if let Some(state) = &*state {
+            if !state.commands.is_empty() {
+                should_flush = true;
+            }
+        }
+
+        if should_flush {
+            let state = self.buffers[index].state.lock().take().unwrap();
+            self.submit(queue, device, index, state);
+        }
+    }
+
     // Destroy the command pool
     pub(super) unsafe fn destroy(&self, device: &Device) {
         device.raw().device_wait_idle().unwrap();

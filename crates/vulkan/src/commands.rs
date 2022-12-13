@@ -12,7 +12,7 @@ pub(crate) struct State {
 
 // A finished command buffer state is what allows us to directly record Vulkan commands
 pub(crate) struct CompletedState {
-    pub(crate) groups: Vec<(Vec<Command>, Option<Barrier>)> 
+    pub(crate) groups: Vec<(Vec<Command>, Vec<Barrier>)> 
 }
 
 // Command pipeline barrier abstraction
@@ -36,6 +36,7 @@ impl Barrier {
 }
 
 // Any type of command that can be applied
+#[derive(Debug)]
 pub(crate) enum Command {
     Buffer(BufferCommand),
 }
@@ -55,14 +56,11 @@ impl CompletedState {
     ) {
         for group in self.groups {
             let commands = group.0;
-            let barrier = group.1;
-            log::debug!("Executing completed stage group with {} commands and barrier: {}", commands.len(), barrier.is_some());
-            if let Some(barrier) = &barrier {
-                log::warn!("{:#?}", barrier);
-            }
+            let barriers = group.1;
+            //log::debug!("Executing completed stage group with {} commands and barrier: {}", commands.len(), barrier.is_some());
 
 
-            if let Some(barrier) = barrier {
+            for barrier in barriers {
                 device.cmd_pipeline_barrier2(
                     cmd,
                     &*vk::DependencyInfo::builder()
@@ -74,6 +72,7 @@ impl CompletedState {
             }
             
             for command in commands {
+                dbg!(&command);
                 match command {
                     Command::Buffer(command) => command.insert(device, cmd),
                 }
@@ -133,14 +132,13 @@ pub(crate) struct BufferAccess {
 impl Recorder {
     // Add a new buffer command internally
     unsafe fn push_buffer_cmd(&mut self, cmd: BufferCommand, access: impl IntoIterator<Item = BufferAccess>) {
-        log::debug!("Recorder::push_buffer_cmd {:?}", &cmd);
         let index = self.state.commands.len();
         self.state.commands.push(Command::Buffer(cmd));
         self.state.access.extend(access.into_iter().map(|a| (Access::Buffer(a), index)));
     }
 
     // Bind an index buffer to the command buffer render pass
-    pub unsafe fn bind_index_buffer(
+    pub unsafe fn cmd_bind_index_buffer(
         &mut self,
         buffer: vk::Buffer,
         offset: vk::DeviceSize,
@@ -161,7 +159,7 @@ impl Recorder {
     }
 
     // Bind vertex buffers to the command buffer render pass
-    pub unsafe fn bind_vertex_buffers(
+    pub unsafe fn cmd_bind_vertex_buffers(
         &mut self,
         first_binding: u32,
         buffers: Vec<vk::Buffer>,
@@ -182,13 +180,12 @@ impl Recorder {
     }
 
     // Copy a buffer to another buffer in GPU memory
-    pub unsafe fn copy_buffer(
+    pub unsafe fn cmd_copy_buffer(
         &mut self,
         src: vk::Buffer,
         dst: vk::Buffer,
         regions: Vec<vk::BufferCopy>,
     ) {
-        log::debug!("Commands::copy_buffer, src = {:?}, dst = {:?}", src, dst);
         self.push_buffer_cmd(BufferCommand::CopyBuffer {
             src,
             dst,
@@ -211,7 +208,7 @@ impl Recorder {
     }
 
     // Copy an image to a buffer in GPU memory
-    pub unsafe fn copy_image_to_buffer(
+    pub unsafe fn cmd_copy_image_to_buffer(
         &mut self,
         buffer: vk::Buffer,
         image: vk::Image,
@@ -257,9 +254,9 @@ impl Recorder {
         &mut self,
         buffer: vk::Buffer,
         offset: vk::DeviceSize,
-        size: vk::DeviceSize,
         data: Vec<u8>,
     ) {
+        let size = data.len() as u64;
         self.push_buffer_cmd(BufferCommand::UpdateBuffer {
             src: buffer,
             offset,
