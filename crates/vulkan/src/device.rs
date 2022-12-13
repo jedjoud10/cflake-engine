@@ -1,12 +1,12 @@
 use crate::{Adapter, Instance, Queue, required_features};
 use ash::vk::{self, DeviceCreateInfo, DeviceQueueCreateInfo};
 use gpu_allocator::vulkan::{Allocator, AllocatorCreateDesc, Allocation, AllocationCreateDesc};
-use parking_lot::Mutex;
+use parking_lot::{Mutex, MappedMutexGuard, MutexGuard};
 
 // This is a logical device that can run multiple commands and that can create Vulkan objects
 pub struct Device {
     device: ash::Device,
-    allocator: Mutex<Allocator>,
+    allocator: Mutex<Option<Allocator>>,
 }
 
 impl Device {
@@ -92,7 +92,7 @@ impl Device {
 
         Device {
             device,
-            allocator: Mutex::new(allocator),
+            allocator: Mutex::new(Some(allocator)),
         }
     }
 
@@ -101,13 +101,14 @@ impl Device {
         &self.device
     }
 
-    // Lock the GPU allocator
-    pub fn allocator(&self) -> &Mutex<Allocator> {
-        &self.allocator
+    // Lock the GPU allocator mutably
+    pub fn allocator(&self) -> MappedMutexGuard<Allocator> {
+        MutexGuard::map(self.allocator.lock(), |f| f.as_mut().unwrap())
     }
 
     // Destroy the logical device
     pub unsafe fn destroy(&self) {
+        self.allocator.lock().take().unwrap();
         self.device.device_wait_idle().unwrap();
         self.device.destroy_device(None);
     }
@@ -162,8 +163,7 @@ impl Device {
 
         // Create gpu-allocator allocation
         let allocation = self
-            .allocator
-            .lock()
+            .allocator()
             .allocate(&AllocationCreateDesc {
                 name: "",
                 requirements,
@@ -208,7 +208,7 @@ impl Device {
             "Freeing allocation {:?}",
             allocation.mapped_ptr()
         );
-        self.allocator.lock().free(allocation).unwrap();
+        self.allocator().free(allocation).unwrap();
 
         // Delete the Vulkan buffer
         let buffer = buffer;

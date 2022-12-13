@@ -33,7 +33,7 @@ impl Queue {
                 // Check if the queue family supports the flags
                 let flags = props
                     .queue_flags
-                    .contains(vk::QueueFlags::GRAPHICS);
+                    .contains(vk::QueueFlags::GRAPHICS | vk::QueueFlags::COMPUTE);
 
                 // If the queue we must fetch must support presenting, fetch the physical device properties
                 let presenting = !adapter
