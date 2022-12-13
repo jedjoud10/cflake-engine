@@ -26,7 +26,7 @@ pub(super) struct Barrier {
 
 impl Barrier {
     // Combine two barriers together. This will result in a coarser barrier
-    fn combine(self, other: Self) -> Barrier {
+    fn combine(mut self, other: Self) -> Barrier {
         self.memory_barriers.extend(other.memory_barriers);
         self.buffer_memory_barriers.extend(other.buffer_memory_barriers);
         self.image_memory_barriers.extend(other.image_memory_barriers);
@@ -378,11 +378,13 @@ pub(super) fn complete(state: State) -> CompletedState {
     let mut commands_test = AHashMap::<usize, Barrier>::new();
 
     // Create a prototype barrier for each access
-    for (access, &command) in &state.access {
+    for (access, command) in &state.access {
         let other = prototype(access, &mut exclusive_buffer_access);
 
-        commands_test.entry(command);
+        commands_test.entry(*command);
     }
+
+    todo!()
 
 
 

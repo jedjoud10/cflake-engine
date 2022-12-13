@@ -20,8 +20,7 @@ pub struct Queue {
 
 impl Queue {
     // Create the queue families, queues, and default pools
-    pub(crate) unsafe fn new(
-        _instance: &Instance,
+    pub unsafe fn new(
         device: &Device,
         adapter: &Adapter,
     ) -> Self {
@@ -151,7 +150,7 @@ impl Queue {
     }
 
     // Destroy the queue and the command pools
-    pub(crate) unsafe fn destroy(&self, device: &Device) {
+    pub unsafe fn destroy(&self, device: &Device) {
         for pool in &self.pools {
             pool.destroy(device);
         }

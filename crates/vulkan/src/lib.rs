@@ -1,3 +1,6 @@
+pub use ash::vk;
+pub use gpu_allocator::MemoryLocation;
+
 mod adapter;
 mod commands;
 mod debug;

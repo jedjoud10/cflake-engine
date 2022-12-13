@@ -18,7 +18,6 @@ pub struct StateColumn(Vec<StateColumnChunk>, usize);
 
 // Update a value in a specific bitmask, though return the unwritten value first
 fn set_bit(bitmask: &mut usize, index: usize, value: bool) -> bool {
-    //dbg!(index);
     let copy = (*bitmask >> index) & 1 == 1;
 
     if value {

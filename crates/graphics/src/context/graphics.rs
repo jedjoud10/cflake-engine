@@ -1,16 +1,15 @@
 use std::sync::Arc;
-
-use crate::{Instance, Surface, Adapter, Device, Swapchain, Queue, Recorder, Submission};
+use vulkan::{Instance, Surface, Adapter, Device, Swapchain, Queue, Recorder, Submission};
 
 // Internal struct that contain the raw vulkan instances and values
 // This is what will be wrapped around an arc, and this is what will handle Vulkan object destruction
-struct InternalGraphics {
-    instance: Instance,
-    surface: Surface,
-    adapter: Adapter,
-    device: Device,
-    queue: Queue,
-    swapchain: Swapchain,
+pub(super) struct InternalGraphics {
+    pub instance: Instance,
+    pub surface: Surface,
+    pub adapter: Adapter,
+    pub device: Device,
+    pub queue: Queue,
+    pub swapchain: Swapchain,
 }
 
 // Destroys the underlying Vulkan objects in proper
@@ -41,28 +40,9 @@ impl Drop for InternalGraphics {
 // Graphical context that we will wrap around the Vulkan instance
 // This context must be shareable between threads to allow for multithreading
 #[derive(Clone)]
-pub struct Graphics(Arc<InternalGraphics>);
+pub struct Graphics(pub(super) Arc<InternalGraphics>);
 
 impl Graphics {
-    // Create a new graphics wrapper from the raw Vulkan wrappers
-    pub(crate) fn new(
-        instance: Instance,
-        surface: Surface,
-        adapter: Adapter,
-        device: Device,
-        queue: Queue,
-        swapchain: Swapchain,
-    ) -> Self {
-        Self(Arc::new(InternalGraphics {
-            instance,
-            surface,
-            adapter,
-            device,
-            queue,
-            swapchain,
-        }))
-    }
-
     // Get the instance
     pub fn instance(&self) -> &Instance {
         &self.0.instance

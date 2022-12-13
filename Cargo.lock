@@ -864,21 +864,14 @@ version = "0.1.0"
 dependencies = [
  "ahash",
  "ash",
- "ash-window",
  "assets",
- "bitflags",
- "bytemuck",
- "gpu-allocator",
  "log",
  "math",
- "nohash-hasher",
  "parking_lot",
- "raw-window-handle 0.5.0",
- "smallvec",
  "thiserror",
- "thread_local",
  "utils",
  "vek",
+ "vulkan",
  "winit",
  "world",
 ]
@@ -2154,6 +2147,26 @@ name = "version_check"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
+
+[[package]]
+name = "vulkan"
+version = "0.1.0"
+dependencies = [
+ "ahash",
+ "ash",
+ "ash-window",
+ "bitflags",
+ "bytemuck",
+ "gpu-allocator",
+ "log",
+ "nohash-hasher",
+ "parking_lot",
+ "raw-window-handle 0.5.0",
+ "smallvec",
+ "thread_local",
+ "vek",
+ "winit",
+]
 
 [[package]]
 name = "walkdir"
