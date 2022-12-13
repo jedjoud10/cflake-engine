@@ -169,12 +169,15 @@ pub fn required_instance_extensions() -> Vec<CString> {
     vec![
         ash::extensions::ext::DebugUtils::name().to_owned(),
         ash::extensions::khr::Surface::name().to_owned(),
+        ]
+    }
+    
+    // Get the reqwuired logical device extensions
+    pub fn required_device_extensions() -> Vec<CString> {
+    vec![
+        ash::extensions::khr::Swapchain::name().to_owned(),
+        ash::extensions::khr::Synchronization2::name().to_owned(),
     ]
-}
-
-// Get the reqwuired logical device extensions
-pub fn required_device_extensions() -> Vec<CString> {
-    vec![ash::extensions::khr::Swapchain::name().to_owned()]
 }
 
 // Get the features that we will use for the device
@@ -185,6 +188,9 @@ pub fn required_features() -> vk::PhysicalDeviceFeatures {
         .draw_indirect_first_instance(true)
         .sample_rate_shading(true)
         .sampler_anisotropy(true)
+        .shader_float64(true)
+        .shader_int16(true)
+        .shader_int64(true)
 }
 
 // The required Vulkan API version

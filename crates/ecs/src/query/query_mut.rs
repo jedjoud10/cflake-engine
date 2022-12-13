@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use utils::BitSet;
 
 use crate::{
@@ -207,7 +206,6 @@ impl<'a: 'b, 'b, 'it, L: for<'s> QueryLayoutMut<'s>> IntoIterator
             bitsets: self.bitsets,
             chunk: None,
             index: 0,
-            mutability: self.mutability,
             _phantom1: PhantomData,
             _phantom2: PhantomData,
         }
@@ -216,7 +214,7 @@ impl<'a: 'b, 'b, 'it, L: for<'s> QueryLayoutMut<'s>> IntoIterator
 
 // Currently loaded chunk in the mutable query iterator
 struct Chunk<'b, 's, L: QueryLayoutMut<'s>> {
-    archetype: &'b mut Archetype,
+    _phantom: PhantomData<&'b ()>,
     bitset: Option<BitSet>,
     ptrs: L::PtrTuple,
     length: usize,
@@ -231,7 +229,6 @@ pub struct QueryMutIter<'b, 's, L: QueryLayoutMut<'s>> {
     // Unique to the iterator
     chunk: Option<Chunk<'b, 's, L>>,
     index: usize,
-    mutability: Mask,
     _phantom1: PhantomData<&'s ()>,
     _phantom2: PhantomData<L>,
 }
@@ -255,7 +252,7 @@ impl<'b, 's, L: QueryLayoutMut<'s>> QueryMutIter<'b, 's, L> {
             let length = archetype.len();
             self.index = 0;
             self.chunk = Some(Chunk {
-                archetype,
+                _phantom: PhantomData,
                 bitset,
                 ptrs,
                 length,

@@ -113,13 +113,13 @@ impl AtomicBitSet {
         self.0
             .read()
             .iter()
-            .map(|chunk| chunk.load(Ordering::Relaxed).count_zeros() as usize)
+            .map(|chunk| chunk.load(order).count_zeros() as usize)
             .sum()
     }
 
     // Count the number of ones in this bitset
     pub fn count_ones(&self, order: Ordering) -> usize {
-        self.0.read().iter().map(|chunk| chunk.load(Ordering::Relaxed).count_ones() as usize).sum()
+        self.0.read().iter().map(|chunk| chunk.load(order).count_ones() as usize).sum()
     }
 
     // Starting from a specific index, read forward and check if there is any set bits

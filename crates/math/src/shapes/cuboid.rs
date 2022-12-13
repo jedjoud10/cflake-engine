@@ -13,6 +13,14 @@ pub struct Cuboid {
 }
 
 impl Cuboid {
+    // Create a cuboid from a center and an extent
+    pub fn new(center: vek::Vec3<f32>, extent: vek::Extent3<f32>) -> Self {
+        Self {
+            center,
+            extent,
+        }
+    }
+
     // Create a cube from a center and an extent
     pub fn cube(center: vek::Vec3<f32>, extent: f32) -> Self {
         Self {
