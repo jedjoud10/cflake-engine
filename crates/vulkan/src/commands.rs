@@ -25,16 +25,6 @@ pub(crate) struct Barrier {
     pub(crate) image_memory_barriers: Vec<vk::ImageMemoryBarrier2>,
 }
 
-impl Barrier {
-    // Combine two barriers together. This will result in a coarser barrier
-    pub(crate) fn combine(&mut self, other: Self) {
-        self.memory_barriers.extend(other.memory_barriers);
-        self.buffer_memory_barriers.extend(other.buffer_memory_barriers);
-        self.image_memory_barriers.extend(other.image_memory_barriers);
-        self.dependency_flags |= other.dependency_flags;
-    }   
-}
-
 // Any type of command that can be applied
 #[derive(Debug)]
 pub(crate) enum Command {
@@ -57,10 +47,9 @@ impl CompletedState {
         for group in self.groups {
             let commands = group.0;
             let barriers = group.1;
-            //log::debug!("Executing completed stage group with {} commands and barrier: {}", commands.len(), barrier.is_some());
-
 
             for barrier in barriers {
+                dbg!(&barrier);
                 device.cmd_pipeline_barrier2(
                     cmd,
                     &*vk::DependencyInfo::builder()
@@ -216,6 +205,7 @@ impl Recorder {
         regions: Vec<vk::BufferImageCopy>,
     ) {
         for _buffer_image_copy in regions.iter() {
+            todo!()
             //self.push_buffer_access(BufferAccess { buffer, mutable: true, size: buffer_image_copy., offset: buffer_image_copy.buffer_offset });
             //self.push_buffer_access(BufferAccess { buffer: dst, mutable: true, size: copy.size, offset: copy.dst_offset });
         }

@@ -121,9 +121,9 @@ impl Queue {
 
     // Submit the command buffer (this doesn't actually submit it, it only steals it's state)
     // You can use the "force" parameter to force the submission of this command buffer
-    pub unsafe fn submit(
-        &self,
-        device: &Device,
+    pub unsafe fn submit<'a>(
+        &'a self,
+        device: &'a Device,
         recorder: Recorder,
     ) -> Submission {
         log::warn!("Submitting (locally storing) command recorder");
@@ -150,13 +150,18 @@ impl Queue {
             pool.unlock(recorder.index, recorder.state);
         }
 
-        Submission { queue: self.queue, index, pool }
+        Submission { queue: self.queue, index, pool, device, flushed: false }
     }
 
     // Flush unsubmitted command buffers to this queue
     pub unsafe fn flush(&self, device: &Device) {
         let pool = &self.pools[0];
         pool.flush_all(self.queue, device);
+    }
+
+    // Wait until all the data submitted to this queue finishes executing on the GPU
+    pub fn wait(&self, device: &Device) {
+        unsafe { device.raw().queue_wait_idle(self.queue()).unwrap() };
     }
 
     // Destroy the queue and the command pools

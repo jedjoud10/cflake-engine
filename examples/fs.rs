@@ -5,7 +5,7 @@ use std::io::Write;
 fn main() {
     App::default()
         .insert_init(init)
-        .set_window_title("Hello World!")
+        .set_app_name("Hello World!")
         .execute();
 }
 

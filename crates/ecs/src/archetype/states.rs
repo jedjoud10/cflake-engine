@@ -1,4 +1,5 @@
 // A single chunk that will be contained within the archetype component column
+// TODO: Handle removal detection?
 #[derive(Default, Clone, Copy)]
 pub(crate) struct StateColumnChunk {
     pub added: usize,

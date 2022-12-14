@@ -1,3 +1,5 @@
+use std::time::{Duration, Instant};
+
 use crate::{Device, Pool};
 
 use super::State;
@@ -35,22 +37,43 @@ pub struct Submission<'a> {
     pub(crate) index: usize,
     pub(crate) queue: vk::Queue,
     pub(crate) pool: &'a Pool,
+    pub(crate) device: &'a Device,
+    pub(crate) flushed: bool,
 }
 
-impl<'a> Submission<'a> {
-    // Check if the submission has completed
-    pub fn has_completed(&self) -> bool {
-        todo!()
-    }
-    
-    // Wait until the submission completes
-    pub fn wait(&self) {
-        todo!()
+impl<'a> Submission<'a> {    
+    // Wait until the submission completes, and return the elapsedtime
+    pub fn wait(mut self) -> Duration {        
+        // Flush the submission and start executing it on the GPU
+        let i = Instant::now();
+        log::debug!("Waiting for submission {} from queue {:?}", self.index, self.queue);
+        let fence = unsafe { self.pool.flush_specific(self.queue, self.device, self.index, true) };
+        log::debug!("Waiting on fence {:?}...", fence);
+
+        // Wait for the fence (if we have one) to complete
+        if let Some(fence) = fence {
+            unsafe { self.device.raw().wait_for_fences(&[fence], true, u64::MAX).unwrap() };
+        } else {
+            log::warn!("Waiting on submission that doesn't have a fence!");
+        }
+
+        self.flushed = true;
+        i.elapsed()
     }
 
     // Force an immediate flush of the buffer
-    pub fn flush(&self, device: &Device) {
-        log::warn!("Flusing submission {} from queue {:?}", self.index, self.queue);
-        unsafe { self.pool.flush_specific(self.queue, device, self.index) };
+    pub fn flush(mut self) {
+        log::debug!("Flusing submission {} from queue {:?}", self.index, self.queue);
+        unsafe { self.pool.flush_specific(self.queue, self.device, self.index, false) };
+        self.flushed = true;
+    }
+}
+
+impl<'a> Drop for Submission<'a> {
+    fn drop(&mut self) {
+        if !self.flushed {
+            log::debug!("Flusing submission {} from queue {:?}", self.index, self.queue);
+            unsafe { self.pool.flush_specific(self.queue, self.device, self.index, false) };
+        }
     }
 }

@@ -106,10 +106,15 @@ impl Device {
         MutexGuard::map(self.allocator.lock(), |f| f.as_mut().unwrap())
     }
 
+    // Wait until the device executes all the code submitted to the GPU
+    pub fn wait(&self) {
+        unsafe { self.device.device_wait_idle().unwrap(); }
+    }
+
     // Destroy the logical device
     pub unsafe fn destroy(&self) {
+        self.wait();
         self.allocator.lock().take().unwrap();
-        self.device.device_wait_idle().unwrap();
         self.device.destroy_device(None);
     }
 }

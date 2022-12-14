@@ -7,7 +7,7 @@ fn main() {
     App::default()
         .insert_init(init)
         .set_user_assets_path(user_assets_path!("/examples/assets/"))
-        .set_window_title("Hello World!")
+        .set_app_name("Hello World!")
         .execute();
 }
 

@@ -29,6 +29,7 @@ pub(super) fn is_physical_device_suitable(
 
     // All the checks must pass
     double_buffering_supported
+        && features_supported
         && format_supported
         && present_supported
         && device_type_okay
@@ -103,7 +104,9 @@ fn is_feature_list_supported(given: vk::PhysicalDeviceFeatures) -> bool {
     }
 
     let required = convert(required_features());
+    println!("{:b}", required);
     let given = convert(given);
+    println!("{:b}", given);
 
     let supported = required & given == required; 
     log::debug!("Adapter Supports Required Features: {supported}");
@@ -169,11 +172,11 @@ pub fn required_instance_extensions() -> Vec<CString> {
     vec![
         ash::extensions::ext::DebugUtils::name().to_owned(),
         ash::extensions::khr::Surface::name().to_owned(),
-        ]
-    }
+    ]
+}
     
-    // Get the reqwuired logical device extensions
-    pub fn required_device_extensions() -> Vec<CString> {
+// Get the reqwuired logical device extensions
+pub fn required_device_extensions() -> Vec<CString> {
     vec![
         ash::extensions::khr::Swapchain::name().to_owned(),
         ash::extensions::khr::Synchronization2::name().to_owned(),
@@ -186,7 +189,6 @@ pub fn required_features() -> vk::PhysicalDeviceFeatures {
         .tessellation_shader(true)
         .multi_draw_indirect(true)
         .draw_indirect_first_instance(true)
-        .sample_rate_shading(true)
         .sampler_anisotropy(true)
         .shader_float64(true)
         .shader_int16(true)

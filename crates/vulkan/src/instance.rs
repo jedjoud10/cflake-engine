@@ -8,6 +8,8 @@ use raw_window_handle::HasRawDisplayHandle;
 use std::ffi::CString;
 use winit::window::Window;
 
+use crate::required_api_version;
+
 // This is a Vulkan instance that gets loaded in
 pub struct Instance {
     // Context related
@@ -26,7 +28,9 @@ impl Instance {
     pub unsafe fn new(
         window: &Window,
         app_name: impl ToString,
+        app_version: u32,
         engine_name: impl ToString,
+        engine_version: u32,
     ) -> Self {
         // Load the loading functions
         let entry = Entry::load().unwrap();
@@ -37,9 +41,9 @@ impl Instance {
             CString::new(engine_name.to_string()).unwrap();
         let app_info = *vk::ApplicationInfo::builder()
             .application_name(&app_name)
-            .api_version(vk::API_VERSION_1_3)
-            .application_version(0)
-            .engine_version(0)
+            .api_version(required_api_version())
+            .application_version(app_version)
+            .engine_version(engine_version)
             .engine_name(&engine_name);
 
         // Create the debug messenger create info

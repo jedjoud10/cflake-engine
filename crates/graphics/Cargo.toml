@@ -12,10 +12,8 @@ math = { path = "../math" }
 utils = { path = "../utils" }
 vulkan = { path = "../vulkan" }
 
-# Vulkan bindings and Window creation
-ash = "0.37.1"
 winit = "0.27.5"
-
+bytemuck = "1.12.3"
 log = { workspace = true }
 thiserror = { workspace = true }
 ahash = { workspace = true } 

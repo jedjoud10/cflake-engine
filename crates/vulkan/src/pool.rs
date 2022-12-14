@@ -18,6 +18,9 @@ pub(super) struct CommandBuffer {
     // Underlying command buffer
     pub(super) raw: vk::CommandBuffer,
 
+    // Fence for this command buffer
+    pub(super) fence: vk::Fence,
+
     // State of the command buffer
     pub(super) state: Mutex<Option<State>>,
 
@@ -48,7 +51,7 @@ impl Pool {
 
         // Allocate some new command buffers
         let allocate_info = vk::CommandBufferAllocateInfo::builder()
-            .command_buffer_count(32)
+            .command_buffer_count(4)
             .command_pool(command_pool)
             .level(vk::CommandBufferLevel::PRIMARY);
         let buffers = device
@@ -60,6 +63,7 @@ impl Pool {
                 raw,
                 state: Mutex::new(Some(State::default())),
                 tags: Mutex::new(CommandBufferTags::empty()),
+                fence: device.create_fence(),
             });
 
         Self {
@@ -135,11 +139,12 @@ impl Pool {
             "Submitting command buffer {:?} for execution",
             buffer.raw
         );
+        device.raw().reset_fences(&[buffer.fence]).unwrap();
         device
             .raw()
-            .queue_submit(queue, &[*info], vk::Fence::null())
+            .queue_submit(queue, &[*info], buffer.fence)
             .unwrap();
-        device.raw().queue_wait_idle(queue).unwrap();
+        //device.raw().queue_wait_idle(queue).unwrap();
     }
 
     // Record a command buffer using it's given state
@@ -190,20 +195,25 @@ impl Pool {
         &self,
         queue: vk::Queue,
         device: &Device,
-        index: usize
-    ) {
+        index: usize,
+        fence: bool,
+    ) -> Option<vk::Fence> {
         let buffer = &self.buffers[index];
-        let state = buffer.state.lock();
+        let mut lock = buffer.state.lock();
         let mut should_flush = false;
-        if let Some(state) = &*state {
+        if let Some(state) = &*lock {
             if !state.commands.is_empty() {
                 should_flush = true;
             }
         }
 
         if should_flush {
-            let state = self.buffers[index].state.lock().take().unwrap();
+            let state = lock.take().unwrap();
+            drop(lock);
             self.submit(queue, device, index, state);
+            return fence.then(|| buffer.fence);
+        } else {
+            return None;
         }
     }
 

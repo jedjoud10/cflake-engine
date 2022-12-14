@@ -863,8 +863,8 @@ name = "graphics"
 version = "0.1.0"
 dependencies = [
  "ahash",
- "ash",
  "assets",
+ "bytemuck",
  "log",
  "math",
  "parking_lot",

@@ -8,12 +8,16 @@ fn init(
     el: &EventLoop<()>,
     window_settings: WindowSettings,
     app_name: String,
+    app_version: u32,
     engine_name: String,
+    engine_version: u32,
 ) {
     // Initialize the Vulkan context and create a winit Window
     let (graphics, window) = unsafe { crate::context::init_context_and_window(
         app_name,
+        app_version,
         engine_name,
+        engine_version,
         el,
         window_settings.clone(),
     ) };
@@ -64,11 +68,13 @@ pub fn system(
     system: &mut System,
     window_settings: WindowSettings,
     app_name: String,
+    app_version: u32,
     engine_name: String,
+    engine_version: u32
 ) {
     system
         .insert_init(move |world: &mut World, el: &EventLoop<()>| {
-            init(world, el, window_settings, app_name, engine_name)
+            init(world, el, window_settings, app_name, app_version, engine_name, engine_version)
         })
         .after(utils::threadpool)
         .before(user);

@@ -74,7 +74,9 @@ pub struct App {
     user_assets_folder: Option<PathBuf>,
     author_name: String,
     app_name: String,
+    app_version: u32,
     engine_name: String,
+    engine_version: u32,
 
     // Main app resources
     enabled: EnabledSystems,
@@ -95,7 +97,9 @@ impl Default for App {
             },
             author_name: "cFlake Dev".to_string(),
             app_name: "cFlake Prototype Game".to_string(),
+            app_version: 1,
             engine_name: "cFlake Game Engine".to_string(),
+            engine_version: 1,
             user_assets_folder: None,
             enabled: EnabledSystems::default(),
             systems,
@@ -106,12 +110,6 @@ impl Default for App {
 }
 
 impl App {
-    // Set the window title
-    pub fn set_window_title(mut self, title: impl ToString) -> Self {
-        self.window.title = title.to_string();
-        self
-    }
-
     // Set the window framerate limit
     pub fn set_frame_rate_limit(
         mut self,
@@ -155,9 +153,10 @@ impl App {
         self
     }
 
-    // Set the app name
+    // Set the app name (and also the window title)
     pub fn set_app_name(mut self, name: &str) -> Self {
         self.app_name = name.to_string();
+        self.window.title = name.to_string();
         self
     }
 
@@ -353,10 +352,12 @@ impl App {
         // Insert the graphics API if needed
         if self.enabled.graphics {
             let window = self.window.clone();
-            let app = self.app_name.clone();
-            let engine = self.engine_name.clone();
+            let app_name = self.app_name.clone();
+            let app_version = self.app_version;
+            let engine_name = self.engine_name.clone();
+            let engine_version = self.engine_version;
             self = self.insert_system(move |system: &mut System| {
-                graphics::system(system, window, app, engine);
+                graphics::system(system, window, app_name, app_version,engine_name, engine_version);
             });
         }
 
