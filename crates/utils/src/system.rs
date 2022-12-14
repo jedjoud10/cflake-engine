@@ -35,6 +35,8 @@ pub fn io(system: &mut System, author: String, app: String) {
         .before(user);
 }
 
+// Add the logging system 
+
 // Add the Time manager
 pub fn time(system: &mut System) {
     // Main initialization event

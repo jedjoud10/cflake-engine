@@ -4,6 +4,8 @@ mod system;
 mod tests;
 mod thread;
 mod time;
+mod logger;
+pub use logger::*;
 pub use bitset::*;
 pub use file::*;
 pub use log;

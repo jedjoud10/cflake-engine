@@ -11,12 +11,6 @@ fn init(world: &mut World) {
         keys: Default::default(),
         axii: Default::default(),
         gilrs: gilrs::Gilrs::new().unwrap(),
-
-        #[cfg(feature = "sentence-recording")]
-        sentence: None,
-
-        #[cfg(feature = "sentence-recording")]
-        sentence_nl_action: crate::NewLineAction::Clear,
         gamepad: None,
     });
 }
@@ -75,47 +69,10 @@ fn event(world: &mut World, ev: &DeviceEvent) {
                         v.insert(key.state.into());
                     }
                 }
-
-                // Only used for sentence recording
-                #[cfg(feature = "sentence-recording")]
-                {
-                    let action = input.sentence_nl_action;
-                    if let Some(sentence) = &mut input.sentence {
-                        if matches!(
-                            keycode,
-                            winit::event::VirtualKeyCode::Back
-                        ) {
-                            sentence.pop();
-                        } else if matches!(
-                            keycode,
-                            winit::event::VirtualKeyCode::Return
-                        ) {
-                            match action {
-                                crate::NewLineAction::Clear => {
-                                    sentence.clear()
-                                }
-                                crate::NewLineAction::NewLine => {
-                                    sentence.push('\n')
-                                }
-                            }
-                        }
-                    }
-                }
             }
         }
 
         _ => {}
-    }
-}
-
-// Winit window event (called by handler when needed)
-#[cfg(feature = "sentence-recording")]
-fn window(world: &mut World, ev: &mut WindowEvent) {
-    if let WindowEvent::ReceivedCharacter(char) = ev {
-        let mut input = world.get_mut::<Input>().unwrap();
-        if let Some(sentence) = &mut input.sentence {
-            sentence.push(*char);
-        }
     }
 }
 
@@ -192,7 +149,4 @@ pub fn system(system: &mut System) {
     system.insert_init(init).before(user);
     system.insert_device(event).before(user);
     system.insert_update(update).after(post_user);
-
-    #[cfg(feature = "sentence-recording")]
-    system.insert_window(window).before(user);
 }
