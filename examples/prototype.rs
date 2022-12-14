@@ -46,6 +46,7 @@ fn init(world: &mut World) {
 
     // Copy the whole buffer1 into buffer2
     buffer2.copy_from(&buffer1, &mut recorder).unwrap();
+    buffer2.copy_from(&buffer1, &mut recorder).unwrap();
     
     // Submit to the GPU and wait for execution
     let submission = graphics.submit(recorder);

@@ -10,7 +10,7 @@ pub(super) fn is_physical_device_suitable(
     name: &str,
     _type: vk::PhysicalDeviceType,
     surface_capabilities: vk::SurfaceCapabilitiesKHR,
-    features: vk::PhysicalDeviceFeatures,
+    features: vk::PhysicalDeviceFeatures2,
     modes: &[vk::PresentModeKHR],
     formats: &[vk::SurfaceFormatKHR]
 ) -> bool {
@@ -43,7 +43,7 @@ fn is_device_type_optimal(_type: PhysicalDeviceType) -> bool {
 }
 
 // Check if the Adapter supports the given features
-fn is_feature_list_supported(given: vk::PhysicalDeviceFeatures) -> bool {
+fn is_feature_list_supported(given: vk::PhysicalDeviceFeatures2) -> bool {
     // Convert a vk::PhysicalDeviceFeatures to some bitset
     fn convert(value: vk::PhysicalDeviceFeatures) -> u64 {
         value.robust_buffer_access as u64 * 1
@@ -103,8 +103,8 @@ fn is_feature_list_supported(given: vk::PhysicalDeviceFeatures) -> bool {
         | value.inherited_queries as u64 * 18014398509481984
     }
 
-    let required = convert(required_features());
-    let given = convert(given);
+    let required = convert(required_features().0);
+    let given = convert(given.features);
     let supported = required & given == required; 
     log::debug!("Adapter Supports Required Features: {supported}");
     supported
@@ -181,15 +181,20 @@ pub fn required_device_extensions() -> Vec<CString> {
 }
 
 // Get the features that we will use for the device
-pub fn required_features() -> vk::PhysicalDeviceFeatures {
-    *vk::PhysicalDeviceFeatures::builder()
+pub fn required_features() -> (vk::PhysicalDeviceFeatures, vk::PhysicalDeviceVulkan13Features) {
+    let features = *vk::PhysicalDeviceFeatures::builder()
         .tessellation_shader(true)
         .multi_draw_indirect(true)
         .draw_indirect_first_instance(true)
         .sampler_anisotropy(true)
         .shader_float64(true)
         .shader_int16(true)
-        .shader_int64(true)
+        .shader_int64(true);
+
+    let features_13 = *vk::PhysicalDeviceVulkan13Features::builder()
+        .synchronization2(true);
+
+    (features, features_13)
 }
 
 // The required Vulkan API version

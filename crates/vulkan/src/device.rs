@@ -39,11 +39,16 @@ impl Device {
             .iter()
             .map(|s| s.as_ptr())
             .collect::<Vec<_>>();
-        let enabled_features = required_features();
-            let logical_device_create_info = DeviceCreateInfo::builder()
+
+        // Get the features that we must enable
+        let (features10, mut features13) = required_features();
+        
+        // Create the device create info
+        let logical_device_create_info = DeviceCreateInfo::builder()
             .queue_create_infos(&create_infos)
             .enabled_extension_names(&logical_device_extensions)
-            .enabled_features(&enabled_features);
+            .enabled_features(&features10)
+            .push_next(&mut features13);
 
         // Create the logical device
         let device = instance

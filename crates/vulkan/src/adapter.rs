@@ -3,7 +3,7 @@ use std::ffi::CStr;
 use ash::vk::{
     self, PhysicalDevice, PhysicalDeviceFeatures,
     PhysicalDeviceLimits, PhysicalDeviceProperties, PresentModeKHR,
-    SurfaceCapabilitiesKHR, SurfaceFormatKHR, PhysicalDeviceType,
+    SurfaceCapabilitiesKHR, SurfaceFormatKHR, PhysicalDeviceType, PhysicalDeviceFeatures2, PhysicalDeviceVulkan13Features, PhysicalDeviceVulkan12Features, PhysicalDeviceVulkan11Features,
 };
 
 use super::{Instance, Surface};
@@ -19,9 +19,14 @@ pub struct Adapter {
     device_id: u32,
     vendor_id: u32,
 
+    // Enabled features for this adapater
+    pub(crate) features: PhysicalDeviceFeatures,
+    pub(crate) features11: PhysicalDeviceVulkan11Features,
+    pub(crate) features12: PhysicalDeviceVulkan12Features,
+    pub(crate) features13: PhysicalDeviceVulkan13Features,
+    
     // Properties
     pub(crate) limits: PhysicalDeviceLimits,
-    pub(crate) features: PhysicalDeviceFeatures,
     pub(crate) properties: PhysicalDeviceProperties,
     pub(crate) surface_capabilities: SurfaceCapabilitiesKHR,
 
@@ -197,20 +202,29 @@ unsafe fn get_capabilities(
     physical_device: PhysicalDevice,
     surface: &Surface,
 ) -> (
-    PhysicalDeviceFeatures,
+    PhysicalDeviceFeatures2,
     PhysicalDeviceProperties,
     PhysicalDeviceLimits,
     SurfaceCapabilitiesKHR,
     String,
     String
 ) {
-    let features = instance
+    // Get the required features for this physical device
+    let mut features13 = PhysicalDeviceVulkan13Features::default();
+    let mut features = PhysicalDeviceFeatures2::builder()
+        .features(PhysicalDeviceFeatures::default())
+        .push_next(&mut features13);
+    instance
         .instance
-        .get_physical_device_features(physical_device);
+        .get_physical_device_features2(physical_device, &mut features);
+    
+    // Get the properties and limits
     let properties = instance
         .instance
         .get_physical_device_properties(physical_device);
     let limits = properties.limits;
+
+    // Get the surface capabilitites of the physical device
     let surface_capabilities = surface
         .surface_loader()
         .get_physical_device_surface_capabilities(
@@ -218,15 +232,19 @@ unsafe fn get_capabilities(
             surface.surface(),
         )
         .unwrap();
+
+    // Get the name of the physical device
     let name = CStr::from_ptr(properties.device_name.as_ptr())
         .to_str()
         .unwrap()
         .to_owned();
+
+    // Get the API version and create a string representing it
     let version = properties.api_version;
-    //let variant = vk::api_version_variant(version);
-    let major = vk::api_version_major(version);
-    let minor = vk::api_version_minor(version);
-    let patch = vk::api_version_patch(version);
-    let api_version = format!("{}.{}.{}", major, minor, patch);
+    let api_version = format!("{}.{}.{}",
+        vk::api_version_major(version),
+        vk::api_version_minor(version),
+        vk::api_version_patch(version)
+    );
     (features, properties, limits, surface_capabilities, name, api_version)
 }
