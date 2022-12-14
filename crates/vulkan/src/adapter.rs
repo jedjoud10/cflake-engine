@@ -14,6 +14,7 @@ pub struct Adapter {
     // Raw physical device
     raw: PhysicalDevice,
     name: String,
+    api_version: String,
     device_type: PhysicalDeviceType,
     device_id: u32,
     vendor_id: u32,
@@ -49,6 +50,7 @@ impl Adapter {
             limits,
             surface_capabilities,
             name,
+            api_version,
         ) = get_capabilities(instance, physical_device, surface);
 
         // Surface and swapchain related
@@ -66,6 +68,7 @@ impl Adapter {
         Adapter {
             raw: physical_device,
             name,
+            api_version,
             device_type: properties.device_type,
             device_id: properties.device_id,
             vendor_id: properties.vendor_id,
@@ -111,7 +114,7 @@ impl Adapter {
             })
             .expect("Could not find a suitable GPU to use!");
 
-        log::debug!("Using the adpater {:?}", adapter.name);
+        log::debug!("Using the adpater {:?} with API version {:?}", adapter.name,  adapter.api_version);
         adapter
     }
 
@@ -199,6 +202,7 @@ unsafe fn get_capabilities(
     PhysicalDeviceLimits,
     SurfaceCapabilitiesKHR,
     String,
+    String
 ) {
     let features = instance
         .instance
@@ -218,5 +222,11 @@ unsafe fn get_capabilities(
         .to_str()
         .unwrap()
         .to_owned();
-    (features, properties, limits, surface_capabilities, name)
+    let version = properties.api_version;
+    //let variant = vk::api_version_variant(version);
+    let major = vk::api_version_major(version);
+    let minor = vk::api_version_minor(version);
+    let patch = vk::api_version_patch(version);
+    let api_version = format!("{}.{}.{}", major, minor, patch);
+    (features, properties, limits, surface_capabilities, name, api_version)
 }

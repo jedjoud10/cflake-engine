@@ -16,23 +16,23 @@ pub(super) struct InternalGraphics {
 impl Drop for InternalGraphics {
     fn drop(&mut self) {
         unsafe {
-            log::warn!("Dropping internal graphics handler...");
+            log::debug!("Dropping internal graphics handler...");
 
-            log::warn!("Destroying swapchain...");
+            log::debug!("Destroying swapchain...");
             self.swapchain.destroy(&self.device);
 
-            log::warn!("Destroying queue...");
+            log::debug!("Destroying queue...");
             self.queue.destroy(&self.device);
 
-            log::warn!("Destroying surface...");
+            log::debug!("Destroying surface...");
             self.surface.destroy();
 
-            log::warn!("Destroying logical device...");
+            log::debug!("Destroying logical device...");
             self.device.destroy();
 
-            log::warn!("Destroying Vulkan Instance...");
+            log::debug!("Destroying Vulkan Instance...");
             self.instance.destroy();
-            log::warn!("We did it guys, Vulkan is no more");
+            log::debug!("We did it guys, Vulkan is no more");
         }
     }
 }

@@ -37,9 +37,7 @@ MemoryLocation::GpuOnly => vk::MemoryPropertyFlags::DEVICE_LOCAL,
 // Convert buffer mode and buffer usage to memory location and buffer usage flags
 // and potential staging buffer memory location
 // This will ignore invalid use cases
-// (og location, cached staging buffer, init staging buffer)
 pub(super) fn find_optimal_layout(
-    _mode: BufferMode,
     usage: BufferUsage,
     _type: u32,
 ) -> BufferLayouts {
@@ -56,15 +54,12 @@ pub(super) fn find_optimal_layout(
     // Check if there is host access
     let host = host_read || host_write;
 
+    // Convert the transfer src/dst into the appropriate flags
+    let transfer = vk::BufferUsageFlags::TRANSFER_SRC
+        | vk::BufferUsageFlags::TRANSFER_DST;
+
     // Map buffer type to usage flags
-    let base = match _type {
-        0 => vk::BufferUsageFlags::VERTEX_BUFFER,
-        1 => vk::BufferUsageFlags::INDEX_BUFFER,
-        2 => vk::BufferUsageFlags::STORAGE_BUFFER,
-        3 => vk::BufferUsageFlags::UNIFORM_BUFFER,
-        4 => vk::BufferUsageFlags::INDIRECT_BUFFER,
-        _ => panic!(),
-    };
+    let base = vk::BufferUsageFlags::from_raw(_type) | transfer;
 
     // hint_device_read or hint_device_write only, GpuOnly, init staging
     if device && !host {

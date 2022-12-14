@@ -96,7 +96,7 @@ impl Pool {
             .unwrap();
 
         let buffer = &self.buffers[index];
-        log::warn!("Found a free command buffer {:?}", buffer.raw);
+        log::debug!("Found a free command buffer {:?}", buffer.raw);
         let mut tags = buffer.tags.lock();
         tags.insert(CommandBufferTags::LOCKED);
         let state = buffer.state.lock().take().unwrap();
@@ -110,7 +110,7 @@ impl Pool {
 
     // Store the state of a command buffer back into the pool
     pub(crate) unsafe fn unlock(&self, index: usize, state: State) {
-        log::warn!("Unlocking buffer at index {index}");
+        log::debug!("Unlocking buffer at index {index}");
         let buffer = &self.buffers[index];
         *buffer.state.lock() = Some(state);
         let mut tags = buffer.tags.lock();
@@ -135,7 +135,7 @@ impl Pool {
 
         buffer.tags.lock().insert(CommandBufferTags::PENDING);
 
-        log::warn!(
+        log::debug!(
             "Submitting command buffer {:?} for execution",
             buffer.raw
         );
@@ -173,7 +173,7 @@ impl Pool {
         device: &Device,
     ) {
         let mut should_flush = Vec::<usize>::new();
-        log::warn!("Explicit call to flush queue");
+        log::debug!("Explicit call to flush queue");
         for (index, buffer) in self.buffers.iter().enumerate() {
             let state = buffer.state.lock();
             if let Some(state) = &*state {
@@ -183,7 +183,7 @@ impl Pool {
             }
         }
 
-        log::warn!("Manually flushing {} cmd buffers", should_flush.len());
+        log::debug!("Manually flushing {} cmd buffers", should_flush.len());
         for index in should_flush {
             let state = self.buffers[index].state.lock().take().unwrap();
             self.submit(queue, device, index, state);
@@ -191,6 +191,7 @@ impl Pool {
     }
 
     // Flush a specific command buffer (no-op if it was already flushed)
+    // Flushing will tell the GPU to start executing the commands for this recorder
     pub(crate) unsafe fn flush_specific(
         &self,
         queue: vk::Queue,

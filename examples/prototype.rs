@@ -35,11 +35,24 @@ fn init(world: &mut World) {
         &mut recorder
     ).unwrap();
 
+    // Create another new buffer
+    let mut buffer2 = StorageBuffer::<u32>::from_slice(
+        &graphics,
+        &[0, 0, 0, 0],
+        BufferMode::default(),
+        BufferUsage::default(),
+        &mut recorder
+    ).unwrap();
+
     // Copy the whole buffer1 into buffer2
     buffer2.copy_from(&buffer1, &mut recorder).unwrap();
-    
-    // Submit to the GPU and wait for execution
     let submission = graphics.submit(recorder);
     let elapsed = submission.wait();
+    let mut recorder = graphics.acquire();
+    let vec = buffer2.read_range_as_vec(.., &mut recorder).unwrap();
+    dbg!(vec);
+    graphics.submit(recorder).wait();
+
+    // Submit to the GPU and wait for execution
     dbg!(elapsed);
 }

@@ -308,7 +308,7 @@ pub(crate) fn add_bundle_unchecked<B: Bundle>(
             entities: Default::default(),
         };
         archetypes.insert(new, archetype);
-        log::warn!(
+        log::debug!(
             "Created new archetype with mask {} (added bundle)",
             new
         );
@@ -405,7 +405,7 @@ pub(crate) fn remove_bundle_unchecked<B: Bundle>(
             entities: Default::default(),
         };
         archetypes.insert(new, archetype);
-        log::warn!(
+        log::debug!(
             "Created new archetype with mask {} (removed bundle)",
             new
         );

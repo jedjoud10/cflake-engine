@@ -104,10 +104,7 @@ fn is_feature_list_supported(given: vk::PhysicalDeviceFeatures) -> bool {
     }
 
     let required = convert(required_features());
-    println!("{:b}", required);
     let given = convert(given);
-    println!("{:b}", given);
-
     let supported = required & given == required; 
     log::debug!("Adapter Supports Required Features: {supported}");
     supported

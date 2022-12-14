@@ -44,36 +44,40 @@ pub struct Submission<'a> {
 impl<'a> Submission<'a> {    
     // Wait until the submission completes, and return the elapsedtime
     pub fn wait(mut self) -> Duration {        
-        // Flush the submission and start executing it on the GPU
         let i = Instant::now();
+        self.wait_internal();
+        i.elapsed()
+    }
+
+    // We *can* take a reference instead of consuming the type
+    fn wait_internal(&mut self) {
+        // Flush the submission and start executing it on the GPU
         log::debug!("Waiting for submission {} from queue {:?}", self.index, self.queue);
         let fence = unsafe { self.pool.flush_specific(self.queue, self.device, self.index, true) };
         log::debug!("Waiting on fence {:?}...", fence);
-
         // Wait for the fence (if we have one) to complete
         if let Some(fence) = fence {
             unsafe { self.device.raw().wait_for_fences(&[fence], true, u64::MAX).unwrap() };
         } else {
             log::warn!("Waiting on submission that doesn't have a fence!");
         }
-
         self.flushed = true;
-        i.elapsed()
     }
 
+    /*
     // Force an immediate flush of the buffer
     pub fn flush(mut self) {
         log::debug!("Flusing submission {} from queue {:?}", self.index, self.queue);
         unsafe { self.pool.flush_specific(self.queue, self.device, self.index, false) };
         self.flushed = true;
     }
+    */
 }
 
 impl<'a> Drop for Submission<'a> {
     fn drop(&mut self) {
         if !self.flushed {
-            log::debug!("Flusing submission {} from queue {:?}", self.index, self.queue);
-            unsafe { self.pool.flush_specific(self.queue, self.device, self.index, false) };
+            self.wait_internal();
         }
     }
 }

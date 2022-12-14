@@ -126,7 +126,7 @@ impl Queue {
         device: &'a Device,
         recorder: Recorder,
     ) -> Submission {
-        log::warn!("Submitting (locally storing) command recorder");
+        log::debug!("Submitting (locally storing) command recorder");
         log::debug!(
             "Currently stored commands: {}",
             recorder.state.commands.len()

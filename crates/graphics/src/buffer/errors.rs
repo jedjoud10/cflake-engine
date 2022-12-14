@@ -22,10 +22,10 @@ pub enum InvalidModeError {
 // Buffer invalid usage error if we have invalid permissions
 #[derive(Error, Debug)]
 pub enum InvalidUsageError {
-    #[error("Cannot read from buffer since BufferUsages:host_read is false")]
+    #[error("Cannot read from buffer since BufferUsages.host_read is false")]
     IllegalHostRead,
 
-    #[error("Cannot write to buffer since BufferUsages:host_write is false")]
+    #[error("Cannot write to buffer since BufferUsages.host_write is false")]
     IllegalHostWrite,
 }
 
@@ -46,6 +46,6 @@ pub enum BufferError {
     )]
     SliceLengthRangeMistmatch(usize, usize),
 
-    #[error("The given range {0}..{1} is an invalid lhength for buffer with size {2}")]
+    #[error("The given range {0}..{1} is an invalid length for buffer with size {2}")]
     InvalidRangeSize(usize, usize, usize),
 }

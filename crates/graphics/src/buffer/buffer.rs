@@ -30,16 +30,12 @@ pub enum BufferMode {
 // Anything related to the device access is a hint since you can always access stuff
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct BufferUsage {
-    // Specifies that the device can write to the buffer
+    // Specifies what the device can do with the buffer
     pub hint_device_write: bool,
-
-    // Specifies that the device can read from the buffer
     pub hint_device_read: bool,
 
-    // Specifies that the host can write to the buffer
+    // Specifies what the host can do do with the buffer 
     pub host_write: bool,
-
-    // Specifies that the host can read from the buffer
     pub host_read: bool,
 }
 
@@ -48,8 +44,8 @@ impl Default for BufferUsage {
         Self {
             hint_device_write: false,
             hint_device_read: true,
-            host_write: true,
-            host_read: false,
+            host_write: false,
+            host_read: true,
         }
     }
 }
@@ -109,17 +105,16 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
 
         // Decompose graphics
         let device = graphics.device();
-        let queues = graphics.queue();
+        let queue = graphics.queue();
 
         // Calculate the byte size of the buffer
-        let size =
-            u64::try_from(size_of::<T>() * slice.len()).unwrap();
+        let size = (size_of::<T>() * slice.len()) as u64;
 
         // Get location and staging buffer location
-        let layout = super::find_optimal_layout(mode, usage, TYPE);
+        let layout = super::find_optimal_layout(usage, TYPE);
 
         // Create the actual buffer
-        let (src_buffer, src_allocation) = unsafe {
+        let (src_buffer, mut src_allocation) = unsafe {
             device.create_buffer(
                 size,
                 layout.src_buffer_usage_flags,
@@ -128,25 +123,46 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
             )
         };
 
-        /*
-
         // Optional init staging buffer
         let tmp_init_staging = layout
             .init_staging_buffer_memory_location
-            .map(|memory| unsafe {
-                let buffe = device.create_buffer(
+            .zip(layout.init_staging_buffer_usage_flags)
+            .map(|(location, usage)| unsafe {
+                let (buffer, allocation) = device.create_buffer(
                     size,
-                    layout.init_staging_buffer_usage_flags.unwrap(),
-                    graphics.queues(),
+                    usage,
+                    location,
+                    graphics.queue(),
                 );
-                let memory =
-                    device.create_buffer_memory(buffer, memory);
-                (buffer, memory)
+
+                (buffer, allocation)
             });
 
         // Check if we need to make a staging buffer
-        if let Some((buffer, allocation)) = tmp_init_staging {
+        if let Some((staging_buffer, mut staging_allocation)) = tmp_init_staging {
             unsafe {
+                // Write to the staging buffer memory by mapping it directly
+                let dst = bytemuck::cast_slice_mut::<u8, T>(
+                    staging_allocation.mapped_slice_mut().unwrap(),
+                );
+                let len = slice.len();
+                dst[..len].copy_from_slice(slice);
+
+                let copy = vk::BufferCopy::builder()
+                    .dst_offset(0)
+                    .src_offset(0)
+                    .size(size);
+
+                // Copy the contents from the staging buffer to the src buffer
+                let mut old = std::mem::replace(recorder, queue.acquire(device));
+                old.cmd_copy_buffer(staging_buffer, src_buffer, vec![*copy]);
+
+                // Submit the recorder and wait for it's completion so we can get rid of this staging buffer
+                dbg!(queue.submit(device, old).wait());
+
+                // TODO: Remove the temp staging buffer by a round buffer of dynamically allocated staging buffers 
+                // For now though, this works, just very inneficiently
+                device.destroy_buffer(staging_buffer, staging_allocation);
             }
         } else {
             // Write to the buffer memory by mapping it directly
@@ -158,7 +174,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         }
 
         // Create the struct and return it
-        Some(Self {
+        Ok(Self {
             length: slice.len(),
             capacity: slice.len(),
             mode,
@@ -168,8 +184,6 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
             buffer: src_buffer,
             allocation: ManuallyDrop::new(src_allocation),
         })
-        */
-        todo!()
     }
 
     // Create an empty buffer if we can (resizable)
@@ -249,11 +263,9 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         range: impl RangeBounds<usize>,
         _recorder: &mut Recorder,
     ) -> Result<(), BufferError> {
-        let Some(BufferBounds {
+        let BufferBounds {
             offset: _, size: _ 
-        }) = self.convert_range_bounds(range) else {
-            return Ok(());
-        };
+        } = self.convert_range_bounds(range)?;
 
         todo!()
     }
@@ -323,11 +335,9 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         range: impl RangeBounds<usize>,
         _recorder: &mut Recorder,
     ) -> Result<(), BufferError> {
-        let Some(BufferBounds {
-            offset, size 
-        }) = self.convert_range_bounds(range) else {
-            return Ok(());
-        };
+        let BufferBounds {
+            offset, size
+        } = self.convert_range_bounds(range)?;
 
         // Check if the given slice matches with the range
         if size != src.len() {
@@ -362,11 +372,9 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         range: impl RangeBounds<usize>,
         _recorder: &mut Recorder,
     ) -> Result<(), BufferError> {
-        let Some(BufferBounds {
-            offset, size
-        }) = self.convert_range_bounds(range) else {
-            return Ok(());
-        };
+        let BufferBounds {
+            offset, size 
+        } = self.convert_range_bounds(range)?;
 
         // Check if the given slice matches with the range
         if size != dst.len() {
@@ -400,11 +408,9 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         range: impl RangeBounds<usize> + Copy,
         recorder: &mut Recorder,
     ) -> Result<Vec<T>, BufferError> {
-        let Some(BufferBounds {
-            size, .. 
-        }) = self.convert_range_bounds(range) else {
-            return Ok(Vec::new());
-        };
+        let BufferBounds {
+            offset, size 
+        } = self.convert_range_bounds(range)?;
 
         // Create a vec and read into it
         let mut vec = vec![T::zeroed(); size];
@@ -421,10 +427,13 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     }
 
     // Clear the buffer contents, resetting the buffer's length down to zero
-    pub fn clear(&mut self) -> Result<(), BufferError> {
-        // TODO: write to current buffer
+    pub fn clear(&mut self, recorder: &mut Recorder) -> Result<(), BufferError> {
+        unsafe {
+            let size = (self.length * self.stride()) as u64;
+            recorder.cmd_clear_buffer(self.buffer, 0, size);
+        }
         self.length = 0;
-        todo!()
+        Ok(())
     }
 
     // Copy the data from another buffer's range into this buffer's range
@@ -437,33 +446,27 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         dst_offset: usize,
         recorder: &mut Recorder,
     ) -> Result<(), BufferError> {
-        let Some(BufferBounds {
-            offset, size
-        }) = self.convert_range_bounds(src_range) else {
-            return Ok(());
-        };
+        let BufferBounds {
+            offset: src_offset, size 
+        } = self.convert_range_bounds(src_range)?;
 
-        // Check if the given slice matches with the range
-        if size != dst.len() {
-            return Err(BufferError::SliceLengthRangeMistmatch(
-                dst.len(),
-                size,
-            ));
+        // Check if the given range is valid for the other buffer
+        if dst_offset + size < other.length && size == other.length {
+            return Err(BufferError::InvalidRangeSize(src_offset, src_offset+size, other.length));
         }
-
-        // Check if we can read from the buffer
-        if !self.usage.host_read {
-            return Err(BufferError::InvalidUsage(
-                InvalidUsageError::IllegalHostRead,
-            ));
-        }
-
 
         unsafe {
-            recorder.cmd_copy_buffer(other.buffer, self.buffer, vec![
-                
-            ])
+            let size = (size * self.stride()) as u64;
+            let src_offset = (src_offset * self.stride()) as u64;
+            let dst_offset = (dst_offset * self.stride()) as u64;
+            let copy = vk::BufferCopy::builder()
+                .size(size)
+                .src_offset(src_offset)
+                .dst_offset(dst_offset)
+                .build();
+            recorder.cmd_copy_buffer(other.buffer, self.buffer, vec![copy]);
         }
+        Ok(())
     }
 
     // Copy the data from another buffer into this buffer
@@ -471,14 +474,8 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         &mut self,
         other: &Buffer<T, OTHER>,
         recorder: &mut Recorder,
-    ) -> Result<(), BufferError> {
-        assert_eq!(
-            self.len(),
-            other.len(),
-            "Cannot copy from buffer, length mismatch"
-        );
-
-        self.copy_range_from(.., other, 0, recorder);
+    ) -> Result<(), BufferError> {        
+        self.copy_range_from(.., other, 0, recorder)
     }
 
     // Fills the whole buffer with a constant value
