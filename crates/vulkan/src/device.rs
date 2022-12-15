@@ -1,12 +1,16 @@
 use crate::{Adapter, Instance, Queue, required_features};
+use ahash::AHashMap;
 use ash::vk::{self, DeviceCreateInfo, DeviceQueueCreateInfo};
 use gpu_allocator::vulkan::{Allocator, AllocatorCreateDesc, Allocation, AllocationCreateDesc};
 use parking_lot::{Mutex, MappedMutexGuard, MutexGuard};
+use dashmap::DashMap;
 
 // This is a logical device that can run multiple commands and that can create Vulkan objects
 pub struct Device {
     device: ash::Device,
     allocator: Mutex<Option<Allocator>>,
+    buffers_used_by_gpu: DashMap<vk::Buffer, bool>,
+    images_used_by_gpu: DashMap<vk::Image, bool>,
 }
 
 impl Device {
@@ -99,6 +103,8 @@ impl Device {
         Device {
             device,
             allocator: Mutex::new(Some(allocator)),
+            buffers_used_by_gpu: Default::default(),
+            images_used_by_gpu: Default::default(),
         }
     }
 

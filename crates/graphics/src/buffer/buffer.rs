@@ -125,25 +125,17 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
 
         // Optional init staging buffer
         let tmp_init_staging = layout
-            .init_staging_buffer_memory_location
-            .zip(layout.init_staging_buffer_usage_flags)
-            .map(|(location, usage)| unsafe {
-                let (buffer, allocation) = device.create_buffer(
-                    size,
-                    usage,
-                    location,
-                    graphics.queue(),
-                );
-
-                (buffer, allocation)
+            .init_staging_buffer
+            .then(|| {
+                graphics.staging().lock(device, queue, size)
             });
 
         // Check if we need to make a staging buffer
-        if let Some((staging_buffer, mut staging_allocation)) = tmp_init_staging {
+        if let Some(mut block) = tmp_init_staging {
             unsafe {
                 // Write to the staging buffer memory by mapping it directly
                 let dst = bytemuck::cast_slice_mut::<u8, T>(
-                    staging_allocation.mapped_slice_mut().unwrap(),
+                    block.mapped_slice_mut(),
                 );
                 let len = slice.len();
                 dst[..len].copy_from_slice(slice);
@@ -155,14 +147,10 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
 
                 // Copy the contents from the staging buffer to the src buffer
                 let mut old = std::mem::replace(recorder, queue.acquire(device));
-                old.cmd_copy_buffer(staging_buffer, src_buffer, vec![*copy]);
+                old.cmd_copy_buffer(block.buffer(), src_buffer, vec![*copy]);
 
                 // Submit the recorder and wait for it's completion so we can get rid of this staging buffer
-                dbg!(queue.submit(device, old).wait());
-
-                // TODO: Remove the temp staging buffer by a round buffer of dynamically allocated staging buffers 
-                // For now though, this works, just very inneficiently
-                device.destroy_buffer(staging_buffer, staging_allocation);
+                queue.submit(device, old).wait();
             }
         } else {
             // Write to the buffer memory by mapping it directly

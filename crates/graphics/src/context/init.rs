@@ -1,4 +1,4 @@
-use crate::{FrameRateLimit, Graphics, Window, WindowSettings, Surface, Adapter, Device, Queue, Swapchain, Instance};
+use crate::{FrameRateLimit, Graphics, Window, WindowSettings, Surface, Adapter, Device, Queue, Swapchain, Instance, StagingPool};
 use parking_lot::Mutex;
 use std::sync::Arc;
 use winit::{
@@ -31,6 +31,7 @@ pub(crate) unsafe fn init_context_and_window(
 
     // Create the graphics wrapper
     let graphics = super::graphics::Graphics(Arc::new(super::graphics::InternalGraphics {
+        staging: StagingPool::new(),
         instance,
         surface,
         adapter,

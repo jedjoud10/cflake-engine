@@ -15,6 +15,8 @@ mod requirements;
 mod surface;
 mod swapchain;
 mod sync;
+mod allocator;
+pub use allocator::*;
 pub use sync::*;
 pub use adapter::*;
 pub use commands::*;

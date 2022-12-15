@@ -8,14 +8,9 @@ pub(super) struct BufferLayouts {
     pub src_buffer_memory_location: MemoryLocation,
     pub src_buffer_usage_flags: vk::BufferUsageFlags,
 
-    // Used during init times
-    pub init_staging_buffer_memory_location: Option<MemoryLocation>,
-    pub init_staging_buffer_usage_flags: Option<vk::BufferUsageFlags>,
-
-    // Used for staging buffer that is stored alongside the original buffer
-    pub cached_staging_buffer_memory_location: Option<MemoryLocation>,
-    pub cached_staging_buffer_usage_flags:
-        Option<vk::BufferUsageFlags>,
+    // Types of staging buffers and if we should use them
+    pub init_staging_buffer: bool,
+    pub cached_staging_buffer: bool,
 }
 
 /*
@@ -67,14 +62,8 @@ pub(super) fn find_optimal_layout(
             src_buffer_memory_location: MemoryLocation::GpuOnly,
             src_buffer_usage_flags: vk::BufferUsageFlags::TRANSFER_DST
                 | base,
-            init_staging_buffer_memory_location: Some(
-                MemoryLocation::CpuToGpu,
-            ),
-            init_staging_buffer_usage_flags: Some(
-                vk::BufferUsageFlags::TRANSFER_SRC,
-            ),
-            cached_staging_buffer_memory_location: None,
-            cached_staging_buffer_usage_flags: None,
+            init_staging_buffer: true,
+            cached_staging_buffer: false,
         };
     }
 
@@ -87,10 +76,8 @@ pub(super) fn find_optimal_layout(
         return BufferLayouts {
             src_buffer_memory_location: MemoryLocation::GpuToCpu,
             src_buffer_usage_flags: base,
-            init_staging_buffer_memory_location: None,
-            init_staging_buffer_usage_flags: None,
-            cached_staging_buffer_memory_location: None,
-            cached_staging_buffer_usage_flags: None,
+            init_staging_buffer: false,
+            cached_staging_buffer: false,
         };
     }
 
@@ -103,10 +90,8 @@ pub(super) fn find_optimal_layout(
         return BufferLayouts {
             src_buffer_memory_location: MemoryLocation::CpuToGpu,
             src_buffer_usage_flags: base,
-            init_staging_buffer_memory_location: None,
-            init_staging_buffer_usage_flags: None,
-            cached_staging_buffer_memory_location: None,
-            cached_staging_buffer_usage_flags: None,
+            init_staging_buffer: false,
+            cached_staging_buffer: false,
         };
     }
 
@@ -114,9 +99,7 @@ pub(super) fn find_optimal_layout(
     BufferLayouts {
         src_buffer_memory_location: MemoryLocation::CpuToGpu,
         src_buffer_usage_flags: base,
-        init_staging_buffer_memory_location: None,
-        init_staging_buffer_usage_flags: None,
-        cached_staging_buffer_memory_location: None,
-        cached_staging_buffer_usage_flags: None,
+        init_staging_buffer: false,
+        cached_staging_buffer: false,
     }
 }
