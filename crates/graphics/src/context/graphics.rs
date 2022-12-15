@@ -4,6 +4,7 @@ use vulkan::{Instance, Surface, Adapter, Device, Swapchain, Queue, Recorder, Sub
 // Internal struct that contain the raw vulkan instances and values
 // This is what will be wrapped around an arc, and this is what will handle Vulkan object destruction
 pub(super) struct InternalGraphics {
+    pub staging: StagingPool,
     pub instance: Instance,
     pub surface: Surface,
     pub adapter: Adapter,

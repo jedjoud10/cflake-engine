@@ -15,12 +15,13 @@ impl Device {
         instance: &Instance,
         adapter: &Adapter,
     ) -> Device {
-        // Get the graphics and present queue family
-        let family = crate::Queue::pick_queue_family(
-            &adapter.queue_family_properties,
+        // Let one queue family handle everything
+        let family = Queue::pick_queue_family(
             adapter,
             true,
-            vk::QueueFlags::GRAPHICS,
+            vk::QueueFlags::GRAPHICS
+             | vk::QueueFlags::COMPUTE
+             | vk::QueueFlags::TRANSFER
         );
 
         // Create the queue create infos
@@ -41,14 +42,16 @@ impl Device {
             .collect::<Vec<_>>();
 
         // Get the features that we must enable
-        let (features10, mut features13) = required_features();
+        let mut adapter_features = required_features();
         
         // Create the device create info
         let logical_device_create_info = DeviceCreateInfo::builder()
             .queue_create_infos(&create_infos)
             .enabled_extension_names(&logical_device_extensions)
-            .enabled_features(&features10)
-            .push_next(&mut features13);
+            .enabled_features(&adapter_features.features)
+            .push_next(&mut adapter_features.features11)
+            .push_next(&mut adapter_features.features12)
+            .push_next(&mut adapter_features.features13);
 
         // Create the logical device
         let device = instance
@@ -92,8 +95,6 @@ impl Device {
 
         // Drop the cstrings
         drop(required_device_extensions);
-
-        // Le logical device
 
         Device {
             device,

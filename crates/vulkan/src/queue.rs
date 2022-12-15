@@ -24,24 +24,14 @@ impl Queue {
         device: &Device,
         adapter: &Adapter,
     ) -> Self {
-        // Get the present and graphics queue family
-        let family = adapter
-            .queue_family_properties
-            .iter()
-            .enumerate()
-            .position(|(i, props)| {
-                // Check if the queue family supports the flags
-                let flags = props
-                    .queue_flags
-                    .contains(vk::QueueFlags::GRAPHICS | vk::QueueFlags::COMPUTE);
-
-                // If the queue we must fetch must support presenting, fetch the physical device properties
-                let presenting = !adapter
-                    .queue_family_surface_supported[i]
-                    || adapter.queue_family_surface_supported[i];
-                flags && presenting
-            })
-            .unwrap() as u32;
+        // Let one queue family handle everything
+        let family = Self::pick_queue_family(
+            adapter,
+            true,
+            vk::QueueFlags::GRAPHICS
+             | vk::QueueFlags::COMPUTE
+             | vk::QueueFlags::TRANSFER
+        );
 
         // Get the queue from the device
         let queue = device.raw().get_device_queue(family, 0);
@@ -51,7 +41,7 @@ impl Queue {
 
         Self {
             qfi: family,
-            properties: adapter.queue_family_properties
+            properties: adapter.families.queue_family_properties
                 [family as usize],
             pools: vec![Pool::new(device, family)],
             queue,
@@ -60,12 +50,11 @@ impl Queue {
 
     // Find a queue that supports the specific flags
     pub(super) unsafe fn pick_queue_family(
-        family_properties: &[vk::QueueFamilyProperties],
         adapter: &Adapter,
         supports_presenting: bool,
         flags: vk::QueueFlags,
     ) -> u32 {
-        family_properties
+        adapter.families.queue_family_properties
             .iter()
             .enumerate()
             .position(|(i, props)| {
@@ -74,7 +63,7 @@ impl Queue {
 
                 // If the queue we must fetch must support presenting, fetch the physical device properties
                 let presenting = !supports_presenting
-                    || adapter.queue_family_surface_supported[i];
+                    || adapter.families.queue_family_surface_supported[i];
                 flags && presenting
             })
             .unwrap() as u32

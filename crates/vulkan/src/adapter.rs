@@ -8,84 +8,73 @@ use ash::vk::{
 
 use super::{Instance, Surface};
 
+// Features supported by an adapter
+pub struct AdapterFeatures {
+    pub features: PhysicalDeviceFeatures,
+    pub features11: PhysicalDeviceVulkan11Features,
+    pub features12: PhysicalDeviceVulkan12Features,
+    pub features13: PhysicalDeviceVulkan13Features,
+}
+
+// Properties of an adapter
+pub struct AdapterProperties {
+    pub name: String,
+    pub api_version: String,
+    pub device_type: PhysicalDeviceType,
+    pub device_id: u32,
+    pub vendor_id: u32,
+
+    pub limits: PhysicalDeviceLimits,
+    pub properties: PhysicalDeviceProperties,
+}
+
+// Swapchain data supported by the adapter
+pub struct AdapterSurfaceProperties {
+    pub present_modes: Vec<PresentModeKHR>,
+    pub present_formats: Vec<SurfaceFormatKHR>,
+    pub surface_capabilities: SurfaceCapabilitiesKHR,
+}
+
+// Queue family properties
+pub struct AdapterQueueFamiliesProperties {
+    pub queue_family_properties:
+        Vec<vk::QueueFamilyProperties>,
+    pub queue_family_nums: usize,
+    pub queue_family_surface_supported: Vec<bool>,
+}
+
 // An adapter is a physical device that was chosen manually by the user
 // For now, this Vulkan abstraction library can only handle one adapter per instance
 pub struct Adapter {
     // Raw physical device
     raw: PhysicalDevice,
-    name: String,
-    api_version: String,
-    device_type: PhysicalDeviceType,
-    device_id: u32,
-    vendor_id: u32,
-
-    // Enabled features for this adapater
-    pub(crate) features: PhysicalDeviceFeatures,
-    pub(crate) features11: PhysicalDeviceVulkan11Features,
-    pub(crate) features12: PhysicalDeviceVulkan12Features,
-    pub(crate) features13: PhysicalDeviceVulkan13Features,
     
-    // Properties
-    pub(crate) limits: PhysicalDeviceLimits,
-    pub(crate) properties: PhysicalDeviceProperties,
-    pub(crate) surface_capabilities: SurfaceCapabilitiesKHR,
-
-    // Swapchain related
-    pub(crate) present_modes: Vec<PresentModeKHR>,
-    pub(crate) present_formats: Vec<SurfaceFormatKHR>,
-
-    // Related to queue families
-    pub(crate) queue_family_properties:
-        Vec<vk::QueueFamilyProperties>,
-    pub(crate) queue_family_nums: usize,
-    pub(crate) queue_family_surface_supported: Vec<bool>,
+    // Properties and features
+    pub(crate) features: AdapterFeatures,
+    pub(crate) properties: AdapterProperties,
+    pub(crate) surface: AdapterSurfaceProperties,
+    pub(crate) families: AdapterQueueFamiliesProperties,
 }
 
 impl Adapter {
     // Create an adapter from it's raw physical device
     unsafe fn from_raw_parts(
         instance: &Instance,
-        physical_device: PhysicalDevice,
+        physical: PhysicalDevice,
         surface: &Surface,
     ) -> Adapter {
-        // Main features and capabilities
-        let (
-            features,
-            properties,
-            limits,
-            surface_capabilities,
-            name,
-            api_version,
-        ) = get_capabilities(instance, physical_device, surface);
-
-        // Surface and swapchain related
-        let (present_modes, present_formats) =
-            get_swapchain_modes(surface, physical_device);
-
-        // Queue family related
-        let (queue_family_properties, queue_family_surface_supported) =
-            get_queue_family_properties(
-                instance,
-                physical_device,
-                surface,
-            );
+        // Get the features and capabilities
+        let features = get_adapter_features(instance, &physical);
+        let properties = get_adapter_properties(instance, &physical, surface);
+        let families = get_adapter_queue_family_properties(instance, &physical, surface);
+        let surface = get_adapter_surface_properties(instance, &physical, surface);
 
         Adapter {
-            raw: physical_device,
-            name,
-            api_version,
-            device_type: properties.device_type,
-            device_id: properties.device_id,
-            vendor_id: properties.vendor_id,
-            limits,
+            raw: physical,
             features,
             properties,
-            surface_capabilities,
-            present_modes,
-            present_formats,
-            queue_family_nums: queue_family_properties.len(),
-            queue_family_properties,
-            queue_family_surface_supported,
+            surface,
+            families,
         }
     }
 
@@ -109,17 +98,15 @@ impl Adapter {
                 );
 
                 super::is_physical_device_suitable(
-                    &adapter.name,
-                    adapter.properties.device_type,
-                    adapter.surface_capabilities,
-                    adapter.features,
-                    &adapter.present_modes,
-                    &adapter.present_formats)
-                .then_some(adapter)
+                    &adapter.features,
+                    &adapter.properties,
+                    &adapter.surface,
+                    &adapter.families
+                ).then_some(adapter)
             })
             .expect("Could not find a suitable GPU to use!");
 
-        log::debug!("Using the adpater {:?} with API version {:?}", adapter.name,  adapter.api_version);
+        log::debug!("Using the adpater {:?} with API version {:?}", adapter.properties.name,  adapter.properties.api_version);
         adapter
     }
 
@@ -130,108 +117,55 @@ impl Adapter {
 
     // Get the name of the adapter
     pub fn name(&self) -> &str {
-        &self.name
+        &self.properties.name
     }
 
     // Get the device type of the adapter
     pub fn device_type(&self) -> vk::PhysicalDeviceType {
-        self.device_type
+        self.properties.device_type
     }
     
     // Get the device ID as a u32
     pub fn device_id(&self) -> u32 {
-        self.device_id
+        self.properties.device_id
     }
 
     // Get the vendor ID as a u32
     pub fn vendor_id(&self) -> u32 {
-        self.vendor_id
+        self.properties.vendor_id
     }
 }
 
-// Get the queue family properties that are supported by this physical device
-unsafe fn get_queue_family_properties(
-    instance: &Instance,
-    physical_device: PhysicalDevice,
-    surface: &Surface,
-) -> (Vec<vk::QueueFamilyProperties>, Vec<bool>) {
-    let queue_family_properties = instance
-        .instance
-        .get_physical_device_queue_family_properties(physical_device);
-    let queue_family_surface_supported = (0..queue_family_properties
-        .len())
-        .map(|i| {
-            surface
-                .surface_loader()
-                .get_physical_device_surface_support(
-                    physical_device,
-                    i as u32,
-                    surface.surface(),
-                )
-                .unwrap()
-        })
-        .collect::<Vec<bool>>();
-    (queue_family_properties, queue_family_surface_supported)
-}
 
-// Get the swapchain modes and formats that are supported by this Adapter
-unsafe fn get_swapchain_modes(
-    surface: &Surface,
-    physical_device: PhysicalDevice,
-) -> (Vec<PresentModeKHR>, Vec<SurfaceFormatKHR>) {
-    let present_modes = surface
-        .surface_loader()
-        .get_physical_device_surface_present_modes(
-            physical_device,
-            surface.surface(),
-        )
-        .unwrap();
-    let present_formats = surface
-        .surface_loader()
-        .get_physical_device_surface_formats(
-            physical_device,
-            surface.surface(),
-        )
-        .unwrap();
-    (present_modes, present_formats)
-}
-
-// Get the properties, features, limits, and the name of the physical device
-unsafe fn get_capabilities(
-    instance: &Instance,
-    physical_device: PhysicalDevice,
-    surface: &Surface,
-) -> (
-    PhysicalDeviceFeatures2,
-    PhysicalDeviceProperties,
-    PhysicalDeviceLimits,
-    SurfaceCapabilitiesKHR,
-    String,
-    String
-) {
-    // Get the required features for this physical device
+// Get the adapter features of a physical device
+unsafe fn get_adapter_features(instance: &Instance, physical: &PhysicalDevice) -> AdapterFeatures {
+    let mut features11 = PhysicalDeviceVulkan11Features::default();
+    let mut features12 = PhysicalDeviceVulkan12Features::default();
     let mut features13 = PhysicalDeviceVulkan13Features::default();
     let mut features = PhysicalDeviceFeatures2::builder()
         .features(PhysicalDeviceFeatures::default())
+        .push_next(&mut features11)
+        .push_next(&mut features12)
         .push_next(&mut features13);
     instance
         .instance
-        .get_physical_device_features2(physical_device, &mut features);
-    
+        .get_physical_device_features2(*physical, &mut features);
+
+    AdapterFeatures {
+        features: features.features,
+        features11,
+        features12,
+        features13,
+    }
+}
+
+// Get the adapter properties of a physical device
+unsafe fn get_adapter_properties(instance: &Instance, physical: &PhysicalDevice, surface: &Surface) -> AdapterProperties {
     // Get the properties and limits
     let properties = instance
         .instance
-        .get_physical_device_properties(physical_device);
+        .get_physical_device_properties(*physical);
     let limits = properties.limits;
-
-    // Get the surface capabilitites of the physical device
-    let surface_capabilities = surface
-        .surface_loader()
-        .get_physical_device_surface_capabilities(
-            physical_device,
-            surface.surface(),
-        )
-        .unwrap();
 
     // Get the name of the physical device
     let name = CStr::from_ptr(properties.device_name.as_ptr())
@@ -246,5 +180,72 @@ unsafe fn get_capabilities(
         vk::api_version_minor(version),
         vk::api_version_patch(version)
     );
-    (features, properties, limits, surface_capabilities, name, api_version)
+
+    AdapterProperties {
+        name,
+        api_version,
+        device_type: properties.device_type,
+        device_id: properties.device_id,
+        vendor_id: properties.vendor_id,
+        limits, properties
+    }
+}
+
+// Get the adapter surface properties
+unsafe fn get_adapter_surface_properties(instance: &Instance, physical: &PhysicalDevice, surface: &Surface) -> AdapterSurfaceProperties {
+    let present_modes = surface
+        .surface_loader()
+        .get_physical_device_surface_present_modes(
+*            physical,
+            surface.surface(),
+        )
+        .unwrap();
+    let present_formats = surface
+        .surface_loader()
+        .get_physical_device_surface_formats(
+            *physical,
+            surface.surface(),
+        )
+        .unwrap();
+
+
+    let surface_capabilities = surface
+        .surface_loader()
+        .get_physical_device_surface_capabilities(
+            *physical,
+            surface.surface(),
+        )
+        .unwrap();
+
+    AdapterSurfaceProperties {
+        present_modes,
+        present_formats,
+        surface_capabilities
+    }
+}
+
+// Get the adapter queue family properties
+unsafe fn get_adapter_queue_family_properties(instance: &Instance, physical: &PhysicalDevice, surface: &Surface) -> AdapterQueueFamiliesProperties {
+    let queue_family_properties = instance
+        .instance
+        .get_physical_device_queue_family_properties(*physical);
+    let queue_family_surface_supported = (0..queue_family_properties
+        .len())
+        .map(|i| {
+            surface
+                .surface_loader()
+                .get_physical_device_surface_support(
+                    *physical,
+                    i as u32,
+                    surface.surface(),
+                )
+                .unwrap()
+        })
+        .collect::<Vec<bool>>();
+
+    AdapterQueueFamiliesProperties {
+        queue_family_nums: queue_family_properties.len(),
+        queue_family_properties,
+        queue_family_surface_supported
+    }
 }
