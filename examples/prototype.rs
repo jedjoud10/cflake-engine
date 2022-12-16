@@ -17,12 +17,19 @@ fn init(world: &mut World) {
     // Create a recorder to record commands
     let mut recorder = graphics.acquire();
 
+    let usage = BufferUsage {
+        device_write: true,
+        device_read: true,
+        host_write: true,
+        host_read: true,
+    };
+
     // Create a new buffer
     let buffer1 = StorageBuffer::<u32>::from_slice(
         &graphics,
         &[69, 0, 0, 420],
         BufferMode::default(),
-        BufferUsage::default(),
+        usage,
         &mut recorder
     ).unwrap();
 
@@ -31,7 +38,7 @@ fn init(world: &mut World) {
         &graphics,
         &[0, 0, 0, 0],
         BufferMode::default(),
-        BufferUsage::default(),
+        usage,
         &mut recorder
     ).unwrap();
 

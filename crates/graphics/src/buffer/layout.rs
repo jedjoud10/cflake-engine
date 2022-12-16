@@ -37,21 +37,21 @@ pub(super) fn find_optimal_layout(
     _type: u32,
 ) -> BufferLayouts {
     let BufferUsage {
-        hint_device_write,
-        hint_device_read,
+        device_write,
+        device_read,
         host_write,
         host_read,
     } = usage;
 
     // Check if there is device (hint)
-    let device = hint_device_read || hint_device_write;
+    let device = device_read || device_write;
 
     // Check if there is host access
     let host = host_read || host_write;
 
     // Convert the transfer src/dst into the appropriate flags
-    let transfer = vk::BufferUsageFlags::TRANSFER_SRC
-        | vk::BufferUsageFlags::TRANSFER_DST;
+    let transfer = if device_write { vk::BufferUsageFlags::TRANSFER_DST } else { vk::BufferUsageFlags::empty() }
+        | if device_read { vk::BufferUsageFlags::TRANSFER_SRC } else { vk::BufferUsageFlags::empty() };
 
     // Map buffer type to usage flags
     let base = vk::BufferUsageFlags::from_raw(_type) | transfer;
@@ -69,9 +69,9 @@ pub(super) fn find_optimal_layout(
 
     // if host_read and hint_device_write, GPUToCPU
     if host_read
-        && hint_device_write
+        && device_write
         && !host_write
-        && !hint_device_read
+        && !device_read
     {
         return BufferLayouts {
             src_buffer_memory_location: MemoryLocation::GpuToCpu,
@@ -83,9 +83,9 @@ pub(super) fn find_optimal_layout(
 
     // if host_write and hint_device_read, CPUToGPU
     if host_write
-        && hint_device_read
+        && device_read
         && !host_read
-        && !hint_device_write
+        && !device_write
     {
         return BufferLayouts {
             src_buffer_memory_location: MemoryLocation::CpuToGpu,

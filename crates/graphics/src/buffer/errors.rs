@@ -27,11 +27,36 @@ pub enum InvalidUsageError {
 
     #[error("Cannot write to buffer since BufferUsages.host_write is false")]
     IllegalHostWrite,
+
+    #[error("Cannot read from buffer on the GPU since BufferUsages.device_read is false")]
+    IllegalDeviceRead,
+
+    #[error("Cannot write to buffer on the GPU since BufferUsages.device_write is false")]
+    IllegalDeviceWrite,
 }
 
 // Buffer error that is returned from each buffer command
 #[derive(Error, Debug)]
 pub enum BufferError {
+    #[error("{0}")]
+    SplatRange(),
+
+    #[error("{0}")]
+    ExtendFromIter(),
+
+    #[error("{0}")]
+    WriteRange(),
+
+    #[error("{0}")]
+    ReadRange(),
+
+    #[error("{0}")]
+    Clear(),
+
+    #[error("{0}")]
+    CopyRangeFrom(),
+
+    /*
     #[error("{0}")]
     InvalidMode(InvalidModeError),
 
@@ -48,4 +73,5 @@ pub enum BufferError {
 
     #[error("The given range {0}..{1} is an invalid length for buffer with size {2}")]
     InvalidRangeSize(usize, usize, usize),
+    */
 }

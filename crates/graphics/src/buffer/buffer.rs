@@ -31,8 +31,8 @@ pub enum BufferMode {
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct BufferUsage {
     // Specifies what the device can do with the buffer
-    pub hint_device_write: bool,
-    pub hint_device_read: bool,
+    pub device_write: bool,
+    pub device_read: bool,
 
     // Specifies what the host can do do with the buffer 
     pub host_write: bool,
@@ -42,9 +42,9 @@ pub struct BufferUsage {
 impl Default for BufferUsage {
     fn default() -> Self {
         Self {
-            hint_device_write: false,
-            hint_device_read: true,
-            host_write: false,
+            device_write: true,
+            device_read: true,
+            host_write: true,
             host_read: true,
         }
     }
@@ -112,6 +112,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
 
         // Get location and staging buffer location
         let layout = super::find_optimal_layout(usage, TYPE);
+        log::debug!("{:?}", layout);
 
         // Create the actual buffer
         let (src_buffer, mut src_allocation) = unsafe {
@@ -126,8 +127,8 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         // Optional init staging buffer
         let tmp_init_staging = layout
             .init_staging_buffer
-            .then(|| {
-                graphics.staging().lock(device, queue, size)
+            .then(|| unsafe {
+                device.create_staging_buffer(size, queue)
             });
 
         // Check if we need to make a staging buffer
@@ -149,8 +150,9 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
                 let mut old = std::mem::replace(recorder, queue.acquire(device));
                 old.cmd_copy_buffer(block.buffer(), src_buffer, vec![*copy]);
 
-                // Submit the recorder and wait for it's completion so we can get rid of this staging buffer
+                // Submit the recorder
                 queue.submit(device, old).wait();
+                device.destroy_staging_buffer(block);
             }
         } else {
             // Write to the buffer memory by mapping it directly
@@ -442,6 +444,9 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         if dst_offset + size < other.length && size == other.length {
             return Err(BufferError::InvalidRangeSize(src_offset, src_offset+size, other.length));
         }
+
+        // Check if we can read from the src buffer
+        // Check if we write to the dst buffer
 
         unsafe {
             let size = (size * self.stride()) as u64;

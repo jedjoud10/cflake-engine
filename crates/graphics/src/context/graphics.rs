@@ -1,11 +1,9 @@
 use std::sync::Arc;
 use vulkan::{Instance, Surface, Adapter, Device, Swapchain, Queue, Recorder, Submission};
-use crate::StagingPool;
 
 // Internal struct that contain the raw vulkan instances and values
 // This is what will be wrapped around an arc, and this is what will handle Vulkan object destruction
 pub(super) struct InternalGraphics {
-    pub(super) staging: StagingPool,
     pub(super) instance: Instance,
     pub(super) surface: Surface,
     pub(super) adapter: Adapter,
@@ -75,12 +73,7 @@ impl Graphics {
         &self.0.swapchain
     }
 
-    // Get a staging pool for upload/download
-    pub(crate) fn staging(&self) -> &StagingPool {
-        &self.0.staging
-    }
-
-    // Aquire a new free command recorder that we can use to record commands
+    // Acquire a new free command recorder that we can use to record commands
     pub fn acquire(&self) -> Recorder {
         unsafe { self.queue().acquire(self.device()) }
     }

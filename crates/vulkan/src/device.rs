@@ -1,4 +1,4 @@
-use crate::{Adapter, Instance, Queue, required_features};
+use crate::{Adapter, Instance, Queue, required_features, SubBufferBlock, StagingPool};
 use ahash::AHashMap;
 use ash::vk::{self, DeviceCreateInfo, DeviceQueueCreateInfo};
 use gpu_allocator::vulkan::{Allocator, AllocatorCreateDesc, Allocation, AllocationCreateDesc};
@@ -9,6 +9,7 @@ use dashmap::DashMap;
 pub struct Device {
     device: ash::Device,
     allocator: Mutex<Option<Allocator>>,
+    pool: Mutex<StagingPool>,
     buffers_used_by_gpu: DashMap<vk::Buffer, bool>,
     images_used_by_gpu: DashMap<vk::Image, bool>,
 }
@@ -103,6 +104,7 @@ impl Device {
         Device {
             device,
             allocator: Mutex::new(Some(allocator)),
+            pool: Mutex::new(StagingPool::new()),
             buffers_used_by_gpu: Default::default(),
             images_used_by_gpu: Default::default(),
         }
@@ -204,16 +206,6 @@ impl Device {
         (buffer, allocation)
     }
 
-    // Get the device address of a buffer
-    pub unsafe fn buffer_device_address(
-        &self,
-        buffer: vk::Buffer,
-    ) -> vk::DeviceAddress {
-        let builder =
-            vk::BufferDeviceAddressInfo::builder().buffer(buffer);
-        self.device.get_buffer_device_address(&builder)
-    }
-
     // Free a buffer and it's allocation
     pub unsafe fn destroy_buffer(
         &self,
@@ -231,5 +223,22 @@ impl Device {
         let buffer = buffer;
         log::debug!("Freeing buffer {:?}", buffer);
         self.device.destroy_buffer(buffer, None);
+    }
+
+    // Create a temporary staging buffer from the StagingPool
+    pub unsafe fn create_staging_buffer(
+        &self,
+        size: u64,
+        queue: &Queue
+    ) -> SubBufferBlock {
+        self.pool.lock().lock(self, queue, size)
+    }
+
+    // Free a temporary staging buffer from the StagingPool 
+    pub unsafe fn destroy_staging_buffer(
+        &self,
+        block: SubBufferBlock
+    ) {
+        self.pool.lock().unlock(self, block);
     }
 }
