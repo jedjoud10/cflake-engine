@@ -260,7 +260,7 @@ fn split(
 }
 
 // Add some new components onto an entity, forcing it to switch archetypes
-pub(crate) fn add_bundle_unchecked<B: Bundle>(
+pub(crate) fn add_bundle<B: Bundle>(
     archetypes: &mut ArchetypeSet,
     entity: Entity,
     entities: &mut EntitySet,
@@ -278,7 +278,7 @@ pub(crate) fn add_bundle_unchecked<B: Bundle>(
 
     // Nothing changed, don't execute
     if new == old {
-        return Some(());
+        return None;
     }
 
     // Create the new target archetype if needed
@@ -369,7 +369,7 @@ pub(crate) fn add_bundle_unchecked<B: Bundle>(
 
 // Remove some old components from an entity, forcing it to switch archetypes
 // This assumes that the OwnedBundle type is valid for this use case
-pub(crate) fn remove_bundle_unchecked<B: Bundle>(
+pub(crate) fn remove_bundle<B: Bundle>(
     archetypes: &mut ArchetypeSet,
     entity: Entity,
     entities: &mut EntitySet,
@@ -383,7 +383,6 @@ pub(crate) fn remove_bundle_unchecked<B: Bundle>(
 
     // Check if we even have the bundle stored
     if !old.contains(bundle_mask) {
-        dbg!("true");
         return None;
     }
 

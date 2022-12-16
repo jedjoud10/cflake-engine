@@ -1,6 +1,6 @@
 use super::Entity;
 use crate::{
-    registry::mask, Archetype, Component, EntityLinkings,
+    Archetype, Component, EntityLinkings,
     QueryLayoutRef, Scene, Bundle,
 };
 

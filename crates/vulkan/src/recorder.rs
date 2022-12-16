@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant};
 
-use crate::{Device, Pool};
+use crate::{Device, CommandPool};
 
 use super::State;
 use ash::vk;
@@ -36,7 +36,7 @@ impl Recorder {
 pub struct Submission<'a> {
     pub(crate) index: usize,
     pub(crate) queue: vk::Queue,
-    pub(crate) pool: &'a Pool,
+    pub(crate) pool: &'a CommandPool,
     pub(crate) device: &'a Device,
     pub(crate) flushed: bool,
     pub(crate) force: bool,

@@ -141,6 +141,8 @@ fn moving() {
     let mut entry = manager.entry_mut(entity).unwrap();
     entry.remove_bundle::<Health>().unwrap();
     entry.insert_bundle::<Ammo>(Ammo(0)).unwrap();
+    assert!(entry.insert_bundle::<Ammo>(Ammo(0)).is_none());
+    assert!(entry.insert_bundle::<Ammo>(Ammo(0)).is_none());
 }
 
 #[test]
@@ -401,4 +403,9 @@ fn unit_tuple() {
     assert_eq!(entry1.archetype().mask(), Mask::zero());
     assert_eq!(entry2.archetype().mask(), Mask::zero());
     assert_eq!(entry1.archetype().len(), 2);
+
+    let mut entry1 = manager.entry_mut(entity1).unwrap();
+    entry1.insert_bundle(Health(0)).unwrap();
+    let mut entry2 = manager.entry_mut(entity2).unwrap();
+    entry2.insert_bundle(Health(0)).unwrap();    
 }

@@ -1,5 +1,5 @@
 use crate::{Adapter, Device, Instance, Recorder, Submission, CommandBufferTags};
-use super::{Pool};
+use super::{CommandPool};
 use ash::vk;
 
 // This will be the main queue that we will access and submit data into
@@ -12,7 +12,7 @@ pub struct Queue {
     pub(super) properties: vk::QueueFamilyProperties,
 
     // Command pools that we can use
-    pub(super) pools: Vec<Pool>,
+    pub(super) pools: Vec<CommandPool>,
 
     // Main queue that we submit command buffers to
     pub(super) queue: vk::Queue,
@@ -43,7 +43,7 @@ impl Queue {
             qfi: family,
             properties: adapter.families.queue_family_properties
                 [family as usize],
-            pools: vec![Pool::new(device, family)],
+            pools: vec![CommandPool::new(device, family)],
             queue,
         }
     }

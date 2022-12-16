@@ -1,74 +1,60 @@
 use crate::Device;
-use super::State;
 use ash::vk;
 use parking_lot::Mutex;
 
-bitflags::bitflags! {
-    pub(super) struct CommandBufferTags: u32 {
-        // The command buffer is currently in use by the CPU
-        const LOCKED = 1;
+// Abstraction around a Vulkan command buffer
+pub struct CommandBuffer {
+    // Raw vulkan sheize
+    raw: vk::CommandBuffer,
+    fence: vk::Fence,
 
-        // The command buffer is currently in use by the GPU
-        const PENDING = 2;
+    // State tracking for this buffer
+    free: Mutex<bool>,
+    recording: Mutex<bool>,
+}
+
+impl CommandBuffer {
+    // Get the raw Vulkan command buffer
+    pub fn raw(&self) -> vk::CommandBuffer {
+        self.raw
+    }
+    
+    // Get the command buffer's fence
+    pub fn fence(&self) -> vk::Fence {
+        self.fence
+    }
+    
+    // Check if the command buffer is free
+    pub fn is_free(&self) -> bool {
+        *self.free.lock()
+    }
+    
+    // Check if the command buffer is recording
+    pub fn is_recording(&self) -> bool {
+        *self.recording.lock()
     }
 }
 
-// Abstraction around a Vulkan command buffer
-pub(super) struct CommandBuffer {
-    // Underlying command buffer
-    pub(super) raw: vk::CommandBuffer,
-
-    // Fence for this command buffer
-    pub(super) fence: vk::Fence,
-
-    // State of the command buffer
-    pub(super) state: Mutex<Option<State>>,
-
-    // Tags that are applied to this command buffer
-    pub(super) tags: Mutex<CommandBufferTags>,
-}
-
 // Abstraction around a Vulkan command pool
-pub(super) struct Pool {
-    // Underlying pool
+pub(super) struct CommandPool {
     pub(super) pool: vk::CommandPool,
-
-    // All the buffers that we allocated
     pub(super) buffers: Vec<CommandBuffer>,
 }
 
-impl Pool {
+impl CommandPool {
     // Create a new command pool and pre-allocate it
     pub(super) unsafe fn new(device: &Device, qfi: u32) -> Self {
-        // Create the raw Vulkan command pool
-        let pool_create_info = vk::CommandPoolCreateInfo::builder()
-            .flags(vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER)
-            .queue_family_index(qfi);
-        let command_pool = device
-            .raw()
-            .create_command_pool(&pool_create_info, None)
-            .unwrap();
-
-        // Allocate some new command buffers
-        let allocate_info = vk::CommandBufferAllocateInfo::builder()
-            .command_buffer_count(4)
-            .command_pool(command_pool)
-            .level(vk::CommandBufferLevel::PRIMARY);
-        let buffers = device
-            .raw()
-            .allocate_command_buffers(&allocate_info)
-            .unwrap()
-            .into_iter()
-            .map(|raw| CommandBuffer {
-                raw,
-                state: Mutex::new(Some(State::default())),
-                tags: Mutex::new(CommandBufferTags::empty()),
-                fence: device.create_fence(),
-            });
+        let pool = create_command_pool(qfi, device);
+        let buffers = allocate_command_buffers(
+            pool,
+            device,
+            4,
+            vk::CommandBufferLevel::PRIMARY
+        );
 
         Self {
-            pool: command_pool,
-            buffers: buffers.collect(),
+            pool,
+            buffers,
         }
     }
 
@@ -229,4 +215,34 @@ impl Pool {
         
         device.raw().destroy_command_pool(self.pool, None);
     } 
+}
+
+unsafe fn allocate_command_buffers(command_pool: vk::CommandPool, device: &Device, count: u32, level: vk::CommandBufferLevel) -> Vec<CommandBuffer> {
+    let allocate_info = vk::CommandBufferAllocateInfo::builder()
+        .command_buffer_count(count)
+        .command_pool(command_pool)
+        .level(level);
+    let buffers = device
+        .raw()
+        .allocate_command_buffers(&allocate_info)
+        .unwrap()
+        .into_iter()
+        .map(|raw| CommandBuffer {
+            raw,
+            fence: device.create_fence(),
+            free: Mutex::new(true),
+            recording: Mutex::new(false),
+        });
+    buffers.collect()
+}
+
+unsafe fn create_command_pool(qfi: u32, device: &Device) -> vk::CommandPool {
+    let pool_create_info = vk::CommandPoolCreateInfo::builder()
+        .flags(vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER)
+        .queue_family_index(qfi);
+    let command_pool = device
+        .raw()
+        .create_command_pool(&pool_create_info, None)
+        .unwrap();
+    command_pool
 }

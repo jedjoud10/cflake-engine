@@ -3,7 +3,7 @@ use std::iter::once;
 use world::{post_user, user, System, World};
 
 use crate::{
-    archetype::remove_bundle_unchecked, entity::Entity, Archetype,
+    archetype::remove_bundle, entity::Entity, Archetype,
     Bundle, EntityLinkings, EntryMut, EntryRef, Mask, MaskHashMap,
     QueryFilter, QueryLayoutMut, QueryLayoutRef, QueryMut, QueryRef,
     Wrap,
@@ -108,7 +108,7 @@ impl Scene {
         iter.into_iter()
             .map(|entity| {
                 // Move the entity from it's current archetype to the unit archetype
-                remove_bundle_unchecked::<B>(
+                remove_bundle::<B>(
                     &mut self.archetypes,
                     entity,
                     &mut self.entities,

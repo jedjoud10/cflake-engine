@@ -1,6 +1,6 @@
 use super::Entity;
 use crate::{
-    add_bundle_unchecked, registry::mask, remove_bundle_unchecked,
+    add_bundle, remove_bundle,
     Archetype, ArchetypeSet, Bundle, Component, EntityLinkings,
     EntitySet, QueryLayoutMut, QueryLayoutRef, Scene,
 };
@@ -88,7 +88,7 @@ impl<'a> EntryMut<'a> {
             "Bundle is not valid, check the bundle for component collisions"
         );
         
-        add_bundle_unchecked(
+        add_bundle(
             self.archetypes,
             self.entity,
             self.entities,
@@ -105,7 +105,7 @@ impl<'a> EntryMut<'a> {
             "Bundle is not valid, check the bundle for component collisions"
         );
 
-        let bundle = remove_bundle_unchecked(
+        let bundle = remove_bundle(
             self.archetypes,
             self.entity,
             self.entities,
