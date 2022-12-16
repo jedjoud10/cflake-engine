@@ -20,10 +20,11 @@ pub(crate) struct BufferId {
 #[derive(Hash, PartialEq, Eq)]
 pub(crate) struct ImageId {
     image: vk::Image,
+    range: vk::ImageSubresourceRange,
 }
 
 pub(crate) type BufferTrackers = AHashMap::<BufferId, Flags>;
-pub(crate) type ImageTrackers = AHashMap::<BufferId, Flags>;
+pub(crate) type ImageTrackers = AHashMap::<ImageId, Flags>;
 pub(crate) type OutBarriers = AHashMap::<usize, Vec<Barrier>>;
 
 // Create a prototype barrier for a specific access BEFORE the command
@@ -63,6 +64,9 @@ pub(crate) fn prototype(access: &Access, trackers: &mut BufferTrackers) -> Optio
                 buffer_memory_barriers: vec![*barrier],
                 image_memory_barriers: Default::default(),
             })
+        },
+
+        Access::Image(image) => {
         },
     }
 }

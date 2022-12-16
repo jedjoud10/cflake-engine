@@ -87,6 +87,7 @@ impl<'a> EntryMut<'a> {
             B::is_valid(),
             "Bundle is not valid, check the bundle for component collisions"
         );
+        
         add_bundle_unchecked(
             self.archetypes,
             self.entity,
@@ -103,6 +104,7 @@ impl<'a> EntryMut<'a> {
             B::is_valid(),
             "Bundle is not valid, check the bundle for component collisions"
         );
+
         let bundle = remove_bundle_unchecked(
             self.archetypes,
             self.entity,
@@ -112,9 +114,10 @@ impl<'a> EntryMut<'a> {
         Some(bundle)
     }
 
-    // Check if the entity has a component linked to it
-    pub fn contains<T: Component>(&self) -> bool {
-        self.archetype().mask().contains(mask::<T>())
+    // Check if the entity contains the given bundle
+    pub fn contains<B: Bundle>(&self) -> bool {
+        let bundle = B::reduce(|a, b| a | b);
+        self.archetype().mask().contains(bundle)
     }
 
     // Read certain components from the entry as if they were used in an immutable query

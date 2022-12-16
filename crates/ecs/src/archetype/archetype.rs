@@ -272,9 +272,9 @@ pub(crate) fn add_bundle_unchecked<B: Bundle>(
     );
 
     // Get the old and new masks
-    let additional = B::reduce(|a, b| a | b);
+    let bundle_mask = B::reduce(|a, b| a | b);
     let old = entities[entity].mask;
-    let new = entities[entity].mask | additional;
+    let new = entities[entity].mask | bundle_mask;
 
     // Nothing changed, don't execute
     if new == old {
@@ -340,7 +340,7 @@ pub(crate) fn add_bundle_unchecked<B: Bundle>(
     for (_, output) in target
         .state_table_mut()
         .iter_mut()
-        .filter(|(mask, _)| additional.contains(**mask))
+        .filter(|(mask, _)| bundle_mask.contains(**mask))
     {
         output.extend_with_flags(
             1,
@@ -378,8 +378,14 @@ pub(crate) fn remove_bundle_unchecked<B: Bundle>(
 
     // Get the old and new masks
     let old = entities[entity].mask;
-    let combined = B::reduce(|a, b| a | b);
-    let new = entities[entity].mask & !combined;
+    let bundle_mask = B::reduce(|a, b| a | b);
+    let new = entities[entity].mask & !bundle_mask;
+
+    // Check if we even have the bundle stored
+    if !old.contains(bundle_mask) {
+        dbg!("true");
+        return None;
+    }
 
     // Create the new target archetype if needed
     if !archetypes.contains_key(&new) {

@@ -20,8 +20,8 @@ fn init(world: &mut World) {
     let usage = BufferUsage {
         device_write: true,
         device_read: true,
-        host_write: true,
-        host_read: true,
+        host_write: false,
+        host_read: false,
     };
 
     // Create a new buffer
@@ -43,16 +43,16 @@ fn init(world: &mut World) {
     ).unwrap();
 
     // Copy the whole buffer1 into buffer2
-    buffer2.copy_from(&buffer1, &mut recorder).unwrap();
+    //buffer2.copy_from(&buffer1, &mut recorder).unwrap();
     
     // Submit to the GPU and wait for execution
     let submission = graphics.submit(recorder);
     let elapsed = submission.wait();
 
     // Create a temporary recorder to read back the data from buffer2
-    let mut recorder = graphics.acquire();
-    dbg!(buffer2.read_range_as_vec(.., &mut recorder).unwrap());
-    graphics.submit(recorder).wait();
+    //let mut recorder = graphics.acquire();
+    //dbg!(buffer2.read_range_as_vec(.., &mut recorder).unwrap());
+    //graphics.submit(recorder).wait();
 
     dbg!(elapsed);
 }

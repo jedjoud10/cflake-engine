@@ -6,7 +6,7 @@ use std::{
 
 use crate::{
     BufferError, Graphics, InvalidModeError,
-    InvalidUsageError, InitializationError,
+    InvalidUsageError, InitializationError, InvalidRangeSizeError, SplatRangeError, ExtendFromIterError, WriteRangeError,
 };
 use bytemuck::{Zeroable, Pod};
 use vulkan::{Recorder, Allocation, vk};
@@ -100,7 +100,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     ) -> Result<Self, BufferError> {
         // Cannot create a zero sized slice for non-resizable buffers
         if slice.is_empty() && !matches!(mode, BufferMode::Resizable) {
-            return Err(BufferError::Initializion(InitializationError::NotResizable));
+            return Err(BufferError::Initialization(InitializationError::NotResizable));
         }
 
         // Decompose graphics
@@ -128,15 +128,15 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         let tmp_init_staging = layout
             .init_staging_buffer
             .then(|| unsafe {
-                device.create_staging_buffer(size, queue)
+                device.create_buffer(size, vk::BufferUsageFlags::TRANSFER_SRC, vulkan::MemoryLocation::CpuToGpu, queue)
             });
 
         // Check if we need to make a staging buffer
-        if let Some(mut block) = tmp_init_staging {
+        if let Some((buffer, mut alloc)) = tmp_init_staging {
             unsafe {
                 // Write to the staging buffer memory by mapping it directly
                 let dst = bytemuck::cast_slice_mut::<u8, T>(
-                    block.mapped_slice_mut(),
+                    alloc.mapped_slice_mut().unwrap(),
                 );
                 let len = slice.len();
                 dst[..len].copy_from_slice(slice);
@@ -148,11 +148,11 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
 
                 // Copy the contents from the staging buffer to the src buffer
                 let mut old = std::mem::replace(recorder, queue.acquire(device));
-                old.cmd_copy_buffer(block.buffer(), src_buffer, vec![*copy]);
+                old.cmd_copy_buffer(buffer, src_buffer, vec![*copy]);
 
                 // Submit the recorder
                 queue.submit(device, old).wait();
-                device.destroy_staging_buffer(block);
+                device.destroy_buffer(buffer, alloc);
             }
         } else {
             // Write to the buffer memory by mapping it directly
@@ -216,7 +216,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     fn convert_range_bounds(
         &self,
         range: impl RangeBounds<usize>,
-    ) -> Result<BufferBounds, BufferError> {
+    ) -> Result<BufferBounds, InvalidRangeSizeError> {
         let start = match range.start_bound() {
             std::ops::Bound::Included(start) => *start,
             std::ops::Bound::Excluded(_) => panic!(),
@@ -233,11 +233,11 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         let valid_end_index = end <= self.length && end >= start;
 
         if !valid_start_index || !valid_end_index {
-            return Err(BufferError::InvalidRangeSize(start, end, self.length));
+            return Err(InvalidRangeSizeError(start, end, self.length));
         }
 
         if (end - start) == 0 {
-            return Err(BufferError::InvalidRangeSize(start, end, self.length));
+            return Err(InvalidRangeSizeError(start, end, self.length));
         }
 
         Ok(BufferBounds {
@@ -255,7 +255,8 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     ) -> Result<(), BufferError> {
         let BufferBounds {
             offset: _, size: _ 
-        } = self.convert_range_bounds(range)?;
+        } = self.convert_range_bounds(range)
+            .map_err(|x| BufferError::SplatRange(SplatRangeError::InvalidRangeSize(x)))?;
 
         todo!()
     }
@@ -285,22 +286,22 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         if !matches!(self.mode, BufferMode::Resizable)
             && !matches!(self.mode, BufferMode::Parital)
         {
-            return Err(BufferError::InvalidMode(
-                InvalidModeError::IllegalChangeLength,
+            return Err(BufferError::ExtendFromIter(
+                ExtendFromIterError::InvalidMode(InvalidModeError::IllegalChangeLength),
             ));
         }
 
         // Check if we can write to the buffer
         if !self.usage.host_write {
-            return Err(BufferError::InvalidUsage(
-                InvalidUsageError::IllegalHostWrite,
+            return Err(BufferError::ExtendFromIter(
+                ExtendFromIterError::InvalidUsage(InvalidUsageError::IllegalHostWrite),
             ));
         }
 
         // Check if we can read from the buffer
         if !self.usage.host_read {
-            return Err(BufferError::InvalidUsage(
-                InvalidUsageError::IllegalHostRead,
+            return Err(BufferError::ExtendFromIter(
+                ExtendFromIterError::InvalidUsage(InvalidUsageError::IllegalHostWrite),
             ));
         }
 
@@ -325,23 +326,22 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         range: impl RangeBounds<usize>,
         _recorder: &mut Recorder,
     ) -> Result<(), BufferError> {
+        todo!()
+        /*
         let BufferBounds {
             offset, size
-        } = self.convert_range_bounds(range)?;
+        } = self.convert_range_bounds(range)
+            .map_err(|x| BufferError::WriteRange(WriteRangeError::InvalidRangeSize(x)))?;
+
 
         // Check if the given slice matches with the range
         if size != src.len() {
-            return Err(BufferError::SliceLengthRangeMistmatch(
-                src.len(),
-                size,
-            ));
+            return Err(BufferError::WriteRange(WriteRangeError::SliceLengthMismatch()));
         }
 
         // Check if we can write to the buffer
         if !self.usage.host_write {
-            return Err(BufferError::InvalidUsage(
-                InvalidUsageError::IllegalHostWrite,
-            ));
+            return Err(BufferError::WriteRange(WriteRangeError::InvalidUsage(InvalidUsageError::IllegalHostWrite)));
         }
 
         // Get the mapped pointer and write to it the given slice (if possible)
@@ -353,6 +353,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
             todo!()
         }
         Ok(())
+        */
     }
 
     // Read a region of the buffer into a mutable slice immediately
@@ -362,6 +363,8 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         range: impl RangeBounds<usize>,
         _recorder: &mut Recorder,
     ) -> Result<(), BufferError> {
+        todo!()
+        /*
         let BufferBounds {
             offset, size 
         } = self.convert_range_bounds(range)?;
@@ -390,6 +393,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
             todo!()
         }
         Ok(())
+        */
     }
 
     // Read a region of the buffer into a new vector
@@ -398,6 +402,8 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         range: impl RangeBounds<usize> + Copy,
         recorder: &mut Recorder,
     ) -> Result<Vec<T>, BufferError> {
+        todo!()
+        /*
         let BufferBounds {
             offset, size 
         } = self.convert_range_bounds(range)?;
@@ -406,6 +412,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         let mut vec = vec![T::zeroed(); size];
         self.read_range(&mut vec, range, recorder)?;
         Ok(vec)
+        */
     }
 
     // Read the whole buffer into a new vector
@@ -436,6 +443,8 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         dst_offset: usize,
         recorder: &mut Recorder,
     ) -> Result<(), BufferError> {
+        todo!()
+        /*
         let BufferBounds {
             offset: src_offset, size 
         } = self.convert_range_bounds(src_range)?;
@@ -460,6 +469,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
             recorder.cmd_copy_buffer(other.buffer, self.buffer, vec![copy]);
         }
         Ok(())
+        */
     }
 
     // Copy the data from another buffer into this buffer

@@ -46,7 +46,7 @@ fn is_device_type_optimal(_type: PhysicalDeviceType) -> bool {
 fn is_double_buffering_supported(
     surface: SurfaceCapabilitiesKHR,
 ) -> bool {
-    let double_buffering_supported = surface.min_image_count == 2;
+    let double_buffering_supported = surface.min_image_count >= 2;
     log::debug!(
         "Adapter Double Buffering: {}",
         double_buffering_supported
@@ -120,6 +120,7 @@ pub fn required_features() -> AdapterFeatures {
         .draw_indirect_first_instance(true)
         .sampler_anisotropy(true)
         .shader_float64(true)
+        .robust_buffer_access(true)
         .shader_int64(true);
 
     let features11 = *vk::PhysicalDeviceVulkan11Features::builder();
@@ -127,6 +128,7 @@ pub fn required_features() -> AdapterFeatures {
     let features12 = *vk::PhysicalDeviceVulkan12Features::builder();
 
     let features13 = *vk::PhysicalDeviceVulkan13Features::builder()
+        .robust_image_access(true)
         .synchronization2(true);
 
     AdapterFeatures { features, features11, features12, features13 }

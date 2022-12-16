@@ -221,6 +221,12 @@ impl Pool {
     // Destroy the command pool
     pub(super) unsafe fn destroy(&self, device: &Device) {
         device.raw().device_wait_idle().unwrap();
+
+        for wrapper in self.buffers.iter() {
+            device.raw().destroy_fence(wrapper.fence, None);
+            device.raw().free_command_buffers(self.pool, &[wrapper.raw]);
+        }
+        
         device.raw().destroy_command_pool(self.pool, None);
     } 
 }

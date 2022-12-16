@@ -1,7 +1,7 @@
 use super::Entity;
 use crate::{
     registry::mask, Archetype, Component, EntityLinkings,
-    QueryLayoutRef, Scene,
+    QueryLayoutRef, Scene, Bundle,
 };
 
 // Immutable entity entries allow the user to be able to read and get some data about a specific entity
@@ -47,9 +47,10 @@ impl<'a> EntryRef<'a> {
         self.table::<T>().map(|vec| &vec[self.linkings.index])
     }
 
-    // Check if the entity has a component linked to it
-    pub fn contains<T: Component>(&self) -> bool {
-        self.archetype().mask().contains(mask::<T>())
+    // Check if the entity contains the given bundle
+    pub fn contains<B: Bundle>(&self) -> bool {
+        let bundle = B::reduce(|a, b| a | b);
+        self.archetype().mask().contains(bundle)
     }
 
     // Read certain components from the entry as if they were used in an immutable query

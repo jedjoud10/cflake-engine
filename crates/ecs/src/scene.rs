@@ -9,8 +9,9 @@ use crate::{
     Wrap,
 };
 
-pub type EntitySet = SlotMap<Entity, EntityLinkings>;
-pub type ArchetypeSet = MaskHashMap<Archetype>;
+// Convenience type aliases
+pub(crate) type EntitySet = SlotMap<Entity, EntityLinkings>;
+pub(crate) type ArchetypeSet = MaskHashMap<Archetype>;
 
 // The scene is what will contain the multiple ECS entities and archetypes
 pub struct Scene {

@@ -55,6 +55,10 @@ impl<'a, T: Component> OwnedBundle<'a> for T {
             .unwrap()
     }
 
+    fn is_valid() -> bool {
+        true
+    }
+
     fn prepare(
         archetype: &'a mut Archetype,
     ) -> Option<Self::Storages> {
@@ -80,5 +84,40 @@ impl<'a, T: Component> OwnedBundle<'a> for T {
         let vec =
             boxed.as_any_mut().downcast_mut::<Vec<T>>().unwrap();
         Some(vec.swap_remove(index))
+    }
+}
+
+// Implement the owned bundle for the unit tuple
+impl<'a> OwnedBundle<'a> for () {
+    type Storages = ();
+
+    fn reduce(lambda: impl FnMut(Mask, Mask) -> Mask) -> Mask {
+        std::iter::once(Mask::zero())
+            .into_iter()
+            .reduce(lambda)
+            .unwrap()
+    }
+
+    fn is_valid() -> bool {
+        true
+    }
+
+    fn prepare(
+        archetype: &'a mut Archetype,
+    ) -> Option<Self::Storages> {
+        archetype.mask().is_zero().then_some(())
+    }
+
+    fn push(_storages: &mut Self::Storages, _bundle: Self) {}
+
+    fn default_tables() -> MaskHashMap<Box<dyn ComponentColumn>> {
+        MaskHashMap::default()
+    }
+
+    fn try_swap_remove(
+        tables: &mut MaskHashMap<Box<dyn ComponentColumn>>,
+        _index: usize,
+    ) -> Option<Self> {
+        tables.is_empty().then_some(())
     }
 }

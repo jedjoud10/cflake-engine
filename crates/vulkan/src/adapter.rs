@@ -3,7 +3,7 @@ use std::ffi::CStr;
 use ash::vk::{
     self, PhysicalDevice, PhysicalDeviceFeatures,
     PhysicalDeviceLimits, PhysicalDeviceProperties, PresentModeKHR,
-    SurfaceCapabilitiesKHR, SurfaceFormatKHR, PhysicalDeviceType, PhysicalDeviceFeatures2, PhysicalDeviceVulkan13Features, PhysicalDeviceVulkan12Features, PhysicalDeviceVulkan11Features,
+    SurfaceCapabilitiesKHR, SurfaceFormatKHR, PhysicalDeviceType, PhysicalDeviceFeatures2, PhysicalDeviceVulkan13Features, PhysicalDeviceVulkan12Features, PhysicalDeviceVulkan11Features, PhysicalDeviceVulkan11Properties, PhysicalDeviceVulkan12Properties, PhysicalDeviceVulkan13Properties, PhysicalDeviceProperties2,
 };
 
 use super::{Instance, Surface};
@@ -26,6 +26,9 @@ pub struct AdapterProperties {
 
     pub limits: PhysicalDeviceLimits,
     pub properties: PhysicalDeviceProperties,
+    pub properties11: PhysicalDeviceVulkan11Properties,
+    pub properties12: PhysicalDeviceVulkan12Properties,
+    pub properties13: PhysicalDeviceVulkan13Properties,
 }
 
 // Swapchain data supported by the adapter
@@ -161,20 +164,26 @@ unsafe fn get_adapter_features(instance: &Instance, physical: &PhysicalDevice) -
 
 // Get the adapter properties of a physical device
 unsafe fn get_adapter_properties(instance: &Instance, physical: &PhysicalDevice, surface: &Surface) -> AdapterProperties {
-    // Get the properties and limits
-    let properties = instance
+    let mut properties11 = PhysicalDeviceVulkan11Properties::default();
+    let mut properties12 = PhysicalDeviceVulkan12Properties::default();
+    let mut properties13 = PhysicalDeviceVulkan13Properties::default();    
+    let mut properties = *PhysicalDeviceProperties2::builder()
+        .properties(PhysicalDeviceProperties::default())
+        .push_next(&mut properties11)
+        .push_next(&mut properties12)
+        .push_next(&mut properties13);
+    instance
         .instance
-        .get_physical_device_properties(*physical);
-    let limits = properties.limits;
+        .get_physical_device_properties2(*physical, &mut properties);
 
     // Get the name of the physical device
-    let name = CStr::from_ptr(properties.device_name.as_ptr())
+    let name = CStr::from_ptr(properties.properties.device_name.as_ptr())
         .to_str()
         .unwrap()
         .to_owned();
 
     // Get the API version and create a string representing it
-    let version = properties.api_version;
+    let version = properties.properties.api_version;
     let api_version = format!("{}.{}.{}",
         vk::api_version_major(version),
         vk::api_version_minor(version),
@@ -184,10 +193,14 @@ unsafe fn get_adapter_properties(instance: &Instance, physical: &PhysicalDevice,
     AdapterProperties {
         name,
         api_version,
-        device_type: properties.device_type,
-        device_id: properties.device_id,
-        vendor_id: properties.vendor_id,
-        limits, properties
+        device_type: properties.properties.device_type,
+        device_id: properties.properties.device_id,
+        vendor_id: properties.properties.vendor_id,
+        properties: properties.properties,
+        properties11,
+        properties12,
+        properties13,
+        limits: properties.properties.limits,
     }
 }
 

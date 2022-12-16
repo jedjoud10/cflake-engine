@@ -124,6 +124,7 @@ impl Queue {
         let pool = &self.pools[0];
         let index = recorder.index;
         let force = recorder.state.commands.len() > 8 && !recorder.state.commands.is_empty();
+        log::debug!("Force: {force}");
         if force {
             pool.submit(
                 self.queue,
@@ -139,7 +140,7 @@ impl Queue {
             pool.unlock(recorder.index, recorder.state);
         }
 
-        Submission { queue: self.queue, index, pool, device, flushed: false }
+        Submission { queue: self.queue, index, pool, device, flushed: false, force }
     }
 
     // Flush unsubmitted command buffers to this queue

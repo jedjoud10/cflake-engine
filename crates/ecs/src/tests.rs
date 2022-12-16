@@ -22,12 +22,12 @@ fn cleanup(ecs: &mut Scene) {
 fn entries() {
     let mut manager = Scene::default();
 
-    let entity = manager.insert((Name("Basic"), Health(100)));
+    let entity = manager.insert(Name("Basic"));
     let mut entry = manager.entry_mut(entity).unwrap();
     assert_eq!(entry.get_mut::<Name>(), Some(&mut Name("Basic")));
     assert!(entry.get_mut::<Ammo>().is_none());
 
-    let mask = registry::mask::<Name>() | registry::mask::<Health>();
+    let mask = registry::mask::<Name>();
     let archetype = manager.archetypes().get(&mask).unwrap();
     let column = archetype.states::<Name>().unwrap();
     assert!(column.get(0).unwrap().modified == 1);
@@ -35,6 +35,16 @@ fn entries() {
     let entry = manager.entry(entity).unwrap();
     assert_eq!(entry.get::<Name>(), Some(&Name("Basic")));
     assert!(entry.get::<Ammo>().is_none());
+
+    let mut entry = manager.entry_mut(entity).unwrap();
+    entry.insert_bundle(Health(100)).unwrap();
+    assert!(!entry.contains::<Ammo>());
+    assert_eq!(entry.remove_bundle::<Ammo>(), None);
+    entry.insert_bundle(Ammo(100)).unwrap();
+    entry.remove_bundle::<Ammo>().unwrap();
+    assert!(!entry.contains::<Ammo>());
+    assert!(entry.contains::<Health>());
+    assert!(entry.contains::<Name>());
 }
 
 #[test]
@@ -67,6 +77,13 @@ fn bit_range_setter() {
         usize::BITS as usize,
     );
     assert_eq!(test, 1 << (usize::BITS as usize - 1));
+}
+
+#[test]
+fn mask() {
+    let mask1 = Mask::from(0b0100u32);
+    let mask2 = Mask::from(0b1111u32);
+    assert!(mask2.contains(mask1));
 }
 
 #[test]
@@ -372,4 +389,16 @@ fn filter_mut() {
     let query = manager.query_mut_with::<&Health>(never());
     assert_eq!(query.len(), 0);
     assert_eq!(query.into_iter().count(), 0);
+}
+
+#[test]
+fn unit_tuple() {
+    let mut manager = Scene::default();
+    let entity1 = manager.insert(());
+    let entity2 = manager.insert(());
+    let entry1 = manager.entry(entity1).unwrap();
+    let entry2 = manager.entry(entity2).unwrap();
+    assert_eq!(entry1.archetype().mask(), Mask::zero());
+    assert_eq!(entry2.archetype().mask(), Mask::zero());
+    assert_eq!(entry1.archetype().len(), 2);
 }

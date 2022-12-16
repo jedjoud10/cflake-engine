@@ -42,7 +42,7 @@ impl SubBufferBlock {
 unsafe impl Sync for SubBufferBlock {}
 unsafe impl Send for SubBufferBlock {}
 
-
+/*
 // Sub buffer used by the staging pool
 pub(crate) struct SubBuffer {
     raw: vk::Buffer,
@@ -81,6 +81,7 @@ impl SubBuffer {
                 (self.allocation.mapped_ptr().unwrap().as_ptr() as *mut u8)
                 .add(start)
             };
+            log::debug!("Found sub-buffer block {}..{} from sub-buffer {:?}", start, end, self.raw);
         
             SubBufferBlock {
                 index: self.index,
@@ -113,6 +114,7 @@ impl StagingPool {
     // Force the allocation of a new block in memory, even though we might have
     // free blocks that we can reuse
     unsafe fn allocate(&self, device: &Device, queue: &Queue, size: u64) -> SubBufferBlock {
+        log::debug!("Allocating a new sub-buffer with size {size}");
         let used = vk::BufferUsageFlags::TRANSFER_SRC |  vk::BufferUsageFlags::TRANSFER_DST;
         let (buffer, allocation) = device.create_buffer(size, used, MemoryLocation::GpuToCpu, queue);
         let mut lock = self.subbuffers.lock();
@@ -128,6 +130,7 @@ impl StagingPool {
     // The given buffer has the flags TRANSFER_SRC and TRANSFER_DST only
     pub unsafe fn lock(&self, device: &Device, queue: &Queue, size: u64) -> SubBufferBlock {
         let mut lock = self.subbuffers.lock();
+        log::debug!("Looking for subbuffer block of size {size}...");
         let find = lock
             .iter_mut()
             .enumerate()
@@ -152,3 +155,4 @@ impl StagingPool {
         
     }
 }
+*/

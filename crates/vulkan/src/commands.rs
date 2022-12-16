@@ -3,6 +3,99 @@ use ahash::AHashMap;
 use ash::vk;
 
 
+/*
+    vkCmdBeginConditionalRenderingEXT(3)
+vkCmdBeginDebugUtilsLabelEXT(3)
+vkCmdBeginQuery(3)
+vkCmdBeginQueryIndexedEXT(3)
+vkCmdBeginRenderPass(3)
+vkCmdBeginRenderPass2(3)
+vkCmdBeginTransformFeedbackEXT(3)
+vkCmdBindDescriptorSets(3)
+vkCmdBindIndexBuffer(3)
+vkCmdBindPipeline(3)
+vkCmdBindShadingRateImageNV(3)
+vkCmdBindTransformFeedbackBuffersEXT(3)
+vkCmdBindVertexBuffers(3)
+vkCmdBlitImage(3)
+vkCmdBuildAccelerationStructureNV(3)
+vkCmdClearAttachments(3)
+vkCmdClearColorImage(3)
+vkCmdClearDepthStencilImage(3)
+vkCmdCopyAccelerationStructureNV(3)
+vkCmdCopyBuffer(3)
+vkCmdCopyBufferToImage(3)
+vkCmdCopyImage(3)
+vkCmdCopyImageToBuffer(3)
+vkCmdCopyQueryPoolResults(3)
+vkCmdDebugMarkerBeginEXT(3)
+vkCmdDebugMarkerEndEXT(3)
+vkCmdDebugMarkerInsertEXT(3)
+vkCmdDispatch(3)
+vkCmdDispatchBase(3)
+vkCmdDispatchIndirect(3)
+vkCmdDraw(3)
+vkCmdDrawIndexed(3)
+vkCmdDrawIndexedIndirect(3)
+vkCmdDrawIndexedIndirectCount(3)
+vkCmdDrawIndirect(3)
+vkCmdDrawIndirectByteCountEXT(3)
+vkCmdDrawIndirectCount(3)
+vkCmdDrawMeshTasksIndirectCountNV(3)
+vkCmdDrawMeshTasksIndirectNV(3)
+vkCmdDrawMeshTasksNV(3)
+vkCmdEndConditionalRenderingEXT(3)
+vkCmdEndDebugUtilsLabelEXT(3)
+vkCmdEndQuery(3)
+vkCmdEndQueryIndexedEXT(3)
+vkCmdEndRenderPass(3)
+vkCmdEndRenderPass2(3)
+vkCmdEndTransformFeedbackEXT(3)
+vkCmdExecuteCommands(3)
+vkCmdFillBuffer(3)
+vkCmdInsertDebugUtilsLabelEXT(3)
+vkCmdNextSubpass(3)
+vkCmdNextSubpass2(3)
+vkCmdPipelineBarrier(3)
+vkCmdProcessCommandsNVX(3)
+vkCmdPushConstants(3)
+vkCmdPushDescriptorSetKHR(3)
+vkCmdPushDescriptorSetWithTemplateKHR(3)
+vkCmdReserveSpaceForCommandsNVX(3)
+vkCmdResetEvent(3)
+vkCmdResetQueryPool(3)
+vkCmdResolveImage(3)
+vkCmdSetBlendConstants(3)
+vkCmdSetCheckpointNV(3)
+vkCmdSetCoarseSampleOrderNV(3)
+vkCmdSetDepthBias(3)
+vkCmdSetDepthBounds(3)
+vkCmdSetDeviceMask(3)
+vkCmdSetDiscardRectangleEXT(3)
+vkCmdSetEvent(3)
+vkCmdSetExclusiveScissorNV(3)
+vkCmdSetLineStippleEXT(3)
+vkCmdSetLineWidth(3)
+vkCmdSetPerformanceMarkerINTEL(3)
+vkCmdSetPerformanceOverrideINTEL(3)
+vkCmdSetPerformanceStreamMarkerINTEL(3)
+vkCmdSetSampleLocationsEXT(3)
+vkCmdSetScissor(3)
+vkCmdSetStencilCompareMask(3)
+vkCmdSetStencilReference(3)
+vkCmdSetStencilWriteMask(3)
+vkCmdSetViewport(3)
+vkCmdSetViewportShadingRatePaletteNV(3)
+vkCmdSetViewportWScalingNV(3)
+vkCmdTraceRaysNV(3)
+vkCmdUpdateBuffer(3)
+vkCmdWaitEvents(3)
+vkCmdWriteAccelerationStructuresPropertiesNV(3)
+vkCmdWriteBufferMarkerAMD(3)
+vkCmdWriteTimestamp(3)
+
+*/
+
 // Recorder state that is stored within the recorders that is dynamically bound to command buffers
 #[derive(Default)]
 pub(crate) struct State {
@@ -26,14 +119,15 @@ pub(crate) struct Barrier {
 }
 
 // Any type of command that can be applied
-#[derive(Debug)]
 pub(crate) enum Command {
     Buffer(BufferCommand),
+    Image(ImageCommand),
 }
 
 // Any type of command access
 pub(crate) enum Access {
     Buffer(BufferAccess),
+    Image(ImageAccess),
 }
 
 impl CompletedState {
@@ -61,9 +155,9 @@ impl CompletedState {
             }
             
             for command in commands {
-                dbg!(&command);
                 match command {
                     Command::Buffer(command) => command.insert(device, cmd),
+                    Command::Image(image) => image.insert(device, cmd),
                 }
             }
         }
@@ -308,6 +402,125 @@ impl BufferCommand {
                 offset,
                 data,
             } => device.cmd_update_buffer(cmd, src, offset, &data),
+        }
+    }
+}
+
+
+// Enum that contains all the types of commands that can be applied to images
+pub(crate) enum ImageCommand {
+    BlitImage {
+        src_image: vk::Image,
+        src_layout: vk::ImageLayout,
+        dst_image: vk::Image,
+        dst_layout: vk::ImageLayout,
+        regions: Vec<vk::ImageBlit>,
+        filter: vk::Filter,
+    },
+
+    ClearColor {
+        image: vk::Image,
+        layout: vk::ImageLayout,
+        clear: vk::ClearColorValue,
+        regions: Vec<vk::ImageSubresourceRange>,
+    },
+
+    CopyImage {
+        src_image: vk::Image,
+        src_layout: vk::ImageLayout,
+        dst_image: vk::Image,
+        dst_layout: vk::ImageLayout,
+        regions: Vec<vk::ImageCopy>
+    },
+}
+
+
+// Contains an access window for a specific image
+pub(crate) struct ImageAccess {
+    pub(crate) flags: vk::AccessFlags2,
+    pub(crate) stage: vk::PipelineStageFlags2,
+    pub(crate) image: vk::Image,
+    pub(crate) mutable: bool,
+    pub(crate) range: vk::ImageSubresourceRange,
+}
+
+// Image commands
+impl Recorder {
+    // Add a new image command internally
+    unsafe fn push_image_cmd(&mut self, cmd: ImageCommand, access: impl IntoIterator<Item = ImageAccess>) {
+        let index = self.state.commands.len();
+        self.state.commands.push(Command::Image(cmd));
+        self.state.access.extend(access.into_iter().map(|a| (Access::Image(a), index)));
+    }
+
+    // Blit an image to another image in GPU memory
+    pub unsafe fn cmd_blit_image(
+        &mut self,
+        src_image: vk::Image,
+        src_layout: vk::ImageLayout,
+        dst_image: vk::Image,
+        dst_layout: vk::ImageLayout,
+        regions: Vec<vk::ImageBlit>,
+        filter: vk::Filter,
+    ) {
+        self.push_image_cmd(ImageCommand::BlitImage {
+            src_image,
+            src_layout,
+            dst_image,
+            dst_layout,
+            regions,
+            filter
+        }, Some(ImageAccess {
+
+        }));
+    }
+
+    // Clear an image to a specific color 
+    pub unsafe fn cmd_clear_image(
+        &mut self,
+        image: vk::Image,
+        layout: vk::ImageLayout,
+        color: vk::ClearColorValue,
+        regions: Vec<vk::ImageSubresourceRange>,
+    ) {
+        
+    }
+
+    // Copy an image to another image in GPU memory
+    pub unsafe fn cmd_copy_image(
+        &mut self,
+        src_image: vk::Image,
+        src_layout: vk::ImageLayout,
+        dst_image: vk::Image,
+        dst_layout: vk::ImageLayout,
+        regions: Vec<vk::ImageCopy>,
+    ) {
+
+    }
+}
+
+impl ImageCommand {
+    unsafe fn insert(
+        self,
+        device: &ash::Device,
+        cmd: vk::CommandBuffer,
+    ) {
+        match self {
+            ImageCommand::BlitImage {
+                src_image,
+                src_layout,
+                dst_image,
+                dst_layout,
+                regions,
+                filter
+            } => device.cmd_blit_image(cmd, src_image, src_layout, dst_image, dst_layout, &regions, filter),
+            ImageCommand::ClearColor {
+                image,
+                layout,
+                clear,
+                regions
+            } => device.cmd_clear_color_image(cmd, image, layout, &clear, &regions),
+            ImageCommand::CopyImage { src_image, src_layout, dst_image, dst_layout, regions } => device.cmd_copy_image(cmd, src_image, src_layout, dst_image, dst_layout, &regions),
         }
     }
 }

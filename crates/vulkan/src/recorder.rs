@@ -39,6 +39,7 @@ pub struct Submission<'a> {
     pub(crate) pool: &'a Pool,
     pub(crate) device: &'a Device,
     pub(crate) flushed: bool,
+    pub(crate) force: bool,
 }
 
 impl<'a> Submission<'a> {    
@@ -55,6 +56,7 @@ impl<'a> Submission<'a> {
         log::debug!("Waiting for submission {} from queue {:?}", self.index, self.queue);
         let fence = unsafe { self.pool.flush_specific(self.queue, self.device, self.index, true) };
         log::debug!("Waiting on fence {:?}...", fence);
+        
         // Wait for the fence (if we have one) to complete
         if let Some(fence) = fence {
             unsafe { self.device.raw().wait_for_fences(&[fence], true, u64::MAX).unwrap() };

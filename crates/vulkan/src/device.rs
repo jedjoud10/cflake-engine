@@ -1,4 +1,4 @@
-use crate::{Adapter, Instance, Queue, required_features, SubBufferBlock, StagingPool};
+use crate::{Adapter, Instance, Queue, required_features, SubBufferBlock};
 use ahash::AHashMap;
 use ash::vk::{self, DeviceCreateInfo, DeviceQueueCreateInfo};
 use gpu_allocator::vulkan::{Allocator, AllocatorCreateDesc, Allocation, AllocationCreateDesc};
@@ -9,7 +9,6 @@ use dashmap::DashMap;
 pub struct Device {
     device: ash::Device,
     allocator: Mutex<Option<Allocator>>,
-    pool: Mutex<StagingPool>,
     buffers_used_by_gpu: DashMap<vk::Buffer, bool>,
     images_used_by_gpu: DashMap<vk::Image, bool>,
 }
@@ -104,7 +103,6 @@ impl Device {
         Device {
             device,
             allocator: Mutex::new(Some(allocator)),
-            pool: Mutex::new(StagingPool::new()),
             buffers_used_by_gpu: Default::default(),
             images_used_by_gpu: Default::default(),
         }
@@ -141,10 +139,20 @@ impl Device {
             .unwrap()
     }
 
+    // Destroy a semaphore
+    pub unsafe fn destroy_semaphore(&self, semaphore: vk::Semaphore) {
+        self.device.destroy_semaphore(semaphore, None);
+    }
+
     // Create a single simple fence
     pub unsafe fn create_fence(&self) -> vk::Fence {
         self.device.create_fence(&Default::default(), None).unwrap()
     }
+
+    // Destroy a fence
+    pub unsafe fn destroy_fence(&self, fence: vk::Fence) {
+        self.device.destroy_fence(fence, None);
+    } 
 }
 
 
@@ -225,6 +233,8 @@ impl Device {
         self.device.destroy_buffer(buffer, None);
     }
 
+    /*
+    
     // Create a temporary staging buffer from the StagingPool
     pub unsafe fn create_staging_buffer(
         &self,
@@ -241,4 +251,5 @@ impl Device {
     ) {
         self.pool.lock().unlock(self, block);
     }
+    */
 }
