@@ -9,10 +9,10 @@ type Target = math::RawRotation;
 
 #[derive(Default, Clone, Copy, Component)]
 #[repr(transparent)]
-pub struct Rotation(Target);
+pub struct LocalRotation(Target);
 
 #[cfg(not(feature = "two-dim"))]
-impl Rotation {
+impl LocalRotation {
     // Calculate the forward vector (-Z)
     pub fn forward(&self) -> vek::Vec3<f32> {
         vek::Mat4::from(self).mul_point(-vek::Vec3::unit_z())
@@ -63,7 +63,7 @@ impl Rotation {
 }
 
 #[cfg(feature = "two-dim")]
-impl Rotation {
+impl LocalRotation {
     // Calculate the forward vector (-Z)
     pub fn forward(&self) -> vek::Vec2<f32> {
         vek::Mat3::from(self).mul_point(-vek::Vec2::unit_x())
@@ -109,7 +109,7 @@ impl Rotation {
     }
 }
 
-impl Debug for Rotation {
+impl Debug for LocalRotation {
     fn fmt(
         &self,
         f: &mut std::fmt::Formatter<'_>,
@@ -119,7 +119,7 @@ impl Debug for Rotation {
 }
 
 #[cfg(feature = "two-dim")]
-impl Display for Rotation {
+impl Display for LocalRotation {
     fn fmt(
         &self,
         f: &mut std::fmt::Formatter<'_>,
@@ -128,7 +128,7 @@ impl Display for Rotation {
     }
 }
 
-impl Deref for Rotation {
+impl Deref for LocalRotation {
     type Target = Target;
 
     fn deref(&self) -> &Self::Target {
@@ -136,67 +136,67 @@ impl Deref for Rotation {
     }
 }
 
-impl DerefMut for Rotation {
+impl DerefMut for LocalRotation {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
-impl AsRef<Target> for Rotation {
+impl AsRef<Target> for LocalRotation {
     fn as_ref(&self) -> &Target {
         &self.0
     }
 }
 
-impl AsMut<Target> for Rotation {
+impl AsMut<Target> for LocalRotation {
     fn as_mut(&mut self) -> &mut Target {
         &mut self.0
     }
 }
 
-impl From<Rotation> for Target {
-    fn from(value: Rotation) -> Self {
+impl From<LocalRotation> for Target {
+    fn from(value: LocalRotation) -> Self {
         value.0
     }
 }
 
-impl From<&Rotation> for Target {
-    fn from(value: &Rotation) -> Self {
+impl From<&LocalRotation> for Target {
+    fn from(value: &LocalRotation) -> Self {
         value.0
     }
 }
 
-impl From<Target> for Rotation {
+impl From<Target> for LocalRotation {
     fn from(q: Target) -> Self {
         Self(q)
     }
 }
 
-impl From<&Target> for Rotation {
+impl From<&Target> for LocalRotation {
     fn from(q: &Target) -> Self {
         Self(*q)
     }
 }
 
-impl From<Rotation> for math::RawMatrix {
-    fn from(value: Rotation) -> Self {
+impl From<LocalRotation> for math::RawMatrix {
+    fn from(value: LocalRotation) -> Self {
         value.0.into()
     }
 }
 
-impl From<&Rotation> for math::RawMatrix {
-    fn from(value: &Rotation) -> Self {
+impl From<&LocalRotation> for math::RawMatrix {
+    fn from(value: &LocalRotation) -> Self {
         value.0.into()
     }
 }
 
-impl Mul<Rotation> for Rotation {
-    type Output = Rotation;
+impl Mul<LocalRotation> for LocalRotation {
+    type Output = LocalRotation;
 
-    fn mul(self, rhs: Rotation) -> Self::Output {
+    fn mul(self, rhs: LocalRotation) -> Self::Output {
         #[cfg(not(feature = "two-dim"))]
-        return Rotation(self.0 * rhs.0);
+        return LocalRotation(self.0 * rhs.0);
         #[cfg(feature = "two-dim")]
-        return Rotation(self.0 + rhs.0);
+        return LocalRotation(self.0 + rhs.0);
     }
 }

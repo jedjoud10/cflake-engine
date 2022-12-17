@@ -9,16 +9,16 @@ type Target = math::RawPoint;
 
 #[derive(Clone, Copy, Component)]
 #[repr(transparent)]
-pub struct Scale(Target);
+pub struct LocalScale(Target);
 
-impl Default for Scale {
+impl Default for LocalScale {
     fn default() -> Self {
         Self(Target::one())
     }
 }
 
 #[cfg(not(feature = "two-dim"))]
-impl Scale {
+impl LocalScale {
     // Construct a scale using an X width
     pub fn scale_x(width: f32) -> Self {
         Self(vek::Vec3::new(width, 1.0, 1.0))
@@ -41,7 +41,7 @@ impl Scale {
 }
 
 #[cfg(feature = "two-dim")]
-impl Scale {
+impl LocalScale {
     // Construct a scale using an X width
     pub fn scale_x(width: f32) -> Self {
         Self(vek::Vec2::new(width, 1.0))
@@ -58,7 +58,7 @@ impl Scale {
     }
 }
 
-impl Debug for Scale {
+impl Debug for LocalScale {
     fn fmt(
         &self,
         f: &mut std::fmt::Formatter<'_>,
@@ -67,7 +67,7 @@ impl Debug for Scale {
     }
 }
 
-impl Display for Scale {
+impl Display for LocalScale {
     fn fmt(
         &self,
         f: &mut std::fmt::Formatter<'_>,
@@ -76,7 +76,7 @@ impl Display for Scale {
     }
 }
 
-impl Deref for Scale {
+impl Deref for LocalScale {
     type Target = Target;
 
     fn deref(&self) -> &Self::Target {
@@ -84,56 +84,56 @@ impl Deref for Scale {
     }
 }
 
-impl DerefMut for Scale {
+impl DerefMut for LocalScale {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
-impl AsRef<Target> for Scale {
+impl AsRef<Target> for LocalScale {
     fn as_ref(&self) -> &Target {
         &self.0
     }
 }
 
-impl AsMut<Target> for Scale {
+impl AsMut<Target> for LocalScale {
     fn as_mut(&mut self) -> &mut Target {
         &mut self.0
     }
 }
 
-impl From<Scale> for Target {
-    fn from(value: Scale) -> Self {
+impl From<LocalScale> for Target {
+    fn from(value: LocalScale) -> Self {
         value.0
     }
 }
 
-impl From<&Scale> for Target {
-    fn from(value: &Scale) -> Self {
+impl From<&LocalScale> for Target {
+    fn from(value: &LocalScale) -> Self {
         value.0
     }
 }
 
-impl From<Target> for Scale {
+impl From<Target> for LocalScale {
     fn from(value: Target) -> Self {
         Self(value)
     }
 }
 
-impl From<&Target> for Scale {
+impl From<&Target> for LocalScale {
     fn from(value: &Target) -> Self {
         Self(*value)
     }
 }
 
-impl From<Scale> for math::RawMatrix {
-    fn from(value: Scale) -> Self {
+impl From<LocalScale> for math::RawMatrix {
+    fn from(value: LocalScale) -> Self {
         vek::Mat4::scaling_3d(value.0)
     }
 }
 
-impl From<&Scale> for math::RawMatrix {
-    fn from(value: &Scale) -> Self {
+impl From<&LocalScale> for math::RawMatrix {
+    fn from(value: &LocalScale) -> Self {
         #[cfg(not(feature = "two-dim"))]
         return vek::Mat4::scaling_3d(value.0);
         #[cfg(feature = "two-dim")]

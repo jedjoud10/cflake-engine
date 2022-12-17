@@ -146,6 +146,8 @@ tuple_impls! { C0 C1 C2, 3 }
 tuple_impls! { C0 C1 C2 C3, 4 }
 tuple_impls! { C0 C1 C2 C3 C4, 5 }
 tuple_impls! { C0 C1 C2 C3 C4 C5, 6 }
+tuple_impls! { C0 C1 C2 C3 C4 C5 C6, 7 }
+tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7, 8 }
 
 #[cfg(feature = "extended-tuples")]
 mod extend {
@@ -156,8 +158,6 @@ mod extend {
     };
     use casey::lower;
     use seq_macro::seq;
-    tuple_impls! { C0 C1 C2 C3 C4 C5 C6, 7 }
-    tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7, 8 }
     tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8, 9 }
     tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9, 10 }
     tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10, 11 }

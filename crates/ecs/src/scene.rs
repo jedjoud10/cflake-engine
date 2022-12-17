@@ -1,3 +1,4 @@
+use ahash::{AHashMap, AHashSet};
 use slotmap::SlotMap;
 use std::iter::once;
 use world::{post_user, user, System, World};
@@ -6,7 +7,7 @@ use crate::{
     archetype::remove_bundle, entity::Entity, Archetype,
     Bundle, EntityLinkings, EntryMut, EntryRef, Mask, MaskHashMap,
     QueryFilter, QueryLayoutMut, QueryLayoutRef, QueryMut, QueryRef,
-    Wrap,
+    Wrap, Parent, Child,
 };
 
 // Convenience type aliases
@@ -211,17 +212,61 @@ impl Scene {
             QueryMut::<L>::new(self).into_iter().fuse();
         iterator.next().xor(iterator.next())
     }
-}
 
-// Late update event that will cleanup the ECS manager states
-fn cleanup(world: &mut World) {
-    let mut ecs = world.get_mut::<Scene>().unwrap();
+    // Attach an entity to another entity, making a child-parent relation
+    // Returns None if the entities don't exist, or if child is already attached
+    pub fn attach(&mut self, child: Entity, parent: Entity) -> Option<()> {
+        // Get the "Parent" component from the parent entity
+        let mut parent_entry = self.entry_mut(parent)?;
+        let parent_depth = if let Some(parent) = parent_entry.get_mut::<Parent>() {
+            parent_node.children += 1;
+            parent_node.depth
+        } else {
+            parent_entry.insert_bundle(Node {
+                local_to_world: Default::default(),
+                parent: None,
+                children: 1,
+                depth: 0,
+            });
+            
+            0
+        };
 
-    // Clear all the archetype states that were set last frame
-    for (_, archetype) in ecs.archetypes_mut() {
-        for (_, column) in archetype.state_table_mut().iter_mut() {
-            column.clear();
+        // Update the child node, or insert it if it doesn't exist yet
+        let mut child_entry = self.entry_mut(child)?;
+        if let Some(child_node) = child_entry.get_mut::<Node>() {
+            if let None = child_node.parent {
+                child_node.parent = Some(parent);
+                child_node.depth = parent_depth + 1;
+            } else {
+                return None
+            }
+        } else {
+            child_entry.insert_bundle(Node {
+                local_to_world: Default::default(),
+                parent: Some(parent),
+                children: 0,
+                depth: parent_depth + 1,
+            });
         }
+
+        Some(())
+    }
+
+    // Detach an entity from it's parent
+    // Returns None if the entities don't exist, or if the child isn't attached
+    pub fn detach(&mut self, child: Entity) -> Option<()> {
+        // Get the child node
+        //let mut child_entry = self.entry_mut(child)?;
+        //let mut child_node = child_entry.get_mut::<Node>()?;
+
+        Some(())
+    }
+
+    // Move a child from one parent to another 
+    // Equivalent to calling detach() then attach()
+    pub fn orphan(&mut self, child: Entity, new_parent: Entity) {
+
     }
 }
 
@@ -230,13 +275,20 @@ fn init(world: &mut World) {
     world.insert(Scene::default());
 }
 
-// Update the scene hierarchy
+// Reset the archetype states and update the hierarchy
 fn update(world: &mut World) {
-    
+    let mut scene = world.get_mut::<Scene>().unwrap();
+
+    // Clear all the archetype states that were set last frame
+    for (_, archetype) in scene.archetypes_mut() {
+        for (_, column) in archetype.state_table_mut().iter_mut() {
+            column.clear();
+        }
+    }
 }
 
 // The ECS system will manually insert the ECS resource and will clean it at the start of each frame (except the first frame)
 pub fn system(system: &mut System) {
     system.insert_init(init).before(user);
-    system.insert_update(cleanup).after(post_user);
+    system.insert_update(update).after(post_user);
 }
