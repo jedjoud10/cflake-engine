@@ -84,34 +84,6 @@ fn mask() {
     let mask1 = Mask::from(0b0100u32);
     let mask2 = Mask::from(0b1111u32);
     assert!(mask2.contains(mask1));
-
-    let mask = Mask::from_ref_layout::<(&Entity,
-        Option<&Position>,
-        Option<&Rotation>,
-        Option<&Scale>)>();
-    assert_eq!(mask, Mask::zero());
-
-    let mask = Mask::from_ref_layout::<(Option<&Position>,
-        Option<&Rotation>,
-        Option<&Scale>)>();
-    assert_eq!(mask, Mask::zero());
-
-    let mask = Mask::from_ref_layout::<Option<&Scale>>();
-    assert_eq!(mask, Mask::zero());
-
-    let mask = Mask::from_mut_layout::<(&Entity,
-        Option<&Position>,
-        Option<&Rotation>,
-        Option<&Scale>)>();
-    assert_eq!(mask, Mask::zero());
-
-    let mask = Mask::from_mut_layout::<(Option<&Position>,
-        Option<&Rotation>,
-        Option<&Scale>)>();
-    assert_eq!(mask, Mask::zero());
-
-    let mask = Mask::from_mut_layout::<Option<&Scale>>();
-    assert_eq!(mask, Mask::zero());
 }
 
 #[test]

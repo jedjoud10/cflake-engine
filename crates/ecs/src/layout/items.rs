@@ -57,7 +57,11 @@ impl<'s, T: Component> QueryItemRef<'s> for &T {
     type Owned = T;
 
     fn access() -> LayoutAccess {
-        LayoutAccess::new(mask::<T>(), Mask::zero())
+        LayoutAccess {
+            arch_search: mask::<T>(),
+            validation_shared: mask::<T>(),
+            validation_unique: Mask::zero(),
+        }
     }
 
     unsafe fn ptr_from_archetype_unchecked(
@@ -88,7 +92,11 @@ impl<'s, T: Component> QueryItemRef<'s> for Option<&T> {
     type Owned = T;
 
     fn access() -> LayoutAccess {
-        LayoutAccess::none()
+        LayoutAccess {
+            arch_search: Mask::zero(),
+            validation_shared: mask::<T>(),
+            validation_unique: Mask::zero(),
+        }
     }
 
     unsafe fn ptr_from_archetype_unchecked(
@@ -117,7 +125,11 @@ impl<'s> QueryItemRef<'s> for &Entity {
     type Owned = Entity;
 
     fn access() -> LayoutAccess {
-        LayoutAccess::none()
+        LayoutAccess {
+            arch_search: Mask::zero(),
+            validation_shared: Mask::zero(),
+            validation_unique: Mask::zero(),
+        }
     }
 
     unsafe fn ptr_from_archetype_unchecked(
@@ -144,7 +156,11 @@ impl<'s, T: Component> QueryItemMut<'s> for &T {
     type Owned = T;
 
     fn access() -> LayoutAccess {
-        LayoutAccess::new(mask::<T>(), Mask::zero())
+        LayoutAccess {
+            arch_search: mask::<T>(),
+            validation_shared: mask::<T>(),
+            validation_unique: Mask::zero(),
+        }
     }
 
     unsafe fn ptr_from_mut_archetype_unchecked(
@@ -178,7 +194,11 @@ impl<'s, T: Component> QueryItemMut<'s> for Option<&T> {
     type Owned = T;
 
     fn access() -> LayoutAccess {
-        LayoutAccess::none()
+        LayoutAccess {
+            arch_search: Mask::zero(),
+            validation_shared: mask::<T>(),
+            validation_unique: Mask::zero(),
+        }
     }
 
     unsafe fn ptr_from_mut_archetype_unchecked(
@@ -210,7 +230,11 @@ impl<'s, T: Component> QueryItemMut<'s> for &mut T {
     type Owned = T;
 
     fn access() -> LayoutAccess {
-        LayoutAccess::new(Mask::zero(), mask::<T>())
+        LayoutAccess {
+            arch_search: mask::<T>(),
+            validation_shared: Mask::zero(),
+            validation_unique: mask::<T>(),
+        }
     }
 
     unsafe fn ptr_from_mut_archetype_unchecked(
@@ -244,7 +268,11 @@ impl<'s, T: Component> QueryItemMut<'s> for Option<&mut T> {
     type Owned = T;
 
     fn access() -> LayoutAccess {
-        LayoutAccess::none()
+        LayoutAccess {
+            arch_search: Mask::zero(),
+            validation_shared: Mask::zero(),
+            validation_unique: mask::<T>(),
+        }
     }
 
     unsafe fn ptr_from_mut_archetype_unchecked(
@@ -276,7 +304,11 @@ impl<'s> QueryItemMut<'s> for &Entity {
     type Owned = Entity;
 
     fn access() -> LayoutAccess {
-        LayoutAccess::none()
+        LayoutAccess {
+            arch_search: Mask::zero(),
+            validation_shared: Mask::zero(),
+            validation_unique: Mask::zero(),
+        }
     }
 
     unsafe fn ptr_from_mut_archetype_unchecked(

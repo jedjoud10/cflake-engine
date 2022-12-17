@@ -302,14 +302,12 @@ fn update(world: &mut World) {
 
     // Fetch entities that are roots (ONLY parents)
     let filter = contains::<Parent>() | always();
-    for (entity, pos, rot, scl) in scene.query::<(
+    for (entity, pos, rot, scl) in scene.query_with::<(
         &Entity,
         Option<&Position>,
         Option<&Rotation>,
         Option<&Scale>,
-    )>()
-    {
-        dbg!("test2");
+    )>(filter) {
         transforms.insert(
             *entity,
             (pos.cloned(), rot.cloned(), scl.cloned()),
@@ -327,7 +325,6 @@ fn update(world: &mut World) {
     {
         let local_to_world = child.local_to_world;
         if let Some(parent_transform) = transforms.get(&child.parent) {
-            dbg!("test");
             let (parent_position, parent_rotation, parent_scale) =
                 parent_transform;
 

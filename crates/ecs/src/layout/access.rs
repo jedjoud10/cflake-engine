@@ -4,37 +4,33 @@ use std::ops::{BitAnd, BitOr, BitXor};
 // Layout access that contain the shared access mask and unique access mask
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LayoutAccess {
-    shared: Mask,
-    unique: Mask,
+    // Used for searching for valid archetypes
+    pub(super) arch_search: Mask,
+
+    // Used for query validation
+    pub(super) validation_shared: Mask,
+    pub(super) validation_unique: Mask,
 }
 
 impl LayoutAccess {
-    // Create a new layout access
-    pub fn new(shared: Mask, unique: Mask) -> Self {
-        Self { shared, unique }
+    // Get the archetype search mask
+    pub fn archetype_search_mask(&self) -> Mask {
+        self.arch_search
+    }
+ 
+    // Get the shared validation mask
+    pub fn shared_validation_mask(&self) -> Mask {
+        self.validation_shared
     }
 
-    // No layout access at all
-    pub fn none() -> Self {
-        Self {
-            shared: Mask::zero(),
-            unique: Mask::zero(),
-        }
+    // Get the unique validation mask
+    pub fn unique_validation_mask(&self) -> Mask {
+        self.validation_unique
     }
 
-    // Get the shared access mask
-    pub fn shared(&self) -> Mask {
-        self.shared
-    }
-
-    // Get the unique access mask
-    pub fn unique(&self) -> Mask {
-        self.unique
-    }
-
-    // Or the shared and unique masks
-    pub fn both(&self) -> Mask {
-        self.shared | self.unique
+    // Get both validation masks (bitwise or)
+    pub fn both_validation_masks(&self) -> Mask {
+        self.validation_shared | self.validation_unique
     }
 }
 
@@ -43,8 +39,9 @@ impl BitOr for LayoutAccess {
 
     fn bitor(self, rhs: Self) -> Self::Output {
         Self {
-            shared: self.shared | rhs.shared,
-            unique: self.unique | rhs.unique,
+            arch_search: self.arch_search | rhs.arch_search,
+            validation_shared: self.validation_shared | rhs.validation_shared,
+            validation_unique: self.validation_unique | rhs.validation_unique
         }
     }
 }
@@ -54,8 +51,9 @@ impl BitAnd for LayoutAccess {
 
     fn bitand(self, rhs: Self) -> Self::Output {
         Self {
-            shared: self.shared & rhs.shared,
-            unique: self.unique & rhs.unique,
+            arch_search: self.arch_search & rhs.arch_search,
+            validation_shared: self.validation_shared & rhs.validation_shared,
+            validation_unique: self.validation_unique & rhs.validation_unique
         }
     }
 }
@@ -65,8 +63,9 @@ impl BitXor for LayoutAccess {
 
     fn bitxor(self, rhs: Self) -> Self::Output {
         Self {
-            shared: self.shared ^ rhs.shared,
-            unique: self.unique ^ rhs.unique,
+            arch_search: self.arch_search ^ rhs.arch_search,
+            validation_shared: self.validation_shared ^ rhs.validation_shared,
+            validation_unique: self.validation_unique ^ rhs.validation_unique
         }
     }
 }

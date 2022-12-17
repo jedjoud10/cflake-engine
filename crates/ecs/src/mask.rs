@@ -28,16 +28,6 @@ impl Mask {
         B::reduce(|a, b| a | b)
     }
 
-    // Create a mask from a ref layout
-    pub fn from_ref_layout<'s, L: QueryLayoutRef<'s>>() -> Self {
-        L::reduce(|a, b| a | b).both()
-    }
-
-    // Create a mask from a mut layout
-    pub fn from_mut_layout<'s, L: QueryLayoutMut<'s>>() -> Self {
-        L::reduce(|a, b| a | b).both()
-    }
-
     // Create a mask that has it's bitfield set to one
     pub fn one() -> Mask {
         Mask(0b1)

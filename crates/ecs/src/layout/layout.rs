@@ -43,10 +43,11 @@ pub trait QueryLayoutMut<'s> {
     fn is_valid() -> bool {
         let combined = Self::reduce(|a, b| a | b);
         let refmut_collisions =
-            combined.shared() & combined.unique() != Mask::zero();
+            combined.shared_validation_mask() & combined.unique_validation_mask() != Mask::zero();
+            
         let mut mut_collisions = false;
         Self::reduce(|a, b| {
-            mut_collisions |= (a & b) == b;
+            mut_collisions |= (a.unique_validation_mask() & b.unique_validation_mask()) == b.unique_validation_mask();
             a | b
         });
         !refmut_collisions && !mut_collisions
@@ -55,7 +56,7 @@ pub trait QueryLayoutMut<'s> {
     // Check if the query layout contains any mutable items
     fn is_mutable() -> bool {
         let combined = Self::reduce(|a, b| a | b);
-        combined.unique() != Mask::zero()
+        combined.unique_validation_mask() != Mask::zero()
     }
 
     // Read ptrs from the archetype, convert to slices, read from pointers
