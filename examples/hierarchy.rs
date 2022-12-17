@@ -21,5 +21,5 @@ fn update(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
     let (pos, _) =
         scene.find_mut::<(&mut Position, &Child)>().unwrap();
-    dbg!(pos);
+    println!("{:?}", pos);
 }

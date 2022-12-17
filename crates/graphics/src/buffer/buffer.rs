@@ -7,7 +7,7 @@ use std::{
 use crate::{
     BufferError, ExtendFromIterError, Graphics, InitializationError,
     InvalidModeError, InvalidRangeSizeError, InvalidUsageError,
-    SplatRangeError, WriteRangeError,
+    SplatRangeError, WriteRangeError, CopyRangeFromError,
 };
 use bytemuck::{Pod, Zeroable};
 use vulkan::{vk, Allocation, Recorder};
@@ -479,19 +479,36 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         dst_offset: usize,
         recorder: &mut Recorder,
     ) -> Result<(), BufferError> {
-        todo!()
-        /*
         let BufferBounds {
             offset: src_offset, size
-        } = self.convert_range_bounds(src_range)?;
+        } = self.convert_range_bounds(src_range).map_err(|x| {
+            BufferError::CopyRangeFrom(
+                CopyRangeFromError::InvalidDstRangeSize(x),
+            )
+        })?;
 
         // Check if the given range is valid for the other buffer
         if dst_offset + size < other.length && size == other.length {
-            return Err(BufferError::InvalidRangeSize(src_offset, src_offset+size, other.length));
+            return Err(BufferError::CopyRangeFrom(CopyRangeFromError::InvalidSrcRangeSize(InvalidRangeSizeError(src_offset, src_offset+size, other.length))));
         }
 
-        // Check if we can read from the src buffer
-        // Check if we write to the dst buffer
+        // Check if we can write to the buffer
+        if !self.usage.device_write {
+            return Err(BufferError::CopyRangeFrom(
+                CopyRangeFromError::InvalidSrcUsage(
+                    InvalidUsageError::IllegalHostWrite,
+                ),
+            ));
+        }
+
+        // Check if we can read from the buffer
+        if !other.usage.device_read {
+            return Err(BufferError::CopyRangeFrom(
+                CopyRangeFromError::InvalidDstUsage(
+                    InvalidUsageError::IllegalHostWrite,
+                ),
+            ));
+        }
 
         unsafe {
             let size = (size * self.stride()) as u64;
@@ -505,7 +522,6 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
             recorder.cmd_copy_buffer(other.buffer, self.buffer, vec![copy]);
         }
         Ok(())
-        */
     }
 
     // Copy the data from another buffer into this buffer

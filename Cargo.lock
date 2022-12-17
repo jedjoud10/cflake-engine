@@ -1689,6 +1689,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "roxmltree"
+version = "0.14.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "921904a62e410e37e215c40381b7117f830d9d89ba60ab5236170541dd25646b"
+dependencies = [
+ "xmlparser",
+]
+
+[[package]]
 name = "rubato"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1887,6 +1896,27 @@ name = "sha1_smol"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ae1a47186c03a32177042e55dbc5fd5aee900b8e0069a8d70fba96a9375cd012"
+
+[[package]]
+name = "shaderc"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77a410ea26a220ceaef964dd71054ccd63cc97fd54393014c09046e795127824"
+dependencies = [
+ "libc",
+ "shaderc-sys",
+]
+
+[[package]]
+name = "shaderc-sys"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a281c39df7d8a0a97e9430409abb466ff4bd046875c4d97591935042bbffc898"
+dependencies = [
+ "cmake",
+ "libc",
+ "roxmltree",
+]
 
 [[package]]
 name = "shlex"
@@ -2182,6 +2212,7 @@ dependencies = [
  "nohash-hasher",
  "parking_lot",
  "raw-window-handle 0.5.0",
+ "shaderc",
  "smallvec",
  "thread_local",
  "utils",
@@ -2628,3 +2659,9 @@ name = "xml-rs"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d2d7d3948613f75c98fd9328cfdcc45acc4d360655289d0a7d4ec931392200a3"
+
+[[package]]
+name = "xmlparser"
+version = "0.13.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4d25c75bf9ea12c4040a97f829154768bbbce366287e2dc044af160cd79a13fd"

@@ -113,23 +113,46 @@ impl CommandPool {
         &self,
         queue: vk::Queue,
         device: &Device,
-        buffer: &CommandBuffer,
+        command_buffer: &CommandBuffer,
     ) {
-        let buffers = [buffer.raw()];
+        let buffers = [command_buffer.raw()];
         let submit_info =
             vk::SubmitInfo::builder().command_buffers(&buffers);
         let submit_infos = [*submit_info];
 
         device
             .raw()
-            .queue_submit(queue, &submit_infos, vk::Fence::null())
+            .queue_submit(queue, &submit_infos, command_buffer.fence)
             .unwrap();
     }
 
-    // Complete the lifetime of a specific command buffer
-    pub unsafe fn complete(&self, buffer: &CommandBuffer) {
-        *buffer.recording.lock() = false;
-        *buffer.free.lock() = true;
+    // Wait for a command buffer to complete executing
+    pub unsafe fn wait(
+        &self,
+        device: &Device,
+        command_buffer: &CommandBuffer
+    ) {
+        // Flush the submission and start executing it on the GPU
+        let fence = command_buffer.fence();
+        log::debug!(
+            "Waiting for submission {}, fence {:?}",
+            command_buffer.index(),
+            fence
+        );
+
+        // Wait for the fence to complete
+        unsafe { device.raw().wait_for_fences(&[fence], true, u64::MAX).unwrap() };
+
+        // Unlock the command buffer
+        *command_buffer.recording.lock() = false;
+        *command_buffer.free.lock() = true;
+
+        // Reset the command buffer and it's fence
+        device.raw().reset_fences(&[command_buffer.fence]).unwrap();
+        device.raw().reset_command_buffer(
+            command_buffer.raw(),
+            vk::CommandBufferResetFlags::RELEASE_RESOURCES
+        ).unwrap();
     }
 
     /*

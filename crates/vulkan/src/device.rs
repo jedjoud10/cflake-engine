@@ -227,7 +227,7 @@ impl Device {
     ) {
         // Deallocate the underlying memory
         log::debug!(
-            "Freeing allocation {:?}",
+            "Freeing allocation with mapped ptr: {:?}",
             allocation.mapped_ptr()
         );
         self.allocator().free(allocation).unwrap();

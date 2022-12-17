@@ -67,6 +67,8 @@ impl<'a> Recorder<'a> {
         dst: vk::Buffer,
         regions: Vec<vk::BufferCopy>,
     ) {
+        log::warn!("Recorder::cmd_copy_buffer");
+        self.device().raw().cmd_copy_buffer(self.command_buffer().raw(), src, dst, &regions);
     }
 
     // Copy an image to a buffer in GPU memory
@@ -138,7 +140,6 @@ impl<'a> Recorder<'a> {
 // The underlying command buffer might've not been submitted yet
 pub struct Submission<'a> {
     flushed: bool,
-    force: bool,
 
     // Vulkan wrappers
     command_pool: &'a CommandPool,
@@ -157,7 +158,6 @@ impl<'a> Submission<'a> {
     ) -> Self {
         Self {
             flushed: false,
-            force: true,
             command_pool,
             command_buffer,
             device,
@@ -168,44 +168,26 @@ impl<'a> Submission<'a> {
     // Wait until the submission completes, and return the elapsedtime
     pub fn wait(mut self) -> Duration {
         let i = Instant::now();
-        self.flush();
+        self.flush_then_wait();
         i.elapsed()
     }
 
-    // Force an immediate flush of the buffer
-    pub fn flush(&mut self) {
+    // Force an immediate flush of the buffer, and wait for it to complete
+    pub fn flush_then_wait(&mut self) {
         if self.flushed {
             return;
         }
-
-        // Flush the submission and start executing it on the GPU
-        log::debug!(
-            "Waiting for submission {} from queue {:?}",
-            self.command_buffer.index(),
-            self.queue.raw()
-        );
-        //let fence = unsafe { self.pool.flush_specific(self.queue, self.device, self.index, true) };
-        /*
-        log::debug!("Waiting on fence {:?}...", fence);
-
-        // Wait for the fence (if we have one) to complete
-        if let Some(fence) = fence {
-            unsafe { self.device.raw().wait_for_fences(&[fence], true, u64::MAX).unwrap() };
-        } else {
-            log::warn!("Waiting on submission that doesn't have a fence!");
-        }
-        self.flushed = true;
-        */
-        self.device.wait();
-        self.flushed = true;
+        
+        // Wait for the command buffer to complete
         unsafe {
-            self.command_pool.complete(self.command_buffer);
+            self.command_pool.wait(self.device, self.command_buffer);
         }
+        self.flushed = true;
     }
 }
 
 impl<'a> Drop for Submission<'a> {
     fn drop(&mut self) {
-        self.flush();
+        self.flush_then_wait();
     }
 }
