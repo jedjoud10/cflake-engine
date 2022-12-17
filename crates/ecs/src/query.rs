@@ -1,4 +1,4 @@
-mod filters;
+pub(crate) mod filters;
 mod query_mut;
 mod query_ref;
 

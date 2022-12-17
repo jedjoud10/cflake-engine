@@ -88,7 +88,7 @@ impl<'s, T: Component> QueryItemRef<'s> for Option<&T> {
     type Owned = T;
 
     fn access() -> LayoutAccess {
-        LayoutAccess::new(mask::<T>(), Mask::zero())
+        LayoutAccess::none()
     }
 
     unsafe fn ptr_from_archetype_unchecked(
@@ -117,7 +117,7 @@ impl<'s> QueryItemRef<'s> for &Entity {
     type Owned = Entity;
 
     fn access() -> LayoutAccess {
-        LayoutAccess::new(Mask::zero(), Mask::zero())
+        LayoutAccess::none()
     }
 
     unsafe fn ptr_from_archetype_unchecked(

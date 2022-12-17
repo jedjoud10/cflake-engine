@@ -84,6 +84,34 @@ fn mask() {
     let mask1 = Mask::from(0b0100u32);
     let mask2 = Mask::from(0b1111u32);
     assert!(mask2.contains(mask1));
+
+    let mask = Mask::from_ref_layout::<(&Entity,
+        Option<&Position>,
+        Option<&Rotation>,
+        Option<&Scale>)>();
+    assert_eq!(mask, Mask::zero());
+
+    let mask = Mask::from_ref_layout::<(Option<&Position>,
+        Option<&Rotation>,
+        Option<&Scale>)>();
+    assert_eq!(mask, Mask::zero());
+
+    let mask = Mask::from_ref_layout::<Option<&Scale>>();
+    assert_eq!(mask, Mask::zero());
+
+    let mask = Mask::from_mut_layout::<(&Entity,
+        Option<&Position>,
+        Option<&Rotation>,
+        Option<&Scale>)>();
+    assert_eq!(mask, Mask::zero());
+
+    let mask = Mask::from_mut_layout::<(Option<&Position>,
+        Option<&Rotation>,
+        Option<&Scale>)>();
+    assert_eq!(mask, Mask::zero());
+
+    let mask = Mask::from_mut_layout::<Option<&Scale>>();
+    assert_eq!(mask, Mask::zero());
 }
 
 #[test]
@@ -260,8 +288,19 @@ fn optional_queries() {
     let iter = (0..4096).map(|_| (Name("Person"), Health(100)));
     manager.extend_from_iter(iter);
     assert_eq!(manager.query_mut::<&Health>().len(), 4096);
+    assert_eq!(manager.query_mut::<&Entity>().len(), 4096);
+    assert_eq!(manager.query_mut::<Option<&Health>>().len(), 4096);
+    assert_eq!(manager.query_mut::<(&Entity, Option<&Health>)>().len(), 4096);
     assert_eq!(
         manager.query_mut::<&Health>().into_iter().count(),
+        4096
+    );
+    assert_eq!(
+        manager.query_mut::<Option<&Health>>().into_iter().count(),
+        4096
+    );
+    assert_eq!(
+        manager.query_mut::<&Entity>().into_iter().count(),
         4096
     );
 
@@ -285,15 +324,6 @@ fn optional_queries() {
         health.0 += 100;
     }
 
-    assert_eq!(manager.query_mut::<&Health>().len(), 4096);
-    assert_eq!(
-        manager.query_mut::<&Health>().into_iter().count(),
-        4096
-    );
-    for health in manager.query_mut::<&Health>() {
-        assert_eq!(health.0, 100)
-    }
-
     let mut threadpool = ThreadPool::default();
     let query =
         manager.query_mut::<(&Name, &mut Health, Option<&Ammo>)>();
@@ -306,11 +336,6 @@ fn optional_queries() {
         32,
     );
 
-    assert_eq!(manager.query_mut::<&Health>().len(), 4096);
-    assert_eq!(
-        manager.query_mut::<&Health>().into_iter().count(),
-        4096
-    );
     for health in manager.query_mut::<&Health>() {
         assert_eq!(health.0, 200)
     }

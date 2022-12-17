@@ -75,6 +75,7 @@ pub(super) fn archetypes<
     scene: &Scene,
 ) -> (Mask, Vec<&Archetype>, F::Cached) {
     let mask = L::reduce(|a, b| a | b);
+    dbg!(mask);
     let cached = F::prepare();
     let archetypes = scene
         .archetypes()

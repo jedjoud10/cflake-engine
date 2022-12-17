@@ -274,10 +274,78 @@ fn update(world: &mut World) {
     }
 
     use crate::components::*;
+    use crate::query::filters::*;
 
     // Update the local-to-world matrix of the children
-    for (child, local_pos, local_rot, local_scl) in scene.query_mut::<(&mut Child, &LocalPosition, &LocalRotation, &LocalScale)>() {
+    for (child, local_pos, local_rot, local_scl) in scene
+        .query_mut::<(
+            &mut Child,
+            Option<&LocalPosition>,
+            Option<&LocalRotation>,
+            Option<&LocalScale>,
+        )>()
+    {
+        let mut matrix = vek::Mat4::<f32>::identity();
+        matrix = local_pos
+            .map_or(matrix, |l| matrix * vek::Mat4::<f32>::from(l));
+        matrix *= local_rot
+            .map_or(matrix, |r| matrix * vek::Mat4::<f32>::from(r));
+        matrix *= local_scl
+            .map_or(matrix, |s| matrix * vek::Mat4::<f32>::from(s));
+        child.local_to_world += matrix;
+    }
 
+    // Keeps track of the global transform of parents
+    type Transform =
+        (Option<Position>, Option<Rotation>, Option<Scale>);
+    let mut transforms = AHashMap::<Entity, Transform>::new();
+
+    // Fetch entities that are roots (ONLY parents)
+    let filter = contains::<Parent>() | always();
+    for (entity, pos, rot, scl) in scene.query::<(
+        &Entity,
+        Option<&Position>,
+        Option<&Rotation>,
+        Option<&Scale>,
+    )>()
+    {
+        dbg!("test2");
+        transforms.insert(
+            *entity,
+            (pos.cloned(), rot.cloned(), scl.cloned()),
+        );
+    }
+
+    // Iterate through all the child entities and update their global transform based on the parent
+    for (child, global_pos, global_rot, global_scl) in scene
+        .query_mut::<(
+            &Child,
+            Option<&mut Position>,
+            Option<&mut Rotation>,
+            Option<&mut Scale>,
+        )>()
+    {
+        let local_to_world = child.local_to_world;
+        if let Some(parent_transform) = transforms.get(&child.parent) {
+            dbg!("test");
+            let (parent_position, parent_rotation, parent_scale) =
+                parent_transform;
+
+            // Update transform here...
+            if let Some((global, parent)) =
+                global_pos.zip(*parent_position)
+            {
+                **global = vek::Vec3::one();
+            }
+
+            if let Some((global, parent)) =
+                global_rot.zip(*parent_position)
+            {}
+
+            if let Some((global, parent)) =
+                global_scl.zip(*parent_scale)
+            {}
+        }
     }
 }
 
