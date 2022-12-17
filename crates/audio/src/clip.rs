@@ -199,5 +199,7 @@ fn calculate_clip_duration_secs_from_size(
 ) -> Duration {
     let file_size = file_size as f32;
     let bytes_per_second = bytes_per_second as f32;
-    return Duration::from_secs((file_size / bytes_per_second) as u64);
+    return Duration::from_secs(
+        (file_size / bytes_per_second) as u64,
+    );
 }

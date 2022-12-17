@@ -407,14 +407,25 @@ fn unit_tuple() {
     let mut entry1 = manager.entry_mut(entity1).unwrap();
     entry1.insert_bundle(Health(0)).unwrap();
     let mut entry2 = manager.entry_mut(entity2).unwrap();
-    entry2.insert_bundle(Health(0)).unwrap();    
+    entry2.insert_bundle(Health(0)).unwrap();
 }
-
 
 #[test]
 fn hierarchy() {
     let mut manager = Scene::default();
     let entity1 = manager.insert(Position::default());
     let entity2 = manager.insert(Position::default());
-    manager.attach(entity1, entity2);
+    manager.attach(entity2, entity1);
+
+    let entry1 = manager.entry(entity1).unwrap();
+    let entry2 = manager.entry(entity2).unwrap();
+
+    let parent = entry1.get::<Parent>().unwrap();
+    assert_eq!(parent.children(), 1);
+
+    let child = entry2.get::<Child>().unwrap();
+    assert_eq!(child.parent(), entity1);
+    assert_eq!(child.depth(), 1);
+    assert_eq!(child.local_to_world(), vek::Mat4::identity());
+    assert_eq!(child.world_to_local(), vek::Mat4::identity());
 }

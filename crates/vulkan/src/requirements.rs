@@ -1,15 +1,20 @@
-use std::ffi::CString;
+use crate::{
+    AdapterFeatures, AdapterProperties,
+    AdapterQueueFamiliesProperties, AdapterSurfaceProperties,
+};
 use ash::vk::{
     self, PresentModeKHR, SurfaceCapabilitiesKHR, SurfaceFormatKHR,
 };
+use std::ffi::CString;
 use vk::PhysicalDeviceType;
-use crate::{AdapterFeatures, AdapterProperties, AdapterSurfaceProperties, AdapterQueueFamiliesProperties};
 
 // Get the required validation layers
 pub fn required_validation_layers() -> Vec<CString> {
     #[cfg(debug_assertions)]
-    return vec![CString::new("VK_LAYER_KHRONOS_validation".to_owned())
-        .unwrap()];
+    return vec![CString::new(
+        "VK_LAYER_KHRONOS_validation".to_owned(),
+    )
+    .unwrap()];
 
     #[cfg(not(debug_assertions))]
     return vec![];
@@ -22,7 +27,7 @@ pub fn required_instance_extensions() -> Vec<CString> {
         ash::extensions::khr::Surface::name().to_owned(),
     ]
 }
-    
+
 // Get the reqwuired logical device extensions
 pub fn required_device_extensions() -> Vec<CString> {
     vec![
@@ -50,7 +55,12 @@ pub fn required_features() -> AdapterFeatures {
         .robust_image_access(true)
         .synchronization2(true);
 
-    AdapterFeatures { features, features11, features12, features13 }
+    AdapterFeatures {
+        features,
+        features11,
+        features12,
+        features13,
+    }
 }
 
 // The required Vulkan API version

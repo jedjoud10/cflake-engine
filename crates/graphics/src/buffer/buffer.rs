@@ -5,11 +5,12 @@ use std::{
 };
 
 use crate::{
-    BufferError, Graphics, InvalidModeError,
-    InvalidUsageError, InitializationError, InvalidRangeSizeError, SplatRangeError, ExtendFromIterError, WriteRangeError,
+    BufferError, ExtendFromIterError, Graphics, InitializationError,
+    InvalidModeError, InvalidRangeSizeError, InvalidUsageError,
+    SplatRangeError, WriteRangeError,
 };
-use bytemuck::{Zeroable, Pod};
-use vulkan::{Recorder, Allocation, vk};
+use bytemuck::{Pod, Zeroable};
+use vulkan::{vk, Allocation, Recorder};
 
 // Some settings that tell us how exactly we should create the buffer
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
@@ -34,7 +35,7 @@ pub struct BufferUsage {
     pub device_write: bool,
     pub device_read: bool,
 
-    // Specifies what the host can do do with the buffer 
+    // Specifies what the host can do do with the buffer
     pub host_write: bool,
     pub host_read: bool,
 }
@@ -65,8 +66,14 @@ pub type UniformBuffer<T> = Buffer<T, UNIFORM>;
 pub type IndirectBuffer<T> = Buffer<T, INDIRECT>;
 
 // Plain old data type internally used by buffers and other types
-pub trait Content: Zeroable + Pod + Clone + Copy + Sync + Send + 'static {}
-impl<T: Clone + Copy + Sync + Send + Zeroable + Pod + 'static> Content for T {}
+pub trait Content:
+    Zeroable + Pod + Clone + Copy + Sync + Send + 'static
+{
+}
+impl<T: Clone + Copy + Sync + Send + Zeroable + Pod + 'static> Content
+    for T
+{
+}
 
 // An abstraction layer over a valid OpenGL buffer
 // This takes a valid OpenGL type and an element type, though the user won't be able make the buffer directly
@@ -99,8 +106,11 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         recorder: &mut Recorder<'a>,
     ) -> Result<Self, BufferError> {
         // Cannot create a zero sized slice for non-resizable buffers
-        if slice.is_empty() && !matches!(mode, BufferMode::Resizable) {
-            return Err(BufferError::Initialization(InitializationError::NotResizable));
+        if slice.is_empty() && !matches!(mode, BufferMode::Resizable)
+        {
+            return Err(BufferError::Initialization(
+                InitializationError::NotResizable,
+            ));
         }
 
         // Decompose graphics
@@ -125,10 +135,14 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         };
 
         // Optional init staging buffer
-        let tmp_init_staging = layout
-            .init_staging_buffer
-            .then(|| unsafe {
-                device.create_buffer(size, vk::BufferUsageFlags::TRANSFER_SRC, vulkan::MemoryLocation::CpuToGpu, queue)
+        let tmp_init_staging =
+            layout.init_staging_buffer.then(|| unsafe {
+                device.create_buffer(
+                    size,
+                    vk::BufferUsageFlags::TRANSFER_SRC,
+                    vulkan::MemoryLocation::CpuToGpu,
+                    queue,
+                )
             });
 
         // Check if we need to make a staging buffer
@@ -147,7 +161,10 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
                     .size(size);
 
                 // Copy the contents from the staging buffer to the src buffer
-                let mut old = std::mem::replace(recorder, queue.acquire(device));
+                let mut old = std::mem::replace(
+                    recorder,
+                    queue.acquire(device),
+                );
                 old.cmd_copy_buffer(buffer, src_buffer, vec![*copy]);
 
                 // Submit the recorder
@@ -233,11 +250,19 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         let valid_end_index = end <= self.length && end >= start;
 
         if !valid_start_index || !valid_end_index {
-            return Err(InvalidRangeSizeError(start, end, self.length));
+            return Err(InvalidRangeSizeError(
+                start,
+                end,
+                self.length,
+            ));
         }
 
         if (end - start) == 0 {
-            return Err(InvalidRangeSizeError(start, end, self.length));
+            return Err(InvalidRangeSizeError(
+                start,
+                end,
+                self.length,
+            ));
         }
 
         Ok(BufferBounds {
@@ -253,10 +278,12 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         range: impl RangeBounds<usize>,
         _recorder: &mut Recorder,
     ) -> Result<(), BufferError> {
-        let BufferBounds {
-            offset: _, size: _ 
-        } = self.convert_range_bounds(range)
-            .map_err(|x| BufferError::SplatRange(SplatRangeError::InvalidRangeSize(x)))?;
+        let BufferBounds { offset: _, size: _ } =
+            self.convert_range_bounds(range).map_err(|x| {
+                BufferError::SplatRange(
+                    SplatRangeError::InvalidRangeSize(x),
+                )
+            })?;
 
         todo!()
     }
@@ -287,21 +314,27 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
             && !matches!(self.mode, BufferMode::Parital)
         {
             return Err(BufferError::ExtendFromIter(
-                ExtendFromIterError::InvalidMode(InvalidModeError::IllegalChangeLength),
+                ExtendFromIterError::InvalidMode(
+                    InvalidModeError::IllegalChangeLength,
+                ),
             ));
         }
 
         // Check if we can write to the buffer
         if !self.usage.host_write {
             return Err(BufferError::ExtendFromIter(
-                ExtendFromIterError::InvalidUsage(InvalidUsageError::IllegalHostWrite),
+                ExtendFromIterError::InvalidUsage(
+                    InvalidUsageError::IllegalHostWrite,
+                ),
             ));
         }
 
         // Check if we can read from the buffer
         if !self.usage.host_read {
             return Err(BufferError::ExtendFromIter(
-                ExtendFromIterError::InvalidUsage(InvalidUsageError::IllegalHostWrite),
+                ExtendFromIterError::InvalidUsage(
+                    InvalidUsageError::IllegalHostWrite,
+                ),
             ));
         }
 
@@ -366,7 +399,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         todo!()
         /*
         let BufferBounds {
-            offset, size 
+            offset, size
         } = self.convert_range_bounds(range)?;
 
         // Check if the given slice matches with the range
@@ -405,7 +438,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         todo!()
         /*
         let BufferBounds {
-            offset, size 
+            offset, size
         } = self.convert_range_bounds(range)?;
 
         // Create a vec and read into it
@@ -424,7 +457,10 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     }
 
     // Clear the buffer contents, resetting the buffer's length down to zero
-    pub fn clear(&mut self, recorder: &mut Recorder) -> Result<(), BufferError> {
+    pub fn clear(
+        &mut self,
+        recorder: &mut Recorder,
+    ) -> Result<(), BufferError> {
         unsafe {
             let size = (self.length * self.stride()) as u64;
             recorder.cmd_clear_buffer(self.buffer, 0, size);
@@ -446,7 +482,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         todo!()
         /*
         let BufferBounds {
-            offset: src_offset, size 
+            offset: src_offset, size
         } = self.convert_range_bounds(src_range)?;
 
         // Check if the given range is valid for the other buffer
@@ -477,7 +513,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         &mut self,
         other: &Buffer<T, OTHER>,
         recorder: &mut Recorder,
-    ) -> Result<(), BufferError> {        
+    ) -> Result<(), BufferError> {
         self.copy_range_from(.., other, 0, recorder)
     }
 

@@ -137,11 +137,10 @@ mod bitset {
     }
 }
 
-
 #[cfg(test)]
 mod atomic_bitset {
-    use std::sync::atomic::Ordering;
     use crate::AtomicBitSet;
+    use std::sync::atomic::Ordering;
 
     #[test]
     fn bitset() {
@@ -168,14 +167,29 @@ mod atomic_bitset {
         bitset.set(0, Ordering::Relaxed);
         bitset.set(10, Ordering::Relaxed);
         assert_eq!(bitset.count_ones(Ordering::Relaxed), 2);
-        assert_eq!(bitset.find_one_from(0, Ordering::Relaxed), Some(0));
-        assert_eq!(bitset.find_one_from(1, Ordering::Relaxed), Some(10));
+        assert_eq!(
+            bitset.find_one_from(0, Ordering::Relaxed),
+            Some(0)
+        );
+        assert_eq!(
+            bitset.find_one_from(1, Ordering::Relaxed),
+            Some(10)
+        );
         assert_eq!(bitset.find_one_from(11, Ordering::Relaxed), None);
-        assert_eq!(bitset.find_one_from(10, Ordering::Relaxed), Some(10));
+        assert_eq!(
+            bitset.find_one_from(10, Ordering::Relaxed),
+            Some(10)
+        );
 
         bitset.set(4096, Ordering::Relaxed);
-        assert_eq!(bitset.find_one_from(11, Ordering::Relaxed), Some(4096));
-        assert_eq!(bitset.find_one_from(4098, Ordering::Relaxed), None);
+        assert_eq!(
+            bitset.find_one_from(11, Ordering::Relaxed),
+            Some(4096)
+        );
+        assert_eq!(
+            bitset.find_one_from(4098, Ordering::Relaxed),
+            None
+        );
     }
 
     #[test]
@@ -183,13 +197,28 @@ mod atomic_bitset {
         let bitset = AtomicBitSet::new();
         bitset.set(0, Ordering::Relaxed);
         bitset.set(10, Ordering::Relaxed);
-        assert_eq!(bitset.count_zeros(Ordering::Relaxed), usize::BITS as usize - 2);
-        assert_eq!(bitset.find_zero_from(0, Ordering::Relaxed), Some(1));
-        assert_eq!(bitset.find_zero_from(1, Ordering::Relaxed), Some(1));
+        assert_eq!(
+            bitset.count_zeros(Ordering::Relaxed),
+            usize::BITS as usize - 2
+        );
+        assert_eq!(
+            bitset.find_zero_from(0, Ordering::Relaxed),
+            Some(1)
+        );
+        assert_eq!(
+            bitset.find_zero_from(1, Ordering::Relaxed),
+            Some(1)
+        );
 
         bitset.set(4096, Ordering::Relaxed);
-        assert_eq!(bitset.find_zero_from(10, Ordering::Relaxed), Some(11));
-        assert_eq!(bitset.find_zero_from(11, Ordering::Relaxed), Some(11));
+        assert_eq!(
+            bitset.find_zero_from(10, Ordering::Relaxed),
+            Some(11)
+        );
+        assert_eq!(
+            bitset.find_zero_from(11, Ordering::Relaxed),
+            Some(11)
+        );
     }
 
     #[test]
@@ -200,10 +229,22 @@ mod atomic_bitset {
         bitset.set(4, Ordering::Relaxed);
 
         assert_eq!(bitset.count_ones(Ordering::Relaxed), 3);
-        assert_eq!(bitset.find_one_from(0, Ordering::Relaxed), Some(0));
-        assert_eq!(bitset.find_one_from(1, Ordering::Relaxed), Some(2));
-        assert_eq!(bitset.find_one_from(2, Ordering::Relaxed), Some(2));
-        assert_eq!(bitset.find_one_from(3, Ordering::Relaxed), Some(4));
+        assert_eq!(
+            bitset.find_one_from(0, Ordering::Relaxed),
+            Some(0)
+        );
+        assert_eq!(
+            bitset.find_one_from(1, Ordering::Relaxed),
+            Some(2)
+        );
+        assert_eq!(
+            bitset.find_one_from(2, Ordering::Relaxed),
+            Some(2)
+        );
+        assert_eq!(
+            bitset.find_one_from(3, Ordering::Relaxed),
+            Some(4)
+        );
     }
 }
 

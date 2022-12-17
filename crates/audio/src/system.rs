@@ -14,14 +14,15 @@ fn update(world: &mut World) {
     // Don't do anything if we don't have an audio player
     let player = if player.is_none() {
         return;
-    } else { player.unwrap() };
+    } else {
+        player.unwrap()
+    };
 
     // Iterate through all the audio sources that have been changed
     for source in scene.query_mut::<&mut AudioSource>() {
         if source.stream.is_none() && source.playing {
             let builder = source.builder().clone();
-            let stream =
-                builder.build_output_stream(player).unwrap();
+            let stream = builder.build_output_stream(player).unwrap();
             source.stream = Some(stream);
         }
     }

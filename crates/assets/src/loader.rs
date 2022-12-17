@@ -1,4 +1,4 @@
-use crate::{Asset, AssetInput, AsyncAsset, AssetLoadError};
+use crate::{Asset, AssetInput, AssetLoadError, AsyncAsset};
 use ahash::AHashMap;
 use parking_lot::RwLock;
 use slotmap::{DefaultKey, SlotMap};

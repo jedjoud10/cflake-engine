@@ -1,4 +1,7 @@
-use crate::{FrameRateLimit, Graphics, Window, WindowSettings, Surface, Adapter, Device, Queue, Swapchain, Instance};
+use crate::{
+    Adapter, Device, FrameRateLimit, Graphics, Instance, Queue,
+    Surface, Swapchain, Window, WindowSettings,
+};
 use parking_lot::Mutex;
 use std::sync::Arc;
 use winit::{
@@ -19,7 +22,13 @@ pub(crate) unsafe fn init_context_and_window(
     let window = init_window(el, &settings);
 
     // Create the low-level mid wrappers around raw Vulkan objects
-    let instance = Instance::new(&window, app_name, app_version, engine_name, engine_version);
+    let instance = Instance::new(
+        &window,
+        app_name,
+        app_version,
+        engine_name,
+        engine_version,
+    );
     let surface = Surface::new(&instance, &window);
     let adapter = Adapter::pick(&instance, &surface);
     let device = Device::new(&instance, &adapter);
@@ -30,17 +39,22 @@ pub(crate) unsafe fn init_context_and_window(
     );
 
     // Create the graphics wrapper
-    let graphics = super::graphics::Graphics(Arc::new(super::graphics::InternalGraphics {
-        instance,
-        surface,
-        adapter,
-        device,
-        queue,
-        swapchain,
-    }));
+    let graphics = super::graphics::Graphics(Arc::new(
+        super::graphics::InternalGraphics {
+            instance,
+            surface,
+            adapter,
+            device,
+            queue,
+            swapchain,
+        },
+    ));
 
     // Create the window wrapper
-    let window = Window { settings, raw: window };
+    let window = Window {
+        settings,
+        raw: window,
+    };
 
     (graphics, window)
 }

@@ -1,5 +1,8 @@
 use std::sync::Arc;
-use vulkan::{Instance, Surface, Adapter, Device, Swapchain, Queue, Recorder, Submission};
+use vulkan::{
+    Adapter, Device, Instance, Queue, Recorder, Submission, Surface,
+    Swapchain,
+};
 
 // Internal struct that contain the raw vulkan instances and values
 // This is what will be wrapped around an arc, and this is what will handle Vulkan object destruction
@@ -79,7 +82,10 @@ impl Graphics {
     }
 
     // Submit the command buffer and start executing the underlying commands
-    pub fn submit<'a>(&'a self, recorder: Recorder<'a>) -> Submission {
+    pub fn submit<'a>(
+        &'a self,
+        recorder: Recorder<'a>,
+    ) -> Submission {
         self.queue().submit(recorder)
     }
 }

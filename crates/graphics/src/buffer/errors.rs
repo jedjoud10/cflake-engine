@@ -19,7 +19,9 @@ pub enum InvalidModeError {
     #[error("Missing change length permission (BufferMode::Resizable or BufferMode::Partial)")]
     IllegalChangeLength,
 
-    #[error("Missing reallocation permission (BufferMode::Resizable)")]
+    #[error(
+        "Missing reallocation permission (BufferMode::Resizable)"
+    )]
     IllegalReallocation,
 }
 
@@ -28,7 +30,7 @@ pub enum InvalidModeError {
 pub enum InvalidUsageError {
     #[error("The buffer is not readable at all since BufferUsages.host_read is false and BufferUsages.device_read is false")]
     IllegalRead,
-    
+
     #[error("The buffer is not writable at all since BufferUsages.host_write is false and BufferUsages.device_write is false")]
     IllegalWrite,
 

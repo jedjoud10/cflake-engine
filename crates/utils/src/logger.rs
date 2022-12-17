@@ -5,8 +5,8 @@ use parking_lot::Mutex;
 
 /*
 FIXME
-// This will log debug messages, warning messages, and errors to a file 
-// This will also print the messages to the console 
+// This will log debug messages, warning messages, and errors to a file
+// This will also print the messages to the console
 pub struct Logger {
     level: Level,
     file: PathBuf,
@@ -42,7 +42,7 @@ impl Log for Logger {
 
     // Flush the lines and write to a log file
     fn flush(&self) {
-        let 
+        let
     }
 }
 */

@@ -2,7 +2,6 @@ use super::Recorder;
 use ahash::AHashMap;
 use ash::vk;
 
-
 /*
     vkCmdBeginConditionalRenderingEXT(3)
 vkCmdBeginDebugUtilsLabelEXT(3)
@@ -95,4 +94,3 @@ vkCmdWriteBufferMarkerAMD(3)
 vkCmdWriteTimestamp(3)
 
 */
-

@@ -1,5 +1,5 @@
-use vulkan::{vk, MemoryLocation};
 use crate::{BufferMode, BufferUsage};
+use vulkan::{vk, MemoryLocation};
 
 // Buffer internal layout that contains memory location of src buffer
 // and it's staging buffer (if it has one)
@@ -50,8 +50,15 @@ pub(super) fn find_optimal_layout(
     let host = host_read || host_write;
 
     // Convert the transfer src/dst into the appropriate flags
-    let transfer = if device_write { vk::BufferUsageFlags::TRANSFER_DST } else { vk::BufferUsageFlags::empty() }
-        | if device_read { vk::BufferUsageFlags::TRANSFER_SRC } else { vk::BufferUsageFlags::empty() };
+    let transfer = if device_write {
+        vk::BufferUsageFlags::TRANSFER_DST
+    } else {
+        vk::BufferUsageFlags::empty()
+    } | if device_read {
+        vk::BufferUsageFlags::TRANSFER_SRC
+    } else {
+        vk::BufferUsageFlags::empty()
+    };
 
     // Map buffer type to usage flags
     let base = vk::BufferUsageFlags::from_raw(_type) | transfer;
@@ -68,11 +75,7 @@ pub(super) fn find_optimal_layout(
     }
 
     // if host_read and hint_device_write, GPUToCPU
-    if host_read
-        && device_write
-        && !host_write
-        && !device_read
-    {
+    if host_read && device_write && !host_write && !device_read {
         return BufferLayouts {
             src_buffer_memory_location: MemoryLocation::GpuToCpu,
             src_buffer_usage_flags: base,
@@ -82,11 +85,7 @@ pub(super) fn find_optimal_layout(
     }
 
     // if host_write and hint_device_read, CPUToGPU
-    if host_write
-        && device_read
-        && !host_read
-        && !device_write
-    {
+    if host_write && device_read && !host_read && !device_write {
         return BufferLayouts {
             src_buffer_memory_location: MemoryLocation::CpuToGpu,
             src_buffer_usage_flags: base,

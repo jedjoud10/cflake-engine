@@ -1,5 +1,5 @@
+use super::CommandPool;
 use crate::{Adapter, Device, Instance, Recorder, Submission};
-use super::{CommandPool};
 use ash::vk;
 
 // This will be the main queue that we will access and submit data into
@@ -20,17 +20,14 @@ pub struct Queue {
 
 impl Queue {
     // Create the queue families, queues, and default pools
-    pub unsafe fn new(
-        device: &Device,
-        adapter: &Adapter,
-    ) -> Self {
+    pub unsafe fn new(device: &Device, adapter: &Adapter) -> Self {
         // Let one queue family handle everything
         let family = Self::pick_queue_family(
             adapter,
             true,
             vk::QueueFlags::GRAPHICS
-             | vk::QueueFlags::COMPUTE
-             | vk::QueueFlags::TRANSFER
+                | vk::QueueFlags::COMPUTE
+                | vk::QueueFlags::TRANSFER,
         );
 
         // Get the queue from the device
@@ -54,7 +51,9 @@ impl Queue {
         supports_presenting: bool,
         flags: vk::QueueFlags,
     ) -> u32 {
-        adapter.families.queue_family_properties
+        adapter
+            .families
+            .queue_family_properties
             .iter()
             .enumerate()
             .position(|(i, props)| {
@@ -63,7 +62,9 @@ impl Queue {
 
                 // If the queue we must fetch must support presenting, fetch the physical device properties
                 let presenting = !supports_presenting
-                    || adapter.families.queue_family_surface_supported[i];
+                    || adapter
+                        .families
+                        .queue_family_surface_supported[i];
                 flags && presenting
             })
             .unwrap() as u32
@@ -91,14 +92,15 @@ impl Queue {
 
     // Aquire a new free command recorder that we can use to record commands
     // This might return a command buffer that is already in the recording state*
-    pub fn acquire<'a>(
-        &'a self,
-        device: &'a Device,
-    ) -> Recorder<'a> {
+    pub fn acquire<'a>(&'a self, device: &'a Device) -> Recorder<'a> {
         let command_pool = &self.pools[0];
         unsafe {
             let command_buffer = command_pool.start_recording(device);
-            Recorder::from_raw_parts(command_buffer, command_pool, device)
+            Recorder::from_raw_parts(
+                command_buffer,
+                command_pool,
+                device,
+            )
         }
     }
 
@@ -110,10 +112,22 @@ impl Queue {
     ) -> Submission {
         let pool = recorder.command_pool;
         unsafe {
-            pool.stop_recording(recorder.device(), &recorder.command_buffer);
-            pool.submit(self.raw(), recorder.device(), &recorder.command_buffer);
+            pool.stop_recording(
+                recorder.device(),
+                &recorder.command_buffer,
+            );
+            pool.submit(
+                self.raw(),
+                recorder.device(),
+                &recorder.command_buffer,
+            );
         }
-        Submission::new(recorder.command_pool, recorder.command_buffer, recorder.device, self)
+        Submission::new(
+            recorder.command_pool,
+            recorder.command_buffer,
+            recorder.device,
+            self,
+        )
     }
 
     // Wait until all the data submitted to this queue finishes executing on the GPU

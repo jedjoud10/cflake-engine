@@ -1,13 +1,13 @@
 mod asset;
+mod error;
 mod input;
 mod loader;
 mod macros;
 mod raw;
 mod system;
 mod tests;
-mod error;
-pub use error::*;
 pub use asset::*;
+pub use error::*;
 pub use input::*;
 pub use loader::*;
 pub use macros::*;

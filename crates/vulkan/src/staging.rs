@@ -1,7 +1,7 @@
+use crate::{Device, Queue};
 use ash::vk;
 use gpu_allocator::{vulkan::Allocation, MemoryLocation};
 use parking_lot::Mutex;
-use crate::{Device, Queue};
 
 // Sub buffer block that is accessible in the staging pool
 pub struct SubBufferBlock {
@@ -22,10 +22,12 @@ impl SubBufferBlock {
     pub fn mapped_slice(&self) -> &[u8] {
         unsafe { std::slice::from_raw_parts(self.data, self.size()) }
     }
-    
+
     // Get the mapped data mutably
     pub fn mapped_slice_mut(&mut self) -> &mut [u8] {
-        unsafe { std::slice::from_raw_parts_mut(self.data, self.size()) }
+        unsafe {
+            std::slice::from_raw_parts_mut(self.data, self.size())
+        }
     }
 
     // Get the size of this sub buffer block
@@ -63,7 +65,7 @@ impl SubBuffer {
                     output = Some((last, *start));
                 }
             }
-            
+
             last = *end;
         }
 
@@ -74,7 +76,7 @@ impl SubBuffer {
             None
         };
 
-        
+
 
         output.map(|(start, end)| {
             let ptr = unsafe {
@@ -82,7 +84,7 @@ impl SubBuffer {
                 .add(start)
             };
             log::debug!("Found sub-buffer block {}..{} from sub-buffer {:?}", start, end, self.raw);
-        
+
             SubBufferBlock {
                 index: self.index,
                 buffer: self.raw,
@@ -110,7 +112,7 @@ impl StagingPool {
             subbuffers: Mutex::new(Vec::new())
         }
     }
-    
+
     // Force the allocation of a new block in memory, even though we might have
     // free blocks that we can reuse
     unsafe fn allocate(&self, device: &Device, queue: &Queue, size: u64) -> SubBufferBlock {
@@ -150,9 +152,9 @@ impl StagingPool {
 
     // Unlock a buffer and return it to the staging pool
     // Note: This might be called with a buffer that is still in use by the GPU,
-    // in which case this command would basically act as if the sub buffer was still in use 
+    // in which case this command would basically act as if the sub buffer was still in use
     pub unsafe fn unlock(&self, device: &Device, block: SubBufferBlock) {
-        
+
     }
 }
 */

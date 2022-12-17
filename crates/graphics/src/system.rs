@@ -1,4 +1,4 @@
-use crate::{WindowSettings, Graphics};
+use crate::{Graphics, WindowSettings};
 use winit::{event::WindowEvent, event_loop::EventLoop};
 use world::{post_user, user, State, System, World};
 
@@ -13,14 +13,16 @@ fn init(
     engine_version: u32,
 ) {
     // Initialize the Vulkan context and create a winit Window
-    let (graphics, window) = unsafe { crate::context::init_context_and_window(
-        app_name,
-        app_version,
-        engine_name,
-        engine_version,
-        el,
-        window_settings.clone(),
-    ) };
+    let (graphics, window) = unsafe {
+        crate::context::init_context_and_window(
+            app_name,
+            app_version,
+            engine_name,
+            engine_version,
+            el,
+            window_settings.clone(),
+        )
+    };
 
     // Add the resources into the world
     world.insert(window);
@@ -58,7 +60,7 @@ fn update(world: &mut World) {
     let swapchain = graphics.swapchain();
     let recorder = graphics.acquire();
 
-    unsafe { 
+    unsafe {
         let (index, image) = swapchain.acquire_next_image();
         //recorder.cmd_clear_image(image);
         swapchain.present(queue, (index, image));
@@ -77,11 +79,19 @@ pub fn system(
     app_name: String,
     app_version: u32,
     engine_name: String,
-    engine_version: u32
+    engine_version: u32,
 ) {
     system
         .insert_init(move |world: &mut World, el: &EventLoop<()>| {
-            init(world, el, window_settings, app_name, app_version, engine_name, engine_version)
+            init(
+                world,
+                el,
+                window_settings,
+                app_name,
+                app_version,
+                engine_name,
+                engine_version,
+            )
         })
         .after(utils::threadpool)
         .before(user);

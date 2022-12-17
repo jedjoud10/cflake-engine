@@ -1,6 +1,6 @@
-use std::time::{Duration, Instant};
-use crate::{Device, CommandPool, CommandBuffer, Queue};
+use crate::{CommandBuffer, CommandPool, Device, Queue};
 use ash::vk;
+use std::time::{Duration, Instant};
 
 // A recorder can keep a command buffer cached until we flush it
 // This is used to reduce the number of submissions we have to make to the GPU
@@ -11,7 +11,7 @@ pub struct Recorder<'a> {
 }
 
 impl<'a> Recorder<'a> {
-    // Create a raw recorder using it's raw components 
+    // Create a raw recorder using it's raw components
     pub(crate) unsafe fn from_raw_parts(
         command_buffer: &'a CommandBuffer,
         command_pool: &'a CommandPool,
@@ -34,12 +34,11 @@ impl<'a> Recorder<'a> {
         &self.command_pool
     }
 
-    // Get the underlying device from the device  
+    // Get the underlying device from the device
     pub fn device(&self) -> &Device {
         &self.device
     }
 }
-
 
 // Buffer commands
 impl<'a> Recorder<'a> {
@@ -113,7 +112,7 @@ impl<'a> Recorder<'a> {
     ) {
     }
 
-    // Clear an image to a specific color 
+    // Clear an image to a specific color
     pub unsafe fn cmd_clear_image(
         &mut self,
         image: vk::Image,
@@ -140,7 +139,7 @@ impl<'a> Recorder<'a> {
 pub struct Submission<'a> {
     flushed: bool,
     force: bool,
-    
+
     // Vulkan wrappers
     command_pool: &'a CommandPool,
     command_buffer: &'a CommandBuffer,
@@ -148,26 +147,31 @@ pub struct Submission<'a> {
     queue: &'a Queue,
 }
 
-impl<'a> Submission<'a> {   
+impl<'a> Submission<'a> {
     // Create a submission (only used within queue)
-    pub fn new(command_pool: &'a CommandPool, command_buffer: &'a CommandBuffer, device: &'a Device, queue: &'a Queue) -> Self {
+    pub fn new(
+        command_pool: &'a CommandPool,
+        command_buffer: &'a CommandBuffer,
+        device: &'a Device,
+        queue: &'a Queue,
+    ) -> Self {
         Self {
             flushed: false,
             force: true,
             command_pool,
             command_buffer,
             device,
-            queue
+            queue,
         }
     }
 
     // Wait until the submission completes, and return the elapsedtime
-    pub fn wait(mut self) -> Duration {     
+    pub fn wait(mut self) -> Duration {
         let i = Instant::now();
-        self.flush();   
+        self.flush();
         i.elapsed()
     }
-    
+
     // Force an immediate flush of the buffer
     pub fn flush(&mut self) {
         if self.flushed {
@@ -175,11 +179,15 @@ impl<'a> Submission<'a> {
         }
 
         // Flush the submission and start executing it on the GPU
-        log::debug!("Waiting for submission {} from queue {:?}", self.command_buffer.index(), self.queue.raw());
+        log::debug!(
+            "Waiting for submission {} from queue {:?}",
+            self.command_buffer.index(),
+            self.queue.raw()
+        );
         //let fence = unsafe { self.pool.flush_specific(self.queue, self.device, self.index, true) };
         /*
         log::debug!("Waiting on fence {:?}...", fence);
-        
+
         // Wait for the fence (if we have one) to complete
         if let Some(fence) = fence {
             unsafe { self.device.raw().wait_for_fences(&[fence], true, u64::MAX).unwrap() };
@@ -190,7 +198,9 @@ impl<'a> Submission<'a> {
         */
         self.device.wait();
         self.flushed = true;
-        unsafe { self.command_pool.complete(self.command_buffer); }
+        unsafe {
+            self.command_pool.complete(self.command_buffer);
+        }
     }
 }
 

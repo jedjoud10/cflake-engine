@@ -1,5 +1,5 @@
-use ahash::{AHashSet, AHashMap};
-use crate::{Scene, Entity, Component};
+use crate::{Component, Entity, Scene};
+use ahash::{AHashMap, AHashSet};
 
 // A child component added onto entities that are linked to a parent entity
 #[derive(Component)]
@@ -19,12 +19,12 @@ impl Child {
     pub fn local_to_world(&self) -> vek::Mat4<f32> {
         self.local_to_world
     }
-    
+
     // Get the world to local matrix
     pub fn world_to_local(&self) -> vek::Mat4<f32> {
         self.local_to_world.inverted()
     }
-    
+
     // Get the depth of this child
     pub fn depth(&self) -> usize {
         self.depth
@@ -39,4 +39,7 @@ pub struct Parent {
 
 impl Parent {
     // Get the number of children that this parent has
+    pub fn children(&self) -> usize {
+        self.children
+    }
 }

@@ -1,8 +1,9 @@
 use std::{
+    any::TypeId,
     fs::{File, OpenOptions},
     io::{BufReader, BufWriter, Read},
     path::{Path, PathBuf},
-    str::FromStr, any::TypeId,
+    str::FromStr,
 };
 
 use ahash::AHashMap;

@@ -1,5 +1,5 @@
-use thiserror::Error;
 use std::error::Error;
+use thiserror::Error;
 
 // Error that occurs when we try to load an asset
 #[derive(Error, Debug)]

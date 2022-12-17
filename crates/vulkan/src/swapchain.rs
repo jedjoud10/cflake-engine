@@ -1,4 +1,4 @@
-use crate::{Adapter, Device, Instance, Surface, Queue};
+use crate::{Adapter, Device, Instance, Queue, Surface};
 use ash::vk::{self};
 
 // Wrapper around the vulkan swapchain
@@ -75,8 +75,8 @@ impl Swapchain {
         let swapchain_images = unsafe {
             swapchain_loader.get_swapchain_images(swapchain).unwrap()
         };
-        let min =
-            adapter.surface.surface_capabilities.min_image_count as usize;
+        let min = adapter.surface.surface_capabilities.min_image_count
+            as usize;
         log::debug!(
             "Swapchain contains {} images. {} more than the minimum",
             swapchain_images.len(),
@@ -84,13 +84,16 @@ impl Swapchain {
         );
 
         // Semaphore that is signaled whenever we have a new available image
-        let image_available_semaphore = unsafe { device.create_semaphore() };
+        let image_available_semaphore =
+            unsafe { device.create_semaphore() };
 
         // Semaphore that is signaled when we finished rendering
-        let rendering_finished_semaphore = unsafe { device.create_semaphore() };
+        let rendering_finished_semaphore =
+            unsafe { device.create_semaphore() };
 
         // Fence that is signaled when we finished rendered
-        let rendering_finished_fence = unsafe { device.create_fence() };
+        let rendering_finished_fence =
+            unsafe { device.create_fence() };
 
         Swapchain {
             loader: swapchain_loader,
@@ -193,18 +196,21 @@ impl Swapchain {
                 u64::MAX,
                 self.image_available_semaphore,
                 vk::Fence::null(),
-            ).unwrap();
+            )
+            .unwrap();
         (index, self.images[index as usize])
     }
 
     // Present an image to the swapchain and make sure it will wait on the correspoding semaphore
-    pub unsafe fn present(&self, queue: &Queue, index: (u32, vk::Image)) {        
+    pub unsafe fn present(
+        &self,
+        queue: &Queue,
+        index: (u32, vk::Image),
+    ) {
         // Wait until the command buffers finished executing so we can present the image
         let present_info = *vk::PresentInfoKHR::builder()
             .swapchains(&[self.raw])
-            .wait_semaphores(&[
-                self.image_available_semaphore
-            ])
+            .wait_semaphores(&[self.image_available_semaphore])
             .image_indices(&[index.0]);
 
         // Present the image to the screen

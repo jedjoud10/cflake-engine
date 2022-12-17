@@ -1,9 +1,13 @@
-use crate::{Adapter, Instance, Queue, required_features, SubBufferBlock};
+use crate::{
+    required_features, Adapter, Instance, Queue, SubBufferBlock,
+};
 use ahash::AHashMap;
 use ash::vk::{self, DeviceCreateInfo, DeviceQueueCreateInfo};
-use gpu_allocator::vulkan::{Allocator, AllocatorCreateDesc, Allocation, AllocationCreateDesc};
-use parking_lot::{Mutex, MappedMutexGuard, MutexGuard};
 use dashmap::DashMap;
+use gpu_allocator::vulkan::{
+    Allocation, AllocationCreateDesc, Allocator, AllocatorCreateDesc,
+};
+use parking_lot::{MappedMutexGuard, Mutex, MutexGuard};
 
 // This is a logical device that can run multiple commands and that can create Vulkan objects
 pub struct Device {
@@ -24,8 +28,8 @@ impl Device {
             adapter,
             true,
             vk::QueueFlags::GRAPHICS
-             | vk::QueueFlags::COMPUTE
-             | vk::QueueFlags::TRANSFER
+                | vk::QueueFlags::COMPUTE
+                | vk::QueueFlags::TRANSFER,
         );
 
         // Create the queue create infos
@@ -47,7 +51,7 @@ impl Device {
 
         // Get the features that we must enable
         let mut adapter_features = required_features();
-        
+
         // Create the device create info
         let logical_device_create_info = DeviceCreateInfo::builder()
             .queue_create_infos(&create_infos)
@@ -93,9 +97,7 @@ impl Device {
             buffer_device_address: false,
         })
         .unwrap();
-        log::debug!(
-            "Created the Vulkan memory allocator"
-        );
+        log::debug!("Created the Vulkan memory allocator");
 
         // Drop the cstrings
         drop(required_device_extensions);
@@ -115,12 +117,16 @@ impl Device {
 
     // Lock the GPU allocator mutably
     pub fn allocator(&self) -> MappedMutexGuard<Allocator> {
-        MutexGuard::map(self.allocator.lock(), |f| f.as_mut().unwrap())
+        MutexGuard::map(self.allocator.lock(), |f| {
+            f.as_mut().unwrap()
+        })
     }
 
     // Wait until the device executes all the code submitted to the GPU
     pub fn wait(&self) {
-        unsafe { self.device.device_wait_idle().unwrap(); }
+        unsafe {
+            self.device.device_wait_idle().unwrap();
+        }
     }
 
     // Destroy the logical device
@@ -152,9 +158,8 @@ impl Device {
     // Destroy a fence
     pub unsafe fn destroy_fence(&self, fence: vk::Fence) {
         self.device.destroy_fence(fence, None);
-    } 
+    }
 }
-
 
 impl Device {
     // Create raw buffer with no memory
@@ -234,7 +239,7 @@ impl Device {
     }
 
     /*
-    
+
     // Create a temporary staging buffer from the StagingPool
     pub unsafe fn create_staging_buffer(
         &self,
@@ -244,7 +249,7 @@ impl Device {
         self.pool.lock().lock(self, queue, size)
     }
 
-    // Free a temporary staging buffer from the StagingPool 
+    // Free a temporary staging buffer from the StagingPool
     pub unsafe fn destroy_staging_buffer(
         &self,
         block: SubBufferBlock

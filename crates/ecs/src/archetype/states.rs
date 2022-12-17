@@ -94,7 +94,8 @@ impl StateColumn {
     // Reserve a specific amount of entries within the state column
     pub(crate) fn reserve(&mut self, additional: usize) {
         let current = self.0.len();
-        let new = ((self.1 + additional) as f32 / BITS as f32).ceil() as usize;
+        let new = ((self.1 + additional) as f32 / BITS as f32).ceil()
+            as usize;
         assert!(new >= current);
         self.0.reserve(new - current);
     }

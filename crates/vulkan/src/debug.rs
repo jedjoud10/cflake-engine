@@ -54,8 +54,11 @@ pub(super) unsafe extern "system" fn debug_callback(
     pub const WARNING: u32 = 0b1_0000_0000;
     pub const ERROR: u32 = 0b1_0000_0000_0000;
 
-    if message_severity.contains(DebugUtilsMessageSeverityFlagsEXT::VERBOSE) |  
-    message_severity.contains(DebugUtilsMessageSeverityFlagsEXT::INFO) {
+    if message_severity
+        .contains(DebugUtilsMessageSeverityFlagsEXT::VERBOSE)
+        | message_severity
+            .contains(DebugUtilsMessageSeverityFlagsEXT::INFO)
+    {
         log::debug!(
             "{:?} [{} ({})] : {}\n",
             message_type,
@@ -64,8 +67,10 @@ pub(super) unsafe extern "system" fn debug_callback(
             message,
         )
     }
-    
-    if message_severity.contains(DebugUtilsMessageSeverityFlagsEXT::WARNING) {
+
+    if message_severity
+        .contains(DebugUtilsMessageSeverityFlagsEXT::WARNING)
+    {
         log::warn!(
             "{:?} [{} ({})] : {}\n",
             message_type,
@@ -75,7 +80,9 @@ pub(super) unsafe extern "system" fn debug_callback(
         )
     }
 
-    if message_severity.contains(DebugUtilsMessageSeverityFlagsEXT::ERROR) {
+    if message_severity
+        .contains(DebugUtilsMessageSeverityFlagsEXT::ERROR)
+    {
         log::error!(
             "{:?} [{} ({})] : {}\n",
             message_type,

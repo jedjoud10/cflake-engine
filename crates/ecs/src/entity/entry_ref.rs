@@ -1,7 +1,7 @@
 use super::Entity;
 use crate::{
-    Archetype, Component, EntityLinkings,
-    QueryLayoutRef, Scene, Bundle,
+    Archetype, Bundle, Component, EntityLinkings, QueryLayoutRef,
+    Scene,
 };
 
 // Immutable entity entries allow the user to be able to read and get some data about a specific entity

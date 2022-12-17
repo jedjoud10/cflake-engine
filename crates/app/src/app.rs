@@ -297,7 +297,9 @@ impl App {
     }
 
     // Create a loop sleeper using the given window frame rate limit
-    fn create_sleeper(limit: FrameRateLimit) -> spin_sleep::LoopHelper {
+    fn create_sleeper(
+        limit: FrameRateLimit,
+    ) -> spin_sleep::LoopHelper {
         let builder = spin_sleep::LoopHelper::builder();
         let sleeper = if let FrameRateLimit::Limited(limit) = limit {
             builder.build_with_target_rate(limit)
@@ -306,9 +308,15 @@ impl App {
         };
 
         match limit {
-            FrameRateLimit::Limited(limit) => log::debug!("Created sleeper with a target rate of {limit}"),
-            FrameRateLimit::VSync => log::debug!("Created sleeper without a target rate (VSync on)"),
-            FrameRateLimit::Unlimited => log::debug!("Created sleeper without a target rate (VSync off)"),
+            FrameRateLimit::Limited(limit) => log::debug!(
+                "Created sleeper with a target rate of {limit}"
+            ),
+            FrameRateLimit::VSync => log::debug!(
+                "Created sleeper without a target rate (VSync on)"
+            ),
+            FrameRateLimit::Unlimited => log::debug!(
+                "Created sleeper without a target rate (VSync off)"
+            ),
         }
         sleeper
     }
@@ -357,7 +365,14 @@ impl App {
             let engine_name = self.engine_name.clone();
             let engine_version = self.engine_version;
             self = self.insert_system(move |system: &mut System| {
-                graphics::system(system, window, app_name, app_version,engine_name, engine_version);
+                graphics::system(
+                    system,
+                    window,
+                    app_name,
+                    app_version,
+                    engine_name,
+                    engine_version,
+                );
             });
         }
 

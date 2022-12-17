@@ -39,7 +39,7 @@ impl Surface {
     pub fn surface_loader(&self) -> &khr::Surface {
         &self.surface_loader
     }
-    
+
     // Get the underlying raw surface
     pub fn surface(&self) -> vk::SurfaceKHR {
         self.surface

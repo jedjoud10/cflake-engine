@@ -24,17 +24,17 @@ impl CommandBuffer {
     pub fn raw(&self) -> vk::CommandBuffer {
         self.raw
     }
-    
+
     // Get the command buffer's fence
     pub fn fence(&self) -> vk::Fence {
         self.fence
     }
-    
+
     // Check if the command buffer is free
     pub fn is_free(&self) -> bool {
         *self.free.lock()
     }
-    
+
     // Check if the command buffer is recording
     pub fn is_recording(&self) -> bool {
         *self.recording.lock()
@@ -55,13 +55,10 @@ impl CommandPool {
             pool,
             device,
             4,
-            vk::CommandBufferLevel::PRIMARY
+            vk::CommandBufferLevel::PRIMARY,
         );
 
-        Self {
-            pool,
-            buffers,
-        }
+        Self { pool, buffers }
     }
 
     // Get the internally used command buffers
@@ -74,27 +71,41 @@ impl CommandPool {
         self.pool
     }
 
-    // Try to find a free command buffer and begin recording it 
-    pub unsafe fn start_recording(&self, device: &Device) -> &CommandBuffer {
-        let cmd = self.buffers.iter().find(|cmd| cmd.is_free()).unwrap();
+    // Try to find a free command buffer and begin recording it
+    pub unsafe fn start_recording(
+        &self,
+        device: &Device,
+    ) -> &CommandBuffer {
+        let cmd =
+            self.buffers.iter().find(|cmd| cmd.is_free()).unwrap();
         log::debug!("{}", cmd.index());
         *cmd.free.lock() = false;
-        
+
         if !cmd.is_recording() {
             let begin_info = vk::CommandBufferBeginInfo::builder()
-            .flags(vk::CommandBufferUsageFlags::SIMULTANEOUS_USE);
-            device.raw().begin_command_buffer(cmd.raw, &begin_info).unwrap();
+                .flags(vk::CommandBufferUsageFlags::SIMULTANEOUS_USE);
+            device
+                .raw()
+                .begin_command_buffer(cmd.raw, &begin_info)
+                .unwrap();
             *cmd.recording.lock() = true;
-        }        
+        }
 
         cmd
     }
 
     // Stop recording a specific command buffer
-    pub unsafe fn stop_recording(&self, device: &Device, command_buffer: &CommandBuffer) {
+    pub unsafe fn stop_recording(
+        &self,
+        device: &Device,
+        command_buffer: &CommandBuffer,
+    ) {
         *command_buffer.free.lock() = false;
         *command_buffer.recording.lock() = false;
-        device.raw().end_command_buffer(command_buffer.raw()).unwrap();
+        device
+            .raw()
+            .end_command_buffer(command_buffer.raw())
+            .unwrap();
     }
 
     // Submit a recorder to the queue
@@ -105,18 +116,18 @@ impl CommandPool {
         buffer: &CommandBuffer,
     ) {
         let buffers = [buffer.raw()];
-        let submit_info = vk::SubmitInfo::builder()
-            .command_buffers(&buffers);
+        let submit_info =
+            vk::SubmitInfo::builder().command_buffers(&buffers);
         let submit_infos = [*submit_info];
 
-        device.raw().queue_submit(queue, &submit_infos, vk::Fence::null()).unwrap();
+        device
+            .raw()
+            .queue_submit(queue, &submit_infos, vk::Fence::null())
+            .unwrap();
     }
 
     // Complete the lifetime of a specific command buffer
-    pub unsafe fn complete(
-        &self, 
-        buffer: &CommandBuffer
-    ) {
+    pub unsafe fn complete(&self, buffer: &CommandBuffer) {
         *buffer.recording.lock() = false;
         *buffer.free.lock() = true;
     }
@@ -181,14 +192,21 @@ impl CommandPool {
 
         for wrapper in self.buffers.iter() {
             device.raw().destroy_fence(wrapper.fence, None);
-            device.raw().free_command_buffers(self.pool, &[wrapper.raw]);
+            device
+                .raw()
+                .free_command_buffers(self.pool, &[wrapper.raw]);
         }
-        
+
         device.raw().destroy_command_pool(self.pool, None);
-    } 
+    }
 }
 
-unsafe fn allocate_command_buffers(command_pool: vk::CommandPool, device: &Device, count: u32, level: vk::CommandBufferLevel) -> Vec<CommandBuffer> {
+unsafe fn allocate_command_buffers(
+    command_pool: vk::CommandPool,
+    device: &Device,
+    count: u32,
+    level: vk::CommandBufferLevel,
+) -> Vec<CommandBuffer> {
     let allocate_info = vk::CommandBufferAllocateInfo::builder()
         .command_buffer_count(count)
         .command_pool(command_pool)
@@ -209,7 +227,10 @@ unsafe fn allocate_command_buffers(command_pool: vk::CommandPool, device: &Devic
     buffers.collect()
 }
 
-unsafe fn create_command_pool(qfi: u32, device: &Device) -> vk::CommandPool {
+unsafe fn create_command_pool(
+    qfi: u32,
+    device: &Device,
+) -> vk::CommandPool {
     let pool_create_info = vk::CommandPoolCreateInfo::builder()
         .flags(vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER)
         .queue_family_index(qfi);

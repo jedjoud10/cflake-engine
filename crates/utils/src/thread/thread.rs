@@ -1,5 +1,7 @@
+use super::{ArcFn, ThreadFuncEntry, ThreadedTask};
 use crate::BitSet;
-use crossbeam_deque::{Stealer, Injector, Worker};
+use crate::{SliceTuple, ThreadPoolScope};
+use crossbeam_deque::{Injector, Stealer, Worker};
 use parking_lot::Mutex;
 use std::{
     any::Any,
@@ -12,8 +14,6 @@ use std::{
     },
     thread::{JoinHandle, ThreadId},
 };
-use crate::{SliceTuple, ThreadPoolScope};
-use super::{ArcFn, ThreadFuncEntry, ThreadedTask};
 
 // A single threadpool that contains multiple worker threads that are ready to be executed in parallel
 pub struct ThreadPool {
@@ -60,7 +60,9 @@ impl ThreadPool {
             .map(|i| spawn(&threadpool, i))
             .collect::<Vec<_>>();
         threadpool.joins = joins;
-        log::debug!("Initialized a new thread pool with {num} thread(s)");
+        log::debug!(
+            "Initialized a new thread pool with {num} thread(s)"
+        );
 
         threadpool
     }
@@ -237,7 +239,6 @@ impl ThreadPool {
         let task = ThreadedTask::Execute(Box::new(function));
         self.append(task);
     }
-
 
     // Create a scope that we can use to send multiple commands to the threads
     pub fn scope<'a>(

@@ -1,8 +1,8 @@
 use super::Entity;
 use crate::{
-    add_bundle, remove_bundle,
-    Archetype, ArchetypeSet, Bundle, Component, EntityLinkings,
-    EntitySet, QueryLayoutMut, QueryLayoutRef, Scene,
+    add_bundle, remove_bundle, Archetype, ArchetypeSet, Bundle,
+    Component, EntityLinkings, EntitySet, QueryLayoutMut,
+    QueryLayoutRef, Scene,
 };
 
 // Mutable entity entries allow the user to be able to modify components that are linked to the entity
@@ -87,7 +87,7 @@ impl<'a> EntryMut<'a> {
             B::is_valid(),
             "Bundle is not valid, check the bundle for component collisions"
         );
-        
+
         add_bundle(
             self.archetypes,
             self.entity,

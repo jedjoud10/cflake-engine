@@ -25,7 +25,10 @@ impl AtomicBitSet {
     pub fn from_chunks_iter(
         iter: impl Iterator<Item = usize>,
     ) -> Self {
-        Self(RwLock::new(iter.map(|s| AtomicUsize::new(s)).collect()), AtomicBool::new(false))
+        Self(
+            RwLock::new(iter.map(|s| AtomicUsize::new(s)).collect()),
+            AtomicBool::new(false),
+        )
     }
 
     // Create a bitset from an iterator of booleans
@@ -52,7 +55,9 @@ impl AtomicBitSet {
     }
 
     // Get a mutable reference to the stored chunks
-    pub fn chunks_mut(&self) -> MappedRwLockWriteGuard<[AtomicUsize]> {
+    pub fn chunks_mut(
+        &self,
+    ) -> MappedRwLockWriteGuard<[AtomicUsize]> {
         RwLockWriteGuard::map(self.0.write(), |s| s.as_mut_slice())
     }
 
@@ -70,9 +75,17 @@ impl AtomicBitSet {
         // Extend the layer if needed (this bitset is dynamic)
         let len = self.0.read().len();
         if chunk >= len {
-            let splat = if self.1.load(Ordering::Relaxed) { usize::MAX } else { usize::MIN };
+            let splat = if self.1.load(Ordering::Relaxed) {
+                usize::MAX
+            } else {
+                usize::MIN
+            };
             let num = chunk - len;
-            self.0.write().extend((0..(num + 1)).into_iter().map(|_| AtomicUsize::new(splat)));
+            self.0.write().extend(
+                (0..(num + 1))
+                    .into_iter()
+                    .map(|_| AtomicUsize::new(splat)),
+            );
         }
 
         // Set the bit value specified in the chunk
@@ -83,7 +96,10 @@ impl AtomicBitSet {
     // Set the whole bitset to a single value
     pub fn splat(&self, value: bool, order: Ordering) {
         for chunk in &*self.chunks() {
-            chunk.store(if value { usize::MAX } else { usize::MIN }, order);
+            chunk.store(
+                if value { usize::MAX } else { usize::MIN },
+                order,
+            );
         }
 
         // We must store the value of the splat because we might allocate new chunks
@@ -119,12 +135,20 @@ impl AtomicBitSet {
 
     // Count the number of ones in this bitset
     pub fn count_ones(&self, order: Ordering) -> usize {
-        self.0.read().iter().map(|chunk| chunk.load(order).count_ones() as usize).sum()
+        self.0
+            .read()
+            .iter()
+            .map(|chunk| chunk.load(order).count_ones() as usize)
+            .sum()
     }
 
     // Starting from a specific index, read forward and check if there is any set bits
     // Returns None if it could not find an set bit, returns Some with it's index if it did
-    pub fn find_one_from(&self, index: usize, order: Ordering) -> Option<usize> {
+    pub fn find_one_from(
+        &self,
+        index: usize,
+        order: Ordering,
+    ) -> Option<usize> {
         let (start_chunk, start_location) = Self::coords(index);
         self.chunks()
             .iter()
@@ -151,7 +175,11 @@ impl AtomicBitSet {
 
     // Starting from a specific index, read forward and check if there is any unset bits
     // Returns None if it could not find an unset bit, returns Some with it's index if it did
-    pub fn find_zero_from(&self, index: usize, order: Ordering) -> Option<usize> {
+    pub fn find_zero_from(
+        &self,
+        index: usize,
+        order: Ordering,
+    ) -> Option<usize> {
         let (start_chunk, start_location) = Self::coords(index);
         self.chunks()
             .iter()
