@@ -59,7 +59,7 @@ impl Device {
 
         // Create the logical device
         let device = instance
-            .instance
+            .raw()
             .create_device(
                 adapter.physical_device(),
                 &logical_device_create_info,
@@ -86,7 +86,7 @@ impl Device {
 
         // Create a memory allocator (gpu_allocator)
         let allocator = Allocator::new(&AllocatorCreateDesc {
-            instance: instance.instance.clone(),
+            instance: instance.raw().clone(),
             device: device.clone(),
             physical_device: adapter.physical_device(),
             debug_settings,

@@ -54,6 +54,7 @@ fn event(world: &mut World, event: &mut WindowEvent) {
 fn update(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
     let queue = graphics.queue();
+    /*
     let swapchain = graphics.swapchain();
     let recorder = graphics.acquire();
 
@@ -65,6 +66,7 @@ fn update(world: &mut World) {
 
     let submission = graphics.submit(recorder);
     submission.wait();
+    */
 }
 
 // Context system will just register the wgpu context and create a simple window

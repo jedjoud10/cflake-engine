@@ -75,11 +75,11 @@ impl Graphics {
 
     // Acquire a new free command recorder that we can use to record commands
     pub fn acquire(&self) -> Recorder {
-        unsafe { self.queue().acquire(self.device()) }
+        self.queue().acquire(self.device())
     }
 
     // Submit the command buffer and start executing the underlying commands
-    pub fn submit(&self, recorder: Recorder) -> Submission {
-        unsafe { self.queue().submit(self.device(), recorder) }
+    pub fn submit<'a>(&'a self, recorder: Recorder<'a>) -> Submission {
+        self.queue().submit(recorder)
     }
 }

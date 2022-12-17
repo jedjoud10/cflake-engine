@@ -13,8 +13,8 @@ use crate::required_api_version;
 // This is a Vulkan instance that gets loaded in
 pub struct Instance {
     // Context related
-    pub(crate) entry: Entry,
-    pub(crate) instance: ash::Instance,
+    entry: Entry,
+    instance: ash::Instance,
 
     // Only enable validation and message logging in debug mode
     #[cfg(debug_assertions)]
@@ -123,6 +123,16 @@ impl Instance {
             #[cfg(debug_assertions)]
             debug_messenger,
         }
+    }
+
+    // Get the raw entry
+    pub fn entry(&self) -> &Entry {
+        &self.entry
+    }
+
+    // Get the raw instance
+    pub fn raw(&self) -> &ash::Instance {
+        &self.instance
     }
 
     // Destroy the instance. This should be called when the main context gets dropepd

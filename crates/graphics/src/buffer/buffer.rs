@@ -91,12 +91,12 @@ pub(super) struct BufferBounds {
 impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     // Create a buffer using a slice of elements
     // (will return none if we try to create a zero length Static, Dynamic, or Partial buffer)
-    pub fn from_slice(
-        graphics: &Graphics,
+    pub fn from_slice<'a>(
+        graphics: &'a Graphics,
         slice: &[T],
         mode: BufferMode,
         usage: BufferUsage,
-        recorder: &mut Recorder,
+        recorder: &mut Recorder<'a>,
     ) -> Result<Self, BufferError> {
         // Cannot create a zero sized slice for non-resizable buffers
         if slice.is_empty() && !matches!(mode, BufferMode::Resizable) {
@@ -151,7 +151,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
                 old.cmd_copy_buffer(buffer, src_buffer, vec![*copy]);
 
                 // Submit the recorder
-                queue.submit(device, old).wait();
+                queue.submit(old).wait();
                 device.destroy_buffer(buffer, alloc);
             }
         } else {
@@ -177,11 +177,11 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     }
 
     // Create an empty buffer if we can (resizable)
-    pub fn empty(
-        graphics: &Graphics,
+    pub fn empty<'a>(
+        graphics: &'a Graphics,
         mode: BufferMode,
         usage: BufferUsage,
-        recorder: &mut Recorder,
+        recorder: &mut Recorder<'a>,
     ) -> Result<Self, BufferError> {
         Self::from_slice(graphics, &[], mode, usage, recorder)
     }

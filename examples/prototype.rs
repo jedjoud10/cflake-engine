@@ -16,7 +16,22 @@ fn init(world: &mut World) {
     
     // Create a recorder to record commands
     let mut recorder = graphics.acquire();
+    let submission = graphics.submit(recorder);
+    let elapsed = submission.wait();
 
+    let mut recorder = graphics.acquire();
+    let submission = graphics.submit(recorder);
+    let elapsed = submission.wait();
+    
+    let mut recorder = graphics.acquire();
+    let submission = graphics.submit(recorder);
+    let elapsed = submission.wait();
+
+    let mut recorder = graphics.acquire();
+    let submission = graphics.submit(recorder);
+    let elapsed = submission.wait();
+
+    /*
     let usage = BufferUsage {
         device_write: true,
         device_read: true,
@@ -41,13 +56,13 @@ fn init(world: &mut World) {
         usage,
         &mut recorder
     ).unwrap();
+    */
 
     // Copy the whole buffer1 into buffer2
     //buffer2.copy_from(&buffer1, &mut recorder).unwrap();
     
     // Submit to the GPU and wait for execution
-    let submission = graphics.submit(recorder);
-    let elapsed = submission.wait();
+
 
     // Create a temporary recorder to read back the data from buffer2
     //let mut recorder = graphics.acquire();

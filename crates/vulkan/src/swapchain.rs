@@ -23,7 +23,7 @@ pub struct Swapchain {
 
 impl Swapchain {
     // Create the image swapchain that we will present to the screen
-    pub unsafe fn new(
+    pub fn new(
         adapter: &Adapter,
         surface: &Surface,
         device: &Device,
@@ -42,8 +42,9 @@ impl Swapchain {
             .width(window.inner_size().width);
 
         // Pick the most appropriate present mode
-        let present_mode =
-            Self::pick_presentation_mode(surface, adapter, vsync);
+        let present_mode = unsafe {
+            Self::pick_presentation_mode(surface, adapter, vsync)
+        };
         log::debug!(
             "Picked the presentation mode {:?}",
             present_mode
@@ -61,16 +62,19 @@ impl Swapchain {
 
         // Create the loader and the actual swapchain
         let swapchain_loader = ash::extensions::khr::Swapchain::new(
-            &instance.instance,
+            &instance.raw(),
             &device.raw(),
         );
-        let swapchain = swapchain_loader
-            .create_swapchain(&swapchain_create_info, None)
-            .expect("Could not create the swapchain");
+        let swapchain = unsafe {
+            swapchain_loader
+                .create_swapchain(&swapchain_create_info, None)
+                .expect("Could not create the swapchain")
+        };
 
         // Create the image handles
-        let swapchain_images =
-            swapchain_loader.get_swapchain_images(swapchain).unwrap();
+        let swapchain_images = unsafe {
+            swapchain_loader.get_swapchain_images(swapchain).unwrap()
+        };
         let min =
             adapter.surface.surface_capabilities.min_image_count as usize;
         log::debug!(
@@ -80,13 +84,13 @@ impl Swapchain {
         );
 
         // Semaphore that is signaled whenever we have a new available image
-        let image_available_semaphore = device.create_semaphore();
+        let image_available_semaphore = unsafe { device.create_semaphore() };
 
         // Semaphore that is signaled when we finished rendering
-        let rendering_finished_semaphore = device.create_semaphore();
+        let rendering_finished_semaphore = unsafe { device.create_semaphore() };
 
         // Fence that is signaled when we finished rendered
-        let rendering_finished_fence = device.create_fence();
+        let rendering_finished_fence = unsafe { device.create_fence() };
 
         Swapchain {
             loader: swapchain_loader,

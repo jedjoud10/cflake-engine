@@ -1,10 +1,12 @@
-use std::ffi::CStr;
+use std::ffi::{CStr, CString};
 
 use ash::vk::{
     self, PhysicalDevice, PhysicalDeviceFeatures,
     PhysicalDeviceLimits, PhysicalDeviceProperties, PresentModeKHR,
     SurfaceCapabilitiesKHR, SurfaceFormatKHR, PhysicalDeviceType, PhysicalDeviceFeatures2, PhysicalDeviceVulkan13Features, PhysicalDeviceVulkan12Features, PhysicalDeviceVulkan11Features, PhysicalDeviceVulkan11Properties, PhysicalDeviceVulkan12Properties, PhysicalDeviceVulkan13Properties, PhysicalDeviceProperties2,
 };
+
+use crate::required_device_extensions;
 
 use super::{Instance, Surface};
 
@@ -29,6 +31,7 @@ pub struct AdapterProperties {
     pub properties11: PhysicalDeviceVulkan11Properties,
     pub properties12: PhysicalDeviceVulkan12Properties,
     pub properties13: PhysicalDeviceVulkan13Properties,
+    pub extensions: Vec<vk::ExtensionProperties>,
 }
 
 // Swapchain data supported by the adapter
@@ -68,7 +71,7 @@ impl Adapter {
     ) -> Adapter {
         // Get the features and capabilities
         let features = get_adapter_features(instance, &physical);
-        let properties = get_adapter_properties(instance, &physical, surface);
+        let properties = get_adapter_properties(instance, &physical);
         let families = get_adapter_queue_family_properties(instance, &physical, surface);
         let surface = get_adapter_surface_properties(instance, &physical, surface);
 
@@ -83,24 +86,27 @@ impl Adapter {
 
     // Pick out a physical adapter automatically for the user
     // Pick a physical device from the Vulkan instance
-    pub unsafe fn pick(
+    pub fn pick(
         instance: &Instance,
         surface: &Surface,
     ) -> Adapter {
-        let devices =
-            instance.instance.enumerate_physical_devices().unwrap();
+        let devices = unsafe {
+            instance.raw().enumerate_physical_devices().unwrap()
+        };
 
         let adapter = devices
             .iter()
             .cloned()
             .find_map(|physical_device| {
-                let adapter = Self::from_raw_parts(
-                    instance,
-                    physical_device,
-                    surface,
-                );
+                let adapter = unsafe {
+                    Self::from_raw_parts(
+                        instance,
+                        physical_device,
+                        surface,
+                    )
+                };
 
-                super::is_physical_device_suitable(
+                is_physical_device_suitable(
                     &adapter.features,
                     &adapter.properties,
                     &adapter.surface,
@@ -109,7 +115,9 @@ impl Adapter {
             })
             .expect("Could not find a suitable GPU to use!");
 
-        log::debug!("Using the adpater {:?} with API version {:?}", adapter.properties.name,  adapter.properties.api_version);
+        log::debug!("Using the adpater {:?}", adapter.properties.name);
+        log::debug!("Adapter API version: {:?}", adapter.properties.api_version);
+        log::debug!("Adapter supported extensions: {:?}", adapter.properties.extensions.len());
         adapter
     }
 
@@ -151,7 +159,7 @@ unsafe fn get_adapter_features(instance: &Instance, physical: &PhysicalDevice) -
         .push_next(&mut features12)
         .push_next(&mut features13);
     instance
-        .instance
+        .raw()
         .get_physical_device_features2(*physical, &mut features);
 
     AdapterFeatures {
@@ -163,7 +171,8 @@ unsafe fn get_adapter_features(instance: &Instance, physical: &PhysicalDevice) -
 }
 
 // Get the adapter properties of a physical device
-unsafe fn get_adapter_properties(instance: &Instance, physical: &PhysicalDevice, surface: &Surface) -> AdapterProperties {
+unsafe fn get_adapter_properties(instance: &Instance, physical: &PhysicalDevice) -> AdapterProperties {
+    // Get the physical device properties for Vulkan 11, 12, 13
     let mut properties11 = PhysicalDeviceVulkan11Properties::default();
     let mut properties12 = PhysicalDeviceVulkan12Properties::default();
     let mut properties13 = PhysicalDeviceVulkan13Properties::default();    
@@ -173,7 +182,7 @@ unsafe fn get_adapter_properties(instance: &Instance, physical: &PhysicalDevice,
         .push_next(&mut properties12)
         .push_next(&mut properties13);
     instance
-        .instance
+        .raw()
         .get_physical_device_properties2(*physical, &mut properties);
 
     // Get the name of the physical device
@@ -190,6 +199,12 @@ unsafe fn get_adapter_properties(instance: &Instance, physical: &PhysicalDevice,
         vk::api_version_patch(version)
     );
 
+    // Get the supported extensions properties
+    let extensions = instance
+        .raw()
+        .enumerate_device_extension_properties(*physical)
+        .unwrap();
+
     AdapterProperties {
         name,
         api_version,
@@ -200,6 +215,7 @@ unsafe fn get_adapter_properties(instance: &Instance, physical: &PhysicalDevice,
         properties11,
         properties12,
         properties13,
+        extensions,
         limits: properties.properties.limits,
     }
 }
@@ -240,7 +256,7 @@ unsafe fn get_adapter_surface_properties(instance: &Instance, physical: &Physica
 // Get the adapter queue family properties
 unsafe fn get_adapter_queue_family_properties(instance: &Instance, physical: &PhysicalDevice, surface: &Surface) -> AdapterQueueFamiliesProperties {
     let queue_family_properties = instance
-        .instance
+        .raw()
         .get_physical_device_queue_family_properties(*physical);
     let queue_family_surface_supported = (0..queue_family_properties
         .len())
@@ -261,4 +277,87 @@ unsafe fn get_adapter_queue_family_properties(instance: &Instance, physical: &Ph
         queue_family_properties,
         queue_family_surface_supported
     }
+}
+
+
+// Check wether or not a physical device is suitable for rendering
+// This checks the minimum requirements that we need to achieve to be able to render
+fn is_physical_device_suitable(
+    features: &AdapterFeatures,
+    properties: &AdapterProperties,
+    surface: &AdapterSurfaceProperties,
+    families: &AdapterQueueFamiliesProperties,
+) -> bool {
+    log::debug!(
+        "Checking if adapter {} is suitable...",
+        properties.name
+    );
+
+    let double_buffering_supported = is_double_buffering_supported(surface.surface_capabilities);
+    let format_supported = is_surface_format_supported(&surface.present_formats);
+    let extensions_supported = is_extension_list_supported(&properties.extensions);
+    let present_supported = is_present_mode_supported(&surface.present_modes);
+    let device_type_okay = is_device_type_optimal(properties.device_type);
+    log::debug!("Double Buffering supported: {}", double_buffering_supported);
+    log::debug!("Swapchain Formats supported: {}", format_supported);
+    log::debug!("Swapchain Present Modes supported: {}", present_supported);
+    log::debug!("Extensions supported: {}", extensions_supported);
+    log::debug!("Device type optimal: {}", device_type_okay);
+    
+
+    // All the checks must pass
+    double_buffering_supported
+        && format_supported
+        && present_supported
+        && device_type_okay
+        && extensions_supported
+}
+
+// Check if the Adapter is optimal (dGPU)
+fn is_device_type_optimal(_type: PhysicalDeviceType) -> bool {
+    _type == PhysicalDeviceType::DISCRETE_GPU
+}
+
+
+// Check if the Adapter supports a min image count of 2
+fn is_double_buffering_supported(
+    surface: SurfaceCapabilitiesKHR,
+) -> bool {
+    surface.min_image_count >= 2
+}
+
+// Check if the Adapter present modes support FIFO_RELAXED and IMMEDIATE
+fn is_present_mode_supported(modes: &[PresentModeKHR]) -> bool {
+    modes
+        .iter()
+        .find(|&&present| {
+            let relaxed = present == vk::PresentModeKHR::FIFO_RELAXED;
+            let immediate = present == vk::PresentModeKHR::IMMEDIATE;
+            relaxed || immediate
+        })
+        .is_some()
+}
+
+// Check if the Adapter formats supportB8G8R8A8_SRGB and SRGB_NONLINEAR
+fn is_surface_format_supported(formats: &[SurfaceFormatKHR]) -> bool {
+    formats
+        .iter()
+        .find(|format| {
+            let format_ = format.format == vk::Format::B8G8R8A8_SRGB;
+            let color_space_ = format.color_space
+                == vk::ColorSpaceKHR::SRGB_NONLINEAR;
+            format_ && color_space_
+        })
+        .is_some()
+}
+
+// Check if the Adapter supports the required extensions
+fn is_extension_list_supported(extensions: &[vk::ExtensionProperties]) -> bool {
+    let required = required_device_extensions();
+
+    let supported = extensions.iter().map(|props| unsafe {
+        CStr::from_ptr(props.extension_name.as_ptr()).to_owned()
+    }).collect::<Vec<_>>();
+
+    required.iter().all(|name| supported.contains(name))
 }

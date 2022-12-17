@@ -5,6 +5,7 @@ use parking_lot::Mutex;
 // Abstraction around a Vulkan command buffer
 pub struct CommandBuffer {
     // Raw vulkan sheize
+    index: usize,
     raw: vk::CommandBuffer,
     fence: vk::Fence,
 
@@ -14,6 +15,11 @@ pub struct CommandBuffer {
 }
 
 impl CommandBuffer {
+    // Get the index of the command buffer
+    pub fn index(&self) -> usize {
+        self.index
+    }
+
     // Get the raw Vulkan command buffer
     pub fn raw(&self) -> vk::CommandBuffer {
         self.raw
@@ -36,9 +42,9 @@ impl CommandBuffer {
 }
 
 // Abstraction around a Vulkan command pool
-pub(super) struct CommandPool {
-    pub(super) pool: vk::CommandPool,
-    pub(super) buffers: Vec<CommandBuffer>,
+pub struct CommandPool {
+    pool: vk::CommandPool,
+    buffers: Vec<CommandBuffer>,
 }
 
 impl CommandPool {
@@ -58,100 +64,64 @@ impl CommandPool {
         }
     }
 
-    // Get a free command buffer from this pool and lock it for usage
-    pub(super) unsafe fn find_free_and_lock(
-        &self,
-    ) -> (usize, vk::CommandBuffer, State) {
-        let index = self
-            .buffers
-            .iter()
-            .position(|cmd_buffer| {
-                let CommandBuffer { tags, .. } = cmd_buffer;
-                let tags = tags.lock();
-
-                // Check if the command buffer isn't in use on the CPU
-                let locked =
-                    !tags.contains(CommandBufferTags::LOCKED);
-
-                // Check if the command buffer isn't in use on the GPU
-                let pending =
-                    !tags.contains(CommandBufferTags::PENDING);
-
-                pending && locked
-            })
-            .unwrap();
-
-        let buffer = &self.buffers[index];
-        log::debug!("Found a free command buffer {:?}", buffer.raw);
-        let mut tags = buffer.tags.lock();
-        tags.insert(CommandBufferTags::LOCKED);
-        let state = buffer.state.lock().take().unwrap();
-        log::debug!(
-            "Currently chained commands: {}",
-            state.commands.len()
-        );
-
-        (index, buffer.raw, state)
+    // Get the internally used command buffers
+    pub unsafe fn command_buffers(&self) -> &[CommandBuffer] {
+        &self.buffers
     }
 
-    // Store the state of a command buffer back into the pool
-    pub(crate) unsafe fn unlock(&self, index: usize, state: State) {
-        log::debug!("Unlocking buffer at index {index}");
-        let buffer = &self.buffers[index];
-        *buffer.state.lock() = Some(state);
-        let mut tags = buffer.tags.lock();
-        tags.remove(CommandBufferTags::LOCKED);
+    // Gett he raw command pool
+    pub unsafe fn raw(&self) -> vk::CommandPool {
+        self.pool
     }
 
-    // Actually submit a command buffer for execution
-    pub(crate) unsafe fn submit(
+    // Try to find a free command buffer and begin recording it 
+    pub unsafe fn start_recording(&self, device: &Device) -> &CommandBuffer {
+        let cmd = self.buffers.iter().find(|cmd| cmd.is_free()).unwrap();
+        log::debug!("{}", cmd.index());
+        *cmd.free.lock() = false;
+        
+        if !cmd.is_recording() {
+            let begin_info = vk::CommandBufferBeginInfo::builder()
+            .flags(vk::CommandBufferUsageFlags::SIMULTANEOUS_USE);
+            device.raw().begin_command_buffer(cmd.raw, &begin_info).unwrap();
+            *cmd.recording.lock() = true;
+        }        
+
+        cmd
+    }
+
+    // Stop recording a specific command buffer
+    pub unsafe fn stop_recording(&self, device: &Device, command_buffer: &CommandBuffer) {
+        *command_buffer.free.lock() = false;
+        *command_buffer.recording.lock() = false;
+        device.raw().end_command_buffer(command_buffer.raw()).unwrap();
+    }
+
+    // Submit a recorder to the queue
+    pub unsafe fn submit(
         &self,
         queue: vk::Queue,
         device: &Device,
-        index: usize,
-        state: State,
-    ) {
-        let buffer = &self.buffers[index];
-        self.unlock(index, state);
-        let state = self.buffers[index].state.lock().take().unwrap();
-        self.record(device, buffer, state);
-
-        let bufs = [buffer.raw];
-        let info = vk::SubmitInfo::builder().command_buffers(&bufs);
-
-        buffer.tags.lock().insert(CommandBufferTags::PENDING);
-
-        log::debug!(
-            "Submitting command buffer {:?} for execution",
-            buffer.raw
-        );
-        device.raw().reset_fences(&[buffer.fence]).unwrap();
-        device
-            .raw()
-            .queue_submit(queue, &[*info], buffer.fence)
-            .unwrap();
-        //device.raw().queue_wait_idle(queue).unwrap();
-    }
-
-    // Record a command buffer using it's given state
-    pub(crate) unsafe fn record(
-        &self,
-        device: &Device,
         buffer: &CommandBuffer,
-        state: State,
     ) {
-        let converted = super::complete(state);
-        device
-            .raw()
-            .begin_command_buffer(
-                buffer.raw,
-                &vk::CommandBufferBeginInfo::default(),
-            )
-            .unwrap();
-        converted.insert(device.raw(), buffer.raw);
-        device.raw().end_command_buffer(buffer.raw).unwrap();
+        let buffers = [buffer.raw()];
+        let submit_info = vk::SubmitInfo::builder()
+            .command_buffers(&buffers);
+        let submit_infos = [*submit_info];
+
+        device.raw().queue_submit(queue, &submit_infos, vk::Fence::null()).unwrap();
     }
 
+    // Complete the lifetime of a specific command buffer
+    pub unsafe fn complete(
+        &self, 
+        buffer: &CommandBuffer
+    ) {
+        *buffer.recording.lock() = false;
+        *buffer.free.lock() = true;
+    }
+
+    /*
     // Flush unsubmitted command buffers to the given queue
     pub(crate) unsafe fn flush_all(
         &self,
@@ -203,6 +173,7 @@ impl CommandPool {
             return None;
         }
     }
+    */
 
     // Destroy the command pool
     pub(super) unsafe fn destroy(&self, device: &Device) {
@@ -227,7 +198,9 @@ unsafe fn allocate_command_buffers(command_pool: vk::CommandPool, device: &Devic
         .allocate_command_buffers(&allocate_info)
         .unwrap()
         .into_iter()
-        .map(|raw| CommandBuffer {
+        .enumerate()
+        .map(|(i, raw)| CommandBuffer {
+            index: i,
             raw,
             fence: device.create_fence(),
             free: Mutex::new(true),
