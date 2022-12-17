@@ -27,6 +27,7 @@ vek = { workspace = true }
 ahash = { workspace = true }
 
 [features]
+double-precision = ["ecs/double-precision", "math/double-precision"]
 two-dim = ["ecs/two-dim", "rendering/two-dim", "math/two-dim"]
 extended-tuples = ["ecs/extended-tuples", "utils/extended-tuples"]
 extended-bitmasks = ["ecs/extended-bitmasks"]

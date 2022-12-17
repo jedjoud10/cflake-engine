@@ -1,3 +1,5 @@
+use math::Scalar;
+
 use crate::Component;
 use std::{
     fmt::{Debug, Display},
@@ -20,22 +22,22 @@ impl Default for Scale {
 #[cfg(not(feature = "two-dim"))]
 impl Scale {
     // Construct a scale using an X width
-    pub fn scale_x(width: f32) -> Self {
+    pub fn scale_x(width: Scalar) -> Self {
         Self(vek::Vec3::new(width, 1.0, 1.0))
     }
 
     // Construct a scale using a Y height
-    pub fn scale_y(height: f32) -> Self {
+    pub fn scale_y(height: Scalar) -> Self {
         Self(vek::Vec3::new(1.0, height, 1.0))
     }
 
     // Construct a scale using a Z depth
-    pub fn scale_z(depth: f32) -> Self {
+    pub fn scale_z(depth: Scalar) -> Self {
         Self(vek::Vec3::new(1.0, 1.0, depth))
     }
 
     // Construct a scale with it's raw data
-    pub fn scale_xyz(x: f32, y: f32, z: f32) -> Self {
+    pub fn scale_xyz(x: Scalar, y: Scalar, z: Scalar) -> Self {
         Self(vek::Vec3::new(x, y, z))
     }
 }
@@ -43,17 +45,17 @@ impl Scale {
 #[cfg(feature = "two-dim")]
 impl Scale {
     // Construct a scale using an X width
-    pub fn scale_x(width: f32) -> Self {
+    pub fn scale_x(width: Scalar) -> Self {
         Self(vek::Vec2::new(width, 1.0))
     }
 
     // Construct a scale using a Y height
-    pub fn scale_y(height: f32) -> Self {
+    pub fn scale_y(height: Scalar) -> Self {
         Self(vek::Vec2::new(1.0, height))
     }
 
     // Construct a scale with it's raw data
-    pub fn scale_xy(x: f32, y: f32) -> Self {
+    pub fn scale_xy(x: Scalar, y: Scalar) -> Self {
         Self(vek::Vec2::new(x, y))
     }
 }

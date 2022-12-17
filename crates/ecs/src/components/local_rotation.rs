@@ -1,3 +1,5 @@
+use math::Scalar;
+
 use crate::Component;
 use std::{
     fmt::Debug,
@@ -14,50 +16,52 @@ pub struct LocalRotation(Target);
 #[cfg(not(feature = "two-dim"))]
 impl LocalRotation {
     // Calculate the forward vector (-Z)
-    pub fn forward(&self) -> vek::Vec3<f32> {
+    pub fn forward(&self) -> vek::Vec3<Scalar> {
         vek::Mat4::from(self).mul_point(-vek::Vec3::unit_z())
     }
 
     // Calculate the up vector (+Y)
-    pub fn up(&self) -> vek::Vec3<f32> {
+    pub fn up(&self) -> vek::Vec3<Scalar> {
         vek::Mat4::from(self).mul_point(vek::Vec3::unit_y())
     }
 
     // Calculate the right vector (+X)
-    pub fn right(&self) -> vek::Vec3<f32> {
+    pub fn right(&self) -> vek::Vec3<Scalar> {
         vek::Mat4::from(self).mul_point(vek::Vec3::unit_x())
     }
 
     // Construct a rotation using an X rotation (radians)
-    pub fn rotation_x(angle_radians: f32) -> Self {
+    pub fn rotation_x(angle_radians: Scalar) -> Self {
         Self(vek::Quaternion::rotation_x(angle_radians))
     }
 
     // Construct a rotation using a Y rotation (radians)
-    pub fn rotation_y(angle_radians: f32) -> Self {
+    pub fn rotation_y(angle_radians: Scalar) -> Self {
         Self(vek::Quaternion::rotation_y(angle_radians))
     }
 
     // Construct a rotation using a Z rotation (radians)
-    pub fn rotation_z(angle_radians: f32) -> Self {
+    pub fn rotation_z(angle_radians: Scalar) -> Self {
         Self(vek::Quaternion::rotation_z(angle_radians))
     }
 
     // Construct a rotation that is looking directly down (forward => (0, -1, 0))
     pub fn looking_down() -> Self {
-        Self::rotation_x(90.0f32.to_radians())
+        let scalar: Scalar = 90.0; 
+        Self::rotation_x(scalar.to_radians())
     }
 
     // Construct a rotation that is looking directly up (forward => (0, 1, 0))
     pub fn looking_up() -> Self {
-        Self::rotation_x(-90.0f32.to_radians())
+        let scalar: Scalar = -90.0; 
+        Self::rotation_x(scalar.to_radians())
     }
 
     /*
     TODO: Test
     // Construct a rotation that is looking directly right (forward => (1, 0, 0))
     pub fn looking_right() -> Self {
-        Self::rotation_y(90.0f32.to_radians())
+        Self::rotation_y(90.0Scalar.to_radians())
     }
     */
 }
@@ -65,28 +69,30 @@ impl LocalRotation {
 #[cfg(feature = "two-dim")]
 impl LocalRotation {
     // Calculate the forward vector (-Z)
-    pub fn forward(&self) -> vek::Vec2<f32> {
+    pub fn forward(&self) -> vek::Vec2<Scalar> {
         vek::Mat3::from(self).mul_point(-vek::Vec2::unit_x())
     }
 
     // Calculate the up vector (+Y)
-    pub fn up(&self) -> vek::Vec2<f32> {
+    pub fn up(&self) -> vek::Vec2<Scalar> {
         vek::Mat3::from(self).mul_point(vek::Vec2::unit_y())
     }
 
     // Construct a 2D rotation using an angle (radians)
-    pub fn from_angle(angle_radians: f32) -> Self {
+    pub fn from_angle(angle_radians: Scalar) -> Self {
         Self(angle_radians)
     }
 
     // Construct a rotation that is looking directly down (forward => (0, -1))
     pub fn looking_down() -> Self {
-        Self::from_angle(90.0f32.to_radians())
+        let scalar: Scalar = 90.0; 
+        Self::from_angle(scalar.to_radians())
     }
 
     // Construct a rotation that is looking directly up (forward => (0, 1))
     pub fn looking_up() -> Self {
-        Self::from_angle(-90.0f32.to_radians())
+        let scalar: Scalar = 90.0; 
+        Self::from_angle(-scalar.to_radians())
     }
 
     // Construct a rotation that is looking directly left (forward => (-1, 0))
@@ -98,11 +104,12 @@ impl LocalRotation {
     // Construct a rotation that is looking directly right (forward => (1, 0))
     // TODO: Test
     pub fn looking_right() -> Self {
-        Self::from_angle(-0.0f32.to_radians())
+        let scalar: Scalar = 0.0;
+        Self::from_angle(-scalar.to_radians())
     }
 
     // Mix two rotation together using a lerp value
-    pub fn mix(self, other: Self, t: f32) -> Self {
+    pub fn mix(self, other: Self, t: Scalar) -> Self {
         let a = self.0;
         let b = self.1;
         a * t + (b * (1.0 - t))

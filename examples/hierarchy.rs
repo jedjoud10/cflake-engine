@@ -11,8 +11,8 @@ fn main() {
 // Insert some entities and link 'em together
 fn init(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
-    let parent = scene.insert(Position::at_y(1.0));
-    let child = scene.insert(Position::default());
+    let parent = scene.insert((Position::at_y(1.0), Rotation::rotation_x(90.0f32.to_radians())));
+    let child = scene.insert((Position::default(), LocalPosition::default()));
     scene.attach(child, parent);
 }
 

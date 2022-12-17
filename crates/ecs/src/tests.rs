@@ -423,6 +423,4 @@ fn hierarchy() {
     let child = entry2.get::<Child>().unwrap();
     assert_eq!(child.parent(), entity1);
     assert_eq!(child.depth(), 1);
-    assert_eq!(child.local_to_world(), vek::Mat4::identity());
-    assert_eq!(child.world_to_local(), vek::Mat4::identity());
 }

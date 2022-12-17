@@ -7,7 +7,7 @@ use crate::{
     archetype::remove_bundle, entity::Entity, Archetype, Bundle,
     Child, EntityLinkings, EntryMut, EntryRef, Mask, MaskHashMap,
     Parent, QueryFilter, QueryLayoutMut, QueryLayoutRef, QueryMut,
-    QueryRef, Wrap,
+    QueryRef, Wrap, LocalPosition, LocalRotation, LocalScale, Position, Rotation, Scale, contains,
 };
 
 // Convenience type aliases
@@ -243,7 +243,6 @@ impl Scene {
             child.depth = parent_depth + 1;
         } else {
             child_entry.insert_bundle(Child {
-                local_to_world: Default::default(),
                 parent: parent,
                 depth: parent_depth + 1,
             });
@@ -257,6 +256,12 @@ impl Scene {
     pub fn detach(&mut self, child: Entity) -> Option<()> {
         let mut entry = self.entry_mut(child)?;
         entry.remove_bundle::<Child>().unwrap();
+
+        // Remove the "local" components that we added automatically
+        entry.remove_bundle::<LocalPosition>();
+        entry.remove_bundle::<LocalRotation>();
+        entry.remove_bundle::<LocalScale>();
+
         Some(())
     }
 }
@@ -277,35 +282,13 @@ fn update(world: &mut World) {
         }
     }
 
-    use crate::components::*;
-    use crate::query::filters::*;
-
-    // Update the local-to-world matrix of the children
-    for (child, local_pos, local_rot, local_scl) in scene
-        .query_mut::<(
-            &mut Child,
-            Option<&LocalPosition>,
-            Option<&LocalRotation>,
-            Option<&LocalScale>,
-        )>()
-    {
-        let mut matrix = vek::Mat4::<f32>::identity();
-        matrix = local_pos
-            .map_or(matrix, |l| matrix * vek::Mat4::<f32>::from(l));
-        matrix *= local_rot
-            .map_or(matrix, |r| matrix * vek::Mat4::<f32>::from(r));
-        matrix *= local_scl
-            .map_or(matrix, |s| matrix * vek::Mat4::<f32>::from(s));
-        child.local_to_world += matrix;
-    }
-
     // Keeps track of the global transform of parents
     type Transform =
         (Option<Position>, Option<Rotation>, Option<Scale>);
     let mut transforms = AHashMap::<Entity, Transform>::new();
 
     // Fetch entities that are roots (ONLY parents)
-    let filter = contains::<Parent>() | always();
+    let filter = contains::<Parent>();
     for (entity, pos, rot, scl) in scene.query_with::<(
         &Entity,
         Option<&Position>,
@@ -319,33 +302,51 @@ fn update(world: &mut World) {
     }
 
     // Iterate through all the child entities and update their global transform based on the parent
-    for (child, global_pos, global_rot, global_scl) in scene
+    for (child,
+        local_pos,
+        local_rot,
+        local_scale,
+        global_pos,
+        global_rot,
+        global_scl
+    ) in scene
         .query_mut::<(
             &Child,
+            Option<&LocalPosition>,
+            Option<&LocalRotation>,
+            Option<&LocalScale>,
             Option<&mut Position>,
             Option<&mut Rotation>,
             Option<&mut Scale>,
         )>()
     {
-        let local_to_world = child.local_to_world;
         if let Some(parent_transform) = transforms.get(&child.parent) {
             let (parent_position, parent_rotation, parent_scale) =
-                parent_transform;
+            parent_transform;
 
-            // Update transform here...
-            if let Some((global, parent)) =
-                global_pos.zip(*parent_position)
-            {
-                **global = vek::Vec3::one();
+            // Zip the required elements
+            let pos = global_pos.zip(local_pos).zip(*parent_position);
+            let rot = global_rot.zip(local_rot).zip(*parent_rotation);
+            let scl = global_scl.zip(local_scale).zip(*parent_scale);
+
+            // Update the global position based on the parent position (and parent rotation)
+            if let Some(((global, local), parent)) = pos {   
+                if let Some(parent_rotation) = parent_rotation {
+                    **global = vek::Mat4::from(parent_rotation).mul_point(**local + *parent);
+                } else {
+                    **global = **local + *parent;
+                }
             }
 
-            if let Some((global, parent)) =
-                global_rot.zip(*parent_position)
-            {}
+            // Update the global rotation based on the parent rotation
+            if let Some(((global, local), parent)) = rot {   
+                **global = **local * *parent;
+            }
 
-            if let Some((global, parent)) =
-                global_scl.zip(*parent_scale)
-            {}
+            // Update the global scale based on the parent scale
+            if let Some(((global, local), parent)) = scl {   
+                **global = **local * *parent;
+            }
         }
     }
 }
