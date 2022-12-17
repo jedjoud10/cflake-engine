@@ -9,10 +9,10 @@ type Target = math::RawPoint;
 
 #[derive(Default, Clone, Copy, Component)]
 #[repr(transparent)]
-pub struct Location(Target);
+pub struct LocalPosition(Target);
 
 #[cfg(not(feature = "two-dim"))]
-impl Location {
+impl LocalPosition {
     // Construct a scale at the given X unit position
     pub fn at_x(x: f32) -> Self {
         Self(vek::Vec3::new(x, 0.0, 0.0))
@@ -35,7 +35,7 @@ impl Location {
 }
 
 #[cfg(feature = "two-dim")]
-impl Location {
+impl LocalPosition {
     // Construct a scale at the given X unit position
     pub fn at_x(x: f32) -> Self {
         Self(vek::Vec2::new(x, 0.0))
@@ -52,7 +52,7 @@ impl Location {
     }
 }
 
-impl Debug for Location {
+impl Debug for LocalPosition {
     fn fmt(
         &self,
         f: &mut std::fmt::Formatter<'_>,
@@ -61,7 +61,7 @@ impl Debug for Location {
     }
 }
 
-impl Display for Location {
+impl Display for LocalPosition {
     fn fmt(
         &self,
         f: &mut std::fmt::Formatter<'_>,
@@ -70,7 +70,7 @@ impl Display for Location {
     }
 }
 
-impl Deref for Location {
+impl Deref for LocalPosition {
     type Target = Target;
 
     fn deref(&self) -> &Self::Target {
@@ -78,50 +78,50 @@ impl Deref for Location {
     }
 }
 
-impl DerefMut for Location {
+impl DerefMut for LocalPosition {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
-impl AsRef<Target> for Location {
+impl AsRef<Target> for LocalPosition {
     fn as_ref(&self) -> &Target {
         &self.0
     }
 }
 
-impl AsMut<Target> for Location {
+impl AsMut<Target> for LocalPosition {
     fn as_mut(&mut self) -> &mut Target {
         &mut self.0
     }
 }
 
-impl From<Location> for Target {
-    fn from(value: Location) -> Self {
+impl From<LocalPosition> for Target {
+    fn from(value: LocalPosition) -> Self {
         value.0
     }
 }
 
-impl From<&Location> for Target {
-    fn from(value: &Location) -> Self {
+impl From<&LocalPosition> for Target {
+    fn from(value: &LocalPosition) -> Self {
         value.0
     }
 }
 
-impl From<Target> for Location {
+impl From<Target> for LocalPosition {
     fn from(value: Target) -> Self {
         Self(value)
     }
 }
 
-impl From<&Target> for Location {
+impl From<&Target> for LocalPosition {
     fn from(value: &Target) -> Self {
         Self(*value)
     }
 }
 
-impl From<Location> for math::RawMatrix {
-    fn from(value: Location) -> Self {
+impl From<LocalPosition> for math::RawMatrix {
+    fn from(value: LocalPosition) -> Self {
         #[cfg(not(feature = "two-dim"))]
         return vek::Mat4::translation_3d(value.0);
 
@@ -130,8 +130,8 @@ impl From<Location> for math::RawMatrix {
     }
 }
 
-impl From<&Location> for vek::Mat4<f32> {
-    fn from(value: &Location) -> Self {
+impl From<&LocalPosition> for vek::Mat4<f32> {
+    fn from(value: &LocalPosition) -> Self {
         #[cfg(not(feature = "two-dim"))]
         return vek::Mat4::translation_3d(value.0);
 
@@ -140,8 +140,8 @@ impl From<&Location> for vek::Mat4<f32> {
     }
 }
 
-impl Add<Location> for Location {
-    type Output = Location;
+impl Add<LocalPosition> for LocalPosition {
+    type Output = LocalPosition;
 
     fn add(self, rhs: Self) -> Self::Output {
         Self(self.0 + rhs.0)

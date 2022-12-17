@@ -409,3 +409,10 @@ fn unit_tuple() {
     let mut entry2 = manager.entry_mut(entity2).unwrap();
     entry2.insert_bundle(Health(0)).unwrap();    
 }
+
+#[test]
+fn hierarchy() {
+    let mut manager = Scene::default();
+    let entity1 = manager.insert(Position::default());
+    let enttiy2 = manager.insert((Position::default(), Child::new(entity1)));
+}

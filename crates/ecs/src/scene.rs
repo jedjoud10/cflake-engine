@@ -230,6 +230,11 @@ fn init(world: &mut World) {
     world.insert(Scene::default());
 }
 
+// Update the scene hierarchy
+fn update(world: &mut World) {
+    
+}
+
 // The ECS system will manually insert the ECS resource and will clean it at the start of each frame (except the first frame)
 pub fn system(system: &mut System) {
     system.insert_init(init).before(user);
