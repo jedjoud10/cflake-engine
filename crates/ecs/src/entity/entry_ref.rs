@@ -58,8 +58,8 @@ impl<'a> EntryRef<'a> {
         &self,
     ) -> Option<L> {
         // Make sure the layout can be fetched from the archetype
-        let combined = L::reduce(|a, b| a | b).both();
-        if combined & self.archetype().mask() != combined {
+        let search = L::reduce(|a, b| a | b).search();
+        if search & self.archetype().mask() != search {
             return None;
         }
 

@@ -1,7 +1,7 @@
 use utils::BitSet;
 
 use crate::{
-    Always, Archetype, Mask, QueryFilter, QueryLayoutMut, Scene, Wrap,
+    Always, Archetype, Mask, QueryFilter, QueryLayoutMut, Scene, Wrap, LayoutAccess,
 };
 use std::{iter::FusedIterator, marker::PhantomData};
 
@@ -9,8 +9,7 @@ use std::{iter::FusedIterator, marker::PhantomData};
 // Even though I define the 'it, 'b, and 's lfietimes, I don't use them in this query, I only use them in the query iterator
 pub struct QueryMut<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> {
     pub(crate) archetypes: Vec<&'a mut Archetype>,
-    mask: Mask,
-    mutability: Mask,
+    access: LayoutAccess,
     bitsets: Option<Vec<BitSet>>,
     _phantom1: PhantomData<&'b ()>,
     _phantom2: PhantomData<&'s ()>,
@@ -22,17 +21,14 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>>
 {
     // Create a new mut query from the scene
     pub fn new(scene: &'a mut Scene) -> Self {
-        let (mask, archetypes, _) =
+        let (access, archetypes, _) =
             super::archetypes_mut::<L, Always>(scene);
-        let mutability = mask.unique();
-        let mask = mask.both();
 
         Self {
             archetypes,
             bitsets: None,
             _phantom3: PhantomData,
-            mask,
-            mutability,
+            access,
             _phantom1: PhantomData,
             _phantom2: PhantomData,
         }
@@ -44,21 +40,16 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>>
         _: Wrap<F>,
     ) -> Self {
         // Filter out the archetypes then create the bitsets
-        let (mask, archetypes, cached) =
+        let (access, archetypes, cached) =
             super::archetypes_mut::<L, F>(scene);
         let bitsets = super::generate_bitset_chunks::<F>(
             archetypes.iter().map(|a| &**a),
             cached,
         );
 
-        // Separate the masks
-        let mutability = mask.unique();
-        let mask = mask.both();
-
         Self {
             archetypes,
-            mask,
-            mutability,
+            access,
             bitsets: Some(bitsets),
             _phantom3: PhantomData,
             _phantom1: PhantomData,
@@ -80,7 +71,6 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>>
             utils::SliceTuple<'s2>,
     {
         threadpool.scope(|scope| {
-            let mutability = self.mutability;
             // Convert the optional bitset vector to an iterator that returns None if it is None
             let bitsets = self
                 .bitsets
@@ -102,7 +92,7 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>>
                 // Update all states chunks of the current archetype before iterating
                 apply_mutability_states(
                     archetype,
-                    mutability,
+                    archetype.mask() & self.access.unique(),
                     bitset.as_ref(),
                 );
 
@@ -125,9 +115,9 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>>
         });
     }
 
-    // Get the mask that we will use to filter through the archetypes
-    pub fn mask(&self) -> Mask {
-        self.mask
+    // Get the access masks that we have calculated
+    pub fn layout_access(&self) -> LayoutAccess {
+        self.access
     }
 
     // Get the number of entries that we will have to iterate through
@@ -196,7 +186,7 @@ impl<'a: 'b, 'b, 'it, L: for<'s> QueryLayoutMut<'s>> IntoIterator
                 self.bitsets.as_ref().map(|bitset| &bitset[i]);
             apply_mutability_states(
                 archetype,
-                self.mutability,
+                archetype.mask() & self.access.unique(),
                 bitset,
             );
         }

@@ -199,8 +199,10 @@ impl Scene {
     pub fn find<'a, L: for<'i> QueryLayoutRef<'i>>(
         &'a self,
     ) -> Option<L> {
-        let mut iterator =
-            QueryRef::<L>::new(self).into_iter().fuse();
+        let mut iterator = self
+            .query::<L>()
+            .into_iter()
+            .fuse();
         iterator.next().xor(iterator.next())
     }
 
@@ -208,8 +210,10 @@ impl Scene {
     pub fn find_mut<'a, L: for<'i> QueryLayoutMut<'i>>(
         &'a mut self,
     ) -> Option<L> {
-        let mut iterator =
-            QueryMut::<L>::new(self).into_iter().fuse();
+        let mut iterator = self
+            .query_mut::<L>()
+            .into_iter()
+            .fuse();
         iterator.next().xor(iterator.next())
     }
 

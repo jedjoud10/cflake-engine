@@ -64,7 +64,7 @@ macro_rules! tuple_impls {
 
             fn reduce(mut lambda: impl FnMut(LayoutAccess, LayoutAccess) -> LayoutAccess) -> LayoutAccess {
                 let layouts = [$($name::access()),+];
-                layouts[..].into_iter().cloned().filter(|l| *l != LayoutAccess::none()).reduce(|a, b| lambda(a, b)).unwrap_or(LayoutAccess::none())
+                layouts[..].into_iter().cloned().reduce(|a, b| lambda(a, b)).unwrap()
             }
 
             unsafe fn ptrs_from_archetype_unchecked(archetype: &Archetype) -> Self::PtrTuple {
@@ -105,7 +105,7 @@ macro_rules! tuple_impls {
 
             fn reduce(mut lambda: impl FnMut(LayoutAccess, LayoutAccess) -> LayoutAccess) -> LayoutAccess {
                 let layouts = [$($name::access()),+];
-                layouts[..].into_iter().cloned().filter(|l| *l != LayoutAccess::none()).reduce(|a, b| lambda(a, b)).unwrap_or(LayoutAccess::none())
+                layouts[..].into_iter().cloned().reduce(|a, b| lambda(a, b)).unwrap()
             }
 
             unsafe fn ptrs_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::PtrTuple {

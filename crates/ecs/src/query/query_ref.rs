@@ -1,7 +1,7 @@
 use utils::BitSet;
 
 use crate::{
-    Always, Archetype, Mask, QueryFilter, QueryLayoutRef, Scene, Wrap,
+    Always, Archetype, Mask, QueryFilter, QueryLayoutRef, Scene, Wrap, LayoutAccess,
 };
 use std::{iter::FusedIterator, marker::PhantomData};
 
@@ -9,7 +9,7 @@ use std::{iter::FusedIterator, marker::PhantomData};
 // Even though I define the 'it, 'b, and 's lfietimes, I don't use them in this query, I only use them in the query iterator
 pub struct QueryRef<'a: 'b, 'b, 's, L: for<'it> QueryLayoutRef<'it>> {
     archetypes: Vec<&'a Archetype>,
-    mask: Mask,
+    access: LayoutAccess,
     bitsets: Option<Vec<BitSet>>,
     _phantom1: PhantomData<&'b ()>,
     _phantom2: PhantomData<&'s ()>,
@@ -27,7 +27,7 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutRef<'it>>
             archetypes,
             bitsets: None,
             _phantom3: PhantomData,
-            mask,
+            access: mask,
             _phantom1: PhantomData,
             _phantom2: PhantomData,
         }
@@ -39,7 +39,7 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutRef<'it>>
         _: Wrap<F>,
     ) -> Self {
         // Filter out the archetypes then create the bitsets
-        let (mask, archetypes, cached) =
+        let (access, archetypes, cached) =
             super::archetypes::<L, F>(scene);
         let bitsets = super::generate_bitset_chunks::<F>(
             archetypes.iter().map(|a| &**a),
@@ -48,7 +48,7 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutRef<'it>>
 
         Self {
             archetypes,
-            mask,
+            access,
             bitsets: Some(bitsets),
             _phantom3: PhantomData,
             _phantom1: PhantomData,
@@ -108,9 +108,9 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutRef<'it>>
         });
     }
 
-    // Get the mask that we will use to filter through the archetypes
-    pub fn mask(&self) -> Mask {
-        self.mask
+    // Get the access masks that we have calculated
+    pub fn layout_access(&self) -> LayoutAccess {
+        self.access
     }
 
     // Get the number of entries that we will have to iterate through

@@ -14,17 +14,17 @@ pub struct LayoutAccess {
 
 impl LayoutAccess {
     // Get the archetype search mask
-    pub fn archetype_search_mask(&self) -> Mask {
+    pub fn search(&self) -> Mask {
         self.arch_search
     }
  
     // Get the shared validation mask
-    pub fn shared_validation_mask(&self) -> Mask {
+    pub fn shared(&self) -> Mask {
         self.validation_shared
     }
 
     // Get the unique validation mask
-    pub fn unique_validation_mask(&self) -> Mask {
+    pub fn unique(&self) -> Mask {
         self.validation_unique
     }
 

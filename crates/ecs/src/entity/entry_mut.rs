@@ -125,7 +125,7 @@ impl<'a> EntryMut<'a> {
         &self,
     ) -> Option<L> {
         // Make sure the layout can be fetched from the archetype
-        let search = L::reduce(|a, b| a | b).archetype_search_mask();
+        let search = L::reduce(|a, b| a | b).search();
         if search & self.archetype().mask() != search {
             return None;
         }
@@ -150,7 +150,7 @@ impl<'a> EntryMut<'a> {
 
         // Make sure the layout can be fetched from the archetype
         let access = L::reduce(|a, b| a | b);
-        let search = access.archetype_search_mask();
+        let search = access.search();
         if search & self.archetype().mask() != search {
             return None;
         }
@@ -163,12 +163,12 @@ impl<'a> EntryMut<'a> {
         let layout = unsafe { L::read_mut_unchecked(ptrs, index) };
 
         // Get a mask of changed components from the archetype
-        let archetype = self.archetype();
-        let mutability = todo!();
+        let archetype = self.archetype_mut();
+        let mutability = archetype.mask() & access.unique();
 
         // Update the states based on the layout mask
         for unit in mutability.units() {
-            let table = self.archetype_mut().state_table_mut();
+            let table = archetype.state_table_mut();
             let states = table.get_mut(&unit).unwrap();
             states.update(index, |flags| flags.modified = true);
         }

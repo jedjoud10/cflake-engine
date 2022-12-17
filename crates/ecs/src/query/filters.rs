@@ -55,7 +55,7 @@ pub(super) fn archetypes_mut<
         .iter_mut()
         .filter_map(move |(&archetype_mask, archetype)| {
             (!archetype.is_empty()
-                && archetype_mask.contains(mask.both()))
+                && archetype_mask.contains(mask.search()))
             .then_some(archetype)
         })
         .filter(|a| F::evaluate_archetype(cached, a))
@@ -73,22 +73,21 @@ pub(super) fn archetypes<
     F: QueryFilter,
 >(
     scene: &Scene,
-) -> (Mask, Vec<&Archetype>, F::Cached) {
+) -> (LayoutAccess, Vec<&Archetype>, F::Cached) {
     let mask = L::reduce(|a, b| a | b);
-    dbg!(mask);
     let cached = F::prepare();
     let archetypes = scene
         .archetypes()
         .iter()
         .filter_map(move |(&archetype_mask, archetype)| {
             (!archetype.is_empty()
-                && archetype_mask.contains(mask.shared()))
+                && archetype_mask.contains(mask.search()))
             .then_some(archetype)
         })
         .filter(|a| F::evaluate_archetype(cached, a))
         .collect::<Vec<_>>();
 
-    (mask.shared(), archetypes, cached)
+    (mask, archetypes, cached)
 }
 
 // Create a vector of bitsets in case we are using query filtering
