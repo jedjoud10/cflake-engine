@@ -2,6 +2,7 @@ pub use ash;
 pub use ash::vk;
 pub use gpu_allocator;
 pub use gpu_allocator::{vulkan::*, MemoryLocation};
+pub use shaderc::*;
 
 mod adapter;
 mod commands;

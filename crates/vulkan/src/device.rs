@@ -162,6 +162,29 @@ impl Device {
 }
 
 impl Device {
+    // Translate some GLSL shader code to SPIRV
+    pub unsafe fn translate_glsl_spirv(&self, code: &str, file_name: &str, entry_point: &str, kind: shaderc::ShaderKind) -> Vec<u32> {
+        let compiler = shaderc::Compiler::new().unwrap();        
+        let binary_result = compiler.compile_into_spirv(
+            code, kind,
+            file_name, entry_point, None).unwrap();
+        binary_result.as_binary().to_owned()
+    }
+
+    // Create a new shader module from SPIRV byte code
+    pub unsafe fn compile_shader_module(&self, bytecode: &[u32]) -> vk::ShaderModule {
+        let create_info = vk::ShaderModuleCreateInfo::builder()
+            .code(bytecode);
+        self.raw().create_shader_module(&create_info, None).unwrap()
+    }
+
+    // Destroy a specific shader module
+    pub unsafe fn destroy_shader_module(&self, module: vk::ShaderModule) {
+        self.raw().destroy_shader_module(module, None);
+    } 
+}
+
+impl Device {
     // Create raw buffer with no memory
     pub unsafe fn create_buffer(
         &self,
