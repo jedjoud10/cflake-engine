@@ -1,6 +1,6 @@
 use assets::Assets;
 use world::World;
-use crate::{DepthConfig, BlendConfig, PrimitiveMode, CompareOp, FaceCullMode, StencilTest, VertexModule, FragmentModule};
+use crate::{DepthConfig, BlendConfig, Primitive, CompareOp, FaceCullMode, StencilTest, VertexModule, FragmentModule};
 
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
@@ -44,8 +44,8 @@ pub trait Material: 'static + Sized {
     }
 
     // Get the rasterizer config for this materil
-    fn primitive_mode() -> PrimitiveMode {
-        PrimitiveMode::Triangles {
+    fn primitive_mode() -> Primitive {
+        Primitive::Triangles {
             cull: Some(FaceCullMode::Back(true)),
             wireframe: false,
         }

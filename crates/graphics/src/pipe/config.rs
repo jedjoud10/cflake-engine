@@ -1,25 +1,5 @@
 use vulkan::vk;
 
-// How rasterized triangles should be culled
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub enum FaceCullMode {
-    Front(bool),
-    Back(bool),
-}
-
-// Depicts the exact primitives we will use to draw the VAOs
-#[derive(Clone, Copy, PartialEq)]
-pub enum PrimitiveMode {
-    Triangles { 
-        cull: Option<FaceCullMode>,
-        wireframe: bool,
-    },
-    Lines {
-        width: f32
-    },
-    Points,
-}
-
 // Comparison operator that represents the raw Vulkan comparison modes
 // Equivalent to vk::CompareOp
 #[repr(i32)]
@@ -60,30 +40,6 @@ pub struct StencilState {
     pub compare_mask: u32,
     pub write_mask: u32,
     pub reference: u32,
-}
-
-// Wrapper around depth bound testing
-#[derive(Clone, Copy, PartialEq)]
-pub struct DepthBounds {
-    pub min_depth_bounds: f32,
-    pub max_depth_bounds: f32,
-}
-
-// Wrapper around depth bias
-#[derive(Clone, Copy, PartialEq)]
-pub struct DepthBias {
-    pub bias_clamp: f32,
-    pub bias_constant_factor: f32,
-    pub bias_slope_factor: f32,
-}
-
-// How we read/write from depth attachments used by the material
-pub struct DepthConfig {
-    pub depth_write_enable: bool,
-    pub depth_clamp_enable: bool,
-    pub depth_test: Option<CompareOp>,
-    pub depth_bias: Option<DepthBias>,
-    pub depth_bounds: Option<DepthBounds>,
 }
 
 // Stencil testing wrapper 
