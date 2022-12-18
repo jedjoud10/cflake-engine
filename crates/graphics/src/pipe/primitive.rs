@@ -74,28 +74,29 @@ impl Primitive {
     }
 
     // Create the input assembly state for this primitive
-    pub fn apply_input_assembly_state(&self, builder: &mut vk::PipelineInputAssemblyStateCreateInfoBuilder) {
+    pub fn apply_input_assembly_state<'a>(&self, builder: vk::PipelineInputAssemblyStateCreateInfoBuilder<'a>) -> vk::PipelineInputAssemblyStateCreateInfoBuilder<'a> {
         let topology = match self {
             crate::Primitive::Triangles { cull, wireframe } => vk::PrimitiveTopology::TRIANGLE_LIST,
             crate::Primitive::Lines { width } => vk::PrimitiveTopology::LINE_LIST,
             crate::Primitive::Points => vk::PrimitiveTopology::POINT_LIST,
         };
-    
-        *builder = builder
+
+        builder
             .topology(topology)
-            .primitive_restart_enable(false);
+            .primitive_restart_enable(false)
     }
 
 
     // Create initialize a pipeline rasterization state builder using this primitive
-    pub fn apply_rasterization_state(&self, builder: &mut vk::PipelineRasterizationStateCreateInfoBuilder) {
+    pub fn apply_rasterization_state<'a>(&self, builder: vk::PipelineRasterizationStateCreateInfoBuilder<'a>) -> vk::PipelineRasterizationStateCreateInfoBuilder<'a> {
         let polygon_mode = self.build_polygon_mode();
         let cull_mode = self.build_cull_mode_flags();
         let front_face = self.build_front_face();    
 
-        *builder = builder.front_face(front_face)
+        builder
+            .front_face(front_face)
             .cull_mode(cull_mode)    
-            .polygon_mode(polygon_mode);
+            .polygon_mode(polygon_mode)
     }
 }
 

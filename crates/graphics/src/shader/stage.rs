@@ -1,18 +1,25 @@
 use assets::Asset;
 
+// The type of shader module that the shader files represent
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum ModuleKind {
+    // Vertex shaders get executed on a per vertex basis
+    Vertex,
+    
+    // Fragment shaders get executed for each fragment, or each pixel (in case of no MSAA)
+    Fragment
+}
+
 // This trait is implemented for each shader module, like the vertex module or fragment module
 pub trait Module: Sized {
-    // Get the file name of the module
-    fn name(&self) -> &str;
-
-    // Get the source code of the module
+    // Get the main properties of the module
+    fn file_name(&self) -> &str;
     fn source(&self) -> &str;
+    fn kind(&self) -> ModuleKind;
 
     // Convert the module into it's source code and name
     fn into_raw_parts(self) -> (String, String);
 
-    // Convert some source code and a file name into a module
-    fn from_raw_parts(source: String, name: String) -> Self;
 }
 
 // A vertex module that will be loaded from .vrtx files
@@ -36,9 +43,9 @@ pub struct ComputeModule {
 
 // I love procedural programming
 macro_rules! impl_module_traits {
-    ($t: ty, $gl: expr, $ext: expr) => {
+    ($t: ty, $kind: expr, $ext: expr) => {
         impl Module for $t {
-            fn name(&self) -> &str {
+            fn file_name(&self) -> &str {
                 &self.name
             }
 
@@ -46,24 +53,23 @@ macro_rules! impl_module_traits {
                 &self.source
             }
 
+            fn kind(&self) -> ModuleKind {
+                $kind
+            }
+
             fn into_raw_parts(self) -> (String, String) {
                 (self.source, self.name)
             }
-
-            fn from_raw_parts(source: String, name: String) -> Self {
-                Self { source, name }
-            }
         }
 
-        /*
-        impl Asset<'static> for $t {
-            type Args = ();
+        impl Asset for $t {
+            type Args<'a> = ();
 
             fn extensions() -> &'static [&'static str] {
                 &[$ext]
             }
 
-            fn deserialize(data: assets::Data, _args: Self::Args) -> Self {
+            fn deserialize(data: assets::Data, _args: Self::Args<'_>) -> Self {
                 Self {
                     source: String::from_utf8(data.bytes().to_vec()).unwrap(),
                     name: data
@@ -76,10 +82,8 @@ macro_rules! impl_module_traits {
                 }
             }
         }
-        */
     };
 }
 
-impl_module_traits!(VertexModule, gl::VERTEX_SHADER, "vrsh.glsl");
-impl_module_traits!(FragmentModule, gl::FRAGMENT_SHADER, "frsh.glsl");
-impl_module_traits!(ComputeModule, gl::COMPUTE_SHADER, "cmpt.glsl");
+impl_module_traits!(VertexModule, ModuleKind::Vertex, "vrsh.glsl");
+impl_module_traits!(FragmentModule, ModuleKind::Fragment, "frsh.glsl");

@@ -1,8 +1,9 @@
 use vulkan::{vk, Device};
 
 // Compile GLSL data into SPIRV byte code
-pub unsafe fn translate_glsl_spirv(device: &Device, code: &str) -> Vec<u32> {
+pub unsafe fn translate_glsl_spirv(device: &Device, file_name: &str, code: &str) -> Vec<u32> {
     todo!()
+    //device.translate_glsl_spirv(code, file_name, entry_point, kind)
 }
 
 // Compile an actual SPIRV module into a Vulkan module

@@ -1,5 +1,7 @@
 use std::{path::Path, sync::Arc};
 
+use thiserror::Error;
+
 // File data is what will be given to assets whenever we try to deserialize them
 // We will assume that all assets are files
 // TODO: add the loader back again
@@ -33,7 +35,8 @@ impl<'a> Data<'a> {
 }
 
 // An asset that will be loaded from a single unique file
-// Each asset has some extra data that can be used to construct the object
+// Each asset can fail to load it's data
+// Use the InfallibleAsset trait instead if data deserialization is infallible
 pub trait Asset: Sized + 'static {
     type Args<'args>;
 
@@ -49,6 +52,42 @@ pub trait Asset: Sized + 'static {
         data: Data,
         args: Self::Args<'args>,
     ) -> Result<Self, Self::Err>;
+}
+
+// An asset that will be loaded from a single unique file and that CANNOT fail
+pub trait InfallibleAsset: Sized + 'static {
+    type Args<'args>;
+
+    // Possible extensions that are supported
+    // If this is of 0 length, then all extensions are supported
+    fn extensions() -> &'static [&'static str];
+
+    // Deserialize the asset without returning an error
+    fn deserialize<'args>(
+        data: Data,
+        args: Self::Args<'args>,
+    ) -> Self;
+}
+
+// This should not even be considered and error bruh
+#[derive(Error, Debug)]
+#[error("")]
+pub struct Infallible;
+
+impl<T: InfallibleAsset> Asset for T {
+    type Args<'args> = T::Args<'args>;
+    type Err = Infallible;
+
+    fn extensions() -> &'static [&'static str] {
+        <T as InfallibleAsset>::extensions()
+    }
+
+    fn deserialize<'args>(
+        data: Data,
+        args: Self::Args<'args>,
+    ) -> Result<Self, Self::Err> {
+        Ok(<T as InfallibleAsset>::deserialize(data, args))
+    }
 }
 
 // Just for convience's sake

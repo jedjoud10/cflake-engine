@@ -40,6 +40,19 @@ impl<'a> Recorder<'a> {
     }
 }
 
+// Synchronization
+impl<'a> Recorder<'a> {
+    // Full barrier
+    pub unsafe fn cmd_full_barrier(&mut self) {
+        self.device().raw().cmd_pipeline_barrier(
+            self.command_buffer().raw(),
+            vk::PipelineStageFlags::ALL_COMMANDS,
+            vk::PipelineStageFlags::ALL_COMMANDS,
+            vk::DependencyFlags::empty(),
+            &[], &[], &[]);
+    } 
+}
+
 // Buffer commands
 impl<'a> Recorder<'a> {
     // Bind an index buffer to the command buffer render pass
@@ -49,15 +62,17 @@ impl<'a> Recorder<'a> {
         offset: vk::DeviceSize,
         index_type: vk::IndexType,
     ) {
+        self.device().raw().cmd_bind_index_buffer(self.command_buffer().raw(), buffer, offset, index_type);
     }
 
     // Bind vertex buffers to the command buffer render pass
     pub unsafe fn cmd_bind_vertex_buffers(
         &mut self,
         first_binding: u32,
-        buffers: Vec<vk::Buffer>,
-        offsets: Vec<vk::DeviceSize>,
+        buffers: &[vk::Buffer],
+        offsets: &[vk::DeviceSize],
     ) {
+        self.device().raw().cmd_bind_vertex_buffers(self.command_buffer().raw(), first_binding, &buffers, &offsets);
     }
 
     // Copy a buffer to another buffer in GPU memory
@@ -65,9 +80,8 @@ impl<'a> Recorder<'a> {
         &mut self,
         src: vk::Buffer,
         dst: vk::Buffer,
-        regions: Vec<vk::BufferCopy>,
+        regions: &[vk::BufferCopy],
     ) {
-        log::warn!("Recorder::cmd_copy_buffer");
         self.device().raw().cmd_copy_buffer(self.command_buffer().raw(), src, dst, &regions);
     }
 
@@ -77,8 +91,12 @@ impl<'a> Recorder<'a> {
         buffer: vk::Buffer,
         image: vk::Image,
         layout: vk::ImageLayout,
-        regions: Vec<vk::BufferImageCopy>,
+        regions: &[vk::BufferImageCopy],
     ) {
+        self.device().raw().cmd_copy_image_to_buffer(
+            self.command_buffer().raw(),
+            image, layout, buffer,
+            regions);
     }
 
     // Clear a buffer to zero
@@ -88,6 +106,9 @@ impl<'a> Recorder<'a> {
         offset: vk::DeviceSize,
         size: vk::DeviceSize,
     ) {
+        self.device().raw().cmd_fill_buffer(
+            self.command_buffer().raw(),
+            buffer, offset, size, 0);
     }
 
     // Update the buffer using memory that is directly stored within the command buffer
@@ -95,8 +116,11 @@ impl<'a> Recorder<'a> {
         &mut self,
         buffer: vk::Buffer,
         offset: vk::DeviceSize,
-        data: Vec<u8>,
+        data: &[u8],
     ) {
+        self.device().raw().cmd_update_buffer(
+            self.command_buffer().raw(),
+            buffer, offset, data);
     }
 }
 

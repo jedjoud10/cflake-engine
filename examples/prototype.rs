@@ -17,19 +17,12 @@ fn init(world: &mut World) {
     // Create a recorder to record commands
     let mut recorder = graphics.acquire();
 
-    let usage = BufferUsage {
-        device_write: true,
-        device_read: true,
-        host_write: false,
-        host_read: false,
-    };
-
     // Create a new buffer
     let buffer1 = StorageBuffer::<u32>::from_slice(
         &graphics,
         &[69, 0, 0, 420],
         BufferMode::default(),
-        usage,
+        BufferUsage::default(),
         &mut recorder
     ).unwrap();
 
@@ -38,7 +31,7 @@ fn init(world: &mut World) {
         &graphics,
         &[0, 0, 0, 0],
         BufferMode::default(),
-        usage,
+        BufferUsage::default(),
         &mut recorder
     ).unwrap();
 
@@ -46,6 +39,12 @@ fn init(world: &mut World) {
     buffer2.copy_from(&buffer1, &mut recorder).unwrap();
 
     // Submit to the GPU and wait for execution
-    let submission = graphics.submit(recorder);
-    let elapsed = submission.wait();
+    graphics.submit(recorder).wait();
+    
+    // Read back the data
+    let mut recorder = graphics.acquire();
+    let data = buffer2.read_to_vec(&mut recorder).unwrap();
+    graphics.submit(recorder).wait();
+    dbg!(data);
+
 }

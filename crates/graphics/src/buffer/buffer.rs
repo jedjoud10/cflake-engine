@@ -7,7 +7,7 @@ use std::{
 use crate::{
     BufferError, ExtendFromIterError, Graphics, InitializationError,
     InvalidModeError, InvalidRangeSizeError, InvalidUsageError,
-    SplatRangeError, WriteRangeError, CopyRangeFromError,
+    WriteRangeError, CopyRangeFromError, ReadRangeError,
 };
 use bytemuck::{Pod, Zeroable};
 use vulkan::{vk, Allocation, Recorder};
@@ -40,14 +40,51 @@ pub struct BufferUsage {
     pub host_read: bool,
 }
 
-impl Default for BufferUsage {
-    fn default() -> Self {
+impl BufferUsage {    
+    // Device local buffer usage. Not host visible
+    pub fn device_local_usage() -> Self {
+        Self {
+            device_write: true,
+            device_read: true,
+            host_write: false,
+            host_read: false,
+        }
+    }
+    
+    // Common buffer usage. Allows you to do anything
+    pub fn common_device_usage() -> Self {
         Self {
             device_write: true,
             device_read: true,
             host_write: true,
             host_read: true,
         }
+    }
+    
+    // Buffer usage to upload data to the GPU
+    pub fn upload_to_device_usage() -> Self {
+        Self {
+            device_write: false,
+            device_read: true,
+            host_write: true,
+            host_read: false,
+        }
+    }
+    
+    // Buffer usage to download data from the GPU
+    pub fn download_from_device_usage() -> Self {
+        Self {
+            device_write: true,
+            device_read: false,
+            host_write: false,
+            host_read: true,
+        }
+    }
+}
+
+impl Default for BufferUsage {
+    fn default() -> Self {
+        Self::common_device_usage()
     }
 }
 
@@ -155,7 +192,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
                 let len = slice.len();
                 dst[..len].copy_from_slice(slice);
 
-                let copy = vk::BufferCopy::builder()
+                let copy = *vk::BufferCopy::builder()
                     .dst_offset(0)
                     .src_offset(0)
                     .size(size);
@@ -165,7 +202,9 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
                     recorder,
                     queue.acquire(device),
                 );
-                old.cmd_copy_buffer(buffer, src_buffer, vec![*copy]);
+                recorder.cmd_full_barrier();
+                old.cmd_copy_buffer(buffer, src_buffer, &[copy]);
+                recorder.cmd_full_barrier();
 
                 // Submit the recorder
                 queue.submit(old).wait();
@@ -271,23 +310,6 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         })
     }
 
-    // Fills a range in the buffer with a constant value
-    pub fn splat_range(
-        &mut self,
-        _val: T,
-        range: impl RangeBounds<usize>,
-        _recorder: &mut Recorder,
-    ) -> Result<(), BufferError> {
-        let BufferBounds { offset: _, size: _ } =
-            self.convert_range_bounds(range).map_err(|x| {
-                BufferError::SplatRange(
-                    SplatRangeError::InvalidRangeSize(x),
-                )
-            })?;
-
-        todo!()
-    }
-
     // Extent the current buffer using data from an iterator
     pub fn extend_from_iterator<I: Iterator<Item = T>>(
         &mut self,
@@ -320,6 +342,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
             ));
         }
 
+        /*
         // Check if we can write to the buffer
         if !self.usage.host_write {
             return Err(BufferError::ExtendFromIter(
@@ -337,6 +360,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
                 ),
             ));
         }
+        */
 
         // Allocate the buffer for the first time
         if self.length == 0 && self.capacity == 0 {
@@ -359,12 +383,12 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         range: impl RangeBounds<usize>,
         _recorder: &mut Recorder,
     ) -> Result<(), BufferError> {
-        todo!()
-        /*
-        let BufferBounds {
-            offset, size
-        } = self.convert_range_bounds(range)
-            .map_err(|x| BufferError::WriteRange(WriteRangeError::InvalidRangeSize(x)))?;
+        let BufferBounds { offset, size } =
+            self.convert_range_bounds(range).map_err(|x| {
+                BufferError::WriteRange(
+                    WriteRangeError::InvalidRangeSize(x),
+                )
+            })?;
 
 
         // Check if the given slice matches with the range
@@ -372,21 +396,20 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
             return Err(BufferError::WriteRange(WriteRangeError::SliceLengthMismatch()));
         }
 
-        // Check if we can write to the buffer
-        if !self.usage.host_write {
-            return Err(BufferError::WriteRange(WriteRangeError::InvalidUsage(InvalidUsageError::IllegalHostWrite)));
-        }
-
         // Get the mapped pointer and write to it the given slice (if possible)
         if let Some(mapped) = self.allocation.mapped_slice_mut() {
-            let dst = bytemuck::cast_slice_mut::<u8, T>(mapped);
-            dst[offset..size].copy_from_slice(src);
+            // Check if we can write to the buffer
+            if !self.usage.host_write {
+                return Err(BufferError::WriteRange(WriteRangeError::InvalidUsage(InvalidUsageError::IllegalHostWrite)));
+            }
+
+            let dst = &mut bytemuck::cast_slice_mut::<u8, T>(mapped);
+            dst[offset..][..size].copy_from_slice(src);
         } else {
             // TODO: HANDLE WRITING TO BUFFER THAT ISNT MAPPABLE
             todo!()
         }
         Ok(())
-        */
     }
 
     // Read a region of the buffer into a mutable slice immediately
@@ -396,37 +419,33 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         range: impl RangeBounds<usize>,
         _recorder: &mut Recorder,
     ) -> Result<(), BufferError> {
-        todo!()
-        /*
-        let BufferBounds {
-            offset, size
-        } = self.convert_range_bounds(range)?;
+        let BufferBounds { offset, size } =
+            self.convert_range_bounds(range).map_err(|x| {
+                BufferError::ReadRange(
+                    ReadRangeError::InvalidRangeSize(x),
+                )
+            })?;
+
 
         // Check if the given slice matches with the range
         if size != dst.len() {
-            return Err(BufferError::SliceLengthRangeMistmatch(
-                dst.len(),
-                size,
-            ));
+            return Err(BufferError::WriteRange(WriteRangeError::SliceLengthMismatch()));
         }
 
-        // Check if we can read from the buffer
-        if !self.usage.host_read {
-            return Err(BufferError::InvalidUsage(
-                InvalidUsageError::IllegalHostRead,
-            ));
-        }
-
-        // Get the mapped pointer and read from it (if possible)
-        if let Some(mapped) = self.allocation.mapped_slice(){
-            let src = bytemuck::cast_slice::<u8, T>(mapped);
-            dst.copy_from_slice(&src[offset..size]);
+        // Get the mapped pointer and write to it the given slice (if possible)
+        if let Some(mapped) = self.allocation.mapped_slice() {
+            // Check if we can read from the buffer
+            if !self.usage.host_read {
+                return Err(BufferError::WriteRange(WriteRangeError::InvalidUsage(InvalidUsageError::IllegalHostRead)));
+            }
+            
+            let src = &bytemuck::cast_slice::<u8, T>(mapped);
+            dst.copy_from_slice(&src[offset..][..size]);
         } else {
-            // TODO: HANDLE READING FROM BUFFER THAT ISNT MAPPABLE
+            // TODO: HANDLE WRITING TO BUFFER THAT ISNT MAPPABLE
             todo!()
         }
         Ok(())
-        */
     }
 
     // Read a region of the buffer into a new vector
@@ -435,17 +454,17 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         range: impl RangeBounds<usize> + Copy,
         recorder: &mut Recorder,
     ) -> Result<Vec<T>, BufferError> {
-        todo!()
-        /*
-        let BufferBounds {
-            offset, size
-        } = self.convert_range_bounds(range)?;
-
+        let BufferBounds { offset: _, size } =
+        self.convert_range_bounds(range).map_err(|x| {
+            BufferError::ReadRange(
+                ReadRangeError::InvalidRangeSize(x),
+            )
+        })?;
+        
         // Create a vec and read into it
         let mut vec = vec![T::zeroed(); size];
         self.read_range(&mut vec, range, recorder)?;
         Ok(vec)
-        */
     }
 
     // Read the whole buffer into a new vector
@@ -514,12 +533,13 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
             let size = (size * self.stride()) as u64;
             let src_offset = (src_offset * self.stride()) as u64;
             let dst_offset = (dst_offset * self.stride()) as u64;
-            let copy = vk::BufferCopy::builder()
+            let copy = *vk::BufferCopy::builder()
                 .size(size)
                 .src_offset(src_offset)
-                .dst_offset(dst_offset)
-                .build();
-            recorder.cmd_copy_buffer(other.buffer, self.buffer, vec![copy]);
+                .dst_offset(dst_offset);
+            recorder.cmd_full_barrier();
+            recorder.cmd_copy_buffer(other.buffer, self.buffer, &[copy]);
+            recorder.cmd_full_barrier();
         }
         Ok(())
     }
@@ -531,15 +551,6 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         recorder: &mut Recorder,
     ) -> Result<(), BufferError> {
         self.copy_range_from(.., other, 0, recorder)
-    }
-
-    // Fills the whole buffer with a constant value
-    pub fn splat(
-        &mut self,
-        val: T,
-        recorder: &mut Recorder,
-    ) -> Result<(), BufferError> {
-        self.splat_range(val, .., recorder)
     }
 
     // Overwrite the whole buffer using a slice

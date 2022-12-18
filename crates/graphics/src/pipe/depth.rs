@@ -31,7 +31,7 @@ pub struct DepthConfig {
 }
 
 impl DepthConfig {
-    pub fn apply_rasterization_state(&self, builder: &mut vk::PipelineRasterizationStateCreateInfoBuilder) {
+    pub fn apply_rasterization_state<'a>(&self, builder: vk::PipelineRasterizationStateCreateInfoBuilder<'a>) -> vk::PipelineRasterizationStateCreateInfoBuilder<'a> {
         let DepthConfig {
             depth_write_enable,
             depth_clamp_enable,
@@ -40,18 +40,18 @@ impl DepthConfig {
             depth_bounds,
         } = *self;
 
-        *builder = if let Some(depth_bias) = depth_bias {
+        if let Some(depth_bias) = depth_bias {
             builder
                 .depth_bias_constant_factor(depth_bias.bias_constant_factor)
                 .depth_bias_slope_factor(depth_bias.bias_slope_factor)
                 .depth_bias_clamp(depth_bias.bias_clamp)
                 .depth_bias_enable(true)
             } else {
-            *builder
-        }.depth_clamp_enable(depth_clamp_enable);
+            builder
+        }.depth_clamp_enable(depth_clamp_enable)
     }
 
-    pub fn build_depth_stencil_state(&self, builder: &mut vk::PipelineDepthStencilStateCreateInfoBuilder) {
+    pub fn apply_depth_stencil_state<'a>(&self, mut builder: vk::PipelineDepthStencilStateCreateInfoBuilder<'a>) -> vk::PipelineDepthStencilStateCreateInfoBuilder<'a> {
         let DepthConfig {
             depth_write_enable,
             depth_clamp_enable,
@@ -60,24 +60,24 @@ impl DepthConfig {
             ..
         } = *self;
 
-        *builder = builder
+        builder = builder
             .depth_write_enable(depth_write_enable)
             .depth_test_enable(depth_test.is_some())
             .depth_bounds_test_enable(depth_bounds.is_some());
 
-        *builder = if let Some(depth_test) = depth_test {
+        builder = if let Some(depth_test) = depth_test {
             builder
-                .depth_compare_op(transmute::<CompareOp, vk::CompareOp>(depth_test))
+                .depth_compare_op(unsafe { transmute::<CompareOp, vk::CompareOp>(depth_test) })
         } else {
-            *builder
+            builder
         };
 
-        *builder = if let Some(depth_bounds) = depth_bounds {
+        if let Some(depth_bounds) = depth_bounds {
             builder
                 .min_depth_bounds(depth_bounds.min_depth_bounds)
                 .max_depth_bounds(depth_bounds.max_depth_bounds)
         } else {
-            *builder
-        };
+            builder
+        }
     }
 }

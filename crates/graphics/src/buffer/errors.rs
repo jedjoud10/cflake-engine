@@ -51,19 +51,6 @@ pub enum InvalidUsageError {
 #[error("The given range {0}..{1} is an invalid length for buffer with size {2}")]
 pub struct InvalidRangeSizeError(pub usize, pub usize, pub usize);
 
-// Splat range command error
-#[derive(Error, Debug)]
-pub enum SplatRangeError {
-    #[error("{0}")]
-    InvalidRangeSize(InvalidRangeSizeError),
-
-    #[error("{0}")]
-    InvalidUsage(InvalidUsageError),
-
-    #[error("{0}")]
-    InvalidMode(InvalidModeError),
-}
-
 // Extend from iter command error
 #[derive(Error, Debug)]
 pub enum ExtendFromIterError {
@@ -129,9 +116,6 @@ pub enum CopyRangeFromError {
 pub enum BufferError {
     #[error("{0}")]
     Initialization(InitializationError),
-
-    #[error("{0}")]
-    SplatRange(SplatRangeError),
 
     #[error("{0}")]
     ExtendFromIter(ExtendFromIterError),
