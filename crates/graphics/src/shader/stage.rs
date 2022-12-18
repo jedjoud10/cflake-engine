@@ -7,7 +7,10 @@ pub enum ModuleKind {
     Vertex,
     
     // Fragment shaders get executed for each fragment, or each pixel (in case of no MSAA)
-    Fragment
+    Fragment,
+
+    // Compute shaders are arbitrary shaders that run on arbitrary input and output
+    Compute,
 }
 
 // This trait is implemented for each shader module, like the vertex module or fragment module
@@ -42,7 +45,7 @@ pub struct ComputeModule {
 
 
 // I love procedural programming
-macro_rules! impl_module_traits {
+macro_rules! impl_module {
     ($t: ty, $kind: expr, $ext: expr) => {
         impl Module for $t {
             fn file_name(&self) -> &str {
@@ -63,27 +66,34 @@ macro_rules! impl_module_traits {
         }
 
         impl Asset for $t {
-            type Args<'a> = ();
-
+            type Args<'args> = ();
+            type Err = std::string::FromUtf8Error;
+        
             fn extensions() -> &'static [&'static str] {
                 &[$ext]
             }
+        
+            fn deserialize<'args>(
+                data: assets::Data,
+                _args: Self::Args<'args>,
+            ) -> Result<Self, Self::Err> {
+                let source = String::from_utf8(data.bytes().to_vec())?;
+                let name = data.path()
+                    .file_name()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .to_string();
 
-            fn deserialize(data: assets::Data, _args: Self::Args<'_>) -> Self {
-                Self {
-                    source: String::from_utf8(data.bytes().to_vec()).unwrap(),
-                    name: data
-                        .path()
-                        .file_name()
-                        .unwrap()
-                        .to_str()
-                        .unwrap()
-                        .to_string(),
-                }
+                Ok(Self {
+                    source, name
+                })
             }
         }
+        
     };
 }
 
-impl_module_traits!(VertexModule, ModuleKind::Vertex, "vrsh.glsl");
-impl_module_traits!(FragmentModule, ModuleKind::Fragment, "frsh.glsl");
+impl_module!(VertexModule, ModuleKind::Vertex, "vert");
+impl_module!(FragmentModule, ModuleKind::Fragment, "frag");
+impl_module!(ComputeModule, ModuleKind::Compute, "comp");

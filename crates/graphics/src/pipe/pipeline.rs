@@ -1,10 +1,12 @@
 use std::mem::transmute;
-
 use vulkan::{vk, Device};
 use crate::{DepthConfig, CompareOp, StencilOp, Primitive, StencilTest, BlendConfig, StencilConfig};
 
+// A vulkan pipeline abstraction that will handle initialization / destruction for us manually
+// This will abstract most of the initialization and 
+
 // Create the rasterization state from the material
-pub unsafe fn build_rasterization_state(primitive: &Primitive, depth_config: &DepthConfig) -> vk::PipelineRasterizationStateCreateInfo {
+pub fn build_rasterization_state(primitive: &Primitive, depth_config: &DepthConfig) -> vk::PipelineRasterizationStateCreateInfo {
     let mut builder = vk::PipelineRasterizationStateCreateInfo::builder();
     builder = primitive.apply_rasterization_state(builder);
     builder = depth_config.apply_rasterization_state(builder);
@@ -19,7 +21,7 @@ pub fn build_input_assembly_state(primitive: &Primitive) -> vk::PipelineInputAss
 }
 
 // Create the depth stencil state from the material
-pub unsafe fn build_depth_stencil_state(stencil_config: &StencilConfig, depth_config: &DepthConfig) -> vk::PipelineDepthStencilStateCreateInfo {
+pub fn build_depth_stencil_state(stencil_config: &StencilConfig, depth_config: &DepthConfig) -> vk::PipelineDepthStencilStateCreateInfo {
     let mut builder = vk::PipelineDepthStencilStateCreateInfo::builder();
     builder = depth_config.apply_depth_stencil_state(builder);
     builder = stencil_config.apply_depth_stencil_state(builder);
@@ -27,27 +29,30 @@ pub unsafe fn build_depth_stencil_state(stencil_config: &StencilConfig, depth_co
 }
 
 // Create the color blend state from the materil
-pub unsafe fn build_color_blend_state(blend_config: &BlendConfig) -> vk::PipelineColorBlendStateCreateInfo {
+pub fn build_color_blend_state(blend_config: &BlendConfig) -> vk::PipelineColorBlendStateCreateInfo {
     *vk::PipelineColorBlendStateCreateInfo::builder()
         .logic_op_enable(false)
 }
 
 // Create the pipeline layout for a specific material
-pub unsafe fn build_pipeline_layout() -> vk::PipelineLayout {
+pub fn build_pipeline_layout() -> vk::PipelineLayout {
     todo!()
 }
 
 // Create the vertex input state for this specific material
-pub unsafe fn build_vertex_input_state() -> vk::PipelineVertexInputStateCreateInfo {
+pub fn build_vertex_input_state() -> vk::PipelineVertexInputStateCreateInfo {
     todo!()
 }
 
 // Get the dynamic state that will be modified per frame
-pub unsafe fn build_dynamic_state() -> vk::PipelineDynamicStateCreateInfo {
-    let viewport = vk::DynamicState::VIEWPORT;
+pub fn build_dynamic_state() -> vk::PipelineDynamicStateCreateInfo {
+    let dynamic = &[
+        vk::DynamicState::VIEWPORT,
+        vk::DynamicState::SCISSOR,
+    ];
     
     vk::PipelineDynamicStateCreateInfo::builder()
-        .dynamic_states(&[viewport])
+        .dynamic_states(dynamic)
         .build()
 }
 

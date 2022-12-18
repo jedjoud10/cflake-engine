@@ -1,9 +1,16 @@
 use vulkan::{vk, Device};
 
-// Compile GLSL data into SPIRV byte code
-pub unsafe fn translate_glsl_spirv(device: &Device, file_name: &str, code: &str) -> Vec<u32> {
-    todo!()
-    //device.translate_glsl_spirv(code, file_name, entry_point, kind)
+use crate::ModuleKind;
+
+// Translate GLSL data into SPIRV byte code
+pub unsafe fn translate_glsl_spirv(device: &Device, file_name: &str, code: &str, kind: ModuleKind) -> Vec<u32> {
+    let kind = match kind {
+        ModuleKind::Vertex => vulkan::ShaderKind::Vertex,
+        ModuleKind::Fragment => vulkan::ShaderKind::Fragment,
+        ModuleKind::Compute => vulkan::ShaderKind::Compute,
+    };
+    
+    device.translate_glsl_spirv(code, file_name, "main", kind)
 }
 
 // Compile an actual SPIRV module into a Vulkan module

@@ -13,6 +13,7 @@ fn main() {
 // Executed at the start
 fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
+    let assets = world.get::<Assets>().unwrap();
 
     // Create a recorder to record commands
     let mut recorder = graphics.acquire();
@@ -47,4 +48,7 @@ fn init(world: &mut World) {
     graphics.submit(recorder).wait();
     dbg!(data);
 
+
+    //let vert = assets.load::<VertexModule>("engine/shaders/basic.vert").unwrap();
+    //let data = unsafe { translate_glsl_spirv(graphics.device(), "test", vert.source(), vert.kind()) };
 }

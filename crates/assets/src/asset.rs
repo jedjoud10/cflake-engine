@@ -115,7 +115,6 @@ impl Asset for String {
         data: Data,
         _args: Self::Args<'args>,
     ) -> Result<Self, Self::Err> {
-        std::thread::sleep(std::time::Duration::from_millis(1));
         String::from_utf8(data.bytes().to_vec())
     }
 }
