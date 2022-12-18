@@ -10,8 +10,13 @@ pub enum FaceCullMode {
 // Depicts the exact primitives we will use to draw the VAOs
 #[derive(Clone, Copy, PartialEq)]
 pub enum PrimitiveMode {
-    Triangles { cull: Option<FaceCullMode> },
-    Lines { width: f32 },
+    Triangles { 
+        cull: Option<FaceCullMode>,
+        wireframe: bool,
+    },
+    Lines {
+        width: f32
+    },
     Points,
 }
 

@@ -13,8 +13,6 @@ use parking_lot::{MappedMutexGuard, Mutex, MutexGuard};
 pub struct Device {
     device: ash::Device,
     allocator: Mutex<Option<Allocator>>,
-    buffers_used_by_gpu: DashMap<vk::Buffer, bool>,
-    images_used_by_gpu: DashMap<vk::Image, bool>,
 }
 
 impl Device {
@@ -105,8 +103,6 @@ impl Device {
         Device {
             device,
             allocator: Mutex::new(Some(allocator)),
-            buffers_used_by_gpu: Default::default(),
-            images_used_by_gpu: Default::default(),
         }
     }
 
@@ -178,10 +174,26 @@ impl Device {
         self.raw().create_shader_module(&create_info, None).unwrap()
     }
 
+    // Create a new graphics pipeline based on the given info
+    pub unsafe fn create_graphics_pipeline(&self, create_info: vk::GraphicsPipelineCreateInfo) -> vk::Pipeline {
+        self.raw().create_graphics_pipelines(vk::PipelineCache::null(), &[create_info], None).unwrap()[0]
+    }
+
+    // Create a new compute pipeline based on the given info
+    pub unsafe fn create_compute_pipeline(&self, create_info: vk::ComputePipelineCreateInfo) -> vk::Pipeline {
+        self.raw().create_compute_pipelines(vk::PipelineCache::null(), &[create_info], None).unwrap()[0]
+    }
+
+    // Destroy a specific pipeline
+    pub unsafe fn destroy_pipeline(&self, pipeline: vk::Pipeline) {
+        self.raw().destroy_pipeline(pipeline, None);
+    }
+
     // Destroy a specific shader module
     pub unsafe fn destroy_shader_module(&self, module: vk::ShaderModule) {
         self.raw().destroy_shader_module(module, None);
     } 
+    
 }
 
 impl Device {
