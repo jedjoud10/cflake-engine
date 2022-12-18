@@ -13,6 +13,7 @@ use parking_lot::{MappedMutexGuard, Mutex, MutexGuard};
 pub struct Device {
     device: ash::Device,
     allocator: Mutex<Option<Allocator>>,
+    
 }
 
 impl Device {
@@ -272,24 +273,4 @@ impl Device {
         log::debug!("Freeing buffer {:?}", buffer);
         self.device.destroy_buffer(buffer, None);
     }
-
-    /*
-
-    // Create a temporary staging buffer from the StagingPool
-    pub unsafe fn create_staging_buffer(
-        &self,
-        size: u64,
-        queue: &Queue
-    ) -> SubBufferBlock {
-        self.pool.lock().lock(self, queue, size)
-    }
-
-    // Free a temporary staging buffer from the StagingPool
-    pub unsafe fn destroy_staging_buffer(
-        &self,
-        block: SubBufferBlock
-    ) {
-        self.pool.lock().unlock(self, block);
-    }
-    */
 }
