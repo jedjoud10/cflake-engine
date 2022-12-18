@@ -72,9 +72,9 @@ pub struct DepthBounds {
 // Wrapper around depth bias
 #[derive(Clone, Copy, PartialEq)]
 pub struct DepthBias {
-    pub depth_bias_enable: bool,
-    pub depth_bias_constant_factor: f32,
-    pub depth_bias_slope_factor: f32,
+    pub bias_clamp: f32,
+    pub bias_constant_factor: f32,
+    pub bias_slope_factor: f32,
 }
 
 // How we read/write from depth attachments used by the material

@@ -1,41 +1,41 @@
 use assets::Asset;
 
-// This trait is implemented for each shader stage, like the vertex stage or fragment stage
+// This trait is implemented for each shader module, like the vertex module or fragment module
 pub trait Module: Sized {
-    // Get the file name of the stage
+    // Get the file name of the module
     fn name(&self) -> &str;
 
-    // Get the source code of the stage
+    // Get the source code of the module
     fn source(&self) -> &str;
 
-    // Convert the stage into it's source code and name
+    // Convert the module into it's source code and name
     fn into_raw_parts(self) -> (String, String);
 
-    // Convert some source code and a file name into a stage
+    // Convert some source code and a file name into a module
     fn from_raw_parts(source: String, name: String) -> Self;
 }
 
-// A vertex stage that will be loaded from .vrtx files
-pub struct VertexStage {
+// A vertex module that will be loaded from .vrtx files
+pub struct VertexModule {
     source: String,
     name: String,
 }
 
-// A fragment stage that will be loaded from .frag files
-pub struct FragmentStage {
+// A fragment module that will be loaded from .frag files
+pub struct FragmentModule {
     source: String,
     name: String,
 }
 
-// A compute stage (only for compute shaders) that will be loaded from .cmpt files
-pub struct ComputeStage {
+// A compute module (only for compute shaders) that will be loaded from .cmpt files
+pub struct ComputeModule {
     source: String,
     name: String,
 }
 
 
 // I love procedural programming
-macro_rules! impl_stage_traits {
+macro_rules! impl_module_traits {
     ($t: ty, $gl: expr, $ext: expr) => {
         impl Module for $t {
             fn name(&self) -> &str {
@@ -80,6 +80,6 @@ macro_rules! impl_stage_traits {
     };
 }
 
-impl_stage_traits!(VertexStage, gl::VERTEX_SHADER, "vrsh.glsl");
-impl_stage_traits!(FragmentStage, gl::FRAGMENT_SHADER, "frsh.glsl");
-impl_stage_traits!(ComputeStage, gl::COMPUTE_SHADER, "cmpt.glsl");
+impl_module_traits!(VertexModule, gl::VERTEX_SHADER, "vrsh.glsl");
+impl_module_traits!(FragmentModule, gl::FRAGMENT_SHADER, "frsh.glsl");
+impl_module_traits!(ComputeModule, gl::COMPUTE_SHADER, "cmpt.glsl");

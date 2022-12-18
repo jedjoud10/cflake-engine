@@ -1,5 +1,6 @@
+use assets::Assets;
 use world::World;
-use crate::{DepthConfig, BlendConfig, PrimitiveMode, CompareOp, FaceCullMode, StencilTest};
+use crate::{DepthConfig, BlendConfig, PrimitiveMode, CompareOp, FaceCullMode, StencilTest, VertexModule, FragmentModule};
 
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
@@ -9,19 +10,25 @@ pub trait Material: 'static + Sized {
     type Resources<'w>: 'w;
 
     // Static scene descriptor set
-    type SceneDescSet; 
+    type SceneDescriptorSet<'w>: 'w; 
     
     // Instance descriptor set
-    type InstanceDescSet; 
+    type InstanceDescriptorSet<'w>: 'w; 
     
     // Surface descriptor set
-    type SurfaceDescSet; 
+    type SurfaceDescriptorSet<'w>: 'w; 
+
+    // Load the vertex module
+    fn vertex_module(assets: &Assets) -> VertexModule;
+
+    // Load the fragment module
+    fn fragment_module(assets: &Assets) -> FragmentModule;
 
     // Get the required mesh attributes that we need to render a surface
     fn required_mesh_attributes() -> ();
 
     // Get the depth config for this material
-    fn depth_config(&self) -> DepthConfig {
+    fn depth_config() -> DepthConfig {
         DepthConfig { 
             depth_write_enable: true,
             depth_clamp_enable: false,
@@ -32,36 +39,37 @@ pub trait Material: 'static + Sized {
     }
     
     // Get the stencil testing for this material
-    fn stencil_testing(&self) -> Option<StencilTest> {
+    fn stencil_testing() -> Option<StencilTest> {
         None
     }
 
     // Get the rasterizer config for this materil
-    fn primitive_mode(&self) -> PrimitiveMode {
+    fn primitive_mode() -> PrimitiveMode {
         PrimitiveMode::Triangles {
             cull: Some(FaceCullMode::Back(true)),
+            wireframe: false,
         }
     }
 
     // Get the blend config for this material
-    fn blend_config(&self) -> BlendConfig {
+    fn blend_config() -> BlendConfig {
         todo!()
     }
 
     // Set the global and static instance descriptor sets
-    fn set_static_properties<'a>(
-        resources: &mut Self::Resources<'a>,
-    );
+    fn get_static_descriptor_set<'w>(
+        resources: &mut Self::Resources<'w>,
+    ) -> Self::SceneDescriptorSet<'w>;
 
     // Set the uniforms for this property block right before we render our surface
-    fn set_surface_properties<'a>(
-        resources: &mut Self::Resources<'a>,
-    );
+    fn get_surface_descriptor_set<'w>(
+        resources: &mut Self::Resources<'w>,
+    ) -> Self::SurfaceDescriptorSet<'w>;
 
     // With the help of the fetched resources, set the uniform properties for a unique material instance
     // This will only be called whenever we switch instances
-    fn set_instance_properties<'a>(
-        resources: &mut Self::Resources<'a>,
+    fn get_instance_descriptor_set<'w>(
+        resources: &mut Self::Resources<'w>,
         instance: &Self,
-    );
+    ) -> Self::InstanceDescriptorSet<'w>;
 }
