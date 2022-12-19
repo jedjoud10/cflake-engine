@@ -30,6 +30,7 @@ pub struct WindowSettings {
 pub struct Window {
     pub(crate) settings: WindowSettings,
     pub(crate) raw: winit::window::Window,
+    pub(crate) size: vek::Extent2<u32>, 
 }
 
 impl Window {
@@ -41,5 +42,10 @@ impl Window {
     // Get the raw winit window
     pub fn window(&self) -> &winit::window::Window {
         &self.raw
+    }
+
+    // Get the current size of the window in pixels
+    pub fn size(&self) -> vek::Extent2<u32> {
+        self.size
     }
 }

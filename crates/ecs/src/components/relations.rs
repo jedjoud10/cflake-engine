@@ -22,13 +22,4 @@ impl Child {
 
 // Parent component added onto entities that have multiple children
 #[derive(Component)]
-pub struct Parent {
-    pub(crate) children: usize,
-}
-
-impl Parent {
-    // Get the number of children that this parent has
-    pub fn children(&self) -> usize {
-        self.children
-    }
-}
+pub struct Parent;

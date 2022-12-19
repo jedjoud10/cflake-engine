@@ -18,36 +18,41 @@ fn init(world: &mut World) {
     // Create a recorder to record commands
     let mut recorder = graphics.acquire();
 
+    let mode = BufferMode::default();
+    let usage = BufferUsage::device_local_usage();
+
     // Create a new buffer
     let buffer1 = StorageBuffer::<u32>::from_slice(
         &graphics,
         &[69, 0, 0, 420],
-        BufferMode::default(),
-        BufferUsage::default(),
+        mode,
+        usage,
         &mut recorder
     ).unwrap();
 
     // Create another new buffer
-    let mut buffer2 = StorageBuffer::<u32>::from_slice(
+    let mut buffer2 = StorageBuffer::<u32>::with_capacity(
         &graphics,
-        &[0, 0, 0, 0],
-        BufferMode::default(),
-        BufferUsage::default(),
+        16,
+        mode,
+        usage,
         &mut recorder
     ).unwrap();
 
     // Copy the whole buffer1 into buffer2
     //buffer2.copy_from(&buffer1, &mut recorder).unwrap();
-    buffer2.extend_from_slice(&[220], &mut recorder).unwrap();
+    //buffer2.extend_from_slice(&[220], &mut recorder).unwrap();
 
     // Submit to the GPU and wait for execution
     //graphics.submit(recorder).wait();
     
     // Read back the data
+    /*
     let mut recorder = graphics.acquire();
     let data = buffer2.read_to_vec(&mut recorder).unwrap();
     graphics.submit(recorder).wait();
-    dbg!(data);
+    */
+    //dbg!(data);
 
 
     //let vert = assets.load::<VertexModule>("engine/shaders/basic.vert").unwrap();

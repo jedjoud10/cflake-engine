@@ -1,5 +1,5 @@
 use crate::{
-    required_features, Adapter, Instance, Queue, SubBufferBlock,
+    required_features, Adapter, Instance, Queue, StagingBlock, StagingPool,
 };
 use ahash::AHashMap;
 use ash::vk::{self, DeviceCreateInfo, DeviceQueueCreateInfo};
@@ -10,11 +10,13 @@ use gpu_allocator::vulkan::{
 use parking_lot::{MappedMutexGuard, Mutex, MutexGuard};
 
 // This is a logical device that can run multiple commands and that can create Vulkan objects
+// TODO: Check objects that are currently being used by the GPU?
 pub struct Device {
     device: ash::Device,
     allocator: Mutex<Option<Allocator>>,
     glsl_spirv_translator: shaderc::Compiler,    
-    pipeline_cache: vk::PipelineCache
+    pipeline_cache: vk::PipelineCache,
+    staging: StagingPool,
 }
 
 impl Device {
@@ -113,6 +115,7 @@ impl Device {
             allocator: Mutex::new(Some(allocator)),
             glsl_spirv_translator: shaderc::Compiler::new().unwrap(),
             pipeline_cache,
+            staging: StagingPool::new(),
         }
     }
 
@@ -126,6 +129,11 @@ impl Device {
         MutexGuard::map(self.allocator.lock(), |f| {
             f.as_mut().unwrap()
         })
+    }
+
+    // Get the underlying staging pool
+    pub fn staging_pool(&self) -> &StagingPool {
+        &self.staging
     }
 
     // Wait until the device executes all the code submitted to the GPU

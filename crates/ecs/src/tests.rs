@@ -417,9 +417,6 @@ fn hierarchy() {
     let entry1 = manager.entry(entity1).unwrap();
     let entry2 = manager.entry(entity2).unwrap();
 
-    let parent = entry1.get::<Parent>().unwrap();
-    assert_eq!(parent.children(), 1);
-
     let child = entry2.get::<Child>().unwrap();
     assert_eq!(child.parent(), entity1);
     assert_eq!(child.depth(), 1);

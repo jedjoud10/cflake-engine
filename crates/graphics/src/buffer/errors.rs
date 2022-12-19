@@ -11,6 +11,9 @@ pub enum InitializationError {
 
     #[error("The given buffer mode is BufferMode::Resizable, but BufferUsage.device_write is false")]
     ResizableMissingDeviceWrite,
+
+    #[error("The stride of T is zero. Currently, buffers cannot support zero-sized types")]
+    ZeroSizedStride
 }
 
 // Buffer invalid mode error if we have invalid permissions

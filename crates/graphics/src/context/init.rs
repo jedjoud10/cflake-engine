@@ -51,8 +51,10 @@ pub(crate) unsafe fn init_context_and_window(
     ));
 
     // Create the window wrapper
+    let size = vek::Extent2::<u32>::from(<(u32, u32)>::from(window.inner_size()));
     let window = Window {
         settings,
+        size,
         raw: window,
     };
 

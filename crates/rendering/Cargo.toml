@@ -6,6 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+world = { path = "../world" }
 ecs = { path = "../ecs" }
 graphics = { path = "../graphics" }
 assets = { path = "../assets" }

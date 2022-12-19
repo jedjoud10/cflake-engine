@@ -189,7 +189,7 @@ impl Swapchain {
 impl Swapchain {
     // Get the next free image that we can render to
     pub unsafe fn acquire_next_image(&self) -> (u32, vk::Image) {
-        let (index, _) = self
+        let (index, suboptimal) = self
             .loader
             .acquire_next_image(
                 self.raw,
@@ -202,11 +202,12 @@ impl Swapchain {
     }
 
     // Present an image to the swapchain and make sure it will wait on the correspoding semaphore
+    // This will return a bool telling us if we should recreate the swapchain or not
     pub unsafe fn present(
         &self,
         queue: &Queue,
         index: (u32, vk::Image),
-    ) {
+    ) -> bool {
         // Wait until the command buffers finished executing so we can present the image
         let present_info = *vk::PresentInfoKHR::builder()
             .swapchains(&[self.raw])
@@ -214,8 +215,22 @@ impl Swapchain {
             .image_indices(&[index.0]);
 
         // Present the image to the screen
-        self.loader
-            .queue_present(queue.queue, &present_info)
-            .unwrap();
+        let err = self.loader
+            .queue_present(queue.queue, &present_info);
+
+        match err {
+            Ok(_) => true,
+            Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => false,
+            Err(_) => true,
+        }
+    }
+
+    // Recreate the swapchain with some new dimensions
+    pub unsafe fn recreate(
+        &self,
+        device: &Device,
+        dimensions: vek::Extent2<u32>,
+    ) {
+
     }
 }

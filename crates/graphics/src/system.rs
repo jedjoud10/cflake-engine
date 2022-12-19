@@ -1,4 +1,4 @@
-use crate::{Graphics, WindowSettings};
+use crate::{Graphics, WindowSettings, Window};
 use winit::{event::WindowEvent, event_loop::EventLoop};
 use world::{post_user, user, State, System, World};
 
@@ -40,7 +40,18 @@ fn event(world: &mut World, event: &mut WindowEvent) {
             }
 
             // Handle resizing the window
+            let size = vek::Extent2::new(size.width, size.height);
+            let mut window = world.get_mut::<Window>().unwrap();
+            window.size = size; 
+
+            /*
+            unsafe {
+                let graphics = world.get_mut::<Graphics>().unwrap();
+                graphics.swapchain().recreate(graphics.device(), dimensions);
+            }
+            */
         }
+
 
         // Close requested, set the world state to "Stopped"
         WindowEvent::CloseRequested => {
@@ -50,25 +61,6 @@ fn event(world: &mut World, event: &mut WindowEvent) {
 
         _ => (),
     }
-}
-
-// Clear the window at the start of every frame
-fn update(world: &mut World) {
-    let graphics = world.get::<Graphics>().unwrap();
-    let queue = graphics.queue();
-    /*
-    let swapchain = graphics.swapchain();
-    let recorder = graphics.acquire();
-
-    unsafe {
-        let (index, image) = swapchain.acquire_next_image();
-        //recorder.cmd_clear_image(image);
-        swapchain.present(queue, (index, image));
-    }
-
-    let submission = graphics.submit(recorder);
-    submission.wait();
-    */
 }
 
 // Context system will just register the wgpu context and create a simple window
@@ -96,6 +88,5 @@ pub fn system(
         .after(utils::threadpool)
         .before(user);
 
-    system.insert_update(update).before(user);
     system.insert_window(event);
 }

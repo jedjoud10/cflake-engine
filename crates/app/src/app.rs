@@ -25,6 +25,7 @@ pub struct EnabledSystems {
     assets: bool,
     audio: bool,
     graphics: bool,
+    rendering: bool,
 }
 
 impl EnabledSystems {
@@ -40,6 +41,7 @@ impl EnabledSystems {
             assets: true,
             audio: true,
             graphics: true,
+            rendering: true,
         }
     }
 
@@ -55,6 +57,7 @@ impl EnabledSystems {
             assets: false,
             audio: false,
             graphics: false,
+            rendering: false,
         }
     }
 }
@@ -340,6 +343,9 @@ impl App {
         }
         if self.enabled.audio {
             self = self.insert_system(audio::system);
+        }
+        if self.enabled.rendering {
+            self = self.insert_system(rendering::system);
         }
 
         // Insert the IO manager
