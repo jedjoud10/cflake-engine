@@ -33,11 +33,9 @@ pub struct DepthConfig {
 impl DepthConfig {
     pub fn apply_rasterization_state<'a>(&self, builder: vk::PipelineRasterizationStateCreateInfoBuilder<'a>) -> vk::PipelineRasterizationStateCreateInfoBuilder<'a> {
         let DepthConfig {
-            depth_write_enable,
             depth_clamp_enable,
-            depth_test,
             depth_bias,
-            depth_bounds,
+            ..
         } = *self;
 
         if let Some(depth_bias) = depth_bias {
@@ -54,7 +52,6 @@ impl DepthConfig {
     pub fn apply_depth_stencil_state<'a>(&self, mut builder: vk::PipelineDepthStencilStateCreateInfoBuilder<'a>) -> vk::PipelineDepthStencilStateCreateInfoBuilder<'a> {
         let DepthConfig {
             depth_write_enable,
-            depth_clamp_enable,
             depth_test,
             depth_bounds,
             ..

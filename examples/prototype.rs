@@ -37,10 +37,11 @@ fn init(world: &mut World) {
     ).unwrap();
 
     // Copy the whole buffer1 into buffer2
-    buffer2.copy_from(&buffer1, &mut recorder).unwrap();
+    //buffer2.copy_from(&buffer1, &mut recorder).unwrap();
+    buffer2.extend_from_slice(&[220], &mut recorder).unwrap();
 
     // Submit to the GPU and wait for execution
-    graphics.submit(recorder).wait();
+    //graphics.submit(recorder).wait();
     
     // Read back the data
     let mut recorder = graphics.acquire();

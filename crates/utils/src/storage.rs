@@ -13,7 +13,8 @@ struct Trackers {
     cleaned: Cell<bool>,
 }
 
-// Storages automatically get inserted into the world when we try to access them, so we must write that custom logic when implementing the resource trait
+// TODO: Rewrite tracking logic
+
 pub struct Storage<T: 'static> {
     map: SlotMap<DefaultKey, T>,
     trackers: Rc<Trackers>,

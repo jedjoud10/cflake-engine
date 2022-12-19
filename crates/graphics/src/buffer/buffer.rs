@@ -116,14 +116,32 @@ impl<T: Clone + Copy + Sync + Send + Zeroable + Pod + 'static> Content
 // This takes a valid OpenGL type and an element type, though the user won't be able make the buffer directly
 // This also takes a constant that represents it's OpenGL target
 pub struct Buffer<T: Content, const TYPE: u32> {
+    // Raw Vulkan
     buffer: vk::Buffer,
     allocation: ManuallyDrop<Allocation>,
+    
+    // Size fields
     length: usize,
     capacity: usize,
+
+    // Legal Permissions
     usage: BufferUsage,
     mode: BufferMode,
+
+    // Keep the graphics API alive
     graphics: Graphics,
     _phantom: PhantomData<T>,
+}
+
+impl<T: Content, const TYPE: u32> Drop for Buffer<T, TYPE> {
+    fn drop(&mut self) {
+        unsafe {
+            let allocation = ManuallyDrop::take(&mut self.allocation);
+            self.graphics
+                .device()
+                .destroy_buffer(self.buffer, allocation);
+        }
+    }
 }
 
 // Internal bounds used by the buffer
@@ -595,15 +613,4 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         todo!()
     }
     */
-}
-
-impl<T: Content, const TYPE: u32> Drop for Buffer<T, TYPE> {
-    fn drop(&mut self) {
-        unsafe {
-            let allocation = ManuallyDrop::take(&mut self.allocation);
-            self.graphics
-                .device()
-                .destroy_buffer(self.buffer, allocation);
-        }
-    }
 }

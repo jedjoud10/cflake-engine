@@ -13,7 +13,8 @@ use parking_lot::{MappedMutexGuard, Mutex, MutexGuard};
 pub struct Device {
     device: ash::Device,
     allocator: Mutex<Option<Allocator>>,
-    
+    glsl_spirv_translator: shaderc::Compiler,    
+    pipeline_cache: vk::PipelineCache
 }
 
 impl Device {
@@ -101,9 +102,17 @@ impl Device {
         // Drop the cstrings
         drop(required_device_extensions);
 
+        // Create pipeline cache to optimize pipeline creation
+        let pipeline_cache = device.create_pipeline_cache(
+            &vk::PipelineCacheCreateInfo::default(),
+            None
+        ).unwrap();
+
         Device {
             device,
             allocator: Mutex::new(Some(allocator)),
+            glsl_spirv_translator: shaderc::Compiler::new().unwrap(),
+            pipeline_cache,
         }
     }
 
@@ -129,6 +138,7 @@ impl Device {
     // Destroy the logical device
     pub unsafe fn destroy(&self) {
         self.wait();
+        self.device.destroy_pipeline_cache(self.pipeline_cache, None);
         self.allocator.lock().take().unwrap();
         self.device.destroy_device(None);
     }
@@ -160,9 +170,8 @@ impl Device {
 
 impl Device {
     // Translate some GLSL shader code to SPIRV
-    pub unsafe fn translate_glsl_spirv(&self, code: &str, file_name: &str, entry_point: &str, kind: shaderc::ShaderKind) -> Vec<u32> {
-        let compiler = shaderc::Compiler::new().unwrap();        
-        let binary_result = compiler.compile_into_spirv(
+    pub unsafe fn translate_glsl_spirv(&self, code: &str, file_name: &str, entry_point: &str, kind: shaderc::ShaderKind) -> Vec<u32> {     
+        let binary_result = self.glsl_spirv_translator.compile_into_spirv(
             code, kind,
             file_name, entry_point, None).unwrap();
         binary_result.as_binary().to_owned()

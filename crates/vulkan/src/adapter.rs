@@ -67,31 +67,6 @@ pub struct Adapter {
 }
 
 impl Adapter {
-    // Create an adapter from it's raw physical device
-    unsafe fn from_raw_parts(
-        instance: &Instance,
-        physical: PhysicalDevice,
-        surface: &Surface,
-    ) -> Adapter {
-        // Get the features and capabilities
-        let features = get_adapter_features(instance, &physical);
-        let properties = get_adapter_properties(instance, &physical);
-        let families = get_adapter_queue_family_properties(
-            instance, &physical, surface,
-        );
-        let surface = get_adapter_surface_properties(
-            instance, &physical, surface,
-        );
-
-        Adapter {
-            raw: physical,
-            features,
-            properties,
-            surface,
-            families,
-        }
-    }
-
     // Pick out a physical adapter automatically for the user
     // Pick a physical device from the Vulkan instance
     pub fn pick(instance: &Instance, surface: &Surface) -> Adapter {
@@ -134,6 +109,31 @@ impl Adapter {
             adapter.properties.extensions.len()
         );
         adapter
+    }
+
+    // Create an adapter from it's raw physical device
+    unsafe fn from_raw_parts(
+        instance: &Instance,
+        physical: PhysicalDevice,
+        surface: &Surface,
+    ) -> Adapter {
+        // Get the features and capabilities
+        let features = get_adapter_features(instance, &physical);
+        let properties = get_adapter_properties(instance, &physical);
+        let families = get_adapter_queue_family_properties(
+            instance, &physical, surface,
+        );
+        let surface = get_adapter_surface_properties(
+            instance, &physical, surface,
+        );
+
+        Adapter {
+            raw: physical,
+            features,
+            properties,
+            surface,
+            families,
+        }
     }
 
     // Get the underlying physical device

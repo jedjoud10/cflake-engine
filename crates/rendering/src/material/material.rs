@@ -1,3 +1,6 @@
+use assets::Assets;
+use graphics::{VertexModule, FragmentModule, DepthConfig, CompareOp, StencilConfig, Primitive, FaceCullMode, BlendConfig};
+
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
 // Materials correspond to a specific Vulkan pipeline based on it's config parameters
 pub trait Material: 'static + Sized {
@@ -34,8 +37,8 @@ pub trait Material: 'static + Sized {
     }
     
     // Get the stencil testing for this material
-    fn stencil_testing() -> Option<StencilTest> {
-        None
+    fn stencil_config() -> StencilConfig {
+        StencilConfig(None)
     }
 
     // Get the rasterizer config for this materil
