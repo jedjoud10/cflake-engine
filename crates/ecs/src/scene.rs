@@ -326,6 +326,7 @@ fn update(world: &mut World) {
             )>()
         {
             if let Some(parent_transform) = transforms.get(&child.parent) {
+                dbg!("test2");
                 let (parent_position, parent_rotation, parent_scale) =
                 parent_transform;
 
@@ -364,6 +365,8 @@ fn update(world: &mut World) {
                 recurse = true;
             }
         }
+
+        dbg!("test");
     } 
 }
 

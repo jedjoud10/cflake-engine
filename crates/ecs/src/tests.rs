@@ -355,13 +355,14 @@ fn filter_mut() {
     let mut manager = Scene::default();
     let e1 = manager.insert(Health(100));
     let e2 = manager.insert((Health(100), Ammo(30)));
+    let e3 = manager.insert((Health(100), Ammo(30)));
     let query =
         manager.query_mut_with::<&mut Health>(contains::<Ammo>());
-    assert_eq!(query.len(), 1);
-    assert_eq!(query.into_iter().count(), 1);
-    let query = manager.query_mut::<&mut Health>();
     assert_eq!(query.len(), 2);
     assert_eq!(query.into_iter().count(), 2);
+    let query = manager.query_mut::<&mut Health>();
+    assert_eq!(query.len(), 3);
+    assert_eq!(query.into_iter().count(), 3);
     cleanup(&mut manager);
 
     let query =
@@ -377,17 +378,18 @@ fn filter_mut() {
     let mask = Mask::from_bundle::<Health>();
     assert_eq!(query.len(), 1);
     assert_eq!(query.into_iter().count(), 1);
-    let archetype = manager.archetypes().get(&mask).unwrap();
-    let states = archetype.states::<Health>().unwrap();
-    assert_eq!(states.chunks()[0].modified, 1);
 
     let query = manager.query_mut_with::<&Health>(always());
-    assert_eq!(query.len(), 2);
-    assert_eq!(query.into_iter().count(), 2);
+    assert_eq!(query.len(), 3);
+    assert_eq!(query.into_iter().count(), 3);
 
     let query = manager.query_mut_with::<&Health>(never());
     assert_eq!(query.len(), 0);
     assert_eq!(query.into_iter().count(), 0);
+
+    let query = manager.query_mut_with::<&Entity>(contains::<Health>() & !contains::<Ammo>());
+    assert_eq!(query.len(), 1);
+    assert_eq!(query.into_iter().count(), 1);
 }
 
 #[test]

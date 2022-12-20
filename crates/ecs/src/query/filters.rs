@@ -419,6 +419,7 @@ impl<A: QueryFilter> QueryFilter for Not<A> {
         columns: Self::Columns<'_>,
         index: usize,
     ) -> usize {
+        // FIXME: This shit don't work bruh when using Contains<T>
         !A::evaluate_chunk(columns, index)
     }
 }
