@@ -188,26 +188,30 @@ impl Swapchain {
 
 impl Swapchain {
     // Get the next free image that we can render to
-    pub unsafe fn acquire_next_image(&self) -> (u32, vk::Image) {
-        let (index, suboptimal) = self
+    pub unsafe fn acquire_next_image(&self) -> Option<(u32, vk::Image)> {
+        let err = self
             .loader
             .acquire_next_image(
                 self.raw,
                 u64::MAX,
                 self.image_available_semaphore,
                 vk::Fence::null(),
-            )
-            .unwrap();
-        (index, self.images[index as usize])
+            );
+
+        match err {
+            Ok((index, _)) => Some((index, self.images[index as usize])),
+            Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => None,
+            Err(_) => None,
+        }
     }
 
     // Present an image to the swapchain and make sure it will wait on the correspoding semaphore
-    // This will return a bool telling us if we should recreate the swapchain or not
+    // This will return an Option telling us if we should recreate the swapchain or not
     pub unsafe fn present(
         &self,
         queue: &Queue,
         index: (u32, vk::Image),
-    ) -> bool {
+    ) -> Option<()> {
         // Wait until the command buffers finished executing so we can present the image
         let present_info = *vk::PresentInfoKHR::builder()
             .swapchains(&[self.raw])
@@ -219,9 +223,9 @@ impl Swapchain {
             .queue_present(queue.queue, &present_info);
 
         match err {
-            Ok(_) => true,
-            Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => false,
-            Err(_) => true,
+            Ok(_) => Some(()),
+            Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => None,
+            Err(_) => Some(()),
         }
     }
 

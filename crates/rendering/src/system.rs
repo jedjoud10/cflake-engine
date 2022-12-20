@@ -10,9 +10,11 @@ fn update(world: &mut World) {
     let mut recorder = graphics.acquire();
 
     unsafe {
-        let (index, image) = swapchain.acquire_next_image();
-        let recreate = swapchain.present(queue, (index, image));
-        
+        /*
+        if let Some((index, image)) = swapchain.acquire_next_image() {
+            let recreate = swapchain.present(queue, (index, image));
+        }
+        */
     }
 
     let submission = graphics.submit(recorder);

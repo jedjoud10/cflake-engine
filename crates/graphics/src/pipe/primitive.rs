@@ -45,7 +45,7 @@ impl Primitive {
     // Get the cull mode flags from the primitive mode
     fn build_cull_mode_flags(&self) -> vk::CullModeFlags {
         match self {
-            Primitive::Triangles { cull, wireframe } => {
+            Primitive::Triangles { cull, .. } => {
                 cull.map(|face_cull_mode| {
                     match face_cull_mode {
                         FaceCullMode::Front(_) => vk::CullModeFlags::FRONT,
@@ -53,7 +53,7 @@ impl Primitive {
                     }
                 }).unwrap_or(vk::CullModeFlags::NONE)
             },
-            Primitive::Lines { width } => vk::CullModeFlags::NONE,
+            Primitive::Lines { .. } => vk::CullModeFlags::NONE,
             Primitive::Points => vk::CullModeFlags::NONE,
         }
     }
@@ -61,14 +61,14 @@ impl Primitive {
     // Get the polygon mode from the primitive mode
     fn build_polygon_mode(&self) -> vk::PolygonMode {
         match self {
-            Primitive::Triangles { cull, wireframe } => {
+            Primitive::Triangles { wireframe, .. } => {
                 if *wireframe {
                     vk::PolygonMode::LINE
                 } else {
                     vk::PolygonMode::FILL
                 }
             },
-            Primitive::Lines { width } => vk::PolygonMode::FILL,
+            Primitive::Lines { .. } => vk::PolygonMode::FILL,
             Primitive::Points => vk::PolygonMode::POINT,
         }
     }
@@ -76,8 +76,8 @@ impl Primitive {
     // Create the input assembly state for this primitive
     pub fn apply_input_assembly_state<'a>(&self, builder: vk::PipelineInputAssemblyStateCreateInfoBuilder<'a>) -> vk::PipelineInputAssemblyStateCreateInfoBuilder<'a> {
         let topology = match self {
-            crate::Primitive::Triangles { cull, wireframe } => vk::PrimitiveTopology::TRIANGLE_LIST,
-            crate::Primitive::Lines { width } => vk::PrimitiveTopology::LINE_LIST,
+            crate::Primitive::Triangles { .. } => vk::PrimitiveTopology::TRIANGLE_LIST,
+            crate::Primitive::Lines { .. } => vk::PrimitiveTopology::LINE_LIST,
             crate::Primitive::Points => vk::PrimitiveTopology::POINT_LIST,
         };
 

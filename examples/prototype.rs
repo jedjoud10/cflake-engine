@@ -7,6 +7,7 @@ fn main() {
     App::default()
         .set_app_name("cflake engine prototype example")
         .insert_init(init)
+        .set_window_fullscreen(true)
         .execute();
 }
 

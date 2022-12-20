@@ -1,5 +1,5 @@
 use assets::Assets;
-use graphics::{VertexModule, FragmentModule, DepthConfig, CompareOp, StencilConfig, Primitive, FaceCullMode, BlendConfig};
+use graphics::{VertexModule, FragmentModule, DepthConfig, CompareOp, StencilConfig, Primitive, FaceCullMode, BlendConfig, DescriptorSet};
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
 // Materials correspond to a specific Vulkan pipeline based on it's config parameters
@@ -8,13 +8,13 @@ pub trait Material: 'static + Sized {
     type Resources<'w>: 'w;
 
     // Static scene descriptor set
-    type SceneDescriptorSet<'w>: 'w; 
+    type SceneDescriptorSet<'w>: 'w + DescriptorSet; 
     
     // Instance descriptor set
-    type InstanceDescriptorSet<'w>: 'w; 
+    type InstanceDescriptorSet<'w>: 'w + DescriptorSet; 
     
     // Surface descriptor set
-    type SurfaceDescriptorSet<'w>: 'w; 
+    type SurfaceDescriptorSet<'w>: 'w + DescriptorSet; 
 
     // Load the vertex module
     fn vertex_module(assets: &Assets) -> VertexModule;

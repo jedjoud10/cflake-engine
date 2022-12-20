@@ -172,26 +172,26 @@ impl Archetype {
     }
 
     // Try to get an immutable reference to the state table for a specific component
-    pub(crate) fn states<T: Component>(
+    pub fn states<T: Component>(
         &self,
     ) -> Option<&StateColumn> {
         self.states.get(&mask::<T>())
     }
 
     // Try to get a mutable reference to the state table for a specific component
-    pub(crate) fn states_mut<T: Component>(
+    pub fn states_mut<T: Component>(
         &mut self,
     ) -> Option<&mut StateColumn> {
         self.states.get_mut(&mask::<T>())
     }
 
     // Get the component table immutably
-    pub(crate) fn component_table(&self) -> &ComponentTable {
+    pub fn component_table(&self) -> &ComponentTable {
         &self.components
     }
 
     // Get the component table mutably
-    pub(crate) fn component_table_mut(
+    pub fn component_table_mut(
         &mut self,
     ) -> &mut ComponentTable {
         &mut self.components
