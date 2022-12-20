@@ -380,6 +380,14 @@ fn filter_mut() {
     let query = manager.query_mut_with::<&Entity>(contains::<Health>() & contains::<Ammo>());
     assert_eq!(query.len(), 2);
     assert_eq!(query.into_iter().count(), 2);
+
+    let query = manager.query_mut_with::<&Entity>(contains::<Health>() & contains::<Ammo>() & contains::<Ammo>());
+    assert_eq!(query.len(), 2);
+    assert_eq!(query.into_iter().count(), 2);
+
+    let query = manager.query_mut_with::<&Entity>((contains::<Health>() & !contains::<Ammo>()) & contains::<Ammo>());
+    assert_eq!(query.len(), 0);
+    assert_eq!(query.into_iter().count(), 0);
 }
 
 #[test]

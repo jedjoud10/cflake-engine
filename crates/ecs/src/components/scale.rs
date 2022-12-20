@@ -6,8 +6,8 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-// Our target is the raw point (either 3D or 2D)
-type Target = math::RawPoint;
+// Our target is the scalar (uniform scale)
+type Target = math::Scalar;
 
 #[derive(Clone, Copy, Component)]
 #[repr(transparent)]
@@ -15,48 +15,19 @@ pub struct Scale(Target);
 
 impl Default for Scale {
     fn default() -> Self {
-        Self(Target::one())
+        Self::unit()
     }
 }
 
-#[cfg(not(feature = "two-dim"))]
 impl Scale {
-    // Construct a scale using an X width
-    pub fn scale_x(width: Scalar) -> Self {
-        Self(vek::Vec3::new(width, 1.0, 1.0))
+    // Construct a uniform scale with the given value
+    pub fn uniform(scale: math::Scalar) -> Self {
+        Self(scale)
     }
 
-    // Construct a scale using a Y height
-    pub fn scale_y(height: Scalar) -> Self {
-        Self(vek::Vec3::new(1.0, height, 1.0))
-    }
-
-    // Construct a scale using a Z depth
-    pub fn scale_z(depth: Scalar) -> Self {
-        Self(vek::Vec3::new(1.0, 1.0, depth))
-    }
-
-    // Construct a scale with it's raw data
-    pub fn scale_xyz(x: Scalar, y: Scalar, z: Scalar) -> Self {
-        Self(vek::Vec3::new(x, y, z))
-    }
-}
-
-#[cfg(feature = "two-dim")]
-impl Scale {
-    // Construct a scale using an X width
-    pub fn scale_x(width: Scalar) -> Self {
-        Self(vek::Vec2::new(width, 1.0))
-    }
-
-    // Construct a scale using a Y height
-    pub fn scale_y(height: Scalar) -> Self {
-        Self(vek::Vec2::new(1.0, height))
-    }
-
-    // Construct a scale with it's raw data
-    pub fn scale_xy(x: Scalar, y: Scalar) -> Self {
-        Self(vek::Vec2::new(x, y))
+    // Construct a "unit" scale, aka default scale
+    pub fn unit() -> Self {
+        Self(1.0)
     }
 }
 
@@ -130,15 +101,18 @@ impl From<&Target> for Scale {
 
 impl From<Scale> for math::RawMatrix {
     fn from(value: Scale) -> Self {
-        vek::Mat4::scaling_3d(value.0)
+        #[cfg(not(feature = "two-dim"))]
+        return vek::Mat4::scaling_3d(vek::Vec3::broadcast(value.0));
+        #[cfg(feature = "two-dim")]
+        return vek::Mat3::scaling_2d(vek::Vec2::broadcast(value.0));
     }
 }
 
 impl From<&Scale> for math::RawMatrix {
     fn from(value: &Scale) -> Self {
         #[cfg(not(feature = "two-dim"))]
-        return vek::Mat4::scaling_3d(value.0);
+        return vek::Mat4::scaling_3d(vek::Vec3::broadcast(value.0));
         #[cfg(feature = "two-dim")]
-        return vek::Mat3::scaling_2d(value.0);
+        return vek::Mat3::scaling_2d(vek::Vec2::broadcast(value.0));
     }
 }

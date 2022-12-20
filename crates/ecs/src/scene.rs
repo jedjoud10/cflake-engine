@@ -282,7 +282,7 @@ fn update(world: &mut World) {
 
     // Keeps track of the global transform of parents
     type Transform =
-        (Option<Position>, Option<Rotation>, Option<Scale>);
+        (Option<Position>, Option<Rotation>, Option<LocalScale>);
     let mut transforms = AHashMap::<Entity, Transform>::new();
 
     // Fetch entities that are roots (ONLY parents)
@@ -291,7 +291,7 @@ fn update(world: &mut World) {
         &Entity,
         Option<&Position>,
         Option<&Rotation>,
-        Option<&Scale>,
+        Option<&LocalScale>,
     )>(filter) {
         transforms.insert(
             *entity,
@@ -322,7 +322,7 @@ fn update(world: &mut World) {
                 Option<&LocalScale>,
                 Option<&mut Position>,
                 Option<&mut Rotation>,
-                Option<&mut Scale>,
+                Option<&mut LocalScale>,
             )>()
         {
             if let Some(parent_transform) = transforms.get(&child.parent) {
