@@ -6,6 +6,44 @@ use crate::{
 use std::marker::PhantomData;
 use utils::BitSet;
 
+// Result value whenever we call evaluate_chunk within QueryFilter
+// This is an enum because in the Contains<T> filter source we want to not care about the chunk evaluation
+pub enum ChunkEval {
+    // Chunk evaluation that gave us a predictable answer that is taken acount when using modifiers
+    Evaluated(usize),
+
+    // Value that isn't needed or that SHOULD NOT be taken account when using modifiers
+    // This will propagate up whenever we use combinational modifiers, and it will always return true
+    Passthrough,
+}
+
+impl ChunkEval {
+    // Same function as Option::zip_with, but stable
+    pub fn zip_with<F: FnOnce((usize, usize)) -> usize>(self, other: Self, fun: F) -> Self {
+        match (self, other) {
+            (ChunkEval::Evaluated(a), ChunkEval::Evaluated(b)) => 
+                Self::Evaluated(fun((a, b))),
+            _ => Self::Passthrough
+        }
+    }
+
+    // Map, only used for modifiers
+    pub fn map<F: FnOnce(usize) -> usize>(self, fun: F) -> Self {
+        match self {
+            ChunkEval::Evaluated(x) => Self::Evaluated(fun(x)),
+            ChunkEval::Passthrough => Self::Passthrough,
+        }
+    }
+
+    // Return the inner value if Valid, or return usize::MAX if DontCare
+    pub fn into_inner(self) -> usize {
+        match self {
+            ChunkEval::Evaluated(x) => x,
+            ChunkEval::Passthrough => usize::MAX,
+        }
+    }
+}
+
 // Basic evaluator that will be implemented for the filter sources and modifiers
 // These filters allow users to discard certain entries when iterating
 pub trait QueryFilter: 'static {
@@ -35,7 +73,7 @@ pub trait QueryFilter: 'static {
     fn evaluate_chunk(
         columns: Self::Columns<'_>,
         index: usize,
-    ) -> usize;
+    ) -> ChunkEval;
 }
 
 // Given a scene and a specific filter, filter out the archetypes
@@ -104,7 +142,7 @@ pub(super) fn generate_bitset_chunks<'a, F: QueryFilter>(
         BitSet::from_chunks_iter(
             (0..chunks)
                 .into_iter()
-                .map(move |i| F::evaluate_chunk(columns, i)),
+                .map(move |i| F::evaluate_chunk(columns, i).into_inner()),
         )
     });
 
@@ -120,9 +158,8 @@ pub struct Added<T: Component>(PhantomData<T>);
 pub struct Modified<T: Component>(PhantomData<T>);
 pub struct Contains<T: Component>(PhantomData<T>);
 
-// Constant source that always fail / succeed the test
-pub struct Always(());
-pub struct Never(());
+// Note: ONLY USED INTERNALLY. THIS IS LITERALLY USELESS
+pub(crate) struct Always(());
 
 // Query filter operators
 pub struct And<A: QueryFilter, B: QueryFilter>(
@@ -148,10 +185,10 @@ impl<T: Component> QueryFilter for Added<T> {
     }
 
     fn evaluate_archetype(
-        _cached: Self::Cached,
-        _archetype: &Archetype,
+        cached: Self::Cached,
+        archetype: &Archetype,
     ) -> bool {
-        true
+        archetype.mask().contains(cached)
     }
 
     fn cache_columns(
@@ -164,10 +201,10 @@ impl<T: Component> QueryFilter for Added<T> {
     fn evaluate_chunk(
         columns: Self::Columns<'_>,
         index: usize,
-    ) -> usize {
-        columns
+    ) -> ChunkEval {
+        ChunkEval::Evaluated(columns
             .map(|c| c.get(index).unwrap().added)
-            .unwrap_or_default()
+            .unwrap_or_default())
     }
 }
 
@@ -180,10 +217,10 @@ impl<T: Component> QueryFilter for Modified<T> {
     }
 
     fn evaluate_archetype(
-        _cached: Self::Cached,
-        _archetype: &Archetype,
+        cached: Self::Cached,
+        archetype: &Archetype,
     ) -> bool {
-        true
+        archetype.mask().contains(cached)
     }
 
     fn cache_columns(
@@ -196,10 +233,10 @@ impl<T: Component> QueryFilter for Modified<T> {
     fn evaluate_chunk(
         columns: Self::Columns<'_>,
         index: usize,
-    ) -> usize {
-        columns
+    ) -> ChunkEval {
+        ChunkEval::Evaluated(columns
             .map(|c| c.get(index).unwrap().modified)
-            .unwrap_or_default()
+            .unwrap_or_default())
     }
 }
 
@@ -227,8 +264,8 @@ impl<T: Component> QueryFilter for Contains<T> {
     fn evaluate_chunk(
         _columns: Self::Columns<'_>,
         _index: usize,
-    ) -> usize {
-        usize::MAX
+    ) -> ChunkEval {
+        ChunkEval::Passthrough
     }
 }
 
@@ -254,36 +291,8 @@ impl QueryFilter for Always {
     fn evaluate_chunk(
         _columns: Self::Columns<'_>,
         _index: usize,
-    ) -> usize {
-        usize::MAX
-    }
-}
-
-impl QueryFilter for Never {
-    type Cached = ();
-    type Columns<'a> = ();
-
-    fn prepare() -> Self::Cached {}
-
-    fn evaluate_archetype(
-        _cached: Self::Cached,
-        _archetype: &Archetype,
-    ) -> bool {
-        false
-    }
-
-    fn cache_columns(
-        _cached: Self::Cached,
-        _archetype: &Archetype,
-    ) -> Self::Columns<'_> {
-        panic!()
-    }
-
-    fn evaluate_chunk(
-        _columns: Self::Columns<'_>,
-        _index: usize,
-    ) -> usize {
-        panic!()
+    ) -> ChunkEval {
+        ChunkEval::Evaluated(usize::MAX)
     }
 }
 
@@ -317,9 +326,10 @@ impl<A: QueryFilter, B: QueryFilter> QueryFilter for And<A, B> {
     fn evaluate_chunk(
         columns: Self::Columns<'_>,
         index: usize,
-    ) -> usize {
-        A::evaluate_chunk(columns.0, index)
-            & B::evaluate_chunk(columns.1, index)
+    ) -> ChunkEval {
+        let a = A::evaluate_chunk(columns.0, index);
+        let b = B::evaluate_chunk(columns.1, index);
+        a.zip_with(b, |(a, b)| a & b)
     }
 }
 
@@ -352,9 +362,10 @@ impl<A: QueryFilter, B: QueryFilter> QueryFilter for Or<A, B> {
     fn evaluate_chunk(
         columns: Self::Columns<'_>,
         index: usize,
-    ) -> usize {
-        A::evaluate_chunk(columns.0, index)
-            | B::evaluate_chunk(columns.1, index)
+    ) -> ChunkEval {
+        let a = A::evaluate_chunk(columns.0, index);
+        let b = B::evaluate_chunk(columns.1, index);
+        a.zip_with(b, |(a, b)| a | b)
     }
 }
 
@@ -387,9 +398,10 @@ impl<A: QueryFilter, B: QueryFilter> QueryFilter for Xor<A, B> {
     fn evaluate_chunk(
         columns: Self::Columns<'_>,
         index: usize,
-    ) -> usize {
-        A::evaluate_chunk(columns.0, index)
-            ^ B::evaluate_chunk(columns.1, index)
+    ) -> ChunkEval {
+        let a = A::evaluate_chunk(columns.0, index);
+        let b = B::evaluate_chunk(columns.1, index);
+        a.zip_with(b, |(a, b)| a ^ b)
     }
 }
 
@@ -418,29 +430,24 @@ impl<A: QueryFilter> QueryFilter for Not<A> {
     fn evaluate_chunk(
         columns: Self::Columns<'_>,
         index: usize,
-    ) -> usize {
-        // FIXME: This shit don't work bruh when using Contains<T>
-        !A::evaluate_chunk(columns, index)
+    ) -> ChunkEval {
+        A::evaluate_chunk(columns, index).map(|x| !x)
     }
 }
 
-// Functions to create the sources and modifiers
+// Source to check if we have modified a specific component before this call
 pub fn modified<T: Component>() -> Wrap<Modified<T>> {
     Wrap::<Modified<T>>(PhantomData)
 }
+
+// Source to check if we added a specific component before this call
 pub fn added<T: Component>() -> Wrap<Added<T>> {
     Wrap::<Added<T>>(PhantomData)
 }
+
+// Source to check if we contain a specific component within the archetype
 pub fn contains<T: Component>() -> Wrap<Contains<T>> {
     Wrap::<Contains<T>>(PhantomData)
-}
-
-// Constant sources
-pub fn always() -> Wrap<Always> {
-    Wrap::<Always>(PhantomData)
-}
-pub fn never() -> Wrap<Never> {
-    Wrap::<Never>(PhantomData)
 }
 
 impl<A: QueryFilter, B: QueryFilter> std::ops::BitAnd<Wrap<B>>
