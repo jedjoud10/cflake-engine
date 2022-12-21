@@ -14,60 +14,6 @@ use world::{
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
 
-// Bitfield that contains the default systems that we should activate
-pub struct EnabledSystems {
-    input: bool,
-    ecs: bool,
-    world: bool,
-    threadpool: bool,
-    time: bool,
-    io: bool,
-    assets: bool,
-    audio: bool,
-    graphics: bool,
-    rendering: bool,
-}
-
-impl EnabledSystems {
-    // Enable all the systems
-    pub fn all() -> Self {
-        Self {
-            input: true,
-            ecs: true,
-            world: true,
-            threadpool: true,
-            time: true,
-            io: true,
-            assets: true,
-            audio: true,
-            graphics: true,
-            rendering: true,
-        }
-    }
-
-    // Disable all the systems
-    pub fn none() -> Self {
-        Self {
-            input: false,
-            ecs: false,
-            world: false,
-            threadpool: false,
-            time: false,
-            io: false,
-            assets: false,
-            audio: false,
-            graphics: false,
-            rendering: false,
-        }
-    }
-}
-
-impl Default for EnabledSystems {
-    fn default() -> Self {
-        Self::all()
-    }
-}
-
 // An app is just a world builder. It uses the builder pattern to construct a world object and the corresponding game engine window
 pub struct App {
     // Graphical settings
@@ -82,7 +28,6 @@ pub struct App {
     engine_version: u32,
 
     // Main app resources
-    enabled: EnabledSystems,
     systems: Systems,
     world: World,
     el: EventLoop<()>,
@@ -104,7 +49,6 @@ impl Default for App {
             engine_name: "cFlake Game Engine".to_string(),
             engine_version: 1,
             user_assets_folder: None,
-            enabled: EnabledSystems::default(),
             systems,
             el: EventLoop::new(),
             world,
@@ -125,15 +69,6 @@ impl App {
     // Set window fullscreen mode
     pub fn set_window_fullscreen(mut self, toggled: bool) -> Self {
         self.window.fullscreen = toggled;
-        self
-    }
-
-    // Set what default systems we wish to use
-    pub fn set_enabled_systems(
-        mut self,
-        enabled: EnabledSystems,
-    ) -> Self {
-        self.enabled = enabled;
         self
     }
 
@@ -163,8 +98,7 @@ impl App {
         self
     }
 
-    // Insert a new system into the app and execute it immediately
-    // This will register all the necessary events automatically
+    // Insert a new system into the app and register the necessary events
     pub fn insert_system(
         mut self,
         callback: impl FnOnce(&mut System) + 'static,
@@ -324,63 +258,46 @@ impl App {
         sleeper
     }
 
-    // Insert the required default systems (if specified by the EnabledSystems struct)
+    // Insert the required default systems
     fn insert_default_systems(mut self) -> Self {
-        if self.enabled.input {
-            self = self.insert_system(input::system);
-        }
-        if self.enabled.ecs {
-            self = self.insert_system(ecs::system);
-        }
-        if self.enabled.world {
-            self = self.insert_system(world::system);
-        }
-        if self.enabled.threadpool {
-            self = self.insert_system(utils::threadpool);
-        }
-        if self.enabled.time {
-            self = self.insert_system(utils::time);
-        }
-        if self.enabled.audio {
-            self = self.insert_system(audio::system);
-        }
-        if self.enabled.rendering {
-            self = self.insert_system(rendering::system);
-        }
+        self = self.insert_system(input::system);
+        self = self.insert_system(ecs::system);
+        self = self.insert_system(world::system);
+        self = self.insert_system(utils::threadpool);
+        self = self.insert_system(utils::time);
+        self = self.insert_system(audio::system);
+        self = self.insert_system(rendering::system);
+        self = self.insert_system(networking::system);
 
         // Insert the IO manager
-        if self.enabled.io {
-            let author = self.author_name.clone();
-            let app = self.app_name.clone();
-            self = self.insert_system(move |system: &mut System| {
-                utils::io(system, author, app)
-            });
-        }
+        let author = self.author_name.clone();
+        let app = self.app_name.clone();
+        self = self.insert_system(move |system: &mut System| {
+            utils::io(system, author, app)
+        });
+        
         // Insert the asset loader
-        if self.enabled.assets {
-            let user = self.user_assets_folder.take();
-            self = self.insert_system(|system: &mut System| {
-                assets::system(system, user)
-            });
-        }
+        let user = self.user_assets_folder.take();
+        self = self.insert_system(|system: &mut System| {
+            assets::system(system, user)
+        });
+        
         // Insert the graphics API if needed
-        if self.enabled.graphics {
-            let window = self.window.clone();
-            let app_name = self.app_name.clone();
-            let app_version = self.app_version;
-            let engine_name = self.engine_name.clone();
-            let engine_version = self.engine_version;
-            self = self.insert_system(move |system: &mut System| {
-                graphics::system(
-                    system,
-                    window,
-                    app_name,
-                    app_version,
-                    engine_name,
-                    engine_version,
-                );
-            });
-        }
+        let window = self.window.clone();
+        let app_name = self.app_name.clone();
+        let app_version = self.app_version;
+        let engine_name = self.engine_name.clone();
+        let engine_version = self.engine_version;
+        self = self.insert_system(move |system: &mut System| {
+            graphics::system(
+                system,
+                window,
+                app_name,
+                app_version,
+                engine_name,
+                engine_version,
+            );
+        });
 
         self
     }

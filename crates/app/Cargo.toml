@@ -19,6 +19,7 @@ assets = { path = "../assets" }
 math = { path = "../math" }
 gui = { path = "../gui" }
 audio = { path = "../audio" }
+networking = { path = "../networking" }
 utils = { path = "../utils" }
 env_logger = "0.9"
 serde = "1.0.145"  

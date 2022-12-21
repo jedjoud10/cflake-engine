@@ -5,7 +5,6 @@ fn main() {
     App::default()
         .insert_system(first)
         .insert_system(second)
-        .set_enabled_systems(EnabledSystems::none())
         .insert_init(default)
         .execute();
 }
