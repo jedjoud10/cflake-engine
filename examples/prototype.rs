@@ -34,14 +34,13 @@ fn init(world: &mut World) {
     let mut buffer2 = StorageBuffer::<u32>::with_capacity(
         &graphics,
         16,
-        mode,
         usage,
         &mut recorder
     ).unwrap();
 
     // Copy the whole buffer1 into buffer2
     //buffer2.copy_from(&buffer1, &mut recorder).unwrap();
-    buffer2.extend_from_slice(&[220], &mut recorder).unwrap();
+    //buffer2.extend_from_slice(&[220], &mut recorder).unwrap();
 
     // Submit to the GPU and wait for execution
     //graphics.submit(recorder).wait();

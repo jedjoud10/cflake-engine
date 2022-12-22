@@ -3,14 +3,8 @@ use thiserror::Error;
 // Buffer creation error (only one really)
 #[derive(Error, Debug)]
 pub enum InitializationError {
-    #[error("The given buffer mode must not be BufferMode::Resizable if the length of the buffer is 0")]
-    NotResizable,
-
-    #[error("The given buffer mode is BufferMode::Resizable, but BufferUsage.device_read is false")]
-    ResizableMissingDeviceRead,
-
-    #[error("The given buffer mode is BufferMode::Resizable, but BufferUsage.device_write is false")]
-    ResizableMissingDeviceWrite,
+    #[error("The given slice is emtpy")]
+    ZeroSizedSlice,
 
     #[error("The stride of T is zero. Currently, buffers cannot support zero-sized types")]
     ZeroSizedStride
@@ -19,13 +13,8 @@ pub enum InitializationError {
 // Buffer invalid mode error if we have invalid permissions
 #[derive(Error, Debug)]
 pub enum InvalidModeError {
-    #[error("Missing change length permission (BufferMode::Resizable or BufferMode::Partial)")]
-    IllegalChangeLength,
-
-    #[error(
-        "Missing reallocation permission (BufferMode::Resizable)"
-    )]
-    IllegalReallocation,
+    #[error("Missing change length permission (BufferMode::Partial)")]
+    IllegalLengthModify,
 }
 
 // Buffer invalid usage error if we have invalid permissions
@@ -49,20 +38,23 @@ pub enum BufferError {
     Initialization(InitializationError),
 
     #[error("{0}")]
-    InvalidSrcUsage(InvalidUsageError),
+    InvalidUsage(InvalidUsageError),
 
     #[error("{0}")]
-    InvalidSrcMode(InvalidModeError),
+    InvalidMode(InvalidModeError),
 
     #[error("{0}")]
-    InvalidSrcRange(InvalidRangeSizeError),
+    InvalidRange(InvalidRangeSizeError),
 
+    // Only used in the copy command
     #[error("{0}")]
     InvalidDstUsage(InvalidUsageError),
 
+    // Only used in the copy command
     #[error("{0}")]
     InvalidDstMode(InvalidModeError),
 
+    // Only used in the copy command
     #[error("{0}")]
     InvalidDstRange(InvalidRangeSizeError),
 }
