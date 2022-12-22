@@ -8,6 +8,7 @@ use crate::{
     BufferError, Graphics, InitializationError, InvalidModeError,
     InvalidRangeSizeError, InvalidUsageError, BufferUsage, BufferMode,
 };
+use super::BufferLayouts;
 use bytemuck::{Pod, Zeroable};
 use vulkan::{vk, Allocation, Recorder};
 
@@ -123,22 +124,25 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
             std::ops::Bound::Unbounded => length,
         };
 
+        // Multiple checks to make sure the range is valid
         let valid_start_index = start < length;
         let valid_end_index = end <= length && end >= start;
         let valid_length = (end - start) > 0;
 
-        if !valid_start_index || !valid_end_index || !valid_length {
-            return Err(BufferError::InvalidRange(InvalidRangeSizeError(
+        // Handle errors
+        if valid_start_index && valid_end_index && valid_length {
+            Ok(BufferBounds {
+                offset: start,
+                size: end - start,
+            })
+        } else {
+            Err(BufferError::InvalidRange(InvalidRangeSizeError(
                 start,
                 end,
                 length,
-            )));
+            )))
         }
-
-        Ok(BufferBounds {
-            offset: start,
-            size: end - start,
-        })
+        
     }
 }
 
@@ -152,23 +156,15 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         usage: BufferUsage,
         recorder: &mut Recorder<'a>,
     ) -> Result<Self, BufferError> {
-        // Cannot create a zero sized slice
-        if slice.is_empty() {
-            return Err(BufferError::Initialization(
-                InitializationError::ZeroSizedSlice,
-            ));
-        }
-
         // Cannot create a zero sized stride buffer
-        if size_of::<T>() == 0 {
+        assert!(size_of::<T>() > 0, "Buffers do not support zero-sized types");        
+
+        // Cannot create a zero sized slice if we aren't resizable
+        if slice.is_empty() && !matches!(mode, BufferMode::Resizable) {
             return Err(BufferError::Initialization(
-                InitializationError::ZeroSizedStride,
+                InitializationError::EmptySliceNotResizable,
             ));
         }
-
-        let device = graphics.device();
-        let queue = graphics.queue();
-
         // Calculate the byte size of the buffer
         let stride = size_of::<T>() as u64; 
         let size = stride * (slice.len() as u64);
@@ -176,58 +172,13 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         // Get location and staging buffer location
         let layout = super::find_optimal_layout(usage, TYPE);
 
-        // Create the actual buffer
-        let (src_buffer, mut src_allocation) = unsafe {
-            device.create_buffer(
-                size,
-                layout.src_buffer_usage_flags,
-                layout.src_buffer_memory_location,
-                queue,
-            )
-        };
-
-        // Get a free staging block with the given size
-        let block =  layout.init_staging_buffer.then(|| unsafe {
-            device.staging_pool().lock(device, queue, size)
-        });
-
-        // Check if we need to make a staging buffer
-        if let Some(mut block) = block {
-            // Write to the staging buffer memory by mapping it directly
-            let dst = bytemuck::cast_slice_mut::<u8, T>(
-                block.mapped_slice_mut(),
-            );
-            let len = slice.len();
-            dst[..len].copy_from_slice(slice);
-
-            let copy = *vk::BufferCopy::builder()
-                .dst_offset(0)
-                .src_offset(block.offset())
-                .size(size);
-
-            // Copy the contents from the staging buffer to the src buffer
-            let mut old = std::mem::replace(
-                recorder,
-                queue.acquire(device),
-            );
-
-            // Record the cpy staging -> src buffer command
-            unsafe {
-                recorder.cmd_full_barrier();
-                old.cmd_copy_buffer(block.buffer(), src_buffer, &[copy]);
-                recorder.cmd_full_barrier();
-            }
-
-            // Submit the recorder
-            queue.submit(old).wait();            
-        } else {
-            // Write to the buffer memory by mapping it directly
-            let dst = bytemuck::cast_slice_mut::<u8, T>(
-                src_allocation.mapped_slice_mut().unwrap(),
-            );
-            let len = slice.len();
-            dst[..len].copy_from_slice(slice);
-        }
+        let (src_buffer, src_allocation) = unsafe { super::allocate_buffer(
+            graphics,
+            size,
+            layout,
+            slice,
+            recorder
+        ) };
 
         // Create the struct and return it
         Ok(Self {
@@ -252,8 +203,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         Self::from_slice(graphics, &[], mode, usage, recorder)
     }
 
-    /*
-    // Create a buffer with a specific capacity
+    // Create a buffer with a specific capacity and a length of 0
     pub fn with_capacity<'a>(
         graphics: &'a Graphics,
         capacity: usize,
@@ -263,95 +213,26 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     ) -> Result<Self, BufferError> {
         let vec = vec![T::zeroed(); capacity];
         let mut buffer = Self::from_slice(graphics, &vec, mode, usage, recorder)?;
-        buffer.length = 0;        
-
-        if matches!(BufferMode::Dynamic, mode) {
-            return Err(BufferError::Initialization(InitializationError::ZeroSizedSlice));
-        }
-
+        buffer.length = 0;
         Ok(buffer)
     }
-    */
+}
+
+// Implementation of unsafe methods
+impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
+    // Write to the specified range within the buffer
+    // Read from the specified range within the buffer
+    // Clear the buffer and reset it's length
+    // Transmute the buffer into another type of buffer
+    // Copy the data from another buffer's range into this buffer's range
+    // Copy the data from another buffer into this buffer
 }
 
 // Implementation of safe methods
 impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
-    // Overwrite a region of the buffer using a slice and a range
-    pub fn write_range(
-        &mut self,
-        src: &[T],
-        range: impl RangeBounds<usize>,
-        recorder: &mut Recorder,
-    ) -> Result<(), BufferError> {
-        let BufferBounds {
-            offset,
-            size,
-        } = self.convert(range)?;
-        Ok(())
-    }
-
-    // Read a region of the buffer into a mutable slice immediately
-    pub fn read_range(
-        &self,
-        dst: &mut [T],
-        range: impl RangeBounds<usize>,
-        _recorder: &mut Recorder,
-    ) -> Result<(), BufferError> {
-        let BufferBounds {
-            offset,
-            size,
-        } = self.convert(range)?;
-        Ok(())
-    }
-
-    // Clear the buffer contents, resetting the buffer's length down to zero
-    pub fn clear(
-        &mut self,
-        recorder: &mut Recorder,
-    ) -> Result<(), BufferError> {
-        Ok(())
-    }
-
+    // Write to the specified range within the buffer
+    // Read from the specified range within the buffer
+    // Clear the buffer and reset it's length
     // Copy the data from another buffer's range into this buffer's range
-    // dst_offset refers to the offset inside Self
-    // src_range refers to the range of 'other'
-    pub fn copy_range_from<const OTHER_TYPE: u32>(
-        &mut self,
-        src_range: impl RangeBounds<usize>,
-        other: &Buffer<T, OTHER_TYPE>,
-        dst_offset: usize,
-        recorder: &mut Recorder,
-    ) -> Result<(), BufferError> {
-        Ok(())
-    }
-}
-
-// Default methods (.. as range)
-impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     // Copy the data from another buffer into this buffer
-    pub fn copy_from<const OTHER: u32>(
-        &mut self,
-        other: &Buffer<T, OTHER>,
-        recorder: &mut Recorder,
-    ) -> Result<(), BufferError> {
-        self.copy_range_from(.., other, 0, recorder)
-    }
-
-    // Overwrite the whole buffer using a slice
-    pub fn write(
-        &mut self,
-        slice: &[T],
-        recorder: &mut Recorder,
-    ) -> Result<(), BufferError> {
-        self.write_range(slice, .., recorder)
-    }
-
-    // Read the whole buffer into a mutable slice
-    pub fn read(
-        &self,
-        slice: &mut [T],
-        recorder: &mut Recorder,
-    ) -> Result<(), BufferError> {
-        self.read_range(slice, .., recorder)
-    }
 }

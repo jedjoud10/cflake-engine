@@ -51,7 +51,7 @@ pub trait Material: 'static + Sized {
 
     // Get the blend config for this material
     fn blend_config() -> BlendConfig {
-        todo!()
+        BlendConfig {  }
     }
 
     // Set the global and static instance descriptor sets

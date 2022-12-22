@@ -215,7 +215,7 @@ impl Device {
 }
 
 impl Device {
-    // Create raw buffer with no memory
+    // Create a raw buffer and allocate the needed memory for it
     pub unsafe fn create_buffer(
         &self,
         size: u64,

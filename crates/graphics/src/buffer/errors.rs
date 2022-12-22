@@ -3,11 +3,8 @@ use thiserror::Error;
 // Buffer creation error (only one really)
 #[derive(Error, Debug)]
 pub enum InitializationError {
-    #[error("The given slice is emtpy")]
-    ZeroSizedSlice,
-
-    #[error("The stride of T is zero. Currently, buffers cannot support zero-sized types")]
-    ZeroSizedStride
+    #[error("The given buffer mode must be BufferMode::Resizable if the slice is empty")]
+    EmptySliceNotResizable,
 }
 
 // Buffer invalid mode error if we have invalid permissions
@@ -30,6 +27,10 @@ pub enum InvalidUsageError {
 #[derive(Error, Debug)]
 #[error("The given range {0}..{1} is an invalid length for buffer with size {2}")]
 pub struct InvalidRangeSizeError(pub usize, pub usize, pub usize);
+
+#[derive(Error, Debug)]
+#[error("The given lengthes {0}, {1} are not equal")]
+pub struct InvalidLengthMismatch(pub usize, pub usize);
 
 // Buffer error that is returned from each buffer command
 #[derive(Error, Debug)]
@@ -57,4 +58,8 @@ pub enum BufferError {
     // Only used in the copy command
     #[error("{0}")]
     InvalidDstRange(InvalidRangeSizeError),
+
+    // Only used in the copy command
+    #[error("{0}")]
+    InvalidLengthMismatch(InvalidLengthMismatch),
 }

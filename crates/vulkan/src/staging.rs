@@ -131,7 +131,7 @@ impl StagingPool {
     // free blocks that we can reuse
     unsafe fn allocate(&self, device: &Device, queue: &Queue, size: u64) -> StagingBlock {
         // Use a bigger capacity just so we don't have to allocate as many times
-        let upper = size * 8;
+        let upper = size * 2;
 
         // Create the underlying staging buffer memory
         let used = vk::BufferUsageFlags::TRANSFER_SRC |  vk::BufferUsageFlags::TRANSFER_DST;
