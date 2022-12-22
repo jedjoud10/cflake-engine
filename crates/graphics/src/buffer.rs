@@ -1,6 +1,10 @@
 mod buffer;
 mod errors;
 mod layout;
+mod mode;
+mod usage;
+pub use mode::*;
+pub use usage::*;
 pub use buffer::*;
 pub use errors::*;
 pub use layout::*;

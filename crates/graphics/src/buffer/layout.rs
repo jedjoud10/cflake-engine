@@ -39,8 +39,8 @@ pub(super) fn find_optimal_layout(
     let BufferUsage {
         device_write,
         device_read,
-        host_write,
-        host_read,
+        hint_host_write: host_write,
+        hint_host_read: host_read,
     } = usage;
 
     // Check if there is device (hint)

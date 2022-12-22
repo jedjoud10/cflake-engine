@@ -7,7 +7,6 @@ fn main() {
     App::default()
         .set_app_name("cflake engine prototype example")
         .insert_init(init)
-        .set_window_fullscreen(true)
         .execute();
 }
 
@@ -42,7 +41,7 @@ fn init(world: &mut World) {
 
     // Copy the whole buffer1 into buffer2
     //buffer2.copy_from(&buffer1, &mut recorder).unwrap();
-    //buffer2.extend_from_slice(&[220], &mut recorder).unwrap();
+    buffer2.extend_from_slice(&[220], &mut recorder).unwrap();
 
     // Submit to the GPU and wait for execution
     //graphics.submit(recorder).wait();

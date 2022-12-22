@@ -1,14 +1,14 @@
 use std::{mem::transmute, sync::Arc};
 use vulkan::{vk, Device};
-use crate::{DepthConfig, CompareOp, StencilOp, Primitive, StencilTest, BlendConfig, StencilConfig, Graphics};
+use crate::{DepthConfig, CompareOp, StencilOp, Primitive, StencilTest, BlendConfig, StencilConfig, Graphics, RenderPass, Stages};
 
-// A vulkan pipeline abstraction that will handle initialization / destruction for us manually
+// A vulkan GRAPHICS pipeline abstraction that will handle initialization / destruction for us manually
 // This will abstract most of the initialization and pain staking work of pipelines
 
 // This pipeline is only to be used with the Material system in the "rendering" crate
 // By itself, it only contains only 2 dynamic state that we can change after building it,
 // which is it's viewport size and scissor testing
-pub struct Pipeline {
+pub struct GraphicsPipeline {
     // Raw Vulkan
     pipeline: vk::Pipeline,
 
@@ -22,7 +22,7 @@ pub struct Pipeline {
     graphics: Graphics,
 }
 
-impl Drop for Pipeline {
+impl Drop for GraphicsPipeline {
     fn drop(&mut self) {
         unsafe {
             self.graphics.device().destroy_pipeline(self.pipeline);
@@ -30,14 +30,15 @@ impl Drop for Pipeline {
     }
 }
 
-impl Pipeline {
+impl GraphicsPipeline {
     // Create a new pipeline with the specified configs
     pub unsafe fn new(
         graphics: &Graphics,
         depth_config: DepthConfig,
         stencil_config: StencilConfig,
         blend_config: BlendConfig,
-        primitive: Primitive
+        primitive: Primitive,
+        render_pass: &RenderPass,
     ) -> Self {
         let pipeline = unsafe {
             let input_assembly_state = Self::build_input_assembly_state(&primitive);
@@ -46,7 +47,7 @@ impl Pipeline {
             let depth_stencil_state = Self::build_depth_stencil_state(&stencil_config, &depth_config);
             let vertex_input_state = Self::build_vertex_input_state();
             let dynamic_state = Self::build_dynamic_state();
-            let layout = Self::build_pipeline_layout();
+            let layout = Self::build_pipeline_layout(graphics.device());
         
             let create_info = vk::GraphicsPipelineCreateInfo::builder()
                 .color_blend_state(&color_blend_state)
@@ -72,7 +73,7 @@ impl Pipeline {
         }
     }
 
-    // Create the rasterization state from the material
+    // Create the rasterization state
     fn build_rasterization_state(primitive: &Primitive, depth_config: &DepthConfig) -> vk::PipelineRasterizationStateCreateInfo {
         let mut builder = vk::PipelineRasterizationStateCreateInfo::builder();
         builder = primitive.apply_rasterization_state(builder);
@@ -87,7 +88,7 @@ impl Pipeline {
         *builder
     }
 
-    // Create the depth stencil state from the material
+    // Create the depth stencil state
     fn build_depth_stencil_state(stencil_config: &StencilConfig, depth_config: &DepthConfig) -> vk::PipelineDepthStencilStateCreateInfo {
         let mut builder = vk::PipelineDepthStencilStateCreateInfo::builder();
         builder = depth_config.apply_depth_stencil_state(builder);
@@ -101,12 +102,18 @@ impl Pipeline {
             .logic_op_enable(false)
     }
 
-    // Create the pipeline layout for a specific material
-    fn build_pipeline_layout() -> vk::PipelineLayout {
-        todo!()
+    // Create the pipeline layout
+    fn build_pipeline_layout(device: &Device) -> vk::PipelineLayout {
+        let create_info = vk::PipelineLayoutCreateInfo::builder();
+
+        unsafe {
+            device
+                .raw()
+                .create_pipeline_layout(&create_info, None).unwrap()
+        }
     }
 
-    // Create the vertex input state for this specific material
+    // Create the vertex input state
     fn build_vertex_input_state() -> vk::PipelineVertexInputStateCreateInfo {
         todo!()
     }

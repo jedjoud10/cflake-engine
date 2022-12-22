@@ -5,88 +5,11 @@ use std::{
 };
 
 use crate::{
-    BufferError, ExtendFromIterError, Graphics, InitializationError,
-    InvalidModeError, InvalidRangeSizeError, InvalidUsageError,
-    WriteRangeError, CopyRangeFromError, ReadRangeError,
+    BufferError, Graphics, InitializationError, InvalidModeError,
+    InvalidRangeSizeError, InvalidUsageError, BufferUsage, BufferMode,
 };
 use bytemuck::{Pod, Zeroable};
 use vulkan::{vk, Allocation, Recorder};
-
-// Some settings that tell us how exactly we should create the buffer
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
-pub enum BufferMode {
-    // Dynamic buffers are like static buffers, but they allow the user to mutate each element
-    Dynamic,
-
-    // Partial buffer have a fixed capacity, but a dynamic length
-    Parital,
-
-    // Resizable buffers can be resized to whatever length needed
-    #[default]
-    Resizable,
-}
-
-// How we shall access the buffer
-// These buffer usages do not count the initial buffer creation phase
-// Anything related to the device access is a hint since you can always access stuff
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub struct BufferUsage {
-    // Specifies what the device can do with the buffer
-    pub device_write: bool,
-    pub device_read: bool,
-
-    // Specifies what the host can do do with the buffer
-    pub host_write: bool,
-    pub host_read: bool,
-}
-
-impl BufferUsage {    
-    // Device local buffer usage. Not host visible
-    pub fn device_local_usage() -> Self {
-        Self {
-            device_write: true,
-            device_read: true,
-            host_write: false,
-            host_read: false,
-        }
-    }
-    
-    // Common buffer usage. Allows you to do anything
-    pub fn common_device_usage() -> Self {
-        Self {
-            device_write: true,
-            device_read: true,
-            host_write: true,
-            host_read: true,
-        }
-    }
-    
-    // Buffer usage to upload data to the GPU
-    pub fn upload_to_device_usage() -> Self {
-        Self {
-            device_write: false,
-            device_read: true,
-            host_write: true,
-            host_read: false,
-        }
-    }
-    
-    // Buffer usage to download data from the GPU
-    pub fn download_from_device_usage() -> Self {
-        Self {
-            device_write: true,
-            device_read: false,
-            host_write: false,
-            host_read: true,
-        }
-    }
-}
-
-impl Default for BufferUsage {
-    fn default() -> Self {
-        Self::common_device_usage()
-    }
-}
 
 // Bitmask from Vulkan BufferUsages
 const VERTEX: u32 = vk::BufferUsageFlags::VERTEX_BUFFER.as_raw();
@@ -150,30 +73,24 @@ pub(super) struct BufferBounds {
     size: usize,
 }
 
-// Raw buffer allocation data that is used only internally
-struct RawBufferAllocation {
-    buffer: vk::Buffer,
-    allocation: Allocation,
-    capacity: u64,
-}
-
+// Implementation of raw unsafe methods
 impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     // Allocate a raw Vulkan buffer and somehow write data to it    
     unsafe fn allocate_buffer<'a>(
         graphics: &'a Graphics,
-        queue: &'a vulkan::Queue,
-        device: &'a vulkan::Device,
         recorder: &mut Recorder<'a>,
         usage: BufferUsage,
-        _type: u32,
         slice: &[T],
-    ) -> RawBufferAllocation {
+    ) -> (vk::Buffer, Allocation, u64) {
+        let device = graphics.device();
+        let queue = graphics.queue();
+
         // Calculate the byte size of the buffer
         let stride = size_of::<T>() as u64; 
         let size = stride * (slice.len() as u64);
 
         // Get location and staging buffer location
-        let layout = super::find_optimal_layout(usage, _type);
+        let layout = super::find_optimal_layout(usage, TYPE);
 
         // Create the actual buffer
         let (src_buffer, mut src_allocation) = {
@@ -181,7 +98,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
                 size,
                 layout.src_buffer_usage_flags,
                 layout.src_buffer_memory_location,
-                graphics.queue(),
+                queue,
             )
         };
 
@@ -236,103 +153,14 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
             dst[..len].copy_from_slice(slice);
         }
 
-        RawBufferAllocation {
-            buffer: src_buffer,
-            allocation: src_allocation,
-            capacity: size / stride,
-        }
+        (src_buffer, src_allocation, size / stride)
     }
 
-    // Try to create a buffer with the specified mode, usage, and slice data
-    pub fn from_slice<'a>(
-        graphics: &'a Graphics,
-        slice: &[T],
-        mode: BufferMode,
-        usage: BufferUsage,
-        recorder: &mut Recorder<'a>,
-    ) -> Result<Self, BufferError> {
-        // Cannot create a zero sized slice for non-resizable buffers
-        if slice.is_empty() && !matches!(mode, BufferMode::Resizable)
-        {
-            return Err(BufferError::Initialization(
-                InitializationError::NotResizable,
-            ));
-        }
 
-        // Cannot create a zero sized stride buffer
-        if size_of::<T>() == 0 {
-            return Err(BufferError::Initialization(
-                InitializationError::ZeroSizedStride,
-            ));
-        }
+}
 
-        // Decompose graphics
-        let device = graphics.device();
-        let queue = graphics.queue();
-
-        // If we are trying to create a zero sized resizable buffer, don't initialize the VK buffer
-        if slice.is_empty() {
-            return Ok(Self {
-                buffer: vk::Buffer::null(),
-                allocation: None,
-                length: 0,
-                capacity: 0,
-                usage,
-                mode,
-                graphics: graphics.clone(),
-                _phantom: PhantomData,
-            })
-        }
-
-        // Create the buffer and write the data to it
-        let RawBufferAllocation {
-            buffer,
-            allocation,
-            capacity,
-        } = unsafe {
-            Self::allocate_buffer(
-                graphics, queue, device, recorder,
-                usage, TYPE, slice
-            )
-        };
-
-        // Create the struct and return it
-        Ok(Self {
-            length: slice.len() as u64,
-            capacity,
-            mode,
-            usage,
-            graphics: graphics.clone(),
-            _phantom: PhantomData,
-            buffer,
-            allocation: Some(allocation),
-        })
-    }
-
-    // Create an empty buffer if we can (resizable)
-    pub fn empty<'a>(
-        graphics: &'a Graphics,
-        mode: BufferMode,
-        usage: BufferUsage,
-        recorder: &mut Recorder<'a>,
-    ) -> Result<Self, BufferError> {
-        Self::from_slice(graphics, &[], mode, usage, recorder)
-    }
-
-    // Create a buffer with a specific capacity
-    pub fn with_capacity<'a>(
-        graphics: &'a Graphics,
-        capacity: usize,
-        mode: BufferMode,
-        usage: BufferUsage,
-        recorder: &mut Recorder<'a>,
-    ) -> Result<Self, BufferError> {
-        let vec = vec![T::zeroed(); capacity];
-        let mut buffer = Self::from_slice(graphics, &vec, mode, usage, recorder)?;
-        buffer.length = 0;        
-        Ok(buffer)
-    }
-
+// Implementation of util methods
+impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     // Get the current length of the buffer
     pub fn len(&self) -> usize {
         self.length.try_into().unwrap()
@@ -401,7 +229,94 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
             size: end - start,
         })
     }
+}
 
+// Implementation of safe methods
+impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
+    // Try to create a buffer with the specified mode, usage, and slice data
+    pub fn from_slice<'a>(
+        graphics: &'a Graphics,
+        slice: &[T],
+        mode: BufferMode,
+        usage: BufferUsage,
+        recorder: &mut Recorder<'a>,
+    ) -> Result<Self, BufferError> {
+        // Cannot create a zero sized slice for non-resizable buffers
+        if slice.is_empty() && !matches!(mode, BufferMode::Resizable)
+        {
+            return Err(BufferError::Initialization(
+                InitializationError::NotResizable,
+            ));
+        }
+
+        // Cannot create a zero sized stride buffer
+        if size_of::<T>() == 0 {
+            return Err(BufferError::Initialization(
+                InitializationError::ZeroSizedStride,
+            ));
+        }
+
+        // If we are trying to create a zero sized resizable buffer, don't initialize the VK buffer
+        if slice.is_empty() {
+            return Ok(Self {
+                buffer: vk::Buffer::null(),
+                allocation: None,
+                length: 0,
+                capacity: 0,
+                usage,
+                mode,
+                graphics: graphics.clone(),
+                _phantom: PhantomData,
+            })
+        }
+
+        // Create the buffer and write the data to it
+        let (buffer,
+            allocation,
+            capacity) = unsafe {
+            Self::allocate_buffer(
+                graphics, recorder, usage, slice
+            )
+        };
+
+        // Create the struct and return it
+        Ok(Self {
+            length: slice.len() as u64,
+            capacity,
+            mode,
+            usage,
+            graphics: graphics.clone(),
+            _phantom: PhantomData,
+            buffer,
+            allocation: Some(allocation),
+        })
+    }
+
+    // Create an empty buffer if we can (resizable)
+    pub fn empty<'a>(
+        graphics: &'a Graphics,
+        mode: BufferMode,
+        usage: BufferUsage,
+        recorder: &mut Recorder<'a>,
+    ) -> Result<Self, BufferError> {
+        Self::from_slice(graphics, &[], mode, usage, recorder)
+    }
+
+    // Create a buffer with a specific capacity
+    pub fn with_capacity<'a>(
+        graphics: &'a Graphics,
+        capacity: usize,
+        mode: BufferMode,
+        usage: BufferUsage,
+        recorder: &mut Recorder<'a>,
+    ) -> Result<Self, BufferError> {
+        let vec = vec![T::zeroed(); capacity];
+        let mut buffer = Self::from_slice(graphics, &vec, mode, usage, recorder)?;
+        buffer.length = 0;        
+        Ok(buffer)
+    }
+
+    /*
     // Extent the current buffer using data from an iterator
     pub fn extend_from_iterator<I: Iterator<Item = T>>(
         &mut self,
@@ -424,15 +339,6 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         }
 
         // Check if we are allowed to change the length of the buffer
-        if !matches!(self.mode, BufferMode::Resizable)
-            && !matches!(self.mode, BufferMode::Parital)
-        {
-            return Err(BufferError::ExtendFromIter(
-                ExtendFromIterError::InvalidMode(
-                    InvalidModeError::IllegalChangeLength,
-                ),
-            ));
-        }
 
         /*
         // Check if we can write to the buffer
@@ -499,7 +405,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         // Get the mapped pointer and write to it the given slice (if possible)
         if let Some(mapped) = self.allocation.as_mut().unwrap().mapped_slice_mut() {
             // Check if we can write to the buffer
-            if !self.usage.host_write {
+            if !self.usage.hint_host_write {
                 return Err(BufferError::WriteRange(WriteRangeError::InvalidUsage(InvalidUsageError::IllegalHostWrite)));
             }
 
@@ -535,7 +441,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         // Get the mapped pointer and write to it the given slice (if possible)
         if let Some(mapped) = self.allocation.as_ref().unwrap().mapped_slice() {
             // Check if we can read from the buffer
-            if !self.usage.host_read {
+            if !self.usage.hint_host_read {
                 return Err(BufferError::WriteRange(WriteRangeError::InvalidUsage(InvalidUsageError::IllegalHostRead)));
             }
             
@@ -644,6 +550,44 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         Ok(())
     }
 
+    /*
+    // Create a new ranged buffer reader that can read from the buffer
+    pub fn as_view_ranged(&self, range: impl RangeBounds<usize>) -> Option<BufferView<T, TYPE>> {
+        todo!()
+    }
+
+    // Create a new ranged buffer writer that can read/write from/to the buffer
+    pub fn as_view_ranged_mut(
+        &mut self,
+        range: impl RangeBounds<usize>,
+    ) -> Option<BufferViewMut<T, TYPE>> {
+        todo!()
+    }
+
+    // Create a buffer reader that uses the whole buffer
+    pub fn as_view(&self) -> Option<BufferView<T, TYPE>> {
+        todo!()
+    }
+
+    // Create a buffer writer that uses the whole buffer
+    pub fn as_mut_view(&mut self) -> Option<BufferViewMut<T, TYPE>> {
+        todo!()
+    }
+    */
+    */
+}
+
+/*
+// Default methods (.. as range)
+impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
+    // Read the whole buffer into a new vector
+    pub fn read_to_vec(
+        &self,
+        recorder: &mut Recorder,
+    ) -> Result<Vec<T>, BufferError> {
+        self.read_range_as_vec(.., recorder)
+    }
+
     // Copy the data from another buffer into this buffer
     pub fn copy_from<const OTHER: u32>(
         &mut self,
@@ -670,29 +614,5 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     ) -> Result<(), BufferError> {
         self.read_range(slice, .., recorder)
     }
-
-    /*
-    // Create a new ranged buffer reader that can read from the buffer
-    pub fn as_view_ranged(&self, range: impl RangeBounds<usize>) -> Option<BufferView<T, TYPE>> {
-        todo!()
-    }
-
-    // Create a new ranged buffer writer that can read/write from/to the buffer
-    pub fn as_view_ranged_mut(
-        &mut self,
-        range: impl RangeBounds<usize>,
-    ) -> Option<BufferViewMut<T, TYPE>> {
-        todo!()
-    }
-
-    // Create a buffer reader that uses the whole buffer
-    pub fn as_view(&self) -> Option<BufferView<T, TYPE>> {
-        todo!()
-    }
-
-    // Create a buffer writer that uses the whole buffer
-    pub fn as_mut_view(&mut self) -> Option<BufferViewMut<T, TYPE>> {
-        todo!()
-    }
-    */
 }
+ */

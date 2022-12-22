@@ -130,12 +130,21 @@ impl<'a> Recorder<'a> {
     pub unsafe fn cmd_blit_image(
         &mut self,
         src_image: vk::Image,
-        src_layout: vk::ImageLayout,
+        src_image_layout: vk::ImageLayout,
         dst_image: vk::Image,
-        dst_layout: vk::ImageLayout,
-        regions: Vec<vk::ImageBlit>,
+        dst_image_layout: vk::ImageLayout,
+        regions: &[vk::ImageBlit],
         filter: vk::Filter,
     ) {
+        self.device().raw().cmd_blit_image(
+            self.command_buffer().raw(),
+            src_image,
+            src_image_layout,
+            dst_image,
+            dst_image_layout,
+            regions,
+            filter
+        )
     }
 
     // Clear an image to a specific color
@@ -144,19 +153,34 @@ impl<'a> Recorder<'a> {
         image: vk::Image,
         layout: vk::ImageLayout,
         color: vk::ClearColorValue,
-        regions: Vec<vk::ImageSubresourceRange>,
+        regions: &[vk::ImageSubresourceRange],
     ) {
+        self.device().raw().cmd_clear_color_image(
+            self.command_buffer().raw(),
+            image,
+            layout,
+            &color,
+            regions,
+        )
     }
 
     // Copy an image to another image in GPU memory
     pub unsafe fn cmd_copy_image(
         &mut self,
         src_image: vk::Image,
-        src_layout: vk::ImageLayout,
+        src_image_layout: vk::ImageLayout,
         dst_image: vk::Image,
-        dst_layout: vk::ImageLayout,
-        regions: Vec<vk::ImageCopy>,
+        dst_image_layout: vk::ImageLayout,
+        regions: &[vk::ImageCopy],
     ) {
+        self.device().raw().cmd_copy_image(
+            self.command_buffer().raw(),
+            src_image,
+            src_image_layout,
+            dst_image,
+            dst_image_layout,
+            regions
+        )
     }
 }
 
