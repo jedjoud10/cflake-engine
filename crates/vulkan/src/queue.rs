@@ -109,7 +109,7 @@ impl Queue {
     pub fn submit<'a>(
         &self,
         recorder: &mut Recorder<'a>,
-    ) -> Submission<'a> {
+    ) -> Submission {
         let pool = recorder.command_pool;
         unsafe {
             pool.stop_recording(
@@ -126,6 +126,7 @@ impl Queue {
             recorder.command_pool,
             recorder.command_buffer,
             recorder.device,
+            self,
         )
     }
 

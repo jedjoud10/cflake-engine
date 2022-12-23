@@ -41,7 +41,7 @@ impl<T: Clone + Copy + Sync + Send + Zeroable + Pod + 'static> Content
 pub struct Buffer<T: Content, const TYPE: u32> {
     // Raw Vulkan
     buffer: vk::Buffer,
-    allocation: ManuallyDrop<MaybeUninit<Allocation>>,
+    allocation: ManuallyDrop<Allocation>,
     
     // Size fields
     length: usize,
@@ -59,13 +59,10 @@ pub struct Buffer<T: Content, const TYPE: u32> {
 impl<T: Content, const TYPE: u32> Drop for Buffer<T, TYPE> {
     fn drop(&mut self) {
         unsafe {
-            if self.buffer == vk::Buffer::null() {
-                let alloc = ManuallyDrop::take(&mut self.allocation);
-                let alloc = alloc.assume_init();
-                self.graphics
-                   .device()
-                   .destroy_buffer(self.buffer, alloc);
-            }       
+            let alloc = ManuallyDrop::take(&mut self.allocation);
+            self.graphics
+                .device()
+                .destroy_buffer(self.buffer, alloc);
         }
     }
 }
@@ -84,17 +81,13 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     }
 
     // Get the inner raw Vulkan Allocation immutably
-    pub fn allocation(&self) -> Option<&Allocation> {
-        (self.buffer != vk::Buffer::null()).then(|| unsafe {
-            self.allocation.assume_init_ref()
-        })
+    pub fn allocation(&self) -> &Allocation {
+        &self.allocation
     }
 
     // Get the inner raw Vulkan Allocation mutably
-    pub fn allocation_mut(&mut self) -> Option<&mut Allocation> {
-        (self.buffer != vk::Buffer::null()).then(|| unsafe {
-            self.allocation.assume_init_mut()
-        })
+    pub fn allocation_mut(&mut self) -> &mut Allocation {
+        &mut self.allocation
     }
 
     // Get the current length of the buffer
@@ -121,6 +114,12 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     pub fn stride(&self) -> usize {
         size_of::<T>()
     }
+
+    // Check if the buffer is HOST accessible (mappable)
+    pub fn is_host_mapped(&self) -> bool {
+        self.allocation().mapped_ptr().is_some()
+    }
+
 }
 
 // Buffer initialization
@@ -150,24 +149,27 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         // Get location and staging buffer location
         let layout = super::find_optimal_layout(usage, TYPE);
 
-        // Allocate an actual buffer if we have valid data
-        let (buffer, allocation, capacity) = if !slice.is_empty() {
-            let (buffer, allocation) = unsafe { super::allocate_buffer(
-                graphics,
-                size,
-                layout,
-                slice,
-                recorder
-            ) };
-
-            // Calculate the number of elements that can fit in this one allocation
-            let capacity = (allocation.size() / stride) as usize;
-            let allocation = ManuallyDrop::new(MaybeUninit::new(allocation));
-            (buffer, allocation, capacity)
+        // If the slice is empty (implying a resizable buffer), change it to contain one single null element
+        // This is a little hack to allow us to have resizable buffers without dealing with null/invalid buffers
+        let one = [T::zeroed()];
+        let slice = if slice.is_empty() {
+            &one
         } else {
-            // Don't allocate a buffer nor allocate it's memory
-            (vk::Buffer::null(), ManuallyDrop::new(MaybeUninit::uninit()), 0)
+            slice
         };
+
+        // Allocate the buffer
+        let (buffer, allocation) = unsafe { super::allocate_buffer(
+            graphics,
+            size,
+            layout,
+            slice,
+            recorder
+        ) };
+
+        // Calculate the number of elements that can fit in this one allocation
+        let capacity = (allocation.size() / stride) as usize;
+        let allocation = ManuallyDrop::new(allocation);
 
         // Create the struct and return it
         Ok(Self {
@@ -180,16 +182,6 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
             buffer: buffer,
             allocation: allocation,
         })
-    }
-
-    // Create an empty buffer if we can (resizable)
-    pub fn empty<'a>(
-        graphics: &'a Graphics,
-        mode: BufferMode,
-        usage: BufferUsage,
-        recorder: &mut Recorder<'a>,
-    ) -> Result<Self, BufferError> {
-        Self::from_slice(graphics, &[], mode, usage, recorder)
     }
 
     // Create a buffer with a specific capacity and a length of 0
@@ -216,9 +208,8 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         offset: usize,
         recorder: &mut Recorder,
     ) {
-        if self.usage.host_write {
+        if let Some(dst) = self.allocation_mut().mapped_slice_mut() {
             // Use the mapped point to write to the data
-            let dst = self.allocation_mut().unwrap_unchecked().mapped_slice_mut().unwrap_unchecked();
             super::raw::write_to(src, dst);
             log::debug!("write unchecked: write mapped");
         } else {
@@ -252,9 +243,8 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         offset: usize,
         recorder: &mut Recorder,
     ) {        
-        if self.usage.host_read {
+        if let Some(src) = self.allocation().mapped_slice() {
             // Use the mapped pointer to read from the data
-            let src = self.allocation().unwrap_unchecked().mapped_slice().unwrap_unchecked();
             super::raw::read_to(src, dst);
             log::debug!("read unchecked: read mapped");
         } else {
@@ -302,10 +292,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         );
 
         let mut manually = ManuallyDrop::new(self);
-        let allocation = std::mem::replace(
-            &mut manually.allocation,
-            ManuallyDrop::new(MaybeUninit::uninit())
-        );
+        let allocation = std::mem::take(&mut manually.allocation);
         let graphics = manually.graphics.clone();
 
         Buffer::<U, TYPE> {
@@ -423,9 +410,8 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     pub fn as_slice(&self) -> Option<&[T]> {
         self
             .allocation()
-            .and_then(|alloc| 
-                alloc.mapped_slice()
-            ).map(|bytes| 
+            .mapped_slice()
+            .map(|bytes| 
                 bytemuck::cast_slice::<u8, T>(bytes)
             )
     }
@@ -434,9 +420,8 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     pub fn as_slice_mut(&mut self) -> Option<&mut [T]> {
         self
             .allocation_mut()
-            .and_then(|alloc| 
-                alloc.mapped_slice_mut()
-            ).map(|bytes| 
+            .mapped_slice_mut()
+            .map(|bytes| 
                 bytemuck::cast_slice_mut::<u8, T>(bytes)
             )
     }

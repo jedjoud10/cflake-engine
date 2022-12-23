@@ -4,56 +4,27 @@ use std::time::{Duration, Instant};
 
 // A recorder can keep a command buffer cached until we flush it
 // This is used to reduce the number of submissions we have to make to the GPU
-pub struct Recorder<'a> {
-    pub(crate) command_buffer: &'a CommandBuffer,
-    pub(crate) command_pool: &'a CommandPool,
-    pub(crate) device: &'a Device,
-    pub(crate) queue: &'a Queue,
+pub struct Recorder {
+    cmd: vk::CommandBuffer,
+    device: ash::Device,
+    index: usize,
 }
 
-impl<'a> Recorder<'a> {
+impl Recorder {
     // Create a raw recorder using it's raw components
     pub(crate) unsafe fn from_raw_parts(
-        command_buffer: &'a CommandBuffer,
-        command_pool: &'a CommandPool,
-        device: &'a Device,
-        queue: &'a Queue,
+        command_buffer: &CommandBuffer,
     ) -> Self {
-        Self {
-            command_buffer,
-            command_pool,
-            device,
-            queue
-        }
-    }
-
-    // Get the command buffer from the recorder
-    pub fn command_buffer(&self) -> &CommandBuffer {
-        &self.command_buffer
-    }
-
-    // Get the command pool from the recorder
-    pub fn command_pool(&self) -> &CommandPool {
-        &self.command_pool
-    }
-
-    // Get the underlying device from the device
-    pub fn device(&self) -> &Device {
-        &self.device
-    }
-
-    // Get the underlying queue that we will eventually submit to
-    pub fn queue(&self) -> &Queue {
-        &self.queue
+        todo!()
     }
 }
 
 // Synchronization
-impl<'a> Recorder<'a> {
+impl Recorder {
     // Full barrier
     pub unsafe fn cmd_full_barrier(&mut self) {
-        self.device().raw().cmd_pipeline_barrier(
-            self.command_buffer().raw(),
+        self.device.cmd_pipeline_barrier(
+            self.cmd,
             vk::PipelineStageFlags::ALL_COMMANDS,
             vk::PipelineStageFlags::ALL_COMMANDS,
             vk::DependencyFlags::empty(),
@@ -62,7 +33,7 @@ impl<'a> Recorder<'a> {
 }
 
 // Buffer commands
-impl<'a> Recorder<'a> {
+impl Recorder {
     // Bind an index buffer to the command buffer render pass
     pub unsafe fn cmd_bind_index_buffer(
         &mut self,
@@ -70,7 +41,7 @@ impl<'a> Recorder<'a> {
         offset: vk::DeviceSize,
         index_type: vk::IndexType,
     ) {
-        self.device().raw().cmd_bind_index_buffer(self.command_buffer().raw(), buffer, offset, index_type);
+        self.device.cmd_bind_index_buffer(self.cmd, buffer, offset, index_type);
     }
 
     // Bind vertex buffers to the command buffer render pass
@@ -80,7 +51,7 @@ impl<'a> Recorder<'a> {
         buffers: &[vk::Buffer],
         offsets: &[vk::DeviceSize],
     ) {
-        self.device().raw().cmd_bind_vertex_buffers(self.command_buffer().raw(), first_binding, &buffers, &offsets);
+        self.device.cmd_bind_vertex_buffers(self.cmd, first_binding, &buffers, &offsets);
     }
 
     // Copy a buffer to another buffer in GPU memory
@@ -90,7 +61,7 @@ impl<'a> Recorder<'a> {
         dst: vk::Buffer,
         regions: &[vk::BufferCopy],
     ) {
-        self.device().raw().cmd_copy_buffer(self.command_buffer().raw(), src, dst, &regions);
+        self.device.cmd_copy_buffer(self.cmd, src, dst, &regions);
     }
 
     // Copy an image to a buffer in GPU memory
@@ -101,8 +72,8 @@ impl<'a> Recorder<'a> {
         layout: vk::ImageLayout,
         regions: &[vk::BufferImageCopy],
     ) {
-        self.device().raw().cmd_copy_image_to_buffer(
-            self.command_buffer().raw(),
+        self.device.cmd_copy_image_to_buffer(
+            self.cmd,
             image, layout, buffer,
             regions);
     }
@@ -114,8 +85,8 @@ impl<'a> Recorder<'a> {
         offset: vk::DeviceSize,
         size: vk::DeviceSize,
     ) {
-        self.device().raw().cmd_fill_buffer(
-            self.command_buffer().raw(),
+        self.device.cmd_fill_buffer(
+            self.cmd,
             buffer, offset, size, 0);
     }
 
@@ -126,14 +97,14 @@ impl<'a> Recorder<'a> {
         offset: vk::DeviceSize,
         data: &[u8],
     ) {
-        self.device().raw().cmd_update_buffer(
-            self.command_buffer().raw(),
+        self.device.cmd_update_buffer(
+            self.cmd,
             buffer, offset, data);
     }
 }
 
 // Image commands
-impl<'a> Recorder<'a> {
+impl Recorder {
     // Blit an image to another image in GPU memory
     pub unsafe fn cmd_blit_image(
         &mut self,
@@ -144,8 +115,8 @@ impl<'a> Recorder<'a> {
         regions: &[vk::ImageBlit],
         filter: vk::Filter,
     ) {
-        self.device().raw().cmd_blit_image(
-            self.command_buffer().raw(),
+        self.device.cmd_blit_image(
+            self.cmd,
             src_image,
             src_image_layout,
             dst_image,
@@ -163,8 +134,8 @@ impl<'a> Recorder<'a> {
         color: vk::ClearColorValue,
         regions: &[vk::ImageSubresourceRange],
     ) {
-        self.device().raw().cmd_clear_color_image(
-            self.command_buffer().raw(),
+        self.device.cmd_clear_color_image(
+            self.cmd,
             image,
             layout,
             &color,
@@ -181,8 +152,8 @@ impl<'a> Recorder<'a> {
         dst_image_layout: vk::ImageLayout,
         regions: &[vk::ImageCopy],
     ) {
-        self.device().raw().cmd_copy_image(
-            self.command_buffer().raw(),
+        self.device.cmd_copy_image(
+            self.cmd,
             src_image,
             src_image_layout,
             dst_image,

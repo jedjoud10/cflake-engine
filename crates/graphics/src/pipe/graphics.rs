@@ -48,7 +48,8 @@ impl GraphicsPipeline {
             let vertex_input_state = Self::build_vertex_input_state();
             let dynamic_state = Self::build_dynamic_state();
             let layout = Self::build_pipeline_layout(graphics.device());
-        
+    
+
             let create_info = vk::GraphicsPipelineCreateInfo::builder()
                 .color_blend_state(&color_blend_state)
                 .depth_stencil_state(&depth_stencil_state)

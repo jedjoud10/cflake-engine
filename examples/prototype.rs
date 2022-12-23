@@ -22,8 +22,8 @@ fn init(world: &mut World) {
     let usage = BufferUsage {
         hint_device_write: true,
         hint_device_read: true,
-        host_write: true,
-        host_read: true,
+        host_write: false,
+        host_read: false,
     };
 
     // Create a new buffer
