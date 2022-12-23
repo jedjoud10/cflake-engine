@@ -23,11 +23,6 @@ pub enum InvalidUsageError {
     #[error("Cannot write to buffer since BufferUsages.host_write is false")]
     IllegalHostWrite,
 }
-
-#[derive(Error, Debug)]
-#[error("The given range {0}..{1} is an invalid length for buffer with size {2}")]
-pub struct InvalidRangeSizeError(pub usize, pub usize, pub usize);
-
 #[derive(Error, Debug)]
 #[error("The given lengthes {0}, {1} are not equal")]
 pub struct InvalidLengthMismatch(pub usize, pub usize);
@@ -44,9 +39,6 @@ pub enum BufferError {
     #[error("{0}")]
     InvalidMode(InvalidModeError),
 
-    #[error("{0}")]
-    InvalidRange(InvalidRangeSizeError),
-
     // Only used in the copy command
     #[error("{0}")]
     InvalidDstUsage(InvalidUsageError),
@@ -54,10 +46,6 @@ pub enum BufferError {
     // Only used in the copy command
     #[error("{0}")]
     InvalidDstMode(InvalidModeError),
-
-    // Only used in the copy command
-    #[error("{0}")]
-    InvalidDstRange(InvalidRangeSizeError),
 
     // Only used in the copy command
     #[error("{0}")]

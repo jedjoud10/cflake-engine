@@ -78,9 +78,9 @@ impl CommandPool {
     ) -> &CommandBuffer {
         let cmd =
             self.buffers.iter().find(|cmd| cmd.is_free()).unwrap();
-        log::debug!("{}", cmd.index());
         *cmd.free.lock() = false;
 
+        // Start recording if we are currently not recording
         if !cmd.is_recording() {
             let begin_info = vk::CommandBufferBeginInfo::builder()
                 .flags(vk::CommandBufferUsageFlags::SIMULTANEOUS_USE);
@@ -170,6 +170,7 @@ impl CommandPool {
     }
 }
 
+// Allocate some new command buffers from the vulkan pool
 unsafe fn allocate_command_buffers(
     command_pool: vk::CommandPool,
     device: &Device,
@@ -196,6 +197,7 @@ unsafe fn allocate_command_buffers(
     buffers.collect()
 }
 
+// Allocate a new vulkan command pool
 unsafe fn create_command_pool(
     qfi: u32,
     device: &Device,

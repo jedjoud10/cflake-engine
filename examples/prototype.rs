@@ -19,10 +19,15 @@ fn init(world: &mut World) {
     let mut recorder = graphics.acquire();
 
     let mode = BufferMode::default();
-    let usage = BufferUsage::device_local_usage();
+    let usage = BufferUsage {
+        hint_device_write: true,
+        hint_device_read: true,
+        host_write: true,
+        host_read: true,
+    };
 
     // Create a new buffer
-    let buffer1 = StorageBuffer::<u32>::from_slice(
+    let mut buffer1 = StorageBuffer::<u32>::from_slice(
         &graphics,
         &[69, 0, 0, 420],
         mode,
@@ -30,13 +35,17 @@ fn init(world: &mut World) {
         &mut recorder
     ).unwrap();
 
+    buffer1.write(&[1, 2, 3, 4], 0, &mut recorder);
+
     // Create another new buffer
+    /*
     let mut buffer2 = StorageBuffer::<u32>::with_capacity(
         &graphics,
         16,
         usage,
         &mut recorder
     ).unwrap();
+    */
 
     // Copy the whole buffer1 into buffer2
     //buffer2.copy_from(&buffer1, &mut recorder).unwrap();

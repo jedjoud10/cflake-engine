@@ -1,6 +1,5 @@
 use vulkan::{MemoryLocation, vk};
 
-
 // How we shall access the buffer
 // These buffer usages do not count the initial buffer creation phase
 // Anything related to the device access is a hint since you can always access stuff
