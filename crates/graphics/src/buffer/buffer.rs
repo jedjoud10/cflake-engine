@@ -1,7 +1,7 @@
 use std::{
     marker::PhantomData,
     mem::{size_of, ManuallyDrop, MaybeUninit},
-    ops::RangeBounds,
+    ops::RangeBounds, alloc::Layout, f32::consts::E,
 };
 
 use crate::{
@@ -41,7 +41,7 @@ impl<T: Clone + Copy + Sync + Send + Zeroable + Pod + 'static> Content
 pub struct Buffer<T: Content, const TYPE: u32> {
     // Raw Vulkan
     buffer: vk::Buffer,
-    allocation: Option<Allocation>,
+    allocation: ManuallyDrop<MaybeUninit<Allocation>>,
     
     // Size fields
     length: usize,
@@ -59,10 +59,12 @@ pub struct Buffer<T: Content, const TYPE: u32> {
 impl<T: Content, const TYPE: u32> Drop for Buffer<T, TYPE> {
     fn drop(&mut self) {
         unsafe {
-            if let Some(allocation) = self.allocation.take() {
+            if self.buffer == vk::Buffer::null() {
+                let alloc = ManuallyDrop::take(&mut self.allocation);
+                let alloc = alloc.assume_init();
                 self.graphics
                    .device()
-                   .destroy_buffer(self.buffer, allocation);
+                   .destroy_buffer(self.buffer, alloc);
             }       
         }
     }
@@ -74,9 +76,27 @@ pub(super) struct BufferBounds {
     size: usize,
 }
 
-
 // Implementation of util methods
 impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
+    // Get the inner raw Vulkan buffer
+    pub fn raw(&self) -> Option<vk::Buffer> {
+        (self.buffer != vk::Buffer::null()).then(|| self.buffer)
+    }
+
+    // Get the inner raw Vulkan Allocation immutably
+    pub fn allocation(&self) -> Option<&Allocation> {
+        (self.buffer != vk::Buffer::null()).then(|| unsafe {
+            self.allocation.assume_init_ref()
+        })
+    }
+
+    // Get the inner raw Vulkan Allocation mutably
+    pub fn allocation_mut(&mut self) -> Option<&mut Allocation> {
+        (self.buffer != vk::Buffer::null()).then(|| unsafe {
+            self.allocation.assume_init_mut()
+        })
+    }
+
     // Get the current length of the buffer
     pub fn len(&self) -> usize {
         self.length.try_into().unwrap()
@@ -165,6 +185,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
                 InitializationError::EmptySliceNotResizable,
             ));
         }
+
         // Calculate the byte size of the buffer
         let stride = size_of::<T>() as u64; 
         let size = stride * (slice.len() as u64);
@@ -172,24 +193,35 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         // Get location and staging buffer location
         let layout = super::find_optimal_layout(usage, TYPE);
 
-        let (src_buffer, src_allocation) = unsafe { super::allocate_buffer(
-            graphics,
-            size,
-            layout,
-            slice,
-            recorder
-        ) };
+        // Allocate an actual buffer if we have valid data
+        let (buffer, allocation, capacity) = if !slice.is_empty() {
+            let (buffer, allocation) = unsafe { super::allocate_buffer(
+                graphics,
+                size,
+                layout,
+                slice,
+                recorder
+            ) };
+
+            // Calculate the number of elements that can fit in this one allocation
+            let capacity = (allocation.size() / stride) as usize;
+            let allocation = ManuallyDrop::new(MaybeUninit::new(allocation));
+            (buffer, allocation, capacity)
+        } else {
+            // Don't allocate a buffer nor allocate it's memory
+            (vk::Buffer::null(), ManuallyDrop::new(MaybeUninit::uninit()), 0)
+        };
 
         // Create the struct and return it
         Ok(Self {
             length: slice.len(),
-            capacity: (src_allocation.size() / stride) as usize,
+            capacity,
             mode,
             usage,
             graphics: graphics.clone(),
             _phantom: PhantomData,
-            buffer: src_buffer,
-            allocation: Some(src_allocation),
+            buffer: buffer,
+            allocation: allocation,
         })
     }
 
@@ -220,18 +252,140 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
 
 // Implementation of unsafe methods
 impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
-    // Write to the specified range within the buffer
-    // Read from the specified range within the buffer
-    // Clear the buffer and reset it's length
-    // Transmute the buffer into another type of buffer
-    // Copy the data from another buffer's range into this buffer's range
-    // Copy the data from another buffer into this buffer
+    // Read from "src" and write to buffer unsafely and instantly
+    pub unsafe fn write_unchecked<'a>(
+        &'a mut self,
+        src: &[T],
+        offset: usize,
+        recorder: &mut Recorder<'a>,
+    ) {
+        if self.usage.host_write {
+            // Use the mapped point to write to the data
+            let dst = self.allocation_mut().unwrap_unchecked().mapped_slice_mut().unwrap_unchecked();
+            super::raw::write_to(src, dst);
+        } else {
+            let device = self.graphics.device();
+            let queue = self.graphics.queue();
+            
+            // Write to a staging buffer first
+            let size = ((self.len() - offset) * self.stride()) as u64; 
+            let offset = (offset * self.stride()) as u64;
+            let mut block = device.staging_pool().lock(device, queue, size);
+            super::raw::write_to(src, block.mapped_slice_mut());
+
+            // Copy the data from the staging buffer
+            super::raw::copy_from_staging(
+                &block,
+                size,
+                offset,
+                self.buffer,
+                recorder,
+                queue,
+                device
+            ).wait();
+            device.staging_pool().unlock(device, block);
+        }
+    }
+    
+    // Read buffer and write to "dst" unsafely and instantly
+    pub unsafe fn read_unchecked<'a>(
+        &'a self,
+        dst: &mut [T],
+        offset: usize,
+        recorder: &mut Recorder<'a>,
+    ) {        
+        if self.usage.host_read {
+            // Use the mapped pointer to read from the data
+            let src = self.allocation().unwrap_unchecked().mapped_slice().unwrap_unchecked();
+            super::raw::read_to(src, dst);
+        } else {
+            let device = self.graphics.device();
+            let queue = self.graphics.queue();
+            
+            // Copy to a staging buffer first
+            let size = ((self.len() - offset) * self.stride()) as u64; 
+            let offset = (offset * self.stride()) as u64;
+            let block = device.staging_pool().lock(device, queue, size);
+
+            // Copy the data into the staging buffer
+            super::raw::copy_into_staging(
+                &block,
+                size,
+                offset,
+                self.buffer,
+                recorder,
+                queue,
+                device
+            ).wait();
+
+            // Read from the staging buffer and unlock it
+            super::raw::read_to(block.mapped_slice(), dst);
+            device.staging_pool().unlock(device, block);
+        }
+    }
+
+    // Clear the buffer and reset it's length unsafely
+    pub unsafe fn clear_unchecked(
+        &mut self,
+        recorder: &mut Recorder
+    ) {
+        recorder.cmd_full_barrier();
+        recorder.cmd_clear_buffer(self.buffer, 0, vk::WHOLE_SIZE);
+        recorder.cmd_full_barrier();
+    }
+
+    // Transmute the buffer into another type of buffer unsafely
+    pub unsafe fn transmute<U: Content>(self) -> Buffer<U, TYPE> {
+        assert_eq!(
+            Layout::new::<T>(),
+            Layout::new::<U>(),
+            "Layout type mismatch, cannot transmute buffer"
+        );
+
+        let mut manually = ManuallyDrop::new(self);
+        let allocation = std::mem::replace(
+            &mut manually.allocation,
+            ManuallyDrop::new(MaybeUninit::uninit())
+        );
+        let graphics = manually.graphics.clone();
+
+        Buffer::<U, TYPE> {
+            buffer: manually.buffer,
+            allocation,
+            length: manually.length,
+            capacity: manually.capacity,
+            usage: manually.usage,
+            mode: manually.mode,
+            graphics,
+            _phantom: PhantomData,
+        }
+    }
+
+    // Copy the data from another buffer's range into this buffer's range unsafely
+    // Copy the data from another buffer into this buffer unsafely
 }
 
 // Implementation of safe methods
 impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
-    // Write to the specified range within the buffer
-    // Read from the specified range within the buffer
+    // Read buffer and write to "dst" instantly
+    pub fn write<'a>(
+        &'a mut self,
+        src: &[T],
+        offset: usize,
+        recorder: &mut Recorder<'a>,
+    ) {
+        
+        self.write_unchecked(src, offset, recorder);
+    }
+
+    // Read from "src" and write to buffer instantly
+    pub fn read<'a>(
+        &'a self,
+        dst: &mut [T],
+        offset: usize,
+        recorder: &mut Recorder<'a>,
+    ) {}
+
     // Clear the buffer and reset it's length
     // Copy the data from another buffer's range into this buffer's range
     // Copy the data from another buffer into this buffer
