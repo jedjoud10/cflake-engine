@@ -6,7 +6,7 @@ use std::{
 
 use crate::{
     BufferError, Graphics, InitializationError, InvalidModeError,
-    InvalidRangeSizeError, InvalidUsageError, BufferUsage, BufferMode,
+    InvalidUsageError, BufferUsage, BufferMode,
 };
 use super::BufferLayouts;
 use bytemuck::{Pod, Zeroable};
@@ -121,60 +121,17 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     pub fn stride(&self) -> usize {
         size_of::<T>()
     }
-
-    // Convert a range bounds type into the range indices
-    // This will take the size in 
-    fn convert(
-        &self,
-        range: impl RangeBounds<usize>,
-    ) -> Result<BufferBounds, BufferError> {
-        let length = self.length as usize;
-
-        // Convert the end range index to the element index
-        let start = match range.start_bound() {
-            std::ops::Bound::Included(start) => *start,
-            std::ops::Bound::Excluded(_) => panic!(),
-            std::ops::Bound::Unbounded => 0,
-        };
-
-        // Conver the end range index to the element index
-        let end = match range.end_bound() {
-            std::ops::Bound::Included(end) => *end + 1,
-            std::ops::Bound::Excluded(end) => *end,
-            std::ops::Bound::Unbounded => length,
-        };
-
-        // Multiple checks to make sure the range is valid
-        let valid_start_index = start < length;
-        let valid_end_index = end <= length && end >= start;
-        let valid_length = (end - start) > 0;
-
-        // Handle errors
-        if valid_start_index && valid_end_index && valid_length {
-            Ok(BufferBounds {
-                offset: start,
-                size: end - start,
-            })
-        } else {
-            Err(BufferError::InvalidRange(InvalidRangeSizeError(
-                start,
-                end,
-                length,
-            )))
-        }
-        
-    }
 }
 
 // Buffer initialization
 impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     // Try to create a buffer with the specified mode, usage, and slice data
-    pub fn from_slice<'a>(
-        graphics: &'a Graphics,
+    pub fn from_slice(
+        graphics: &Graphics,
         slice: &[T],
         mode: BufferMode,
         usage: BufferUsage,
-        recorder: &mut Recorder<'a>,
+        recorder: &mut Recorder,
     ) -> Result<Self, BufferError> {
         // Cannot create a zero sized stride buffer
         assert!(size_of::<T>() > 0, "Buffers do not support zero-sized types");        
@@ -253,16 +210,17 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
 // Implementation of unsafe methods
 impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     // Read from "src" and write to buffer unsafely and instantly
-    pub unsafe fn write_unchecked<'a>(
-        &'a mut self,
+    pub unsafe fn write_unchecked(
+        &mut self,
         src: &[T],
         offset: usize,
-        recorder: &mut Recorder<'a>,
+        recorder: &mut Recorder,
     ) {
         if self.usage.host_write {
             // Use the mapped point to write to the data
             let dst = self.allocation_mut().unwrap_unchecked().mapped_slice_mut().unwrap_unchecked();
             super::raw::write_to(src, dst);
+            log::debug!("write unchecked: write mapped");
         } else {
             let device = self.graphics.device();
             let queue = self.graphics.queue();
@@ -280,24 +238,25 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
                 offset,
                 self.buffer,
                 recorder,
-                queue,
-                device
+                queue
             ).wait();
+            log::debug!("write unchecked: write staging");
             device.staging_pool().unlock(device, block);
         }
     }
     
     // Read buffer and write to "dst" unsafely and instantly
-    pub unsafe fn read_unchecked<'a>(
-        &'a self,
+    pub unsafe fn read_unchecked(
+        &self,
         dst: &mut [T],
         offset: usize,
-        recorder: &mut Recorder<'a>,
+        recorder: &mut Recorder,
     ) {        
         if self.usage.host_read {
             // Use the mapped pointer to read from the data
             let src = self.allocation().unwrap_unchecked().mapped_slice().unwrap_unchecked();
             super::raw::read_to(src, dst);
+            log::debug!("read unchecked: read mapped");
         } else {
             let device = self.graphics.device();
             let queue = self.graphics.queue();
@@ -315,8 +274,8 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
                 self.buffer,
                 recorder,
                 queue,
-                device
             ).wait();
+            log::debug!("read unchecked: read staging");
 
             // Read from the staging buffer and unlock it
             super::raw::read_to(block.mapped_slice(), dst);
@@ -361,21 +320,47 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         }
     }
 
-    // Copy the data from another buffer's range into this buffer's range unsafely
-    // Copy the data from another buffer into this buffer unsafely
+    // Copy the data from another buffer into this buffer unsafely and instantly
+    pub unsafe fn copy_from_unchecked<const TYPE2: u32>(
+        &mut self,
+        src: &Buffer<T, TYPE2>,
+        dst_offset: usize,
+        src_offset: usize,
+        length: usize,
+        recorder: &mut Recorder,
+    ) {
+    }
+
+    // Extend this buffer using the given slice unsafely and instantly
+    pub unsafe fn extend_from_slice_unchecked(
+        &mut self,
+        slice: &[T],
+        recorder: &mut Recorder,
+    ) {        
+    }
 }
 
 // Implementation of safe methods
 impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     // Read buffer and write to "dst" instantly
-    pub fn write<'a>(
-        &'a mut self,
+    pub fn write(
+        &mut self,
         src: &[T],
         offset: usize,
-        recorder: &mut Recorder<'a>,
-    ) {
-        
-        self.write_unchecked(src, offset, recorder);
+        recorder: &mut Recorder,
+    ) -> Result<(), BufferError> {
+        if src.is_empty() {
+            return Ok(());
+        }
+
+        if src.len() + offset > self.length {
+            todo!()
+        }
+
+        unsafe {
+            self.write_unchecked(src, offset, recorder);
+        }
+        Ok(())
     }
 
     // Read from "src" and write to buffer instantly
@@ -384,9 +369,75 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         dst: &mut [T],
         offset: usize,
         recorder: &mut Recorder<'a>,
-    ) {}
+    ) -> Result<(), BufferError> {
+        if dst.is_empty() {
+            return Ok(());
+        }
+
+        if dst.len() + offset > self.length {
+            todo!()
+        }
+
+        unsafe {
+            self.read_unchecked(dst, offset, recorder);
+        }
+        Ok(())
+    }
 
     // Clear the buffer and reset it's length
-    // Copy the data from another buffer's range into this buffer's range
-    // Copy the data from another buffer into this buffer
+    pub fn clear(
+        &mut self,
+        recorder: &mut Recorder
+    ) -> Result<(), BufferError> {
+        if matches!(self.mode, BufferMode::Dynamic) {
+            todo!()
+        }
+
+        unsafe {
+            self.clear_unchecked(recorder);
+        }
+        Ok(())
+    }
+
+    // Copy the data from another buffer into this buffer instantly
+    pub fn copy_from<const TYPE2: u32>(
+        &mut self,
+        src: &Buffer<T, TYPE2>,
+        dst_offset: usize,
+        src_offset: usize,
+        length: usize,
+    ) -> Result<(), BufferError> {
+        todo!()
+    }
+
+    // Extend this buffer using the given slice instantly
+    pub unsafe fn extend_from_slice(
+        &mut self,
+        slice: &[T],
+        recorder: &mut Recorder,
+    ) -> Result<(), BufferError> { 
+        todo!()       
+    }
+    
+    // Try to view the buffer immutably (if it's mappable)
+    pub fn as_slice(&self) -> Option<&[T]> {
+        self
+            .allocation()
+            .and_then(|alloc| 
+                alloc.mapped_slice()
+            ).map(|bytes| 
+                bytemuck::cast_slice::<u8, T>(bytes)
+            )
+    }
+
+    // Try to view the buffer mutably (if it's mappable)
+    pub fn as_slice_mut(&mut self) -> Option<&mut [T]> {
+        self
+            .allocation_mut()
+            .and_then(|alloc| 
+                alloc.mapped_slice_mut()
+            ).map(|bytes| 
+                bytemuck::cast_slice_mut::<u8, T>(bytes)
+            )
+    }
 }

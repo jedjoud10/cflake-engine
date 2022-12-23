@@ -35,7 +35,10 @@ fn init(world: &mut World) {
         &mut recorder
     ).unwrap();
 
-    buffer1.write(&[1, 2, 3, 4], 0, &mut recorder);
+    buffer1.write(&[1, 2, 3, 4], 0, &mut recorder).unwrap();
+    log::info!("{:?}", buffer1.as_slice());
+    buffer1.write(&[1, 4], 0, &mut recorder).unwrap();
+    log::info!("{:?}", buffer1.as_slice());
 
     // Create another new buffer
     /*

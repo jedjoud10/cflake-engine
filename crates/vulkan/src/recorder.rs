@@ -8,6 +8,7 @@ pub struct Recorder<'a> {
     pub(crate) command_buffer: &'a CommandBuffer,
     pub(crate) command_pool: &'a CommandPool,
     pub(crate) device: &'a Device,
+    pub(crate) queue: &'a Queue,
 }
 
 impl<'a> Recorder<'a> {
@@ -16,11 +17,13 @@ impl<'a> Recorder<'a> {
         command_buffer: &'a CommandBuffer,
         command_pool: &'a CommandPool,
         device: &'a Device,
+        queue: &'a Queue,
     ) -> Self {
         Self {
             command_buffer,
             command_pool,
             device,
+            queue
         }
     }
 
@@ -37,6 +40,11 @@ impl<'a> Recorder<'a> {
     // Get the underlying device from the device
     pub fn device(&self) -> &Device {
         &self.device
+    }
+
+    // Get the underlying queue that we will eventually submit to
+    pub fn queue(&self) -> &Queue {
+        &self.queue
     }
 }
 
@@ -193,7 +201,6 @@ pub struct Submission<'a> {
     command_pool: &'a CommandPool,
     command_buffer: &'a CommandBuffer,
     device: &'a Device,
-    queue: &'a Queue,
 }
 
 impl<'a> Submission<'a> {
@@ -202,14 +209,12 @@ impl<'a> Submission<'a> {
         command_pool: &'a CommandPool,
         command_buffer: &'a CommandBuffer,
         device: &'a Device,
-        queue: &'a Queue,
     ) -> Self {
         Self {
             flushed: false,
             command_pool,
             command_buffer,
             device,
-            queue,
         }
     }
 

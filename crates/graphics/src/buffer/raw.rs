@@ -7,11 +7,11 @@ use super::{BufferLayouts};
 // Allocate a new buffer with a specific size and layout
 // This will return the Vulkan buffer and memory allocation
 pub(super) unsafe fn allocate_buffer<'a, T: Content>(
-    graphics: &'a Graphics,
+    graphics: &Graphics,
     size: u64,
     layout: BufferLayouts,
     slice: &[T],
-    recorder: &mut Recorder<'a>
+    recorder: &mut Recorder
 ) -> (vk::Buffer, Allocation) {
     // Create the actual buffer
     let device = graphics.device();
@@ -41,7 +41,6 @@ pub(super) unsafe fn allocate_buffer<'a, T: Content>(
             src_buffer,
             recorder,
             queue,
-            device
         ).wait();
         device.staging_pool().unlock(device, block);
     } else {
@@ -68,14 +67,13 @@ pub(super) unsafe fn read_to<T: Content>(src: &[u8], dst: &mut [T]) {
 }
 
 // Perform a raw copy command from a staging buffer
-pub(super)unsafe fn copy_from_staging<'a>(
+pub(super) unsafe fn copy_from_staging<'a>(
     src_block: &vulkan::StagingBlock,
     size: u64,
     dst_offset: u64,
     dst_buffer: vk::Buffer,
     recorder: &mut Recorder<'a>,
-    queue: &'a vulkan::Queue,
-    device: &'a vulkan::Device,
+    queue: &vulkan::Queue,
 ) -> Submission<'a> {
     // Copy from the staging buffer
     let copy = *vk::BufferCopy::builder()
@@ -83,30 +81,23 @@ pub(super)unsafe fn copy_from_staging<'a>(
         .src_offset(src_block.offset())
         .size(size);
 
-    // Copy the contents from the staging buffer to the src buffer
-    let mut old = std::mem::replace(
-        recorder,
-        queue.acquire(device),
-    );
-
     // Record the cpy staging -> src buffer command
     recorder.cmd_full_barrier();
-    old.cmd_copy_buffer(src_block.buffer(), dst_buffer, &[copy]);
+    recorder.cmd_copy_buffer(src_block.buffer(), dst_buffer, &[copy]);
     recorder.cmd_full_barrier();
     
     // Submit the recorder
-    queue.submit(old)
+    queue.submit(recorder)
 }
 
 // Perform a raw copy command into staging buffer
-pub(super)unsafe fn copy_into_staging<'a>(
+pub(super) unsafe fn copy_into_staging<'a>(
     dst_block: &vulkan::StagingBlock,
     size: u64,
     src_offset: u64,
     src_buffer: vk::Buffer,
     recorder: &mut Recorder<'a>,
-    queue: &'a vulkan::Queue,
-    device: &'a vulkan::Device,
+    queue: &vulkan::Queue,
 ) -> Submission<'a> {
     // Copy into the staging buffer
     let copy = *vk::BufferCopy::builder()
@@ -114,17 +105,11 @@ pub(super)unsafe fn copy_into_staging<'a>(
         .src_offset(src_offset)
         .size(size);
 
-    // Copy the contents from the staging buffer to the src buffer
-    let mut old = std::mem::replace(
-        recorder,
-        queue.acquire(device),
-    );
-
     // Record the cpy src buffer -> staging command
     recorder.cmd_full_barrier();
-    old.cmd_copy_buffer(src_buffer, dst_block.buffer(), &[copy]);
+    recorder.cmd_copy_buffer(src_buffer, dst_block.buffer(), &[copy]);
     recorder.cmd_full_barrier();
     
     // Submit the recorder
-    queue.submit(old)
+    queue.submit(recorder)
 }

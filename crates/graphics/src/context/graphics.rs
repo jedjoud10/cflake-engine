@@ -84,8 +84,8 @@ impl Graphics {
     // Submit the command buffer and start executing the underlying commands
     pub fn submit<'a>(
         &'a self,
-        recorder: Recorder<'a>,
+        mut recorder: Recorder<'a>,
     ) -> Submission {
-        self.queue().submit(recorder)
+        self.queue().submit(&mut recorder)
     }
 }

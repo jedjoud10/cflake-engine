@@ -2,7 +2,6 @@ mod buffer;
 mod errors;
 mod mode;
 mod usage;
-mod view;
 mod raw;
 pub use raw::*;
 pub use mode::*;

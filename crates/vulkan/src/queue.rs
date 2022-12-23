@@ -100,16 +100,16 @@ impl Queue {
                 command_buffer,
                 command_pool,
                 device,
+                self
             )
         }
     }
 
-    // Submit the command buffer (this doesn't actually submit it, it only steals it's state)
-    // You can use the "force" parameter to force the submission of this command buffer
+    // Submit the command buffer and start executing it's commands on the GPU
     pub fn submit<'a>(
-        &'a self,
-        recorder: Recorder<'a>,
-    ) -> Submission {
+        &self,
+        recorder: &mut Recorder<'a>,
+    ) -> Submission<'a> {
         let pool = recorder.command_pool;
         unsafe {
             pool.stop_recording(
@@ -126,7 +126,6 @@ impl Queue {
             recorder.command_pool,
             recorder.command_buffer,
             recorder.device,
-            self,
         )
     }
 
