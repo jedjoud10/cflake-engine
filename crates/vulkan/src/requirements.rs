@@ -33,6 +33,7 @@ pub fn required_device_extensions() -> Vec<CString> {
     vec![
         ash::extensions::khr::Swapchain::name().to_owned(),
         ash::extensions::khr::Synchronization2::name().to_owned(),
+        ash::extensions::khr::DynamicRendering::name().to_owned(),
     ]
 }
 

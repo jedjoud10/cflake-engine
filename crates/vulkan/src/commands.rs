@@ -91,7 +91,7 @@ impl CommandPool {
                 cmd.index
             );
             let begin_info = vk::CommandBufferBeginInfo::builder()
-                .flags(vk::CommandBufferUsageFlags::SIMULTANEOUS_USE);
+                .flags(vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT);
             device
                 .raw()
                 .begin_command_buffer(cmd.raw, &begin_info)

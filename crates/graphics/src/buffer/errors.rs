@@ -9,11 +9,11 @@ pub enum InitializationError {
 
 #[derive(Error, Debug)]
 pub enum ExtendError {
-    #[error("Missing change length permission (BufferMode::Partial or BufferMode::Resizable)")]
+    #[error("Cannot extend the buffer since self.mode isn't BufferMode::Partial or BufferMode::Resizable")]
     IllegalLengthModify,
 
     #[error(
-        "Missing reallocation permission (BufferMode::Resizable)"
+        "Cannot reallocate the buffer since self.mode isn't BufferMode::Resizable"
     )]
     IllegalReallocation,
 }
@@ -39,11 +39,20 @@ pub enum CopyError {
     InvalidDstOverflow(usize, usize, usize),
 }
 
+#[derive(Error, Debug)]
+pub enum ClearError {
+    #[error("Cannot clear the buffer since self.mode isn't BufferMode::Partial or BufferMode::Resizable")]
+    IllegalLengthModify,
+}
+
 // Buffer error that is returned from each buffer command
 #[derive(Error, Debug)]
 pub enum BufferError {
     #[error("{0}")]
     Initialization(InitializationError),
+
+    #[error("{0}")]
+    ClearError(ClearError),
 
     #[error("{0}")]
     WriteError(WriteError),

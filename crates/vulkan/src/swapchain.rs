@@ -1,15 +1,16 @@
 use crate::{Adapter, Device, Instance, Queue, Surface};
 use ash::vk::{self};
+use parking_lot::Mutex;
 
 // Wrapper around the vulkan swapchain
 pub struct Swapchain {
     // Swapchain
     pub(super) loader: ash::extensions::khr::Swapchain,
-    pub(super) raw: vk::SwapchainKHR,
+    pub(super) raw: Mutex<vk::SwapchainKHR>,
 
     // Image data
-    pub(super) images: Vec<vk::Image>,
-    pub(super) extent: vk::Extent2D,
+    pub(super) images: Mutex<Vec<vk::Image>>,
+    pub(super) extent: Mutex<vek::Extent2<u32>>,
 
     // Synchronization
     pub(super) rendering_finished_semaphore: vk::Semaphore,
@@ -36,10 +37,9 @@ impl Swapchain {
             .format(vk::Format::B8G8R8A8_SRGB)
             .color_space(vk::ColorSpaceKHR::SRGB_NONLINEAR);
 
-        // Create the swapchain image size
-        let extent = *vk::Extent2D::builder()
-            .height(window.inner_size().height)
-            .width(window.inner_size().width);
+        // Convert the window inner size to vek extent2d
+        let extent = window.inner_size();
+        let extent = vek::Extent2::new(extent.width, extent.height);
 
         // Pick the most appropriate present mode
         let present_mode = unsafe {
@@ -58,6 +58,7 @@ impl Swapchain {
                 format,
                 extent,
                 present_mode,
+                vk::SwapchainKHR::null()
             );
 
         // Create the loader and the actual swapchain
@@ -97,9 +98,9 @@ impl Swapchain {
 
         Swapchain {
             loader: swapchain_loader,
-            raw: swapchain,
-            images: swapchain_images,
-            extent,
+            raw: Mutex::new(swapchain),
+            images: Mutex::new(swapchain_images),
+            extent: Mutex::new(extent),
             rendering_finished_semaphore,
             rendering_finished_fence,
             image_available_semaphore,
@@ -113,9 +114,15 @@ impl Swapchain {
         surface: &Surface,
         adapter: &Adapter,
         format: vk::SurfaceFormatKHR,
-        extent: vk::Extent2D,
+        extent: vek::Extent2<u32>,
         present: vk::PresentModeKHR,
+        old_swapchain: vk::SwapchainKHR,
     ) -> vk::SwapchainCreateInfoKHR {
+        // Create the swapchain image size
+        let extent = *vk::Extent2D::builder()
+            .height(extent.h)
+            .width(extent.w);
+
         *vk::SwapchainCreateInfoKHR::builder()
             .surface(surface.surface())
             .min_image_count(
@@ -133,7 +140,7 @@ impl Swapchain {
             )
             .clipped(true)
             .image_sharing_mode(vk::SharingMode::EXCLUSIVE)
-            .old_swapchain(vk::SwapchainKHR::null())
+            .old_swapchain(old_swapchain)
             .present_mode(present)
     }
 
@@ -182,7 +189,7 @@ impl Swapchain {
         device
             .raw()
             .destroy_fence(self.rendering_finished_fence, None);
-        self.loader.destroy_swapchain(self.raw, None);
+        self.loader.destroy_swapchain(*self.raw.lock(), None);
     }
 }
 
@@ -192,7 +199,7 @@ impl Swapchain {
         &self,
     ) -> Option<(u32, vk::Image)> {
         let err = self.loader.acquire_next_image(
-            self.raw,
+            *self.raw.lock(),
             u64::MAX,
             self.image_available_semaphore,
             vk::Fence::null(),
@@ -200,7 +207,7 @@ impl Swapchain {
 
         match err {
             Ok((index, _)) => {
-                Some((index, self.images[index as usize]))
+                Some((index, self.images.lock()[index as usize]))
             }
             Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => None,
             Err(_) => None,
@@ -216,7 +223,7 @@ impl Swapchain {
     ) -> Option<()> {
         // Wait until the command buffers finished executing so we can present the image
         let present_info = *vk::PresentInfoKHR::builder()
-            .swapchains(&[self.raw])
+            .swapchains(&[*self.raw.lock()])
             .wait_semaphores(&[self.image_available_semaphore])
             .image_indices(&[index.0]);
 
@@ -244,8 +251,36 @@ impl Swapchain {
     // Recreate the swapchain with some new dimensions
     pub unsafe fn recreate(
         &self,
+        adapter: &Adapter,
         device: &Device,
+        surface: &Surface,
         dimensions: vek::Extent2<u32>,
     ) {
+        device.wait();
+        let create_info = Self::create_swapchain_create_info(
+            surface,
+            adapter,
+            self.format,
+            dimensions,
+            self.present_mode,
+            *self.raw.lock()
+        );
+
+        // Create a new swapchain
+        let swapchain = unsafe {
+            self.loader
+                .create_swapchain(&create_info, None)
+                .expect("Could not recreate the swapchain")
+        };
+
+        // Update the used swapchain image 
+        *self.images.lock() = unsafe {
+            self.loader.get_swapchain_images(swapchain).unwrap()
+        };
+
+        // Destroy the old swapchain
+        unsafe {
+            self.loader.destroy_swapchain(*self.raw.lock(), None);
+        }
     }
 }

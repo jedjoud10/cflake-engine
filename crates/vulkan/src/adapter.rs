@@ -8,11 +8,10 @@ use ash::vk::{
     PhysicalDeviceVulkan11Properties, PhysicalDeviceVulkan12Features,
     PhysicalDeviceVulkan12Properties, PhysicalDeviceVulkan13Features,
     PhysicalDeviceVulkan13Properties, PresentModeKHR,
-    SurfaceCapabilitiesKHR, SurfaceFormatKHR,
+    SurfaceCapabilitiesKHR, SurfaceFormatKHR, PhysicalDeviceDynamicRenderingFeatures,
 };
 
 use crate::required_device_extensions;
-
 use super::{Instance, Surface};
 
 // Features supported by an adapter

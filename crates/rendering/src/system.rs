@@ -3,23 +3,23 @@ use world::{post_user, System, World};
 
 // Clear the window and render the entities
 fn update(world: &mut World) {
-    /*
     let graphics = world.get::<Graphics>().unwrap();
     let window = world.get::<Window>().unwrap();
     let queue = graphics.queue();
+    let device = graphics.device();
     let swapchain = graphics.swapchain();
-    let mut recorder = graphics.acquire();
-
+    
+    /*
     unsafe {
+        let mut recorder = queue.acquire(device);
         /*
         if let Some((index, image)) = swapchain.acquire_next_image() {
             let recreate = swapchain.present(queue, (index, image));
         }
         */
+        let submission = queue.submit(recorder).wait();
+        log::info!("{:?}", submission);
     }
-
-    let submission = graphics.submit(recorder);
-    submission.wait();
     */
 }
 

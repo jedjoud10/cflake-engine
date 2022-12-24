@@ -1,6 +1,6 @@
 use crate::{
     BlendConfig, CompareOp, DepthConfig, Graphics, ShaderModule, Primitive,
-    RenderPass, StencilConfig, StencilOp, StencilTest,
+    RenderPass, StencilConfig, StencilOp, StencilTest, GraphicsPipelineLinkedModules, CompiledDescription,
 };
 use std::{mem::transmute, sync::Arc};
 use vulkan::{vk, Device};
@@ -33,6 +33,7 @@ impl Drop for GraphicsPipeline {
     }
 }
 
+// Initialization of the graphics pipeline
 impl GraphicsPipeline {
     // Create a new pipeline with the specified configs
     pub unsafe fn new(
@@ -41,26 +42,50 @@ impl GraphicsPipeline {
         stencil_config: StencilConfig,
         blend_config: BlendConfig,
         primitive: Primitive,
-        render_pass: &RenderPass,
+        render_pass: RenderPass,
+        descriptions: Vec<CompiledDescription>,
     ) -> Self {
         let pipeline = unsafe {
+            // Input assembly state
             let input_assembly_state =
                 Self::build_input_assembly_state(&primitive);
+
+            // Rasterization state
             let rasterization_state = Self::build_rasterization_state(
                 &primitive,
                 &depth_config,
             );
+
+            // Color blend state
             let color_blend_state =
                 Self::build_color_blend_state(&blend_config);
+
+            // Depth stencil state
             let depth_stencil_state = Self::build_depth_stencil_state(
                 &stencil_config,
                 &depth_config,
             );
-            let vertex_input_state = Self::build_vertex_input_state();
-            let dynamic_state = Self::build_dynamic_state();
+
+            // Vertex input state
+            let vertex_input_state = 
+                Self::build_vertex_input_state();
+
+            // Dynamic state
+            let dynamic_state = 
+                Self::build_dynamic_state();
+            
+            // Pipeline layout
             let layout =
                 Self::build_pipeline_layout(graphics.device());
+            
+            // Multisample state
+            let multisample_state =
+                Self::build_multisampling_state();
 
+            // Pipeline stages create info
+            let stages = Self::build_stages(descriptions);
+
+            // Create info for the graphics pipeline
             let create_info =
                 vk::GraphicsPipelineCreateInfo::builder()
                     .color_blend_state(&color_blend_state)
@@ -69,8 +94,9 @@ impl GraphicsPipeline {
                     .input_assembly_state(&input_assembly_state)
                     .layout(layout)
                     .rasterization_state(&rasterization_state)
-                    .render_pass(todo!())
-                    .stages(todo!())
+                    .multisample_state(&multisample_state)
+                    .render_pass(render_pass.renderpass())
+                    .stages(&stages)
                     .subpass(0)
                     .vertex_input_state(&vertex_input_state);
             graphics.device().create_graphics_pipeline(*create_info)
@@ -140,6 +166,18 @@ impl GraphicsPipeline {
         }
     }
 
+    // Create the multi-sampling state (I hate anti-aliasing. Fuck you. Cope)
+    fn build_multisampling_state() -> vk::PipelineMultisampleStateCreateInfo {
+        vk::PipelineMultisampleStateCreateInfo::builder()
+            .sample_shading_enable(false)
+            .rasterization_samples(vk::SampleCountFlags::TYPE_1)
+            .sample_mask(&[])
+            .min_sample_shading(1.0f32)
+            .alpha_to_coverage_enable(false)
+            .alpha_to_one_enable(false)
+            .build()
+    }
+
     // Create the vertex input state
     fn build_vertex_input_state(
     ) -> vk::PipelineVertexInputStateCreateInfo {
@@ -154,5 +192,50 @@ impl GraphicsPipeline {
         vk::PipelineDynamicStateCreateInfo::builder()
             .dynamic_states(dynamic)
             .build()
+    }
+
+    // Create the shader stage create info using the compiled module descriptions
+    // TODO: Change this I don't like it
+    fn build_stages(descriptions: Vec<CompiledDescription>) -> Vec<vk::PipelineShaderStageCreateInfo> {
+        descriptions.into_iter().map(|c| {
+            let stage = match c.kind {
+                crate::ModuleKind::Vertex => vk::ShaderStageFlags::VERTEX,
+                crate::ModuleKind::Fragment => vk::ShaderStageFlags::FRAGMENT,
+                crate::ModuleKind::Compute => vk::ShaderStageFlags::COMPUTE,
+            };
+
+            *vk::PipelineShaderStageCreateInfo::builder()
+                .flags(c.flags)
+                .module(*c.module)
+                .stage(stage)
+        }).collect::<Vec<_>>()
+    }
+}
+
+// Others
+impl GraphicsPipeline {
+    // Get the underlying raw Vulkan pipeline
+    pub fn raw(&self) -> vk::Pipeline {
+        self.pipeline
+    }
+
+    // Get the depth config used when creating this pipeline
+    pub fn depth_config(&self) -> DepthConfig {
+        self.depth_config
+    }
+    
+    // Get the stencil config used when creating this pipeline
+    pub fn stencil_config(&self) -> StencilConfig {
+        self.stencil_config
+    }
+    
+    // Get the blend config used when creating this pipeline
+    pub fn blend_config(&self) -> BlendConfig {
+        self.blend_config
+    }
+    
+    // Get the primitive config used when creating this pipeline
+    pub fn primitive(&self) -> Primitive {
+        self.primitive
     }
 }

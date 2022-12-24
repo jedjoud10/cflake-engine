@@ -82,4 +82,21 @@ impl<M: ShaderModule> Compiled<M> {
     pub fn file_name(&self) -> &str {
         &self.file_name
     }
+
+    // Get the compiled description
+    pub fn description(&self) -> CompiledDescription {
+        CompiledDescription {
+            flags: vk::PipelineShaderStageCreateFlags::default(),
+            kind: self.kind,
+            module: &self.raw
+        }
+    }
+}
+
+
+// A description of a compiled shader module that we can convert to a 
+pub struct CompiledDescription<'a> {
+    pub(crate) flags: vk::PipelineShaderStageCreateFlags,
+    pub(crate) kind: ModuleKind,
+    pub(crate) module: &'a vk::ShaderModule,
 }

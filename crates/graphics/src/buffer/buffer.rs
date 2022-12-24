@@ -8,7 +8,7 @@ use std::{
 
 use crate::{
     BufferError, BufferMode, BufferUsage, CopyError, ExtendError,
-    Graphics, InitializationError, ReadError, WriteError,
+    Graphics, InitializationError, ReadError, WriteError, ClearError,
 };
 use bytemuck::{Pod, Zeroable};
 use vulkan::{vk, Allocation, Recorder};
@@ -291,13 +291,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
 
     // Clear the buffer and reset it's length unsafely
     pub unsafe fn clear_unchecked(&mut self) {
-        let device = self.graphics.device();
-        let queue = self.graphics.queue();
-        let mut recorder = queue.acquire(device);
-        recorder.cmd_full_barrier();
-        recorder.cmd_clear_buffer(self.buffer, 0, vk::WHOLE_SIZE);
-        recorder.cmd_full_barrier();
-        queue.submit(recorder).wait();
+        self.length = 0;
     }
 
     // Transmute the buffer into another type of buffer unsafely
@@ -469,7 +463,9 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     // Clear the buffer and reset it's length
     pub fn clear(&mut self) -> Result<(), BufferError> {
         if matches!(self.mode, BufferMode::Dynamic) {
-            todo!()
+            return Err(BufferError::ClearError(
+                ClearError::IllegalLengthModify,
+            ));
         }
 
         unsafe {

@@ -220,7 +220,7 @@ impl Device {
     ) -> vk::Pipeline {
         self.raw()
             .create_graphics_pipelines(
-                vk::PipelineCache::null(),
+                self.pipeline_cache,
                 &[create_info],
                 None,
             )
@@ -234,11 +234,41 @@ impl Device {
     ) -> vk::Pipeline {
         self.raw()
             .create_compute_pipelines(
-                vk::PipelineCache::null(),
+                self.pipeline_cache,
                 &[create_info],
                 None,
             )
             .unwrap()[0]
+    }
+
+    // Create a render pass based on the given info
+    pub unsafe fn create_render_pass(
+        &self,
+        create_info: vk::RenderPassCreateInfo
+    ) -> vk::RenderPass {
+        self.raw()
+            .create_render_pass(&create_info, None)
+            .unwrap()
+    }
+
+    // Create a new framebuffer
+    pub unsafe fn create_framebuffer(
+        &self,
+        create_info: vk::FramebufferCreateInfo
+    ) -> vk::Framebuffer {
+        self.raw()
+            .create_framebuffer(&create_info, None)
+            .unwrap()
+    }
+
+    // Destroy a specific render pass
+    pub unsafe fn destroy_render_pass(&self, renderpass: vk::RenderPass) {
+        self.raw().destroy_render_pass(renderpass, None);
+    }
+
+    // Destroy a specific framebuffer
+    pub unsafe fn destroy_framebuffer(&self, framebuffer: vk::Framebuffer) {
+        self.raw().destroy_framebuffer(framebuffer, None);
     }
 
     // Destroy a specific pipeline
