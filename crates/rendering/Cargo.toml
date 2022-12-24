@@ -11,5 +11,10 @@ ecs = { path = "../ecs" }
 graphics = { path = "../graphics" }
 assets = { path = "../assets" }
 
+log = { workspace = true }
+ahash = { workspace = true } 
+vek = { workspace = true }
+parking_lot = { workspace = true }
+
 [features]
 two-dim = []

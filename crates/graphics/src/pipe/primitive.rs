@@ -24,7 +24,7 @@ impl Primitive {
     // Get the cull mode direction from the primtive mode
     fn build_front_face(&self) -> vk::FrontFace {
         match self {
-            Primitive::Triangles { cull, wireframe } => cull
+            Primitive::Triangles { cull, .. } => cull
                 .map(|mode| {
                     let ccw = match mode {
                         FaceCullMode::Front(ccw) => ccw,
