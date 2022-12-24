@@ -1,4 +1,6 @@
+
 #version 460 core
+#include "engine/shaders/basic.func"
 
 // https://vkguide.dev/docs/chapter-2/triangle_walkthrough/
 void main() {

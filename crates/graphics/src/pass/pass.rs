@@ -1,1 +1,3 @@
-pub struct RenderPass;
+pub struct RenderPass {
+    
+}

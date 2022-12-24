@@ -14,6 +14,7 @@ pub enum ModuleKind {
 }
 
 // This trait is implemented for each shader module, like the vertex module or fragment module
+// Modules are uncompiled shaders that will later be converted to SPIRV and linked together
 pub trait Module: Sized {
     // Get the main properties of the module
     fn file_name(&self) -> &str;
@@ -22,7 +23,6 @@ pub trait Module: Sized {
 
     // Convert the module into it's source code and name
     fn into_raw_parts(self) -> (String, String);
-
 }
 
 // A vertex module that will be loaded from .vrtx files
@@ -43,28 +43,14 @@ pub struct ComputeModule {
     name: String,
 }
 
+// A function module is fucking useless
+pub struct FunctionModule {
+    pub(crate) source: String,
+    name: String,
+}
 
-// I love procedural programming
-macro_rules! impl_module {
-    ($t: ty, $kind: expr, $ext: expr) => {
-        impl Module for $t {
-            fn file_name(&self) -> &str {
-                &self.name
-            }
-
-            fn source(&self) -> &str {
-                &self.source
-            }
-
-            fn kind(&self) -> ModuleKind {
-                $kind
-            }
-
-            fn into_raw_parts(self) -> (String, String) {
-                (self.source, self.name)
-            }
-        }
-
+macro_rules! impl_asset_for_module {
+    ($t: ty, $ext: expr) => {
         impl Asset for $t {
             type Args<'args> = ();
             type Err = std::string::FromUtf8Error;
@@ -90,10 +76,40 @@ macro_rules! impl_module {
                 })
             }
         }
-        
     };
 }
 
-impl_module!(VertexModule, ModuleKind::Vertex, "vert");
-impl_module!(FragmentModule, ModuleKind::Fragment, "frag");
-impl_module!(ComputeModule, ModuleKind::Compute, "comp");
+
+// I love procedural programming
+macro_rules! impl_module_trait {
+    ($t: ty, $kind: expr) => {
+        impl Module for $t {
+            fn file_name(&self) -> &str {
+                &self.name
+            }
+
+            fn source(&self) -> &str {
+                &self.source
+            }
+
+            fn kind(&self) -> ModuleKind {
+                $kind
+            }
+
+            fn into_raw_parts(self) -> (String, String) {
+                (self.name, self.source)
+            }
+        }        
+    };
+}
+
+// Implement the module trait
+impl_module_trait!(VertexModule, ModuleKind::Vertex);
+impl_module_trait!(FragmentModule, ModuleKind::Fragment);
+impl_module_trait!(ComputeModule, ModuleKind::Compute);
+
+// Implement the asset trait
+impl_asset_for_module!(VertexModule, "vert");
+impl_asset_for_module!(FragmentModule, "frag");
+impl_asset_for_module!(ComputeModule, "comp");
+impl_asset_for_module!(FunctionModule, "func");
