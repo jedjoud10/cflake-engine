@@ -55,6 +55,7 @@ pub fn required_features() -> AdapterFeatures {
         .buffer_device_address_capture_replay(true);
 
     let features13 = *vk::PhysicalDeviceVulkan13Features::builder()
+        .dynamic_rendering(true)
         .robust_image_access(true)
         .synchronization2(true);
 

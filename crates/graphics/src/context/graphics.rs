@@ -75,17 +75,4 @@ impl Graphics {
     pub fn swapchain(&self) -> &Swapchain {
         &self.0.swapchain
     }
-
-    // Acquire a new free command recorder that we can use to record commands
-    pub fn acquire(&self) -> Recorder {
-        self.queue().acquire(self.device())
-    }
-
-    // Submit the command buffer and start executing the underlying commands
-    pub fn submit<'a>(
-        &'a self,
-        mut recorder: Recorder<'a>,
-    ) -> Submission {
-        self.queue().submit(&mut recorder)
-    }
 }

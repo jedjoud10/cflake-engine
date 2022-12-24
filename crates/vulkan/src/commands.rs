@@ -79,9 +79,11 @@ impl CommandPool {
         let cmd =
             self.buffers.iter().find(|cmd| cmd.is_free()).unwrap();
         *cmd.free.lock() = false;
+        log::debug!("Found the free command buffer at index {}", cmd.index);
 
         // Start recording if we are currently not recording
         if !cmd.is_recording() {
+            log::debug!("Starting the recording of command buffer {}", cmd.index);
             let begin_info = vk::CommandBufferBeginInfo::builder()
                 .flags(vk::CommandBufferUsageFlags::SIMULTANEOUS_USE);
             device
@@ -106,6 +108,14 @@ impl CommandPool {
             .raw()
             .end_command_buffer(command_buffer.raw())
             .unwrap();
+    }
+
+
+    pub unsafe fn chain(
+        &self,
+        command_buffer: &CommandBuffer
+    ) {
+        *command_buffer.free.lock() = false;
     }
 
     // Submit a recorder to the queue

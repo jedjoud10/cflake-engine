@@ -7,25 +7,39 @@ pub enum InitializationError {
     EmptySliceNotResizable,
 }
 
-// Buffer invalid mode error if we have invalid permissions
+
 #[derive(Error, Debug)]
-pub enum InvalidModeError {
-    #[error("Missing change length permission (BufferMode::Partial)")]
+pub enum ExtendError {
+    #[error("Missing change length permission (BufferMode::Partial or BufferMode::Resizable)")]
     IllegalLengthModify,
+
+    #[error("Missing reallocation permission (BufferMode::Resizable)")]
+    IllegalReallocation,
 }
 
-// Buffer invalid usage error if we have invalid permissions
-#[derive(Error, Debug)]
-pub enum InvalidUsageError {
-    #[error("Cannot read from buffer since BufferUsages.host_read is false")]
-    IllegalHostRead,
 
-    #[error("Cannot write to buffer since BufferUsages.host_write is false")]
-    IllegalHostWrite,
-}
 #[derive(Error, Debug)]
-#[error("The given lengthes {0}, {1} are not equal")]
-pub struct InvalidLengthMismatch(pub usize, pub usize);
+pub enum ReadError {
+    #[error("The given destination slice of length {0} (or offset of {1}) would overflow the buffer of length {2}")]
+    InvalidLen(usize, usize, usize)
+}
+
+#[derive(Error, Debug)]
+pub enum WriteError {
+    #[error("The given source slice of length {0} (or offset of {1}) would overflow the buffer of length {2}")]
+    InvalidLen(usize, usize, usize)
+}
+
+#[derive(Error, Debug)]
+pub enum CopyError {
+    #[error("The given length {0} (or offset of {1}) would overflow the destination buffer of length {2}")]
+    InvalidSrcOverflow(usize, usize, usize),
+
+    #[error("The given length {0} (or offset of {1}) would overflow the source buffer of length {2}")]
+    InvalidDstOverflow(usize, usize, usize)
+}
+
+
 
 // Buffer error that is returned from each buffer command
 #[derive(Error, Debug)]
@@ -34,20 +48,17 @@ pub enum BufferError {
     Initialization(InitializationError),
 
     #[error("{0}")]
-    InvalidUsage(InvalidUsageError),
+    WriteError(WriteError),
 
     #[error("{0}")]
-    InvalidMode(InvalidModeError),
+    ReadError(ReadError),
 
-    // Only used in the copy command
     #[error("{0}")]
-    InvalidDstUsage(InvalidUsageError),
+    CopyError(CopyError),
 
-    // Only used in the copy command
     #[error("{0}")]
-    InvalidDstMode(InvalidModeError),
+    ExtendError(ExtendError),
 
-    // Only used in the copy command
-    #[error("{0}")]
-    InvalidLengthMismatch(InvalidLengthMismatch),
+    #[error("The given buffer cannot be mapped to host memory")]
+    NotMappable,
 }

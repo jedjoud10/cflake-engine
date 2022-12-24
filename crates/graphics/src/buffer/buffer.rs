@@ -5,10 +5,9 @@ use std::{
 };
 
 use crate::{
-    BufferError, Graphics, InitializationError, InvalidModeError,
-    InvalidUsageError, BufferUsage, BufferMode,
+    BufferError, Graphics, InitializationError, ExtendError,
+    BufferUsage, BufferMode, WriteError, ReadError, CopyError,
 };
-use super::BufferLayouts;
 use bytemuck::{Pod, Zeroable};
 use vulkan::{vk, Allocation, Recorder};
 
@@ -38,6 +37,8 @@ impl<T: Clone + Copy + Sync + Send + Zeroable + Pod + 'static> Content
 
 // An abstraction layer over a valid Vulkan buffer
 // This also takes a constant that represents it's Vulkan target at compile time
+// TODO: Handle async read writes and async command buf submissions
+// TODO: Merge multiple async commands together? (like multiple copy or clear commands) 
 pub struct Buffer<T: Content, const TYPE: u32> {
     // Raw Vulkan
     buffer: vk::Buffer,
@@ -65,12 +66,6 @@ impl<T: Content, const TYPE: u32> Drop for Buffer<T, TYPE> {
                 .destroy_buffer(self.buffer, alloc);
         }
     }
-}
-
-// Internal bounds used by the buffer
-pub(super) struct BufferBounds {
-    offset: usize,
-    size: usize,
 }
 
 // Implementation of util methods
@@ -130,7 +125,6 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         slice: &[T],
         mode: BufferMode,
         usage: BufferUsage,
-        recorder: &mut Recorder,
     ) -> Result<Self, BufferError> {
         // Cannot create a zero sized stride buffer
         assert!(size_of::<T>() > 0, "Buffers do not support zero-sized types");        
@@ -142,12 +136,8 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
             ));
         }
 
-        // Calculate the byte size of the buffer
-        let stride = size_of::<T>() as u64; 
-        let size = stride * (slice.len() as u64);
-
         // Get location and staging buffer location
-        let layout = super::find_optimal_layout(usage, TYPE);
+        let (location, flags) = super::find_optimal_layout(usage, TYPE);
 
         // If the slice is empty (implying a resizable buffer), change it to contain one single null element
         // This is a little hack to allow us to have resizable buffers without dealing with null/invalid buffers
@@ -159,15 +149,27 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         };
 
         // Allocate the buffer
-        let (buffer, allocation) = unsafe { super::allocate_buffer(
-            graphics,
-            size,
-            layout,
-            slice,
-            recorder
-        ) };
+        let (buffer, mut allocation) = unsafe {
+            super::allocate_buffer::<T>(
+                graphics,
+                location,
+            slice.len(),
+            flags,
+            )
+        };
+
+        // Fill up the buffer
+        unsafe {
+            super::fill_buffer(
+                graphics,
+                buffer,
+                &mut allocation,
+                slice
+            );
+        }
 
         // Calculate the number of elements that can fit in this one allocation
+        let stride = size_of::<T>() as u64; 
         let capacity = (allocation.size() / stride) as usize;
         let allocation = ManuallyDrop::new(allocation);
 
@@ -190,10 +192,9 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         capacity: usize,
         mode: BufferMode,
         usage: BufferUsage,
-        recorder: &mut Recorder<'a>,
     ) -> Result<Self, BufferError> {
         let vec = vec![T::zeroed(); capacity];
-        let mut buffer = Self::from_slice(graphics, &vec, mode, usage, recorder)?;
+        let mut buffer = Self::from_slice(graphics, &vec, mode, usage)?;
         buffer.length = 0;
         Ok(buffer)
     }
@@ -206,32 +207,35 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         &mut self,
         src: &[T],
         offset: usize,
-        recorder: &mut Recorder,
-    ) {
+    ) {        
         if let Some(dst) = self.allocation_mut().mapped_slice_mut() {
-            // Use the mapped point to write to the data
-            super::raw::write_to(src, dst);
-            log::debug!("write unchecked: write mapped");
+            // Use the mapped pointer to write to the data
+            let size = src.len() * size_of::<T>(); 
+            let offset = offset * size_of::<T>();
+            super::raw::write_to(src, &mut dst[offset..][..size]);
         } else {
             let device = self.graphics.device();
             let queue = self.graphics.queue();
+            let mut recorder = queue.acquire(device);
             
             // Write to a staging buffer first
-            let size = ((self.len() - offset) * self.stride()) as u64; 
+            let size = (src.len() * self.stride()) as u64; 
             let offset = (offset * self.stride()) as u64;
             let mut block = device.staging_pool().lock(device, queue, size);
-            super::raw::write_to(src, block.mapped_slice_mut());
+            let dst = block.mapped_slice_mut();
+            super::raw::write_to(src, dst);
 
-            // Copy the data from the staging buffer
-            super::raw::copy_from_staging(
-                &block,
-                size,
-                offset,
-                self.buffer,
-                recorder,
-                queue
-            ).wait();
-            log::debug!("write unchecked: write staging");
+            // Copy from the staging buffer
+            let copy = *vk::BufferCopy::builder()
+                .dst_offset(offset)
+                .src_offset(block.offset())
+                .size(size);            
+
+            // Record the cpy staging -> src buffer command
+            recorder.cmd_full_barrier();
+            recorder.cmd_copy_buffer(block.buffer(), self.buffer, &[copy]);
+            queue.submit(recorder).wait();
+
             device.staging_pool().unlock(device, block);
         }
     }
@@ -241,31 +245,32 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         &self,
         dst: &mut [T],
         offset: usize,
-        recorder: &mut Recorder,
     ) {        
         if let Some(src) = self.allocation().mapped_slice() {
             // Use the mapped pointer to read from the data
-            super::raw::read_to(src, dst);
-            log::debug!("read unchecked: read mapped");
+            let size = dst.len() * self.stride(); 
+            let offset = offset * self.stride();
+            super::raw::read_to(&src[offset..][..size], dst);
         } else {
             let device = self.graphics.device();
             let queue = self.graphics.queue();
+            let mut recorder = queue.acquire(device);
             
             // Copy to a staging buffer first
-            let size = ((self.len() - offset) * self.stride()) as u64; 
+            let size = (dst.len() * self.stride()) as u64; 
             let offset = (offset * self.stride()) as u64;
             let block = device.staging_pool().lock(device, queue, size);
 
-            // Copy the data into the staging buffer
-            super::raw::copy_into_staging(
-                &block,
-                size,
-                offset,
-                self.buffer,
-                recorder,
-                queue,
-            ).wait();
-            log::debug!("read unchecked: read staging");
+            // Copy into the staging buffer
+            let copy = *vk::BufferCopy::builder()
+                .dst_offset(block.offset())
+                .src_offset(offset)
+                .size(size);
+
+            // Record the cpy src buffer -> staging command
+            recorder.cmd_full_barrier();
+            recorder.cmd_copy_buffer(self.buffer, block.buffer(), &[copy]);
+            queue.submit(recorder).wait();
 
             // Read from the staging buffer and unlock it
             super::raw::read_to(block.mapped_slice(), dst);
@@ -276,11 +281,14 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     // Clear the buffer and reset it's length unsafely
     pub unsafe fn clear_unchecked(
         &mut self,
-        recorder: &mut Recorder
     ) {
+        let device = self.graphics.device();
+        let queue = self.graphics.queue();
+        let mut recorder = queue.acquire(device);
         recorder.cmd_full_barrier();
         recorder.cmd_clear_buffer(self.buffer, 0, vk::WHOLE_SIZE);
         recorder.cmd_full_barrier();
+        queue.submit(recorder).wait();
     }
 
     // Transmute the buffer into another type of buffer unsafely
@@ -314,16 +322,90 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         dst_offset: usize,
         src_offset: usize,
         length: usize,
-        recorder: &mut Recorder,
     ) {
+        let device = self.graphics.device();
+        let queue = self.graphics.queue();
+        let stride = self.stride();
+        let mut recorder = queue.acquire(device);
+
+        let dst_offset = (stride * dst_offset) as u64;
+        let src_offset = (stride * src_offset) as u64;
+        let size = (stride * length) as u64;
+
+        // Create the copy info
+        let copy = *vk::BufferCopy::builder()
+            .dst_offset(dst_offset)
+            .src_offset(src_offset)
+            .size(size);
+
+        // Record the cpy src -> self buffer command
+        recorder.cmd_full_barrier();
+        recorder.cmd_copy_buffer(src.buffer, self.buffer, &[copy]);
     }
 
     // Extend this buffer using the given slice unsafely and instantly
     pub unsafe fn extend_from_slice_unchecked(
         &mut self,
         slice: &[T],
-        recorder: &mut Recorder,
     ) {        
+        if self.length + slice.len() > self.capacity {
+            log::warn!("Reallocating buffer {:?}", self.buffer);
+
+            // Calculate the new capacity
+            let device = self.graphics.device();
+            let queue = self.graphics.queue();
+            let stride = self.stride();
+            let mut recorder = queue.acquire(device);
+
+            // Calculate the new capacity for the buffer
+            let old_length = self.length;
+            let new_capacity = self.capacity + slice.len();
+
+            // Convert to bytes
+            let old_length_bytes = (stride * old_length) as u64;
+
+            // Allocate a new buffer with a bigger capacity
+            let (location, flags) = super::find_optimal_layout(self.usage, TYPE);
+            let (buffer, allocation) = unsafe { 
+                super::allocate_buffer::<T>(
+                    &self.graphics,
+                    location,
+                    new_capacity,
+                    flags
+                )
+            };
+
+            // Copy the old contents to the new buffer
+            let copy = *vk::BufferCopy::builder()
+                .dst_offset(0)
+                .src_offset(0)
+                .size(old_length_bytes);
+
+            // Record the cpy src -> self buffer command
+            recorder.cmd_full_barrier();
+            recorder.cmd_copy_buffer(self.buffer, buffer, &[copy]);
+            queue.submit(recorder).wait();
+
+            // Overwrite the struct with the new buffer
+            let old_buffer = std::mem::replace(&mut self.buffer, buffer);
+            let mut old_allocation = std::mem::replace(&mut self.allocation, ManuallyDrop::new(allocation));
+            self.capacity = new_capacity;
+
+            // Update the buffer with the new slice
+            self.write_unchecked(slice, old_length);
+
+            // Destroy the old buffer
+            let alloc = ManuallyDrop::take(&mut old_allocation);
+            self.graphics
+                .device()
+                .destroy_buffer(old_buffer, alloc);
+
+        } else {
+            // Write to the buffer normally
+            self.write_unchecked(slice, self.length);
+        }
+
+        self.length += slice.len();
     }
 }
 
@@ -334,18 +416,17 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         &mut self,
         src: &[T],
         offset: usize,
-        recorder: &mut Recorder,
     ) -> Result<(), BufferError> {
         if src.is_empty() {
             return Ok(());
         }
 
         if src.len() + offset > self.length {
-            todo!()
+            return Err(BufferError::WriteError(WriteError::InvalidLen(src.len(), offset, self.len())));
         }
 
         unsafe {
-            self.write_unchecked(src, offset, recorder);
+            self.write_unchecked(src, offset);
         }
         Ok(())
     }
@@ -355,18 +436,17 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         &'a self,
         dst: &mut [T],
         offset: usize,
-        recorder: &mut Recorder<'a>,
     ) -> Result<(), BufferError> {
         if dst.is_empty() {
             return Ok(());
         }
 
         if dst.len() + offset > self.length {
-            todo!()
+            return Err(BufferError::ReadError(ReadError::InvalidLen(dst.len(), offset, self.len())));
         }
 
         unsafe {
-            self.read_unchecked(dst, offset, recorder);
+            self.read_unchecked(dst, offset);
         }
         Ok(())
     }
@@ -374,14 +454,13 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     // Clear the buffer and reset it's length
     pub fn clear(
         &mut self,
-        recorder: &mut Recorder
     ) -> Result<(), BufferError> {
         if matches!(self.mode, BufferMode::Dynamic) {
             todo!()
         }
 
         unsafe {
-            self.clear_unchecked(recorder);
+            self.clear_unchecked();
         }
         Ok(())
     }
@@ -394,35 +473,71 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         src_offset: usize,
         length: usize,
     ) -> Result<(), BufferError> {
-        todo!()
+        if length == 0 {
+            return Ok(());
+        }
+
+        if dst_offset + length > self.length {
+            return Err(BufferError::CopyError(CopyError::InvalidDstOverflow(length, dst_offset, self.len())))
+        }
+
+        if src_offset + length > src.length {
+            return Err(BufferError::CopyError(CopyError::InvalidSrcOverflow(length, src_offset, src.len())))
+        }
+
+        unsafe {
+            self.copy_from_unchecked(
+                src,
+                dst_offset,
+                src_offset,
+                length
+            );
+        }
+
+        Ok(())
     }
 
     // Extend this buffer using the given slice instantly
-    pub unsafe fn extend_from_slice(
+    pub fn extend_from_slice(
         &mut self,
         slice: &[T],
-        recorder: &mut Recorder,
     ) -> Result<(), BufferError> { 
-        todo!()       
+        if slice.is_empty() {
+            return Ok(())
+        }
+
+        if matches!(self.mode, BufferMode::Dynamic) {
+            return Err(BufferError::ExtendError(ExtendError::IllegalLengthModify));
+        }
+
+        if slice.len() + self.length > self.capacity && matches!(self.mode, BufferMode::Parital) {
+            return Err(BufferError::ExtendError(ExtendError::IllegalReallocation));
+        }
+
+        unsafe {
+            self.extend_from_slice_unchecked(slice);
+        }
+        Ok(())
     }
     
     // Try to view the buffer immutably (if it's mappable)
-    pub fn as_slice(&self) -> Option<&[T]> {
+    pub fn as_slice(&self) -> Result<&[T], BufferError> {
         self
             .allocation()
             .mapped_slice()
             .map(|bytes| 
-                bytemuck::cast_slice::<u8, T>(bytes)
-            )
+                &bytemuck::cast_slice::<u8, T>(bytes)[..self.length]
+            ).ok_or(BufferError::NotMappable)
     }
 
     // Try to view the buffer mutably (if it's mappable)
-    pub fn as_slice_mut(&mut self) -> Option<&mut [T]> {
+    pub fn as_slice_mut(&mut self) -> Result<&mut [T], BufferError> {
+        let length = self.length;
         self
             .allocation_mut()
             .mapped_slice_mut()
             .map(|bytes| 
-                bytemuck::cast_slice_mut::<u8, T>(bytes)
-            )
+                &mut bytemuck::cast_slice_mut::<u8, T>(bytes)[..length]
+            ).ok_or(BufferError::NotMappable)
     }
 }

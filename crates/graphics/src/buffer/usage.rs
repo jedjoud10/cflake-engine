@@ -1,46 +1,25 @@
 use vulkan::{MemoryLocation, vk};
 
-// How we shall access the buffer
-// These buffer usages do not count the initial buffer creation phase
-// Anything related to the device access is a hint since you can always access stuff
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub struct BufferUsage {
-    // Specifies what the device can do with the buffer
-    pub hint_device_write: bool,
-    pub hint_device_read: bool,
+// For what use are we making this buffer?
+// This is only a hint
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
+pub enum BufferUsage {
+    // The buffer would live on GPU memory
+    // Example: Static Vertex Buffers, Static UBO
+    // DEVICE_LOCAL
+    GpuOnly,
 
-    // Specifies what the host can do do with the buffer
-    pub host_write: bool,
-    pub host_read: bool,
+    // Buffer would mainly be used for CPU -> GPU upload
+    // Example: Dynamic Vertex Buffers
+    // HOST_VISIBLE, HOST_COHERENT, DEVICE_LOCAL
+    #[default]
+    CpuToGpu,
+
+    // Buffer would mainly be used for GPU -> CPU readback
+    // Example: Voxel data generated from compute
+    // HOST_VISIBLE, HOST_COHERENT, HOST_CACHED
+    GpuToCpu,
 }
-
-// Buffer internal layout that contains memory location of src buffer
-// and it's staging buffer (if it has one)
-#[derive(Debug)]
-pub(super) struct BufferLayouts {
-    pub src_buffer_memory_location: MemoryLocation,
-    pub src_buffer_usage_flags: vk::BufferUsageFlags,
-
-    // Types of staging buffers and if we should use them
-    pub init_staging_buffer: bool,
-    pub cached_staging_buffer: bool,
-}
-
-/*
-
-MemoryLocation::GpuOnly => vk::MemoryPropertyFlags::DEVICE_LOCAL,
-            MemoryLocation::CpuToGpu => {
-                vk::MemoryPropertyFlags::HOST_VISIBLE
-                    | vk::MemoryPropertyFlags::HOST_COHERENT
-                    | vk::MemoryPropertyFlags::DEVICE_LOCAL
-            }
-            MemoryLocation::GpuToCpu => {
-                vk::MemoryPropertyFlags::HOST_VISIBLE
-                    | vk::MemoryPropertyFlags::HOST_COHERENT
-                    | vk::MemoryPropertyFlags::HOST_CACHED
-            }
-
-*/
 
 // Convert buffer mode and buffer usage to memory location and buffer usage flags
 // and potential staging buffer memory location
@@ -48,71 +27,16 @@ MemoryLocation::GpuOnly => vk::MemoryPropertyFlags::DEVICE_LOCAL,
 pub(super) fn find_optimal_layout(
     usage: BufferUsage,
     _type: u32,
-) -> BufferLayouts {
-    let BufferUsage {
-        hint_device_write: device_write,
-        hint_device_read: device_read,
-        host_write,
-        host_read,
-    } = usage;
-
-    // Check if there is device (hint)
-    let device = device_read || device_write;
-
-    // Check if there is host access
-    let host = host_read || host_write;
-
-    // Convert the transfer src/dst into the appropriate flags
-    let transfer = if device_write {
-        vk::BufferUsageFlags::TRANSFER_DST
-    } else {
-        vk::BufferUsageFlags::empty()
-    } | if device_read {
-        vk::BufferUsageFlags::TRANSFER_SRC
-    } else {
-        vk::BufferUsageFlags::empty()
+) -> (MemoryLocation, vk::BufferUsageFlags) {
+    let location = match usage {
+        BufferUsage::GpuOnly => MemoryLocation::GpuOnly,
+        BufferUsage::CpuToGpu => MemoryLocation::CpuToGpu,
+        BufferUsage::GpuToCpu => MemoryLocation::GpuToCpu,
     };
 
     // Map buffer type to usage flags
-    let base = vk::BufferUsageFlags::from_raw(_type) | transfer;
+    let base = vk::BufferUsageFlags::from_raw(_type) | vk::BufferUsageFlags::TRANSFER_DST | vk::BufferUsageFlags::TRANSFER_SRC;
 
-    // hint_device_read or hint_device_write only, GpuOnly, init staging
-    if device && !host {
-        return BufferLayouts {
-            src_buffer_memory_location: MemoryLocation::GpuOnly,
-            src_buffer_usage_flags: vk::BufferUsageFlags::TRANSFER_DST
-                | base,
-            init_staging_buffer: true,
-            cached_staging_buffer: false,
-        };
-    }
-
-    // if host_read and hint_device_write, GPUToCPU
-    if host_read && device_write && !host_write && !device_read {
-        return BufferLayouts {
-            src_buffer_memory_location: MemoryLocation::GpuToCpu,
-            src_buffer_usage_flags: base,
-            init_staging_buffer: false,
-            cached_staging_buffer: false,
-        };
-    }
-
-    // if host_write and hint_device_read, CPUToGPU
-    if host_write && device_read && !host_read && !device_write {
-        return BufferLayouts {
-            src_buffer_memory_location: MemoryLocation::CpuToGpu,
-            src_buffer_usage_flags: base,
-            init_staging_buffer: false,
-            cached_staging_buffer: false,
-        };
-    }
-
-    // This always works
-    BufferLayouts {
-        src_buffer_memory_location: MemoryLocation::CpuToGpu,
-        src_buffer_usage_flags: base,
-        init_staging_buffer: false,
-        cached_staging_buffer: false,
-    }
+    (location, base)
 }
 

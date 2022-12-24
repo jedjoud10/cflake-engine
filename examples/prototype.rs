@@ -13,32 +13,22 @@ fn main() {
 // Executed at the start
 fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
-    let assets = world.get::<Assets>().unwrap();
-
-    // Create a recorder to record commands
-    let mut recorder = graphics.acquire();
-
-    let mode = BufferMode::default();
-    let usage = BufferUsage {
-        hint_device_write: true,
-        hint_device_read: true,
-        host_write: false,
-        host_read: false,
-    };
 
     // Create a new buffer
     let mut buffer1 = StorageBuffer::<u32>::from_slice(
         &graphics,
-        &[69, 0, 0, 420],
-        mode,
-        usage,
-        &mut recorder
+        &[1; 10],
+        BufferMode::default(),
+        BufferUsage::GpuToCpu,
     ).unwrap();
 
-    buffer1.write(&[1, 2, 3, 4], 0, &mut recorder).unwrap();
     log::info!("{:?}", buffer1.as_slice());
-    buffer1.write(&[1, 4], 0, &mut recorder).unwrap();
+    buffer1.extend_from_slice(&[2; 5]).unwrap();
     log::info!("{:?}", buffer1.as_slice());
+    /*
+    buffer1.write(&[1, 4], 0).unwrap();
+    log::info!("{:?}", buffer1.as_slice());
+    */
 
     // Create another new buffer
     /*
