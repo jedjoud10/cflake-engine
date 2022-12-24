@@ -189,6 +189,7 @@ impl Device {
         entry_point: &str,
         kind: shaderc::ShaderKind,
     ) -> Vec<u32> {
+        // TODO: Make use of "additional_options" to manually add the include callback instead of using shitty processor
         let binary_result = self
             .glsl_spirv_translator
             .compile_into_spirv(
@@ -196,7 +197,7 @@ impl Device {
                 kind,
                 file_name,
                 entry_point,
-                None,
+                None
             )
             .unwrap();
         binary_result.as_binary().to_owned()

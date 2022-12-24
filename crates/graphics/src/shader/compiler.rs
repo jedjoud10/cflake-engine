@@ -1,9 +1,9 @@
-use crate::{Graphics, Module, ModuleKind, Processed};
-use std::{marker::PhantomData, sync::Arc};
+use crate::{Graphics, ShaderModule, ModuleKind, Processed};
+use std::{marker::PhantomData, sync::Arc, time::Instant};
 use vulkan::{vk, Device};
 
 // This is a compiled shader module that we can use in multiple pipelines
-pub struct Compiled<M: Module> {
+pub struct Compiled<M: ShaderModule> {
     graphics: Graphics,
     raw: vk::ShaderModule,
     kind: ModuleKind,
@@ -12,7 +12,7 @@ pub struct Compiled<M: Module> {
     _phantom: PhantomData<M>,
 }
 
-impl<M: Module> Drop for Compiled<M> {
+impl<M: ShaderModule> Drop for Compiled<M> {
     fn drop(&mut self) {
         unsafe {
             self.graphics.device().destroy_shader_module(self.raw);
@@ -20,7 +20,7 @@ impl<M: Module> Drop for Compiled<M> {
     }
 }
 
-impl<M: Module> Compiled<M> {
+impl<M: ShaderModule> Compiled<M> {
     // Compile a shader module by using it's processed counter part
     pub fn compile(
         graphics: &Graphics,
@@ -31,6 +31,7 @@ impl<M: Module> Compiled<M> {
         let source = module.source;
         log::debug!("Created a compiled wrapper for {}", file_name);
 
+        // Translate the shader to SPIRV and compile it
         let (spirv, raw) = unsafe {
             let kind = match kind {
                 ModuleKind::Vertex => vulkan::ShaderKind::Vertex,
@@ -38,10 +39,17 @@ impl<M: Module> Compiled<M> {
                 ModuleKind::Compute => vulkan::ShaderKind::Compute,
             };
 
+            // Translate the GLSL code to SPIRV bytecode
+            let i = Instant::now();
             let spirv = graphics.device().translate_glsl_spirv(
                 &source, &file_name, "main", kind,
             );
+            log::debug!("Took {:?} to translate '{}' to SPIRV", i.elapsed(), &file_name);
+
+            // Compile the SPIRV bytecode
+            let i = Instant::now();
             let raw = graphics.device().compile_shader_module(&spirv);
+            log::debug!("Took {:?} to compile '{}' from SPIRV", i.elapsed(), &file_name);
             (spirv, raw)
         };
 

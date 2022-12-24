@@ -17,7 +17,7 @@ pub fn required_validation_layers() -> Vec<CString> {
     .unwrap()];
 
     #[cfg(not(debug_assertions))]
-    return vec![];
+    return Vec::new();
 }
 
 // Get the required instance extensions
@@ -52,6 +52,8 @@ pub fn required_features() -> AdapterFeatures {
     let features12 = *vk::PhysicalDeviceVulkan12Features::builder()
         .imageless_framebuffer(true)
         .buffer_device_address(true)
+        .draw_indirect_count(true)
+        .timeline_semaphore(true)
         .buffer_device_address_capture_replay(true);
 
     let features13 = *vk::PhysicalDeviceVulkan13Features::builder()

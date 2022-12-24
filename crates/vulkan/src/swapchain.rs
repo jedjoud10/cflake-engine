@@ -231,6 +231,16 @@ impl Swapchain {
         }
     }
 
+    // Get the internal surface format of the swapchain
+    pub fn format(&self) -> vk::Format {
+        self.format.format
+    }
+
+    // Get the internal color space used by the swapchain
+    pub fn color_space(&self) -> vk::ColorSpaceKHR {
+        self.format.color_space
+    }
+
     // Recreate the swapchain with some new dimensions
     pub unsafe fn recreate(
         &self,

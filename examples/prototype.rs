@@ -19,6 +19,7 @@ fn init(world: &mut World) {
     let vert = assets
         .load::<VertexModule>("engine/shaders/basic.vert")
         .unwrap();
-    let processor = Processor::new(vert, &assets);
+    let mut processor = Processor::new(vert, &assets);
+    processor.define_snippet("snippet1", "void test2() {}");
     let compiled = Compiled::compile(&graphics, processor.process());
 }

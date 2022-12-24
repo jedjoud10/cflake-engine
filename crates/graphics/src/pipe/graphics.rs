@@ -1,5 +1,5 @@
 use crate::{
-    BlendConfig, CompareOp, DepthConfig, Graphics, Module, Primitive,
+    BlendConfig, CompareOp, DepthConfig, Graphics, ShaderModule, Primitive,
     RenderPass, StencilConfig, StencilOp, StencilTest,
 };
 use std::{mem::transmute, sync::Arc};

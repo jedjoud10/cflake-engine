@@ -15,7 +15,7 @@ pub enum ModuleKind {
 
 // This trait is implemented for each shader module, like the vertex module or fragment module
 // Modules are uncompiled shaders that will later be converted to SPIRV and linked together
-pub trait Module: Sized {
+pub trait ShaderModule: Sized {
     // Get the main properties of the module
     fn file_name(&self) -> &str;
     fn source(&self) -> &str;
@@ -82,7 +82,7 @@ macro_rules! impl_asset_for_module {
 // I love procedural programming
 macro_rules! impl_module_trait {
     ($t: ty, $kind: expr) => {
-        impl Module for $t {
+        impl ShaderModule for $t {
             fn file_name(&self) -> &str {
                 &self.name
             }
@@ -111,4 +111,4 @@ impl_module_trait!(ComputeModule, ModuleKind::Compute);
 impl_asset_for_module!(VertexModule, "vert");
 impl_asset_for_module!(FragmentModule, "frag");
 impl_asset_for_module!(ComputeModule, "comp");
-impl_asset_for_module!(FunctionModule, "func");
+impl_asset_for_module!(FunctionModule, "glsl");

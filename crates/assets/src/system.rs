@@ -9,7 +9,7 @@ fn init(world: &mut World, user: Option<PathBuf>) {
 
     // Load the default shaders
     persistent!(loader, "engine/shaders/basic.vert");
-    persistent!(loader, "engine/shaders/basic.func");
+    persistent!(loader, "engine/shaders/basic.glsl");
 
     /*
 
