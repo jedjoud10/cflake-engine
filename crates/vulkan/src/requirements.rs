@@ -50,7 +50,7 @@ pub fn required_features() -> AdapterFeatures {
     let features11 = *vk::PhysicalDeviceVulkan11Features::builder();
 
     let features12 = *vk::PhysicalDeviceVulkan12Features::builder()
-        .imageless_framebuffer(true)    
+        .imageless_framebuffer(true)
         .buffer_device_address(true)
         .buffer_device_address_capture_replay(true);
 

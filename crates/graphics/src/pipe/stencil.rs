@@ -1,7 +1,6 @@
+use crate::CompareOp;
 use std::mem::transmute;
 use vulkan::vk;
-use crate::CompareOp;
-
 
 // Stencil operator that represents the raw Vulkan stencil operations
 // Equivalent to vk::StencilOp
@@ -15,7 +14,7 @@ pub enum StencilOp {
     DecrementAndClamp,
     Invert,
     IncrementAndWrap,
-    DecrementAndWrap
+    DecrementAndWrap,
 }
 
 // Wrapper around vk::StencilState
@@ -30,7 +29,7 @@ pub struct StencilState {
     pub reference: u32,
 }
 
-// Stencil testing wrapper 
+// Stencil testing wrapper
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct StencilTest {
     pub front_op: StencilState,
@@ -42,7 +41,10 @@ pub struct StencilTest {
 pub struct StencilConfig(pub Option<StencilTest>);
 
 impl StencilConfig {
-    pub fn apply_depth_stencil_state<'a>(&self, builder: vk::PipelineDepthStencilStateCreateInfoBuilder<'a>) -> vk::PipelineDepthStencilStateCreateInfoBuilder<'a> {
+    pub fn apply_depth_stencil_state<'a>(
+        &self,
+        builder: vk::PipelineDepthStencilStateCreateInfoBuilder<'a>,
+    ) -> vk::PipelineDepthStencilStateCreateInfoBuilder<'a> {
         if let Some(stencil_test) = self.0 {
             builder
                 .front(unsafe { transmute(stencil_test.front_op) })

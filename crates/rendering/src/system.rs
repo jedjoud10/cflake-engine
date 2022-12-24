@@ -1,5 +1,5 @@
 use graphics::{Graphics, Window};
-use world::{World, post_user, System};
+use world::{post_user, System, World};
 
 // Clear the window and render the entities
 fn update(world: &mut World) {

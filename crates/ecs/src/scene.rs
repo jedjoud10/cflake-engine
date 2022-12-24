@@ -4,10 +4,11 @@ use std::iter::once;
 use world::{post_user, user, System, World};
 
 use crate::{
-    archetype::remove_bundle, entity::Entity, Archetype, Bundle,
-    Child, EntityLinkings, EntryMut, EntryRef, Mask, MaskHashMap,
-    Parent, QueryFilter, QueryLayoutMut, QueryLayoutRef, QueryMut,
-    QueryRef, Wrap, LocalPosition, LocalRotation, LocalScale, Position, Rotation, Scale, contains,
+    archetype::remove_bundle, contains, entity::Entity, Archetype,
+    Bundle, Child, EntityLinkings, EntryMut, EntryRef, LocalPosition,
+    LocalRotation, LocalScale, Mask, MaskHashMap, Parent, Position,
+    QueryFilter, QueryLayoutMut, QueryLayoutRef, QueryMut, QueryRef,
+    Rotation, Scale, Wrap,
 };
 
 // Convenience type aliases
@@ -199,10 +200,7 @@ impl Scene {
     pub fn find<'a, L: for<'i> QueryLayoutRef<'i>>(
         &'a self,
     ) -> Option<L> {
-        let mut iterator = self
-            .query::<L>()
-            .into_iter()
-            .fuse();
+        let mut iterator = self.query::<L>().into_iter().fuse();
         iterator.next().xor(iterator.next())
     }
 
@@ -210,10 +208,7 @@ impl Scene {
     pub fn find_mut<'a, L: for<'i> QueryLayoutMut<'i>>(
         &'a mut self,
     ) -> Option<L> {
-        let mut iterator = self
-            .query_mut::<L>()
-            .into_iter()
-            .fuse();
+        let mut iterator = self.query_mut::<L>().into_iter().fuse();
         iterator.next().xor(iterator.next())
     }
 
@@ -292,79 +287,99 @@ fn update(world: &mut World) {
         Option<&Position>,
         Option<&Rotation>,
         Option<&Scale>,
-    )>(filter) {
+    )>(filter)
+    {
         transforms.insert(
             *entity,
             (pos.cloned(), rot.cloned(), scl.cloned()),
         );
     }
-    
+
     // Iterate recursively until all the entities finished updating their locations
     let mut recurse = true;
     while recurse {
         recurse = false;
 
         // Iterate through all the child entities and update their global transform based on the parent
-        for (entity, 
+        for (
+            entity,
             child,
             local_pos,
             local_rot,
             local_scale,
             global_pos,
             global_rot,
-            global_scl
-        ) in scene
-            .query_mut::<(
-                &Entity,
-                &Child,
-                Option<&LocalPosition>,
-                Option<&LocalRotation>,
-                Option<&LocalScale>,
-                Option<&mut Position>,
-                Option<&mut Rotation>,
-                Option<&mut Scale>,
-            )>()
-        {
-            if let Some(parent_transform) = transforms.get(&child.parent) {
+            global_scl,
+        ) in scene.query_mut::<(
+            &Entity,
+            &Child,
+            Option<&LocalPosition>,
+            Option<&LocalRotation>,
+            Option<&LocalScale>,
+            Option<&mut Position>,
+            Option<&mut Rotation>,
+            Option<&mut Scale>,
+        )>() {
+            if let Some(parent_transform) =
+                transforms.get(&child.parent)
+            {
                 let (parent_position, parent_rotation, parent_scale) =
-                parent_transform;
+                    parent_transform;
 
                 // Zip the required elements
-                let pos = global_pos.zip(local_pos).zip(*parent_position);
-                let rot = global_rot.zip(local_rot).zip(*parent_rotation);
-                let scl = global_scl.zip(local_scale).zip(*parent_scale);
+                let pos =
+                    global_pos.zip(local_pos).zip(*parent_position);
+                let rot =
+                    global_rot.zip(local_rot).zip(*parent_rotation);
+                let scl =
+                    global_scl.zip(local_scale).zip(*parent_scale);
 
                 // Update the global position based on the parent position (and parent rotation)
-                let global_pos = if let Some(((global, local), parent)) = pos {   
-                    if let Some(parent_rotation) = parent_rotation {
-                        **global = vek::Mat4::from(parent_rotation).mul_point(**local + *parent);
-                    } else {
-                        **global = **local + *parent;
-                    }
+                let global_pos =
+                    if let Some(((global, local), parent)) = pos {
+                        if let Some(parent_rotation) = parent_rotation
+                        {
+                            **global =
+                                vek::Mat4::from(parent_rotation)
+                                    .mul_point(**local + *parent);
+                        } else {
+                            **global = **local + *parent;
+                        }
 
-                    Some(*global)
-                } else { None };
+                        Some(*global)
+                    } else {
+                        None
+                    };
 
                 // Update the global rotation based on the parent rotation
-                let global_rot = if let Some(((global, local), parent)) = rot {   
-                    **global = **local * *parent;
-                    Some(*global)
-                } else { None };
+                let global_rot =
+                    if let Some(((global, local), parent)) = rot {
+                        **global = **local * *parent;
+                        Some(*global)
+                    } else {
+                        None
+                    };
 
                 // Update the global scale based on the parent scale
-                let global_scl = if let Some(((global, local), parent)) = scl {   
-                    **global = **local * *parent;
-                    Some(*global)
-                } else { None };
+                let global_scl =
+                    if let Some(((global, local), parent)) = scl {
+                        **global = **local * *parent;
+                        Some(*global)
+                    } else {
+                        None
+                    };
 
                 // Act as if the child we just updated is a parent itself
-                transforms.insert(*entity, (global_pos, global_rot, global_scl));
+                transforms.insert(
+                    *entity,
+                    (global_pos, global_rot, global_scl),
+                );
             } else {
                 // We must repeat this for another pass it seems
                 recurse = true;
             }
         }
-    } 
+    }
 }
 
 // The ECS system will manually insert the ECS resource and will clean it at the start of each frame (except the first frame)

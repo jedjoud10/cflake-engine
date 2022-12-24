@@ -262,7 +262,10 @@ fn optional_queries() {
     assert_eq!(manager.query_mut::<&Health>().len(), 4096);
     assert_eq!(manager.query_mut::<&Entity>().len(), 4096);
     assert_eq!(manager.query_mut::<Option<&Health>>().len(), 4096);
-    assert_eq!(manager.query_mut::<(&Entity, Option<&Health>)>().len(), 4096);
+    assert_eq!(
+        manager.query_mut::<(&Entity, Option<&Health>)>().len(),
+        4096
+    );
     assert_eq!(
         manager.query_mut::<&Health>().into_iter().count(),
         4096
@@ -337,11 +340,15 @@ fn filter_ref() {
     assert_eq!(query.len(), 1);
     assert_eq!(query.into_iter().count(), 1);
 
-    let query = manager.query_with::<&Entity>(contains::<Health>() & !contains::<Ammo>());
+    let query = manager.query_with::<&Entity>(
+        contains::<Health>() & !contains::<Ammo>(),
+    );
     assert_eq!(query.len(), 1);
     assert_eq!(query.into_iter().count(), 1);
 
-    let query = manager.query_with::<&Entity>(contains::<Health>() & contains::<Ammo>());
+    let query = manager.query_with::<&Entity>(
+        contains::<Health>() & contains::<Ammo>(),
+    );
     assert_eq!(query.len(), 2);
     assert_eq!(query.into_iter().count(), 2);
 }
@@ -369,23 +376,35 @@ fn filter_mut() {
     let mut entry = manager.entry_mut(e1).unwrap();
     entry.get_mut::<Health>().unwrap();
 
-    let query = manager.query_mut_with::<&Health>(modified::<Health>());
+    let query =
+        manager.query_mut_with::<&Health>(modified::<Health>());
     assert_eq!(query.len(), 1);
     assert_eq!(query.into_iter().count(), 1);
 
-    let query = manager.query_mut_with::<&Entity>(contains::<Health>() & !contains::<Ammo>());
+    let query = manager.query_mut_with::<&Entity>(
+        contains::<Health>() & !contains::<Ammo>(),
+    );
     assert_eq!(query.len(), 1);
     assert_eq!(query.into_iter().count(), 1);
 
-    let query = manager.query_mut_with::<&Entity>(contains::<Health>() & contains::<Ammo>());
+    let query = manager.query_mut_with::<&Entity>(
+        contains::<Health>() & contains::<Ammo>(),
+    );
     assert_eq!(query.len(), 2);
     assert_eq!(query.into_iter().count(), 2);
 
-    let query = manager.query_mut_with::<&Entity>(contains::<Health>() & contains::<Ammo>() & contains::<Ammo>());
+    let query = manager.query_mut_with::<&Entity>(
+        contains::<Health>()
+            & contains::<Ammo>()
+            & contains::<Ammo>(),
+    );
     assert_eq!(query.len(), 2);
     assert_eq!(query.into_iter().count(), 2);
 
-    let query = manager.query_mut_with::<&Entity>((contains::<Health>() & !contains::<Ammo>()) & contains::<Ammo>());
+    let query = manager.query_mut_with::<&Entity>(
+        (contains::<Health>() & !contains::<Ammo>())
+            & contains::<Ammo>(),
+    );
     assert_eq!(query.len(), 0);
     assert_eq!(query.into_iter().count(), 0);
 }

@@ -23,7 +23,7 @@ impl<'a> Recorder<'a> {
             command_buffer,
             command_pool,
             device,
-            queue
+            queue,
         }
     }
 
@@ -57,8 +57,11 @@ impl<'a> Recorder<'a> {
             vk::PipelineStageFlags::ALL_COMMANDS,
             vk::PipelineStageFlags::ALL_COMMANDS,
             vk::DependencyFlags::empty(),
-            &[], &[], &[]);
-    } 
+            &[],
+            &[],
+            &[],
+        );
+    }
 }
 
 // Buffer commands
@@ -70,7 +73,12 @@ impl<'a> Recorder<'a> {
         offset: vk::DeviceSize,
         index_type: vk::IndexType,
     ) {
-        self.device().raw().cmd_bind_index_buffer(self.command_buffer().raw(), buffer, offset, index_type);
+        self.device().raw().cmd_bind_index_buffer(
+            self.command_buffer().raw(),
+            buffer,
+            offset,
+            index_type,
+        );
     }
 
     // Bind vertex buffers to the command buffer render pass
@@ -80,7 +88,12 @@ impl<'a> Recorder<'a> {
         buffers: &[vk::Buffer],
         offsets: &[vk::DeviceSize],
     ) {
-        self.device().raw().cmd_bind_vertex_buffers(self.command_buffer().raw(), first_binding, &buffers, &offsets);
+        self.device().raw().cmd_bind_vertex_buffers(
+            self.command_buffer().raw(),
+            first_binding,
+            &buffers,
+            &offsets,
+        );
     }
 
     // Copy a buffer to another buffer in GPU memory
@@ -90,7 +103,12 @@ impl<'a> Recorder<'a> {
         dst: vk::Buffer,
         regions: &[vk::BufferCopy],
     ) {
-        self.device().raw().cmd_copy_buffer(self.command_buffer().raw(), src, dst, &regions);
+        self.device().raw().cmd_copy_buffer(
+            self.command_buffer().raw(),
+            src,
+            dst,
+            &regions,
+        );
     }
 
     // Copy an image to a buffer in GPU memory
@@ -103,8 +121,11 @@ impl<'a> Recorder<'a> {
     ) {
         self.device().raw().cmd_copy_image_to_buffer(
             self.command_buffer().raw(),
-            image, layout, buffer,
-            regions);
+            image,
+            layout,
+            buffer,
+            regions,
+        );
     }
 
     // Clear a buffer to zero
@@ -116,7 +137,11 @@ impl<'a> Recorder<'a> {
     ) {
         self.device().raw().cmd_fill_buffer(
             self.command_buffer().raw(),
-            buffer, offset, size, 0);
+            buffer,
+            offset,
+            size,
+            0,
+        );
     }
 
     // Update the buffer using memory that is directly stored within the command buffer
@@ -128,7 +153,10 @@ impl<'a> Recorder<'a> {
     ) {
         self.device().raw().cmd_update_buffer(
             self.command_buffer().raw(),
-            buffer, offset, data);
+            buffer,
+            offset,
+            data,
+        );
     }
 }
 
@@ -151,7 +179,7 @@ impl<'a> Recorder<'a> {
             dst_image,
             dst_image_layout,
             regions,
-            filter
+            filter,
         )
     }
 
@@ -187,7 +215,7 @@ impl<'a> Recorder<'a> {
             src_image_layout,
             dst_image,
             dst_image_layout,
-            regions
+            regions,
         )
     }
 }
@@ -226,7 +254,10 @@ impl<'a> Submission<'a> {
         let i = Instant::now();
         self.flush_then_wait();
         let elapsed = i.elapsed();
-        log::warn!("Waited for {:?} for cmd buffer execution", elapsed);
+        log::warn!(
+            "Waited for {:?} for cmd buffer execution",
+            elapsed
+        );
         elapsed
     }
 
@@ -235,7 +266,7 @@ impl<'a> Submission<'a> {
         if self.flushed {
             return;
         }
-        
+
         // Wait for the command buffer to complete
         unsafe {
             self.command_pool.wait(self.device, self.command_buffer);

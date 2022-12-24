@@ -79,11 +79,17 @@ impl CommandPool {
         let cmd =
             self.buffers.iter().find(|cmd| cmd.is_free()).unwrap();
         *cmd.free.lock() = false;
-        log::debug!("Found the free command buffer at index {}", cmd.index);
+        log::debug!(
+            "Found the free command buffer at index {}",
+            cmd.index
+        );
 
         // Start recording if we are currently not recording
         if !cmd.is_recording() {
-            log::debug!("Starting the recording of command buffer {}", cmd.index);
+            log::debug!(
+                "Starting the recording of command buffer {}",
+                cmd.index
+            );
             let begin_info = vk::CommandBufferBeginInfo::builder()
                 .flags(vk::CommandBufferUsageFlags::SIMULTANEOUS_USE);
             device
@@ -110,11 +116,7 @@ impl CommandPool {
             .unwrap();
     }
 
-
-    pub unsafe fn chain(
-        &self,
-        command_buffer: &CommandBuffer
-    ) {
+    pub unsafe fn chain(&self, command_buffer: &CommandBuffer) {
         *command_buffer.free.lock() = false;
     }
 
@@ -140,7 +142,7 @@ impl CommandPool {
     pub unsafe fn wait(
         &self,
         device: &Device,
-        command_buffer: &CommandBuffer
+        command_buffer: &CommandBuffer,
     ) {
         // Flush the submission and start executing it on the GPU
         let fence = command_buffer.fence();
@@ -151,7 +153,12 @@ impl CommandPool {
         );
 
         // Wait for the fence to complete
-        unsafe { device.raw().wait_for_fences(&[fence], true, u64::MAX).unwrap() };
+        unsafe {
+            device
+                .raw()
+                .wait_for_fences(&[fence], true, u64::MAX)
+                .unwrap()
+        };
 
         // Unlock the command buffer
         *command_buffer.recording.lock() = false;
@@ -159,10 +166,13 @@ impl CommandPool {
 
         // Reset the command buffer and it's fence
         device.raw().reset_fences(&[command_buffer.fence]).unwrap();
-        device.raw().reset_command_buffer(
-            command_buffer.raw(),
-            vk::CommandBufferResetFlags::RELEASE_RESOURCES
-        ).unwrap();
+        device
+            .raw()
+            .reset_command_buffer(
+                command_buffer.raw(),
+                vk::CommandBufferResetFlags::RELEASE_RESOURCES,
+            )
+            .unwrap();
     }
 
     // Destroy the command pool

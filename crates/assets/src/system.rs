@@ -1,4 +1,4 @@
-use crate::{Assets, persistent};
+use crate::{persistent, Assets};
 use std::path::PathBuf;
 use world::{user, System, World};
 
@@ -10,9 +10,9 @@ fn init(world: &mut World, user: Option<PathBuf>) {
     // Load the default shaders
     persistent!(loader, "engine/shaders/basic.vert");
     persistent!(loader, "engine/shaders/basic.func");
-    
+
     /*
-    
+
     persistent!(loader, "engine/shaders/scene/pbr/models.func.glsl");
     persistent!(loader, "engine/shaders/scene/pbr/pbr.vrtx.glsl");
     persistent!(loader, "engine/shaders/scene/pbr/pbr.frag.glsl");

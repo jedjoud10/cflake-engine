@@ -19,11 +19,16 @@ pub enum ChunkEval {
 
 impl ChunkEval {
     // Same function as Option::zip_with, but stable
-    pub fn zip_with<F: FnOnce((usize, usize)) -> usize>(self, other: Self, fun: F) -> Self {
+    pub fn zip_with<F: FnOnce((usize, usize)) -> usize>(
+        self,
+        other: Self,
+        fun: F,
+    ) -> Self {
         match (self, other) {
-            (ChunkEval::Evaluated(a), ChunkEval::Evaluated(b)) => 
-                Self::Evaluated(fun((a, b))),
-            _ => Self::Passthrough
+            (ChunkEval::Evaluated(a), ChunkEval::Evaluated(b)) => {
+                Self::Evaluated(fun((a, b)))
+            }
+            _ => Self::Passthrough,
         }
     }
 
@@ -134,17 +139,16 @@ pub(super) fn generate_bitset_chunks<'a, F: QueryFilter>(
     cached: F::Cached,
 ) -> Vec<BitSet> {
     // Filter the entries by chunks of 64 entries at a time
-    let iterator = archetypes.map(|archetype| {
-        let columns = F::cache_columns(cached, archetype);
-        let chunks =
-            archetype.entities().len() as f32 / usize::BITS as f32;
-        let chunks = chunks.ceil() as usize;
-        BitSet::from_chunks_iter(
-            (0..chunks)
-                .into_iter()
-                .map(move |i| F::evaluate_chunk(columns, i).into_inner()),
-        )
-    });
+    let iterator =
+        archetypes.map(|archetype| {
+            let columns = F::cache_columns(cached, archetype);
+            let chunks = archetype.entities().len() as f32
+                / usize::BITS as f32;
+            let chunks = chunks.ceil() as usize;
+            BitSet::from_chunks_iter((0..chunks).into_iter().map(
+                move |i| F::evaluate_chunk(columns, i).into_inner(),
+            ))
+        });
 
     // Create a unique hop bitset for each archetype
     Vec::from_iter(iterator)
@@ -202,9 +206,11 @@ impl<T: Component> QueryFilter for Added<T> {
         columns: Self::Columns<'_>,
         index: usize,
     ) -> ChunkEval {
-        ChunkEval::Evaluated(columns
-            .map(|c| c.get(index).unwrap().added)
-            .unwrap_or_default())
+        ChunkEval::Evaluated(
+            columns
+                .map(|c| c.get(index).unwrap().added)
+                .unwrap_or_default(),
+        )
     }
 }
 
@@ -234,9 +240,11 @@ impl<T: Component> QueryFilter for Modified<T> {
         columns: Self::Columns<'_>,
         index: usize,
     ) -> ChunkEval {
-        ChunkEval::Evaluated(columns
-            .map(|c| c.get(index).unwrap().modified)
-            .unwrap_or_default())
+        ChunkEval::Evaluated(
+            columns
+                .map(|c| c.get(index).unwrap().modified)
+                .unwrap_or_default(),
+        )
     }
 }
 

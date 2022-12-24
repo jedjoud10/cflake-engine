@@ -1,6 +1,6 @@
+use crate::{Graphics, Module, ModuleKind, Processed};
 use std::{marker::PhantomData, sync::Arc};
 use vulkan::{vk, Device};
-use crate::{ModuleKind, Module, Graphics, Processed};
 
 // This is a compiled shader module that we can use in multiple pipelines
 pub struct Compiled<M: Module> {
@@ -22,7 +22,10 @@ impl<M: Module> Drop for Compiled<M> {
 
 impl<M: Module> Compiled<M> {
     // Compile a shader module by using it's processed counter part
-    pub fn compile(graphics: &Graphics, module: Processed<M>) -> Self {       
+    pub fn compile(
+        graphics: &Graphics,
+        module: Processed<M>,
+    ) -> Self {
         let kind = module.kind;
         let file_name = module.file_name;
         let source = module.source;
@@ -35,7 +38,9 @@ impl<M: Module> Compiled<M> {
                 ModuleKind::Compute => vulkan::ShaderKind::Compute,
             };
 
-            let spirv = graphics.device().translate_glsl_spirv(&source, &file_name, "main", kind);
+            let spirv = graphics.device().translate_glsl_spirv(
+                &source, &file_name, "main", kind,
+            );
             let raw = graphics.device().compile_shader_module(&spirv);
             (spirv, raw)
         };

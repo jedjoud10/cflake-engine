@@ -47,13 +47,13 @@ impl LocalRotation {
 
     // Construct a rotation that is looking directly down (forward => (0, -1, 0))
     pub fn looking_down() -> Self {
-        let scalar: Scalar = 90.0; 
+        let scalar: Scalar = 90.0;
         Self::rotation_x(scalar.to_radians())
     }
 
     // Construct a rotation that is looking directly up (forward => (0, 1, 0))
     pub fn looking_up() -> Self {
-        let scalar: Scalar = -90.0; 
+        let scalar: Scalar = -90.0;
         Self::rotation_x(scalar.to_radians())
     }
 
@@ -85,13 +85,13 @@ impl LocalRotation {
 
     // Construct a rotation that is looking directly down (forward => (0, -1))
     pub fn looking_down() -> Self {
-        let scalar: Scalar = 90.0; 
+        let scalar: Scalar = 90.0;
         Self::from_angle(scalar.to_radians())
     }
 
     // Construct a rotation that is looking directly up (forward => (0, 1))
     pub fn looking_up() -> Self {
-        let scalar: Scalar = 90.0; 
+        let scalar: Scalar = 90.0;
         Self::from_angle(-scalar.to_radians())
     }
 

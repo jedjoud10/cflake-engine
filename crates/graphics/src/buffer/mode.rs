@@ -1,4 +1,3 @@
-
 // Some settings that tell us how exactly we should create the buffer
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum BufferMode {

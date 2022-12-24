@@ -43,12 +43,15 @@ pub trait QueryLayoutMut<'s> {
     fn is_valid() -> bool {
         // Check for ref-mut collisions
         let combined = Self::reduce(|a, b| a | b);
-        let refmut_collisions = combined.shared() & combined.unique() != Mask::zero();
- 
+        let refmut_collisions =
+            combined.shared() & combined.unique() != Mask::zero();
+
         // Check for mut collisions between the masks
         let mut mut_collisions = false;
         Self::reduce(|acc, b| {
-            mut_collisions |= (acc.unique() & b.unique()) == b.unique() && (!b.unique().is_zero());
+            mut_collisions |= (acc.unique() & b.unique())
+                == b.unique()
+                && (!b.unique().is_zero());
             acc | b
         });
 

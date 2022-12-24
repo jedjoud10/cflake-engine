@@ -1,7 +1,8 @@
 use utils::BitSet;
 
 use crate::{
-    Always, Archetype, QueryFilter, QueryLayoutRef, Scene, Wrap, LayoutAccess,
+    Always, Archetype, LayoutAccess, QueryFilter, QueryLayoutRef,
+    Scene, Wrap,
 };
 use std::{iter::FusedIterator, marker::PhantomData};
 

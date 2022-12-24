@@ -5,7 +5,7 @@ use assets::Asset;
 pub enum ModuleKind {
     // Vertex shaders get executed on a per vertex basis
     Vertex,
-    
+
     // Fragment shaders get executed for each fragment, or each pixel (in case of no MSAA)
     Fragment,
 
@@ -54,31 +54,30 @@ macro_rules! impl_asset_for_module {
         impl Asset for $t {
             type Args<'args> = ();
             type Err = std::string::FromUtf8Error;
-        
+
             fn extensions() -> &'static [&'static str] {
                 &[$ext]
             }
-        
+
             fn deserialize<'args>(
                 data: assets::Data,
                 _args: Self::Args<'args>,
             ) -> Result<Self, Self::Err> {
-                let source = String::from_utf8(data.bytes().to_vec())?;
-                let name = data.path()
+                let source =
+                    String::from_utf8(data.bytes().to_vec())?;
+                let name = data
+                    .path()
                     .file_name()
                     .unwrap()
                     .to_str()
                     .unwrap()
                     .to_string();
 
-                Ok(Self {
-                    source, name
-                })
+                Ok(Self { source, name })
             }
         }
     };
 }
-
 
 // I love procedural programming
 macro_rules! impl_module_trait {
@@ -99,7 +98,7 @@ macro_rules! impl_module_trait {
             fn into_raw_parts(self) -> (String, String) {
                 (self.name, self.source)
             }
-        }        
+        }
     };
 }
 

@@ -61,7 +61,10 @@ pub(crate) struct StagingBuffer {
 impl StagingBuffer {
     // Check if the subbuffer has a free unused block of memory that we can use
     // This will return None if it could not find a buffer with the appropriate size within this block
-    fn find_free_block_and_lock(&mut self, size: u64) -> Option<StagingBlock> {
+    fn find_free_block_and_lock(
+        &mut self,
+        size: u64,
+    ) -> Option<StagingBlock> {
         // Keep track of empty spaces within the sub buffer
         let mut last = 0u64;
         let mut output = None;
@@ -79,24 +82,25 @@ impl StagingBuffer {
 
         // Try to find a free block at the end of the used blocks of memory
         if let Some((_, end)) = self.used.last() {
-            let potential_block_size = self.size - end; 
+            let potential_block_size = self.size - end;
             if output.is_none() && (potential_block_size > size) {
                 output = Some((*end, *end + size));
             }
         }
 
         // Try to find a free block at the start of the used blocks of memory
-        if self.used.is_empty() { 
+        if self.used.is_empty() {
             if output.is_none() && (self.size >= size) {
                 output = Some((0, size));
             }
         }
-        
+
         // Convert the found block of memory into a SubBufferBlock
         output.map(|(start, end)| {
             let ptr = unsafe {
-                (self.allocation.mapped_ptr().unwrap().as_ptr() as *mut u8)
-                .add(start.try_into().unwrap())
+                (self.allocation.mapped_ptr().unwrap().as_ptr()
+                    as *mut u8)
+                    .add(start.try_into().unwrap())
             };
             self.used.push((start, end));
 
@@ -111,7 +115,6 @@ impl StagingBuffer {
     }
 }
 
-
 // A staging pool is used to transfer data between GPU and CPU memory
 // This is a round robin buffer of mappable host visible buffers
 // Stolen from https://docs.rs/vulkano/latest/vulkano/buffer/cpu_pool/struct.CpuBufferPool.html
@@ -123,26 +126,43 @@ impl StagingPool {
     // Create a new staging pool that will be stored within the graphical context
     pub unsafe fn new() -> Self {
         Self {
-            subbuffers: Mutex::new(Vec::new())
+            subbuffers: Mutex::new(Vec::new()),
         }
     }
 
     // Force the allocation of a new block in memory, even though we might have
     // free blocks that we can reuse
-    unsafe fn allocate(&self, device: &Device, queue: &Queue, size: u64) -> StagingBlock {
+    unsafe fn allocate(
+        &self,
+        device: &Device,
+        queue: &Queue,
+        size: u64,
+    ) -> StagingBlock {
         // Use a bigger capacity just so we don't have to allocate as many times
         let upper = size * 2;
 
         // Create the underlying staging buffer memory
-        let used = vk::BufferUsageFlags::TRANSFER_SRC |  vk::BufferUsageFlags::TRANSFER_DST;
-        let (buffer, allocation) = device.create_buffer(upper, used, MemoryLocation::GpuToCpu, queue);
+        let used = vk::BufferUsageFlags::TRANSFER_SRC
+            | vk::BufferUsageFlags::TRANSFER_DST;
+        let (buffer, allocation) = device.create_buffer(
+            upper,
+            used,
+            MemoryLocation::GpuToCpu,
+            queue,
+        );
 
         // Get the staging buffer index
         let mut lock = self.subbuffers.lock();
         let index = lock.len();
 
         // Initialize the staging buffer struct
-        let mut buffer = StagingBuffer { raw: buffer, index, allocation, size: upper, used: Vec::new() };
+        let mut buffer = StagingBuffer {
+            raw: buffer,
+            index,
+            allocation,
+            size: upper,
+            used: Vec::new(),
+        };
         let block = buffer.find_free_block_and_lock(size).unwrap();
 
         // Add the staging buffer locally
@@ -153,14 +173,17 @@ impl StagingPool {
 
     // Get a sub-buffer or create a new one if we don't have a free one for use
     // The given buffer has the flags TRANSFER_SRC and TRANSFER_DST only
-    pub unsafe fn lock(&self, device: &Device, queue: &Queue, size: u64) -> StagingBlock {
+    pub unsafe fn lock(
+        &self,
+        device: &Device,
+        queue: &Queue,
+        size: u64,
+    ) -> StagingBlock {
         let mut lock = self.subbuffers.lock();
         let find = lock
             .iter_mut()
             .enumerate()
-            .find_map(|(_, sub)| {
-                sub.find_free_block_and_lock(size)
-            });
+            .find_map(|(_, sub)| sub.find_free_block_and_lock(size));
 
         // Check if the given buffer range is not in use by the GPU
         // TODO
@@ -170,13 +193,19 @@ impl StagingPool {
             drop(lock);
             log::warn!("Could not find subbuffer block of size {size}, allocating a new one...");
             self.allocate(device, queue, size)
-        } else { find.unwrap() }
+        } else {
+            find.unwrap()
+        }
     }
 
     // Unlock a buffer and return it to the staging pool
     // Note: This might be called with a buffer that is still in use by the GPU,
     // in which case this command would basically act as if the sub buffer was still in use
-    pub unsafe fn unlock(&self, device: &Device, block: StagingBlock) {
+    pub unsafe fn unlock(
+        &self,
+        device: &Device,
+        block: StagingBlock,
+    ) {
         // TODO:
         // Check if the buffer is still in use by the GPU
         // Unlock when it is not in use, and add a callback to unlock it

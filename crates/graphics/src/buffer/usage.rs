@@ -1,4 +1,4 @@
-use vulkan::{MemoryLocation, vk};
+use vulkan::{vk, MemoryLocation};
 
 // For what use are we making this buffer?
 // This is only a hint
@@ -35,8 +35,9 @@ pub(super) fn find_optimal_layout(
     };
 
     // Map buffer type to usage flags
-    let base = vk::BufferUsageFlags::from_raw(_type) | vk::BufferUsageFlags::TRANSFER_DST | vk::BufferUsageFlags::TRANSFER_SRC;
+    let base = vk::BufferUsageFlags::from_raw(_type)
+        | vk::BufferUsageFlags::TRANSFER_DST
+        | vk::BufferUsageFlags::TRANSFER_SRC;
 
     (location, base)
 }
-

@@ -274,13 +274,13 @@ impl App {
         self = self.insert_system(move |system: &mut System| {
             utils::io(system, author, app)
         });
-        
+
         // Insert the asset loader
         let user = self.user_assets_folder.take();
         self = self.insert_system(|system: &mut System| {
             assets::system(system, user)
         });
-        
+
         // Insert the graphics API if needed
         let window = self.window.clone();
         let app_name = self.app_name.clone();

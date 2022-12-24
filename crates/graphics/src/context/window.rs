@@ -30,7 +30,7 @@ pub struct WindowSettings {
 pub struct Window {
     pub(crate) settings: WindowSettings,
     pub(crate) raw: winit::window::Window,
-    pub(crate) size: vek::Extent2<u32>, 
+    pub(crate) size: vek::Extent2<u32>,
 }
 
 impl Window {

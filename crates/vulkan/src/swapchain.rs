@@ -188,18 +188,20 @@ impl Swapchain {
 
 impl Swapchain {
     // Get the next free image that we can render to
-    pub unsafe fn acquire_next_image(&self) -> Option<(u32, vk::Image)> {
-        let err = self
-            .loader
-            .acquire_next_image(
-                self.raw,
-                u64::MAX,
-                self.image_available_semaphore,
-                vk::Fence::null(),
-            );
+    pub unsafe fn acquire_next_image(
+        &self,
+    ) -> Option<(u32, vk::Image)> {
+        let err = self.loader.acquire_next_image(
+            self.raw,
+            u64::MAX,
+            self.image_available_semaphore,
+            vk::Fence::null(),
+        );
 
         match err {
-            Ok((index, _)) => Some((index, self.images[index as usize])),
+            Ok((index, _)) => {
+                Some((index, self.images[index as usize]))
+            }
             Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => None,
             Err(_) => None,
         }
@@ -219,8 +221,8 @@ impl Swapchain {
             .image_indices(&[index.0]);
 
         // Present the image to the screen
-        let err = self.loader
-            .queue_present(queue.queue, &present_info);
+        let err =
+            self.loader.queue_present(queue.queue, &present_info);
 
         match err {
             Ok(_) => Some(()),
@@ -235,6 +237,5 @@ impl Swapchain {
         device: &Device,
         dimensions: vek::Extent2<u32>,
     ) {
-
     }
 }

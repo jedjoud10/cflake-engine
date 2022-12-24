@@ -1,10 +1,10 @@
 mod buffer;
 mod errors;
 mod mode;
-mod usage;
 mod raw;
-pub use raw::*;
-pub use mode::*;
-pub use usage::*;
+mod usage;
 pub use buffer::*;
 pub use errors::*;
+pub use mode::*;
+pub use raw::*;
+pub use usage::*;

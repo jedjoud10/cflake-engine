@@ -16,7 +16,9 @@ fn init(world: &mut World) {
     let assets = world.get::<Assets>().unwrap();
 
     // Load a vertex shader
-    let vert = assets.load::<VertexModule>("engine/shaders/basic.vert").unwrap();
+    let vert = assets
+        .load::<VertexModule>("engine/shaders/basic.vert")
+        .unwrap();
     let processor = Processor::new(vert, &assets);
     let compiled = Compiled::compile(&graphics, processor.process());
 }

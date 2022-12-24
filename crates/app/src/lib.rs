@@ -22,7 +22,7 @@ pub mod prelude {
     pub use crate::math::*;
     pub use crate::utils::*;
     pub use crate::world::*;
-    
+
     // Re-exports
     pub use log;
     pub use serde;

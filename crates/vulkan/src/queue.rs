@@ -92,7 +92,10 @@ impl Queue {
 
     // Aquire a new free command recorder that we can use to record commands
     // This might return a command buffer that is already in the recording state*
-    pub unsafe fn acquire<'a>(&'a self, device: &'a Device) -> Recorder<'a> {
+    pub unsafe fn acquire<'a>(
+        &'a self,
+        device: &'a Device,
+    ) -> Recorder<'a> {
         let command_pool = &self.pools[0];
         unsafe {
             let command_buffer = command_pool.start_recording(device);
@@ -100,7 +103,7 @@ impl Queue {
                 command_buffer,
                 command_pool,
                 device,
-                self
+                self,
             )
         }
     }
@@ -116,7 +119,10 @@ impl Queue {
         recorder: Recorder<'a>,
     ) -> Submission<'a> {
         let pool = recorder.command_pool;
-        log::warn!("Submitting the command buffer of index {}", recorder.command_buffer.index());
+        log::warn!(
+            "Submitting the command buffer of index {}",
+            recorder.command_buffer.index()
+        );
         unsafe {
             pool.stop_recording(
                 recorder.device(),

@@ -1,12 +1,12 @@
+mod blend;
 mod config;
+mod depth;
 mod graphics;
 mod primitive;
-mod depth;
 mod stencil;
-mod blend;
 pub use blend::*;
-pub use stencil::*;
 pub use config::*;
+pub use depth::*;
 pub use graphics::*;
 pub use primitive::*;
-pub use depth::*;
+pub use stencil::*;

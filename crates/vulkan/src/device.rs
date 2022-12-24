@@ -1,5 +1,6 @@
 use crate::{
-    required_features, Adapter, Instance, Queue, StagingBlock, StagingPool,
+    required_features, Adapter, Instance, Queue, StagingBlock,
+    StagingPool,
 };
 use ahash::AHashMap;
 use ash::vk::{self, DeviceCreateInfo, DeviceQueueCreateInfo};
@@ -14,7 +15,7 @@ use parking_lot::{MappedMutexGuard, Mutex, MutexGuard};
 pub struct Device {
     device: ash::Device,
     allocator: Mutex<Option<Allocator>>,
-    glsl_spirv_translator: shaderc::Compiler,    
+    glsl_spirv_translator: shaderc::Compiler,
     pipeline_cache: vk::PipelineCache,
     staging: StagingPool,
 }
@@ -105,10 +106,12 @@ impl Device {
         drop(required_device_extensions);
 
         // Create pipeline cache to optimize pipeline creation
-        let pipeline_cache = device.create_pipeline_cache(
-            &vk::PipelineCacheCreateInfo::default(),
-            None
-        ).unwrap();
+        let pipeline_cache = device
+            .create_pipeline_cache(
+                &vk::PipelineCacheCreateInfo::default(),
+                None,
+            )
+            .unwrap();
 
         Device {
             device,
@@ -146,7 +149,8 @@ impl Device {
     // Destroy the logical device
     pub unsafe fn destroy(&self) {
         self.wait();
-        self.device.destroy_pipeline_cache(self.pipeline_cache, None);
+        self.device
+            .destroy_pipeline_cache(self.pipeline_cache, None);
         self.allocator.lock().take().unwrap();
         self.device.destroy_device(None);
     }
@@ -178,28 +182,62 @@ impl Device {
 
 impl Device {
     // Translate some GLSL shader code to SPIRV
-    pub unsafe fn translate_glsl_spirv(&self, code: &str, file_name: &str, entry_point: &str, kind: shaderc::ShaderKind) -> Vec<u32> {     
-        let binary_result = self.glsl_spirv_translator.compile_into_spirv(
-            code, kind,
-            file_name, entry_point, None).unwrap();
+    pub unsafe fn translate_glsl_spirv(
+        &self,
+        code: &str,
+        file_name: &str,
+        entry_point: &str,
+        kind: shaderc::ShaderKind,
+    ) -> Vec<u32> {
+        let binary_result = self
+            .glsl_spirv_translator
+            .compile_into_spirv(
+                code,
+                kind,
+                file_name,
+                entry_point,
+                None,
+            )
+            .unwrap();
         binary_result.as_binary().to_owned()
     }
 
     // Create a new shader module from SPIRV byte code
-    pub unsafe fn compile_shader_module(&self, bytecode: &[u32]) -> vk::ShaderModule {
-        let create_info = vk::ShaderModuleCreateInfo::builder()
-            .code(bytecode);
+    pub unsafe fn compile_shader_module(
+        &self,
+        bytecode: &[u32],
+    ) -> vk::ShaderModule {
+        let create_info =
+            vk::ShaderModuleCreateInfo::builder().code(bytecode);
         self.raw().create_shader_module(&create_info, None).unwrap()
     }
 
     // Create a new graphics pipeline based on the given info
-    pub unsafe fn create_graphics_pipeline(&self, create_info: vk::GraphicsPipelineCreateInfo) -> vk::Pipeline {
-        self.raw().create_graphics_pipelines(vk::PipelineCache::null(), &[create_info], None).unwrap()[0]
+    pub unsafe fn create_graphics_pipeline(
+        &self,
+        create_info: vk::GraphicsPipelineCreateInfo,
+    ) -> vk::Pipeline {
+        self.raw()
+            .create_graphics_pipelines(
+                vk::PipelineCache::null(),
+                &[create_info],
+                None,
+            )
+            .unwrap()[0]
     }
 
     // Create a new compute pipeline based on the given info
-    pub unsafe fn create_compute_pipeline(&self, create_info: vk::ComputePipelineCreateInfo) -> vk::Pipeline {
-        self.raw().create_compute_pipelines(vk::PipelineCache::null(), &[create_info], None).unwrap()[0]
+    pub unsafe fn create_compute_pipeline(
+        &self,
+        create_info: vk::ComputePipelineCreateInfo,
+    ) -> vk::Pipeline {
+        self.raw()
+            .create_compute_pipelines(
+                vk::PipelineCache::null(),
+                &[create_info],
+                None,
+            )
+            .unwrap()[0]
     }
 
     // Destroy a specific pipeline
@@ -208,10 +246,12 @@ impl Device {
     }
 
     // Destroy a specific shader module
-    pub unsafe fn destroy_shader_module(&self, module: vk::ShaderModule) {
+    pub unsafe fn destroy_shader_module(
+        &self,
+        module: vk::ShaderModule,
+    ) {
         self.raw().destroy_shader_module(module, None);
-    } 
-    
+    }
 }
 
 impl Device {

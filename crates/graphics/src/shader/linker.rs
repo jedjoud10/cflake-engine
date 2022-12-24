@@ -1,15 +1,10 @@
-use crate::{Compiled, VertexModule, FragmentModule, ComputeModule};
+use crate::{Compiled, ComputeModule, FragmentModule, VertexModule};
 
 // This trait will be implemented for valid combinations of multiple unique modules
-pub trait StageSet {
-}
+pub trait StageSet {}
 
 // Basic graphics stage set
-impl StageSet for (Compiled<VertexModule>, Compiled<FragmentModule>) {
-
-}
+impl StageSet for (Compiled<VertexModule>, Compiled<FragmentModule>) {}
 
 // Compute shader stage set
-impl StageSet for Compiled<ComputeModule> {
-
-}
+impl StageSet for Compiled<ComputeModule> {}

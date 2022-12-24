@@ -1,4 +1,4 @@
-use crate::{Graphics, WindowSettings, Window};
+use crate::{Graphics, Window, WindowSettings};
 use winit::{event::WindowEvent, event_loop::EventLoop};
 use world::{post_user, user, State, System, World};
 
@@ -42,7 +42,7 @@ fn event(world: &mut World, event: &mut WindowEvent) {
             // Handle resizing the window
             let size = vek::Extent2::new(size.width, size.height);
             let mut window = world.get_mut::<Window>().unwrap();
-            window.size = size; 
+            window.size = size;
 
             /*
             unsafe {
@@ -51,7 +51,6 @@ fn event(world: &mut World, event: &mut WindowEvent) {
             }
             */
         }
-
 
         // Close requested, set the world state to "Stopped"
         WindowEvent::CloseRequested => {

@@ -1,8 +1,8 @@
-mod module;
-mod processor;
 mod compiler;
 mod linker;
-pub use module::*;
-pub use processor::*;
+mod module;
+mod processor;
 pub use compiler::*;
 pub use linker::*;
+pub use module::*;
+pub use processor::*;

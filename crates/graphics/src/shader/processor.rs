@@ -1,6 +1,6 @@
-use std::{marker::PhantomData, path::PathBuf};
+use crate::{FunctionModule, Graphics, Module, ModuleKind};
 use assets::Assets;
-use crate::{Module, Graphics, ModuleKind, FunctionModule};
+use std::{marker::PhantomData, path::PathBuf};
 
 // A processor is something that will take some raw GLSL text and expand/process each directive
 pub struct Processor<'a, M: Module> {
@@ -23,20 +23,30 @@ impl<'a, M: Module> Processor<'a, M> {
             kind,
             source,
             file_name,
-            _phantom: PhantomData
+            _phantom: PhantomData,
         }
     }
 
     // Include a constant directive that will replace specialization constants (stored internally until compile time)
-    pub fn define_constant(&mut self, name: impl ToString, value: impl ToString) {}
+    pub fn define_constant(
+        &mut self,
+        name: impl ToString,
+        value: impl ToString,
+    ) {
+    }
 
     // Include a snippet directive that will replace ``#include`` lines that don't refer to a file
-    pub fn define_snippet(&mut self, name: impl ToString, value: impl ToString) {}
+    pub fn define_snippet(
+        &mut self,
+        name: impl ToString,
+        value: impl ToString,
+    ) {
+    }
 
     // Process the internally stored module and convert it to "Processed<M>"
     pub fn process(self) -> Processed<M> {
         let output = process(self.source, self.assets);
-    
+
         Processed {
             kind: self.kind,
             file_name: self.file_name,
@@ -49,7 +59,8 @@ impl<'a, M: Module> Processor<'a, M> {
 // Main function that will process the shader directives outside of shaders
 fn process(source: String, assets: &Assets) -> String {
     // We must filter repeatedly until we find no more directives
-    let mut lines = source.lines().map(str::to_string).collect::<Vec<String>>();
+    let mut lines =
+        source.lines().map(str::to_string).collect::<Vec<String>>();
     loop {
         // Simply iterate through each line, and check if it starts with a directive that we must replace (whitespaces ignored)
         let mut should_stop = true;
@@ -60,7 +71,7 @@ fn process(source: String, assets: &Assets) -> String {
             // Include statements work with files and snippets
             if trimmed.starts_with("#include") {
                 handle_include(trimmed, assets, &mut output);
-                
+
                 // Overwrite line with new output
                 should_stop = false;
                 *line = output;
@@ -85,7 +96,11 @@ fn process(source: String, assets: &Assets) -> String {
 }
 
 // Handle dealing with the include directive (that works with asset paths and snippets)
-fn handle_include(trimmed: &str, assets: &Assets, output: &mut String) {
+fn handle_include(
+    trimmed: &str,
+    assets: &Assets,
+    output: &mut String,
+) {
     // Split into words, and classify path
     let words = trimmed.split_whitespace().collect::<Vec<&str>>();
     let path = snailquote::unescape(words[1]).unwrap();

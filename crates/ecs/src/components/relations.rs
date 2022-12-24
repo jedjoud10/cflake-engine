@@ -13,7 +13,7 @@ impl Child {
     pub fn parent(&self) -> Entity {
         self.parent
     }
-    
+
     // Get the depth of this child
     pub fn depth(&self) -> usize {
         self.depth

@@ -1,5 +1,9 @@
 use assets::Assets;
-use graphics::{VertexModule, FragmentModule, DepthConfig, CompareOp, StencilConfig, Primitive, FaceCullMode, BlendConfig, DescriptorSet, Processed};
+use graphics::{
+    BlendConfig, CompareOp, DepthConfig, DescriptorSet, FaceCullMode,
+    FragmentModule, Primitive, Processed, StencilConfig,
+    VertexModule,
+};
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
 // Materials correspond to a specific Vulkan pipeline based on it's config parameters
@@ -8,13 +12,13 @@ pub trait Material: 'static + Sized {
     type Resources<'w>: 'w;
 
     // Static scene descriptor set
-    type SceneDescriptorSet<'w>: 'w + DescriptorSet; 
-    
+    type SceneDescriptorSet<'w>: 'w + DescriptorSet;
+
     // Instance descriptor set
-    type InstanceDescriptorSet<'w>: 'w + DescriptorSet; 
-    
+    type InstanceDescriptorSet<'w>: 'w + DescriptorSet;
+
     // Surface descriptor set
-    type SurfaceDescriptorSet<'w>: 'w + DescriptorSet; 
+    type SurfaceDescriptorSet<'w>: 'w + DescriptorSet;
 
     // Load the vertex module and process it
     fn vertex(assets: &Assets) -> Processed<VertexModule>;
@@ -27,15 +31,15 @@ pub trait Material: 'static + Sized {
 
     // Get the depth config for this material
     fn depth_config() -> DepthConfig {
-        DepthConfig { 
+        DepthConfig {
             depth_write_enable: true,
             depth_clamp_enable: false,
             depth_test: Some(CompareOp::Less),
             depth_bias: None,
-            depth_bounds: None
+            depth_bounds: None,
         }
     }
-    
+
     // Get the stencil testing for this material
     fn stencil_config() -> StencilConfig {
         StencilConfig(None)
@@ -51,7 +55,7 @@ pub trait Material: 'static + Sized {
 
     // Get the blend config for this material
     fn blend_config() -> BlendConfig {
-        BlendConfig {  }
+        BlendConfig {}
     }
 
     // Set the global and static instance descriptor sets
