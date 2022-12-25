@@ -2,7 +2,7 @@ use assets::Assets;
 use graphics::{
     BlendConfig, CompareOp, DepthConfig, DescriptorSet, FaceCullMode,
     FragmentModule, Primitive, Processed, StencilConfig,
-    VertexModule,
+    VertexModule, Compiled,
 };
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
@@ -21,10 +21,10 @@ pub trait Material: 'static + Sized {
     type SurfaceDescriptorSet<'w>: 'w + DescriptorSet;
 
     // Load the vertex module and process it
-    fn vertex(assets: &Assets) -> Processed<VertexModule>;
+    fn vertex(assets: &Assets) -> Compiled<VertexModule>;
 
     // Load the fragment module and process it
-    fn fragment(assets: &Assets) -> Processed<FragmentModule>;
+    fn fragment(assets: &Assets) -> Compiled<FragmentModule>;
 
     // Get the required mesh attributes that we need to render a surface
     fn required_mesh_attributes() -> ();

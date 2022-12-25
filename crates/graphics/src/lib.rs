@@ -7,6 +7,8 @@ mod renderpass;
 mod pipeline;
 mod shader;
 mod system;
+mod texture;
+pub use texture::*;
 pub use buffer::*;
 pub use context::*;
 pub use descriptor::*;

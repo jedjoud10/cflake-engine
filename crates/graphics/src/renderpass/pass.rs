@@ -30,6 +30,16 @@ impl RenderPass {
     pub unsafe fn new(
         graphics: &Graphics,
     ) -> Self {
+        // Create a default framebuffer
+        let extent = graphics.swapchain().extent();
+        let framebuffer = Self::create_framebuffer(&graphics, extent);
+        let renderpass_create_info = vk::RenderPassCreateInfo::builder();
+
+        todo!()
+    }
+
+    // Create a framebuffer for the given extent
+    fn create_framebuffer(graphics: &Graphics, extent: vek::Extent2<u32>) -> vk::Framebuffer {
         todo!()
     }
 
@@ -42,4 +52,22 @@ impl RenderPass {
     pub fn framebuffer(&self) -> vk::Framebuffer {
         self.framebuffer
     } 
+
+    // Recreate the render pass and modify it's framebuffer size
+    pub unsafe fn recreate(
+        &mut self,
+        dimensions: vek::Extent2<u32>,
+    ) {
+        self.graphics.device().wait();
+        
+        // Create a new framebuffer
+        let extent = self.graphics.swapchain().extent();
+        let framebuffer = Self::create_framebuffer(&self.graphics, extent);
+
+        // Replace the framebuffer
+        let old = std::mem::replace(&mut self.framebuffer, framebuffer);        
+
+        // Destroy the old framebuffer
+        self.graphics.device().destroy_framebuffer(old);
+    }
 }

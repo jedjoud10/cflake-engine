@@ -248,6 +248,11 @@ impl Swapchain {
         self.format.color_space
     }
 
+    // Get the current extent of the swapchain
+    pub fn extent(&self) -> vek::Extent2<u32> {
+        *self.extent.lock()
+    }
+
     // Recreate the swapchain with some new dimensions
     pub unsafe fn recreate(
         &self,
