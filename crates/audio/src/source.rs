@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::{stream::OutputStreamBuilder, AudioClip};
+use crate::{AudioClip, OutputStream};
 use cpal::traits::StreamTrait;
 use ecs::Component;
 use parking_lot::Mutex;
@@ -10,7 +10,7 @@ use parking_lot::Mutex;
 #[derive(Component)]
 pub struct AudioSource {
     // Audio stream we have to create
-    builder: Arc<dyn OutputStreamBuilder>,
+    pub(crate) builder: Arc<dyn OutputStream>,
 
     // These two fields get validated whenever we start playing the audio stream
     pub(crate) stream: Option<cpal::Stream>,
@@ -21,17 +21,12 @@ pub struct AudioSource {
 
 impl AudioSource {
     // Create a new audio source to play, and automatically play it on start
-    pub fn new(builder: Arc<dyn OutputStreamBuilder>) -> Self {
+    pub fn new<S: OutputStream + 'static>(builder: S) -> Self {
         Self {
-            builder,
+            builder: Arc::new(builder),
             stream: None,
             playing: true,
         }
-    }
-
-    // Get the internal audio stream builder used
-    pub fn builder(&self) -> Arc<dyn OutputStreamBuilder> {
-        self.builder.clone()
     }
 
     // Check if the audio source is currently playing

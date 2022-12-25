@@ -1,4 +1,4 @@
-use crate::{AudioPlayer, Sample};
+use crate::{AudioPlayer, Sample, AudioClip};
 use cpal::{
     traits::DeviceTrait, BuildStreamError, Stream, StreamConfig,
 };
@@ -10,22 +10,42 @@ use std::{
     time::{Duration, Instant},
 };
 
-// This will build an output stream with the given data
-// This will be later replaced with the new audio API
-pub trait OutputStreamBuilder: Any + Sync + Send {
+
+// This will be used to create the CPAL output stream
+pub trait OutputStream {
+    // Create the CPAL output stream
     fn build_output_stream(
         &self,
-        listener: &AudioPlayer,
+        player: &AudioPlayer,
     ) -> Result<Stream, BuildStreamError>;
 }
 
-pub trait IntoOutputStreamBuilder {
+impl<S: Sample> OutputStream for AudioClip<S> {
+    fn build_output_stream(
+        &self,
+        player: &AudioPlayer,
+    ) -> Result<Stream, BuildStreamError> {
+        let channels = self.channels();
+        let sample_rate = self.sample_rate();
+        let src = self.samples();
+        let config = player.find_audio_stream_config(channels, sample_rate).unwrap();
+        build_output_stream::<S>(config, &player.device, Box::new(move |dst, frame| {
+            if frame >= src.len() {
+                dst.fill(S::zero());
+                return;
+            }
+
+            dst.copy_from_slice(&src[frame..][..dst.len()]);
+        }))
+    }
 }
 
-// Internal function that actually builds the CPAL stream
-fn build_output_stream<T: Sample>(
+// This function will take in a stream config and a device and it will create the CPAL stream for us
+// We can also pass it a callback function that gets called whenever we need to write some data into it
+fn build_output_stream<S: Sample>(
     config: StreamConfig,
     device: &cpal::Device,
+    callback: Box<dyn Fn(&mut [S], usize) + Send + Sync>,
 ) -> Result<Stream, BuildStreamError> {
     let channels = config.channels as usize;
     let mut index = 0;
@@ -33,9 +53,9 @@ fn build_output_stream<T: Sample>(
     log::debug!("Building CPAL audio stream...");
     device.build_output_stream(
         &config,
-        move |dst: &mut [T], c: &cpal::OutputCallbackInfo| {
+        move |dst: &mut [S], _: &cpal::OutputCallbackInfo| {
             for frame in dst.chunks_mut(channels) {
-                write_data(frame, channels, index);
+                callback(frame, index);
                 index += channels;
             }
         },
@@ -43,12 +63,4 @@ fn build_output_stream<T: Sample>(
             log::error!("{}", err);
         },
     )
-}
-
-// Write to the destination channels
-fn write_data<T: Sample>(
-    dst: &mut [T],
-    channels: usize,
-    index: usize,
-) {
 }

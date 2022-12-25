@@ -33,4 +33,6 @@ fn init(world: &mut World) {
     let clip3 = assets
         .load::<AudioClip<i16>>("user/ignored/nicolas.mp3")
         .unwrap();
+
+    scene.insert(AudioSource::new(clip3));
 }

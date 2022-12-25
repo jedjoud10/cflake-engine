@@ -21,8 +21,7 @@ fn update(world: &mut World) {
     // Iterate through all the audio sources that have been changed
     for source in scene.query_mut::<&mut AudioSource>() {
         if source.stream.is_none() && source.playing {
-            let builder = source.builder().clone();
-            let stream = builder.build_output_stream(player).unwrap();
+            let stream = source.builder.build_output_stream(player).unwrap();
             source.stream = Some(stream);
         }
     }

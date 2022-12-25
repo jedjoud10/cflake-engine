@@ -1,4 +1,4 @@
-use crate::{stream::OutputStreamBuilder, AudioClipError, Sample};
+use crate::{AudioClipError, Sample};
 use assets::Asset;
 use std::{
     io::{BufReader, Cursor},
@@ -44,6 +44,11 @@ impl<S: Sample> AudioClip<S> {
     // Get the duration of the audio clip
     pub fn duration(&self) -> Duration {
         self.duration
+    }
+
+    // Get access to the internally stored samples
+    pub fn samples(&self) -> Arc<[S]> {
+        self.samples.clone()
     }
 }
 

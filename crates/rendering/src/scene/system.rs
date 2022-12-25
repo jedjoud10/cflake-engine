@@ -12,11 +12,11 @@ fn update(world: &mut World) {
     let swapchain = graphics.swapchain();
 
     unsafe {
+        /*
         let mut recorder = queue.acquire(device);        
-
-
         let submission = queue.submit(recorder).wait();
         log::info!("{:?}", submission);
+        */
     }
 }
 
