@@ -370,7 +370,10 @@ pub(crate) fn remove_bundle<B: Bundle>(
     entity: Entity,
     entities: &mut EntitySet,
 ) -> Option<B> {
-    assert!(B::is_valid(), "Bundle is not valid");
+    assert!(
+        B::is_valid(),
+        "Bundle is not valid, check the bundle for component collisions"
+    );
 
     // Get the old and new masks
     let old = entities[entity].mask;
@@ -411,6 +414,9 @@ pub(crate) fn remove_bundle<B: Bundle>(
             new
         );
     }
+
+    // If the bundle is a tuple bundle '()', then exit early since it's just a special case
+    // where we must remove the 
 
     // Get the current and target archetypes that we will modify
     let (current, target) = split(archetypes, old, new);
