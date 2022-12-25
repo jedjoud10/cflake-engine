@@ -32,7 +32,7 @@ impl<'a> EntryRef<'a> {
         self.linkings
     }
 
-    // Get an immutable reference to the enitity's archetype
+    // Get an immutable reference to the entity's archetype
     pub fn archetype(&self) -> &Archetype {
         self.archetype
     }

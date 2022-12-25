@@ -9,7 +9,7 @@ use std::{
 // Our target is the scalar (uniform scale)
 type Target = math::Scalar;
 
-#[derive(Clone, Copy, Component)]
+#[derive(Clone, Copy, PartialEq, Component)]
 #[repr(transparent)]
 pub struct Scale(Target);
 

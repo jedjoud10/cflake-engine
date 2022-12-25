@@ -203,21 +203,16 @@ impl Archetype {
         &mut self.states
     }
 
-    // Remove an entity that is stored within this archetype using it's index
-    // This will return the entity's old linkings if successful
+    // Paritally remove an entity that is stored within this archetype using it's index
+    // This will leave the component columns intact, since we must remove them using the component_table_mut
     pub(crate) fn remove(
         &mut self,
         entities: &mut EntitySet,
         entity: Entity,
-    ) -> Option<EntityLinkings> {
+    ) -> Option<()> {
         // Try to get the linkings and index
         let linkings = entities.remove(entity)?;
         let index = linkings.index();
-
-        // Remove the components from the columns
-        for (_, column) in self.components.iter_mut() {
-            column.swap_remove(index)
-        }
 
         // Remove the states from the columns
         for (_, column) in self.states.iter_mut() {
@@ -234,7 +229,7 @@ impl Archetype {
             swapped.index = index;
         }
 
-        Some(linkings)
+        Some(())
     }
 }
 
@@ -414,9 +409,6 @@ pub(crate) fn remove_bundle<B: Bundle>(
             new
         );
     }
-
-    // If the bundle is a tuple bundle '()', then exit early since it's just a special case
-    // where we must remove the 
 
     // Get the current and target archetypes that we will modify
     let (current, target) = split(archetypes, old, new);

@@ -73,56 +73,31 @@ impl Scene {
             .extend_from_slice::<B>(&mut self.entities, components)
     }
 
-    // Remove an entity, and discard it's components
-    pub fn remove(&mut self, entity: Entity) -> Option<()> {
-        self.remove_from_iter(once(entity))
+    /*
+    // Remove an entity and fetch the given bundle from it 
+    // This will return None if the entity is not valid or if the bundle is not valid
+    pub fn remove<B: Bundle>(&mut self, entity: Entity) -> Option<B> {
+        assert!(
+            B::is_valid(),
+            "Bundle is not valid, check the bundle for component collisions"
+        );
+
+        let mut vec = self.remove_from_iter(once(entity));
+        vec.pop().unwrap()
     }
 
-    // Remove an entity, and fetch it's removed components as a new bundle
-    pub fn remove_then<B: Bundle>(
-        &mut self,
-        entity: Entity,
-    ) -> Option<B> {
-        self.remove_from_iter_then::<B>(once(entity))
-            .map(|mut vec| vec.pop().unwrap())
+    // Remove multiple entity and fetch the given bundle (of the same type, same archetype) from them 
+    // This will return None if the entity is not valid or if the bundle is not valid
+    pub fn remove_from_iter<B: Bundle>(&mut self, iter: impl IntoIterator<Item = Entity>) -> Vec<Option<B>> {
+        assert!(
+            B::is_valid(),
+            "Bundle is not valid, check the bundle for component collisions"
+        );
+
+        todo!()
     }
-
-    // Remove multiple entities, and discard their components
-    pub fn remove_from_iter(
-        &mut self,
-        iter: impl IntoIterator<Item = Entity>,
-    ) -> Option<()> {
-        for entity in iter.into_iter() {
-            let linkings = *self.entities.get(entity)?;
-            let archetype =
-                self.archetypes.get_mut(&linkings.mask).unwrap();
-            archetype.remove(&mut self.entities, entity).unwrap();
-        }
-
-        Some(())
-    }
-
-    // Remove multiple entities, and fetch their removed components as new bundles
-    pub fn remove_from_iter_then<B: Bundle>(
-        &mut self,
-        iter: impl IntoIterator<Item = Entity>,
-    ) -> Option<Vec<B>> {
-        iter.into_iter()
-            .map(|entity| {
-                // Move the entity from it's current archetype to the unit archetype
-                remove_bundle::<B>(
-                    &mut self.archetypes,
-                    entity,
-                    &mut self.entities,
-                )
-                .map(|bundle| {
-                    self.entities.remove(entity).unwrap();
-                    bundle
-                })
-            })
-            .collect::<Option<Vec<B>>>()
-    }
-
+    */
+    
     // Check if an entity is stored within the scene
     pub fn contains(&self, entity: Entity) -> bool {
         self.entities.contains_key(entity)

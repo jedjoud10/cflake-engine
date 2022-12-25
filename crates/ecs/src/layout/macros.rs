@@ -1,6 +1,6 @@
 use crate::{
     mask, Archetype, Component, ComponentColumn, LayoutAccess, Mask,
-    MaskHashMap, OwnedBundle, QueryItemMut, QueryItemRef,
+    MaskHashMap, Bundle, QueryItemMut, QueryItemRef,
     QueryLayoutMut, QueryLayoutRef,
 };
 use casey::lower;
@@ -8,15 +8,15 @@ use seq_macro::seq;
 
 macro_rules! tuple_impls {
     ( $( $name:ident )+, $max:tt ) => {
-        impl<'a, $($name: Component),+> OwnedBundle<'a> for ($($name,)+) {
-            type Storages = ($(&'a mut Vec<$name>),+);
+        impl<$($name: Component),+> Bundle for ($($name,)+) {
+            type Storages<'a> = ($(&'a mut Vec<$name>),+);
 
             fn reduce(mut lambda: impl FnMut(Mask, Mask) -> Mask) -> Mask {
                 let masks = [$(mask::<$name>()),+];
                 masks[..].into_iter().cloned().reduce(|a, b| lambda(a, b)).unwrap()
             }
 
-            fn prepare(archetype: &'a mut Archetype) -> Option<Self::Storages> {
+            fn prepare<'a>(archetype: &'a mut Archetype) -> Option<Self::Storages<'a>> {
                 assert!(Self::is_valid());
                 seq!(N in 0..$max {
                     let table = archetype.components_mut::<C~N>()?;
@@ -29,7 +29,7 @@ macro_rules! tuple_impls {
                 ),+,))
             }
 
-            fn push(storages: &mut Self::Storages, bundle: Self) {
+            fn push<'a>(storages: &mut Self::Storages<'a>, bundle: Self) {
                 seq!(N in 0..$max {
                     let vec = &mut storages.N;
                     vec.push(bundle.N);

@@ -37,12 +37,12 @@ impl<'a> EntryMut<'a> {
         self.linkings
     }
 
-    // Get an immutable reference to the enitity's archetype
+    // Get an immutable reference to the entity's archetype
     pub fn archetype(&self) -> &Archetype {
         self.archetypes.get(&self.linkings().mask()).unwrap()
     }
 
-    // Get a mutable reference to the enitity's archetype
+    // Get a mutable reference to the entity's archetype
     pub fn archetype_mut(&mut self) -> &mut Archetype {
         self.archetypes.get_mut(&self.linkings().mask()).unwrap()
     }

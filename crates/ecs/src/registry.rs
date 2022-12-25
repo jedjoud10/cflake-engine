@@ -8,7 +8,7 @@ use std::any::{type_name, TypeId};
 // This is a certified hood classic
 pub trait Component
 where
-    Self: 'static + Sized,
+    Self: 'static,
 {
 }
 

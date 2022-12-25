@@ -55,24 +55,28 @@ impl<T: Component> ComponentColumn for Vec<T> {
         index: usize,
         other: &mut dyn ComponentColumn,
     ) {
-        let removed = self.swap_remove(index);
+        let removed = Vec::swap_remove(self, index);
         let other =
             other.as_any_mut().downcast_mut::<Self>().unwrap();
         other.push(removed);
     }
 
+    // Reserve more memory to fit "additional" more elements
     fn reserve(&mut self, additional: usize) {
         Vec::reserve(self, additional);
     }
 
+    // Shrink the memory allocation
     fn shrink_to_fit(&mut self) {
         Vec::shrink_to_fit(self);
     }
 
+    // Get the length of the storage
     fn len(&self) -> usize {
         Vec::len(self)
     }
 
+    // Create a new boxed component column based on the default state of Vec<T>
     fn clone_default(&self) -> Box<dyn ComponentColumn> {
         Box::new(Vec::<T>::new())
     }

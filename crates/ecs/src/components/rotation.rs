@@ -9,7 +9,7 @@ use std::{
 // Our target is the raw rotation (either 3D or 2D)
 type Target = math::RawRotation;
 
-#[derive(Default, Clone, Copy, Component)]
+#[derive(Default, Clone, Copy, PartialEq, Component)]
 #[repr(transparent)]
 pub struct Rotation(Target);
 

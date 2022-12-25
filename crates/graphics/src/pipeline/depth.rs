@@ -75,7 +75,7 @@ impl DepthConfig {
                 transmute::<CompareOp, vk::CompareOp>(depth_test)
             })
         } else {
-            builder
+            builder.depth_compare_op(vk::CompareOp::ALWAYS)
         };
 
         if let Some(depth_bounds) = depth_bounds {

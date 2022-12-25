@@ -9,7 +9,7 @@ use std::{
 // Our target is the raw point (either 3D or 2D)
 type Target = math::RawPoint;
 
-#[derive(Default, Clone, Copy, Component)]
+#[derive(Default, Clone, Copy, PartialEq, Component)]
 #[repr(transparent)]
 pub struct LocalPosition(Target);
 

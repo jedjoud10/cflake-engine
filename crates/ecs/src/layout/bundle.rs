@@ -3,11 +3,8 @@ use crate::{
 };
 
 // An owned layout trait will be implemented for owned tuples that contain a set of components
-pub trait OwnedBundle<'a>
-where
-    Self: Sized,
-{
-    type Storages: 'a;
+pub trait Bundle: Sized {
+    type Storages<'a>: 'a;
 
     // Get a combined  mask by running a lambda on each mask
     fn reduce(lambda: impl FnMut(Mask, Mask) -> Mask) -> Mask;
@@ -23,15 +20,18 @@ where
     }
 
     // Get the storage tables once and for all
-    fn prepare(
+    fn prepare<'a>(
         archetype: &'a mut Archetype,
-    ) -> Option<Self::Storages>;
+    ) -> Option<Self::Storages<'a>>;
 
     // Push an element into those tables
-    fn push(storages: &mut Self::Storages, bundle: Self);
+    fn push<'a>(storages: &mut Self::Storages<'a>, bundle: Self);
 
     // Get the default tables for this owned bundle
     fn default_tables() -> MaskHashMap<Box<dyn ComponentColumn>>;
+
+    // Try to get a default bundle (only used for unit bundles)
+    fn try_get_default() -> Option<Self> { None }
 
     // Try to remove and element from the tables, and try to return the cast element
     fn try_swap_remove(
@@ -39,14 +39,9 @@ where
         index: usize,
     ) -> Option<Self>;
 }
-
-// Same as owned bundle, but simply a wrapper to eliminate the 'a lifetime
-pub trait Bundle: for<'a> OwnedBundle<'a> {}
-impl<T: for<'a> OwnedBundle<'a>> Bundle for T {}
-
 // Implement the owned bundle for single component
-impl<'a, T: Component> OwnedBundle<'a> for T {
-    type Storages = &'a mut Vec<T>;
+impl<T: Component> Bundle for T {
+    type Storages<'a> = &'a mut Vec<T>;
 
     fn reduce(lambda: impl FnMut(Mask, Mask) -> Mask) -> Mask {
         std::iter::once(mask::<T>())
@@ -59,13 +54,13 @@ impl<'a, T: Component> OwnedBundle<'a> for T {
         true
     }
 
-    fn prepare(
+    fn prepare<'a>(
         archetype: &'a mut Archetype,
-    ) -> Option<Self::Storages> {
+    ) -> Option<Self::Storages<'a>> {
         archetype.components_mut::<T>()
     }
 
-    fn push(storages: &mut Self::Storages, bundle: Self) {
+    fn push<'a>(storages: &mut Self::Storages<'a>, bundle: Self) {
         storages.push(bundle)
     }
 
@@ -88,8 +83,8 @@ impl<'a, T: Component> OwnedBundle<'a> for T {
 }
 
 // Implement the owned bundle for the unit tuple
-impl<'a> OwnedBundle<'a> for () {
-    type Storages = ();
+impl Bundle for () {
+    type Storages<'a> = ();
 
     fn reduce(lambda: impl FnMut(Mask, Mask) -> Mask) -> Mask {
         std::iter::once(Mask::zero())
@@ -102,16 +97,20 @@ impl<'a> OwnedBundle<'a> for () {
         true
     }
 
-    fn prepare(
+    fn prepare<'a>(
         archetype: &'a mut Archetype,
-    ) -> Option<Self::Storages> {
+    ) -> Option<Self::Storages<'a>> {
         archetype.mask().is_zero().then_some(())
     }
 
-    fn push(_storages: &mut Self::Storages, _bundle: Self) {}
+    fn push<'a>(_storages: &mut Self::Storages<'a>, _bundle: Self) {}
 
     fn default_tables() -> MaskHashMap<Box<dyn ComponentColumn>> {
         MaskHashMap::default()
+    }
+
+    fn try_get_default() -> Option<Self> {
+        Some(())
     }
 
     fn try_swap_remove(

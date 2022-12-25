@@ -364,6 +364,7 @@ fn filter_mut() {
     assert_eq!(query.len(), 2);
     assert_eq!(query.into_iter().count(), 2);
     let query = manager.query_mut::<&mut Health>();
+    // WTF sometimes this is false??? maybe UB?
     assert_eq!(query.len(), 3);
     assert_eq!(query.into_iter().count(), 3);
     cleanup(&mut manager);
@@ -412,17 +413,20 @@ fn filter_mut() {
 #[test]
 fn unit_tuple() {
     let mut manager = Scene::default();
-    let entity1 = manager.insert(());
-    let entity2 = manager.insert(());
-    let entry1 = manager.entry(entity1).unwrap();
-    let entry2 = manager.entry(entity2).unwrap();
+    let e1 = manager.insert(());
+    let e2 = manager.insert(());
+    let e3 = manager.insert(Health(100));
+    let entry1 = manager.entry(e1).unwrap();
+    let entry2 = manager.entry(e2).unwrap();
+    let entry3 = manager.entry(e3).unwrap();
     assert_eq!(entry1.archetype().mask(), Mask::zero());
     assert_eq!(entry2.archetype().mask(), Mask::zero());
     assert_eq!(entry1.archetype().len(), 2);
+    assert_eq!(entry3.contains::<()>(), true);
 
-    let mut entry1 = manager.entry_mut(entity1).unwrap();
+    let mut entry1 = manager.entry_mut(e1).unwrap();
     entry1.insert_bundle(Health(0)).unwrap();
-    let mut entry2 = manager.entry_mut(entity2).unwrap();
+    let mut entry2 = manager.entry_mut(e2).unwrap();
     entry2.insert_bundle(Health(0)).unwrap();
 }
 
@@ -439,4 +443,15 @@ fn hierarchy() {
     let child = entry2.get::<Child>().unwrap();
     assert_eq!(child.parent(), entity1);
     assert_eq!(child.depth(), 1);
+}
+
+#[test]
+fn removal() {
+    let mut manager = Scene::default();
+    let e1 = manager.insert((Health(100), Ammo(100)));
+    let e2 = manager.insert((Health(100), Ammo(100)));
+    let e3 = manager.insert((Health(100), Ammo(100)));
+    let e4 = manager.insert((Health(100), Ammo(100)));
+    let e5 = manager.insert((Health(100), Ammo(100)));
+
 }
