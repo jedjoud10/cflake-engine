@@ -19,13 +19,7 @@ pub trait OutputStreamBuilder: Any + Sync + Send {
     ) -> Result<Stream, BuildStreamError>;
 }
 
-impl<T: Sample> OutputStreamBuilder for Arc<[T]> {
-    fn build_output_stream(
-        &self,
-        listener: &AudioPlayer,
-    ) -> Result<Stream, BuildStreamError> {
-        todo!()
-    }
+pub trait IntoOutputStreamBuilder {
 }
 
 // Internal function that actually builds the CPAL stream

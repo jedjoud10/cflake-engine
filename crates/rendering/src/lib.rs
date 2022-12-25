@@ -1,6 +1,6 @@
 mod material;
 mod mesh;
-mod system;
+mod scene;
 pub use material::*;
 pub use mesh::*;
-pub use system::*;
+pub use scene::*;

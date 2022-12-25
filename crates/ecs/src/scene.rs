@@ -281,6 +281,7 @@ fn update(world: &mut World) {
     let mut transforms = AHashMap::<Entity, Transform>::new();
 
     // Fetch entities that are roots (ONLY parents)
+    // TODO: Optimize this by only checking only the parents that have been modified, and updating their subtree ONLY if the parent transform got modified
     let filter = contains::<Parent>() & !contains::<Child>();
     for (entity, pos, rot, scl) in scene.query_with::<(
         &Entity,
