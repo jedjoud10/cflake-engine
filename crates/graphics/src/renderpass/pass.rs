@@ -54,15 +54,14 @@ impl RenderPass {
     } 
 
     // Recreate the render pass and modify it's framebuffer size
-    pub unsafe fn recreate(
+    pub unsafe fn resize(
         &mut self,
         dimensions: vek::Extent2<u32>,
     ) {
         self.graphics.device().wait();
         
         // Create a new framebuffer
-        let extent = self.graphics.swapchain().extent();
-        let framebuffer = Self::create_framebuffer(&self.graphics, extent);
+        let framebuffer = Self::create_framebuffer(&self.graphics, dimensions);
 
         // Replace the framebuffer
         let old = std::mem::replace(&mut self.framebuffer, framebuffer);        

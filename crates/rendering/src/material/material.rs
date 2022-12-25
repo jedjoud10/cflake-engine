@@ -2,8 +2,9 @@ use assets::Assets;
 use graphics::{
     BlendConfig, CompareOp, DepthConfig, DescriptorSet, FaceCullMode,
     FragmentModule, Primitive, Processed, StencilConfig,
-    VertexModule, Compiled,
+    VertexModule, Compiled, Graphics,
 };
+use world::World;
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
 // Materials correspond to a specific Vulkan pipeline based on it's config parameters
@@ -12,19 +13,19 @@ pub trait Material: 'static + Sized {
     type Resources<'w>: 'w;
 
     // Static scene descriptor set
-    type SceneDescriptorSet<'w>: 'w + DescriptorSet;
+    type SceneDescriptorSet<'ds>: DescriptorSet<'ds>;
 
     // Instance descriptor set
-    type InstanceDescriptorSet<'w>: 'w + DescriptorSet;
+    type InstanceDescriptorSet<'ds>: DescriptorSet<'ds>;
 
     // Surface descriptor set
-    type SurfaceDescriptorSet<'w>: 'w + DescriptorSet;
+    type SurfaceDescriptorSet<'ds>: DescriptorSet<'ds>;
 
     // Load the vertex module and process it
-    fn vertex(assets: &Assets) -> Compiled<VertexModule>;
+    fn vertex(graphics: &Graphics, assets: &Assets) -> Compiled<VertexModule>;
 
     // Load the fragment module and process it
-    fn fragment(assets: &Assets) -> Compiled<FragmentModule>;
+    fn fragment(graphics: &Graphics, assets: &Assets) -> Compiled<FragmentModule>;
 
     // Get the required mesh attributes that we need to render a surface
     fn required_mesh_attributes() -> ();
@@ -58,20 +59,23 @@ pub trait Material: 'static + Sized {
         BlendConfig {}
     }
 
+    // Fetch the property block resources
+    fn fetch<'w>(world: &'w World) -> Self::Resources<'w>;
+
     // Set the global and static instance descriptor sets
-    fn get_static_descriptor_set<'w>(
+    fn get_static_descriptor_set<'w: 'ds, 'ds>(
         resources: &mut Self::Resources<'w>,
-    ) -> Self::SceneDescriptorSet<'w>;
+    ) -> Self::SceneDescriptorSet<'ds>;
 
     // Set the uniforms for this property block right before we render our surface
-    fn get_surface_descriptor_set<'w>(
+    fn get_surface_descriptor_set<'w: 'ds, 'ds>(
         resources: &mut Self::Resources<'w>,
-    ) -> Self::SurfaceDescriptorSet<'w>;
+    ) -> Self::SurfaceDescriptorSet<'ds>;
 
     // With the help of the fetched resources, set the uniform properties for a unique material instance
     // This will only be called whenever we switch instances
-    fn get_instance_descriptor_set<'w>(
+    fn get_instance_descriptor_set<'w: 'ds, 'ds>(
         resources: &mut Self::Resources<'w>,
         instance: &Self,
-    ) -> Self::InstanceDescriptorSet<'w>;
+    ) -> Self::InstanceDescriptorSet<'ds>;
 }

@@ -254,7 +254,7 @@ impl Swapchain {
     }
 
     // Recreate the swapchain with some new dimensions
-    pub unsafe fn recreate(
+    pub unsafe fn resize(
         &self,
         adapter: &Adapter,
         device: &Device,

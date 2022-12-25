@@ -1678,6 +1678,7 @@ dependencies = [
  "graphics",
  "log",
  "parking_lot",
+ "utils",
  "vek",
  "world",
 ]
