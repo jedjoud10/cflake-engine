@@ -7,6 +7,6 @@ mod stencil;
 pub use blend::*;
 pub use config::*;
 pub use depth::*;
-pub use graphics::*;
+pub use self::graphics::*;
 pub use primitive::*;
 pub use stencil::*;

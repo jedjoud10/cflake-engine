@@ -1,5 +1,7 @@
+use std::mem::size_of;
+use vek::{Vec2, Vec3, Vec4};
 use vulkan::vk;
-use crate::{R, ChannelsType, Base, BaseType};
+use crate::{R, ChannelsType, Base, BaseType, Normalizable, ColorChannels, Normalized, DepthElement, StencilElement, Depth, Stencil, RG, RGB, RGBA};
 use super::AnyElement;
 
 // An untyped wrapper around texel types
@@ -50,3 +52,64 @@ pub trait Texel: 'static + Sized {
         }
     }
 }
+
+// Implement the color texel layout
+macro_rules! impl_color_texel_layout {
+    ($t:ident, $channels_type:expr, $vec: ident) => {
+        impl<T: AnyElement> Texel for $t<T> {
+            const BITS_PER_CHANNEL: u32 = size_of::<T>() as u32 * 8;
+            const BASE_TYPE: BaseType = T::TYPE;
+            const NORMALIZED: bool = T::NORMALIZED;
+            const CHANNELS_TYPE: ChannelsType = $channels_type;
+            const FORMAT: vk::Format = super::pick_format_from_params(
+                Self::BITS_PER_CHANNEL,
+                Self::BASE_TYPE,
+                Self::NORMALIZED,
+                Self::CHANNELS_TYPE
+            );
+            type Storage = $vec<T>;
+        }
+    };
+}
+
+// Implement the special texel layouts
+macro_rules! impl_special_texel_layout {
+    () => {
+        impl<T: DepthElement> Texel for Depth<T> {
+            const BITS_PER_CHANNEL: u32 = size_of::<T>() as u32 * 8;
+            const BASE_TYPE: BaseType = T::TYPE;
+            const NORMALIZED: bool = false;
+            const CHANNELS_TYPE: ChannelsType = ChannelsType::Depth;
+            const FORMAT: vk::Format = super::pick_format_from_params(
+                Self::BITS_PER_CHANNEL,
+                Self::BASE_TYPE,
+                Self::NORMALIZED,
+                Self::CHANNELS_TYPE
+            );
+            type Storage = T;
+        }
+
+        impl<T: StencilElement> Texel for Stencil<T> {
+            const BITS_PER_CHANNEL: u32 = size_of::<T>() as u32 * 8;
+            const BASE_TYPE: BaseType = T::TYPE;
+            const NORMALIZED: bool = true;
+            const CHANNELS_TYPE: ChannelsType = ChannelsType::Stencil;
+            const FORMAT: vk::Format = super::pick_format_from_params(
+                Self::BITS_PER_CHANNEL,
+                Self::BASE_TYPE,
+                Self::NORMALIZED,
+                Self::CHANNELS_TYPE
+            );
+            type Storage = T;
+        }
+    };
+}
+
+// Need this for the macro to work
+type Scalar<T> = T;
+
+impl_color_texel_layout!(R, ChannelsType::Color(ColorChannels::R), Scalar);
+impl_color_texel_layout!(RG, ChannelsType::Color(ColorChannels::RG), Vec2);
+impl_color_texel_layout!(RGB, ChannelsType::Color(ColorChannels::RGB), Vec3);
+impl_color_texel_layout!(RGBA, ChannelsType::Color(ColorChannels::RGBA), Vec4);
+impl_special_texel_layout!();
