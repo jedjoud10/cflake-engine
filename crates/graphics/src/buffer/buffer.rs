@@ -234,7 +234,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
                 .size(size);
 
             // Record the cpy staging -> src buffer command
-            recorder.cmd_full_barrier();
+            recorder.cmd_full_pipeline_barrier();
             recorder.cmd_copy_buffer(
                 block.buffer(),
                 self.buffer,
@@ -275,7 +275,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
                 .size(size);
 
             // Record the cpy src buffer -> staging command
-            recorder.cmd_full_barrier();
+            recorder.cmd_full_pipeline_barrier();
             recorder.cmd_copy_buffer(
                 self.buffer,
                 block.buffer(),
@@ -342,7 +342,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
             .size(size);
 
         // Record the cpy src -> self buffer command
-        recorder.cmd_full_barrier();
+        recorder.cmd_full_pipeline_barrier();
         recorder.cmd_copy_buffer(src.buffer, self.buffer, &[copy]);
     }
 
@@ -386,7 +386,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
                 .size(old_length_bytes);
 
             // Record the cpy src -> self buffer command
-            recorder.cmd_full_barrier();
+            recorder.cmd_full_pipeline_barrier();
             recorder.cmd_copy_buffer(self.buffer, buffer, &[copy]);
             queue.submit(recorder).wait();
 
@@ -546,6 +546,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
 
     // Try to view the buffer immutably (if it's mappable)
     pub fn as_slice(&self) -> Result<&[T], BufferError> {
+        self.
         self.allocation()
             .mapped_slice()
             .map(|bytes| {
