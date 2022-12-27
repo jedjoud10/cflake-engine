@@ -23,6 +23,7 @@ pub(super) unsafe fn allocate_buffer<'a, T: Content>(
     (buffer, src_allocation)
 }
 
+// Fills a buffer with the specified data. Used for init
 pub(super) unsafe fn fill_buffer<'a, T: Content>(
     graphics: &Graphics,
     buffer: vk::Buffer,
@@ -55,10 +56,10 @@ pub(super) unsafe fn fill_buffer<'a, T: Content>(
             .size(size);
 
         // Record the cpy staging -> src buffer command
-        recorder.cmd_full_barrier();
+        recorder.cmd_full_pipeline_barrier();
         recorder.cmd_copy_buffer(block.buffer(), buffer, &[copy]);
 
-        queue.submit(recorder).wait();
+        queue.chain(recorder);
         device.staging_pool().unlock(device, block);
     } else {
         // Write to the buffer memory by mapping it directly
@@ -97,7 +98,7 @@ pub(super) unsafe fn copy_from_staging<'a>(
         .size(size);
 
     // Record the cpy staging -> src buffer command
-    recorder.cmd_full_barrier();
+    recorder.cmd_full_pipeline_barrier();
     recorder.cmd_copy_buffer(src_block.buffer(), dst_buffer, &[copy]);
 }
 
@@ -116,6 +117,6 @@ pub(super) unsafe fn copy_into_staging<'a>(
         .size(size);
 
     // Record the cpy src buffer -> staging command
-    recorder.cmd_full_barrier();
+    recorder.cmd_full_pipeline_barrier();
     recorder.cmd_copy_buffer(src_buffer, dst_block.buffer(), &[copy]);
 }

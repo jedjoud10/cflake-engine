@@ -50,8 +50,8 @@ impl<'a> Recorder<'a> {
 
 // Synchronization
 impl<'a> Recorder<'a> {
-    // Full barrier
-    pub unsafe fn cmd_full_barrier(&mut self) {
+    // Full pipeline barrier
+    pub unsafe fn cmd_full_pipeline_barrier(&mut self) {
         self.device().raw().cmd_pipeline_barrier(
             self.command_buffer().raw(),
             vk::PipelineStageFlags::ALL_COMMANDS,
@@ -60,6 +60,32 @@ impl<'a> Recorder<'a> {
             &[],
             &[],
             &[],
+        );
+    }
+
+    // Specific buffer memory barrier
+    pub unsafe fn cmd_buffer_memory_barrier(&mut self, barrier: vk::BufferMemoryBarrier) {
+        self.device().raw().cmd_pipeline_barrier(
+            self.command_buffer().raw(),
+            vk::PipelineStageFlags::ALL_COMMANDS,
+            vk::PipelineStageFlags::ALL_COMMANDS,
+            vk::DependencyFlags::empty(),
+            &[],
+            &[barrier],
+            &[],
+        );
+    }
+
+    // Specific image memory barrier
+    pub unsafe fn cmd_image_memory_barrier(&mut self, barrier: vk::ImageMemoryBarrier) {
+        self.device().raw().cmd_pipeline_barrier(
+            self.command_buffer().raw(),
+            vk::PipelineStageFlags::ALL_COMMANDS,
+            vk::PipelineStageFlags::ALL_COMMANDS,
+            vk::DependencyFlags::empty(),
+            &[],
+            &[],
+            &[barrier],
         );
     }
 }

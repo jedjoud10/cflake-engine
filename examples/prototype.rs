@@ -15,11 +15,22 @@ fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
     let assets = world.get::<Assets>().unwrap();
 
-    // Load a vertex shader
-    let vert = assets
-        .load::<VertexModule>("engine/shaders/basic.vert")
-        .unwrap();
-    let mut processor = Processor::new(vert, &assets);
-    processor.define_snippet("snippet1", "void test2() {}");
-    let compiled = Compiled::compile(&graphics, processor.process());
+    // Create a new buffer
+    let mut buffer1 = StorageBuffer::<u32>::from_slice(
+        &graphics,
+        &[1; 10],
+        BufferMode::default(),
+        BufferUsage::GpuToCpu,
+    ).unwrap();
+
+    log::info!("{:?}", buffer1.as_slice());
+    buffer1.extend_from_slice(&[2; 5]).unwrap();
+    log::info!("{:?}", buffer1.as_slice());
+
+    let mut buffer2 = StorageBuffer::<u32>::from_slice(
+        &graphics,
+        &[1; 10],
+        BufferMode::default(),
+        BufferUsage::GpuToCpu,
+    ).unwrap();
 }

@@ -116,8 +116,9 @@ impl CommandPool {
             .unwrap();
     }
 
+    // Chaining a command buffer makes it free, so we can use it again without submission
     pub unsafe fn chain(&self, command_buffer: &CommandBuffer) {
-        *command_buffer.free.lock() = false;
+        *command_buffer.free.lock() = true;
     }
 
     // Submit a recorder to the queue
