@@ -445,6 +445,7 @@ fn hierarchy() {
     assert_eq!(child.depth(), 1);
 }
 
+/*
 #[test]
 fn removal() {
     let mut manager = Scene::default();
@@ -455,3 +456,4 @@ fn removal() {
     let e5 = manager.insert((Health(100), Ammo(100)));
 
 }
+*/

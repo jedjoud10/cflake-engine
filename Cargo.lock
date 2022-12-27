@@ -881,6 +881,7 @@ dependencies = [
  "log",
  "math",
  "parking_lot",
+ "paste",
  "snailquote",
  "thiserror",
  "utils",
