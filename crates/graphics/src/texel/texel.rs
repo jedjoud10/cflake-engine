@@ -10,7 +10,6 @@ pub struct UntypedTexel {
     pub format: vk::Format,
     pub channels: ChannelsType,
     pub element: ElementType,
-    pub base: BaseType,
 
     // Storage/memory related
     pub total_bits: u32,
@@ -24,11 +23,7 @@ pub trait Texel: 'static + Sized {
     // Number of bits per channel
     const BITS_PER_CHANNEL: u32;
 
-    // Untyped representation of the underlying base
-    // TODO: Rename this mofo
-    const BASE_TYPE: BaseType;
-
-    // TODO: bruh, mayb rename?
+    // Untyped representation of the underlying element
     const ELEMENT_TYPE: ElementType;
 
     // Type of channels (either R, RG, RGB, RGBA, Depth, Stencil)
@@ -45,7 +40,6 @@ pub trait Texel: 'static + Sized {
         UntypedTexel {
             format: Self::FORMAT,
             channels: Self::CHANNELS_TYPE,
-            base: Self::BASE_TYPE,
             element: Self::ELEMENT_TYPE,
             bits_per_channel: Self::BITS_PER_CHANNEL,
             total_bits: Self::BITS_PER_CHANNEL * Self::CHANNELS_TYPE.count()
@@ -58,7 +52,6 @@ macro_rules! impl_color_texel_layout {
     ($t:ident, $channels_type:expr, $vec: ident) => {
         impl<T: AnyElement> Texel for $t<T> {
             const BITS_PER_CHANNEL: u32 = size_of::<T>() as u32 * 8;
-            const BASE_TYPE: BaseType = T::BASE_TYPE;
             const ELEMENT_TYPE: ElementType = T::ELEMENT_TYPE;
             const CHANNELS_TYPE: ChannelsType = $channels_type;
             const FORMAT: vk::Format = super::pick_format_from_params(
@@ -75,7 +68,6 @@ macro_rules! impl_special_texel_layout {
     () => {
         impl<T: DepthElement> Texel for Depth<T> {
             const BITS_PER_CHANNEL: u32 = size_of::<T>() as u32 * 8;
-            const BASE_TYPE: BaseType = T::BASE_TYPE;
             const ELEMENT_TYPE: ElementType = T::ELEMENT_TYPE;
             const CHANNELS_TYPE: ChannelsType = ChannelsType::Depth;
             const FORMAT: vk::Format = super::pick_format_from_params(
@@ -87,7 +79,6 @@ macro_rules! impl_special_texel_layout {
 
         impl<T: StencilElement> Texel for Stencil<T> {
             const BITS_PER_CHANNEL: u32 = size_of::<T>() as u32 * 8;
-            const BASE_TYPE: BaseType = T::BASE_TYPE;
             const ELEMENT_TYPE: ElementType = T::ELEMENT_TYPE;
             const CHANNELS_TYPE: ChannelsType = ChannelsType::Stencil;
             const FORMAT: vk::Format = super::pick_format_from_params(

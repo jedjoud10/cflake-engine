@@ -122,5 +122,8 @@ mod texels {
 
     #[test]
     fn special() {
+        assert_eq!(Depth::<Normalized<u16>>::FORMAT, vk::Format::D16_UNORM);
+        assert_eq!(Depth::<f32>::FORMAT, vk::Format::D32_SFLOAT);
+        assert_eq!(Stencil::<u8>::FORMAT, vk::Format::S8_UINT);
     }
 }

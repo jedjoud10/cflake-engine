@@ -3,12 +3,10 @@ use crate::{Base, BaseType};
 
 // Elements are just values that can be stored within channels, like u32, Normalized<i8> or i8
 pub trait AnyElement: 'static {
-    const BASE_TYPE: BaseType; 
     const ELEMENT_TYPE: ElementType;
 }
 impl<T: Base> AnyElement for T {
-    const BASE_TYPE: BaseType = T::TYPE;
-    const ELEMENT_TYPE: ElementType = match Self::BASE_TYPE {
+    const ELEMENT_TYPE: ElementType = match T::TYPE {
         BaseType::Eight => ElementType::Eight { signed: T::SIGNED, normalized: false },
         BaseType::Sixteen => ElementType::Sixteen { signed: T::SIGNED, normalized: false },
         BaseType::ThirtyTwo => ElementType::ThirtyTwo { signed: T::SIGNED },
@@ -19,7 +17,7 @@ impl<T: Base> AnyElement for T {
     };
 }
 
-// Untyped element type
+// Untyped element type that will be used to fetch VkFormat
 pub enum ElementType {
     Eight {
         signed: bool,
@@ -56,8 +54,7 @@ impl Normalizable for u16 {}
 //  the -1 - 1 range if it's a signed integer and the 0 - 1 range if it's an unsigned integer
 pub struct Normalized<T: Base + Normalizable>(T);
 impl<T: Base + Normalizable> AnyElement for Normalized<T> {
-    const BASE_TYPE: BaseType = T::TYPE;
-    const ELEMENT_TYPE: ElementType = match Self::BASE_TYPE {
+    const ELEMENT_TYPE: ElementType = match T::TYPE {
         BaseType::Eight => ElementType::Eight { signed: T::SIGNED, normalized: true },
         BaseType::Sixteen => ElementType::Sixteen { signed: T::SIGNED, normalized: true },
 

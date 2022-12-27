@@ -9,14 +9,16 @@ pub struct RGBA<T: AnyElement>(vek::Vec4<T>);
 
 // TODO: Implement SRGB
 
-// Element used only for depth texels
+// Element used only for depth-only texels
 pub trait DepthElement: AnyElement {}
 impl DepthElement for Normalized<u16> {}
 impl DepthElement for f32 {}
 
-// Element used only for stencil texels
+// Element used for stencil-only texels
 pub trait StencilElement: AnyElement {}
 impl StencilElement for u8 {}
+
+// TODO: Implement depth-stencil texels
 
 // Unique depth and stencil channels for depth render textures and stencil render textures
 pub struct Depth<T: DepthElement>(T);

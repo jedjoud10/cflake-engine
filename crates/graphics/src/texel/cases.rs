@@ -77,6 +77,23 @@ const fn pick_format_from_color_channels(
     }  
 }
 
+// Converts the given depth channel to the proper format
+const fn pick_depth_format(element_type: ElementType) -> vk::Format  {
+    match element_type {
+        ElementType::Sixteen { signed: false, normalized: true } => vk::Format::D16_UNORM,
+        ElementType::FloatThirtyTwo => vk::Format::D32_SFLOAT,
+        _ => panic!(),
+    }
+}
+
+// Converts the given stencil channel to the proper format
+const fn pick_stencil_format(element_type: ElementType) -> vk::Format {
+    match element_type {
+        ElementType::Eight { signed: false, normalized: false } => vk::Format::S8_UINT,
+        _ => panic!(),
+    }
+}
+
 // Converts the given data to the proper format
 // This is called within the Texel::format method
 pub const fn pick_format_from_params(
@@ -88,7 +105,7 @@ pub const fn pick_format_from_params(
             element_type,
             channels
         ),
-        ChannelsType::Depth => todo!(),
-        ChannelsType::Stencil => todo!(),
+        ChannelsType::Depth => pick_depth_format(element_type),
+        ChannelsType::Stencil => pick_stencil_format(element_type),
     }
 }
