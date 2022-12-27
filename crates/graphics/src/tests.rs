@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod texels {
+    use half::f16;
     use vulkan::vk;
-
     use crate::texel::*;
     
     #[test]
@@ -10,7 +10,9 @@ mod texels {
         assert_eq!(R::<u16>::BITS_PER_CHANNEL, 16);
         assert_eq!(R::<u32>::BITS_PER_CHANNEL, 32);
         assert_eq!(R::<u64>::BITS_PER_CHANNEL, 64);
+        assert_eq!(R::<f16>::BITS_PER_CHANNEL, 16);
         assert_eq!(R::<f32>::BITS_PER_CHANNEL, 32);
+        assert_eq!(R::<f64>::BITS_PER_CHANNEL, 64);
     }
 
     #[test]
@@ -30,10 +32,33 @@ mod texels {
         assert_eq!(RGB::<u16>::FORMAT, vk::Format::R16G16B16_UINT);
         assert_eq!(RGBA::<u16>::FORMAT, vk::Format::R16G16B16A16_UINT);
 
+        assert_eq!(R::<u32>::FORMAT, vk::Format::R32_UINT);
+        assert_eq!(RG::<u32>::FORMAT, vk::Format::R32G32_UINT);
+        assert_eq!(RGB::<u32>::FORMAT, vk::Format::R32G32B32_UINT);
+        assert_eq!(RGBA::<u32>::FORMAT, vk::Format::R32G32B32A32_UINT);
+
+        assert_eq!(R::<u64>::FORMAT, vk::Format::R64_UINT);
+        assert_eq!(RG::<u64>::FORMAT, vk::Format::R64G64_UINT);
+        assert_eq!(RGB::<u64>::FORMAT, vk::Format::R64G64B64_UINT);
+        assert_eq!(RGBA::<u64>::FORMAT, vk::Format::R64G64B64A64_UINT);
+    }
+
+    #[test]
+    fn float() {
+        assert_eq!(R::<f16>::FORMAT, vk::Format::R16_SFLOAT);
+        assert_eq!(RG::<f16>::FORMAT, vk::Format::R16G16_SFLOAT);
+        assert_eq!(RGB::<f16>::FORMAT, vk::Format::R16G16B16_SFLOAT);
+        assert_eq!(RGBA::<f16>::FORMAT, vk::Format::R16G16B16A16_SFLOAT);
+
         assert_eq!(R::<f32>::FORMAT, vk::Format::R32_SFLOAT);
         assert_eq!(RG::<f32>::FORMAT, vk::Format::R32G32_SFLOAT);
         assert_eq!(RGB::<f32>::FORMAT, vk::Format::R32G32B32_SFLOAT);
         assert_eq!(RGBA::<f32>::FORMAT, vk::Format::R32G32B32A32_SFLOAT);
+
+        assert_eq!(R::<f64>::FORMAT, vk::Format::R64_SFLOAT);
+        assert_eq!(RG::<f64>::FORMAT, vk::Format::R64G64_SFLOAT);
+        assert_eq!(RGB::<f64>::FORMAT, vk::Format::R64G64B64_SFLOAT);
+        assert_eq!(RGBA::<f64>::FORMAT, vk::Format::R64G64B64A64_SFLOAT);
     }
 
     #[test]
@@ -61,20 +86,41 @@ mod texels {
 
     #[test]
     fn signed() {
-        type SX = R<i8>;
-        type SY = R<i16>;
-        type SZ = R<i32>;
+        assert_eq!(R::<i8>::FORMAT, vk::Format::R8_SINT);
+        assert_eq!(RG::<i8>::FORMAT, vk::Format::R8G8_SINT);
+        assert_eq!(RGB::<i8>::FORMAT, vk::Format::R8G8B8_SINT);
+        assert_eq!(RGBA::<i8>::FORMAT, vk::Format::R8G8B8A8_SINT);
+
+        assert_eq!(R::<i16>::FORMAT, vk::Format::R16_SINT);
+        assert_eq!(RG::<i16>::FORMAT, vk::Format::R16G16_SINT);
+        assert_eq!(RGB::<i16>::FORMAT, vk::Format::R16G16B16_SINT);
+        assert_eq!(RGBA::<i16>::FORMAT, vk::Format::R16G16B16A16_SINT);
     }
 
     #[test]
-    fn unsigned() {
-        type UX = R<u8>;
-        type UY = R<u16>;
-        type UZ = R<u32>;
+    fn unsugned() {
+        assert_eq!(R::<u8>::FORMAT, vk::Format::R8_UINT);
+        assert_eq!(RG::<u8>::FORMAT, vk::Format::R8G8_UINT);
+        assert_eq!(RGB::<u8>::FORMAT, vk::Format::R8G8B8_UINT);
+        assert_eq!(RGBA::<u8>::FORMAT, vk::Format::R8G8B8A8_UINT);
+
+        assert_eq!(R::<u16>::FORMAT, vk::Format::R16_UINT);
+        assert_eq!(RG::<u16>::FORMAT, vk::Format::R16G16_UINT);
+        assert_eq!(RGB::<u16>::FORMAT, vk::Format::R16G16B16_UINT);
+        assert_eq!(RGBA::<u16>::FORMAT, vk::Format::R16G16B16A16_UINT);
+
+        assert_eq!(R::<u32>::FORMAT, vk::Format::R32_UINT);
+        assert_eq!(RG::<u32>::FORMAT, vk::Format::R32G32_UINT);
+        assert_eq!(RGB::<u32>::FORMAT, vk::Format::R32G32B32_UINT);
+        assert_eq!(RGBA::<u32>::FORMAT, vk::Format::R32G32B32A32_UINT);
+
+        assert_eq!(R::<u64>::FORMAT, vk::Format::R64_UINT);
+        assert_eq!(RG::<u64>::FORMAT, vk::Format::R64G64_UINT);
+        assert_eq!(RGB::<u64>::FORMAT, vk::Format::R64G64B64_UINT);
+        assert_eq!(RGBA::<u64>::FORMAT, vk::Format::R64G64B64A64_UINT);
     }
 
     #[test]
     fn special() {
-
     }
 }

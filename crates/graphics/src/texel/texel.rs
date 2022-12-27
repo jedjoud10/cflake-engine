@@ -1,7 +1,7 @@
 use std::mem::size_of;
 use vek::{Vec2, Vec3, Vec4};
 use vulkan::vk;
-use crate::{R, ChannelsType, Base, BaseType, Normalizable, ColorChannels, Normalized, DepthElement, StencilElement, Depth, Stencil, RG, RGB, RGBA};
+use crate::{R, ChannelsType, Base, BaseType, Normalizable, ColorChannels, Normalized, DepthElement, StencilElement, Depth, Stencil, RG, RGB, RGBA, ElementType};
 use super::AnyElement;
 
 // An untyped wrapper around texel types
@@ -9,7 +9,7 @@ pub struct UntypedTexel {
     // Format related
     pub format: vk::Format,
     pub channels: ChannelsType,
-    pub normalized: bool,
+    pub element: ElementType,
     pub base: BaseType,
 
     // Storage/memory related
@@ -28,8 +28,8 @@ pub trait Texel: 'static + Sized {
     // TODO: Rename this mofo
     const BASE_TYPE: BaseType;
 
-    // Is the data normalized to it's appropriate range
-    const NORMALIZED: bool;
+    // TODO: bruh, mayb rename?
+    const ELEMENT_TYPE: ElementType;
 
     // Type of channels (either R, RG, RGB, RGBA, Depth, Stencil)
     const CHANNELS_TYPE: ChannelsType; 
@@ -46,7 +46,7 @@ pub trait Texel: 'static + Sized {
             format: Self::FORMAT,
             channels: Self::CHANNELS_TYPE,
             base: Self::BASE_TYPE,
-            normalized: Self::NORMALIZED,
+            element: Self::ELEMENT_TYPE,
             bits_per_channel: Self::BITS_PER_CHANNEL,
             total_bits: Self::BITS_PER_CHANNEL * Self::CHANNELS_TYPE.count()
         }
@@ -58,13 +58,11 @@ macro_rules! impl_color_texel_layout {
     ($t:ident, $channels_type:expr, $vec: ident) => {
         impl<T: AnyElement> Texel for $t<T> {
             const BITS_PER_CHANNEL: u32 = size_of::<T>() as u32 * 8;
-            const BASE_TYPE: BaseType = T::TYPE;
-            const NORMALIZED: bool = T::NORMALIZED;
+            const BASE_TYPE: BaseType = T::BASE_TYPE;
+            const ELEMENT_TYPE: ElementType = T::ELEMENT_TYPE;
             const CHANNELS_TYPE: ChannelsType = $channels_type;
             const FORMAT: vk::Format = super::pick_format_from_params(
-                Self::BITS_PER_CHANNEL,
-                Self::BASE_TYPE,
-                Self::NORMALIZED,
+                Self::ELEMENT_TYPE,
                 Self::CHANNELS_TYPE
             );
             type Storage = $vec<T>;
@@ -77,13 +75,11 @@ macro_rules! impl_special_texel_layout {
     () => {
         impl<T: DepthElement> Texel for Depth<T> {
             const BITS_PER_CHANNEL: u32 = size_of::<T>() as u32 * 8;
-            const BASE_TYPE: BaseType = T::TYPE;
-            const NORMALIZED: bool = false;
+            const BASE_TYPE: BaseType = T::BASE_TYPE;
+            const ELEMENT_TYPE: ElementType = T::ELEMENT_TYPE;
             const CHANNELS_TYPE: ChannelsType = ChannelsType::Depth;
             const FORMAT: vk::Format = super::pick_format_from_params(
-                Self::BITS_PER_CHANNEL,
-                Self::BASE_TYPE,
-                Self::NORMALIZED,
+                Self::ELEMENT_TYPE,
                 Self::CHANNELS_TYPE
             );
             type Storage = T;
@@ -91,13 +87,11 @@ macro_rules! impl_special_texel_layout {
 
         impl<T: StencilElement> Texel for Stencil<T> {
             const BITS_PER_CHANNEL: u32 = size_of::<T>() as u32 * 8;
-            const BASE_TYPE: BaseType = T::TYPE;
-            const NORMALIZED: bool = true;
+            const BASE_TYPE: BaseType = T::BASE_TYPE;
+            const ELEMENT_TYPE: ElementType = T::ELEMENT_TYPE;
             const CHANNELS_TYPE: ChannelsType = ChannelsType::Stencil;
             const FORMAT: vk::Format = super::pick_format_from_params(
-                Self::BITS_PER_CHANNEL,
-                Self::BASE_TYPE,
-                Self::NORMALIZED,
+                Self::ELEMENT_TYPE,
                 Self::CHANNELS_TYPE
             );
             type Storage = T;
