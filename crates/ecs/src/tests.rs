@@ -37,11 +37,11 @@ fn entries() {
     assert!(entry.get::<Ammo>().is_none());
 
     let mut entry = manager.entry_mut(entity).unwrap();
-    entry.insert_bundle(Health(100)).unwrap();
+    entry.insert(Health(100)).unwrap();
     assert!(!entry.contains::<Ammo>());
-    assert_eq!(entry.remove_bundle::<Ammo>(), None);
-    entry.insert_bundle(Ammo(100)).unwrap();
-    entry.remove_bundle::<Ammo>().unwrap();
+    assert_eq!(entry.remove::<Ammo>(), None);
+    entry.insert(Ammo(100)).unwrap();
+    entry.remove::<Ammo>().unwrap();
     assert!(!entry.contains::<Ammo>());
     assert!(entry.contains::<Health>());
     assert!(entry.contains::<Name>());
@@ -139,10 +139,10 @@ fn moving() {
     let mut manager = Scene::default();
     let entity = manager.insert((Name(""), Health(100)));
     let mut entry = manager.entry_mut(entity).unwrap();
-    entry.remove_bundle::<Health>().unwrap();
-    entry.insert_bundle::<Ammo>(Ammo(0)).unwrap();
-    assert!(entry.insert_bundle::<Ammo>(Ammo(0)).is_none());
-    assert!(entry.insert_bundle::<Ammo>(Ammo(0)).is_none());
+    entry.remove::<Health>().unwrap();
+    entry.insert::<Ammo>(Ammo(0)).unwrap();
+    assert!(entry.insert::<Ammo>(Ammo(0)).is_none());
+    assert!(entry.insert::<Ammo>(Ammo(0)).is_none());
 }
 
 #[test]
@@ -162,9 +162,9 @@ fn moving_batch() {
     for (i, id) in entities.iter().enumerate() {
         if i % 10 == 0 {
             let mut entry = scene.entry_mut(*id).unwrap();
-            entry.remove_bundle::<Name>().unwrap();
+            entry.remove::<Name>().unwrap();
             entry
-                .insert_bundle::<Placeholder>(Placeholder())
+                .insert::<Placeholder>(Placeholder())
                 .unwrap();
         }
     }
@@ -425,9 +425,9 @@ fn unit_tuple() {
     assert_eq!(entry3.contains::<()>(), true);
 
     let mut entry1 = manager.entry_mut(e1).unwrap();
-    entry1.insert_bundle(Health(0)).unwrap();
+    entry1.insert(Health(0)).unwrap();
     let mut entry2 = manager.entry_mut(e2).unwrap();
-    entry2.insert_bundle(Health(0)).unwrap();
+    entry2.insert(Health(0)).unwrap();
 }
 
 #[test]
@@ -445,15 +445,27 @@ fn hierarchy() {
     assert_eq!(child.depth(), 1);
 }
 
-/*
 #[test]
-fn removal() {
+fn removed() {
     let mut manager = Scene::default();
-    let e1 = manager.insert((Health(100), Ammo(100)));
-    let e2 = manager.insert((Health(100), Ammo(100)));
-    let e3 = manager.insert((Health(100), Ammo(100)));
-    let e4 = manager.insert((Health(100), Ammo(100)));
-    let e5 = manager.insert((Health(100), Ammo(100)));
+    let entity1 = manager.insert(Position::default());
+    let entity2 = manager.insert(Position::default());
 
+    // Gets entry for a specific entity
+    let entry1 = manager.entry_mut(entity1).unwrap();
+    
+    // Returns a Option<&mut Position> of the removed position
+    entry1.remove::<Position>().unwrap();
+
+    // To detect removal, returns iterator of type &mut Position on the bundles that contain the Position comp
+    manager.removed::<&mut Position>();
+
+    
+    // Gets entry for a specific entity
+    let entry1 = manager.entry_mut(entity1).unwrap();
+
+    // Returns a Option<Position> of the removed position
+    entry1.remove::<Position>().unwrap();
+
+    // To detect removal, implement the "Drop" on Position and handle logic there??
 }
-*/

@@ -79,7 +79,7 @@ impl<'a> EntryMut<'a> {
 
     // Add a new component bundle to the entity, forcing it to switch archetypes
     // This will fail if we try to add some components that were already added
-    pub fn insert_bundle<B: Bundle>(
+    pub fn insert<B: Bundle>(
         &mut self,
         bundle: B,
     ) -> Option<()> {
@@ -99,7 +99,7 @@ impl<'a> EntryMut<'a> {
     }
 
     // Remove an old component bundle from the entity, forcing it to switch archetypes
-    pub fn remove_bundle<B: Bundle>(&mut self) -> Option<B> {
+    pub fn remove<B: Bundle>(&mut self) -> Option<B> {
         assert!(
             B::is_valid(),
             "Bundle is not valid, check the bundle for component collisions"

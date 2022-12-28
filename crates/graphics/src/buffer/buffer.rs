@@ -546,7 +546,6 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
 
     // Try to view the buffer immutably (if it's mappable)
     pub fn as_slice(&self) -> Result<&[T], BufferError> {
-        self.
         self.allocation()
             .mapped_slice()
             .map(|bytes| {

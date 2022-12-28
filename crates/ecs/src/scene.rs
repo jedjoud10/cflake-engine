@@ -197,7 +197,7 @@ impl Scene {
         // Get the "Parent" component from the parent entity
         let mut parent_entry = self.entry_mut(parent)?;
         if parent_entry.get_mut::<Parent>().is_none() {
-            parent_entry.insert_bundle(Parent);
+            parent_entry.insert(Parent);
         }
         let parent_depth = parent_entry
             .get::<Child>()
@@ -210,7 +210,7 @@ impl Scene {
             child.parent = parent;
             child.depth = parent_depth + 1;
         } else {
-            child_entry.insert_bundle(Child {
+            child_entry.insert(Child {
                 parent: parent,
                 depth: parent_depth + 1,
             });
@@ -223,12 +223,12 @@ impl Scene {
     // Returns None if the entities don't exist, or if the child isn't attached
     pub fn detach(&mut self, child: Entity) -> Option<()> {
         let mut entry = self.entry_mut(child)?;
-        entry.remove_bundle::<Child>().unwrap();
+        entry.remove::<Child>().unwrap();
 
         // Remove the "local" components that we added automatically
-        entry.remove_bundle::<LocalPosition>();
-        entry.remove_bundle::<LocalRotation>();
-        entry.remove_bundle::<LocalScale>();
+        entry.remove::<LocalPosition>();
+        entry.remove::<LocalRotation>();
+        entry.remove::<LocalScale>();
 
         Some(())
     }
