@@ -450,22 +450,6 @@ fn removed() {
     let mut manager = Scene::default();
     let entity1 = manager.insert(Position::default());
     let entity2 = manager.insert(Position::default());
-
-    // Gets entry for a specific entity
-    let entry1 = manager.entry_mut(entity1).unwrap();
-    
-    // Returns a Option<&mut Position> of the removed position
+    let mut entry1 = manager.entry_mut(entity1).unwrap();
     entry1.remove::<Position>().unwrap();
-
-    // To detect removal, returns iterator of type &mut Position on the bundles that contain the Position comp
-    manager.removed::<&mut Position>();
-
-    
-    // Gets entry for a specific entity
-    let entry1 = manager.entry_mut(entity1).unwrap();
-
-    // Returns a Option<Position> of the removed position
-    entry1.remove::<Position>().unwrap();
-
-    // To detect removal, implement the "Drop" on Position and handle logic there??
 }

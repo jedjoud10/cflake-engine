@@ -9,11 +9,23 @@ use crate::{
 pub type ComponentTable = MaskHashMap<Box<dyn ComponentColumn>>;
 pub(crate) type StateTable = MaskHashMap<StateColumn>;
 
+// Archetypes contain two variants, the "active" variant and "inactive" variant
+// Active archetypes store entities that are currently alive
+// Inactive archetypes store the remains of entities that were removed
+pub enum ArchetypeVariant {
+    // Active archetypes contain entities that are currently alive
+    Active,
+    
+    // Inactive archetypes contain removed components for one more frame than needed
+    Inactive
+}
+
 // An archetype is a special structure that contains multiple entities of the same layout
 // Archetypes are used in archetypal ECSs to improve iteration and insertion/removal performance
 pub struct Archetype {
     mask: Mask,
     components: ComponentTable,
+    variant: ArchetypeVariant,
     states: StateTable,
     entities: Vec<Entity>,
 }
