@@ -1,7 +1,7 @@
 use super::Entity;
 use crate::{
     Archetype, Bundle, Component, EntityLinkings, QueryLayoutRef,
-    Scene,
+    Scene, Column,
 };
 
 // Immutable entity entries allow the user to be able to read and get some data about a specific entity
@@ -38,13 +38,13 @@ impl<'a> EntryRef<'a> {
     }
 
     // Get an immutable reference to a tableStateRow
-    pub fn table<T: Component>(&self) -> Option<&Vec<T>> {
+    pub fn table<T: Component>(&self) -> Option<&Column<T>> {
         self.archetype().components::<T>()
     }
 
     // Get an immutable reference to a linked component
     pub fn get<T: Component>(&self) -> Option<&T> {
-        self.table::<T>().map(|vec| &vec[self.linkings.index])
+        self.table::<T>().map(|vec| unsafe { vec[self.linkings.index].assume_init_ref() })
     }
 
     // Check if the entity contains the given bundle

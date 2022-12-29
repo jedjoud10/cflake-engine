@@ -156,11 +156,6 @@ impl Scene {
     ) -> QueryRef<'a, '_, '_, L> {
         QueryRef::new_with_filter(self, filter)
     }
-    
-    // Iterate over all the removed component bundles mutably
-    pub fn removed_mut(&mut self) -> () {
-
-    }
 
     // Find the a layout ref (if it's the only one that exists in the scene)
     pub fn find<'a, L: QueryLayoutRef>(

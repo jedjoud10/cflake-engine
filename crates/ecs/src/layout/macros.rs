@@ -3,13 +3,14 @@ use crate::{
     MaskHashMap, Bundle, QueryItemMut, QueryItemRef,
     QueryLayoutMut, QueryLayoutRef,
 };
+use std::mem::MaybeUninit;
 use casey::lower;
 use seq_macro::seq;
 
 macro_rules! tuple_impls {
     ( $( $name:ident )+, $max:tt ) => {
         impl<$($name: Component),+> Bundle for ($($name,)+) {
-            type Storages<'a> = ($(&'a mut Vec<$name>),+);
+            type Storages<'a> = ($(&'a mut Vec<MaybeUninit<$name>>),+);
 
             fn reduce(mut lambda: impl FnMut(Mask, Mask) -> Mask) -> Mask {
                 let masks = [$(mask::<$name>()),+];
@@ -20,7 +21,7 @@ macro_rules! tuple_impls {
                 assert!(Self::is_valid());
                 seq!(N in 0..$max {
                     let table = archetype.components_mut::<C~N>()?;
-                    let ptr = table as *mut Vec<C~N>;
+                    let ptr = table as *mut Vec<MaybeUninit<C~N>>;
                     let c~N = unsafe { &mut *ptr };
                 });
 
@@ -32,14 +33,14 @@ macro_rules! tuple_impls {
             fn push<'a>(storages: &mut Self::Storages<'a>, bundle: Self) {
                 seq!(N in 0..$max {
                     let vec = &mut storages.N;
-                    vec.push(bundle.N);
+                    vec.push(MaybeUninit::new(bundle.N));
                 });
             }
 
             fn default_tables() -> MaskHashMap<Box<dyn ComponentColumn>> {
                 let mut map = MaskHashMap::<Box<dyn ComponentColumn>>::default();
                 ($(
-                    map.insert(mask::<$name>(), Box::new(Vec::<$name>::new()))
+                    map.insert(mask::<$name>(), Box::new(Vec::<MaybeUninit<$name>>::new()))
                 ),+);
                 map
             }

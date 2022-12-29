@@ -293,16 +293,13 @@ impl<'b, L: QueryLayoutMut> Iterator
     }
 }
 
-/*
 
-impl<'b, 's, L: QueryLayoutMut<'s>> ExactSizeIterator
-    for QueryMutIter<'b, 's, L>
+impl<'b, L: QueryLayoutMut> ExactSizeIterator
+    for QueryMutIter<'b, L>
 {
 }
 
-impl<'b, 's, L: QueryLayoutMut<'s>> FusedIterator
-    for QueryMutIter<'b, 's, L>
+impl<'b, 's, L: QueryLayoutMut> FusedIterator
+    for QueryMutIter<'b, L>
 {
 }
-
-*/

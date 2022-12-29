@@ -1,5 +1,7 @@
+use std::mem::MaybeUninit;
+
 use crate::{
-    mask, Archetype, Component, ComponentColumn, Mask, MaskHashMap,
+    mask, Archetype, Component, ComponentColumn, Mask, MaskHashMap, Column,
 };
 
 // An owned layout trait will be implemented for owned tuples that contain a set of components
@@ -41,7 +43,7 @@ pub trait Bundle: Sized {
 }
 // Implement the owned bundle for single component
 impl<T: Component> Bundle for T {
-    type Storages<'a> = &'a mut Vec<T>;
+    type Storages<'a> = &'a mut Column<T>;
 
     fn reduce(lambda: impl FnMut(Mask, Mask) -> Mask) -> Mask {
         std::iter::once(mask::<T>())
@@ -61,12 +63,11 @@ impl<T: Component> Bundle for T {
     }
 
     fn push<'a>(storages: &mut Self::Storages<'a>, bundle: Self) {
-        storages.push(bundle)
+        storages.push(MaybeUninit::new(bundle))
     }
 
     fn default_tables() -> MaskHashMap<Box<dyn ComponentColumn>> {
-        let boxed: Box<dyn ComponentColumn> =
-            Box::new(Vec::<T>::new());
+        let boxed: Box<dyn ComponentColumn> = Box::new(Column::<T>::new());
         let mask = mask::<T>();
         MaskHashMap::from_iter(std::iter::once((mask, boxed)))
     }
@@ -77,8 +78,8 @@ impl<T: Component> Bundle for T {
     ) -> Option<Self> {
         let boxed = tables.get_mut(&mask::<T>())?;
         let vec =
-            boxed.as_any_mut().downcast_mut::<Vec<T>>().unwrap();
-        Some(vec.swap_remove(index))
+            boxed.as_any_mut().downcast_mut::<Column<T>>().unwrap();
+        Some(unsafe { vec.swap_remove(index).assume_init() })
     }
 }
 

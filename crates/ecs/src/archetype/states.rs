@@ -3,6 +3,7 @@
 #[derive(Default, Clone, Copy)]
 pub(crate) struct StateColumnChunk {
     pub added: usize,
+    pub zombie: usize,
     pub modified: usize,
 }
 
@@ -10,6 +11,7 @@ pub(crate) struct StateColumnChunk {
 #[derive(Default, Clone, Copy)]
 pub(crate) struct StateFlags {
     pub added: bool,
+    pub zombie: bool,
     pub modified: bool,
 }
 
@@ -67,6 +69,7 @@ impl StateColumn {
         // Convert the flags into masks
         let added = flags.added as usize * usize::MAX;
         let modified = flags.modified as usize * usize::MAX;
+        let zombie = flags.zombie as usize * usize::MAX;
 
         // Update the chunk bits
         for (i, chunk) in self.0.iter_mut().enumerate() {
@@ -88,6 +91,7 @@ impl StateColumn {
             let range = enable_in_range(local_start, local_end);
             chunk.added |= range & added;
             chunk.modified |= range & modified;
+            chunk.zombie |= range & zombie;
         }
     }
 
@@ -120,8 +124,8 @@ impl StateColumn {
             let last_local_index = self.1 % BITS;
             StateFlags {
                 added: (chunk.added >> last_local_index) & 1 == 1,
-                modified: (chunk.modified >> last_local_index) & 1
-                    == 1,
+                modified: (chunk.modified >> last_local_index) & 1 == 1,
+                zombie: (chunk.zombie >> last_local_index) & 1 == 1,
             }
         });
 
@@ -132,10 +136,17 @@ impl StateColumn {
             let chunk = &mut self.0[chunk];
             self.1 -= 1;
 
-            let added = set_bit(&mut chunk.added, local, flags.added);
-            let modified =
-                set_bit(&mut chunk.modified, local, flags.modified);
-            StateFlags { added, modified }
+            // Decompose the state flags
+            let StateFlags {
+                added,
+                zombie,
+                modified
+            } = flags;
+
+            let added = set_bit(&mut chunk.added, local, added);
+            let modified = set_bit(&mut chunk.modified, local, modified);
+            let zombie = set_bit(&mut chunk.zombie, local, zombie);
+            StateFlags { added, modified, zombie }
         })
     }
 
@@ -165,6 +176,7 @@ impl StateColumn {
         let mut flags = StateFlags {
             added: (chunk.added >> location) & 1 == 1,
             modified: (chunk.modified >> location) & 1 == 1,
+            zombie: (chunk.zombie >> location) & 1 == 1,
         };
         update(&mut flags);
 
@@ -203,6 +215,7 @@ impl StateColumn {
         for chunk in self.0.iter_mut() {
             chunk.added = 0usize;
             chunk.modified = 0usize;
+            chunk.zombie = 0usize;
         }
     }
 }

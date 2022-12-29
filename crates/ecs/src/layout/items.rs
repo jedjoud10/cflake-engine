@@ -71,7 +71,7 @@ impl<T: Component> QueryItemRef for &T {
             .components::<T>()
             .unwrap_unchecked()
             .as_slice()
-            .as_ptr()
+            .as_ptr() as _
     }
 
     unsafe fn from_raw_parts<'s>(
@@ -104,7 +104,7 @@ impl<T: Component> QueryItemRef for Option<&T> {
     ) -> Self::Ptr {
         archetype
             .components::<T>()
-            .map(|vec| vec.as_slice().as_ptr())
+            .map(|vec| vec.as_slice().as_ptr() as _)
     }
 
     unsafe fn from_raw_parts<'s>(
@@ -170,7 +170,7 @@ impl<T: Component> QueryItemMut for &T {
             .components::<T>()
             .unwrap_unchecked()
             .as_slice()
-            .as_ptr()
+            .as_ptr() as _
     }
 
     unsafe fn from_raw_parts<'s>(
@@ -206,7 +206,7 @@ impl<T: Component> QueryItemMut for Option<&T> {
     ) -> Self::Ptr {
         archetype
             .components::<T>()
-            .map(|vec| vec.as_slice().as_ptr())
+            .map(|vec| vec.as_slice().as_ptr() as _)
     }
 
     unsafe fn from_raw_parts<'s>(
@@ -244,7 +244,7 @@ impl<T: Component> QueryItemMut for &mut T {
             .components_mut::<T>()
             .unwrap_unchecked()
             .as_mut_slice()
-            .as_mut_ptr()
+            .as_mut_ptr() as _
     }
 
     unsafe fn from_raw_parts<'s>(
@@ -280,7 +280,7 @@ impl<T: Component> QueryItemMut for Option<&mut T> {
     ) -> Self::Ptr {
         archetype
             .components_mut::<T>()
-            .map(|vec| vec.as_mut_slice().as_mut_ptr())
+            .map(|vec| vec.as_mut_slice().as_mut_ptr() as _)
     }
 
     unsafe fn from_raw_parts<'s>(

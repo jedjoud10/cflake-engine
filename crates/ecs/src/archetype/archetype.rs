@@ -2,7 +2,7 @@ use crate::{
     entity::{Entity, EntityLinkings},
     mask, ArchetypeSet, Bundle, Component, ComponentColumn,
     EntitySet, Mask, MaskHashMap, QueryLayoutRef, StateColumn,
-    StateFlags,
+    StateFlags, Column,
 };
 
 // We store two different column-major tables within the archetypes
@@ -79,6 +79,7 @@ impl Archetype {
                 StateFlags {
                     added: true,
                     modified: true,
+                    zombie: false,
                 },
             );
         }
@@ -158,7 +159,7 @@ impl Archetype {
     }
 
     // Try to get an immutable reference to the table for a specific component
-    pub(crate) fn components<T: Component>(&self) -> Option<&Vec<T>> {
+    pub(crate) fn components<T: Component>(&self) -> Option<&Column<T>> {
         let boxed = &self.components.get(&mask::<T>())?;
         Some(boxed.as_any().downcast_ref().unwrap())
     }
@@ -166,7 +167,7 @@ impl Archetype {
     // Try to get a mutable reference to the table for a specific component
     pub(crate) fn components_mut<T: Component>(
         &mut self,
-    ) -> Option<&mut Vec<T>> {
+    ) -> Option<&mut Column<T>> {
         let boxed = self.components.get_mut(&mask::<T>())?;
         Some(boxed.as_any_mut().downcast_mut().unwrap())
     }
@@ -338,6 +339,7 @@ pub(crate) fn add_bundle<B: Bundle>(
             StateFlags {
                 added: true,
                 modified: true,
+                zombie: false,
             },
         )
     }

@@ -251,16 +251,13 @@ impl<'b, L: QueryLayoutRef> Iterator
     }
 }
 
-/*
 
-impl<'b, 's, L: QueryLayoutRef<'s>> ExactSizeIterator
-    for QueryRefIter<'b, 's, L>
+impl<'b, L: QueryLayoutRef> ExactSizeIterator
+    for QueryRefIter<'b, L>
 {
 }
 
-impl<'b, 's, L: QueryLayoutRef<'s>> FusedIterator
-    for QueryRefIter<'b, 's, L>
+impl<'b, 's, L: QueryLayoutRef> FusedIterator
+    for QueryRefIter<'b, L>
 {
 }
-
-*/

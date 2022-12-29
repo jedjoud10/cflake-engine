@@ -3,6 +3,7 @@ use super::slice::*;
 use std::any::Any;
 
 // A ref/mut layout contains one or more ref/mut slices that will be iterated through in other threads
+// TODO: Try to make this work with GATS instead. Already tried it out the first time, didn't work out
 pub trait SliceTuple<'i>: Sized {
     type PtrTuple: Any + Send + Sync + Copy + 'static;
     type OwnedTuple: 'static + Send + Sync;

@@ -2,7 +2,7 @@ use super::Entity;
 use crate::{
     add_bundle, remove_bundle, Archetype, ArchetypeSet, Bundle,
     Component, EntityLinkings, EntitySet, QueryLayoutMut,
-    QueryLayoutRef, Scene,
+    QueryLayoutRef, Scene, Column,
 };
 
 // Mutable entity entries allow the user to be able to modify components that are linked to the entity
@@ -48,24 +48,26 @@ impl<'a> EntryMut<'a> {
     }
 
     // Get an immutable reference to a table
-    pub fn table<T: Component>(&self) -> Option<&Vec<T>> {
+    // TODO: rename this or column
+    pub fn table<T: Component>(&self) -> Option<&Column<T>> {
         self.archetype().components::<T>()
     }
 
     // Get a mutable reference to a table
-    pub fn table_mut<T: Component>(&mut self) -> Option<&mut Vec<T>> {
+    // TODO: rename this or column
+    pub fn table_mut<T: Component>(&mut self) -> Option<&mut Column<T>> {
         self.archetype_mut().components_mut::<T>()
     }
 
     // Get an immutable reference to a linked component
     pub fn get<T: Component>(&self) -> Option<&T> {
-        self.table::<T>().map(|vec| &vec[self.linkings.index])
+        self.table::<T>().map(|vec| unsafe { vec[self.linkings.index].assume_init_ref() })
     }
 
     // Get a mutable reference to a linked component, but without triggering a StateRow mutation change
     pub fn get_mut_silent<T: Component>(&mut self) -> Option<&mut T> {
         let i = self.linkings.index;
-        self.table_mut::<T>().map(|vec| &mut vec[i])
+        self.table_mut::<T>().map(|vec| unsafe { vec[i].assume_init_mut() })
     }
 
     // Get a mutable reference to a linked component
