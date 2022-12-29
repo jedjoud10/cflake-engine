@@ -66,7 +66,7 @@ impl<'a: 'b, 'b, 's, L: QueryLayoutRef>
             + Sync
             + Clone,
         batch_size: usize,
-    ) where for<'it, 's2> L::SliceTuple<'it>: utils::SliceTuple<'s2> {
+    ) where for<'st, 's2> L::SliceTuple<'st>: utils::SliceTuple<'s2> {
         threadpool.scope(|scope| {
             // Convert the optional bitset vector to an iterator that returns None if it is None
             let bitsets = self

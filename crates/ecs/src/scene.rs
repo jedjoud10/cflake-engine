@@ -122,7 +122,7 @@ impl Scene {
     // Create a new mutable query from this scene (with no filter)
     pub fn query_mut<'a, L: QueryLayoutMut>(
         &'a mut self,
-    ) -> QueryMut<'a, '_, '_, L> {
+    ) -> QueryMut<'a, '_, L> {
         assert!(
             L::is_valid(),
             "Query layout is not valid, check the layout for component collisions"
@@ -134,7 +134,7 @@ impl Scene {
     pub fn query_mut_with<'a, L: QueryLayoutMut>(
         &'a mut self,
         filter: Wrap<impl QueryFilter>,
-    ) -> QueryMut<'a, '_, '_, L> {
+    ) -> QueryMut<'a, '_, L> {
         assert!(
             L::is_valid(),
             "Query layout is not valid, check the layout for component collisions"
