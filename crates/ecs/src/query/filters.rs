@@ -85,8 +85,7 @@ pub trait QueryFilter: 'static {
 // This will also prepare the filter for later by caching required data
 // Only used internally by the mutable query
 pub(super) fn archetypes_mut<
-    's,
-    L: QueryLayoutMut<'s>,
+    L: QueryLayoutMut,
     F: QueryFilter,
 >(
     archetypes: &mut ArchetypeSet,
@@ -110,8 +109,7 @@ pub(super) fn archetypes_mut<
 // This will also prepare the filter for later by caching required data
 // Only used internally by the immutable query
 pub(super) fn archetypes<
-    's,
-    L: QueryLayoutRef<'s>,
+    L: QueryLayoutRef,
     F: QueryFilter,
 >(
     archetypes: &ArchetypeSet,

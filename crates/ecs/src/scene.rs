@@ -108,7 +108,7 @@ impl Scene {
     pub fn archetypes_mut(&mut self) -> &mut ArchetypeSet {
         &mut self.archetypes
     }
-    
+
     // Get an immutable reference to the entity set
     pub fn entities(&self) -> &EntitySet {
         &self.entities
@@ -120,7 +120,7 @@ impl Scene {
     }
 
     // Create a new mutable query from this scene (with no filter)
-    pub fn query_mut<'a, L: for<'i> QueryLayoutMut<'i>>(
+    pub fn query_mut<'a, L: QueryLayoutMut>(
         &'a mut self,
     ) -> QueryMut<'a, '_, '_, L> {
         assert!(
@@ -131,7 +131,7 @@ impl Scene {
     }
 
     // Create a new mutable query from this scene using a filter
-    pub fn query_mut_with<'a, L: for<'i> QueryLayoutMut<'i>>(
+    pub fn query_mut_with<'a, L: QueryLayoutMut>(
         &'a mut self,
         filter: Wrap<impl QueryFilter>,
     ) -> QueryMut<'a, '_, '_, L> {
@@ -143,23 +143,18 @@ impl Scene {
     }
 
     // Create a new immutable query from this scene (with no filter)
-    pub fn query<'a, L: for<'i> QueryLayoutRef<'i>>(
+    pub fn query<'a, L: QueryLayoutRef>(
         &'a self,
     ) -> QueryRef<'a, '_, '_, L> {
         QueryRef::new(self)
     }
 
     // Create a new immutable query from this scene using a filter
-    pub fn query_with<'a, L: for<'i> QueryLayoutRef<'i>>(
+    pub fn query_with<'a, L: QueryLayoutRef>(
         &'a self,
         filter: Wrap<impl QueryFilter>,
     ) -> QueryRef<'a, '_, '_, L> {
         QueryRef::new_with_filter(self, filter)
-    }
-
-    // Iterate over all the removed component bundles immutably
-    pub fn removed(&self) -> () {
-
     }
     
     // Iterate over all the removed component bundles mutably
@@ -168,7 +163,7 @@ impl Scene {
     }
 
     // Find the a layout ref (if it's the only one that exists in the scene)
-    pub fn find<'a, L: for<'i> QueryLayoutRef<'i>>(
+    pub fn find<'a, L: QueryLayoutRef>(
         &'a self,
     ) -> Option<L> {
         let mut iterator = self.query::<L>().into_iter().fuse();
@@ -176,7 +171,7 @@ impl Scene {
     }
 
     // Find the a layout mut (if it's the only one that exists in the scene)
-    pub fn find_mut<'a, L: for<'i> QueryLayoutMut<'i>>(
+    pub fn find_mut<'a, L: QueryLayoutMut>(
         &'a mut self,
     ) -> Option<L> {
         let mut iterator = self.query_mut::<L>().into_iter().fuse();

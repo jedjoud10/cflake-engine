@@ -8,7 +8,7 @@ use std::{iter::FusedIterator, marker::PhantomData};
 
 // This is a query that will be fetched from the main scene that we can use to get components out of entries with a specific layout
 // Even though I define the 'it, 'b, and 's lfietimes, I don't use them in this query, I only use them in the query iterator
-pub struct QueryRef<'a: 'b, 'b, 's, L: for<'it> QueryLayoutRef<'it>> {
+pub struct QueryRef<'a: 'b, 'b, 's, L: QueryLayoutRef> {
     archetypes: Vec<&'a Archetype>,
     access: LayoutAccess,
     bitsets: Option<Vec<BitSet>>,
@@ -17,7 +17,7 @@ pub struct QueryRef<'a: 'b, 'b, 's, L: for<'it> QueryLayoutRef<'it>> {
     _phantom3: PhantomData<L>,
 }
 
-impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutRef<'it>>
+impl<'a: 'b, 'b, 's, L: QueryLayoutRef>
     QueryRef<'a, 'b, 's, L>
 {
     // Create a new mut query from the scene for active entities
@@ -61,15 +61,12 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutRef<'it>>
     pub fn for_each(
         self,
         threadpool: &mut utils::ThreadPool,
-        function: impl Fn(<<L as QueryLayoutRef<'_>>::SliceTuple as utils::SliceTuple<'_>>::ItemTuple)
+        function: impl Fn(<<L as QueryLayoutRef>::SliceTuple<'_> as utils::SliceTuple<'_>>::ItemTuple)
             + Send
             + Sync
             + Clone,
         batch_size: usize,
-    ) where
-        for<'it, 's2> <L as QueryLayoutRef<'it>>::SliceTuple:
-            utils::SliceTuple<'s2>,
-    {
+    ) where for<'it, 's2> L::SliceTuple<'it>: utils::SliceTuple<'s2> {
         threadpool.scope(|scope| {
             // Convert the optional bitset vector to an iterator that returns None if it is None
             let bitsets = self
@@ -142,11 +139,11 @@ fn len(
     }
 }
 
-impl<'a: 'b, 'b, 'it, L: for<'s> QueryLayoutRef<'s>> IntoIterator
+impl<'a: 'b, 'b, 'it, L: QueryLayoutRef> IntoIterator
     for QueryRef<'a, 'b, 'it, L>
 {
     type Item = L;
-    type IntoIter = QueryRefIter<'b, 'it, L>;
+    type IntoIter = QueryRefIter<'b, L>;
 
     fn into_iter(self) -> Self::IntoIter {
         QueryRefIter {
@@ -154,33 +151,31 @@ impl<'a: 'b, 'b, 'it, L: for<'s> QueryLayoutRef<'s>> IntoIterator
             bitsets: self.bitsets,
             chunk: None,
             index: 0,
-            _phantom1: PhantomData,
             _phantom2: PhantomData,
         }
     }
 }
 
 // Currently loaded chunk in the immutable query iterator
-struct Chunk<'s, L: QueryLayoutRef<'s>> {
+struct Chunk<L: QueryLayoutRef> {
     ptrs: L::PtrTuple,
     bitset: Option<BitSet>,
     length: usize,
 }
 
 // This is a immutable query iterator that will iterate through all the query entries in arbitrary order
-pub struct QueryRefIter<'b, 's, L: QueryLayoutRef<'s>> {
+pub struct QueryRefIter<'b, L: QueryLayoutRef> {
     // Inputs from the query
     archetypes: Vec<&'b Archetype>,
     bitsets: Option<Vec<BitSet>>,
 
     // Unique to the iterator
-    chunk: Option<Chunk<'s, L>>,
+    chunk: Option<Chunk<L>>,
     index: usize,
-    _phantom1: PhantomData<&'s ()>,
     _phantom2: PhantomData<L>,
 }
 
-impl<'b, 's, L: QueryLayoutRef<'s>> QueryRefIter<'b, 's, L> {
+impl<'b, 's, L: QueryLayoutRef> QueryRefIter<'b, L> {
     // Hop onto the next archetype if we are done iterating through the current one
     fn check_hop_chunk(&mut self) -> Option<()> {
         let len = self
@@ -209,8 +204,8 @@ impl<'b, 's, L: QueryLayoutRef<'s>> QueryRefIter<'b, 's, L> {
     }
 }
 
-impl<'b, 's, L: QueryLayoutRef<'s>> Iterator
-    for QueryRefIter<'b, 's, L>
+impl<'b, L: QueryLayoutRef> Iterator
+    for QueryRefIter<'b, L>
 {
     type Item = L;
 
@@ -256,6 +251,8 @@ impl<'b, 's, L: QueryLayoutRef<'s>> Iterator
     }
 }
 
+/*
+
 impl<'b, 's, L: QueryLayoutRef<'s>> ExactSizeIterator
     for QueryRefIter<'b, 's, L>
 {
@@ -265,3 +262,5 @@ impl<'b, 's, L: QueryLayoutRef<'s>> FusedIterator
     for QueryRefIter<'b, 's, L>
 {
 }
+
+*/

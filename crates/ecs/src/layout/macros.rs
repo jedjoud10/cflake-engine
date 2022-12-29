@@ -57,10 +57,10 @@ macro_rules! tuple_impls {
             }
         }
 
-        impl<'i, $($name: QueryItemRef<'i> + 'i, )+> QueryLayoutRef<'i> for ($($name,)+) {
+        impl<$($name: QueryItemRef, )+> QueryLayoutRef for ($($name,)+) {
             type OwnedTuple = ($($name::Owned,)+);
             type PtrTuple = ($($name::Ptr,)+);
-            type SliceTuple = ($($name::Slice,)+);
+            type SliceTuple<'s> = ($($name::Slice<'s>,)+);
 
             fn reduce(mut lambda: impl FnMut(LayoutAccess, LayoutAccess) -> LayoutAccess) -> LayoutAccess {
                 let layouts = [$($name::access()),+];
@@ -77,7 +77,7 @@ macro_rules! tuple_impls {
                 ),+,)
             }
 
-            unsafe fn from_raw_parts(ptrs: Self::PtrTuple, length: usize) -> Self::SliceTuple {
+            unsafe fn from_raw_parts<'s>(ptrs: Self::PtrTuple, length: usize) -> Self::SliceTuple<'s> {
                 seq!(N in 0..$max {
                     let c~N = C~N::from_raw_parts(ptrs.N, length);
                 });
@@ -89,7 +89,7 @@ macro_rules! tuple_impls {
 
             unsafe fn read_unchecked(ptrs: Self::PtrTuple, index: usize) -> Self {
                 seq!(N in 0..$max {
-                    let c~N = <C~N as QueryItemRef<'i>>::read_unchecked(ptrs.N, index);
+                    let c~N = <C~N as QueryItemRef>::read_unchecked(ptrs.N, index);
                 });
 
                 ($(
@@ -98,10 +98,10 @@ macro_rules! tuple_impls {
             }
         }
 
-        impl<'i, $($name: QueryItemMut<'i> + 'i, )+> QueryLayoutMut<'i> for ($($name,)+) {
+        impl<$($name: QueryItemMut, )+> QueryLayoutMut for ($($name,)+) {
             type OwnedTuple = ($($name::Owned,)+);
             type PtrTuple = ($($name::Ptr,)+);
-            type SliceTuple = ($($name::Slice,)+);
+            type SliceTuple<'s> = ($($name::Slice<'s>,)+);
 
             fn reduce(mut lambda: impl FnMut(LayoutAccess, LayoutAccess) -> LayoutAccess) -> LayoutAccess {
                 let layouts = [$($name::access()),+];
@@ -118,7 +118,7 @@ macro_rules! tuple_impls {
                 ),+,)
             }
 
-            unsafe fn from_raw_parts(ptrs: Self::PtrTuple, length: usize) -> Self::SliceTuple {
+            unsafe fn from_raw_parts<'s>(ptrs: Self::PtrTuple, length: usize) -> Self::SliceTuple<'s> {
                 seq!(N in 0..$max {
                     let c~N = C~N::from_raw_parts(ptrs.N, length);
                 });
@@ -130,7 +130,7 @@ macro_rules! tuple_impls {
 
             unsafe fn read_mut_unchecked(ptrs: Self::PtrTuple, index: usize) -> Self {
                 seq!(N in 0..$max {
-                    let c~N = <C~N as QueryItemMut<'i>>::read_mut_unchecked(ptrs.N, index);
+                    let c~N = <C~N as QueryItemMut>::read_mut_unchecked(ptrs.N, index);
                 });
 
                 ($(
