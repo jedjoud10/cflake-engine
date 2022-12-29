@@ -20,10 +20,10 @@ pub struct QueryRef<'a: 'b, 'b, 's, L: for<'it> QueryLayoutRef<'it>> {
 impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutRef<'it>>
     QueryRef<'a, 'b, 's, L>
 {
-    // Create a new mut query from the scene
+    // Create a new mut query from the scene for active entities
     pub fn new(scene: &'a Scene) -> Self {
         let (mask, archetypes, _) =
-            super::archetypes::<L, Always>(scene);
+            super::archetypes::<L, Always>(scene.archetypes());
         Self {
             archetypes,
             bitsets: None,
@@ -41,7 +41,7 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutRef<'it>>
     ) -> Self {
         // Filter out the archetypes then create the bitsets
         let (access, archetypes, cached) =
-            super::archetypes::<L, F>(scene);
+            super::archetypes::<L, F>(scene.archetypes());
         let bitsets = super::generate_bitset_chunks::<F>(
             archetypes.iter().map(|a| &**a),
             cached,

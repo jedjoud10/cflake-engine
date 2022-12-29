@@ -22,7 +22,8 @@ pub struct Scene {
     pub(crate) entities: EntitySet,
 
     // Archetypes are a subset of entities that all share the same component mask
-    // We use an archetypal ECS because it is a bit more efficient when iterating through components, though it is slower when modifying entity component layouts
+    // We use an archetypal ECS because it is a bit more efficient when iterating through components,
+    // though it is slower when modifying entity component layouts
     pub(crate) archetypes: ArchetypeSet,
 }
 
@@ -32,7 +33,7 @@ impl Default for Scene {
         empty.shrink();
         Self {
             entities: Default::default(),
-            archetypes: MaskHashMap::from_iter(once((
+            archetypes: ArchetypeSet::from_iter(once((
                 Mask::zero(),
                 empty,
             ))),
@@ -73,30 +74,15 @@ impl Scene {
             .extend_from_slice::<B>(&mut self.entities, components)
     }
 
-    /*
-    // Remove an entity and fetch the given bundle from it 
-    // This will return None if the entity is not valid or if the bundle is not valid
-    pub fn remove<B: Bundle>(&mut self, entity: Entity) -> Option<B> {
-        assert!(
-            B::is_valid(),
-            "Bundle is not valid, check the bundle for component collisions"
-        );
+    // Despawn an entity from the scene
+    pub fn remove(&mut self, entity: Entity) {
 
-        let mut vec = self.remove_from_iter(once(entity));
-        vec.pop().unwrap()
     }
+    
+    // Despawn a batch of entities from an iterator
+    pub fn remove_from_iter(&mut self, iter: impl IntoIterator<Item = Entity>) {
 
-    // Remove multiple entity and fetch the given bundle (of the same type, same archetype) from them 
-    // This will return None if the entity is not valid or if the bundle is not valid
-    pub fn remove_from_iter<B: Bundle>(&mut self, iter: impl IntoIterator<Item = Entity>) -> Vec<Option<B>> {
-        assert!(
-            B::is_valid(),
-            "Bundle is not valid, check the bundle for component collisions"
-        );
-
-        todo!()
     }
-    */
     
     // Check if an entity is stored within the scene
     pub fn contains(&self, entity: Entity) -> bool {
@@ -113,16 +99,16 @@ impl Scene {
         EntryMut::new(self, entity)
     }
 
-    // Get a immutable reference to the archetype set
+    // Get a immutable reference to the active archetype set
     pub fn archetypes(&self) -> &ArchetypeSet {
         &self.archetypes
     }
 
-    // Get a mutable reference to the archetype set
+    // Get a mutable reference to the active archetype set
     pub fn archetypes_mut(&mut self) -> &mut ArchetypeSet {
         &mut self.archetypes
     }
-
+    
     // Get an immutable reference to the entity set
     pub fn entities(&self) -> &EntitySet {
         &self.entities
@@ -169,6 +155,16 @@ impl Scene {
         filter: Wrap<impl QueryFilter>,
     ) -> QueryRef<'a, '_, '_, L> {
         QueryRef::new_with_filter(self, filter)
+    }
+
+    // Iterate over all the removed component bundles immutably
+    pub fn removed(&self) -> () {
+
+    }
+    
+    // Iterate over all the removed component bundles mutably
+    pub fn removed_mut(&mut self) -> () {
+
     }
 
     // Find the a layout ref (if it's the only one that exists in the scene)

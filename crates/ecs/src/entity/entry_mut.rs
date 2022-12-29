@@ -99,22 +99,19 @@ impl<'a> EntryMut<'a> {
     }
 
     // Remove an old component bundle from the entity, forcing it to switch archetypes
-    pub fn remove<B: Bundle>(&mut self) -> Option<&mut B> {
+    pub fn remove<B: Bundle>(&mut self) -> Option<B> {
         assert!(
             B::is_valid(),
             "Bundle is not valid, check the bundle for component collisions"
         );
 
-        /*
-        let bundle = remove_bundle(
+        let bundle = remove_bundle::<B>(
             self.archetypes,
             self.entity,
             self.entities,
         )?;
         self.linkings = self.entities[self.entity];
         Some(bundle)
-        */
-        todo!()
     }
 
     // Check if the entity contains the given bundle

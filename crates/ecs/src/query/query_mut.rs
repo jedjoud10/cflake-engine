@@ -23,7 +23,7 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>>
     // Create a new mut query from the scene
     pub fn new(scene: &'a mut Scene) -> Self {
         let (access, archetypes, _) =
-            super::archetypes_mut::<L, Always>(scene);
+            super::archetypes_mut::<L, Always>(scene.archetypes_mut());
 
         Self {
             archetypes,
@@ -42,7 +42,7 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>>
     ) -> Self {
         // Filter out the archetypes then create the bitsets
         let (access, archetypes, cached) =
-            super::archetypes_mut::<L, F>(scene);
+            super::archetypes_mut::<L, F>(scene.archetypes_mut());
         let bitsets = super::generate_bitset_chunks::<F>(
             archetypes.iter().map(|a| &**a),
             cached,

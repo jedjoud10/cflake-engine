@@ -1,7 +1,7 @@
 use crate::{
     registry::{self},
     Archetype, Component, LayoutAccess, Mask, QueryLayoutMut,
-    QueryLayoutRef, Scene, StateColumn,
+    QueryLayoutRef, Scene, StateColumn, ArchetypeSet,
 };
 use std::marker::PhantomData;
 use utils::BitSet;
@@ -89,12 +89,11 @@ pub(super) fn archetypes_mut<
     L: QueryLayoutMut<'s>,
     F: QueryFilter,
 >(
-    scene: &mut Scene,
+    archetypes: &mut ArchetypeSet,
 ) -> (LayoutAccess, Vec<&mut Archetype>, F::Cached) {
     let mask = L::reduce(|a, b| a | b);
     let cached = F::prepare();
-    let archetypes = scene
-        .archetypes_mut()
+    let archetypes = archetypes
         .iter_mut()
         .filter_map(move |(&archetype_mask, archetype)| {
             (!archetype.is_empty()
@@ -115,12 +114,11 @@ pub(super) fn archetypes<
     L: QueryLayoutRef<'s>,
     F: QueryFilter,
 >(
-    scene: &Scene,
+    archetypes: &ArchetypeSet,
 ) -> (LayoutAccess, Vec<&Archetype>, F::Cached) {
     let mask = L::reduce(|a, b| a | b);
     let cached = F::prepare();
-    let archetypes = scene
-        .archetypes()
+    let archetypes = archetypes
         .iter()
         .filter_map(move |(&archetype_mask, archetype)| {
             (!archetype.is_empty()
