@@ -162,12 +162,6 @@ fn columns() {
 }
 
 #[test]
-fn simple() {
-    let mut manager = Scene::default();
-    manager.insert(Name("Simple"));
-}
-
-#[test]
 fn moving_batch() {
     let mut scene = Scene::default();
     let entities = scene

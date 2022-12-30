@@ -100,11 +100,11 @@ impl<T: Component> UntypedColumn for Column<T> {
         index: usize,
         other: &mut dyn UntypedColumn,
     ) {
-        let (component, flags) = Column::swap_remove(self, index);
+        let (removed, flags) = Column::swap_remove(self, index);
         let other =
             other.as_any_mut().downcast_mut::<Self>().unwrap();
 
-        other.data.push(component);
+        other.data.push(removed);
         other.states.extend_with_flags(1, flags);
     }
 

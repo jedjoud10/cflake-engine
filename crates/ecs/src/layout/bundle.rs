@@ -32,8 +32,8 @@ pub trait Bundle: Sized + 'static {
         iter: impl IntoIterator<Item = Self>
     ) -> usize;
 
-    // Get the default tables for this owned bundle
-    fn default_tables() -> MaskHashMap<Box<dyn UntypedColumn>>;
+    // Get the default untyped column for this bundle
+    fn default_columns() -> MaskHashMap<Box<dyn UntypedColumn>>;
 
     // Try to remove and element from the tables, and try to return the cast element
     fn try_swap_remove(
@@ -41,7 +41,8 @@ pub trait Bundle: Sized + 'static {
         index: usize,
     ) -> Option<Self>;
 }
-// Implement the owned bundle for single component
+
+// Implement the bundle for single component
 impl<T: Component> Bundle for T {
     type Storages<'a> = &'a mut Column<T>;
 
@@ -79,7 +80,7 @@ impl<T: Component> Bundle for T {
         additional
     }
 
-    fn default_tables() -> MaskHashMap<Box<dyn UntypedColumn>> {
+    fn default_columns() -> MaskHashMap<Box<dyn UntypedColumn>> {
         let boxed: Box<dyn UntypedColumn> = Box::new(Column::<T>::new());
         let mask = mask::<T>();
         MaskHashMap::from_iter(std::iter::once((mask, boxed)))

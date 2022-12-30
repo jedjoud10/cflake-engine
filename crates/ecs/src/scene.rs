@@ -14,7 +14,7 @@ use crate::{
 // Convenience type aliases
 pub(crate) type EntitySet = SlotMap<Entity, EntityLinkings>;
 pub(crate) type ArchetypeSet = MaskHashMap<Archetype>;
-pub(crate) type RemovedBundles = AHashMap<TypeId, Box<dyn Any>>;
+pub(crate) type RemovedComponents = MaskHashMap<Box<dyn Any>>;
 
 // The scene is what will contain the multiple ECS entities and archetypes
 pub struct Scene {
@@ -27,10 +27,10 @@ pub struct Scene {
     // though it is slower when modifying entity component layouts
     pub(crate) archetypes: ArchetypeSet,
 
-    // These are removed bundles that we can iterate over
-    // These bundles get added here whenever we destroy entities or unlink components from them
-    // Stored as Box<Vec<T>> where T: Bundle
-    pub(crate) removed: RemovedBundles, 
+    // These are removed components that we can iterate over
+    // These components get added here whenever we destroy entities or unlink components from them
+    // Stored as Box<Vec<T>> where T: Component
+    pub(crate) removed: RemovedComponents, 
 }
 
 impl Default for Scene {
@@ -82,13 +82,22 @@ impl Scene {
     }
 
     // Despawn an entity from the scene
+    // Panics if the entity ID is invalid
     pub fn remove(&mut self, entity: Entity) {
         todo!()
     }
     
     // Despawn a batch of entities from an iterator
+    // Panics if the entity ID is invalid
     pub fn remove_from_iter(&mut self, iter: impl IntoIterator<Item = Entity>) {
-        todo!()
+        for entity in iter.into_iter() {
+            let linkings = 
+                *self.entities.get(entity).expect("Entity does not exist");
+            let archetype = 
+                self.archetypes.get_mut(&linkings.mask).unwrap();
+
+            //archetype.remove(&mut self.entities, entity).unwrap();
+        }
     }
 
     // Fetch all the bundles of a specific type immutably

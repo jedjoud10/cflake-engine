@@ -56,7 +56,7 @@ macro_rules! tuple_impls {
                 additional
             }
 
-            fn default_tables() -> MaskHashMap<Box<dyn UntypedColumn>> {
+            fn default_columns() -> MaskHashMap<Box<dyn UntypedColumn>> {
                 let mut map = MaskHashMap::<Box<dyn UntypedColumn>>::default();
                 ($(
                     map.insert(mask::<$name>(), Box::new(Column::<$name>::new()))

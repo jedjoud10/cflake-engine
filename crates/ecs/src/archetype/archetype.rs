@@ -32,7 +32,7 @@ impl Archetype {
 
         Self {
             mask,
-            table: B::default_tables(),
+            table: B::default_columns(),
             entities: Vec::new(),
         }
     }
@@ -186,7 +186,7 @@ fn init_archetype_added_bundle<B: Bundle>(
         .table
         .iter()
         .map(|(mask, table)| (*mask, table.clone_default()));
-    let mut columns = B::default_tables();
+    let mut columns = B::default_columns();
     columns.extend(base_columns);
     
     Archetype {
