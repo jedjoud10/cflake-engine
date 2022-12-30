@@ -26,6 +26,12 @@ impl<T: Component> Column<T> {
         self.data.len()
     }
 
+    // Clear the column completely
+    pub fn clear(&mut self) {
+        self.data.clear();
+        self.states.clear();
+    }
+
     // Swap remove a component at an index
     pub fn swap_remove(&mut self, index: usize) -> (T, StateFlags) {
         let flags = self.states.swap_remove(index).unwrap();
@@ -132,6 +138,18 @@ impl<T: Component> UntypedColumn for Column<T> {
 
     fn states_mut(&mut self) -> &mut StateColumn {
         &mut self.states   
+    }
+
+    fn components(&self) -> &dyn crate::UntypedVec {
+        &self.data
+    }
+
+    fn components_mut(&mut self) -> &mut dyn crate::UntypedVec {
+        &mut self.data
+    }
+
+    fn clear(&mut self) {
+        Column::clear(self)
     }
 
     fn len(&self) -> usize {

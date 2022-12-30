@@ -1,7 +1,7 @@
 use crate::{
     mask, Archetype, Component, UntypedColumn, Column, LayoutAccess, Mask,
     MaskHashMap, Bundle, QueryItemMut, QueryItemRef,
-    QueryLayoutMut, QueryLayoutRef, StateFlags
+    QueryLayoutMut, QueryLayoutRef, StateFlags, UntypedVec
 };
 use casey::lower;
 use seq_macro::seq;
@@ -64,16 +64,12 @@ macro_rules! tuple_impls {
                 map
             }
 
-            fn try_swap_remove(tables: &mut MaskHashMap<Box<dyn UntypedColumn>>, index: usize) -> Option<Self> {
-                seq!(N in 0..$max {
-                    let boxed = tables.get_mut(&mask::<C~N>())?;
-                    let vec = boxed.as_any_mut().downcast_mut::<Column<C~N>>().unwrap();
-                    let c~N: C~N = vec.swap_remove(index).0;
-                });
-
-                Some(($(
-                    lower!($name)
-                ),+,))
+            fn default_vectors() -> MaskHashMap<Box<dyn UntypedVec>> {
+                let mut map = MaskHashMap::<Box<dyn UntypedVec>>::default();
+                ($(
+                    map.insert(mask::<$name>(), Box::new(Vec::<$name>::new()))
+                ),+);
+                map
             }
         }
 

@@ -4,7 +4,7 @@ use crate::{
     entity::{Entity, EntityLinkings},
     mask, ArchetypeSet, Bundle, Component,
     EntitySet, Mask, MaskHashMap, QueryLayoutRef, StateColumn,
-    StateFlags, Column, UntypedColumn,
+    StateFlags, Column, UntypedColumn, RemovedComponents,
 };
 
 // The table that will be stored internally
@@ -48,6 +48,7 @@ impl Archetype {
 
     // Add multiple entities into the archetype with their corresponding owned components
     // The layout mask for "B" must be equal to the layout mask that this archetype contains
+    // This will also add the entities to the entity set
     pub(crate) fn extend_from_iter<B: Bundle>(
         &mut self,
         entities: &mut EntitySet,
@@ -70,10 +71,10 @@ impl Archetype {
         drop(storages);
 
         // Allocate the entities then add them as well
-        for _ in 0..additional {
+        for i in 0..additional {
             let linkings = EntityLinkings {
                 mask: self.mask,
-                index: self.len(),
+                index: old_len + i,
             };
             let entity = entities.insert(linkings);
             self.entities.push(entity);
@@ -87,6 +88,17 @@ impl Archetype {
 
         // Return the newly added entity IDs
         &self.entities[old_len..]
+    }
+
+    // Remove multiple entities from the archetype and dissociate their components
+    // This will also remove the entities from the entity set
+    pub(crate) fn remove_from_iter(
+        &mut self,
+        entities: &mut EntitySet,
+        iter: impl IntoIterator<Item = Entity>,
+        removed: &mut RemovedComponents,
+    ) {
+
     }
 
     // Reserve enough memory space to be able to fit all the new entities in one allocation
@@ -115,9 +127,23 @@ impl Archetype {
         }
     }
 
+    // Clear the archetype completely from entities
+    pub fn clear(&mut self) {
+        for (_, column) in self.table.iter_mut() {
+            column.clear();
+        }
+
+        self.entities.clear();
+    }
+
     // Get the number of entities that reference this archetype
     pub fn len(&self) -> usize {
-        self.entities.len()
+        let len = self.entities.len();
+        for (_, c) in &self.table {
+            debug_assert_eq!(c.len(), len);
+        }
+
+        len
     }
 
     // Check if the archetype is empty
@@ -304,7 +330,8 @@ pub(crate) fn remove_bundle<B: Bundle>(
     archetypes: &mut ArchetypeSet,
     entity: Entity,
     entities: &mut EntitySet,
-) -> Option<B> {
+    removed: &mut RemovedComponents,
+) -> bool {
     assert!(
         B::is_valid(),
         "Bundle is not valid, check the bundle for component collisions"
@@ -317,7 +344,7 @@ pub(crate) fn remove_bundle<B: Bundle>(
 
     // Check if we even have the bundle stored
     if !old.contains(bundle_mask) {
-        return None;
+        return false;
     }
 
     // Create the new target archetype if needed
@@ -333,7 +360,11 @@ pub(crate) fn remove_bundle<B: Bundle>(
 
     // Get the current and target archetypes that we will modify
     let (current, target) = split(archetypes, old, new);
-    let linkings = entities.get(entity)?;
+    let linkings = if let Some(entity) = entities.get(entity) {
+        entity
+    } else {
+        return false;
+    };
     let index = linkings.index();
 
     // Move the components and states from one archetype to the other (flipped)
@@ -342,8 +373,12 @@ pub(crate) fn remove_bundle<B: Bundle>(
         input.swap_remove_move(index, output.as_mut());
     }
 
-    // Create the return bundle
-    let bundle = B::try_swap_remove(&mut current.table, index);
+    // Dissociate the bunle intop it's raw components
+    for (mask, input) in current.table.iter_mut() {
+        let entry = removed.entry(*mask).or_insert_with(|| input.components().clone_default());
+        let data = &mut **entry;
+        input.components_mut().swap_remove_move(index, data);
+    }
 
     // Handle swap-remove logic in the current archetype
     current.entities.swap_remove(index);
@@ -358,5 +393,5 @@ pub(crate) fn remove_bundle<B: Bundle>(
     linkings.index = target.len() - 1;
     linkings.mask = target.mask;
 
-    bundle
+    true
 }

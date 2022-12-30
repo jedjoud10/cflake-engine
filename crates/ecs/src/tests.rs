@@ -13,7 +13,7 @@ struct Placeholder();
 fn cleanup(ecs: &mut Scene) {
     for (_, archetype) in ecs.archetypes_mut() {
         for (_, column) in archetype.table_mut().iter_mut() {
-            column.states_mut().clear();
+            column.states_mut().reset();
         }
     }
 
@@ -41,12 +41,14 @@ fn entries() {
     let mut entry = manager.entry_mut(entity).unwrap();
     entry.insert(Health(100)).unwrap();
     assert!(!entry.contains::<Ammo>());
-    assert_eq!(entry.remove::<Ammo>(), None);
+    /*
+    assert!(!entry.remove::<Ammo>());
     entry.insert(Ammo(100)).unwrap();
-    entry.remove::<Ammo>().unwrap();
+    assert!(entry.remove::<Ammo>());
     assert!(!entry.contains::<Ammo>());
     assert!(entry.contains::<Health>());
     assert!(entry.contains::<Name>());
+    */
 }
 
 #[test]
@@ -143,10 +145,12 @@ fn moving() {
     let mut manager = Scene::default();
     let entity = manager.insert((Name(""), Health(100)));
     let mut entry = manager.entry_mut(entity).unwrap();
-    entry.remove::<Health>().unwrap();
+    //assert!(entry.remove::<Health>());
+    assert_eq!(entry.archetype().len(), 1);
     entry.insert::<Ammo>(Ammo(0)).unwrap();
     assert!(entry.insert::<Ammo>(Ammo(0)).is_none());
     assert!(entry.insert::<Ammo>(Ammo(0)).is_none());
+    assert_eq!(entry.archetype().len(), 1);
 }
 
 #[test]
@@ -178,7 +182,7 @@ fn moving_batch() {
     for (i, id) in entities.iter().enumerate() {
         if i % 10 == 0 {
             let mut entry = scene.entry_mut(*id).unwrap();
-            entry.remove::<Name>().unwrap();
+            assert!(entry.remove::<Name>());
             entry
                 .insert::<Placeholder>(Placeholder())
                 .unwrap();
@@ -447,7 +451,7 @@ fn removed() {
     let entity1 = manager.insert(Position::default());
     let entity2 = manager.insert(Position::default());
     let mut entry1 = manager.entry_mut(entity1).unwrap();
-    let removed = entry1.remove::<Position>().unwrap();
+    assert!(entry1.remove::<Position>());
 
     assert_eq!(manager.removed::<Position>().len(), 1);
     assert_eq!(manager.removed_mut::<Position>().len(), 1);

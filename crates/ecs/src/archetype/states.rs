@@ -231,10 +231,16 @@ impl StateColumn {
     }
 
     // Clear all the states from within this column
-    pub(crate) fn clear(&mut self) {
+    pub(crate) fn reset(&mut self) {
         for chunk in self.0.iter_mut() {
             chunk.added = 0usize;
             chunk.modified = 0usize;
         }
+    }
+
+    // Clear all the states from within this column
+    pub(crate) fn clear(&mut self) {
+        self.0.clear();
+        self.1 = 0;
     }
 }

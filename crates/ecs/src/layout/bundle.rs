@@ -1,7 +1,7 @@
 use std::mem::MaybeUninit;
 
 use crate::{
-    mask, Archetype, Component, Mask, MaskHashMap, Column, UntypedColumn, StateFlags,
+    mask, Archetype, Component, Mask, MaskHashMap, Column, UntypedColumn, StateFlags, UntypedVec,
 };
 
 // An owned layout trait will be implemented for owned tuples that contain a set of components
@@ -32,15 +32,14 @@ pub trait Bundle: Sized + 'static {
         iter: impl IntoIterator<Item = Self>
     ) -> usize;
 
-    // Get the default untyped column for this bundle
+    // Get the default untyped component columns for this bundle
     fn default_columns() -> MaskHashMap<Box<dyn UntypedColumn>>;
 
-    // Try to remove and element from the tables, and try to return the cast element
-    fn try_swap_remove(
-        tables: &mut MaskHashMap<Box<dyn UntypedColumn>>,
-        index: usize,
-    ) -> Option<Self>;
+    // Get the default untyped component vectors for this bundle
+    fn default_vectors() -> MaskHashMap<Box<dyn UntypedVec>>;
 }
+
+trait RemovalBundle {}
 
 // Implement the bundle for single component
 impl<T: Component> Bundle for T {
@@ -86,13 +85,9 @@ impl<T: Component> Bundle for T {
         MaskHashMap::from_iter(std::iter::once((mask, boxed)))
     }
 
-    fn try_swap_remove(
-        tables: &mut MaskHashMap<Box<dyn UntypedColumn>>,
-        index: usize,
-    ) -> Option<Self> {
-        let boxed = tables.get_mut(&mask::<T>())?;
-        let vec =
-            boxed.as_any_mut().downcast_mut::<Column<T>>().unwrap();
-        Some(vec.swap_remove(index).0)
+    fn default_vectors() -> MaskHashMap<Box<dyn UntypedVec>> {
+        let boxed: Box<dyn UntypedVec> = Box::new(Vec::<T>::new());
+        let mask = mask::<T>();
+        MaskHashMap::from_iter(std::iter::once((mask, boxed)))
     }
 }

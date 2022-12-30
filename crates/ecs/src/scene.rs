@@ -1,4 +1,5 @@
 use ahash::{AHashMap, AHashSet};
+use itertools::Itertools;
 use slotmap::SlotMap;
 use std::{iter::once, any::{Any, TypeId}};
 use world::{post_user, user, System, World};
@@ -8,13 +9,13 @@ use crate::{
     Bundle, Child, EntityLinkings, EntryMut, EntryRef, LocalPosition,
     LocalRotation, LocalScale, Mask, MaskHashMap, Parent, Position,
     QueryFilter, QueryLayoutMut, QueryLayoutRef, QueryMut, QueryRef,
-    Rotation, Scale, Wrap,
+    Rotation, Scale, Wrap, UntypedVec,
 };
 
 // Convenience type aliases
 pub(crate) type EntitySet = SlotMap<Entity, EntityLinkings>;
 pub(crate) type ArchetypeSet = MaskHashMap<Archetype>;
-pub(crate) type RemovedComponents = MaskHashMap<Box<dyn Any>>;
+pub(crate) type RemovedComponents = MaskHashMap<Box<dyn UntypedVec>>;
 
 // The scene is what will contain the multiple ECS entities and archetypes
 pub struct Scene {
@@ -74,11 +75,10 @@ impl Scene {
             .archetypes
             .entry(mask)
             .or_insert_with(|| Archetype::from_bundle::<B>());
-        let components = iter.into_iter().collect::<Vec<_>>();
 
         // Extend the archetype with the new bundles
         archetype
-            .extend_from_iter::<B>(&mut self.entities, components)
+            .extend_from_iter::<B>(&mut self.entities, iter)
     }
 
     // Despawn an entity from the scene
@@ -90,6 +90,18 @@ impl Scene {
     // Despawn a batch of entities from an iterator
     // Panics if the entity ID is invalid
     pub fn remove_from_iter(&mut self, iter: impl IntoIterator<Item = Entity>) {
+        /*
+        let mut vec = iter.into_iter().collect::<Vec<Entity>>();
+
+        for entity in &vec {
+
+        }
+
+        let vec = .sorted_by(|a, b| {
+            self.entities.get()
+        }).group_by(|a|)
+
+
         for entity in iter.into_iter() {
             let linkings = 
                 *self.entities.get(entity).expect("Entity does not exist");
@@ -98,6 +110,7 @@ impl Scene {
 
             //archetype.remove(&mut self.entities, entity).unwrap();
         }
+        */
     }
 
     // Fetch all the bundles of a specific type immutably
@@ -235,7 +248,7 @@ impl Scene {
     // Returns None if the entities don't exist, or if the child isn't attached
     pub fn detach(&mut self, child: Entity) -> Option<()> {
         let mut entry = self.entry_mut(child)?;
-        entry.remove::<Child>().unwrap();
+        assert!(entry.remove::<Child>());
 
         // Remove the "local" components that we added automatically
         entry.remove::<LocalPosition>();
@@ -258,7 +271,7 @@ fn update(world: &mut World) {
     // Clear all the archetype states that were set last frame
     for (_, archetype) in scene.archetypes_mut() {
         for (_, column) in archetype.table_mut().iter_mut() {
-            column.states_mut().clear();
+            column.states_mut().reset();
         }
     }
 

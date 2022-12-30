@@ -1,6 +1,6 @@
 use utils::{UntypedPtr, UntypedMutPtr};
 
-use crate::{Component, StateColumn};
+use crate::{Component, StateColumn, UntypedVec};
 use std::{any::{Any, TypeId}, mem::MaybeUninit};
 
 // A component storage that is implemented for Vec<T>
@@ -42,6 +42,15 @@ pub trait UntypedColumn {
 
     // Get the internally stored states mutably
     fn states_mut(&mut self) -> &mut StateColumn;
+
+    // Get the internally stored components immutably
+    fn components(&self) -> &dyn UntypedVec;
+
+    // Get the internally stored componnets mutably
+    fn components_mut(&mut self) -> &mut dyn UntypedVec;
+
+    // Clear the column
+    fn clear(&mut self);
 
     // Get the length of the vector
     fn len(&self) -> usize;
