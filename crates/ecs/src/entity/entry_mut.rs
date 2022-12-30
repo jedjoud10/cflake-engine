@@ -4,13 +4,13 @@ use super::Entity;
 use crate::{
     add_bundle, remove_bundle, Archetype, ArchetypeSet, Bundle,
     Component, EntityLinkings, EntitySet, QueryLayoutMut,
-    QueryLayoutRef, Scene, Column, RemovedBundles,
+    QueryLayoutRef, Scene, Column, RemovedComponents,
 };
 
 // Mutable entity entries allow the user to be able to modify components that are linked to the entity
 // They also allow the user to be able to add/remove certain component bundles from the entity
 pub struct EntryMut<'a> {
-    removed: &'a mut RemovedBundles,
+    removed: &'a mut RemovedComponents,
     archetypes: &'a mut ArchetypeSet,
     entities: &'a mut EntitySet,
     entity: Entity,
@@ -115,15 +115,13 @@ impl<'a> EntryMut<'a> {
         )?;
         self.linkings = self.entities[self.entity];
 
-        // Add the bundle to the scene's removed bundles 
-        let key = TypeId::of::<B>();
-        let boxed = self
-            .removed
-            .entry(key)
-            .or_insert_with(|| Box::new(Vec::<B>::new()));
-        let vector = boxed.downcast_mut::<Vec<B>>().unwrap();
-        vector.push(bundle);
-        Some(vector.last_mut().unwrap())
+        // Make sure the removed component vectors exist
+        
+
+        // Add the bundle to the scene's removed components
+        
+        
+        todo!()
     }
 
     // Check if the entity contains the given bundle
