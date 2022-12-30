@@ -27,18 +27,10 @@ impl<T: Component> Column<T> {
     }
 
     // Swap remove a component at an index
-    pub fn swap_remove(&mut self, index: usize) -> T {
-        self.states.swap_remove(index).unwrap();
-        self.data.swap_remove(index)
-    }
-
-    // Add a new component to the column
-    pub fn push(&mut self, component: T) {
-        self.data.push(component);
-        self.states.extend_with_flags(1, StateFlags {
-            added: true,
-            modified: true,
-        })
+    pub fn swap_remove(&mut self, index: usize) -> (T, StateFlags) {
+        let flags = self.states.swap_remove(index).unwrap();
+        let component = self.data.swap_remove(index);
+        (component, flags)
     }
 
     // Reserve more space to add more components
@@ -108,10 +100,12 @@ impl<T: Component> UntypedColumn for Column<T> {
         index: usize,
         other: &mut dyn UntypedColumn,
     ) {
-        let removed = Column::swap_remove(self, index);
+        let (component, flags) = Column::swap_remove(self, index);
         let other =
             other.as_any_mut().downcast_mut::<Self>().unwrap();
-        other.push(removed);
+
+        other.data.push(component);
+        other.states.extend_with_flags(1, flags);
     }
 
     fn reserve(&mut self, additional: usize) {

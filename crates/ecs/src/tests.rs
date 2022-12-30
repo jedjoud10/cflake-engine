@@ -16,6 +16,8 @@ fn cleanup(ecs: &mut Scene) {
             column.states_mut().clear();
         }
     }
+
+    ecs.removed.clear() ;
 }
 
 #[test]
@@ -92,11 +94,13 @@ fn states() {
 
     manager
         .extend_from_iter(std::iter::repeat(Name("Test")).take(32));
-
+    dbg!("bruh");
     let mask = Mask::from_bundle::<Name>();
     let archetype = manager.archetypes().get(&mask).unwrap();
     let column = archetype.column::<Name>().unwrap();
     let chunk = column.states().chunks()[0];
+    println!("{:b}", chunk.added);
+    println!("{:b}", (1usize << 32) - 1);
     assert_eq!(chunk.added, (1 << 32) - 1);
     assert_eq!(chunk.modified, (1 << 32) - 1);
     assert_eq!(chunk.added.count_ones(), 32);
@@ -449,5 +453,10 @@ fn removed() {
     let entity1 = manager.insert(Position::default());
     let entity2 = manager.insert(Position::default());
     let mut entry1 = manager.entry_mut(entity1).unwrap();
-    entry1.remove::<Position>().unwrap();
+    let removed = entry1.remove::<Position>().unwrap();
+
+    assert_eq!(manager.removed::<Position>().len(), 1);
+    assert_eq!(manager.removed_mut::<Position>().len(), 1);
+    assert_eq!(manager.removed::<(Position, Rotation)>().len(), 0);
+    assert_eq!(manager.removed_mut::<(Position, Rotation)>().len(), 0);
 }

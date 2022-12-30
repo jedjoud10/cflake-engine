@@ -1,6 +1,6 @@
 use ahash::{AHashMap, AHashSet};
 use slotmap::SlotMap;
-use std::iter::once;
+use std::{iter::once, any::{Any, TypeId}};
 use world::{post_user, user, System, World};
 
 use crate::{
@@ -14,6 +14,7 @@ use crate::{
 // Convenience type aliases
 pub(crate) type EntitySet = SlotMap<Entity, EntityLinkings>;
 pub(crate) type ArchetypeSet = MaskHashMap<Archetype>;
+pub(crate) type RemovedBundles = AHashMap<TypeId, Box<dyn Any>>;
 
 // The scene is what will contain the multiple ECS entities and archetypes
 pub struct Scene {
@@ -25,6 +26,11 @@ pub struct Scene {
     // We use an archetypal ECS because it is a bit more efficient when iterating through components,
     // though it is slower when modifying entity component layouts
     pub(crate) archetypes: ArchetypeSet,
+
+    // These are removed bundles that we can iterate over
+    // These bundles get added here whenever we destroy entities or unlink components from them
+    // Stored as Box<Vec<T>> where T: Bundle
+    pub(crate) removed: RemovedBundles, 
 }
 
 impl Default for Scene {
@@ -37,6 +43,7 @@ impl Default for Scene {
                 Mask::zero(),
                 empty,
             ))),
+            removed: Default::default(),
         }
     }
 }
@@ -71,14 +78,28 @@ impl Scene {
 
         // Extend the archetype with the new bundles
         archetype
-            .extend_from_slice::<B>(&mut self.entities, components)
+            .extend_from_iter::<B>(&mut self.entities, components)
     }
 
     // Despawn an entity from the scene
-    pub fn remove(&mut self, entity: Entity) {}
+    pub fn remove(&mut self, entity: Entity) {
+        todo!()
+    }
     
     // Despawn a batch of entities from an iterator
-    pub fn remove_from_iter(&mut self, iter: impl IntoIterator<Item = Entity>) {}
+    pub fn remove_from_iter(&mut self, iter: impl IntoIterator<Item = Entity>) {
+        todo!()
+    }
+
+    // Fetch all the bundles of a specific type immutably
+    pub fn removed<B: Bundle>(&self) -> &[B] {
+        todo!()
+    }
+
+    // Fetch all the bundles of a specific type mutably
+    pub fn removed_mut<B: Bundle>(&mut self) -> &mut [B] {
+        todo!()
+    }
     
     // Check if an entity is stored within the scene
     pub fn contains(&self, entity: Entity) -> bool {

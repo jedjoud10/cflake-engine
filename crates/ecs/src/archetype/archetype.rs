@@ -48,7 +48,7 @@ impl Archetype {
 
     // Add multiple entities into the archetype with their corresponding owned components
     // The layout mask for "B" must be equal to the layout mask that this archetype contains
-    pub(crate) fn extend_from_slice<B: Bundle>(
+    pub(crate) fn extend_from_iter<B: Bundle>(
         &mut self,
         entities: &mut EntitySet,
         components: impl IntoIterator<Item = B>,
@@ -58,31 +58,16 @@ impl Archetype {
             B::is_valid(),
             "Bundle is not valid, check the bundle for component collisions"
         );
-
-        // Reserve and calculate difference
+        
+        // Reserve more memory to reduce the number of reallocation
         let iter = components.into_iter();
         self.reserve(iter.size_hint().0);
         let old_len = self.entities.len();
 
         // Add the components first (so we know how many entities we need to add)
         let mut storages = B::prepare(self).unwrap();
-        let mut additional = 0;
-        for set in iter {
-            set.push(&mut storages);
-            additional += 1;
-        }
+        let additional = B::extend_from_iter(&mut storages, iter);
         drop(storages);
-
-        // Then, add the state bits 
-        for (_, column) in self.table.iter_mut() {
-            column.states_mut().extend_with_flags(
-                additional,
-                StateFlags {
-                    added: true,
-                    modified: true,
-                },
-            );
-        }
 
         // Allocate the entities then add them as well
         for _ in 0..additional {
@@ -279,21 +264,20 @@ pub(crate) fn add_bundle<B: Bundle>(
 
     // Add the extra components to the archetype
     let mut storages = B::prepare(target).unwrap();
-    // TODO: Handle states within B::push??
-    B::push(bundle, &mut storages);
+    B::extend_from_iter(&mut storages, [bundle].into_iter());
     drop(storages);
 
-    // Add the extra states as well
+    // We must also add the states that don't correspond to the bundle "B" within "target"
     for (_, output) in target
         .table_mut()
         .iter_mut()
-        .filter(|(mask, _)| bundle_mask.contains(**mask))
+        .filter(|(mask, _)| !bundle_mask.contains(**mask))
     {
         output.states_mut().extend_with_flags(
             1,
             StateFlags {
-                added: true,
-                modified: true,
+                added: false,
+                modified: false,
             },
         )
     }
@@ -320,7 +304,7 @@ pub(crate) fn remove_bundle<B: Bundle>(
     archetypes: &mut ArchetypeSet,
     entity: Entity,
     entities: &mut EntitySet,
-) -> Option<()> {
+) -> Option<B> {
     assert!(
         B::is_valid(),
         "Bundle is not valid, check the bundle for component collisions"
@@ -358,6 +342,9 @@ pub(crate) fn remove_bundle<B: Bundle>(
         input.swap_remove_move(index, output.as_mut());
     }
 
+    // Create the return bundle
+    let bundle = B::try_swap_remove(&mut current.table, index);
+
     // Handle swap-remove logic in the current archetype
     current.entities.swap_remove(index);
     if let Some(entity) = current.entities.get(index).cloned() {
@@ -371,5 +358,5 @@ pub(crate) fn remove_bundle<B: Bundle>(
     linkings.index = target.len() - 1;
     linkings.mask = target.mask;
 
-    Some(())
+    bundle
 }
