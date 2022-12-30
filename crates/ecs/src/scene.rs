@@ -30,7 +30,7 @@ pub struct Scene {
 impl Default for Scene {
     fn default() -> Self {
         let mut empty = Archetype::empty();
-        empty.shrink();
+        empty.shrink_to_fit();
         Self {
             entities: Default::default(),
             archetypes: ArchetypeSet::from_iter(once((
@@ -66,7 +66,7 @@ impl Scene {
         let archetype = self
             .archetypes
             .entry(mask)
-            .or_insert_with(|| Archetype::from_table_accessor::<B>());
+            .or_insert_with(|| Archetype::from_bundle::<B>());
         let components = iter.into_iter().collect::<Vec<_>>();
 
         // Extend the archetype with the new bundles
@@ -75,14 +75,10 @@ impl Scene {
     }
 
     // Despawn an entity from the scene
-    pub fn remove(&mut self, entity: Entity) {
-
-    }
+    pub fn remove(&mut self, entity: Entity) {}
     
     // Despawn a batch of entities from an iterator
-    pub fn remove_from_iter(&mut self, iter: impl IntoIterator<Item = Entity>) {
-
-    }
+    pub fn remove_from_iter(&mut self, iter: impl IntoIterator<Item = Entity>) {}
     
     // Check if an entity is stored within the scene
     pub fn contains(&self, entity: Entity) -> bool {
@@ -231,8 +227,8 @@ fn update(world: &mut World) {
 
     // Clear all the archetype states that were set last frame
     for (_, archetype) in scene.archetypes_mut() {
-        for (_, column) in archetype.state_table_mut().iter_mut() {
-            column.clear();
+        for (_, column) in archetype.table_mut().iter_mut() {
+            column.states_mut().clear();
         }
     }
 

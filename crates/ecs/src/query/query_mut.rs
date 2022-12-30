@@ -133,12 +133,13 @@ fn apply_mutability_states(
     mutability: Mask,
     bitset: Option<&BitSet>,
 ) {
-    let table = archetype.state_table_mut();
+    let table = archetype.table_mut();
     for unit in mutability.units() {
         let column = table.get_mut(&unit).unwrap();
+        let states = column.states_mut();
 
         if let Some(bitset) = bitset {
-            for (out_states, in_states) in column
+            for (out_states, in_states) in states
                 .chunks_mut()
                 .iter_mut()
                 .zip(bitset.chunks().iter())
@@ -146,7 +147,7 @@ fn apply_mutability_states(
                 out_states.modified = *in_states;
             }
         } else {
-            for out in column.chunks_mut() {
+            for out in states.chunks_mut() {
                 out.modified = usize::MAX;
             }
         }

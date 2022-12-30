@@ -68,8 +68,8 @@ impl<T: Component> QueryItemRef for &T {
         archetype: &Archetype,
     ) -> Self::Ptr {
         archetype
-            .components::<T>()
-            .unwrap_unchecked()
+            .column::<T>()
+            .unwrap()
             .as_slice()
             .as_ptr() as _
     }
@@ -103,8 +103,8 @@ impl<T: Component> QueryItemRef for Option<&T> {
         archetype: &Archetype,
     ) -> Self::Ptr {
         archetype
-            .components::<T>()
-            .map(|vec| vec.as_slice().as_ptr() as _)
+            .column::<T>()
+            .map(|col| col.as_slice().as_ptr() as _)
     }
 
     unsafe fn from_raw_parts<'s>(
@@ -167,9 +167,9 @@ impl<T: Component> QueryItemMut for &T {
         archetype: &mut Archetype,
     ) -> Self::Ptr {
         archetype
-            .components::<T>()
-            .unwrap_unchecked()
-            .as_slice()
+            .column_mut::<T>()
+            .unwrap()
+            .as_mut_slice()
             .as_ptr() as _
     }
 
@@ -205,7 +205,7 @@ impl<T: Component> QueryItemMut for Option<&T> {
         archetype: &mut Archetype,
     ) -> Self::Ptr {
         archetype
-            .components::<T>()
+            .column_mut::<T>()
             .map(|vec| vec.as_slice().as_ptr() as _)
     }
 
@@ -241,8 +241,8 @@ impl<T: Component> QueryItemMut for &mut T {
         archetype: &mut Archetype,
     ) -> Self::Ptr {
         archetype
-            .components_mut::<T>()
-            .unwrap_unchecked()
+            .column_mut::<T>()
+            .unwrap()
             .as_mut_slice()
             .as_mut_ptr() as _
     }
@@ -279,7 +279,7 @@ impl<T: Component> QueryItemMut for Option<&mut T> {
         archetype: &mut Archetype,
     ) -> Self::Ptr {
         archetype
-            .components_mut::<T>()
+            .column_mut::<T>()
             .map(|vec| vec.as_mut_slice().as_mut_ptr() as _)
     }
 

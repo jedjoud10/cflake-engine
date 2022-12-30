@@ -1,7 +1,7 @@
 use std::mem::MaybeUninit;
 
 use crate::{
-    mask, Archetype, Component, ComponentColumn, Mask, MaskHashMap, Column,
+    mask, Archetype, Component, Mask, MaskHashMap, Column, UntypedColumn,
 };
 
 // An owned layout trait will be implemented for owned tuples that contain a set of components
@@ -27,23 +27,14 @@ pub trait Bundle: Sized {
     ) -> Option<Self::Storages<'a>>;
 
     // Push an element into those tables
-    fn push<'a>(storages: &mut Self::Storages<'a>, bundle: Self);
+    fn push<'a>(self, storages: &mut Self::Storages<'a>);
 
     // Get the default tables for this owned bundle
-    fn default_tables() -> MaskHashMap<Box<dyn ComponentColumn>>;
-
-    // Try to get a default bundle (only used for unit bundles)
-    fn try_get_default() -> Option<Self> { None }
-
-    // Try to remove and element from the tables, and try to return the cast element
-    fn try_swap_remove(
-        tables: &mut MaskHashMap<Box<dyn ComponentColumn>>,
-        index: usize,
-    ) -> Option<Self>;
+    fn default_tables() -> MaskHashMap<Box<dyn UntypedColumn>>;
 }
 // Implement the owned bundle for single component
 impl<T: Component> Bundle for T {
-    type Storages<'a> = &'a mut Column<T>;
+    type Storages<'a> = &'a mut Vec<T>;
 
     fn reduce(lambda: impl FnMut(Mask, Mask) -> Mask) -> Mask {
         std::iter::once(mask::<T>())
@@ -59,65 +50,17 @@ impl<T: Component> Bundle for T {
     fn prepare<'a>(
         archetype: &'a mut Archetype,
     ) -> Option<Self::Storages<'a>> {
-        archetype.components_mut::<T>()
+        archetype.column_mut::<T>().map(|c| c.components_mut())
     }
 
-    fn push<'a>(storages: &mut Self::Storages<'a>, bundle: Self) {
-        storages.push(MaybeUninit::new(bundle))
+    fn push<'a>(self, storages: &mut Self::Storages<'a>) {
+        storages.push(self)
     }
 
-    fn default_tables() -> MaskHashMap<Box<dyn ComponentColumn>> {
-        let boxed: Box<dyn ComponentColumn> = Box::new(Column::<T>::new());
+    fn default_tables() -> MaskHashMap<Box<dyn UntypedColumn>> {
+        let column = Column::<T>::new();
+        let boxed: Box<dyn UntypedColumn> = Box::new(column);
         let mask = mask::<T>();
         MaskHashMap::from_iter(std::iter::once((mask, boxed)))
-    }
-
-    fn try_swap_remove(
-        tables: &mut MaskHashMap<Box<dyn ComponentColumn>>,
-        index: usize,
-    ) -> Option<Self> {
-        let boxed = tables.get_mut(&mask::<T>())?;
-        let vec =
-            boxed.as_any_mut().downcast_mut::<Column<T>>().unwrap();
-        Some(unsafe { vec.swap_remove(index).assume_init() })
-    }
-}
-
-// Implement the owned bundle for the unit tuple
-impl Bundle for () {
-    type Storages<'a> = ();
-
-    fn reduce(lambda: impl FnMut(Mask, Mask) -> Mask) -> Mask {
-        std::iter::once(Mask::zero())
-            .into_iter()
-            .reduce(lambda)
-            .unwrap()
-    }
-
-    fn is_valid() -> bool {
-        true
-    }
-
-    fn prepare<'a>(
-        archetype: &'a mut Archetype,
-    ) -> Option<Self::Storages<'a>> {
-        archetype.mask().is_zero().then_some(())
-    }
-
-    fn push<'a>(_storages: &mut Self::Storages<'a>, _bundle: Self) {}
-
-    fn default_tables() -> MaskHashMap<Box<dyn ComponentColumn>> {
-        MaskHashMap::default()
-    }
-
-    fn try_get_default() -> Option<Self> {
-        Some(())
-    }
-
-    fn try_swap_remove(
-        tables: &mut MaskHashMap<Box<dyn ComponentColumn>>,
-        _index: usize,
-    ) -> Option<Self> {
-        tables.is_empty().then_some(())
     }
 }

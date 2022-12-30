@@ -1,8 +1,8 @@
 mod archetype;
 mod states;
-mod storage;
-mod wrapper;
-pub use wrapper::*;
+mod typed;
+mod untyped;
+pub use untyped::*;
+pub use typed::*;
 pub use archetype::*;
 pub use states::*;
-pub use storage::*;

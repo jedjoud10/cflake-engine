@@ -37,14 +37,14 @@ impl<'a> EntryRef<'a> {
         self.archetype
     }
 
-    // Get an immutable reference to a tableStateRow
-    pub fn table<T: Component>(&self) -> Option<&Column<T>> {
-        self.archetype().components::<T>()
+    // Get an immutable reference to a column of the current archetype
+    pub fn column<T: Component>(&self) -> Option<&Column<T>> {
+        self.archetype().column::<T>()
     }
 
     // Get an immutable reference to a linked component
     pub fn get<T: Component>(&self) -> Option<&T> {
-        self.table::<T>().map(|vec| unsafe { vec[self.linkings.index].assume_init_ref() })
+        self.column::<T>().map(|col| col.get(self.linkings.index).unwrap())
     }
 
     // Check if the entity contains the given bundle

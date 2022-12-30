@@ -1,5 +1,5 @@
 use crate::{
-    mask, Archetype, Component, ComponentColumn, LayoutAccess, Mask,
+    mask, Archetype, Component, UntypedColumn, Column, LayoutAccess, Mask,
     MaskHashMap, Bundle, QueryItemMut, QueryItemRef,
     QueryLayoutMut, QueryLayoutRef,
 };
@@ -10,7 +10,7 @@ use seq_macro::seq;
 macro_rules! tuple_impls {
     ( $( $name:ident )+, $max:tt ) => {
         impl<$($name: Component),+> Bundle for ($($name,)+) {
-            type Storages<'a> = ($(&'a mut Vec<MaybeUninit<$name>>),+);
+            type Storages<'a> = ($(&'a mut Vec<$name>),+);
 
             fn reduce(mut lambda: impl FnMut(Mask, Mask) -> Mask) -> Mask {
                 let masks = [$(mask::<$name>()),+];
@@ -20,8 +20,8 @@ macro_rules! tuple_impls {
             fn prepare<'a>(archetype: &'a mut Archetype) -> Option<Self::Storages<'a>> {
                 assert!(Self::is_valid());
                 seq!(N in 0..$max {
-                    let table = archetype.components_mut::<C~N>()?;
-                    let ptr = table as *mut Vec<MaybeUninit<C~N>>;
+                    let column = archetype.column_mut::<C~N>()?;
+                    let ptr = column.components_mut() as *mut Vec::<C~N>;
                     let c~N = unsafe { &mut *ptr };
                 });
 
@@ -30,31 +30,19 @@ macro_rules! tuple_impls {
                 ),+,))
             }
 
-            fn push<'a>(storages: &mut Self::Storages<'a>, bundle: Self) {
+            fn push<'a>(self, storages: &mut Self::Storages<'a>) {
                 seq!(N in 0..$max {
                     let vec = &mut storages.N;
-                    vec.push(MaybeUninit::new(bundle.N));
+                    vec.push(self.N);
                 });
             }
 
-            fn default_tables() -> MaskHashMap<Box<dyn ComponentColumn>> {
-                let mut map = MaskHashMap::<Box<dyn ComponentColumn>>::default();
+            fn default_tables() -> MaskHashMap<Box<dyn UntypedColumn>> {
+                let mut map = MaskHashMap::<Box<dyn UntypedColumn>>::default();
                 ($(
-                    map.insert(mask::<$name>(), Box::new(Vec::<MaybeUninit<$name>>::new()))
+                    map.insert(mask::<$name>(), Box::new(Column::<$name>::new()))
                 ),+);
                 map
-            }
-
-            fn try_swap_remove(tables: &mut MaskHashMap<Box<dyn ComponentColumn>>, index: usize) -> Option<Self> {
-                seq!(N in 0..$max {
-                    let boxed = tables.get_mut(&mask::<C~N>())?;
-                    let vec = boxed.as_any_mut().downcast_mut::<Vec<C~N>>().unwrap();
-                    let c~N: C~N = vec.swap_remove(index);
-                });
-
-                Some(($(
-                    lower!($name)
-                ),+,))
             }
         }
 

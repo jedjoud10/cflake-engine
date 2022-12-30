@@ -195,7 +195,7 @@ impl<T: Component> QueryFilter for Added<T> {
         cached: Self::Cached,
         archetype: &Archetype,
     ) -> Self::Columns<'_> {
-        archetype.state_table().get(&cached)
+        archetype.table().get(&cached).map(|col| col.states())
     }
 
     fn evaluate_chunk(
@@ -204,7 +204,7 @@ impl<T: Component> QueryFilter for Added<T> {
     ) -> ChunkEval {
         ChunkEval::Evaluated(
             columns
-                .map(|c| c.get(index).unwrap().added)
+                .map(|c| c.get_chunk(index).unwrap().added)
                 .unwrap_or_default(),
         )
     }
@@ -229,7 +229,7 @@ impl<T: Component> QueryFilter for Modified<T> {
         cached: Self::Cached,
         archetype: &Archetype,
     ) -> Self::Columns<'_> {
-        archetype.state_table().get(&cached)
+        archetype.table().get(&cached).map(|col| col.states())
     }
 
     fn evaluate_chunk(
@@ -238,7 +238,7 @@ impl<T: Component> QueryFilter for Modified<T> {
     ) -> ChunkEval {
         ChunkEval::Evaluated(
             columns
-                .map(|c| c.get(index).unwrap().modified)
+                .map(|c| c.get_chunk(index).unwrap().modified)
                 .unwrap_or_default(),
         )
     }

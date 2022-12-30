@@ -1,17 +1,21 @@
+// Number of bits in a usize as an usize
+const BITS: usize = usize::BITS as usize;
+
 // A single chunk that will be contained within the archetype component column
 // TODO: Handle removal detection?
 #[derive(Default, Clone, Copy)]
-pub(crate) struct StateColumnChunk {
+pub struct StateColumnChunk {
+    // Keeps track of added components
     pub added: usize,
-    pub zombie: usize,
+
+    // Keeps track of mutated (modified) components
     pub modified: usize,
 }
 
 // Returned from the Vec<StateColumnChunk>
 #[derive(Default, Clone, Copy)]
-pub(crate) struct StateFlags {
+pub struct StateFlags {
     pub added: bool,
-    pub zombie: bool,
     pub modified: bool,
 }
 
@@ -20,7 +24,7 @@ pub(crate) struct StateFlags {
 pub struct StateColumn(Vec<StateColumnChunk>, usize);
 
 // Update a value in a specific bitmask, though return the unwritten value first
-fn set_bit(bitmask: &mut usize, index: usize, value: bool) -> bool {
+fn toggle_bit(bitmask: &mut usize, index: usize, value: bool) -> bool {
     let copy = (*bitmask >> index) & 1 == 1;
 
     if value {
@@ -31,9 +35,6 @@ fn set_bit(bitmask: &mut usize, index: usize, value: bool) -> bool {
 
     copy
 }
-
-// Number of bits in a usize as an usize
-const BITS: usize = usize::BITS as usize;
 
 // Enable all the bits between "start" and "end" in the binary representation of a usize
 // Start is inclusive, end is exclusive
@@ -47,6 +48,11 @@ pub(crate) fn enable_in_range(start: usize, end: usize) -> usize {
     } else {
         ((1usize << (start)) - 1usize) ^ ((1usize << end) - 1usize)
     }
+}
+
+// Check if a bit at a specific index is set
+fn is_bit_enabled(bitset: usize, index: usize) -> bool {
+    bitset >> index & 1 == 1
 }
 
 impl StateColumn {
@@ -69,7 +75,6 @@ impl StateColumn {
         // Convert the flags into masks
         let added = flags.added as usize * usize::MAX;
         let modified = flags.modified as usize * usize::MAX;
-        let zombie = flags.zombie as usize * usize::MAX;
 
         // Update the chunk bits
         for (i, chunk) in self.0.iter_mut().enumerate() {
@@ -91,7 +96,6 @@ impl StateColumn {
             let range = enable_in_range(local_start, local_end);
             chunk.added |= range & added;
             chunk.modified |= range & modified;
-            chunk.zombie |= range & zombie;
         }
     }
 
@@ -113,7 +117,7 @@ impl StateColumn {
     pub(crate) fn swap_remove(
         &mut self,
         index: usize,
-    ) -> Option<StateFlags> {
+    ) -> Option<StateFlags> {        
         // Cannot remove non-existant index
         if index >= self.1 {
             return None;
@@ -123,9 +127,8 @@ impl StateColumn {
         let last = self.0.last().map(|chunk| {
             let last_local_index = self.1 % BITS;
             StateFlags {
-                added: (chunk.added >> last_local_index) & 1 == 1,
-                modified: (chunk.modified >> last_local_index) & 1 == 1,
-                zombie: (chunk.zombie >> last_local_index) & 1 == 1,
+                added: is_bit_enabled(chunk.added, last_local_index),
+                modified: is_bit_enabled(chunk.modified, last_local_index),
             }
         });
 
@@ -139,14 +142,12 @@ impl StateColumn {
             // Decompose the state flags
             let StateFlags {
                 added,
-                zombie,
-                modified
+                modified,
             } = flags;
 
-            let added = set_bit(&mut chunk.added, local, added);
-            let modified = set_bit(&mut chunk.modified, local, modified);
-            let zombie = set_bit(&mut chunk.zombie, local, zombie);
-            StateFlags { added, modified, zombie }
+            let added = toggle_bit(&mut chunk.added, local, added);
+            let modified = toggle_bit(&mut chunk.modified, local, modified);
+            StateFlags { added, modified }
         })
     }
 
@@ -174,18 +175,17 @@ impl StateColumn {
         let location = index % BITS;
         let chunk = &mut self.0[chunk];
         let mut flags = StateFlags {
-            added: (chunk.added >> location) & 1 == 1,
-            modified: (chunk.modified >> location) & 1 == 1,
-            zombie: (chunk.zombie >> location) & 1 == 1,
+            added: is_bit_enabled(chunk.added, location),
+            modified: is_bit_enabled(chunk.modified, location),
         };
         update(&mut flags);
 
-        set_bit(&mut chunk.added, location, flags.added);
-        set_bit(&mut chunk.modified, location, flags.modified);
+        toggle_bit(&mut chunk.added, location, flags.added);
+        toggle_bit(&mut chunk.modified, location, flags.modified);
     }
 
     // Get an immutable slice over all the chunks
-    pub(crate) fn chunks(&self) -> &[StateColumnChunk] {
+    pub fn chunks(&self) -> &[StateColumnChunk] {
         &self.0
     }
 
@@ -195,27 +195,46 @@ impl StateColumn {
     }
 
     // Get a specific state column chunk immutably
-    pub(crate) fn get(
+    pub fn get_chunk(
         &self,
         index: usize,
     ) -> Option<&StateColumnChunk> {
         self.0.get(index)
     }
 
+    // Get a specific state column entry immutably
+    pub fn get(
+        &self,
+        index: usize
+    ) -> Option<StateFlags> {
+        let chunk = index / BITS;
+        let location = index % BITS;
+        let chunk = &mut self.0.get(chunk)?;
+        let flags = StateFlags {
+            added: is_bit_enabled(chunk.added, location),
+            modified: is_bit_enabled(chunk.modified, location),
+        };
+        Some(flags)
+    }
+
     // Get a specific state column chunk mutably
-    pub(crate) fn get_mut(
+    pub(crate) fn get_mut_chunk(
         &mut self,
         index: usize,
     ) -> Option<&mut StateColumnChunk> {
         self.0.get_mut(index)
     }
 
+    // Get the number of component states we have
+    pub fn len(&self) -> usize {
+        self.1
+    }
+
     // Clear all the states from within this column
-    pub fn clear(&mut self) {
+    pub(crate) fn clear(&mut self) {
         for chunk in self.0.iter_mut() {
             chunk.added = 0usize;
             chunk.modified = 0usize;
-            chunk.zombie = 0usize;
         }
     }
 }

@@ -47,36 +47,31 @@ impl<'a> EntryMut<'a> {
         self.archetypes.get_mut(&self.linkings().mask()).unwrap()
     }
 
-    // Get an immutable reference to a table
-    // TODO: rename this or column
-    pub fn table<T: Component>(&self) -> Option<&Column<T>> {
-        self.archetype().components::<T>()
+    // Get an immutable reference to a column of the current archetype
+    pub fn column<T: Component>(&self) -> Option<&Column<T>> {
+        self.archetype().column::<T>()
     }
 
-    // Get a mutable reference to a table
-    // TODO: rename this or column
-    pub fn table_mut<T: Component>(&mut self) -> Option<&mut Column<T>> {
-        self.archetype_mut().components_mut::<T>()
+    // Get a mutable reference to a column of the current archetype
+    pub fn column_mut<T: Component>(&mut self) -> Option<&mut Column<T>> {
+        self.archetype_mut().column_mut::<T>()
     }
 
     // Get an immutable reference to a linked component
     pub fn get<T: Component>(&self) -> Option<&T> {
-        self.table::<T>().map(|vec| unsafe { vec[self.linkings.index].assume_init_ref() })
+        self.column::<T>().map(|col| col.get(self.linkings.index).unwrap())
     }
 
     // Get a mutable reference to a linked component, but without triggering a StateRow mutation change
     pub fn get_mut_silent<T: Component>(&mut self) -> Option<&mut T> {
         let i = self.linkings.index;
-        self.table_mut::<T>().map(|vec| unsafe { vec[i].assume_init_mut() })
+        self.column_mut::<T>().map(|col| col.get_mut_silent(i).unwrap())
     }
 
     // Get a mutable reference to a linked component
     pub fn get_mut<T: Component>(&mut self) -> Option<&mut T> {
-        self.table_mut::<T>()?;
-        let index = self.linkings().index();
-        let states = self.archetype_mut().states_mut::<T>()?;
-        states.update(index, |flags| flags.modified = true);
-        self.get_mut_silent::<T>()
+        let i = self.linkings.index;
+        self.column_mut::<T>().map(|col| col.get_mut(i).unwrap())
     }
 
     // Add a new component bundle to the entity, forcing it to switch archetypes
@@ -101,19 +96,19 @@ impl<'a> EntryMut<'a> {
     }
 
     // Remove an old component bundle from the entity, forcing it to switch archetypes
-    pub fn remove<B: Bundle>(&mut self) -> Option<B> {
+    pub fn remove<B: Bundle>(&mut self) -> Option<&mut B> {
         assert!(
             B::is_valid(),
             "Bundle is not valid, check the bundle for component collisions"
         );
 
-        let bundle = remove_bundle::<B>(
+        remove_bundle::<B>(
             self.archetypes,
             self.entity,
             self.entities,
         )?;
         self.linkings = self.entities[self.entity];
-        Some(bundle)
+        Some(())
     }
 
     // Check if the entity contains the given bundle
@@ -170,8 +165,8 @@ impl<'a> EntryMut<'a> {
 
         // Update the states based on the layout mask
         for unit in mutability.units() {
-            let table = archetype.state_table_mut();
-            let states = table.get_mut(&unit).unwrap();
+            let table = archetype.table_mut();
+            let states = table.get_mut(&unit).unwrap().states_mut();
             states.update(index, |flags| flags.modified = true);
         }
 

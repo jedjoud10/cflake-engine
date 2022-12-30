@@ -12,8 +12,8 @@ struct Placeholder();
 
 fn cleanup(ecs: &mut Scene) {
     for (_, archetype) in ecs.archetypes_mut() {
-        for (_, column) in archetype.state_table_mut().iter_mut() {
-            column.clear();
+        for (_, column) in archetype.table_mut().iter_mut() {
+            column.states_mut().clear();
         }
     }
 }
@@ -29,8 +29,8 @@ fn entries() {
 
     let mask = registry::mask::<Name>();
     let archetype = manager.archetypes().get(&mask).unwrap();
-    let column = archetype.states::<Name>().unwrap();
-    assert!(column.get(0).unwrap().modified == 1);
+    let column = archetype.column::<Name>().unwrap();
+    assert!(column.states().get(0).unwrap().modified);
 
     let entry = manager.entry(entity).unwrap();
     assert_eq!(entry.get::<Name>(), Some(&Name("Basic")));
@@ -95,8 +95,8 @@ fn states() {
 
     let mask = Mask::from_bundle::<Name>();
     let archetype = manager.archetypes().get(&mask).unwrap();
-    let states = archetype.states::<Name>().unwrap();
-    let chunk = states.chunks()[0];
+    let column = archetype.column::<Name>().unwrap();
+    let chunk = column.states().chunks()[0];
     assert_eq!(chunk.added, (1 << 32) - 1);
     assert_eq!(chunk.modified, (1 << 32) - 1);
     assert_eq!(chunk.added.count_ones(), 32);
@@ -112,10 +112,10 @@ fn states() {
 
     let mask = Mask::from_bundle::<(Name, Health)>();
     let archetype = manager.archetypes().get(&mask).unwrap();
-    let states = archetype.states::<Name>().unwrap();
+    let states = archetype.column::<Name>().unwrap().states();
     let sum1: u32 =
         states.chunks().iter().map(|c| c.added.count_ones()).sum();
-    let states2 = archetype.states::<Health>().unwrap();
+    let states2 = archetype.column::<Health>().unwrap().states();
     let sum2: u32 =
         states2.chunks().iter().map(|c| c.added.count_ones()).sum();
     assert_eq!(sum1, 64);
@@ -143,6 +143,24 @@ fn moving() {
     entry.insert::<Ammo>(Ammo(0)).unwrap();
     assert!(entry.insert::<Ammo>(Ammo(0)).is_none());
     assert!(entry.insert::<Ammo>(Ammo(0)).is_none());
+}
+
+#[test]
+fn columns() {
+    let boxed: Box<dyn UntypedColumn> = Box::new(Column::<Position>::new());
+    let _ = boxed.as_any().downcast_ref::<Column::<Position>>().unwrap();
+
+    let archetype = Archetype::from_bundle::<Position>();
+    let table = archetype.table();
+    assert_eq!(table.len(), 1);
+    assert!(table.get(&registry::mask::<Position>()).is_some());
+    let _ = table.get(&registry::mask::<Position>()).unwrap().as_any().downcast_ref::<Column::<Position>>().unwrap();
+}
+
+#[test]
+fn simple() {
+    let mut manager = Scene::default();
+    manager.insert(Name("Simple"));
 }
 
 #[test]
@@ -408,26 +426,6 @@ fn filter_mut() {
     );
     assert_eq!(query.len(), 0);
     assert_eq!(query.into_iter().count(), 0);
-}
-
-#[test]
-fn unit_tuple() {
-    let mut manager = Scene::default();
-    let e1 = manager.insert(());
-    let e2 = manager.insert(());
-    let e3 = manager.insert(Health(100));
-    let entry1 = manager.entry(e1).unwrap();
-    let entry2 = manager.entry(e2).unwrap();
-    let entry3 = manager.entry(e3).unwrap();
-    assert_eq!(entry1.archetype().mask(), Mask::zero());
-    assert_eq!(entry2.archetype().mask(), Mask::zero());
-    assert_eq!(entry1.archetype().len(), 2);
-    assert_eq!(entry3.contains::<()>(), true);
-
-    let mut entry1 = manager.entry_mut(e1).unwrap();
-    entry1.insert(Health(0)).unwrap();
-    let mut entry2 = manager.entry_mut(e2).unwrap();
-    entry2.insert(Health(0)).unwrap();
 }
 
 #[test]
