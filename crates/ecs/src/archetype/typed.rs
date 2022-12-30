@@ -1,4 +1,4 @@
-use std::mem::MaybeUninit;
+use std::{mem::MaybeUninit, any::Any};
 use crate::{Component, StateColumn, UntypedColumn, StateFlags};
 
 // Typed component that will be converted to a Box<dyn UntypedColumn>
@@ -83,11 +83,11 @@ impl<T: Component> Column<T> {
 }
 
 impl<T: Component> UntypedColumn for Column<T> {
-    fn as_any(&self) -> &dyn std::any::Any {
+    fn as_any(&self) -> &dyn Any {
         self
     }
 
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+    fn as_any_mut(&mut self) -> &mut dyn Any {
         self
     }
 
@@ -106,6 +106,16 @@ impl<T: Component> UntypedColumn for Column<T> {
 
         other.data.push(removed);
         other.states.extend_with_flags(1, flags);
+    }
+
+    fn swap_remove_move_any_vec(
+        &mut self,
+        index: usize,
+        vec: &mut dyn Any,
+    ) {
+        let (removed, _) = Column::swap_remove(self, index);
+        let other = vec.downcast_mut::<Vec<T>>().unwrap();
+        other.push(removed);
     }
 
     fn reserve(&mut self, additional: usize) {

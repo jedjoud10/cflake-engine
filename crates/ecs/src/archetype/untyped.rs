@@ -14,12 +14,21 @@ pub trait UntypedColumn {
     // Remove a component from the storage, and move the last element into it's place instead
     fn swap_remove(&mut self, index: usize);
 
-    // Remove a component from the storage, and insert the return value into another component storage
-    // This assumes that "other" is of the same type as Self and that the old value is not uninitialize
+    // Remove a component from the storage, and insert the return value into another untyped column
+    // This assumes that "other" is of the same type as Self
     fn swap_remove_move(
         &mut self,
         index: usize,
         other: &mut dyn UntypedColumn,
+    );
+
+    // Remove a component from the storage, and insert the return value into a vector of type Vec<T> where T: component
+    // This assumes that "other" is of the type Vec<T>
+    // Used internally when removing and dissociating removed components
+    fn swap_remove_move_any_vec(
+        &mut self,
+        index: usize,
+        vec: &mut dyn Any,
     );
 
     // Reserve some allocation space for the storage
