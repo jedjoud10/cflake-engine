@@ -7,8 +7,9 @@ use std::{
 };
 
 use crate::{
-    BufferError, BufferMode, BufferUsage, CopyError, ExtendError,
-    Graphics, InitializationError, ReadError, WriteError, ClearError,
+    BufferError, BufferMode, BufferUsage, ClearError, CopyError,
+    ExtendError, Graphics, InitializationError, ReadError,
+    WriteError,
 };
 use bytemuck::{Pod, Zeroable};
 use vulkan::{vk, Allocation, Recorder};

@@ -16,13 +16,13 @@ pub struct QueryMut<'a: 'b, 'b, L: QueryLayoutMut> {
     _phantom3: PhantomData<L>,
 }
 
-impl<'a: 'b, 'b, L: QueryLayoutMut>
-    QueryMut<'a, 'b, L>
-{
+impl<'a: 'b, 'b, L: QueryLayoutMut> QueryMut<'a, 'b, L> {
     // Create a new mut query from the scene
     pub fn new(scene: &'a mut Scene) -> Self {
         let (access, archetypes, _) =
-            super::archetypes_mut::<L, Always>(scene.archetypes_mut());
+            super::archetypes_mut::<L, Always>(
+                scene.archetypes_mut(),
+            );
 
         Self {
             archetypes,
@@ -64,8 +64,9 @@ impl<'a: 'b, 'b, L: QueryLayoutMut>
             + Sync
             + Clone,
         batch_size: usize,
-    ) where for<'st, 's> L::SliceTuple<'st>: utils::SliceTuple<'s> {
-
+    ) where
+        for<'st, 's> L::SliceTuple<'st>: utils::SliceTuple<'s>,
+    {
         threadpool.scope(|scope| {
             // Convert the optional bitset vector to an iterator that returns None if it is None
             let bitsets = self
@@ -246,9 +247,7 @@ impl<'b, L: QueryLayoutMut> QueryMutIter<'b, L> {
     }
 }
 
-impl<'b, L: QueryLayoutMut> Iterator
-    for QueryMutIter<'b, L>
-{
+impl<'b, L: QueryLayoutMut> Iterator for QueryMutIter<'b, L> {
     type Item = L;
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -293,7 +292,6 @@ impl<'b, L: QueryLayoutMut> Iterator
         Some(items)
     }
 }
-
 
 impl<'b, L: QueryLayoutMut> ExactSizeIterator
     for QueryMutIter<'b, L>

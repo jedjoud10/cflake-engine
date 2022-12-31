@@ -1,15 +1,19 @@
 use ahash::{AHashMap, AHashSet};
 use itertools::Itertools;
 use slotmap::SlotMap;
-use std::{iter::once, any::{Any, TypeId}};
+use std::{
+    any::{Any, TypeId},
+    iter::once,
+};
 use world::{post_user, user, System, World};
 
 use crate::{
-    archetype::remove_bundle, contains, entity::Entity, Archetype,
-    Bundle, Child, EntityLinkings, EntryMut, EntryRef, LocalPosition,
-    LocalRotation, LocalScale, Mask, MaskHashMap, Parent, Position,
-    QueryFilter, QueryLayoutMut, QueryLayoutRef, QueryMut, QueryRef,
-    Rotation, Scale, Wrap, UntypedVec, mask, Component,
+    archetype::remove_bundle, contains, entity::Entity, mask,
+    Archetype, Bundle, Child, Component, EntityLinkings, EntryMut,
+    EntryRef, LocalPosition, LocalRotation, LocalScale, Mask,
+    MaskHashMap, Parent, Position, QueryFilter, QueryLayoutMut,
+    QueryLayoutRef, QueryMut, QueryRef, Rotation, Scale, UntypedVec,
+    Wrap,
 };
 
 // Convenience type aliases
@@ -31,7 +35,7 @@ pub struct Scene {
     // These are removed components that we can iterate over
     // These components get added here whenever we destroy entities or unlink components from them
     // Stored as Box<Vec<T>> where T: Component
-    pub(crate) removed: RemovedComponents, 
+    pub(crate) removed: RemovedComponents,
 }
 
 impl Default for Scene {
@@ -77,25 +81,37 @@ impl Scene {
             .or_insert_with(|| Archetype::from_bundle::<B>());
 
         // Extend the archetype with the new bundles
-        archetype
-            .extend_from_iter::<B>(&mut self.entities, iter)
+        archetype.extend_from_iter::<B>(&mut self.entities, iter)
     }
 
     // Despawn an entity from the scene
     // Panics if the entity ID is invalid
     pub fn remove(&mut self, entity: Entity) {
         let linkings = *self.entities.get(entity).unwrap();
-        let archetype = self.archetypes.get_mut(&linkings.mask).unwrap();
-        archetype.remove_from_iter(&mut self.entities, [(entity, linkings)].into_iter(), &mut self.removed);
+        let archetype =
+            self.archetypes.get_mut(&linkings.mask).unwrap();
+        archetype.remove_from_iter(
+            &mut self.entities,
+            [(entity, linkings)].into_iter(),
+            &mut self.removed,
+        );
     }
-    
+
     // Despawn a batch of entities from an iterator
     // Panics if the entity ID is invalid
-    pub fn remove_from_iter(&mut self, iter: impl IntoIterator<Item = Entity>) {
+    pub fn remove_from_iter(
+        &mut self,
+        iter: impl IntoIterator<Item = Entity>,
+    ) {
         for entity in iter {
             let linkings = *self.entities.get(entity).unwrap();
-            let archetype = self.archetypes.get_mut(&linkings.mask).unwrap();
-            archetype.remove_from_iter(&mut self.entities, [(entity, linkings)].into_iter(), &mut self.removed);
+            let archetype =
+                self.archetypes.get_mut(&linkings.mask).unwrap();
+            archetype.remove_from_iter(
+                &mut self.entities,
+                [(entity, linkings)].into_iter(),
+                &mut self.removed,
+            );
         }
         /*
         let mut vec = iter.into_iter().collect::<Vec<Entity>>();
@@ -110,9 +126,9 @@ impl Scene {
 
 
         for entity in iter.into_iter() {
-            let linkings = 
+            let linkings =
                 *self.entities.get(entity).expect("Entity does not exist");
-            let archetype = 
+            let archetype =
                 self.archetypes.get_mut(&linkings.mask).unwrap();
 
             //archetype.remove(&mut self.entities, entity).unwrap();
@@ -122,18 +138,32 @@ impl Scene {
 
     // Fetch all the removed components of a specific type immutably
     pub fn removed<T: Component + Default>(&self) -> &[T] {
-        self.removed.get(&mask::<T>()).map(|untyped| {
-            untyped.as_any().downcast_ref::<Vec<T>>().unwrap().as_slice()
-        }).unwrap_or(&[])
+        self.removed
+            .get(&mask::<T>())
+            .map(|untyped| {
+                untyped
+                    .as_any()
+                    .downcast_ref::<Vec<T>>()
+                    .unwrap()
+                    .as_slice()
+            })
+            .unwrap_or(&[])
     }
 
     // Fetch all the removed components of a specific type mutably
     pub fn removed_mut<T: Component>(&mut self) -> &mut [T] {
-        self.removed.get_mut(&mask::<T>()).map(|untyped| {
-            untyped.as_any_mut().downcast_mut::<Vec<T>>().unwrap().as_mut_slice()
-        }).unwrap_or(&mut [])
+        self.removed
+            .get_mut(&mask::<T>())
+            .map(|untyped| {
+                untyped
+                    .as_any_mut()
+                    .downcast_mut::<Vec<T>>()
+                    .unwrap()
+                    .as_mut_slice()
+            })
+            .unwrap_or(&mut [])
     }
-    
+
     // Check if an entity is stored within the scene
     pub fn contains(&self, entity: Entity) -> bool {
         self.entities.contains_key(entity)
@@ -208,9 +238,7 @@ impl Scene {
     }
 
     // Find the a layout ref (if it's the only one that exists in the scene)
-    pub fn find<'a, L: QueryLayoutRef>(
-        &'a self,
-    ) -> Option<L> {
+    pub fn find<'a, L: QueryLayoutRef>(&'a self) -> Option<L> {
         let mut iterator = self.query::<L>().into_iter().fuse();
         iterator.next().xor(iterator.next())
     }

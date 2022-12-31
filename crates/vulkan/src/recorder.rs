@@ -64,7 +64,10 @@ impl<'a> Recorder<'a> {
     }
 
     // Specific buffer memory barrier
-    pub unsafe fn cmd_buffer_memory_barrier(&mut self, barrier: vk::BufferMemoryBarrier) {
+    pub unsafe fn cmd_buffer_memory_barrier(
+        &mut self,
+        barrier: vk::BufferMemoryBarrier,
+    ) {
         self.device().raw().cmd_pipeline_barrier(
             self.command_buffer().raw(),
             vk::PipelineStageFlags::ALL_COMMANDS,
@@ -77,7 +80,10 @@ impl<'a> Recorder<'a> {
     }
 
     // Specific image memory barrier
-    pub unsafe fn cmd_image_memory_barrier(&mut self, barrier: vk::ImageMemoryBarrier) {
+    pub unsafe fn cmd_image_memory_barrier(
+        &mut self,
+        barrier: vk::ImageMemoryBarrier,
+    ) {
         self.device().raw().cmd_pipeline_barrier(
             self.command_buffer().raw(),
             vk::PipelineStageFlags::ALL_COMMANDS,

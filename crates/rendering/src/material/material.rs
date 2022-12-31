@@ -1,8 +1,8 @@
 use assets::Assets;
 use graphics::{
-    BlendConfig, CompareOp, DepthConfig, DescriptorSet, FaceCullMode,
-    FragmentModule, Primitive, Processed, StencilConfig,
-    VertexModule, Compiled, Graphics,
+    BlendConfig, CompareOp, Compiled, DepthConfig, DescriptorSet,
+    FaceCullMode, FragmentModule, Graphics, Primitive, Processed,
+    StencilConfig, VertexModule,
 };
 use world::World;
 
@@ -22,10 +22,16 @@ pub trait Material: 'static + Sized {
     type SurfaceDescriptorSet<'ds>: DescriptorSet<'ds>;
 
     // Load the vertex module and process it
-    fn vertex(graphics: &Graphics, assets: &Assets) -> Compiled<VertexModule>;
+    fn vertex(
+        graphics: &Graphics,
+        assets: &Assets,
+    ) -> Compiled<VertexModule>;
 
     // Load the fragment module and process it
-    fn fragment(graphics: &Graphics, assets: &Assets) -> Compiled<FragmentModule>;
+    fn fragment(
+        graphics: &Graphics,
+        assets: &Assets,
+    ) -> Compiled<FragmentModule>;
 
     // Get the required mesh attributes that we need to render a surface
     fn required_mesh_attributes() -> ();

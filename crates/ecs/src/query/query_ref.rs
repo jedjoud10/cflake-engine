@@ -17,9 +17,7 @@ pub struct QueryRef<'a: 'b, 'b, 's, L: QueryLayoutRef> {
     _phantom3: PhantomData<L>,
 }
 
-impl<'a: 'b, 'b, 's, L: QueryLayoutRef>
-    QueryRef<'a, 'b, 's, L>
-{
+impl<'a: 'b, 'b, 's, L: QueryLayoutRef> QueryRef<'a, 'b, 's, L> {
     // Create a new mut query from the scene for active entities
     pub fn new(scene: &'a Scene) -> Self {
         let (mask, archetypes, _) =
@@ -66,7 +64,9 @@ impl<'a: 'b, 'b, 's, L: QueryLayoutRef>
             + Sync
             + Clone,
         batch_size: usize,
-    ) where for<'st, 's2> L::SliceTuple<'st>: utils::SliceTuple<'s2> {
+    ) where
+        for<'st, 's2> L::SliceTuple<'st>: utils::SliceTuple<'s2>,
+    {
         threadpool.scope(|scope| {
             // Convert the optional bitset vector to an iterator that returns None if it is None
             let bitsets = self
@@ -204,9 +204,7 @@ impl<'b, 's, L: QueryLayoutRef> QueryRefIter<'b, L> {
     }
 }
 
-impl<'b, L: QueryLayoutRef> Iterator
-    for QueryRefIter<'b, L>
-{
+impl<'b, L: QueryLayoutRef> Iterator for QueryRefIter<'b, L> {
     type Item = L;
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -250,7 +248,6 @@ impl<'b, L: QueryLayoutRef> Iterator
         Some(items)
     }
 }
-
 
 impl<'b, L: QueryLayoutRef> ExactSizeIterator
     for QueryRefIter<'b, L>

@@ -1,6 +1,5 @@
 use std::{num::NonZeroU8, ops::Add};
 
-
 // Texture dimensions traits that are simply implemented for extents
 pub trait Extent: Copy {
     // Get the surface area of a superficial rectangle that uses these extents as it's dimensions
@@ -16,7 +15,8 @@ pub trait Extent: Copy {
     fn levels(&self) -> NonZeroU8 {
         let cur = self.reduce_max() as f32;
         let num = cur.log2().floor() + 1.0;
-        NonZeroU8::new(u8::try_from(num as u8).unwrap()).unwrap_or(NonZeroU8::new(1).unwrap())
+        NonZeroU8::new(u8::try_from(num as u8).unwrap())
+            .unwrap_or(NonZeroU8::new(1).unwrap())
     }
 }
 

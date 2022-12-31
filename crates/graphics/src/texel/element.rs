@@ -1,5 +1,5 @@
-use std::marker::PhantomData;
 use crate::{Base, BaseType};
+use std::marker::PhantomData;
 
 // Elements are just values that can be stored within channels, like u32, Normalized<i8> or i8
 pub trait AnyElement: 'static {
@@ -7,10 +7,20 @@ pub trait AnyElement: 'static {
 }
 impl<T: Base> AnyElement for T {
     const ELEMENT_TYPE: ElementType = match T::TYPE {
-        BaseType::Eight => ElementType::Eight { signed: T::SIGNED, normalized: false },
-        BaseType::Sixteen => ElementType::Sixteen { signed: T::SIGNED, normalized: false },
-        BaseType::ThirtyTwo => ElementType::ThirtyTwo { signed: T::SIGNED },
-        BaseType::SixtyFour => ElementType::SixtyFour { signed: T::SIGNED },
+        BaseType::Eight => ElementType::Eight {
+            signed: T::SIGNED,
+            normalized: false,
+        },
+        BaseType::Sixteen => ElementType::Sixteen {
+            signed: T::SIGNED,
+            normalized: false,
+        },
+        BaseType::ThirtyTwo => {
+            ElementType::ThirtyTwo { signed: T::SIGNED }
+        }
+        BaseType::SixtyFour => {
+            ElementType::SixtyFour { signed: T::SIGNED }
+        }
         BaseType::FloatSixteen => ElementType::FloatSixteen,
         BaseType::FloatThirtyTwo => ElementType::FloatThirtyTwo,
         BaseType::FloatSixtyFour => ElementType::FloatSixtyFour,
@@ -19,29 +29,18 @@ impl<T: Base> AnyElement for T {
 
 // Untyped element type that will be used to fetch VkFormat
 pub enum ElementType {
-    Eight {
-        signed: bool,
-        normalized: bool
-    },
+    Eight { signed: bool, normalized: bool },
 
-    Sixteen {
-        signed: bool,
-        normalized: bool
-    },
+    Sixteen { signed: bool, normalized: bool },
 
-    ThirtyTwo {
-        signed: bool,
-    },
+    ThirtyTwo { signed: bool },
 
-    SixtyFour {
-        signed: bool,
-    },
+    SixtyFour { signed: bool },
 
     FloatSixteen,
     FloatThirtyTwo,
     FloatSixtyFour,
 }
-
 
 // This trait represents bases that can be normalized
 pub trait Normalizable: Base {}
@@ -55,8 +54,14 @@ impl Normalizable for u16 {}
 pub struct Normalized<T: Base + Normalizable>(T);
 impl<T: Base + Normalizable> AnyElement for Normalized<T> {
     const ELEMENT_TYPE: ElementType = match T::TYPE {
-        BaseType::Eight => ElementType::Eight { signed: T::SIGNED, normalized: true },
-        BaseType::Sixteen => ElementType::Sixteen { signed: T::SIGNED, normalized: true },
+        BaseType::Eight => ElementType::Eight {
+            signed: T::SIGNED,
+            normalized: true,
+        },
+        BaseType::Sixteen => ElementType::Sixteen {
+            signed: T::SIGNED,
+            normalized: true,
+        },
 
         // Not supported by VkFormat
         _ => panic!(),

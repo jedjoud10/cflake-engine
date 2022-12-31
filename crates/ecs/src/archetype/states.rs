@@ -24,7 +24,11 @@ pub struct StateFlags {
 pub struct StateColumn(Vec<StateColumnChunk>, usize);
 
 // Update a value in a specific bitmask, though return the unwritten value first
-fn toggle_bit(bitmask: &mut usize, index: usize, value: bool) -> bool {
+fn toggle_bit(
+    bitmask: &mut usize,
+    index: usize,
+    value: bool,
+) -> bool {
     let copy = (*bitmask >> index) & 1 == 1;
 
     if value {
@@ -117,7 +121,7 @@ impl StateColumn {
     pub(crate) fn swap_remove(
         &mut self,
         index: usize,
-    ) -> Option<StateFlags> {        
+    ) -> Option<StateFlags> {
         // Cannot remove non-existant index
         if index >= self.1 {
             return None;
@@ -128,7 +132,10 @@ impl StateColumn {
             let last_local_index = self.1 % BITS;
             StateFlags {
                 added: is_bit_enabled(chunk.added, last_local_index),
-                modified: is_bit_enabled(chunk.modified, last_local_index),
+                modified: is_bit_enabled(
+                    chunk.modified,
+                    last_local_index,
+                ),
             }
         });
 
@@ -140,13 +147,11 @@ impl StateColumn {
             self.1 -= 1;
 
             // Decompose the state flags
-            let StateFlags {
-                added,
-                modified,
-            } = flags;
+            let StateFlags { added, modified } = flags;
 
             let added = toggle_bit(&mut chunk.added, local, added);
-            let modified = toggle_bit(&mut chunk.modified, local, modified);
+            let modified =
+                toggle_bit(&mut chunk.modified, local, modified);
             StateFlags { added, modified }
         })
     }
@@ -203,10 +208,7 @@ impl StateColumn {
     }
 
     // Get a specific state column entry immutably
-    pub fn get(
-        &self,
-        index: usize
-    ) -> Option<StateFlags> {
+    pub fn get(&self, index: usize) -> Option<StateFlags> {
         let chunk = index / BITS;
         let location = index % BITS;
         let chunk = &mut self.0.get(chunk)?;

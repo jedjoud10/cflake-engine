@@ -39,7 +39,9 @@ impl<'a> EntryRef<'a> {
 
     // Get an immutable reference to a linked component
     pub fn get<T: Component>(&self) -> Option<&T> {
-        self.archetype().components::<T>().map(|col| col.get(self.linkings.index).unwrap())
+        self.archetype()
+            .components::<T>()
+            .map(|col| col.get(self.linkings.index).unwrap())
     }
 
     // Check if the entity contains the given bundle
@@ -49,9 +51,7 @@ impl<'a> EntryRef<'a> {
     }
 
     // Read certain components from the entry as if they were used in an immutable query
-    pub fn as_query<L: QueryLayoutRef>(
-        &self,
-    ) -> Option<L> {
+    pub fn as_query<L: QueryLayoutRef>(&self) -> Option<L> {
         // Make sure the layout can be fetched from the archetype
         let search = L::reduce(|a, b| a | b).search();
         if search & self.archetype().mask() != search {

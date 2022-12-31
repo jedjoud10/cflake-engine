@@ -1,4 +1,4 @@
-use crate::{Region, Texel, Graphics, TextureError};
+use crate::{Graphics, Region, Texel, TextureError};
 
 // Possibly predefined texel data
 type Texels<'a, T: Texel> = Option<&'a [<T as Texel>::Storage]>;

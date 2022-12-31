@@ -4,7 +4,7 @@ use super::Entity;
 use crate::{
     add_bundle, remove_bundle, Archetype, ArchetypeSet, Bundle,
     Component, EntityLinkings, EntitySet, QueryLayoutMut,
-    QueryLayoutRef, Scene, RemovedComponents,
+    QueryLayoutRef, RemovedComponents, Scene,
 };
 
 // Mutable entity entries allow the user to be able to modify components that are linked to the entity
@@ -54,13 +54,17 @@ impl<'a> EntryMut<'a> {
 
     // Get an immutable reference to a linked component
     pub fn get<T: Component>(&self) -> Option<&T> {
-        self.archetype().components::<T>().map(|col| col.get(self.linkings.index).unwrap())
+        self.archetype()
+            .components::<T>()
+            .map(|col| col.get(self.linkings.index).unwrap())
     }
 
     // Get a mutable reference to a linked component, but without triggering a StateRow mutation change
     pub fn get_mut_silent<T: Component>(&mut self) -> Option<&mut T> {
         let i = self.linkings.index;
-        self.archetype_mut().components_mut::<T>().map(|col| col.get_mut(i).unwrap())
+        self.archetype_mut()
+            .components_mut::<T>()
+            .map(|col| col.get_mut(i).unwrap())
     }
 
     // Get a mutable reference to a linked component
@@ -73,10 +77,7 @@ impl<'a> EntryMut<'a> {
 
     // Add a new component bundle to the entity, forcing it to switch archetypes
     // This will fail if we try to add some components that were already added
-    pub fn insert<B: Bundle>(
-        &mut self,
-        bundle: B,
-    ) -> Option<()> {
+    pub fn insert<B: Bundle>(&mut self, bundle: B) -> Option<()> {
         assert!(
             B::is_valid(),
             "Bundle is not valid, check the bundle for component collisions"
@@ -118,9 +119,7 @@ impl<'a> EntryMut<'a> {
     }
 
     // Read certain components from the entry as if they were used in an immutable query
-    pub fn as_query<L: QueryLayoutRef>(
-        &self,
-    ) -> Option<L> {
+    pub fn as_query<L: QueryLayoutRef>(&self) -> Option<L> {
         // Make sure the layout can be fetched from the archetype
         let search = L::reduce(|a, b| a | b).search();
         if search & self.archetype().mask() != search {
@@ -137,9 +136,7 @@ impl<'a> EntryMut<'a> {
     }
 
     // Read certain components from the entry as if they were used in an mutable query
-    pub fn as_query_mut<L: QueryLayoutMut>(
-        &mut self,
-    ) -> Option<L> {
+    pub fn as_query_mut<L: QueryLayoutMut>(&mut self) -> Option<L> {
         assert!(
             L::is_valid(),
             "Query layout is not valid, check the layout for component collisions"

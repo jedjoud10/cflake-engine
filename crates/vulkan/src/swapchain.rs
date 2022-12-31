@@ -58,7 +58,7 @@ impl Swapchain {
                 format,
                 extent,
                 present_mode,
-                vk::SwapchainKHR::null()
+                vk::SwapchainKHR::null(),
             );
 
         // Create the loader and the actual swapchain
@@ -119,9 +119,8 @@ impl Swapchain {
         old_swapchain: vk::SwapchainKHR,
     ) -> vk::SwapchainCreateInfoKHR {
         // Create the swapchain image size
-        let extent = *vk::Extent2D::builder()
-            .height(extent.h)
-            .width(extent.w);
+        let extent =
+            *vk::Extent2D::builder().height(extent.h).width(extent.w);
 
         *vk::SwapchainCreateInfoKHR::builder()
             .surface(surface.surface())
@@ -268,7 +267,7 @@ impl Swapchain {
             self.format,
             dimensions,
             self.present_mode,
-            *self.raw.lock()
+            *self.raw.lock(),
         );
 
         // Create a new swapchain
@@ -278,7 +277,7 @@ impl Swapchain {
                 .expect("Could not recreate the swapchain")
         };
 
-        // Update the used swapchain image 
+        // Update the used swapchain image
         *self.images.lock() = unsafe {
             self.loader.get_swapchain_images(swapchain).unwrap()
         };

@@ -1,4 +1,4 @@
-use crate::{FunctionModule, Graphics, ShaderModule, ModuleKind};
+use crate::{FunctionModule, Graphics, ModuleKind, ShaderModule};
 use ahash::AHashMap;
 use assets::Assets;
 use std::{marker::PhantomData, path::PathBuf};
@@ -36,7 +36,7 @@ impl<'a, M: ShaderModule> Processor<'a, M> {
         name: impl ToString,
         value: impl ToString,
     ) {
-        // Somehow make this work 
+        // Somehow make this work
         // https://github.com/gwihlidal/spirv-reflect-rs
         todo!()
     }
@@ -48,7 +48,11 @@ impl<'a, M: ShaderModule> Processor<'a, M> {
         value: impl ToString,
     ) {
         let name = name.to_string();
-        log::debug!("Defined snippet '{}' for processor '{}'", &name, &self.file_name);
+        log::debug!(
+            "Defined snippet '{}' for processor '{}'",
+            &name,
+            &self.file_name
+        );
         self.snippets.insert(name, value.to_string());
     }
 
@@ -66,7 +70,11 @@ impl<'a, M: ShaderModule> Processor<'a, M> {
 }
 
 // Main function that will process the shader directives outside of shaders
-fn process(source: String, assets: &Assets, snippets: AHashMap<String, String>) -> String {
+fn process(
+    source: String,
+    assets: &Assets,
+    snippets: AHashMap<String, String>,
+) -> String {
     // We must filter repeatedly until we find no more directives
     let mut lines =
         source.lines().map(str::to_string).collect::<Vec<String>>();
@@ -79,7 +87,12 @@ fn process(source: String, assets: &Assets, snippets: AHashMap<String, String>) 
 
             // Include statements work with files and snippets
             if trimmed.starts_with("#include") {
-                handle_include(trimmed, assets, &mut output, &snippets);
+                handle_include(
+                    trimmed,
+                    assets,
+                    &mut output,
+                    &snippets,
+                );
 
                 // Overwrite line with new output
                 should_stop = false;
@@ -124,7 +137,11 @@ fn handle_include(
 }
 
 // Load a function module and write it to the output line
-fn load_function_module(path: String, assets: &Assets, output: &mut String) {
+fn load_function_module(
+    path: String,
+    assets: &Assets,
+    output: &mut String,
+) {
     // Make sure the path is something we can load (.glsl file)
     let pathbuf = PathBuf::try_from(path).unwrap();
     let name = pathbuf.file_name().unwrap().to_str().unwrap();
@@ -139,13 +156,17 @@ fn load_function_module(path: String, assets: &Assets, output: &mut String) {
 }
 
 // Load a snippet from the snippets and write it to the output line
-fn load_snippet(name: String, output: &mut String, snippets: &AHashMap<String, String>) {
+fn load_snippet(
+    name: String,
+    output: &mut String,
+    snippets: &AHashMap<String, String>,
+) {
     let snippet = snippets
         .get(&name)
         .expect(&format!("Snippet of name '{name}' was not defined"));
-    *output = snippet.clone(); 
+    *output = snippet.clone();
 }
- 
+
 // Check if an include directive resembles like an asset path instead of a snippet
 fn resembles_asset_path(path: &str) -> bool {
     let value = || {
@@ -154,7 +175,7 @@ fn resembles_asset_path(path: &str) -> bool {
         Some(extension == "glsl")
     };
     value().unwrap_or_default()
-} 
+}
 
 // This is a successfully processed staged returned by the "Processor"
 pub struct Processed<M: ShaderModule> {

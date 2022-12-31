@@ -67,11 +67,7 @@ impl<T: Component> QueryItemRef for &T {
     unsafe fn ptr_from_archetype_unchecked(
         archetype: &Archetype,
     ) -> Self::Ptr {
-        archetype
-            .components::<T>()
-            .unwrap()
-            .as_slice()
-            .as_ptr() as _
+        archetype.components::<T>().unwrap().as_slice().as_ptr() as _
     }
 
     unsafe fn from_raw_parts<'s>(
@@ -225,7 +221,7 @@ impl<T: Component> QueryItemMut for Option<&T> {
 }
 
 impl<T: Component> QueryItemMut for &mut T {
-    type Slice<'s> =  &'s mut [T];
+    type Slice<'s> = &'s mut [T];
     type Ptr = *mut T;
     type Owned = T;
 

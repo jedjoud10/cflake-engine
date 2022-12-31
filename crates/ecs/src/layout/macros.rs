@@ -1,11 +1,12 @@
 use crate::{
-    mask, Archetype, Component, UntypedColumn, LayoutAccess, Mask,
-    MaskHashMap, Bundle, QueryItemMut, QueryItemRef,
-    QueryLayoutMut, QueryLayoutRef, StateFlags, UntypedVec, StateColumn
+    mask, Archetype, Bundle, Component, LayoutAccess, Mask,
+    MaskHashMap, QueryItemMut, QueryItemRef, QueryLayoutMut,
+    QueryLayoutRef, StateColumn, StateFlags, UntypedColumn,
+    UntypedVec,
 };
 use casey::lower;
-use seq_macro::seq;
 use paste::paste;
+use seq_macro::seq;
 
 macro_rules! tuple_impls {
     ( $( $name:ident )+, $max:tt ) => {

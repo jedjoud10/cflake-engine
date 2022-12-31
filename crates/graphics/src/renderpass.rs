@@ -1,4 +1,4 @@
-mod pass;
 mod attachment;
-pub use pass::*;
+mod pass;
 pub use attachment::*;
+pub use pass::*;

@@ -1,10 +1,10 @@
-mod texture;
-mod region;
-mod mode;
-mod sampler;
 mod errors;
+mod mode;
+mod region;
+mod sampler;
+mod texture;
 pub use errors::*;
-pub use sampler::*;
 pub use mode::*;
 pub use region::*;
+pub use sampler::*;
 pub use texture::*;

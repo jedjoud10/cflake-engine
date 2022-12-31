@@ -1,7 +1,8 @@
 use std::mem::MaybeUninit;
 
 use crate::{
-    mask, Archetype, Component, Mask, MaskHashMap, UntypedColumn, StateFlags, UntypedVec, StateColumn,
+    mask, Archetype, Component, Mask, MaskHashMap, StateColumn,
+    StateFlags, UntypedColumn, UntypedVec,
 };
 
 // An owned layout trait will be implemented for owned tuples that contain a set of components
@@ -30,7 +31,7 @@ pub trait Bundle: Sized + 'static {
     // Push multiple elements into those storages, returns how many we added
     fn extend_from_iter<'a>(
         storages: &mut Self::Storages<'a>,
-        iter: impl IntoIterator<Item = Self>
+        iter: impl IntoIterator<Item = Self>,
     ) -> usize;
 
     // Get the default untyped component vectors for this bundle
@@ -62,7 +63,7 @@ impl<T: Component> Bundle for T {
 
     fn extend_from_iter<'a>(
         storages: &mut Self::Storages<'a>,
-        iter: impl IntoIterator<Item = Self>
+        iter: impl IntoIterator<Item = Self>,
     ) -> usize {
         let mut additional = 0;
         for bundle in iter {
@@ -70,10 +71,13 @@ impl<T: Component> Bundle for T {
             additional += 1;
         }
 
-        storages.1.extend_with_flags(additional, StateFlags {
-            added: true,
-            modified: true,
-        });
+        storages.1.extend_with_flags(
+            additional,
+            StateFlags {
+                added: true,
+                modified: true,
+            },
+        );
         additional
     }
 

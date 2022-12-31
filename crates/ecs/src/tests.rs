@@ -17,7 +17,7 @@ fn cleanup(ecs: &mut Scene) {
         }
     }
 
-    ecs.removed.clear() ;
+    ecs.removed.clear();
 }
 
 #[test]
@@ -175,15 +175,13 @@ fn moving_batch() {
             .take(5000),
         )
         .to_vec();
-    
+
     cleanup(&mut scene);
     for (i, id) in entities.iter().enumerate() {
         if i % 10 == 0 {
             let mut entry = scene.entry_mut(*id).unwrap();
             assert!(entry.remove::<Name>());
-            entry
-                .insert::<Placeholder>(Placeholder())
-                .unwrap();
+            entry.insert::<Placeholder>(Placeholder()).unwrap();
         }
     }
 

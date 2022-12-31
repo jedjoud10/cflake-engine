@@ -1,7 +1,7 @@
 use crate::{
     registry::{self},
-    Archetype, Component, LayoutAccess, Mask, QueryLayoutMut,
-    QueryLayoutRef, Scene, StateColumn, ArchetypeSet,
+    Archetype, ArchetypeSet, Component, LayoutAccess, Mask,
+    QueryLayoutMut, QueryLayoutRef, Scene, StateColumn,
 };
 use std::marker::PhantomData;
 use utils::BitSet;
@@ -84,10 +84,7 @@ pub trait QueryFilter: 'static {
 // Given a scene and a specific filter, filter out the archetypes
 // This will also prepare the filter for later by caching required data
 // Only used internally by the mutable query
-pub(super) fn archetypes_mut<
-    L: QueryLayoutMut,
-    F: QueryFilter,
->(
+pub(super) fn archetypes_mut<L: QueryLayoutMut, F: QueryFilter>(
     archetypes: &mut ArchetypeSet,
 ) -> (LayoutAccess, Vec<&mut Archetype>, F::Cached) {
     let mask = L::reduce(|a, b| a | b);
@@ -108,10 +105,7 @@ pub(super) fn archetypes_mut<
 // Given a scene and a specific filter, filter out the archetypes
 // This will also prepare the filter for later by caching required data
 // Only used internally by the immutable query
-pub(super) fn archetypes<
-    L: QueryLayoutRef,
-    F: QueryFilter,
->(
+pub(super) fn archetypes<L: QueryLayoutRef, F: QueryFilter>(
     archetypes: &ArchetypeSet,
 ) -> (LayoutAccess, Vec<&Archetype>, F::Cached) {
     let mask = L::reduce(|a, b| a | b);
