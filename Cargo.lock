@@ -76,6 +76,7 @@ dependencies = [
  "log",
  "math",
  "mimalloc",
+ "networking",
  "rendering",
  "serde",
  "spin_sleep",
@@ -1348,6 +1349,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "networking"
+version = "0.1.0"
+dependencies = [
+ "ahash",
+ "ecs",
+ "log",
+ "thiserror",
+ "uuid",
+ "vek",
+ "world",
+]
+
+[[package]]
 name = "nix"
 version = "0.23.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2232,6 +2246,9 @@ name = "uuid"
 version = "1.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "422ee0de9031b5b948b97a8fc04e3aa35230001a722ddd27943e0be31564ce4c"
+dependencies = [
+ "getrandom",
+]
 
 [[package]]
 name = "vec_map"

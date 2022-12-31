@@ -1,7 +1,7 @@
-use crate::{Graphics, Region, Texel, TextureError};
+use crate::{Graphics, Region, Texel, TextureError, TextureMode, TextureUsage, UntypedTexel};
 
 // Possibly predefined texel data
-type Texels<'a, T: Texel> = Option<&'a [<T as Texel>::Storage]>;
+type Texels<'a, T> = Option<&'a [<T as Texel>::Storage]>;
 
 // A texture is an abstraction over Vulkan images to allow us to access/modify them with ease
 // A texture is a container of multiple texels (like pixels, but for textures) that are stored on the GPU
@@ -17,5 +17,17 @@ pub trait Texture: Sized {
     fn new(
         graphics: &Graphics,
         texels: Texels<Self::T>,
-    ) -> Result<Self, TextureError>;
+        mode: TextureMode,
+        usage: TextureUsage,
+    ) -> Result<Self, TextureError> {
+        // First of all, check if the format is supported for the supported usage and mode
+        let UntypedTexel { 
+            format,
+            channels,
+            element,
+            total_bits,
+            bits_per_channel
+        } = <Self::T as Texel>::untyped();
+        todo!()
+    }
 }

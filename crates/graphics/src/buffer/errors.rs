@@ -1,14 +1,13 @@
 use thiserror::Error;
 
-// Buffer creation error (only one really)
 #[derive(Error, Debug)]
-pub enum InitializationError {
+pub enum BufferInitializationError {
     #[error("The given buffer mode must be BufferMode::Resizable if the slice is empty")]
     EmptySliceNotResizable,
 }
 
 #[derive(Error, Debug)]
-pub enum ExtendError {
+pub enum BufferExtendError {
     #[error("Cannot extend the buffer since self.mode isn't BufferMode::Partial or BufferMode::Resizable")]
     IllegalLengthModify,
 
@@ -19,19 +18,19 @@ pub enum ExtendError {
 }
 
 #[derive(Error, Debug)]
-pub enum ReadError {
+pub enum BufferReadError {
     #[error("The given destination slice of length {0} (or offset of {1}) would overflow the buffer of length {2}")]
     InvalidLen(usize, usize, usize),
 }
 
 #[derive(Error, Debug)]
-pub enum WriteError {
+pub enum BufferWriteError {
     #[error("The given source slice of length {0} (or offset of {1}) would overflow the buffer of length {2}")]
     InvalidLen(usize, usize, usize),
 }
 
 #[derive(Error, Debug)]
-pub enum CopyError {
+pub enum BufferCopyError {
     #[error("The given length {0} (or offset of {1}) would overflow the destination buffer of length {2}")]
     InvalidSrcOverflow(usize, usize, usize),
 
@@ -40,7 +39,7 @@ pub enum CopyError {
 }
 
 #[derive(Error, Debug)]
-pub enum ClearError {
+pub enum BufferClearError {
     #[error("Cannot clear the buffer since self.mode isn't BufferMode::Partial or BufferMode::Resizable")]
     IllegalLengthModify,
 }
@@ -49,22 +48,22 @@ pub enum ClearError {
 #[derive(Error, Debug)]
 pub enum BufferError {
     #[error("{0}")]
-    Initialization(InitializationError),
+    Initialization(BufferInitializationError),
 
     #[error("{0}")]
-    ClearError(ClearError),
+    ClearError(BufferClearError),
 
     #[error("{0}")]
-    WriteError(WriteError),
+    WriteError(BufferWriteError),
 
     #[error("{0}")]
-    ReadError(ReadError),
+    ReadError(BufferReadError),
 
     #[error("{0}")]
-    CopyError(CopyError),
+    CopyError(BufferCopyError),
 
     #[error("{0}")]
-    ExtendError(ExtendError),
+    ExtendError(BufferExtendError),
 
     #[error("The given buffer cannot be mapped to host memory")]
     NotMappable,

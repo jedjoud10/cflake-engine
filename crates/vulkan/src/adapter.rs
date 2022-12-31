@@ -24,17 +24,25 @@ pub struct AdapterFeatures {
 
 // Properties of an adapter
 pub struct AdapterProperties {
+    // Name of the adapter
     pub name: String,
+
+    // Version of the Vulkan API
     pub api_version: String,
+
+    // Device ID and type
     pub device_type: PhysicalDeviceType,
     pub device_id: u32,
     pub vendor_id: u32,
 
+    // Vulkan properties and limits
     pub limits: PhysicalDeviceLimits,
     pub properties: PhysicalDeviceProperties,
     pub properties11: PhysicalDeviceVulkan11Properties,
     pub properties12: PhysicalDeviceVulkan12Properties,
     pub properties13: PhysicalDeviceVulkan13Properties,
+
+    // Supported extensions
     pub extensions: Vec<vk::ExtensionProperties>,
 }
 
@@ -59,10 +67,10 @@ pub struct Adapter {
     raw: PhysicalDevice,
 
     // Properties and features
-    pub(crate) features: AdapterFeatures,
-    pub(crate) properties: AdapterProperties,
-    pub(crate) surface: AdapterSurfaceProperties,
-    pub(crate) families: AdapterQueueFamiliesProperties,
+    features: AdapterFeatures,
+    properties: AdapterProperties,
+    surface: AdapterSurfaceProperties,
+    families: AdapterQueueFamiliesProperties,
 }
 
 impl Adapter {
@@ -153,6 +161,26 @@ impl Adapter {
     // Get the device ID as a u32
     pub fn device_id(&self) -> u32 {
         self.properties.device_id
+    }
+
+    // Get the supported adapter features
+    pub fn features(&self) -> &AdapterFeatures {
+        &self.features
+    }
+
+    // Get the adapter properties
+    pub fn properties(&self) -> &AdapterProperties {
+        &&self.properties
+    }
+
+    // Get the adapter surface properties
+    pub fn surface_properties(&self) -> &AdapterSurfaceProperties {
+        &self.surface
+    }
+
+    // Get adapter family properties
+    pub fn family_properties(&self) -> &AdapterQueueFamiliesProperties {
+        &self.families
     }
 
     // Get the vendor ID as a u32

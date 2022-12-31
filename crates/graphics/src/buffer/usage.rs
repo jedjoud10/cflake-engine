@@ -1,7 +1,6 @@
 use vulkan::{vk, MemoryLocation};
 
-// For what use are we making this buffer?
-// This is only a hint
+// How exactly are we going to use the buffer?
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum BufferUsage {
     // The buffer would live on GPU memory

@@ -76,7 +76,7 @@ impl Swapchain {
         let swapchain_images = unsafe {
             swapchain_loader.get_swapchain_images(swapchain).unwrap()
         };
-        let min = adapter.surface.surface_capabilities.min_image_count
+        let min = adapter.surface_properties().surface_capabilities.min_image_count
             as usize;
         log::debug!(
             "Swapchain contains {} images. {} more than the minimum",
@@ -125,7 +125,7 @@ impl Swapchain {
         *vk::SwapchainCreateInfoKHR::builder()
             .surface(surface.surface())
             .min_image_count(
-                adapter.surface.surface_capabilities.min_image_count,
+                adapter.surface_properties().surface_capabilities.min_image_count,
             )
             .image_format(format.format)
             .image_color_space(format.color_space)

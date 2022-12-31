@@ -7,7 +7,7 @@ pub enum BufferMode {
     // Partial buffer have a fixed capacity, but a dynamic length
     Parital,
 
-    #[default]
     // Resizable buffers can be re-allocated to whatever capacity needed
+    #[default]
     Resizable,
 }

@@ -7,9 +7,9 @@ use std::{
 };
 
 use crate::{
-    BufferError, BufferMode, BufferUsage, ClearError, CopyError,
-    ExtendError, Graphics, InitializationError, ReadError,
-    WriteError,
+    BufferError, BufferMode, BufferUsage, BufferClearError, BufferCopyError,
+    BufferExtendError, Graphics, BufferInitializationError, BufferReadError,
+    BufferWriteError,
 };
 use bytemuck::{Pod, Zeroable};
 use vulkan::{vk, Allocation, Recorder};
@@ -136,7 +136,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         if slice.is_empty() && !matches!(mode, BufferMode::Resizable)
         {
             return Err(BufferError::Initialization(
-                InitializationError::EmptySliceNotResizable,
+                BufferInitializationError::EmptySliceNotResizable,
             ));
         }
 
@@ -241,7 +241,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
                 self.buffer,
                 &[copy],
             );
-            queue.submit(recorder).wait();
+            queue.immediate_submit(recorder);
 
             device.staging_pool().unlock(device, block);
         }
@@ -282,7 +282,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
                 block.buffer(),
                 &[copy],
             );
-            queue.submit(recorder).wait();
+            queue.immediate_submit(recorder);
 
             // Read from the staging buffer and unlock it
             super::raw::read_to(block.mapped_slice(), dst);
@@ -389,7 +389,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
             // Record the cpy src -> self buffer command
             recorder.cmd_full_pipeline_barrier();
             recorder.cmd_copy_buffer(self.buffer, buffer, &[copy]);
-            queue.submit(recorder).wait();
+            queue.immediate_submit(recorder);
 
             // Overwrite the struct with the new buffer
             let old_buffer =
@@ -429,7 +429,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
 
         if src.len() + offset > self.length {
             return Err(BufferError::WriteError(
-                WriteError::InvalidLen(src.len(), offset, self.len()),
+                BufferWriteError::InvalidLen(src.len(), offset, self.len()),
             ));
         }
 
@@ -451,7 +451,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
 
         if dst.len() + offset > self.length {
             return Err(BufferError::ReadError(
-                ReadError::InvalidLen(dst.len(), offset, self.len()),
+                BufferReadError::InvalidLen(dst.len(), offset, self.len()),
             ));
         }
 
@@ -465,7 +465,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     pub fn clear(&mut self) -> Result<(), BufferError> {
         if matches!(self.mode, BufferMode::Dynamic) {
             return Err(BufferError::ClearError(
-                ClearError::IllegalLengthModify,
+                BufferClearError::IllegalLengthModify,
             ));
         }
 
@@ -489,7 +489,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
 
         if dst_offset + length > self.length {
             return Err(BufferError::CopyError(
-                CopyError::InvalidDstOverflow(
+                BufferCopyError::InvalidDstOverflow(
                     length,
                     dst_offset,
                     self.len(),
@@ -499,7 +499,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
 
         if src_offset + length > src.length {
             return Err(BufferError::CopyError(
-                CopyError::InvalidSrcOverflow(
+                BufferCopyError::InvalidSrcOverflow(
                     length,
                     src_offset,
                     src.len(),
@@ -527,7 +527,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
 
         if matches!(self.mode, BufferMode::Dynamic) {
             return Err(BufferError::ExtendError(
-                ExtendError::IllegalLengthModify,
+                BufferExtendError::IllegalLengthModify,
             ));
         }
 
@@ -535,7 +535,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
             && matches!(self.mode, BufferMode::Parital)
         {
             return Err(BufferError::ExtendError(
-                ExtendError::IllegalReallocation,
+                BufferExtendError::IllegalReallocation,
             ));
         }
 

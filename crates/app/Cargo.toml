@@ -14,6 +14,7 @@ input = { path = "../input" }
 ecs = { path = "../ecs" }
 graphics = { path = "../graphics" }
 rendering = { path = "../rendering" }
+networking = { path = "../networking" }
 world = { path = "../world" }
 assets = { path = "../assets" }
 math = { path = "../math" }
