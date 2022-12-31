@@ -1,60 +1,88 @@
-use utils::{UntypedPtr, UntypedMutPtr};
+use std::{mem::MaybeUninit, any::Any};
+use crate::{Component, StateColumn, StateFlags, UntypedVec};
 
-use crate::{Component, StateColumn, UntypedVec};
-use std::{any::{Any, TypeId}, mem::MaybeUninit};
+// Typed component that will be converted to a Box<dyn UntypedColumn>
+// This will not be stored within the archetype, but only to access internal component data 
+pub struct UntypedColumn {
+    // Internal component data
+    data: Box<dyn UntypedVec>,
 
-// A component storage that is implemented for Vec<T>
-// This type makes a lot of assumption about the parameters
-// that are given to it, so it is only used internally
-pub trait UntypedColumn {
-    // Runtime dynamic conversions
-    fn as_any(&self) -> &dyn Any;
-    fn as_any_mut(&mut self) -> &mut dyn Any;
+    // Internal states stored in the column
+    states: StateColumn,
+}
 
-    // Remove a component from the storage, and move the last element into it's place instead
-    fn swap_remove(&mut self, index: usize);
+impl UntypedColumn {
+    // Create a new untyped column from a boxed untyped vec
+    pub(crate) fn new(data: Box<dyn UntypedVec>) -> Self {
+        Self {
+            data,
+            states: Default::default(),
+        }
+    }
 
-    // Remove a component from the storage, and insert the return value into another untyped column
-    // This assumes that "other" is of the same type as Self
-    fn swap_remove_move(
-        &mut self,
-        index: usize,
-        other: &mut dyn UntypedColumn,
-    );
+    // Get the number of rows stored in this column
+    pub fn len(&self) -> usize {
+        assert_eq!(self.data.len(), self.states.len());
+        self.data.len()
+    }
 
-    // Remove a component from the storage, and insert the return value into a vector of type Vec<T> where T: component
-    // This assumes that "other" is of the type Vec<T>
-    // Used internally when removing and dissociating removed components
-    fn swap_remove_move_any_vec(
-        &mut self,
-        index: usize,
-        vec: &mut dyn Any,
-    );
+    // Clear the column completely
+    pub(crate) fn clear(&mut self) {
+        self.data.clear();
+        self.states.clear();
+        assert_eq!(self.data.len(), self.states.len());
+    }
 
-    // Reserve some allocation space for the storage
-    fn reserve(&mut self, additional: usize);
+    // Reserve more space to add more components
+    pub fn reserve(&mut self, additional: usize) {
+        self.data.reserve(additional);
+        self.states.reserve(additional);
+    }
+    
+    // Shrink the memory allocation as much as possible
+    pub fn shrink_to_fit(&mut self) {
+        self.data.shrink_to_fit();
+        self.states.shrink_to_fit();
+    }
 
-    // Shrink the memory allocation so it takes less space
-    fn shrink_to_fit(&mut self);
+    // Get an immutable reference to the states
+    pub fn states(&self) -> &StateColumn {
+        &self.states
+    }
+    
+    // Get a mutable reference to the states
+    pub(crate) fn states_mut(&mut self) -> &mut StateColumn {
+        &mut self.states
+    }
 
-    // Get the internally stored states immutably
-    fn states(&self) -> &StateColumn;
+    // Get an immutable reference to the components
+    pub fn components(&self) -> &dyn UntypedVec {
+        &*self.data
+    }
 
-    // Get the internally stored states mutably
-    fn states_mut(&mut self) -> &mut StateColumn;
+    // Get a mutable reference to the components
+    pub (crate)fn components_mut(&mut self) -> &mut dyn UntypedVec {
+        &mut *self.data
+    }
 
-    // Get the internally stored components immutably
-    fn components(&self) -> &dyn UntypedVec;
+    // Try to cast the internally stored component vector to Vec<T> and return it as an immutable "typed column"
+    pub fn as_<T: Component>(&self) -> Option<(&Vec<T>, &StateColumn)> {
+        let vec = self.data.as_any().downcast_ref::<Vec<T>>()?;
+        let states = &self.states;
+        Some((vec, states))
+    }
 
-    // Get the internally stored componnets mutably
-    fn components_mut(&mut self) -> &mut dyn UntypedVec;
+    // Try to cast the internally stored component vector to Vec<T> and return it as a mutable "typed column"
+    pub(crate) fn as_mut_<T: Component>(&mut self) -> Option<(&mut Vec<T>, &mut StateColumn)> {
+        let vec = self.data.as_any_mut().downcast_mut::<Vec<T>>()?;
+        let states = &mut self.states;
+        Some((vec, states))
+    }
 
-    // Clear the column
-    fn clear(&mut self);
-
-    // Get the length of the vector
-    fn len(&self) -> usize;
-
-    // This will create an empty ComponentColumn vector using another one (to keep the trait object safe)
-    fn clone_default(&self) -> Box<dyn UntypedColumn>;
+    pub fn clone_default(&self) -> Self {
+        Self {
+            data: self.data.clone_default(),
+            states: Default::default(),
+        }
+    }
 }

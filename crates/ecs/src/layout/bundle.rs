@@ -1,10 +1,11 @@
 use std::mem::MaybeUninit;
 
 use crate::{
-    mask, Archetype, Component, Mask, MaskHashMap, Column, UntypedColumn, StateFlags, UntypedVec,
+    mask, Archetype, Component, Mask, MaskHashMap, UntypedColumn, StateFlags, UntypedVec, StateColumn,
 };
 
 // An owned layout trait will be implemented for owned tuples that contain a set of components
+// This will also handle the synchronization between the states/component columns whenever we add bundles
 pub trait Bundle: Sized + 'static {
     type Storages<'a>: 'a;
 
@@ -32,9 +33,6 @@ pub trait Bundle: Sized + 'static {
         iter: impl IntoIterator<Item = Self>
     ) -> usize;
 
-    // Get the default untyped component columns for this bundle
-    fn default_columns() -> MaskHashMap<Box<dyn UntypedColumn>>;
-
     // Get the default untyped component vectors for this bundle
     fn default_vectors() -> MaskHashMap<Box<dyn UntypedVec>>;
 }
@@ -43,7 +41,7 @@ trait RemovalBundle {}
 
 // Implement the bundle for single component
 impl<T: Component> Bundle for T {
-    type Storages<'a> = &'a mut Column<T>;
+    type Storages<'a> = (&'a mut Vec<T>, &'a mut StateColumn);
 
     fn reduce(lambda: impl FnMut(Mask, Mask) -> Mask) -> Mask {
         std::iter::once(mask::<T>())
@@ -68,21 +66,15 @@ impl<T: Component> Bundle for T {
     ) -> usize {
         let mut additional = 0;
         for bundle in iter {
-            storages.components_mut().push(bundle);
+            storages.0.push(bundle);
             additional += 1;
         }
 
-        storages.states_mut().extend_with_flags(additional, StateFlags {
+        storages.1.extend_with_flags(additional, StateFlags {
             added: true,
             modified: true,
         });
         additional
-    }
-
-    fn default_columns() -> MaskHashMap<Box<dyn UntypedColumn>> {
-        let boxed: Box<dyn UntypedColumn> = Box::new(Column::<T>::new());
-        let mask = mask::<T>();
-        MaskHashMap::from_iter(std::iter::once((mask, boxed)))
     }
 
     fn default_vectors() -> MaskHashMap<Box<dyn UntypedVec>> {

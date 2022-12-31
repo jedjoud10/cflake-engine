@@ -9,7 +9,7 @@ use crate::{
     Bundle, Child, EntityLinkings, EntryMut, EntryRef, LocalPosition,
     LocalRotation, LocalScale, Mask, MaskHashMap, Parent, Position,
     QueryFilter, QueryLayoutMut, QueryLayoutRef, QueryMut, QueryRef,
-    Rotation, Scale, Wrap, UntypedVec,
+    Rotation, Scale, Wrap, UntypedVec, mask, Component,
 };
 
 // Convenience type aliases
@@ -84,12 +84,19 @@ impl Scene {
     // Despawn an entity from the scene
     // Panics if the entity ID is invalid
     pub fn remove(&mut self, entity: Entity) {
-        todo!()
+        let linkings = *self.entities.get(entity).unwrap();
+        let archetype = self.archetypes.get_mut(&linkings.mask).unwrap();
+        archetype.remove_from_iter(&mut self.entities, [(entity, linkings)].into_iter(), &mut self.removed);
     }
     
     // Despawn a batch of entities from an iterator
     // Panics if the entity ID is invalid
     pub fn remove_from_iter(&mut self, iter: impl IntoIterator<Item = Entity>) {
+        for entity in iter {
+            let linkings = *self.entities.get(entity).unwrap();
+            let archetype = self.archetypes.get_mut(&linkings.mask).unwrap();
+            archetype.remove_from_iter(&mut self.entities, [(entity, linkings)].into_iter(), &mut self.removed);
+        }
         /*
         let mut vec = iter.into_iter().collect::<Vec<Entity>>();
 
@@ -113,14 +120,18 @@ impl Scene {
         */
     }
 
-    // Fetch all the bundles of a specific type immutably
-    pub fn removed<B: Bundle>(&self) -> &[B] {
-        todo!()
+    // Fetch all the removed components of a specific type immutably
+    pub fn removed<T: Component + Default>(&self) -> &[T] {
+        self.removed.get(&mask::<T>()).map(|untyped| {
+            untyped.as_any().downcast_ref::<Vec<T>>().unwrap().as_slice()
+        }).unwrap_or(&[])
     }
 
-    // Fetch all the bundles of a specific type mutably
-    pub fn removed_mut<B: Bundle>(&mut self) -> &mut [B] {
-        todo!()
+    // Fetch all the removed components of a specific type mutably
+    pub fn removed_mut<T: Component>(&mut self) -> &mut [T] {
+        self.removed.get_mut(&mask::<T>()).map(|untyped| {
+            untyped.as_any_mut().downcast_mut::<Vec<T>>().unwrap().as_mut_slice()
+        }).unwrap_or(&mut [])
     }
     
     // Check if an entity is stored within the scene

@@ -1,15 +1,16 @@
 use crate::{
-    mask, Archetype, Component, UntypedColumn, Column, LayoutAccess, Mask,
+    mask, Archetype, Component, UntypedColumn, LayoutAccess, Mask,
     MaskHashMap, Bundle, QueryItemMut, QueryItemRef,
-    QueryLayoutMut, QueryLayoutRef, StateFlags, UntypedVec
+    QueryLayoutMut, QueryLayoutRef, StateFlags, UntypedVec, StateColumn
 };
 use casey::lower;
 use seq_macro::seq;
+use paste::paste;
 
 macro_rules! tuple_impls {
     ( $( $name:ident )+, $max:tt ) => {
         impl<$($name: Component),+> Bundle for ($($name,)+) {
-            type Storages<'a> = ($(&'a mut Column<$name>),+);
+            type Storages<'a> = ($((&'a mut Vec<$name>, &'a mut StateColumn)),+);
 
             fn reduce(mut lambda: impl FnMut(Mask, Mask) -> Mask) -> Mask {
                 let masks = [$(mask::<$name>()),+];
@@ -19,14 +20,21 @@ macro_rules! tuple_impls {
             fn prepare<'a>(archetype: &'a mut Archetype) -> Option<Self::Storages<'a>> {
                 assert!(Self::is_valid());
                 seq!(N in 0..$max {
-                    let column = archetype.column_mut::<C~N>()?;
-                    let ptr = column as *mut Column::<C~N>;
-                    let c~N = unsafe { &mut *ptr };
+                    #[allow(non_snake_case)]
+                    let (components_C~N, states_C~N) = archetype.column_mut::<C~N>()?;
+                    #[allow(non_snake_case)]
+                    let components_ptr_C~N = components_C~N as *mut Vec::<C~N>;
+                    #[allow(non_snake_case)]
+                    let states_ptr_C~N = states_C~N as *mut StateColumn;
+                    #[allow(non_snake_case)]
+                    let components_C~N = unsafe { &mut *components_ptr_C~N };
+                    #[allow(non_snake_case)]
+                    let states_C~N = unsafe { &mut *states_ptr_C~N };
                 });
 
-                Some(($(
-                    lower!($name)
-                ),+,))
+                Some(($((
+                    paste! { [<components_ $name>] }, paste! { [<states_ $name>] }
+                )),+,))
             }
 
             fn extend_from_iter<'a>(
@@ -41,29 +49,21 @@ macro_rules! tuple_impls {
 
                 for bundle in iter.into_iter() {
                     seq!(N in 0..$max {
-                        column~N.components_mut().push(bundle.N);
+                        column~N.0.push(bundle.N);
                     });
                     additional += 1;
                 }
 
                 seq!(N in 0..$max {
-                    column~N.states_mut().extend_with_flags(additional, StateFlags {
+                    column~N.1.extend_with_flags(additional, StateFlags {
                         added: true,
                         modified: true,
                     });
-                    assert_eq!(column~N.states_mut().len(), column~N.components_mut().len());
+                    assert_eq!(column~N.0.len(), column~N.1.len());
                 });
 
 
                 additional
-            }
-
-            fn default_columns() -> MaskHashMap<Box<dyn UntypedColumn>> {
-                let mut map = MaskHashMap::<Box<dyn UntypedColumn>>::default();
-                ($(
-                    map.insert(mask::<$name>(), Box::new(Column::<$name>::new()))
-                ),+);
-                map
             }
 
             fn default_vectors() -> MaskHashMap<Box<dyn UntypedVec>> {

@@ -31,8 +31,8 @@ fn entries() {
 
     let mask = registry::mask::<Name>();
     let archetype = manager.archetypes().get(&mask).unwrap();
-    let column = archetype.column::<Name>().unwrap();
-    assert!(column.states().get(0).unwrap().modified);
+    let states = archetype.states::<Name>().unwrap();
+    assert!(states.get(0).unwrap().modified);
 
     let entry = manager.entry(entity).unwrap();
     assert_eq!(entry.get::<Name>(), Some(&Name("Basic")));
@@ -99,8 +99,8 @@ fn states() {
     dbg!("bruh");
     let mask = Mask::from_bundle::<Name>();
     let archetype = manager.archetypes().get(&mask).unwrap();
-    let column = archetype.column::<Name>().unwrap();
-    let chunk = column.states().chunks()[0];
+    let states = archetype.states::<Name>().unwrap();
+    let chunk = states.chunks()[0];
     println!("{:b}", chunk.added);
     println!("{:b}", (1usize << 32) - 1);
     assert_eq!(chunk.added, (1 << 32) - 1);
@@ -118,10 +118,10 @@ fn states() {
 
     let mask = Mask::from_bundle::<(Name, Health)>();
     let archetype = manager.archetypes().get(&mask).unwrap();
-    let states = archetype.column::<Name>().unwrap().states();
+    let states = archetype.states::<Name>().unwrap();
     let sum1: u32 =
         states.chunks().iter().map(|c| c.added.count_ones()).sum();
-    let states2 = archetype.column::<Health>().unwrap().states();
+    let states2 = archetype.states::<Health>().unwrap();
     let sum2: u32 =
         states2.chunks().iter().map(|c| c.added.count_ones()).sum();
     assert_eq!(sum1, 64);
@@ -160,18 +160,6 @@ fn proto() {
     let mut entry = manager.entry_mut(entity).unwrap();
     assert_eq!(entry.archetype().len(), 1);
     entry.insert::<Ammo>(Ammo(0)).unwrap();
-}
-
-#[test]
-fn columns() {
-    let boxed: Box<dyn UntypedColumn> = Box::new(Column::<Position>::new());
-    let _ = boxed.as_any().downcast_ref::<Column::<Position>>().unwrap();
-
-    let archetype = Archetype::from_bundle::<Position>();
-    let table = archetype.table();
-    assert_eq!(table.len(), 1);
-    assert!(table.get(&registry::mask::<Position>()).is_some());
-    let _ = table.get(&registry::mask::<Position>()).unwrap().as_any().downcast_ref::<Column::<Position>>().unwrap();
 }
 
 #[test]
@@ -467,6 +455,6 @@ fn removed() {
 
     assert_eq!(manager.removed::<Position>().len(), 1);
     assert_eq!(manager.removed_mut::<Position>().len(), 1);
-    assert_eq!(manager.removed::<(Position, Rotation)>().len(), 0);
-    assert_eq!(manager.removed_mut::<(Position, Rotation)>().len(), 0);
+    assert_eq!(manager.removed::<Rotation>().len(), 0);
+    assert_eq!(manager.removed_mut::<Rotation>().len(), 0);
 }

@@ -68,7 +68,7 @@ impl<T: Component> QueryItemRef for &T {
         archetype: &Archetype,
     ) -> Self::Ptr {
         archetype
-            .column::<T>()
+            .components::<T>()
             .unwrap()
             .as_slice()
             .as_ptr() as _
@@ -103,7 +103,7 @@ impl<T: Component> QueryItemRef for Option<&T> {
         archetype: &Archetype,
     ) -> Self::Ptr {
         archetype
-            .column::<T>()
+            .components::<T>()
             .map(|col| col.as_slice().as_ptr() as _)
     }
 
@@ -167,7 +167,7 @@ impl<T: Component> QueryItemMut for &T {
         archetype: &mut Archetype,
     ) -> Self::Ptr {
         archetype
-            .column_mut::<T>()
+            .components_mut::<T>()
             .unwrap()
             .as_mut_slice()
             .as_ptr() as _
@@ -205,7 +205,7 @@ impl<T: Component> QueryItemMut for Option<&T> {
         archetype: &mut Archetype,
     ) -> Self::Ptr {
         archetype
-            .column_mut::<T>()
+            .components_mut::<T>()
             .map(|vec| vec.as_slice().as_ptr() as _)
     }
 
@@ -241,7 +241,7 @@ impl<T: Component> QueryItemMut for &mut T {
         archetype: &mut Archetype,
     ) -> Self::Ptr {
         archetype
-            .column_mut::<T>()
+            .components_mut::<T>()
             .unwrap()
             .as_mut_slice()
             .as_mut_ptr() as _
@@ -279,7 +279,7 @@ impl<T: Component> QueryItemMut for Option<&mut T> {
         archetype: &mut Archetype,
     ) -> Self::Ptr {
         archetype
-            .column_mut::<T>()
+            .components_mut::<T>()
             .map(|vec| vec.as_mut_slice().as_mut_ptr() as _)
     }
 

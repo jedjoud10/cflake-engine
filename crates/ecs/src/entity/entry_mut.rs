@@ -4,7 +4,7 @@ use super::Entity;
 use crate::{
     add_bundle, remove_bundle, Archetype, ArchetypeSet, Bundle,
     Component, EntityLinkings, EntitySet, QueryLayoutMut,
-    QueryLayoutRef, Scene, Column, RemovedComponents,
+    QueryLayoutRef, Scene, RemovedComponents,
 };
 
 // Mutable entity entries allow the user to be able to modify components that are linked to the entity
@@ -52,31 +52,23 @@ impl<'a> EntryMut<'a> {
         self.archetypes.get_mut(&self.linkings().mask()).unwrap()
     }
 
-    // Get an immutable reference to a column of the current archetype
-    pub fn column<T: Component>(&self) -> Option<&Column<T>> {
-        self.archetype().column::<T>()
-    }
-
-    // Get a mutable reference to a column of the current archetype
-    pub fn column_mut<T: Component>(&mut self) -> Option<&mut Column<T>> {
-        self.archetype_mut().column_mut::<T>()
-    }
-
     // Get an immutable reference to a linked component
     pub fn get<T: Component>(&self) -> Option<&T> {
-        self.column::<T>().map(|col| col.get(self.linkings.index).unwrap())
+        self.archetype().components::<T>().map(|col| col.get(self.linkings.index).unwrap())
     }
 
     // Get a mutable reference to a linked component, but without triggering a StateRow mutation change
     pub fn get_mut_silent<T: Component>(&mut self) -> Option<&mut T> {
         let i = self.linkings.index;
-        self.column_mut::<T>().map(|col| col.get_mut_silent(i).unwrap())
+        self.archetype_mut().components_mut::<T>().map(|col| col.get_mut(i).unwrap())
     }
 
     // Get a mutable reference to a linked component
     pub fn get_mut<T: Component>(&mut self) -> Option<&mut T> {
-        let i = self.linkings.index;
-        self.column_mut::<T>().map(|col| col.get_mut(i).unwrap())
+        let index = self.linkings.index;
+        let states = self.archetype_mut().states_mut::<T>()?;
+        states.update(index, |flags| flags.modified = true);
+        self.get_mut_silent::<T>()
     }
 
     // Add a new component bundle to the entity, forcing it to switch archetypes
