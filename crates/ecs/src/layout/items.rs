@@ -1,8 +1,8 @@
 use crate::{mask, Archetype, Component, Entity, LayoutAccess, Mask};
 
 // Immutable query slice that will be fetched from each archetype
-pub trait QueryItemRef<'s>: Sized {
-    type Slice: 's;
+pub trait QueryItemRef: Sized {
+    type Slice<'s>: 's;
     type Ptr: 'static + Copy;
     type Owned: 'static;
 
@@ -15,18 +15,18 @@ pub trait QueryItemRef<'s>: Sized {
     ) -> Self::Ptr;
 
     // Convert the pointer into a slice
-    unsafe fn from_raw_parts(
+    unsafe fn from_raw_parts<'s>(
         ptr: Self::Ptr,
         length: usize,
-    ) -> Self::Slice;
+    ) -> Self::Slice<'s>;
 
     // Read from a raw pointer directly
     unsafe fn read_unchecked(ptr: Self::Ptr, index: usize) -> Self;
 }
 
 // Mutable query slice that will be fetched from each archetype
-pub trait QueryItemMut<'s>: Sized {
-    type Slice: 's;
+pub trait QueryItemMut: Sized {
+    type Slice<'s>: 's;
     type Ptr: 'static + Copy;
     type Owned: 'static;
 
@@ -39,10 +39,10 @@ pub trait QueryItemMut<'s>: Sized {
     ) -> Self::Ptr;
 
     // Convert the pointer into a slice, and read from said slice
-    unsafe fn from_raw_parts(
+    unsafe fn from_raw_parts<'s>(
         ptr: Self::Ptr,
         length: usize,
-    ) -> Self::Slice;
+    ) -> Self::Slice<'s>;
 
     // Read from a raw pointer directly
     unsafe fn read_mut_unchecked(
@@ -51,8 +51,8 @@ pub trait QueryItemMut<'s>: Sized {
     ) -> Self;
 }
 
-impl<'s, T: Component> QueryItemRef<'s> for &T {
-    type Slice = &'s [T];
+impl<T: Component> QueryItemRef for &T {
+    type Slice<'s> = &'s [T];
     type Ptr = *const T;
     type Owned = T;
 
@@ -67,17 +67,13 @@ impl<'s, T: Component> QueryItemRef<'s> for &T {
     unsafe fn ptr_from_archetype_unchecked(
         archetype: &Archetype,
     ) -> Self::Ptr {
-        archetype
-            .components::<T>()
-            .unwrap_unchecked()
-            .as_slice()
-            .as_ptr()
+        archetype.components::<T>().unwrap().as_slice().as_ptr() as _
     }
 
-    unsafe fn from_raw_parts(
+    unsafe fn from_raw_parts<'s>(
         ptr: Self::Ptr,
         length: usize,
-    ) -> Self::Slice {
+    ) -> Self::Slice<'s> {
         std::slice::from_raw_parts(ptr, length)
     }
 
@@ -86,8 +82,8 @@ impl<'s, T: Component> QueryItemRef<'s> for &T {
     }
 }
 
-impl<'s, T: Component> QueryItemRef<'s> for Option<&T> {
-    type Slice = Option<&'s [T]>;
+impl<T: Component> QueryItemRef for Option<&T> {
+    type Slice<'s> = Option<&'s [T]>;
     type Ptr = Option<*const T>;
     type Owned = T;
 
@@ -104,13 +100,13 @@ impl<'s, T: Component> QueryItemRef<'s> for Option<&T> {
     ) -> Self::Ptr {
         archetype
             .components::<T>()
-            .map(|vec| vec.as_slice().as_ptr())
+            .map(|col| col.as_slice().as_ptr() as _)
     }
 
-    unsafe fn from_raw_parts(
+    unsafe fn from_raw_parts<'s>(
         ptr: Self::Ptr,
         length: usize,
-    ) -> Self::Slice {
+    ) -> Self::Slice<'s> {
         ptr.map(|ptr| std::slice::from_raw_parts(ptr, length))
     }
 
@@ -119,8 +115,8 @@ impl<'s, T: Component> QueryItemRef<'s> for Option<&T> {
     }
 }
 
-impl<'s> QueryItemRef<'s> for &Entity {
-    type Slice = &'s [Entity];
+impl QueryItemRef for &Entity {
+    type Slice<'s> = &'s [Entity];
     type Ptr = *const Entity;
     type Owned = Entity;
 
@@ -138,10 +134,10 @@ impl<'s> QueryItemRef<'s> for &Entity {
         archetype.entities().as_ptr()
     }
 
-    unsafe fn from_raw_parts(
+    unsafe fn from_raw_parts<'s>(
         ptr: Self::Ptr,
         length: usize,
-    ) -> Self::Slice {
+    ) -> Self::Slice<'s> {
         std::slice::from_raw_parts(ptr, length)
     }
 
@@ -150,8 +146,8 @@ impl<'s> QueryItemRef<'s> for &Entity {
     }
 }
 
-impl<'s, T: Component> QueryItemMut<'s> for &T {
-    type Slice = &'s [T];
+impl<T: Component> QueryItemMut for &T {
+    type Slice<'s> = &'s [T];
     type Ptr = *const T;
     type Owned = T;
 
@@ -167,16 +163,16 @@ impl<'s, T: Component> QueryItemMut<'s> for &T {
         archetype: &mut Archetype,
     ) -> Self::Ptr {
         archetype
-            .components::<T>()
-            .unwrap_unchecked()
-            .as_slice()
-            .as_ptr()
+            .components_mut::<T>()
+            .unwrap()
+            .as_mut_slice()
+            .as_ptr() as _
     }
 
-    unsafe fn from_raw_parts(
+    unsafe fn from_raw_parts<'s>(
         ptr: Self::Ptr,
         length: usize,
-    ) -> Self::Slice {
+    ) -> Self::Slice<'s> {
         std::slice::from_raw_parts(ptr, length)
     }
 
@@ -188,8 +184,8 @@ impl<'s, T: Component> QueryItemMut<'s> for &T {
     }
 }
 
-impl<'s, T: Component> QueryItemMut<'s> for Option<&T> {
-    type Slice = Option<&'s [T]>;
+impl<T: Component> QueryItemMut for Option<&T> {
+    type Slice<'s> = Option<&'s [T]>;
     type Ptr = Option<*const T>;
     type Owned = T;
 
@@ -205,14 +201,14 @@ impl<'s, T: Component> QueryItemMut<'s> for Option<&T> {
         archetype: &mut Archetype,
     ) -> Self::Ptr {
         archetype
-            .components::<T>()
-            .map(|vec| vec.as_slice().as_ptr())
+            .components_mut::<T>()
+            .map(|vec| vec.as_slice().as_ptr() as _)
     }
 
-    unsafe fn from_raw_parts(
+    unsafe fn from_raw_parts<'s>(
         ptr: Self::Ptr,
         length: usize,
-    ) -> Self::Slice {
+    ) -> Self::Slice<'s> {
         ptr.map(|ptr| std::slice::from_raw_parts(ptr, length))
     }
 
@@ -224,8 +220,8 @@ impl<'s, T: Component> QueryItemMut<'s> for Option<&T> {
     }
 }
 
-impl<'s, T: Component> QueryItemMut<'s> for &mut T {
-    type Slice = &'s mut [T];
+impl<T: Component> QueryItemMut for &mut T {
+    type Slice<'s> = &'s mut [T];
     type Ptr = *mut T;
     type Owned = T;
 
@@ -242,15 +238,15 @@ impl<'s, T: Component> QueryItemMut<'s> for &mut T {
     ) -> Self::Ptr {
         archetype
             .components_mut::<T>()
-            .unwrap_unchecked()
+            .unwrap()
             .as_mut_slice()
-            .as_mut_ptr()
+            .as_mut_ptr() as _
     }
 
-    unsafe fn from_raw_parts(
+    unsafe fn from_raw_parts<'s>(
         ptr: Self::Ptr,
         length: usize,
-    ) -> Self::Slice {
+    ) -> Self::Slice<'s> {
         std::slice::from_raw_parts_mut(ptr, length)
     }
 
@@ -262,8 +258,8 @@ impl<'s, T: Component> QueryItemMut<'s> for &mut T {
     }
 }
 
-impl<'s, T: Component> QueryItemMut<'s> for Option<&mut T> {
-    type Slice = Option<&'s mut [T]>;
+impl<T: Component> QueryItemMut for Option<&mut T> {
+    type Slice<'s> = Option<&'s mut [T]>;
     type Ptr = Option<*mut T>;
     type Owned = T;
 
@@ -280,13 +276,13 @@ impl<'s, T: Component> QueryItemMut<'s> for Option<&mut T> {
     ) -> Self::Ptr {
         archetype
             .components_mut::<T>()
-            .map(|vec| vec.as_mut_slice().as_mut_ptr())
+            .map(|vec| vec.as_mut_slice().as_mut_ptr() as _)
     }
 
-    unsafe fn from_raw_parts(
+    unsafe fn from_raw_parts<'s>(
         ptr: Self::Ptr,
         length: usize,
-    ) -> Self::Slice {
+    ) -> Self::Slice<'s> {
         ptr.map(|ptr| std::slice::from_raw_parts_mut(ptr, length))
     }
 
@@ -298,8 +294,8 @@ impl<'s, T: Component> QueryItemMut<'s> for Option<&mut T> {
     }
 }
 
-impl<'s> QueryItemMut<'s> for &Entity {
-    type Slice = &'s [Entity];
+impl QueryItemMut for &Entity {
+    type Slice<'s> = &'s [Entity];
     type Ptr = *const Entity;
     type Owned = Entity;
 
@@ -317,10 +313,10 @@ impl<'s> QueryItemMut<'s> for &Entity {
         archetype.entities().as_ptr()
     }
 
-    unsafe fn from_raw_parts(
+    unsafe fn from_raw_parts<'s>(
         ptr: Self::Ptr,
         length: usize,
-    ) -> Self::Slice {
+    ) -> Self::Slice<'s> {
         std::slice::from_raw_parts(ptr, length)
     }
 

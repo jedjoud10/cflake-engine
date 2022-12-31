@@ -1,7 +1,9 @@
-use assets::Assets;
-use graphics::{Compiled, Graphics, Processor, VertexModule, FragmentModule};
-use utils::Storage;
 use crate::Material;
+use assets::Assets;
+use graphics::{
+    Compiled, FragmentModule, Graphics, Processor, VertexModule,
+};
+use utils::Storage;
 
 // A basic forward rendering material that will read from a diffuse map and normal map
 // This does not implement the PBR workflow, and it's only used for simplicity at first
@@ -22,7 +24,10 @@ impl Material for Basic {
     type SurfaceDescriptorSet<'ds> = ();
 
     // Load the vertex shader for this material
-    fn vertex(graphics: &Graphics, assets: &Assets) -> Compiled<VertexModule> {
+    fn vertex(
+        graphics: &Graphics,
+        assets: &Assets,
+    ) -> Compiled<VertexModule> {
         let vert = assets
             .load::<VertexModule>("engine/shaders/basic.vert")
             .unwrap();
@@ -31,7 +36,10 @@ impl Material for Basic {
     }
 
     // Load the fragment shader for this material
-    fn fragment(graphics: &Graphics, assets: &Assets) -> Compiled<graphics::FragmentModule> {
+    fn fragment(
+        graphics: &Graphics,
+        assets: &Assets,
+    ) -> Compiled<graphics::FragmentModule> {
         let frag = assets
             .load::<FragmentModule>("engine/shaders/basic.frag")
             .unwrap();

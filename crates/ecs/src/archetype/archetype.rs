@@ -1,35 +1,41 @@
+use std::any::TypeId;
+
 use crate::{
     entity::{Entity, EntityLinkings},
-    mask, ArchetypeSet, Bundle, Component, ComponentColumn,
-    EntitySet, Mask, MaskHashMap, QueryLayoutRef, StateColumn,
-    StateFlags,
+    mask, ArchetypeSet, Bundle, Component, EntitySet, Mask,
+    MaskHashMap, QueryLayoutRef, RemovedComponents, StateColumn,
+    StateFlags, UntypedColumn, UntypedVec,
 };
 
-// We store two different column-major tables within the archetypes
-pub type ComponentTable = MaskHashMap<Box<dyn ComponentColumn>>;
-pub(crate) type StateTable = MaskHashMap<StateColumn>;
+// The table that will be stored internally
+pub type Table = MaskHashMap<UntypedColumn>;
 
 // An archetype is a special structure that contains multiple entities of the same layout
 // Archetypes are used in archetypal ECSs to improve iteration and insertion/removal performance
 pub struct Archetype {
     mask: Mask,
-    components: ComponentTable,
-    states: StateTable,
+
+    table: Table,
+
+    // Entities that have the same mask as the archetype's mask
     entities: Vec<Entity>,
 }
 
 impl Archetype {
     // Create a new archetype from a owned bundle accessor
     // This assumes that B is a valid bundle
-    pub(crate) fn from_table_accessor<B: Bundle>() -> Self {
+    pub(crate) fn from_bundle<B: Bundle>() -> Self {
         let mask = B::reduce(|a, b| a | b);
+
+        println!("Creating archetype from bundle of mask {:?}", mask);
+
+        let defaults = B::default_vectors()
+            .into_iter()
+            .map(|(mask, vec)| (mask, UntypedColumn::new(vec)));
+
         Self {
             mask,
-            components: B::default_tables(),
-            states: MaskHashMap::from_iter(
-                mask.units()
-                    .map(|mask| (mask, StateColumn::default())),
-            ),
+            table: Table::from_iter(defaults),
             entities: Vec::new(),
         }
     }
@@ -38,57 +44,45 @@ impl Archetype {
     pub(crate) fn empty() -> Self {
         Self {
             mask: Mask::zero(),
-            components: Default::default(),
-            states: Default::default(),
+            table: Default::default(),
             entities: Default::default(),
         }
     }
 
     // Add multiple entities into the archetype with their corresponding owned components
     // The layout mask for "B" must be equal to the layout mask that this archetype contains
-    pub(crate) fn extend_from_slice<B: Bundle>(
+    // This will also add the entities to the entity set
+    pub(crate) fn extend_from_iter<B: Bundle>(
         &mut self,
         entities: &mut EntitySet,
-        components: Vec<B>,
+        components: impl IntoIterator<Item = B>,
     ) -> &[Entity] {
-        debug_assert_eq!(self.mask(), B::reduce(|a, b| a | b));
+        assert_eq!(self.mask(), B::reduce(|a, b| a | b));
         assert!(
             B::is_valid(),
             "Bundle is not valid, check the bundle for component collisions"
         );
 
-        // Reserve and calculate difference
-        self.reserve(components.len());
+        // Reserve more memory to reduce the number of reallocation
+        let iter = components.into_iter();
+        self.reserve(iter.size_hint().0);
         let old_len = self.entities.len();
-        let additional = components.len();
 
-        // Add the entities internally and externally
-        for _ in 0..additional {
+        // Add the components first (so we know how many entities we need to add)
+        let mut storages = B::prepare(self).unwrap();
+        let additional = B::extend_from_iter(&mut storages, iter);
+        drop(storages);
+
+        // Allocate the entities then add them as well
+        for i in 0..additional {
             let linkings = EntityLinkings {
                 mask: self.mask,
-                index: self.len(),
+                index: old_len + i,
             };
             let entity = entities.insert(linkings);
             self.entities.push(entity);
         }
 
-        // Add the state bits if needed
-        for (_, column) in self.states.iter_mut() {
-            column.extend_with_flags(
-                additional,
-                StateFlags {
-                    added: true,
-                    modified: true,
-                },
-            );
-        }
-
-        // Add the storage bundles to their respective columns
-        let mut storages = B::prepare(self).unwrap();
-        for set in components {
-            B::push(&mut storages, set);
-        }
-        drop(storages);
         log::debug!(
             "Extended archetype {} with {} new elements",
             self.mask,
@@ -99,6 +93,37 @@ impl Archetype {
         &self.entities[old_len..]
     }
 
+    // Remove multiple entities from the archetype and dissociate their components
+    // This will also remove the entities from the entity set
+    pub(crate) fn remove_from_iter(
+        &mut self,
+        entities: &mut EntitySet,
+        iter: impl Iterator<Item = (Entity, EntityLinkings)>,
+        removed: &mut RemovedComponents,
+    ) {
+        // Remove el entities and el components
+        for (entity, linking) in iter {
+            // Remove the entities from the scene and from the archetype
+            let index = linking.index;
+            self.entities.remove(index);
+            entities.remove(entity);
+
+            // Remove the components and decompose them
+            for (mask, input) in self.table_mut() {
+                input.states_mut().swap_remove(index);
+
+                // Add the "removal" column in case it doesn't exist
+                let output =
+                    removed.entry(*mask).or_insert_with(|| {
+                        input.components().clone_default()
+                    });
+                input
+                    .components_mut()
+                    .swap_remove_move(index, &mut **output);
+            }
+        }
+    }
+
     // Reserve enough memory space to be able to fit all the new entities in one allocation
     pub fn reserve(&mut self, additional: usize) {
         log::debug!(
@@ -107,39 +132,41 @@ impl Archetype {
             self.mask
         );
         self.entities.reserve(additional);
-        self.states.reserve(additional);
 
-        // Reserve more memory for the components columns
-        for (_, column) in self.components.iter_mut() {
-            column.reserve(additional);
-        }
-
-        // Reserve more memory for the state columns
-        for (_, column) in self.states.iter_mut() {
+        // Reserve more memory for the columns
+        for (_, column) in self.table.iter_mut() {
             column.reserve(additional);
         }
     }
 
     // Shrink the memory allocation used by this archetype
-    pub fn shrink(&mut self) {
+    pub fn shrink_to_fit(&mut self) {
         self.entities.shrink_to_fit();
-        self.states.shrink_to_fit();
-        self.components.shrink_to_fit();
+        self.table.shrink_to_fit();
 
-        // Shrink the component columns
-        for (_, column) in self.components.iter_mut() {
-            column.shrink_to_fit();
-        }
-
-        // Shrink the state columns
-        for (_, column) in self.states.iter_mut() {
+        // Shrink the actual column allocation
+        for (_, column) in self.table.iter_mut() {
             column.shrink_to_fit();
         }
     }
 
+    // Clear the archetype completely from entities
+    pub(crate) fn clear(&mut self) {
+        for (_, column) in self.table.iter_mut() {
+            column.clear();
+        }
+
+        self.entities.clear();
+    }
+
     // Get the number of entities that reference this archetype
     pub fn len(&self) -> usize {
-        self.entities.len()
+        let len = self.entities.len();
+        for (_, c) in &self.table {
+            debug_assert_eq!(c.len(), len);
+        }
+
+        len
     }
 
     // Check if the archetype is empty
@@ -157,79 +184,67 @@ impl Archetype {
         self.mask
     }
 
-    // Try to get an immutable reference to the table for a specific component
-    pub(crate) fn components<T: Component>(&self) -> Option<&Vec<T>> {
-        let boxed = &self.components.get(&mask::<T>())?;
-        Some(boxed.as_any().downcast_ref().unwrap())
+    // Try to get an immutable reference to an untyped column of a specific component
+    pub fn untyped_column<T: Component>(
+        &self,
+    ) -> Option<&UntypedColumn> {
+        self.table.get(&mask::<T>())
     }
 
-    // Try to get a mutable reference to the table for a specific component
+    // Try to get a mutable reference to an untyped column of a specific component
+    pub(crate) fn untyped_column_mut<T: Component>(
+        &mut self,
+    ) -> Option<&mut UntypedColumn> {
+        self.table.get_mut(&mask::<T>())
+    }
+
+    // Try to get an immutable reference to a typed column of a specific component
+    pub fn column<T: Component>(
+        &self,
+    ) -> Option<(&Vec<T>, &StateColumn)> {
+        self.untyped_column::<T>().map(|c| c.as_::<T>().unwrap())
+    }
+
+    // Try to get a mutable reference to a typed column of a specific component
+    pub(crate) fn column_mut<T: Component>(
+        &mut self,
+    ) -> Option<(&mut Vec<T>, &mut StateColumn)> {
+        self.untyped_column_mut::<T>()
+            .map(|c| c.as_mut_::<T>().unwrap())
+    }
+
+    // Try to get an immutable reference to the data vector of a specific component
+    pub fn components<T: Component>(&self) -> Option<&Vec<T>> {
+        self.column::<T>().map(|(vec, _)| vec)
+    }
+
+    // Try to get a mutable reference to a data vector of a specific component
     pub(crate) fn components_mut<T: Component>(
         &mut self,
     ) -> Option<&mut Vec<T>> {
-        let boxed = self.components.get_mut(&mask::<T>())?;
-        Some(boxed.as_any_mut().downcast_mut().unwrap())
+        self.column_mut::<T>().map(|(vec, _)| vec)
     }
 
-    // Try to get an immutable reference to the state table for a specific component
+    // Try to get an immutable reference to the states of a specific component
     pub fn states<T: Component>(&self) -> Option<&StateColumn> {
-        self.states.get(&mask::<T>())
+        self.untyped_column::<T>().map(|c| c.states())
     }
 
-    // Try to get a mutable reference to the state table for a specific component
-    pub fn states_mut<T: Component>(
+    // Try to get a mutable reference to the states of a specific component
+    pub(crate) fn states_mut<T: Component>(
         &mut self,
     ) -> Option<&mut StateColumn> {
-        self.states.get_mut(&mask::<T>())
+        self.untyped_column_mut::<T>().map(|c| c.states_mut())
     }
 
-    // Get the component table immutably
-    pub fn component_table(&self) -> &ComponentTable {
-        &self.components
+    // Get the internal table immutably
+    pub fn table(&self) -> &Table {
+        &self.table
     }
 
-    // Get the component table mutably
-    pub fn component_table_mut(&mut self) -> &mut ComponentTable {
-        &mut self.components
-    }
-
-    // Get the state table immutably
-    pub(crate) fn state_table(&self) -> &StateTable {
-        &self.states
-    }
-
-    // Get the state table mutably
-    pub(crate) fn state_table_mut(&mut self) -> &mut StateTable {
-        &mut self.states
-    }
-
-    // Paritally remove an entity that is stored within this archetype using it's index
-    // This will leave the component columns intact, since we must remove them using the component_table_mut
-    pub(crate) fn remove(
-        &mut self,
-        entities: &mut EntitySet,
-        entity: Entity,
-    ) -> Option<()> {
-        // Try to get the linkings and index
-        let linkings = entities.remove(entity)?;
-        let index = linkings.index();
-
-        // Remove the states from the columns
-        for (_, column) in self.states.iter_mut() {
-            column.swap_remove(index);
-        }
-
-        // Remove the entity and get the entity that was swapped with it
-        self.entities.swap_remove(index);
-        let entity = self.entities.get(index).cloned();
-
-        // Swap might've failed if we swapped with the last element in the vector
-        if let Some(entity) = entity {
-            let swapped = entities.get_mut(entity).unwrap();
-            swapped.index = index;
-        }
-
-        Some(())
+    // Get the internal table mutably
+    pub(crate) fn table_mut(&mut self) -> &mut Table {
+        &mut self.table
     }
 }
 
@@ -247,6 +262,51 @@ fn split(
         let a1 = &mut *a1;
         let a2 = &mut *a2;
         (a1, a2)
+    }
+}
+
+// Initialize a new archetype for when we add a bundle to an entity
+fn init_archetype_added_bundle<B: Bundle>(
+    archetypes: &MaskHashMap<Archetype>,
+    old: Mask,
+    new: Mask,
+) -> Archetype {
+    let current = archetypes.get(&old).unwrap();
+    let base_columns = current
+        .table
+        .iter()
+        .map(|(mask, column)| (*mask, column.clone_default()));
+    let columns = base_columns.chain(
+        B::default_vectors()
+            .into_iter()
+            .map(|(mask, vec)| (mask, UntypedColumn::new(vec))),
+    );
+
+    Archetype {
+        mask: new,
+        table: Table::from_iter(columns),
+        entities: Default::default(),
+    }
+}
+
+// Initialize a new archetype for when we remove a bundle from a bundle
+fn init_archetype_removed_bundle<B: Bundle>(
+    archetypes: &MaskHashMap<Archetype>,
+    old: Mask,
+    new: Mask,
+) -> Archetype {
+    let current = archetypes.get(&old).unwrap();
+    let columns = current
+        .table
+        .iter()
+        .filter(|(mask, _)| new.contains(**mask))
+        .filter(|(mask, _)| Mask::contains(&new, **mask))
+        .map(|(mask, table)| (*mask, table.clone_default()));
+
+    Archetype {
+        mask: new,
+        table: MaskHashMap::from_iter(columns),
+        entities: Default::default(),
     }
 }
 
@@ -274,31 +334,10 @@ pub(crate) fn add_bundle<B: Bundle>(
 
     // Create the new target archetype if needed
     if !archetypes.contains_key(&new) {
-        let current = archetypes.get_mut(&old).unwrap();
-        let base = current
-            .components
-            .iter()
-            .map(|(mask, table)| (*mask, table.clone_default()));
-        let mut components = B::default_tables();
-        components.extend(base);
+        let arch =
+            init_archetype_added_bundle::<B>(archetypes, old, new);
+        archetypes.insert(new, arch);
 
-        let base = current
-            .states
-            .iter()
-            .map(|(mask, _)| (*mask, StateColumn::default()));
-        let mask = B::reduce(|a, b| a | b);
-        let mut states = MaskHashMap::from_iter(
-            mask.units().map(|mask| (mask, StateColumn::default())),
-        );
-        states.extend(base);
-
-        let archetype = Archetype {
-            mask: new,
-            components,
-            states,
-            entities: Default::default(),
-        };
-        archetypes.insert(new, archetype);
         log::debug!(
             "Created new archetype with mask {} (added bundle)",
             new
@@ -310,36 +349,28 @@ pub(crate) fn add_bundle<B: Bundle>(
     let linkings = entities.get(entity).unwrap();
     let index = linkings.index();
 
-    // Move the components from one archetype to the other
-    for (mask, input) in current.components.iter_mut() {
-        let output = target.components.get_mut(mask).unwrap();
-        input.swap_remove_move(index, output.as_mut());
+    // Move the components and states from one archetype to the other
+    for (mask, input) in current.table.iter_mut() {
+        let output = target.table.get_mut(mask).unwrap();
+        input
+            .components_mut()
+            .swap_remove_move(index, output.components_mut());
+        input
+            .states_mut()
+            .swap_remove_move(index, output.states_mut());
     }
 
-    // Move the states from one archetype to the other
-    for (mask, input) in current.states.iter_mut() {
-        let output = target.states.get_mut(mask).unwrap();
-        input.swap_remove_move(index, output);
-    }
-
-    // Add the extra components as well
+    // Add the extra components to the archetype
     let mut storages = B::prepare(target).unwrap();
-    B::push(&mut storages, bundle);
+    B::extend_from_iter(&mut storages, [bundle]);
     drop(storages);
 
-    // Add the extra states as well
-    for (_, output) in target
-        .state_table_mut()
-        .iter_mut()
-        .filter(|(mask, _)| bundle_mask.contains(**mask))
-    {
-        output.extend_with_flags(
-            1,
-            StateFlags {
-                added: true,
-                modified: true,
-            },
-        )
+    for (mask, current) in current.table.iter() {
+        println!("Current Mask: {:?}, len: {}", mask, current.len());
+    }
+
+    for (mask, current) in target.table.iter() {
+        println!("Target Mask: {:?}, len: {}", mask, current.len());
     }
 
     // Handle swap-remove logic in the current archetype
@@ -364,7 +395,8 @@ pub(crate) fn remove_bundle<B: Bundle>(
     archetypes: &mut ArchetypeSet,
     entity: Entity,
     entities: &mut EntitySet,
-) -> Option<B> {
+    removed: &mut RemovedComponents,
+) -> bool {
     assert!(
         B::is_valid(),
         "Bundle is not valid, check the bundle for component collisions"
@@ -377,33 +409,15 @@ pub(crate) fn remove_bundle<B: Bundle>(
 
     // Check if we even have the bundle stored
     if !old.contains(bundle_mask) {
-        return None;
+        return false;
     }
 
     // Create the new target archetype if needed
     if !archetypes.contains_key(&new) {
-        let current = archetypes.get_mut(&old).unwrap();
-        let components = current
-            .components
-            .iter()
-            .filter(|(mask, _)| new.contains(**mask))
-            .filter(|(mask, _)| Mask::contains(&new, **mask))
-            .map(|(mask, table)| (*mask, table.clone_default()));
+        let arch =
+            init_archetype_removed_bundle::<B>(archetypes, old, new);
+        archetypes.insert(new, arch);
 
-        let states = current
-            .states
-            .iter()
-            .filter(|(mask, _)| Mask::contains(&new, **mask))
-            .filter(|(mask, _)| new.contains(**mask))
-            .map(|(mask, _)| (*mask, StateColumn::default()));
-
-        let archetype = Archetype {
-            mask: new,
-            components: MaskHashMap::from_iter(components),
-            states: MaskHashMap::from_iter(states),
-            entities: Default::default(),
-        };
-        archetypes.insert(new, archetype);
         log::debug!(
             "Created new archetype with mask {} (removed bundle)",
             new
@@ -412,23 +426,61 @@ pub(crate) fn remove_bundle<B: Bundle>(
 
     // Get the current and target archetypes that we will modify
     let (current, target) = split(archetypes, old, new);
-    let linkings = entities.get(entity)?;
+    let linkings = if let Some(entity) = entities.get(entity) {
+        entity
+    } else {
+        return false;
+    };
     let index = linkings.index();
 
-    // Move the components from one archetype to the other (flipped)
-    for (mask, output) in target.components.iter_mut() {
-        let input = current.components.get_mut(mask).unwrap();
-        input.swap_remove_move(index, output.as_mut());
+    for (mask, current) in current.table.iter() {
+        println!(
+            "Removal Current Mask: {:?}, len: {}",
+            mask,
+            current.len()
+        );
     }
 
-    // Move the states from one archetype to the other (flipped)
-    for (mask, output) in target.states.iter_mut() {
-        let input = current.states.get_mut(mask).unwrap();
-        input.swap_remove_move(index, output);
+    for (mask, current) in target.table.iter() {
+        println!(
+            "Removal Target Mask: {:?}, len: {}",
+            mask,
+            current.len()
+        );
     }
 
-    // Create the return bundle
-    let bundle = B::try_swap_remove(&mut current.components, index);
+    // Move the components and states from one archetype to the other (flipped)
+    for (mask, output) in target.table.iter_mut() {
+        let input = current.table.get_mut(mask).unwrap();
+        input
+            .components_mut()
+            .swap_remove_move(index, output.components_mut());
+        input
+            .states_mut()
+            .swap_remove_move(index, output.states_mut());
+    }
+
+    // Dissociate the bunle intop it's raw components
+    for (mask, input) in current
+        .table
+        .iter_mut()
+        .filter(|(mask, _)| bundle_mask.contains(**mask))
+    {
+        let entry = removed
+            .entry(*mask)
+            .or_insert_with(|| input.components().clone_default());
+        let data = &mut **entry;
+        input.components_mut().swap_remove_move(index, data);
+        input.states_mut().swap_remove(index);
+    }
+
+    for (mask, current) in target.table.iter() {
+        println!(
+            "Removal Target Mask: {:?}, len: {}",
+            mask,
+            current.len()
+        );
+    }
 
     // Handle swap-remove logic in the current archetype
     current.entities.swap_remove(index);
@@ -443,5 +495,5 @@ pub(crate) fn remove_bundle<B: Bundle>(
     linkings.index = target.len() - 1;
     linkings.mask = target.mask;
 
-    bundle
+    true
 }

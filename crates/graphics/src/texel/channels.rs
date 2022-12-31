@@ -1,5 +1,5 @@
-use std::marker::PhantomData;
 use crate::{AnyElement, Normalized};
+use std::marker::PhantomData;
 
 // The channels that represent the texels (non sRGB)
 pub struct R<T: AnyElement>(T);
@@ -26,7 +26,10 @@ pub struct Stencil<T: StencilElement>(T);
 
 // Color channel as texel channels
 pub enum ColorChannels {
-    R, RG, RGB, RGBA,
+    R,
+    RG,
+    RGB,
+    RGBA,
 }
 
 impl ColorChannels {
@@ -45,7 +48,7 @@ impl ColorChannels {
 pub enum ChannelsType {
     Color(ColorChannels),
     Depth,
-    Stencil
+    Stencil,
 }
 
 impl ChannelsType {

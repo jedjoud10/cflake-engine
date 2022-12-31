@@ -1,10 +1,10 @@
+mod base;
+mod cases;
 mod channels;
 mod element;
 mod texel;
-mod cases;
-mod base;
-pub use cases::*;
 pub use base::*;
-pub use texel::*;
-pub use element::*;
+pub use cases::*;
 pub use channels::*;
+pub use element::*;
+pub use texel::*;

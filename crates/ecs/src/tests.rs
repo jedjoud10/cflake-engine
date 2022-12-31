@@ -12,10 +12,12 @@ struct Placeholder();
 
 fn cleanup(ecs: &mut Scene) {
     for (_, archetype) in ecs.archetypes_mut() {
-        for (_, column) in archetype.state_table_mut().iter_mut() {
-            column.clear();
+        for (_, column) in archetype.table_mut().iter_mut() {
+            column.states_mut().reset();
         }
     }
+
+    ecs.removed.clear();
 }
 
 #[test]
@@ -29,8 +31,8 @@ fn entries() {
 
     let mask = registry::mask::<Name>();
     let archetype = manager.archetypes().get(&mask).unwrap();
-    let column = archetype.states::<Name>().unwrap();
-    assert!(column.get(0).unwrap().modified == 1);
+    let states = archetype.states::<Name>().unwrap();
+    assert!(states.get(0).unwrap().modified);
 
     let entry = manager.entry(entity).unwrap();
     assert_eq!(entry.get::<Name>(), Some(&Name("Basic")));
@@ -39,12 +41,14 @@ fn entries() {
     let mut entry = manager.entry_mut(entity).unwrap();
     entry.insert(Health(100)).unwrap();
     assert!(!entry.contains::<Ammo>());
-    assert_eq!(entry.remove::<Ammo>(), None);
+    /*
+    assert!(!entry.remove::<Ammo>());
     entry.insert(Ammo(100)).unwrap();
-    entry.remove::<Ammo>().unwrap();
+    assert!(entry.remove::<Ammo>());
     assert!(!entry.contains::<Ammo>());
     assert!(entry.contains::<Health>());
     assert!(entry.contains::<Name>());
+    */
 }
 
 #[test]
@@ -92,11 +96,13 @@ fn states() {
 
     manager
         .extend_from_iter(std::iter::repeat(Name("Test")).take(32));
-
+    dbg!("bruh");
     let mask = Mask::from_bundle::<Name>();
     let archetype = manager.archetypes().get(&mask).unwrap();
     let states = archetype.states::<Name>().unwrap();
     let chunk = states.chunks()[0];
+    println!("{:b}", chunk.added);
+    println!("{:b}", (1usize << 32) - 1);
     assert_eq!(chunk.added, (1 << 32) - 1);
     assert_eq!(chunk.modified, (1 << 32) - 1);
     assert_eq!(chunk.added.count_ones(), 32);
@@ -139,10 +145,21 @@ fn moving() {
     let mut manager = Scene::default();
     let entity = manager.insert((Name(""), Health(100)));
     let mut entry = manager.entry_mut(entity).unwrap();
-    entry.remove::<Health>().unwrap();
+    //assert!(entry.remove::<Health>());
+    assert_eq!(entry.archetype().len(), 1);
     entry.insert::<Ammo>(Ammo(0)).unwrap();
     assert!(entry.insert::<Ammo>(Ammo(0)).is_none());
     assert!(entry.insert::<Ammo>(Ammo(0)).is_none());
+    assert_eq!(entry.archetype().len(), 1);
+}
+
+#[test]
+fn proto() {
+    let mut manager = Scene::default();
+    let entity = manager.insert((Name(""), Health(100)));
+    let mut entry = manager.entry_mut(entity).unwrap();
+    assert_eq!(entry.archetype().len(), 1);
+    entry.insert::<Ammo>(Ammo(0)).unwrap();
 }
 
 #[test]
@@ -158,17 +175,17 @@ fn moving_batch() {
             .take(5000),
         )
         .to_vec();
+
     cleanup(&mut scene);
     for (i, id) in entities.iter().enumerate() {
         if i % 10 == 0 {
             let mut entry = scene.entry_mut(*id).unwrap();
-            entry.remove::<Name>().unwrap();
-            entry
-                .insert::<Placeholder>(Placeholder())
-                .unwrap();
+            assert!(entry.remove::<Name>());
+            entry.insert::<Placeholder>(Placeholder()).unwrap();
         }
     }
 
+    /*
     let filter = added::<Placeholder>();
     for (health, ammo) in
         scene.query_mut_with::<(&mut Health, &Ammo)>(filter)
@@ -185,6 +202,7 @@ fn moving_batch() {
             assert_eq!(data, Some(&Health(50)));
         }
     }
+    */
 }
 
 #[test]
@@ -411,26 +429,6 @@ fn filter_mut() {
 }
 
 #[test]
-fn unit_tuple() {
-    let mut manager = Scene::default();
-    let e1 = manager.insert(());
-    let e2 = manager.insert(());
-    let e3 = manager.insert(Health(100));
-    let entry1 = manager.entry(e1).unwrap();
-    let entry2 = manager.entry(e2).unwrap();
-    let entry3 = manager.entry(e3).unwrap();
-    assert_eq!(entry1.archetype().mask(), Mask::zero());
-    assert_eq!(entry2.archetype().mask(), Mask::zero());
-    assert_eq!(entry1.archetype().len(), 2);
-    assert_eq!(entry3.contains::<()>(), true);
-
-    let mut entry1 = manager.entry_mut(e1).unwrap();
-    entry1.insert(Health(0)).unwrap();
-    let mut entry2 = manager.entry_mut(e2).unwrap();
-    entry2.insert(Health(0)).unwrap();
-}
-
-#[test]
 fn hierarchy() {
     let mut manager = Scene::default();
     let entity1 = manager.insert(Position::default());
@@ -450,22 +448,11 @@ fn removed() {
     let mut manager = Scene::default();
     let entity1 = manager.insert(Position::default());
     let entity2 = manager.insert(Position::default());
+    let mut entry1 = manager.entry_mut(entity1).unwrap();
+    assert!(entry1.remove::<Position>());
 
-    // Gets entry for a specific entity
-    let entry1 = manager.entry_mut(entity1).unwrap();
-    
-    // Returns a Option<&mut Position> of the removed position
-    entry1.remove::<Position>().unwrap();
-
-    // To detect removal, returns iterator of type &mut Position on the bundles that contain the Position comp
-    manager.removed::<&mut Position>();
-
-    
-    // Gets entry for a specific entity
-    let entry1 = manager.entry_mut(entity1).unwrap();
-
-    // Returns a Option<Position> of the removed position
-    entry1.remove::<Position>().unwrap();
-
-    // To detect removal, implement the "Drop" on Position and handle logic there??
+    assert_eq!(manager.removed::<Position>().len(), 1);
+    assert_eq!(manager.removed_mut::<Position>().len(), 1);
+    assert_eq!(manager.removed::<Rotation>().len(), 0);
+    assert_eq!(manager.removed_mut::<Rotation>().len(), 0);
 }

@@ -1,4 +1,4 @@
-use crate::{AudioPlayer, Sample, AudioClip};
+use crate::{AudioClip, AudioPlayer, Sample};
 use cpal::{
     traits::DeviceTrait, BuildStreamError, Stream, StreamConfig,
 };
@@ -9,7 +9,6 @@ use std::{
     sync::Arc,
     time::{Duration, Instant},
 };
-
 
 // This will be used to create the CPAL output stream
 pub trait OutputStream {
@@ -28,15 +27,21 @@ impl<S: Sample> OutputStream for AudioClip<S> {
         let channels = self.channels();
         let sample_rate = self.sample_rate();
         let src = self.samples();
-        let config = player.find_audio_stream_config(channels, sample_rate).unwrap();
-        build_output_stream::<S>(config, &player.device, Box::new(move |dst, frame| {
-            if frame >= src.len() {
-                dst.fill(S::zero());
-                return;
-            }
+        let config = player
+            .find_audio_stream_config(channels, sample_rate)
+            .unwrap();
+        build_output_stream::<S>(
+            config,
+            &player.device,
+            Box::new(move |dst, frame| {
+                if frame >= src.len() {
+                    dst.fill(S::zero());
+                    return;
+                }
 
-            dst.copy_from_slice(&src[frame..][..dst.len()]);
-        }))
+                dst.copy_from_slice(&src[frame..][..dst.len()]);
+            }),
+        )
     }
 }
 

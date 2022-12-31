@@ -1,4 +1,4 @@
-use crate::{Graphics, ShaderModule, ModuleKind, Processed};
+use crate::{Graphics, ModuleKind, Processed, ShaderModule};
 use std::{marker::PhantomData, sync::Arc, time::Instant};
 use vulkan::{vk, Device};
 
@@ -44,12 +44,20 @@ impl<M: ShaderModule> Compiled<M> {
             let spirv = graphics.device().translate_glsl_spirv(
                 &source, &file_name, "main", kind,
             );
-            log::debug!("Took {:?} to translate '{}' to SPIRV", i.elapsed(), &file_name);
+            log::debug!(
+                "Took {:?} to translate '{}' to SPIRV",
+                i.elapsed(),
+                &file_name
+            );
 
             // Compile the SPIRV bytecode
             let i = Instant::now();
             let raw = graphics.device().compile_shader_module(&spirv);
-            log::debug!("Took {:?} to compile '{}' from SPIRV", i.elapsed(), &file_name);
+            log::debug!(
+                "Took {:?} to compile '{}' from SPIRV",
+                i.elapsed(),
+                &file_name
+            );
             (spirv, raw)
         };
 
@@ -88,13 +96,12 @@ impl<M: ShaderModule> Compiled<M> {
         CompiledDescription {
             flags: vk::PipelineShaderStageCreateFlags::default(),
             kind: self.kind,
-            module: &self.raw
+            module: &self.raw,
         }
     }
 }
 
-
-// A description of a compiled shader module that we can convert to a 
+// A description of a compiled shader module that we can convert to a
 pub struct CompiledDescription<'a> {
     pub(crate) flags: vk::PipelineShaderStageCreateFlags,
     pub(crate) kind: ModuleKind,

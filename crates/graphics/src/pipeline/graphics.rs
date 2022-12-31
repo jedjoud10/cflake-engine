@@ -1,6 +1,7 @@
 use crate::{
-    BlendConfig, CompareOp, DepthConfig, Graphics, ShaderModule, Primitive,
-    RenderPass, StencilConfig, StencilOp, StencilTest, GraphicsPipelineLinkedModules, CompiledDescription,
+    BlendConfig, CompareOp, CompiledDescription, DepthConfig,
+    Graphics, GraphicsPipelineLinkedModules, Primitive, RenderPass,
+    ShaderModule, StencilConfig, StencilOp, StencilTest,
 };
 use std::{mem::transmute, sync::Arc};
 use vulkan::{vk, Device};
@@ -67,20 +68,17 @@ impl GraphicsPipeline {
             );
 
             // Vertex input state
-            let vertex_input_state = 
-                Self::build_vertex_input_state();
+            let vertex_input_state = Self::build_vertex_input_state();
 
             // Dynamic state
-            let dynamic_state = 
-                Self::build_dynamic_state();
-            
+            let dynamic_state = Self::build_dynamic_state();
+
             // Pipeline layout
             let layout =
                 Self::build_pipeline_layout(graphics.device());
-            
+
             // Multisample state
-            let multisample_state =
-                Self::build_multisampling_state();
+            let multisample_state = Self::build_multisampling_state();
 
             // Pipeline stages create info
             let stages = Self::build_stages(descriptions);
@@ -167,7 +165,8 @@ impl GraphicsPipeline {
     }
 
     // Create the multi-sampling state (I hate anti-aliasing. Fuck you. Cope)
-    fn build_multisampling_state() -> vk::PipelineMultisampleStateCreateInfo {
+    fn build_multisampling_state(
+    ) -> vk::PipelineMultisampleStateCreateInfo {
         vk::PipelineMultisampleStateCreateInfo::builder()
             .sample_shading_enable(false)
             .rasterization_samples(vk::SampleCountFlags::TYPE_1)
@@ -196,19 +195,30 @@ impl GraphicsPipeline {
 
     // Create the shader stage create info using the compiled module descriptions
     // TODO: Change this I don't like it
-    fn build_stages(descriptions: Vec<CompiledDescription>) -> Vec<vk::PipelineShaderStageCreateInfo> {
-        descriptions.into_iter().map(|c| {
-            let stage = match c.kind {
-                crate::ModuleKind::Vertex => vk::ShaderStageFlags::VERTEX,
-                crate::ModuleKind::Fragment => vk::ShaderStageFlags::FRAGMENT,
-                crate::ModuleKind::Compute => vk::ShaderStageFlags::COMPUTE,
-            };
+    fn build_stages(
+        descriptions: Vec<CompiledDescription>,
+    ) -> Vec<vk::PipelineShaderStageCreateInfo> {
+        descriptions
+            .into_iter()
+            .map(|c| {
+                let stage = match c.kind {
+                    crate::ModuleKind::Vertex => {
+                        vk::ShaderStageFlags::VERTEX
+                    }
+                    crate::ModuleKind::Fragment => {
+                        vk::ShaderStageFlags::FRAGMENT
+                    }
+                    crate::ModuleKind::Compute => {
+                        vk::ShaderStageFlags::COMPUTE
+                    }
+                };
 
-            *vk::PipelineShaderStageCreateInfo::builder()
-                .flags(c.flags)
-                .module(*c.module)
-                .stage(stage)
-        }).collect::<Vec<_>>()
+                *vk::PipelineShaderStageCreateInfo::builder()
+                    .flags(c.flags)
+                    .module(*c.module)
+                    .stage(stage)
+            })
+            .collect::<Vec<_>>()
     }
 }
 
@@ -223,17 +233,17 @@ impl GraphicsPipeline {
     pub fn depth_config(&self) -> DepthConfig {
         self.depth_config
     }
-    
+
     // Get the stencil config used when creating this pipeline
     pub fn stencil_config(&self) -> StencilConfig {
         self.stencil_config
     }
-    
+
     // Get the blend config used when creating this pipeline
     pub fn blend_config(&self) -> BlendConfig {
         self.blend_config
     }
-    
+
     // Get the primitive config used when creating this pipeline
     pub fn primitive(&self) -> Primitive {
         self.primitive

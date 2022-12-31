@@ -1,15 +1,17 @@
 use crate::{
-    mask, Archetype, Component, ComponentColumn, LayoutAccess, Mask,
-    MaskHashMap, Bundle, QueryItemMut, QueryItemRef,
-    QueryLayoutMut, QueryLayoutRef,
+    mask, Archetype, Bundle, Component, LayoutAccess, Mask,
+    MaskHashMap, QueryItemMut, QueryItemRef, QueryLayoutMut,
+    QueryLayoutRef, StateColumn, StateFlags, UntypedColumn,
+    UntypedVec,
 };
 use casey::lower;
+use paste::paste;
 use seq_macro::seq;
 
 macro_rules! tuple_impls {
     ( $( $name:ident )+, $max:tt ) => {
         impl<$($name: Component),+> Bundle for ($($name,)+) {
-            type Storages<'a> = ($(&'a mut Vec<$name>),+);
+            type Storages<'a> = ($((&'a mut Vec<$name>, &'a mut StateColumn)),+);
 
             fn reduce(mut lambda: impl FnMut(Mask, Mask) -> Mask) -> Mask {
                 let masks = [$(mask::<$name>()),+];
@@ -19,48 +21,65 @@ macro_rules! tuple_impls {
             fn prepare<'a>(archetype: &'a mut Archetype) -> Option<Self::Storages<'a>> {
                 assert!(Self::is_valid());
                 seq!(N in 0..$max {
-                    let table = archetype.components_mut::<C~N>()?;
-                    let ptr = table as *mut Vec<C~N>;
-                    let c~N = unsafe { &mut *ptr };
+                    #[allow(non_snake_case)]
+                    let (components_C~N, states_C~N) = archetype.column_mut::<C~N>()?;
+                    #[allow(non_snake_case)]
+                    let components_ptr_C~N = components_C~N as *mut Vec::<C~N>;
+                    #[allow(non_snake_case)]
+                    let states_ptr_C~N = states_C~N as *mut StateColumn;
+                    #[allow(non_snake_case)]
+                    let components_C~N = unsafe { &mut *components_ptr_C~N };
+                    #[allow(non_snake_case)]
+                    let states_C~N = unsafe { &mut *states_ptr_C~N };
                 });
 
-                Some(($(
-                    lower!($name)
-                ),+,))
+                Some(($((
+                    paste! { [<components_ $name>] }, paste! { [<states_ $name>] }
+                )),+,))
             }
 
-            fn push<'a>(storages: &mut Self::Storages<'a>, bundle: Self) {
+            fn extend_from_iter<'a>(
+                storages: &mut Self::Storages<'a>,
+                iter: impl IntoIterator<Item = Self>
+            ) -> usize {
+                let mut additional = 0;
+
                 seq!(N in 0..$max {
-                    let vec = &mut storages.N;
-                    vec.push(bundle.N);
+                    let column~N = &mut storages.N;
                 });
+
+                for bundle in iter.into_iter() {
+                    seq!(N in 0..$max {
+                        column~N.0.push(bundle.N);
+                    });
+                    additional += 1;
+                }
+
+                seq!(N in 0..$max {
+                    column~N.1.extend_with_flags(additional, StateFlags {
+                        added: true,
+                        modified: true,
+                    });
+                    assert_eq!(column~N.0.len(), column~N.1.len());
+                });
+
+
+                additional
             }
 
-            fn default_tables() -> MaskHashMap<Box<dyn ComponentColumn>> {
-                let mut map = MaskHashMap::<Box<dyn ComponentColumn>>::default();
+            fn default_vectors() -> MaskHashMap<Box<dyn UntypedVec>> {
+                let mut map = MaskHashMap::<Box<dyn UntypedVec>>::default();
                 ($(
                     map.insert(mask::<$name>(), Box::new(Vec::<$name>::new()))
                 ),+);
                 map
             }
-
-            fn try_swap_remove(tables: &mut MaskHashMap<Box<dyn ComponentColumn>>, index: usize) -> Option<Self> {
-                seq!(N in 0..$max {
-                    let boxed = tables.get_mut(&mask::<C~N>())?;
-                    let vec = boxed.as_any_mut().downcast_mut::<Vec<C~N>>().unwrap();
-                    let c~N: C~N = vec.swap_remove(index);
-                });
-
-                Some(($(
-                    lower!($name)
-                ),+,))
-            }
         }
 
-        impl<'i, $($name: QueryItemRef<'i> + 'i, )+> QueryLayoutRef<'i> for ($($name,)+) {
+        impl<$($name: QueryItemRef, )+> QueryLayoutRef for ($($name,)+) {
             type OwnedTuple = ($($name::Owned,)+);
             type PtrTuple = ($($name::Ptr,)+);
-            type SliceTuple = ($($name::Slice,)+);
+            type SliceTuple<'s> = ($($name::Slice<'s>,)+);
 
             fn reduce(mut lambda: impl FnMut(LayoutAccess, LayoutAccess) -> LayoutAccess) -> LayoutAccess {
                 let layouts = [$($name::access()),+];
@@ -77,7 +96,7 @@ macro_rules! tuple_impls {
                 ),+,)
             }
 
-            unsafe fn from_raw_parts(ptrs: Self::PtrTuple, length: usize) -> Self::SliceTuple {
+            unsafe fn from_raw_parts<'s>(ptrs: Self::PtrTuple, length: usize) -> Self::SliceTuple<'s> {
                 seq!(N in 0..$max {
                     let c~N = C~N::from_raw_parts(ptrs.N, length);
                 });
@@ -89,7 +108,7 @@ macro_rules! tuple_impls {
 
             unsafe fn read_unchecked(ptrs: Self::PtrTuple, index: usize) -> Self {
                 seq!(N in 0..$max {
-                    let c~N = <C~N as QueryItemRef<'i>>::read_unchecked(ptrs.N, index);
+                    let c~N = <C~N as QueryItemRef>::read_unchecked(ptrs.N, index);
                 });
 
                 ($(
@@ -98,10 +117,10 @@ macro_rules! tuple_impls {
             }
         }
 
-        impl<'i, $($name: QueryItemMut<'i> + 'i, )+> QueryLayoutMut<'i> for ($($name,)+) {
+        impl<$($name: QueryItemMut, )+> QueryLayoutMut for ($($name,)+) {
             type OwnedTuple = ($($name::Owned,)+);
             type PtrTuple = ($($name::Ptr,)+);
-            type SliceTuple = ($($name::Slice,)+);
+            type SliceTuple<'s> = ($($name::Slice<'s>,)+);
 
             fn reduce(mut lambda: impl FnMut(LayoutAccess, LayoutAccess) -> LayoutAccess) -> LayoutAccess {
                 let layouts = [$($name::access()),+];
@@ -118,7 +137,7 @@ macro_rules! tuple_impls {
                 ),+,)
             }
 
-            unsafe fn from_raw_parts(ptrs: Self::PtrTuple, length: usize) -> Self::SliceTuple {
+            unsafe fn from_raw_parts<'s>(ptrs: Self::PtrTuple, length: usize) -> Self::SliceTuple<'s> {
                 seq!(N in 0..$max {
                     let c~N = C~N::from_raw_parts(ptrs.N, length);
                 });
@@ -130,7 +149,7 @@ macro_rules! tuple_impls {
 
             unsafe fn read_mut_unchecked(ptrs: Self::PtrTuple, index: usize) -> Self {
                 seq!(N in 0..$max {
-                    let c~N = <C~N as QueryItemMut<'i>>::read_mut_unchecked(ptrs.N, index);
+                    let c~N = <C~N as QueryItemMut>::read_mut_unchecked(ptrs.N, index);
                 });
 
                 ($(

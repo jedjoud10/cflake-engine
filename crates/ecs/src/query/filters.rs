@@ -1,7 +1,7 @@
 use crate::{
     registry::{self},
-    Archetype, Component, LayoutAccess, Mask, QueryLayoutMut,
-    QueryLayoutRef, Scene, StateColumn,
+    Archetype, ArchetypeSet, Component, LayoutAccess, Mask,
+    QueryLayoutMut, QueryLayoutRef, Scene, StateColumn,
 };
 use std::marker::PhantomData;
 use utils::BitSet;
@@ -84,17 +84,12 @@ pub trait QueryFilter: 'static {
 // Given a scene and a specific filter, filter out the archetypes
 // This will also prepare the filter for later by caching required data
 // Only used internally by the mutable query
-pub(super) fn archetypes_mut<
-    's,
-    L: QueryLayoutMut<'s>,
-    F: QueryFilter,
->(
-    scene: &mut Scene,
+pub(super) fn archetypes_mut<L: QueryLayoutMut, F: QueryFilter>(
+    archetypes: &mut ArchetypeSet,
 ) -> (LayoutAccess, Vec<&mut Archetype>, F::Cached) {
     let mask = L::reduce(|a, b| a | b);
     let cached = F::prepare();
-    let archetypes = scene
-        .archetypes_mut()
+    let archetypes = archetypes
         .iter_mut()
         .filter_map(move |(&archetype_mask, archetype)| {
             (!archetype.is_empty()
@@ -110,17 +105,12 @@ pub(super) fn archetypes_mut<
 // Given a scene and a specific filter, filter out the archetypes
 // This will also prepare the filter for later by caching required data
 // Only used internally by the immutable query
-pub(super) fn archetypes<
-    's,
-    L: QueryLayoutRef<'s>,
-    F: QueryFilter,
->(
-    scene: &Scene,
+pub(super) fn archetypes<L: QueryLayoutRef, F: QueryFilter>(
+    archetypes: &ArchetypeSet,
 ) -> (LayoutAccess, Vec<&Archetype>, F::Cached) {
     let mask = L::reduce(|a, b| a | b);
     let cached = F::prepare();
-    let archetypes = scene
-        .archetypes()
+    let archetypes = archetypes
         .iter()
         .filter_map(move |(&archetype_mask, archetype)| {
             (!archetype.is_empty()
@@ -199,7 +189,7 @@ impl<T: Component> QueryFilter for Added<T> {
         cached: Self::Cached,
         archetype: &Archetype,
     ) -> Self::Columns<'_> {
-        archetype.state_table().get(&cached)
+        archetype.table().get(&cached).map(|col| col.states())
     }
 
     fn evaluate_chunk(
@@ -208,7 +198,7 @@ impl<T: Component> QueryFilter for Added<T> {
     ) -> ChunkEval {
         ChunkEval::Evaluated(
             columns
-                .map(|c| c.get(index).unwrap().added)
+                .map(|c| c.get_chunk(index).unwrap().added)
                 .unwrap_or_default(),
         )
     }
@@ -233,7 +223,7 @@ impl<T: Component> QueryFilter for Modified<T> {
         cached: Self::Cached,
         archetype: &Archetype,
     ) -> Self::Columns<'_> {
-        archetype.state_table().get(&cached)
+        archetype.table().get(&cached).map(|col| col.states())
     }
 
     fn evaluate_chunk(
@@ -242,7 +232,7 @@ impl<T: Component> QueryFilter for Modified<T> {
     ) -> ChunkEval {
         ChunkEval::Evaluated(
             columns
-                .map(|c| c.get(index).unwrap().modified)
+                .map(|c| c.get_chunk(index).unwrap().modified)
                 .unwrap_or_default(),
         )
     }

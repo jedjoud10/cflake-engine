@@ -197,7 +197,7 @@ impl Device {
                 kind,
                 file_name,
                 entry_point,
-                None
+                None,
             )
             .unwrap();
         binary_result.as_binary().to_owned()
@@ -244,30 +244,32 @@ impl Device {
     // Create a render pass based on the given info
     pub unsafe fn create_render_pass(
         &self,
-        create_info: vk::RenderPassCreateInfo
+        create_info: vk::RenderPassCreateInfo,
     ) -> vk::RenderPass {
-        self.raw()
-            .create_render_pass(&create_info, None)
-            .unwrap()
+        self.raw().create_render_pass(&create_info, None).unwrap()
     }
 
     // Create a new framebuffer
     pub unsafe fn create_framebuffer(
         &self,
-        create_info: vk::FramebufferCreateInfo
+        create_info: vk::FramebufferCreateInfo,
     ) -> vk::Framebuffer {
-        self.raw()
-            .create_framebuffer(&create_info, None)
-            .unwrap()
+        self.raw().create_framebuffer(&create_info, None).unwrap()
     }
 
     // Destroy a specific render pass
-    pub unsafe fn destroy_render_pass(&self, renderpass: vk::RenderPass) {
+    pub unsafe fn destroy_render_pass(
+        &self,
+        renderpass: vk::RenderPass,
+    ) {
         self.raw().destroy_render_pass(renderpass, None);
     }
 
     // Destroy a specific framebuffer
-    pub unsafe fn destroy_framebuffer(&self, framebuffer: vk::Framebuffer) {
+    pub unsafe fn destroy_framebuffer(
+        &self,
+        framebuffer: vk::Framebuffer,
+    ) {
         self.raw().destroy_framebuffer(framebuffer, None);
     }
 

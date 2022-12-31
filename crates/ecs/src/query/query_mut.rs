@@ -8,30 +8,28 @@ use std::{iter::FusedIterator, marker::PhantomData};
 
 // This is a query that will be fetched from the main scene that we can use to get components out of entries with a specific layout
 // Even though I define the 'it, 'b, and 's lfietimes, I don't use them in this query, I only use them in the query iterator
-pub struct QueryMut<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>> {
+pub struct QueryMut<'a: 'b, 'b, L: QueryLayoutMut> {
     pub(crate) archetypes: Vec<&'a mut Archetype>,
     access: LayoutAccess,
     bitsets: Option<Vec<BitSet>>,
     _phantom1: PhantomData<&'b ()>,
-    _phantom2: PhantomData<&'s ()>,
     _phantom3: PhantomData<L>,
 }
 
-impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>>
-    QueryMut<'a, 'b, 's, L>
-{
+impl<'a: 'b, 'b, L: QueryLayoutMut> QueryMut<'a, 'b, L> {
     // Create a new mut query from the scene
     pub fn new(scene: &'a mut Scene) -> Self {
         let (access, archetypes, _) =
-            super::archetypes_mut::<L, Always>(scene);
+            super::archetypes_mut::<L, Always>(
+                scene.archetypes_mut(),
+            );
 
         Self {
             archetypes,
-            bitsets: None,
-            _phantom3: PhantomData,
             access,
+            bitsets: None,
             _phantom1: PhantomData,
-            _phantom2: PhantomData,
+            _phantom3: PhantomData,
         }
     }
 
@@ -42,7 +40,7 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>>
     ) -> Self {
         // Filter out the archetypes then create the bitsets
         let (access, archetypes, cached) =
-            super::archetypes_mut::<L, F>(scene);
+            super::archetypes_mut::<L, F>(scene.archetypes_mut());
         let bitsets = super::generate_bitset_chunks::<F>(
             archetypes.iter().map(|a| &**a),
             cached,
@@ -52,9 +50,8 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>>
             archetypes,
             access,
             bitsets: Some(bitsets),
-            _phantom3: PhantomData,
             _phantom1: PhantomData,
-            _phantom2: PhantomData,
+            _phantom3: PhantomData,
         }
     }
 
@@ -62,14 +59,13 @@ impl<'a: 'b, 'b, 's, L: for<'it> QueryLayoutMut<'it>>
     pub fn for_each(
         mut self,
         threadpool: &mut utils::ThreadPool,
-        function: impl Fn(<<L as QueryLayoutMut<'_>>::SliceTuple as utils::SliceTuple<'_>>::ItemTuple)
+        function: impl Fn(<<L as QueryLayoutMut>::SliceTuple<'_> as utils::SliceTuple<'_>>::ItemTuple)
             + Send
             + Sync
             + Clone,
         batch_size: usize,
     ) where
-        for<'it, 's2> <L as QueryLayoutMut<'it>>::SliceTuple:
-            utils::SliceTuple<'s2>,
+        for<'st, 's> L::SliceTuple<'st>: utils::SliceTuple<'s>,
     {
         threadpool.scope(|scope| {
             // Convert the optional bitset vector to an iterator that returns None if it is None
@@ -138,12 +134,13 @@ fn apply_mutability_states(
     mutability: Mask,
     bitset: Option<&BitSet>,
 ) {
-    let table = archetype.state_table_mut();
+    let table = archetype.table_mut();
     for unit in mutability.units() {
         let column = table.get_mut(&unit).unwrap();
+        let states = column.states_mut();
 
         if let Some(bitset) = bitset {
-            for (out_states, in_states) in column
+            for (out_states, in_states) in states
                 .chunks_mut()
                 .iter_mut()
                 .zip(bitset.chunks().iter())
@@ -151,7 +148,7 @@ fn apply_mutability_states(
                 out_states.modified = *in_states;
             }
         } else {
-            for out in column.chunks_mut() {
+            for out in states.chunks_mut() {
                 out.modified = usize::MAX;
             }
         }
@@ -175,11 +172,11 @@ fn len(
     }
 }
 
-impl<'a: 'b, 'b, 'it, L: for<'s> QueryLayoutMut<'s>> IntoIterator
-    for QueryMut<'a, 'b, 'it, L>
+impl<'a: 'b, 'b, L: QueryLayoutMut> IntoIterator
+    for QueryMut<'a, 'b, L>
 {
     type Item = L;
-    type IntoIter = QueryMutIter<'b, 'it, L>;
+    type IntoIter = QueryMutIter<'b, L>;
 
     fn into_iter(mut self) -> Self::IntoIter {
         for (i, archetype) in self.archetypes.iter_mut().enumerate() {
@@ -197,34 +194,31 @@ impl<'a: 'b, 'b, 'it, L: for<'s> QueryLayoutMut<'s>> IntoIterator
             bitsets: self.bitsets,
             chunk: None,
             index: 0,
-            _phantom1: PhantomData,
             _phantom2: PhantomData,
         }
     }
 }
 
 // Currently loaded chunk in the mutable query iterator
-struct Chunk<'b, 's, L: QueryLayoutMut<'s>> {
-    _phantom: PhantomData<&'b ()>,
+struct Chunk<L: QueryLayoutMut> {
     bitset: Option<BitSet>,
     ptrs: L::PtrTuple,
     length: usize,
 }
 
 // This is a mutable query iterator that will iterate through all the query entries in arbitrary order
-pub struct QueryMutIter<'b, 's, L: QueryLayoutMut<'s>> {
+pub struct QueryMutIter<'b, L: QueryLayoutMut> {
     // Inputs from the query
     archetypes: Vec<&'b mut Archetype>,
     bitsets: Option<Vec<BitSet>>,
 
     // Unique to the iterator
-    chunk: Option<Chunk<'b, 's, L>>,
+    chunk: Option<Chunk<L>>,
     index: usize,
-    _phantom1: PhantomData<&'s ()>,
     _phantom2: PhantomData<L>,
 }
 
-impl<'b, 's, L: QueryLayoutMut<'s>> QueryMutIter<'b, 's, L> {
+impl<'b, L: QueryLayoutMut> QueryMutIter<'b, L> {
     // Hop onto the next archetype if we are done iterating through the current one
     fn check_hop_chunk(&mut self) -> Option<()> {
         let len = self
@@ -243,7 +237,6 @@ impl<'b, 's, L: QueryLayoutMut<'s>> QueryMutIter<'b, 's, L> {
             let length = archetype.len();
             self.index = 0;
             self.chunk = Some(Chunk {
-                _phantom: PhantomData,
                 bitset,
                 ptrs,
                 length,
@@ -254,9 +247,7 @@ impl<'b, 's, L: QueryLayoutMut<'s>> QueryMutIter<'b, 's, L> {
     }
 }
 
-impl<'b, 's, L: QueryLayoutMut<'s>> Iterator
-    for QueryMutIter<'b, 's, L>
-{
+impl<'b, L: QueryLayoutMut> Iterator for QueryMutIter<'b, L> {
     type Item = L;
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -302,12 +293,12 @@ impl<'b, 's, L: QueryLayoutMut<'s>> Iterator
     }
 }
 
-impl<'b, 's, L: QueryLayoutMut<'s>> ExactSizeIterator
-    for QueryMutIter<'b, 's, L>
+impl<'b, L: QueryLayoutMut> ExactSizeIterator
+    for QueryMutIter<'b, L>
 {
 }
 
-impl<'b, 's, L: QueryLayoutMut<'s>> FusedIterator
-    for QueryMutIter<'b, 's, L>
+impl<'b, 's, L: QueryLayoutMut> FusedIterator
+    for QueryMutIter<'b, L>
 {
 }

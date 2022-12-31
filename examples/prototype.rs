@@ -21,7 +21,8 @@ fn init(world: &mut World) {
         &[1; 10],
         BufferMode::default(),
         BufferUsage::GpuToCpu,
-    ).unwrap();
+    )
+    .unwrap();
 
     log::info!("{:?}", buffer1.as_slice());
     buffer1.extend_from_slice(&[2; 5]).unwrap();
@@ -32,5 +33,6 @@ fn init(world: &mut World) {
         &[1; 10],
         BufferMode::default(),
         BufferUsage::GpuToCpu,
-    ).unwrap();
+    )
+    .unwrap();
 }

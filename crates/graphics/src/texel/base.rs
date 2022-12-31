@@ -3,7 +3,7 @@ use half::f16;
 
 // Base numbers that are used to store the inner raw values of texture texels
 pub trait Base: Pod + Clone + Send + Sync {
-    const TYPE: BaseType; 
+    const TYPE: BaseType;
     const SIGNED: bool;
 }
 
@@ -33,6 +33,11 @@ impl_base!(f64, FloatSixtyFour, true);
 // TODO: RENAME
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
 pub enum BaseType {
-    Eight, Sixteen, ThirtyTwo, SixtyFour,
-    FloatSixteen, FloatThirtyTwo, FloatSixtyFour
+    Eight,
+    Sixteen,
+    ThirtyTwo,
+    SixtyFour,
+    FloatSixteen,
+    FloatThirtyTwo,
+    FloatSixtyFour,
 }

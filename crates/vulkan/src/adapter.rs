@@ -1,18 +1,18 @@
 use std::ffi::{CStr, CString};
 
 use ash::vk::{
-    self, PhysicalDevice, PhysicalDeviceFeatures,
-    PhysicalDeviceFeatures2, PhysicalDeviceLimits,
-    PhysicalDeviceProperties, PhysicalDeviceProperties2,
-    PhysicalDeviceType, PhysicalDeviceVulkan11Features,
-    PhysicalDeviceVulkan11Properties, PhysicalDeviceVulkan12Features,
-    PhysicalDeviceVulkan12Properties, PhysicalDeviceVulkan13Features,
-    PhysicalDeviceVulkan13Properties, PresentModeKHR,
-    SurfaceCapabilitiesKHR, SurfaceFormatKHR, PhysicalDeviceDynamicRenderingFeatures,
+    self, PhysicalDevice, PhysicalDeviceDynamicRenderingFeatures,
+    PhysicalDeviceFeatures, PhysicalDeviceFeatures2,
+    PhysicalDeviceLimits, PhysicalDeviceProperties,
+    PhysicalDeviceProperties2, PhysicalDeviceType,
+    PhysicalDeviceVulkan11Features, PhysicalDeviceVulkan11Properties,
+    PhysicalDeviceVulkan12Features, PhysicalDeviceVulkan12Properties,
+    PhysicalDeviceVulkan13Features, PhysicalDeviceVulkan13Properties,
+    PresentModeKHR, SurfaceCapabilitiesKHR, SurfaceFormatKHR,
 };
 
-use crate::required_device_extensions;
 use super::{Instance, Surface};
+use crate::required_device_extensions;
 
 // Features supported by an adapter
 pub struct AdapterFeatures {

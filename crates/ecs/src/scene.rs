@@ -1,19 +1,25 @@
 use ahash::{AHashMap, AHashSet};
+use itertools::Itertools;
 use slotmap::SlotMap;
-use std::iter::once;
+use std::{
+    any::{Any, TypeId},
+    iter::once,
+};
 use world::{post_user, user, System, World};
 
 use crate::{
-    archetype::remove_bundle, contains, entity::Entity, Archetype,
-    Bundle, Child, EntityLinkings, EntryMut, EntryRef, LocalPosition,
-    LocalRotation, LocalScale, Mask, MaskHashMap, Parent, Position,
-    QueryFilter, QueryLayoutMut, QueryLayoutRef, QueryMut, QueryRef,
-    Rotation, Scale, Wrap,
+    archetype::remove_bundle, contains, entity::Entity, mask,
+    Archetype, Bundle, Child, Component, EntityLinkings, EntryMut,
+    EntryRef, LocalPosition, LocalRotation, LocalScale, Mask,
+    MaskHashMap, Parent, Position, QueryFilter, QueryLayoutMut,
+    QueryLayoutRef, QueryMut, QueryRef, Rotation, Scale, UntypedVec,
+    Wrap,
 };
 
 // Convenience type aliases
 pub(crate) type EntitySet = SlotMap<Entity, EntityLinkings>;
 pub(crate) type ArchetypeSet = MaskHashMap<Archetype>;
+pub(crate) type RemovedComponents = MaskHashMap<Box<dyn UntypedVec>>;
 
 // The scene is what will contain the multiple ECS entities and archetypes
 pub struct Scene {
@@ -22,20 +28,27 @@ pub struct Scene {
     pub(crate) entities: EntitySet,
 
     // Archetypes are a subset of entities that all share the same component mask
-    // We use an archetypal ECS because it is a bit more efficient when iterating through components, though it is slower when modifying entity component layouts
+    // We use an archetypal ECS because it is a bit more efficient when iterating through components,
+    // though it is slower when modifying entity component layouts
     pub(crate) archetypes: ArchetypeSet,
+
+    // These are removed components that we can iterate over
+    // These components get added here whenever we destroy entities or unlink components from them
+    // Stored as Box<Vec<T>> where T: Component
+    pub(crate) removed: RemovedComponents,
 }
 
 impl Default for Scene {
     fn default() -> Self {
         let mut empty = Archetype::empty();
-        empty.shrink();
+        empty.shrink_to_fit();
         Self {
             entities: Default::default(),
-            archetypes: MaskHashMap::from_iter(once((
+            archetypes: ArchetypeSet::from_iter(once((
                 Mask::zero(),
                 empty,
             ))),
+            removed: Default::default(),
         }
     }
 }
@@ -65,39 +78,92 @@ impl Scene {
         let archetype = self
             .archetypes
             .entry(mask)
-            .or_insert_with(|| Archetype::from_table_accessor::<B>());
-        let components = iter.into_iter().collect::<Vec<_>>();
+            .or_insert_with(|| Archetype::from_bundle::<B>());
 
         // Extend the archetype with the new bundles
-        archetype
-            .extend_from_slice::<B>(&mut self.entities, components)
+        archetype.extend_from_iter::<B>(&mut self.entities, iter)
     }
 
-    /*
-    // Remove an entity and fetch the given bundle from it 
-    // This will return None if the entity is not valid or if the bundle is not valid
-    pub fn remove<B: Bundle>(&mut self, entity: Entity) -> Option<B> {
-        assert!(
-            B::is_valid(),
-            "Bundle is not valid, check the bundle for component collisions"
+    // Despawn an entity from the scene
+    // Panics if the entity ID is invalid
+    pub fn remove(&mut self, entity: Entity) {
+        let linkings = *self.entities.get(entity).unwrap();
+        let archetype =
+            self.archetypes.get_mut(&linkings.mask).unwrap();
+        archetype.remove_from_iter(
+            &mut self.entities,
+            [(entity, linkings)].into_iter(),
+            &mut self.removed,
         );
-
-        let mut vec = self.remove_from_iter(once(entity));
-        vec.pop().unwrap()
     }
 
-    // Remove multiple entity and fetch the given bundle (of the same type, same archetype) from them 
-    // This will return None if the entity is not valid or if the bundle is not valid
-    pub fn remove_from_iter<B: Bundle>(&mut self, iter: impl IntoIterator<Item = Entity>) -> Vec<Option<B>> {
-        assert!(
-            B::is_valid(),
-            "Bundle is not valid, check the bundle for component collisions"
-        );
+    // Despawn a batch of entities from an iterator
+    // Panics if the entity ID is invalid
+    pub fn remove_from_iter(
+        &mut self,
+        iter: impl IntoIterator<Item = Entity>,
+    ) {
+        for entity in iter {
+            let linkings = *self.entities.get(entity).unwrap();
+            let archetype =
+                self.archetypes.get_mut(&linkings.mask).unwrap();
+            archetype.remove_from_iter(
+                &mut self.entities,
+                [(entity, linkings)].into_iter(),
+                &mut self.removed,
+            );
+        }
+        /*
+        let mut vec = iter.into_iter().collect::<Vec<Entity>>();
 
-        todo!()
+        for entity in &vec {
+
+        }
+
+        let vec = .sorted_by(|a, b| {
+            self.entities.get()
+        }).group_by(|a|)
+
+
+        for entity in iter.into_iter() {
+            let linkings =
+                *self.entities.get(entity).expect("Entity does not exist");
+            let archetype =
+                self.archetypes.get_mut(&linkings.mask).unwrap();
+
+            //archetype.remove(&mut self.entities, entity).unwrap();
+        }
+        */
     }
-    */
-    
+
+    // Fetch all the removed components of a specific type immutably
+    pub fn removed<T: Component + Default>(&self) -> &[T] {
+        self.removed
+            .get(&mask::<T>())
+            .map(|untyped| {
+                untyped
+                    .as_any()
+                    .downcast_ref::<Vec<T>>()
+                    .unwrap()
+                    .as_slice()
+            })
+            .unwrap_or(&[])
+    }
+
+    // Fetch all the removed components of a specific type mutably
+    pub fn removed_mut<T: Component>(&mut self) -> &mut [T] {
+        self.removed
+            .get_mut(&mask::<T>())
+            .map(|untyped| {
+                untyped
+                    .as_any_mut()
+                    .downcast_mut::<Vec<T>>()
+                    .unwrap()
+                    .as_mut_slice()
+            })
+            .unwrap_or(&mut [])
+    }
+
     // Check if an entity is stored within the scene
     pub fn contains(&self, entity: Entity) -> bool {
         self.entities.contains_key(entity)
@@ -113,12 +179,12 @@ impl Scene {
         EntryMut::new(self, entity)
     }
 
-    // Get a immutable reference to the archetype set
+    // Get a immutable reference to the active archetype set
     pub fn archetypes(&self) -> &ArchetypeSet {
         &self.archetypes
     }
 
-    // Get a mutable reference to the archetype set
+    // Get a mutable reference to the active archetype set
     pub fn archetypes_mut(&mut self) -> &mut ArchetypeSet {
         &mut self.archetypes
     }
@@ -134,9 +200,9 @@ impl Scene {
     }
 
     // Create a new mutable query from this scene (with no filter)
-    pub fn query_mut<'a, L: for<'i> QueryLayoutMut<'i>>(
+    pub fn query_mut<'a, L: QueryLayoutMut>(
         &'a mut self,
-    ) -> QueryMut<'a, '_, '_, L> {
+    ) -> QueryMut<'a, '_, L> {
         assert!(
             L::is_valid(),
             "Query layout is not valid, check the layout for component collisions"
@@ -145,10 +211,10 @@ impl Scene {
     }
 
     // Create a new mutable query from this scene using a filter
-    pub fn query_mut_with<'a, L: for<'i> QueryLayoutMut<'i>>(
+    pub fn query_mut_with<'a, L: QueryLayoutMut>(
         &'a mut self,
         filter: Wrap<impl QueryFilter>,
-    ) -> QueryMut<'a, '_, '_, L> {
+    ) -> QueryMut<'a, '_, L> {
         assert!(
             L::is_valid(),
             "Query layout is not valid, check the layout for component collisions"
@@ -157,14 +223,14 @@ impl Scene {
     }
 
     // Create a new immutable query from this scene (with no filter)
-    pub fn query<'a, L: for<'i> QueryLayoutRef<'i>>(
+    pub fn query<'a, L: QueryLayoutRef>(
         &'a self,
     ) -> QueryRef<'a, '_, '_, L> {
         QueryRef::new(self)
     }
 
     // Create a new immutable query from this scene using a filter
-    pub fn query_with<'a, L: for<'i> QueryLayoutRef<'i>>(
+    pub fn query_with<'a, L: QueryLayoutRef>(
         &'a self,
         filter: Wrap<impl QueryFilter>,
     ) -> QueryRef<'a, '_, '_, L> {
@@ -172,15 +238,13 @@ impl Scene {
     }
 
     // Find the a layout ref (if it's the only one that exists in the scene)
-    pub fn find<'a, L: for<'i> QueryLayoutRef<'i>>(
-        &'a self,
-    ) -> Option<L> {
+    pub fn find<'a, L: QueryLayoutRef>(&'a self) -> Option<L> {
         let mut iterator = self.query::<L>().into_iter().fuse();
         iterator.next().xor(iterator.next())
     }
 
     // Find the a layout mut (if it's the only one that exists in the scene)
-    pub fn find_mut<'a, L: for<'i> QueryLayoutMut<'i>>(
+    pub fn find_mut<'a, L: QueryLayoutMut>(
         &'a mut self,
     ) -> Option<L> {
         let mut iterator = self.query_mut::<L>().into_iter().fuse();
@@ -223,7 +287,7 @@ impl Scene {
     // Returns None if the entities don't exist, or if the child isn't attached
     pub fn detach(&mut self, child: Entity) -> Option<()> {
         let mut entry = self.entry_mut(child)?;
-        entry.remove::<Child>().unwrap();
+        assert!(entry.remove::<Child>());
 
         // Remove the "local" components that we added automatically
         entry.remove::<LocalPosition>();
@@ -245,8 +309,8 @@ fn update(world: &mut World) {
 
     // Clear all the archetype states that were set last frame
     for (_, archetype) in scene.archetypes_mut() {
-        for (_, column) in archetype.state_table_mut().iter_mut() {
-            column.clear();
+        for (_, column) in archetype.table_mut().iter_mut() {
+            column.states_mut().reset();
         }
     }
 

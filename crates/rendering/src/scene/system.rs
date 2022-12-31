@@ -13,7 +13,7 @@ fn update(world: &mut World) {
 
     unsafe {
         /*
-        let mut recorder = queue.acquire(device);        
+        let mut recorder = queue.acquire(device);
         let submission = queue.submit(recorder).wait();
         log::info!("{:?}", submission);
         */

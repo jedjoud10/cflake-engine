@@ -1,8 +1,12 @@
+use super::AnyElement;
+use crate::{
+    Base, BaseType, ChannelsType, ColorChannels, Depth, DepthElement,
+    ElementType, Normalizable, Normalized, Stencil, StencilElement,
+    R, RG, RGB, RGBA,
+};
 use std::mem::size_of;
 use vek::{Vec2, Vec3, Vec4};
 use vulkan::vk;
-use crate::{R, ChannelsType, Base, BaseType, Normalizable, ColorChannels, Normalized, DepthElement, StencilElement, Depth, Stencil, RG, RGB, RGBA, ElementType};
-use super::AnyElement;
 
 // An untyped wrapper around texel types
 pub struct UntypedTexel {
@@ -27,12 +31,12 @@ pub trait Texel: 'static + Sized {
     const ELEMENT_TYPE: ElementType;
 
     // Type of channels (either R, RG, RGB, RGBA, Depth, Stencil)
-    const CHANNELS_TYPE: ChannelsType; 
+    const CHANNELS_TYPE: ChannelsType;
 
     // Compile time Vulkan format (calls to cases::guess)
     const FORMAT: vk::Format;
 
-    // The raw data type that we will use to access texture memory 
+    // The raw data type that we will use to access texture memory
     type Storage;
 
     // Get the untyped variant of this texel
@@ -42,7 +46,8 @@ pub trait Texel: 'static + Sized {
             channels: Self::CHANNELS_TYPE,
             element: Self::ELEMENT_TYPE,
             bits_per_channel: Self::BITS_PER_CHANNEL,
-            total_bits: Self::BITS_PER_CHANNEL * Self::CHANNELS_TYPE.count()
+            total_bits: Self::BITS_PER_CHANNEL
+                * Self::CHANNELS_TYPE.count(),
         }
     }
 }
@@ -56,7 +61,7 @@ macro_rules! impl_color_texel_layout {
             const CHANNELS_TYPE: ChannelsType = $channels_type;
             const FORMAT: vk::Format = super::pick_format_from_params(
                 Self::ELEMENT_TYPE,
-                Self::CHANNELS_TYPE
+                Self::CHANNELS_TYPE,
             );
             type Storage = $vec<T>;
         }
@@ -72,7 +77,7 @@ macro_rules! impl_special_texel_layout {
             const CHANNELS_TYPE: ChannelsType = ChannelsType::Depth;
             const FORMAT: vk::Format = super::pick_format_from_params(
                 Self::ELEMENT_TYPE,
-                Self::CHANNELS_TYPE
+                Self::CHANNELS_TYPE,
             );
             type Storage = T;
         }
@@ -83,7 +88,7 @@ macro_rules! impl_special_texel_layout {
             const CHANNELS_TYPE: ChannelsType = ChannelsType::Stencil;
             const FORMAT: vk::Format = super::pick_format_from_params(
                 Self::ELEMENT_TYPE,
-                Self::CHANNELS_TYPE
+                Self::CHANNELS_TYPE,
             );
             type Storage = T;
         }
@@ -93,8 +98,24 @@ macro_rules! impl_special_texel_layout {
 // Need this for the macro to work
 type Scalar<T> = T;
 
-impl_color_texel_layout!(R, ChannelsType::Color(ColorChannels::R), Scalar);
-impl_color_texel_layout!(RG, ChannelsType::Color(ColorChannels::RG), Vec2);
-impl_color_texel_layout!(RGB, ChannelsType::Color(ColorChannels::RGB), Vec3);
-impl_color_texel_layout!(RGBA, ChannelsType::Color(ColorChannels::RGBA), Vec4);
+impl_color_texel_layout!(
+    R,
+    ChannelsType::Color(ColorChannels::R),
+    Scalar
+);
+impl_color_texel_layout!(
+    RG,
+    ChannelsType::Color(ColorChannels::RG),
+    Vec2
+);
+impl_color_texel_layout!(
+    RGB,
+    ChannelsType::Color(ColorChannels::RGB),
+    Vec3
+);
+impl_color_texel_layout!(
+    RGBA,
+    ChannelsType::Color(ColorChannels::RGBA),
+    Vec4
+);
 impl_special_texel_layout!();
