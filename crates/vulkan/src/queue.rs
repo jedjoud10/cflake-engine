@@ -38,7 +38,7 @@ impl Queue {
 
         Self {
             qfi: family,
-            properties: adapter.families.queue_family_properties
+            properties: adapter.family_properties().queue_family_properties
                 [family as usize],
             pools: vec![CommandPool::new(device, family)],
             queue,
@@ -52,7 +52,7 @@ impl Queue {
         flags: vk::QueueFlags,
     ) -> u32 {
         adapter
-            .families
+            .family_properties()
             .queue_family_properties
             .iter()
             .enumerate()
@@ -63,7 +63,7 @@ impl Queue {
                 // If the queue we must fetch must support presenting, fetch the physical device properties
                 let presenting = !supports_presenting
                     || adapter
-                        .families
+                        .family_properties()
                         .queue_family_surface_supported[i];
                 flags && presenting
             })
@@ -113,6 +113,7 @@ impl Queue {
         recorder.command_pool().chain(recorder.command_buffer())
     }
 
+    /*
     // Submit the command buffer and start executing it's commands on the GPU
     pub unsafe fn submit<'a>(
         &'a self,
@@ -140,6 +141,37 @@ impl Queue {
             recorder.device,
             self,
         )
+    }
+    */
+
+    // Submit the command buffer and wait until the commands have finished executing
+    pub unsafe fn immediate_submit<'a>(
+        &'a self,
+        recorder: Recorder<'a>,
+    ) {
+        let pool = recorder.command_pool;
+        log::warn!(
+            "Submitting the command buffer of index {}",
+            recorder.command_buffer.index()
+        );
+        unsafe {
+            pool.stop_recording(
+                recorder.device(),
+                &recorder.command_buffer,
+            );
+            pool.submit(
+                self.raw(),
+                recorder.device(),
+                &recorder.command_buffer,
+            );
+        }
+        let submission = Submission::new(
+            recorder.command_pool,
+            recorder.command_buffer,
+            recorder.device,
+            self,
+        );
+        submission.wait();
     }
 
     // Wait until all the data submitted to this queue finishes executing on the GPU

@@ -3,6 +3,8 @@ mod mode;
 mod region;
 mod sampler;
 mod texture;
+mod usage;
+pub use usage::*;
 pub use errors::*;
 pub use mode::*;
 pub use region::*;

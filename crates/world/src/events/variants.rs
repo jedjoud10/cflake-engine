@@ -152,7 +152,7 @@ impl<F: FnMut() + 'static> Event<Update, ()> for F {
     }
 }
 
-// Exit event marker (called at the end of the game)
+// Shutdown event marker (called at the end of the game)
 pub struct Shutdown(());
 
 impl Caller for Shutdown {
