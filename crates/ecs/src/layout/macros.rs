@@ -51,7 +51,9 @@ macro_rules! tuple_impls {
                         added: true,
                         modified: true,
                     });
+                    assert_eq!(column~N.states_mut().len(), column~N.components_mut().len());
                 });
+
 
                 additional
             }

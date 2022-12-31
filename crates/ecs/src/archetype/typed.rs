@@ -30,12 +30,14 @@ impl<T: Component> Column<T> {
     pub fn clear(&mut self) {
         self.data.clear();
         self.states.clear();
+        assert_eq!(self.data.len(), self.states.len());
     }
 
     // Swap remove a component at an index
     pub fn swap_remove(&mut self, index: usize) -> (T, StateFlags) {
         let flags = self.states.swap_remove(index).unwrap();
         let component = self.data.swap_remove(index);
+        assert_eq!(self.data.len(), self.states.len());
         (component, flags)
     }
 
@@ -112,6 +114,7 @@ impl<T: Component> UntypedColumn for Column<T> {
 
         other.data.push(removed);
         other.states.extend_with_flags(1, flags);
+        assert_eq!(other.data.len(), other.states.len());
     }
 
     fn swap_remove_move_any_vec(

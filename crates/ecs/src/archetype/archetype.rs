@@ -290,24 +290,17 @@ pub(crate) fn add_bundle<B: Bundle>(
 
     // Add the extra components to the archetype
     let mut storages = B::prepare(target).unwrap();
-    B::extend_from_iter(&mut storages, [bundle].into_iter());
+    B::extend_from_iter(&mut storages, [bundle]);
     drop(storages);
-
-    // We must also add the states that don't correspond to the bundle "B" within "target"
-    for (_, output) in target
-        .table_mut()
-        .iter_mut()
-        .filter(|(mask, _)| !bundle_mask.contains(**mask))
-    {
-        output.states_mut().extend_with_flags(
-            1,
-            StateFlags {
-                added: false,
-                modified: false,
-            },
-        )
+    
+    for (mask, current) in current.table.iter() {
+        println!("Current Mask: {:?}, len: {}", mask, current.len());
     }
 
+    for (mask, current) in target.table.iter() {
+        println!("Target Mask: {:?}, len: {}", mask, current.len());
+    }
+    
     // Handle swap-remove logic in the current archetype
     current.entities.swap_remove(index);
     if let Some(entity) = current.entities.get(index).cloned() {
@@ -367,17 +360,34 @@ pub(crate) fn remove_bundle<B: Bundle>(
     };
     let index = linkings.index();
 
+    for (mask, current) in current.table.iter() {
+        println!("Removal Current Mask: {:?}, len: {}", mask, current.len());
+    }
+
+    for (mask, current) in target.table.iter() {
+        println!("Removal Target Mask: {:?}, len: {}", mask, current.len());
+    }
+
     // Move the components and states from one archetype to the other (flipped)
     for (mask, output) in target.table.iter_mut() {
         let input = current.table.get_mut(mask).unwrap();
+
+        // This automatically moves the states as well
         input.swap_remove_move(index, output.as_mut());
     }
 
     // Dissociate the bunle intop it's raw components
-    for (mask, input) in current.table.iter_mut() {
+    for (mask, input) in current.table.iter_mut().filter(|(mask, _)| bundle_mask.contains(**mask)) {
         let entry = removed.entry(*mask).or_insert_with(|| input.components().clone_default());
         let data = &mut **entry;
+
+        // Must move the states manually here since we cast to UntypedVec
         input.components_mut().swap_remove_move(index, data);
+        input.states_mut().swap_remove(index);
+    }
+
+    for (mask, current) in target.table.iter() {
+        println!("Removal Target Mask: {:?}, len: {}", mask, current.len());
     }
 
     // Handle swap-remove logic in the current archetype

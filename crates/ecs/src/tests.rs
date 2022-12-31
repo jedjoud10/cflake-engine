@@ -154,6 +154,15 @@ fn moving() {
 }
 
 #[test]
+fn proto() {
+    let mut manager = Scene::default();
+    let entity = manager.insert((Name(""), Health(100)));
+    let mut entry = manager.entry_mut(entity).unwrap();
+    assert_eq!(entry.archetype().len(), 1);
+    entry.insert::<Ammo>(Ammo(0)).unwrap();
+}
+
+#[test]
 fn columns() {
     let boxed: Box<dyn UntypedColumn> = Box::new(Column::<Position>::new());
     let _ = boxed.as_any().downcast_ref::<Column::<Position>>().unwrap();
@@ -178,6 +187,7 @@ fn moving_batch() {
             .take(5000),
         )
         .to_vec();
+    
     cleanup(&mut scene);
     for (i, id) in entities.iter().enumerate() {
         if i % 10 == 0 {
@@ -189,6 +199,7 @@ fn moving_batch() {
         }
     }
 
+    /*
     let filter = added::<Placeholder>();
     for (health, ammo) in
         scene.query_mut_with::<(&mut Health, &Ammo)>(filter)
@@ -205,6 +216,7 @@ fn moving_batch() {
             assert_eq!(data, Some(&Health(50)));
         }
     }
+    */
 }
 
 #[test]
