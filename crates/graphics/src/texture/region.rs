@@ -18,6 +18,9 @@ pub trait Extent: Copy {
         NonZeroU8::new(u8::try_from(num as u8).unwrap())
             .unwrap_or(NonZeroU8::new(1).unwrap())
     }
+
+    // Check if an extent is larger in all axii than another one
+    fn is_larger_than(self, other: Self) -> bool;
 }
 
 // Implementation of extent for 2D extent
@@ -33,6 +36,10 @@ impl Extent for vek::Extent2<u32> {
     fn reduce_max(&self) -> u32 {
         vek::Extent2::reduce_max(*self)
     }
+
+    fn is_larger_than(self, other: Self) -> bool {
+        self.cmpge(&other).reduce_and()
+    }
 }
 
 // Implementation of extent for 3D extent
@@ -47,6 +54,10 @@ impl Extent for vek::Extent3<u32> {
 
     fn reduce_max(&self) -> u32 {
         vek::Extent3::reduce_max(*self)
+    }
+
+    fn is_larger_than(self, other: Self) -> bool {
+        self.cmpge(&other).reduce_and()
     }
 }
 

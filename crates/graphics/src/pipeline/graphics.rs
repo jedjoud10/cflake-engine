@@ -154,7 +154,8 @@ impl GraphicsPipeline {
 
     // Create the pipeline layout
     fn build_pipeline_layout(device: &Device) -> vk::PipelineLayout {
-        let create_info = vk::PipelineLayoutCreateInfo::builder();
+        let create_info = vk::PipelineLayoutCreateInfo::builder()
+            .flags(vk::PipelineLayoutCreateFlags::empty());
 
         unsafe {
             device

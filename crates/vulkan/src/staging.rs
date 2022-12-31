@@ -139,7 +139,7 @@ impl StagingPool {
         size: u64,
     ) -> StagingBlock {
         // Use a bigger capacity just so we don't have to allocate as many times
-        let upper = size * 2;
+        let upper = size * 8;
 
         // Create the underlying staging buffer memory
         let used = vk::BufferUsageFlags::TRANSFER_SRC
@@ -185,8 +185,7 @@ impl StagingPool {
             .enumerate()
             .find_map(|(_, sub)| sub.find_free_block_and_lock(size));
 
-        // Check if the given buffer range is not in use by the GPU
-        // TODO
+        // TODO: Check if the given buffer range is not in use by the GPU
 
         // Allocate a new buffer if we can't find one
         if let None = find {
@@ -199,8 +198,6 @@ impl StagingPool {
     }
 
     // Unlock a buffer and return it to the staging pool
-    // Note: This might be called with a buffer that is still in use by the GPU,
-    // in which case this command would basically act as if the sub buffer was still in use
     pub unsafe fn unlock(
         &self,
         device: &Device,
@@ -209,5 +206,21 @@ impl StagingPool {
         // TODO:
         // Check if the buffer is still in use by the GPU
         // Unlock when it is not in use, and add a callback to unlock it
+    }
+
+    // Deallocate all the buffers and blocks that we internally allocated
+    pub(super) unsafe fn deallocate(&self, device: &Device) {
+        device.wait();
+        log::debug!("Deallocating staging buffers and sub-blocks...");
+        let mut locked = self.subbuffers.lock();
+        let mut block_count = 0;
+        let mut buffer_count = 0;
+        for buffer in locked.drain(..) {
+            device.destroy_buffer(buffer.raw, buffer.allocation);
+            block_count += buffer.used.len();
+            buffer_count += 1;
+        }
+
+        log::debug!("Deallocated {block_count} sub-blocks and {buffer_count} buffers")
     }
 }

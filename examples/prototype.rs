@@ -35,4 +35,12 @@ fn init(world: &mut World) {
         BufferUsage::GpuToCpu,
     )
     .unwrap();
+
+    let mut texture = Texture2D::<RGBA<u32>>::from_texels(
+        &graphics,
+        Some(&[vek::Vec4::broadcast(0); 64]),
+        vek::Extent2::broadcast(8),
+        TextureMode::Dynamic,
+        TextureUsage::Placeholder
+    );
 }

@@ -101,7 +101,8 @@ impl<M: ShaderModule> Compiled<M> {
     }
 }
 
-// A description of a compiled shader module that we can convert to a
+// A description of a compiled shader module that we can use within a pipeline
+// TODO: Remove tis
 pub struct CompiledDescription<'a> {
     pub(crate) flags: vk::PipelineShaderStageCreateFlags,
     pub(crate) kind: ModuleKind,

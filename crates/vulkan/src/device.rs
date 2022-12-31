@@ -151,6 +151,7 @@ impl Device {
         self.wait();
         self.device
             .destroy_pipeline_cache(self.pipeline_cache, None);
+        self.staging.deallocate(self);
         self.allocator.lock().take().unwrap();
         self.device.destroy_device(None);
     }
@@ -359,8 +360,99 @@ impl Device {
         self.allocator().free(allocation).unwrap();
 
         // Delete the Vulkan buffer
-        let buffer = buffer;
         log::debug!("Freeing buffer {:?}", buffer);
         self.device.destroy_buffer(buffer, None);
+    }
+
+    // Create a raw image and allocate the needed memory for it
+    pub unsafe fn create_image(
+        &self,
+        extent: vk::Extent3D,
+        usage: vk::ImageUsageFlags,
+        format: vk::Format,
+        _type: vk::ImageType,
+        tiling: vk::ImageTiling,
+        mip_levels: u32,
+        location: gpu_allocator::MemoryLocation,
+        queue: &Queue,
+    ) -> (vk::Image, Allocation) {
+        // Setup vulkan info
+        let arr = [queue.qfi];
+        let vk_info = vk::ImageCreateInfo::builder()
+            .extent(extent)
+            .flags(vk::ImageCreateFlags::empty())
+            .sharing_mode(vk::SharingMode::EXCLUSIVE)
+            .queue_family_indices(&arr)
+            .usage(usage)
+            .format(format)
+            .image_type(_type)
+            .mip_levels(mip_levels)
+            .tiling(tiling);
+
+        // Create the image and fetch requirements
+        log::debug!(
+            "Creating image with extent {:?} and usage {:?}",
+            extent,
+            usage
+        );
+        let image =
+            self.device.create_image(&vk_info, None).unwrap();
+
+        // Get memory requirements
+        log::debug!("Creating image memory for image {:?}", image);
+        let requirements =
+            self.device.get_image_memory_requirements(image);
+
+        // Check if the memory allocation should be linear or not
+        let linear = if tiling == vk::ImageTiling::LINEAR {
+            true
+        } else if tiling == vk::ImageTiling::OPTIMAL  {
+            false
+        } else {
+            panic!()
+        };
+
+        // Create gpu-allocator allocation
+        let allocation = self
+            .allocator()
+            .allocate(&AllocationCreateDesc {
+                name: "",
+                requirements,
+                location,
+                linear,
+            })
+            .unwrap();
+
+        // Bind memory to the image
+        unsafe {
+            self.device
+                .bind_image_memory(
+                    image,
+                    allocation.memory(),
+                    allocation.offset(),
+                )
+                .unwrap()
+        };
+
+        // Create the tuple and return it
+        (image, allocation)
+    }
+
+    // Free an image and it's allocation
+    pub unsafe fn destroy_image(
+        &self,
+        image: vk::Image,
+        allocation: Allocation,
+    ) {
+        // Deallocate the underlying memory
+        log::debug!(
+            "Freeing allocation with mapped ptr: {:?}",
+            allocation.mapped_ptr()
+        );
+        self.allocator().free(allocation).unwrap();
+
+        // Delete the Vulkan image
+        log::debug!("Freeing image {:?}", image);
+        self.device.destroy_image(image, None);
     }
 }
