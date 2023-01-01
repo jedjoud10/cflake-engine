@@ -98,42 +98,46 @@ impl Scene {
     }
 
     // Despawn a batch of entities from an iterator
-    // Panics if the entity ID is invalid
+    // Panics if ANY entity ID is invalid
     pub fn remove_from_iter(
         &mut self,
         iter: impl IntoIterator<Item = Entity>,
     ) {
-        for entity in iter {
-            let linkings = *self.entities.get(entity).unwrap();
+        // Convert the mask and group to vector of entities and linkings
+        fn map(entities: &EntitySet, mask: Mask, group: impl IntoIterator<Item = Entity>) -> (Mask, Vec<(Entity, EntityLinkings)>) {
+            let vec = group.into_iter().map(|entity| {
+                let linkings = entities.get(entity).cloned().unwrap();
+                (entity, linkings)
+            }).collect::<Vec<_>>();
+            (mask, vec)
+        }
+
+        // Group the entities based on their archetype
+        let binding = iter.into_iter().group_by(|entity| {
+            let linkings = self.entities.get(*entity).unwrap();
+            linkings.mask()
+        });
+
+        // TODO: Rewrite this hell of a function
+        let iter = 
+            binding
+            .into_iter()
+            .map(|(mask, group)| map(&self.entities, mask, group.into_iter()))
+            .into_iter()
+            .collect::<Vec<_>>();
+
+        // Batch remove the entities per archetype
+        for (mask, group) in iter {
             let archetype =
-                self.archetypes.get_mut(&linkings.mask).unwrap();
+                self.archetypes.get_mut(&mask).unwrap();
+
+            // Remove the entities from the group
             archetype.remove_from_iter(
                 &mut self.entities,
-                [(entity, linkings)].into_iter(),
+                group.into_iter(),
                 &mut self.removed,
             );
         }
-        /*
-        let mut vec = iter.into_iter().collect::<Vec<Entity>>();
-
-        for entity in &vec {
-
-        }
-
-        let vec = .sorted_by(|a, b| {
-            self.entities.get()
-        }).group_by(|a|)
-
-
-        for entity in iter.into_iter() {
-            let linkings =
-                *self.entities.get(entity).expect("Entity does not exist");
-            let archetype =
-                self.archetypes.get_mut(&linkings.mask).unwrap();
-
-            //archetype.remove(&mut self.entities, entity).unwrap();
-        }
-        */
     }
 
     // Fetch all the removed components of a specific type immutably

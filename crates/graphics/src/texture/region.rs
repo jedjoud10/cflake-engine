@@ -1,15 +1,21 @@
 use std::{num::NonZeroU8, ops::Add};
+use vulkan::vk;
 
 // Texture dimensions traits that are simply implemented for extents
 pub trait Extent: Copy {
     // Get the surface area of a superficial rectangle that uses these extents as it's dimensions
     fn area(&self) -> u32;
 
-    // Check if this region can be used to create a texture or update it
-    fn is_valid(&self) -> bool;
-
     // Get the max element from these dimensions
     fn reduce_max(&self) -> u32;
+
+    // Get the min element from these dimensions
+    fn reduce_min(&self) -> u32;
+
+    // Check if this region can be used to create a texture or update it
+    fn is_valid(&self) -> bool {
+        self.reduce_min() > 0        
+    }
 
     // Caclulate the number of mipmap levels that a texture can have
     fn levels(&self) -> NonZeroU8 {
@@ -21,6 +27,12 @@ pub trait Extent: Copy {
 
     // Check if an extent is larger in all axii than another one
     fn is_larger_than(self, other: Self) -> bool;
+
+    // Convert to a Vulkan Extent3D
+    fn as_vk_extent(&self) -> vk::Extent3D;
+
+    // Get the dimensionality of the extent (1, 2, or 3)
+    fn dimensionality() -> usize;
 }
 
 // Implementation of extent for 2D extent
@@ -29,16 +41,28 @@ impl Extent for vek::Extent2<u32> {
         self.product()
     }
 
-    fn is_valid(&self) -> bool {
-        *self != vek::Extent2::zero()
-    }
-
     fn reduce_max(&self) -> u32 {
         vek::Extent2::reduce_max(*self)
     }
 
+    fn reduce_min(&self) -> u32 {
+        vek::Extent2::reduce_min(*self)
+    }
+
     fn is_larger_than(self, other: Self) -> bool {
         self.cmpge(&other).reduce_and()
+    }
+
+    fn as_vk_extent(&self) -> vk::Extent3D {
+        vk::Extent3D {
+            width: self.w,
+            height: self.h,
+            depth: 1,
+        }
+    }
+
+    fn dimensionality() -> usize {
+        vek::Extent2::<u32>::ELEM_COUNT
     }
 }
 
@@ -56,8 +80,24 @@ impl Extent for vek::Extent3<u32> {
         vek::Extent3::reduce_max(*self)
     }
 
+    fn reduce_min(&self) -> u32 {
+        vek::Extent3::reduce_max(*self)
+    }
+
     fn is_larger_than(self, other: Self) -> bool {
         self.cmpge(&other).reduce_and()
+    }
+
+    fn as_vk_extent(&self) -> vk::Extent3D {
+        vk::Extent3D {
+            width: self.w,
+            height: self.h,
+            depth: self.h,
+        }
+    }
+
+    fn dimensionality() -> usize {
+        vek::Extent3::<u32>::ELEM_COUNT
     }
 }
 
@@ -91,6 +131,9 @@ pub trait Region: Copy {
     // Create a region with it's raw components
     fn from_raw_parts(origin: Self::O, extent: Self::E) -> Self;
 
+    // Is this region a multi-layer region
+    fn is_multi_layered() -> bool;
+
     // Calculate the surface area of the region
     fn area(&self) -> u32;
 }
@@ -100,6 +143,10 @@ impl Region for (vek::Vec2<u32>, vek::Extent2<u32>) {
     type O = vek::Vec2<u32>;
     type E = vek::Extent2<u32>;
 
+    fn unit() -> Self {
+        (vek::Vec2::zero(), vek::Extent2::one())
+    }
+
     fn origin(&self) -> Self::O {
         self.0
     }
@@ -116,6 +163,10 @@ impl Region for (vek::Vec2<u32>, vek::Extent2<u32>) {
         self.1 = extent;
     }
 
+    fn extent_from_origin(origin: Self::O) -> Self::E {
+        origin.into()
+    }
+
     fn with_extent(extent: Self::E) -> Self {
         (Default::default(), extent)
     }
@@ -124,16 +175,12 @@ impl Region for (vek::Vec2<u32>, vek::Extent2<u32>) {
         (origin, extent)
     }
 
+    fn is_multi_layered() -> bool {
+        false
+    }
+
     fn area(&self) -> u32 {
         self.extent().area()
-    }
-
-    fn unit() -> Self {
-        (vek::Vec2::zero(), vek::Extent2::one())
-    }
-
-    fn extent_from_origin(origin: Self::O) -> Self::E {
-        origin.into()
     }
 }
 
@@ -142,6 +189,10 @@ impl Region for (vek::Vec3<u32>, vek::Extent3<u32>) {
     type O = vek::Vec3<u32>;
     type E = vek::Extent3<u32>;
 
+    fn unit() -> Self {
+        (vek::Vec3::zero(), vek::Extent3::one())
+    }
+
     fn origin(&self) -> Self::O {
         self.0
     }
@@ -158,23 +209,23 @@ impl Region for (vek::Vec3<u32>, vek::Extent3<u32>) {
         self.1 = extent;
     }
 
+    fn extent_from_origin(origin: Self::O) -> Self::E {
+        origin.into()
+    }
+
     fn with_extent(extent: Self::E) -> Self {
         (Default::default(), extent)
     }
-
+    
     fn from_raw_parts(origin: Self::O, extent: Self::E) -> Self {
         (origin, extent)
     }
 
+    fn is_multi_layered() -> bool {
+        false
+    }
+
     fn area(&self) -> u32 {
         self.extent().area()
-    }
-
-    fn unit() -> Self {
-        (vek::Vec3::zero(), vek::Extent3::one())
-    }
-
-    fn extent_from_origin(origin: Self::O) -> Self::E {
-        origin.into()
     }
 }

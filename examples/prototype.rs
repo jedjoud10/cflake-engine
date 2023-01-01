@@ -38,9 +38,9 @@ fn init(world: &mut World) {
 
     let mut texture = Texture2D::<RGBA<u32>>::from_texels(
         &graphics,
-        Some(&[vek::Vec4::broadcast(0); 64]),
-        vek::Extent2::broadcast(8),
+        &[vek::Vec4::broadcast(0); 64],
+        vek::Extent2::broadcast(2),
         TextureMode::Dynamic,
         TextureUsage::Placeholder
-    );
+    ).unwrap();
 }

@@ -7,9 +7,9 @@ use std::{
 };
 
 use crate::{
-    BufferError, BufferMode, BufferUsage, BufferClearError, BufferCopyError,
+    BufferMode, BufferUsage, BufferClearError, BufferCopyError,
     BufferExtendError, Graphics, BufferInitializationError, BufferReadError,
-    BufferWriteError,
+    BufferWriteError, BufferNotMappableError,
 };
 use bytemuck::{Pod, Zeroable};
 use vulkan::{vk, Allocation, Recorder};
@@ -125,7 +125,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         slice: &[T],
         mode: BufferMode,
         usage: BufferUsage,
-    ) -> Result<Self, BufferError> {
+    ) -> Result<Self, BufferInitializationError> {
         // Cannot create a zero sized stride buffer
         assert!(
             size_of::<T>() > 0,
@@ -133,11 +133,8 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         );
 
         // Cannot create a zero sized slice if we aren't resizable
-        if slice.is_empty() && !matches!(mode, BufferMode::Resizable)
-        {
-            return Err(BufferError::Initialization(
-                BufferInitializationError::EmptySliceNotResizable,
-            ));
+        if slice.is_empty() && !matches!(mode, BufferMode::Resizable) {
+            return Err(BufferInitializationError::EmptySliceNotResizable);
         }
 
         // Get location and staging buffer location
@@ -193,7 +190,7 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         capacity: usize,
         mode: BufferMode,
         usage: BufferUsage,
-    ) -> Result<Self, BufferError> {
+    ) -> Result<Self, BufferInitializationError> {
         let vec = vec![T::zeroed(); capacity];
         let mut buffer =
             Self::from_slice(graphics, &vec, mode, usage)?;
@@ -422,15 +419,15 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         &mut self,
         src: &[T],
         offset: usize,
-    ) -> Result<(), BufferError> {
+    ) -> Result<(), BufferWriteError> {
         if src.is_empty() {
             return Ok(());
         }
 
         if src.len() + offset > self.length {
-            return Err(BufferError::WriteError(
+            return Err(
                 BufferWriteError::InvalidLen(src.len(), offset, self.len()),
-            ));
+            );
         }
 
         unsafe {
@@ -444,15 +441,15 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         &'a self,
         dst: &mut [T],
         offset: usize,
-    ) -> Result<(), BufferError> {
+    ) -> Result<(), BufferReadError> {
         if dst.is_empty() {
             return Ok(());
         }
 
         if dst.len() + offset > self.length {
-            return Err(BufferError::ReadError(
-                BufferReadError::InvalidLen(dst.len(), offset, self.len()),
-            ));
+            return Err(
+                BufferReadError::InvalidLen(dst.len(), offset, self.len())
+            );
         }
 
         unsafe {
@@ -462,11 +459,11 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     }
 
     // Clear the buffer and reset it's length
-    pub fn clear(&mut self) -> Result<(), BufferError> {
+    pub fn clear(&mut self) -> Result<(), BufferClearError> {
         if matches!(self.mode, BufferMode::Dynamic) {
-            return Err(BufferError::ClearError(
+            return Err(
                 BufferClearError::IllegalLengthModify,
-            ));
+            );
         }
 
         unsafe {
@@ -482,29 +479,29 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
         dst_offset: usize,
         src_offset: usize,
         length: usize,
-    ) -> Result<(), BufferError> {
+    ) -> Result<(), BufferCopyError> {
         if length == 0 {
             return Ok(());
         }
 
         if dst_offset + length > self.length {
-            return Err(BufferError::CopyError(
+            return Err(
                 BufferCopyError::InvalidDstOverflow(
                     length,
                     dst_offset,
                     self.len(),
                 ),
-            ));
+            );
         }
 
         if src_offset + length > src.length {
-            return Err(BufferError::CopyError(
+            return Err(
                 BufferCopyError::InvalidSrcOverflow(
                     length,
                     src_offset,
                     src.len(),
                 ),
-            ));
+            );
         }
 
         unsafe {
@@ -520,23 +517,23 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     pub fn extend_from_slice(
         &mut self,
         slice: &[T],
-    ) -> Result<(), BufferError> {
+    ) -> Result<(), BufferExtendError> {
         if slice.is_empty() {
             return Ok(());
         }
 
         if matches!(self.mode, BufferMode::Dynamic) {
-            return Err(BufferError::ExtendError(
+            return Err(
                 BufferExtendError::IllegalLengthModify,
-            ));
+            );
         }
 
         if slice.len() + self.length > self.capacity
             && matches!(self.mode, BufferMode::Parital)
         {
-            return Err(BufferError::ExtendError(
+            return Err(
                 BufferExtendError::IllegalReallocation,
-            ));
+            );
         }
 
         unsafe {
@@ -546,17 +543,17 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
     }
 
     // Try to view the buffer immutably (if it's mappable)
-    pub fn as_slice(&self) -> Result<&[T], BufferError> {
+    pub fn as_slice(&self) -> Result<&[T], BufferNotMappableError> {
         self.allocation()
             .mapped_slice()
             .map(|bytes| {
                 &bytemuck::cast_slice::<u8, T>(bytes)[..self.length]
             })
-            .ok_or(BufferError::NotMappable)
+            .ok_or(BufferNotMappableError)
     }
 
     // Try to view the buffer mutably (if it's mappable)
-    pub fn as_slice_mut(&mut self) -> Result<&mut [T], BufferError> {
+    pub fn as_slice_mut(&mut self) -> Result<&mut [T], BufferNotMappableError> {
         let length = self.length;
         self.allocation_mut()
             .mapped_slice_mut()
@@ -564,6 +561,6 @@ impl<T: Content, const TYPE: u32> Buffer<T, TYPE> {
                 &mut bytemuck::cast_slice_mut::<u8, T>(bytes)
                     [..length]
             })
-            .ok_or(BufferError::NotMappable)
+            .ok_or(BufferNotMappableError)
     }
 }

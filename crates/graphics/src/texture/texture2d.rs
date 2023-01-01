@@ -45,15 +45,36 @@ impl<T: Texel> Texture for Texture2D<T> {
         self.mode
     }
 
-    fn dimensionality(&self) -> usize {
-        2
-    }
-
-    fn layers(&self) -> usize {
-        1
-    }
-
     fn usage(&self) -> TextureUsage {
         self.usage
+    }
+
+    unsafe fn from_raw_parts(
+        image: vk::Image,
+        whole_view: vk::ImageView,
+        allocation: Allocation,
+        dimensions: <Self::Region as crate::Region>::E,
+        usage: TextureUsage,
+        mode: TextureMode,
+        graphics: &Graphics,
+    ) -> Self {
+        Self {
+            image,
+            allocation: ManuallyDrop::new(allocation),
+            whole_view,
+            dimensions,
+            usage,
+            mode,
+            graphics: graphics.clone(),
+            _phantom: PhantomData,
+        }
+    }
+
+    fn allocation(&self) -> &Allocation {
+        &self.allocation
+    }
+
+    fn allocation_mut(&mut self) -> &mut Allocation {
+        &mut self.allocation
     }
 }

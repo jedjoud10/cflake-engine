@@ -44,27 +44,6 @@ pub enum BufferClearError {
     IllegalLengthModify,
 }
 
-// Buffer error that is returned from each buffer command
 #[derive(Error, Debug)]
-pub enum BufferError {
-    #[error("{0}")]
-    Initialization(BufferInitializationError),
-
-    #[error("{0}")]
-    ClearError(BufferClearError),
-
-    #[error("{0}")]
-    WriteError(BufferWriteError),
-
-    #[error("{0}")]
-    ReadError(BufferReadError),
-
-    #[error("{0}")]
-    CopyError(BufferCopyError),
-
-    #[error("{0}")]
-    ExtendError(BufferExtendError),
-
-    #[error("The given buffer cannot be mapped to host memory")]
-    NotMappable,
-}
+#[error("The given buffer cannot be mapped to host memory")]
+pub struct BufferNotMappableError;
