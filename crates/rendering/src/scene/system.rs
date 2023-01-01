@@ -12,6 +12,8 @@ fn update(world: &mut World) {
     let swapchain = graphics.swapchain();
 
     unsafe {
+        let img = swapchain.acquire_next_image().unwrap();
+        swapchain.present(queue, img).unwrap();
         /*
         let mut recorder = queue.acquire(device);
         let submission = queue.submit(recorder).wait();

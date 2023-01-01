@@ -46,6 +46,11 @@ impl<'a> Recorder<'a> {
     pub fn queue(&self) -> &Queue {
         &self.queue
     }
+
+    // Submit the recorder immediatly and wait for the GPU to execute it
+    pub unsafe fn immediate_submit(self) {
+        self.queue.immediate_submit(self)
+    }
 }
 
 // Synchronization
@@ -248,6 +253,23 @@ impl<'a> Recorder<'a> {
             dst_image,
             dst_image_layout,
             regions,
+        )
+    }
+
+    // Copy a buffer to an image in GPU memory
+    pub unsafe fn cmd_copy_buffer_to_image(
+        &mut self,
+        src_buffer: vk::Buffer,
+        dst_image: vk::Image,
+        dst_image_layout: vk::ImageLayout,
+        regions: &[vk::BufferImageCopy],
+    ) {
+        self.device().raw().cmd_copy_buffer_to_image(
+            self.command_buffer().raw(),
+            src_buffer,
+            dst_image,
+            dst_image_layout,
+            regions
         )
     }
 }

@@ -289,6 +289,50 @@ impl Device {
 }
 
 impl Device {
+    // Create an image sampler
+    pub unsafe fn create_sampler(
+        &self,
+        format: vk::Format,
+        filter: vk::Filter,
+        address_mode: vk::SamplerAddressMode,
+        max_anisotropy: Option<f32>,
+        border_color: vk::BorderColor,
+        custom_border_color: vk::ClearColorValue,
+    ) -> vk::Sampler {
+        let builder = vk::SamplerCreateInfo::builder()
+            .mag_filter(filter)
+            .min_filter(filter)
+            .address_mode_u(address_mode)
+            .address_mode_v(address_mode)
+            .address_mode_w(address_mode);
+
+        let builder = if let Some(max_anisotropy) = max_anisotropy {
+            builder
+                .anisotropy_enable(true)
+                .max_anisotropy(max_anisotropy)
+        } else {
+            builder
+        };
+
+        let mut next = vk::SamplerCustomBorderColorCreateInfoEXT::builder()
+            .custom_border_color(custom_border_color)
+            .format(format);
+
+        let builder = if border_color == vk::BorderColor::FLOAT_CUSTOM_EXT ||
+        border_color == vk::BorderColor::INT_CUSTOM_EXT {
+            builder
+                .push_next(&mut next)
+        } else {
+            builder    
+        };
+        
+        self.raw().create_sampler(&builder, None).unwrap()
+    }
+
+    // Destroy an image sampler
+}
+
+impl Device {
     // Create a raw buffer and allocate the needed memory for it
     pub unsafe fn create_buffer(
         &self,
@@ -371,8 +415,9 @@ impl Device {
         usage: vk::ImageUsageFlags,
         format: vk::Format,
         _type: vk::ImageType,
-        tiling: vk::ImageTiling,
         mip_levels: u32,
+        layers: u32,
+        samples: vk::SampleCountFlags,
         location: gpu_allocator::MemoryLocation,
         queue: &Queue,
     ) -> (vk::Image, Allocation) {
@@ -384,10 +429,12 @@ impl Device {
             .sharing_mode(vk::SharingMode::EXCLUSIVE)
             .queue_family_indices(&arr)
             .usage(usage)
+            .array_layers(layers)
             .format(format)
+            .samples(samples)
             .image_type(_type)
             .mip_levels(mip_levels)
-            .tiling(tiling);
+            .tiling(vk::ImageTiling::OPTIMAL);
 
         // Create the image and fetch requirements
         log::debug!(
@@ -403,15 +450,6 @@ impl Device {
         let requirements =
             self.device.get_image_memory_requirements(image);
 
-        // Check if the memory allocation should be linear or not
-        let linear = if tiling == vk::ImageTiling::LINEAR {
-            true
-        } else if tiling == vk::ImageTiling::OPTIMAL  {
-            false
-        } else {
-            panic!()
-        };
-
         // Create gpu-allocator allocation
         let allocation = self
             .allocator()
@@ -419,7 +457,7 @@ impl Device {
                 name: "",
                 requirements,
                 location,
-                linear,
+                linear: false,
             })
             .unwrap();
 

@@ -27,7 +27,6 @@ pub trait Texture: Sized {
             format,
             channels,
             element,
-            total_bits,
             bits_per_channel
         } = <Self::T as Texel>::untyped();
 
@@ -39,7 +38,22 @@ pub trait Texture: Sized {
             ));
         }
 
-        // Create a staging buffer that contains the data 
+        // Calculate how many bytes we should allocate for this texture
+        let bits = u64::from(dimensions.area())
+         * u64::from(bits_per_channel)
+         * u64::from(channels.count());
+        let bytes = bits / 8;
+
+        // Create a staging buffer that contains the texel data
+        let device = graphics.device();
+        let queue = graphics.queue();
+        let mut block = unsafe {
+            device.staging_pool().lock(device, queue, bytes)
+        };
+
+        // Fill the staging buffer with the corresponding texel data
+        let slice = bytemuck::cast_slice_mut::<u8, <Self::T as Texel>::Storage>(block.mapped_slice_mut());
+        slice.copy_from_slice(texels);
 
         // Get the image type using the dimensionality
         let image_type = match <<Self::Region as Region>::E as Extent>::dimensionality() {
@@ -50,24 +64,92 @@ pub trait Texture: Sized {
         };
 
         // Pick the vulkan image usage flags
-        let image_usage_flags = vk::ImageUsageFlags::empty();
+        let image_usage_flags = vk::ImageUsageFlags::TRANSFER_DST | vk::ImageUsageFlags::SAMPLED;
 
         // Create the raw Vulkan image
-        /*
-        graphics.device().create_image(
-            dimensions.as_vk_extent(),
-            image_usage_flags,
-            format,
-            image_type,
-            vk::TILIN,
-            mip_levels,
-            location,
-            queue
-        );
-        */
+        let (image, allocation) = unsafe {
+            graphics.device().create_image(
+                dimensions.as_vk_extent(),
+                image_usage_flags,
+                format,
+                image_type,
+                1,
+                1,
+                vk::SampleCountFlags::TYPE_1,
+                vulkan::MemoryLocation::GpuOnly,
+                queue
+            )
+        };
 
-        log::info!("{:?}", format);
-        todo!();
+        // Optimal image layout for our specific use
+        let dst_image_layout = vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL;
+        let dst_access_mask = vk::AccessFlags::SHADER_READ;
+
+        // Convert image layouts, copy, and then convert to optimal one
+        unsafe {
+            let mut recorder = queue.acquire(device);
+
+            // Image whole subresource range (TODO: Implement mipmapping
+            let subresource_range = vk::ImageSubresourceRange::builder()
+                .aspect_mask(vk::ImageAspectFlags::COLOR)
+                .base_mip_level(0)
+                .base_array_layer(0)
+                .layer_count(1)
+                .level_count(1);
+
+            // TBH Idk what is the difference between ImageSubresourceLayers and  ImageSubresourceRange
+            let subresource_layers = vk::ImageSubresourceLayers::builder()
+                .aspect_mask(vk::ImageAspectFlags::COLOR)
+                .mip_level(0)
+                .base_array_layer(0)
+                .layer_count(1);
+
+            // Convert the image layout to TRANSFER_DST first
+            let image_barrier_to_transfer_dst = vk::ImageMemoryBarrier::builder()
+                .old_layout(vk::ImageLayout::UNDEFINED)
+                .new_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
+                .src_access_mask(vk::AccessFlags::empty())
+                .dst_access_mask(vk::AccessFlags::TRANSFER_WRITE)
+                .subresource_range(*subresource_range)
+                .image(image);
+
+            // Copy the buffer data into the texture
+            let copy = vk::BufferImageCopy::builder()
+                .buffer_offset(block.offset())
+                .buffer_row_length(0)
+                .buffer_image_height(0)
+                .image_extent(dimensions.as_vk_extent())
+                .image_offset(vk::Offset3D::default())
+                .image_subresource(*subresource_layers);
+
+            // Convert back to the usage defined layout 
+            let image_barrier_to_optimal_dst = vk::ImageMemoryBarrier::builder()
+                .old_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
+                .new_layout(dst_image_layout)
+                .src_access_mask(vk::AccessFlags::TRANSFER_WRITE)
+                .dst_access_mask(dst_access_mask)
+                .subresource_range(*subresource_range)
+                .image(image);
+
+            // Copy buffer data to the image
+            recorder.cmd_image_memory_barrier(*image_barrier_to_transfer_dst);
+            recorder.cmd_copy_buffer_to_image(block.buffer(), image, vk::ImageLayout::TRANSFER_DST_OPTIMAL, &[*copy]);
+            recorder.cmd_image_memory_barrier(*image_barrier_to_optimal_dst);
+
+            recorder.immediate_submit();
+        }
+
+        Ok(unsafe {
+            Self::from_raw_parts(
+                image,
+                vk::ImageView::null(),
+                allocation,
+                dimensions,
+                usage,
+                mode,
+                graphics,
+            )
+        })
     }
 
     // Get the texture's region (origin state is default)

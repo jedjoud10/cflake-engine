@@ -2,7 +2,7 @@ use super::AnyElement;
 use crate::{
     Base, BaseType, ChannelsType, ColorChannels, Depth, DepthElement,
     ElementType, Normalizable, Normalized, Stencil, StencilElement,
-    R, RG, RGB, RGBA,
+    R, RG, RGB, RGBA, GpuPod,
 };
 use std::mem::size_of;
 use vek::{Vec2, Vec3, Vec4};
@@ -16,7 +16,6 @@ pub struct UntypedTexel {
     pub element: ElementType,
 
     // Storage/memory related
-    pub total_bits: u32,
     pub bits_per_channel: u32,
 }
 
@@ -37,7 +36,7 @@ pub trait Texel: 'static + Sized {
     const FORMAT: vk::Format;
 
     // The raw data type that we will use to access texture memory
-    type Storage;
+    type Storage: bytemuck::Pod;
 
     // Get the untyped variant of this texel
     fn untyped() -> UntypedTexel {
@@ -46,8 +45,6 @@ pub trait Texel: 'static + Sized {
             channels: Self::CHANNELS_TYPE,
             element: Self::ELEMENT_TYPE,
             bits_per_channel: Self::BITS_PER_CHANNEL,
-            total_bits: Self::BITS_PER_CHANNEL
-                * Self::CHANNELS_TYPE.count(),
         }
     }
 }
@@ -63,7 +60,7 @@ macro_rules! impl_color_texel_layout {
                 Self::ELEMENT_TYPE,
                 Self::CHANNELS_TYPE,
             );
-            type Storage = $vec<T>;
+            type Storage = $vec<T::Storage>;
         }
     };
 }
@@ -79,7 +76,7 @@ macro_rules! impl_special_texel_layout {
                 Self::ELEMENT_TYPE,
                 Self::CHANNELS_TYPE,
             );
-            type Storage = T;
+            type Storage = T::Storage;
         }
 
         impl<T: StencilElement> Texel for Stencil<T> {
@@ -90,7 +87,7 @@ macro_rules! impl_special_texel_layout {
                 Self::ELEMENT_TYPE,
                 Self::CHANNELS_TYPE,
             );
-            type Storage = T;
+            type Storage = T::Storage;
         }
     };
 }

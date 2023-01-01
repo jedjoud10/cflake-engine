@@ -3,6 +3,8 @@ mod cases;
 mod channels;
 mod element;
 mod texel;
+mod image;
+pub use self::image::*;
 pub use base::*;
 pub use cases::*;
 pub use channels::*;

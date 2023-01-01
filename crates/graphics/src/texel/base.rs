@@ -1,8 +1,7 @@
-use bytemuck::Pod;
 use half::f16;
 
 // Base numbers that are used to store the inner raw values of texture texels
-pub trait Base: Pod + Clone + Send + Sync {
+pub trait Base: Clone + Copy + Send + Sync + 'static + bytemuck::Pod + bytemuck::Zeroable {
     const TYPE: BaseType;
     const SIGNED: bool;
 }
@@ -16,6 +15,7 @@ macro_rules! impl_base {
     };
 }
 
+// Integer types
 impl_base!(i8, Eight, true);
 impl_base!(u8, Eight, false);
 impl_base!(i16, Sixteen, true);
@@ -25,6 +25,7 @@ impl_base!(u32, ThirtyTwo, false);
 impl_base!(i64, SixtyFour, true);
 impl_base!(u64, SixtyFour, false);
 
+// Floating point types
 impl_base!(f16, FloatSixteen, true);
 impl_base!(f32, FloatThirtyTwo, true);
 impl_base!(f64, FloatSixtyFour, true);

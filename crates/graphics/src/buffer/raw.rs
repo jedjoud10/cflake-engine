@@ -1,11 +1,11 @@
 use std::mem::size_of;
 
-use crate::{Content, Graphics};
+use crate::{GpuPod, Graphics};
 use vulkan::{vk, Allocation, MemoryLocation, Recorder, Submission};
 
 // Allocate a new buffer with a specific size and layout
 // This will return the Vulkan buffer and memory allocation
-pub(super) unsafe fn allocate_buffer<'a, T: Content>(
+pub(super) unsafe fn allocate_buffer<'a, T: GpuPod>(
     graphics: &Graphics,
     location: MemoryLocation,
     capacity: usize,
@@ -24,7 +24,7 @@ pub(super) unsafe fn allocate_buffer<'a, T: Content>(
 }
 
 // Fills a buffer with the specified data. Used for init
-pub(super) unsafe fn fill_buffer<'a, T: Content>(
+pub(super) unsafe fn fill_buffer<'a, T: GpuPod>(
     graphics: &Graphics,
     buffer: vk::Buffer,
     allocation: &mut Allocation,
@@ -70,14 +70,14 @@ pub(super) unsafe fn fill_buffer<'a, T: Content>(
 }
 
 // Write to the given bytes slice
-pub(super) unsafe fn write_to<T: Content>(src: &[T], dst: &mut [u8]) {
+pub(super) unsafe fn write_to<T: GpuPod>(src: &[T], dst: &mut [u8]) {
     assert_eq!(src.len(), dst.len() / size_of::<T>());
     let dst = bytemuck::cast_slice_mut::<u8, T>(dst);
     dst.copy_from_slice(src);
 }
 
 // Read from the given bytes slice
-pub(super) unsafe fn read_to<T: Content>(src: &[u8], dst: &mut [T]) {
+pub(super) unsafe fn read_to<T: GpuPod>(src: &[u8], dst: &mut [T]) {
     assert_eq!(dst.len(), src.len() / size_of::<T>());
     let src = bytemuck::cast_slice::<u8, T>(src);
     dst.copy_from_slice(src);

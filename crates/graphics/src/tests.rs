@@ -161,7 +161,7 @@ mod texels {
     }
 
     #[test]
-    fn unsugned() {
+    fn unsigned() {
         assert_eq!(R::<u8>::FORMAT, vk::Format::R8_UINT);
         assert_eq!(RG::<u8>::FORMAT, vk::Format::R8G8_UINT);
         assert_eq!(RGB::<u8>::FORMAT, vk::Format::R8G8B8_UINT);

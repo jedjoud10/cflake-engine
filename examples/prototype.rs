@@ -38,9 +38,11 @@ fn init(world: &mut World) {
 
     let mut texture = Texture2D::<RGBA<u32>>::from_texels(
         &graphics,
-        &[vek::Vec4::broadcast(0); 64],
-        vek::Extent2::broadcast(2),
+        &[vek::Vec4::broadcast(u32::MAX); 64],
+        vek::Extent2::broadcast(8),
         TextureMode::Dynamic,
         TextureUsage::Placeholder
     ).unwrap();
+
+    let mut texture = assets.load::<Texture2D::<RGBA<Normalized<u8>>>>("engine/textures/test.png");
 }
