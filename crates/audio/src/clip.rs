@@ -1,4 +1,4 @@
-use crate::{AudioClipError, Sample};
+use crate::{AudioClipDeserializationError, Sample};
 use assets::Asset;
 use std::{
     io::{BufReader, Cursor},
@@ -54,7 +54,7 @@ impl<S: Sample> AudioClip<S> {
 
 impl<S: Sample> Asset for AudioClip<S> {
     type Args<'args> = ();
-    type Err = AudioClipError;
+    type Err = AudioClipDeserializationError;
 
     fn extensions() -> &'static [&'static str] {
         &["mp3", "wav"]
@@ -73,12 +73,12 @@ impl<S: Sample> Asset for AudioClip<S> {
                 // Handle decoding a singular frame
                 fn decode(
                     result: Result<minimp3::Frame, minimp3::Error>,
-                ) -> Result<Option<minimp3::Frame>, AudioClipError>
+                ) -> Result<Option<minimp3::Frame>, AudioClipDeserializationError>
                 {
                     match result {
                         Ok(frame) => Ok(Some(frame)),
                         Err(minimp3::Error::Eof) => Ok(None),
-                        Err(err) => Err(AudioClipError::MP3(err)),
+                        Err(err) => Err(AudioClipDeserializationError::MP3(err)),
                     }
                 }
 
@@ -133,7 +133,7 @@ impl<S: Sample> Asset for AudioClip<S> {
                 let mut read =
                     BufReader::new(Cursor::new(data.bytes()));
                 let (header, bitdepth) = wav::read(&mut read)
-                    .map_err(AudioClipError::Wav)?;
+                    .map_err(AudioClipDeserializationError::Wav)?;
 
                 // Fetch the descriptor data
                 let bitrate = header.bytes_per_second as u32 * 8;

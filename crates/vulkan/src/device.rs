@@ -368,7 +368,7 @@ impl Device {
         let allocation = self
             .allocator()
             .allocate(&AllocationCreateDesc {
-                name: "",
+                name: "buffer",
                 requirements,
                 location,
                 linear: true,
@@ -454,7 +454,7 @@ impl Device {
         let allocation = self
             .allocator()
             .allocate(&AllocationCreateDesc {
-                name: "",
+                name: "image",
                 requirements,
                 location,
                 linear: false,

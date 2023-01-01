@@ -1,8 +1,9 @@
-use std::{marker::PhantomData, mem::ManuallyDrop};
+use std::{marker::PhantomData, mem::ManuallyDrop, time::Instant};
 
+use assets::Asset;
 use vulkan::{vk, Allocation};
 
-use crate::{Texel, TextureMode, TextureUsage, Graphics, Texture};
+use crate::{Texel, TextureMode, TextureUsage, Graphics, Texture, ImageTexel, TextureAssetLoadError};
 
 // A 2D texture that contains multiple texels that have their own channels
 // Each texel can be either a single value, RG, RGB, or even RGBA
@@ -76,5 +77,35 @@ impl<T: Texel> Texture for Texture2D<T> {
 
     fn allocation_mut(&mut self) -> &mut Allocation {
         &mut self.allocation
+    }
+}
+
+impl<T: ImageTexel> Asset for Texture2D<T> {
+    type Args<'args> = &'args Graphics;
+    type Err = TextureAssetLoadError;
+
+    fn extensions() -> &'static [&'static str] {
+        &["png", "jpg", "jpeg"]
+    }
+
+    fn deserialize<'args>(
+        data: assets::Data,
+        args: Self::Args<'args>,
+    ) -> Result<Self, Self::Err> {
+        let i = Instant::now();
+        let image = image::load_from_memory(data.bytes())
+            .map_err(TextureAssetLoadError::Deserialization)?;
+        log::debug!("Took {:?} to deserialize texture {:?}", i.elapsed(), data.path());
+
+        let dimensions = vek::Extent2::new(image.width(), image.height());
+        let texels = T::to_image_texels(image);
+
+        Self::from_texels(
+            args,
+            &texels,
+            dimensions,
+            TextureMode::Dynamic,
+            TextureUsage::Placeholder,
+        ).map_err(TextureAssetLoadError::Initialization)
     }
 }

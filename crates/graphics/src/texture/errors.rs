@@ -18,3 +18,12 @@ pub enum TextureMipLayerError {
     #[error("The given mip layer was already immutably borrowed")]
     BorrowedImmutably,
 }
+
+#[derive(Error, Debug)]
+pub enum TextureAssetLoadError {
+    #[error("{0}")]
+    Initialization(TextureInitializationError),
+    
+    #[error("{0}")]
+    Deserialization(image::ImageError),
+}

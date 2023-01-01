@@ -2,13 +2,13 @@ use crate::{Texel, R, RG, RGB, RGBA, Normalized};
 
 // Image texels are texels that can be loaded from a file, like when loading a Texture2D<RGBA<Normalized<u8>>
 pub trait ImageTexel: Texel {
-    fn texels_from_dynamic_image(image: image::DynamicImage) -> Vec<Self::Storage>;
+    fn to_image_texels(image: image::DynamicImage) -> Vec<Self::Storage>;
 }
 
 macro_rules! internal_impl_single_image_texel {
     ($t:ident, $base:ty, $convert:ident, $closure:expr) => {
         impl ImageTexel for $t<$base> {
-            fn texels_from_dynamic_image(image: image::DynamicImage) -> Vec<Self::Storage> {
+            fn to_image_texels(image: image::DynamicImage) -> Vec<Self::Storage> {
                 let image = image.$convert();
                 image.chunks(4).map($closure).collect()
             }
