@@ -1,10 +1,10 @@
-use crate::{BaseType, ChannelsType, ColorChannels, ElementType};
+use crate::{BaseType, ChannelsType, VectorChannels, ElementType};
 use vulkan::vk;
 
-// Converts the given color channels to the proper format
-const fn pick_format_from_color_channels(
+// Converts the given vector channels to the proper format
+pub const fn pick_format_from_vector_channels(
     element_type: ElementType,
-    channels: ColorChannels,
+    channels: VectorChannels,
 ) -> vk::Format {
     // Handle normalizable integers of the given bitsize
     // Takes care of u8, i8, u16, i16
@@ -12,7 +12,7 @@ const fn pick_format_from_color_channels(
         bitsize: u32,
         normalized: bool,
         signed: bool,
-        channels: ColorChannels,
+        channels: VectorChannels,
     ) -> vk::Format {
         let offset = match bitsize {
             8 => vk::Format::R8_UNORM.as_raw(),
@@ -44,7 +44,7 @@ const fn pick_format_from_color_channels(
     const fn pick_non_normalizable_int(
         bitsize: u32,
         signed: bool,
-        channels: ColorChannels,
+        channels: VectorChannels,
     ) -> vk::Format {
         let offset = match bitsize {
             32 => vk::Format::R32_UINT.as_raw(),
@@ -62,7 +62,7 @@ const fn pick_format_from_color_channels(
     // Takes care of f16, f32, f64
     const fn pick_float(
         bitsize: u32,
-        channels: ColorChannels,
+        channels: VectorChannels,
     ) -> vk::Format {
         let offset = match bitsize {
             16 => vk::Format::R16_SFLOAT.as_raw(),
@@ -101,7 +101,7 @@ const fn pick_format_from_color_channels(
 }
 
 // Converts the given depth channel to the proper format
-const fn pick_depth_format(element_type: ElementType) -> vk::Format {
+pub const fn pick_depth_format(element_type: ElementType) -> vk::Format {
     match element_type {
         ElementType::Sixteen {
             signed: false,
@@ -113,7 +113,7 @@ const fn pick_depth_format(element_type: ElementType) -> vk::Format {
 }
 
 // Converts the given stencil channel to the proper format
-const fn pick_stencil_format(
+pub const fn pick_stencil_format(
     element_type: ElementType,
 ) -> vk::Format {
     match element_type {
@@ -126,14 +126,14 @@ const fn pick_stencil_format(
 }
 
 // Converts the given data to the proper format
-// This is called within the Texel::format method
+// This is called within the Texel::FORMAT and Vertex::FORMAT
 pub const fn pick_format_from_params(
     element_type: ElementType,
     channels_type: ChannelsType,
 ) -> vk::Format {
     match channels_type {
-        ChannelsType::Color(channels) => {
-            pick_format_from_color_channels(element_type, channels)
+        ChannelsType::Vector(channels) => {
+            pick_format_from_vector_channels(element_type, channels)
         }
         ChannelsType::Depth => pick_depth_format(element_type),
         ChannelsType::Stencil => pick_stencil_format(element_type),

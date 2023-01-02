@@ -7,6 +7,12 @@ pub struct RG<T: AnyElement>(vek::Vec2<T>);
 pub struct RGB<T: AnyElement>(vek::Vec3<T>);
 pub struct RGBA<T: AnyElement>(vek::Vec4<T>);
 
+// The channels that represent the vertices
+pub struct X<T: AnyElement>(T);
+pub struct XY<T: AnyElement>(vek::Vec2<T>);
+pub struct XYZ<T: AnyElement>(vek::Vec3<T>);
+pub struct XYZW<T: AnyElement>(vek::Vec4<T>);
+
 // TODO: Implement SRGB
 
 // Element used only for depth-only texels
@@ -24,29 +30,30 @@ impl StencilElement for u8 {}
 pub struct Depth<T: DepthElement>(T);
 pub struct Stencil<T: StencilElement>(T);
 
-// Color channel as texel channels
-pub enum ColorChannels {
-    R,
-    RG,
-    RGB,
-    RGBA,
+// Vector channel as texel channels
+// TODO: Is there a better way to handle this?
+pub enum VectorChannels {
+    One, // X or R
+    Two, // XY or RG
+    Three, // XYZ or RGB
+    Four, // XYZW or RGBA
 }
 
-impl ColorChannels {
+impl VectorChannels {
     // Count the number of channels that we have in total
     pub const fn count(&self) -> u32 {
         match self {
-            ColorChannels::R => 1,
-            ColorChannels::RG => 2,
-            ColorChannels::RGB => 3,
-            ColorChannels::RGBA => 4,
+            VectorChannels::One => 1,
+            VectorChannels::Two => 2,
+            VectorChannels::Three => 3,
+            VectorChannels::Four => 4,
         }
     }
 }
 
 // Untyped representation of texel channels
 pub enum ChannelsType {
-    Color(ColorChannels),
+    Vector(VectorChannels),
     Depth,
     Stencil,
 }
@@ -55,7 +62,7 @@ impl ChannelsType {
     // Count the number of channels that we have in total
     pub const fn count(&self) -> u32 {
         match self {
-            ChannelsType::Color(color) => color.count(),
+            ChannelsType::Vector(color) => color.count(),
             ChannelsType::Depth | ChannelsType::Stencil => 1,
         }
     }

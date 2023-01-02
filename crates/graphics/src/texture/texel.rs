@@ -1,6 +1,5 @@
-use super::AnyElement;
 use crate::{
-    Base, BaseType, ChannelsType, ColorChannels, Depth, DepthElement,
+    AnyElement, Base, BaseType, ChannelsType, VectorChannels, Depth, DepthElement,
     ElementType, Normalizable, Normalized, Stencil, StencilElement,
     R, RG, RGB, RGBA, GpuPod,
 };
@@ -49,6 +48,11 @@ pub trait Texel: 'static + Sized {
     }
 }
 
+// Image texels are texels that can be loaded from a file, like when loading a Texture2D<RGBA<Normalized<u8>>
+pub trait ImageTexel: Texel {
+    fn to_image_texels(image: image::DynamicImage) -> Vec<Self::Storage>;
+}
+
 // Implement the color texel layout
 macro_rules! impl_color_texel_layout {
     ($t:ident, $channels_type:expr, $vec: ident) => {
@@ -56,7 +60,7 @@ macro_rules! impl_color_texel_layout {
             const BITS_PER_CHANNEL: u32 = size_of::<T>() as u32 * 8;
             const ELEMENT_TYPE: ElementType = T::ELEMENT_TYPE;
             const CHANNELS_TYPE: ChannelsType = $channels_type;
-            const FORMAT: vk::Format = super::pick_format_from_params(
+            const FORMAT: vk::Format = crate::format::pick_format_from_params(
                 Self::ELEMENT_TYPE,
                 Self::CHANNELS_TYPE,
             );
@@ -72,7 +76,7 @@ macro_rules! impl_special_texel_layout {
             const BITS_PER_CHANNEL: u32 = size_of::<T>() as u32 * 8;
             const ELEMENT_TYPE: ElementType = T::ELEMENT_TYPE;
             const CHANNELS_TYPE: ChannelsType = ChannelsType::Depth;
-            const FORMAT: vk::Format = super::pick_format_from_params(
+            const FORMAT: vk::Format = crate::format::pick_format_from_params(
                 Self::ELEMENT_TYPE,
                 Self::CHANNELS_TYPE,
             );
@@ -83,7 +87,7 @@ macro_rules! impl_special_texel_layout {
             const BITS_PER_CHANNEL: u32 = size_of::<T>() as u32 * 8;
             const ELEMENT_TYPE: ElementType = T::ELEMENT_TYPE;
             const CHANNELS_TYPE: ChannelsType = ChannelsType::Stencil;
-            const FORMAT: vk::Format = super::pick_format_from_params(
+            const FORMAT: vk::Format = crate::format::pick_format_from_params(
                 Self::ELEMENT_TYPE,
                 Self::CHANNELS_TYPE,
             );
@@ -92,27 +96,54 @@ macro_rules! impl_special_texel_layout {
     };
 }
 
+// Internally used for implementing the image texel
+macro_rules! internal_impl_single_image_texel {
+    ($t:ident, $base:ty, $convert:ident, $closure:expr) => {
+        impl ImageTexel for $t<$base> {
+            fn to_image_texels(image: image::DynamicImage) -> Vec<Self::Storage> {
+                let image = image.$convert();
+                image.chunks(4).map($closure).collect()
+            }
+        }
+    };
+}
+
+// Implement the image texel layouts
+macro_rules! impl_image_texel {
+    ($t:ident, $closure:expr) => {
+        internal_impl_single_image_texel!($t, u8, into_rgba8, $closure);
+        internal_impl_single_image_texel!($t, u16, into_rgba16, $closure);
+        internal_impl_single_image_texel!($t, Normalized<u8>, into_rgba8, $closure);
+        internal_impl_single_image_texel!($t, Normalized<u16>, into_rgba16, $closure);
+    };
+}
+
 // Need this for the macro to work
 type Scalar<T> = T;
 
 impl_color_texel_layout!(
     R,
-    ChannelsType::Color(ColorChannels::R),
+    ChannelsType::Vector(VectorChannels::One),
     Scalar
 );
 impl_color_texel_layout!(
     RG,
-    ChannelsType::Color(ColorChannels::RG),
+    ChannelsType::Vector(VectorChannels::Two),
     Vec2
 );
 impl_color_texel_layout!(
     RGB,
-    ChannelsType::Color(ColorChannels::RGB),
+    ChannelsType::Vector(VectorChannels::Three),
     Vec3
 );
 impl_color_texel_layout!(
     RGBA,
-    ChannelsType::Color(ColorChannels::RGBA),
+    ChannelsType::Vector(VectorChannels::Four),
     Vec4
 );
 impl_special_texel_layout!();
+
+impl_image_texel!(R, |val| val[0]);
+impl_image_texel!(RG, vek::Vec2::from_slice);
+impl_image_texel!(RGB, vek::Vec3::from_slice);
+impl_image_texel!(RGBA, vek::Vec4::from_slice);

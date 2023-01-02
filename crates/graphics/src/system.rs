@@ -28,7 +28,13 @@ fn init(
     world.insert(window);
 
     // Graphics context is global
-    crate::context::CONTEXT.set(graphics).map_err(|_| ()).unwrap();
+    *crate::context::CONTEXT.write() = Some(graphics);
+}
+
+// Destroy the underlying Vulkan context when we stop the app
+fn shutdown() {
+    let taken = crate::context::CONTEXT.write().take().unwrap();
+    unsafe { taken.destroy(); }
 }
 
 // Handle window quitting and resizing
@@ -90,4 +96,5 @@ pub fn system(
         .before(user);
 
     system.insert_window(event);
+    system.insert_shutdown(shutdown).after(post_user);
 }

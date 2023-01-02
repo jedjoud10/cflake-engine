@@ -41,7 +41,7 @@ fn update(world: &mut World) {
             .image(img.1);
 
         let color = vk::ClearColorValue {
-            float32: [r, g, b, 0.0]
+            float32: [1.0, 1.0, 1.0, 0.0]
         };
 
         let mut recorder = queue.acquire(device);

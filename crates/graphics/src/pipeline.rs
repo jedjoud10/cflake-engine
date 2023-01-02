@@ -4,6 +4,8 @@ mod depth;
 mod graphics;
 mod primitive;
 mod stencil;
+mod vertex;
+pub use vertex::*;
 pub use self::graphics::*;
 pub use blend::*;
 pub use config::*;

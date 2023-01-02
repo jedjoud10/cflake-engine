@@ -136,7 +136,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         // Allocate the buffer
         let (buffer, mut allocation) = unsafe {
             super::allocate_buffer::<T>(
-                graphics,
+                &graphics,
                 location,
                 slice.len(),
                 flags,
@@ -146,7 +146,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         // Fill up the buffer
         unsafe {
             super::fill_buffer(
-                graphics,
+                &graphics,
                 buffer,
                 &mut allocation,
                 slice,

@@ -6,6 +6,8 @@ mod texture;
 mod usage;
 mod mipmap;
 mod texture2d;
+mod texel;
+pub use texel::*;
 pub use texture2d::*;
 pub use mipmap::*;
 pub use usage::*;

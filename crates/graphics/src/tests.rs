@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod texels {
-    use crate::texel::*;
+    use crate::texture::Texel;
+    use crate::format::*;
     use half::f16;
     use vulkan::vk;
 
@@ -200,5 +201,62 @@ mod texels {
         );
         assert_eq!(Depth::<f32>::FORMAT, vk::Format::D32_SFLOAT);
         assert_eq!(Stencil::<u8>::FORMAT, vk::Format::S8_UINT);
+    }
+}
+
+#[cfg(test)]
+mod vertex {
+    use crate::pipeline::Vertex;
+    use crate::format::*;
+    use half::f16;
+    use vulkan::vk;
+
+    #[test]
+    fn positional() {
+        assert_eq!(
+            XYZ::<f16>::FORMAT,
+            vk::Format::R16G16B16_SFLOAT,
+        );
+
+        assert_eq!(
+            XYZ::<f32>::FORMAT,
+            vk::Format::R32G32B32_SFLOAT,
+        );
+
+        assert_eq!(
+            XYZ::<f64>::FORMAT,
+            vk::Format::R64G64B64_SFLOAT,
+        );
+
+        assert_eq!(
+            XYZ::<f32>::FORMAT,
+            vk::Format::R32G32B32_SFLOAT,
+        );
+    }
+
+    #[test]
+    fn normals() {
+        assert_eq!(
+            XYZ::<Normalized<i8>>::FORMAT,
+            vk::Format::R8G8B8_SNORM,
+        );
+
+        assert_eq!(
+            XYZ::<Normalized<i16>>::FORMAT,
+            vk::Format::R16G16B16_SNORM,
+        );
+    }
+
+    #[test]
+    fn uvs() {
+        assert_eq!(
+            XY::<Normalized<u8>>::FORMAT,
+            vk::Format::R8G8_UNORM,
+        );
+
+        assert_eq!(
+            XY::<Normalized<u16>>::FORMAT,
+            vk::Format::R16G16_UNORM,
+        );
     }
 }

@@ -203,7 +203,6 @@ impl App {
                     world.get::<State>().map(|x| *x)
                 {
                     *cf = ControlFlow::Exit;
-                    systems.shutdown.execute(&mut world);
                 }
 
                 sleeper.loop_sleep();

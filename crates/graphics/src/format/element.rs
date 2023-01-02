@@ -1,4 +1,4 @@
-use crate::{Base, BaseType};
+use crate::{Base, BaseType, GpuPod};
 use std::marker::PhantomData;
 
 // Elements are just values that can be stored within channels, like u32, Normalized<i8> or i8
@@ -7,7 +7,7 @@ pub trait AnyElement: 'static {
     const ELEMENT_TYPE: ElementType;
 
     // Raw data representation that will be sent to the GPU
-    type Storage: bytemuck::Pod + bytemuck::Zeroable;
+    type Storage: bytemuck::Pod;
 }
 impl<T: Base> AnyElement for T {
     const ELEMENT_TYPE: ElementType = match T::TYPE {

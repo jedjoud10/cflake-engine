@@ -6,30 +6,11 @@ use vulkan::{
     Swapchain,
 };
 
-/*
-        unsafe {
-            log::debug!("Dropping internal graphics handler...");
-
-            log::debug!("Destroying swapchain...");
-            self.swapchain.destroy(&self.device);
-
-            log::debug!("Destroying queue...");
-            self.queue.destroy(&self.device);
-
-            log::debug!("Destroying surface...");
-            self.surface.destroy();
-
-            log::debug!("Destroying logical device...");
-            self.device.destroy();
-
-            log::debug!("Destroying Vulkan Instance...");
-            self.instance.destroy();
-            log::debug!("We did it guys, Vulkan is no more");
-        }
-*/
-
 // We have a global graphical context
-pub(crate) static CONTEXT: OnceCell<Graphics> = OnceCell::new();
+// TODO: Find alternate of OnceCell and lazy_Static
+lazy_static::lazy_static! {
+    pub(crate) static ref CONTEXT: RwLock<Option<Graphics>> = RwLock::new(None);
+}
 
 // Graphical context that we will wrap around the Vulkan instance
 // This context must be shareable between threads to allow for multithreading
@@ -45,8 +26,9 @@ pub struct Graphics {
 impl Graphics {
     // Get the graphics from the global graphical context
     // Panics if the graphics context wasn't created yet
-    pub fn global() -> &'static Self {
-        CONTEXT.get().unwrap()
+    pub fn global() -> parking_lot::MappedRwLockReadGuard<'static, Self> {
+        let initialized = CONTEXT.read();
+        parking_lot::RwLockReadGuard::map(initialized, |x| x.as_ref().unwrap())
     }
 
     // Get the instance
@@ -77,5 +59,26 @@ impl Graphics {
     // Get the swapchain
     pub fn swapchain(&self) -> &Swapchain {
         &self.swapchain
+    }
+
+    // Destroy the graphical context
+    pub(crate) unsafe fn destroy(self) {
+        log::debug!("Dropping internal graphics handler...");
+
+        log::debug!("Destroying swapchain...");
+        self.swapchain.destroy(&self.device);
+
+        log::debug!("Destroying queue...");
+        self.queue.destroy(&self.device);
+
+        log::debug!("Destroying surface...");
+        self.surface.destroy();
+
+        log::debug!("Destroying logical device...");
+        self.device.destroy();
+
+        log::debug!("Destroying Vulkan Instance...");
+        self.instance.destroy();
+        log::debug!("We did it guys, Vulkan is no more");
     }
 }
