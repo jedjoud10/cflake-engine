@@ -1,27 +1,15 @@
-use crate::{Graphics, Window, WindowSettings};
+use crate::{Graphics, Window, WindowSettings, GraphicsInit};
 use winit::{event::WindowEvent, event_loop::EventLoop};
 use world::{post_user, user, State, System, World};
 
-// Insert the required resources
-fn init(
-    world: &mut World,
-    el: &EventLoop<()>,
-    window_settings: WindowSettings,
-    app_name: String,
-    app_version: u32,
-    engine_name: String,
-    engine_version: u32,
-) {
+// Insert the required graphics resources
+fn init(world: &mut World, el: &EventLoop<()>) {
+    // Initialization resource
+    let init = world.remove::<GraphicsInit>().unwrap();
+
     // Initialize the Vulkan context and create a winit Window
     let (graphics, window) = unsafe {
-        crate::context::init_context_and_window(
-            app_name,
-            app_version,
-            engine_name,
-            engine_version,
-            el,
-            window_settings.clone(),
-        )
+        crate::context::init_context_and_window(init, el)
     };
 
     // Add the window resource to the world
@@ -51,13 +39,17 @@ fn event(world: &mut World, event: &mut WindowEvent) {
             let size = vek::Extent2::new(size.width, size.height);
             let mut window = world.get_mut::<Window>().unwrap();
             window.size = size;
+            let graphics = Graphics::global();
+            let queue = graphics.queue();
+            let device = graphics.device();
+            let adapter = graphics.adapter();
+            let surface = graphics.surface();
+            let swapchain = graphics.swapchain();
+            dbg!("window resize");
 
-            /*
             unsafe {
-                let graphics = world.get_mut::<Graphics>().unwrap();
-                graphics.swapchain().recreate(graphics.device(), dimensions);
+                swapchain.resize(adapter, device, surface, window.size());
             }
-            */
         }
 
         // Close requested, set the world state to "Stopped"
@@ -72,26 +64,9 @@ fn event(world: &mut World, event: &mut WindowEvent) {
 
 // Context system will just register the wgpu context and create a simple window
 // This system will also handle window events like exiting
-pub fn system(
-    system: &mut System,
-    window_settings: WindowSettings,
-    app_name: String,
-    app_version: u32,
-    engine_name: String,
-    engine_version: u32,
-) {
+pub fn system(system: &mut System) {
     system
-        .insert_init(move |world: &mut World, el: &EventLoop<()>| {
-            init(
-                world,
-                el,
-                window_settings,
-                app_name,
-                app_version,
-                engine_name,
-                engine_version,
-            )
-        })
+        .insert_init(init)
         .after(utils::threadpool)
         .before(user);
 
