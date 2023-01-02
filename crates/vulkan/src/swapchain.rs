@@ -233,7 +233,7 @@ impl Swapchain {
         match err {
             Ok(_) => Some(()),
             Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => None,
-            Err(_) => Some(()),
+            Err(_) => None,
         }
     }
 
@@ -260,7 +260,11 @@ impl Swapchain {
         surface: &Surface,
         dimensions: vek::Extent2<u32>,
     ) {
+        log::warn!("Recreating swapchain with new dimensions {dimensions}");
         device.wait();
+
+
+
         let create_info = Self::create_swapchain_create_info(
             surface,
             adapter,
@@ -286,5 +290,8 @@ impl Swapchain {
         unsafe {
             self.loader.destroy_swapchain(*self.raw.lock(), None);
         }
+
+        // Updatah
+        *self.raw.lock() = swapchain;
     }
 }

@@ -47,6 +47,18 @@ impl<T: Texel> Texture for Texture2D<T> {
         self.usage
     }
 
+    fn raw(&self) -> vk::Image {
+        self.image
+    }
+
+    fn allocation(&self) -> &Allocation {
+        &self.allocation
+    }
+
+    fn allocation_mut(&mut self) -> &mut Allocation {
+        &mut self.allocation
+    }
+
     unsafe fn from_raw_parts(
         image: vk::Image,
         whole_view: vk::ImageView,
@@ -64,14 +76,6 @@ impl<T: Texel> Texture for Texture2D<T> {
             mode,
             _phantom: PhantomData,
         }
-    }
-
-    fn allocation(&self) -> &Allocation {
-        &self.allocation
-    }
-
-    fn allocation_mut(&mut self) -> &mut Allocation {
-        &mut self.allocation
     }
 }
 

@@ -45,7 +45,6 @@ fn event(world: &mut World, event: &mut WindowEvent) {
             let adapter = graphics.adapter();
             let surface = graphics.surface();
             let swapchain = graphics.swapchain();
-            dbg!("window resize");
 
             unsafe {
                 swapchain.resize(adapter, device, surface, window.size());

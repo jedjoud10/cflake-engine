@@ -1,12 +1,19 @@
-use graphics::{Graphics, Window, vk};
+use graphics::{Graphics, Window, vk, Texture2D, Texture, Allocation};
 use utils::Time;
-use world::{post_user, System, World};
+use world::{post_user, System, World, user};
+
+use crate::ForwardRenderer;
+
+// Add the compositors and setup the world for rendering
+fn init(world: &mut World) {
+    world.insert(ForwardRenderer {})
+}
 
 // Clear the window and render the entities
 fn update(world: &mut World) {
     let graphics = Graphics::global();
-    let window = world.get::<Window>().unwrap();
-    let time = world.get::<Time>().unwrap();
+    let window = world.get_mut::<Window>().unwrap();
+    let mut renderer = world.get_mut::<ForwardRenderer>().unwrap();
     let queue = graphics.queue();
     let device = graphics.device();
     let adapter = graphics.adapter();
@@ -14,7 +21,8 @@ fn update(world: &mut World) {
     let swapchain = graphics.swapchain();
 
     unsafe {
-        let img = swapchain.acquire_next_image().unwrap();
+        // Acquire a new color image to render to
+        let (index, image) = swapchain.acquire_next_image().unwrap();
 
         // Image whole subresource range (TODO: Implement mipmapping
         let subresource_range = vk::ImageSubresourceRange::builder()
@@ -30,7 +38,7 @@ fn update(world: &mut World) {
             .src_access_mask(vk::AccessFlags::MEMORY_READ)
             .dst_access_mask(vk::AccessFlags::TRANSFER_WRITE)
             .subresource_range(*subresource_range)
-            .image(img.1);
+            .image(image);
 
         let image_barrier2 = vk::ImageMemoryBarrier::builder()
             .old_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
@@ -38,7 +46,7 @@ fn update(world: &mut World) {
             .src_access_mask(vk::AccessFlags::TRANSFER_WRITE)
             .dst_access_mask(vk::AccessFlags::MEMORY_READ)
             .subresource_range(*subresource_range)
-            .image(img.1);
+            .image(image);
 
         let color = vk::ClearColorValue {
             float32: [1.0, 1.0, 1.0, 0.0]
@@ -46,18 +54,19 @@ fn update(world: &mut World) {
 
         let mut recorder = queue.acquire(device);
         recorder.cmd_image_memory_barrier(*image_barrier1);
-        recorder.cmd_clear_image(img.1, vk::ImageLayout::TRANSFER_DST_OPTIMAL, color, &[*subresource_range]);
+        recorder.cmd_clear_image(image, vk::ImageLayout::TRANSFER_DST_OPTIMAL, color, &[*subresource_range]);
         recorder.cmd_image_memory_barrier(*image_barrier2);
         recorder.immediate_submit();
-        swapchain.present(queue, img).unwrap();
-        /*
-        let submission = queue.submit(recorder).wait();
-        log::info!("{:?}", submission);
-        */
+
+        // Check if we must recreate the swapchain
+        if let None = swapchain.present(queue, (index, image)) {
+            swapchain.resize(adapter, device, surface, window.size());
+        }
     }
 }
 
 // Rendering system to clear the window and render the entities
 pub fn system(system: &mut System) {
+    system.insert_init(init).before(user).after(graphics::system);
     system.insert_update(update).after(post_user);
 }

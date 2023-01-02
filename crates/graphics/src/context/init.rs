@@ -9,17 +9,30 @@ use winit::{
     window::{Fullscreen, WindowBuilder},
 };
 
+// Temporary resource that the app creates so we can pass data to the graphic system
+pub struct GraphicsInit {
+    pub window_settings: WindowSettings,
+    pub app_name: String,
+    pub app_version: u32,
+    pub engine_name: String,
+    pub engine_version: u32,
+}
+
 // Create the Vulkan context wrapper and a Window wrapper
 pub(crate) unsafe fn init_context_and_window(
-    app_name: String,
-    app_version: u32,
-    engine_name: String,
-    engine_version: u32,
+    init: GraphicsInit,
     el: &EventLoop<()>,
-    settings: WindowSettings,
 ) -> (Graphics, Window) {
+    let GraphicsInit {
+        window_settings,
+        app_name,
+        app_version,
+        engine_name,
+        engine_version,
+    } = init;
+
     // Create a winit window
-    let window = init_window(el, &settings);
+    let window = init_window(el, &window_settings);
 
     // Create the low-level mid wrappers around raw Vulkan objects
     let instance = Instance::new(
@@ -33,7 +46,7 @@ pub(crate) unsafe fn init_context_and_window(
     let adapter = Adapter::pick(&instance, &surface);
     let device = Device::new(&instance, &adapter);
     let queue = Queue::new(&device, &adapter);
-    let vsync = matches!(settings.limit, FrameRateLimit::VSync);
+    let vsync = matches!(window_settings.limit, FrameRateLimit::VSync);
     let swapchain = Swapchain::new(
         &adapter, &surface, &device, &instance, &window, vsync,
     );
@@ -53,7 +66,7 @@ pub(crate) unsafe fn init_context_and_window(
         window.inner_size(),
     ));
     let window = Window {
-        settings,
+        settings: window_settings,
         size,
         raw: window,
     };
@@ -64,15 +77,15 @@ pub(crate) unsafe fn init_context_and_window(
 // Init a winit window
 fn init_window(
     el: &EventLoop<()>,
-    settings: &WindowSettings,
+    window_settings: &WindowSettings,
 ) -> winit::window::Window {
     WindowBuilder::default()
         .with_fullscreen(
-            settings
+            window_settings
                 .fullscreen
                 .then_some(Fullscreen::Borderless(None)),
         )
-        .with_title(&settings.title)
+        .with_title(&window_settings.title)
         .build(&el)
         .unwrap()
 }

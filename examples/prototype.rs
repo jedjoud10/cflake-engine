@@ -7,7 +7,7 @@ fn main() {
     App::default()
         .set_app_name("cflake engine prototype example")
         .insert_init(init)
-        .set_frame_rate_limit(FrameRateLimit::Limited(5))
+        .set_frame_rate_limit(FrameRateLimit::Limited(30))
         .execute();
 }
 

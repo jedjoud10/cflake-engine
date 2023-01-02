@@ -174,6 +174,9 @@ pub trait Texture: Sized {
     // Get the texture's usage
     fn usage(&self) -> TextureUsage;
 
+    // Get the underlying Vulkan image
+    fn raw(&self) -> vk::Image;
+
     // Get immutable access to the internal allocation
     fn allocation(&self) -> &Allocation;
 

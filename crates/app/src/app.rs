@@ -4,7 +4,7 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
 };
 //use gui::egui::util::id_type_map::TypeId;
-use graphics::{FrameRateLimit, WindowSettings};
+use graphics::{FrameRateLimit, WindowSettings, GraphicsInit};
 use mimalloc::MiMalloc;
 use std::{any::TypeId, path::PathBuf};
 use world::{
@@ -267,6 +267,7 @@ impl App {
         self = self.insert_system(audio::system);
         self = self.insert_system(rendering::system);
         self = self.insert_system(networking::system);
+        self = self.insert_system(graphics::system);
 
         // Insert the IO manager
         let author = self.author_name.clone();
@@ -281,23 +282,19 @@ impl App {
             assets::system(system, user)
         });
 
-        // Insert the graphics API if needed
-        let window = self.window.clone();
+        // Insert the graphics API init resource
+        let window_settings = self.window.clone();
         let app_name = self.app_name.clone();
         let app_version = self.app_version;
         let engine_name = self.engine_name.clone();
         let engine_version = self.engine_version;
-        self = self.insert_system(move |system: &mut System| {
-            graphics::system(
-                system,
-                window,
-                app_name,
-                app_version,
-                engine_name,
-                engine_version,
-            );
+        self.world.insert(GraphicsInit {
+            window_settings,
+            app_name,
+            app_version,
+            engine_name,
+            engine_version,
         });
-
         self
     }
 }
