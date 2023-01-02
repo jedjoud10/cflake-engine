@@ -1,4 +1,4 @@
-use std::{any::TypeId, rc::Rc};
+use std::{any::TypeId, rc::Rc, marker::PhantomData};
 use ahash::AHashMap;
 use assets::Assets;
 use crate::{DynamicPipeline, Material, MaterialId, Pipeline};
@@ -17,18 +17,15 @@ impl ForwardRenderer {
         &mut self,
         assets: &Assets,
     ) -> MaterialId<M> {
+        // Initialize the pipeline and register it if needed
         let key = TypeId::of::<M>();
         if !self.pipelines.contains_key(&key) {
-            // Load the material shader
-            let shader = todo!();
-
-            // Initialize the pipeline and register it
-            let pipeline = Pipeline::<M>::new();
+            let pipeline = Pipeline::<M>::new(assets);
             self.pipelines.insert(key, Rc::new(pipeline));
         }
 
         // Material ID is just a marker type for safety
-        MaterialId(Default::default())
+        MaterialId(PhantomData)
     }
 
     // Get a MaterialID from a pre-initialized pipeline
@@ -36,7 +33,7 @@ impl ForwardRenderer {
         let key = TypeId::of::<M>();
         self.pipelines
             .get(&key)
-            .map(|_| MaterialId(Default::default()))
+            .map(|_| MaterialId(PhantomData))
     }
 
     // Extract the internally stored material pipelines

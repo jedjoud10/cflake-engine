@@ -1,4 +1,6 @@
 use std::marker::PhantomData;
+use assets::Assets;
+use graphics::{Shader, GraphicsPipeline};
 use world::World;
 use crate::Material;
 
@@ -14,22 +16,53 @@ impl<M: Material> Clone for MaterialId<M> {
 // A material pipeline will be responsible for rendering surface and
 // entities that correspond to a specific material type.
 pub struct Pipeline<M: Material> {
-    pipeline: graphics::GraphicsPipeline,
-    id: MaterialId<M>,
+    pipeline: GraphicsPipeline,
+    shader: Shader,
     _phantom: PhantomData<M>,
 }
 
 impl<M: Material> Pipeline<M> {
-    // Create a new material pipeline
-    pub fn new() -> Self {
-        todo!()
+    // Create a new material pipeline for the given material
+    // This will load the shader, and create the graphics pipeline
+    pub fn new(assets: &Assets) -> Self {
+        let vertex = M::vertex(assets);
+        let fragment = M::fragment(assets);
+        let shader = Shader::new(vertex, fragment);
+
+        // Create the graphics pipeline
+        let pipeline = unsafe {
+            GraphicsPipeline::new(
+                M::depth_config(),
+                M::stencil_config(),
+                M::blend_config(),
+                M::primitive_mode(),
+                todo!(),
+                shader
+            )
+        };
+
+        Self {
+            pipeline,
+            shader,
+            _phantom: PhantomData,
+        }
+    }
+
+    // Get the material ID of the pipeline
+    pub fn id(&self) -> MaterialId<M> {
+        MaterialId(PhantomData)
+    }
+    
+    // Get the material pipeline shader
+    pub fn shader(&self) -> &Shader {
+        &self.shader
     }
 }
 
 // This trait will be implemented for Pipeline<T> to allow for dynamic dispatch
 pub trait DynamicPipeline {
     // Get the inner graphics pipeline
-    fn graphical(&self) -> &graphics::GraphicsPipeline;
+    fn graphical(&self) -> &GraphicsPipeline;
 
     // Get the inner graphics shader
 
@@ -38,7 +71,7 @@ pub trait DynamicPipeline {
 }
 
 impl<M: Material> DynamicPipeline for Pipeline<M> {
-    fn graphical(&self) -> &graphics::GraphicsPipeline {
+    fn graphical(&self) -> &GraphicsPipeline {
         &self.pipeline
     }
 

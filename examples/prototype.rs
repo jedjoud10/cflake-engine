@@ -42,6 +42,7 @@ fn init(world: &mut World) {
     ).unwrap();
 
     type Test = Texture2D::<RGBA<Normalized<u8>>>;
+    
     let mut texture = assets.load::<Test>("engine/textures/test.jpg").unwrap();
 
     /*

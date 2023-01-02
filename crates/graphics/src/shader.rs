@@ -1,8 +1,8 @@
 mod compiler;
-mod linked;
 mod module;
 mod processor;
+mod shader;
+pub use shader::*;
 pub use compiler::*;
-pub use linked::*;
 pub use module::*;
 pub use processor::*;

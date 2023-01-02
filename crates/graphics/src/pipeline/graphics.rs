@@ -1,7 +1,7 @@
 use crate::{
     BlendConfig, CompareOp, CompiledDescription, DepthConfig,
-    Graphics, GraphicsPipelineLinkedModules, Primitive, RenderPass,
-    ShaderModule, StencilConfig, StencilOp, StencilTest,
+    Graphics, Primitive, RenderPass,
+    ShaderModule, StencilConfig, StencilOp, StencilTest, Shader,
 };
 use std::{mem::transmute, sync::Arc};
 use vulkan::{vk, Device};
@@ -21,6 +21,9 @@ pub struct GraphicsPipeline {
     stencil_config: StencilConfig,
     blend_config: BlendConfig,
     primitive: Primitive,
+
+    // Keep the shader modules alive
+    shader: Shader,
 }
 
 impl Drop for GraphicsPipeline {
@@ -35,14 +38,14 @@ impl Drop for GraphicsPipeline {
 impl GraphicsPipeline {
     // Create a new pipeline with the specified configs
     pub unsafe fn new(
-        graphics: &Graphics,
         depth_config: DepthConfig,
         stencil_config: StencilConfig,
         blend_config: BlendConfig,
         primitive: Primitive,
         render_pass: RenderPass,
-        descriptions: Vec<CompiledDescription>,
+        shader: Shader,
     ) -> Self {
+        let graphics = Graphics::global();
         let pipeline = unsafe {
             // Input assembly state
             let input_assembly_state =
@@ -78,6 +81,10 @@ impl GraphicsPipeline {
             let multisample_state = Self::build_multisampling_state();
 
             // Pipeline stages create info
+            let descriptions = vec![
+                shader.vertex().description(),
+                shader.fragment().description()
+            ];
             let stages = Self::build_stages(descriptions);
 
             // Create info for the graphics pipeline
@@ -103,6 +110,7 @@ impl GraphicsPipeline {
             stencil_config,
             blend_config,
             primitive,
+            shader,
         }
     }
 
