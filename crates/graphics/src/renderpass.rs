@@ -1,4 +1,8 @@
 mod attachment;
-mod pass;
+mod renderpass;
+mod active;
+mod operations;
+pub use operations::*;
+pub use active::*;
 pub use attachment::*;
-pub use pass::*;
+pub use renderpass::*;

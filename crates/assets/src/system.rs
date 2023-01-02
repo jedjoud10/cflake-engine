@@ -8,8 +8,8 @@ fn init(world: &mut World, user: Option<PathBuf>) {
     let loader = Assets::new(user);
 
     // Load the default shaders
+    persistent!(loader, "engine/shaders/basic.frag");
     persistent!(loader, "engine/shaders/basic.vert");
-    persistent!(loader, "engine/shaders/basic.glsl");
 
     // Load the default textures
     persistent!(loader, "engine/textures/test.jpg");

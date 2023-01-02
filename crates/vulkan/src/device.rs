@@ -157,6 +157,7 @@ impl Device {
     }
 }
 
+// Synchronization
 impl Device {
     // Create a single simple semaphore
     pub unsafe fn create_semaphore(&self) -> vk::Semaphore {
@@ -181,6 +182,7 @@ impl Device {
     }
 }
 
+// Pipelines and shader modules
 impl Device {
     // Translate some GLSL shader code to SPIRV
     pub unsafe fn translate_glsl_spirv(
@@ -242,35 +244,44 @@ impl Device {
             .unwrap()[0]
     }
 
-    // Create a render pass based on the given info
+    // Create a framebuffer to be used with a render pass
+    pub unsafe fn create_frame_buffer(
+        &self,
+        attachment_image_infos: &[vk::FramebufferAttachmentImageInfo],
+        extent: vek::Extent2<u32>
+    ) -> vk::Framebuffer {
+        let mut frame_buffer_attachments_create_info = vk::FramebufferAttachmentsCreateInfo::builder()
+            .attachment_image_infos(attachment_image_infos);
+
+        let frame_buffer_create_info = vk::FramebufferCreateInfo::builder()
+            .attachments(&[])
+            .width(extent.w)
+            .height(extent.h)
+            .push_next(&mut frame_buffer_attachments_create_info);
+
+        self.raw().create_framebuffer(&frame_buffer_create_info, None).unwrap()
+    }
+
+
+    // Create a single render pass to be used with a framebuffer
     pub unsafe fn create_render_pass(
         &self,
-        create_info: vk::RenderPassCreateInfo,
+        subpasses: &[vk::SubpassDescription],
+        dependencies: &[vk::SubpassDependency],
     ) -> vk::RenderPass {
-        self.raw().create_render_pass(&create_info, None).unwrap()
+        let render_pass_create_info = vk::RenderPassCreateInfo::builder()
+            .dependencies(dependencies)
+            .subpasses(subpasses);
+        self.raw().create_render_pass(&render_pass_create_info, None).unwrap()
     }
 
-    // Create a new framebuffer
-    pub unsafe fn create_framebuffer(
+    // Destroy a specific render pass and a framebuffer
+    pub unsafe fn destroy_render_pass_and_framebuffer(
         &self,
-        create_info: vk::FramebufferCreateInfo,
-    ) -> vk::Framebuffer {
-        self.raw().create_framebuffer(&create_info, None).unwrap()
-    }
-
-    // Destroy a specific render pass
-    pub unsafe fn destroy_render_pass(
-        &self,
-        renderpass: vk::RenderPass,
-    ) {
-        self.raw().destroy_render_pass(renderpass, None);
-    }
-
-    // Destroy a specific framebuffer
-    pub unsafe fn destroy_framebuffer(
-        &self,
+        render_pass: vk::RenderPass,
         framebuffer: vk::Framebuffer,
     ) {
+        self.raw().destroy_render_pass(render_pass, None);
         self.raw().destroy_framebuffer(framebuffer, None);
     }
 
@@ -288,6 +299,7 @@ impl Device {
     }
 }
 
+// Samplers
 impl Device {
     // Create an image sampler
     pub unsafe fn create_sampler(
@@ -341,8 +353,15 @@ impl Device {
     }
 
     // Destroy an image sampler
+    pub unsafe fn destroy_sampler(
+        &self,
+        sampler: vk::Sampler
+    ) {
+        self.raw().destroy_sampler(sampler, None);
+    }
 }
 
+// Buffers and images
 impl Device {
     // Create a raw buffer and allocate the needed memory for it
     pub unsafe fn create_buffer(

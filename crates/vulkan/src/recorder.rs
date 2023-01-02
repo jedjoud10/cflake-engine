@@ -274,6 +274,53 @@ impl<'a> Recorder<'a> {
     }
 }
 
+// Render pass commands
+
+impl<'a> Recorder<'a> {
+    // Begin a render pass
+    pub unsafe fn cmd_begin_render_pass(
+        &mut self,
+        render_pass: vk::RenderPass,
+        framebuffer: vk::Framebuffer,
+        image_views: &[vk::ImageView],
+        rect: vek::Rect<i32, u32>,
+    ) {
+        let mut attachments = vk::RenderPassAttachmentBeginInfo::builder()
+            .attachments(image_views);
+
+        let begin_info = vk::RenderPassBeginInfo::builder()
+            .framebuffer(framebuffer)
+            .render_pass(render_pass)
+            .render_area(vk::Rect2D {
+                offset: vk::Offset2D {
+                    x: rect.x,
+                    y: rect.y,
+                },
+                extent: vk::Extent2D {
+                    width: rect.w,
+                    height: rect.h,
+                },
+            })
+            .push_next(&mut attachments);
+
+        self.device().raw().cmd_begin_render_pass(
+            self.command_buffer.raw(),
+            &begin_info,
+            vk::SubpassContents::INLINE
+        );
+    }
+    
+    // End the currently active render pass
+    pub unsafe fn cmd_end_render_pass(&mut self) {
+        self.device().raw().cmd_end_render_pass(self.command_buffer().raw());
+    }
+    
+    // Bind a pipeline to the bind point
+    pub unsafe fn cmd_bind_pipeline(&mut self, pipeline: vk::Pipeline, point: vk::PipelineBindPoint) {
+        self.device().raw().cmd_bind_pipeline(self.command_buffer().raw(), point, pipeline);
+    }
+}
+
 // This is a submission of a command recorder
 // The underlying command buffer might've not been submitted yet
 pub struct Submission<'a> {

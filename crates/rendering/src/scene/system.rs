@@ -1,4 +1,4 @@
-use graphics::{Graphics, Window, vk, Texture2D, Texture, Allocation};
+use graphics::{Graphics, Window, vk, Texture2D, Texture, Allocation, RenderPass};
 use utils::Time;
 use world::{post_user, System, World, user};
 
@@ -6,7 +6,7 @@ use crate::ForwardRenderer;
 
 // Add the compositors and setup the world for rendering
 fn init(world: &mut World) {
-    world.insert(ForwardRenderer::default())
+    world.insert(ForwardRenderer::new(renderpass))
 }
 
 // Clear the window and render the entities

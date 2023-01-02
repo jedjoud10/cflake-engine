@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 use assets::Assets;
-use graphics::{Shader, GraphicsPipeline};
+use graphics::{Shader, GraphicsPipeline, RenderPass};
 use world::World;
 use crate::Material;
 
@@ -24,7 +24,7 @@ pub struct Pipeline<M: Material> {
 impl<M: Material> Pipeline<M> {
     // Create a new material pipeline for the given material
     // This will load the shader, and create the graphics pipeline
-    pub fn new(assets: &Assets) -> Self {
+    pub fn new(assets: &Assets, render_pass: RenderPass) -> Self {
         let vertex = M::vertex(assets);
         let fragment = M::fragment(assets);
         let shader = Shader::new(vertex, fragment);
@@ -36,7 +36,7 @@ impl<M: Material> Pipeline<M> {
                 M::stencil_config(),
                 M::blend_config(),
                 M::primitive_mode(),
-                todo!(),
+                render_pass,
                 shader
             )
         };
