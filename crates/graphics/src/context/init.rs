@@ -69,6 +69,7 @@ pub(crate) unsafe fn init_context_and_window(
         settings: window_settings,
         size,
         raw: window,
+        dirty: false,
     };
 
     (graphics, window)

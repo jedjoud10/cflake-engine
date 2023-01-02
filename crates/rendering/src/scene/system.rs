@@ -1,12 +1,30 @@
-use graphics::{Graphics, Window, vk, Texture2D, Texture, Allocation, RenderPass};
+use std::mem::ManuallyDrop;
+use graphics::{Graphics, Window, vk, Texture2D, Texture, Allocation, RenderPass, BGRA, Normalized, TextureUsage, TextureMode, Swapchain};
 use utils::Time;
 use world::{post_user, System, World, user};
-
 use crate::ForwardRenderer;
 
 // Add the compositors and setup the world for rendering
 fn init(world: &mut World) {
-    world.insert(ForwardRenderer::new(renderpass))
+    let graphics = Graphics::global();
+    let render_targets = swapchain_images_to_textures(graphics.swapchain());
+    world.insert(ForwardRenderer::new(render_targets))
+}
+
+// Create the texture wrappers from the swapchain
+fn swapchain_images_to_textures(swapchain: &Swapchain)-> Vec<ManuallyDrop<Texture2D::<BGRA<Normalized<u8>>>>> {
+    let images = swapchain.images();
+    let dimensions = swapchain.extent();
+    images.into_iter().map(|(image, view)| unsafe {
+        Texture2D::<BGRA<Normalized<u8>>>::from_raw_parts(
+            image,
+            view,
+            Allocation::default(),
+            dimensions,
+            TextureUsage::Placeholder,
+            TextureMode::Dynamic,
+        )
+    }).map(ManuallyDrop::new).collect::<Vec<_>>()
 }
 
 // Clear the window and render the entities
@@ -21,49 +39,25 @@ fn update(world: &mut World) {
     let surface = graphics.surface();
     let swapchain = graphics.swapchain();
 
+    // Check if we must resize the swapchain
+    if window.is_dirty() {
+        unsafe {
+            swapchain.resize(adapter, device, surface, window.size());
+            swapchain.images();
+        }
+    }
+
     unsafe {
         // Acquire a new color image to render to
-        let (index, image) = swapchain.acquire_next_image().unwrap();
+        let index = swapchain.acquire_next_image().unwrap();
+        let texture = renderer.render_targets.get(index as usize).unwrap();
 
-        // Image whole subresource range (TODO: Implement mipmapping
-        let subresource_range = vk::ImageSubresourceRange::builder()
-            .aspect_mask(vk::ImageAspectFlags::COLOR)
-            .base_mip_level(0)
-            .base_array_layer(0)
-            .layer_count(1)
-            .level_count(1);
 
-        let image_barrier1 = vk::ImageMemoryBarrier::builder()
-            .old_layout(vk::ImageLayout::UNDEFINED)
-            .new_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
-            .src_access_mask(vk::AccessFlags::MEMORY_READ)
-            .dst_access_mask(vk::AccessFlags::TRANSFER_WRITE)
-            .subresource_range(*subresource_range)
-            .image(image);
-
-        let image_barrier2 = vk::ImageMemoryBarrier::builder()
-            .old_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
-            .new_layout(vk::ImageLayout::PRESENT_SRC_KHR)
-            .src_access_mask(vk::AccessFlags::TRANSFER_WRITE)
-            .dst_access_mask(vk::AccessFlags::MEMORY_READ)
-            .subresource_range(*subresource_range)
-            .image(image);
-
-        let value = time.since_startup().as_secs_f32().sin() * 0.5 + 0.5;
-
-        let color = vk::ClearColorValue {
-            float32: [value; 4]
-        };
-
-        let mut recorder = queue.acquire(device);
-        recorder.cmd_image_memory_barrier(*image_barrier1);
-        recorder.cmd_clear_image(image, vk::ImageLayout::TRANSFER_DST_OPTIMAL, color, &[*subresource_range]);
-        recorder.cmd_image_memory_barrier(*image_barrier2);
-        recorder.immediate_submit();
 
         // Check if we must recreate the swapchain
-        if let None = swapchain.present(queue, (index, image)) {
+        if let None = swapchain.present(queue, device, index) {
             swapchain.resize(adapter, device, surface, window.size());
+            renderer.render_targets = swapchain_images_to_textures(swapchain);
         }
     }
 }

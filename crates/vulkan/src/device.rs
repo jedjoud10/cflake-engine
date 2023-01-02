@@ -420,24 +420,6 @@ impl Device {
         (buffer, allocation)
     }
 
-    // Free a buffer and it's allocation
-    pub unsafe fn destroy_buffer(
-        &self,
-        buffer: vk::Buffer,
-        allocation: Allocation,
-    ) {
-        // Deallocate the underlying memory
-        log::debug!(
-            "Freeing allocation with mapped ptr: {:?}",
-            allocation.mapped_ptr()
-        );
-        self.allocator().free(allocation).unwrap();
-
-        // Delete the Vulkan buffer
-        log::debug!("Freeing buffer {:?}", buffer);
-        self.device.destroy_buffer(buffer, None);
-    }
-
     // Create a raw image and allocate the needed memory for it
     pub unsafe fn create_image(
         &self,
@@ -506,6 +488,24 @@ impl Device {
         (image, allocation)
     }
 
+    // Free a buffer and it's allocation
+    pub unsafe fn destroy_buffer(
+        &self,
+        buffer: vk::Buffer,
+        allocation: Allocation,
+    ) {
+        // Deallocate the underlying memory
+        log::debug!(
+            "Freeing allocation with mapped ptr: {:?}",
+            allocation.mapped_ptr()
+        );
+        self.allocator().free(allocation).unwrap();
+
+        // Delete the Vulkan buffer
+        log::debug!("Freeing buffer {:?}", buffer);
+        self.device.destroy_buffer(buffer, None);
+    }    
+
     // Free an image and it's allocation
     pub unsafe fn destroy_image(
         &self,
@@ -522,5 +522,37 @@ impl Device {
         // Delete the Vulkan image
         log::debug!("Freeing image {:?}", image);
         self.device.destroy_image(image, None);
+    }
+}
+
+// Buffer and image views
+impl Device{
+    // Create a new image view for an image
+    pub unsafe fn create_image_view(
+        &self,
+        flags: vk::ImageViewCreateFlags,
+        image: vk::Image,
+        view_type: vk::ImageViewType,
+        format: vk::Format,
+        components: vk::ComponentMapping,
+        subresource_range: vk::ImageSubresourceRange,
+    ) -> vk::ImageView {
+        let create_info = vk::ImageViewCreateInfo::builder()
+            .components(components)
+            .subresource_range(subresource_range)
+            .format(format)
+            .view_type(view_type)
+            .image(image)
+            .flags(flags);
+        
+        self.raw().create_image_view(&create_info, None).unwrap()
+    }
+
+    // Destroy an image view
+    pub unsafe fn destroy_image_view(
+        &self,
+        view: vk::ImageView
+    ) {
+        self.raw().destroy_image_view(view, None);
     }
 }

@@ -37,7 +37,7 @@ impl<M: Material> Pipeline<M> {
                 M::blend_config(),
                 M::primitive_mode(),
                 render_pass,
-                shader
+                shader.clone()
             )
         };
 

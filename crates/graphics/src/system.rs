@@ -19,6 +19,11 @@ fn init(world: &mut World, el: &EventLoop<()>) {
     *crate::context::CONTEXT.write() = Some(graphics);
 }
 
+fn update(world: &mut World) {
+    let mut window = world.get_mut::<Window>().unwrap();
+    window.dirty = false;
+}
+
 // Destroy the underlying Vulkan context when we stop the app
 fn shutdown() {
     let taken = crate::context::CONTEXT.write().take().unwrap();
@@ -39,16 +44,7 @@ fn event(world: &mut World, event: &mut WindowEvent) {
             let size = vek::Extent2::new(size.width, size.height);
             let mut window = world.get_mut::<Window>().unwrap();
             window.size = size;
-            let graphics = Graphics::global();
-            let queue = graphics.queue();
-            let device = graphics.device();
-            let adapter = graphics.adapter();
-            let surface = graphics.surface();
-            let swapchain = graphics.swapchain();
-
-            unsafe {
-                swapchain.resize(adapter, device, surface, window.size());
-            }
+            window.dirty = true;
         }
 
         // Close requested, set the world state to "Stopped"
@@ -70,5 +66,6 @@ pub fn system(system: &mut System) {
         .before(user);
 
     system.insert_window(event);
+    system.insert_update(update);
     system.insert_shutdown(shutdown).after(post_user);
 }

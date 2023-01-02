@@ -31,6 +31,7 @@ pub struct Window {
     pub(crate) settings: WindowSettings,
     pub(crate) raw: winit::window::Window,
     pub(crate) size: vek::Extent2<u32>,
+    pub(crate) dirty: bool,
 }
 
 impl Window {
@@ -47,5 +48,10 @@ impl Window {
     // Get the current size of the window in pixels
     pub fn size(&self) -> vek::Extent2<u32> {
         self.size
+    }
+
+    // Check if the window was resized in the past
+    pub fn is_dirty(&self) -> bool {
+        self.dirty
     }
 }

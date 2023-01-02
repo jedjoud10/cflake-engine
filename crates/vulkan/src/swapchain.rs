@@ -9,7 +9,7 @@ pub struct Swapchain {
     pub(super) raw: Mutex<vk::SwapchainKHR>,
 
     // Image data
-    pub(super) images: Mutex<Vec<vk::Image>>,
+    pub(super) images: Mutex<Vec<(vk::Image, vk::ImageView)>>,
     pub(super) extent: Mutex<vek::Extent2<u32>>,
 
     // Synchronization
@@ -72,17 +72,16 @@ impl Swapchain {
                 .expect("Could not create the swapchain")
         };
 
-        // Create the image handles
-        let swapchain_images = unsafe {
-            swapchain_loader.get_swapchain_images(swapchain).unwrap()
+        // Create the image handles and image views
+        let images = unsafe {
+            Self::get_images_and_views(
+                swapchain,
+                &swapchain_loader,
+                format.format,
+                adapter,
+                device
+            )
         };
-        let min = adapter.surface_properties().surface_capabilities.min_image_count
-            as usize;
-        log::debug!(
-            "Swapchain contains {} images. {} more than the minimum",
-            swapchain_images.len(),
-            swapchain_images.len() - min
-        );
 
         // Semaphore that is signaled whenever we have a new available image
         let image_available_semaphore =
@@ -99,7 +98,7 @@ impl Swapchain {
         Swapchain {
             loader: swapchain_loader,
             raw: Mutex::new(swapchain),
-            images: Mutex::new(swapchain_images),
+            images: Mutex::new(images),
             extent: Mutex::new(extent),
             rendering_finished_semaphore,
             rendering_finished_fence,
@@ -141,6 +140,51 @@ impl Swapchain {
             .image_sharing_mode(vk::SharingMode::EXCLUSIVE)
             .old_swapchain(old_swapchain)
             .present_mode(present)
+    }
+
+    // Get the images and image views for the swapchain
+    unsafe fn get_images_and_views(
+        swapchain: vk::SwapchainKHR,
+        loader: &ash::extensions::khr::Swapchain,
+        format: vk::Format,
+        adapter: &Adapter,
+        device: &Device,
+    ) -> Vec<(vk::Image, vk::ImageView)> {
+        let swapchain_images = unsafe {
+            loader.get_swapchain_images(swapchain).unwrap()
+        };
+        let min = adapter.surface_properties().surface_capabilities.min_image_count
+            as usize;
+        log::debug!(
+            "Swapchain contains {} images. {} more than the minimum",
+            swapchain_images.len(),
+            swapchain_images.len() - min
+        );
+
+        // Create the image views
+        let image_views = swapchain_images.iter().map(|image| unsafe {
+            device.create_image_view(
+                vk::ImageViewCreateFlags::empty(),
+                *image,
+                vk::ImageViewType::TYPE_2D,
+                format,
+                vk::ComponentMapping {
+                    r: vk::ComponentSwizzle::IDENTITY,
+                    g: vk::ComponentSwizzle::IDENTITY,
+                    b: vk::ComponentSwizzle::IDENTITY,
+                    a: vk::ComponentSwizzle::IDENTITY,
+                },
+                vk::ImageSubresourceRange {
+                    aspect_mask: vk::ImageAspectFlags::COLOR,
+                    base_mip_level: 0,
+                    level_count: 1,
+                    base_array_layer: 0,
+                    layer_count: 1,
+                }
+            )
+        });
+
+        swapchain_images.iter().cloned().zip(image_views).collect::<Vec<_>>()
     }
 
     // Pick the proper swapchain presentation mode
@@ -185,6 +229,11 @@ impl Swapchain {
             self.rendering_finished_semaphore,
             None,
         );
+
+        for (_, view) in &*self.images.lock() {
+            device.destroy_image_view(*view);
+        }
+
         device
             .raw()
             .destroy_fence(self.rendering_finished_fence, None);
@@ -196,7 +245,7 @@ impl Swapchain {
     // Get the next free image that we can render to
     pub unsafe fn acquire_next_image(
         &self,
-    ) -> Option<(u32, vk::Image)> {
+    ) -> Option<u32> {
         let err = self.loader.acquire_next_image(
             *self.raw.lock(),
             u64::MAX,
@@ -206,7 +255,7 @@ impl Swapchain {
 
         match err {
             Ok((index, _)) => {
-                Some((index, self.images.lock()[index as usize]))
+                Some(index)
             }
             Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => None,
             Err(_) => None,
@@ -218,17 +267,19 @@ impl Swapchain {
     pub unsafe fn present(
         &self,
         queue: &Queue,
-        index: (u32, vk::Image),
+        device: &Device,
+        index: u32,
     ) -> Option<()> {
         // Wait until the command buffers finished executing so we can present the image
         let present_info = *vk::PresentInfoKHR::builder()
             .swapchains(&[*self.raw.lock()])
             .wait_semaphores(&[self.image_available_semaphore])
-            .image_indices(&[index.0]);
+            .image_indices(&[index]);
 
         // Present the image to the screen
         let err =
             self.loader.queue_present(queue.queue, &present_info);
+        device.wait();
 
         match err {
             Ok(_) => Some(()),
@@ -252,6 +303,11 @@ impl Swapchain {
         *self.extent.lock()
     }
 
+    // Get the swapchain images and views
+    pub fn images(&self) -> Vec<(vk::Image, vk::ImageView)> {
+        self.images.lock().clone()
+    }
+
     // Recreate the swapchain with some new dimensions
     pub unsafe fn resize(
         &self,
@@ -262,8 +318,6 @@ impl Swapchain {
     ) {
         log::warn!("Recreating swapchain with new dimensions {dimensions}");
         device.wait();
-
-
 
         let create_info = Self::create_swapchain_create_info(
             surface,
@@ -282,9 +336,21 @@ impl Swapchain {
         };
 
         // Update the used swapchain image
-        *self.images.lock() = unsafe {
-            self.loader.get_swapchain_images(swapchain).unwrap()
-        };
+        let old_images = std::mem::replace(
+            &mut *self.images.lock(),
+            Self::get_images_and_views(
+                swapchain,
+                &self.loader,
+                self.format.format,
+                adapter,
+                device
+            )
+        );
+
+        // Destroy the old image view
+        for (_, view) in old_images {
+            device.destroy_image_view(view);
+        }
 
         // Destroy the old swapchain
         unsafe {
