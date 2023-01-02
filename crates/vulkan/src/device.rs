@@ -298,6 +298,7 @@ impl Device {
         max_anisotropy: Option<f32>,
         border_color: vk::BorderColor,
         custom_border_color: vk::ClearColorValue,
+        mipmap_mode: Option<(f32, f32, f32, vk::SamplerMipmapMode)>,
     ) -> vk::Sampler {
         let builder = vk::SamplerCreateInfo::builder()
             .mag_filter(filter)
@@ -310,6 +311,16 @@ impl Device {
             builder
                 .anisotropy_enable(true)
                 .max_anisotropy(max_anisotropy)
+        } else {
+            builder
+        };
+
+        let builder = if let Some((min_lod, max_lod, lod_bias, mode)) = mipmap_mode {
+            builder
+                .mipmap_mode(mode)
+                .min_lod(min_lod)
+                .max_lod(max_lod)
+                .mip_lod_bias(lod_bias)
         } else {
             builder
         };

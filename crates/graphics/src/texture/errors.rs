@@ -27,3 +27,7 @@ pub enum TextureAssetLoadError {
     #[error("{0}")]
     Deserialization(image::ImageError),
 }
+
+#[derive(Error, Debug)]
+#[error("Cannot create a sampler for texture since it does not have the approperiate usage flags")]
+pub struct TextureSamplerError;

@@ -1,6 +1,6 @@
 use vulkan::{Allocation, vk};
 
-use crate::{Graphics, Region, Texel, TextureMode, TextureUsage, UntypedTexel, Extent, MipLevelMut, MipLevelRef, TextureInitializationError, TextureMipLayerError};
+use crate::{Graphics, Region, Texel, TextureMode, TextureUsage, UntypedTexel, Extent, MipLevelMut, MipLevelRef, TextureInitializationError, TextureMipLayerError, Sampler, TextureSamplerError};
 
 // Predefined texel data
 type Texels<'a, T> = &'a [<T as Texel>::Storage];
@@ -186,6 +186,11 @@ pub trait Texture: Sized {
 
     // Get a single mip level from the texture, mutably (uses internal mutability pattern)
     fn mip_mut(&mut self, level: u8) -> Result<MipLevelMut<Self>, TextureMipLayerError> {
+        todo!()
+    }
+
+    // Try to get a sampler for this texture so we can read from it within shaders 
+    fn try_fetch_sampler(&self) -> Result<Sampler<Self>, TextureSamplerError> {
         todo!()
     }
 
