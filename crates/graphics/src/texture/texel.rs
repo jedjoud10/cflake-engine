@@ -1,7 +1,7 @@
 use crate::{
     AnyElement, Base, BaseType, ChannelsType, VectorChannels, Depth, DepthElement,
     ElementType, Normalizable, Normalized, Stencil, StencilElement,
-    R, RG, RGB, RGBA, GpuPod,
+    R, RG, RGB, RGBA, BGR, BGRA, Swizzable
 };
 use std::mem::size_of;
 use vek::{Vec2, Vec3, Vec4};
@@ -57,6 +57,22 @@ pub trait ImageTexel: Texel {
 macro_rules! impl_color_texel_layout {
     ($t:ident, $channels_type:expr, $vec: ident) => {
         impl<T: AnyElement> Texel for $t<T> {
+            const BITS_PER_CHANNEL: u32 = size_of::<T>() as u32 * 8;
+            const ELEMENT_TYPE: ElementType = T::ELEMENT_TYPE;
+            const CHANNELS_TYPE: ChannelsType = $channels_type;
+            const FORMAT: vk::Format = crate::format::pick_format_from_params(
+                Self::ELEMENT_TYPE,
+                Self::CHANNELS_TYPE,
+            );
+            type Storage = $vec<T::Storage>;
+        }
+    };
+}
+
+// Implement the swizzled color texel layout
+macro_rules! impl_swizzled_color_texel_layout {
+    ($t:ident, $channels_type:expr, $vec: ident) => {
+        impl<T: AnyElement + Swizzable> Texel for $t<T> {
             const BITS_PER_CHANNEL: u32 = size_of::<T>() as u32 * 8;
             const ELEMENT_TYPE: ElementType = T::ELEMENT_TYPE;
             const CHANNELS_TYPE: ChannelsType = $channels_type;
@@ -141,8 +157,23 @@ impl_color_texel_layout!(
     ChannelsType::Vector(VectorChannels::Four),
     Vec4
 );
+
+// Swizzled
+impl_swizzled_color_texel_layout!(
+    BGR,
+    ChannelsType::Vector(VectorChannels::ThreeSwizzled),
+    Vec3
+);
+impl_swizzled_color_texel_layout!(
+    BGRA,
+    ChannelsType::Vector(VectorChannels::FourSwizzled),
+    Vec4
+);
+
+// Special
 impl_special_texel_layout!();
 
+// Image texels
 impl_image_texel!(R, |val| val[0]);
 impl_image_texel!(RG, vek::Vec2::from_slice);
 impl_image_texel!(RGB, vek::Vec3::from_slice);

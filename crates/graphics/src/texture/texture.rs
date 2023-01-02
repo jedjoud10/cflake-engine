@@ -63,8 +63,10 @@ pub trait Texture: Sized {
             _ => panic!("1D, 2D, or 3D textures are the only supported types of textures")
         };
 
-        // Pick the vulkan image usage flags
+        // TODO: Pick the vulkan image usage flags
         let image_usage_flags = vk::ImageUsageFlags::TRANSFER_DST | vk::ImageUsageFlags::SAMPLED;
+
+        // TODO: Check if the format is valid for the given usage flag
 
         // Create the raw Vulkan image
         let (image, allocation) = unsafe {
@@ -81,7 +83,7 @@ pub trait Texture: Sized {
             )
         };
 
-        // Optimal image layout for our specific use
+        // TODO: Select ptimal image layout for our specific use
         let dst_image_layout = vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL;
         let dst_access_mask = vk::AccessFlags::SHADER_READ;
 

@@ -23,12 +23,16 @@ pub const fn pick_format_from_vector_channels(
         let signed_offset = signed as i32;
 
         let normalized_offset = !normalized as i32 * 4;
+        let swizzled = channels.is_swizzled();
         let channels_offset = match channels.count() {
             1 => 0,
             2 => 7,
-            3 => 14,
+            3 if bitsize == 16 => 14,
+            3 if bitsize != 16 && !swizzled => 14,
+            3 if bitsize != 16 && swizzled => 21,
             4 if bitsize == 16 => 21,
-            4 if bitsize != 16 => 28,
+            4 if bitsize != 16 && !swizzled => 28,
+            4 if bitsize != 16 && swizzled => 35,
             _ => panic!(),
         };
 

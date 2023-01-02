@@ -92,8 +92,16 @@ mod texels {
             vk::Format::R8G8B8_UNORM
         );
         assert_eq!(
+            BGR::<Normalized<u8>>::FORMAT,
+            vk::Format::B8G8R8_UNORM
+        );
+        assert_eq!(
             RGBA::<Normalized<u8>>::FORMAT,
             vk::Format::R8G8B8A8_UNORM
+        );
+        assert_eq!(
+            BGRA::<Normalized<u8>>::FORMAT,
+            vk::Format::B8G8R8A8_UNORM
         );
 
         assert_eq!(
@@ -123,8 +131,16 @@ mod texels {
             vk::Format::R8G8B8_SNORM
         );
         assert_eq!(
+            BGR::<Normalized<i8>>::FORMAT,
+            vk::Format::B8G8R8_SNORM
+        );
+        assert_eq!(
             RGBA::<Normalized<i8>>::FORMAT,
             vk::Format::R8G8B8A8_SNORM
+        );
+        assert_eq!(
+            BGRA::<Normalized<i8>>::FORMAT,
+            vk::Format::B8G8R8A8_SNORM
         );
 
         assert_eq!(

@@ -38,7 +38,7 @@ impl Primitive {
                     }
                 })
                 .unwrap_or(vk::FrontFace::CLOCKWISE),
-            Primitive::Lines { width } => vk::FrontFace::CLOCKWISE,
+            Primitive::Lines { .. } => vk::FrontFace::CLOCKWISE,
             Primitive::Points => vk::FrontFace::CLOCKWISE,
         }
     }
