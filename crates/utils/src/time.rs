@@ -25,11 +25,6 @@ impl Time {
         self.delta
     }
 
-    // Get the time delta as a float depicting the number of seconds that elapsed
-    pub fn delta_f32(&self) -> f32 {
-        self.delta().as_secs_f32()
-    }
-
     // Get the total frame count
     pub fn frame_count(&self) -> u128 {
         self.frame_count
@@ -40,9 +35,9 @@ impl Time {
         self.startup
     }
 
-    // Caclulate the number of seconds that have passed since the start of the engine
-    pub fn secs_since_startup_f32(&self) -> f32 {
-        (Instant::now() - self.startup()).as_secs_f32()
+    // Calculate the elapsed time that have passed since the start of the engine
+    pub fn since_startup(&self) -> Duration {
+        Instant::now() - self.startup()
     }
 
     // Get the moment the current frame started

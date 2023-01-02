@@ -23,13 +23,11 @@ pub trait Material: 'static + Sized {
 
     // Load the vertex module and process it
     fn vertex(
-        graphics: &Graphics,
         assets: &Assets,
     ) -> Compiled<VertexModule>;
 
     // Load the fragment module and process it
     fn fragment(
-        graphics: &Graphics,
         assets: &Assets,
     ) -> Compiled<FragmentModule>;
 

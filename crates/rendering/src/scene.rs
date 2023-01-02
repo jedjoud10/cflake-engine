@@ -1,4 +1,4 @@
 mod system;
-mod composites;
-pub use composites::*;
+mod resources;
+pub use resources::*;
 pub use system::*;

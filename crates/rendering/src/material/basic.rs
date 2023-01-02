@@ -25,7 +25,6 @@ impl Material for Basic {
 
     // Load the vertex shader for this material
     fn vertex(
-        graphics: &Graphics,
         assets: &Assets,
     ) -> Compiled<VertexModule> {
         let vert = assets
@@ -37,7 +36,6 @@ impl Material for Basic {
 
     // Load the fragment shader for this material
     fn fragment(
-        graphics: &Graphics,
         assets: &Assets,
     ) -> Compiled<graphics::FragmentModule> {
         let frag = assets

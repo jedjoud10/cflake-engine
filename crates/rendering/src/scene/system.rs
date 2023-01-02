@@ -6,7 +6,7 @@ use crate::ForwardRenderer;
 
 // Add the compositors and setup the world for rendering
 fn init(world: &mut World) {
-    world.insert(ForwardRenderer {})
+    world.insert(ForwardRenderer::default())
 }
 
 // Clear the window and render the entities
@@ -14,6 +14,7 @@ fn update(world: &mut World) {
     let graphics = Graphics::global();
     let window = world.get_mut::<Window>().unwrap();
     let mut renderer = world.get_mut::<ForwardRenderer>().unwrap();
+    let time = world.get::<Time>().unwrap();
     let queue = graphics.queue();
     let device = graphics.device();
     let adapter = graphics.adapter();
@@ -48,8 +49,10 @@ fn update(world: &mut World) {
             .subresource_range(*subresource_range)
             .image(image);
 
+        let value = time.since_startup().as_secs_f32().sin() * 0.5 + 0.5;
+
         let color = vk::ClearColorValue {
-            float32: [1.0, 1.0, 1.0, 0.0]
+            float32: [value; 4]
         };
 
         let mut recorder = queue.acquire(device);

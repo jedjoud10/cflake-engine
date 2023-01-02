@@ -7,7 +7,7 @@ fn main() {
     App::default()
         .set_app_name("cflake engine prototype example")
         .insert_init(init)
-        .set_frame_rate_limit(FrameRateLimit::Limited(30))
+        //.set_frame_rate_limit(FrameRateLimit::Limited(30))
         .execute();
 }
 
@@ -43,4 +43,9 @@ fn init(world: &mut World) {
 
     type Test = Texture2D::<RGBA<Normalized<u8>>>;
     let mut texture = assets.load::<Test>("engine/textures/test.jpg").unwrap();
+
+    /*
+    let mut renderer = world.get_mut::<ForwardRenderer>().unwrap();
+    let material_id = renderer.register::<Basic>(&assets);
+    */
 }
