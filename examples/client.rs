@@ -4,11 +4,23 @@ use cflake_engine::prelude::*;
 fn main() {
     App::default()
         .insert_init(init)
-        .set_app_name("Hello World!")
+        .insert_update(update)
+        .set_app_name("Client!")
         .execute();
 }
 
 // Start a client and connect to the machine hosted server
 fn init(world: &mut World) {
-    world.insert(Client::connect("localhost:25565"));
+    world.insert(NetworkedSession::connect("127.0.0.1:8080").unwrap());
+}
+
+fn update(world: &mut World) {
+    let input = world.get::<Input>().unwrap();
+    let mut session = world.get_mut::<NetworkedSession>().unwrap();
+
+    if input.get_button(Button::A).pressed() {
+        if let NetworkedSession::Client(client) = &mut *session {
+            client.send::<u32>(5);
+        }
+    }
 }

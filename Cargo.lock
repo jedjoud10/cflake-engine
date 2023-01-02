@@ -1475,6 +1475,7 @@ dependencies = [
  "ahash",
  "ecs",
  "log",
+ "serde",
  "thiserror",
  "uuid",
  "vek",

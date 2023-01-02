@@ -265,9 +265,9 @@ impl App {
         self = self.insert_system(utils::threadpool);
         self = self.insert_system(utils::time);
         self = self.insert_system(audio::system);
-        self = self.insert_system(rendering::system);
+        //self = self.insert_system(rendering::system);
         self = self.insert_system(networking::system);
-        self = self.insert_system(graphics::system);
+        //self = self.insert_system(graphics::system);
 
         // Insert the IO manager
         let author = self.author_name.clone();

@@ -47,6 +47,7 @@ fn update(world: &mut World) {
         }
     }
 
+    /*
     unsafe {
         // Acquire a new color image to render to
         let index = swapchain.acquire_next_image().unwrap();
@@ -60,6 +61,7 @@ fn update(world: &mut World) {
             renderer.render_targets = swapchain_images_to_textures(swapchain);
         }
     }
+    */
 }
 
 // Rendering system to clear the window and render the entities
