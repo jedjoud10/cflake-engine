@@ -43,9 +43,6 @@ pub struct Buffer<T: GpuPod, const TYPE: u32> {
     // Legal Permissions
     usage: BufferUsage,
     mode: BufferMode,
-
-    // Keep the graphics API alive
-    graphics: Graphics,
     _phantom: PhantomData<T>,
 }
 
@@ -53,7 +50,7 @@ impl<T: GpuPod, const TYPE: u32> Drop for Buffer<T, TYPE> {
     fn drop(&mut self) {
         unsafe {
             let alloc = ManuallyDrop::take(&mut self.allocation);
-            self.graphics.device().destroy_buffer(self.buffer, alloc);
+            Graphics::global().device().destroy_buffer(self.buffer, alloc);
         }
     }
 }
@@ -110,11 +107,12 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
 impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
     // Try to create a buffer with the specified mode, usage, and slice data
     pub fn from_slice(
-        graphics: &Graphics,
         slice: &[T],
         mode: BufferMode,
         usage: BufferUsage,
     ) -> Result<Self, BufferInitializationError> {
+        let graphics = Graphics::global();
+
         // Cannot create a zero sized stride buffer
         assert!(
             size_of::<T>() > 0,
@@ -166,7 +164,6 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
             capacity,
             mode,
             usage,
-            graphics: graphics.clone(),
             _phantom: PhantomData,
             buffer: buffer,
             allocation: allocation,
@@ -175,14 +172,13 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
 
     // Create a buffer with a specific capacity and a length of 0
     pub fn with_capacity<'a>(
-        graphics: &'a Graphics,
         capacity: usize,
         mode: BufferMode,
         usage: BufferUsage,
     ) -> Result<Self, BufferInitializationError> {
         let vec = vec![T::zeroed(); capacity];
         let mut buffer =
-            Self::from_slice(graphics, &vec, mode, usage)?;
+            Self::from_slice(&vec, mode, usage)?;
         buffer.length = 0;
         Ok(buffer)
     }
@@ -202,8 +198,9 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
             let offset = offset * size_of::<T>();
             super::raw::write_to(src, &mut dst[offset..][..size]);
         } else {
-            let device = self.graphics.device();
-            let queue = self.graphics.queue();
+            let graphics = Graphics::global();
+            let device = graphics.device();
+            let queue = graphics.queue();
             let mut recorder = queue.acquire(device);
 
             // Write to a staging buffer first
@@ -245,8 +242,9 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
             let offset = offset * self.stride();
             super::raw::read_to(&src[offset..][..size], dst);
         } else {
-            let device = self.graphics.device();
-            let queue = self.graphics.queue();
+            let graphics = Graphics::global();
+            let device = graphics.device();
+            let queue = graphics.queue();
             let mut recorder = queue.acquire(device);
 
             // Copy to a staging buffer first
@@ -291,7 +289,6 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
 
         let mut manually = ManuallyDrop::new(self);
         let allocation = std::mem::take(&mut manually.allocation);
-        let graphics = manually.graphics.clone();
 
         Buffer::<U, TYPE> {
             buffer: manually.buffer,
@@ -300,7 +297,6 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
             capacity: manually.capacity,
             usage: manually.usage,
             mode: manually.mode,
-            graphics,
             _phantom: PhantomData,
         }
     }
@@ -313,8 +309,9 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         src_offset: usize,
         length: usize,
     ) {
-        let device = self.graphics.device();
-        let queue = self.graphics.queue();
+        let graphics = Graphics::global();
+        let device = graphics.device();
+        let queue = graphics.queue();
         let stride = self.stride();
         let mut recorder = queue.acquire(device);
 
@@ -342,8 +339,9 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
             log::warn!("Reallocating buffer {:?}", self.buffer);
 
             // Calculate the new capacity
-            let device = self.graphics.device();
-            let queue = self.graphics.queue();
+            let graphics = Graphics::global();
+            let device = graphics.device();
+            let queue = graphics.queue();
             let stride = self.stride();
             let mut recorder = queue.acquire(device);
 
@@ -359,7 +357,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
                 super::find_optimal_layout(self.usage, TYPE);
             let (buffer, allocation) = unsafe {
                 super::allocate_buffer::<T>(
-                    &self.graphics,
+                    &graphics,
                     location,
                     new_capacity,
                     flags,
@@ -391,7 +389,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
 
             // Destroy the old buffer
             let alloc = ManuallyDrop::take(&mut old_allocation);
-            self.graphics.device().destroy_buffer(old_buffer, alloc);
+            graphics.device().destroy_buffer(old_buffer, alloc);
         } else {
             // Write to the buffer normally
             self.write_unchecked(slice, self.length);

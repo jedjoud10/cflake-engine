@@ -19,9 +19,6 @@ pub struct Texture2D<T: Texel> {
     // Legal permissions
     usage: TextureUsage,
     mode: TextureMode,
-
-    // Keep the graphics API alive
-    graphics: Graphics,
     _phantom: PhantomData<T>,
 }
 
@@ -29,7 +26,7 @@ impl<T: Texel> Drop for Texture2D<T> {
     fn drop(&mut self) {
         unsafe {
             let alloc = ManuallyDrop::take(&mut self.allocation);
-            self.graphics.device().destroy_image(self.image, alloc);
+            Graphics::global().device().destroy_image(self.image, alloc);
         }
     }
 }
@@ -57,7 +54,6 @@ impl<T: Texel> Texture for Texture2D<T> {
         dimensions: <Self::Region as crate::Region>::E,
         usage: TextureUsage,
         mode: TextureMode,
-        graphics: &Graphics,
     ) -> Self {
         Self {
             image,
@@ -66,7 +62,6 @@ impl<T: Texel> Texture for Texture2D<T> {
             dimensions,
             usage,
             mode,
-            graphics: graphics.clone(),
             _phantom: PhantomData,
         }
     }
@@ -81,7 +76,7 @@ impl<T: Texel> Texture for Texture2D<T> {
 }
 
 impl<T: ImageTexel> Asset for Texture2D<T> {
-    type Args<'args> = &'args Graphics;
+    type Args<'args> = ();
     type Err = TextureAssetLoadError;
 
     fn extensions() -> &'static [&'static str] {
@@ -99,9 +94,9 @@ impl<T: ImageTexel> Asset for Texture2D<T> {
 
         let dimensions = vek::Extent2::new(image.width(), image.height());
         let texels = T::to_image_texels(image);
+        let graphics = Graphics::global();
 
         Self::from_texels(
-            args,
             &texels,
             dimensions,
             TextureMode::Dynamic,

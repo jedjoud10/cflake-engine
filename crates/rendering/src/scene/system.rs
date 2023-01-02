@@ -1,10 +1,12 @@
 use graphics::{Graphics, Window, vk};
+use utils::Time;
 use world::{post_user, System, World};
 
 // Clear the window and render the entities
 fn update(world: &mut World) {
-    let graphics = world.get::<Graphics>().unwrap();
+    let graphics = Graphics::global();
     let window = world.get::<Window>().unwrap();
+    let time = world.get::<Time>().unwrap();
     let queue = graphics.queue();
     let device = graphics.device();
     let adapter = graphics.adapter();
@@ -22,17 +24,30 @@ fn update(world: &mut World) {
             .layer_count(1)
             .level_count(1);
 
-        // Convert the image layout to PRESENT
-        let image_barrier = vk::ImageMemoryBarrier::builder()
+        let image_barrier1 = vk::ImageMemoryBarrier::builder()
             .old_layout(vk::ImageLayout::UNDEFINED)
-            .new_layout(vk::ImageLayout::PRESENT_SRC_KHR)
+            .new_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
             .src_access_mask(vk::AccessFlags::MEMORY_READ)
+            .dst_access_mask(vk::AccessFlags::TRANSFER_WRITE)
+            .subresource_range(*subresource_range)
+            .image(img.1);
+
+        let image_barrier2 = vk::ImageMemoryBarrier::builder()
+            .old_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
+            .new_layout(vk::ImageLayout::PRESENT_SRC_KHR)
+            .src_access_mask(vk::AccessFlags::TRANSFER_WRITE)
             .dst_access_mask(vk::AccessFlags::MEMORY_READ)
             .subresource_range(*subresource_range)
             .image(img.1);
 
+        let color = vk::ClearColorValue {
+            float32: [r, g, b, 0.0]
+        };
+
         let mut recorder = queue.acquire(device);
-        recorder.cmd_image_memory_barrier(*image_barrier);
+        recorder.cmd_image_memory_barrier(*image_barrier1);
+        recorder.cmd_clear_image(img.1, vk::ImageLayout::TRANSFER_DST_OPTIMAL, color, &[*subresource_range]);
+        recorder.cmd_image_memory_barrier(*image_barrier2);
         recorder.immediate_submit();
         swapchain.present(queue, img).unwrap();
         /*

@@ -36,6 +36,29 @@ pub enum SamplerMipMapping {
 pub struct Sampler<'a, T: Texture> {
     texture: &'a T,
     wrap: SamplerWrap<T::T>,
-    filter: SamplerFilter,
+    min_filter: SamplerFilter,
+    mag_filter: SamplerFilter,
     mipmapping: SamplerMipMapping
+}
+
+impl<'a, T: Texture> Sampler<'a, T> {
+    // Change the sampler wrapping mode
+    pub fn wrapping_mode(self, wrap: SamplerWrap<T::T>) -> Self {
+        todo!()
+    }
+    
+    // Change the sampler minification filter
+    pub fn min_filter(self, filter: SamplerFilter) -> Self {
+        todo!()
+    }
+        
+    // Change the sampler magnification filter
+    pub fn mag_filter(self, filter: SamplerFilter) -> Self {
+        todo!()
+    }
+    
+    // Change the sampler mipmapping mode
+    pub fn mipmap(self, mipmap: SamplerMipMapping) -> Self {
+        todo!()
+    }
 }

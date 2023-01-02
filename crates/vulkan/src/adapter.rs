@@ -73,6 +73,9 @@ pub struct Adapter {
     families: AdapterQueueFamiliesProperties,
 }
 
+unsafe impl Sync for Adapter {}
+unsafe impl Send for Adapter {}
+
 impl Adapter {
     // Pick out a physical adapter automatically for the user
     // Pick a physical device from the Vulkan instance

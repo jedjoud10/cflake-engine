@@ -24,9 +24,11 @@ fn init(
         )
     };
 
-    // Add the resources into the world
+    // Add the window resource to the world
     world.insert(window);
-    world.insert(graphics);
+
+    // Graphics context is global
+    crate::context::CONTEXT.set(graphics).map_err(|_| ()).unwrap();
 }
 
 // Handle window quitting and resizing

@@ -39,16 +39,14 @@ pub(crate) unsafe fn init_context_and_window(
     );
 
     // Create the graphics wrapper
-    let graphics = super::graphics::Graphics(Arc::new(
-        super::graphics::InternalGraphics {
-            instance,
-            surface,
-            adapter,
-            device,
-            queue,
-            swapchain,
-        },
-    ));
+    let graphics = super::graphics::Graphics {
+        instance,
+        surface,
+        adapter,
+        device,
+        queue,
+        swapchain,
+    };
 
     // Create the window wrapper
     let size = vek::Extent2::<u32>::from(<(u32, u32)>::from(

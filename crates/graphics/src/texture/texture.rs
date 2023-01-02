@@ -17,12 +17,12 @@ pub trait Texture: Sized {
 
     // Create a new texture with some possibly predefined data
     fn from_texels(
-        graphics: &Graphics,
         texels: Texels<Self::T>,
         dimensions: <Self::Region as Region>::E,
         mode: TextureMode,
         usage: TextureUsage,
     ) -> Result<Self, TextureInitializationError> {
+        let graphics = Graphics::global();
         let UntypedTexel { 
             format,
             channels,
@@ -147,7 +147,6 @@ pub trait Texture: Sized {
                 dimensions,
                 usage,
                 mode,
-                graphics,
             )
         })
     }
@@ -190,7 +189,7 @@ pub trait Texture: Sized {
     }
 
     // Try to get a sampler for this texture so we can read from it within shaders 
-    fn try_fetch_sampler(&self) -> Result<Sampler<Self>, TextureSamplerError> {
+    fn sampler(&self) -> Result<Sampler<Self>, TextureSamplerError> {
         todo!()
     }
 
@@ -204,6 +203,5 @@ pub trait Texture: Sized {
         dimensions: <Self::Region as Region>::E,
         usage: TextureUsage,
         mode: TextureMode,
-        graphics: &Graphics,
     ) -> Self;
 }

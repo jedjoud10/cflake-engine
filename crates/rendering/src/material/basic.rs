@@ -32,7 +32,7 @@ impl Material for Basic {
             .load::<VertexModule>("engine/shaders/basic.vert")
             .unwrap();
         let processor = Processor::new(vert, &assets);
-        Compiled::compile(&graphics, processor.process())
+        Compiled::compile(processor.process())
     }
 
     // Load the fragment shader for this material
@@ -44,7 +44,7 @@ impl Material for Basic {
             .load::<FragmentModule>("engine/shaders/basic.frag")
             .unwrap();
         let processor = Processor::new(frag, &assets);
-        Compiled::compile(&graphics, processor.process())
+        Compiled::compile(processor.process())
     }
 
     fn required_mesh_attributes() -> () {

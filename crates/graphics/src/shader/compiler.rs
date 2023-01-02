@@ -4,7 +4,6 @@ use vulkan::{vk, Device};
 
 // This is a compiled shader module that we can use in multiple pipelines
 pub struct Compiled<M: ShaderModule> {
-    graphics: Graphics,
     raw: vk::ShaderModule,
     kind: ModuleKind,
     file_name: String,
@@ -15,7 +14,7 @@ pub struct Compiled<M: ShaderModule> {
 impl<M: ShaderModule> Drop for Compiled<M> {
     fn drop(&mut self) {
         unsafe {
-            self.graphics.device().destroy_shader_module(self.raw);
+            Graphics::global().device().destroy_shader_module(self.raw);
         }
     }
 }
@@ -23,9 +22,9 @@ impl<M: ShaderModule> Drop for Compiled<M> {
 impl<M: ShaderModule> Compiled<M> {
     // Compile a shader module by using it's processed counter part
     pub fn compile(
-        graphics: &Graphics,
         module: Processed<M>,
     ) -> Self {
+        let graphics = Graphics::global();
         let kind = module.kind;
         let file_name = module.file_name;
         let source = module.source;
@@ -62,7 +61,6 @@ impl<M: ShaderModule> Compiled<M> {
         };
 
         Self {
-            graphics: graphics.clone(),
             raw,
             kind,
             file_name,

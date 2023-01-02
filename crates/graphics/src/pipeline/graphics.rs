@@ -21,15 +21,12 @@ pub struct GraphicsPipeline {
     stencil_config: StencilConfig,
     blend_config: BlendConfig,
     primitive: Primitive,
-
-    // Keep the graphics API alive
-    graphics: Graphics,
 }
 
 impl Drop for GraphicsPipeline {
     fn drop(&mut self) {
         unsafe {
-            self.graphics.device().destroy_pipeline(self.pipeline);
+            Graphics::global().device().destroy_pipeline(self.pipeline);
         }
     }
 }
@@ -106,7 +103,6 @@ impl GraphicsPipeline {
             stencil_config,
             blend_config,
             primitive,
-            graphics: graphics.clone(),
         }
     }
 
