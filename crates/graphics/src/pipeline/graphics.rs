@@ -3,7 +3,7 @@ use crate::{
     Graphics, Primitive, RenderPass,
     ShaderModule, StencilConfig, StencilOp, StencilTest, Shader,
 };
-use std::{mem::transmute, sync::Arc};
+use std::{mem::transmute, sync::Arc, ffi::CStr};
 use vulkan::{vk, Device};
 
 // A vulkan GRAPHICS pipeline abstraction that will handle initialization / destruction for us manually
@@ -42,11 +42,14 @@ impl GraphicsPipeline {
         stencil_config: StencilConfig,
         blend_config: BlendConfig,
         primitive: Primitive,
-        render_pass: RenderPass,
+        render_pass: &RenderPass,
         shader: Shader,
     ) -> Self {
         let graphics = Graphics::global();
         let pipeline = unsafe {
+            // Viewport state
+            let viewport_state = Self::build_viewport_state();
+
             // Input assembly state
             let input_assembly_state =
                 Self::build_input_assembly_state(&primitive);
@@ -81,16 +84,54 @@ impl GraphicsPipeline {
             let multisample_state = Self::build_multisampling_state();
 
             // Pipeline stages create info
-            let descriptions = vec![
-                shader.vertex().description(),
-                shader.fragment().description()
-            ];
-            let stages = Self::build_stages(descriptions);
+            let stages = Self::build_stages(&shader);
+
+            let attachment = vk::PipelineColorBlendAttachmentState::builder()
+            .color_write_mask(vk::ColorComponentFlags::R |
+                vk::ColorComponentFlags::G |
+                vk::ColorComponentFlags::B |
+                vk::ColorComponentFlags::A)
+            .blend_enable(false)
+            .src_color_blend_factor(vk::BlendFactor::ONE)
+            .dst_color_blend_factor(vk::BlendFactor::ZERO)
+            .color_blend_op(vk::BlendOp::ADD)
+            .src_alpha_blend_factor(vk::BlendFactor::ONE)
+            .dst_alpha_blend_factor(vk::BlendFactor::ZERO)
+            .alpha_blend_op(vk::BlendOp::ADD);
+            let attachment = [*attachment];
+                
+            // FIXME
+            let blend_state = *vk::PipelineColorBlendStateCreateInfo::builder()
+                .logic_op_enable(false)
+                .logic_op(vk::LogicOp::COPY)
+                .attachments(&attachment);
+
+            let size = graphics.swapchain().extent();
+            let viewport = vk::Viewport {
+                x: 0.0,
+                y: 0.0,
+                width: size.w as f32,
+                height: size.h as f32,
+                min_depth: 0.01,
+                max_depth: 1.0,
+            };
+    
+            let scissor = vk::Rect2D {
+                offset: vk::Offset2D::default(),
+                extent: vk::Extent2D {
+                    width: size.w,
+                    height: size.h,
+                },
+            };
+    
+            let viewport_state = *vk::PipelineViewportStateCreateInfo::builder()
+                .viewports(&[viewport])
+                .scissors(&[scissor]);
 
             // Create info for the graphics pipeline
             let create_info =
                 vk::GraphicsPipelineCreateInfo::builder()
-                    .color_blend_state(&color_blend_state)
+                    .color_blend_state(&blend_state)
                     .depth_stencil_state(&depth_stencil_state)
                     .dynamic_state(&dynamic_state)
                     .input_assembly_state(&input_assembly_state)
@@ -98,6 +139,7 @@ impl GraphicsPipeline {
                     .rasterization_state(&rasterization_state)
                     .multisample_state(&multisample_state)
                     .render_pass(render_pass.renderpass())
+                    .viewport_state(&viewport_state)
                     .stages(&stages)
                     .subpass(0)
                     .vertex_input_state(&vertex_input_state);
@@ -112,6 +154,33 @@ impl GraphicsPipeline {
             primitive,
             shader,
         }
+    }
+
+    // Create the viewport state
+    fn build_viewport_state() -> vk::PipelineViewportStateCreateInfo {
+        let graphics = Graphics::global();
+        let size = graphics.swapchain().extent();
+        log::warn!("{size}");
+        let viewport = vk::Viewport {
+            x: 0.0,
+            y: 0.0,
+            width: size.w as f32,
+            height: size.h as f32,
+            min_depth: 0.01,
+            max_depth: 1.0,
+        };
+
+        let scissor = vk::Rect2D {
+            offset: vk::Offset2D::default(),
+            extent: vk::Extent2D {
+                width: size.w,
+                height: size.h,
+            },
+        };
+
+        *vk::PipelineViewportStateCreateInfo::builder()
+            .viewports(&[viewport])
+            .scissors(&[scissor])
     }
 
     // Create the rasterization state
@@ -152,8 +221,24 @@ impl GraphicsPipeline {
     fn build_color_blend_state(
         blend_config: &BlendConfig,
     ) -> vk::PipelineColorBlendStateCreateInfo {
+        let attachment = vk::PipelineColorBlendAttachmentState::builder()
+            .color_write_mask(vk::ColorComponentFlags::R |
+                vk::ColorComponentFlags::G |
+                vk::ColorComponentFlags::B |
+                vk::ColorComponentFlags::A)
+            .blend_enable(false)
+            .src_color_blend_factor(vk::BlendFactor::ONE)
+            .dst_color_blend_factor(vk::BlendFactor::ZERO)
+            .color_blend_op(vk::BlendOp::ADD)
+            .src_alpha_blend_factor(vk::BlendFactor::ONE)
+            .dst_alpha_blend_factor(vk::BlendFactor::ZERO)
+            .alpha_blend_op(vk::BlendOp::ADD);
+        let attachment = [*attachment];
+        
         *vk::PipelineColorBlendStateCreateInfo::builder()
             .logic_op_enable(false)
+            .logic_op(vk::LogicOp::COPY)
+            .attachments(&attachment)
     }
 
     // Create the pipeline layout
@@ -183,15 +268,19 @@ impl GraphicsPipeline {
     }
 
     // Create the vertex input state
+    // TODO: Actually write this
     fn build_vertex_input_state(
     ) -> vk::PipelineVertexInputStateCreateInfo {
-        todo!()
+        vk::PipelineVertexInputStateCreateInfo::default()
     }
 
     // Get the dynamic state that will be modified per frame
     fn build_dynamic_state() -> vk::PipelineDynamicStateCreateInfo {
+        /*
         let dynamic =
             &[vk::DynamicState::VIEWPORT, vk::DynamicState::SCISSOR];
+        */
+        let dynamic = &[];
 
         vk::PipelineDynamicStateCreateInfo::builder()
             .dynamic_states(dynamic)
@@ -200,9 +289,12 @@ impl GraphicsPipeline {
 
     // Create the shader stage create info using the compiled module descriptions
     // TODO: Change this I don't like it
-    fn build_stages(
-        descriptions: Vec<CompiledDescription>,
-    ) -> Vec<vk::PipelineShaderStageCreateInfo> {
+    fn build_stages(shader: &Shader) -> Vec<vk::PipelineShaderStageCreateInfo> {
+        let descriptions = [
+            shader.vertex().description(),
+            shader.fragment().description()
+        ];
+
         descriptions
             .into_iter()
             .map(|c| {
@@ -219,6 +311,7 @@ impl GraphicsPipeline {
                 };
 
                 *vk::PipelineShaderStageCreateInfo::builder()
+                    .name(c.entry)
                     .flags(c.flags)
                     .module(*c.module)
                     .stage(stage)

@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 use assets::Assets;
-use graphics::{Shader, GraphicsPipeline, RenderPass};
+use graphics::{Shader, GraphicsPipeline, RenderPass, ActiveRenderPass};
 use world::World;
 use crate::Material;
 
@@ -24,7 +24,7 @@ pub struct Pipeline<M: Material> {
 impl<M: Material> Pipeline<M> {
     // Create a new material pipeline for the given material
     // This will load the shader, and create the graphics pipeline
-    pub fn new(assets: &Assets, render_pass: RenderPass) -> Self {
+    pub fn new(assets: &Assets, render_pass: &RenderPass) -> Self {
         let vertex = M::vertex(assets);
         let fragment = M::fragment(assets);
         let shader = Shader::new(vertex, fragment);
@@ -36,7 +36,7 @@ impl<M: Material> Pipeline<M> {
                 M::stencil_config(),
                 M::blend_config(),
                 M::primitive_mode(),
-                render_pass,
+                &render_pass,
                 shader.clone()
             )
         };
@@ -63,11 +63,10 @@ impl<M: Material> Pipeline<M> {
 pub trait DynamicPipeline {
     // Get the inner graphics pipeline
     fn graphical(&self) -> &GraphicsPipeline;
-
-    // Get the inner graphics shader
-
+    
     // Render all surfaces that use the material of this pipeline
-    fn render(&self, world: &mut World);
+    // TODO: Remove active render pass
+    fn render(&self, render_pass: &mut ActiveRenderPass);
 }
 
 impl<M: Material> DynamicPipeline for Pipeline<M> {
@@ -75,7 +74,7 @@ impl<M: Material> DynamicPipeline for Pipeline<M> {
         &self.pipeline
     }
 
-    fn render(&self, world: &mut World) {
-        super::render_surfaces::<M>(world);
+    fn render(&self, render_pass: &mut ActiveRenderPass) {
+        super::render_surfaces::<M>(render_pass, &self.pipeline);
     }
 }

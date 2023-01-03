@@ -51,6 +51,10 @@ impl<T: Texel> Texture for Texture2D<T> {
         self.image
     }
 
+    fn view(&self) -> vk::ImageView {
+        self.whole_view
+    }
+
     fn allocation(&self) -> &Allocation {
         &self.allocation
     }

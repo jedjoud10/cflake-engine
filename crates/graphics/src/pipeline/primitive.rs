@@ -107,5 +107,6 @@ impl Primitive {
             .front_face(front_face)
             .cull_mode(cull_mode)
             .polygon_mode(polygon_mode)
+            .line_width(1.0)
     }
 }

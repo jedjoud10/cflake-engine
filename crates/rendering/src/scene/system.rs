@@ -8,7 +8,28 @@ use crate::ForwardRenderer;
 fn init(world: &mut World) {
     let graphics = Graphics::global();
     let render_targets = swapchain_images_to_textures(graphics.swapchain());
-    world.insert(ForwardRenderer::new(render_targets))
+    let extent = graphics.swapchain().extent();
+    let format = [graphics.swapchain().format()];
+
+    let attachment_image_info = vk::FramebufferAttachmentImageInfo::builder()
+        .width(extent.w)
+        .height(extent.h)
+        .view_formats(&format)
+        .layer_count(1)
+        .usage(vk::ImageUsageFlags::COLOR_ATTACHMENT | vk::ImageUsageFlags::TRANSFER_DST);
+
+    let render_pass = unsafe {
+        RenderPass::new(
+            format[0],
+            &[*attachment_image_info], vek::Rect {
+            x: 0,
+            y: 0,
+            w: extent.w,
+            h: extent.h,
+        })
+    };
+
+    world.insert(ForwardRenderer::new(render_targets, render_pass))
 }
 
 // Create the texture wrappers from the swapchain
@@ -47,13 +68,17 @@ fn update(world: &mut World) {
         }
     }
 
-    /*
     unsafe {
         // Acquire a new color image to render to
         let index = swapchain.acquire_next_image().unwrap();
         let texture = renderer.render_targets.get(index as usize).unwrap();
-
-
+        let view = texture.view();
+        let pipelines = renderer.extract_pipelines();
+        let mut active = renderer.render_pass.begin(&[view], &graphics);
+        for x in pipelines {
+            x.render(&mut active);
+        }
+        active.end();
 
         // Check if we must recreate the swapchain
         if let None = swapchain.present(queue, device, index) {
@@ -61,7 +86,6 @@ fn update(world: &mut World) {
             renderer.render_targets = swapchain_images_to_textures(swapchain);
         }
     }
-    */
 }
 
 // Rendering system to clear the window and render the entities

@@ -248,29 +248,38 @@ impl Device {
     pub unsafe fn create_frame_buffer(
         &self,
         attachment_image_infos: &[vk::FramebufferAttachmentImageInfo],
-        extent: vek::Extent2<u32>
+        extent: vek::Extent2<u32>,
+        render_pass: vk::RenderPass,
     ) -> vk::Framebuffer {
         let mut frame_buffer_attachments_create_info = vk::FramebufferAttachmentsCreateInfo::builder()
             .attachment_image_infos(attachment_image_infos);
 
-        let frame_buffer_create_info = vk::FramebufferCreateInfo::builder()
+        let test = [vk::ImageView::null()];
+
+        let framebuffer_create_info = vk::FramebufferCreateInfo::builder()
             .attachments(&[])
             .width(extent.w)
             .height(extent.h)
+            .render_pass(render_pass)
+            .layers(1)
+            .flags(vk::FramebufferCreateFlags::IMAGELESS)
+            .attachments(&test)
             .push_next(&mut frame_buffer_attachments_create_info);
 
-        self.raw().create_framebuffer(&frame_buffer_create_info, None).unwrap()
+        self.raw().create_framebuffer(&framebuffer_create_info, None).unwrap()
     }
 
 
     // Create a single render pass to be used with a framebuffer
     pub unsafe fn create_render_pass(
         &self,
+        attachments: &[vk::AttachmentDescription],
         subpasses: &[vk::SubpassDescription],
         dependencies: &[vk::SubpassDependency],
     ) -> vk::RenderPass {
         let render_pass_create_info = vk::RenderPassCreateInfo::builder()
             .dependencies(dependencies)
+            .attachments(attachments)
             .subpasses(subpasses);
         self.raw().create_render_pass(&render_pass_create_info, None).unwrap()
     }

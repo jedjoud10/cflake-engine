@@ -1,5 +1,5 @@
 use crate::{Graphics, ModuleKind, Processed, ShaderModule};
-use std::{marker::PhantomData, sync::Arc, time::Instant};
+use std::{marker::PhantomData, sync::Arc, time::Instant, ffi::CStr};
 use vulkan::{vk, Device};
 
 // This is a compiled shader module that we can use in multiple pipelines
@@ -92,6 +92,7 @@ impl<M: ShaderModule> Compiled<M> {
     // Get the compiled description
     pub fn description(&self) -> CompiledDescription {
         CompiledDescription {
+            entry: unsafe { CStr::from_bytes_with_nul_unchecked(b"main\0") },
             flags: vk::PipelineShaderStageCreateFlags::default(),
             kind: self.kind,
             module: &self.raw,
@@ -102,6 +103,7 @@ impl<M: ShaderModule> Compiled<M> {
 // A description of a compiled shader module that we can use within a pipeline
 // TODO: Remove tis
 pub struct CompiledDescription<'a> {
+    pub(crate) entry: &'static CStr,
     pub(crate) flags: vk::PipelineShaderStageCreateFlags,
     pub(crate) kind: ModuleKind,
     pub(crate) module: &'a vk::ShaderModule,

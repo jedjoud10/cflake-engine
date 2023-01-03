@@ -275,7 +275,6 @@ impl<'a> Recorder<'a> {
 }
 
 // Render pass commands
-
 impl<'a> Recorder<'a> {
     // Begin a render pass
     pub unsafe fn cmd_begin_render_pass(
@@ -287,6 +286,14 @@ impl<'a> Recorder<'a> {
     ) {
         let mut attachments = vk::RenderPassAttachmentBeginInfo::builder()
             .attachments(image_views);
+        
+        // FIXME
+        let clear = vk::ClearValue {
+            color: vk::ClearColorValue {
+                float32: [0.0; 4]
+            }
+        };
+        let clear = [clear];
 
         let begin_info = vk::RenderPassBeginInfo::builder()
             .framebuffer(framebuffer)
@@ -301,7 +308,9 @@ impl<'a> Recorder<'a> {
                     height: rect.h,
                 },
             })
+            .clear_values(&clear)
             .push_next(&mut attachments);
+            
 
         self.device().raw().cmd_begin_render_pass(
             self.command_buffer.raw(),
@@ -318,6 +327,25 @@ impl<'a> Recorder<'a> {
     // Bind a pipeline to the bind point
     pub unsafe fn cmd_bind_pipeline(&mut self, pipeline: vk::Pipeline, point: vk::PipelineBindPoint) {
         self.device().raw().cmd_bind_pipeline(self.command_buffer().raw(), point, pipeline);
+    }
+
+    // Draw some vertices to the currently bound render pass
+    pub unsafe fn cmd_draw(
+        &mut self,
+        vertex_count: u32,
+        instance_count: u32,
+        first_vertex: u32,
+        first_instance: u32
+    ) {
+        self.device().raw().cmd_draw(self.command_buffer().raw(), vertex_count, instance_count, first_vertex, first_instance);
+    }
+
+    // Set a dynamically set viewport
+    pub unsafe fn cmd_set_viewport(
+        &mut self,
+        viewport: vk::Viewport
+    ) {
+        self.device().raw().cmd_set_viewport(self.command_buffer().raw(), 0, &[viewport]);
     }
 }
 

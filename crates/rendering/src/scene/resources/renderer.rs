@@ -12,7 +12,7 @@ pub struct ForwardRenderer {
     pub(crate) render_targets: Vec<ManuallyDrop<SwapchainRenderTexture>>,
 
     // Main render pass that we will use to render to the swapchain
-    //render_pass: RenderPass,
+    pub(crate) render_pass: RenderPass,
 
     // Material pipelines that we will use to render the surfaces
     pipelines: AHashMap<TypeId, Rc<dyn DynamicPipeline>>
@@ -20,9 +20,9 @@ pub struct ForwardRenderer {
 
 impl ForwardRenderer {
     // Create a new scene renderer
-    pub fn new(render_targets: Vec<ManuallyDrop<SwapchainRenderTexture>>) -> Self {
+    pub fn new(render_targets: Vec<ManuallyDrop<SwapchainRenderTexture>>, render_pass: RenderPass) -> Self {
         Self {
-        //    render_pass,
+            render_pass,
             render_targets,
             pipelines: Default::default(),
         }
@@ -34,13 +34,11 @@ impl ForwardRenderer {
         assets: &Assets,
     ) -> MaterialId<M> {
         // Initialize the pipeline and register it if needed
-        /*
         let key = TypeId::of::<M>();
         if !self.pipelines.contains_key(&key) {
-            let pipeline = Pipeline::<M>::new(assets, self.render_pass);
+            let pipeline = Pipeline::<M>::new(assets, &self.render_pass);
             self.pipelines.insert(key, Rc::new(pipeline));
         }
-        */
 
         // Material ID is just a marker type for safety
         MaterialId(PhantomData)

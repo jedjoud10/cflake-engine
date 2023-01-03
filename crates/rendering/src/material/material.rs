@@ -37,9 +37,9 @@ pub trait Material: 'static + Sized {
     // Get the depth config for this material
     fn depth_config() -> DepthConfig {
         DepthConfig {
-            depth_write_enable: true,
+            depth_write_enable: false,
             depth_clamp_enable: false,
-            depth_test: Some(CompareOp::Less),
+            depth_test: None,
             depth_bias: None,
             depth_bounds: None,
         }
@@ -53,7 +53,7 @@ pub trait Material: 'static + Sized {
     // Get the rasterizer config for this materil
     fn primitive_mode() -> Primitive {
         Primitive::Triangles {
-            cull: Some(FaceCullMode::Back(true)),
+            cull: None,
             wireframe: false,
         }
     }
