@@ -6,10 +6,10 @@ use crate::{DynamicPipeline, Material, MaterialId, Pipeline};
 
 // Main resource that will contain data to render objects on the screen
 // This will contain the current swapchain texture that we must render to
-type SwapchainRenderTexture = Texture2D<BGRA<Normalized<u8>>>;
+pub type WindowRenderTexture = ManuallyDrop<Texture2D<BGRA<Normalized<u8>>>>;
 pub struct ForwardRenderer {    
     // Current render texture from the swapchain
-    pub(crate) render_targets: Vec<ManuallyDrop<SwapchainRenderTexture>>,
+    pub(crate) render_targets: Vec<WindowRenderTexture>,
 
     // Main render pass that we will use to render to the swapchain
     pub(crate) render_pass: RenderPass,
@@ -20,7 +20,7 @@ pub struct ForwardRenderer {
 
 impl ForwardRenderer {
     // Create a new scene renderer
-    pub fn new(render_targets: Vec<ManuallyDrop<SwapchainRenderTexture>>, render_pass: RenderPass) -> Self {
+    pub fn new(render_targets: Vec<WindowRenderTexture>, render_pass: RenderPass) -> Self {
         Self {
             render_pass,
             render_targets,

@@ -1,4 +1,5 @@
 use assets::Asset;
+use vulkan::vk;
 
 // The type of shader module that the shader files represent
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -11,6 +12,23 @@ pub enum ModuleKind {
 
     // Compute shaders are arbitrary shaders that run on arbitrary input and output
     Compute,
+}
+
+impl ModuleKind {
+    // Convert the module kind to the Vulkan ShaderStageFlags
+    pub const fn into_shader_stage_flags(self) -> vk::ShaderStageFlags {
+        match self {
+            Self::Vertex => {
+                vk::ShaderStageFlags::VERTEX
+            }
+            Self::Fragment => {
+                vk::ShaderStageFlags::FRAGMENT
+            }
+            Self::Compute => {
+                vk::ShaderStageFlags::COMPUTE
+            }
+        }
+    }
 }
 
 // This trait is implemented for each shader module, like the vertex module or fragment module

@@ -343,8 +343,20 @@ impl<'a> Recorder<'a> {
     // Set a dynamically set viewport
     pub unsafe fn cmd_set_viewport(
         &mut self,
-        viewport: vk::Viewport
+        x: f32, y: f32,
+        width: f32, height: f32,
+        min_depth: f32,
+        max_depth: f32,
     ) {
+        let viewport = vk::Viewport {
+            x,
+            y,
+            width,
+            height,
+            min_depth,
+            max_depth,
+        };
+
         self.device().raw().cmd_set_viewport(self.command_buffer().raw(), 0, &[viewport]);
     }
 }

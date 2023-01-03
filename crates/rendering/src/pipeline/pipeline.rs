@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 use assets::Assets;
-use graphics::{Shader, GraphicsPipeline, RenderPass, ActiveRenderPass};
+use graphics::{Shader, GraphicsPipeline, RenderPass};
 use world::World;
 use crate::Material;
 
@@ -65,8 +65,7 @@ pub trait DynamicPipeline {
     fn graphical(&self) -> &GraphicsPipeline;
     
     // Render all surfaces that use the material of this pipeline
-    // TODO: Remove active render pass
-    fn render(&self, render_pass: &mut ActiveRenderPass);
+    fn render(&self);
 }
 
 impl<M: Material> DynamicPipeline for Pipeline<M> {
@@ -74,7 +73,7 @@ impl<M: Material> DynamicPipeline for Pipeline<M> {
         &self.pipeline
     }
 
-    fn render(&self, render_pass: &mut ActiveRenderPass) {
-        super::render_surfaces::<M>(render_pass, &self.pipeline);
+    fn render(&self) {
+        //super::render_surfaces::<M>(render_pass, &self.pipeline);
     }
 }

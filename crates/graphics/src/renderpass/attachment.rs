@@ -26,3 +26,5 @@ pub trait DynamicAttachment {
     // Get the underlying image view that must be used for rendering
     fn image_view(&self) -> vk::ImageView;
 }
+
+// An attachment layout is a tuple that contains multiple attachments

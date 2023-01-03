@@ -3,6 +3,7 @@ use crate::{RenderPass, Graphics, GraphicsPipeline};
 
 // This is an active render pass that is currently
 // able to render to the framebuffer attachments
+/*
 pub struct ActiveRenderPass<'a, 'r> {
     pub(super) renderpass: &'a RenderPass,
     pub recorder: Recorder<'r>,
@@ -36,6 +37,7 @@ impl<'a, 'r> ActiveRenderPass<'a, 'r> {
         self.recorder.immediate_submit();
     }
 }
+*/
 
 /*
 impl<'a, 'r> Drop for ActiveRenderPass<'a, 'r> {

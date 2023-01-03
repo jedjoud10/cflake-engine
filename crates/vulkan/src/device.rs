@@ -244,44 +244,46 @@ impl Device {
             .unwrap()[0]
     }
 
-    // Create a framebuffer to be used with a render pass
-    pub unsafe fn create_frame_buffer(
-        &self,
-        attachment_image_infos: &[vk::FramebufferAttachmentImageInfo],
-        extent: vek::Extent2<u32>,
-        render_pass: vk::RenderPass,
-    ) -> vk::Framebuffer {
-        let mut frame_buffer_attachments_create_info = vk::FramebufferAttachmentsCreateInfo::builder()
-            .attachment_image_infos(attachment_image_infos);
-
-        let test = [vk::ImageView::null()];
-
-        let framebuffer_create_info = vk::FramebufferCreateInfo::builder()
-            .attachments(&[])
-            .width(extent.w)
-            .height(extent.h)
-            .render_pass(render_pass)
-            .layers(1)
-            .flags(vk::FramebufferCreateFlags::IMAGELESS)
-            .attachments(&test)
-            .push_next(&mut frame_buffer_attachments_create_info);
-
-        self.raw().create_framebuffer(&framebuffer_create_info, None).unwrap()
-    }
-
-
-    // Create a single render pass to be used with a framebuffer
-    pub unsafe fn create_render_pass(
+    // Create a framebuffer and a renderpass combined
+    // (since we store them in the same wrapper struct anyways)
+    // Note: This creates the frame buffer with the IMAGELESS flag
+    pub unsafe fn create_render_pass_framebuffer(
         &self,
         attachments: &[vk::AttachmentDescription],
         subpasses: &[vk::SubpassDescription],
         dependencies: &[vk::SubpassDependency],
-    ) -> vk::RenderPass {
+        attachment_image_infos: &[vk::FramebufferAttachmentImageInfo],
+        extent: vek::Extent2<u32>,
+        layers: u32,
+    ) -> (vk::RenderPass, vk::Framebuffer) {
+        // Create the render pass first
         let render_pass_create_info = vk::RenderPassCreateInfo::builder()
             .dependencies(dependencies)
             .attachments(attachments)
             .subpasses(subpasses);
-        self.raw().create_render_pass(&render_pass_create_info, None).unwrap()
+        let render_pass = self.raw().create_render_pass(&render_pass_create_info, None).unwrap();
+
+        // Imageless attachment image infos
+        let mut frame_buffer_attachments_create_info = vk::FramebufferAttachmentsCreateInfo::builder()
+            .attachment_image_infos(attachment_image_infos);
+        
+        // Create null image views since the framebuffer is imagless
+        let count = attachment_image_infos.len();
+        let image_views = vec![vk::ImageView::null(); count];
+
+        // Create info for the framebuffer
+        let framebuffer_create_info = vk::FramebufferCreateInfo::builder()
+            .attachments(&image_views)
+            .width(extent.w)
+            .height(extent.h)
+            .render_pass(render_pass)
+            .layers(layers)
+            .flags(vk::FramebufferCreateFlags::IMAGELESS)
+            .push_next(&mut frame_buffer_attachments_create_info);
+        let framebuffer = self.raw().create_framebuffer(&framebuffer_create_info, None).unwrap();
+
+        // Combine and return
+        (render_pass, framebuffer)
     }
 
     // Destroy a specific render pass and a framebuffer

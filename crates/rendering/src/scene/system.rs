@@ -2,7 +2,7 @@ use std::mem::ManuallyDrop;
 use graphics::{Graphics, Window, vk, Texture2D, Texture, Allocation, RenderPass, BGRA, Normalized, TextureUsage, TextureMode, Swapchain};
 use utils::Time;
 use world::{post_user, System, World, user};
-use crate::ForwardRenderer;
+use crate::{ForwardRenderer, WindowRenderTexture};
 
 // Add the compositors and setup the world for rendering
 fn init(world: &mut World) {
@@ -33,7 +33,7 @@ fn init(world: &mut World) {
 }
 
 // Create the texture wrappers from the swapchain
-fn swapchain_images_to_textures(swapchain: &Swapchain)-> Vec<ManuallyDrop<Texture2D::<BGRA<Normalized<u8>>>>> {
+fn swapchain_images_to_textures(swapchain: &Swapchain)-> Vec<WindowRenderTexture> {
     let images = swapchain.images();
     let dimensions = swapchain.extent();
     images.into_iter().map(|(image, view)| unsafe {
@@ -74,11 +74,7 @@ fn update(world: &mut World) {
         let texture = renderer.render_targets.get(index as usize).unwrap();
         let view = texture.view();
         let pipelines = renderer.extract_pipelines();
-        let mut active = renderer.render_pass.begin(&[view], &graphics);
-        for x in pipelines {
-            x.render(&mut active);
-        }
-        active.end();
+        
 
         // Check if we must recreate the swapchain
         if let None = swapchain.present(queue, device, index) {

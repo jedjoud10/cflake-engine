@@ -1,6 +1,6 @@
 use vulkan::vk;
 
-use crate::{Graphics, ActiveRenderPass, DynamicAttachment};
+use crate::{Graphics, DynamicAttachment};
 
 // In vanilla vulkan, render passes and frame buffers are completely separate, but since we will be using
 // This is a wrapper around a Vulkan render pass that will read/write from/to specific attachments
@@ -54,20 +54,15 @@ impl RenderPass {
             .pipeline_bind_point(vk::PipelineBindPoint::GRAPHICS)
             .color_attachments(&attachment_ref);
 
-        // Create the actual render pass
+        // Create a render pass and a framebuffer
         let graphics = Graphics::global();
-        let render_pass = graphics.device().create_render_pass(
+        let (render_pass, framebuffer) = graphics.device().create_render_pass_framebuffer(
             &attachment,
             &[*subpass],
             &[],
-        );
-
-        // Create the framebuffer for this render pass
-        let extent = graphics.swapchain().extent();
-        let framebuffer = graphics.device().create_frame_buffer(
             attachment_image_infos,
-            extent,
-            render_pass,
+            rect.extent(),
+            1
         );
 
         Self {
@@ -88,6 +83,7 @@ impl RenderPass {
     }
 
     // Begin the render pass by using the given render attachments
+    /*
     pub unsafe fn begin<'a, 'r>(&'a mut self, attachments: &[vk::ImageView], graphics: &'r Graphics,) -> ActiveRenderPass<'a, 'r> {
         let device = graphics.device();
         let mut recorder = graphics.queue().acquire(device);
@@ -104,4 +100,5 @@ impl RenderPass {
             recorder,
         }
     }
+    */
 }
