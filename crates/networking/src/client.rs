@@ -1,11 +1,13 @@
-use std::{net::{ToSocketAddrs, TcpStream}, io::Read};
+use std::{net::{ToSocketAddrs, TcpStream}, io::{Read, Write}, any::{TypeId, Any}, collections::{HashMap, hash_map::DefaultHasher}, hash::{Hash, Hasher}};
 use uuid::Uuid;
+
+use crate::Packet;
 
 // A client resource that can be added to the world (as a NetworkedSession)
 // Clients can be created when we connect to a specific IP address (Server) 
 pub struct Client {
     // Identifier
-    uuid: Uuid,
+    uuid: Uuid, 
 
     // Networking
     stream: TcpStream,
@@ -32,8 +34,8 @@ impl Client {
         let mut bytes = [0u8; 16];
         stream.read(&mut bytes).unwrap();
         let uuid = Uuid::from_bytes(bytes);
-        stream.set_nonblocking(true).unwrap();
-        log::debug!("Recveived UUID {}", uuid);
+        stream.set_nonblocking(false).unwrap();
+        log::debug!("Received UUID {}", uuid);
         
         Ok(Self {
             uuid,
@@ -52,29 +54,23 @@ impl Client {
 
     // Called each networking tick to update the client
     pub(crate) fn tick(&mut self) {
-
     }
 }
 
 // Data transmission
 impl Client {
     // Send a message of a specific type to the server
-    pub fn send<T>(&mut self, val: T,) {
-        todo!()
-    }
-
-    // Send a message of a specific type to a specific client
-    pub fn message<T>(&mut self, client: Uuid, val: T) {
-        todo!()
-    }
-
-    // Send a message of a specific type to all the clients
-    pub fn broadcast<T>(&mut self, val: T,) {
-        todo!()
+    pub fn send<T: Packet>(&mut self, val: T,) {
+        let string = serde_json::to_string(&val).unwrap();
+        let id = crate::packet::id::<T>();
+        let mut data = Vec::<u8>::with_capacity(string.as_bytes().len() + 8);
+        data.extend(&id.to_be_bytes());
+        data.extend(string.as_bytes());
+        self.stream.write(&data).unwrap();
     }
 
     // Receive messages of a specific type from the server
-    pub fn receive<T>(&mut self) -> &[T] {
+    pub fn receive<T: Packet>(&mut self) -> &[T] {
         todo!()
     }
 }

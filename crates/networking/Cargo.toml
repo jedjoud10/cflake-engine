@@ -12,6 +12,7 @@ vek = { workspace = true }
 ahash = { workspace = true }
 uuid = { version = "1.2.2", features = ["v4"] }
 serde = "1.0.145"   
+serde_json = "1.0.85"
 
 thiserror = { workspace = true }
 log = { workspace = true }

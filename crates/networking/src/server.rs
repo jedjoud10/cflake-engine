@@ -1,5 +1,15 @@
-use std::{collections::HashMap, net::{IpAddr, SocketAddrV4, Ipv4Addr, TcpListener, TcpStream, SocketAddr}, io::Write};
+use std::{collections::HashMap, net::{IpAddr, SocketAddrV4, Ipv4Addr, TcpListener, TcpStream, SocketAddr}, io::{Write, Read}, any::TypeId};
 use uuid::Uuid;
+
+use crate::Packet;
+
+// Server side representation of a client
+struct ClientRepr {
+    uuid: Uuid,
+    stream: TcpStream,
+    socket_address: SocketAddr,
+    data: HashMap<u64, Vec<String>>,
+}
 
 // A server resource that can be added to the world (as a NetworkedSession)
 // Servers are created by hosting one using the "host" method
@@ -8,7 +18,7 @@ pub struct Server {
     listener: TcpListener,
 
     // Connected clients
-    clients: HashMap<Uuid, SocketAddr>,
+    clients: HashMap<Uuid, ClientRepr>,
 }
 
 impl Server {
@@ -35,9 +45,24 @@ impl Server {
 
         // Create a UUID for this client
         let uuid = Uuid::new_v4();
-        self.clients.insert(uuid, address);
+        stream.set_nonblocking(true).unwrap();
         stream.write(uuid.as_bytes()).unwrap();
-        log::debug!("Sent UUID {}", uuid);
+        log::debug!("Sent UUID {uuid} to client {address}");
+
+        // Add the server side client representation
+        self.clients.insert(uuid, ClientRepr {
+            uuid,
+            stream,
+            socket_address: address,
+            data: Default::default(),
+        });
+    }
+
+    // Handle the disconnection of an old client
+    fn handle_client_disconnection(&mut self, uuid: Uuid) {
+        let old = self.clients.remove(&uuid).unwrap();
+        let address = old.socket_address;
+        log::debug!("Client {address} disconnected from the server");
     }
 
     // Called each networking tick to update the server
@@ -45,6 +70,35 @@ impl Server {
         // Detect newly connected clients
         if let Ok((stream, address)) = self.listener.accept() {
             self.handle_client_connection(stream, address);
+        }
+
+        // Clients that we must remove
+        let mut disconnected = Vec::<Uuid>::new();
+
+        // Handle client read connections
+        for (uuid, client) in self.clients.iter_mut() {
+            let mut buf = [0u8; 512];
+            if let Ok(len) = client.stream.read(&mut buf) {
+                // Check if the client got disconnected
+                if len == 0 {
+                    disconnected.push(*uuid);
+                    continue;
+                }
+                
+                // Get the TypeID hash in the first 8 bytes of data
+                let hash = u64::from_be_bytes(buf[0..8].try_into().unwrap());
+
+                // Read the rest of the data as a string
+                let data = (buf[8..][..(len-8)]).to_vec();
+                if let Ok(string) = String::from_utf8(data) {
+                    client.data.entry(hash).or_default().push(string);                
+                }
+            }
+        }
+
+        // Disconnect the clients
+        for client in disconnected {
+            self.handle_client_disconnection(client);
         }
     }
 }
@@ -62,7 +116,20 @@ impl Server {
     }
 
     // Receive messages of a specific type from the clients
-    pub fn receive<T>(&mut self) -> &[(T, Uuid)] {
-        todo!()
+    pub fn receive<T: Packet>(&mut self) -> Vec<(T, Uuid)> {
+        let mut output = Vec::new();
+        let hash = crate::id::<T>();
+        for (uuid, client) in self.clients.iter_mut() {
+            let drain = client
+                .data
+                .entry(hash)
+                .or_default()
+                .drain(..).filter_map(|x| {
+                    let deserialized = serde_json::from_str::<T>(&x);
+                    deserialized.map(|x| (x, *uuid)).ok()
+                });
+            output.extend(drain);
+        }
+        output
     }
 }
