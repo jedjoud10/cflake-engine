@@ -282,18 +282,15 @@ impl<'a> Recorder<'a> {
         render_pass: vk::RenderPass,
         framebuffer: vk::Framebuffer,
         image_views: &[vk::ImageView],
+        clear_values: &[vk::ClearValue],
         rect: vek::Rect<i32, u32>,
     ) {
+        // Needed since we always use imageless framebuffers
         let mut attachments =
             vk::RenderPassAttachmentBeginInfo::builder()
                 .attachments(image_views);
 
-        // FIXME
-        let clear = vk::ClearValue {
-            color: vk::ClearColorValue { float32: [0.0; 4] },
-        };
-        let clear = [clear];
-
+        // Begin the render pass and imageless framebuffer
         let begin_info = vk::RenderPassBeginInfo::builder()
             .framebuffer(framebuffer)
             .render_pass(render_pass)
@@ -307,9 +304,10 @@ impl<'a> Recorder<'a> {
                     height: rect.h,
                 },
             })
-            .clear_values(&clear)
+            .clear_values(&clear_values)
             .push_next(&mut attachments);
 
+        // Begin the render pass
         self.device().raw().cmd_begin_render_pass(
             self.command_buffer.raw(),
             &begin_info,

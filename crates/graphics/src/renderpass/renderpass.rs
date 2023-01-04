@@ -164,7 +164,7 @@ pub struct Rasterizer<'r, 'c, 'ds, C: ColorLayout, DS: DepthStencilLayout> {
 }
 
 impl<'r, 'c, 'ds, C: ColorLayout, DS: DepthStencilLayout> Rasterizer<'r, 'c, 'ds, C, DS> {
-    pub fn cmd_bind_pipeline(
+    pub fn bind_pipeline(
         &mut self,
         pipeline: &GraphicsPipeline,
     ) {
@@ -191,7 +191,7 @@ impl<'r, 'c, 'ds, C: ColorLayout, DS: DepthStencilLayout> Rasterizer<'r, 'c, 'ds
         }
     }
 
-    pub fn cmd_draw(
+    pub fn draw(
         &mut self,
         vertex_count: u32,
         instance_count: u32,
@@ -225,11 +225,18 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPass<C, DS> {
             self.graphics.queue().acquire(self.graphics.device())
         };
 
+        // FIXME
+        let clear = vk::ClearValue {
+            color: vk::ClearColorValue { float32: [0.0; 4] },
+        };
+        let clear = [clear];
+
         unsafe {
             recorder.cmd_begin_render_pass(
                 self.render_pass,
                 self.framebuffer,
                 &color_attachments.image_views(),
+                &clear, 
                 vek::Rect {
                     x: 0,
                     y: 0,

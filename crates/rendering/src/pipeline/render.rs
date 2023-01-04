@@ -7,6 +7,6 @@ pub(super) fn render_surfaces<M: Material>(
     pipeline: &GraphicsPipeline,
     rasterizer: &mut Rasterizer<'_, '_, '_, SwapchainFormat, ()>
 ) {
-    rasterizer.cmd_bind_pipeline(pipeline);
-    rasterizer.cmd_draw(3, 1, 0, 0);
+    rasterizer.bind_pipeline(pipeline);
+    rasterizer.draw(6, 1, 0, 0);
 }
