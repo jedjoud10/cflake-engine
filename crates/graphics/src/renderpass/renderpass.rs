@@ -152,6 +152,7 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPass<C, DS> {
 
             let old = std::mem::replace(&mut self.framebuffer, framebuffer);
             self.graphics.device().destroy_framebuffer(old);
+            self.graphics.device().wait();
         } 
     }
 }

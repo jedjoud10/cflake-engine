@@ -87,17 +87,19 @@ impl AttachmentBlendConfig {
     pub fn apply_default_color_blend_attachment_state<'a>(
         builder: vk::PipelineColorBlendAttachmentStateBuilder<'a>,
     ) -> vk::PipelineColorBlendAttachmentStateBuilder<'a> {
-        let this = Self {
-            color_write_mask: ColorComponentFlags::all(),
-            src_color_blend_factor: BlendFactor::Zero,
-            dst_color_blend_factor: BlendFactor::One,
-            color_blend_op: BlendOp::Add,
-            src_alpha_blend_factor: BlendFactor::Zero,
-            dstc_alpha_blend_factor: BlendFactor::One,
-            alpha_blend_op: BlendOp::Add,
-        };
+        let color_write_mask = vk::ColorComponentFlags::from_raw(
+            ColorComponentFlags::all().bits()
+        );
 
-        this.apply_color_blend_attachment_state(builder)
+        builder
+            .color_write_mask(color_write_mask)
+            .blend_enable(false)
+            .src_color_blend_factor(vk::BlendFactor::ZERO)
+            .dst_color_blend_factor(vk::BlendFactor::ONE)
+            .color_blend_op(vk::BlendOp::ADD)
+            .src_alpha_blend_factor(vk::BlendFactor::ZERO)
+            .dst_alpha_blend_factor(vk::BlendFactor::ONE)
+            .alpha_blend_op(vk::BlendOp::ADD)
     }
 }
 

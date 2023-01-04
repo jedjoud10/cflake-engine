@@ -49,11 +49,6 @@ pub(super) unsafe extern "system" fn debug_callback(
         CStr::from_ptr(callback_data.p_message).to_string_lossy()
     };
 
-    pub const VERBOSE: u32 = 0b1;
-    pub const INFO: u32 = 0b1_0000;
-    pub const WARNING: u32 = 0b1_0000_0000;
-    pub const ERROR: u32 = 0b1_0000_0000_0000;
-
     if message_severity
         .contains(DebugUtilsMessageSeverityFlagsEXT::VERBOSE)
         | message_severity
