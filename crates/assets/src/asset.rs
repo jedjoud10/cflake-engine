@@ -38,8 +38,8 @@ impl<'a> Data<'a> {
 // Each asset can fail to load it's data
 // This trait contains a "context" that can be passed around with the asset load settings
 pub trait Asset: Sized + 'static {
-    type Context<'args>;
-    type Settings<'args>;
+    type Context<'ctx>;
+    type Settings<'stg>;
 
     // Possible error that we might return
     type Err: std::error::Error + Send + Sync + 'static;
@@ -72,8 +72,8 @@ where
 }
 
 impl Asset for String {
-    type Context<'args> = ();
-    type Settings<'args> = ();
+    type Context<'ctx> = ();
+    type Settings<'stg> = ();
     type Err = std::string::FromUtf8Error;
 
     fn extensions() -> &'static [&'static str] {
@@ -82,8 +82,8 @@ impl Asset for String {
 
     fn deserialize<'c, 's>(
         data: Data,
-        context: Self::Context<'c>,
-        settings: Self::Settings<'s>,
+        _: Self::Context<'c>,
+        _: Self::Settings<'s>,
     ) -> Result<Self, Self::Err> {
         String::from_utf8(data.bytes().to_vec())
     }

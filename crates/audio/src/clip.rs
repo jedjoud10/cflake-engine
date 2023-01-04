@@ -53,16 +53,18 @@ impl<S: Sample> AudioClip<S> {
 }
 
 impl<S: Sample> Asset for AudioClip<S> {
-    type Args<'args> = ();
+    type Context<'ctx> = ();
+    type Settings<'stg> = ();
     type Err = AudioClipDeserializationError;
 
     fn extensions() -> &'static [&'static str] {
         &["mp3", "wav"]
     }
 
-    fn deserialize(
+    fn deserialize<'c, 's>(
         data: assets::Data,
-        _args: Self::Args<'_>,
+        _: Self::Context<'c>,
+        _: Self::Settings<'s>,
     ) -> Result<Self, Self::Err> {
         let this = match data.extension() {
             // Decode an MP3 file into the appropriate format

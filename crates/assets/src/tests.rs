@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::{persistent, Assets};
+    use crate::{persistent, Assets, AssetLoadError};
 
     #[test]
     fn read() {
@@ -47,7 +47,7 @@ mod tests {
         let mut strings =
             loader.load_from_iter::<String>(["test/text.txt"]);
         let string = strings.pop().unwrap();
-        assert!(string.is_err());
+        assert!(matches!(string.unwrap_err(), AssetLoadError::CachedNotFound(_)));
     }
 
     #[test]
@@ -68,7 +68,7 @@ mod tests {
         let handle = loader
             .async_load::<String>("test/text.txt", &mut threadpool);
         let string = loader.wait(handle);
-        assert!(string.is_err());
+        assert!(matches!(string.unwrap_err(), AssetLoadError::CachedNotFound(_)));
     }
 
     #[test]
@@ -97,8 +97,8 @@ mod tests {
         );
         let handle = handles.pop().unwrap();
         let mut vec = loader.wait_from_iter([handle]);
-        let last = vec.pop().unwrap();
-        assert!(last.is_err());
+        let string = vec.pop().unwrap();
+        assert!(matches!(string.unwrap_err(), AssetLoadError::CachedNotFound(_)));
     }
 
     #[test]
@@ -124,6 +124,7 @@ mod tests {
         }
 
         let loader = Assets::new(None);
+        persistent!(loader, "test/text.txt");
         let string = loader.load::<Contextual>("test/text.txt");
         assert_eq!(
             string.unwrap().0,

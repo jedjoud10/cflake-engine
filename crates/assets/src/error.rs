@@ -7,8 +7,11 @@ pub enum AssetLoadError {
     #[error("Invalid '{0}' extension in file path")]
     InvalidExtension(String),
 
-    #[error("Cannot find file at path '{0}'")]
+    #[error("Cannot load dynamic file at path '{0}'")]
     DynamicNotFound(String),
+
+    #[error("Cannot load cached filed bytes at path '{0}'")]
+    CachedNotFound(String),
 
     #[error("Could not convert to OS str")]
     InvalidOsStr,

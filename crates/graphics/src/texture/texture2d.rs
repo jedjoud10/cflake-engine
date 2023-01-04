@@ -84,16 +84,18 @@ impl<T: Texel> Texture for Texture2D<T> {
 }
 
 impl<T: ImageTexel> Asset for Texture2D<T> {
-    type Args<'args> = ();
+    type Context<'ctx> = ();
+    type Settings<'stg> = ();
     type Err = TextureAssetLoadError;
 
     fn extensions() -> &'static [&'static str] {
         &["png", "jpg", "jpeg"]
     }
 
-    fn deserialize<'args>(
+    fn deserialize<'c, 's>(
         data: assets::Data,
-        args: Self::Args<'args>,
+        graphics: Self::Context<'c>,
+        settings: Self::Settings<'s>,
     ) -> Result<Self, Self::Err> {
         let i = Instant::now();
         let image = image::load_from_memory(data.bytes())

@@ -122,8 +122,12 @@ impl Assets {
         bytes: &AsyncLoadedBytes,
         user: &UserPath,
         path: &Path,
-    ) -> Result<bool, AssetLoadError> {
-        Ok(false)
+    ) -> bool {
+        if user.is_some() {
+            !bytes.read().contains_key(path)
+        } else {
+            false
+        }
     }
 
     // Load bytes either dynamically or load cached bytes
@@ -137,27 +141,30 @@ impl Assets {
             bytes,
             user,
             &owned
-        )?;
+        );
 
-        // Load the cached bytes or load them dynamically 
-        let bytes = if dynamic {
-            Self::load_cached_bytes(bytes, &owned)
+        // Load the bytes dynamically or load them from cache 
+        if dynamic {
+            Self::load_bytes_dynamically(bytes, user, owned)
         } else {
-            Self::load_bytes_dynamically(bytes, user, owned)?
-        };
-        Ok(bytes)
+            Self::load_cached_bytes(bytes, &owned)
+        }
     }
 
     // Load the already cached bytes
     fn load_cached_bytes(
         bytes: &AsyncLoadedBytes,
         path: &Path,
-    ) -> Arc<[u8]> {
+    ) -> Result<Arc<[u8]>, AssetLoadError> {
         log::debug!(
             "Loaded asset from path {:?} from cached bytes",
             path
         );
-        bytes.read().get(path).unwrap().clone()
+
+        bytes.read().get(path).cloned().ok_or_else(|| {
+            let path = path.as_os_str().to_str().unwrap().to_owned();
+            AssetLoadError::CachedNotFound(path)
+        })
     }
 
     // Load the bytes for an asset dynamically and store them within self
@@ -171,7 +178,12 @@ impl Assets {
             &owned
         );
         let mut write = bytes.write();
-        let user = user.as_ref().unwrap();
+        
+        // Sometimes the user path is not specified
+        let user = user
+            .as_ref()
+            .ok_or(AssetLoadError::UserPathNotSpecified)?;
+        
         let bytes = super::raw::read(&owned, user)?;
         let arc: Arc<[u8]> = Arc::from(bytes);
         write.insert(owned.clone(), arc.clone());
