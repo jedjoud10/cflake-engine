@@ -11,7 +11,7 @@ pub struct Texture2D<T: Texel> {
     // Raw vulkan
     image: vk::Image,
     allocation: ManuallyDrop<Allocation>,
-    whole_view: vk::ImageView,
+    view: vk::ImageView,
 
     // Main texture settings
     dimensions: vek::Extent2<u32>,
@@ -52,7 +52,7 @@ impl<T: Texel> Texture for Texture2D<T> {
     }
 
     fn view(&self) -> vk::ImageView {
-        self.whole_view
+        self.view
     }
 
     fn allocation(&self) -> &Allocation {
@@ -74,7 +74,7 @@ impl<T: Texel> Texture for Texture2D<T> {
         Self {
             image,
             allocation: ManuallyDrop::new(allocation),
-            whole_view,
+            view: whole_view,
             dimensions,
             usage,
             mode,
@@ -84,16 +84,18 @@ impl<T: Texel> Texture for Texture2D<T> {
 }
 
 impl<T: ImageTexel> Asset for Texture2D<T> {
-    type Args<'args> = ();
+    type Context<'ctx> = ();
+    type Settings<'stg> = ();
     type Err = TextureAssetLoadError;
 
     fn extensions() -> &'static [&'static str] {
         &["png", "jpg", "jpeg"]
     }
 
-    fn deserialize<'args>(
+    fn deserialize<'c, 's>(
         data: assets::Data,
-        args: Self::Args<'args>,
+        graphics: Self::Context<'c>,
+        settings: Self::Settings<'s>,
     ) -> Result<Self, Self::Err> {
         let i = Instant::now();
         let image = image::load_from_memory(data.bytes())

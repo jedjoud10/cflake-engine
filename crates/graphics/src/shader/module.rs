@@ -70,16 +70,18 @@ pub struct FunctionModule {
 macro_rules! impl_asset_for_module {
     ($t: ty, $ext: expr) => {
         impl Asset for $t {
-            type Args<'args> = ();
+            type Context<'ctx> = ();
+            type Settings<'stg> = ();
             type Err = std::string::FromUtf8Error;
 
             fn extensions() -> &'static [&'static str] {
                 &[$ext]
             }
 
-            fn deserialize<'args>(
+            fn deserialize<'c, 's>(
                 data: assets::Data,
-                _args: Self::Args<'args>,
+                _: Self::Context<'c>,
+                _: Self::Settings<'s>,
             ) -> Result<Self, Self::Err> {
                 let source =
                     String::from_utf8(data.bytes().to_vec())?;

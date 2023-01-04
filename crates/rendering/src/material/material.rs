@@ -60,7 +60,10 @@ pub trait Material: 'static + Sized {
 
     // Get the blend config for this material
     fn blend_config() -> BlendConfig {
-        BlendConfig {}
+        BlendConfig { 
+            logic_operation: None,
+            attachments: [None]
+        }
     }
 
     // Fetch the property block resources

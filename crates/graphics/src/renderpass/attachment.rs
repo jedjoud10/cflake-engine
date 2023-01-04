@@ -18,7 +18,7 @@ pub struct Attachment<T: Texel> {
 // Dynamic attachment without the texel (basically a render target trait)
 pub trait DynamicAttachment {
     // Get the untyped texel format
-    fn untyped(&self) -> UntypedTexel;
+    fn untyped_texel(&self) -> UntypedTexel;
 
     // Get the underlying image that must be used for rendering
     fn image(&self) -> vk::Image;
@@ -26,5 +26,3 @@ pub trait DynamicAttachment {
     // Get the underlying image view that must be used for rendering
     fn image_view(&self) -> vk::ImageView;
 }
-
-// An attachment layout is a tuple that contains multiple attachments

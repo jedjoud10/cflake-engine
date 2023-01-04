@@ -117,30 +117,54 @@ impl Assets {
         (name, extension)
     }
 
+    // Check if we must load the bytes dynamically or load cached bytes
+    fn should_load_dynamically(
+        bytes: &AsyncLoadedBytes,
+        user: &UserPath,
+        path: &Path,
+    ) -> bool {
+        if user.is_some() {
+            !bytes.read().contains_key(path)
+        } else {
+            false
+        }
+    }
+
     // Load bytes either dynamically or load cached bytes
     fn load_bytes(
         bytes: &AsyncLoadedBytes,
         user: &UserPath,
         owned: PathBuf,
     ) -> Result<Arc<[u8]>, AssetLoadError> {
-        let bytes = if bytes.read().contains_key(&owned) {
-            Self::load_cached_bytes(bytes, &owned)
+        // Check if we must load dynamically
+        let dynamic = Self::should_load_dynamically(
+            bytes,
+            user,
+            &owned
+        );
+
+        // Load the bytes dynamically or load them from cache 
+        if dynamic {
+            Self::load_bytes_dynamically(bytes, user, owned)
         } else {
-            Self::load_bytes_dynamically(bytes, user, owned)?
-        };
-        Ok(bytes)
+            Self::load_cached_bytes(bytes, &owned)
+        }
     }
 
     // Load the already cached bytes
     fn load_cached_bytes(
         bytes: &AsyncLoadedBytes,
         path: &Path,
-    ) -> Arc<[u8]> {
+    ) -> Result<Arc<[u8]>, AssetLoadError> {
         log::debug!(
             "Loaded asset from path {:?} from cached bytes",
             path
         );
-        bytes.read().get(path).unwrap().clone()
+
+        bytes.read().get(path).cloned().ok_or_else(|| {
+            let path = path.as_os_str().to_str().unwrap().to_owned();
+            AssetLoadError::CachedNotFound(path)
+        })
     }
 
     // Load the bytes for an asset dynamically and store them within self
@@ -154,14 +178,17 @@ impl Assets {
             &owned
         );
         let mut write = bytes.write();
+        
+        // Sometimes the user path is not specified
         let user = user
             .as_ref()
             .ok_or(AssetLoadError::UserPathNotSpecified)?;
+        
         let bytes = super::raw::read(&owned, user)?;
         let arc: Arc<[u8]> = Arc::from(bytes);
         write.insert(owned.clone(), arc.clone());
         log::debug!(
-            "Successfully loaded asset bytes from path {:?}",
+            "Successfully loaded dynamic asset bytes from path {:?}",
             &owned
         );
         Ok(arc)
@@ -173,7 +200,8 @@ impl Assets {
         owned: PathBuf,
         bytes: AsyncLoadedBytes,
         user: UserPath,
-        args: <A as Asset>::Args<'_>,
+        context: <A as Asset>::Context<'_>,
+        settings: <A as Asset>::Settings<'_>,
         assets: AsyncLoadedAssets,
         key: DefaultKey,
         sender: Sender<DefaultKey>,
@@ -198,7 +226,8 @@ impl Assets {
                     bytes,
                     path: owned.as_path(),
                 },
-                args,
+                context,
+                settings,
             )
             .map_err(|err| {
                 AssetLoadError::BoxedDeserialization(Box::new(err))
@@ -221,12 +250,12 @@ impl Assets {
 // Synchronous loading
 impl Assets {
     // Load an asset using some explicit/default loading arguments
-    pub fn load<'s, 'args, A: Asset>(
+    pub fn load<'str, 'ctx, 'stg, A: Asset>(
         &self,
-        input: impl AssetInput<'s, 'args, A>,
+        input: impl AssetInput<'str, 'ctx, 'stg, A>,
     ) -> Result<A, AssetLoadError> {
         // Check if the extension is valid
-        let (path, args) = input.split();
+        let (path, context, settings) = input.split();
         let path = Path::new(OsStr::new(path));
         let owned = path.to_owned();
         Self::validate::<A>(&path)?;
@@ -245,7 +274,8 @@ impl Assets {
                 bytes,
                 path: &path,
             },
-            args,
+            context,
+            settings,
         )
         .map_err(|err| {
             AssetLoadError::BoxedDeserialization(Box::new(err))
@@ -253,9 +283,9 @@ impl Assets {
     }
 
     // Load multiple assets using some explicit/default loading arguments
-    pub fn load_from_iter<'s, 'args, A: Asset>(
+    pub fn load_from_iter<'str, 'ctx, 'stg, A: Asset>(
         &self,
-        inputs: impl IntoIterator<Item = impl AssetInput<'s, 'args, A>>,
+        inputs: impl IntoIterator<Item = impl AssetInput<'str, 'ctx, 'stg, A>>,
     ) -> Vec<Result<A, AssetLoadError>> {
         inputs
             .into_iter()
@@ -267,16 +297,17 @@ impl Assets {
 // Asynchronous loading
 impl Assets {
     // Load an asset using some explicit/default loading arguments in another thread
-    pub fn async_load<'s, A: AsyncAsset>(
+    pub fn async_load<'str, A: AsyncAsset>(
         &self,
-        input: impl AssetInput<'s, 'static, A>,
+        input: impl AssetInput<'str, 'static, 'static, A>,
         threadpool: &mut ThreadPool,
     ) -> AsyncHandle<A>
     where
-        A::Args<'static>: Send + Sync,
+        A::Settings<'static>: Send + Sync,
+        A::Context<'static>: Send + Sync,
     {
         // Get the path and arguments
-        let (path, args) = input.split();
+        let (path, context, settings) = input.split();
         let path = Path::new(OsStr::new(path));
         let owned = path.to_owned();
 
@@ -296,7 +327,7 @@ impl Assets {
         // Create a new task that will load this asset
         threadpool.execute(move || {
             Self::async_load_inner::<A>(
-                owned, bytes, user, args, assets, key, sender,
+                owned, bytes, user, context, settings, assets, key, sender,
             );
         });
         handle
@@ -307,12 +338,13 @@ impl Assets {
     pub fn async_load_from_iter<'s, A: AsyncAsset>(
         &self,
         inputs: impl IntoIterator<
-            Item = impl AssetInput<'s, 'static, A> + Send,
+            Item = impl AssetInput<'s, 'static, 'static, A> + Send,
         >,
         threadpool: &mut ThreadPool,
     ) -> Vec<AsyncHandle<A>>
     where
-        A::Args<'static>: Send + Sync,
+        A::Settings<'static>: Send + Sync,
+        A::Context<'static>: Send + Sync,
     {
         // Create a temporary threadpool scope for these assets only
         let mut outer = Vec::<AsyncHandle<A>>::new();
@@ -320,7 +352,7 @@ impl Assets {
         threadpool.scope(move |scope| {
             for input in inputs.into_iter() {
                 // Check the extension on a per file basis
-                let (path, args) = input.split();
+                let (path, context, settings) = input.split();
                 let path = Path::new(OsStr::new(path));
                 let owned = path.to_owned();
 
@@ -339,7 +371,7 @@ impl Assets {
 
                 scope.execute(move || {
                     Self::async_load_inner::<A>(
-                        owned, bytes, user, args, assets, key, sender,
+                        owned, bytes, user, context, settings, assets, key, sender,
                     );
                 });
             }
