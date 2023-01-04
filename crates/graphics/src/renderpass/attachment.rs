@@ -6,7 +6,7 @@ pub trait ColorAttachments<'a, C: ColorLayout> {
 }
 
 // A depth stencil attachment that is passed to the render pass when starting it
-pub trait DepthStencilAttachment<'a, DS: DepthStencilLayout + DepthElement> {
+pub trait DepthStencilAttachment<'a, DS: DepthStencilLayout> {
 }
 
 // A render target that can be used inside a renderpass (attachment)

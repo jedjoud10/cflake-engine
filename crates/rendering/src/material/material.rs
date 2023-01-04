@@ -12,15 +12,6 @@ pub trait Material: 'static + Sized {
     // The resources that we need to fetch from the world to set the descriptor sets
     type Resources<'w>: 'w;
 
-    // Static scene descriptor set
-    type SceneDescriptorSet<'ds>: DescriptorSet<'ds>;
-
-    // Instance descriptor set
-    type InstanceDescriptorSet<'ds>: DescriptorSet<'ds>;
-
-    // Surface descriptor set
-    type SurfaceDescriptorSet<'ds>: DescriptorSet<'ds>;
-
     // Load the vertex module and process it
     fn vertex(
         graphics: &Graphics,
@@ -74,17 +65,17 @@ pub trait Material: 'static + Sized {
     // Set the global and static instance descriptor sets
     fn get_static_descriptor_set<'w: 'ds, 'ds>(
         resources: &mut Self::Resources<'w>,
-    ) -> Self::SceneDescriptorSet<'ds>;
+    ) {}
 
     // Set the uniforms for this property block right before we render our surface
     fn get_surface_descriptor_set<'w: 'ds, 'ds>(
         resources: &mut Self::Resources<'w>,
-    ) -> Self::SurfaceDescriptorSet<'ds>;
+    ) {}
 
     // With the help of the fetched resources, set the uniform properties for a unique material instance
     // This will only be called whenever we switch instances
     fn get_instance_descriptor_set<'w: 'ds, 'ds>(
         resources: &mut Self::Resources<'w>,
         instance: &Self,
-    ) -> Self::InstanceDescriptorSet<'ds>;
+    ) {}
 }

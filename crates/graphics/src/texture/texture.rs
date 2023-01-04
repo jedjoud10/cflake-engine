@@ -81,6 +81,8 @@ pub trait Texture: Sized {
 
         // TODO: Check if the format is valid for the given usage flag
 
+        // TODO: Don't use mipmapping with NPOT textures
+
         // Create the raw Vulkan image
         let (image, allocation) = unsafe {
             graphics.device().create_image(
@@ -231,7 +233,7 @@ pub trait Texture: Sized {
         todo!()
     }
 
-    // Try to get a sampler for this texture so we can read from it within shaders
+    // Try to get a sampler for this whole texture so we can read from it within shaders
     fn sampler(&self) -> Result<Sampler<Self>, TextureSamplerError> {
         todo!()
     }

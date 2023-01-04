@@ -1,7 +1,7 @@
 use crate::{
-    AnyElement, ChannelsType, Depth, DepthElement, ElementType,
+    AnyElement, ChannelsType, Depth, DepthStencil, DepthElement, ElementType,
     Normalized, Stencil, StencilElement, Swizzable, VectorChannels,
-    BGR, BGRA, R, RG, RGB, RGBA,
+    BGR, BGRA, R, RG, RGB, RGBA, GpuPodRelaxed,
 };
 use std::mem::size_of;
 use vek::{Vec2, Vec3, Vec4};
@@ -15,7 +15,7 @@ pub struct UntypedTexel {
     pub element: ElementType,
 
     // Storage/memory related
-    pub bits_per_channel: u32,
+    pub bits_per_channel: u64,
 }
 
 // This trait defines the layout for a single texel that will be stored within textures
@@ -23,7 +23,7 @@ pub struct UntypedTexel {
 // This assumes a very simple case of multi-channel texels
 pub trait Texel: 'static + Sized {
     // Number of bits per channel
-    const BITS_PER_CHANNEL: u32;
+    const BITS_PER_CHANNEL: u64;
 
     // Untyped representation of the underlying element
     const ELEMENT_TYPE: ElementType;
@@ -35,7 +35,7 @@ pub trait Texel: 'static + Sized {
     const FORMAT: vk::Format;
 
     // The raw data type that we will use to access texture memory
-    type Storage: bytemuck::Pod;
+    type Storage: GpuPodRelaxed;
 
     // Get the untyped variant of this texel
     fn untyped() -> UntypedTexel {
@@ -46,6 +46,22 @@ pub trait Texel: 'static + Sized {
             bits_per_channel: Self::BITS_PER_CHANNEL,
         }
     }
+}
+
+// Color texels are texels used for color attachments
+// TODO: Figure out if there are any limits to this
+pub trait ColorTexel: Texel {
+    // A texel that represents complete black or 0 (-1 if normalized)
+    fn black() -> Self::Storage;
+
+    // A texel that represents gray or 0.5 (0 if normalized)
+    fn grey() -> Self::Storage;
+
+    // A texel that represents complete white or 1 (1 if normalized)
+    fn white() -> Self::Storage;
+
+    // Convert this texel to a clear color value 
+    fn into_clear_color_value(storage: Self::Storage) -> vk::ClearColorValue;
 }
 
 // Image texels are texels that can be loaded from a file, like when loading a Texture2D<RGBA<Normalized<u8>>
@@ -59,7 +75,7 @@ pub trait ImageTexel: Texel {
 macro_rules! impl_color_texel_layout {
     ($t:ident, $channels_type:expr, $vec: ident) => {
         impl<T: AnyElement> Texel for $t<T> {
-            const BITS_PER_CHANNEL: u32 = size_of::<T>() as u32 * 8;
+            const BITS_PER_CHANNEL: u64 = size_of::<T>() as u64 * 8;
             const ELEMENT_TYPE: ElementType = T::ELEMENT_TYPE;
             const CHANNELS_TYPE: ChannelsType = $channels_type;
             const FORMAT: vk::Format =
@@ -68,6 +84,24 @@ macro_rules! impl_color_texel_layout {
                     Self::CHANNELS_TYPE,
                 );
             type Storage = $vec<T::Storage>;
+        }
+
+        impl<T: AnyElement> ColorTexel for $t<T> {
+            fn black() -> Self::Storage {
+                todo!()
+            }
+
+            fn grey() -> Self::Storage {
+                todo!()
+            }
+
+            fn white() -> Self::Storage {
+                todo!()
+            }
+            
+            fn into_clear_color_value(_storage: Self::Storage) -> vk::ClearColorValue {
+                todo!()
+            }
         }
     };
 }
@@ -76,7 +110,7 @@ macro_rules! impl_color_texel_layout {
 macro_rules! impl_swizzled_color_texel_layout {
     ($t:ident, $channels_type:expr, $vec: ident) => {
         impl<T: AnyElement + Swizzable> Texel for $t<T> {
-            const BITS_PER_CHANNEL: u32 = size_of::<T>() as u32 * 8;
+            const BITS_PER_CHANNEL: u64 = size_of::<T>() as u64 * 8;
             const ELEMENT_TYPE: ElementType = T::ELEMENT_TYPE;
             const CHANNELS_TYPE: ChannelsType = $channels_type;
             const FORMAT: vk::Format =
@@ -86,6 +120,24 @@ macro_rules! impl_swizzled_color_texel_layout {
                 );
             type Storage = $vec<T::Storage>;
         }
+
+        impl<T: AnyElement + Swizzable> ColorTexel for $t<T> {
+            fn black() -> Self::Storage {
+                todo!()
+            }
+
+            fn grey() -> Self::Storage {
+                todo!()
+            }
+
+            fn white() -> Self::Storage {
+                todo!()
+            }
+            
+            fn into_clear_color_value(_storage: Self::Storage) -> vk::ClearColorValue {
+                todo!()
+            }
+        }
     };
 }
 
@@ -93,7 +145,7 @@ macro_rules! impl_swizzled_color_texel_layout {
 macro_rules! impl_special_texel_layout {
     () => {
         impl<T: DepthElement> Texel for Depth<T> {
-            const BITS_PER_CHANNEL: u32 = size_of::<T>() as u32 * 8;
+            const BITS_PER_CHANNEL: u64 = size_of::<T>() as u64 * 8;
             const ELEMENT_TYPE: ElementType = T::ELEMENT_TYPE;
             const CHANNELS_TYPE: ChannelsType = ChannelsType::Depth;
             const FORMAT: vk::Format =
@@ -105,7 +157,7 @@ macro_rules! impl_special_texel_layout {
         }
 
         impl<T: StencilElement> Texel for Stencil<T> {
-            const BITS_PER_CHANNEL: u32 = size_of::<T>() as u32 * 8;
+            const BITS_PER_CHANNEL: u64 = size_of::<T>() as u64 * 8;
             const ELEMENT_TYPE: ElementType = T::ELEMENT_TYPE;
             const CHANNELS_TYPE: ChannelsType = ChannelsType::Stencil;
             const FORMAT: vk::Format =
@@ -114,6 +166,20 @@ macro_rules! impl_special_texel_layout {
                     Self::CHANNELS_TYPE,
                 );
             type Storage = T::Storage;
+        }
+
+        impl<D: DepthElement, S: StencilElement> Texel for DepthStencil<D, S> where (D::Storage, S::Storage): GpuPodRelaxed {
+            const BITS_PER_CHANNEL: u64 = size_of::<D>() as u64 * 8 + size_of::<S>() as u64 * 8;
+            const ELEMENT_TYPE: ElementType = ElementType::CompoundDepthStencil {
+                depth_bits: size_of::<D>() as u64 * 8
+            };
+            const CHANNELS_TYPE: ChannelsType = ChannelsType::Stencil;
+            const FORMAT: vk::Format =
+                crate::format::pick_format_from_params(
+                    Self::ELEMENT_TYPE,
+                    Self::CHANNELS_TYPE,
+                );
+            type Storage = (D::Storage, S::Storage);
         }
     };
 }

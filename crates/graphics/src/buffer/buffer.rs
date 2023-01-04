@@ -7,7 +7,7 @@ use std::{
 use crate::{
     BufferClearError, BufferCopyError, BufferExtendError,
     BufferInitializationError, BufferMode, BufferNotMappableError,
-    BufferReadError, BufferUsage, BufferWriteError, GpuPod, Graphics,
+    BufferReadError, BufferUsage, BufferWriteError, GpuPodRelaxed, Graphics,
 };
 use vulkan::{vk, Allocation};
 
@@ -29,7 +29,7 @@ pub type IndirectBuffer<T> = Buffer<T, INDIRECT>;
 // This also takes a constant that represents it's Vulkan target at compile time
 // TODO: Handle async read writes and async command buf submissions
 // TODO: Merge multiple async commands together? (like multiple copy or clear commands)
-pub struct Buffer<T: GpuPod, const TYPE: u32> {
+pub struct Buffer<T: GpuPodRelaxed, const TYPE: u32> {
     // Raw Vulkan
     buffer: vk::Buffer,
     allocation: ManuallyDrop<Allocation>,
@@ -47,7 +47,7 @@ pub struct Buffer<T: GpuPod, const TYPE: u32> {
     graphics: Graphics,
 }
 
-impl<T: GpuPod, const TYPE: u32> Drop for Buffer<T, TYPE> {
+impl<T: GpuPodRelaxed, const TYPE: u32> Drop for Buffer<T, TYPE> {
     fn drop(&mut self) {
         unsafe {
             let alloc = ManuallyDrop::take(&mut self.allocation);
@@ -57,7 +57,7 @@ impl<T: GpuPod, const TYPE: u32> Drop for Buffer<T, TYPE> {
 }
 
 // Buffer initialization
-impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
+impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
     // Try to create a buffer with the specified mode, usage, and slice data
     pub fn from_slice(
         graphics: &Graphics,
@@ -142,7 +142,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
 }
 
 // Implementation of util methods
-impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
+impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
     // Get the inner raw Vulkan buffer
     pub fn raw(&self) -> Option<vk::Buffer> {
         (self.buffer != vk::Buffer::null()).then_some(self.buffer)
@@ -190,7 +190,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
 }
 
 // Implementation of unsafe methods
-impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
+impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
     // Read from "src" and write to buffer unsafely and instantly
     pub unsafe fn write_unchecked(
         &mut self,
@@ -282,7 +282,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
     }
 
     // Transmute the buffer into another type of buffer unsafely
-    pub unsafe fn transmute<U: GpuPod>(self) -> Buffer<U, TYPE> {
+    pub unsafe fn transmute<U: GpuPodRelaxed>(self) -> Buffer<U, TYPE> {
         assert_eq!(
             Layout::new::<T>(),
             Layout::new::<U>(),
@@ -402,7 +402,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
 }
 
 // Implementation of safe methods
-impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
+impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
     // Read buffer and write to "dst" instantly
     pub fn write(
         &mut self,

@@ -14,6 +14,8 @@ mod texels {
         assert_eq!(R::<f16>::BITS_PER_CHANNEL, 16);
         assert_eq!(R::<f32>::BITS_PER_CHANNEL, 32);
         assert_eq!(R::<f64>::BITS_PER_CHANNEL, 64);
+        assert_eq!(R::<Normalized<u8>>::BITS_PER_CHANNEL, 8);
+        assert_eq!(R::<Normalized<u16>>::BITS_PER_CHANNEL, 16);
     }
 
     #[test]
@@ -217,6 +219,7 @@ mod texels {
         );
         assert_eq!(Depth::<f32>::FORMAT, vk::Format::D32_SFLOAT);
         assert_eq!(Stencil::<u8>::FORMAT, vk::Format::S8_UINT);
+        //assert_eq!(DepthStencil::<f32, u8>::FORMAT, vk::Format::D32_SFLOAT_S8_UINT);
     }
 }
 

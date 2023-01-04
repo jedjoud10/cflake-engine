@@ -1,6 +1,6 @@
 use crate::{
     BlendConfig, DepthConfig, Graphics, Primitive, RenderPass,
-    Shader, ShaderModule, StencilConfig,
+    Shader, ShaderModule, StencilConfig, ColorLayout, DepthStencilLayout,
 };
 
 use vulkan::vk;
@@ -39,13 +39,13 @@ impl Drop for GraphicsPipeline {
 // Initialization of the graphics pipeline
 impl GraphicsPipeline {
     // Create a new pipeline with the specified configs
-    pub unsafe fn new(
+    pub unsafe fn new<C: ColorLayout, DS: DepthStencilLayout>(
         graphics: &Graphics,
         depth_config: DepthConfig,
         stencil_config: StencilConfig,
         blend_config: BlendConfig,
         primitive: Primitive,
-        render_pass: &RenderPass,
+        render_pass: &RenderPass<C, DS>,
         shader: Shader,
     ) -> Self {
         let pipeline = unsafe {

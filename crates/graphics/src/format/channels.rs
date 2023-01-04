@@ -1,4 +1,4 @@
-use crate::{AnyElement, Normalized};
+use crate::{AnyElement, Normalized, GpuPodRelaxed};
 
 // The channels that represent the texels (non sRGB)
 pub struct R<T: AnyElement>(T);
@@ -32,12 +32,12 @@ impl DepthElement for f32 {}
 pub trait StencilElement: AnyElement {}
 impl StencilElement for u8 {}
 
-// TODO: Implement depth-stencil texels
-
-
 // Unique depth and stencil channels for depth render textures and stencil render textures
 pub struct Depth<T: DepthElement>(T);
 pub struct Stencil<T: StencilElement>(T);
+
+//#[repr(C, packed)]
+pub struct DepthStencil<D: DepthElement, S: StencilElement>(D, S);
 
 // Vector channel as texel channels
 // TODO: Is there a better way to handle this?
@@ -78,14 +78,16 @@ pub enum ChannelsType {
     Vector(VectorChannels),
     Depth,
     Stencil,
+    DepthStencil,
 }
 
 impl ChannelsType {
     // Count the number of channels that we have in total
     pub const fn count(&self) -> u32 {
         match self {
-            ChannelsType::Vector(color) => color.count(),
-            ChannelsType::Depth | ChannelsType::Stencil => 1,
+            Self::Vector(color) => color.count(),
+            Self::Depth | Self::Stencil => 1,
+            Self::DepthStencil => 2,
         }
     }
 }

@@ -6,12 +6,16 @@ use graphics::{
 };
 use utils::Storage;
 
+// Basic type aliases
+type BasicAlbedoMap = Texture2D<RGB<Normalized<u8>>>;
+type BasicNormalMap = Texture2D<RGB<Normalized<i8>>>;
+
 // A basic forward rendering material that will read from a diffuse map and normal map
 // This does not implement the PBR workflow, and it's only used for simplicity at first
 pub struct Basic {
     // Textures
-    pub albedo_map: Texture2D<RGB<Normalized<u8>>>,
-    pub normal_map: Texture2D<RGB<Normalized<i8>>>,
+    pub albedo_map: BasicAlbedoMap,
+    pub normal_map: BasicNormalMap,
 
     // Parameters
     pub bumpiness: f32,
@@ -20,9 +24,6 @@ pub struct Basic {
 
 impl Material for Basic {
     type Resources<'w> = world::Read<'w, Storage<Box<u32>>>;
-    type SceneDescriptorSet<'ds> = &'ds Box<u32>;
-    type InstanceDescriptorSet<'ds> = ();
-    type SurfaceDescriptorSet<'ds> = ();
 
     // Load the vertex shader for this material
     fn vertex(
@@ -55,24 +56,5 @@ impl Material for Basic {
     fn fetch<'w>(world: &'w world::World) -> Self::Resources<'w> {
         let storage = world.get::<Storage<Box<u32>>>().unwrap();
         storage
-    }
-
-    fn get_static_descriptor_set<'w: 'ds, 'ds>(
-        resources: &mut Self::Resources<'w>,
-    ) -> Self::SceneDescriptorSet<'ds> {
-        resources.get(todo!())
-    }
-
-    fn get_surface_descriptor_set<'w: 'ds, 'ds>(
-        resources: &mut Self::Resources<'w>,
-    ) -> Self::SurfaceDescriptorSet<'ds> {
-        todo!()
-    }
-
-    fn get_instance_descriptor_set<'w: 'ds, 'ds>(
-        resources: &mut Self::Resources<'w>,
-        instance: &Self,
-    ) -> Self::InstanceDescriptorSet<'ds> {
-        todo!()
     }
 }

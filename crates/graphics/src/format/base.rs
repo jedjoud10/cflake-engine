@@ -1,5 +1,7 @@
 use half::f16;
 
+use crate::GpuPod;
+
 // Base numbers that are used to store the inner raw values of texture texels
 pub trait Base:
     Clone
@@ -7,8 +9,7 @@ pub trait Base:
     + Send
     + Sync
     + 'static
-    + bytemuck::Pod
-    + bytemuck::Zeroable
+    + GpuPod
 {
     const TYPE: BaseType;
     const SIGNED: bool;

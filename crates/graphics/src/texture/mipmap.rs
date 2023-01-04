@@ -1,6 +1,9 @@
 use vulkan::vk;
-
+use crate::{TextureSamplerError, Sampler};
 use super::{Region, Texture};
+
+// TODO: Figure out how to store and create vk::Views for each mipmap
+// Should they be stored in a SmallArray or SmallVec??
 
 // An immutable mip level that we can use to read from the texture
 pub struct MipLevelRef<'a, T: Texture> {
@@ -29,6 +32,11 @@ impl<'a, T: Texture> MipLevelRef<'a, T> {
     // Get the mip level's region
     pub fn region(&self) -> T::Region {
         T::Region::with_extent(self.dimensions())
+    }
+
+    // Try to get a sampler for this one mip level
+    fn sampler(&self) -> Result<Sampler<T>, TextureSamplerError> {
+        todo!()
     }
 }
 
@@ -65,6 +73,11 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
     // Get the mip level's region
     pub fn region(&self) -> T::Region {
         T::Region::with_extent(self.dimensions())
+    }
+
+    // Try to get a sampler for this one mip level
+    fn sampler(&self) -> Result<Sampler<T>, TextureSamplerError> {
+        todo!()
     }
 }
 

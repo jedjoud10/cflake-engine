@@ -1,4 +1,6 @@
-use crate::{Base, BaseType};
+use std::any::TypeId;
+
+use crate::{Base, BaseType, GpuPodRelaxed, GpuPod};
 
 // Elements are just values that can be stored within channels, like u32, Normalized<i8> or i8
 pub trait AnyElement: 'static {
@@ -6,8 +8,9 @@ pub trait AnyElement: 'static {
     const ELEMENT_TYPE: ElementType;
 
     // Raw data representation that will be sent to the GPU
-    type Storage: bytemuck::Pod;
+    type Storage: GpuPod;
 }
+
 impl<T: Base> AnyElement for T {
     const ELEMENT_TYPE: ElementType = match T::TYPE {
         BaseType::Eight => ElementType::Eight {
@@ -46,6 +49,14 @@ pub enum ElementType {
     FloatSixteen,
     FloatThirtyTwo,
     FloatSixtyFour,
+
+    // Only used when dealing with depth-stencil texels
+    // We can guess the format using the bit size of the combined layout
+    // since we always know that the stencil element is exactly 1 byte (8 bits)
+    // And the only supported depth formats are either D32_SFLOAT or D16_UNORM 
+    CompoundDepthStencil {
+        depth_bits: u64,
+    },
 }
 
 // This trait represents bases that can be normalized
