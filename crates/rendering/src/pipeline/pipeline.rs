@@ -1,6 +1,6 @@
-use crate::Material;
+use crate::{Material, SwapchainFormat, ForwardRendererRenderPass};
 use assets::Assets;
-use graphics::{Graphics, GraphicsPipeline, RenderPass, Shader};
+use graphics::{Graphics, GraphicsPipeline, RenderPass, Shader, Rasterizer};
 use std::marker::PhantomData;
 use world::World;
 
@@ -27,24 +27,22 @@ impl<M: Material> Pipeline<M> {
     pub fn new(
         graphics: &Graphics,
         assets: &Assets,
-        render_pass: &RenderPass,
+        render_pass: &ForwardRendererRenderPass,
     ) -> Self {
         let vertex = M::vertex(graphics, assets);
         let fragment = M::fragment(graphics, assets);
         let shader = Shader::new(vertex, fragment);
 
         // Create the graphics pipeline
-        let pipeline = unsafe {
-            GraphicsPipeline::new(
-                graphics,
-                M::depth_config(),
-                M::stencil_config(),
-                M::blend_config(),
-                M::primitive_mode(),
-                &render_pass,
-                shader.clone(),
-            )
-        };
+        let pipeline = GraphicsPipeline::new(
+            graphics,
+            M::depth_config(),
+            M::stencil_config(),
+            M::blend_config(),
+            M::primitive_mode(),
+            &render_pass,
+            shader.clone(),
+        ).unwrap();
 
         Self {
             pipeline,
@@ -70,7 +68,7 @@ pub trait DynamicPipeline {
     fn graphical(&self) -> &GraphicsPipeline;
 
     // Render all surfaces that use the material of this pipeline
-    fn render(&self);
+    fn render(&self, rasterizer: &mut Rasterizer<'_, '_, '_, SwapchainFormat, ()>);
 }
 
 impl<M: Material> DynamicPipeline for Pipeline<M> {
@@ -78,7 +76,7 @@ impl<M: Material> DynamicPipeline for Pipeline<M> {
         &self.pipeline
     }
 
-    fn render(&self) {
-        //super::render_surfaces::<M>(render_pass, &self.pipeline);
+    fn render(&self, rasterizer: &mut Rasterizer<'_, '_, '_, SwapchainFormat, ()>) {
+        super::render_surfaces::<M>(&self.pipeline, rasterizer);
     }
 }

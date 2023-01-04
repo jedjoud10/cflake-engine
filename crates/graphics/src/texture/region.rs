@@ -2,7 +2,7 @@ use std::{num::NonZeroU8, ops::Add};
 use vulkan::vk;
 
 // Texture dimensions traits that are simply implemented for extents
-pub trait Extent: Copy {
+pub trait Extent: Copy + std::ops::Div<u32, Output=Self> {
     // Get the surface area of a superficial rectangle that uses these extents as it's dimensions
     fn area(&self) -> u32;
 
@@ -23,6 +23,11 @@ pub trait Extent: Copy {
         let num = cur.log2().floor() + 1.0;
         NonZeroU8::new(u8::try_from(num as u8).unwrap())
             .unwrap_or(NonZeroU8::new(1).unwrap())
+    }
+
+    // Calculate the dimensions of a mip map level using it's index (starts from 0)
+    fn mip_level_dimensions(self, level: u8) -> Self {
+        self / (level as u32 + 1)
     }
 
     // Check if an extent is larger in all axii than another one

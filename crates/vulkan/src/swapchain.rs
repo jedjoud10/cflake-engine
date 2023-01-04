@@ -34,7 +34,7 @@ impl Swapchain {
     ) -> Swapchain {
         // Get the supported surface formats khr
         let format = *vk::SurfaceFormatKHR::builder()
-            .format(vk::Format::B8G8R8A8_SRGB)
+            .format(vk::Format::B8G8R8A8_UNORM)
             .color_space(vk::ColorSpaceKHR::SRGB_NONLINEAR);
 
         // Convert the window inner size to vek extent2d

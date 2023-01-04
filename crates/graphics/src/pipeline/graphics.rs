@@ -1,6 +1,6 @@
 use crate::{
     BlendConfig, DepthConfig, Graphics, Primitive, RenderPass,
-    Shader, ShaderModule, StencilConfig, ColorLayout, DepthStencilLayout,
+    Shader, ShaderModule, StencilConfig, ColorLayout, DepthStencilLayout, PipelineInitializationError, AttachmentBlendConfig,
 };
 
 use vulkan::vk;
@@ -39,7 +39,7 @@ impl Drop for GraphicsPipeline {
 // Initialization of the graphics pipeline
 impl GraphicsPipeline {
     // Create a new pipeline with the specified configs
-    pub unsafe fn new<C: ColorLayout, DS: DepthStencilLayout>(
+    pub fn new<C: ColorLayout, DS: DepthStencilLayout>(
         graphics: &Graphics,
         depth_config: DepthConfig,
         stencil_config: StencilConfig,
@@ -47,7 +47,7 @@ impl GraphicsPipeline {
         primitive: Primitive,
         render_pass: &RenderPass<C, DS>,
         shader: Shader,
-    ) -> Self {
+    ) -> Result<Self, PipelineInitializationError> {
         let pipeline = unsafe {
             // Common values that we reuse
             let depth_config = &depth_config;
@@ -56,50 +56,45 @@ impl GraphicsPipeline {
             let _blend_config = &blend_config;
             let shader = &shader;
 
-            // Viewport state
+            // Viewport state set to nothing since it's dynamic state
             let viewport_state =
                 *vk::PipelineViewportStateCreateInfo::builder()
-                    .viewports(&[])
-                    .scissors(&[]);
+                    .viewports(&[vk::Viewport::default()])
+                    .scissors(&[vk::Rect2D::default()]);
 
             // Input assembly state
             let mut builder =
                 vk::PipelineInputAssemblyStateCreateInfo::builder();
             builder = primitive.apply_input_assembly_state(builder);
-            let input_assembly_state = *builder;
+            let input_assembly_state = builder;
 
             // Rasterization state
             let mut builder =
                 vk::PipelineRasterizationStateCreateInfo::builder();
             builder = primitive.apply_rasterization_state(builder);
             builder = depth_config.apply_rasterization_state(builder);
-            let rasterization_state = *builder;
+            let rasterization_state = builder;
 
             // Color blend state
-            // TODO: FIXME
-            let attachment =
-                vk::PipelineColorBlendAttachmentState::builder()
-                    .color_write_mask(
-                        vk::ColorComponentFlags::R
-                            | vk::ColorComponentFlags::G
-                            | vk::ColorComponentFlags::B
-                            | vk::ColorComponentFlags::A,
-                    )
-                    .blend_enable(false)
-                    .src_color_blend_factor(vk::BlendFactor::ONE)
-                    .dst_color_blend_factor(vk::BlendFactor::ZERO)
-                    .color_blend_op(vk::BlendOp::ADD)
-                    .src_alpha_blend_factor(vk::BlendFactor::ONE)
-                    .dst_alpha_blend_factor(vk::BlendFactor::ZERO)
-                    .alpha_blend_op(vk::BlendOp::ADD);
-            let attachment = [*attachment];
-
-            // FIXME
-            let blend_state =
-                *vk::PipelineColorBlendStateCreateInfo::builder()
+            let mut color_blend_builder = 
+                vk::PipelineColorBlendStateCreateInfo::builder()
                     .logic_op_enable(false)
                     .logic_op(vk::LogicOp::COPY)
-                    .attachments(&attachment);
+                    .attachments(&[]);
+
+            // Color blend state attachment 0
+            let attachment_builder = blend_config.attachments.map(|attachment| {
+                attachment[0].apply_color_blend_attachment_state(vk::PipelineColorBlendAttachmentState::builder())
+            }).unwrap_or_else(|| AttachmentBlendConfig::apply_default_color_blend_attachment_state(
+                vk::PipelineColorBlendAttachmentState::builder()
+            ));
+            
+            // Apply the color blend attachments to the state
+            let penis = [*attachment_builder];
+            let cock = penis.as_ref();
+            color_blend_builder = color_blend_builder.attachments(cock);
+            let color_blend_state = color_blend_builder;
+
 
             // Depth stencil state
             let mut builder =
@@ -107,7 +102,7 @@ impl GraphicsPipeline {
             builder = depth_config.apply_depth_stencil_state(builder);
             builder =
                 stencil_config.apply_depth_stencil_state(builder);
-            let depth_stencil_state = *builder;
+            let depth_stencil_state = builder;
 
             // Vertex input state
             let vertex_input_state =
@@ -147,11 +142,7 @@ impl GraphicsPipeline {
                     .alpha_to_one_enable(false);
 
             // Pipeline stages create info
-            let descriptions = [
-                shader.vertex().description(),
-                shader.fragment().description(),
-            ];
-            let stages = descriptions
+            let stages = shader.descriptions()
                 .into_iter()
                 .map(|c| {
                     let stage = c.kind.into_shader_stage_flags();
@@ -166,7 +157,7 @@ impl GraphicsPipeline {
             // Create info for the graphics pipeline
             let create_info =
                 vk::GraphicsPipelineCreateInfo::builder()
-                    .color_blend_state(&blend_state)
+                    .color_blend_state(&color_blend_state)
                     .depth_stencil_state(&depth_stencil_state)
                     .dynamic_state(&dynamic_state)
                     .input_assembly_state(&input_assembly_state)
@@ -181,7 +172,7 @@ impl GraphicsPipeline {
             graphics.device().create_graphics_pipeline(*create_info)
         };
 
-        Self {
+        Ok(Self {
             pipeline,
             depth_config,
             stencil_config,
@@ -189,7 +180,7 @@ impl GraphicsPipeline {
             primitive,
             shader,
             graphics: graphics.clone(),
-        }
+        })
     }
 }
 

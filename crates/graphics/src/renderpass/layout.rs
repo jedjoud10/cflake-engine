@@ -19,14 +19,46 @@ pub struct UntypedAttachmentDescription {
     stencil_store_op: StoreOp,
 }
 
-// An attachment layout is a tuple that contains multiple color attachments
+// An attachment layout is a tuple that contains multiple color texels
 pub trait ColorLayout {
+    // Get the underlying untyped color texels
+    fn untyped_texels() -> Vec<UntypedTexel>;
 }
 
-// An attachment layout that contains a depth and/or a stencil attachment
+impl<T: ColorTexel> ColorLayout for T {
+    fn untyped_texels() -> Vec<UntypedTexel> {
+        vec![T::untyped()]
+    }
+}
+
+// An attachment layout that contains a depth and/or a stencil texel
 pub trait DepthStencilLayout {
+    // Try to get the underlying untyped texel
+    fn untyped_texel() -> Option<UntypedTexel>;
 }
 
-impl<D: DepthElement> DepthStencilLayout for Depth<D> {}
-impl<S: StencilElement> DepthStencilLayout for Stencil<S> {}
-impl<D: DepthElement, S: StencilElement> DepthStencilLayout for DepthStencil<D, S> {}
+impl DepthStencilLayout for () {
+    fn untyped_texel() -> Option<UntypedTexel> {
+        None
+    }
+}
+
+impl<D: DepthElement> DepthStencilLayout for Depth<D> {
+    fn untyped_texel() -> Option<UntypedTexel> {
+        Some(<Depth::<D> as Texel>::untyped())
+    }
+}
+
+impl<S: StencilElement> DepthStencilLayout for Stencil<S> {
+    fn untyped_texel() -> Option<UntypedTexel> {
+        Some(<Stencil::<S> as Texel>::untyped())
+    }
+}
+
+/*
+impl<D: DepthElement, S: StencilElement> DepthStencilLayout for DepthStencil<D, S> {
+    fn untyped_texel() -> UntypedTexel {
+        <DepthStencil::<D, S> as Texel>::untyped()
+    }
+}
+*/

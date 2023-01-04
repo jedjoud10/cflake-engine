@@ -19,7 +19,7 @@ fn init(world: &mut World, el: &EventLoop<()>) {
 // Reset the dirty state of the window at the end of each frame
 fn update(world: &mut World) {
     let mut window = world.get_mut::<Window>().unwrap();
-    window.dirty = false;
+    window.reset_dirty();
 }
 
 // Handle window quitting and resizing
@@ -35,8 +35,7 @@ fn event(world: &mut World, event: &mut WindowEvent) {
             // Handle resizing the window
             let size = vek::Extent2::new(size.width, size.height);
             let mut window = world.get_mut::<Window>().unwrap();
-            window.size = size;
-            window.dirty = true;
+            window.set_size(size);
         }
 
         // Close requested, set the world state to "Stopped"

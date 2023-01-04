@@ -219,7 +219,6 @@ mod texels {
         );
         assert_eq!(Depth::<f32>::FORMAT, vk::Format::D32_SFLOAT);
         assert_eq!(Stencil::<u8>::FORMAT, vk::Format::S8_UINT);
-        //assert_eq!(DepthStencil::<f32, u8>::FORMAT, vk::Format::D32_SFLOAT_S8_UINT);
     }
 }
 
@@ -233,11 +232,8 @@ mod vertex {
     #[test]
     fn positional() {
         assert_eq!(XYZ::<f16>::FORMAT, vk::Format::R16G16B16_SFLOAT,);
-
         assert_eq!(XYZ::<f32>::FORMAT, vk::Format::R32G32B32_SFLOAT,);
-
         assert_eq!(XYZ::<f64>::FORMAT, vk::Format::R64G64B64_SFLOAT,);
-
         assert_eq!(XYZ::<f32>::FORMAT, vk::Format::R32G32B32_SFLOAT,);
     }
 

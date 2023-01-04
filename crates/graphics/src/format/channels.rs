@@ -35,8 +35,6 @@ impl StencilElement for u8 {}
 // Unique depth and stencil channels for depth render textures and stencil render textures
 pub struct Depth<T: DepthElement>(T);
 pub struct Stencil<T: StencilElement>(T);
-
-//#[repr(C, packed)]
 pub struct DepthStencil<D: DepthElement, S: StencilElement>(D, S);
 
 // Vector channel as texel channels
@@ -78,7 +76,6 @@ pub enum ChannelsType {
     Vector(VectorChannels),
     Depth,
     Stencil,
-    DepthStencil,
 }
 
 impl ChannelsType {
@@ -87,7 +84,6 @@ impl ChannelsType {
         match self {
             Self::Vector(color) => color.count(),
             Self::Depth | Self::Stencil => 1,
-            Self::DepthStencil => 2,
         }
     }
 }

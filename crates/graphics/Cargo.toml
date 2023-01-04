@@ -27,6 +27,5 @@ vek = { workspace = true, features = ["bytemuck"] }
 parking_lot = { workspace = true }
 lazy_static = { workspace = true }
 
-
 [features]
 headless = []

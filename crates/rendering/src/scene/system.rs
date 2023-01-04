@@ -1,7 +1,7 @@
-use crate::{ForwardRenderer, WindowRenderTexture};
+use crate::{ForwardRenderer, SwapchainTexture, SwapchainFormat, ForwardRendererRenderPass};
 use graphics::{
     vk, Allocation, Graphics, Normalized, RenderPass, Swapchain,
-    Texture, Texture2D, TextureMode, TextureUsage, Window, BGRA,
+    Texture, Texture2D, TextureMode, TextureUsage, Window, BGRA, Adapter, Device,
 };
 use std::mem::ManuallyDrop;
 use utils::Time;
@@ -13,32 +13,10 @@ fn init(world: &mut World) {
     let render_targets =
         extract_swapchain_images_to_textures(&graphics);
     let extent = graphics.swapchain().extent();
-    let format = [graphics.swapchain().format()];
-
-    let attachment_image_info =
-        vk::FramebufferAttachmentImageInfo::builder()
-            .width(extent.w)
-            .height(extent.h)
-            .view_formats(&format)
-            .layer_count(1)
-            .usage(
-                vk::ImageUsageFlags::COLOR_ATTACHMENT
-                    | vk::ImageUsageFlags::TRANSFER_DST,
-            );
-
-    let render_pass = unsafe {
-        RenderPass::new(
-            &graphics,
-            format[0],
-            &[*attachment_image_info],
-            vek::Rect {
-                x: 0,
-                y: 0,
-                w: extent.w,
-                h: extent.h,
-            },
-        )
-    };
+    let render_pass = ForwardRendererRenderPass::new(
+        &graphics,
+        extent,
+    ).unwrap();
     drop(graphics);
 
     world.insert(ForwardRenderer::new(render_targets, render_pass));
@@ -47,13 +25,13 @@ fn init(world: &mut World) {
 // Create the texture wrappers from the swapchain
 fn extract_swapchain_images_to_textures(
     graphics: &Graphics,
-) -> Vec<WindowRenderTexture> {
+) -> Vec<SwapchainTexture> {
     let images = graphics.swapchain().images();
     let dimensions = graphics.swapchain().extent();
     images
         .into_iter()
         .map(|(image, view)| unsafe {
-            Texture2D::<BGRA<Normalized<u8>>>::from_raw_parts(
+            Texture2D::<SwapchainFormat>::from_raw_parts(
                 graphics,
                 image,
                 view,
@@ -83,21 +61,35 @@ fn update(world: &mut World) {
     if window.is_dirty() {
         unsafe {
             swapchain.resize(adapter, device, surface, window.size());
-            swapchain.images();
+            renderer.render_pass.resize(window.size());
+            renderer.render_targets =
+                extract_swapchain_images_to_textures(&graphics);
         }
     }
 
     unsafe {
         // Acquire a new color image to render to
         let index = swapchain.acquire_next_image().unwrap();
-        let texture =
-            renderer.render_targets.get(index as usize).unwrap();
-        let view = texture.view();
+        let renderer = &mut *renderer;
         let pipelines = renderer.extract_pipelines();
+        let targets = &mut renderer.render_targets;
+        let render_pass = &mut renderer.render_pass;
+        let texture = targets.get_mut(index as usize).unwrap();
+        let texture = &mut **texture;
+
+        // Start the main render passd
+        let mut rasterizer = render_pass.begin(texture, ()).unwrap();
+        
+        // Render the surfaces
+        for pipeline in pipelines {
+            pipeline.render(&mut rasterizer);
+        }
+        rasterizer.end().immediate_submit();
 
         // Check if we must recreate the swapchain
         if let None = swapchain.present(queue, device, index) {
             swapchain.resize(adapter, device, surface, window.size());
+            renderer.render_pass.resize(window.size());
             renderer.render_targets =
                 extract_swapchain_images_to_textures(&graphics);
         }

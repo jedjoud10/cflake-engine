@@ -4,6 +4,8 @@ mod layout;
 mod operations;
 mod renderpass;
 mod macros;
+mod errors;
+pub use errors::*;
 pub use layout::*;
 pub use macros::*;
 pub use active::*;

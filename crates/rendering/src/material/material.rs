@@ -55,7 +55,7 @@ pub trait Material: 'static + Sized {
     fn blend_config() -> BlendConfig {
         BlendConfig {
             logic_operation: None,
-            attachments: [None],
+            attachments: None,
         }
     }
 

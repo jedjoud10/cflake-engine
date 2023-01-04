@@ -1,5 +1,5 @@
 use vulkan::vk;
-use crate::{TextureSamplerError, Sampler};
+use crate::{TextureSamplerError, Sampler, Extent};
 use super::{Region, Texture};
 
 // TODO: Figure out how to store and create vk::Views for each mipmap
@@ -26,7 +26,7 @@ impl<'a, T: Texture> MipLevelRef<'a, T> {
 
     // Get the mip level's dimensions
     pub fn dimensions(&self) -> <T::Region as Region>::E {
-        todo!()
+        self.texture.dimensions().mip_level_dimensions(self.level)
     }
 
     // Get the mip level's region
@@ -67,7 +67,7 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
 
     // Get the mip level's dimensions
     pub fn dimensions(&self) -> <T::Region as Region>::E {
-        todo!()
+        self.texture.dimensions().mip_level_dimensions(self.level)
     }
 
     // Get the mip level's region

@@ -1,13 +1,15 @@
 mod blend;
-mod config;
+mod operations;
 mod depth;
 mod graphics;
 mod primitive;
 mod stencil;
 mod vertex;
+mod error;
+pub use error::*;
 pub use self::graphics::*;
 pub use blend::*;
-pub use config::*;
+pub use operations::*;
 pub use depth::*;
 pub use primitive::*;
 pub use stencil::*;

@@ -28,6 +28,8 @@ impl<'a, 'r> ActiveRenderPass<'a, 'r> {
         }
     }
 
+    pub fn set_viewport()
+
     pub unsafe fn end(mut self) {
         log::debug!("End active render pass");
         self.recorder.cmd_end_render_pass();

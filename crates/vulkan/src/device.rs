@@ -141,6 +141,7 @@ impl Device {
     // Wait until the device executes all the code submitted to the GPU
     pub fn wait(&self) {
         unsafe {
+            log::warn!("Device wait idle called, waiting...");
             self.device.device_wait_idle().unwrap();
         }
     }
@@ -243,29 +244,15 @@ impl Device {
             .unwrap()[0]
     }
 
-    // Create a framebuffer and a renderpass combined
-    // (since we store them in the same wrapper struct anyways)
+    // Create a raw framebuffer
     // Note: This creates the frame buffer with the IMAGELESS flag
-    pub unsafe fn create_render_pass_framebuffer(
+    pub unsafe fn create_framebuffer(
         &self,
-        attachments: &[vk::AttachmentDescription],
-        subpasses: &[vk::SubpassDescription],
-        dependencies: &[vk::SubpassDependency],
         attachment_image_infos: &[vk::FramebufferAttachmentImageInfo],
         extent: vek::Extent2<u32>,
         layers: u32,
-    ) -> (vk::RenderPass, vk::Framebuffer) {
-        // Create the render pass first
-        let render_pass_create_info =
-            vk::RenderPassCreateInfo::builder()
-                .dependencies(dependencies)
-                .attachments(attachments)
-                .subpasses(subpasses);
-        let render_pass = self
-            .raw()
-            .create_render_pass(&render_pass_create_info, None)
-            .unwrap();
-
+        render_pass: vk::RenderPass
+    ) -> vk::Framebuffer {
         // Imageless attachment image infos
         let mut frame_buffer_attachments_create_info =
             vk::FramebufferAttachmentsCreateInfo::builder()
@@ -285,22 +272,42 @@ impl Device {
                 .layers(layers)
                 .flags(vk::FramebufferCreateFlags::IMAGELESS)
                 .push_next(&mut frame_buffer_attachments_create_info);
-        let framebuffer = self
+        self
             .raw()
             .create_framebuffer(&framebuffer_create_info, None)
-            .unwrap();
-
-        // Combine and return
-        (render_pass, framebuffer)
+            .unwrap()
     }
 
-    // Destroy a specific render pass and a framebuffer
-    pub unsafe fn destroy_render_pass_and_framebuffer(
+    // Create a raw render pass
+    pub unsafe fn create_render_pass(
         &self,
-        render_pass: vk::RenderPass,
-        framebuffer: vk::Framebuffer,
+        attachments: &[vk::AttachmentDescription],
+        subpasses: &[vk::SubpassDescription],
+        dependencies: &[vk::SubpassDependency],
+    ) -> vk::RenderPass {
+        // Create the render pass first
+        let render_pass_create_info =
+            vk::RenderPassCreateInfo::builder()
+                .dependencies(dependencies)
+                .attachments(attachments)
+                .subpasses(subpasses);
+        self
+            .raw()
+            .create_render_pass(&render_pass_create_info, None)
+            .unwrap()
+    }
+
+    // Destroy a specific render pass
+    pub unsafe fn destroy_render_pass(
+        &self, render_pass: vk::RenderPass
     ) {
         self.raw().destroy_render_pass(render_pass, None);
+    }
+    
+    // Destroy a specific framebuffer
+    pub unsafe fn destroy_framebuffer(
+        &self, framebuffer: vk::Framebuffer
+    ) {
         self.raw().destroy_framebuffer(framebuffer, None);
     }
 

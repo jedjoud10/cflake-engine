@@ -168,6 +168,9 @@ macro_rules! impl_special_texel_layout {
             type Storage = T::Storage;
         }
 
+
+        /*
+        TODO: Fix this sheize
         impl<D: DepthElement, S: StencilElement> Texel for DepthStencil<D, S> where (D::Storage, S::Storage): GpuPodRelaxed {
             const BITS_PER_CHANNEL: u64 = size_of::<D>() as u64 * 8 + size_of::<S>() as u64 * 8;
             const ELEMENT_TYPE: ElementType = ElementType::CompoundDepthStencil {
@@ -181,6 +184,7 @@ macro_rules! impl_special_texel_layout {
                 );
             type Storage = (D::Storage, S::Storage);
         }
+        */
     };
 }
 

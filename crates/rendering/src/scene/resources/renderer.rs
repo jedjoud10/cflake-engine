@@ -6,16 +6,19 @@ use std::{
     any::TypeId, marker::PhantomData, mem::ManuallyDrop, rc::Rc,
 };
 
+// Texel that stores the SwapChain image format
+pub type SwapchainFormat = BGRA<Normalized<u8>>;
+pub type SwapchainTexture = ManuallyDrop<Texture2D<SwapchainFormat>>;
+pub type ForwardRendererRenderPass = RenderPass<SwapchainFormat, ()>;
+
 // Main resource that will contain data to render objects on the screen
 // This will contain the current swapchain texture that we must render to
-pub type WindowRenderTexture =
-    ManuallyDrop<Texture2D<BGRA<Normalized<u8>>>>;
 pub struct ForwardRenderer {
     // Current render texture from the swapchain
-    pub(crate) render_targets: Vec<WindowRenderTexture>,
+    pub(crate) render_targets: Vec<SwapchainTexture>,
 
     // Main render pass that we will use to render to the swapchain
-    pub(crate) render_pass: RenderPass,
+    pub(crate) render_pass: ForwardRendererRenderPass,
 
     // Material pipelines that we will use to render the surfaces
     pipelines: AHashMap<TypeId, Rc<dyn DynamicPipeline>>,
@@ -24,8 +27,8 @@ pub struct ForwardRenderer {
 impl ForwardRenderer {
     // Create a new scene renderer
     pub fn new(
-        render_targets: Vec<WindowRenderTexture>,
-        render_pass: RenderPass,
+        render_targets: Vec<SwapchainTexture>,
+        render_pass: ForwardRendererRenderPass,
     ) -> Self {
         Self {
             render_pass,
@@ -43,12 +46,14 @@ impl ForwardRenderer {
         // Initialize the pipeline and register it if needed
         let key = TypeId::of::<M>();
         if !self.pipelines.contains_key(&key) {
+            log::debug!("Creating pipeline for material {}...", std::any::type_name::<M>());
             let pipeline = Pipeline::<M>::new(
                 graphics,
                 assets,
                 &self.render_pass,
             );
             self.pipelines.insert(key, Rc::new(pipeline));
+            log::debug!("Registered pipeline for material {}", std::any::type_name::<M>());
         }
 
         // Material ID is just a marker type for safety

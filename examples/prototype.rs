@@ -14,6 +14,7 @@ fn main() {
 // Executed at the start
 fn init(world: &mut World) {
     let assets = world.get::<Assets>().unwrap();
+    let graphics = world.get::<Graphics>().unwrap();
     let mut renderer = world.get_mut::<ForwardRenderer>().unwrap();
-    //let material_id = renderer.register::<Basic>(&assets);
+    let material_id = renderer.register::<Basic>(&graphics, &assets);
 }

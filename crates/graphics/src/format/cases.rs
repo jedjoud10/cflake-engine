@@ -101,13 +101,6 @@ pub const fn pick_format_from_vector_channels(
         ElementType::FloatSixteen => pick_float(16, channels),
         ElementType::FloatThirtyTwo => pick_float(32, channels),
         ElementType::FloatSixtyFour => pick_float(64, channels),
-
-        // We panic since the compound depth stencil should not be handled here
-        // It must be handled as a completely separate "ChannelsType" in
-        // pick_combined_depth_stencil_format
-        ElementType::CompoundDepthStencil {
-            ..
-        } => panic!(""),
     }
 }
 
@@ -139,10 +132,11 @@ pub const fn pick_stencil_format(
 }
 
 // Convert the given depth-stencil combined channel to the proper format
-// TODO: Refactor this maybe?
 pub const fn pick_combined_depth_stencil_format(
     element_type: ElementType
 ) -> vk::Format {
+    panic!()
+    /*
     match element_type {
         ElementType::CompoundDepthStencil {
             depth_bits: 32 
@@ -152,6 +146,7 @@ pub const fn pick_combined_depth_stencil_format(
         } => vk::Format::D32_SFLOAT_S8_UINT,
         _ => panic!()
     }
+    */
 }
 
 // Converts the given data to the proper format
@@ -166,6 +161,5 @@ pub const fn pick_format_from_params(
         }
         ChannelsType::Depth => pick_depth_format(element_type),
         ChannelsType::Stencil => pick_stencil_format(element_type),
-        ChannelsType::DepthStencil => pick_combined_depth_stencil_format(element_type)
     }
 }

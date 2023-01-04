@@ -379,6 +379,32 @@ impl<'a> Recorder<'a> {
             &[viewport],
         );
     }
+
+    // Set a dynamically set scissor
+    pub unsafe fn cmd_set_scissor(
+        &mut self,
+        x: i32,
+        y: i32,
+        width: u32,
+        height: u32,
+    ) {
+        let scissor = vk::Rect2D {
+            offset: vk::Offset2D {
+                x,
+                y,
+            },
+            extent: vk::Extent2D {
+                width,
+                height,
+            },
+        };
+
+        self.device().raw().cmd_set_scissor(
+            self.command_buffer().raw(),
+            0,
+            &[scissor]
+        );
+    }
 }
 
 // This is a submission of a command recorder

@@ -12,10 +12,12 @@ ecs = { path = "../ecs" }
 graphics = { path = "../graphics" }
 assets = { path = "../assets" }
 
+bitflags = "1.3.2"
 log = { workspace = true }
 ahash = { workspace = true } 
 vek = { workspace = true }
 parking_lot = { workspace = true }
 
 [features]
-two-dim = []
+double-precision = ["ecs/double-precision"]
+two-dim = ["ecs/two-dim"]

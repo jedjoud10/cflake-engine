@@ -3,11 +3,14 @@ use crate::{LoadOp, Stencil, StoreOp, Texel, UntypedTexel, Texture2D, ColorTexel
 
 // A color attachment that is passed to the render pass when starting it
 pub trait ColorAttachments<'a, C: ColorLayout> {
+    fn image_views(&self) -> Vec<vk::ImageView>;
 }
 
 // A depth stencil attachment that is passed to the render pass when starting it
 pub trait DepthStencilAttachment<'a, DS: DepthStencilLayout> {
 }
+
+impl<'a> DepthStencilAttachment<'a, ()> for () {}
 
 // A render target that can be used inside a renderpass (attachment)
 // TODO: Handle MSAA maybe?
@@ -29,3 +32,9 @@ impl<'a, T: Texel> RenderTarget<'a, T> for &'a mut Texture2D<T> {
         self.view()
     }
 }
+
+impl<'a, T: ColorTexel, R: RenderTarget<'a, T>> ColorAttachments<'a, T> for R {
+    fn image_views(&self) -> Vec<vk::ImageView> {
+        vec![R::image_view(self)]
+    }
+} 
