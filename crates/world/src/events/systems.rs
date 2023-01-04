@@ -1,10 +1,10 @@
 use crate::{
-    Caller, CallerId, Event, Init, Registry, Rule, Shutdown, StageId,
+    Caller, CallerId, Event, Init, Registry, Rule, Shutdown,
     SystemId, Update,
 };
-use ahash::{AHashMap, AHashSet};
+
 use log_err::LogErrResult;
-use std::{any::TypeId, marker::PhantomData};
+use std::marker::PhantomData;
 use winit::event::{DeviceEvent, WindowEvent};
 
 // Systems are collections of multiple events that we insert onto the world
@@ -93,7 +93,7 @@ impl<'a, C: Caller> EventMut<'a, C> {
 
         // Insert the rule internally
         self.rules.push(rule);
-        let t = Some(0u32);
+        let _t = Some(0u32);
         self
     }
 }

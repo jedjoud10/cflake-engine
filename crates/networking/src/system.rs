@@ -3,7 +3,7 @@ use world::{post_user, user, System, World};
 use crate::NetworkedSession;
 
 // Add networking related resources and update settings
-fn init(world: &mut World) {}
+fn init(_world: &mut World) {}
 
 // Handle sending / receiving packets
 fn update(world: &mut World) {

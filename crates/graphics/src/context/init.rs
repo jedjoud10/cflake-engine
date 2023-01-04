@@ -2,7 +2,7 @@ use crate::{
     Adapter, Device, FrameRateLimit, Graphics, Instance, Queue,
     Surface, Swapchain, Window, WindowSettings,
 };
-use parking_lot::Mutex;
+
 use std::sync::Arc;
 use winit::{
     event_loop::EventLoop,
@@ -90,6 +90,6 @@ fn init_window(
                 .then_some(Fullscreen::Borderless(None)),
         )
         .with_title(&window_settings.title)
-        .build(&el)
+        .build(el)
         .unwrap()
 }

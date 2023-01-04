@@ -1,7 +1,6 @@
 use vulkan::vk;
 
-use super::{Extent, Region, Texture};
-use std::{cell::Cell, num::NonZeroU8, rc::Rc};
+use super::{Region, Texture};
 
 // An immutable mip level that we can use to read from the texture
 pub struct MipLevelRef<'a, T: Texture> {

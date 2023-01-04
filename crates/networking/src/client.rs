@@ -1,7 +1,5 @@
 use std::{
-    any::{Any, TypeId},
-    collections::{hash_map::DefaultHasher, HashMap},
-    hash::{Hash, Hasher},
+    hash::Hasher,
     io::{Read, Write},
     net::{TcpStream, ToSocketAddrs},
 };
@@ -67,7 +65,7 @@ impl Client {
         let id = crate::packet::id::<T>();
         let mut data =
             Vec::<u8>::with_capacity(string.as_bytes().len() + 8);
-        data.extend(&id.to_be_bytes());
+        data.extend(id.to_be_bytes());
         data.extend(string.as_bytes());
         self.stream.write(&data).unwrap();
     }

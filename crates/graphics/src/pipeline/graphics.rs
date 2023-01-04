@@ -1,10 +1,9 @@
 use crate::{
-    BlendConfig, CompareOp, CompiledDescription, DepthConfig,
-    Graphics, Primitive, RenderPass, Shader, ShaderModule,
-    StencilConfig, StencilOp, StencilTest,
+    BlendConfig, DepthConfig, Graphics, Primitive, RenderPass,
+    Shader, ShaderModule, StencilConfig,
 };
-use std::{ffi::CStr, mem::transmute, sync::Arc};
-use vulkan::{vk, Device};
+
+use vulkan::vk;
 
 // A vulkan GRAPHICS pipeline abstraction that will handle initialization / destruction for us manually
 // This will abstract most of the initialization and pain staking work of pipelines
@@ -54,7 +53,7 @@ impl GraphicsPipeline {
             let depth_config = &depth_config;
             let primitive = &primitive;
             let stencil_config = &stencil_config;
-            let blend_config = &blend_config;
+            let _blend_config = &blend_config;
             let shader = &shader;
 
             // Viewport state

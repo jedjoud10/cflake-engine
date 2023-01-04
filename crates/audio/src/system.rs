@@ -1,10 +1,8 @@
-use std::sync::Arc;
-
 use crate::{AudioPlayer, AudioSource};
 use cpal::traits::DeviceTrait;
 use ecs::Scene;
-use parking_lot::Mutex;
-use world::{post_user, user, System, World};
+
+use world::{post_user, System, World};
 
 // Main audio update event that will play the audio clips
 fn update(world: &mut World) {

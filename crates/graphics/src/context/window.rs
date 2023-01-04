@@ -1,9 +1,3 @@
-use std::sync::Arc;
-use winit::{
-    event_loop::EventLoop,
-    window::{Fullscreen, WindowBuilder},
-};
-
 // Frame rate limit of the window (can be disabled by selecting Unlimited)
 #[derive(Default, Clone, Copy, PartialEq, Eq)]
 pub enum FrameRateLimit {

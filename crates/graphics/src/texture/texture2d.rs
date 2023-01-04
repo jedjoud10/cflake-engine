@@ -103,7 +103,7 @@ impl<T: ImageTexel> Asset for Texture2D<T> {
     fn deserialize<'c, 's>(
         data: assets::Data,
         graphics: Self::Context<'c>,
-        settings: Self::Settings<'s>,
+        _settings: Self::Settings<'s>,
     ) -> Result<Self, Self::Err> {
         let i = Instant::now();
         let image = image::load_from_memory(data.bytes())

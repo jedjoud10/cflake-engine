@@ -1,12 +1,6 @@
-use crate::{
-    AdapterFeatures, AdapterProperties,
-    AdapterQueueFamiliesProperties, AdapterSurfaceProperties,
-};
-use ash::vk::{
-    self, PresentModeKHR, SurfaceCapabilitiesKHR, SurfaceFormatKHR,
-};
+use crate::AdapterFeatures;
+use ash::vk::{self};
 use std::ffi::CString;
-use vk::PhysicalDeviceType;
 
 // Get the required validation layers
 pub fn required_validation_layers() -> Vec<CString> {

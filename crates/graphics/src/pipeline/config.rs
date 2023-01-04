@@ -1,5 +1,3 @@
-use vulkan::vk;
-
 // Equivalent to vk::CompareOp
 #[repr(i32)]
 #[derive(Clone, Copy, PartialEq, Eq)]

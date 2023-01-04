@@ -1,6 +1,6 @@
 use crate::{Graphics, ModuleKind, Processed, ShaderModule};
-use std::{ffi::CStr, marker::PhantomData, sync::Arc, time::Instant};
-use vulkan::{vk, Device};
+use std::{ffi::CStr, marker::PhantomData, time::Instant};
+use vulkan::vk;
 
 // This is a compiled shader module that we can use in multiple pipelines
 pub struct Compiled<M: ShaderModule> {

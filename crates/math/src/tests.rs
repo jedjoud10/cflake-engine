@@ -67,17 +67,17 @@ mod shapes {
         #[test]
         fn volume() {
             let sphere = Sphere::new(Vec3::zero(), 1.0);
-            assert_eq!(sphere.volume(), 4.188790205f32);
+            assert_eq!(sphere.volume(), 4.188_790_3_f32);
             let sphere = Sphere::new(Vec3::zero(), 2.0);
-            assert_eq!(sphere.volume(), 33.51032164f32);
+            assert_eq!(sphere.volume(), 33.510_323_f32);
         }
 
         #[test]
         fn surface_area() {
             let sphere = Sphere::new(Vec3::zero(), 1.0);
-            assert_eq!(sphere.surface_area(), 12.56637061);
+            assert_eq!(sphere.surface_area(), 12.566_371);
             let sphere = Sphere::new(Vec3::zero(), 2.0);
-            assert_eq!(sphere.surface_area(), 50.26548246f32);
+            assert_eq!(sphere.surface_area(), 50.265_484_f32);
         }
 
         #[test]

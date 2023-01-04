@@ -1,10 +1,8 @@
-use std::any::TypeId;
-
 use crate::{
     entity::{Entity, EntityLinkings},
     mask, ArchetypeSet, Bundle, Component, EntitySet, Mask,
     MaskHashMap, QueryLayoutRef, RemovedComponents, StateColumn,
-    StateFlags, UntypedColumn, UntypedVec,
+    UntypedColumn, UntypedVec,
 };
 
 // The table that will be stored internally

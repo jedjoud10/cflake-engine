@@ -1,4 +1,4 @@
-use crate::{FunctionModule, Graphics, ModuleKind, ShaderModule};
+use crate::{FunctionModule, ModuleKind, ShaderModule};
 use ahash::AHashMap;
 use assets::Assets;
 use std::{marker::PhantomData, path::PathBuf};
@@ -33,8 +33,8 @@ impl<'a, M: ShaderModule> Processor<'a, M> {
     // Include a constant directive that will replace specialization constants (stored internally until compile time)
     pub fn define_constant(
         &mut self,
-        name: impl ToString,
-        value: impl ToString,
+        _name: impl ToString,
+        _value: impl ToString,
     ) {
         // Somehow make this work
         // https://github.com/gwihlidal/spirv-reflect-rs
@@ -151,7 +151,9 @@ fn load_function_module(
     let raw = assets
         .load::<FunctionModule>(path)
         .map(|x| x.source)
-        .expect(&format!("File '{name}' could not be loaded in"));
+        .unwrap_or_else(|_| {
+            panic!("File '{name}' could not be loaded in")
+        });
     *output = raw;
 }
 
@@ -161,9 +163,9 @@ fn load_snippet(
     output: &mut String,
     snippets: &AHashMap<String, String>,
 ) {
-    let snippet = snippets
-        .get(&name)
-        .expect(&format!("Snippet of name '{name}' was not defined"));
+    let snippet = snippets.get(&name).unwrap_or_else(|| {
+        panic!("Snippet of name '{name}' was not defined")
+    });
     *output = snippet.clone();
 }
 

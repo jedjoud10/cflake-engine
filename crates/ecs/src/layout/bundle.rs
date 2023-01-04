@@ -1,8 +1,6 @@
-use std::mem::MaybeUninit;
-
 use crate::{
     mask, Archetype, Component, Mask, MaskHashMap, StateColumn,
-    StateFlags, UntypedColumn, UntypedVec,
+    StateFlags, UntypedVec,
 };
 
 // An owned layout trait will be implemented for owned tuples that contain a set of components

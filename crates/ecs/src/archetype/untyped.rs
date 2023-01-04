@@ -1,5 +1,4 @@
-use crate::{Component, StateColumn, StateFlags, UntypedVec};
-use std::{any::Any, mem::MaybeUninit};
+use crate::{Component, StateColumn, UntypedVec};
 
 // Typed component that will be converted to a Box<dyn UntypedColumn>
 // This will not be stored within the archetype, but only to access internal component data

@@ -1,19 +1,15 @@
-use ahash::{AHashMap, AHashSet};
+use ahash::AHashMap;
 use itertools::Itertools;
 use slotmap::SlotMap;
-use std::{
-    any::{Any, TypeId},
-    iter::once,
-};
+use std::iter::once;
 use world::{post_user, user, System, World};
 
 use crate::{
-    archetype::remove_bundle, contains, entity::Entity, mask,
-    Archetype, Bundle, Child, Component, EntityLinkings, EntryMut,
-    EntryRef, LocalPosition, LocalRotation, LocalScale, Mask,
-    MaskHashMap, Parent, Position, QueryFilter, QueryLayoutMut,
-    QueryLayoutRef, QueryMut, QueryRef, Rotation, Scale, UntypedVec,
-    Wrap,
+    contains, entity::Entity, mask, Archetype, Bundle, Child,
+    Component, EntityLinkings, EntryMut, EntryRef, LocalPosition,
+    LocalRotation, LocalScale, Mask, MaskHashMap, Parent, Position,
+    QueryFilter, QueryLayoutMut, QueryLayoutRef, QueryMut, QueryRef,
+    Rotation, Scale, UntypedVec, Wrap,
 };
 
 // Convenience type aliases
@@ -129,9 +125,7 @@ impl Scene {
         // TODO: Rewrite this hell of a function
         let iter = binding
             .into_iter()
-            .map(|(mask, group)| {
-                map(&self.entities, mask, group.into_iter())
-            })
+            .map(|(mask, group)| map(&self.entities, mask, group))
             .into_iter()
             .collect::<Vec<_>>();
 
@@ -287,7 +281,7 @@ impl Scene {
             child.depth = parent_depth + 1;
         } else {
             child_entry.insert(Child {
-                parent: parent,
+                parent,
                 depth: parent_depth + 1,
             });
         }

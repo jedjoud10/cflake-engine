@@ -1,5 +1,4 @@
-use crate::{Component, Entity, Scene};
-use ahash::{AHashMap, AHashSet};
+use crate::{Component, Entity};
 
 // A child component added onto entities that are linked to a parent entity
 #[derive(Component)]

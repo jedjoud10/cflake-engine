@@ -1,7 +1,5 @@
 use std::{path::Path, sync::Arc};
 
-use thiserror::Error;
-
 // File data is what will be given to assets whenever we try to deserialize them
 // We will assume that all assets are files
 // TODO: add the loader back again

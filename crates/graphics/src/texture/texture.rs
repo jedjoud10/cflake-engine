@@ -30,7 +30,7 @@ pub trait Texture: Sized {
         let UntypedTexel {
             format,
             channels,
-            element,
+            element: _,
             bits_per_channel,
         } = <Self::T as Texel>::untyped();
 
@@ -218,7 +218,7 @@ pub trait Texture: Sized {
     // Get a single mip level from the texture, immutably
     fn mip(
         &self,
-        level: u8,
+        _level: u8,
     ) -> Result<MipLevelRef<Self>, TextureMipLayerError> {
         todo!()
     }
@@ -226,7 +226,7 @@ pub trait Texture: Sized {
     // Get a single mip level from the texture, mutably (uses internal mutability pattern)
     fn mip_mut(
         &mut self,
-        level: u8,
+        _level: u8,
     ) -> Result<MipLevelMut<Self>, TextureMipLayerError> {
         todo!()
     }

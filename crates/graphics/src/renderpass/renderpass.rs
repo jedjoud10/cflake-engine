@@ -1,6 +1,6 @@
 use vulkan::vk;
 
-use crate::{DynamicAttachment, Graphics};
+use crate::Graphics;
 
 // In vanilla vulkan, render passes and frame buffers are completely separate, but since we will be using
 // This is a wrapper around a Vulkan render pass that will read/write from/to specific attachments

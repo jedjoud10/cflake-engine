@@ -29,22 +29,22 @@ impl<'a> Recorder<'a> {
 
     // Get the command buffer from the recorder
     pub fn command_buffer(&self) -> &CommandBuffer {
-        &self.command_buffer
+        self.command_buffer
     }
 
     // Get the command pool from the recorder
     pub fn command_pool(&self) -> &CommandPool {
-        &self.command_pool
+        self.command_pool
     }
 
     // Get the underlying device from the device
     pub fn device(&self) -> &Device {
-        &self.device
+        self.device
     }
 
     // Get the underlying queue that we will eventually submit to
     pub fn queue(&self) -> &Queue {
-        &self.queue
+        self.queue
     }
 
     // Submit the recorder immediatly and wait for the GPU to execute it
@@ -128,8 +128,8 @@ impl<'a> Recorder<'a> {
         self.device().raw().cmd_bind_vertex_buffers(
             self.command_buffer().raw(),
             first_binding,
-            &buffers,
-            &offsets,
+            buffers,
+            offsets,
         );
     }
 
@@ -144,7 +144,7 @@ impl<'a> Recorder<'a> {
             self.command_buffer().raw(),
             src,
             dst,
-            &regions,
+            regions,
         );
     }
 

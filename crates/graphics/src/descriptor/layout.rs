@@ -1,5 +1,3 @@
-use vulkan::vk;
-
 // The predefined layout of a descriptor set
 pub unsafe trait DescriptorLayout {}
 

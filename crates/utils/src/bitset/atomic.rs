@@ -26,7 +26,7 @@ impl AtomicBitSet {
         iter: impl Iterator<Item = usize>,
     ) -> Self {
         Self(
-            RwLock::new(iter.map(|s| AtomicUsize::new(s)).collect()),
+            RwLock::new(iter.map(AtomicUsize::new).collect()),
             AtomicBool::new(false),
         )
     }

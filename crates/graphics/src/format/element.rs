@@ -1,5 +1,4 @@
-use crate::{Base, BaseType, GpuPod};
-use std::marker::PhantomData;
+use crate::{Base, BaseType};
 
 // Elements are just values that can be stored within channels, like u32, Normalized<i8> or i8
 pub trait AnyElement: 'static {

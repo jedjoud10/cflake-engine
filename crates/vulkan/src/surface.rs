@@ -18,8 +18,8 @@ impl Surface {
     ) -> Surface {
         // Create a surface loader and the surface itself
         let surface = ash_window::create_surface(
-            &instance.entry(),
-            &instance.raw(),
+            instance.entry(),
+            instance.raw(),
             window.raw_display_handle(),
             window.raw_window_handle(),
             None,
@@ -27,7 +27,7 @@ impl Surface {
         .unwrap();
         log::debug!("Created the Vulkan surface successfully");
         let surface_loader =
-            khr::Surface::new(&instance.entry(), &instance.raw());
+            khr::Surface::new(instance.entry(), instance.raw());
         log::debug!("Created the Vulkan surface loader successfully");
         Surface {
             surface_loader,

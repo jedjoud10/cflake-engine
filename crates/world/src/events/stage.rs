@@ -134,25 +134,27 @@ impl Rule {
 
 // Default user system and default events
 pub fn user(system: &mut System) {
-    system.insert_init(|world: &mut World| {});
-    system.insert_update(|world: &mut World| {});
-    system.insert_shutdown(|world: &mut World| {});
-    system
-        .insert_device(|world: &mut World, device: &DeviceEvent| {});
+    system.insert_init(|_world: &mut World| {});
+    system.insert_update(|_world: &mut World| {});
+    system.insert_shutdown(|_world: &mut World| {});
+    system.insert_device(
+        |_world: &mut World, _device: &DeviceEvent| {},
+    );
     system.insert_window(
-        |world: &mut World, window: &mut WindowEvent| {},
+        |_world: &mut World, _window: &mut WindowEvent| {},
     );
 }
 
 // Default post user system and default events
 pub fn post_user(system: &mut System) {
-    system.insert_init(|world: &mut World| {});
-    system.insert_update(|world: &mut World| {});
-    system.insert_shutdown(|world: &mut World| {});
-    system
-        .insert_device(|world: &mut World, device: &DeviceEvent| {});
+    system.insert_init(|_world: &mut World| {});
+    system.insert_update(|_world: &mut World| {});
+    system.insert_shutdown(|_world: &mut World| {});
+    system.insert_device(
+        |_world: &mut World, _device: &DeviceEvent| {},
+    );
     system.insert_window(
-        |world: &mut World, window: &mut WindowEvent| {},
+        |_world: &mut World, _window: &mut WindowEvent| {},
     );
 }
 

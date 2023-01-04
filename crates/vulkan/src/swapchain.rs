@@ -63,8 +63,8 @@ impl Swapchain {
 
         // Create the loader and the actual swapchain
         let swapchain_loader = ash::extensions::khr::Swapchain::new(
-            &instance.raw(),
-            &device.raw(),
+            instance.raw(),
+            device.raw(),
         );
         let swapchain = unsafe {
             swapchain_loader

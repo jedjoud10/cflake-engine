@@ -1,10 +1,8 @@
 use std::{
-    any::TypeId,
     collections::HashMap,
     io::{Read, Write},
     net::{
-        IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4, TcpListener,
-        TcpStream,
+        Ipv4Addr, SocketAddr, SocketAddrV4, TcpListener, TcpStream,
     },
 };
 use uuid::Uuid;
@@ -122,12 +120,12 @@ impl Server {
 // Data transmission
 impl Server {
     // Send a message of a specific type to a specific client
-    pub fn message<T>(&mut self, client: Uuid, val: T) {
+    pub fn message<T>(&mut self, _client: Uuid, _val: T) {
         todo!()
     }
 
     // Send a message of a specific type to all the clients
-    pub fn broadcast<T>(&mut self, val: T) {
+    pub fn broadcast<T>(&mut self, _val: T) {
         todo!()
     }
 

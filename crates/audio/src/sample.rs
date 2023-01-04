@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 pub use cpal::Sample as CpalSample;
 use cpal::SampleFormat;
 

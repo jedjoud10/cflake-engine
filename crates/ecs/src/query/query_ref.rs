@@ -73,7 +73,7 @@ impl<'a: 'b, 'b, 's, L: QueryLayoutRef> QueryRef<'a, 'b, 's, L> {
                 .bitsets
                 .into_iter()
                 .flatten()
-                .map(|b| Some(b))
+                .map(Some)
                 .chain(std::iter::repeat(None));
 
             for (archetype, bitset) in

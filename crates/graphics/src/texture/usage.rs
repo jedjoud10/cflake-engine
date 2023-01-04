@@ -1,5 +1,3 @@
-use vulkan::{vk, MemoryLocation};
-
 // How exactly are we going to use the texture?
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum TextureUsage {

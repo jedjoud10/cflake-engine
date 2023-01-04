@@ -1,18 +1,17 @@
 use super::{ArcFn, ThreadFuncEntry, ThreadedTask};
 use crate::BitSet;
 use crate::{SliceTuple, ThreadPoolScope};
-use crossbeam_deque::{Injector, Stealer, Worker};
+
 use parking_lot::Mutex;
 use std::{
     any::Any,
-    cell::Cell,
     slice::SliceIndex,
     sync::{
         atomic::{AtomicU32, Ordering},
         mpsc::{Receiver, Sender},
         Arc,
     },
-    thread::{JoinHandle, ThreadId},
+    thread::JoinHandle,
 };
 
 // A single threadpool that contains multiple worker threads that are ready to be executed in parallel

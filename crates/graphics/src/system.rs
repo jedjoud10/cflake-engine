@@ -1,4 +1,4 @@
-use crate::{Graphics, GraphicsInit, Window, WindowSettings};
+use crate::{GraphicsInit, Window};
 use winit::{event::WindowEvent, event_loop::EventLoop};
 use world::{post_user, user, State, System, World};
 

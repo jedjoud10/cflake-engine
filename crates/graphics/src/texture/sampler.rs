@@ -1,6 +1,4 @@
-use crate::{Graphics, Texel, Texture};
-use std::{marker::PhantomData, num::NonZeroU8};
-use vulkan::vk;
+use crate::{Texel, Texture};
 
 // Texel filters that are applied to the samplers's mininifcation and magnification parameters
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -43,22 +41,22 @@ pub struct Sampler<'a, T: Texture> {
 
 impl<'a, T: Texture> Sampler<'a, T> {
     // Change the sampler wrapping mode
-    pub fn wrapping_mode(self, wrap: SamplerWrap<T::T>) -> Self {
+    pub fn wrapping_mode(self, _wrap: SamplerWrap<T::T>) -> Self {
         todo!()
     }
 
     // Change the sampler minification filter
-    pub fn min_filter(self, filter: SamplerFilter) -> Self {
+    pub fn min_filter(self, _filter: SamplerFilter) -> Self {
         todo!()
     }
 
     // Change the sampler magnification filter
-    pub fn mag_filter(self, filter: SamplerFilter) -> Self {
+    pub fn mag_filter(self, _filter: SamplerFilter) -> Self {
         todo!()
     }
 
     // Change the sampler mipmapping mode
-    pub fn mipmap(self, mipmap: SamplerMipMapping) -> Self {
+    pub fn mipmap(self, _mipmap: SamplerMipMapping) -> Self {
         todo!()
     }
 }

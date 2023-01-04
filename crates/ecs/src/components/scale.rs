@@ -1,5 +1,3 @@
-use math::Scalar;
-
 use crate::Component;
 use std::{
     fmt::{Debug, Display},

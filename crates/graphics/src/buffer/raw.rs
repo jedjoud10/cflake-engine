@@ -1,7 +1,7 @@
 use std::mem::size_of;
 
 use crate::{GpuPod, Graphics};
-use vulkan::{vk, Allocation, MemoryLocation, Recorder, Submission};
+use vulkan::{vk, Allocation, MemoryLocation, Recorder};
 
 // Allocate a new buffer with a specific size and layout
 // This will return the Vulkan buffer and memory allocation
@@ -17,7 +17,7 @@ pub(super) unsafe fn allocate_buffer<'a, T: GpuPod>(
     let size = stride * (capacity as u64);
 
     // Create the actual buffer and it's memory allocation
-    let (buffer, mut src_allocation) =
+    let (buffer, src_allocation) =
         unsafe { device.create_buffer(size, usage, location, queue) };
 
     (buffer, src_allocation)
@@ -39,10 +39,9 @@ pub(super) unsafe fn fill_buffer<'a, T: GpuPod>(
     let size = stride * (slice.len() as u64);
 
     // Get a free staging block with the given size
-    let block =
-        matches!(MemoryLocation::GpuOnly, location).then(|| unsafe {
-            device.staging_pool().lock(device, queue, size)
-        });
+    let block = matches!(MemoryLocation::GpuOnly, _location).then(
+        || unsafe { device.staging_pool().lock(device, queue, size) },
+    );
 
     // Check if we need to make a staging buffer
     if let Some(mut block) = block {

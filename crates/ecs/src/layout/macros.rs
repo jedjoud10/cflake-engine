@@ -1,8 +1,7 @@
 use crate::{
     mask, Archetype, Bundle, Component, LayoutAccess, Mask,
     MaskHashMap, QueryItemMut, QueryItemRef, QueryLayoutMut,
-    QueryLayoutRef, StateColumn, StateFlags, UntypedColumn,
-    UntypedVec,
+    QueryLayoutRef, StateColumn, StateFlags, UntypedVec,
 };
 use casey::lower;
 use paste::paste;

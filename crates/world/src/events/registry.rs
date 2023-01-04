@@ -1,8 +1,8 @@
 use std::{any::TypeId, cmp::Ordering};
 
 use crate::{
-    post_user, user, Caller, CallerId, Event, RegistrySortingError,
-    Rule, StageError, StageId, SystemId,
+    Caller, CallerId, Event, RegistrySortingError, Rule, StageError,
+    StageId, SystemId,
 };
 use ahash::{AHashMap, AHashSet};
 
@@ -49,13 +49,13 @@ lazy_static! {
         // Create the reserved stage ID for all the user type callers
         let system = super::fetch_system_id(&crate::user);
         for caller in RESERVED_CALLER_IDS.iter() {
-            reserved.push(super::combine_ids(&system, &caller));
+            reserved.push(super::combine_ids(&system, caller));
         }
 
         // Create the reserved stage ID for all the post user type callers
         let system = super::fetch_system_id(&crate::post_user);
         for caller in RESERVED_CALLER_IDS.iter() {
-            reserved.push(super::combine_ids(&system, &caller));
+            reserved.push(super::combine_ids(&system, caller));
         }
 
         reserved

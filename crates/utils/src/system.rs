@@ -1,7 +1,4 @@
-use std::{
-    thread::Thread,
-    time::{Duration, Instant},
-};
+use std::time::{Duration, Instant};
 
 use crate::{FileManager, ThreadPool, Time};
 use world::{post_user, user, System, World};

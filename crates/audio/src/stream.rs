@@ -2,13 +2,6 @@ use crate::{AudioClip, AudioPlayer, Sample};
 use cpal::{
     traits::DeviceTrait, BuildStreamError, Stream, StreamConfig,
 };
-use parking_lot::{Mutex, RwLock};
-use std::{
-    any::Any,
-    marker::PhantomData,
-    sync::Arc,
-    time::{Duration, Instant},
-};
 
 // This will be used to create the CPAL output stream
 pub trait OutputStream {

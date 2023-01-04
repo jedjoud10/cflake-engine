@@ -1,8 +1,3 @@
-use std::{cell::RefCell, path::PathBuf};
-
-use log::{Level, Log};
-use parking_lot::Mutex;
-
 /*
 FIXME
 // This will log debug messages, warning messages, and errors to a file

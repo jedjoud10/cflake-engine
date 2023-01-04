@@ -73,7 +73,7 @@ impl<'a: 'b, 'b, L: QueryLayoutMut> QueryMut<'a, 'b, L> {
                 .bitsets
                 .into_iter()
                 .flatten()
-                .map(|b| Some(b))
+                .map(Some)
                 .chain(std::iter::repeat(None));
             for (archetype, bitset) in
                 self.archetypes.iter_mut().zip(bitsets)

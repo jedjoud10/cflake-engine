@@ -1,5 +1,4 @@
 use crate::{AnyElement, Normalized};
-use std::marker::PhantomData;
 
 // The channels that represent the texels (non sRGB)
 pub struct R<T: AnyElement>(T);

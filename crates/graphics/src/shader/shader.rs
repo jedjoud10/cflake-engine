@@ -1,9 +1,5 @@
-use crate::{
-    Compiled, CompiledDescription, ComputeModule, FragmentModule,
-    VertexModule,
-};
+use crate::{Compiled, ComputeModule, FragmentModule, VertexModule};
 use std::sync::Arc;
-use vulkan::vk;
 
 // A rendering shader that contains a vertex module and fragment module
 // This shader might contain more modules though, like the tesselation modules

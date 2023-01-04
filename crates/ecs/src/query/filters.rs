@@ -1,7 +1,7 @@
 use crate::{
     registry::{self},
     Archetype, ArchetypeSet, Component, LayoutAccess, Mask,
-    QueryLayoutMut, QueryLayoutRef, Scene, StateColumn,
+    QueryLayoutMut, QueryLayoutRef, StateColumn,
 };
 use std::marker::PhantomData;
 use utils::BitSet;

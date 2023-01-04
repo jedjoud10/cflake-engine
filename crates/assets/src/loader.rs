@@ -2,13 +2,12 @@ use crate::{Asset, AssetInput, AssetLoadError, AsyncAsset};
 use ahash::AHashMap;
 use parking_lot::RwLock;
 use slotmap::{DefaultKey, SlotMap};
-use thiserror::Error;
+
 use utils::ThreadPool;
 
 use std::{
     any::Any,
     cell::RefCell,
-    error::Error,
     ffi::OsStr,
     marker::PhantomData,
     path::{Path, PathBuf},
@@ -255,7 +254,7 @@ impl Assets {
         let (path, context, settings) = input.split();
         let path = Path::new(OsStr::new(path));
         let owned = path.to_owned();
-        Self::validate::<A>(&path)?;
+        Self::validate::<A>(path)?;
 
         // All this does is that it ensures that the bytes are valid before we actually deserialize the asset
         let (name, extension) = Self::decompose_path(path);
@@ -269,7 +268,7 @@ impl Assets {
                 name,
                 extension,
                 bytes,
-                path: &path,
+                path,
             },
             context,
             settings,

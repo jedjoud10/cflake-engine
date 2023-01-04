@@ -1,4 +1,4 @@
-use crate::{BaseType, ChannelsType, ElementType, VectorChannels};
+use crate::{ChannelsType, ElementType, VectorChannels};
 use vulkan::vk;
 
 // Converts the given vector channels to the proper format

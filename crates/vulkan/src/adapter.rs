@@ -1,14 +1,14 @@
-use std::ffi::{CStr, CString};
+use std::ffi::CStr;
 
 use ash::vk::{
-    self, PhysicalDevice, PhysicalDeviceDynamicRenderingFeatures,
-    PhysicalDeviceFeatures, PhysicalDeviceFeatures2,
-    PhysicalDeviceLimits, PhysicalDeviceProperties,
-    PhysicalDeviceProperties2, PhysicalDeviceType,
-    PhysicalDeviceVulkan11Features, PhysicalDeviceVulkan11Properties,
-    PhysicalDeviceVulkan12Features, PhysicalDeviceVulkan12Properties,
-    PhysicalDeviceVulkan13Features, PhysicalDeviceVulkan13Properties,
-    PresentModeKHR, SurfaceCapabilitiesKHR, SurfaceFormatKHR,
+    self, PhysicalDevice, PhysicalDeviceFeatures,
+    PhysicalDeviceFeatures2, PhysicalDeviceLimits,
+    PhysicalDeviceProperties, PhysicalDeviceProperties2,
+    PhysicalDeviceType, PhysicalDeviceVulkan11Features,
+    PhysicalDeviceVulkan11Properties, PhysicalDeviceVulkan12Features,
+    PhysicalDeviceVulkan12Properties, PhysicalDeviceVulkan13Features,
+    PhysicalDeviceVulkan13Properties, PresentModeKHR,
+    SurfaceCapabilitiesKHR, SurfaceFormatKHR,
 };
 
 use super::{Instance, Surface};
@@ -173,7 +173,7 @@ impl Adapter {
 
     // Get the adapter properties
     pub fn properties(&self) -> &AdapterProperties {
-        &&self.properties
+        &self.properties
     }
 
     // Get the adapter surface properties
@@ -279,7 +279,7 @@ unsafe fn get_adapter_properties(
 
 // Get the adapter surface properties
 unsafe fn get_adapter_surface_properties(
-    instance: &Instance,
+    _instance: &Instance,
     physical: &PhysicalDevice,
     surface: &Surface,
 ) -> AdapterSurfaceProperties {
@@ -346,10 +346,10 @@ unsafe fn get_adapter_queue_family_properties(
 // Check wether or not a physical device is suitable for rendering
 // This checks the minimum requirements that we need to achieve to be able to render
 fn is_physical_device_suitable(
-    features: &AdapterFeatures,
+    _features: &AdapterFeatures,
     properties: &AdapterProperties,
     surface: &AdapterSurfaceProperties,
-    families: &AdapterQueueFamiliesProperties,
+    _families: &AdapterQueueFamiliesProperties,
 ) -> bool {
     log::debug!(
         "Checking if adapter {} is suitable...",

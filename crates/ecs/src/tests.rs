@@ -1,5 +1,4 @@
 use crate::*;
-use utils::ThreadPool;
 
 #[derive(Component, Debug, PartialEq, Eq, Clone, Default)]
 struct Name(&'static str);
@@ -208,7 +207,7 @@ fn moving_batch() {
 #[test]
 fn threaded() {
     let mut scene = Scene::default();
-    let mut threadpool = ThreadPool::with(16);
+    let mut threadpool = utils::ThreadPool::with(16);
 
     scene
         .extend_from_iter(
@@ -256,7 +255,7 @@ fn queries() {
         health.0 += 100;
     }
 
-    let mut threadpool = ThreadPool::default();
+    let mut threadpool = utils::ThreadPool::default();
     let query = manager.query_mut::<(&Name, &mut Health)>();
     query.for_each(
         &mut threadpool,
@@ -317,7 +316,7 @@ fn optional_queries() {
         health.0 += 100;
     }
 
-    let mut threadpool = ThreadPool::default();
+    let mut threadpool = utils::ThreadPool::default();
     let query =
         manager.query_mut::<(&Name, &mut Health, Option<&Ammo>)>();
     query.for_each(

@@ -1,5 +1,5 @@
 use super::CommandPool;
-use crate::{Adapter, Device, Instance, Recorder, Submission};
+use crate::{Adapter, Device, Recorder, Submission};
 use ash::vk;
 
 // This will be the main queue that we will access and submit data into
@@ -158,12 +158,12 @@ impl Queue {
         unsafe {
             pool.stop_recording(
                 recorder.device(),
-                &recorder.command_buffer,
+                recorder.command_buffer,
             );
             pool.submit(
                 self.raw(),
                 recorder.device(),
-                &recorder.command_buffer,
+                recorder.command_buffer,
             );
         }
         let submission = Submission::new(

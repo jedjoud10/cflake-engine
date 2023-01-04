@@ -1,5 +1,4 @@
 use std::time::{Duration, Instant};
-use world::{user, System, World};
 
 // Global resource that defines the time since the start of the engine and the current frame data
 pub struct Time {

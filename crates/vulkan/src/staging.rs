@@ -71,10 +71,8 @@ impl StagingBuffer {
 
         // Try to find a free block of memory within the used blocks
         for (start, end) in self.used.iter() {
-            if *start != last {
-                if (start - last) > size {
-                    output = Some((last, *start));
-                }
+            if *start != last && (start - last) > size {
+                output = Some((last, *start));
             }
 
             last = *end;
@@ -89,10 +87,11 @@ impl StagingBuffer {
         }
 
         // Try to find a free block at the start of the used blocks of memory
-        if self.used.is_empty() {
-            if output.is_none() && (self.size >= size) {
-                output = Some((0, size));
-            }
+        if self.used.is_empty()
+            && output.is_none()
+            && (self.size >= size)
+        {
+            output = Some((0, size));
         }
 
         // Convert the found block of memory into a SubBufferBlock
@@ -188,7 +187,7 @@ impl StagingPool {
         // TODO: Check if the given buffer range is not in use by the GPU
 
         // Allocate a new buffer if we can't find one
-        if let None = find {
+        if find.is_none() {
             drop(lock);
             log::warn!("Could not find subbuffer block of size {size}, allocating a new one...");
             self.allocate(device, queue, size)
@@ -200,8 +199,8 @@ impl StagingPool {
     // Unlock a buffer and return it to the staging pool
     pub unsafe fn unlock(
         &self,
-        device: &Device,
-        block: StagingBlock,
+        _device: &Device,
+        _block: StagingBlock,
     ) {
         // TODO:
         // Check if the buffer is still in use by the GPU

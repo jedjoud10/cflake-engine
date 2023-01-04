@@ -1,5 +1,3 @@
-use std::any::TypeId;
-
 use super::Entity;
 use crate::{
     add_bundle, remove_bundle, Archetype, ArchetypeSet, Bundle,

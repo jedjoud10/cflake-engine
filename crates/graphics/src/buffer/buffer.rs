@@ -1,9 +1,7 @@
 use std::{
     alloc::Layout,
-    f32::consts::E,
     marker::PhantomData,
-    mem::{size_of, ManuallyDrop, MaybeUninit},
-    ops::RangeBounds,
+    mem::{size_of, ManuallyDrop},
 };
 
 use crate::{
@@ -11,7 +9,7 @@ use crate::{
     BufferInitializationError, BufferMode, BufferNotMappableError,
     BufferReadError, BufferUsage, BufferWriteError, GpuPod, Graphics,
 };
-use vulkan::{vk, Allocation, Recorder};
+use vulkan::{vk, Allocation};
 
 // Bitmask from Vulkan BufferUsages
 const VERTEX: u32 = vk::BufferUsageFlags::VERTEX_BUFFER.as_raw();
@@ -93,7 +91,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         // Allocate the buffer
         let (buffer, mut allocation) = unsafe {
             super::allocate_buffer::<T>(
-                &graphics,
+                graphics,
                 location,
                 slice.len(),
                 flags,
@@ -103,7 +101,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         // Fill up the buffer
         unsafe {
             super::fill_buffer(
-                &graphics,
+                graphics,
                 buffer,
                 &mut allocation,
                 slice,
@@ -122,8 +120,8 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
             mode,
             usage,
             _phantom: PhantomData,
-            buffer: buffer,
-            allocation: allocation,
+            buffer,
+            allocation,
             graphics: graphics.clone(),
         })
     }
@@ -147,7 +145,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
 impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
     // Get the inner raw Vulkan buffer
     pub fn raw(&self) -> Option<vk::Buffer> {
-        (self.buffer != vk::Buffer::null()).then(|| self.buffer)
+        (self.buffer != vk::Buffer::null()).then_some(self.buffer)
     }
 
     // Get the inner raw Vulkan Allocation immutably

@@ -1,7 +1,5 @@
 use crate::{
-    AnyElement, Base, BaseType, ChannelsType, Depth, DepthElement,
-    ElementType, GpuPod, Normalizable, Normalized, Stencil,
-    StencilElement, VectorChannels, X, XY, XYZ, XYZW,
+    AnyElement, ElementType, VectorChannels, X, XY, XYZ, XYZW,
 };
 use std::mem::size_of;
 use vek::{Vec2, Vec3, Vec4};

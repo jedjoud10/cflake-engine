@@ -1,10 +1,9 @@
 use crate::{
-    required_features, Adapter, Instance, Queue, StagingBlock,
-    StagingPool,
+    required_features, Adapter, Instance, Queue, StagingPool,
 };
-use ahash::AHashMap;
+
 use ash::vk::{self, DeviceCreateInfo, DeviceQueueCreateInfo};
-use dashmap::DashMap;
+
 use gpu_allocator::vulkan::{
     Allocation, AllocationCreateDesc, Allocator, AllocatorCreateDesc,
 };

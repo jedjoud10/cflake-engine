@@ -9,12 +9,7 @@ pub use system::*;
 
 use ahash::AHashMap;
 use serde::*;
-use std::{
-    borrow::Cow,
-    fs::File,
-    io::{BufReader, Read, Write},
-    path::Path,
-};
+use std::borrow::Cow;
 
 // This keyboard struct will be responsible for all key events and state handling for the keyboard
 pub struct Input {
