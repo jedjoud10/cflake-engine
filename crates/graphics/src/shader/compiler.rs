@@ -1,20 +1,26 @@
 use crate::{Graphics, ModuleKind, Processed, ShaderModule};
-use std::{marker::PhantomData, sync::Arc, time::Instant, ffi::CStr};
+use std::{ffi::CStr, marker::PhantomData, sync::Arc, time::Instant};
 use vulkan::{vk, Device};
 
 // This is a compiled shader module that we can use in multiple pipelines
 pub struct Compiled<M: ShaderModule> {
+    // Vulkan related data
     raw: vk::ShaderModule,
     kind: ModuleKind,
-    file_name: String,
     spirv: Vec<u32>,
+
+    // Helpers
+    file_name: String,
     _phantom: PhantomData<M>,
+
+    // Keep the graphics API alive
+    graphics: Graphics,
 }
 
 impl<M: ShaderModule> Drop for Compiled<M> {
     fn drop(&mut self) {
         unsafe {
-            Graphics::global().device().destroy_shader_module(self.raw);
+            self.graphics.device().destroy_shader_module(self.raw);
         }
     }
 }
@@ -22,9 +28,9 @@ impl<M: ShaderModule> Drop for Compiled<M> {
 impl<M: ShaderModule> Compiled<M> {
     // Compile a shader module by using it's processed counter part
     pub fn compile(
+        graphics: &Graphics,
         module: Processed<M>,
     ) -> Self {
-        let graphics = Graphics::global();
         let kind = module.kind;
         let file_name = module.file_name;
         let source = module.source;
@@ -66,6 +72,7 @@ impl<M: ShaderModule> Compiled<M> {
             file_name,
             spirv,
             _phantom: PhantomData,
+            graphics: graphics.clone(),
         }
     }
 
@@ -92,7 +99,9 @@ impl<M: ShaderModule> Compiled<M> {
     // Get the compiled description
     pub fn description(&self) -> CompiledDescription {
         CompiledDescription {
-            entry: unsafe { CStr::from_bytes_with_nul_unchecked(b"main\0") },
+            entry: unsafe {
+                CStr::from_bytes_with_nul_unchecked(b"main\0")
+            },
             flags: vk::PipelineShaderStageCreateFlags::default(),
             kind: self.kind,
             module: &self.raw,

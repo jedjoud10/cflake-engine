@@ -38,8 +38,9 @@ impl Queue {
 
         Self {
             qfi: family,
-            properties: adapter.family_properties().queue_family_properties
-                [family as usize],
+            properties: adapter
+                .family_properties()
+                .queue_family_properties[family as usize],
             pools: vec![CommandPool::new(device, family)],
             queue,
         }

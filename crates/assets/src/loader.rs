@@ -137,13 +137,10 @@ impl Assets {
         owned: PathBuf,
     ) -> Result<Arc<[u8]>, AssetLoadError> {
         // Check if we must load dynamically
-        let dynamic = Self::should_load_dynamically(
-            bytes,
-            user,
-            &owned
-        );
+        let dynamic =
+            Self::should_load_dynamically(bytes, user, &owned);
 
-        // Load the bytes dynamically or load them from cache 
+        // Load the bytes dynamically or load them from cache
         if dynamic {
             Self::load_bytes_dynamically(bytes, user, owned)
         } else {
@@ -178,12 +175,12 @@ impl Assets {
             &owned
         );
         let mut write = bytes.write();
-        
+
         // Sometimes the user path is not specified
         let user = user
             .as_ref()
             .ok_or(AssetLoadError::UserPathNotSpecified)?;
-        
+
         let bytes = super::raw::read(&owned, user)?;
         let arc: Arc<[u8]> = Arc::from(bytes);
         write.insert(owned.clone(), arc.clone());
@@ -285,7 +282,9 @@ impl Assets {
     // Load multiple assets using some explicit/default loading arguments
     pub fn load_from_iter<'str, 'ctx, 'stg, A: Asset>(
         &self,
-        inputs: impl IntoIterator<Item = impl AssetInput<'str, 'ctx, 'stg, A>>,
+        inputs: impl IntoIterator<
+            Item = impl AssetInput<'str, 'ctx, 'stg, A>,
+        >,
     ) -> Vec<Result<A, AssetLoadError>> {
         inputs
             .into_iter()
@@ -327,7 +326,8 @@ impl Assets {
         // Create a new task that will load this asset
         threadpool.execute(move || {
             Self::async_load_inner::<A>(
-                owned, bytes, user, context, settings, assets, key, sender,
+                owned, bytes, user, context, settings, assets, key,
+                sender,
             );
         });
         handle
@@ -371,7 +371,8 @@ impl Assets {
 
                 scope.execute(move || {
                     Self::async_load_inner::<A>(
-                        owned, bytes, user, context, settings, assets, key, sender,
+                        owned, bytes, user, context, settings,
+                        assets, key, sender,
                     );
                 });
             }

@@ -1,9 +1,9 @@
-mod attachment;
-mod renderpass;
 mod active;
-mod operations;
+mod attachment;
 mod layout;
-pub use operations::*;
+mod operations;
+mod renderpass;
 pub use active::*;
 pub use attachment::*;
+pub use operations::*;
 pub use renderpass::*;

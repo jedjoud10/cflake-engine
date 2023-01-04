@@ -1,21 +1,20 @@
-use world::{World, user, post_user, System};
+use world::{post_user, user, System, World};
 
 use crate::NetworkedSession;
 
 // Add networking related resources and update settings
-fn init(world: &mut World) {
-}
+fn init(world: &mut World) {}
 
 // Handle sending / receiving packets
 fn update(world: &mut World) {
     let Some(mut session) = world.get_mut::<NetworkedSession>() else {
         return;
     };
-    
+
     match &mut *session {
         NetworkedSession::Server(server) => {
             server.tick();
-        },
+        }
         NetworkedSession::Client(client) => {
             client.tick();
         }

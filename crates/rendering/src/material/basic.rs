@@ -1,7 +1,8 @@
 use crate::Material;
 use assets::Assets;
 use graphics::{
-    Compiled, FragmentModule, Graphics, Processor, VertexModule,
+    Compiled, FragmentModule, Graphics, Normalized, Processor,
+    Texture2D, VertexModule, RGB,
 };
 use utils::Storage;
 
@@ -9,8 +10,8 @@ use utils::Storage;
 // This does not implement the PBR workflow, and it's only used for simplicity at first
 pub struct Basic {
     // Textures
-    pub albedo_map: (),
-    pub normal_map: (),
+    pub albedo_map: Texture2D<RGB<Normalized<u8>>>,
+    pub normal_map: Texture2D<RGB<Normalized<i8>>>,
 
     // Parameters
     pub bumpiness: f32,
@@ -25,24 +26,26 @@ impl Material for Basic {
 
     // Load the vertex shader for this material
     fn vertex(
+        graphics: &Graphics,
         assets: &Assets,
     ) -> Compiled<VertexModule> {
         let vert = assets
             .load::<VertexModule>("engine/shaders/basic.vert")
             .unwrap();
         let processor = Processor::new(vert, &assets);
-        Compiled::compile(processor.process())
+        Compiled::compile(graphics, processor.process())
     }
 
     // Load the fragment shader for this material
     fn fragment(
+        graphics: &Graphics,
         assets: &Assets,
     ) -> Compiled<graphics::FragmentModule> {
         let frag = assets
             .load::<FragmentModule>("engine/shaders/basic.frag")
             .unwrap();
         let processor = Processor::new(frag, &assets);
-        Compiled::compile(processor.process())
+        Compiled::compile(graphics, processor.process())
     }
 
     fn required_mesh_attributes() -> () {

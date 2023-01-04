@@ -46,20 +46,23 @@ pub(crate) unsafe fn init_context_and_window(
     let adapter = Adapter::pick(&instance, &surface);
     let device = Device::new(&instance, &adapter);
     let queue = Queue::new(&device, &adapter);
-    let vsync = matches!(window_settings.limit, FrameRateLimit::VSync);
+    let vsync =
+        matches!(window_settings.limit, FrameRateLimit::VSync);
     let swapchain = Swapchain::new(
         &adapter, &surface, &device, &instance, &window, vsync,
     );
 
     // Create the graphics wrapper
-    let graphics = super::graphics::Graphics {
-        instance,
-        surface,
-        adapter,
-        device,
-        queue,
-        swapchain,
-    };
+    let graphics = super::graphics::Graphics(Arc::new(
+        super::graphics::InternalGraphics {
+            instance,
+            surface,
+            adapter,
+            device,
+            queue,
+            swapchain,
+        },
+    ));
 
     // Create the window wrapper
     let size = vek::Extent2::<u32>::from(<(u32, u32)>::from(

@@ -104,11 +104,19 @@ impl Scene {
         iter: impl IntoIterator<Item = Entity>,
     ) {
         // Convert the mask and group to vector of entities and linkings
-        fn map(entities: &EntitySet, mask: Mask, group: impl IntoIterator<Item = Entity>) -> (Mask, Vec<(Entity, EntityLinkings)>) {
-            let vec = group.into_iter().map(|entity| {
-                let linkings = entities.get(entity).cloned().unwrap();
-                (entity, linkings)
-            }).collect::<Vec<_>>();
+        fn map(
+            entities: &EntitySet,
+            mask: Mask,
+            group: impl IntoIterator<Item = Entity>,
+        ) -> (Mask, Vec<(Entity, EntityLinkings)>) {
+            let vec = group
+                .into_iter()
+                .map(|entity| {
+                    let linkings =
+                        entities.get(entity).cloned().unwrap();
+                    (entity, linkings)
+                })
+                .collect::<Vec<_>>();
             (mask, vec)
         }
 
@@ -119,17 +127,17 @@ impl Scene {
         });
 
         // TODO: Rewrite this hell of a function
-        let iter = 
-            binding
+        let iter = binding
             .into_iter()
-            .map(|(mask, group)| map(&self.entities, mask, group.into_iter()))
+            .map(|(mask, group)| {
+                map(&self.entities, mask, group.into_iter())
+            })
             .into_iter()
             .collect::<Vec<_>>();
 
         // Batch remove the entities per archetype
         for (mask, group) in iter {
-            let archetype =
-                self.archetypes.get_mut(&mask).unwrap();
+            let archetype = self.archetypes.get_mut(&mask).unwrap();
 
             // Remove the entities from the group
             archetype.remove_from_iter(

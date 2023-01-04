@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::{persistent, Assets, AssetLoadError};
+    use crate::{persistent, AssetLoadError, Assets};
 
     #[test]
     fn read() {
@@ -47,7 +47,10 @@ mod tests {
         let mut strings =
             loader.load_from_iter::<String>(["test/text.txt"]);
         let string = strings.pop().unwrap();
-        assert!(matches!(string.unwrap_err(), AssetLoadError::CachedNotFound(_)));
+        assert!(matches!(
+            string.unwrap_err(),
+            AssetLoadError::CachedNotFound(_)
+        ));
     }
 
     #[test]
@@ -68,7 +71,10 @@ mod tests {
         let handle = loader
             .async_load::<String>("test/text.txt", &mut threadpool);
         let string = loader.wait(handle);
-        assert!(matches!(string.unwrap_err(), AssetLoadError::CachedNotFound(_)));
+        assert!(matches!(
+            string.unwrap_err(),
+            AssetLoadError::CachedNotFound(_)
+        ));
     }
 
     #[test]
@@ -98,7 +104,10 @@ mod tests {
         let handle = handles.pop().unwrap();
         let mut vec = loader.wait_from_iter([handle]);
         let string = vec.pop().unwrap();
-        assert!(matches!(string.unwrap_err(), AssetLoadError::CachedNotFound(_)));
+        assert!(matches!(
+            string.unwrap_err(),
+            AssetLoadError::CachedNotFound(_)
+        ));
     }
 
     #[test]
@@ -109,17 +118,18 @@ mod tests {
             type Context<'args> = ();
             type Settings<'args> = ();
             type Err = std::string::FromUtf8Error;
-        
+
             fn extensions() -> &'static [&'static str] {
                 &["txt"]
             }
-        
+
             fn deserialize<'c, 's>(
                 data: crate::Data,
                 context: Self::Context<'c>,
                 settings: Self::Settings<'s>,
             ) -> Result<Self, Self::Err> {
-                String::deserialize(data, context, settings).map(Contextual)
+                String::deserialize(data, context, settings)
+                    .map(Contextual)
             }
         }
 

@@ -1,7 +1,7 @@
 use crate::{
-    AnyElement, Base, BaseType, ChannelsType, VectorChannels, Depth, DepthElement,
+    AnyElement, Base, BaseType, ChannelsType, Depth, DepthElement,
     ElementType, Normalizable, Normalized, Stencil, StencilElement,
-    R, RG, RGB, RGBA, BGR, BGRA, Swizzable
+    Swizzable, VectorChannels, BGR, BGRA, R, RG, RGB, RGBA,
 };
 use std::mem::size_of;
 use vek::{Vec2, Vec3, Vec4};
@@ -50,7 +50,9 @@ pub trait Texel: 'static + Sized {
 
 // Image texels are texels that can be loaded from a file, like when loading a Texture2D<RGBA<Normalized<u8>>
 pub trait ImageTexel: Texel {
-    fn to_image_texels(image: image::DynamicImage) -> Vec<Self::Storage>;
+    fn to_image_texels(
+        image: image::DynamicImage,
+    ) -> Vec<Self::Storage>;
 }
 
 // Implement the color texel layout
@@ -60,10 +62,11 @@ macro_rules! impl_color_texel_layout {
             const BITS_PER_CHANNEL: u32 = size_of::<T>() as u32 * 8;
             const ELEMENT_TYPE: ElementType = T::ELEMENT_TYPE;
             const CHANNELS_TYPE: ChannelsType = $channels_type;
-            const FORMAT: vk::Format = crate::format::pick_format_from_params(
-                Self::ELEMENT_TYPE,
-                Self::CHANNELS_TYPE,
-            );
+            const FORMAT: vk::Format =
+                crate::format::pick_format_from_params(
+                    Self::ELEMENT_TYPE,
+                    Self::CHANNELS_TYPE,
+                );
             type Storage = $vec<T::Storage>;
         }
     };
@@ -76,10 +79,11 @@ macro_rules! impl_swizzled_color_texel_layout {
             const BITS_PER_CHANNEL: u32 = size_of::<T>() as u32 * 8;
             const ELEMENT_TYPE: ElementType = T::ELEMENT_TYPE;
             const CHANNELS_TYPE: ChannelsType = $channels_type;
-            const FORMAT: vk::Format = crate::format::pick_format_from_params(
-                Self::ELEMENT_TYPE,
-                Self::CHANNELS_TYPE,
-            );
+            const FORMAT: vk::Format =
+                crate::format::pick_format_from_params(
+                    Self::ELEMENT_TYPE,
+                    Self::CHANNELS_TYPE,
+                );
             type Storage = $vec<T::Storage>;
         }
     };
@@ -92,10 +96,11 @@ macro_rules! impl_special_texel_layout {
             const BITS_PER_CHANNEL: u32 = size_of::<T>() as u32 * 8;
             const ELEMENT_TYPE: ElementType = T::ELEMENT_TYPE;
             const CHANNELS_TYPE: ChannelsType = ChannelsType::Depth;
-            const FORMAT: vk::Format = crate::format::pick_format_from_params(
-                Self::ELEMENT_TYPE,
-                Self::CHANNELS_TYPE,
-            );
+            const FORMAT: vk::Format =
+                crate::format::pick_format_from_params(
+                    Self::ELEMENT_TYPE,
+                    Self::CHANNELS_TYPE,
+                );
             type Storage = T::Storage;
         }
 
@@ -103,10 +108,11 @@ macro_rules! impl_special_texel_layout {
             const BITS_PER_CHANNEL: u32 = size_of::<T>() as u32 * 8;
             const ELEMENT_TYPE: ElementType = T::ELEMENT_TYPE;
             const CHANNELS_TYPE: ChannelsType = ChannelsType::Stencil;
-            const FORMAT: vk::Format = crate::format::pick_format_from_params(
-                Self::ELEMENT_TYPE,
-                Self::CHANNELS_TYPE,
-            );
+            const FORMAT: vk::Format =
+                crate::format::pick_format_from_params(
+                    Self::ELEMENT_TYPE,
+                    Self::CHANNELS_TYPE,
+                );
             type Storage = T::Storage;
         }
     };
@@ -116,7 +122,9 @@ macro_rules! impl_special_texel_layout {
 macro_rules! internal_impl_single_image_texel {
     ($t:ident, $base:ty, $convert:ident, $closure:expr) => {
         impl ImageTexel for $t<$base> {
-            fn to_image_texels(image: image::DynamicImage) -> Vec<Self::Storage> {
+            fn to_image_texels(
+                image: image::DynamicImage,
+            ) -> Vec<Self::Storage> {
                 let image = image.$convert();
                 image.chunks(4).map($closure).collect()
             }
@@ -127,10 +135,27 @@ macro_rules! internal_impl_single_image_texel {
 // Implement the image texel layouts
 macro_rules! impl_image_texel {
     ($t:ident, $closure:expr) => {
-        internal_impl_single_image_texel!($t, u8, into_rgba8, $closure);
-        internal_impl_single_image_texel!($t, u16, into_rgba16, $closure);
-        internal_impl_single_image_texel!($t, Normalized<u8>, into_rgba8, $closure);
-        internal_impl_single_image_texel!($t, Normalized<u16>, into_rgba16, $closure);
+        internal_impl_single_image_texel!(
+            $t, u8, into_rgba8, $closure
+        );
+        internal_impl_single_image_texel!(
+            $t,
+            u16,
+            into_rgba16,
+            $closure
+        );
+        internal_impl_single_image_texel!(
+            $t,
+            Normalized<u8>,
+            into_rgba8,
+            $closure
+        );
+        internal_impl_single_image_texel!(
+            $t,
+            Normalized<u16>,
+            into_rgba16,
+            $closure
+        );
     };
 }
 

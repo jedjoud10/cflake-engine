@@ -42,12 +42,12 @@ pub struct Stencil<T: StencilElement>(T);
 // Vector channel as texel channels
 // TODO: Is there a better way to handle this?
 pub enum VectorChannels {
-    One, // X or R
-    Two, // XY or RG
-    Three, // XYZ or RGB
+    One,           // X or R
+    Two,           // XY or RG
+    Three,         // XYZ or RGB
     ThreeSwizzled, // ZYX or BGR
-    Four, // XYZW or RGBA
-    FourSwizzled, // ZYXW or BGRA
+    Four,          // XYZW or RGBA
+    FourSwizzled,  // ZYXW or BGRA
 }
 
 impl VectorChannels {

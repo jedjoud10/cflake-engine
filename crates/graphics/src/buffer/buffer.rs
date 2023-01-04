@@ -7,9 +7,9 @@ use std::{
 };
 
 use crate::{
-    BufferMode, BufferUsage, BufferClearError, BufferCopyError,
-    BufferExtendError, Graphics, BufferInitializationError, BufferReadError,
-    BufferWriteError, BufferNotMappableError, GpuPod,
+    BufferClearError, BufferCopyError, BufferExtendError,
+    BufferInitializationError, BufferMode, BufferNotMappableError,
+    BufferReadError, BufferUsage, BufferWriteError, GpuPod, Graphics,
 };
 use vulkan::{vk, Allocation, Recorder};
 
@@ -44,14 +44,102 @@ pub struct Buffer<T: GpuPod, const TYPE: u32> {
     usage: BufferUsage,
     mode: BufferMode,
     _phantom: PhantomData<T>,
+
+    // Keep the graphics API alive
+    graphics: Graphics,
 }
 
 impl<T: GpuPod, const TYPE: u32> Drop for Buffer<T, TYPE> {
     fn drop(&mut self) {
         unsafe {
             let alloc = ManuallyDrop::take(&mut self.allocation);
-            Graphics::global().device().destroy_buffer(self.buffer, alloc);
+            self.graphics.device().destroy_buffer(self.buffer, alloc);
         }
+    }
+}
+
+// Buffer initialization
+impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
+    // Try to create a buffer with the specified mode, usage, and slice data
+    pub fn from_slice(
+        graphics: &Graphics,
+        slice: &[T],
+        mode: BufferMode,
+        usage: BufferUsage,
+    ) -> Result<Self, BufferInitializationError> {
+        // Cannot create a zero sized stride buffer
+        assert!(
+            size_of::<T>() > 0,
+            "Buffers do not support zero-sized types"
+        );
+
+        // Cannot create a zero sized slice if we aren't resizable
+        if slice.is_empty() && !matches!(mode, BufferMode::Resizable)
+        {
+            return Err(
+                BufferInitializationError::EmptySliceNotResizable,
+            );
+        }
+
+        // Get location and staging buffer location
+        let (location, flags) =
+            super::find_optimal_layout(usage, TYPE);
+
+        // If the slice is empty (implying a resizable buffer), change it to contain one single null element
+        // This is a little hack to allow us to have resizable buffers without dealing with null/invalid buffers
+        let one = [T::zeroed()];
+        let slice = if slice.is_empty() { &one } else { slice };
+
+        // Allocate the buffer
+        let (buffer, mut allocation) = unsafe {
+            super::allocate_buffer::<T>(
+                &graphics,
+                location,
+                slice.len(),
+                flags,
+            )
+        };
+
+        // Fill up the buffer
+        unsafe {
+            super::fill_buffer(
+                &graphics,
+                buffer,
+                &mut allocation,
+                slice,
+            );
+        }
+
+        // Calculate the number of elements that can fit in this one allocation
+        let stride = size_of::<T>() as u64;
+        let capacity = (allocation.size() / stride) as usize;
+        let allocation = ManuallyDrop::new(allocation);
+
+        // Create the struct and return it
+        Ok(Self {
+            length: slice.len(),
+            capacity,
+            mode,
+            usage,
+            _phantom: PhantomData,
+            buffer: buffer,
+            allocation: allocation,
+            graphics: graphics.clone(),
+        })
+    }
+
+    // Create a buffer with a specific capacity and a length of 0
+    pub fn with_capacity<'a>(
+        graphics: &Graphics,
+        capacity: usize,
+        mode: BufferMode,
+        usage: BufferUsage,
+    ) -> Result<Self, BufferInitializationError> {
+        let vec = vec![T::zeroed(); capacity];
+        let mut buffer =
+            Self::from_slice(graphics, &vec, mode, usage)?;
+        buffer.length = 0;
+        Ok(buffer)
     }
 }
 
@@ -103,87 +191,6 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
     }
 }
 
-// Buffer initialization
-impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
-    // Try to create a buffer with the specified mode, usage, and slice data
-    pub fn from_slice(
-        slice: &[T],
-        mode: BufferMode,
-        usage: BufferUsage,
-    ) -> Result<Self, BufferInitializationError> {
-        let graphics = Graphics::global();
-
-        // Cannot create a zero sized stride buffer
-        assert!(
-            size_of::<T>() > 0,
-            "Buffers do not support zero-sized types"
-        );
-
-        // Cannot create a zero sized slice if we aren't resizable
-        if slice.is_empty() && !matches!(mode, BufferMode::Resizable) {
-            return Err(BufferInitializationError::EmptySliceNotResizable);
-        }
-
-        // Get location and staging buffer location
-        let (location, flags) =
-            super::find_optimal_layout(usage, TYPE);
-
-        // If the slice is empty (implying a resizable buffer), change it to contain one single null element
-        // This is a little hack to allow us to have resizable buffers without dealing with null/invalid buffers
-        let one = [T::zeroed()];
-        let slice = if slice.is_empty() { &one } else { slice };
-
-        // Allocate the buffer
-        let (buffer, mut allocation) = unsafe {
-            super::allocate_buffer::<T>(
-                &graphics,
-                location,
-                slice.len(),
-                flags,
-            )
-        };
-
-        // Fill up the buffer
-        unsafe {
-            super::fill_buffer(
-                &graphics,
-                buffer,
-                &mut allocation,
-                slice,
-            );
-        }
-
-        // Calculate the number of elements that can fit in this one allocation
-        let stride = size_of::<T>() as u64;
-        let capacity = (allocation.size() / stride) as usize;
-        let allocation = ManuallyDrop::new(allocation);
-
-        // Create the struct and return it
-        Ok(Self {
-            length: slice.len(),
-            capacity,
-            mode,
-            usage,
-            _phantom: PhantomData,
-            buffer: buffer,
-            allocation: allocation,
-        })
-    }
-
-    // Create a buffer with a specific capacity and a length of 0
-    pub fn with_capacity<'a>(
-        capacity: usize,
-        mode: BufferMode,
-        usage: BufferUsage,
-    ) -> Result<Self, BufferInitializationError> {
-        let vec = vec![T::zeroed(); capacity];
-        let mut buffer =
-            Self::from_slice(&vec, mode, usage)?;
-        buffer.length = 0;
-        Ok(buffer)
-    }
-}
-
 // Implementation of unsafe methods
 impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
     // Read from "src" and write to buffer unsafely and instantly
@@ -198,9 +205,8 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
             let offset = offset * size_of::<T>();
             super::raw::write_to(src, &mut dst[offset..][..size]);
         } else {
-            let graphics = Graphics::global();
-            let device = graphics.device();
-            let queue = graphics.queue();
+            let device = self.graphics.device();
+            let queue = self.graphics.queue();
             let mut recorder = queue.acquire(device);
 
             // Write to a staging buffer first
@@ -225,7 +231,6 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
                 &[copy],
             );
             queue.immediate_submit(recorder);
-
             device.staging_pool().unlock(device, block);
         }
     }
@@ -242,9 +247,8 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
             let offset = offset * self.stride();
             super::raw::read_to(&src[offset..][..size], dst);
         } else {
-            let graphics = Graphics::global();
-            let device = graphics.device();
-            let queue = graphics.queue();
+            let device = self.graphics.device();
+            let queue = self.graphics.queue();
             let mut recorder = queue.acquire(device);
 
             // Copy to a staging buffer first
@@ -298,6 +302,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
             usage: manually.usage,
             mode: manually.mode,
             _phantom: PhantomData,
+            graphics: manually.graphics.clone(),
         }
     }
 
@@ -309,9 +314,8 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         src_offset: usize,
         length: usize,
     ) {
-        let graphics = Graphics::global();
-        let device = graphics.device();
-        let queue = graphics.queue();
+        let device = self.graphics.device();
+        let queue = self.graphics.queue();
         let stride = self.stride();
         let mut recorder = queue.acquire(device);
 
@@ -328,6 +332,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         // Record the cpy src -> self buffer command
         recorder.cmd_full_pipeline_barrier();
         recorder.cmd_copy_buffer(src.buffer, self.buffer, &[copy]);
+        recorder.immediate_submit();
     }
 
     // Extend this buffer using the given slice unsafely and instantly
@@ -339,9 +344,8 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
             log::warn!("Reallocating buffer {:?}", self.buffer);
 
             // Calculate the new capacity
-            let graphics = Graphics::global();
-            let device = graphics.device();
-            let queue = graphics.queue();
+            let device = self.graphics.device();
+            let queue = self.graphics.queue();
             let stride = self.stride();
             let mut recorder = queue.acquire(device);
 
@@ -357,7 +361,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
                 super::find_optimal_layout(self.usage, TYPE);
             let (buffer, allocation) = unsafe {
                 super::allocate_buffer::<T>(
-                    &graphics,
+                    &self.graphics,
                     location,
                     new_capacity,
                     flags,
@@ -389,7 +393,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
 
             // Destroy the old buffer
             let alloc = ManuallyDrop::take(&mut old_allocation);
-            graphics.device().destroy_buffer(old_buffer, alloc);
+            self.graphics.device().destroy_buffer(old_buffer, alloc);
         } else {
             // Write to the buffer normally
             self.write_unchecked(slice, self.length);
@@ -412,9 +416,11 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         }
 
         if src.len() + offset > self.length {
-            return Err(
-                BufferWriteError::InvalidLen(src.len(), offset, self.len()),
-            );
+            return Err(BufferWriteError::InvalidLen(
+                src.len(),
+                offset,
+                self.len(),
+            ));
         }
 
         unsafe {
@@ -434,9 +440,11 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         }
 
         if dst.len() + offset > self.length {
-            return Err(
-                BufferReadError::InvalidLen(dst.len(), offset, self.len())
-            );
+            return Err(BufferReadError::InvalidLen(
+                dst.len(),
+                offset,
+                self.len(),
+            ));
         }
 
         unsafe {
@@ -448,9 +456,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
     // Clear the buffer and reset it's length
     pub fn clear(&mut self) -> Result<(), BufferClearError> {
         if matches!(self.mode, BufferMode::Dynamic) {
-            return Err(
-                BufferClearError::IllegalLengthModify,
-            );
+            return Err(BufferClearError::IllegalLengthModify);
         }
 
         unsafe {
@@ -472,23 +478,19 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         }
 
         if dst_offset + length > self.length {
-            return Err(
-                BufferCopyError::InvalidDstOverflow(
-                    length,
-                    dst_offset,
-                    self.len(),
-                ),
-            );
+            return Err(BufferCopyError::InvalidDstOverflow(
+                length,
+                dst_offset,
+                self.len(),
+            ));
         }
 
         if src_offset + length > src.length {
-            return Err(
-                BufferCopyError::InvalidSrcOverflow(
-                    length,
-                    src_offset,
-                    src.len(),
-                ),
-            );
+            return Err(BufferCopyError::InvalidSrcOverflow(
+                length,
+                src_offset,
+                src.len(),
+            ));
         }
 
         unsafe {
@@ -510,17 +512,13 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         }
 
         if matches!(self.mode, BufferMode::Dynamic) {
-            return Err(
-                BufferExtendError::IllegalLengthModify,
-            );
+            return Err(BufferExtendError::IllegalLengthModify);
         }
 
         if slice.len() + self.length > self.capacity
             && matches!(self.mode, BufferMode::Parital)
         {
-            return Err(
-                BufferExtendError::IllegalReallocation,
-            );
+            return Err(BufferExtendError::IllegalReallocation);
         }
 
         unsafe {
@@ -540,7 +538,9 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
     }
 
     // Try to view the buffer mutably (if it's mappable)
-    pub fn as_slice_mut(&mut self) -> Result<&mut [T], BufferNotMappableError> {
+    pub fn as_slice_mut(
+        &mut self,
+    ) -> Result<&mut [T], BufferNotMappableError> {
         let length = self.length;
         self.allocation_mut()
             .mapped_slice_mut()

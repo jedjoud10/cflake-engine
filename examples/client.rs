@@ -12,7 +12,8 @@ fn main() {
 
 // Start a client and connect to the machine hosted server
 fn init(world: &mut World) {
-    world.insert(NetworkedSession::connect("127.0.0.1:8080").unwrap());
+    world
+        .insert(NetworkedSession::connect("127.0.0.1:8080").unwrap());
 }
 
 // Send a packet to the server everytime we press the A key

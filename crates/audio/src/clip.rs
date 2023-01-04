@@ -75,12 +75,16 @@ impl<S: Sample> Asset for AudioClip<S> {
                 // Handle decoding a singular frame
                 fn decode(
                     result: Result<minimp3::Frame, minimp3::Error>,
-                ) -> Result<Option<minimp3::Frame>, AudioClipDeserializationError>
-                {
+                ) -> Result<
+                    Option<minimp3::Frame>,
+                    AudioClipDeserializationError,
+                > {
                     match result {
                         Ok(frame) => Ok(Some(frame)),
                         Err(minimp3::Error::Eof) => Ok(None),
-                        Err(err) => Err(AudioClipDeserializationError::MP3(err)),
+                        Err(err) => Err(
+                            AudioClipDeserializationError::MP3(err),
+                        ),
                     }
                 }
 

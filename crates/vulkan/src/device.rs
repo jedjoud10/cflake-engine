@@ -257,30 +257,39 @@ impl Device {
         layers: u32,
     ) -> (vk::RenderPass, vk::Framebuffer) {
         // Create the render pass first
-        let render_pass_create_info = vk::RenderPassCreateInfo::builder()
-            .dependencies(dependencies)
-            .attachments(attachments)
-            .subpasses(subpasses);
-        let render_pass = self.raw().create_render_pass(&render_pass_create_info, None).unwrap();
+        let render_pass_create_info =
+            vk::RenderPassCreateInfo::builder()
+                .dependencies(dependencies)
+                .attachments(attachments)
+                .subpasses(subpasses);
+        let render_pass = self
+            .raw()
+            .create_render_pass(&render_pass_create_info, None)
+            .unwrap();
 
         // Imageless attachment image infos
-        let mut frame_buffer_attachments_create_info = vk::FramebufferAttachmentsCreateInfo::builder()
-            .attachment_image_infos(attachment_image_infos);
-        
+        let mut frame_buffer_attachments_create_info =
+            vk::FramebufferAttachmentsCreateInfo::builder()
+                .attachment_image_infos(attachment_image_infos);
+
         // Create null image views since the framebuffer is imagless
         let count = attachment_image_infos.len();
         let image_views = vec![vk::ImageView::null(); count];
 
         // Create info for the framebuffer
-        let framebuffer_create_info = vk::FramebufferCreateInfo::builder()
-            .attachments(&image_views)
-            .width(extent.w)
-            .height(extent.h)
-            .render_pass(render_pass)
-            .layers(layers)
-            .flags(vk::FramebufferCreateFlags::IMAGELESS)
-            .push_next(&mut frame_buffer_attachments_create_info);
-        let framebuffer = self.raw().create_framebuffer(&framebuffer_create_info, None).unwrap();
+        let framebuffer_create_info =
+            vk::FramebufferCreateInfo::builder()
+                .attachments(&image_views)
+                .width(extent.w)
+                .height(extent.h)
+                .render_pass(render_pass)
+                .layers(layers)
+                .flags(vk::FramebufferCreateFlags::IMAGELESS)
+                .push_next(&mut frame_buffer_attachments_create_info);
+        let framebuffer = self
+            .raw()
+            .create_framebuffer(&framebuffer_create_info, None)
+            .unwrap();
 
         // Combine and return
         (render_pass, framebuffer)
@@ -338,36 +347,38 @@ impl Device {
             builder
         };
 
-        let builder = if let Some((min_lod, max_lod, lod_bias, mode)) = mipmap_mode {
-            builder
-                .mipmap_mode(mode)
-                .min_lod(min_lod)
-                .max_lod(max_lod)
-                .mip_lod_bias(lod_bias)
+        let builder =
+            if let Some((min_lod, max_lod, lod_bias, mode)) =
+                mipmap_mode
+            {
+                builder
+                    .mipmap_mode(mode)
+                    .min_lod(min_lod)
+                    .max_lod(max_lod)
+                    .mip_lod_bias(lod_bias)
+            } else {
+                builder
+            };
+
+        let mut next =
+            vk::SamplerCustomBorderColorCreateInfoEXT::builder()
+                .custom_border_color(custom_border_color)
+                .format(format);
+
+        let builder = if border_color
+            == vk::BorderColor::FLOAT_CUSTOM_EXT
+            || border_color == vk::BorderColor::INT_CUSTOM_EXT
+        {
+            builder.push_next(&mut next)
         } else {
             builder
         };
 
-        let mut next = vk::SamplerCustomBorderColorCreateInfoEXT::builder()
-            .custom_border_color(custom_border_color)
-            .format(format);
-
-        let builder = if border_color == vk::BorderColor::FLOAT_CUSTOM_EXT ||
-        border_color == vk::BorderColor::INT_CUSTOM_EXT {
-            builder
-                .push_next(&mut next)
-        } else {
-            builder    
-        };
-        
         self.raw().create_sampler(&builder, None).unwrap()
     }
 
     // Destroy an image sampler
-    pub unsafe fn destroy_sampler(
-        &self,
-        sampler: vk::Sampler
-    ) {
+    pub unsafe fn destroy_sampler(&self, sampler: vk::Sampler) {
         self.raw().destroy_sampler(sampler, None);
     }
 }
@@ -465,8 +476,7 @@ impl Device {
             extent,
             usage
         );
-        let image =
-            self.device.create_image(&vk_info, None).unwrap();
+        let image = self.device.create_image(&vk_info, None).unwrap();
 
         // Get memory requirements
         log::debug!("Creating image memory for image {:?}", image);
@@ -515,7 +525,7 @@ impl Device {
         // Delete the Vulkan buffer
         log::debug!("Freeing buffer {:?}", buffer);
         self.device.destroy_buffer(buffer, None);
-    }    
+    }
 
     // Free an image and it's allocation
     pub unsafe fn destroy_image(
@@ -537,7 +547,7 @@ impl Device {
 }
 
 // Buffer and image views
-impl Device{
+impl Device {
     // Create a new image view for an image
     pub unsafe fn create_image_view(
         &self,
@@ -555,15 +565,12 @@ impl Device{
             .view_type(view_type)
             .image(image)
             .flags(flags);
-        
+
         self.raw().create_image_view(&create_info, None).unwrap()
     }
 
     // Destroy an image view
-    pub unsafe fn destroy_image_view(
-        &self,
-        view: vk::ImageView
-    ) {
+    pub unsafe fn destroy_image_view(&self, view: vk::ImageView) {
         self.raw().destroy_image_view(view, None);
     }
 }

@@ -182,7 +182,9 @@ impl Adapter {
     }
 
     // Get adapter family properties
-    pub fn family_properties(&self) -> &AdapterQueueFamiliesProperties {
+    pub fn family_properties(
+        &self,
+    ) -> &AdapterQueueFamiliesProperties {
         &self.families
     }
 

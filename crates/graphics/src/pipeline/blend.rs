@@ -29,7 +29,7 @@ pub enum BlendFactor {
 #[repr(i32)]
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum BlendOp {
-    Add = 0, 
+    Add = 0,
     Subtract,
     ReverseSubtract,
     Min,

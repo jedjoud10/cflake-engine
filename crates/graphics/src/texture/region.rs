@@ -14,7 +14,7 @@ pub trait Extent: Copy {
 
     // Check if this region can be used to create a texture or update it
     fn is_valid(&self) -> bool {
-        self.reduce_min() > 0        
+        self.reduce_min() > 0
     }
 
     // Caclulate the number of mipmap levels that a texture can have
@@ -216,7 +216,7 @@ impl Region for (vek::Vec3<u32>, vek::Extent3<u32>) {
     fn with_extent(extent: Self::E) -> Self {
         (Default::default(), extent)
     }
-    
+
     fn from_raw_parts(origin: Self::O, extent: Self::E) -> Self {
         (origin, extent)
     }

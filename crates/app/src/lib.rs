@@ -6,9 +6,9 @@ pub use ecs;
 pub use gui;
 pub use input;
 pub use math;
+pub use networking;
 pub use utils;
 pub use world;
-pub use networking;
 
 // Gfx related
 pub use graphics;
@@ -21,9 +21,9 @@ pub mod prelude {
     pub use crate::gui::*;
     pub use crate::input::*;
     pub use crate::math::*;
+    pub use crate::networking::*;
     pub use crate::utils::*;
     pub use crate::world::*;
-    pub use crate::networking::*;
 
     // Re-exports
     pub use log;

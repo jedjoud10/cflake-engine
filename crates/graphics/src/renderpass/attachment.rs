@@ -1,8 +1,8 @@
 use vulkan::vk;
 
-use crate::{Texel, UntypedTexel, LoadOp, StoreOp, Stencil};
+use crate::{LoadOp, Stencil, StoreOp, Texel, UntypedTexel};
 
-// A render pass attachment is like a render texture that we write to 
+// A render pass attachment is like a render texture that we write to
 // whenever we render something in the render pass
 pub struct Attachment<T: Texel> {
     format: vk::Format,

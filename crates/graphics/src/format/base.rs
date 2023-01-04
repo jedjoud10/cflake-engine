@@ -1,7 +1,15 @@
 use half::f16;
 
 // Base numbers that are used to store the inner raw values of texture texels
-pub trait Base: Clone + Copy + Send + Sync + 'static + bytemuck::Pod + bytemuck::Zeroable {
+pub trait Base:
+    Clone
+    + Copy
+    + Send
+    + Sync
+    + 'static
+    + bytemuck::Pod
+    + bytemuck::Zeroable
+{
     const TYPE: BaseType;
     const SIGNED: bool;
 }

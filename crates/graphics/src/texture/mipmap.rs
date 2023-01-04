@@ -34,12 +34,10 @@ impl<'a, T: Texture> MipLevelRef<'a, T> {
 }
 
 // Implementation of unsafe methods
-impl<'a, T: Texture> MipLevelRef<'a, T> {
-}
+impl<'a, T: Texture> MipLevelRef<'a, T> {}
 
 // Implementation of safe methods
-impl<'a, T: Texture> MipLevelRef<'a, T> {
-}
+impl<'a, T: Texture> MipLevelRef<'a, T> {}
 
 // A mutable mip level that we can use to write to the texture
 pub struct MipLevelMut<'a, T: Texture> {
@@ -47,7 +45,6 @@ pub struct MipLevelMut<'a, T: Texture> {
     view: vk::ImageView,
     level: u8,
 }
-
 
 // Helper methods
 impl<'a, T: Texture> MipLevelMut<'a, T> {
@@ -72,11 +69,8 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
     }
 }
 
-
 // Implementation of unsafe methods
-impl<'a, T: Texture> MipLevelMut<'a, T> {
-}
+impl<'a, T: Texture> MipLevelMut<'a, T> {}
 
 // Implementation of safe methods
-impl<'a, T: Texture> MipLevelMut<'a, T> {
-}
+impl<'a, T: Texture> MipLevelMut<'a, T> {}

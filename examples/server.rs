@@ -20,7 +20,7 @@ fn update(world: &mut World) {
 
     if let NetworkedSession::Server(server) = &mut *session {
         let data = server.receive::<u32>();
-    
+
         for (data, client) in data {
             log::debug!("Client {client} sent {data}");
         }

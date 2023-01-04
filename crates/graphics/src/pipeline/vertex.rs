@@ -1,7 +1,7 @@
 use crate::{
-    AnyElement, Base, BaseType, ChannelsType, VectorChannels, Depth, DepthElement,
-    ElementType, Normalizable, Normalized, Stencil, StencilElement,
-    X, XY, XYZ, XYZW, GpuPod,
+    AnyElement, Base, BaseType, ChannelsType, Depth, DepthElement,
+    ElementType, GpuPod, Normalizable, Normalized, Stencil,
+    StencilElement, VectorChannels, X, XY, XYZ, XYZW,
 };
 use std::mem::size_of;
 use vek::{Vec2, Vec3, Vec4};
@@ -46,18 +46,19 @@ pub trait Vertex {
     }
 }
 
-
 // Implement the vertex texel layout
 macro_rules! impl_vector_texel_layout {
     ($t:ident, $channels_type:expr, $vec: ident) => {
         impl<T: AnyElement> Vertex for $t<T> {
             const BITS_PER_CHANNEL: u32 = size_of::<T>() as u32 * 8;
             const ELEMENT_TYPE: ElementType = T::ELEMENT_TYPE;
-            const VECTOR_CHANNELS_TYPE: VectorChannels = $channels_type;
-            const FORMAT: vk::Format = crate::format::pick_format_from_vector_channels(
-                Self::ELEMENT_TYPE,
-                Self::VECTOR_CHANNELS_TYPE,
-            );
+            const VECTOR_CHANNELS_TYPE: VectorChannels =
+                $channels_type;
+            const FORMAT: vk::Format =
+                crate::format::pick_format_from_vector_channels(
+                    Self::ELEMENT_TYPE,
+                    Self::VECTOR_CHANNELS_TYPE,
+                );
             type Storage = $vec<T::Storage>;
         }
     };
@@ -66,23 +67,7 @@ macro_rules! impl_vector_texel_layout {
 // Need this for the macro to work
 type Scalar<T> = T;
 
-impl_vector_texel_layout!(
-    X,
-    VectorChannels::One,
-    Scalar
-);
-impl_vector_texel_layout!(
-    XY,
-    VectorChannels::Two,
-    Vec2
-);
-impl_vector_texel_layout!(
-    XYZ,
-    VectorChannels::Three,
-    Vec3
-);
-impl_vector_texel_layout!(
-    XYZW,
-    VectorChannels::Four,
-    Vec4
-);
+impl_vector_texel_layout!(X, VectorChannels::One, Scalar);
+impl_vector_texel_layout!(XY, VectorChannels::Two, Vec2);
+impl_vector_texel_layout!(XYZ, VectorChannels::Three, Vec3);
+impl_vector_texel_layout!(XYZW, VectorChannels::Four, Vec4);

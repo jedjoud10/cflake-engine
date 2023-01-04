@@ -1,6 +1,6 @@
 use vulkan::vk;
 
-use crate::{Graphics, DynamicAttachment};
+use crate::{DynamicAttachment, Graphics};
 
 // In vanilla vulkan, render passes and frame buffers are completely separate, but since we will be using
 // This is a wrapper around a Vulkan render pass that will read/write from/to specific attachments
@@ -12,15 +12,20 @@ pub struct RenderPass {
     render_pass: vk::RenderPass,
     framebuffer: vk::Framebuffer,
     rect: vek::Rect<i32, u32>,
+
+    // Keep the graphics API alive
+    graphics: Graphics,
 }
 
 impl Drop for RenderPass {
     fn drop(&mut self) {
         unsafe {
-            let graphics = Graphics::global();
-            graphics
+            self.graphics
                 .device()
-                .destroy_render_pass_and_framebuffer(self.render_pass, self.framebuffer);
+                .destroy_render_pass_and_framebuffer(
+                    self.render_pass,
+                    self.framebuffer,
+                );
         }
     }
 }
@@ -28,9 +33,10 @@ impl Drop for RenderPass {
 impl RenderPass {
     // Create a new render pass with the given attachment layouts
     pub unsafe fn new(
+        graphics: &Graphics,
         format: vk::Format,
         attachment_image_infos: &[vk::FramebufferAttachmentImageInfo],
-        rect: vek::Rect<i32, u32>
+        rect: vek::Rect<i32, u32>,
     ) -> Self {
         // FIXME
         let attachment = vk::AttachmentDescription::builder()
@@ -43,7 +49,7 @@ impl RenderPass {
             .initial_layout(vk::ImageLayout::UNDEFINED)
             .final_layout(vk::ImageLayout::PRESENT_SRC_KHR);
         let attachment = [*attachment];
-        
+
         // FIXME
         let attachment_ref = vk::AttachmentReference::builder()
             .attachment(0)
@@ -55,20 +61,21 @@ impl RenderPass {
             .color_attachments(&attachment_ref);
 
         // Create a render pass and a framebuffer
-        let graphics = Graphics::global();
-        let (render_pass, framebuffer) = graphics.device().create_render_pass_framebuffer(
-            &attachment,
-            &[*subpass],
-            &[],
-            attachment_image_infos,
-            rect.extent(),
-            1
-        );
+        let (render_pass, framebuffer) =
+            graphics.device().create_render_pass_framebuffer(
+                &attachment,
+                &[*subpass],
+                &[],
+                attachment_image_infos,
+                rect.extent(),
+                1,
+            );
 
         Self {
             render_pass,
             framebuffer,
             rect,
+            graphics: graphics.clone(),
         }
     }
 

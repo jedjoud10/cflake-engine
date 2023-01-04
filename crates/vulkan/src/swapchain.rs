@@ -79,7 +79,7 @@ impl Swapchain {
                 &swapchain_loader,
                 format.format,
                 adapter,
-                device
+                device,
             )
         };
 
@@ -124,7 +124,10 @@ impl Swapchain {
         *vk::SwapchainCreateInfoKHR::builder()
             .surface(surface.surface())
             .min_image_count(
-                adapter.surface_properties().surface_capabilities.min_image_count,
+                adapter
+                    .surface_properties()
+                    .surface_capabilities
+                    .min_image_count,
             )
             .image_format(format.format)
             .image_color_space(format.color_space)
@@ -153,8 +156,10 @@ impl Swapchain {
         let swapchain_images = unsafe {
             loader.get_swapchain_images(swapchain).unwrap()
         };
-        let min = adapter.surface_properties().surface_capabilities.min_image_count
-            as usize;
+        let min = adapter
+            .surface_properties()
+            .surface_capabilities
+            .min_image_count as usize;
         log::debug!(
             "Swapchain contains {} images. {} more than the minimum",
             swapchain_images.len(),
@@ -162,29 +167,34 @@ impl Swapchain {
         );
 
         // Create the image views
-        let image_views = swapchain_images.iter().map(|image| unsafe {
-            device.create_image_view(
-                vk::ImageViewCreateFlags::empty(),
-                *image,
-                vk::ImageViewType::TYPE_2D,
-                format,
-                vk::ComponentMapping {
-                    r: vk::ComponentSwizzle::IDENTITY,
-                    g: vk::ComponentSwizzle::IDENTITY,
-                    b: vk::ComponentSwizzle::IDENTITY,
-                    a: vk::ComponentSwizzle::IDENTITY,
-                },
-                vk::ImageSubresourceRange {
-                    aspect_mask: vk::ImageAspectFlags::COLOR,
-                    base_mip_level: 0,
-                    level_count: 1,
-                    base_array_layer: 0,
-                    layer_count: 1,
-                }
-            )
-        });
+        let image_views =
+            swapchain_images.iter().map(|image| unsafe {
+                device.create_image_view(
+                    vk::ImageViewCreateFlags::empty(),
+                    *image,
+                    vk::ImageViewType::TYPE_2D,
+                    format,
+                    vk::ComponentMapping {
+                        r: vk::ComponentSwizzle::IDENTITY,
+                        g: vk::ComponentSwizzle::IDENTITY,
+                        b: vk::ComponentSwizzle::IDENTITY,
+                        a: vk::ComponentSwizzle::IDENTITY,
+                    },
+                    vk::ImageSubresourceRange {
+                        aspect_mask: vk::ImageAspectFlags::COLOR,
+                        base_mip_level: 0,
+                        level_count: 1,
+                        base_array_layer: 0,
+                        layer_count: 1,
+                    },
+                )
+            });
 
-        swapchain_images.iter().cloned().zip(image_views).collect::<Vec<_>>()
+        swapchain_images
+            .iter()
+            .cloned()
+            .zip(image_views)
+            .collect::<Vec<_>>()
     }
 
     // Pick the proper swapchain presentation mode
@@ -243,9 +253,7 @@ impl Swapchain {
 
 impl Swapchain {
     // Get the next free image that we can render to
-    pub unsafe fn acquire_next_image(
-        &self,
-    ) -> Option<u32> {
+    pub unsafe fn acquire_next_image(&self) -> Option<u32> {
         let err = self.loader.acquire_next_image(
             *self.raw.lock(),
             u64::MAX,
@@ -254,9 +262,7 @@ impl Swapchain {
         );
 
         match err {
-            Ok((index, _)) => {
-                Some(index)
-            }
+            Ok((index, _)) => Some(index),
             Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => None,
             Err(_) => None,
         }
@@ -316,7 +322,9 @@ impl Swapchain {
         surface: &Surface,
         dimensions: vek::Extent2<u32>,
     ) {
-        log::warn!("Recreating swapchain with new dimensions {dimensions}");
+        log::warn!(
+            "Recreating swapchain with new dimensions {dimensions}"
+        );
         device.wait();
 
         let create_info = Self::create_swapchain_create_info(
@@ -343,8 +351,8 @@ impl Swapchain {
                 &self.loader,
                 self.format.format,
                 adapter,
-                device
-            )
+                device,
+            ),
         );
 
         // Destroy the old image view

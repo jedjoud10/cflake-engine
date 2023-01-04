@@ -3,7 +3,10 @@ use std::{marker::PhantomData, mem::ManuallyDrop, time::Instant};
 use assets::Asset;
 use vulkan::{vk, Allocation};
 
-use crate::{Texel, TextureMode, TextureUsage, Graphics, Texture, ImageTexel, TextureAssetLoadError};
+use crate::{
+    Graphics, ImageTexel, Texel, Texture, TextureAssetLoadError,
+    TextureMode, TextureUsage,
+};
 
 // A 2D texture that contains multiple texels that have their own channels
 // Each texel can be either a single value, RG, RGB, or even RGBA
@@ -20,13 +23,16 @@ pub struct Texture2D<T: Texel> {
     usage: TextureUsage,
     mode: TextureMode,
     _phantom: PhantomData<T>,
+
+    // Keep the graphics API alive
+    graphics: Graphics,
 }
 
 impl<T: Texel> Drop for Texture2D<T> {
     fn drop(&mut self) {
         unsafe {
             let alloc = ManuallyDrop::take(&mut self.allocation);
-            Graphics::global().device().destroy_image(self.image, alloc);
+            self.graphics.device().destroy_image(self.image, alloc);
         }
     }
 }
@@ -64,6 +70,7 @@ impl<T: Texel> Texture for Texture2D<T> {
     }
 
     unsafe fn from_raw_parts(
+        graphics: &Graphics,
         image: vk::Image,
         whole_view: vk::ImageView,
         allocation: Allocation,
@@ -79,12 +86,13 @@ impl<T: Texel> Texture for Texture2D<T> {
             usage,
             mode,
             _phantom: PhantomData,
+            graphics: graphics.clone(),
         }
     }
 }
 
 impl<T: ImageTexel> Asset for Texture2D<T> {
-    type Context<'ctx> = ();
+    type Context<'ctx> = &'ctx Graphics;
     type Settings<'stg> = ();
     type Err = TextureAssetLoadError;
 
@@ -100,17 +108,23 @@ impl<T: ImageTexel> Asset for Texture2D<T> {
         let i = Instant::now();
         let image = image::load_from_memory(data.bytes())
             .map_err(TextureAssetLoadError::Deserialization)?;
-        log::debug!("Took {:?} to deserialize texture {:?}", i.elapsed(), data.path());
+        log::debug!(
+            "Took {:?} to deserialize texture {:?}",
+            i.elapsed(),
+            data.path()
+        );
 
-        let dimensions = vek::Extent2::new(image.width(), image.height());
+        let dimensions =
+            vek::Extent2::new(image.width(), image.height());
         let texels = T::to_image_texels(image);
-        let graphics = Graphics::global();
 
         Self::from_texels(
+            graphics,
             &texels,
             dimensions,
             TextureMode::Dynamic,
             TextureUsage::Placeholder,
-        ).map_err(TextureAssetLoadError::Initialization)
+        )
+        .map_err(TextureAssetLoadError::Initialization)
     }
 }

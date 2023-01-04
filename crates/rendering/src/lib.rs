@@ -1,8 +1,8 @@
 mod material;
 mod mesh;
-mod scene;
 mod pipeline;
-pub use pipeline::*;
+mod scene;
 pub use material::*;
 pub use mesh::*;
+pub use pipeline::*;
 pub use scene::*;

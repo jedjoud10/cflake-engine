@@ -38,7 +38,7 @@ pub enum ElementType {
     // Fixed point / integer types
     Eight { signed: bool, normalized: bool },
     Sixteen { signed: bool, normalized: bool },
-    
+
     // Strictly integer types
     ThirtyTwo { signed: bool },
     SixtyFour { signed: bool },

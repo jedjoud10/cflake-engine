@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod texels {
-    use crate::texture::Texel;
     use crate::format::*;
+    use crate::texture::Texel;
     use half::f16;
     use vulkan::vk;
 
@@ -222,32 +222,20 @@ mod texels {
 
 #[cfg(test)]
 mod vertex {
-    use crate::pipeline::Vertex;
     use crate::format::*;
+    use crate::pipeline::Vertex;
     use half::f16;
     use vulkan::vk;
 
     #[test]
     fn positional() {
-        assert_eq!(
-            XYZ::<f16>::FORMAT,
-            vk::Format::R16G16B16_SFLOAT,
-        );
+        assert_eq!(XYZ::<f16>::FORMAT, vk::Format::R16G16B16_SFLOAT,);
 
-        assert_eq!(
-            XYZ::<f32>::FORMAT,
-            vk::Format::R32G32B32_SFLOAT,
-        );
+        assert_eq!(XYZ::<f32>::FORMAT, vk::Format::R32G32B32_SFLOAT,);
 
-        assert_eq!(
-            XYZ::<f64>::FORMAT,
-            vk::Format::R64G64B64_SFLOAT,
-        );
+        assert_eq!(XYZ::<f64>::FORMAT, vk::Format::R64G64B64_SFLOAT,);
 
-        assert_eq!(
-            XYZ::<f32>::FORMAT,
-            vk::Format::R32G32B32_SFLOAT,
-        );
+        assert_eq!(XYZ::<f32>::FORMAT, vk::Format::R32G32B32_SFLOAT,);
     }
 
     #[test]

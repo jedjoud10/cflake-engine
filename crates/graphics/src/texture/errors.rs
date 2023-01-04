@@ -7,14 +7,14 @@ pub enum TextureInitializationError {
     FormatNotSupported(vk::Format),
 
     #[error("The number of texels ({0}) does not match up with the number of theoretical texels defined in the dimensions ({1}x{2}x{3})")]
-    TexelDimensionsMismatch(usize, u32, u32, u32)
+    TexelDimensionsMismatch(usize, u32, u32, u32),
 }
 
 #[derive(Error, Debug)]
 pub enum TextureMipLayerError {
     #[error("The given mip layer was already mutably borrowed")]
     BorrowedMutably,
-    
+
     #[error("The given mip layer was already immutably borrowed")]
     BorrowedImmutably,
 }
@@ -23,7 +23,7 @@ pub enum TextureMipLayerError {
 pub enum TextureAssetLoadError {
     #[error("{0}")]
     Initialization(TextureInitializationError),
-    
+
     #[error("{0}")]
     Deserialization(image::ImageError),
 }

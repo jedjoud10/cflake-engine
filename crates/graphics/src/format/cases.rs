@@ -1,4 +1,4 @@
-use crate::{BaseType, ChannelsType, VectorChannels, ElementType};
+use crate::{BaseType, ChannelsType, ElementType, VectorChannels};
 use vulkan::vk;
 
 // Converts the given vector channels to the proper format
@@ -105,7 +105,9 @@ pub const fn pick_format_from_vector_channels(
 }
 
 // Converts the given depth channel to the proper format
-pub const fn pick_depth_format(element_type: ElementType) -> vk::Format {
+pub const fn pick_depth_format(
+    element_type: ElementType,
+) -> vk::Format {
     match element_type {
         ElementType::Sixteen {
             signed: false,

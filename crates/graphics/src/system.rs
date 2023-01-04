@@ -1,4 +1,4 @@
-use crate::{Graphics, Window, WindowSettings, GraphicsInit};
+use crate::{Graphics, GraphicsInit, Window, WindowSettings};
 use winit::{event::WindowEvent, event_loop::EventLoop};
 use world::{post_user, user, State, System, World};
 
@@ -8,26 +8,18 @@ fn init(world: &mut World, el: &EventLoop<()>) {
     let init = world.remove::<GraphicsInit>().unwrap();
 
     // Initialize the Vulkan context and create a winit Window
-    let (graphics, window) = unsafe {
-        crate::context::init_context_and_window(init, el)
-    };
+    let (graphics, window) =
+        unsafe { crate::context::init_context_and_window(init, el) };
 
-    // Add the window resource to the world
+    // Add the resources to the world
     world.insert(window);
-
-    // Graphics context is global
-    *crate::context::CONTEXT.write() = Some(graphics);
+    world.insert(graphics);
 }
 
+// Reset the dirty state of the window at the end of each frame
 fn update(world: &mut World) {
     let mut window = world.get_mut::<Window>().unwrap();
     window.dirty = false;
-}
-
-// Destroy the underlying Vulkan context when we stop the app
-fn shutdown() {
-    let taken = crate::context::CONTEXT.write().take().unwrap();
-    unsafe { taken.destroy(); }
 }
 
 // Handle window quitting and resizing
@@ -66,6 +58,5 @@ pub fn system(system: &mut System) {
         .before(user);
 
     system.insert_window(event);
-    system.insert_update(update);
-    system.insert_shutdown(shutdown).after(post_user);
+    system.insert_update(update).after(post_user);
 }

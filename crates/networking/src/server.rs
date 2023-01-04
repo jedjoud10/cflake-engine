@@ -1,4 +1,12 @@
-use std::{collections::HashMap, net::{IpAddr, SocketAddrV4, Ipv4Addr, TcpListener, TcpStream, SocketAddr}, io::{Write, Read}, any::TypeId};
+use std::{
+    any::TypeId,
+    collections::HashMap,
+    io::{Read, Write},
+    net::{
+        IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4, TcpListener,
+        TcpStream,
+    },
+};
 use uuid::Uuid;
 
 use crate::Packet;
@@ -28,7 +36,7 @@ impl Server {
         let loopback = Ipv4Addr::new(127, 0, 0, 1);
         let socket = SocketAddrV4::new(loopback, port);
         log::debug!("Hosted server on socket: {socket}");
-        
+
         // Create a tcp listener
         let listener = TcpListener::bind(socket).unwrap();
         listener.set_nonblocking(true).unwrap();
@@ -40,7 +48,11 @@ impl Server {
     }
 
     // Handle the connection of a new client
-    fn handle_client_connection(&mut self, mut stream: TcpStream, address: SocketAddr) {
+    fn handle_client_connection(
+        &mut self,
+        mut stream: TcpStream,
+        address: SocketAddr,
+    ) {
         log::debug!("Client {address} has connected to the server");
 
         // Create a UUID for this client
@@ -50,12 +62,15 @@ impl Server {
         log::debug!("Sent UUID {uuid} to client {address}");
 
         // Add the server side client representation
-        self.clients.insert(uuid, ClientRepr {
+        self.clients.insert(
             uuid,
-            stream,
-            socket_address: address,
-            data: Default::default(),
-        });
+            ClientRepr {
+                uuid,
+                stream,
+                socket_address: address,
+                data: Default::default(),
+            },
+        );
     }
 
     // Handle the disconnection of an old client
@@ -84,14 +99,15 @@ impl Server {
                     disconnected.push(*uuid);
                     continue;
                 }
-                
+
                 // Get the TypeID hash in the first 8 bytes of data
-                let hash = u64::from_be_bytes(buf[0..8].try_into().unwrap());
+                let hash =
+                    u64::from_be_bytes(buf[0..8].try_into().unwrap());
 
                 // Read the rest of the data as a string
-                let data = (buf[8..][..(len-8)]).to_vec();
+                let data = (buf[8..][..(len - 8)]).to_vec();
                 if let Ok(string) = String::from_utf8(data) {
-                    client.data.entry(hash).or_default().push(string);                
+                    client.data.entry(hash).or_default().push(string);
                 }
             }
         }
@@ -106,12 +122,12 @@ impl Server {
 // Data transmission
 impl Server {
     // Send a message of a specific type to a specific client
-    pub fn message<T>(&mut self, client: Uuid, val: T,) {
+    pub fn message<T>(&mut self, client: Uuid, val: T) {
         todo!()
     }
 
     // Send a message of a specific type to all the clients
-    pub fn broadcast<T>(&mut self, val: T,) {
+    pub fn broadcast<T>(&mut self, val: T) {
         todo!()
     }
 
@@ -124,7 +140,8 @@ impl Server {
                 .data
                 .entry(hash)
                 .or_default()
-                .drain(..).filter_map(|x| {
+                .drain(..)
+                .filter_map(|x| {
                     let deserialized = serde_json::from_str::<T>(&x);
                     deserialized.map(|x| (x, *uuid)).ok()
                 });

@@ -16,17 +16,13 @@ pub enum ModuleKind {
 
 impl ModuleKind {
     // Convert the module kind to the Vulkan ShaderStageFlags
-    pub const fn into_shader_stage_flags(self) -> vk::ShaderStageFlags {
+    pub const fn into_shader_stage_flags(
+        self,
+    ) -> vk::ShaderStageFlags {
         match self {
-            Self::Vertex => {
-                vk::ShaderStageFlags::VERTEX
-            }
-            Self::Fragment => {
-                vk::ShaderStageFlags::FRAGMENT
-            }
-            Self::Compute => {
-                vk::ShaderStageFlags::COMPUTE
-            }
+            Self::Vertex => vk::ShaderStageFlags::VERTEX,
+            Self::Fragment => vk::ShaderStageFlags::FRAGMENT,
+            Self::Compute => vk::ShaderStageFlags::COMPUTE,
         }
     }
 }

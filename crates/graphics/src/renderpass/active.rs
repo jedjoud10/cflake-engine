@@ -1,5 +1,5 @@
-use vulkan::{Recorder, vk};
-use crate::{RenderPass, Graphics, GraphicsPipeline};
+use crate::{Graphics, GraphicsPipeline, RenderPass};
+use vulkan::{vk, Recorder};
 
 // This is an active render pass that is currently
 // able to render to the framebuffer attachments

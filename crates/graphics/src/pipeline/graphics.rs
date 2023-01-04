@@ -1,9 +1,9 @@
 use crate::{
     BlendConfig, CompareOp, CompiledDescription, DepthConfig,
-    Graphics, Primitive, RenderPass,
-    ShaderModule, StencilConfig, StencilOp, StencilTest, Shader,
+    Graphics, Primitive, RenderPass, Shader, ShaderModule,
+    StencilConfig, StencilOp, StencilTest,
 };
-use std::{mem::transmute, sync::Arc, ffi::CStr};
+use std::{ffi::CStr, mem::transmute, sync::Arc};
 use vulkan::{vk, Device};
 
 // A vulkan GRAPHICS pipeline abstraction that will handle initialization / destruction for us manually
@@ -24,12 +24,15 @@ pub struct GraphicsPipeline {
 
     // Keep the shader modules alive
     shader: Shader,
+
+    // Keep the graphics API alive
+    graphics: Graphics,
 }
 
 impl Drop for GraphicsPipeline {
     fn drop(&mut self) {
         unsafe {
-            Graphics::global().device().destroy_pipeline(self.pipeline);
+            self.graphics.device().destroy_pipeline(self.pipeline);
         }
     }
 }
@@ -38,6 +41,7 @@ impl Drop for GraphicsPipeline {
 impl GraphicsPipeline {
     // Create a new pipeline with the specified configs
     pub unsafe fn new(
+        graphics: &Graphics,
         depth_config: DepthConfig,
         stencil_config: StencilConfig,
         blend_config: BlendConfig,
@@ -45,7 +49,6 @@ impl GraphicsPipeline {
         render_pass: &RenderPass,
         shader: Shader,
     ) -> Self {
-        let graphics = Graphics::global();
         let pipeline = unsafe {
             // Common values that we reuse
             let depth_config = &depth_config;
@@ -55,13 +58,13 @@ impl GraphicsPipeline {
             let shader = &shader;
 
             // Viewport state
-            let viewport_state = 
+            let viewport_state =
                 *vk::PipelineViewportStateCreateInfo::builder()
                     .viewports(&[])
                     .scissors(&[]);
 
             // Input assembly state
-            let mut builder = 
+            let mut builder =
                 vk::PipelineInputAssemblyStateCreateInfo::builder();
             builder = primitive.apply_input_assembly_state(builder);
             let input_assembly_state = *builder;
@@ -75,39 +78,48 @@ impl GraphicsPipeline {
 
             // Color blend state
             // TODO: FIXME
-            let attachment = vk::PipelineColorBlendAttachmentState::builder()
-            .color_write_mask(vk::ColorComponentFlags::R |
-                vk::ColorComponentFlags::G |
-                vk::ColorComponentFlags::B |
-                vk::ColorComponentFlags::A)
-            .blend_enable(false)
-            .src_color_blend_factor(vk::BlendFactor::ONE)
-            .dst_color_blend_factor(vk::BlendFactor::ZERO)
-            .color_blend_op(vk::BlendOp::ADD)
-            .src_alpha_blend_factor(vk::BlendFactor::ONE)
-            .dst_alpha_blend_factor(vk::BlendFactor::ZERO)
-            .alpha_blend_op(vk::BlendOp::ADD);
+            let attachment =
+                vk::PipelineColorBlendAttachmentState::builder()
+                    .color_write_mask(
+                        vk::ColorComponentFlags::R
+                            | vk::ColorComponentFlags::G
+                            | vk::ColorComponentFlags::B
+                            | vk::ColorComponentFlags::A,
+                    )
+                    .blend_enable(false)
+                    .src_color_blend_factor(vk::BlendFactor::ONE)
+                    .dst_color_blend_factor(vk::BlendFactor::ZERO)
+                    .color_blend_op(vk::BlendOp::ADD)
+                    .src_alpha_blend_factor(vk::BlendFactor::ONE)
+                    .dst_alpha_blend_factor(vk::BlendFactor::ZERO)
+                    .alpha_blend_op(vk::BlendOp::ADD);
             let attachment = [*attachment];
-                
+
             // FIXME
-            let blend_state = *vk::PipelineColorBlendStateCreateInfo::builder()
-                .logic_op_enable(false)
-                .logic_op(vk::LogicOp::COPY)
-                .attachments(&attachment);
+            let blend_state =
+                *vk::PipelineColorBlendStateCreateInfo::builder()
+                    .logic_op_enable(false)
+                    .logic_op(vk::LogicOp::COPY)
+                    .attachments(&attachment);
 
             // Depth stencil state
             let mut builder =
                 vk::PipelineDepthStencilStateCreateInfo::builder();
             builder = depth_config.apply_depth_stencil_state(builder);
-            builder = stencil_config.apply_depth_stencil_state(builder);
+            builder =
+                stencil_config.apply_depth_stencil_state(builder);
             let depth_stencil_state = *builder;
 
             // Vertex input state
-            let vertex_input_state = vk::PipelineVertexInputStateCreateInfo::default();
+            let vertex_input_state =
+                vk::PipelineVertexInputStateCreateInfo::default();
 
             // Dynamic state
-            let dynamic = [vk::DynamicState::VIEWPORT, vk::DynamicState::SCISSOR];
-            let dynamic_state = 
+            let dynamic = [
+                vk::DynamicState::VIEWPORT,
+                vk::DynamicState::SCISSOR,
+            ];
+            let dynamic_state =
                 vk::PipelineDynamicStateCreateInfo::builder()
                     .dynamic_states(&dynamic);
 
@@ -115,26 +127,30 @@ impl GraphicsPipeline {
             let layout = {
                 let create_info = vk::PipelineLayoutCreateInfo::builder()
                     .flags(vk::PipelineLayoutCreateFlags::empty());
-    
-                graphics.device()
+
+                graphics
+                    .device()
                     .raw()
                     .create_pipeline_layout(&create_info, None)
                     .unwrap()
             };
-              
+
             // Multisample state
-            let multisample_state = vk::PipelineMultisampleStateCreateInfo::builder()
-                .sample_shading_enable(false)
-                .rasterization_samples(vk::SampleCountFlags::TYPE_1)
-                .sample_mask(&[])
-                .min_sample_shading(1.0f32)
-                .alpha_to_coverage_enable(false)
-                .alpha_to_one_enable(false);
-                
+            let multisample_state =
+                vk::PipelineMultisampleStateCreateInfo::builder()
+                    .sample_shading_enable(false)
+                    .rasterization_samples(
+                        vk::SampleCountFlags::TYPE_1,
+                    )
+                    .sample_mask(&[])
+                    .min_sample_shading(1.0f32)
+                    .alpha_to_coverage_enable(false)
+                    .alpha_to_one_enable(false);
+
             // Pipeline stages create info
             let descriptions = [
                 shader.vertex().description(),
-                shader.fragment().description()
+                shader.fragment().description(),
             ];
             let stages = descriptions
                 .into_iter()
@@ -147,7 +163,6 @@ impl GraphicsPipeline {
                         .stage(stage)
                 })
                 .collect::<Vec<_>>();
-
 
             // Create info for the graphics pipeline
             let create_info =
@@ -174,6 +189,7 @@ impl GraphicsPipeline {
             blend_config,
             primitive,
             shader,
+            graphics: graphics.clone(),
         }
     }
 }
