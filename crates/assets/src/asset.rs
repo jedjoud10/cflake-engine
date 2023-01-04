@@ -36,9 +36,10 @@ impl<'a> Data<'a> {
 
 // An asset that will be loaded from a single unique file
 // Each asset can fail to load it's data
-// Use the InfallibleAsset trait instead if data deserialization is infallible
+// This trait contains a "context" that can be passed around with the asset load settings
 pub trait Asset: Sized + 'static {
-    type Args<'args>;
+    type Context<'args>;
+    type Settings<'args>;
 
     // Possible error that we might return
     type Err: std::error::Error + Send + Sync + 'static;
@@ -47,73 +48,42 @@ pub trait Asset: Sized + 'static {
     // If this is of 0 length, then all extensions are supported
     fn extensions() -> &'static [&'static str];
 
-    // Deserialize the asset and possibly return an error
-    fn deserialize<'args>(
+    // Deserialize the asset with the context and settings
+    fn deserialize<'c, 's>(
         data: Data,
-        args: Self::Args<'args>,
+        context: Self::Context<'c>,
+        settings: Self::Settings<'s>,
     ) -> Result<Self, Self::Err>;
-}
-
-// An asset that will be loaded from a single unique file and that CANNOT fail
-pub trait InfallibleAsset: Sized + 'static {
-    type Args<'args>;
-
-    // Possible extensions that are supported
-    // If this is of 0 length, then all extensions are supported
-    fn extensions() -> &'static [&'static str];
-
-    // Deserialize the asset without returning an error
-    fn deserialize<'args>(
-        data: Data,
-        args: Self::Args<'args>,
-    ) -> Self;
-}
-
-// This should not even be considered and error bruh
-#[derive(Error, Debug)]
-#[error("")]
-pub struct Infallible;
-
-impl<T: InfallibleAsset> Asset for T {
-    type Args<'args> = T::Args<'args>;
-    type Err = Infallible;
-
-    fn extensions() -> &'static [&'static str] {
-        <T as InfallibleAsset>::extensions()
-    }
-
-    fn deserialize<'args>(
-        data: Data,
-        args: Self::Args<'args>,
-    ) -> Result<Self, Self::Err> {
-        Ok(<T as InfallibleAsset>::deserialize(data, args))
-    }
 }
 
 // Just for convience's sake
 pub trait AsyncAsset: Asset + Send + Sync
 where
-    Self::Err: Send,
+    <Self as Asset>::Err: Send,
 {
 }
+
 impl<T: Asset + Send + Sync> AsyncAsset for T
 where
-    T::Args<'static>: 'static + Send + Sync,
+    T::Context<'static>: 'static + Send + Sync,
+    T::Settings<'static>: 'static + Send + Sync,
     T::Err: 'static + Send + Sync,
 {
 }
 
 impl Asset for String {
-    type Args<'args> = ();
+    type Context<'args> = ();
+    type Settings<'args> = ();
     type Err = std::string::FromUtf8Error;
 
     fn extensions() -> &'static [&'static str] {
         &["txt"]
     }
 
-    fn deserialize<'args>(
+    fn deserialize<'c, 's>(
         data: Data,
-        _args: Self::Args<'args>,
+        context: Self::Context<'c>,
+        settings: Self::Settings<'s>,
     ) -> Result<Self, Self::Err> {
         String::from_utf8(data.bytes().to_vec())
     }

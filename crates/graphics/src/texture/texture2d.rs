@@ -11,7 +11,7 @@ pub struct Texture2D<T: Texel> {
     // Raw vulkan
     image: vk::Image,
     allocation: ManuallyDrop<Allocation>,
-    whole_view: vk::ImageView,
+    view: vk::ImageView,
 
     // Main texture settings
     dimensions: vek::Extent2<u32>,
@@ -52,7 +52,7 @@ impl<T: Texel> Texture for Texture2D<T> {
     }
 
     fn view(&self) -> vk::ImageView {
-        self.whole_view
+        self.view
     }
 
     fn allocation(&self) -> &Allocation {
@@ -74,7 +74,7 @@ impl<T: Texel> Texture for Texture2D<T> {
         Self {
             image,
             allocation: ManuallyDrop::new(allocation),
-            whole_view,
+            view: whole_view,
             dimensions,
             usage,
             mode,

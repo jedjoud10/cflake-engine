@@ -100,4 +100,34 @@ mod tests {
         let last = vec.pop().unwrap();
         assert!(last.is_err());
     }
+
+    #[test]
+    fn context() {
+        struct Contextual(String);
+
+        impl crate::Asset for Contextual {
+            type Context<'args> = ();
+            type Settings<'args> = ();
+            type Err = std::string::FromUtf8Error;
+        
+            fn extensions() -> &'static [&'static str] {
+                &["txt"]
+            }
+        
+            fn deserialize<'c, 's>(
+                data: crate::Data,
+                context: Self::Context<'c>,
+                settings: Self::Settings<'s>,
+            ) -> Result<Self, Self::Err> {
+                String::deserialize(data, context, settings).map(Contextual)
+            }
+        }
+
+        let loader = Assets::new(None);
+        let string = loader.load::<Contextual>("test/text.txt");
+        assert_eq!(
+            string.unwrap().0,
+            "this is a test file\n1234567890"
+        );
+    }
 }

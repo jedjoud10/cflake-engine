@@ -1,9 +1,12 @@
+use vulkan::vk;
+
 use super::{Extent, Region, Texture};
 use std::{cell::Cell, num::NonZeroU8, rc::Rc};
 
 // An immutable mip level that we can use to read from the texture
 pub struct MipLevelRef<'a, T: Texture> {
     texture: &'a T,
+    view: vk::ImageView,
     level: u8,
 }
 
@@ -41,6 +44,7 @@ impl<'a, T: Texture> MipLevelRef<'a, T> {
 // A mutable mip level that we can use to write to the texture
 pub struct MipLevelMut<'a, T: Texture> {
     texture: &'a T,
+    view: vk::ImageView,
     level: u8,
 }
 

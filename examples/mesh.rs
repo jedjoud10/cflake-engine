@@ -166,12 +166,7 @@ fn init(world: &mut World) {
     let mut convolutor = world.get_mut::<CubeMapConvolutor2D>().unwrap();
 
     // Load the equirectangular map
-    let equirectangular = assets
-        .load::<Texture2D<RGB<f32>>>(
-            "user/ignored/cubemap.hdr",
-            (&mut ctx, TextureImportSettings::default()),
-        )
-        .unwrap();
+    let equirectangular = assets.load::<Texture2D<RGB<f32>>>("user/ignored/cubemap.hdr").unwrap();
 
     // Load up the HDRi cubemap (not convoluted)
     let hdri = hdris.insert(
