@@ -1,28 +1,31 @@
 use vulkan::vk;
+use crate::{LoadOp, Stencil, StoreOp, Texel, UntypedTexel, Texture2D, ColorTexel, Texture, UntypedLoadOp, ColorLayout, DepthStencilLayout, DepthElement};
 
-use crate::{LoadOp, Stencil, StoreOp, Texel, UntypedTexel};
-
-// A render pass attachment is like a render texture that we write to
-// whenever we render something in the render pass
-pub struct Attachment<T: Texel> {
-    format: vk::Format,
-    sample_count: vk::SampleCountFlags,
-    load_op: LoadOp<T>,
-    store_op: StoreOp,
-    stencil_load_op: LoadOp<Stencil<u8>>,
-    stencil_store_op: StoreOp,
-    initial_layout: vk::ImageLayout,
-    final_layout: vk::ImageLayout,
+// A color attachment that is passed to the render pass when starting it
+pub trait ColorAttachments<'a, C: ColorLayout> {
 }
 
-// Dynamic attachment without the texel (basically a render target trait)
-pub trait DynamicAttachment {
-    // Get the untyped texel format
-    fn untyped_texel(&self) -> UntypedTexel;
+// A depth stencil attachment that is passed to the render pass when starting it
+pub trait DepthStencilAttachment<'a, DS: DepthStencilLayout + DepthElement> {
+}
 
-    // Get the underlying image that must be used for rendering
-    fn image(&self) -> vk::Image;
+// A render target that can be used inside a renderpass (attachment)
+// TODO: Handle MSAA maybe?
+pub trait RenderTarget<'a, T: Texel> {
+    // Get the untyped texel format
+    fn untyped_texel() -> UntypedTexel;
 
     // Get the underlying image view that must be used for rendering
     fn image_view(&self) -> vk::ImageView;
+}
+
+// TODO: This should be implemented on the MipLevels instead of the texture  
+impl<'a, T: Texel> RenderTarget<'a, T> for &'a mut Texture2D<T> {
+    fn untyped_texel() -> UntypedTexel {
+        T::untyped()
+    }
+
+    fn image_view(&self) -> vk::ImageView {
+        self.view()
+    }
 }
