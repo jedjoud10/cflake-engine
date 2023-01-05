@@ -78,7 +78,8 @@ fn update(world: &mut World) {
         let texture = &mut **texture;
 
         // Start the main render passd
-        let mut rasterizer = render_pass.begin(texture, ()).unwrap();
+        device.wait();
+        let mut rasterizer = render_pass.begin(texture, (), window.viewport()).unwrap();
         
         // Render the surfaces
         for pipeline in pipelines {

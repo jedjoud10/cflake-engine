@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 use vulkan::{vk, Recorder};
-use crate::{Graphics, ColorLayout, DepthStencilLayout, ColorAttachments, DepthStencilAttachment, RenderPassBeginError, RenderPassInitializationError, GraphicsPipeline};
+use crate::{Graphics, ColorLayout, DepthStencilLayout, ColorAttachments, DepthStencilAttachment, RenderPassBeginError, RenderPassInitializationError, GraphicsPipeline, Viewport};
 
 // In vanilla vulkan, render passes and frame buffers are completely separate, but since we will be using
 // This is a wrapper around a Vulkan render pass that will read/write from/to specific attachments
@@ -127,6 +127,9 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPass<C, DS> {
 
     // Resize the render pass' framebuffer
     pub fn resize(&mut self, extent: vek::Extent2<u32>) {
+        log::debug!("Resize render pass' framebuffer");
+        
+        self.extent = extent;
         let format = C::untyped_texels()[0].format;
         let view_format = [format];
         let attachment_image_info =
@@ -158,6 +161,7 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPass<C, DS> {
 }
 
 pub struct Rasterizer<'r, 'c, 'ds, C: ColorLayout, DS: DepthStencilLayout> {
+    viewport: Viewport,
     recorder: Recorder<'r>,
     _phantom_color_layout: PhantomData<&'c C>,
     _phantom_depth_stencil_layout: PhantomData<&'ds DS>,
@@ -173,10 +177,10 @@ impl<'r, 'c, 'ds, C: ColorLayout, DS: DepthStencilLayout> Rasterizer<'r, 'c, 'ds
         
             
             self.recorder.cmd_set_viewport(
-                0.0,
-                0.0,
-                800.0,
-                600.0,
+                self.viewport.origin.x as f32,
+                self.viewport.origin.y as f32,
+                self.viewport.extent.w as f32,
+                self.viewport.extent.h as f32,
                 0.01,
                 1.0
             );
@@ -184,8 +188,8 @@ impl<'r, 'c, 'ds, C: ColorLayout, DS: DepthStencilLayout> Rasterizer<'r, 'c, 'ds
             self.recorder.cmd_set_scissor(
                 0,
                 0,
-                800,
-                600
+                self.viewport.extent.w,
+                self.viewport.extent.h
             );
             
         }
@@ -206,7 +210,6 @@ impl<'r, 'c, 'ds, C: ColorLayout, DS: DepthStencilLayout> Rasterizer<'r, 'c, 'ds
 
     pub fn end(mut self) -> Recorder<'r> {
         unsafe {
-            log::debug!("End active render pass");
             self.recorder.cmd_end_render_pass();
             self.recorder
         }
@@ -220,9 +223,16 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPass<C, DS> {
         &'r mut self,
         color_attachments: impl ColorAttachments<'c, C>,
         depth_stencil_attachment: impl DepthStencilAttachment<'ds, DS>,
+        _: Viewport,
     ) -> Result<Rasterizer<'r, 'c, 'ds, C, DS>, RenderPassBeginError> {
         let mut recorder = unsafe {
             self.graphics.queue().acquire(self.graphics.device())
+        };
+
+
+        let viewport = Viewport {
+            origin: vek::Vec2::default(),
+            extent: self.extent,
         };
 
         // FIXME
@@ -238,14 +248,18 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPass<C, DS> {
                 &color_attachments.image_views(),
                 &clear, 
                 vek::Rect {
-                    x: 0,
-                    y: 0,
-                    w: 800,
-                    h: 600,
+                    x: viewport.origin.x,
+                    y: viewport.origin.y,
+                    w: viewport.extent.w,
+                    h: viewport.extent.h,
                 }
             );
         }
 
-        Ok(Rasterizer { recorder, _phantom_color_layout: PhantomData, _phantom_depth_stencil_layout: PhantomData })
+        Ok(Rasterizer {
+            viewport,
+            recorder, _phantom_color_layout: PhantomData,
+            _phantom_depth_stencil_layout: PhantomData
+        })
     }
 }
