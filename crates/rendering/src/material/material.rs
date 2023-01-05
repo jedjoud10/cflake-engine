@@ -1,7 +1,7 @@
 use assets::Assets;
 use graphics::{
     BlendConfig, CompareOp, Compiled, DepthConfig, DescriptorSet,
-    FaceCullMode, FragmentModule, Graphics, Primitive, Processed,
+    FaceCullMode, FragmentModule, Graphics, Primitive,
     StencilConfig, VertexModule,
 };
 use world::World;

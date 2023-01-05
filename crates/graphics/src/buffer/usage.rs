@@ -1,4 +1,4 @@
-use vulkan::{vk, MemoryLocation};
+use vulkan::{vk, gpu_allocator::MemoryLocation};
 
 // How exactly are we going to use the buffer?
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]

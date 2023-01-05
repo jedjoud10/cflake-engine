@@ -1,8 +1,8 @@
 use crate::Material;
 use assets::Assets;
 use graphics::{
-    Compiled, FragmentModule, Graphics, Normalized, Processor,
-    Texture2D, VertexModule, RGB,
+    Compiled, FragmentModule, Graphics, Normalized,
+    Texture2D, VertexModule, RGB, Compiler,
 };
 use utils::Storage;
 
@@ -33,8 +33,7 @@ impl Material for Basic {
         let vert = assets
             .load::<VertexModule>("engine/shaders/basic.vert")
             .unwrap();
-        let processor = Processor::new(vert, &assets);
-        Compiled::compile(graphics, processor.process())
+        Compiler::new(vert).compile(assets, graphics).unwrap()
     }
 
     // Load the fragment shader for this material
@@ -45,8 +44,7 @@ impl Material for Basic {
         let frag = assets
             .load::<FragmentModule>("engine/shaders/basic.frag")
             .unwrap();
-        let processor = Processor::new(frag, &assets);
-        Compiled::compile(graphics, processor.process())
+        Compiler::new(frag).compile(assets, graphics).unwrap()
     }
 
     fn required_mesh_attributes() -> () {

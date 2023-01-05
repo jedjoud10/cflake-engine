@@ -1,7 +1,7 @@
 use crate::{ForwardRenderer, SwapchainTexture, SwapchainFormat, ForwardRendererRenderPass};
 use graphics::{
-    vk, Allocation, Graphics, Normalized, RenderPass, Swapchain,
-    Texture, Texture2D, TextureMode, TextureUsage, Window, BGRA, Adapter, Device,
+    vk, Graphics, Normalized, RenderPass, Swapchain,
+    Texture, Texture2D, TextureMode, TextureUsage, Window, BGRA, Adapter, Device, gpu_allocator::vulkan::Allocation,
 };
 use std::mem::ManuallyDrop;
 use utils::Time;

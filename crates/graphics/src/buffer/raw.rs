@@ -1,7 +1,7 @@
 use std::mem::size_of;
 
 use crate::{GpuPodRelaxed, Graphics};
-use vulkan::{vk, Allocation, MemoryLocation, Recorder};
+use vulkan::{vk, Recorder, gpu_allocator::{MemoryLocation, vulkan::Allocation}};
 
 // Allocate a new buffer with a specific size and layout
 // This will return the Vulkan buffer and memory allocation

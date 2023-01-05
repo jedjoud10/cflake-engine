@@ -8,6 +8,7 @@ use gpu_allocator::vulkan::{
     Allocation, AllocationCreateDesc, Allocator, AllocatorCreateDesc,
 };
 use parking_lot::{MappedMutexGuard, Mutex, MutexGuard};
+use shaderc::{CompileOptions, ResolvedInclude};
 
 // This is a logical device that can run multiple commands and that can create Vulkan objects
 // TODO: Check objects that are currently being used by the GPU?
@@ -191,19 +192,20 @@ impl Device {
         file_name: &str,
         entry_point: &str,
         kind: shaderc::ShaderKind,
-    ) -> Vec<u32> {
-        // TODO: Make use of "additional_options" to manually add the include callback instead of using shitty processor
-        let binary_result = self
+        callback: impl Fn(&str, shaderc::IncludeType, &str, usize) -> Result<ResolvedInclude, String>,
+    ) -> Result<shaderc::CompilationArtifact, shaderc::Error> {
+        let mut options = CompileOptions::new().unwrap();
+        options.set_include_callback(callback);
+
+        self
             .glsl_spirv_translator
             .compile_into_spirv(
                 code,
                 kind,
                 file_name,
                 entry_point,
-                None,
+                Some(&options),
             )
-            .unwrap();
-        binary_result.as_binary().to_owned()
     }
 
     // Create a new shader module from SPIRV byte code

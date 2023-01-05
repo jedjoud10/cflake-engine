@@ -1,7 +1,7 @@
 use std::{marker::PhantomData, mem::ManuallyDrop, time::Instant};
 
 use assets::Asset;
-use vulkan::{vk, Allocation};
+use vulkan::{vk, gpu_allocator::vulkan::Allocation};
 
 use crate::{
     Graphics, ImageTexel, Texel, Texture, TextureAssetLoadError,

@@ -1,4 +1,4 @@
-use vulkan::{vk, Allocation};
+use vulkan::{vk, gpu_allocator::{vulkan::Allocation, MemoryLocation}};
 
 use crate::{
     Extent, Graphics, MipLevelMut, MipLevelRef, Region, Sampler,
@@ -93,7 +93,7 @@ pub trait Texture: Sized {
                 1,
                 1,
                 vk::SampleCountFlags::TYPE_1,
-                vulkan::MemoryLocation::GpuOnly,
+                MemoryLocation::GpuOnly,
                 queue,
             )
         };

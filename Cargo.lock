@@ -983,6 +983,7 @@ dependencies = [
  "parking_lot",
  "paste",
  "snailquote",
+ "spirv-reflect",
  "thiserror",
  "utils",
  "vek",
@@ -2237,6 +2238,30 @@ checksum = "cafa7900db085f4354dbc7025e25d7a839a14360ea13b5fc4fd717f2d3b23134"
 dependencies = [
  "once_cell",
  "winapi",
+]
+
+[[package]]
+name = "spirv-reflect"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cecc7af6a7d3ca6d15f4d6b5077df89c77ad1f4b314d0cabee221656d041dad7"
+dependencies = [
+ "bitflags",
+ "cc",
+ "num-traits",
+ "serde",
+ "serde_derive",
+ "spirv_headers",
+]
+
+[[package]]
+name = "spirv_headers"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1f5b132530b1ac069df335577e3581765995cba5a13995cdbbdbc8fb057c532c"
+dependencies = [
+ "bitflags",
+ "num-traits",
 ]
 
 [[package]]
