@@ -67,7 +67,11 @@ impl<M: ShaderModule> Compiler<M> {
         } = self;
 
         // Callback to use for loading #include directives
-        let callback = |current: &str, _type: IncludeType, target: &str, depth: usize| -> Result<ResolvedInclude, String> {
+        let callback = |target: &str, _type: IncludeType, current: &str, depth: usize| -> Result<ResolvedInclude, String> {
+            if matches!(_type, IncludeType::Relative) {
+                panic!("Not supported yet");
+            }
+            
             let include = handle_include(target, assets, &snippets).unwrap();
             Ok(include)
         };

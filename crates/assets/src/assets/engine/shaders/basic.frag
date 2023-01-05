@@ -1,5 +1,5 @@
 #version 460 core
-#include "./test.glsl"
+#include <engine/shaders/test.glsl>
 layout(location = 0) out vec4 outColor;
 
 // https://vkguide.dev/docs/chapter-2/triangle_walkthrough/
