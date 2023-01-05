@@ -8,7 +8,7 @@ use std::{
 
 // Texel that stores the SwapChain image format
 pub type SwapchainFormat = BGRA<Normalized<u8>>;
-pub type SwapchainTexture = ManuallyDrop<Texture2D<SwapchainFormat>>;
+pub type SwapchainTexture = Texture2D<SwapchainFormat>;
 pub type ForwardRendererRenderPass = RenderPass<SwapchainFormat, ()>;
 
 // Main resource that will contain data to render objects on the screen

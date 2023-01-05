@@ -246,6 +246,19 @@ impl Device {
             .unwrap()[0]
     }
 
+    // Create a pipeline layout for a pipeline
+    pub unsafe fn create_pipeline_layout(
+        &self,
+        create_info: vk::PipelineLayoutCreateInfo
+    ) -> vk::PipelineLayout {
+        self.raw()
+            .create_pipeline_layout(
+                &create_info,
+                None,
+            )
+            .unwrap()
+    }
+
     // Create a raw framebuffer
     // Note: This creates the frame buffer with the IMAGELESS flag
     pub unsafe fn create_framebuffer(
@@ -316,6 +329,11 @@ impl Device {
     // Destroy a specific pipeline
     pub unsafe fn destroy_pipeline(&self, pipeline: vk::Pipeline) {
         self.raw().destroy_pipeline(pipeline, None);
+    }
+
+    // Destroy a specific pipeline layout
+    pub unsafe fn destroy_pipeline_layout(&self, layout: vk::PipelineLayout) {
+        self.raw().destroy_pipeline_layout(layout, None);
     }
 
     // Destroy a specific shader module

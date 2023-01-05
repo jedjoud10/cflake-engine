@@ -1,6 +1,6 @@
 // Get the SDF to the scene
 float sdf(vec3 point) {
-    return min(point.y, length(point) - 2) + sin(point.x*4);
+    return min(point.y, length(point) - 2);
 }
 
 // Calculate lighting from normal

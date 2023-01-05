@@ -1,6 +1,7 @@
 #version 460 core
 #include <engine/shaders/test.glsl>
 layout(location = 0) out vec4 outColor;
+layout(constant_id = 0) const uint testValue = 1;
 
 // https://vkguide.dev/docs/chapter-2/triangle_walkthrough/
 void main() {
@@ -16,12 +17,11 @@ void main() {
 	const float EPSILON = 0.01;
 
 	for (int i = 0; i < 256; i++) {
-		point += ray * last_value;		
+		point += ray * last_value * float(testValue);		
 
 		last_value = sdf(point);
 		if (last_value < EPSILON) {
 			col = lighting(normal(point, EPSILON));
-			break;
 		}
 	}
 

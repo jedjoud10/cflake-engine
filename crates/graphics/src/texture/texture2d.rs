@@ -32,7 +32,9 @@ impl<T: Texel> Drop for Texture2D<T> {
     fn drop(&mut self) {
         unsafe {
             let alloc = ManuallyDrop::take(&mut self.allocation);
-            self.graphics.device().destroy_image(self.image, alloc);
+            if !alloc.is_null() {
+                self.graphics.device().destroy_image(self.image, alloc);
+            }
         }
     }
 }

@@ -4,6 +4,7 @@ use crate::{
 };
 
 use vulkan::vk;
+use winit::platform::unix::x11::ffi::XK_Left;
 
 // A vulkan GRAPHICS pipeline abstraction that will handle initialization / destruction for us manually
 // This will abstract most of the initialization and pain staking work of pipelines
@@ -14,6 +15,7 @@ use vulkan::vk;
 pub struct GraphicsPipeline {
     // Raw Vulkan
     pipeline: vk::Pipeline,
+    layout: vk::PipelineLayout,
 
     // Immutable data set at build time
     depth_config: DepthConfig,
@@ -31,6 +33,7 @@ pub struct GraphicsPipeline {
 impl Drop for GraphicsPipeline {
     fn drop(&mut self) {
         unsafe {
+            self.graphics.device().destroy_pipeline_layout(self.layout);
             self.graphics.device().destroy_pipeline(self.pipeline);
         }
     }
@@ -48,7 +51,7 @@ impl GraphicsPipeline {
         render_pass: &RenderPass<C, DS>,
         shader: Shader,
     ) -> Result<Self, PipelineInitializationError> {
-        let pipeline = unsafe {
+        let (pipeline, layout) = unsafe {
             // Common values that we reuse
             let depth_config = &depth_config;
             let primitive = &primitive;
@@ -121,12 +124,7 @@ impl GraphicsPipeline {
             let layout = {
                 let create_info = vk::PipelineLayoutCreateInfo::builder()
                     .flags(vk::PipelineLayoutCreateFlags::empty());
-
-                graphics
-                    .device()
-                    .raw()
-                    .create_pipeline_layout(&create_info, None)
-                    .unwrap()
+                graphics.device().create_pipeline_layout(*create_info)
             };
 
             // Multisample state
@@ -144,18 +142,19 @@ impl GraphicsPipeline {
             // Pipeline stages create info
             let stages = shader.descriptions()
                 .into_iter()
-                .map(|c| {
-                    let stage = c.kind.into_shader_stage_flags();
+                .map(|description| {
+                    let stage = description.kind.into_shader_stage_flags();
                     *vk::PipelineShaderStageCreateInfo::builder()
-                        .name(c.entry)
-                        .flags(c.flags)
-                        .module(*c.module)
+                        .name(description.entry)
+                        .flags(description.flags)
+                        .module(*description.module)
                         .stage(stage)
+                        .specialization_info(&description.constants.raw)
                 })
                 .collect::<Vec<_>>();
 
             // Create info for the graphics pipeline
-            let create_info =
+            let create_info_builder =
                 vk::GraphicsPipelineCreateInfo::builder()
                     .color_blend_state(&color_blend_state)
                     .depth_stencil_state(&depth_stencil_state)
@@ -169,11 +168,13 @@ impl GraphicsPipeline {
                     .stages(&stages)
                     .subpass(0)
                     .vertex_input_state(&vertex_input_state);
-            graphics.device().create_graphics_pipeline(*create_info)
+            let create_info = *create_info_builder;
+            (graphics.device().create_graphics_pipeline(create_info), layout)
         };
 
         Ok(Self {
             pipeline,
+            layout,
             depth_config,
             stencil_config,
             blend_config,

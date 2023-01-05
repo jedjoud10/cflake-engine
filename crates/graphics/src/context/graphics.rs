@@ -3,7 +3,7 @@ use vulkan::{Adapter, Device, Instance, Queue, Surface, Swapchain};
 
 // Internal struct that contain the raw vulkan instances and values
 // This is what will be wrapped around an arc, and this is what will handle Vulkan object destruction
-pub(super) struct InternalGraphics {
+pub struct InternalGraphics {
     pub(super) instance: Instance,
     pub(super) surface: Surface,
     pub(super) adapter: Adapter,
@@ -40,7 +40,7 @@ impl Drop for InternalGraphics {
 // Graphical context that we will wrap around the Vulkan instance
 // This context must be shareable between threads to allow for multithreading
 #[derive(Clone)]
-pub struct Graphics(pub(super) Arc<InternalGraphics>);
+pub struct Graphics(pub Arc<InternalGraphics>);
 
 impl Graphics {
     // Get the instance

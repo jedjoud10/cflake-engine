@@ -1,4 +1,3 @@
-use ahash::AHashSet;
 use winit::{
     event::{DeviceEvent, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
@@ -6,7 +5,7 @@ use winit::{
 //use gui::egui::util::id_type_map::TypeId;
 use graphics::{FrameRateLimit, GraphicsInit, WindowSettings};
 use mimalloc::MiMalloc;
-use std::{any::TypeId, path::PathBuf};
+use std::{path::PathBuf};
 use world::{
     Event, Init, Shutdown, State, System, Systems, Update, World,
 };
@@ -211,6 +210,7 @@ impl App {
             // Call the shutdown events
             winit::event::Event::LoopDestroyed => {
                 systems.shutdown.execute(&mut world);
+                
             }
 
             // Call the window events
@@ -265,9 +265,9 @@ impl App {
         self = self.insert_system(utils::threadpool);
         self = self.insert_system(utils::time);
         self = self.insert_system(audio::system);
-        self = self.insert_system(rendering::system);
         self = self.insert_system(networking::system);
         self = self.insert_system(graphics::system);
+        self = self.insert_system(rendering::system);
 
         // Insert the IO manager
         let author = self.author_name.clone();

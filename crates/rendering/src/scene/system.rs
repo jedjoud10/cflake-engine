@@ -3,7 +3,7 @@ use graphics::{
     vk, Graphics, Normalized, RenderPass, Swapchain,
     Texture, Texture2D, TextureMode, TextureUsage, Window, BGRA, Adapter, Device, gpu_allocator::vulkan::Allocation,
 };
-use std::mem::ManuallyDrop;
+use std::{mem::ManuallyDrop, sync::Arc};
 use utils::Time;
 use world::{post_user, user, System, World};
 
@@ -28,6 +28,9 @@ fn extract_swapchain_images_to_textures(
 ) -> Vec<SwapchainTexture> {
     let images = graphics.swapchain().images();
     let dimensions = graphics.swapchain().extent();
+
+    
+
     images
         .into_iter()
         .map(|(image, view)| unsafe {
@@ -41,7 +44,6 @@ fn extract_swapchain_images_to_textures(
                 TextureMode::Dynamic,
             )
         })
-        .map(ManuallyDrop::new)
         .collect::<Vec<_>>()
 }
 
@@ -75,7 +77,7 @@ fn update(world: &mut World) {
         let targets = &mut renderer.render_targets;
         let render_pass = &mut renderer.render_pass;
         let texture = targets.get_mut(index as usize).unwrap();
-        let texture = &mut **texture;
+        let texture = &mut *texture;
 
         // Start the main render passd
         device.wait();
