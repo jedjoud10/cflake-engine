@@ -1,10 +1,9 @@
 use crate::{
     BlendConfig, DepthConfig, Graphics, Primitive, RenderPass,
-    Shader, ShaderModule, StencilConfig, ColorLayout, DepthStencilLayout, PipelineInitializationError, AttachmentBlendConfig,
+    Shader, ShaderModule, StencilConfig, ColorLayout, DepthStencilLayout, PipelineInitializationError, AttachmentBlendConfig, VertexConfig, PipelineVertexConfigError,
 };
 
 use vulkan::vk;
-use winit::platform::unix::x11::ffi::XK_Left;
 
 // A vulkan GRAPHICS pipeline abstraction that will handle initialization / destruction for us manually
 // This will abstract most of the initialization and pain staking work of pipelines
@@ -21,6 +20,7 @@ pub struct GraphicsPipeline {
     depth_config: DepthConfig,
     stencil_config: StencilConfig,
     blend_config: BlendConfig,
+    vertex_config: VertexConfig,
     primitive: Primitive,
 
     // Keep the shader modules alive
@@ -47,6 +47,7 @@ impl GraphicsPipeline {
         depth_config: DepthConfig,
         stencil_config: StencilConfig,
         blend_config: BlendConfig,
+        vertex_config: VertexConfig,
         primitive: Primitive,
         render_pass: &RenderPass<C, DS>,
         shader: Shader,
@@ -59,85 +60,27 @@ impl GraphicsPipeline {
             let _blend_config = &blend_config;
             let shader = &shader;
 
-            // Viewport state set to nothing since it's dynamic state
-            let viewport_state =
-                *vk::PipelineViewportStateCreateInfo::builder()
-                    .viewports(&[vk::Viewport::default()])
-                    .scissors(&[vk::Rect2D::default()]);
-
-            // Input assembly state
-            let mut builder =
-                vk::PipelineInputAssemblyStateCreateInfo::builder();
-            builder = primitive.apply_input_assembly_state(builder);
-            let input_assembly_state = builder;
-
-            // Rasterization state
-            let mut builder =
-                vk::PipelineRasterizationStateCreateInfo::builder();
-            builder = primitive.apply_rasterization_state(builder);
-            builder = depth_config.apply_rasterization_state(builder);
-            let rasterization_state = builder;
-
-            // Color blend state
-            let mut color_blend_builder = 
-                vk::PipelineColorBlendStateCreateInfo::builder()
-                    .logic_op_enable(false)
-                    .logic_op(vk::LogicOp::COPY)
-                    .attachments(&[]);
-
-            // Color blend state attachment 0
-            let attachment_builder = blend_config.attachments.map(|attachment| {
-                attachment[0].apply_color_blend_attachment_state(vk::PipelineColorBlendAttachmentState::builder())
-            }).unwrap_or_else(|| AttachmentBlendConfig::apply_default_color_blend_attachment_state(
-                vk::PipelineColorBlendAttachmentState::builder()
-            ));
-            
-            // Apply the color blend attachments to the state
-            let penis = [*attachment_builder];
-            let cock = penis.as_ref();
-            color_blend_builder = color_blend_builder.attachments(cock);
-            let color_blend_state = color_blend_builder;
-
-
-            // Depth stencil state
-            let mut builder =
-                vk::PipelineDepthStencilStateCreateInfo::builder();
-            builder = depth_config.apply_depth_stencil_state(builder);
-            builder =
-                stencil_config.apply_depth_stencil_state(builder);
-            let depth_stencil_state = builder;
+            // All the pipeline state builders
+            let (viewport, scissor) = viewport_and_scissor();
+            let viewport_state = viewport_state_builder(&viewport,& scissor);
+            let input_assembly_state = input_assembly_state_builder(primitive);
+            let rasterization_state = rasterization_state_builder(primitive, depth_config);
+            let attachments = color_blend_attachments(blend_config);
+            let color_blend_state = color_blend_state_builder(&attachments);
+            let depth_stencil_state = depth_stencil_state_builder(depth_config, stencil_config);
 
             // Vertex input state
-            let vertex_input_state =
-                vk::PipelineVertexInputStateCreateInfo::default();
+            let vertex_attribute_descriptions = vertex_attribute_descriptions(&vertex_config);
+            let vertex_binding_descriptions = vertex_binding_descriptions(&vertex_config);
+            let vertex_input_state = vertex_input_state_builder(
+                &vertex_attribute_descriptions,
+                &vertex_binding_descriptions
+            );
 
-            // Dynamic state
-            let dynamic = [
-                vk::DynamicState::VIEWPORT,
-                vk::DynamicState::SCISSOR,
-            ];
-            let dynamic_state =
-                vk::PipelineDynamicStateCreateInfo::builder()
-                    .dynamic_states(&dynamic);
-
-            // Pipeline layout
-            let layout = {
-                let create_info = vk::PipelineLayoutCreateInfo::builder()
-                    .flags(vk::PipelineLayoutCreateFlags::empty());
-                graphics.device().create_pipeline_layout(*create_info)
-            };
-
-            // Multisample state
-            let multisample_state =
-                vk::PipelineMultisampleStateCreateInfo::builder()
-                    .sample_shading_enable(false)
-                    .rasterization_samples(
-                        vk::SampleCountFlags::TYPE_1,
-                    )
-                    .sample_mask(&[])
-                    .min_sample_shading(1.0f32)
-                    .alpha_to_coverage_enable(false)
-                    .alpha_to_one_enable(false);
+            let dynamic = dynamic_states();
+            let dynamic_state = dynamic_state_builder(&dynamic);
+            let layout = pipeline_layout(graphics);
+            let multisample_state = multiple_state_builder();
 
             // Pipeline stages create info
             let stages = shader.descriptions()
@@ -169,6 +112,7 @@ impl GraphicsPipeline {
                     .subpass(0)
                     .vertex_input_state(&vertex_input_state);
             let create_info = *create_info_builder;
+
             (graphics.device().create_graphics_pipeline(create_info), layout)
         };
 
@@ -178,6 +122,7 @@ impl GraphicsPipeline {
             depth_config,
             stencil_config,
             blend_config,
+            vertex_config,
             primitive,
             shader,
             graphics: graphics.clone(),
@@ -185,7 +130,6 @@ impl GraphicsPipeline {
     }
 }
 
-// Others
 impl GraphicsPipeline {
     // Get the underlying raw Vulkan pipeline
     pub fn raw(&self) -> vk::Pipeline {
@@ -193,22 +137,153 @@ impl GraphicsPipeline {
     }
 
     // Get the depth config used when creating this pipeline
-    pub fn depth_config(&self) -> DepthConfig {
-        self.depth_config
+    pub fn depth_config(&self) -> &DepthConfig {
+        &self.depth_config
     }
 
     // Get the stencil config used when creating this pipeline
-    pub fn stencil_config(&self) -> StencilConfig {
-        self.stencil_config
+    pub fn stencil_config(&self) -> &StencilConfig {
+        &self.stencil_config
     }
 
     // Get the blend config used when creating this pipeline
-    pub fn blend_config(&self) -> BlendConfig {
-        self.blend_config
+    pub fn blend_config(&self) -> &BlendConfig {
+        &self.blend_config
+    }
+
+    // Get the vertex config used when creating this pipeline
+    pub fn vertex_config(&self) -> &VertexConfig {
+        &self.vertex_config
     }
 
     // Get the primitive config used when creating this pipeline
-    pub fn primitive(&self) -> Primitive {
-        self.primitive
+    pub fn primitive(&self) -> &Primitive {
+        &self.primitive
     }
+}
+
+fn vertex_input_state_builder<'a>(
+    vertex_attribute_descriptions: &'a [vk::VertexInputAttributeDescription], 
+    vertex_binding_descriptions: &'a [vk::VertexInputBindingDescription]
+) -> vk::PipelineVertexInputStateCreateInfoBuilder<'a> {
+    vk::PipelineVertexInputStateCreateInfo::builder()
+        .vertex_attribute_descriptions(&vertex_attribute_descriptions)
+        .vertex_binding_descriptions(&vertex_binding_descriptions)
+}
+
+unsafe fn pipeline_layout(graphics: &Graphics) -> vk::PipelineLayout {
+    let layout = {
+        let create_info = vk::PipelineLayoutCreateInfo::builder()
+            .flags(vk::PipelineLayoutCreateFlags::empty());
+        graphics.device().create_pipeline_layout(*create_info)
+    };
+    layout
+}
+
+fn multiple_state_builder<'a>() -> vk::PipelineMultisampleStateCreateInfoBuilder<'a> {
+    let multisample_state =
+        vk::PipelineMultisampleStateCreateInfo::builder()
+            .sample_shading_enable(false)
+            .rasterization_samples(
+                vk::SampleCountFlags::TYPE_1,
+            )
+            .sample_mask(&[])
+            .min_sample_shading(1.0f32)
+            .alpha_to_coverage_enable(false)
+            .alpha_to_one_enable(false);
+    multisample_state
+}
+
+fn vertex_binding_descriptions(vertex_config: &VertexConfig) -> Vec<vk::VertexInputBindingDescription> {
+    let vertex_binding_descriptions = vertex_config.bindings.iter().map(|binding| {
+        *vk::VertexInputBindingDescription::builder()
+            .binding(binding.binding)
+            .input_rate(vk::VertexInputRate::VERTEX)
+            .stride(binding.format.bits_per_axii as u32 * binding.format.channels.count() / 8)
+    }).collect::<Vec<_>>();
+    vertex_binding_descriptions
+}
+
+fn vertex_attribute_descriptions(vertex_config: &VertexConfig) -> Vec<vk::VertexInputAttributeDescription> {
+    let vertex_attribute_descriptions = vertex_config.attributes.iter().map(|attribute| {
+        *vk::VertexInputAttributeDescription::builder()
+            .binding(attribute.binding)
+            .format(attribute.format.format)
+            .location(attribute.location)
+            .offset(attribute.offset)
+    }).collect::<Vec<_>>();
+    vertex_attribute_descriptions
+}
+
+fn dynamic_state_builder<'a>(dynamic: &'a [vk::DynamicState]) -> vk::PipelineDynamicStateCreateInfoBuilder<'a> {
+    vk::PipelineDynamicStateCreateInfo::builder()
+        .dynamic_states(dynamic)
+}
+
+fn dynamic_states() -> [vk::DynamicState; 2] {
+    [
+        vk::DynamicState::VIEWPORT,
+        vk::DynamicState::SCISSOR,
+    ]
+}
+
+fn depth_stencil_state_builder<'a>(depth_config: &DepthConfig, stencil_config: &StencilConfig) -> vk::PipelineDepthStencilStateCreateInfoBuilder<'a> {
+    let mut builder =
+        vk::PipelineDepthStencilStateCreateInfo::builder();
+    builder = depth_config.apply_depth_stencil_state(builder);
+    builder =
+        stencil_config.apply_depth_stencil_state(builder);
+    let depth_stencil_state = builder;
+    depth_stencil_state
+}
+
+fn color_blend_attachments(blend_config: BlendConfig) -> [vk::PipelineColorBlendAttachmentState; 1] {
+    // Color blend state attachment 0
+    let attachment_builder = blend_config.attachments.map(|attachment| {
+        attachment[0].apply_color_blend_attachment_state(vk::PipelineColorBlendAttachmentState::builder())
+    }).unwrap_or_else(|| AttachmentBlendConfig::apply_default_color_blend_attachment_state(
+        vk::PipelineColorBlendAttachmentState::builder()
+    ));
+    // Apply the color blend attachments to the state
+    // TODO: Add render graph so we can support multiple attachments
+    [*attachment_builder]
+}
+
+fn color_blend_state_builder<'a>(attachment_state: &'a [vk::PipelineColorBlendAttachmentState]) -> vk::PipelineColorBlendStateCreateInfoBuilder<'a> {
+    let mut color_blend_builder = 
+    vk::PipelineColorBlendStateCreateInfo::builder()
+        .logic_op_enable(false)
+        .logic_op(vk::LogicOp::COPY)
+        .attachments(&[]);
+
+    color_blend_builder = color_blend_builder.attachments(attachment_state);
+    let color_blend_state = color_blend_builder;
+    color_blend_state
+}
+
+fn rasterization_state_builder<'a>(primitive: &Primitive, depth_config: &DepthConfig) -> vk::PipelineRasterizationStateCreateInfoBuilder<'a> {
+    let mut builder =
+        vk::PipelineRasterizationStateCreateInfo::builder();
+    builder = primitive.apply_rasterization_state(builder);
+    builder = depth_config.apply_rasterization_state(builder);
+    let rasterization_state = builder;
+    rasterization_state
+}
+
+fn input_assembly_state_builder(primitive: &Primitive) -> vk::PipelineInputAssemblyStateCreateInfoBuilder {
+    let mut builder =
+        vk::PipelineInputAssemblyStateCreateInfo::builder();
+    builder = primitive.apply_input_assembly_state(builder);
+    let input_assembly_state = builder;
+    input_assembly_state
+}
+
+fn viewport_and_scissor() -> ([vk::Viewport; 1], [vk::Rect2D; 1]) {
+   ([vk::Viewport::default(); 1], [vk::Rect2D::default(); 1])
+}
+
+fn viewport_state_builder<'a>(viewports: &'a [vk::Viewport; 1], scissors: &'a [vk::Rect2D; 1]) -> vk::PipelineViewportStateCreateInfoBuilder<'a> {    
+    vk::PipelineViewportStateCreateInfo::builder()
+        .viewports(viewports)
+        .scissors(scissors)
 }

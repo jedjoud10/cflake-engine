@@ -36,6 +36,7 @@ impl<T: Base> AnyElement for T {
 }
 
 // Untyped element type that will be used to fetch VkFormat
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum ElementType {
     // Fixed point / integer types
     Eight { signed: bool, normalized: bool },

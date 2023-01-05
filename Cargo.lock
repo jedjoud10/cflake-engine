@@ -1896,12 +1896,14 @@ name = "rendering"
 version = "0.1.0"
 dependencies = [
  "ahash",
+ "arrayvec 0.7.2",
  "assets",
  "bitflags",
  "ecs",
  "graphics",
  "log",
  "parking_lot",
+ "paste",
  "utils",
  "vek",
  "world",

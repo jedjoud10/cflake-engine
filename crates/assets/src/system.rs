@@ -10,7 +10,6 @@ fn init(world: &mut World, user: Option<PathBuf>) {
     // Load the default shaders
     persistent!(loader, "engine/shaders/basic.frag");
     persistent!(loader, "engine/shaders/basic.vert");
-    persistent!(loader, "engine/shaders/test.glsl");
 
     // Load the default textures
     persistent!(loader, "engine/textures/test.jpg");

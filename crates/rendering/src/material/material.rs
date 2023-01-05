@@ -6,6 +6,8 @@ use graphics::{
 };
 use world::World;
 
+use crate::EnabledMeshAttributes;
+
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
 // Materials correspond to a specific Vulkan pipeline based on it's config parameters
 pub trait Material: 'static + Sized {
@@ -25,7 +27,8 @@ pub trait Material: 'static + Sized {
     ) -> Compiled<FragmentModule>;
 
     // Get the required mesh attributes that we need to render a surface
-    fn required_mesh_attributes() -> ();
+    // If a surface does not support these attributes, it will not be rendered
+    fn required_mesh_attributes() -> EnabledMeshAttributes;
 
     // Get the depth config for this material
     fn depth_config() -> DepthConfig {
@@ -44,7 +47,7 @@ pub trait Material: 'static + Sized {
     }
 
     // Get the rasterizer config for this materil
-    fn primitive_mode() -> Primitive {
+    fn primitive() -> Primitive {
         Primitive::Triangles {
             cull: None,
             wireframe: false,

@@ -1,11 +1,12 @@
 use crate::{
     AnyElement, ElementType, VectorChannels, X, XY, XYZ, XYZW, GpuPodRelaxed,
 };
-use std::mem::size_of;
+use std::{mem::size_of};
 use vek::{Vec2, Vec3, Vec4};
 use vulkan::vk;
 
 // An untyped wrapper around vertex types
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct UntypedVertex {
     // Format related
     pub format: vk::Format,
@@ -42,6 +43,28 @@ pub trait Vertex {
             bits_per_axii: Self::BITS_PER_AXII,
         }
     }
+}
+
+// Equivalent to vk::VertexInputAttributeDescription
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct VertexAttribute {
+    pub format: UntypedVertex,
+    pub binding: u32,
+    pub location: u32,
+    pub offset: u32,
+}
+
+// Equivalent to vk::VertexInputBindingDescription
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct VertexBinding {
+    pub format: UntypedVertex,
+    pub binding: u32,
+}
+
+// Grapics pipeline vertex configuration
+pub struct VertexConfig {
+    pub attributes: Vec<VertexAttribute>,
+    pub bindings: Vec<VertexBinding>,
 }
 
 // Implement the vertex texel layout

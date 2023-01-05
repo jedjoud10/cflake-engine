@@ -1,4 +1,4 @@
-use crate::Material;
+use crate::{Material, EnabledMeshAttributes};
 use assets::Assets;
 use graphics::{
     Compiled, FragmentModule, Graphics, Normalized,
@@ -47,8 +47,9 @@ impl Material for Basic {
         Compiler::new(frag).compile(assets, graphics).unwrap()
     }
 
-    fn required_mesh_attributes() -> () {
-        todo!()
+    fn required_mesh_attributes() -> EnabledMeshAttributes {
+        //EnabledMeshAttributes::POSITIONS | EnabledMeshAttributes::NORMALS | EnabledMeshAttributes::TEX_COORDS
+        EnabledMeshAttributes::empty()
     }
 
     fn fetch<'w>(world: &'w world::World) -> Self::Resources<'w> {
