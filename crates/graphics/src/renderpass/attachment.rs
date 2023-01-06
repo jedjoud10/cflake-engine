@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use vulkan::vk;
 use crate::{LoadOp, Stencil, StoreOp, Texel, UntypedTexel, Texture2D, ColorTexel, Texture, UntypedLoadOp, ColorLayout, DepthStencilLayout, DepthElement};
 
@@ -7,34 +9,42 @@ pub trait ColorAttachments<'a, C: ColorLayout> {
 }
 
 // A depth stencil attachment that is passed to the render pass when starting it
-pub trait DepthStencilAttachment<'a, DS: DepthStencilLayout> {
-}
-
+pub trait DepthStencilAttachment<'a, DS: DepthStencilLayout> {}
 impl<'a> DepthStencilAttachment<'a, ()> for () {}
 
 // A render target that can be used inside a renderpass (attachment)
-// TODO: Handle MSAA maybe?
-pub trait RenderTarget<'a, T: Texel> {
-    // Get the untyped texel format
-    fn untyped_texel() -> UntypedTexel;
-
-    // Get the underlying image view that must be used for rendering
-    fn image_view(&self) -> vk::ImageView;
+pub struct RenderTarget<'a, T: Texel> {
+    image: vk::Image,
+    view: vk::ImageView,
+    _phantom: PhantomData<T>,
+    _phantom2: PhantomData<&'a ()>,
 }
 
-// TODO: This should be implemented on the MipLevels instead of the texture  
-impl<'a, T: Texel> RenderTarget<'a, T> for &'a mut Texture2D<T> {
-    fn untyped_texel() -> UntypedTexel {
-        T::untyped()
+impl<'a, T: Texel> RenderTarget<'a, T> {
+    // Create a render target from the raw Vulkan parts
+    // This assumes that the image is valid to be used as a render target
+    pub unsafe fn from_raw_parts(image: vk::Image, view: vk::ImageView) -> Self {
+        Self {
+            image,
+            view,
+            _phantom: PhantomData,
+            _phantom2: PhantomData,
+        }
     }
 
-    fn image_view(&self) -> vk::ImageView {
-        self.view()
+    // Get the internally used backing image
+    pub fn image(&self) -> vk::Image {
+        self.image
+    }
+    
+    // Get the internally used image view
+    pub fn image_view(&self) -> vk::ImageView {
+        self.view
     }
 }
 
-impl<'a, T: ColorTexel, R: RenderTarget<'a, T>> ColorAttachments<'a, T> for R {
+impl<'a, T: ColorTexel> ColorAttachments<'a, T> for RenderTarget<'a, T> {
     fn image_views(&self) -> Vec<vk::ImageView> {
-        vec![R::image_view(self)]
+        vec![self.image_view()]
     }
 } 

@@ -3,20 +3,16 @@ use ahash::AHashMap;
 use assets::Assets;
 use graphics::{Graphics, Normalized, RenderPass, Texture2D, BGRA};
 use std::{
-    any::TypeId, marker::PhantomData, mem::ManuallyDrop, rc::Rc,
+    any::TypeId, marker::PhantomData, mem::ManuallyDrop, rc::Rc, cell::RefCell,
 };
 
 // Texel that stores the SwapChain image format
 pub type SwapchainFormat = BGRA<Normalized<u8>>;
-pub type SwapchainTexture = Texture2D<SwapchainFormat>;
 pub type ForwardRendererRenderPass = RenderPass<SwapchainFormat, ()>;
 
 // Main resource that will contain data to render objects on the screen
 // This will contain the current swapchain texture that we must render to
 pub struct ForwardRenderer {
-    // Current render texture from the swapchain
-    pub(crate) render_targets: Vec<SwapchainTexture>,
-
     // Main render pass that we will use to render to the swapchain
     pub(crate) render_pass: ForwardRendererRenderPass,
 
@@ -27,12 +23,10 @@ pub struct ForwardRenderer {
 impl ForwardRenderer {
     // Create a new scene renderer
     pub fn new(
-        render_targets: Vec<SwapchainTexture>,
         render_pass: ForwardRendererRenderPass,
     ) -> Self {
         Self {
             render_pass,
-            render_targets,
             pipelines: Default::default(),
         }
     }

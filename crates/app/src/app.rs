@@ -198,7 +198,7 @@ impl App {
                 systems.update.execute(&mut world);
 
                 // Handle app shutdown
-                if let Some(State::Stopped) =
+                if let Ok(State::Stopped) =
                     world.get::<State>().map(|x| *x)
                 {
                     *cf = ControlFlow::Exit;

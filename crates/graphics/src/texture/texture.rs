@@ -1,3 +1,5 @@
+use std::mem::transmute;
+
 use vulkan::{vk, gpu_allocator::{vulkan::Allocation, MemoryLocation}};
 
 use crate::{
@@ -98,6 +100,30 @@ pub trait Texture: Sized {
             )
         };
 
+        // Create the raw Vulkan image's view for the whole image
+        // TODO: Fixme
+        let image_view = unsafe {
+            graphics.device().create_image_view(
+                vk::ImageViewCreateFlags::empty(),
+                image,
+                transmute(image_type),
+                format,
+                vk::ComponentMapping {
+                    r: vk::ComponentSwizzle::IDENTITY,
+                    g: vk::ComponentSwizzle::IDENTITY,
+                    b: vk::ComponentSwizzle::IDENTITY,
+                    a: vk::ComponentSwizzle::IDENTITY,
+                },
+                vk::ImageSubresourceRange {
+                    aspect_mask: vk::ImageAspectFlags::COLOR,
+                    base_mip_level: 0,
+                    level_count: 1,
+                    base_array_layer: 0,
+                    layer_count: 1,
+                }
+            )
+        };
+
         // TODO: Select ptimal image layout for our specific use
         let dst_image_layout =
             vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL;
@@ -174,7 +200,7 @@ pub trait Texture: Sized {
             Self::from_raw_parts(
                 graphics,
                 image,
-                vk::ImageView::null(),
+                image_view,
                 allocation,
                 dimensions,
                 usage,
@@ -206,10 +232,10 @@ pub trait Texture: Sized {
     fn usage(&self) -> TextureUsage;
 
     // Get the underlying Vulkan image
-    fn raw(&self) -> vk::Image;
+    fn image(&self) -> vk::Image;
 
     // Get the underlying Vulkan image view
-    fn view(&self) -> vk::ImageView;
+    fn image_view(&self) -> vk::ImageView;
 
     // Get immutable access to the internal allocation
     fn allocation(&self) -> &Allocation;
@@ -234,7 +260,7 @@ pub trait Texture: Sized {
     }
 
     // Try to get a sampler for this whole texture so we can read from it within shaders
-    fn sampler(&self) -> Result<Sampler<Self>, TextureSamplerError> {
+    fn as_sampler(&self) -> Result<Sampler<Self>, TextureSamplerError> {
         todo!()
     }
 
@@ -244,7 +270,7 @@ pub trait Texture: Sized {
     unsafe fn from_raw_parts(
         graphics: &Graphics,
         image: vk::Image,
-        whole_view: vk::ImageView,
+        image_view: vk::ImageView,
         allocation: Allocation,
         dimensions: <Self::Region as Region>::E,
         usage: TextureUsage,

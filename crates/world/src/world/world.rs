@@ -1,4 +1,4 @@
-use crate::{user, Entry, Read, Resource, System, Write};
+use crate::{user, Entry, Read, Resource, System, Write, WorldBorrowError, WorldBorrowMutError};
 use ahash::AHashMap;
 use std::{
     any::TypeId,
@@ -35,29 +35,35 @@ impl World {
     }
 
     // Get an immutable reference (read guard) to a resource
-    pub fn get<R: Resource>(&self) -> Option<Read<R>> {
-        self.0.get(&TypeId::of::<R>()).map(|cell| {
-            let borrowed = cell.borrow();
-            let borrowed = Ref::map(borrowed, |boxed| {
-                boxed.as_ref().as_any().downcast_ref::<R>().unwrap()
-            });
-            Read(borrowed)
-        })
+    pub fn get<R: Resource>(&self) -> Result<Read<R>, WorldBorrowError> {
+        let cell = self
+            .0
+            .get(&TypeId::of::<R>())
+            .ok_or(WorldBorrowError::NotPresent)?;
+        let borrowed = cell.try_borrow()
+            .map_err(WorldBorrowError::BorrowError)?;
+        let borrowed = Ref::map(borrowed, |boxed| {
+            boxed.as_ref().as_any().downcast_ref::<R>().unwrap()
+        });
+        Ok(Read(borrowed))
     }
 
     // Get a mutable reference (write guard) to a resource
-    pub fn get_mut<R: Resource>(&self) -> Option<Write<R>> {
-        self.0.get(&TypeId::of::<R>()).map(|cell| {
-            let borrowed = cell.borrow_mut();
-            let borrowed = RefMut::map(borrowed, |boxed| {
-                boxed
-                    .as_mut()
-                    .as_any_mut()
-                    .downcast_mut::<R>()
-                    .unwrap()
-            });
-            Write(borrowed)
-        })
+    pub fn get_mut<R: Resource>(&self) -> Result<Write<R>, WorldBorrowMutError> {
+        let cell = self
+            .0
+            .get(&TypeId::of::<R>())
+            .ok_or(WorldBorrowMutError::NotPresent)?;
+        let borrowed = cell.try_borrow_mut()
+            .map_err(WorldBorrowMutError::BorrowMutError)?;
+        let borrowed = RefMut::map(borrowed, |boxed| {
+            boxed
+                .as_mut()
+                .as_any_mut()
+                .downcast_mut::<R>()
+                .unwrap()
+        });
+        Ok(Write(borrowed))
     }
 
     // Get an entry for a specific resource

@@ -21,7 +21,6 @@ pub struct UntypedAttachmentDescription {
 
 // An attachment layout is a tuple that contains multiple color texels
 pub trait ColorLayout {
-    // Get the underlying untyped color texels
     fn untyped_texels() -> Vec<UntypedTexel>;
 }
 

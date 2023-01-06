@@ -2967,6 +2967,7 @@ dependencies = [
  "paste",
  "seq-macro",
  "slotmap",
+ "thiserror",
  "winit",
 ]
 

@@ -1,5 +1,5 @@
 use vulkan::vk;
-use crate::{TextureSamplerError, Sampler, Extent};
+use crate::{TextureSamplerError, Sampler, Extent, RenderTarget, TextureAsTargetError};
 use super::{Region, Texture};
 
 // TODO: Figure out how to store and create vk::Views for each mipmap
@@ -14,6 +14,19 @@ pub struct MipLevelRef<'a, T: Texture> {
 
 // Helper methods
 impl<'a, T: Texture> MipLevelRef<'a, T> {
+    // Creat a mip level reference from it's raw parts
+    pub unsafe fn from_raw_parts(
+        texture: &'a T,
+        view: vk::ImageView,
+        level: u8
+    ) -> Self {
+        Self {
+            texture,
+            view,
+            level,
+        }
+    }
+
     // Get the underlying texture
     pub fn texture(&self) -> &T {
         self.texture
@@ -35,7 +48,7 @@ impl<'a, T: Texture> MipLevelRef<'a, T> {
     }
 
     // Try to get a sampler for this one mip level
-    fn sampler(&self) -> Result<Sampler<T>, TextureSamplerError> {
+    pub fn as_sampler(&self) -> Result<Sampler<T>, TextureSamplerError> {
         todo!()
     }
 }
@@ -55,6 +68,19 @@ pub struct MipLevelMut<'a, T: Texture> {
 
 // Helper methods
 impl<'a, T: Texture> MipLevelMut<'a, T> {
+    // Creat a mip level mutable reference from it's raw parts
+    pub unsafe fn from_raw_parts(
+        texture: &'a T,
+        view: vk::ImageView,
+        level: u8
+    ) -> Self {
+        Self {
+            texture,
+            view,
+            level,
+        }
+    }
+
     // Get the underlying texture
     pub fn texture(&self) -> &T {
         self.texture
@@ -76,8 +102,13 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
     }
 
     // Try to get a sampler for this one mip level
-    fn sampler(&self) -> Result<Sampler<T>, TextureSamplerError> {
+    pub fn as_sampler(&self) -> Result<Sampler<T>, TextureSamplerError> {
         todo!()
+    }
+
+    // Try to get a render target so we can render to this one mip level
+    pub fn as_target(&mut self) -> Result<RenderTarget<T::T>, TextureAsTargetError> {
+        Ok(unsafe { RenderTarget::from_raw_parts(self.texture.image(), self.view) })
     }
 }
 

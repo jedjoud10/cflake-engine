@@ -20,6 +20,7 @@ math = { path = "../math" }
 ahash = { workspace = true }
 parking_lot = { workspace = true }
 log = { workspace = true }
+thiserror = { workspace = true }
 
 [features]
 debug-names = []

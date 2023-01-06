@@ -128,6 +128,7 @@ mod tests {
                 context: Self::Context<'c>,
                 settings: Self::Settings<'s>,
             ) -> Result<Self, Self::Err> {
+                assert_eq!(*context, 69);
                 String::deserialize(data, (), settings)
                     .map(Contextual)
             }
@@ -135,7 +136,7 @@ mod tests {
 
         let loader = Assets::new(None);
         persistent!(loader, "test/text.txt");
-        let context = 0u32;
+        let context = 69u32;
         let string = loader.load::<Contextual>(("test/text.txt", &context));
         assert_eq!(
             string.unwrap().0,

@@ -31,3 +31,7 @@ pub enum TextureAssetLoadError {
 #[derive(Error, Debug)]
 #[error("Cannot create a sampler for texture since it does not have the approperiate usage flags")]
 pub struct TextureSamplerError;
+
+#[derive(Error, Debug)]
+#[error("Cannot use the texture mip level as a render target since it does not have the appropriate usage flags")]
+pub struct TextureAsTargetError;

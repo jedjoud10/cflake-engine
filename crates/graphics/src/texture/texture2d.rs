@@ -55,11 +55,11 @@ impl<T: Texel> Texture for Texture2D<T> {
         self.usage
     }
 
-    fn raw(&self) -> vk::Image {
+    fn image(&self) -> vk::Image {
         self.image
     }
 
-    fn view(&self) -> vk::ImageView {
+    fn image_view(&self) -> vk::ImageView {
         self.view
     }
 

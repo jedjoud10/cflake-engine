@@ -7,7 +7,7 @@ fn init(_world: &mut World) {}
 
 // Handle sending / receiving packets
 fn update(world: &mut World) {
-    let Some(mut session) = world.get_mut::<NetworkedSession>() else {
+    let Ok(mut session) = world.get_mut::<NetworkedSession>() else {
         return;
     };
 

@@ -77,7 +77,10 @@ pub trait DynamicPipeline {
     fn graphical(&self) -> &GraphicsPipeline;
 
     // Render all surfaces that use the material of this pipeline
-    fn render(&self, rasterizer: &mut Rasterizer<'_, '_, '_, SwapchainFormat, ()>);
+    fn render(&self,
+        world: &World,
+        rasterizer: &mut Rasterizer<'_, '_, '_, SwapchainFormat, ()>
+    );
 }
 
 impl<M: Material> DynamicPipeline for Pipeline<M> {
@@ -85,7 +88,7 @@ impl<M: Material> DynamicPipeline for Pipeline<M> {
         &self.pipeline
     }
 
-    fn render(&self, rasterizer: &mut Rasterizer<'_, '_, '_, SwapchainFormat, ()>) {
-        super::render_surfaces::<M>(&self.pipeline, rasterizer);
+    fn render(&self, world: &World, rasterizer: &mut Rasterizer<'_, '_, '_, SwapchainFormat, ()>) {
+        super::render_surfaces::<M>(world, &self.pipeline, rasterizer);
     }
 }
