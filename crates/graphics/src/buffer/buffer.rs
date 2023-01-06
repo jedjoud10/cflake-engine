@@ -527,10 +527,11 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
 
     // Try to view the buffer immutably (if it's mappable)
     pub fn as_slice(&self) -> Result<&[T], BufferNotMappableError> {
+        let length = self.length * self.stride();
         self.allocation()
             .mapped_slice()
             .map(|bytes| {
-                &bytemuck::cast_slice::<u8, T>(bytes)[..self.length]
+                bytemuck::cast_slice::<u8, T>(&bytes[..self.length])
             })
             .ok_or(BufferNotMappableError)
     }
@@ -539,12 +540,11 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
     pub fn as_slice_mut(
         &mut self,
     ) -> Result<&mut [T], BufferNotMappableError> {
-        let length = self.length;
+        let length = self.length * self.stride();
         self.allocation_mut()
             .mapped_slice_mut()
             .map(|bytes| {
-                &mut bytemuck::cast_slice_mut::<u8, T>(bytes)
-                    [..length]
+                bytemuck::cast_slice_mut::<u8, T>(&mut bytes[..length])
             })
             .ok_or(BufferNotMappableError)
     }

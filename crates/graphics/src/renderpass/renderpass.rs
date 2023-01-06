@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 use vulkan::{vk, Recorder};
-use crate::{Graphics, ColorLayout, DepthStencilLayout, ColorAttachments, DepthStencilAttachment, RenderPassBeginError, RenderPassInitializationError, GraphicsPipeline, Viewport};
+use crate::{Graphics, ColorLayout, DepthStencilLayout, ColorAttachments, DepthStencilAttachment, RenderPassBeginError, RenderPassInitializationError, GraphicsPipeline, Viewport, VertexBuffer, Vertex};
 
 // In vanilla vulkan, render passes and frame buffers are completely separate, but since we will be using
 // This is a wrapper around a Vulkan render pass that will read/write from/to specific attachments
@@ -192,6 +192,15 @@ impl<'r, 'c, 'ds, C: ColorLayout, DS: DepthStencilLayout> Rasterizer<'r, 'c, 'ds
                 self.viewport.extent.h
             );
             
+        }
+    }
+
+    pub fn bind_vertex_buffer<T: Vertex>(
+        &mut self,
+        buffer: &VertexBuffer<T::Storage>,
+    ) {
+        unsafe {
+            self.recorder.cmd_bind_vertex_buffers(0, &[buffer.raw().unwrap()], &[0]);
         }
     }
 

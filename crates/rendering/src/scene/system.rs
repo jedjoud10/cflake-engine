@@ -1,10 +1,10 @@
-use crate::{ForwardRenderer, SwapchainFormat, ForwardRendererRenderPass};
+use crate::{ForwardRenderer, SwapchainFormat, ForwardRendererRenderPass, Mesh, Basic};
 use graphics::{
     vk, Graphics, Normalized, RenderPass, Swapchain,
     Texture, Texture2D, TextureMode, TextureUsage, Window, BGRA, Adapter, Device, gpu_allocator::vulkan::Allocation,
 };
 use std::{mem::ManuallyDrop, sync::Arc};
-use utils::Time;
+use utils::{Time, Storage};
 use world::{post_user, user, System, World};
 
 // Add the compositors and setup the world for rendering
@@ -18,6 +18,8 @@ fn init(world: &mut World) {
     drop(graphics);
 
     world.insert(ForwardRenderer::new(render_pass));
+    world.insert(Storage::<Mesh>::default());
+    world.insert(Storage::<Basic>::default());
 }
 
 // Called at the start of the system to acquire a new image to render to
