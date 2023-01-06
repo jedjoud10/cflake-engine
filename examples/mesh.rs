@@ -78,6 +78,8 @@ fn init(world: &mut World) {
         .unwrap();
     let albedo_map = albedo_maps.insert(albedo_map);
 
+    let albedo_map = assets.load::<AlbedoMap>(("user/ignored/diffuse.png", graphics)).unwrap();
+
     // Load the normal map texture
     let normal_map = assets
         .load::<NormalMap>(

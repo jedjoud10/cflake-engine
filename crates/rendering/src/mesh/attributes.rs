@@ -86,8 +86,8 @@ pub fn untyped_attributes_from_enabled_attributes(attributes: EnabledMeshAttribu
 
     // Add the attribute's untyped representation to the vector if it's enabled
     fn push<A: MeshAttribute>(attributes: EnabledMeshAttributes, vec: &mut ArrayVec<UntypedMeshAttribute, MAX_MESH_VERTEX_ATTRIBUTES>) {
-        if attributes.contains(Position::ATTRIBUTE) {
-            vec.push(Position::untyped())
+        if attributes.contains(A::ATTRIBUTE) {
+            vec.push(A::untyped())
         }
     }
 
@@ -97,6 +97,7 @@ pub fn untyped_attributes_from_enabled_attributes(attributes: EnabledMeshAttribu
     push::<Tangent>(attributes, &mut vec);
     push::<Color>(attributes, &mut vec);
     push::<TexCoord>(attributes, &mut vec);
+    dbg!(vec.len());
     vec
 }
 
@@ -105,7 +106,7 @@ macro_rules! impl_vertex_attribute {
     ($attribute:ident, $name:ident, $vertex:ty, $enabled:ident) => {
         paste! {
             pub struct $attribute(PhantomData<$vertex>);
-            pub type [<Ve $attribute>] = <<$attribute as MeshAttribute>::V as Vertex>::Storage;
+            pub type [<Raw $attribute>] = <<$attribute as MeshAttribute>::V as Vertex>::Storage;
             
             impl MeshAttribute for $attribute {
                 type V = $vertex;

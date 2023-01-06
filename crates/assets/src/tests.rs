@@ -115,8 +115,8 @@ mod tests {
         struct Contextual(String);
 
         impl crate::Asset for Contextual {
-            type Context<'args> = ();
-            type Settings<'args> = ();
+            type Context<'ctx> = &'ctx u32;
+            type Settings<'stg> = ();
             type Err = std::string::FromUtf8Error;
 
             fn extensions() -> &'static [&'static str] {
@@ -128,14 +128,15 @@ mod tests {
                 context: Self::Context<'c>,
                 settings: Self::Settings<'s>,
             ) -> Result<Self, Self::Err> {
-                String::deserialize(data, context, settings)
+                String::deserialize(data, (), settings)
                     .map(Contextual)
             }
         }
 
         let loader = Assets::new(None);
         persistent!(loader, "test/text.txt");
-        let string = loader.load::<Contextual>("test/text.txt");
+        let context = 0u32;
+        let string = loader.load::<Contextual>(("test/text.txt", &context));
         assert_eq!(
             string.unwrap().0,
             "this is a test file\n1234567890"

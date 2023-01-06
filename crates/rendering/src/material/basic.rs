@@ -49,7 +49,8 @@ impl Material for Basic {
 
     fn required_mesh_attributes() -> EnabledMeshAttributes {
         //EnabledMeshAttributes::POSITIONS | EnabledMeshAttributes::NORMALS | EnabledMeshAttributes::TEX_COORDS
-        EnabledMeshAttributes::empty()
+        //EnabledMeshAttributes::empty()
+        EnabledMeshAttributes::POSITIONS 
     }
 
     fn fetch<'w>(world: &'w world::World) -> Self::Resources<'w> {

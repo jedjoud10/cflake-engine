@@ -30,9 +30,9 @@ where
     }
 }
 
-// Contains the settings only, assumes the context is Default-able
+// Contains the context only, assumes the settings is Default-able
 impl<'str, 'ctx, 'stg, A: Asset> AssetInput<'str, 'ctx, 'stg, A>
-    for (&'str str, A::Settings<'stg>)
+    for (&'str str, A::Context<'ctx>)
 where
     <A as Asset>::Settings<'stg>: Default,
 {
@@ -43,7 +43,7 @@ where
         <A as Asset>::Context<'ctx>,
         <A as Asset>::Settings<'stg>,
     ) {
-        todo!()
+        (self.0, self.1, Default::default())
     }
 
     fn path(&self) -> &'str str {
