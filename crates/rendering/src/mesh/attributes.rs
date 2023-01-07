@@ -1,6 +1,6 @@
 use std::mem::MaybeUninit;
 use arrayvec::ArrayVec;
-use graphics::{VertexBuffer, Vertex, VertexBinding, VertexAttribute, UntypedVertex, XYZ, XYZW, XY, Normalized, VertexConfig};
+use graphics::{VertexBuffer, Vertex, VertexBinding, VertexAttribute, UntypedVertex, XYZ, XYZW, XY, Normalized, VertexConfig, GpuPodRelaxed};
 use std::marker::PhantomData;
 use paste::paste;
 
@@ -44,6 +44,7 @@ pub struct UntypedMeshAttribute {
 // A named attribute that has a specific name, like "Position", or "Normal"
 pub trait MeshAttribute {
     type V: Vertex;
+    type Storage: GpuPodRelaxed;
     const ATTRIBUTE: EnabledMeshAttributes;
 
     /*
@@ -110,6 +111,7 @@ macro_rules! impl_vertex_attribute {
             
             impl MeshAttribute for $attribute {
                 type V = $vertex;
+                type Storage = <$vertex as Vertex>::Storage;
                 const ATTRIBUTE: EnabledMeshAttributes = EnabledMeshAttributes::[<$enabled>];
 
                 fn binding() -> VertexBinding {

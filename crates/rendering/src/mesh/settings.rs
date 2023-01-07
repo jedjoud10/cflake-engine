@@ -8,6 +8,16 @@ pub struct MeshImportSettings {
     pub buffer_mode: BufferMode,
     pub buffer_usage: BufferUsage,
 
+    // Optional attributes we can discard when loading
+    pub use_normals: bool,
+    pub use_tangents: bool,
+    pub use_tex_coords: bool,
+
+    // We can invert all of the attributes if we want to
+    pub invert_normals: bool,
+    pub invert_tangents: bool,
+    pub invert_tex_coords: vek::Vec2<bool>,
+
     // Invert the triangle ordering to make the mesh inside out
     pub invert_triangle_ordering: bool,
 
@@ -22,6 +32,12 @@ impl Default for MeshImportSettings {
         Self {
             buffer_mode: BufferMode::Resizable,
             buffer_usage: BufferUsage::CpuToGpu,
+            use_normals: true,
+            use_tangents: true,
+            use_tex_coords: true,
+            invert_normals: false,
+            invert_tangents: false,
+            invert_tex_coords: vek::Vec2::broadcast(false),
             invert_triangle_ordering: false,
             translation: vek::Vec3::zero(),
             rotation: vek::Quaternion::identity(),

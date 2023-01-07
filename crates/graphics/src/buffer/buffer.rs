@@ -20,7 +20,8 @@ const INDIRECT: u32 = vk::BufferUsageFlags::INDIRECT_BUFFER.as_raw();
 
 // Common buffer types
 pub type VertexBuffer<T> = Buffer<T, VERTEX>;
-pub type IndexBuffer<T> = Buffer<T, INDEX>;
+pub type Triangle<T> = [T; 3];
+pub type TriangleBuffer<T> = Buffer<Triangle<T>, INDEX>;
 pub type StorageBuffer<T> = Buffer<T, STORAGE>;
 pub type UniformBuffer<T> = Buffer<T, UNIFORM>;
 pub type IndirectBuffer<T> = Buffer<T, INDIRECT>;
