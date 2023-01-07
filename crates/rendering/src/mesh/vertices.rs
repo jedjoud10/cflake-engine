@@ -1,16 +1,16 @@
 use graphics::VertexBuffer;
 use math::AABB;
 use crate::MeshAabbComputeError;
-
-use super::{attributes::*, MeshUtils};
+use super::attributes::*;
 
 // Immutable access to the mesh vertices
+#[cfg(not(feature = "two-dim"))]
 pub struct VerticesRef<'a> {
     pub(super) enabled: EnabledMeshAttributes,
     pub(super) positions: &'a AttributeBuffer<Position>,
     pub(super) normals: &'a AttributeBuffer<Normal>,
     pub(super) tangents: &'a AttributeBuffer<Tangent>,
-    pub(super) uvs: &'a AttributeBuffer<TexCoord>,
+    pub(super) tex_coords: &'a AttributeBuffer<TexCoord>,
     pub(super) len: Option<usize>,
 }
 
@@ -42,7 +42,7 @@ pub struct VerticesMut<'a> {
     pub(super) positions: &'a mut AttributeBuffer<Position>,
     pub(super) normals: &'a mut AttributeBuffer<Normal>,
     pub(super) tangents: &'a mut AttributeBuffer<Tangent>,
-    pub(super) uvs: &'a mut AttributeBuffer<TexCoord>,
+    pub(super) tex_coords: &'a mut AttributeBuffer<TexCoord>,
     pub(super) len: &'a mut Option<usize>,
 }
 
@@ -67,13 +67,13 @@ impl VerticesMut<'_> {
         todo!()
     }
 
-    // Get the number of vertices that we have (will return None if we have buffers of mismatching lengths)
-    pub fn len(&self) -> Option<usize> {
+    // Set a new attribute buffer (this ignores that the buffer is a different length)
+    pub fn set_attribute<T: MeshAttribute>(&mut self, buffer: Option<VertexBuffer<T::Storage>>) {
         todo!()
     }
 
-    // Set a new attribute buffer (this ignores that the buffer is a different length)
-    pub fn set_attribute<T: MeshAttribute>(&mut self, buffer: Option<VertexBuffer<T::Storage>>) {
+    // Get the number of vertices that we have (will return None if we have buffers of mismatching lengths)
+    pub fn len(&self) -> Option<usize> {
         todo!()
     }
 

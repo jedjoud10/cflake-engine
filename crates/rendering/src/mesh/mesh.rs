@@ -1,8 +1,8 @@
 use assets::Asset;
 use graphics::{TriangleBuffer, Graphics, BufferMode, BufferUsage, Triangle, VertexBuffer, Vertex};
 use obj::TexturedVertex;
-use crate::attributes::{RawPosition, RawNormal, RawTexCoord, RawTangent};
-use crate::{AttributeBuffer, EnabledMeshAttributes, MeshImportSettings, MeshImportError, MeshUtils, MeshInitializationError, MeshAttribute};
+use super::attributes::*;
+use crate::{AttributeBuffer, EnabledMeshAttributes, MeshImportSettings, MeshImportError, MeshInitializationError, MeshAttribute, VerticesRef, VerticesMut, TrianglesRef, TrianglesMut};
 use crate::mesh::attributes::{TexCoord, Color, Tangent, Normal, Position};
 use std::mem::MaybeUninit;
 
@@ -82,6 +82,74 @@ impl Mesh {
         valid.then_some(mesh)
         */
         Ok(mesh)
+    }
+}
+
+// Helper functions
+#[cfg(not(feature = "two-dim"))]
+impl Mesh {
+    // Get a reference to the vertices immutably
+    pub fn vertices(&self) -> VerticesRef {
+        VerticesRef {
+            enabled: self.enabled,
+            positions: &self.positions,
+            normals: &self.normals,
+            tangents: &self.tangents,
+            tex_coords: &self.tex_coords,
+            len: self.len,
+        }
+    }
+
+    // Get a reference to the vertices mutably
+    pub fn vertices_mut(&mut self) -> VerticesMut {
+        VerticesMut {
+            enabled: &mut self.enabled,
+            positions: &mut self.positions,
+            normals: &mut self.normals,
+            tangents: &mut self.tangents,
+            tex_coords: &mut self.tex_coords,
+            len: &mut self.len,
+        }
+    }
+
+    // Get a reference to the triangles immutably
+    pub fn triangles(&self) -> TrianglesRef {
+        TrianglesRef(&self.triangles)
+    }
+
+    // Get a reference to the triangles mutably
+    pub fn triangles_mut(&mut self) -> TrianglesMut {
+        TrianglesMut(&mut self.triangles)
+    }
+
+    // Get the triangles and vertices both at the same time, immutably
+    pub fn both(&self) -> (TrianglesRef, VerticesRef) {
+        (
+            TrianglesRef(&self.triangles),
+            VerticesRef {
+                enabled: self.enabled,
+                positions: &self.positions,
+                normals: &self.normals,
+                tangents: &self.tangents,
+                tex_coords: &self.tex_coords,
+                len: self.len,
+            },
+        )
+    }
+
+    // Get thr triangles and vertices both at the same time, mutably
+    pub fn both_mut(&mut self) -> (TrianglesMut, VerticesMut) {
+        (
+            TrianglesMut(&mut self.triangles),
+            VerticesMut {
+                enabled: &mut self.enabled,
+                positions: &mut self.positions,
+                normals: &mut self.normals,
+                tangents: &mut self.tangents,
+                tex_coords: &mut self.tex_coords,
+                len: &mut self.len,
+            },
+        )
     }
 }
 
@@ -180,12 +248,6 @@ impl Asset for Mesh {
         let indices = parsed.indices;
         use vek::{Vec2, Vec3};
 
-        // Convert the translation/rotation/scale settings to a unified matrix
-        let translation: vek::Mat4<f32> = vek::Mat4::translation_3d(settings.translation);
-        let rotation: vek::Mat4<f32> = vek::Mat4::from(settings.rotation);
-        let scale: vek::Mat4<f32> = vek::Mat4::scaling_3d(settings.scale);
-        let matrix = translation * rotation * scale;
-
         // Convert the vertices into the separate buffer
         for vertex in parsed.vertices {
             // Read and add the position
@@ -213,7 +275,7 @@ impl Asset for Mesh {
 
         // Optionally generate the tangents
         let mut tangents = settings.use_tangents.then(|| {
-            MeshUtils::compute_tangents(
+            super::compute_tangents(
                 &positions,
                 normals.as_ref().unwrap(),
                 tex_coords.as_ref().unwrap(),
@@ -222,10 +284,15 @@ impl Asset for Mesh {
             .unwrap()
         });
 
+        // Remap the attributes into a slices and options
+        let mut normals = normals.as_mut().map(|vec| vec.as_mut_slice());
+        let mut tangents = tangents.as_mut().map(|vec| vec.as_mut_slice());
+        let mut tex_coords = tex_coords.as_mut().map(|vec| vec.as_mut_slice());
+
         // Apply the mesh settings to the attributes
-        MeshUtils::apply_vec_settings(
+        let mut positions = Some(positions.as_mut_slice());
+        super::apply_vec_settings(
             settings,
-            matrix,
             &mut positions,
             &mut normals,
             &mut tangents,
@@ -238,10 +305,10 @@ impl Asset for Mesh {
             graphics,
             settings.buffer_mode,
             settings.buffer_usage,
-            positions,
-            normals,
-            tangents,
-            tex_coords,
+            positions.as_deref(),
+            normals.as_deref(),
+            tangents.as_deref(),
+            tex_coords.as_deref(),
             &triangles
         ).map_err(MeshImportError::Initialization)
     }
