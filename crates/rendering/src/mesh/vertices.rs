@@ -27,7 +27,7 @@ impl VerticesRef<'_> {
 
     // Get an immutable reference to an attribute buffer
     pub fn attribute<T: MeshAttribute>(&self) -> Option<&VertexBuffer<T::Storage>> {
-        todo!()
+        T::from_ref_as_ref(self)
     }
 
     // Get the number of vertices that we have (will return None if we have buffers of mismatching lengths)
@@ -59,17 +59,22 @@ impl VerticesMut<'_> {
 
     // Get an immutable reference to an attribute buffer
     pub fn attribute<T: MeshAttribute>(&self) -> Option<&VertexBuffer<T::Storage>> {
-        todo!()
+        T::from_mut_as_ref(self)
     }
 
     // Get a mutable reference to an attribute buffer
     pub fn attribute_mut<T: MeshAttribute>(&mut self) -> Option<&mut VertexBuffer<T::Storage>> {
-        todo!()
+        T::from_mut_as_mut(self)
     }
 
-    // Set a new attribute buffer (this ignores that the buffer is a different length)
-    pub fn set_attribute<T: MeshAttribute>(&mut self, buffer: Option<VertexBuffer<T::Storage>>) {
-        todo!()
+    // Insert a new vertex buffer to the vertices
+    pub fn insert<T: MeshAttribute>(&mut self, buffer: VertexBuffer<T::Storage>) {
+        T::insert(self, buffer);
+    }
+
+    // Remove an old vertex buffer from the vertices
+    pub fn remove<T: MeshAttribute>(&mut self) -> Option<VertexBuffer<T::Storage>> {
+        T::remove(self)
     }
 
     // Get the number of vertices that we have (will return None if we have buffers of mismatching lengths)

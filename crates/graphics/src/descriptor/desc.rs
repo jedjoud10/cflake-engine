@@ -1,8 +1,8 @@
 // A single descriptor for a resource
-pub unsafe trait Descriptor<'a> {}
+pub trait Descriptor<'a> {}
 
 // The predefined layout of a descriptor set
-pub unsafe trait DescriptorLayout {}
+pub trait DescriptorLayout {}
 
 // A descriptor set that we can bind to a pipeline
-pub unsafe trait DescriptorSet<'a>: DescriptorLayout {}
+pub trait DescriptorSet<'a> {}

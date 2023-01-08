@@ -3,11 +3,10 @@ use graphics::{TriangleBuffer, Graphics, BufferMode, BufferUsage, Triangle, Vert
 use obj::TexturedVertex;
 use super::attributes::*;
 use crate::{AttributeBuffer, EnabledMeshAttributes, MeshImportSettings, MeshImportError, MeshInitializationError, MeshAttribute, VerticesRef, VerticesMut, TrianglesRef, TrianglesMut};
-use crate::mesh::attributes::{TexCoord, Color, Tangent, Normal, Position};
+use crate::mesh::attributes::{TexCoord, Tangent, Normal, Position};
 use std::mem::MaybeUninit;
 
 // A mesh is a collection of 3D vertices connected by triangles
-#[cfg(not(feature = "two-dim"))]
 pub struct Mesh {
     // Enabled mesh attributes
     enabled: EnabledMeshAttributes,
@@ -27,7 +26,6 @@ pub struct Mesh {
 }
 
 // Mesh initialization for 3D meshes
-#[cfg(not(feature = "two-dim"))]
 impl Mesh {
     // Create a new mesh from the mesh attributes, context, and buffer settings
     // TODO: Support multiple modes and usages PER attribute
@@ -68,25 +66,25 @@ impl Mesh {
             triangles,
         };
 
-        // Set the vertex buffers (including the position buffer)
-        /*
-        let mut vertices = mesh.vertices_mut();
-        vertices.set_attribute::<Position>(positions);
-        vertices.set_attribute::<Normal>(normals);
-        vertices.set_attribute::<Tangent>(tangents);
-        vertices.set_attribute::<Color>(colors);
-        vertices.set_attribute::<TexCoord>(tex_coords);
-        vertices.compute_aabb();
-        vertices.len();
+        // "Set"s a buffer, basically insert it if it's Some and removing it if it's None
+        pub fn set<T: MeshAttribute>(vertices: &mut VerticesMut, buffer: Option<VertexBuffer<T::Storage>>) {
+            match buffer {
+                Some(x) => vertices.insert::<T>(x),
+                None => { vertices.remove::<T>(); },
+            };
+        } 
 
-        valid.then_some(mesh)
-        */
+        // Set the vertex buffers (including the position buffer)
+        let mut vertices = mesh.vertices_mut();
+        set::<Position>(&mut vertices, positions);
+        set::<Normal>(&mut vertices, normals);
+        set::<Tangent>(&mut vertices, tangents);
+        set::<TexCoord>(&mut vertices, tex_coords);
         Ok(mesh)
     }
 }
 
 // Helper functions
-#[cfg(not(feature = "two-dim"))]
 impl Mesh {
     // Get a reference to the vertices immutably
     pub fn vertices(&self) -> VerticesRef {
@@ -153,69 +151,6 @@ impl Mesh {
     }
 }
 
-// A mesh is a collection of 2D vertices connected by triangles
-#[cfg(feature = "two-dim")]
-pub struct Mesh {
-    // Enabled mesh attributes
-    enabled: EnabledMeshAttributes,
-
-    // Vertex attribute buffers
-    positions: AttributeBuffer<Position>,
-
-    // The number of vertices stored in this mesh
-    len: usize,
-
-    // The triangle buffer
-    triangles: TriangleBuffer<u32>,
-}
-
-#[cfg(feature = "two-dim")]
-// Mesh initialization for 2D meshes
-impl Mesh {
-    // Create a new mesh from the mesh attributes, context, and buffer settings
-    // TODO: Support multiple modes and usages PER attribute
-    pub fn from_slices(
-        graphics: &Graphics,
-        mode: BufferMode,
-        usage: BufferUsage,
-        positions: Option<&[RawPosition]>,
-        triangles: &[Triangle<u32>],
-    ) -> Result<Self, MeshInitializationError> {
-        let positions = positions.map(|slice| VertexBuffer::from_slice(graphics, &slice, mode, usage).unwrap());        
-        let triangles = TriangleBuffer::from_slice(graphics, &triangles, mode, usage).unwrap();
-        Self::from_buffers(positions, normals, tangents, tex_coords, triangles)
-    }
-
-    // Create a new mesh from the attribute buffers
-    pub fn from_buffers(
-        positions: Option<VertexBuffer<RawPosition>>,
-        triangles: TriangleBuffer<u32>,
-    ) -> Result<Self, MeshInitializationError> {
-        let mut mesh = Self {
-            enabled: EnabledMeshAttributes::empty(),
-            positions: MaybeUninit::uninit(),
-            len: 0,
-            triangles,
-        };
-
-        // Set the vertex buffers (including the position buffer)
-        /*
-        let mut vertices = mesh.vertices_mut();
-        vertices.set_attribute::<Position>(positions);
-        vertices.set_attribute::<Normal>(normals);
-        vertices.set_attribute::<Tangent>(tangents);
-        vertices.set_attribute::<Color>(colors);
-        vertices.set_attribute::<TexCoord>(tex_coords);
-        vertices.compute_aabb();
-        vertices.len();
-
-        valid.then_some(mesh)
-        */
-        Ok(mesh)
-    }
-}
-
-#[cfg(not(feature = "two-dim"))]
 impl Asset for Mesh {
     type Context<'ctx> = &'ctx Graphics;
     type Settings<'stg> = MeshImportSettings;

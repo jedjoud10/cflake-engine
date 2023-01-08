@@ -8,8 +8,6 @@ fn main() {
         .set_app_name("cflake engine prototype example")
         .insert_init(init)
         .insert_update(update)
-        .set_window_fullscreen(true)
-        .set_frame_rate_limit(FrameRateLimit::VSync)
         .execute();
 }
 

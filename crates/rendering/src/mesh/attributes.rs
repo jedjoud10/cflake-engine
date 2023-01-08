@@ -4,6 +4,8 @@ use graphics::{VertexBuffer, Vertex, VertexBinding, VertexAttribute, UntypedVert
 use std::marker::PhantomData;
 use paste::paste;
 
+use crate::{VerticesMut, VerticesRef};
+
 #[cfg(not(feature = "two-dim"))]
 bitflags::bitflags! {
     // This specifies the buffers that the mesh uses internally
@@ -47,19 +49,19 @@ pub trait MeshAttribute {
     type Storage: GpuPodRelaxed;
     const ATTRIBUTE: EnabledMeshAttributes;
 
-    /*
-    // Get the proper reference from the wrapper vertex types
-    fn from_vertices_ref_as_ref<'a>(vertices: &'a VerticesRef) -> &'a AttributeBuffer<Self>;
-    fn from_vertices_mut_as_ref<'a>(vertices: &'a VerticesMut) -> &'a AttributeBuffer<Self>;
-    fn from_vertices_mut_as_mut<'a>(vertices: &'a mut VerticesMut) -> &'a mut AttributeBuffer<Self>;
+    // Try to get the references to the underlying vertex buffers
+    // Forgive me my children, for I have failed to bring you salvation, from this cold, dark, world...
+    // AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+    fn from_ref_as_ref<'a>(vertices: &'a VerticesRef) -> Option<&'a VertexBuffer<Self::Storage>>;
+    fn from_mut_as_mut<'a>(vertices: &'a mut VerticesMut) -> Option<&'a mut VertexBuffer<Self::Storage>>;
+    fn from_mut_as_ref<'a>(vertices: &'a VerticesMut) -> Option<&'a VertexBuffer<Self::Storage>>;
 
-    // Insert an attribute buffer into the vertices
-    fn insert(vertices: &mut VerticesMut, buffer: ArrayBuffer<Self::Out>);
+    // Insert a mesh attribute vertex buffer into the vertices
+    fn insert(vertices: &mut VerticesMut, buffer: VertexBuffer<Self::Storage>);
 
-    // Remove an attribute from the vertices
-    fn remove(vertices: &mut VerticesMut);
-    */
-
+    // Try to remove the mesh attribute vertex buffer from the vertices
+    fn remove(vertices: &mut VerticesMut) -> Option<VertexBuffer<Self::Storage>>;
+    
     // Get the attribute's index
     fn index() -> u32 {
         debug_assert_eq!(Self::ATTRIBUTE.bits().count_ones(), 1);
@@ -96,7 +98,6 @@ pub fn untyped_attributes_from_enabled_attributes(attributes: EnabledMeshAttribu
     push::<Position>(attributes, &mut vec);
     push::<Normal>(attributes, &mut vec);
     push::<Tangent>(attributes, &mut vec);
-    push::<Color>(attributes, &mut vec);
     push::<TexCoord>(attributes, &mut vec);
     dbg!(vec.len());
     vec
@@ -113,6 +114,39 @@ macro_rules! impl_vertex_attribute {
                 type V = $vertex;
                 type Storage = <$vertex as Vertex>::Storage;
                 const ATTRIBUTE: EnabledMeshAttributes = EnabledMeshAttributes::[<$enabled>];
+
+                fn from_ref_as_ref<'a>(vertices: &'a VerticesRef) -> Option<&'a VertexBuffer<Self::Storage>> {
+                    vertices.is_enabled::<Self>().then(|| {
+                        unsafe { vertices.$name.assume_init_ref() }
+                    })
+                }
+
+                fn from_mut_as_mut<'a>(vertices: &'a mut VerticesMut) -> Option<&'a mut VertexBuffer<Self::Storage>> {
+                    vertices.is_enabled::<Self>().then(|| {
+                        unsafe { vertices.$name.assume_init_mut() }
+                    })
+                }
+
+                fn from_mut_as_ref<'a>(vertices: &'a VerticesMut) -> Option<&'a VertexBuffer<Self::Storage>> {
+                    vertices.is_enabled::<Self>().then(|| {
+                        unsafe { vertices.$name.assume_init_ref() }
+                    })
+                }
+            
+                fn insert(vertices: &mut VerticesMut, buffer: VertexBuffer<Self::Storage>) {
+                    if vertices.is_enabled::<Self>() {
+                        let old = std::mem::replace(vertices.$name, std::mem::MaybeUninit::new(buffer));
+                        drop(old)
+                    } else {
+                        *vertices.$name = std::mem::MaybeUninit::new(buffer);
+                    }
+                }
+            
+                fn remove<'a>(vertices: &mut VerticesMut<'a>) -> Option<VertexBuffer<Self::Storage>> {
+                    vertices.is_enabled::<Self>().then(|| {
+                        std::mem::replace(vertices.$name, std::mem::MaybeUninit::uninit())
+                    }).map(|x| unsafe { x.assume_init() })
+                }
 
                 fn binding() -> VertexBinding {
                     VertexBinding {
@@ -137,5 +171,5 @@ macro_rules! impl_vertex_attribute {
 impl_vertex_attribute!(Position, positions, XYZ<f32>, POSITIONS);
 impl_vertex_attribute!(Normal, normals, XYZ<Normalized<i8>>, NORMALS);
 impl_vertex_attribute!(Tangent, tangents, XYZW<Normalized<i8>>, TANGENTS);
-impl_vertex_attribute!(Color, colors, XYZ<Normalized<u8>>, COLORS);
-impl_vertex_attribute!(TexCoord, uvs, XY<Normalized<u8>>, TEX_COORDS);
+//impl_vertex_attribute!(Color, colors, XYZ<Normalized<u8>>, COLORS);
+impl_vertex_attribute!(TexCoord, tex_coords, XY<Normalized<u8>>, TEX_COORDS);

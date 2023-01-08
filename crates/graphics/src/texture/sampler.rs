@@ -1,3 +1,5 @@
+use vulkan::vk;
+
 use crate::{Texel, Texture};
 
 // Texel filters that are applied to the samplers's mininifcation and magnification parameters
@@ -37,6 +39,7 @@ pub struct Sampler<'a, T: Texture> {
     min_filter: SamplerFilter,
     mag_filter: SamplerFilter,
     mipmapping: SamplerMipMapping,
+    sampler: vk::Sampler,
 }
 
 impl<'a, T: Texture> Sampler<'a, T> {
