@@ -1,4 +1,5 @@
 pub use vulkan::*;
+pub use graphics_derive::*;
 
 mod buffer;
 mod context;

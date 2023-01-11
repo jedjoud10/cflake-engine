@@ -2,13 +2,26 @@ use crate::{Material, EnabledMeshAttributes};
 use assets::Assets;
 use graphics::{
     Compiled, FragmentModule, Graphics, Normalized,
-    Texture2D, VertexModule, RGB, Compiler,
+    Texture2D, VertexModule, RGB, Compiler, Bindings,
 };
 use utils::Storage;
 
 // Basic type aliases
 type BasicAlbedoMap = Texture2D<RGB<Normalized<u8>>>;
 type BasicNormalMap = Texture2D<RGB<Normalized<i8>>>;
+
+#[derive(Bindings)]
+pub struct Test {
+    // Textures
+    /*
+    pub albedo_map: BasicAlbedoMap,
+    pub normal_map: BasicNormalMap,
+
+    // Parameters
+    pub bumpiness: f32,
+    pub tint: vek::Rgb<f32>,
+    */
+}
 
 // A basic forward rendering material that will read from a diffuse map and normal map
 // This does not implement the PBR workflow, and it's only used for simplicity at first

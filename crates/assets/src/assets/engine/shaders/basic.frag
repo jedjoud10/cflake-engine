@@ -5,5 +5,6 @@ layout(location = 0) out vec4 outColor;
 void main() {
 	vec4 pos = gl_FragCoord;
 	vec2 coords = pos.xy / vec2(1920, 1080);
+	vec4 rgba = texture(tex, coords);
 	outColor = vec4(coords, 0, 0);
 }

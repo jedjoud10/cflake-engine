@@ -8,6 +8,7 @@ edition = "2021"
 syn = "1.0.88"
 quote = "1.0.15"
 proc-macro2 = "1.0.49"
+proc-macro-crate = "1.2.1"
 
 [lib]
 proc-macro = true

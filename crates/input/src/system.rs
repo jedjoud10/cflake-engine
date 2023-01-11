@@ -1,6 +1,7 @@
 use std::collections::hash_map::Entry;
 
 use crate::{Axis, ButtonState, Input};
+use gilrs::PowerInfo;
 use winit::event::{DeviceEvent, ElementState};
 use world::{post_user, user, System, World};
 
@@ -87,6 +88,25 @@ fn update(world: &mut World) {
             crate::ButtonState::Held => ButtonState::Held,
             crate::ButtonState::None => ButtonState::None,
         };
+    }
+
+    // Try to get the currently used gamepad
+    let gamepad = input
+        .gamepad
+        .map(|main| input.gilrs.connected_gamepad(main))
+        .flatten();
+
+    // Report battery level if critical
+    if let Some(gamepad) = gamepad {
+        let name = gamepad.name();
+        let info = gamepad.power_info();
+
+        match info {
+            PowerInfo::Discharging(val) if val < 10 => {
+                log::warn!("Gamepad {name} is reaching critical battery levels.")
+            },
+            _ => {}
+        }
     }
 
     // Update the gamepad axii and buttson

@@ -6,7 +6,7 @@ use graphics::{
 };
 use world::World;
 
-use crate::EnabledMeshAttributes;
+use crate::{EnabledMeshAttributes, Mesh, Renderer};
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
 // Materials correspond to a specific Vulkan pipeline based on it's config parameters
@@ -65,17 +65,17 @@ pub trait Material: 'static + Sized {
     // Fetch the property block resources
     fn fetch<'w>(world: &'w World) -> Self::Resources<'w>;
 
-    // Set the global and static instance descriptor sets
+    // Get the global / static descriptor
     fn get_static_descriptor_set<'w: 'ds, 'ds>(
         resources: &mut Self::Resources<'w>,
     ) {}
 
-    // Set the uniforms for this property block right before we render our surface
+    // Get the descriptor for per-mesh rendering
     fn get_surface_descriptor_set<'w: 'ds, 'ds>(
+        renderer: Renderer,
         resources: &mut Self::Resources<'w>,
     ) {}
 
-    // With the help of the fetched resources, set the uniform properties for a unique material instance
     // This will only be called whenever we switch instances
     fn get_instance_descriptor_set<'w: 'ds, 'ds>(
         resources: &mut Self::Resources<'w>,

@@ -1006,6 +1006,7 @@ dependencies = [
 name = "graphics-derive"
 version = "0.1.0"
 dependencies = [
+ "proc-macro-crate",
  "proc-macro2",
  "quote",
  "syn",
@@ -1088,6 +1089,7 @@ version = "0.1.0"
 dependencies = [
  "ahash",
  "gilrs",
+ "log",
  "multimap",
  "serde",
  "serde_json",
