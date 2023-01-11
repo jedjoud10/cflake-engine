@@ -6,11 +6,13 @@ use proc_macro_crate::{crate_name, FoundCrate};
 
 #[proc_macro_derive(Bindings, attributes(sampler, frequency, view, ubo, push_constants))]
 pub fn derive_descriptor_set(input: TokenStream) -> TokenStream {
-    proc_macro::
     let found_crate = crate_name("graphics").expect("my-crate is present in `Cargo.toml`");
 
     let cratename = match found_crate {
-        FoundCrate::Itself => quote!( crate ),
+        FoundCrate::Itself => {
+            let ident = Ident::new("crate", Span::call_site());
+            quote!( #ident )
+        },
         FoundCrate::Name(name) => {
             let ident = Ident::new(&name, Span::call_site());
             quote!( #ident )
@@ -36,9 +38,6 @@ pub fn derive_descriptor_set(input: TokenStream) -> TokenStream {
         }
         impl<'a> DescriptorSet<'a> for #ident<'a> {}
         */
-        fn testa() -> #cratename::BindingFrequency {
-            BindingFrequency::Global
-        }
     };
 
     output.into()
