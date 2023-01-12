@@ -1986,21 +1986,10 @@ dependencies = [
  "obj-rs",
  "parking_lot",
  "paste",
- "rendering-derive",
  "thiserror",
  "utils",
  "vek",
  "world",
-]
-
-[[package]]
-name = "rendering-derive"
-version = "0.1.0"
-dependencies = [
- "proc-macro-crate",
- "proc-macro2",
- "quote",
- "syn",
 ]
 
 [[package]]

@@ -11,8 +11,7 @@ utils = { path = "../utils" }
 math = { path = "../math" }
 ecs = { path = "../ecs" }
 graphics = { path = "../graphics" }
-assets = { path = "../assets" }
-rendering-derive = { path = "./rendering-derive"  }
+assets = { path = "../assets" }A
 paste = "1.0.7"
 arrayvec = "0.7.2"
 mikktspace = "0.3.0"
