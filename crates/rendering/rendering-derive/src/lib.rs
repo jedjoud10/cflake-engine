@@ -6,7 +6,7 @@ use proc_macro_crate::{crate_name, FoundCrate};
 
 #[proc_macro_derive(Bindings, attributes(sampler, frequency, view, ubo, push_constants))]
 pub fn derive_descriptor_set(input: TokenStream) -> TokenStream {
-    let found_crate = crate_name("graphics").expect("my-crate is present in `Cargo.toml`");
+    let found_crate = crate_name("graphics").unwrap();
 
     let cratename = match found_crate {
         FoundCrate::Itself => {

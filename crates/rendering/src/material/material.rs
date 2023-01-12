@@ -4,6 +4,7 @@ use graphics::{
     FaceCullMode, FragmentModule, Graphics, Primitive,
     StencilConfig, VertexModule,
 };
+use rendering_derive::Bindings;
 use world::World;
 
 use crate::{EnabledMeshAttributes, Mesh, Renderer};

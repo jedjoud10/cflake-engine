@@ -1,6 +1,6 @@
-mod desc;
+mod binding;
 mod layout;
 mod set;
-pub use desc::*;
+pub use binding::*;
 pub use layout::*;
 pub use set::*;

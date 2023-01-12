@@ -1,5 +1,5 @@
 [package]
-name = "graphics-derive"
+name = "rendering-derive"
 version = "0.1.0"
 edition = "2021"
 

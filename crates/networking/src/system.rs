@@ -5,7 +5,7 @@ use crate::NetworkedSession;
 // Add networking related resources and update settings
 fn init(_world: &mut World) {}
 
-// Handle sending / receiving packets
+// Handle sending / receiving packets and ECS entities
 fn update(world: &mut World) {
     let Ok(mut session) = world.get_mut::<NetworkedSession>() else {
         return;
