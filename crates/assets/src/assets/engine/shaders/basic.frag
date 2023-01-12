@@ -1,5 +1,6 @@
 #version 460 core
-#include <engine/shaders/shared.glsl>
+#include <engine/shaders/bindless.glsl>
+#include <engine/shaders/global.glsl>
 
 layout(location = 0) out vec4 outColor;
 
