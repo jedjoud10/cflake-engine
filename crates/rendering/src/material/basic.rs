@@ -4,8 +4,7 @@ use graphics::{
     Compiled, FragmentModule, Graphics, Normalized,
     Texture2D, VertexModule, RGB, Compiler, Sampler,
 };
-use rendering_derive::Bindings;
-use utils::Storage;
+use utils::{Storage, Handle};
 
 // Basic type aliases
 type AlbedoTexel = RGB<Normalized<u8>>;
@@ -16,7 +15,13 @@ type NormalMap = Texture2D<NormalTexel>;
 // A basic forward rendering material that will read from a diffuse map and normal map
 // This does not implement the PBR workflow, and it's only used for simplicity at first
 pub struct Basic {
-    diffuse_map: Option<Handle<AlbedoMap>>,
+    // Textures used by this basic material
+    pub diffuse_map: Option<Handle<AlbedoMap>>,
+    pub normal_map: Option<Handle<NormalMap>>,
+
+    // Simple Basic Parameters
+    pub roughness: f32,
+    pub tint: vek::Rgb<f32>, 
 }
 
 impl Material for Basic {

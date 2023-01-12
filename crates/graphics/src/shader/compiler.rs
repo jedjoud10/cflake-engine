@@ -86,10 +86,13 @@ impl<M: ShaderModule> Compiler<M> {
         
         // Compile the SPIRV bytecode
         let raw = compile_spirv(
-            artifacts,
+            &artifacts,
             graphics,
             &file_name
         );
+
+        // Reflect the SPIRV bytecode
+        let reflected = reflect_spirv(&artifacts);
 
         Ok(Compiled {
             raw,
@@ -243,7 +246,7 @@ fn translate_glsl_to_spirv(
 
 // Compile SPIRV bytecode to an actual Vulkan module
 fn compile_spirv(
-    artifacts: CompilationArtifact,
+    artifacts: &CompilationArtifact,
     graphics: &Graphics,
     file_name: &str
 ) -> vk::ShaderModule {
@@ -258,6 +261,13 @@ fn compile_spirv(
         &file_name
     );
     raw
+}
+
+// Reflect the given compiled SPIRV data (baka)
+fn reflect_spirv(
+    artifacts: &CompilationArtifact
+) -> spirv_reflect::ShaderModule {
+    spirv_reflect::create_shader_module(artifacts.as_binary_u8()).unwrap()
 }
 
 // This is a compiled shader module that we can use in multiple pipelines

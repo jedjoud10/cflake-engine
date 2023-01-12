@@ -1,4 +1,3 @@
-pub use rendering_derive::Bindings;
 mod material;
 mod mesh;
 mod pipeline;

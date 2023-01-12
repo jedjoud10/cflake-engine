@@ -28,6 +28,8 @@ pub fn required_device_extensions() -> Vec<CString> {
         ash::extensions::khr::Swapchain::name().to_owned(),
         ash::extensions::khr::Synchronization2::name().to_owned(),
         ash::extensions::khr::DynamicRendering::name().to_owned(),
+        ash::extensions::khr::BufferDeviceAddress::name().to_owned(),
+        ash::extensions::khr::PushDescriptor::name().to_owned(),
     ]
 }
 
@@ -40,6 +42,10 @@ pub fn required_features() -> AdapterFeatures {
         .sampler_anisotropy(true)
         .shader_float64(true)
         .robust_buffer_access(true)
+        .shader_sampled_image_array_dynamic_indexing(true)
+        .shader_storage_image_array_dynamic_indexing(true)
+        .shader_storage_buffer_array_dynamic_indexing(true)
+        .shader_uniform_buffer_array_dynamic_indexing(true)
         .shader_int64(true);
 
     let features11 = *vk::PhysicalDeviceVulkan11Features::builder();
@@ -49,7 +55,10 @@ pub fn required_features() -> AdapterFeatures {
         .buffer_device_address(true)
         .draw_indirect_count(true)
         .timeline_semaphore(true)
-        .buffer_device_address_capture_replay(true);
+        .buffer_device_address_capture_replay(true)
+        .descriptor_binding_partially_bound(true)
+        .runtime_descriptor_array(true)
+        .descriptor_indexing(true);
 
     let features13 = *vk::PhysicalDeviceVulkan13Features::builder()
         .dynamic_rendering(true)
