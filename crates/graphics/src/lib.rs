@@ -1,7 +1,6 @@
 pub use vulkan::*;
 mod buffer;
 mod context;
-mod descriptor;
 mod format;
 mod pipeline;
 mod pod;
@@ -12,7 +11,6 @@ mod tests;
 mod texture;
 pub use buffer::*;
 pub use context::*;
-pub use descriptor::*;
 pub use format::*;
 pub use pipeline::*;
 pub use pod::*;

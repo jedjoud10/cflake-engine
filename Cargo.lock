@@ -1978,6 +1978,7 @@ dependencies = [
  "arrayvec 0.7.2",
  "assets",
  "bitflags",
+ "bytemuck",
  "ecs",
  "graphics",
  "log",

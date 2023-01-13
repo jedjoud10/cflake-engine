@@ -1,9 +1,12 @@
 // Camera matrices
 layout(set = 0, binding = 0) uniform CameraUniform {
-    mat4 camera_projection;
-    mat4 camera_inverse_projection;
-    mat4 camera_view;
-    mat4 camera_inverse_view;
+    mat4 projection;
+    mat4 inverse_projection;
+    mat4 view;
+    mat4 inverse_view;
+    vec3 position;
+    vec3 forward;
+    vec3 right;
 } camera;
 
 // Timing data

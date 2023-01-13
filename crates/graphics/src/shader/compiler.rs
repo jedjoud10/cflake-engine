@@ -100,6 +100,7 @@ impl<M: ShaderModule> Compiler<M> {
             file_name,
             _phantom,
             constants,
+            reflected,
             graphics: graphics.clone(),
         })
     }
@@ -276,6 +277,7 @@ pub struct Compiled<M: ShaderModule> {
     raw: vk::ShaderModule,
     kind: ModuleKind,
     constants: Constants,
+    reflected: spirv_reflect::ShaderModule,
 
     // Helpers
     file_name: String,
@@ -307,6 +309,11 @@ impl<M: ShaderModule> Compiled<M> {
     // Get the shader module file name for this module
     pub fn file_name(&self) -> &str {
         &self.file_name
+    }
+
+    // Get out the reflected data from the SPIRV bytecode
+    pub fn reflected_spirv(&self) -> &spirv_reflect::ShaderModule {
+        &self.reflected
     }
 
     // Get the compiled description

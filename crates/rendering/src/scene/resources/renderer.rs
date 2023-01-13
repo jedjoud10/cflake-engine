@@ -9,12 +9,14 @@ use std::{
 // Texel that stores the SwapChain image format
 pub type SwapchainFormat = BGRA<Normalized<u8>>;
 pub type ForwardRendererRenderPass = RenderPass<SwapchainFormat, ()>;
-
 // Main resource that will contain data to render objects on the screen
 // This will contain the current swapchain texture that we must render to
 pub struct ForwardRenderer {
     // Main render pass that we will use to render to the swapchain
     pub(crate) render_pass: ForwardRendererRenderPass,
+
+    // Data that will be sent to the shaders
+    
 
     // Material pipelines that we will use to render the surfaces
     pipelines: AHashMap<TypeId, Rc<dyn DynamicPipeline>>,

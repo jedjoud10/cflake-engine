@@ -79,7 +79,7 @@ impl GraphicsPipeline {
 
             let dynamic = dynamic_states();
             let dynamic_state = dynamic_state_builder(&dynamic);
-            let layout = pipeline_layout(graphics);
+            let layout = pipeline_layout(graphics, shader);
             let multisample_state = multiple_state_builder();
 
             // Pipeline stages create info
@@ -171,7 +171,11 @@ fn vertex_input_state_builder<'a>(
         .vertex_binding_descriptions(&vertex_binding_descriptions)
 }
 
-unsafe fn pipeline_layout(graphics: &Graphics) -> vk::PipelineLayout {
+unsafe fn pipeline_layout(graphics: &Graphics, shader: &Shader) -> vk::PipelineLayout {
+    // Check from shader if bindless is being used
+    // Reserve the required layout for bindless
+    // Reserve the required layout for non bindless (UBO, push constant)
+
     let layout = {
         let create_info = vk::PipelineLayoutCreateInfo::builder()
             .flags(vk::PipelineLayoutCreateFlags::empty());
