@@ -86,7 +86,6 @@ fn update(world: &mut World) {
     let mut rasterizer = render_pass.begin(
         target,
         (),
-        window.viewport()
     ).unwrap();
     
     // Drop everything that is temporarily owned by the world

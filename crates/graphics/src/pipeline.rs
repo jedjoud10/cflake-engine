@@ -6,6 +6,8 @@ mod primitive;
 mod stencil;
 mod vertex;
 mod error;
+mod bindings;
+pub use bindings::*;
 pub use error::*;
 pub use self::graphics::*;
 pub use blend::*;

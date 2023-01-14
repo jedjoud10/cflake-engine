@@ -334,6 +334,23 @@ impl<'a> Recorder<'a> {
             pipeline,
         );
     }
+    
+    // Apply some push constants before rendering
+    pub unsafe fn cmd_push_constants(
+        &mut self,
+        layout: vk::PipelineLayout,
+        stage_flags: vk::ShaderStageFlags,
+        offset: u32,
+        values: &[u8],
+    ) {
+        self.device().raw().cmd_push_constants(
+            self.command_buffer().raw(),
+            layout,
+            stage_flags,
+            offset,
+            values
+        )
+    }
 
     // Draw some vertices to the currently bound render pass
     pub unsafe fn cmd_draw(

@@ -1,6 +1,18 @@
 #version 460 core
-#include <engine/shaders/bindless.glsl>
-#include <engine/shaders/global.glsl>
+/*
+#include <engine/shaders/bindless/samplers.glsl>
+layout(push_constant) uniform MeshConstants {
+	uint albedo_texture;
+	uint normal_texture;
+
+	float roughness;
+	vec4 color;
+} constants;
+
+layout(set = 1, binding = 0) uniform BasicMaterial {
+    
+} material;
+*/
 
 layout(location = 0) out vec4 outColor;
 

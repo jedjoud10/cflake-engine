@@ -17,6 +17,10 @@ pub struct Device {
     allocator: Mutex<Option<Allocator>>,
     glsl_spirv_translator: shaderc::Compiler,
     pipeline_cache: vk::PipelineCache,
+    global_descriptor_pool: vk::DescriptorPool,
+
+    // TODO Handle state tracking here
+
     staging: StagingPool,
 }
 
@@ -113,11 +117,31 @@ impl Device {
             )
             .unwrap();
 
+        // Create a global descriptor pool for bindless
+        let sizes = [
+            vk::DescriptorPoolSize {
+                ty: vk::DescriptorType::COMBINED_IMAGE_SAMPLER,
+                descriptor_count: 1024,
+            },
+
+            vk::DescriptorPoolSize {
+                ty: vk::DescriptorType::UNIFORM_BUFFER,
+                descriptor_count: 1024,
+            },
+        ];
+        let global_desc_pool_create_info = vk::DescriptorPoolCreateInfo::builder()
+            .flags(vk::DescriptorPoolCreateFlags::empty())
+            .max_sets(4)
+            .pool_sizes(&sizes);
+        let global_descriptor_pool = device
+            .create_descriptor_pool(&global_desc_pool_create_info, None)
+            .unwrap();
         Device {
             device,
             allocator: Mutex::new(Some(allocator)),
             glsl_spirv_translator: shaderc::Compiler::new().unwrap(),
             pipeline_cache,
+            global_descriptor_pool,
             staging: StagingPool::new(),
         }
     }
@@ -154,6 +178,8 @@ impl Device {
             .destroy_pipeline_cache(self.pipeline_cache, None);
         self.staging.deallocate(self);
         self.allocator.lock().take().unwrap();
+        self.device
+            .destroy_descriptor_pool(self.global_descriptor_pool, None);
         self.device.destroy_device(None);
     }
 }
@@ -311,7 +337,7 @@ impl Device {
             .create_render_pass(&render_pass_create_info, None)
             .unwrap()
     }
-
+    
     // Destroy a specific render pass
     pub unsafe fn destroy_render_pass(
         &self, render_pass: vk::RenderPass

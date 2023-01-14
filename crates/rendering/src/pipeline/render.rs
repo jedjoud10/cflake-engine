@@ -1,7 +1,7 @@
 use crate::{Material, SwapchainFormat, RenderSurface, Mesh, attributes::RawPosition};
 use ecs::Scene;
 use graphics::{vk, Graphics, GraphicsPipeline, Rasterizer, XYZ};
-use utils::Storage;
+use utils::{Storage, Time};
 use world::World;
 
 // Render all the visible surfaces of a specific material type
@@ -10,7 +10,8 @@ pub(super) fn render_surfaces<M: Material>(
     pipeline: &GraphicsPipeline,
     rasterizer: &mut Rasterizer<'_, '_, '_, SwapchainFormat, ()>
 ) {
-    rasterizer.bind_pipeline(pipeline);
+    let time = world.get::<Time>().unwrap();
+    rasterizer.bind_pipeline(pipeline, time.since_startup().as_secs_f32());
     rasterizer.draw(6, 1, 0, 0);
 
     /*

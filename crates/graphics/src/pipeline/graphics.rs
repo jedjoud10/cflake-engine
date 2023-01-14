@@ -1,6 +1,6 @@
 use crate::{
     BlendConfig, DepthConfig, Graphics, Primitive, RenderPass,
-    Shader, ShaderModule, StencilConfig, ColorLayout, DepthStencilLayout, PipelineInitializationError, AttachmentBlendConfig, VertexConfig, PipelineVertexConfigError,
+    Shader, ShaderModule, StencilConfig, ColorLayout, DepthStencilLayout, PipelineInitializationError, AttachmentBlendConfig, VertexConfig, PipelineVertexConfigError, Compiled,
 };
 
 use vulkan::vk;
@@ -136,6 +136,11 @@ impl GraphicsPipeline {
         self.pipeline
     }
 
+    // Get the pipeline layout that we have specified
+    pub fn layout(&self) -> vk::PipelineLayout {
+        self.layout
+    }
+
     // Get the depth config used when creating this pipeline
     pub fn depth_config(&self) -> &DepthConfig {
         &self.depth_config
@@ -171,14 +176,53 @@ fn vertex_input_state_builder<'a>(
         .vertex_binding_descriptions(&vertex_binding_descriptions)
 }
 
+fn contains_bindings_in_set<M: ShaderModule>(shader: &Compiled<M>, set: u32, bindings: &[u32]) -> bool {
+    let reflected = shader.reflected_spirv();
+    let descriptor_sets = reflected.enumerate_descriptor_sets(None).unwrap();
+    if let Some(set) = descriptor_sets.iter().find(|x| x.set == set) {
+        set.bindings.iter().all(|binding| bindings.contains(&binding.binding))
+    } else {
+        false
+    }
+}
+
+fn push_constant_ranges(shader: &Shader) -> Vec<vk::PushConstantRange> {
+    let vertex_push_constants_blocks = shader
+        .vertex()
+        .reflected_spirv()
+        .enumerate_push_constant_blocks(None).unwrap();
+    let fragment_push_constants_blocks = shader
+        .fragment()
+        .reflected_spirv()
+        .enumerate_push_constant_blocks(None).unwrap();
+
+    let mut push_constant_ranges = Vec::new();
+
+    for block in vertex_push_constants_blocks {
+        let push_constant_range = vk::PushConstantRange {
+            stage_flags: vk::ShaderStageFlags::VERTEX,
+            offset: block.offset,
+            size: block.size,
+        };
+
+        push_constant_ranges.push(push_constant_range);
+    }
+
+    push_constant_ranges
+}
+
 unsafe fn pipeline_layout(graphics: &Graphics, shader: &Shader) -> vk::PipelineLayout {
-    // Check from shader if bindless is being used
+    let fragment_bindless_sampler = contains_bindings_in_set(shader.fragment(), 0, &[0]);
+
     // Reserve the required layout for bindless
     // Reserve the required layout for non bindless (UBO, push constant)
 
+    let push_constant_ranges = push_constant_ranges(shader);
+
     let layout = {
         let create_info = vk::PipelineLayoutCreateInfo::builder()
-            .flags(vk::PipelineLayoutCreateFlags::empty());
+            .flags(vk::PipelineLayoutCreateFlags::empty())
+            .push_constant_ranges(&push_constant_ranges);
         graphics.device().create_pipeline_layout(*create_info)
     };
     layout

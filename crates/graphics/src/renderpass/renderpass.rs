@@ -171,10 +171,12 @@ impl<'r, 'c, 'ds, C: ColorLayout, DS: DepthStencilLayout> Rasterizer<'r, 'c, 'ds
     pub fn bind_pipeline(
         &mut self,
         pipeline: &GraphicsPipeline,
+        test: f32,
     ) {
         unsafe {
             self.recorder.cmd_bind_pipeline(pipeline.raw(), vk::PipelineBindPoint::GRAPHICS);
-        
+            let values = test.to_ne_bytes();
+            self.recorder.cmd_push_constants(pipeline.layout(), vk::ShaderStageFlags::VERTEX, 0, &values);
             
             self.recorder.cmd_set_viewport(
                 self.viewport.origin.x as f32,
@@ -227,17 +229,14 @@ impl<'r, 'c, 'ds, C: ColorLayout, DS: DepthStencilLayout> Rasterizer<'r, 'c, 'ds
 
 impl<C: ColorLayout, DS: DepthStencilLayout> RenderPass<C, DS> {
     // Begin the render pass and return a rasterizer that we can use to draw onto the attachments
-    // This will automatically resize the render pass if the attachments have been resized
     pub fn begin<'r, 'c, 'ds>(
         &'r mut self,
         color_attachments: impl ColorAttachments<'c, C>,
         depth_stencil_attachment: impl DepthStencilAttachment<'ds, DS>,
-        _: Viewport,
     ) -> Result<Rasterizer<'r, 'c, 'ds, C, DS>, RenderPassBeginError> {
         let mut recorder = unsafe {
             self.graphics.queue().acquire(self.graphics.device())
         };
-
 
         let viewport = Viewport {
             origin: vek::Vec2::default(),
