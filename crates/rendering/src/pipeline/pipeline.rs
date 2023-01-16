@@ -1,6 +1,6 @@
 use crate::{Material, SwapchainFormat, ForwardRendererRenderPass};
 use assets::Assets;
-use graphics::{Graphics, GraphicsPipeline, RenderPass, Shader, Rasterizer, VertexConfig};
+use graphics::{Graphics, GraphicsPipeline, RenderPass, Shader, ActiveRenderPass, VertexConfig};
 use std::marker::PhantomData;
 use world::World;
 
@@ -79,7 +79,7 @@ pub trait DynamicPipeline {
     // Render all surfaces that use the material of this pipeline
     fn render(&self,
         world: &World,
-        rasterizer: &mut Rasterizer<'_, '_, '_, SwapchainFormat, ()>
+        rasterizer: &mut ActiveRenderPass<'_, '_, '_, SwapchainFormat, ()>
     );
 }
 
@@ -88,7 +88,7 @@ impl<M: Material> DynamicPipeline for Pipeline<M> {
         &self.pipeline
     }
 
-    fn render(&self, world: &World, rasterizer: &mut Rasterizer<'_, '_, '_, SwapchainFormat, ()>) {
+    fn render(&self, world: &World, rasterizer: &mut ActiveRenderPass<'_, '_, '_, SwapchainFormat, ()>) {
         super::render_surfaces::<M>(world, &self.pipeline, rasterizer);
     }
 }

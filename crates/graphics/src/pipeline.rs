@@ -7,6 +7,8 @@ mod stencil;
 mod vertex;
 mod error;
 mod bindings;
+mod active;
+pub use active::*;
 pub use bindings::*;
 pub use error::*;
 pub use self::graphics::*;

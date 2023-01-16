@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 use vulkan::{vk, Recorder};
-use crate::{Graphics, ColorLayout, DepthStencilLayout, ColorAttachments, DepthStencilAttachment, RenderPassBeginError, RenderPassInitializationError, GraphicsPipeline, Viewport, VertexBuffer, Vertex};
+use crate::{Graphics, ColorLayout, DepthStencilLayout, ColorAttachments, DepthStencilAttachment, RenderPassBeginError, RenderPassInitializationError, GraphicsPipeline, Viewport, VertexBuffer, Vertex, ActiveRenderPass};
 
 // In vanilla vulkan, render passes and frame buffers are completely separate, but since we will be using
 // This is a wrapper around a Vulkan render pass that will read/write from/to specific attachments
@@ -160,80 +160,15 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPass<C, DS> {
     }
 }
 
-pub struct Rasterizer<'r, 'c, 'ds, C: ColorLayout, DS: DepthStencilLayout> {
-    viewport: Viewport,
-    recorder: Recorder<'r>,
-    _phantom_color_layout: PhantomData<&'c C>,
-    _phantom_depth_stencil_layout: PhantomData<&'ds DS>,
-}
-
-impl<'r, 'c, 'ds, C: ColorLayout, DS: DepthStencilLayout> Rasterizer<'r, 'c, 'ds, C, DS> {
-    pub fn bind_pipeline(
-        &mut self,
-        pipeline: &GraphicsPipeline,
-        test: f32,
-    ) {
-        unsafe {
-            self.recorder.cmd_bind_pipeline(pipeline.raw(), vk::PipelineBindPoint::GRAPHICS);
-            let values = test.to_ne_bytes();
-            self.recorder.cmd_push_constants(pipeline.layout(), vk::ShaderStageFlags::VERTEX, 0, &values);
-            
-            self.recorder.cmd_set_viewport(
-                self.viewport.origin.x as f32,
-                self.viewport.origin.y as f32,
-                self.viewport.extent.w as f32,
-                self.viewport.extent.h as f32,
-                0.01,
-                1.0
-            );
-
-            self.recorder.cmd_set_scissor(
-                0,
-                0,
-                self.viewport.extent.w,
-                self.viewport.extent.h
-            );
-            
-        }
-    }
-
-    pub fn bind_vertex_buffer<T: Vertex>(
-        &mut self,
-        buffer: &VertexBuffer<T::Storage>,
-    ) {
-        unsafe {
-            self.recorder.cmd_bind_vertex_buffers(0, &[buffer.raw().unwrap()], &[0]);
-        }
-    }
-
-    pub fn draw(
-        &mut self,
-        vertex_count: u32,
-        instance_count: u32,
-        first_vertex: u32,
-        first_instance: u32
-    ) {
-        unsafe {
-            self.recorder.cmd_draw(vertex_count, instance_count, first_vertex, first_instance);
-        }
-    }
-
-
-    pub fn end(mut self) -> Recorder<'r> {
-        unsafe {
-            self.recorder.cmd_end_render_pass();
-            self.recorder
-        }
-    }
-}
 
 impl<C: ColorLayout, DS: DepthStencilLayout> RenderPass<C, DS> {
-    // Begin the render pass and return a rasterizer that we can use to draw onto the attachments
+    // Begin the render pass and return an active render pass that we can use to bind multiple 
+    // graphical pipelines to so we can render specific types of objects
     pub fn begin<'r, 'c, 'ds>(
         &'r mut self,
         color_attachments: impl ColorAttachments<'c, C>,
         depth_stencil_attachment: impl DepthStencilAttachment<'ds, DS>,
-    ) -> Result<Rasterizer<'r, 'c, 'ds, C, DS>, RenderPassBeginError> {
+    ) -> Result<ActiveRenderPass<'r, 'c, 'ds, C, DS>, RenderPassBeginError> {
         let mut recorder = unsafe {
             self.graphics.queue().acquire(self.graphics.device())
         };
@@ -264,10 +199,6 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPass<C, DS> {
             );
         }
 
-        Ok(Rasterizer {
-            viewport,
-            recorder, _phantom_color_layout: PhantomData,
-            _phantom_depth_stencil_layout: PhantomData
-        })
+        Ok(unsafe { ActiveRenderPass::from_raw_parts(viewport, recorder) })
     }
 }
