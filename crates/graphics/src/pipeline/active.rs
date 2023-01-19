@@ -8,12 +8,12 @@ use crate::{Bindings, ColorLayout, DepthStencilLayout, GraphicsPipeline};
 // This is named a Rasterizer because it's what it was named in my old OpenGL implementation
 pub struct ActiveGraphicsPipeline<'rp, 'r, 'gp> {
     recorder: &'rp mut Recorder<'r>,
-    graphics: &'gp mut GraphicsPipeline,
+    graphics: &'gp GraphicsPipeline,
 }
 
 impl<'rp, 'r, 'gp> ActiveGraphicsPipeline<'rp, 'r, 'gp>  {
     // Create an active graphics pipeline from it's raw components
-    pub(crate) unsafe fn from_raw_parts(recorder: &'rp mut Recorder<'r>, graphics: &'gp mut GraphicsPipeline) -> Self {
+    pub(crate) unsafe fn from_raw_parts(recorder: &'rp mut Recorder<'r>, graphics: &'gp GraphicsPipeline) -> Self {
         Self {
             recorder,
             graphics

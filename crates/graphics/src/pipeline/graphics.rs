@@ -181,33 +181,35 @@ fn vertex_input_state_builder<'a>(
         .vertex_binding_descriptions(&vertex_binding_descriptions)
 }
 
+/*
 fn contains_bindings_in_set<M: ShaderModule>(shader: &Compiled<M>, set: u32, bindings: &[u32]) -> bool {
     let reflected = shader.reflected();
-    let descriptor_sets = reflected.descriptor_set().unwrap();
-    if let Some(set) = descriptor_sets.get(set) {
-        set.bindings().iter().all(|binding| bindings.contains(&binding.binding))
+    let descriptor_sets = reflected.descriptor_sets();
+    if let Some(set) = descriptor_sets.get(&set) {
+        set.bindings().iter().all(|(binding, var)| bindings.contains(&binding))
     } else {
         false
     }
 }
+*/
 
 fn push_constant_ranges(shader: &Shader) -> Vec<vk::PushConstantRange> {
-    let vertex_push_constants_blocks = shader
+    let vertex_push_constants_block = shader
         .vertex()
         .reflected()
-        .push_constants().unwrap();
-    let fragment_push_constants_blocks = shader
+        .push_constant();
+    let fragment_push_constants_block = shader
         .fragment()
         .reflected()
-        .push_constants().unwrap();
+        .push_constant();
 
     let mut push_constant_ranges = Vec::new();
 
-    for block in vertex_push_constants_blocks {
+    if let Some(block) = vertex_push_constants_block {
         let push_constant_range = vk::PushConstantRange {
             stage_flags: vk::ShaderStageFlags::VERTEX,
-            offset: block.offset,
-            size: block.size,
+            offset: block.memory_layout().offset(),
+            size: block.memory_layout().size(),
         };
 
         push_constant_ranges.push(push_constant_range);
@@ -217,7 +219,7 @@ fn push_constant_ranges(shader: &Shader) -> Vec<vk::PushConstantRange> {
 }
 
 unsafe fn pipeline_layout(graphics: &Graphics, shader: &Shader) -> vk::PipelineLayout {
-    let fragment_bindless_sampler = contains_bindings_in_set(shader.fragment(), 0, &[0]);
+    //let fragment_bindless_sampler = contains_bindings_in_set(shader.fragment(), 0, &[0]);
 
     // Reserve the required layout for bindless
     // Reserve the required layout for non bindless (UBO, push constant)

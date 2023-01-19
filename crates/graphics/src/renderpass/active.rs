@@ -26,7 +26,7 @@ impl<'r, 'c, 'ds, C: ColorLayout, DS: DepthStencilLayout> ActiveRenderPass<'r, '
     // I made it return an ActiveGraphicsPipeline so we can bind multiple pipelines in the same render pass
     pub fn bind_pipeline<'gp, 'rp>(
         &'rp mut self,
-        pipeline: &'gp mut GraphicsPipeline,
+        pipeline: &'gp GraphicsPipeline,
     ) -> (ActiveGraphicsPipeline<'rp, 'r, 'gp>, Bindings) {
         // Set dynamic state (viewport and scissor only)
         unsafe fn set_dynamic_state(recorder: &mut Recorder, viewport: &Viewport) {

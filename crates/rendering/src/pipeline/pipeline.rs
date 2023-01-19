@@ -73,8 +73,11 @@ impl<M: Material> Pipeline<M> {
 
 // This trait will be implemented for Pipeline<T> to allow for dynamic dispatch
 pub trait DynamicPipeline {
-    // Get the inner graphics pipeline
+    // Get the inner graphics pipeline immutably
     fn graphical(&self) -> &GraphicsPipeline;
+
+    // Get the inner graphics pipeline mutably
+    fn graphical_mut(&mut self) -> &mut GraphicsPipeline;
 
     // Render all surfaces that use the material of this pipeline
     fn render(&self,
@@ -86,6 +89,10 @@ pub trait DynamicPipeline {
 impl<M: Material> DynamicPipeline for Pipeline<M> {
     fn graphical(&self) -> &GraphicsPipeline {
         &self.pipeline
+    }
+
+    fn graphical_mut(&mut self) -> &mut GraphicsPipeline {
+        &mut self.pipeline
     }
 
     fn render(&self, world: &World, rasterizer: &mut ActiveRenderPass<'_, '_, '_, SwapchainFormat, ()>) {
