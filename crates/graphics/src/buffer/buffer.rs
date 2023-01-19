@@ -48,6 +48,64 @@ pub struct Buffer<T: GpuPodRelaxed, const TYPE: u32> {
     graphics: Graphics,
 }
 
+// Untyped buffer that does not contain a generic type nor type ID
+pub struct UntypedBuffer<'a> {
+    buffer: &'a vk::Buffer,
+    allocation: &'a Allocation,
+    length: usize,
+    stride: usize,
+    capacity: usize,
+    usage: BufferUsage,
+    mode: BufferMode,
+}
+
+impl<'a> UntypedBuffer<'a> {
+    // Get the inner raw Vulkan buffer
+    pub fn raw(&self) -> Option<vk::Buffer> {
+        (*self.buffer != vk::Buffer::null()).then_some(*self.buffer)
+    }
+
+    // Get the inner raw Vulkan Allocation immutably
+    pub fn allocation(&self) -> &Allocation {
+        &self.allocation
+    }
+
+    // Get the current length of the buffer
+    pub fn len(&self) -> usize {
+        self.length.try_into().unwrap()
+    }
+
+    // Check if the buffer is empty
+    pub fn is_empty(&self) -> bool {
+        self.length == 0
+    }
+
+    // Get the current capacity of the buffer
+    pub fn capacity(&self) -> usize {
+        self.capacity.try_into().unwrap()
+    }
+    
+    // Get the buffer usage
+    pub fn usage(&self) -> BufferUsage {
+        self.usage
+    }
+
+    // Get the buffer mode
+    pub fn mode(&self) -> BufferMode {
+        self.mode
+    }
+
+    // Get the buffer's stride (length of each element)
+    pub fn stride(&self) -> usize {
+        self.stride
+    }
+
+    // Check if the buffer is HOST accessible (mappable)
+    pub fn is_host_mapped(&self) -> bool {
+        self.allocation().mapped_ptr().is_some()
+    }
+}
+
 impl<T: GpuPodRelaxed, const TYPE: u32> Drop for Buffer<T, TYPE> {
     fn drop(&mut self) {
         unsafe {
@@ -174,6 +232,11 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
         self.capacity.try_into().unwrap()
     }
 
+    // Get the buffer usage
+    pub fn usage(&self) -> BufferUsage {
+        self.usage
+    }
+    
     // Get the buffer mode
     pub fn mode(&self) -> BufferMode {
         self.mode
@@ -187,6 +250,19 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
     // Check if the buffer is HOST accessible (mappable)
     pub fn is_host_mapped(&self) -> bool {
         self.allocation().mapped_ptr().is_some()
+    }
+
+    // Get the untyped buffer from this typed buffer
+    pub fn untyped(&self) -> UntypedBuffer {
+        UntypedBuffer {
+            buffer: &self.buffer,
+            allocation: &self.allocation,
+            length: self.len(),
+            stride: self.stride(),
+            capacity: self.capacity(),
+            usage: self.usage(),
+            mode: self.mode(),
+        }
     }
 }
 

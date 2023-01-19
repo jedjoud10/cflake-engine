@@ -1,4 +1,4 @@
-use crate::{Graphics, ModuleKind, ShaderModule, ShaderCompilationError, FunctionModule, ShaderIncludeError, GpuPodRelaxed};
+use crate::{Graphics, ModuleKind, ShaderModule, ShaderCompilationError, FunctionModule, ShaderIncludeError, GpuPodRelaxed, Reflected};
 use std::{ffi::CStr, marker::PhantomData, time::Instant, path::PathBuf, any::TypeId};
 use ahash::AHashMap;
 use assets::Assets;
@@ -267,8 +267,8 @@ fn compile_spirv(
 // Reflect the given compiled SPIRV data (baka)
 fn reflect_spirv(
     artifacts: &CompilationArtifact
-) -> spirv_reflect::ShaderModule {
-    spirv_reflect::create_shader_module(artifacts.as_binary_u8()).unwrap()
+) -> Reflected {
+    Reflected::new(spirv_reflect::create_shader_module(artifacts.as_binary_u8()).unwrap())
 }
 
 // This is a compiled shader module that we can use in multiple pipelines
@@ -277,7 +277,7 @@ pub struct Compiled<M: ShaderModule> {
     raw: vk::ShaderModule,
     kind: ModuleKind,
     constants: Constants,
-    reflected: spirv_reflect::ShaderModule,
+    reflected: Reflected,
 
     // Helpers
     file_name: String,
@@ -312,7 +312,7 @@ impl<M: ShaderModule> Compiled<M> {
     }
 
     // Get out the reflected data from the SPIRV bytecode
-    pub fn reflected_spirv(&self) -> &spirv_reflect::ShaderModule {
+    pub fn reflected(&self) -> &Reflected {
         &self.reflected
     }
 

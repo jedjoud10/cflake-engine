@@ -161,6 +161,11 @@ impl GraphicsPipeline {
         &self.vertex_config
     }
 
+    // Get the internally used shader for this graphics pipeline
+    pub fn shader(&self) -> &Shader {
+        &self.shader
+    }
+
     // Get the primitive config used when creating this pipeline
     pub fn primitive(&self) -> &Primitive {
         &self.primitive
@@ -177,10 +182,10 @@ fn vertex_input_state_builder<'a>(
 }
 
 fn contains_bindings_in_set<M: ShaderModule>(shader: &Compiled<M>, set: u32, bindings: &[u32]) -> bool {
-    let reflected = shader.reflected_spirv();
-    let descriptor_sets = reflected.enumerate_descriptor_sets(None).unwrap();
-    if let Some(set) = descriptor_sets.iter().find(|x| x.set == set) {
-        set.bindings.iter().all(|binding| bindings.contains(&binding.binding))
+    let reflected = shader.reflected();
+    let descriptor_sets = reflected.descriptor_set().unwrap();
+    if let Some(set) = descriptor_sets.get(set) {
+        set.bindings().iter().all(|binding| bindings.contains(&binding.binding))
     } else {
         false
     }
@@ -189,12 +194,12 @@ fn contains_bindings_in_set<M: ShaderModule>(shader: &Compiled<M>, set: u32, bin
 fn push_constant_ranges(shader: &Shader) -> Vec<vk::PushConstantRange> {
     let vertex_push_constants_blocks = shader
         .vertex()
-        .reflected_spirv()
-        .enumerate_push_constant_blocks(None).unwrap();
+        .reflected()
+        .push_constants().unwrap();
     let fragment_push_constants_blocks = shader
         .fragment()
-        .reflected_spirv()
-        .enumerate_push_constant_blocks(None).unwrap();
+        .reflected()
+        .push_constants().unwrap();
 
     let mut push_constant_ranges = Vec::new();
 

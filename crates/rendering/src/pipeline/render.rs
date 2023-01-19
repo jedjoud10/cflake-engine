@@ -12,9 +12,11 @@ pub(super) fn render_surfaces<M: Material>(
 ) {
     let time = world.get::<Time>().unwrap();
     
-    let (mut active, mut uniforms ) = rasterizer.bind_pipeline(pipeline);
-    uniforms.set_push_constants::<u32>("mesh_data", &2);
-    active.draw(6, &uniforms);
+    let (mut active, mut bindings) = rasterizer.bind_pipeline(pipeline);
+    
+    bindings.set_push_constant_block::<u32>("mesh_data", &2).unwrap();
+    active.draw(6, &bindings);
+    active.draw(6, &bindings);
     
     /*
     let scene = world.get::<Scene>().unwrap();

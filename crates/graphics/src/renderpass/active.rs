@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 use vulkan::{Recorder, vk};
-use crate::{Viewport, ColorLayout, DepthStencilLayout, GraphicsPipeline, ActiveGraphicsPipeline, Uniforms};
+use crate::{Viewport, ColorLayout, DepthStencilLayout, GraphicsPipeline, ActiveGraphicsPipeline, Bindings};
 
 // An active render pass is basically just a rasterize that is used to bind
 // multiple render graphical pipelines so we can draw objects to the screen
@@ -24,10 +24,10 @@ impl<'r, 'c, 'ds, C: ColorLayout, DS: DepthStencilLayout> ActiveRenderPass<'r, '
     
     // Bind a graphics pipeline, which takes mutable access of the rasterizer temporarily
     // I made it return an ActiveGraphicsPipeline so we can bind multiple pipelines in the same render pass
-    pub fn bind_pipeline<'rp>(
+    pub fn bind_pipeline<'gp, 'rp>(
         &'rp mut self,
-        pipeline: &GraphicsPipeline,
-    ) -> (ActiveGraphicsPipeline<'rp, 'r, 'c, 'ds, C, DS>, Uniforms) {
+        pipeline: &'gp mut GraphicsPipeline,
+    ) -> (ActiveGraphicsPipeline<'rp, 'r, 'gp>, Bindings) {
         // Set dynamic state (viewport and scissor only)
         unsafe fn set_dynamic_state(recorder: &mut Recorder, viewport: &Viewport) {
             recorder.cmd_set_viewport(
@@ -52,7 +52,7 @@ impl<'r, 'c, 'ds, C: ColorLayout, DS: DepthStencilLayout> ActiveRenderPass<'r, '
             set_dynamic_state(&mut self.recorder, &self.viewport);
             
             // Create the actige graphics pipeline struct
-            (ActiveGraphicsPipeline::from_raw_parts(&mut self.recorder), todo!())
+            (ActiveGraphicsPipeline::from_raw_parts(&mut self.recorder, pipeline), todo!())
         }
     }
 
