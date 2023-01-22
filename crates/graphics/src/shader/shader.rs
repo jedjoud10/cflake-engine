@@ -1,4 +1,7 @@
-use crate::{Compiled, ComputeModule, FragmentModule, VertexModule, CompiledDescription};
+use crate::{
+    Compiled, CompiledDescription, ComputeModule, FragmentModule,
+    VertexModule,
+};
 use std::sync::Arc;
 
 // A rendering shader that contains a vertex module and fragment module
@@ -33,10 +36,7 @@ impl Shader {
 
     // Get the untyped module descriptions
     pub fn descriptions(&self) -> [CompiledDescription; 2] {
-        [
-            self.vertex().description(),
-            self.fragment().description()
-        ]
+        [self.vertex().description(), self.fragment().description()]
     }
 }
 

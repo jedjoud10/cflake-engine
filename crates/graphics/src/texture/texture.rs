@@ -1,6 +1,9 @@
 use std::mem::transmute;
 
-use vulkan::{vk, gpu_allocator::{vulkan::Allocation, MemoryLocation}};
+use vulkan::{
+    gpu_allocator::{vulkan::Allocation, MemoryLocation},
+    vk,
+};
 
 use crate::{
     Extent, Graphics, MipLevelMut, MipLevelRef, Region, Sampler,
@@ -120,7 +123,7 @@ pub trait Texture: Sized {
                     level_count: 1,
                     base_array_layer: 0,
                     layer_count: 1,
-                }
+                },
             )
         };
 
@@ -198,13 +201,8 @@ pub trait Texture: Sized {
 
         Ok(unsafe {
             Self::from_raw_parts(
-                graphics,
-                image,
-                image_view,
-                allocation,
-                dimensions,
-                usage,
-                mode,
+                graphics, image, image_view, allocation, dimensions,
+                usage, mode,
             )
         })
     }
@@ -260,7 +258,9 @@ pub trait Texture: Sized {
     }
 
     // Try to get a sampler for this whole texture so we can read from it within shaders
-    fn as_sampler(&self) -> Result<Sampler<Self>, TextureSamplerError> {
+    fn as_sampler(
+        &self,
+    ) -> Result<Sampler<Self>, TextureSamplerError> {
         todo!()
     }
 

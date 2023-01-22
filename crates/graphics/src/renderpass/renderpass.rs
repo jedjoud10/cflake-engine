@@ -1,6 +1,11 @@
+use crate::{
+    ActiveRenderPass, ColorAttachments, ColorLayout,
+    DepthStencilAttachment, DepthStencilLayout, Graphics,
+    GraphicsPipeline, RenderPassBeginError,
+    RenderPassInitializationError, Vertex, VertexBuffer, Viewport,
+};
 use std::marker::PhantomData;
 use vulkan::{vk, Recorder};
-use crate::{Graphics, ColorLayout, DepthStencilLayout, ColorAttachments, DepthStencilAttachment, RenderPassBeginError, RenderPassInitializationError, GraphicsPipeline, Viewport, VertexBuffer, Vertex, ActiveRenderPass};
 
 // In vanilla vulkan, render passes and frame buffers are completely separate, but since we will be using
 // This is a wrapper around a Vulkan render pass that will read/write from/to specific attachments
@@ -23,25 +28,23 @@ pub struct RenderPass<C: ColorLayout, DS: DepthStencilLayout> {
 }
 
 // TODO: Handle safer destruction when this gets dropped
-impl<C: ColorLayout, DS: DepthStencilLayout> Drop for RenderPass<C, DS> {
+impl<C: ColorLayout, DS: DepthStencilLayout> Drop
+    for RenderPass<C, DS>
+{
     fn drop(&mut self) {
         unsafe {
             self.graphics
                 .device()
-                .destroy_framebuffer(
-                    self.framebuffer,
-                );
+                .destroy_framebuffer(self.framebuffer);
             self.graphics
                 .device()
-                .destroy_render_pass(
-                    self.render_pass
-                );
+                .destroy_render_pass(self.render_pass);
         }
     }
 }
 
 impl<C: ColorLayout, DS: DepthStencilLayout> RenderPass<C, DS> {
-    // Create a new render pass with some predefined dimensions 
+    // Create a new render pass with some predefined dimensions
     // TODO: Use multiple attachments and multiple subpasses
     pub fn new(
         graphics: &Graphics,
@@ -58,9 +61,8 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPass<C, DS> {
                 .usage(
                     vk::ImageUsageFlags::COLOR_ATTACHMENT
                         | vk::ImageUsageFlags::TRANSFER_DST,
-            );
+                );
         let attachment_image_infos = [*attachment_image_info];
-        
 
         // FIXME
         let attachment = vk::AttachmentDescription::builder()
@@ -98,12 +100,11 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPass<C, DS> {
                 &attachment_image_infos,
                 extent,
                 1,
-                render_pass
+                render_pass,
             );
 
             (render_pass, framebuffer)
         };
-            
 
         Ok(Self {
             render_pass,
@@ -128,7 +129,7 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPass<C, DS> {
     // Resize the render pass' framebuffer
     pub fn resize(&mut self, extent: vek::Extent2<u32>) {
         log::debug!("Resize render pass' framebuffer");
-        
+
         self.extent = extent;
         let format = C::untyped_texels()[0].format;
         let view_format = [format];
@@ -141,34 +142,38 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPass<C, DS> {
                 .usage(
                     vk::ImageUsageFlags::COLOR_ATTACHMENT
                         | vk::ImageUsageFlags::TRANSFER_DST,
-            );
+                );
         let attachment_image_infos = [*attachment_image_info];
 
         unsafe {
             self.graphics.device().wait();
-            let framebuffer = self.graphics.device().create_framebuffer(
-                &attachment_image_infos,
-                extent,
-                1,
-                self.render_pass
-            );
+            let framebuffer =
+                self.graphics.device().create_framebuffer(
+                    &attachment_image_infos,
+                    extent,
+                    1,
+                    self.render_pass,
+                );
 
-            let old = std::mem::replace(&mut self.framebuffer, framebuffer);
+            let old =
+                std::mem::replace(&mut self.framebuffer, framebuffer);
             self.graphics.device().destroy_framebuffer(old);
             self.graphics.device().wait();
-        } 
+        }
     }
 }
 
-
 impl<C: ColorLayout, DS: DepthStencilLayout> RenderPass<C, DS> {
-    // Begin the render pass and return an active render pass that we can use to bind multiple 
+    // Begin the render pass and return an active render pass that we can use to bind multiple
     // graphical pipelines to so we can render specific types of objects
     pub fn begin<'r, 'c, 'ds>(
         &'r mut self,
         color_attachments: impl ColorAttachments<'c, C>,
         depth_stencil_attachment: impl DepthStencilAttachment<'ds, DS>,
-    ) -> Result<ActiveRenderPass<'r, 'c, 'ds, C, DS>, RenderPassBeginError> {
+    ) -> Result<
+        ActiveRenderPass<'r, 'c, 'ds, C, DS>,
+        RenderPassBeginError,
+    > {
         let mut recorder = unsafe {
             self.graphics.queue().acquire(self.graphics.device())
         };
@@ -189,16 +194,18 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPass<C, DS> {
                 self.render_pass,
                 self.framebuffer,
                 &color_attachments.image_views(),
-                &clear, 
+                &clear,
                 vek::Rect {
                     x: viewport.origin.x,
                     y: viewport.origin.y,
                     w: viewport.extent.w,
                     h: viewport.extent.h,
-                }
+                },
             );
         }
 
-        Ok(unsafe { ActiveRenderPass::from_raw_parts(viewport, recorder) })
+        Ok(unsafe {
+            ActiveRenderPass::from_raw_parts(viewport, recorder)
+        })
     }
 }

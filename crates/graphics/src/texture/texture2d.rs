@@ -1,7 +1,7 @@
 use std::{marker::PhantomData, mem::ManuallyDrop, time::Instant};
 
 use assets::Asset;
-use vulkan::{vk, gpu_allocator::vulkan::Allocation};
+use vulkan::{gpu_allocator::vulkan::Allocation, vk};
 
 use crate::{
     Graphics, ImageTexel, Texel, Texture, TextureAssetLoadError,
@@ -33,7 +33,9 @@ impl<T: Texel> Drop for Texture2D<T> {
         unsafe {
             let alloc = ManuallyDrop::take(&mut self.allocation);
             if !alloc.is_null() {
-                self.graphics.device().destroy_image(self.image, alloc);
+                self.graphics
+                    .device()
+                    .destroy_image(self.image, alloc);
             }
         }
     }

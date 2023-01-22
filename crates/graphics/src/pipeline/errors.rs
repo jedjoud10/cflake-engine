@@ -5,7 +5,7 @@ use crate::VertexAttribute;
 #[derive(Error, Debug)]
 pub enum PipelineInitializationError {
     #[error("{0}")]
-    VertexConfigError(PipelineVertexConfigError)
+    VertexConfigError(PipelineVertexConfigError),
 }
 
 #[derive(Error, Debug)]

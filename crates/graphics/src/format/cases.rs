@@ -133,16 +133,16 @@ pub const fn pick_stencil_format(
 
 // Convert the given depth-stencil combined channel to the proper format
 pub const fn pick_combined_depth_stencil_format(
-    element_type: ElementType
+    element_type: ElementType,
 ) -> vk::Format {
     panic!()
     /*
     match element_type {
         ElementType::CompoundDepthStencil {
-            depth_bits: 32 
+            depth_bits: 32
         } => vk::Format::D32_SFLOAT_S8_UINT,
         ElementType::CompoundDepthStencil {
-            depth_bits: 16 
+            depth_bits: 16
         } => vk::Format::D32_SFLOAT_S8_UINT,
         _ => panic!()
     }

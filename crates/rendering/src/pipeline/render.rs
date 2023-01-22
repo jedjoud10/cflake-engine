@@ -14,7 +14,7 @@ pub(super) fn render_surfaces<M: Material>(
     
     let (mut active, mut bindings) = rasterizer.bind_pipeline(pipeline);
     
-    bindings.set_push_constant_block::<u32>("mesh_data", &2).unwrap();
+    //bindings.set_push_constant::<u32>("mesh_data", "value", &2).unwrap();
     active.draw(6, &bindings);
     active.draw(6, &bindings);
     

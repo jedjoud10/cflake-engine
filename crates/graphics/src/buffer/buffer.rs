@@ -7,9 +7,10 @@ use std::{
 use crate::{
     BufferClearError, BufferCopyError, BufferExtendError,
     BufferInitializationError, BufferMode, BufferNotMappableError,
-    BufferReadError, BufferUsage, BufferWriteError, GpuPodRelaxed, Graphics,
+    BufferReadError, BufferUsage, BufferWriteError, GpuPodRelaxed,
+    Graphics,
 };
-use vulkan::{vk, gpu_allocator::vulkan::Allocation};
+use vulkan::{gpu_allocator::vulkan::Allocation, vk};
 
 // Bitmask from Vulkan BufferUsages
 const VERTEX: u32 = vk::BufferUsageFlags::VERTEX_BUFFER.as_raw();
@@ -84,7 +85,7 @@ impl<'a> UntypedBuffer<'a> {
     pub fn capacity(&self) -> usize {
         self.capacity.try_into().unwrap()
     }
-    
+
     // Get the buffer usage
     pub fn usage(&self) -> BufferUsage {
         self.usage
@@ -236,7 +237,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
     pub fn usage(&self) -> BufferUsage {
         self.usage
     }
-    
+
     // Get the buffer mode
     pub fn mode(&self) -> BufferMode {
         self.mode
@@ -359,7 +360,9 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
     }
 
     // Transmute the buffer into another type of buffer unsafely
-    pub unsafe fn transmute<U: GpuPodRelaxed>(self) -> Buffer<U, TYPE> {
+    pub unsafe fn transmute<U: GpuPodRelaxed>(
+        self,
+    ) -> Buffer<U, TYPE> {
         assert_eq!(
             Layout::new::<T>(),
             Layout::new::<U>(),
@@ -621,7 +624,9 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
         self.allocation_mut()
             .mapped_slice_mut()
             .map(|bytes| {
-                bytemuck::cast_slice_mut::<u8, T>(&mut bytes[..length])
+                bytemuck::cast_slice_mut::<u8, T>(
+                    &mut bytes[..length],
+                )
             })
             .ok_or(BufferNotMappableError)
     }

@@ -1,4 +1,4 @@
-use crate::{AnyElement, Normalized, GpuPodRelaxed};
+use crate::{AnyElement, GpuPodRelaxed, Normalized};
 
 // The channels that represent the texels (non sRGB)
 pub struct R<T: AnyElement>(T);

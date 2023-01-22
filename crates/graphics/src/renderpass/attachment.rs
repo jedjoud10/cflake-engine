@@ -1,7 +1,11 @@
 use std::marker::PhantomData;
 
+use crate::{
+    ColorLayout, ColorTexel, DepthElement, DepthStencilLayout,
+    LoadOp, Stencil, StoreOp, Texel, Texture, Texture2D,
+    UntypedLoadOp, UntypedTexel,
+};
 use vulkan::vk;
-use crate::{LoadOp, Stencil, StoreOp, Texel, UntypedTexel, Texture2D, ColorTexel, Texture, UntypedLoadOp, ColorLayout, DepthStencilLayout, DepthElement};
 
 // A color attachment that is passed to the render pass when starting it
 pub trait ColorAttachments<'a, C: ColorLayout> {
@@ -23,7 +27,10 @@ pub struct RenderTarget<'a, T: Texel> {
 impl<'a, T: Texel> RenderTarget<'a, T> {
     // Create a render target from the raw Vulkan parts
     // This assumes that the image is valid to be used as a render target
-    pub unsafe fn from_raw_parts(image: vk::Image, view: vk::ImageView) -> Self {
+    pub unsafe fn from_raw_parts(
+        image: vk::Image,
+        view: vk::ImageView,
+    ) -> Self {
         Self {
             image,
             view,
@@ -36,15 +43,17 @@ impl<'a, T: Texel> RenderTarget<'a, T> {
     pub fn image(&self) -> vk::Image {
         self.image
     }
-    
+
     // Get the internally used image view
     pub fn image_view(&self) -> vk::ImageView {
         self.view
     }
 }
 
-impl<'a, T: ColorTexel> ColorAttachments<'a, T> for RenderTarget<'a, T> {
+impl<'a, T: ColorTexel> ColorAttachments<'a, T>
+    for RenderTarget<'a, T>
+{
     fn image_views(&self) -> Vec<vk::ImageView> {
         vec![self.image_view()]
     }
-} 
+}

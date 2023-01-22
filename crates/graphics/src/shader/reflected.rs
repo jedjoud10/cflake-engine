@@ -1,8 +1,6 @@
-use std::marker::PhantomData;
-use ahash::AHashMap;
 use crate::ShaderModule;
-
-
+use ahash::AHashMap;
+use std::marker::PhantomData;
 
 // This is the reflected SPIRV data from the shader
 pub struct Reflected<M: ShaderModule> {
@@ -12,69 +10,94 @@ pub struct Reflected<M: ShaderModule> {
 
 impl<M: ShaderModule> Reflected<M> {
     // Create new reflected dat from the raw reflected data
-    pub unsafe fn from_raw_parts(spirv_reflected: spirv_reflect::ShaderModule) -> Self {
-        todo!()
-        /*
-        let push_constant_blocks = spirv_reflected.enumerate_push_constant_blocks(None).unwrap();
-        
-        let mut pconst = None;
-        if let Some(block) = push_constant_blocks.first() {
-            let variables = block.members.iter().map(|x| {
-                PushConstantVarLayout {
-                    name: x.name.clone(),
-                    memory: MemoryLayout {
-                        size: x.size,
-                        offset: x.offset,
-                        absolute_offset: x.absolute_offset,
-                    },
-                }
-            });
-
-            pconst = Some(PushConstantBlockLayout {
-                name: block.name.clone(),
-                variables: variables.collect(),
-                memory: MemoryLayout {
-                    size: block.size,
-                    offset: block.offset,
-                    absolute_offset: block.absolute_offset
-                },
-            })
-        }
+    pub unsafe fn from_raw_parts(
+        spirv_reflected: spirv_reflect::ShaderModule,
+    ) -> Self {
+        // Fetch the push constant block from the spirv data
+        let mut push_constant_blocks = spirv_reflected.enumerate_push_constant_blocks(None).unwrap();
+        assert!(push_constant_blocks.len() <= 1);
+        let push_constant = push_constant_blocks
+            .pop()
+            .map(|block| {
+            PushConstantBlock {
+                name: block.name,
+                variables: block
+                    .members
+                    .into_iter()
+                    .map(|member| {
+                        PushConstantVariable::Unit {
+                            name: member.name,
+                            size: member.size,
+                            offset: member.offset,
+                            _type: UnitVariableType::Bool,
+                        }
+                    }).collect(),
+                size: block.size,
+                offset: block.offset,
+            }
+        });
 
         Self {
             _phantom: PhantomData,
-            push_constant: pconst,
+            push_constant,
         }
-        */
     }
 
-    /*
-    // Get all the reflected descriptor sets for this shader
-    pub fn descriptor_sets(&self) -> &AHashMap<u32, ReflectedDescriptorSet> {
-        todo!()
-    } 
-    */
-
     // Get the reflected push constant for this shader
-    pub fn push_constant(&self) -> Option<&PushConstantBlock> {
+    pub fn push_constant_block(&self) -> Option<&PushConstantBlock> {
+        todo!()
+    }
+
+    // Check if a givne push constant template is used within this reflected data
+    pub fn contains_push_constant_block_template(
+        &self,
+        template: PushConstantBlock,
+    ) -> bool {
         todo!()
     }
 }
 
-pub enum ReflectedVar<T> {
-    DontCare,
-    Reflected(T),
-    MustMatch(T),
+// Type of a specific pre-defined type variable
+#[derive(Clone, PartialEq, Eq, Hash)]
+pub enum UnitVariableType {
+    Bool,
+    Int {
+        size: u32,
+        signed: bool,
+    },
+    Float {
+        size: u32,
+    },
+    Vector {
+        components_count: u32,
+        component: Box<UnitVariableType>,
+    },
+    Martrix {
+        column_count: u32,
+        row_count: u32,
+        stride: u32,
+        component: Box<UnitVariableType>,
+    },
 }
 
 // A push constant variable that is fetched from the shader
 #[derive(Clone, PartialEq, Eq, Hash)]
-pub struct PushConstantVariable {
-    pub name: String,
-    pub _type: (),
-    pub size: u32,
-    pub offset: u32,
-    pub global_offset: ReflectedVar<u32>,
+pub enum PushConstantVariable {
+    // A user mad structure variable
+    Structure {
+        name: String,
+        size: u32,
+        offset: u32,
+        members: Vec<PushConstantVariable>,
+    },
+
+    // A default unit variable like a float or int
+    Unit {
+        name: String,
+        size: u32,
+        offset: u32,
+        _type: UnitVariableType,
+    },
 }
 
 // A push constant block that is fetched from the shader
@@ -84,9 +107,7 @@ pub struct PushConstantBlock {
     pub variables: Vec<PushConstantVariable>,
     pub size: u32,
     pub offset: u32,
-    pub global_offset: u32,
 }
-
 /*
 // This is a descriptor set layout stored within a shader stage
 pub struct ReflectedDescriptorSet {

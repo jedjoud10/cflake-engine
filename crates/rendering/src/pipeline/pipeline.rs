@@ -49,6 +49,7 @@ impl<M: Material> Pipeline<M> {
             M::blend_config(),
             vertex_config,
             M::primitive(),
+            M::binding_config(),
             &render_pass,
             shader.clone(),
         ).unwrap();

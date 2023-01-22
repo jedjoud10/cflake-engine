@@ -1,8 +1,12 @@
+use crate::{
+    ColorTexel, Depth, DepthElement, DepthStencil, LoadOp, Stencil,
+    StencilElement, StoreOp, Texel, Texture, Texture2D,
+    UntypedLoadOp, UntypedTexel,
+};
 use vulkan::vk;
-use crate::{LoadOp, Stencil, StoreOp, Texel, UntypedTexel, Texture2D, ColorTexel, Texture, UntypedLoadOp, DepthElement, StencilElement, Depth, DepthStencil};
 
 // Describes what an attachment should do within a render pass
-// This doesn't store the actual render pass, just a description of it 
+// This doesn't store the actual render pass, just a description of it
 pub struct AttachmentDescriptior<T: Texel> {
     pub load_op: LoadOp<T>,
     pub store_op: StoreOp,
@@ -10,7 +14,7 @@ pub struct AttachmentDescriptior<T: Texel> {
     pub stencil_store_op: StoreOp,
 }
 
-// Untyped attachments description don't contain the texel type 
+// Untyped attachments description don't contain the texel type
 pub struct UntypedAttachmentDescription {
     format: vk::Format,
     load_op: UntypedLoadOp,
@@ -44,13 +48,13 @@ impl DepthStencilLayout for () {
 
 impl<D: DepthElement> DepthStencilLayout for Depth<D> {
     fn untyped_texel() -> Option<UntypedTexel> {
-        Some(<Depth::<D> as Texel>::untyped())
+        Some(<Depth<D> as Texel>::untyped())
     }
 }
 
 impl<S: StencilElement> DepthStencilLayout for Stencil<S> {
     fn untyped_texel() -> Option<UntypedTexel> {
-        Some(<Stencil::<S> as Texel>::untyped())
+        Some(<Stencil<S> as Texel>::untyped())
     }
 }
 

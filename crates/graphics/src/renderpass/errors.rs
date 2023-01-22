@@ -1,9 +1,7 @@
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum RenderPassInitializationError {
-}
+pub enum RenderPassInitializationError {}
 
 #[derive(Error, Debug)]
-pub enum RenderPassBeginError {
-}
+pub enum RenderPassBeginError {}

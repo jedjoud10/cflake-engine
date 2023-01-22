@@ -60,7 +60,7 @@ impl Window {
         &self.raw
     }
 
-    // Get a Vulkan viewport that represents this window 
+    // Get a Vulkan viewport that represents this window
     pub fn viewport(&self) -> Viewport {
         Viewport {
             origin: vek::Vec2::default(),

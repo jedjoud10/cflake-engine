@@ -4,12 +4,7 @@ use crate::GpuPod;
 
 // Base numbers that are used to store the inner raw values of texture texels
 pub trait Base:
-    Clone
-    + Copy
-    + Send
-    + Sync
-    + 'static
-    + GpuPod
+    Clone + Copy + Send + Sync + 'static + GpuPod
 {
     const TYPE: BaseType;
     const SIGNED: bool;

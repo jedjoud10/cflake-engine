@@ -14,7 +14,7 @@ pub enum LoadOp<T: Texel> {
 pub(crate) enum UntypedLoadOp {
     Ignore,
     Load,
-    Clear(vk::ClearColorValue)
+    Clear(vk::ClearColorValue),
 }
 
 // What we should do when writing data to the attachment

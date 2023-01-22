@@ -68,18 +68,26 @@ impl AttachmentBlendConfig {
         builder: vk::PipelineColorBlendAttachmentStateBuilder<'a>,
     ) -> vk::PipelineColorBlendAttachmentStateBuilder<'a> {
         let color_write_mask = vk::ColorComponentFlags::from_raw(
-            self.color_write_mask.bits()
+            self.color_write_mask.bits(),
         );
-        
+
         unsafe {
             builder
                 .color_write_mask(color_write_mask)
                 .blend_enable(true)
-                .src_color_blend_factor(transmute(self.src_color_blend_factor))
-                .dst_color_blend_factor(transmute(self.dst_color_blend_factor))
+                .src_color_blend_factor(transmute(
+                    self.src_color_blend_factor,
+                ))
+                .dst_color_blend_factor(transmute(
+                    self.dst_color_blend_factor,
+                ))
                 .color_blend_op(transmute(self.color_blend_op))
-                .src_alpha_blend_factor(transmute(self.src_alpha_blend_factor))
-                .dst_alpha_blend_factor(transmute(self.dstc_alpha_blend_factor))
+                .src_alpha_blend_factor(transmute(
+                    self.src_alpha_blend_factor,
+                ))
+                .dst_alpha_blend_factor(transmute(
+                    self.dstc_alpha_blend_factor,
+                ))
                 .alpha_blend_op(transmute(self.alpha_blend_op))
         }
     }
@@ -88,7 +96,7 @@ impl AttachmentBlendConfig {
         builder: vk::PipelineColorBlendAttachmentStateBuilder<'a>,
     ) -> vk::PipelineColorBlendAttachmentStateBuilder<'a> {
         let color_write_mask = vk::ColorComponentFlags::from_raw(
-            ColorComponentFlags::all().bits()
+            ColorComponentFlags::all().bits(),
         );
 
         builder

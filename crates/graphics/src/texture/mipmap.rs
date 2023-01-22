@@ -1,6 +1,9 @@
-use vulkan::vk;
-use crate::{TextureSamplerError, Sampler, Extent, RenderTarget, TextureAsTargetError};
 use super::{Region, Texture};
+use crate::{
+    Extent, RenderTarget, Sampler, TextureAsTargetError,
+    TextureSamplerError,
+};
+use vulkan::vk;
 
 // TODO: Figure out how to store and create vk::Views for each mipmap
 // Should they be stored in a SmallArray or SmallVec??
@@ -18,7 +21,7 @@ impl<'a, T: Texture> MipLevelRef<'a, T> {
     pub unsafe fn from_raw_parts(
         texture: &'a T,
         view: vk::ImageView,
-        level: u8
+        level: u8,
     ) -> Self {
         Self {
             texture,
@@ -48,7 +51,9 @@ impl<'a, T: Texture> MipLevelRef<'a, T> {
     }
 
     // Try to get a sampler for this one mip level
-    pub fn as_sampler(&self) -> Result<Sampler<T>, TextureSamplerError> {
+    pub fn as_sampler(
+        &self,
+    ) -> Result<Sampler<T>, TextureSamplerError> {
         todo!()
     }
 }
@@ -72,7 +77,7 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
     pub unsafe fn from_raw_parts(
         texture: &'a T,
         view: vk::ImageView,
-        level: u8
+        level: u8,
     ) -> Self {
         Self {
             texture,
@@ -102,13 +107,22 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
     }
 
     // Try to get a sampler for this one mip level
-    pub fn as_sampler(&self) -> Result<Sampler<T>, TextureSamplerError> {
+    pub fn as_sampler(
+        &self,
+    ) -> Result<Sampler<T>, TextureSamplerError> {
         todo!()
     }
 
     // Try to get a render target so we can render to this one mip level
-    pub fn as_target(&mut self) -> Result<RenderTarget<T::T>, TextureAsTargetError> {
-        Ok(unsafe { RenderTarget::from_raw_parts(self.texture.image(), self.view) })
+    pub fn as_target(
+        &mut self,
+    ) -> Result<RenderTarget<T::T>, TextureAsTargetError> {
+        Ok(unsafe {
+            RenderTarget::from_raw_parts(
+                self.texture.image(),
+                self.view,
+            )
+        })
     }
 }
 

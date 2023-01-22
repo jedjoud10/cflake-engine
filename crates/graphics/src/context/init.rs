@@ -68,11 +68,7 @@ pub(crate) unsafe fn init_context_and_window(
     let size = vek::Extent2::<u32>::from(<(u32, u32)>::from(
         window.inner_size(),
     ));
-    let window = Window::new(
-        window_settings,
-        window,
-        size
-    );
+    let window = Window::new(window_settings, window, size);
 
     (graphics, window)
 }

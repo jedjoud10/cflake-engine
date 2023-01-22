@@ -1,7 +1,8 @@
 use crate::{
-    AnyElement, ElementType, VectorChannels, X, XY, XYZ, XYZW, GpuPodRelaxed,
+    AnyElement, ElementType, GpuPodRelaxed, VectorChannels, X, XY,
+    XYZ, XYZW,
 };
-use std::{mem::size_of};
+use std::mem::size_of;
 use vek::{Vec2, Vec3, Vec4};
 use vulkan::vk;
 
@@ -84,7 +85,6 @@ macro_rules! impl_vector_texel_layout {
         }
     };
 }
-
 
 // Need this for the macro to work
 type Scalar<T> = T;

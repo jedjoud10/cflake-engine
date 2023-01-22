@@ -1,7 +1,7 @@
 use crate::{
-    AnyElement, ChannelsType, Depth, DepthStencil, DepthElement, ElementType,
-    Normalized, Stencil, StencilElement, Swizzable, VectorChannels,
-    BGR, BGRA, R, RG, RGB, RGBA, GpuPodRelaxed,
+    AnyElement, ChannelsType, Depth, DepthElement, DepthStencil,
+    ElementType, GpuPodRelaxed, Normalized, Stencil, StencilElement,
+    Swizzable, VectorChannels, BGR, BGRA, R, RG, RGB, RGBA,
 };
 use std::mem::size_of;
 use vek::{Vec2, Vec3, Vec4};
@@ -60,8 +60,10 @@ pub trait ColorTexel: Texel {
     // A texel that represents complete white or 1 (1 if normalized)
     fn white() -> Self::Storage;
 
-    // Convert this texel to a clear color value 
-    fn into_clear_color_value(storage: Self::Storage) -> vk::ClearColorValue;
+    // Convert this texel to a clear color value
+    fn into_clear_color_value(
+        storage: Self::Storage,
+    ) -> vk::ClearColorValue;
 }
 
 // Image texels are texels that can be loaded from a file, like when loading a Texture2D<RGBA<Normalized<u8>>
@@ -98,8 +100,10 @@ macro_rules! impl_color_texel_layout {
             fn white() -> Self::Storage {
                 todo!()
             }
-            
-            fn into_clear_color_value(_storage: Self::Storage) -> vk::ClearColorValue {
+
+            fn into_clear_color_value(
+                _storage: Self::Storage,
+            ) -> vk::ClearColorValue {
                 todo!()
             }
         }
@@ -133,8 +137,10 @@ macro_rules! impl_swizzled_color_texel_layout {
             fn white() -> Self::Storage {
                 todo!()
             }
-            
-            fn into_clear_color_value(_storage: Self::Storage) -> vk::ClearColorValue {
+
+            fn into_clear_color_value(
+                _storage: Self::Storage,
+            ) -> vk::ClearColorValue {
                 todo!()
             }
         }
@@ -167,7 +173,6 @@ macro_rules! impl_special_texel_layout {
                 );
             type Storage = T::Storage;
         }
-
 
         /*
         TODO: Fix this sheize

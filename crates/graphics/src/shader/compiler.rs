@@ -1,8 +1,19 @@
-use crate::{Graphics, ModuleKind, ShaderModule, ShaderCompilationError, FunctionModule, ShaderIncludeError, GpuPodRelaxed, Reflected};
-use std::{ffi::CStr, marker::PhantomData, time::Instant, path::PathBuf, any::TypeId};
+use crate::{
+    FunctionModule, GpuPodRelaxed, Graphics, ModuleKind, Reflected,
+    ShaderCompilationError, ShaderIncludeError, ShaderModule,
+};
 use ahash::AHashMap;
 use assets::Assets;
-use vulkan::{vk, shaderc::{ResolvedInclude, IncludeType, ShaderKind, CompilationArtifact}};
+use std::{
+    any::TypeId, ffi::CStr, marker::PhantomData, path::PathBuf,
+    time::Instant,
+};
+use vulkan::{
+    shaderc::{
+        CompilationArtifact, IncludeType, ResolvedInclude, ShaderKind,
+    },
+    vk,
+};
 
 // This is a compiler that will take was GLSL code, convert it to SPIRV,
 // then to an appropriate Vulkan shader module.
@@ -61,35 +72,30 @@ impl<M: ShaderModule> Compiler<M> {
     }
 
     // Convert the GLSL code to SPIRV code, then compile said SPIRV code
-    pub fn compile(self, assets: &Assets, graphics: &Graphics) -> Result<Compiled<M>, ShaderCompilationError> {
-        let Compiler { 
+    pub fn compile(
+        self,
+        assets: &Assets,
+        graphics: &Graphics,
+    ) -> Result<Compiled<M>, ShaderCompilationError> {
+        let Compiler {
             kind,
             source,
             file_name,
             snippets,
             constants,
-            _phantom
+            _phantom,
         } = self;
 
         // Create the constants specialization info
         let constants = create_constants_wrapper(constants);
-        
+
         // Translate the GLSL code to SPIRV compilation artifacts
         let artifacts = translate_glsl_to_spirv(
-            graphics,
-            assets,
-            &snippets,
-            kind,
-            &source,
-            &file_name
+            graphics, assets, &snippets, kind, &source, &file_name,
         )?;
-        
+
         // Compile the SPIRV bytecode
-        let raw = compile_spirv(
-            &artifacts,
-            graphics,
-            &file_name
-        );
+        let raw = compile_spirv(&artifacts, graphics, &file_name);
 
         // Reflect the SPIRV bytecode
         let reflected = reflect_spirv(&artifacts);
@@ -115,9 +121,14 @@ pub struct Constants {
 }
 
 // Calculate the specialization info based on a hashmap of constants
-fn create_constants_wrapper(constants: AHashMap<u32, Vec<u8>>) -> Constants {
+fn create_constants_wrapper(
+    constants: AHashMap<u32, Vec<u8>>,
+) -> Constants {
     let merged = constants.iter().collect::<Vec<_>>();
-    let data = merged.iter().flat_map(|(_, data)| data.iter().cloned()).collect::<Vec<_>>();
+    let data = merged
+        .iter()
+        .flat_map(|(_, data)| data.iter().cloned())
+        .collect::<Vec<_>>();
     let ids = merged.iter().map(|(id, _)| **id).collect::<Vec<_>>();
 
     let mut summed_offset = 0;
@@ -143,17 +154,13 @@ fn create_constants_wrapper(constants: AHashMap<u32, Vec<u8>>) -> Constants {
         .map_entries(&entries)
         .data(&data);
 
-    Constants {
-        raw,
-        data,
-        entries,
-    }
+    Constants { raw, data, entries }
 }
 
 // Handle dealing with the include directive (that works with asset paths and snippets)
 fn handle_include(
     current: &str,
-    _type: IncludeType, 
+    _type: IncludeType,
     target: &str,
     depth: usize,
     assets: &Assets,
@@ -176,9 +183,10 @@ fn handle_include(
     ) -> Result<ResolvedInclude, ShaderIncludeError> {
         // Make sure the path is something we can load (.glsl file)
         let pathbuf = PathBuf::try_from(path).unwrap();
-    
+
         // Load the path from the asset manager
-        let resolved_name = pathbuf.clone().into_os_string().into_string().unwrap();
+        let resolved_name =
+            pathbuf.clone().into_os_string().into_string().unwrap();
         let path = pathbuf.as_os_str().to_str().unwrap();
         let content = assets
             .load::<FunctionModule>(path)
@@ -189,13 +197,15 @@ fn handle_include(
             content,
         })
     }
-    
+
     // Load a snippet from the snippets and write it to the output line
     fn load_snippet(
         name: &str,
         snippets: &AHashMap<String, String>,
     ) -> Result<ResolvedInclude, ShaderIncludeError> {
-        let snippet = snippets.get(name).ok_or(ShaderIncludeError::SnippetNotDefined)?;
+        let snippet = snippets
+            .get(name)
+            .ok_or(ShaderIncludeError::SnippetNotDefined)?;
         Ok(ResolvedInclude {
             resolved_name: name.to_string(),
             content: snippet.clone(),
@@ -203,7 +213,10 @@ fn handle_include(
     }
 
     // Relative paths not supported yet
-    assert!(matches!(_type, IncludeType::Standard), "Not supported yet");
+    assert!(
+        matches!(_type, IncludeType::Standard),
+        "Not supported yet"
+    );
 
     // Either load it as an asset or a snippet
     if resembles_asset_path(&target) {
@@ -223,19 +236,29 @@ fn translate_glsl_to_spirv(
     file_name: &str,
 ) -> Result<CompilationArtifact, ShaderCompilationError> {
     let i = Instant::now();
-    let artifacts = unsafe {            
+    let artifacts = unsafe {
         let kind = match kind {
             ModuleKind::Vertex => ShaderKind::Vertex,
             ModuleKind::Fragment => ShaderKind::Fragment,
             ModuleKind::Compute => ShaderKind::Compute,
         };
 
-        graphics.device().translate_glsl_spirv(
-            &source, &file_name, "main", kind,
-            |target, _type, current, depth| {
-                Ok(handle_include(current, _type, target, depth, assets, &snippets).unwrap())
-            },
-        ).map_err(ShaderCompilationError::TranslationError)?
+        graphics
+            .device()
+            .translate_glsl_spirv(
+                &source,
+                &file_name,
+                "main",
+                kind,
+                |target, _type, current, depth| {
+                    Ok(handle_include(
+                        current, _type, target, depth, assets,
+                        &snippets,
+                    )
+                    .unwrap())
+                },
+            )
+            .map_err(ShaderCompilationError::TranslationError)?
     };
     log::debug!(
         "Took {:?} to translate '{}' to SPIRV",
@@ -249,7 +272,7 @@ fn translate_glsl_to_spirv(
 fn compile_spirv(
     artifacts: &CompilationArtifact,
     graphics: &Graphics,
-    file_name: &str
+    file_name: &str,
 ) -> vk::ShaderModule {
     let i = Instant::now();
     let raw = unsafe {
@@ -266,10 +289,13 @@ fn compile_spirv(
 
 // Reflect the given compiled SPIRV data (baka)
 fn reflect_spirv<M: ShaderModule>(
-    artifacts: &CompilationArtifact
+    artifacts: &CompilationArtifact,
 ) -> Reflected<M> {
     unsafe {
-        let raw = spirv_reflect::create_shader_module(artifacts.as_binary_u8()).unwrap();
+        let raw = spirv_reflect::create_shader_module(
+            artifacts.as_binary_u8(),
+        )
+        .unwrap();
         Reflected::<M>::from_raw_parts(raw)
     }
 }

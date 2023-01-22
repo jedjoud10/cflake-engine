@@ -1,7 +1,10 @@
 use std::mem::size_of;
 
 use crate::{GpuPodRelaxed, Graphics};
-use vulkan::{vk, Recorder, gpu_allocator::{MemoryLocation, vulkan::Allocation}};
+use vulkan::{
+    gpu_allocator::{vulkan::Allocation, MemoryLocation},
+    vk, Recorder,
+};
 
 // Allocate a new buffer with a specific size and layout
 // This will return the Vulkan buffer and memory allocation
@@ -69,14 +72,20 @@ pub(super) unsafe fn fill_buffer<'a, T: GpuPodRelaxed>(
 }
 
 // Write to the given bytes slice
-pub(super) unsafe fn write_to<T: GpuPodRelaxed>(src: &[T], dst: &mut [u8]) {
+pub(super) unsafe fn write_to<T: GpuPodRelaxed>(
+    src: &[T],
+    dst: &mut [u8],
+) {
     assert_eq!(src.len(), dst.len() / size_of::<T>());
     let dst = bytemuck::cast_slice_mut::<u8, T>(dst);
     dst.copy_from_slice(src);
 }
 
 // Read from the given bytes slice
-pub(super) unsafe fn read_to<T: GpuPodRelaxed>(src: &[u8], dst: &mut [T]) {
+pub(super) unsafe fn read_to<T: GpuPodRelaxed>(
+    src: &[u8],
+    dst: &mut [T],
+) {
     assert_eq!(dst.len(), src.len() / size_of::<T>());
     let src = bytemuck::cast_slice::<u8, T>(src);
     dst.copy_from_slice(src);

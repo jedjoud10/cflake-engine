@@ -5,7 +5,7 @@ use thiserror::Error;
 pub enum ShaderIncludeError {
     #[error("{0}")]
     FileAssetError(AssetLoadError),
-    
+
     #[error("A")]
     SnippetNotDefined,
 }

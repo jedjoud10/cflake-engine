@@ -2,7 +2,7 @@ use assets::Assets;
 use graphics::{
     BlendConfig, CompareOp, Compiled, DepthConfig,
     FaceCullMode, FragmentModule, Graphics, Primitive,
-    StencilConfig, VertexModule, UniformBuffer,
+    StencilConfig, VertexModule, UniformBuffer, BindingConfig,
 };
 use world::World;
 use crate::{EnabledMeshAttributes, Mesh, Renderer, CameraUniform, TimingUniform, SceneUniform};
@@ -66,6 +66,11 @@ pub trait Material: 'static + Sized {
             logic_operation: None,
             attachments: None,
         }
+    }
+
+    // Get the bindings config for this material
+    fn binding_config() -> BindingConfig {
+        BindingConfig::default()
     }
 
     // Fetch the property block resources
