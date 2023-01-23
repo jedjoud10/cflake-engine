@@ -3,12 +3,11 @@ use ahash::AHashMap;
 use std::marker::PhantomData;
 
 // This is the reflected SPIRV data from the shader
-pub struct Reflected<M: ShaderModule> {
-    _phantom: PhantomData<M>,
+pub struct Reflected {
     push_constant: Option<PushConstantBlock>,
 }
 
-impl<M: ShaderModule> Reflected<M> {
+impl Reflected {
     // Create new reflected dat from the raw reflected data
     pub unsafe fn from_raw_parts(
         spirv_reflected: spirv_reflect::ShaderModule,
@@ -25,12 +24,12 @@ impl<M: ShaderModule> Reflected<M> {
                     .members
                     .into_iter()
                     .map(|member| {
-                        PushConstantVariable::Unit {
+                        (member.name.clone(), PushConstantVariable::Unit {
                             name: member.name,
                             size: member.size,
                             offset: member.offset,
                             _type: UnitVariableType::Bool,
-                        }
+                        })
                     }).collect(),
                 size: block.size,
                 offset: block.offset,
@@ -38,22 +37,13 @@ impl<M: ShaderModule> Reflected<M> {
         });
 
         Self {
-            _phantom: PhantomData,
             push_constant,
         }
     }
 
     // Get the reflected push constant for this shader
     pub fn push_constant_block(&self) -> Option<&PushConstantBlock> {
-        todo!()
-    }
-
-    // Check if a givne push constant template is used within this reflected data
-    pub fn contains_push_constant_block_template(
-        &self,
-        template: PushConstantBlock,
-    ) -> bool {
-        todo!()
+        self.push_constant.as_ref()
     }
 }
 
@@ -81,14 +71,14 @@ pub enum UnitVariableType {
 }
 
 // A push constant variable that is fetched from the shader
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum PushConstantVariable {
     // A user mad structure variable
     Structure {
         name: String,
         size: u32,
         offset: u32,
-        members: Vec<PushConstantVariable>,
+        members: AHashMap<String, PushConstantVariable>,
     },
 
     // A default unit variable like a float or int
@@ -101,13 +91,14 @@ pub enum PushConstantVariable {
 }
 
 // A push constant block that is fetched from the shader
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct PushConstantBlock {
     pub name: String,
-    pub variables: Vec<PushConstantVariable>,
+    pub variables: AHashMap<String, PushConstantVariable>,
     pub size: u32,
     pub offset: u32,
 }
+
 /*
 // This is a descriptor set layout stored within a shader stage
 pub struct ReflectedDescriptorSet {

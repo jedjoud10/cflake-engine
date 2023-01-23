@@ -1,11 +1,10 @@
 #version 460 core
-#include <engine/shaders/common/camera.glsl>
-/*
+//#include <engine/shaders/common/camera.glsl>
+
 layout(push_constant) uniform MeshConstants {
 	//mat4 model_matrix;
 	float test;
 } constants;
-*/
 
 // https://vkguide.dev/docs/chapter-2/triangle_walkthrough/
 void main() {

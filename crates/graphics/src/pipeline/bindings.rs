@@ -1,28 +1,14 @@
 use std::mem::{size_of, align_of};
 
-use crate::{GraphicsPipeline, ModuleKind, PushConstantBlock};
+use crate::{GraphicsPipeline, ModuleKind, PushConstantBlock, PushConstantVariable};
+use ahash::AHashMap;
 use vulkan::vk;
-
-// Smaller push constant range that can be updated
-pub struct BlockSubRange {
-    pub offset: u64,
-    pub size: u64,
-}
-
-// Defines a push constant block's layout
-pub struct BlockDefinition {
-    pub ranges: Vec<BlockSubRange>,
-    pub size: u32,
-    pub alignment: u32,
-}
-
 
 // Since Vulkan is explicit, we must define the bindings config of each material before hand
 #[derive(Default)]
 pub struct BindingConfig {
     // Push constant blocks shit
-    pub vertex_push_constant_block_definition: Option<BlockDefinition>,
-    pub framgent_push_constant_block_definition: Option<BlockDefinition>,
+    pub block_definitions: AHashMap<ModuleKind, PushConstantBlock>,
 
     // Descriptor sets shit (bindless)
 }
@@ -34,18 +20,29 @@ impl BindingConfig {
     }
 
     // Create some new binding configs using block definitions and their corresponding shader
-    pub fn from_block_definitions(defs: &[(ModuleKind, BlockDefinition)]) -> Self {
-        todo!()
+    pub fn from_block_definitions(block_definitions: &[(ModuleKind, PushConstantBlock)]) -> Self {
+        let block_definitions = block_definitions
+            .into_iter()
+            .cloned()
+            .collect::<AHashMap<ModuleKind, PushConstantBlock>>();
+        Self { block_definitions }
+    }
+
+    // Get the block definitions with their appropriate module kinds
+    pub fn block_definitions(&self) -> &AHashMap<ModuleKind, PushConstantBlock> {
+        &self.block_definitions
     }
 }
 
 // A push constant block's member (variable)
 pub trait Member: Sized {
+    fn definition() -> PushConstantVariable;
 }
 
-// A whole push constant block
+// Trait implemented for structs that have a #[derive(PushConstantBlock)]
+// and the appropriate attributes on each of their fields
 pub trait Block: Sized {
-    fn definition() -> BlockDefinition;
+    fn definition() -> PushConstantBlock;
 }
 
 // This is a wrapper that allows the user to send data to GPU shaders

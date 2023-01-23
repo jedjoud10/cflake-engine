@@ -3,9 +3,10 @@ use crate::{
     DepthConfig, DepthStencilLayout, Graphics,
     PipelineInitializationError, PipelineVertexConfigError,
     Primitive, RenderPass, Shader, ShaderModule, StencilConfig,
-    VertexConfig, BindingConfig,
+    VertexConfig, BindingConfig, PipelineBindingConfigError, ModuleKind, CompiledDescription, PushConstBlockError,
 };
 
+use ahash::AHashMap;
 use vulkan::vk;
 
 // A vulkan GRAPHICS pipeline abstraction that will handle initialization / destruction for us manually
@@ -85,18 +86,26 @@ impl GraphicsPipeline {
 
             // Vertex input state
             let vertex_attribute_descriptions =
-                vertex_attribute_descriptions(&vertex_config);
+                vertex_attribute_descriptions(&vertex_config)
+                .map_err(PipelineInitializationError::VertexConfigError)?;
             let vertex_binding_descriptions =
-                vertex_binding_descriptions(&vertex_config);
+                vertex_intput_binding_descriptions(&vertex_config)
+                .map_err(PipelineInitializationError::VertexConfigError)?;
             let vertex_input_state = vertex_input_state_builder(
                 &vertex_attribute_descriptions,
                 &vertex_binding_descriptions,
             );
 
+            // Dyanmic state (only viewport and scissor)
             let dynamic = dynamic_states();
             let dynamic_state = dynamic_state_builder(&dynamic);
-            let layout = pipeline_layout(graphics, binding_config, shader);
-            let multisample_state = multiple_state_builder();
+            
+            // Pipeline layout (descriptors / push constants)
+            let layout = pipeline_layout(graphics, binding_config, shader)
+                .map_err(PipelineInitializationError::BindingConfigError)?;
+
+            // Multisampling (I HATE ANTIALISATION. FUCK YOU. COPE)
+            let multisample_state = multisample_state_builder();
 
             // Pipeline stages create info
             let stages = shader
@@ -198,6 +207,7 @@ impl GraphicsPipeline {
     }
 }
 
+// Create the vertex input state builder
 fn vertex_input_state_builder<'a>(
     vertex_attribute_descriptions: &'a [vk::VertexInputAttributeDescription],
     vertex_binding_descriptions: &'a [vk::VertexInputBindingDescription],
@@ -207,11 +217,68 @@ fn vertex_input_state_builder<'a>(
         .vertex_binding_descriptions(&vertex_binding_descriptions)
 }
 
+// Check if a module's push constants match up
+fn check_push_constants(
+    binding_config: &BindingConfig,
+    description: CompiledDescription,
+) -> Result<(), PushConstBlockError> {
+    // Combine the required layout and the current one in one option
+    let reflected = description.reflected.push_constant_block();
+    let defined = binding_config.block_definitions().get(&description.kind);
+    let zipped = reflected.zip(defined);
+    let kind = description.kind;
+
+    // Make sure the "defined" layout fits the layout of "required"
+    if let Some((required, defined)) = zipped {
+        // Check name mismatch
+        if required.name != defined.name {
+            return Err(PushConstBlockError::NameMismatch(kind));
+        }
+        
+        // Check variables mismatch (check required)
+        for (name, required_var) in &required.variables {
+            if defined.variables.get(name) {
+
+            } else {
+                return Err(PushConstBlockError::VariableNotDefinedBindings((), (), ()))
+            }
+        }
+
+        // Check variables mismatch (check defined)
+        for (name, defined_var) in &defined.variables {
+            retrun
+        }
+
+        if !size || !variables {
+            return Err(PushConstBlockError::Mismatch(kind));
+        } else {
+            return Ok(());
+        }
+
+    } else {
+        // Handle the layout being not defined in either the shader or in the confi
+        if reflected.is_none() {
+            return Err(PushConstBlockError::NotDefinedShader(defined.unwrap().name.clone(), kind));
+        } else {
+            return Err(PushConstBlockError::NotDefinedBindings(reflected.unwrap().name.clone(), kind));
+        }
+    }
+}
+
+// Create the pipeline layout (cached)
 unsafe fn pipeline_layout(
     graphics: &Graphics,
     binding_config: &BindingConfig,
     shader: &Shader,
-) -> vk::PipelineLayout {
+) -> Result<vk::PipelineLayout, PipelineBindingConfigError> {
+    // Check if the shader push constants match up
+    for description in shader.descriptions() {
+        check_push_constants(binding_config, description)?;
+    }
+
+
+    
+
     // Reserve the required layout for bindless
     // Reserve the required layout for non bindless (UBO, push constant)
 
@@ -220,10 +287,11 @@ unsafe fn pipeline_layout(
             .flags(vk::PipelineLayoutCreateFlags::empty());
         graphics.device().create_pipeline_layout(*create_info)
     };
-    layout
+    Ok(layout)
 }
 
-fn multiple_state_builder<'a>(
+// Create the multisampling state
+fn multisample_state_builder<'a>(
 ) -> vk::PipelineMultisampleStateCreateInfoBuilder<'a> {
     let multisample_state =
         vk::PipelineMultisampleStateCreateInfo::builder()
@@ -236,9 +304,10 @@ fn multiple_state_builder<'a>(
     multisample_state
 }
 
-fn vertex_binding_descriptions(
+// Create the vertex input bindings descriptions
+fn vertex_intput_binding_descriptions(
     vertex_config: &VertexConfig,
-) -> Vec<vk::VertexInputBindingDescription> {
+) -> Result<Vec<vk::VertexInputBindingDescription>, PipelineVertexConfigError> {
     let vertex_binding_descriptions = vertex_config
         .bindings
         .iter()
@@ -253,12 +322,13 @@ fn vertex_binding_descriptions(
                 )
         })
         .collect::<Vec<_>>();
-    vertex_binding_descriptions
+    Ok(vertex_binding_descriptions)
 }
 
+// Create the vertex attribute descriptions
 fn vertex_attribute_descriptions(
     vertex_config: &VertexConfig,
-) -> Vec<vk::VertexInputAttributeDescription> {
+) -> Result<Vec<vk::VertexInputAttributeDescription>, PipelineVertexConfigError> {
     let vertex_attribute_descriptions = vertex_config
         .attributes
         .iter()
@@ -270,9 +340,10 @@ fn vertex_attribute_descriptions(
                 .offset(attribute.offset)
         })
         .collect::<Vec<_>>();
-    vertex_attribute_descriptions
+    Ok(vertex_attribute_descriptions)
 }
 
+// Create the dynamic states
 fn dynamic_state_builder<'a>(
     dynamic: &'a [vk::DynamicState],
 ) -> vk::PipelineDynamicStateCreateInfoBuilder<'a> {
@@ -280,6 +351,7 @@ fn dynamic_state_builder<'a>(
         .dynamic_states(dynamic)
 }
 
+// Required
 fn dynamic_states() -> [vk::DynamicState; 2] {
     [vk::DynamicState::VIEWPORT, vk::DynamicState::SCISSOR]
 }

@@ -55,6 +55,24 @@ impl Material for Basic {
         //EnabledMeshAttributes::POSITIONS 
     }
 
+    fn binding_config() -> graphics::BindingConfig {
+        graphics::BindingConfig::from_block_definitions(&[
+            (graphics::ModuleKind::Vertex, graphics::PushConstantBlock {
+                name: "MeshConstants".to_string(),
+                variables: vec![
+                    graphics::PushConstantVariable::Unit {
+                        name: "test".to_string(),
+                        size: 4,
+                        offset: 0,
+                        _type: graphics::UnitVariableType::Float { size: 32 }
+                    }
+                ],
+                size: 4,
+                offset: 0,
+            })
+        ])
+    }
+
     fn fetch<'w>(world: &'w world::World) -> Self::Resources<'w> {
         let storage = world.get::<Storage<Box<u32>>>().unwrap();
         storage

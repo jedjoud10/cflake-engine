@@ -288,15 +288,15 @@ fn compile_spirv(
 }
 
 // Reflect the given compiled SPIRV data (baka)
-fn reflect_spirv<M: ShaderModule>(
+fn reflect_spirv(
     artifacts: &CompilationArtifact,
-) -> Reflected<M> {
+) -> Reflected {
     unsafe {
         let raw = spirv_reflect::create_shader_module(
             artifacts.as_binary_u8(),
         )
         .unwrap();
-        Reflected::<M>::from_raw_parts(raw)
+        Reflected::from_raw_parts(raw)
     }
 }
 
@@ -306,7 +306,7 @@ pub struct Compiled<M: ShaderModule> {
     raw: vk::ShaderModule,
     kind: ModuleKind,
     constants: Constants,
-    reflected: Reflected<M>,
+    reflected: Reflected,
 
     // Helpers
     file_name: String,
@@ -341,7 +341,7 @@ impl<M: ShaderModule> Compiled<M> {
     }
 
     // Get out the reflected data from the SPIRV bytecode
-    pub fn reflected(&self) -> &Reflected<M> {
+    pub fn reflected(&self) -> &Reflected {
         &self.reflected
     }
 
@@ -355,6 +355,7 @@ impl<M: ShaderModule> Compiled<M> {
             kind: self.kind,
             module: &self.raw,
             constants: &self.constants,
+            reflected: &self.reflected,
         }
     }
 }
@@ -366,4 +367,5 @@ pub struct CompiledDescription<'a> {
     pub(crate) kind: ModuleKind,
     pub(crate) module: &'a vk::ShaderModule,
     pub(crate) constants: &'a Constants,
+    pub(crate) reflected: &'a Reflected,
 }
