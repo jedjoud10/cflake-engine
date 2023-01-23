@@ -1,6 +1,6 @@
 use crate::{Material, SwapchainFormat, RenderSurface, Mesh, attributes::RawPosition};
 use ecs::Scene;
-use graphics::{vk, Graphics, GraphicsPipeline, ActiveRenderPass, XYZ};
+use graphics::{vk, Graphics, GraphicsPipeline, ActiveRenderPass, XYZ, ModuleKind};
 use utils::{Storage, Time};
 use world::World;
 
@@ -15,8 +15,9 @@ pub(super) fn render_surfaces<M: Material>(
     let (mut active, mut bindings) = rasterizer.bind_pipeline(pipeline);
     
     //bindings.set_push_constant::<u32>("mesh_data", "value", &2).unwrap();
-    active.draw(6, &bindings);
-    active.draw(6, &bindings);
+    bindings.push_constant
+    active.draw(6);
+    active.draw(6);
     
     /*
     let scene = world.get::<Scene>().unwrap();

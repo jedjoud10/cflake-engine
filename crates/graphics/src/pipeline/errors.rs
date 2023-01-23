@@ -50,4 +50,7 @@ pub enum PushConstBlockError {
 
     #[error("The push constant variable {0} (from block {1}, {2:?} module) is not defined in BindingsConfig")]
     VariableNotDefinedBindings(String, String, ModuleKind),
+
+    #[error("The push constant variable {0} has mismatching representations")]
+    VariableTypeMismatch(String),
 }

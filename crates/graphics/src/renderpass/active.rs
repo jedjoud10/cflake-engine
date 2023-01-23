@@ -1,5 +1,5 @@
 use crate::{
-    ActiveGraphicsPipeline, ActiveBindings, ColorLayout,
+    ActiveGraphicsPipeline, Bindings, ColorLayout,
     DepthStencilLayout, GraphicsPipeline, Viewport,
 };
 use std::marker::PhantomData;
@@ -38,10 +38,10 @@ impl<'r, 'c, 'ds, C: ColorLayout, DS: DepthStencilLayout>
 
     // Bind a graphics pipeline, which takes mutable access of the rasterizer temporarily
     // I made it return an ActiveGraphicsPipeline so we can bind multiple pipelines in the same render pass
-    pub fn bind_pipeline<'gp, 'rp>(
+    pub fn bind_pipeline<'gp: 'rp, 'rp>(
         &'rp mut self,
         pipeline: &'gp GraphicsPipeline,
-    ) -> (ActiveGraphicsPipeline<'rp, 'r, 'gp>, ActiveBindings) {
+    ) -> (ActiveGraphicsPipeline<'rp, 'r, 'gp>, Bindings) {
         // Set dynamic state (viewport and scissor only)
         unsafe fn set_dynamic_state(
             recorder: &mut Recorder,
@@ -77,7 +77,7 @@ impl<'r, 'c, 'ds, C: ColorLayout, DS: DepthStencilLayout>
                     &mut self.recorder,
                     pipeline,
                 ),
-                ActiveBindings::from_raw_parts(pipeline),
+                Bindings::from_raw_parts(pipeline),
             )
         }
     }

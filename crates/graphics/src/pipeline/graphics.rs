@@ -205,6 +205,11 @@ impl GraphicsPipeline {
     pub fn primitive(&self) -> &Primitive {
         &self.primitive
     }
+
+    // Get the binding config used when creating this pipeline
+    pub fn binding_config(&self) -> &BindingConfig {
+        &self.binding_config
+    }
 }
 
 // Create the vertex input state builder
@@ -224,44 +229,52 @@ fn check_push_constants(
 ) -> Result<(), PushConstBlockError> {
     // Combine the required layout and the current one in one option
     let reflected = description.reflected.push_constant_block();
-    let defined = binding_config.block_definitions().get(&description.kind);
+    let defined = binding_config.0
+        .get(&description.kind)
+        .map(|x| x.push_constant.as_ref())
+        .flatten().map(|x| &x.0);
     let zipped = reflected.zip(defined);
     let kind = description.kind;
 
     // Make sure the "defined" layout fits the layout of "required"
-    if let Some((required, defined)) = zipped {
+    if let Some((required_block, defined_block)) = zipped {
         // Check name mismatch
-        if required.name != defined.name {
+        if required_block.name != defined_block.name {
             return Err(PushConstBlockError::NameMismatch(kind));
         }
         
         // Check variables mismatch (check required)
-        for (name, required_var) in &required.variables {
-            if defined.variables.get(name) {
-
+        for (name, required_variable) in &required_block.variables {
+            if let Some(defined_variable) = defined_block.variables.get(name) {
+                if defined_variable != required_variable {
+                    dbg!(defined_variable);
+                    dbg!(required_variable);
+                    return Err(PushConstBlockError::VariableTypeMismatch(name.clone()))
+                }
             } else {
-                return Err(PushConstBlockError::VariableNotDefinedBindings((), (), ()))
+                return Err(PushConstBlockError::VariableNotDefinedBindings(name.clone(), required_block.name.clone(), kind));
             }
         }
 
         // Check variables mismatch (check defined)
-        for (name, defined_var) in &defined.variables {
-            retrun
+        for (name, defined_variable) in &defined_block.variables {
+            if let Some(required_variable) = required_block.variables.get(name) {
+                if defined_variable != required_variable {
+                    return Err(PushConstBlockError::VariableTypeMismatch(name.clone()))
+                }
+            } else {
+                return Err(PushConstBlockError::VariableNotDefinedShader(name.clone(), defined_block.name.clone(), kind));
+            }
         }
 
-        if !size || !variables {
-            return Err(PushConstBlockError::Mismatch(kind));
-        } else {
-            return Ok(());
-        }
-
+        // No errors found
+        Ok(())
+    } else if defined.is_some() {
+        return Err(PushConstBlockError::NotDefinedShader(defined.unwrap().name.clone(), kind));
+    } else if reflected.is_some() {
+        return Err(PushConstBlockError::NotDefinedBindings(reflected.unwrap().name.clone(), kind));
     } else {
-        // Handle the layout being not defined in either the shader or in the confi
-        if reflected.is_none() {
-            return Err(PushConstBlockError::NotDefinedShader(defined.unwrap().name.clone(), kind));
-        } else {
-            return Err(PushConstBlockError::NotDefinedBindings(reflected.unwrap().name.clone(), kind));
-        }
+        return Ok(());
     }
 }
 
@@ -273,7 +286,8 @@ unsafe fn pipeline_layout(
 ) -> Result<vk::PipelineLayout, PipelineBindingConfigError> {
     // Check if the shader push constants match up
     for description in shader.descriptions() {
-        check_push_constants(binding_config, description)?;
+        check_push_constants(binding_config, description)
+            .map_err(PipelineBindingConfigError::PushConstBlock)?;
     }
 
 

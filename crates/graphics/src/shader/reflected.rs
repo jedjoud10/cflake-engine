@@ -1,5 +1,6 @@
 use crate::ShaderModule;
 use ahash::AHashMap;
+use spirv_reflect::types::ReflectTypeFlags;
 use std::marker::PhantomData;
 
 // This is the reflected SPIRV data from the shader
@@ -8,7 +9,50 @@ pub struct Reflected {
 }
 
 impl Reflected {
-    // Create new reflected dat from the raw reflected data
+    // Fetch the appropriate unit variable type from a ReflectBlockVariable
+    fn reflect_variable_type(member: &spirv_reflect::types::ReflectBlockVariable) -> Option<VariableType> {
+        if member.members.len() > 0 {
+            return None;
+        }
+        let _type = member.type_description.as_ref().unwrap().type_flags;
+
+        let value = if _type.contains(ReflectTypeFlags::BOOL) {
+            VariableType::Bool
+        } else if _type.contains(ReflectTypeFlags::FLOAT) {
+            VariableType::Float {
+                size: member.numeric.scalar.width
+            }
+        } else if _type.contains(ReflectTypeFlags::INT) {
+            VariableType::Int {
+                size: member.numeric.scalar.width,
+                signed: member.numeric.scalar.signedness != 0
+            }
+        } else {
+            panic!()
+        };
+
+        Some(value)
+    }
+
+    // Convert a ReflectBlockVariable (spirv_reflect) to a ReflectedVariable (Rust)
+    fn reflect_variable(member: spirv_reflect::types::ReflectBlockVariable) -> (String, BlockVariable) {
+        let name = member.name.clone();
+        let _type = Self::reflect_variable_type(&member).unwrap();
+
+        // Only unit variables supported for now 
+        let variable = BlockVariable::Unit {
+            name: member.name,
+            size: member.size,
+            offset: member.offset,
+            _type,
+        };
+
+        dbg!(&variable);
+
+        (name, variable)
+    }
+
+    // Create new reflected data from the raw reflected data
     pub unsafe fn from_raw_parts(
         spirv_reflected: spirv_reflect::ShaderModule,
     ) -> Self {
@@ -23,14 +67,7 @@ impl Reflected {
                 variables: block
                     .members
                     .into_iter()
-                    .map(|member| {
-                        (member.name.clone(), PushConstantVariable::Unit {
-                            name: member.name,
-                            size: member.size,
-                            offset: member.offset,
-                            _type: UnitVariableType::Bool,
-                        })
-                    }).collect(),
+                    .map(Self::reflect_variable).collect(),
                 size: block.size,
                 offset: block.offset,
             }
@@ -48,8 +85,8 @@ impl Reflected {
 }
 
 // Type of a specific pre-defined type variable
-#[derive(Clone, PartialEq, Eq, Hash)]
-pub enum UnitVariableType {
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+pub enum VariableType {
     Bool,
     Int {
         size: u32,
@@ -60,25 +97,25 @@ pub enum UnitVariableType {
     },
     Vector {
         components_count: u32,
-        component: Box<UnitVariableType>,
+        component: Box<VariableType>,
     },
     Martrix {
         column_count: u32,
         row_count: u32,
         stride: u32,
-        component: Box<UnitVariableType>,
+        component: Box<VariableType>,
     },
 }
 
-// A push constant variable that is fetched from the shader
-#[derive(Clone, PartialEq, Eq)]
-pub enum PushConstantVariable {
+// A block variable that is fetched from the shader
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum BlockVariable {
     // A user mad structure variable
     Structure {
         name: String,
         size: u32,
         offset: u32,
-        members: AHashMap<String, PushConstantVariable>,
+        members: AHashMap<String, BlockVariable>,
     },
 
     // A default unit variable like a float or int
@@ -86,15 +123,41 @@ pub enum PushConstantVariable {
         name: String,
         size: u32,
         offset: u32,
-        _type: UnitVariableType,
+        _type: VariableType,
     },
+}
+
+impl BlockVariable {
+    // Get the name of the variable
+    pub fn name(&self) -> &str {
+        match self {
+            BlockVariable::Structure { name, .. } => name,
+            BlockVariable::Unit { name, .. } => name,
+        }
+    }
+
+    // Get the size of the variable
+    pub fn size(&self) -> u32 {
+        *match self {
+            BlockVariable::Structure { size, .. } => size,
+            BlockVariable::Unit { size, .. } => size,
+        }
+    }
+    
+    // Get the offset of the variable
+    pub fn offset(&self) -> u32 {
+        *match self {
+            BlockVariable::Structure { offset, .. } => offset,
+            BlockVariable::Unit { offset, .. } => offset,
+        }
+    }
 }
 
 // A push constant block that is fetched from the shader
 #[derive(Clone, PartialEq, Eq)]
 pub struct PushConstantBlock {
     pub name: String,
-    pub variables: AHashMap<String, PushConstantVariable>,
+    pub variables: AHashMap<String, BlockVariable>,
     pub size: u32,
     pub offset: u32,
 }

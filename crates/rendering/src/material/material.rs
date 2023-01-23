@@ -2,7 +2,7 @@ use assets::Assets;
 use graphics::{
     BlendConfig, CompareOp, Compiled, DepthConfig,
     FaceCullMode, FragmentModule, Graphics, Primitive,
-    StencilConfig, VertexModule, UniformBuffer, BindingConfig,
+    StencilConfig, VertexModule, UniformBuffer, BindingConfig, Bindings,
 };
 use world::World;
 use crate::{EnabledMeshAttributes, Mesh, Renderer, CameraUniform, TimingUniform, SceneUniform};
@@ -34,7 +34,7 @@ pub trait Material: 'static + Sized {
 
     // Get the required mesh attributes that we need to render a surface
     // If a surface does not support these attributes, it will not be rendered
-    fn required_mesh_attributes() -> EnabledMeshAttributes;
+    fn attributes() -> EnabledMeshAttributes;
 
     // Get the depth config for this material
     fn depth_config() -> DepthConfig {
@@ -80,6 +80,7 @@ pub trait Material: 'static + Sized {
     fn get_static_descriptor_set<'w: 'ds, 'ds>(
         resources: &mut Self::Resources<'w>,
         default: &DefaultMaterialResources,
+        bindings: Bindings,
     ) {}
 
     // Get the descriptor for per-mesh rendering
@@ -87,6 +88,7 @@ pub trait Material: 'static + Sized {
         renderer: Renderer,
         resources: &mut Self::Resources<'w>,
         default: &DefaultMaterialResources,
+        bindings: Bindings,
     ) {}
 
     // This will only be called whenever we switch instances
@@ -94,5 +96,6 @@ pub trait Material: 'static + Sized {
         &self,
         resources: &mut Self::Resources<'w>,
         default: &DefaultMaterialResources,
+        bindings: Bindings,
     ) {}
 }

@@ -1,8 +1,9 @@
 use crate::{Material, EnabledMeshAttributes};
+use ahash::AHashMap;
 use assets::Assets;
 use graphics::{
     Compiled, FragmentModule, Graphics, Normalized,
-    Texture2D, VertexModule, RGB, Compiler, Sampler,
+    Texture2D, VertexModule, RGB, Compiler, Sampler, ModuleKind,
 };
 use utils::{Storage, Handle};
 
@@ -49,28 +50,45 @@ impl Material for Basic {
         Compiler::new(frag).compile(assets, graphics).unwrap()
     }
 
-    fn required_mesh_attributes() -> EnabledMeshAttributes {
+    fn attributes() -> EnabledMeshAttributes {
         //EnabledMeshAttributes::POSITIONS | EnabledMeshAttributes::NORMALS | EnabledMeshAttributes::TEX_COORDS
         EnabledMeshAttributes::empty()
         //EnabledMeshAttributes::POSITIONS 
     }
 
     fn binding_config() -> graphics::BindingConfig {
+        todo!()
+        /*
+        graphics::BindingConfig::from_modules(&[
+            (ModuleKind::Vertex, graphics::ModuleBindingConfig::default()
+                .with_push_constant()
+                .with_bindless()
+            ),
+        ])
+        */
+        /*
         graphics::BindingConfig::from_block_definitions(&[
             (graphics::ModuleKind::Vertex, graphics::PushConstantBlock {
                 name: "MeshConstants".to_string(),
-                variables: vec![
-                    graphics::PushConstantVariable::Unit {
+                variables: AHashMap::from_iter([(("test".to_string(), 
+                    graphics::BlockVariable::Unit {
                         name: "test".to_string(),
                         size: 4,
                         offset: 0,
-                        _type: graphics::UnitVariableType::Float { size: 32 }
+                        _type: graphics::VariableType::Float { size: 32 }
                     }
-                ],
+                )), ("test2".to_string(), 
+                    graphics::BlockVariable::Unit {
+                        name: "test2".to_string(),
+                        size: 4,
+                        offset: 4,
+                        _type: graphics::VariableType::Int { size: 32, signed: false }
+                })]),
                 size: 4,
                 offset: 0,
             })
         ])
+        */
     }
 
     fn fetch<'w>(world: &'w world::World) -> Self::Resources<'w> {

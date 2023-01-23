@@ -34,7 +34,7 @@ impl<M: Material> Pipeline<M> {
         let shader = Shader::new(vertex, fragment);
         
         // Fetch the correct vertex config based on the material
-        let required = M::required_mesh_attributes();
+        let required = M::attributes();
         let untyped = crate::untyped_attributes_from_enabled_attributes(required);
         let vertex_config = VertexConfig {
             attributes: untyped.iter().map(|u| u.attribute).collect(),
