@@ -61,6 +61,7 @@ impl Client {
 impl Client {
     // Send a message of a specific type to the server
     pub fn send<T: Packet>(&mut self, val: T) {
+        // TODO: User another serialization system other than this bozo
         let string = serde_json::to_string(&val).unwrap();
         let id = crate::packet::id::<T>();
         let mut data =

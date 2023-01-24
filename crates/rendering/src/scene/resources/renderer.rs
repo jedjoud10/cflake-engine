@@ -1,7 +1,8 @@
-use crate::{DynamicPipeline, Material, MaterialId, Pipeline};
+use crate::{DynamicPipeline, Material, MaterialId, Pipeline, CameraUniform, TimingUniform, SceneUniform};
 use ahash::AHashMap;
 use assets::Assets;
-use graphics::{Graphics, Normalized, RenderPass, Texture2D, BGRA};
+use bytemuck::Zeroable;
+use graphics::{Graphics, Normalized, RenderPass, Texture2D, BGRA, PipelineInitializationError, UniformBuffer, BufferMode, BufferUsage, GpuPod};
 use std::{
     any::TypeId, marker::PhantomData, mem::ManuallyDrop, rc::Rc, cell::RefCell,
 };
@@ -16,20 +17,31 @@ pub struct ForwardRenderer {
     pub(crate) render_pass: ForwardRendererRenderPass,
 
     // Data that will be sent to the shaders
-    
+    camera_buffer: UniformBuffer<CameraUniform>,
+    timing_buffer: UniformBuffer<TimingUniform>,
+    scene_buffer: UniformBuffer<SceneUniform>,
 
     // Material pipelines that we will use to render the surfaces
     pipelines: AHashMap<TypeId, Rc<dyn DynamicPipeline>>,
 }
 
+// Create a new uniform buffer with the given value (zeroed out contents) 
+fn create_uniform_buffer<T: GpuPod>(graphics: &Graphics) -> UniformBuffer<T> {
+    UniformBuffer::from_slice(graphics, &[T::zeroed()], BufferMode::Dynamic, BufferUsage::CpuToGpu).unwrap()
+}
+
 impl ForwardRenderer {
     // Create a new scene renderer
-    pub fn new(
+    pub(crate) fn new(
+        graphics: &Graphics,
         render_pass: ForwardRendererRenderPass,
     ) -> Self {
         Self {
             render_pass,
             pipelines: Default::default(),
+            camera_buffer: create_uniform_buffer::<CameraUniform>(graphics),
+            timing_buffer: create_uniform_buffer::<TimingUniform>(graphics),
+            scene_buffer: create_uniform_buffer::<SceneUniform>(graphics),
         }
     }
 
@@ -38,7 +50,7 @@ impl ForwardRenderer {
         &mut self,
         graphics: &Graphics,
         assets: &Assets,
-    ) -> MaterialId<M> {
+    ) -> Result<MaterialId<M>, PipelineInitializationError> {
         // Initialize the pipeline and register it if needed
         let key = TypeId::of::<M>();
         if !self.pipelines.contains_key(&key) {
@@ -47,13 +59,13 @@ impl ForwardRenderer {
                 graphics,
                 assets,
                 &self.render_pass,
-            );
+            )?;
             self.pipelines.insert(key, Rc::new(pipeline));
             log::debug!("Registered pipeline for material {}", std::any::type_name::<M>());
         }
 
         // Material ID is just a marker type for safety
-        MaterialId(PhantomData)
+        Ok(MaterialId(PhantomData))
     }
 
     // Get a MaterialID from a pre-initialized pipeline

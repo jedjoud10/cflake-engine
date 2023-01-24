@@ -21,4 +21,20 @@ impl NetworkedSession {
     pub fn connect(address: impl ToSocketAddrs) -> Result<Self, ()> {
         Client::connect(address).map(NetworkedSession::Client)
     }
+
+    // Check if the current session is a hosted session
+    pub fn is_server(&self) -> bool {
+        match self {
+            NetworkedSession::Server(_) => true,
+            NetworkedSession::Client(_) => false,
+        }
+    }
+    
+    // Check if the current session is a client session
+    pub fn is_client(&self) -> bool {
+        match self {
+            NetworkedSession::Server(_) => false,
+            NetworkedSession::Client(_) => true,
+        }
+    }
 }

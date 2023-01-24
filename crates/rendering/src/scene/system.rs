@@ -15,9 +15,10 @@ fn init(world: &mut World) {
         &graphics,
         extent,
     ).unwrap();
+    let renderer = ForwardRenderer::new(&graphics, render_pass);
     drop(graphics);
 
-    world.insert(ForwardRenderer::new(render_pass));
+    world.insert(renderer);
     world.insert(Storage::<Mesh>::default());
     world.insert(Storage::<Basic>::default());
 }

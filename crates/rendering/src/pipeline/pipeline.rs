@@ -1,6 +1,6 @@
 use crate::{Material, SwapchainFormat, ForwardRendererRenderPass};
 use assets::Assets;
-use graphics::{Graphics, GraphicsPipeline, RenderPass, Shader, ActiveRenderPass, VertexConfig};
+use graphics::{Graphics, GraphicsPipeline, RenderPass, Shader, ActiveRenderPass, VertexConfig, PipelineInitializationError};
 use std::marker::PhantomData;
 use world::World;
 
@@ -28,7 +28,7 @@ impl<M: Material> Pipeline<M> {
         graphics: &Graphics,
         assets: &Assets,
         render_pass: &ForwardRendererRenderPass,
-    ) -> Self {
+    ) -> Result<Self, PipelineInitializationError> {
         let vertex = M::vertex(graphics, assets);
         let fragment = M::fragment(graphics, assets);
         let shader = Shader::new(vertex, fragment);
@@ -52,13 +52,13 @@ impl<M: Material> Pipeline<M> {
             M::binding_config(),
             &render_pass,
             shader.clone(),
-        ).unwrap();
+        )?;
 
-        Self {
+        Ok(Self {
             pipeline,
             shader,
             _phantom: PhantomData,
-        }
+        })
     }
 
     // Get the material ID of the pipeline

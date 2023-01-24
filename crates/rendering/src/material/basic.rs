@@ -1,9 +1,11 @@
+use std::any::TypeId;
+
 use crate::{Material, EnabledMeshAttributes};
 use ahash::AHashMap;
 use assets::Assets;
 use graphics::{
     Compiled, FragmentModule, Graphics, Normalized,
-    Texture2D, VertexModule, RGB, Compiler, Sampler, ModuleKind,
+    Texture2D, VertexModule, RGB, Compiler, Sampler, ModuleKind, BindingConfig, ModuleBindingConfig,
 };
 use utils::{Storage, Handle};
 
@@ -43,7 +45,7 @@ impl Material for Basic {
     fn fragment(
         graphics: &Graphics,
         assets: &Assets,
-    ) -> Compiled<graphics::FragmentModule> {
+    ) -> Compiled<FragmentModule> {
         let frag = assets
             .load::<FragmentModule>("engine/shaders/basic.frag")
             .unwrap();
@@ -56,19 +58,9 @@ impl Material for Basic {
         //EnabledMeshAttributes::POSITIONS 
     }
 
-    fn binding_config() -> graphics::BindingConfig {
-        todo!()
-        /*
-        graphics::BindingConfig::from_modules(&[
-            (ModuleKind::Vertex, graphics::ModuleBindingConfig::default()
-                .with_push_constant()
-                .with_bindless()
-            ),
-        ])
-        */
-        /*
-        graphics::BindingConfig::from_block_definitions(&[
-            (graphics::ModuleKind::Vertex, graphics::PushConstantBlock {
+    fn binding_config() -> BindingConfig {
+        let module_binding_config = ModuleBindingConfig {
+            push_constant: Some((graphics::PushConstantBlock {
                 name: "MeshConstants".to_string(),
                 variables: AHashMap::from_iter([(("test".to_string(), 
                     graphics::BlockVariable::Unit {
@@ -86,9 +78,10 @@ impl Material for Basic {
                 })]),
                 size: 4,
                 offset: 0,
-            })
-        ])
-        */
+            }, TypeId::of::<u32>())),
+        };
+
+        BindingConfig::from_modules([(ModuleKind::Vertex, module_binding_config)])
     }
 
     fn fetch<'w>(world: &'w world::World) -> Self::Resources<'w> {
