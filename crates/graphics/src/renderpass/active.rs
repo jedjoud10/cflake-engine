@@ -1,5 +1,5 @@
 use crate::{
-    ActiveGraphicsPipeline, Bindings, ColorLayout,
+    ActiveGraphicsPipeline, ColorLayout,
     DepthStencilLayout, GraphicsPipeline, Viewport,
 };
 use std::marker::PhantomData;
@@ -41,7 +41,7 @@ impl<'r, 'c, 'ds, C: ColorLayout, DS: DepthStencilLayout>
     pub fn bind_pipeline<'gp: 'rp, 'rp>(
         &'rp mut self,
         pipeline: &'gp GraphicsPipeline,
-    ) -> (ActiveGraphicsPipeline<'rp, 'r, 'gp>, Bindings) {
+    ) -> (ActiveGraphicsPipeline<'rp, 'r, 'gp>) {
         // Set dynamic state (viewport and scissor only)
         unsafe fn set_dynamic_state(
             recorder: &mut Recorder,
@@ -72,13 +72,11 @@ impl<'r, 'c, 'ds, C: ColorLayout, DS: DepthStencilLayout>
             set_dynamic_state(&mut self.recorder, &self.viewport);
 
             // Create the actige graphics pipeline struct
-            (
+            
                 ActiveGraphicsPipeline::from_raw_parts(
                     &mut self.recorder,
                     pipeline,
-                ),
-                Bindings::from_raw_parts(pipeline),
-            )
+                )
         }
     }
 

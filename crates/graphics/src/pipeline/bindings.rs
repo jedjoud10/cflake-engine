@@ -9,8 +9,14 @@ use vulkan::{vk, Recorder};
 pub struct BindingConfig(pub(crate) AHashMap<ModuleKind, ModuleBindingConfig>);
 
 impl BindingConfig {
-    pub fn from_modules(slice: &[(ModuleKind, ModuleBindingConfig)]) -> Self {
-        todo!()
+    // Create a new binding config that does not contain any module binding configs
+    pub fn empty() -> Self {
+        Self::default()
+    }
+
+    // Create a new binding config that contains the specified module binding configs
+    pub fn from_modules(slice: impl IntoIterator<Item = (ModuleKind, ModuleBindingConfig)>) -> Self {
+        Self(slice.into_iter().collect())
     }
 }
 
@@ -27,15 +33,14 @@ pub struct ModuleBindingConfig {
 impl ModuleBindingConfig {
     // Enables the usage of a specific push constant block within the module bindings
     pub fn with_push_constant<B: Block>(mut self) -> Self {
-        self.push_constant.insert((B::definition(), TypeId::of::<B>()));
+        self.push_constant = Some((B::definition(), TypeId::of::<B>()));
         self
     }
 }
 
 // A push constant block's member (variable)
 pub trait Member: Sized {
-    fn size() -> u32;
-    fn var_type() -> VariableType;
+    fn definition() -> BlockVariable;
 }
 
 // Trait implemented for structs that have a #[derive(PushConstantBlock)]
@@ -46,67 +51,4 @@ pub trait Block: Sized + 'static {
     type Internal: GpuPod + Sized + 'static;
     fn definition() -> PushConstantBlock;
     fn serialize(&self) -> Self::Internal;
-}
-
-// This is a wrapper that allows the user to send data to GPU shaders
-// in a clean and safe fashion
-// TODO: Figure out how to handle bindless textures and buffers?
-pub struct Bindings<'a> {
-    config: &'a BindingConfig,
-    layout: vk::PipelineLayout,
-    _phantom: PhantomData<&'a ()>,
-}
-
-impl<'a> Bindings< 'a> {
-    // Create some bindings for a specific type of graphics pipeline
-    pub(crate) unsafe fn from_raw_parts(
-        graphics: &'a GraphicsPipeline,
-    ) -> Self {
-        Self {
-            config: graphics.binding_config(),
-            layout: graphics.layout(),
-            _phantom: PhantomData,
-        }
-    }
-
-    // Update the whole push constant block
-    pub fn set_block<B: Block>(
-        &mut self,
-        block_name: &'static str,
-        value: &B
-    ) -> Option<()> {
-        // We iterate because I want the user to be able to call "set_block" once for all recurrent block defs in each module
-        for (kind, module_binding_config) in &self.config.0 {
-            if let Some((block, _type)) = &module_binding_config.push_constant {
-                // Check if the block is the same as defined in the config
-                // (which is also the same block as defined in the shader through reflection)
-                if TypeId::of::<B>() == *_type {
-                    // Set the block using cmdPushConstants
-                    let internal = value.serialize();
-                    let boxed: Box<dyn Any> = Box::new(internal);
-                
-                    //self.push_constants.insert(*kind, (Cell::new(true), boxed));
-                } else {
-                    // Block definition mismatch
-                    return None;
-                }
-            } else {
-                // Block not defined
-                return None;
-            }
-        }
-
-        Some(())
-    }
-
-    // Update a sub-range of push constants within a push constant block
-    // This assumes that the variable is set as dynamic within the defintion of Block "B"
-    pub fn set<M: Member, B: Block>(
-        &mut self,
-        block_name: &'static str,
-        var_name: &'static str,
-        value: &M
-    ) -> Option<()> {
-        todo!()
-    }
 }

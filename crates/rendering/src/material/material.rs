@@ -2,7 +2,7 @@ use assets::Assets;
 use graphics::{
     BlendConfig, CompareOp, Compiled, DepthConfig,
     FaceCullMode, FragmentModule, Graphics, Primitive,
-    StencilConfig, VertexModule, UniformBuffer, BindingConfig, Bindings,
+    StencilConfig, VertexModule, UniformBuffer, BindingConfig,
 };
 use world::World;
 use crate::{EnabledMeshAttributes, Mesh, Renderer, CameraUniform, TimingUniform, SceneUniform};
@@ -70,7 +70,7 @@ pub trait Material: 'static + Sized {
 
     // Get the bindings config for this material
     fn binding_config() -> BindingConfig {
-        BindingConfig::default()
+        BindingConfig::empty()
     }
 
     // Fetch the property block resources
@@ -80,7 +80,6 @@ pub trait Material: 'static + Sized {
     fn get_static_descriptor_set<'w: 'ds, 'ds>(
         resources: &mut Self::Resources<'w>,
         default: &DefaultMaterialResources,
-        bindings: Bindings,
     ) {}
 
     // Get the descriptor for per-mesh rendering
@@ -88,7 +87,6 @@ pub trait Material: 'static + Sized {
         renderer: Renderer,
         resources: &mut Self::Resources<'w>,
         default: &DefaultMaterialResources,
-        bindings: Bindings,
     ) {}
 
     // This will only be called whenever we switch instances
@@ -96,6 +94,5 @@ pub trait Material: 'static + Sized {
         &self,
         resources: &mut Self::Resources<'w>,
         default: &DefaultMaterialResources,
-        bindings: Bindings,
     ) {}
 }

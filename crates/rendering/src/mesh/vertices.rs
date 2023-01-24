@@ -1,3 +1,5 @@
+use std::cell::{Cell, RefCell};
+
 use graphics::VertexBuffer;
 use math::AABB;
 use crate::MeshAabbComputeError;
@@ -16,7 +18,7 @@ pub struct VerticesRef<'a> {
 
 impl VerticesRef<'_> {
     // Get the enabled mesh attributes bitflags
-    pub fn enabled_attributes(&self) -> EnabledMeshAttributes {
+    pub fn enabled(&self) -> EnabledMeshAttributes {
         self.enabled
     }
 
@@ -43,12 +45,13 @@ pub struct VerticesMut<'a> {
     pub(super) normals: &'a mut AttributeBuffer<Normal>,
     pub(super) tangents: &'a mut AttributeBuffer<Tangent>,
     pub(super) tex_coords: &'a mut AttributeBuffer<TexCoord>,
-    pub(super) len: &'a mut Option<usize>,
+    pub(super) len: RefCell<&'a mut Option<usize>>,
+    pub(super) dirty: Cell<bool>,
 }
 
 impl VerticesMut<'_> {
     // Get the enabled mesh attributes bitflags
-    pub fn enabled_attributes(&self) -> EnabledMeshAttributes {
+    pub fn enabled(&self) -> EnabledMeshAttributes {
         *self.enabled
     }
 
@@ -64,11 +67,13 @@ impl VerticesMut<'_> {
 
     // Get a mutable reference to an attribute buffer
     pub fn attribute_mut<T: MeshAttribute>(&mut self) -> Option<&mut VertexBuffer<T::Storage>> {
+        self.dirty.set(true);
         T::from_mut_as_mut(self)
     }
 
     // Insert a new vertex buffer to the vertices
     pub fn insert<T: MeshAttribute>(&mut self, buffer: VertexBuffer<T::Storage>) {
+        self.dirty.set(true);
         T::insert(self, buffer);
     }
 
@@ -79,7 +84,29 @@ impl VerticesMut<'_> {
 
     // Get the number of vertices that we have (will return None if we have buffers of mismatching lengths)
     pub fn len(&self) -> Option<usize> {
-        todo!()
+        if self.dirty.get() {
+            // Fetch the length of each of the attribute (even if they don't actually exist)
+            let positions = self.attribute::<Position>().map(|x| x.len());
+            let normals = self.attribute::<Normal>().map(|x| x.len());
+            let tangents = self.attribute::<Tangent>().map(|x| x.len());
+            let tex_coords = self.attribute::<TexCoord>().map(|x| x.len());
+
+            // Convert the options into a fixed sized array and iterate over it
+            let array = [positions, normals, tangents, tex_coords];
+            let length = array.into_iter().reduce(|accum, actual| {
+                if accum.is_some() && accum == actual {
+                    accum
+                } else {
+                    None
+                }
+            }).unwrap();
+            
+            // Update and remove the "dirty" state
+            **self.len.borrow_mut() = length;
+            self.dirty.set(true);
+        }
+        
+        **self.len.borrow()
     }
 
     // Try to compute the AABB of the mesh using updated position vertices

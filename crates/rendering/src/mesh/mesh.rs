@@ -4,6 +4,7 @@ use obj::TexturedVertex;
 use super::attributes::*;
 use crate::{AttributeBuffer, EnabledMeshAttributes, MeshImportSettings, MeshImportError, MeshInitializationError, MeshAttribute, VerticesRef, VerticesMut, TrianglesRef, TrianglesMut};
 use crate::mesh::attributes::{TexCoord, Tangent, Normal, Position};
+use std::cell::{Cell, RefCell};
 use std::mem::MaybeUninit;
 
 // A mesh is a collection of 3D vertices connected by triangles
@@ -106,7 +107,8 @@ impl Mesh {
             normals: &mut self.normals,
             tangents: &mut self.tangents,
             tex_coords: &mut self.tex_coords,
-            len: &mut self.len,
+            len: RefCell::new(&mut self.len),
+            dirty: Cell::new(false),
         }
     }
 
@@ -145,7 +147,8 @@ impl Mesh {
                 normals: &mut self.normals,
                 tangents: &mut self.tangents,
                 tex_coords: &mut self.tex_coords,
-                len: &mut self.len,
+                len: RefCell::new(&mut self.len),
+                dirty: Cell::new(false),
             },
         )
     }
