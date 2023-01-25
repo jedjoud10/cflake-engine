@@ -229,7 +229,7 @@ fn check_push_constants(
 ) -> Result<(), PushConstBlockError> {
     // Combine the required layout and the current one in one option
     let reflected = description.reflected.push_constant_block();
-    let defined = binding_config.0
+    let defined = binding_config
         .get(&description.kind)
         .map(|x| x.push_constant.as_ref())
         .flatten().map(|x| &x.0);

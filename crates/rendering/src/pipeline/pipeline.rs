@@ -83,7 +83,7 @@ pub trait DynamicPipeline {
     // Render all surfaces that use the material of this pipeline
     fn render(&self,
         world: &World,
-        rasterizer: &mut ActiveRenderPass<'_, '_, '_, SwapchainFormat, ()>
+        render_pass: &mut ActiveRenderPass<SwapchainFormat, ()>
     );
 }
 
@@ -96,7 +96,7 @@ impl<M: Material> DynamicPipeline for Pipeline<M> {
         &mut self.pipeline
     }
 
-    fn render(&self, world: &World, rasterizer: &mut ActiveRenderPass<'_, '_, '_, SwapchainFormat, ()>) {
-        super::render_surfaces::<M>(world, &self.pipeline, rasterizer);
+    fn render(&self, world: &World, render_pass: &mut ActiveRenderPass<SwapchainFormat, ()>) {
+        super::render_surfaces::<M>(world, &self.pipeline, render_pass);
     }
 }

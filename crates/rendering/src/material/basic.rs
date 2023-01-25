@@ -81,7 +81,7 @@ impl Material for Basic {
             }, TypeId::of::<u32>())),
         };
 
-        BindingConfig::from_modules([(ModuleKind::Vertex, module_binding_config)])
+        BindingConfig::from_iter([(ModuleKind::Vertex, module_binding_config)])
     }
 
     fn fetch<'w>(world: &'w world::World) -> Self::Resources<'w> {

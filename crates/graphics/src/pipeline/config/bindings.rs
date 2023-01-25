@@ -5,20 +5,7 @@ use ahash::{AHashMap, AHashSet};
 use vulkan::{vk, Recorder};
 
 // This contains the config for the multiple module binding configs in one structure
-#[derive(Default)]
-pub struct BindingConfig(pub(crate) AHashMap<ModuleKind, ModuleBindingConfig>);
-
-impl BindingConfig {
-    // Create a new binding config that does not contain any module binding configs
-    pub fn empty() -> Self {
-        Self::default()
-    }
-
-    // Create a new binding config that contains the specified module binding configs
-    pub fn from_modules(slice: impl IntoIterator<Item = (ModuleKind, ModuleBindingConfig)>) -> Self {
-        Self(slice.into_iter().collect())
-    }
-}
+pub type BindingConfig = AHashMap<ModuleKind, ModuleBindingConfig>;
 
 // Since Vulkan is explicit, we must define the bindings config of each material before hand
 // This binding config is for a single module only

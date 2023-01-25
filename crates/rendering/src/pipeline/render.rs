@@ -8,15 +8,14 @@ use world::World;
 pub(super) fn render_surfaces<M: Material>(
     world: &World,
     pipeline: &GraphicsPipeline,
-    rasterizer: &mut ActiveRenderPass<SwapchainFormat, ()>
+    render_pass: &mut ActiveRenderPass<SwapchainFormat, ()>
 ) {
     let time = world.get::<Time>().unwrap();
     
-    let mut active = rasterizer.bind_pipeline(pipeline);
-    
-    //bindings.set_push_constant::<u32>("mesh_data", "value", &2).unwrap();
-    active.draw(6);
-    active.draw(6);
+    let (mut rasterizer, mut bindings) = render_pass.bind_pipeline(pipeline);
+    //bindings.set_block::<u32>("mesh_data", &2).unwrap();
+    rasterizer.draw(6, &bindings);
+    //rasterizer.draw(6, &bindings);
     
     /*
     let scene = world.get::<Scene>().unwrap();

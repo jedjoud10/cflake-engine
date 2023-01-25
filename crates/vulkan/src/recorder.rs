@@ -56,7 +56,7 @@ impl<'a> Recorder<'a> {
 // Synchronization
 impl<'a> Recorder<'a> {
     // Full pipeline barrier
-    pub unsafe fn cmd_full_pipeline_barrier(&mut self) {
+    pub unsafe fn cmd_full_pipeline_barrier(&self) {
         self.device().raw().cmd_pipeline_barrier(
             self.command_buffer().raw(),
             vk::PipelineStageFlags::ALL_COMMANDS,
@@ -70,7 +70,7 @@ impl<'a> Recorder<'a> {
 
     // Specific buffer memory barrier
     pub unsafe fn cmd_buffer_memory_barrier(
-        &mut self,
+        &self,
         barrier: vk::BufferMemoryBarrier,
     ) {
         self.device().raw().cmd_pipeline_barrier(
@@ -86,7 +86,7 @@ impl<'a> Recorder<'a> {
 
     // Specific image memory barrier
     pub unsafe fn cmd_image_memory_barrier(
-        &mut self,
+        &self,
         barrier: vk::ImageMemoryBarrier,
     ) {
         self.device().raw().cmd_pipeline_barrier(
@@ -105,7 +105,7 @@ impl<'a> Recorder<'a> {
 impl<'a> Recorder<'a> {
     // Bind an index buffer to the command buffer render pass
     pub unsafe fn cmd_bind_index_buffer(
-        &mut self,
+        &self,
         buffer: vk::Buffer,
         offset: vk::DeviceSize,
         index_type: vk::IndexType,
@@ -120,7 +120,7 @@ impl<'a> Recorder<'a> {
 
     // Bind vertex buffers to the command buffer render pass
     pub unsafe fn cmd_bind_vertex_buffers(
-        &mut self,
+        &self,
         first_binding: u32,
         buffers: &[vk::Buffer],
         offsets: &[vk::DeviceSize],
@@ -135,7 +135,7 @@ impl<'a> Recorder<'a> {
 
     // Copy a buffer to another buffer in GPU memory
     pub unsafe fn cmd_copy_buffer(
-        &mut self,
+        &self,
         src: vk::Buffer,
         dst: vk::Buffer,
         regions: &[vk::BufferCopy],
@@ -150,7 +150,7 @@ impl<'a> Recorder<'a> {
 
     // Copy an image to a buffer in GPU memory
     pub unsafe fn cmd_copy_image_to_buffer(
-        &mut self,
+        &self,
         buffer: vk::Buffer,
         image: vk::Image,
         layout: vk::ImageLayout,
@@ -167,7 +167,7 @@ impl<'a> Recorder<'a> {
 
     // Clear a buffer to zero
     pub unsafe fn cmd_clear_buffer(
-        &mut self,
+        &self,
         buffer: vk::Buffer,
         offset: vk::DeviceSize,
         size: vk::DeviceSize,
@@ -183,7 +183,7 @@ impl<'a> Recorder<'a> {
 
     // Update the buffer using memory that is directly stored within the command buffer
     pub unsafe fn cmd_update_buffer(
-        &mut self,
+        &self,
         buffer: vk::Buffer,
         offset: vk::DeviceSize,
         data: &[u8],
@@ -201,7 +201,7 @@ impl<'a> Recorder<'a> {
 impl<'a> Recorder<'a> {
     // Blit an image to another image in GPU memory
     pub unsafe fn cmd_blit_image(
-        &mut self,
+        &self,
         src_image: vk::Image,
         src_image_layout: vk::ImageLayout,
         dst_image: vk::Image,
@@ -222,7 +222,7 @@ impl<'a> Recorder<'a> {
 
     // Clear an image to a specific color
     pub unsafe fn cmd_clear_image(
-        &mut self,
+        &self,
         image: vk::Image,
         layout: vk::ImageLayout,
         color: vk::ClearColorValue,
@@ -239,7 +239,7 @@ impl<'a> Recorder<'a> {
 
     // Copy an image to another image in GPU memory
     pub unsafe fn cmd_copy_image(
-        &mut self,
+        &self,
         src_image: vk::Image,
         src_image_layout: vk::ImageLayout,
         dst_image: vk::Image,
@@ -258,7 +258,7 @@ impl<'a> Recorder<'a> {
 
     // Copy a buffer to an image in GPU memory
     pub unsafe fn cmd_copy_buffer_to_image(
-        &mut self,
+        &self,
         src_buffer: vk::Buffer,
         dst_image: vk::Image,
         dst_image_layout: vk::ImageLayout,
@@ -278,7 +278,7 @@ impl<'a> Recorder<'a> {
 impl<'a> Recorder<'a> {
     // Begin a render pass
     pub unsafe fn cmd_begin_render_pass(
-        &mut self,
+        &self,
         render_pass: vk::RenderPass,
         framebuffer: vk::Framebuffer,
         image_views: &[vk::ImageView],
@@ -316,7 +316,7 @@ impl<'a> Recorder<'a> {
     }
 
     // End the currently active render pass
-    pub unsafe fn cmd_end_render_pass(&mut self) {
+    pub unsafe fn cmd_end_render_pass(&self) {
         self.device()
             .raw()
             .cmd_end_render_pass(self.command_buffer().raw());
@@ -324,7 +324,7 @@ impl<'a> Recorder<'a> {
 
     // Bind a pipeline to the bind point
     pub unsafe fn cmd_bind_pipeline(
-        &mut self,
+        &self,
         pipeline: vk::Pipeline,
         point: vk::PipelineBindPoint,
     ) {
@@ -337,7 +337,7 @@ impl<'a> Recorder<'a> {
     
     // Apply some push constants before rendering
     pub unsafe fn cmd_push_constants(
-        &mut self,
+        &self,
         layout: vk::PipelineLayout,
         stage_flags: vk::ShaderStageFlags,
         offset: u32,
@@ -354,7 +354,7 @@ impl<'a> Recorder<'a> {
 
     // Draw some vertices to the currently bound render pass
     pub unsafe fn cmd_draw(
-        &mut self,
+        &self,
         vertex_count: u32,
         instance_count: u32,
         first_vertex: u32,
@@ -371,7 +371,7 @@ impl<'a> Recorder<'a> {
 
     // Set a dynamically set viewport
     pub unsafe fn cmd_set_viewport(
-        &mut self,
+        &self,
         x: f32,
         y: f32,
         width: f32,
@@ -397,7 +397,7 @@ impl<'a> Recorder<'a> {
 
     // Set a dynamically set scissor
     pub unsafe fn cmd_set_scissor(
-        &mut self,
+        &self,
         x: i32,
         y: i32,
         width: u32,

@@ -2,7 +2,7 @@ use assets::Assets;
 use graphics::{
     BlendConfig, CompareOp, Compiled, DepthConfig,
     FaceCullMode, FragmentModule, Graphics, Primitive,
-    StencilConfig, VertexModule, UniformBuffer, BindingConfig,
+    StencilConfig, VertexModule, UniformBuffer, BindingConfig, ActiveBindings,
 };
 use world::World;
 use crate::{EnabledMeshAttributes, Mesh, Renderer, CameraUniform, TimingUniform, SceneUniform};
@@ -70,28 +70,36 @@ pub trait Material: 'static + Sized {
 
     // Get the bindings config for this material
     fn binding_config() -> BindingConfig {
-        BindingConfig::empty()
+        BindingConfig::default()
     }
 
     // Fetch the property block resources
     fn fetch<'w>(world: &'w World) -> Self::Resources<'w>;
 
-    // Get the global / static descriptor
-    fn get_static_descriptor_set<'w: 'ds, 'ds>(
+    // Set the global bindings and uniforms required
+    fn set_global_bindings<'w: 'ds, 'ds>(
+        bindings: &mut ActiveBindings,
         resources: &mut Self::Resources<'w>,
         default: &DefaultMaterialResources,
-    ) {}
+    ) {
+        // check if camera desc set is present in pipeline
+            // set it if it is
+        // check if scene des set is present in pipeline
+            // set it if it is
+    }
 
-    // Get the descriptor for per-mesh rendering
-    fn get_surface_descriptor_set<'w: 'ds, 'ds>(
+    // Sets the bindings related to surface only
+    fn set_surface_bindings<'w: 'ds, 'ds>(
+        bindings: &mut ActiveBindings,
         renderer: Renderer,
         resources: &mut Self::Resources<'w>,
         default: &DefaultMaterialResources,
     ) {}
 
     // This will only be called whenever we switch instances
-    fn get_instance_descriptor_set<'w: 'ds, 'ds>(
+    fn set_instance_bindings<'w: 'ds, 'ds>(
         &self,
+        bindings: &mut ActiveBindings,
         resources: &mut Self::Resources<'w>,
         default: &DefaultMaterialResources,
     ) {}
