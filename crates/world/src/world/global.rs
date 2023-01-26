@@ -16,6 +16,7 @@ pub fn setup() -> (World, Systems) {
                 init: Default::default(),
                 update: Default::default(),
                 shutdown: Default::default(),
+                tick: Default::default(),
                 window: Default::default(),
                 device: Default::default(),
             },

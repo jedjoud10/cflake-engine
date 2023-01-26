@@ -86,6 +86,7 @@ pub trait Material: 'static + Sized {
             // set it if it is
         // check if scene des set is present in pipeline
             // set it if it is
+        
     }
 
     // Sets the bindings related to surface only

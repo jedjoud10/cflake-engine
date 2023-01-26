@@ -30,7 +30,7 @@ impl<'rp, 'r, 'gp> ActiveBindings<'rp, 'r, 'gp> {
     }
     
     // Update the whole push constant block
-    pub fn set_block<B: Block>(
+    pub fn set_push_constant<B: Block>(
         &mut self,
         block_name: &'static str,
         value: &B
@@ -58,17 +58,6 @@ impl<'rp, 'r, 'gp> ActiveBindings<'rp, 'r, 'gp> {
         }
 
         Some(())
-    }
-
-    // Update a sub-range of push constants within a push constant block
-    // This assumes that the variable is set as dynamic within the defintion of Block "B"
-    pub fn set<M: Member, B: Block>(
-        &mut self,
-        block_name: &'static str,
-        var_name: &'static str,
-        value: &M
-    ) -> Option<()> {
-        todo!()
     }
 }
 
@@ -146,6 +135,7 @@ impl<'rp, 'r, 'gp> ActiveRasterizer<'rp, 'r, 'gp> {
 
         // Also check if we have vertex buffers bound
 
+        // Only draw when we actually have vertices
         if count > 0 {
             unsafe {
                 self.draw_unchecked(count, bindings);
@@ -156,5 +146,7 @@ impl<'rp, 'r, 'gp> ActiveRasterizer<'rp, 'r, 'gp> {
     // Draw an indexed mesh using the currently bound vertex buffers
     pub fn draw_indexed(&mut self, count: u32, bindings: &ActiveBindings) {
         debug_assert_eq!(bindings.pipeline, self.graphics.raw());
+        // Also check if we have vertex buffers bound
+        // Also check if we have index buffers bound
     }
 }

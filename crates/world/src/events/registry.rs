@@ -21,12 +21,13 @@ lazy_static! {
         let init = TypeId::of::<crate::Init>();
         let update = TypeId::of::<crate::Update>();
         let shutdown = TypeId::of::<crate::Shutdown>();
+        let tick = TypeId::of::<crate::Tick>();
 
         // Winit reserved callers
         let device = TypeId::of::<winit::event::DeviceEvent>();
         let window = TypeId::of::<winit::event::WindowEvent>();
 
-        vec![init, update, shutdown, device, window]
+        vec![init, update, shutdown, tick, device, window]
     };
 
     pub static ref RESERVED_CALLER_IDS: Vec<CallerId> = {

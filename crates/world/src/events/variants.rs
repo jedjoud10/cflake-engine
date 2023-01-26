@@ -186,3 +186,41 @@ impl<F: FnMut() + 'static> Event<Shutdown, ()> for F {
         Box::new(move |_| self())
     }
 }
+
+// Tick event marker (called 60 times per second
+pub struct Tick(());
+
+impl Caller for Tick {
+    type DynFn = dyn FnMut(&mut World);
+    type Args<'a, 'p> = &'p mut World where 'a: 'p;
+
+
+    fn call<'a, 'p>(
+        boxed: &mut Box<Self::DynFn>,
+        args: &mut Self::Args<'a, 'p>,
+    ) where
+        'a: 'p
+    {
+        boxed(args)
+    }
+}
+
+impl<F: FnMut(&mut World) + 'static> Event<Tick, &mut World>
+    for F
+{
+    type Args<'a, 'p> = &'p mut World where 'a: 'p;
+
+    fn boxed(mut self) -> Box<<Tick as Caller>::DynFn> {
+        Box::new(self)
+    }
+}
+
+impl<F: FnMut() + 'static> Event<Tick, ()>
+    for F
+{
+    type Args<'a, 'p> = () where 'a: 'p;
+
+    fn boxed(mut self) -> Box<<Tick as Caller>::DynFn> {
+        Box::new(move |_| self())
+    }
+}

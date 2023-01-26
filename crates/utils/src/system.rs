@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::{time::{Duration, Instant}, num::{NonZeroU128, NonZeroU32}};
 
 use crate::{FileManager, ThreadPool, Time};
 use world::{post_user, user, System, World};
@@ -32,8 +32,6 @@ pub fn io(system: &mut System, author: String, app: String) {
         .before(user);
 }
 
-// Add the logging system
-
 // Add the Time manager
 pub fn time(system: &mut System) {
     // Main initialization event
@@ -45,6 +43,9 @@ pub fn time(system: &mut System) {
                 startup: Instant::now(),
                 frame_start: Instant::now(),
                 average_delta: 1.0,
+                tick_count: 0,
+                last_tick_start: Instant::now(),
+                ticks_to_execute: None,
             });
         })
         .before(user);
@@ -54,12 +55,36 @@ pub fn time(system: &mut System) {
         .insert_update(|world: &mut World| {
             let mut time = world.get_mut::<Time>().unwrap();
             let now = Instant::now();
-            time.delta = now - time.frame_start;
+            
+            // Update frame count and frame start
             time.frame_start = now;
             time.frame_count += 1;
+
+            // Calculate delta
+            time.delta = now - time.frame_start;
             let delta = time.delta.as_secs_f32();
             time.average_delta =
                 time.average_delta * 0.8 + delta * 0.2;
+
+            // Constants needed for ticks
+            const TICKS_PER_SEC: f32 = 120.0f32;
+            const TICKS_DELTA_NS: f32 = (1.0 / TICKS_PER_SEC) * 1000000000.0;
+            const TICK_DELTA: Duration = Duration::from_nanos(TICKS_DELTA_NS as u64);
+            
+            // Update the tick count and starts
+            let diff = now - time.last_tick_start;
+            if diff >= TICK_DELTA {
+                // Calculate how many ticks have elapsed since the last tick
+                let divided = diff.as_micros() as f32 / TICK_DELTA.as_micros() as f32;
+                let count = divided.floor() as u32;
+
+                // Add divided tick count to accumulator
+                time.last_tick_start = now;
+                time.tick_count += count as u128;
+                time.ticks_to_execute = NonZeroU32::new(count);
+            } else {
+                time.ticks_to_execute = None;
+            }
         })
         .before(user);
 }

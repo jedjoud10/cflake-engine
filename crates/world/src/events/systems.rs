@@ -1,6 +1,6 @@
 use crate::{
     Caller, CallerId, Event, Init, Registry, Rule, Shutdown,
-    SystemId, Update,
+    SystemId, Update, Tick,
 };
 
 use log_err::LogErrResult;
@@ -15,6 +15,7 @@ pub struct Systems {
     pub init: Registry<Init>,
     pub update: Registry<Update>,
     pub shutdown: Registry<Shutdown>,
+    pub tick: Registry<Tick>,
     pub window: Registry<WindowEvent<'static>>,
     pub device: Registry<DeviceEvent>,
 }
@@ -31,6 +32,7 @@ impl Systems {
             init: &mut self.init,
             update: &mut self.update,
             shutdown: &mut self.shutdown,
+            tick: &mut self.tick,
             window: &mut self.window,
             device: &mut self.device,
             system: super::fetch_system_id(&callback),
@@ -104,6 +106,7 @@ impl<'a, C: Caller> EventMut<'a, C> {
 pub struct System<'a> {
     init: &'a mut Registry<Init>,
     update: &'a mut Registry<Update>,
+    tick: &'a mut Registry<Tick>,
     shutdown: &'a mut Registry<Shutdown>,
     window: &'a mut Registry<WindowEvent<'static>>,
     device: &'a mut Registry<DeviceEvent>,
@@ -154,6 +157,14 @@ impl<'a> System<'a> {
         event: impl Event<Shutdown, ID>,
     ) -> EventMut<Shutdown> {
         insert!(self, event, shutdown, Shutdown)
+    }
+
+    // Insert a tick event and return a mut evnet
+    pub fn insert_tick<ID>(
+        &mut self,
+        event: impl Event<Tick, ID>
+    ) -> EventMut<Tick> {
+        insert!(self, event, tick, Tick)
     }
 
     // Insert a device event and return a mut event

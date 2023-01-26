@@ -12,10 +12,12 @@ pub(super) fn render_surfaces<M: Material>(
 ) {
     let time = world.get::<Time>().unwrap();
     
+    // Get a rasterizer for the current render pass by binding a pipeline
     let (mut rasterizer, mut bindings) = render_pass.bind_pipeline(pipeline);
+
     //bindings.set_block::<u32>("mesh_data", &2).unwrap();
     rasterizer.draw(6, &bindings);
-    //rasterizer.draw(6, &bindings);
+    rasterizer.draw(6, &bindings);
     
     /*
     let scene = world.get::<Scene>().unwrap();

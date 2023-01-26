@@ -7,7 +7,7 @@ use graphics::{FrameRateLimit, GraphicsInit, WindowSettings};
 use mimalloc::MiMalloc;
 use std::{path::PathBuf};
 use world::{
-    Event, Init, Shutdown, State, System, Systems, Update, World,
+    Event, Init, Shutdown, State, System, Systems, Update, World, Tick,
 };
 
 #[global_allocator]
@@ -136,6 +136,16 @@ impl App {
         })
     }
 
+    // Insert a single tick event
+    pub fn insert_tick<ID>(
+        self,
+        tick: impl Event<Tick, ID> + 'static
+    ) -> Self {
+        self.insert_system(move |system: &mut System| {
+            system.insert_tick(tick);
+        })
+    }
+
     // Insert a single window event
     pub fn insert_window<ID>(
         self,
@@ -195,7 +205,20 @@ impl App {
             // Call the update events
             winit::event::Event::MainEventsCleared => {
                 sleeper.loop_start();
+
+                // Execute the update event
                 systems.update.execute(&mut world);
+
+                // Execute the tick event 60 times per second
+                let time = world.get::<utils::Time>().unwrap();
+                
+                // Make sure we execute the tick event only 60 times per second
+                if let Some(count) = time.ticks_to_execute() {
+                    drop(time);
+                    for _ in 0..count.get() {
+                        systems.tick.execute(&mut world);
+                    }
+                }
 
                 // Handle app shutdown
                 if let Ok(State::Stopped) =
@@ -266,8 +289,8 @@ impl App {
         self = self.insert_system(utils::time);
         self = self.insert_system(audio::system);
         self = self.insert_system(networking::system);
-        self = self.insert_system(graphics::system);
-        self = self.insert_system(rendering::system);
+        //self = self.insert_system(graphics::system);
+        //self = self.insert_system(rendering::system);
 
         // Insert the IO manager
         let author = self.author_name.clone();
@@ -283,6 +306,7 @@ impl App {
         });
 
         // Insert the graphics API init resource
+        /*
         let window_settings = self.window.clone();
         let app_name = self.app_name.clone();
         let app_version = self.app_version;
@@ -295,6 +319,7 @@ impl App {
             engine_name,
             engine_version,
         });
+        */
         self
     }
 }
