@@ -6,7 +6,7 @@ use crate::{Material, Mesh, MaterialId};
 // A surface is a combination of a sub mesh and a specific material handle
 // A renderable entity will have multiple surface sets
 #[derive(Component)]
-pub struct RenderSurface<M: Material> {
+pub struct Surface<M: Material> {
     // Graphic object handles
     pub mesh: Handle<Mesh>,
     pub material: Handle<M>,
@@ -18,7 +18,7 @@ pub struct RenderSurface<M: Material> {
     pub matid: MaterialId<M>,
 }
 
-impl<M: Material> RenderSurface<M> {
+impl<M: Material> Surface<M> {
     // Create a new visible surface from a mesh handle, material handle, and material ID
     pub fn new(mesh: Handle<Mesh>, material: Handle<M>, id: MaterialId<M>) -> Self {
         Self {

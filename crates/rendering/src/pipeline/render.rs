@@ -1,4 +1,4 @@
-use crate::{Material, SwapchainFormat, RenderSurface, Mesh, attributes::RawPosition};
+use crate::{Material, SwapchainFormat, Surface, Mesh, attributes::RawPosition};
 use ecs::Scene;
 use graphics::{vk, Graphics, GraphicsPipeline, ActiveRenderPass, XYZ, ModuleKind};
 use utils::{Storage, Time};
@@ -10,23 +10,28 @@ pub(super) fn render_surfaces<M: Material>(
     pipeline: &GraphicsPipeline,
     render_pass: &mut ActiveRenderPass<SwapchainFormat, ()>
 ) {
-    let time = world.get::<Time>().unwrap();
-    
     // Get a rasterizer for the current render pass by binding a pipeline
     let (mut rasterizer, mut bindings) = render_pass.bind_pipeline(pipeline);
 
-    //bindings.set_block::<u32>("mesh_data", &2).unwrap();
-    rasterizer.draw(6, &bindings);
-    rasterizer.draw(6, &bindings);
-    
-    /*
-    let scene = world.get::<Scene>().unwrap();
+    // Get all the meshes and surface for this specific material
     let meshes = world.get::<Storage<Mesh>>().unwrap();
     let materials = world.get::<Storage<M>>().unwrap();
-    let query = scene.query::<&RenderSurface<M>>(); 
 
+    // Get all the entities that contain a visible surface
+    let scene = world.get::<Scene>().unwrap();
+    let query = scene.query::<&Surface<M>>();
+
+    // Iterate over all the surface of this material
     for surface in query {
+        // Get the mesh and material that correspond to this surface
         let mesh = meshes.get(&surface.mesh);
+        let material = materials.get(&surface.material);
+
+        // FIXME: Figure out if we should use bindless or not
+        // If we were to use bindless, how should be pass keep track of textures / buffers sequentially?
+
+        // Bind the mesh's vertices and draw
+        //rasterizer.bind_vertex_buffers(&mesh.vertices().untyped_buffers());
+        rasterizer.draw(mesh.vertices().len().unwrap_or_default() as u32, &bindings);
     }
-    */
 }

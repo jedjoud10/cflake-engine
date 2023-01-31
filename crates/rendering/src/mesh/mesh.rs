@@ -30,6 +30,9 @@ pub struct Mesh {
 impl Mesh {
     // Create a new mesh from the mesh attributes, context, and buffer settings
     // TODO: Support multiple modes and usages PER attribute
+    
+    // FIXME: Crashes when trying to create triangles buffer for the default engine sphere
+    // Has to do with the high triangle, maybe usize overflow?
     pub fn from_slices(
         graphics: &Graphics,
         mode: BufferMode,
@@ -44,7 +47,6 @@ impl Mesh {
         let normals = normals.map(|slice| VertexBuffer::from_slice(graphics, &slice, mode, usage).unwrap());
         let tangents = tangents.map(|slice| VertexBuffer::from_slice(graphics, &slice, mode, usage).unwrap());
         let tex_coords = tex_coords.map(|slice| VertexBuffer::from_slice(graphics, &slice, mode, usage).unwrap());
-        
         let triangles = TriangleBuffer::from_slice(graphics, &triangles, mode, usage).unwrap();
         Self::from_buffers(positions, normals, tangents, tex_coords, triangles)
     }
@@ -172,6 +174,7 @@ impl Asset for Mesh {
 
         // Load the .Obj mesh
         let parsed = obj::load_obj::<TexturedVertex, &[u8], u32>(data.bytes()).unwrap();
+        log::debug!("Parsed mesh from file '{}', vertex count: {}, index count: {}", data.name(), parsed.vertices.len(), parsed.indices.len());
 
         // Create temporary slicetors containing the vertex attributes
         let capacity = parsed.vertices.len();

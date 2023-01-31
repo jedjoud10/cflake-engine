@@ -2,7 +2,7 @@ use graphics::{BufferUsage, BufferMode};
 use crate::attributes::TexCoord;
 
 // Mesh settings that we will use whenever we import a new mesh from a file
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct MeshImportSettings {
     // How the mesh attribute buffers shall be created
     pub buffer_mode: BufferMode,

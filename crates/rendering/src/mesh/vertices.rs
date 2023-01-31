@@ -1,6 +1,6 @@
 use std::cell::{Cell, RefCell};
 
-use graphics::VertexBuffer;
+use graphics::{VertexBuffer, UntypedBuffer, Buffer};
 use math::AABB;
 use crate::MeshAabbComputeError;
 use super::attributes::*;
@@ -30,6 +30,19 @@ impl VerticesRef<'_> {
     // Get an immutable reference to an attribute buffer
     pub fn attribute<T: MeshAttribute>(&self) -> Option<&VertexBuffer<T::Storage>> {
         T::from_ref_as_ref(self)
+    }
+
+    // Get all the available attribute buffers as untyped buffers types
+    pub fn untyped_buffers(
+        &self,
+    ) -> [Option<UntypedBuffer>; MAX_MESH_VERTEX_ATTRIBUTES] {
+        [
+            self.attribute::<Position>().map(|b| Buffer::untyped(b)),
+            self.attribute::<Normal>().map(|b| Buffer::untyped(b)),
+            self.attribute::<Tangent>().map(|b| Buffer::untyped(b)),
+            //self.attribute::<Color>().map(|b| Buffer::untyped(b)),
+            self.attribute::<TexCoord>().map(|b| Buffer::untyped(b)),
+        ]
     }
 
     // Get the number of vertices that we have (will return None if we have buffers of mismatching lengths)

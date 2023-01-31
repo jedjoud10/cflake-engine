@@ -57,11 +57,12 @@ pub fn time(system: &mut System) {
             let now = Instant::now();
             
             // Update frame count and frame start
+            let old_frame_start = time.frame_start;
             time.frame_start = now;
             time.frame_count += 1;
 
-            // Calculate delta
-            time.delta = now - time.frame_start;
+            // Calculate delta (using old frame start)
+            time.delta = now - old_frame_start;
             let delta = time.delta.as_secs_f32();
             time.average_delta =
                 time.average_delta * 0.8 + delta * 0.2;

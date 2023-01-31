@@ -1,9 +1,9 @@
-use std::{marker::PhantomData, any::{Any, TypeId}};
+use std::{marker::PhantomData, any::{Any, TypeId}, sync::Arc};
 
 use vulkan::{Recorder, vk};
 
 use crate::{
-    ColorLayout, DepthStencilLayout, GraphicsPipeline, Block, Member, BindingConfig, DepthConfig, StencilConfig, BlendConfig, VertexConfig, Shader, Primitive,
+    ColorLayout, DepthStencilLayout, GraphicsPipeline, Block, Member, BindingConfig, DepthConfig, StencilConfig, BlendConfig, VertexConfig, Shader, Primitive, UntypedBuffer, VertexBuffer,
 };
 
 // This is an active binding that is linked to a specific active pipeline
@@ -111,6 +111,29 @@ impl<'rp, 'r, 'gp> ActiveRasterizer<'rp, 'r, 'gp> {
     pub fn primitive(&self) -> &Primitive {
         &self.graphics_pipeline().primitive()
     }
+
+    // Binds one vertex buffer to be used within the pipeline at a specific location
+    /*
+    pub fn bind_vertex_buffer<T>(
+        &mut self,
+        buffer: &VertexBuffer<T>,
+        binding: u32,
+    ) {
+
+    }
+    */
+
+    /*
+    // Bind multiple vertex buffers to be able to draw them in the draw command
+    // This ignores vertex buffers 
+    pub fn bind_vertex_buffers(
+        &mut self,
+        vertex_buffers: &[Option<UntypedBuffer>]
+    ) {
+        // FIXME: Make the size of this slice the lowest supported value of maxVertexInputAttributes
+        let slice = [0; 8];
+    }
+    */
 
     // Draw an array mesh using the currently bound vertex buffers without checking for safety
     pub unsafe fn draw_unchecked(

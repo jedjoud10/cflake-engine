@@ -13,7 +13,8 @@ pub struct Shader {
 }
 
 impl Shader {
-    // Create a new shaderf rom the vertex and fragment modules
+    // Create a new shader from the vertex and fragment modules
+    // FIXME: Use shader source sharing
     pub fn new(
         vert: Compiled<VertexModule>,
         frag: Compiled<FragmentModule>,

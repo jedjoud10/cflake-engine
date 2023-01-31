@@ -45,13 +45,14 @@ fn init(world: &mut World, user: Option<PathBuf>) {
     persistent!(loader, "engine/shaders/math/conversions.func.glsl");
     persistent!(loader, "engine/shaders/math/kernels.func.glsl");
 
-    // Load the default meshes
-    persistent!(loader, "engine/meshes/cube.obj");
-    persistent!(loader, "engine/meshes/sphere.obj");
-
+    
     // Load the default texutres
     persistent!(loader, "engine/textures/integration.png");
     */
+
+    // Load the default meshes
+    persistent!(loader, "engine/meshes/cube.obj");
+    persistent!(loader, "engine/meshes/sphere.obj");
 
     // Insert the loader
     world.insert(loader);

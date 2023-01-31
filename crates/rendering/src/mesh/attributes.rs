@@ -13,7 +13,7 @@ bitflags::bitflags! {
         const POSITIONS = 1;
         const NORMALS = 1 << 1;
         const TANGENTS = 1 << 2;
-        const COLORS = 1 << 3;
+        //const COLORS = 1 << 3;
         const TEX_COORDS = 1 << 4;
     }
 }
@@ -29,7 +29,7 @@ bitflags::bitflags! {
 
 // This is the maximum number of active attributes that we can have inside a mesh
 pub const MAX_MESH_VERTEX_ATTRIBUTES: usize =
-    EnabledMeshAttributes::all().bits.trailing_ones() as usize;
+    EnabledMeshAttributes::all().bits.count_ones() as usize;
 
 // Contains the underlying array buffer for a specific attribute
 pub type AttributeBuffer<A> = MaybeUninit<VertexBuffer<<<A as MeshAttribute>::V as Vertex>::Storage>>;

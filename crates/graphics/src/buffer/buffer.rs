@@ -1,7 +1,7 @@
 use std::{
     alloc::Layout,
     marker::PhantomData,
-    mem::{size_of, ManuallyDrop},
+    mem::{size_of, ManuallyDrop}, any::type_name,
 };
 
 use crate::{
@@ -150,6 +150,8 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
 
         // Allocate the buffer
         let (buffer, mut allocation) = unsafe {
+            log::debug!("Allocating raw buffer for type {}, len: {}", type_name::<T>(), slice.len());
+            log::debug!("Buffer allocation settings: Buffer mode: {:?}Buffer usage: {:?}", mode, usage);
             super::allocate_buffer::<T>(
                 graphics,
                 location,

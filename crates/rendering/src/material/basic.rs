@@ -54,8 +54,8 @@ impl Material for Basic {
 
     fn attributes() -> EnabledMeshAttributes {
         //EnabledMeshAttributes::POSITIONS | EnabledMeshAttributes::NORMALS | EnabledMeshAttributes::TEX_COORDS
-        EnabledMeshAttributes::empty()
-        //EnabledMeshAttributes::POSITIONS 
+        //EnabledMeshAttributes::empty()
+        EnabledMeshAttributes::POSITIONS 
     }
 
     fn binding_config() -> BindingConfig {
