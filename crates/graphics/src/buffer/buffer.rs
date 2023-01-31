@@ -19,6 +19,17 @@ const STORAGE: u32 = vk::BufferUsageFlags::STORAGE_BUFFER.as_raw();
 const UNIFORM: u32 = vk::BufferUsageFlags::UNIFORM_BUFFER.as_raw();
 const INDIRECT: u32 = vk::BufferUsageFlags::INDIRECT_BUFFER.as_raw();
 
+// Type of buffer stored as an enum (Vulkan BufferUsages)
+#[repr(u32)]
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum BufferVariant {
+    Vertex = VERTEX,
+    Index = INDEX,
+    Storage = STORAGE,
+    Uniform = UNIFORM,
+    Indirect = INDIRECT,
+}
+
 // Common buffer types
 pub type VertexBuffer<T> = Buffer<T, VERTEX>;
 pub type Triangle<T> = [T; 3];
@@ -26,6 +37,8 @@ pub type TriangleBuffer<T> = Buffer<Triangle<T>, INDEX>;
 pub type StorageBuffer<T> = Buffer<T, STORAGE>;
 pub type UniformBuffer<T> = Buffer<T, UNIFORM>;
 pub type IndirectBuffer<T> = Buffer<T, INDIRECT>;
+
+
 
 // An abstraction layer over a valid Vulkan buffer
 // This also takes a constant that represents it's Vulkan target at compile time
@@ -52,6 +65,7 @@ pub struct Buffer<T: GpuPodRelaxed, const TYPE: u32> {
 // Untyped buffer that does not contain a generic type nor type ID
 pub struct UntypedBuffer<'a> {
     buffer: &'a vk::Buffer,
+    variant: BufferVariant,
     allocation: &'a Allocation,
     length: usize,
     stride: usize,
@@ -105,6 +119,11 @@ impl<'a> UntypedBuffer<'a> {
     pub fn is_host_mapped(&self) -> bool {
         self.allocation().mapped_ptr().is_some()
     }
+
+    // Get the buffer variant type
+    pub fn variant(&self) -> BufferVariant {
+        self.variant
+    }
 }
 
 impl<T: GpuPodRelaxed, const TYPE: u32> Drop for Buffer<T, TYPE> {
@@ -139,6 +158,12 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
             );
         }
 
+        // Panic if the buffer type isn't supported
+        let valid_variant_type = TYPE & (VERTEX | INDEX | STORAGE | UNIFORM | INDIRECT) != 0;
+        assert!(valid_variant_type, 
+            "Given buffer variant type is invalid. Must be VERTEX, INDEX, STORAGE, UNIFORM, or INDIRECT"
+        );
+
         // Get location and staging buffer location
         let (location, flags) =
             super::find_optimal_layout(usage, TYPE);
@@ -160,7 +185,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
             )
         };
 
-        // Fill up the buffer
+        // Fill up TEJ3M1-01the buffer
         unsafe {
             super::fill_buffer(
                 graphics,
@@ -245,6 +270,18 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
         self.mode
     }
 
+    // Get the buffer variant (TYPE wrapper)
+    pub fn variant(&self) -> BufferVariant {
+        match TYPE {
+            VERTEX => BufferVariant::Vertex,
+            INDEX => BufferVariant::Index,
+            STORAGE => BufferVariant::Storage,
+            UNIFORM => BufferVariant::Uniform,
+            INDIRECT => BufferVariant::Indirect,
+            _ => panic!("This shouldn't happen. Fuck me"),
+        }
+    }
+
     // Get the buffer's stride (length of each element)
     pub fn stride(&self) -> usize {
         size_of::<T>()
@@ -265,6 +302,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
             capacity: self.capacity(),
             usage: self.usage(),
             mode: self.mode(),
+            variant: self.variant(),
         }
     }
 }

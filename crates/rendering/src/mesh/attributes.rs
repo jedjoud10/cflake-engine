@@ -99,7 +99,6 @@ pub fn untyped_attributes_from_enabled_attributes(attributes: EnabledMeshAttribu
     push::<Normal>(attributes, &mut vec);
     push::<Tangent>(attributes, &mut vec);
     push::<TexCoord>(attributes, &mut vec);
-    dbg!(vec.len());
     vec
 }
 

@@ -59,6 +59,7 @@ impl Material for Basic {
     }
 
     fn binding_config() -> BindingConfig {
+        /*
         let module_binding_config = ModuleBindingConfig {
             push_constant: Some((graphics::PushConstantBlock {
                 name: "MeshConstants".to_string(),
@@ -82,6 +83,8 @@ impl Material for Basic {
         };
 
         BindingConfig::from_iter([(ModuleKind::Vertex, module_binding_config)])
+        */
+        BindingConfig::default()
     }
 
     fn fetch<'w>(world: &'w world::World) -> Self::Resources<'w> {

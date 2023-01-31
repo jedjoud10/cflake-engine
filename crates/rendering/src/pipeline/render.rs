@@ -1,6 +1,6 @@
 use crate::{Material, SwapchainFormat, Surface, Mesh, attributes::RawPosition};
 use ecs::Scene;
-use graphics::{vk, Graphics, GraphicsPipeline, ActiveRenderPass, XYZ, ModuleKind};
+use graphics::{Graphics, GraphicsPipeline, ActiveRenderPass, XYZ, ModuleKind};
 use utils::{Storage, Time};
 use world::World;
 
@@ -32,6 +32,7 @@ pub(super) fn render_surfaces<M: Material>(
 
         // Bind the mesh's vertices and draw
         //rasterizer.bind_vertex_buffers(&mesh.vertices().untyped_buffers());
-        rasterizer.draw(mesh.vertices().len().unwrap_or_default() as u32, &bindings);
+        log::debug!("Draw mesh")
     }
+    rasterizer.draw(6, &bindings);
 }

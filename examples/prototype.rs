@@ -22,8 +22,20 @@ fn init(world: &mut World) {
     let mut renderer = world.get_mut::<ForwardRenderer>().unwrap();
     let material_id = renderer.register::<Basic>(&graphics, &assets);
 
+    let material = materials.insert(Basic {
+        diffuse_map: None,
+        normal_map: None,
+        roughness: 0.0,
+        tint: vek::Rgb::default(),
+    });
+
+    let id = material_id.unwrap();
     let mesh = assets.load::<Mesh>(("engine/meshes/cube.obj", &*graphics)).unwrap();
-    meshes.insert(mesh);
+    let mesh = meshes.insert(mesh);
+
+    let surface = Surface::new(mesh, material, id);
+
+    scene.insert(surface);
 
     /*
     let buffer = TriangleBuffer::<u32>::from_slice(

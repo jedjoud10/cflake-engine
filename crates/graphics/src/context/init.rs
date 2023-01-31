@@ -1,9 +1,9 @@
 use crate::{
-    Adapter, Device, FrameRateLimit, Graphics, Instance, Queue,
-    Surface, Swapchain, Window, WindowSettings,
+    FrameRateLimit, Graphics, Window, WindowSettings,
 };
 
 use std::sync::Arc;
+use vulkan::{Instance, Surface, Adapter, Device, Queue, Swapchain};
 use winit::{
     event_loop::EventLoop,
     window::{Fullscreen, WindowBuilder},

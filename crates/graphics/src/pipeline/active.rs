@@ -3,7 +3,7 @@ use std::{marker::PhantomData, any::{Any, TypeId}, sync::Arc};
 use vulkan::{Recorder, vk};
 
 use crate::{
-    ColorLayout, DepthStencilLayout, GraphicsPipeline, Block, Member, BindingConfig, DepthConfig, StencilConfig, BlendConfig, VertexConfig, Shader, Primitive, UntypedBuffer, VertexBuffer,
+    ColorLayout, DepthStencilLayout, GraphicsPipeline, Block, Member, BindingConfig, DepthConfig, StencilConfig, BlendConfig, VertexConfig, Shader, Primitive, UntypedBuffer, VertexBuffer, GpuPodRelaxed, BufferVariant,
 };
 
 // This is an active binding that is linked to a specific active pipeline
@@ -113,27 +113,42 @@ impl<'rp, 'r, 'gp> ActiveRasterizer<'rp, 'r, 'gp> {
     }
 
     // Binds one vertex buffer to be used within the pipeline at a specific location
-    /*
-    pub fn bind_vertex_buffer<T>(
+    pub fn bind_vertex_buffer<T: GpuPodRelaxed>(
         &mut self,
         buffer: &VertexBuffer<T>,
         binding: u32,
     ) {
 
     }
-    */
 
-    /*
     // Bind multiple vertex buffers to be able to draw them in the draw command
-    // This ignores vertex buffers 
+    // This ignores buffers that are not defined as vertex buffers 
+    // FIXME: IMPLEMENT RESOURCE TRACKING. THIS SHIT SUCKS ASS BRO 
     pub fn bind_vertex_buffers(
         &mut self,
         vertex_buffers: &[Option<UntypedBuffer>]
     ) {
         // FIXME: Make the size of this slice the lowest supported value of maxVertexInputAttributes
-        let slice = [0; 8];
+        let mut slice = [vk::Buffer::null(); 8];
+
+        // Set the buffer handles inside the slice
+        let mut next = 0;
+        for buffer in vertex_buffers.iter() {
+            if let Some(buffer) = buffer {
+                if buffer.variant() == BufferVariant::Vertex {
+                    slice[next] = buffer.raw().unwrap_or(vk::Buffer::null());
+                    next += 1;
+                }
+            } else {
+                next += 1;
+            }
+        }
+
+        // Bind the vertex buffers to the rasterizer
+        unsafe {
+            self.recorder.cmd_bind_vertex_buffers(0, &slice, &[]);
+        }
     }
-    */
 
     // Draw an array mesh using the currently bound vertex buffers without checking for safety
     pub unsafe fn draw_unchecked(

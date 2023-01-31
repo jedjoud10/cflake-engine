@@ -1,3 +1,4 @@
+// TODO: Try removing this. There must be a better way bruv
 pub unsafe trait GpuPodRelaxed:
     bytemuck::AnyBitPattern
     + bytemuck::NoUninit
