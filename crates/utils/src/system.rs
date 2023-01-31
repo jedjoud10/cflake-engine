@@ -87,4 +87,12 @@ pub fn time(system: &mut System) {
             }
         })
         .before(user);
+
+    // Insert the tick event that will increase the tick count as well
+    system
+        .insert_tick(|world: &mut World| {
+            let mut time = world.get_mut::<Time>().unwrap();
+            time.tick_count += 1;
+        })
+        .before(user);
 }

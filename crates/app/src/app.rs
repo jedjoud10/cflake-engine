@@ -209,12 +209,14 @@ impl App {
                 // Execute the update event
                 systems.update.execute(&mut world);
 
-                // Execute the tick event 60 times per second
+                // Execute the tick event 120 times per second
                 let time = world.get::<utils::Time>().unwrap();
                 
-                // Make sure we execute the tick event only 60 times per second
+                // Make sure we execute the tick event only 120 times per second
                 if let Some(count) = time.ticks_to_execute() {
                     drop(time);
+                    
+                    // Execute the tick events
                     for _ in 0..count.get() {
                         systems.tick.execute(&mut world);
                     }
@@ -289,8 +291,8 @@ impl App {
         self = self.insert_system(utils::time);
         self = self.insert_system(audio::system);
         self = self.insert_system(networking::system);
-        //self = self.insert_system(graphics::system);
-        //self = self.insert_system(rendering::system);
+        self = self.insert_system(graphics::system);
+        self = self.insert_system(rendering::system);
 
         // Insert the IO manager
         let author = self.author_name.clone();
@@ -306,7 +308,6 @@ impl App {
         });
 
         // Insert the graphics API init resource
-        /*
         let window_settings = self.window.clone();
         let app_name = self.app_name.clone();
         let app_version = self.app_version;
@@ -319,7 +320,6 @@ impl App {
             engine_name,
             engine_version,
         });
-        */
         self
     }
 }

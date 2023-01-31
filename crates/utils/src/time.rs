@@ -2,29 +2,17 @@ use std::{time::{Duration, Instant}, num::NonZeroU32};
 
 // Global resource that defines the time since the start of the engine and the current frame data
 pub struct Time {
-    // The difference in seconds between the last frame and the current frame
+    // Related to delta, time, and frames
     pub(crate) delta: Duration,
-
-    // How many frames has the engine been running for?
     pub(crate) frame_count: u128,
-
-    // When the engine started
     pub(crate) startup: Instant,
-
-    // The start of the current frame
     pub(crate) frame_start: Instant,
-
-    // How many ticks has the engine been running for?
-    pub(crate) tick_count: u128,
-
-    // The last time we ran a tick
-    pub(crate) last_tick_start: Instant,
-
-    // Number of ticks we must execute this frame
-    pub(crate) ticks_to_execute: Option<NonZeroU32>,
-
-    // FPS counter buffer
     pub(crate) average_delta: f32,
+
+    // Related to constant ticks
+    pub(crate) tick_count: u128,
+    pub(crate) last_tick_start: Instant,
+    pub(crate) ticks_to_execute: Option<NonZeroU32>,
 }
 
 impl Time {
@@ -47,7 +35,7 @@ impl Time {
     pub fn since_startup(&self) -> Duration {
         Instant::now() - self.startup()
     }
-
+    
     // Get the moment the current frame started
     pub fn frame_start(&self) -> Instant {
         self.frame_start
