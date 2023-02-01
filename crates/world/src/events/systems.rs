@@ -102,7 +102,6 @@ impl<'a, C: Caller> EventMut<'a, C> {
 
 // This is a single system that will be passed along a callback
 // This system is the main entry point to modify how events are executed
-// TODO: Implement fixed tick system?
 pub struct System<'a> {
     init: &'a mut Registry<Init>,
     update: &'a mut Registry<Update>,

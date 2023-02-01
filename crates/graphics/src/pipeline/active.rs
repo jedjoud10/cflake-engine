@@ -133,10 +133,12 @@ impl<'rp, 'r, 'gp> ActiveRasterizer<'rp, 'r, 'gp> {
 
         // Set the buffer handles inside the slice
         let mut next = 0;
+        let mut valid = false;
         for buffer in vertex_buffers.iter() {
             if let Some(buffer) = buffer {
                 if buffer.variant() == BufferVariant::Vertex {
                     slice[next] = buffer.raw().unwrap_or(vk::Buffer::null());
+                    valid = true;
                     next += 1;
                 }
             } else {
@@ -146,7 +148,9 @@ impl<'rp, 'r, 'gp> ActiveRasterizer<'rp, 'r, 'gp> {
 
         // Bind the vertex buffers to the rasterizer
         unsafe {
-            self.recorder.cmd_bind_vertex_buffers(0, &slice, &[]);
+            if valid {
+                self.recorder.cmd_bind_vertex_buffers(0, &slice, &[0; 8]);
+            }
         }
     }
 

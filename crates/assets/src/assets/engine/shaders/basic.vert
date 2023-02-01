@@ -2,7 +2,7 @@
 #include <engine/shaders/common/camera.glsl>
 
 // Vertex attributes from Rust
-//layout (location = 0) in vec3 vertex_position;
+layout (location = 0) in vec3 vertex_position;
 
 /*
 // This material stores indices to actual textures and other params

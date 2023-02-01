@@ -58,6 +58,7 @@ impl Device {
 
         // Get the features that we must enable
         let mut adapter_features = required_features();
+        adapter_features.features12.p_next = (&mut adapter_features.robustness12 as *mut vk::PhysicalDeviceRobustness2FeaturesEXT) as _;
 
         // Create the device create info
         let logical_device_create_info = DeviceCreateInfo::builder()
@@ -118,6 +119,7 @@ impl Device {
             .unwrap();
 
         // Create a global descriptor pool for bindless
+        // TODO: Make this dynamic?
         let sizes = [
             vk::DescriptorPoolSize {
                 ty: vk::DescriptorType::COMBINED_IMAGE_SAMPLER,

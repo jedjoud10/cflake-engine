@@ -6,7 +6,6 @@ use paste::paste;
 
 use crate::{VerticesMut, VerticesRef};
 
-#[cfg(not(feature = "two-dim"))]
 bitflags::bitflags! {
     // This specifies the buffers that the mesh uses internally
     pub struct EnabledMeshAttributes: u8 {
@@ -15,15 +14,6 @@ bitflags::bitflags! {
         const TANGENTS = 1 << 2;
         //const COLORS = 1 << 3;
         const TEX_COORDS = 1 << 4;
-    }
-}
-
-#[cfg(feature = "two-dim")]
-bitflags::bitflags! {
-    // This specifies the buffers that the mesh uses internally
-    pub struct EnabledMeshAttributes: u8 {
-        const POSITIONS = 1;
-        const COLORS = 1 << 3;
     }
 }
 
@@ -134,14 +124,17 @@ macro_rules! impl_vertex_attribute {
             
                 fn insert(vertices: &mut VerticesMut, buffer: VertexBuffer<Self::Storage>) {
                     if vertices.is_enabled::<Self>() {
-                        let old = std::mem::replace(vertices.$name, std::mem::MaybeUninit::new(buffer));
-                        drop(old)
+                        let mut old = std::mem::replace(vertices.$name, std::mem::MaybeUninit::new(buffer));
+                        unsafe { old.assume_init_drop() }
                     } else {
                         *vertices.$name = std::mem::MaybeUninit::new(buffer);
                     }
+
+                    vertices.enabled.insert(Self::ATTRIBUTE);
                 }
             
                 fn remove<'a>(vertices: &mut VerticesMut<'a>) -> Option<VertexBuffer<Self::Storage>> {
+                    vertices.enabled.remove(Self::ATTRIBUTE);
                     vertices.is_enabled::<Self>().then(|| {
                         std::mem::replace(vertices.$name, std::mem::MaybeUninit::uninit())
                     }).map(|x| unsafe { x.assume_init() })

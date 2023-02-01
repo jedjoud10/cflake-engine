@@ -31,6 +31,10 @@ fn init(world: &mut World) {
 
     let id = material_id.unwrap();
     let mesh = assets.load::<Mesh>(("engine/meshes/cube.obj", &*graphics)).unwrap();
+    let vertices = mesh.vertices();
+    let positions = vertices.attribute::<attributes::Position>().unwrap();
+    dbg!(positions.as_slice().unwrap());
+    dbg!(vertices.len());
     let mesh = meshes.insert(mesh);
 
     let surface = Surface::new(mesh, material, id);

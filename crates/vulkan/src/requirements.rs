@@ -60,6 +60,9 @@ pub fn required_features() -> AdapterFeatures {
         .runtime_descriptor_array(true)
         .descriptor_indexing(true);
 
+    let robustness12 = *vk::PhysicalDeviceRobustness2FeaturesEXT::builder()
+        .null_descriptor(true);
+
     let features13 = *vk::PhysicalDeviceVulkan13Features::builder()
         .dynamic_rendering(true)
         .robust_image_access(true)
@@ -70,6 +73,7 @@ pub fn required_features() -> AdapterFeatures {
         features11,
         features12,
         features13,
+        robustness12,
     }
 }
 

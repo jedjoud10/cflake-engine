@@ -8,7 +8,7 @@ use ash::vk::{
     PhysicalDeviceVulkan11Properties, PhysicalDeviceVulkan12Features,
     PhysicalDeviceVulkan12Properties, PhysicalDeviceVulkan13Features,
     PhysicalDeviceVulkan13Properties, PresentModeKHR,
-    SurfaceCapabilitiesKHR, SurfaceFormatKHR,
+    SurfaceCapabilitiesKHR, SurfaceFormatKHR, PhysicalDeviceRobustness2FeaturesEXT,
 };
 
 use super::{Instance, Surface};
@@ -20,6 +20,7 @@ pub struct AdapterFeatures {
     pub features11: PhysicalDeviceVulkan11Features,
     pub features12: PhysicalDeviceVulkan12Features,
     pub features13: PhysicalDeviceVulkan13Features,
+    pub robustness12: PhysicalDeviceRobustness2FeaturesEXT,
 }
 
 // Properties of an adapter
@@ -201,6 +202,8 @@ unsafe fn get_adapter_features(
 ) -> AdapterFeatures {
     let mut features11 = PhysicalDeviceVulkan11Features::default();
     let mut features12 = PhysicalDeviceVulkan12Features::default();
+    let mut robustness12 = PhysicalDeviceRobustness2FeaturesEXT::default();
+    features12.p_next = (&mut robustness12 as *mut PhysicalDeviceRobustness2FeaturesEXT) as _;
     let mut features13 = PhysicalDeviceVulkan13Features::default();
     let mut features = PhysicalDeviceFeatures2::builder()
         .features(PhysicalDeviceFeatures::default())
@@ -216,6 +219,7 @@ unsafe fn get_adapter_features(
         features11,
         features12,
         features13,
+        robustness12,
     }
 }
 

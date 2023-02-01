@@ -31,8 +31,8 @@ pub(super) fn render_surfaces<M: Material>(
         // If we were to use bindless, how should be pass keep track of textures / buffers sequentially?
 
         // Bind the mesh's vertices and draw
-        //rasterizer.bind_vertex_buffers(&mesh.vertices().untyped_buffers());
-        log::debug!("Draw mesh")
+        rasterizer.bind_vertex_buffers(&mesh.vertices().untyped_buffers());
+        rasterizer.draw(mesh.vertices().len().unwrap() as u32, &bindings);
+        log::debug!("Draw mesh");
     }
-    rasterizer.draw(6, &bindings);
 }

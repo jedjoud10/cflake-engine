@@ -6,7 +6,6 @@ use crate::MeshAabbComputeError;
 use super::attributes::*;
 
 // Immutable access to the mesh vertices
-#[cfg(not(feature = "two-dim"))]
 pub struct VerticesRef<'a> {
     pub(super) enabled: EnabledMeshAttributes,
     pub(super) positions: &'a AttributeBuffer<Position>,

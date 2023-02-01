@@ -83,6 +83,8 @@ impl Mesh {
         set::<Normal>(&mut vertices, normals);
         set::<Tangent>(&mut vertices, tangents);
         set::<TexCoord>(&mut vertices, tex_coords);
+        let len = vertices.len();
+        mesh.len = len;
         Ok(mesh)
     }
 }
@@ -240,6 +242,12 @@ impl Asset for Mesh {
             &mut tex_coords,
             &mut triangles,
         );
+
+        log::debug!("Loaded {} position vertices", positions.as_ref().unwrap().len());
+        log::debug!("Loaded {} normal vertices", normals.as_ref().map(|tc| tc.len()).unwrap_or_default());
+        log::debug!("Loaded {} tangent vertices", tangents.as_ref().map(|tc| tc.len()).unwrap_or_default());
+        log::debug!("Loaded {} texture coordinate vertices", tex_coords.as_ref().map(|tc| tc.len()).unwrap_or_default());
+
 
         // Generate the mesh and it's corresponding data
         Mesh::from_slices(
