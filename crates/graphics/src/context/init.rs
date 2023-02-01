@@ -3,7 +3,7 @@ use crate::{
 };
 
 use std::sync::Arc;
-use vulkan::{Instance, Surface, Adapter, Device, Queue, Swapchain};
+use crate::vulkan::{Instance, Surface, Adapter, Device, Queue, Swapchain};
 use winit::{
     event_loop::EventLoop,
     window::{Fullscreen, WindowBuilder},

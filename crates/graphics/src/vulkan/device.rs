@@ -1,4 +1,4 @@
-use crate::{
+use super::{
     required_features, Adapter, Instance, Queue, StagingPool,
 };
 

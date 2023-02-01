@@ -1,4 +1,4 @@
-pub use vulkan;
+pub mod vulkan;
 mod buffer;
 mod context;
 mod format;

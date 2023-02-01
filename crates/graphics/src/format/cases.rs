@@ -1,5 +1,5 @@
 use crate::{ChannelsType, ElementType, VectorChannels};
-use vulkan::vk;
+use crate::vulkan::vk;
 
 // Converts the given vector channels to the proper format
 pub const fn pick_format_from_vector_channels(

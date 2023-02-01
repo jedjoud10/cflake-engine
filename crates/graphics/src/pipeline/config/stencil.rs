@@ -1,6 +1,6 @@
 use crate::CompareOp;
 use std::mem::transmute;
-use vulkan::vk;
+use crate::vulkan::vk;
 
 // Stencil operator that represents the raw Vulkan stencil operations
 // Equivalent to vk::StencilOp

@@ -5,7 +5,7 @@ use crate::{
     LoadOp, Stencil, StoreOp, Texel, Texture, Texture2D,
     UntypedLoadOp, UntypedTexel,
 };
-use vulkan::vk;
+use crate::vulkan::vk;
 
 // A color attachment that is passed to the render pass when starting it
 pub trait ColorAttachments<'a, C: ColorLayout> {

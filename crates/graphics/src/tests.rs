@@ -3,7 +3,7 @@ mod texels {
     use crate::format::*;
     use crate::texture::Texel;
     use half::f16;
-    use vulkan::vk;
+    use crate::vulkan::vk;
 
     #[test]
     fn size() {
@@ -227,7 +227,7 @@ mod vertex {
     use crate::format::*;
     use crate::pipeline::Vertex;
     use half::f16;
-    use vulkan::vk;
+    use crate::vulkan::vk;
 
     #[test]
     fn positional() {

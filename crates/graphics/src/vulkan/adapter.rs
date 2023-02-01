@@ -12,7 +12,7 @@ use ash::vk::{
 };
 
 use super::{Instance, Surface};
-use crate::required_device_extensions;
+use super::required_device_extensions;
 
 // Features supported by an adapter
 pub struct AdapterFeatures {

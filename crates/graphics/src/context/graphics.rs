@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use vulkan::{Adapter, Device, Instance, Queue, Surface, Swapchain};
+use crate::vulkan::{Adapter, Device, Instance, Queue, Surface, Swapchain};
 
 // Internal struct that contain the raw vulkan instances and values
 // This is what will be wrapped around an arc, and this is what will handle Vulkan object destruction

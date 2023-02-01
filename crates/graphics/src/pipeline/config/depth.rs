@@ -1,6 +1,6 @@
 use crate::CompareOp;
 use std::mem::transmute;
-use vulkan::vk;
+use crate::vulkan::vk;
 
 // Wrapper around depth bound testing
 #[derive(Clone, Copy, PartialEq)]

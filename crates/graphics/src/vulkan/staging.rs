@@ -1,4 +1,4 @@
-use crate::{Device, Queue};
+use super::{Device, Queue};
 use ash::vk;
 use gpu_allocator::{vulkan::Allocation, MemoryLocation};
 use parking_lot::Mutex;

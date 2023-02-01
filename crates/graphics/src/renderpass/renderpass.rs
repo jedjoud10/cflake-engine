@@ -5,7 +5,7 @@ use crate::{
     RenderPassInitializationError, Vertex, VertexBuffer, Viewport,
 };
 use std::marker::PhantomData;
-use vulkan::{vk, Recorder};
+use crate::vulkan::{vk, Recorder};
 
 // In vanilla vulkan, render passes and frame buffers are completely separate, but since we will be using
 // This is a wrapper around a Vulkan render pass that will read/write from/to specific attachments

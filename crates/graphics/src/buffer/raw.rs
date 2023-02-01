@@ -1,7 +1,7 @@
 use std::mem::size_of;
 
 use crate::{GpuPodRelaxed, Graphics};
-use vulkan::{
+use crate::vulkan::{
     gpu_allocator::{vulkan::Allocation, MemoryLocation},
     vk, Recorder,
 };
@@ -93,7 +93,7 @@ pub(super) unsafe fn read_to<T: GpuPodRelaxed>(
 
 // Perform a raw copy command from a staging buffer
 pub(super) unsafe fn copy_from_staging<'a>(
-    src_block: &vulkan::StagingBlock,
+    src_block: &crate::vulkan::StagingBlock,
     size: u64,
     dst_offset: u64,
     dst_buffer: vk::Buffer,
@@ -112,7 +112,7 @@ pub(super) unsafe fn copy_from_staging<'a>(
 
 // Perform a raw copy command into staging buffer
 pub(super) unsafe fn copy_into_staging<'a>(
-    dst_block: &vulkan::StagingBlock,
+    dst_block: &crate::vulkan::StagingBlock,
     size: u64,
     src_offset: u64,
     src_buffer: vk::Buffer,

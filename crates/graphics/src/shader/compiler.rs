@@ -8,7 +8,7 @@ use std::{
     any::TypeId, ffi::CStr, marker::PhantomData, path::PathBuf,
     time::Instant,
 };
-use vulkan::{
+use crate::vulkan::{
     shaderc::{
         CompilationArtifact, IncludeType, ResolvedInclude, ShaderKind,
     },

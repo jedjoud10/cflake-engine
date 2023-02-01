@@ -1,9 +1,10 @@
 use std::{marker::PhantomData, any::{Any, TypeId}, sync::Arc};
 
-use vulkan::{Recorder, vk};
+use bytemuck::{AnyBitPattern, Pod};
+use crate::vulkan::{Recorder, vk};
 
 use crate::{
-    ColorLayout, DepthStencilLayout, GraphicsPipeline, Block, Member, BindingConfig, DepthConfig, StencilConfig, BlendConfig, VertexConfig, Shader, Primitive, UntypedBuffer, VertexBuffer, GpuPodRelaxed, BufferVariant,
+    ColorLayout, DepthStencilLayout, GraphicsPipeline, Block, Member, BindingConfig, DepthConfig, StencilConfig, BlendConfig, VertexConfig, Shader, Primitive, UntypedBuffer, VertexBuffer, GpuPodRelaxed, BufferVariant, TriangleBuffer, GpuPod,
 };
 
 // This is an active binding that is linked to a specific active pipeline
@@ -154,21 +155,16 @@ impl<'rp, 'r, 'gp> ActiveRasterizer<'rp, 'r, 'gp> {
         }
     }
 
-    // Draw an array mesh using the currently bound vertex buffers without checking for safety
-    pub unsafe fn draw_unchecked(
+    // Bind an index buffer to be able to draw indexed meshes
+    pub fn bind_index_buffer<T: GpuPod>(
         &mut self,
-        count: u32,
-        bindings: &ActiveBindings
+        buffer: &TriangleBuffer<T>
     ) {
-        self.recorder.cmd_draw(count, 1, 0, 0);
-    }
+        assert_eq!(TypeId::of::<T>(), TypeId::of::<u32>());
 
-    // Draw an indexed mesh using the currently bound vertex buffers without checking for safety
-    pub unsafe fn draw_indexed_unchecked(
-        &mut self,
-        count: u32,
-        bindings: &ActiveBindings
-    ) {
+        unsafe {
+            self.recorder.cmd_bind_index_buffer(buffer.raw().unwrap(), 0, vk::IndexType::UINT32);
+        }
     }
 
     // Draw an array mesh using the currently bound vertex buffers
@@ -180,7 +176,7 @@ impl<'rp, 'r, 'gp> ActiveRasterizer<'rp, 'r, 'gp> {
         // Only draw when we actually have vertices
         if count > 0 {
             unsafe {
-                self.draw_unchecked(count, bindings);
+                self.recorder.cmd_draw(count, 1, 0, 0);
             }
         }
     }
@@ -190,5 +186,12 @@ impl<'rp, 'r, 'gp> ActiveRasterizer<'rp, 'r, 'gp> {
         debug_assert_eq!(bindings.pipeline, self.graphics.raw());
         // Also check if we have vertex buffers bound
         // Also check if we have index buffers bound
+
+        // Only draw when we actually have triangles
+        if count > 0 {
+            unsafe {
+                //self.draw_indexed_unchecked(count, bindings);
+            }
+        }
     }
 }

@@ -2,7 +2,7 @@ use std::{mem::{size_of, align_of}, marker::PhantomData, any::{TypeId, Any}, cel
 
 use crate::{GraphicsPipeline, ModuleKind, PushConstantBlock, BlockVariable, VariableType, GpuPod};
 use ahash::{AHashMap, AHashSet};
-use vulkan::{vk, Recorder};
+use crate::vulkan::{vk, Recorder};
 
 // This contains the config for the multiple module binding configs in one structure
 pub type BindingConfig = AHashMap<ModuleKind, ModuleBindingConfig>;

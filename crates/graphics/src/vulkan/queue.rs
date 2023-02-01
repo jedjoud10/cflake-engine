@@ -1,5 +1,5 @@
 use super::CommandPool;
-use crate::{Adapter, Device, Recorder, Submission};
+use super::{Adapter, Device, Recorder, Submission};
 use ash::vk;
 
 // This will be the main queue that we will access and submit data into

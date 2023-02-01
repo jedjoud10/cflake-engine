@@ -1,6 +1,6 @@
 use std::mem::transmute;
 
-use vulkan::{
+use crate::vulkan::{
     gpu_allocator::{vulkan::Allocation, MemoryLocation},
     vk,
 };

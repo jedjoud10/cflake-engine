@@ -1,4 +1,4 @@
-use crate::AdapterFeatures;
+use super::AdapterFeatures;
 use ash::vk::{self};
 use std::ffi::CString;
 

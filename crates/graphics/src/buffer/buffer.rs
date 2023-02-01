@@ -10,7 +10,7 @@ use crate::{
     BufferReadError, BufferUsage, BufferWriteError, GpuPodRelaxed,
     Graphics,
 };
-use vulkan::{gpu_allocator::vulkan::Allocation, vk};
+use crate::vulkan::{gpu_allocator::vulkan::Allocation, vk};
 
 // Bitmask from Vulkan BufferUsages
 const VERTEX: u32 = vk::BufferUsageFlags::VERTEX_BUFFER.as_raw();
