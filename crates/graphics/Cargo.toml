@@ -11,29 +11,25 @@ assets = { path = "../assets" }
 math = { path = "../math" }
 utils = { path = "../utils" }
 
-# Vulkan bindings and Window creation
-ash = "0.37.1"
-raw-window-handle = "0.5.0"
-ash-window = "0.12.0"
+# Wgpu and Window creation
+wgpu = "0.15"
+winit = "0.27.5"
+pollster = "0.2.5"
 
 # Utils and helpers
 smallvec = "1.10.0"
-gpu-allocator = { version = "0.21.0", features = ["vulkan"] }
-gpu-descriptor = "0.2.3"
 thread_local = "1.1.4"
 nohash-hasher = "0.2.0"
 dashmap = "5.4.0"
-shaderc = "0.8.1"
-
 bitflags = "1.3.2"
-winit = "0.27.5"
 bytemuck = "1.12.3"
 snailquote = "0.3.1"
 half = { version = "2.1.0", features = ["bytemuck"] }
 paste = "1.0.7"
 image = "0.24.5"
 once_cell = "1.17.0"
-spirv-reflect = "0.2.3"
+
+# Common utils
 log = { workspace = true }
 thiserror = { workspace = true }
 ahash = { workspace = true } 

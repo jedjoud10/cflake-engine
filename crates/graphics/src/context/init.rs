@@ -1,9 +1,8 @@
 use crate::{
-    FrameRateLimit, Graphics, Window, WindowSettings,
+    FrameRateLimit, Graphics, Window, WindowSettings, InternalGraphics,
 };
 
 use std::sync::Arc;
-use crate::vulkan::{Instance, Surface, Adapter, Device, Queue, Swapchain};
 use winit::{
     event_loop::EventLoop,
     window::{Fullscreen, WindowBuilder},
@@ -31,44 +30,74 @@ pub(crate) unsafe fn init_context_and_window(
         engine_version,
     } = init;
 
-    // Create a winit window
+    // Create a winit window and it's wrapper
     let window = init_window(el, &window_settings);
-
-    // Create the low-level mid wrappers around raw Vulkan objects
-    let instance = Instance::new(
-        &window,
-        app_name,
-        app_version,
-        engine_name,
-        engine_version,
-    );
-    let surface = Surface::new(&instance, &window);
-    let adapter = Adapter::pick(&instance, &surface);
-    let device = Device::new(&instance, &adapter);
-    let queue = Queue::new(&device, &adapter);
-    let vsync =
-        matches!(window_settings.limit, FrameRateLimit::VSync);
-    let swapchain = Swapchain::new(
-        &adapter, &surface, &device, &instance, &window, vsync,
-    );
-
-    // Create the graphics wrapper
-    let graphics = super::graphics::Graphics(Arc::new(
-        super::graphics::InternalGraphics {
-            instance,
-            surface,
-            adapter,
-            device,
-            queue,
-            swapchain,
-        },
-    ));
-
-    // Create the window wrapper
     let size = vek::Extent2::<u32>::from(<(u32, u32)>::from(
         window.inner_size(),
     ));
     let window = Window::new(window_settings, window, size);
+
+    // Create the WGPU instance that will pick an appropriate backend
+    let instance = wgpu::Instance::new(
+        wgpu::InstanceDescriptor {
+            backends: wgpu::Backends::all(),
+            dx12_shader_compiler: Default::default(),
+        }
+    );
+
+    // Create the rendering surface
+    let surface = unsafe { instance.create_surface(&window).unwrap() };
+
+    // Pick an appropriate adapter
+    let adapter = pollster::block_on(instance.request_adapter(
+        &wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            force_fallback_adapter: false,
+            compatible_surface: Some(&surface),
+        }
+    )).unwrap();
+
+    // Create a device for the adapter
+    let (device, queue) = pollster::block_on(adapter.request_device(
+        &wgpu::DeviceDescriptor {
+            label: None,
+            features: wgpu::Features::empty(),
+            limits: wgpu::Limits::default(),
+        },
+        None
+    )).unwrap();
+
+    // Get surface data
+    let surface_capabilities = surface.get_capabilities(&adapter);
+    let surface_format = surface_capabilities.formats.iter().find(|x| x.describe().srgb).unwrap();
+    
+    // Pick the appropriate present mode
+    let present_mode = match window_settings.limit {
+        FrameRateLimit::VSync => wgpu::PresentMode::AutoVsync,
+        FrameRateLimit::Limited(_) => wgpu::PresentMode::AutoNoVsync,
+        FrameRateLimit::Unlimited => wgpu::PresentMode::AutoNoVsync,
+    };
+    
+    // Create the surface configuration
+    let surface_config = wgpu::SurfaceConfiguration {
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_DST,
+        format: surface_format,
+        width: window.inner_size().width,
+        height: window.inner_size().height,
+        present_mode,
+        alpha_mode: wgpu::CompositeAlphaMode::Opaque,
+        view_formats: vec![],
+    };
+
+    // Create the raw graphics context
+    let graphics = InternalGraphics {
+        surface,
+        device,
+        queue,
+        surface_capabilities,
+        surface_config,
+    };
+    let graphics = Graphics(Arc::new(graphics));
 
     (graphics, window)
 }
