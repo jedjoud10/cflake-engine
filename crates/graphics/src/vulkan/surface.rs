@@ -2,7 +2,7 @@ use ash::{extensions::khr, vk};
 use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
 use winit::window::Window;
 
-use crate::Instance;
+use super::Instance;
 
 // This is a surface that matches up with the Vulkan surface KHR extension
 pub struct Surface {

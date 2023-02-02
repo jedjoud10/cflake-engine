@@ -1,5 +1,5 @@
 use assets::Asset;
-use vulkan::vk;
+use crate::vulkan::vk;
 
 // The type of shader module that the shader files represent
 #[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]

@@ -3,7 +3,7 @@ use crate::{
     DepthStencilLayout, GraphicsPipeline, Viewport, ActiveBindings,
 };
 use std::marker::PhantomData;
-use vulkan::{vk, Recorder};
+use crate::vulkan::{vk, Recorder};
 
 // An active render pass is basically just a rasterize that is used to bind
 // multiple render graphical pipelines so we can draw objects to the screen

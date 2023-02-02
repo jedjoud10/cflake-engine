@@ -16,7 +16,7 @@ pub enum ShaderCompilationError {
     MissingConst,
 
     #[error("{0}")]
-    TranslationError(vulkan::shaderc::Error),
+    TranslationError(shaderc::Error),
 
     #[error("{0}")]
     ReflectionError(String),

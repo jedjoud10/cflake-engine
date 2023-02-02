@@ -1,4 +1,4 @@
-use vulkan::vk;
+use crate::vulkan::vk;
 
 use crate::{Texel, Texture};
 

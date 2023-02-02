@@ -1,4 +1,4 @@
-use crate::{Adapter, Device, Instance, Queue, Surface};
+use super::{Adapter, Device, Instance, Queue, Surface};
 use ash::vk::{self};
 use parking_lot::Mutex;
 

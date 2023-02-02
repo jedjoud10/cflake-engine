@@ -8,7 +8,7 @@ use raw_window_handle::HasRawDisplayHandle;
 use std::ffi::CString;
 use winit::window::Window;
 
-use crate::required_api_version;
+use super::required_api_version;
 
 // This is a Vulkan instance that gets loaded in
 pub struct Instance {
@@ -59,14 +59,14 @@ impl Instance {
             .unwrap()
             .to_vec();
         let required_instance_extensions =
-            crate::required_instance_extensions();
+            super::required_instance_extensions();
         extension_names_ptrs.extend(
             required_instance_extensions.iter().map(|s| s.as_ptr()),
         );
 
         // Get the required validation layers
         let required_validation_layers =
-            crate::required_validation_layers();
+            super::required_validation_layers();
         let validation_ptrs = required_validation_layers
             .iter()
             .map(|cstr| cstr.as_ptr())

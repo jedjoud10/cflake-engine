@@ -1,7 +1,7 @@
-pub use ash;
-pub use ash::vk;
-pub use gpu_allocator;
-pub use shaderc;
+pub(crate) use ash;
+pub(crate) use ash::vk;
+pub(crate) use gpu_allocator;
+pub(crate) use shaderc;
 
 mod adapter;
 mod commands;
@@ -25,4 +25,3 @@ pub use requirements::*;
 pub use staging::*;
 pub use surface::*;
 pub use swapchain::*;
-mod test;

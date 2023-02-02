@@ -1,5 +1,5 @@
 use thiserror::Error;
-use vulkan::vk;
+use crate::vulkan::vk;
 
 #[derive(Error, Debug)]
 pub enum TextureInitializationError {

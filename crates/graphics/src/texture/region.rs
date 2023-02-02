@@ -1,5 +1,5 @@
 use std::{num::NonZeroU8, ops::Add};
-use vulkan::vk;
+use crate::vulkan::vk;
 
 // Texture dimensions traits that are simply implemented for extents
 pub trait Extent: Copy + std::ops::Div<u32, Output = Self> {

@@ -1,4 +1,4 @@
-use crate::Device;
+use super::Device;
 use ash::vk;
 use parking_lot::Mutex;
 

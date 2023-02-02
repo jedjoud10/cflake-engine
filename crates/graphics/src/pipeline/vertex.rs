@@ -4,7 +4,7 @@ use crate::{
 };
 use std::mem::size_of;
 use vek::{Vec2, Vec3, Vec4};
-use vulkan::vk;
+use crate::vulkan::vk;
 
 // An untyped wrapper around vertex types
 #[derive(Clone, Copy, PartialEq, Eq)]

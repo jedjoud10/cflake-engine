@@ -1,6 +1,6 @@
 use std::mem::transmute;
 
-use vulkan::vk;
+use crate::vulkan::vk;
 
 use crate::LogicOp;
 

@@ -3,7 +3,7 @@ use crate::{
     Extent, RenderTarget, Sampler, TextureAsTargetError,
     TextureSamplerError,
 };
-use vulkan::vk;
+use crate::vulkan::vk;
 
 // TODO: Figure out how to store and create vk::Views for each mipmap
 // Should they be stored in a SmallArray or SmallVec??

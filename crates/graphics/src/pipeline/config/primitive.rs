@@ -1,4 +1,4 @@
-use vulkan::vk;
+use crate::vulkan::vk;
 
 // How rasterized triangles should be culled
 #[derive(Clone, Copy, PartialEq, Eq)]

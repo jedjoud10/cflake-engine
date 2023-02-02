@@ -3,7 +3,7 @@ use crate::{
     StencilElement, StoreOp, Texel, Texture, Texture2D,
     UntypedLoadOp, UntypedTexel,
 };
-use vulkan::vk;
+use crate::vulkan::vk;
 
 // Describes what an attachment should do within a render pass
 // This doesn't store the actual render pass, just a description of it
