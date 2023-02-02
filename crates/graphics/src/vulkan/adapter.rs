@@ -14,130 +14,57 @@ use ash::vk::{
 use super::{Instance, Surface};
 use super::required_device_extensions;
 
-// Features supported by an adapter
-
-
-pub struct AdapterFeatures {
-    pub robust_buffer_access: Bool32,
-    pub full_draw_index_uint32: Bool32,
-    pub image_cube_array: Bool32,
-    pub independent_blend: Bool32,
-    pub geometry_shader: Bool32,
-    pub tessellation_shader: Bool32,
-    pub sample_rate_shading: Bool32,
-    pub dual_src_blend: Bool32,
-    pub logic_op: Bool32,
-    pub multi_draw_indirect: Bool32,
-    pub draw_indirect_first_instance: Bool32,
-    pub depth_clamp: Bool32,
-    pub depth_bias_clamp: Bool32,
-    pub fill_mode_non_solid: Bool32,
-    pub depth_bounds: Bool32,
-    pub wide_lines: Bool32,
-    pub large_points: Bool32,
-    pub alpha_to_one: Bool32,
-    pub multi_viewport: Bool32,
-    pub sampler_anisotropy: Bool32,
-    pub texture_compression_etc2: Bool32,
-    pub texture_compression_astc_ldr: Bool32,
-    pub texture_compression_bc: Bool32,
-    pub occlusion_query_precise: Bool32,
-    pub pipeline_statistics_query: Bool32,
-    pub vertex_pipeline_stores_and_atomics: Bool32,
-    pub fragment_stores_and_atomics: Bool32,
-    pub shader_tessellation_and_geometry_point_size: Bool32,
-    pub shader_image_gather_extended: Bool32,
-    pub shader_storage_image_extended_formats: Bool32,
-    pub shader_storage_image_multisample: Bool32,
-    pub shader_storage_image_read_without_format: Bool32,
-    pub shader_storage_image_write_without_format: Bool32,
-    pub shader_uniform_buffer_array_dynamic_indexing: Bool32,
-    pub shader_sampled_image_array_dynamic_indexing: Bool32,
-    pub shader_storage_buffer_array_dynamic_indexing: Bool32,
-    pub shader_storage_image_array_dynamic_indexing: Bool32,
-    pub shader_clip_distance: Bool32,
-    pub shader_cull_distance: Bool32,
-    pub shader_float64: Bool32,
-    pub shader_int64: Bool32,
-    pub shader_int16: Bool32,
-    pub shader_resource_residency: Bool32,
-    pub shader_resource_min_lod: Bool32,
-    pub sparse_binding: Bool32,
-    pub sparse_residency_buffer: Bool32,
-    pub sparse_residency_image2_d: Bool32,
-    pub sparse_residency_image3_d: Bool32,
-    pub sparse_residency2_samples: Bool32,
-    pub sparse_residency4_samples: Bool32,
-    pub sparse_residency8_samples: Bool32,
-    pub sparse_residency16_samples: Bool32,
-    pub sparse_residency_aliased: Bool32,
-    pub variable_multisample_rate: Bool32,
-    pub inherited_queries: Bool32,
-
-    pub features: PhysicalDeviceFeatures,
-    pub features11: PhysicalDeviceVulkan11Features,
-    pub features12: PhysicalDeviceVulkan12Features,
-    pub features13: PhysicalDeviceVulkan13Features,
-    pub robustness12: PhysicalDeviceRobustness2FeaturesEXT,
-}
-
-// Properties of an adapter
-pub struct AdapterProperties {
-    // Name of the adapter
-    pub name: String,
-
-    // Version of the Vulkan API
-    pub api_version: String,
-
-    // Device ID and type
-    pub device_type: PhysicalDeviceType,
-    pub device_id: u32,
-    pub vendor_id: u32,
-
-    // Vulkan properties and limits
-    pub limits: PhysicalDeviceLimits,
-    pub properties: PhysicalDeviceProperties,
-    pub properties11: PhysicalDeviceVulkan11Properties,
-    pub properties12: PhysicalDeviceVulkan12Properties,
-    pub properties13: PhysicalDeviceVulkan13Properties,
-
-    // Supported extensions
-    pub extensions: Vec<vk::ExtensionProperties>,
-}
-
 // Swapchain data supported by the adapter
-pub struct AdapterSurfaceProperties {
+pub struct SurfaceProperties {
     pub present_modes: Vec<PresentModeKHR>,
     pub present_formats: Vec<SurfaceFormatKHR>,
     pub surface_capabilities: SurfaceCapabilitiesKHR,
 }
 
 // Queue family properties
-pub struct AdapterQueueFamiliesProperties {
+pub struct QueueFamilyProperties {
     pub queue_family_properties: Vec<vk::QueueFamilyProperties>,
-    pub queue_family_nums: usize,
     pub queue_family_surface_supported: Vec<bool>,
 }
 
 // An adapter is a physical device that was chosen manually by the user
 // For now, this Vulkan abstraction library can only handle one adapter per instance
 pub struct Adapter {
+    // Name of the adapter
+    name: String,
+
+    // Version of the Vulkan API
+    api_version: String,
+
+    // Device ID and type
+    device_type: PhysicalDeviceType,
+    device_id: u32,
+    vendor_id: u32,
+
     // Raw physical device
     raw: PhysicalDevice,
 
-    // Properties and features
-    features: AdapterFeatures,
-    properties: AdapterProperties,
-    surface: AdapterSurfaceProperties,
-    families: AdapterQueueFamiliesProperties,
+    // Features, limits
+    features: Features,
+    limits: Limits,
+
+    // Surface properties
+    surface_properties: SurfaceProperties,
+
+    // Queue families properties
+    queue_family_properties: QueueFamilyProperties,
 }
 
 unsafe impl Sync for Adapter {}
 unsafe impl Send for Adapter {}
 
 impl Adapter {
-    // Pick out a physical adapter automatically for the user
-    // Pick a physical device from the Vulkan instance
+    // List all the available adapters that the user can pick from
+    pub fn list_available(instance: &Instance, surface: &Surface) -> Vec<Adapter> {
+
+    }
+
+    // Picks a physical device that is deemed to be optimal for the user
     pub fn pick(instance: &Instance, surface: &Surface) -> Adapter {
         let devices = unsafe {
             instance.raw().enumerate_physical_devices().unwrap()
@@ -225,6 +152,11 @@ impl Adapter {
         self.properties.device_id
     }
 
+    // Get the vendor ID as a u32
+    pub fn vendor_id(&self) -> u32 {
+        self.properties.vendor_id
+    }
+
     // Get the supported adapter features
     pub fn features(&self) -> &AdapterFeatures {
         &self.features
@@ -246,39 +178,22 @@ impl Adapter {
     ) -> &AdapterQueueFamiliesProperties {
         &self.families
     }
-
-    // Get the vendor ID as a u32
-    pub fn vendor_id(&self) -> u32 {
-        self.properties.vendor_id
-    }
 }
 
 // Get the adapter features of a physical device
 unsafe fn get_adapter_features(
     instance: &Instance,
     physical: &PhysicalDevice,
-) -> AdapterFeatures {
-    let mut features11 = PhysicalDeviceVulkan11Features::default();
-    let mut features12 = PhysicalDeviceVulkan12Features::default();
-    let mut robustness12 = PhysicalDeviceRobustness2FeaturesEXT::default();
-    features12.p_next = (&mut robustness12 as *mut PhysicalDeviceRobustness2FeaturesEXT) as _;
-    let mut features13 = PhysicalDeviceVulkan13Features::default();
-    let mut features = PhysicalDeviceFeatures2::builder()
-        .features(PhysicalDeviceFeatures::default())
-        .push_next(&mut features11)
-        .push_next(&mut features12)
-        .push_next(&mut features13);
-    instance
-        .raw()
-        .get_physical_device_features2(*physical, &mut features);
+) -> Features {
+    
+}
 
-    AdapterFeatures {
-        features: features.features,
-        features11,
-        features12,
-        features13,
-        robustness12,
-    }
+// Get the adapter limits of a physical device
+unsafe fn get_adapter_limits(
+    instace: &Instance,
+    physical: &PhysicalDevice
+) -> Limits {
+
 }
 
 // Get the adapter properties of a physical device

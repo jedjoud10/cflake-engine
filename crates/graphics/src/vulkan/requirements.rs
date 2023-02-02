@@ -33,50 +33,6 @@ pub fn required_device_extensions() -> Vec<CString> {
     ]
 }
 
-// Get the features that we will use for the device
-pub fn required_features() -> AdapterFeatures {
-    let features = *vk::PhysicalDeviceFeatures::builder()
-        .tessellation_shader(true)
-        .multi_draw_indirect(true)
-        .draw_indirect_first_instance(true)
-        .sampler_anisotropy(true)
-        .shader_float64(true)
-        .robust_buffer_access(true)
-        .shader_sampled_image_array_dynamic_indexing(true)
-        .shader_storage_image_array_dynamic_indexing(true)
-        .shader_storage_buffer_array_dynamic_indexing(true)
-        .shader_uniform_buffer_array_dynamic_indexing(true)
-        .shader_int64(true);
-
-    let features11 = *vk::PhysicalDeviceVulkan11Features::builder();
-
-    let features12 = *vk::PhysicalDeviceVulkan12Features::builder()
-        .imageless_framebuffer(true)
-        .buffer_device_address(true)
-        .draw_indirect_count(true)
-        .timeline_semaphore(true)
-        .buffer_device_address_capture_replay(true)
-        .descriptor_binding_partially_bound(true)
-        .runtime_descriptor_array(true)
-        .descriptor_indexing(true);
-
-    let robustness12 = *vk::PhysicalDeviceRobustness2FeaturesEXT::builder()
-        .null_descriptor(true);
-
-    let features13 = *vk::PhysicalDeviceVulkan13Features::builder()
-        .dynamic_rendering(true)
-        .robust_image_access(true)
-        .synchronization2(true);
-
-    AdapterFeatures {
-        features,
-        features11,
-        features12,
-        features13,
-        robustness12,
-    }
-}
-
 // The required Vulkan API version
 pub fn required_api_version() -> u32 {
     vk::API_VERSION_1_3
