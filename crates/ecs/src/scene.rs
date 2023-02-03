@@ -122,7 +122,7 @@ impl Scene {
             linkings.mask()
         });
 
-        // TODO: Rewrite this hell of a function
+        // Fetch the entities that correspond to each archetype
         let iter = binding
             .into_iter()
             .map(|(mask, group)| map(&self.entities, mask, group))

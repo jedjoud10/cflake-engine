@@ -43,6 +43,9 @@ impl<M: ShaderModule> Compiler<M> {
         }
     }
 
+
+    /*
+    TODO: Re-implement this
     // Include a constant directive that will replace specialization constants (stored internally until compile time)
     // TODO: Make dis work with bool pwease??
     pub fn define_constant<T: GpuPodRelaxed>(
@@ -65,6 +68,7 @@ impl<M: ShaderModule> Compiler<M> {
         let name = name.to_string();
         self.snippets.insert(name, value.to_string());
     }
+    */
 
     // Convert the GLSL code to SPIRV code, then compile said SPIRV code
     pub fn compile(

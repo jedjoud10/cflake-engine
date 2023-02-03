@@ -1,7 +1,6 @@
 use std::any::Any;
 
 // A component storage that is implemented for Vec<T>
-// TODO: Convert to struct instead?
 pub trait UntypedVec {
     // Runtime dynamic conversions
     fn as_any(&self) -> &dyn Any;
