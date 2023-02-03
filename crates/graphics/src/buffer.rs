@@ -1,10 +1,6 @@
 mod buffer;
 mod errors;
-mod mode;
-mod raw;
-mod usage;
+mod settings;
+pub use settings::*;
 pub use buffer::*;
 pub use errors::*;
-pub use mode::*;
-pub use raw::*;
-pub use usage::*;

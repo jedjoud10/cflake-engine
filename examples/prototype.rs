@@ -16,6 +16,8 @@ fn main() {
 fn init(world: &mut World) {
     let assets = world.get::<Assets>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
+
+    /*
     let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
     let mut materials = world.get_mut::<Storage<Basic>>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
@@ -38,16 +40,30 @@ fn init(world: &mut World) {
     let mesh = meshes.insert(mesh);
 
     let surface = Surface::new(mesh, material, id);
-
     scene.insert(surface);
+    */
+
+    let texture = Texture2D::<R<u8>>::from_texels(
+        &graphics,
+        None,
+        vek::Extent2::new(4, 4),
+        TextureMode::Dynamic,
+        TextureUsage::Placeholder
+    ).unwrap();
 
     /*
-    let buffer = TriangleBuffer::<u32>::from_slice(
+    let mut buffer = TriangleBuffer::<u32>::from_slice(
         &graphics,
-        &[[0, 1, 2]; 960],
+        &[[0, 1, 2]],
         BufferMode::Resizable,
-        BufferUsage::CpuToGpu
+        BufferUsage::READ | BufferUsage::WRITE
     ).unwrap();
+
+    //buffer.clear().unwrap();
+    buffer.write(&[[0, 1, 0]], 0).unwrap();
+    let mut data = [[1, 1, 1]];
+    buffer.read(&mut data, 0).unwrap();
+    dbg!(data);
     */
 }
 

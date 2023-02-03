@@ -3,7 +3,6 @@ use crate::{AnyElement, GpuPodRelaxed, Normalized};
 // The channels that represent the texels (non sRGB)
 pub struct R<T: AnyElement>(T);
 pub struct RG<T: AnyElement>(vek::Vec2<T>);
-pub struct RGB<T: AnyElement>(vek::Vec3<T>);
 pub struct RGBA<T: AnyElement>(vek::Vec4<T>);
 
 // Only used for 8 bit integers since they are the only supported swizzle types in VkFormat
@@ -12,7 +11,6 @@ impl Swizzable for u8 {}
 impl Swizzable for Normalized<u8> {}
 impl Swizzable for i8 {}
 impl Swizzable for Normalized<i8> {}
-pub struct BGR<T: AnyElement + Swizzable>(vek::Vec3<T>);
 pub struct BGRA<T: AnyElement + Swizzable>(vek::Vec3<T>);
 
 // The channels that represent the vertices
@@ -43,8 +41,6 @@ pub struct DepthStencil<D: DepthElement, S: StencilElement>(D, S);
 pub enum VectorChannels {
     One,           // X or R
     Two,           // XY or RG
-    Three,         // XYZ or RGB
-    ThreeSwizzled, // ZYX or BGR
     Four,          // XYZW or RGBA
     FourSwizzled,  // ZYXW or BGRA
 }
@@ -55,9 +51,7 @@ impl VectorChannels {
         match self {
             VectorChannels::One => 1,
             VectorChannels::Two => 2,
-            VectorChannels::Three => 3,
             VectorChannels::Four => 4,
-            VectorChannels::ThreeSwizzled => 3,
             VectorChannels::FourSwizzled => 4,
         }
     }
@@ -65,8 +59,7 @@ impl VectorChannels {
     // Check if the R (X) and B (Z) channels are swizzled
     pub const fn is_swizzled(&self) -> bool {
         match self {
-            VectorChannels::ThreeSwizzled
-            | VectorChannels::FourSwizzled => true,
+            VectorChannels::FourSwizzled => true,
             _ => false,
         }
     }

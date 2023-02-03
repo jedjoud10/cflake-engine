@@ -44,12 +44,10 @@ pub enum ElementType {
 
     // Strictly integer types
     ThirtyTwo { signed: bool },
-    SixtyFour { signed: bool },
 
     // Floating point types
     FloatSixteen,
     FloatThirtyTwo,
-    FloatSixtyFour,
 }
 
 // This trait represents bases that can be normalized

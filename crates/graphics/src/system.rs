@@ -1,13 +1,13 @@
-use crate::{GraphicsInit, Window};
+use crate::{WindowSettings, Window};
 use winit::{event::WindowEvent, event_loop::EventLoop};
 use world::{post_user, user, State, System, World};
 
 // Insert the required graphics resources
 fn init(world: &mut World, el: &EventLoop<()>) {
     // Initialization resource
-    let init = world.remove::<GraphicsInit>().unwrap();
+    let init = world.remove::<WindowSettings>().unwrap();
 
-    // Initialize the Vulkan context and create a winit Window
+    // Initialize the WGPU context and create a winit Window
     let (graphics, window) =
         unsafe { crate::context::init_context_and_window(init, el) };
 

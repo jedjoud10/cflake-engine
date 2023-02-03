@@ -1,7 +1,6 @@
 use std::{marker::PhantomData, mem::ManuallyDrop, time::Instant};
 
 use assets::Asset;
-use crate::vulkan::{gpu_allocator::vulkan::Allocation, vk};
 
 use crate::{
     Graphics, ImageTexel, Texel, Texture, TextureAssetLoadError,
@@ -11,34 +10,20 @@ use crate::{
 // A 2D texture that contains multiple texels that have their own channels
 // Each texel can be either a single value, RG, RGB, or even RGBA
 pub struct Texture2D<T: Texel> {
-    // Raw vulkan
-    image: vk::Image,
-    allocation: ManuallyDrop<Allocation>,
-    view: vk::ImageView,
+    // Raw WGPU
+    texture: wgpu::Texture,
+    view: wgpu::TextureView,
 
     // Main texture settings
     dimensions: vek::Extent2<u32>,
 
-    // Legal permissions
+    // Permissions
     usage: TextureUsage,
     mode: TextureMode,
     _phantom: PhantomData<T>,
 
     // Keep the graphics API alive
     graphics: Graphics,
-}
-
-impl<T: Texel> Drop for Texture2D<T> {
-    fn drop(&mut self) {
-        unsafe {
-            let alloc = ManuallyDrop::take(&mut self.allocation);
-            if !alloc.is_null() {
-                self.graphics
-                    .device()
-                    .destroy_image(self.image, alloc);
-            }
-        }
-    }
 }
 
 impl<T: Texel> Texture for Texture2D<T> {
@@ -57,35 +42,25 @@ impl<T: Texel> Texture for Texture2D<T> {
         self.usage
     }
 
-    fn image(&self) -> vk::Image {
-        self.image
+    fn texture(&self) -> &wgpu::Texture {
+        &self.texture
     }
 
-    fn image_view(&self) -> vk::ImageView {
-        self.view
-    }
-
-    fn allocation(&self) -> &Allocation {
-        &self.allocation
-    }
-
-    fn allocation_mut(&mut self) -> &mut Allocation {
-        &mut self.allocation
+    fn view(&self) -> &wgpu::TextureView {
+        &self.view
     }
 
     unsafe fn from_raw_parts(
         graphics: &Graphics,
-        image: vk::Image,
-        whole_view: vk::ImageView,
-        allocation: Allocation,
+        texture: wgpu::Texture,
+        view: wgpu::TextureView,
         dimensions: <Self::Region as crate::Region>::E,
         usage: TextureUsage,
         mode: TextureMode,
     ) -> Self {
         Self {
-            image,
-            allocation: ManuallyDrop::new(allocation),
-            view: whole_view,
+            texture,
+            view,
             dimensions,
             usage,
             mode,
@@ -124,7 +99,7 @@ impl<T: ImageTexel> Asset for Texture2D<T> {
 
         Self::from_texels(
             graphics,
-            &texels,
+            Some(&texels),
             dimensions,
             TextureMode::Dynamic,
             TextureUsage::Placeholder,

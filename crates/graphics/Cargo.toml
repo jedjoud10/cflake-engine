@@ -12,7 +12,7 @@ math = { path = "../math" }
 utils = { path = "../utils" }
 
 # Wgpu and Window creation
-wgpu = "0.15"
+wgpu = { version = "0.15", features = ["expose-ids"] }
 winit = "0.27.5"
 pollster = "0.2.5"
 

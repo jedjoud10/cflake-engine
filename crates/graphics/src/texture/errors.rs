@@ -1,10 +1,10 @@
 use thiserror::Error;
-use crate::vulkan::vk;
+use wgpu::TextureFormat;
 
 #[derive(Error, Debug)]
 pub enum TextureInitializationError {
     #[error("The given texture format {0:?} is not supported on the physical device")]
-    FormatNotSupported(vk::Format),
+    FormatNotSupported(TextureFormat),
 
     #[error("The number of texels ({0}) does not match up with the number of theoretical texels defined in the dimensions ({1}x{2}x{3})")]
     TexelDimensionsMismatch(usize, u32, u32, u32),

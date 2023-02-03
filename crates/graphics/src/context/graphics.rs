@@ -5,8 +5,10 @@ pub(crate) struct InternalGraphics {
     // Device and queue
     pub(crate) device: wgpu::Device,
     pub(crate) queue: wgpu::Queue,
-    
+    pub(crate) staging: wgpu::util::StagingBelt,
+
     // Surface related
+    pub(crate) window: Arc<winit::window::Window>,
     pub(crate) surface: wgpu::Surface,
     pub(crate) surface_config: wgpu::SurfaceConfiguration,
     pub(crate) surface_capabilities: wgpu::SurfaceCapabilities,

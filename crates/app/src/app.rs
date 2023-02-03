@@ -2,8 +2,7 @@ use winit::{
     event::{DeviceEvent, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
-//use gui::egui::util::id_type_map::TypeId;
-use graphics::{FrameRateLimit, GraphicsInit, WindowSettings};
+use graphics::{FrameRateLimit, WindowSettings};
 use mimalloc::MiMalloc;
 use std::{path::PathBuf};
 use world::{
@@ -94,6 +93,12 @@ impl App {
     pub fn set_app_name(mut self, name: &str) -> Self {
         self.app_name = name.to_string();
         self.window.title = name.to_string();
+        self
+    }
+
+    // Set the app version
+    pub fn set_app_version(mut self, version: u32) -> Self {
+        self.app_version = version;
         self
     }
 
@@ -292,7 +297,7 @@ impl App {
         self = self.insert_system(audio::system);
         self = self.insert_system(networking::system);
         self = self.insert_system(graphics::system);
-        self = self.insert_system(rendering::system);
+        //self = self.insert_system(rendering::system);
 
         // Insert the IO manager
         let author = self.author_name.clone();
@@ -307,19 +312,15 @@ impl App {
             assets::system(system, user)
         });
 
-        // Insert the graphics API init resource
+        // Insert the graphics API window resource
         let window_settings = self.window.clone();
+        self.world.insert(window_settings);
+
+        // FIXME: Make use of this or remove it
         let app_name = self.app_name.clone();
         let app_version = self.app_version;
         let engine_name = self.engine_name.clone();
         let engine_version = self.engine_version;
-        self.world.insert(GraphicsInit {
-            window_settings,
-            app_name,
-            app_version,
-            engine_name,
-            engine_version,
-        });
         self
     }
 }

@@ -1,5 +1,4 @@
 use std::{num::NonZeroU8, ops::Add};
-use crate::vulkan::vk;
 
 // Texture dimensions traits that are simply implemented for extents
 pub trait Extent: Copy + std::ops::Div<u32, Output = Self> {
@@ -33,8 +32,14 @@ pub trait Extent: Copy + std::ops::Div<u32, Output = Self> {
     // Check if an extent is larger in all axii than another one
     fn is_larger_than(self, other: Self) -> bool;
 
-    // Convert to a Vulkan Extent3D
-    fn as_vk_extent(&self) -> vk::Extent3D;
+    // Get the width of the extent
+    fn width(&self) -> u32;
+    
+    // Get the height of the extent
+    fn height(&self) -> u32;
+    
+    // Get the depth of the extent
+    fn depth(&self) -> u32;
 
     // Get the dimensionality of the extent (1, 2, or 3)
     fn dimensionality() -> usize;
@@ -58,16 +63,20 @@ impl Extent for vek::Extent2<u32> {
         self.cmpge(&other).reduce_and()
     }
 
-    fn as_vk_extent(&self) -> vk::Extent3D {
-        vk::Extent3D {
-            width: self.w,
-            height: self.h,
-            depth: 1,
-        }
-    }
-
     fn dimensionality() -> usize {
         vek::Extent2::<u32>::ELEM_COUNT
+    }
+
+    fn width(&self) -> u32 {
+        self.w
+    }
+
+    fn height(&self) -> u32 {
+        self.h
+    }
+
+    fn depth(&self) -> u32 {
+        1
     }
 }
 
@@ -93,16 +102,20 @@ impl Extent for vek::Extent3<u32> {
         self.cmpge(&other).reduce_and()
     }
 
-    fn as_vk_extent(&self) -> vk::Extent3D {
-        vk::Extent3D {
-            width: self.w,
-            height: self.h,
-            depth: self.h,
-        }
-    }
-
     fn dimensionality() -> usize {
         vek::Extent3::<u32>::ELEM_COUNT
+    }
+
+    fn width(&self) -> u32 {
+        self.w
+    }
+
+    fn height(&self) -> u32 {
+        self.h
+    }
+
+    fn depth(&self) -> u32 {
+        self.d
     }
 }
 

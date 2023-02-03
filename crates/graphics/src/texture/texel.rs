@@ -1,16 +1,16 @@
 use crate::{
     AnyElement, ChannelsType, Depth, DepthElement, DepthStencil,
     ElementType, GpuPodRelaxed, Normalized, Stencil, StencilElement,
-    Swizzable, VectorChannels, BGR, BGRA, R, RG, RGB, RGBA,
+    Swizzable, VectorChannels, BGRA, R, RG, RGBA,
 };
 use std::mem::size_of;
 use vek::{Vec2, Vec3, Vec4};
-use crate::vulkan::vk;
+use wgpu::TextureFormat;
 
 // An untyped wrapper around texel types
 pub struct UntypedTexel {
     // Format related
-    pub format: vk::Format,
+    pub format: TextureFormat,
     pub channels: ChannelsType,
     pub element: ElementType,
 
@@ -31,8 +31,8 @@ pub trait Texel: 'static + Sized {
     // Type of channels (either R, RG, RGB, RGBA, Depth, Stencil)
     const CHANNELS_TYPE: ChannelsType;
 
-    // Compile time Vulkan format (calls to cases::guess)
-    const FORMAT: vk::Format;
+    // Compile time WGPU format
+    const FORMAT: TextureFormat;
 
     // The raw data type that we will use to access texture memory
     type Storage: GpuPodRelaxed;
@@ -50,6 +50,7 @@ pub trait Texel: 'static + Sized {
 
 // Color texels are texels used for color attachments
 // TODO: Figure out if there are any limits to this
+// TODO: Maybe add saturation / hue control (since this is strictly color after all)
 pub trait ColorTexel: Texel {
     // A texel that represents complete black or 0 (-1 if normalized)
     fn black() -> Self::Storage;
@@ -60,10 +61,10 @@ pub trait ColorTexel: Texel {
     // A texel that represents complete white or 1 (1 if normalized)
     fn white() -> Self::Storage;
 
-    // Convert this texel to a clear color value
-    fn into_clear_color_value(
+    // Convert this texel to a color value
+    fn into_color(
         storage: Self::Storage,
-    ) -> vk::ClearColorValue;
+    ) -> wgpu::Color;
 }
 
 // Image texels are texels that can be loaded from a file, like when loading a Texture2D<RGBA<Normalized<u8>>
@@ -80,7 +81,7 @@ macro_rules! impl_color_texel_layout {
             const BITS_PER_CHANNEL: u64 = size_of::<T>() as u64 * 8;
             const ELEMENT_TYPE: ElementType = T::ELEMENT_TYPE;
             const CHANNELS_TYPE: ChannelsType = $channels_type;
-            const FORMAT: vk::Format =
+            const FORMAT: wgpu::TextureFormat =
                 crate::format::pick_format_from_params(
                     Self::ELEMENT_TYPE,
                     Self::CHANNELS_TYPE,
@@ -101,9 +102,9 @@ macro_rules! impl_color_texel_layout {
                 todo!()
             }
 
-            fn into_clear_color_value(
+            fn into_color(
                 _storage: Self::Storage,
-            ) -> vk::ClearColorValue {
+            ) -> wgpu::Color {
                 todo!()
             }
         }
@@ -117,7 +118,7 @@ macro_rules! impl_swizzled_color_texel_layout {
             const BITS_PER_CHANNEL: u64 = size_of::<T>() as u64 * 8;
             const ELEMENT_TYPE: ElementType = T::ELEMENT_TYPE;
             const CHANNELS_TYPE: ChannelsType = $channels_type;
-            const FORMAT: vk::Format =
+            const FORMAT: wgpu::TextureFormat =
                 crate::format::pick_format_from_params(
                     Self::ELEMENT_TYPE,
                     Self::CHANNELS_TYPE,
@@ -138,9 +139,9 @@ macro_rules! impl_swizzled_color_texel_layout {
                 todo!()
             }
 
-            fn into_clear_color_value(
+            fn into_color(
                 _storage: Self::Storage,
-            ) -> vk::ClearColorValue {
+            ) -> wgpu::Color {
                 todo!()
             }
         }
@@ -154,7 +155,7 @@ macro_rules! impl_special_texel_layout {
             const BITS_PER_CHANNEL: u64 = size_of::<T>() as u64 * 8;
             const ELEMENT_TYPE: ElementType = T::ELEMENT_TYPE;
             const CHANNELS_TYPE: ChannelsType = ChannelsType::Depth;
-            const FORMAT: vk::Format =
+            const FORMAT: wgpu::TextureFormat =
                 crate::format::pick_format_from_params(
                     Self::ELEMENT_TYPE,
                     Self::CHANNELS_TYPE,
@@ -166,7 +167,7 @@ macro_rules! impl_special_texel_layout {
             const BITS_PER_CHANNEL: u64 = size_of::<T>() as u64 * 8;
             const ELEMENT_TYPE: ElementType = T::ELEMENT_TYPE;
             const CHANNELS_TYPE: ChannelsType = ChannelsType::Stencil;
-            const FORMAT: vk::Format =
+            const FORMAT: wgpu::TextureFormat =
                 crate::format::pick_format_from_params(
                     Self::ELEMENT_TYPE,
                     Self::CHANNELS_TYPE,
@@ -248,22 +249,12 @@ impl_color_texel_layout!(
     Vec2
 );
 impl_color_texel_layout!(
-    RGB,
-    ChannelsType::Vector(VectorChannels::Three),
-    Vec3
-);
-impl_color_texel_layout!(
     RGBA,
     ChannelsType::Vector(VectorChannels::Four),
     Vec4
 );
 
 // Swizzled
-impl_swizzled_color_texel_layout!(
-    BGR,
-    ChannelsType::Vector(VectorChannels::ThreeSwizzled),
-    Vec3
-);
 impl_swizzled_color_texel_layout!(
     BGRA,
     ChannelsType::Vector(VectorChannels::FourSwizzled),
@@ -276,5 +267,4 @@ impl_special_texel_layout!();
 // Image texels
 impl_image_texel!(R, |val| val[0]);
 impl_image_texel!(RG, vek::Vec2::from_slice);
-impl_image_texel!(RGB, vek::Vec3::from_slice);
 impl_image_texel!(RGBA, vek::Vec4::from_slice);

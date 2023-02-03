@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 // Frame rate limit of the window (can be disabled by selecting Unlimited)
 #[derive(Default, Clone, Copy, PartialEq, Eq)]
 pub enum FrameRateLimit {
@@ -30,7 +32,7 @@ pub struct Viewport {
 // A window is what we will draw to at the end of each frame
 pub struct Window {
     settings: WindowSettings,
-    raw: winit::window::Window,
+    raw: Arc<winit::window::Window>,
     size: vek::Extent2<u32>,
     dirty: bool,
 }
@@ -38,12 +40,12 @@ pub struct Window {
 impl Window {
     // Create a new window wrapper
     pub(crate) fn new(
-        settings: WindowSettings,
-        raw: winit::window::Window,
+        settings: &WindowSettings,
+        raw: Arc<winit::window::Window>,
         size: vek::Extent2<u32>,
     ) -> Self {
         Self {
-            settings,
+            settings: settings.clone(),
             raw,
             size,
             dirty: false,

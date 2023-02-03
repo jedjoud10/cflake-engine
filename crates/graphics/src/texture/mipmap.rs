@@ -1,9 +1,8 @@
 use super::{Region, Texture};
 use crate::{
-    Extent, RenderTarget, Sampler, TextureAsTargetError,
+    Extent, Sampler, TextureAsTargetError,
     TextureSamplerError,
 };
-use crate::vulkan::vk;
 
 // TODO: Figure out how to store and create vk::Views for each mipmap
 // Should they be stored in a SmallArray or SmallVec??
@@ -11,7 +10,6 @@ use crate::vulkan::vk;
 // An immutable mip level that we can use to read from the texture
 pub struct MipLevelRef<'a, T: Texture> {
     texture: &'a T,
-    view: vk::ImageView,
     level: u8,
 }
 
@@ -20,12 +18,10 @@ impl<'a, T: Texture> MipLevelRef<'a, T> {
     // Creat a mip level reference from it's raw parts
     pub unsafe fn from_raw_parts(
         texture: &'a T,
-        view: vk::ImageView,
         level: u8,
     ) -> Self {
         Self {
             texture,
-            view,
             level,
         }
     }
@@ -67,7 +63,6 @@ impl<'a, T: Texture> MipLevelRef<'a, T> {}
 // A mutable mip level that we can use to write to the texture
 pub struct MipLevelMut<'a, T: Texture> {
     texture: &'a T,
-    view: vk::ImageView,
     level: u8,
 }
 
@@ -76,12 +71,10 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
     // Creat a mip level mutable reference from it's raw parts
     pub unsafe fn from_raw_parts(
         texture: &'a T,
-        view: vk::ImageView,
         level: u8,
     ) -> Self {
         Self {
             texture,
-            view,
             level,
         }
     }
@@ -113,6 +106,7 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
         todo!()
     }
 
+    /*
     // Try to get a render target so we can render to this one mip level
     pub fn as_target(
         &mut self,
@@ -124,6 +118,7 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
             )
         })
     }
+    */
 }
 
 // Implementation of unsafe methods

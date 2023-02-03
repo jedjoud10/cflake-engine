@@ -4,6 +4,9 @@ use thiserror::Error;
 pub enum BufferInitializationError {
     #[error("The given buffer mode must be BufferMode::Resizable if the slice is empty")]
     EmptySliceNotResizable,
+
+    #[error("Given buffer variant type is invalid. Must be VERTEX, INDEX, STORAGE, UNIFORM, or INDIRECT")]
+    InvalidVariantType,
 }
 
 #[derive(Error, Debug)]
@@ -21,12 +24,18 @@ pub enum BufferExtendError {
 pub enum BufferReadError {
     #[error("The given destination slice of length {0} (or offset of {1}) would overflow the buffer of length {2}")]
     InvalidLen(usize, usize, usize),
+
+    #[error("The buffer cannot be read since it's BufferUsages does not contain the read flag")]
+    InvalidPermissions,
 }
 
 #[derive(Error, Debug)]
 pub enum BufferWriteError {
     #[error("The given source slice of length {0} (or offset of {1}) would overflow the buffer of length {2}")]
     InvalidLen(usize, usize, usize),
+
+    #[error("The buffer cannot be written since it's BufferUsages does not contain the write flag")]
+    InvalidPermissions,
 }
 
 #[derive(Error, Debug)]
