@@ -3,6 +3,7 @@ use crate::{
 };
 
 use std::sync::Arc;
+use parking_lot::Mutex;
 use winit::{
     event_loop::EventLoop,
     window::{Fullscreen, WindowBuilder},
@@ -24,7 +25,7 @@ pub(crate) unsafe fn init_context_and_window(
     // Create the WGPU instance that will pick an appropriate backend
     let instance = wgpu::Instance::new(
         wgpu::InstanceDescriptor {
-            backends: wgpu::Backends::all(),
+            backends: wgpu::Backends::VULKAN,
             dx12_shader_compiler: Default::default(),
         }
     );
@@ -42,7 +43,9 @@ pub(crate) unsafe fn init_context_and_window(
     )).unwrap();
 
     // Features and limits
-    let features = wgpu::Features::MAPPABLE_PRIMARY_BUFFERS | wgpu::Features::TEXTURE_FORMAT_16BIT_NORM;
+    let features = wgpu::Features::TEXTURE_FORMAT_16BIT_NORM
+        | wgpu::Features::ADDRESS_MODE_CLAMP_TO_ZERO
+        | wgpu::Features::SPIRV_SHADER_PASSTHROUGH;
     let limits = wgpu::Limits::default();
 
     // Create a device for the adapter
@@ -77,12 +80,25 @@ pub(crate) unsafe fn init_context_and_window(
         view_formats: vec![],
     };
 
+    // Create a new Naga validator
+    let flags = naga::valid::ValidationFlags::all();
+    let capabilities = naga::valid::Capabilities::all();
+    let validator = naga::valid::Validator::new(flags, capabilities);
+
+    // Create a new Naga GLSL parser
+    let parser = naga::front::glsl::Parser::default();
+
+    // Create a new Wgpu staging belt
+    let staging = wgpu::util::StagingBelt::new(4096);
+
     // Create the raw graphics context
     let graphics = InternalGraphics {
         surface,
         device,
         queue,
-        staging: wgpu::util::StagingBelt::new(4096),
+        parser: Mutex::new(parser),
+        validator: Mutex::new(validator),
+        staging: Mutex::new(staging),
         surface_capabilities,
         surface_config,
         window: winit_window.clone(),

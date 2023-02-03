@@ -1089,6 +1089,7 @@ dependencies = [
  "lazy_static",
  "log",
  "math",
+ "naga",
  "nohash-hasher",
  "once_cell",
  "parking_lot",
@@ -1585,6 +1586,7 @@ dependencies = [
  "indexmap",
  "log",
  "num-traits",
+ "pp-rs",
  "rustc-hash",
  "spirv",
  "termcolor",
@@ -2026,6 +2028,15 @@ name = "pollster"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5da3b0203fd7ee5720aa0b5e790b591aa5d3f41c3ed2c34a3a393382198af2f7"
+
+[[package]]
+name = "pp-rs"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bb458bb7f6e250e6eb79d5026badc10a3ebb8f9a15d1fff0f13d17c71f4d6dee"
+dependencies = [
+ "unicode-xid",
+]
 
 [[package]]
 name = "primal-check"

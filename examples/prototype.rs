@@ -43,6 +43,7 @@ fn init(world: &mut World) {
     scene.insert(surface);
     */
 
+    /*
     let texture = Texture2D::<R<u8>>::from_texels(
         &graphics,
         None,
@@ -50,6 +51,12 @@ fn init(world: &mut World) {
         TextureMode::Dynamic,
         TextureUsage::Placeholder
     ).unwrap();
+    */
+
+    let frag = assets
+        .load::<FragmentModule>("engine/shaders/basic.frag")
+        .unwrap();
+    Compiler::new(frag).compile(&assets, &graphics).unwrap();
 
     /*
     let mut buffer = TriangleBuffer::<u32>::from_slice(

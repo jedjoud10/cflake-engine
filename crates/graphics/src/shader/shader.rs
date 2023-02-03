@@ -1,5 +1,5 @@
 use crate::{
-    Compiled, CompiledDescription, ComputeModule, FragmentModule,
+    Compiled, ComputeModule, FragmentModule,
     VertexModule,
 };
 use std::sync::Arc;
@@ -35,10 +35,12 @@ impl Shader {
         &self.frag
     }
 
+    /*
     // Get the untyped module descriptions
     pub fn descriptions(&self) -> [CompiledDescription; 2] {
         [self.vertex().description(), self.fragment().description()]
     }
+    */
 }
 
 // A compute shader used for general computing work

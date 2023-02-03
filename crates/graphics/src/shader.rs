@@ -1,10 +1,8 @@
 mod compiler;
 mod error;
 mod module;
-mod reflected;
 mod shader;
 pub use compiler::*;
 pub use error::*;
 pub use module::*;
-pub use reflected::*;
 pub use shader::*;

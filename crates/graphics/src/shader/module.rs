@@ -1,31 +1,5 @@
 use assets::Asset;
-use crate::vulkan::vk;
-
-// The type of shader module that the shader files represent
-#[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
-pub enum ModuleKind {
-    // Vertex shaders get executed on a per vertex basis
-    Vertex,
-
-    // Fragment shaders get executed for each fragment, or each pixel (in case of no MSAA)
-    Fragment,
-
-    // Compute shaders are arbitrary shaders that run on arbitrary input and output
-    Compute,
-}
-
-impl ModuleKind {
-    // Convert the module kind to the Vulkan ShaderStageFlags
-    pub const fn into_shader_stage_flags(
-        self,
-    ) -> vk::ShaderStageFlags {
-        match self {
-            Self::Vertex => vk::ShaderStageFlags::VERTEX,
-            Self::Fragment => vk::ShaderStageFlags::FRAGMENT,
-            Self::Compute => vk::ShaderStageFlags::COMPUTE,
-        }
-    }
-}
+use naga::ShaderStage;
 
 // This trait is implemented for each shader module, like the vertex module or fragment module
 // Modules are uncompiled shaders that will later be converted to SPIRV and linked together
@@ -33,7 +7,7 @@ pub trait ShaderModule: Sized {
     // Get the main properties of the module
     fn file_name(&self) -> &str;
     fn source(&self) -> &str;
-    fn kind(&self) -> ModuleKind;
+    fn stage(&self) -> ShaderStage;
 
     // Convert the module into it's source code and name
     fn into_raw_parts(self) -> (String, String);
@@ -107,7 +81,7 @@ macro_rules! impl_module_trait {
                 &self.source
             }
 
-            fn kind(&self) -> ModuleKind {
+            fn stage(&self) -> ShaderStage {
                 $kind
             }
 
@@ -119,9 +93,9 @@ macro_rules! impl_module_trait {
 }
 
 // Implement the module trait
-impl_module_trait!(VertexModule, ModuleKind::Vertex);
-impl_module_trait!(FragmentModule, ModuleKind::Fragment);
-impl_module_trait!(ComputeModule, ModuleKind::Compute);
+impl_module_trait!(VertexModule, ShaderStage::Vertex);
+impl_module_trait!(FragmentModule, ShaderStage::Fragment);
+impl_module_trait!(ComputeModule, ShaderStage::Compute);
 
 // Implement the asset trait
 impl_asset_for_module!(VertexModule, "vert");

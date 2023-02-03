@@ -1,18 +1,13 @@
 use crate::{
-    FunctionModule, GpuPodRelaxed, Graphics, ModuleKind, Reflected,
+    FunctionModule, GpuPodRelaxed, Graphics,
     ShaderCompilationError, ShaderIncludeError, ShaderModule,
 };
 use ahash::AHashMap;
 use assets::Assets;
+use naga::{ShaderStage, WithSpan, valid::{ValidationError, ModuleInfo}, Module};
 use std::{
     any::TypeId, ffi::CStr, marker::PhantomData, path::PathBuf,
-    time::Instant,
-};
-use crate::vulkan::{
-    shaderc::{
-        CompilationArtifact, IncludeType, ResolvedInclude, ShaderKind,
-    },
-    vk,
+    time::Instant, borrow::Cow,
 };
 
 // This is a compiler that will take was GLSL code, convert it to SPIRV,
@@ -20,7 +15,7 @@ use crate::vulkan::{
 // This compiler also allows us to define constants and snippets before compilation
 pub struct Compiler<M: ShaderModule> {
     // Needed for shaderc and Vulkan pipeline module
-    kind: ModuleKind,
+    stage: ShaderStage,
     source: String,
     file_name: String,
 
@@ -34,12 +29,12 @@ pub struct Compiler<M: ShaderModule> {
 impl<M: ShaderModule> Compiler<M> {
     // Create a compiler that will execute over the given module
     pub fn new(module: M) -> Self {
-        let kind = module.kind();
+        let stage = module.stage();
         let (file_name, source) = module.into_raw_parts();
         log::debug!("Created a new compiler for {}", file_name);
 
         Self {
-            kind,
+            stage,
             source,
             file_name,
             _phantom: PhantomData,
@@ -78,7 +73,7 @@ impl<M: ShaderModule> Compiler<M> {
         graphics: &Graphics,
     ) -> Result<Compiled<M>, ShaderCompilationError> {
         let Compiler {
-            kind,
+            stage,
             source,
             file_name,
             snippets,
@@ -86,40 +81,70 @@ impl<M: ShaderModule> Compiler<M> {
             _phantom,
         } = self;
 
-        // Create the constants specialization info
-        let constants = create_constants_wrapper(constants);
+        // Convert GLSL to the Naga module (and validate it)
+        let module = parse_glsl(stage, graphics, source)?;
+        let info = validate(&graphics, &module)?;
 
-        // Translate the GLSL code to SPIRV compilation artifacts
-        let artifacts = translate_glsl_to_spirv(
-            graphics, assets, &snippets, kind, &source, &file_name,
-        )?;
+        // Convert the Naga module to SPIRV bytecode
+        let bytecode = compile_to_spirv(module, info)?;
 
         // Compile the SPIRV bytecode
-        let raw = compile_spirv(&artifacts, graphics, &file_name);
-
-        // Reflect the SPIRV bytecode
-        let reflected = reflect_spirv(&artifacts);
+        let raw = compile_module(graphics, bytecode);
 
         Ok(Compiled {
             raw,
-            kind,
+            stage,
             file_name,
             _phantom,
-            constants,
-            reflected,
             graphics: graphics.clone(),
         })
     }
 }
 
+// Compile the SPIRV shader
+fn compile_module(graphics: &Graphics, bytecode: Vec<u32>) -> wgpu::ShaderModule {
+    let raw = unsafe {
+        graphics.device().create_shader_module_spirv(&wgpu::ShaderModuleDescriptorSpirV {
+            label: None,
+            source: Cow::Borrowed(&bytecode),
+        })
+    };
+    raw
+}
+
+// Parse the GLSL code to the intermediate naga representation
+fn parse_glsl(stage: ShaderStage, graphics: &Graphics, source: String) -> Result<Module, ShaderCompilationError> {
+    let options = naga::front::glsl::Options {
+        stage,
+        defines: naga::FastHashMap::default(),
+    };
+    let mut parser = graphics.parser().lock();
+    let module = parser.parse(&options, &source)
+        .map_err(ShaderCompilationError::ParserError)?;
+    Ok(module)
+}
+
+// Validate a naga Module
+fn validate(graphics: &Graphics, module: &Module) -> Result<ModuleInfo, ShaderCompilationError> {
+    let mut validator = graphics.validator().lock();
+    validator.validate(module).map_err(
+        ShaderCompilationError::NagaValidationError)
+}
+
+// Compile the Naga representation into SPIRV
+fn compile_to_spirv(module: Module, info: ModuleInfo) -> Result<Vec<u32>, ShaderCompilationError> {
+    let options = naga::back::spv::Options::default();
+    let bytecode = naga::back::spv::write_vec(&module, &info, &options, None)
+        .map_err(ShaderCompilationError::SpirvOutError)?;
+    Ok(bytecode)
+}
+
 // Data that must be stored within the compiled shader
 // that indicates how constants are defined in the specialization info
 pub struct Constants {
-    pub(crate) raw: vk::SpecializationInfo,
-    data: Vec<u8>,
-    entries: Vec<vk::SpecializationMapEntry>,
 }
 
+/*
 // Calculate the specialization info based on a hashmap of constants
 fn create_constants_wrapper(
     constants: AHashMap<u32, Vec<u8>>,
@@ -225,88 +250,13 @@ fn handle_include(
         load_snippet(target, snippets)
     }
 }
-
-// Translate the GLSL code to SPIRV and handle the includes and such
-fn translate_glsl_to_spirv(
-    graphics: &Graphics,
-    assets: &Assets,
-    snippets: &AHashMap<String, String>,
-    kind: ModuleKind,
-    source: &str,
-    file_name: &str,
-) -> Result<CompilationArtifact, ShaderCompilationError> {
-    let i = Instant::now();
-    let artifacts = unsafe {
-        let kind = match kind {
-            ModuleKind::Vertex => ShaderKind::Vertex,
-            ModuleKind::Fragment => ShaderKind::Fragment,
-            ModuleKind::Compute => ShaderKind::Compute,
-        };
-
-        graphics
-            .device()
-            .translate_glsl_spirv(
-                &source,
-                &file_name,
-                "main",
-                kind,
-                |target, _type, current, depth| {
-                    Ok(handle_include(
-                        current, _type, target, depth, assets,
-                        &snippets,
-                    )
-                    .unwrap())
-                },
-            )
-            .map_err(ShaderCompilationError::TranslationError)?
-    };
-    log::debug!(
-        "Took {:?} to translate '{}' to SPIRV",
-        i.elapsed(),
-        &file_name
-    );
-    Ok(artifacts)
-}
-
-// Compile SPIRV bytecode to an actual Vulkan module
-fn compile_spirv(
-    artifacts: &CompilationArtifact,
-    graphics: &Graphics,
-    file_name: &str,
-) -> vk::ShaderModule {
-    let i = Instant::now();
-    let raw = unsafe {
-        let spirv = artifacts.as_binary();
-        graphics.device().compile_shader_module(spirv)
-    };
-    log::debug!(
-        "Took {:?} to compile '{}' from SPIRV",
-        i.elapsed(),
-        &file_name
-    );
-    raw
-}
-
-// Reflect the given compiled SPIRV data (baka)
-fn reflect_spirv(
-    artifacts: &CompilationArtifact,
-) -> Reflected {
-    unsafe {
-        let raw = spirv_reflect::create_shader_module(
-            artifacts.as_binary_u8(),
-        )
-        .unwrap();
-        Reflected::from_raw_parts(raw)
-    }
-}
+*/
 
 // This is a compiled shader module that we can use in multiple pipelines
 pub struct Compiled<M: ShaderModule> {
-    // Vulkan related data
-    raw: vk::ShaderModule,
-    kind: ModuleKind,
-    constants: Constants,
-    reflected: Reflected,
+    // Wgpu related data
+    raw: wgpu::ShaderModule,
+    stage: ShaderStage,
 
     // Helpers
     file_name: String,
@@ -316,56 +266,14 @@ pub struct Compiled<M: ShaderModule> {
     graphics: Graphics,
 }
 
-impl<M: ShaderModule> Drop for Compiled<M> {
-    fn drop(&mut self) {
-        unsafe {
-            self.graphics.device().destroy_shader_module(self.raw);
-        }
-    }
-}
-
 impl<M: ShaderModule> Compiled<M> {
-    // Get the underlying raw Vulkan shader module
-    pub fn raw(&self) -> vk::ShaderModule {
-        self.raw
-    }
-
-    // Get the shader module kind for this compiled shader
-    pub fn kind(&self) -> ModuleKind {
-        self.kind
+    // Get the shader module stage for this compiled shader
+    pub fn stage(&self) -> ShaderStage {
+        self.stage
     }
 
     // Get the shader module file name for this module
     pub fn file_name(&self) -> &str {
         &self.file_name
     }
-
-    // Get out the reflected data from the SPIRV bytecode
-    pub fn reflected(&self) -> &Reflected {
-        &self.reflected
-    }
-
-    // Get the compiled description
-    pub fn description(&self) -> CompiledDescription {
-        CompiledDescription {
-            entry: unsafe {
-                CStr::from_bytes_with_nul_unchecked(b"main\0")
-            },
-            flags: vk::PipelineShaderStageCreateFlags::default(),
-            kind: self.kind,
-            module: &self.raw,
-            constants: &self.constants,
-            reflected: &self.reflected,
-        }
-    }
-}
-
-// A description of a compiled shader module that we can use within a pipeline
-pub struct CompiledDescription<'a> {
-    pub(crate) entry: &'static CStr,
-    pub(crate) flags: vk::PipelineShaderStageCreateFlags,
-    pub(crate) kind: ModuleKind,
-    pub(crate) module: &'a vk::ShaderModule,
-    pub(crate) constants: &'a Constants,
-    pub(crate) reflected: &'a Reflected,
 }
