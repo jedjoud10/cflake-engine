@@ -24,12 +24,8 @@ impl<T: Base> AnyElement for T {
         BaseType::ThirtyTwo => {
             ElementType::ThirtyTwo { signed: T::SIGNED }
         }
-        BaseType::SixtyFour => {
-            ElementType::SixtyFour { signed: T::SIGNED }
-        }
         BaseType::FloatSixteen => ElementType::FloatSixteen,
         BaseType::FloatThirtyTwo => ElementType::FloatThirtyTwo,
-        BaseType::FloatSixtyFour => ElementType::FloatSixtyFour,
     };
 
     type Storage = T;

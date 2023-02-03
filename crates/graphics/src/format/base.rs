@@ -38,8 +38,6 @@ pub enum BaseType {
     Eight,
     Sixteen,
     ThirtyTwo,
-    SixtyFour,
     FloatSixteen,
     FloatThirtyTwo,
-    FloatSixtyFour,
 }

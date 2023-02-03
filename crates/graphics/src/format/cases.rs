@@ -1,30 +1,34 @@
 use crate::{ChannelsType, ElementType, VectorChannels};
 use wgpu::TextureFormat;
+use paste::paste;
 
 // Implement a function that will deserialize the element type for a specific channel type
 // Only supported: R, Rg, RGBA
-macro_rules! impl_test {
-    ($channel:ident) => {
-        fn handle__formats(element: ElementType) -> TextureFormat {
-            match element {
-                ElementType::Eight { signed, normalized } => match (signed, normalized) {
-                    (true, true) => TextureFormat::R8Snorm,
-                    (true, false) => TextureFormat::R8Sint,
-                    (false, true) => TextureFormat::R8Unorm,
-                    (false, false) => TextureFormat::R8Uint,
-                },
-                ElementType::Sixteen { signed, normalized } => match (signed, normalized) {
-                    (true, true) => TextureFormat::R16Snorm,
-                    (true, false) => TextureFormat::R16Sint,
-                    (false, true) => TextureFormat::R16Unorm,
-                    (false, false) => TextureFormat::R16Uint,
-                },
-                ElementType::ThirtyTwo { signed } => match signed {
-                    true => TextureFormat::R32Sint,
-                    false => TextureFormat::R32Uint,
-                },
-                ElementType::FloatSixteen => TextureFormat::R16Float,
-                ElementType::FloatThirtyTwo => TextureFormat::R32Float,
+macro_rules! impl_texel_conversion_specific_channels {
+    ($channel:ident, $function:ident) => {
+        paste! {
+            const fn [<handle_ $function _formats>](element: ElementType) -> Option<TextureFormat> {
+                match element {
+                    ElementType::Eight { signed, normalized } => Some(match (signed, normalized) {
+                        (true, true) => TextureFormat::[<$channel 8Snorm>],
+                        (true, false) => TextureFormat::[<$channel 8Sint>],
+                        (false, true) => TextureFormat::[<$channel 8Unorm>],
+                        (false, false) => TextureFormat::[<$channel 8Uint>],
+                    }),
+                    ElementType::Sixteen { signed, normalized } => Some(match (signed, normalized) {
+                        (true, true) => TextureFormat::[<$channel 16Snorm>],
+                        (true, false) => TextureFormat::[<$channel 16Sint>],
+                        (false, true) => TextureFormat::[<$channel 16Unorm>],
+                        (false, false) => TextureFormat::[<$channel 16Uint>],
+                    }),
+                    ElementType::ThirtyTwo { signed } => Some(match signed {
+                        true => TextureFormat::[<$channel 32Sint>],
+                        false => TextureFormat::[<$channel 32Uint>],
+                    }),
+                    ElementType::FloatSixteen => Some(TextureFormat::[<$channel 16Float>]),
+                    ElementType::FloatThirtyTwo => Some(TextureFormat::[<$channel 32Float>]),
+                    _ => None
+                }
             }
         }
     };
@@ -34,54 +38,60 @@ macro_rules! impl_test {
 // Converts the given vector channels to the proper format
 pub const fn pick_format_from_vector_channels(
     element: ElementType,
-    channels: VectorChannels,
-) -> TextureFormat {
-    impl_test!(r);
+    channels: VectorChannels
+) -> Option<TextureFormat> {
+    impl_texel_conversion_specific_channels!(R, r);
+    impl_texel_conversion_specific_channels!(Rg, rg);
+    impl_texel_conversion_specific_channels!(Rgba, rgba);
 
-    
-    // Handle BGRA formats
-    fn handle_bgra_formats(element: ElementType) -> TextureFormat {
-        todo!()
+    // Handle BGRA formats by themselves since WGPU doesn't support all formats
+    const fn handle_bgra_formats(element: ElementType) -> Option<TextureFormat> {
+        match element {
+            ElementType::Eight { signed: false, normalized: true } => Some(TextureFormat::Bgra8Unorm),
+            _ => None,
+        }
     }
 
     match channels {
         VectorChannels::One => handle_r_formats(element),
-        //VectorChannels::Two => handle_rg_formats(element),
-        //VectorChannels::Four => handle_rgba_formats(element),
+        VectorChannels::Two => handle_rg_formats(element),
+        VectorChannels::Four => handle_rgba_formats(element),
         VectorChannels::FourSwizzled => handle_bgra_formats(element),
+        _ => None,
     }
 }
 
 // Converts the given depth channel to the proper format
 pub const fn pick_depth_format(
     element_type: ElementType,
-) -> TextureFormat {
+) -> Option<TextureFormat> {
     match element_type {
         ElementType::Sixteen {
             signed: false,
             normalized: true,
-        } => TextureFormat::Depth16Unorm,
-        ElementType::FloatThirtyTwo => TextureFormat::Depth32Float,
-        _ => panic!(),
+        } => Some(TextureFormat::Depth16Unorm),
+        ElementType::FloatThirtyTwo => Some(TextureFormat::Depth32Float),
+        _ => None,
     }
 }
 
 // Converts the given stencil channel to the proper format
 pub const fn pick_stencil_format(
     element_type: ElementType,
-) -> TextureFormat {
+) -> Option<TextureFormat> {
     match element_type {
-        ElementType::Eight { signed: false, normalized: false } => TextureFormat::Stencil8,
-        _ => panic!()
+        ElementType::Eight { signed: false, normalized: false } => Some(TextureFormat::Stencil8),
+        _ => None
     }    
 }
 
 // Converts the given data to the proper format
 // This is called within the Texel::FORMAT and Vertex::FORMAT
+// The given input might not always be supported (for example, RGB), and in which case, this function would return None
 pub const fn pick_format_from_params(
     element_type: ElementType,
     channels_type: ChannelsType,
-) -> TextureFormat {
+) -> Option<TextureFormat> {
     match channels_type {
         ChannelsType::Vector(channels) => pick_format_from_vector_channels(element_type, channels),
         ChannelsType::Depth => pick_depth_format(element_type),

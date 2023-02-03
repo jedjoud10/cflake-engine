@@ -7,45 +7,24 @@ use std::mem::size_of;
 use vek::{Vec2, Vec3, Vec4};
 use wgpu::TextureFormat;
 
-// An untyped wrapper around texel types
-pub struct UntypedTexel {
-    // Format related
-    pub format: TextureFormat,
-    pub channels: ChannelsType,
-    pub element: ElementType,
-
-    // Storage/memory related
-    pub bits_per_channel: u64,
-}
-
 // This trait defines the layout for a single texel that will be stored within textures
 // The texel format of each texture is specified at compile time
 // This assumes a very simple case of multi-channel texels
 pub trait Texel: 'static + Sized {
-    // Number of bits per channel
-    const BITS_PER_CHANNEL: u64;
-
-    // Untyped representation of the underlying element
-    const ELEMENT_TYPE: ElementType;
-
-    // Type of channels (either R, RG, RGB, RGBA, Depth, Stencil)
-    const CHANNELS_TYPE: ChannelsType;
-
-    // Compile time WGPU format
-    const FORMAT: TextureFormat;
-
     // The raw data type that we will use to access texture memory
     type Storage: GpuPodRelaxed;
 
-    // Get the untyped variant of this texel
-    fn untyped() -> UntypedTexel {
-        UntypedTexel {
-            format: Self::FORMAT,
-            channels: Self::CHANNELS_TYPE,
-            element: Self::ELEMENT_TYPE,
-            bits_per_channel: Self::BITS_PER_CHANNEL,
-        }
-    }
+    // Number of bits per channel
+    fn bits_per_channel() -> u64;
+
+    // Untyped representation of the underlying element
+    fn element() -> ElementType;
+
+    // Type of channels (either R, RG, RGB, RGBA, Depth, Stencil)
+    fn channels() -> ChannelsType;
+
+    // Compile time WGPU format
+    fn format() -> TextureFormat;
 }
 
 // Color texels are texels used for color attachments
@@ -78,15 +57,26 @@ pub trait ImageTexel: Texel {
 macro_rules! impl_color_texel_layout {
     ($t:ident, $channels_type:expr, $vec: ident) => {
         impl<T: AnyElement> Texel for $t<T> {
-            const BITS_PER_CHANNEL: u64 = size_of::<T>() as u64 * 8;
-            const ELEMENT_TYPE: ElementType = T::ELEMENT_TYPE;
-            const CHANNELS_TYPE: ChannelsType = $channels_type;
-            const FORMAT: wgpu::TextureFormat =
-                crate::format::pick_format_from_params(
-                    Self::ELEMENT_TYPE,
-                    Self::CHANNELS_TYPE,
-                );
             type Storage = $vec<T::Storage>;
+
+            fn bits_per_channel() -> u64 {
+                size_of::<T>() as u64 * 8
+            }
+
+            fn element() -> ElementType {
+                T::ELEMENT_TYPE
+            }
+
+            fn channels() -> ChannelsType {
+                $channels_type
+            }
+
+            fn format() -> wgpu::TextureFormat {
+                crate::format::pick_format_from_params(
+                    T::ELEMENT_TYPE,
+                    $channels_type,
+                ).unwrap()
+            }
         }
 
         impl<T: AnyElement> ColorTexel for $t<T> {
@@ -115,15 +105,26 @@ macro_rules! impl_color_texel_layout {
 macro_rules! impl_swizzled_color_texel_layout {
     ($t:ident, $channels_type:expr, $vec: ident) => {
         impl<T: AnyElement + Swizzable> Texel for $t<T> {
-            const BITS_PER_CHANNEL: u64 = size_of::<T>() as u64 * 8;
-            const ELEMENT_TYPE: ElementType = T::ELEMENT_TYPE;
-            const CHANNELS_TYPE: ChannelsType = $channels_type;
-            const FORMAT: wgpu::TextureFormat =
-                crate::format::pick_format_from_params(
-                    Self::ELEMENT_TYPE,
-                    Self::CHANNELS_TYPE,
-                );
             type Storage = $vec<T::Storage>;
+
+            fn bits_per_channel() -> u64 {
+                size_of::<T>() as u64 * 8
+            }
+
+            fn element() -> ElementType {
+                T::ELEMENT_TYPE
+            }
+
+            fn channels() -> ChannelsType {
+                $channels_type
+            }
+
+            fn format() -> wgpu::TextureFormat {
+                crate::format::pick_format_from_params(
+                    T::ELEMENT_TYPE,
+                    $channels_type,
+                ).unwrap()
+            }
         }
 
         impl<T: AnyElement + Swizzable> ColorTexel for $t<T> {
@@ -152,27 +153,49 @@ macro_rules! impl_swizzled_color_texel_layout {
 macro_rules! impl_special_texel_layout {
     () => {
         impl<T: DepthElement> Texel for Depth<T> {
-            const BITS_PER_CHANNEL: u64 = size_of::<T>() as u64 * 8;
-            const ELEMENT_TYPE: ElementType = T::ELEMENT_TYPE;
-            const CHANNELS_TYPE: ChannelsType = ChannelsType::Depth;
-            const FORMAT: wgpu::TextureFormat =
-                crate::format::pick_format_from_params(
-                    Self::ELEMENT_TYPE,
-                    Self::CHANNELS_TYPE,
-                );
             type Storage = T::Storage;
+
+            fn bits_per_channel() -> u64 {
+                size_of::<T>() as u64 * 8
+            }
+
+            fn element() -> ElementType {
+                T::ELEMENT_TYPE
+            }
+
+            fn channels() -> ChannelsType {
+                ChannelsType::Depth
+            }
+
+            fn format() -> wgpu::TextureFormat {
+                crate::format::pick_format_from_params(
+                    T::ELEMENT_TYPE,
+                    ChannelsType::Depth,
+                ).unwrap()
+            }
         }
 
         impl<T: StencilElement> Texel for Stencil<T> {
-            const BITS_PER_CHANNEL: u64 = size_of::<T>() as u64 * 8;
-            const ELEMENT_TYPE: ElementType = T::ELEMENT_TYPE;
-            const CHANNELS_TYPE: ChannelsType = ChannelsType::Stencil;
-            const FORMAT: wgpu::TextureFormat =
-                crate::format::pick_format_from_params(
-                    Self::ELEMENT_TYPE,
-                    Self::CHANNELS_TYPE,
-                );
             type Storage = T::Storage;
+
+            fn bits_per_channel() -> u64 {
+                size_of::<T>() as u64 * 8
+            }
+
+            fn element() -> ElementType {
+                T::ELEMENT_TYPE
+            }
+
+            fn channels() -> ChannelsType {
+                ChannelsType::Stencil
+            }
+
+            fn format() -> wgpu::TextureFormat {
+                crate::format::pick_format_from_params(
+                    T::ELEMENT_TYPE,
+                    ChannelsType::Stencil,
+                ).unwrap()
+            }
         }
 
         /*

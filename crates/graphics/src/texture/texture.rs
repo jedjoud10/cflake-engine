@@ -5,7 +5,7 @@ use wgpu::{TextureDescriptor, TextureViewDescriptor};
 use crate::{
     Extent, Graphics, MipLevelMut, MipLevelRef, Region, Sampler,
     Texel, TextureInitializationError, TextureMipLayerError,
-    TextureMode, TextureSamplerError, TextureUsage, UntypedTexel,
+    TextureMode, TextureSamplerError, TextureUsage,
 };
 
 // Possibly predefined texel data
@@ -29,12 +29,9 @@ pub trait Texture: Sized {
         mode: TextureMode,
         usage: TextureUsage,
     ) -> Result<Self, TextureInitializationError> {
-        let UntypedTexel {
-            format,
-            channels,
-            element: _,
-            bits_per_channel,
-        } = <Self::T as Texel>::untyped();
+        let format = <Self::T as Texel>::format();
+        let channels = <Self::T as Texel>::channels();
+        let bits_per_channel = <Self::T as Texel>::bits_per_channel();
 
         // Make sure the number of texels matches up with the dimensions
         if let Some(texels) = texels {
