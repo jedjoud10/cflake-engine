@@ -1,7 +1,6 @@
 use super::{Region, Texture};
 use crate::{
-    Extent, Sampler, TextureAsTargetError,
-    TextureSamplerError,
+    Extent, Sampler, TextureAsTargetError, TextureSamplerError,
 };
 
 // TODO: Figure out how to store and create vk::Views for each mipmap
@@ -16,14 +15,8 @@ pub struct MipLevelRef<'a, T: Texture> {
 // Helper methods
 impl<'a, T: Texture> MipLevelRef<'a, T> {
     // Creat a mip level reference from it's raw parts
-    pub unsafe fn from_raw_parts(
-        texture: &'a T,
-        level: u8,
-    ) -> Self {
-        Self {
-            texture,
-            level,
-        }
+    pub unsafe fn from_raw_parts(texture: &'a T, level: u8) -> Self {
+        Self { texture, level }
     }
 
     // Get the underlying texture
@@ -69,14 +62,8 @@ pub struct MipLevelMut<'a, T: Texture> {
 // Helper methods
 impl<'a, T: Texture> MipLevelMut<'a, T> {
     // Creat a mip level mutable reference from it's raw parts
-    pub unsafe fn from_raw_parts(
-        texture: &'a T,
-        level: u8,
-    ) -> Self {
-        Self {
-            texture,
-            level,
-        }
+    pub unsafe fn from_raw_parts(texture: &'a T, level: u8) -> Self {
+        Self { texture, level }
     }
 
     // Get the underlying texture

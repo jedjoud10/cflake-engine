@@ -1,7 +1,4 @@
-use crate::{
-    Compiled, ComputeModule, FragmentModule,
-    VertexModule,
-};
+use crate::{Compiled, ComputeModule, FragmentModule, VertexModule};
 use std::sync::Arc;
 
 // A rendering shader that contains a vertex module and fragment module

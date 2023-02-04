@@ -45,7 +45,7 @@ fn init(world: &mut World, user: Option<PathBuf>) {
     persistent!(loader, "engine/shaders/math/conversions.func.glsl");
     persistent!(loader, "engine/shaders/math/kernels.func.glsl");
 
-    
+
     // Load the default texutres
     persistent!(loader, "engine/textures/integration.png");
     */

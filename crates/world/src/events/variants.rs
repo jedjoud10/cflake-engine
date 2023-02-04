@@ -194,20 +194,17 @@ impl Caller for Tick {
     type DynFn = dyn FnMut(&mut World);
     type Args<'a, 'p> = &'p mut World where 'a: 'p;
 
-
     fn call<'a, 'p>(
         boxed: &mut Box<Self::DynFn>,
         args: &mut Self::Args<'a, 'p>,
     ) where
-        'a: 'p
+        'a: 'p,
     {
         boxed(args)
     }
 }
 
-impl<F: FnMut(&mut World) + 'static> Event<Tick, &mut World>
-    for F
-{
+impl<F: FnMut(&mut World) + 'static> Event<Tick, &mut World> for F {
     type Args<'a, 'p> = &'p mut World where 'a: 'p;
 
     fn boxed(mut self) -> Box<<Tick as Caller>::DynFn> {
@@ -215,9 +212,7 @@ impl<F: FnMut(&mut World) + 'static> Event<Tick, &mut World>
     }
 }
 
-impl<F: FnMut() + 'static> Event<Tick, ()>
-    for F
-{
+impl<F: FnMut() + 'static> Event<Tick, ()> for F {
     type Args<'a, 'p> = () where 'a: 'p;
 
     fn boxed(mut self) -> Box<<Tick as Caller>::DynFn> {

@@ -1,6 +1,6 @@
 use crate::{
     Caller, CallerId, Event, Init, Registry, Rule, Shutdown,
-    SystemId, Update, Tick,
+    SystemId, Tick, Update,
 };
 
 use log_err::LogErrResult;
@@ -161,7 +161,7 @@ impl<'a> System<'a> {
     // Insert a tick event and return a mut evnet
     pub fn insert_tick<ID>(
         &mut self,
-        event: impl Event<Tick, ID>
+        event: impl Event<Tick, ID>,
     ) -> EventMut<Tick> {
         insert!(self, event, tick, Tick)
     }

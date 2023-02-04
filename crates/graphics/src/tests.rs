@@ -28,39 +28,30 @@ mod texels {
 
         assert_eq!(R::<u16>::format(), TextureFormat::R16Uint);
         assert_eq!(RG::<u16>::format(), TextureFormat::Rg16Uint);
-        assert_eq!(
-            RGBA::<u16>::format(),
-            TextureFormat::Rgba16Uint
-        );
+        assert_eq!(RGBA::<u16>::format(), TextureFormat::Rgba16Uint);
 
         assert_eq!(R::<u32>::format(), TextureFormat::R32Uint);
         assert_eq!(RG::<u32>::format(), TextureFormat::Rg32Uint);
-        assert_eq!(
-            RGBA::<u32>::format(),
-            TextureFormat::Rgba32Uint
-        );
+        assert_eq!(RGBA::<u32>::format(), TextureFormat::Rgba32Uint);
     }
 
     #[test]
     fn float() {
         assert_eq!(R::<f16>::format(), TextureFormat::R16Float);
         assert_eq!(RG::<f16>::format(), TextureFormat::Rg16Float);
-        assert_eq!(
-            RGBA::<f16>::format(),
-            TextureFormat::Rgba16Float
-        );
+        assert_eq!(RGBA::<f16>::format(), TextureFormat::Rgba16Float);
 
         assert_eq!(R::<f32>::format(), TextureFormat::R32Float);
         assert_eq!(RG::<f32>::format(), TextureFormat::Rg32Float);
-        assert_eq!(
-            RGBA::<f32>::format(),
-            TextureFormat::Rgba32Float
-        );
+        assert_eq!(RGBA::<f32>::format(), TextureFormat::Rgba32Float);
     }
 
     #[test]
     fn normalized() {
-        assert_eq!(R::<Normalized<u8>>::format(), TextureFormat::R8Unorm);
+        assert_eq!(
+            R::<Normalized<u8>>::format(),
+            TextureFormat::R8Unorm
+        );
         assert_eq!(
             RG::<Normalized<u8>>::format(),
             TextureFormat::Rg8Unorm
@@ -87,7 +78,10 @@ mod texels {
             TextureFormat::Rgba16Unorm
         );
 
-        assert_eq!(R::<Normalized<i8>>::format(), TextureFormat::R8Snorm);
+        assert_eq!(
+            R::<Normalized<i8>>::format(),
+            TextureFormat::R8Snorm
+        );
         assert_eq!(
             RG::<Normalized<i8>>::format(),
             TextureFormat::Rg8Snorm
@@ -124,10 +118,7 @@ mod texels {
 
         assert_eq!(R::<i16>::format(), TextureFormat::R16Sint);
         assert_eq!(RG::<i16>::format(), TextureFormat::Rg16Sint);
-        assert_eq!(
-            RGBA::<i16>::format(),
-            TextureFormat::Rgba16Sint
-        );
+        assert_eq!(RGBA::<i16>::format(), TextureFormat::Rgba16Sint);
     }
 
     #[test]
@@ -138,17 +129,11 @@ mod texels {
 
         assert_eq!(R::<u16>::format(), TextureFormat::R16Uint);
         assert_eq!(RG::<u16>::format(), TextureFormat::Rg16Uint);
-        assert_eq!(
-            RGBA::<u16>::format(),
-            TextureFormat::Rgba16Uint
-        );
+        assert_eq!(RGBA::<u16>::format(), TextureFormat::Rgba16Uint);
 
         assert_eq!(R::<u32>::format(), TextureFormat::R32Uint);
         assert_eq!(RG::<u32>::format(), TextureFormat::Rg32Uint);
-        assert_eq!(
-            RGBA::<u32>::format(),
-            TextureFormat::Rgba32Uint
-        );
+        assert_eq!(RGBA::<u32>::format(), TextureFormat::Rgba32Uint);
     }
 
     #[test]
@@ -157,7 +142,10 @@ mod texels {
             Depth::<Normalized<u16>>::format(),
             TextureFormat::Depth16Unorm
         );
-        assert_eq!(Depth::<f32>::format(), TextureFormat::Depth32Float);
+        assert_eq!(
+            Depth::<f32>::format(),
+            TextureFormat::Depth32Float
+        );
         assert_eq!(Stencil::<u8>::format(), TextureFormat::Stencil8);
     }
 }

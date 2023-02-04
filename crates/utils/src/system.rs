@@ -1,4 +1,7 @@
-use std::{time::{Duration, Instant}, num::{NonZeroU128, NonZeroU32}};
+use std::{
+    num::{NonZeroU128, NonZeroU32},
+    time::{Duration, Instant},
+};
 
 use crate::{FileManager, ThreadPool, Time};
 use world::{post_user, user, System, World};
@@ -55,7 +58,7 @@ pub fn time(system: &mut System) {
         .insert_update(|world: &mut World| {
             let mut time = world.get_mut::<Time>().unwrap();
             let now = Instant::now();
-            
+
             // Update frame count and frame start
             let old_frame_start = time.frame_start;
             time.frame_start = now;
@@ -69,14 +72,17 @@ pub fn time(system: &mut System) {
 
             // Constants needed for ticks
             const TICKS_PER_SEC: f32 = 120.0f32;
-            const TICKS_DELTA_NS: f32 = (1.0 / TICKS_PER_SEC) * 1000000000.0;
-            const TICK_DELTA: Duration = Duration::from_nanos(TICKS_DELTA_NS as u64);
-            
+            const TICKS_DELTA_NS: f32 =
+                (1.0 / TICKS_PER_SEC) * 1000000000.0;
+            const TICK_DELTA: Duration =
+                Duration::from_nanos(TICKS_DELTA_NS as u64);
+
             // Update the tick count and starts
             let diff = now - time.last_tick_start;
             if diff >= TICK_DELTA {
                 // Calculate how many ticks have elapsed since the last tick
-                let divided = diff.as_micros() as f32 / TICK_DELTA.as_micros() as f32;
+                let divided = diff.as_micros() as f32
+                    / TICK_DELTA.as_micros() as f32;
                 let count = divided.floor() as u32;
 
                 // Add divided tick count to accumulator

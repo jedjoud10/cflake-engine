@@ -1,16 +1,17 @@
 use std::{
     alloc::Layout,
+    any::type_name,
     marker::PhantomData,
-    mem::{size_of, ManuallyDrop}, any::type_name,
+    mem::{size_of, ManuallyDrop},
 };
 
 use wgpu::util::DeviceExt;
 
 use crate::{
     BufferClearError, BufferCopyError, BufferExtendError,
-    BufferInitializationError, BufferNotMappableError,
-    BufferReadError, BufferWriteError, GpuPodRelaxed,
-    Graphics, BufferMode, BufferUsage,
+    BufferInitializationError, BufferMode, BufferNotMappableError,
+    BufferReadError, BufferUsage, BufferWriteError, GpuPodRelaxed,
+    Graphics,
 };
 
 // Bitmask from Vulkan BufferUsages
@@ -128,7 +129,8 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
         );
 
         // Cannot create a zero sized slice if we aren't resizable
-        if slice.is_empty() && !matches!(mode, BufferMode::Resizable) {
+        if slice.is_empty() && !matches!(mode, BufferMode::Resizable)
+        {
             return Err(
                 BufferInitializationError::EmptySliceNotResizable,
             );
@@ -144,19 +146,23 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
 
         // TODO: Make this work with the StagingBelt / StagingBuffer
 
-        let wgpu_usages = variant | wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ;
-
+        let wgpu_usages = variant
+            | wgpu::BufferUsages::COPY_SRC
+            | wgpu::BufferUsages::COPY_DST
+            | wgpu::BufferUsages::MAP_READ;
 
         // Convert the slice into bytes
         let bytes = bytemuck::cast_slice::<T, u8>(slice);
 
         // Allocate the WGPU buffer
         log::debug!("Allocating raw buffer for type {}, element len: {}, byte len: {}", type_name::<T>(), slice.len(), bytes.len());
-        let buffer = graphics.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: None,
-            contents: bytes,
-            usage: wgpu_usages,
-        });
+        let buffer = graphics.device().create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: None,
+                contents: bytes,
+                usage: wgpu_usages,
+            },
+        );
         graphics.device().poll(wgpu::Maintain::Wait);
 
         // Calculate the number of elements that can fit in this one allocation
@@ -305,13 +311,15 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
         }
 
         // Write to the buffer
-        let offset = wgpu::BufferAddress::try_from(offset * self.stride()).unwrap();
+        let offset =
+            wgpu::BufferAddress::try_from(offset * self.stride())
+                .unwrap();
         self.graphics.queue().write_buffer(
             &self.buffer,
             offset,
             bytemuck::cast_slice(src),
         );
-        
+
         // Wait for the write to happen
         self.graphics.queue().submit([]);
         Ok(())
@@ -342,7 +350,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
             ));
         }
 
-        let offset = u64::try_from(self.stride() * offset).unwrap(); 
+        let offset = u64::try_from(self.stride() * offset).unwrap();
         let size = u64::try_from(self.stride() * dst.len()).unwrap();
 
         //TODO: Add this again
@@ -378,19 +386,20 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
 
         // Map the buffer (and wait)
         type MapResult = Result<(), wgpu::BufferAsyncError>;
-        let (tx, rx) = 
-            std::sync::mpsc::channel::<MapResult>();
+        let (tx, rx) = std::sync::mpsc::channel::<MapResult>();
         let staging_slice = self.buffer.slice(..);
 
         // Map async (but wait for submission)
-        staging_slice.map_async(wgpu::MapMode::Read, move |res| tx.send(res).unwrap());
+        staging_slice.map_async(wgpu::MapMode::Read, move |res| {
+            tx.send(res).unwrap()
+        });
         self.graphics.device().poll(wgpu::Maintain::Wait);
 
         // Wait until the buffer is mapped, then read
         if let Ok(Ok(_)) = rx.recv() {
             let bytes = &*staging_slice.get_mapped_range();
             dst.copy_from_slice(bytemuck::cast_slice(bytes));
-        }        
+        }
 
         Ok(())
     }
@@ -402,9 +411,10 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
         }
 
         self.length = 0;
-        let mut encoder = self.graphics.device().create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: None,
-        });
+        let mut encoder =
+            self.graphics.device().create_command_encoder(
+                &wgpu::CommandEncoderDescriptor { label: None },
+            );
         encoder.clear_buffer(&self.buffer, 0, None);
         self.graphics.queue().submit(Some(encoder.finish()));
 

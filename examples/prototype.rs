@@ -77,7 +77,7 @@ fn init(world: &mut World) {
 fn update(world: &mut World) {
     let time = world.get::<Time>().unwrap();
     let input = world.get::<Input>().unwrap();
-    
+
     if input.get_button(Button::F5).pressed() {
         dbg!(time.average_fps());
     }

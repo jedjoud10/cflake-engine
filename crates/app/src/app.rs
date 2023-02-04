@@ -1,12 +1,13 @@
+use graphics::{FrameRateLimit, WindowSettings};
+use mimalloc::MiMalloc;
+use std::path::PathBuf;
 use winit::{
     event::{DeviceEvent, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
-use graphics::{FrameRateLimit, WindowSettings};
-use mimalloc::MiMalloc;
-use std::{path::PathBuf};
 use world::{
-    Event, Init, Shutdown, State, System, Systems, Update, World, Tick,
+    Event, Init, Shutdown, State, System, Systems, Tick, Update,
+    World,
 };
 
 #[global_allocator]
@@ -144,7 +145,7 @@ impl App {
     // Insert a single tick event
     pub fn insert_tick<ID>(
         self,
-        tick: impl Event<Tick, ID> + 'static
+        tick: impl Event<Tick, ID> + 'static,
     ) -> Self {
         self.insert_system(move |system: &mut System| {
             system.insert_tick(tick);
@@ -216,11 +217,11 @@ impl App {
 
                 // Execute the tick event 120 times per second
                 let time = world.get::<utils::Time>().unwrap();
-                
+
                 // Make sure we execute the tick event only 120 times per second
                 if let Some(count) = time.ticks_to_execute() {
                     drop(time);
-                    
+
                     // Execute the tick events
                     for _ in 0..count.get() {
                         systems.tick.execute(&mut world);
@@ -240,7 +241,6 @@ impl App {
             // Call the shutdown events
             winit::event::Event::LoopDestroyed => {
                 systems.shutdown.execute(&mut world);
-                
             }
 
             // Call the window events

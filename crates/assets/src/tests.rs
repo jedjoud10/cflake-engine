@@ -137,7 +137,8 @@ mod tests {
         let loader = Assets::new(None);
         persistent!(loader, "test/text.txt");
         let context = 69u32;
-        let string = loader.load::<Contextual>(("test/text.txt", &context));
+        let string =
+            loader.load::<Contextual>(("test/text.txt", &context));
         assert_eq!(
             string.unwrap().0,
             "this is a test file\n1234567890"

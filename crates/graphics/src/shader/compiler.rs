@@ -1,13 +1,16 @@
 use crate::{
-    FunctionModule, GpuPodRelaxed, Graphics,
-    ShaderCompilationError, ShaderIncludeError, ShaderModule,
+    FunctionModule, GpuPodRelaxed, Graphics, ShaderCompilationError,
+    ShaderIncludeError, ShaderModule,
 };
 use ahash::AHashMap;
 use assets::Assets;
-use naga::{ShaderStage, WithSpan, valid::{ValidationError, ModuleInfo}, Module};
+use naga::{
+    valid::{ModuleInfo, ValidationError},
+    Module, ShaderStage, WithSpan,
+};
 use std::{
-    any::TypeId, ffi::CStr, marker::PhantomData, path::PathBuf,
-    time::Instant, borrow::Cow,
+    any::TypeId, borrow::Cow, ffi::CStr, marker::PhantomData,
+    path::PathBuf, time::Instant,
 };
 
 // This is a compiler that will take was GLSL code, convert it to SPIRV,
@@ -42,7 +45,6 @@ impl<M: ShaderModule> Compiler<M> {
             constants: Default::default(),
         }
     }
-
 
     /*
     TODO: Re-implement this
@@ -106,47 +108,64 @@ impl<M: ShaderModule> Compiler<M> {
 }
 
 // Compile the SPIRV shader
-fn compile_module(graphics: &Graphics, bytecode: Vec<u32>) -> wgpu::ShaderModule {
+fn compile_module(
+    graphics: &Graphics,
+    bytecode: Vec<u32>,
+) -> wgpu::ShaderModule {
     let raw = unsafe {
-        graphics.device().create_shader_module_spirv(&wgpu::ShaderModuleDescriptorSpirV {
-            label: None,
-            source: Cow::Borrowed(&bytecode),
-        })
+        graphics.device().create_shader_module_spirv(
+            &wgpu::ShaderModuleDescriptorSpirV {
+                label: None,
+                source: Cow::Borrowed(&bytecode),
+            },
+        )
     };
     raw
 }
 
 // Parse the GLSL code to the intermediate naga representation
-fn parse_glsl(stage: ShaderStage, graphics: &Graphics, source: String) -> Result<Module, ShaderCompilationError> {
+fn parse_glsl(
+    stage: ShaderStage,
+    graphics: &Graphics,
+    source: String,
+) -> Result<Module, ShaderCompilationError> {
     let options = naga::front::glsl::Options {
         stage,
         defines: naga::FastHashMap::default(),
     };
     let mut parser = graphics.parser().lock();
-    let module = parser.parse(&options, &source)
+    let module = parser
+        .parse(&options, &source)
         .map_err(ShaderCompilationError::ParserError)?;
     Ok(module)
 }
 
 // Validate a naga Module
-fn validate(graphics: &Graphics, module: &Module) -> Result<ModuleInfo, ShaderCompilationError> {
+fn validate(
+    graphics: &Graphics,
+    module: &Module,
+) -> Result<ModuleInfo, ShaderCompilationError> {
     let mut validator = graphics.validator().lock();
-    validator.validate(module).map_err(
-        ShaderCompilationError::NagaValidationError)
+    validator
+        .validate(module)
+        .map_err(ShaderCompilationError::NagaValidationError)
 }
 
 // Compile the Naga representation into SPIRV
-fn compile_to_spirv(module: Module, info: ModuleInfo) -> Result<Vec<u32>, ShaderCompilationError> {
+fn compile_to_spirv(
+    module: Module,
+    info: ModuleInfo,
+) -> Result<Vec<u32>, ShaderCompilationError> {
     let options = naga::back::spv::Options::default();
-    let bytecode = naga::back::spv::write_vec(&module, &info, &options, None)
-        .map_err(ShaderCompilationError::SpirvOutError)?;
+    let bytecode =
+        naga::back::spv::write_vec(&module, &info, &options, None)
+            .map_err(ShaderCompilationError::SpirvOutError)?;
     Ok(bytecode)
 }
 
 // Data that must be stored within the compiled shader
 // that indicates how constants are defined in the specialization info
-pub struct Constants {
-}
+pub struct Constants {}
 
 /*
 // Calculate the specialization info based on a hashmap of constants

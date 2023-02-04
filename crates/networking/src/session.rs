@@ -29,7 +29,7 @@ impl NetworkedSession {
             NetworkedSession::Client(_) => false,
         }
     }
-    
+
     // Check if the current session is a client session
     pub fn is_client(&self) -> bool {
         match self {

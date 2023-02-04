@@ -1,4 +1,4 @@
-use crate::{WindowSettings, Window};
+use crate::{Window, WindowSettings};
 use winit::{event::WindowEvent, event_loop::EventLoop};
 use world::{post_user, user, State, System, World};
 

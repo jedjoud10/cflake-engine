@@ -20,7 +20,7 @@ pub trait Texel: 'static + Sized {
     // Untyped representation of the underlying element
     fn element() -> ElementType;
 
-    // Type of channels (either R, RG, RGB, RGBA, Depth, Stencil)
+    // Type of channels (either R, RG, RGBA, BGRA, Depth, Stencil)
     fn channels() -> ChannelsType;
 
     // Compile time WGPU format
@@ -41,9 +41,7 @@ pub trait ColorTexel: Texel {
     fn white() -> Self::Storage;
 
     // Convert this texel to a color value
-    fn into_color(
-        storage: Self::Storage,
-    ) -> wgpu::Color;
+    fn into_color(storage: Self::Storage) -> wgpu::Color;
 }
 
 // Image texels are texels that can be loaded from a file, like when loading a Texture2D<RGBA<Normalized<u8>>
@@ -72,10 +70,11 @@ macro_rules! impl_color_texel_layout {
             }
 
             fn format() -> wgpu::TextureFormat {
-                crate::format::pick_format_from_params(
+                crate::format::pick_texture_format(
                     T::ELEMENT_TYPE,
                     $channels_type,
-                ).unwrap()
+                )
+                .unwrap()
             }
         }
 
@@ -92,9 +91,7 @@ macro_rules! impl_color_texel_layout {
                 todo!()
             }
 
-            fn into_color(
-                _storage: Self::Storage,
-            ) -> wgpu::Color {
+            fn into_color(_storage: Self::Storage) -> wgpu::Color {
                 todo!()
             }
         }
@@ -120,10 +117,11 @@ macro_rules! impl_swizzled_color_texel_layout {
             }
 
             fn format() -> wgpu::TextureFormat {
-                crate::format::pick_format_from_params(
+                crate::format::pick_texture_format(
                     T::ELEMENT_TYPE,
                     $channels_type,
-                ).unwrap()
+                )
+                .unwrap()
             }
         }
 
@@ -140,9 +138,7 @@ macro_rules! impl_swizzled_color_texel_layout {
                 todo!()
             }
 
-            fn into_color(
-                _storage: Self::Storage,
-            ) -> wgpu::Color {
+            fn into_color(_storage: Self::Storage) -> wgpu::Color {
                 todo!()
             }
         }
@@ -168,10 +164,10 @@ macro_rules! impl_special_texel_layout {
             }
 
             fn format() -> wgpu::TextureFormat {
-                crate::format::pick_format_from_params(
+                crate::format::pick_texture_depth_format(
                     T::ELEMENT_TYPE,
-                    ChannelsType::Depth,
-                ).unwrap()
+                )
+                .unwrap()
             }
         }
 
@@ -191,10 +187,10 @@ macro_rules! impl_special_texel_layout {
             }
 
             fn format() -> wgpu::TextureFormat {
-                crate::format::pick_format_from_params(
+                crate::format::pick_texture_stencil_format(
                     T::ELEMENT_TYPE,
-                    ChannelsType::Stencil,
-                ).unwrap()
+                )
+                .unwrap()
             }
         }
 

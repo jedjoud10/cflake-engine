@@ -34,10 +34,10 @@ pub trait Extent: Copy + std::ops::Div<u32, Output = Self> {
 
     // Get the width of the extent
     fn width(&self) -> u32;
-    
+
     // Get the height of the extent
     fn height(&self) -> u32;
-    
+
     // Get the depth of the extent
     fn depth(&self) -> u32;
 

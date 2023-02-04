@@ -18,7 +18,7 @@ bitflags::bitflags! {
         // The buffer is only going to be used for reading GPU data back
         // Example: Data generated from a compute shader read back to the CPU
         const READ = 0b01;
-        
+
         // The buffer is only going to be used to send data to the GPU
         // Example: Non-readable vertex buffers
         const WRITE = 0b10;

@@ -104,7 +104,7 @@ fn update(world: &mut World) {
         match info {
             PowerInfo::Discharging(val) if val < 10 => {
                 log::warn!("Gamepad {name} is reaching critical battery levels.")
-            },
+            }
             _ => {}
         }
     }

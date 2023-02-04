@@ -1,7 +1,10 @@
-use std::sync::{Arc};
 use naga::{front::glsl::Parser, valid::Validator};
 use parking_lot::Mutex;
-use wgpu::{util::StagingBelt, Device, Queue, SurfaceCapabilities, SurfaceConfiguration, Surface};
+use std::sync::Arc;
+use wgpu::{
+    util::StagingBelt, Device, Queue, Surface, SurfaceCapabilities,
+    SurfaceConfiguration,
+};
 
 // Internnal graphics context that will eventually be wrapped within an Arc
 pub(crate) struct InternalGraphics {
@@ -38,8 +41,8 @@ impl Graphics {
     pub fn queue(&self) -> &Queue {
         &self.0.queue
     }
-    
-    // Get the internally stored surface 
+
+    // Get the internally stored surface
     pub fn surface(&self) -> &Surface {
         &self.0.surface
     }

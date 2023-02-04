@@ -1,10 +1,12 @@
+/*
 mod active;
 mod config;
 mod errors;
 mod graphics;
-mod vertex;
 pub use self::graphics::*;
 pub use config::*;
 pub use active::*;
 pub use errors::*;
+*/
+mod vertex;
 pub use vertex::*;

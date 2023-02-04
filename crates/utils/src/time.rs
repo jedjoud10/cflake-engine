@@ -1,4 +1,7 @@
-use std::{time::{Duration, Instant}, num::NonZeroU32};
+use std::{
+    num::NonZeroU32,
+    time::{Duration, Instant},
+};
 
 // Global resource that defines the time since the start of the engine and the current frame data
 pub struct Time {
@@ -35,7 +38,7 @@ impl Time {
     pub fn since_startup(&self) -> Duration {
         Instant::now() - self.startup()
     }
-    
+
     // Get the moment the current frame started
     pub fn frame_start(&self) -> Instant {
         self.frame_start

@@ -1,9 +1,10 @@
 use crate::{
-    FrameRateLimit, Graphics, Window, WindowSettings, InternalGraphics,
+    FrameRateLimit, Graphics, InternalGraphics, Window,
+    WindowSettings,
 };
 
-use std::sync::Arc;
 use parking_lot::Mutex;
+use std::sync::Arc;
 use winit::{
     event_loop::EventLoop,
     window::{Fullscreen, WindowBuilder},
@@ -14,7 +15,6 @@ pub(crate) unsafe fn init_context_and_window(
     settings: WindowSettings,
     el: &EventLoop<()>,
 ) -> (Graphics, Window) {
-
     // Create a winit window and it's wrapper
     let winit_window = Arc::new(init_window(el, &settings));
     let size = vek::Extent2::<u32>::from(<(u32, u32)>::from(
@@ -23,15 +23,15 @@ pub(crate) unsafe fn init_context_and_window(
     let window = Window::new(&settings, winit_window.clone(), size);
 
     // Create the WGPU instance that will pick an appropriate backend
-    let instance = wgpu::Instance::new(
-        wgpu::InstanceDescriptor {
-            backends: wgpu::Backends::VULKAN,
-            dx12_shader_compiler: Default::default(),
-        }
-    );
+    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        backends: wgpu::Backends::VULKAN,
+        dx12_shader_compiler: Default::default(),
+    });
 
     // Create the rendering surface
-    let surface = unsafe { instance.create_surface(&winit_window.as_ref()).unwrap() };
+    let surface = unsafe {
+        instance.create_surface(&winit_window.as_ref()).unwrap()
+    };
 
     // Pick an appropriate adapter
     let adapter = pollster::block_on(instance.request_adapter(
@@ -39,13 +39,15 @@ pub(crate) unsafe fn init_context_and_window(
             power_preference: wgpu::PowerPreference::HighPerformance,
             force_fallback_adapter: false,
             compatible_surface: Some(&surface),
-        }
-    )).unwrap();
+        },
+    ))
+    .unwrap();
 
     // Features and limits
     let features = wgpu::Features::TEXTURE_FORMAT_16BIT_NORM
         | wgpu::Features::ADDRESS_MODE_CLAMP_TO_ZERO
-        | wgpu::Features::SPIRV_SHADER_PASSTHROUGH;
+        | wgpu::Features::SPIRV_SHADER_PASSTHROUGH
+        | wgpu::Features::VERTEX_ATTRIBUTE_64BIT;
     let limits = wgpu::Limits::default();
 
     // Create a device for the adapter
@@ -55,23 +57,29 @@ pub(crate) unsafe fn init_context_and_window(
             features,
             limits,
         },
-        None
-    )).unwrap();
+        None,
+    ))
+    .unwrap();
 
     // Get surface data
     let surface_capabilities = surface.get_capabilities(&adapter);
-    let surface_format = surface_capabilities.formats.iter().find(|x| x.describe().srgb).unwrap();
-    
+    let surface_format = surface_capabilities
+        .formats
+        .iter()
+        .find(|x| x.describe().srgb)
+        .unwrap();
+
     // Pick the appropriate present mode
     let present_mode = match settings.limit {
         FrameRateLimit::VSync => wgpu::PresentMode::AutoVsync,
         FrameRateLimit::Limited(_) => wgpu::PresentMode::AutoNoVsync,
         FrameRateLimit::Unlimited => wgpu::PresentMode::AutoNoVsync,
     };
-    
+
     // Create the surface configuration
     let surface_config = wgpu::SurfaceConfiguration {
-        usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_DST,
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT
+            | wgpu::TextureUsages::COPY_DST,
         format: *surface_format,
         width: window.size().w,
         height: window.size().h,

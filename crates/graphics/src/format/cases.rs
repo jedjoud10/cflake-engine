@@ -1,6 +1,6 @@
 use crate::{ChannelsType, ElementType, VectorChannels};
-use wgpu::TextureFormat;
 use paste::paste;
+use wgpu::{TextureFormat, VertexFormat};
 
 // Implement a function that will deserialize the element type for a specific channel type
 // Only supported: R, Rg, RGBA
@@ -34,20 +34,24 @@ macro_rules! impl_texel_conversion_specific_channels {
     };
 }
 
-
-// Converts the given vector channels to the proper format
-pub const fn pick_format_from_vector_channels(
+// Converts the given vector channels to the proper texture format
+pub const fn pick_texture_format_from_vector_channels(
     element: ElementType,
-    channels: VectorChannels
+    channels: VectorChannels,
 ) -> Option<TextureFormat> {
     impl_texel_conversion_specific_channels!(R, r);
     impl_texel_conversion_specific_channels!(Rg, rg);
     impl_texel_conversion_specific_channels!(Rgba, rgba);
 
     // Handle BGRA formats by themselves since WGPU doesn't support all formats
-    const fn handle_bgra_formats(element: ElementType) -> Option<TextureFormat> {
+    const fn handle_bgra_formats(
+        element: ElementType,
+    ) -> Option<TextureFormat> {
         match element {
-            ElementType::Eight { signed: false, normalized: true } => Some(TextureFormat::Bgra8Unorm),
+            ElementType::Eight {
+                signed: false,
+                normalized: true,
+            } => Some(TextureFormat::Bgra8Unorm),
             _ => None,
         }
     }
@@ -61,8 +65,15 @@ pub const fn pick_format_from_vector_channels(
     }
 }
 
+// Converts the given vector channels to the proper vertex format
+pub const fn pick_vertex_format_from_vector_channels(
+    element: ElementType,
+    channels: VectorChannels,
+) -> Option<VertexFormat> {
+}
+
 // Converts the given depth channel to the proper format
-pub const fn pick_depth_format(
+pub const fn pick_texture_depth_format(
     element_type: ElementType,
 ) -> Option<TextureFormat> {
     match element_type {
@@ -70,31 +81,45 @@ pub const fn pick_depth_format(
             signed: false,
             normalized: true,
         } => Some(TextureFormat::Depth16Unorm),
-        ElementType::FloatThirtyTwo => Some(TextureFormat::Depth32Float),
+        ElementType::FloatThirtyTwo => {
+            Some(TextureFormat::Depth32Float)
+        }
         _ => None,
     }
 }
 
 // Converts the given stencil channel to the proper format
-pub const fn pick_stencil_format(
+pub const fn pick_texture_stencil_format(
     element_type: ElementType,
 ) -> Option<TextureFormat> {
     match element_type {
-        ElementType::Eight { signed: false, normalized: false } => Some(TextureFormat::Stencil8),
-        _ => None
-    }    
+        ElementType::Eight {
+            signed: false,
+            normalized: false,
+        } => Some(TextureFormat::Stencil8),
+        _ => None,
+    }
 }
 
 // Converts the given data to the proper format
 // This is called within the Texel::FORMAT and Vertex::FORMAT
 // The given input might not always be supported (for example, RGB), and in which case, this function would return None
-pub const fn pick_format_from_params(
+pub const fn pick_texture_format(
     element_type: ElementType,
     channels_type: ChannelsType,
 ) -> Option<TextureFormat> {
     match channels_type {
-        ChannelsType::Vector(channels) => pick_format_from_vector_channels(element_type, channels),
-        ChannelsType::Depth => pick_depth_format(element_type),
-        ChannelsType::Stencil => pick_stencil_format(element_type),
+        ChannelsType::Vector(channels) => {
+            pick_texture_format_from_vector_channels(
+                element_type,
+                channels,
+            )
+        }
+        ChannelsType::Depth => {
+            pick_texture_depth_format(element_type)
+        }
+        ChannelsType::Stencil => {
+            pick_texture_stencil_format(element_type)
+        }
     }
 }

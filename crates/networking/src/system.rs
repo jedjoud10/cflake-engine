@@ -1,4 +1,4 @@
-use ecs::{added, Scene, Entity};
+use ecs::{added, Entity, Scene};
 use world::{post_user, user, System, World};
 
 use crate::{NetworkedSession, SyncedEntity};
@@ -12,7 +12,7 @@ fn update(world: &mut World) {
     let Ok(mut session) = world.get_mut::<NetworkedSession>() else {
         return;
     };
-    
+
     // Call the "tick" method on both the server and client
     match &mut *session {
         NetworkedSession::Server(server) => {
@@ -22,7 +22,7 @@ fn update(world: &mut World) {
             client.tick();
         }
     }
-    
+
     // Check for any new SyncedEntities
     let scene = world.get_mut::<Scene>().unwrap();
     let filter = added::<SyncedEntity>();
@@ -30,8 +30,7 @@ fn update(world: &mut World) {
 
     // If we're the server, we must send a "SpawnEntity" command to the respective clients
     if let NetworkedSession::Server(server) = &mut *session {
-        for (synced, entity) in added {
-        }
+        for (synced, entity) in added {}
     }
 }
 

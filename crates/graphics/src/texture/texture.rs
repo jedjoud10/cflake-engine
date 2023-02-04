@@ -66,9 +66,9 @@ pub trait Texture: Sized {
             depth_or_array_layers: dimensions.depth(),
         };
 
-
         // Get optimal texture usage
-        let usages = wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST;
+        let usages = wgpu::TextureUsages::TEXTURE_BINDING
+            | wgpu::TextureUsages::COPY_DST;
 
         // TODO: Check if the format is valid for the given usage flag
 
@@ -77,7 +77,7 @@ pub trait Texture: Sized {
         // Config for the Wgpu texture
         let descriptor = TextureDescriptor {
             size: extent,
-            mip_level_count: 1, 
+            mip_level_count: 1,
             sample_count: 1,
             dimension,
             format,
@@ -85,22 +85,24 @@ pub trait Texture: Sized {
             label: None,
             view_formats: &[],
         };
-        
-        // Create the raw WGPU texture
-        let texture = graphics.device().create_texture(
-            &descriptor
-        );        
 
-        // Convert the texels to bytes 
-        let bytes = texels.map(|texels| 
-            bytemuck::cast_slice::<<Self::T as Texel>::Storage, u8>(texels)
-        );
+        // Create the raw WGPU texture
+        let texture = graphics.device().create_texture(&descriptor);
+
+        // Convert the texels to bytes
+        let bytes = texels.map(|texels| {
+            bytemuck::cast_slice::<<Self::T as Texel>::Storage, u8>(
+                texels,
+            )
+        });
 
         // Fill the texture with the appropriate data
         if let Some(bytes) = bytes {
             let bytes_per_channel = bits_per_channel / 8;
-            let bytes_per_texel = bytes_per_channel * channels.count() as u64;
-            let bytes_per_row = NonZeroU32::new(bytes_per_texel as u32);
+            let bytes_per_texel =
+                bytes_per_channel * channels.count() as u64;
+            let bytes_per_row =
+                NonZeroU32::new(bytes_per_texel as u32);
 
             // FIXME: Does this work with 3D textures?
             let image_data_layout = wgpu::ImageDataLayout {
@@ -108,29 +110,29 @@ pub trait Texture: Sized {
                 bytes_per_row,
                 rows_per_image: NonZeroU32::new(dimensions.height()),
             };
-            
+
             let image_copy_texture = wgpu::ImageCopyTexture {
-                    texture: &texture,
-                    mip_level: 0,
-                    origin: wgpu::Origin3d::ZERO,
-                    aspect: wgpu::TextureAspect::All,
-                };
-            
+                texture: &texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            };
+
             graphics.queue().write_texture(
                 image_copy_texture,
                 bytes,
                 image_data_layout,
-                extent
+                extent,
             );
         }
 
         // Create an texture view of the whole texture
-        let view = texture.create_view(&TextureViewDescriptor::default());
+        let view =
+            texture.create_view(&TextureViewDescriptor::default());
 
         Ok(unsafe {
             Self::from_raw_parts(
-                graphics, texture, view, dimensions,
-                usage, mode,
+                graphics, texture, view, dimensions, usage, mode,
             )
         })
     }

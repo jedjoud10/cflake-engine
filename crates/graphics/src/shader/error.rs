@@ -1,5 +1,5 @@
 use assets::AssetLoadError;
-use naga::{WithSpan, valid::ValidationError};
+use naga::{valid::ValidationError, WithSpan};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -24,7 +24,7 @@ pub enum ShaderCompilationError {
 
     #[error("{0}")]
     NagaValidationError(WithSpan<ValidationError>),
-    
+
     #[error("{0}")]
     ReflectionError(String),
 }
