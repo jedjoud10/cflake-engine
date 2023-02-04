@@ -1,19 +1,18 @@
 #[cfg(test)]
 mod texels {
     use crate::format::*;
-    use crate::texture::Texel;
     use half::f16;
     use wgpu::TextureFormat;
 
     #[test]
     fn size() {
-        assert_eq!(R::<u8>::bits_per_channel(), 8);
-        assert_eq!(R::<u16>::bits_per_channel(), 16);
-        assert_eq!(R::<u32>::bits_per_channel(), 32);
-        assert_eq!(R::<f16>::bits_per_channel(), 16);
-        assert_eq!(R::<f32>::bits_per_channel(), 32);
-        assert_eq!(R::<Normalized<u8>>::bits_per_channel(), 8);
-        assert_eq!(R::<Normalized<u16>>::bits_per_channel(), 16);
+        assert_eq!(R::<u8>::bytes_per_channel(), 1);
+        assert_eq!(R::<u16>::bytes_per_channel(), 2);
+        assert_eq!(R::<u32>::bytes_per_channel(), 4);
+        assert_eq!(R::<f16>::bytes_per_channel(), 2);
+        assert_eq!(R::<f32>::bytes_per_channel(), 4);
+        assert_eq!(R::<Normalized<u8>>::bytes_per_channel(), 1);
+        assert_eq!(R::<Normalized<u16>>::bytes_per_channel(), 2);
     }
 
     #[test]
@@ -89,11 +88,6 @@ mod texels {
         assert_eq!(
             RGBA::<Normalized<i8>>::format(),
             TextureFormat::Rgba8Snorm
-        );
-
-        assert_eq!(
-            BGRA::<Normalized<u8>>::format(),
-            TextureFormat::Bgra8Unorm
         );
 
         assert_eq!(

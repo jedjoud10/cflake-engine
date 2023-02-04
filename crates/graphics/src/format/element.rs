@@ -4,14 +4,16 @@ use crate::{Base, BaseType, GpuPod, GpuPodRelaxed};
 
 // Elements are just values that can be stored within channels, like u32, Normalized<i8> or i8
 pub trait AnyElement: 'static {
+    // Raw data representation that will be sent to the GPU
+    type Storage: Base;
+
     // Untyped element type of AnyElement
     const ELEMENT_TYPE: ElementType;
-
-    // Raw data representation that will be sent to the GPU
-    type Storage: GpuPod;
 }
 
 impl<T: Base> AnyElement for T {
+    type Storage = T;
+
     const ELEMENT_TYPE: ElementType = match T::TYPE {
         BaseType::Eight => ElementType::Eight {
             signed: T::SIGNED,
@@ -24,26 +26,32 @@ impl<T: Base> AnyElement for T {
         BaseType::ThirtyTwo => {
             ElementType::ThirtyTwo { signed: T::SIGNED }
         }
+        BaseType::SixtyFour => {
+            ElementType::SixtyFour { signed: T::SIGNED }
+        },
         BaseType::FloatSixteen => ElementType::FloatSixteen,
         BaseType::FloatThirtyTwo => ElementType::FloatThirtyTwo,
+        BaseType::FloatSixtyFour => ElementType::FloatSixtyFour,
     };
-
-    type Storage = T;
 }
 
 // Untyped element type that will be used to fetch VkFormat
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum ElementType {
-    // Fixed point / integer types
+    // Integer types
     Eight { signed: bool, normalized: bool },
     Sixteen { signed: bool, normalized: bool },
-
-    // Strictly integer types
     ThirtyTwo { signed: bool },
+
+    // ONLY SUPPORTED FOR VERTEX FORMATS
+    SixtyFour { signed: bool },
 
     // Floating point types
     FloatSixteen,
     FloatThirtyTwo,
+
+    // ONLY SUPPORTED FOR VERTEX FORMATS
+    FloatSixtyFour
 }
 
 // This trait represents bases that can be normalized

@@ -5,7 +5,7 @@ pub struct R<T: AnyElement>(T);
 pub struct RG<T: AnyElement>(vek::Vec2<T>);
 pub struct RGBA<T: AnyElement>(vek::Vec4<T>);
 
-// Only used for 8 bit integers since they are the only supported swizzle types in VkFormat
+// In WGPU, BGRA supports u8 SNORM only
 pub trait Swizzable {}
 impl Swizzable for Normalized<u8> {}
 pub struct BGRA<T: AnyElement + Swizzable>(vek::Vec3<T>);

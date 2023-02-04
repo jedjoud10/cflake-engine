@@ -1,9 +1,8 @@
 use half::f16;
-
 use crate::GpuPod;
 
-// Base numbers that are used to store the inner raw values of texture texels
-pub trait Base:
+// Base underlying type used for TextureFormat and VertexFormat
+pub trait Base: 
     Clone + Copy + Send + Sync + 'static + GpuPod
 {
     const TYPE: BaseType;
@@ -26,10 +25,13 @@ impl_base!(i16, Sixteen, true);
 impl_base!(u16, Sixteen, false);
 impl_base!(i32, ThirtyTwo, true);
 impl_base!(u32, ThirtyTwo, false);
+impl_base!(i64, SixtyFour, true);
+impl_base!(u64, SixtyFour, false);
 
 // Floating point types
 impl_base!(f16, FloatSixteen, true);
 impl_base!(f32, FloatThirtyTwo, true);
+impl_base!(f64, FloatSixtyFour, true);
 
 // Untyped representation of "base" needed for texel
 // TODO: RENAME
@@ -38,6 +40,13 @@ pub enum BaseType {
     Eight,
     Sixteen,
     ThirtyTwo,
+
+    // ONLY SUPPORTED FOR VERTEX FORMATS
+    SixtyFour,
+    
     FloatSixteen,
     FloatThirtyTwo,
+
+    // ONLY SUPPORTED FOR VERTEX FORMATS
+    FloatSixtyFour
 }

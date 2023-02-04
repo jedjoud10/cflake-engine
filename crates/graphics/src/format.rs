@@ -2,6 +2,8 @@ mod base;
 mod cases;
 mod channels;
 mod element;
+mod typed;
+pub use typed::*;
 pub use base::*;
 pub use cases::*;
 pub use channels::*;
