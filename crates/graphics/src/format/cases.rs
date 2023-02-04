@@ -70,6 +70,7 @@ pub const fn pick_vertex_format_from_vector_channels(
     element: ElementType,
     channels: VectorChannels,
 ) -> Option<VertexFormat> {
+    None
 }
 
 // Converts the given depth channel to the proper format
