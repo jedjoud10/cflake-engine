@@ -31,11 +31,6 @@ pub trait Texel: 'static + Sized {
     fn format() -> TextureFormat;
 }
 
-// Get the element type of AnyElement
-fn element<T: AnyElement>() -> ElementType {
-    T::ELEMENT_TYPE
-}
-
 macro_rules! internal_impl_texel {
     ($vec:ident, $elem:ty, $channels:expr, $storagevec: ident) => {
         impl Texel for $vec<$elem> {
@@ -47,7 +42,7 @@ macro_rules! internal_impl_texel {
             }
 
             fn element() -> ElementType {
-                element::<$elem>()
+                <$elem as AnyElement>::ELEMENT_TYPE
             }
 
             fn channels() -> ChannelsType {
@@ -59,8 +54,7 @@ macro_rules! internal_impl_texel {
                 crate::pick_texture_format(
                     Self::element(),
                     Self::channels(),
-                )
-                .unwrap()
+                ).unwrap()
             }
         }
     };

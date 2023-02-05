@@ -220,32 +220,28 @@ mod color {
     }
 }
 
-/*
 #[cfg(test)]
 mod vertex {
     use crate::format::*;
-    use crate::pipeline::Vertex;
     use half::f16;
-    use crate::vulkan::vk;
+    use wgpu::VertexFormat;
 
     #[test]
     fn positional() {
-        assert_eq!(XYZ::<f16>::format(), TextureFormat::R16G16B16_SFLOAT,);
-        assert_eq!(XYZ::<f32>::format(), TextureFormat::R32G32B32_SFLOAT,);
-        assert_eq!(XYZ::<f64>::format(), TextureFormat::R64G64B64_SFLOAT,);
-        assert_eq!(XYZ::<f32>::format(), TextureFormat::R32G32B32_SFLOAT,);
+        assert_eq!(XYZ::<f64>::format(), VertexFormat::Float64x3,);
+        assert_eq!(XYZ::<f32>::format(), VertexFormat::Float32x3);
     }
 
     #[test]
     fn normals() {
         assert_eq!(
-            XYZ::<Normalized<i8>>::format(),
-            TextureFormat::R8G8B8_SNORM,
+            XYZW::<Normalized<i8>>::format(),
+            VertexFormat::Snorm8x4,
         );
 
         assert_eq!(
-            XYZ::<Normalized<i16>>::format(),
-            TextureFormat::R16G16B16_SNORM,
+            XYZW::<Normalized<i16>>::format(),
+            VertexFormat::Snorm16x4,
         );
     }
 
@@ -253,13 +249,12 @@ mod vertex {
     fn uvs() {
         assert_eq!(
             XY::<Normalized<u8>>::format(),
-            TextureFormat::R8G8_UNORM,
+            VertexFormat::Unorm8x2,
         );
 
         assert_eq!(
             XY::<Normalized<u16>>::format(),
-            TextureFormat::R16G16_UNORM,
+            VertexFormat::Unorm16x2,
         );
     }
 }
-*/
