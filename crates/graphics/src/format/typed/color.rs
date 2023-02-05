@@ -12,12 +12,12 @@ pub trait ColorTexel: Texel {
 
     // Converts the color texel to an RGBA f32 v
     // If the ColorTexel contains less channels than the Vec4, the extra channels are discarded
-    fn to_rgba32(texel: Self::Storage) -> vek::Vec4<f32>;
+    fn into_rgba32(texel: Self::Storage) -> vek::Vec4<f32>;
 
     // Convert this texel to a color v (if possible)
     // This returns None if the color data is not in the 0 - 1 range 
     fn into_color(texel: Self::Storage) -> Option<wgpu::Color> {
-        let rgba = Self::to_rgba32(texel);
+        let rgba = Self::into_rgba32(texel);
 
         if rgba.reduce_partial_max() > 1.0 || rgba.reduce_partial_min() < 0.0 {
             return None;
@@ -52,7 +52,7 @@ macro_rules! internal_impl_color_texel {
                 Some(storage)
             }
 
-            fn to_rgba32(texel: Self::Storage) -> vek::Vec4<f32> {
+            fn into_rgba32(texel: Self::Storage) -> vek::Vec4<f32> {
                 let input = vek::Vec4::<Self::Base>::from(texel);
                 let mapped = input.map($tof32);
                 mapped
