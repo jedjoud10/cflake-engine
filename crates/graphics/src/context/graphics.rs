@@ -18,12 +18,6 @@ pub(crate) struct InternalGraphics {
     // Shader compiler and validator
     pub(crate) parser: Mutex<Parser>,
     pub(crate) validator: Mutex<Validator>,
-
-    // Surface related
-    pub(crate) window: Arc<winit::window::Window>,
-    pub(crate) surface: Surface,
-    pub(crate) surface_config: SurfaceConfiguration,
-    pub(crate) surface_capabilities: SurfaceCapabilities,
 }
 
 // Graphical context that we will wrap around the WGPU instance
@@ -40,11 +34,6 @@ impl Graphics {
     // Get the internally stored queue
     pub fn queue(&self) -> &Queue {
         &self.0.queue
-    }
-
-    // Get the internally stored surface
-    pub fn surface(&self) -> &Surface {
-        &self.0.surface
     }
 
     // Get the GLSL shader parser

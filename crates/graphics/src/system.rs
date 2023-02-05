@@ -1,4 +1,4 @@
-use crate::{Window, WindowSettings};
+use crate::{Window, WindowSettings, Graphics};
 use winit::{event::WindowEvent, event_loop::EventLoop};
 use world::{post_user, user, State, System, World};
 
@@ -19,7 +19,34 @@ fn init(world: &mut World, el: &EventLoop<()>) {
 // Reset the dirty state of the window at the end of each frame
 fn update(world: &mut World) {
     let mut window = world.get_mut::<Window>().unwrap();
-    window.reset_dirty();
+    
+    let mut graphics = world.get_mut::<Graphics>().unwrap();
+    let texture = window.surface.get_current_texture().unwrap();
+    let view = texture.texture.create_view(&wgpu::TextureViewDescriptor::default());
+    let mut encoder = graphics.device().create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
+    let render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        label: None,
+        color_attachments: &[Some(
+            wgpu::RenderPassColorAttachment {
+                view: &view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color {
+                        r: 0.1,
+                        g: 0.2,
+                        b: 0.3,
+                        a: 1.0,
+                    }),
+                    store: true,
+                },
+            }
+        )],
+        depth_stencil_attachment: None,
+    });
+    drop(render_pass);
+
+    graphics.queue().submit(Some(encoder.finish()));
+    texture.present();
 }
 
 // Handle window quitting and resizing
@@ -35,7 +62,14 @@ fn event(world: &mut World, event: &mut WindowEvent) {
             // Handle resizing the window
             let size = vek::Extent2::new(size.width, size.height);
             let mut window = world.get_mut::<Window>().unwrap();
-            window.set_size(size);
+            let graphics = world.get::<Graphics>().unwrap();
+
+            // Update the surface configuration and reconfigure the surface
+            window.surface_config.width = size.w;
+            window.surface_config.height = size.h;
+            let config = &window.surface_config;
+            window.surface.configure(graphics.device(), config);
+            window.size = size;
         }
 
         // Close requested, set the world state to "Stopped"

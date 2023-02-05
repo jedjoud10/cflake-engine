@@ -9,7 +9,7 @@ mod renderpass;
 mod shader;
 mod system;
 mod tests;
-//mod texture;
+mod texture;
 pub use buffer::*;
 pub use context::*;
 pub use format::*;
@@ -20,4 +20,4 @@ pub use renderpass::*;
 */
 pub use shader::*;
 pub use system::*;
-//pub use texture::*;
+pub use texture::*;

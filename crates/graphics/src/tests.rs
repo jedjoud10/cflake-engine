@@ -228,7 +228,6 @@ mod vertex {
 
     #[test]
     fn positional() {
-        assert_eq!(XYZ::<f64>::format(), VertexFormat::Float64x3,);
         assert_eq!(XYZ::<f32>::format(), VertexFormat::Float32x3);
     }
 

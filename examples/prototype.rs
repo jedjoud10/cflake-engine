@@ -53,6 +53,9 @@ fn init(world: &mut World) {
     ).unwrap();
     */
 
+    type Diffuse = Texture2D::<RGBA<Normalized<u8>>>;
+    let texture = assets.load::<Diffuse>(("engine/textures/test.jpg", &*graphics)).unwrap();
+
     let frag = assets
         .load::<FragmentModule>("engine/shaders/basic.frag")
         .unwrap();

@@ -60,7 +60,6 @@ macro_rules! impl_vertex_relaxed {
         internal_impl_vertex!($vec, i32, $channels, $storagevec);
 
         internal_impl_vertex!($vec, f32, $channels, $storagevec);
-        internal_impl_vertex!($vec, f64, $channels, $storagevec);
     };
 }
 

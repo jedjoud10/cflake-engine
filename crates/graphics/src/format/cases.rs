@@ -131,7 +131,6 @@ pub const fn pick_vertex_format(
                 false => VertexFormat::Uint32,
             }),
             ElementType::FloatThirtyTwo => Some(VertexFormat::Float32),
-            ElementType::FloatSixtyFour => Some(VertexFormat::Float64),
             _ => None
         },
         VectorChannels::Two => match element {
@@ -153,7 +152,6 @@ pub const fn pick_vertex_format(
             }),
             ElementType::FloatSixteen => Some(VertexFormat::Float16x2),
             ElementType::FloatThirtyTwo => Some(VertexFormat::Float32x2),
-            ElementType::FloatSixtyFour => Some(VertexFormat::Float64x2),
             _ => None
         },
         VectorChannels::Three => match element {
@@ -162,7 +160,6 @@ pub const fn pick_vertex_format(
                 false => VertexFormat::Uint32x3,
             }),
             ElementType::FloatThirtyTwo => Some(VertexFormat::Float32x3),
-            ElementType::FloatSixtyFour => Some(VertexFormat::Float64x3),
             _ => None
         },
         VectorChannels::Four => match element {
@@ -184,7 +181,6 @@ pub const fn pick_vertex_format(
             }),
             ElementType::FloatSixteen => Some(VertexFormat::Float16x4),
             ElementType::FloatThirtyTwo => Some(VertexFormat::Float32x4),
-            ElementType::FloatSixtyFour => Some(VertexFormat::Float64x4),
             _ => None
         },
         _ => None

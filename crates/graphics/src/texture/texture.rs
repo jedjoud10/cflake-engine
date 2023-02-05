@@ -31,7 +31,8 @@ pub trait Texture: Sized {
     ) -> Result<Self, TextureInitializationError> {
         let format = <Self::T as Texel>::format();
         let channels = <Self::T as Texel>::channels();
-        let bits_per_channel = <Self::T as Texel>::bits_per_channel();
+        let bytes_per_channel = <Self::T as Texel>::bytes_per_channel();
+        let bytes_per_texel = bytes_per_channel as u64 * channels.count() as u64;
 
         // Make sure the number of texels matches up with the dimensions
         if let Some(texels) = texels {
@@ -46,12 +47,6 @@ pub trait Texture: Sized {
                 );
             }
         }
-
-        // Calculate how many bytes we should allocate for this texture
-        let bits = u64::from(dimensions.area())
-            * u64::from(bits_per_channel)
-            * u64::from(channels.count());
-        let bytes = bits / 8;
 
         // Get the image type using the dimensionality
         let dimension = match <<Self::Region as Region>::E as Extent>::dimensionality() {
@@ -98,11 +93,9 @@ pub trait Texture: Sized {
 
         // Fill the texture with the appropriate data
         if let Some(bytes) = bytes {
-            let bytes_per_channel = bits_per_channel / 8;
-            let bytes_per_texel =
-                bytes_per_channel * channels.count() as u64;
+            // Bytes per row of texel data
             let bytes_per_row =
-                NonZeroU32::new(bytes_per_texel as u32);
+                NonZeroU32::new(bytes_per_texel as u32 * dimensions.width());
 
             // FIXME: Does this work with 3D textures?
             let image_data_layout = wgpu::ImageDataLayout {

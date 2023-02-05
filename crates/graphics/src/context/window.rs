@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use wgpu::{Surface, SurfaceConfiguration, SurfaceCapabilities};
+
 // Frame rate limit of the window (can be disabled by selecting Unlimited)
 #[derive(Default, Clone, Copy, PartialEq, Eq)]
 pub enum FrameRateLimit {
@@ -22,7 +24,7 @@ pub struct WindowSettings {
     pub limit: FrameRateLimit,
 }
 
-// A viewport wrapper around raw Vulkan viewport
+// A viewport wrapper around raw WGPU viewport
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Viewport {
     pub origin: vek::Vec2<i32>,
@@ -31,27 +33,18 @@ pub struct Viewport {
 
 // A window is what we will draw to at the end of each frame
 pub struct Window {
-    settings: WindowSettings,
-    raw: Arc<winit::window::Window>,
-    size: vek::Extent2<u32>,
-    dirty: bool,
+    // Raw winit window and settings
+    pub(crate) settings: WindowSettings,
+    pub(crate) raw: Arc<winit::window::Window>,
+    pub(crate) size: vek::Extent2<u32>,
+
+    // WGPU surface and config
+    pub(crate) surface: Surface,
+    pub(crate) surface_config: SurfaceConfiguration,
+    pub(crate) surface_capabilities: SurfaceCapabilities,
 }
 
 impl Window {
-    // Create a new window wrapper
-    pub(crate) fn new(
-        settings: &WindowSettings,
-        raw: Arc<winit::window::Window>,
-        size: vek::Extent2<u32>,
-    ) -> Self {
-        Self {
-            settings: settings.clone(),
-            raw,
-            size,
-            dirty: false,
-        }
-    }
-
     // Get the internal window settings
     pub fn settings(&self) -> &WindowSettings {
         &self.settings
@@ -73,21 +66,5 @@ impl Window {
     // Get the current size of the window in pixels
     pub fn size(&self) -> vek::Extent2<u32> {
         self.size
-    }
-
-    // Check if the window was resized in the past
-    pub fn is_dirty(&self) -> bool {
-        self.dirty
-    }
-
-    // Update the window size. Only used internally
-    pub(crate) fn set_size(&mut self, size: vek::Extent2<u32>) {
-        self.size = size;
-        self.dirty = true;
-    }
-
-    // Reset the "dirty" state of the window
-    pub(crate) fn reset_dirty(&mut self) {
-        self.dirty = false;
     }
 }
