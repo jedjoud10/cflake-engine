@@ -7,7 +7,10 @@ use crate::{GpuPodRelaxed, ElementType, ChannelsType, VectorChannels, R, RG, RGB
 // This trait defines the layout for a single texel that will be stored within textures
 // The texel format of each texture is specified at compile time
 pub trait Texel: 'static + Sized {
-    // The raw data type that we will use to access texture memory
+    // The raw RAW data type (u8 or shit like dat)
+    type Base: GpuPodRelaxed;
+
+    // The raw vector data type that we will use to access texture memory
     type Storage: GpuPodRelaxed;
 
     // Number of bytes in total
@@ -36,7 +39,8 @@ fn element<T: AnyElement>() -> ElementType {
 macro_rules! internal_impl_texel {
     ($vec:ident, $elem:ty, $channels:expr, $storagevec: ident) => {
         impl Texel for $vec<$elem> {
-            type Storage = $storagevec<<$elem as AnyElement>::Storage>;
+            type Base = <$elem as AnyElement>::Storage;
+            type Storage = $storagevec<Self::Base>;
 
             fn bytes_per_channel() -> u32 {
                 size_of::<$elem>() as u32
