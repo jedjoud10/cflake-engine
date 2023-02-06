@@ -1,15 +1,16 @@
 use thiserror::Error;
 
-use crate::{VertexAttribute, ModuleKind};
-
 #[derive(Error, Debug)]
 pub enum PipelineInitializationError {
+    /*
     #[error("{0}")]
     VertexConfigError(PipelineVertexConfigError),
-
+    
     #[error("{0}")]
     BindingConfigError(PipelineBindingConfigError),
+    */
 }
+/*
 
 #[derive(Error, Debug)]
 pub enum PipelineVertexConfigError {
@@ -27,6 +28,9 @@ pub enum PipelineVertexConfigError {
     BindingNotUsed(u32),
     */
 }
+*/
+
+/*
 
 #[derive(Error, Debug)]
 pub enum PipelineBindingConfigError {
@@ -54,3 +58,4 @@ pub enum PushConstBlockError {
     #[error("The push constant variable {0} has mismatching representations")]
     VariableTypeMismatch(String),
 }
+*/

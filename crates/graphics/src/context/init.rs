@@ -43,9 +43,11 @@ pub(crate) unsafe fn init_context_and_window(
     .unwrap();
 
     // Features and limits
+    // TODO: Figure out how to remove SPIRV_SHADER_PASSTHROUGH to be able to make this work on Metal
     let features = wgpu::Features::TEXTURE_FORMAT_16BIT_NORM
         | wgpu::Features::ADDRESS_MODE_CLAMP_TO_ZERO
-        | wgpu::Features::SPIRV_SHADER_PASSTHROUGH;
+        | wgpu::Features::SPIRV_SHADER_PASSTHROUGH
+        | wgpu::Features::POLYGON_MODE_LINE;
     let limits = wgpu::Limits::default();
 
     // Create a device for the adapter

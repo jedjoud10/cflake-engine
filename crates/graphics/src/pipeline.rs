@@ -1,4 +1,3 @@
-/*
 mod active;
 mod config;
 mod errors;
@@ -7,6 +6,3 @@ pub use self::graphics::*;
 pub use config::*;
 pub use active::*;
 pub use errors::*;
-mod vertex;
-pub use vertex::*;
-*/
