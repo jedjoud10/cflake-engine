@@ -2,7 +2,7 @@ use vek::{Vec3, Vec2, Vec4};
 use wgpu::{TextureFormat, VertexFormat};
 use half::f16;
 use std::mem::size_of;
-use crate::{GpuPodRelaxed, ElementType, ChannelsType, VectorChannels, X, XY, XYZ, XYZW, AnyElement, Normalized, DepthElement, Depth, Stencil};
+use crate::{GpuPodRelaxed, ElementType, ChannelsType, VectorChannels, X, XY, XYZ, XYZW, AnyElement, Normalized, DepthElement, Depth, Stencil, VertexInfo};
 
 // A vertex that represents a vertex within a rendered object
 pub trait Vertex {
@@ -11,6 +11,11 @@ pub trait Vertex {
 
     // The raw data type that we will use to access texture memory
     type Storage: GpuPodRelaxed;
+
+    // Number of bytes in total
+    fn size() -> u32 {
+        Self::bytes_per_channel() * Self::channels().count()
+    }
 
     // Number of bytes per channel
     fn bytes_per_channel() -> u32;
@@ -23,6 +28,16 @@ pub trait Vertex {
 
     // Compile time WGPU format
     fn format() -> VertexFormat;
+
+    // Get the untyped vertex info
+    fn info() -> VertexInfo {
+        VertexInfo {
+            bytes_per_channel: Self::bytes_per_channel(),
+            element: Self::element(),
+            channels: Self::channels(),
+            format: Self::format()
+        }
+    }
 }
 
 macro_rules! internal_impl_vertex {

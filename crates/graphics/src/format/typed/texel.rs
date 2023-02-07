@@ -2,7 +2,7 @@ use vek::{Vec3, Vec2, Vec4};
 use wgpu::TextureFormat;
 use half::f16;
 use std::mem::size_of;
-use crate::{GpuPodRelaxed, ElementType, ChannelsType, VectorChannels, R, RG, RGBA, AnyElement, BGRA, Normalized, DepthElement, Depth, Stencil};
+use crate::{GpuPodRelaxed, ElementType, ChannelsType, VectorChannels, R, RG, RGBA, AnyElement, BGRA, Normalized, DepthElement, Depth, Stencil, TexelInfo};
 
 // This trait defines the layout for a single texel that will be stored within textures
 // The texel format of each texture is specified at compile time
@@ -29,6 +29,16 @@ pub trait Texel: 'static + Sized {
 
     // Compile time WGPU format
     fn format() -> TextureFormat;
+
+    // Get the untyped texel info
+    fn info() -> TexelInfo {
+        TexelInfo {
+            bytes_per_channel: Self::bytes_per_channel(),
+            element: Self::element(),
+            channels: Self::channels(),
+            format: Self::format()
+        }
+    }
 }
 
 macro_rules! internal_impl_texel {

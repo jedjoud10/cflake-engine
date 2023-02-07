@@ -1,8 +1,7 @@
 use assets::Assets;
 use graphics::{
-    BlendConfig, CompareOp, Compiled, DepthConfig,
-    FaceCullMode, FragmentModule, Graphics, Primitive,
-    StencilConfig, VertexModule, UniformBuffer, BindingConfig, ActiveBindings,
+    BlendConfig, Compiled, DepthConfig, FragmentModule, Graphics, PrimitiveConfig,
+    StencilConfig, VertexModule, UniformBuffer, BindingConfig,
 };
 use world::World;
 use crate::{EnabledMeshAttributes, Mesh, Renderer, CameraUniform, TimingUniform, SceneUniform};
@@ -48,29 +47,17 @@ pub trait Material: 'static + Sized {
     }
 
     // Get the stencil testing for this material
-    fn stencil_config() -> StencilConfig {
-        StencilConfig(None)
+    fn stencil_config() -> Option<StencilConfig> {
+        None
     }
 
     // Get the rasterizer config for this materil
-    fn primitive() -> Primitive {
-        Primitive::Triangles {
-            cull: None,
-            wireframe: false,
-        }
+    fn primitive_config() -> PrimitiveConfig {
     }
 
     // Get the blend config for this material
-    fn blend_config() -> BlendConfig {
-        BlendConfig {
-            logic_operation: None,
-            attachments: None,
-        }
-    }
-
-    // Get the bindings config for this material
-    fn binding_config() -> BindingConfig {
-        BindingConfig::default()
+    fn blend_config() -> Option<BlendConfig> {
+        None
     }
 
     // Fetch the property block resources
@@ -78,7 +65,6 @@ pub trait Material: 'static + Sized {
 
     // Set the global bindings and uniforms required
     fn set_global_bindings<'w: 'ds, 'ds>(
-        bindings: &mut ActiveBindings,
         resources: &mut Self::Resources<'w>,
         default: &DefaultMaterialResources,
     ) {
@@ -91,7 +77,6 @@ pub trait Material: 'static + Sized {
 
     // Sets the bindings related to surface only
     fn set_surface_bindings<'w: 'ds, 'ds>(
-        bindings: &mut ActiveBindings,
         renderer: Renderer,
         resources: &mut Self::Resources<'w>,
         default: &DefaultMaterialResources,
@@ -100,7 +85,6 @@ pub trait Material: 'static + Sized {
     // This will only be called whenever we switch instances
     fn set_instance_bindings<'w: 'ds, 'ds>(
         &self,
-        bindings: &mut ActiveBindings,
         resources: &mut Self::Resources<'w>,
         default: &DefaultMaterialResources,
     ) {}

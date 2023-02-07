@@ -48,7 +48,7 @@ impl<M: Material> Pipeline<M> {
             M::stencil_config(),
             M::blend_config(),
             vertex_config,
-            M::primitive(),
+            M::primitive_config(),
             M::binding_config(),
             &render_pass,
             shader.clone(),

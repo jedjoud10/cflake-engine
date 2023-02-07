@@ -3,6 +3,8 @@ mod cases;
 mod channels;
 mod element;
 mod typed;
+mod untyped;
+pub use untyped::*;
 pub use typed::*;
 pub use base::*;
 pub use cases::*;

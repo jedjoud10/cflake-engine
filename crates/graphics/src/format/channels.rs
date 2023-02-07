@@ -34,7 +34,7 @@ pub struct DepthStencil<D: DepthElement, S: StencilElement>(D, S);
 
 // Vector channel as texel channels
 // TODO: Is there a better way to handle this?
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub enum VectorChannels {
     One,           // X or R
     Two,           // XY or RG
@@ -68,6 +68,7 @@ impl VectorChannels {
 }
 
 // Untyped representation of texel channels
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ChannelsType {
     Vector(VectorChannels),
     Depth,

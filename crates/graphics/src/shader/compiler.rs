@@ -10,7 +10,7 @@ use naga::{
 };
 use std::{
     any::TypeId, borrow::Cow, ffi::CStr, marker::PhantomData,
-    path::PathBuf, time::Instant,
+    path::PathBuf, time::Instant, sync::Arc,
 };
 
 // This is a compiler that will take was GLSL code, convert it to SPIRV,
@@ -92,17 +92,19 @@ impl<M: ShaderModule> Compiler<M> {
         let info = validate(&graphics, &module)?;
 
         // Convert the Naga module to SPIRV bytecode
-        let bytecode = compile_to_spirv(module, info)?;
+        let bytecode = compile_to_spirv(&module, info)?;
+        let naga = Arc::new(module);
 
         // Compile the SPIRV bytecode
         let raw = compile_module(graphics, bytecode);
 
         Ok(Compiled {
-            raw,
+            raw: Arc::new(raw),
             stage,
-            file_name,
+            file_name: file_name.into(),
             _phantom,
             graphics: graphics.clone(),
+            naga,
         })
     }
 }
@@ -153,12 +155,12 @@ fn validate(
 
 // Compile the Naga representation into SPIRV
 fn compile_to_spirv(
-    module: Module,
+    module: &Module,
     info: ModuleInfo,
 ) -> Result<Vec<u32>, ShaderCompilationError> {
     let options = naga::back::spv::Options::default();
     let bytecode =
-        naga::back::spv::write_vec(&module, &info, &options, None)
+        naga::back::spv::write_vec(module, &info, &options, None)
             .map_err(ShaderCompilationError::SpirvOutError)?;
     Ok(bytecode)
 }
@@ -276,20 +278,40 @@ fn handle_include(
 */
 
 // This is a compiled shader module that we can use in multiple pipelines
+// We can clone this shader module since we can share 
 pub struct Compiled<M: ShaderModule> {
     // Wgpu related data
-    raw: wgpu::ShaderModule,
+    raw: Arc<wgpu::ShaderModule>,
+    naga: Arc<naga::Module>,
     stage: ShaderStage,
 
     // Helpers
-    file_name: String,
+    file_name: Arc<str>,
     _phantom: PhantomData<M>,
 
     // Keep the graphics API alive
     graphics: Graphics,
 }
 
+impl<M: ShaderModule> Clone for Compiled<M> {
+    fn clone(&self) -> Self {
+        Self {
+            raw: self.raw.clone(),
+            naga: self.naga.clone(),
+            stage: self.stage.clone(),
+            file_name: self.file_name.clone(),
+            _phantom: self._phantom.clone(),
+            graphics: self.graphics.clone(),
+        }
+    }
+}
+
 impl<M: ShaderModule> Compiled<M> {
+    // Get the raw wgpu hidden module
+    pub fn module(&self) -> &wgpu::ShaderModule {
+        &self.raw
+    }
+
     // Get the shader module stage for this compiled shader
     pub fn stage(&self) -> ShaderStage {
         self.stage
@@ -298,5 +320,10 @@ impl<M: ShaderModule> Compiled<M> {
     // Get the shader module file name for this module
     pub fn file_name(&self) -> &str {
         &self.file_name
+    }
+
+    // Get the entry point for the compiled shader
+    pub fn entry_point(&self) -> Option<&str> {
+        self.naga.entry_points.iter().next().map(|n| n.name.as_str())
     }
 }

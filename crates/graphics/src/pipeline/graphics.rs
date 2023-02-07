@@ -9,9 +9,9 @@ pub struct GraphicsPipeline<C: ColorLayout, DS: DepthStencilLayout> {
     pipeline: wgpu::RenderPipeline,
 
     // Immutable data set at build time
-    depth_config: DepthConfig,
-    stencil_config: StencilConfig,
-    blend_config: BlendConfig,
+    depth_config: Option<DepthConfig>,
+    stencil_config: Option<StencilConfig>,
+    //blend_config: Option<BlendConfig>,
     vertex_config: VertexConfig,
     primitive_config: PrimitiveConfig,
     binding_config: BindingConfig,
@@ -32,77 +32,104 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
         graphics: &Graphics,
         depth_config: Option<DepthConfig>,
         stencil_config: Option<StencilConfig>,
-        blend_config: Option<BlendConfig>,
         vertex_config: VertexConfig,
         primitive_config: PrimitiveConfig,
         binding_config: Option<BindingConfig>,
-        shader: Shader,
+        shader: &Shader,
     ) -> Result<Self, PipelineInitializationError> {
         // If stencil/depth is enabled, make sure the layout matches up
         let stencil_config_enabled = stencil_config.is_some();
         let depth_config_enabled = depth_config.is_some();
 
-        // Check if the DepthStencilLayout contains a stencil format
+        // Check if the DepthStencilLayout contains a stencil format, return errors if appropriate
         if stencil_config_enabled {
-            
         }
 
-        // Check if the DepthStencilLayout contains a depth format
+        // Check if the DepthStencilLayout contains a depth format, return errors if appropriate
         if depth_config_enabled {
-
         }
 
         // Create a depth stencil state if either the depth config or stencil config are enabled
-        let depth_stencil_state = (depth_config_enabled || stencil_config_enabled).then(|| {
+        let depth_stencil = (depth_config_enabled || stencil_config_enabled).then(|| {
+            // Get the depth bias state for the DepthStencilState
+            let bias = if let Some(depth_config) = depth_config {
+                wgpu::DepthBiasState {
+                    constant: depth_config.depth_bias_constant,
+                    slope_scale: depth_config.depth_bias_slope_scale,
+                    clamp: depth_config.depth_bias_clamp,
+                }
+            } else {
+                wgpu::DepthBiasState::default()
+            };
+
+            // Get stencil, depth comparison function, depth write
+            let stencil = stencil_config.as_ref().cloned().unwrap_or_default();
+            let depth_compare = depth_config.map(|dc| dc.compare).unwrap_or(wgpu::CompareFunction::Never);
+            let depth_write_enabled = depth_config.map(|dc| dc.write_enabled).unwrap_or_default();
+            let format = DS::info().unwrap().format;
+
             wgpu::DepthStencilState {
-                format: todo!(),
-                depth_write_enabled: todo!(),
-                depth_compare: todo!(),
-                stencil: todo!(),
-                bias: todo!(),
+                format,
+                depth_write_enabled,
+                depth_compare,
+                stencil,
+                bias,
             }
         });
 
-        // Create a depth stencil state for the depth config
-        
-        
-        // Create a stencil state for the stencil config
-        
+        // Buffers used by the vertex
+        let buffers = &[];
+
+        // Targets used by the fragment shader (created from the ColorLayout and DepthStencilLayout type)
+        let targets = C::layout_info().into_iter().map(|info| Some(wgpu::ColorTargetState {
+            format: info.format(),
+            blend: None,
+            write_mask: wgpu::ColorWrites::ALL,
+        })).collect::<Vec<_>>();
+
         // Create the WGPU primitive state
         let primitive = primitive_config_to_state(primitive_config);
+
+        // Create FIXED, STATIC multisampling state
+        // Multisampling (I HATE ANTIALISATION. FUCK YOU. COPE)
+        let multisample = wgpu::MultisampleState {
+            count: 1,
+            mask: !0,
+            alpha_to_coverage_enabled: false,
+        };
 
         // Create the WGPU pipeline using the given configuration
         let pipeline = graphics.device().create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: None,
             layout: None,
-            vertex: todo!(),
-            primitive,
-            depth_stencil: Some(wgpu::DepthStencilState {
-                format: todo!(),
-                depth_write_enabled: todo!(),
-                depth_compare: todo!(),
-                stencil: wgpu::StencilState {
-                    front: todo!(),
-                    back: todo!(),
-                    read_mask: todo!(),
-                    write_mask: todo!(),
-                },
-                bias: wgpu::DepthBiasState {
-                    constant: todo!(),
-                    slope_scale: todo!(),
-                    clamp: todo!(),
-                },
-            }),
-            multisample: wgpu::MultisampleState {
-                count: 1,
-                mask: !0,
-                alpha_to_coverage_enabled: false,
+            vertex: wgpu::VertexState {
+                module: shader.vertex().module(),
+                entry_point: shader.vertex().entry_point().unwrap(),
+                buffers,
             },
-            fragment: todo!(),
+            primitive,
+            depth_stencil,
+            multisample,
+            fragment: Some(wgpu::FragmentState {
+                module: shader.fragment().module(),
+                entry_point: shader.vertex().entry_point().unwrap(),
+                targets: &targets,
+            }),
             multiview: None,
         });
 
-
+        Ok(Self {
+            pipeline,
+            depth_config,
+            stencil_config,
+            vertex_config,
+            primitive_config,
+            binding_config: todo!(),
+            _phantom: PhantomData,
+            _phantom2: PhantomData,
+            shader: shader.clone(),
+            graphics: graphics.clone(),
+        })
     }
 }
 
@@ -115,7 +142,7 @@ fn primitive_config_to_state(primitive_config: PrimitiveConfig) -> PrimitiveStat
     };
 
     let front_face = match primitive_config {
-        PrimitiveConfig::Triangles { winding_order, cull_face, wireframe } => winding_order,
+        PrimitiveConfig::Triangles { winding_order, .. } => winding_order,
         _ => wgpu::FrontFace::Cw,
     };
 
@@ -147,19 +174,21 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
     }
 
     // Get the depth config used when creating this pipeline
-    pub fn depth_config(&self) -> &DepthConfig {
-        &self.depth_config
+    pub fn depth_config(&self) -> Option<&DepthConfig> {
+        self.depth_config.as_ref()
     }
 
     // Get the stencil config used when creating this pipeline
-    pub fn stencil_config(&self) -> &StencilConfig {
-        &self.stencil_config
+    pub fn stencil_config(&self) -> Option<&StencilConfig> {
+        self.stencil_config.as_ref()
     }
 
+    /*
     // Get the blend config used when creating this pipeline
-    pub fn blend_config(&self) -> &BlendConfig {
-        &self.blend_config
+    pub fn blend_config(&self) -> Option<&BlendConfig> {
+        self.blend_config.as_ref()
     }
+    */
 
     // Get the vertex config used when creating this pipeline
     pub fn vertex_config(&self) -> &VertexConfig {
