@@ -155,6 +155,10 @@ macro_rules! impl_vertex_attribute {
                         offset: 0,
                     }
                 }
+
+                fn test() -> VertexAttribute {
+                    VertexAttribute::new::<>()
+                }
             }
         }
     };
