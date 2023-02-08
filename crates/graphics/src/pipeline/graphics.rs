@@ -34,7 +34,7 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
         stencil_config: Option<StencilConfig>,
         vertex_config: VertexConfig,
         primitive_config: PrimitiveConfig,
-        binding_config: Option<BindingConfig>,
+        binding_config: BindingConfig,
         shader: &Shader,
     ) -> Result<Self, PipelineInitializationError> {
         // If stencil/depth is enabled, make sure the layout matches up
@@ -49,54 +49,13 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
         if depth_config_enabled {
         }
 
-        // Create a depth stencil state if either the depth config or stencil config are enabled
-        let depth_stencil = (depth_config_enabled || stencil_config_enabled).then(|| {
-            // Get the depth bias state for the DepthStencilState
-            let bias = if let Some(depth_config) = depth_config {
-                wgpu::DepthBiasState {
-                    constant: depth_config.depth_bias_constant,
-                    slope_scale: depth_config.depth_bias_slope_scale,
-                    clamp: depth_config.depth_bias_clamp,
-                }
-            } else {
-                wgpu::DepthBiasState::default()
-            };
-
-            // Get stencil, depth comparison function, depth write
-            let stencil = stencil_config.as_ref().cloned().unwrap_or_default();
-            let depth_compare = depth_config.map(|dc| dc.compare).unwrap_or(wgpu::CompareFunction::Never);
-            let depth_write_enabled = depth_config.map(|dc| dc.write_enabled).unwrap_or_default();
-            let format = DS::info().unwrap().format;
-
-            wgpu::DepthStencilState {
-                format,
-                depth_write_enabled,
-                depth_compare,
-                stencil,
-                bias,
-            }
-        });
-
-        // Buffers used by the vertex
-        let buffers = &[];
-
-        // Targets used by the fragment shader (created from the ColorLayout and DepthStencilLayout type)
-        let targets = C::layout_info().into_iter().map(|info| Some(wgpu::ColorTargetState {
-            format: info.format(),
-            blend: None,
-            write_mask: wgpu::ColorWrites::ALL,
-        })).collect::<Vec<_>>();
-
-        // Create the WGPU primitive state
+        // Get all the configuration settings required for the RenderPipeline 
+        let depth_stencil = depth_stencil_config_to_state::<DS>(&depth_config, &stencil_config);
+        let attributes = vertex_config_to_vertex_attributes(&vertex_config);
+        let buffers = vertex_config_to_buffer_layout(&vertex_config, attributes);
+        let targets = color_layout_to_color_target_state::<C>();
         let primitive = primitive_config_to_state(primitive_config);
-
-        // Create FIXED, STATIC multisampling state
-        // Multisampling (I HATE ANTIALISATION. FUCK YOU. COPE)
-        let multisample = wgpu::MultisampleState {
-            count: 1,
-            mask: !0,
-            alpha_to_coverage_enabled: false,
-        };
+        let multisample = multisample_state();
 
         // Create the WGPU pipeline using the given configuration
         let pipeline = graphics.device().create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -105,7 +64,7 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
             vertex: wgpu::VertexState {
                 module: shader.vertex().module(),
                 entry_point: shader.vertex().entry_point().unwrap(),
-                buffers,
+                buffers: &buffers,
             },
             primitive,
             depth_stencil,
@@ -124,13 +83,76 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
             stencil_config,
             vertex_config,
             primitive_config,
-            binding_config: todo!(),
+            binding_config,
             _phantom: PhantomData,
             _phantom2: PhantomData,
             shader: shader.clone(),
             graphics: graphics.clone(),
         })
     }
+}
+
+// Convert the given vertex config to the vertex attributes used byt he vertex buffer layout
+fn vertex_config_to_vertex_attributes(vertex_config: &VertexConfig) -> Vec<Vec<wgpu::VertexAttribute>> {
+    Vec::default()
+}
+
+// Conver the given vertex config to internally used buffer layout
+fn vertex_config_to_buffer_layout(vertex_config: &VertexConfig, atttributes: Vec<Vec<wgpu::VertexAttribute>>) -> Vec<wgpu::VertexBufferLayout> {
+    Vec::default()
+}
+
+// Conver the statically typed color layout to the color target states needed for the fragment field
+fn color_layout_to_color_target_state<C: ColorLayout>() -> Vec<Option<wgpu::ColorTargetState>> {
+    let targets = C::layout_info().into_iter().map(|info| Some(wgpu::ColorTargetState {
+        format: info.format(),
+        blend: None,
+        write_mask: wgpu::ColorWrites::ALL,
+    })).collect::<Vec<_>>();
+    targets
+}
+
+// Create the default multisampling state (Since we will never use antialisaing)
+// (I HATE ANTIALISATION. FUCK YOU. COPE)
+fn multisample_state() -> wgpu::MultisampleState {
+    let multisample = wgpu::MultisampleState {
+        count: 1,
+        mask: !0,
+        alpha_to_coverage_enabled: false,
+    };
+    multisample
+}
+
+fn depth_stencil_config_to_state<DS: DepthStencilLayout>(
+    depth_config: &Option<DepthConfig>,
+    stencil_config: &Option<StencilConfig>
+) -> Option<wgpu::DepthStencilState> {
+    // Get the depth bias state for the DepthStencilState
+    let bias = if let Some(depth_config) = depth_config {
+        wgpu::DepthBiasState {
+            constant: depth_config.depth_bias_constant,
+            slope_scale: depth_config.depth_bias_slope_scale,
+            clamp: depth_config.depth_bias_clamp,
+        }
+    } else {
+        wgpu::DepthBiasState::default()
+    };
+
+    // Get stencil, depth comparison function, depth write
+    let stencil = stencil_config.as_ref().cloned().unwrap_or_default();
+    let depth_compare = depth_config.map(|dc| dc.compare).unwrap_or(wgpu::CompareFunction::Never);
+    let depth_write_enabled = depth_config.map(|dc| dc.write_enabled).unwrap_or_default();
+    let format = DS::info().unwrap().format;
+
+    // (this isn't really needed since the calling method will ignore if both are None as well)
+    let valid = depth_config.is_some() || stencil_config.is_some();
+    valid.then(|| wgpu::DepthStencilState {
+        format,
+        depth_write_enabled,
+        depth_compare,
+        stencil,
+        bias,
+    })
 }
 
 // Convert the primitive config to primitive state

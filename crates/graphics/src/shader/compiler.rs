@@ -1,6 +1,6 @@
 use crate::{
     FunctionModule, GpuPodRelaxed, Graphics, ShaderCompilationError,
-    ShaderIncludeError, ShaderModule,
+    ShaderIncludeError, ShaderModule, VertexModule,
 };
 use ahash::AHashMap;
 use assets::Assets;
@@ -322,8 +322,23 @@ impl<M: ShaderModule> Compiled<M> {
         &self.file_name
     }
 
+    // Get the internally stored Naga representation of the shader
+    pub fn naga(&self) -> &naga::Module {
+        &self.naga
+    }
+
     // Get the entry point for the compiled shader
     pub fn entry_point(&self) -> Option<&str> {
         self.naga.entry_points.iter().next().map(|n| n.name.as_str())
+    }
+}
+
+impl Compiled<VertexModule> {
+    // Get the location of a specific vertex attribute
+    pub fn get_vertex_attribute_location(&self, name: &str) -> Option<wgpu::ShaderLocation> {
+        let arguments = &self.naga.entry_points.first()?.function.arguments;
+        arguments.iter().find_map(|x| if let Some(naga::Binding::Location { location, interpolation, sampling }) = x.binding {
+            Some(location)
+        } else { None })
     }
 }
