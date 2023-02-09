@@ -1,6 +1,6 @@
 use crate::{Material, SwapchainFormat, ForwardRendererRenderPass};
 use assets::Assets;
-use graphics::{Graphics, GraphicsPipeline, RenderPass, Shader, ActiveRenderPass, VertexConfig, PipelineInitializationError};
+use graphics::{Graphics, GraphicsPipeline, RenderPass, Shader, VertexConfig, PipelineInitializationError};
 use std::marker::PhantomData;
 use world::World;
 

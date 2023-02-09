@@ -25,9 +25,9 @@ pub struct ForwardRenderer {
     pipelines: AHashMap<TypeId, Rc<dyn DynamicPipeline>>,
 }
 
-// Create a new uniform buffer with the given value (zeroed out contents) 
-fn create_uniform_buffer<T: GpuPod>(graphics: &Graphics) -> UniformBuffer<T> {
-    UniformBuffer::from_slice(graphics, &[T::zeroed()], BufferMode::Dynamic, BufferUsage::CpuToGpu).unwrap()
+// Create a new uniform buffer with the given value (defaulted contents) 
+fn create_uniform_buffer<T: GpuPod + Default>(graphics: &Graphics) -> UniformBuffer<T> {
+    UniformBuffer::from_slice(graphics, &[T::default()], BufferMode::Dynamic, BufferUsage::CpuToGpu).unwrap()
 }
 
 impl ForwardRenderer {

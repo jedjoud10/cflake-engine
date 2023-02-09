@@ -1,7 +1,7 @@
 use bytemuck::{Pod, Zeroable};
 
 // Camera data that will be stored in a UBO
-#[derive(Clone, Copy, PartialEq, Pod, Zeroable)]
+#[derive(Clone, Copy, PartialEq, Pod, Zeroable, Default)]
 #[repr(C)]
 pub struct CameraUniform {
     /*
@@ -16,7 +16,7 @@ pub struct CameraUniform {
 }
 
 // Timing data that will be stored in a UBO
-#[derive(Clone, Copy, PartialEq, Pod, Zeroable)]
+#[derive(Clone, Copy, PartialEq, Pod, Zeroable, Default)]
 #[repr(C)]
 pub struct TimingUniform {
     pub frame_count: u32,
@@ -25,7 +25,7 @@ pub struct TimingUniform {
 }
 
 // Scene data that will be stored in a UBO
-#[derive(Clone, Copy, PartialEq, Pod, Zeroable)]
+#[derive(Clone, Copy, PartialEq, Pod, Zeroable, Default)]
 #[repr(C)]
 pub struct SceneUniform {
     pub ambient_color: vek::Rgb<f32>,

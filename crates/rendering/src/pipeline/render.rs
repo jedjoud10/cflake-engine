@@ -1,6 +1,6 @@
 use crate::{Material, SwapchainFormat, Surface, Mesh, attributes::RawPosition};
 use ecs::Scene;
-use graphics::{Graphics, GraphicsPipeline, ActiveRenderPass, XYZ, ModuleKind};
+use graphics::{Graphics, GraphicsPipeline, XYZ};
 use utils::{Storage, Time};
 use world::World;
 
@@ -10,6 +10,7 @@ pub(super) fn render_surfaces<M: Material>(
     pipeline: &GraphicsPipeline,
     render_pass: &mut ActiveRenderPass<SwapchainFormat, ()>
 ) {
+    /*
     // Get a rasterizer for the current render pass by binding a pipeline
     let (mut rasterizer, mut bindings) = render_pass.bind_pipeline(pipeline);
 
@@ -35,4 +36,5 @@ pub(super) fn render_surfaces<M: Material>(
         rasterizer.draw(mesh.vertices().len().unwrap() as u32, &bindings);
         log::debug!("Draw mesh");
     }
+    */
 }

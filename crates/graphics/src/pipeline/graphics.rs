@@ -1,8 +1,8 @@
 use std::marker::PhantomData;
 
-use wgpu::PrimitiveState;
+use wgpu::{PrimitiveState, VertexStepMode};
 
-use crate::{Shader, Graphics, PipelineInitializationError, DepthConfig, StencilConfig, BlendConfig, PrimitiveConfig, BindingConfig, VertexConfig, DepthStencilLayout, ColorLayout};
+use crate::{Shader, Graphics, PipelineInitializationError, DepthConfig, StencilConfig, BlendConfig, PrimitiveConfig, BindingConfig, VertexConfig, DepthStencilLayout, ColorLayout, VertexInfo};
 
 // Wrapper around a WGPU render pipeline just to help me instantiate them
 pub struct GraphicsPipeline<C: ColorLayout, DS: DepthStencilLayout> {
@@ -12,7 +12,7 @@ pub struct GraphicsPipeline<C: ColorLayout, DS: DepthStencilLayout> {
     depth_config: Option<DepthConfig>,
     stencil_config: Option<StencilConfig>,
     //blend_config: Option<BlendConfig>,
-    vertex_config: VertexConfig,
+    vertex_attributes: Vec<(VertexInfo, VertexStepMode)>,
     primitive_config: PrimitiveConfig,
     binding_config: BindingConfig,
     _phantom: PhantomData<C>,
@@ -52,6 +52,7 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
         // Get all the configuration settings required for the RenderPipeline 
         let depth_stencil = depth_stencil_config_to_state::<DS>(&depth_config, &stencil_config);
         let attributes = vertex_config_to_vertex_attributes(&vertex_config);
+        let attributes = attributes.iter().map(|x| x.as_slice()).collect();
         let buffers = vertex_config_to_buffer_layout(&vertex_config, attributes);
         let targets = color_layout_to_color_target_state::<C>();
         let primitive = primitive_config_to_state(primitive_config);
@@ -79,27 +80,41 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
 
         Ok(Self {
             pipeline,
-            depth_config,
-            stencil_config,
-            vertex_config,
-            primitive_config,
-            binding_config,
             _phantom: PhantomData,
             _phantom2: PhantomData,
             shader: shader.clone(),
             graphics: graphics.clone(),
+            depth_config,
+            stencil_config,
+            vertex_attributes: todo!(),
+            primitive_config,
+            binding_config,
         })
     }
 }
 
 // Convert the given vertex config to the vertex attributes used byt he vertex buffer layout
 fn vertex_config_to_vertex_attributes(vertex_config: &VertexConfig) -> Vec<Vec<wgpu::VertexAttribute>> {
-    Vec::default()
+    vertex_config.inputs.iter().map(|input| {
+        vec![wgpu::VertexAttribute {
+            format: input.info().format(),
+            offset: 0,
+            shader_location: input.location(),
+        }]
+    }).collect()
 }
 
 // Conver the given vertex config to internally used buffer layout
-fn vertex_config_to_buffer_layout(vertex_config: &VertexConfig, atttributes: Vec<Vec<wgpu::VertexAttribute>>) -> Vec<wgpu::VertexBufferLayout> {
-    Vec::default()
+fn vertex_config_to_buffer_layout<'a>(vertex_config: &VertexConfig, attributes: Vec<&'a [wgpu::VertexAttribute]>) -> Vec<wgpu::VertexBufferLayout<'a>> {
+    vertex_config.inputs.iter().enumerate().map(|(index, input)| {
+        let attribute = &attributes[index];
+        
+        wgpu::VertexBufferLayout {
+            array_stride: input.info().size() as u64,
+            step_mode: input.step_mode(),
+            attributes: attribute,
+        }
+    }).collect()
 }
 
 // Conver the statically typed color layout to the color target states needed for the fragment field
@@ -123,6 +138,7 @@ fn multisample_state() -> wgpu::MultisampleState {
     multisample
 }
 
+// Convert the depth and stencil config to the DepthStencilState
 fn depth_stencil_config_to_state<DS: DepthStencilLayout>(
     depth_config: &Option<DepthConfig>,
     stencil_config: &Option<StencilConfig>
@@ -212,10 +228,12 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
     }
     */
 
+    /*
     // Get the vertex config used when creating this pipeline
     pub fn vertex_config(&self) -> &VertexConfig {
         &self.vertex_config
     }
+    */
 
     // Get the internally used shader for this graphics pipeline
     pub fn shader(&self) -> &Shader {

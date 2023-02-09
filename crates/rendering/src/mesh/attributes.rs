@@ -1,6 +1,6 @@
 use std::mem::MaybeUninit;
 use arrayvec::ArrayVec;
-use graphics::{VertexBuffer, Vertex, VertexBinding, VertexAttribute, UntypedVertex, XYZ, XYZW, XY, Normalized, VertexConfig, GpuPodRelaxed};
+use graphics::{VertexBuffer, Vertex, XYZ, XYZW, XY, Normalized, VertexConfig, GpuPodRelaxed, VertexInput};
 use std::marker::PhantomData;
 use paste::paste;
 
@@ -24,19 +24,11 @@ pub const MAX_MESH_VERTEX_ATTRIBUTES: usize =
 // Contains the underlying array buffer for a specific attribute
 pub type AttributeBuffer<A> = MaybeUninit<VertexBuffer<<<A as MeshAttribute>::V as Vertex>::Storage>>;
 
-// An untyped attribute wrapper that contains all the basic information about attributes
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub struct UntypedMeshAttribute {
-    pub untyped: UntypedVertex,
-    pub enabled: EnabledMeshAttributes,
-    pub attribute: VertexAttribute,
-    pub binding: VertexBinding,
-}
-
 // A named attribute that has a specific name, like "Position", or "Normal"
 pub trait MeshAttribute {
     type V: Vertex;
     type Storage: GpuPodRelaxed;
+    type Input: VertexInput;
     const ATTRIBUTE: EnabledMeshAttributes;
 
     // Try to get the references to the underlying vertex buffers
@@ -57,39 +49,10 @@ pub trait MeshAttribute {
         debug_assert_eq!(Self::ATTRIBUTE.bits().count_ones(), 1);
         Self::ATTRIBUTE.bits().trailing_zeros()
     }
-
-    // Needed for the graphics pipeline' VertexConfig
-    fn binding() -> VertexBinding;
-    fn attribute() -> VertexAttribute;
-
-    // Get the attribute's format as an untyped struct
-    fn untyped() -> UntypedMeshAttribute {
-        UntypedMeshAttribute { 
-            untyped: <Self::V as Vertex>::untyped(),
-            enabled: Self::ATTRIBUTE,
-            attribute: Self::attribute(),
-            binding: Self::binding(),
-        }
-    }
 }
 
 // Get a list of the untyped attributes from the enabled mesh attributes
-pub fn untyped_attributes_from_enabled_attributes(attributes: EnabledMeshAttributes) -> ArrayVec<UntypedMeshAttribute, MAX_MESH_VERTEX_ATTRIBUTES> {
-    let mut vec = ArrayVec::new();
-
-    // Add the attribute's untyped representation to the vector if it's enabled
-    fn push<A: MeshAttribute>(attributes: EnabledMeshAttributes, vec: &mut ArrayVec<UntypedMeshAttribute, MAX_MESH_VERTEX_ATTRIBUTES>) {
-        if attributes.contains(A::ATTRIBUTE) {
-            vec.push(A::untyped())
-        }
-    }
-
-    // Add the mesh attributes untyped representations
-    push::<Position>(attributes, &mut vec);
-    push::<Normal>(attributes, &mut vec);
-    push::<Tangent>(attributes, &mut vec);
-    push::<TexCoord>(attributes, &mut vec);
-    vec
+pub fn vertex_config_from(attributes: EnabledMeshAttributes) -> ArrayVec<VertexConfig, MAX_MESH_VERTEX_ATTRIBUTES> {
 }
 
 
@@ -138,26 +101,6 @@ macro_rules! impl_vertex_attribute {
                     vertices.is_enabled::<Self>().then(|| {
                         std::mem::replace(vertices.$name, std::mem::MaybeUninit::uninit())
                     }).map(|x| unsafe { x.assume_init() })
-                }
-
-                fn binding() -> VertexBinding {
-                    VertexBinding {
-                        binding: Self::index(),
-                        format: <Self::V as Vertex>::untyped()
-                    }
-                }
-
-                fn attribute() -> VertexAttribute {
-                    VertexAttribute {
-                        binding: Self::index(),
-                        format: <Self::V as Vertex>::untyped(),
-                        location: Self::index(),
-                        offset: 0,
-                    }
-                }
-
-                fn test() -> VertexAttribute {
-                    VertexAttribute::new::<>()
                 }
             }
         }
