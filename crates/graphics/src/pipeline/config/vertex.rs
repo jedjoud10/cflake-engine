@@ -9,6 +9,31 @@ pub struct VertexConfig<'a, 'b> {
     pub inputs: &'a [&'b dyn VertexInput],
 }
 
+// VertexInputInfo combines all the required info for a vertex input in one struct
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct VertexInputInfo {
+    location: ShaderLocation,
+    info: VertexInfo,
+    step_mode: VertexStepMode,
+}
+
+impl VertexInputInfo {
+    // Get the shader location of the VertexInput
+    pub fn location(&self) -> ShaderLocation {
+        self.location
+    }
+
+    // Get the VertexInfo of the VertexInput
+    pub fn vertex_info(&self) -> VertexInfo {
+        self.info
+    }
+
+    // Get the step mode of the VertexInput
+    pub fn step_mode(&self) -> VertexStepMode {
+        self.step_mode
+    }
+}
+
 // Vertex input defines the vertex layout for a single buffer
 // TODO: Implement vertex interlacing
 pub trait VertexInput {
@@ -19,8 +44,17 @@ pub trait VertexInput {
     fn location(&self) -> ShaderLocation;
 
     // Compile time Vertex and step mode
-    fn info(&self) -> VertexInfo;
+    fn vertex_info(&self) -> VertexInfo;
     fn step_mode(&self) -> VertexStepMode;
+
+    // Get the combined info
+    fn info(&self) -> VertexInputInfo {
+        VertexInputInfo {
+            location: self.location(),
+            info: self.vertex_info(),
+            step_mode: self.step_mode(),
+        }
+    }
 }
 
 // Defines a Vertex buffer/layout as being an input that
@@ -35,7 +69,7 @@ impl<V: Vertex> VertexInput for PerVertex<V> {
         self.1
     }
 
-    fn info(&self) -> VertexInfo {
+    fn vertex_info(&self) -> VertexInfo {
         V::info()
     }
 
@@ -56,7 +90,7 @@ impl<V: Vertex> VertexInput for PerInstance<V> {
         self.1
     }
 
-    fn info(&self) -> VertexInfo {
+    fn vertex_info(&self) -> VertexInfo {
         V::info()
     }
 

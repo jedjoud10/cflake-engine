@@ -4,6 +4,7 @@ use wgpu::TextureFormat;
 use crate::{ChannelsType, ElementType};
 
 // Untyped texel info that does not contain typed information about the texel nor base types
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct TexelInfo {
     pub(crate) bytes_per_channel: u32,
     pub(crate) element: ElementType,

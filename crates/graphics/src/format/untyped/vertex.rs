@@ -2,6 +2,7 @@ use wgpu::VertexFormat;
 use crate::{ElementType, VectorChannels};
 
 // Untyped texel info that does not contain typed information about the vertex nor base types
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct VertexInfo {
     pub(crate) bytes_per_channel: u32,
     pub(crate) element: ElementType,
