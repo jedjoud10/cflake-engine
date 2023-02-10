@@ -2,7 +2,7 @@ use crate::{
     ColorAttachments, ColorLayout,
     DepthStencilAttachment, DepthStencilLayout, Graphics,
     GraphicsPipeline, RenderPassBeginError,
-    RenderPassInitializationError, Vertex, VertexBuffer, Viewport,
+    RenderPassInitializationError, Vertex, VertexBuffer,
 };
 use std::marker::PhantomData;
 

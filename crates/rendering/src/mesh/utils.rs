@@ -157,7 +157,7 @@ pub fn compute_normals(
     Some(
         normals
             .into_iter()
-            .map(|n| n.normalized().map(to_i8))
+            .map(|n| n.normalized().map(to_i8).with_w(0))
             .collect::<Vec<RawNormal>>(),
     )
 }
@@ -200,7 +200,7 @@ pub fn compute_tangents(
 
         fn normal(&self, face: usize, vert: usize) -> [f32; 3] {
             let i = self.triangles[face][vert] as usize;
-            self.normals[i].map(to_f32).into_array()
+            self.normals[i].map(to_f32).xyz().into_array()
         }
 
         fn tex_coord(&self, face: usize, vert: usize) -> [f32; 2] {

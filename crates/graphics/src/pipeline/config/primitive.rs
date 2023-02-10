@@ -1,3 +1,5 @@
+pub use wgpu::{FrontFace, Face};
+
 // Depicts the exact primitives we will use to draw the VAOs
 #[derive(Clone, Copy, PartialEq)]
 pub enum PrimitiveConfig {

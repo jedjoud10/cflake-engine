@@ -148,8 +148,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
 
         let wgpu_usages = variant
             | wgpu::BufferUsages::COPY_SRC
-            | wgpu::BufferUsages::COPY_DST
-            | wgpu::BufferUsages::MAP_READ;
+            | wgpu::BufferUsages::COPY_DST;
 
         // Convert the slice into bytes
         let bytes = bytemuck::cast_slice::<T, u8>(slice);

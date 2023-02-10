@@ -15,7 +15,7 @@ type NormalTexel = RGBA<Normalized<i8>>;
 type AlbedoMap = Texture2D<AlbedoTexel>;
 type NormalMap = Texture2D<NormalTexel>;
 
-/*
+
 // A basic forward rendering material that will read from a diffuse map and normal map
 // This does not implement the PBR workflow, and it's only used for simplicity at first
 pub struct Basic {
@@ -64,5 +64,3 @@ impl Material for Basic {
         storage
     }
 }
-
-*/

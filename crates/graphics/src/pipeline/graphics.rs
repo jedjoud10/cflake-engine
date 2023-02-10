@@ -159,7 +159,7 @@ fn depth_stencil_config_to_state<DS: DepthStencilLayout>(
     let stencil = stencil_config.as_ref().cloned().unwrap_or_default();
     let depth_compare = depth_config.map(|dc| dc.compare).unwrap_or(wgpu::CompareFunction::Never);
     let depth_write_enabled = depth_config.map(|dc| dc.write_enabled).unwrap_or_default();
-    let format = DS::info().unwrap().format;
+    let format = DS::info().unwrap().format();
 
     // (this isn't really needed since the calling method will ignore if both are None as well)
     let valid = depth_config.is_some() || stencil_config.is_some();

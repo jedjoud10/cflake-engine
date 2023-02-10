@@ -1,6 +1,6 @@
 use crate::{Material, SwapchainFormat, ForwardRendererRenderPass};
 use assets::Assets;
-use graphics::{Graphics, GraphicsPipeline, RenderPass, Shader, VertexConfig, PipelineInitializationError};
+use graphics::{Graphics, GraphicsPipeline, RenderPass, Shader, VertexConfig, PipelineInitializationError, BindingConfig};
 use std::marker::PhantomData;
 use world::World;
 
@@ -16,7 +16,7 @@ impl<M: Material> Clone for MaterialId<M> {
 // A material pipeline will be responsible for rendering surface and
 // entities that correspond to a specific material type.
 pub struct Pipeline<M: Material> {
-    pipeline: GraphicsPipeline,
+    pipeline: GraphicsPipeline<SwapchainFormat, ()>,
     shader: Shader,
     _phantom: PhantomData<M>,
 }
@@ -29,29 +29,23 @@ impl<M: Material> Pipeline<M> {
         assets: &Assets,
         render_pass: &ForwardRendererRenderPass,
     ) -> Result<Self, PipelineInitializationError> {
+        // Load the vertex and fragment modules, and create the shader
         let vertex = M::vertex(graphics, assets);
         let fragment = M::fragment(graphics, assets);
-        let shader = Shader::new(vertex, fragment);
+        let shader = Shader::new(&vertex,& fragment);
         
         // Fetch the correct vertex config based on the material
         let required = M::attributes();
-        let untyped = crate::untyped_attributes_from_enabled_attributes(required);
-        let vertex_config = VertexConfig {
-            attributes: untyped.iter().map(|u| u.attribute).collect(),
-            bindings: untyped.iter().map(|u| u.binding).collect(),
-        };
-
+        
         // Create the graphics pipeline
         let pipeline = GraphicsPipeline::new(
             graphics,
             M::depth_config(),
             M::stencil_config(),
-            M::blend_config(),
-            vertex_config,
+            todo!(),
             M::primitive_config(),
-            M::binding_config(),
-            &render_pass,
-            shader.clone(),
+            BindingConfig {},
+            &shader
         )?;
 
         Ok(Self {
@@ -75,28 +69,27 @@ impl<M: Material> Pipeline<M> {
 // This trait will be implemented for Pipeline<T> to allow for dynamic dispatch
 pub trait DynamicPipeline {
     // Get the inner graphics pipeline immutably
-    fn graphical(&self) -> &GraphicsPipeline;
+    fn graphical(&self) -> &GraphicsPipeline<SwapchainFormat, ()>;
 
     // Get the inner graphics pipeline mutably
-    fn graphical_mut(&mut self) -> &mut GraphicsPipeline;
+    fn graphical_mut(&mut self) -> &mut GraphicsPipeline<SwapchainFormat, ()>;
 
     // Render all surfaces that use the material of this pipeline
     fn render(&self,
         world: &World,
-        render_pass: &mut ActiveRenderPass<SwapchainFormat, ()>
     );
 }
 
 impl<M: Material> DynamicPipeline for Pipeline<M> {
-    fn graphical(&self) -> &GraphicsPipeline {
+    fn graphical(&self) -> &GraphicsPipeline<SwapchainFormat, ()> {
         &self.pipeline
     }
 
-    fn graphical_mut(&mut self) -> &mut GraphicsPipeline {
+    fn graphical_mut(&mut self) -> &mut GraphicsPipeline<SwapchainFormat, ()> {
         &mut self.pipeline
     }
 
-    fn render(&self, world: &World, render_pass: &mut ActiveRenderPass<SwapchainFormat, ()>) {
-        super::render_surfaces::<M>(world, &self.pipeline, render_pass);
+    fn render(&self, world: &World) {
+        //super::render_surfaces::<M>(world, &self.pipeline, render_pass);
     }
 }

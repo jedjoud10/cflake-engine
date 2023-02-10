@@ -66,8 +66,13 @@ pub(crate) unsafe fn init_context_and_window(
     let surface_format = surface_capabilities
         .formats
         .iter()
-        .find(|x| x.describe().srgb)
+        .find(|x| {
+            dbg!(x);
+            x.describe().srgb
+        })
         .unwrap();
+
+    panic!();
 
     // Pick the appropriate present mode
     let present_mode = match settings.limit {
@@ -117,6 +122,8 @@ pub(crate) unsafe fn init_context_and_window(
         surface,
         surface_config,
         surface_capabilities,
+        presentable_texture: None,
+        presentable_texture_view: None,
     };
 
     (graphics, window)

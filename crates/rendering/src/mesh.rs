@@ -5,7 +5,7 @@ mod errors;
 mod triangles;
 mod utils;
 mod vertices;
-pub use attributes::{MeshAttribute, EnabledMeshAttributes, AttributeBuffer, untyped_attributes_from_enabled_attributes};
+pub use attributes::{MeshAttribute, EnabledMeshAttributes, AttributeBuffer};
 pub use triangles::*;
 pub use self::utils::*;
 pub use vertices::*;

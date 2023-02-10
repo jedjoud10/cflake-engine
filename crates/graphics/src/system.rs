@@ -16,37 +16,23 @@ fn init(world: &mut World, el: &EventLoop<()>) {
     world.insert(graphics);
 }
 
-// Reset the dirty state of the window at the end of each frame
-fn update(world: &mut World) {
+// Acquire a new texture that we can render to
+fn acquire(world: &mut World) {
+    // Acquire a new texture to render to
     let mut window = world.get_mut::<Window>().unwrap();
-    
-    let mut graphics = world.get_mut::<Graphics>().unwrap();
     let texture = window.surface.get_current_texture().unwrap();
     let view = texture.texture.create_view(&wgpu::TextureViewDescriptor::default());
-    let mut encoder = graphics.device().create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
-    let render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-        label: None,
-        color_attachments: &[Some(
-            wgpu::RenderPassColorAttachment {
-                view: &view,
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color {
-                        r: 0.1,
-                        g: 0.2,
-                        b: 0.3,
-                        a: 1.0,
-                    }),
-                    store: true,
-                },
-            }
-        )],
-        depth_stencil_attachment: None,
-    });
-    drop(render_pass);
 
-    graphics.queue().submit(Some(encoder.finish()));
-    texture.present();
+    // Set the Window's texture view
+    // TODO: Cache the texture views instead?
+    window.presentable_texture = Some(texture);
+    window.presentable_texture_view = Some(view);
+}
+
+// Present the texture at the end of the frame
+fn present(world: &mut World) {
+    let mut window = world.get_mut::<Window>().unwrap();
+    window.presentable_texture.take().unwrap().present();
 }
 
 // Handle window quitting and resizing
@@ -91,5 +77,6 @@ pub fn system(system: &mut System) {
         .before(user);
 
     system.insert_window(event);
-    system.insert_update(update).after(post_user);
+    system.insert_update(acquire).before(user);
+    system.insert_update(present).after(post_user);
 }

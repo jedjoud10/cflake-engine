@@ -16,6 +16,7 @@ fn main() {
 fn init(world: &mut World) {
     let assets = world.get::<Assets>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
+    let mesh = assets.load::<Mesh>(("engine/meshes/cube.obj", &*graphics)).unwrap();
 
     /*
     let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
@@ -53,6 +54,7 @@ fn init(world: &mut World) {
     ).unwrap();
     */
 
+    /*
     type Diffuse = Texture2D::<RGBA<Normalized<u8>>>;
     let texture = assets.load::<Diffuse>(("engine/textures/test.jpg", &*graphics)).unwrap();
 
@@ -60,6 +62,7 @@ fn init(world: &mut World) {
         .load::<FragmentModule>("engine/shaders/basic.frag")
         .unwrap();
     Compiler::new(frag).compile(&assets, &graphics).unwrap();
+    */
 
     /*
     let mut buffer = TriangleBuffer::<u32>::from_slice(

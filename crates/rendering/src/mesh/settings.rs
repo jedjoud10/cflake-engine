@@ -30,8 +30,8 @@ pub struct MeshImportSettings {
 impl Default for MeshImportSettings {
     fn default() -> Self {
         Self {
-            buffer_mode: BufferMode::Resizable,
-            buffer_usage: BufferUsage::CpuToGpu,
+            buffer_mode: BufferMode::Dynamic,
+            buffer_usage: BufferUsage::READ,
             use_normals: true,
             use_tangents: true,
             use_tex_coords: true,

@@ -1,6 +1,6 @@
 use std::mem::MaybeUninit;
 use arrayvec::ArrayVec;
-use graphics::{VertexBuffer, Vertex, XYZ, XYZW, XY, Normalized, VertexConfig, GpuPodRelaxed, VertexInput};
+use graphics::{VertexBuffer, Vertex, XYZ, XYZW, XY, Normalized, VertexConfig, GpuPodRelaxed, VertexInput, PerVertex};
 use std::marker::PhantomData;
 use paste::paste;
 
@@ -51,13 +51,15 @@ pub trait MeshAttribute {
     }
 }
 
+/*
 // Get a list of the untyped attributes from the enabled mesh attributes
 pub fn vertex_config_from(attributes: EnabledMeshAttributes) -> ArrayVec<VertexConfig, MAX_MESH_VERTEX_ATTRIBUTES> {
 }
+*/
 
 
 macro_rules! impl_vertex_attribute {
-    ($attribute:ident, $name:ident, $vertex:ty, $enabled:ident) => {
+    ($attribute:ident, $name:ident, $vertex:ty, $enabled:ident, $input:ident) => {
         paste! {
             pub struct $attribute(PhantomData<$vertex>);
             pub type [<Raw $attribute>] = <<$attribute as MeshAttribute>::V as Vertex>::Storage;
@@ -65,6 +67,7 @@ macro_rules! impl_vertex_attribute {
             impl MeshAttribute for $attribute {
                 type V = $vertex;
                 type Storage = <$vertex as Vertex>::Storage;
+                type Input = $input<Self::V>;
                 const ATTRIBUTE: EnabledMeshAttributes = EnabledMeshAttributes::[<$enabled>];
 
                 fn from_ref_as_ref<'a>(vertices: &'a VerticesRef) -> Option<&'a VertexBuffer<Self::Storage>> {
@@ -107,8 +110,8 @@ macro_rules! impl_vertex_attribute {
     };
 }
 
-impl_vertex_attribute!(Position, positions, XYZ<f32>, POSITIONS);
-impl_vertex_attribute!(Normal, normals, XYZ<Normalized<i8>>, NORMALS);
-impl_vertex_attribute!(Tangent, tangents, XYZW<Normalized<i8>>, TANGENTS);
+impl_vertex_attribute!(Position, positions, XYZ<f32>, POSITIONS, PerVertex);
+impl_vertex_attribute!(Normal, normals, XYZW<Normalized<i8>>, NORMALS, PerVertex);
+impl_vertex_attribute!(Tangent, tangents, XYZW<Normalized<i8>>, TANGENTS, PerVertex);
 //impl_vertex_attribute!(Color, colors, XYZ<Normalized<u8>>, COLORS);
-impl_vertex_attribute!(TexCoord, tex_coords, XY<Normalized<u8>>, TEX_COORDS);
+impl_vertex_attribute!(TexCoord, tex_coords, XY<Normalized<u8>>, TEX_COORDS, PerVertex);

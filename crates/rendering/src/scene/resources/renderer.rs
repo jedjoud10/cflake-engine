@@ -2,13 +2,13 @@ use crate::{DynamicPipeline, Material, MaterialId, Pipeline, CameraUniform, Timi
 use ahash::AHashMap;
 use assets::Assets;
 use bytemuck::Zeroable;
-use graphics::{Graphics, Normalized, RenderPass, Texture2D, BGRA, PipelineInitializationError, UniformBuffer, BufferMode, BufferUsage, GpuPod};
+use graphics::{Graphics, Normalized, RenderPass, Texture2D, BGRA, PipelineInitializationError, UniformBuffer, BufferMode, BufferUsage, GpuPod, RGBA};
 use std::{
     any::TypeId, marker::PhantomData, mem::ManuallyDrop, rc::Rc, cell::RefCell,
 };
 
 // Texel that stores the SwapChain image format
-pub type SwapchainFormat = BGRA<Normalized<u8>>;
+pub type SwapchainFormat = RGBA<Normalized<u8>>;
 pub type ForwardRendererRenderPass = RenderPass<SwapchainFormat, ()>;
 // Main resource that will contain data to render objects on the screen
 // This will contain the current swapchain texture that we must render to
@@ -27,7 +27,7 @@ pub struct ForwardRenderer {
 
 // Create a new uniform buffer with the given value (defaulted contents) 
 fn create_uniform_buffer<T: GpuPod + Default>(graphics: &Graphics) -> UniformBuffer<T> {
-    UniformBuffer::from_slice(graphics, &[T::default()], BufferMode::Dynamic, BufferUsage::CpuToGpu).unwrap()
+    UniformBuffer::from_slice(graphics, &[T::default()], BufferMode::Dynamic, BufferUsage::WRITE | BufferUsage::READ).unwrap()
 }
 
 impl ForwardRenderer {

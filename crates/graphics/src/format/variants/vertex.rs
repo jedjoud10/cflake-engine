@@ -2,7 +2,7 @@ use vek::{Vec3, Vec2, Vec4};
 use wgpu::{TextureFormat, VertexFormat};
 use half::f16;
 use std::mem::size_of;
-use crate::{GpuPodRelaxed, ElementType, ChannelsType, VectorChannels, X, XY, XYZ, XYZW, AnyElement, Normalized, DepthElement, Depth, Stencil, VertexInfo};
+use crate::{GpuPodRelaxed, ElementType, ChannelsType, VectorChannels, X, XY, XYZ, XYZW, AnyElement, Normalized, DepthElement, Depth, Stencil};
 
 // A vertex that represents a vertex within a rendered object
 pub trait Vertex {
@@ -37,6 +37,43 @@ pub trait Vertex {
             channels: Self::channels(),
             format: Self::format()
         }
+    }
+}
+
+
+// Untyped texel info that does not contain typed information about the vertex nor base types
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct VertexInfo {
+    bytes_per_channel: u32,
+    element: ElementType,
+    channels: VectorChannels,
+    format: VertexFormat,
+}
+
+impl VertexInfo {
+    // Number of bytes in total
+    pub fn size(&self) -> u32 {
+        self.bytes_per_channel * self.channels.count()
+    }
+
+    // Number of bytes per channel
+    pub fn bytes_per_channel(&self) -> u32 {
+        self.bytes_per_channel
+    }
+
+    // Untyped representation of the underlying element
+    pub fn element(&self) -> ElementType {
+        self.element
+    }
+    
+    // Type of channels (either X, XY, XYZ, XYZW)
+    pub fn channels(&self) -> VectorChannels {
+        self.channels
+    }
+    
+    // Compile time WGPU format
+    pub fn format(&self) -> VertexFormat {
+        self.format
     }
 }
 

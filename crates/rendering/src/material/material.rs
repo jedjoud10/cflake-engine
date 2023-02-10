@@ -1,7 +1,7 @@
 use assets::Assets;
 use graphics::{
     BlendConfig, Compiled, DepthConfig, FragmentModule, Graphics, PrimitiveConfig,
-    StencilConfig, VertexModule, UniformBuffer, BindingConfig,
+    StencilConfig, VertexModule, UniformBuffer, BindingConfig, FrontFace,
 };
 use world::World;
 use crate::{EnabledMeshAttributes, Mesh, Renderer, CameraUniform, TimingUniform, SceneUniform};
@@ -36,14 +36,8 @@ pub trait Material: 'static + Sized {
     fn attributes() -> EnabledMeshAttributes;
 
     // Get the depth config for this material
-    fn depth_config() -> DepthConfig {
-        DepthConfig {
-            depth_write_enable: false,
-            depth_clamp_enable: false,
-            depth_test: None,
-            depth_bias: None,
-            depth_bounds: None,
-        }
+    fn depth_config() -> Option<DepthConfig> {
+        None
     }
 
     // Get the stencil testing for this material
@@ -53,6 +47,11 @@ pub trait Material: 'static + Sized {
 
     // Get the rasterizer config for this materil
     fn primitive_config() -> PrimitiveConfig {
+        PrimitiveConfig::Triangles { 
+            winding_order: FrontFace::Ccw,
+            cull_face: None,
+            wireframe: false
+        }
     }
 
     // Get the blend config for this material
@@ -67,13 +66,7 @@ pub trait Material: 'static + Sized {
     fn set_global_bindings<'w: 'ds, 'ds>(
         resources: &mut Self::Resources<'w>,
         default: &DefaultMaterialResources,
-    ) {
-        // check if camera desc set is present in pipeline
-            // set it if it is
-        // check if scene des set is present in pipeline
-            // set it if it is
-        
-    }
+    ) {}
 
     // Sets the bindings related to surface only
     fn set_surface_bindings<'w: 'ds, 'ds>(

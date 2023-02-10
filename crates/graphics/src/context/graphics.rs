@@ -3,7 +3,7 @@ use parking_lot::Mutex;
 use std::sync::Arc;
 use wgpu::{
     util::StagingBelt, Device, Queue, Surface, SurfaceCapabilities,
-    SurfaceConfiguration,
+    SurfaceConfiguration, TextureView,
 };
 
 // Internnal graphics context that will eventually be wrapped within an Arc

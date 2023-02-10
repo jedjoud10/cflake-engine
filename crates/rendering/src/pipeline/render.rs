@@ -7,8 +7,8 @@ use world::World;
 // Render all the visible surfaces of a specific material type
 pub(super) fn render_surfaces<M: Material>(
     world: &World,
-    pipeline: &GraphicsPipeline,
-    render_pass: &mut ActiveRenderPass<SwapchainFormat, ()>
+    pipeline: &GraphicsPipeline<SwapchainFormat, ()>,
+    //render_pass: &mut ActiveRenderPass<SwapchainFormat, ()>
 ) {
     /*
     // Get a rasterizer for the current render pass by binding a pipeline

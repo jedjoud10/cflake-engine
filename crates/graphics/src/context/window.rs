@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use wgpu::{Surface, SurfaceConfiguration, SurfaceCapabilities};
+use wgpu::{Surface, SurfaceConfiguration, SurfaceCapabilities, SurfaceTexture, TextureView};
 
 // Frame rate limit of the window (can be disabled by selecting Unlimited)
 #[derive(Default, Clone, Copy, PartialEq, Eq)]
@@ -24,13 +24,6 @@ pub struct WindowSettings {
     pub limit: FrameRateLimit,
 }
 
-// A viewport wrapper around raw WGPU viewport
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub struct Viewport {
-    pub origin: vek::Vec2<i32>,
-    pub extent: vek::Extent2<u32>,
-}
-
 // A window is what we will draw to at the end of each frame
 pub struct Window {
     // Raw winit window and settings
@@ -42,6 +35,10 @@ pub struct Window {
     pub(crate) surface: Surface,
     pub(crate) surface_config: SurfaceConfiguration,
     pub(crate) surface_capabilities: SurfaceCapabilities,
+
+    // Current presentable texture and it's view
+    pub(crate) presentable_texture: Option<SurfaceTexture>,
+    pub(crate) presentable_texture_view: Option<TextureView>,
 }
 
 impl Window {
@@ -55,12 +52,9 @@ impl Window {
         &self.raw
     }
 
-    // Get a Vulkan viewport that represents this window
-    pub fn viewport(&self) -> Viewport {
-        Viewport {
-            origin: vek::Vec2::default(),
-            extent: self.size,
-        }
+    // Get the texture that we can render to
+    pub fn view(&self) -> Option<&TextureView> {
+        self.presentable_texture_view.as_ref()
     }
 
     // Get the current size of the window in pixels

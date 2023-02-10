@@ -180,13 +180,13 @@ impl Asset for Mesh {
 
         // Create temporary slicetors containing the vertex attributes
         let capacity = parsed.vertices.len();
-        let mut positions = Vec::<vek::Vec3<f32>>::with_capacity(capacity);
+        let mut positions = Vec::<RawPosition>::with_capacity(capacity);
         let mut normals = settings
             .use_normals
-            .then(|| Vec::<vek::Vec3<i8>>::with_capacity(capacity));
+            .then(|| Vec::<RawNormal>::with_capacity(capacity));
         let mut tex_coords = settings
             .use_tex_coords
-            .then(|| Vec::<vek::Vec2<u8>>::with_capacity(capacity));
+            .then(|| Vec::<RawTexCoord>::with_capacity(capacity));
         let mut triangles = Vec::<[u32; 3]>::with_capacity(parsed.indices.len() / 3);
         let indices = parsed.indices;
         use vek::{Vec2, Vec3};
@@ -200,7 +200,7 @@ impl Asset for Mesh {
             if let Some(normals) = &mut normals {
                 let read = Vec3::from_slice(&vertex.normal);
                 let viewed = read.map(|f| (f * 127.0) as i8);
-                normals.push(viewed);
+                normals.push(viewed.with_w(0));
             }
 
             // Read and add the texture coordinate

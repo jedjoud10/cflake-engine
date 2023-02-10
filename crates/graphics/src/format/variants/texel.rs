@@ -2,7 +2,7 @@ use vek::{Vec3, Vec2, Vec4};
 use wgpu::TextureFormat;
 use half::f16;
 use std::mem::size_of;
-use crate::{GpuPodRelaxed, ElementType, ChannelsType, VectorChannels, R, RG, RGBA, AnyElement, BGRA, Normalized, DepthElement, Depth, Stencil, TexelInfo};
+use crate::{GpuPodRelaxed, ElementType, ChannelsType, VectorChannels, R, RG, RGBA, AnyElement, BGRA, Normalized, DepthElement, Depth, Stencil};
 
 // This trait defines the layout for a single texel that will be stored within textures
 // The texel format of each texture is specified at compile time
@@ -38,6 +38,42 @@ pub trait Texel: 'static + Sized {
             channels: Self::channels(),
             format: Self::format()
         }
+    }
+}
+
+// Untyped texel info that does not contain typed information about the texel nor base types
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct TexelInfo {
+    bytes_per_channel: u32,
+    element: ElementType,
+    channels: ChannelsType,
+    format: TextureFormat,
+}
+
+impl TexelInfo {
+    // Number of bytes in total
+    pub fn size(&self) -> u32 {
+        self.bytes_per_channel * self.channels.count()
+    }
+
+    // Number of bytes per channel
+    pub fn bytes_per_channel(&self) -> u32 {
+        self.bytes_per_channel
+    }
+
+    // Untyped representation of the underlying element
+    pub fn element(&self) -> ElementType {
+        self.element
+    }
+
+    // Type of channels (either R, RG, RGBA, BGRA, Depth, Stencil)
+    pub fn channels(&self) -> ChannelsType {
+        self.channels
+    }
+
+    // Compile time WGPU format
+    pub fn format(&self) -> TextureFormat {
+        self.format
     }
 }
 
