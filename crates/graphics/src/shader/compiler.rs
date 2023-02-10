@@ -8,6 +8,7 @@ use naga::{
     valid::{ModuleInfo, ValidationError},
     Module, ShaderStage, WithSpan,
 };
+use snailquote::unescape;
 use std::{
     any::TypeId, borrow::Cow, ffi::CStr, marker::PhantomData,
     path::PathBuf, time::Instant, sync::Arc,
@@ -92,7 +93,7 @@ impl<M: ShaderModule> Compiler<M> {
         } = self;
 
         // Convert GLSL to the Naga module (and validate it)
-        let module = parse_glsl(stage, graphics, assets, snippets, source)?;
+        let module = parse_glsl(stage, graphics, assets, &snippets, source)?;
 
         // Convert the Naga module to SPIRV bytecode
         let bytecode = compile_to_spirv(graphics, &module, constants)?;
@@ -100,6 +101,7 @@ impl<M: ShaderModule> Compiler<M> {
 
         // Compile the SPIRV bytecode
         let raw = compile_module(graphics, bytecode);
+        panic!();
 
         Ok(Compiled {
             raw: Arc::new(raw),
@@ -118,9 +120,11 @@ fn parse_glsl(
     stage: ShaderStage,
     graphics: &Graphics,
     assets: &Assets,
-    snippets: Snippets,
+    snippets: &Snippets,
     source: String,
 ) -> Result<Module, ShaderCompilationError> {
+    let source = preprocess(source, assets, snippets)
+        .map_err(ShaderCompilationError::PreprocessorError)?;
     let options = naga::front::glsl::Options {
         stage,
         defines: naga::FastHashMap::default(),
@@ -149,8 +153,8 @@ fn compile_to_spirv(
     let bytecode =
         naga::back::spv::write_vec(module, &info, &options, None)
             .map_err(ShaderCompilationError::SpirvOutError)?;
-    
-    // TODO: Somehow implement specialization constants
+
+    // TODO: Wait till naga supports spec-constants (doesnn't atm)
 
     Ok(bytecode)
 }
@@ -171,36 +175,41 @@ fn compile_module(
     raw
 }
 
-// Handle dealing with the include directive (that works with asset paths and snippets)
-fn handle_include(
-    current: &str,
-    target: &str,
-    depth: usize,
+// Pre-process the GLSL shader source and include files / snippets
+fn preprocess(
+    source: String,
     assets: &Assets,
-    snippets: &AHashMap<String, String>,
+    snippets: &Snippets,
 ) -> Result<String, ShaderPreprocessorError> {
+    // Parse a possible include line and fetch the target file / snippet
+    fn convert_to_target(line: &str) -> Option<String> {
+        let line = line.trim();
+        let valid = line.starts_with("#include");
+        let output = line.replace("#include", "").trim().to_string();
+        valid.then_some(output)
+    }
+
     // Check if an include directive resembles like an asset path instead of a snippet
-    fn resembles_asset_path(path: &str) -> bool {
-        let value: fn(&str) -> Option<bool> = |path: &str| {
+    fn resembles_asset_path(path: &str) -> Option<bool> {
+        // Check if we start with an angle bracket
+        let mut characters = path.chars();
+        let first_angle_bracket_valid = characters.next()? == '<';
+        let second_angle_bracket_valid = characters.last()? == '>';
+        
+        // If we have the brackets, check if extension is valid?
+        let extension_valid = if first_angle_bracket_valid && second_angle_bracket_valid {
             // Check if extension is "glsl"
+            let path = &path.trim()[1..];
+            let path = &path[..(path.len() - 1)];
             let pathbuf = PathBuf::try_from(path).ok()?;
             let extension = pathbuf.extension()?.to_str()?;
-            let extension_valid = extension == "glsl";
-
-            // Convert to words and make sure we start with #include
-            let mut words = path.split_whitespace();
-            let first_word_valid = words.next()? == "#include";
-            let second = words.next()?;
-
-            // Check if we start with an angle bracket
-            let mut characters = second.chars();
-            let first_angle_bracket_valid = characters.next()? == '<';
-            let second_angle_bracket_valid = characters.last()? == '>';
-
-            // Combine all tests
-            Some(extension_valid && first_word_valid && first_angle_bracket_valid && second_angle_bracket_valid)
+            extension == "glsl"
+        } else {
+            false
         };
-        value(path).unwrap_or_default()
+
+        // Combine all tests
+        Some(extension_valid && first_angle_bracket_valid && second_angle_bracket_valid)
     }
 
     // Load a function module and write it to the output line
@@ -208,6 +217,9 @@ fn handle_include(
         path: &str,
         assets: &Assets,
     ) -> Result<String, ShaderPreprocessorError> {
+        let path = &path.trim()[1..];
+        let path = &path[..(path.len() - 1)];
+
         // Make sure the path is something we can load (.glsl file)
         let pathbuf = PathBuf::try_from(path).unwrap();
 
@@ -225,18 +237,63 @@ fn handle_include(
         name: &str,
         snippets: &AHashMap<String, String>,
     ) -> Result<String, ShaderPreprocessorError> {
+        let name = unescape(name).unwrap();
         let snippet = snippets
-            .get(name)
-            .ok_or(ShaderPreprocessorError::SnippetNotDefined(name.to_string()))?;
+            .get(&name)
+            .ok_or(ShaderPreprocessorError::SnippetNotDefined(name))?;
         Ok(snippet.clone())
     }
 
-    // Either load it as an asset or a snippet
-    if resembles_asset_path(&target) {
-        load_function_module(target, assets)
-    } else {
-        load_snippet(target, snippets)
+    // Recursive include function that will call iself
+    fn include(
+        source: String,
+        assets: &Assets,
+        snippets: &Snippets,
+        depth: u32
+    ) -> Result<String, ShaderPreprocessorError> {
+        // If we're too deep, assume that the user caused a cyclic reference, and return an error
+        if depth > 20 {
+            return Err(ShaderPreprocessorError::IncludeCyclicReference);
+        }
+
+        let mut lines = source.lines().map(str::to_string).collect::<Vec<String>>();
+        for line in lines.iter_mut() {
+            let trimmed = line.trim();
+
+            // Handle the include directive and replace the line
+            if trimmed.starts_with("#include") {
+                // Convert the line into "target"
+                let target = convert_to_target(line)
+                    .ok_or(ShaderPreprocessorError::InvalidIncludeDirective)?;
+
+                // Either load it as an asset or a snippet
+                let output = if resembles_asset_path(&target).unwrap_or_default() {
+                    load_function_module(&target, assets)
+                } else {
+                    load_snippet(&target, snippets)
+                }?;
+
+                // Recusrive function calls itself
+                let output = include(
+                    output,
+                    assets,
+                    snippets,
+                    depth + 1
+                )?;
+                
+                *line = output;
+            } 
+        }
+        Ok(lines.join("\n"))
     }
+    
+    // Call this once (it's recusrive so we chilling)
+    include(
+        source,
+        assets,
+        snippets,
+        0
+    )
 }
 
 // This is a compiled shader module that we can use in multiple pipelines

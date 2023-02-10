@@ -16,6 +16,12 @@ fn main() {
 fn init(world: &mut World) {
     let assets = world.get::<Assets>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
+
+    let frag = assets
+        .load::<FragmentModule>("engine/shaders/basic.frag")
+        .unwrap();
+    Compiler::new(frag).compile(&assets, &graphics).unwrap();
+
     let mesh = assets.load::<Mesh>(("engine/meshes/cube.obj", &*graphics)).unwrap();
 
     /*

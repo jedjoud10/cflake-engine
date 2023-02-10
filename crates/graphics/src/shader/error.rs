@@ -4,14 +4,17 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ShaderPreprocessorError {
+    #[error("Shader include directive is invalid or incomplete")]
+    InvalidIncludeDirective,
+
+    #[error("Shader include cylcic reference detected")]
+    IncludeCyclicReference,
+
     #[error("IncludeError: {0}")]
     FileAssetError(AssetLoadError),
 
     #[error("Snippet {0} was not defined")]
     SnippetNotDefined(String),
-
-    #[error("Constant {0} was not defined")]
-    ConstantNotDefined(String),
 }
 
 #[derive(Error, Debug)]

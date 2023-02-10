@@ -1095,7 +1095,6 @@ dependencies = [
  "parking_lot",
  "paste",
  "pollster",
- "rspirv",
  "smallvec",
  "snailquote",
  "thiserror",
@@ -2233,17 +2232,6 @@ dependencies = [
  "base64",
  "bitflags",
  "serde",
-]
-
-[[package]]
-name = "rspirv"
-version = "0.11.0+1.5.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1503993b59ca9ae4127365c3293517576d7ce56be9f3d8abb1625c85ddc583ba"
-dependencies = [
- "fxhash",
- "num-traits",
- "spirv",
 ]
 
 [[package]]
