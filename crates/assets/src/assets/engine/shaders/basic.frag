@@ -1,6 +1,6 @@
 #version 460 core
-/*
 #include <engine/shaders/bindless/samplers.glsl>
+/*
 layout(push_constant) uniform MeshConstants {
 	uint albedo_texture;
 	uint normal_texture;
@@ -14,6 +14,7 @@ layout(set = 1, binding = 0) uniform BasicMaterial {
 } material;
 */
 
+layout(constant_id = 0) const int TEST = 0;
 layout(location = 0) out vec4 outColor;
 
 // https://vkguide.dev/docs/chapter-2/triangle_walkthrough/
