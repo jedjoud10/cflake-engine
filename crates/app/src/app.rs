@@ -296,7 +296,9 @@ impl App {
         self = self.insert_system(utils::time);
         self = self.insert_system(audio::system);
         self = self.insert_system(networking::system);
-        self = self.insert_system(graphics::system);
+        self = self.insert_system(graphics::common);
+        self = self.insert_system(graphics::acquire);
+        self = self.insert_system(graphics::present);
         //self = self.insert_system(rendering::system);
 
         // Insert the IO manager

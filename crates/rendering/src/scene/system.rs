@@ -33,6 +33,6 @@ pub fn system(system: &mut System) {
     system
         .insert_init(init)
         .before(user)
-        .after(graphics::system);
+        .after(graphics::acquire);
     system.insert_update(update).after(post_user);
 }

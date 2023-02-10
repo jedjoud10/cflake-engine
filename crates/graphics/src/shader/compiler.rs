@@ -1,6 +1,6 @@
 use crate::{
     FunctionModule, GpuPodRelaxed, Graphics, ShaderCompilationError,
-    ShaderIncludeError, ShaderModule, VertexModule,
+    ShaderModule, VertexModule, ShaderPreprocessorError,
 };
 use ahash::AHashMap;
 use assets::Assets;
@@ -13,6 +13,10 @@ use std::{
     path::PathBuf, time::Instant, sync::Arc,
 };
 
+// Type alias for snippets and constants
+type Snippets = AHashMap<String, String>;
+type Constants = AHashMap<u32, Vec<u8>>;
+
 // This is a compiler that will take was GLSL code, convert it to SPIRV,
 // then to an appropriate Vulkan shader module.
 // This compiler also allows us to define constants and snippets before compilation
@@ -23,8 +27,8 @@ pub struct Compiler<M: ShaderModule> {
     file_name: String,
 
     // Definitions
-    snippets: AHashMap<String, String>,
-    constants: AHashMap<u32, Vec<u8>>,
+    snippets: Snippets,
+    constants: Constants,
 
     _phantom: PhantomData<M>,
 }
@@ -60,6 +64,7 @@ impl<M: ShaderModule> Compiler<M> {
 
         self.constants.insert(id, slice.to_owned());
     }
+    */
 
     // Include a snippet directive that will replace ``#include`` lines that don't refer to a file
     pub fn define_snippet(
@@ -70,7 +75,6 @@ impl<M: ShaderModule> Compiler<M> {
         let name = name.to_string();
         self.snippets.insert(name, value.to_string());
     }
-    */
 
     // Convert the GLSL code to SPIRV code, then compile said SPIRV code
     pub fn compile(
@@ -88,11 +92,10 @@ impl<M: ShaderModule> Compiler<M> {
         } = self;
 
         // Convert GLSL to the Naga module (and validate it)
-        let module = parse_glsl(stage, graphics, source)?;
-        let info = validate(&graphics, &module)?;
+        let module = parse_glsl(stage, graphics, assets, snippets, source)?;
 
         // Convert the Naga module to SPIRV bytecode
-        let bytecode = compile_to_spirv(&module, info)?;
+        let bytecode = compile_to_spirv(graphics, &module, constants)?;
         let naga = Arc::new(module);
 
         // Compile the SPIRV bytecode
@@ -107,6 +110,49 @@ impl<M: ShaderModule> Compiler<M> {
             naga,
         })
     }
+}
+
+// Parse the GLSL code to the intermediate naga representation
+// This will also include the necessary #include directives
+fn parse_glsl(
+    stage: ShaderStage,
+    graphics: &Graphics,
+    assets: &Assets,
+    snippets: Snippets,
+    source: String,
+) -> Result<Module, ShaderCompilationError> {
+    let options = naga::front::glsl::Options {
+        stage,
+        defines: naga::FastHashMap::default(),
+    };
+    let mut parser = graphics.parser().lock();
+    let module = parser
+        .parse(&options, &source)
+        .map_err(ShaderCompilationError::ParserError)?;
+    Ok(module)
+}
+
+// Compile the Naga representation into SPIRV
+fn compile_to_spirv(
+    graphics: &Graphics,
+    module: &Module,
+    constants: Constants,
+) -> Result<Vec<u32>, ShaderCompilationError> {
+    // Validate the Naga shader first
+    let mut validator = graphics.validator().lock();
+    let info = validator
+        .validate(module)
+        .map_err(ShaderCompilationError::NagaValidationError)?;
+
+    // Convert to SPIRV bytecode
+    let options = naga::back::spv::Options::default();
+    let bytecode =
+        naga::back::spv::write_vec(module, &info, &options, None)
+            .map_err(ShaderCompilationError::SpirvOutError)?;
+    
+    // TODO: Somehow implement specialization constants
+
+    Ok(bytecode)
 }
 
 // Compile the SPIRV shader
@@ -125,148 +171,65 @@ fn compile_module(
     raw
 }
 
-// Parse the GLSL code to the intermediate naga representation
-fn parse_glsl(
-    stage: ShaderStage,
-    graphics: &Graphics,
-    source: String,
-) -> Result<Module, ShaderCompilationError> {
-    let options = naga::front::glsl::Options {
-        stage,
-        defines: naga::FastHashMap::default(),
-    };
-    let mut parser = graphics.parser().lock();
-    let module = parser
-        .parse(&options, &source)
-        .map_err(ShaderCompilationError::ParserError)?;
-    Ok(module)
-}
-
-// Validate a naga Module
-fn validate(
-    graphics: &Graphics,
-    module: &Module,
-) -> Result<ModuleInfo, ShaderCompilationError> {
-    let mut validator = graphics.validator().lock();
-    validator
-        .validate(module)
-        .map_err(ShaderCompilationError::NagaValidationError)
-}
-
-// Compile the Naga representation into SPIRV
-fn compile_to_spirv(
-    module: &Module,
-    info: ModuleInfo,
-) -> Result<Vec<u32>, ShaderCompilationError> {
-    let options = naga::back::spv::Options::default();
-    let bytecode =
-        naga::back::spv::write_vec(module, &info, &options, None)
-            .map_err(ShaderCompilationError::SpirvOutError)?;
-    Ok(bytecode)
-}
-
-// Data that must be stored within the compiled shader
-// that indicates how constants are defined in the specialization info
-pub struct Constants {}
-
-/*
-// Calculate the specialization info based on a hashmap of constants
-fn create_constants_wrapper(
-    constants: AHashMap<u32, Vec<u8>>,
-) -> Constants {
-    let merged = constants.iter().collect::<Vec<_>>();
-    let data = merged
-        .iter()
-        .flat_map(|(_, data)| data.iter().cloned())
-        .collect::<Vec<_>>();
-    let ids = merged.iter().map(|(id, _)| **id).collect::<Vec<_>>();
-
-    let mut summed_offset = 0;
-    let ranges = merged.iter().map(|(_, data)| {
-        let offset = summed_offset;
-        summed_offset += data.len();
-        (offset, offset + data.len())
-    });
-
-    let entries: Vec<vk::SpecializationMapEntry> = ids
-        .iter()
-        .zip(ranges)
-        .map(|(id, (start, end))| {
-            let size = end - start;
-            *vk::SpecializationMapEntry::builder()
-                .constant_id(*id)
-                .offset(start as u32)
-                .size(size)
-        })
-        .collect::<Vec<_>>();
-
-    let raw = *vk::SpecializationInfo::builder()
-        .map_entries(&entries)
-        .data(&data);
-
-    Constants { raw, data, entries }
-}
-
 // Handle dealing with the include directive (that works with asset paths and snippets)
 fn handle_include(
     current: &str,
-    _type: IncludeType,
     target: &str,
     depth: usize,
     assets: &Assets,
     snippets: &AHashMap<String, String>,
-) -> Result<ResolvedInclude, ShaderIncludeError> {
+) -> Result<String, ShaderPreprocessorError> {
     // Check if an include directive resembles like an asset path instead of a snippet
     fn resembles_asset_path(path: &str) -> bool {
-        let value = || {
+        let value: fn(&str) -> Option<bool> = |path: &str| {
+            // Check if extension is "glsl"
             let pathbuf = PathBuf::try_from(path).ok()?;
             let extension = pathbuf.extension()?.to_str()?;
-            Some(extension == "glsl")
+            let extension_valid = extension == "glsl";
+
+            // Convert to words and make sure we start with #include
+            let mut words = path.split_whitespace();
+            let first_word_valid = words.next()? == "#include";
+            let second = words.next()?;
+
+            // Check if we start with an angle bracket
+            let mut characters = second.chars();
+            let first_angle_bracket_valid = characters.next()? == '<';
+            let second_angle_bracket_valid = characters.last()? == '>';
+
+            // Combine all tests
+            Some(extension_valid && first_word_valid && first_angle_bracket_valid && second_angle_bracket_valid)
         };
-        value().unwrap_or_default()
+        value(path).unwrap_or_default()
     }
 
     // Load a function module and write it to the output line
     fn load_function_module(
         path: &str,
         assets: &Assets,
-    ) -> Result<ResolvedInclude, ShaderIncludeError> {
+    ) -> Result<String, ShaderPreprocessorError> {
         // Make sure the path is something we can load (.glsl file)
         let pathbuf = PathBuf::try_from(path).unwrap();
 
         // Load the path from the asset manager
-        let resolved_name =
-            pathbuf.clone().into_os_string().into_string().unwrap();
         let path = pathbuf.as_os_str().to_str().unwrap();
         let content = assets
             .load::<FunctionModule>(path)
             .map(|x| x.source)
-            .map_err(ShaderIncludeError::FileAssetError)?;
-        Ok(ResolvedInclude {
-            resolved_name,
-            content,
-        })
+            .map_err(ShaderPreprocessorError::FileAssetError)?;
+        Ok(content)
     }
 
     // Load a snippet from the snippets and write it to the output line
     fn load_snippet(
         name: &str,
         snippets: &AHashMap<String, String>,
-    ) -> Result<ResolvedInclude, ShaderIncludeError> {
+    ) -> Result<String, ShaderPreprocessorError> {
         let snippet = snippets
             .get(name)
-            .ok_or(ShaderIncludeError::SnippetNotDefined)?;
-        Ok(ResolvedInclude {
-            resolved_name: name.to_string(),
-            content: snippet.clone(),
-        })
+            .ok_or(ShaderPreprocessorError::SnippetNotDefined(name.to_string()))?;
+        Ok(snippet.clone())
     }
-
-    // Relative paths not supported yet
-    assert!(
-        matches!(_type, IncludeType::Standard),
-        "Not supported yet"
-    );
 
     // Either load it as an asset or a snippet
     if resembles_asset_path(&target) {
@@ -275,7 +238,6 @@ fn handle_include(
         load_snippet(target, snippets)
     }
 }
-*/
 
 // This is a compiled shader module that we can use in multiple pipelines
 // We can clone this shader module since we can share 
@@ -330,15 +292,5 @@ impl<M: ShaderModule> Compiled<M> {
     // Get the entry point for the compiled shader
     pub fn entry_point(&self) -> Option<&str> {
         self.naga.entry_points.iter().next().map(|n| n.name.as_str())
-    }
-}
-
-impl Compiled<VertexModule> {
-    // Get the location of a specific vertex attribute
-    pub fn get_vertex_attribute_location(&self, name: &str) -> Option<wgpu::ShaderLocation> {
-        let arguments = &self.naga.entry_points.first()?.function.arguments;
-        arguments.iter().find_map(|x| if let Some(naga::Binding::Location { location, interpolation, sampling }) = x.binding {
-            Some(location)
-        } else { None })
     }
 }

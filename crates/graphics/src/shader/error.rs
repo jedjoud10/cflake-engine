@@ -3,18 +3,21 @@ use naga::{valid::ValidationError, WithSpan};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum ShaderIncludeError {
-    #[error("{0}")]
+pub enum ShaderPreprocessorError {
+    #[error("IncludeError: {0}")]
     FileAssetError(AssetLoadError),
 
-    #[error("A")]
-    SnippetNotDefined,
+    #[error("Snippet {0} was not defined")]
+    SnippetNotDefined(String),
+
+    #[error("Constant {0} was not defined")]
+    ConstantNotDefined(String),
 }
 
 #[derive(Error, Debug)]
 pub enum ShaderCompilationError {
-    #[error("A")]
-    MissingConst,
+    #[error("{0:?}")]
+    PreprocessorError(ShaderPreprocessorError),
 
     #[error("{0:?}")]
     ParserError(Vec<naga::front::glsl::Error>),
@@ -24,7 +27,4 @@ pub enum ShaderCompilationError {
 
     #[error("{0}")]
     NagaValidationError(WithSpan<ValidationError>),
-
-    #[error("{0}")]
-    ReflectionError(String),
 }

@@ -16,25 +16,6 @@ fn init(world: &mut World, el: &EventLoop<()>) {
     world.insert(graphics);
 }
 
-// Acquire a new texture that we can render to
-fn acquire(world: &mut World) {
-    // Acquire a new texture to render to
-    let mut window = world.get_mut::<Window>().unwrap();
-    let texture = window.surface.get_current_texture().unwrap();
-    let view = texture.texture.create_view(&wgpu::TextureViewDescriptor::default());
-
-    // Set the Window's texture view
-    // TODO: Cache the texture views instead?
-    window.presentable_texture = Some(texture);
-    window.presentable_texture_view = Some(view);
-}
-
-// Present the texture at the end of the frame
-fn present(world: &mut World) {
-    let mut window = world.get_mut::<Window>().unwrap();
-    window.presentable_texture.take().unwrap().present();
-}
-
 // Handle window quitting and resizing
 fn event(world: &mut World, event: &mut WindowEvent) {
     match event {
@@ -68,15 +49,37 @@ fn event(world: &mut World, event: &mut WindowEvent) {
     }
 }
 
-// Context system will just register the wgpu context and create a simple window
-// This system will also handle window events like exiting
-pub fn system(system: &mut System) {
+// Common system will be responsible for calling the init event and window event
+pub fn common(system: &mut System) {
     system
         .insert_init(init)
-        .after(utils::threadpool)
         .before(user);
+    system
+        .insert_window(event)
+        .before(user);
+}
 
-    system.insert_window(event);
-    system.insert_update(acquire).before(user);
-    system.insert_update(present).after(post_user);
+// Acquire system will acquire a valid texture to draw to at the start of every frame
+pub fn acquire(system: &mut System) {
+    system.insert_update(|world: &mut World| {
+        // Acquire a new texture to render to
+        let mut window = world.get_mut::<Window>().unwrap();
+        let texture = window.surface.get_current_texture().unwrap();
+        let view = texture.texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+        // Set the Window's texture view
+        // TODO: Cache the texture views instead?
+        window.presentable_texture = Some(texture);
+        window.presentable_texture_view = Some(view);
+
+        // Clear the window first, and save the command encoder
+    }).before(user);
+}
+
+// Present system will present the currently acquired texture to the monitor
+pub fn present(system: &mut System) {
+    system.insert_update(|world: &mut World| {
+        let mut window = world.get_mut::<Window>().unwrap();
+        window.presentable_texture.take().unwrap().present();
+    }).after(post_user);
 }

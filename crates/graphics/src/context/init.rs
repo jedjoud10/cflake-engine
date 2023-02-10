@@ -65,14 +65,9 @@ pub(crate) unsafe fn init_context_and_window(
     let surface_capabilities = surface.get_capabilities(&adapter);
     let surface_format = surface_capabilities
         .formats
-        .iter()
-        .find(|x| {
-            dbg!(x);
-            x.describe().srgb
-        })
-        .unwrap();
-
-    panic!();
+        .contains(&wgpu::TextureFormat::Bgra8Unorm)
+        .then_some(wgpu::TextureFormat::Bgra8Unorm)
+        .expect("Adapter does not support Bgra8Unorm surface format");
 
     // Pick the appropriate present mode
     let present_mode = match settings.limit {
@@ -85,7 +80,7 @@ pub(crate) unsafe fn init_context_and_window(
     let surface_config = wgpu::SurfaceConfiguration {
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT
             | wgpu::TextureUsages::COPY_DST,
-        format: *surface_format,
+        format: surface_format,
         width: window.inner_size().width,
         height: window.inner_size().height,
         present_mode,
