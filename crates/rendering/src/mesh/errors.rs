@@ -1,10 +1,14 @@
 use graphics::{BufferUsage, BufferInitializationError, BufferNotMappableError};
+use obj::ObjError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum MeshImportError {
     #[error("{0}")]
-    Initialization(MeshInitializationError)
+    Initialization(MeshInitializationError),
+
+    #[error("{0}")]
+    ObjError(ObjError),
 }
 
 #[derive(Error, Debug)]

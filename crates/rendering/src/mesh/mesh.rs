@@ -175,7 +175,8 @@ impl Asset for Mesh {
         let graphics = context;
 
         // Load the .Obj mesh
-        let parsed = obj::load_obj::<TexturedVertex, &[u8], u32>(data.bytes()).unwrap();
+        let parsed = obj::load_obj::<TexturedVertex, &[u8], u32>(data.bytes())
+            .map_err(MeshImportError::ObjError)?;
         log::debug!("Parsed mesh from file '{}', vertex count: {}, index count: {}", data.name(), parsed.vertices.len(), parsed.indices.len());
 
         // Create temporary slicetors containing the vertex attributes

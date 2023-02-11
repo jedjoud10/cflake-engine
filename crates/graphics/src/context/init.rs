@@ -109,7 +109,7 @@ pub(crate) unsafe fn init_context_and_window(
         parser: Mutex::new(parser),
         validator: Mutex::new(validator),
         staging: Mutex::new(staging),
-        samplers: Mutex::new(Vec::new()),
+        samplers: DashMap::default(),
     }));
 
     // Create the Window wrapper

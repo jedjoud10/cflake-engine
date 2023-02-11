@@ -17,10 +17,12 @@ fn init(world: &mut World) {
     let assets = world.get::<Assets>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
 
+    assets.load::<FunctionModule>("engine/shaders/common/camera.glsl").unwrap();
     let frag = assets
         .load::<FragmentModule>("engine/shaders/basic.frag")
         .unwrap();
-    Compiler::new(frag).compile(&assets, &graphics).unwrap();
+    let mut compiler = Compiler::new(frag);
+    compiler.compile(&assets, &graphics).unwrap();
 
     let mesh = assets.load::<Mesh>(("engine/meshes/cube.obj", &*graphics)).unwrap();
 

@@ -1,5 +1,6 @@
 use std::{num::NonZeroU8, marker::PhantomData, sync::Arc, collections::hash_map::DefaultHasher, hash::{Hash, Hasher}};
 use crate::{Texel, Texture, ColorTexel, Graphics};
+use dashmap::mapref::entry::Entry;
 use utils::Handle;
 use wgpu::{AddressMode, SamplerBorderColor, SamplerDescriptor};
 pub use wgpu::FilterMode as SamplerFilter;
@@ -55,6 +56,7 @@ pub struct SamplerSettings {
 
 // This sampler will be passed to shader groups to allow us
 // to read from textures on the GPU
+// TODO: Maybe split this into it's own struct? / Make it less coupled with texture
 pub struct Sampler<'a, T: Texel> {
     pub(crate) sampler: Arc<wgpu::Sampler>,
     pub(crate) _phantom: PhantomData<&'a T>,
@@ -102,38 +104,34 @@ pub fn get_or_insert_sampler(
     graphics: &Graphics,
     sampling: SamplerSettings
 ) -> Arc<wgpu::Sampler> {
-    // Hash the sampler settings to get a unique ID
-    let hasher = DefaultHasher::new();
-    sampling.hash(&mut hasher);
-    let hashed = hasher.finish();
-
-    graphics.0.
-
-    if let Some(sampler) = graphics.0.samplers.iter().find(|(_, settings)| *settings == sampling) {
-        return &*sampler;
+    match graphics.0.samplers.entry(sampling) {
+        Entry::Occupied(occupied) => {
+            occupied.get().clone()
+        },
+        Entry::Vacant(vacant) => {
+            // Convert texture sampling wrap settings to their Wgpu counterpart
+            let (address_mode, border_color) = super::convert_wrap_to_address_mode(&sampling.wrap);
+            let anisotropy_clamp = super::convert_mip_map_anisotropic_clamp(&sampling.mipmaps);
+            let filter= sampling.filter;
+                
+            // Sampler configuration
+            let descriptor = SamplerDescriptor {
+                address_mode_u: address_mode,
+                address_mode_v: address_mode,
+                address_mode_w: address_mode,
+                mag_filter: filter,
+                min_filter: filter,
+                mipmap_filter: filter,
+                anisotropy_clamp,
+                border_color,
+                ..Default::default()
+            };
+        
+            // Create a new sampler and cache it
+            let sampler = graphics.device().create_sampler(&descriptor);
+            let sampler = Arc::new(sampler);
+            vacant.insert(sampler.clone());
+            sampler
+        },
     }
-    
-    // Convert texture sampling wrap settings to their Wgpu counterpart
-    let (address_mode, border_color) = super::convert_wrap_to_address_mode(&sampling.wrap);
-    let anisotropy_clamp = super::convert_mip_map_anisotropic_clamp(&sampling.mip_mapping);
-    let filter= sampling.filter;
-
-    // Sampler configuration
-    let descriptor = SamplerDescriptor {
-        address_mode_u: address_mode,
-        address_mode_v: address_mode,
-        address_mode_w: address_mode,
-        mag_filter: filter,
-        min_filter: filter,
-        mipmap_filter: filter,
-        anisotropy_clamp,
-        border_color,
-        ..Default::default()
-    };
-
-    // Create a new sampler and cache it
-    let sampler = graphics.device().create_sampler(&descriptor);
-    graphics.0.samplers.insert(sampling, sampler);
-    &graphics.0.samplers.get(&sampling).unwrap()
-    */
 }

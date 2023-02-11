@@ -21,7 +21,7 @@ pub(crate) struct InternalGraphics {
     pub(crate) staging: Mutex<StagingBelt>,
 
     // Cached texture samplers 
-    pub(crate) samplers: Mutex<Vec<(u64, Arc<Sampler>)>>,
+    pub(crate) samplers: DashMap<SamplerSettings, Arc<Sampler>>,
 
     // Shader compiler and validator
     pub(crate) parser: Mutex<Parser>,

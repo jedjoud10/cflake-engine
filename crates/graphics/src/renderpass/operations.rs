@@ -8,7 +8,6 @@ pub enum LoadOp<T: Texel> {
     Clear(T::Storage),
 }
 
-
 // What we should do when writing data to the attachment
 pub enum StoreOp {
     Ignore,

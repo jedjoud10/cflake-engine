@@ -28,7 +28,7 @@ pub type AttributeBuffer<A> = MaybeUninit<VertexBuffer<<<A as MeshAttribute>::V 
 pub trait MeshAttribute {
     type V: Vertex;
     type Storage: GpuPodRelaxed;
-    type Input: VertexInput;
+    type Input: VertexInput<Self::V>;
     const ATTRIBUTE: EnabledMeshAttributes;
 
     // Try to get the references to the underlying vertex buffers
@@ -56,7 +56,7 @@ pub(crate) fn enabled_to_vertex_config(attributes: EnabledMeshAttributes) -> Ver
     // This will push the mesh attribute's input to the vector if the bitflags contain the vertex input
     fn push<M: MeshAttribute>(attributes: EnabledMeshAttributes, inputs: &mut Vec<VertexInputInfo>) {
         if attributes.contains(M::ATTRIBUTE) {
-            let input = <M::Input as VertexInput>::new(M::index());
+            let input = <M::Input as VertexInput<M::V>>::new(M::index());
             inputs.push(input.info());
         }
     }

@@ -15,8 +15,7 @@ impl<'a> DepthStencilAttachment<'a, ()> for () {}
 
 // A render target that can be used inside a renderpass (attachment)
 pub struct RenderTarget<'a, T: Texel> {
-    _phantom: PhantomData<T>,
-    _phantom2: PhantomData<&'a ()>,
+    _phantom: PhantomData<&'a T>,
 }
 
 impl<'a, T: Texel> RenderTarget<'a, T> {

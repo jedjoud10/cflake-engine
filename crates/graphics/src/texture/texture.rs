@@ -1,5 +1,6 @@
 use std::{mem::transmute, num::NonZeroU32, sync::Arc};
 
+use smallvec::SmallVec;
 use wgpu::{TextureDescriptor, TextureViewDescriptor, SamplerDescriptor};
 
 use crate::{
@@ -87,7 +88,7 @@ pub trait Texture: Sized {
         let texture = graphics.device().create_texture(&descriptor);
 
         // Fetch a new sampler for the given sampling settings
-        let sampler = todo!(); 
+        let sampler = crate::get_or_insert_sampler(graphics, sampling); 
 
         // Convert the texels to bytes
         let bytes = texels.map(|texels| {
@@ -95,6 +96,13 @@ pub trait Texture: Sized {
                 texels,
             )
         });
+
+        // Get color texture aspect for the texture view and ImageCopyTexture
+        let aspect = match <Self::T as Texel>::channels() {
+            crate::ChannelsType::Vector(_) => wgpu::TextureAspect::All,
+            crate::ChannelsType::Depth => wgpu::TextureAspect::DepthOnly,
+            crate::ChannelsType::Stencil => wgpu::TextureAspect::StencilOnly,
+        };
 
         // Fill the texture with the appropriate data
         if let Some(bytes) = bytes {
@@ -124,9 +132,23 @@ pub trait Texture: Sized {
             );
         }
 
+        // Create the texture's texture view descriptor
+        let view_descriptor = TextureViewDescriptor {
+            format: Some(format),
+            dimension: Some(match dimension {
+                wgpu::TextureDimension::D1 => wgpu::TextureViewDimension::D1,
+                wgpu::TextureDimension::D2 => wgpu::TextureViewDimension::D2,
+                wgpu::TextureDimension::D3 => wgpu::TextureViewDimension::D3,
+            }),
+            aspect,
+            ..Default::default()
+        };
+
         // Create an texture view of the whole texture
+        // TODO: Create MULTIPLE views for the texture
+        let view = texture.create_view(&view_descriptor);
         let views =
-            vec![texture.create_view(&TextureViewDescriptor::default())];
+            SmallVec::from_buf([view]);
 
         Ok(unsafe {
             Self::from_raw_parts(
@@ -164,7 +186,12 @@ pub trait Texture: Sized {
     fn sampler(&self) -> Sampler<Self::T>;
 
     // Get the underlying Texture view
-    fn view(&self) -> &wgpu::TextureView;
+    fn view(&self) -> &wgpu::TextureView {
+        &self.views()[0]
+    }
+
+    // Get all the allocated texture views
+    fn views(&self) -> &[wgpu::TextureView];
 
     // Get a single mip level from the texture, immutably
     fn mip(
@@ -188,7 +215,7 @@ pub trait Texture: Sized {
     unsafe fn from_raw_parts(
         graphics: &Graphics,
         texture: wgpu::Texture,
-        views: Vec<wgpu::TextureView>,
+        views: SmallVec<[wgpu::TextureView; 1]>,
         sampler: Arc<wgpu::Sampler>,
         sampling: SamplerSettings,
         dimensions: <Self::Region as crate::Region>::E,

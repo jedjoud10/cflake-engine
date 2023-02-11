@@ -1,3 +1,4 @@
+use image::ImageError;
 use thiserror::Error;
 use wgpu::TextureFormat;
 
@@ -25,7 +26,7 @@ pub enum TextureAssetLoadError {
     Initialization(TextureInitializationError),
 
     #[error("{0}")]
-    Deserialization(image::ImageError),
+    ImageError(ImageError),
 }
 
 #[derive(Error, Debug)]

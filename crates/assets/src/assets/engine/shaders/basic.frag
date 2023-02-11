@@ -1,5 +1,6 @@
 #version 460 core
-//#include <engine/shaders/bindless/samplers.glsl>
+#include <engine/shaders/common/camera.glsl>
+#include "TEST2"
 /*
 layout(push_constant) uniform MeshConstants {
 	uint albedo_texture;

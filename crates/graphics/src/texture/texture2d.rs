@@ -2,6 +2,7 @@ use std::{marker::PhantomData, mem::ManuallyDrop, time::Instant, sync::Arc};
 
 use assets::Asset;
 use naga::Sampling;
+use smallvec::SmallVec;
 
 use crate::{
     Graphics, ImageTexel, Texel, Texture, TextureAssetLoadError,
@@ -13,7 +14,7 @@ use crate::{
 pub struct Texture2D<T: Texel> {
     // Raw WGPU
     texture: wgpu::Texture,
-    views: Vec<wgpu::TextureView>,
+    views: SmallVec<[wgpu::TextureView; 1]>,
 
     // Main texture settings
     dimensions: vek::Extent2<u32>,
@@ -51,8 +52,8 @@ impl<T: Texel> Texture for Texture2D<T> {
         &self.texture
     }
 
-    fn view(&self) -> &wgpu::TextureView {
-        &self.views[0]
+    fn views(&self) -> &[wgpu::TextureView] {
+        &self.views
     }
 
     fn sampler(&self) -> Sampler<Self::T> {
@@ -66,7 +67,7 @@ impl<T: Texel> Texture for Texture2D<T> {
     unsafe fn from_raw_parts(
         graphics: &Graphics,
         texture: wgpu::Texture,
-        views: Vec<wgpu::TextureView>,
+        views: SmallVec<[wgpu::TextureView; 1]>,
         sampler: Arc<wgpu::Sampler>,
         sampling: SamplerSettings,
         dimensions: <Self::Region as crate::Region>::E,
@@ -103,7 +104,7 @@ impl<T: ImageTexel> Asset for Texture2D<T> {
     ) -> Result<Self, Self::Err> {
         let i = Instant::now();
         let image = image::load_from_memory(data.bytes())
-            .map_err(TextureAssetLoadError::Deserialization)?;
+            .map_err(TextureAssetLoadError::ImageError)?;
         log::debug!(
             "Took {:?} to deserialize texture {:?}",
             i.elapsed(),
