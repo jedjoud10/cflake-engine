@@ -63,6 +63,7 @@ impl Normalizable for u16 {}
 
 // A normalized texel limiter that will the texture that the integer must be accessed as a floating point value, and that it must be in
 //  the -1 - 1 range if it's a signed integer and the 0 - 1 range if it's an unsigned integer
+#[derive(Default, Copy, Clone)]
 pub struct Normalized<T: Base + Normalizable>(T);
 
 impl<T: Base + Normalizable> AnyElement for Normalized<T> {

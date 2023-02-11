@@ -12,7 +12,7 @@ pub struct GraphicsPipeline<C: ColorLayout, DS: DepthStencilLayout> {
     depth_config: Option<DepthConfig>,
     stencil_config: Option<StencilConfig>,
     //blend_config: Option<BlendConfig>,
-    vertex_inputs: Vec<VertexInputInfo>,
+    vertex_config: VertexConfig,
     primitive_config: PrimitiveConfig,
     binding_config: BindingConfig,
     _phantom: PhantomData<C>,
@@ -54,7 +54,6 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
         let attributes = vertex_config_to_vertex_attributes(&vertex_config);
         let attributes = attributes.iter().map(|x| x.as_slice()).collect();
         let buffers = vertex_config_to_buffer_layout(&vertex_config, attributes);
-        let vertex_inputs = vertex_config.inputs.iter().map(|x| x.info()).collect();
         let targets = color_layout_to_color_target_state::<C>();
         let primitive = primitive_config_to_state(primitive_config);
         let multisample = multisample_state();
@@ -87,7 +86,7 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
             graphics: graphics.clone(),
             depth_config,
             stencil_config,
-            vertex_inputs,
+            vertex_config,
             primitive_config,
             binding_config,
         })
@@ -229,9 +228,9 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
     }
     */
 
-    // Get the vertex inputs used when creating this pipeline
-    pub fn vertex_inputs(&self) -> &[VertexInputInfo] {
-        &self.vertex_inputs
+    // Get the vertex config used when creating this pipeline
+    pub fn vertex_config(&self) -> &VertexConfig {
+        &self.vertex_config
     }
 
     // Get the internally used shader for this graphics pipeline

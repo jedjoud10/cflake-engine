@@ -1,10 +1,11 @@
-use std::{marker::PhantomData, mem::ManuallyDrop, time::Instant};
+use std::{marker::PhantomData, mem::ManuallyDrop, time::Instant, sync::Arc};
 
 use assets::Asset;
+use naga::Sampling;
 
 use crate::{
     Graphics, ImageTexel, Texel, Texture, TextureAssetLoadError,
-    TextureMode, TextureUsage,
+    TextureMode, TextureUsage, SamplerSettings, TextureMipMaps, Sampler,
 };
 
 // A 2D texture that contains multiple texels that have their own channels
@@ -12,7 +13,7 @@ use crate::{
 pub struct Texture2D<T: Texel> {
     // Raw WGPU
     texture: wgpu::Texture,
-    view: wgpu::TextureView,
+    views: Vec<wgpu::TextureView>,
 
     // Main texture settings
     dimensions: vek::Extent2<u32>,
@@ -21,6 +22,10 @@ pub struct Texture2D<T: Texel> {
     usage: TextureUsage,
     mode: TextureMode,
     _phantom: PhantomData<T>,
+
+    // Shader Sampler
+    sampler: Arc<wgpu::Sampler>,
+    sampling: SamplerSettings,
 
     // Keep the graphics API alive
     graphics: Graphics,
@@ -47,25 +52,37 @@ impl<T: Texel> Texture for Texture2D<T> {
     }
 
     fn view(&self) -> &wgpu::TextureView {
-        &self.view
+        &self.views[0]
+    }
+
+    fn sampler(&self) -> Sampler<Self::T> {
+        Sampler {
+            sampler: self.sampler.clone(),
+            _phantom: PhantomData,
+            settings: &self.sampling,
+        }
     }
 
     unsafe fn from_raw_parts(
         graphics: &Graphics,
         texture: wgpu::Texture,
-        view: wgpu::TextureView,
+        views: Vec<wgpu::TextureView>,
+        sampler: Arc<wgpu::Sampler>,
+        sampling: SamplerSettings,
         dimensions: <Self::Region as crate::Region>::E,
         usage: TextureUsage,
         mode: TextureMode,
     ) -> Self {
         Self {
             texture,
-            view,
+            views,
             dimensions,
             usage,
             mode,
             _phantom: PhantomData,
             graphics: graphics.clone(),
+            sampler,
+            sampling,
         }
     }
 }
@@ -103,6 +120,8 @@ impl<T: ImageTexel> Asset for Texture2D<T> {
             dimensions,
             TextureMode::Dynamic,
             TextureUsage::Placeholder,
+            SamplerSettings::default(),
+            TextureMipMaps::Automatic
         )
         .map_err(TextureAssetLoadError::Initialization)
     }

@@ -3,6 +3,7 @@ use crate::{
     WindowSettings,
 };
 
+use dashmap::DashMap;
 use parking_lot::Mutex;
 use std::sync::Arc;
 use winit::{
@@ -104,9 +105,11 @@ pub(crate) unsafe fn init_context_and_window(
     let graphics = Graphics(Arc::new(InternalGraphics {
         device,
         queue,
+        adapter,
         parser: Mutex::new(parser),
         validator: Mutex::new(validator),
         staging: Mutex::new(staging),
+        samplers: Mutex::new(Vec::new()),
     }));
 
     // Create the Window wrapper

@@ -1,19 +1,27 @@
+use dashmap::DashMap;
 use naga::{front::glsl::Parser, valid::Validator};
 use parking_lot::Mutex;
+use utils::Storage;
 use std::sync::Arc;
 use wgpu::{
     util::StagingBelt, Device, Queue, Surface, SurfaceCapabilities,
-    SurfaceConfiguration, TextureView,
+    SurfaceConfiguration, TextureView, Sampler, Adapter,
 };
+
+use crate::{SamplerWrap, SamplerSettings};
 
 // Internnal graphics context that will eventually be wrapped within an Arc
 pub(crate) struct InternalGraphics {
     // Device and queue
     pub(crate) device: Device,
+    pub(crate) adapter: Adapter,
     pub(crate) queue: Queue,
 
     // Buffer staging belt
     pub(crate) staging: Mutex<StagingBelt>,
+
+    // Cached texture samplers 
+    pub(crate) samplers: Mutex<Vec<(u64, Arc<Sampler>)>>,
 
     // Shader compiler and validator
     pub(crate) parser: Mutex<Parser>,
@@ -34,6 +42,11 @@ impl Graphics {
     // Get the internally stored queue
     pub fn queue(&self) -> &Queue {
         &self.0.queue
+    }
+
+    // Get the GPU we are using
+    pub fn adapter(&self) -> &Adapter {
+        &self.0.adapter
     }
 
     // Get the GLSL shader parser

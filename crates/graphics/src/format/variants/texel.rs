@@ -1,12 +1,12 @@
 use vek::{Vec3, Vec2, Vec4};
 use wgpu::TextureFormat;
 use half::f16;
-use std::mem::size_of;
+use std::{mem::size_of, any::Any};
 use crate::{GpuPodRelaxed, ElementType, ChannelsType, VectorChannels, R, RG, RGBA, AnyElement, BGRA, Normalized, DepthElement, Depth, Stencil};
 
 // This trait defines the layout for a single texel that will be stored within textures
 // The texel format of each texture is specified at compile time
-pub trait Texel: 'static + Sized {
+pub trait Texel: 'static {
     // The raw RAW data type (u8 or shit like dat)
     type Base: GpuPodRelaxed;
 

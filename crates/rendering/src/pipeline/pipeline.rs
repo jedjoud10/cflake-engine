@@ -1,6 +1,6 @@
-use crate::{Material, SwapchainFormat, ForwardRendererRenderPass};
+use crate::{Material, SwapchainFormat, ForwardRendererRenderPass, MeshAttribute, attributes::{TexCoord, Tangent, Normal, Position}, EnabledMeshAttributes};
 use assets::Assets;
-use graphics::{Graphics, GraphicsPipeline, RenderPass, Shader, VertexConfig, PipelineInitializationError, BindingConfig};
+use graphics::{Graphics, GraphicsPipeline, RenderPass, Shader, VertexConfig, PipelineInitializationError, BindingConfig, VertexInput};
 use std::marker::PhantomData;
 use world::World;
 
@@ -35,14 +35,16 @@ impl<M: Material> Pipeline<M> {
         let shader = Shader::new(&vertex,& fragment);
         
         // Fetch the correct vertex config based on the material
-        let required = M::attributes();
-        
+        let vertex_config = crate::attributes::enabled_to_vertex_config(
+            M::attributes()
+        );
+
         // Create the graphics pipeline
         let pipeline = GraphicsPipeline::new(
             graphics,
             M::depth_config(),
             M::stencil_config(),
-            todo!(),
+            vertex_config,
             M::primitive_config(),
             BindingConfig {},
             &shader

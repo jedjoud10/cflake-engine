@@ -1,6 +1,6 @@
 use std::mem::MaybeUninit;
 use arrayvec::ArrayVec;
-use graphics::{VertexBuffer, Vertex, XYZ, XYZW, XY, Normalized, VertexConfig, GpuPodRelaxed, VertexInput, PerVertex};
+use graphics::{VertexBuffer, Vertex, XYZ, XYZW, XY, Normalized, VertexConfig, GpuPodRelaxed, VertexInput, PerVertex, VertexInfo, VertexInputInfo};
 use std::marker::PhantomData;
 use paste::paste;
 
@@ -51,12 +51,27 @@ pub trait MeshAttribute {
     }
 }
 
-/*
 // Get a list of the untyped attributes from the enabled mesh attributes
-pub fn vertex_config_from(attributes: EnabledMeshAttributes) -> ArrayVec<VertexConfig, MAX_MESH_VERTEX_ATTRIBUTES> {
+pub(crate) fn enabled_to_vertex_config(attributes: EnabledMeshAttributes) -> VertexConfig {
+    // This will push the mesh attribute's input to the vector if the bitflags contain the vertex input
+    fn push<M: MeshAttribute>(attributes: EnabledMeshAttributes, inputs: &mut Vec<VertexInputInfo>) {
+        if attributes.contains(M::ATTRIBUTE) {
+            let input = <M::Input as VertexInput>::new(M::index());
+            inputs.push(input.info());
+        }
+    }
+    
+    // Add the different types of mesh attributes
+    let mut inputs = Vec::<VertexInputInfo>::new();
+    push::<Position>(attributes, &mut inputs);
+    push::<Normal>(attributes, &mut inputs);
+    push::<Tangent>(attributes, &mut inputs);
+    push::<TexCoord>(attributes, &mut inputs);
+    
+    VertexConfig {
+        inputs
+    }
 }
-*/
-
 
 macro_rules! impl_vertex_attribute {
     ($attribute:ident, $name:ident, $vertex:ty, $enabled:ident, $input:ident) => {

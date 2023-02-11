@@ -101,7 +101,6 @@ impl<M: ShaderModule> Compiler<M> {
 
         // Compile the SPIRV bytecode
         let raw = compile_module(graphics, bytecode);
-        panic!();
 
         Ok(Compiled {
             raw: Arc::new(raw),

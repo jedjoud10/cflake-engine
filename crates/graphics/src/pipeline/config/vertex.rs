@@ -5,8 +5,8 @@ use crate::{VertexInfo, Vertex};
 
 // This vertex config describes how vertices or more specifically, "vertex buffers" should be read
 // This maps the vertex buffer bindings directly to be usable by a render pass 
-pub struct VertexConfig<'a, 'b> {
-    pub inputs: &'a [&'b dyn VertexInput],
+pub struct VertexConfig {
+    pub inputs: Vec<VertexInputInfo>,
 }
 
 // VertexInputInfo combines all the required info for a vertex input in one struct

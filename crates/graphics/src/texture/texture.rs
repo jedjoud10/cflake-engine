@@ -1,11 +1,11 @@
-use std::{mem::transmute, num::NonZeroU32};
+use std::{mem::transmute, num::NonZeroU32, sync::Arc};
 
-use wgpu::{TextureDescriptor, TextureViewDescriptor};
+use wgpu::{TextureDescriptor, TextureViewDescriptor, SamplerDescriptor};
 
 use crate::{
-    Extent, Graphics, MipLevelMut, MipLevelRef, Region, Sampler,
+    Extent, Graphics, MipLevelMut, MipLevelRef, Region,
     Texel, TextureInitializationError, TextureMipLayerError,
-    TextureMode, TextureSamplerError, TextureUsage,
+    TextureMode, TextureSamplerError, TextureUsage, SamplerSettings, SamplerWrap, TextureMipMaps, Sampler,
 };
 
 // Possibly predefined texel data
@@ -28,6 +28,8 @@ pub trait Texture: Sized {
         dimensions: <Self::Region as Region>::E,
         mode: TextureMode,
         usage: TextureUsage,
+        sampling: SamplerSettings,
+        mipmaps: TextureMipMaps<Self::T>,
     ) -> Result<Self, TextureInitializationError> {
         let format = <Self::T as Texel>::format();
         let channels = <Self::T as Texel>::channels();
@@ -84,6 +86,9 @@ pub trait Texture: Sized {
         // Create the raw WGPU texture
         let texture = graphics.device().create_texture(&descriptor);
 
+        // Fetch a new sampler for the given sampling settings
+        let sampler = todo!(); 
+
         // Convert the texels to bytes
         let bytes = texels.map(|texels| {
             bytemuck::cast_slice::<<Self::T as Texel>::Storage, u8>(
@@ -113,19 +118,19 @@ pub trait Texture: Sized {
 
             graphics.queue().write_texture(
                 image_copy_texture,
-                bytes,
+                bytes,            
                 image_data_layout,
                 extent,
             );
         }
 
         // Create an texture view of the whole texture
-        let view =
-            texture.create_view(&TextureViewDescriptor::default());
+        let views =
+            vec![texture.create_view(&TextureViewDescriptor::default())];
 
         Ok(unsafe {
             Self::from_raw_parts(
-                graphics, texture, view, dimensions, usage, mode,
+                graphics, texture, views, sampler, sampling, dimensions, usage, mode,
             )
         })
     }
@@ -155,6 +160,9 @@ pub trait Texture: Sized {
     // Get the underlying WGPU Texture
     fn texture(&self) -> &wgpu::Texture;
 
+    // Get the sampler associated with this texture
+    fn sampler(&self) -> Sampler<Self::T>;
+
     // Get the underlying Texture view
     fn view(&self) -> &wgpu::TextureView;
 
@@ -174,21 +182,16 @@ pub trait Texture: Sized {
         todo!()
     }
 
-    // Try to get a sampler for this whole texture so we can read from it within shaders
-    fn as_sampler(
-        &self,
-    ) -> Result<Sampler<Self>, TextureSamplerError> {
-        todo!()
-    }
-
     // Create a texture struct from it's raw components
     // This will simply create the texture struct, and it assumes
     // that the texture was already created externally
     unsafe fn from_raw_parts(
         graphics: &Graphics,
         texture: wgpu::Texture,
-        view: wgpu::TextureView,
-        dimensions: <Self::Region as Region>::E,
+        views: Vec<wgpu::TextureView>,
+        sampler: Arc<wgpu::Sampler>,
+        sampling: SamplerSettings,
+        dimensions: <Self::Region as crate::Region>::E,
         usage: TextureUsage,
         mode: TextureMode,
     ) -> Self;
