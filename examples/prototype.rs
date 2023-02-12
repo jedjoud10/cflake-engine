@@ -16,17 +16,6 @@ fn main() {
 fn init(world: &mut World) {
     let assets = world.get::<Assets>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
-
-    assets.load::<FunctionModule>("engine/shaders/common/camera.glsl").unwrap();
-    let frag = assets
-        .load::<FragmentModule>("engine/shaders/basic.frag")
-        .unwrap();
-    let mut compiler = Compiler::new(frag);
-    compiler.compile(&assets, &graphics).unwrap();
-
-    let mesh = assets.load::<Mesh>(("engine/meshes/cube.obj", &*graphics)).unwrap();
-
-    /*
     let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
     let mut materials = world.get_mut::<Storage<Basic>>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
@@ -40,6 +29,7 @@ fn init(world: &mut World) {
         tint: vek::Rgb::default(),
     });
 
+    /*
     let id = material_id.unwrap();
     let mesh = assets.load::<Mesh>(("engine/meshes/cube.obj", &*graphics)).unwrap();
     let vertices = mesh.vertices();

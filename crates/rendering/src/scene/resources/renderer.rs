@@ -57,7 +57,6 @@ impl ForwardRenderer {
             let pipeline = Pipeline::<M>::new(
                 graphics,
                 assets,
-                &self.render_pass,
             )?;
             self.pipelines.insert(key, Rc::new(pipeline));
             log::debug!("Registered pipeline for material {}", std::any::type_name::<M>());

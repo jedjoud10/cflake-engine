@@ -39,12 +39,23 @@ fn update(world: &mut World) {
     
     // Get a presentable render target from the window
     let view = window.as_render_target().unwrap();
+
+    // Extract the render pipelines
+    let renderer = &mut *renderer;
+    let pipelines = renderer.extract_pipelines();
     
     // Activate the render pass
-    renderer.render_pass.begin(
+    let mut render_pass = renderer.render_pass.begin(
         view,
         ()
-    );
+    ).unwrap();
+    
+    // Drop everything that is temporarily owned by the world
+    drop(window);
+    drop(graphics);
+    for pipeline in pipelines.iter() {
+        pipeline.render(world, &mut render_pass);
+    }
 }
 
 // The rendering system will be resposible for iterating through the entities and displaying them

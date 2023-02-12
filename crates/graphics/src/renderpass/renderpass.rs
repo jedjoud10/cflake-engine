@@ -81,10 +81,10 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPass<C, DS> {
             depth_stencil_attachment,
         });
 
-        drop(pass);
-
-        self.graphics.queue().submit([encoder.finish()]);
-
-        Err(RenderPassBeginError)
+        Ok(ActiveRenderPass { 
+            render_pass: ,
+            _phantom: (),
+            _phantom2: ()
+        })
     }
 }

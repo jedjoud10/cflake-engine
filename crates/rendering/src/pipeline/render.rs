@@ -1,19 +1,20 @@
 use crate::{Material, Surface, Mesh, attributes::RawPosition};
 use ecs::Scene;
-use graphics::{Graphics, GraphicsPipeline, XYZ, SwapchainFormat};
+use graphics::{Graphics, GraphicsPipeline, XYZ, SwapchainFormat, ActiveRenderPass};
 use utils::{Storage, Time};
 use world::World;
 
 // Render all the visible surfaces of a specific material type
-pub(super) fn render_surfaces<M: Material>(
+pub(super) fn render_surfaces<'r, M: Material>(
     world: &World,
-    pipeline: &GraphicsPipeline<SwapchainFormat, ()>,
-    //render_pass: &mut ActiveRenderPass<SwapchainFormat, ()>
+    pipeline: &'r GraphicsPipeline<SwapchainFormat, ()>,
+    render_pass: &mut ActiveRenderPass<'r, '_, '_, SwapchainFormat, ()>
 ) {
-    /*
     // Get a rasterizer for the current render pass by binding a pipeline
-    let (mut rasterizer, mut bindings) = render_pass.bind_pipeline(pipeline);
+    render_pass.bind_pipeline(pipeline);
+    render_pass.draw(0..6, 0..1);
 
+    /*
     // Get all the meshes and surface for this specific material
     let meshes = world.get::<Storage<Mesh>>().unwrap();
     let materials = world.get::<Storage<M>>().unwrap();
@@ -28,13 +29,12 @@ pub(super) fn render_surfaces<M: Material>(
         let mesh = meshes.get(&surface.mesh);
         let material = materials.get(&surface.material);
 
-        // FIXME: Figure out if we should use bindless or not
-        // If we were to use bindless, how should be pass keep track of textures / buffers sequentially?
+        // Bind the mesh's vertex buffers
+        //render_pass.set_vertex_buffer(0, mesh.p);
 
-        // Bind the mesh's vertices and draw
-        rasterizer.bind_vertex_buffers(&mesh.vertices().untyped_buffers());
-        rasterizer.draw(mesh.vertices().len().unwrap() as u32, &bindings);
-        log::debug!("Draw mesh");
+        // Draw the mesh
+        // TODO: Use indirect drawing isntead for ze performance
+        render_pass.draw(0..6, 0..1);
     }
     */
 }

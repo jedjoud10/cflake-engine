@@ -57,11 +57,12 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
         let targets = color_layout_to_color_target_state::<C>();
         let primitive = primitive_config_to_state(primitive_config);
         let multisample = multisample_state();
+        let pipeline_layout = binding_config_to_pipeline_layout(&graphics);
 
         // Create the WGPU pipeline using the given configuration
         let pipeline = graphics.device().create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: None,
-            layout: None,
+            layout: Some(&pipeline_layout),
             vertex: wgpu::VertexState {
                 module: shader.vertex().module(),
                 entry_point: shader.vertex().entry_point().unwrap(),
@@ -93,7 +94,16 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
     }
 }
 
-// Convert the given vertex config to the vertex attributes used byt he vertex buffer layout
+// Convert the given binding config to the pipeline layout used by the pipeline 
+fn binding_config_to_pipeline_layout(graphics: &Graphics) -> wgpu::PipelineLayout {
+    graphics.device().create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        label: None,
+        bind_group_layouts: &[],
+        push_constant_ranges: &[],
+    })
+}
+
+// Convert the given vertex config to the vertex attributes used by the vertex buffer layout
 fn vertex_config_to_vertex_attributes(vertex_config: &VertexConfig) -> Vec<Vec<wgpu::VertexAttribute>> {
     vertex_config.inputs.iter().map(|input| {
         vec![wgpu::VertexAttribute {
@@ -158,12 +168,8 @@ fn depth_stencil_config_to_state<DS: DepthStencilLayout>(
     let stencil = stencil_config.as_ref().cloned().unwrap_or_default();
     let depth_compare = depth_config.map(|dc| dc.compare).unwrap_or(wgpu::CompareFunction::Never);
     let depth_write_enabled = depth_config.map(|dc| dc.write_enabled).unwrap_or_default();
-    let format = DS::info().unwrap().format();
-
-    // (this isn't really needed since the calling method will ignore if both are None as well)
-    let valid = depth_config.is_some() || stencil_config.is_some();
-    valid.then(|| wgpu::DepthStencilState {
-        format,
+    DS::info().map(|format| wgpu::DepthStencilState {
+        format: format.format(),
         depth_write_enabled,
         depth_compare,
         stencil,
@@ -196,7 +202,7 @@ fn primitive_config_to_state(primitive_config: PrimitiveConfig) -> PrimitiveStat
 
     wgpu::PrimitiveState {
         topology,
-        strip_index_format: Some(wgpu::IndexFormat::Uint32),
+        strip_index_format: None,
         front_face,
         cull_mode,
         unclipped_depth: false,

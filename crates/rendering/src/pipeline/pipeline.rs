@@ -1,6 +1,6 @@
 use crate::{Material, ForwardRendererRenderPass, MeshAttribute, attributes::{TexCoord, Tangent, Normal, Position}, EnabledMeshAttributes};
 use assets::Assets;
-use graphics::{Graphics, GraphicsPipeline, RenderPass, Shader, VertexConfig, PipelineInitializationError, BindingConfig, VertexInput, SwapchainFormat};
+use graphics::{Graphics, GraphicsPipeline, RenderPass, Shader, VertexConfig, PipelineInitializationError, BindingConfig, VertexInput, SwapchainFormat, ActiveRenderPass};
 use std::marker::PhantomData;
 use world::World;
 
@@ -27,7 +27,6 @@ impl<M: Material> Pipeline<M> {
     pub fn new(
         graphics: &Graphics,
         assets: &Assets,
-        render_pass: &ForwardRendererRenderPass,
     ) -> Result<Self, PipelineInitializationError> {
         // Load the vertex and fragment modules, and create the shader
         let vertex = M::vertex(graphics, assets);
@@ -77,8 +76,9 @@ pub trait DynamicPipeline {
     fn graphical_mut(&mut self) -> &mut GraphicsPipeline<SwapchainFormat, ()>;
 
     // Render all surfaces that use the material of this pipeline
-    fn render(&self,
+    fn render<'r>(&'r self,
         world: &World,
+        render_pass: &mut ActiveRenderPass<'r, '_, '_, SwapchainFormat, ()>
     );
 }
 
@@ -91,7 +91,7 @@ impl<M: Material> DynamicPipeline for Pipeline<M> {
         &mut self.pipeline
     }
 
-    fn render(&self, world: &World) {
-        //super::render_surfaces::<M>(world, &self.pipeline, render_pass);
+    fn render<'r>(&'r self, world: &World, render_pass: &mut ActiveRenderPass<'r, '_, '_, SwapchainFormat, ()>) {
+        super::render_surfaces::<M>(world, &self.pipeline, render_pass);
     }
 }

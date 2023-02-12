@@ -11,9 +11,9 @@ pub struct ActiveRenderPass<
     C: ColorLayout,
     DS: DepthStencilLayout,
 > {
-    render_pass: wgpu::RenderPass<'r>,
-    _phantom: PhantomData<&'c C>,
-    _phantom2: PhantomData<&'ds DS>,
+    pub(crate) render_pass: wgpu::RenderPass<'r>,
+    pub(crate) _phantom: PhantomData<&'c C>,
+    pub(crate) _phantom2: PhantomData<&'ds DS>,
 }
 
 impl<'r, 'c, 'ds, C: ColorLayout, DS: DepthStencilLayout>
@@ -40,9 +40,10 @@ impl<'r, 'c, 'ds, C: ColorLayout, DS: DepthStencilLayout>
     }
 
     // Bind a graphics pipeline, which takes mutable access of the rasterizer temporarily
-    pub fn bind_pipeline<'gp: 'rp, 'rp>(
-        &'rp mut self,
-        pipeline: &'gp GraphicsPipeline<C, DS>,
+    pub fn bind_pipeline(
+        &mut self,
+        pipeline: &'r GraphicsPipeline<C, DS>,
     ) {
+        self.render_pass.set_pipeline(pipeline.pipeline());
     }
 }
