@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use wgpu::{Surface, SurfaceConfiguration, SurfaceCapabilities, SurfaceTexture, TextureView};
 
-use crate::{RGBA, Normalized, RenderTarget, WindowAsTargetError};
+use crate::{RGBA, Normalized, RenderTarget, WindowAsTargetError, BGRA};
 
 // Frame rate limit of the window (can be disabled by selecting Unlimited)
 #[derive(Default, Clone, Copy, PartialEq, Eq)]
@@ -27,7 +27,7 @@ pub struct WindowSettings {
 }
 
 // Format of the swapchain / window presentable texture
-pub type SwapchainFormat = RGBA<Normalized<u8>>;
+pub type SwapchainFormat = BGRA<Normalized<u8>>;
 
 // A window is what we will draw to at the end of each frame
 pub struct Window {

@@ -39,7 +39,7 @@ fn map<T: Texel>(rgba: vek::Vec4<f32>, map: impl Fn(f32) -> T::Base) -> vek::Vec
 
 // Do NOT FUCKING TOUCH THIS
 macro_rules! internal_impl_color_texel {
-    ($vec:ident, $elem:ty, $channels:expr, $storagevec:ident, $conv:tt, $min:expr, $max:expr, $fromf32:expr, $tof32:expr) => {
+    ($vec:ident, $elem:ty, $channels:expr, $storagevec:ident, $conv:expr, $min:expr, $max:expr, $fromf32:expr, $tof32:expr) => {
         impl ColorTexel for $vec<$elem> {
             fn try_from_rgba32(rgba: vek::Vec4<f32>) -> Option<Self::Storage> {
                 if rgba.reduce_partial_max() > $max || rgba.reduce_partial_min() < $min {
@@ -86,5 +86,5 @@ type Scalar<T> = T;
 impl_color_texels!(R, ChannelsType::Vector(VectorChannels::One), Scalar, |v: vek::Vec4<Self::Base>| v[0]);
 impl_color_texels!(RG, ChannelsType::Vector(VectorChannels::Two), Vec2, |v: vek::Vec4<Self::Base>| vek::Vec2::from(v));
 impl_color_texels!(RGBA, ChannelsType::Vector(VectorChannels::Four), Vec4, |v: vek::Vec4<Self::Base>| vek::Vec4::from(v));
-//internal_impl_color_texel!(BGRA, Normalized<u8>, ChannelsType::Vector(VectorChannels::FourSwizzled), Vec4, from_slice, 0.0, 1.0, |f| (f * u8::MAX as f32) as u8, |v| v as f32 / u8::MAX as f32);
+internal_impl_color_texel!(BGRA, Normalized<u8>, ChannelsType::Vector(VectorChannels::Four), Vec4, |v: vek::Vec4<Self::Base>| vek::Vec4::from(v), 0.0, 1.0, |f| (f * u8::MAX as f32) as u8, |v| v as f32 / u8::MAX as f32);
 

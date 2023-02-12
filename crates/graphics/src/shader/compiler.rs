@@ -92,15 +92,8 @@ impl<M: ShaderModule> Compiler<M> {
             _phantom,
         } = self;
 
-        // Convert GLSL to the Naga module (and validate it)
-        let module = parse_glsl(stage, graphics, assets, &snippets, source)?;
-
-        // Convert the Naga module to SPIRV bytecode
-        let bytecode = compile_to_spirv(graphics, &module, constants)?;
-        let naga = Arc::new(module);
-
-        // Compile the SPIRV bytecode
-        let raw = compile_module(graphics, bytecode);
+        // Compile GLSL to Naga then to Wgpu
+        let (raw, naga) = compile(stage, graphics, assets, &snippets, source)?;
 
         Ok(Compiled {
             raw: Arc::new(raw),
@@ -108,70 +101,42 @@ impl<M: ShaderModule> Compiler<M> {
             file_name: file_name.into(),
             _phantom,
             graphics: graphics.clone(),
-            naga,
+            naga: Arc::new(naga),
         })
     }
 }
 
-// Parse the GLSL code to the intermediate naga representation
-// This will also include the necessary #include directives
-fn parse_glsl(
+// Parses the GLSL shader into a Naga module, then passes it to Wgpu
+fn compile(
     stage: ShaderStage,
     graphics: &Graphics,
     assets: &Assets,
     snippets: &Snippets,
     source: String,
-) -> Result<Module, ShaderCompilationError> {
+) -> Result<(wgpu::ShaderModule, naga::Module), ShaderCompilationError> {
+    // Pre-process the shader source to get expand of shader directives
     let source = preprocess(source, assets, snippets)
         .map_err(ShaderCompilationError::PreprocessorError)?;
+    
+    // [GLSL -> Naga] parsing options 
     let options = naga::front::glsl::Options {
         stage,
         defines: naga::FastHashMap::default(),
     };
-    let mut parser = graphics.parser().lock();
+    
+    // Compile the GLSL shader source to a Naga module
+    let mut parser = naga::front::glsl::Parser::default();
     let module = parser
         .parse(&options, &source)
         .map_err(ShaderCompilationError::ParserError)?;
-    Ok(module)
-}
 
-// Compile the Naga representation into SPIRV
-fn compile_to_spirv(
-    graphics: &Graphics,
-    module: &Module,
-    constants: Constants,
-) -> Result<Vec<u32>, ShaderCompilationError> {
-    // Validate the Naga shader first
-    let mut validator = graphics.validator().lock();
-    let info = validator
-        .validate(module)
-        .map_err(ShaderCompilationError::NagaValidationError)?;
-
-    // Convert to SPIRV bytecode
-    let options = naga::back::spv::Options::default();
-    let bytecode =
-        naga::back::spv::write_vec(module, &info, &options, None)
-            .map_err(ShaderCompilationError::SpirvOutError)?;
-
-    // TODO: Wait till naga supports spec-constants (doesnn't atm)
-
-    Ok(bytecode)
-}
-
-// Compile the SPIRV shader
-fn compile_module(
-    graphics: &Graphics,
-    bytecode: Vec<u32>,
-) -> wgpu::ShaderModule {
-    let raw = unsafe {
-        graphics.device().create_shader_module_spirv(
-            &wgpu::ShaderModuleDescriptorSpirV {
-                label: None,
-                source: Cow::Borrowed(&bytecode),
-            },
-        )
-    };
-    raw
+    // Compile the Wgpu shader
+    Ok((graphics.device().create_shader_module(
+        wgpu::ShaderModuleDescriptor {
+            label: None,
+            source: wgpu::ShaderSource::Naga(Cow::Owned(module.clone())),
+        }
+    ), module))
 }
 
 // Pre-process the GLSL shader source and include files / snippets

@@ -5,7 +5,7 @@ use utils::Storage;
 use std::sync::Arc;
 use wgpu::{
     util::StagingBelt, Device, Queue, Surface, SurfaceCapabilities,
-    SurfaceConfiguration, TextureView, Sampler, Adapter,
+    SurfaceConfiguration, TextureView, Sampler, Adapter, CommandEncoder,
 };
 
 use crate::{SamplerWrap, SamplerSettings};
@@ -22,10 +22,6 @@ pub(crate) struct InternalGraphics {
 
     // Cached texture samplers 
     pub(crate) samplers: DashMap<SamplerSettings, Arc<Sampler>>,
-
-    // Shader compiler and validator
-    pub(crate) parser: Mutex<Parser>,
-    pub(crate) validator: Mutex<Validator>,
 }
 
 // Graphical context that we will wrap around the WGPU instance
@@ -49,20 +45,19 @@ impl Graphics {
         &self.0.adapter
     }
 
-    // Get the GLSL shader parser
-    // TODO: Make this thread local
-    pub fn parser(&self) -> &Mutex<Parser> {
-        &self.0.parser
-    }
-
-    // Get the Naga shader validator
-    // TODO: Make this thread local
-    pub fn validator(&self) -> &Mutex<Validator> {
-        &self.0.validator
-    }
-
     // Get the wgpu buffer staging belt
     pub fn staging_belt(&self) -> &Mutex<StagingBelt> {
         &self.0.staging
+    }
+
+    // Create a new command list to record commands
+    pub fn acquire(&self) -> CommandEncoder {
+        self.device().create_command_encoder(&Default::default())
+    }
+    
+    // Submit one or multiple command lists and return a fence
+    pub fn submit(&self, encoders: impl IntoIterator<Item = CommandEncoder>) {
+        let finished = encoders.into_iter().map(|x| x.finish());
+        self.queue().submit(finished);
     }
 }

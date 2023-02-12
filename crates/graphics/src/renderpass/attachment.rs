@@ -9,17 +9,17 @@ use crate::{
 };
 
 // A color attachment that is passed to the render pass when starting it
-pub trait ColorAttachments<'a, C: ColorLayout> {
+pub trait ColorAttachments<'a, C: ColorLayout>: 'a {
     // Get the texture views that we will render to
-    fn views(&self) -> Vec<&wgpu::TextureView>;
+    fn views(&self) -> Vec<&'a wgpu::TextureView>;
 }
 
 // A depth stencil attachment that is passed to the render pass when starting it
-pub trait DepthStencilAttachment<'a, DS: DepthStencilLayout> {
-    fn view(&self) -> Option<&wgpu::TextureView>;
+pub trait DepthStencilAttachment<'a, DS: DepthStencilLayout>: 'a {
+    fn view(&self) -> Option<&'a wgpu::TextureView>;
 }
 impl<'a> DepthStencilAttachment<'a, ()> for () {
-    fn view(&self) -> Option<&wgpu::TextureView> {
+    fn view(&self) -> Option<&'a wgpu::TextureView> {
         None
     }
 }
@@ -43,7 +43,7 @@ pub struct RenderTarget<'a, T: Texel> {
 
 impl<'a, T: Texel> RenderTarget<'a, T> {
     // Get the raw texture view that we will write to
-    pub fn view(&self) -> &wgpu::TextureView {
+    pub fn view(&self) -> &'a wgpu::TextureView {
         self.view
     }
 }
@@ -51,19 +51,19 @@ impl<'a, T: Texel> RenderTarget<'a, T> {
 impl<'a, T: ColorTexel> ColorAttachments<'a, T>
     for RenderTarget<'a, T>
 {
-    fn views(&self) -> Vec<&wgpu::TextureView> {
+    fn views(&self) -> Vec<&'a wgpu::TextureView> {
         vec![self.view()]
     }
 }
 
 impl<'a, D: DepthElement> DepthStencilAttachment<'a, Depth<D>> for RenderTarget<'a, Depth<D>> where Depth<D>: Texel + DepthStencilLayout {
-    fn view(&self) -> Option<&wgpu::TextureView> {
+    fn view(&self) -> Option<&'a wgpu::TextureView> {
         Some(self.view)
     }
 }
 
 impl<'a, S: StencilElement> DepthStencilAttachment<'a, Stencil<S>> for RenderTarget<'a, Stencil<S>> where Stencil<S>: Texel + DepthStencilLayout {
-    fn view(&self) -> Option<&wgpu::TextureView> {
+    fn view(&self) -> Option<&'a wgpu::TextureView> {
         Some(self.view)
     }
 }

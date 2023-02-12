@@ -44,18 +44,28 @@ fn update(world: &mut World) {
     let renderer = &mut *renderer;
     let pipelines = renderer.extract_pipelines();
     
+    // Create a new command encoder
+    let mut encoder = graphics.acquire();
+
     // Activate the render pass
     let mut render_pass = renderer.render_pass.begin(
+        &mut encoder,
         view,
         ()
     ).unwrap();
     
     // Drop everything that is temporarily owned by the world
-    drop(window);
-    drop(graphics);
+    //drop(window);
+    //drop(graphics);
+
+    // This will iterate over each material pipeline and draw the scene
     for pipeline in pipelines.iter() {
         pipeline.render(world, &mut render_pass);
     }
+
+    // Submit the encoder at the end
+    drop(render_pass); 
+    graphics.submit([encoder]);
 }
 
 // The rendering system will be resposible for iterating through the entities and displaying them

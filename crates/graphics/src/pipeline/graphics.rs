@@ -38,15 +38,17 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
         shader: &Shader,
     ) -> Result<Self, PipelineInitializationError> {
         // If stencil/depth is enabled, make sure the layout matches up
-        let stencil_config_enabled = stencil_config.is_some();
-        let depth_config_enabled = depth_config.is_some();
+        let stencil_config_enabled = DS::is_stencil_enabled();
+        let depth_config_enabled = DS::is_depth_enabled();
 
         // Check if the DepthStencilLayout contains a stencil format, return errors if appropriate
-        if stencil_config_enabled {
+        if stencil_config_enabled && stencil_config.is_none() {
+            return Err(PipelineInitializationError::MissingStencilConfig);
         }
 
         // Check if the DepthStencilLayout contains a depth format, return errors if appropriate
-        if depth_config_enabled {
+        if depth_config_enabled && depth_config.is_none() {
+            return Err(PipelineInitializationError::MissingStencilConfig);
         }
 
         // Get all the configuration settings required for the RenderPipeline 
@@ -56,7 +58,6 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
         let buffers = vertex_config_to_buffer_layout(&vertex_config, attributes);
         let targets = color_layout_to_color_target_state::<C>();
         let primitive = primitive_config_to_state(primitive_config);
-        let multisample = multisample_state();
         let pipeline_layout = binding_config_to_pipeline_layout(&graphics);
 
         // Create the WGPU pipeline using the given configuration
@@ -70,7 +71,7 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
             },
             primitive,
             depth_stencil,
-            multisample,
+            multisample: Default::default(),
             fragment: Some(wgpu::FragmentState {
                 module: shader.fragment().module(),
                 entry_point: shader.vertex().entry_point().unwrap(),
@@ -135,17 +136,6 @@ fn color_layout_to_color_target_state<C: ColorLayout>() -> Vec<Option<wgpu::Colo
         write_mask: wgpu::ColorWrites::ALL,
     })).collect::<Vec<_>>();
     targets
-}
-
-// Create the default multisampling state (Since we will never use antialisaing)
-// (I HATE ANTIALISATION. FUCK YOU. COPE)
-fn multisample_state() -> wgpu::MultisampleState {
-    let multisample = wgpu::MultisampleState {
-        count: 1,
-        mask: !0,
-        alpha_to_coverage_enabled: false,
-    };
-    multisample
 }
 
 // Convert the depth and stencil config to the DepthStencilState

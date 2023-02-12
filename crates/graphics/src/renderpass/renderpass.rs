@@ -1,3 +1,5 @@
+use wgpu::CommandEncoder;
+
 use crate::{
     ColorAttachments, ColorLayout,
     DepthStencilAttachment, DepthStencilLayout, Graphics,
@@ -38,15 +40,12 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPass<C, DS> {
 
     // Begin the render pass and return an active render pass that we can use to bind multiple
     // graphical pipelines to so we can render specific types of objects
-    pub fn begin<'r, 'c, 'ds>(
+    pub fn begin<'r>(
         &'r mut self,
-        color_attachments: impl ColorAttachments<'c, C>,
-        depth_stencil_attachment: impl DepthStencilAttachment<'ds, DS>,
+        encoder: &'r mut CommandEncoder,
+        color_attachments: impl ColorAttachments<'r, C>,
+        depth_stencil_attachment: impl DepthStencilAttachment<'r, DS>,
     ) -> Result<ActiveRenderPass<C, DS>, RenderPassBeginError>{
-        let mut encoder = self.graphics.device().create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: None,
-        });
-
         // Fetch the appropriate texture views to use
         let color_views = color_attachments.views();
         let depth_stencil_view = depth_stencil_attachment.view();
@@ -75,16 +74,16 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPass<C, DS> {
         });
 
         // Being the Wgpu render pass
-        let pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        let pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor::<'r, '_> {
             label: None,
             color_attachments: &color_attachments,
-            depth_stencil_attachment,
+            depth_stencil_attachment: None,
         });
 
         Ok(ActiveRenderPass { 
-            render_pass: ,
-            _phantom: (),
-            _phantom2: ()
+            render_pass: pass,
+            _phantom: PhantomData,
+            _phantom2: PhantomData
         })
     }
 }
