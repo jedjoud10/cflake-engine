@@ -72,11 +72,3 @@ impl<S: StencilElement> DepthStencilLayout for Stencil<S> where Self: Texel {
         true
     }
 }
-
-/*
-impl<D: DepthElement, S: StencilElement> DepthStencilLayout for DepthStencil<D, S> {
-    fn untyped_texel() -> UntypedTexel {
-        <DepthStencil::<D, S> as Texel>::untyped()
-    }
-}
-*/

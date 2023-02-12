@@ -2,6 +2,8 @@ use std::sync::Arc;
 
 use wgpu::{Surface, SurfaceConfiguration, SurfaceCapabilities, SurfaceTexture, TextureView};
 
+use crate::{RGBA, Normalized, RenderTarget, WindowAsTargetError};
+
 // Frame rate limit of the window (can be disabled by selecting Unlimited)
 #[derive(Default, Clone, Copy, PartialEq, Eq)]
 pub enum FrameRateLimit {
@@ -23,6 +25,9 @@ pub struct WindowSettings {
     pub fullscreen: bool,
     pub limit: FrameRateLimit,
 }
+
+// Format of the swapchain / window presentable texture
+pub type SwapchainFormat = RGBA<Normalized<u8>>;
 
 // A window is what we will draw to at the end of each frame
 pub struct Window {
@@ -52,9 +57,12 @@ impl Window {
         &self.raw
     }
 
-    // Get the texture that we can render to
-    pub fn view(&self) -> Option<&TextureView> {
-        self.presentable_texture_view.as_ref()
+    // Get the texture render that we can render to
+    pub fn as_render_target(&mut self) -> Result<RenderTarget<SwapchainFormat>, WindowAsTargetError> {
+        self.presentable_texture_view.as_ref().map(|view| RenderTarget {
+            _phantom: std::marker::PhantomData,
+            view,
+        }).ok_or(WindowAsTargetError)
     }
 
     // Get the current size of the window in pixels

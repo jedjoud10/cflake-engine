@@ -299,7 +299,7 @@ impl App {
         self = self.insert_system(graphics::common);
         self = self.insert_system(graphics::acquire);
         self = self.insert_system(graphics::present);
-        //self = self.insert_system(rendering::system);
+        self = self.insert_system(rendering::system);
 
         // Insert the IO manager
         let author = self.author_name.clone();

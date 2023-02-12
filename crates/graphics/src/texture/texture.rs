@@ -6,7 +6,7 @@ use wgpu::{TextureDescriptor, TextureViewDescriptor, SamplerDescriptor};
 use crate::{
     Extent, Graphics, MipLevelMut, MipLevelRef, Region,
     Texel, TextureInitializationError, TextureMipLayerError,
-    TextureMode, TextureSamplerError, TextureUsage, SamplerSettings, SamplerWrap, TextureMipMaps, Sampler,
+    TextureMode, TextureSamplerError, TextureUsage, SamplerSettings, SamplerWrap, TextureMipMaps, Sampler, RenderTarget, TextureAsTargetError,
 };
 
 // Possibly predefined texel data
@@ -52,12 +52,7 @@ pub trait Texture: Sized {
         }
 
         // Get the image type using the dimensionality
-        let dimension = match <<Self::Region as Region>::E as Extent>::dimensionality() {
-            1 => wgpu::TextureDimension::D1,
-            2 => wgpu::TextureDimension::D2,
-            3 => wgpu::TextureDimension::D3,
-            _ => panic!("1D, 2D, or 3D textures are the only supported types of textures")
-        };
+        let dimension = <<Self::Region as Region>::E as Extent>::dimensionality();
         let extent = wgpu::Extent3d {
             width: dimensions.width(),
             height: dimensions.height(),
@@ -66,11 +61,20 @@ pub trait Texture: Sized {
 
         // Get optimal texture usage
         let usages = wgpu::TextureUsages::TEXTURE_BINDING
-            | wgpu::TextureUsages::COPY_DST;
+            | wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::RENDER_ATTACHMENT;
 
-        // TODO: Check if the format is valid for the given usage flag
+        // Check if the format is valid for the given usage flag
+        let texture_format_features = graphics.adapter().get_texture_format_features(format);
+        if !texture_format_features.allowed_usages.contains(usages) {
+            return Err(TextureInitializationError::FormatNotSupported(format))
+        }
 
-        // TODO: Don't use mipmapping with NPOT textures
+        // Don't use mipmapping with NPOT textures
+        if let TextureMipMaps::Disabled = mipmaps {} else {
+            if !dimensions.is_power_of_two() {
+                return Err(TextureInitializationError::MipMapGenerationNPOT);
+            }
+        }
 
         // Config for the Wgpu texture
         let descriptor = TextureDescriptor {
@@ -208,6 +212,14 @@ pub trait Texture: Sized {
     ) -> Result<MipLevelMut<Self>, TextureMipLayerError> {
         todo!()
     }
+
+    // Use the whole texture as a render target
+    fn as_render_target(&mut self) -> Result<RenderTarget<Self::T>, TextureAsTargetError> {
+        todo!()
+    }
+
+    // Try to use the texture as a renderable target
+    // This will fail if the texture isn't supported
 
     // Create a texture struct from it's raw components
     // This will simply create the texture struct, and it assumes

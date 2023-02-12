@@ -1,5 +1,7 @@
 use std::{num::NonZeroU8, ops::Add};
 
+use wgpu::TextureDimension;
+
 // Texture dimensions traits that are simply implemented for extents
 pub trait Extent: Copy + std::ops::Div<u32, Output = Self> {
     // Get the surface area of a superficial rectangle that uses these extents as it's dimensions
@@ -16,12 +18,26 @@ pub trait Extent: Copy + std::ops::Div<u32, Output = Self> {
         self.reduce_min() > 0
     }
 
+    // Check if the extent is a power of 2 extent
+    fn is_power_of_two(&self) -> bool {
+        match Self::dimensionality() {
+            TextureDimension::D1 => self.width().is_power_of_two(),
+            TextureDimension::D2 => self.width().is_power_of_two() && self.height().is_power_of_two(),
+            TextureDimension::D3 => self.width().is_power_of_two() && self.height().is_power_of_two() && self.depth().is_power_of_two(),
+        }
+    }
+
     // Caclulate the number of mipmap levels that a texture can have
-    fn levels(&self) -> NonZeroU8 {
+    // Returns None if the extent is a NPOT extent
+    fn levels(&self) -> Option<NonZeroU8> {
+        if !self.is_power_of_two() {
+            return None;
+        }
+
         let cur = self.reduce_max() as f32;
         let num = cur.log2().floor() + 1.0;
-        NonZeroU8::new(u8::try_from(num as u8).unwrap())
-            .unwrap_or(NonZeroU8::new(1).unwrap())
+        Some(NonZeroU8::new(u8::try_from(num as u8).unwrap())
+            .unwrap_or(NonZeroU8::new(1).unwrap()))
     }
 
     // Calculate the dimensions of a mip map level using it's index (starts from 0)
@@ -42,7 +58,7 @@ pub trait Extent: Copy + std::ops::Div<u32, Output = Self> {
     fn depth(&self) -> u32;
 
     // Get the dimensionality of the extent (1, 2, or 3)
-    fn dimensionality() -> usize;
+    fn dimensionality() -> TextureDimension;
 }
 
 // Implementation of extent for 2D extent
@@ -63,8 +79,8 @@ impl Extent for vek::Extent2<u32> {
         self.cmpge(&other).reduce_and()
     }
 
-    fn dimensionality() -> usize {
-        vek::Extent2::<u32>::ELEM_COUNT
+    fn dimensionality() -> TextureDimension {
+        TextureDimension::D2
     }
 
     fn width(&self) -> u32 {
@@ -102,8 +118,8 @@ impl Extent for vek::Extent3<u32> {
         self.cmpge(&other).reduce_and()
     }
 
-    fn dimensionality() -> usize {
-        vek::Extent3::<u32>::ELEM_COUNT
+    fn dimensionality() -> TextureDimension {
+        TextureDimension::D3
     }
 
     fn width(&self) -> u32 {

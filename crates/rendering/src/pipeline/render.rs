@@ -1,6 +1,6 @@
-use crate::{Material, SwapchainFormat, Surface, Mesh, attributes::RawPosition};
+use crate::{Material, Surface, Mesh, attributes::RawPosition};
 use ecs::Scene;
-use graphics::{Graphics, GraphicsPipeline, XYZ};
+use graphics::{Graphics, GraphicsPipeline, XYZ, SwapchainFormat};
 use utils::{Storage, Time};
 use world::World;
 

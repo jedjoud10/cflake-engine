@@ -1,6 +1,6 @@
-use crate::{Material, SwapchainFormat, ForwardRendererRenderPass, MeshAttribute, attributes::{TexCoord, Tangent, Normal, Position}, EnabledMeshAttributes};
+use crate::{Material, ForwardRendererRenderPass, MeshAttribute, attributes::{TexCoord, Tangent, Normal, Position}, EnabledMeshAttributes};
 use assets::Assets;
-use graphics::{Graphics, GraphicsPipeline, RenderPass, Shader, VertexConfig, PipelineInitializationError, BindingConfig, VertexInput};
+use graphics::{Graphics, GraphicsPipeline, RenderPass, Shader, VertexConfig, PipelineInitializationError, BindingConfig, VertexInput, SwapchainFormat};
 use std::marker::PhantomData;
 use world::World;
 

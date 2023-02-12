@@ -55,6 +55,11 @@ impl<'a, T: Texture> MipLevelRef<'a, T> {
         self.level
     }
 
+    // Get the view for this mip
+    pub fn view(&self) -> &wgpu::TextureView {
+        &self.texture().views()[self.level as usize]
+    }
+
     // Get the mip level's dimensions
     pub fn dimensions(&self) -> <T::Region as Region>::E {
         self.texture.dimensions().mip_level_dimensions(self.level)
@@ -95,6 +100,11 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
         self.level
     }
 
+    // Get the view for this mip
+    pub fn view(&self) -> &wgpu::TextureView {
+        &self.texture().views()[self.level as usize]
+    }
+
     // Get the mip level's dimensions
     pub fn dimensions(&self) -> <T::Region as Region>::E {
         self.texture.dimensions().mip_level_dimensions(self.level)
@@ -106,7 +116,7 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
     }
 
     // Try to get a render target so we can render to this one mip level
-    pub fn as_target(
+    pub fn as_render_target(
         &mut self,
     ) -> Result<RenderTarget<T::T>, TextureAsTargetError> {
         todo!()

@@ -1,21 +1,4 @@
 #version 460 core
-#include <engine/shaders/common/camera.glsl>
-#include "TEST2"
-/*
-layout(push_constant) uniform MeshConstants {
-	uint albedo_texture;
-	uint normal_texture;
-
-	float roughness;
-	vec4 color;
-} constants;
-
-layout(set = 1, binding = 0) uniform BasicMaterial {
-    
-} material;
-*/
-//layout(location = 1) in int SSAO_KERNEL_SIZE;
-//layout(constant_id = 0) const int suckmeoff = 0;
 layout(location = 0) out vec4 outColor;
 
 // https://vkguide.dev/docs/chapter-2/triangle_walkthrough/

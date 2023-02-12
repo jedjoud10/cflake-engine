@@ -121,7 +121,7 @@ fn vertex_config_to_buffer_layout<'a>(vertex_config: &VertexConfig, attributes: 
 fn color_layout_to_color_target_state<C: ColorLayout>() -> Vec<Option<wgpu::ColorTargetState>> {
     let targets = C::layout_info().into_iter().map(|info| Some(wgpu::ColorTargetState {
         format: info.format(),
-        blend: None,
+        blend: Some(wgpu::BlendState::REPLACE),
         write_mask: wgpu::ColorWrites::ALL,
     })).collect::<Vec<_>>();
     targets

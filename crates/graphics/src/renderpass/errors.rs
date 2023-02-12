@@ -4,4 +4,5 @@ use thiserror::Error;
 pub enum RenderPassInitializationError {}
 
 #[derive(Error, Debug)]
-pub enum RenderPassBeginError {}
+#[error("t")]
+pub struct RenderPassBeginError;

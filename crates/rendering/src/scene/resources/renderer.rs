@@ -2,13 +2,12 @@ use crate::{DynamicPipeline, Material, MaterialId, Pipeline, CameraUniform, Timi
 use ahash::AHashMap;
 use assets::Assets;
 use bytemuck::Zeroable;
-use graphics::{Graphics, Normalized, RenderPass, Texture2D, BGRA, PipelineInitializationError, UniformBuffer, BufferMode, BufferUsage, GpuPod, RGBA};
+use graphics::{Graphics, Normalized, RenderPass, Texture2D, BGRA, PipelineInitializationError, UniformBuffer, BufferMode, BufferUsage, GpuPod, RGBA, SwapchainFormat};
 use std::{
     any::TypeId, marker::PhantomData, mem::ManuallyDrop, rc::Rc, cell::RefCell,
 };
 
-// Texel that stores the SwapChain image format
-pub type SwapchainFormat = RGBA<Normalized<u8>>;
+// Renderpass that will render the scene
 pub type ForwardRendererRenderPass = RenderPass<SwapchainFormat, ()>;
 // Main resource that will contain data to render objects on the screen
 // This will contain the current swapchain texture that we must render to

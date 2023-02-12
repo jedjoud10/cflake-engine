@@ -4,11 +4,17 @@ use wgpu::TextureFormat;
 
 #[derive(Error, Debug)]
 pub enum TextureInitializationError {
-    #[error("The given texture format {0:?} is not supported on the physical device")]
+    #[error("The given texture format {0:?} is not supported with the given options")]
     FormatNotSupported(TextureFormat),
 
     #[error("The number of texels ({0}) does not match up with the number of theoretical texels defined in the dimensions ({1}x{2}x{3})")]
     TexelDimensionsMismatch(usize, u32, u32, u32),
+
+    #[error("Tried creating a mip map for a NPOT texture")]
+    MipMapGenerationNPOT,
+
+    #[error("The mip level of {0} does not contain the appropriate number of texels (expected {1}, found {2})")]
+    UnexpectedMipLevelTexelCount(u8, u64, u64)
 }
 
 #[derive(Error, Debug)]
@@ -34,5 +40,13 @@ pub enum TextureAssetLoadError {
 pub struct TextureSamplerError;
 
 #[derive(Error, Debug)]
-#[error("Cannot use the texture mip level as a render target since it does not have the appropriate usage flags")]
-pub struct TextureAsTargetError;
+pub enum TextureAsTargetError {
+    #[error("Cannot use the texture mip level as a render target since it does not have the appropriate usage flags")]
+    MipLevelMissingFlags,
+
+    #[error("Cannot use the whole texture as a render target since it does not have the appropriate usage flags")]
+    WholeTextureMissingFlags,
+
+    #[error("Cannot use the whole texture as a render target since it contains multiple mip levels")]
+    WholeTextureMultipleMips
+}
