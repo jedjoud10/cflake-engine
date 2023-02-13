@@ -26,7 +26,7 @@ pub struct ForwardRenderer {
 
 // Create a new uniform buffer with the given value (defaulted contents) 
 fn create_uniform_buffer<T: GpuPod + Default>(graphics: &Graphics) -> UniformBuffer<T> {
-    UniformBuffer::from_slice(graphics, &[T::default()], BufferMode::Dynamic, BufferUsage::WRITE | BufferUsage::READ).unwrap()
+    UniformBuffer::from_slice(graphics, &[T::default()], BufferMode::Dynamic, BufferUsage::default()).unwrap()
 }
 
 impl ForwardRenderer {

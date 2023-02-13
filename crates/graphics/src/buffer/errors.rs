@@ -18,6 +18,9 @@ pub enum BufferExtendError {
         "Cannot reallocate the buffer since self.mode isn't BufferMode::Resizable"
     )]
     IllegalReallocation,
+
+    #[error("The buffer cannot be written since it's BufferUsages does not contain the write flag")]
+    NonWritable,
 }
 
 #[derive(Error, Debug)]
@@ -26,7 +29,7 @@ pub enum BufferReadError {
     InvalidLen(usize, usize, usize),
 
     #[error("The buffer cannot be read since it's BufferUsages does not contain the read flag")]
-    InvalidPermissions,
+    NonReadable,
 }
 
 #[derive(Error, Debug)]
@@ -35,7 +38,7 @@ pub enum BufferWriteError {
     InvalidLen(usize, usize, usize),
 
     #[error("The buffer cannot be written since it's BufferUsages does not contain the write flag")]
-    InvalidPermissions,
+    NonWritable,
 }
 
 #[derive(Error, Debug)]
@@ -54,5 +57,10 @@ pub enum BufferClearError {
 }
 
 #[derive(Error, Debug)]
-#[error("The given buffer cannot be mapped to host memory")]
-pub struct BufferNotMappableError;
+pub enum BufferNotMappableError {
+    #[error("The buffer cannot be mapped (read) since it's BufferUsages does not contain the write flag")]
+    NonReadable,
+
+    #[error("The buffer cannot be mapped (write) since it's BufferUsages does not contain the write flag")]
+    NonWritable,
+}

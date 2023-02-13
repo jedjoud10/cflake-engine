@@ -8,7 +8,7 @@ fn main() {
         .set_app_name("cflake engine prototype example")
         .insert_init(init)
         .insert_update(update)
-        .set_frame_rate_limit(FrameRateLimit::Limited(60))
+        .set_frame_rate_limit(FrameRateLimit::Unlimited)
         .execute();
 }
 
@@ -16,6 +16,21 @@ fn main() {
 fn init(world: &mut World) {
     let assets = world.get::<Assets>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
+
+    let mut buffer = TriangleBuffer::<u32>::from_slice(
+        &graphics,
+        &[[0, 1, 2]],
+        BufferMode::Resizable,
+        BufferUsage::ReadWrite
+    ).unwrap();
+
+    buffer.write(&[[1, 1, 1]], 0).unwrap();
+    let view = buffer.as_view().unwrap();
+    dbg!(view.as_slice());
+
+    panic!()
+
+    /*
     let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
     let mut materials = world.get_mut::<Storage<Basic>>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
@@ -29,7 +44,6 @@ fn init(world: &mut World) {
         tint: vek::Rgb::default(),
     });
 
-    /*
     let id = material_id.unwrap();
     let mesh = assets.load::<Mesh>(("engine/meshes/cube.obj", &*graphics)).unwrap();
     let vertices = mesh.vertices();
@@ -40,41 +54,6 @@ fn init(world: &mut World) {
 
     let surface = Surface::new(mesh, material, id);
     scene.insert(surface);
-    */
-
-    /*
-    let texture = Texture2D::<R<u8>>::from_texels(
-        &graphics,
-        None,
-        vek::Extent2::new(4, 4),
-        TextureMode::Dynamic,
-        TextureUsage::Placeholder
-    ).unwrap();
-    */
-
-    /*
-    type Diffuse = Texture2D::<RGBA<Normalized<u8>>>;
-    let texture = assets.load::<Diffuse>(("engine/textures/test.jpg", &*graphics)).unwrap();
-
-    let frag = assets
-        .load::<FragmentModule>("engine/shaders/basic.frag")
-        .unwrap();
-    Compiler::new(frag).compile(&assets, &graphics).unwrap();
-    */
-
-    /*
-    let mut buffer = TriangleBuffer::<u32>::from_slice(
-        &graphics,
-        &[[0, 1, 2]],
-        BufferMode::Resizable,
-        BufferUsage::READ | BufferUsage::WRITE
-    ).unwrap();
-
-    //buffer.clear().unwrap();
-    buffer.write(&[[0, 1, 0]], 0).unwrap();
-    let mut data = [[1, 1, 1]];
-    buffer.read(&mut data, 0).unwrap();
-    dbg!(data);
     */
 }
 

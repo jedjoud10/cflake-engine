@@ -2,16 +2,16 @@ use std::{
     alloc::Layout,
     any::type_name,
     marker::PhantomData,
-    mem::{size_of, ManuallyDrop},
+    mem::{size_of, ManuallyDrop}, f32::consts::E, num::NonZeroU64,
 };
 
-use wgpu::util::DeviceExt;
+use wgpu::{util::DeviceExt, Maintain};
 
 use crate::{
     BufferClearError, BufferCopyError, BufferExtendError,
     BufferInitializationError, BufferMode, BufferNotMappableError,
     BufferReadError, BufferUsage, BufferWriteError, GpuPodRelaxed,
-    Graphics,
+    Graphics, R, BufferView, BufferViewMut,
 };
 
 // Bitmask from Vulkan BufferUsages
@@ -136,7 +136,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
             );
         }
 
-        // Panic if the buffer type isn't supported
+        // Return an error if the buffer type isn't supported
         let variant = wgpu::BufferUsages::from_bits(TYPE);
         let Some(variant) = variant else {
             return Err(
@@ -144,8 +144,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
             );
         };
 
-        // TODO: Make this work with the StagingBelt / StagingBuffer
-
+        // Wgpu usages for primary buffer 
         let wgpu_usages = variant
             | wgpu::BufferUsages::COPY_SRC
             | wgpu::BufferUsages::COPY_DST;
@@ -153,7 +152,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
         // Convert the slice into bytes
         let bytes = bytemuck::cast_slice::<T, u8>(slice);
 
-        // Allocate the WGPU buffer
+        // Allocate the primary WGPU buffer
         log::debug!("Allocating raw buffer for type {}, element len: {}, byte len: {}", type_name::<T>(), slice.len(), bytes.len());
         let buffer = graphics.device().create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
@@ -162,6 +161,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
                 usage: wgpu_usages,
             },
         );
+
         graphics.device().poll(wgpu::Maintain::Wait);
 
         // Calculate the number of elements that can fit in this one allocation
@@ -296,8 +296,8 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
         }
 
         // Make sure we can write to the buffer
-        if !self.usage.contains(BufferUsage::WRITE) {
-            return Err(BufferWriteError::InvalidPermissions);
+        if self.usage != BufferUsage::Write && self.usage != BufferUsage::ReadWrite {
+            return Err(BufferWriteError::NonWritable);
         }
 
         // Make sure the "offset" doesn't cause writes outside the buffer
@@ -313,14 +313,9 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
         let offset =
             wgpu::BufferAddress::try_from(offset * self.stride())
                 .unwrap();
-        self.graphics.queue().write_buffer(
-            &self.buffer,
-            offset,
-            bytemuck::cast_slice(src),
-        );
 
-        // Wait for the write to happen
-        self.graphics.queue().submit([]);
+        todo!();
+
         Ok(())
     }
 
@@ -336,8 +331,8 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
         }
 
         // Make sure we can read from the buffer
-        if !self.usage.contains(BufferUsage::READ) {
-            return Err(BufferReadError::InvalidPermissions);
+        if self.usage != BufferUsage::Read && self.usage != BufferUsage::ReadWrite {
+            return Err(BufferReadError::NonReadable);
         }
 
         // Make sure the "offset" doesn't cause reads outside the buffer
@@ -349,57 +344,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
             ));
         }
 
-        let offset = u64::try_from(self.stride() * offset).unwrap();
-        let size = u64::try_from(self.stride() * dst.len()).unwrap();
-
-        //TODO: Add this again
         todo!();
-        /*
-        // Create the staging buffer's descriptor
-        let desc = wgpu::BufferDescriptor {
-            label: None,
-            size,
-            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
-            mapped_at_creation: false,
-        };
-
-        // Create a temporary staging buffer
-        let staging = self.graphics.device().create_buffer(&desc);
-
-        let mut encoder = self.graphics.device().create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: None,
-        });
-
-        // Record the copy command
-        encoder.copy_buffer_to_buffer(
-            &self.buffer,
-            offset,
-            &staging,
-            0,
-            size
-        );
-
-        // Submit the encoder to the queue
-        self.graphics.queue().submit(Some(encoder.finish()));
-        */
-        self.graphics.queue().submit([]);
-
-        // Map the buffer (and wait)
-        type MapResult = Result<(), wgpu::BufferAsyncError>;
-        let (tx, rx) = std::sync::mpsc::channel::<MapResult>();
-        let staging_slice = self.buffer.slice(..);
-
-        // Map async (but wait for submission)
-        staging_slice.map_async(wgpu::MapMode::Read, move |res| {
-            tx.send(res).unwrap()
-        });
-        self.graphics.device().poll(wgpu::Maintain::Wait);
-
-        // Wait until the buffer is mapped, then read
-        if let Ok(Ok(_)) = rx.recv() {
-            let bytes = &*staging_slice.get_mapped_range();
-            dst.copy_from_slice(bytemuck::cast_slice(bytes));
-        }
 
         Ok(())
     }
@@ -411,20 +356,20 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
         }
 
         self.length = 0;
-        let mut encoder =
-            self.graphics.device().create_command_encoder(
-                &wgpu::CommandEncoderDescriptor { label: None },
-            );
+        let mut encoder = self.graphics.acquire();
         encoder.clear_buffer(&self.buffer, 0, None);
-        self.graphics.queue().submit(Some(encoder.finish()));
-
-        /*
-        unsafe {
-            self.clear_unchecked();
-        }
-        */
-
+        self.graphics.submit([encoder]);
         Ok(())
+    }
+
+
+    // Fill the buffer with a repeating value specified by "val"
+    pub fn splat(
+        &mut self,
+        val: T
+    ) -> Result<(), BufferWriteError> {
+        let src = vec![val; self.length];
+        self.write(&src, 0)
     }
 
     // Copy the data from another buffer into this buffer instantly
@@ -455,14 +400,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
             ));
         }
 
-        /*
-        unsafe {
-            self.copy_from_unchecked(
-                src, dst_offset, src_offset, length,
-            );
-        }
-        */
-
+        todo!();
         Ok(())
     }
 
@@ -485,24 +423,46 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
             return Err(BufferExtendError::IllegalReallocation);
         }
 
-        /*
-        unsafe {
-            self.extend_from_slice_unchecked(slice);
+        if self.usage != BufferUsage::Write && self.usage != BufferUsage::ReadWrite {
+            return Err(BufferExtendError::NonWritable);
         }
-        */
+
+        todo!();
 
         Ok(())
     }
 
     // Try to view the buffer immutably immediately
-    pub fn as_slice(&self) -> Result<&[T], BufferNotMappableError> {
-        todo!()
+    pub fn as_view(&self) -> Result<BufferView<T, TYPE>, BufferNotMappableError> {
+        if self.usage != BufferUsage::Read && self.usage != BufferUsage::ReadWrite {
+            return Err(BufferNotMappableError::NonWritable);
+        }
+
+        let staging = self.graphics.staging_pool();
+        let size = self.len() * self.stride();
+
+        Ok(BufferView {
+            buffer: self,
+            data: staging.download(
+                &self.graphics,
+                &self.buffer,
+                0,
+                NonZeroU64::new(size as u64).unwrap(),
+            ),
+            staging,
+        })
     }
 
-    // Try to view the buffer mutably immediately
-    pub fn as_slice_mut(
+    // Try to view the buffer mutably (for writing AND reading) immediately
+    pub fn as_view_mut(
         &mut self,
-    ) -> Result<&mut [T], BufferNotMappableError> {
+    ) -> Result<BufferViewMut<T, TYPE>, BufferNotMappableError> {
+        if self.usage != BufferUsage::ReadWrite {
+            return Err(BufferNotMappableError::NonWritable);
+        }
+
+        // Read the buffer into a temporary buffer, and flush the write at the end
+
         todo!()
     }
 }

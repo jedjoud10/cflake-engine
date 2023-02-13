@@ -1,6 +1,6 @@
 use crate::{
     FrameRateLimit, Graphics, InternalGraphics, Window,
-    WindowSettings,
+    WindowSettings, StagingPool,
 };
 
 use dashmap::DashMap;
@@ -89,15 +89,12 @@ pub(crate) unsafe fn init_context_and_window(
     };
     surface.configure(&device, &surface_config);
 
-    // Create a new Wgpu staging belt
-    let staging = wgpu::util::StagingBelt::new(4096);
-
     // Create the Graphics context wrapper
     let graphics = Graphics(Arc::new(InternalGraphics {
         device,
         queue,
         adapter,
-        staging: Mutex::new(staging),
+        staging: StagingPool::new(4096),
         samplers: DashMap::default(),
     }));
 

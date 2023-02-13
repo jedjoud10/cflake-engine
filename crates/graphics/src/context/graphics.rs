@@ -8,7 +8,7 @@ use wgpu::{
     SurfaceConfiguration, TextureView, Sampler, Adapter, CommandEncoder,
 };
 
-use crate::{SamplerWrap, SamplerSettings};
+use crate::{SamplerWrap, SamplerSettings, StagingPool};
 
 // Internnal graphics context that will eventually be wrapped within an Arc
 pub(crate) struct InternalGraphics {
@@ -17,8 +17,8 @@ pub(crate) struct InternalGraphics {
     pub(crate) adapter: Adapter,
     pub(crate) queue: Queue,
 
-    // Buffer staging belt
-    pub(crate) staging: Mutex<StagingBelt>,
+    // Buffer staging pool
+    pub(crate) staging: StagingPool,
 
     // Cached texture samplers 
     pub(crate) samplers: DashMap<SamplerSettings, Arc<Sampler>>,
@@ -45,8 +45,8 @@ impl Graphics {
         &self.0.adapter
     }
 
-    // Get the wgpu buffer staging belt
-    pub fn staging_belt(&self) -> &Mutex<StagingBelt> {
+    // Get the buffer staging pool
+    pub fn staging_pool(&self) -> &StagingPool {
         &self.0.staging
     }
 

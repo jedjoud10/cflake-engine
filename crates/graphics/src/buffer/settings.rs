@@ -13,14 +13,21 @@ pub enum BufferMode {
 }
 
 // How exactly are we going to use the buffer?
-bitflags::bitflags! {
-    pub struct BufferUsage: u32 {
-        // The buffer is only going to be used for reading GPU data back
-        // Example: Data generated from a compute shader read back to the CPU
-        const READ = 0b01;
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
+pub enum BufferUsage {
+    // The buffer is not accessible on the CPU side
+    None,
 
-        // The buffer is only going to be used to send data to the GPU
-        // Example: Non-readable vertex buffers
-        const WRITE = 0b10;
-    }
+    // The buffer is only going to be used for reading GPU data back
+    // Example: Data generated from a compute shader read back to the CPU
+    #[default]
+    Read,
+
+    // The buffer is only going to be used to send data to the GPU
+    // Example: Non-readable vertex buffers
+    Write,
+    
+    // The buffer and be written to AND read on the CPU
+    ReadWrite,
 }
+

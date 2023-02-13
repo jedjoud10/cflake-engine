@@ -124,7 +124,8 @@ impl VerticesMut<'_> {
     // Try to compute the AABB of the mesh using updated position vertices
     pub fn compute_aabb(&mut self) -> Result<AABB, MeshAabbComputeError> {
         let attribute = self.attribute::<Position>().ok_or(MeshAabbComputeError::MissingPositionAttributeBuffer)?;
-        let slice = attribute.as_slice().map_err(MeshAabbComputeError::NotHostMapped)?;
+        let view = attribute.as_view().map_err(MeshAabbComputeError::NotHostMapped)?;
+        let slice = view.as_slice();
         let aabb = super::aabb_from_points(slice).ok_or(MeshAabbComputeError::EmptyPositionAttributeBuffer)?;
         Ok(aabb)
     }
