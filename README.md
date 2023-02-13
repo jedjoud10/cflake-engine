@@ -6,7 +6,7 @@ Currently, cFlake engine is under heavy development (***very*** WIP), but pull r
 * Custom World Events, Systems, and Resources all accessible within the **World** struct
 * Deterministic event sorting through multiple stages 
 * Archetypal ECS built to be used in conjunction with the World Events and Systems
-* Custom Renderer built on OpenGL and Glutin (**WIP, currently switching to Ash and Winit**)
+* Custom Graphics API built on OpenGL and Glutin (**WIP, currently switching to Wgpu**)
 * GPU Voxel generation and Octree Terrain (disabled temporarily)
 * Asynchronous asset loader and utility thread pool
 * Input handling with gamepad support (gilrs) and keybinding serialization / deserialization
