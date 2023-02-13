@@ -94,7 +94,7 @@ pub(crate) unsafe fn init_context_and_window(
         device,
         queue,
         adapter,
-        staging: StagingPool::new(4096),
+        staging: Mutex::new(StagingPool::new(4096)),
         samplers: DashMap::default(),
     }));
 

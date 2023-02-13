@@ -18,7 +18,7 @@ pub(crate) struct InternalGraphics {
     pub(crate) queue: Queue,
 
     // Buffer staging pool
-    pub(crate) staging: StagingPool,
+    pub(crate) staging: Mutex<StagingPool>,
 
     // Cached texture samplers 
     pub(crate) samplers: DashMap<SamplerSettings, Arc<Sampler>>,
@@ -46,7 +46,7 @@ impl Graphics {
     }
 
     // Get the buffer staging pool
-    pub fn staging_pool(&self) -> &StagingPool {
+    pub fn staging_pool(&self) -> &Mutex<StagingPool> {
         &self.0.staging
     }
 

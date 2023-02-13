@@ -1,4 +1,5 @@
 use std::num::NonZeroU64;
+use parking_lot::Mutex;
 use wgpu::{CommandEncoder, Maintain};
 use crate::Graphics;
 
@@ -19,6 +20,7 @@ struct Allocation {
 // multiple download / upload operations
 pub struct StagingPool {
     download: Vec<Allocation>,
+    chunk_size: u64,
 }
 
 impl StagingPool {
@@ -26,6 +28,7 @@ impl StagingPool {
     pub fn new(chunk_size: u64) -> Self {
         Self {
             download: todo!(),
+            chunk_size,
         }
     }
 
@@ -46,7 +49,7 @@ impl StagingPool {
         buffer: &'a wgpu::Buffer,
         offset: wgpu::BufferAddress,
         size: wgpu::BufferSize,
-    ) -> wgpu::BufferView<'a> {
+    ) -> Option<wgpu::BufferView<'a>> {
         let AllocationId {
             index,
             start,
@@ -83,13 +86,13 @@ impl StagingPool {
 
         // Wait until the buffer is mapped, then return
         if let Ok(Ok(_)) = rx.recv() {
-            return slice.get_mapped_range();
+            Some(slice.get_mapped_range())
         } else {
-            panic!()
+            None
         }
     }
 
-    // Request an immediate buffer upload (either through mappable buffer or not)
+    // Request an immediate buffer upload (though write_buffer_with)
     pub fn upload<'a>(
         &self, 
         graphics: &'a Graphics,
@@ -101,4 +104,6 @@ impl StagingPool {
             buffer, offset, size
         ).unwrap()
     }
+
+    // Request an immediate buffer upload by copying data into a buffer and return it
 }

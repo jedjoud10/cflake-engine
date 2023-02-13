@@ -427,7 +427,52 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
             return Err(BufferExtendError::NonWritable);
         }
 
-        todo!();
+        // We know this is valid before hand
+        let variant = wgpu::BufferUsages::from_bits(TYPE).unwrap();
+
+        // Wgpu usages for primary buffer 
+        let usage = variant
+            | wgpu::BufferUsages::COPY_SRC
+            | wgpu::BufferUsages::COPY_DST;
+
+        // Check if we need to allocate a new buffer
+        if slice.len() + self.length > self.capacity {            
+            // Calculate a new capacity and new length
+            let capacity = self.capacity + slice.len();
+            let size = (capacity * self.stride()) as u64;
+
+            // Allocate a new buffer with a higher capacity
+            let buffer = self.graphics.device().create_buffer(&wgpu::BufferDescriptor {
+                label: None,
+                size,
+                usage,
+                mapped_at_creation: false,
+            });
+
+            // Copy the current buffer to the new one
+            let mut encoder = self.graphics.acquire();
+            encoder.copy_buffer_to_buffer(
+                &self.buffer,
+                0,
+                &buffer,
+                0,
+                (self.length * self.stride()) as u64
+            );
+
+            // Wait till the copy finishes
+            self.graphics.submit([encoder]);
+            self.graphics.device().poll(Maintain::Wait);
+
+            // Swap them out, and drop the last buffer
+            let old = std::mem::replace(&mut self.buffer, buffer);
+            drop(old)
+        } else {
+            // Just read into a sub-part of the buffer
+            self.write(
+                slice,
+                self.length,
+            ).unwrap();
+        }
 
         Ok(())
     }
@@ -439,16 +484,21 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
         }
 
         let staging = self.graphics.staging_pool();
+        let staging = staging.lock();
         let size = self.len() * self.stride();
+
+        parking_lot::MutexGuard::map(s, f)
+
+        let data = staging.download(
+            &self.graphics,
+            &self.buffer,
+            0,
+            NonZeroU64::new(size as u64).unwrap(),
+        ).unwrap();
 
         Ok(BufferView {
             buffer: self,
-            data: staging.download(
-                &self.graphics,
-                &self.buffer,
-                0,
-                NonZeroU64::new(size as u64).unwrap(),
-            ),
+            data,
             staging,
         })
     }
