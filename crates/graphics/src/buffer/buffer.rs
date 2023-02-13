@@ -309,12 +309,8 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
             ));
         }
 
-        // Write to the buffer
-        let offset =
-            wgpu::BufferAddress::try_from(offset * self.stride())
-                .unwrap();
-
         todo!();
+        
 
         Ok(())
     }
@@ -487,20 +483,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
         let staging = staging.lock();
         let size = self.len() * self.stride();
 
-        parking_lot::MutexGuard::map(s, f)
-
-        let data = staging.download(
-            &self.graphics,
-            &self.buffer,
-            0,
-            NonZeroU64::new(size as u64).unwrap(),
-        ).unwrap();
-
-        Ok(BufferView {
-            buffer: self,
-            data,
-            staging,
-        })
+        todo!();
     }
 
     // Try to view the buffer mutably (for writing AND reading) immediately
