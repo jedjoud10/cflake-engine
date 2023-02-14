@@ -19,7 +19,7 @@ pub enum BufferExtendError {
     )]
     IllegalReallocation,
 
-    #[error("The buffer cannot be written since it's BufferUsages does not contain the write flag")]
+    #[error("The buffer cannot be written since it's BufferUsages is not Write nor ReadWrite")]
     NonWritable,
 }
 
@@ -28,7 +28,7 @@ pub enum BufferReadError {
     #[error("The given destination slice of length {0} (or offset of {1}) would overflow the buffer of length {2}")]
     InvalidLen(usize, usize, usize),
 
-    #[error("The buffer cannot be read since it's BufferUsages does not contain the read flag")]
+    #[error("The buffer cannot be read since it's BufferUsages is not Read nor ReadWrite")]
     NonReadable,
 }
 
@@ -37,7 +37,7 @@ pub enum BufferWriteError {
     #[error("The given source slice of length {0} (or offset of {1}) would overflow the buffer of length {2}")]
     InvalidLen(usize, usize, usize),
 
-    #[error("The buffer cannot be written since it's BufferUsages does not contain the write flag")]
+    #[error("The buffer cannot be written since it's BufferUsages is not Write nor ReadWrite")]
     NonWritable,
 }
 
@@ -58,9 +58,9 @@ pub enum BufferClearError {
 
 #[derive(Error, Debug)]
 pub enum BufferNotMappableError {
-    #[error("The buffer cannot be mapped (read) since it's BufferUsages does not contain the write flag")]
-    NonReadable,
+    #[error("The buffer cannot be mapped (read) since it's BufferUsages is not Read nor ReadWrite")]
+    AsView,
 
-    #[error("The buffer cannot be mapped (write) since it's BufferUsages does not contain the write flag")]
-    NonWritable,
+    #[error("The buffer cannot be mapped (for reading AND writing) since it's BufferUsages is not ReadWrite")]
+    AsViewMut,
 }

@@ -1,6 +1,5 @@
 mod bitset;
 mod file;
-mod logger;
 mod storage;
 mod system;
 mod tests;
@@ -9,7 +8,6 @@ mod time;
 pub use bitset::*;
 pub use file::*;
 pub use log;
-pub use logger::*;
 pub use storage::*;
 pub use system::*;
 pub use tests::*;

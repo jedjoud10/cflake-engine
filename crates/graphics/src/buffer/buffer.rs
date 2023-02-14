@@ -11,7 +11,7 @@ use crate::{
     BufferClearError, BufferCopyError, BufferExtendError,
     BufferInitializationError, BufferMode, BufferNotMappableError,
     BufferReadError, BufferUsage, BufferWriteError, GpuPodRelaxed,
-    Graphics, R, BufferView, BufferViewMut,
+    Graphics, R, BufferView, BufferViewMut, StagingPool,
 };
 
 // Bitmask from Vulkan BufferUsages
@@ -476,14 +476,24 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
     // Try to view the buffer immutably immediately
     pub fn as_view(&self) -> Result<BufferView<T, TYPE>, BufferNotMappableError> {
         if self.usage != BufferUsage::Read && self.usage != BufferUsage::ReadWrite {
-            return Err(BufferNotMappableError::NonWritable);
+            return Err(BufferNotMappableError::AsView);
         }
 
         let staging = self.graphics.staging_pool();
-        let staging = staging.lock();
         let size = self.len() * self.stride();
 
-        todo!();
+        let view = staging.download(
+            &self.buffer,
+            &self.graphics,
+            0,
+            NonZeroU64::new(size as u64).unwrap()
+        ).unwrap();
+
+        Ok(BufferView {
+            _phantom: PhantomData,
+            //data: view,
+            data: todo!()
+        })
     }
 
     // Try to view the buffer mutably (for writing AND reading) immediately
@@ -491,7 +501,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
         &mut self,
     ) -> Result<BufferViewMut<T, TYPE>, BufferNotMappableError> {
         if self.usage != BufferUsage::ReadWrite {
-            return Err(BufferNotMappableError::NonWritable);
+            return Err(BufferNotMappableError::AsViewMut);
         }
 
         // Read the buffer into a temporary buffer, and flush the write at the end

@@ -1,12 +1,13 @@
+use std::marker::PhantomData;
+
 use parking_lot::MappedMutexGuard;
 
 use crate::{GpuPodRelaxed, Buffer, StagingPool};
 
 // Allows  us to read the buffer as if it were an immutably slice
 pub struct BufferView<'a, T: GpuPodRelaxed, const TYPE: u32> {
-    pub(crate) buffer: &'a Buffer<T, TYPE>,
+    pub(crate) _phantom: PhantomData<&'a Buffer<T, TYPE>>,
     pub(crate) data: wgpu::BufferView<'a>,
-    pub(crate) staging: &'a StagingPool,
 }
 
 impl<'a, T: GpuPodRelaxed, const TYPE: u32> BufferView<'a, T, TYPE> {
@@ -36,7 +37,7 @@ pub enum BufferViewMut<'a, T: GpuPodRelaxed, const TYPE: u32> {
     // Used when the buffer is readable AND writable 
     Cloned {
         buffer: &'a mut Buffer<T, TYPE>,
-        data: Vec<T>
+        data: Vec<T>,
     },
 }
 
@@ -44,19 +45,22 @@ impl<'a, T: GpuPodRelaxed, const TYPE: u32> BufferViewMut<'a, T, TYPE> {
     // Get an immutable slice that we can read from
     pub fn as_slice(&self) -> &[T] {
         match self {
-            BufferViewMut::Mapped { buffer, data } => todo!(),
-            BufferViewMut::Cloned { buffer, data } => &data,
+            BufferViewMut::Mapped { data, .. } => {
+                let bytes = &*data;
+                bytemuck::cast_slice(bytes)
+            },
+            BufferViewMut::Cloned { data, .. } => &data,
         }
     }
 
     // Get a mutable slice that we can read/write from
     pub fn as_slice_mut(&mut self) -> &mut [T] {
         match self {
-            BufferViewMut::Mapped { buffer, data } => {
+            BufferViewMut::Mapped { data, .. } => {
                 let bytes = &mut **data;
                 bytemuck::cast_slice_mut(bytes)
             },
-            BufferViewMut::Cloned { buffer, data } => data,
+            BufferViewMut::Cloned { data, .. } => data,
         }
     }
 }

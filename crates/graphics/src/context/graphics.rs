@@ -18,7 +18,7 @@ pub(crate) struct InternalGraphics {
     pub(crate) queue: Queue,
 
     // Buffer staging pool
-    pub(crate) staging: Mutex<StagingPool>,
+    pub(crate) staging: StagingPool,
 
     // Cached texture samplers 
     pub(crate) samplers: DashMap<SamplerSettings, Arc<Sampler>>,
@@ -45,8 +45,8 @@ impl Graphics {
         &self.0.adapter
     }
 
-    // Get the buffer staging pool
-    pub fn staging_pool(&self) -> &Mutex<StagingPool> {
+    // Get the global buffer allocator
+    pub fn staging_pool(&self) -> &StagingPool {
         &self.0.staging
     }
 
