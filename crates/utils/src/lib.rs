@@ -5,6 +5,8 @@ mod system;
 mod tests;
 mod thread;
 mod time;
+mod atomicvec;
+pub use atomicvec::*;
 pub use bitset::*;
 pub use file::*;
 pub use log;

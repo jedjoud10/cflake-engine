@@ -2,18 +2,18 @@ use std::marker::PhantomData;
 
 use parking_lot::MappedMutexGuard;
 
-use crate::{GpuPodRelaxed, Buffer, StagingPool};
+use crate::{GpuPodRelaxed, Buffer, StagingPool, StagingView, StagingViewWrite};
 
 // Allows  us to read the buffer as if it were an immutably slice
 pub struct BufferView<'a, T: GpuPodRelaxed, const TYPE: u32> {
     pub(crate) _phantom: PhantomData<&'a Buffer<T, TYPE>>,
-    pub(crate) data: wgpu::BufferView<'a>,
+    pub(crate) data: StagingView<'a>,
 }
 
 impl<'a, T: GpuPodRelaxed, const TYPE: u32> BufferView<'a, T, TYPE> {
     // Get an immutable slice that we can read from
     pub fn as_slice(&self) -> &[T] {
-        let bytes = &*self.data;
+        let bytes = self.data.as_ref();
         bytemuck::cast_slice(bytes)
     }
 }
@@ -30,7 +30,7 @@ pub enum BufferViewMut<'a, T: GpuPodRelaxed, const TYPE: u32> {
     // Only used when WRITING ONLY
     Mapped {
         buffer: &'a mut Buffer<T, TYPE>,
-        data: wgpu::QueueWriteBufferView<'a>,
+        data: StagingViewWrite<'a>,
     }, 
 
     // Read the buffer's data to the CPU for reading/writing
@@ -46,7 +46,7 @@ impl<'a, T: GpuPodRelaxed, const TYPE: u32> BufferViewMut<'a, T, TYPE> {
     pub fn as_slice(&self) -> &[T] {
         match self {
             BufferViewMut::Mapped { data, .. } => {
-                let bytes = &*data;
+                let bytes = data.as_ref();
                 bytemuck::cast_slice(bytes)
             },
             BufferViewMut::Cloned { data, .. } => &data,
@@ -57,7 +57,7 @@ impl<'a, T: GpuPodRelaxed, const TYPE: u32> BufferViewMut<'a, T, TYPE> {
     pub fn as_slice_mut(&mut self) -> &mut [T] {
         match self {
             BufferViewMut::Mapped { data, .. } => {
-                let bytes = &mut **data;
+                let bytes = data.as_mut();
                 bytemuck::cast_slice_mut(bytes)
             },
             BufferViewMut::Cloned { data, .. } => data,

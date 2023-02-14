@@ -280,3 +280,20 @@ mod storage {
         assert_eq!(1, *storage.get(&one));
     }
 }
+
+#[cfg(test)]
+mod atomic_vec {
+    use crate::AtomicVec;
+
+    #[test]
+    fn init() {
+        let vec = AtomicVec::<u32>::new();
+        vec.push(5);
+        vec.push(1);
+        vec.push(2);
+
+        assert_eq!(*vec.get(0).unwrap(), 5);
+        assert_eq!(*vec.get(1).unwrap(), 1);
+        assert_eq!(*vec.get(2).unwrap(), 2);
+    }
+}

@@ -486,13 +486,12 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
             &self.buffer,
             &self.graphics,
             0,
-            NonZeroU64::new(size as u64).unwrap()
+            size as u64
         ).unwrap();
 
         Ok(BufferView {
             _phantom: PhantomData,
-            //data: view,
-            data: todo!()
+            data: view,
         })
     }
 

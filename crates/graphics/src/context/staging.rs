@@ -4,8 +4,8 @@ use wgpu::{CommandEncoder, Maintain};
 use crate::Graphics;
 
 // Contains a sub-allocated block of memory (which also contains a reference to it's backing WGPU buffer)
-pub struct BlockId {
-    buffer: Arc<wgpu::Buffer>,
+pub struct BlockId<'a> {
+    buffer: &'a wgpu::Buffer,
     start: u64,
     end: u64, 
 }
@@ -40,6 +40,12 @@ impl<'a> AsMut<[u8]> for StagingViewWrite<'a> {
     }
 }
 
+impl<'a> AsRef<[u8]> for StagingViewWrite<'a> {
+    fn as_ref(&self) -> &[u8] {
+        &self.view
+    }
+}
+
 impl<'a> Drop for StagingViewWrite<'a> {
     fn drop(&mut self) {
         self.staging.unmap();
@@ -61,52 +67,131 @@ impl<'a> Drop for StagingViewWrite<'a> {
 }
 
 // A backed up allocation that might contain sparsely used data
-#[derive(Clone)]
 struct Allocation {
-    backing: Arc<wgpu::Buffer>,
-    size: wgpu::BufferSize,
-    read: bool,
-    write: bool,
-    used: Arc<Mutex<Vec<BlockId>>>,
+    backing: wgpu::Buffer,
+    size: wgpu::BufferAddress,
+    mode: wgpu::MapMode,
+    used: Mutex<Vec<(wgpu::BufferAddress, wgpu::BufferAddress)>>,
+}
+
+impl Allocation {
+    // Checks if a block has enough empty space to contain "capacity"
+    // If we do, this returns a slice with the calculated (start, end) end points
+    fn allocate_block(
+        &self,
+        capacity: wgpu::BufferAddress
+    ) -> Option<BlockId> {
+        // Keep track of empty spaces within the sub buffer
+        let mut last = 0u64;
+        let mut last_index = 0;
+        let mut output = None;
+        let mut used = self.used.lock(); 
+
+        // Try to find a free block of memory within the used blocks
+        for (i, (start, end)) in used.iter().enumerate() {
+            if *start != last && (start - last) > capacity {
+                output = Some((last, *start));
+                last_index = i;
+            }
+
+            last = *end;
+        }
+
+        // Try to find a free block at the end of the used blocks of memory
+        if let Some((_, end)) = used.last() {
+            let potential_block_size = capacity - end;
+            if output.is_none() && (potential_block_size > capacity) {
+                output = Some((*end, *end + capacity));
+                last_index = used.len()-1;
+            }
+        }
+
+        // Try to find a free block at the start of the used blocks of memory
+        if used.is_empty()
+            && output.is_none()
+            && (self.size >= capacity)
+        {
+            output = Some((0, capacity));
+        }
+
+        output.map(|(start, end)| {
+            used.insert(last_index + 1,(start, end));
+            BlockId {
+                buffer: &self.backing,
+                start,
+                end,
+            }
+        })
+    }
 }
 
 // Staging buffer belt that can re-use multiple mappable buffers for 
 // multiple download / upload operations
 // TODO: Re-write this to make it a global buffer allocater / manager
 pub struct StagingPool {
-    allocations: Mutex<Vec<Allocation>>,
+    allocations: Vec<Allocation>,
 }
 
 impl StagingPool {
     // Create a new staging belt for upload / download
     pub fn new() -> Self {
         Self {
-            allocations: Mutex::new(Vec::new()),
+            allocations: Vec::new(),
         }
     }
 
-    // Checks if a block has enough empty space to contain "capacity"
-    // If we do, this returns a slice with the calculated (start, end) end points
-    fn is_sparse_for(
-        allocation: &Allocation,
-        capacity: wgpu::BufferSize
-    ) -> Option<(usize, usize)> {
-        None
+    // This WILL allocate a new block of memory for a specific size
+    fn allocate(
+        &self,
+        graphics: &Graphics,
+        mode: wgpu::MapMode,
+        capacity: wgpu::BufferAddress,
+    ) -> Allocation {
+        let usage = match mode {
+            wgpu::MapMode::Read => wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+            wgpu::MapMode::Write => wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::MAP_WRITE,
+        };
+
+        // If not, make a new allocation (with a bigger capacity than the original allocation) and use a part of it
+        let backing = graphics.device().create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: capacity,
+            usage,
+            mapped_at_creation: false,
+        });
+
+        Allocation {
+            backing,
+            size: capacity,
+            mode,
+            used: Mutex::new(Vec::new()),
+        }
     }
 
     // Tries to find a free block of memory that we can use, and allocate a new one if needed
-    fn allocate(
+    fn find_or_allocate(
         &self,
+        graphics: &Graphics,
         mode: wgpu::MapMode,
-        capacity: wgpu::BufferSize,
-    ) -> &BlockId {
+        capacity: wgpu::BufferAddress,
+    ) -> BlockId {
         // Iterates over each block and checks if any of them have enough space for "capacity"
-        self.download. Self::is_sparse_for(allocation, capacity)
-        
-        // If we find a block with enough space, create a new BlockId and push it for that specific allocation
+        let block = self.allocations.iter().filter_map(|allocation| {
+            allocation.allocate_block(capacity)
+        }).next();
 
-        // If not, make a new allocation (with a bigger capacity than the original allocation) and use a part of it
-        todo!()
+        if let Some(block) = block {
+            block
+        } else {
+            //self.allocations.push(allocation);
+            let allocation = self.allocate(graphics, mode, capacity);
+            let allocation = self.allocations.get(0).unwrap();
+            BlockId {
+                buffer: &allocation.backing,
+                start: todo!(),
+                end: todo!(),
+            }
+        }
     }
 
     // Request an immediate buffer download (copies data from buffer to accessible mappable buffer)
@@ -116,14 +201,14 @@ impl StagingPool {
         buffer: &wgpu::Buffer,
         graphics: &Graphics,
         offset: wgpu::BufferAddress,
-        size: wgpu::BufferSize,
+        size: wgpu::BufferAddress,
     ) -> Option<StagingView<'a>> {
         // Decomspoe the allocation buffer
         let BlockId {
             buffer: staging,
             start,
             end,
-        } = self.allocate(wgpu::MapMode::Read, size);
+        } = self.find_or_allocate(graphics, wgpu::MapMode::Read, size);
 
         // Record the copy command
         let mut encoder = graphics.acquire();
@@ -131,8 +216,8 @@ impl StagingPool {
             &buffer,
             offset,
             &staging,
-            *start,
-            size.get()
+            start,
+            size
         );  
 
         // Submit the copy command (but don't wait for it)
@@ -167,14 +252,14 @@ impl StagingPool {
         buffer: &'a wgpu::Buffer,
         graphics: &'a Graphics,
         offset: wgpu::BufferAddress,
-        size: wgpu::BufferSize,
+        size: wgpu::BufferAddress,
     ) -> Option<StagingViewWrite<'a>> {
         // Decomspoe the allocation buffer
         let BlockId {
             buffer: staging,
             start,
             end,
-        } = self.allocate(wgpu::MapMode::Write, size);
+        } = self.find_or_allocate(graphics, wgpu::MapMode::Write, size);
 
         // Map the staging buffer
         type MapResult = Result<(), wgpu::BufferAsyncError>;
@@ -196,8 +281,8 @@ impl StagingPool {
                 graphics,
                 staging,
                 dst_offset: offset,
-                staging_offset: *start,
-                size: size.get(),
+                staging_offset: start,
+                size,
             })
         } else {
             None
