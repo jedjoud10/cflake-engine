@@ -1,5 +1,6 @@
 use std::{num::NonZeroU64, sync::Arc, ops::DerefMut};
 use parking_lot::Mutex;
+use utils::AtomicVec;
 use wgpu::{CommandEncoder, Maintain};
 use crate::Graphics;
 
@@ -86,7 +87,7 @@ impl Allocation {
         let mut last_index = 0;
         let mut output = None;
         let mut used = self.used.lock(); 
-
+        
         // Try to find a free block of memory within the used blocks
         for (i, (start, end)) in used.iter().enumerate() {
             if *start != last && (start - last) > capacity {
@@ -115,7 +116,7 @@ impl Allocation {
         }
 
         output.map(|(start, end)| {
-            used.insert(last_index + 1,(start, end));
+            used.insert(last_index,(start, end));
             BlockId {
                 buffer: &self.backing,
                 start,
@@ -129,42 +130,14 @@ impl Allocation {
 // multiple download / upload operations
 // TODO: Re-write this to make it a global buffer allocater / manager
 pub struct StagingPool {
-    allocations: Vec<Allocation>,
+    allocations: boxcar::Vec<Allocation>,
 }
 
 impl StagingPool {
     // Create a new staging belt for upload / download
     pub fn new() -> Self {
         Self {
-            allocations: Vec::new(),
-        }
-    }
-
-    // This WILL allocate a new block of memory for a specific size
-    fn allocate(
-        &self,
-        graphics: &Graphics,
-        mode: wgpu::MapMode,
-        capacity: wgpu::BufferAddress,
-    ) -> Allocation {
-        let usage = match mode {
-            wgpu::MapMode::Read => wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
-            wgpu::MapMode::Write => wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::MAP_WRITE,
-        };
-
-        // If not, make a new allocation (with a bigger capacity than the original allocation) and use a part of it
-        let backing = graphics.device().create_buffer(&wgpu::BufferDescriptor {
-            label: None,
-            size: capacity,
-            usage,
-            mapped_at_creation: false,
-        });
-
-        Allocation {
-            backing,
-            size: capacity,
-            mode,
-            used: Mutex::new(Vec::new()),
+            allocations: boxcar::Vec::new(),
         }
     }
 
@@ -175,22 +148,49 @@ impl StagingPool {
         mode: wgpu::MapMode,
         capacity: wgpu::BufferAddress,
     ) -> BlockId {
+        log::debug!("Looking for block with size {capacity} and mode {mode:?}...");
+
         // Iterates over each block and checks if any of them have enough space for "capacity"
         let block = self.allocations.iter().filter_map(|allocation| {
             allocation.allocate_block(capacity)
         }).next();
 
         if let Some(block) = block {
+            log::debug!("Found free block from buffer backed allocation with buffer {:?}", block.buffer);
             block
         } else {
-            //self.allocations.push(allocation);
-            let allocation = self.allocate(graphics, mode, capacity);
+            // Convert the map mode to the proper usages
+            let usage = match mode {
+                wgpu::MapMode::Read => wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+                wgpu::MapMode::Write => wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::MAP_WRITE,
+            };
+
+            // Scale up the capacity (so we don't have to allocate a new block anytime soon)
+            let capacity = (capacity*4).next_power_of_two();
+
+            // Allocate a new backing buffer as requested
+            log::warn!("Did not find block, allocating new buffer with size {capacity} and mode {mode:?}");
+            let backing = graphics.device().create_buffer(&wgpu::BufferDescriptor {
+                label: None,
+                size: capacity,
+                usage,
+                mapped_at_creation: false,
+            });
+
+            // Create the allocation struct
+            let allocation = Allocation {
+                backing,
+                size: capacity,
+                mode,
+                used: Mutex::new(Vec::new()),
+            };
+            
+            // Add and fetch to make sure WE own the allocation
+            self.allocations.push(allocation);
             let allocation = self.allocations.get(0).unwrap();
-            BlockId {
-                buffer: &allocation.backing,
-                start: todo!(),
-                end: todo!(),
-            }
+
+            // Create a sub-block for the allocation
+            allocation.allocate_block(capacity).unwrap()
         }
     }
 

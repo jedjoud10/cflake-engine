@@ -309,8 +309,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
             ));
         }
 
-        todo!();
-        
+        todo!();        
 
         Ok(())
     }
