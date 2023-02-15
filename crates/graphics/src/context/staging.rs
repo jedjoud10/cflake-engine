@@ -5,7 +5,8 @@ use wgpu::{CommandEncoder, Maintain};
 use crate::Graphics;
 
 // Contains a sub-allocated block of memory (which also contains a reference to it's backing WGPU buffer)
-pub struct BlockId<'a> {
+struct BlockId<'a> {
+    allocation: &'a Allocation,
     buffer: &'a wgpu::Buffer,
     start: u64,
     end: u64, 
@@ -14,7 +15,15 @@ pub struct BlockId<'a> {
 // This is the view returned from the download() method of the staging pool
 // This allows us to read the data of the given buffer at the given offset and slice
 pub struct StagingView<'a> {
+    allocation: &'a Allocation,
+    block: BlockId<'a>,
     view: wgpu::BufferView<'a>,
+}
+
+impl<'a> Drop for StagingView<'a> {
+    fn drop(&mut self) {
+        self.allocation.unmap_block(&self.block);
+    }
 }
 
 impl<'a> AsRef<[u8]> for StagingView<'a> {
@@ -27,9 +36,11 @@ impl<'a> AsRef<[u8]> for StagingView<'a> {
 // This allows us to write to the given buffer (it will submit this write when this gets dropped)
 pub struct StagingViewWrite<'a> {
     view: wgpu::BufferViewMut<'a>,
+    block: BlockId<'a>,
     buffer: &'a wgpu::Buffer,
     staging: &'a wgpu::Buffer,
     graphics: &'a Graphics,
+    allocation: &'a Allocation,
     dst_offset: wgpu::BufferAddress,
     staging_offset: wgpu::BufferAddress,
     size: wgpu::BufferAddress,
@@ -50,6 +61,7 @@ impl<'a> AsRef<[u8]> for StagingViewWrite<'a> {
 impl<'a> Drop for StagingViewWrite<'a> {
     fn drop(&mut self) {
         self.staging.unmap();
+        self.allocation.unmap_block(&self.block);
 
         // Record the copy command
         let mut encoder = self.graphics.acquire();
@@ -78,7 +90,7 @@ struct Allocation {
 impl Allocation {
     // Checks if a block has enough empty space to contain "capacity"
     // If we do, this returns a slice with the calculated (start, end) end points
-    fn allocate_block(
+    fn map_block(
         &self,
         capacity: wgpu::BufferAddress
     ) -> Option<BlockId> {
@@ -89,10 +101,11 @@ impl Allocation {
         let mut used = self.used.lock(); 
         
         // Try to find a free block of memory within the used blocks
+        dbg!(used.len());
         for (i, (start, end)) in used.iter().enumerate() {
             if *start != last && (start - last) > capacity {
                 output = Some((last, *start));
-                last_index = i;
+                last_index = i; 
             }
 
             last = *end;
@@ -121,8 +134,25 @@ impl Allocation {
                 buffer: &self.backing,
                 start,
                 end,
+                allocation: self,
             }
         })
+    }
+
+    // Unmap a block of memory that was already mapped
+    fn unmap_block(
+        &self,
+        block: &BlockId
+    ) {
+        let mut locked = self.used.lock();
+
+        let index = locked.iter().cloned().position(|(start, end)| 
+            start == block.start && end == block.end
+        );
+
+        if let Some(index) = index {
+            locked.remove(index);
+        }
     }
 }
 
@@ -152,7 +182,7 @@ impl StagingPool {
 
         // Iterates over each block and checks if any of them have enough space for "capacity"
         let block = self.allocations.iter().filter_map(|allocation| {
-            allocation.allocate_block(capacity)
+            allocation.map_block(capacity)
         }).next();
 
         if let Some(block) = block {
@@ -166,13 +196,13 @@ impl StagingPool {
             };
 
             // Scale up the capacity (so we don't have to allocate a new block anytime soon)
-            let capacity = (capacity*4).next_power_of_two();
+            let overallocator = |capacity: u64| (capacity*4).next_power_of_two();
 
             // Allocate a new backing buffer as requested
             log::warn!("Did not find block, allocating new buffer with size {capacity} and mode {mode:?}");
             let backing = graphics.device().create_buffer(&wgpu::BufferDescriptor {
                 label: None,
-                size: capacity,
+                size: overallocator(capacity),
                 usage,
                 mapped_at_creation: false,
             });
@@ -190,7 +220,7 @@ impl StagingPool {
             let allocation = self.allocations.get(0).unwrap();
 
             // Create a sub-block for the allocation
-            allocation.allocate_block(capacity).unwrap()
+            allocation.map_block(capacity).unwrap()
         }
     }
 
@@ -205,6 +235,7 @@ impl StagingPool {
     ) -> Option<StagingView<'a>> {
         // Decomspoe the allocation buffer
         let BlockId {
+            allocation,
             buffer: staging,
             start,
             end,
@@ -228,6 +259,8 @@ impl StagingPool {
         let (tx, rx) = std::sync::mpsc::channel::<MapResult>();
 
         // Map async (but wait for submission)
+        dbg!(size);
+        dbg!(end - start);
         let slice = staging.slice(start..end);
         slice.map_async(wgpu::MapMode::Read, move |res| {
             tx.send(res).unwrap()
@@ -239,6 +272,13 @@ impl StagingPool {
             let view = slice.get_mapped_range();
             Some(StagingView {
                 view,
+                allocation,
+                block: BlockId {
+                    allocation,
+                    buffer: staging,
+                    start,
+                    end,
+                },
             })
         } else {
             None
@@ -256,6 +296,7 @@ impl StagingPool {
     ) -> Option<StagingViewWrite<'a>> {
         // Decomspoe the allocation buffer
         let BlockId {
+            allocation,
             buffer: staging,
             start,
             end,
@@ -276,6 +317,12 @@ impl StagingPool {
         if let Ok(Ok(_)) = rx.recv() {
             let view = slice.get_mapped_range_mut();
             Some(StagingViewWrite {
+                block: BlockId {
+                    allocation,
+                    buffer: staging,
+                    start,
+                    end,
+                },
                 view,
                 buffer,
                 graphics,
@@ -283,6 +330,7 @@ impl StagingPool {
                 dst_offset: offset,
                 staging_offset: start,
                 size,
+                allocation,
             })
         } else {
             None

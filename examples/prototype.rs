@@ -23,10 +23,16 @@ fn init(world: &mut World) {
         BufferMode::Resizable,
         BufferUsage::ReadWrite
     ).unwrap();
+
     //buffer.write(&[[1, 1, 1]], 0).unwrap();
     let slice = buffer.as_view().unwrap();
     dbg!(slice.as_slice());
-    std::thread::sleep(std::time::Duration::from_secs(4));
+    drop(slice);
+
+    let mut slice = buffer.as_view_mut().unwrap();
+    dbg!(slice.as_slice_mut());
+    panic!()
+
     /*
 
     let view = buffer.as_view().unwrap();

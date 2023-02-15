@@ -1,7 +1,5 @@
 use std::marker::PhantomData;
-
 use parking_lot::MappedMutexGuard;
-
 use crate::{GpuPodRelaxed, Buffer, StagingPool, StagingView, StagingViewWrite};
 
 // Allows  us to read the buffer as if it were an immutably slice
@@ -29,7 +27,6 @@ pub enum BufferViewMut<'a, T: GpuPodRelaxed, const TYPE: u32> {
     // The buffer's staging buffer is mapped mutably
     // Only used when WRITING ONLY
     Mapped {
-        buffer: &'a mut Buffer<T, TYPE>,
         data: StagingViewWrite<'a>,
     }, 
 

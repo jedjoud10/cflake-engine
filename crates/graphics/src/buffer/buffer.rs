@@ -495,15 +495,23 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
     }
 
     // Try to view the buffer mutably (for writing AND reading) immediately
-    pub fn as_view_mut(
-        &mut self,
-    ) -> Result<BufferViewMut<T, TYPE>, BufferNotMappableError> {
+    pub fn as_view_mut(&mut self) -> Result<BufferViewMut<T, TYPE>, BufferNotMappableError> {
         if self.usage != BufferUsage::ReadWrite {
             return Err(BufferNotMappableError::AsViewMut);
         }
 
-        // Read the buffer into a temporary buffer, and flush the write at the end
+        let staging = self.graphics.staging_pool();
+        let size = self.len() * self.stride();
 
-        todo!()
+        let view = staging.upload(
+            &self.buffer,
+            &self.graphics,
+            0,
+            size as u64
+        ).unwrap();
+
+        Ok(BufferViewMut::Mapped {
+            data: view,
+        })
     }
 }
