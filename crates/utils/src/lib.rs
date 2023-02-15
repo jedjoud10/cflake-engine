@@ -5,8 +5,6 @@ mod system;
 mod tests;
 mod thread;
 mod time;
-mod atomicvec;
-pub use atomicvec::*;
 pub use bitset::*;
 pub use file::*;
 pub use log;
@@ -15,3 +13,8 @@ pub use system::*;
 pub use tests::*;
 pub use thread::*;
 pub use time::*;
+
+// Re-export boxcar's concurrent vector
+pub use boxcar::Vec as ConcVec;
+pub use boxcar::Iter as ConcVecIter;
+pub use boxcar::IntoIter as ConcVecIntoIter;

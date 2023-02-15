@@ -4,7 +4,7 @@ use crate::{GpuPodRelaxed, Buffer, StagingPool, StagingView, StagingViewWrite};
 
 // Allows  us to read the buffer as if it were an immutably slice
 pub struct BufferView<'a, T: GpuPodRelaxed, const TYPE: u32> {
-    pub(crate) _phantom: PhantomData<&'a Buffer<T, TYPE>>,
+    pub(crate) buffer: &'a Buffer<T, TYPE>,
     pub(crate) data: StagingView<'a>,
 }
 
@@ -22,11 +22,20 @@ impl<'a, T: GpuPodRelaxed, const TYPE: u32> AsRef<[T]> for BufferView<'a, T, TYP
     }
 }
 
+impl<'a, T: GpuPodRelaxed, const TYPE: u32> std::ops::Deref for BufferView<'a, T, TYPE> {
+    type Target = [T];
+
+    fn deref(&self) -> &Self::Target {
+        self.as_ref()
+    }
+}
+
 // Allows us to read the buffer as if it were a mutable slice
 pub enum BufferViewMut<'a, T: GpuPodRelaxed, const TYPE: u32> {
     // The buffer's staging buffer is mapped mutably
     // Only used when WRITING ONLY
     Mapped {
+        buffer: PhantomData<&'a Buffer<T, TYPE>>,
         data: StagingViewWrite<'a>,
     }, 
 
@@ -76,6 +85,14 @@ impl<'a, T: GpuPodRelaxed, const TYPE: u32> AsMut<[T]> for BufferViewMut<'a, T, 
 
 impl<'a, T: GpuPodRelaxed, const TYPE: u32> Drop for BufferViewMut<'a, T, TYPE> {
     fn drop(&mut self) {
-        todo!()
+        match self {
+            BufferViewMut::Cloned {
+                buffer,
+                data
+            } => {
+                
+            },
+            _ => {}
+        }
     }
 }

@@ -63,4 +63,7 @@ pub enum BufferNotMappableError {
 
     #[error("The buffer cannot be mapped (for reading AND writing) since it's BufferUsages is not ReadWrite")]
     AsViewMut,
+
+    #[error("Invalid range")]
+    InvalidRange,
 }

@@ -16,32 +16,6 @@ fn main() {
 fn init(world: &mut World) {
     let assets = world.get::<Assets>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
-
-    let mut buffer = TriangleBuffer::<u32>::from_slice(
-        &graphics,
-        &[[0, 1, 2]],
-        BufferMode::Resizable,
-        BufferUsage::ReadWrite
-    ).unwrap();
-
-    //buffer.write(&[[1, 1, 1]], 0).unwrap();
-    let slice = buffer.as_view().unwrap();
-    dbg!(slice.as_slice());
-    drop(slice);
-
-    let mut slice = buffer.as_view_mut().unwrap();
-    dbg!(slice.as_slice_mut());
-    panic!()
-
-    /*
-
-    let view = buffer.as_view().unwrap();
-    dbg!(view.as_slice());
-
-    panic!()
-    */
-
-    /*
     let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
     let mut materials = world.get_mut::<Storage<Basic>>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
@@ -59,13 +33,14 @@ fn init(world: &mut World) {
     let mesh = assets.load::<Mesh>(("engine/meshes/cube.obj", &*graphics)).unwrap();
     let vertices = mesh.vertices();
     let positions = vertices.attribute::<attributes::Position>().unwrap();
-    dbg!(positions.as_slice().unwrap());
+    let view = positions.as_view(..).unwrap();
+    dbg!(view.as_ref());
     dbg!(vertices.len());
+    drop(view);
     let mesh = meshes.insert(mesh);
 
     let surface = Surface::new(mesh, material, id);
     scene.insert(surface);
-    */
 }
 
 fn update(world: &mut World) {

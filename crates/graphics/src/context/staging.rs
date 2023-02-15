@@ -1,6 +1,6 @@
 use std::{num::NonZeroU64, sync::Arc, ops::DerefMut};
 use parking_lot::Mutex;
-use utils::AtomicVec;
+use utils::ConcVec;
 use wgpu::{CommandEncoder, Maintain};
 use crate::Graphics;
 
@@ -16,26 +16,30 @@ struct BlockId<'a> {
 // This allows us to read the data of the given buffer at the given offset and slice
 pub struct StagingView<'a> {
     allocation: &'a Allocation,
+    graphics: &'a Graphics,
     block: BlockId<'a>,
-    view: wgpu::BufferView<'a>,
+    staging: &'a wgpu::Buffer,
+    view: Option<wgpu::BufferView<'a>>,
 }
 
 impl<'a> Drop for StagingView<'a> {
     fn drop(&mut self) {
+        drop(self.view.take().unwrap());
+        self.staging.unmap();
         self.allocation.unmap_block(&self.block);
     }
 }
 
 impl<'a> AsRef<[u8]> for StagingView<'a> {
     fn as_ref(&self) -> &[u8] {
-        &self.view
+        self.view.as_ref().unwrap()
     }
 }
 
 // This is the view returned from the upload() method of the staging pool
 // This allows us to write to the given buffer (it will submit this write when this gets dropped)
 pub struct StagingViewWrite<'a> {
-    view: wgpu::BufferViewMut<'a>,
+    view: Option<wgpu::BufferViewMut<'a>>,
     block: BlockId<'a>,
     buffer: &'a wgpu::Buffer,
     staging: &'a wgpu::Buffer,
@@ -48,18 +52,19 @@ pub struct StagingViewWrite<'a> {
 
 impl<'a> AsMut<[u8]> for StagingViewWrite<'a> {
     fn as_mut(&mut self) -> &mut [u8] {
-        &mut self.view
+        self.view.as_mut().unwrap()
     }
 }
 
 impl<'a> AsRef<[u8]> for StagingViewWrite<'a> {
     fn as_ref(&self) -> &[u8] {
-        &self.view
+        self.view.as_ref().unwrap()
     }
 }
 
 impl<'a> Drop for StagingViewWrite<'a> {
     fn drop(&mut self) {
+        drop(self.view.take().unwrap());
         self.staging.unmap();
         self.allocation.unmap_block(&self.block);
 
@@ -101,7 +106,6 @@ impl Allocation {
         let mut used = self.used.lock(); 
         
         // Try to find a free block of memory within the used blocks
-        dbg!(used.len());
         for (i, (start, end)) in used.iter().enumerate() {
             if *start != last && (start - last) > capacity {
                 output = Some((last, *start));
@@ -128,6 +132,10 @@ impl Allocation {
             output = Some((0, capacity));
         }
 
+        // TODO: Actually do the buffer mapping here instead
+        // of having it occur in the download / upload functions
+        
+        // Convert the range into a BlockId
         output.map(|(start, end)| {
             used.insert(last_index,(start, end));
             BlockId {
@@ -160,14 +168,14 @@ impl Allocation {
 // multiple download / upload operations
 // TODO: Re-write this to make it a global buffer allocater / manager
 pub struct StagingPool {
-    allocations: boxcar::Vec<Allocation>,
+    allocations: ConcVec<Allocation>,
 }
 
 impl StagingPool {
     // Create a new staging belt for upload / download
     pub fn new() -> Self {
         Self {
-            allocations: boxcar::Vec::new(),
+            allocations: ConcVec::new(),
         }
     }
 
@@ -181,12 +189,17 @@ impl StagingPool {
         log::debug!("Looking for block with size {capacity} and mode {mode:?}...");
 
         // Iterates over each block and checks if any of them have enough space for "capacity"
-        let block = self.allocations.iter().filter_map(|allocation| {
-            allocation.map_block(capacity)
+        let block = self.allocations.iter().filter(|allocation| allocation.mode == mode).filter_map(|allocation| {
+            // TODO: Implement proper concurrent block mapping
+            if allocation.used.lock().is_empty() {
+                allocation.map_block(capacity)
+            } else {
+                None
+            }
         }).next();
 
         if let Some(block) = block {
-            log::debug!("Found free block from buffer backed allocation with buffer {:?}", block.buffer);
+            log::debug!("Found free block from buffer backed allocation");
             block
         } else {
             // Convert the map mode to the proper usages
@@ -216,20 +229,22 @@ impl StagingPool {
             };
             
             // Add and fetch to make sure WE own the allocation
+            let index = self.allocations.len();
             self.allocations.push(allocation);
-            let allocation = self.allocations.get(0).unwrap();
+            let allocation = self.allocations.get(index).unwrap();
 
             // Create a sub-block for the allocation
             allocation.map_block(capacity).unwrap()
         }
     }
 
-    // Request an immediate buffer download (copies data from buffer to accessible mappable buffer)
+
+    // Map a buffer for writing only (maps an intermediate staging buffer)
     // Src buffer must have the COPY_SRC buffer usage flag
-    pub fn download<'a>(
+    pub fn map_read<'a>(
         &'a self,
         buffer: &wgpu::Buffer,
-        graphics: &Graphics,
+        graphics: &'a Graphics,
         offset: wgpu::BufferAddress,
         size: wgpu::BufferAddress,
     ) -> Option<StagingView<'a>> {
@@ -259,8 +274,6 @@ impl StagingPool {
         let (tx, rx) = std::sync::mpsc::channel::<MapResult>();
 
         // Map async (but wait for submission)
-        dbg!(size);
-        dbg!(end - start);
         let slice = staging.slice(start..end);
         slice.map_async(wgpu::MapMode::Read, move |res| {
             tx.send(res).unwrap()
@@ -271,7 +284,7 @@ impl StagingPool {
         if let Ok(Ok(_)) = rx.recv() {
             let view = slice.get_mapped_range();
             Some(StagingView {
-                view,
+                view: Some(view),
                 allocation,
                 block: BlockId {
                     allocation,
@@ -279,15 +292,17 @@ impl StagingPool {
                     start,
                     end,
                 },
+                staging,
+                graphics,
             })
         } else {
             None
         }
     }
 
-    // Request an immediate buffer upload by copying data into a buffer and return it
-    // When the StagingViewMut is dropped, the data is copied to the staging buffer and to the original buffer
-    pub fn upload<'a>(
+    // Map a buffer for writing only (maps an intermediate staging buffer)
+    // Src buffer must have the COPY_DST buffer usage flag
+    pub fn map_write<'a>(
         &'a self,
         buffer: &'a wgpu::Buffer,
         graphics: &'a Graphics,
@@ -323,7 +338,7 @@ impl StagingPool {
                     start,
                     end,
                 },
-                view,
+                view: Some(view),
                 buffer,
                 graphics,
                 staging,
@@ -335,5 +350,43 @@ impl StagingPool {
         } else {
             None
         }
+    }
+
+    // Request an immediate buffer  write
+    // Src buffer must have the COPY_DST buffer usage flag
+    pub fn write<'a>(
+        &'a self,
+        buffer: &wgpu::Buffer,
+        graphics: &'a Graphics,
+        offset: wgpu::BufferAddress,
+        src: &[u8],
+    ) {
+        // TODO: Optimize this shit
+        let mut read = self.map_write(
+            buffer,
+            graphics,
+            offset,
+            src.len() as u64
+        ).unwrap();
+        read.as_mut().copy_from_slice(src);
+    }
+
+    // Request an immediate buffer read
+    // Src buffer must have the COPY_SRC buffer usage flag
+    pub fn read<'a>(
+        &'a self,
+        buffer: &wgpu::Buffer,
+        graphics: &'a Graphics,
+        offset: wgpu::BufferAddress,
+        dst: &mut [u8]
+    ) {
+        // TODO: Optimize this shit
+        let read = self.map_read(
+            buffer,
+            graphics,
+            offset,
+            dst.len() as u64
+        ).unwrap();
+        dst.copy_from_slice(read.as_ref());
     }
 }

@@ -1089,7 +1089,6 @@ dependencies = [
  "ahash",
  "assets",
  "bitflags",
- "boxcar",
  "bytemuck",
  "dashmap",
  "half",
@@ -2786,6 +2785,7 @@ version = "0.1.0"
 dependencies = [
  "ahash",
  "arrayvec 0.7.2",
+ "boxcar",
  "casey",
  "crossbeam-deque",
  "itertools",

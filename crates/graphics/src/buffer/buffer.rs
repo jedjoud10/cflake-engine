@@ -2,7 +2,7 @@ use std::{
     alloc::Layout,
     any::type_name,
     marker::PhantomData,
-    mem::{size_of, ManuallyDrop}, f32::consts::E, num::NonZeroU64,
+    mem::{size_of, ManuallyDrop}, f32::consts::E, num::NonZeroU64, ops::{Range, RangeBounds},
 };
 
 use wgpu::{util::DeviceExt, Maintain};
@@ -153,7 +153,6 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
         let bytes = bytemuck::cast_slice::<T, u8>(slice);
 
         // Allocate the primary WGPU buffer
-        log::debug!("Allocating raw buffer for type {}, element len: {}, byte len: {}", type_name::<T>(), slice.len(), bytes.len());
         let buffer = graphics.device().create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: None,
@@ -161,9 +160,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
                 usage: wgpu_usages,
             },
         );
-
-        graphics.device().poll(wgpu::Maintain::Wait);
-
+        
         // Calculate the number of elements that can fit in this one allocation
         let stride = size_of::<T>() as u64;
         let capacity = (buffer.size() / stride) as usize;
@@ -256,6 +253,34 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
             variant: self.variant(),
         }
     }
+
+    // Convert the bounds of the RangeBounds trait
+    fn convert_bounds(&self, range: impl RangeBounds<usize>) -> Option<(usize, usize)> {
+        let start = match range.start_bound() {
+            std::ops::Bound::Included(start) => *start,
+            std::ops::Bound::Excluded(_) => panic!(),
+            std::ops::Bound::Unbounded => 0,
+        };
+
+        let end = match range.end_bound() {
+            std::ops::Bound::Included(end) => *end + 1,
+            std::ops::Bound::Excluded(end) => *end,
+            std::ops::Bound::Unbounded => self.length,
+        };
+
+        let valid_start_index = start < self.length;
+        let valid_end_index = end <= self.length && end >= start;
+
+        if !valid_start_index || !valid_end_index {
+            return None;
+        }
+
+        if (end - start) == 0 {
+            return None;
+        }
+
+        Some((start, end))
+    } 
 }
 
 // Implementation of unsafe methods
@@ -309,7 +334,14 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
             ));
         }
 
-        todo!();        
+        // Use the staging pool for data writes
+        let staging = self.graphics.staging_pool();
+        staging.write(
+            &self.buffer,
+            &self.graphics,
+            (offset * self.stride()) as u64,
+            bytemuck::cast_slice(src)
+        );
 
         Ok(())
     }
@@ -339,7 +371,14 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
             ));
         }
 
-        todo!();
+        // Use the staging pool for data reads 
+        let staging = self.graphics.staging_pool();
+        staging.read(
+            &self.buffer,
+            &self.graphics,
+            (offset * self.stride()) as u64,
+            bytemuck::cast_slice_mut(dst)
+        );
 
         Ok(())
     }
@@ -473,45 +512,76 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
     }
 
     // Try to view the buffer immutably immediately
-    pub fn as_view(&self) -> Result<BufferView<T, TYPE>, BufferNotMappableError> {
+    pub fn as_view(&self, bounds: impl RangeBounds<usize>) -> Result<BufferView<T, TYPE>, BufferNotMappableError> {
         if self.usage != BufferUsage::Read && self.usage != BufferUsage::ReadWrite {
             return Err(BufferNotMappableError::AsView);
         }
 
-        let staging = self.graphics.staging_pool();
-        let size = self.len() * self.stride();
+        // Size and offset of the slice
+        let (start, end) = self.convert_bounds(bounds)
+            .ok_or(BufferNotMappableError::InvalidRange)?;
+        let size = (end - start) * self.stride();
+        let offset = start * self.stride();
 
-        let view = staging.download(
+        // Get the staging pool for download
+        let staging = self.graphics.staging_pool();
+        let data = staging.map_read(
             &self.buffer,
             &self.graphics,
-            0,
+            offset as u64,
             size as u64
         ).unwrap();
 
         Ok(BufferView {
-            _phantom: PhantomData,
-            data: view,
+            buffer: &self,
+            data,
         })
     }
 
     // Try to view the buffer mutably (for writing AND reading) immediately
-    pub fn as_view_mut(&mut self) -> Result<BufferViewMut<T, TYPE>, BufferNotMappableError> {
-        if self.usage != BufferUsage::ReadWrite {
+    // If the BufferUsage is Write only, then reading from BufferViewMut might be slow / might not return buffer contents
+    pub fn as_view_mut(&mut self, bounds: impl RangeBounds<usize>) -> Result<BufferViewMut<T, TYPE>, BufferNotMappableError> {
+        if self.usage != BufferUsage::ReadWrite && self.usage != BufferUsage::Write {
             return Err(BufferNotMappableError::AsViewMut);
         }
 
-        let staging = self.graphics.staging_pool();
-        let size = self.len() * self.stride();
+        // Size and offset of the slice
+        let (start, end) = self.convert_bounds(bounds)
+            .ok_or(BufferNotMappableError::InvalidRange)?;
+        let size = (end - start) * self.stride();
+        let offset = start * self.stride();
 
-        let view = staging.upload(
-            &self.buffer,
-            &self.graphics,
-            0,
-            size as u64
-        ).unwrap();
+        match self.usage {
+            // Write only, map staging buffer
+            BufferUsage::Write => {
+                // Get the staging pool for upload
+                let staging = self.graphics.staging_pool();
+                let data = staging.map_write(
+                    &self.buffer,
+                    &self.graphics,
+                    offset as u64,
+                    size as u64
+                ).unwrap();
+            
+                Ok(BufferViewMut::Mapped {
+                    buffer: PhantomData,
+                    data
+                })
+            },
 
-        Ok(BufferViewMut::Mapped {
-            data: view,
-        })
+            // Read and write, clone first, then write
+            BufferUsage::ReadWrite => {
+                // Create a temporary vector that will store the contents of the buffer
+                let mut vector = vec![T::zeroed(); end - start];
+                self.read(&mut vector, start).unwrap();
+            
+                Ok(BufferViewMut::Cloned {
+                    buffer: self,
+                    data: vector,
+                })
+            },
+
+            _ => panic!()
+        }
     }
 }
