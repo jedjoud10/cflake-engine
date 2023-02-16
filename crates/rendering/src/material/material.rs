@@ -8,9 +8,12 @@ use crate::{EnabledMeshAttributes, Mesh, Renderer, CameraUniform, TimingUniform,
 
 // These are the default resources that we pass to any/each material
 pub struct DefaultMaterialResources<'a> { 
+    // Main scene uniform buffers
     pub camera_buffer: &'a UniformBuffer<CameraUniform>,
     pub timing_buffer: &'a UniformBuffer<TimingUniform>,
     pub scene_buffer: &'a UniformBuffer<SceneUniform>,
+
+    // Main scene textures
 }
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
@@ -18,6 +21,11 @@ pub struct DefaultMaterialResources<'a> {
 pub trait Material: 'static + Sized {
     // The resources that we need to fetch from the world to set the descriptor sets
     type Resources<'w>: 'w;
+
+    // Glboal, surface, and mesh descriptor sets
+    type GlobalGroup<'a>;
+    type InstanceGroup<'a>;
+    type SurfaceGroup<'a>;
 
     // Load the vertex module and process it
     fn vertex(
@@ -63,22 +71,28 @@ pub trait Material: 'static + Sized {
     fn fetch<'w>(world: &'w World) -> Self::Resources<'w>;
 
     // Set the global bindings and uniforms required
-    fn set_global_bindings<'w: 'ds, 'ds>(
+    fn set_global_bindings<'w>(
         resources: &mut Self::Resources<'w>,
         default: &DefaultMaterialResources,
-    ) {}
-
-    // Sets the bindings related to surface only
-    fn set_surface_bindings<'w: 'ds, 'ds>(
-        renderer: Renderer,
-        resources: &mut Self::Resources<'w>,
-        default: &DefaultMaterialResources,
-    ) {}
+    ) -> Self::GlobalGroup<'w> {
+        todo!()
+    }
 
     // This will only be called whenever we switch instances
-    fn set_instance_bindings<'w: 'ds, 'ds>(
+    fn set_instance_bindings<'w>(
         &self,
         resources: &mut Self::Resources<'w>,
         default: &DefaultMaterialResources,
-    ) {}
+    ) -> Self::InstanceGroup<'w> {
+        todo!()
+    }
+
+    // Sets the bindings related to surface only
+    fn set_surface_bindings<'w>(
+        renderer: Renderer,
+        resources: &mut Self::Resources<'w>,
+        default: &DefaultMaterialResources,
+    ) -> Self::SurfaceGroup<'w> {
+        todo!()
+    }
 }

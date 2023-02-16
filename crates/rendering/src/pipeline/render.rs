@@ -5,7 +5,7 @@ use utils::{Storage, Time};
 use world::World;
 
 // Set a mesh binding vertex buffer to the current render pass
-fn set_vertex_buffer_attribute<'r, M: MeshAttribute>(
+pub(crate) fn set_vertex_buffer_attribute<'r, M: MeshAttribute>(
     mesh: &'r Mesh,
     render_pass: &mut ActiveRenderPass<'r, '_, '_, SwapchainFormat, ()>
 ) {

@@ -29,6 +29,10 @@ pub struct Basic {
 }
 
 impl Material for Basic {
+    type GlobalGroup<'a> = &'a ();
+    type InstanceGroup<'a> = &'a ();
+    type SurfaceGroup<'a> = &'a ();
+    
     type Resources<'w> = world::Read<'w, Storage<Box<u32>>>;
 
     // Load the vertex shader for this material
