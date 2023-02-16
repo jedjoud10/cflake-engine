@@ -1,4 +1,5 @@
 use bytemuck::{Pod, Zeroable};
+use graphics::UniformBuffer;
 
 // Camera data that will be stored in a UBO
 #[derive(Clone, Copy, PartialEq, Pod, Zeroable, Default)]
@@ -15,6 +16,7 @@ pub struct CameraUniform {
     pub right: vek::Vec4<f32>,
 }
 
+
 // Timing data that will be stored in a UBO
 #[derive(Clone, Copy, PartialEq, Pod, Zeroable, Default)]
 #[repr(C)]
@@ -24,6 +26,7 @@ pub struct TimingUniform {
     pub time_since_startup: f32,
 }
 
+
 // Scene data that will be stored in a UBO
 #[derive(Clone, Copy, PartialEq, Pod, Zeroable, Default)]
 #[repr(C)]
@@ -32,3 +35,7 @@ pub struct SceneUniform {
     pub sun_strength: f32,
     pub sun_size: f32,
 }
+
+pub type CameraBuffer = UniformBuffer<CameraUniform>;
+pub type TimingBuffer = UniformBuffer<TimingUniform>;
+pub type SceneBuffer = UniformBuffer<SceneUniform>;

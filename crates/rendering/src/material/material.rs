@@ -67,19 +67,16 @@ pub trait Material: 'static + Sized {
         None
     }
 
-    // Fetch the property block resources
-    fn fetch<'w>(world: &'w World) -> Self::Resources<'w>;
-
-    // Set the global bindings and uniforms required
-    fn set_global_bindings<'w>(
+    // Get the global bind group required
+    fn get_global_bind_group<'w>(
         resources: &mut Self::Resources<'w>,
         default: &DefaultMaterialResources,
     ) -> Self::GlobalGroup<'w> {
         todo!()
     }
 
-    // This will only be called whenever we switch instances
-    fn set_instance_bindings<'w>(
+    // Get the instance bind group
+    fn get_instance_bind_group<'w>(
         &self,
         resources: &mut Self::Resources<'w>,
         default: &DefaultMaterialResources,
@@ -87,8 +84,8 @@ pub trait Material: 'static + Sized {
         todo!()
     }
 
-    // Sets the bindings related to surface only
-    fn set_surface_bindings<'w>(
+    // Get the surface bind group
+    fn get_surface_bindings<'w>(
         renderer: Renderer,
         resources: &mut Self::Resources<'w>,
         default: &DefaultMaterialResources,

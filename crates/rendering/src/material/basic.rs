@@ -1,11 +1,11 @@
 use std::any::TypeId;
 
-use crate::{Material, EnabledMeshAttributes};
+use crate::{Material, EnabledMeshAttributes, TimingUniform, CameraUniform, SceneUniform, CameraBuffer, TimingBuffer, SceneBuffer};
 use ahash::AHashMap;
 use assets::Assets;
 use graphics::{
     Compiled, FragmentModule, Graphics, Normalized,
-    Texture2D, VertexModule, Compiler, Sampler, Shader, BindingConfig, RGBA,
+    Texture2D, VertexModule, Compiler, Sampler, Shader, BindingConfig, RGBA, UniformBuffer,
 };
 use utils::{Storage, Handle};
 
@@ -28,12 +28,35 @@ pub struct Basic {
     pub tint: vek::Rgb<f32>, 
 }
 
+impl_vertex_material_layout! {
+    target: Basic,
+
+    attributes: [Position, Normal],
+
+    bindings: {
+        #[uniform(pushconstant)]
+        model_matrix: vek::Mat4<f32>,
+    }
+}
+
+impl_fragment_material_layout! {
+    target: Basic,
+
+    bindings: {
+        #[texture(0)]
+        diffuse_map: &AlbedoMap,
+
+        #[texture(1)]
+        normal_map: &NormalMap,
+    }
+}
+
 impl Material for Basic {
     type GlobalGroup<'a> = &'a ();
     type InstanceGroup<'a> = &'a ();
     type SurfaceGroup<'a> = &'a ();
     
-    type Resources<'w> = world::Read<'w, Storage<Box<u32>>>;
+    type Resources<'w> = &;A ();
 
     // Load the vertex shader for this material
     fn vertex(
@@ -61,10 +84,5 @@ impl Material for Basic {
         //EnabledMeshAttributes::POSITIONS | EnabledMeshAttributes::NORMALS | EnabledMeshAttributes::TEX_COORDS
         //EnabledMeshAttributes::empty()
         EnabledMeshAttributes::POSITIONS 
-    }
-
-    fn fetch<'w>(world: &'w world::World) -> Self::Resources<'w> {
-        let storage = world.get::<Storage<Box<u32>>>().unwrap();
-        storage
     }
 }
