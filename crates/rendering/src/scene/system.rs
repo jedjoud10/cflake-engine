@@ -36,6 +36,7 @@ fn update(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
     let mut window = world.get_mut::<Window>().unwrap();
     let mut renderer = world.get_mut::<ForwardRenderer>().unwrap();
+    let meshes = world.get::<Storage<Mesh>>().unwrap();
     
     // Get a presentable render target from the window
     let view = window.as_render_target().unwrap();
@@ -60,7 +61,7 @@ fn update(world: &mut World) {
 
     // This will iterate over each material pipeline and draw the scene
     for pipeline in pipelines.iter() {
-        pipeline.render(world, &mut render_pass);
+        pipeline.render(world, &meshes, &mut render_pass);
     }
 
     // Submit the encoder at the end

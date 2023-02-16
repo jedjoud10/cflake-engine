@@ -12,6 +12,8 @@ bitflags::bitflags! {
         const POSITIONS = 1;
         const NORMALS = 1 << 1;
         const TANGENTS = 1 << 2;
+
+        // TODO: Reimplement the color attribute
         //const COLORS = 1 << 3;
         const TEX_COORDS = 1 << 4;
     }
@@ -86,20 +88,20 @@ macro_rules! impl_vertex_attribute {
                 const ATTRIBUTE: EnabledMeshAttributes = EnabledMeshAttributes::[<$enabled>];
 
                 fn from_ref_as_ref<'a>(vertices: &'a VerticesRef) -> Option<&'a VertexBuffer<Self::Storage>> {
-                    vertices.is_enabled::<Self>().then(|| {
-                        unsafe { vertices.$name.assume_init_ref() }
+                    vertices.is_enabled::<Self>().then(|| unsafe {
+                        vertices.$name.assume_init_ref()
                     })
                 }
 
                 fn from_mut_as_mut<'a>(vertices: &'a mut VerticesMut) -> Option<&'a mut VertexBuffer<Self::Storage>> {
-                    vertices.is_enabled::<Self>().then(|| {
-                        unsafe { vertices.$name.assume_init_mut() }
+                    vertices.is_enabled::<Self>().then(|| unsafe {
+                        vertices.$name.assume_init_mut()
                     })
                 }
 
                 fn from_mut_as_ref<'a>(vertices: &'a VerticesMut) -> Option<&'a VertexBuffer<Self::Storage>> {
-                    vertices.is_enabled::<Self>().then(|| {
-                        unsafe { vertices.$name.assume_init_ref() }
+                    vertices.is_enabled::<Self>().then(|| unsafe {
+                        vertices.$name.assume_init_ref()
                     })
                 }
             

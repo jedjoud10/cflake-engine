@@ -92,7 +92,7 @@ impl Mesh {
 // Helper functions
 impl Mesh {
     // Get a reference to the vertices immutably
-    pub fn vertices(&self) -> VerticesRef {
+    pub fn vertices<'a>(&'a self) -> VerticesRef<'a> {
         VerticesRef {
             enabled: self.enabled,
             positions: &self.positions,

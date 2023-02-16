@@ -15,7 +15,7 @@ pub struct VerticesRef<'a> {
     pub(super) len: Option<usize>,
 }
 
-impl VerticesRef<'_> {
+impl<'a> VerticesRef<'a> {
     // Get the enabled mesh attributes bitflags
     pub fn enabled(&self) -> EnabledMeshAttributes {
         self.enabled
@@ -29,6 +29,10 @@ impl VerticesRef<'_> {
     // Get an immutable reference to an attribute buffer
     pub fn attribute<T: MeshAttribute>(&self) -> Option<&VertexBuffer<T::Storage>> {
         T::from_ref_as_ref(self)
+    }
+
+    pub fn positions(&self) -> &'a VertexBuffer<<Position as MeshAttribute>::Storage> {
+        unsafe { &self.positions.assume_init_ref() }
     }
 
     // Get all the available attribute buffers as untyped buffers types
