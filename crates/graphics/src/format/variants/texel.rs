@@ -42,7 +42,7 @@ pub trait Texel: 'static {
 }
 
 // Untyped texel info that does not contain typed information about the texel nor base types
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct TexelInfo {
     bytes_per_channel: u32,
     element: ElementType,

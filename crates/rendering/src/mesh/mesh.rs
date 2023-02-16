@@ -13,10 +13,10 @@ pub struct Mesh {
     enabled: EnabledMeshAttributes,
 
     // Vertex attribute buffers
-    positions: AttributeBuffer<Position>,
-    normals: AttributeBuffer<Normal>,
-    tangents: AttributeBuffer<Tangent>,
-    tex_coords: AttributeBuffer<TexCoord>,
+    positions: MaybeUninit<AttributeBuffer<Position>>,
+    normals: MaybeUninit<AttributeBuffer<Normal>>,
+    tangents: MaybeUninit<AttributeBuffer<Tangent>>,
+    tex_coords: MaybeUninit<AttributeBuffer<TexCoord>>,
 
     // The number of vertices stored in this mesh
     // None if the buffers contain different sizes
@@ -43,20 +43,20 @@ impl Mesh {
         tex_coords: Option<&[RawTexCoord]>,
         triangles: &[Triangle<u32>],
     ) -> Result<Self, MeshInitializationError> {
-        let positions = positions.map(|slice| VertexBuffer::from_slice(graphics, &slice, mode, usage).unwrap());
-        let normals = normals.map(|slice| VertexBuffer::from_slice(graphics, &slice, mode, usage).unwrap());
-        let tangents = tangents.map(|slice| VertexBuffer::from_slice(graphics, &slice, mode, usage).unwrap());
-        let tex_coords = tex_coords.map(|slice| VertexBuffer::from_slice(graphics, &slice, mode, usage).unwrap());
+        let positions = positions.map(|slice| AttributeBuffer::<Position>::from_slice(graphics, &slice, mode, usage).unwrap());
+        let normals = normals.map(|slice| AttributeBuffer::<Normal>::from_slice(graphics, &slice, mode, usage).unwrap());
+        let tangents = tangents.map(|slice| AttributeBuffer::<Tangent>::from_slice(graphics, &slice, mode, usage).unwrap());
+        let tex_coords = tex_coords.map(|slice| AttributeBuffer::<TexCoord>::from_slice(graphics, &slice, mode, usage).unwrap());
         let triangles = TriangleBuffer::from_slice(graphics, &triangles, mode, usage).unwrap();
         Self::from_buffers(positions, normals, tangents, tex_coords, triangles)
     }
 
     // Create a new mesh from the attribute buffers
     pub fn from_buffers(
-        positions: Option<VertexBuffer<RawPosition>>,
-        normals: Option<VertexBuffer<RawNormal>>,
-        tangents: Option<VertexBuffer<RawTangent>>,
-        tex_coords: Option<VertexBuffer<RawTexCoord>>,
+        positions: Option<AttributeBuffer<Position>>,
+        normals: Option<AttributeBuffer<Normal>>,
+        tangents: Option<AttributeBuffer<Tangent>>,
+        tex_coords: Option<AttributeBuffer<TexCoord>>,
         triangles: TriangleBuffer<u32>,
     ) -> Result<Self, MeshInitializationError> {
         let mut mesh = Self {
@@ -70,7 +70,7 @@ impl Mesh {
         };
 
         // "Set"s a buffer, basically insert it if it's Some and removing it if it's None
-        pub fn set<T: MeshAttribute>(vertices: &mut VerticesMut, buffer: Option<VertexBuffer<T::Storage>>) {
+        pub fn set<T: MeshAttribute>(vertices: &mut VerticesMut, buffer: Option<AttributeBuffer<T>>) {
             match buffer {
                 Some(x) => vertices.insert::<T>(x),
                 None => { vertices.remove::<T>(); },

@@ -11,7 +11,7 @@ use crate::{
     BufferClearError, BufferCopyError, BufferExtendError,
     BufferInitializationError, BufferMode, BufferNotMappableError,
     BufferReadError, BufferUsage, BufferWriteError, GpuPodRelaxed,
-    Graphics, R, BufferView, BufferViewMut, StagingPool,
+    Graphics, R, BufferView, BufferViewMut, StagingPool, Vertex,
 };
 
 // Bitmask from Vulkan BufferUsages
@@ -32,10 +32,14 @@ pub enum BufferVariant {
     Indirect = INDIRECT,
 }
 
-// Common buffer types
-pub type VertexBuffer<T> = Buffer<T, VERTEX>;
+// Special vertex buffer (for vertices only)
+pub type VertexBuffer<T: Vertex> = Buffer<<T as Vertex>::Storage, VERTEX>;
+
+// Special triangle (index) buffer (for triangles only)
 pub type Triangle<T> = [T; 3];
 pub type TriangleBuffer<T> = Buffer<Triangle<T>, INDEX>;
+
+// Buffers where you can put anything you want really
 pub type StorageBuffer<T> = Buffer<T, STORAGE>;
 pub type UniformBuffer<T> = Buffer<T, UNIFORM>;
 pub type IndirectBuffer<T> = Buffer<T, INDIRECT>;

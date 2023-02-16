@@ -1,6 +1,6 @@
-use std::cell::{Cell, RefCell};
+use std::{cell::{Cell, RefCell}, mem::MaybeUninit};
 
-use graphics::{VertexBuffer, UntypedBuffer, Buffer};
+use graphics::{VertexBuffer, UntypedBuffer, Buffer, Vertex};
 use math::AABB;
 use crate::MeshAabbComputeError;
 use super::attributes::*;
@@ -8,10 +8,10 @@ use super::attributes::*;
 // Immutable access to the mesh vertices
 pub struct VerticesRef<'a> {
     pub(super) enabled: EnabledMeshAttributes,
-    pub(super) positions: &'a AttributeBuffer<Position>,
-    pub(super) normals: &'a AttributeBuffer<Normal>,
-    pub(super) tangents: &'a AttributeBuffer<Tangent>,
-    pub(super) tex_coords: &'a AttributeBuffer<TexCoord>,
+    pub(super) positions: &'a MaybeUninit<AttributeBuffer<Position>>,
+    pub(super) normals: &'a MaybeUninit<AttributeBuffer<Normal>>,
+    pub(super) tangents: &'a MaybeUninit<AttributeBuffer<Tangent>>,
+    pub(super) tex_coords: &'a MaybeUninit<AttributeBuffer<TexCoord>>,
     pub(super) len: Option<usize>,
 }
 
@@ -27,12 +27,8 @@ impl<'a> VerticesRef<'a> {
     }
 
     // Get an immutable reference to an attribute buffer
-    pub fn attribute<T: MeshAttribute>(&self) -> Option<&VertexBuffer<T::Storage>> {
+    pub fn attribute<T: MeshAttribute>(&self) -> Option<&'a VertexBuffer<T::V>> {
         T::from_ref_as_ref(self)
-    }
-
-    pub fn positions(&self) -> &'a VertexBuffer<<Position as MeshAttribute>::Storage> {
-        unsafe { &self.positions.assume_init_ref() }
     }
 
     // Get all the available attribute buffers as untyped buffers types
@@ -57,15 +53,15 @@ impl<'a> VerticesRef<'a> {
 // Mutable access to the mesh vertices
 pub struct VerticesMut<'a> {
     pub(super) enabled: &'a mut EnabledMeshAttributes,
-    pub(super) positions: &'a mut AttributeBuffer<Position>,
-    pub(super) normals: &'a mut AttributeBuffer<Normal>,
-    pub(super) tangents: &'a mut AttributeBuffer<Tangent>,
-    pub(super) tex_coords: &'a mut AttributeBuffer<TexCoord>,
+    pub(super) positions: &'a mut MaybeUninit<AttributeBuffer<Position>>,
+    pub(super) normals: &'a mut MaybeUninit<AttributeBuffer<Normal>>,
+    pub(super) tangents: &'a mut MaybeUninit<AttributeBuffer<Tangent>>,
+    pub(super) tex_coords: &'a mut MaybeUninit<AttributeBuffer<TexCoord>>,
     pub(super) len: RefCell<&'a mut Option<usize>>,
     pub(super) dirty: Cell<bool>,
 }
 
-impl VerticesMut<'_> {
+impl<'a> VerticesMut<'a> {
     // Get the enabled mesh attributes bitflags
     pub fn enabled(&self) -> EnabledMeshAttributes {
         *self.enabled
@@ -77,24 +73,24 @@ impl VerticesMut<'_> {
     }
 
     // Get an immutable reference to an attribute buffer
-    pub fn attribute<T: MeshAttribute>(&self) -> Option<&VertexBuffer<T::Storage>> {
+    pub fn attribute<T: MeshAttribute>(&self) -> Option<&AttributeBuffer<T>> {
         T::from_mut_as_ref(self)
     }
 
     // Get a mutable reference to an attribute buffer
-    pub fn attribute_mut<T: MeshAttribute>(&mut self) -> Option<&mut VertexBuffer<T::Storage>> {
+    pub fn attribute_mut<T: MeshAttribute>(&mut self) -> Option<&mut AttributeBuffer<T>> {
         self.dirty.set(true);
         T::from_mut_as_mut(self)
     }
 
     // Insert a new vertex buffer to the vertices
-    pub fn insert<T: MeshAttribute>(&mut self, buffer: VertexBuffer<T::Storage>) {
+    pub fn insert<T: MeshAttribute>(&mut self, buffer: AttributeBuffer<T>) {
         self.dirty.set(true);
         T::insert(self, buffer);
     }
 
     // Remove an old vertex buffer from the vertices
-    pub fn remove<T: MeshAttribute>(&mut self) -> Option<VertexBuffer<T::Storage>> {
+    pub fn remove<T: MeshAttribute>(&mut self) -> Option<AttributeBuffer<T>> {
         T::remove(self)
     }
 

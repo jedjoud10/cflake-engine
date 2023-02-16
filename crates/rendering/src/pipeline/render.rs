@@ -1,14 +1,17 @@
 use crate::{Material, Surface, Mesh, attributes::{RawPosition, Position}, MeshAttribute};
 use ecs::Scene;
-use graphics::{Graphics, GraphicsPipeline, XYZ, SwapchainFormat, ActiveRenderPass};
+use graphics::{Graphics, GraphicsPipeline, XYZ, SwapchainFormat, ActiveRenderPass, Vertex};
 use utils::{Storage, Time};
 use world::World;
 
 // Set a mesh binding vertex buffer to the current render pass
-fn set_vertex_buffer_attribute<M: MeshAttribute>(
-    mesh: &Mesh,
-    render_pass: &mut ActiveRenderPass<'_, '_, '_, SwapchainFormat, ()>
+fn set_vertex_buffer_attribute<'r, M: MeshAttribute>(
+    mesh: &'r Mesh,
+    render_pass: &mut ActiveRenderPass<'r, '_, '_, SwapchainFormat, ()>
 ) {
+    if let Some(buffer) = mesh.vertices().attribute::<M>() {
+        render_pass.set_vertex_buffer::<M::V>(M::index(), buffer);
+    }
 }
 
 // Render all the visible surfaces of a specific material type
@@ -20,7 +23,6 @@ pub(super) fn render_surfaces<'r, M: Material>(
 ) {
     // Get a rasterizer for the current render pass by binding a pipeline
     render_pass.bind_pipeline(pipeline);
-    render_pass.draw(0..6, 0..1);
 
     // Get all the meshes and surface for this specific material
     let materials = world.get::<Storage<M>>().unwrap();
@@ -36,13 +38,18 @@ pub(super) fn render_surfaces<'r, M: Material>(
         let material = materials.get(&surface.material);
 
         // Bind the mesh's vertex buffers
-        // TODO: This works btw
-        //let buffer = mesh.vertices().attribute::<Position>().unwrap();
-        let buffer = mesh.vertices().positions();
-        render_pass.set_vertex_buffer::<graphics::XYZ<f32>>(0, buffer);
+        use crate::attributes::*;
+        set_vertex_buffer_attribute::<Position>(mesh, render_pass);
+        set_vertex_buffer_attribute::<Normal>(mesh, render_pass);
+        set_vertex_buffer_attribute::<Tangent>(mesh, render_pass);
+        set_vertex_buffer_attribute::<TexCoord>(mesh, render_pass);
 
-        // Draw the mesh
-        // TODO: Use indirect drawing isntead for ze performance
-        render_pass.draw(0..6, 0..1);
+        // Set the index buffer
+        let triangles = mesh.triangles();
+        render_pass.set_index_buffer(triangles.buffer());
+
+        // Draw the triangulated mesh 
+        let indices = 0..(triangles.buffer().len() as u32);
+        render_pass.draw_indexed(indices, 0..1);
     }
 }

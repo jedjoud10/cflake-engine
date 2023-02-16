@@ -20,7 +20,7 @@ impl<'r, 'c, 'ds, C: ColorLayout, DS: DepthStencilLayout>
     ActiveRenderPass<'r, 'c, 'ds, C, DS>
 {
     // Assign a vertex buffer to a slot
-    pub fn set_vertex_buffer<V: Vertex>(&mut self, slot: u32, buffer: &'r VertexBuffer<V::Storage>) {
+    pub fn set_vertex_buffer<V: Vertex>(&mut self, slot: u32, buffer: &'r VertexBuffer<V>) {
         self.render_pass.set_vertex_buffer(slot, buffer.raw().slice(..));
     }
     

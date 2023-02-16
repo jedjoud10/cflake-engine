@@ -42,7 +42,7 @@ pub trait Vertex {
 
 
 // Untyped texel info that does not contain typed information about the vertex nor base types
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct VertexInfo {
     bytes_per_channel: u32,
     element: ElementType,

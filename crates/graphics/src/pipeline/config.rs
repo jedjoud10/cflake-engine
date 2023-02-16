@@ -52,12 +52,13 @@ pub enum PrimitiveConfig {
 
 // This vertex config describes how vertices or more specifically, "vertex buffers" should be read
 // This maps the vertex buffer bindings directly to be usable by a render pass 
+#[derive(Debug)]
 pub struct VertexConfig {
     pub inputs: Vec<VertexInputInfo>,
 }
 
 // VertexInputInfo combines all the required info for a vertex input in one struct
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct VertexInputInfo {
     location: ShaderLocation,
     info: VertexInfo,
