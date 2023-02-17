@@ -2,6 +2,8 @@ mod active;
 mod config;
 mod errors;
 mod graphics;
+mod bindings;
+pub use bindings::*;
 pub use self::graphics::*;
 pub use config::*;
 pub use active::*;

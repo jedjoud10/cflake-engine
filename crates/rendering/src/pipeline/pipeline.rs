@@ -1,6 +1,6 @@
-use crate::{Material, ForwardRendererRenderPass, MeshAttribute, attributes::{TexCoord, Tangent, Normal, Position, MAX_MESH_VERTEX_ATTRIBUTES}, EnabledMeshAttributes, Mesh};
+use crate::{Material, ForwardRendererRenderPass, MeshAttribute, attributes::{TexCoord, Tangent, Normal, Position, MAX_MESH_VERTEX_ATTRIBUTES}, EnabledMeshAttributes, Mesh, DefaultMaterialResources};
 use assets::Assets;
-use graphics::{Graphics, GraphicsPipeline, RenderPass, Shader, VertexConfig, PipelineInitializationError, BindingConfig, VertexInput, SwapchainFormat, ActiveRenderPass};
+use graphics::{Graphics, GraphicsPipeline, RenderPass, Shader, VertexConfig, PipelineInitializationError, VertexInput, SwapchainFormat, ActiveRenderPass};
 use utils::Storage;
 use std::marker::PhantomData;
 use world::World;
@@ -46,7 +46,6 @@ impl<M: Material> Pipeline<M> {
             M::stencil_config(),
             vertex_config,
             M::primitive_config(),
-            BindingConfig {},
             &shader
         )?;
 
@@ -80,6 +79,7 @@ pub trait DynamicPipeline {
     fn render<'r>(&'r self,
         world: &'r World,
         meshes: &'r Storage<Mesh>,
+        default: &'r DefaultMaterialResources,
         render_pass: &mut ActiveRenderPass<'r, '_, '_, SwapchainFormat, ()>
     );
 }
@@ -93,7 +93,7 @@ impl<M: Material> DynamicPipeline for Pipeline<M> {
         &mut self.pipeline
     }
 
-    fn render<'r>(&'r self, world: &'r World, meshes: &'r Storage<Mesh>, render_pass: &mut ActiveRenderPass<'r, '_, '_, SwapchainFormat, ()>) {
-        super::render_surfaces::<M>(world, meshes, &self.pipeline, render_pass);
+    fn render<'r>(&'r self, world: &'r World, meshes: &'r Storage<Mesh>,  default: &'r DefaultMaterialResources, render_pass: &mut ActiveRenderPass<'r, '_, '_, SwapchainFormat, ()>) {
+        super::render_surfaces::<M>(world, meshes, &self.pipeline, default, render_pass);
     }
 }

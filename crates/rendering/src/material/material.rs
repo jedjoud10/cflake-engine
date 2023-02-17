@@ -1,32 +1,23 @@
 use assets::Assets;
 use graphics::{
     BlendConfig, Compiled, DepthConfig, FragmentModule, Graphics, PrimitiveConfig,
-    StencilConfig, VertexModule, UniformBuffer, BindingConfig, FrontFace,
+    StencilConfig, VertexModule, UniformBuffer, Bindings, FrontFace, RGBA, Normalized, Texture2D,
 };
 use world::World;
-use crate::{EnabledMeshAttributes, Mesh, Renderer, CameraUniform, TimingUniform, SceneUniform, CameraBuffer, TimingBuffer, SceneBuffer};
+use crate::{EnabledMeshAttributes, Mesh, Renderer, CameraUniform, TimingUniform, SceneUniform, CameraBuffer, TimingBuffer, SceneBuffer, AlbedoMap, NormalMap};
 
 // These are the default resources that we pass to any/each material
 pub struct DefaultMaterialResources<'a> { 
     // Main scene uniform buffers
+    // TODO: Make use of crevice to implement Std130, Std140
     pub camera_buffer: &'a CameraBuffer,
     pub timing_buffer: &'a TimingBuffer,
     pub scene_buffer: &'a SceneBuffer,
 
     // Main scene textures
-}
-
-// A binder is used to bind multiple values to the current render pass
-// Bindes must have a specific WGPU layout that is used to create the graphics pipeline
-pub trait Binder: 'static + Sized {
-    // Nice interface structs that will contains the lifetimed data 
-    type Instance<'a>;
-    type Global<'a>;
-    type Surface<'a>;
-
-    // Statically typed pipeline layout
-    // This contains the bind group entries and push constant ranges
-    fn layout() -> ();
+    pub white: &'a AlbedoMap,
+    pub black: &'a AlbedoMap,
+    pub normal: &'a NormalMap,
 }
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
@@ -77,29 +68,31 @@ pub trait Material: 'static + Sized {
         None
     }
 
-    // Get the global bind group required
-    fn get_global_bind_group<'w>(
+    // Fetch the required resources from the world
+    fn fetch<'w>(
+        world: &'w World
+    ) -> Self::Resources<'w>;
+
+    // Set the static bindings
+    fn set_global_bindings<'w>(
         resources: &mut Self::Resources<'w>,
         default: &DefaultMaterialResources,
-    ) {
-        todo!()
-    }
+        bindings: &mut Bindings<'w>,
+    ) {}
 
-    // Get the instance bind group
-    fn get_instance_bind_group<'w>(
+    // Set the per instance bindings
+    fn set_instance_bindings<'w>(
         &self,
         resources: &mut Self::Resources<'w>,
         default: &DefaultMaterialResources,
-    ) {
-        todo!()
-    }
+        bindings: &Bindings,
+    ) {}
 
-    // Get the surface bind group
-    fn get_surface_bindings<'w>(
+    // Set the per surface bindings
+    fn set_surface_bindings<'w>(
         renderer: Renderer,
         resources: &mut Self::Resources<'w>,
         default: &DefaultMaterialResources,
-    ) {
-        todo!()
-    }
+        bindings: &Bindings,
+    ) {}
 }

@@ -1,9 +1,30 @@
 #version 460 core
-layout(location = 0) out vec4 outColor;
+layout(location = 0) out vec4 frag;
 
-// https://vkguide.dev/docs/chapter-2/triangle_walkthrough/
+// Data given by the vertex shader
+layout(location = 0) in vec3 m_position;
+layout(location = 1) in vec3 m_normal;
+layout(location = 2) in vec3 m_tangent;
+layout(location = 3) in vec3 m_bitangent;
+layout(location = 4) in vec2 m_tex_coord;
+
+/*
+// Camera bind group buffer (creates a 'camera' object)
+#include <engine/shaders/common/camera.glsl>
+
+// Scene bind group buffer (creates a 'scene' object)
+#include <engine/shaders/common/scene.glsl>
+
+// Timing bind group buffer (creates a 'time' object)
+#include <engine/shaders/common/timing.glsl>
+
+// Material scalar data
+layout(set = 1, binding = 1) uniform MaterialData {
+	float roughness;
+	vec3 tint;
+} material;
+*/
+
 void main() {
-	vec4 pos = gl_FragCoord;
-	vec2 coords = pos.xy / vec2(1920, 1080);
-	outColor = vec4(coords, 0, 0);
+	frag = vec4(m_normal, 0);
 }

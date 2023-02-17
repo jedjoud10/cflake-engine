@@ -1,84 +1,76 @@
-use crate::{DynamicPipeline, Material, MaterialId, Pipeline, CameraUniform, TimingUniform, SceneUniform};
+use crate::{DynamicPipeline, Material, MaterialId, Pipeline, CameraUniform, TimingUniform, SceneUniform, AlbedoMap, NormalMap, CameraBuffer, TimingBuffer, SceneBuffer, NormalTexel, AlbedoTexel};
 use ahash::AHashMap;
 use assets::Assets;
 use bytemuck::Zeroable;
-use graphics::{Graphics, Normalized, RenderPass, Texture2D, BGRA, PipelineInitializationError, UniformBuffer, BufferMode, BufferUsage, GpuPod, RGBA, SwapchainFormat};
+use graphics::{Graphics, Normalized, RenderPass, Texture2D, BGRA, PipelineInitializationError, UniformBuffer, BufferMode, BufferUsage, GpuPod, RGBA, SwapchainFormat, Operation, LoadOp, StoreOp, Texel, TextureMode, TextureUsage, SamplerSettings, TextureMipMaps, Texture};
 use std::{
     any::TypeId, marker::PhantomData, mem::ManuallyDrop, rc::Rc, cell::RefCell,
 };
 
 // Renderpass that will render the scene
 pub type ForwardRendererRenderPass = RenderPass<SwapchainFormat, ()>;
-// Main resource that will contain data to render objects on the screen
-// This will contain the current swapchain texture that we must render to
+
+// Keeps tracks of data that we use for rendering the scene 
 pub struct ForwardRenderer {
     // Main render pass that we will use to render to the swapchain
     pub(crate) render_pass: ForwardRendererRenderPass,
 
-    // Data that will be sent to the shaders
-    camera_buffer: UniformBuffer<CameraUniform>,
-    timing_buffer: UniformBuffer<TimingUniform>,
-    scene_buffer: UniformBuffer<SceneUniform>,
+    // Default shader buffers that will be shared with each material
+    pub camera_buffer: CameraBuffer,
+    pub timing_buffer: TimingBuffer,
+    pub scene_buffer: SceneBuffer,    
 
-    // Material pipelines that we will use to render the surfaces
-    pipelines: AHashMap<TypeId, Rc<dyn DynamicPipeline>>,
+    // Default textures that will be shared with each material
+    pub white: AlbedoMap,
+    pub black: AlbedoMap,
+    pub normal: NormalMap,
 }
 
-// Create a new uniform buffer with the given value (defaulted contents) 
+// Create a new uniform buffer with default contents
 fn create_uniform_buffer<T: GpuPod + Default>(graphics: &Graphics) -> UniformBuffer<T> {
     UniformBuffer::from_slice(graphics, &[T::default()], BufferMode::Dynamic, BufferUsage::default()).unwrap()
 }
 
+// Create a 1x1 texture 2D with the given value
+fn create_texture2d<T: Texel>(graphics: &Graphics, value: T::Storage) -> Texture2D<T> {
+    Texture2D::<T>::from_texels(
+        graphics,
+        Some(&[value]),
+        vek::Extent2::broadcast(1),
+        TextureMode::Dynamic,
+        TextureUsage::Placeholder,
+        SamplerSettings::default(),
+        TextureMipMaps::Disabled
+    ).unwrap()
+}
+
 impl ForwardRenderer {
-    // Create a new scene renderer
+    // Create a new scene render pass and the forward renderer
     pub(crate) fn new(
         graphics: &Graphics,
-        render_pass: ForwardRendererRenderPass,
     ) -> Self {
+        // Create the forward shading scene pass
+        let render_pass = ForwardRendererRenderPass::new(
+            &graphics,
+            Operation {
+                load: LoadOp::Clear(vek::Vec4::broadcast(0)),
+                store: StoreOp::Store,
+            },
+            (),
+        ).unwrap();
+
         Self {
             render_pass,
-            pipelines: Default::default(),
+
+            // Create the common material buffers
             camera_buffer: create_uniform_buffer::<CameraUniform>(graphics),
             timing_buffer: create_uniform_buffer::<TimingUniform>(graphics),
             scene_buffer: create_uniform_buffer::<SceneUniform>(graphics),
+
+            // Create the 1x1 common textures
+            white: create_texture2d::<AlbedoTexel>(graphics, vek::Vec4::broadcast(0).with_w(255)),
+            black: create_texture2d::<AlbedoTexel>(graphics, vek::Vec4::broadcast(255)),
+            normal: create_texture2d::<NormalTexel>(graphics, vek::Vec4::new(0, 0, 127, 127)),
         }
-    }
-
-    // Register a new material pipeline within the renderer
-    pub fn register<M: Material>(
-        &mut self,
-        graphics: &Graphics,
-        assets: &Assets,
-    ) -> Result<MaterialId<M>, PipelineInitializationError> {
-        // Initialize the pipeline and register it if needed
-        let key = TypeId::of::<M>();
-        if !self.pipelines.contains_key(&key) {
-            log::debug!("Creating pipeline for material {}...", utils::pretty_type_name::<M>());
-            let pipeline = Pipeline::<M>::new(
-                graphics,
-                assets,
-            )?;
-            self.pipelines.insert(key, Rc::new(pipeline));
-            log::debug!("Registered pipeline for material {}", utils::pretty_type_name::<M>());
-        }
-
-        // Material ID is just a marker type for safety
-        Ok(MaterialId(PhantomData))
-    }
-
-    // Get a MaterialID from a pre-initialized pipeline
-    pub fn get<M: Material>(&self) -> Option<MaterialId<M>> {
-        let key = TypeId::of::<M>();
-        self.pipelines.get(&key).map(|_| MaterialId(PhantomData))
-    }
-
-    // Extract the internally stored material pipelines
-    pub(crate) fn extract_pipelines(
-        &self,
-    ) -> Vec<Rc<dyn DynamicPipeline>> {
-        self.pipelines
-            .iter()
-            .map(|(_key, value)| value.clone())
-            .collect::<_>()
     }
 }

@@ -10,6 +10,7 @@ use std::{
 
 // The world is a unique container for multiple resources like ECS and assets
 // Each World can be created using the builder pattern with the help of an App
+// TODO: Maybe replace this with DashMap to allow non mutable insertions?
 pub struct World(
     pub(crate) AHashMap<TypeId, RefCell<Box<dyn Resource>>>,
 );

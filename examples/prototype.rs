@@ -16,20 +16,21 @@ fn main() {
 fn init(world: &mut World) {
     let assets = world.get::<Assets>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
+    let mut pipelines = world.get_mut::<Pipelines>().unwrap();
+    pipelines.register::<Basic>(&graphics, &assets).unwrap();
+
     let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
     let mut materials = world.get_mut::<Storage<Basic>>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
-    let mut renderer = world.get_mut::<ForwardRenderer>().unwrap();
-    let material_id = renderer.register::<Basic>(&graphics, &assets);
+    let id = pipelines.get::<Basic>().unwrap();
 
     let material = materials.insert(Basic {
-        diffuse_map: None,
+        albedo_map: None,
         normal_map: None,
         roughness: 0.0,
         tint: vek::Rgb::default(),
     });
 
-    let id = material_id.unwrap();
     let mesh = assets.load::<Mesh>(("engine/meshes/cube.obj", &*graphics)).unwrap();
     let vertices = mesh.vertices();
     let positions = vertices.attribute::<attributes::Position>().unwrap();

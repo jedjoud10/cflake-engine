@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use wgpu::{PrimitiveState, VertexStepMode};
 
-use crate::{Shader, Graphics, PipelineInitializationError, DepthConfig, StencilConfig, BlendConfig, PrimitiveConfig, BindingConfig, VertexConfig, DepthStencilLayout, ColorLayout, VertexInfo, VertexInputInfo};
+use crate::{Shader, Graphics, PipelineInitializationError, DepthConfig, StencilConfig, BlendConfig, PrimitiveConfig, VertexConfig, DepthStencilLayout, ColorLayout, VertexInfo, VertexInputInfo};
 
 // Wrapper around a WGPU render pipeline just to help me instantiate them
 pub struct GraphicsPipeline<C: ColorLayout, DS: DepthStencilLayout> {
@@ -14,7 +14,6 @@ pub struct GraphicsPipeline<C: ColorLayout, DS: DepthStencilLayout> {
     //blend_config: Option<BlendConfig>,
     vertex_config: VertexConfig,
     primitive_config: PrimitiveConfig,
-    binding_config: BindingConfig,
     _phantom: PhantomData<C>,
     _phantom2: PhantomData<DS>,
 
@@ -34,7 +33,6 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
         stencil_config: Option<StencilConfig>,
         vertex_config: VertexConfig,
         primitive_config: PrimitiveConfig,
-        binding_config: BindingConfig,
         shader: &Shader,
     ) -> Result<Self, PipelineInitializationError> {
         // If stencil/depth is enabled, make sure the layout matches up
@@ -90,7 +88,6 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
             stencil_config,
             vertex_config,
             primitive_config,
-            binding_config,
         })
     }
 }
@@ -238,10 +235,5 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
     // Get the primitive config used when creating this pipeline
     pub fn primitive_config(&self) -> &PrimitiveConfig {
         &self.primitive_config
-    }
-
-    // Get the binding config used when creating this pipeline
-    pub fn binding_config(&self) -> &BindingConfig {
-        &self.binding_config
     }
 }

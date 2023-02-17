@@ -1,25 +1,19 @@
 use std::any::TypeId;
 
-use crate::{Material, EnabledMeshAttributes, TimingUniform, CameraUniform, SceneUniform, CameraBuffer, TimingBuffer, SceneBuffer};
+use crate::{Material, EnabledMeshAttributes, TimingUniform, CameraUniform, SceneUniform, CameraBuffer, TimingBuffer, SceneBuffer, DefaultMaterialResources, AlbedoMap, NormalMap};
 use ahash::AHashMap;
 use assets::Assets;
 use graphics::{
     Compiled, FragmentModule, Graphics, Normalized,
-    Texture2D, VertexModule, Compiler, Sampler, Shader, BindingConfig, RGBA, UniformBuffer,
+    Texture2D, VertexModule, Compiler, Sampler, Shader, RGBA, UniformBuffer, Bindings,
 };
 use utils::{Storage, Handle};
-
-// Basic type aliases
-type AlbedoTexel = RGBA<Normalized<u8>>;
-type NormalTexel = RGBA<Normalized<i8>>;
-type AlbedoMap = Texture2D<AlbedoTexel>;
-type NormalMap = Texture2D<NormalTexel>;
 
 // A basic forward rendering material that will read from a diffuse map and normal map
 // This does not implement the PBR workflow, and it's only used for simplicity at first
 pub struct Basic {
     // Textures used by this basic material
-    pub diffuse_map: Option<Handle<AlbedoMap>>,
+    pub albedo_map: Option<Handle<AlbedoMap>>,
     pub normal_map: Option<Handle<NormalMap>>,
 
     // Simple Basic Parameters
@@ -27,38 +21,11 @@ pub struct Basic {
     pub tint: vek::Rgb<f32>, 
 }
 
-/*
-impl_material_layout! {
-    target: Basic,
-
-    surface: {},
-
-    instance: {
-        #[texture(0)]
-        #[fragment]
-        diffuse_map: AlbedoMap,
-    
-        #[texture(1)]
-        #[fragment]
-        normal_map: NormalMap,
-    
-    },
-
-    global: {
-        #[buffer(0)]
-        scene_buffer: SceneBuffer,
-    },
-
-    pushconstants: {
-        #[uniform(pushconstant)]
-        #[fragment]
-        model_matrix: vek::Mat4<f32>,
-    }
-}
-*/
-
 impl Material for Basic {    
-    type Resources<'w> = ();
+    type Resources<'w> = (
+        world::Read<'w, Storage<AlbedoMap>>,
+        world::Read<'w, Storage<NormalMap>>
+    );
 
     // Load the vertex shader for this material
     fn vertex(
@@ -82,7 +49,56 @@ impl Material for Basic {
         Compiler::new(frag).compile(assets, graphics).unwrap()
     }
 
-    fn attributes() -> EnabledMeshAttributes {
-        EnabledMeshAttributes::all()
+    // Fetch the texture storages
+    fn fetch<'w>(
+        world: &'w world::World
+    ) -> Self::Resources<'w> {
+        let albedo_maps = world.get::<Storage<AlbedoMap>>().unwrap();
+        let normal_maps = world.get::<Storage<NormalMap>>().unwrap();
+        (albedo_maps, normal_maps)
+    }
+
+    // Set the static bindings that will never change
+    fn set_global_bindings<'w>(
+        resources: &mut Self::Resources<'w>,
+        default: &DefaultMaterialResources,
+        bindings: &mut Bindings<'w>,
+    ) {
+        bindings.test(default.camera_buffer);
+        bindings.test(default.timing_buffer);
+        bindings.test(default.scene_buffer);
+    }
+
+    // Set the instance bindings that will change per material
+    fn set_instance_bindings<'w>(
+        &self,
+        resources: &mut Self::Resources<'w>,
+        default: &DefaultMaterialResources,
+        bindings: &Bindings,
+    ) {
+        let (albedo_maps, normal_maps) = resources;
+
+        // Get the albedo texture, and fallback to a white one
+        let albedo_map = self
+            .albedo_map
+            .as_ref()
+            .map_or(default.white, |h| albedo_maps.get(h));
+
+        // Get the normal map, and fallback to the default one
+        let normal_map = self
+            .normal_map
+            .as_ref()
+            .map_or(default.normal, |h| normal_maps.get(h));
+
+    }
+
+    // Set the surface bindings that will change from entity to entity
+    fn set_surface_bindings<'w>(
+        renderer: crate::Renderer,
+        resources: &mut Self::Resources<'w>,
+        default: &DefaultMaterialResources,
+        bindings: &Bindings,
+    ) {
+        
     }
 }

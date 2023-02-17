@@ -3,10 +3,6 @@ use wgpu::{VertexFormat, VertexStepMode, ShaderLocation};
 pub use wgpu::{FrontFace, Face};
 use crate::{VertexInfo, Vertex};
 
-// TODO: Write binding config for use with WGPU
-pub struct BindingConfig {
-}
-
 // Blend config for a single color attachment
 #[derive(Clone, Copy)]
 pub struct AttachmentBlendConfig {

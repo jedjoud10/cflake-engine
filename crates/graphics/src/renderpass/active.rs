@@ -1,5 +1,5 @@
 use std::{marker::PhantomData, ops::Range};
-use crate::{ColorLayout, DepthStencilLayout, UntypedBuffer, VertexBuffer, Vertex, TriangleBuffer, GraphicsPipeline, ActiveGraphicsPipeline};
+use crate::{ColorLayout, DepthStencilLayout, UntypedBuffer, VertexBuffer, Vertex, TriangleBuffer, GraphicsPipeline, ActiveGraphicsPipeline, Bindings};
 
 // An active render pass is basically just a rasterizer that is used to bind
 // multiple render pipelines so we can draw objects to the screen
@@ -23,14 +23,14 @@ impl<'r, 'c, 'ds, C: ColorLayout, DS: DepthStencilLayout>
     pub fn bind_pipeline<'a>(
         &'a mut self,
         pipeline: &'r GraphicsPipeline<C, DS>,
-    ) -> ActiveGraphicsPipeline<'a, 'r, 'c, 'ds, C, DS>{
+    ) -> (ActiveGraphicsPipeline<'a, 'r, 'c, 'ds, C, DS>, Bindings<'r>) {
         self.render_pass.set_pipeline(pipeline.pipeline());
 
-        ActiveGraphicsPipeline {
+        (ActiveGraphicsPipeline {
             render_pass: &mut self.render_pass,
             _phantom: PhantomData,
             _phantom2: PhantomData,
             pipeline: &pipeline,
-        }
+        }, Bindings { _phantom: PhantomData })
     }
 }

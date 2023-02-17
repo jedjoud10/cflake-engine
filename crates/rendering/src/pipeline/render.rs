@@ -1,4 +1,4 @@
-use crate::{Material, Surface, Mesh, attributes::{RawPosition, Position}, MeshAttribute, EnabledMeshAttributes, Renderer};
+use crate::{Material, Surface, Mesh, attributes::{RawPosition, Position}, MeshAttribute, EnabledMeshAttributes, Renderer, DefaultMaterialResources};
 use ecs::Scene;
 use graphics::{Graphics, GraphicsPipeline, XYZ, SwapchainFormat, ActiveRenderPass, Vertex, ActiveGraphicsPipeline};
 use utils::{Storage, Time};
@@ -37,18 +37,25 @@ pub(super) fn render_surfaces<'r, M: Material>(
     world: &'r World,
     meshes: &'r Storage<Mesh>,
     pipeline: &'r GraphicsPipeline<SwapchainFormat, ()>,
+    default: &'r DefaultMaterialResources,
     render_pass: &mut ActiveRenderPass<'r, '_, '_, SwapchainFormat, ()>
 ) {
     // Get a rasterizer for the current render pass by binding a pipeline
-    let mut active = render_pass.bind_pipeline(pipeline);
+    let (mut active, mut bindings) = render_pass.bind_pipeline(pipeline);
     let supported = M::attributes();
 
-    // Get all the meshes and surface for this specific material
+    // Get the material storage and resources for this material
     let materials = world.get::<Storage<M>>().unwrap();
+    let mut resources = M::fetch(world);
+
+    // Set the global material bindings    
+    M::set_global_bindings(&mut resources, default, &mut bindings);
+ 
 
     // Get all the entities that contain a visible surface
     let scene = world.get::<Scene>().unwrap();
     let query = scene.query::<(&Surface<M>, &Renderer)>();
+
 
     // Iterate over all the surface of this material
     for (surface, renderer) in query {
