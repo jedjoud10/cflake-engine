@@ -53,13 +53,13 @@ impl ForwardRenderer {
         // Initialize the pipeline and register it if needed
         let key = TypeId::of::<M>();
         if !self.pipelines.contains_key(&key) {
-            log::debug!("Creating pipeline for material {}...", std::any::type_name::<M>());
+            log::debug!("Creating pipeline for material {}...", utils::pretty_type_name::<M>());
             let pipeline = Pipeline::<M>::new(
                 graphics,
                 assets,
             )?;
             self.pipelines.insert(key, Rc::new(pipeline));
-            log::debug!("Registered pipeline for material {}", std::any::type_name::<M>());
+            log::debug!("Registered pipeline for material {}", utils::pretty_type_name::<M>());
         }
 
         // Material ID is just a marker type for safety

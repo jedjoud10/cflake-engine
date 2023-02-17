@@ -18,3 +18,6 @@ pub use time::*;
 pub use boxcar::Vec as ConcVec;
 pub use boxcar::Iter as ConcVecIter;
 pub use boxcar::IntoIter as ConcVecIntoIter;
+
+// Re-export pretty-type-name's functionality
+pub use pretty_type_name::*;

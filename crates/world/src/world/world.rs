@@ -34,7 +34,10 @@ impl World {
         let id = TypeId::of::<R>();
         let returned =
             self.0.insert(id, RefCell::new(Box::new(resource)));
-        assert!(returned.is_none());
+        if returned.is_some() {
+            let name = pretty_type_name::pretty_type_name::<R>();
+            log::warn!("Replaced resource {} since it was already present", name);
+        }
     }
 
     // Get an immutable reference (read guard) to a resource

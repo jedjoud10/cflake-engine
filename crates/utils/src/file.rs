@@ -19,6 +19,15 @@ pub struct FileManager {
     strings: AHashMap<TypeId, String>,
 }
 
+// The type of file that we will read / write
+// This will pick where the file should be located
+pub enum FileType {
+    Config,
+    Data,
+    Cache,
+    Log,
+}
+
 impl FileManager {
     // Create an IO manager
     pub fn new(author: &str, app: &str) -> Self {
@@ -31,7 +40,7 @@ impl FileManager {
         let dirs = AppDirs::new(Some(path), false).unwrap();
 
         // Create the config directory if needed
-        Self::initialize_directory(&dirs.config_dir).unwrap();
+        Self::init_directory(&dirs.config_dir).unwrap();
 
         Self {
             dirs,
@@ -40,7 +49,7 @@ impl FileManager {
     }
 
     // Create a directory in the given path if needed
-    pub fn initialize_directory(
+    pub fn init_directory(
         path: impl AsRef<Path>,
     ) -> std::io::Result<()> {
         let path = path.as_ref();
@@ -52,26 +61,47 @@ impl FileManager {
     }
 
     // Create an empty file with the given path if needed
-    pub fn initialize_file(
+    pub fn init_file(
         path: impl AsRef<Path>,
     ) -> std::io::Result<File> {
         let path = path.as_ref();
         std::fs::File::create(path)
     }
 
-    // Create a buf reader for a file
-    // PS: This will automatically create the file if needed
-    pub fn read(
+    // Convert a FileType variant and local path to a proper global system path
+    fn local_path_to_global(
         &self,
         path: impl AsRef<Path>,
+        variant: FileType
+    ) -> PathBuf {
+        let mut base = match variant {
+            FileType::Config => self.dirs.config_dir.clone(),
+            FileType::Data => self.dirs.state_dir.clone(),
+            FileType::Cache => self.dirs.cache_dir.clone(),
+            FileType::Log => { 
+                let mut base = self.dirs.cache_dir.clone();
+                base.push("/log/");
+                base
+            },
+        };
+
+        base.push(path);
+        base
+    }
+
+    // Create a buf reader for a file
+    // PS: This will automatically create the file if needed
+    pub fn read_file(
+        &self,
+        path: impl AsRef<Path>,
+        variant: FileType,
     ) -> Option<BufReader<File>> {
-        // Create the global path
+        // Create the global path based on the variant
         log::debug!("Reading from file {:?}...", path.as_ref());
-        let mut global = self.dirs.config_dir.clone();
-        global.push(path);
+        let global = self.local_path_to_global(path, variant);
 
         // Check if there was a file creation error
-        let file = Self::initialize_file(&global);
+        let file = Self::init_file(&global);
         let Ok(_file) = file else {
             log::error!("{}", file.err().unwrap());
             return None;
@@ -91,17 +121,17 @@ impl FileManager {
 
     // Creat a buf write and write data to a file
     // PS: This will automatically create the file if needed
-    pub fn write(
+    pub fn write_file(
         &mut self,
         path: impl AsRef<Path>,
+        variant: FileType,
     ) -> Option<BufWriter<File>> {
         // Create the global path
         log::debug!("Writing to file {:?}...", path.as_ref());
-        let mut global = self.dirs.config_dir.clone();
-        global.push(path);
+        let global = self.local_path_to_global(path, variant);
 
         // Check if there was a file creation error
-        let file = Self::initialize_file(&global);
+        let file = Self::init_file(&global);
         if let Err(err) = file {
             log::error!("{}", err);
             return None;
@@ -124,13 +154,14 @@ impl FileManager {
     }
 
     // Deserialize a file using Serde
-    pub fn deserialize<'a, T: serde::Deserialize<'a> + 'static>(
+    pub fn deserialize_from_file<'a, T: serde::Deserialize<'a> + 'static>(
         &'a mut self,
         path: impl AsRef<Path>,
+        variant: FileType,
     ) -> Option<T> {
         // Read the file into a string and then add it internally
         log::debug!("Deserializing to file {:?}...", path.as_ref());
-        let mut reader = self.read(&path)?;
+        let mut reader = self.read_file(&path, variant)?;
         let mut string = String::new();
         reader.read_to_string(&mut string).ok()?;
         self.strings.insert(TypeId::of::<T>(), string);
@@ -144,13 +175,14 @@ impl FileManager {
     }
 
     // Serialize a struct into a file using Serde
-    pub fn serialize<T: serde::Serialize>(
+    pub fn serialize_into_file<T: serde::Serialize>(
         &mut self,
         value: &T,
         path: impl AsRef<Path>,
+        variant: FileType,
     ) -> Option<()> {
         log::debug!("Serializing to file {:?}...", path.as_ref());
-        let writer = self.write(&path)?;
+        let writer = self.write_file(&path, variant)?;
         serde_json::to_writer_pretty(writer, value).ok()?;
         log::debug!(
             "Serialized data into {:?} successfully!",

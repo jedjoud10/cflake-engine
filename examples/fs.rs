@@ -21,12 +21,13 @@ fn init(world: &mut World) {
     let mut fm = world.get_mut::<FileManager>().unwrap();
 
     // Write to the config JSON file
-    fm.serialize(
+    fm.serialize_into_file(
         &SimpleStruct {
             name: "Test name".to_owned(),
             value: 50,
         },
         "config.json",
+        FileType::Config
     )
     .unwrap();
 }

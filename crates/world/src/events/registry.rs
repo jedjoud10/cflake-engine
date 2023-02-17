@@ -125,10 +125,11 @@ impl<C: Caller> Registry<C> {
         self.events.sort_by(|(a, _), (b, _)| {
             usize::cmp(&indices[a], &indices[b])
         });
+
         log::debug!(
             "Sorted {} events for {} registry",
             self.events.len(),
-            self.caller.name
+            pretty_type_name::pretty_type_name_str(self.caller.name),
         );
 
         // 3x POUNCES ON YOU UWU YOU'RE SO WARM

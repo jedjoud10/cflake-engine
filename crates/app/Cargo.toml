@@ -22,6 +22,8 @@ gui = { path = "../gui" }
 audio = { path = "../audio" }
 utils = { path = "../utils" }
 env_logger = "0.9"
+fern = { version = "0.6.1", features = ["colored"] }
+chrono = "0.4.23"
 serde = "1.0.145"  
 log = { workspace = true }
 vek = { workspace = true }

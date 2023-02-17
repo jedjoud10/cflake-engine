@@ -172,10 +172,53 @@ impl App {
         })
     }
 
+    // Initialize the global logger (also sets the output file)
+    fn init_logger(&mut self) {
+        use fern::colors::Color;
+        self.world.insert(utils::ThreadPool::default());
+        
+        // Color config for the line color
+        let colors_line = fern::colors::ColoredLevelConfig::new()
+            .error(Color::Red)
+            .warn(Color::Yellow)
+            .info(Color::White)
+            .debug(Color::White)
+            .trace(Color::BrightBlack);
+
+        // Color config for the level
+        let colors_level = colors_line.clone()
+            .info(Color::Green)
+            .debug(Color::Blue)
+            .warn(Color::Yellow)
+            .error(Color::Red);
+
+        fern::Dispatch::new()
+            .format(move |out, message, record| {
+                out.finish(format_args!(
+                    "{color_line}[{date}][{target}][{level}{color_line}] {message}\x1B[0m",
+                    color_line = format_args!(
+                        "\x1B[{}m",
+                        colors_line.get_color(&record.level()).to_fg_str()
+                    ),
+                    date = chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
+                    target = record.target(),
+                    level = colors_level.color(record.level()),
+                    message = message,
+                ));
+            })
+            .level_for("naga", log::LevelFilter::Warn)
+            .level_for("wgpu", log::LevelFilter::Warn)
+            .level_for("wgpu_core", log::LevelFilter::Warn)
+            .level_for("wgpu_hal", log::LevelFilter::Warn)
+            .level(log::LevelFilter::Debug)
+            .chain(std::io::stdout())
+            .apply().unwrap();
+    }
+
     // Consume the App builder, and start the engine window
     pub fn execute(mut self) {
         // Enable the environment logger
-        env_logger::init();
+        self.init_logger();
 
         // Pass the panics to the LOG crate
         let hook = std::panic::take_hook();
