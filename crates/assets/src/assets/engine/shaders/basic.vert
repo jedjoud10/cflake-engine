@@ -1,21 +1,44 @@
 #version 460 core
-#include <engine/shaders/common/camera.glsl>
 
-// Vertex attributes from Rust
-layout (location = 0) in vec3 vertex_position;
+// Main attribute set vertex attributes
+layout(location = 0) in vec3 position;
+layout(location = 1) in vec3 normal;
+layout(location = 2) in vec4 tangent;
+layout(location = 3) in vec4 tex_coord;
 
-// https://vkguide.dev/docs/chapter-2/triangle_walkthrough/
+// Camera bind group buffer (creates a 'camera' object)
+//#include <engine/shaders/common/camera.glsl>
+
+// Push constants for the mesh matrix
+layout(push_constant) uniform PushConstants {
+    mat4 matrix;
+} mesh;
+
+// Data to give to the fragment shader
+/*
+out vec3 m_position;
+out vec3 m_normal;
+out vec3 m_tangent;
+out vec3 m_bitangent;
+out vec2 m_tex_coord;
+*/
+
 void main() {
-    const vec2 positions[6] = vec2[6](
-		vec2(1.0f, 1.0f),
-		vec2(-1.0f, 1.0f),
-		vec2(1.0f, -1.0f),
+	gl_Position = vec4(1);
+	/*
+	// Model space -> World space -> Clip space
+    vec4 world_pos = mesh.matrix * vec4(position, 1);
+    vec4 projected = (camera.projection * camera.view) * world_pos; 
+    gl_Position = projected;
 
-		vec2(-1.0f, -1.0f),
-		vec2(1.0f, -1.0f), 
-		vec2(-1.0f, 1.0f)
-	);
+    // Set the output variables
+    m_position = world_pos.xyz;
+    m_normal = normalize((mesh.matrix * vec4(normal, 0)).xyz);
+    m_tangent = normalize((mesh.matrix * vec4(tangent.xyz, 0)).xyz);
+    m_tex_coord = tex_coord;
 
-	gl_Position = vec4(positions[gl_VertexIndex], 0.0f, 1.0f);
-
+    // Calculate world space bitangent
+	vec3 bitangent = cross(normalize(m_normal), normalize(tangent.xyz)) * tangent.w;
+	m_bitangent = normalize((mesh.matrix * vec4(bitangent, 0.0)).xyz);     
+	*/
 }

@@ -31,11 +31,7 @@ pub struct Basic {
 impl_material_layout! {
     target: Basic,
 
-    surface: {
-        #[uniform(pushconstant)]
-        #[fragment]
-        model_matrix: vek::Mat4<f32>,
-    },
+    surface: {},
 
     instance: {
         #[texture(0)]
@@ -51,6 +47,12 @@ impl_material_layout! {
     global: {
         #[buffer(0)]
         scene_buffer: SceneBuffer,
+    },
+
+    pushconstants: {
+        #[uniform(pushconstant)]
+        #[fragment]
+        model_matrix: vek::Mat4<f32>,
     }
 }
 */
@@ -81,8 +83,6 @@ impl Material for Basic {
     }
 
     fn attributes() -> EnabledMeshAttributes {
-        //EnabledMeshAttributes::POSITIONS | EnabledMeshAttributes::NORMALS | EnabledMeshAttributes::TEX_COORDS
-        //EnabledMeshAttributes::empty()
-        EnabledMeshAttributes::POSITIONS 
+        EnabledMeshAttributes::all()
     }
 }

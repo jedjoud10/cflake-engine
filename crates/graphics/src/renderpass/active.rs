@@ -30,6 +30,7 @@ impl<'r, 'c, 'ds, C: ColorLayout, DS: DepthStencilLayout>
             render_pass: &mut self.render_pass,
             _phantom: PhantomData,
             _phantom2: PhantomData,
+            pipeline: &pipeline,
         }
     }
 }

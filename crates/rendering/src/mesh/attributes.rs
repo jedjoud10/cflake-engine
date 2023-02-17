@@ -15,7 +15,7 @@ bitflags::bitflags! {
 
         // TODO: Reimplement the color attribute
         //const COLORS = 1 << 3;
-        const TEX_COORDS = 1 << 4;
+        const TEX_COORDS = 1 << 3;
     }
 }
 
@@ -57,7 +57,7 @@ pub(crate) fn enabled_to_vertex_config(attributes: EnabledMeshAttributes) -> Ver
     // This will push the mesh attribute's input to the vector if the bitflags contain the vertex input
     fn push<M: MeshAttribute>(attributes: EnabledMeshAttributes, inputs: &mut Vec<VertexInputInfo>) {
         if attributes.contains(M::ATTRIBUTE) {
-            let input = <M::Input as VertexInput<M::V>>::new(M::index());
+            let input = <M::Input as VertexInput<M::V>>::new();
             inputs.push(input.info());
         }
     }
@@ -129,4 +129,4 @@ impl_vertex_attribute!(Position, positions, XYZ<f32>, POSITIONS, PerVertex);
 impl_vertex_attribute!(Normal, normals, XYZW<Normalized<i8>>, NORMALS, PerVertex);
 impl_vertex_attribute!(Tangent, tangents, XYZW<Normalized<i8>>, TANGENTS, PerVertex);
 //impl_vertex_attribute!(Color, colors, XYZ<Normalized<u8>>, COLORS);
-impl_vertex_attribute!(TexCoord, tex_coords, XY<Normalized<u8>>, TEX_COORDS, PerVertex);
+impl_vertex_attribute!(TexCoord, tex_coords, XYZW<Normalized<u8>>, TEX_COORDS, PerVertex);

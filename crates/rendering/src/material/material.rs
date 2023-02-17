@@ -49,7 +49,9 @@ pub trait Material: 'static + Sized {
 
     // Get the required mesh attributes that we need to render a surface
     // If a surface does not support these attributes, it will not be rendered
-    fn attributes() -> EnabledMeshAttributes;
+    fn attributes() -> EnabledMeshAttributes {
+        EnabledMeshAttributes::all()
+    }
 
     // Get the depth config for this material
     fn depth_config() -> Option<DepthConfig> {

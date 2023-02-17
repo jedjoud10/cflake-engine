@@ -82,7 +82,7 @@ impl Archetype {
         }
 
         log::debug!(
-            "Extended archetype {} with {} new elements",
+            "Extended archetype {} with {} new element(s)",
             self.mask,
             additional
         );

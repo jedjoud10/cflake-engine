@@ -247,11 +247,6 @@ mod vertex {
     #[test]
     fn uvs() {
         assert_eq!(
-            XY::<Normalized<u8>>::format(),
-            VertexFormat::Unorm8x2,
-        );
-
-        assert_eq!(
             XY::<Normalized<u16>>::format(),
             VertexFormat::Unorm16x2,
         );

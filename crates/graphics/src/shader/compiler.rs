@@ -93,7 +93,9 @@ impl<M: ShaderModule> Compiler<M> {
         } = self;
 
         // Compile GLSL to Naga then to Wgpu
+        let time = std::time::Instant::now();
         let (raw, naga) = compile(stage, graphics, assets, &snippets, source)?;
+        log::debug!("Compiled shader {} sucessfully! Took {} ms", file_name, time.elapsed().as_millis());
 
         Ok(Compiled {
             raw: Arc::new(raw),

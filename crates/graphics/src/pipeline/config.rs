@@ -60,17 +60,11 @@ pub struct VertexConfig {
 // VertexInputInfo combines all the required info for a vertex input in one struct
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct VertexInputInfo {
-    location: ShaderLocation,
     info: VertexInfo,
     step_mode: VertexStepMode,
 }
 
 impl VertexInputInfo {
-    // Get the shader location of the VertexInput
-    pub fn location(&self) -> ShaderLocation {
-        self.location
-    }
-
     // Get the VertexInfo of the VertexInput
     pub fn vertex_info(&self) -> VertexInfo {
         self.info
@@ -85,11 +79,8 @@ impl VertexInputInfo {
 // Vertex input defines the vertex layout for a single buffer
 // TODO: Implement vertex interlacing
 pub trait VertexInput<V: Vertex> {
-    // Create a new vertex input (layout) using the appropriate shader location
-    fn new(location: ShaderLocation) -> Self where Self: Sized;
-
-    // Get the shader location of the vertex input
-    fn location(&self) -> ShaderLocation;
+    // Create a new vertex input (layout)
+    fn new() -> Self where Self: Sized;
 
     // Get the vertex info of the input
     fn vertex_info(&self) -> VertexInfo {
@@ -102,7 +93,6 @@ pub trait VertexInput<V: Vertex> {
     // Get the combined info
     fn info(&self) -> VertexInputInfo {
         VertexInputInfo {
-            location: self.location(),
             info: self.vertex_info(),
             step_mode: self.step_mode(),
         }
@@ -111,14 +101,10 @@ pub trait VertexInput<V: Vertex> {
 
 // Defines a Vertex buffer/layout as being an input that
 // should be updated for every vertex drawn in the mesh
-pub struct PerVertex<V: Vertex>(PhantomData<V>, ShaderLocation);
+pub struct PerVertex<V: Vertex>(PhantomData<V>);
 impl<V: Vertex> VertexInput<V> for PerVertex<V> {
-    fn new(location: ShaderLocation) -> Self {
-        Self(PhantomData, location)
-    }
-
-    fn location(&self) -> ShaderLocation {
-        self.1
+    fn new() -> Self {
+        Self(PhantomData)
     }
 
     fn step_mode(&self) -> VertexStepMode {
@@ -128,14 +114,10 @@ impl<V: Vertex> VertexInput<V> for PerVertex<V> {
 
 // Defines a Vertex buffer/layout as being an input
 // that should be updated for every instance drawn
-pub struct PerInstance<V: Vertex>(PhantomData<V>, ShaderLocation);
+pub struct PerInstance<V: Vertex>(PhantomData<V>);
 impl<V: Vertex> VertexInput<V> for PerInstance<V> {
-    fn new(location: ShaderLocation) -> Self {
-        Self(PhantomData, location)
-    }
-
-    fn location(&self) -> ShaderLocation {
-        self.1
+    fn new() -> Self {
+        Self(PhantomData)
     }
 
     fn step_mode(&self) -> VertexStepMode {

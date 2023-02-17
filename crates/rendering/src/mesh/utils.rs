@@ -118,7 +118,7 @@ pub fn apply_settings_tex_coords(tex_coords: &mut [RawTexCoord], flip: vek::Vec2
 }
 
 // Invert the triangle ordering of a mutable slice
-pub fn invert_triangle_ordering(triangles: &mut [[u32; 3]]) {
+pub fn invert_triangle_ordering(triangles: &mut [Triangle<u32>]) {
     for triangle in triangles {
         triangle.swap(0, 2);
     }
@@ -127,7 +127,7 @@ pub fn invert_triangle_ordering(triangles: &mut [[u32; 3]]) {
 // Calculate the vertex normals procedurally and return them as a vector
 pub fn compute_normals(
     positions: &[RawPosition],
-    triangles: &[[u32; 3]],
+    triangles: &[Triangle<u32>],
 ) -> Option<Vec<RawNormal>> {
     let mut normals = vec![vek::Vec3::<f32>::zero(); positions.len()];
     for i in 0..(triangles.len() / 3) {
@@ -167,7 +167,7 @@ pub fn compute_tangents(
     positions: &[RawPosition],
     normals: &[RawNormal],
     tex_coords: &[RawTexCoord],
-    triangles: &[[u32; 3]],
+    triangles: &[Triangle<u32>],
 ) -> Option<Vec<RawTangent>> {
     // Check for incompatible lengths
     let len = positions.len();
@@ -205,7 +205,7 @@ pub fn compute_tangents(
 
         fn tex_coord(&self, face: usize, vert: usize) -> [f32; 2] {
             let i = self.triangles[face][vert] as usize;
-            self.tex_coords[i].map(|x| x as f32 / 255.0).into_array()
+            self.tex_coords[i].map(|x| x as f32 / 255.0).xy().into_array()
         }
 
         fn set_tangent_encoded(&mut self, tangent: [f32; 4], face: usize, vert: usize) {

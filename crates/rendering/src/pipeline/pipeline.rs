@@ -1,4 +1,4 @@
-use crate::{Material, ForwardRendererRenderPass, MeshAttribute, attributes::{TexCoord, Tangent, Normal, Position}, EnabledMeshAttributes, Mesh};
+use crate::{Material, ForwardRendererRenderPass, MeshAttribute, attributes::{TexCoord, Tangent, Normal, Position, MAX_MESH_VERTEX_ATTRIBUTES}, EnabledMeshAttributes, Mesh};
 use assets::Assets;
 use graphics::{Graphics, GraphicsPipeline, RenderPass, Shader, VertexConfig, PipelineInitializationError, BindingConfig, VertexInput, SwapchainFormat, ActiveRenderPass};
 use utils::Storage;
@@ -38,7 +38,7 @@ impl<M: Material> Pipeline<M> {
         let vertex_config = crate::attributes::enabled_to_vertex_config(
             M::attributes()
         );
-
+        
         // Create the graphics pipeline
         let pipeline = GraphicsPipeline::new(
             graphics,

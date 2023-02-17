@@ -1,5 +1,5 @@
 use vek::{Vec3, Vec2, Vec4};
-use wgpu::{TextureFormat, VertexFormat};
+use wgpu::{VertexFormat};
 use half::f16;
 use std::mem::size_of;
 use crate::{GpuPodRelaxed, ElementType, ChannelsType, VectorChannels, X, XY, XYZ, XYZW, AnyElement, Normalized, DepthElement, Depth, Stencil};
@@ -9,7 +9,7 @@ pub trait Vertex {
     // The raw RAW data type (u8 or shit like dat)
     type Base: GpuPodRelaxed;
 
-    // The raw data type that we will use to access texture memory
+    // The raw data type that we will use to access vertex memory
     type Storage: GpuPodRelaxed;
 
     // Number of bytes in total
@@ -106,34 +106,49 @@ macro_rules! internal_impl_vertex {
     };
 }
 
-macro_rules! impl_vertex_relaxed {
+macro_rules! impl_vertex_8 {
     ($vec:ident, $channels:expr, $storagevec: ident) => {
-        internal_impl_vertex!($vec, u32, $channels, $storagevec);
-        internal_impl_vertex!($vec, i32, $channels, $storagevec);
-
-        internal_impl_vertex!($vec, f32, $channels, $storagevec);
-    };
-}
-
-macro_rules! impl_vertex_strict {
-    ($vec:ident, $channels:expr, $storagevec: ident) => {
-        impl_vertex_relaxed!($vec, $channels, $storagevec);
         internal_impl_vertex!($vec, u8, $channels, $storagevec);
         internal_impl_vertex!($vec, i8, $channels, $storagevec);
         internal_impl_vertex!($vec, Normalized<u8>, $channels, $storagevec);
         internal_impl_vertex!($vec, Normalized<i8>, $channels, $storagevec);
+    };
+}
 
+macro_rules! impl_vertex_16 {
+    ($vec:ident, $channels:expr, $storagevec: ident) => {
         internal_impl_vertex!($vec, u16, $channels, $storagevec);
         internal_impl_vertex!($vec, i16, $channels, $storagevec);
         internal_impl_vertex!($vec, Normalized<u16>, $channels, $storagevec);
         internal_impl_vertex!($vec, Normalized<i16>, $channels, $storagevec);
+    };
+}
 
-        internal_impl_vertex!($vec, f16, $channels, $storagevec);
-    };  
+macro_rules! impl_vertex_32 {
+    ($vec:ident, $channels:expr, $storagevec: ident) => {
+        internal_impl_vertex!($vec, u32, $channels, $storagevec);
+        internal_impl_vertex!($vec, i32, $channels, $storagevec);
+        internal_impl_vertex!($vec, f32, $channels, $storagevec);
+    };
 }
 
 type Scalar<T> = T;
-impl_vertex_relaxed!(X, VectorChannels::One, Scalar);
-impl_vertex_strict!(XY, VectorChannels::Two, Vec2);
-impl_vertex_relaxed!(XYZ, VectorChannels::Three, Vec3);
-impl_vertex_strict!(XYZW, VectorChannels::Four, Vec4);
+
+// 4 bytes for 1 channel (4)
+impl_vertex_32!(X, VectorChannels::One, Scalar);
+
+// 2 bytes for 2 channels (4), 4 bytes for 2 channels (8) 
+impl_vertex_16!(XY, VectorChannels::Two, Vec2);
+impl_vertex_32!(XY, VectorChannels::Two, Vec2);
+
+// 4 bytes for 3 channels (12)
+impl_vertex_32!(XYZ, VectorChannels::Three, Vec3);
+
+// 1 byte for 4 channels (4), 
+impl_vertex_8!(XYZW, VectorChannels::Four, Vec4);
+
+// 2 bytes for 4 channels (8),
+impl_vertex_16!(XYZW, VectorChannels::Four, Vec4);
+
+// 4 bytes for 4 channels (16),
+impl_vertex_32!(XYZW, VectorChannels::Four, Vec4);

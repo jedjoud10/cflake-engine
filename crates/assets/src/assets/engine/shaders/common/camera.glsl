@@ -1,4 +1,4 @@
-layout(set = 1, binding = 0) uniform CameraUniform {
+layout(set = 0, binding = 0, std430) uniform CameraUniform {
     // Projection & inv projection matrix
     mat4 projection;
     mat4 inverse_projection;

@@ -21,7 +21,7 @@ const STORAGE: u32 = wgpu::BufferUsages::STORAGE.bits();
 const UNIFORM: u32 = wgpu::BufferUsages::UNIFORM.bits();
 const INDIRECT: u32 = wgpu::BufferUsages::INDIRECT.bits();
 
-// Type of buffer stored as an enum (Vulkan BufferUsages)
+// Type of buffer stored as an enum (WGPU BufferUsage)
 #[repr(u32)]
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum BufferVariant {
@@ -30,6 +30,9 @@ pub enum BufferVariant {
     Storage = STORAGE,
     Uniform = UNIFORM,
     Indirect = INDIRECT,
+
+    // User set their own buffer variant type
+    Unknown,
 }
 
 // Special vertex buffer (for vertices only)
@@ -51,7 +54,7 @@ pub struct Buffer<T: GpuPodRelaxed, const TYPE: u32> {
     // Raw WGPU buffer
     buffer: wgpu::Buffer,
 
-    // Size fields
+    // Size / Layout fields
     length: usize,
     capacity: usize,
 
@@ -236,11 +239,11 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
             STORAGE => BufferVariant::Storage,
             UNIFORM => BufferVariant::Uniform,
             INDIRECT => BufferVariant::Indirect,
-            _ => panic!("This shouldn't happen. Fuck me"),
+            _ => BufferVariant::Unknown,
         }
     }
 
-    // Get the buffer's stride (length of each element)
+    // Get the buffer's stride (size of each element)
     pub fn stride(&self) -> usize {
         size_of::<T>()
     }
@@ -285,30 +288,6 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
 
         Some((start, end))
     } 
-}
-
-// Implementation of unsafe methods
-impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
-    // Transmute the buffer into another type of buffer unsafely
-    pub unsafe fn transmute<U: GpuPodRelaxed>(
-        self,
-    ) -> Buffer<U, TYPE> {
-        assert_eq!(
-            Layout::new::<T>(),
-            Layout::new::<U>(),
-            "Layout type mismatch, cannot transmute buffer"
-        );
-
-        Buffer::<U, TYPE> {
-            buffer: self.buffer,
-            length: self.length,
-            capacity: self.capacity,
-            usage: self.usage,
-            mode: self.mode,
-            _phantom: PhantomData,
-            graphics: self.graphics.clone(),
-        }
-    }
 }
 
 // Implementation of safe methods

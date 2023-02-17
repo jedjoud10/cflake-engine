@@ -33,14 +33,11 @@ fn init(world: &mut World) {
     let mesh = assets.load::<Mesh>(("engine/meshes/cube.obj", &*graphics)).unwrap();
     let vertices = mesh.vertices();
     let positions = vertices.attribute::<attributes::Position>().unwrap();
-    let view = positions.as_view(..).unwrap();
-    dbg!(view.as_ref());
-    dbg!(vertices.len());
-    drop(view);
     let mesh = meshes.insert(mesh);
 
     let surface = Surface::new(mesh, material, id);
-    scene.insert(surface);
+    let renderer = Renderer::new(true, vek::Mat4::default());
+    scene.insert((surface, renderer));
 }
 
 fn update(world: &mut World) {

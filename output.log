@@ -208,7 +208,7 @@
 [37m[2023-02-16 20:44:30][naga::front][[37mDEBUG[0m[37m] Resolving [14] = Load { pointer: [13] } : Handle([2])[0m
 [37m[2023-02-16 20:44:30][naga::front][[37mDEBUG[0m[37m] Resolving [15] = Constant([1]) : Value(Scalar { kind: Sint, width: 4 })[0m
 [37m[2023-02-16 20:44:30][naga::front][[37mDEBUG[0m[37m] Resolving [16] = Constant([1]) : Value(Scalar { kind: Sint, width: 4 })[0m
-[37m[2023-02-16 20:44:30][naga::front][[37mDEBUG[0m[37m] Resolving [17] = AccessIndex { base: [14], index: 0 } : Value(Scalar { kind: Float, width: 4 })[0m
+[37m[2023-02-16 20:44:30][naga::front][[Extended archet37mDEBUG[0m[37m] Resolving [17] = AccessIndex { base: [14], index: 0 } : Value(Scalar { kind: Float, width: 4 })[0m
 [37m[2023-02-16 20:44:30][naga::front][[37mDEBUG[0m[37m] Resolving [18] = AccessIndex { base: [14], index: 1 } : Value(Scalar { kind: Float, width: 4 })[0m
 [37m[2023-02-16 20:44:30][naga::front][[37mDEBUG[0m[37m] Resolving [19] = As { expr: [15], kind: Float, convert: Some(4) } : Value(Scalar { kind: Float, width: 4 })[0m
 [37m[2023-02-16 20:44:30][naga::front][[37mDEBUG[0m[37m] Resolving [20] = As { expr: [16], kind: Float, convert: Some(4) } : Value(Scalar { kind: Float, width: 4 })[0m

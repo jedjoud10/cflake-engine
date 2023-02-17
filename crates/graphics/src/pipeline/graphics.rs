@@ -106,11 +106,12 @@ fn binding_config_to_pipeline_layout(graphics: &Graphics) -> wgpu::PipelineLayou
 
 // Convert the given vertex config to the vertex attributes used by the vertex buffer layout
 fn vertex_config_to_vertex_attributes(vertex_config: &VertexConfig) -> Vec<Vec<wgpu::VertexAttribute>> {
-    vertex_config.inputs.iter().map(|input| {
+    // TODO: Implement custom shader location + shader location checking + mapping
+    vertex_config.inputs.iter().enumerate().map(|(i, input)| {
         vec![wgpu::VertexAttribute {
             format: input.vertex_info().format(),
             offset: 0,
-            shader_location: input.location(),
+            shader_location: i as u32,
         }]
     }).collect()
 }
