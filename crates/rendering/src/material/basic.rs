@@ -15,7 +15,6 @@ type NormalTexel = RGBA<Normalized<i8>>;
 type AlbedoMap = Texture2D<AlbedoTexel>;
 type NormalMap = Texture2D<NormalTexel>;
 
-
 // A basic forward rendering material that will read from a diffuse map and normal map
 // This does not implement the PBR workflow, and it's only used for simplicity at first
 pub struct Basic {
@@ -28,35 +27,36 @@ pub struct Basic {
     pub tint: vek::Rgb<f32>, 
 }
 
-impl_vertex_material_layout! {
+/*
+impl_material_layout! {
     target: Basic,
 
-    attributes: [Position, Normal],
-
-    bindings: {
+    surface: {
         #[uniform(pushconstant)]
+        #[fragment]
         model_matrix: vek::Mat4<f32>,
-    }
-}
+    },
 
-impl_fragment_material_layout! {
-    target: Basic,
-
-    bindings: {
+    instance: {
         #[texture(0)]
-        diffuse_map: &AlbedoMap,
-
+        #[fragment]
+        diffuse_map: AlbedoMap,
+    
         #[texture(1)]
-        normal_map: &NormalMap,
+        #[fragment]
+        normal_map: NormalMap,
+    
+    },
+
+    global: {
+        #[buffer(0)]
+        scene_buffer: SceneBuffer,
     }
 }
+*/
 
-impl Material for Basic {
-    type GlobalGroup<'a> = &'a ();
-    type InstanceGroup<'a> = &'a ();
-    type SurfaceGroup<'a> = &'a ();
-    
-    type Resources<'w> = &;A ();
+impl Material for Basic {    
+    type Resources<'w> = ();
 
     // Load the vertex shader for this material
     fn vertex(

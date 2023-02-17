@@ -77,7 +77,7 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPass<C, DS> {
         let pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor::<'r, '_> {
             label: None,
             color_attachments: &color_attachments,
-            depth_stencil_attachment: None,
+            depth_stencil_attachment,
         });
 
         Ok(ActiveRenderPass { 

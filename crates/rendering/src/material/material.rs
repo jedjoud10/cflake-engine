@@ -4,28 +4,36 @@ use graphics::{
     StencilConfig, VertexModule, UniformBuffer, BindingConfig, FrontFace,
 };
 use world::World;
-use crate::{EnabledMeshAttributes, Mesh, Renderer, CameraUniform, TimingUniform, SceneUniform};
+use crate::{EnabledMeshAttributes, Mesh, Renderer, CameraUniform, TimingUniform, SceneUniform, CameraBuffer, TimingBuffer, SceneBuffer};
 
 // These are the default resources that we pass to any/each material
 pub struct DefaultMaterialResources<'a> { 
     // Main scene uniform buffers
-    pub camera_buffer: &'a UniformBuffer<CameraUniform>,
-    pub timing_buffer: &'a UniformBuffer<TimingUniform>,
-    pub scene_buffer: &'a UniformBuffer<SceneUniform>,
+    pub camera_buffer: &'a CameraBuffer,
+    pub timing_buffer: &'a TimingBuffer,
+    pub scene_buffer: &'a SceneBuffer,
 
     // Main scene textures
 }
 
+// A binder is used to bind multiple values to the current render pass
+// Bindes must have a specific WGPU layout that is used to create the graphics pipeline
+pub trait Binder: 'static + Sized {
+    // Nice interface structs that will contains the lifetimed data 
+    type Instance<'a>;
+    type Global<'a>;
+    type Surface<'a>;
+
+    // Statically typed pipeline layout
+    // This contains the bind group entries and push constant ranges
+    fn layout() -> ();
+}
+
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
-// Materials correspond to a specific Vulkan pipeline based on it's config parameters
+// Materials correspond to a specific WGPU render pipeline based on it's config parameters
 pub trait Material: 'static + Sized {
     // The resources that we need to fetch from the world to set the descriptor sets
     type Resources<'w>: 'w;
-
-    // Glboal, surface, and mesh descriptor sets
-    type GlobalGroup<'a>;
-    type InstanceGroup<'a>;
-    type SurfaceGroup<'a>;
 
     // Load the vertex module and process it
     fn vertex(
@@ -71,7 +79,7 @@ pub trait Material: 'static + Sized {
     fn get_global_bind_group<'w>(
         resources: &mut Self::Resources<'w>,
         default: &DefaultMaterialResources,
-    ) -> Self::GlobalGroup<'w> {
+    ) {
         todo!()
     }
 
@@ -80,7 +88,7 @@ pub trait Material: 'static + Sized {
         &self,
         resources: &mut Self::Resources<'w>,
         default: &DefaultMaterialResources,
-    ) -> Self::InstanceGroup<'w> {
+    ) {
         todo!()
     }
 
@@ -89,7 +97,7 @@ pub trait Material: 'static + Sized {
         renderer: Renderer,
         resources: &mut Self::Resources<'w>,
         default: &DefaultMaterialResources,
-    ) -> Self::SurfaceGroup<'w> {
+    ) {
         todo!()
     }
 }

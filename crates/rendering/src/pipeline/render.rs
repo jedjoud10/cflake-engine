@@ -1,16 +1,16 @@
 use crate::{Material, Surface, Mesh, attributes::{RawPosition, Position}, MeshAttribute};
 use ecs::Scene;
-use graphics::{Graphics, GraphicsPipeline, XYZ, SwapchainFormat, ActiveRenderPass, Vertex};
+use graphics::{Graphics, GraphicsPipeline, XYZ, SwapchainFormat, ActiveRenderPass, Vertex, ActiveGraphicsPipeline};
 use utils::{Storage, Time};
 use world::World;
 
 // Set a mesh binding vertex buffer to the current render pass
-pub(crate) fn set_vertex_buffer_attribute<'r, M: MeshAttribute>(
+pub(crate) fn set_vertex_buffer_attribute<'a, 'r, M: MeshAttribute>(
     mesh: &'r Mesh,
-    render_pass: &mut ActiveRenderPass<'r, '_, '_, SwapchainFormat, ()>
+    active: &mut ActiveGraphicsPipeline<'a, 'r, '_, '_, SwapchainFormat, ()>
 ) {
     if let Some(buffer) = mesh.vertices().attribute::<M>() {
-        render_pass.set_vertex_buffer::<M::V>(M::index(), buffer);
+        active.set_vertex_buffer::<M::V>(M::index(), buffer);
     }
 }
 
@@ -22,7 +22,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
     render_pass: &mut ActiveRenderPass<'r, '_, '_, SwapchainFormat, ()>
 ) {
     // Get a rasterizer for the current render pass by binding a pipeline
-    render_pass.bind_pipeline(pipeline);
+    let mut active = render_pass.bind_pipeline(pipeline);
 
     // Get all the meshes and surface for this specific material
     let materials = world.get::<Storage<M>>().unwrap();
@@ -39,17 +39,17 @@ pub(super) fn render_surfaces<'r, M: Material>(
 
         // Bind the mesh's vertex buffers
         use crate::attributes::*;
-        set_vertex_buffer_attribute::<Position>(mesh, render_pass);
-        set_vertex_buffer_attribute::<Normal>(mesh, render_pass);
-        set_vertex_buffer_attribute::<Tangent>(mesh, render_pass);
-        set_vertex_buffer_attribute::<TexCoord>(mesh, render_pass);
+        set_vertex_buffer_attribute::<Position>(mesh, &mut active);
+        set_vertex_buffer_attribute::<Normal>(mesh, &mut active);
+        set_vertex_buffer_attribute::<Tangent>(mesh, &mut active);
+        set_vertex_buffer_attribute::<TexCoord>(mesh, &mut active);
 
         // Set the index buffer
         let triangles = mesh.triangles();
-        render_pass.set_index_buffer(triangles.buffer());
+        active.set_index_buffer(triangles.buffer());
 
         // Draw the triangulated mesh 
         let indices = 0..(triangles.buffer().len() as u32);
-        render_pass.draw_indexed(indices, 0..1);
+        active.draw_indexed(indices, 0..1);
     }
 }

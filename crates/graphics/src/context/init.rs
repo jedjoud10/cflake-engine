@@ -46,7 +46,8 @@ pub(crate) unsafe fn init_context_and_window(
     // Features and limits
     let features = wgpu::Features::TEXTURE_FORMAT_16BIT_NORM
         | wgpu::Features::ADDRESS_MODE_CLAMP_TO_ZERO
-        | wgpu::Features::POLYGON_MODE_LINE;
+        | wgpu::Features::POLYGON_MODE_LINE
+        | wgpu::Features::PUSH_CONSTANTS;
     let limits = wgpu::Limits::default();
 
     // Create a device for the adapter

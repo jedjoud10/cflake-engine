@@ -95,7 +95,6 @@ fn states() {
 
     manager
         .extend_from_iter(std::iter::repeat(Name("Test")).take(32));
-    dbg!("bruh");
     let mask = Mask::from_bundle::<Name>();
     let archetype = manager.archetypes().get(&mask).unwrap();
     let states = archetype.states::<Name>().unwrap();
