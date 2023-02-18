@@ -1,6 +1,6 @@
 use crate::{
     FunctionModule, GpuPodRelaxed, Graphics, ShaderCompilationError,
-    ShaderModule, VertexModule, ShaderPreprocessorError,
+    ShaderModule, VertexModule, ShaderPreprocessorError, Reflected,
 };
 use ahash::AHashMap;
 use assets::Assets;

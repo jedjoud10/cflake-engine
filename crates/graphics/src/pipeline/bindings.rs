@@ -33,4 +33,6 @@ impl<'a> BindGroup<'a> {
     // Set a uniform buffer that we can read from within shaders
     pub fn set_buffer<T: GpuPod>(&mut self, name: &str, buffer: &'a UniformBuffer<T>) {
     }
+
+    
 }

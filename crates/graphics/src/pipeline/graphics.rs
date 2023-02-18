@@ -1,5 +1,6 @@
 use std::{marker::PhantomData, sync::Arc};
 
+use ahash::AHashMap;
 use wgpu::{PrimitiveState, VertexStepMode};
 
 use crate::{Shader, Graphics, PipelineInitializationError, DepthConfig, StencilConfig, BlendConfig, PrimitiveConfig, VertexConfig, DepthStencilLayout, ColorLayout, VertexInfo, VertexInputInfo, PipelineBindingsError};
@@ -93,32 +94,39 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
     }
 }
 
-// Reflect the shader to create an identical layout to be used as pipeline layout 
+// Fetch the reflected shader data (from shaders modules) and merge it
 fn shader_to_pipeline_layout(graphics: &Graphics, shader: &Shader) -> Result<wgpu::PipelineLayout, PipelineBindingsError> {
-    let naga = shader.vertex().naga();
-    for (_, global) in naga.global_variables.iter() {
-        if global.space == naga::AddressSpace::Uniform {
-            let binding = global.binding.as_ref().unwrap();
-            let (binding, group) = (binding.binding, binding.group);
-            let typed = naga.types.get_handle(global.ty).unwrap();
-
-        }    
+    pub struct Reflected {
+        pub bind_groups: Vec<BindGroup>,
+    }
+    
+    pub struct BindGroup {
+        pub binding_type: Vec<BindingEntry>,
+    }
+    
+    pub struct BindingEntry {
+        pub name: String,
+        pub binding: u32,
+        pub typed: wgpu::BindingType,
     }
 
-    let bind_group_layout_descriptors = &[wgpu::BindGroupLayoutDescriptor {
-        label: None,
-        entries: &[wgpu::BindGroupLayoutEntry {
-            binding: 0,
-            visibility: wgpu::ShaderStages::all(),
-            ty: wgpu::BindingType::Buffer {
-                ty: wgpu::BufferBindingType::Uniform,
-                has_dynamic_offset: false,
-                min_binding_size: None
-            },
-            count: None,
-        }],
-    }];
+    let types = &naga.types;
+    let vars = &naga.global_variables;
+    
+    // Iterate over the global variables and get their binding entry
+    let test = vars.iter().filter_map(|(_, value)| {
+        // Only care about the group entries for now
+        match value.binding.unwrap() {
 
+        }
+    });
+
+    // Get the bind groups of the naga module
+
+    //    For each bind group, get resource bindings
+
+    let bind_group_layout_descriptors = [];
+    
     // Create the bind group layouts from the corresponding descriptors
     let bind_group_layouts = bind_group_layout_descriptors.iter().map(|desc| {
         graphics.device().create_bind_group_layout(desc)
@@ -129,7 +137,7 @@ fn shader_to_pipeline_layout(graphics: &Graphics, shader: &Shader) -> Result<wgp
 
     Ok(graphics.device().create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: None,
-        bind_group_layouts: &[bind_group_layouts],
+        bind_group_layouts: &bind_group_layouts,
         push_constant_ranges: &[],
     }))
 }
