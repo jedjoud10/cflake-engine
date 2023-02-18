@@ -1,5 +1,5 @@
 use std::{marker::PhantomData, ops::Range};
-use crate::{ColorLayout, DepthStencilLayout, UntypedBuffer, VertexBuffer, Vertex, TriangleBuffer, GraphicsPipeline, Bindings};
+use crate::{ColorLayout, DepthStencilLayout, UntypedBuffer, VertexBuffer, Vertex, TriangleBuffer, GraphicsPipeline, BindGroup};
 
 // An active graphics pipeline that is bound to a render pass that we can use to render
 pub struct ActiveGraphicsPipeline<
@@ -29,9 +29,23 @@ impl<'a, 'r, 'c, 'ds, C: ColorLayout, DS: DepthStencilLayout>
         self.render_pass.set_index_buffer(buffer.raw().slice(..), wgpu::IndexFormat::Uint32);
     }
 
-    // Set the bindings to be used with this specific pipeline
-    pub fn set_bindings(&mut self, bindings: &Bindings<'r>) {
-        //self.render_pass.set_bind_group(index, bind_group, &[])
+    // Execute a callback that we will use to fill a bind group
+    pub fn set_bind_group(&mut self, binding: u32, callback: impl FnOnce(&mut BindGroup<'a>)) {
+        let shader = self.pipeline.shader();
+        let mut bind_group = BindGroup {
+            entries: Vec::new(),
+            _phantom: PhantomData,
+            shader: shader,
+        };
+
+        callback(&mut bind_group);
+
+        // Hash the entries from the bind group
+        // Check if we have a bind group with the same entries
+        //      Create a new one if not
+        // Bind the group
+
+        
     }
 
     // Draw a number of primitives using the currently bound vertex buffers

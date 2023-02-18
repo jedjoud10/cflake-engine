@@ -1,7 +1,7 @@
 use assets::Assets;
 use graphics::{
     BlendConfig, Compiled, DepthConfig, FragmentModule, Graphics, PrimitiveConfig,
-    StencilConfig, VertexModule, UniformBuffer, Bindings, FrontFace, RGBA, Normalized, Texture2D, BindGroup,
+    StencilConfig, VertexModule, UniformBuffer, FrontFace, RGBA, Normalized, Texture2D, BindGroup,
 };
 use world::World;
 use crate::{EnabledMeshAttributes, Mesh, Renderer, CameraUniform, TimingUniform, SceneUniform, CameraBuffer, TimingBuffer, SceneBuffer, AlbedoMap, NormalMap};

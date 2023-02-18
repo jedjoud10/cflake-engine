@@ -40,17 +40,19 @@ pub(super) fn render_surfaces<'r, M: Material>(
     default: &'r DefaultMaterialResources,
     render_pass: &mut ActiveRenderPass<'r, '_, '_, SwapchainFormat, ()>
 ) {
+
     // Get a rasterizer for the current render pass by binding a pipeline
-    let (mut active, mut bindings) = render_pass.bind_pipeline(pipeline);
+    let mut active = render_pass.bind_pipeline(pipeline);
     let supported = M::attributes();
 
     // Get the material storage and resources for this material
     let materials = world.get::<Storage<M>>().unwrap();
     let mut resources = M::fetch(world);
 
-    // Set the global material bindings    
-    let mut group = bindings.bind_group(0);
-    M::set_global_bindings(&mut resources, default, &mut group);
+    // Set the global material bindings
+    active.set_bind_group(0, |group| {
+        M::set_global_bindings(&mut resources, default, group);
+    });  
 
     // Get all the entities that contain a visible surface
     let scene = world.get::<Scene>().unwrap();
@@ -70,13 +72,14 @@ pub(super) fn render_surfaces<'r, M: Material>(
             let material = materials.get(&surface.material);
 
             // Set the instance group bindings
-            let mut group = bindings.bind_group(1);
-            M::set_instance_bindings(
-                material,
-                &mut resources,
-                default,
-                &mut group
-            );
+            active.set_bind_group(1, |group| {
+                M::set_instance_bindings(
+                    material,
+                    &mut resources,
+                    default,
+                    group
+                );
+            })            
         }
 
         // Skip rendering if not needed
@@ -85,16 +88,14 @@ pub(super) fn render_surfaces<'r, M: Material>(
         }
 
         // Set the surface group bindings
-        let mut group = bindings.bind_group(2);
-        M::set_surface_bindings(
-            &renderer,
-            &mut resources,
-            default,
-            &mut group
-        );
-
-        // Set the updated bindings
-        active.set_bindings(&bindings);
+        active.set_bind_group(2, |group| {
+            M::set_surface_bindings(
+                &renderer,
+                &mut resources,
+                default,
+                group
+            );
+        });
 
         // Bind the mesh's vertex buffers
         use crate::attributes::*;

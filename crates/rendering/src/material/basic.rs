@@ -5,7 +5,7 @@ use ahash::AHashMap;
 use assets::Assets;
 use graphics::{
     Compiled, FragmentModule, Graphics, Normalized,
-    Texture2D, VertexModule, Compiler, Sampler, Shader, RGBA, UniformBuffer, Bindings, BindGroup,
+    Texture2D, VertexModule, Compiler, Sampler, Shader, RGBA, UniformBuffer, BindGroup,
 };
 use utils::{Storage, Handle};
 
