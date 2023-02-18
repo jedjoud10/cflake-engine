@@ -8,16 +8,12 @@ layout(location = 2) in vec3 m_tangent;
 layout(location = 3) in vec3 m_bitangent;
 layout(location = 4) in vec2 m_tex_coord;
 
-/*
-// Camera bind group buffer (creates a 'camera' object)
+// Camera, scene, and time shared objects
 #include <engine/shaders/common/camera.glsl>
-
-// Scene bind group buffer (creates a 'scene' object)
 #include <engine/shaders/common/scene.glsl>
-
-// Timing bind group buffer (creates a 'time' object)
 #include <engine/shaders/common/timing.glsl>
 
+/*
 // Material scalar data
 layout(set = 1, binding = 1) uniform MaterialData {
 	float roughness;

@@ -206,7 +206,7 @@ impl App {
                     message = message,
                 ));
             })
-            //.level_for("naga", log::LevelFilter::Warn)
+            .level_for("naga", log::LevelFilter::Warn)
             .level_for("wgpu", log::LevelFilter::Warn)
             .level_for("wgpu_core", log::LevelFilter::Warn)
             .level_for("wgpu_hal", log::LevelFilter::Warn)

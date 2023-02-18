@@ -1,7 +1,7 @@
 use assets::Assets;
 use graphics::{
     BlendConfig, Compiled, DepthConfig, FragmentModule, Graphics, PrimitiveConfig,
-    StencilConfig, VertexModule, UniformBuffer, Bindings, FrontFace, RGBA, Normalized, Texture2D,
+    StencilConfig, VertexModule, UniformBuffer, Bindings, FrontFace, RGBA, Normalized, Texture2D, BindGroup,
 };
 use world::World;
 use crate::{EnabledMeshAttributes, Mesh, Renderer, CameraUniform, TimingUniform, SceneUniform, CameraBuffer, TimingBuffer, SceneBuffer, AlbedoMap, NormalMap};
@@ -76,23 +76,23 @@ pub trait Material: 'static + Sized {
     // Set the static bindings
     fn set_global_bindings<'w>(
         resources: &mut Self::Resources<'w>,
-        default: &DefaultMaterialResources,
-        bindings: &mut Bindings<'w>,
+        default: &DefaultMaterialResources<'w>,
+        group: &mut BindGroup<'w>,
     ) {}
 
     // Set the per instance bindings
     fn set_instance_bindings<'w>(
         &self,
         resources: &mut Self::Resources<'w>,
-        default: &DefaultMaterialResources,
-        bindings: &Bindings,
+        default: &DefaultMaterialResources<'w>,
+        group: &BindGroup<'w>,
     ) {}
 
     // Set the per surface bindings
     fn set_surface_bindings<'w>(
-        renderer: Renderer,
+        renderer: &Renderer,
         resources: &mut Self::Resources<'w>,
-        default: &DefaultMaterialResources,
-        bindings: &Bindings,
+        default: &DefaultMaterialResources<'w>,
+        group: &BindGroup<'w>,
     ) {}
 }

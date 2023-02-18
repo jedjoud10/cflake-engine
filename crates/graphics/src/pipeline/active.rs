@@ -1,5 +1,5 @@
 use std::{marker::PhantomData, ops::Range};
-use crate::{ColorLayout, DepthStencilLayout, UntypedBuffer, VertexBuffer, Vertex, TriangleBuffer, GraphicsPipeline};
+use crate::{ColorLayout, DepthStencilLayout, UntypedBuffer, VertexBuffer, Vertex, TriangleBuffer, GraphicsPipeline, Bindings};
 
 // An active graphics pipeline that is bound to a render pass that we can use to render
 pub struct ActiveGraphicsPipeline<
@@ -27,6 +27,11 @@ impl<'a, 'r, 'c, 'ds, C: ColorLayout, DS: DepthStencilLayout>
     // Sets the active index buffer
     pub fn set_index_buffer(&mut self, buffer: &'r TriangleBuffer<u32>) {
         self.render_pass.set_index_buffer(buffer.raw().slice(..), wgpu::IndexFormat::Uint32);
+    }
+
+    // Set the bindings to be used with this specific pipeline
+    pub fn set_bindings(&mut self, bindings: &Bindings<'r>) {
+        //self.render_pass.set_bind_group(index, bind_group, &[])
     }
 
     // Draw a number of primitives using the currently bound vertex buffers

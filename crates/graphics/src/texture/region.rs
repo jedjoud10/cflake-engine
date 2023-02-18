@@ -138,8 +138,8 @@ impl Extent for vek::Extent3<u32> {
 // Texture region trait that will be implemented for (origin, extent) tuples
 pub trait Region: Copy {
     // Regions are defined by their origin and extents
-    type O: Default + Copy + Add<Self::O, Output = Self::O>;
-    type E: Extent + Copy + Add<Self::E, Output = Self::E> + PartialEq;
+    type O: Default + Copy + Add<Self::O, Output = Self::O> + std::fmt::Debug;
+    type E: Extent + Copy + Add<Self::E, Output = Self::E> + PartialEq + std::fmt::Debug;
 
     // Create a texel region of one singular unit (so we can store a singular texel)
     fn unit() -> Self;

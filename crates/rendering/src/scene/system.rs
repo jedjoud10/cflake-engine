@@ -1,4 +1,4 @@
-use crate::{ForwardRenderer, ForwardRendererRenderPass, Mesh, Basic, DefaultMaterialResources, Pipelines};
+use crate::{ForwardRenderer, ForwardRendererRenderPass, Mesh, Basic, DefaultMaterialResources, Pipelines, AlbedoMap, NormalMap};
 use graphics::{
     Graphics, Normalized, RenderPass,
     Texture, Texture2D, TextureMode, TextureUsage, Window, BGRA, Operation, StoreOp, LoadOp,
@@ -20,6 +20,11 @@ fn init(world: &mut World) {
     world.insert(renderer);
     world.insert(pipelines);
     world.insert(Storage::<Mesh>::default());
+
+    // TODO: Handle this automatically
+    world.insert(Storage::<Basic>::default());
+    world.insert(Storage::<AlbedoMap>::default());
+    world.insert(Storage::<NormalMap>::default());
 }
 
 // Clear the window and render the entities

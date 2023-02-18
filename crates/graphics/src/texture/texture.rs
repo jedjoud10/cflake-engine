@@ -74,6 +74,8 @@ pub trait Texture: Sized {
             if !dimensions.is_power_of_two() {
                 return Err(TextureInitializationError::MipMapGenerationNPOT);
             }
+
+            panic!();
         }
 
         // Config for the Wgpu texture
@@ -90,6 +92,8 @@ pub trait Texture: Sized {
 
         // Create the raw WGPU texture
         let texture = graphics.device().create_texture(&descriptor);
+        let name = utils::pretty_type_name::<Self::T>();
+        log::debug!("Creating texture, {dimension:?}, <{name}>, {}x{}x{}", dimensions.width(), dimensions.height(), dimensions.depth());
 
         // Fetch a new sampler for the given sampling settings
         let sampler = crate::get_or_insert_sampler(graphics, sampling); 
@@ -128,6 +132,7 @@ pub trait Texture: Sized {
                 aspect: wgpu::TextureAspect::All,
             };
 
+            // TODO: DO this shit but with mip mapped textures too
             graphics.queue().write_texture(
                 image_copy_texture,
                 bytes,            

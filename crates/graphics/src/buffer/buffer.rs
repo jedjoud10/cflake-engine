@@ -30,22 +30,22 @@ pub enum BufferVariant {
     Storage = STORAGE,
     Uniform = UNIFORM,
     Indirect = INDIRECT,
-
-    // User set their own buffer variant type
-    Unknown,
 }
 
 // Special vertex buffer (for vertices only)
-pub type VertexBuffer<T: Vertex> = Buffer<<T as Vertex>::Storage, VERTEX>;
+pub type VertexBuffer<V> = Buffer<<V as Vertex>::Storage, VERTEX>;
 
 // Special triangle (index) buffer (for triangles only)
 pub type Triangle<T> = [T; 3];
 pub type TriangleBuffer<T> = Buffer<Triangle<T>, INDEX>;
 
-// Buffers where you can put anything you want really
+// TODO: Implemenent std430 + std130 for these types of buffers
 pub type StorageBuffer<T> = Buffer<T, STORAGE>;
 pub type UniformBuffer<T> = Buffer<T, UNIFORM>;
+
+// Indirect command buffer
 pub type IndirectBuffer<T> = Buffer<T, INDIRECT>;
+
 
 // A buffer abstraction over a valid WGPU buffer
 // This also takes a constant that represents it's Wgpu target at compile time
@@ -167,10 +167,13 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
                 usage: wgpu_usages,
             },
         );
-        
+
         // Calculate the number of elements that can fit in this one allocation
         let stride = size_of::<T>() as u64;
         let capacity = (buffer.size() / stride) as usize;
+
+        let name = utils::pretty_type_name::<T>();
+        log::debug!("Creating buffer [{name}; cap = {capacity}], usage: {variant:?}");
 
         // Create the struct and return it
         Ok(Self {
@@ -206,6 +209,11 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
         &self.buffer
     }
 
+    // Get the resource binding for this buffer
+    pub fn resource_binding(&self) -> wgpu::BindingResource {
+        self.buffer.as_entire_binding()
+    }
+
     // Get the current length of the buffer
     pub fn len(&self) -> usize {
         self.length.try_into().unwrap()
@@ -239,7 +247,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
             STORAGE => BufferVariant::Storage,
             UNIFORM => BufferVariant::Uniform,
             INDIRECT => BufferVariant::Indirect,
-            _ => BufferVariant::Unknown,
+            _ => panic!()
         }
     }
 
