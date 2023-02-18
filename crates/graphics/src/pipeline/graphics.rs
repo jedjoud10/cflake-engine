@@ -1,8 +1,8 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, sync::Arc};
 
 use wgpu::{PrimitiveState, VertexStepMode};
 
-use crate::{Shader, Graphics, PipelineInitializationError, DepthConfig, StencilConfig, BlendConfig, PrimitiveConfig, VertexConfig, DepthStencilLayout, ColorLayout, VertexInfo, VertexInputInfo};
+use crate::{Shader, Graphics, PipelineInitializationError, DepthConfig, StencilConfig, BlendConfig, PrimitiveConfig, VertexConfig, DepthStencilLayout, ColorLayout, VertexInfo, VertexInputInfo, PipelineBindingsError};
 
 // Wrapper around a WGPU render pipeline just to help me instantiate them
 pub struct GraphicsPipeline<C: ColorLayout, DS: DepthStencilLayout> {
@@ -56,12 +56,13 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
         let buffers = vertex_config_to_buffer_layout(&vertex_config, attributes);
         let targets = color_layout_to_color_target_state::<C>();
         let primitive = primitive_config_to_state(primitive_config);
-        let pipeline_layout = binding_config_to_pipeline_layout(&graphics);
+        let layout = shader_to_pipeline_layout(&graphics, &shader);
+        let layout = Some(layout.map_err(PipelineInitializationError::InvalidBindings)?);
 
         // Create the WGPU pipeline using the given configuration
         let pipeline = graphics.device().create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: None,
-            layout: Some(&pipeline_layout),
+            layout: layout.as_ref(),
             vertex: wgpu::VertexState {
                 module: shader.vertex().module(),
                 entry_point: shader.vertex().entry_point().unwrap(),
@@ -92,13 +93,45 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
     }
 }
 
-// Convert the given binding config to the pipeline layout used by the pipeline 
-fn binding_config_to_pipeline_layout(graphics: &Graphics) -> wgpu::PipelineLayout {
-    graphics.device().create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+// Reflect the shader to create an identical layout to be used as pipeline layout 
+fn shader_to_pipeline_layout(graphics: &Graphics, shader: &Shader) -> Result<wgpu::PipelineLayout, PipelineBindingsError> {
+    let naga = shader.vertex().naga();
+    for (_, global) in naga.global_variables.iter() {
+        if global.space == naga::AddressSpace::Uniform {
+            let binding = global.binding.as_ref().unwrap();
+            let (binding, group) = (binding.binding, binding.group);
+            let typed = naga.types.get_handle(global.ty).unwrap();
+
+        }    
+    }
+
+    let bind_group_layout_descriptors = &[wgpu::BindGroupLayoutDescriptor {
         label: None,
-        bind_group_layouts: &[],
+        entries: &[wgpu::BindGroupLayoutEntry {
+            binding: 0,
+            visibility: wgpu::ShaderStages::all(),
+            ty: wgpu::BindingType::Buffer {
+                ty: wgpu::BufferBindingType::Uniform,
+                has_dynamic_offset: false,
+                min_binding_size: None
+            },
+            count: None,
+        }],
+    }];
+
+    // Create the bind group layouts from the corresponding descriptors
+    let bind_group_layouts = bind_group_layout_descriptors.iter().map(|desc| {
+        graphics.device().create_bind_group_layout(desc)
+    }).collect::<Vec<_>>();
+    let bind_group_layouts = bind_group_layouts
+        .iter()
+        .collect::<Vec<_>>();
+
+    Ok(graphics.device().create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        label: None,
+        bind_group_layouts: &[bind_group_layouts],
         push_constant_ranges: &[],
-    })
+    }))
 }
 
 // Convert the given vertex config to the vertex attributes used by the vertex buffer layout

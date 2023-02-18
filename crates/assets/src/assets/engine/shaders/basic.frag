@@ -9,12 +9,12 @@ layout(location = 3) in vec3 m_bitangent;
 layout(location = 4) in vec2 m_tex_coord;
 
 // Camera, scene, and time shared objects
-#include <engine/shaders/common/camera.glsl>
-#include <engine/shaders/common/scene.glsl>
-#include <engine/shaders/common/timing.glsl>
+//#include <engine/shaders/common/camera.glsl>
+//#include <engine/shaders/common/scene.glsl>
+//#include <engine/shaders/common/timing.glsl>
 
-/*
 // Material scalar data
+/*
 layout(set = 1, binding = 1) uniform MaterialData {
 	float roughness;
 	vec3 tint;
@@ -22,5 +22,5 @@ layout(set = 1, binding = 1) uniform MaterialData {
 */
 
 void main() {
-	frag = vec4(m_normal, 0);
+	frag = vec4(0);
 }

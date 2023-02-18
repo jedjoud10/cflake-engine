@@ -26,15 +26,11 @@ pub struct BindGroup<'a> {
 }
 
 impl<'a> BindGroup<'a> {
-    // Set a texture to be sampled
-    pub fn set_sampler<T>(&'a self, value: &'a T) {
+    // Set a shader texture that can be sampled and red from
+    pub fn set_sampler<T>(&'a self, name: &str, value: &'a T) {
     }
 
     // Set a uniform buffer that we can read from within shaders
-    pub fn set_buffer<T: GpuPod>(&mut self, buffer: &'a UniformBuffer<T>) {
-        let entry = wgpu::BindGroupEntry {
-            binding: 0,
-            resource: buffer.raw().as_entire_binding(),
-        };
+    pub fn set_buffer<T: GpuPod>(&mut self, name: &str, buffer: &'a UniformBuffer<T>) {
     }
 }
