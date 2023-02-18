@@ -209,11 +209,6 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
         &self.buffer
     }
 
-    // Get the resource binding for this buffer
-    pub fn resource_binding(&self) -> wgpu::BindingResource {
-        self.buffer.as_entire_binding()
-    }
-
     // Get the current length of the buffer
     pub fn len(&self) -> usize {
         self.length.try_into().unwrap()

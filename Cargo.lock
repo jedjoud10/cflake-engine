@@ -1175,6 +1175,7 @@ dependencies = [
  "dashmap",
  "half",
  "image",
+ "itertools",
  "lazy_static",
  "log",
  "math",

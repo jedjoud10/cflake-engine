@@ -14,6 +14,7 @@ impl<'a> Bindings<'a> {
         BindGroup {
             group,
             _phantom: PhantomData,
+            entries: Vec::new(),
         }
     }
 }
@@ -22,17 +23,28 @@ impl<'a> Bindings<'a> {
 // textures, buffers, and push constants (even though push constants aren't stored within it)
 pub struct BindGroup<'a> {
     group: u32,
+    entries: Vec<wgpu::BindGroupEntry<'a>>,
     _phantom: PhantomData<&'a ()>,    
 }
 
 impl<'a> BindGroup<'a> {
     // Set a shader texture that can be sampled and red from
-    pub fn set_sampler<T>(&'a self, name: &str, value: &'a T) {
+    pub fn set_sampler<T: Texture>(&'a mut self, name: &str, texture: &'a T) {
+        let entry = wgpu::BindGroupEntry {
+            binding: 0,
+            resource: wgpu::BindingResource::TextureView(texture.view()),
+        };
+
+        self.entries.push(entry);
     }
 
     // Set a uniform buffer that we can read from within shaders
     pub fn set_buffer<T: GpuPod>(&mut self, name: &str, buffer: &'a UniformBuffer<T>) {
-    }
+        let entry = wgpu::BindGroupEntry {
+            binding: 0,
+            resource: wgpu::BindingResource::Buffer(buffer.raw().as_entire_buffer_binding()),
+        };
 
-    
+        self.entries.push(entry);
+    }
 }

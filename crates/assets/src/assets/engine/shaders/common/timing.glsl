@@ -1,5 +1,5 @@
 // UBO that contains the timing information of the current frame
-layout(set = 1, binding = 2) uniform TimingUniform {
+layout(set = 0, binding = 2) uniform TimingUniform {
     // Number of frames that elapsed
     uint frame_count;
 

@@ -189,7 +189,7 @@ pub trait Texture: Sized {
     fn usage(&self) -> TextureUsage;
 
     // Get the underlying WGPU Texture
-    fn texture(&self) -> &wgpu::Texture;
+    fn raw(&self) -> &wgpu::Texture;
 
     // Get the sampler associated with this texture
     fn sampler(&self) -> Sampler<Self::T>;

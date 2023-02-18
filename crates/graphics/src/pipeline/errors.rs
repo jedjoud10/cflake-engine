@@ -23,4 +23,9 @@ pub enum PipelineVertexConfigError {
 
 #[derive(Error, Debug)]
 pub enum PipelineBindingsError {
+    #[error("Duplicate binding {binding} from group {group}")]
+    DuplicateBinding {
+        binding: u32,
+        group: u32
+    }
 }

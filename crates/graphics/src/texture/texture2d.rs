@@ -48,7 +48,7 @@ impl<T: Texel> Texture for Texture2D<T> {
         self.usage
     }
 
-    fn texture(&self) -> &wgpu::Texture {
+    fn raw(&self) -> &wgpu::Texture {
         &self.texture
     }
 

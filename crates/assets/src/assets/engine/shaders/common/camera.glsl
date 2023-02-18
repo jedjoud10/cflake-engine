@@ -7,6 +7,7 @@ layout(set = 0, binding = 0) uniform CameraUniform {
     mat4 view;
     mat4 inverse_view;
 
+    /*
     // Position of the camera
     vec3 position;
 
@@ -14,4 +15,5 @@ layout(set = 0, binding = 0) uniform CameraUniform {
     vec3 forward;
     vec3 right;
     vec3 up;
+    */
 } camera;

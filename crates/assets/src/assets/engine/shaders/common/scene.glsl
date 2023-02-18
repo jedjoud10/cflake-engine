@@ -1,5 +1,5 @@
 // UBO that contains the current scene information
-layout(set = 1, binding = 1) uniform SceneUniform {
+layout(set = 0, binding = 1) uniform SceneUniform {
     // Ambient color of the environment
     vec4 ambient_color;
 
