@@ -144,7 +144,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
         active.set_index_buffer(triangles.buffer());
 
         // Draw the triangulated mesh
-        let indices = 0..(triangles.buffer().len() as u32);
+        let indices = 0..(triangles.buffer().len() as u32 * 3);
         active.draw_indexed(indices, 0..1);
     }
 }

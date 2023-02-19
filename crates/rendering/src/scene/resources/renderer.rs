@@ -6,6 +6,7 @@ use crate::{
 use ahash::AHashMap;
 use assets::Assets;
 use bytemuck::Zeroable;
+use ecs::Entity;
 use graphics::{
     BufferMode, BufferUsage, GpuPod, Graphics, LoadOp, Normalized,
     Operation, PipelineInitializationError, RenderPass,
@@ -26,6 +27,9 @@ pub struct ForwardRenderer {
     // Main render pass that we will use to render to the swapchain
     pub(crate) render_pass: ForwardRendererRenderPass,
 
+    // Main camera entity that we use to render the scene
+    pub main_camera: Option<Entity>,
+
     // Default shader buffers that will be shared with each material
     pub camera_buffer: CameraBuffer,
     pub timing_buffer: TimingBuffer,
@@ -45,7 +49,7 @@ fn create_uniform_buffer<T: GpuPod + Default>(
         graphics,
         &[T::default()],
         BufferMode::Dynamic,
-        BufferUsage::default(),
+        BufferUsage::Write,
     )
     .unwrap()
 }
@@ -108,6 +112,9 @@ impl ForwardRenderer {
                 graphics,
                 vek::Vec4::new(0, 0, 127, 127),
             ),
+
+            // No default camera
+            main_camera: None,
         }
     }
 }

@@ -1,5 +1,3 @@
-use std::time::Instant;
-
 use cflake_engine::prelude::*;
 
 // Prototype example game window
@@ -8,7 +6,7 @@ fn main() {
         .set_app_name("cflake engine prototype example")
         .insert_init(init)
         .insert_update(update)
-        .set_frame_rate_limit(FrameRateLimit::Unlimited)
+        .set_frame_rate_limit(FrameRateLimit::Limited(60))
         .execute();
 }
 
@@ -42,13 +40,63 @@ fn init(world: &mut World) {
     let surface = Surface::new(mesh, material, id);
     let renderer = Renderer::new(true, vek::Mat4::default());
     scene.insert((surface, renderer));
+
+    let camera = Camera::new(90.0, 0.3, 1000.0, 16.0/9.0);
+    scene.insert((Position::default(), Rotation::default(), camera));
+
+    let mut input = world.get_mut::<Input>().unwrap();
+
+    input.bind_button("forward", Button::W);
+    input.bind_button("backward", Button::S);
+    input.bind_button("up", Button::Space);
+    input.bind_button("down", Button::LControl);
+    input.bind_button("left", Button::A);
+    input.bind_button("right", Button::D);
+    input.bind_axis("x rotation", Axis::MousePositionX);
+    input.bind_axis("y rotation", Axis::MousePositionY);
 }
 
 fn update(world: &mut World) {
     let time = world.get::<Time>().unwrap();
     let input = world.get::<Input>().unwrap();
+    let mut scene = world.get_mut::<Scene>().unwrap();
 
-    if input.get_button(Button::F5).pressed() {
-        dbg!(time.average_fps());
+    let camera = scene.find_mut::<(&Camera, &mut Position, &mut Rotation)>();
+    if let Some((_, position, rotation)) = camera {
+        // Forward and right vectors relative to the camera
+        let forward = rotation.forward();
+        let right = rotation.right();
+        let up = rotation.up();
+        let mut velocity = vek::Vec3::<f32>::default();
+
+        // Update the velocity in the forward and backward directions
+        if input.get_button("forward").held() {
+            velocity += forward;
+        } else if input.get_button("backward").held() {
+            velocity += -forward;
+        }
+
+        // Update the velocity in the left and right directions
+        if input.get_button("left").held() {
+            velocity += -right;
+        } else if input.get_button("right").held() {
+            velocity += right;
+        }
+
+        // Update the velocity in the left and right directions
+        if input.get_button("up").held() {
+            velocity += up;
+        } else if input.get_button("down").held() {
+            velocity += -up;
+        }
+
+        // Update the position with the new velocity
+        **position += velocity * time.delta().as_secs_f32() * 10.0;
+
+        // Calculate a new rotation and apply it
+        let pos_x = input.get_axis("x rotation");
+        let pos_y = input.get_axis("y rotation");
+        **rotation = vek::Quaternion::rotation_y(-pos_x as f32 * 0.0007)
+            * vek::Quaternion::rotation_x(-pos_y as f32 * 0.0007);
     }
 }

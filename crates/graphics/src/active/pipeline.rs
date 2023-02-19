@@ -92,17 +92,6 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
             },
         };
         self.commands.push(RenderCommand::SetBindGroup(binding, bind_group));
-
-        /*
-
-        */
-
-        // Hash the entries from the bind group
-        // Check if we have a bind group with the same entries
-        //      Create a new one if not
-        
-        // Set the bind group
-        //self.render_pass.set_bind_group(binding, &bind_group2, &[])
     }
 
     // Draw a number of primitives using the currently bound vertex buffers

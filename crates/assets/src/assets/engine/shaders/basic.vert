@@ -26,14 +26,12 @@ layout(location = 4) out vec2 m_tex_coord;
 */
 
 void main() {
-    gl_Position = vec4(position, 0);
-    /*
 	// Model space -> World space -> Clip space
-    vec4 world_pos = mesh.matrix * vec4(position, 1);
-    //vec4 projected = (camera.projection * camera.view) * world_pos; 
-    vec4 projected = vec4(0);
+    vec4 world_pos = vec4(position, 1);
+    vec4 projected = (camera.projection * camera.view) * world_pos; 
     gl_Position = projected;
 
+    /*
     // Set the output variables
     m_position = world_pos.xyz;
     m_normal = normalize((mesh.matrix * vec4(normal, 0)).xyz);

@@ -1,7 +1,8 @@
 use crate::{
     AlbedoMap, Basic, DefaultMaterialResources, ForwardRenderer,
-    ForwardRendererRenderPass, Mesh, NormalMap, Pipelines,
+    ForwardRendererRenderPass, Mesh, NormalMap, Pipelines, Camera,
 };
+use ecs::Scene;
 use graphics::{
     Graphics, LoadOp, Normalized, Operation, RenderPass, StoreOp,
     Texture, Texture2D, TextureMode, TextureUsage, Window, BGRA,
@@ -30,8 +31,41 @@ fn init(world: &mut World) {
     world.insert(Storage::<NormalMap>::default());
 }
 
+// Update event that will set/update the main perspective camera
+fn update_camera(world: &mut World) {
+    let mut ecs = world.get_mut::<Scene>().unwrap();
+    let mut renderer = world.get_mut::<ForwardRenderer>().unwrap();
+
+    // Fetch the main perspective camera from the scene renderer
+    if let Some(entity) = renderer.main_camera {
+        // Disable the entity in the resource if it got removed
+        let mut entry = if let Some(entry) = ecs.entry_mut(entity) {
+            entry
+        } else {
+            renderer.main_camera = None;
+            return;
+        };
+
+        // Fetch it's components,and update them
+        let (camera, location, rotation) = entry
+            .as_query_mut::<(&mut Camera, &ecs::Position, &ecs::Rotation)>()
+            .unwrap();
+        camera.update(location, rotation);
+
+        // Fill the camera UBO with the proper data
+        renderer.camera_buffer.write(&[camera.as_uniform_data()], 0).unwrap();
+    } else {
+        // Set the main camera if we did not find one
+        let next = ecs
+            .find::<(&Camera, &ecs::Position, &ecs::Rotation, &ecs::Entity)>();
+        if let Some((_, _, _, entity)) = next {
+            renderer.main_camera = Some(*entity);
+        }
+    }
+}
+
 // Clear the window and render the entities
-fn update(world: &mut World) {
+fn render_update(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
     let mut window = world.get_mut::<Window>().unwrap();
     let mut renderer = world.get_mut::<ForwardRenderer>().unwrap();
@@ -39,13 +73,15 @@ fn update(world: &mut World) {
     let pipelines = world.get::<Pipelines>().unwrap();
     let meshes = world.get::<Storage<Mesh>>().unwrap();
 
-    // Get a presentable render target from the window
+    // Skip if we don't have a camera to draw with
+    if renderer.main_camera.is_none() {
+        log::warn!("No active camera to draw with!");
+        return;
+    }
+
+    // Get textures, pipelines, and encoder
     let view = window.as_render_target().unwrap();
-
-    // Extract the render pipelines
     let pipelines = pipelines.extract_pipelines();
-
-    // Create a new command encoder
     let mut encoder = graphics.acquire();
 
     // Activate the render pass
@@ -74,13 +110,20 @@ fn update(world: &mut World) {
 }
 
 // The rendering system will be resposible for iterating through the entities and displaying them
-pub fn system(system: &mut System) {
+pub fn rendering_system(system: &mut System) {
     system
         .insert_init(init)
         .before(user)
         .after(graphics::common);
     system
-        .insert_update(update)
+        .insert_update(render_update)
         .after(graphics::acquire)
         .before(graphics::present);
+}
+
+// The camera system will be responsible for updating the camera UBO and matrices
+pub fn camera_system(system: &mut System) {
+    system
+        .insert_update(update_camera)
+        .before(rendering_system);
 }
