@@ -1,22 +1,24 @@
+use std::{collections::hash_map::DefaultHasher, hash::Hash, sync::Arc};
+
 use crate::{Graphics, ShaderModule};
 use ahash::{AHashMap, AHashSet};
 use itertools::Itertools;
 use naga::{AddressSpace, ResourceBinding, TypeInner};
 
 // This container stores all data related to reflected shaders
-#[derive(Debug, Clone, PartialEq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ReflectedShader {
     pub groups: Vec<BindGroupLayout>,
 }
 
 // This container stores all data related to reflected modules
-#[derive(Debug, Clone, PartialEq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ReflectedModule {
     pub groups: Vec<BindGroupLayout>,
 }
 
 // A bind group contains one or more bind entries
-#[derive(Debug, Clone, PartialEq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BindGroupLayout {
     pub entries: Vec<BindEntryLayout>,
 }
@@ -81,9 +83,9 @@ pub enum StructMemberType {
 pub fn merge_reflected_modules_to_shader(
     modules: &[&ReflectedModule],
 ) -> ReflectedShader {
-    // TODO: Handle gaps in the group bindings (set = 0, hops over to set = 2, gap at set = 1)
     let mut entries: AHashMap<u32, AHashMap<u32, BindEntryLayout>> = AHashMap::new();
     
+    // Merge differnet bind modules into one big hashmap
     for module in modules {
         for (index, group) in module.groups.iter().enumerate() {
             let set = entries.entry(index as u32).or_default();
@@ -100,14 +102,12 @@ pub fn merge_reflected_modules_to_shader(
         }
     }
 
-    // TODO: Handle gaps in the group bindings (set = 0, hops over to set = 2, gap at set = 1)
+    // Convert the entries back into bind groups
     let groups = entries.iter().map(|(_, set)| {
         BindGroupLayout {
             entries: set.iter().map(|(_, x)| x).cloned().collect(),
         }
     }).collect::<Vec<_>>();
-
-    dbg!(&groups);
     
     ReflectedShader { groups }
 }
@@ -116,8 +116,40 @@ pub fn merge_reflected_modules_to_shader(
 pub fn create_pipeline_layout_from_shader(
     graphics: &Graphics,
     shader: &ReflectedShader,
-) -> wgpu::PipelineLayout {
-    // TODO: Handle gaps in the group bindings (set = 0, hops over to set = 2, gap at set = 1)
+    name: &[&str],
+) -> Arc<wgpu::PipelineLayout> {
+    // Convert a reflected bind entry layout to a wgpu binding type
+    fn map_binding_type(value: &BindEntryLayout) -> wgpu::BindingType {
+        match value.binding_type {
+            BindingType::Buffer {
+                buffer_binding,
+                ..
+            } => wgpu::BindingType::Buffer {
+                ty: buffer_binding,
+                has_dynamic_offset: false,
+                min_binding_size: None,
+            },
+            BindingType::Sampler { sampler_binding } => {
+                wgpu::BindingType::Sampler(
+                    sampler_binding,
+                )
+            }
+            BindingType::Texture {
+                sample_type,
+                view_dimension,
+            } => wgpu::BindingType::Texture {
+                sample_type,
+                view_dimension,
+                multisampled: false,
+            },
+        }
+    }
+
+    // Before creating the layout, check if we already have a corresponding one in cache
+    if let Some(cached) = graphics.0.cached.bind_group_layouts.get(&shader) {
+        log::debug!("Found pipeline layout in cache, using it...");
+        return cached.clone();
+    }
 
     // Merge each binding entry by group (itertools)
     let bind_group_layout_entries: Vec<
@@ -133,32 +165,9 @@ pub fn create_pipeline_layout_from_shader(
                 .map(|value| wgpu::BindGroupLayoutEntry {
                     binding: value.binding,
                     visibility: value.visiblity,
-                    ty: match value.binding_type {
-                        BindingType::Buffer {
-                            buffer_binding,
-                            ..
-                        } => wgpu::BindingType::Buffer {
-                            ty: buffer_binding,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        BindingType::Sampler { sampler_binding } => {
-                            wgpu::BindingType::Sampler(
-                                sampler_binding,
-                            )
-                        }
-                        BindingType::Texture {
-                            sample_type,
-                            view_dimension,
-                        } => wgpu::BindingType::Texture {
-                            sample_type,
-                            view_dimension,
-                            multisampled: false,
-                        },
-                    },
+                    ty: map_binding_type(value),
                     count: None,
-                })
-                .collect()
+                }).collect()
         })
         .collect();
 
@@ -174,8 +183,9 @@ pub fn create_pipeline_layout_from_shader(
 
     // TODO: Validate the bindings and groups
 
+
+
     // Create the bind group layouts from the corresponding descriptors
-    // TODO: Cache reusable bind group layouts
     let bind_group_layouts = bind_group_layout_descriptors
         .iter()
         .map(|desc| graphics.device().create_bind_group_layout(desc))
@@ -184,13 +194,19 @@ pub fn create_pipeline_layout_from_shader(
         bind_group_layouts.iter().collect::<Vec<_>>();
 
     // Create the pipeline layout
-    graphics.device().create_pipeline_layout(
+    let layout = graphics.device().create_pipeline_layout(
         &wgpu::PipelineLayoutDescriptor {
             label: None,
-            bind_group_layouts: &[],
+            bind_group_layouts: &bind_group_layouts,
             push_constant_ranges: &[],
         },
-    )
+    );
+
+    // Put it inside the graphics cache
+    let layout = Arc::new(layout);
+    graphics.0.cached.bind_group_layouts.insert(shader.clone(), layout.clone());
+    log::debug!("Saved pipeline layout for {name:?} in graphics cache");
+    layout
 }
 
 // Reflect a naga module's bindings and constants

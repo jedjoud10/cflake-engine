@@ -28,12 +28,13 @@ impl Shader {
         // Convert the reflected shader to a layout
         let layout = super::create_pipeline_layout_from_shader(
             graphics, &shader,
+            &[vertex.file_name(), fragment.file_name()]
         );
 
         Self {
             vertex: vertex.clone(),
             fragment: fragment.clone(),
-            layout: Arc::new(layout),
+            layout,
             reflected: Arc::new(shader),
         }
     }

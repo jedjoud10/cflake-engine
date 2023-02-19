@@ -1,6 +1,6 @@
 use crate::{
     BindGroup, ColorLayout, DepthStencilLayout, GraphicsPipeline,
-    TriangleBuffer, UntypedBuffer, Vertex, VertexBuffer,
+    TriangleBuffer, UntypedBuffer, Vertex, VertexBuffer, Graphics,
 };
 use std::{marker::PhantomData, ops::Range};
 
@@ -15,6 +15,7 @@ pub struct ActiveGraphicsPipeline<
 > {
     pub(crate) pipeline: &'r GraphicsPipeline<C, DS>,
     pub(crate) render_pass: &'a mut wgpu::RenderPass<'r>,
+    pub(crate) graphics: &'r Graphics,
     pub(crate) _phantom: PhantomData<&'c C>,
     pub(crate) _phantom2: PhantomData<&'ds DS>,
 }
@@ -51,18 +52,38 @@ impl<'a, 'r, 'c, 'ds, C: ColorLayout, DS: DepthStencilLayout>
     ) {
         let shader = self.pipeline.shader();
         let mut bind_group = BindGroup {
-            entries: Vec::new(),
             _phantom: PhantomData,
             shader: shader,
             index: binding,
+            resources: Vec::new(),
+            ids: Vec::new(),
         };
 
         callback(&mut bind_group);
 
+        let cache = &self.graphics.0.cached;
+
+        /*
+        let bind_group = match cache.bind_groups.entry(bind_group.ids.clone()) {
+            dashmap::mapref::entry::Entry::Occupied(occupied) => {
+                occupied.get().clone()
+            },
+            dashmap::mapref::entry::Entry::Vacant(vacant) => {
+                log::warn!("Did not find cached bind group, creating new one...");
+
+                let bind_group = self.graphics.device();
+
+                todo!()
+            },
+        };
+        */
+
         // Hash the entries from the bind group
         // Check if we have a bind group with the same entries
         //      Create a new one if not
-        // Bind the group
+        
+        // Set the bind group
+        self.render_pass.set_bind_group(binding, &bind_group, &[])
     }
 
     // Draw a number of primitives using the currently bound vertex buffers

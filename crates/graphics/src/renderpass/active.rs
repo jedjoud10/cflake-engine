@@ -1,7 +1,7 @@
 use crate::{
     ActiveGraphicsPipeline, ColorLayout, DepthStencilLayout,
     GraphicsPipeline, TriangleBuffer, UntypedBuffer, Vertex,
-    VertexBuffer,
+    VertexBuffer, Graphics,
 };
 use std::{marker::PhantomData, ops::Range};
 
@@ -15,6 +15,7 @@ pub struct ActiveRenderPass<
     DS: DepthStencilLayout,
 > {
     pub(crate) render_pass: wgpu::RenderPass<'r>,
+    pub(crate) graphics: &'r Graphics,
     pub(crate) _phantom: PhantomData<&'c C>,
     pub(crate) _phantom2: PhantomData<&'ds DS>,
 }
@@ -36,6 +37,7 @@ impl<'r, 'c, 'ds, C: ColorLayout, DS: DepthStencilLayout>
             _phantom: PhantomData,
             _phantom2: PhantomData,
             pipeline: &pipeline,
+            graphics: self.graphics,
         })
     }
 }

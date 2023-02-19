@@ -12,7 +12,7 @@ pub use wgpu::FilterMode as SamplerFilter;
 use wgpu::{AddressMode, SamplerBorderColor, SamplerDescriptor};
 
 // Wrapping mode utilized by the sampler address mode
-#[derive(Default, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SamplerWrap {
     // Repeats the edge color infinitely
     ClampToEdge,
@@ -29,7 +29,7 @@ pub enum SamplerWrap {
 }
 
 // This enum tells the sampler how it should use the mipmaps from the texture
-#[derive(Default, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SamplerMipMaps {
     // Sampler will fetch it's required data from the texture (aniso disabled)
     Automatic,
@@ -53,7 +53,7 @@ pub enum SamplerMipMaps {
 }
 
 // Some special sampling parameters for textures
-#[derive(Default, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct SamplerSettings {
     pub filter: SamplerFilter,
     pub wrap: SamplerWrap,
@@ -122,8 +122,11 @@ pub fn get_or_insert_sampler(
     graphics: &Graphics,
     sampling: SamplerSettings,
 ) -> Arc<wgpu::Sampler> {
-    match graphics.0.samplers.entry(sampling) {
-        Entry::Occupied(occupied) => occupied.get().clone(),
+    match graphics.0.cached.samplers.entry(sampling) {
+        Entry::Occupied(occupied) => {
+            log::debug!("Found sampler type in cache, using it...");
+            occupied.get().clone()
+        },
         Entry::Vacant(vacant) => {
             // Convert texture sampling wrap settings to their Wgpu counterpart
             let (address_mode, border_color) =
@@ -152,6 +155,7 @@ pub fn get_or_insert_sampler(
                 graphics.device().create_sampler(&descriptor);
             let sampler = Arc::new(sampler);
             vacant.insert(sampler.clone());
+            log::debug!("Saved sampler type {sampling:#?} in graphics cache");
             sampler
         }
     }

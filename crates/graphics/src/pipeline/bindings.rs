@@ -1,17 +1,13 @@
 use crate::{GpuPod, Shader, Texture, UniformBuffer};
 use std::{marker::PhantomData, sync::Arc};
 
-#[derive(Debug)]
-pub struct BindEntry<'a> {
-    pub(crate) binding: u32,
-    pub(crate) resource: wgpu::BindingResource<'a>,
-    pub(crate) id: wgpu::Id,
-}
-
+// A bind group allows us to set one or more bind entries to set them in the active render pass
+// Bind groups are created using the set_bind_group method on the render pass
 pub struct BindGroup<'a> {
     pub(crate) index: u32,
     pub(crate) shader: &'a Shader,
-    pub(crate) entries: Vec<BindEntry<'a>>,
+    pub(crate) resources: Vec<wgpu::BindingResource<'a>>,
+    pub(crate) ids: Vec<wgpu::Id>,
     pub(crate) _phantom: PhantomData<&'a ()>,
 }
 
@@ -81,14 +77,8 @@ impl<'a> BindGroup<'a> {
         let buffer_binding = buffer.raw().as_entire_buffer_binding();
         let resource = wgpu::BindingResource::Buffer(buffer_binding);
 
-        // Make a valid bind entry and locally store it
-        let entry = BindEntry {
-            binding,
-            resource,
-            id,
-        };
-
         // Save the bind entry for later
-        self.entries.push(entry);
+        self.resources.push(resource);
+        self.ids.push(id);
     }
 }

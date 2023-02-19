@@ -1,9 +1,10 @@
 use crate::{
     FrameRateLimit, Graphics, InternalGraphics, StagingPool, Window,
-    WindowSettings,
+    WindowSettings, Cached,
 };
 
 use dashmap::DashMap;
+use nohash_hasher::NoHashHasher;
 use parking_lot::Mutex;
 use std::sync::Arc;
 use winit::{
@@ -94,7 +95,11 @@ pub(crate) unsafe fn init_context_and_window(
         queue,
         adapter,
         staging: StagingPool::new(),
-        samplers: DashMap::default(),
+        cached: Cached {
+            samplers: Default::default(),
+            bind_group_layouts: Default::default(),
+            bind_groups: Default::default(),
+        }
     }));
 
     // Create the Window wrapper

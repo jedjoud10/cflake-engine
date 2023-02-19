@@ -96,6 +96,7 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPass<C, DS> {
             render_pass: pass,
             _phantom: PhantomData,
             _phantom2: PhantomData,
+            graphics: &self.graphics,
         })
     }
 }
