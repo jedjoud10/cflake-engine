@@ -9,19 +9,15 @@ use wgpu::{
     TextureView,
 };
 
-use crate::{SamplerSettings, SamplerWrap, StagingPool, ReflectedShader};
+use crate::{SamplerSettings, SamplerWrap, StagingPool, ReflectedShader, BindGroupLayout};
 
 type NoHash = BuildHasherDefault<nohash_hasher::NoHashHasher<u64>>;
 
 // Cached graphics data
 pub(crate) struct Cached {
-    // Cached texture samplers
     pub(crate) samplers: DashMap<SamplerSettings, Arc<Sampler>>,
-
-    // Cached bind group layouts
-    pub(crate) bind_group_layouts: DashMap<ReflectedShader, Arc<wgpu::PipelineLayout>>,
-
-    // Cache bind groups + ids used by bind group
+    pub(crate) bind_group_layouts: DashMap<BindGroupLayout, Arc<wgpu::BindGroupLayout>>,
+    pub(crate) pipeline_layouts: DashMap<ReflectedShader, Arc<wgpu::PipelineLayout>>,
     pub(crate) bind_groups: DashMap<Vec<wgpu::Id>, Arc<wgpu::BindGroup>>,
 }
 

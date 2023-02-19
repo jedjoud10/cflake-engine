@@ -116,7 +116,7 @@ pub fn merge_reflected_modules_to_shader(
 pub fn create_pipeline_layout_from_shader(
     graphics: &Graphics,
     shader: &ReflectedShader,
-    name: &[&str],
+    names: &[&str],
 ) -> Arc<wgpu::PipelineLayout> {
     // Convert a reflected bind entry layout to a wgpu binding type
     fn map_binding_type(value: &BindEntryLayout) -> wgpu::BindingType {
@@ -146,20 +146,22 @@ pub fn create_pipeline_layout_from_shader(
     }
 
     // Before creating the layout, check if we already have a corresponding one in cache
-    if let Some(cached) = graphics.0.cached.bind_group_layouts.get(&shader) {
+    if let Some(cached) = graphics.0.cached.pipeline_layouts.get(&shader) {
         log::debug!("Found pipeline layout in cache, using it...");
         return cached.clone();
+    } else {
+        log::warn!("Did not find cached pipeline layout for {names:?}");
     }
 
-    // Merge each binding entry by group (itertools)
-    let bind_group_layout_entries: Vec<
-        Vec<wgpu::BindGroupLayoutEntry>,
-    > = shader
-        .groups
-        .iter()
-        .map(|group| {
+    // Add the uncached bind group entries to the graphics cache
+    let cached = &graphics.0.cached;
+    for (index, group) in shader.groups.iter().enumerate() {
+        // Add the bind group to the cache if it's missing
+        if !cached.bind_group_layouts.contains_key(group) {
+            log::warn!("Did not find cached bind group layout for set = {index}, in {names:?}");
+            // TODO: Validate the bindings and groups
             // Convert each entry from this group to a WGPU BindGroupLayoutEntry
-            group
+            let entries = group
                 .entries
                 .iter()
                 .map(|value| wgpu::BindGroupLayoutEntry {
@@ -167,31 +169,29 @@ pub fn create_pipeline_layout_from_shader(
                     visibility: value.visiblity,
                     ty: map_binding_type(value),
                     count: None,
-                }).collect()
-        })
-        .collect();
+                }).collect::<Vec<_>>();
 
-    // Create the BindGroupLayoutDescriptor for the BindgGroupEntries
-    let bind_group_layout_descriptors = bind_group_layout_entries
-        .iter()
-        .map(|entries| wgpu::BindGroupLayoutDescriptor {
-            label: None,
-            entries: &entries,
-        })
-        .collect::<Vec<_>>();
-    dbg!(&bind_group_layout_descriptors);
+            // Create the BindGroupLayoutDescriptor for the BindgGroupEntries
+            let descriptor = wgpu::BindGroupLayoutDescriptor {
+                label: None,
+                entries: &entries,
+            };
 
-    // TODO: Validate the bindings and groups
+            // Create the bind group layout and add it to the cache
+            let layout = graphics
+                .device()
+                .create_bind_group_layout(&descriptor);
+            let layout = Arc::new(layout);
+            cached.bind_group_layouts.insert(group.clone(), layout);
+        }
+    }
 
-
-
-    // Create the bind group layouts from the corresponding descriptors
-    let bind_group_layouts = bind_group_layout_descriptors
-        .iter()
-        .map(|desc| graphics.device().create_bind_group_layout(desc))
-        .collect::<Vec<_>>();
+    // Fetch the bind group layouts from the cache
+    let bind_group_layouts = shader.groups.iter().map(|group| {
+        cached.bind_group_layouts.get(&group).unwrap()
+    }).collect::<Vec<_>>();
     let bind_group_layouts =
-        bind_group_layouts.iter().collect::<Vec<_>>();
+        bind_group_layouts.iter().map(|x| &***x).collect::<Vec<_>>();
 
     // Create the pipeline layout
     let layout = graphics.device().create_pipeline_layout(
@@ -204,8 +204,8 @@ pub fn create_pipeline_layout_from_shader(
 
     // Put it inside the graphics cache
     let layout = Arc::new(layout);
-    graphics.0.cached.bind_group_layouts.insert(shader.clone(), layout.clone());
-    log::debug!("Saved pipeline layout for {name:?} in graphics cache");
+    graphics.0.cached.pipeline_layouts.insert(shader.clone(), layout.clone());
+    log::debug!("Saved pipeline layout for {names:?} in graphics cache");
     layout
 }
 

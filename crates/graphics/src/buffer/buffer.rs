@@ -83,7 +83,7 @@ pub struct UntypedBuffer<'a> {
 
 impl<'a> UntypedBuffer<'a> {
     // Get the inner raw WGPU buffer
-    pub fn raw(&self) -> &wgpu::Buffer {
+    pub fn raw(&self) -> &'a wgpu::Buffer {
         self.buffer
     }
 
@@ -255,7 +255,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
     }
 
     // Get the untyped buffer from this typed buffer
-    pub fn untyped(&self) -> UntypedBuffer {
+    pub fn as_untyped(&self) -> UntypedBuffer {
         UntypedBuffer {
             buffer: &self.buffer,
             length: self.len(),

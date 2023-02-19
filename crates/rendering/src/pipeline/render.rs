@@ -23,7 +23,6 @@ pub(crate) fn set_vertex_buffer_attribute<
         'a,
         'r,
         '_,
-        '_,
         SwapchainFormat,
         (),
     >,
@@ -56,7 +55,6 @@ pub(super) fn render_surfaces<'r, M: Material>(
     default: &'r DefaultMaterialResources,
     render_pass: &mut ActiveRenderPass<
         'r,
-        '_,
         '_,
         SwapchainFormat,
         (),

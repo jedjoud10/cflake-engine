@@ -129,6 +129,7 @@ pub fn get_or_insert_sampler(
         },
         Entry::Vacant(vacant) => {
             // Convert texture sampling wrap settings to their Wgpu counterpart
+            log::warn!("Did not find cached sampler {sampling:#?}");
             let (address_mode, border_color) =
                 super::convert_wrap_to_address_mode(&sampling.wrap);
             let anisotropy_clamp =

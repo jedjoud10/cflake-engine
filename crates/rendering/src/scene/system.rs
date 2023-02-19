@@ -67,8 +67,9 @@ fn update(world: &mut World) {
         pipeline.render(world, &meshes, &default, &mut render_pass);
     }
 
-    // Submit the encoder at the end
     drop(render_pass);
+
+    // Submit the encoder at the end
     graphics.submit([encoder]);
 }
 

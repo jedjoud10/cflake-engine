@@ -93,10 +93,11 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPass<C, DS> {
             });
 
         Ok(ActiveRenderPass {
-            render_pass: pass,
+            render_pass: Some(pass),
             _phantom: PhantomData,
             _phantom2: PhantomData,
             graphics: &self.graphics,
+            commands: Vec::new(),
         })
     }
 }

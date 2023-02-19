@@ -98,7 +98,6 @@ pub trait DynamicPipeline {
         render_pass: &mut ActiveRenderPass<
             'r,
             '_,
-            '_,
             SwapchainFormat,
             (),
         >,
@@ -123,7 +122,6 @@ impl<M: Material> DynamicPipeline for Pipeline<M> {
         default: &'r DefaultMaterialResources,
         render_pass: &mut ActiveRenderPass<
             'r,
-            '_,
             '_,
             SwapchainFormat,
             (),
