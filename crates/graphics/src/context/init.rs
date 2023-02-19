@@ -1,6 +1,6 @@
 use crate::{
-    FrameRateLimit, Graphics, InternalGraphics, StagingPool, Window,
-    WindowSettings, Cached,
+    Cached, FrameRateLimit, Graphics, InternalGraphics, StagingPool,
+    Window, WindowSettings,
 };
 
 use dashmap::DashMap;
@@ -100,7 +100,7 @@ pub(crate) unsafe fn init_context_and_window(
             pipeline_layouts: Default::default(),
             bind_groups: Default::default(),
             bind_group_layouts: Default::default(),
-        }
+        },
     }));
 
     // Create the Window wrapper

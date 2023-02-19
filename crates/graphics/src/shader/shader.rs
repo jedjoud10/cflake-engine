@@ -1,6 +1,6 @@
 use crate::{
     Compiled, ComputeModule, FragmentModule, Graphics,
-    ReflectedModule, VertexModule, ReflectedShader,
+    ReflectedModule, ReflectedShader, VertexModule,
 };
 use std::sync::Arc;
 
@@ -23,12 +23,14 @@ impl Shader {
     ) -> Self {
         // Convert the reflected module to a reflected shader
         let modules = &[vertex.reflected(), fragment.reflected()];
-        let shader = super::merge_reflected_modules_to_shader(modules);
+        let shader =
+            super::merge_reflected_modules_to_shader(modules);
 
         // Convert the reflected shader to a layout
         let layout = super::create_pipeline_layout_from_shader(
-            graphics, &shader,
-            &[vertex.file_name(), fragment.file_name()]
+            graphics,
+            &shader,
+            &[vertex.file_name(), fragment.file_name()],
         );
 
         Self {

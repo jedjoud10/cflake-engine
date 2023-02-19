@@ -1,6 +1,7 @@
 use crate::{
-    BindGroup, ColorLayout, DepthStencilLayout, GraphicsPipeline,
-    TriangleBuffer, UntypedBuffer, Vertex, VertexBuffer, Graphics, RenderCommand,
+    BindGroup, ColorLayout, DepthStencilLayout, Graphics,
+    GraphicsPipeline, RenderCommand, TriangleBuffer, UntypedBuffer,
+    Vertex, VertexBuffer,
 };
 use std::{marker::PhantomData, ops::Range, sync::Arc};
 
@@ -28,7 +29,10 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         slot: u32,
         buffer: &'r VertexBuffer<V>,
     ) {
-        self.commands.push(RenderCommand::SetVertexBuffer(slot, buffer.as_untyped()))
+        self.commands.push(RenderCommand::SetVertexBuffer(
+            slot,
+            buffer.as_untyped(),
+        ))
     }
 
     // Sets the active index buffer
@@ -61,22 +65,34 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         callback(&mut bind_group);
 
         let cache = &self.graphics.0.cached;
-        let bind_group = match cache.bind_groups.entry(bind_group.ids.clone()) {
+        let bind_group = match cache
+            .bind_groups
+            .entry(bind_group.ids.clone())
+        {
             dashmap::mapref::entry::Entry::Occupied(occupied) => {
                 occupied.get().clone()
-            },
+            }
             dashmap::mapref::entry::Entry::Vacant(vacant) => {
                 log::warn!("Did not find cached bind group (set = {binding}), creating new one...");
 
-                let layout = &shader.reflected.groups[binding as usize];
-                let layout = self.graphics.0.cached.bind_group_layouts.get(layout).unwrap();
+                let layout =
+                    &shader.reflected.groups[binding as usize];
+                let layout = self
+                    .graphics
+                    .0
+                    .cached
+                    .bind_group_layouts
+                    .get(layout)
+                    .unwrap();
 
-                let entries = bind_group.resources.into_iter().map(|x| {
-                    wgpu::BindGroupEntry {
+                let entries = bind_group
+                    .resources
+                    .into_iter()
+                    .map(|x| wgpu::BindGroupEntry {
                         binding,
                         resource: x,
-                    }
-                }).collect::<Vec<_>>();
+                    })
+                    .collect::<Vec<_>>();
 
                 let desc = wgpu::BindGroupDescriptor {
                     label: None,
@@ -84,14 +100,15 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
                     entries: &entries,
                 };
 
-                let bind_group = self.graphics
-                    .device().create_bind_group(&desc);
+                let bind_group =
+                    self.graphics.device().create_bind_group(&desc);
                 let bind_group = Arc::new(bind_group);
                 vacant.insert(bind_group.clone());
                 bind_group
-            },
+            }
         };
-        self.commands.push(RenderCommand::SetBindGroup(binding, bind_group));
+        self.commands
+            .push(RenderCommand::SetBindGroup(binding, bind_group));
     }
 
     // Draw a number of primitives using the currently bound vertex buffers
@@ -112,10 +129,8 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         indices: Range<u32>,
         instances: Range<u32>,
     ) {
-        self.commands.push(RenderCommand::DrawIndexed {
-            indices,
-            instances
-        });
+        self.commands
+            .push(RenderCommand::DrawIndexed { indices, instances });
     }
 
     // Get the underlying graphics pipeline that is currently bound

@@ -1,4 +1,6 @@
-use std::{collections::hash_map::DefaultHasher, hash::Hash, sync::Arc};
+use std::{
+    collections::hash_map::DefaultHasher, hash::Hash, sync::Arc,
+};
 
 use crate::{Graphics, ShaderModule};
 use ahash::{AHashMap, AHashSet};
@@ -83,16 +85,18 @@ pub enum StructMemberType {
 pub fn merge_reflected_modules_to_shader(
     modules: &[&ReflectedModule],
 ) -> ReflectedShader {
-    let mut entries: AHashMap<u32, AHashMap<u32, BindEntryLayout>> = AHashMap::new();
-    
+    let mut entries: AHashMap<u32, AHashMap<u32, BindEntryLayout>> =
+        AHashMap::new();
+
     // Merge differnet bind modules into one big hashmap
     for module in modules {
         for (index, group) in module.groups.iter().enumerate() {
             let set = entries.entry(index as u32).or_default();
-            
+
             for entry in group.entries.iter() {
-                let layout= set.entry(entry.binding).or_insert(entry.clone());
-                
+                let layout =
+                    set.entry(entry.binding).or_insert(entry.clone());
+
                 if entry.binding_type != layout.binding_type {
                     panic!();
                 }
@@ -103,12 +107,13 @@ pub fn merge_reflected_modules_to_shader(
     }
 
     // Convert the entries back into bind groups
-    let groups = entries.iter().map(|(_, set)| {
-        BindGroupLayout {
+    let groups = entries
+        .iter()
+        .map(|(_, set)| BindGroupLayout {
             entries: set.iter().map(|(_, x)| x).cloned().collect(),
-        }
-    }).collect::<Vec<_>>();
-    
+        })
+        .collect::<Vec<_>>();
+
     ReflectedShader { groups }
 }
 
@@ -119,20 +124,19 @@ pub fn create_pipeline_layout_from_shader(
     names: &[&str],
 ) -> Arc<wgpu::PipelineLayout> {
     // Convert a reflected bind entry layout to a wgpu binding type
-    fn map_binding_type(value: &BindEntryLayout) -> wgpu::BindingType {
+    fn map_binding_type(
+        value: &BindEntryLayout,
+    ) -> wgpu::BindingType {
         match value.binding_type {
-            BindingType::Buffer {
-                buffer_binding,
-                ..
-            } => wgpu::BindingType::Buffer {
-                ty: buffer_binding,
-                has_dynamic_offset: false,
-                min_binding_size: None,
-            },
+            BindingType::Buffer { buffer_binding, .. } => {
+                wgpu::BindingType::Buffer {
+                    ty: buffer_binding,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                }
+            }
             BindingType::Sampler { sampler_binding } => {
-                wgpu::BindingType::Sampler(
-                    sampler_binding,
-                )
+                wgpu::BindingType::Sampler(sampler_binding)
             }
             BindingType::Texture {
                 sample_type,
@@ -146,11 +150,15 @@ pub fn create_pipeline_layout_from_shader(
     }
 
     // Before creating the layout, check if we already have a corresponding one in cache
-    if let Some(cached) = graphics.0.cached.pipeline_layouts.get(&shader) {
+    if let Some(cached) =
+        graphics.0.cached.pipeline_layouts.get(&shader)
+    {
         log::debug!("Found pipeline layout in cache, using it...");
         return cached.clone();
     } else {
-        log::warn!("Did not find cached pipeline layout for {names:?}");
+        log::warn!(
+            "Did not find cached pipeline layout for {names:?}"
+        );
     }
 
     // Add the uncached bind group entries to the graphics cache
@@ -169,7 +177,8 @@ pub fn create_pipeline_layout_from_shader(
                     visibility: value.visiblity,
                     ty: map_binding_type(value),
                     count: None,
-                }).collect::<Vec<_>>();
+                })
+                .collect::<Vec<_>>();
 
             // Create the BindGroupLayoutDescriptor for the BindgGroupEntries
             let descriptor = wgpu::BindGroupLayoutDescriptor {
@@ -187,9 +196,11 @@ pub fn create_pipeline_layout_from_shader(
     }
 
     // Fetch the bind group layouts from the cache
-    let bind_group_layouts = shader.groups.iter().map(|group| {
-        cached.bind_group_layouts.get(&group).unwrap()
-    }).collect::<Vec<_>>();
+    let bind_group_layouts = shader
+        .groups
+        .iter()
+        .map(|group| cached.bind_group_layouts.get(&group).unwrap())
+        .collect::<Vec<_>>();
     let bind_group_layouts =
         bind_group_layouts.iter().map(|x| &***x).collect::<Vec<_>>();
 
@@ -204,8 +215,14 @@ pub fn create_pipeline_layout_from_shader(
 
     // Put it inside the graphics cache
     let layout = Arc::new(layout);
-    graphics.0.cached.pipeline_layouts.insert(shader.clone(), layout.clone());
-    log::debug!("Saved pipeline layout for {names:?} in graphics cache");
+    graphics
+        .0
+        .cached
+        .pipeline_layouts
+        .insert(shader.clone(), layout.clone());
+    log::debug!(
+        "Saved pipeline layout for {names:?} in graphics cache"
+    );
     layout
 }
 
@@ -214,9 +231,7 @@ pub fn reflect_module<M: ShaderModule>(
     naga: &naga::Module,
 ) -> ReflectedModule {
     let groups = reflect_binding_group::<M>(naga);
-    ReflectedModule {
-        groups,
-    }
+    ReflectedModule { groups }
 }
 
 // Fetches the used binding groups of a given naga module

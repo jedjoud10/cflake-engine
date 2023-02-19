@@ -5,8 +5,9 @@ fn main() {
     App::default()
         .set_app_name("cflake engine prototype example")
         .insert_init(init)
-        .insert_update(update)
-        .set_frame_rate_limit(FrameRateLimit::Limited(60))
+        .insert_update(tick)
+        .set_frame_rate_limit(FrameRateLimit::Unlimited)
+        .set_window_fullscreen(true)
         .execute();
 }
 
@@ -15,6 +16,12 @@ fn init(world: &mut World) {
     let assets = world.get::<Assets>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
     let mut pipelines = world.get_mut::<Pipelines>().unwrap();
+    let window = world.get::<Window>().unwrap();
+    window
+        .window()
+        .set_cursor_grab(winit::window::CursorGrabMode::Confined)
+        .unwrap();
+    window.window().set_cursor_visible(false);
     pipelines.register::<Basic>(&graphics, &assets).unwrap();
 
     let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
@@ -29,8 +36,17 @@ fn init(world: &mut World) {
         tint: vek::Rgb::default(),
     });
 
+    let settings = MeshImportSettings {
+        invert_triangle_ordering: true,
+        ..Default::default()
+    };
+
     let mesh = assets
-        .load::<Mesh>(("engine/meshes/cube.obj", &*graphics))
+        .load::<Mesh>((
+            "engine/meshes/cube.obj",
+            &*graphics,
+            settings,
+        ))
         .unwrap();
     let vertices = mesh.vertices();
     let positions =
@@ -41,7 +57,7 @@ fn init(world: &mut World) {
     let renderer = Renderer::new(true, vek::Mat4::default());
     scene.insert((surface, renderer));
 
-    let camera = Camera::new(90.0, 0.3, 1000.0, 16.0/9.0);
+    let camera = Camera::new(120.0, 0.3, 1000.0, 16.0 / 9.0);
     scene.insert((Position::default(), Rotation::default(), camera));
 
     let mut input = world.get_mut::<Input>().unwrap();
@@ -56,12 +72,15 @@ fn init(world: &mut World) {
     input.bind_axis("y rotation", Axis::MousePositionY);
 }
 
-fn update(world: &mut World) {
+fn tick(world: &mut World) {
+    world.entry::<vek::Vec3<f32>>().or_default();
+    let mut velocity1 = world.get_mut::<vek::Vec3<f32>>().unwrap();
     let time = world.get::<Time>().unwrap();
     let input = world.get::<Input>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
 
-    let camera = scene.find_mut::<(&Camera, &mut Position, &mut Rotation)>();
+    let camera =
+        scene.find_mut::<(&Camera, &mut Position, &mut Rotation)>();
     if let Some((_, position, rotation)) = camera {
         // Forward and right vectors relative to the camera
         let forward = rotation.forward();
@@ -90,13 +109,16 @@ fn update(world: &mut World) {
             velocity += -up;
         }
 
+        *velocity1 = vek::Vec3::lerp(*velocity1, velocity, 0.009);
+
         // Update the position with the new velocity
-        **position += velocity * time.delta().as_secs_f32() * 10.0;
+        **position += *velocity1 * time.delta().as_secs_f32() * 30.0;
 
         // Calculate a new rotation and apply it
         let pos_x = input.get_axis("x rotation");
         let pos_y = input.get_axis("y rotation");
-        **rotation = vek::Quaternion::rotation_y(-pos_x as f32 * 0.0007)
-            * vek::Quaternion::rotation_x(-pos_y as f32 * 0.0007);
+        **rotation =
+            vek::Quaternion::rotation_y(-pos_x as f32 * 0.0008)
+                * vek::Quaternion::rotation_x(-pos_y as f32 * 0.0008);
     }
 }

@@ -62,8 +62,8 @@ pub trait Material: 'static + Sized {
     // Get the rasterizer config for this materil
     fn primitive_config() -> PrimitiveConfig {
         PrimitiveConfig::Triangles {
-            winding_order: FrontFace::Ccw,
-            cull_face: None,
+            winding_order: FrontFace::Cw,
+            cull_face: Some(graphics::Face::Front),
             wireframe: false,
         }
     }

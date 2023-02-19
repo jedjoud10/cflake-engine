@@ -41,11 +41,14 @@ impl<'a> VerticesRef<'a> {
         &self,
     ) -> [Option<UntypedBuffer>; MAX_MESH_VERTEX_ATTRIBUTES] {
         [
-            self.attribute::<Position>().map(|b| Buffer::as_untyped(b)),
+            self.attribute::<Position>()
+                .map(|b| Buffer::as_untyped(b)),
             self.attribute::<Normal>().map(|b| Buffer::as_untyped(b)),
-            self.attribute::<Tangent>().map(|b| Buffer::as_untyped(b)),
+            self.attribute::<Tangent>()
+                .map(|b| Buffer::as_untyped(b)),
             //self.attribute::<Color>().map(|b| Buffer::untyped(b)),
-            self.attribute::<TexCoord>().map(|b| Buffer::as_untyped(b)),
+            self.attribute::<TexCoord>()
+                .map(|b| Buffer::as_untyped(b)),
         ]
     }
 

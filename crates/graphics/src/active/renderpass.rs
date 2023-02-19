@@ -1,7 +1,7 @@
 use crate::{
     ActiveGraphicsPipeline, ColorLayout, DepthStencilLayout,
-    GraphicsPipeline, TriangleBuffer, UntypedBuffer, Vertex,
-    VertexBuffer, Graphics, RenderCommand,
+    Graphics, GraphicsPipeline, RenderCommand, TriangleBuffer,
+    UntypedBuffer, Vertex, VertexBuffer,
 };
 use std::{marker::PhantomData, ops::Range, sync::Arc};
 
@@ -40,12 +40,11 @@ impl<'r, 't, C: ColorLayout, DS: DepthStencilLayout>
     }
 }
 
-impl<'r, 't, C: ColorLayout, DS: DepthStencilLayout> Drop for ActiveRenderPass<'r, 't, C, DS> {
+impl<'r, 't, C: ColorLayout, DS: DepthStencilLayout> Drop
+    for ActiveRenderPass<'r, 't, C, DS>
+{
     fn drop(&mut self) {
         let taken = self.render_pass.take().unwrap();
-        super::record(
-            taken,
-            &self.commands
-        )
+        super::record(taken, &self.commands)
     }
 }

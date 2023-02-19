@@ -19,8 +19,9 @@ pub struct CallerId {
     // Init = 0
     // Update = 1
     // Shutdown = 2
-    // Device event = 3
-    // Window event = 4
+    // Tick = 3
+    // Device event = 4
+    // Window event = 5
     pub index: usize,
 
     // Used tp find said index

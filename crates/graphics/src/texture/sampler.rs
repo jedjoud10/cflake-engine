@@ -126,7 +126,7 @@ pub fn get_or_insert_sampler(
         Entry::Occupied(occupied) => {
             log::debug!("Found sampler type in cache, using it...");
             occupied.get().clone()
-        },
+        }
         Entry::Vacant(vacant) => {
             // Convert texture sampling wrap settings to their Wgpu counterpart
             log::warn!("Did not find cached sampler {sampling:#?}");
@@ -156,7 +156,9 @@ pub fn get_or_insert_sampler(
                 graphics.device().create_sampler(&descriptor);
             let sampler = Arc::new(sampler);
             vacant.insert(sampler.clone());
-            log::debug!("Saved sampler type {sampling:#?} in graphics cache");
+            log::debug!(
+                "Saved sampler type {sampling:#?} in graphics cache"
+            );
             sampler
         }
     }

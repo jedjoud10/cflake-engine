@@ -211,6 +211,7 @@ impl App {
             .level_for("wgpu", log::LevelFilter::Warn)
             .level_for("wgpu_core", log::LevelFilter::Warn)
             .level_for("wgpu_hal", log::LevelFilter::Warn)
+            .level_for("graphics::context::staging", log::LevelFilter::Warn)
             .level(log::LevelFilter::Debug)
             .chain(std::io::stdout())
             .apply().unwrap();
@@ -238,6 +239,7 @@ impl App {
         self.systems.shutdown.sort().unwrap();
         self.systems.window.sort().unwrap();
         self.systems.device.sort().unwrap();
+        self.systems.tick.sort().unwrap();
 
         // Sort & execute the init events
         self.systems.init.execute((&mut self.world, &self.el));

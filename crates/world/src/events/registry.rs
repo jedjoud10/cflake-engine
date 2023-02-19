@@ -36,6 +36,7 @@ lazy_static! {
             super::fetch_caller_id::<crate::Init>(),
             super::fetch_caller_id::<crate::Update>(),
             super::fetch_caller_id::<crate::Shutdown>(),
+            super::fetch_caller_id::<crate::Tick>(),
 
             // Winit reserved callers
             super::fetch_caller_id::<winit::event::DeviceEvent>(),

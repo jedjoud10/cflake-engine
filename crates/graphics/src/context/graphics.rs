@@ -1,7 +1,7 @@
 use dashmap::DashMap;
 use naga::{front::glsl::Parser, valid::Validator};
 use parking_lot::Mutex;
-use std::{sync::Arc, hash::BuildHasherDefault};
+use std::{hash::BuildHasherDefault, sync::Arc};
 use utils::Storage;
 use wgpu::{
     util::StagingBelt, Adapter, CommandEncoder, Device, Queue,
@@ -9,16 +9,22 @@ use wgpu::{
     TextureView,
 };
 
-use crate::{SamplerSettings, SamplerWrap, StagingPool, ReflectedShader, BindGroupLayout};
+use crate::{
+    BindGroupLayout, ReflectedShader, SamplerSettings, SamplerWrap,
+    StagingPool,
+};
 
 type NoHash = BuildHasherDefault<nohash_hasher::NoHashHasher<u64>>;
 
 // Cached graphics data
 pub(crate) struct Cached {
     pub(crate) samplers: DashMap<SamplerSettings, Arc<Sampler>>,
-    pub(crate) bind_group_layouts: DashMap<BindGroupLayout, Arc<wgpu::BindGroupLayout>>,
-    pub(crate) pipeline_layouts: DashMap<ReflectedShader, Arc<wgpu::PipelineLayout>>,
-    pub(crate) bind_groups: DashMap<Vec<wgpu::Id>, Arc<wgpu::BindGroup>>,
+    pub(crate) bind_group_layouts:
+        DashMap<BindGroupLayout, Arc<wgpu::BindGroupLayout>>,
+    pub(crate) pipeline_layouts:
+        DashMap<ReflectedShader, Arc<wgpu::PipelineLayout>>,
+    pub(crate) bind_groups:
+        DashMap<Vec<wgpu::Id>, Arc<wgpu::BindGroup>>,
 }
 
 // Internnal graphics context that will eventually be wrapped within an Arc

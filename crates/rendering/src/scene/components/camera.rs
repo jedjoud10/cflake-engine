@@ -26,23 +26,41 @@ pub struct Camera {
 
 // Convert a horizontal FOV to a vertical FOV (this returns the FOV in radians)
 fn horizontal_to_vertical(hfov: f32, aspect_ratio: f32) -> f32 {
-    2.0 * ((hfov.to_radians() / 2.0).tan() * (1.0 / (aspect_ratio))).atan()
+    2.0 * ((hfov.to_radians() / 2.0).tan() * (1.0 / (aspect_ratio)))
+        .atan()
 }
 
 // Create a new projection matrix using a ratio, a field of view, and the clip planes
-fn new_projection_matrix(hfov: f32, aspect_ratio: f32, near: f32, far: f32) -> vek::Mat4<f32> {
+fn new_projection_matrix(
+    hfov: f32,
+    aspect_ratio: f32,
+    near: f32,
+    far: f32,
+) -> vek::Mat4<f32> {
     let vfov = horizontal_to_vertical(hfov, aspect_ratio);
     vek::Mat4::<f32>::perspective_rh_no(vfov, aspect_ratio, near, far)
 }
 
 // Create a new view matrix using a position and rotation
-fn new_view_matrix(position: &Position, rotation: &Rotation) -> vek::Mat4<f32> {
-    vek::Mat4::<f32>::look_at_rh(**position, rotation.forward() + **position, rotation.up())
+fn new_view_matrix(
+    position: &Position,
+    rotation: &Rotation,
+) -> vek::Mat4<f32> {
+    vek::Mat4::<f32>::look_at_rh(
+        **position,
+        rotation.forward() + **position,
+        rotation.up(),
+    )
 }
 
 impl Camera {
     // Create a new camera with it's horizontal fov, the clip planes, and an aspect ratio
-    pub fn new(hfov: f32, near_plane: f32, far_plane: f32, aspect_ratio: f32) -> Self {
+    pub fn new(
+        hfov: f32,
+        near_plane: f32,
+        far_plane: f32,
+        aspect_ratio: f32,
+    ) -> Self {
         Self {
             view: vek::Mat4::identity(),
             projection: vek::Mat4::identity(),
@@ -54,17 +72,30 @@ impl Camera {
     }
 
     // Update the view matrix using a position and rotation
-    pub fn update_view(&mut self, position: &Position, rotation: &Rotation) {
+    pub fn update_view(
+        &mut self,
+        position: &Position,
+        rotation: &Rotation,
+    ) {
         self.view = new_view_matrix(position, rotation);
     }
 
     // Update the projection matrix using the currently stored values
     pub fn update_projection(&mut self) {
-        self.projection = new_projection_matrix(self.hfov, self.aspect_ratio, self.near, self.far);
+        self.projection = new_projection_matrix(
+            self.hfov,
+            self.aspect_ratio,
+            self.near,
+            self.far,
+        );
     }
 
     // Update the inner matrices (view & projection) using a position and rotation
-    pub fn update(&mut self, position: &Position, rotation: &Rotation) {
+    pub fn update(
+        &mut self,
+        position: &Position,
+        rotation: &Rotation,
+    ) {
         self.update_view(position, rotation);
         self.update_projection()
     }
@@ -112,7 +143,11 @@ impl Camera {
     }
 
     // Set the clip planes
-    pub fn set_clip_planes(&mut self, near_plane: f32, far_plane: f32) {
+    pub fn set_clip_planes(
+        &mut self,
+        near_plane: f32,
+        far_plane: f32,
+    ) {
         self.near = near_plane;
         self.far = far_plane;
         self.update_projection();
@@ -120,9 +155,10 @@ impl Camera {
 
     // Get the view frustum planes from this camera
     pub fn frustum(&self) -> Frustum {
-        let columns = (*self.projection_matrix() * *self.view_matrix())
-            .transposed()
-            .into_col_arrays();
+        let columns = (*self.projection_matrix()
+            * *self.view_matrix())
+        .transposed()
+        .into_col_arrays();
         let columns = columns
             .into_iter()
             .map(vek::Vec4::from)
@@ -139,25 +175,10 @@ impl Camera {
         let far = FrustumPlane::new(columns[3] - columns[2]);
         [top, bottom, left, right, near, far]
     }
-
-    // Get the camera UBO data that represents this camera
-    pub fn as_uniform_data(&self) -> CameraUniform {
-        let projection = self.projection.cols;
-        let view = self.view.cols;
-        let inverse_projection = self.projection.inverted().cols;
-        let inverse_view = self.view.inverted().cols;
-
-        CameraUniform {
-            projection,
-            inverse_projection,
-            view,
-            inverse_view
-        }
-    }
 }
 
 // A whhole view frustum
-pub type Frustum = [FrustumPlane; 6]; 
+pub type Frustum = [FrustumPlane; 6];
 
 // A single frustum plane
 #[derive(Clone, Copy, PartialEq)]

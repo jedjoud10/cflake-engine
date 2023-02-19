@@ -236,7 +236,11 @@ fn primitive_config_to_state(
     };
 
     let cull_mode = match primitive_config {
-        PrimitiveConfig::Triangles { cull_face, .. } => cull_face,
+        PrimitiveConfig::Triangles {
+            cull_face,
+            wireframe: false,
+            ..
+        } => cull_face,
         _ => None,
     };
 

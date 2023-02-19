@@ -62,7 +62,7 @@ impl<'str, 'ctx, 'stg, A: Asset> AssetInput<'str, 'ctx, 'stg, A>
         <A as Asset>::Context<'ctx>,
         <A as Asset>::Settings<'stg>,
     ) {
-        todo!()
+        self
     }
 
     fn path(&self) -> &'str str {

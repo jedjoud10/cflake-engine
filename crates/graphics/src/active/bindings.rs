@@ -13,10 +13,16 @@ pub struct BindGroup<'a> {
 
 impl<'a> BindGroup<'a> {
     // Get the entry layout for a specific resource in this bind group
-    fn find_entry_layout(&mut self, name: &str) -> &crate::BindEntryLayout {
+    fn find_entry_layout(
+        &mut self,
+        name: &str,
+    ) -> &crate::BindEntryLayout {
         let groups = &self.shader.vertex().reflected().groups;
-        let (_, group) =
-            groups.iter().enumerate().find(|(i, _)| *i == self.index as usize).unwrap();
+        let (_, group) = groups
+            .iter()
+            .enumerate()
+            .find(|(i, _)| *i == self.index as usize)
+            .unwrap();
         group.entries.iter().find(|x| x.name == name).unwrap()
     }
 
@@ -40,7 +46,7 @@ impl<'a> BindGroup<'a> {
         let view = texture.view();
         let resource = wgpu::BindingResource::TextureView(view);
 
-        // Make a valid bind entry and locally store it 
+        // Make a valid bind entry and locally store it
         let entry = BindEntry {
             binding,
             resource,
@@ -67,8 +73,8 @@ impl<'a> BindGroup<'a> {
                 if (size as usize) != buffer.stride() {
                     panic!()
                 }
-            },
-            _ => panic!()
+            }
+            _ => panic!(),
         }
 
         // Get values needed for the bind entry

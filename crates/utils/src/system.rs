@@ -35,6 +35,9 @@ pub fn io(system: &mut System, author: String, app: String) {
         .before(user);
 }
 
+// Number of ticks that should execute per second
+const TICKS_PER_SEC: f32 = 120.0f32;
+
 // Add the Time manager
 pub fn time(system: &mut System) {
     // Main initialization event
@@ -49,6 +52,9 @@ pub fn time(system: &mut System) {
                 tick_count: 0,
                 last_tick_start: Instant::now(),
                 ticks_to_execute: None,
+                tick_delta: Duration::from_secs_f32(
+                    1.0 / TICKS_PER_SEC,
+                ),
             });
         })
         .before(user);
@@ -71,7 +77,6 @@ pub fn time(system: &mut System) {
                 time.average_delta * 0.8 + delta * 0.2;
 
             // Constants needed for ticks
-            const TICKS_PER_SEC: f32 = 120.0f32;
             const TICKS_DELTA_NS: f32 =
                 (1.0 / TICKS_PER_SEC) * 1000000000.0;
             const TICK_DELTA: Duration =

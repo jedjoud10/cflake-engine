@@ -1,3 +1,4 @@
+mod active;
 mod buffer;
 mod context;
 mod format;
@@ -8,7 +9,6 @@ mod shader;
 mod system;
 mod tests;
 mod texture;
-mod active;
 pub use active::*;
 pub use buffer::*;
 pub use context::*;

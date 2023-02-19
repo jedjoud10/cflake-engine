@@ -2,7 +2,6 @@ use std::{path::Path, sync::Arc};
 
 // File data is what will be given to assets whenever we try to deserialize them
 // We will assume that all assets are files
-// TODO: add the loader back again
 pub struct Data<'a> {
     pub(super) name: &'a str,
     pub(super) extension: &'a str,

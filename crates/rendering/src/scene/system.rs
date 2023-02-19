@@ -1,6 +1,7 @@
 use crate::{
-    AlbedoMap, Basic, DefaultMaterialResources, ForwardRenderer,
-    ForwardRendererRenderPass, Mesh, NormalMap, Pipelines, Camera,
+    AlbedoMap, Basic, Camera, CameraUniform,
+    DefaultMaterialResources, ForwardRenderer,
+    ForwardRendererRenderPass, Mesh, NormalMap, Pipelines,
 };
 use ecs::Scene;
 use graphics::{
@@ -35,6 +36,7 @@ fn init(world: &mut World) {
 fn update_camera(world: &mut World) {
     let mut ecs = world.get_mut::<Scene>().unwrap();
     let mut renderer = world.get_mut::<ForwardRenderer>().unwrap();
+    let window = world.get::<Window>().unwrap();
 
     // Fetch the main perspective camera from the scene renderer
     if let Some(entity) = renderer.main_camera {
@@ -50,14 +52,35 @@ fn update_camera(world: &mut World) {
         let (camera, location, rotation) = entry
             .as_query_mut::<(&mut Camera, &ecs::Position, &ecs::Rotation)>()
             .unwrap();
+        let aspect = window.size().w as f32 / window.size().h as f32;
+        camera.set_aspect_ratio(aspect);
         camera.update(location, rotation);
 
+        // Convert the camera to uniform data
+        let projection = camera.projection_matrix().cols;
+        let view = camera.view_matrix().cols;
+        let inverse_projection =
+            camera.projection_matrix().inverted().cols;
+        let inverse_view = camera.view_matrix().inverted().cols;
+
+        // Create the struct that contains the UBO data
+        let data = CameraUniform {
+            projection,
+            inverse_projection,
+            view,
+            inverse_view,
+        };
+
         // Fill the camera UBO with the proper data
-        renderer.camera_buffer.write(&[camera.as_uniform_data()], 0).unwrap();
+        renderer.camera_buffer.write(&[data], 0).unwrap();
     } else {
         // Set the main camera if we did not find one
-        let next = ecs
-            .find::<(&Camera, &ecs::Position, &ecs::Rotation, &ecs::Entity)>();
+        let next = ecs.find::<(
+            &Camera,
+            &ecs::Position,
+            &ecs::Rotation,
+            &ecs::Entity,
+        )>();
         if let Some((_, _, _, entity)) = next {
             renderer.main_camera = Some(*entity);
         }
@@ -73,12 +96,6 @@ fn render_update(world: &mut World) {
     let pipelines = world.get::<Pipelines>().unwrap();
     let meshes = world.get::<Storage<Mesh>>().unwrap();
 
-    // Skip if we don't have a camera to draw with
-    if renderer.main_camera.is_none() {
-        log::warn!("No active camera to draw with!");
-        return;
-    }
-
     // Get textures, pipelines, and encoder
     let view = window.as_render_target().unwrap();
     let pipelines = pipelines.extract_pipelines();
@@ -87,6 +104,14 @@ fn render_update(world: &mut World) {
     // Activate the render pass
     let mut render_pass =
         renderer.render_pass.begin(&mut encoder, view, ()).unwrap();
+
+    // Skip if we don't have a camera to draw with
+    if renderer.main_camera.is_none() {
+        log::warn!("No active camera to draw with!");
+        drop(render_pass);
+        graphics.submit([encoder]);
+        return;
+    }
 
     // Create the shared material resources1
     let default = DefaultMaterialResources {
@@ -123,7 +148,5 @@ pub fn rendering_system(system: &mut System) {
 
 // The camera system will be responsible for updating the camera UBO and matrices
 pub fn camera_system(system: &mut System) {
-    system
-        .insert_update(update_camera)
-        .before(rendering_system);
+    system.insert_update(update_camera).before(rendering_system);
 }

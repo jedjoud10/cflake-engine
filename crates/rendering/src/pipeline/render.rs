@@ -53,12 +53,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
     meshes: &'r Storage<Mesh>,
     pipeline: &'r GraphicsPipeline<SwapchainFormat, ()>,
     default: &'r DefaultMaterialResources,
-    render_pass: &mut ActiveRenderPass<
-        'r,
-        '_,
-        SwapchainFormat,
-        (),
-    >,
+    render_pass: &mut ActiveRenderPass<'r, '_, SwapchainFormat, ()>,
 ) {
     // Get a rasterizer for the current render pass by binding a pipeline
     let mut active = render_pass.bind_pipeline(pipeline);

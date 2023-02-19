@@ -15,6 +15,7 @@ pub struct Time {
     // Related to constant ticks
     pub(crate) tick_count: u128,
     pub(crate) last_tick_start: Instant,
+    pub(crate) tick_delta: Duration,
     pub(crate) ticks_to_execute: Option<NonZeroU32>,
 }
 
@@ -54,14 +55,14 @@ impl Time {
         self.average_delta
     }
 
-    // Check if we will execute any ticks this frame
-    pub fn execute_tick(&self) -> bool {
-        self.ticks_to_execute().is_some()
-    }
-
     // Get the total tick count
     pub fn tick_count(&self) -> u128 {
         self.tick_count
+    }
+
+    // Get the elapsed time between this tick and the last tick
+    pub fn tick_delta(&self) -> Duration {
+        self.tick_delta
     }
 
     // Check how many ticks we should execute this frame

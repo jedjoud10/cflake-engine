@@ -191,7 +191,6 @@ impl Assets {
     }
 
     // Load an asset asynchronously and automatically add it to the loaded assets
-    // TODO: Rewrite this function
     fn async_load_inner<A: AsyncAsset>(
         owned: PathBuf,
         bytes: AsyncLoadedBytes,
