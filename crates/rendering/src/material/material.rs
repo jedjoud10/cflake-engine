@@ -1,13 +1,18 @@
+use crate::{
+    AlbedoMap, CameraBuffer, CameraUniform, EnabledMeshAttributes,
+    Mesh, NormalMap, Renderer, SceneBuffer, SceneUniform,
+    TimingBuffer, TimingUniform,
+};
 use assets::Assets;
 use graphics::{
-    BlendConfig, Compiled, DepthConfig, FragmentModule, Graphics, PrimitiveConfig,
-    StencilConfig, VertexModule, UniformBuffer, FrontFace, RGBA, Normalized, Texture2D, BindGroup,
+    BindGroup, BlendConfig, Compiled, DepthConfig, FragmentModule,
+    FrontFace, Graphics, Normalized, PrimitiveConfig, StencilConfig,
+    Texture2D, UniformBuffer, VertexModule, RGBA,
 };
 use world::World;
-use crate::{EnabledMeshAttributes, Mesh, Renderer, CameraUniform, TimingUniform, SceneUniform, CameraBuffer, TimingBuffer, SceneBuffer, AlbedoMap, NormalMap};
 
 // These are the default resources that we pass to any/each material
-pub struct DefaultMaterialResources<'a> { 
+pub struct DefaultMaterialResources<'a> {
     // Main scene uniform buffers
     // TODO: Make use of crevice to implement Std130, Std140
     pub camera_buffer: &'a CameraBuffer,
@@ -56,10 +61,10 @@ pub trait Material: 'static + Sized {
 
     // Get the rasterizer config for this materil
     fn primitive_config() -> PrimitiveConfig {
-        PrimitiveConfig::Triangles { 
+        PrimitiveConfig::Triangles {
             winding_order: FrontFace::Ccw,
             cull_face: None,
-            wireframe: false
+            wireframe: false,
         }
     }
 
@@ -69,16 +74,15 @@ pub trait Material: 'static + Sized {
     }
 
     // Fetch the required resources from the world
-    fn fetch<'w>(
-        world: &'w World
-    ) -> Self::Resources<'w>;
+    fn fetch<'w>(world: &'w World) -> Self::Resources<'w>;
 
     // Set the static bindings
     fn set_global_bindings<'w>(
         resources: &mut Self::Resources<'w>,
         default: &DefaultMaterialResources<'w>,
         group: &mut BindGroup<'w>,
-    ) {}
+    ) {
+    }
 
     // Set the per instance bindings
     fn set_instance_bindings<'w>(
@@ -86,7 +90,8 @@ pub trait Material: 'static + Sized {
         resources: &mut Self::Resources<'w>,
         default: &DefaultMaterialResources<'w>,
         group: &BindGroup<'w>,
-    ) {}
+    ) {
+    }
 
     // Set the per surface bindings
     fn set_surface_bindings<'w>(
@@ -94,5 +99,6 @@ pub trait Material: 'static + Sized {
         resources: &mut Self::Resources<'w>,
         default: &DefaultMaterialResources<'w>,
         group: &BindGroup<'w>,
-    ) {}
+    ) {
+    }
 }

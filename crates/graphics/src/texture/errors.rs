@@ -14,7 +14,7 @@ pub enum TextureInitializationError {
     MipMapGenerationNPOT,
 
     #[error("The mip level of {0} does not contain the appropriate number of texels (expected {1}, found {2})")]
-    UnexpectedMipLevelTexelCount(u8, u64, u64)
+    UnexpectedMipLevelTexelCount(u8, u64, u64),
 }
 
 #[derive(Error, Debug)]
@@ -48,5 +48,5 @@ pub enum TextureAsTargetError {
     WholeTextureMissingFlags,
 
     #[error("Cannot use the whole texture as a render target since it contains multiple mip levels")]
-    WholeTextureMultipleMips
+    WholeTextureMultipleMips,
 }

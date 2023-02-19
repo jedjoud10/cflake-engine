@@ -1,5 +1,9 @@
+use crate::{
+    ActiveGraphicsPipeline, ColorLayout, DepthStencilLayout,
+    GraphicsPipeline, TriangleBuffer, UntypedBuffer, Vertex,
+    VertexBuffer,
+};
 use std::{marker::PhantomData, ops::Range};
-use crate::{ColorLayout, DepthStencilLayout, UntypedBuffer, VertexBuffer, Vertex, TriangleBuffer, GraphicsPipeline, ActiveGraphicsPipeline};
 
 // An active render pass is basically just a rasterizer that is used to bind
 // multiple render pipelines so we can draw objects to the screen
@@ -17,7 +21,7 @@ pub struct ActiveRenderPass<
 
 impl<'r, 'c, 'ds, C: ColorLayout, DS: DepthStencilLayout>
     ActiveRenderPass<'r, 'c, 'ds, C, DS>
-{    
+{
     // Bind a graphics pipeline, which takes mutable access of the render pass temporarily
     // Returns an active graphics pipeline that we can render to
     // TODO: Switch this to closure maybe?? Idk why we would tho

@@ -1,9 +1,12 @@
+use crate::{
+    BindGroup, ColorLayout, DepthStencilLayout, GraphicsPipeline,
+    TriangleBuffer, UntypedBuffer, Vertex, VertexBuffer,
+};
 use std::{marker::PhantomData, ops::Range};
-use crate::{ColorLayout, DepthStencilLayout, UntypedBuffer, VertexBuffer, Vertex, TriangleBuffer, GraphicsPipeline, BindGroup};
 
 // An active graphics pipeline that is bound to a render pass that we can use to render
 pub struct ActiveGraphicsPipeline<
-    'a, 
+    'a,
     'r,
     'c,
     'ds,
@@ -18,19 +21,34 @@ pub struct ActiveGraphicsPipeline<
 
 impl<'a, 'r, 'c, 'ds, C: ColorLayout, DS: DepthStencilLayout>
     ActiveGraphicsPipeline<'a, 'r, 'c, 'ds, C, DS>
-{    
+{
     // Assign a vertex buffer to a slot
-    pub fn set_vertex_buffer<V: Vertex>(&mut self, slot: u32, buffer: &'r VertexBuffer<V>) {
-        self.render_pass.set_vertex_buffer(slot, buffer.raw().slice(..));
+    pub fn set_vertex_buffer<V: Vertex>(
+        &mut self,
+        slot: u32,
+        buffer: &'r VertexBuffer<V>,
+    ) {
+        self.render_pass
+            .set_vertex_buffer(slot, buffer.raw().slice(..));
     }
-    
+
     // Sets the active index buffer
-    pub fn set_index_buffer(&mut self, buffer: &'r TriangleBuffer<u32>) {
-        self.render_pass.set_index_buffer(buffer.raw().slice(..), wgpu::IndexFormat::Uint32);
+    pub fn set_index_buffer(
+        &mut self,
+        buffer: &'r TriangleBuffer<u32>,
+    ) {
+        self.render_pass.set_index_buffer(
+            buffer.raw().slice(..),
+            wgpu::IndexFormat::Uint32,
+        );
     }
 
     // Execute a callback that we will use to fill a bind group
-    pub fn set_bind_group(&mut self, binding: u32, callback: impl FnOnce(&mut BindGroup<'a>)) {
+    pub fn set_bind_group(
+        &mut self,
+        binding: u32,
+        callback: impl FnOnce(&mut BindGroup<'a>),
+    ) {
         let shader = self.pipeline.shader();
         let mut bind_group = BindGroup {
             entries: Vec::new(),
@@ -45,17 +63,23 @@ impl<'a, 'r, 'c, 'ds, C: ColorLayout, DS: DepthStencilLayout>
         // Check if we have a bind group with the same entries
         //      Create a new one if not
         // Bind the group
-
-        
     }
 
     // Draw a number of primitives using the currently bound vertex buffers
-    pub fn draw(&mut self, vertices: Range<u32>, instances: Range<u32>) {
+    pub fn draw(
+        &mut self,
+        vertices: Range<u32>,
+        instances: Range<u32>,
+    ) {
         self.render_pass.draw(vertices, instances);
     }
 
     // Draw a number of primitives using the currently bound vertex buffers and index buffer
-    pub fn draw_indexed(&mut self, indices: Range<u32>, instances: Range<u32>) {
+    pub fn draw_indexed(
+        &mut self,
+        indices: Range<u32>,
+        instances: Range<u32>,
+    ) {
         self.render_pass.draw_indexed(indices, 0, instances);
     }
 

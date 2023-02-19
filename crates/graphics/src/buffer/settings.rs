@@ -26,8 +26,7 @@ pub enum BufferUsage {
     // The buffer is only going to be used to send data to the GPU
     // Example: Non-readable vertex buffers
     Write,
-    
+
     // The buffer and be written to AND read on the CPU
     ReadWrite,
 }
-

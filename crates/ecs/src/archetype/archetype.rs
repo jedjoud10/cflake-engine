@@ -25,7 +25,10 @@ impl Archetype {
     pub(crate) fn from_bundle<B: Bundle>() -> Self {
         let mask = B::reduce(|a, b| a | b);
 
-        log::debug!("Creating archetype from bundle of mask {:?}", mask);
+        log::debug!(
+            "Creating archetype from bundle of mask {:?}",
+            mask
+        );
 
         let defaults = B::default_vectors()
             .into_iter()
@@ -364,11 +367,19 @@ pub(crate) fn add_bundle<B: Bundle>(
     drop(storages);
 
     for (mask, current) in current.table.iter() {
-        log::debug!("Current Mask: {:?}, len: {}", mask, current.len());
+        log::debug!(
+            "Current Mask: {:?}, len: {}",
+            mask,
+            current.len()
+        );
     }
 
     for (mask, current) in target.table.iter() {
-        log::debug!("Target Mask: {:?}, len: {}", mask, current.len());
+        log::debug!(
+            "Target Mask: {:?}, len: {}",
+            mask,
+            current.len()
+        );
     }
 
     // Handle swap-remove logic in the current archetype

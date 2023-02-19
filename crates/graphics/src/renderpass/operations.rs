@@ -1,4 +1,7 @@
-use crate::{Texel, ColorLayout, DepthStencilLayout, ColorTexel, Depth, Stencil, DepthElement, StencilElement};
+use crate::{
+    ColorLayout, ColorTexel, Depth, DepthElement, DepthStencilLayout,
+    Stencil, StencilElement, Texel,
+};
 
 // What we should do when loading in data from the render target
 // Even though WGPU has a LoadOp type, I still decided to implement one myself simply
@@ -30,7 +33,9 @@ impl<T: ColorTexel> ColorOperations<T> for Operation<T> {
     fn operations(&self) -> Vec<wgpu::Operations<wgpu::Color>> {
         let load = match self.load {
             LoadOp::Load => wgpu::LoadOp::Load,
-            LoadOp::Clear(color) => wgpu::LoadOp::Clear(T::into_color(color).unwrap()),
+            LoadOp::Clear(color) => {
+                wgpu::LoadOp::Clear(T::into_color(color).unwrap())
+            }
         };
 
         let store = match self.store {
@@ -61,7 +66,10 @@ impl DepthStencilOperations<()> for () {
     }
 }
 
-impl<D: DepthElement> DepthStencilOperations<Depth<D>> for Depth<D> where Self: Texel + DepthStencilLayout {
+impl<D: DepthElement> DepthStencilOperations<Depth<D>> for Depth<D>
+where
+    Self: Texel + DepthStencilLayout,
+{
     fn depth_operations(&self) -> Option<wgpu::Operations<f32>> {
         Some(todo!())
     }
@@ -71,7 +79,11 @@ impl<D: DepthElement> DepthStencilOperations<Depth<D>> for Depth<D> where Self: 
     }
 }
 
-impl<S: StencilElement> DepthStencilOperations<Stencil<S>> for Stencil<S> where Self: Texel + DepthStencilLayout {
+impl<S: StencilElement> DepthStencilOperations<Stencil<S>>
+    for Stencil<S>
+where
+    Self: Texel + DepthStencilLayout,
+{
     fn depth_operations(&self) -> Option<wgpu::Operations<f32>> {
         None
     }

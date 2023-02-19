@@ -1,4 +1,7 @@
-use crate::{Compiled, ComputeModule, FragmentModule, VertexModule, ReflectedModule, ReflectedShader};
+use crate::{
+    Compiled, ComputeModule, FragmentModule, ReflectedModule,
+    ReflectedShader, VertexModule,
+};
 use std::sync::Arc;
 
 // A rendering shader that contains a vertex module and fragment module
@@ -21,7 +24,7 @@ impl Shader {
         Self {
             vertex: vertex.clone(),
             fragment: fragment.clone(),
-            reflected: Arc::new(reflected)
+            reflected: Arc::new(reflected),
         }
     }
 

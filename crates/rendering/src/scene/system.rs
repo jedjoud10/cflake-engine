@@ -1,10 +1,13 @@
-use crate::{ForwardRenderer, ForwardRendererRenderPass, Mesh, Basic, DefaultMaterialResources, Pipelines, AlbedoMap, NormalMap};
+use crate::{
+    AlbedoMap, Basic, DefaultMaterialResources, ForwardRenderer,
+    ForwardRendererRenderPass, Mesh, NormalMap, Pipelines,
+};
 use graphics::{
-    Graphics, Normalized, RenderPass,
-    Texture, Texture2D, TextureMode, TextureUsage, Window, BGRA, Operation, StoreOp, LoadOp,
+    Graphics, LoadOp, Normalized, Operation, RenderPass, StoreOp,
+    Texture, Texture2D, TextureMode, TextureUsage, Window, BGRA,
 };
 use std::{mem::ManuallyDrop, sync::Arc};
-use utils::{Time, Storage};
+use utils::{Storage, Time};
 use world::{post_user, user, System, World};
 
 // Add the compositors and setup the world for rendering
@@ -14,7 +17,7 @@ fn init(world: &mut World) {
     // Create the scene renderer, pipeline manager, and  commonly used textures
     let renderer = ForwardRenderer::new(&graphics);
     let pipelines = Pipelines::new();
-    
+
     // Add composites and basic storages
     drop(graphics);
     world.insert(renderer);
@@ -35,23 +38,20 @@ fn update(world: &mut World) {
     let renderer = &mut *renderer;
     let pipelines = world.get::<Pipelines>().unwrap();
     let meshes = world.get::<Storage<Mesh>>().unwrap();
-    
+
     // Get a presentable render target from the window
     let view = window.as_render_target().unwrap();
 
     // Extract the render pipelines
     let pipelines = pipelines.extract_pipelines();
-    
+
     // Create a new command encoder
     let mut encoder = graphics.acquire();
 
     // Activate the render pass
-    let mut render_pass = renderer.render_pass.begin(
-        &mut encoder,
-        view,
-        ()
-    ).unwrap();
-    
+    let mut render_pass =
+        renderer.render_pass.begin(&mut encoder, view, ()).unwrap();
+
     // Create the shared material resources1
     let default = DefaultMaterialResources {
         camera_buffer: &renderer.camera_buffer,
@@ -68,7 +68,7 @@ fn update(world: &mut World) {
     }
 
     // Submit the encoder at the end
-    drop(render_pass); 
+    drop(render_pass);
     graphics.submit([encoder]);
 }
 
@@ -78,7 +78,8 @@ pub fn system(system: &mut System) {
         .insert_init(init)
         .before(user)
         .after(graphics::common);
-    system.insert_update(update)
+    system
+        .insert_update(update)
         .after(graphics::acquire)
         .before(graphics::present);
 }

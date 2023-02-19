@@ -1,4 +1,4 @@
-mod surface;
 mod renderer;
-pub use surface::*;
+mod surface;
 pub use renderer::*;
+pub use surface::*;

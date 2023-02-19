@@ -147,76 +147,214 @@ mod texels {
 #[cfg(test)]
 mod color {
     use crate::format::*;
-    use wgpu::TextureFormat;
     use half::f16;
+    use wgpu::TextureFormat;
 
     #[test]
     fn convert_unsigned() {
         assert_eq!(R::<u8>::into_rgba32(u8::MIN).x, u8::MIN as f32);
         assert_eq!(R::<u8>::into_rgba32(u8::MAX).x, u8::MAX as f32);
-        assert_eq!(R::<u16>::into_rgba32(u16::MIN).x, u16::MIN as f32);
-        assert_eq!(R::<u16>::into_rgba32(u16::MAX).x, u16::MAX as f32);
-        assert_eq!(R::<u32>::into_rgba32(u32::MIN).x, u32::MIN as f32);
-        assert_eq!(R::<u32>::into_rgba32(u32::MAX).x, u32::MAX as f32);
+        assert_eq!(
+            R::<u16>::into_rgba32(u16::MIN).x,
+            u16::MIN as f32
+        );
+        assert_eq!(
+            R::<u16>::into_rgba32(u16::MAX).x,
+            u16::MAX as f32
+        );
+        assert_eq!(
+            R::<u32>::into_rgba32(u32::MIN).x,
+            u32::MIN as f32
+        );
+        assert_eq!(
+            R::<u32>::into_rgba32(u32::MAX).x,
+            u32::MAX as f32
+        );
 
-        assert_eq!(RG::<u8>::into_rgba32(vek::Vec2::broadcast(u8::MIN)).xy(), vek::Vec2::broadcast(u8::MIN as f32));
-        assert_eq!(RG::<u8>::into_rgba32(vek::Vec2::broadcast(u8::MAX)).xy(), vek::Vec2::broadcast(u8::MAX as f32));
-        assert_eq!(RG::<u16>::into_rgba32(vek::Vec2::broadcast(u16::MIN)).xy(), vek::Vec2::broadcast(u16::MIN as f32));
-        assert_eq!(RG::<u16>::into_rgba32(vek::Vec2::broadcast(u16::MAX)).xy(), vek::Vec2::broadcast(u16::MAX as f32));
-        assert_eq!(RG::<u32>::into_rgba32(vek::Vec2::broadcast(u32::MIN)).xy(), vek::Vec2::broadcast(u32::MIN as f32));
-        assert_eq!(RG::<u32>::into_rgba32(vek::Vec2::broadcast(u32::MAX)).xy(), vek::Vec2::broadcast(u32::MAX as f32));
+        assert_eq!(
+            RG::<u8>::into_rgba32(vek::Vec2::broadcast(u8::MIN)).xy(),
+            vek::Vec2::broadcast(u8::MIN as f32)
+        );
+        assert_eq!(
+            RG::<u8>::into_rgba32(vek::Vec2::broadcast(u8::MAX)).xy(),
+            vek::Vec2::broadcast(u8::MAX as f32)
+        );
+        assert_eq!(
+            RG::<u16>::into_rgba32(vek::Vec2::broadcast(u16::MIN))
+                .xy(),
+            vek::Vec2::broadcast(u16::MIN as f32)
+        );
+        assert_eq!(
+            RG::<u16>::into_rgba32(vek::Vec2::broadcast(u16::MAX))
+                .xy(),
+            vek::Vec2::broadcast(u16::MAX as f32)
+        );
+        assert_eq!(
+            RG::<u32>::into_rgba32(vek::Vec2::broadcast(u32::MIN))
+                .xy(),
+            vek::Vec2::broadcast(u32::MIN as f32)
+        );
+        assert_eq!(
+            RG::<u32>::into_rgba32(vek::Vec2::broadcast(u32::MAX))
+                .xy(),
+            vek::Vec2::broadcast(u32::MAX as f32)
+        );
 
-        assert_eq!(RGBA::<u8>::into_rgba32(vek::Vec4::broadcast(u8::MIN)), vek::Vec4::broadcast(u8::MIN as f32));
-        assert_eq!(RGBA::<u8>::into_rgba32(vek::Vec4::broadcast(u8::MAX)), vek::Vec4::broadcast(u8::MAX as f32));
-        assert_eq!(RGBA::<u16>::into_rgba32(vek::Vec4::broadcast(u16::MIN)), vek::Vec4::broadcast(u16::MIN as f32));
-        assert_eq!(RGBA::<u16>::into_rgba32(vek::Vec4::broadcast(u16::MAX)), vek::Vec4::broadcast(u16::MAX as f32));
-        assert_eq!(RGBA::<u32>::into_rgba32(vek::Vec4::broadcast(u32::MIN)), vek::Vec4::broadcast(u32::MIN as f32));
-        assert_eq!(RGBA::<u32>::into_rgba32(vek::Vec4::broadcast(u32::MAX)), vek::Vec4::broadcast(u32::MAX as f32));
+        assert_eq!(
+            RGBA::<u8>::into_rgba32(vek::Vec4::broadcast(u8::MIN)),
+            vek::Vec4::broadcast(u8::MIN as f32)
+        );
+        assert_eq!(
+            RGBA::<u8>::into_rgba32(vek::Vec4::broadcast(u8::MAX)),
+            vek::Vec4::broadcast(u8::MAX as f32)
+        );
+        assert_eq!(
+            RGBA::<u16>::into_rgba32(vek::Vec4::broadcast(u16::MIN)),
+            vek::Vec4::broadcast(u16::MIN as f32)
+        );
+        assert_eq!(
+            RGBA::<u16>::into_rgba32(vek::Vec4::broadcast(u16::MAX)),
+            vek::Vec4::broadcast(u16::MAX as f32)
+        );
+        assert_eq!(
+            RGBA::<u32>::into_rgba32(vek::Vec4::broadcast(u32::MIN)),
+            vek::Vec4::broadcast(u32::MIN as f32)
+        );
+        assert_eq!(
+            RGBA::<u32>::into_rgba32(vek::Vec4::broadcast(u32::MAX)),
+            vek::Vec4::broadcast(u32::MAX as f32)
+        );
     }
 
     #[test]
     fn convert_signed() {
         assert_eq!(R::<i8>::into_rgba32(i8::MIN).x, i8::MIN as f32);
         assert_eq!(R::<i8>::into_rgba32(i8::MAX).x, i8::MAX as f32);
-        assert_eq!(R::<i16>::into_rgba32(i16::MIN).x, i16::MIN as f32);
-        assert_eq!(R::<i16>::into_rgba32(i16::MAX).x, i16::MAX as f32);
-        assert_eq!(R::<i32>::into_rgba32(i32::MIN).x, i32::MIN as f32);
-        assert_eq!(R::<i32>::into_rgba32(i32::MAX).x, i32::MAX as f32);
+        assert_eq!(
+            R::<i16>::into_rgba32(i16::MIN).x,
+            i16::MIN as f32
+        );
+        assert_eq!(
+            R::<i16>::into_rgba32(i16::MAX).x,
+            i16::MAX as f32
+        );
+        assert_eq!(
+            R::<i32>::into_rgba32(i32::MIN).x,
+            i32::MIN as f32
+        );
+        assert_eq!(
+            R::<i32>::into_rgba32(i32::MAX).x,
+            i32::MAX as f32
+        );
 
-        assert_eq!(RG::<i8>::into_rgba32(vek::Vec2::broadcast(i8::MIN)).xy(), vek::Vec2::broadcast(i8::MIN as f32));
-        assert_eq!(RG::<i8>::into_rgba32(vek::Vec2::broadcast(i8::MAX)).xy(), vek::Vec2::broadcast(i8::MAX as f32));
-        assert_eq!(RG::<i16>::into_rgba32(vek::Vec2::broadcast(i16::MIN)).xy(), vek::Vec2::broadcast(i16::MIN as f32));
-        assert_eq!(RG::<i16>::into_rgba32(vek::Vec2::broadcast(i16::MAX)).xy(), vek::Vec2::broadcast(i16::MAX as f32));
-        assert_eq!(RG::<i32>::into_rgba32(vek::Vec2::broadcast(i32::MIN)).xy(), vek::Vec2::broadcast(i32::MIN as f32));
-        assert_eq!(RG::<i32>::into_rgba32(vek::Vec2::broadcast(i32::MAX)).xy(), vek::Vec2::broadcast(i32::MAX as f32));
+        assert_eq!(
+            RG::<i8>::into_rgba32(vek::Vec2::broadcast(i8::MIN)).xy(),
+            vek::Vec2::broadcast(i8::MIN as f32)
+        );
+        assert_eq!(
+            RG::<i8>::into_rgba32(vek::Vec2::broadcast(i8::MAX)).xy(),
+            vek::Vec2::broadcast(i8::MAX as f32)
+        );
+        assert_eq!(
+            RG::<i16>::into_rgba32(vek::Vec2::broadcast(i16::MIN))
+                .xy(),
+            vek::Vec2::broadcast(i16::MIN as f32)
+        );
+        assert_eq!(
+            RG::<i16>::into_rgba32(vek::Vec2::broadcast(i16::MAX))
+                .xy(),
+            vek::Vec2::broadcast(i16::MAX as f32)
+        );
+        assert_eq!(
+            RG::<i32>::into_rgba32(vek::Vec2::broadcast(i32::MIN))
+                .xy(),
+            vek::Vec2::broadcast(i32::MIN as f32)
+        );
+        assert_eq!(
+            RG::<i32>::into_rgba32(vek::Vec2::broadcast(i32::MAX))
+                .xy(),
+            vek::Vec2::broadcast(i32::MAX as f32)
+        );
 
-        assert_eq!(RGBA::<i8>::into_rgba32(vek::Vec4::broadcast(i8::MIN)), vek::Vec4::broadcast(i8::MIN as f32));
-        assert_eq!(RGBA::<i8>::into_rgba32(vek::Vec4::broadcast(i8::MAX)), vek::Vec4::broadcast(i8::MAX as f32));
-        assert_eq!(RGBA::<i16>::into_rgba32(vek::Vec4::broadcast(i16::MIN)), vek::Vec4::broadcast(i16::MIN as f32));
-        assert_eq!(RGBA::<i16>::into_rgba32(vek::Vec4::broadcast(i16::MAX)), vek::Vec4::broadcast(i16::MAX as f32));
-        assert_eq!(RGBA::<i32>::into_rgba32(vek::Vec4::broadcast(i32::MIN)), vek::Vec4::broadcast(i32::MIN as f32));
-        assert_eq!(RGBA::<i32>::into_rgba32(vek::Vec4::broadcast(i32::MAX)), vek::Vec4::broadcast(i32::MAX as f32));
+        assert_eq!(
+            RGBA::<i8>::into_rgba32(vek::Vec4::broadcast(i8::MIN)),
+            vek::Vec4::broadcast(i8::MIN as f32)
+        );
+        assert_eq!(
+            RGBA::<i8>::into_rgba32(vek::Vec4::broadcast(i8::MAX)),
+            vek::Vec4::broadcast(i8::MAX as f32)
+        );
+        assert_eq!(
+            RGBA::<i16>::into_rgba32(vek::Vec4::broadcast(i16::MIN)),
+            vek::Vec4::broadcast(i16::MIN as f32)
+        );
+        assert_eq!(
+            RGBA::<i16>::into_rgba32(vek::Vec4::broadcast(i16::MAX)),
+            vek::Vec4::broadcast(i16::MAX as f32)
+        );
+        assert_eq!(
+            RGBA::<i32>::into_rgba32(vek::Vec4::broadcast(i32::MIN)),
+            vek::Vec4::broadcast(i32::MIN as f32)
+        );
+        assert_eq!(
+            RGBA::<i32>::into_rgba32(vek::Vec4::broadcast(i32::MAX)),
+            vek::Vec4::broadcast(i32::MAX as f32)
+        );
     }
 
     #[test]
     fn convert_float() {
-        assert_eq!(R::<f16>::into_rgba32(f16::MIN).x, f16::MIN.to_f32());
-        assert_eq!(R::<f16>::into_rgba32(f16::MAX).x, f16::MAX.to_f32());
-        
+        assert_eq!(
+            R::<f16>::into_rgba32(f16::MIN).x,
+            f16::MIN.to_f32()
+        );
+        assert_eq!(
+            R::<f16>::into_rgba32(f16::MAX).x,
+            f16::MAX.to_f32()
+        );
+
         assert_eq!(R::<f32>::into_rgba32(f32::MIN).x, f32::MIN);
         assert_eq!(R::<f32>::into_rgba32(f32::MAX).x, f32::MAX);
 
-        assert_eq!(RG::<f16>::into_rgba32(vek::Vec2::broadcast(f16::MIN)).xy(), vek::Vec2::broadcast(f16::MIN.to_f32()));
-        assert_eq!(RG::<f16>::into_rgba32(vek::Vec2::broadcast(f16::MAX)).xy(), vek::Vec2::broadcast(f16::MAX.to_f32()));
-        
-        assert_eq!(RG::<f32>::into_rgba32(vek::Vec2::broadcast(f32::MIN)).xy(), vek::Vec2::broadcast(f32::MIN));
-        assert_eq!(RG::<f32>::into_rgba32(vek::Vec2::broadcast(f32::MAX)).xy(), vek::Vec2::broadcast(f32::MAX));
+        assert_eq!(
+            RG::<f16>::into_rgba32(vek::Vec2::broadcast(f16::MIN))
+                .xy(),
+            vek::Vec2::broadcast(f16::MIN.to_f32())
+        );
+        assert_eq!(
+            RG::<f16>::into_rgba32(vek::Vec2::broadcast(f16::MAX))
+                .xy(),
+            vek::Vec2::broadcast(f16::MAX.to_f32())
+        );
 
-        assert_eq!(RGBA::<f16>::into_rgba32(vek::Vec4::broadcast(f16::MIN)), vek::Vec4::broadcast(f16::MIN.to_f32()));
-        assert_eq!(RGBA::<f16>::into_rgba32(vek::Vec4::broadcast(f16::MAX)), vek::Vec4::broadcast(f16::MAX.to_f32()));
-        
-        assert_eq!(RGBA::<f32>::into_rgba32(vek::Vec4::broadcast(f32::MIN)), vek::Vec4::broadcast(f32::MIN));
-        assert_eq!(RGBA::<f32>::into_rgba32(vek::Vec4::broadcast(f32::MAX)), vek::Vec4::broadcast(f32::MAX));
+        assert_eq!(
+            RG::<f32>::into_rgba32(vek::Vec2::broadcast(f32::MIN))
+                .xy(),
+            vek::Vec2::broadcast(f32::MIN)
+        );
+        assert_eq!(
+            RG::<f32>::into_rgba32(vek::Vec2::broadcast(f32::MAX))
+                .xy(),
+            vek::Vec2::broadcast(f32::MAX)
+        );
+
+        assert_eq!(
+            RGBA::<f16>::into_rgba32(vek::Vec4::broadcast(f16::MIN)),
+            vek::Vec4::broadcast(f16::MIN.to_f32())
+        );
+        assert_eq!(
+            RGBA::<f16>::into_rgba32(vek::Vec4::broadcast(f16::MAX)),
+            vek::Vec4::broadcast(f16::MAX.to_f32())
+        );
+
+        assert_eq!(
+            RGBA::<f32>::into_rgba32(vek::Vec4::broadcast(f32::MIN)),
+            vek::Vec4::broadcast(f32::MIN)
+        );
+        assert_eq!(
+            RGBA::<f32>::into_rgba32(vek::Vec4::broadcast(f32::MAX)),
+            vek::Vec4::broadcast(f32::MAX)
+        );
     }
 }
 

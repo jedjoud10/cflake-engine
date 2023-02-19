@@ -1,18 +1,15 @@
+use crate::{Vertex, VertexInfo};
 use std::marker::PhantomData;
-use wgpu::{VertexFormat, VertexStepMode, ShaderLocation};
-pub use wgpu::{FrontFace, Face};
-use crate::{VertexInfo, Vertex};
+pub use wgpu::{Face, FrontFace};
+use wgpu::{ShaderLocation, VertexFormat, VertexStepMode};
 
 // Blend config for a single color attachment
 #[derive(Clone, Copy)]
-pub struct AttachmentBlendConfig {
-}
-
+pub struct AttachmentBlendConfig {}
 
 // How we deal with blending for the color attachments
 #[derive(Clone, Copy)]
-pub struct BlendConfig {
-}
+pub struct BlendConfig {}
 
 // How we read/write from depth attachments used by the material
 #[derive(Clone, Copy, PartialEq)]
@@ -47,7 +44,7 @@ pub enum PrimitiveConfig {
 }
 
 // This vertex config describes how vertices or more specifically, "vertex buffers" should be read
-// This maps the vertex buffer bindings directly to be usable by a render pass 
+// This maps the vertex buffer bindings directly to be usable by a render pass
 #[derive(Debug)]
 pub struct VertexConfig {
     pub inputs: Vec<VertexInputInfo>,
@@ -76,7 +73,9 @@ impl VertexInputInfo {
 // TODO: Implement vertex interlacing
 pub trait VertexInput<V: Vertex> {
     // Create a new vertex input (layout)
-    fn new() -> Self where Self: Sized;
+    fn new() -> Self
+    where
+        Self: Sized;
 
     // Get the vertex info of the input
     fn vertex_info(&self) -> VertexInfo {

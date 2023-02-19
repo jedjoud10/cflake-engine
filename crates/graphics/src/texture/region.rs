@@ -22,8 +22,15 @@ pub trait Extent: Copy + std::ops::Div<u32, Output = Self> {
     fn is_power_of_two(&self) -> bool {
         match Self::dimensionality() {
             TextureDimension::D1 => self.width().is_power_of_two(),
-            TextureDimension::D2 => self.width().is_power_of_two() && self.height().is_power_of_two(),
-            TextureDimension::D3 => self.width().is_power_of_two() && self.height().is_power_of_two() && self.depth().is_power_of_two(),
+            TextureDimension::D2 => {
+                self.width().is_power_of_two()
+                    && self.height().is_power_of_two()
+            }
+            TextureDimension::D3 => {
+                self.width().is_power_of_two()
+                    && self.height().is_power_of_two()
+                    && self.depth().is_power_of_two()
+            }
         }
     }
 
@@ -36,8 +43,10 @@ pub trait Extent: Copy + std::ops::Div<u32, Output = Self> {
 
         let cur = self.reduce_max() as f32;
         let num = cur.log2().floor() + 1.0;
-        Some(NonZeroU8::new(u8::try_from(num as u8).unwrap())
-            .unwrap_or(NonZeroU8::new(1).unwrap()))
+        Some(
+            NonZeroU8::new(u8::try_from(num as u8).unwrap())
+                .unwrap_or(NonZeroU8::new(1).unwrap()),
+        )
     }
 
     // Calculate the dimensions of a mip map level using it's index (starts from 0)
@@ -138,8 +147,15 @@ impl Extent for vek::Extent3<u32> {
 // Texture region trait that will be implemented for (origin, extent) tuples
 pub trait Region: Copy {
     // Regions are defined by their origin and extents
-    type O: Default + Copy + Add<Self::O, Output = Self::O> + std::fmt::Debug;
-    type E: Extent + Copy + Add<Self::E, Output = Self::E> + PartialEq + std::fmt::Debug;
+    type O: Default
+        + Copy
+        + Add<Self::O, Output = Self::O>
+        + std::fmt::Debug;
+    type E: Extent
+        + Copy
+        + Add<Self::E, Output = Self::E>
+        + PartialEq
+        + std::fmt::Debug;
 
     // Create a texel region of one singular unit (so we can store a singular texel)
     fn unit() -> Self;

@@ -104,20 +104,15 @@ pub const fn pick_texture_format(
     match channels {
         ChannelsType::Vector(channels) => {
             pick_texture_format_from_vector_channels(
-                element,
-                channels,
+                element, channels,
             )
         }
-        ChannelsType::Depth => {
-            pick_texture_depth_format(element)
-        }
-        ChannelsType::Stencil => {
-            pick_texture_stencil_format(element)
-        }
+        ChannelsType::Depth => pick_texture_depth_format(element),
+        ChannelsType::Stencil => pick_texture_stencil_format(element),
     }
 }
 
-// Converts the given data to the proper vertex format 
+// Converts the given data to the proper vertex format
 // This is called within the Vertex::format()
 // The given input might not always be supported (for example, XYZ), and in which case, this function would return None
 pub const fn pick_vertex_format(
@@ -130,59 +125,79 @@ pub const fn pick_vertex_format(
                 true => VertexFormat::Sint32,
                 false => VertexFormat::Uint32,
             }),
-            ElementType::FloatThirtyTwo => Some(VertexFormat::Float32),
-            _ => None
+            ElementType::FloatThirtyTwo => {
+                Some(VertexFormat::Float32)
+            }
+            _ => None,
         },
         VectorChannels::Two => match element {
-            ElementType::Eight { signed, normalized } => Some(match (signed, normalized) {
-                (true, true) => VertexFormat::Snorm8x2,
-                (true, false) => VertexFormat::Sint8x2,
-                (false, true) => VertexFormat::Unorm8x2,
-                (false, false) => VertexFormat::Uint8x2,
-            }),
-            ElementType::Sixteen { signed, normalized } => Some(match (signed, normalized) {
-                (true, true) => VertexFormat::Snorm16x2,
-                (true, false) => VertexFormat::Sint16x2,
-                (false, true) => VertexFormat::Unorm16x2,
-                (false, false) => VertexFormat::Uint16x2,
-            }),
+            ElementType::Eight { signed, normalized } => {
+                Some(match (signed, normalized) {
+                    (true, true) => VertexFormat::Snorm8x2,
+                    (true, false) => VertexFormat::Sint8x2,
+                    (false, true) => VertexFormat::Unorm8x2,
+                    (false, false) => VertexFormat::Uint8x2,
+                })
+            }
+            ElementType::Sixteen { signed, normalized } => {
+                Some(match (signed, normalized) {
+                    (true, true) => VertexFormat::Snorm16x2,
+                    (true, false) => VertexFormat::Sint16x2,
+                    (false, true) => VertexFormat::Unorm16x2,
+                    (false, false) => VertexFormat::Uint16x2,
+                })
+            }
             ElementType::ThirtyTwo { signed } => Some(match signed {
                 true => VertexFormat::Sint32x2,
                 false => VertexFormat::Uint32x2,
             }),
-            ElementType::FloatSixteen => Some(VertexFormat::Float16x2),
-            ElementType::FloatThirtyTwo => Some(VertexFormat::Float32x2),
-            _ => None
+            ElementType::FloatSixteen => {
+                Some(VertexFormat::Float16x2)
+            }
+            ElementType::FloatThirtyTwo => {
+                Some(VertexFormat::Float32x2)
+            }
+            _ => None,
         },
         VectorChannels::Three => match element {
             ElementType::ThirtyTwo { signed } => Some(match signed {
                 true => VertexFormat::Sint32x3,
                 false => VertexFormat::Uint32x3,
             }),
-            ElementType::FloatThirtyTwo => Some(VertexFormat::Float32x3),
-            _ => None
+            ElementType::FloatThirtyTwo => {
+                Some(VertexFormat::Float32x3)
+            }
+            _ => None,
         },
         VectorChannels::Four => match element {
-            ElementType::Eight { signed, normalized } => Some(match (signed, normalized) {
-                (true, true) => VertexFormat::Snorm8x4,
-                (true, false) => VertexFormat::Sint8x4,
-                (false, true) => VertexFormat::Unorm8x4,
-                (false, false) => VertexFormat::Uint8x4,
-            }),
-            ElementType::Sixteen { signed, normalized } => Some(match (signed, normalized) {
-                (true, true) => VertexFormat::Snorm16x4,
-                (true, false) => VertexFormat::Sint16x4,
-                (false, true) => VertexFormat::Unorm16x4,
-                (false, false) => VertexFormat::Uint16x4,
-            }),
+            ElementType::Eight { signed, normalized } => {
+                Some(match (signed, normalized) {
+                    (true, true) => VertexFormat::Snorm8x4,
+                    (true, false) => VertexFormat::Sint8x4,
+                    (false, true) => VertexFormat::Unorm8x4,
+                    (false, false) => VertexFormat::Uint8x4,
+                })
+            }
+            ElementType::Sixteen { signed, normalized } => {
+                Some(match (signed, normalized) {
+                    (true, true) => VertexFormat::Snorm16x4,
+                    (true, false) => VertexFormat::Sint16x4,
+                    (false, true) => VertexFormat::Unorm16x4,
+                    (false, false) => VertexFormat::Uint16x4,
+                })
+            }
             ElementType::ThirtyTwo { signed } => Some(match signed {
                 true => VertexFormat::Sint32x4,
                 false => VertexFormat::Uint32x4,
             }),
-            ElementType::FloatSixteen => Some(VertexFormat::Float16x4),
-            ElementType::FloatThirtyTwo => Some(VertexFormat::Float32x4),
-            _ => None
+            ElementType::FloatSixteen => {
+                Some(VertexFormat::Float16x4)
+            }
+            ElementType::FloatThirtyTwo => {
+                Some(VertexFormat::Float32x4)
+            }
+            _ => None,
         },
-        _ => None
+        _ => None,
     }
 }

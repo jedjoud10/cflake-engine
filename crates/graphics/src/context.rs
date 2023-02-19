@@ -1,10 +1,10 @@
+mod errors;
 mod graphics;
 mod init;
-mod window;
-mod errors;
 mod staging;
-pub use staging::*;
-pub use errors::*;
+mod window;
 pub use self::graphics::*;
+pub use errors::*;
 pub use init::*;
+pub use staging::*;
 pub use window::*;

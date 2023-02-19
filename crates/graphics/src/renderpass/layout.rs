@@ -1,6 +1,6 @@
 use crate::{
     ColorTexel, Depth, DepthElement, DepthStencil, LoadOp, Stencil,
-    StencilElement, StoreOp, Texel, Texture, Texture2D, TexelInfo,
+    StencilElement, StoreOp, Texel, TexelInfo, Texture, Texture2D,
 };
 
 // An attachment layout is a tuple that contains multiple color texels
@@ -23,7 +23,7 @@ pub trait DepthStencilLayout {
 
     // Does the DepthStencilLayout contain a Depth format?
     fn is_depth_enabled() -> bool;
-    
+
     // Does the DepthStencilLayout contain a Stencil format?
     fn is_stencil_enabled() -> bool;
 }
@@ -44,7 +44,10 @@ impl DepthStencilLayout for () {
 }
 
 // Depth only attachment
-impl<D: DepthElement> DepthStencilLayout for Depth<D> where Self: Texel {
+impl<D: DepthElement> DepthStencilLayout for Depth<D>
+where
+    Self: Texel,
+{
     fn info() -> Option<TexelInfo> {
         Some(<Self as Texel>::info())
     }
@@ -59,7 +62,10 @@ impl<D: DepthElement> DepthStencilLayout for Depth<D> where Self: Texel {
 }
 
 // Stencil only attachment
-impl<S: StencilElement> DepthStencilLayout for Stencil<S> where Self: Texel {
+impl<S: StencilElement> DepthStencilLayout for Stencil<S>
+where
+    Self: Texel,
+{
     fn info() -> Option<TexelInfo> {
         Some(<Self as Texel>::info())
     }

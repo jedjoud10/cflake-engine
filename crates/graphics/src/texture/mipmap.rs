@@ -2,7 +2,8 @@ use std::num::NonZeroU8;
 
 use super::{Region, Texture};
 use crate::{
-    Extent, TextureAsTargetError, TextureSamplerError, RenderTarget, Texel,
+    Extent, RenderTarget, Texel, TextureAsTargetError,
+    TextureSamplerError,
 };
 
 // This enum tells the texture how exactly it should create it's mipmaps

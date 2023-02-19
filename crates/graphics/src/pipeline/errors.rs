@@ -7,7 +7,7 @@ pub enum PipelineInitializationError {
 
     #[error("Stencil layout is enabled, although stencil configuration is missing")]
     MissingStencilConfig,
-    
+
     #[error("Depth layout is enabled, although depth configuration is missing")]
     MissingDepthConfig,
 }

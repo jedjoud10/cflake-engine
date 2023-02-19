@@ -1,14 +1,16 @@
-mod mesh;
 pub mod attributes;
-pub mod settings;
 mod errors;
+mod mesh;
+pub mod settings;
 mod triangles;
 mod utils;
 mod vertices;
-pub use attributes::{MeshAttribute, EnabledMeshAttributes, AttributeBuffer};
-pub use triangles::*;
 pub use self::utils::*;
-pub use vertices::*;
+pub use attributes::{
+    AttributeBuffer, EnabledMeshAttributes, MeshAttribute,
+};
+pub use errors::*;
 pub use mesh::*;
 pub use settings::*;
-pub use errors::*;
+pub use triangles::*;
+pub use vertices::*;

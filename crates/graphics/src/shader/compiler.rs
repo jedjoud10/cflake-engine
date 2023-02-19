@@ -1,6 +1,7 @@
 use crate::{
-    FunctionModule, GpuPodRelaxed, Graphics, ShaderCompilationError,
-    ShaderModule, VertexModule, ShaderPreprocessorError, ReflectedModule,
+    FunctionModule, GpuPodRelaxed, Graphics, ReflectedModule,
+    ShaderCompilationError, ShaderModule, ShaderPreprocessorError,
+    VertexModule,
 };
 use ahash::AHashMap;
 use assets::Assets;
@@ -11,7 +12,7 @@ use naga::{
 use snailquote::unescape;
 use std::{
     any::TypeId, borrow::Cow, ffi::CStr, marker::PhantomData,
-    path::PathBuf, time::Instant, sync::Arc,
+    path::PathBuf, sync::Arc, time::Instant,
 };
 
 // Type alias for snippets and constants
@@ -88,12 +89,19 @@ impl<M: ShaderModule> Compiler<M> {
 
         // Compile GLSL to Naga then to Wgpu
         let time = std::time::Instant::now();
-        let (raw, naga) = compile(M::stage(), graphics, assets, &snippets, source)?;
-        log::debug!("Compiled shader {file_name} sucessfully! Took {}ms", time.elapsed().as_millis());
+        let (raw, naga) =
+            compile(M::stage(), graphics, assets, &snippets, source)?;
+        log::debug!(
+            "Compiled shader {file_name} sucessfully! Took {}ms",
+            time.elapsed().as_millis()
+        );
 
         let time = std::time::Instant::now();
         let reflected = super::reflect_module::<M>(&naga);
-        log::debug!("Reflected shader {file_name} sucessfully! Took {}ms", time.elapsed().as_millis());
+        log::debug!(
+            "Reflected shader {file_name} sucessfully! Took {}ms",
+            time.elapsed().as_millis()
+        );
 
         Ok(Compiled {
             raw: Arc::new(raw),
@@ -113,17 +121,18 @@ fn compile(
     assets: &Assets,
     snippets: &Snippets,
     source: String,
-) -> Result<(wgpu::ShaderModule, naga::Module), ShaderCompilationError> {
+) -> Result<(wgpu::ShaderModule, naga::Module), ShaderCompilationError>
+{
     // Pre-process the shader source to get expand of shader directives
     let source = preprocess(source, assets, snippets)
         .map_err(ShaderCompilationError::PreprocessorError)?;
-    
-    // [GLSL -> Naga] parsing options 
+
+    // [GLSL -> Naga] parsing options
     let options = naga::front::glsl::Options {
         stage,
         defines: naga::FastHashMap::default(),
     };
-    
+
     // Compile the GLSL shader source to a Naga module
     let mut parser = naga::front::glsl::Parser::default();
     let module = parser
@@ -131,12 +140,17 @@ fn compile(
         .map_err(ShaderCompilationError::ParserError)?;
 
     // Compile the Wgpu shader
-    Ok((graphics.device().create_shader_module(
-        wgpu::ShaderModuleDescriptor {
-            label: None,
-            source: wgpu::ShaderSource::Naga(Cow::Owned(module.clone())),
-        }
-    ), module))
+    Ok((
+        graphics.device().create_shader_module(
+            wgpu::ShaderModuleDescriptor {
+                label: None,
+                source: wgpu::ShaderSource::Naga(Cow::Owned(
+                    module.clone(),
+                )),
+            },
+        ),
+        module,
+    ))
 }
 
 // Pre-process the GLSL shader source and include files / snippets
@@ -165,9 +179,11 @@ fn preprocess(
         let mut characters = path.chars();
         let first_angle_bracket_valid = characters.next()? == '<';
         let second_angle_bracket_valid = characters.last()? == '>';
-        
+
         // If we have the brackets, check if extension is valid?
-        let extension_valid = if first_angle_bracket_valid && second_angle_bracket_valid {
+        let extension_valid = if first_angle_bracket_valid
+            && second_angle_bracket_valid
+        {
             // Check if extension is "glsl"
             let path = &path.trim()[1..];
             let path = &path[..(path.len() - 1)];
@@ -179,7 +195,11 @@ fn preprocess(
         };
 
         // Combine all tests
-        Some(extension_valid && first_angle_bracket_valid && second_angle_bracket_valid)
+        Some(
+            extension_valid
+                && first_angle_bracket_valid
+                && second_angle_bracket_valid,
+        )
     }
 
     // Load a function module and write it to the output line
@@ -208,9 +228,9 @@ fn preprocess(
         snippets: &AHashMap<String, String>,
     ) -> Result<String, ShaderPreprocessorError> {
         let name = unescape(name).unwrap();
-        let snippet = snippets
-            .get(&name)
-            .ok_or(ShaderPreprocessorError::SnippetNotDefined(name))?;
+        let snippet = snippets.get(&name).ok_or(
+            ShaderPreprocessorError::SnippetNotDefined(name),
+        )?;
         Ok(snippet.clone())
     }
 
@@ -219,60 +239,63 @@ fn preprocess(
         source: String,
         assets: &Assets,
         snippets: &Snippets,
-        depth: u32
+        depth: u32,
     ) -> Result<String, ShaderPreprocessorError> {
         // If we're too deep, assume that the user caused a cyclic reference, and return an error
         if depth > 20 {
-            return Err(ShaderPreprocessorError::IncludeCyclicReference);
+            return Err(
+                ShaderPreprocessorError::IncludeCyclicReference,
+            );
         }
 
-        let mut lines = source.lines().map(str::to_string).collect::<Vec<String>>();
+        let mut lines = source
+            .lines()
+            .map(str::to_string)
+            .collect::<Vec<String>>();
         for line in lines.iter_mut() {
             let trimmed = line.trim();
 
             // Handle the include directive and replace the line
             if trimmed.starts_with("#include") {
                 // Convert the line into "target"
-                let target = convert_to_target(line)
-                    .ok_or(ShaderPreprocessorError::InvalidIncludeDirective)?;
+                let target = convert_to_target(line).ok_or(
+                    ShaderPreprocessorError::InvalidIncludeDirective,
+                )?;
 
                 // Either load it as an asset or a snippet
-                let output = if resembles_asset_path(&target).unwrap_or_default() {
-                    log::debug!("Loading shader function module '{target}'");
+                let output = if resembles_asset_path(&target)
+                    .unwrap_or_default()
+                {
+                    log::debug!(
+                        "Loading shader function module '{target}'"
+                    );
                     load_function_module(&target, assets)
                 } else {
-                    log::debug!("Loading shader source snippet '{target}'");
+                    log::debug!(
+                        "Loading shader source snippet '{target}'"
+                    );
                     load_snippet(&target, snippets)
                 }?;
 
                 // Recusrive function calls itself
-                let output = include(
-                    output,
-                    assets,
-                    snippets,
-                    depth + 1
-                )?;
-                
+                let output =
+                    include(output, assets, snippets, depth + 1)?;
+
                 *line = output;
-            } 
+            }
         }
         Ok(lines.join("\n"))
     }
 
     // Cleanse shader input
     let source = cleanse(source);
-    
+
     // Call this once (it's recusrive so we chilling)
-    include(
-        source,
-        assets,
-        snippets,
-        0
-    )
+    include(source, assets, snippets, 0)
 }
 
 // This is a compiled shader module that we can use in multiple pipelines
-// We can clone this shader module since we can share 
+// We can clone this shader module since we can share
 pub struct Compiled<M: ShaderModule> {
     // Wgpu related data
     raw: Arc<wgpu::ShaderModule>,
@@ -323,6 +346,10 @@ impl<M: ShaderModule> Compiled<M> {
 
     // Get the entry point for the compiled shader
     pub fn entry_point(&self) -> Option<&str> {
-        self.naga.entry_points.iter().next().map(|n| n.name.as_str())
+        self.naga
+            .entry_points
+            .iter()
+            .next()
+            .map(|n| n.name.as_str())
     }
 }

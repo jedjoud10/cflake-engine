@@ -1,14 +1,32 @@
-use crate::{Material, Surface, Mesh, attributes::{RawPosition, Position}, MeshAttribute, EnabledMeshAttributes, Renderer, DefaultMaterialResources};
+use crate::{
+    attributes::{Position, RawPosition},
+    DefaultMaterialResources, EnabledMeshAttributes, Material, Mesh,
+    MeshAttribute, Renderer, Surface,
+};
 use ecs::Scene;
-use graphics::{Graphics, GraphicsPipeline, XYZ, SwapchainFormat, ActiveRenderPass, Vertex, ActiveGraphicsPipeline};
-use utils::{Storage, Time, Handle};
+use graphics::{
+    ActiveGraphicsPipeline, ActiveRenderPass, Graphics,
+    GraphicsPipeline, SwapchainFormat, Vertex, XYZ,
+};
+use utils::{Handle, Storage, Time};
 use world::World;
 
 // Set a mesh binding vertex buffer to the current render pass
-pub(crate) fn set_vertex_buffer_attribute<'a, 'r, A: MeshAttribute>(
+pub(crate) fn set_vertex_buffer_attribute<
+    'a,
+    'r,
+    A: MeshAttribute,
+>(
     supported: EnabledMeshAttributes,
     mesh: &'r Mesh,
-    active: &mut ActiveGraphicsPipeline<'a, 'r, '_, '_, SwapchainFormat, ()>
+    active: &mut ActiveGraphicsPipeline<
+        'a,
+        'r,
+        '_,
+        '_,
+        SwapchainFormat,
+        (),
+    >,
 ) {
     // If the material doesn't support the attribute, no need to set it
     if !supported.contains(A::ATTRIBUTE) {
@@ -22,12 +40,10 @@ pub(crate) fn set_vertex_buffer_attribute<'a, 'r, A: MeshAttribute>(
 }
 
 // Returns true if the pipeline should render the given entity, false otherwise
-fn filter<M: Material>(
-    mesh: &Mesh,
-    renderer: &Renderer,
-) -> bool {
+fn filter<M: Material>(mesh: &Mesh, renderer: &Renderer) -> bool {
     let enabled = renderer.visible;
-    let attribute = mesh.vertices().enabled().contains(M::attributes());
+    let attribute =
+        mesh.vertices().enabled().contains(M::attributes());
     let validity = mesh.vertices().len().is_some();
     enabled && validity && attribute
 }
@@ -38,9 +54,14 @@ pub(super) fn render_surfaces<'r, M: Material>(
     meshes: &'r Storage<Mesh>,
     pipeline: &'r GraphicsPipeline<SwapchainFormat, ()>,
     default: &'r DefaultMaterialResources,
-    render_pass: &mut ActiveRenderPass<'r, '_, '_, SwapchainFormat, ()>
+    render_pass: &mut ActiveRenderPass<
+        'r,
+        '_,
+        '_,
+        SwapchainFormat,
+        (),
+    >,
 ) {
-
     // Get a rasterizer for the current render pass by binding a pipeline
     let mut active = render_pass.bind_pipeline(pipeline);
     let supported = M::attributes();
@@ -52,7 +73,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
     // Set the global material bindings
     active.set_bind_group(0, |group| {
         M::set_global_bindings(&mut resources, default, group);
-    });  
+    });
 
     // Get all the entities that contain a visible surface
     let scene = world.get::<Scene>().unwrap();
@@ -65,7 +86,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
     for (surface, renderer) in query {
         // Get the mesh and material that correspond to this surface
         let mesh = meshes.get(&surface.mesh);
-        
+
         // Check if we changed material instances
         if last != Some(surface.material.clone()) {
             last = Some(surface.material.clone());
@@ -77,9 +98,9 @@ pub(super) fn render_surfaces<'r, M: Material>(
                     material,
                     &mut resources,
                     default,
-                    group
+                    group,
                 );
-            })            
+            })
         }
 
         // Skip rendering if not needed
@@ -93,22 +114,38 @@ pub(super) fn render_surfaces<'r, M: Material>(
                 &renderer,
                 &mut resources,
                 default,
-                group
+                group,
             );
         });
 
         // Bind the mesh's vertex buffers
         use crate::attributes::*;
-        set_vertex_buffer_attribute::<Position>(supported, mesh, &mut active);
-        set_vertex_buffer_attribute::<Normal>(supported, mesh, &mut active);
-        set_vertex_buffer_attribute::<Tangent>(supported, mesh, &mut active);
-        set_vertex_buffer_attribute::<TexCoord>(supported, mesh, &mut active);
+        set_vertex_buffer_attribute::<Position>(
+            supported,
+            mesh,
+            &mut active,
+        );
+        set_vertex_buffer_attribute::<Normal>(
+            supported,
+            mesh,
+            &mut active,
+        );
+        set_vertex_buffer_attribute::<Tangent>(
+            supported,
+            mesh,
+            &mut active,
+        );
+        set_vertex_buffer_attribute::<TexCoord>(
+            supported,
+            mesh,
+            &mut active,
+        );
 
         // Set the index buffer
         let triangles = mesh.triangles();
         active.set_index_buffer(triangles.buffer());
 
-        // Draw the triangulated mesh 
+        // Draw the triangulated mesh
         let indices = 0..(triangles.buffer().len() as u32);
         active.draw_indexed(indices, 0..1);
     }

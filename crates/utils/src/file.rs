@@ -72,17 +72,17 @@ impl FileManager {
     fn local_path_to_global(
         &self,
         path: impl AsRef<Path>,
-        variant: FileType
+        variant: FileType,
     ) -> PathBuf {
         let mut base = match variant {
             FileType::Config => self.dirs.config_dir.clone(),
             FileType::Data => self.dirs.state_dir.clone(),
             FileType::Cache => self.dirs.cache_dir.clone(),
-            FileType::Log => { 
+            FileType::Log => {
                 let mut base = self.dirs.cache_dir.clone();
                 base.push("/log/");
                 base
-            },
+            }
         };
 
         base.push(path);
@@ -154,7 +154,10 @@ impl FileManager {
     }
 
     // Deserialize a file using Serde
-    pub fn deserialize_from_file<'a, T: serde::Deserialize<'a> + 'static>(
+    pub fn deserialize_from_file<
+        'a,
+        T: serde::Deserialize<'a> + 'static,
+    >(
         &'a mut self,
         path: impl AsRef<Path>,
         variant: FileType,

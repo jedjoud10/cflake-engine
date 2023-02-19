@@ -176,7 +176,7 @@ impl App {
     fn init_logger(&mut self) {
         use fern::colors::Color;
         self.world.insert(utils::ThreadPool::default());
-        
+
         // Color config for the line color
         let colors_line = fern::colors::ColoredLevelConfig::new()
             .error(Color::Red)
@@ -186,7 +186,8 @@ impl App {
             .trace(Color::BrightBlack);
 
         // Color config for the level
-        let colors_level = colors_line.clone()
+        let colors_level = colors_line
+            .clone()
             .info(Color::Green)
             .debug(Color::Blue)
             .warn(Color::Yellow)

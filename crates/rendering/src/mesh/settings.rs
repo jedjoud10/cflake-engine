@@ -1,5 +1,5 @@
-use graphics::{BufferUsage, BufferMode};
 use crate::attributes::TexCoord;
+use graphics::{BufferMode, BufferUsage};
 
 // Mesh settings that we will use whenever we import a new mesh from a file
 #[derive(Debug, Clone, Copy, PartialEq)]

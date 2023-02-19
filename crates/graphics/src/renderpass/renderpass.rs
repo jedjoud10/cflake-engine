@@ -1,10 +1,11 @@
 use wgpu::CommandEncoder;
 
 use crate::{
-    ColorAttachments, ColorLayout,
-    DepthStencilAttachment, DepthStencilLayout, Graphics,
-    GraphicsPipeline, RenderPassBeginError,
-    RenderPassInitializationError, Vertex, VertexBuffer, ColorOperations, DepthStencilOperations, ActiveRenderPass,
+    ActiveRenderPass, ColorAttachments, ColorLayout, ColorOperations,
+    DepthStencilAttachment, DepthStencilLayout,
+    DepthStencilOperations, Graphics, GraphicsPipeline,
+    RenderPassBeginError, RenderPassInitializationError, Vertex,
+    VertexBuffer,
 };
 use std::marker::PhantomData;
 
@@ -30,8 +31,10 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPass<C, DS> {
     ) -> Result<Self, RenderPassInitializationError> {
         Ok(Self {
             color_layout_operations: color_operations.operations(),
-            depth_operations: depth_stencil_operations.depth_operations(),
-            stencil_operations: depth_stencil_operations.stencil_operations(),
+            depth_operations: depth_stencil_operations
+                .depth_operations(),
+            stencil_operations: depth_stencil_operations
+                .stencil_operations(),
             _phantom_color: PhantomData,
             _phantom_depth_stencil: PhantomData,
             graphics: graphics.clone(),
@@ -45,45 +48,54 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPass<C, DS> {
         encoder: &'r mut CommandEncoder,
         color_attachments: impl ColorAttachments<'r, C>,
         depth_stencil_attachment: impl DepthStencilAttachment<'r, DS>,
-    ) -> Result<ActiveRenderPass<C, DS>, RenderPassBeginError>{
+    ) -> Result<ActiveRenderPass<C, DS>, RenderPassBeginError> {
         // Fetch the appropriate texture views to use
         let color_views = color_attachments.views();
         let depth_stencil_view = depth_stencil_attachment.view();
-        
+
         // Extract operations that we used in the RenderPass' setup
         let color_ops = &self.color_layout_operations;
         let depth_ops = self.depth_operations;
         let stencil_ops = self.stencil_operations;
 
         // Get a vector that contains all RenderPassColorAttachments
-        let color_attachments = color_views.iter().zip(color_ops.iter()).map(|(view, ops)| {
-            Some(wgpu::RenderPassColorAttachment {
-                view,
-                resolve_target: None,
-                ops: *ops,
+        let color_attachments = color_views
+            .iter()
+            .zip(color_ops.iter())
+            .map(|(view, ops)| {
+                Some(wgpu::RenderPassColorAttachment {
+                    view,
+                    resolve_target: None,
+                    ops: *ops,
+                })
             })
-        }).collect::<Vec<_>>();
+            .collect::<Vec<_>>();
 
         // Get the Option that contains the RenderPassDepthStencilAttachment
-        let depth_stencil_attachment = depth_stencil_view.map(|view| {
-            wgpu::RenderPassDepthStencilAttachment {
-                view,
-                depth_ops,
-                stencil_ops,
-            }
-        });
+        let depth_stencil_attachment =
+            depth_stencil_view.map(|view| {
+                wgpu::RenderPassDepthStencilAttachment {
+                    view,
+                    depth_ops,
+                    stencil_ops,
+                }
+            });
 
         // Being the Wgpu render pass
-        let pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor::<'r, '_> {
-            label: None,
-            color_attachments: &color_attachments,
-            depth_stencil_attachment,
-        });
+        let pass =
+            encoder.begin_render_pass(&wgpu::RenderPassDescriptor::<
+                'r,
+                '_,
+            > {
+                label: None,
+                color_attachments: &color_attachments,
+                depth_stencil_attachment,
+            });
 
-        Ok(ActiveRenderPass { 
+        Ok(ActiveRenderPass {
             render_pass: pass,
             _phantom: PhantomData,
-            _phantom2: PhantomData
+            _phantom2: PhantomData,
         })
     }
 }

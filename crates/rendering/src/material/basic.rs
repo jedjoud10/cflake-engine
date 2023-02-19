@@ -1,13 +1,18 @@
 use std::any::TypeId;
 
-use crate::{Material, EnabledMeshAttributes, TimingUniform, CameraUniform, SceneUniform, CameraBuffer, TimingBuffer, SceneBuffer, DefaultMaterialResources, AlbedoMap, NormalMap, Renderer};
+use crate::{
+    AlbedoMap, CameraBuffer, CameraUniform, DefaultMaterialResources,
+    EnabledMeshAttributes, Material, NormalMap, Renderer,
+    SceneBuffer, SceneUniform, TimingBuffer, TimingUniform,
+};
 use ahash::AHashMap;
 use assets::Assets;
 use graphics::{
-    Compiled, FragmentModule, Graphics, Normalized,
-    Texture2D, VertexModule, Compiler, Sampler, Shader, RGBA, UniformBuffer, BindGroup,
+    BindGroup, Compiled, Compiler, FragmentModule, Graphics,
+    Normalized, Sampler, Shader, Texture2D, UniformBuffer,
+    VertexModule, RGBA,
 };
-use utils::{Storage, Handle};
+use utils::{Handle, Storage};
 
 // A basic forward rendering material that will read from a diffuse map and normal map
 // This does not implement the PBR workflow, and it's only used for simplicity at first
@@ -18,13 +23,13 @@ pub struct Basic {
 
     // Simple Basic Parameters
     pub roughness: f32,
-    pub tint: vek::Rgb<f32>, 
+    pub tint: vek::Rgb<f32>,
 }
 
-impl Material for Basic {    
+impl Material for Basic {
     type Resources<'w> = (
         world::Read<'w, Storage<AlbedoMap>>,
-        world::Read<'w, Storage<NormalMap>>
+        world::Read<'w, Storage<NormalMap>>,
     );
 
     // Load the vertex shader for this material
@@ -50,9 +55,7 @@ impl Material for Basic {
     }
 
     // Fetch the texture storages
-    fn fetch<'w>(
-        world: &'w world::World
-    ) -> Self::Resources<'w> {
+    fn fetch<'w>(world: &'w world::World) -> Self::Resources<'w> {
         let albedo_maps = world.get::<Storage<AlbedoMap>>().unwrap();
         let normal_maps = world.get::<Storage<NormalMap>>().unwrap();
         (albedo_maps, normal_maps)
@@ -103,6 +106,5 @@ impl Material for Basic {
         default: &DefaultMaterialResources,
         group: &BindGroup<'w>,
     ) {
-        
     }
 }

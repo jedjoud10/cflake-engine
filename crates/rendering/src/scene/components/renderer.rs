@@ -14,12 +14,9 @@ pub struct Renderer {
 impl Renderer {
     // Create a new visible entity renderer with a default matrix
     pub fn new(visible: bool, matrix: vek::Mat4<f32>) -> Self {
-        Self {
-            matrix, visible,
-        }
+        Self { matrix, visible }
     }
 }
-
 
 impl Default for Renderer {
     fn default() -> Self {

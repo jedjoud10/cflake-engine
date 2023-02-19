@@ -1,8 +1,12 @@
-use vek::{Vec3, Vec2, Vec4};
-use wgpu::TextureFormat;
+use crate::{
+    AnyElement, ChannelsType, Depth, DepthElement, ElementType,
+    GpuPodRelaxed, Normalized, Stencil, VectorChannels, BGRA, R, RG,
+    RGBA,
+};
 use half::f16;
-use std::{mem::size_of, any::Any};
-use crate::{GpuPodRelaxed, ElementType, ChannelsType, VectorChannels, R, RG, RGBA, AnyElement, BGRA, Normalized, DepthElement, Depth, Stencil};
+use std::{any::Any, mem::size_of};
+use vek::{Vec2, Vec3, Vec4};
+use wgpu::TextureFormat;
 
 // This trait defines the layout for a single texel that will be stored within textures
 // The texel format of each texture is specified at compile time
@@ -36,7 +40,7 @@ pub trait Texel: 'static {
             bytes_per_channel: Self::bytes_per_channel(),
             element: Self::element(),
             channels: Self::channels(),
-            format: Self::format()
+            format: Self::format(),
         }
     }
 }
@@ -100,7 +104,8 @@ macro_rules! internal_impl_texel {
                 crate::pick_texture_format(
                     Self::element(),
                     Self::channels(),
-                ).unwrap()
+                )
+                .unwrap()
             }
         }
     };
@@ -110,28 +115,70 @@ macro_rules! impl_color_texels {
     ($vec:ident, $channels:expr, $storagevec: ident) => {
         internal_impl_texel!($vec, u8, $channels, $storagevec);
         internal_impl_texel!($vec, i8, $channels, $storagevec);
-        internal_impl_texel!($vec, Normalized<u8>, $channels, $storagevec);
-        internal_impl_texel!($vec, Normalized<i8>, $channels, $storagevec);
+        internal_impl_texel!(
+            $vec,
+            Normalized<u8>,
+            $channels,
+            $storagevec
+        );
+        internal_impl_texel!(
+            $vec,
+            Normalized<i8>,
+            $channels,
+            $storagevec
+        );
 
         internal_impl_texel!($vec, u16, $channels, $storagevec);
         internal_impl_texel!($vec, i16, $channels, $storagevec);
-        internal_impl_texel!($vec, Normalized<u16>, $channels, $storagevec);
-        internal_impl_texel!($vec, Normalized<i16>, $channels, $storagevec);
+        internal_impl_texel!(
+            $vec,
+            Normalized<u16>,
+            $channels,
+            $storagevec
+        );
+        internal_impl_texel!(
+            $vec,
+            Normalized<i16>,
+            $channels,
+            $storagevec
+        );
 
         internal_impl_texel!($vec, u32, $channels, $storagevec);
         internal_impl_texel!($vec, i32, $channels, $storagevec);
 
         internal_impl_texel!($vec, f16, $channels, $storagevec);
         internal_impl_texel!($vec, f32, $channels, $storagevec);
-    };  
+    };
 }
 
 type Scalar<T> = T;
-impl_color_texels!(R, ChannelsType::Vector(VectorChannels::One), Scalar);
-impl_color_texels!(RG, ChannelsType::Vector(VectorChannels::Two), Vec2);
-impl_color_texels!(RGBA, ChannelsType::Vector(VectorChannels::Four), Vec4);
-internal_impl_texel!(BGRA, Normalized<u8>, ChannelsType::Vector(VectorChannels::FourSwizzled), Vec4);
+impl_color_texels!(
+    R,
+    ChannelsType::Vector(VectorChannels::One),
+    Scalar
+);
+impl_color_texels!(
+    RG,
+    ChannelsType::Vector(VectorChannels::Two),
+    Vec2
+);
+impl_color_texels!(
+    RGBA,
+    ChannelsType::Vector(VectorChannels::Four),
+    Vec4
+);
+internal_impl_texel!(
+    BGRA,
+    Normalized<u8>,
+    ChannelsType::Vector(VectorChannels::FourSwizzled),
+    Vec4
+);
 
-internal_impl_texel!(Depth, Normalized<u16>, ChannelsType::Depth, Scalar);
+internal_impl_texel!(
+    Depth,
+    Normalized<u16>,
+    ChannelsType::Depth,
+    Scalar
+);
 internal_impl_texel!(Depth, f32, ChannelsType::Depth, Scalar);
 internal_impl_texel!(Stencil, u8, ChannelsType::Stencil, Scalar);

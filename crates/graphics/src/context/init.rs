@@ -1,6 +1,6 @@
 use crate::{
-    FrameRateLimit, Graphics, InternalGraphics, Window,
-    WindowSettings, StagingPool,
+    FrameRateLimit, Graphics, InternalGraphics, StagingPool, Window,
+    WindowSettings,
 };
 
 use dashmap::DashMap;
@@ -29,9 +29,8 @@ pub(crate) unsafe fn init_context_and_window(
     });
 
     // Create the rendering surface
-    let surface = unsafe {
-        instance.create_surface(&window.as_ref()).unwrap()
-    };
+    let surface =
+        unsafe { instance.create_surface(&window.as_ref()).unwrap() };
 
     // Pick an appropriate adapter
     let adapter = pollster::block_on(instance.request_adapter(

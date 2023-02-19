@@ -1,12 +1,14 @@
-use std::{marker::PhantomData, mem::ManuallyDrop, time::Instant, sync::Arc};
+use std::{
+    marker::PhantomData, mem::ManuallyDrop, sync::Arc, time::Instant,
+};
 
 use assets::Asset;
 use naga::Sampling;
 use smallvec::SmallVec;
 
 use crate::{
-    Graphics, ImageTexel, Texel, Texture, TextureAssetLoadError,
-    TextureMode, TextureUsage, SamplerSettings, TextureMipMaps, Sampler,
+    Graphics, ImageTexel, Sampler, SamplerSettings, Texel, Texture,
+    TextureAssetLoadError, TextureMipMaps, TextureMode, TextureUsage,
 };
 
 // A 2D texture that contains multiple texels that have their own channels
@@ -122,7 +124,7 @@ impl<T: ImageTexel> Asset for Texture2D<T> {
             TextureMode::Dynamic,
             TextureUsage::Placeholder,
             SamplerSettings::default(),
-            TextureMipMaps::Automatic
+            TextureMipMaps::Automatic,
         )
         .map_err(TextureAssetLoadError::Initialization)
     }

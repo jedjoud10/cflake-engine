@@ -1,6 +1,8 @@
-use std::marker::PhantomData;
+use crate::{
+    Buffer, GpuPodRelaxed, StagingPool, StagingView, StagingViewWrite,
+};
 use parking_lot::MappedMutexGuard;
-use crate::{GpuPodRelaxed, Buffer, StagingPool, StagingView, StagingViewWrite};
+use std::marker::PhantomData;
 
 // Allows  us to read the buffer as if it were an immutably slice
 pub struct BufferView<'a, T: GpuPodRelaxed, const TYPE: u32> {
@@ -16,13 +18,17 @@ impl<'a, T: GpuPodRelaxed, const TYPE: u32> BufferView<'a, T, TYPE> {
     }
 }
 
-impl<'a, T: GpuPodRelaxed, const TYPE: u32> AsRef<[T]> for BufferView<'a, T, TYPE> {
+impl<'a, T: GpuPodRelaxed, const TYPE: u32> AsRef<[T]>
+    for BufferView<'a, T, TYPE>
+{
     fn as_ref(&self) -> &[T] {
         self.as_slice()
     }
 }
 
-impl<'a, T: GpuPodRelaxed, const TYPE: u32> std::ops::Deref for BufferView<'a, T, TYPE> {
+impl<'a, T: GpuPodRelaxed, const TYPE: u32> std::ops::Deref
+    for BufferView<'a, T, TYPE>
+{
     type Target = [T];
 
     fn deref(&self) -> &Self::Target {
@@ -37,24 +43,26 @@ pub enum BufferViewMut<'a, T: GpuPodRelaxed, const TYPE: u32> {
     Mapped {
         buffer: PhantomData<&'a Buffer<T, TYPE>>,
         data: StagingViewWrite<'a>,
-    }, 
+    },
 
     // Read the buffer's data to the CPU for reading/writing
-    // Used when the buffer is readable AND writable 
+    // Used when the buffer is readable AND writable
     Cloned {
         buffer: &'a mut Buffer<T, TYPE>,
         data: Vec<T>,
     },
 }
 
-impl<'a, T: GpuPodRelaxed, const TYPE: u32> BufferViewMut<'a, T, TYPE> {
+impl<'a, T: GpuPodRelaxed, const TYPE: u32>
+    BufferViewMut<'a, T, TYPE>
+{
     // Get an immutable slice that we can read from
     pub fn as_slice(&self) -> &[T] {
         match self {
             BufferViewMut::Mapped { data, .. } => {
                 let bytes = data.as_ref();
                 bytemuck::cast_slice(bytes)
-            },
+            }
             BufferViewMut::Cloned { data, .. } => &data,
         }
     }
@@ -65,33 +73,34 @@ impl<'a, T: GpuPodRelaxed, const TYPE: u32> BufferViewMut<'a, T, TYPE> {
             BufferViewMut::Mapped { data, .. } => {
                 let bytes = data.as_mut();
                 bytemuck::cast_slice_mut(bytes)
-            },
+            }
             BufferViewMut::Cloned { data, .. } => data,
         }
     }
 }
 
-impl<'a, T: GpuPodRelaxed, const TYPE: u32> AsRef<[T]> for BufferViewMut<'a, T, TYPE> {
+impl<'a, T: GpuPodRelaxed, const TYPE: u32> AsRef<[T]>
+    for BufferViewMut<'a, T, TYPE>
+{
     fn as_ref(&self) -> &[T] {
         self.as_slice()
     }
 }
 
-impl<'a, T: GpuPodRelaxed, const TYPE: u32> AsMut<[T]> for BufferViewMut<'a, T, TYPE> {
+impl<'a, T: GpuPodRelaxed, const TYPE: u32> AsMut<[T]>
+    for BufferViewMut<'a, T, TYPE>
+{
     fn as_mut(&mut self) -> &mut [T] {
         self.as_slice_mut()
     }
 }
 
-impl<'a, T: GpuPodRelaxed, const TYPE: u32> Drop for BufferViewMut<'a, T, TYPE> {
+impl<'a, T: GpuPodRelaxed, const TYPE: u32> Drop
+    for BufferViewMut<'a, T, TYPE>
+{
     fn drop(&mut self) {
         match self {
-            BufferViewMut::Cloned {
-                buffer,
-                data
-            } => {
-                
-            },
+            BufferViewMut::Cloned { buffer, data } => {}
             _ => {}
         }
     }

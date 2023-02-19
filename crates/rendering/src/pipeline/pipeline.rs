@@ -1,8 +1,19 @@
-use crate::{Material, ForwardRendererRenderPass, MeshAttribute, attributes::{TexCoord, Tangent, Normal, Position, MAX_MESH_VERTEX_ATTRIBUTES}, EnabledMeshAttributes, Mesh, DefaultMaterialResources};
+use crate::{
+    attributes::{
+        Normal, Position, Tangent, TexCoord,
+        MAX_MESH_VERTEX_ATTRIBUTES,
+    },
+    DefaultMaterialResources, EnabledMeshAttributes,
+    ForwardRendererRenderPass, Material, Mesh, MeshAttribute,
+};
 use assets::Assets;
-use graphics::{Graphics, GraphicsPipeline, RenderPass, Shader, VertexConfig, PipelineInitializationError, VertexInput, SwapchainFormat, ActiveRenderPass};
-use utils::Storage;
+use graphics::{
+    ActiveRenderPass, Graphics, GraphicsPipeline,
+    PipelineInitializationError, RenderPass, Shader, SwapchainFormat,
+    VertexConfig, VertexInput,
+};
 use std::marker::PhantomData;
+use utils::Storage;
 use world::World;
 
 // A material ID is used to make sure the user has initialized the proper material pipeline
@@ -32,13 +43,14 @@ impl<M: Material> Pipeline<M> {
         // Load the vertex and fragment modules, and create the shader
         let vertex = M::vertex(graphics, assets);
         let fragment = M::fragment(graphics, assets);
-        let shader = Shader::new(&vertex,& fragment);
-        
+        let shader = Shader::new(&vertex, &fragment);
+
         // Fetch the correct vertex config based on the material
-        let vertex_config = crate::attributes::enabled_to_vertex_config(
-            M::attributes()
-        );
-        
+        let vertex_config =
+            crate::attributes::enabled_to_vertex_config(
+                M::attributes(),
+            );
+
         // Create the graphics pipeline
         let pipeline = GraphicsPipeline::new(
             graphics,
@@ -46,7 +58,7 @@ impl<M: Material> Pipeline<M> {
             M::stencil_config(),
             vertex_config,
             M::primitive_config(),
-            &shader
+            &shader,
         )?;
 
         Ok(Self {
@@ -73,14 +85,23 @@ pub trait DynamicPipeline {
     fn graphical(&self) -> &GraphicsPipeline<SwapchainFormat, ()>;
 
     // Get the inner graphics pipeline mutably
-    fn graphical_mut(&mut self) -> &mut GraphicsPipeline<SwapchainFormat, ()>;
+    fn graphical_mut(
+        &mut self,
+    ) -> &mut GraphicsPipeline<SwapchainFormat, ()>;
 
     // Render all surfaces that use the material of this pipeline
-    fn render<'r>(&'r self,
+    fn render<'r>(
+        &'r self,
         world: &'r World,
         meshes: &'r Storage<Mesh>,
         default: &'r DefaultMaterialResources,
-        render_pass: &mut ActiveRenderPass<'r, '_, '_, SwapchainFormat, ()>
+        render_pass: &mut ActiveRenderPass<
+            'r,
+            '_,
+            '_,
+            SwapchainFormat,
+            (),
+        >,
     );
 }
 
@@ -89,11 +110,31 @@ impl<M: Material> DynamicPipeline for Pipeline<M> {
         &self.pipeline
     }
 
-    fn graphical_mut(&mut self) -> &mut GraphicsPipeline<SwapchainFormat, ()> {
+    fn graphical_mut(
+        &mut self,
+    ) -> &mut GraphicsPipeline<SwapchainFormat, ()> {
         &mut self.pipeline
     }
 
-    fn render<'r>(&'r self, world: &'r World, meshes: &'r Storage<Mesh>,  default: &'r DefaultMaterialResources, render_pass: &mut ActiveRenderPass<'r, '_, '_, SwapchainFormat, ()>) {
-        super::render_surfaces::<M>(world, meshes, &self.pipeline, default, render_pass);
+    fn render<'r>(
+        &'r self,
+        world: &'r World,
+        meshes: &'r Storage<Mesh>,
+        default: &'r DefaultMaterialResources,
+        render_pass: &mut ActiveRenderPass<
+            'r,
+            '_,
+            '_,
+            SwapchainFormat,
+            (),
+        >,
+    ) {
+        super::render_surfaces::<M>(
+            world,
+            meshes,
+            &self.pipeline,
+            default,
+            render_pass,
+        );
     }
 }

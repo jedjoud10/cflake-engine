@@ -28,7 +28,7 @@ impl<T: Base> AnyElement for T {
         }
         BaseType::SixtyFour => {
             ElementType::SixtyFour { signed: T::SIGNED }
-        },
+        }
         BaseType::FloatSixteen => ElementType::FloatSixteen,
         BaseType::FloatThirtyTwo => ElementType::FloatThirtyTwo,
         BaseType::FloatSixtyFour => ElementType::FloatSixtyFour,
@@ -51,7 +51,7 @@ pub enum ElementType {
     FloatThirtyTwo,
 
     // ONLY SUPPORTED FOR VERTEX FORMATS
-    FloatSixtyFour
+    FloatSixtyFour,
 }
 
 // This trait represents bases that can be normalized

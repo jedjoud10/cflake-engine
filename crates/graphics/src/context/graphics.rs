@@ -1,14 +1,15 @@
 use dashmap::DashMap;
 use naga::{front::glsl::Parser, valid::Validator};
 use parking_lot::Mutex;
-use utils::Storage;
 use std::sync::Arc;
+use utils::Storage;
 use wgpu::{
-    util::StagingBelt, Device, Queue, Surface, SurfaceCapabilities,
-    SurfaceConfiguration, TextureView, Sampler, Adapter, CommandEncoder,
+    util::StagingBelt, Adapter, CommandEncoder, Device, Queue,
+    Sampler, Surface, SurfaceCapabilities, SurfaceConfiguration,
+    TextureView,
 };
 
-use crate::{SamplerWrap, SamplerSettings, StagingPool};
+use crate::{SamplerSettings, SamplerWrap, StagingPool};
 
 // Internnal graphics context that will eventually be wrapped within an Arc
 pub(crate) struct InternalGraphics {
@@ -20,7 +21,7 @@ pub(crate) struct InternalGraphics {
     // Buffer staging pool
     pub(crate) staging: StagingPool,
 
-    // Cached texture samplers 
+    // Cached texture samplers
     pub(crate) samplers: DashMap<SamplerSettings, Arc<Sampler>>,
 }
 
@@ -54,9 +55,12 @@ impl Graphics {
     pub fn acquire(&self) -> CommandEncoder {
         self.device().create_command_encoder(&Default::default())
     }
-    
+
     // Submit one or multiple command lists and return a fence
-    pub fn submit(&self, encoders: impl IntoIterator<Item = CommandEncoder>) {
+    pub fn submit(
+        &self,
+        encoders: impl IntoIterator<Item = CommandEncoder>,
+    ) {
         let finished = encoders.into_iter().map(|x| x.finish());
         self.queue().submit(finished);
     }

@@ -1,5 +1,5 @@
 use bytemuck::{Pod, Zeroable};
-use graphics::{UniformBuffer, Texture2D, RGBA, Normalized};
+use graphics::{Normalized, Texture2D, UniformBuffer, RGBA};
 
 // Camera data that will be stored in a UBO
 #[derive(Clone, Copy, PartialEq, Pod, Zeroable, Default)]
@@ -16,7 +16,6 @@ pub struct CameraUniform {
     */
 }
 
-
 // Timing data that will be stored in a UBO
 #[derive(Clone, Copy, PartialEq, Pod, Zeroable, Default)]
 #[repr(C)]
@@ -25,7 +24,6 @@ pub struct TimingUniform {
     pub delta_time: f32,
     pub time_since_startup: f32,
 }
-
 
 // Scene data that will be stored in a UBO
 #[derive(Clone, Copy, PartialEq, Pod, Zeroable, Default)]

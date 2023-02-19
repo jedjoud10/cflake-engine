@@ -1,8 +1,8 @@
-use half::f16;
 use crate::GpuPod;
+use half::f16;
 
 // Base underlying type used for TextureFormat and VertexFormat
-pub trait Base: 
+pub trait Base:
     Clone + Copy + Send + Sync + 'static + GpuPod
 {
     const TYPE: BaseType;
@@ -43,10 +43,10 @@ pub enum BaseType {
 
     // ONLY SUPPORTED FOR VERTEX FORMATS
     SixtyFour,
-    
+
     FloatSixteen,
     FloatThirtyTwo,
 
     // ONLY SUPPORTED FOR VERTEX FORMATS
-    FloatSixtyFour
+    FloatSixtyFour,
 }

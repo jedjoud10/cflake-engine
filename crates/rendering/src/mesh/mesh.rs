@@ -1,9 +1,16 @@
-use assets::Asset;
-use graphics::{TriangleBuffer, Graphics, BufferMode, BufferUsage, Triangle, VertexBuffer, Vertex};
-use obj::TexturedVertex;
 use super::attributes::*;
-use crate::{AttributeBuffer, EnabledMeshAttributes, MeshImportSettings, MeshImportError, MeshInitializationError, MeshAttribute, VerticesRef, VerticesMut, TrianglesRef, TrianglesMut};
-use crate::mesh::attributes::{TexCoord, Tangent, Normal, Position};
+use crate::mesh::attributes::{Normal, Position, Tangent, TexCoord};
+use crate::{
+    AttributeBuffer, EnabledMeshAttributes, MeshAttribute,
+    MeshImportError, MeshImportSettings, MeshInitializationError,
+    TrianglesMut, TrianglesRef, VerticesMut, VerticesRef,
+};
+use assets::Asset;
+use graphics::{
+    BufferMode, BufferUsage, Graphics, Triangle, TriangleBuffer,
+    Vertex, VertexBuffer,
+};
+use obj::TexturedVertex;
 use std::cell::{Cell, RefCell};
 use std::mem::MaybeUninit;
 
@@ -30,7 +37,7 @@ pub struct Mesh {
 impl Mesh {
     // Create a new mesh from the mesh attributes, context, and buffer settings
     // TODO: Support multiple modes and usages PER attribute
-    
+
     // FIXME: Crashes when trying to create triangles buffer for the default engine sphere
     // Has to do with the high triangle, maybe usize overflow?
     pub fn from_slices(
@@ -43,12 +50,37 @@ impl Mesh {
         tex_coords: Option<&[RawTexCoord]>,
         triangles: &[Triangle<u32>],
     ) -> Result<Self, MeshInitializationError> {
-        let positions = positions.map(|slice| AttributeBuffer::<Position>::from_slice(graphics, &slice, mode, usage).unwrap());
-        let normals = normals.map(|slice| AttributeBuffer::<Normal>::from_slice(graphics, &slice, mode, usage).unwrap());
-        let tangents = tangents.map(|slice| AttributeBuffer::<Tangent>::from_slice(graphics, &slice, mode, usage).unwrap());
-        let tex_coords = tex_coords.map(|slice| AttributeBuffer::<TexCoord>::from_slice(graphics, &slice, mode, usage).unwrap());
-        let triangles = TriangleBuffer::from_slice(graphics, &triangles, mode, usage).unwrap();
-        Self::from_buffers(positions, normals, tangents, tex_coords, triangles)
+        let positions = positions.map(|slice| {
+            AttributeBuffer::<Position>::from_slice(
+                graphics, &slice, mode, usage,
+            )
+            .unwrap()
+        });
+        let normals = normals.map(|slice| {
+            AttributeBuffer::<Normal>::from_slice(
+                graphics, &slice, mode, usage,
+            )
+            .unwrap()
+        });
+        let tangents = tangents.map(|slice| {
+            AttributeBuffer::<Tangent>::from_slice(
+                graphics, &slice, mode, usage,
+            )
+            .unwrap()
+        });
+        let tex_coords = tex_coords.map(|slice| {
+            AttributeBuffer::<TexCoord>::from_slice(
+                graphics, &slice, mode, usage,
+            )
+            .unwrap()
+        });
+        let triangles = TriangleBuffer::from_slice(
+            graphics, &triangles, mode, usage,
+        )
+        .unwrap();
+        Self::from_buffers(
+            positions, normals, tangents, tex_coords, triangles,
+        )
     }
 
     // Create a new mesh from the attribute buffers
@@ -70,12 +102,17 @@ impl Mesh {
         };
 
         // "Set"s a buffer, basically insert it if it's Some and removing it if it's None
-        pub fn set<T: MeshAttribute>(vertices: &mut VerticesMut, buffer: Option<AttributeBuffer<T>>) {
+        pub fn set<T: MeshAttribute>(
+            vertices: &mut VerticesMut,
+            buffer: Option<AttributeBuffer<T>>,
+        ) {
             match buffer {
                 Some(x) => vertices.insert::<T>(x),
-                None => { vertices.remove::<T>(); },
+                None => {
+                    vertices.remove::<T>();
+                }
             };
-        } 
+        }
 
         // Set the vertex buffers (including the position buffer)
         let mut vertices = mesh.vertices_mut();
@@ -176,20 +213,23 @@ impl Asset for Mesh {
 
         // Load the .Obj mesh
         let name = data.path().file_name().unwrap().to_str().unwrap();
-        let parsed = obj::load_obj::<TexturedVertex, &[u8], u32>(data.bytes())
-            .map_err(MeshImportError::ObjError)?;
+        let parsed =
+            obj::load_obj::<TexturedVertex, &[u8], u32>(data.bytes())
+                .map_err(MeshImportError::ObjError)?;
         log::debug!("Parsed mesh from file '{}', vertex count: {}, index count: {}", name, parsed.vertices.len(), parsed.indices.len());
 
         // Create temporary slicetors containing the vertex attributes
         let capacity = parsed.vertices.len();
-        let mut positions = Vec::<RawPosition>::with_capacity(capacity);
+        let mut positions =
+            Vec::<RawPosition>::with_capacity(capacity);
         let mut normals = settings
             .use_normals
             .then(|| Vec::<RawNormal>::with_capacity(capacity));
         let mut tex_coords = settings
             .use_tex_coords
             .then(|| Vec::<RawTexCoord>::with_capacity(capacity));
-        let mut triangles = Vec::<[u32; 3]>::with_capacity(parsed.indices.len() / 3);
+        let mut triangles =
+            Vec::<[u32; 3]>::with_capacity(parsed.indices.len() / 3);
         let indices = parsed.indices;
         use vek::{Vec2, Vec3};
 
@@ -230,9 +270,12 @@ impl Asset for Mesh {
         });
 
         // Remap the attributes into a slices and options
-        let mut normals = normals.as_mut().map(|vec| vec.as_mut_slice());
-        let mut tangents = tangents.as_mut().map(|vec| vec.as_mut_slice());
-        let mut tex_coords = tex_coords.as_mut().map(|vec| vec.as_mut_slice());
+        let mut normals =
+            normals.as_mut().map(|vec| vec.as_mut_slice());
+        let mut tangents =
+            tangents.as_mut().map(|vec| vec.as_mut_slice());
+        let mut tex_coords =
+            tex_coords.as_mut().map(|vec| vec.as_mut_slice());
 
         // Apply the mesh settings to the attributes
         let mut positions = Some(positions.as_mut_slice());
@@ -245,11 +288,25 @@ impl Asset for Mesh {
             &mut triangles,
         );
 
-        log::debug!("Loaded {} position vertices", positions.as_ref().unwrap().len());
-        log::debug!("Loaded {} normal vertices", normals.as_ref().map(|tc| tc.len()).unwrap_or_default());
-        log::debug!("Loaded {} tangent vertices", tangents.as_ref().map(|tc| tc.len()).unwrap_or_default());
-        log::debug!("Loaded {} texture coordinate vertices", tex_coords.as_ref().map(|tc| tc.len()).unwrap_or_default());
-
+        log::debug!(
+            "Loaded {} position vertices",
+            positions.as_ref().unwrap().len()
+        );
+        log::debug!(
+            "Loaded {} normal vertices",
+            normals.as_ref().map(|tc| tc.len()).unwrap_or_default()
+        );
+        log::debug!(
+            "Loaded {} tangent vertices",
+            tangents.as_ref().map(|tc| tc.len()).unwrap_or_default()
+        );
+        log::debug!(
+            "Loaded {} texture coordinate vertices",
+            tex_coords
+                .as_ref()
+                .map(|tc| tc.len())
+                .unwrap_or_default()
+        );
 
         // Generate the mesh and it's corresponding data
         Mesh::from_slices(
@@ -260,7 +317,8 @@ impl Asset for Mesh {
             normals.as_deref(),
             tangents.as_deref(),
             tex_coords.as_deref(),
-            &triangles
-        ).map_err(MeshImportError::Initialization)
+            &triangles,
+        )
+        .map_err(MeshImportError::Initialization)
     }
 }

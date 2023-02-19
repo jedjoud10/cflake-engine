@@ -27,7 +27,7 @@ fn init(world: &mut World) {
             value: 50,
         },
         "config.json",
-        FileType::Config
+        FileType::Config,
     )
     .unwrap();
 }

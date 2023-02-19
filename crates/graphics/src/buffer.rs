@@ -1,8 +1,8 @@
 mod buffer;
 mod errors;
-mod settings;
 mod mapping;
-pub use mapping::*;
+mod settings;
 pub use buffer::*;
 pub use errors::*;
+pub use mapping::*;
 pub use settings::*;

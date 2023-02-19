@@ -1,12 +1,16 @@
 use std::{mem::transmute, num::NonZeroU32, sync::Arc};
 
 use smallvec::SmallVec;
-use wgpu::{TextureDescriptor, TextureViewDescriptor, SamplerDescriptor};
+use wgpu::{
+    SamplerDescriptor, TextureDescriptor, TextureViewDescriptor,
+};
 
 use crate::{
-    Extent, Graphics, MipLevelMut, MipLevelRef, Region,
-    Texel, TextureInitializationError, TextureMipLayerError,
-    TextureMode, TextureSamplerError, TextureUsage, SamplerSettings, SamplerWrap, TextureMipMaps, Sampler, RenderTarget, TextureAsTargetError,
+    Extent, Graphics, MipLevelMut, MipLevelRef, Region, RenderTarget,
+    Sampler, SamplerSettings, SamplerWrap, Texel,
+    TextureAsTargetError, TextureInitializationError,
+    TextureMipLayerError, TextureMipMaps, TextureMode,
+    TextureSamplerError, TextureUsage,
 };
 
 // Possibly predefined texel data
@@ -34,8 +38,10 @@ pub trait Texture: Sized {
     ) -> Result<Self, TextureInitializationError> {
         let format = <Self::T as Texel>::format();
         let channels = <Self::T as Texel>::channels();
-        let bytes_per_channel = <Self::T as Texel>::bytes_per_channel();
-        let bytes_per_texel = bytes_per_channel as u64 * channels.count() as u64;
+        let bytes_per_channel =
+            <Self::T as Texel>::bytes_per_channel();
+        let bytes_per_texel =
+            bytes_per_channel as u64 * channels.count() as u64;
 
         // Make sure the number of texels matches up with the dimensions
         if let Some(texels) = texels {
@@ -52,7 +58,8 @@ pub trait Texture: Sized {
         }
 
         // Get the image type using the dimensionality
-        let dimension = <<Self::Region as Region>::E as Extent>::dimensionality();
+        let dimension =
+            <<Self::Region as Region>::E as Extent>::dimensionality();
         let extent = wgpu::Extent3d {
             width: dimensions.width(),
             height: dimensions.height(),
@@ -61,18 +68,27 @@ pub trait Texture: Sized {
 
         // Get optimal texture usage
         let usages = wgpu::TextureUsages::TEXTURE_BINDING
-            | wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::RENDER_ATTACHMENT;
+            | wgpu::TextureUsages::COPY_DST
+            | wgpu::TextureUsages::RENDER_ATTACHMENT;
 
         // Check if the format is valid for the given usage flag
-        let texture_format_features = graphics.adapter().get_texture_format_features(format);
+        let texture_format_features =
+            graphics.adapter().get_texture_format_features(format);
         if !texture_format_features.allowed_usages.contains(usages) {
-            return Err(TextureInitializationError::FormatNotSupported(format))
+            return Err(
+                TextureInitializationError::FormatNotSupported(
+                    format,
+                ),
+            );
         }
 
         // Don't use mipmapping with NPOT textures
-        if let TextureMipMaps::Disabled = mipmaps {} else {
+        if let TextureMipMaps::Disabled = mipmaps {
+        } else {
             if !dimensions.is_power_of_two() {
-                return Err(TextureInitializationError::MipMapGenerationNPOT);
+                return Err(
+                    TextureInitializationError::MipMapGenerationNPOT,
+                );
             }
 
             panic!();
@@ -93,10 +109,16 @@ pub trait Texture: Sized {
         // Create the raw WGPU texture
         let texture = graphics.device().create_texture(&descriptor);
         let name = utils::pretty_type_name::<Self::T>();
-        log::debug!("Creating texture, {dimension:?}, <{name}>, {}x{}x{}", dimensions.width(), dimensions.height(), dimensions.depth());
+        log::debug!(
+            "Creating texture, {dimension:?}, <{name}>, {}x{}x{}",
+            dimensions.width(),
+            dimensions.height(),
+            dimensions.depth()
+        );
 
         // Fetch a new sampler for the given sampling settings
-        let sampler = crate::get_or_insert_sampler(graphics, sampling); 
+        let sampler =
+            crate::get_or_insert_sampler(graphics, sampling);
 
         // Convert the texels to bytes
         let bytes = texels.map(|texels| {
@@ -107,16 +129,23 @@ pub trait Texture: Sized {
 
         // Get color texture aspect for the texture view and ImageCopyTexture
         let aspect = match <Self::T as Texel>::channels() {
-            crate::ChannelsType::Vector(_) => wgpu::TextureAspect::All,
-            crate::ChannelsType::Depth => wgpu::TextureAspect::DepthOnly,
-            crate::ChannelsType::Stencil => wgpu::TextureAspect::StencilOnly,
+            crate::ChannelsType::Vector(_) => {
+                wgpu::TextureAspect::All
+            }
+            crate::ChannelsType::Depth => {
+                wgpu::TextureAspect::DepthOnly
+            }
+            crate::ChannelsType::Stencil => {
+                wgpu::TextureAspect::StencilOnly
+            }
         };
 
         // Fill the texture with the appropriate data
         if let Some(bytes) = bytes {
             // Bytes per row of texel data
-            let bytes_per_row =
-                NonZeroU32::new(bytes_per_texel as u32 * dimensions.width());
+            let bytes_per_row = NonZeroU32::new(
+                bytes_per_texel as u32 * dimensions.width(),
+            );
 
             // FIXME: Does this work with 3D textures?
             let image_data_layout = wgpu::ImageDataLayout {
@@ -135,7 +164,7 @@ pub trait Texture: Sized {
             // TODO: DO this shit but with mip mapped textures too
             graphics.queue().write_texture(
                 image_copy_texture,
-                bytes,            
+                bytes,
                 image_data_layout,
                 extent,
             );
@@ -145,9 +174,15 @@ pub trait Texture: Sized {
         let view_descriptor = TextureViewDescriptor {
             format: Some(format),
             dimension: Some(match dimension {
-                wgpu::TextureDimension::D1 => wgpu::TextureViewDimension::D1,
-                wgpu::TextureDimension::D2 => wgpu::TextureViewDimension::D2,
-                wgpu::TextureDimension::D3 => wgpu::TextureViewDimension::D3,
+                wgpu::TextureDimension::D1 => {
+                    wgpu::TextureViewDimension::D1
+                }
+                wgpu::TextureDimension::D2 => {
+                    wgpu::TextureViewDimension::D2
+                }
+                wgpu::TextureDimension::D3 => {
+                    wgpu::TextureViewDimension::D3
+                }
             }),
             aspect,
             ..Default::default()
@@ -156,12 +191,12 @@ pub trait Texture: Sized {
         // Create an texture view of the whole texture
         // TODO: Create MULTIPLE views for the texture
         let view = texture.create_view(&view_descriptor);
-        let views =
-            SmallVec::from_buf([view]);
+        let views = SmallVec::from_buf([view]);
 
         Ok(unsafe {
             Self::from_raw_parts(
-                graphics, texture, views, sampler, sampling, dimensions, usage, mode,
+                graphics, texture, views, sampler, sampling,
+                dimensions, usage, mode,
             )
         })
     }
@@ -219,7 +254,9 @@ pub trait Texture: Sized {
     }
 
     // Use the whole texture as a render target
-    fn as_render_target(&mut self) -> Result<RenderTarget<Self::T>, TextureAsTargetError> {
+    fn as_render_target(
+        &mut self,
+    ) -> Result<RenderTarget<Self::T>, TextureAsTargetError> {
         todo!()
     }
 

@@ -37,7 +37,10 @@ impl World {
             self.0.insert(id, RefCell::new(Box::new(resource)));
         if returned.is_some() {
             let name = pretty_type_name::pretty_type_name::<R>();
-            log::warn!("Replaced resource {} since it was already present", name);
+            log::warn!(
+                "Replaced resource {} since it was already present",
+                name
+            );
         }
     }
 

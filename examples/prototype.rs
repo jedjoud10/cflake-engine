@@ -31,9 +31,12 @@ fn init(world: &mut World) {
         tint: vek::Rgb::default(),
     });
 
-    let mesh = assets.load::<Mesh>(("engine/meshes/cube.obj", &*graphics)).unwrap();
+    let mesh = assets
+        .load::<Mesh>(("engine/meshes/cube.obj", &*graphics))
+        .unwrap();
     let vertices = mesh.vertices();
-    let positions = vertices.attribute::<attributes::Position>().unwrap();
+    let positions =
+        vertices.attribute::<attributes::Position>().unwrap();
     let mesh = meshes.insert(mesh);
 
     let surface = Surface::new(mesh, material, id);
