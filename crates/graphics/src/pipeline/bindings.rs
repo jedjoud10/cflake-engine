@@ -1,6 +1,7 @@
 use crate::{GpuPod, Shader, Texture, UniformBuffer};
 use std::{marker::PhantomData, sync::Arc};
 
+#[derive(Debug)]
 pub struct BindEntry<'a> {
     pub(crate) binding: u32,
     pub(crate) resource: wgpu::BindingResource<'a>,
@@ -15,35 +16,44 @@ pub struct BindGroup<'a> {
 }
 
 impl<'a> BindGroup<'a> {
+    // Get the entry layout for a specific resource in this bind group
+    fn find_entry_layout(&mut self, name: &str) -> &crate::BindEntryLayout {
+        let groups = &self.shader.vertex().reflected().groups;
+        let (_, group) =
+            groups.iter().enumerate().find(|(i, _)| *i == self.index as usize).unwrap();
+        group.entries.iter().find(|x| x.name == name).unwrap()
+    }
+
     // Set a shader texture that can be sampled and red from
     pub fn set_sampler<T: Texture>(
         &'a mut self,
         name: &str,
         texture: &'a T,
     ) {
-        let groups = &self.shader.vertex().reflected().groups;
-        let group =
-            groups.iter().find(|x| x.index == self.index).unwrap();
-        let entry =
-            group.entries.iter().find(|x| x.name == name).unwrap();
-        log::debug!(
-            "Found entry {:?} for group {}",
-            entry,
-            self.index
-        );
+        // Get the binding entry layout for the given sampler
+        let entry = self.find_entry_layout(name);
 
+        /*
+        match entry.binding_type {
+            crate::BindingType::Sampler { sampler_binding } => todo!(),
+        }
+
+        // Get binding, id, view and resource needed for bind entry
         let binding = entry.binding;
         let id = texture.view().global_id();
         let view = texture.view();
         let resource = wgpu::BindingResource::TextureView(view);
 
+        // Make a valid bind entry and locally store it 
         let entry = BindEntry {
             binding,
             resource,
             id,
         };
 
+        // Save the bind entry for later
         self.entries.push(entry);
+        */
     }
 
     // Set a uniform buffer that we can read from within shaders
@@ -52,28 +62,33 @@ impl<'a> BindGroup<'a> {
         name: &str,
         buffer: &'a UniformBuffer<T>,
     ) {
-        let groups = &self.shader.vertex().reflected().groups;
-        let group =
-            groups.iter().find(|x| x.index == self.index).unwrap();
-        let entry =
-            group.entries.iter().find(|x| x.name == name).unwrap();
-        log::debug!(
-            "Found entry {:?} for group {}",
-            entry,
-            self.index
-        );
+        // Get the binding entry layout for the given buffer
+        let entry = self.find_entry_layout(name);
 
+        // Make sure the layout is the same size as buffer stride
+        match entry.binding_type {
+            crate::BindingType::Buffer { size, .. } => {
+                if (size as usize) != buffer.stride() {
+                    panic!()
+                }
+            },
+            _ => panic!()
+        }
+
+        // Get values needed for the bind entry
         let binding = entry.binding;
         let id = buffer.raw().global_id();
         let buffer_binding = buffer.raw().as_entire_buffer_binding();
         let resource = wgpu::BindingResource::Buffer(buffer_binding);
 
+        // Make a valid bind entry and locally store it
         let entry = BindEntry {
             binding,
             resource,
             id,
         };
 
+        // Save the bind entry for later
         self.entries.push(entry);
     }
 }

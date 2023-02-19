@@ -43,7 +43,7 @@ impl<M: Material> Pipeline<M> {
         // Load the vertex and fragment modules, and create the shader
         let vertex = M::vertex(graphics, assets);
         let fragment = M::fragment(graphics, assets);
-        let shader = Shader::new(&vertex, &fragment);
+        let shader = Shader::new(graphics, &vertex, &fragment);
 
         // Fetch the correct vertex config based on the material
         let vertex_config =

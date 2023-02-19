@@ -123,67 +123,6 @@ fn shader_to_pipeline_layout(
     shader: &Shader,
 ) -> &wgpu::PipelineLayout {
     &shader.layout
-
-    /*
-    use naga::{TypeInner, ResourceBinding};
-
-    let naga = shader.vertex().reflected();
-
-
-
-
-    // Merge each binding entry by group (itertools)
-    let bind_group_layout_entries: Vec<Vec<wgpu::BindGroupLayoutEntry>> = binding_entries.group_by(|value| {
-        value.group
-    }).into_iter().map(|(group, values)| {
-        // Convert each entry from this group to a WGPU BindGroupLayoutEntry
-        values.map(|value| {
-            wgpu::BindGroupLayoutEntry {
-                binding: value.binding,
-                visibility: value.visiblity,
-                ty: match value.binding_type {
-                    BindingType::Buffer { buffer_binding, .. } => wgpu::BindingType::Buffer {
-                        ty: buffer_binding,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    BindingType::Sampler { sampler_binding } => wgpu::BindingType::Sampler(sampler_binding),
-                    BindingType::Texture { sample_type, view_dimension } => wgpu::BindingType::Texture {
-                        sample_type,
-                        view_dimension,
-                        multisampled: false
-                    },
-                },
-                count: None,
-            }
-        }).collect()
-    }).collect();
-
-    // Create the BindGroupLayoutDescriptor for the BindgGroupEntries
-    let bind_group_layout_descriptors = bind_group_layout_entries.iter().map(|entries| {
-        wgpu::BindGroupLayoutDescriptor {
-            label: None,
-            entries: &entries,
-        }
-    }).collect::<Vec<_>>();
-    dbg!(&bind_group_layout_descriptors);
-
-    // TODO: Validate the bindings and groups
-
-    // Create the bind group layouts from the corresponding descriptors
-    let bind_group_layouts = bind_group_layout_descriptors.iter().map(|desc| {
-        graphics.device().create_bind_group_layout(desc)
-    }).collect::<Vec<_>>();
-    let bind_group_layouts = bind_group_layouts
-        .iter()
-        .collect::<Vec<_>>();
-
-    Ok(graphics.device().create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-        label: None,
-        bind_group_layouts: &[],
-        push_constant_ranges: &[],
-    }))
-    */
 }
 
 // Convert the given vertex config to the vertex attributes used by the vertex buffer layout

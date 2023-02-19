@@ -68,7 +68,7 @@ impl Material for Basic {
         group: &mut BindGroup<'w>,
     ) {
         // Set the required common buffers
-        group.set_buffer("", default.camera_buffer);
+        group.set_buffer("camera", default.camera_buffer);
         //bindings.set_buffer(default.timing_buffer);
         //bindings.set_buffer(default.scene_buffer);
     }

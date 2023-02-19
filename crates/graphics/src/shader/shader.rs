@@ -1,6 +1,6 @@
 use crate::{
-    Compiled, ComputeModule, FragmentModule, ReflectedModule,
-    ReflectedShader, VertexModule,
+    Compiled, ComputeModule, FragmentModule, Graphics,
+    ReflectedModule, VertexModule, ReflectedShader,
 };
 use std::sync::Arc;
 
@@ -11,20 +11,30 @@ pub struct Shader {
     vertex: Compiled<VertexModule>,
     fragment: Compiled<FragmentModule>,
     pub(crate) layout: Arc<wgpu::PipelineLayout>,
+    pub(crate) reflected: Arc<ReflectedShader>,
 }
 
 impl Shader {
     // Create a new shader from the vertex and fragment modules
     pub fn new(
+        graphics: &Graphics,
         vertex: &Compiled<VertexModule>,
         fragment: &Compiled<FragmentModule>,
     ) -> Self {
+        // Convert the reflected module to a reflected shader
         let modules = &[vertex.reflected(), fragment.reflected()];
-        let reflected = super::merge_reflected_module(modules);
+        let shader = super::merge_reflected_modules_to_shader(modules);
+
+        // Convert the reflected shader to a layout
+        let layout = super::create_pipeline_layout_from_shader(
+            graphics, &shader,
+        );
+
         Self {
             vertex: vertex.clone(),
             fragment: fragment.clone(),
-            reflected: Arc::new(reflected),
+            layout: Arc::new(layout),
+            reflected: Arc::new(shader),
         }
     }
 
