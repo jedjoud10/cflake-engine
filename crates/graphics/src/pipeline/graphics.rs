@@ -4,7 +4,7 @@ use ahash::AHashMap;
 use itertools::Itertools;
 use wgpu::{PrimitiveState, VertexStepMode};
 
-use crate::{Shader, Graphics, PipelineInitializationError, DepthConfig, StencilConfig, BlendConfig, PrimitiveConfig, VertexConfig, DepthStencilLayout, ColorLayout, VertexInfo, VertexInputInfo, PipelineBindingsError};
+use crate::{Shader, Graphics, PipelineInitializationError, DepthConfig, StencilConfig, BlendConfig, PrimitiveConfig, VertexConfig, DepthStencilLayout, ColorLayout, VertexInfo, VertexInputInfo};
 
 // Wrapper around a WGPU render pipeline just to help me instantiate them
 pub struct GraphicsPipeline<C: ColorLayout, DS: DepthStencilLayout> {
@@ -58,13 +58,12 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
         let buffers = vertex_config_to_buffer_layout(&vertex_config, attributes);
         let targets = color_layout_to_color_target_state::<C>();
         let primitive = primitive_config_to_state(primitive_config);
-        let layout = shader_to_pipeline_layout(&graphics, &shader);
-        let layout = Some(layout.map_err(PipelineInitializationError::InvalidBindings)?);
+        let layout = shader_to_pipeline_layout(&shader);
 
         // Create the WGPU pipeline using the given configuration
         let pipeline = graphics.device().create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: None,
-            layout: layout.as_ref(),
+            layout: Some(layout),
             vertex: wgpu::VertexState {
                 module: shader.vertex().module(),
                 entry_point: shader.vertex().entry_point().unwrap(),
@@ -95,169 +94,16 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
     }
 }
 
-// Fetch the reflected shader data (from shaders modules) and merge it
-fn shader_to_pipeline_layout(graphics: &Graphics, shader: &Shader) -> Result<wgpu::PipelineLayout, PipelineBindingsError> {
-    use naga::{TypeInner, ResourceBinding};
-
-    #[derive(Debug)]
-    pub struct BindingEntry {
-        pub name: String,
-        pub binding: u32,
-        pub group: u32,
-        pub binding_type: BindingType,
-        pub visiblity: wgpu::ShaderStages,
-    }
-
-    #[derive(Debug)]
-    pub struct StructMember {
-        pub name: String,
-        pub offset: u32,
-        pub size: u32,
-        pub struct_type: StructMemberType,
-    }
-
-    #[derive(Debug)]
-    pub enum StructMemberType {
-        Scalar {
-            kind: naga::ScalarKind,
-        },
-
-        Vector {
-            size: naga::VectorSize,
-            kind: naga::ScalarKind,
-        },
-
-        Matrix {
-            columns: naga::VectorSize,
-            rows: naga::VectorSize,
-        },
-    }
-
-    #[derive(Debug)]
-    pub enum BindingType {
-        Buffer {
-            buffer_binding: wgpu::BufferBindingType,
-            members: Vec<StructMember>,
-            size: u32,
-        },
-        Sampler {
-            sampler_binding: wgpu::SamplerBindingType,
-        },
-        Texture {
-            sample_type: wgpu::TextureSampleType,
-            view_dimension: wgpu::TextureViewDimension,
-        },
-    }
-
-    let naga = shader.vertex().naga();
-    dbg!(naga);
-    let types = &naga.types;
-    let vars = &naga.global_variables;
+// Fetches the pipeline layout from the given shader
+fn shader_to_pipeline_layout(shader: &Shader) -> &wgpu::PipelineLayout {
+    &shader.layout
     
-    // Iterate over the global variables and get their binding entry
-    let binding_entries = vars.iter().filter_map(|(_, value)| {
-        value.binding.as_ref().map(|_| value)
-    }).map(|value| {
-        let ResourceBinding {
-            group,
-            binding,
-        } = *value.binding.as_ref().unwrap();
+    /*
+    use naga::{TypeInner, ResourceBinding};
+    
+    let naga = shader.vertex().reflected();
 
-        let typed = types.get_handle(value.ty).unwrap();
-        let type_inner = &typed.inner;
-        let space = value.space;
 
-        let binding_type = match &type_inner {
-            // Uniform Buffers
-            TypeInner::Struct { members, span: size } if space == naga::AddressSpace::Uniform => {
-                BindingType::Buffer {
-                    buffer_binding: wgpu::BufferBindingType::Uniform,
-                    members: members.iter().map(|member| {
-                        let type_inner = &types.get_handle(member.ty).unwrap().inner;
-                        let (size, struct_type) = match type_inner {
-                            TypeInner::Scalar { kind, width } => {
-                                (*width as u32, StructMemberType::Scalar { kind: *kind })
-                            },
-                            TypeInner::Vector { size, kind, width } => {
-                                (*width as u32 * match size {
-                                    naga::VectorSize::Bi => 2,
-                                    naga::VectorSize::Tri => 3,
-                                    naga::VectorSize::Quad => 4,
-                                }, StructMemberType::Vector { size: *size, kind: *kind })
-                            },
-                            TypeInner::Matrix { columns, rows, width } => {
-                                (*width as u32 * match columns {
-                                    naga::VectorSize::Bi => 2,
-                                    naga::VectorSize::Tri => 3,
-                                    naga::VectorSize::Quad => 4,
-                                } * match rows {
-                                    naga::VectorSize::Bi => 2,
-                                    naga::VectorSize::Tri => 3,
-                                    naga::VectorSize::Quad => 4,
-                                }, StructMemberType::Matrix { columns: *columns, rows: *rows })
-                            },
-                            _ => panic!()
-                        };
-                        
-                        StructMember {
-                            name: member.name.clone().unwrap(),
-                            offset: member.offset,
-                            size,
-                            struct_type,
-                        }
-                    }).collect(),
-                    size: *size,
-                }
-            },
-
-            // Uniform Textures
-            TypeInner::Image { dim, class, .. } if space == naga::AddressSpace::Handle => {
-                BindingType::Texture {
-                    sample_type: match class {
-                        naga::ImageClass::Sampled { kind, multi: false } => {
-                            match kind {
-                                naga::ScalarKind::Sint => wgpu::TextureSampleType::Sint,
-                                naga::ScalarKind::Uint => wgpu::TextureSampleType::Uint,
-                                naga::ScalarKind::Float => wgpu::TextureSampleType::Float { filterable: true },
-                                _ => panic!()
-                            }
-                        },
-                        naga::ImageClass::Depth { multi: false } => {
-                            wgpu::TextureSampleType::Depth
-                        },
-
-                        _ => panic!()
-                    },
-
-                    // Convert Naga image dimensions to WGPU texture dimensions
-                    view_dimension: match dim {
-                        naga::ImageDimension::D1 => wgpu::TextureViewDimension::D1,
-                        naga::ImageDimension::D2 => wgpu::TextureViewDimension::D2,
-                        naga::ImageDimension::D3 => wgpu::TextureViewDimension::D3,
-                        naga::ImageDimension::Cube => wgpu::TextureViewDimension::Cube,
-                    },
-                }
-            },
-
-            // Uniform Sampler
-            TypeInner::Sampler { comparison } if space == naga::AddressSpace::Handle => {
-                BindingType::Sampler {
-                    sampler_binding: if *comparison {
-                        wgpu::SamplerBindingType::Comparison
-                    } else { wgpu::SamplerBindingType::Filtering }
-                }
-            },
-            _ => todo!()
-        };
-
-        BindingEntry {
-            name: value.name.clone().unwrap(),
-            binding,
-            group,
-            binding_type,
-            visiblity: wgpu::ShaderStages::all(),
-        }
-    });
 
     
     // Merge each binding entry by group (itertools)
@@ -308,9 +154,10 @@ fn shader_to_pipeline_layout(graphics: &Graphics, shader: &Shader) -> Result<wgp
 
     Ok(graphics.device().create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: None,
-        bind_group_layouts: &bind_group_layouts,
+        bind_group_layouts: &[],
         push_constant_ranges: &[],
     }))
+    */
 }
 
 // Convert the given vertex config to the vertex attributes used by the vertex buffer layout

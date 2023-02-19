@@ -1,6 +1,6 @@
 use crate::{
     FunctionModule, GpuPodRelaxed, Graphics, ShaderCompilationError,
-    ShaderModule, VertexModule, ShaderPreprocessorError,
+    ShaderModule, VertexModule, ShaderPreprocessorError, ReflectedModule,
 };
 use ahash::AHashMap;
 use assets::Assets;
@@ -18,12 +18,9 @@ use std::{
 type Snippets = AHashMap<String, String>;
 type Constants = AHashMap<u32, Vec<u8>>;
 
-// This is a compiler that will take was GLSL code, convert it to SPIRV,
-// then to an appropriate Vulkan shader module.
+// This is a compiler that will take was GLSL code, convert it to Naga, then to WGPU
 // This compiler also allows us to define constants and snippets before compilation
 pub struct Compiler<M: ShaderModule> {
-    // Needed for shaderc and Vulkan pipeline module
-    stage: ShaderStage,
     source: String,
     file_name: String,
 
@@ -37,12 +34,10 @@ pub struct Compiler<M: ShaderModule> {
 impl<M: ShaderModule> Compiler<M> {
     // Create a compiler that will execute over the given module
     pub fn new(module: M) -> Self {
-        let stage = module.stage();
         let (file_name, source) = module.into_raw_parts();
         log::debug!("Created a new compiler for {}", file_name);
 
         Self {
-            stage,
             source,
             file_name,
             _phantom: PhantomData,
@@ -84,7 +79,6 @@ impl<M: ShaderModule> Compiler<M> {
         graphics: &Graphics,
     ) -> Result<Compiled<M>, ShaderCompilationError> {
         let Compiler {
-            stage,
             source,
             file_name,
             snippets,
@@ -94,16 +88,20 @@ impl<M: ShaderModule> Compiler<M> {
 
         // Compile GLSL to Naga then to Wgpu
         let time = std::time::Instant::now();
-        let (raw, naga) = compile(stage, graphics, assets, &snippets, source)?;
-        log::debug!("Compiled shader {} sucessfully! Took {} ms", file_name, time.elapsed().as_millis());
+        let (raw, naga) = compile(M::stage(), graphics, assets, &snippets, source)?;
+        log::debug!("Compiled shader {file_name} sucessfully! Took {}ms", time.elapsed().as_millis());
+
+        let time = std::time::Instant::now();
+        let reflected = super::reflect_module::<M>(&naga);
+        log::debug!("Reflected shader {file_name} sucessfully! Took {}ms", time.elapsed().as_millis());
 
         Ok(Compiled {
             raw: Arc::new(raw),
-            stage,
             file_name: file_name.into(),
             _phantom,
             graphics: graphics.clone(),
             naga: Arc::new(naga),
+            reflected: Arc::new(reflected),
         })
     }
 }
@@ -147,6 +145,12 @@ fn preprocess(
     assets: &Assets,
     snippets: &Snippets,
 ) -> Result<String, ShaderPreprocessorError> {
+    // Cleanse shader input by removing comments and commented code
+    // TODO: Implement this pleasee
+    fn cleanse(source: String) -> String {
+        source
+    }
+
     // Parse a possible include line and fetch the target file / snippet
     fn convert_to_target(line: &str) -> Option<String> {
         let line = line.trim();
@@ -234,8 +238,10 @@ fn preprocess(
 
                 // Either load it as an asset or a snippet
                 let output = if resembles_asset_path(&target).unwrap_or_default() {
+                    log::debug!("Loading shader function module '{target}'");
                     load_function_module(&target, assets)
                 } else {
+                    log::debug!("Loading shader source snippet '{target}'");
                     load_snippet(&target, snippets)
                 }?;
 
@@ -252,6 +258,9 @@ fn preprocess(
         }
         Ok(lines.join("\n"))
     }
+
+    // Cleanse shader input
+    let source = cleanse(source);
     
     // Call this once (it's recusrive so we chilling)
     include(
@@ -268,7 +277,7 @@ pub struct Compiled<M: ShaderModule> {
     // Wgpu related data
     raw: Arc<wgpu::ShaderModule>,
     naga: Arc<naga::Module>,
-    stage: ShaderStage,
+    reflected: Arc<ReflectedModule>,
 
     // Helpers
     file_name: Arc<str>,
@@ -283,7 +292,7 @@ impl<M: ShaderModule> Clone for Compiled<M> {
         Self {
             raw: self.raw.clone(),
             naga: self.naga.clone(),
-            stage: self.stage.clone(),
+            reflected: self.reflected.clone(),
             file_name: self.file_name.clone(),
             _phantom: self._phantom.clone(),
             graphics: self.graphics.clone(),
@@ -297,9 +306,9 @@ impl<M: ShaderModule> Compiled<M> {
         &self.raw
     }
 
-    // Get the shader module stage for this compiled shader
-    pub fn stage(&self) -> ShaderStage {
-        self.stage
+    // Get the reflected shader representation
+    pub fn reflected(&self) -> &ReflectedModule {
+        &self.reflected
     }
 
     // Get the shader module file name for this module

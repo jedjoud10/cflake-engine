@@ -36,6 +36,7 @@ impl<'a, 'r, 'c, 'ds, C: ColorLayout, DS: DepthStencilLayout>
             entries: Vec::new(),
             _phantom: PhantomData,
             shader: shader,
+            index: binding,
         };
 
         callback(&mut bind_group);

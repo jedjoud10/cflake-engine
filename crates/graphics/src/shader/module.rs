@@ -7,7 +7,7 @@ pub trait ShaderModule: Sized {
     // Get the main properties of the module
     fn file_name(&self) -> &str;
     fn source(&self) -> &str;
-    fn stage(&self) -> ShaderStage;
+    fn stage() -> ShaderStage;
 
     // Convert the module into it's source code and name
     fn into_raw_parts(self) -> (String, String);
@@ -81,7 +81,7 @@ macro_rules! impl_module_trait {
                 &self.source
             }
 
-            fn stage(&self) -> ShaderStage {
+            fn stage() -> ShaderStage {
                 $kind
             }
 
