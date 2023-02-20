@@ -4,6 +4,7 @@ use cflake_engine::prelude::*;
 fn main() {
     App::default()
         .set_app_name("cflake engine prototype example")
+        .set_user_assets_path(user_assets_path!("/examples/assets/"))
         .insert_init(init)
         .insert_update(update)
         .set_frame_rate_limit(FrameRateLimit::Unlimited)
@@ -13,7 +14,7 @@ fn main() {
 
 // Executed at the start
 fn init(world: &mut World) {
-    let assets = world.get::<Assets>().unwrap();
+    let mut assets = world.get_mut::<Assets>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
     let mut pipelines = world.get_mut::<Pipelines>().unwrap();
     let window = world.get::<Window>().unwrap();
@@ -24,14 +25,25 @@ fn init(world: &mut World) {
     window.window().set_cursor_visible(false);
     pipelines.register::<Basic>(&graphics, &assets).unwrap();
 
+    asset!(&mut assets, "assets/user/ignored/diffuse.jpg");
+    asset!(&mut assets, "assets/user/ignored/normal.jpg");
+
     let mut textures = world.get_mut::<Storage<AlbedoMap>>().unwrap();
     let texture = assets
         .load::<AlbedoMap>((
-            "engine/textures/test3.png",
+            "user/ignored/diffuse.jpg",
             &*graphics,
         ))
     .unwrap();
-    let handle = textures.insert(texture);
+    let diffuse = textures.insert(texture);
+
+    let texture = assets
+        .load::<NormalMap>((
+            "user/ignored/normal.jpg",
+            &*graphics,
+        ))
+    .unwrap();
+    let normal = textures.insert(texture);
 
     let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
     let mut materials = world.get_mut::<Storage<Basic>>().unwrap();
@@ -39,9 +51,9 @@ fn init(world: &mut World) {
     let id = pipelines.get::<Basic>().unwrap();
     
     let material = materials.insert(Basic {
-        albedo_map: Some(handle),
-        normal_map: None,
-        roughness: 0.0,
+        albedo_map: Some(diffuse),
+        normal_map: Some(normal),
+        bumpiness: 0.0,
         tint: vek::Rgb::default(),
     });
 

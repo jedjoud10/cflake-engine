@@ -62,7 +62,6 @@ pub struct SamplerSettings {
 
 // This sampler will be passed to shader groups to allow us
 // to read from textures on the GPU
-// TODO: Maybe split this into it's own struct? / Make it less coupled with texture
 pub struct Sampler<'a, T: Texel> {
     pub(crate) sampler: &'a wgpu::Sampler,
     pub(crate) _phantom: PhantomData<&'a T>,
@@ -71,7 +70,7 @@ pub struct Sampler<'a, T: Texel> {
 
 impl<'a, T: Texel> Sampler<'a, T> {
     // Get internally used raw sampler
-    pub fn sampler(&self) -> &'a wgpu::Sampler {
+    pub fn raw(&self) -> &'a wgpu::Sampler {
         &self.sampler
     }
 

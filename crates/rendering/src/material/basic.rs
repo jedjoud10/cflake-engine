@@ -10,7 +10,7 @@ use assets::Assets;
 use graphics::{
     BindGroup, Compiled, Compiler, FragmentModule, Graphics,
     Normalized, Sampler, Shader, Texture2D, UniformBuffer,
-    VertexModule, RGBA,
+    VertexModule, RGBA, Texture,
 };
 use utils::{Handle, Storage};
 
@@ -22,7 +22,7 @@ pub struct Basic {
     pub normal_map: Option<Handle<NormalMap>>,
 
     // Simple Basic Parameters
-    pub roughness: f32,
+    pub bumpiness: f32,
     pub tint: vek::Rgb<f32>,
 }
 
@@ -97,9 +97,9 @@ impl Material for Basic {
 
         // Set the material textures
         group.set_texture("albedo_map", albedo_map).unwrap();
-        group.set_sampler("albedo_map_sampler", albedo_map).unwrap();
-        //group.set_texture("normal_map", normal_map).unwrap();
-        //group.set_sampler("normal_map_sampler", normal_map).unwrap();
+        group.set_sampler("albedo_map_sampler", albedo_map.sampler()).unwrap();
+        group.set_texture("normal_map", normal_map).unwrap();
+        group.set_sampler("normal_map_sampler", normal_map.sampler()).unwrap();
         
         // Fill the material UBO with the specified fields automatically
         /*

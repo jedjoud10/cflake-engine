@@ -1,5 +1,5 @@
 use thiserror::Error;
-use crate::{GpuPod, Shader, Texture, UniformBuffer, ReflectedShader};
+use crate::{GpuPod, Shader, Texture, UniformBuffer, ReflectedShader, Sampler, Texel};
 use std::{marker::PhantomData, sync::Arc};
 
 #[derive(Debug, Error)]
@@ -55,6 +55,7 @@ impl<'a> BindGroup<'a> {
         })
     }
 
+    // Set a texture that can be read / sampler with the help of a sampler
     pub fn set_texture<'s, T: Texture>(
         &mut self,
         name: &'s str,
@@ -78,12 +79,13 @@ impl<'a> BindGroup<'a> {
         Ok(())
     }
 
-    pub fn set_sampler<'s, T: Texture>(
+    // Set the texture sampler so we can sample textures within the shader
+    pub fn set_sampler<'s, T: Texel>(
         &mut self,
         name: &'s str,
-        texture: &'a T,
+        sampler: Sampler<'a, T>,
     ) -> Result<(), BindError<'s>> {
-        // Get the binding entry layout for the given texture
+        // Get the binding entry layout for the given sampler
         let entry = Self::find_entry_layout(
             self.index,
             &self.reflected,
@@ -91,9 +93,8 @@ impl<'a> BindGroup<'a> {
         )?;
 
         // Get values needed for the bind entry
-        let id = texture.raw().global_id();
-        let sampler = texture.sampler();
-        let sampler = sampler.sampler();
+        let id = sampler.raw().global_id();
+        let sampler = sampler.raw();
         let resource = wgpu::BindingResource::Sampler(sampler);
 
         // Save the bind entry for later
