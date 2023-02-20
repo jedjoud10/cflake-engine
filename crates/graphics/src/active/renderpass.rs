@@ -30,6 +30,22 @@ impl<'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         pipeline: &'r GraphicsPipeline<C, DS>,
     ) -> ActiveGraphicsPipeline<'a, 'r, 't, C, DS> {
         self.commands.push(RenderCommand::BindPipeline(&pipeline));
+
+        let cache = &self.graphics.0.cached;
+        let bind_group = cache
+            .bind_groups
+            .get(&Vec::new())
+            .unwrap();
+
+        // Bind the empty bind groups for bind group layouts
+        // that have been hopped over during reflection
+        for (index, bind_group_layout) in pipeline.shader().reflected.bind_group_layouts.iter().enumerate() {
+            if bind_group_layout.is_none() {
+                self.commands.push(RenderCommand::SetBindGroup(index as u32, bind_group.clone()))
+            }
+        }
+
+
         ActiveGraphicsPipeline {
             _phantom: PhantomData,
             _phantom2: PhantomData,

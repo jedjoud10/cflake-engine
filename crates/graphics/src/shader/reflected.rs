@@ -4,26 +4,26 @@ use std::{
 
 use crate::{Graphics, ShaderModule};
 use ahash::{AHashMap, AHashSet};
+use arrayvec::ArrayVec;
 use itertools::Itertools;
 use naga::{AddressSpace, ResourceBinding, TypeInner};
 
 // This container stores all data related to reflected shaders
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ReflectedShader {
-    pub groups: Vec<BindGroupLayout>,
+    pub bind_group_layouts: [Option<BindGroupLayout>; 4],
 }
 
 // This container stores all data related to reflected modules
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ReflectedModule {
-    pub groups: Vec<BindGroupLayout>,
+    pub bind_group_layouts: [Option<BindGroupLayout>; 4],
 }
 
 // A bind group contains one or more bind entries
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BindGroupLayout {
-    pub index: u32,
-    pub entries: Vec<BindEntryLayout>,
+    pub bind_entry_layouts: Vec<BindEntryLayout>,
 }
 
 // A binding entry is a single binding resource from within a group
@@ -86,37 +86,48 @@ pub enum StructMemberType {
 pub fn merge_reflected_modules_to_shader(
     modules: &[&ReflectedModule],
 ) -> ReflectedShader {
-    #[derive(PartialEq, Eq, Hash, Clone, Copy)]
-    struct Grouping {
-        group: u32,
-        binding: u32,
-    }
-
-    let mut entries: AHashMap<Grouping, BindEntryLayout> =
-        AHashMap::new();
+    // Stores multiple entries per set (max number of sets = 4)
+    let mut groups: [Option<AHashMap<u32, BindEntryLayout>>; 4] =
+        [None, None, None, None];
 
     // Merge differnet bind modules into one big hashmap
     for module in modules {
-        for group in module.groups.iter() {
-            for entry in group.entries.iter() {
-                dbg!(entry);
-                
-                match entries.entry(Grouping {
-                    group: entry.group,
-                    binding: entry.binding,
-                }) {
-                    std::collections::hash_map::Entry::Occupied(mut occupied) => {
-                        log::warn!("{:#?}", entry.binding_type);
-                        log::warn!("{:#?}", occupied.get().binding_type);
+        for (group_index, bind_group_layout) in module.bind_group_layouts.iter().enumerate() {
+            // Skip this bind group if it was hopped over in the shader
+            let Some(bind_group_layout) = bind_group_layout else {
+                continue;
+            };
 
-                        if entry.binding_type != occupied.get().binding_type {
-                            panic!();
+            // This bind group MUST contains at least ONE entry
+            if bind_group_layout.bind_entry_layouts.len() == 0 {
+                panic!("Bind group MUST contain at least ONE entry");
+            }
+            
+            let merged_group_layout = &mut groups[group_index as usize];
+            let merged_group_entry_layouts = merged_group_layout.get_or_insert_with(|| Default::default());
+
+            // Merge each entry for this group individually
+            for bind_entry_layout in bind_group_layout.bind_entry_layouts.iter() {                
+                match merged_group_entry_layouts.entry(bind_entry_layout.binding) {
+                    // Merge an already existing layout with the new one
+                    std::collections::hash_map::Entry::Occupied(mut occupied) => {
+                        let merged_bind_entry_layout = occupied.get_mut();
+                        let old = bind_entry_layout;
+                        let merged = merged_bind_entry_layout;
+
+                        // Make sure the currently merged layout and the new layout
+                        // have well... the same layout
+                        if old != merged {
+                            panic!("Not the same layout");
                         }
 
-                        occupied.get_mut().visiblity.insert(entry.visiblity);
+                        // Merge the visibility to allow more modules to access this entry
+                        merged.visiblity.insert(old.visiblity);
                     },
+
+                    // If the spot is vacant, add the bind entry layout for the first time
                     std::collections::hash_map::Entry::Vacant(vacant) => {
-                        vacant.insert(entry.clone());
+                        vacant.insert(bind_entry_layout.clone());
                     },
                 }
             }
@@ -124,17 +135,16 @@ pub fn merge_reflected_modules_to_shader(
     }
 
     // Convert the entries back into bind groups
-    let groups = entries
-        .iter()
-        .group_by(|x| x.0.group)
+    let groups: [Option<BindGroupLayout>; 4] = groups
         .into_iter()
-        .map(|(grouping, set)| BindGroupLayout {
-            index: grouping,
-            entries: set.into_iter().map(|(_, x)| x).cloned().collect(),
+        .map(|entries| {
+            entries.map(|entries| BindGroupLayout {
+                bind_entry_layouts: entries.into_iter().map(|(_, x)| x).collect(),
+            })
         })
-        .collect::<Vec<_>>();
-
-    ReflectedShader { groups }
+        .collect::<Vec<_>>()
+        .try_into().unwrap();
+    ReflectedShader { bind_group_layouts: groups }
 }
 
 // Convert a given reflected shader to a pipeline layout (by creating it)
@@ -181,19 +191,50 @@ pub fn create_pipeline_layout_from_shader(
         );
     }
 
-    // Add the uncached bind group entries to the graphics cache
+    // Fetch (and cache if necessary) the empty bind group layout
     let cached = &graphics.0.cached;
-    for group in shader.groups.iter() {
-        // Add the bind group to the cache if it's missing
-        let index = group.index;
-        if !cached.bind_group_layouts.contains_key(group) {
-            dbg!(group);
+    let empty_bind_group_layout = cached.bind_group_layouts.entry(BindGroupLayout {
+        bind_entry_layouts: Vec::new(),
+    }).or_insert_with(|| {
+        // Create the BindGroupLayoutDescriptor for the BindGroupEntries
+        let descriptor = wgpu::BindGroupLayoutDescriptor {
+            label: None,
+            entries: &[],
+        };
 
-            log::warn!("Did not find cached bind group layout for set = {index}, in {names:?}");
+        // Create the bind group layout and add it to the cache
+        Arc::new(graphics
+            .device()
+            .create_bind_group_layout(&descriptor))
+    });
+
+
+    // Create the empty bind group
+    cached.bind_groups.entry(Vec::new()).or_insert_with(|| {
+        let desc = wgpu::BindGroupDescriptor {
+            label: None,
+            layout: &empty_bind_group_layout,
+            entries: &[],
+        };
+
+        Arc::new(graphics.device().create_bind_group(&desc))
+    });
+
+    // Add the uncached bind group entries to the graphics cache
+    for (bind_group_index, bind_group_layout) in shader.bind_group_layouts.iter().enumerate() {
+        // If the bind group is hopped over, always use the default hop bind group layout
+        let Some(bind_group_layout) = bind_group_layout else {
+            continue;
+        };
+        
+        // Add the bind group to the cache if it's missing
+        if !cached.bind_group_layouts.contains_key(bind_group_layout) {
+            log::warn!("Did not find cached bind group layout for set = {bind_group_index}, in {names:?}");
+
             // TODO: Validate the bindings and groups
             // Convert each entry from this group to a WGPU BindGroupLayoutEntry
-            let entries = group
-                .entries
+            let entries = bind_group_layout
+                .bind_entry_layouts
                 .iter()
                 .map(|value| wgpu::BindGroupLayoutEntry {
                     binding: value.binding,
@@ -203,7 +244,7 @@ pub fn create_pipeline_layout_from_shader(
                 })
                 .collect::<Vec<_>>();
 
-            // Create the BindGroupLayoutDescriptor for the BindgGroupEntries
+            // Create the BindGroupLayoutDescriptor for the BindGroupEntries
             let descriptor = wgpu::BindGroupLayoutDescriptor {
                 label: None,
                 entries: &entries,
@@ -214,18 +255,30 @@ pub fn create_pipeline_layout_from_shader(
                 .device()
                 .create_bind_group_layout(&descriptor);
             let layout = Arc::new(layout);
-            cached.bind_group_layouts.insert(group.clone(), layout);
+            cached.bind_group_layouts.insert(bind_group_layout.clone(), layout);
         }
     }
 
     // Fetch the bind group layouts from the cache
     let bind_group_layouts = shader
-        .groups
+        .bind_group_layouts
         .iter()
-        .map(|group| cached.bind_group_layouts.get(&group).unwrap())
+        .map(|bind_group_layout| {
+            bind_group_layout.as_ref().map(|bind_group_layout| {
+                cached.bind_group_layouts.get(&bind_group_layout).unwrap()
+            })
+        })
         .collect::<Vec<_>>();
-    let bind_group_layouts =
-        bind_group_layouts.iter().map(|x| &***x).collect::<Vec<_>>();
+
+    // Convert the bind group layouts hash map references to proper references 
+    let bind_group_layouts = bind_group_layouts
+        .iter()
+        .map(|x| x
+            .as_ref()
+            .map(|x| &***x)
+            .unwrap_or(&**empty_bind_group_layout)
+        )
+        .collect::<Vec<_>>();
 
     // Create the pipeline layout
     let layout = graphics.device().create_pipeline_layout(
@@ -254,22 +307,29 @@ pub fn reflect_module<M: ShaderModule>(
     naga: &naga::Module,
 ) -> ReflectedModule {
     let groups = reflect_binding_group::<M>(naga);
-    ReflectedModule { groups }
+    ReflectedModule { bind_group_layouts: groups }
 }
 
 // Fetches the used binding groups of a given naga module
 pub fn reflect_binding_group<M: ShaderModule>(
     naga: &naga::Module,
-) -> Vec<BindGroupLayout> {
+) -> [Option<BindGroupLayout>; 4] {
+    let mut bind_group_layouts: [Option<BindGroupLayout>; 4] = [None, None, None, None];
     let entries = reflect_binding_entries::<M>(naga);
-    let grouped = entries.into_iter().group_by(|x| x.group);
-    grouped
-        .into_iter()
-        .map(|(index, entries)| BindGroupLayout {
-            entries: entries.collect(),
-            index,
-        })
-        .collect()
+
+    // Merge the binding entries into their respective bind group layouts
+    for bind_entry_layout in entries {
+        let bind_group_layout = 
+            &mut bind_group_layouts[bind_entry_layout.group as usize];
+        let bind_group_layout = bind_group_layout.get_or_insert_with(|| BindGroupLayout {
+            bind_entry_layouts: Vec::new(),
+        });
+
+        // Add the bind entry layout to the bind group layout
+        bind_group_layout.bind_entry_layouts.push(bind_entry_layout);
+    }
+
+    bind_group_layouts
 }
 
 // Fetches the used binding entries of a given naga module

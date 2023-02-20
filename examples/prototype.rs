@@ -5,7 +5,7 @@ fn main() {
     App::default()
         .set_app_name("cflake engine prototype example")
         .insert_init(init)
-        .insert_update(tick)
+        .insert_update(update)
         .set_frame_rate_limit(FrameRateLimit::Unlimited)
         .set_window_fullscreen(true)
         .execute();
@@ -24,13 +24,22 @@ fn init(world: &mut World) {
     window.window().set_cursor_visible(false);
     pipelines.register::<Basic>(&graphics, &assets).unwrap();
 
+    let mut textures = world.get_mut::<Storage<AlbedoMap>>().unwrap();
+    let texture = assets
+        .load::<AlbedoMap>((
+            "engine/textures/test3.png",
+            &*graphics,
+        ))
+    .unwrap();
+    let handle = textures.insert(texture);
+
     let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
     let mut materials = world.get_mut::<Storage<Basic>>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
     let id = pipelines.get::<Basic>().unwrap();
-
+    
     let material = materials.insert(Basic {
-        albedo_map: None,
+        albedo_map: Some(handle),
         normal_map: None,
         roughness: 0.0,
         tint: vek::Rgb::default(),
@@ -72,12 +81,16 @@ fn init(world: &mut World) {
     input.bind_axis("y rotation", Axis::MousePositionY);
 }
 
-fn tick(world: &mut World) {
+fn update(world: &mut World) {
     world.entry::<vek::Vec3<f32>>().or_default();
     let mut velocity1 = world.get_mut::<vek::Vec3<f32>>().unwrap();
     let time = world.get::<Time>().unwrap();
     let input = world.get::<Input>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
+
+    if input.get_button(Button::F5).pressed() {
+        dbg!(time.average_fps());
+    }
 
     let camera =
         scene.find_mut::<(&Camera, &mut Position, &mut Rotation)>();

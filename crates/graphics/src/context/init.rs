@@ -71,7 +71,7 @@ pub(crate) unsafe fn init_context_and_window(
 
     // Pick the appropriate present mode
     let present_mode = match settings.limit {
-        FrameRateLimit::VSync => wgpu::PresentMode::AutoVsync,
+        FrameRateLimit::VSync => wgpu::PresentMode::Fifo,
         FrameRateLimit::Limited(_) => wgpu::PresentMode::AutoNoVsync,
         FrameRateLimit::Unlimited => wgpu::PresentMode::AutoNoVsync,
     };

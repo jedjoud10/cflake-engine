@@ -124,7 +124,7 @@ impl<T: ImageTexel> Asset for Texture2D<T> {
             TextureMode::Dynamic,
             TextureUsage::Placeholder,
             SamplerSettings::default(),
-            TextureMipMaps::Automatic,
+            TextureMipMaps::default(),
         )
         .map_err(TextureAssetLoadError::Initialization)
     }

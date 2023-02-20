@@ -50,10 +50,21 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         callback: impl FnOnce(&mut BindGroup<'b>),
     ) {
         let shader = self.pipeline.shader();
-        if (binding as usize) >= shader.reflected.groups.len() {
+
+        // Check if the binding is valid
+        let valid = shader
+            .reflected
+            .bind_group_layouts
+            .get(binding as usize)
+            .map(|x| x.is_some())
+            .unwrap_or_default();
+
+        // Don't set the bind group if it doesn't exist in the shader
+        if !valid {
             return;
         }
 
+        // Create a new bind group
         let mut bind_group = BindGroup {
             _phantom: PhantomData,
             reflected: shader.reflected.clone(),
@@ -63,7 +74,9 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
             slots: Vec::new(),
         };
 
+        // Let the user modify the bind group 
         callback(&mut bind_group);
+
 
         let cache = &self.graphics.0.cached;
         let bind_group = match cache
@@ -77,7 +90,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
                 log::warn!("Did not find cached bind group (set = {binding}), creating new one...");
 
                 let layout =
-                    &shader.reflected.groups[binding as usize];
+                    &shader.reflected.bind_group_layouts[binding as usize].as_ref().unwrap();
                 let layout = self
                     .graphics
                     .0

@@ -16,6 +16,8 @@ fn init(world: &mut World, user: Option<PathBuf>) {
 
     // Load the default textures
     persistent!(loader, "engine/textures/test.jpg");
+    persistent!(loader, "engine/textures/test2.jpg");
+    persistent!(loader, "engine/textures/test3.png");
 
     /*
 

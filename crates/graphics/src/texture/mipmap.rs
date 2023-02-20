@@ -7,13 +7,12 @@ use crate::{
 };
 
 // This enum tells the texture how exactly it should create it's mipmaps
-#[derive(Default, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum TextureMipMaps<'mip, 'map, T: Texel> {
     // Disable mipmap generation for the texture
     Disabled,
 
     // Automatic mipmap generation based on the texture dimensions
-    #[default]
     Automatic,
 
     // Clamped automatic mipmap generation (to limit number of mips)
@@ -28,6 +27,12 @@ pub enum TextureMipMaps<'mip, 'map, T: Texel> {
     Manual {
         mips: &'map [&'mip [T::Storage]],
     },
+}
+
+impl<T: Texel> Default for TextureMipMaps<'_, '_, T> {
+    fn default() -> Self {
+        Self::Disabled
+    }
 }
 
 // TODO: Figure out how to store and create vk::Views for each mipmap

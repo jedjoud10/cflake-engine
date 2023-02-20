@@ -42,13 +42,14 @@ impl<'a> BindGroup<'a> {
         reflected: &'c ReflectedShader,
         name: &'s str,
     ) -> Result<&'c crate::BindEntryLayout, BindError<'s>> {
-        let groups = &reflected.groups;
+        let groups = &reflected.bind_group_layouts;
         let (_, group) = groups
             .iter()
             .enumerate()
             .find(|(i, _)| *i == index as usize)
             .unwrap();
-        group.entries.iter().find(|x| x.name == name).ok_or(BindError::ResourceNotDefined {
+        let group = group.as_ref().unwrap();
+        group.bind_entry_layouts.iter().find(|x| x.name == name).ok_or(BindError::ResourceNotDefined {
             name,
             group: index
         })
