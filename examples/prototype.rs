@@ -78,7 +78,7 @@ fn init(world: &mut World) {
     let renderer = Renderer::new(true, vek::Mat4::default());
     scene.insert((surface, renderer));
 
-    let camera = Camera::new(120.0, 0.3, 1000.0, 16.0 / 9.0);
+    let camera = Camera::new(120.0, 0.01, 500.0, 16.0 / 9.0);
     scene.insert((Position::default(), Rotation::default(), camera));
 
     let mut input = world.get_mut::<Input>().unwrap();

@@ -117,7 +117,7 @@ pub fn merge_reflected_modules_to_shader(
 
                         // Make sure the currently merged layout and the new layout
                         // have well... the same layout
-                        if old != merged {
+                        if old.binding_type != merged.binding_type {
                             panic!("Not the same layout");
                         }
 
@@ -127,6 +127,7 @@ pub fn merge_reflected_modules_to_shader(
 
                     // If the spot is vacant, add the bind entry layout for the first time
                     std::collections::hash_map::Entry::Vacant(vacant) => {
+                        dbg!(bind_entry_layout);
                         vacant.insert(bind_entry_layout.clone());
                     },
                 }

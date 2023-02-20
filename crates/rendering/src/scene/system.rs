@@ -56,12 +56,22 @@ fn update_camera(world: &mut World) {
         camera.set_aspect_ratio(aspect);
         camera.update(location, rotation);
 
+        let opengl_to_wgpu_matrix: vek::Mat4<f32> = vek::Mat4::new(
+            1.0, 0.0, 0.0, 0.0,
+            0.0, 1.0, 0.0, 0.0,
+            0.0, 0.0, 0.5, 0.0,
+            0.0, 0.0, 0.5, 1.0,
+        ).inverted();
+        let opengl_to_wgpu_matrix = vek::Mat4::<f32>::identity();
+
         // Convert the camera to uniform data
-        let projection = camera.projection_matrix().cols;
-        let view = camera.view_matrix().cols;
+        let projection = (opengl_to_wgpu_matrix * *camera.projection_matrix()).cols;
+        let view = (opengl_to_wgpu_matrix * *camera.view_matrix()).cols;
         let inverse_projection =
-            camera.projection_matrix().inverted().cols;
-        let inverse_view = camera.view_matrix().inverted().cols;
+            (opengl_to_wgpu_matrix * camera.projection_matrix().inverted()).cols;
+        let inverse_view = (opengl_to_wgpu_matrix * camera.view_matrix().inverted()).cols;
+
+        
 
         // Create the struct that contains the UBO data
         let data = CameraUniform {
@@ -69,6 +79,12 @@ fn update_camera(world: &mut World) {
             inverse_projection,
             view,
             inverse_view,
+            /*
+            position: (*location).with_w(0.0),
+            forward: rotation.forward().with_w(0.0),
+            right: rotation.right().with_w(0.0),
+            up: rotation.up().with_w(0.0),
+            */
         };
 
         // Fill the camera UBO with the proper data

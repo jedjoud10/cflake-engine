@@ -8,7 +8,6 @@ use std::{
     sync::Arc,
 };
 use utils::Handle;
-pub use wgpu::FilterMode as SamplerFilter;
 use wgpu::{AddressMode, SamplerBorderColor, SamplerDescriptor};
 
 // Wrapping mode utilized by the sampler address mode
@@ -26,6 +25,14 @@ pub enum SamplerWrap {
 
     // Repeats the texture, but mirrors it to remove seams
     MirroredRepeat,
+}
+
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum SamplerFilter {
+    Nearest,
+    
+    #[default]
+    Linear,
 }
 
 // This enum tells the sampler how it should use the mipmaps from the texture
@@ -110,6 +117,16 @@ pub fn convert_wrap_to_address_mode(
     }
 }
 
+// Convert the sampler filter to the wgpu filter mode 
+pub fn convert_sampler_filter(
+    filter: SamplerFilter
+) -> wgpu::FilterMode {
+    match filter {
+        SamplerFilter::Nearest => wgpu::FilterMode::Nearest,
+        SamplerFilter::Linear => wgpu::FilterMode::Linear,
+    }
+}
+
 // Convert the mip mapping settings to the anisotropic values used by the Wgpu sampler
 pub fn convert_mip_map_anisotropic_clamp(
     mip_mapping: &SamplerMipMaps,
@@ -140,7 +157,7 @@ pub fn get_or_insert_sampler(
                 super::convert_mip_map_anisotropic_clamp(
                     &sampling.mipmaps,
                 );
-            let filter = sampling.filter;
+            let filter = super::convert_sampler_filter(sampling.filter);
 
             // Sampler configuration
             let descriptor = SamplerDescriptor {
