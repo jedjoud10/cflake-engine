@@ -44,10 +44,10 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
     }
 
     // Execute a callback that we will use to fill a bind group
-    pub fn set_bind_group(
+    pub fn set_bind_group<'b>(
         &mut self,
         binding: u32,
-        callback: impl FnOnce(&mut BindGroup<'a>),
+        callback: impl FnOnce(&mut BindGroup<'b>),
     ) {
         let shader = self.pipeline.shader();
         if (binding as usize) >= shader.reflected.groups.len() {
@@ -56,10 +56,11 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
 
         let mut bind_group = BindGroup {
             _phantom: PhantomData,
-            shader: shader,
+            reflected: shader.reflected.clone(),
             index: binding,
             resources: Vec::new(),
             ids: Vec::new(),
+            slots: Vec::new(),
         };
 
         callback(&mut bind_group);
@@ -88,9 +89,10 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
                 let entries = bind_group
                     .resources
                     .into_iter()
-                    .map(|x| wgpu::BindGroupEntry {
+                    .zip(bind_group.slots.into_iter())
+                    .map(|(resource, binding)| wgpu::BindGroupEntry {
                         binding,
-                        resource: x,
+                        resource,
                     })
                     .collect::<Vec<_>>();
 

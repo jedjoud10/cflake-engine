@@ -37,7 +37,7 @@ fn init(world: &mut World) {
     });
 
     let settings = MeshImportSettings {
-        invert_triangle_ordering: true,
+        invert_triangle_ordering: false,
         ..Default::default()
     };
 
@@ -109,10 +109,10 @@ fn tick(world: &mut World) {
             velocity += -up;
         }
 
-        *velocity1 = vek::Vec3::lerp(*velocity1, velocity, 0.009);
+        *velocity1 = vek::Vec3::lerp(*velocity1, velocity, 0.1);
 
         // Update the position with the new velocity
-        **position += *velocity1 * time.delta().as_secs_f32() * 30.0;
+        **position += *velocity1 * time.delta().as_secs_f32() * 20.0;
 
         // Calculate a new rotation and apply it
         let pos_x = input.get_axis("x rotation");

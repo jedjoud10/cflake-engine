@@ -102,11 +102,11 @@ impl ForwardRenderer {
             // Create the 1x1 common textures
             white: create_texture2d::<AlbedoTexel>(
                 graphics,
-                vek::Vec4::broadcast(0).with_w(255),
+                vek::Vec4::broadcast(255).with_w(255),
             ),
             black: create_texture2d::<AlbedoTexel>(
                 graphics,
-                vek::Vec4::broadcast(255),
+                vek::Vec4::broadcast(0),
             ),
             normal: create_texture2d::<NormalTexel>(
                 graphics,

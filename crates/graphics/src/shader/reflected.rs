@@ -22,6 +22,7 @@ pub struct ReflectedModule {
 // A bind group contains one or more bind entries
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BindGroupLayout {
+    pub index: u32,
     pub entries: Vec<BindEntryLayout>,
 }
 
@@ -85,23 +86,39 @@ pub enum StructMemberType {
 pub fn merge_reflected_modules_to_shader(
     modules: &[&ReflectedModule],
 ) -> ReflectedShader {
-    let mut entries: AHashMap<u32, AHashMap<u32, BindEntryLayout>> =
+    #[derive(PartialEq, Eq, Hash, Clone, Copy)]
+    struct Grouping {
+        group: u32,
+        binding: u32,
+    }
+
+    let mut entries: AHashMap<Grouping, BindEntryLayout> =
         AHashMap::new();
 
     // Merge differnet bind modules into one big hashmap
     for module in modules {
-        for (index, group) in module.groups.iter().enumerate() {
-            let set = entries.entry(index as u32).or_default();
-
+        for group in module.groups.iter() {
             for entry in group.entries.iter() {
-                let layout =
-                    set.entry(entry.binding).or_insert(entry.clone());
+                dbg!(entry);
+                
+                match entries.entry(Grouping {
+                    group: entry.group,
+                    binding: entry.binding,
+                }) {
+                    std::collections::hash_map::Entry::Occupied(mut occupied) => {
+                        log::warn!("{:#?}", entry.binding_type);
+                        log::warn!("{:#?}", occupied.get().binding_type);
 
-                if entry.binding_type != layout.binding_type {
-                    panic!();
+                        if entry.binding_type != occupied.get().binding_type {
+                            panic!();
+                        }
+
+                        occupied.get_mut().visiblity.insert(entry.visiblity);
+                    },
+                    std::collections::hash_map::Entry::Vacant(vacant) => {
+                        vacant.insert(entry.clone());
+                    },
                 }
-
-                layout.visiblity.insert(entry.visiblity);
             }
         }
     }
@@ -109,8 +126,11 @@ pub fn merge_reflected_modules_to_shader(
     // Convert the entries back into bind groups
     let groups = entries
         .iter()
-        .map(|(_, set)| BindGroupLayout {
-            entries: set.iter().map(|(_, x)| x).cloned().collect(),
+        .group_by(|x| x.0.group)
+        .into_iter()
+        .map(|(grouping, set)| BindGroupLayout {
+            index: grouping,
+            entries: set.into_iter().map(|(_, x)| x).cloned().collect(),
         })
         .collect::<Vec<_>>();
 
@@ -163,9 +183,12 @@ pub fn create_pipeline_layout_from_shader(
 
     // Add the uncached bind group entries to the graphics cache
     let cached = &graphics.0.cached;
-    for (index, group) in shader.groups.iter().enumerate() {
+    for group in shader.groups.iter() {
         // Add the bind group to the cache if it's missing
+        let index = group.index;
         if !cached.bind_group_layouts.contains_key(group) {
+            dbg!(group);
+
             log::warn!("Did not find cached bind group layout for set = {index}, in {names:?}");
             // TODO: Validate the bindings and groups
             // Convert each entry from this group to a WGPU BindGroupLayoutEntry
@@ -244,6 +267,7 @@ pub fn reflect_binding_group<M: ShaderModule>(
         .into_iter()
         .map(|(index, entries)| BindGroupLayout {
             entries: entries.collect(),
+            index,
         })
         .collect()
 }

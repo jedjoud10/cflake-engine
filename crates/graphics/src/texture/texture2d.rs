@@ -60,7 +60,7 @@ impl<T: Texel> Texture for Texture2D<T> {
 
     fn sampler(&self) -> Sampler<Self::T> {
         Sampler {
-            sampler: self.sampler.clone(),
+            sampler: &self.sampler,
             _phantom: PhantomData,
             settings: &self.sampling,
         }

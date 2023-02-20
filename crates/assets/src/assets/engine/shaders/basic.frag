@@ -19,16 +19,19 @@ layout(set = 1, binding = 1) uniform MaterialData {
 	vec3 tint;
 	float roughness;
 } material;
+*/
 
 // Albedo / diffuse map
-layout(set = 1, binding = 2) uniform texture2D albedo_map;
-layout(set = 1, binding = 3) uniform sampler albedo_sampler;
+layout(set = 1, binding = 0) uniform texture2D albedo_map;
+layout(set = 1, binding = 1) uniform sampler albedo_map_sampler;
 
+/*
 // Normal map
-layout(set = 1, binding = 4) uniform texture2D normal_map;
-layout(set = 1, binding = 5) uniform sampler normal_sampler;
+layout(set = 1, binding = 2) uniform texture2D normal_map;
+layout(set = 1, binding = 3) uniform sampler normal_map_sampler;
 */
 
 void main() {
-	frag = vec4(m_normal, 0);
+	vec3 color = texture(sampler2D(albedo_map, albedo_map_sampler), m_tex_coord).rgb;
+	frag = vec4(color, 0);
 }

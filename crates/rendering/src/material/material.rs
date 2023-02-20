@@ -77,28 +77,28 @@ pub trait Material: 'static + Sized {
     fn fetch<'w>(world: &'w World) -> Self::Resources<'w>;
 
     // Set the static bindings
-    fn set_global_bindings<'w>(
-        resources: &mut Self::Resources<'w>,
-        default: &DefaultMaterialResources<'w>,
-        group: &mut BindGroup<'w>,
+    fn set_global_bindings<'r, 'w>(
+        resources: &'r mut Self::Resources<'w>,
+        default: &DefaultMaterialResources<'r>,
+        group: &mut BindGroup<'r>,
     ) {
     }
 
     // Set the per instance bindings
-    fn set_instance_bindings<'w>(
+    fn set_instance_bindings<'r, 'w>(
         &self,
-        resources: &mut Self::Resources<'w>,
-        default: &DefaultMaterialResources<'w>,
-        group: &BindGroup<'w>,
+        resources: &'r mut Self::Resources<'w>,
+        default: &DefaultMaterialResources<'r>,
+        group: &mut BindGroup<'r>,
     ) {
     }
 
     // Set the per surface bindings
-    fn set_surface_bindings<'w>(
+    fn set_surface_bindings<'r, 'w>(
         renderer: &Renderer,
-        resources: &mut Self::Resources<'w>,
-        default: &DefaultMaterialResources<'w>,
-        group: &BindGroup<'w>,
+        resources: &'r mut Self::Resources<'w>,
+        default: &DefaultMaterialResources<'r>,
+        group: &mut BindGroup<'r>,
     ) {
     }
 }

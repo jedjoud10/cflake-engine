@@ -62,23 +62,23 @@ impl Material for Basic {
     }
 
     // Set the static bindings that will never change
-    fn set_global_bindings<'w>(
-        resources: &mut Self::Resources<'w>,
-        default: &DefaultMaterialResources<'w>,
-        group: &mut BindGroup<'w>,
+    fn set_global_bindings<'r, 'w>(
+        resources: &'r mut Self::Resources<'w>,
+        default: &DefaultMaterialResources<'r>,
+        group: &mut BindGroup<'r>,
     ) {
         // Set the required common buffers
-        group.set_buffer("camera", default.camera_buffer);
+        group.set_buffer("camera", default.camera_buffer).unwrap();
         //bindings.set_buffer(default.timing_buffer);
         //bindings.set_buffer(default.scene_buffer);
     }
 
     // Set the instance bindings that will change per material
-    fn set_instance_bindings<'w>(
+    fn set_instance_bindings<'r, 'w>(
         &self,
-        resources: &mut Self::Resources<'w>,
-        default: &DefaultMaterialResources,
-        group: &BindGroup<'w>,
+        resources: &'r mut Self::Resources<'w>,
+        default: &DefaultMaterialResources<'r>,
+        group: &mut BindGroup<'r>,
     ) {
         let (albedo_maps, normal_maps) = resources;
 
@@ -93,18 +93,31 @@ impl Material for Basic {
             .normal_map
             .as_ref()
             .map_or(default.normal, |h| normal_maps.get(h));
+        
 
         // Set the material textures
-        //bindings.set_sampler(albedo_map);
-        //bindings.set_sampler(normal_map);
+        group.set_texture("albedo_map", albedo_map).unwrap();
+        group.set_sampler("albedo_map_sampler", albedo_map).unwrap();
+        //group.set_texture("normal_map", normal_map).unwrap();
+        //group.set_sampler("normal_map_sampler", normal_map).unwrap();
+        
+        // Fill the material UBO with the specified fields automatically
+        /*
+        group.fill_buffer("material", |fill| {
+            fill.set_scalar("roughness", self.roughness);
+            fill.set_vec3("tint", self.tint);
+        }).unwrap();
+        */
     }
 
     // Set the surface bindings that will change from entity to entity
+    /*
     fn set_surface_bindings<'w>(
         renderer: &Renderer,
         resources: &mut Self::Resources<'w>,
         default: &DefaultMaterialResources,
-        group: &BindGroup<'w>,
+        group: &mut BindGroup<'w>,
     ) {
     }
+    */
 }

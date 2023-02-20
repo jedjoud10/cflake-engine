@@ -1,84 +1,135 @@
-use crate::{GpuPod, Shader, Texture, UniformBuffer};
+use thiserror::Error;
+use crate::{GpuPod, Shader, Texture, UniformBuffer, ReflectedShader};
 use std::{marker::PhantomData, sync::Arc};
+
+#[derive(Debug, Error)]
+pub enum BindError<'a> {
+    #[error("The bind resource '{name}' at bind group '{group}' was not defined")]
+    ResourceNotDefined {
+        name: &'a str,
+        group: u32,
+    },
+
+    #[error("The given buffer at '{name}' has different strides (layout stride = {defined}, buffer stride = {inputted})")]
+    BufferDifferentStride {
+        name: &'a str,
+        defined: usize,
+        inputted: usize,
+    },
+
+    #[error("The texutre '{name}' does not have a correspodning sampler named '{name}_sampler'")]
+    TextureMissingSampler {
+        name: &'a str
+    }
+}
 
 // A bind group allows us to set one or more bind entries to set them in the active render pass
 // Bind groups are created using the set_bind_group method on the render pass
 pub struct BindGroup<'a> {
     pub(crate) index: u32,
-    pub(crate) shader: &'a Shader,
+    pub(crate) reflected: Arc<ReflectedShader>,
     pub(crate) resources: Vec<wgpu::BindingResource<'a>>,
+    pub(crate) slots: Vec<u32>,
     pub(crate) ids: Vec<wgpu::Id>,
     pub(crate) _phantom: PhantomData<&'a ()>,
 }
 
 impl<'a> BindGroup<'a> {
     // Get the entry layout for a specific resource in this bind group
-    fn find_entry_layout(
-        &mut self,
-        name: &str,
-    ) -> &crate::BindEntryLayout {
-        let groups = &self.shader.vertex().reflected().groups;
+    // Returns None if there is no matching entry layout 
+    fn find_entry_layout<'c, 's>(
+        index: u32,
+        reflected: &'c ReflectedShader,
+        name: &'s str,
+    ) -> Result<&'c crate::BindEntryLayout, BindError<'s>> {
+        let groups = &reflected.groups;
         let (_, group) = groups
             .iter()
             .enumerate()
-            .find(|(i, _)| *i == self.index as usize)
+            .find(|(i, _)| *i == index as usize)
             .unwrap();
-        group.entries.iter().find(|x| x.name == name).unwrap()
+        group.entries.iter().find(|x| x.name == name).ok_or(BindError::ResourceNotDefined {
+            name,
+            group: index
+        })
     }
 
-    // Set a shader texture that can be sampled and red from
-    pub fn set_sampler<T: Texture>(
-        &'a mut self,
-        name: &str,
+    pub fn set_texture<'s, T: Texture>(
+        &mut self,
+        name: &'s str,
         texture: &'a T,
-    ) {
-        // Get the binding entry layout for the given sampler
-        let entry = self.find_entry_layout(name);
+    ) -> Result<(), BindError<'s>> {
+        // Get the binding entry layout for the given texture
+        let entry = Self::find_entry_layout(
+            self.index,
+            &self.reflected,
+            name
+        )?;
 
-        /*
-        match entry.binding_type {
-            crate::BindingType::Sampler { sampler_binding } => todo!(),
-        }
-
-        // Get binding, id, view and resource needed for bind entry
-        let binding = entry.binding;
-        let id = texture.view().global_id();
-        let view = texture.view();
-        let resource = wgpu::BindingResource::TextureView(view);
-
-        // Make a valid bind entry and locally store it
-        let entry = BindEntry {
-            binding,
-            resource,
-            id,
-        };
+        // Get values needed for the bind entry
+        let id = texture.raw().global_id();
+        let resource = wgpu::BindingResource::TextureView(texture.view());
 
         // Save the bind entry for later
-        self.entries.push(entry);
-        */
+        self.resources.push(resource);
+        self.ids.push(id);
+        self.slots.push(entry.binding);
+        Ok(())
+    }
+
+    pub fn set_sampler<'s, T: Texture>(
+        &mut self,
+        name: &'s str,
+        texture: &'a T,
+    ) -> Result<(), BindError<'s>> {
+        // Get the binding entry layout for the given texture
+        let entry = Self::find_entry_layout(
+            self.index,
+            &self.reflected,
+            name
+        )?;
+
+        // Get values needed for the bind entry
+        let id = texture.raw().global_id();
+        let sampler = texture.sampler();
+        let sampler = sampler.sampler();
+        let resource = wgpu::BindingResource::Sampler(sampler);
+
+        // Save the bind entry for later
+        self.resources.push(resource);
+        self.ids.push(id);
+        self.slots.push(entry.binding);
+        Ok(())
     }
 
     // Set a uniform buffer that we can read from within shaders
-    pub fn set_buffer<T: GpuPod>(
+    pub fn set_buffer<'s, T: GpuPod>(
         &mut self,
-        name: &str,
+        name: &'s str,
         buffer: &'a UniformBuffer<T>,
-    ) {
+    ) -> Result<(), BindError<'s>> {
         // Get the binding entry layout for the given buffer
-        let entry = self.find_entry_layout(name);
+        let entry = Self::find_entry_layout(
+            self.index,
+            &self.reflected,
+            name
+        )?;
 
         // Make sure the layout is the same size as buffer stride
         match entry.binding_type {
             crate::BindingType::Buffer { size, .. } => {
                 if (size as usize) != buffer.stride() {
-                    panic!()
+                    return Err(BindError::BufferDifferentStride {
+                        name,
+                        defined: size as usize,
+                        inputted: buffer.stride()
+                    });
                 }
             }
             _ => panic!(),
         }
 
         // Get values needed for the bind entry
-        let binding = entry.binding;
         let id = buffer.raw().global_id();
         let buffer_binding = buffer.raw().as_entire_buffer_binding();
         let resource = wgpu::BindingResource::Buffer(buffer_binding);
@@ -86,5 +137,63 @@ impl<'a> BindGroup<'a> {
         // Save the bind entry for later
         self.resources.push(resource);
         self.ids.push(id);
+        self.slots.push(entry.binding);
+        Ok(())
+    }
+
+    // Create a new uniform buffer and fills it's fields one by one
+    // This is basically emulates OpenGL uniforms through UBOs, should only be used for data
+    // that doesn't change too much and that is unique to each material / draw batch
+    pub fn fill_buffer<'s>(
+        &mut self,
+        name: &'s str,
+        callback: impl FnOnce(&mut FillBuffer)
+    ) -> Result<(), BindError<'s>> {
+        // Get the binding entry layout for the given buffer
+        let entry = Self::find_entry_layout(
+            self.index,
+            &self.reflected,
+            name
+        )?;
+
+        Ok(())
+    }
+}
+
+pub struct FillBuffer<'a> {
+    _phantom: PhantomData<&'a ()>
+}
+
+impl<'a> FillBuffer<'a> {
+    // Set a single scalar type using the Scalar trait
+    pub fn set_scalar<S>(&mut self, name: &str, scalar: S) {
+    }
+
+    // Set an array of values values
+    pub fn set_array<S>(&mut self, name: &str, array: S) {
+    }
+
+    // Set a 2D vector that consists of scalar values
+    pub fn set_vec2<V>(&mut self, name: &str, vec: V) {
+    }
+
+    // Set a 3D vector that consists of scalar values
+    pub fn set_vec3<V>(&mut self, name: &str, vec: V) {
+    }
+
+    // Set a 4D vector that consists of scalar values
+    pub fn set_vec4<V>(&mut self, name: &str, vec: V) {
+    }
+
+    // Set a 4x4 matrix
+    pub fn set_mat4x4<M>(&mut self, name: &str, mat: M) {
+    }
+
+    // Set a 3x3 matrix
+    pub fn set_mat3x3<M>(&mut self, name: &str, mat: M) {
+    }
+
+    // Set a 2x2 matrix
+    pub fn set_mat2x2<M>(&mut self, name: &str, mat: M) {
     }
 }

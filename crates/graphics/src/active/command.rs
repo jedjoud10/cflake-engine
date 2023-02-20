@@ -5,6 +5,9 @@ use crate::{
 use std::{ops::Range, sync::Arc};
 use wgpu::BindGroup;
 
+// Keep track of all render commands that we call upon the render pass
+// The whole reason I have to delegate this to a command type system is because
+// the render pass requires the BindGroups to live longer than itself, and I couldn't make it work
 pub enum RenderCommand<'a, C: ColorLayout, DS: DepthStencilLayout> {
     BindPipeline(&'a GraphicsPipeline<C, DS>),
     SetVertexBuffer(u32, UntypedBuffer<'a>),
@@ -20,6 +23,7 @@ pub enum RenderCommand<'a, C: ColorLayout, DS: DepthStencilLayout> {
     },
 }
 
+// Record the render commands to the given render pass
 pub fn record<'r, C: ColorLayout, DS: DepthStencilLayout>(
     mut render_pass: wgpu::RenderPass<'r>,
     render_commands: &'r [RenderCommand<'r, C, DS>],

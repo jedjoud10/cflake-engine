@@ -64,12 +64,17 @@ pub struct SamplerSettings {
 // to read from textures on the GPU
 // TODO: Maybe split this into it's own struct? / Make it less coupled with texture
 pub struct Sampler<'a, T: Texel> {
-    pub(crate) sampler: Arc<wgpu::Sampler>,
+    pub(crate) sampler: &'a wgpu::Sampler,
     pub(crate) _phantom: PhantomData<&'a T>,
     pub(crate) settings: &'a SamplerSettings,
 }
 
 impl<'a, T: Texel> Sampler<'a, T> {
+    // Get internally used raw sampler
+    pub fn sampler(&self) -> &'a wgpu::Sampler {
+        &self.sampler
+    }
+
     // Get the filter used by this sampler
     pub fn filter(&self) -> &SamplerFilter {
         &self.settings.filter
