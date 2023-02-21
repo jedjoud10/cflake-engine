@@ -3,10 +3,10 @@ cFlake Engine, in it's current state, is a free and open-source Rust game engine
 Currently, cFlake engine is under heavy development (***very*** WIP), but pull requests are heavily appreciated (pls help me I am becoming insane)
 
 # Main features of cFlake:
-* Custom World Events, Systems, and Resources all accessible within the **World** struct
+* 6 World Event Variants, Systems, and Resources all accessible within the **World** struct
 * Deterministic event sorting through multiple stages 
-* Archetypal ECS built to be used in conjunction with the World Events and Systems
-* Custom Graphics API built on OpenGL and Glutin (**WIP, currently switching to Wgpu**)
+* Archetypal multithreaded ECS built to be used in conjunction with the World Events and Systems
+* Custom Graphics API built on top of WGPU
 * GPU Voxel generation and Octree Terrain (disabled temporarily)
 * Asynchronous asset loader and utility thread pool
 * Input handling with gamepad support (gilrs) and keybinding serialization / deserialization
@@ -40,7 +40,7 @@ fn update(world: &mut World) {
 }
 ``` 
 
-# Architecture & Design
+# Scene Architecture & Design
 **cFlake engine** uses an ECS (Entity, Component, System) architecture. This architecture is mostly used by new and modern game engines to be able to easily use of highly parallel code that can benefit from multithreading. The same goes for cFlake engine. The ECS architectures is split into 3 main parts, **Entities**, **Components**, and **Systems**.
 
 ## Entities
@@ -58,7 +58,8 @@ This is where things get tricky however, and this is where my implementation of 
 
 To actually handle modifying data related to components, one must use a scene ``Query`` that would iterate over all the given components of the given ``Bundle`` tuple type. These ``Queries`` are not related in any way to the ``Systems``, and they could be accessed as long as you have a mutable or immutable reference to the ``Scene`` resource (depending on what type of query you wish to use)
 
-
+# Graphics (story time)
+At the moment, cFlake uses a custom built graphics API abstraction that wraps over WGPU and Naga. This however, was a recent change (~4 months in the making) due to limitations with the original backend (OpenGL) the engine. I had realized that OpenGL was not going to scale well with all the new multi-threaded features that I've implemented like a multithreaded asset loader and multithreaded ECS system. After tinkering with Vulkan (raw Vulkan, Vulkano), I decided to not use it (even after I pathetically tried to implement it, which took me 2-3 months), I decided to use Wgpu, since I simply could not cope with the manual state tracking of Vulkan. 
 
 # Thanks to:
 * Lionel Stanway (MoldyToeMan)
