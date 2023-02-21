@@ -6,7 +6,7 @@ use crate::{
 use ecs::Scene;
 use graphics::{
     ActiveGraphicsPipeline, ActiveRenderPass, Graphics,
-    GraphicsPipeline, SwapchainFormat, Vertex, XYZ,
+    GraphicsPipeline, SwapchainFormat, Vertex, XYZ, PushConstants,
 };
 use utils::{Handle, Storage, Time};
 use world::World;
@@ -133,6 +133,18 @@ pub(super) fn render_surfaces<'r, M: Material>(
             mesh,
             &mut active,
         );
+
+        // Set the push constant ranges right before rendering (in the hot loop!)
+        active.set_push_constants(|push_constants| {
+            let material = materials.get(&surface.material);
+            M::set_push_constants(
+                material,
+                renderer,
+                &mut resources,
+                default,
+                push_constants
+            );
+        });
 
         // Set the index buffer
         let triangles = mesh.triangles();

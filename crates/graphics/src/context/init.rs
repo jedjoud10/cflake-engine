@@ -25,7 +25,7 @@ pub(crate) unsafe fn init_context_and_window(
 
     // Create the WGPU instance that will pick an appropriate backend
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-        backends: wgpu::Backends::VULKAN,
+        backends: wgpu::Backends::PRIMARY,
         dx12_shader_compiler: Default::default(),
     });
 

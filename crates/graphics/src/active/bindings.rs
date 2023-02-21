@@ -1,5 +1,5 @@
 use thiserror::Error;
-use crate::{GpuPod, Shader, Texture, UniformBuffer, ReflectedShader, Sampler, Texel};
+use crate::{GpuPod, Shader, Texture, UniformBuffer, ReflectedShader, Sampler, Texel, ValueFiller};
 use std::{marker::PhantomData, sync::Arc};
 
 #[derive(Debug, Error)]
@@ -151,51 +151,22 @@ impl<'a> BindGroup<'a> {
         name: &'s str,
         callback: impl FnOnce(&mut FillBuffer)
     ) -> Result<(), BindError<'s>> {
+        /*
         // Get the binding entry layout for the given buffer
         let entry = Self::find_entry_layout(
             self.index,
             &self.reflected,
             name
         )?;
-
+        */
         Ok(())
     }
 }
+
 
 pub struct FillBuffer<'a> {
     _phantom: PhantomData<&'a ()>
 }
 
-impl<'a> FillBuffer<'a> {
-    // Set a single scalar type using the Scalar trait
-    pub fn set_scalar<S>(&mut self, name: &str, scalar: S) {
-    }
-
-    // Set an array of values values
-    pub fn set_array<S>(&mut self, name: &str, array: S) {
-    }
-
-    // Set a 2D vector that consists of scalar values
-    pub fn set_vec2<V>(&mut self, name: &str, vec: V) {
-    }
-
-    // Set a 3D vector that consists of scalar values
-    pub fn set_vec3<V>(&mut self, name: &str, vec: V) {
-    }
-
-    // Set a 4D vector that consists of scalar values
-    pub fn set_vec4<V>(&mut self, name: &str, vec: V) {
-    }
-
-    // Set a 4x4 matrix
-    pub fn set_mat4x4<M>(&mut self, name: &str, mat: M) {
-    }
-
-    // Set a 3x3 matrix
-    pub fn set_mat3x3<M>(&mut self, name: &str, mat: M) {
-    }
-
-    // Set a 2x2 matrix
-    pub fn set_mat2x2<M>(&mut self, name: &str, mat: M) {
-    }
+impl ValueFiller for FillBuffer<'_> {
 }

@@ -1,7 +1,7 @@
 use crate::{
     BindGroup, ColorLayout, DepthStencilLayout, Graphics,
     GraphicsPipeline, RenderCommand, TriangleBuffer, UntypedBuffer,
-    Vertex, VertexBuffer,
+    Vertex, VertexBuffer, PushConstants, ModuleKind,
 };
 use std::{marker::PhantomData, ops::Range, sync::Arc};
 
@@ -41,6 +41,31 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         buffer: &'r TriangleBuffer<u32>,
     ) {
         self.commands.push(RenderCommand::SetIndexBuffer(buffer))
+    }
+
+    // Set push constants before rendering
+    pub fn set_push_constants(
+        &mut self,
+        callback: impl FnOnce(&mut PushConstants)
+    ) {
+        /*
+        // Get shader and it's reflected data
+        let shader = self.pipeline.shader();
+        let reflected = &shader.reflected;
+        
+        // Check the shader's push constant layouts if they contain the field
+        reflected
+            .push_constant_layouts
+            .iter()
+            .filter_map(|x| x.as_ref())
+            .map(|push_constant_layout| push_constant_layout.members.iter().any(|members| {
+
+            }));
+        */
+
+
+        // Set push constants using the callback
+        // Store the results of the push constants in memory
     }
 
     // Execute a callback that we will use to fill a bind group

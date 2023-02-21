@@ -7,7 +7,7 @@ use assets::Assets;
 use graphics::{
     BindGroup, BlendConfig, Compiled, DepthConfig, FragmentModule,
     FrontFace, Graphics, Normalized, PrimitiveConfig, StencilConfig,
-    Texture2D, UniformBuffer, VertexModule, RGBA,
+    Texture2D, UniformBuffer, VertexModule, RGBA, PushConstants,
 };
 use world::World;
 
@@ -100,5 +100,16 @@ pub trait Material: 'static + Sized {
         default: &DefaultMaterialResources<'r>,
         group: &mut BindGroup<'r>,
     ) {
+    }
+
+    // Set push constants (per surface)
+    fn set_push_constants<'r, 'w>(
+        &self,
+        renderer: &Renderer,
+        resources: &'r mut Self::Resources<'w>,
+        default: &DefaultMaterialResources<'r>,
+        push_constants: &mut PushConstants
+    ) {
+
     }
 }

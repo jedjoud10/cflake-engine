@@ -1,7 +1,7 @@
 use crate::{
     FunctionModule, GpuPodRelaxed, Graphics, ReflectedModule,
     ShaderCompilationError, ShaderModule, ShaderPreprocessorError,
-    VertexModule,
+    VertexModule, ModuleKind,
 };
 use ahash::AHashMap;
 use assets::Assets;
@@ -90,7 +90,7 @@ impl<M: ShaderModule> Compiler<M> {
         // Compile GLSL to Naga then to Wgpu
         let time = std::time::Instant::now();
         let (raw, naga) =
-            compile(M::stage(), graphics, assets, &snippets, source)?;
+            compile(&M::kind(), graphics, assets, &snippets, source)?;
         log::debug!(
             "Compiled shader {file_name} sucessfully! Took {}ms",
             time.elapsed().as_millis()
@@ -116,7 +116,7 @@ impl<M: ShaderModule> Compiler<M> {
 
 // Parses the GLSL shader into a Naga module, then passes it to Wgpu
 fn compile(
-    stage: ShaderStage,
+    kind: &ModuleKind,
     graphics: &Graphics,
     assets: &Assets,
     snippets: &Snippets,
@@ -129,7 +129,7 @@ fn compile(
 
     // [GLSL -> Naga] parsing options
     let options = naga::front::glsl::Options {
-        stage,
+        stage: super::kind_to_naga_stage(kind),
         defines: naga::FastHashMap::default(),
     };
 

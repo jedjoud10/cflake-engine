@@ -2,7 +2,7 @@ use std::{
     hash::Hash, sync::Arc,
 };
 
-use crate::{Graphics, ShaderModule, Compiled, FragmentModule, VertexModule};
+use crate::{Graphics, ShaderModule, Compiled, FragmentModule, VertexModule, ModuleKind};
 use ahash::{AHashMap, AHashSet};
 use naga::{AddressSpace, ResourceBinding, TypeInner};
 
@@ -10,7 +10,8 @@ use naga::{AddressSpace, ResourceBinding, TypeInner};
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ReflectedShader {
     pub bind_group_layouts: [Option<BindGroupLayout>; 4],
-    pub push_constants: [Option<PushConstantLayout>; 2],
+    pub push_constant_layouts: [Option<PushConstantLayout>; 2],
+    pub push_constant_ranges: Vec<wgpu::PushConstantRange>,
 }
 
 // This container stores all data related to reflected modules
@@ -120,12 +121,19 @@ fn merge_reflected_modules_to_shader(
         [None, None, None, None];
 
     // Stores mutliple push constants for each module (at max we will have 2 modules)
-    let mut push_constants: [Option<PushConstantLayout>; 2] = [None, None];
+    let mut push_constant_layouts: [Option<PushConstantLayout>; 2] = [None, None];
 
-    // Merge differnet bind modules into one big hashmap
+    // Push constant byte ranges that we will use to submit to GPU memory
+    let mut push_constant_ranges: Vec<wgpu::PushConstantRange> = Vec::new();
+
+    // Merge different modules into a ReflectedShader
     for (module_index, module) in modules.iter().enumerate() {
         // Add the bind group push constant layout (if it exists)
-        push_constants[module_index] = module.push_constant.clone();
+        push_constant_layouts[module_index] = module.push_constant.clone();
+
+        // Merge push constants and create shared ranges
+
+        // Merrge bind groups and their entries
         for (group_index, bind_group_layout) in module.bind_group_layouts.iter().enumerate() {
 
             // Skip this bind group if it was hopped over in the shader
@@ -180,7 +188,11 @@ fn merge_reflected_modules_to_shader(
         })
         .collect::<Vec<_>>()
         .try_into().unwrap();
-    ReflectedShader { bind_group_layouts: groups, push_constants }
+    ReflectedShader {
+        bind_group_layouts: groups,
+        push_constant_layouts,
+        push_constant_ranges,
+    }
 }
 
 // Convert a given reflected shader to a pipeline layout (by creating it)
@@ -322,7 +334,7 @@ fn create_pipeline_layout_from_shader(
         &wgpu::PipelineLayoutDescriptor {
             label: None,
             bind_group_layouts: &bind_group_layouts,
-            push_constant_ranges: &[],
+            push_constant_ranges: &shader.push_constant_ranges,
         },
     );
 
@@ -419,7 +431,7 @@ pub fn reflect_binding_entries<M: ShaderModule>(
                 binding,
                 group,
                 binding_type,
-                visiblity: naga_stage_to_wgpu_stage(&M::stage()),
+                visiblity: kind_to_wgpu_stage(&M::kind()),
             }
         })
         .collect::<Vec<_>>()
@@ -542,14 +554,25 @@ fn vector_size_to_u32(size: &naga::VectorSize) -> u32 {
     }
 }
 
-// Convert a naga shader stage to WGPU shader stage bitfield
-fn naga_stage_to_wgpu_stage(
-    stage: &naga::ShaderStage,
+// Convert a module ind to Naga shader stage
+pub(super) fn kind_to_naga_stage(
+    kind: &ModuleKind,
+) -> naga::ShaderStage {
+    match *kind {
+        ModuleKind::Vertex => naga::ShaderStage::Vertex,
+        ModuleKind::Fragment => naga::ShaderStage::Fragment,
+        ModuleKind::Compute => naga::ShaderStage::Compute,
+    }
+}
+
+// Convert a module kind to WGPU shader stage bitfield
+pub(super) fn kind_to_wgpu_stage(
+    kind: &ModuleKind,
 ) -> wgpu::ShaderStages {
-    match *stage {
-        naga::ShaderStage::Vertex => wgpu::ShaderStages::VERTEX,
-        naga::ShaderStage::Fragment => wgpu::ShaderStages::FRAGMENT,
-        naga::ShaderStage::Compute => wgpu::ShaderStages::COMPUTE,
+    match *kind {
+        ModuleKind::Vertex => wgpu::ShaderStages::VERTEX,
+        ModuleKind::Fragment => wgpu::ShaderStages::FRAGMENT,
+        ModuleKind::Compute => wgpu::ShaderStages::COMPUTE,
     }
 }
 

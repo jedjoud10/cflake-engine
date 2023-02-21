@@ -10,7 +10,7 @@ use assets::Assets;
 use graphics::{
     BindGroup, Compiled, Compiler, FragmentModule, Graphics,
     Normalized, Sampler, Shader, Texture2D, UniformBuffer,
-    VertexModule, RGBA, Texture,
+    VertexModule, RGBA, Texture, ValueFiller, PushConstants,
 };
 use utils::{Handle, Storage};
 
@@ -102,22 +102,20 @@ impl Material for Basic {
         group.set_sampler("normal_map_sampler", normal_map.sampler()).unwrap();
         
         // Fill the material UBO with the specified fields automatically
-        /*
         group.fill_buffer("material", |fill| {
-            fill.set_scalar("roughness", self.roughness);
+            fill.set_scalar("bumpiness", self.bumpiness);
             fill.set_vec3("tint", self.tint);
         }).unwrap();
-        */
     }
 
-    // Set the surface bindings that will change from entity to entity
-    /*
-    fn set_surface_bindings<'w>(
+    // Set the surface push constants
+    fn set_push_constants<'r, 'w>(
+        &self,
         renderer: &Renderer,
-        resources: &mut Self::Resources<'w>,
-        default: &DefaultMaterialResources,
-        group: &mut BindGroup<'w>,
+        resources: &'r mut Self::Resources<'w>,
+        default: &DefaultMaterialResources<'r>,
+        push_constants: &mut PushConstants
     ) {
+        //push_constants.set_mat4x4("matrix", renderer.matrix);
     }
-    */
 }

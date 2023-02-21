@@ -56,11 +56,13 @@ impl Input {
 
     // Create a new button binding using a name and a unique key
     pub fn bind_button(&mut self, name: &'static str, key: Button) {
+        log::debug!("Binding button/key {key:?} to '{name}'");
         self.bindings.key_bindings.insert(Cow::Borrowed(name), key);
     }
 
     // Create a new axis binding using a name and a unique axis
     pub fn bind_axis(&mut self, name: &'static str, axis: Axis) {
+        log::debug!("Binding axis {axis:?} to '{name}'");
         self.bindings
             .axis_bindings
             .insert(Cow::Borrowed(name), axis);

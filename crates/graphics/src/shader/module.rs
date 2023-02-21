@@ -1,5 +1,17 @@
 use assets::Asset;
-use naga::ShaderStage;
+
+// The type of shader module that the shader files represent
+#[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
+pub enum ModuleKind {
+    // Vertex shaders get executed on a per vertex basis
+    Vertex,
+
+    // Fragment shaders get executed for each fragment, or each pixel (in case of no MSAA)
+    Fragment,
+
+    // Compute shaders are arbitrary shaders that run on arbitrary input and output
+    Compute,
+}
 
 // This trait is implemented for each shader module, like the vertex module or fragment module
 // Modules are uncompiled shaders that will later be converted to SPIRV and linked together
@@ -7,7 +19,7 @@ pub trait ShaderModule: Sized {
     // Get the main properties of the module
     fn file_name(&self) -> &str;
     fn source(&self) -> &str;
-    fn stage() -> ShaderStage;
+    fn kind() -> ModuleKind;
 
     // Convert the module into it's source code and name
     fn into_raw_parts(self) -> (String, String);
@@ -81,7 +93,7 @@ macro_rules! impl_module_trait {
                 &self.source
             }
 
-            fn stage() -> ShaderStage {
+            fn kind() -> ModuleKind {
                 $kind
             }
 
@@ -93,9 +105,9 @@ macro_rules! impl_module_trait {
 }
 
 // Implement the module trait
-impl_module_trait!(VertexModule, ShaderStage::Vertex);
-impl_module_trait!(FragmentModule, ShaderStage::Fragment);
-impl_module_trait!(ComputeModule, ShaderStage::Compute);
+impl_module_trait!(VertexModule, ModuleKind::Vertex);
+impl_module_trait!(FragmentModule, ModuleKind::Fragment);
+impl_module_trait!(ComputeModule, ModuleKind::Compute);
 
 // Implement the asset trait
 impl_asset_for_module!(VertexModule, "vert");
