@@ -3,9 +3,9 @@ cFlake Engine, in it's current state, is a free and open-source Rust game engine
 Currently, cFlake engine is under heavy development (***very*** WIP), but pull requests are heavily appreciated (pls help me I am becoming insane)
 
 # Main features of cFlake:
-* Custom World Events, Systems, and Resources all accessible within the **World** struct
+* 6 World Event Variants, Systems, and Resources all accessible within the **World** struct
 * Deterministic event sorting through multiple stages 
-* Archetypal ECS built to be used in conjunction with the World Events and Systems
+* Archetypal multithreaded ECS built to be used in conjunction with the World Events and Systems
 * Custom Graphics API built on top of WGPU
 * GPU Voxel generation and Octree Terrain (disabled temporarily)
 * Asynchronous asset loader and utility thread pool
