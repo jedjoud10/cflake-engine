@@ -214,6 +214,7 @@ impl App {
             .level_for("graphics::context::staging", log::LevelFilter::Warn)
             .level(log::LevelFilter::Debug)
             .chain(std::io::stdout())
+            .chain(fern::log_file("log.log").unwrap())
             .apply().unwrap();
     }
 

@@ -39,11 +39,11 @@ pub enum SamplerFilter {
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SamplerMipMaps {
     // Sampler will fetch it's required data from the texture (aniso disabled)
-    Automatic,
+    Auto,
 
     // Sampler will fetch it's required data from the texture with anisotropy
     #[default]
-    AutomaticAniso,
+    AutoAniso,
 
     // Clamped sampler mip mapping levels (aniso disabled)
     Clamped {
@@ -132,7 +132,7 @@ pub fn convert_mip_map_anisotropic_clamp(
     mip_mapping: &SamplerMipMaps,
 ) -> Option<NonZeroU8> {
     match mip_mapping {
-        SamplerMipMaps::AutomaticAniso => NonZeroU8::new(16),
+        SamplerMipMaps::AutoAniso => NonZeroU8::new(16),
         _ => None,
     }
 }
@@ -150,7 +150,12 @@ pub fn get_or_insert_sampler(
         }
         Entry::Vacant(vacant) => {
             // Convert texture sampling wrap settings to their Wgpu counterpart
-            log::warn!("Did not find cached sampler {sampling:#?}");
+            log::warn!(
+                "Did not find cached sampler ({:?}, {:?}, {:?})",
+                sampling.filter,
+                sampling.wrap,
+                sampling.mipmaps
+            );
             let (address_mode, border_color) =
                 super::convert_wrap_to_address_mode(&sampling.wrap);
             let anisotropy_clamp =
@@ -178,7 +183,10 @@ pub fn get_or_insert_sampler(
             let sampler = Arc::new(sampler);
             vacant.insert(sampler.clone());
             log::debug!(
-                "Saved sampler type {sampling:#?} in graphics cache"
+                "Saved sampler ({:?}, {:?}, {:?}) in graphics cache",
+                sampling.filter,
+                sampling.wrap,
+                sampling.mipmaps
             );
             sampler
         }

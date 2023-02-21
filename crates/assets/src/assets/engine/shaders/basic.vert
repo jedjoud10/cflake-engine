@@ -10,11 +10,9 @@ layout(location = 3) in vec2 tex_coord;
 #include <engine/shaders/common/camera.glsl>
 
 // Push constants for the mesh matrix
-/*
 layout(push_constant) uniform PushConstants {
     mat4 matrix;
 } mesh;
-*/
 
 // Data to give to the fragment shader
 layout(location = 0) out vec3 m_position;

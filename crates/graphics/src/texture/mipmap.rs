@@ -13,12 +13,12 @@ pub enum TextureMipMaps<'mip, 'map, T: Texel> {
     Disabled,
 
     // Automatic mipmap generation based on the texture dimensions
-    Automatic,
+    Auto,
 
     // Clamped automatic mipmap generation (to limit number of mips)
     // If levels is less than 2, then mipmapping will be disabled
     // Will be clamped to the maximum number of levels possible
-    AutomaticClamped {
+    AutoClamped {
         max: NonZeroU8,
     },
 

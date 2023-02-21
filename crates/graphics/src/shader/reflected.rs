@@ -1,23 +1,23 @@
 use std::{
-    collections::hash_map::DefaultHasher, hash::Hash, sync::Arc,
+    hash::Hash, sync::Arc,
 };
 
-use crate::{Graphics, ShaderModule};
+use crate::{Graphics, ShaderModule, Compiled, FragmentModule, VertexModule};
 use ahash::{AHashMap, AHashSet};
-use arrayvec::ArrayVec;
-use itertools::Itertools;
 use naga::{AddressSpace, ResourceBinding, TypeInner};
 
 // This container stores all data related to reflected shaders
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ReflectedShader {
     pub bind_group_layouts: [Option<BindGroupLayout>; 4],
+    pub push_constants: [Option<PushConstantLayout>; 2],
 }
 
 // This container stores all data related to reflected modules
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ReflectedModule {
     pub bind_group_layouts: [Option<BindGroupLayout>; 4],
+    pub push_constant: Option<PushConstantLayout>,
 }
 
 // A bind group contains one or more bind entries
@@ -35,6 +35,14 @@ pub struct BindEntryLayout {
     pub group: u32,
     pub binding_type: BindingType,
     pub visiblity: wgpu::ShaderStages,
+}
+
+// Push constant uniform data
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct PushConstantLayout {
+    pub name: String,
+    pub members: Vec<StructMemberLayout>,
+    pub size: u32,
 }
 
 // The type of BindingEntry.
@@ -82,17 +90,44 @@ pub enum StructMemberType {
     },
 }
 
+// Reflect a vertex and fragment modules and create their respective pipeline layout
+pub fn merge_and_make_layout(
+    vertex: &Compiled<VertexModule>,
+    fragment: &Compiled<FragmentModule>,
+    graphics: &Graphics
+) -> (ReflectedShader, Arc<wgpu::PipelineLayout>) {
+    // Convert the reflected module to a reflected shader
+    let modules = &[vertex.reflected(), fragment.reflected()];
+    let shader =
+        merge_reflected_modules_to_shader(modules);
+
+    // Convert the reflected shader to a layout
+    let layout = create_pipeline_layout_from_shader(
+        graphics,
+        &shader,
+        &[vertex.file_name(), fragment.file_name()],
+    );
+    (shader, layout)
+}
+
 // Merge multiple reflected modules to create a reflected shader
-pub fn merge_reflected_modules_to_shader(
+// This is private since the ordering of 'modules' is implementation defined
+fn merge_reflected_modules_to_shader(
     modules: &[&ReflectedModule],
 ) -> ReflectedShader {
     // Stores multiple entries per set (max number of sets = 4)
     let mut groups: [Option<AHashMap<u32, BindEntryLayout>>; 4] =
         [None, None, None, None];
 
+    // Stores mutliple push constants for each module (at max we will have 2 modules)
+    let mut push_constants: [Option<PushConstantLayout>; 2] = [None, None];
+
     // Merge differnet bind modules into one big hashmap
-    for module in modules {
+    for (module_index, module) in modules.iter().enumerate() {
+        // Add the bind group push constant layout (if it exists)
+        push_constants[module_index] = module.push_constant.clone();
         for (group_index, bind_group_layout) in module.bind_group_layouts.iter().enumerate() {
+
             // Skip this bind group if it was hopped over in the shader
             let Some(bind_group_layout) = bind_group_layout else {
                 continue;
@@ -103,6 +138,7 @@ pub fn merge_reflected_modules_to_shader(
                 panic!("Bind group MUST contain at least ONE entry");
             }
             
+            // Get the merged group layout and merged group entry layouts
             let merged_group_layout = &mut groups[group_index as usize];
             let merged_group_entry_layouts = merged_group_layout.get_or_insert_with(|| Default::default());
 
@@ -127,7 +163,6 @@ pub fn merge_reflected_modules_to_shader(
 
                     // If the spot is vacant, add the bind entry layout for the first time
                     std::collections::hash_map::Entry::Vacant(vacant) => {
-                        dbg!(bind_entry_layout);
                         vacant.insert(bind_entry_layout.clone());
                     },
                 }
@@ -145,11 +180,12 @@ pub fn merge_reflected_modules_to_shader(
         })
         .collect::<Vec<_>>()
         .try_into().unwrap();
-    ReflectedShader { bind_group_layouts: groups }
+    ReflectedShader { bind_group_layouts: groups, push_constants }
 }
 
 // Convert a given reflected shader to a pipeline layout (by creating it)
-pub fn create_pipeline_layout_from_shader(
+// This is private since the ordering of 'names' is implementation defined
+fn create_pipeline_layout_from_shader(
     graphics: &Graphics,
     shader: &ReflectedShader,
     names: &[&str],
@@ -308,7 +344,9 @@ pub fn reflect_module<M: ShaderModule>(
     naga: &naga::Module,
 ) -> ReflectedModule {
     let groups = reflect_binding_group::<M>(naga);
-    ReflectedModule { bind_group_layouts: groups }
+    let push_constant = reflect_push_constant::<M>(naga);
+
+    ReflectedModule { bind_group_layouts: groups, push_constant }
 }
 
 // Fetches the used binding groups of a given naga module
@@ -345,21 +383,24 @@ pub fn reflect_binding_entries<M: ShaderModule>(
         .filter_map(|(_, value)| {
             value.binding.as_ref().map(|_| value)
         })
+        .filter(|value| {
+            value.space == AddressSpace::Uniform
+            || value.space == AddressSpace::Handle
+        })
         .map(|value| {
+            // Get the type and address space of the variable
             let ResourceBinding { group, binding } =
                 *value.binding.as_ref().unwrap();
-
-            // Get the type and address space of the variable
             let typed = types.get_handle(value.ty).unwrap();
             let type_inner = &typed.inner;
-            let space = value.space;
 
-            let binding_type = match &type_inner {
+            //reflect_bind_entry::<M>(value, types);
+            let binding_type = match type_inner {
                 // Uniform Buffers
                 TypeInner::Struct {
                     members,
                     span: size,
-                } => reflect_buffer(members, types, size, space),
+                } => reflect_buffer(members, types, size, value.space),
 
                 // Uniform Textures
                 TypeInner::Image { dim, class, .. } => {
@@ -370,7 +411,7 @@ pub fn reflect_binding_entries<M: ShaderModule>(
                 TypeInner::Sampler { comparison } => {
                     reflect_sampler(comparison)
                 }
-                _ => todo!(),
+                _ => panic!("Not supported"),
             };
 
             BindEntryLayout {
@@ -382,6 +423,43 @@ pub fn reflect_binding_entries<M: ShaderModule>(
             }
         })
         .collect::<Vec<_>>()
+}
+
+// Fetches the used push constant of the given global variable
+pub fn reflect_push_constant<M: ShaderModule>(naga: &naga::Module,) -> Option<PushConstantLayout> {
+    // Get the type and address space of the variable
+    let types = &naga.types;
+    let vars = &naga.global_variables;
+    
+    // The push constant layout that we will return
+    let mut output: Option<PushConstantLayout> = None;
+
+    // Try to find a push constant that we use
+    for (_, value) in vars.iter() {
+        match value.space {
+            AddressSpace::PushConstant => {
+                let typed = types.get_handle(value.ty).unwrap();
+                let type_inner = &typed.inner;
+                let name = value.name.clone().unwrap().clone();
+
+                let (members, size) =  match type_inner {
+                    TypeInner::Struct { members, span } => (members, *span),
+                    _ => panic!("")
+                };
+
+                let members = reflect_struct_member_layouts(members, types);
+
+                output = Some(PushConstantLayout {
+                    name,
+                    members,
+                    size,
+                })
+            },
+            _ => {}
+        }
+    }
+
+    output
 }
 
 // Fetch the BindingType of a naga Struct (assuming it to be a buffer)
@@ -398,56 +476,61 @@ fn reflect_buffer(
 
     BindingType::Buffer {
         buffer_binding: wgpu::BufferBindingType::Uniform,
-        members: members
-            .iter()
-            .map(|member| {
-                let type_inner =
-                    &types.get_handle(member.ty).unwrap().inner;
-                let (size, struct_type) = match type_inner {
-                    TypeInner::Scalar { kind, width } => (
-                        *width as u32,
-                        StructMemberType::Scalar { kind: *kind },
-                    ),
-                    TypeInner::Vector { size, kind, width } => {
-                        let size2 =
-                            *width as u32 * vector_size_to_u32(size);
-                        (
-                            size2,
-                            StructMemberType::Vector {
-                                size: *size,
-                                kind: *kind,
-                            },
-                        )
-                    }
-                    TypeInner::Matrix {
-                        columns,
-                        rows,
-                        width,
-                    } => {
-                        let size = *width as u32
-                            * vector_size_to_u32(columns)
-                            * vector_size_to_u32(rows);
-                        (
-                            size,
-                            StructMemberType::Matrix {
-                                columns: *columns,
-                                rows: *rows,
-                            },
-                        )
-                    }
-                    _ => panic!(),
-                };
-
-                StructMemberLayout {
-                    name: member.name.clone().unwrap(),
-                    offset: member.offset,
-                    size,
-                    struct_type,
-                }
-            })
-            .collect(),
+        members: reflect_struct_member_layouts(members, types),
         size: *size,
     }
+}
+
+// Fetch teh struct layout of the struct member layout
+fn reflect_struct_member_layouts(members: &Vec<naga::StructMember>, types: &naga::UniqueArena<naga::Type>) -> Vec<StructMemberLayout> {
+    members
+        .iter()
+        .map(|member| {
+            let type_inner =
+                &types.get_handle(member.ty).unwrap().inner;
+            let (size, struct_type) = match type_inner {
+                TypeInner::Scalar { kind, width } => (
+                    *width as u32,
+                    StructMemberType::Scalar { kind: *kind },
+                ),
+                TypeInner::Vector { size, kind, width } => {
+                    let size2 =
+                        *width as u32 * vector_size_to_u32(size);
+                    (
+                        size2,
+                        StructMemberType::Vector {
+                            size: *size,
+                            kind: *kind,
+                        },
+                    )
+                }
+                TypeInner::Matrix {
+                    columns,
+                    rows,
+                    width,
+                } => {
+                    let size = *width as u32
+                        * vector_size_to_u32(columns)
+                        * vector_size_to_u32(rows);
+                    (
+                        size,
+                        StructMemberType::Matrix {
+                            columns: *columns,
+                            rows: *rows,
+                        },
+                    )
+                }
+                _ => panic!(),
+            };
+
+            StructMemberLayout {
+                name: member.name.clone().unwrap(),
+                offset: member.offset,
+                size,
+                struct_type,
+            }
+        })
+        .collect()
 }
 
 // Convert a VectorSize enum to it's corresponding u32 value

@@ -21,17 +21,7 @@ impl Shader {
         vertex: &Compiled<VertexModule>,
         fragment: &Compiled<FragmentModule>,
     ) -> Self {
-        // Convert the reflected module to a reflected shader
-        let modules = &[vertex.reflected(), fragment.reflected()];
-        let shader =
-            super::merge_reflected_modules_to_shader(modules);
-
-        // Convert the reflected shader to a layout
-        let layout = super::create_pipeline_layout_from_shader(
-            graphics,
-            &shader,
-            &[vertex.file_name(), fragment.file_name()],
-        );
+        let (shader, layout) = super::merge_and_make_layout(vertex, fragment, graphics);
 
         Self {
             vertex: vertex.clone(),
