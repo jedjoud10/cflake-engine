@@ -32,17 +32,15 @@ fn init(world: &mut World) {
     // Import the diffuse map and normal map
     asset!(&mut assets, "assets/user/ignored/diffuse.jpg");
     asset!(&mut assets, "assets/user/ignored/normal.jpg");
+    asset!(&mut assets, "assets/user/ignored/test.txt");
 
-    let vec = vec![(
-        "user/ignored/diffuse.jpg",
-        graphics.clone(),
-    ); 40];
+    let vec = vec!["user/ignored/test.txt"; 40];
 
-    let handles = assets
-    .async_load_from_iter::<AlbedoMap>(vec, &mut threadpool);
+    let handles = assets.async_load_from_iter::<String>(vec, &mut threadpool);
+    assets.wait_from_iter(handles);
+
 
     // Load in the diffuse map and normal map textures asynchronously
-    let instant = std::time::Instant::now();
     let handles = assets
         .async_load_from_iter::<AlbedoMap>([(
             "user/ignored/diffuse.jpg",

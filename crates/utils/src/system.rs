@@ -1,7 +1,7 @@
 use std::{
     num::{NonZeroU128, NonZeroU32},
     time::{Duration, Instant},
-    io::Write,
+    io::{Write, BufWriter}, fs::File,
 };
 
 use crate::{FileManager, ThreadPool, Time, FileType};
@@ -42,20 +42,19 @@ pub fn file_logger(system: &mut System, receiver: std::sync::mpsc::Receiver<Stri
     let file = chrono::Local::now().format("%Y-%m-%d.log").to_string();
 
     system
-        .insert_update(move |world: &mut World| {
+        .insert_init(move |world: &mut World| {
             // Get the file manager to get the log file
             let mut manager = world.get_mut::<FileManager>().unwrap();
+            let file = manager.write_file(&file, false, FileType::Log).unwrap();
 
-            // This receiver will receive the logged messages from the fern dispatcher
-            let lines: Vec::<String> = receiver.try_iter().filter(|x| !x.is_empty()).collect();
-            
-            // If we have messages that we must log, open the file, and write
-            if !lines.is_empty() {
-                let mut buffer = manager.write_file(&file, false, FileType::Log).unwrap();
-                for line in lines {
-                    write!(buffer, "{}", line).unwrap();
+            // Create a secondary thread that will be responsible for logging these events
+            std::thread::spawn(move || {
+                // This receiver will receive the logged messages from the fern dispatcher
+                let mut file = file;
+                for line in receiver.iter().filter(|x| !x.is_empty()) {
+                    write!(file, "{}", line).unwrap();
                 }
-            }
+            });            
         });
 }
 

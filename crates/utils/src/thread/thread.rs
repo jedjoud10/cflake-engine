@@ -226,8 +226,8 @@ impl ThreadPool {
 
     // Execute a raw task. Only should be used internally
     pub(super) fn append(&mut self, task: ThreadedTask) {
-        self.waiting.fetch_add(1, Ordering::Relaxed);
-        self.task_sender.as_ref().unwrap().send(task).unwrap();
+        //self.waiting.fetch_add(1, Ordering::Relaxed);
+        //self.task_sender.as_ref().unwrap().send(task).unwrap();
     }
 
     // Add a new task to execute in the threadpool. This task will run in the background
@@ -300,7 +300,7 @@ fn spawn(threadpool: &ThreadPool, index: usize) -> JoinHandle<()> {
     let task_receiver = threadpool.task_receiver.clone();
     let active = threadpool.active.clone();
     let waiting = threadpool.waiting.clone();
-    let name = format!("WorkerThread-{index}");
+    let name = format!("worker-{index}");
 
     // Used to check if a thread has panicked
     struct Hook(usize, Arc<Mutex<Option<usize>>>);

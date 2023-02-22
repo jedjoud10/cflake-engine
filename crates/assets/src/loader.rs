@@ -378,6 +378,7 @@ impl Assets {
                 });
             }
         });
+        panic!();
         outer
     }
 
@@ -422,6 +423,7 @@ impl Assets {
         &self,
         handles: impl IntoIterator<Item = AsyncHandle<A>>,
     ) -> Vec<Result<A, AssetLoadError>> {
+        log::debug!("Waiting for async assets to load...");
         handles
             .into_iter()
             .map(|handle| self.wait(handle))

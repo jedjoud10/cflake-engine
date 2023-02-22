@@ -183,11 +183,12 @@ impl App {
             fern::Dispatch::new()
                 .format(move |out, _, record| {
                     out.finish(format_args!(
-                        "[{date}][{target}][{level}] {message}",
+                        "[{thread_name}][{date}][{target}][{level}] {message}",
                         date = chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
                         target = record.target(),
                         level = record.level(),
                         message = record.args(),
+                        thread_name = std::thread::current().name().unwrap_or_else(|| "none")
                     ));
                 })
                 .chain(sender)
@@ -197,7 +198,7 @@ impl App {
         fn console_logger(colors_level: ColoredLevelConfig, colors_line: ColoredLevelConfig) -> fern::Dispatch {
             fern::Dispatch::new().format(move |out, message, record| {
                 out.finish(format_args!(
-                    "{color_line}[{date}][{target}][{level}{color_line}] {message}\x1B[0m",
+                    "{color_line}[{thread_name}][{date}][{target}][{level}{color_line}] {message}\x1B[0m",
                     color_line = format_args!(
                         "\x1B[{}m",
                         colors_line.get_color(&record.level()).to_fg_str()
@@ -206,6 +207,7 @@ impl App {
                     target = record.target(),
                     level = colors_level.color(record.level()),
                     message = message,
+                    thread_name = std::thread::current().name().unwrap_or_else(|| "none"),
                 ));
             }).chain(std::io::stdout())
         }

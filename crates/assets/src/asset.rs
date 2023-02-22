@@ -82,6 +82,7 @@ impl Asset for String {
         _: Self::Context<'c>,
         _: Self::Settings<'s>,
     ) -> Result<Self, Self::Err> {
+        std::thread::sleep(std::time::Duration::from_millis(1000));
         String::from_utf8(data.bytes().to_vec())
     }
 }
