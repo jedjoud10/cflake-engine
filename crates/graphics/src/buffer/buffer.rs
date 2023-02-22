@@ -426,7 +426,20 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
             ));
         }
 
-        todo!();
+        // Calculate byte wise offsets and sizes
+        let source_offset = (src_offset * self.stride()) as u64;
+        let destination_offset = (dst_offset * self.stride()) as u64;
+        let copy_size = (length * self.stride()) as u64;
+
+        let mut encoder = self.graphics.acquire();
+        encoder.copy_buffer_to_buffer(
+            src.raw(),
+            source_offset,
+            self.raw(),
+            destination_offset,
+            copy_size
+        );
+        self.graphics.submit([encoder]);
         Ok(())
     }
 

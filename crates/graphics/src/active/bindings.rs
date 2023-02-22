@@ -1,5 +1,5 @@
 use thiserror::Error;
-use crate::{GpuPod, Shader, Texture, UniformBuffer, ReflectedShader, Sampler, Texel, ValueFiller};
+use crate::{GpuPod, Shader, Texture, UniformBuffer, ReflectedShader, Sampler, Texel, ValueFiller, StructMemberLayout};
 use std::{marker::PhantomData, sync::Arc};
 
 #[derive(Debug, Error)]
@@ -20,6 +20,11 @@ pub enum BindError<'a> {
     #[error("The texutre '{name}' does not have a correspodning sampler named '{name}_sampler'")]
     TextureMissingSampler {
         name: &'a str
+    },
+
+    #[error("Field {name} was not set when FIllBuffer was dropped")]
+    FillBufferMissingField {
+        name: String,
     }
 }
 
@@ -151,20 +156,57 @@ impl<'a> BindGroup<'a> {
         name: &'s str,
         callback: impl FnOnce(&mut FillBuffer)
     ) -> Result<(), BindError<'s>> {
-        /*
         // Get the binding entry layout for the given buffer
         let entry = Self::find_entry_layout(
             self.index,
             &self.reflected,
             name
         )?;
-        */
+        
+        // Pre-allocate a vector with an appropriate size
+        let (size, members) = match entry.binding_type {
+            crate::BindingType::Buffer { size, ref members, .. } => (size as usize, members),
+            _ => panic!(),
+        };
+
+        // Le vecteur that contains le data
+        let mut vector = vec![0u8; size];
+
+        // Contains some flags that tell us if each field was set or not
+        let mut set = members.iter().map(|_| false).collect::<Vec<_>>();
+
+        // Create the fill buffer
+        let mut fill_buffer = FillBuffer {
+            internal: &mut vector,
+            set: &mut set,
+            members: members.as_slice(),
+            _phantom: PhantomData,
+        };
+        
+        // Execute the call back to set the UBO fields
+        callback(&mut fill_buffer);
+        drop(fill_buffer);
+
+        // Return an error if the user didn't set all of the fields
+        if let Some((index, _)) = set.iter().enumerate().find(|(_, &x)| !x) {
+            let member = &members[index];
+            return Err(BindError::FillBufferMissingField { name: member.name.clone() });
+        }
+
+        // Create a UBO for this specific bind group if necessary
+        // Write to one immediately, and create a new one if needed
+        // Then, bind to the current bind group
+
         Ok(())
     }
 }
 
-
+// A fill buffer can be used to fill UBO data field by fiel instead of uploading raw bytes to the GPU
+// All it does is fetch field layout, write to a byte buffer, then upload at the end of the closure
 pub struct FillBuffer<'a> {
+    internal: &'a mut [u8],
+    members: &'a [StructMemberLayout],
+    set: &'a mut [bool], 
     _phantom: PhantomData<&'a ()>
 }
 

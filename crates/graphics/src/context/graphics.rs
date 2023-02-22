@@ -11,7 +11,7 @@ use wgpu::{
 
 use crate::{
     BindGroupLayout, ReflectedShader, SamplerSettings, SamplerWrap,
-    StagingPool,
+    StagingPool, UniformBuffer,
 };
 
 type NoHash = BuildHasherDefault<nohash_hasher::NoHashHasher<u64>>;
@@ -25,6 +25,8 @@ pub(crate) struct Cached {
         DashMap<ReflectedShader, Arc<wgpu::PipelineLayout>>,
     pub(crate) bind_groups:
         DashMap<Vec<wgpu::Id>, Arc<wgpu::BindGroup>>,
+    pub(crate) fill_buffers_ubo:
+        DashMap<u32, UniformBuffer<u8>>,
 }
 
 // Internnal graphics context that will eventually be wrapped within an Arc

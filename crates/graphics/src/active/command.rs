@@ -1,6 +1,6 @@
 use crate::{
     ColorLayout, DepthStencilLayout, GraphicsPipeline,
-    TriangleBuffer, UntypedBuffer,
+    TriangleBuffer, UntypedBuffer, UniformBuffer,
 };
 use std::{ops::Range, sync::Arc};
 use wgpu::BindGroup;
