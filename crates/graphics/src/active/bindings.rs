@@ -169,4 +169,7 @@ pub struct FillBuffer<'a> {
 }
 
 impl ValueFiller for FillBuffer<'_> {
+    fn set<'s, T>(&mut self, name: &'s str, value: T) -> Result<(), crate::FillError<'s>> {
+        todo!()
+    }
 }

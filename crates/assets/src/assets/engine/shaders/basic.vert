@@ -23,17 +23,17 @@ layout(location = 4) out vec2 m_tex_coord;
 
 void main() {
 	// Model space -> World space -> Clip space
-    vec4 world_pos = vec4(position, 1);
+    vec4 world_pos = mesh.matrix * vec4(position, 1);
     vec4 projected = (camera.projection * camera.view) * world_pos; 
     gl_Position = projected;
 
     // Set the output variables
     m_position = world_pos.xyz;
-    m_normal = normalize((vec4(normal, 0)).xyz);
-    m_tangent = normalize((vec4(tangent.xyz, 0)).xyz);
+    m_normal = normalize((mesh.matrix * vec4(normal, 0)).xyz);
+    m_tangent = normalize((mesh.matrix * vec4(tangent.xyz, 0)).xyz);
     m_tex_coord = tex_coord;
 
     // Calculate world space bitangent
 	vec3 bitangent = cross(normalize(m_normal), normalize(tangent.xyz)) * tangent.w;
-	m_bitangent = normalize((vec4(bitangent, 0.0)).xyz);
+	m_bitangent = normalize((mesh.matrix * vec4(bitangent, 0.0)).xyz);    
 }

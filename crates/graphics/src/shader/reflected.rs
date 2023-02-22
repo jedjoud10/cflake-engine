@@ -11,7 +11,6 @@ use naga::{AddressSpace, ResourceBinding, TypeInner};
 pub struct ReflectedShader {
     pub bind_group_layouts: [Option<BindGroupLayout>; 4],
     pub push_constant_layouts: [Option<PushConstantLayout>; 2],
-    pub push_constant_ranges: Vec<wgpu::PushConstantRange>,
 }
 
 // This container stores all data related to reflected modules
@@ -42,6 +41,7 @@ pub struct BindEntryLayout {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PushConstantLayout {
     pub name: String,
+    pub stages: wgpu::ShaderStages,
     pub members: Vec<StructMemberLayout>,
     pub size: u32,
 }
@@ -123,15 +123,10 @@ fn merge_reflected_modules_to_shader(
     // Stores mutliple push constants for each module (at max we will have 2 modules)
     let mut push_constant_layouts: [Option<PushConstantLayout>; 2] = [None, None];
 
-    // Push constant byte ranges that we will use to submit to GPU memory
-    let mut push_constant_ranges: Vec<wgpu::PushConstantRange> = Vec::new();
-
     // Merge different modules into a ReflectedShader
     for (module_index, module) in modules.iter().enumerate() {
         // Add the bind group push constant layout (if it exists)
         push_constant_layouts[module_index] = module.push_constant.clone();
-
-        // Merge push constants and create shared ranges
 
         // Merrge bind groups and their entries
         for (group_index, bind_group_layout) in module.bind_group_layouts.iter().enumerate() {
@@ -191,7 +186,6 @@ fn merge_reflected_modules_to_shader(
     ReflectedShader {
         bind_group_layouts: groups,
         push_constant_layouts,
-        push_constant_ranges,
     }
 }
 
@@ -329,12 +323,24 @@ fn create_pipeline_layout_from_shader(
         )
         .collect::<Vec<_>>();
 
+    // Convert the push constant range layouts to push constant ranges
+    let push_constant_ranges = shader.push_constant_layouts
+        .iter()
+        .filter_map(|x| x.as_ref())
+        .map(|layout| {
+            wgpu::PushConstantRange {
+                stages: layout.stages,
+                range: 0..layout.size,
+            }
+        })
+        .collect::<Vec<_>>();
+
     // Create the pipeline layout
     let layout = graphics.device().create_pipeline_layout(
         &wgpu::PipelineLayoutDescriptor {
             label: None,
             bind_group_layouts: &bind_group_layouts,
-            push_constant_ranges: &shader.push_constant_ranges,
+            push_constant_ranges: &push_constant_ranges,
         },
     );
 
@@ -465,6 +471,7 @@ pub fn reflect_push_constant<M: ShaderModule>(naga: &naga::Module,) -> Option<Pu
                     name,
                     members,
                     size,
+                    stages: kind_to_wgpu_stage(&M::kind()),
                 })
             },
             _ => {}

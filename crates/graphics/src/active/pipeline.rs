@@ -48,24 +48,40 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         &mut self,
         callback: impl FnOnce(&mut PushConstants)
     ) {
-        /*
-        // Get shader and it's reflected data
         let shader = self.pipeline.shader();
-        let reflected = &shader.reflected;
-        
-        // Check the shader's push constant layouts if they contain the field
-        reflected
-            .push_constant_layouts
-            .iter()
-            .filter_map(|x| x.as_ref())
-            .map(|push_constant_layout| push_constant_layout.members.iter().any(|members| {
 
-            }));
-        */
+        // Don't set the push constants if we don't have any to set
+        let valid = shader.reflected.push_constant_layouts.iter().any(|x| x.is_some());
+        if !valid {
+            return;
+        }
 
+        // Create push constants that we can set 
+        let mut push_constants = PushConstants {
+            reflected: shader.reflected.clone(),
+            offsets: Vec::new(),
+            data: Vec::new(),
+            stages: Vec::new(),
+            _phantom: PhantomData,
+        };
 
-        // Set push constants using the callback
-        // Store the results of the push constants in memory
+        // Let the user modify the push constant
+        callback(&mut push_constants);
+
+        // Fetch data back from push constants
+        let offsets = push_constants.offsets;
+        let data = push_constants.data;
+        let stages = push_constants.stages;
+
+        // Create the render commands for settings for push constants
+        let iter = stages.into_iter().zip(offsets.into_iter().zip(data.into_iter()));
+        for (stages, (offset, data)) in iter {
+            self.commands.push(RenderCommand::SetPushConstants {
+                stages,
+                offset,
+                data
+            })
+        }
     }
 
     // Execute a callback that we will use to fill a bind group
@@ -102,7 +118,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         // Let the user modify the bind group 
         callback(&mut bind_group);
 
-
+        // Check the cache, and create a new bind group
         let cache = &self.graphics.0.cached;
         let bind_group = match cache
             .bind_groups
@@ -114,6 +130,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
             dashmap::mapref::entry::Entry::Vacant(vacant) => {
                 log::warn!("Did not find cached bind group (set = {binding}), creating new one...");
 
+                // Get the bind group layout of the bind group
                 let layout =
                     &shader.reflected.bind_group_layouts[binding as usize].as_ref().unwrap();
                 let layout = self
@@ -124,6 +141,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
                     .get(layout)
                     .unwrap();
 
+                // Get the bind group entries
                 let entries = bind_group
                     .resources
                     .into_iter()
@@ -134,12 +152,14 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
                     })
                     .collect::<Vec<_>>();
 
+                // Create a bind group descriptor of the entries 
                 let desc = wgpu::BindGroupDescriptor {
                     label: None,
                     layout: &layout,
                     entries: &entries,
                 };
 
+                // Create the bind group and cache it for later use
                 let bind_group =
                     self.graphics.device().create_bind_group(&desc);
                 let bind_group = Arc::new(bind_group);

@@ -103,8 +103,8 @@ impl Material for Basic {
         
         // Fill the material UBO with the specified fields automatically
         group.fill_buffer("material", |fill| {
-            fill.set_scalar("bumpiness", self.bumpiness);
-            fill.set_vec3("tint", self.tint);
+            fill.set_scalar("bumpiness", self.bumpiness).unwrap();
+            fill.set_vec3("tint", self.tint).unwrap();
         }).unwrap();
     }
 
@@ -116,6 +116,6 @@ impl Material for Basic {
         default: &DefaultMaterialResources<'r>,
         push_constants: &mut PushConstants
     ) {
-        //push_constants.set_mat4x4("matrix", renderer.matrix);
+        push_constants.set_mat4x4("matrix", renderer.matrix.cols).unwrap();
     }
 }
