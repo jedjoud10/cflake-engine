@@ -39,7 +39,7 @@ impl ValueFiller for PushConstants<'_> {
             return Err(FillError::MissingField { name: name });
         };
 
-        // Conver the data to a byte slice
+        // Convert the data to a byte slice
         let value = [value];
         let bytes = bytemuck::cast_slice::<T, u8>(&value);
 

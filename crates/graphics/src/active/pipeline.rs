@@ -136,12 +136,14 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
 
                 // Create a new UBO with the specified layout and bind group
                 Entry::Vacant(vacant) => {
+                    log::warn!("Did not find fill buffer for bind group (set = {binding}), allocating a new one...");
                     let buffer = UniformBuffer::<u8>::from_slice(
                         &self.graphics,
                         &data,
                         BufferMode::Resizable,
                         BufferUsage::Write
                     ).unwrap();
+                    vacant.insert(buffer);
                 },
             }
         }
@@ -185,7 +187,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
                     let buffer = ubos.get(&(binding, layout.clone())).unwrap();
                     
                     entries.push(wgpu::BindGroupEntry {
-                        binding,
+                        binding: layout.binding,
                         resource: wgpu::BindingResource::Buffer(buffer.raw().as_entire_buffer_binding()),
                     });
                 } 

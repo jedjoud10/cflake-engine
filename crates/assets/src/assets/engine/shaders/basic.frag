@@ -12,14 +12,12 @@ layout(location = 4) in vec2 m_tex_coord;
 #include <engine/shaders/common/camera.glsl>
 #include <engine/shaders/common/scene.glsl>
 #include <engine/shaders/common/timing.glsl>
-/*
 
 // Material scalar data
-layout(set = 1, binding = 1) uniform MaterialData {
+layout(set = 1, binding = 4) uniform MaterialData {
 	vec3 tint;
 	float bumpiness;
 } material;
-*/
 
 // Albedo / diffuse map
 layout(set = 1, binding = 0) uniform texture2D albedo_map;

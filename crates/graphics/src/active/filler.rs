@@ -1,10 +1,9 @@
 use thiserror::Error;
-
 use crate::GpuPod;
 
 #[derive(Debug, Error)]
 pub enum FillError<'a> {
-    #[error("The field {name} does not exist on the filler")]
+    #[error("The field {name} does not exist in the layout")]
     MissingField {
         name: &'a str
     },
