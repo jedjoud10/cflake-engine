@@ -31,16 +31,21 @@ pub struct CameraUniform {
 pub struct TimingUniform {
     pub frame_count: u32,
     pub delta_time: f32,
-    pub time_since_startup: f32,
+    pub time_since_startup: f32
 }
 
 // Scene data that will be stored in a UBO
 #[derive(Clone, Copy, PartialEq, Pod, Zeroable, Default)]
 #[repr(C)]
 pub struct SceneUniform {
-    pub ambient_color: vek::Rgb<f32>,
+    // Ambient color of the environment
+    pub ambient_color: vek::Vec4<f32>,
+
+    // Sun related parameters
+    pub sun_direction: vek::Vec4<f32>,
     pub sun_strength: f32,
     pub sun_size: f32,
+    pub _padding: [f32; 2],
 }
 
 // Type aliases for textures

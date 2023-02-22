@@ -69,8 +69,8 @@ impl Material for Basic {
     ) {
         // Set the required common buffers
         group.set_buffer("camera", default.camera_buffer).unwrap();
-        //bindings.set_buffer(default.timing_buffer);
-        //bindings.set_buffer(default.scene_buffer);
+        group.set_buffer("scene", default.scene_buffer).unwrap();
+        group.set_buffer("time", default.timing_buffer).unwrap();
     }
 
     // Set the instance bindings that will change per material
