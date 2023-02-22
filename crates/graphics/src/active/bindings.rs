@@ -1,5 +1,6 @@
+use ahash::AHashMap;
 use thiserror::Error;
-use crate::{GpuPod, Shader, Texture, UniformBuffer, ReflectedShader, Sampler, Texel, ValueFiller, StructMemberLayout};
+use crate::{GpuPod, Shader, Texture, UniformBuffer, ReflectedShader, Sampler, Texel, ValueFiller, StructMemberLayout, BindEntryLayout};
 use std::{marker::PhantomData, sync::Arc};
 
 #[derive(Debug, Error)]
@@ -34,6 +35,7 @@ pub struct BindGroup<'a> {
     pub(crate) index: u32,
     pub(crate) reflected: Arc<ReflectedShader>,
     pub(crate) resources: Vec<wgpu::BindingResource<'a>>,
+    pub(crate) fill_ubos: AHashMap<String, (Vec<u8>, BindEntryLayout)>,
     pub(crate) slots: Vec<u32>,
     pub(crate) ids: Vec<wgpu::Id>,
     pub(crate) _phantom: PhantomData<&'a ()>,
@@ -193,10 +195,8 @@ impl<'a> BindGroup<'a> {
             return Err(BindError::FillBufferMissingField { name: member.name.clone() });
         }
 
-        // Create a UBO for this specific bind group if necessary
-        // Write to one immediately, and create a new one if needed
-        // Then, bind to the current bind group
-
+        // Set the fill UBO data
+        self.fill_ubos.insert(entry.name.clone(), (vector, entry.clone()));
         Ok(())
     }
 }
@@ -211,6 +211,7 @@ pub struct FillBuffer<'a> {
 }
 
 impl ValueFiller for FillBuffer<'_> {
+    // Set the value of a UBO fill buffer field
     fn set<'s, T>(&mut self, name: &'s str, value: T) -> Result<(), crate::FillError<'s>> {
         todo!()
     }

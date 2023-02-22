@@ -1,9 +1,11 @@
+use ahash::AHashMap;
+
 use crate::{
     BindGroup, ColorLayout, DepthStencilLayout, Graphics,
     GraphicsPipeline, RenderCommand, TriangleBuffer, UntypedBuffer,
-    Vertex, VertexBuffer, PushConstants, ModuleKind,
+    Vertex, VertexBuffer, PushConstants, ModuleKind, UniformBuffer, BufferMode, BufferUsage,
 };
-use std::{marker::PhantomData, ops::Range, sync::Arc};
+use std::{marker::PhantomData, ops::Range, sync::Arc, collections::hash_map::Entry};
 
 // An active graphics pipeline that is bound to a render pass that we can use to render
 pub struct ActiveGraphicsPipeline<
@@ -113,13 +115,38 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
             resources: Vec::new(),
             ids: Vec::new(),
             slots: Vec::new(),
+            fill_ubos: AHashMap::new(),
         };
 
         // Let the user modify the bind group 
         callback(&mut bind_group);
 
-        // Check the cache, and create a new bind group
+        // Check the cache, and create a new fill UBOs if needed
+        // This will also fill the buffers, but it won't bind them
         let cache = &self.graphics.0.cached;
+        let mut ubos = cache.fill_buffers_ubo.lock();
+        let fill_ubos = &bind_group.fill_ubos;
+        for (name, (data, layout)) in fill_ubos.iter() {
+            match ubos.entry((binding, layout.clone())) {
+                // There is an already existing UBO buffer with the same layout and bind group, fill it up
+                Entry::Occupied(mut occupied) => {
+                    let buffer = occupied.get_mut();
+                    buffer.write(&data, 0).unwrap();
+                },
+
+                // Create a new UBO with the specified layout and bind group
+                Entry::Vacant(vacant) => {
+                    let buffer = UniformBuffer::<u8>::from_slice(
+                        &self.graphics,
+                        &data,
+                        BufferMode::Resizable,
+                        BufferUsage::Write
+                    ).unwrap();
+                },
+            }
+        }
+
+        // Check the cache, and create a new bind group
         let bind_group = match cache
             .bind_groups
             .entry(bind_group.ids.clone())
@@ -142,7 +169,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
                     .unwrap();
 
                 // Get the bind group entries
-                let entries = bind_group
+                let mut entries = bind_group
                     .resources
                     .into_iter()
                     .zip(bind_group.slots.into_iter())
@@ -151,6 +178,17 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
                         resource,
                     })
                     .collect::<Vec<_>>();
+
+                // Take in consideration the fill buffer UBOs
+                for (name, (data, layout)) in fill_ubos.iter() {
+                    // Get the buffer back from cache
+                    let buffer = ubos.get(&(binding, layout.clone())).unwrap();
+                    
+                    entries.push(wgpu::BindGroupEntry {
+                        binding,
+                        resource: wgpu::BindingResource::Buffer(buffer.raw().as_entire_buffer_binding()),
+                    });
+                } 
 
                 // Create a bind group descriptor of the entries 
                 let desc = wgpu::BindGroupDescriptor {

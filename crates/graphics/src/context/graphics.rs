@@ -1,3 +1,4 @@
+use ahash::AHashMap;
 use dashmap::DashMap;
 use naga::{front::glsl::Parser, valid::Validator};
 use parking_lot::Mutex;
@@ -11,7 +12,7 @@ use wgpu::{
 
 use crate::{
     BindGroupLayout, ReflectedShader, SamplerSettings, SamplerWrap,
-    StagingPool, UniformBuffer,
+    StagingPool, UniformBuffer, BindEntryLayout,
 };
 
 type NoHash = BuildHasherDefault<nohash_hasher::NoHashHasher<u64>>;
@@ -26,7 +27,7 @@ pub(crate) struct Cached {
     pub(crate) bind_groups:
         DashMap<Vec<wgpu::Id>, Arc<wgpu::BindGroup>>,
     pub(crate) fill_buffers_ubo:
-        DashMap<u32, UniformBuffer<u8>>,
+        Mutex<AHashMap<(u32, BindEntryLayout), UniformBuffer<u8>>>,
 }
 
 // Internnal graphics context that will eventually be wrapped within an Arc
