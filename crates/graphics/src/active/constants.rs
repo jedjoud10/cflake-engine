@@ -44,7 +44,11 @@ impl ValueFiller for PushConstants<'_> {
         let bytes = bytemuck::cast_slice::<T, u8>(&value);
 
         // There is a possibility that the field is shared
-        if valid.len() == 2 && valid[0].0 == valid[1].0 {    
+        if valid.len() == 2 && valid[0].0 == valid[1].0 {
+            let entry = &valid[1].0;  
+            self.offsets.push(entry.offset);
+            self.data.push(bytes.to_vec());
+            self.stages.push(wgpu::ShaderStages::VERTEX_FRAGMENT);
         } else {
             // Set the field separately
             for (layout, stage) in valid {

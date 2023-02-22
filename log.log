@@ -7300,3 +7300,691 @@
 [33m[2023-02-21 19:37:05][graphics::active::pipeline][[33mWARN[0m[33m] Did not find cached bind group (set = 0), creating new one...[0m
 [33m[2023-02-21 19:37:05][graphics::active::pipeline][[33mWARN[0m[33m] Did not find cached bind group (set = 1), creating new one...[0m
 [33m[2023-02-21 19:37:05][graphics::context::staging][[33mWARN[0m[33m] Did not find block, allocating new buffer with size 256 and mode Write[0m
+[37m[2023-02-21 20:24:33][app::app][[34mDEBUG[0m[37m] Sorting engine stages...[0m
+[37m[2023-02-21 20:24:33][world::events::registry][[34mDEBUG[0m[37m] Sorted 11 events for Init registry[0m
+[37m[2023-02-21 20:24:33][world::events::registry][[34mDEBUG[0m[37m] Sorted 11 events for Update registry[0m
+[37m[2023-02-21 20:24:33][world::events::registry][[34mDEBUG[0m[37m] Sorted 0 events for Shutdown registry[0m
+[37m[2023-02-21 20:24:33][world::events::registry][[34mDEBUG[0m[37m] Sorted 1 events for WindowEvent registry[0m
+[37m[2023-02-21 20:24:33][world::events::registry][[34mDEBUG[0m[37m] Sorted 1 events for DeviceEvent registry[0m
+[37m[2023-02-21 20:24:33][world::events::registry][[34mDEBUG[0m[37m] Sorted 1 events for Tick registry[0m
+[37m[2023-02-21 20:24:33][winit::platform_impl::platform::x11::window][[32mINFO[0m[37m] Guessed window scale factor: 1[0m
+[37m[2023-02-21 20:24:33][winit::platform_impl::platform::x11::window][[34mDEBUG[0m[37m] Calculated physical dimensions: 800x600[0m
+[33m[2023-02-21 20:24:33][wgpu_hal::vulkan::instance][[33mWARN[0m[33m] Unable to find layer: VK_LAYER_KHRONOS_validation[0m
+[37m[2023-02-21 20:24:33][graphics::context::init][[34mDEBUG[0m[37m] Chosen Adapter: 'NVIDIA GeForce GTX 1050', Backend: Vulkan [0m
+[37m[2023-02-21 20:24:33][graphics::context::init][[34mDEBUG[0m[37m] Adapter Limits: Max Texture Dimensions: 32768x32768x16384[0m
+[37m[2023-02-21 20:24:33][graphics::context::init][[34mDEBUG[0m[37m] Adapter Limits: Max bind groups: 8[0m
+[37m[2023-02-21 20:24:33][graphics::context::init][[34mDEBUG[0m[37m] Adapter Limits: Max bindings per group: 640[0m
+[37m[2023-02-21 20:24:33][graphics::context::init][[34mDEBUG[0m[37m] Adapter Limits: Max Push Constants Size: 256[0m
+[37m[2023-02-21 20:24:33][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [CameraUniform; cap = 1], usage: UNIFORM[0m
+[37m[2023-02-21 20:24:33][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [TimingUniform; cap = 1], usage: UNIFORM[0m
+[37m[2023-02-21 20:24:33][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [SceneUniform; cap = 1], usage: UNIFORM[0m
+[37m[2023-02-21 20:24:33][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1x1x1[0m
+[33m[2023-02-21 20:24:33][graphics::texture::sampler][[33mWARN[0m[33m] Did not find cached sampler (Linear, Repeat, AutoAniso)[0m
+[37m[2023-02-21 20:24:33][graphics::texture::sampler][[34mDEBUG[0m[37m] Saved sampler (Linear, Repeat, AutoAniso) in graphics cache[0m
+[37m[2023-02-21 20:24:33][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1x1x1[0m
+[37m[2023-02-21 20:24:33][graphics::texture::sampler][[34mDEBUG[0m[37m] Found sampler type in cache, using it...[0m
+[37m[2023-02-21 20:24:33][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1x1x1[0m
+[37m[2023-02-21 20:24:33][graphics::texture::sampler][[34mDEBUG[0m[37m] Found sampler type in cache, using it...[0m
+[33m[2023-02-21 20:24:33][world::world::world][[33mWARN[0m[33m] Replaced resource Storage<Texture2D<RGBA<Normalized<u8>>>> since it was already present[0m
+[37m[2023-02-21 20:24:33][gilrs::gamepad][[34mDEBUG[0m[37m] Loaded 525 mappings.[0m
+[37m[2023-02-21 20:24:33][utils::thread::thread][[34mDEBUG[0m[37m] Initialized a new thread pool with 8 thread(s)[0m
+[33m[2023-02-21 20:24:33][world::world::world][[33mWARN[0m[33m] Replaced resource ThreadPool since it was already present[0m
+[37m[2023-02-21 20:24:33][rendering::scene::resources::pipelines][[34mDEBUG[0m[37m] Creating pipeline for material Basic...[0m
+[37m[2023-02-21 20:24:33][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/shaders/basic.vert" from cached bytes[0m
+[37m[2023-02-21 20:24:33][graphics::shader::compiler][[34mDEBUG[0m[37m] Created a new compiler for basic.vert[0m
+[37m[2023-02-21 20:24:33][graphics::shader::compiler][[34mDEBUG[0m[37m] Loading shader function module '<engine/shaders/common/camera.glsl>'[0m
+[37m[2023-02-21 20:24:33][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/shaders/common/camera.glsl" from cached bytes[0m
+[37m[2023-02-21 20:24:33][graphics::shader::compiler][[34mDEBUG[0m[37m] Compiled shader basic.vert sucessfully! Took 6ms[0m
+[37m[2023-02-21 20:24:33][graphics::shader::compiler][[34mDEBUG[0m[37m] Reflected shader basic.vert sucessfully! Took 0ms[0m
+[37m[2023-02-21 20:24:33][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/shaders/basic.frag" from cached bytes[0m
+[37m[2023-02-21 20:24:33][graphics::shader::compiler][[34mDEBUG[0m[37m] Created a new compiler for basic.frag[0m
+[37m[2023-02-21 20:24:33][graphics::shader::compiler][[34mDEBUG[0m[37m] Loading shader function module '<engine/shaders/common/camera.glsl>'[0m
+[37m[2023-02-21 20:24:33][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/shaders/common/camera.glsl" from cached bytes[0m
+[37m[2023-02-21 20:24:33][graphics::shader::compiler][[34mDEBUG[0m[37m] Compiled shader basic.frag sucessfully! Took 4ms[0m
+[37m[2023-02-21 20:24:33][graphics::shader::compiler][[34mDEBUG[0m[37m] Reflected shader basic.frag sucessfully! Took 0ms[0m
+[33m[2023-02-21 20:24:33][graphics::shader::reflected][[33mWARN[0m[33m] Did not find cached pipeline layout for ["basic.vert", "basic.frag"][0m
+[33m[2023-02-21 20:24:33][graphics::shader::reflected][[33mWARN[0m[33m] Did not find cached bind group layout for set = 0, in ["basic.vert", "basic.frag"][0m
+[33m[2023-02-21 20:24:33][graphics::shader::reflected][[33mWARN[0m[33m] Did not find cached bind group layout for set = 1, in ["basic.vert", "basic.frag"][0m
+[37m[2023-02-21 20:24:33][graphics::shader::reflected][[34mDEBUG[0m[37m] Saved pipeline layout for ["basic.vert", "basic.frag"] in graphics cache[0m
+[37m[2023-02-21 20:24:33][rendering::scene::resources::pipelines][[34mDEBUG[0m[37m] Registered pipeline for material Basic[0m
+[33m[2023-02-21 20:24:33][assets::loader][[33mWARN[0m[33m] Loading asset bytes from path "user/ignored/diffuse.jpg" dynamically...[0m
+[37m[2023-02-21 20:24:33][assets::loader][[34mDEBUG[0m[37m] Successfully loaded dynamic asset bytes from path "user/ignored/diffuse.jpg"[0m
+[37m[2023-02-21 20:24:34][graphics::texture::texture2d][[34mDEBUG[0m[37m] Took 220.471828ms to deserialize texture "user/ignored/diffuse.jpg"[0m
+[37m[2023-02-21 20:24:34][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1024x1024x1[0m
+[37m[2023-02-21 20:24:34][graphics::texture::sampler][[34mDEBUG[0m[37m] Found sampler type in cache, using it...[0m
+[33m[2023-02-21 20:24:34][assets::loader][[33mWARN[0m[33m] Loading asset bytes from path "user/ignored/normal.jpg" dynamically...[0m
+[37m[2023-02-21 20:24:34][assets::loader][[34mDEBUG[0m[37m] Successfully loaded dynamic asset bytes from path "user/ignored/normal.jpg"[0m
+[37m[2023-02-21 20:24:34][graphics::texture::texture2d][[34mDEBUG[0m[37m] Took 233.95371ms to deserialize texture "user/ignored/normal.jpg"[0m
+[37m[2023-02-21 20:24:35][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1024x1024x1[0m
+[37m[2023-02-21 20:24:35][graphics::texture::sampler][[34mDEBUG[0m[37m] Found sampler type in cache, using it...[0m
+[37m[2023-02-21 20:24:35][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/meshes/cube.obj" from cached bytes[0m
+[37m[2023-02-21 20:24:35][rendering::mesh::mesh][[34mDEBUG[0m[37m] Parsed mesh from file 'cube.obj', vertex count: 24, index count: 36[0m
+[37m[2023-02-21 20:24:35][rendering::mesh::mesh][[34mDEBUG[0m[37m] Loaded 24 position vertices[0m
+[37m[2023-02-21 20:24:35][rendering::mesh::mesh][[34mDEBUG[0m[37m] Loaded 24 normal vertices[0m
+[37m[2023-02-21 20:24:35][rendering::mesh::mesh][[34mDEBUG[0m[37m] Loaded 24 tangent vertices[0m
+[37m[2023-02-21 20:24:35][rendering::mesh::mesh][[34mDEBUG[0m[37m] Loaded 24 texture coordinate vertices[0m
+[37m[2023-02-21 20:24:35][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [Vec3<f32>; cap = 24], usage: VERTEX[0m
+[37m[2023-02-21 20:24:35][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [Vec4<i8>; cap = 24], usage: VERTEX[0m
+[37m[2023-02-21 20:24:35][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [Vec4<i8>; cap = 24], usage: VERTEX[0m
+[37m[2023-02-21 20:24:35][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [Vec4<u8>; cap = 24], usage: VERTEX[0m
+[37m[2023-02-21 20:24:35][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [[u32; 3]; cap = 12], usage: INDEX[0m
+[37m[2023-02-21 20:24:35][ecs::archetype::archetype][[34mDEBUG[0m[37m] Creating archetype from bundle of mask m11[0m
+[37m[2023-02-21 20:24:35][ecs::archetype::archetype][[34mDEBUG[0m[37m] Reserving 1 additional elements for archetype m11[0m
+[37m[2023-02-21 20:24:35][ecs::archetype::archetype][[34mDEBUG[0m[37m] Extended archetype m11 with 1 new element(s)[0m
+[37m[2023-02-21 20:24:35][ecs::archetype::archetype][[34mDEBUG[0m[37m] Creating archetype from bundle of mask m11100[0m
+[37m[2023-02-21 20:24:35][ecs::archetype::archetype][[34mDEBUG[0m[37m] Reserving 1 additional elements for archetype m11100[0m
+[37m[2023-02-21 20:24:35][ecs::archetype::archetype][[34mDEBUG[0m[37m] Extended archetype m11100 with 1 new element(s)[0m
+[37m[2023-02-21 20:24:35][input][[34mDEBUG[0m[37m] Binding button/key W to 'forward'[0m
+[37m[2023-02-21 20:24:35][input][[34mDEBUG[0m[37m] Binding button/key S to 'backward'[0m
+[37m[2023-02-21 20:24:35][input][[34mDEBUG[0m[37m] Binding button/key Space to 'up'[0m
+[37m[2023-02-21 20:24:35][input][[34mDEBUG[0m[37m] Binding button/key LControl to 'down'[0m
+[37m[2023-02-21 20:24:35][input][[34mDEBUG[0m[37m] Binding button/key A to 'left'[0m
+[37m[2023-02-21 20:24:35][input][[34mDEBUG[0m[37m] Binding button/key D to 'right'[0m
+[37m[2023-02-21 20:24:35][input][[34mDEBUG[0m[37m] Binding axis MousePositionX to 'x rotation'[0m
+[37m[2023-02-21 20:24:35][input][[34mDEBUG[0m[37m] Binding axis MousePositionY to 'y rotation'[0m
+[37m[2023-02-21 20:24:35][app::app][[34mDEBUG[0m[37m] Created sleeper without a target rate (VSync off)[0m
+[33m[2023-02-21 20:24:35][graphics::active::pipeline][[33mWARN[0m[33m] Did not find cached bind group (set = 0), creating new one...[0m
+[33m[2023-02-21 20:24:35][graphics::active::pipeline][[33mWARN[0m[33m] Did not find cached bind group (set = 1), creating new one...[0m
+[33m[2023-02-21 20:24:35][graphics::context::staging][[33mWARN[0m[33m] Did not find block, allocating new buffer with size 256 and mode Write[0m
+[37m[2023-02-21 20:37:26][app::app][[34mDEBUG[0m[37m] Sorting engine stages...[0m
+[37m[2023-02-21 20:37:26][world::events::registry][[34mDEBUG[0m[37m] Sorted 11 events for Init registry[0m
+[37m[2023-02-21 20:37:26][world::events::registry][[34mDEBUG[0m[37m] Sorted 11 events for Update registry[0m
+[37m[2023-02-21 20:37:26][world::events::registry][[34mDEBUG[0m[37m] Sorted 0 events for Shutdown registry[0m
+[37m[2023-02-21 20:37:26][world::events::registry][[34mDEBUG[0m[37m] Sorted 1 events for WindowEvent registry[0m
+[37m[2023-02-21 20:37:26][world::events::registry][[34mDEBUG[0m[37m] Sorted 1 events for DeviceEvent registry[0m
+[37m[2023-02-21 20:37:26][world::events::registry][[34mDEBUG[0m[37m] Sorted 1 events for Tick registry[0m
+[37m[2023-02-21 20:37:26][winit::platform_impl::platform::x11::window][[32mINFO[0m[37m] Guessed window scale factor: 1[0m
+[37m[2023-02-21 20:37:26][winit::platform_impl::platform::x11::window][[34mDEBUG[0m[37m] Calculated physical dimensions: 800x600[0m
+[33m[2023-02-21 20:37:26][wgpu_hal::vulkan::instance][[33mWARN[0m[33m] Unable to find layer: VK_LAYER_KHRONOS_validation[0m
+[37m[2023-02-21 20:37:26][graphics::context::init][[34mDEBUG[0m[37m] Chosen Adapter: 'NVIDIA GeForce GTX 1050', Backend: Vulkan [0m
+[37m[2023-02-21 20:37:26][graphics::context::init][[34mDEBUG[0m[37m] Adapter Limits: Max Texture Dimensions: 32768x32768x16384[0m
+[37m[2023-02-21 20:37:26][graphics::context::init][[34mDEBUG[0m[37m] Adapter Limits: Max bind groups: 8[0m
+[37m[2023-02-21 20:37:26][graphics::context::init][[34mDEBUG[0m[37m] Adapter Limits: Max bindings per group: 640[0m
+[37m[2023-02-21 20:37:26][graphics::context::init][[34mDEBUG[0m[37m] Adapter Limits: Max Push Constants Size: 256[0m
+[37m[2023-02-21 20:37:26][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [CameraUniform; cap = 1], usage: UNIFORM[0m
+[37m[2023-02-21 20:37:26][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [TimingUniform; cap = 1], usage: UNIFORM[0m
+[37m[2023-02-21 20:37:26][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [SceneUniform; cap = 1], usage: UNIFORM[0m
+[37m[2023-02-21 20:37:26][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1x1x1[0m
+[33m[2023-02-21 20:37:26][graphics::texture::sampler][[33mWARN[0m[33m] Did not find cached sampler (Linear, Repeat, AutoAniso)[0m
+[37m[2023-02-21 20:37:26][graphics::texture::sampler][[34mDEBUG[0m[37m] Saved sampler (Linear, Repeat, AutoAniso) in graphics cache[0m
+[37m[2023-02-21 20:37:26][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1x1x1[0m
+[37m[2023-02-21 20:37:26][graphics::texture::sampler][[34mDEBUG[0m[37m] Found sampler type in cache, using it...[0m
+[37m[2023-02-21 20:37:26][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1x1x1[0m
+[37m[2023-02-21 20:37:26][graphics::texture::sampler][[34mDEBUG[0m[37m] Found sampler type in cache, using it...[0m
+[33m[2023-02-21 20:37:26][world::world::world][[33mWARN[0m[33m] Replaced resource Storage<Texture2D<RGBA<Normalized<u8>>>> since it was already present[0m
+[37m[2023-02-21 20:37:26][gilrs::gamepad][[34mDEBUG[0m[37m] Loaded 525 mappings.[0m
+[37m[2023-02-21 20:37:26][utils::thread::thread][[34mDEBUG[0m[37m] Initialized a new thread pool with 8 thread(s)[0m
+[33m[2023-02-21 20:37:26][world::world::world][[33mWARN[0m[33m] Replaced resource ThreadPool since it was already present[0m
+[37m[2023-02-21 20:37:26][rendering::scene::resources::pipelines][[34mDEBUG[0m[37m] Creating pipeline for material Basic...[0m
+[37m[2023-02-21 20:37:26][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/shaders/basic.vert" from cached bytes[0m
+[37m[2023-02-21 20:37:26][graphics::shader::compiler][[34mDEBUG[0m[37m] Created a new compiler for basic.vert[0m
+[37m[2023-02-21 20:37:26][graphics::shader::compiler][[34mDEBUG[0m[37m] Loading shader function module '<engine/shaders/common/camera.glsl>'[0m
+[37m[2023-02-21 20:37:26][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/shaders/common/camera.glsl" from cached bytes[0m
+[37m[2023-02-21 20:37:26][graphics::shader::compiler][[34mDEBUG[0m[37m] Compiled shader basic.vert sucessfully! Took 6ms[0m
+[37m[2023-02-21 20:37:26][graphics::shader::compiler][[34mDEBUG[0m[37m] Reflected shader basic.vert sucessfully! Took 0ms[0m
+[37m[2023-02-21 20:37:26][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/shaders/basic.frag" from cached bytes[0m
+[37m[2023-02-21 20:37:26][graphics::shader::compiler][[34mDEBUG[0m[37m] Created a new compiler for basic.frag[0m
+[37m[2023-02-21 20:37:26][graphics::shader::compiler][[34mDEBUG[0m[37m] Loading shader function module '<engine/shaders/common/camera.glsl>'[0m
+[37m[2023-02-21 20:37:26][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/shaders/common/camera.glsl" from cached bytes[0m
+[37m[2023-02-21 20:37:26][graphics::shader::compiler][[34mDEBUG[0m[37m] Compiled shader basic.frag sucessfully! Took 5ms[0m
+[37m[2023-02-21 20:37:26][graphics::shader::compiler][[34mDEBUG[0m[37m] Reflected shader basic.frag sucessfully! Took 0ms[0m
+[33m[2023-02-21 20:37:26][graphics::shader::reflected][[33mWARN[0m[33m] Did not find cached pipeline layout for ["basic.vert", "basic.frag"][0m
+[33m[2023-02-21 20:37:26][graphics::shader::reflected][[33mWARN[0m[33m] Did not find cached bind group layout for set = 0, in ["basic.vert", "basic.frag"][0m
+[33m[2023-02-21 20:37:26][graphics::shader::reflected][[33mWARN[0m[33m] Did not find cached bind group layout for set = 1, in ["basic.vert", "basic.frag"][0m
+[37m[2023-02-21 20:37:26][graphics::shader::reflected][[34mDEBUG[0m[37m] Saved pipeline layout for ["basic.vert", "basic.frag"] in graphics cache[0m
+[37m[2023-02-21 20:37:26][rendering::scene::resources::pipelines][[34mDEBUG[0m[37m] Registered pipeline for material Basic[0m
+[33m[2023-02-21 20:37:26][assets::loader][[33mWARN[0m[33m] Loading asset bytes from path "user/ignored/diffuse.jpg" dynamically...[0m
+[37m[2023-02-21 20:37:26][assets::loader][[34mDEBUG[0m[37m] Successfully loaded dynamic asset bytes from path "user/ignored/diffuse.jpg"[0m
+[37m[2023-02-21 20:37:26][graphics::texture::texture2d][[34mDEBUG[0m[37m] Took 212.057559ms to deserialize texture "user/ignored/diffuse.jpg"[0m
+[37m[2023-02-21 20:37:27][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1024x1024x1[0m
+[37m[2023-02-21 20:37:27][graphics::texture::sampler][[34mDEBUG[0m[37m] Found sampler type in cache, using it...[0m
+[33m[2023-02-21 20:37:27][assets::loader][[33mWARN[0m[33m] Loading asset bytes from path "user/ignored/normal.jpg" dynamically...[0m
+[37m[2023-02-21 20:37:27][assets::loader][[34mDEBUG[0m[37m] Successfully loaded dynamic asset bytes from path "user/ignored/normal.jpg"[0m
+[37m[2023-02-21 20:37:27][graphics::texture::texture2d][[34mDEBUG[0m[37m] Took 231.35324ms to deserialize texture "user/ignored/normal.jpg"[0m
+[37m[2023-02-21 20:37:28][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1024x1024x1[0m
+[37m[2023-02-21 20:37:28][graphics::texture::sampler][[34mDEBUG[0m[37m] Found sampler type in cache, using it...[0m
+[37m[2023-02-21 20:37:28][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/meshes/cube.obj" from cached bytes[0m
+[37m[2023-02-21 20:37:28][rendering::mesh::mesh][[34mDEBUG[0m[37m] Parsed mesh from file 'cube.obj', vertex count: 24, index count: 36[0m
+[37m[2023-02-21 20:37:28][rendering::mesh::mesh][[34mDEBUG[0m[37m] Loaded 24 position vertices[0m
+[37m[2023-02-21 20:37:28][rendering::mesh::mesh][[34mDEBUG[0m[37m] Loaded 24 normal vertices[0m
+[37m[2023-02-21 20:37:28][rendering::mesh::mesh][[34mDEBUG[0m[37m] Loaded 24 tangent vertices[0m
+[37m[2023-02-21 20:37:28][rendering::mesh::mesh][[34mDEBUG[0m[37m] Loaded 24 texture coordinate vertices[0m
+[37m[2023-02-21 20:37:28][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [Vec3<f32>; cap = 24], usage: VERTEX[0m
+[37m[2023-02-21 20:37:28][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [Vec4<i8>; cap = 24], usage: VERTEX[0m
+[37m[2023-02-21 20:37:28][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [Vec4<i8>; cap = 24], usage: VERTEX[0m
+[37m[2023-02-21 20:37:28][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [Vec4<u8>; cap = 24], usage: VERTEX[0m
+[37m[2023-02-21 20:37:28][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [[u32; 3]; cap = 12], usage: INDEX[0m
+[37m[2023-02-21 20:37:28][ecs::archetype::archetype][[34mDEBUG[0m[37m] Creating archetype from bundle of mask m11[0m
+[37m[2023-02-21 20:37:28][ecs::archetype::archetype][[34mDEBUG[0m[37m] Reserving 1 additional elements for archetype m11[0m
+[37m[2023-02-21 20:37:28][ecs::archetype::archetype][[34mDEBUG[0m[37m] Extended archetype m11 with 1 new element(s)[0m
+[37m[2023-02-21 20:37:28][ecs::archetype::archetype][[34mDEBUG[0m[37m] Creating archetype from bundle of mask m11100[0m
+[37m[2023-02-21 20:37:28][ecs::archetype::archetype][[34mDEBUG[0m[37m] Reserving 1 additional elements for archetype m11100[0m
+[37m[2023-02-21 20:37:28][ecs::archetype::archetype][[34mDEBUG[0m[37m] Extended archetype m11100 with 1 new element(s)[0m
+[37m[2023-02-21 20:37:28][input][[34mDEBUG[0m[37m] Binding button/key W to 'forward'[0m
+[37m[2023-02-21 20:37:28][input][[34mDEBUG[0m[37m] Binding button/key S to 'backward'[0m
+[37m[2023-02-21 20:37:28][input][[34mDEBUG[0m[37m] Binding button/key Space to 'up'[0m
+[37m[2023-02-21 20:37:28][input][[34mDEBUG[0m[37m] Binding button/key LControl to 'down'[0m
+[37m[2023-02-21 20:37:28][input][[34mDEBUG[0m[37m] Binding button/key A to 'left'[0m
+[37m[2023-02-21 20:37:28][input][[34mDEBUG[0m[37m] Binding button/key D to 'right'[0m
+[37m[2023-02-21 20:37:28][input][[34mDEBUG[0m[37m] Binding axis MousePositionX to 'x rotation'[0m
+[37m[2023-02-21 20:37:28][input][[34mDEBUG[0m[37m] Binding axis MousePositionY to 'y rotation'[0m
+[37m[2023-02-21 20:37:28][app::app][[34mDEBUG[0m[37m] Created sleeper without a target rate (VSync off)[0m
+[33m[2023-02-21 20:37:28][graphics::active::pipeline][[33mWARN[0m[33m] Did not find cached bind group (set = 0), creating new one...[0m
+[33m[2023-02-21 20:37:28][graphics::active::pipeline][[33mWARN[0m[33m] Did not find cached bind group (set = 1), creating new one...[0m
+[31m[2023-02-21 20:37:28][app::app][[31mERROR[0m[31m] "panicked at 'called `Option::unwrap()` on a `None` value', examples/prototype.rs:107:71"[0m
+[37m[2023-02-21 20:37:52][app::app][[34mDEBUG[0m[37m] Sorting engine stages...[0m
+[37m[2023-02-21 20:37:52][world::events::registry][[34mDEBUG[0m[37m] Sorted 11 events for Init registry[0m
+[37m[2023-02-21 20:37:52][world::events::registry][[34mDEBUG[0m[37m] Sorted 11 events for Update registry[0m
+[37m[2023-02-21 20:37:52][world::events::registry][[34mDEBUG[0m[37m] Sorted 0 events for Shutdown registry[0m
+[37m[2023-02-21 20:37:52][world::events::registry][[34mDEBUG[0m[37m] Sorted 1 events for WindowEvent registry[0m
+[37m[2023-02-21 20:37:52][world::events::registry][[34mDEBUG[0m[37m] Sorted 1 events for DeviceEvent registry[0m
+[37m[2023-02-21 20:37:52][world::events::registry][[34mDEBUG[0m[37m] Sorted 1 events for Tick registry[0m
+[37m[2023-02-21 20:37:52][winit::platform_impl::platform::x11::window][[32mINFO[0m[37m] Guessed window scale factor: 1[0m
+[37m[2023-02-21 20:37:52][winit::platform_impl::platform::x11::window][[34mDEBUG[0m[37m] Calculated physical dimensions: 800x600[0m
+[33m[2023-02-21 20:37:52][wgpu_hal::vulkan::instance][[33mWARN[0m[33m] Unable to find layer: VK_LAYER_KHRONOS_validation[0m
+[37m[2023-02-21 20:37:52][graphics::context::init][[34mDEBUG[0m[37m] Chosen Adapter: 'NVIDIA GeForce GTX 1050', Backend: Vulkan [0m
+[37m[2023-02-21 20:37:52][graphics::context::init][[34mDEBUG[0m[37m] Adapter Limits: Max Texture Dimensions: 32768x32768x16384[0m
+[37m[2023-02-21 20:37:52][graphics::context::init][[34mDEBUG[0m[37m] Adapter Limits: Max bind groups: 8[0m
+[37m[2023-02-21 20:37:52][graphics::context::init][[34mDEBUG[0m[37m] Adapter Limits: Max bindings per group: 640[0m
+[37m[2023-02-21 20:37:52][graphics::context::init][[34mDEBUG[0m[37m] Adapter Limits: Max Push Constants Size: 256[0m
+[37m[2023-02-21 20:37:52][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [CameraUniform; cap = 1], usage: UNIFORM[0m
+[37m[2023-02-21 20:37:52][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [TimingUniform; cap = 1], usage: UNIFORM[0m
+[37m[2023-02-21 20:37:52][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [SceneUniform; cap = 1], usage: UNIFORM[0m
+[37m[2023-02-21 20:37:52][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1x1x1[0m
+[33m[2023-02-21 20:37:52][graphics::texture::sampler][[33mWARN[0m[33m] Did not find cached sampler (Linear, Repeat, AutoAniso)[0m
+[37m[2023-02-21 20:37:52][graphics::texture::sampler][[34mDEBUG[0m[37m] Saved sampler (Linear, Repeat, AutoAniso) in graphics cache[0m
+[37m[2023-02-21 20:37:52][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1x1x1[0m
+[37m[2023-02-21 20:37:52][graphics::texture::sampler][[34mDEBUG[0m[37m] Found sampler type in cache, using it...[0m
+[37m[2023-02-21 20:37:52][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1x1x1[0m
+[37m[2023-02-21 20:37:52][graphics::texture::sampler][[34mDEBUG[0m[37m] Found sampler type in cache, using it...[0m
+[33m[2023-02-21 20:37:52][world::world::world][[33mWARN[0m[33m] Replaced resource Storage<Texture2D<RGBA<Normalized<u8>>>> since it was already present[0m
+[37m[2023-02-21 20:37:52][gilrs::gamepad][[34mDEBUG[0m[37m] Loaded 525 mappings.[0m
+[37m[2023-02-21 20:37:52][utils::thread::thread][[34mDEBUG[0m[37m] Initialized a new thread pool with 8 thread(s)[0m
+[33m[2023-02-21 20:37:52][world::world::world][[33mWARN[0m[33m] Replaced resource ThreadPool since it was already present[0m
+[37m[2023-02-21 20:37:52][rendering::scene::resources::pipelines][[34mDEBUG[0m[37m] Creating pipeline for material Basic...[0m
+[37m[2023-02-21 20:37:52][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/shaders/basic.vert" from cached bytes[0m
+[37m[2023-02-21 20:37:52][graphics::shader::compiler][[34mDEBUG[0m[37m] Created a new compiler for basic.vert[0m
+[37m[2023-02-21 20:37:52][graphics::shader::compiler][[34mDEBUG[0m[37m] Loading shader function module '<engine/shaders/common/camera.glsl>'[0m
+[37m[2023-02-21 20:37:52][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/shaders/common/camera.glsl" from cached bytes[0m
+[37m[2023-02-21 20:37:52][graphics::shader::compiler][[34mDEBUG[0m[37m] Compiled shader basic.vert sucessfully! Took 7ms[0m
+[37m[2023-02-21 20:37:52][graphics::shader::compiler][[34mDEBUG[0m[37m] Reflected shader basic.vert sucessfully! Took 0ms[0m
+[37m[2023-02-21 20:37:52][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/shaders/basic.frag" from cached bytes[0m
+[37m[2023-02-21 20:37:52][graphics::shader::compiler][[34mDEBUG[0m[37m] Created a new compiler for basic.frag[0m
+[37m[2023-02-21 20:37:52][graphics::shader::compiler][[34mDEBUG[0m[37m] Loading shader function module '<engine/shaders/common/camera.glsl>'[0m
+[37m[2023-02-21 20:37:52][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/shaders/common/camera.glsl" from cached bytes[0m
+[37m[2023-02-21 20:37:52][graphics::shader::compiler][[34mDEBUG[0m[37m] Compiled shader basic.frag sucessfully! Took 8ms[0m
+[37m[2023-02-21 20:37:52][graphics::shader::compiler][[34mDEBUG[0m[37m] Reflected shader basic.frag sucessfully! Took 0ms[0m
+[33m[2023-02-21 20:37:52][graphics::shader::reflected][[33mWARN[0m[33m] Did not find cached pipeline layout for ["basic.vert", "basic.frag"][0m
+[33m[2023-02-21 20:37:52][graphics::shader::reflected][[33mWARN[0m[33m] Did not find cached bind group layout for set = 0, in ["basic.vert", "basic.frag"][0m
+[33m[2023-02-21 20:37:52][graphics::shader::reflected][[33mWARN[0m[33m] Did not find cached bind group layout for set = 1, in ["basic.vert", "basic.frag"][0m
+[37m[2023-02-21 20:37:52][graphics::shader::reflected][[34mDEBUG[0m[37m] Saved pipeline layout for ["basic.vert", "basic.frag"] in graphics cache[0m
+[37m[2023-02-21 20:37:52][rendering::scene::resources::pipelines][[34mDEBUG[0m[37m] Registered pipeline for material Basic[0m
+[33m[2023-02-21 20:37:52][assets::loader][[33mWARN[0m[33m] Loading asset bytes from path "user/ignored/diffuse.jpg" dynamically...[0m
+[37m[2023-02-21 20:37:52][assets::loader][[34mDEBUG[0m[37m] Successfully loaded dynamic asset bytes from path "user/ignored/diffuse.jpg"[0m
+[37m[2023-02-21 20:37:52][graphics::texture::texture2d][[34mDEBUG[0m[37m] Took 340.283506ms to deserialize texture "user/ignored/diffuse.jpg"[0m
+[37m[2023-02-21 20:37:53][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1024x1024x1[0m
+[37m[2023-02-21 20:37:53][graphics::texture::sampler][[34mDEBUG[0m[37m] Found sampler type in cache, using it...[0m
+[33m[2023-02-21 20:37:53][assets::loader][[33mWARN[0m[33m] Loading asset bytes from path "user/ignored/normal.jpg" dynamically...[0m
+[37m[2023-02-21 20:37:53][assets::loader][[34mDEBUG[0m[37m] Successfully loaded dynamic asset bytes from path "user/ignored/normal.jpg"[0m
+[37m[2023-02-21 20:37:54][graphics::texture::texture2d][[34mDEBUG[0m[37m] Took 343.534059ms to deserialize texture "user/ignored/normal.jpg"[0m
+[37m[2023-02-21 20:37:54][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1024x1024x1[0m
+[37m[2023-02-21 20:37:54][graphics::texture::sampler][[34mDEBUG[0m[37m] Found sampler type in cache, using it...[0m
+[37m[2023-02-21 20:37:54][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/meshes/cube.obj" from cached bytes[0m
+[37m[2023-02-21 20:37:54][rendering::mesh::mesh][[34mDEBUG[0m[37m] Parsed mesh from file 'cube.obj', vertex count: 24, index count: 36[0m
+[37m[2023-02-21 20:37:54][rendering::mesh::mesh][[34mDEBUG[0m[37m] Loaded 24 position vertices[0m
+[37m[2023-02-21 20:37:54][rendering::mesh::mesh][[34mDEBUG[0m[37m] Loaded 24 normal vertices[0m
+[37m[2023-02-21 20:37:54][rendering::mesh::mesh][[34mDEBUG[0m[37m] Loaded 24 tangent vertices[0m
+[37m[2023-02-21 20:37:54][rendering::mesh::mesh][[34mDEBUG[0m[37m] Loaded 24 texture coordinate vertices[0m
+[37m[2023-02-21 20:37:54][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [Vec3<f32>; cap = 24], usage: VERTEX[0m
+[37m[2023-02-21 20:37:54][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [Vec4<i8>; cap = 24], usage: VERTEX[0m
+[37m[2023-02-21 20:37:54][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [Vec4<i8>; cap = 24], usage: VERTEX[0m
+[37m[2023-02-21 20:37:54][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [Vec4<u8>; cap = 24], usage: VERTEX[0m
+[37m[2023-02-21 20:37:54][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [[u32; 3]; cap = 12], usage: INDEX[0m
+[37m[2023-02-21 20:37:54][ecs::archetype::archetype][[34mDEBUG[0m[37m] Creating archetype from bundle of mask m111[0m
+[37m[2023-02-21 20:37:54][ecs::archetype::archetype][[34mDEBUG[0m[37m] Reserving 1 additional elements for archetype m111[0m
+[37m[2023-02-21 20:37:54][ecs::archetype::archetype][[34mDEBUG[0m[37m] Extended archetype m111 with 1 new element(s)[0m
+[37m[2023-02-21 20:37:54][ecs::archetype::archetype][[34mDEBUG[0m[37m] Creating archetype from bundle of mask m11100[0m
+[37m[2023-02-21 20:37:54][ecs::archetype::archetype][[34mDEBUG[0m[37m] Reserving 1 additional elements for archetype m11100[0m
+[37m[2023-02-21 20:37:54][ecs::archetype::archetype][[34mDEBUG[0m[37m] Extended archetype m11100 with 1 new element(s)[0m
+[37m[2023-02-21 20:37:54][input][[34mDEBUG[0m[37m] Binding button/key W to 'forward'[0m
+[37m[2023-02-21 20:37:54][input][[34mDEBUG[0m[37m] Binding button/key S to 'backward'[0m
+[37m[2023-02-21 20:37:54][input][[34mDEBUG[0m[37m] Binding button/key Space to 'up'[0m
+[37m[2023-02-21 20:37:54][input][[34mDEBUG[0m[37m] Binding button/key LControl to 'down'[0m
+[37m[2023-02-21 20:37:54][input][[34mDEBUG[0m[37m] Binding button/key A to 'left'[0m
+[37m[2023-02-21 20:37:54][input][[34mDEBUG[0m[37m] Binding button/key D to 'right'[0m
+[37m[2023-02-21 20:37:54][input][[34mDEBUG[0m[37m] Binding axis MousePositionX to 'x rotation'[0m
+[37m[2023-02-21 20:37:54][input][[34mDEBUG[0m[37m] Binding axis MousePositionY to 'y rotation'[0m
+[37m[2023-02-21 20:37:54][app::app][[34mDEBUG[0m[37m] Created sleeper without a target rate (VSync off)[0m
+[33m[2023-02-21 20:37:54][graphics::active::pipeline][[33mWARN[0m[33m] Did not find cached bind group (set = 0), creating new one...[0m
+[33m[2023-02-21 20:37:54][graphics::active::pipeline][[33mWARN[0m[33m] Did not find cached bind group (set = 1), creating new one...[0m
+[33m[2023-02-21 20:37:54][graphics::context::staging][[33mWARN[0m[33m] Did not find block, allocating new buffer with size 256 and mode Write[0m
+[37m[2023-02-21 20:38:32][app::app][[34mDEBUG[0m[37m] Sorting engine stages...[0m
+[37m[2023-02-21 20:38:32][world::events::registry][[34mDEBUG[0m[37m] Sorted 11 events for Init registry[0m
+[37m[2023-02-21 20:38:32][world::events::registry][[34mDEBUG[0m[37m] Sorted 12 events for Update registry[0m
+[37m[2023-02-21 20:38:32][world::events::registry][[34mDEBUG[0m[37m] Sorted 0 events for Shutdown registry[0m
+[37m[2023-02-21 20:38:32][world::events::registry][[34mDEBUG[0m[37m] Sorted 1 events for WindowEvent registry[0m
+[37m[2023-02-21 20:38:32][world::events::registry][[34mDEBUG[0m[37m] Sorted 1 events for DeviceEvent registry[0m
+[37m[2023-02-21 20:38:32][world::events::registry][[34mDEBUG[0m[37m] Sorted 1 events for Tick registry[0m
+[37m[2023-02-21 20:38:32][winit::platform_impl::platform::x11::window][[32mINFO[0m[37m] Guessed window scale factor: 1[0m
+[37m[2023-02-21 20:38:32][winit::platform_impl::platform::x11::window][[34mDEBUG[0m[37m] Calculated physical dimensions: 800x600[0m
+[33m[2023-02-21 20:38:32][wgpu_hal::vulkan::instance][[33mWARN[0m[33m] Unable to find layer: VK_LAYER_KHRONOS_validation[0m
+[37m[2023-02-21 20:38:32][graphics::context::init][[34mDEBUG[0m[37m] Chosen Adapter: 'NVIDIA GeForce GTX 1050', Backend: Vulkan [0m
+[37m[2023-02-21 20:38:32][graphics::context::init][[34mDEBUG[0m[37m] Adapter Limits: Max Texture Dimensions: 32768x32768x16384[0m
+[37m[2023-02-21 20:38:32][graphics::context::init][[34mDEBUG[0m[37m] Adapter Limits: Max bind groups: 8[0m
+[37m[2023-02-21 20:38:32][graphics::context::init][[34mDEBUG[0m[37m] Adapter Limits: Max bindings per group: 640[0m
+[37m[2023-02-21 20:38:32][graphics::context::init][[34mDEBUG[0m[37m] Adapter Limits: Max Push Constants Size: 256[0m
+[37m[2023-02-21 20:38:32][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [CameraUniform; cap = 1], usage: UNIFORM[0m
+[37m[2023-02-21 20:38:32][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [TimingUniform; cap = 1], usage: UNIFORM[0m
+[37m[2023-02-21 20:38:32][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [SceneUniform; cap = 1], usage: UNIFORM[0m
+[37m[2023-02-21 20:38:32][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1x1x1[0m
+[33m[2023-02-21 20:38:32][graphics::texture::sampler][[33mWARN[0m[33m] Did not find cached sampler (Linear, Repeat, AutoAniso)[0m
+[37m[2023-02-21 20:38:32][graphics::texture::sampler][[34mDEBUG[0m[37m] Saved sampler (Linear, Repeat, AutoAniso) in graphics cache[0m
+[37m[2023-02-21 20:38:32][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1x1x1[0m
+[37m[2023-02-21 20:38:32][graphics::texture::sampler][[34mDEBUG[0m[37m] Found sampler type in cache, using it...[0m
+[37m[2023-02-21 20:38:32][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1x1x1[0m
+[37m[2023-02-21 20:38:32][graphics::texture::sampler][[34mDEBUG[0m[37m] Found sampler type in cache, using it...[0m
+[33m[2023-02-21 20:38:32][world::world::world][[33mWARN[0m[33m] Replaced resource Storage<Texture2D<RGBA<Normalized<u8>>>> since it was already present[0m
+[37m[2023-02-21 20:38:32][gilrs::gamepad][[34mDEBUG[0m[37m] Loaded 525 mappings.[0m
+[37m[2023-02-21 20:38:32][utils::thread::thread][[34mDEBUG[0m[37m] Initialized a new thread pool with 8 thread(s)[0m
+[33m[2023-02-21 20:38:32][world::world::world][[33mWARN[0m[33m] Replaced resource ThreadPool since it was already present[0m
+[37m[2023-02-21 20:38:32][rendering::scene::resources::pipelines][[34mDEBUG[0m[37m] Creating pipeline for material Basic...[0m
+[37m[2023-02-21 20:38:32][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/shaders/basic.vert" from cached bytes[0m
+[37m[2023-02-21 20:38:32][graphics::shader::compiler][[34mDEBUG[0m[37m] Created a new compiler for basic.vert[0m
+[37m[2023-02-21 20:38:32][graphics::shader::compiler][[34mDEBUG[0m[37m] Loading shader function module '<engine/shaders/common/camera.glsl>'[0m
+[37m[2023-02-21 20:38:32][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/shaders/common/camera.glsl" from cached bytes[0m
+[37m[2023-02-21 20:38:32][graphics::shader::compiler][[34mDEBUG[0m[37m] Compiled shader basic.vert sucessfully! Took 5ms[0m
+[37m[2023-02-21 20:38:32][graphics::shader::compiler][[34mDEBUG[0m[37m] Reflected shader basic.vert sucessfully! Took 0ms[0m
+[37m[2023-02-21 20:38:32][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/shaders/basic.frag" from cached bytes[0m
+[37m[2023-02-21 20:38:32][graphics::shader::compiler][[34mDEBUG[0m[37m] Created a new compiler for basic.frag[0m
+[37m[2023-02-21 20:38:32][graphics::shader::compiler][[34mDEBUG[0m[37m] Loading shader function module '<engine/shaders/common/camera.glsl>'[0m
+[37m[2023-02-21 20:38:32][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/shaders/common/camera.glsl" from cached bytes[0m
+[37m[2023-02-21 20:38:32][graphics::shader::compiler][[34mDEBUG[0m[37m] Compiled shader basic.frag sucessfully! Took 5ms[0m
+[37m[2023-02-21 20:38:32][graphics::shader::compiler][[34mDEBUG[0m[37m] Reflected shader basic.frag sucessfully! Took 0ms[0m
+[33m[2023-02-21 20:38:32][graphics::shader::reflected][[33mWARN[0m[33m] Did not find cached pipeline layout for ["basic.vert", "basic.frag"][0m
+[33m[2023-02-21 20:38:32][graphics::shader::reflected][[33mWARN[0m[33m] Did not find cached bind group layout for set = 0, in ["basic.vert", "basic.frag"][0m
+[33m[2023-02-21 20:38:32][graphics::shader::reflected][[33mWARN[0m[33m] Did not find cached bind group layout for set = 1, in ["basic.vert", "basic.frag"][0m
+[37m[2023-02-21 20:38:32][graphics::shader::reflected][[34mDEBUG[0m[37m] Saved pipeline layout for ["basic.vert", "basic.frag"] in graphics cache[0m
+[37m[2023-02-21 20:38:32][rendering::scene::resources::pipelines][[34mDEBUG[0m[37m] Registered pipeline for material Basic[0m
+[33m[2023-02-21 20:38:32][assets::loader][[33mWARN[0m[33m] Loading asset bytes from path "user/ignored/diffuse.jpg" dynamically...[0m
+[37m[2023-02-21 20:38:32][assets::loader][[34mDEBUG[0m[37m] Successfully loaded dynamic asset bytes from path "user/ignored/diffuse.jpg"[0m
+[37m[2023-02-21 20:38:32][graphics::texture::texture2d][[34mDEBUG[0m[37m] Took 223.558463ms to deserialize texture "user/ignored/diffuse.jpg"[0m
+[37m[2023-02-21 20:38:33][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1024x1024x1[0m
+[37m[2023-02-21 20:38:33][graphics::texture::sampler][[34mDEBUG[0m[37m] Found sampler type in cache, using it...[0m
+[33m[2023-02-21 20:38:33][assets::loader][[33mWARN[0m[33m] Loading asset bytes from path "user/ignored/normal.jpg" dynamically...[0m
+[37m[2023-02-21 20:38:33][assets::loader][[34mDEBUG[0m[37m] Successfully loaded dynamic asset bytes from path "user/ignored/normal.jpg"[0m
+[37m[2023-02-21 20:38:33][graphics::texture::texture2d][[34mDEBUG[0m[37m] Took 231.080999ms to deserialize texture "user/ignored/normal.jpg"[0m
+[37m[2023-02-21 20:38:33][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1024x1024x1[0m
+[37m[2023-02-21 20:38:33][graphics::texture::sampler][[34mDEBUG[0m[37m] Found sampler type in cache, using it...[0m
+[37m[2023-02-21 20:38:33][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/meshes/cube.obj" from cached bytes[0m
+[37m[2023-02-21 20:38:33][rendering::mesh::mesh][[34mDEBUG[0m[37m] Parsed mesh from file 'cube.obj', vertex count: 24, index count: 36[0m
+[37m[2023-02-21 20:38:33][rendering::mesh::mesh][[34mDEBUG[0m[37m] Loaded 24 position vertices[0m
+[37m[2023-02-21 20:38:33][rendering::mesh::mesh][[34mDEBUG[0m[37m] Loaded 24 normal vertices[0m
+[37m[2023-02-21 20:38:33][rendering::mesh::mesh][[34mDEBUG[0m[37m] Loaded 24 tangent vertices[0m
+[37m[2023-02-21 20:38:33][rendering::mesh::mesh][[34mDEBUG[0m[37m] Loaded 24 texture coordinate vertices[0m
+[37m[2023-02-21 20:38:33][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [Vec3<f32>; cap = 24], usage: VERTEX[0m
+[37m[2023-02-21 20:38:33][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [Vec4<i8>; cap = 24], usage: VERTEX[0m
+[37m[2023-02-21 20:38:33][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [Vec4<i8>; cap = 24], usage: VERTEX[0m
+[37m[2023-02-21 20:38:33][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [Vec4<u8>; cap = 24], usage: VERTEX[0m
+[37m[2023-02-21 20:38:33][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [[u32; 3]; cap = 12], usage: INDEX[0m
+[37m[2023-02-21 20:38:33][ecs::archetype::archetype][[34mDEBUG[0m[37m] Creating archetype from bundle of mask m111[0m
+[37m[2023-02-21 20:38:33][ecs::archetype::archetype][[34mDEBUG[0m[37m] Reserving 1 additional elements for archetype m111[0m
+[37m[2023-02-21 20:38:33][ecs::archetype::archetype][[34mDEBUG[0m[37m] Extended archetype m111 with 1 new element(s)[0m
+[37m[2023-02-21 20:38:33][ecs::archetype::archetype][[34mDEBUG[0m[37m] Creating archetype from bundle of mask m11100[0m
+[37m[2023-02-21 20:38:33][ecs::archetype::archetype][[34mDEBUG[0m[37m] Reserving 1 additional elements for archetype m11100[0m
+[37m[2023-02-21 20:38:33][ecs::archetype::archetype][[34mDEBUG[0m[37m] Extended archetype m11100 with 1 new element(s)[0m
+[37m[2023-02-21 20:38:33][input][[34mDEBUG[0m[37m] Binding button/key W to 'forward'[0m
+[37m[2023-02-21 20:38:33][input][[34mDEBUG[0m[37m] Binding button/key S to 'backward'[0m
+[37m[2023-02-21 20:38:33][input][[34mDEBUG[0m[37m] Binding button/key Space to 'up'[0m
+[37m[2023-02-21 20:38:33][input][[34mDEBUG[0m[37m] Binding button/key LControl to 'down'[0m
+[37m[2023-02-21 20:38:33][input][[34mDEBUG[0m[37m] Binding button/key A to 'left'[0m
+[37m[2023-02-21 20:38:33][input][[34mDEBUG[0m[37m] Binding button/key D to 'right'[0m
+[37m[2023-02-21 20:38:33][input][[34mDEBUG[0m[37m] Binding axis MousePositionX to 'x rotation'[0m
+[37m[2023-02-21 20:38:33][input][[34mDEBUG[0m[37m] Binding axis MousePositionY to 'y rotation'[0m
+[37m[2023-02-21 20:38:33][app::app][[34mDEBUG[0m[37m] Created sleeper without a target rate (VSync off)[0m
+[33m[2023-02-21 20:38:33][graphics::active::pipeline][[33mWARN[0m[33m] Did not find cached bind group (set = 0), creating new one...[0m
+[33m[2023-02-21 20:38:33][graphics::active::pipeline][[33mWARN[0m[33m] Did not find cached bind group (set = 1), creating new one...[0m
+[33m[2023-02-21 20:38:33][graphics::context::staging][[33mWARN[0m[33m] Did not find block, allocating new buffer with size 256 and mode Write[0m
+[37m[2023-02-21 20:39:00][app::app][[34mDEBUG[0m[37m] Sorting engine stages...[0m
+[37m[2023-02-21 20:39:00][world::events::registry][[34mDEBUG[0m[37m] Sorted 11 events for Init registry[0m
+[37m[2023-02-21 20:39:00][world::events::registry][[34mDEBUG[0m[37m] Sorted 12 events for Update registry[0m
+[37m[2023-02-21 20:39:00][world::events::registry][[34mDEBUG[0m[37m] Sorted 0 events for Shutdown registry[0m
+[37m[2023-02-21 20:39:00][world::events::registry][[34mDEBUG[0m[37m] Sorted 1 events for WindowEvent registry[0m
+[37m[2023-02-21 20:39:00][world::events::registry][[34mDEBUG[0m[37m] Sorted 1 events for DeviceEvent registry[0m
+[37m[2023-02-21 20:39:00][world::events::registry][[34mDEBUG[0m[37m] Sorted 1 events for Tick registry[0m
+[37m[2023-02-21 20:39:00][winit::platform_impl::platform::x11::window][[32mINFO[0m[37m] Guessed window scale factor: 1[0m
+[37m[2023-02-21 20:39:00][winit::platform_impl::platform::x11::window][[34mDEBUG[0m[37m] Calculated physical dimensions: 800x600[0m
+[33m[2023-02-21 20:39:00][wgpu_hal::vulkan::instance][[33mWARN[0m[33m] Unable to find layer: VK_LAYER_KHRONOS_validation[0m
+[37m[2023-02-21 20:39:00][graphics::context::init][[34mDEBUG[0m[37m] Chosen Adapter: 'NVIDIA GeForce GTX 1050', Backend: Vulkan [0m
+[37m[2023-02-21 20:39:00][graphics::context::init][[34mDEBUG[0m[37m] Adapter Limits: Max Texture Dimensions: 32768x32768x16384[0m
+[37m[2023-02-21 20:39:00][graphics::context::init][[34mDEBUG[0m[37m] Adapter Limits: Max bind groups: 8[0m
+[37m[2023-02-21 20:39:00][graphics::context::init][[34mDEBUG[0m[37m] Adapter Limits: Max bindings per group: 640[0m
+[37m[2023-02-21 20:39:00][graphics::context::init][[34mDEBUG[0m[37m] Adapter Limits: Max Push Constants Size: 256[0m
+[37m[2023-02-21 20:39:00][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [CameraUniform; cap = 1], usage: UNIFORM[0m
+[37m[2023-02-21 20:39:00][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [TimingUniform; cap = 1], usage: UNIFORM[0m
+[37m[2023-02-21 20:39:00][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [SceneUniform; cap = 1], usage: UNIFORM[0m
+[37m[2023-02-21 20:39:00][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1x1x1[0m
+[33m[2023-02-21 20:39:00][graphics::texture::sampler][[33mWARN[0m[33m] Did not find cached sampler (Linear, Repeat, AutoAniso)[0m
+[37m[2023-02-21 20:39:00][graphics::texture::sampler][[34mDEBUG[0m[37m] Saved sampler (Linear, Repeat, AutoAniso) in graphics cache[0m
+[37m[2023-02-21 20:39:00][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1x1x1[0m
+[37m[2023-02-21 20:39:00][graphics::texture::sampler][[34mDEBUG[0m[37m] Found sampler type in cache, using it...[0m
+[37m[2023-02-21 20:39:00][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1x1x1[0m
+[37m[2023-02-21 20:39:00][graphics::texture::sampler][[34mDEBUG[0m[37m] Found sampler type in cache, using it...[0m
+[33m[2023-02-21 20:39:00][world::world::world][[33mWARN[0m[33m] Replaced resource Storage<Texture2D<RGBA<Normalized<u8>>>> since it was already present[0m
+[37m[2023-02-21 20:39:00][gilrs::gamepad][[34mDEBUG[0m[37m] Loaded 525 mappings.[0m
+[37m[2023-02-21 20:39:00][utils::thread::thread][[34mDEBUG[0m[37m] Initialized a new thread pool with 8 thread(s)[0m
+[33m[2023-02-21 20:39:00][world::world::world][[33mWARN[0m[33m] Replaced resource ThreadPool since it was already present[0m
+[37m[2023-02-21 20:39:00][rendering::scene::resources::pipelines][[34mDEBUG[0m[37m] Creating pipeline for material Basic...[0m
+[37m[2023-02-21 20:39:00][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/shaders/basic.vert" from cached bytes[0m
+[37m[2023-02-21 20:39:00][graphics::shader::compiler][[34mDEBUG[0m[37m] Created a new compiler for basic.vert[0m
+[37m[2023-02-21 20:39:00][graphics::shader::compiler][[34mDEBUG[0m[37m] Loading shader function module '<engine/shaders/common/camera.glsl>'[0m
+[37m[2023-02-21 20:39:00][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/shaders/common/camera.glsl" from cached bytes[0m
+[37m[2023-02-21 20:39:00][graphics::shader::compiler][[34mDEBUG[0m[37m] Compiled shader basic.vert sucessfully! Took 6ms[0m
+[37m[2023-02-21 20:39:00][graphics::shader::compiler][[34mDEBUG[0m[37m] Reflected shader basic.vert sucessfully! Took 0ms[0m
+[37m[2023-02-21 20:39:00][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/shaders/basic.frag" from cached bytes[0m
+[37m[2023-02-21 20:39:00][graphics::shader::compiler][[34mDEBUG[0m[37m] Created a new compiler for basic.frag[0m
+[37m[2023-02-21 20:39:00][graphics::shader::compiler][[34mDEBUG[0m[37m] Loading shader function module '<engine/shaders/common/camera.glsl>'[0m
+[37m[2023-02-21 20:39:00][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/shaders/common/camera.glsl" from cached bytes[0m
+[37m[2023-02-21 20:39:00][graphics::shader::compiler][[34mDEBUG[0m[37m] Compiled shader basic.frag sucessfully! Took 6ms[0m
+[37m[2023-02-21 20:39:00][graphics::shader::compiler][[34mDEBUG[0m[37m] Reflected shader basic.frag sucessfully! Took 0ms[0m
+[33m[2023-02-21 20:39:00][graphics::shader::reflected][[33mWARN[0m[33m] Did not find cached pipeline layout for ["basic.vert", "basic.frag"][0m
+[33m[2023-02-21 20:39:00][graphics::shader::reflected][[33mWARN[0m[33m] Did not find cached bind group layout for set = 0, in ["basic.vert", "basic.frag"][0m
+[33m[2023-02-21 20:39:00][graphics::shader::reflected][[33mWARN[0m[33m] Did not find cached bind group layout for set = 1, in ["basic.vert", "basic.frag"][0m
+[37m[2023-02-21 20:39:00][graphics::shader::reflected][[34mDEBUG[0m[37m] Saved pipeline layout for ["basic.vert", "basic.frag"] in graphics cache[0m
+[37m[2023-02-21 20:39:00][rendering::scene::resources::pipelines][[34mDEBUG[0m[37m] Registered pipeline for material Basic[0m
+[33m[2023-02-21 20:39:00][assets::loader][[33mWARN[0m[33m] Loading asset bytes from path "user/ignored/diffuse.jpg" dynamically...[0m
+[37m[2023-02-21 20:39:00][assets::loader][[34mDEBUG[0m[37m] Successfully loaded dynamic asset bytes from path "user/ignored/diffuse.jpg"[0m
+[37m[2023-02-21 20:39:00][graphics::texture::texture2d][[34mDEBUG[0m[37m] Took 261.637538ms to deserialize texture "user/ignored/diffuse.jpg"[0m
+[37m[2023-02-21 20:39:01][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1024x1024x1[0m
+[37m[2023-02-21 20:39:01][graphics::texture::sampler][[34mDEBUG[0m[37m] Found sampler type in cache, using it...[0m
+[33m[2023-02-21 20:39:01][assets::loader][[33mWARN[0m[33m] Loading asset bytes from path "user/ignored/normal.jpg" dynamically...[0m
+[37m[2023-02-21 20:39:01][assets::loader][[34mDEBUG[0m[37m] Successfully loaded dynamic asset bytes from path "user/ignored/normal.jpg"[0m
+[37m[2023-02-21 20:39:01][graphics::texture::texture2d][[34mDEBUG[0m[37m] Took 239.635508ms to deserialize texture "user/ignored/normal.jpg"[0m
+[37m[2023-02-21 20:39:02][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1024x1024x1[0m
+[37m[2023-02-21 20:39:02][graphics::texture::sampler][[34mDEBUG[0m[37m] Found sampler type in cache, using it...[0m
+[37m[2023-02-21 20:39:02][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/meshes/cube.obj" from cached bytes[0m
+[37m[2023-02-21 20:39:02][rendering::mesh::mesh][[34mDEBUG[0m[37m] Parsed mesh from file 'cube.obj', vertex count: 24, index count: 36[0m
+[37m[2023-02-21 20:39:02][rendering::mesh::mesh][[34mDEBUG[0m[37m] Loaded 24 position vertices[0m
+[37m[2023-02-21 20:39:02][rendering::mesh::mesh][[34mDEBUG[0m[37m] Loaded 24 normal vertices[0m
+[37m[2023-02-21 20:39:02][rendering::mesh::mesh][[34mDEBUG[0m[37m] Loaded 24 tangent vertices[0m
+[37m[2023-02-21 20:39:02][rendering::mesh::mesh][[34mDEBUG[0m[37m] Loaded 24 texture coordinate vertices[0m
+[37m[2023-02-21 20:39:02][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [Vec3<f32>; cap = 24], usage: VERTEX[0m
+[37m[2023-02-21 20:39:02][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [Vec4<i8>; cap = 24], usage: VERTEX[0m
+[37m[2023-02-21 20:39:02][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [Vec4<i8>; cap = 24], usage: VERTEX[0m
+[37m[2023-02-21 20:39:02][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [Vec4<u8>; cap = 24], usage: VERTEX[0m
+[37m[2023-02-21 20:39:02][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [[u32; 3]; cap = 12], usage: INDEX[0m
+[37m[2023-02-21 20:39:02][ecs::archetype::archetype][[34mDEBUG[0m[37m] Creating archetype from bundle of mask m111[0m
+[37m[2023-02-21 20:39:02][ecs::archetype::archetype][[34mDEBUG[0m[37m] Reserving 1 additional elements for archetype m111[0m
+[37m[2023-02-21 20:39:02][ecs::archetype::archetype][[34mDEBUG[0m[37m] Extended archetype m111 with 1 new element(s)[0m
+[37m[2023-02-21 20:39:02][ecs::archetype::archetype][[34mDEBUG[0m[37m] Creating archetype from bundle of mask m11100[0m
+[37m[2023-02-21 20:39:02][ecs::archetype::archetype][[34mDEBUG[0m[37m] Reserving 1 additional elements for archetype m11100[0m
+[37m[2023-02-21 20:39:02][ecs::archetype::archetype][[34mDEBUG[0m[37m] Extended archetype m11100 with 1 new element(s)[0m
+[37m[2023-02-21 20:39:02][input][[34mDEBUG[0m[37m] Binding button/key W to 'forward'[0m
+[37m[2023-02-21 20:39:02][input][[34mDEBUG[0m[37m] Binding button/key S to 'backward'[0m
+[37m[2023-02-21 20:39:02][input][[34mDEBUG[0m[37m] Binding button/key Space to 'up'[0m
+[37m[2023-02-21 20:39:02][input][[34mDEBUG[0m[37m] Binding button/key LControl to 'down'[0m
+[37m[2023-02-21 20:39:02][input][[34mDEBUG[0m[37m] Binding button/key A to 'left'[0m
+[37m[2023-02-21 20:39:02][input][[34mDEBUG[0m[37m] Binding button/key D to 'right'[0m
+[37m[2023-02-21 20:39:02][input][[34mDEBUG[0m[37m] Binding axis MousePositionX to 'x rotation'[0m
+[37m[2023-02-21 20:39:02][input][[34mDEBUG[0m[37m] Binding axis MousePositionY to 'y rotation'[0m
+[37m[2023-02-21 20:39:02][app::app][[34mDEBUG[0m[37m] Created sleeper without a target rate (VSync off)[0m
+[33m[2023-02-21 20:39:02][graphics::active::pipeline][[33mWARN[0m[33m] Did not find cached bind group (set = 0), creating new one...[0m
+[33m[2023-02-21 20:39:02][graphics::active::pipeline][[33mWARN[0m[33m] Did not find cached bind group (set = 1), creating new one...[0m
+[33m[2023-02-21 20:39:02][graphics::context::staging][[33mWARN[0m[33m] Did not find block, allocating new buffer with size 256 and mode Write[0m
+[37m[2023-02-21 20:39:11][app::app][[34mDEBUG[0m[37m] Sorting engine stages...[0m
+[37m[2023-02-21 20:39:11][world::events::registry][[34mDEBUG[0m[37m] Sorted 11 events for Init registry[0m
+[37m[2023-02-21 20:39:11][world::events::registry][[34mDEBUG[0m[37m] Sorted 12 events for Update registry[0m
+[37m[2023-02-21 20:39:11][world::events::registry][[34mDEBUG[0m[37m] Sorted 0 events for Shutdown registry[0m
+[37m[2023-02-21 20:39:11][world::events::registry][[34mDEBUG[0m[37m] Sorted 1 events for WindowEvent registry[0m
+[37m[2023-02-21 20:39:11][world::events::registry][[34mDEBUG[0m[37m] Sorted 1 events for DeviceEvent registry[0m
+[37m[2023-02-21 20:39:11][world::events::registry][[34mDEBUG[0m[37m] Sorted 1 events for Tick registry[0m
+[37m[2023-02-21 20:39:11][winit::platform_impl::platform::x11::window][[32mINFO[0m[37m] Guessed window scale factor: 1[0m
+[37m[2023-02-21 20:39:11][winit::platform_impl::platform::x11::window][[34mDEBUG[0m[37m] Calculated physical dimensions: 800x600[0m
+[33m[2023-02-21 20:39:11][wgpu_hal::vulkan::instance][[33mWARN[0m[33m] Unable to find layer: VK_LAYER_KHRONOS_validation[0m
+[37m[2023-02-21 20:39:11][graphics::context::init][[34mDEBUG[0m[37m] Chosen Adapter: 'NVIDIA GeForce GTX 1050', Backend: Vulkan [0m
+[37m[2023-02-21 20:39:11][graphics::context::init][[34mDEBUG[0m[37m] Adapter Limits: Max Texture Dimensions: 32768x32768x16384[0m
+[37m[2023-02-21 20:39:11][graphics::context::init][[34mDEBUG[0m[37m] Adapter Limits: Max bind groups: 8[0m
+[37m[2023-02-21 20:39:11][graphics::context::init][[34mDEBUG[0m[37m] Adapter Limits: Max bindings per group: 640[0m
+[37m[2023-02-21 20:39:11][graphics::context::init][[34mDEBUG[0m[37m] Adapter Limits: Max Push Constants Size: 256[0m
+[37m[2023-02-21 20:39:11][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [CameraUniform; cap = 1], usage: UNIFORM[0m
+[37m[2023-02-21 20:39:11][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [TimingUniform; cap = 1], usage: UNIFORM[0m
+[37m[2023-02-21 20:39:11][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [SceneUniform; cap = 1], usage: UNIFORM[0m
+[37m[2023-02-21 20:39:11][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1x1x1[0m
+[33m[2023-02-21 20:39:11][graphics::texture::sampler][[33mWARN[0m[33m] Did not find cached sampler (Linear, Repeat, AutoAniso)[0m
+[37m[2023-02-21 20:39:11][graphics::texture::sampler][[34mDEBUG[0m[37m] Saved sampler (Linear, Repeat, AutoAniso) in graphics cache[0m
+[37m[2023-02-21 20:39:11][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1x1x1[0m
+[37m[2023-02-21 20:39:11][graphics::texture::sampler][[34mDEBUG[0m[37m] Found sampler type in cache, using it...[0m
+[37m[2023-02-21 20:39:11][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1x1x1[0m
+[37m[2023-02-21 20:39:11][graphics::texture::sampler][[34mDEBUG[0m[37m] Found sampler type in cache, using it...[0m
+[33m[2023-02-21 20:39:11][world::world::world][[33mWARN[0m[33m] Replaced resource Storage<Texture2D<RGBA<Normalized<u8>>>> since it was already present[0m
+[37m[2023-02-21 20:39:11][gilrs::gamepad][[34mDEBUG[0m[37m] Loaded 525 mappings.[0m
+[37m[2023-02-21 20:39:11][utils::thread::thread][[34mDEBUG[0m[37m] Initialized a new thread pool with 8 thread(s)[0m
+[33m[2023-02-21 20:39:11][world::world::world][[33mWARN[0m[33m] Replaced resource ThreadPool since it was already present[0m
+[37m[2023-02-21 20:39:11][rendering::scene::resources::pipelines][[34mDEBUG[0m[37m] Creating pipeline for material Basic...[0m
+[37m[2023-02-21 20:39:11][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/shaders/basic.vert" from cached bytes[0m
+[37m[2023-02-21 20:39:11][graphics::shader::compiler][[34mDEBUG[0m[37m] Created a new compiler for basic.vert[0m
+[37m[2023-02-21 20:39:11][graphics::shader::compiler][[34mDEBUG[0m[37m] Loading shader function module '<engine/shaders/common/camera.glsl>'[0m
+[37m[2023-02-21 20:39:11][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/shaders/common/camera.glsl" from cached bytes[0m
+[37m[2023-02-21 20:39:11][graphics::shader::compiler][[34mDEBUG[0m[37m] Compiled shader basic.vert sucessfully! Took 8ms[0m
+[37m[2023-02-21 20:39:11][graphics::shader::compiler][[34mDEBUG[0m[37m] Reflected shader basic.vert sucessfully! Took 0ms[0m
+[37m[2023-02-21 20:39:11][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/shaders/basic.frag" from cached bytes[0m
+[37m[2023-02-21 20:39:11][graphics::shader::compiler][[34mDEBUG[0m[37m] Created a new compiler for basic.frag[0m
+[37m[2023-02-21 20:39:11][graphics::shader::compiler][[34mDEBUG[0m[37m] Loading shader function module '<engine/shaders/common/camera.glsl>'[0m
+[37m[2023-02-21 20:39:11][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/shaders/common/camera.glsl" from cached bytes[0m
+[37m[2023-02-21 20:39:11][graphics::shader::compiler][[34mDEBUG[0m[37m] Compiled shader basic.frag sucessfully! Took 5ms[0m
+[37m[2023-02-21 20:39:11][graphics::shader::compiler][[34mDEBUG[0m[37m] Reflected shader basic.frag sucessfully! Took 0ms[0m
+[33m[2023-02-21 20:39:11][graphics::shader::reflected][[33mWARN[0m[33m] Did not find cached pipeline layout for ["basic.vert", "basic.frag"][0m
+[33m[2023-02-21 20:39:11][graphics::shader::reflected][[33mWARN[0m[33m] Did not find cached bind group layout for set = 0, in ["basic.vert", "basic.frag"][0m
+[33m[2023-02-21 20:39:11][graphics::shader::reflected][[33mWARN[0m[33m] Did not find cached bind group layout for set = 1, in ["basic.vert", "basic.frag"][0m
+[37m[2023-02-21 20:39:11][graphics::shader::reflected][[34mDEBUG[0m[37m] Saved pipeline layout for ["basic.vert", "basic.frag"] in graphics cache[0m
+[37m[2023-02-21 20:39:11][rendering::scene::resources::pipelines][[34mDEBUG[0m[37m] Registered pipeline for material Basic[0m
+[33m[2023-02-21 20:39:11][assets::loader][[33mWARN[0m[33m] Loading asset bytes from path "user/ignored/diffuse.jpg" dynamically...[0m
+[37m[2023-02-21 20:39:11][assets::loader][[34mDEBUG[0m[37m] Successfully loaded dynamic asset bytes from path "user/ignored/diffuse.jpg"[0m
+[37m[2023-02-21 20:39:11][graphics::texture::texture2d][[34mDEBUG[0m[37m] Took 254.402051ms to deserialize texture "user/ignored/diffuse.jpg"[0m
+[37m[2023-02-21 20:39:12][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1024x1024x1[0m
+[37m[2023-02-21 20:39:12][graphics::texture::sampler][[34mDEBUG[0m[37m] Found sampler type in cache, using it...[0m
+[33m[2023-02-21 20:39:12][assets::loader][[33mWARN[0m[33m] Loading asset bytes from path "user/ignored/normal.jpg" dynamically...[0m
+[37m[2023-02-21 20:39:12][assets::loader][[34mDEBUG[0m[37m] Successfully loaded dynamic asset bytes from path "user/ignored/normal.jpg"[0m
+[37m[2023-02-21 20:39:12][graphics::texture::texture2d][[34mDEBUG[0m[37m] Took 235.869597ms to deserialize texture "user/ignored/normal.jpg"[0m
+[37m[2023-02-21 20:39:13][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1024x1024x1[0m
+[37m[2023-02-21 20:39:13][graphics::texture::sampler][[34mDEBUG[0m[37m] Found sampler type in cache, using it...[0m
+[37m[2023-02-21 20:39:13][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/meshes/cube.obj" from cached bytes[0m
+[37m[2023-02-21 20:39:13][rendering::mesh::mesh][[34mDEBUG[0m[37m] Parsed mesh from file 'cube.obj', vertex count: 24, index count: 36[0m
+[37m[2023-02-21 20:39:13][rendering::mesh::mesh][[34mDEBUG[0m[37m] Loaded 24 position vertices[0m
+[37m[2023-02-21 20:39:13][rendering::mesh::mesh][[34mDEBUG[0m[37m] Loaded 24 normal vertices[0m
+[37m[2023-02-21 20:39:13][rendering::mesh::mesh][[34mDEBUG[0m[37m] Loaded 24 tangent vertices[0m
+[37m[2023-02-21 20:39:13][rendering::mesh::mesh][[34mDEBUG[0m[37m] Loaded 24 texture coordinate vertices[0m
+[37m[2023-02-21 20:39:13][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [Vec3<f32>; cap = 24], usage: VERTEX[0m
+[37m[2023-02-21 20:39:13][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [Vec4<i8>; cap = 24], usage: VERTEX[0m
+[37m[2023-02-21 20:39:13][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [Vec4<i8>; cap = 24], usage: VERTEX[0m
+[37m[2023-02-21 20:39:13][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [Vec4<u8>; cap = 24], usage: VERTEX[0m
+[37m[2023-02-21 20:39:13][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [[u32; 3]; cap = 12], usage: INDEX[0m
+[37m[2023-02-21 20:39:13][ecs::archetype::archetype][[34mDEBUG[0m[37m] Creating archetype from bundle of mask m111[0m
+[37m[2023-02-21 20:39:13][ecs::archetype::archetype][[34mDEBUG[0m[37m] Reserving 1 additional elements for archetype m111[0m
+[37m[2023-02-21 20:39:13][ecs::archetype::archetype][[34mDEBUG[0m[37m] Extended archetype m111 with 1 new element(s)[0m
+[37m[2023-02-21 20:39:13][ecs::archetype::archetype][[34mDEBUG[0m[37m] Creating archetype from bundle of mask m11100[0m
+[37m[2023-02-21 20:39:13][ecs::archetype::archetype][[34mDEBUG[0m[37m] Reserving 1 additional elements for archetype m11100[0m
+[37m[2023-02-21 20:39:13][ecs::archetype::archetype][[34mDEBUG[0m[37m] Extended archetype m11100 with 1 new element(s)[0m
+[37m[2023-02-21 20:39:13][input][[34mDEBUG[0m[37m] Binding button/key W to 'forward'[0m
+[37m[2023-02-21 20:39:13][input][[34mDEBUG[0m[37m] Binding button/key S to 'backward'[0m
+[37m[2023-02-21 20:39:13][input][[34mDEBUG[0m[37m] Binding button/key Space to 'up'[0m
+[37m[2023-02-21 20:39:13][input][[34mDEBUG[0m[37m] Binding button/key LControl to 'down'[0m
+[37m[2023-02-21 20:39:13][input][[34mDEBUG[0m[37m] Binding button/key A to 'left'[0m
+[37m[2023-02-21 20:39:13][input][[34mDEBUG[0m[37m] Binding button/key D to 'right'[0m
+[37m[2023-02-21 20:39:13][input][[34mDEBUG[0m[37m] Binding axis MousePositionX to 'x rotation'[0m
+[37m[2023-02-21 20:39:13][input][[34mDEBUG[0m[37m] Binding axis MousePositionY to 'y rotation'[0m
+[37m[2023-02-21 20:39:13][app::app][[34mDEBUG[0m[37m] Created sleeper without a target rate (VSync off)[0m
+[33m[2023-02-21 20:39:13][graphics::active::pipeline][[33mWARN[0m[33m] Did not find cached bind group (set = 0), creating new one...[0m
+[33m[2023-02-21 20:39:13][graphics::active::pipeline][[33mWARN[0m[33m] Did not find cached bind group (set = 1), creating new one...[0m
+[33m[2023-02-21 20:39:13][graphics::context::staging][[33mWARN[0m[33m] Did not find block, allocating new buffer with size 256 and mode Write[0m
+[37m[2023-02-21 20:39:46][app::app][[34mDEBUG[0m[37m] Sorting engine stages...[0m
+[37m[2023-02-21 20:39:46][world::events::registry][[34mDEBUG[0m[37m] Sorted 11 events for Init registry[0m
+[37m[2023-02-21 20:39:46][world::events::registry][[34mDEBUG[0m[37m] Sorted 12 events for Update registry[0m
+[37m[2023-02-21 20:39:46][world::events::registry][[34mDEBUG[0m[37m] Sorted 0 events for Shutdown registry[0m
+[37m[2023-02-21 20:39:46][world::events::registry][[34mDEBUG[0m[37m] Sorted 1 events for WindowEvent registry[0m
+[37m[2023-02-21 20:39:46][world::events::registry][[34mDEBUG[0m[37m] Sorted 1 events for DeviceEvent registry[0m
+[37m[2023-02-21 20:39:46][world::events::registry][[34mDEBUG[0m[37m] Sorted 1 events for Tick registry[0m
+[37m[2023-02-21 20:39:46][winit::platform_impl::platform::x11::window][[32mINFO[0m[37m] Guessed window scale factor: 1[0m
+[37m[2023-02-21 20:39:46][winit::platform_impl::platform::x11::window][[34mDEBUG[0m[37m] Calculated physical dimensions: 800x600[0m
+[33m[2023-02-21 20:39:46][wgpu_hal::vulkan::instance][[33mWARN[0m[33m] Unable to find layer: VK_LAYER_KHRONOS_validation[0m
+[37m[2023-02-21 20:39:46][graphics::context::init][[34mDEBUG[0m[37m] Chosen Adapter: 'NVIDIA GeForce GTX 1050', Backend: Vulkan [0m
+[37m[2023-02-21 20:39:46][graphics::context::init][[34mDEBUG[0m[37m] Adapter Limits: Max Texture Dimensions: 32768x32768x16384[0m
+[37m[2023-02-21 20:39:46][graphics::context::init][[34mDEBUG[0m[37m] Adapter Limits: Max bind groups: 8[0m
+[37m[2023-02-21 20:39:46][graphics::context::init][[34mDEBUG[0m[37m] Adapter Limits: Max bindings per group: 640[0m
+[37m[2023-02-21 20:39:46][graphics::context::init][[34mDEBUG[0m[37m] Adapter Limits: Max Push Constants Size: 256[0m
+[37m[2023-02-21 20:39:46][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [CameraUniform; cap = 1], usage: UNIFORM[0m
+[37m[2023-02-21 20:39:46][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [TimingUniform; cap = 1], usage: UNIFORM[0m
+[37m[2023-02-21 20:39:46][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [SceneUniform; cap = 1], usage: UNIFORM[0m
+[37m[2023-02-21 20:39:46][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1x1x1[0m
+[33m[2023-02-21 20:39:46][graphics::texture::sampler][[33mWARN[0m[33m] Did not find cached sampler (Linear, Repeat, AutoAniso)[0m
+[37m[2023-02-21 20:39:46][graphics::texture::sampler][[34mDEBUG[0m[37m] Saved sampler (Linear, Repeat, AutoAniso) in graphics cache[0m
+[37m[2023-02-21 20:39:46][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1x1x1[0m
+[37m[2023-02-21 20:39:46][graphics::texture::sampler][[34mDEBUG[0m[37m] Found sampler type in cache, using it...[0m
+[37m[2023-02-21 20:39:46][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1x1x1[0m
+[37m[2023-02-21 20:39:46][graphics::texture::sampler][[34mDEBUG[0m[37m] Found sampler type in cache, using it...[0m
+[33m[2023-02-21 20:39:46][world::world::world][[33mWARN[0m[33m] Replaced resource Storage<Texture2D<RGBA<Normalized<u8>>>> since it was already present[0m
+[37m[2023-02-21 20:39:46][gilrs::gamepad][[34mDEBUG[0m[37m] Loaded 525 mappings.[0m
+[37m[2023-02-21 20:39:46][utils::thread::thread][[34mDEBUG[0m[37m] Initialized a new thread pool with 8 thread(s)[0m
+[33m[2023-02-21 20:39:46][world::world::world][[33mWARN[0m[33m] Replaced resource ThreadPool since it was already present[0m
+[37m[2023-02-21 20:39:46][rendering::scene::resources::pipelines][[34mDEBUG[0m[37m] Creating pipeline for material Basic...[0m
+[37m[2023-02-21 20:39:46][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/shaders/basic.vert" from cached bytes[0m
+[37m[2023-02-21 20:39:46][graphics::shader::compiler][[34mDEBUG[0m[37m] Created a new compiler for basic.vert[0m
+[37m[2023-02-21 20:39:46][graphics::shader::compiler][[34mDEBUG[0m[37m] Loading shader function module '<engine/shaders/common/camera.glsl>'[0m
+[37m[2023-02-21 20:39:46][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/shaders/common/camera.glsl" from cached bytes[0m
+[37m[2023-02-21 20:39:46][graphics::shader::compiler][[34mDEBUG[0m[37m] Compiled shader basic.vert sucessfully! Took 6ms[0m
+[37m[2023-02-21 20:39:46][graphics::shader::compiler][[34mDEBUG[0m[37m] Reflected shader basic.vert sucessfully! Took 0ms[0m
+[37m[2023-02-21 20:39:46][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/shaders/basic.frag" from cached bytes[0m
+[37m[2023-02-21 20:39:46][graphics::shader::compiler][[34mDEBUG[0m[37m] Created a new compiler for basic.frag[0m
+[37m[2023-02-21 20:39:46][graphics::shader::compiler][[34mDEBUG[0m[37m] Loading shader function module '<engine/shaders/common/camera.glsl>'[0m
+[37m[2023-02-21 20:39:46][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/shaders/common/camera.glsl" from cached bytes[0m
+[37m[2023-02-21 20:39:46][graphics::shader::compiler][[34mDEBUG[0m[37m] Compiled shader basic.frag sucessfully! Took 6ms[0m
+[37m[2023-02-21 20:39:46][graphics::shader::compiler][[34mDEBUG[0m[37m] Reflected shader basic.frag sucessfully! Took 0ms[0m
+[33m[2023-02-21 20:39:46][graphics::shader::reflected][[33mWARN[0m[33m] Did not find cached pipeline layout for ["basic.vert", "basic.frag"][0m
+[33m[2023-02-21 20:39:46][graphics::shader::reflected][[33mWARN[0m[33m] Did not find cached bind group layout for set = 0, in ["basic.vert", "basic.frag"][0m
+[33m[2023-02-21 20:39:46][graphics::shader::reflected][[33mWARN[0m[33m] Did not find cached bind group layout for set = 1, in ["basic.vert", "basic.frag"][0m
+[37m[2023-02-21 20:39:46][graphics::shader::reflected][[34mDEBUG[0m[37m] Saved pipeline layout for ["basic.vert", "basic.frag"] in graphics cache[0m
+[37m[2023-02-21 20:39:46][rendering::scene::resources::pipelines][[34mDEBUG[0m[37m] Registered pipeline for material Basic[0m
+[33m[2023-02-21 20:39:46][assets::loader][[33mWARN[0m[33m] Loading asset bytes from path "user/ignored/diffuse.jpg" dynamically...[0m
+[37m[2023-02-21 20:39:46][assets::loader][[34mDEBUG[0m[37m] Successfully loaded dynamic asset bytes from path "user/ignored/diffuse.jpg"[0m
+[37m[2023-02-21 20:39:47][graphics::texture::texture2d][[34mDEBUG[0m[37m] Took 247.939148ms to deserialize texture "user/ignored/diffuse.jpg"[0m
+[37m[2023-02-21 20:39:47][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1024x1024x1[0m
+[37m[2023-02-21 20:39:47][graphics::texture::sampler][[34mDEBUG[0m[37m] Found sampler type in cache, using it...[0m
+[33m[2023-02-21 20:39:47][assets::loader][[33mWARN[0m[33m] Loading asset bytes from path "user/ignored/normal.jpg" dynamically...[0m
+[37m[2023-02-21 20:39:47][assets::loader][[34mDEBUG[0m[37m] Successfully loaded dynamic asset bytes from path "user/ignored/normal.jpg"[0m
+[37m[2023-02-21 20:39:48][graphics::texture::texture2d][[34mDEBUG[0m[37m] Took 279.532971ms to deserialize texture "user/ignored/normal.jpg"[0m
+[37m[2023-02-21 20:39:48][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1024x1024x1[0m
+[37m[2023-02-21 20:39:48][graphics::texture::sampler][[34mDEBUG[0m[37m] Found sampler type in cache, using it...[0m
+[37m[2023-02-21 20:39:48][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/meshes/cube.obj" from cached bytes[0m
+[37m[2023-02-21 20:39:48][rendering::mesh::mesh][[34mDEBUG[0m[37m] Parsed mesh from file 'cube.obj', vertex count: 24, index count: 36[0m
+[37m[2023-02-21 20:39:48][rendering::mesh::mesh][[34mDEBUG[0m[37m] Loaded 24 position vertices[0m
+[37m[2023-02-21 20:39:48][rendering::mesh::mesh][[34mDEBUG[0m[37m] Loaded 24 normal vertices[0m
+[37m[2023-02-21 20:39:48][rendering::mesh::mesh][[34mDEBUG[0m[37m] Loaded 24 tangent vertices[0m
+[37m[2023-02-21 20:39:48][rendering::mesh::mesh][[34mDEBUG[0m[37m] Loaded 24 texture coordinate vertices[0m
+[37m[2023-02-21 20:39:48][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [Vec3<f32>; cap = 24], usage: VERTEX[0m
+[37m[2023-02-21 20:39:48][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [Vec4<i8>; cap = 24], usage: VERTEX[0m
+[37m[2023-02-21 20:39:48][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [Vec4<i8>; cap = 24], usage: VERTEX[0m
+[37m[2023-02-21 20:39:48][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [Vec4<u8>; cap = 24], usage: VERTEX[0m
+[37m[2023-02-21 20:39:48][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [[u32; 3]; cap = 12], usage: INDEX[0m
+[37m[2023-02-21 20:39:48][ecs::archetype::archetype][[34mDEBUG[0m[37m] Creating archetype from bundle of mask m111[0m
+[37m[2023-02-21 20:39:48][ecs::archetype::archetype][[34mDEBUG[0m[37m] Reserving 1 additional elements for archetype m111[0m
+[37m[2023-02-21 20:39:48][ecs::archetype::archetype][[34mDEBUG[0m[37m] Extended archetype m111 with 1 new element(s)[0m
+[37m[2023-02-21 20:39:48][ecs::archetype::archetype][[34mDEBUG[0m[37m] Creating archetype from bundle of mask m11100[0m
+[37m[2023-02-21 20:39:48][ecs::archetype::archetype][[34mDEBUG[0m[37m] Reserving 1 additional elements for archetype m11100[0m
+[37m[2023-02-21 20:39:48][ecs::archetype::archetype][[34mDEBUG[0m[37m] Extended archetype m11100 with 1 new element(s)[0m
+[37m[2023-02-21 20:39:48][input][[34mDEBUG[0m[37m] Binding button/key W to 'forward'[0m
+[37m[2023-02-21 20:39:48][input][[34mDEBUG[0m[37m] Binding button/key S to 'backward'[0m
+[37m[2023-02-21 20:39:48][input][[34mDEBUG[0m[37m] Binding button/key Space to 'up'[0m
+[37m[2023-02-21 20:39:48][input][[34mDEBUG[0m[37m] Binding button/key LControl to 'down'[0m
+[37m[2023-02-21 20:39:48][input][[34mDEBUG[0m[37m] Binding button/key A to 'left'[0m
+[37m[2023-02-21 20:39:48][input][[34mDEBUG[0m[37m] Binding button/key D to 'right'[0m
+[37m[2023-02-21 20:39:48][input][[34mDEBUG[0m[37m] Binding axis MousePositionX to 'x rotation'[0m
+[37m[2023-02-21 20:39:48][input][[34mDEBUG[0m[37m] Binding axis MousePositionY to 'y rotation'[0m
+[37m[2023-02-21 20:39:48][app::app][[34mDEBUG[0m[37m] Created sleeper without a target rate (VSync off)[0m
+[33m[2023-02-21 20:39:48][graphics::active::pipeline][[33mWARN[0m[33m] Did not find cached bind group (set = 0), creating new one...[0m
+[33m[2023-02-21 20:39:48][graphics::active::pipeline][[33mWARN[0m[33m] Did not find cached bind group (set = 1), creating new one...[0m
+[33m[2023-02-21 20:39:48][graphics::context::staging][[33mWARN[0m[33m] Did not find block, allocating new buffer with size 256 and mode Write[0m
+[37m[2023-02-21 20:40:09][app::app][[34mDEBUG[0m[37m] Sorting engine stages...[0m
+[37m[2023-02-21 20:40:09][world::events::registry][[34mDEBUG[0m[37m] Sorted 11 events for Init registry[0m
+[37m[2023-02-21 20:40:09][world::events::registry][[34mDEBUG[0m[37m] Sorted 12 events for Update registry[0m
+[37m[2023-02-21 20:40:09][world::events::registry][[34mDEBUG[0m[37m] Sorted 0 events for Shutdown registry[0m
+[37m[2023-02-21 20:40:09][world::events::registry][[34mDEBUG[0m[37m] Sorted 1 events for WindowEvent registry[0m
+[37m[2023-02-21 20:40:09][world::events::registry][[34mDEBUG[0m[37m] Sorted 1 events for DeviceEvent registry[0m
+[37m[2023-02-21 20:40:09][world::events::registry][[34mDEBUG[0m[37m] Sorted 1 events for Tick registry[0m
+[37m[2023-02-21 20:40:09][winit::platform_impl::platform::x11::window][[32mINFO[0m[37m] Guessed window scale factor: 1[0m
+[37m[2023-02-21 20:40:09][winit::platform_impl::platform::x11::window][[34mDEBUG[0m[37m] Calculated physical dimensions: 800x600[0m
+[33m[2023-02-21 20:40:09][wgpu_hal::vulkan::instance][[33mWARN[0m[33m] Unable to find layer: VK_LAYER_KHRONOS_validation[0m
+[37m[2023-02-21 20:40:09][graphics::context::init][[34mDEBUG[0m[37m] Chosen Adapter: 'NVIDIA GeForce GTX 1050', Backend: Vulkan [0m
+[37m[2023-02-21 20:40:09][graphics::context::init][[34mDEBUG[0m[37m] Adapter Limits: Max Texture Dimensions: 32768x32768x16384[0m
+[37m[2023-02-21 20:40:09][graphics::context::init][[34mDEBUG[0m[37m] Adapter Limits: Max bind groups: 8[0m
+[37m[2023-02-21 20:40:09][graphics::context::init][[34mDEBUG[0m[37m] Adapter Limits: Max bindings per group: 640[0m
+[37m[2023-02-21 20:40:09][graphics::context::init][[34mDEBUG[0m[37m] Adapter Limits: Max Push Constants Size: 256[0m
+[37m[2023-02-21 20:40:09][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [CameraUniform; cap = 1], usage: UNIFORM[0m
+[37m[2023-02-21 20:40:09][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [TimingUniform; cap = 1], usage: UNIFORM[0m
+[37m[2023-02-21 20:40:09][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [SceneUniform; cap = 1], usage: UNIFORM[0m
+[37m[2023-02-21 20:40:09][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1x1x1[0m
+[33m[2023-02-21 20:40:09][graphics::texture::sampler][[33mWARN[0m[33m] Did not find cached sampler (Linear, Repeat, AutoAniso)[0m
+[37m[2023-02-21 20:40:09][graphics::texture::sampler][[34mDEBUG[0m[37m] Saved sampler (Linear, Repeat, AutoAniso) in graphics cache[0m
+[37m[2023-02-21 20:40:09][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1x1x1[0m
+[37m[2023-02-21 20:40:09][graphics::texture::sampler][[34mDEBUG[0m[37m] Found sampler type in cache, using it...[0m
+[37m[2023-02-21 20:40:09][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1x1x1[0m
+[37m[2023-02-21 20:40:09][graphics::texture::sampler][[34mDEBUG[0m[37m] Found sampler type in cache, using it...[0m
+[33m[2023-02-21 20:40:09][world::world::world][[33mWARN[0m[33m] Replaced resource Storage<Texture2D<RGBA<Normalized<u8>>>> since it was already present[0m
+[37m[2023-02-21 20:40:09][gilrs::gamepad][[34mDEBUG[0m[37m] Loaded 525 mappings.[0m
+[37m[2023-02-21 20:40:09][utils::thread::thread][[34mDEBUG[0m[37m] Initialized a new thread pool with 8 thread(s)[0m
+[33m[2023-02-21 20:40:09][world::world::world][[33mWARN[0m[33m] Replaced resource ThreadPool since it was already present[0m
+[37m[2023-02-21 20:40:09][rendering::scene::resources::pipelines][[34mDEBUG[0m[37m] Creating pipeline for material Basic...[0m
+[37m[2023-02-21 20:40:09][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/shaders/basic.vert" from cached bytes[0m
+[37m[2023-02-21 20:40:09][graphics::shader::compiler][[34mDEBUG[0m[37m] Created a new compiler for basic.vert[0m
+[37m[2023-02-21 20:40:09][graphics::shader::compiler][[34mDEBUG[0m[37m] Loading shader function module '<engine/shaders/common/camera.glsl>'[0m
+[37m[2023-02-21 20:40:09][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/shaders/common/camera.glsl" from cached bytes[0m
+[37m[2023-02-21 20:40:09][graphics::shader::compiler][[34mDEBUG[0m[37m] Compiled shader basic.vert sucessfully! Took 6ms[0m
+[37m[2023-02-21 20:40:09][graphics::shader::compiler][[34mDEBUG[0m[37m] Reflected shader basic.vert sucessfully! Took 0ms[0m
+[37m[2023-02-21 20:40:09][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/shaders/basic.frag" from cached bytes[0m
+[37m[2023-02-21 20:40:09][graphics::shader::compiler][[34mDEBUG[0m[37m] Created a new compiler for basic.frag[0m
+[37m[2023-02-21 20:40:09][graphics::shader::compiler][[34mDEBUG[0m[37m] Loading shader function module '<engine/shaders/common/camera.glsl>'[0m
+[37m[2023-02-21 20:40:09][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/shaders/common/camera.glsl" from cached bytes[0m
+[37m[2023-02-21 20:40:09][graphics::shader::compiler][[34mDEBUG[0m[37m] Compiled shader basic.frag sucessfully! Took 5ms[0m
+[37m[2023-02-21 20:40:09][graphics::shader::compiler][[34mDEBUG[0m[37m] Reflected shader basic.frag sucessfully! Took 0ms[0m
+[33m[2023-02-21 20:40:09][graphics::shader::reflected][[33mWARN[0m[33m] Did not find cached pipeline layout for ["basic.vert", "basic.frag"][0m
+[33m[2023-02-21 20:40:09][graphics::shader::reflected][[33mWARN[0m[33m] Did not find cached bind group layout for set = 0, in ["basic.vert", "basic.frag"][0m
+[33m[2023-02-21 20:40:09][graphics::shader::reflected][[33mWARN[0m[33m] Did not find cached bind group layout for set = 1, in ["basic.vert", "basic.frag"][0m
+[37m[2023-02-21 20:40:09][graphics::shader::reflected][[34mDEBUG[0m[37m] Saved pipeline layout for ["basic.vert", "basic.frag"] in graphics cache[0m
+[37m[2023-02-21 20:40:09][rendering::scene::resources::pipelines][[34mDEBUG[0m[37m] Registered pipeline for material Basic[0m
+[33m[2023-02-21 20:40:09][assets::loader][[33mWARN[0m[33m] Loading asset bytes from path "user/ignored/diffuse.jpg" dynamically...[0m
+[37m[2023-02-21 20:40:09][assets::loader][[34mDEBUG[0m[37m] Successfully loaded dynamic asset bytes from path "user/ignored/diffuse.jpg"[0m
+[37m[2023-02-21 20:40:09][graphics::texture::texture2d][[34mDEBUG[0m[37m] Took 251.413403ms to deserialize texture "user/ignored/diffuse.jpg"[0m
+[37m[2023-02-21 20:40:10][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1024x1024x1[0m
+[37m[2023-02-21 20:40:10][graphics::texture::sampler][[34mDEBUG[0m[37m] Found sampler type in cache, using it...[0m
+[33m[2023-02-21 20:40:10][assets::loader][[33mWARN[0m[33m] Loading asset bytes from path "user/ignored/normal.jpg" dynamically...[0m
+[37m[2023-02-21 20:40:10][assets::loader][[34mDEBUG[0m[37m] Successfully loaded dynamic asset bytes from path "user/ignored/normal.jpg"[0m
+[37m[2023-02-21 20:40:10][graphics::texture::texture2d][[34mDEBUG[0m[37m] Took 273.604983ms to deserialize texture "user/ignored/normal.jpg"[0m
+[37m[2023-02-21 20:40:11][graphics::texture::texture][[34mDEBUG[0m[37m] Creating texture, D2, <RGBA<Normalized<u8>>>, 1024x1024x1[0m
+[37m[2023-02-21 20:40:11][graphics::texture::sampler][[34mDEBUG[0m[37m] Found sampler type in cache, using it...[0m
+[37m[2023-02-21 20:40:11][assets::loader][[34mDEBUG[0m[37m] Loaded asset from path "engine/meshes/cube.obj" from cached bytes[0m
+[37m[2023-02-21 20:40:11][rendering::mesh::mesh][[34mDEBUG[0m[37m] Parsed mesh from file 'cube.obj', vertex count: 24, index count: 36[0m
+[37m[2023-02-21 20:40:11][rendering::mesh::mesh][[34mDEBUG[0m[37m] Loaded 24 position vertices[0m
+[37m[2023-02-21 20:40:11][rendering::mesh::mesh][[34mDEBUG[0m[37m] Loaded 24 normal vertices[0m
+[37m[2023-02-21 20:40:11][rendering::mesh::mesh][[34mDEBUG[0m[37m] Loaded 24 tangent vertices[0m
+[37m[2023-02-21 20:40:11][rendering::mesh::mesh][[34mDEBUG[0m[37m] Loaded 24 texture coordinate vertices[0m
+[37m[2023-02-21 20:40:11][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [Vec3<f32>; cap = 24], usage: VERTEX[0m
+[37m[2023-02-21 20:40:11][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [Vec4<i8>; cap = 24], usage: VERTEX[0m
+[37m[2023-02-21 20:40:11][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [Vec4<i8>; cap = 24], usage: VERTEX[0m
+[37m[2023-02-21 20:40:11][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [Vec4<u8>; cap = 24], usage: VERTEX[0m
+[37m[2023-02-21 20:40:11][graphics::buffer::buffer][[34mDEBUG[0m[37m] Creating buffer [[u32; 3]; cap = 12], usage: INDEX[0m
+[37m[2023-02-21 20:40:11][ecs::archetype::archetype][[34mDEBUG[0m[37m] Creating archetype from bundle of mask m111[0m
+[37m[2023-02-21 20:40:11][ecs::archetype::archetype][[34mDEBUG[0m[37m] Reserving 1 additional elements for archetype m111[0m
+[37m[2023-02-21 20:40:11][ecs::archetype::archetype][[34mDEBUG[0m[37m] Extended archetype m111 with 1 new element(s)[0m
+[37m[2023-02-21 20:40:11][ecs::archetype::archetype][[34mDEBUG[0m[37m] Creating archetype from bundle of mask m11100[0m
+[37m[2023-02-21 20:40:11][ecs::archetype::archetype][[34mDEBUG[0m[37m] Reserving 1 additional elements for archetype m11100[0m
+[37m[2023-02-21 20:40:11][ecs::archetype::archetype][[34mDEBUG[0m[37m] Extended archetype m11100 with 1 new element(s)[0m
+[37m[2023-02-21 20:40:11][input][[34mDEBUG[0m[37m] Binding button/key W to 'forward'[0m
+[37m[2023-02-21 20:40:11][input][[34mDEBUG[0m[37m] Binding button/key S to 'backward'[0m
+[37m[2023-02-21 20:40:11][input][[34mDEBUG[0m[37m] Binding button/key Space to 'up'[0m
+[37m[2023-02-21 20:40:11][input][[34mDEBUG[0m[37m] Binding button/key LControl to 'down'[0m
+[37m[2023-02-21 20:40:11][input][[34mDEBUG[0m[37m] Binding button/key A to 'left'[0m
+[37m[2023-02-21 20:40:11][input][[34mDEBUG[0m[37m] Binding button/key D to 'right'[0m
+[37m[2023-02-21 20:40:11][input][[34mDEBUG[0m[37m] Binding axis MousePositionX to 'x rotation'[0m
+[37m[2023-02-21 20:40:11][input][[34mDEBUG[0m[37m] Binding axis MousePositionY to 'y rotation'[0m
+[37m[2023-02-21 20:40:11][app::app][[34mDEBUG[0m[37m] Created sleeper without a target rate (VSync off)[0m
+[33m[2023-02-21 20:40:11][graphics::active::pipeline][[33mWARN[0m[33m] Did not find cached bind group (set = 0), creating new one...[0m
+[33m[2023-02-21 20:40:11][graphics::active::pipeline][[33mWARN[0m[33m] Did not find cached bind group (set = 1), creating new one...[0m
+[33m[2023-02-21 20:40:11][graphics::context::staging][[33mWARN[0m[33m] Did not find block, allocating new buffer with size 256 and mode Write[0m

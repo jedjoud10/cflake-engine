@@ -1,7 +1,7 @@
 use crate::{
     AlbedoMap, Basic, Camera, CameraUniform,
     DefaultMaterialResources, ForwardRenderer,
-    ForwardRendererRenderPass, Mesh, NormalMap, Pipelines,
+    ForwardRendererRenderPass, Mesh, NormalMap, Pipelines, Renderer,
 };
 use ecs::Scene;
 use graphics::{
@@ -71,8 +71,6 @@ fn update_camera(world: &mut World) {
             (opengl_to_wgpu_matrix * camera.projection_matrix().inverted()).cols;
         let inverse_view = (opengl_to_wgpu_matrix * camera.view_matrix().inverted()).cols;
 
-        
-
         // Create the struct that contains the UBO data
         let data = CameraUniform {
             projection,
@@ -100,6 +98,39 @@ fn update_camera(world: &mut World) {
         if let Some((_, _, _, entity)) = next {
             renderer.main_camera = Some(*entity);
         }
+    }
+}
+
+// Update the global mesh matrices of objects that have been modified
+fn update_matrices(world: &mut World) {
+    let mut ecs = world.get_mut::<Scene>().unwrap();
+    //use ecs::*;
+
+    /*
+    // Filter the objects that have changed
+    let f1 = modified::<Position>();
+    let f2 = modified::<Rotation>();
+    let f3 = modified::<Scale>();
+    let f4 = added::<Renderer>();
+    let filter = f1 | f2 | f3 | f4;
+    */
+
+    let query = ecs
+        .query_mut::<(
+            &mut Renderer,
+            Option<&ecs::Position>,
+            Option<&ecs::Rotation>,
+            Option<&ecs::Scale>,
+        )>();
+
+        
+    // Update the matrices of objects that might contain location, rotation, or scale
+    for (renderer, location, rotation, scale) in query {
+        let mut matrix = vek::Mat4::<f32>::identity();
+        matrix = location.map_or(matrix, |l| matrix * vek::Mat4::from(l));
+        matrix *= rotation.map_or(matrix, |r| matrix * vek::Mat4::from(r));
+        matrix *= scale.map_or(matrix, |s| matrix * vek::Mat4::from(s));
+        renderer.matrix = matrix;
     }
 }
 
@@ -165,4 +196,9 @@ pub fn rendering_system(system: &mut System) {
 // The camera system will be responsible for updating the camera UBO and matrices
 pub fn camera_system(system: &mut System) {
     system.insert_update(update_camera).before(rendering_system);
+}
+
+// The matrix system will be responsible for updating the matrices of the renderer
+pub fn matrix_system(system: &mut System) {
+    system.insert_update(update_matrices).before(rendering_system);
 }

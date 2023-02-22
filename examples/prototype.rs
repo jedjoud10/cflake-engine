@@ -76,7 +76,8 @@ fn init(world: &mut World) {
 
     let surface = Surface::new(mesh, material, id);
     let renderer = Renderer::new(true, vek::Mat4::identity());
-    scene.insert((surface, renderer));
+    let position = Position::default();
+    scene.insert((surface, renderer, position));
 
     let camera = Camera::new(120.0, 0.01, 500.0, 16.0 / 9.0);
     scene.insert((Position::default(), Rotation::default(), camera));

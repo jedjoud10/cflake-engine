@@ -348,6 +348,7 @@ impl App {
         self = self.insert_system(graphics::present);
         self = self.insert_system(rendering::rendering_system);
         self = self.insert_system(rendering::camera_system);
+        self = self.insert_system(rendering::matrix_system);
 
         // Insert the IO manager
         let author = self.author_name.clone();
