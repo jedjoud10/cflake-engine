@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 winit = "0.27.5" 
+platform-dirs = "0.3.0"
 lazy_static = "1.4.0"
 spin_sleep = "1.1.0"
 mimalloc = "0.1.28"
@@ -21,7 +22,6 @@ math = { path = "../math" }
 gui = { path = "../gui" }
 audio = { path = "../audio" }
 utils = { path = "../utils" }
-env_logger = "0.9"
 fern = { version = "0.6.1", features = ["colored"] }
 chrono = "0.4.23"
 serde = "1.0.145"  

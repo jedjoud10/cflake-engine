@@ -1,6 +1,7 @@
 use graphics::{FrameRateLimit, WindowSettings};
 use mimalloc::MiMalloc;
-use std::path::PathBuf;
+use platform_dirs::AppDirs;
+use std::{path::{PathBuf, Path}, str::FromStr, sync::mpsc};
 use winit::{
     event::{DeviceEvent, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
@@ -173,12 +174,45 @@ impl App {
     }
 
     // Initialize the global logger (also sets the output file)
-    fn init_logger(&mut self) {
-        use fern::colors::Color;
-        self.world.insert(utils::ThreadPool::default());
+    fn init_logger(&mut self, sender: mpsc::Sender<String>) {
+        use fern::*;
+        use fern::colors::*;
+
+        // File logger with no colors. Will write into the given cache buffer
+        fn file_logger(sender: mpsc::Sender<String>) -> fern::Dispatch {
+            fern::Dispatch::new()
+                .format(move |out, _, record| {
+                    out.finish(format_args!(
+                        "[{date}][{target}][{level}] {message}",
+                        date = chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
+                        target = record.target(),
+                        level = record.level(),
+                        message = record.args(),
+                    ));
+                })
+                .chain(sender)
+        }
+
+        // Console logger with pwetty colors
+        fn console_logger(colors_level: ColoredLevelConfig, colors_line: ColoredLevelConfig) -> fern::Dispatch {
+            fern::Dispatch::new().format(move |out, message, record| {
+                out.finish(format_args!(
+                    "{color_line}[{date}][{target}][{level}{color_line}] {message}\x1B[0m",
+                    color_line = format_args!(
+                        "\x1B[{}m",
+                        colors_line.get_color(&record.level()).to_fg_str()
+                    ),
+                    date = chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
+                    target = record.target(),
+                    level = colors_level.color(record.level()),
+                    message = message,
+                ));
+            }).chain(std::io::stdout())
+        }
+
 
         // Color config for the line color
-        let colors_line = fern::colors::ColoredLevelConfig::new()
+        let colors_line = ColoredLevelConfig::new()
             .error(Color::Red)
             .warn(Color::Yellow)
             .info(Color::White)
@@ -194,36 +228,21 @@ impl App {
             .error(Color::Red);
 
         fern::Dispatch::new()
-            .format(move |out, message, record| {
-                out.finish(format_args!(
-                    "{color_line}[{date}][{target}][{level}{color_line}] {message}\x1B[0m",
-                    color_line = format_args!(
-                        "\x1B[{}m",
-                        colors_line.get_color(&record.level()).to_fg_str()
-                    ),
-                    date = chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
-                    target = record.target(),
-                    level = colors_level.color(record.level()),
-                    message = message,
-                ));
-            })
             .level_for("naga", log::LevelFilter::Warn)
             .level_for("wgpu", log::LevelFilter::Warn)
             .level_for("wgpu_core", log::LevelFilter::Warn)
             .level_for("wgpu_hal", log::LevelFilter::Warn)
             .level_for("graphics::context::staging", log::LevelFilter::Warn)
             .level(log::LevelFilter::Debug)
-            .chain(std::io::stdout())
-            .chain(fern::Output::call(|record| {
-                // TODO: Implement file logging here
-            }))
-            .apply().unwrap();
+            .chain(console_logger(colors_level, colors_line))
+            .chain(file_logger(sender)).apply().unwrap();
     }
 
     // Consume the App builder, and start the engine window
     pub fn execute(mut self) {
         // Enable the environment logger
-        self.init_logger();
+        let (tx, rx) = mpsc::channel::<String>();
+        self.init_logger(tx);
 
         // Pass the panics to the LOG crate
         let hook = std::panic::take_hook();
@@ -233,7 +252,7 @@ impl App {
         }));
 
         // Insert the default systems
-        self = self.insert_default_systems();
+        self = self.insert_default_systems(rx);
 
         // Sort all the stages
         log::debug!("Sorting engine stages...");
@@ -337,7 +356,7 @@ impl App {
     }
 
     // Insert the required default systems
-    fn insert_default_systems(mut self) -> Self {
+    fn insert_default_systems(mut self, receiver: mpsc::Receiver<String>) -> Self {
         self = self.insert_system(input::system);
         self = self.insert_system(ecs::system);
         self = self.insert_system(world::system);
@@ -357,6 +376,11 @@ impl App {
         let app = self.app_name.clone();
         self = self.insert_system(move |system: &mut System| {
             utils::io(system, author, app)
+        });
+
+        // Inititialize the file logger
+        self = self.insert_system(move |system: &mut System| {
+            utils::file_logger(system, receiver)
         });
 
         // Insert the asset loader

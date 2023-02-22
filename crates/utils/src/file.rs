@@ -1,7 +1,7 @@
 use std::{
     any::TypeId,
     fs::{File, OpenOptions},
-    io::{BufReader, BufWriter, Read},
+    io::{BufReader, BufWriter, Read, Seek, SeekFrom},
     path::{Path, PathBuf},
     str::FromStr,
 };
@@ -21,7 +21,9 @@ pub struct FileManager {
 
 // The type of file that we will read / write
 // This will pick where the file should be located
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub enum FileType {
+    Global,
     Config,
     Data,
     Cache,
@@ -29,7 +31,7 @@ pub enum FileType {
 }
 
 impl FileManager {
-    // Create an IO manager
+    // Create an IO manager (also creates the AppDirs)
     pub fn new(author: &str, app: &str) -> Self {
         // Create the app path using the author name and app name
         let mut path = PathBuf::from_str(author).unwrap();
@@ -42,6 +44,11 @@ impl FileManager {
         // Create the config directory if needed
         Self::init_directory(&dirs.config_dir).unwrap();
 
+        // Create the log directory if needed
+        let mut base = dirs.cache_dir.clone();
+        base.push("log/");
+        Self::init_directory(&base).unwrap();
+        
         Self {
             dirs,
             strings: Default::default(),
@@ -63,9 +70,13 @@ impl FileManager {
     // Create an empty file with the given path if needed
     pub fn init_file(
         path: impl AsRef<Path>,
-    ) -> std::io::Result<File> {
-        let path = path.as_ref();
-        std::fs::File::create(path)
+    ) -> std::io::Result<()> {
+        if !path.as_ref().exists() {
+            let path = path.as_ref();
+            std::fs::File::create(path).map(|_| ())
+        } else {
+            Ok(())
+        }
     }
 
     // Convert a FileType variant and local path to a proper global system path
@@ -80,9 +91,10 @@ impl FileManager {
             FileType::Cache => self.dirs.cache_dir.clone(),
             FileType::Log => {
                 let mut base = self.dirs.cache_dir.clone();
-                base.push("/log/");
+                base.push("log/");
                 base
             }
+            FileType::Global => return path.as_ref().to_path_buf(),
         };
 
         base.push(path);
@@ -102,7 +114,7 @@ impl FileManager {
 
         // Check if there was a file creation error
         let file = Self::init_file(&global);
-        let Ok(_file) = file else {
+        let Ok(_) = file else {
             log::error!("{}", file.err().unwrap());
             return None;
         };
@@ -124,10 +136,15 @@ impl FileManager {
     pub fn write_file(
         &mut self,
         path: impl AsRef<Path>,
+        truncate: bool,
         variant: FileType,
-    ) -> Option<BufWriter<File>> {
+    ) -> Option<File> {
+        // So we don't cause a rupture in space time continuum
+        if variant != FileType::Log {
+            log::debug!("Writing to file {:?}...", path.as_ref());
+        }
+        
         // Create the global path
-        log::debug!("Writing to file {:?}...", path.as_ref());
         let global = self.local_path_to_global(path, variant);
 
         // Check if there was a file creation error
@@ -139,8 +156,9 @@ impl FileManager {
 
         // Create a file write
         let options = OpenOptions::new()
+            .append(!truncate)
+            .truncate(truncate)
             .write(true)
-            .truncate(true)
             .open(global);
 
         // Check if there was a file write error
@@ -148,9 +166,9 @@ impl FileManager {
             log::error!("{}", options.err().unwrap());
             return None;
         };
-
+        
         // Create a file reader
-        Some(BufWriter::new(file))
+        Some(file)
     }
 
     // Deserialize a file using Serde
@@ -185,7 +203,7 @@ impl FileManager {
         variant: FileType,
     ) -> Option<()> {
         log::debug!("Serializing to file {:?}...", path.as_ref());
-        let writer = self.write_file(&path, variant)?;
+        let writer = self.write_file(&path, true, variant)?;
         serde_json::to_writer_pretty(writer, value).ok()?;
         log::debug!(
             "Serialized data into {:?} successfully!",

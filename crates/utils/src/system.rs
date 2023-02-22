@@ -1,9 +1,10 @@
 use std::{
     num::{NonZeroU128, NonZeroU32},
     time::{Duration, Instant},
+    io::Write,
 };
 
-use crate::{FileManager, ThreadPool, Time};
+use crate::{FileManager, ThreadPool, Time, FileType};
 use world::{post_user, user, System, World};
 
 // Add the threadpool resource to the world
@@ -33,6 +34,29 @@ pub fn io(system: &mut System, author: String, app: String) {
             world.insert(FileManager::new(&author, &app))
         })
         .before(user);
+}
+
+// Add the file logger
+pub fn file_logger(system: &mut System, receiver: std::sync::mpsc::Receiver<String>) {
+    // Get the file name
+    let file = chrono::Local::now().format("%Y-%m-%d.log").to_string();
+
+    system
+        .insert_update(move |world: &mut World| {
+            // Get the file manager to get the log file
+            let mut manager = world.get_mut::<FileManager>().unwrap();
+
+            // This receiver will receive the logged messages from the fern dispatcher
+            let lines: Vec::<String> = receiver.try_iter().filter(|x| !x.is_empty()).collect();
+            
+            // If we have messages that we must log, open the file, and write
+            if !lines.is_empty() {
+                let mut buffer = manager.write_file(&file, false, FileType::Log).unwrap();
+                for line in lines {
+                    write!(buffer, "{}", line).unwrap();
+                }
+            }
+        });
 }
 
 // Number of ticks that should execute per second
