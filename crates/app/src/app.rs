@@ -214,7 +214,9 @@ impl App {
             .level_for("graphics::context::staging", log::LevelFilter::Warn)
             .level(log::LevelFilter::Debug)
             .chain(std::io::stdout())
-            .chain(fern::log_file("log.log").unwrap())
+            .chain(fern::Output::call(|record| {
+                // TODO: Implement file logging here
+            }))
             .apply().unwrap();
     }
 
@@ -367,11 +369,15 @@ impl App {
         let window_settings = self.window.clone();
         self.world.insert(window_settings);
 
-        // FIXME: Make use of this or remove it
+        // Print app / author / engine data
         let app_name = self.app_name.clone();
         let app_version = self.app_version;
         let engine_name = self.engine_name.clone();
         let engine_version = self.engine_version;
+        let author = self.author_name.clone();
+        log::info!("App Name: '{app_name}', App Version: '{app_version}'");
+        log::info!("Engine Name: '{engine_name}, Engine Version: '{engine_version}'");
+        log::info!("Author Name: '{author}'");
         self
     }
 }

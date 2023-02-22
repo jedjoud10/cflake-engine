@@ -12,10 +12,11 @@ math = { path = "../math" }
 utils = { path = "../utils" }
 
 # Wgpu and Window creation
-wgpu = { version = "0.15", default-features = false, features = ["glsl", "expose-ids"] }
+wgpu = { version = "0.15", default-features = false, features = ["naga", "expose-ids"] }
 winit = "0.27.5"
 pollster = "0.2.5"
 naga = { version = "0.11.0", features = ["glsl-in", "spv-out"] }
+shaderc = "0.8.2"
 
 # Utils and helpers
 smallvec = "1.10.0"

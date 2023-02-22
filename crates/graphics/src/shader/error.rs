@@ -22,12 +22,6 @@ pub enum ShaderCompilationError {
     #[error("{0:?}")]
     PreprocessorError(ShaderPreprocessorError),
 
-    #[error("{0:?}")]
-    ParserError(Vec<naga::front::glsl::Error>),
-
-    #[error("{0}")]
-    SpirvOutError(naga::back::spv::Error),
-
-    #[error("{0}")]
-    NagaValidationError(WithSpan<ValidationError>),
+    #[error("Shader validation error. Check logs")]
+    ValidationError,
 }

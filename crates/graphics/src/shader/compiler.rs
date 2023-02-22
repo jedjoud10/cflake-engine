@@ -5,6 +5,7 @@ use crate::{
 };
 use ahash::AHashMap;
 use assets::Assets;
+use itertools::Itertools;
 use naga::{
     valid::{ModuleInfo, ValidationError},
     Module, ShaderStage, WithSpan,
@@ -90,7 +91,7 @@ impl<M: ShaderModule> Compiler<M> {
         // Compile GLSL to Naga then to Wgpu
         let time = std::time::Instant::now();
         let (raw, naga) =
-            compile(&M::kind(), graphics, assets, &snippets, source)?;
+            compile(&M::kind(), graphics, assets, &snippets, source, &file_name)?;
         log::debug!(
             "Compiled shader {file_name} sucessfully! Took {}ms",
             time.elapsed().as_millis()
@@ -121,11 +122,30 @@ fn compile(
     assets: &Assets,
     snippets: &Snippets,
     source: String,
+    file: &str,
 ) -> Result<(wgpu::ShaderModule, naga::Module), ShaderCompilationError>
 {
     // Pre-process the shader source to get expand of shader directives
     let source = preprocess(source, assets, snippets)
         .map_err(ShaderCompilationError::PreprocessorError)?;
+
+    // Pass the source by ShaderC first cause Naga's errors suck ass
+    graphics.0.shaderc.compile_into_spirv(&source, match kind {
+        ModuleKind::Vertex => shaderc::ShaderKind::Vertex,
+        ModuleKind::Fragment => shaderc::ShaderKind::Fragment,
+        ModuleKind::Compute => shaderc::ShaderKind::Compute,
+    }, file, "main", None)
+        .map_err(|error| match error {
+            // ShaderC compilation error, so print out the message to the error log
+            shaderc::Error::CompilationError(_, value) => {
+                for line in value.lines() {
+                    log::error!("{}", line);
+                }
+                
+                ShaderCompilationError::ValidationError
+            },
+            _ => todo!()
+        })?;
 
     // [GLSL -> Naga] parsing options
     let options = naga::front::glsl::Options {
@@ -137,7 +157,7 @@ fn compile(
     let mut parser = naga::front::glsl::Parser::default();
     let module = parser
         .parse(&options, &source)
-        .map_err(ShaderCompilationError::ParserError)?;
+        .unwrap();
 
     // Compile the Wgpu shader
     Ok((

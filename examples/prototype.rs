@@ -7,8 +7,6 @@ fn main() {
         .set_user_assets_path(user_assets_path!("/examples/assets/"))
         .insert_init(init)
         .insert_update(update)
-        .set_frame_rate_limit(FrameRateLimit::Unlimited)
-        .set_window_fullscreen(true)
         .execute();
 }
 
@@ -57,16 +55,10 @@ fn init(world: &mut World) {
         tint: vek::Rgb::default(),
     });
 
-    let settings = MeshImportSettings {
-        invert_triangle_ordering: false,
-        ..Default::default()
-    };
-
     let mesh = assets
         .load::<Mesh>((
             "engine/meshes/cube.obj",
             &*graphics,
-            settings,
         ))
         .unwrap();
     let vertices = mesh.vertices();

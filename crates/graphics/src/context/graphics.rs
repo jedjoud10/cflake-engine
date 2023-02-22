@@ -37,6 +37,9 @@ pub(crate) struct InternalGraphics {
     // Buffer staging pool
     pub(crate) staging: StagingPool,
 
+    // ShaderC compiler
+    pub(crate) shaderc: shaderc::Compiler,
+
     // Cached graphics data
     pub(crate) cached: Cached,
 }
