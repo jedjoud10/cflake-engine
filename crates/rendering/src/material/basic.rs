@@ -102,7 +102,7 @@ impl Material for Basic {
         group.set_sampler("normal_map_sampler", normal_map.sampler()).unwrap();
         
         // Fill the material UBO with the specified fields automatically
-        group.fill_buffer("material", |fill| {
+        group.fill_ubo("material", |fill| {
             fill.set_scalar("bumpiness", self.bumpiness).unwrap();
             fill.set_vec3("tint", self.tint).unwrap();
         }).unwrap();

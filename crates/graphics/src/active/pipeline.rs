@@ -94,28 +94,35 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
     ) {
         let shader = self.pipeline.shader();
 
-        // Check if the binding is valid
-        let valid = shader
+        // ON DIT NON A L'INTIMIDATION
+        if binding >= 4 {
+            return;
+        }
+
+        // Get the bind group layout from the shader
+        let bind_group_layout = shader
             .reflected
             .bind_group_layouts
             .get(binding as usize)
-            .map(|x| x.is_some())
-            .unwrap_or_default();
+            .unwrap();
 
         // Don't set the bind group if it doesn't exist in the shader
-        if !valid {
+        let Some(bind_group_layout) = bind_group_layout else {
             return;
-        }
+        };
+
+        // Get the number of resources that we will bind so we can pre-allocate the vectors
+        let count = bind_group_layout.bind_entry_layouts.len();
 
         // Create a new bind group
         let mut bind_group = BindGroup {
             _phantom: PhantomData,
             reflected: shader.reflected.clone(),
             index: binding,
-            resources: Vec::new(),
-            ids: Vec::new(),
-            slots: Vec::new(),
-            fill_ubos: AHashMap::new(),
+            resources: Vec::with_capacity(count),
+            ids: Vec::with_capacity(count),
+            slots: Vec::with_capacity(count),
+            fill_ubos: Vec::with_capacity(count),
         };
 
         // Let the user modify the bind group 
@@ -124,26 +131,45 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         // Check the cache, and create a new fill UBOs if needed
         // This will also fill the buffers, but it won't bind them
         let cache = &self.graphics.0.cached;
-        let mut ubos = cache.fill_buffers_ubo.lock();
-        let fill_ubos = &bind_group.fill_ubos;
-        for (name, (data, layout)) in fill_ubos.iter() {
-            match ubos.entry((binding, layout.clone())) {
+        let mut cached_ubos = cache.uniform_buffers.lock();
+        let mut filled_up_ubos = Vec::<usize>::with_capacity(bind_group.fill_ubos.len());
+        for (data, layout) in bind_group.fill_ubos.iter() {
+            match cached_ubos.entry((binding, layout.clone())) {
                 // There is an already existing UBO buffer with the same layout and bind group, fill it up
                 Entry::Occupied(mut occupied) => {
-                    let buffer = occupied.get_mut();
-                    buffer.write(&data, 0).unwrap();
+                    // Check if there's an unused buffer that we can use 
+                    let buffers = occupied.get_mut();
+                    let buffer = buffers.iter_mut().enumerate().find(|(_, (_, x))| *x);
+
+                    if let Some((index, (buffer, free))) = buffer {
+                        buffer.write(&data, 0).unwrap();
+                        *free = false;
+                        filled_up_ubos.push(index);
+                    } else {
+                        // Add a new unused buffer
+                        log::warn!("Did not find free fill buffer for bind group (set = {binding}), allocating a new one...");
+                        let buffer = UniformBuffer::<u8>::from_slice(
+                            &self.graphics,
+                            &data,
+                            BufferMode::Resizable,
+                            BufferUsage::Write
+                        ).unwrap();
+                        buffers.push((buffer, true));
+                        filled_up_ubos.push(buffers.len() - 1);
+                    }                    
                 },
 
                 // Create a new UBO with the specified layout and bind group
                 Entry::Vacant(vacant) => {
-                    log::warn!("Did not find fill buffer for bind group (set = {binding}), allocating a new one...");
+                    log::warn!("Did not find fill buffers ring buffer for bind group (set = {binding}), allocating a new one...");
                     let buffer = UniformBuffer::<u8>::from_slice(
                         &self.graphics,
                         &data,
                         BufferMode::Resizable,
                         BufferUsage::Write
                     ).unwrap();
-                    vacant.insert(buffer);
+                    vacant.insert(vec![(buffer, true)]);
+                    filled_up_ubos.push(0);
                 },
             }
         }
@@ -182,10 +208,10 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
                     .collect::<Vec<_>>();
 
                 // Take in consideration the fill buffer UBOs
-                for (name, (data, layout)) in fill_ubos.iter() {
-                    // Get the buffer back from cache
-                    let buffer = ubos.get(&(binding, layout.clone())).unwrap();
-                    
+                for (index, (_, layout)) in bind_group.fill_ubos.iter().enumerate() {
+                    let buffers = cached_ubos.get(&(binding, layout.clone())).unwrap();
+                    let (buffer, _) = &buffers[filled_up_ubos[index]];
+
                     entries.push(wgpu::BindGroupEntry {
                         binding: layout.binding,
                         resource: wgpu::BindingResource::Buffer(buffer.raw().as_entire_buffer_binding()),

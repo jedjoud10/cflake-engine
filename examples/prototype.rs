@@ -6,76 +6,94 @@ fn main() {
         .set_app_name("cflake engine prototype example")
         .set_user_assets_path(user_assets_path!("/examples/assets/"))
         .insert_init(init)
-        .insert_update(update)
+        .insert_tick(tick)
         .execute();
 }
 
 // Executed at the start
 fn init(world: &mut World) {
+    // Fetch the required resources from the world
     let mut assets = world.get_mut::<Assets>().unwrap();
+    let mut threadpool = world.get_mut::<ThreadPool>().unwrap();
+    let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
+    let mut materials = world.get_mut::<Storage<Basic>>().unwrap();
+    let mut scene = world.get_mut::<Scene>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
     let mut pipelines = world.get_mut::<Pipelines>().unwrap();
+    
+    // Make the cursor invisible and locked
     let window = world.get::<Window>().unwrap();
     window
         .window()
         .set_cursor_grab(winit::window::CursorGrabMode::Confined)
         .unwrap();
     window.window().set_cursor_visible(false);
-    pipelines.register::<Basic>(&graphics, &assets).unwrap();
 
+    // Import the diffuse map and normal map
     asset!(&mut assets, "assets/user/ignored/diffuse.jpg");
     asset!(&mut assets, "assets/user/ignored/normal.jpg");
 
-    let mut textures = world.get_mut::<Storage<AlbedoMap>>().unwrap();
-    let texture = assets
-        .load::<AlbedoMap>((
+    let vec = vec![(
+        "user/ignored/diffuse.jpg",
+        graphics.clone(),
+    ); 40];
+
+    let handles = assets
+    .async_load_from_iter::<AlbedoMap>(vec, &mut threadpool);
+
+    // Load in the diffuse map and normal map textures asynchronously
+    let instant = std::time::Instant::now();
+    let handles = assets
+        .async_load_from_iter::<AlbedoMap>([(
             "user/ignored/diffuse.jpg",
-            &*graphics,
-        ))
-    .unwrap();
-    let diffuse = textures.insert(texture);
-
-    let texture = assets
-        .load::<NormalMap>((
+            graphics.clone(),
+        ), (
             "user/ignored/normal.jpg",
-            &*graphics,
-        ))
-    .unwrap();
-    let normal = textures.insert(texture);
-
-    let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
-    let mut materials = world.get_mut::<Storage<Basic>>().unwrap();
-    let mut scene = world.get_mut::<Scene>().unwrap();
-    let id = pipelines.get::<Basic>().unwrap();
+            graphics.clone(),
+        )], &mut threadpool);
     
+    // Fetch the loaded textures
+    let mut textures = assets.wait_from_iter(handles);
+    let normal = textures.pop().unwrap().unwrap();
+    let diffuse = textures.pop().unwrap().unwrap();
+
+    // Add the textures to the storage
+    let mut textures = world.get_mut::<Storage<AlbedoMap>>().unwrap();
+    let diffuse = textures.insert(diffuse);
+    let normal = textures.insert(normal);
+
+    // Get the material id (also registers the material pipeline)
+    let id = pipelines.register::<Basic>(&graphics, &assets).unwrap();
+    
+    // Create a new material instance
     let material = materials.insert(Basic {
         albedo_map: Some(diffuse),
         normal_map: Some(normal),
-        bumpiness: 0.0,
-        tint: vek::Rgb::default(),
+        bumpiness: 4.0,
+        tint: vek::Rgb::one(),
     });
 
+    // Load the renderable mesh
     let mesh = assets
         .load::<Mesh>((
-            "engine/meshes/cube.obj",
-            &*graphics,
+            "engine/meshes/sphere.obj",
+            graphics.clone(),
         ))
         .unwrap();
-    let vertices = mesh.vertices();
-    let positions =
-        vertices.attribute::<attributes::Position>().unwrap();
     let mesh = meshes.insert(mesh);
 
+    // Create the new mesh entity components
     let surface = Surface::new(mesh, material, id);
-    let renderer = Renderer::new(true, vek::Mat4::identity());
+    let renderer = Renderer::default();
     let position = Position::default();
     scene.insert((surface, renderer, position));
 
+    // Create a movable camera (through the tick event)
     let camera = Camera::new(120.0, 0.01, 500.0, 16.0 / 9.0);
     scene.insert((Position::default(), Rotation::default(), camera));
 
+    // Bind inputs to be used by the camera tick event
     let mut input = world.get_mut::<Input>().unwrap();
-
     input.bind_button("forward", Button::W);
     input.bind_button("backward", Button::S);
     input.bind_button("up", Button::Space);
@@ -86,17 +104,11 @@ fn init(world: &mut World) {
     input.bind_axis("y rotation", Axis::MousePositionY);
 }
 
-fn update(world: &mut World) {
-    world.entry::<vek::Vec3<f32>>().or_default();
-    let mut velocity1 = world.get_mut::<vek::Vec3<f32>>().unwrap();
+// Camera controller update executed every tick
+fn tick(world: &mut World) {
     let time = world.get::<Time>().unwrap();
     let input = world.get::<Input>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
-
-    if input.get_button(Button::F5).pressed() {
-        dbg!(time.average_fps());
-    }
-
     let camera =
         scene.find_mut::<(&Camera, &mut Position, &mut Rotation)>();
     if let Some((_, position, rotation)) = camera {
@@ -127,10 +139,8 @@ fn update(world: &mut World) {
             velocity += -up;
         }
 
-        *velocity1 = vek::Vec3::lerp(*velocity1, velocity, 0.1);
-
         // Update the position with the new velocity
-        **position += *velocity1 * time.delta().as_secs_f32() * 20.0;
+        **position += velocity * time.delta().as_secs_f32() * 20.0;
 
         // Calculate a new rotation and apply it
         let pos_x = input.get_axis("x rotation");

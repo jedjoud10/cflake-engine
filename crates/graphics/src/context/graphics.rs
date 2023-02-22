@@ -15,8 +15,6 @@ use crate::{
     StagingPool, UniformBuffer, BindEntryLayout,
 };
 
-type NoHash = BuildHasherDefault<nohash_hasher::NoHashHasher<u64>>;
-
 // Cached graphics data
 pub(crate) struct Cached {
     pub(crate) samplers: DashMap<SamplerSettings, Arc<Sampler>>,
@@ -26,8 +24,8 @@ pub(crate) struct Cached {
         DashMap<ReflectedShader, Arc<wgpu::PipelineLayout>>,
     pub(crate) bind_groups:
         DashMap<Vec<wgpu::Id>, Arc<wgpu::BindGroup>>,
-    pub(crate) fill_buffers_ubo:
-        Mutex<AHashMap<(u32, BindEntryLayout), UniformBuffer<u8>>>,
+    pub(crate) uniform_buffers:
+        Mutex<AHashMap<(u32, BindEntryLayout), Vec<(UniformBuffer<u8>, bool)>>>,
 }
 
 // Internnal graphics context that will eventually be wrapped within an Arc

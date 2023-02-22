@@ -91,7 +91,7 @@ impl<T: Texel> Texture for Texture2D<T> {
 }
 
 impl<T: ImageTexel> Asset for Texture2D<T> {
-    type Context<'ctx> = &'ctx Graphics;
+    type Context<'ctx> = Graphics;
     type Settings<'stg> = ();
     type Err = TextureAssetLoadError;
 
@@ -118,7 +118,7 @@ impl<T: ImageTexel> Asset for Texture2D<T> {
         let texels = T::to_image_texels(image);
 
         Self::from_texels(
-            graphics,
+            &graphics,
             Some(&texels),
             dimensions,
             TextureMode::Dynamic,

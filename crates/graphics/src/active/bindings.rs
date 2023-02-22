@@ -30,7 +30,7 @@ pub struct BindGroup<'a> {
     pub(crate) index: u32,
     pub(crate) reflected: Arc<ReflectedShader>,
     pub(crate) resources: Vec<wgpu::BindingResource<'a>>,
-    pub(crate) fill_ubos: AHashMap<String, (Vec<u8>, BindEntryLayout)>,
+    pub(crate) fill_ubos: Vec<(Vec<u8>, BindEntryLayout)>,
     pub(crate) slots: Vec<u32>,
     pub(crate) ids: Vec<wgpu::Id>,
     pub(crate) _phantom: PhantomData<&'a ()>,
@@ -145,14 +145,8 @@ impl<'a> BindGroup<'a> {
         Ok(())
     }
 
-    // Create a new uniform buffer and fills it's fields one by one
-    // This is basically emulates OpenGL uniforms through UBOs, should only be used for data
-    // that doesn't change too much and that is unique to each material / draw batch
-
-    // TODO: This does work, but it won't work when we modify this between draw calls / in the same active graphics pipeline
-    // Maybe dissociate each filler UBO by bind group frequency enum?
-    // Frequency::Static, Frequency::Batch, Frequency::Stream,
-    pub fn fill_buffer<'s>(
+    // Fetches an already allocated uniform buffer that we can fill up with data
+    pub fn fill_ubo<'s>(
         &mut self,
         name: &'s str,
         callback: impl FnOnce(&mut FillBuffer)
@@ -185,13 +179,13 @@ impl<'a> BindGroup<'a> {
         drop(fill_buffer);
 
         // Set the fill UBO data
-        self.fill_ubos.insert(entry.name.clone(), (vector, entry.clone()));
+        self.fill_ubos.push((vector, entry.clone()));
         Ok(())
     }
 }
 
-// A fill buffer can be used to fill UBO data field by fiel instead of uploading raw bytes to the GPU
-// All it does is fetch field layout, write to a byte buffer, then upload at the end of the closure
+// A fill buffer can be used to fill UBO data field by field instead of uploading raw bytes to the GPU
+// All it does is fetch field layout, write to a byte buffer, then upload when the bind group gets dropped
 pub struct FillBuffer<'a> {
     data: &'a mut [u8],
     members: &'a [StructMemberLayout],
@@ -199,7 +193,7 @@ pub struct FillBuffer<'a> {
 }
 
 impl ValueFiller for FillBuffer<'_> {
-    // Set the value of a UBO fill buffer field
+    // Set the value of a UBO field
     fn set<'s, T: GpuPodRelaxed>(&mut self, name: &'s str, value: T) -> Result<(), crate::FillError<'s>> {
         // Get the struct member layout for the proper field
         let valid = self.members

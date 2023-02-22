@@ -45,6 +45,13 @@ impl<'r, 't, C: ColorLayout, DS: DepthStencilLayout>
             }
         }
 
+        let mut buffers = self.graphics.0.cached.uniform_buffers.lock();
+        for (_, buffers) in buffers.iter_mut() {
+            for (_, free) in buffers {
+                *free = true;
+            }
+        }
+
 
         ActiveGraphicsPipeline {
             _phantom: PhantomData,

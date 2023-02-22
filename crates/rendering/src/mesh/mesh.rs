@@ -196,7 +196,7 @@ impl Mesh {
 }
 
 impl Asset for Mesh {
-    type Context<'ctx> = &'ctx Graphics;
+    type Context<'ctx> = Graphics;
     type Settings<'stg> = MeshImportSettings;
     type Err = MeshImportError;
 
@@ -310,7 +310,7 @@ impl Asset for Mesh {
 
         // Generate the mesh and it's corresponding data
         Mesh::from_slices(
-            graphics,
+            &graphics,
             settings.buffer_mode,
             settings.buffer_usage,
             positions.as_deref(),

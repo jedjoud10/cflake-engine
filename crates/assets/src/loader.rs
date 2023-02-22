@@ -254,6 +254,7 @@ impl Assets {
         let path = Path::new(OsStr::new(path));
         let owned = path.to_owned();
         Self::validate::<A>(path)?;
+        log::debug!("Synchronously loading asset {path:?}...",);
 
         // All this does is that it ensures that the bytes are valid before we actually deserialize the asset
         let (name, extension) = Self::decompose_path(path);
@@ -307,6 +308,7 @@ impl Assets {
         let (path, context, settings) = input.split();
         let path = Path::new(OsStr::new(path));
         let owned = path.to_owned();
+        log::debug!("Asynchronously loading asset {path:?}...",);
 
         // Clone the things that must be sent to the thread
         let assets = self.assets.clone();
@@ -352,6 +354,7 @@ impl Assets {
                 // Check the extension on a per file basis
                 let (path, context, settings) = input.split();
                 let path = Path::new(OsStr::new(path));
+                log::debug!("Asynchronously loading asset {path:?} in batch...",);
                 let owned = path.to_owned();
 
                 // Clone the things that must be sent to the thread
