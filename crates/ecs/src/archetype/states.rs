@@ -2,7 +2,7 @@
 const BITS: usize = usize::BITS as usize;
 
 // A single chunk that will be contained within the archetype component column
-#[derive(Default, Clone, Copy)]
+#[derive(Default, Clone, Copy, Debug)]
 pub struct StateColumnChunk {
     // Keeps track of added components
     pub added: usize,
@@ -12,14 +12,14 @@ pub struct StateColumnChunk {
 }
 
 // Returned from the Vec<StateColumnChunk>
-#[derive(Default, Clone, Copy)]
+#[derive(Default, Clone, Copy, Debug)]
 pub struct StateFlags {
     pub added: bool,
     pub modified: bool,
 }
 
 // A single column of archetype entity states
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct StateColumn(Vec<StateColumnChunk>, usize);
 
 // Update a value in a specific bitmask, though return the unwritten value first
@@ -208,6 +208,11 @@ impl StateColumn {
 
     // Get a specific state column entry immutably
     pub fn get(&self, index: usize) -> Option<StateFlags> {
+        // Cannot get non-existant index
+        if index >= self.1 {
+            return None;
+        }
+
         let chunk = index / BITS;
         let location = index % BITS;
         let chunk = &mut self.0.get(chunk)?;

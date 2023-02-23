@@ -66,6 +66,9 @@ pub trait Extent: Copy + std::ops::Div<u32, Output = Self> {
     // Get the depth of the extent
     fn depth(&self) -> u32;
 
+    // Create a new extent by cloning a value for all axii
+    fn broadcast(val: u32) -> Self;
+
     // Get the dimensionality of the extent (1, 2, or 3)
     fn dimensionality() -> TextureDimension;
 }
@@ -102,6 +105,10 @@ impl Extent for vek::Extent2<u32> {
 
     fn depth(&self) -> u32 {
         1
+    }
+
+    fn broadcast(val: u32) -> Self {
+        vek::Extent2::broadcast(val)
     }
 }
 
@@ -141,6 +148,10 @@ impl Extent for vek::Extent3<u32> {
 
     fn depth(&self) -> u32 {
         self.d
+    }
+
+    fn broadcast(val: u32) -> Self {
+        vek::Extent3::broadcast(val)
     }
 }
 

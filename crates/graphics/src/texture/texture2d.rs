@@ -8,7 +8,7 @@ use smallvec::SmallVec;
 
 use crate::{
     Graphics, ImageTexel, Sampler, SamplerSettings, Texel, Texture,
-    TextureAssetLoadError, TextureMipMaps, TextureMode, TextureUsage,
+    TextureAssetLoadError, TextureMipMaps, TextureMode, TextureUsage, Extent,
 };
 
 // A 2D texture that contains multiple texels that have their own channels
@@ -32,6 +32,46 @@ pub struct Texture2D<T: Texel> {
 
     // Keep the graphics API alive
     graphics: Graphics,
+}
+
+impl<T: Texel> super::raw::RawTexture<(vek::Vec2<u32>, vek::Extent2<u32>)> for Texture2D<T> {
+    fn graphics(&self) -> Graphics {
+        self.graphics.clone()
+    }
+
+    unsafe fn from_raw_parts(
+        graphics: &Graphics,
+        texture: wgpu::Texture,
+        views: SmallVec<[wgpu::TextureView; 1]>,
+        sampler: Arc<wgpu::Sampler>,
+        sampling: SamplerSettings,
+        dimensions: vek::Extent2<u32>,
+        usage: TextureUsage,
+        mode: TextureMode,
+    ) -> Self {
+        Self {
+            texture,
+            views,
+            dimensions,
+            usage,
+            mode,
+            _phantom: PhantomData,
+            graphics: graphics.clone(),
+            sampler,
+            sampling,
+        }
+    }
+
+    unsafe fn replace_raw_parts(
+        &mut self,
+        texture: wgpu::Texture,
+        views: SmallVec<[wgpu::TextureView; 1]>,
+        dimensions: vek::Extent2<u32>,
+    ) {
+        self.texture = texture;
+        self.views = views;
+        self.dimensions = dimensions;
+    }
 }
 
 impl<T: Texel> Texture for Texture2D<T> {
@@ -64,44 +104,6 @@ impl<T: Texel> Texture for Texture2D<T> {
             _phantom: PhantomData,
             settings: &self.sampling,
         }
-    }
-
-    unsafe fn from_raw_parts(
-        graphics: &Graphics,
-        texture: wgpu::Texture,
-        views: SmallVec<[wgpu::TextureView; 1]>,
-        sampler: Arc<wgpu::Sampler>,
-        sampling: SamplerSettings,
-        dimensions: <Self::Region as crate::Region>::E,
-        usage: TextureUsage,
-        mode: TextureMode,
-    ) -> Self {
-        Self {
-            texture,
-            views,
-            dimensions,
-            usage,
-            mode,
-            _phantom: PhantomData,
-            graphics: graphics.clone(),
-            sampler,
-            sampling,
-        }
-    }
-
-    unsafe fn replace_raw_parts(
-        &mut self,
-        texture: wgpu::Texture,
-        views: SmallVec<[wgpu::TextureView; 1]>,
-        dimensions: <Self::Region as crate::Region>::E,
-    ) {
-        self.texture = texture;
-        self.views = views;
-        self.dimensions = dimensions;
-    }
-
-    unsafe fn graphics(&self) -> Graphics {
-        self.graphics.clone()    
     }
 }
 

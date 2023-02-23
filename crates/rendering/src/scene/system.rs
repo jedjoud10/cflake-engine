@@ -129,32 +129,38 @@ fn update_camera(world: &mut World) {
 // Update the global mesh matrices of objects that have been modified
 fn update_matrices(world: &mut World) {
     let mut ecs = world.get_mut::<Scene>().unwrap();
-    //use ecs::*;
+    use ecs::*;
 
-    /*
     // Filter the objects that have changed
     let f1 = modified::<Position>();
+    /*
     let f2 = modified::<Rotation>();
     let f3 = modified::<Scale>();
     let f4 = added::<Renderer>();
-    let filter = f1 | f2 | f3 | f4;
     */
+    let filter = f1;
 
     let query = ecs
-        .query_mut::<(
+        .query_mut_with::<(
             &mut Renderer,
-            Option<&ecs::Position>,
+            &ecs::Position,
+            /*
             Option<&ecs::Rotation>,
             Option<&ecs::Scale>,
-        )>();
+            */
+        )>(filter);
 
         
     // Update the matrices of objects that might contain location, rotation, or scale
-    for (renderer, location, rotation, scale) in query {
+    for (renderer, location) in query {
         let mut matrix = vek::Mat4::<f32>::identity();
+        matrix = matrix * vek::Mat4::from(location);
+        
+        /*
         matrix = location.map_or(matrix, |l| matrix * vek::Mat4::from(l));
         matrix *= rotation.map_or(matrix, |r| matrix * vek::Mat4::from(r));
         matrix *= scale.map_or(matrix, |s| matrix * vek::Mat4::from(s));
+        */
         renderer.matrix = matrix;
     }
 }

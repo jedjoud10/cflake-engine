@@ -105,12 +105,23 @@ fn init(world: &mut World) {
 fn update(world: &mut World) {
     let time = world.get::<Time>().unwrap();
     let input = world.get::<Input>().unwrap();
+    let mut scene = world.get_mut::<Scene>().unwrap();
 
     if input.get_button(Button::F5).pressed() {
         log::info!("FPS: {}", time.average_fps());
+        let mask = Mask::from_bundle::<(Surface<Basic>, Renderer, Position)>();
+        let archetype = scene.archetypes().get(&mask).unwrap();
+        log::warn!("States {:?}", archetype.states::<Position>().unwrap());
+        
+        for (pos, _) in scene.query_mut::<(&mut Position, &Renderer)>() {
+            **pos += vek::Vec3::unit_y() * 0.2;
+        }
+
+        let archetype = scene.archetypes().get(&mask).unwrap();
+        let state = archetype.states::<Position>().unwrap();
+        log::warn!("States {:?}", state.get(0).unwrap());
     }
 
-    let mut scene = world.get_mut::<Scene>().unwrap();
     let camera =
         scene.find_mut::<(&Camera, &mut Position, &mut Rotation)>();
     if let Some((_, position, rotation)) = camera {

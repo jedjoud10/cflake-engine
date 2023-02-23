@@ -19,7 +19,7 @@ type Texels<'a, T> = Option<&'a [<T as Texel>::Storage]>;
 // A texture is an abstraction over Vulkan images to allow us to access/modify them with ease
 // A texture is a container of multiple texels (like pixels, but for textures) that are stored on the GPU
 // This trait is implemented for all variants of textures (1D, 2D, 3D, Layered)
-pub trait Texture: Sized {
+pub trait Texture: Sized + raw::RawTexture<Self::Region> {
     // Texel region (position + extent)
     type Region: Region;
 
@@ -30,7 +30,7 @@ pub trait Texture: Sized {
     fn from_texels(
         graphics: &Graphics,
         texels: Texels<Self::T>,
-        dimensions: <Self::Region as Region>::E,
+        extent: <Self::Region as Region>::E,
         mode: TextureMode,
         usage: TextureUsage,
         sampling: SamplerSettings,
@@ -45,13 +45,13 @@ pub trait Texture: Sized {
 
         // Make sure the number of texels matches up with the dimensions
         if let Some(texels) = texels {
-            if dimensions.area() as usize != texels.len() {
+            if extent.area() as usize != texels.len() {
                 return Err(
                     TextureInitializationError::TexelDimensionsMismatch {
                         count: texels.len(),
-                        w: dimensions.width(),
-                        h: dimensions.height(),
-                        d: dimensions.depth(),
+                        w: extent.width(),
+                        h: extent.height(),
+                        d: extent.depth(),
                     },
                 );
             }
@@ -60,7 +60,17 @@ pub trait Texture: Sized {
         // Get the image type using the dimensionality
         let dimension =
             <<Self::Region as Region>::E as Extent>::dimensionality();
-        let extent = dimensions_to_extent(dimensions);
+        let extent_3d = extent_to_extent3d(extent);
+
+        // If the extent contains a 0 in any axii, it's invalid
+        if !extent.is_valid() {
+            return Err(TextureInitializationError::InvalidExtent);
+        }
+
+        // If the extent is greater than the physical limits, it's invalid
+        if !size_within_limits(&graphics, extent) {
+            return Err(TextureInitializationError::ExtentLimit);
+        }
 
         // Get optimal texture usage
         let usages = texture_usages();
@@ -78,7 +88,7 @@ pub trait Texture: Sized {
 
         // Don't use mipmapping with NPOT textures
         if !matches!(mipmaps, TextureMipMaps::Disabled) {
-            if !dimensions.is_power_of_two() {
+            if !extent.is_power_of_two() {
                 return Err(
                     TextureInitializationError::MipMapGenerationNPOT,
                 );
@@ -87,7 +97,7 @@ pub trait Texture: Sized {
 
         // Config for the Wgpu texture
         let descriptor = TextureDescriptor {
-            size: extent,
+            size: extent_3d,
             mip_level_count: 1,
             sample_count: 1,
             dimension,
@@ -102,9 +112,9 @@ pub trait Texture: Sized {
         let name = utils::pretty_type_name::<Self::T>();
         log::debug!(
             "Creating texture, {dimension:?}, <{name}>, {}x{}x{}",
-            dimensions.width(),
-            dimensions.height(),
-            dimensions.depth()
+            extent.width(),
+            extent.height(),
+            extent.depth()
         );
 
         // Fetch a new sampler for the given sampling settings
@@ -125,14 +135,14 @@ pub trait Texture: Sized {
         if let Some(bytes) = bytes {
             // Bytes per row of texel data
             let bytes_per_row = NonZeroU32::new(
-                bytes_per_texel as u32 * dimensions.width(),
+                bytes_per_texel as u32 * extent.width(),
             );
 
             // FIXME: Does this work with 3D textures?
             let image_data_layout = wgpu::ImageDataLayout {
                 offset: 0,
                 bytes_per_row,
-                rows_per_image: NonZeroU32::new(dimensions.height()),
+                rows_per_image: NonZeroU32::new(extent.height()),
             };
 
             // Create the image copy texture descriptor
@@ -148,7 +158,7 @@ pub trait Texture: Sized {
                 image_copy_texture,
                 bytes,
                 image_data_layout,
-                extent,
+                extent_3d,
             );
         }
 
@@ -168,7 +178,7 @@ pub trait Texture: Sized {
         Ok(unsafe {
             Self::from_raw_parts(
                 graphics, texture, views, sampler, sampling,
-                dimensions, usage, mode,
+                extent, usage, mode,
             )
         })
     }
@@ -239,16 +249,22 @@ pub trait Texture: Sized {
     // Tries to resize the texture to a new size, whilst clearing the contents
     // Mipmapping currently no supported
     fn resize(&mut self, extent: <Self::Region as Region>::E) -> Result<(), TextureResizeError> {
+        let graphics = self.graphics();
         if self.views().len() > 1 {
             return Err(TextureResizeError::MipMappingUnsupported);
         }
 
+        // If the extent contains a 0 in any axii, it's invalid
         if !extent.is_valid() {
             return Err(TextureResizeError::InvalidExtent);
         }
 
+        // If the extent is greater than the physical limits, it's invalid
+        if !size_within_limits(&graphics, extent) {
+            return Err(TextureResizeError::ExtentLimit);
+        }
 
-        let graphics = unsafe { self.graphics() };
+        // Fetch dimensions, name, and texel format
         let dimension = <<Self::Region as Region>::E as Extent>::dimensionality();
         let name = utils::pretty_type_name::<Self::T>();
         let format = <Self::T>::format();
@@ -261,7 +277,7 @@ pub trait Texture: Sized {
 
         // Config for the Wgpu texture
         let descriptor = TextureDescriptor {
-            size: dimensions_to_extent(extent),
+            size: extent_to_extent3d(extent),
             mip_level_count: 1,
             sample_count: 1,
             dimension,
@@ -271,6 +287,7 @@ pub trait Texture: Sized {
             view_formats: &[],
         };
 
+        // Create a new texture
         let texture = graphics.device().create_texture(&descriptor);
 
         // Get color texture aspect for the texture view and ImageCopyTexture
@@ -294,34 +311,58 @@ pub trait Texture: Sized {
 
         Ok(())
     }
-
-    // Create a texture struct from it's raw components
-    // This will simply create the texture struct, and it assumes
-    // that the texture was already created externally with the right parameters
-    unsafe fn from_raw_parts(
-        graphics: &Graphics,
-        texture: wgpu::Texture,
-        views: SmallVec<[wgpu::TextureView; 1]>,
-        sampler: Arc<wgpu::Sampler>,
-        sampling: SamplerSettings,
-        dimensions: <Self::Region as crate::Region>::E,
-        usage: TextureUsage,
-        mode: TextureMode,
-    ) -> Self;
-
-    // Replace the underlying raw data with the given new data
-    unsafe fn replace_raw_parts(
-        &mut self,
-        texture: wgpu::Texture,
-        views: SmallVec<[wgpu::TextureView; 1]>,
-        dimensions: <Self::Region as crate::Region>::E,
-    );
-
-    // Get the internally stored graphics API (only for internal use)
-    // TODO: Remove this shit it's ugly
-    unsafe fn graphics(&self) -> Graphics;
 }
 
+// Separated this into it's own trait since I didn't want there to be unsafe init/internal functions publicly
+pub(crate) mod raw {
+    use std::sync::Arc;
+    use smallvec::SmallVec;
+    use crate::{Region, Graphics, SamplerSettings, TextureUsage, TextureMode};
+
+    pub trait RawTexture<R: Region> {
+        // Get the stored graphics context 
+        fn graphics(&self) -> Graphics;
+
+        // Create a texture struct from it's raw components
+        // This will simply create the texture struct, and it assumes
+        // that the texture was already created externally with the right parameters
+        unsafe fn from_raw_parts(
+            graphics: &Graphics,
+            texture: wgpu::Texture,
+            views: SmallVec<[wgpu::TextureView; 1]>,
+            sampler: Arc<wgpu::Sampler>,
+            sampling: SamplerSettings,
+            dimensions: <R as Region>::E,
+            usage: TextureUsage,
+            mode: TextureMode,
+        ) -> Self;
+
+        // Replace the underlying raw data with the given new data
+        unsafe fn replace_raw_parts(
+            &mut self,
+            texture: wgpu::Texture,
+            views: SmallVec<[wgpu::TextureView; 1]>,
+            dimensions: <R as Region>::E,
+        );
+    }
+}
+
+// Check if the given extent is valid within device limits
+fn size_within_limits<E: Extent>(graphics: &Graphics, extent: E) -> bool {
+    // Create the max possible texture size from device limits
+    let limits = graphics.device().limits();
+    let max = match E::dimensionality() {
+        wgpu::TextureDimension::D1 => limits.max_texture_dimension_1d,
+        wgpu::TextureDimension::D2 => limits.max_texture_dimension_2d,
+        wgpu::TextureDimension::D3 => limits.max_texture_dimension_3d,
+    };
+    let max = E::broadcast(max);
+        
+    // Check if the new texture size is physically possible
+    max.is_larger_than(extent)
+}
+
+// Convert TextureDimension to TextureViewDimension
 fn dims_to_view_dims(dimension: wgpu::TextureDimension) -> wgpu::TextureViewDimension {
     match dimension {
         wgpu::TextureDimension::D1 => {
@@ -336,7 +377,8 @@ fn dims_to_view_dims(dimension: wgpu::TextureDimension) -> wgpu::TextureViewDime
     }
 }
 
-fn dimensions_to_extent<E: Extent>(dimensions: E) -> wgpu::Extent3d {
+// Convert the given extent to an Extent3D
+fn extent_to_extent3d<E: Extent>(dimensions: E) -> wgpu::Extent3d {
     let extent = wgpu::Extent3d {
         width: dimensions.width(),
         height: dimensions.height(),
@@ -345,12 +387,14 @@ fn dimensions_to_extent<E: Extent>(dimensions: E) -> wgpu::Extent3d {
     extent
 }
 
+// Convert the valid texture usages
 fn texture_usages() -> wgpu::TextureUsages {
     wgpu::TextureUsages::TEXTURE_BINDING
         | wgpu::TextureUsages::COPY_DST
         | wgpu::TextureUsages::RENDER_ATTACHMENT
 }
 
+// Get the texture aspect based on the texel type
 fn texture_aspect<T: Texel>() -> wgpu::TextureAspect {
     match T::channels() {
         crate::ChannelsType::Vector(_) => {
