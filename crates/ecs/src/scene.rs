@@ -309,16 +309,20 @@ fn init(world: &mut World) {
     world.insert(Scene::default());
 }
 
-// Reset the archetype states and update the hierarchy
-fn update(world: &mut World) {
-    let mut scene = world.get_mut::<Scene>().unwrap();
-
+// Reset the archetypes
+fn reset_states(world: &mut World) {
     // Clear all the archetype states that were set last frame
+    let mut scene = world.get_mut::<Scene>().unwrap();
     for (_, archetype) in scene.archetypes_mut() {
         for (_, column) in archetype.table_mut().iter_mut() {
             column.states_mut().reset();
         }
     }
+}
+
+// Update the hierarchy
+fn update_hierarchy(world: &mut World) {
+    let mut scene = world.get_mut::<Scene>().unwrap();
 
     // Keeps track of the global transform of parents
     type Transform =
@@ -428,8 +432,13 @@ fn update(world: &mut World) {
     }
 }
 
-// The ECS system will manually insert the ECS resource and will clean it at the start of each frame (except the first frame)
+// The ECS system will manually insert the ECS resource and will clean it at the start of each frame
 pub fn system(system: &mut System) {
     system.insert_init(init).before(user);
-    system.insert_update(update).after(post_user);
+    system.insert_update(reset_states).before(user);
+}
+
+// This system will update the scene hierarchy with the proper local offsets and rotations
+pub fn hierarchy(system: &mut System) {
+    system.insert_update(update_hierarchy).after(post_user);
 }

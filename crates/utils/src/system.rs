@@ -45,7 +45,7 @@ pub fn file_logger(system: &mut System, receiver: std::sync::mpsc::Receiver<Stri
         .insert_init(move |world: &mut World| {
             // Get the file manager to get the log file
             let mut manager = world.get_mut::<FileManager>().unwrap();
-            let file = manager.write_file(&file, false, FileType::Log).unwrap();
+            let file = manager.write_file(&file, true, FileType::Log).unwrap();
 
             // Create a secondary thread that will be responsible for logging these events
             std::thread::spawn(move || {

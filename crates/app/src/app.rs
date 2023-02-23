@@ -361,6 +361,7 @@ impl App {
     fn insert_default_systems(mut self, receiver: mpsc::Receiver<String>) -> Self {
         self = self.insert_system(input::system);
         self = self.insert_system(ecs::system);
+        self = self.insert_system(ecs::hierarchy);
         self = self.insert_system(world::system);
         self = self.insert_system(utils::threadpool);
         self = self.insert_system(utils::time);

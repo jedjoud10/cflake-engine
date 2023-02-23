@@ -74,7 +74,7 @@ pub fn acquire(system: &mut System) {
 
             // Clear the window first, and save the command encoder
         })
-        .before(user);
+        .after(post_user);
 }
 
 // Present system will present the currently acquired texture to the monitor
@@ -84,5 +84,6 @@ pub fn present(system: &mut System) {
             let mut window = world.get_mut::<Window>().unwrap();
             window.presentable_texture.take().unwrap().present();
         })
-        .after(post_user);
+        .after(post_user)
+        .after(acquire);
 }

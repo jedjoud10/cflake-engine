@@ -128,39 +128,29 @@ fn update_camera(world: &mut World) {
 
 // Update the global mesh matrices of objects that have been modified
 fn update_matrices(world: &mut World) {
-    let mut ecs = world.get_mut::<Scene>().unwrap();
+    let mut scene = world.get_mut::<Scene>().unwrap();
     use ecs::*;
 
-    // Filter the objects that have changed
+    // Filter the objects that have changed only
     let f1 = modified::<Position>();
-    /*
     let f2 = modified::<Rotation>();
     let f3 = modified::<Scale>();
     let f4 = added::<Renderer>();
-    */
-    let filter = f1;
-
-    let query = ecs
+    let filter = f1 | f2 | f3 | f4;
+    let query = scene
         .query_mut_with::<(
             &mut Renderer,
-            &ecs::Position,
-            /*
+            Option<&ecs::Position>,
             Option<&ecs::Rotation>,
             Option<&ecs::Scale>,
-            */
         )>(filter);
-
         
     // Update the matrices of objects that might contain location, rotation, or scale
-    for (renderer, location) in query {
+    for (renderer, location, rotation, scale) in query {
         let mut matrix = vek::Mat4::<f32>::identity();
-        matrix = matrix * vek::Mat4::from(location);
-        
-        /*
         matrix = location.map_or(matrix, |l| matrix * vek::Mat4::from(l));
         matrix *= rotation.map_or(matrix, |r| matrix * vek::Mat4::from(r));
         matrix *= scale.map_or(matrix, |s| matrix * vek::Mat4::from(s));
-        */
         renderer.matrix = matrix;
     }
 }
@@ -231,10 +221,13 @@ pub fn rendering_system(system: &mut System) {
 
 // The camera system will be responsible for updating the camera UBO and matrices
 pub fn camera_system(system: &mut System) {
-    system.insert_update(update_camera).before(rendering_system);
+    system.insert_update(update_camera)
+        .before(rendering_system);
 }
 
 // The matrix system will be responsible for updating the matrices of the renderer
 pub fn matrix_system(system: &mut System) {
-    system.insert_update(update_matrices).before(rendering_system);
+    system.insert_update(update_matrices)
+        .before(rendering_system)
+        .after(post_user);
 }
