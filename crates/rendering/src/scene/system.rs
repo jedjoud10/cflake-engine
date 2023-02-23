@@ -10,18 +10,20 @@ use graphics::{
 };
 use std::{mem::ManuallyDrop, sync::Arc};
 use utils::{Storage, Time};
-use world::{post_user, user, System, World};
+use world::{post_user, user, System, World, WindowEvent};
 
 // Add the compositors and setup the world for rendering
 fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
+    let window = world.get::<Window>().unwrap();
 
     // Create the scene renderer, pipeline manager, and  commonly used textures
-    let renderer = ForwardRenderer::new(&graphics);
+    let renderer = ForwardRenderer::new(&graphics, window.size());
     let pipelines = Pipelines::new();
 
     // Add composites and basic storages
     drop(graphics);
+    drop(window);
     world.insert(renderer);
     world.insert(pipelines);
     world.insert(Storage::<Mesh>::default());
@@ -30,6 +32,29 @@ fn init(world: &mut World) {
     world.insert(Storage::<Basic>::default());
     world.insert(Storage::<AlbedoMap>::default());
     world.insert(Storage::<NormalMap>::default());
+}
+
+
+// Handle window resizing the depth texture
+fn event(world: &mut World, event: &mut WindowEvent) {
+    match event {
+        // Window has been resized
+        WindowEvent::Resized(size) => {
+            // Check if the size is valid
+            if size.height == 0 || size.height == 0 {
+                return;
+            }
+
+            // Handle resizing the depth texture
+            let size = vek::Extent2::new(size.width, size.height);
+            let mut renderer = world.get_mut::<ForwardRenderer>().unwrap();
+
+            // Resize the depth texture
+            renderer.depth_texture.resize(size).unwrap();
+        }
+
+        _ => (),
+    }
 }
 
 // Update event that will set/update the main perspective camera
@@ -145,12 +170,13 @@ fn render_update(world: &mut World) {
 
     // Get textures, pipelines, and encoder
     let view = window.as_render_target().unwrap();
+    let depth = renderer.depth_texture.as_render_target().unwrap();
     let pipelines = pipelines.extract_pipelines();
     let mut encoder = graphics.acquire();
 
     // Activate the render pass
     let mut render_pass =
-        renderer.render_pass.begin(&mut encoder, view, ()).unwrap();
+        renderer.render_pass.begin(&mut encoder, view, depth).unwrap();
 
     // Skip if we don't have a camera to draw with
     if renderer.main_camera.is_none() {
@@ -191,6 +217,10 @@ pub fn rendering_system(system: &mut System) {
         .insert_update(render_update)
         .after(graphics::acquire)
         .before(graphics::present);
+    system
+        .insert_window(event)
+        .after(graphics::common)
+        .before(user);
 }
 
 // The camera system will be responsible for updating the camera UBO and matrices

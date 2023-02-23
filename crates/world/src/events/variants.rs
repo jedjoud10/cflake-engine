@@ -1,8 +1,9 @@
 use crate::{Caller, Event, World};
 use winit::{
-    event::{DeviceEvent, WindowEvent},
     event_loop::EventLoop,
 };
+
+pub use winit::event::{DeviceEvent, WindowEvent};
 
 // Device event called when there is a new device / device change
 impl Caller for DeviceEvent {

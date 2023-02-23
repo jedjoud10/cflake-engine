@@ -6,7 +6,7 @@ use crate::{
 use ecs::Scene;
 use graphics::{
     ActiveGraphicsPipeline, ActiveRenderPass, Graphics,
-    GraphicsPipeline, SwapchainFormat, Vertex, XYZ, PushConstants,
+    GraphicsPipeline, SwapchainFormat, Vertex, XYZ, PushConstants, Depth,
 };
 use utils::{Handle, Storage, Time};
 use world::World;
@@ -24,7 +24,7 @@ pub(crate) fn set_vertex_buffer_attribute<
         'r,
         '_,
         SwapchainFormat,
-        (),
+        Depth<f32>,
     >,
 ) {
     // If the material doesn't support the attribute, no need to set it
@@ -51,9 +51,9 @@ fn filter<M: Material>(mesh: &Mesh, renderer: &Renderer) -> bool {
 pub(super) fn render_surfaces<'r, M: Material>(
     world: &'r World,
     meshes: &'r Storage<Mesh>,
-    pipeline: &'r GraphicsPipeline<SwapchainFormat, ()>,
+    pipeline: &'r GraphicsPipeline<SwapchainFormat, Depth<f32>>,
     default: &'r DefaultMaterialResources,
-    render_pass: &mut ActiveRenderPass<'r, '_, SwapchainFormat, ()>,
+    render_pass: &mut ActiveRenderPass<'r, '_, SwapchainFormat, Depth<f32>>,
 ) {
     // Get a rasterizer for the current render pass by binding a pipeline
     let mut active = render_pass.bind_pipeline(pipeline);

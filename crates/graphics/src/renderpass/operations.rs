@@ -1,6 +1,6 @@
 use crate::{
     ColorLayout, ColorTexel, Depth, DepthElement, DepthStencilLayout,
-    Stencil, StencilElement, Texel,
+    Stencil, StencilElement, Texel, Conversion,
 };
 
 // What we should do when loading in data from the render target
@@ -23,6 +23,23 @@ pub struct Operation<T: Texel> {
     pub store: StoreOp,
 }
 
+// Converts the Operation to a wgpu::Operations with the valid target type
+fn convert<C: Conversion>(input: &Operation<C>) -> wgpu::Operations<C::Target> {
+    let load = match input.load {
+        LoadOp::Load => wgpu::LoadOp::Load,
+        LoadOp::Clear(storage) => {
+            wgpu::LoadOp::Clear(C::into_target(storage))
+        }
+    };
+
+    let store = match input.store {
+        StoreOp::Ignore => true,
+        StoreOp::Store => true,
+    };
+
+    wgpu::Operations { load, store }
+}
+
 // Implemented for tuples of color attachment operators
 pub trait ColorOperations<C: ColorLayout> {
     // Wgpu operations for each render target
@@ -34,7 +51,7 @@ impl<T: ColorTexel> ColorOperations<T> for Operation<T> {
         let load = match self.load {
             LoadOp::Load => wgpu::LoadOp::Load,
             LoadOp::Clear(color) => {
-                wgpu::LoadOp::Clear(T::into_color(color).unwrap())
+                wgpu::LoadOp::Clear(T::try_into_color(color).unwrap())
             }
         };
 
@@ -66,12 +83,12 @@ impl DepthStencilOperations<()> for () {
     }
 }
 
-impl<D: DepthElement> DepthStencilOperations<Depth<D>> for Depth<D>
+impl<D: DepthElement> DepthStencilOperations<Depth<D>> for Operation<Depth<D>>
 where
-    Self: Texel + DepthStencilLayout,
+    Depth<D>: Texel + DepthStencilLayout + Conversion<Target = f32>,
 {
     fn depth_operations(&self) -> Option<wgpu::Operations<f32>> {
-        Some(todo!())
+        Some(convert(self))
     }
 
     fn stencil_operations(&self) -> Option<wgpu::Operations<u32>> {
@@ -80,15 +97,15 @@ where
 }
 
 impl<S: StencilElement> DepthStencilOperations<Stencil<S>>
-    for Stencil<S>
+    for Operation<Stencil<S>>
 where
-    Self: Texel + DepthStencilLayout,
+    Stencil<S>: Texel + DepthStencilLayout + Conversion<Target = u32>,
 {
     fn depth_operations(&self) -> Option<wgpu::Operations<f32>> {
         None
     }
 
     fn stencil_operations(&self) -> Option<wgpu::Operations<u32>> {
-        Some(todo!())
+        Some(convert(self))
     }
 }

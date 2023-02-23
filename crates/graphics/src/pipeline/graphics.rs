@@ -55,7 +55,7 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
         // Check if the DepthStencilLayout contains a depth format, return errors if appropriate
         if depth_config_enabled && depth_config.is_none() {
             return Err(
-                PipelineInitializationError::MissingStencilConfig,
+                PipelineInitializationError::MissingDepthConfig,
             );
         }
 

@@ -88,6 +88,21 @@ impl<T: Texel> Texture for Texture2D<T> {
             sampling,
         }
     }
+
+    unsafe fn replace_raw_parts(
+        &mut self,
+        texture: wgpu::Texture,
+        views: SmallVec<[wgpu::TextureView; 1]>,
+        dimensions: <Self::Region as crate::Region>::E,
+    ) {
+        self.texture = texture;
+        self.views = views;
+        self.dimensions = dimensions;
+    }
+
+    unsafe fn graphics(&self) -> Graphics {
+        self.graphics.clone()    
+    }
 }
 
 impl<T: ImageTexel> Asset for Texture2D<T> {

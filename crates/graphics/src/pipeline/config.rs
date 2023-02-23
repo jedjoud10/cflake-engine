@@ -14,14 +14,14 @@ pub struct BlendConfig {}
 // How we read/write from depth attachments used by the material
 #[derive(Clone, Copy, PartialEq)]
 pub struct DepthConfig {
-    pub compare: Compare,
+    pub compare: CompareFunction,
     pub write_enabled: bool,
     pub depth_bias_constant: i32,
     pub depth_bias_slope_scale: f32,
     pub depth_bias_clamp: f32,
 }
 
-pub type Compare = wgpu::CompareFunction;
+pub type CompareFunction = wgpu::CompareFunction;
 pub type StencilConfig = wgpu::StencilState;
 
 // Depicts the exact primitives we will use to draw the VAOs

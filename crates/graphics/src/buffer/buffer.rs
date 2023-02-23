@@ -207,11 +207,11 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
 
 // Implementation of util methods
 impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
-    // Get the inner raw WGPU buffer
+    // Get the inner raw WGPU buffer immutably
     pub fn raw(&self) -> &wgpu::Buffer {
         &self.buffer
     }
-
+    
     // Get the current length of the buffer
     pub fn len(&self) -> usize {
         self.length.try_into().unwrap()

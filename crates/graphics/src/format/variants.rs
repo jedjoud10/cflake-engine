@@ -2,6 +2,8 @@ mod color;
 mod image;
 mod texel;
 mod vertex;
+mod convert;
+pub use convert::*;
 pub use self::image::*;
 pub use color::*;
 pub use texel::*;

@@ -7,14 +7,29 @@ pub enum TextureInitializationError {
     #[error("The given texture format {0:?} is not supported with the given options")]
     FormatNotSupported(TextureFormat),
 
-    #[error("The number of texels ({0}) does not match up with the number of theoretical texels defined in the dimensions ({1}x{2}x{3})")]
-    TexelDimensionsMismatch(usize, u32, u32, u32),
+    #[error("The number of texels ({count}) does not match up with the number of theoretical texels defined in the dimensions ({h}x{w}x{d})")]
+    TexelDimensionsMismatch {
+        count: usize,
+        w: u32,
+        h: u32, 
+        d: u32,
+    },
+
+    #[error("Tried creating a texture with extent above the physical device's max texture size")]
+    ExtentLimit,
+
+    #[error("Tried creating a texture with extent of 0 in any axii")]
+    InvalidExtent,
 
     #[error("Tried creating a mip map for a NPOT texture")]
     MipMapGenerationNPOT,
 
-    #[error("The mip level of {0} does not contain the appropriate number of texels (expected {1}, found {2})")]
-    UnexpectedMipLevelTexelCount(u8, u64, u64),
+    #[error("The mip level of {level} does not contain the appropriate number of texels (expected {expected}, found {found})")]
+    UnexpectedMipLevelTexelCount {
+        level: u8,
+        expected: u64,
+        found: u64
+    },
 }
 
 #[derive(Error, Debug)]
@@ -33,6 +48,18 @@ pub enum TextureAssetLoadError {
 
     #[error("{0}")]
     ImageError(ImageError),
+}
+
+#[derive(Error, Debug)]
+pub enum TextureResizeError {
+    #[error("Tried resizing a texture which contains mip maps, which isn't supported *yet*")]
+    MipMappingUnsupported,
+
+    #[error("Tried resizing a texture above the physical device's max texture size")]
+    ExtentLimit,
+
+    #[error("Tried resizing a texture with extent of 0 in any axii")]
+    InvalidExtent,
 }
 
 #[derive(Error, Debug)]

@@ -12,7 +12,7 @@ use graphics::{
     Operation, PipelineInitializationError, RenderPass,
     SamplerSettings, StoreOp, SwapchainFormat, Texel, Texture,
     Texture2D, TextureMipMaps, TextureMode, TextureUsage,
-    UniformBuffer, BGRA, RGBA,
+    UniformBuffer, BGRA, RGBA, Depth, SamplerFilter, SamplerWrap, SamplerMipMaps,
 };
 use std::{
     any::TypeId, cell::RefCell, marker::PhantomData,
@@ -20,12 +20,13 @@ use std::{
 };
 
 // Renderpass that will render the scene
-pub type ForwardRendererRenderPass = RenderPass<SwapchainFormat, ()>;
+pub type ForwardRendererRenderPass = RenderPass<SwapchainFormat, Depth<f32>>;
 
 // Keeps tracks of data that we use for rendering the scene
 pub struct ForwardRenderer {
     // Main render pass that we will use to render to the swapchain
     pub(crate) render_pass: ForwardRendererRenderPass,
+    pub(crate) depth_texture: Texture2D<Depth<f32>>,
 
     // Main camera entity that we use to render the scene
     pub main_camera: Option<Entity>,
@@ -73,7 +74,22 @@ fn create_texture2d<T: Texel>(
 
 impl ForwardRenderer {
     // Create a new scene render pass and the forward renderer
-    pub(crate) fn new(graphics: &Graphics) -> Self {
+    pub(crate) fn new(graphics: &Graphics, extent: vek::Extent2<u32>) -> Self {
+        // Create the depth texture for the forward shading scene pass
+        let depth_texture = Texture2D::<Depth::<f32>>::from_texels(
+            graphics,
+            None,
+            extent,
+            TextureMode::Dynamic,
+            TextureUsage::Placeholder,
+            SamplerSettings {
+                filter: SamplerFilter::Linear,
+                wrap: SamplerWrap::Repeat,
+                mipmaps: SamplerMipMaps::Auto,
+            },
+            TextureMipMaps::Disabled
+        ).unwrap();
+
         // Create the forward shading scene pass
         let render_pass = ForwardRendererRenderPass::new(
             &graphics,
@@ -81,12 +97,17 @@ impl ForwardRenderer {
                 load: LoadOp::Clear(vek::Vec4::broadcast(0)),
                 store: StoreOp::Store,
             },
-            (),
+            Operation {
+                load: LoadOp::Clear(1.0),
+                store: StoreOp::Store,
+            },
         )
         .unwrap();
 
         Self {
+            // Render pass and it's depth texture
             render_pass,
+            depth_texture,
 
             // Create the common material buffers
             camera_buffer: create_uniform_buffer::<CameraUniform>(

@@ -7,7 +7,7 @@ use assets::Assets;
 use graphics::{
     BindGroup, BlendConfig, Compiled, DepthConfig, FragmentModule,
     FrontFace, Graphics, Normalized, PrimitiveConfig, StencilConfig,
-    Texture2D, UniformBuffer, VertexModule, RGBA, PushConstants,
+    Texture2D, UniformBuffer, VertexModule, RGBA, PushConstants, CompareFunction,
 };
 use world::World;
 
@@ -51,7 +51,13 @@ pub trait Material: 'static + Sized {
 
     // Get the depth config for this material
     fn depth_config() -> Option<DepthConfig> {
-        None
+        Some(DepthConfig {
+            compare: CompareFunction::Less,
+            write_enabled: true,
+            depth_bias_constant: 0,
+            depth_bias_slope_scale: 0.0,
+            depth_bias_clamp: 0.0
+        })
     }
 
     // Get the stencil testing for this material

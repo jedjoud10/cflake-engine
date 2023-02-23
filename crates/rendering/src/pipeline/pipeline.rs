@@ -10,7 +10,7 @@ use assets::Assets;
 use graphics::{
     ActiveRenderPass, Graphics, GraphicsPipeline,
     PipelineInitializationError, RenderPass, Shader, SwapchainFormat,
-    VertexConfig, VertexInput,
+    VertexConfig, VertexInput, Depth, DepthConfig, CompareFunction,
 };
 use std::marker::PhantomData;
 use utils::Storage;
@@ -28,7 +28,7 @@ impl<M: Material> Clone for MaterialId<M> {
 // A material pipeline will be responsible for rendering surface and
 // entities that correspond to a specific material type.
 pub struct Pipeline<M: Material> {
-    pipeline: GraphicsPipeline<SwapchainFormat, ()>,
+    pipeline: GraphicsPipeline<SwapchainFormat, Depth<f32>>,
     shader: Shader,
     _phantom: PhantomData<M>,
 }
@@ -51,10 +51,19 @@ impl<M: Material> Pipeline<M> {
                 M::attributes(),
             );
 
+        // We must always have a depth config
+        let depth_config = M::depth_config().unwrap_or(DepthConfig {
+            compare: CompareFunction::Always,
+            write_enabled: true,
+            depth_bias_constant: 0,
+            depth_bias_slope_scale: 0.0,
+            depth_bias_clamp: 0.0,
+        });
+
         // Create the graphics pipeline
         let pipeline = GraphicsPipeline::new(
             graphics,
-            M::depth_config(),
+            Some(depth_config),
             M::stencil_config(),
             vertex_config,
             M::primitive_config(),
@@ -81,14 +90,6 @@ impl<M: Material> Pipeline<M> {
 
 // This trait will be implemented for Pipeline<T> to allow for dynamic dispatch
 pub trait DynamicPipeline {
-    // Get the inner graphics pipeline immutably
-    fn graphical(&self) -> &GraphicsPipeline<SwapchainFormat, ()>;
-
-    // Get the inner graphics pipeline mutably
-    fn graphical_mut(
-        &mut self,
-    ) -> &mut GraphicsPipeline<SwapchainFormat, ()>;
-
     // Render all surfaces that use the material of this pipeline
     fn render<'r>(
         &'r self,
@@ -99,22 +100,12 @@ pub trait DynamicPipeline {
             'r,
             '_,
             SwapchainFormat,
-            (),
+            Depth<f32>,
         >,
     );
 }
 
 impl<M: Material> DynamicPipeline for Pipeline<M> {
-    fn graphical(&self) -> &GraphicsPipeline<SwapchainFormat, ()> {
-        &self.pipeline
-    }
-
-    fn graphical_mut(
-        &mut self,
-    ) -> &mut GraphicsPipeline<SwapchainFormat, ()> {
-        &mut self.pipeline
-    }
-
     fn render<'r>(
         &'r self,
         world: &'r World,
@@ -124,7 +115,7 @@ impl<M: Material> DynamicPipeline for Pipeline<M> {
             'r,
             '_,
             SwapchainFormat,
-            (),
+            Depth<f32>,
         >,
     ) {
         super::render_surfaces::<M>(

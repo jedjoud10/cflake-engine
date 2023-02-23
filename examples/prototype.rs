@@ -5,9 +5,10 @@ fn main() {
     App::default()
         .set_app_name("cflake engine prototype example")
         .set_user_assets_path(user_assets_path!("/examples/assets/"))
+	    .set_frame_rate_limit(FrameRateLimit::Unlimited)
         .set_window_fullscreen(true)
         .insert_init(init)
-        .insert_tick(tick)
+        .insert_update(update)
         .execute();
 }
 
@@ -61,7 +62,7 @@ fn init(world: &mut World) {
     let material = materials.insert(Basic {
         albedo_map: Some(diffuse),
         normal_map: Some(normal),
-        bumpiness: 10.0,
+        bumpiness: 2.0,
         tint: vek::Rgb::one(),
     });
 
@@ -75,14 +76,14 @@ fn init(world: &mut World) {
     let mesh = meshes.insert(mesh);
 
     // Create the new mesh entity components
-    for x in 0..10 {
-        for y in 0..10 {
-            let surface = Surface::new(mesh.clone(), material.clone(), id.clone());
-            let renderer = Renderer::default();
-            let position = Position::at_xyz(x as f32 * 2.0, y as f32 * 2.0, 0.0);
-            scene.insert((surface, renderer, position));
-        }
-    }
+    scene.extend_from_iter((0..1).into_iter().map(|i| {
+        let x = i % 100;
+        let y = i / 100;
+        let surface = Surface::new(mesh.clone(), material.clone(), id.clone());
+        let renderer = Renderer::default();
+        let position = Position::at_xyz(x as f32 * 2.0, y as f32 * 2.0, 0 as f32 * 2.0);
+        (surface, renderer, position)
+    }));
 
     // Create a movable camera (through the tick event)
     let camera = Camera::new(120.0, 0.01, 500.0, 16.0 / 9.0);
@@ -101,9 +102,14 @@ fn init(world: &mut World) {
 }
 
 // Camera controller update executed every tick
-fn tick(world: &mut World) {
+fn update(world: &mut World) {
     let time = world.get::<Time>().unwrap();
     let input = world.get::<Input>().unwrap();
+
+    if input.get_button(Button::F5).pressed() {
+        log::info!("FPS: {}", time.average_fps());
+    }
+
     let mut scene = world.get_mut::<Scene>().unwrap();
     let camera =
         scene.find_mut::<(&Camera, &mut Position, &mut Rotation)>();
@@ -136,13 +142,13 @@ fn tick(world: &mut World) {
         }
 
         // Update the position with the new velocity
-        **position += velocity * time.tick_delta().as_secs_f32() * 20.0;
+        **position += velocity * time.delta().as_secs_f32() * 20.0;
 
         // Calculate a new rotation and apply it
         let pos_x = input.get_axis("x rotation");
         let pos_y = input.get_axis("y rotation");
         **rotation =
-            vek::Quaternion::rotation_y(-pos_x as f32 * 0.0008)
-                * vek::Quaternion::rotation_x(-pos_y as f32 * 0.0008);
+            vek::Quaternion::rotation_y(-pos_x as f32 * 0.0007)
+                * vek::Quaternion::rotation_x(-pos_y as f32 * 0.0007);
     }
 }
