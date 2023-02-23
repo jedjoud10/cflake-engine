@@ -56,7 +56,7 @@ mod tests {
     #[test]
     fn read_async() {
         let mut threadpool = utils::ThreadPool::default();
-        let loader = Assets::new(None);
+        let mut loader = Assets::new(None);
         persistent!(loader, "test/text.txt");
         let handle = loader
             .async_load::<String>("test/text.txt", &mut threadpool);
@@ -67,7 +67,7 @@ mod tests {
     #[test]
     fn not_found_async() {
         let mut threadpool = utils::ThreadPool::default();
-        let loader = Assets::new(None);
+        let mut loader = Assets::new(None);
         let handle = loader
             .async_load::<String>("test/text.txt", &mut threadpool);
         let string = loader.wait(handle);
@@ -80,7 +80,7 @@ mod tests {
     #[test]
     fn read_async_iter() {
         let mut threadpool = utils::ThreadPool::default();
-        let loader = Assets::new(None);
+        let mut loader = Assets::new(None);
         persistent!(loader, "test/text.txt");
         let mut handles = loader.async_load_from_iter::<String>(
             ["test/text.txt"],
@@ -96,7 +96,7 @@ mod tests {
     #[test]
     fn not_found_async_iter() {
         let mut threadpool = utils::ThreadPool::default();
-        let loader = Assets::new(None);
+        let mut loader = Assets::new(None);
         let mut handles = loader.async_load_from_iter::<String>(
             ["test/text.txt"],
             &mut threadpool,

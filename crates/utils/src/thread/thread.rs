@@ -226,8 +226,8 @@ impl ThreadPool {
 
     // Execute a raw task. Only should be used internally
     pub(super) fn append(&mut self, task: ThreadedTask) {
-        //self.waiting.fetch_add(1, Ordering::Relaxed);
-        //self.task_sender.as_ref().unwrap().send(task).unwrap();
+        self.waiting.fetch_add(1, Ordering::Relaxed);
+        self.task_sender.as_ref().unwrap().send(task).unwrap();
     }
 
     // Add a new task to execute in the threadpool. This task will run in the background

@@ -95,7 +95,6 @@ impl<'a, C: Caller> EventMut<'a, C> {
 
         // Insert the rule internally
         self.rules.push(rule);
-        let _t = Some(0u32);
         self
     }
 }

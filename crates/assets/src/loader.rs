@@ -1,7 +1,6 @@
 use crate::{Asset, AssetInput, AssetLoadError, AsyncAsset};
 use ahash::AHashMap;
 use parking_lot::RwLock;
-use slotmap::{DefaultKey, SlotMap};
 
 use utils::ThreadPool;
 
@@ -20,14 +19,13 @@ use std::{
 // This is a handle to a specific asset that we are currently loading in
 pub struct AsyncHandle<A: Asset> {
     _phantom: PhantomData<A>,
-    key: DefaultKey,
+    index: usize
 }
 
 // Used for async asset loading
 type AsyncBoxedResult =
     Result<Box<dyn Any + Send + Sync>, AssetLoadError>;
-type AsyncSlotMap = SlotMap<DefaultKey, Option<AsyncBoxedResult>>;
-type AsyncLoadedAssets = Arc<RwLock<AsyncSlotMap>>;
+type AsyncChannelResult = (AsyncBoxedResult, usize);
 type AsyncLoadedBytes = Arc<RwLock<AHashMap<PathBuf, Arc<[u8]>>>>;
 
 // Dynamic Asset Path specified by the user
@@ -36,18 +34,17 @@ type UserPath = Option<Arc<Path>>;
 // This is the main asset manager resource that will load & cache newly loaded assets
 // This asset manager will also contain the persistent assets that are included by default into the engine executable
 pub struct Assets {
+    // Receiver that will keep track of the assets that were loaded
+    sender: Sender<AsyncChannelResult>,
+    receiver: Receiver<AsyncChannelResult>,
+    
     // Keep track of the assets that were sucessfully loaded
     // The value corresponding to each key might be None in the case that the asset did not load (yet)
-    assets: AsyncLoadedAssets,
+    loaded: Vec<Option<AsyncBoxedResult>>,
 
     // Keep track of the bytes that were loaded in other threads
     // The value might be none in the case that the bytes were not loaded
     bytes: AsyncLoadedBytes,
-
-    // This receiver and vec keep track of the key IDs of items that were loaded in
-    receiver: Receiver<DefaultKey>,
-    sender: Sender<DefaultKey>,
-    loaded: RefCell<Vec<DefaultKey>>,
 
     // Path that references the main user assets
     user: UserPath,
@@ -56,15 +53,15 @@ pub struct Assets {
 impl Assets {
     // Create a new asset loader using a path to the user defined asset folder (if there is one)
     pub fn new(user: Option<PathBuf>) -> Self {
-        let (sender, receiver) =
-            std::sync::mpsc::channel::<DefaultKey>();
 
         let user = user.map(|p| p.into());
 
+        let (sender, receiver) =
+            std::sync::mpsc::channel::<AsyncChannelResult>();
+
         Self {
-            assets: Default::default(),
-            bytes: Default::default(),
             loaded: Default::default(),
+            bytes: Default::default(),
             receiver,
             sender,
             user,
@@ -197,9 +194,8 @@ impl Assets {
         user: UserPath,
         context: <A as Asset>::Context<'_>,
         settings: <A as Asset>::Settings<'_>,
-        assets: AsyncLoadedAssets,
-        key: DefaultKey,
-        sender: Sender<DefaultKey>,
+        sender: Sender<AsyncChannelResult>,
+        index: usize,
     ) {
         // Smaller scope so we can use ? internally
         let result = move || {
@@ -235,10 +231,7 @@ impl Assets {
         };
 
         // Send the result to the main thread
-        let mut write = assets.write();
-        let opt = write.get_mut(key).unwrap();
-        *opt = Some(result());
-        sender.send(key).unwrap();
+        sender.send((result(), index)).unwrap();
     }
 }
 
@@ -311,23 +304,22 @@ impl Assets {
         log::debug!("Asynchronously loading asset {path:?}...",);
 
         // Clone the things that must be sent to the thread
-        let assets = self.assets.clone();
+        let assets_sender = self.sender.clone();
         let bytes = self.bytes.clone();
         let sender = self.sender.clone();
         let user = self.user.clone();
 
         // Create the handle's key
-        let key = self.assets.write().insert(None);
+        let index = self.loaded.len();
         let handle = AsyncHandle::<A> {
             _phantom: PhantomData,
-            key,
+            index,
         };
 
         // Create a new task that will load this asset
         threadpool.execute(move || {
             Self::async_load_inner::<A>(
-                owned, bytes, user, context, settings, assets, key,
-                sender,
+                owned, bytes, user, context, settings, sender, index
             );
         });
         handle
@@ -350,7 +342,7 @@ impl Assets {
         let mut outer = Vec::<AsyncHandle<A>>::new();
         let reference = &mut outer;
         threadpool.scope(move |scope| {
-            for input in inputs.into_iter() {
+            for (offset, input) in inputs.into_iter().enumerate() {
                 // Check the extension on a per file basis
                 let (path, context, settings) = input.split();
                 let path = Path::new(OsStr::new(path));
@@ -358,42 +350,51 @@ impl Assets {
                 let owned = path.to_owned();
 
                 // Clone the things that must be sent to the thread
-                let assets = self.assets.clone();
                 let bytes = self.bytes.clone();
                 let sender = self.sender.clone();
                 let user = self.user.clone();
 
                 // Create the handle's key and insert it
-                let key = self.assets.write().insert(None);
+                let index = self.loaded.len() + offset;
                 reference.push(AsyncHandle::<A> {
                     _phantom: PhantomData,
-                    key,
+                    index,
                 });
 
+                // Start telling worker threads to begin loading the assets
                 scope.execute(move || {
                     Self::async_load_inner::<A>(
                         owned, bytes, user, context, settings,
-                        assets, key, sender,
+                        sender, index,
                     );
                 });
             }
         });
-        panic!();
         outer
+    }
+
+    // Fetches the loaded assets from the receiver and caches them locally
+    pub fn refresh(&mut self) {
+        for (result, index) in self.receiver.try_iter() {
+            let len = self.loaded.len().max(index+1);
+            self.loaded.resize_with(len, || None);
+
+            self.loaded[index] = Some(result);
+        }
     }
 
     // This will check if the asset loader finished loading a specific asset using it's handle
     pub fn has_finished_loading<A: AsyncAsset>(
-        &self,
+        &mut self,
         handle: &AsyncHandle<A>,
     ) -> bool {
-        self.loaded.borrow_mut().extend(self.receiver.try_iter());
-        self.loaded.borrow().contains(&handle.key)
+        self.refresh();
+        self.loaded.get(handle.index).map(|x| x.is_some()).unwrap_or_default()
     }
 
     // This will wait until the asset referenced by this handle has finished loading
     pub fn wait<A: AsyncAsset>(
-        &self,
+        &mut self,
         handle: AsyncHandle<A>,
     ) -> Result<A, AssetLoadError> {
         // Spin lock whilst whilst waiting for an asset to load
@@ -401,26 +402,14 @@ impl Assets {
             std::hint::spin_loop();
         }
 
-        // Get the global asset queue and find the index of the handle key
-        let mut assets = self.assets.write();
-        let location = self
-            .loaded
-            .borrow()
-            .iter()
-            .position(|k| k == &handle.key)
-            .unwrap();
-
-        // Remove the key
-        self.loaded.borrow_mut().swap_remove(location);
-
-        // Remove the asset from the global queue and return it
-        let boxed = assets.remove(handle.key).unwrap();
-        boxed.unwrap().map(|b| *b.downcast::<A>().unwrap())
+        // Replace the slot with None
+        let old = self.loaded[handle.index].take().unwrap();
+        old.map(|b| *b.downcast::<A>().unwrap())
     }
 
     // This will wait until all the assets reference by these handles have finished loading
     pub fn wait_from_iter<A: AsyncAsset>(
-        &self,
+        &mut self,
         handles: impl IntoIterator<Item = AsyncHandle<A>>,
     ) -> Vec<Result<A, AssetLoadError>> {
         log::debug!("Waiting for async assets to load...");

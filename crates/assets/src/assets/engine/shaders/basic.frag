@@ -31,7 +31,7 @@ void main() {
 	// Fetch the albedo color and normal map value
 	vec3 albedo = texture(sampler2D(albedo_map, albedo_map_sampler), m_tex_coord).rgb;
 	vec3 bumps = texture(sampler2D(normal_map, normal_map_sampler), m_tex_coord).rgb * 2.0 - 1.0;
-	bumps.xz *= material.bumpiness;
+	bumps.xy *= material.bumpiness;
 
 	// Calculate the world space normals
 	mat3 tbn = mat3(

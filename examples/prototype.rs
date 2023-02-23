@@ -5,6 +5,7 @@ fn main() {
     App::default()
         .set_app_name("cflake engine prototype example")
         .set_user_assets_path(user_assets_path!("/examples/assets/"))
+        .set_window_fullscreen(true)
         .insert_init(init)
         .insert_tick(tick)
         .execute();
@@ -32,13 +33,6 @@ fn init(world: &mut World) {
     // Import the diffuse map and normal map
     asset!(&mut assets, "assets/user/ignored/diffuse.jpg");
     asset!(&mut assets, "assets/user/ignored/normal.jpg");
-    asset!(&mut assets, "assets/user/ignored/test.txt");
-
-    let vec = vec!["user/ignored/test.txt"; 40];
-
-    let handles = assets.async_load_from_iter::<String>(vec, &mut threadpool);
-    assets.wait_from_iter(handles);
-
 
     // Load in the diffuse map and normal map textures asynchronously
     let handles = assets
@@ -67,24 +61,28 @@ fn init(world: &mut World) {
     let material = materials.insert(Basic {
         albedo_map: Some(diffuse),
         normal_map: Some(normal),
-        bumpiness: 4.0,
+        bumpiness: 10.0,
         tint: vek::Rgb::one(),
     });
 
     // Load the renderable mesh
     let mesh = assets
         .load::<Mesh>((
-            "engine/meshes/sphere.obj",
+            "engine/meshes/cube.obj",
             graphics.clone(),
         ))
         .unwrap();
     let mesh = meshes.insert(mesh);
 
     // Create the new mesh entity components
-    let surface = Surface::new(mesh, material, id);
-    let renderer = Renderer::default();
-    let position = Position::default();
-    scene.insert((surface, renderer, position));
+    for x in 0..10 {
+        for y in 0..10 {
+            let surface = Surface::new(mesh.clone(), material.clone(), id.clone());
+            let renderer = Renderer::default();
+            let position = Position::at_xyz(x as f32 * 2.0, y as f32 * 2.0, 0.0);
+            scene.insert((surface, renderer, position));
+        }
+    }
 
     // Create a movable camera (through the tick event)
     let camera = Camera::new(120.0, 0.01, 500.0, 16.0 / 9.0);
@@ -138,7 +136,7 @@ fn tick(world: &mut World) {
         }
 
         // Update the position with the new velocity
-        **position += velocity * time.delta().as_secs_f32() * 20.0;
+        **position += velocity * time.tick_delta().as_secs_f32() * 20.0;
 
         // Calculate a new rotation and apply it
         let pos_x = input.get_axis("x rotation");
