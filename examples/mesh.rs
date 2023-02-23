@@ -1,333 +1,121 @@
-/*
 use cflake_engine::prelude::*;
 
-const ASSETS_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/examples/assets/");
-const SENSIVITY: f32 = 0.0007;
-const SPEED: f32 = 10.0;
-
-// Create a game that will draw a simple mesh onto the screen and a movable camera
+// Mesh example game window
 fn main() {
     App::default()
-        .set_window_title("cflake engine mesh example")
-        .set_user_assets_folder_path(ASSETS_PATH)
+        .set_app_name("cflake engine mesh example")
+        .set_user_assets_path(user_assets_path!("/examples/assets/"))
+	    .set_frame_rate_limit(FrameRateLimit::Unlimited)
         .set_window_fullscreen(true)
         .insert_init(init)
         .insert_update(update)
         .execute();
 }
 
-// This is an init event that will be called at the start of the game
+// Executed at the start
 fn init(world: &mut World) {
-    // Get the graphics resources
-    let mut ctx = world.get_mut::<Context>().unwrap();
-    let _shading = world.get_mut::<ClusteredShading>().unwrap();
-    let mut standard_materials = world.get_mut::<Storage<Standard>>().unwrap();
-    let mut sky_materials = world.get_mut::<Storage<Sky>>().unwrap();
-    let mut albedo_maps = world.get_mut::<Storage<AlbedoMap>>().unwrap();
-    let mut normal_maps = world.get_mut::<Storage<NormalMap>>().unwrap();
-    let mut mask_maps = world.get_mut::<Storage<MaskMap>>().unwrap();
-    let mut hdris = world.get_mut::<Storage<HDRI>>().unwrap();
-    let _shaders = world.get_mut::<Storage<Shader>>().unwrap();
-    let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
-
-    // Get the other resources
-    let mut ecs = world.get_mut::<Scene>().unwrap();
-    let mut input = world.get_mut::<Input>().unwrap();
+    // Fetch the required resources from the world
     let mut assets = world.get_mut::<Assets>().unwrap();
+    let mut threadpool = world.get_mut::<ThreadPool>().unwrap();
+    let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
+    let mut materials = world.get_mut::<Storage<Basic>>().unwrap();
+    let mut scene = world.get_mut::<Scene>().unwrap();
+    let graphics = world.get::<Graphics>().unwrap();
+    let mut pipelines = world.get_mut::<Pipelines>().unwrap();
+    
+    // Make the cursor invisible and locked
+    let window = world.get::<Window>().unwrap();
+    window
+        .window()
+        .set_cursor_grab(winit::window::CursorGrabMode::Confined)
+        .unwrap();
+    window.window().set_cursor_visible(false);
 
-    // Create a perspective camera and insert it into the world as an entity (and update the scene settings)
-    let camera = Camera::new(110.0, 0.3, 1000.0, 16.0 / 9.0);
-    let _camera = ecs.insert((camera, Location::at_z(5.0), Rotation::default()));
+    // Import the diffuse map and normal map
+    asset!(&mut assets, "assets/user/ignored/diffuse.jpg");
+    asset!(&mut assets, "assets/user/ignored/normal.jpg");
 
-    asset!(&mut assets, "assets/user/ignored/diffuse.png");
-    asset!(&mut assets, "assets/user/ignored/normal.png");
-    asset!(&mut assets, "assets/user/ignored/mask.png");
-    asset!(&mut assets, "assets/user/ignored/cubemap.hdr");
-    asset!(&mut assets, "assets/user/ignored/untitled.obj");
+    // Load in the diffuse map and normal map textures asynchronously
+    let handles = assets
+        .async_load_from_iter::<AlbedoMap>([(
+            "user/ignored/diffuse.jpg",
+            graphics.clone(),
+        ), (
+            "user/ignored/normal.jpg",
+            graphics.clone(),
+        )], &mut threadpool);
+    
+    // Fetch the loaded textures
+    let mut textures = assets.wait_from_iter(handles);
+    let normal = textures.pop().unwrap().unwrap();
+    let diffuse = textures.pop().unwrap().unwrap();
 
-    // We will also register some new keybinds for the camera controller
-    /*
-    input.bind_key("forward", Key::W);
-    input.bind_key("backward", Key::S);
-    input.bind_key("up", Key::Space);
-    input.bind_key("down", Key::LControl);
-    input.bind_key("left", Key::A);
-    input.bind_key("right", Key::D);
+    // Add the textures to the storage
+    let mut textures = world.get_mut::<Storage<AlbedoMap>>().unwrap();
+    let diffuse = textures.insert(diffuse);
+    let normal = textures.insert(normal);
+
+    // Get the material id (also registers the material pipeline)
+    let id = pipelines.register::<Basic>(&graphics, &assets).unwrap();
+    
+    // Create a new material instance
+    let material = materials.insert(Basic {
+        albedo_map: Some(diffuse),
+        normal_map: Some(normal),
+        bumpiness: 2.0,
+        tint: vek::Rgb::one(),
+    });
+
+    // Load the renderable mesh
+    let mesh = assets
+        .load::<Mesh>((
+            "engine/meshes/sphere.obj",
+            graphics.clone(),
+        ))
+        .unwrap();
+    let mesh = meshes.insert(mesh);
+
+    // Create the new mesh entity component
+    let surface = Surface::new(mesh.clone(), material.clone(), id.clone());
+    let renderer = Renderer::default();
+    let rotation = Rotation::default();
+    scene.insert((surface, renderer, rotation));
+
+    // Create a movable camera (through the tick event)
+    let camera = Camera::new(120.0, 0.01, 500.0, 16.0 / 9.0);
+    scene.insert((Position::default(), Rotation::default(), camera));
+
+    // Bind inputs to be used by the camera tick event
+    let mut input = world.get_mut::<Input>().unwrap();
+    input.bind_button("forward", Button::W);
+    input.bind_button("backward", Button::S);
+    input.bind_button("up", Button::Space);
+    input.bind_button("down", Button::LControl);
+    input.bind_button("left", Button::A);
+    input.bind_button("right", Button::D);
     input.bind_axis("x rotation", Axis::MousePositionX);
     input.bind_axis("y rotation", Axis::MousePositionY);
-    */
-    input.read_bindings_from_file(std::path::Path::new("C:/Users/jribi/Desktop/inputs.json"));
-
-    // Create a directional light insert it as a light entity (and update the scene settings)
-    let light = DirectionalLight {
-        strength: 4.0,
-        ..Default::default()
-    };
-
-    let b1 = Rotation::rotation_x(45f32.to_radians());
-    let b2 = Rotation::rotation_z(45f32.to_radians());
-    ecs.insert((light, b2 * b1));
-
-    /*
-    // Load the albedo map texture
-    let albedo_map = assets
-        .load::<AlbedoMap>(
-            "user/ignored/diffuse.png",
-            (&mut ctx, TextureImportSettings::default()),
-        )
-        .unwrap();
-    let albedo_map = albedo_maps.insert(albedo_map);
-
-    let albedo_map = assets.load::<AlbedoMap>(("user/ignored/diffuse.png", graphics)).unwrap();
-
-    // Load the normal map texture
-    let normal_map = assets
-        .load::<NormalMap>(
-            "user/ignored/normal.png",
-            (&mut ctx, TextureImportSettings::default()),
-        )
-        .unwrap();
-    let normal_map = normal_maps.insert(normal_map);
-
-    // Load the mask map texture
-    let mask_map = assets
-        .load::<MaskMap>(
-            "user/ignored/mask.png",
-            (&mut ctx, TextureImportSettings::default()),
-        )
-        .unwrap();
-    let mask_map = mask_maps.insert(mask_map);
-    */
-
-    // Create the default cube primitive mesh
-    let cube = meshes.insert(
-        assets
-            .load::<Mesh>(
-                "engine/meshes/cube.obj",
-                (&mut ctx, MeshImportSettings::default()),
-            )
-            .unwrap(),
-    );
-
-    // Create the default sphere primitive mesh
-    let sphere = meshes.insert(
-        assets
-            .load::<Mesh>(
-                "user/ignored/untitled.obj",
-                (&mut ctx, MeshImportSettings::default()),
-            )
-            .unwrap(),
-    );
-
-    // Create a new material instance
-    let material = standard_materials.insert(Standard {
-        bumpiness: 0.1,
-        roughness: 0.8,
-        metallic: 0.0,
-        ..Default::default()
-    });
-
-    // Create a new material surface for rendering
-    let pipeid = ctx.material_id::<Standard>().unwrap();
-    let surface = Surface::new(sphere.clone(), material.clone(), pipeid);
-    ecs.insert((surface, Renderer::default(), Location::at_y(1.0)));
-
-    // Create a simple plane
-    let surface = Surface::new(cube.clone(), material.clone(), pipeid);
-    ecs.insert((
-        surface,
-        Renderer::default(),
-        Location::at_y(-0.5),
-        Scale::scale_xyz(400.0, 1.0, 400.0),
-    ));
-
-    // Create a simple cube
-    let surface = Surface::new(cube.clone(), material.clone(), pipeid);
-    ecs.insert((surface, Renderer::default()));
-
-    // Create 25 cubes in total (5x5)
-    for x in 0..10 {
-        for y in 0..10 {
-            let material = standard_materials.insert(Standard {
-                bumpiness: 0.5,
-                roughness: (y as f32) / 9.0,
-                metallic: (x as f32) / 9.0,
-                ..Default::default()
-            });
-
-            let surface = Surface::new(cube.clone(), material.clone(), pipeid);
-            ecs.insert((
-                surface,
-                Renderer::default(),
-                Location::at_xyz(y as f32 * 1.2, 0.0, x as f32 * 1.2),
-            ));
-        }
-    }
-
-    //ecs.insert((Location::at_xyz(5.0, 5.0, 0.0), PointLight::default()));
-    let mut convolutor = world.get_mut::<CubeMapConvolutor2D>().unwrap();
-
-    // Load the equirectangular map
-    let equirectangular = assets.load::<Texture2D<RGB<f32>>>("user/ignored/cubemap.hdr").unwrap();
-
-    // Load up the HDRi cubemap (not convoluted)
-    let hdri = hdris.insert(
-        convolutor
-            .from_equirectangular(&mut ctx, &equirectangular, TextureImportSettings::default())
-            .unwrap(),
-    );
-
-    // Load up the HDRi cubemap (for diffuse irradiance)
-    let irradiance = hdris.insert(
-        convolutor
-            .convoluted_from_requirectangular(
-                &mut ctx,
-                &equirectangular,
-                TextureImportSettings::default(),
-                CubeMapConvolutionMode::DiffuseIrradiance,
-            )
-            .unwrap(),
-    );
-
-    // Load up the HDRi cubemap (for specular IBL)
-    let specular = hdris.insert(
-        convolutor
-            .convoluted_from_requirectangular(
-                &mut ctx,
-                &equirectangular,
-                TextureImportSettings::default(),
-                CubeMapConvolutionMode::SpecularIBL,
-            )
-            .unwrap(),
-    );
-    // Create the default sky material
-    let material = Sky {
-        cubemap: hdri,
-        irradiance,
-        specular,
-        sun_intensity: 15.0,
-        sun_size: 1.05,
-    };
-
-    // Create the default Sky material pipeline and default Sky sphere surface
-    let material = sky_materials.insert(material);
-    let pipeid = ctx.material_id::<Sky>().unwrap();
-    let renderer = Renderer::default();
-    let sphere = assets
-        .load::<Mesh>(
-            "engine/meshes/sphere.obj",
-            (
-                &mut ctx,
-                MeshImportSettings {
-                    invert_triangle_ordering: true,
-                    use_tangents: false,
-                    use_normals: false,
-                    ..Default::default()
-                },
-            ),
-        )
-        .unwrap();
-    let sphere = meshes.insert(sphere);
-    let surface = Surface::new(sphere, material, pipeid);
-
-    // Insert it as a new entity
-    ecs.insert((renderer, surface, Scale::from(vek::Vec3::one() * 400.0)));
 }
 
-// We will use this update event to move the camera around
+// Camera controller update executed every tick
 fn update(world: &mut World) {
-    let stats = world.get::<RenderedFrameStats>().unwrap();
-    let mut pp = world.get_mut::<PostProcessing>().unwrap();
     let time = world.get::<Time>().unwrap();
-    let mut ui = world.get_mut::<UserInterface>().unwrap();
-    let ctx = ui.as_mut().as_mut();
-    egui::Window::new("Stats").show(ctx, |ui| {
-        // Debug the timing resource stats
-        ui.heading("Timing");
-        ui.label(format!(
-            "Delta Time MS: {}",
-            (time.delta_f32() * 1000.0).round()
-        ));
-        ui.label(format!(
-            "Startup Timer: {}",
-            time.secs_since_startup_f32().round()
-        ));
-
-        // Debug the rendering engine's stats for rendering surfaces
-        ui.heading("Rendering Engine: Surfaces");
-        ui.label(format!("Unique Materials: {}", stats.unique_materials));
-        ui.label(format!("Material Instances: {}", stats.material_instances));
-        ui.label(format!("Rendered Surfaces: {}", stats.rendered_surfaces));
-        ui.label(format!("Triangles: {}", stats.tris));
-        ui.label(format!("Vertices: {}", stats.verts));
-
-        // Debug the rendering engine's stats for rendering shadows
-        ui.heading("Rendering Engine: Shadows");
-        ui.label(format!(
-            "Unique Shadow Caster Materials: {}",
-            stats.unique_materials_shadow_casters
-        ));
-        ui.label(format!(
-            "Shadow Caster Surfaces: {}",
-            stats.shadow_casters_surfaces
-        ));
-        ui.label(format!(
-            "Shadow Caster Triangles: {}",
-            stats.shadow_casters_tris
-        ));
-        ui.label(format!(
-            "Shadow Caster Vertices: {}",
-            stats.shadow_casters_verts
-        ));
-
-        // Control the main post-processing rendering settings
-        ui.heading("Rendering Engine: Post-processing");
-        ui.horizontal(|ui| {
-            ui.label("Tonemapping Strength: ");
-            ui.add(egui::Slider::new(
-                &mut pp.tonemapping_strength,
-                0.0f32..=1.0f32,
-            ));
-        });
-        ui.horizontal(|ui| {
-            ui.label("Gamma: ");
-            ui.add(egui::Slider::new(&mut pp.gamma, 0.0f32..=3.0f32));
-        });
-        ui.horizontal(|ui| {
-            ui.label("Exposure: ");
-            ui.add(egui::Slider::new(&mut pp.exposure, 0.0f32..=2.0f32));
-        });
-    });
-
-    let shading = world.get::<ClusteredShading>().unwrap();
-    let window = world.get_mut::<Window>().unwrap();
-
-    // Get the input resources
     let input = world.get::<Input>().unwrap();
+    let mut scene = world.get_mut::<Scene>().unwrap();
 
-    if input.key(Key::H).held() {
-        window.raw().set_cursor_grab(false);
-        window.raw().set_cursor_visible(true);
-        return;
-    } else {
-        window.raw().set_cursor_grab(true);
-        window.raw().set_cursor_visible(false);
+    // Move the cube
+    for (rot, _) in scene.query_mut::<(&mut Rotation, &Renderer)>() {
+        rot.rotate_x(time.delta().as_secs_f32() * 0.1);
     }
 
-    // Get the other resources
-    let mut ecs = world.get_mut::<Scene>().unwrap();
-    let time = world.get::<Time>().unwrap();
-
-    /*
-    if let Some((rotation, _)) = ecs.query::<(&mut Rotation, &DirectionalLight)>().unwrap().next() {
-        rotation.rotate_x(0.1 * time.delta_f32());
+    // Print the FPS when we press F5
+    if input.get_button(Button::F5).pressed() {
+        log::info!("FPS: {}", time.average_fps());
     }
-    */
 
-    if let Some(mut entry) = shading.main_camera().and_then(|c| ecs.entry_mut(c)) {
-        // Get the location and rotation since we will update them
-        let (location, rotation) = entry.as_query::<(&mut Location, &mut Rotation)>().unwrap();
-
+    let camera =
+        scene.find_mut::<(&Camera, &mut Position, &mut Rotation)>();
+    if let Some((_, position, rotation)) = camera {
         // Forward and right vectors relative to the camera
         let forward = rotation.forward();
         let right = rotation.right();
@@ -335,35 +123,34 @@ fn update(world: &mut World) {
         let mut velocity = vek::Vec3::<f32>::default();
 
         // Update the velocity in the forward and backward directions
-        if input.key("forward").held() {
+        if input.get_button("forward").held() {
             velocity += forward;
-        } else if input.key("backward").held() {
+        } else if input.get_button("backward").held() {
             velocity += -forward;
         }
 
         // Update the velocity in the left and right directions
-        if input.key("left").held() {
+        if input.get_button("left").held() {
             velocity += -right;
-        } else if input.key("right").held() {
+        } else if input.get_button("right").held() {
             velocity += right;
         }
 
         // Update the velocity in the left and right directions
-        if input.key("up").held() {
+        if input.get_button("up").held() {
             velocity += up;
-        } else if input.key("down").held() {
+        } else if input.get_button("down").held() {
             velocity += -up;
         }
 
-        // Update the location with the new velocity
-        **location += velocity * time.delta_f32() * SPEED;
+        // Update the position with the new velocity
+        **position += velocity * time.delta().as_secs_f32() * 20.0;
 
         // Calculate a new rotation and apply it
-        let pos_x = input.axis("x rotation");
-        let pos_y = input.axis("y rotation");
-        **rotation = vek::Quaternion::rotation_y(-pos_x as f32 * SENSIVITY)
-            * vek::Quaternion::rotation_x(-pos_y as f32 * SENSIVITY);
+        let pos_x = input.get_axis("x rotation");
+        let pos_y = input.get_axis("y rotation");
+        **rotation =
+            vek::Quaternion::rotation_y(-pos_x as f32 * 0.0007)
+                * vek::Quaternion::rotation_x(-pos_y as f32 * 0.0007);
     }
 }
-*/
-fn main() {}
