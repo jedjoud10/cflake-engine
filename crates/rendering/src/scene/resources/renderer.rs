@@ -40,6 +40,9 @@ pub struct ForwardRenderer {
     pub white: AlbedoMap,
     pub black: AlbedoMap,
     pub normal: NormalMap,
+
+    // Default sky gradient texture
+    pub sky_gradient: AlbedoMap,
 }
 
 // Create a new uniform buffer with default contents
@@ -74,7 +77,7 @@ fn create_texture2d<T: Texel>(
 
 impl ForwardRenderer {
     // Create a new scene render pass and the forward renderer
-    pub(crate) fn new(graphics: &Graphics, extent: vek::Extent2<u32>) -> Self {
+    pub(crate) fn new(graphics: &Graphics, assets: &Assets, extent: vek::Extent2<u32>) -> Self {
         // Create the depth texture for the forward shading scene pass
         let depth_texture = Texture2D::<Depth::<f32>>::from_texels(
             graphics,
@@ -101,8 +104,13 @@ impl ForwardRenderer {
                 load: LoadOp::Clear(1.0),
                 store: StoreOp::Store,
             },
-        )
-        .unwrap();
+        ).unwrap();
+
+        // Load the default sky gradient texture
+        let sky_gradient = assets.load::<AlbedoMap>(
+            ("engine/textures/scene/sky.jpg",
+            graphics.clone()
+        )).unwrap();
 
         Self {
             // Render pass and it's depth texture
@@ -136,6 +144,8 @@ impl ForwardRenderer {
 
             // No default camera
             main_camera: None,
+
+            sky_gradient,
         }
     }
 }

@@ -18,7 +18,8 @@ fn init(world: &mut World) {
     let mut assets = world.get_mut::<Assets>().unwrap();
     let mut threadpool = world.get_mut::<ThreadPool>().unwrap();
     let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
-    let mut materials = world.get_mut::<Storage<Basic>>().unwrap();
+    let mut basics = world.get_mut::<Storage<Basic>>().unwrap();
+    let mut skies = world.get_mut::<Storage<Sky>>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
     let mut pipelines = world.get_mut::<Pipelines>().unwrap();
@@ -59,7 +60,7 @@ fn init(world: &mut World) {
     let id = pipelines.register::<Basic>(&graphics, &assets).unwrap();
     
     // Create a new material instance
-    let material = materials.insert(Basic {
+    let material = basics.insert(Basic {
         albedo_map: Some(diffuse),
         normal_map: Some(normal),
         bumpiness: 2.0,
@@ -75,10 +76,32 @@ fn init(world: &mut World) {
         .unwrap();
     let mesh = meshes.insert(mesh);
 
-    // Create the new mesh entity component
+    // Create the new mesh entity components
     let surface = Surface::new(mesh.clone(), material.clone(), id.clone());
     let renderer = Renderer::default();
     let rotation = Rotation::default();
+    scene.insert((surface, renderer, rotation));
+
+    // Get the material id (also registers the material pipeline)
+    let id = pipelines.register::<Sky>(&graphics, &assets).unwrap();
+    
+    // Create a new material instance
+    let material = skies.insert(Sky {
+        gradient_map: None
+    });
+
+    // Load the renderable mesh
+    let mesh = assets
+        .load::<Mesh>((
+            "engine/meshes/sphere.obj",
+            graphics.clone(),
+        ))
+        .unwrap();
+    let mesh = meshes.insert(mesh);
+
+    // Create the new sky entity components
+    let surface = Surface::new(mesh.clone(), material.clone(), id.clone());
+    let renderer = Renderer::default();
     scene.insert((surface, renderer, rotation));
 
     // Create a movable camera (through the tick event)

@@ -23,6 +23,9 @@ pub struct DefaultMaterialResources<'a> {
     pub white: &'a AlbedoMap,
     pub black: &'a AlbedoMap,
     pub normal: &'a NormalMap,
+
+    // Default sky gradient texture
+    pub sky_gradient: &'a AlbedoMap,
 }
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
@@ -116,6 +119,5 @@ pub trait Material: 'static + Sized {
         default: &DefaultMaterialResources<'r>,
         push_constants: &mut PushConstants
     ) {
-
     }
 }

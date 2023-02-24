@@ -10,7 +10,7 @@ use assets::Assets;
 use graphics::{
     BindGroup, Compiled, Compiler, FragmentModule, Graphics,
     Normalized, Sampler, Shader, Texture2D, UniformBuffer,
-    VertexModule, RGBA, Texture, ValueFiller, PushConstants,
+    VertexModule, RGBA, Texture, ValueFiller, PushConstants, PrimitiveConfig, FrontFace, Face,
 };
 use utils::{Handle, Storage};
 
@@ -43,6 +43,15 @@ impl Material for Sky {
             .load::<FragmentModule>("engine/shaders/scene/sky/sky.frag")
             .unwrap();
         Compiler::new(frag).compile(assets, graphics).unwrap()
+    }
+
+    // Sky-spheres are always flipped inside out
+    fn primitive_config() -> PrimitiveConfig {
+        PrimitiveConfig::Triangles {
+            winding_order: FrontFace::Ccw,
+            cull_face: Some(Face::Front),
+            wireframe: false,
+        }
     }
 
     // Fetch the texture storages

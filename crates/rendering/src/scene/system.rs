@@ -1,8 +1,9 @@
 use crate::{
     AlbedoMap, Sky, Camera, CameraUniform,
     DefaultMaterialResources, ForwardRenderer,
-    ForwardRendererRenderPass, Mesh, NormalMap, Pipelines, Renderer,
+    ForwardRendererRenderPass, Mesh, NormalMap, Pipelines, Renderer, Basic,
 };
+use assets::Assets;
 use ecs::Scene;
 use graphics::{
     Graphics, LoadOp, Normalized, Operation, RenderPass, StoreOp,
@@ -16,20 +17,24 @@ use world::{post_user, user, System, World, WindowEvent};
 fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
     let window = world.get::<Window>().unwrap();
+    let assets = world.get::<Assets>().unwrap();
 
     // Create the scene renderer, pipeline manager, and  commonly used textures
-    let renderer = ForwardRenderer::new(&graphics, window.size());
+    let renderer = ForwardRenderer::new(&graphics, &assets, window.size());
     let pipelines = Pipelines::new();
 
     // Add composites and basic storages
     drop(graphics);
     drop(window);
+    drop(assets);
     world.insert(renderer);
     world.insert(pipelines);
+
+    // Add common storages
     world.insert(Storage::<Mesh>::default());
 
-    // TODO: Handle this automatically within the material trait
-    world.insert(Storage::<Sky>::default());
+    // Add the storages that contain the materials and their resources
+    world.insert(Storage::<Basic>::default());
     world.insert(Storage::<Sky>::default());
     world.insert(Storage::<AlbedoMap>::default());
     world.insert(Storage::<NormalMap>::default());
@@ -189,6 +194,7 @@ fn render_update(world: &mut World) {
         white: &renderer.white,
         black: &renderer.black,
         normal: &renderer.normal,
+        sky_gradient: &renderer.sky_gradient,
     };
 
     // This will iterate over each material pipeline and draw the scene
