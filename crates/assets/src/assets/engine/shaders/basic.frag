@@ -42,7 +42,7 @@ void main() {
 
 	// Do some basic light calculations
 	vec3 direction = vec3(0, 1, 0);
-	float lighting =  clamp(dot(direction, m_normal) * 0.8, 0, 1);
+	float lighting =  clamp(dot(direction, normal) * 0.8, 0, 1);
 	lighting += 0.1;
 
 	// Calculate diffuse lighting

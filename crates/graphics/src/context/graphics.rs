@@ -1,6 +1,6 @@
 use ahash::AHashMap;
 use dashmap::DashMap;
-use naga::{front::glsl::Parser, valid::Validator};
+use naga::{valid::Validator};
 use parking_lot::Mutex;
 use std::{hash::BuildHasherDefault, sync::Arc};
 use utils::Storage;

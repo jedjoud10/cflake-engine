@@ -7,13 +7,9 @@ layout(set = 0, binding = 0) uniform CameraUniform {
     mat4 view;
     mat4 inverse_view;
 
-    // TODO: Fuck naga. This shit fucking sucks
-    mat4 combined;
-
-    /*
+    // Position of the camera and it's directions
     vec4 position;
     vec4 forward;
     vec4 right;
     vec4 up;
-    */
 } camera;

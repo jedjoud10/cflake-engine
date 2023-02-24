@@ -15,7 +15,7 @@ utils = { path = "../utils" }
 wgpu = { version = "0.15", default-features = false, features = ["naga", "expose-ids"] }
 winit = "0.27.5"
 pollster = "0.2.5"
-naga = { version = "0.11.0", features = ["glsl-in", "spv-out"] }
+naga = { version = "0.11.0", features = ["spv-in"] }
 shaderc = "0.8.2"
 
 # Utils and helpers

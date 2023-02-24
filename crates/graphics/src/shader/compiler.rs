@@ -130,7 +130,7 @@ fn compile(
         .map_err(ShaderCompilationError::PreprocessorError)?;
 
     // Pass the source by ShaderC first cause Naga's errors suck ass
-    graphics.0.shaderc.compile_into_spirv(&source, match kind {
+    let artifact = graphics.0.shaderc.compile_into_spirv(&source, match kind {
         ModuleKind::Vertex => shaderc::ShaderKind::Vertex,
         ModuleKind::Fragment => shaderc::ShaderKind::Fragment,
         ModuleKind::Compute => shaderc::ShaderKind::Compute,
@@ -147,17 +147,15 @@ fn compile(
             _ => todo!()
         })?;
 
-    // [GLSL -> Naga] parsing options
-    let options = naga::front::glsl::Options {
-        stage: super::kind_to_naga_stage(kind),
-        defines: naga::FastHashMap::default(),
+    // [SPIRV -> Naga] parsing options
+    let options = naga::front::spv::Options {
+        adjust_coordinate_space: false,
+        strict_capabilities: false,
+        block_ctx_dump_prefix: None,
     };
 
-    // Compile the GLSL shader source to a Naga module
-    let mut parser = naga::front::glsl::Parser::default();
-    let module = parser
-        .parse(&options, &source)
-        .unwrap();
+    // Compile the SPIRV to a Naga module
+    let mut module = naga::front::spv::parse_u8_slice(artifact.as_binary_u8(), &options).unwrap();
 
     // Compile the Wgpu shader
     Ok((
