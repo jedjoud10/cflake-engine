@@ -1,5 +1,5 @@
 use crate::{
-    AlbedoMap, Basic, Camera, CameraUniform,
+    AlbedoMap, Sky, Camera, CameraUniform,
     DefaultMaterialResources, ForwardRenderer,
     ForwardRendererRenderPass, Mesh, NormalMap, Pipelines, Renderer,
 };
@@ -28,8 +28,9 @@ fn init(world: &mut World) {
     world.insert(pipelines);
     world.insert(Storage::<Mesh>::default());
 
-    // TODO: Handle this automatically
-    world.insert(Storage::<Basic>::default());
+    // TODO: Handle this automatically within the material trait
+    world.insert(Storage::<Sky>::default());
+    world.insert(Storage::<Sky>::default());
     world.insert(Storage::<AlbedoMap>::default());
     world.insert(Storage::<NormalMap>::default());
 }

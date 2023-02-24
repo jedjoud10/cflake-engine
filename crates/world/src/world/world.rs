@@ -31,7 +31,7 @@ pub enum State {
 
 impl World {
     // Insert a new resource into the world
-    pub fn insert<R: Resource>(&mut self, resource: R) {
+    pub fn insert<R: Resource>(&self, resource: R) {
         let id = TypeId::of::<R>();
         let returned =
             self.0.insert(id, RefCell::new(Box::new(resource)));
@@ -79,7 +79,7 @@ impl World {
     }
 
     // Get an entry for a specific resource
-    pub fn entry<'a, R: Resource>(&'a mut self) -> Entry<'a, R> {
+    pub fn entry<'a, R: Resource>(&'a self) -> Entry<'a, R> {
         Entry {
             world: self,
             _phantom: std::marker::PhantomData,

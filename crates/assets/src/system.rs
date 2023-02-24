@@ -11,8 +11,10 @@ fn init(world: &mut World, user: Option<PathBuf>) {
     persistent!(loader, "engine/shaders/common/camera.glsl");
     persistent!(loader, "engine/shaders/common/scene.glsl");
     persistent!(loader, "engine/shaders/common/timing.glsl");
-    persistent!(loader, "engine/shaders/basic.frag");
-    persistent!(loader, "engine/shaders/basic.vert");
+    persistent!(loader, "engine/shaders/scene/basic/basic.frag");
+    persistent!(loader, "engine/shaders/scene/basic/basic.vert");
+    persistent!(loader, "engine/shaders/scene/sky/sky.frag");
+    persistent!(loader, "engine/shaders/scene/sky/sky.vert");
 
     // Load the default textures
     persistent!(loader, "engine/textures/test.jpg");

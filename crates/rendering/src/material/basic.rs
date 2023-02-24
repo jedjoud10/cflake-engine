@@ -38,7 +38,7 @@ impl Material for Basic {
         assets: &Assets,
     ) -> Compiled<VertexModule> {
         let vert = assets
-            .load::<VertexModule>("engine/shaders/basic.vert")
+            .load::<VertexModule>("engine/shaders/scene/basic/basic.vert")
             .unwrap();
         Compiler::new(vert).compile(assets, graphics).unwrap()
     }
@@ -49,7 +49,7 @@ impl Material for Basic {
         assets: &Assets,
     ) -> Compiled<FragmentModule> {
         let frag = assets
-            .load::<FragmentModule>("engine/shaders/basic.frag")
+            .load::<FragmentModule>("engine/shaders/scene/basic/basic.frag")
             .unwrap();
         Compiler::new(frag).compile(assets, graphics).unwrap()
     }
