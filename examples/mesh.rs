@@ -6,7 +6,6 @@ fn main() {
         .set_app_name("cflake engine mesh example")
         .set_user_assets_path(user_assets_path!("/examples/assets/"))
 	    .set_frame_rate_limit(FrameRateLimit::Unlimited)
-        .set_window_fullscreen(true)
         .insert_init(init)
         .insert_update(update)
         .execute();
@@ -60,8 +59,8 @@ fn init(world: &mut World) {
     
     // Create a new material instance
     let material = materials.insert(Basic {
-        albedo_map: Some(diffuse),
-        normal_map: Some(normal),
+        albedo_map: None,
+        normal_map: None,
         bumpiness: 2.0,
         tint: vek::Rgb::one(),
     });
@@ -69,7 +68,7 @@ fn init(world: &mut World) {
     // Load the renderable mesh
     let mesh = assets
         .load::<Mesh>((
-            "engine/meshes/sphere.obj",
+            "engine/meshes/icosphere.obj",
             graphics.clone(),
         ))
         .unwrap();
@@ -102,11 +101,6 @@ fn update(world: &mut World) {
     let time = world.get::<Time>().unwrap();
     let input = world.get::<Input>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
-
-    // Move the cube
-    for (rot, _) in scene.query_mut::<(&mut Rotation, &Renderer)>() {
-        rot.rotate_x(time.delta().as_secs_f32() * 0.1);
-    }
 
     // Print the FPS when we press F5
     if input.get_button(Button::F5).pressed() {

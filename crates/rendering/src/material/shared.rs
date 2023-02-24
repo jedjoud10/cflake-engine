@@ -3,7 +3,7 @@ use graphics::{Normalized, Texture2D, UniformBuffer, RGBA};
 
 // Camera data that will be stored in a UBO
 #[derive(Clone, Copy, PartialEq, Pod, Zeroable, Default)]
-#[repr(C)]
+#[repr(C, align(64))]
 pub struct CameraUniform {
     // Projection & inv projection matrix
     pub projection: vek::Vec4<vek::Vec4<f32>>,
@@ -13,15 +13,16 @@ pub struct CameraUniform {
     pub view: vek::Vec4<vek::Vec4<f32>>,
     pub inverse_view: vek::Vec4<vek::Vec4<f32>>,
 
-    // Position of the camera
-    //pub test: vek::Vec4<vek::Vec4<f32>>,
 
-    // Direction vectors
-    /*
     pub position: vek::Vec4<f32>,
     pub forward: vek::Vec4<f32>,
     pub right: vek::Vec4<f32>,
     pub up: vek::Vec4<f32>,
+    
+    /*
+
+
+    // Direction vectors
     */
 }
 

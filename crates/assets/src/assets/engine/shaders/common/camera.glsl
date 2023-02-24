@@ -1,5 +1,4 @@
-
-layout(set = 0, binding = 0, std140) uniform CameraUniform {
+layout(set = 0, binding = 0) uniform CameraUniform {
     // Projection & inv projection matrix
     mat4 projection;
     mat4 inverse_projection;
@@ -8,11 +7,11 @@ layout(set = 0, binding = 0, std140) uniform CameraUniform {
     mat4 view;
     mat4 inverse_view;
 
-    /*
-    // Position of the camera
-    vec4 position;
+    // TODO: Fuck naga. This shit fucking sucks
+    mat4 combined;
 
-    // Direction vectors
+    /*
+    vec4 position;
     vec4 forward;
     vec4 right;
     vec4 up;

@@ -1,4 +1,5 @@
-use std::{mem::transmute, num::NonZeroU32, sync::Arc, marker::PhantomData};
+
+use std::{mem::transmute, num::{NonZeroU32, NonZeroU8}, sync::Arc, marker::PhantomData};
 
 use smallvec::SmallVec;
 use wgpu::{
@@ -12,6 +13,8 @@ use crate::{
     TextureMipLayerError, TextureMipMaps, TextureMode,
     TextureSamplerError, TextureUsage, TextureResizeError,
 };
+
+
 
 // Possibly predefined texel data
 type Texels<'a, T> = Option<&'a [<T as Texel>::Storage]>;
@@ -86,19 +89,29 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
             );
         }
 
-        // Don't use mipmapping with NPOT textures
-        if !matches!(mipmaps, TextureMipMaps::Disabled) {
-            if !extent.is_power_of_two() {
-                return Err(
-                    TextureInitializationError::MipMapGenerationNPOT,
-                );
-            }
-        }
+        // Get the max theoretical mip map levels (1 is set if mipmapping is disabled)
+        let max_mip_levels = if matches!(mipmaps, TextureMipMaps::Disabled) {
+            1u8 as u32
+        } else {
+            let max = extent.levels().ok_or(TextureInitializationError::MipMapGenerationNPOT)?;
+            max.get() as u32
+        };
+
+        // Then get the number of mip levels we should actually use
+        let levels = match mipmaps {
+            TextureMipMaps::AutoClamped { max: levels } => (levels.get() as u32).min(max_mip_levels),
+            TextureMipMaps::Manual { mips } => {
+                let levels = mips.len() as u32 + 1;
+                levels.min(max_mip_levels)
+            },
+            TextureMipMaps::Auto => max_mip_levels,
+            TextureMipMaps::Disabled => 1,
+        };
 
         // Config for the Wgpu texture
         let descriptor = TextureDescriptor {
             size: extent_3d,
-            mip_level_count: 1,
+            mip_level_count: levels,
             sample_count: 1,
             dimension,
             format,
@@ -121,46 +134,50 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
         let sampler =
             crate::get_or_insert_sampler(graphics, sampling);
 
-        // Convert the texels to bytes
-        let bytes = texels.map(|texels| {
-            bytemuck::cast_slice::<<Self::T as Texel>::Storage, u8>(
-                texels,
-            )
-        });
-
         // Get color texture aspect for the texture view and ImageCopyTexture
         let aspect = texture_aspect::<Self::T>();
 
-        // Fill the texture with the appropriate data
-        if let Some(bytes) = bytes {
-            // Bytes per row of texel data
-            let bytes_per_row = NonZeroU32::new(
-                bytes_per_texel as u32 * extent.width(),
-            );
-
-            // FIXME: Does this work with 3D textures?
-            let image_data_layout = wgpu::ImageDataLayout {
-                offset: 0,
-                bytes_per_row,
-                rows_per_image: NonZeroU32::new(extent.height()),
-            };
-
-            // Create the image copy texture descriptor
-            let image_copy_texture = wgpu::ImageCopyTexture {
-                texture: &texture,
-                mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-                aspect: wgpu::TextureAspect::All,
-            };
-
-            // TODO: DO this shit but with mip mapped textures too
-            graphics.queue().write_texture(
-                image_copy_texture,
-                bytes,
-                image_data_layout,
-                extent_3d,
+        // Always write to the first mip level
+        if let Some(texels) = texels {
+            write_to_level::<Self::T, <Self::Region as Region>::E>(
+                extent,
+                texels,
+                &texture,
+                aspect,
+                0,
+                graphics
             );
         }
+
+        // Fill the texture mips with the appropriate data
+        match mipmaps {
+            TextureMipMaps::Auto | TextureMipMaps::AutoClamped { .. } => {
+                // Automatic mip map generation
+                if let Some(texels) = texels {
+                    for level in 0..levels {
+                        // Downscale the original texel values
+                        // Convert to bytes
+                        // Write to mip level
+                        todo!()
+                    }
+                }
+            },
+            TextureMipMaps::Manual { mips } => {
+                // Manual mip map generation
+                for (i, texels) in mips.iter().enumerate() {
+                    write_to_level::<Self::T, <Self::Region as Region>::E>(
+                        extent.mip_level_dimensions(i as u8),
+                        texels,
+                        &texture,
+                        aspect,
+                        i as u32,
+                        graphics
+                    );
+                }
+            },
+            _ => {}
+        }
+        
 
         // Create the texture's texture view descriptor
         let view_descriptor = TextureViewDescriptor {
@@ -189,7 +206,7 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
     }
 
     // Checks if we can access a region of the texture
-    fn is_region_valid(&self, region: Self::Region) -> bool {
+    fn is_region_accessible(&self, region: Self::Region) -> bool {
         let extent = <Self::Region as Region>::extent_from_origin(
             region.origin(),
         ) + region.extent();
@@ -264,6 +281,11 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
             return Err(TextureResizeError::ExtentLimit);
         }
 
+        // Same size; not going to resize
+        if extent == self.dimensions() {
+            return Ok(());
+        }
+
         // Fetch dimensions, name, and texel format
         let dimension = <<Self::Region as Region>::E as Extent>::dimensionality();
         let name = utils::pretty_type_name::<Self::T>();
@@ -302,7 +324,6 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
         };
 
         // Create an texture view of the whole texture
-        // TODO: Create MULTIPLE views for the texture
         let view = texture.create_view(&view_descriptor);
         let views = SmallVec::from_buf([view]);
         unsafe {
@@ -311,6 +332,54 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
 
         Ok(())
     }
+}
+
+// Write texels to a single level of a texture
+// TODO: Test to check if this works with 3D
+fn write_to_level<T: Texel, E: Extent>(
+    extent: E,
+    texels: &[T::Storage],
+    texture: &wgpu::Texture,
+    aspect: wgpu::TextureAspect,
+    level: u32,
+    graphics: &Graphics,
+) {
+    let bytes_per_channel = T::bytes_per_channel();
+    let bytes_per_texel = bytes_per_channel as u64 * T::channels().count() as u64;
+    let extent_3d = extent_to_extent3d(extent);
+
+    // Bytes per row of texel data
+    let bytes_per_row = NonZeroU32::new(
+        bytes_per_texel as u32 * extent.width(),
+    );
+
+    // Convert the texels to bytes
+    let bytes = bytemuck::cast_slice::<T::Storage, u8>(
+        texels,
+    );
+
+    // FIXME: Does this work with 3D textures?
+    let image_data_layout = wgpu::ImageDataLayout {
+        offset: 0,
+        bytes_per_row,
+        rows_per_image: NonZeroU32::new(extent.height()),
+    };
+
+    // Create the image copy texture descriptor
+    let image_copy_texture = wgpu::ImageCopyTexture {
+        texture: texture,
+        mip_level: level,
+        origin: wgpu::Origin3d::ZERO,
+        aspect,
+    };
+
+    // Write to the base layer of the texture 
+    graphics.queue().write_texture(
+        image_copy_texture,
+        bytes,
+        image_data_layout,
+        extent_3d,
+    );
 }
 
 // Separated this into it's own trait since I didn't want there to be unsafe init/internal functions publicly

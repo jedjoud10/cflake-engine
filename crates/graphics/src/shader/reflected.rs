@@ -101,7 +101,6 @@ pub fn merge_and_make_layout(
     let modules = &[vertex.reflected(), fragment.reflected()];
     let shader =
         merge_reflected_modules_to_shader(modules);
-
     // Convert the reflected shader to a layout
     let layout = create_pipeline_layout_from_shader(
         graphics,

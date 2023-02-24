@@ -31,7 +31,7 @@ pub enum TextureMipMaps<'mip, 'map, T: Texel> {
 
 impl<T: Texel> Default for TextureMipMaps<'_, '_, T> {
     fn default() -> Self {
-        Self::Disabled
+        Self::Auto
     }
 }
 

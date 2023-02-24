@@ -60,6 +60,9 @@ pub enum TextureResizeError {
 
     #[error("Tried resizing a texture with extent of 0 in any axii")]
     InvalidExtent,
+
+    #[error("Tried resizing a texture, but texture mode isn't TextureMode::Resizable")]
+    NotResizable
 }
 
 #[derive(Error, Debug)]

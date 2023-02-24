@@ -55,6 +55,8 @@ fn init(world: &mut World, user: Option<PathBuf>) {
     // Load the default meshes
     persistent!(loader, "engine/meshes/cube.obj");
     persistent!(loader, "engine/meshes/sphere.obj");
+    persistent!(loader, "engine/meshes/icosphere.obj");
+
 
     // Insert the loader
     world.insert(loader);

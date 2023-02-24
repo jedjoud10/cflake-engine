@@ -107,9 +107,29 @@ impl<T: Texel> Texture for Texture2D<T> {
     }
 }
 
+// Texture settings that we shall use when loading in a new texture
+#[derive(Clone, Copy)]
+pub struct TextureImportSettings<'m, T: Texel> {
+    pub sampling: SamplerSettings,
+    pub mode: TextureMode,
+    pub usage: TextureUsage,
+    pub mipmaps: TextureMipMaps<'m, 'm, T>,
+}
+
+impl<T: Texel> Default for TextureImportSettings<'_, T> {
+    fn default() -> Self {
+        Self {
+            sampling: SamplerSettings::default(),
+            mode: TextureMode::default(),
+            usage: TextureUsage::default(),
+            mipmaps: TextureMipMaps::Disabled,
+        }
+    }
+}
+
 impl<T: ImageTexel> Asset for Texture2D<T> {
     type Context<'ctx> = Graphics;
-    type Settings<'stg> = ();
+    type Settings<'stg> = TextureImportSettings<'stg, T>;
     type Err = TextureAssetLoadError;
 
     fn extensions() -> &'static [&'static str] {
@@ -119,7 +139,7 @@ impl<T: ImageTexel> Asset for Texture2D<T> {
     fn deserialize<'c, 's>(
         data: assets::Data,
         graphics: Self::Context<'c>,
-        _settings: Self::Settings<'s>,
+        settings: Self::Settings<'s>,
     ) -> Result<Self, Self::Err> {
         let i = Instant::now();
         let image = image::load_from_memory(data.bytes())
@@ -138,10 +158,10 @@ impl<T: ImageTexel> Asset for Texture2D<T> {
             &graphics,
             Some(&texels),
             dimensions,
-            TextureMode::Dynamic,
-            TextureUsage::Placeholder,
-            SamplerSettings::default(),
-            TextureMipMaps::default(),
+            settings.mode,
+            settings.usage,
+            settings.sampling,
+            settings.mipmaps,
         )
         .map_err(TextureAssetLoadError::Initialization)
     }
