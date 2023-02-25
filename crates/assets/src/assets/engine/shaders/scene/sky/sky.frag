@@ -11,8 +11,6 @@ layout(set = 1, binding = 1) uniform sampler gradient_map_sampler;
 void main() {
 	// Calculate elevation
 	float y = normalize(m_position).y;
-	y += 1;
-	y /= 2;
 	y = clamp(y, 0, 1);
 	
 	// Get background sky color based on elevation

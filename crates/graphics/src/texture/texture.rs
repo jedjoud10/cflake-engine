@@ -11,7 +11,7 @@ use crate::{
     Sampler, SamplerSettings, SamplerWrap, Texel,
     TextureAsTargetError, TextureInitializationError,
     TextureMipLayerError, TextureMipMaps, TextureMode,
-    TextureSamplerError, TextureUsage, TextureResizeError,
+    TextureSamplerError, TextureUsage, TextureResizeError, GpuPodRelaxed,
 };
 
 
@@ -43,8 +43,6 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
         let channels = <Self::T as Texel>::channels();
         let bytes_per_channel =
             <Self::T as Texel>::bytes_per_channel();
-        let bytes_per_texel =
-            bytes_per_channel as u64 * channels.count() as u64;
 
         // Make sure the number of texels matches up with the dimensions
         if let Some(texels) = texels {
@@ -89,24 +87,8 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
             );
         }
 
-        // Get the max theoretical mip map levels (1 is set if mipmapping is disabled)
-        let max_mip_levels = if matches!(mipmaps, TextureMipMaps::Disabled) {
-            1u8 as u32
-        } else {
-            let max = extent.levels().ok_or(TextureInitializationError::MipMapGenerationNPOT)?;
-            max.get() as u32
-        };
-
-        // Then get the number of mip levels we should actually use
-        let levels = match mipmaps {
-            TextureMipMaps::AutoClamped { max: levels } => (levels.get() as u32).min(max_mip_levels),
-            TextureMipMaps::Manual { mips } => {
-                let levels = mips.len() as u32 + 1;
-                levels.min(max_mip_levels)
-            },
-            TextureMipMaps::Auto => max_mip_levels,
-            TextureMipMaps::Disabled => 1,
-        };
+        // Get the number of mip levels for this texture
+        let levels = mip_levels(&mipmaps, extent)?;
 
         // Config for the Wgpu texture
         let descriptor = TextureDescriptor {
@@ -151,22 +133,23 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
 
         // Fill the texture mips with the appropriate data
         match mipmaps {
-            TextureMipMaps::Auto | TextureMipMaps::AutoClamped { .. } => {
-                // Automatic mip map generation
-                if let Some(texels) = texels {
-                    for level in 0..levels {
-                        // Downscale the original texel values
-                        // Convert to bytes
-                        // Write to mip level
-                        todo!()
-                    }
-                }
-            },
             TextureMipMaps::Manual { mips } => {
                 // Manual mip map generation
-                for (i, texels) in mips.iter().enumerate() {
+                let iter = mips.iter().enumerate().map(|(x, y)| (x + 1, y));
+                for (i, texels) in iter {
+                    // Downscale the texture extent by two
+                    let downscaled_extent = extent.mip_level_dimensions(i as u8); 
+
+                    log::debug!(
+                        "Creating manual mip-map layer <{i}> for texture, {dimension:?}, <{name}>, {}x{}x{}",
+                        downscaled_extent.width(),
+                        downscaled_extent.height(),
+                        downscaled_extent.depth()
+                    );
+
+                    // Write bytes to the level
                     write_to_level::<Self::T, <Self::Region as Region>::E>(
-                        extent.mip_level_dimensions(i as u8),
+                        downscaled_extent,
                         texels,
                         &texture,
                         aspect,
@@ -332,6 +315,46 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
 
         Ok(())
     }
+}
+
+// Get the number of mip levels that the texture should use
+fn mip_levels<T: Texel, E: Extent>(
+    mipmaps: &TextureMipMaps<T>,
+    extent: E,
+) -> Result<u32, TextureInitializationError> {
+    let max_mip_levels = if matches!(mipmaps, TextureMipMaps::Disabled) {
+        1u8 as u32
+    } else {
+        let max = extent.levels().ok_or(TextureInitializationError::MipMapGenerationNPOT)?;
+        max.get() as u32
+    };
+
+    // Convert Auto to Zeroed (since if this texture was loaded from disk, it would've been Manual instead)
+
+    let levels = match *mipmaps {
+        // Automatic mip level generation, but fills mips with zeroes  
+        TextureMipMaps::Zeroed { clamp } => {
+            let max = clamp.map(|x| x.get()).unwrap_or(u8::MAX);
+            (max as u32).min(max_mip_levels)
+        },
+
+        // Manual mip level generatation, but fills mips with corresponding data 
+        TextureMipMaps::Manual { mips } => {
+            let levels = mips.len() as u32 + 1;
+            levels.min(max_mip_levels)
+        },
+
+        // No mip maps
+        TextureMipMaps::Disabled => 1,
+    };
+
+    log::debug!("Calculated {levels} mip levels for texture with extent {}x{}x{}",
+        extent.width(),
+        extent.height(),
+        extent.depth()
+    );
+
+    Ok(levels)
 }
 
 // Write texels to a single level of a texture

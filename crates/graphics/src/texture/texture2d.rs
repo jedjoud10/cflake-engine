@@ -8,7 +8,7 @@ use smallvec::SmallVec;
 
 use crate::{
     Graphics, ImageTexel, Sampler, SamplerSettings, Texel, Texture,
-    TextureAssetLoadError, TextureMipMaps, TextureMode, TextureUsage, Extent,
+    TextureAssetLoadError, TextureMipMaps, TextureMode, TextureUsage, Extent, TextureInitializationError,
 };
 
 // A 2D texture that contains multiple texels that have their own channels
@@ -122,7 +122,7 @@ impl<T: Texel> Default for TextureImportSettings<'_, T> {
             sampling: SamplerSettings::default(),
             mode: TextureMode::default(),
             usage: TextureUsage::default(),
-            mipmaps: TextureMipMaps::Disabled,
+            mipmaps: TextureMipMaps::Manual { mips: &[] },
         }
     }
 }
@@ -142,6 +142,8 @@ impl<T: ImageTexel> Asset for Texture2D<T> {
         settings: Self::Settings<'s>,
     ) -> Result<Self, Self::Err> {
         let i = Instant::now();
+
+        // Load the texture using the Image crate
         let image = image::load_from_memory(data.bytes())
             .map_err(TextureAssetLoadError::ImageError)?;
         log::debug!(
@@ -150,10 +152,23 @@ impl<T: ImageTexel> Asset for Texture2D<T> {
             data.path()
         );
 
+        // Get 2D dimensions and texel data 
         let dimensions =
             vek::Extent2::new(image.width(), image.height());
         let texels = T::to_image_texels(image);
 
+        // Check if we must generate mip maps
+        if let TextureMipMaps::Manual { mips: &[] } = settings.mipmaps {
+            // Generate each mip's texel data
+            let mips = super::generate_mip_map::<T, vek::Extent2<u32>>(
+                &texels,
+                dimensions
+            ).ok_or(TextureInitializationError::MipMapGenerationNPOT)?;
+        
+            
+        }
+
+        // Create the texture
         Self::from_texels(
             &graphics,
             Some(&texels),
@@ -162,7 +177,6 @@ impl<T: ImageTexel> Asset for Texture2D<T> {
             settings.usage,
             settings.sampling,
             settings.mipmaps,
-        )
-        .map_err(TextureAssetLoadError::Initialization)
+        ).map_err(TextureAssetLoadError::Initialization)
     }
 }

@@ -2,6 +2,7 @@
 pub unsafe trait GpuPodRelaxed:
     bytemuck::AnyBitPattern
     + bytemuck::NoUninit
+    + bytemuck::Zeroable
     + Clone
     + Copy
     + Sync

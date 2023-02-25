@@ -71,6 +71,10 @@ impl Material for Basic {
         group.set_buffer("camera", default.camera_buffer).unwrap();
         group.set_buffer("scene", default.scene_buffer).unwrap();
         group.set_buffer("time", default.timing_buffer).unwrap();
+
+        // Set the scene sky texture
+        group.set_texture("gradient_map", default.sky_gradient).unwrap();
+        group.set_sampler("gradient_map_sampler", default.sky_gradient.sampler()).unwrap();
     }
 
     // Set the instance bindings that will change per material

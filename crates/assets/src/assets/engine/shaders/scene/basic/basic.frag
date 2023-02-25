@@ -13,6 +13,10 @@ layout(location = 4) in vec2 m_tex_coord;
 #include <engine/shaders/common/scene.glsl>
 #include <engine/shaders/common/timing.glsl>
 
+// Sky gradient texture map
+layout(set = 0, binding = 4) uniform texture2D gradient_map;
+layout(set = 0, binding = 5) uniform sampler gradient_map_sampler;
+
 // Material scalar data
 layout(set = 1, binding = 4) uniform MaterialData {
 	vec3 tint;
@@ -40,10 +44,15 @@ void main() {
 		normalize(m_normal));
 	vec3 normal = normalize(tbn * normalize(bumps));
 
+	// Calculate ambient color
+	float y = normal.y;
+	y = clamp(y, 0, 1);
+	vec3 ambient = texture(sampler2D(gradient_map, gradient_map_sampler), vec2(0.5, 1-y)).rgb;
+
 	// Do some basic light calculations
 	vec3 direction = vec3(0, 1, 0);
-	float lighting =  clamp(dot(direction, normal) * 0.8, 0, 1);
-	lighting += 0.1;
+	vec3 lighting = vec3(clamp(dot(direction, normal), 0, 1));
+	lighting += ambient * 0.3;
 
 	// Calculate diffuse lighting
 	frag = vec4(lighting * albedo * material.tint, 1.0);

@@ -45,6 +45,11 @@ impl Material for Sky {
         Compiler::new(frag).compile(assets, graphics).unwrap()
     }
 
+    // Get the required mesh attributes that we need to render a surface
+    fn attributes() -> EnabledMeshAttributes {
+        EnabledMeshAttributes::POSITIONS
+    }
+
     // Sky-spheres are always flipped inside out
     fn primitive_config() -> PrimitiveConfig {
         PrimitiveConfig::Triangles {

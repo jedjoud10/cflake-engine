@@ -24,6 +24,14 @@ pub trait ColorTexel: Texel + Conversion<Target = vek::Vec4<f32>> {
             a: rgba.w as f64,
         })
     }
+
+    // Linearly interpolate between two color texels
+    fn lerp(a: Self::Storage, b: Self::Storage, t: f32) -> Self::Storage {
+        let a = Self::into_target(a);
+        let b = Self::into_target(b);
+        let c = a * (1.0 - t) + b * t;
+        Self::try_from_target(c).unwrap()
+    }
 }
 
 impl<T: Texel + Conversion<Target = vek::Vec4<f32>>> ColorTexel for T {}

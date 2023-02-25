@@ -36,22 +36,24 @@ pub trait Extent: Copy + std::ops::Div<u32, Output = Self> {
 
     // Caclulate the number of mipmap levels that a texture can have
     // Returns None if the extent is a NPOT extent
+    // Returns 1 if the texture only has one mip
     fn levels(&self) -> Option<NonZeroU8> {
         if !self.is_power_of_two() {
             return None;
         }
 
         let cur = self.reduce_max() as f32;
-        let num = cur.log2().floor() + 1.0;
+        let num = cur.log2().floor();
         Some(
-            NonZeroU8::new(u8::try_from(num as u8).unwrap())
+            NonZeroU8::new(u8::try_from(num as u8 + 1).unwrap())
                 .unwrap_or(NonZeroU8::new(1).unwrap()),
         )
     }
 
-    // Calculate the dimensions of a mip map level using it's index (starts from 0)
+    // Calculate the dimensions of a mip map level using it's index
+    // Level equal to 0 meaning that it will return the base extent
     fn mip_level_dimensions(self, level: u8) -> Self {
-        self / (level as u32 + 1)
+        self / 2u32.pow(level as u32)
     }
 
     // Check if an extent is larger in all axii than another one
@@ -68,6 +70,14 @@ pub trait Extent: Copy + std::ops::Div<u32, Output = Self> {
 
     // Create a new extent by cloning a value for all axii
     fn broadcast(val: u32) -> Self;
+
+    // Create a new extent using a width, height, depth
+    fn new(w: u32, h: u32, d: u32) -> Self;
+
+    // Decompose the extent to w, h, d
+    fn decompose(&self) -> (u32, u32, u32) {
+        (self.width(), self.height(), self.depth())
+    }
 
     // Get the dimensionality of the extent (1, 2, or 3)
     fn dimensionality() -> TextureDimension;
@@ -109,6 +119,10 @@ impl Extent for vek::Extent2<u32> {
 
     fn broadcast(val: u32) -> Self {
         vek::Extent2::broadcast(val)
+    }
+
+    fn new(w: u32, h: u32, _: u32) -> Self {
+        vek::Extent2::new(w, h)
     }
 }
 
@@ -152,6 +166,10 @@ impl Extent for vek::Extent3<u32> {
 
     fn broadcast(val: u32) -> Self {
         vek::Extent3::broadcast(val)
+    }
+
+    fn new(w: u32, h: u32, d: u32) -> Self {
+        vek::Extent3::new(w, h, d)
     }
 }
 

@@ -390,3 +390,32 @@ mod vertex {
         );
     }
 }
+
+#[cfg(test)]
+mod region {
+    use crate::Extent;
+
+    #[test]
+    fn levels() {
+        fn broadcast(x: u32) -> vek::Extent2<u32> {
+            vek::Extent2::broadcast(x)
+        }
+
+        fn levels(x: u32) -> u32 {
+            broadcast(x).levels().unwrap().get() as u32
+        }
+
+        assert_eq!(levels(1), 1);
+        assert_eq!(levels(2), 2);
+        assert_eq!(levels(4), 3);
+        assert_eq!(levels(8), 4);
+        assert_eq!(levels(16), 5);
+        assert_eq!(levels(32), 6);
+        assert_eq!(levels(64), 7);
+        assert_eq!(levels(128), 8);
+        assert_eq!(levels(256), 9);
+        assert_eq!(levels(512), 10);
+        assert_eq!(levels(1024), 11);
+        assert_eq!(levels(2048), 12);
+    }
+}
