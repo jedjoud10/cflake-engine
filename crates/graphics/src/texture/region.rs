@@ -74,9 +74,9 @@ pub trait Extent: Copy + std::ops::Div<u32, Output = Self> {
     // Create a new extent using a width, height, depth
     fn new(w: u32, h: u32, d: u32) -> Self;
 
-    // Decompose the extent to w, h, d
-    fn decompose(&self) -> (u32, u32, u32) {
-        (self.width(), self.height(), self.depth())
+    // Convert the extent to Extent3D
+    fn decompose(&self) -> vek::Extent3<u32> {
+        vek::Extent3::new(self.width(), self.height(), self.depth())
     }
 
     // Get the dimensionality of the extent (1, 2, or 3)

@@ -1,5 +1,7 @@
 use std::num::NonZeroU8;
 
+use bytemuck::Zeroable;
+
 use super::{Region, Texture};
 use crate::{
     Extent, RenderTarget, Texel, TextureAsTargetError,
@@ -7,7 +9,7 @@ use crate::{
 };
 
 // This enum tells the texture how exactly it should create it's mipmaps
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[derive(PartialEq, Eq, Hash, Debug)]
 pub enum TextureMipMaps<'mip, 'map, T: Texel> {
     // Disable mipmap generation for the texture
     Disabled,
@@ -37,31 +39,110 @@ impl<T: Texel> Default for TextureMipMaps<'_, '_, T> {
     }
 }
 
+impl<T: Texel> Copy for TextureMipMaps<'_, '_, T> {}
+
+impl<T: Texel> Clone for TextureMipMaps<'_, '_, T> {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Disabled => Self::Disabled,
+            Self::Zeroed { clamp } => Self::Zeroed { clamp: clamp.clone() },
+            Self::Manual { mips } => Self::Manual { mips: mips.clone() },
+        }
+    }
+}
+
 // Calculate mip levels based on the given color data and size
 // Returns None if the texture isn't a power of two texture
 pub fn generate_mip_map<T: ColorTexel, E: Extent>(
     base: &[T::Storage],
     extent: E,
 ) -> Option<Vec<Vec<T::Storage>>> {
+    // Convert a xyz value to an index (texel)
+    fn xyz_to_index(
+        location: vek::Vec3<usize>,
+        extent: vek::Extent3<usize>,
+    ) -> usize {
+        location.x + location.y * extent.w + location.z * (extent.w*extent.h)
+    }
+
     // Create manual mip maps for this texture
     let dimension = <E as Extent>::dimensionality();
     let name = utils::pretty_type_name::<T>();
     let levels = extent.levels()?.get() as u32;
+    let mut map = 
+        Vec::<Vec<T::Storage>>::with_capacity(levels as usize);
+    let mut temp = extent;
+    let mut base = base.to_vec();
     log::debug!("Creating mip-data (max = {levels})for imported texture {dimension:?}, <{name}>");
 
     // Iterate over the levels and fill them up
     // (like how ceddy weddy fills me up inside >.<) 
-    for i in 1..levels {
-        let downscaled = extent.mip_level_dimensions(i as u8); 
+    for i in 0..(levels-1) {
+        // Pre-allocate a vector that will contain the downscaled texels
+        let downscaled = extent.mip_level_dimensions(i as u8+1);
+        let mut texels: Vec<<T as Texel>::Storage> = vec![
+            <T::Storage as Zeroable>::zeroed();
+            downscaled.area() as usize
+        ];
+
+        // Get the original and downscaled sizes
+        let original = temp.decompose();
+        let new = downscaled.decompose();
+
+        // Division factor is either 2, 4, or 8 (based on dims)
+        let factor = match dimension {
+            wgpu::TextureDimension::D1 => 2,
+            wgpu::TextureDimension::D2 => 4,
+            wgpu::TextureDimension::D3 => 8,
+        };
+
         log::debug!(
             "Create mipdata for layer <{i}> from imported image, {}x{}x{}",
             downscaled.width(),
             downscaled.height(),
             downscaled.depth()
         );
+
+        // Write to the downscaled texels
+        for ox in 0..original.w {
+            for oy in 0..original.h {
+                for oz in 0..original.d {                    
+                    // Get the current texel value
+                    let texel = base[xyz_to_index(
+                        vek::Vec3::new(
+                            ox,
+                            oy,
+                            oz
+                        ).as_::<usize>(),
+                        original.as_::<usize>()
+                    )];
+
+                    // La division est vraiment importante pour qu'on evite un overflow
+                    let texel = T::divide(texel, factor as f32);
+
+                    // Get the destination texel value
+                    let dst = &mut texels[xyz_to_index(
+                        vek::Vec3::new(
+                            ox / 2,
+                            oy / 2,
+                            oz / 2
+                        ).as_::<usize>(),
+                        new.as_::<usize>()
+                    )];
+
+                    // Sum to the destination
+                    *dst += texel;
+                }
+            }
+        }
+
+        // Overwrite temp buffers
+        temp = downscaled;
+        base[..(downscaled.area() as usize)].copy_from_slice(&texels); 
+        map.push(texels);
     }
 
-    todo!()
+    Some(map)
 }
 
 // An immutable mip level that we can use to read from the texture

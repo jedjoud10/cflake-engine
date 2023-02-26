@@ -108,7 +108,7 @@ impl<T: Texel> Texture for Texture2D<T> {
 }
 
 // Texture settings that we shall use when loading in a new texture
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct TextureImportSettings<'m, T: Texel> {
     pub sampling: SamplerSettings,
     pub mode: TextureMode,
@@ -139,7 +139,7 @@ impl<T: ImageTexel> Asset for Texture2D<T> {
     fn deserialize<'c, 's>(
         data: assets::Data,
         graphics: Self::Context<'c>,
-        settings: Self::Settings<'s>,
+        mut settings: Self::Settings<'s>,
     ) -> Result<Self, Self::Err> {
         let i = Instant::now();
 
@@ -158,15 +158,33 @@ impl<T: ImageTexel> Asset for Texture2D<T> {
         let texels = T::to_image_texels(image);
 
         // Check if we must generate mip maps
-        if let TextureMipMaps::Manual { mips: &[] } = settings.mipmaps {
-            // Generate each mip's texel data
-            let mips = super::generate_mip_map::<T, vek::Extent2<u32>>(
+        let generate_mip_maps = if let TextureMipMaps::Manual { mips: &[] } = settings.mipmaps {
+            true
+        } else {
+            false
+        };
+
+        // Generate each mip's texel data
+        let mips = if generate_mip_maps {
+            Some(super::generate_mip_map::<T, vek::Extent2<u32>>(
                 &texels,
                 dimensions
-            ).ok_or(TextureInitializationError::MipMapGenerationNPOT)?;
-        
-            
-        }
+            ).ok_or(TextureAssetLoadError::Initialization(
+                TextureInitializationError::MipMapGenerationNPOT
+            ))?)
+        } else { None };
+
+        // Convert the vecs to slices
+        let mips = mips.as_ref().map(|mips| {
+            mips.iter().map(|x| x.as_slice()).collect::<Vec<_>>()
+        });
+
+        // Overwrite the Manual mip map layers if they were empty to begin with
+        let mipmaps = if generate_mip_maps {
+            TextureMipMaps::Manual { mips: &mips.as_ref().unwrap() }
+        } else {
+            settings.mipmaps
+        };
 
         // Create the texture
         Self::from_texels(
@@ -176,7 +194,7 @@ impl<T: ImageTexel> Asset for Texture2D<T> {
             settings.mode,
             settings.usage,
             settings.sampling,
-            settings.mipmaps,
+            mipmaps,
         ).map_err(TextureAssetLoadError::Initialization)
     }
 }

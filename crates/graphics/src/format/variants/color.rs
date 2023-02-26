@@ -25,12 +25,11 @@ pub trait ColorTexel: Texel + Conversion<Target = vek::Vec4<f32>> {
         })
     }
 
-    // Linearly interpolate between two color texels
-    fn lerp(a: Self::Storage, b: Self::Storage, t: f32) -> Self::Storage {
-        let a = Self::into_target(a);
-        let b = Self::into_target(b);
-        let c = a * (1.0 - t) + b * t;
-        Self::try_from_target(c).unwrap()
+    // Divide the texel by the given factor
+    // TODO: Optimize
+    fn divide(texel: Self::Storage, factor: f32) -> Self::Storage {
+        let a = Self::into_target(texel) / factor;
+        Self::try_from_target(a).unwrap()
     }
 }
 
