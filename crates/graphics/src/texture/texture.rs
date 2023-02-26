@@ -263,15 +263,18 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
             return Err(TextureResizeError::MipMappingUnsupported);
         }
 
-        // If the extent contains a 0 in any axii, it's invalid
         if !extent.is_valid() {
             return Err(TextureResizeError::InvalidExtent);
         }
 
-        // If the extent is greater than the physical limits, it's invalid
         if !size_within_limits(&graphics, extent) {
             return Err(TextureResizeError::ExtentLimit);
         }
+
+        if self.mode() != TextureMode::Resizable {
+            return Err(TextureResizeError::NotResizable);
+        }
+
 
         // Same size; not going to resize
         if extent == self.dimensions() {
@@ -488,7 +491,7 @@ fn extent_to_extent3d<E: Extent>(dimensions: E) -> wgpu::Extent3d {
     extent
 }
 
-// Convert the valid texture usages
+// Get the texture usages from the texture usage wrapper
 // Does not check for validity
 fn texture_usages(usage: TextureUsage) -> wgpu::TextureUsages {
     let mut usages = wgpu::TextureUsages::empty();

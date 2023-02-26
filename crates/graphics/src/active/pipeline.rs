@@ -166,7 +166,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
                         &self.graphics,
                         &data,
                         BufferMode::Resizable,
-                        BufferUsage::WRITE
+                        BufferUsage::WRITE | BufferUsage::COPY_SRC
                     ).unwrap();
                     vacant.insert(vec![(buffer, true)]);
                     filled_up_ubos.push(0);

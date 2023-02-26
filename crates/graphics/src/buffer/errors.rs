@@ -13,6 +13,9 @@ pub enum BufferInitializationError {
 
     #[error("The given buffer usage contains the READ flag, but there isn't the COPY_SRC flag")]
     ReadableWithoutCopySrc,
+
+    #[error("The given buffer mode is Resizable, but there isn't the COPY_SRC flag in the usages")]
+    ResizableWithoutCopySrc,
 }
 
 #[derive(Error, Debug)]

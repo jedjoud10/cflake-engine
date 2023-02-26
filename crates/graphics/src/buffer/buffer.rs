@@ -159,16 +159,12 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
             return Err(BufferInitializationError::ReadableWithoutCopySrc);
         } else if usage.contains(BufferUsage::WRITE) && !usage.contains(BufferUsage::COPY_DST) {
             return Err(BufferInitializationError::WritableWithoutCopyDst);
+        } if mode == BufferMode::Resizable && !usage.contains(BufferUsage::COPY_SRC) {
+            return Err(BufferInitializationError::ResizableWithoutCopySrc);
         }
 
         // Wgpu usages for this buffer
-        let mut wgpu_usages = variant;
-        if usage.contains(BufferUsage::COPY_SRC) {
-            wgpu_usages |= wgpu::BufferUsages::COPY_SRC;
-        }
-        if usage.contains(BufferUsage::COPY_DST) {
-            wgpu_usages |= wgpu::BufferUsages::COPY_DST;
-        }
+        let wgpu_usages = buffer_usages(variant, usage);
 
         // Convert the slice into bytes
         let bytes = bytemuck::cast_slice::<T, u8>(slice);
@@ -187,7 +183,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
         let capacity = (buffer.size() / stride) as usize;
 
         let name = utils::pretty_type_name::<T>();
-        log::debug!("Creating buffer [{name}; cap = {capacity}], usage: {variant:?}");
+        log::debug!("Creating buffer [{name}; cap = {capacity}], usage: {wgpu_usages:?}");
 
         // Create the struct and return it
         Ok(Self {
@@ -214,6 +210,18 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
         buffer.length = 0;
         Ok(buffer)
     }
+}
+
+// Get the buffer usages from the buffer variant and usage wrapper
+fn buffer_usages(variant: wgpu::BufferUsages, usage: BufferUsage) -> wgpu::BufferUsages {
+    let mut wgpu_usages = variant;
+    if usage.contains(BufferUsage::COPY_SRC) {
+        wgpu_usages |= wgpu::BufferUsages::COPY_SRC;
+    }
+    if usage.contains(BufferUsage::COPY_DST) {
+        wgpu_usages |= wgpu::BufferUsages::COPY_DST;
+    }
+    wgpu_usages
 }
 
 // Implementation of util methods
@@ -485,9 +493,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
         let variant = wgpu::BufferUsages::from_bits(TYPE).unwrap();
 
         // Wgpu usages for primary buffer
-        let usage = variant
-            | wgpu::BufferUsages::COPY_SRC
-            | wgpu::BufferUsages::COPY_DST;
+        let usage = buffer_usages(variant, self.usage);
 
         // Check if we need to allocate a new buffer
         if slice.len() + self.length > self.capacity {

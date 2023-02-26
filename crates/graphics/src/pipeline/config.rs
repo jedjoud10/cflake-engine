@@ -1,6 +1,6 @@
 use crate::{Vertex, VertexInfo};
 use std::marker::PhantomData;
-pub use wgpu::{Face, FrontFace};
+pub use wgpu::{Face};
 use wgpu::{ShaderLocation, VertexFormat, VertexStepMode};
 
 // Blend config for a single color attachment
@@ -22,6 +22,7 @@ pub struct DepthConfig {
 }
 
 pub type CompareFunction = wgpu::CompareFunction;
+pub type WindingOrder = wgpu::FrontFace;
 pub type StencilConfig = wgpu::StencilState;
 
 // Depicts the exact primitives we will use to draw the VAOs
@@ -29,7 +30,7 @@ pub type StencilConfig = wgpu::StencilState;
 pub enum PrimitiveConfig {
     // The pipeline will draw triangles onto the screen
     Triangles {
-        winding_order: FrontFace,
+        winding_order: WindingOrder,
         cull_face: Option<Face>,
         wireframe: bool,
     },
@@ -45,7 +46,7 @@ pub enum PrimitiveConfig {
 
 // This vertex config describes how vertices or more specifically, "vertex buffers" should be read
 // This maps the vertex buffer bindings directly to be usable by a render pass
-#[derive(Debug)]
+#[derive(Default, Debug)]
 pub struct VertexConfig {
     pub inputs: Vec<VertexInputInfo>,
 }

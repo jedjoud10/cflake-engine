@@ -63,7 +63,7 @@ fn init(world: &mut World) {
     
     // Create a new material instance
     let material = basics.insert(Basic {
-        albedo_map: None,
+        albedo_map: Some(diffuse),
         normal_map: Some(normal),
         bumpiness: 1.0,
         tint: vek::Rgb::one(),

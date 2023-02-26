@@ -11,6 +11,13 @@ fn main() {
 
 // Executed at the start
 fn init(world: &mut World) {
+    let graphics = world.get::<Graphics>().unwrap();
+    let buffer = StorageBuffer::<u32>::from_slice(
+        &graphics,
+        &[],
+        BufferMode::Resizable,
+        BufferUsage::COPY_SRC
+    ).unwrap();
 }
 
 // Camera controller update executed every tick

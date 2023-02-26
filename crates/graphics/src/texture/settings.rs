@@ -16,7 +16,7 @@ bitflags::bitflags! {
         const SAMPLED = 1;
 
         // This texture will be used as a render target attachment
-        const RENDER_TARGET = 2;
+        const RENDER_TARGET = 2 | Self::COPY_SRC.bits;
 
         // Data can be copied from the texture on the GPU side
         const COPY_SRC = 4;

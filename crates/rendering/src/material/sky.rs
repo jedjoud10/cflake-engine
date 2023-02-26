@@ -10,7 +10,7 @@ use assets::Assets;
 use graphics::{
     BindGroup, Compiled, Compiler, FragmentModule, Graphics,
     Normalized, Sampler, Shader, Texture2D, UniformBuffer,
-    VertexModule, RGBA, Texture, ValueFiller, PushConstants, PrimitiveConfig, FrontFace, Face,
+    VertexModule, RGBA, Texture, ValueFiller, PushConstants, PrimitiveConfig, WindingOrder, Face,
 };
 use utils::{Handle, Storage};
 
@@ -53,7 +53,7 @@ impl Material for Sky {
     // Sky-spheres are always flipped inside out
     fn primitive_config() -> PrimitiveConfig {
         PrimitiveConfig::Triangles {
-            winding_order: FrontFace::Ccw,
+            winding_order: WindingOrder::Ccw,
             cull_face: Some(Face::Front),
             wireframe: false,
         }

@@ -1,7 +1,7 @@
 use crate::{
     AlbedoMap, Sky, Camera, CameraUniform,
     DefaultMaterialResources, ForwardRenderer,
-    ForwardRendererRenderPass, Mesh, NormalMap, Pipelines, Renderer, Basic,
+    SceneRenderPass, Mesh, NormalMap, Pipelines, Renderer, Basic, PostProcess,
 };
 use assets::Assets;
 use ecs::Scene;
@@ -13,20 +13,22 @@ use std::{mem::ManuallyDrop, sync::Arc};
 use utils::{Storage, Time};
 use world::{post_user, user, System, World, WindowEvent};
 
-// Add the compositors and setup the world for rendering
-fn init(world: &mut World) {
+// Add the scene resources and setup for rendering
+fn init_scene_renderers(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
     let window = world.get::<Window>().unwrap();
     let mut assets = world.get_mut::<Assets>().unwrap();
 
-    // Create the scene renderer, pipeline manager, and  commonly used textures
+    // Create the scene renderer, pipeline manager, and post-processing
     let renderer = ForwardRenderer::new(&graphics, &mut assets, window.size());
     let pipelines = Pipelines::new();
 
-    // Add composites and basic storages
+    // Drop fetched resources
     drop(graphics);
     drop(window);
     drop(assets);
+
+    // Add composites and basic storages
     world.insert(renderer);
     world.insert(pipelines);
 
@@ -42,7 +44,7 @@ fn init(world: &mut World) {
 
 
 // Handle window resizing the depth texture
-fn event(world: &mut World, event: &mut WindowEvent) {
+fn window_event(world: &mut World, event: &mut WindowEvent) {
     match event {
         // Window has been resized
         WindowEvent::Resized(size) => {
@@ -55,8 +57,9 @@ fn event(world: &mut World, event: &mut WindowEvent) {
             let size = vek::Extent2::new(size.width, size.height);
             let mut renderer = world.get_mut::<ForwardRenderer>().unwrap();
 
-            // Resize the depth texture
+            // Resize the color and depth texture
             renderer.depth_texture.resize(size).unwrap();
+            renderer.color_texture.resize(size).unwrap();
         }
 
         _ => (),
@@ -87,20 +90,12 @@ fn update_camera(world: &mut World) {
         camera.set_aspect_ratio(aspect);
         camera.update(location, rotation);
 
-        let opengl_to_wgpu_matrix: vek::Mat4<f32> = vek::Mat4::new(
-            1.0, 0.0, 0.0, 0.0,
-            0.0, 1.0, 0.0, 0.0,
-            0.0, 0.0, 0.5, 0.0,
-            0.0, 0.0, 0.5, 1.0,
-        ).inverted();
-        let opengl_to_wgpu_matrix = vek::Mat4::<f32>::identity();
-
         // Convert the camera to uniform data
-        let projection = (opengl_to_wgpu_matrix * *camera.projection_matrix()).cols;
-        let view = (opengl_to_wgpu_matrix * *camera.view_matrix()).cols;
+        let projection = (*camera.projection_matrix()).cols;
+        let view = (*camera.view_matrix()).cols;
         let inverse_projection =
-            (opengl_to_wgpu_matrix * camera.projection_matrix().inverted()).cols;
-        let inverse_view = (opengl_to_wgpu_matrix * camera.view_matrix().inverted()).cols;
+            (camera.projection_matrix().inverted()).cols;
+        let inverse_view = (camera.view_matrix().inverted()).cols;
 
         // Create the struct that contains the UBO data
         let data = CameraUniform {
@@ -159,24 +154,23 @@ fn update_matrices(world: &mut World) {
     }
 }
 
-// Clear the window and render the entities
+// Clear the window and render the entities to the texture
 fn render_update(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
-    let mut window = world.get_mut::<Window>().unwrap();
     let mut renderer = world.get_mut::<ForwardRenderer>().unwrap();
     let renderer = &mut *renderer;
     let pipelines = world.get::<Pipelines>().unwrap();
     let meshes = world.get::<Storage<Mesh>>().unwrap();
 
     // Get textures, pipelines, and encoder
-    let view = window.as_render_target().unwrap();
+    let color = renderer.color_texture.as_render_target().unwrap();
     let depth = renderer.depth_texture.as_render_target().unwrap();
     let pipelines = pipelines.extract_pipelines();
     let mut encoder = graphics.acquire();
 
-    // Activate the render pass
+    // Begin the render pass
     let mut render_pass =
-        renderer.render_pass.begin(&mut encoder, view, depth).unwrap();
+        renderer.render_pass.begin(&mut encoder, color, depth).unwrap();
 
     // Skip if we don't have a camera to draw with
     if renderer.main_camera.is_none() {
@@ -208,10 +202,57 @@ fn render_update(world: &mut World) {
     graphics.submit([encoder]);
 }
 
-// The rendering system will be resposible for iterating through the entities and displaying them
+// Inserts the final render pass renderer and post processing params
+fn init_display_pp(world: &mut World) {
+    let graphics = world.get::<Graphics>().unwrap();
+    let mut assets = world.get_mut::<Assets>().unwrap();
+    let pp = PostProcess::new(&graphics, &mut assets);
+    drop(graphics);
+    drop(assets);
+    world.insert(pp);
+}
+
+// Displays the rendered scene texture to the actual window texture (post-processing pass)
+fn display(world: &mut World) {
+    let graphics = world.get::<Graphics>().unwrap();
+    let renderer = world.get::<ForwardRenderer>().unwrap();
+    let mut window = world.get_mut::<Window>().unwrap();
+    let mut postprocess = world.get_mut::<PostProcess>().unwrap();
+    let postprocess = &mut *postprocess;
+
+    // Get textures, pipelines, and encoder
+    let src = &renderer.color_texture;
+    let dst = window.as_render_target().unwrap();
+    let mut encoder = graphics.acquire();
+
+    // Begin the render pass
+    let mut render_pass =
+        postprocess.render_pass.begin(&mut encoder, dst, ()).unwrap();
+
+    // Bind the graphics pipeline
+    let mut active = render_pass.bind_pipeline(&postprocess.pipeline);
+
+    // Set the required shader uniforms
+    /*
+    active.set_bind_group(0, |group| {
+        group.fill_ubo("parameters", |fill| {
+        }).unwrap();
+    });
+    */
+
+    // Draw 6 vertices (2 tris)
+    active.draw(0..6, 0..1);
+
+    drop(render_pass);
+
+    // Submit the encoder at the end
+    graphics.submit([encoder]);
+} 
+
+// The rendering system will be resposible for iterating through the entities and rendering them to the backbuffer texture
 pub fn rendering_system(system: &mut System) {
     system
-        .insert_init(init)
+        .insert_init(init_scene_renderers)
         .before(user)
         .after(graphics::common);
     system
@@ -219,9 +260,20 @@ pub fn rendering_system(system: &mut System) {
         .after(graphics::acquire)
         .before(graphics::present);
     system
-        .insert_window(event)
+        .insert_window(window_event)
         .after(graphics::common)
         .before(user);
+}
+
+// The display system will be responsible for displaying the renderered scene textures to the scene
+pub fn display_system(system: &mut System) {
+    system.insert_init(init_display_pp)
+        .before(user)
+        .after(graphics::common);
+    system.insert_update(display)
+        .after(rendering_system)
+        .after(graphics::acquire)
+        .before(graphics::present);
 }
 
 // The camera system will be responsible for updating the camera UBO and matrices

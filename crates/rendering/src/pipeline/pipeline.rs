@@ -4,7 +4,7 @@ use crate::{
         MAX_MESH_VERTEX_ATTRIBUTES,
     },
     DefaultMaterialResources, EnabledMeshAttributes,
-    ForwardRendererRenderPass, Material, Mesh, MeshAttribute,
+    SceneRenderPass, Material, Mesh, MeshAttribute, ActiveSceneRenderPass, SceneColor, SceneDepth,
 };
 use assets::Assets;
 use graphics::{
@@ -28,7 +28,7 @@ impl<M: Material> Clone for MaterialId<M> {
 // A material pipeline will be responsible for rendering surface and
 // entities that correspond to a specific material type.
 pub struct Pipeline<M: Material> {
-    pipeline: GraphicsPipeline<SwapchainFormat, Depth<f32>>,
+    pipeline: GraphicsPipeline<SceneColor, SceneDepth>,
     shader: Shader,
     _phantom: PhantomData<M>,
 }
@@ -96,12 +96,7 @@ pub trait DynamicPipeline {
         world: &'r World,
         meshes: &'r Storage<Mesh>,
         default: &'r DefaultMaterialResources,
-        render_pass: &mut ActiveRenderPass<
-            'r,
-            '_,
-            SwapchainFormat,
-            Depth<f32>,
-        >,
+        render_pass: &mut ActiveSceneRenderPass<'r, '_>,
     );
 }
 
@@ -111,12 +106,7 @@ impl<M: Material> DynamicPipeline for Pipeline<M> {
         world: &'r World,
         meshes: &'r Storage<Mesh>,
         default: &'r DefaultMaterialResources,
-        render_pass: &mut ActiveRenderPass<
-            'r,
-            '_,
-            SwapchainFormat,
-            Depth<f32>,
-        >,
+        render_pass: &mut ActiveSceneRenderPass<'r, '_>,
     ) {
         super::render_surfaces::<M>(
             world,

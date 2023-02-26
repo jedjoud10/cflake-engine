@@ -12,7 +12,7 @@ use graphics::{
     Operation, PipelineInitializationError, RenderPass,
     SamplerSettings, StoreOp, SwapchainFormat, Texel, Texture,
     Texture2D, TextureMipMaps, TextureMode, TextureUsage,
-    UniformBuffer, BGRA, RGBA, Depth, SamplerFilter, SamplerWrap, SamplerMipMaps, TextureImportSettings,
+    UniformBuffer, BGRA, RGBA, Depth, SamplerFilter, SamplerWrap, SamplerMipMaps, TextureImportSettings, ActiveRenderPass, ActiveGraphicsPipeline,
 };
 use std::{
     any::TypeId, cell::RefCell, marker::PhantomData,
@@ -20,13 +20,20 @@ use std::{
 };
 
 // Renderpass that will render the scene
-pub type ForwardRendererRenderPass = RenderPass<SwapchainFormat, Depth<f32>>;
+pub type SceneColor = RGBA<Normalized<u8>>;
+pub type SceneDepth = Depth<f32>;
+pub type SceneRenderPass = RenderPass<SceneColor, SceneDepth>;
+pub type ActiveSceneRenderPass<'r, 't> = ActiveRenderPass<'r, 't, SceneColor, SceneDepth>;
+pub type ActiveScenePipeline<'a, 'r, 't> = ActiveGraphicsPipeline<'a, 'r, 't, SceneColor, SceneDepth>;
 
 // Keeps tracks of data that we use for rendering the scene
 pub struct ForwardRenderer {
     // Main render pass that we will use to render to the swapchain
-    pub(crate) render_pass: ForwardRendererRenderPass,
-    pub(crate) depth_texture: Texture2D<Depth<f32>>,
+    pub(crate) render_pass: SceneRenderPass,
+    
+    // Since we use post processing, we will write to a texture instead
+    pub(crate) color_texture: Texture2D<SceneColor>,
+    pub(crate) depth_texture: Texture2D<SceneDepth>,
 
     // Main camera entity that we use to render the scene
     pub main_camera: Option<Entity>,
@@ -78,12 +85,27 @@ fn create_texture2d<T: Texel>(
 impl ForwardRenderer {
     // Create a new scene render pass and the forward renderer
     pub(crate) fn new(graphics: &Graphics, assets: &mut Assets, extent: vek::Extent2<u32>) -> Self {
-        // Create the depth texture for the forward shading scene pass
+        // Create the render pass color texture
+        let color_texture = Texture2D::<RGBA<Normalized<u8>>>::from_texels(
+            graphics,
+            None,
+            extent,
+            TextureMode::Resizable,
+            TextureUsage::RENDER_TARGET,
+            SamplerSettings {
+                filter: SamplerFilter::Linear,
+                wrap: SamplerWrap::Repeat,
+                mipmaps: SamplerMipMaps::Auto,
+            },
+            TextureMipMaps::Disabled
+        ).unwrap();
+
+        // Create the render pass depth texture
         let depth_texture = Texture2D::<Depth::<f32>>::from_texels(
             graphics,
             None,
             extent,
-            TextureMode::Dynamic,
+            TextureMode::Resizable,
             TextureUsage::RENDER_TARGET,
             SamplerSettings {
                 filter: SamplerFilter::Linear,
@@ -94,7 +116,7 @@ impl ForwardRenderer {
         ).unwrap();
 
         // Create the forward shading scene pass
-        let render_pass = ForwardRendererRenderPass::new(
+        let render_pass = SceneRenderPass::new(
             &graphics,
             Operation {
                 load: LoadOp::Clear(vek::Vec4::broadcast(0)),
@@ -116,39 +138,53 @@ impl ForwardRenderer {
             }
         )).unwrap();
 
+        // Create the default 1x1 textures
+        let white = create_texture2d::<AlbedoTexel>(
+            graphics,
+            vek::Vec3::broadcast(255).with_w(255),
+        );
+
+        let black = create_texture2d::<AlbedoTexel>(
+            graphics,
+            vek::Vec4::broadcast(0),
+        );
+            
+        let normal = create_texture2d::<NormalTexel>(
+            graphics,
+            vek::Vec3::new(127, 127, 255).with_w(255),
+        );
+
+        // Create the default buffers    
+        let camera_buffer = create_uniform_buffer::<CameraUniform>(
+            graphics,
+        );
+            
+        let timing_buffer = create_uniform_buffer::<TimingUniform>(
+            graphics,
+        );
+            
+        let scene_buffer = create_uniform_buffer::<SceneUniform>(
+            graphics,
+        );
+            
         Self {
-            // Render pass and it's depth texture
+            // Render pass, color texture, and depth texture
             render_pass,
+            color_texture,
             depth_texture,
 
             // Create the common material buffers
-            camera_buffer: create_uniform_buffer::<CameraUniform>(
-                graphics,
-            ),
-            timing_buffer: create_uniform_buffer::<TimingUniform>(
-                graphics,
-            ),
-            scene_buffer: create_uniform_buffer::<SceneUniform>(
-                graphics,
-            ),
+            camera_buffer,
+            timing_buffer,
+            scene_buffer,
 
             // Create the 1x1 common textures
-            white: create_texture2d::<AlbedoTexel>(
-                graphics,
-                vek::Vec3::broadcast(255).with_w(255),
-            ),
-            black: create_texture2d::<AlbedoTexel>(
-                graphics,
-                vek::Vec4::broadcast(0),
-            ),
-            normal: create_texture2d::<NormalTexel>(
-                graphics,
-                vek::Vec3::new(127, 127, 255).with_w(255),
-            ),
+            white,
+            black,
+            normal,
 
             // No default camera
             main_camera: None,
-
             sky_gradient,
         }
     }

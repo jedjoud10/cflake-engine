@@ -6,7 +6,7 @@ use crate::{
 use assets::Assets;
 use graphics::{
     BindGroup, BlendConfig, Compiled, DepthConfig, FragmentModule,
-    FrontFace, Graphics, Normalized, PrimitiveConfig, StencilConfig,
+    WindingOrder, Graphics, Normalized, PrimitiveConfig, StencilConfig,
     Texture2D, UniformBuffer, VertexModule, RGBA, PushConstants, CompareFunction,
 };
 use world::World;
@@ -71,7 +71,7 @@ pub trait Material: 'static + Sized {
     // Get the rasterizer config for this materil
     fn primitive_config() -> PrimitiveConfig {
         PrimitiveConfig::Triangles {
-            winding_order: FrontFace::Cw,
+            winding_order: WindingOrder::Cw,
             cull_face: Some(graphics::Face::Front),
             wireframe: false,
         }

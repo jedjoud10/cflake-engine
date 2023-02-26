@@ -1,7 +1,7 @@
 use crate::{
     attributes::{Position, RawPosition},
     DefaultMaterialResources, EnabledMeshAttributes, Material, Mesh,
-    MeshAttribute, Renderer, Surface,
+    MeshAttribute, Renderer, Surface, ActiveSceneRenderPass, SceneColor, SceneDepth, ActiveScenePipeline,
 };
 use ecs::Scene;
 use graphics::{
@@ -19,13 +19,7 @@ pub(crate) fn set_vertex_buffer_attribute<
 >(
     supported: EnabledMeshAttributes,
     mesh: &'r Mesh,
-    active: &mut ActiveGraphicsPipeline<
-        'a,
-        'r,
-        '_,
-        SwapchainFormat,
-        Depth<f32>,
-    >,
+    active: &mut ActiveScenePipeline<'a, 'r, '_>,
 ) {
     // If the material doesn't support the attribute, no need to set it
     if !supported.contains(A::ATTRIBUTE) {
@@ -51,9 +45,9 @@ fn filter<M: Material>(mesh: &Mesh, renderer: &Renderer) -> bool {
 pub(super) fn render_surfaces<'r, M: Material>(
     world: &'r World,
     meshes: &'r Storage<Mesh>,
-    pipeline: &'r GraphicsPipeline<SwapchainFormat, Depth<f32>>,
+    pipeline: &'r GraphicsPipeline<SceneColor, SceneDepth>,
     default: &'r DefaultMaterialResources,
-    render_pass: &mut ActiveRenderPass<'r, '_, SwapchainFormat, Depth<f32>>,
+    render_pass: &mut ActiveSceneRenderPass<'r, '_>,
 ) {
     // Get a rasterizer for the current render pass by binding a pipeline
     let mut active = render_pass.bind_pipeline(pipeline);

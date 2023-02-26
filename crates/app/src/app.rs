@@ -357,22 +357,29 @@ impl App {
         sleeper
     }
 
+    // Internal function to help us add systems
+    fn regsys(&mut self, sys: impl FnOnce(&mut System) + 'static) {
+        self.systems.insert(sys);
+    }
+
     // Insert the required default systems
     fn insert_default_systems(mut self, receiver: mpsc::Receiver<String>) -> Self {
-        self = self.insert_system(input::system);
-        self = self.insert_system(ecs::system);
-        self = self.insert_system(ecs::hierarchy);
-        self = self.insert_system(world::system);
-        self = self.insert_system(utils::threadpool);
-        self = self.insert_system(utils::time);
-        self = self.insert_system(audio::system);
-        self = self.insert_system(networking::system);
-        self = self.insert_system(graphics::common);
-        self = self.insert_system(graphics::acquire);
-        self = self.insert_system(graphics::present);
-        self = self.insert_system(rendering::rendering_system);
-        self = self.insert_system(rendering::camera_system);
-        self = self.insert_system(rendering::matrix_system);
+        // TODO: Create plugins to remove this shit
+        self.regsys(input::system);
+        self.regsys(ecs::system);
+        self.regsys(ecs::hierarchy);
+        self.regsys(world::system);
+        self.regsys(utils::threadpool);
+        self.regsys(utils::time);
+        self.regsys(audio::system);
+        self.regsys(networking::system);
+        self.regsys(graphics::common);
+        self.regsys(graphics::acquire);
+        self.regsys(graphics::present);
+        self.regsys(rendering::rendering_system);
+        self.regsys(rendering::camera_system);
+        self.regsys(rendering::matrix_system);
+        self.regsys(rendering::display_system);
 
         // Insert the IO manager
         let author = self.author_name.clone();

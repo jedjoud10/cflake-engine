@@ -37,7 +37,7 @@ impl<M: ShaderModule> Compiler<M> {
     // Create a compiler that will execute over the given module
     pub fn new(module: M) -> Self {
         let (file_name, source) = module.into_raw_parts();
-        log::debug!("Created a new compiler for {}", file_name);
+        log::debug!("Created a new compiler for loaded module {}", file_name);
 
         Self {
             source,
@@ -45,6 +45,18 @@ impl<M: ShaderModule> Compiler<M> {
             _phantom: PhantomData,
             snippets: Default::default(),
             constants: Default::default(),
+        }
+    }
+
+    // Create a compiler using the given source code and file name (String)
+    pub fn from_string(source: impl ToString) -> Self {
+        log::debug!("Created a new compiler for string source");
+        Self {
+            source: source.to_string(),
+            file_name: "string-source".to_string(),
+            snippets: Default::default(),
+            constants: Default::default(),
+            _phantom: PhantomData,
         }
     }
 
