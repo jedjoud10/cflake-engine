@@ -12,21 +12,27 @@ pub enum BufferMode {
     Resizable,
 }
 
-// How exactly are we going to use the buffer?
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
-pub enum BufferUsage {
-    // The buffer is not accessible on the CPU side
-    None,
+bitflags::bitflags! {
+    // How exactly are we going to use the texture?
+    pub struct BufferUsage: u8 {
+        // Data can be copied from the buffer on the GPU side
+        const COPY_SRC = 2;
 
-    // The buffer is only going to be used for reading GPU data back
-    // Example: Data generated from a compute shader read back to the CPU
-    #[default]
-    Read,
+        // Data can be copied into the buffer on the GPU side
+        const COPY_DST = 1;
 
-    // The buffer is only going to be used to send data to the GPU
-    // Example: Non-readable vertex buffers
-    Write,
+        // The buffer can be used for reading GPU data back
+        // Example: Data generated from a compute shader read back to the CPU
+        const READ = 4 | Self::COPY_SRC.bits;
 
-    // The buffer and be written to AND read on the CPU
-    ReadWrite,
+        // The buffer can be used to send data to the GPU
+        // Example: Non-readable vertex buffers
+        const WRITE = 8 | Self::COPY_DST.bits;
+    }
 }
+
+impl Default for BufferUsage {
+    fn default() -> Self {
+        Self::READ | Self::COPY_DST
+    }
+} 

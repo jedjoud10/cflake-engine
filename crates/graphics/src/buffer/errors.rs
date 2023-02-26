@@ -7,6 +7,12 @@ pub enum BufferInitializationError {
 
     #[error("Given buffer variant type is invalid. Must be VERTEX, INDEX, STORAGE, UNIFORM, or INDIRECT")]
     InvalidVariantType,
+
+    #[error("The given buffer usage contains the WRITE flag, but there isn't the COPY_DST flag")]
+    WritableWithoutCopyDst,
+
+    #[error("The given buffer usage contains the READ flag, but there isn't the COPY_SRC flag")]
+    ReadableWithoutCopySrc,
 }
 
 #[derive(Error, Debug)]
@@ -43,6 +49,12 @@ pub enum BufferWriteError {
 
 #[derive(Error, Debug)]
 pub enum BufferCopyError {
+    #[error("The given source buffer does not have the COPY_SRC usage")]
+    NonCopySrc,
+    
+    #[error("The destination buffer (self) does not have the COPY_DST usage")]
+    NonCopyDst,
+
     #[error("The given length {0} (or offset of {1}) would overflow the destination buffer of length {2}")]
     InvalidSrcOverflow(usize, usize, usize),
 

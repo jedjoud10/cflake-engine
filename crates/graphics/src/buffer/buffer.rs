@@ -154,15 +154,26 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
             );
         };
 
-        // Wgpu usages for primary buffer
-        let wgpu_usages = variant
-            | wgpu::BufferUsages::COPY_SRC
-            | wgpu::BufferUsages::COPY_DST;
+        // Return an error if the buffer usage flags are invalid
+        if usage.contains(BufferUsage::READ) && !usage.contains(BufferUsage::COPY_SRC) {
+            return Err(BufferInitializationError::ReadableWithoutCopySrc);
+        } else if usage.contains(BufferUsage::WRITE) && !usage.contains(BufferUsage::COPY_DST) {
+            return Err(BufferInitializationError::WritableWithoutCopyDst);
+        }
+
+        // Wgpu usages for this buffer
+        let mut wgpu_usages = variant;
+        if usage.contains(BufferUsage::COPY_SRC) {
+            wgpu_usages |= wgpu::BufferUsages::COPY_SRC;
+        }
+        if usage.contains(BufferUsage::COPY_DST) {
+            wgpu_usages |= wgpu::BufferUsages::COPY_DST;
+        }
 
         // Convert the slice into bytes
         let bytes = bytemuck::cast_slice::<T, u8>(slice);
 
-        // Allocate the primary WGPU buffer
+        // Allocate the WGPU buffer
         let buffer = graphics.device().create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: None,
@@ -313,9 +324,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
         }
 
         // Make sure we can write to the buffer
-        if self.usage != BufferUsage::Write
-            && self.usage != BufferUsage::ReadWrite
-        {
+        if !self.usage.contains(BufferUsage::WRITE) {
             return Err(BufferWriteError::NonWritable);
         }
 
@@ -352,9 +361,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
         }
 
         // Make sure we can read from the buffer
-        if self.usage != BufferUsage::Read
-            && self.usage != BufferUsage::ReadWrite
-        {
+        if !self.usage.contains(BufferUsage::READ) {
             return Err(BufferReadError::NonReadable);
         }
 
@@ -410,6 +417,14 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
             return Ok(());
         }
 
+        if !self.usage.contains(BufferUsage::COPY_DST) {
+            return Err(BufferCopyError::NonCopyDst);
+        }
+
+        if !src.usage.contains(BufferUsage::COPY_SRC) {
+            return Err(BufferCopyError::NonCopySrc);
+        }
+
         if dst_offset + length > self.length {
             return Err(BufferCopyError::InvalidDstOverflow(
                 length,
@@ -462,9 +477,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
             return Err(BufferExtendError::IllegalReallocation);
         }
 
-        if self.usage != BufferUsage::Write
-            && self.usage != BufferUsage::ReadWrite
-        {
+        if !self.usage.contains(BufferUsage::WRITE) {
             return Err(BufferExtendError::NonWritable);
         }
 
@@ -522,9 +535,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
         &self,
         bounds: impl RangeBounds<usize>,
     ) -> Result<BufferView<T, TYPE>, BufferNotMappableError> {
-        if self.usage != BufferUsage::Read
-            && self.usage != BufferUsage::ReadWrite
-        {
+        if !self.usage.contains(BufferUsage::READ) {
             return Err(BufferNotMappableError::AsView);
         }
 
@@ -558,9 +569,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
         &mut self,
         bounds: impl RangeBounds<usize>,
     ) -> Result<BufferViewMut<T, TYPE>, BufferNotMappableError> {
-        if self.usage != BufferUsage::ReadWrite
-            && self.usage != BufferUsage::Write
-        {
+        if !self.usage.contains(BufferUsage::WRITE) {
             return Err(BufferNotMappableError::AsViewMut);
         }
 
@@ -571,39 +580,38 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
         let size = (end - start) * self.stride();
         let offset = start * self.stride();
 
-        match self.usage {
+        let read = self.usage.contains(BufferUsage::READ);
+        let write = self.usage.contains(BufferUsage::WRITE);
+
+        if write && !read {
             // Write only, map staging buffer
-            BufferUsage::Write => {
-                // Get the staging pool for upload
-                let staging = self.graphics.staging_pool();
-                let data = staging
-                    .map_write(
-                        &self.buffer,
-                        &self.graphics,
-                        offset as u64,
-                        size as u64,
-                    )
-                    .unwrap();
-
-                Ok(BufferViewMut::Mapped {
-                    buffer: PhantomData,
-                    data,
-                })
-            }
-
+            // Get the staging pool for upload
+            let staging = self.graphics.staging_pool();
+            let data = staging
+                .map_write(
+                    &self.buffer,
+                    &self.graphics,
+                    offset as u64,
+                    size as u64,
+                )
+                .unwrap();
+            
+            Ok(BufferViewMut::Mapped {
+                buffer: PhantomData,
+                data,
+            })
+        } else if read && write {
             // Read and write, clone first, then write
-            BufferUsage::ReadWrite => {
-                // Create a temporary vector that will store the contents of the buffer
-                let mut vector = vec![T::zeroed(); end - start];
-                self.read(&mut vector, start).unwrap();
+            // Create a temporary vector that will store the contents of the buffer
+            let mut vector = vec![T::zeroed(); end - start];
+            self.read(&mut vector, start).unwrap();
 
-                Ok(BufferViewMut::Cloned {
-                    buffer: self,
-                    data: vector,
-                })
-            }
-
-            _ => panic!(),
+            Ok(BufferViewMut::Cloned {
+                buffer: self,
+                data: vector,
+            })
+        } else {
+            panic!()
         }
     }
 }

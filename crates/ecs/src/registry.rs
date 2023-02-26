@@ -41,7 +41,7 @@ pub fn mask<T: Component>() -> Mask {
             RawBitMask::from(copy).checked_shl(1).expect(ERR).into();
         
         let name = utils::pretty_type_name::<T>();
-        log::debug!("Registered component '{name}' with bitmask {:?}", copy);
+        log::debug!("Registered component '{name}' with bitmask 1<<{:?}", (copy.offset().unwrap()+1));
         
         
         copy

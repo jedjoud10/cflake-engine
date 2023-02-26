@@ -23,6 +23,15 @@ pub enum TextureInitializationError {
 
     #[error("Tried creating a mip map for a NPOT texture")]
     MipMapGenerationNPOT,
+    
+    #[error("The given texture usage contains the READ flag, but there isn't the COPY_SRC flag")]
+    ReadableWithoutCopySrc,
+
+    #[error("The given texture usage contains the WRITE flag, but there isn't the COPY_DST flag")]
+    WritableWithoutCopyDst,
+
+    #[error("The given texture data is pre-initialized, but there isn't the COPY_DST flag")]
+    PreinitializedWithoutCopyDst,
 
     #[error("The mip level of {level} does not contain the appropriate number of texels (expected {expected}, found {found})")]
     UnexpectedMipLevelTexelCount {

@@ -12,7 +12,7 @@ use graphics::{
     Operation, PipelineInitializationError, RenderPass,
     SamplerSettings, StoreOp, SwapchainFormat, Texel, Texture,
     Texture2D, TextureMipMaps, TextureMode, TextureUsage,
-    UniformBuffer, BGRA, RGBA, Depth, SamplerFilter, SamplerWrap, SamplerMipMaps,
+    UniformBuffer, BGRA, RGBA, Depth, SamplerFilter, SamplerWrap, SamplerMipMaps, TextureImportSettings,
 };
 use std::{
     any::TypeId, cell::RefCell, marker::PhantomData,
@@ -53,7 +53,7 @@ fn create_uniform_buffer<T: GpuPod + Default>(
         graphics,
         &[T::default()],
         BufferMode::Dynamic,
-        BufferUsage::Write,
+        BufferUsage::WRITE,
     )
     .unwrap()
 }
@@ -68,7 +68,7 @@ fn create_texture2d<T: Texel>(
         Some(&[value]),
         vek::Extent2::broadcast(1),
         TextureMode::Dynamic,
-        TextureUsage::Placeholder,
+        TextureUsage::SAMPLED | TextureUsage::COPY_DST,
         SamplerSettings::default(),
         TextureMipMaps::Disabled,
     )
@@ -84,7 +84,7 @@ impl ForwardRenderer {
             None,
             extent,
             TextureMode::Dynamic,
-            TextureUsage::Placeholder,
+            TextureUsage::RENDER_TARGET,
             SamplerSettings {
                 filter: SamplerFilter::Linear,
                 wrap: SamplerWrap::Repeat,
@@ -109,7 +109,11 @@ impl ForwardRenderer {
         // Load the default sky gradient texture
         let sky_gradient = assets.load::<AlbedoMap>(
             ("engine/textures/scene/sky.jpg",
-            graphics.clone()
+            graphics.clone(),
+            TextureImportSettings {
+                mipmaps: TextureMipMaps::Disabled,
+                ..Default::default()
+            }
         )).unwrap();
 
         Self {
@@ -131,7 +135,7 @@ impl ForwardRenderer {
             // Create the 1x1 common textures
             white: create_texture2d::<AlbedoTexel>(
                 graphics,
-                vek::Vec4::broadcast(255).with_w(255),
+                vek::Vec3::broadcast(255).with_w(255),
             ),
             black: create_texture2d::<AlbedoTexel>(
                 graphics,
@@ -139,7 +143,7 @@ impl ForwardRenderer {
             ),
             normal: create_texture2d::<NormalTexel>(
                 graphics,
-                vek::Vec4::new(0, 0, 127, 127),
+                vek::Vec3::new(127, 127, 255).with_w(255),
             ),
 
             // No default camera

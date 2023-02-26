@@ -40,9 +40,6 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
         mipmaps: TextureMipMaps<Self::T>,
     ) -> Result<Self, TextureInitializationError> {
         let format = <Self::T as Texel>::format();
-        let channels = <Self::T as Texel>::channels();
-        let bytes_per_channel =
-            <Self::T as Texel>::bytes_per_channel();
 
         // Make sure the number of texels matches up with the dimensions
         if let Some(texels) = texels {
@@ -73,8 +70,20 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
             return Err(TextureInitializationError::ExtentLimit);
         }
 
+        // Return an error if the texture usage flags are invalid
+        if usage.contains(TextureUsage::READ) && !usage.contains(TextureUsage::COPY_SRC) {
+            return Err(TextureInitializationError::ReadableWithoutCopySrc);
+        } else if usage.contains(TextureUsage::WRITE) && !usage.contains(TextureUsage::COPY_DST) {
+            return Err(TextureInitializationError::WritableWithoutCopyDst);
+        } else if !usage.contains(TextureUsage::COPY_DST) && (texels.is_some() || match mipmaps {
+            TextureMipMaps::Manual { mips } => mips.len() > 0,
+            _ => false
+        }) {
+            return Err(TextureInitializationError::PreinitializedWithoutCopyDst);
+        }
+
         // Get optimal texture usage
-        let usages = texture_usages();
+        let usages = texture_usages(usage);
 
         // Check if the format is valid for the given usage flag
         let texture_format_features =
@@ -287,7 +296,7 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
             sample_count: 1,
             dimension,
             format,
-            usage: texture_usages(),
+            usage: texture_usages(self.usage()),
             label: None,
             view_formats: &[],
         };
@@ -480,10 +489,27 @@ fn extent_to_extent3d<E: Extent>(dimensions: E) -> wgpu::Extent3d {
 }
 
 // Convert the valid texture usages
-fn texture_usages() -> wgpu::TextureUsages {
-    wgpu::TextureUsages::TEXTURE_BINDING
-        | wgpu::TextureUsages::COPY_DST
-        | wgpu::TextureUsages::RENDER_ATTACHMENT
+// Does not check for validity
+fn texture_usages(usage: TextureUsage) -> wgpu::TextureUsages {
+    let mut usages = wgpu::TextureUsages::empty();
+
+    if usage.contains(TextureUsage::SAMPLED) {
+        usages |= wgpu::TextureUsages::TEXTURE_BINDING;
+    }
+
+    if usage.contains(TextureUsage::RENDER_TARGET) {
+        usages |= wgpu::TextureUsages::RENDER_ATTACHMENT;
+    }
+
+    if usage.contains(TextureUsage::COPY_SRC) {
+        usages |= wgpu::TextureUsages::COPY_SRC;
+    }
+
+    if usage.contains(TextureUsage::COPY_DST) {
+        usages |= wgpu::TextureUsages::COPY_DST;
+    }
+
+    usages
 }
 
 // Get the texture aspect based on the texel type

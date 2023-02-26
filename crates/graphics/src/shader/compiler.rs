@@ -138,6 +138,17 @@ fn compile(
         .map_err(|error| match error {
             // ShaderC compilation error, so print out the message to the error log
             shaderc::Error::CompilationError(_, value) => {
+                // Get the source code for this stage, and identify each line with it's line out
+                let source = source
+                    .lines()
+                    .enumerate()
+                    .map(|(count, line)| format!("({}): {}", count + 1, line))
+                    .collect::<Vec<String>>()
+                    .join("\n");
+                        
+                // Print the error message
+                log::error!("Failed compilation of shader {file}:\n\n{}\n\n", source);
+
                 for line in value.lines() {
                     log::error!("{}", line);
                 }

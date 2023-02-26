@@ -1,16 +1,14 @@
 mod errors;
 mod mipmap;
-mod mode;
 mod region;
 mod sampler;
 mod texture;
 mod texture2d;
-mod usage;
+mod settings;
 pub use errors::*;
 pub use mipmap::*;
-pub use mode::*;
 pub use region::*;
 pub use sampler::*;
 pub use texture::*;
 pub use texture2d::*;
-pub use usage::*;
+pub use settings::*;
