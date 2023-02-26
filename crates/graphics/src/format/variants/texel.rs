@@ -176,13 +176,13 @@ internal_impl_texel!(
 internal_impl_texel!(
     SRGBA,
     Normalized<u8>,
-    TexelChannels::Vector(VectorChannels::FourSwizzled),
+    TexelChannels::Srgba { swizzled: false },
     Vec4
 );
 internal_impl_texel!(
     SBGRA,
     Normalized<u8>,
-    TexelChannels::Vector(VectorChannels::FourSwizzled),
+    TexelChannels::Srgba { swizzled: true },
     Vec4
 );
 

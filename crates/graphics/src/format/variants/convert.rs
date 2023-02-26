@@ -231,7 +231,7 @@ internal_impl_color_texel!(
 internal_impl_color_texel!(
     BGRA,
     Normalized<u8>,
-    ChannelsType::Srgb(VectorChannels::Four),
+    TexelChannels::Srgba { swizzled: false },
     Vec4,
     |v: vek::Vec4<Self::Base>| vek::Vec4::from(v),
     0.0,
@@ -242,7 +242,7 @@ internal_impl_color_texel!(
 internal_impl_color_texel!(
     SBGRA,
     Normalized<u8>,
-    ChannelsType::Srgb(VectorChannels::Four),
+    TexelChannels::Srgba { swizzled: true },
     Vec4,
     |v: vek::Vec4<Self::Base>| vek::Vec4::from(v),
     0.0,
