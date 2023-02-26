@@ -143,14 +143,14 @@ fn update_matrices(world: &mut World) {
     let f2 = modified::<Rotation>();
     let f3 = modified::<Scale>();
     let f4 = added::<Renderer>();
-    let filter = f1 | f2 | f3 | f4;
+    //let filter = f1 | f2 | f3 | f4;
     let query = scene
         .query_mut_with::<(
             &mut Renderer,
             Option<&ecs::Position>,
             Option<&ecs::Rotation>,
             Option<&ecs::Scale>,
-        )>(filter);
+        )>(f1);
         
     // Update the matrices of objects that might contain location, rotation, or scale
     for (renderer, location, rotation, scale) in query {

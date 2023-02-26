@@ -35,6 +35,7 @@ fn init(world: &mut World) {
     // Import the diffuse map and normal map
     asset!(&mut assets, "assets/user/ignored/diffuse.jpg");
     asset!(&mut assets, "assets/user/ignored/normal.jpg");
+    asset!(&mut assets, "assets/user/ignored/untitled.obj");
 
     // Load in the diffuse map and normal map textures asynchronously
     let albedo = assets
@@ -78,11 +79,16 @@ fn init(world: &mut World) {
         .unwrap();
     let mesh = meshes.insert(mesh);
 
-    // Create the new mesh entity components
-    let surface = Surface::new(mesh.clone(), material.clone(), id.clone());
-    let renderer = Renderer::default();
-    let rotation = Rotation::default();
-    scene.insert((surface, renderer, rotation));
+    // Add multiple objects
+    scene.extend_from_iter((0..25).into_iter().map(|i| {
+        // Create the new mesh entity components
+        let x = i % 5;
+        let y = i / 5;
+        let surface = Surface::new(mesh.clone(), material.clone(), id.clone());
+        let renderer = Renderer::default();
+        let position = Position::at_xyz(x as f32, y as f32, 0.0);
+        (surface, renderer, position)
+    }));
 
     // Get the material id (also registers the material pipeline)
     let id = pipelines.register::<Sky>(&graphics, &mut assets).unwrap();
@@ -104,7 +110,7 @@ fn init(world: &mut World) {
     // Create the new sky entity components
     let surface = Surface::new(mesh.clone(), material.clone(), id.clone());
     let renderer = Renderer::default();
-    scene.insert((surface, renderer, rotation));
+    scene.insert((surface, renderer));
 
     // Create a movable camera (through the tick event)
     let camera = Camera::new(120.0, 0.01, 500.0, 16.0 / 9.0);

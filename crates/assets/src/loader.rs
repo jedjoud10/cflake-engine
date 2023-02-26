@@ -317,7 +317,6 @@ impl Assets {
         self.loaded.push(None);
 
         // Create a new task that will load this asset
-        dbg!(index);
         threadpool.execute(move || {
             Self::async_load_inner::<A>(
                 owned, bytes, user, context, settings, sender, index

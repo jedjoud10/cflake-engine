@@ -1,6 +1,7 @@
 use ahash::AHashMap;
 use itertools::Itertools;
 use slotmap::SlotMap;
+use utils::Time;
 use std::iter::once;
 use world::{post_user, user, System, World};
 
@@ -311,6 +312,12 @@ fn init(world: &mut World) {
 
 // Reset the archetypes
 fn reset_states(world: &mut World) {
+    // Don't reset states if it's the first frame
+    let time = world.get::<Time>().unwrap();
+    if time.frame_count() <= 1 {
+        return;
+    }
+
     // Clear all the archetype states that were set last frame
     let mut scene = world.get_mut::<Scene>().unwrap();
     for (_, archetype) in scene.archetypes_mut() {

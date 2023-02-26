@@ -51,7 +51,7 @@ void main() {
 
 	// Do some basic light calculations
 	vec3 direction = vec3(0, 1, 0);
-	vec3 lighting = vec3(clamp(dot(direction, normal), 0, 1)) * 3;
+	vec3 lighting = vec3(clamp(dot(direction, normal), 0, 1));
 	lighting += ambient * 0.3;
 
 	// Calculate diffuse lighting
