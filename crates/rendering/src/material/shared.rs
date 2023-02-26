@@ -13,31 +13,27 @@ pub struct CameraUniform {
     pub view: vek::Vec4<vek::Vec4<f32>>,
     pub inverse_view: vek::Vec4<vek::Vec4<f32>>,
 
-
+    // Position and direction vectors
     pub position: vek::Vec4<f32>,
     pub forward: vek::Vec4<f32>,
     pub right: vek::Vec4<f32>,
     pub up: vek::Vec4<f32>,
-    
-    /*
-
-
-    // Direction vectors
-    */
 }
 
 // Timing data that will be stored in a UBO
 #[derive(Clone, Copy, PartialEq, Pod, Zeroable, Default)]
-#[repr(C)]
+#[repr(C, align(4))]
+// TODO: IMPLEMENT
 pub struct TimingUniform {
     pub frame_count: u32,
     pub delta_time: f32,
-    pub time_since_startup: f32
+    pub time_since_startup: f32,
 }
 
 // Scene data that will be stored in a UBO
 #[derive(Clone, Copy, PartialEq, Pod, Zeroable, Default)]
-#[repr(C)]
+#[repr(C, align(16))]
+// TODO: IMPLEMENT
 pub struct SceneUniform {
     // Ambient color of the environment
     pub ambient_color: vek::Vec4<f32>,
@@ -47,6 +43,14 @@ pub struct SceneUniform {
     pub sun_strength: f32,
     pub sun_size: f32,
     pub _padding: [f32; 2],
+}
+
+// Window/monitor data thw ill be stored in a UBO
+#[derive(Clone, Copy, PartialEq, Pod, Zeroable, Default)]
+#[repr(C, align(4))]
+pub struct WindowUniform {
+    pub width: u32,
+    pub height: u32,
 }
 
 // Type aliases for textures
@@ -59,3 +63,4 @@ pub type NormalMap = Texture2D<NormalTexel>;
 pub type CameraBuffer = UniformBuffer<CameraUniform>;
 pub type TimingBuffer = UniformBuffer<TimingUniform>;
 pub type SceneBuffer = UniformBuffer<SceneUniform>;
+pub type WindowBuffer = UniformBuffer<WindowUniform>;

@@ -22,6 +22,9 @@ pub enum BindError<'a> {
     TextureMissingSampler {
         name: &'a str
     },
+
+    #[error("The given resource is not the same type in the shader")]
+    DifferentType,
 }
 
 // A bind group allows us to set one or more bind entries to set them in the active render pass
@@ -70,6 +73,11 @@ impl<'a> BindGroup<'a> {
             name
         )?;
 
+        // Return error if the type does not match
+        if !matches!(entry.binding_type, crate::BindingType::Texture { .. }) {
+            return Err(BindError::DifferentType);
+        }
+
         // Get values needed for the bind entry
         let id = texture.raw().global_id();
         let resource = wgpu::BindingResource::TextureView(texture.view());
@@ -93,6 +101,11 @@ impl<'a> BindGroup<'a> {
             &self.reflected,
             name
         )?;
+
+        // Return error if the type does not match
+        if !matches!(entry.binding_type, crate::BindingType::Sampler { .. }) {
+            return Err(BindError::DifferentType);
+        }
 
         // Get values needed for the bind entry
         let id = sampler.raw().global_id();
@@ -118,6 +131,11 @@ impl<'a> BindGroup<'a> {
             &self.reflected,
             name
         )?;
+
+        // Return error if the type does not match
+        if !matches!(entry.binding_type, crate::BindingType::Buffer { .. }) {
+            return Err(BindError::DifferentType);
+        }
 
         // Make sure the layout is the same size as buffer stride
         match entry.binding_type {
@@ -157,6 +175,11 @@ impl<'a> BindGroup<'a> {
             &self.reflected,
             name
         )?;
+
+        // Return error if the type does not match
+        if !matches!(entry.binding_type, crate::BindingType::Buffer { .. }) {
+            return Err(BindError::DifferentType);
+        }
         
         // Pre-allocate a vector with an appropriate size
         let (size, members) = match entry.binding_type {

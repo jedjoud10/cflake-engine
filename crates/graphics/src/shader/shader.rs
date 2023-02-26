@@ -23,6 +23,7 @@ impl Shader {
     ) -> Self {
         let (shader, layout) = super::merge_and_make_layout(vertex, fragment, graphics);
 
+
         Self {
             vertex: vertex.clone(),
             fragment: fragment.clone(),

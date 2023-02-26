@@ -1,7 +1,7 @@
 use crate::{
     AlbedoMap, Sky, Camera, CameraUniform,
     DefaultMaterialResources, ForwardRenderer,
-    SceneRenderPass, Mesh, NormalMap, Pipelines, Renderer, Basic, PostProcess,
+    SceneRenderPass, Mesh, NormalMap, Pipelines, Renderer, Basic, PostProcess, WindowUniform,
 };
 use assets::Assets;
 use ecs::Scene;
@@ -60,6 +60,14 @@ fn window_event(world: &mut World, event: &mut WindowEvent) {
             // Resize the color and depth texture
             renderer.depth_texture.resize(size).unwrap();
             renderer.color_texture.resize(size).unwrap();
+
+            // Update the uniform
+            renderer.window_buffer.write(&[
+                WindowUniform {
+                    width: size.w,
+                    height: size.h,
+                }
+            ], 0).unwrap();
         }
 
         _ => (),
@@ -233,12 +241,11 @@ fn display(world: &mut World) {
     let mut active = render_pass.bind_pipeline(&postprocess.pipeline);
 
     // Set the required shader uniforms
-    /*
     active.set_bind_group(0, |group| {
-        group.fill_ubo("parameters", |fill| {
-        }).unwrap();
+        group.set_texture("color_map", src).unwrap();
+        group.set_sampler("color_map_sampler", src.sampler()).unwrap();
+        group.set_buffer("window", &renderer.window_buffer).unwrap();
     });
-    */
 
     // Draw 6 vertices (2 tris)
     active.draw(0..6, 0..1);

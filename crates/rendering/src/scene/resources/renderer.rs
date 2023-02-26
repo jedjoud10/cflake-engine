@@ -1,7 +1,7 @@
 use crate::{
     AlbedoMap, AlbedoTexel, CameraBuffer, CameraUniform,
     DynamicPipeline, Material, MaterialId, NormalMap, NormalTexel,
-    Pipeline, SceneBuffer, SceneUniform, TimingBuffer, TimingUniform,
+    Pipeline, SceneBuffer, SceneUniform, TimingBuffer, TimingUniform, WindowBuffer, WindowUniform,
 };
 use ahash::AHashMap;
 use assets::Assets;
@@ -42,6 +42,7 @@ pub struct ForwardRenderer {
     pub camera_buffer: CameraBuffer,
     pub timing_buffer: TimingBuffer,
     pub scene_buffer: SceneBuffer,
+    pub window_buffer: WindowBuffer,
 
     // Default textures that will be shared with each material
     pub white: AlbedoMap,
@@ -91,7 +92,7 @@ impl ForwardRenderer {
             None,
             extent,
             TextureMode::Resizable,
-            TextureUsage::RENDER_TARGET,
+            TextureUsage::RENDER_TARGET | TextureUsage::SAMPLED,
             SamplerSettings {
                 filter: SamplerFilter::Linear,
                 wrap: SamplerWrap::Repeat,
@@ -166,6 +167,10 @@ impl ForwardRenderer {
         let scene_buffer = create_uniform_buffer::<SceneUniform>(
             graphics,
         );
+
+        let window_buffer = create_uniform_buffer::<WindowUniform>(
+            graphics,
+        );
             
         Self {
             // Render pass, color texture, and depth texture
@@ -177,6 +182,7 @@ impl ForwardRenderer {
             camera_buffer,
             timing_buffer,
             scene_buffer,
+            window_buffer,
 
             // Create the 1x1 common textures
             white,
