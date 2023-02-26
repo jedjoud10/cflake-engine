@@ -1,5 +1,5 @@
 use crate::{
-    AnyElement, ChannelsType, Depth, DepthElement, ElementType,
+    AnyElement, TexelChannels, Depth, DepthElement, ElementType,
     GpuPodRelaxed, Normalized, Stencil, VectorChannels, X, XY, XYZ,
     XYZW,
 };

@@ -1,4 +1,4 @@
-use crate::{ChannelsType, ElementType, VectorChannels};
+use crate::{TexelChannels, ElementType, VectorChannels};
 use paste::paste;
 use wgpu::{TextureFormat, VertexFormat};
 
@@ -35,7 +35,7 @@ macro_rules! impl_texel_conversion_specific_channels {
 }
 
 // Converts the given vector channels to the proper texture format
-pub const fn pick_texture_format_from_vector_channels(
+pub const fn pick_texture_format_channels(
     element: ElementType,
     channels: VectorChannels,
 ) -> Option<TextureFormat> {
@@ -94,21 +94,39 @@ pub const fn pick_texture_stencil_format(
     }
 }
 
+pub const fn pick_texture_srgb_format(
+    element: ElementType,
+    swizzled: bool,
+) -> Option<TextureFormat> {
+    if !matches!(element, ElementType::Eight {
+        signed: false,
+        normalized: true
+    }) {
+        return None;
+    }
+
+    Some(match swizzled {
+        true => TextureFormat::Bgra8UnormSrgb,
+        false => TextureFormat::Rgba8UnormSrgb,
+    })
+}
+
 // Converts the given data to the proper texel format
 // This is called within the Texel::format function
 // The given input might not always be supported (for example, RGB), and in which case, this function would return None
 pub const fn pick_texture_format(
     element: ElementType,
-    channels: ChannelsType,
+    channels: TexelChannels,
 ) -> Option<TextureFormat> {
     match channels {
-        ChannelsType::Vector(channels) => {
-            pick_texture_format_from_vector_channels(
-                element, channels,
-            )
+        TexelChannels::Vector(channels) => {
+            pick_texture_format_channels(element, channels)
         }
-        ChannelsType::Depth => pick_texture_depth_format(element),
-        ChannelsType::Stencil => pick_texture_stencil_format(element),
+        TexelChannels::Depth => pick_texture_depth_format(element),
+        TexelChannels::Stencil => pick_texture_stencil_format(element),
+        TexelChannels::Srgba { swizzled } => { 
+            pick_texture_srgb_format(element, swizzled)
+        },
     }
 }
 

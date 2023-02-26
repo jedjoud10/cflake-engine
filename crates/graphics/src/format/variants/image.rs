@@ -1,4 +1,4 @@
-use crate::{ColorTexel, Normalized, Texel, R, RG, RGBA};
+use crate::{ColorTexel, Normalized, Texel, R, RG, RGBA, SRGBA};
 
 // Image texels are texels that can be loaded from a file, like when loading a Texture2D<RGBA<Normalized<u8>>
 pub trait ImageTexel: Texel + ColorTexel {
@@ -52,3 +52,10 @@ macro_rules! impl_image_texel {
 impl_image_texel!(R, |val| val[0]);
 impl_image_texel!(RG, vek::Vec2::from_slice);
 impl_image_texel!(RGBA, vek::Vec4::from_slice);
+internal_impl_single_image_texel!(
+    SRGBA,
+    Normalized<u8>,
+    into_rgba8,
+    vek::Vec4::from_slice
+);
+//impl_image_texel!(SRGBA, vek::Vec4::from_slice);

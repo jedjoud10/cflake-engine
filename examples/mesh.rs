@@ -37,27 +37,29 @@ fn init(world: &mut World) {
     asset!(&mut assets, "assets/user/ignored/normal.jpg");
 
     // Load in the diffuse map and normal map textures asynchronously
-    let handles = assets
-        .async_load_from_iter::<AlbedoMap>([(
+    let albedo = assets
+        .async_load::<AlbedoMap>((
             "user/ignored/diffuse.jpg",
             graphics.clone(),
-        ), (
+        ), &mut threadpool);
+    let normal = assets
+        .async_load::<NormalMap>((
             "user/ignored/normal.jpg",
             graphics.clone(),
-        )], &mut threadpool);
+        ), &mut threadpool);
     
     // Fetch the loaded textures
-    let mut textures = assets.wait_from_iter(handles);
-    let normal = textures.pop().unwrap().unwrap();
-    let diffuse = textures.pop().unwrap().unwrap();
+    let diffuse = assets.wait(albedo).unwrap();
+    let normal = assets.wait(normal).unwrap();
 
     // Add the textures to the storage
-    let mut textures = world.get_mut::<Storage<AlbedoMap>>().unwrap();
-    let diffuse = textures.insert(diffuse);
-    let normal = textures.insert(normal);
+    let mut diffuse_maps = world.get_mut::<Storage<AlbedoMap>>().unwrap();
+    let mut normal_maps = world.get_mut::<Storage<NormalMap>>().unwrap();
+    let diffuse = diffuse_maps.insert(diffuse);
+    let normal = normal_maps.insert(normal);
 
     // Get the material id (also registers the material pipeline)
-    let id = pipelines.register::<Basic>(&graphics, &assets).unwrap();
+    let id = pipelines.register::<Basic>(&graphics, &mut assets).unwrap();
     
     // Create a new material instance
     let material = basics.insert(Basic {
@@ -83,7 +85,7 @@ fn init(world: &mut World) {
     scene.insert((surface, renderer, rotation));
 
     // Get the material id (also registers the material pipeline)
-    let id = pipelines.register::<Sky>(&graphics, &assets).unwrap();
+    let id = pipelines.register::<Sky>(&graphics, &mut assets).unwrap();
     
     // Create a new material instance
     let material = skies.insert(Sky {

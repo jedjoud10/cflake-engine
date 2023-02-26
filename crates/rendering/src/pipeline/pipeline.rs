@@ -38,7 +38,7 @@ impl<M: Material> Pipeline<M> {
     // This will load the shader, and create the graphics pipeline
     pub fn new(
         graphics: &Graphics,
-        assets: &Assets,
+        assets: &mut Assets,
     ) -> Result<Self, PipelineInitializationError> {
         // Load the vertex and fragment modules, and create the shader
         let vertex = M::vertex(graphics, assets);

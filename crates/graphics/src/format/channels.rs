@@ -8,15 +8,19 @@ pub struct RGBA<T: AnyElement>(vek::Vec4<T>);
 // In WGPU, BGRA supports u8 SNORM only
 pub trait Swizzable {}
 impl Swizzable for Normalized<u8> {}
-pub struct BGRA<T: AnyElement + Swizzable>(vek::Vec3<T>);
+pub struct BGRA<T: AnyElement + Swizzable>(vek::Vec4<T>);
+
+// In WGPU, SRGBA is only supported by Normalized<u8> (without considering compressed formats)
+pub trait SupportsSrgba {}
+impl SupportsSrgba for Normalized<u8> {}
+pub struct SRGBA<T: AnyElement + SupportsSrgba>(vek::Vec4<T>);
+pub struct SBGRA<T: AnyElement + Swizzable + SupportsSrgba>(vek::Vec4<T>);
 
 // The channels that represent the vertices
 pub struct X<T: AnyElement>(T);
 pub struct XY<T: AnyElement>(vek::Vec2<T>);
 pub struct XYZ<T: AnyElement>(vek::Vec3<T>);
 pub struct XYZW<T: AnyElement>(vek::Vec4<T>);
-
-// TODO: Implement SRGB
 
 // Element used only for depth-only texels
 pub trait DepthElement: AnyElement {}
@@ -69,18 +73,27 @@ impl VectorChannels {
 
 // Untyped representation of texel channels
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
-pub enum ChannelsType {
+pub enum TexelChannels {
+    // 1-4
     Vector(VectorChannels),
+    
+    // Either SRGBA, or SBGRA 
+    Srgba {
+        swizzled: bool,
+    },
+
+    // Always 1
     Depth,
     Stencil,
 }
 
-impl ChannelsType {
+impl TexelChannels {
     // Count the number of channels that we have in total
     pub const fn count(&self) -> u32 {
         match self {
             Self::Vector(color) => color.count(),
             Self::Depth | Self::Stencil => 1,
+            Self::Srgba { .. } => 4,
         }
     }
 }

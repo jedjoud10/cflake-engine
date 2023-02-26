@@ -35,7 +35,7 @@ impl Material for Basic {
     // Load the vertex shader for this material
     fn vertex(
         graphics: &Graphics,
-        assets: &Assets,
+        assets: &mut Assets,
     ) -> Compiled<VertexModule> {
         let vert = assets
             .load::<VertexModule>("engine/shaders/scene/basic/basic.vert")
@@ -46,7 +46,7 @@ impl Material for Basic {
     // Load the fragment shader for this material
     fn fragment(
         graphics: &Graphics,
-        assets: &Assets,
+        assets: &mut Assets,
     ) -> Compiled<FragmentModule> {
         let frag = assets
             .load::<FragmentModule>("engine/shaders/scene/basic/basic.frag")

@@ -17,10 +17,10 @@ use world::{post_user, user, System, World, WindowEvent};
 fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
     let window = world.get::<Window>().unwrap();
-    let assets = world.get::<Assets>().unwrap();
+    let mut assets = world.get_mut::<Assets>().unwrap();
 
     // Create the scene renderer, pipeline manager, and  commonly used textures
-    let renderer = ForwardRenderer::new(&graphics, &assets, window.size());
+    let renderer = ForwardRenderer::new(&graphics, &mut assets, window.size());
     let pipelines = Pipelines::new();
 
     // Add composites and basic storages

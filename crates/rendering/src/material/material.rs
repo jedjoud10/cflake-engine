@@ -37,13 +37,13 @@ pub trait Material: 'static + Sized {
     // Load the vertex module and process it
     fn vertex(
         graphics: &Graphics,
-        assets: &Assets,
+        assets: &mut Assets,
     ) -> Compiled<VertexModule>;
 
     // Load the fragment module and process it
     fn fragment(
         graphics: &Graphics,
-        assets: &Assets,
+        assets: &mut Assets,
     ) -> Compiled<FragmentModule>;
 
     // Get the required mesh attributes that we need to render a surface

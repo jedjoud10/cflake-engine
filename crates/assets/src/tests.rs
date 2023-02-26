@@ -4,7 +4,7 @@ mod tests {
 
     #[test]
     fn read() {
-        let loader = Assets::new(None);
+        let mut loader = Assets::new(None);
         persistent!(loader, "test/text.txt");
         let string = loader.load::<String>("test/text.txt");
         assert_eq!(
@@ -15,14 +15,14 @@ mod tests {
 
     #[test]
     fn not_found() {
-        let loader = Assets::new(None);
+        let mut loader = Assets::new(None);
         let string = loader.load::<String>("test/text.txt");
         assert!(string.is_err());
     }
 
     #[test]
     fn parse_error() {
-        let loader = Assets::new(None);
+        let mut loader = Assets::new(None);
         persistent!(loader, "test/invalid.txt");
         let string = loader.load::<String>("test/invalid.txt");
         assert!(string.is_err());
@@ -30,7 +30,7 @@ mod tests {
 
     #[test]
     fn read_iter() {
-        let loader = Assets::new(None);
+        let mut loader = Assets::new(None);
         persistent!(loader, "test/text.txt");
         let mut strings =
             loader.load_from_iter::<String>(["test/text.txt"]);
@@ -43,7 +43,7 @@ mod tests {
 
     #[test]
     fn not_found_iter() {
-        let loader = Assets::new(None);
+        let mut loader = Assets::new(None);
         let mut strings =
             loader.load_from_iter::<String>(["test/text.txt"]);
         let string = strings.pop().unwrap();
@@ -134,7 +134,7 @@ mod tests {
             }
         }
 
-        let loader = Assets::new(None);
+        let mut loader = Assets::new(None);
         persistent!(loader, "test/text.txt");
         let context = 69u32;
         let string =

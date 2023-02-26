@@ -1,4 +1,4 @@
-use crate::{AnyElement, Normalized, Texel, BGRA, R, RG, RGBA, Depth, DepthElement, StencilElement, Stencil};
+use crate::{AnyElement, Normalized, Texel, BGRA, R, RG, RGBA, Depth, DepthElement, StencilElement, Stencil, SBGRA, SRGBA};
 use half::f16;
 
 // This trait is used to convert between texel storage types to intermediate types
@@ -218,7 +218,7 @@ impl_color_texels!(
     |v: vek::Vec4<Self::Base>| vek::Vec4::from(v)
 );
 internal_impl_color_texel!(
-    BGRA,
+    SRGBA,
     Normalized<u8>,
     ChannelsType::Vector(VectorChannels::Four),
     Vec4,
@@ -228,6 +228,29 @@ internal_impl_color_texel!(
     |f| (f * u8::MAX as f32) as u8,
     |v| v as f32 / u8::MAX as f32
 );
+internal_impl_color_texel!(
+    BGRA,
+    Normalized<u8>,
+    ChannelsType::Srgb(VectorChannels::Four),
+    Vec4,
+    |v: vek::Vec4<Self::Base>| vek::Vec4::from(v),
+    0.0,
+    1.0,
+    |f| (f * u8::MAX as f32) as u8,
+    |v| v as f32 / u8::MAX as f32
+);
+internal_impl_color_texel!(
+    SBGRA,
+    Normalized<u8>,
+    ChannelsType::Srgb(VectorChannels::Four),
+    Vec4,
+    |v: vek::Vec4<Self::Base>| vek::Vec4::from(v),
+    0.0,
+    1.0,
+    |f| (f * u8::MAX as f32) as u8,
+    |v| v as f32 / u8::MAX as f32
+);
+
 
 // TODO: write macro for this
 impl Conversion for Depth<f32> where Self: Texel {

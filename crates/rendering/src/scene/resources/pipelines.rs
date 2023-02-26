@@ -33,7 +33,7 @@ impl Pipelines {
     pub fn register<M: Material>(
         &mut self,
         graphics: &Graphics,
-        assets: &Assets,
+        assets: &mut Assets,
     ) -> Result<MaterialId<M>, PipelineInitializationError> {
         // Initialize the pipeline and register it if needed
         let key = TypeId::of::<M>();

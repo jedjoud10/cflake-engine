@@ -1,7 +1,7 @@
 use crate::{
-    AnyElement, ChannelsType, Depth, DepthElement, ElementType,
+    AnyElement, TexelChannels, Depth, DepthElement, ElementType,
     GpuPodRelaxed, Normalized, Stencil, VectorChannels, BGRA, R, RG,
-    RGBA, ColorTexel,
+    RGBA, ColorTexel, SRGBA, SBGRA,
 };
 use half::f16;
 use std::{any::Any, mem::size_of, ops::Add};
@@ -29,7 +29,7 @@ pub trait Texel: 'static {
     fn element() -> ElementType;
 
     // Type of channels (either R, RG, RGBA, BGRA, Depth, Stencil)
-    fn channels() -> ChannelsType;
+    fn channels() -> TexelChannels;
 
     // Compile time WGPU format
     fn format() -> TextureFormat;
@@ -50,7 +50,7 @@ pub trait Texel: 'static {
 pub struct TexelInfo {
     bytes_per_channel: u32,
     element: ElementType,
-    channels: ChannelsType,
+    channels: TexelChannels,
     format: TextureFormat,
 }
 
@@ -71,7 +71,7 @@ impl TexelInfo {
     }
 
     // Type of channels (either R, RG, RGBA, BGRA, Depth, Stencil)
-    pub fn channels(&self) -> ChannelsType {
+    pub fn channels(&self) -> TexelChannels {
         self.channels
     }
 
@@ -95,7 +95,7 @@ macro_rules! internal_impl_texel {
                 <$elem as AnyElement>::ELEMENT_TYPE
             }
 
-            fn channels() -> ChannelsType {
+            fn channels() -> TexelChannels {
                 $channels
             }
 
@@ -154,31 +154,43 @@ macro_rules! impl_color_texels {
 type Scalar<T> = T;
 impl_color_texels!(
     R,
-    ChannelsType::Vector(VectorChannels::One),
+    TexelChannels::Vector(VectorChannels::One),
     Scalar
 );
 impl_color_texels!(
     RG,
-    ChannelsType::Vector(VectorChannels::Two),
+    TexelChannels::Vector(VectorChannels::Two),
     Vec2
 );
 impl_color_texels!(
     RGBA,
-    ChannelsType::Vector(VectorChannels::Four),
+    TexelChannels::Vector(VectorChannels::Four),
     Vec4
 );
 internal_impl_texel!(
     BGRA,
     Normalized<u8>,
-    ChannelsType::Vector(VectorChannels::FourSwizzled),
+    TexelChannels::Vector(VectorChannels::FourSwizzled),
+    Vec4
+);
+internal_impl_texel!(
+    SRGBA,
+    Normalized<u8>,
+    TexelChannels::Vector(VectorChannels::FourSwizzled),
+    Vec4
+);
+internal_impl_texel!(
+    SBGRA,
+    Normalized<u8>,
+    TexelChannels::Vector(VectorChannels::FourSwizzled),
     Vec4
 );
 
 internal_impl_texel!(
     Depth,
     Normalized<u16>,
-    ChannelsType::Depth,
+    TexelChannels::Depth,
     Scalar
 );
-internal_impl_texel!(Depth, f32, ChannelsType::Depth, Scalar);
-internal_impl_texel!(Stencil, u8, ChannelsType::Stencil, Scalar);
+internal_impl_texel!(Depth, f32, TexelChannels::Depth, Scalar);
+internal_impl_texel!(Stencil, u8, TexelChannels::Stencil, Scalar);

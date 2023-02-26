@@ -77,7 +77,7 @@ impl<M: ShaderModule> Compiler<M> {
     // Convert the GLSL code to SPIRV code, then compile said SPIRV code
     pub fn compile(
         self,
-        assets: &Assets,
+        assets: &mut Assets,
         graphics: &Graphics,
     ) -> Result<Compiled<M>, ShaderCompilationError> {
         let Compiler {
@@ -119,7 +119,7 @@ impl<M: ShaderModule> Compiler<M> {
 fn compile(
     kind: &ModuleKind,
     graphics: &Graphics,
-    assets: &Assets,
+    assets: &mut Assets,
     snippets: &Snippets,
     source: String,
     file: &str,
@@ -185,7 +185,7 @@ fn compile(
 // Pre-process the GLSL shader source and include files / snippets
 fn preprocess(
     source: String,
-    assets: &Assets,
+    assets: &mut Assets,
     snippets: &Snippets,
 ) -> Result<String, ShaderPreprocessorError> {
     // Cleanse shader input by removing comments and commented code
@@ -234,7 +234,7 @@ fn preprocess(
     // Load a function module and write it to the output line
     fn load_function_module(
         path: &str,
-        assets: &Assets,
+        assets: &mut Assets,
     ) -> Result<String, ShaderPreprocessorError> {
         let path = &path.trim()[1..];
         let path = &path[..(path.len() - 1)];
@@ -266,7 +266,7 @@ fn preprocess(
     // Recursive include function that will call iself
     fn include(
         source: String,
-        assets: &Assets,
+        assets: &mut Assets,
         snippets: &Snippets,
         depth: u32,
     ) -> Result<String, ShaderPreprocessorError> {

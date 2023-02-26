@@ -26,7 +26,7 @@ impl Material for Sky {
     // Load the vertex shader for this material
     fn vertex(
         graphics: &Graphics,
-        assets: &Assets,
+        assets: &mut Assets,
     ) -> Compiled<VertexModule> {
         let vert = assets
             .load::<VertexModule>("engine/shaders/scene/sky/sky.vert")
@@ -37,7 +37,7 @@ impl Material for Sky {
     // Load the fragment shader for this material
     fn fragment(
         graphics: &Graphics,
-        assets: &Assets,
+        assets: &mut Assets,
     ) -> Compiled<FragmentModule> {
         let frag = assets
             .load::<FragmentModule>("engine/shaders/scene/sky/sky.frag")

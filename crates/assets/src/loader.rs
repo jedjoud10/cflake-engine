@@ -239,7 +239,7 @@ impl Assets {
 impl Assets {
     // Load an asset using some explicit/default loading arguments
     pub fn load<'str, 'ctx, 'stg, A: Asset>(
-        &self,
+        &mut self,
         input: impl AssetInput<'str, 'ctx, 'stg, A>,
     ) -> Result<A, AssetLoadError> {
         // Check if the extension is valid
@@ -273,7 +273,7 @@ impl Assets {
 
     // Load multiple assets using some explicit/default loading arguments
     pub fn load_from_iter<'str, 'ctx, 'stg, A: Asset>(
-        &self,
+        &mut self,
         inputs: impl IntoIterator<
             Item = impl AssetInput<'str, 'ctx, 'stg, A>,
         >,
@@ -289,7 +289,7 @@ impl Assets {
 impl Assets {
     // Load an asset using some explicit/default loading arguments in another thread
     pub fn async_load<'str, A: AsyncAsset>(
-        &self,
+        &mut self,
         input: impl AssetInput<'str, 'static, 'static, A>,
         threadpool: &mut ThreadPool,
     ) -> AsyncHandle<A>
@@ -304,7 +304,6 @@ impl Assets {
         log::debug!("Asynchronously loading asset {path:?}...",);
 
         // Clone the things that must be sent to the thread
-        let assets_sender = self.sender.clone();
         let bytes = self.bytes.clone();
         let sender = self.sender.clone();
         let user = self.user.clone();
@@ -315,8 +314,10 @@ impl Assets {
             _phantom: PhantomData,
             index,
         };
+        self.loaded.push(None);
 
         // Create a new task that will load this asset
+        dbg!(index);
         threadpool.execute(move || {
             Self::async_load_inner::<A>(
                 owned, bytes, user, context, settings, sender, index
@@ -328,7 +329,7 @@ impl Assets {
     // Load multiple assets using some explicit/default loading arguments in another thread
     // This returns handle(s) that we can wait for and fetch later on
     pub fn async_load_from_iter<'s, A: AsyncAsset>(
-        &self,
+        &mut self,
         inputs: impl IntoIterator<
             Item = impl AssetInput<'s, 'static, 'static, A> + Send,
         >,
@@ -360,6 +361,7 @@ impl Assets {
                     _phantom: PhantomData,
                     index,
                 });
+                self.loaded.push(None);
 
                 // Start telling worker threads to begin loading the assets
                 scope.execute(move || {

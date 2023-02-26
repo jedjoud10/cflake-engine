@@ -1,5 +1,5 @@
 use bytemuck::{Pod, Zeroable};
-use graphics::{Normalized, Texture2D, UniformBuffer, RGBA};
+use graphics::{Normalized, Texture2D, UniformBuffer, RGBA, SRGBA};
 
 // Camera data that will be stored in a UBO
 #[derive(Clone, Copy, PartialEq, Pod, Zeroable, Default)]
@@ -50,7 +50,7 @@ pub struct SceneUniform {
 }
 
 // Type aliases for textures
-pub type AlbedoTexel = RGBA<Normalized<u8>>;
+pub type AlbedoTexel = SRGBA<Normalized<u8>>;
 pub type NormalTexel = RGBA<Normalized<u8>>;
 pub type AlbedoMap = Texture2D<AlbedoTexel>;
 pub type NormalMap = Texture2D<NormalTexel>;

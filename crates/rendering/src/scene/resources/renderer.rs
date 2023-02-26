@@ -77,7 +77,7 @@ fn create_texture2d<T: Texel>(
 
 impl ForwardRenderer {
     // Create a new scene render pass and the forward renderer
-    pub(crate) fn new(graphics: &Graphics, assets: &Assets, extent: vek::Extent2<u32>) -> Self {
+    pub(crate) fn new(graphics: &Graphics, assets: &mut Assets, extent: vek::Extent2<u32>) -> Self {
         // Create the depth texture for the forward shading scene pass
         let depth_texture = Texture2D::<Depth::<f32>>::from_texels(
             graphics,
