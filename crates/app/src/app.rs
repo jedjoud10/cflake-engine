@@ -376,10 +376,10 @@ impl App {
         self.regsys(graphics::common);
         self.regsys(graphics::acquire);
         self.regsys(graphics::present);
-        self.regsys(rendering::rendering_system);
-        self.regsys(rendering::camera_system);
-        self.regsys(rendering::matrix_system);
-        self.regsys(rendering::display_system);
+        self.regsys(rendering::systems::camera::system);
+        self.regsys(rendering::systems::composite::system);
+        self.regsys(rendering::systems::matrix::system);
+        self.regsys(rendering::systems::rendering::system);
 
         // Insert the IO manager
         let author = self.author_name.clone();

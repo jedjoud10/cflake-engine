@@ -44,7 +44,7 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPass<C, DS> {
     // Begin the render pass and return an active render pass that we can use to bind multiple
     // graphical pipelines to so we can render specific types of objects
     pub fn begin<'r>(
-        &'r mut self,
+        &'r self,
         encoder: &'r mut CommandEncoder,
         color_attachments: impl ColorAttachments<'r, C>,
         depth_stencil_attachment: impl DepthStencilAttachment<'r, DS>,
