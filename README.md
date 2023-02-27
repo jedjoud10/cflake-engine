@@ -1,4 +1,9 @@
+# 🚧🚧🚧 **UNDER HEAVY DEVELOPMENT** 🚧🚧🚧
+
+
 # cFlake Engine
+
+
 cFlake Engine, in it's current state, is a free and open-source Rust game engine that I have created with the help of certain friends and mates.
 Currently, cFlake engine is under heavy development (***very*** WIP), but pull requests are heavily appreciated (pls help me I am becoming insane)
 
@@ -48,7 +53,7 @@ Entities could be though of as a simple handle to some underlying data stored wi
 
 They act a *pointer* of some sort that will fetch data from somewhere else. This alleviates the problem of having random data scattered in memory and having separate handles for them and such. 
 
-Entities can be created and destroyed using the ``Scene`` resource that is automatically added into the scene if the ``scene`` system is enabled (check ``EnabledSystems``). More so, entities can have data linked to them through ``Component``s. An entity could have up to 32 components linked to it at the same time (if the "extend-bitmasks" feature is enabled, this gets bumped up to 64 max components)
+Entities can be created and destroyed using the ``Scene`` resource that is automatically added into the world. More so, entities can have data linked to them through ``Component``s. An entity could have up to 32 components linked to it at the same time (if the "extend-bitmasks" feature is enabled, this gets bumped up to 64 max components)
 
 ## Components
 Components are what actually store the data for a specified entity. Components are all stored within an ``Archetype``, which is a deisng/optimization that certain ECS implementation use for faster iteration speeds at the cost for slower insertion / removal speeds. Components can be inserted into the scene using the ``Scene::insert()`` function, which takes in a ``Bundle`` parameter that contains a tuple of different components. Components can also be removed from entities using ``EntryMut``, which is a mutable access to an entity's components directly.

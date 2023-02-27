@@ -380,6 +380,7 @@ impl App {
         self.regsys(rendering::systems::composite::system);
         self.regsys(rendering::systems::matrix::system);
         self.regsys(rendering::systems::rendering::system);
+        self.regsys(gui::system);
 
         // Insert the IO manager
         let author = self.author_name.clone();

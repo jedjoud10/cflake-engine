@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 slotmap = "1.0.6"
-winit = "0.27.5"
+winit = "0.28.1"
 num_cpus = "1.13.1"
 seq-macro = "0.3.0"
 paste = "1.0.7"
