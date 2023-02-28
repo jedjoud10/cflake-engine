@@ -73,6 +73,13 @@ impl Rasterizer {
 
         // Create the appropriate vertex config for Egui
         let vertex_config = VertexConfig {
+            groups: [
+                PerVertex::<XY<f32>>::as_group(),
+                VertexGroup {
+                    bindings: 
+                }
+            ]
+            
             inputs: [
                 PerVertex::<XY<f32>>::info(),
                 PerVertex::<XY<f32>>::info(),
