@@ -1,8 +1,10 @@
 // https://github.com/cohaereo/egui_glfw_gl/blob/master/src/painter.rs
 #version 460 core
 
-// Window bind group buffer (creates a 'window' object)
-#include <engine/shaders/common/window.glsl>
+layout(set = 0, binding = 0) uniform MaterialData {
+    uint width;
+    uint height;
+} window;
 
 layout(location = 0) in vec2 a_pos;
 layout(location = 1) in vec2 a_tc;

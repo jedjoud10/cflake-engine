@@ -1222,6 +1222,7 @@ name = "gui"
 version = "0.1.0"
 dependencies = [
  "assets",
+ "bytemuck",
  "egui",
  "egui-winit",
  "graphics",

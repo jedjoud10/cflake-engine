@@ -41,6 +41,11 @@ impl Shader {
     pub fn fragment(&self) -> &Compiled<FragmentModule> {
         &self.fragment
     }
+
+    // Get the underlying reflected shader
+    pub fn reflected(&self) -> &ReflectedShader {
+        &self.reflected
+    }
 }
 
 // A compute shader used for general computing work

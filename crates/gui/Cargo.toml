@@ -13,4 +13,5 @@ assets = { path = "../assets" }
 math = { path = "../math" }
 egui = "0.21.0"
 egui-winit = "0.21.1"
+bytemuck = "1.12.3"
 vek = { workspace = true }
