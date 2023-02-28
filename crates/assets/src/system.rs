@@ -18,6 +18,8 @@ fn init(world: &mut World, user: Option<PathBuf>) {
     persistent!(loader, "engine/shaders/scene/sky/sky.vert");
     persistent!(loader, "engine/shaders/post/display.frag");
     persistent!(loader, "engine/shaders/post/display.vert");
+    persistent!(loader, "engine/shaders/post/gui.vert");
+    persistent!(loader, "engine/shaders/post/gui.frag");
 
     // Load the default textures
     persistent!(loader, "engine/textures/scene/sky.jpg");

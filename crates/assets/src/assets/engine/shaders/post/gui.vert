@@ -1,11 +1,15 @@
 // https://github.com/cohaereo/egui_glfw_gl/blob/master/src/painter.rs
 #version 460 core
-uniform vec2 resolution;
+
+// Window bind group buffer (creates a 'window' object)
+#include <engine/shaders/common/window.glsl>
+
 layout(location = 0) in vec2 a_pos;
 layout(location = 1) in vec2 a_tc;
 layout(location = 2) in vec4 a_srgba; // 0-255 sRGB
-out vec4 v_rgba;
-out vec2 v_tc;
+
+layout(location = 0) out vec4 v_rgba;
+layout(location = 1) out vec2 v_tc;
 
 // TODO: Is there a way to remove all of this for a simpler solution?
 // Convert srgb color to rgb linear color
@@ -23,8 +27,8 @@ vec4 linear_from_srgba(vec4 srgba) {
 
 void main() {
     gl_Position = vec4(
-        2.0 * a_pos.x / resolution.x - 1.0,
-        1.0 - 2.0 * a_pos.y / resolution.y,
+        2.0 * a_pos.x / float(window.width) - 1.0,
+        1.0 - 2.0 * a_pos.y / float(window.height),
         0.0,
         1.0);
     v_rgba = linear_from_srgba(a_srgba);
