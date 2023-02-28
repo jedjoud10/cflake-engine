@@ -9,6 +9,7 @@ use naga::{AddressSpace, ResourceBinding, TypeInner};
 // This container stores all data related to reflected shaders
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ReflectedShader {
+    pub last_valid_bind_group_layout: usize,
     pub bind_group_layouts: [Option<BindGroupLayout>; 4],
     pub push_constant_layouts: [Option<PushConstantLayout>; 2],
 }
@@ -16,6 +17,7 @@ pub struct ReflectedShader {
 // This container stores all data related to reflected modules
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ReflectedModule {
+    pub last_valid_bind_group_layout: usize,
     pub bind_group_layouts: [Option<BindGroupLayout>; 4],
     pub push_constant: Option<PushConstantLayout>,
 }
@@ -101,6 +103,7 @@ pub fn merge_and_make_layout(
     let modules = &[vertex.reflected(), fragment.reflected()];
     let shader =
         merge_reflected_modules_to_shader(modules);
+
     // Convert the reflected shader to a layout
     let layout = create_pipeline_layout_from_shader(
         graphics,
@@ -122,10 +125,16 @@ fn merge_reflected_modules_to_shader(
     // Stores mutliple push constants for each module (at max we will have 2 modules)
     let mut push_constant_layouts: [Option<PushConstantLayout>; 2] = [None, None];
 
+    // Keep track of the last valid bind group layout index (max)
+    let mut last_valid_bind_group_layout = 0;
+
     // Merge different modules into a ReflectedShader
     for (module_index, module) in modules.iter().enumerate() {
         // Add the bind group push constant layout (if it exists)
         push_constant_layouts[module_index] = module.push_constant.clone();
+        last_valid_bind_group_layout = last_valid_bind_group_layout.max(
+            module.last_valid_bind_group_layout
+        );
 
         // Merrge bind groups and their entries
         for (group_index, bind_group_layout) in module.bind_group_layouts.iter().enumerate() {
@@ -185,6 +194,7 @@ fn merge_reflected_modules_to_shader(
     ReflectedShader {
         bind_group_layouts: groups,
         push_constant_layouts,
+        last_valid_bind_group_layout,
     }
 }
 
@@ -312,14 +322,16 @@ fn create_pipeline_layout_from_shader(
         })
         .collect::<Vec<_>>();
 
-    // Convert the bind group layouts hash map references to proper references 
+    // Convert the bind group layouts hash map references to proper references (use hop bind group layout)
     let bind_group_layouts = bind_group_layouts
         .iter()
-        .map(|x| x
-            .as_ref()
-            .map(|x| &***x)
-            .unwrap_or(&**empty_bind_group_layout)
-        )
+        .map(|x| {
+            x
+                .as_ref()
+                .map(|x| &***x)
+                .unwrap_or(&**empty_bind_group_layout)
+        })
+        .take(shader.last_valid_bind_group_layout+1)
         .collect::<Vec<_>>();
 
     // Convert the push constant range layouts to push constant ranges
@@ -360,10 +372,19 @@ fn create_pipeline_layout_from_shader(
 pub fn reflect_module<M: ShaderModule>(
     naga: &naga::Module,
 ) -> ReflectedModule {
-    let groups = reflect_binding_group::<M>(naga);
+    let bind_group_layouts = reflect_binding_group::<M>(naga);
     let push_constant = reflect_push_constant::<M>(naga);
 
-    ReflectedModule { bind_group_layouts: groups, push_constant }
+    let last_valid_bind_group_layout = bind_group_layouts
+        .iter()
+        .rposition(|x| x.is_some())
+        .unwrap_or_default();
+
+    ReflectedModule {
+        bind_group_layouts,
+        last_valid_bind_group_layout,
+        push_constant
+    }
 }
 
 // Fetches the used binding groups of a given naga module

@@ -39,7 +39,15 @@ impl<'r, 't, C: ColorLayout, DS: DepthStencilLayout>
 
         // Bind the empty bind groups for bind group layouts
         // that have been hopped over during reflection
-        for (index, bind_group_layout) in pipeline.shader().reflected.bind_group_layouts.iter().enumerate() {
+        let reflected = &pipeline.shader().reflected;
+        let iter = reflected
+            .bind_group_layouts
+            .iter()
+            .enumerate()
+            .take(reflected
+                .last_valid_bind_group_layout
+            );
+        for (index, bind_group_layout) in iter {
             if bind_group_layout.is_none() {
                 self.commands.push(RenderCommand::SetBindGroup(index as u32, bind_group.clone()))
             }

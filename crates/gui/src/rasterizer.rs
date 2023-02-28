@@ -147,6 +147,7 @@ impl Rasterizer {
         }
 
         // Write to the buffers
+        dbg!(&positions);
         self.positions.extend_from_slice(&positions).unwrap();
         self.texcoords.extend_from_slice(&texcoords).unwrap();
         self.colors.extend_from_slice(&colors).unwrap();
