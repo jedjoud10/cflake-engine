@@ -1,5 +1,7 @@
 use std::ops::Deref;
 
+use crate::Rasterizer;
+
 // This interface encapsulates all the data that we need to use Egui and to draw
 pub struct Interface {
     // This is the egui context that will handle everything related to egui
@@ -8,10 +10,8 @@ pub struct Interface {
     // This is the current egui state given from winit whenever we receive a new window event
     pub(crate) state: egui_winit::State,
     
-    /*
-    // This is the painter that will actually draw stuff onto the screen
-    painter: Painter,
-    */
+    // This is the rasterizer that will actually draw stuff onto the screen
+    pub(crate) rasterizer: Rasterizer,
 }
 
 impl Deref for Interface {

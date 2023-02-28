@@ -1,5 +1,7 @@
 mod system;
 mod interface;
+mod rasterizer;
+pub use rasterizer::*;
 pub use interface::*;
 pub use system::*;
 

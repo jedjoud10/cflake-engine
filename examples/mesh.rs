@@ -27,10 +27,10 @@ fn init(world: &mut World) {
     // Make the cursor invisible and locked
     let window = world.get::<Window>().unwrap();
     window
-        .window()
+        .raw()
         .set_cursor_grab(winit::window::CursorGrabMode::Confined)
         .unwrap();
-    window.window().set_cursor_visible(false);
+    window.raw().set_cursor_visible(false);
 
     // Import the diffuse map and normal map
     asset!(&mut assets, "assets/user/ignored/diffuse.jpg");

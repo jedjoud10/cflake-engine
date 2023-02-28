@@ -139,38 +139,10 @@ impl ForwardRenderer {
             }
         )).unwrap();
 
-        // Create the default 1x1 textures
-        let white = create_texture2d::<AlbedoTexel>(
-            graphics,
-            vek::Vec3::broadcast(255).with_w(255),
-        );
-
-        let black = create_texture2d::<AlbedoTexel>(
-            graphics,
-            vek::Vec4::broadcast(0),
-        );
-            
-        let normal = create_texture2d::<NormalTexel>(
-            graphics,
-            vek::Vec3::new(127, 127, 255).with_w(255),
-        );
-
-        // Create the default buffers    
-        let camera_buffer = create_uniform_buffer::<CameraUniform>(
-            graphics,
-        );
-            
-        let timing_buffer = create_uniform_buffer::<TimingUniform>(
-            graphics,
-        );
-            
-        let scene_buffer = create_uniform_buffer::<SceneUniform>(
-            graphics,
-        );
-
-        let window_buffer = create_uniform_buffer::<WindowUniform>(
-            graphics,
-        );
+        // Create the default 1x1 textures colors
+        let white = vek::Vec3::broadcast(255).with_w(255);
+        let black = vek::Vec4::broadcast(0);
+        let normal = vek::Vec3::new(127, 127, 255).with_w(255); ;
             
         Self {
             // Render pass, color texture, and depth texture
@@ -179,15 +151,15 @@ impl ForwardRenderer {
             depth_texture,
 
             // Create the common material buffers
-            camera_buffer,
-            timing_buffer,
-            scene_buffer,
-            window_buffer,
+            camera_buffer: create_uniform_buffer(graphics),
+            timing_buffer: create_uniform_buffer(graphics),
+            scene_buffer: create_uniform_buffer(graphics),
+            window_buffer: create_uniform_buffer(graphics),
 
             // Create the 1x1 common textures
-            white,
-            black,
-            normal,
+            white: create_texture2d(graphics, normal),
+            black: create_texture2d(graphics, normal),
+            normal: create_texture2d(graphics, normal),
 
             // No default camera
             main_camera: None,

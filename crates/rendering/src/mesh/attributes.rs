@@ -77,8 +77,8 @@ pub(crate) fn enabled_to_vertex_config(
         inputs: &mut Vec<VertexInputInfo>,
     ) {
         if attributes.contains(M::ATTRIBUTE) {
-            let input = <M::Input as VertexInput<M::V>>::new();
-            inputs.push(input.info());
+            let input = <M::Input as VertexInput<M::V>>::info();
+            inputs.push(input);
         }
     }
 

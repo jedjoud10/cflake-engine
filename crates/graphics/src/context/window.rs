@@ -58,7 +58,7 @@ impl Window {
     }
 
     // Get the raw winit window
-    pub fn window(&self) -> &winit::window::Window {
+    pub fn raw(&self) -> &winit::window::Window {
         &self.raw
     }
 

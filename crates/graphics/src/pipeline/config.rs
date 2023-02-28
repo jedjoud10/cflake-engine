@@ -73,24 +73,19 @@ impl VertexInputInfo {
 // Vertex input defines the vertex layout for a single buffer
 // TODO: Implement vertex interlacing
 pub trait VertexInput<V: Vertex> {
-    // Create a new vertex input (layout)
-    fn new() -> Self
-    where
-        Self: Sized;
-
     // Get the vertex info of the input
-    fn vertex_info(&self) -> VertexInfo {
+    fn vertex_info() -> VertexInfo {
         V::info()
     }
 
     // Get the vertex step mode
-    fn step_mode(&self) -> VertexStepMode;
+    fn step_mode() -> VertexStepMode;
 
     // Get the combined info
-    fn info(&self) -> VertexInputInfo {
+    fn info() -> VertexInputInfo {
         VertexInputInfo {
-            info: self.vertex_info(),
-            step_mode: self.step_mode(),
+            info: Self::vertex_info(),
+            step_mode: Self::step_mode(),
         }
     }
 }
@@ -99,11 +94,7 @@ pub trait VertexInput<V: Vertex> {
 // should be updated for every vertex drawn in the mesh
 pub struct PerVertex<V: Vertex>(PhantomData<V>);
 impl<V: Vertex> VertexInput<V> for PerVertex<V> {
-    fn new() -> Self {
-        Self(PhantomData)
-    }
-
-    fn step_mode(&self) -> VertexStepMode {
+    fn step_mode() -> VertexStepMode {
         VertexStepMode::Vertex
     }
 }
@@ -112,11 +103,7 @@ impl<V: Vertex> VertexInput<V> for PerVertex<V> {
 // that should be updated for every instance drawn
 pub struct PerInstance<V: Vertex>(PhantomData<V>);
 impl<V: Vertex> VertexInput<V> for PerInstance<V> {
-    fn new() -> Self {
-        Self(PhantomData)
-    }
-
-    fn step_mode(&self) -> VertexStepMode {
+    fn step_mode() -> VertexStepMode {
         VertexStepMode::Instance
     }
 }
