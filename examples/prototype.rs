@@ -12,12 +12,16 @@ fn main() {
 // Executed at the start
 fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
-    let buffer = StorageBuffer::<u32>::from_slice(
+    let mut buffer = StorageBuffer::<u32>::from_slice(
         &graphics,
-        &[],
+        &[1],
         BufferMode::Resizable,
-        BufferUsage::COPY_SRC
+        BufferUsage::WRITE | BufferUsage::READ
     ).unwrap();
+
+    dbg!(buffer.as_view(..).unwrap().as_slice());
+    buffer.extend_from_slice(&[2, 3, 4, 5, 6]).unwrap();
+    dbg!(buffer.as_view(..).unwrap().as_slice());
 }
 
 // Camera controller update executed every tick

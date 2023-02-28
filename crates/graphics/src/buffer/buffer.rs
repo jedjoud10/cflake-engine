@@ -527,10 +527,15 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
 
             // Swap them out, and drop the last buffer
             let old = std::mem::replace(&mut self.buffer, buffer);
-            drop(old)
+            drop(old);
+
+            // TODO: Optimize this shit
+            self.length += slice.len();
+            self.write(slice, self.length-slice.len()).unwrap();
         } else {
             // Just read into a sub-part of the buffer
-            self.write(slice, self.length).unwrap();
+            self.length += slice.len();
+            self.write(slice, self.length-slice.len()).unwrap();
         }
 
         Ok(())

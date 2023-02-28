@@ -77,8 +77,9 @@ pub(crate) fn record<'r, C: ColorLayout, DS: DepthStencilLayout>(
                 start,
                 end
             } => {
+                let bound = (*start, *end);
                 render_pass.set_index_buffer(
-                    buffer.raw().slice(..),
+                    buffer.raw().slice(bound),
                     wgpu::IndexFormat::Uint32,
                 );
             },

@@ -3,7 +3,7 @@ use ahash::AHashMap;
 use crate::{
     BindGroup, ColorLayout, DepthStencilLayout, Graphics,
     GraphicsPipeline, RenderCommand, TriangleBuffer, UntypedBuffer,
-    Vertex, VertexBuffer, PushConstants, ModuleKind, UniformBuffer, BufferMode, BufferUsage,
+    Vertex, VertexBuffer, PushConstants, ModuleKind, UniformBuffer, BufferMode, BufferUsage, GpuPod,
 };
 use std::{marker::PhantomData, ops::{Range, RangeBounds, Bound}, sync::Arc, collections::hash_map::Entry};
 
@@ -32,9 +32,10 @@ fn map<T, U, F: FnOnce(T) -> U>(bound: Bound<T>, map: F) -> Bound<U> {
 }
 
 // Convert some buffer range bounds to byte starts / ends
-fn convert(bounds: impl RangeBounds<usize>) -> (Bound<u64>, Bound<u64>) {
-    let start = map(bounds.start_bound().cloned(), |x| x as u64 * 8);
-    let end = map(bounds.end_bound().cloned(), |x| x as u64 * 8);
+fn convert(bounds: impl RangeBounds<usize>, stride: usize) -> (Bound<u64>, Bound<u64>) {
+    let stride = stride as u64;
+    let start = map(bounds.start_bound().cloned(), |x| x as u64 * stride);
+    let end = map(bounds.end_bound().cloned(), |x| x as u64 * stride);
     (start, end)
 }
 
@@ -49,7 +50,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         buffer: &'r VertexBuffer<V>,
         bounds: impl RangeBounds<usize>,
     ) {
-        let (start, end) = convert(bounds);
+        let (start, end) = convert(bounds, buffer.stride());
         self.commands.push(RenderCommand::SetVertexBuffer {
             slot,
             buffer: buffer.as_untyped(),
@@ -65,7 +66,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         buffer: &'r TriangleBuffer<u32>,
         bounds: impl RangeBounds<usize>,
     ) {
-        let (start, end) = convert(bounds);
+        let (start, end) = convert(bounds, buffer.stride());
         self.commands.push(RenderCommand::SetIndexBuffer {
             buffer: buffer,
             start,

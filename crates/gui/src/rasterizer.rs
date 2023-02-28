@@ -60,7 +60,6 @@ impl Rasterizer {
 
         // Combine the modules to the shader
         let shader = Shader::new(graphics, &vertex, &fragment);
-        dbg!(shader.reflected());
 
         // Create the render pass that will write to the swapchain
         let render_pass = FinalRenderPass::new(
@@ -126,6 +125,7 @@ impl Rasterizer {
         let mut texcoords = Vec::<vek::Vec2<f32>>::new();
         let mut colors = Vec::<vek::Vec4<u8>>::new();
         let mut triangles = Vec::<u32>::new();
+        dbg!("drawing egui shit");
 
         // Convert the clipped primitives to their raw vertex representations
         // TODO: Optimize these shenanigans
@@ -141,13 +141,13 @@ impl Rasterizer {
                         texcoords.push(uvs);
                         colors.push(color);
                     }
+                    dbg!(mesh.vertices.len());
                 },
                 egui::epaint::Primitive::Callback(_) => {},
             }
         }
 
         // Write to the buffers
-        dbg!(&positions);
         self.positions.extend_from_slice(&positions).unwrap();
         self.texcoords.extend_from_slice(&texcoords).unwrap();
         self.colors.extend_from_slice(&colors).unwrap();
@@ -181,13 +181,13 @@ impl Rasterizer {
             match &primitive.primitive {
                 egui::epaint::Primitive::Mesh(mesh) => {
                     let verts = mesh.vertices.len();
-                    let triangles = mesh.indices.len() / 3;
+                    let triangles = mesh.indices.len();
 
                     active.set_vertex_buffer::<XY<f32>>(0, &self.positions, vertex_offset..(vertex_offset + verts));
                     active.set_vertex_buffer::<XY<f32>>(1, &self.texcoords, vertex_offset..(vertex_offset + verts));
                     active.set_vertex_buffer::<XYZW<Normalized<u8>>>(2, &self.colors, vertex_offset..(vertex_offset + verts));
                     active.set_index_buffer(&self.triangles, triangle_offset..(triangle_offset + triangles));
-                    active.draw_indexed(0..(triangles as u32 * 3), 0..1);
+                    active.draw_indexed(0..(triangles as u32), 0..1);
 
                     vertex_offset += verts;
                     triangle_offset += triangles;
