@@ -4,12 +4,6 @@ use thiserror::Error;
 pub enum PipelineInitializationError {
     #[error("{0}")]
     VertexConfigError(PipelineVertexConfigError),
-
-    #[error("Stencil layout is enabled, although stencil configuration is missing")]
-    MissingStencilConfig,
-
-    #[error("Depth layout is enabled, although depth configuration is missing")]
-    MissingDepthConfig,
 }
 
 #[derive(Error, Debug)]

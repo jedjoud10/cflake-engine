@@ -1,6 +1,6 @@
 use assets::Assets;
 use egui::{ImageData, TextureId, TexturesDelta, ClippedPrimitive};
-use graphics::{Graphics, Window, RenderPass, ColorOperations, Operation, LoadOp, StoreOp, VertexConfig, PrimitiveConfig, FragmentModule, VertexModule, Compiler, Shader, VertexInput, XY, PerVertex, XYZW, Normalized, VertexBuffer, GpuPod, BufferMode, BufferUsage, TriangleBuffer, ValueFiller};
+use graphics::{Graphics, Window, RenderPass, ColorOperations, Operation, LoadOp, StoreOp, VertexConfig, PrimitiveConfig, FragmentModule, VertexModule, Compiler, Shader, VertexInput, XY, PerVertex, XYZW, Normalized, VertexBuffer, GpuPod, BufferMode, BufferUsage, TriangleBuffer, ValueFiller, Texture2D, RGBA, R, Texture, TextureMipMaps, TextureUsage, TextureMode, SamplerSettings, SamplerFilter, SamplerWrap, SamplerMipMaps, BlendFactor, BlendOperation, BlendComponent, BlendState};
 use rendering::{FinalRenderPass, FinalGraphicsPipeline};
 
 // A global rasterizer that will draw the Egui elements onto the screen
@@ -17,6 +17,9 @@ pub(crate) struct Rasterizer {
     
     // Triangle buffers oui oui oui
     triangles: TriangleBuffer<u32>,
+
+    // Egui font texture
+    texture: Option<Texture2D<RGBA<Normalized<u8>>>>,
 }
 
 fn create_vertex_buffer<V: graphics::Vertex>(
@@ -41,6 +44,28 @@ fn create_index_buffer(
         BufferUsage::WRITE | BufferUsage::COPY_SRC,
     )
     .unwrap()
+}
+
+fn create_rf32_texture(
+    graphics: &Graphics,
+    extent: vek::Extent2<u32>,
+    texels: &[f32]
+) -> Texture2D<RGBA<Normalized<u8>>> {
+    let texels = texels.iter().map(|x| vek::Vec4::broadcast(x * u8::MAX as f32).as_::<u8>()).collect::<Vec<_>>();
+
+    Texture2D::from_texels(
+        graphics,
+        Some(&texels),
+        extent,
+        TextureMode::Dynamic,
+        TextureUsage::SAMPLED | TextureUsage::COPY_DST,
+        SamplerSettings {
+            filter: SamplerFilter::Linear,
+            wrap: SamplerWrap::ClampToEdge,
+            mipmaps: SamplerMipMaps::Auto,
+        },
+        TextureMipMaps::Disabled
+    ).unwrap()
 }
 
 impl Rasterizer {
@@ -85,7 +110,18 @@ impl Rasterizer {
             graphics,
             None,
             None,
-            None,
+            Some([Some(BlendState {
+                color: BlendComponent {
+                    src_factor: BlendFactor::One,
+                    dst_factor: BlendFactor::OneMinusSrcAlpha,
+                    operation: BlendOperation::Add,
+                },
+                alpha: BlendComponent {
+                    src_factor: BlendFactor::OneMinusDstAlpha,
+                    dst_factor: BlendFactor::One,
+                    operation: BlendOperation::Add,
+                },
+            })]),
             vertex_config,
             PrimitiveConfig::Triangles {
                 winding_order: graphics::WindingOrder::Ccw,
@@ -103,6 +139,7 @@ impl Rasterizer {
             texcoords: create_vertex_buffer::<XY<f32>>(graphics),
             colors: create_vertex_buffer::<XYZW<Normalized<u8>>>(graphics),
             triangles: create_index_buffer(graphics),
+            texture: None,
         }
     }
 
@@ -115,6 +152,27 @@ impl Rasterizer {
         primitives: Vec<ClippedPrimitive>,
         deltas: TexturesDelta,
     ) {
+        if let Some((_, delta)) = deltas
+            .set
+            .iter()
+            .find(|(tid, _)| *tid == TextureId::Managed(0))
+        {
+            // Insert the texture if we don't have it already
+            self.texture.get_or_insert_with(|| {
+                let dimensions = vek::Extent2::from_slice(
+                    &delta.image.size()
+                ).as_::<u32>();
+                
+                // For now, we only support the font texture 
+                match &delta.image {
+                    ImageData::Font(font) => {
+                        create_rf32_texture(graphics, dimensions, &font.pixels)
+                    },
+                    _ => todo!()
+                }
+            });
+        }
+
         // Clear most of the buffers since we will write to them
         self.positions.clear().unwrap();
         self.texcoords.clear().unwrap();
@@ -126,7 +184,6 @@ impl Rasterizer {
         let mut texcoords = Vec::<vek::Vec2<f32>>::new();
         let mut colors = Vec::<vek::Vec4<u8>>::new();
         let mut triangles = Vec::<u32>::new();
-        dbg!("drawing egui shit");
 
         // Convert the clipped primitives to their raw vertex representations
         // TODO: Optimize these shenanigans
@@ -142,7 +199,6 @@ impl Rasterizer {
                         texcoords.push(uvs);
                         colors.push(color);
                     }
-                    dbg!(mesh.vertices.len());
                 },
                 egui::epaint::Primitive::Callback(_) => {},
             }
@@ -166,11 +222,15 @@ impl Rasterizer {
         let mut active = render_pass.bind_pipeline(&self.pipeline);
 
         // Set the required shader uniforms
-        active.set_bind_group(0, move |group| {
+        let texture = self.texture.as_ref().unwrap();
+        active.set_bind_group(0, |group| {
             group.fill_ubo("window", |fill| {
                 fill.set("width", extent.w).unwrap();
                 fill.set("height", extent.h).unwrap();
             }).unwrap();
+
+            group.set_texture("font", texture).unwrap();
+            group.set_sampler("font_sampler", texture.sampler()).unwrap();
         });
 
         // Keep track of the vertex and triangle offset
@@ -182,13 +242,13 @@ impl Rasterizer {
             match &primitive.primitive {
                 egui::epaint::Primitive::Mesh(mesh) => {
                     let verts = mesh.vertices.len();
-                    let triangles = mesh.indices.len();
+                    let triangles = mesh.indices.len() / 3;
 
                     active.set_vertex_buffer::<XY<f32>>(0, &self.positions, vertex_offset..(vertex_offset + verts));
                     active.set_vertex_buffer::<XY<f32>>(1, &self.texcoords, vertex_offset..(vertex_offset + verts));
                     active.set_vertex_buffer::<XYZW<Normalized<u8>>>(2, &self.colors, vertex_offset..(vertex_offset + verts));
                     active.set_index_buffer(&self.triangles, triangle_offset..(triangle_offset + triangles));
-                    active.draw_indexed(0..(triangles as u32), 0..1);
+                    active.draw_indexed(0..(triangles as u32 * 3), 0..1);
 
                     vertex_offset += verts;
                     triangle_offset += triangles;

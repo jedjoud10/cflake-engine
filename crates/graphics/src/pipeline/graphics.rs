@@ -46,18 +46,14 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
         let stencil_config_enabled = DS::is_stencil_enabled();
         let depth_config_enabled = DS::is_depth_enabled();
 
-        // Check if the DepthStencilLayout contains a stencil format, return errors if appropriate
-        if stencil_config_enabled && stencil_config.is_none() {
-            return Err(
-                PipelineInitializationError::MissingStencilConfig,
-            );
+        // Check if the DepthStencilLayout does not contain a stencil format, return warning if appropriate
+        if !stencil_config_enabled && stencil_config.is_none() {
+            log::warn!("Tried using stencil config for a graphics pipeline without a stencil texel");
         }
 
-        // Check if the DepthStencilLayout contains a depth format, return errors if appropriate
-        if depth_config_enabled && depth_config.is_none() {
-            return Err(
-                PipelineInitializationError::MissingDepthConfig,
-            );
+        // Check if the DepthStencilLayout does not contain a depth format, return warning if appropriate
+        if !depth_config_enabled && depth_config.is_none() {
+            log::warn!("Tried using depth config for a graphics pipeline without a depth texel");
         }
 
         // Get all the configuration settings required for the RenderPipeline
