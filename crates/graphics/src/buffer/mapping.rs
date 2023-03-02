@@ -2,12 +2,13 @@ use crate::{
     Buffer, GpuPodRelaxed, StagingPool, StagingView, StagingViewWrite,
 };
 use parking_lot::MappedMutexGuard;
+use wgpu::CommandEncoder;
 use std::marker::PhantomData;
 
 // Allows  us to read the buffer as if it were an immutably slice
 pub struct BufferView<'a, T: GpuPodRelaxed, const TYPE: u32> {
     pub(crate) buffer: &'a Buffer<T, TYPE>,
-    pub(crate) data: StagingView<'a, wgpu::Buffer>,
+    pub(crate) data: StagingView<'a>,
 }
 
 impl<'a, T: GpuPodRelaxed, const TYPE: u32> BufferView<'a, T, TYPE> {
@@ -42,7 +43,7 @@ pub enum BufferViewMut<'a, T: GpuPodRelaxed, const TYPE: u32> {
     // Only used when WRITING ONLY
     Mapped {
         buffer: PhantomData<&'a Buffer<T, TYPE>>,
-        data: StagingViewWrite<'a, wgpu::Buffer>,
+        data: StagingViewWrite<'a>,
     },
 
     // Read the buffer's data to the CPU for reading/writing
@@ -100,7 +101,10 @@ impl<'a, T: GpuPodRelaxed, const TYPE: u32> Drop
 {
     fn drop(&mut self) {
         match self {
-            BufferViewMut::Cloned { buffer, data } => {}
+            // Write the cloned data back into the buffer when we drop the view
+            BufferViewMut::Cloned { buffer, data } => {
+                buffer.write(&data, 0);
+            }
             _ => {}
         }
     }

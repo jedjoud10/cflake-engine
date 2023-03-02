@@ -15,7 +15,7 @@ use crate::{
     BufferInitializationError, BufferMode, BufferNotMappableError,
     BufferReadError, BufferUsage, BufferView, BufferViewMut,
     BufferWriteError, GpuPodRelaxed, Graphics, StagingPool, Vertex,
-    R,
+    R, StagingTarget,
 };
 
 // Bitmask from Vulkan BufferUsages
@@ -347,12 +347,14 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
 
         // Use the staging pool for data writes
         let staging = self.graphics.staging_pool();
+        /*
         staging.write(
-            &self.buffer,
+            StagingTarget::Buffer(&self.buffer),
             &self.graphics,
             (offset * self.stride()) as u64,
             bytemuck::cast_slice(src),
         );
+        */
 
         Ok(())
     }
@@ -384,12 +386,18 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
 
         // Use the staging pool for data reads
         let staging = self.graphics.staging_pool();
+        /*
         staging.read(
-            &self.buffer,
-            &self.graphics,
-            (offset * self.stride()) as u64,
+            &self.graphics
+            StagingTarget::Buffer {
+                buffer: &self.buffer,
+                offset: (offset * self.stride()) as u64,
+                size: (dst.len() * self.stride()) as u64,
+            },
+
             bytemuck::cast_slice_mut(dst),
         );
+        */
 
         Ok(())
     }
@@ -546,6 +554,8 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
         &self,
         bounds: impl RangeBounds<usize>,
     ) -> Result<BufferView<T, TYPE>, BufferNotMappableError> {
+        todo!()
+        /*
         if !self.usage.contains(BufferUsage::READ) {
             return Err(BufferNotMappableError::AsView);
         }
@@ -561,7 +571,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
         let staging = self.graphics.staging_pool();
         let data = staging
             .map_read(
-                &self.buffer,
+                StagingTarget::Buffer(&self.buffer),
                 &self.graphics,
                 offset as u64,
                 size as u64,
@@ -572,6 +582,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
             buffer: &self,
             data,
         })
+        */
     }
 
     // Try to view the buffer mutably (for writing AND reading) immediately
@@ -580,6 +591,8 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
         &mut self,
         bounds: impl RangeBounds<usize>,
     ) -> Result<BufferViewMut<T, TYPE>, BufferNotMappableError> {
+        todo!()
+        /*
         if !self.usage.contains(BufferUsage::WRITE) {
             return Err(BufferNotMappableError::AsViewMut);
         }
@@ -600,7 +613,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
             let staging = self.graphics.staging_pool();
             let data = staging
                 .map_write(
-                    &self.buffer,
+                    StagingTarget::Buffer(&self.buffer),
                     &self.graphics,
                     offset as u64,
                     size as u64,
@@ -624,5 +637,6 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
         } else {
             panic!()
         }
+        */
     }
 }
