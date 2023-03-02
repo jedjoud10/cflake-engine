@@ -1,15 +1,6 @@
-use crate::{Vertex, VertexInfo};
+use crate::{Vertex, VertexInfo, ColorLayout, Texel};
 use std::marker::PhantomData;
-pub use wgpu::{Face};
 use wgpu::{ShaderLocation, VertexFormat, VertexStepMode};
-
-// Blend config for a single color attachment
-#[derive(Clone, Copy)]
-pub struct AttachmentBlendConfig {}
-
-// How we deal with blending for the color attachments
-#[derive(Clone, Copy)]
-pub struct BlendConfig {}
 
 // How we read/write from depth attachments used by the material
 #[derive(Clone, Copy, PartialEq)]
@@ -21,9 +12,18 @@ pub struct DepthConfig {
     pub depth_bias_clamp: f32,
 }
 
-pub type CompareFunction = wgpu::CompareFunction;
+// Renames + re-export
 pub type WindingOrder = wgpu::FrontFace;
 pub type StencilConfig = wgpu::StencilState;
+
+// Re-export comp-func and face
+pub use wgpu::{CompareFunction, Face};
+
+// Re-export blend state ops
+pub use wgpu::{BlendState, BlendFactor, BlendOperation, BlendComponent};
+
+// How we will use color blending for each element
+pub type BlendConfig<C: ColorLayout> = C::BlendingArray;
 
 // Depicts the exact primitives we will use to draw the VAOs
 #[derive(Clone, Copy, PartialEq)]

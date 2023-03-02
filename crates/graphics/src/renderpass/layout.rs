@@ -1,3 +1,5 @@
+use wgpu::BlendState;
+
 use crate::{
     ColorTexel, Depth, DepthElement, DepthStencil, LoadOp, Stencil,
     StencilElement, StoreOp, Texel, TexelInfo, Texture, Texture2D,
@@ -5,12 +7,17 @@ use crate::{
 
 // An attachment layout is a tuple that contains multiple color texels
 pub trait ColorLayout {
+    // Array that contains 1-n number of Option<BlendState>
+    type BlendingArray: Into<Vec<Option<BlendState>>> + Copy;
+
     // Get the untyped texel info for this layout
     fn layout_info() -> Vec<TexelInfo>;
 }
 
 // Singular color attachment
 impl<T: ColorTexel> ColorLayout for T {
+    type BlendingArray = [Option<BlendState>; 1];
+
     fn layout_info() -> Vec<TexelInfo> {
         vec![T::info()]
     }

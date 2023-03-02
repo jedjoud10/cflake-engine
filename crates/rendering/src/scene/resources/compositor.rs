@@ -47,6 +47,7 @@ impl Compositor {
             graphics,
             None,
             None,
+            None,
             VertexConfig::default(),
             PrimitiveConfig::Triangles {
                 winding_order: graphics::WindingOrder::Ccw,

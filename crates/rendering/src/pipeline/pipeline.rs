@@ -65,6 +65,7 @@ impl<M: Material> Pipeline<M> {
             graphics,
             Some(depth_config),
             M::stencil_config(),
+            None,
             vertex_config,
             M::primitive_config(),
             &shader,

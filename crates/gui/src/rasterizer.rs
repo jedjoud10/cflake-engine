@@ -85,6 +85,7 @@ impl Rasterizer {
             graphics,
             None,
             None,
+            None,
             vertex_config,
             PrimitiveConfig::Triangles {
                 winding_order: graphics::WindingOrder::Ccw,

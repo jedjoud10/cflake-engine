@@ -2,7 +2,7 @@ use std::{marker::PhantomData, num::NonZeroU64, sync::Arc};
 
 use ahash::AHashMap;
 use itertools::Itertools;
-use wgpu::{PrimitiveState, VertexStepMode};
+use wgpu::{PrimitiveState, VertexStepMode, BlendState};
 
 use crate::{
     BlendConfig, ColorLayout, DepthConfig, DepthStencilLayout,
@@ -17,7 +17,7 @@ pub struct GraphicsPipeline<C: ColorLayout, DS: DepthStencilLayout> {
     // Immutable data set at build time
     depth_config: Option<DepthConfig>,
     stencil_config: Option<StencilConfig>,
-    //blend_config: Option<BlendConfig>,
+    blend_config: Option<BlendConfig<C>>,
     vertex_config: VertexConfig,
     primitive_config: PrimitiveConfig,
     _phantom: PhantomData<C>,
@@ -37,6 +37,7 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
         graphics: &Graphics,
         depth_config: Option<DepthConfig>,
         stencil_config: Option<StencilConfig>,
+        blend_config: Option<BlendConfig<C>>,
         vertex_config: VertexConfig,
         primitive_config: PrimitiveConfig,
         shader: &Shader,
@@ -72,7 +73,7 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
             &vertex_config,
             attributes,
         );
-        let targets = color_layout_to_color_target_state::<C>();
+        let targets = color_layout_to_color_target_state::<C>(&blend_config);
         let primitive = primitive_config_to_state(primitive_config);
         let layout = shader_to_pipeline_layout(&shader);
 
@@ -114,6 +115,7 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
             stencil_config,
             vertex_config,
             primitive_config,
+            blend_config,
         })
     }
 }
@@ -129,7 +131,7 @@ fn shader_to_pipeline_layout(
 fn vertex_config_to_vertex_attributes(
     vertex_config: &VertexConfig,
 ) -> Vec<Vec<wgpu::VertexAttribute>> {
-    // TODO: Implement custom shader location + shader location checking + mapping
+    // TODO: Implement custom shader location + shader location checking + mapping + 
     vertex_config
         .inputs
         .iter()
@@ -167,13 +169,23 @@ fn vertex_config_to_buffer_layout<'a>(
 
 // Conver the statically typed color layout to the color target states needed for the fragment field
 fn color_layout_to_color_target_state<C: ColorLayout>(
+    blending: &Option<BlendConfig<C>>,
 ) -> Vec<Option<wgpu::ColorTargetState>> {
+    // Convert the typed blending state array to a vector
+    let vec: Option<Vec<Option<BlendState>>> = blending.as_ref().map(|x| {
+        <C::BlendingArray as Into<Vec<Option<BlendState>>>>::into(*x)
+    });
+
+    // Convert the typed layout targets to ColorTargetStates
     let targets = C::layout_info()
         .into_iter()
-        .map(|info| {
+        .enumerate()
+        .map(|(i, info)| {
             Some(wgpu::ColorTargetState {
                 format: info.format(),
-                blend: Some(wgpu::BlendState::REPLACE),
+                blend: vec.as_ref().map(|vec| vec[i]).unwrap_or_default(),
+
+                // FIXME: Let the user handle this
                 write_mask: wgpu::ColorWrites::ALL,
             })
         })
@@ -278,12 +290,10 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
         self.stencil_config.as_ref()
     }
 
-    /*
     // Get the blend config used when creating this pipeline
-    pub fn blend_config(&self) -> Option<&BlendConfig> {
+    pub fn blend_config(&self) -> Option<&BlendConfig<C>> {
         self.blend_config.as_ref()
     }
-    */
 
     // Get the vertex config used when creating this pipeline
     pub fn vertex_config(&self) -> &VertexConfig {

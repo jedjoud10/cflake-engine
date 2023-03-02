@@ -1,7 +1,7 @@
 use crate::{
     AlbedoMap, CameraBuffer, CameraUniform, EnabledMeshAttributes,
     Mesh, NormalMap, Renderer, SceneBuffer, SceneUniform,
-    TimingBuffer, TimingUniform,
+    TimingBuffer, TimingUniform, SceneColor,
 };
 use assets::Assets;
 use graphics::{
@@ -78,7 +78,7 @@ pub trait Material: 'static + Sized {
     }
 
     // Get the blend config for this material
-    fn blend_config() -> Option<BlendConfig> {
+    fn blend_config() -> Option<BlendConfig<SceneColor>> {
         None
     }
 
