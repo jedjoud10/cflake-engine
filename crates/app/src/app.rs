@@ -384,8 +384,6 @@ impl App {
         self.regsys(gui::acquire);
         self.regsys(gui::display);
 
-
-
         // Insert the IO manager
         let author = self.author_name.clone();
         let app = self.app_name.clone();

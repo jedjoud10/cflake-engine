@@ -243,7 +243,7 @@ impl Assets {
         input: impl AssetInput<'str, 'ctx, 'stg, A>,
     ) -> Result<A, AssetLoadError> {
         // Check if the extension is valid
-        let (path, context, settings) = input.split();
+        let (path, settings, context) = input.split();
         let path = Path::new(OsStr::new(path));
         let owned = path.to_owned();
         Self::validate::<A>(path)?;
@@ -298,7 +298,7 @@ impl Assets {
         A::Context<'static>: Send + Sync,
     {
         // Get the path and arguments
-        let (path, context, settings) = input.split();
+        let (path, settings, context) = input.split();
         let path = Path::new(OsStr::new(path));
         let owned = path.to_owned();
         log::debug!("Asynchronously loading asset {path:?}...",);
@@ -344,7 +344,7 @@ impl Assets {
         threadpool.scope(move |scope| {
             for (offset, input) in inputs.into_iter().enumerate() {
                 // Check the extension on a per file basis
-                let (path, context, settings) = input.split();
+                let (path, settings, context) = input.split();
                 let path = Path::new(OsStr::new(path));
                 log::debug!("Asynchronously loading asset {path:?} in batch...",);
                 let owned = path.to_owned();

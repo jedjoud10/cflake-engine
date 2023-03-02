@@ -15,6 +15,7 @@ fn init(world: &mut World, el: &EventLoop<()>) {
         egui: Default::default(),
         state: egui_winit::State::new(el),
         rasterizer: Rasterizer::new(&graphics, &mut assets),
+        enabled: true,
     };
 
     // TODO: Pls remove. It's kinda getting annoying now tbh
@@ -31,8 +32,10 @@ fn event(world: &mut World, event: &mut WindowEvent) {
     let mut interface = world.get_mut::<Interface>().unwrap();
     let interface = &mut *interface;
 
-    // TODO: Handle consumed field
-    let _ = interface.state.on_event(&mut interface.egui, event);
+    // Only take window events if the interface says so
+    if interface.enabled {
+        let _ = interface.state.on_event(&mut interface.egui, event);
+    }
 }
 
 // Begin the frame by acquiring input and starting the Egui command recorder
@@ -47,15 +50,24 @@ fn begin(world: &mut World) {
 fn finish(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
     let mut interface = world.get_mut::<Interface>().unwrap();
-    let ui = &mut *interface;
+    let interface = &mut *interface;
     let mut window = world.get_mut::<Window>().unwrap();
     let mut assets = world.get_mut::<Assets>().unwrap();
 
     // End the Egui frame and fetch the meshes
-    let output = ui.egui.end_frame();
-    ui.state
-        .handle_platform_output(window.raw(), &ui.egui, output.platform_output);
-    let tessellated = ui.tessellate(output.shapes);
+    let mut output = interface.egui.end_frame();
+
+    // Hide the cursor if we are not taking events
+    if !interface.enabled {
+        output.platform_output.cursor_icon = egui::CursorIcon::None;
+    }
+
+    // Handle platform output and tesselate the shapes
+    interface.state
+        .handle_platform_output(window.raw(), &interface.egui, output.platform_output);
+    let tessellated = interface.tessellate(output.shapes);
+
+    // Draw using the graphics API
     interface.rasterizer.draw(
         &graphics,
         &mut window,

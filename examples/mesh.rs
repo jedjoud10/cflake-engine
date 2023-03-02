@@ -18,6 +18,7 @@ fn init(world: &mut World) {
     let mut threadpool = world.get_mut::<ThreadPool>().unwrap();
     let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
     let mut basics = world.get_mut::<Storage<Basic>>().unwrap();
+    let mut interface = world.get_mut::<Interface>().unwrap();
     let mut skies = world.get_mut::<Storage<Sky>>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
@@ -30,6 +31,7 @@ fn init(world: &mut World) {
         .set_cursor_grab(winit::window::CursorGrabMode::Confined)
         .unwrap();
     window.raw().set_cursor_visible(false);
+    interface.enabled = false;
 
     // Import the diffuse map and normal map
     asset!(&mut assets, "assets/user/ignored/diffuse.jpg");
@@ -72,7 +74,11 @@ fn init(world: &mut World) {
     // Load the renderable mesh
     let mesh = assets
         .load::<Mesh>((
-            "engine/meshes/cube.obj",
+            "engine/meshes/sphere.obj",
+            MeshImportSettings {
+                invert_tex_coords: vek::Vec2::new(false, true),
+                ..Default::default()
+            },
             graphics.clone(),
         ))
         .unwrap();
@@ -132,11 +138,20 @@ fn update(world: &mut World) {
     let time = world.get::<Time>().unwrap();
     let input = world.get::<Input>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
+    let ui = world.get_mut::<Interface>().unwrap();
 
-    // Print the FPS when we press F5
-    if input.get_button(Button::F5).pressed() {
-        log::info!("FPS: {}", time.average_fps());
-    }
+    // Create a test window where we will debug some sheit
+    egui::Window::new("Test window").show(&ui, |ui| {
+        ui.horizontal(|ui| {
+            ui.label("Delta (s/f): ");
+            ui.label(time.delta().as_secs_f32().to_string());
+        });
+
+        ui.horizontal(|ui| {
+            ui.label("FPS (f/s): ");
+            ui.label((1.0 / time.delta().as_secs_f32()).to_string());
+        });
+    });
 
     let camera =
         scene.find_mut::<(&Camera, &mut Position, &mut Rotation)>();

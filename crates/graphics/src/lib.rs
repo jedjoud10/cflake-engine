@@ -9,6 +9,8 @@ mod shader;
 mod system;
 mod tests;
 mod texture;
+mod staging;
+pub use staging::*;
 pub use active::*;
 pub use buffer::*;
 pub use context::*;

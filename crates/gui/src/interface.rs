@@ -12,6 +12,9 @@ pub struct Interface {
     
     // This is the rasterizer that will actually draw stuff onto the screen
     pub(crate) rasterizer: Rasterizer,
+
+    // Tells egui if it's currently taking window events or not
+    pub enabled: bool,
 }
 
 impl Deref for Interface {

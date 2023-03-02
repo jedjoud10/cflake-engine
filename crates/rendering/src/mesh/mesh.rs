@@ -36,10 +36,6 @@ pub struct Mesh {
 // Mesh initialization for 3D meshes
 impl Mesh {
     // Create a new mesh from the mesh attributes, context, and buffer settings
-    // TODO: Support multiple modes and usages PER attribute
-
-    // FIXME: Crashes when trying to create triangles buffer for the default engine sphere
-    // Has to do with the high triangle, maybe usize overflow?
     pub fn from_slices(
         graphics: &Graphics,
         mode: BufferMode,

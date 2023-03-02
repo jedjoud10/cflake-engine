@@ -4,7 +4,7 @@ use crate::Asset;
 pub trait AssetInput<'str, 'ctx, 'stg, A: Asset> {
     fn split(
         self,
-    ) -> (&'str str, A::Context<'ctx>, A::Settings<'stg>);
+    ) -> (&'str str, A::Settings<'stg>, A::Context<'ctx>);
     fn path(&self) -> &'str str;
 }
 
@@ -19,8 +19,8 @@ where
         self,
     ) -> (
         &'str str,
-        <A as Asset>::Context<'ctx>,
         <A as Asset>::Settings<'stg>,
+        <A as Asset>::Context<'ctx>,
     ) {
         (self, Default::default(), Default::default())
     }
@@ -40,10 +40,10 @@ where
         self,
     ) -> (
         &'str str,
-        <A as Asset>::Context<'ctx>,
         <A as Asset>::Settings<'stg>,
+        <A as Asset>::Context<'ctx>,
     ) {
-        (self.0, self.1, Default::default())
+        (self.0, Default::default(), self.1)
     }
 
     fn path(&self) -> &'str str {
@@ -53,14 +53,14 @@ where
 
 // Contains both the context and settings
 impl<'str, 'ctx, 'stg, A: Asset> AssetInput<'str, 'ctx, 'stg, A>
-    for (&'str str, A::Context<'ctx>, A::Settings<'stg>)
+    for (&'str str, A::Settings<'stg>, A::Context<'ctx>)
 {
     fn split(
         self,
     ) -> (
         &'str str,
-        <A as Asset>::Context<'ctx>,
         <A as Asset>::Settings<'stg>,
+        <A as Asset>::Context<'ctx>
     ) {
         self
     }

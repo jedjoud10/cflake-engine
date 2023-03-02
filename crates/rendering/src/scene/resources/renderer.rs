@@ -132,11 +132,11 @@ impl ForwardRenderer {
         // Load the default sky gradient texture
         let sky_gradient = assets.load::<AlbedoMap>(
             ("engine/textures/scene/sky.jpg",
-            graphics.clone(),
             TextureImportSettings {
                 mipmaps: TextureMipMaps::Disabled,
                 ..Default::default()
-            }
+            },
+            graphics.clone()            
         )).unwrap();
 
         // Create the default 1x1 textures colors

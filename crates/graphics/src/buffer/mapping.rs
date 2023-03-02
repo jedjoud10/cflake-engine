@@ -7,7 +7,7 @@ use std::marker::PhantomData;
 // Allows  us to read the buffer as if it were an immutably slice
 pub struct BufferView<'a, T: GpuPodRelaxed, const TYPE: u32> {
     pub(crate) buffer: &'a Buffer<T, TYPE>,
-    pub(crate) data: StagingView<'a>,
+    pub(crate) data: StagingView<'a, wgpu::Buffer>,
 }
 
 impl<'a, T: GpuPodRelaxed, const TYPE: u32> BufferView<'a, T, TYPE> {
@@ -42,7 +42,7 @@ pub enum BufferViewMut<'a, T: GpuPodRelaxed, const TYPE: u32> {
     // Only used when WRITING ONLY
     Mapped {
         buffer: PhantomData<&'a Buffer<T, TYPE>>,
-        data: StagingViewWrite<'a>,
+        data: StagingViewWrite<'a, wgpu::Buffer>,
     },
 
     // Read the buffer's data to the CPU for reading/writing
