@@ -31,6 +31,12 @@ type AsyncLoadedBytes = Arc<RwLock<AHashMap<PathBuf, Arc<[u8]>>>>;
 // Dynamic Asset Path specified by the user
 type UserPath = Option<Arc<Path>>;
 
+// Paths we can use to hijack default engine assets
+// TODO: This might not be safe but tbh I couldn't care
+type HijackPaths = AHashMap<PathBuf, PathBuf>;
+type AsyncHijackPaths = Arc<RwLock<HijackPaths>>;
+
+
 // This is the main asset manager resource that will load & cache newly loaded assets
 // This asset manager will also contain the persistent assets that are included by default into the engine executable
 pub struct Assets {
@@ -42,8 +48,12 @@ pub struct Assets {
     // The value corresponding to each key might be None in the case that the asset did not load (yet)
     loaded: Vec<Option<AsyncBoxedResult>>,
 
+    // We can use these re-definitions to allow the user to change default asset paths
+    hijack: AsyncHijackPaths,
+
     // Keep track of the bytes that were loaded in other threads
     // The value might be none in the case that the bytes were not loaded
+    // The path buf contains the local path of each asset
     bytes: AsyncLoadedBytes,
 
     // Path that references the main user assets
@@ -53,9 +63,7 @@ pub struct Assets {
 impl Assets {
     // Create a new asset loader using a path to the user defined asset folder (if there is one)
     pub fn new(user: Option<PathBuf>) -> Self {
-
         let user = user.map(|p| p.into());
-
         let (sender, receiver) =
             std::sync::mpsc::channel::<AsyncChannelResult>();
 
@@ -65,6 +73,7 @@ impl Assets {
             receiver,
             sender,
             user,
+            hijack: Default::default(),
         }
     }
 
@@ -79,6 +88,19 @@ impl Assets {
             .write()
             .entry(path)
             .or_insert_with(|| Arc::from(bytes));
+    }
+
+    // Add a "hijack" path that will overwrite the path for a specific asset
+    // This allows the user to write their own assets for engine assets if they want to
+    pub fn hijack(
+        &self,
+        og: impl AsRef<Path>,
+        new: impl AsRef<Path>,
+    ) {
+        let mut write = self.hijack.write();
+        let og = og.as_ref().to_path_buf();
+        let new = new.as_ref().to_path_buf();
+        write.insert(og, new);
     }
 }
 
@@ -119,7 +141,9 @@ impl Assets {
         user: &UserPath,
         path: &Path,
     ) -> bool {
-        if user.is_some() {
+        if path.is_absolute() {
+            true
+        } else if user.is_some() {
             !bytes.read().contains_key(path)
         } else {
             false
@@ -129,6 +153,7 @@ impl Assets {
     // Load bytes either dynamically or load cached bytes
     fn load_bytes(
         bytes: &AsyncLoadedBytes,
+        hijack: AsyncHijackPaths,
         user: &UserPath,
         owned: PathBuf,
     ) -> Result<Arc<[u8]>, AssetLoadError> {
@@ -138,7 +163,7 @@ impl Assets {
 
         // Load the bytes dynamically or load them from cache
         if dynamic {
-            Self::load_bytes_dynamically(bytes, user, owned)
+            Self::load_bytes_dynamically(bytes, hijack, user, owned)
         } else {
             Self::load_cached_bytes(bytes, &owned)
         }
@@ -163,6 +188,7 @@ impl Assets {
     // Load the bytes for an asset dynamically and store them within self
     fn load_bytes_dynamically(
         bytes: &AsyncLoadedBytes,
+        hijack: AsyncHijackPaths,
         user: &UserPath,
         owned: PathBuf,
     ) -> Result<Arc<[u8]>, AssetLoadError> {
@@ -172,12 +198,28 @@ impl Assets {
         );
         let mut write = bytes.write();
 
-        // Sometimes the user path is not specified
-        let user = user
-            .as_ref()
-            .ok_or(AssetLoadError::UserPathNotSpecified)?;
+        // Translate the path if it's defined
+        let read = hijack.read();
+        let owned = read.get(&owned).unwrap_or(&owned);
 
-        let bytes = super::raw::read(&owned, user)?;
+        // Get the path of the asset (make it absolute if needed)
+        let path = if owned.is_absolute() {
+            owned.clone()
+        } else {
+            // Sometimes the user path is not specified
+            let user = user
+                .as_ref()
+                .ok_or(AssetLoadError::UserPathNotSpecified)?;
+
+            let mut path = user.to_path_buf();
+            path.push(owned.clone());
+            path
+        };
+
+        // Load the asset dynamically
+        let bytes = super::raw::read(&path)?;
+
+        // Add the asset bytes into the cache
         let arc: Arc<[u8]> = Arc::from(bytes);
         write.insert(owned.clone(), arc.clone());
         log::debug!(
@@ -192,6 +234,7 @@ impl Assets {
         owned: PathBuf,
         bytes: AsyncLoadedBytes,
         user: UserPath,
+        hijack: AsyncHijackPaths,
         context: <A as Asset>::Context<'_>,
         settings: <A as Asset>::Settings<'_>,
         sender: Sender<AsyncChannelResult>,
@@ -204,7 +247,7 @@ impl Assets {
 
             // Load the bytes dynamically or from cache
             let bytes =
-                Self::load_bytes(&bytes, &user, owned.clone())?;
+                Self::load_bytes(&bytes, hijack, &user, owned.clone())?;
 
             // Split the path into it's name and extension
             let (name, extension) = Self::decompose_path(&owned);
@@ -253,7 +296,8 @@ impl Assets {
         let (name, extension) = Self::decompose_path(path);
 
         // Load the asset bytes (either dynamically or fetch cached bytes)
-        let bytes = Self::load_bytes(&self.bytes, &self.user, owned)?;
+        let hijack = self.hijack.clone();
+        let bytes = Self::load_bytes(&self.bytes, hijack, &self.user, owned)?;
 
         // Deserialize the asset file
         A::deserialize(
@@ -307,6 +351,7 @@ impl Assets {
         let bytes = self.bytes.clone();
         let sender = self.sender.clone();
         let user = self.user.clone();
+        let hijack = self.hijack.clone();
 
         // Create the handle's key
         let index = self.loaded.len();
@@ -319,7 +364,7 @@ impl Assets {
         // Create a new task that will load this asset
         threadpool.execute(move || {
             Self::async_load_inner::<A>(
-                owned, bytes, user, context, settings, sender, index
+                owned, bytes, user, hijack, context, settings, sender, index
             );
         });
         handle
@@ -353,6 +398,7 @@ impl Assets {
                 let bytes = self.bytes.clone();
                 let sender = self.sender.clone();
                 let user = self.user.clone();
+                let hijack = self.hijack.clone();
 
                 // Create the handle's key and insert it
                 let index = self.loaded.len() + offset;
@@ -365,8 +411,8 @@ impl Assets {
                 // Start telling worker threads to begin loading the assets
                 scope.execute(move || {
                     Self::async_load_inner::<A>(
-                        owned, bytes, user, context, settings,
-                        sender, index,
+                        owned, bytes, user, hijack, context,
+                        settings, sender, index,
                     );
                 });
             }

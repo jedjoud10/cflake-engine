@@ -37,7 +37,6 @@ fn init(world: &mut World) {
     asset!(&mut assets, "assets/user/ignored/diffuse.jpg");
     asset!(&mut assets, "assets/user/ignored/normal.jpg");
     asset!(&mut assets, "assets/user/ignored/untitled.obj");
-    asset!(&mut assets, "assets/user/ignored/display.frag");
 
     /*
     // Load in the diffuse map and normal map textures asynchronously

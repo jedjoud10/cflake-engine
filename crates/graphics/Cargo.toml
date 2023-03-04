@@ -43,3 +43,4 @@ lazy_static = { workspace = true }
 
 [features]
 headless = []
+extended-tuples = []

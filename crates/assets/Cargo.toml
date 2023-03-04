@@ -14,3 +14,6 @@ log = { workspace = true }
 slotmap = "1.0.6"
 world = { path = "../world" }
 utils = { path = "../utils" }
+
+[features]
+debug-assets = []
