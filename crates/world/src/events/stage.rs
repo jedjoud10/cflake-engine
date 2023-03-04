@@ -15,29 +15,18 @@ pub struct StageId {
 #[derive(Clone, Copy, Eq, Ord, Debug)]
 pub struct CallerId {
     pub name: &'static str,
-
-    // Init = 0
-    // Update = 1
-    // Shutdown = 2
-    // Tick = 3
-    // Device event = 4
-    // Window event = 5
-    pub index: usize,
-
-    // Used tp find said index
     pub id: TypeId,
 }
 
 impl std::hash::Hash for CallerId {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.index.hash(state);
         self.id.hash(state);
     }
 }
 
 impl PartialEq for CallerId {
     fn eq(&self, other: &Self) -> bool {
-        self.index == other.index && self.id == other.id
+        self.id == other.id
     }
 }
 
@@ -92,14 +81,13 @@ pub(crate) fn combine_ids(
 // Get the caller ID of a specific caller type
 pub(crate) fn fetch_caller_id<C: Caller>() -> CallerId {
     let id = TypeId::of::<C>();
-    let index = crate::RESERVED_CALLER_TYPE_IDS
+    crate::RESERVED_CALLER_TYPE_IDS
         .iter()
         .position(|current| *current == id)
         .unwrap();
     CallerId {
         name: type_name::<C>(),
         id,
-        index,
     }
 }
 

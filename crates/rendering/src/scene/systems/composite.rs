@@ -58,6 +58,7 @@ fn update(world: &mut World) {
 pub fn system(system: &mut System) {
     system.insert_init(init)
         .before(user)
+        .after(assets::system)
         .after(graphics::common);
     system.insert_update(update)
         .after(super::rendering::system)

@@ -28,5 +28,16 @@ void main() {
 	vec3 color = texture(sampler2D(color_map, color_map_sampler), coords).rgb;
 	color *= 1.0;
 	color = pow(aces(color), vec3(1.0 / 2.2));
+
+	// Create a simple vignette
+	float vignette_size = 0.1;
+	float vignette_strength = 1.2;
+	vec2 uv = vec2(x, y);
+	float vignette = length(abs(uv - 0.5));
+	vignette += vignette_size;
+	vignette = clamp(vignette, 0, 1);
+	vignette = pow(vignette, 4.0) * clamp(vignette_strength, 0.0, 2.0);
+	color = mix(color, vec3(0), vignette);
+
 	frag = vec4(color, 0);
 }

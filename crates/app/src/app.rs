@@ -361,7 +361,7 @@ impl App {
     }
 
     // Internal function to help us add systems
-    fn regsys(&mut self, sys: fn(&mut System)) {
+    fn regsys(&mut self, sys: impl FnOnce(&mut System) + 'static) {
         self.systems.insert(sys);
     }
 

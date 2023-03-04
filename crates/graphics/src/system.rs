@@ -77,7 +77,7 @@ pub fn common(system: &mut System) {
         .after(post_user)
         .after(acquire)
         .before(present);
-    system.insert_init(init).before(user);
+    system.insert_init(init).before(user).after(assets::system);
     system.insert_window(event).before(user);
 }
 
