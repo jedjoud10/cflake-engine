@@ -2,9 +2,13 @@ use crate::{persistent, Assets};
 use std::path::PathBuf;
 use world::{user, System, World};
 
+// Simple resource that is temporarily added to world to pass user assets path 
+pub struct AssetsSettings(pub Option<PathBuf>);
+
 // Initialize a load and add it to the world
-fn init(world: &mut World, user: Option<PathBuf>) {
+fn init(world: &mut World) {
     // Create a new asset loader / cacher
+    let user = world.remove::<AssetsSettings>().unwrap().0;
     let loader = Assets::new(user);
 
     // Load the default shaders
@@ -69,8 +73,8 @@ fn init(world: &mut World, user: Option<PathBuf>) {
 
 // This system will add the asset loader resource into the world and automatically pre-load the default assets as well
 // This system will also insert the GlobalPaths resource into the world
-pub fn system(system: &mut System, path: Option<PathBuf>) {
+pub fn system(system: &mut System) {
     system
-        .insert_init(move |world: &mut World| init(world, path))
+        .insert_init(init)
         .before(user);
 }

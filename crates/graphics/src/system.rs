@@ -1,4 +1,4 @@
-use crate::{Graphics, Window, WindowSettings};
+use crate::{Graphics, Window, WindowSettings, GraphicsStats};
 use winit::{event::WindowEvent, event_loop::EventLoop};
 use world::{post_user, user, State, System, World};
 
@@ -14,6 +14,25 @@ fn init(world: &mut World, el: &EventLoop<()>) {
     // Add the resources to the world
     world.insert(window);
     world.insert(graphics);
+    world.insert(GraphicsStats::default());
+}
+
+// Update the graphics stats based on the current frame data
+fn update(world: &mut World) {
+    let mut window = world.get_mut::<Window>().unwrap();
+    let graphics = world.get::<Graphics>().unwrap();
+    let mut stats = world.get_mut::<GraphicsStats>().unwrap();
+    let cached = &graphics.0.cached;
+    *stats = GraphicsStats {
+        submissions: *graphics.0.submissions.lock(),
+        acquires: *graphics.0.acquires.lock(),
+        stalls: *graphics.0.stalls.lock(),
+        staging_buffers: graphics.0.staging.allocations.len() as u32,
+        cached_samplers: cached.samplers.len() as u32,
+        cached_bind_group_layouts: cached.bind_group_layouts.len() as u32,
+        cached_pipeline_layouts: cached.pipeline_layouts.len() as u32,
+        cached_bind_groups: cached.bind_groups.len() as u32,
+    };
 }
 
 // Handle window quitting and resizing
@@ -51,6 +70,10 @@ fn event(world: &mut World, event: &mut WindowEvent) {
 
 // Common system will be responsible for calling the init event and window event
 pub fn common(system: &mut System) {
+    system.insert_update(update)
+        .after(post_user)
+        .after(acquire)
+        .before(present);
     system.insert_init(init).before(user);
     system.insert_window(event).before(user);
 }

@@ -1,3 +1,4 @@
+use assets::AssetsSettings;
 use graphics::{FrameRateLimit, WindowSettings};
 use mimalloc::MiMalloc;
 use platform_dirs::AppDirs;
@@ -107,7 +108,7 @@ impl App {
     // Insert a new system into the app and register the necessary events
     pub fn insert_system(
         mut self,
-        callback: impl FnOnce(&mut System) + 'static,
+        callback: fn(&mut System),
     ) -> Self {
         self.systems.insert(callback);
         self
@@ -118,9 +119,7 @@ impl App {
         self,
         init: impl Event<Init, ID> + 'static,
     ) -> Self {
-        self.insert_system(move |system: &mut System| {
-            system.insert_init(init);
-        })
+        todo!()
     }
 
     // Insert a single update event
@@ -128,9 +127,7 @@ impl App {
         self,
         update: impl Event<Update, ID> + 'static,
     ) -> Self {
-        self.insert_system(move |system: &mut System| {
-            system.insert_update(update);
-        })
+        todo!()
     }
 
     // Insert a single shutdown event
@@ -138,9 +135,7 @@ impl App {
         self,
         shutdown: impl Event<Shutdown, ID> + 'static,
     ) -> Self {
-        self.insert_system(move |system: &mut System| {
-            system.insert_shutdown(shutdown);
-        })
+        todo!()
     }
 
     // Insert a single tick event
@@ -148,9 +143,7 @@ impl App {
         self,
         tick: impl Event<Tick, ID> + 'static,
     ) -> Self {
-        self.insert_system(move |system: &mut System| {
-            system.insert_tick(tick);
-        })
+        todo!()
     }
 
     // Insert a single window event
@@ -158,9 +151,7 @@ impl App {
         self,
         event: impl Event<WindowEvent<'static>, ID> + 'static,
     ) -> Self {
-        self.insert_system(move |system: &mut System| {
-            system.insert_window(event);
-        })
+        todo!()
     }
 
     // Insert a single device event
@@ -168,9 +159,7 @@ impl App {
         self,
         event: impl Event<DeviceEvent, ID> + 'static,
     ) -> Self {
-        self.insert_system(move |system: &mut System| {
-            system.insert_device(event);
-        })
+        todo!()
     }
 
     // Initialize the global logger (also sets the output file)
@@ -383,8 +372,42 @@ impl App {
         self.regsys(gui::acquire);
         self.regsys(gui::display);
 
+        // Create a egui window for debugging graphics data
+        self.regsys(|system: &mut System| {
+            system.insert_update(|world: &mut World| {
+                let stats = world.get::<graphics::GraphicsStats>().unwrap();
+                let mut gui = world.get_mut::<gui::Interface>().unwrap();
+
+                let graphics::GraphicsStats {
+                    acquires,
+                    submissions,
+                    stalls,
+                    staging_buffers,
+                    cached_samplers,
+                    cached_bind_group_layouts,
+                    cached_pipeline_layouts,
+                    cached_bind_groups,
+                } = *stats;
+
+                gui::egui::Window::new("Graphics Stats").show(&gui, |ui| {
+                    ui.label(format!("Acquires: {acquires}"));
+                    ui.label(format!("Submissiosns: {submissions}"));
+                    ui.label(format!("Stalls: {stalls}"));
+                    ui.label(format!("Stg Buffers: {staging_buffers}"));
+                    
+                    ui.heading("Cached Graphics Data");
+                    ui.label(format!("Samplers: {cached_samplers}"));
+                    ui.label(format!("Pipeline Layouts: {cached_pipeline_layouts}"));
+                    ui.label(format!("Bind Group Layouts: {cached_bind_group_layouts}"));
+                    ui.label(format!("Bind Group: {cached_bind_groups}"));
+
+                });
+            });
+        });
+
         // Insert the IO manager
         let author = self.author_name.clone();
+        /*
         let app = self.app_name.clone();
         self = self.insert_system(move |system: &mut System| {
             utils::io(system, author, app)
@@ -394,12 +417,11 @@ impl App {
         self = self.insert_system(move |system: &mut System| {
             utils::file_logger(system, receiver)
         });
+        */
 
-        // Insert the asset loader
-        let user = self.user_assets_folder.take();
-        self = self.insert_system(|system: &mut System| {
-            assets::system(system, user)
-        });
+        // Insert the asset loader's user asset path
+        let assets_settings = AssetsSettings(self.user_assets_folder.take());
+        self.world.insert(assets_settings);
 
         // Insert the graphics API window resource
         let window_settings = self.window.clone();

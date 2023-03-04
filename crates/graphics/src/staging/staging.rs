@@ -33,10 +33,10 @@ pub enum StagingTarget<'a> {
 // This will re-use unmapped buffers to avoid many many buffer creations
 pub(crate) struct StagingPool {
     // Keeps track of mapping buffers
-    allocations: Arc<ConcVec<Buffer>>, 
+    pub(crate) allocations: Arc<ConcVec<Buffer>>, 
 
     // Keeps track of the mapping state
-    states: AtomicBitSet,
+    pub(crate) states: AtomicBitSet,
 }
 
 

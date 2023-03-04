@@ -41,19 +41,28 @@ pub(crate) struct InternalGraphics {
     // List of command encoders that are unused per thread
     pub(crate) encoders: ThreadLocal<Mutex<Vec<CommandEncoder>>>,
 
-    // Buffer staging pool
+    // Helpers and cachers
     pub(crate) staging: StagingPool,
-
-    // ShaderC compiler
     pub(crate) shaderc: shaderc::Compiler,
-
-    // Cached graphics data
     pub(crate) cached: Cached,
+
+    // Keep track of these numbers for statistics
+    pub(crate) acquires: Mutex<u32>,
+    pub(crate) submissions: Mutex<u32>,
+    pub(crate) stalls: Mutex<u32>,
 }
 
 // Stats that can be displayed using egui
+#[derive(Default, Clone, Copy)]
 pub struct GraphicsStats {
-    
+    pub acquires: u32,
+    pub submissions: u32,
+    pub stalls: u32,
+    pub staging_buffers: u32,
+    pub cached_samplers: u32,
+    pub cached_bind_group_layouts: u32,
+    pub cached_pipeline_layouts: u32,
+    pub cached_bind_groups: u32,
 }
 
 // Graphical context that we will wrap around the WGPU instance
@@ -77,7 +86,7 @@ impl Graphics {
         &self.0.adapter
     }
 
-    // Get the global buffer allocator
+    // Get the global staging buffer allocator
     pub(crate) fn staging_pool(&self) -> &StagingPool {
         &self.0.staging
     }
