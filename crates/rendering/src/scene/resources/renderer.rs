@@ -157,8 +157,8 @@ impl ForwardRenderer {
             window_buffer: create_uniform_buffer(graphics),
 
             // Create the 1x1 common textures
-            white: create_texture2d(graphics, normal),
-            black: create_texture2d(graphics, normal),
+            white: create_texture2d(graphics, white),
+            black: create_texture2d(graphics, black),
             normal: create_texture2d(graphics, normal),
 
             // No default camera

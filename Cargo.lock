@@ -201,6 +201,7 @@ name = "assets"
 version = "0.1.0"
 dependencies = [
  "ahash 0.7.6",
+ "cfg-if",
  "lazy_static",
  "log",
  "parking_lot",

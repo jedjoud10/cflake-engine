@@ -17,14 +17,13 @@ macro_rules! asset {
 #[macro_export]
 macro_rules! persistent {
     ($assets:expr, $file:expr) => {
-        // If the "CFLAKE_DEBUG_ASSETS" environment variable is set, then this
+        // If the "CFLAKE_DEBUG_ASSETS" feature is set, then this
         // will load the assets dynamically instead of inserting them into the binary
-        match crate::raw::engine_debug_assets_enabled() {
-            true => {
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "debug-assets")] {
                 let path = concat!(env!("CARGO_MANIFEST_DIR"), "/src/assets/", $file);
                 $assets.hijack($file, path);
-            },
-            false => {
+            } else {
                 let bytes = include_bytes!(concat!("./assets/", $file));
                 $assets.import(concat!("./assets/", $file), bytes.to_vec());
             }

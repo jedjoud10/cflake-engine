@@ -23,6 +23,14 @@ members = [
     "crates/world",
 ]
 
+[features]
+double-precision = ["app/double-precision"]
+two-dim = ["app/two-dim"]
+extended-tuples = ["app/extended-tuples"]
+extended-bitmasks = ["app/extended-bitmasks"]
+headless = ["app/headless"]
+debug-assets = ["app/debug-assets"]
+
 [workspace.dependencies]
 log = "0.4.17"
 vek = "0.15.6"
