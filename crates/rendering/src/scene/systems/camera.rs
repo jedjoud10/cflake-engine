@@ -17,6 +17,7 @@ use world::{post_user, user, System, World, WindowEvent};
 // Update event that will set/update the main perspective camera
 fn update_camera(world: &mut World) {
     let mut ecs = world.get_mut::<Scene>().unwrap();
+    let graphics = world.get::<Graphics>().unwrap();
     let mut renderer = world.get_mut::<ForwardRenderer>().unwrap();
     let window = world.get::<Window>().unwrap();
 

@@ -140,8 +140,7 @@ fn update(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
     let ui = world.get_mut::<Interface>().unwrap();
 
-    // Create a test window where we will debug some sheit
-    egui::Window::new("Test window").show(&ui, |ui| {
+    egui::Window::new("General Performance").show(&ui, |ui| {
         ui.horizontal(|ui| {
             ui.label("Delta (s/f): ");
             ui.label(time.delta().as_secs_f32().to_string());
@@ -150,6 +149,13 @@ fn update(world: &mut World) {
         ui.horizontal(|ui| {
             ui.label("FPS (f/s): ");
             ui.label((1.0 / time.delta().as_secs_f32()).to_string());
+        });
+    });
+
+    egui::Window::new("Rendering").show(&ui, |ui| {
+        ui.horizontal(|ui| {
+            ui.label("Render Entities: ");
+            ui.label(scene.query::<&Renderer>().into_iter().count().to_string());
         });
     });
 

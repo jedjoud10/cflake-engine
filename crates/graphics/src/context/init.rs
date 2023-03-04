@@ -117,6 +117,7 @@ pub(crate) unsafe fn init_context_and_window(
             uniform_buffers: Default::default(),
         },
         shaderc: shaderc::Compiler::new().unwrap(),
+        encoders: thread_local::ThreadLocal::default(),
     }));
 
     // Create the Window wrapper

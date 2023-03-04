@@ -71,7 +71,6 @@ pub fn time(system: &mut System) {
                 frame_count: 0,
                 startup: Instant::now(),
                 frame_start: Instant::now(),
-                average_delta: 1.0,
                 tick_count: 0,
                 last_tick_start: Instant::now(),
                 ticks_to_execute: None,
@@ -95,9 +94,6 @@ pub fn time(system: &mut System) {
 
             // Calculate delta (using old frame start)
             time.delta = now - old_frame_start;
-            let delta = time.delta.as_secs_f32();
-            time.average_delta =
-                time.average_delta * 0.8 + delta * 0.2;
 
             // Constants needed for ticks
             const TICKS_DELTA_NS: f32 =

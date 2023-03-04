@@ -35,11 +35,10 @@ fn update(world: &mut World) {
     // Get textures, pipelines, and encoder
     let src = &renderer.color_texture;
     let dst = window.as_render_target().unwrap();
-    let mut encoder = graphics.acquire();
 
     // Begin the render pass
     let mut render_pass = 
-        compositor.render_pass.begin(&mut encoder, dst, ()).unwrap();
+        compositor.render_pass.begin(dst, ()).unwrap();
 
     // Bind the graphics pipeline
     let mut active = render_pass.bind_pipeline(&compositor.pipeline);
@@ -53,10 +52,6 @@ fn update(world: &mut World) {
 
     // Draw 6 vertices (2 tris)
     active.draw(0..6, 0..1);
-
-    // Submit the encoder at the end
-    drop(render_pass);
-    graphics.submit([encoder]);
 }
 
 // The display system will be responsible for displaying the renderered scene textures to the scene

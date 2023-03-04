@@ -57,18 +57,19 @@ fn event(world: &mut World, event: &mut WindowEvent) {
             // Handle resizing the depth texture
             let size = vek::Extent2::new(size.width, size.height);
             let mut renderer = world.get_mut::<ForwardRenderer>().unwrap();
+            let graphics = world.get::<Graphics>().unwrap();
 
             // Resize the color and depth texture
             renderer.depth_texture.resize(size).unwrap();
             renderer.color_texture.resize(size).unwrap();
 
             // Update the uniform
-            renderer.window_buffer.write(&[
-                WindowUniform {
-                    width: size.w,
-                    height: size.h,
-                }
-            ], 0).unwrap();
+            renderer.window_buffer.write(
+            &[WindowUniform {
+                width: size.w,
+                height: size.h,
+            }],
+            0).unwrap();
         }
 
         _ => (),
@@ -87,7 +88,6 @@ fn render(world: &mut World) {
     let color = renderer.color_texture.as_render_target().unwrap();
     let depth = renderer.depth_texture.as_render_target().unwrap();
     let pipelines = pipelines.extract_pipelines();
-    let mut encoder = graphics.acquire();
 
     // Skip if we don't have a camera to draw with
     if renderer.main_camera.is_none() {
@@ -97,7 +97,7 @@ fn render(world: &mut World) {
 
     // Begin the render pass
     let mut render_pass =
-        renderer.render_pass.begin(&mut encoder, color, depth).unwrap();
+        renderer.render_pass.begin(color, depth).unwrap();
 
     // Create the shared material resources1
     let default = DefaultMaterialResources {
@@ -116,9 +116,6 @@ fn render(world: &mut World) {
     }
 
     drop(render_pass);
-
-    // Submit the encoder at the end
-    graphics.submit([encoder]);
 } 
 
 // The rendering system will be resposible for iterating through the entities and rendering them to the backbuffer texture

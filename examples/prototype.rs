@@ -19,9 +19,14 @@ fn init(world: &mut World) {
         BufferUsage::WRITE | BufferUsage::READ
     ).unwrap();
 
-    dbg!(buffer.as_view(..).unwrap().as_slice());
+    let mut dst = [0u32; 1];
+    buffer.read(&mut dst, 0).unwrap();
+    dbg!(dst);
+    let mut dst = [0u32; 5];
     buffer.extend_from_slice(&[2, 3, 4, 5, 6]).unwrap();
-    dbg!(buffer.as_view(..).unwrap().as_slice());
+    buffer.read(&mut dst, 0).unwrap();
+    dbg!(dst);
+    //panic!("Done here");
 }
 
 // Camera controller update executed every tick

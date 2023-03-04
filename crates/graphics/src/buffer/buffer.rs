@@ -8,7 +8,7 @@ use std::{
     ops::{Range, RangeBounds},
 };
 
-use wgpu::{util::DeviceExt, Maintain};
+use wgpu::{util::DeviceExt, Maintain, CommandEncoder};
 
 use crate::{
     BufferClearError, BufferCopyError, BufferExtendError,
@@ -320,7 +320,9 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
 
 // Implementation of safe methods
 impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
-    // Read from "src" and write to buffer instantly
+    // Read from "src" and write to the buffer instantly
+    // This is a "fire and forget" command that does not stall the CPU
+    // The user can do multiple write calls and expect them to be batched together
     pub fn write(
         &mut self,
         src: &[T],
@@ -347,19 +349,21 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
 
         // Use the staging pool for data writes
         let staging = self.graphics.staging_pool();
-        /*
         staging.write(
-            StagingTarget::Buffer(&self.buffer),
             &self.graphics,
-            (offset * self.stride()) as u64,
-            bytemuck::cast_slice(src),
+            StagingTarget::Buffer {
+                buffer: &self.buffer,
+                offset: (offset * self.stride()) as u64,
+                size: (src.len() * self.stride()) as u64,
+            },
+            bytemuck::cast_slice(src)
         );
-        */
 
         Ok(())
     }
 
     // Read buffer and write to "dst" instantly
+    // Will stall the CPU, since this is waiting for GPU data
     pub fn read<'a>(
         &'a self,
         dst: &mut [T],
@@ -386,9 +390,8 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
 
         // Use the staging pool for data reads
         let staging = self.graphics.staging_pool();
-        /*
         staging.read(
-            &self.graphics
+            &self.graphics,
             StagingTarget::Buffer {
                 buffer: &self.buffer,
                 offset: (offset * self.stride()) as u64,
@@ -397,31 +400,32 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
 
             bytemuck::cast_slice_mut(dst),
         );
-        */
-
+        
         Ok(())
     }
 
     // Clear the buffer and reset it's length
+    // This doesn't enqueue a GPU command
     pub fn clear(&mut self) -> Result<(), BufferClearError> {
         if matches!(self.mode, BufferMode::Dynamic) {
             return Err(BufferClearError::IllegalLengthModify);
         }
 
         self.length = 0;
-        let mut encoder = self.graphics.acquire();
-        encoder.clear_buffer(&self.buffer, 0, None);
-        self.graphics.submit([encoder]);
         Ok(())
     }
 
     // Fill the buffer with a repeating value specified by "val"
+    // This is a "fire and forget" command that does not stall the CPU
+    // The user can do multiple splat calls and expect them to be batched together
     pub fn splat(&mut self, val: T) -> Result<(), BufferWriteError> {
         let src = vec![val; self.length];
         self.write(&src, 0)
     }
 
     // Copy the data from another buffer into this buffer instantly
+    // This is a "fire and forget" command that does not stall the CPU
+    // The user can do multiple copy_from calls and expect them to be batched together
     pub fn copy_from<const TYPE2: u32>(
         &mut self,
         src: &Buffer<T, TYPE2>,
@@ -470,11 +474,13 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
             destination_offset,
             copy_size
         );
-        self.graphics.submit([encoder]);
+        self.graphics.reuse([encoder]);
         Ok(())
     }
 
     // Extend this buffer using the given slice instantly
+    // This is a "fire and forget" command that does not stall the CPU
+    // The user can do multiple extend_from_slice calls and expect them to be batched together
     pub fn extend_from_slice(
         &mut self,
         slice: &[T],
@@ -507,6 +513,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
         if slice.len() + self.length > self.capacity {
             // Calculate a new capacity and new length
             let capacity = self.capacity + slice.len();
+            let capacity = (capacity * 2).next_power_of_two();
             let size = (capacity * self.stride()) as u64;
 
             // Allocate a new buffer with a higher capacity
@@ -528,21 +535,20 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
                 0,
                 (self.length * self.stride()) as u64,
             );
-
-            // Wait till the copy finishes
-            self.graphics.submit([encoder]);
-            self.graphics.device().poll(Maintain::Wait);
-
+            self.graphics.reuse([encoder]);
+            
             // Swap them out, and drop the last buffer
             let old = std::mem::replace(&mut self.buffer, buffer);
             drop(old);
 
-            // TODO: Optimize this shit
+            // Write using the same encoder
             self.length += slice.len();
             self.write(slice, self.length-slice.len()).unwrap();
         } else {
-            // Just read into a sub-part of the buffer
+            // Just write into a sub-part of the buffer
             self.length += slice.len();
+            
+            // Write using the same encoder
             self.write(slice, self.length-slice.len()).unwrap();
         }
 
@@ -550,6 +556,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
     }
 
     // Try to view the buffer immutably immediately
+    // Will stall the CPU, since this is synchronous
     pub fn as_view(
         &self,
         bounds: impl RangeBounds<usize>,
@@ -586,6 +593,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
     }
 
     // Try to view the buffer mutably (for writing AND reading) immediately
+    // Will stall the CPU, since this is synchronous
     // If the BufferUsage is Write only, then reading from BufferViewMut might be slow / might not return buffer contents
     pub fn as_view_mut(
         &mut self,
@@ -638,5 +646,29 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
             panic!()
         }
         */
+    }
+
+    // Read from "src" and write to the buffer when the encoder is submitted
+    // This is a "fire and forget" command that does not stall the CPU
+    // The user can do multiple async_write calls and expect them to be batched together
+    pub fn async_write(
+        &mut self,
+        encoder: &mut CommandEncoder,
+        src: &[T],
+        offset: usize,
+    ) -> Result<(), BufferWriteError> {
+        todo!()
+    }
+
+    // Read buffer and call the callback with the data when done
+    // This is not called immediately. Only called when complete
+    // The user will not be able to write to the buffer on the GPU or CPU whilst this is in progress
+    pub fn async_read(
+        &mut self,
+        encoder: &mut CommandEncoder,
+        bounds: impl RangeBounds<usize>,
+        callback: impl FnOnce(&[T]) + Send + Sync,
+    ) -> Result<(), BufferReadError> {
+        todo!()
     }
 }

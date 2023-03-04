@@ -1,4 +1,5 @@
 use ahash::AHashMap;
+use wgpu::CommandEncoder;
 
 use crate::{
     BindGroup, ColorLayout, DepthStencilLayout, Graphics,
@@ -184,6 +185,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
                     let buffer = buffers.iter_mut().enumerate().find(|(_, (_, x))| *x);
 
                     if let Some((index, (buffer, free))) = buffer {
+                        // Write to the already existing fill ubo for this group
                         buffer.write(&data, 0).unwrap();
                         *free = false;
                         filled_up_ubos.push(index);

@@ -5,7 +5,7 @@ use crate::{Graphics, StagingTarget};
 // This is the view returned from the download() method of the staging pool
 // This allows us to read the data of the given buffer at the given offset and slice
 // T is target, it could either be a buffer or a texture
-pub struct StagingView<'a> {
+pub(crate) struct StagingView<'a> {
     // API, encoder, and target
     graphics: &'a Graphics,
     encoder: &'a CommandEncoder,

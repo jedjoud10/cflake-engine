@@ -5,7 +5,7 @@ use std::{
 
 use super::attributes::*;
 use crate::MeshAabbComputeError;
-use graphics::{Buffer, UntypedBuffer, Vertex, VertexBuffer};
+use graphics::{Buffer, UntypedBuffer, Vertex, VertexBuffer, CommandEncoder};
 use math::AABB;
 
 // Immutable access to the mesh vertices
@@ -150,6 +150,7 @@ impl<'a> VerticesMut<'a> {
     // Try to compute the AABB of the mesh using updated position vertices
     pub fn compute_aabb(
         &mut self,
+        encoder: &mut CommandEncoder,
     ) -> Result<AABB, MeshAabbComputeError> {
         let attribute = self.attribute::<Position>().ok_or(
             MeshAabbComputeError::MissingPositionAttributeBuffer,

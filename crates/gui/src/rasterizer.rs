@@ -212,11 +212,10 @@ impl Rasterizer {
 
         let extent = window.size();
         let dst = window.as_render_target().unwrap();
-        let mut encoder = graphics.acquire();
 
         // Begin the render pass
         let mut render_pass = 
-            self.render_pass.begin(&mut encoder, dst, ()).unwrap();
+            self.render_pass.begin(dst, ()).unwrap();
 
         // Bind the graphics pipeline
         let mut active = render_pass.bind_pipeline(&self.pipeline);
@@ -260,6 +259,5 @@ impl Rasterizer {
 
         // Submit the encoder at the end
         drop(render_pass);
-        graphics.submit([encoder]);
     }
 }

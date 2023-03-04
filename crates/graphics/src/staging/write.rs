@@ -7,7 +7,6 @@ use crate::{Graphics, StagingTarget};
 pub struct StagingViewWrite<'a> {
     // API, encoder, and target
     graphics: &'a Graphics,
-    encoder: &'a CommandEncoder,
     src: StagingTarget<'a>,
 
     // Memory parameters
