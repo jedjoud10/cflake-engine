@@ -96,6 +96,7 @@ impl Graphics {
     pub(crate) fn acquire(&self) -> CommandEncoder {
         let encoders = self.0.encoders.get_or_default();
         let mut locked = encoders.lock();
+        *self.0.acquires.lock() += 1;
         locked.pop().unwrap_or_else(|| {
             self.device().create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: None,
@@ -112,9 +113,11 @@ impl Graphics {
     ) {
         let finished = iter.into_iter().map(|x| x.finish());
         let i = self.queue().submit(finished);
+        *self.0.submissions.lock() += 1;
 
         if wait {
             self.device().poll(Maintain::WaitForSubmissionIndex(i));
+            *self.0.stalls.lock() += 1;
         }
     }
 

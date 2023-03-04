@@ -23,9 +23,9 @@ pub struct Systems {
 impl Systems {
     // Add a system to the systems using a callback function
     // This will not add duplicate systems
-    pub fn insert(
+    pub fn insert<F: FnOnce(&mut System) + 'static>(
         &mut self,
-        callback: fn(&mut System),
+        callback: F,
     ) {
         // Create a system that will modify the registries
         let mut system = System {
@@ -35,7 +35,7 @@ impl Systems {
             tick: &mut self.tick,
             window: &mut self.window,
             device: &mut self.device,
-            system: super::fetch_system_id(callback),
+            system: super::fetch_system_id(&callback),
         };
 
         // This will run a function over the system that will mutate the registries
@@ -57,7 +57,7 @@ impl<'a, C: Caller> EventMut<'a, C> {
     // Tell the event to execute before another system's matching event
     pub fn before(
         mut self,
-        other: fn(&mut System),
+        other: impl FnOnce(&mut System) + 'static,
     ) -> Self {
         if self.default {
             self.rules.clear();
@@ -65,7 +65,7 @@ impl<'a, C: Caller> EventMut<'a, C> {
         }
 
         // Get the stage ID of the other system's event
-        let system = super::fetch_system_id(other);
+        let system = super::fetch_system_id(&other);
         let stage = super::combine_ids(&system, &self.caller);
 
         // Create a rule based on that ID
@@ -79,7 +79,7 @@ impl<'a, C: Caller> EventMut<'a, C> {
     // Tell the event to execute after another system's matching event
     pub fn after(
         mut self,
-        other: fn(&mut System),
+        other: impl FnOnce(&mut System) + 'static,
     ) -> Self {
         if self.default {
             self.rules.clear();
@@ -87,7 +87,7 @@ impl<'a, C: Caller> EventMut<'a, C> {
         }
 
         // Get the stage ID of the other system's event
-        let system = super::fetch_system_id(other);
+        let system = super::fetch_system_id(&other);
         let stage = super::combine_ids(&system, &self.caller);
 
         // Create a rule based on that ID

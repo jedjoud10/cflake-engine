@@ -8,7 +8,7 @@ pub struct AssetsSettings(pub Option<PathBuf>);
 // Initialize a load and add it to the world
 fn init(world: &mut World) {
     // Create a new asset loader / cacher
-    let user = world.remove::<AssetsSettings>().unwrap().0;
+    let user = world.get::<AssetsSettings>().unwrap().0.clone();
     let loader = Assets::new(user);
 
     // Load the default shaders

@@ -55,29 +55,26 @@ impl PartialOrd for CallerId {
 pub struct SystemId {
     pub name: &'static str,
     pub id: TypeId,
-    pub index: usize,
 }
 
 impl std::hash::Hash for SystemId {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.id.hash(state);
-        self.index.hash(state);
     }
 }
 
 impl PartialEq for SystemId {
     fn eq(&self, other: &Self) -> bool {
-        self.id == other.id && self.index == other.index
+        self.id == other.id
     }
 }
 
 impl PartialOrd for SystemId {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        match self.id.partial_cmp(&other.id) {
-            Some(core::cmp::Ordering::Equal) => {}
-            ord => return ord,
-        }
-        self.index.partial_cmp(&other.index)
+    fn partial_cmp(
+        &self,
+        other: &Self,
+    ) -> Option<std::cmp::Ordering> {
+        self.id.partial_cmp(&other.id)
     }
 }
 
@@ -106,22 +103,13 @@ pub(crate) fn fetch_caller_id<C: Caller>() -> CallerId {
     }
 }
 
-fn type_name_of_val<S: 'static>(_: &S) -> &'static str {
-    type_name::<S>()
-}
-
-fn type_of_val<S: 'static>(_: &S) -> TypeId {
-    TypeId::of::<S>()
-}
-
 // Get the system ID of a specific system (simple generic function)
-pub(crate) fn fetch_system_id(
-    function: fn(&mut System),
+pub(crate) fn fetch_system_id<S: FnOnce(&mut System) + 'static>(
+    _: &S,
 ) -> SystemId {
     SystemId {
-        name: type_name_of_val(&function),
-        id: type_of_val(&function),
-        index: function as usize,
+        name: type_name::<S>(),
+        id: TypeId::of::<S>(),
     }
 }
 
@@ -176,12 +164,12 @@ pub(super) fn default_rules<C: Caller>() -> Vec<Rule> {
     let caller = fetch_caller_id::<C>();
 
     // Create the default after rule
-    let system = fetch_system_id(user);
+    let system = fetch_system_id(&user);
     let stage = combine_ids(&system, &caller);
     let after = Rule::After(stage);
 
     // Create the default before rule
-    let system = fetch_system_id(post_user);
+    let system = fetch_system_id(&post_user);
     let stage = combine_ids(&system, &caller);
     let before = Rule::Before(stage);
 

@@ -5,7 +5,7 @@ use world::{post_user, user, State, System, World};
 // Insert the required graphics resources
 fn init(world: &mut World, el: &EventLoop<()>) {
     // Initialization resource
-    let init = world.remove::<WindowSettings>().unwrap();
+    let init = world.get::<WindowSettings>().unwrap().clone();
 
     // Initialize the WGPU context and create a winit Window
     let (graphics, window) =
@@ -20,7 +20,7 @@ fn init(world: &mut World, el: &EventLoop<()>) {
 // Update the graphics stats based on the current frame data
 fn update(world: &mut World) {
     let mut window = world.get_mut::<Window>().unwrap();
-    let graphics = world.get::<Graphics>().unwrap();
+    let graphics = world.get::<Graphics>().unwrap();    
     let mut stats = world.get_mut::<GraphicsStats>().unwrap();
     let cached = &graphics.0.cached;
     *stats = GraphicsStats {
@@ -33,6 +33,9 @@ fn update(world: &mut World) {
         cached_pipeline_layouts: cached.pipeline_layouts.len() as u32,
         cached_bind_groups: cached.bind_groups.len() as u32,
     };
+    *graphics.0.submissions.lock() = 0;
+    *graphics.0.acquires.lock() = 0;
+    *graphics.0.stalls.lock() = 0;
 }
 
 // Handle window quitting and resizing

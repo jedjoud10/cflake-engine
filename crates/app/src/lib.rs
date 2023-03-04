@@ -1,4 +1,6 @@
 pub mod app;
+mod stats;
+pub(crate) use stats::*;
 
 pub use assets;
 pub use audio;

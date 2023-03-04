@@ -2,6 +2,7 @@ use assets::AssetsSettings;
 use graphics::{FrameRateLimit, WindowSettings};
 use mimalloc::MiMalloc;
 use platform_dirs::AppDirs;
+use utils::UtilsSettings;
 use std::{path::{PathBuf, Path}, str::FromStr, sync::mpsc, any::type_name};
 use winit::{
     event::{DeviceEvent, WindowEvent},
@@ -9,7 +10,7 @@ use winit::{
 };
 use world::{
     Event, Init, Shutdown, State, System, Systems, Tick, Update,
-    World,
+    World, SystemId,
 };
 
 #[global_allocator]
@@ -29,6 +30,7 @@ pub struct App {
     engine_version: u32,
 
     // Main app resources
+    inserted_events: usize,
     systems: Systems,
     world: World,
     el: EventLoop<()>,
@@ -49,6 +51,7 @@ impl Default for App {
             app_version: 1,
             engine_name: "cFlake Game Engine".to_string(),
             engine_version: 1,
+            inserted_events: 1,
             user_assets_folder: None,
             systems,
             el: EventLoop::new(),
@@ -108,7 +111,7 @@ impl App {
     // Insert a new system into the app and register the necessary events
     pub fn insert_system(
         mut self,
-        callback: fn(&mut System),
+        callback: impl FnOnce(&mut System) + 'static,
     ) -> Self {
         self.systems.insert(callback);
         self
@@ -119,7 +122,9 @@ impl App {
         self,
         init: impl Event<Init, ID> + 'static,
     ) -> Self {
-        todo!()
+        self.insert_system(move |system: &mut System| {
+            system.insert_init(init);
+        })
     }
 
     // Insert a single update event
@@ -127,7 +132,9 @@ impl App {
         self,
         update: impl Event<Update, ID> + 'static,
     ) -> Self {
-        todo!()
+        self.insert_system(move |system: &mut System| {
+            system.insert_update(update);
+        })
     }
 
     // Insert a single shutdown event
@@ -135,7 +142,9 @@ impl App {
         self,
         shutdown: impl Event<Shutdown, ID> + 'static,
     ) -> Self {
-        todo!()
+        self.insert_system(move |system: &mut System| {
+            system.insert_shutdown(shutdown);
+        })
     }
 
     // Insert a single tick event
@@ -143,7 +152,9 @@ impl App {
         self,
         tick: impl Event<Tick, ID> + 'static,
     ) -> Self {
-        todo!()
+        self.insert_system(move |system: &mut System| {
+            system.insert_tick(tick);
+        })
     }
 
     // Insert a single window event
@@ -151,7 +162,9 @@ impl App {
         self,
         event: impl Event<WindowEvent<'static>, ID> + 'static,
     ) -> Self {
-        todo!()
+        self.insert_system(move |system: &mut System| {
+            system.insert_window(event);
+        })
     }
 
     // Insert a single device event
@@ -159,7 +172,9 @@ impl App {
         self,
         event: impl Event<DeviceEvent, ID> + 'static,
     ) -> Self {
-        todo!()
+        self.insert_system(move |system: &mut System| {
+            system.insert_device(event);
+        })
     }
 
     // Initialize the global logger (also sets the output file)
@@ -372,53 +387,22 @@ impl App {
         self.regsys(gui::common);
         self.regsys(gui::acquire);
         self.regsys(gui::display);
+        self = self.insert_update(crate::update);
 
-        // Create a egui window for debugging graphics data
-        self.regsys(|system: &mut System| {
-            system.insert_update(|world: &mut World| {
-                let stats = world.get::<graphics::GraphicsStats>().unwrap();
-                let mut gui = world.get_mut::<gui::Interface>().unwrap();
+        // Fetch names and versions
+        let app_name = self.app_name.clone();
+        let app_version = self.app_version;
+        let engine_name = self.engine_name.clone();
+        let engine_version = self.engine_version;
+        let author_name = self.author_name.clone();
 
-                let graphics::GraphicsStats {
-                    acquires,
-                    submissions,
-                    stalls,
-                    staging_buffers,
-                    cached_samplers,
-                    cached_bind_group_layouts,
-                    cached_pipeline_layouts,
-                    cached_bind_groups,
-                } = *stats;
-
-                gui::egui::Window::new("Graphics Stats").show(&gui, |ui| {
-                    ui.label(format!("Acquires: {acquires}"));
-                    ui.label(format!("Submissiosns: {submissions}"));
-                    ui.label(format!("Stalls: {stalls}"));
-                    ui.label(format!("Stg Buffers: {staging_buffers}"));
-                    
-                    ui.heading("Cached Graphics Data");
-                    ui.label(format!("Samplers: {cached_samplers}"));
-                    ui.label(format!("Pipeline Layouts: {cached_pipeline_layouts}"));
-                    ui.label(format!("Bind Group Layouts: {cached_bind_group_layouts}"));
-                    ui.label(format!("Bind Group: {cached_bind_groups}"));
-
-                });
-            });
+        // Insert the utils' settings
+        self.world.insert(UtilsSettings {
+            threadpool_max_threads: None,
+            author_name: author_name.clone(),
+            app_name: app_name.clone(),
+            log_receiver: Some(receiver),
         });
-
-        // Insert the IO manager
-        let author = self.author_name.clone();
-        /*
-        let app = self.app_name.clone();
-        self = self.insert_system(move |system: &mut System| {
-            utils::io(system, author, app)
-        });
-
-        // Inititialize the file logger
-        self = self.insert_system(move |system: &mut System| {
-            utils::file_logger(system, receiver)
-        });
-        */
 
         // Insert the asset loader's user asset path
         let assets_settings = AssetsSettings(self.user_assets_folder.take());
@@ -429,14 +413,9 @@ impl App {
         self.world.insert(window_settings);
 
         // Print app / author / engine data
-        let app_name = self.app_name.clone();
-        let app_version = self.app_version;
-        let engine_name = self.engine_name.clone();
-        let engine_version = self.engine_version;
-        let author = self.author_name.clone();
         log::info!("App Name: '{app_name}', App Version: '{app_version}'");
         log::info!("Engine Name: '{engine_name}, Engine Version: '{engine_version}'");
-        log::info!("Author Name: '{author}'");
+        log::info!("Author Name: '{author_name}'");
         self
     }
 }
