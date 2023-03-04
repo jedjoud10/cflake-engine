@@ -49,13 +49,13 @@ lazy_static! {
         let mut reserved: Vec<StageId> = Vec::new();
 
         // Create the reserved stage ID for all the user type callers
-        let system = super::fetch_system_id(&crate::user);
+        let system = super::fetch_system_id(crate::user);
         for caller in RESERVED_CALLER_IDS.iter() {
             reserved.push(super::combine_ids(&system, caller));
         }
 
         // Create the reserved stage ID for all the post user type callers
-        let system = super::fetch_system_id(&crate::post_user);
+        let system = super::fetch_system_id(crate::post_user);
         for caller in RESERVED_CALLER_IDS.iter() {
             reserved.push(super::combine_ids(&system, caller));
         }
@@ -88,8 +88,10 @@ impl<C: Caller + 'static> Default for Registry<C> {
 }
 
 impl<C: Caller> Registry<C> {
+    // Insert a new event that does not have a corresponding system. These events cannot be sorted
+
     // Insert a new event that will be executed after the "user" stage and before the "post user" stage
-    pub(crate) fn insert<ID>(
+    pub fn insert<ID>(
         &mut self,
         event: impl Event<C, ID> + 'static,
         system: SystemId,

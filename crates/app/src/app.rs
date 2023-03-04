@@ -2,7 +2,7 @@ use assets::AssetsSettings;
 use graphics::{FrameRateLimit, WindowSettings};
 use mimalloc::MiMalloc;
 use platform_dirs::AppDirs;
-use std::{path::{PathBuf, Path}, str::FromStr, sync::mpsc};
+use std::{path::{PathBuf, Path}, str::FromStr, sync::mpsc, any::type_name};
 use winit::{
     event::{DeviceEvent, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
@@ -346,7 +346,7 @@ impl App {
     }
 
     // Internal function to help us add systems
-    fn regsys(&mut self, sys: impl FnOnce(&mut System) + 'static) {
+    fn regsys(&mut self, sys: fn(&mut System)) {
         self.systems.insert(sys);
     }
 
@@ -355,6 +355,7 @@ impl App {
         // TODO: Create plugins to remove this shit
         self.regsys(input::system);
         self.regsys(ecs::system);
+        self.regsys(assets::system);
         self.regsys(ecs::hierarchy);
         self.regsys(world::system);
         self.regsys(utils::threadpool);
