@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 use wgpu::{CommandEncoder, BufferAddress, BufferView};
-use crate::{Graphics, StagingTarget};
+use crate::{Graphics};
 
 // This is the view returned from the download() method of the staging pool
 // This allows us to read the data of the given buffer at the given offset and slice
@@ -9,7 +9,6 @@ pub(crate) struct StagingView<'a> {
     // API, encoder, and target
     graphics: &'a Graphics,
     encoder: &'a CommandEncoder,
-    src: StagingTarget<'a>,
 
     // Memory parameters
     dst_offset: BufferAddress,

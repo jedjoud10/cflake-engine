@@ -233,18 +233,18 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
     // Get all the allocated texture views
     fn views(&self) -> &[wgpu::TextureView];
 
-    // Get a single mip level from the texture, immutably
+    // Get a single mip level from the texture immutably
     fn mip(
         &self,
-        _level: u8,
+        level: u8,
     ) -> Result<MipLevelRef<Self>, TextureMipLevelError> {
         todo!()
     }
 
-    // Get a single mip level from the texture, mutably (uses internal mutability pattern)
+    // Get a single mip level from the texture mutably
     fn mip_mut(
         &mut self,
-        _level: u8,
+        level: u8,
     ) -> Result<MipLevelMut<Self>, TextureMipLevelError> {
         todo!()
     }

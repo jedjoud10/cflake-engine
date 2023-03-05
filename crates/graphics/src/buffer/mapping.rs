@@ -46,8 +46,9 @@ pub enum BufferViewMut<'a, T: GpuPodRelaxed, const TYPE: u32> {
         data: StagingViewWrite<'a>,
     },
 
-    // Read the buffer's data to the CPU for reading/writing
-    // Used when the buffer is readable AND writable
+    // Copy the buffer's data to the CPU for reading/writing
+    // StagingViewWrite buffers cannot be read since MapMode is either Read or Write
+    // So we need to have this to be able to do that whenever the buffer has the "read" usage on it
     Cloned {
         buffer: &'a mut Buffer<T, TYPE>,
         data: Vec<T>,

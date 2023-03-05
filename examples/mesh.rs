@@ -85,7 +85,7 @@ fn init(world: &mut World) {
     let mesh = meshes.insert(mesh);
 
     // Add multiple objects
-    scene.extend_from_iter((0..125).into_iter().map(|i| {
+    scene.extend_from_iter((0..500).into_iter().map(|i| {
         // Create the new mesh entity components
         let x = i % 5;
         let y = (i % 25) / 5;
@@ -137,8 +137,18 @@ fn init(world: &mut World) {
 // Camera controller update executed every tick
 fn update(world: &mut World) {
     let time = world.get::<Time>().unwrap();
+    let time = &*time;
     let input = world.get::<Input>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
+    let mut threadpool = world.get_mut::<ThreadPool>().unwrap();
+
+    scene.query_mut::<(&Renderer, &mut Position)>().for_each(
+        &mut threadpool,
+        |(_, pos)| {
+            **pos += vek::Vec3::broadcast(time.delta().as_secs_f32());
+        },
+        1
+    );
 
     let camera =
         scene.find_mut::<(&Camera, &mut Position, &mut Rotation)>();

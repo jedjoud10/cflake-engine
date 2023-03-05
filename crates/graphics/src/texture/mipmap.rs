@@ -181,7 +181,7 @@ impl<'a, T: Texture> MipLevelRef<'a, T> {
 
 impl<'a, T: Texture> MipLevelRef<'a, T> {
     // Read some pixels from the mip level region to the given destination
-    fn read(
+    pub fn read(
         &self,
         dst: &mut [<T::T as Texel>::Storage],
         subregion: Option<T::Region>, 
@@ -196,6 +196,7 @@ impl<'a, T: Texture> MipLevelRef<'a, T> {
             return Err(MipLevelReadError::NonReadable);
         }
 
+        // Get the region for this mip level 
         let mip_level_region = <T::Region as Region>::with_extent(
             self.texture.dimensions().mip_level_dimensions(self.level)
         );
@@ -258,16 +259,42 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
 
 impl<'a, T: Texture> MipLevelMut<'a, T> {
     // Read some pixels from the mip level region to the given destination
-    fn read(
+    pub fn read(
         &self,
         dst: &mut [<T::T as Texel>::Storage],
         subregion: Option<T::Region>, 
     ) -> Result<(), MipLevelReadError> {
-        todo!()
+        // Nothing to write to
+        if dst.is_empty() {
+            return Ok(());
+        }
+
+        // Make sure we can read from the texture
+        if !self.texture.usage().contains(TextureUsage::READ) {
+            return Err(MipLevelReadError::NonReadable);
+        }
+
+        // Get the region for this mip level 
+        let mip_level_region = <T::Region as Region>::with_extent(
+            self.texture.dimensions().mip_level_dimensions(self.level)
+        );
+
+        // Make sure the "offset" doesn't cause reads outside the texture
+        if let Some(subregion) = subregion {
+            if mip_level_region.is_larger_than(subregion) {
+                return Err(MipLevelReadError::InvalidRegion());
+            }
+        }
+
+        // Get the mip level subregion if the given one is None
+        let subregion = subregion.unwrap_or(mip_level_region); 
+
+        // TODO: Actually handle reading here
+        todo!();
     } 
 
     // Write some pixels to the mip level region from the given source
-    fn write(
+    pub fn write(
         &mut self,
         src: &[<T::T as Texel>::Storage],
         subregion: Option<T::Region>, 
@@ -299,7 +326,7 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
         subregion: Option<T::Region>,
         val: <T::T as Texel>::Storage
     ) -> Result<(), MipLevelWriteError> {
-        let src = vec![val;]
+        todo!()
     }
 
     

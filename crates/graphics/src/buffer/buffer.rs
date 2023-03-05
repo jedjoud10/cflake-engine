@@ -15,7 +15,7 @@ use crate::{
     BufferInitializationError, BufferMode, BufferNotMappableError,
     BufferReadError, BufferUsage, BufferView, BufferViewMut,
     BufferWriteError, GpuPodRelaxed, Graphics, StagingPool, Vertex,
-    R, StagingTarget, BufferSplatError,
+    R, BufferSplatError,
 };
 
 // Bitmask from Vulkan BufferUsages
@@ -349,14 +349,12 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
 
         // Use the staging pool for data writes
         let staging = self.graphics.staging_pool();
-        staging.write(
+        staging.write_buffer(
             &self.graphics,
-            StagingTarget::Buffer {
-                buffer: &self.buffer,
-                offset: (offset * self.stride()) as u64,
-                size: (src.len() * self.stride()) as u64,
-            },
-            bytemuck::cast_slice(src)
+            &self.buffer,
+            (offset * self.stride()) as u64,
+            (src.len() * self.stride()) as u64,
+            bytemuck::cast_slice(src),
         );
 
         Ok(())
@@ -390,14 +388,11 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
 
         // Use the staging pool for data reads
         let staging = self.graphics.staging_pool();
-        staging.read(
+        staging.read_buffer(
             &self.graphics,
-            StagingTarget::Buffer {
-                buffer: &self.buffer,
-                offset: (offset * self.stride()) as u64,
-                size: (dst.len() * self.stride()) as u64,
-            },
-
+            &self.buffer,
+            (offset * self.stride()) as u64,
+            (dst.len() * self.stride()) as u64,
             bytemuck::cast_slice_mut(dst),
         );
         
@@ -656,18 +651,6 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
             panic!()
         }
         */
-    }
-
-    // Read from "src" and write to the buffer when the encoder is submitted
-    // This is a "fire and forget" command that does not stall the CPU
-    // The user can do multiple async_write calls and expect them to be batched together
-    pub fn async_write(
-        &mut self,
-        encoder: &mut CommandEncoder,
-        src: &[T],
-        offset: usize,
-    ) -> Result<(), BufferWriteError> {
-        todo!()
     }
 
     // Read buffer and call the callback with the data when done

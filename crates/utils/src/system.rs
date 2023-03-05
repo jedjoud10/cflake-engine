@@ -9,7 +9,7 @@ use world::{post_user, user, System, World};
 
 // Utils resources that is added to the world at the very start
 pub struct UtilsSettings {
-    pub threadpool_max_threads: Option<usize>,
+    pub threadpool_threads: Option<usize>,
     pub author_name: String,
     pub app_name: String,
     pub log_receiver: Option<mpsc::Receiver<String>>,
@@ -20,8 +20,10 @@ pub fn threadpool(system: &mut System) {
     // Main initialization event
     system
         .insert_init(|world: &mut World| {
-            let num = num_cpus::get();
-            world.insert(ThreadPool::with(num))
+            let settings = world.get::<UtilsSettings>().unwrap();
+            let num = settings.threadpool_threads.unwrap_or_else(num_cpus::get);
+            drop(settings);
+            world.insert(ThreadPool::with(num));
         })
         .before(user);
 

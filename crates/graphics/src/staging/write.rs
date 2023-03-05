@@ -1,13 +1,13 @@
 use std::marker::PhantomData;
 use wgpu::{CommandEncoder, BufferAddress, Buffer, BufferViewMut};
-use crate::{Graphics, StagingTarget};
+use crate::{Graphics};
 
 // This is the view returned from the upload() method of the staging pool
 // This allows us to write to the given buffer (it will submit this write when this gets dropped)
+// We cannot read from this staging view. This is only used for writing into the buffer
 pub struct StagingViewWrite<'a> {
     // API, encoder, and target
     graphics: &'a Graphics,
-    src: StagingTarget<'a>,
 
     // Memory parameters
     dst_offset: BufferAddress,
@@ -19,15 +19,16 @@ pub struct StagingViewWrite<'a> {
     view: BufferViewMut<'a>,
 }
 
-impl<'a> AsMut<[u8]> for StagingViewWrite<'a> {
-    fn as_mut(&mut self) -> &mut [u8] {
-        todo!()
+impl<'a> AsRef<[u8]> for StagingViewWrite<'a> {
+    fn as_ref(&self) -> &[u8] {
+        log::error!("Trying to read from MappedStatingWrite buffer. Contents are undefined/zeroed");
+        &self.view
     }
 }
 
-impl<'a> AsRef<[u8]> for StagingViewWrite<'a> {
-    fn as_ref(&self) -> &[u8] {
-        todo!()
+impl<'a> AsMut<[u8]> for StagingViewWrite<'a> {
+    fn as_mut(&mut self) -> &mut [u8] {
+        &mut self.view
     }
 }
 

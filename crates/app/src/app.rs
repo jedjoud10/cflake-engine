@@ -398,7 +398,7 @@ impl App {
 
         // Insert the utils' settings
         self.world.insert(UtilsSettings {
-            threadpool_max_threads: None,
+            threadpool_threads: None,
             author_name: author_name.clone(),
             app_name: app_name.clone(),
             log_receiver: Some(receiver),

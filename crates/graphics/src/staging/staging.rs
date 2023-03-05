@@ -1,32 +1,8 @@
-use crate::{Graphics, StagingView, StagingViewWrite, GpuPod, GpuPodRelaxed};
+use crate::{Graphics, StagingView, GpuPod, GpuPodRelaxed};
 use parking_lot::Mutex;
 use std::{num::NonZeroU64, ops::DerefMut, sync::{Arc, atomic::Ordering}, marker::PhantomData};
 use utils::{ConcVec, AtomicBitSet};
 use wgpu::{CommandEncoder, Maintain, MapMode, Buffer, Texture, Extent3d, Origin3d, TextureAspect, ImageDataLayout};
-
-// Target for writing / download operations
-// Either a wgpu buffer or a wgpu texture
-pub enum StagingTarget<'a> {
-    // Read/write from/to this texture
-    // source layout must be divisible by COPY_BYTES_PER_ROW_ALIGNMENT
-    Texture {
-        texture: &'a Texture,
-        size: Extent3d,
-        mip_level: u32,
-        origin: Origin3d,
-        aspect: TextureAspect,
-        data_layout: ImageDataLayout,
-        stride: u64,
-    },
-
-
-    // Read/write from/to this buffer
-    Buffer {
-        buffer: &'a Buffer,
-        offset: u64,
-        size: u64,
-    },
-}
 
 // Helper struct that will temporarily store mapped buffers so we can have
 // StagingView / StagingViewMut that we can read and write from 
@@ -38,7 +14,6 @@ pub(crate) struct StagingPool {
     // Keeps track of the mapping state
     pub(crate) states: AtomicBitSet,
 }
-
 
 impl StagingPool {
     // Create a new staging belt for upload / download
@@ -102,138 +77,85 @@ impl StagingPool {
         })
     }
 
-    /*
     // Map a target for writing only (maps an intermediate staging buffer)
     // Src target must have the COPY_SRC buffer usage flag
-    pub fn map_read<'a>(
+    pub fn map_buffer_read<'a>(
         &'a self,
-        target: StagingTarget,
-        graphics: &'a Graphics,
-        offset: wgpu::BufferAddress,
-        size: wgpu::BufferAddress,
+        graphics: &Graphics,
+        buffer: &Buffer,
+        offset: u64,
+        size: u64,
     ) -> Option<StagingView<'a>> {
         None
     }
 
-    // Map a target for writing only (maps an intermediate staging buffer)
-    // Src target must have the COPY_DST buffer usage flag
-    pub fn map_write<'a>(
-        &'a self,
-        target: StagingTarget,
-        graphics: &'a Graphics,
-        offset: wgpu::BufferAddress,
-        size: wgpu::BufferAddress,
-    ) -> Option<StagingViewWrite<'a>> {
-        None
-    }
-    */
-
-    // Writes to the destination target using the source byte buffer
+    // Writes to the destination buffer using the source byte buffer
     // This is a "fire and forget" command that does not stall the CPU
     // The user can do multiple write calls and expect them to be batched together
-    pub fn write<'a>(
+    pub fn write_buffer<'a>(
         &'a self,
         graphics: &Graphics,
-        target: StagingTarget,
+        buffer: &Buffer,
+        offset: u64,
+        size: u64,
         src: &[u8],
     ) {
-        match target {
-            // Handle buffer writing
-            StagingTarget::Buffer { buffer, offset, size } => {
-                debug_assert_eq!(size as usize, src.len());
-                graphics.queue().write_buffer(buffer, offset, src);
-            },
-            
-            // Handle texture writing
-            StagingTarget::Texture { 
-                texture,
-                size,
-                mip_level,
-                origin,
-                aspect,
-                data_layout,
-                stride
-            } => {
-                let texels = size.width * size.height * size.depth_or_array_layers;
-                debug_assert_eq!((texels as u64) * stride, src.len() as u64);
-                graphics.queue().write_texture(wgpu::ImageCopyTexture {
-                    texture,
-                    mip_level,
-                    origin,
-                    aspect,
-                }, src, data_layout, size);   
-            }
-        }
+        debug_assert_eq!(size as usize, src.len());
+        graphics.queue().write_buffer(buffer, offset, src);
     }
 
-    // Reads the given staging target into the destination buffer
+    // Reads the given buffer into the destination buffer
     // Will stall the CPU, since this is waiting for GPU data
     // TODO: Make it submit the current recorder only when it was written to recently
-    pub fn read<'a>(
+    pub fn read_buffer<'a>(
         &'a self,
         graphics: &'a Graphics,
-        target: StagingTarget,
+        buffer: &Buffer,
+        offset: u64,
+        size: u64,
         dst: &mut [u8],
     ) {
-        match target {
-            // Handle buffer reading
-            StagingTarget::Buffer { buffer, offset, size } => {
-                assert_eq!(size as usize, dst.len());
-                assert!(buffer.usage().contains(wgpu::BufferUsages::COPY_SRC));
+        assert_eq!(size as usize, dst.len());
+        assert!(buffer.usage().contains(wgpu::BufferUsages::COPY_SRC));
 
-                // Get a encoder (reused or not to perform a copy)
-                let mut encoder = graphics.acquire();
-                let (i, staging) = self.find_or_allocate(graphics, size, MapMode::Read);
+        // Get a encoder (reused or not to perform a copy)
+        let mut encoder = graphics.acquire();
+        let (i, staging) = self.find_or_allocate(graphics, size, MapMode::Read);
 
-                // Copy to staging first
-                encoder.copy_buffer_to_buffer(
-                    buffer,
-                    offset,
-                    staging,
-                    0,
-                    size
-                );
+        // Copy to staging first
+        encoder.copy_buffer_to_buffer(
+            buffer,
+            offset,
+            staging,
+            0,
+            size
+        );
 
-                // Put the encoder back into the cache, and submit ALL encoders
-                graphics.reuse([encoder]);
-                // (Also wait for their subbmission)
-                graphics.submit_unused(true);
+        // Put the encoder back into the cache, and submit ALL encoders
+        graphics.reuse([encoder]);
+        // (Also wait for their subbmission)
+        graphics.submit_unused(true);
 
-                // Map the staging buffer
-                type MapResult = Result<(), wgpu::BufferAsyncError>;
-                let (tx, rx) = std::sync::mpsc::channel::<MapResult>();
+        // Map the staging buffer
+        type MapResult = Result<(), wgpu::BufferAsyncError>;
+        let (tx, rx) = std::sync::mpsc::channel::<MapResult>();
 
-                // Map synchronously
-                let slice = staging.slice(0..size);
-                slice.map_async(wgpu::MapMode::Read, move |res| {
-                    tx.send(res).unwrap()
-                });
-                graphics.device().poll(wgpu::Maintain::Wait);
-            
-                // Wait until the buffer is mapped, then read from the buffer
-                if let Ok(Ok(_)) = rx.recv() {
-                    dst.copy_from_slice(&slice.get_mapped_range());
-                    staging.unmap();
-                } else {
-                    panic!("Could not receive read map async")
-                }
-
-                // Reset the state of the staging buffer
-                self.states.remove(i, Ordering::Relaxed); 
-            },
-        
-            // Handle texture reading
-            StagingTarget::Texture { 
-                texture,
-                size: offset,
-                mip_level,
-                origin,
-                aspect,
-                data_layout,
-                stride
-            } => {
-
-            }
+        // Map synchronously
+        let slice = staging.slice(0..size);
+        slice.map_async(wgpu::MapMode::Read, move |res| {
+            tx.send(res).unwrap()
+        });
+        graphics.device().poll(wgpu::Maintain::Wait);
+    
+        // Wait until the buffer is mapped, then read from the buffer
+        if let Ok(Ok(_)) = rx.recv() {
+            dst.copy_from_slice(&slice.get_mapped_range());
+            staging.unmap();
+        } else {
+            panic!("Could not receive read map async")
         }
+
+        // Reset the state of the staging buffer
+        self.states.remove(i, Ordering::Relaxed); 
     }
 }
