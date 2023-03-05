@@ -60,7 +60,7 @@ impl<'str, 'ctx, 'stg, A: Asset> AssetInput<'str, 'ctx, 'stg, A>
     ) -> (
         &'str str,
         <A as Asset>::Settings<'stg>,
-        <A as Asset>::Context<'ctx>
+        <A as Asset>::Context<'ctx>,
     ) {
         self
     }

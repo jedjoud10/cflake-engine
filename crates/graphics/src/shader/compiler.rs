@@ -1,7 +1,7 @@
 use crate::{
-    FunctionModule, GpuPodRelaxed, Graphics, ReflectedModule,
-    ShaderCompilationError, ShaderModule, ShaderPreprocessorError,
-    VertexModule, ModuleKind,
+    FunctionModule, GpuPodRelaxed, Graphics, ModuleKind,
+    ReflectedModule, ShaderCompilationError, ShaderModule,
+    ShaderPreprocessorError, VertexModule,
 };
 use ahash::AHashMap;
 use assets::Assets;
@@ -37,7 +37,10 @@ impl<M: ShaderModule> Compiler<M> {
     // Create a compiler that will execute over the given module
     pub fn new(module: M) -> Self {
         let (file_name, source) = module.into_raw_parts();
-        log::debug!("Created a new compiler for loaded module {}", file_name);
+        log::debug!(
+            "Created a new compiler for loaded module {}",
+            file_name
+        );
 
         Self {
             source,
@@ -102,8 +105,14 @@ impl<M: ShaderModule> Compiler<M> {
 
         // Compile GLSL to Naga then to Wgpu
         let time = std::time::Instant::now();
-        let (raw, naga) =
-            compile(&M::kind(), graphics, assets, &snippets, source, &file_name)?;
+        let (raw, naga) = compile(
+            &M::kind(),
+            graphics,
+            assets,
+            &snippets,
+            source,
+            &file_name,
+        )?;
         log::debug!(
             "Compiled shader {file_name} sucessfully! Took {}ms",
             time.elapsed().as_millis()
@@ -142,11 +151,20 @@ fn compile(
         .map_err(ShaderCompilationError::PreprocessorError)?;
 
     // Pass the source by ShaderC first cause Naga's errors suck ass
-    let artifact = graphics.0.shaderc.compile_into_spirv(&source, match kind {
-        ModuleKind::Vertex => shaderc::ShaderKind::Vertex,
-        ModuleKind::Fragment => shaderc::ShaderKind::Fragment,
-        ModuleKind::Compute => shaderc::ShaderKind::Compute,
-    }, file, "main", None)
+    let artifact = graphics
+        .0
+        .shaderc
+        .compile_into_spirv(
+            &source,
+            match kind {
+                ModuleKind::Vertex => shaderc::ShaderKind::Vertex,
+                ModuleKind::Fragment => shaderc::ShaderKind::Fragment,
+                ModuleKind::Compute => shaderc::ShaderKind::Compute,
+            },
+            file,
+            "main",
+            None,
+        )
         .map_err(|error| match error {
             // ShaderC compilation error, so print out the message to the error log
             shaderc::Error::CompilationError(_, value) => {
@@ -154,20 +172,25 @@ fn compile(
                 let source = source
                     .lines()
                     .enumerate()
-                    .map(|(count, line)| format!("({}): {}", count + 1, line))
+                    .map(|(count, line)| {
+                        format!("({}): {}", count + 1, line)
+                    })
                     .collect::<Vec<String>>()
                     .join("\n");
-                        
+
                 // Print the error message
-                log::error!("Failed compilation of shader {file}:\n\n{}\n\n", source);
+                log::error!(
+                    "Failed compilation of shader {file}:\n\n{}\n\n",
+                    source
+                );
 
                 for line in value.lines() {
                     log::error!("{}", line);
                 }
-                
+
                 ShaderCompilationError::ValidationError
-            },
-            _ => todo!()
+            }
+            _ => todo!(),
         })?;
 
     // [SPIRV -> Naga] parsing options
@@ -178,7 +201,11 @@ fn compile(
     };
 
     // Compile the SPIRV to a Naga module
-    let mut module = naga::front::spv::parse_u8_slice(artifact.as_binary_u8(), &options).unwrap();
+    let mut module = naga::front::spv::parse_u8_slice(
+        artifact.as_binary_u8(),
+        &options,
+    )
+    .unwrap();
 
     // Compile the Wgpu shader
     Ok((

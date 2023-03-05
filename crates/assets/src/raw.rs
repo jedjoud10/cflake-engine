@@ -3,9 +3,7 @@ use std::path::Path;
 
 // If we are in Debug, we read the bytes directly from the file system
 // Path is a global system wide path
-pub fn read(
-    path: &Path,
-) -> Result<Vec<u8>, AssetLoadError> {
+pub fn read(path: &Path) -> Result<Vec<u8>, AssetLoadError> {
     use std::{fs::File, io::Read};
 
     // We do a bit of reading

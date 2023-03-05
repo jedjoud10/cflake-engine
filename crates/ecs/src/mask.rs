@@ -46,7 +46,8 @@ impl Mask {
     // Get the offset of this mask, assuming that it is a unit mask
     // Returns None if it's not a unit mask
     pub fn offset(&self) -> Option<usize> {
-        (self.count_ones() == 1).then(|| self.0.trailing_zeros() as usize)
+        (self.count_ones() == 1)
+            .then(|| self.0.trailing_zeros() as usize)
     }
 
     // Check if a mask is empty

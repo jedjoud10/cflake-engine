@@ -2,11 +2,17 @@ use ahash::AHashMap;
 use wgpu::CommandEncoder;
 
 use crate::{
-    BindGroup, ColorLayout, DepthStencilLayout, Graphics,
-    GraphicsPipeline, RenderCommand, TriangleBuffer, UntypedBuffer,
-    Vertex, VertexBuffer, PushConstants, ModuleKind, UniformBuffer, BufferMode, BufferUsage, GpuPod,
+    BindGroup, BufferMode, BufferUsage, ColorLayout,
+    DepthStencilLayout, GpuPod, Graphics, GraphicsPipeline,
+    ModuleKind, PushConstants, RenderCommand, TriangleBuffer,
+    UniformBuffer, UntypedBuffer, Vertex, VertexBuffer,
 };
-use std::{marker::PhantomData, ops::{Range, RangeBounds, Bound}, sync::Arc, collections::hash_map::Entry};
+use std::{
+    collections::hash_map::Entry,
+    marker::PhantomData,
+    ops::{Bound, Range, RangeBounds},
+    sync::Arc,
+};
 
 // An active graphics pipeline that is bound to a render pass that we can use to render
 pub struct ActiveGraphicsPipeline<
@@ -33,9 +39,13 @@ fn map<T, U, F: FnOnce(T) -> U>(bound: Bound<T>, map: F) -> Bound<U> {
 }
 
 // Convert some buffer range bounds to byte starts / ends
-fn convert(bounds: impl RangeBounds<usize>, stride: usize) -> (Bound<u64>, Bound<u64>) {
+fn convert(
+    bounds: impl RangeBounds<usize>,
+    stride: usize,
+) -> (Bound<u64>, Bound<u64>) {
     let stride = stride as u64;
-    let start = map(bounds.start_bound().cloned(), |x| x as u64 * stride);
+    let start =
+        map(bounds.start_bound().cloned(), |x| x as u64 * stride);
     let end = map(bounds.end_bound().cloned(), |x| x as u64 * stride);
     (start, end)
 }
@@ -56,7 +66,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
             slot,
             buffer: buffer.as_untyped(),
             start,
-            end
+            end,
         })
     }
 
@@ -71,24 +81,28 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         self.commands.push(RenderCommand::SetIndexBuffer {
             buffer: buffer,
             start,
-            end
+            end,
         })
     }
 
     // Set push constants before rendering
     pub fn set_push_constants(
         &mut self,
-        callback: impl FnOnce(&mut PushConstants)
+        callback: impl FnOnce(&mut PushConstants),
     ) {
         let shader = self.pipeline.shader();
 
         // Don't set the push constants if we don't have any to set
-        let valid = shader.reflected.push_constant_layouts.iter().any(|x| x.is_some());
+        let valid = shader
+            .reflected
+            .push_constant_layouts
+            .iter()
+            .any(|x| x.is_some());
         if !valid {
             return;
         }
 
-        // Create push constants that we can set 
+        // Create push constants that we can set
         let mut push_constants = PushConstants {
             reflected: shader.reflected.clone(),
             offsets: Vec::new(),
@@ -106,12 +120,14 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         let stages = push_constants.stages;
 
         // Create the render commands for settings for push constants
-        let iter = stages.into_iter().zip(offsets.into_iter().zip(data.into_iter()));
+        let iter = stages
+            .into_iter()
+            .zip(offsets.into_iter().zip(data.into_iter()));
         for (stages, (offset, data)) in iter {
             self.commands.push(RenderCommand::SetPushConstants {
                 stages,
                 offset,
-                data
+                data,
             })
         }
     }
@@ -155,7 +171,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
             fill_ubos: Vec::with_capacity(count),
         };
 
-        // Let the user modify the bind group 
+        // Let the user modify the bind group
         callback(&mut bind_group);
 
         // Check the cache, and create a new fill UBOs if needed
@@ -174,15 +190,19 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         } = bind_group;
 
         // Contains the indices of a free UBO buffer of a specific layout that we can use
-        let mut filled_up_ubos = Vec::<usize>::with_capacity(fill_ubos.len());
+        let mut filled_up_ubos =
+            Vec::<usize>::with_capacity(fill_ubos.len());
 
         for (data, layout) in fill_ubos.iter() {
             match cached_ubos.entry((binding, layout.clone())) {
                 // There is an already existing UBO buffer with the same layout and bind group, fill it up
                 Entry::Occupied(mut occupied) => {
-                    // Check if there's an unused buffer that we can use 
+                    // Check if there's an unused buffer that we can use
                     let buffers = occupied.get_mut();
-                    let buffer = buffers.iter_mut().enumerate().find(|(_, (_, x))| *x);
+                    let buffer = buffers
+                        .iter_mut()
+                        .enumerate()
+                        .find(|(_, (_, x))| *x);
 
                     if let Some((index, (buffer, free))) = buffer {
                         // Write to the already existing fill ubo for this group
@@ -196,12 +216,13 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
                             &self.graphics,
                             &data,
                             BufferMode::Dynamic,
-                            BufferUsage::WRITE
-                        ).unwrap();
+                            BufferUsage::WRITE,
+                        )
+                        .unwrap();
                         filled_up_ubos.push(buffers.len());
                         buffers.push((buffer, true));
-                    }                    
-                },
+                    }
+                }
 
                 // Create a new UBO with the specified layout and bind group
                 Entry::Vacant(vacant) => {
@@ -210,36 +231,37 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
                         &self.graphics,
                         &data,
                         BufferMode::Dynamic,
-                        BufferUsage::WRITE
-                    ).unwrap();
+                        BufferUsage::WRITE,
+                    )
+                    .unwrap();
                     vacant.insert(vec![(buffer, true)]);
                     filled_up_ubos.push(0);
-                },
+                }
             }
         }
 
         // Update the bind group IDs based on the fetched UBOS
         // (very important for the next step)
         for (index, (_, layout)) in fill_ubos.iter().enumerate() {
-            let buffers = cached_ubos.get(&(binding, layout.clone())).unwrap();
+            let buffers =
+                cached_ubos.get(&(binding, layout.clone())).unwrap();
             let (buffer, _) = &buffers[filled_up_ubos[index]];
 
             // Get values needed for the bind entry
             let id = buffer.raw().global_id();
-            let buffer_binding = buffer.raw().as_entire_buffer_binding();
-            let resource = wgpu::BindingResource::Buffer(buffer_binding);
+            let buffer_binding =
+                buffer.raw().as_entire_buffer_binding();
+            let resource =
+                wgpu::BindingResource::Buffer(buffer_binding);
 
             // Save the bind entry for later
             resources.push(resource);
             ids.push(id);
             slots.push(layout.binding);
-        } 
+        }
 
         // Check the cache, and create a new bind group
-        let bind_group = match cache
-            .bind_groups
-            .entry(ids.clone())
-        {
+        let bind_group = match cache.bind_groups.entry(ids.clone()) {
             dashmap::mapref::entry::Entry::Occupied(occupied) => {
                 occupied.get().clone()
             }
@@ -247,8 +269,10 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
                 log::warn!("Did not find cached bind group (set = {binding}), creating new one...");
 
                 // Get the bind group layout of the bind group
-                let layout =
-                    &reflected.bind_group_layouts[binding as usize].as_ref().unwrap();
+                let layout = &reflected.bind_group_layouts
+                    [binding as usize]
+                    .as_ref()
+                    .unwrap();
                 let layout = self
                     .graphics
                     .0
@@ -267,7 +291,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
                     })
                     .collect::<Vec<_>>();
 
-                // Create a bind group descriptor of the entries 
+                // Create a bind group descriptor of the entries
                 let desc = wgpu::BindGroupDescriptor {
                     label: None,
                     layout: &layout,

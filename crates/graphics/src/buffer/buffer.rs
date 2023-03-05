@@ -8,14 +8,14 @@ use std::{
     ops::{Range, RangeBounds},
 };
 
-use wgpu::{util::DeviceExt, Maintain, CommandEncoder};
+use wgpu::{util::DeviceExt, CommandEncoder, Maintain};
 
 use crate::{
     BufferClearError, BufferCopyError, BufferExtendError,
     BufferInitializationError, BufferMode, BufferNotMappableError,
-    BufferReadError, BufferUsage, BufferView, BufferViewMut,
-    BufferWriteError, GpuPodRelaxed, Graphics, StagingPool, Vertex,
-    R, BufferSplatError,
+    BufferReadError, BufferSplatError, BufferUsage, BufferView,
+    BufferViewMut, BufferWriteError, GpuPodRelaxed, Graphics,
+    StagingPool, Vertex, R,
 };
 
 // Bitmask from Vulkan BufferUsages
@@ -155,12 +155,25 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
         };
 
         // Return an error if the buffer usage flags are invalid
-        if usage.contains(BufferUsage::READ) && !usage.contains(BufferUsage::COPY_SRC) {
-            return Err(BufferInitializationError::ReadableWithoutCopySrc);
-        } else if usage.contains(BufferUsage::WRITE) && !usage.contains(BufferUsage::COPY_DST) {
-            return Err(BufferInitializationError::WritableWithoutCopyDst);
-        } if mode == BufferMode::Resizable && !usage.contains(BufferUsage::COPY_SRC) {
-            return Err(BufferInitializationError::ResizableWithoutCopySrc);
+        if usage.contains(BufferUsage::READ)
+            && !usage.contains(BufferUsage::COPY_SRC)
+        {
+            return Err(
+                BufferInitializationError::ReadableWithoutCopySrc,
+            );
+        } else if usage.contains(BufferUsage::WRITE)
+            && !usage.contains(BufferUsage::COPY_DST)
+        {
+            return Err(
+                BufferInitializationError::WritableWithoutCopyDst,
+            );
+        }
+        if mode == BufferMode::Resizable
+            && !usage.contains(BufferUsage::COPY_SRC)
+        {
+            return Err(
+                BufferInitializationError::ResizableWithoutCopySrc,
+            );
         }
 
         // Wgpu usages for this buffer
@@ -213,7 +226,10 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
 }
 
 // Get the buffer usages from the buffer variant and usage wrapper
-fn buffer_usages(variant: wgpu::BufferUsages, usage: BufferUsage) -> wgpu::BufferUsages {
+fn buffer_usages(
+    variant: wgpu::BufferUsages,
+    usage: BufferUsage,
+) -> wgpu::BufferUsages {
     let mut wgpu_usages = variant;
     if usage.contains(BufferUsage::COPY_SRC) {
         wgpu_usages |= wgpu::BufferUsages::COPY_SRC;
@@ -230,7 +246,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
     pub fn raw(&self) -> &wgpu::Buffer {
         &self.buffer
     }
-    
+
     // Get the current length of the buffer
     pub fn len(&self) -> usize {
         self.length.try_into().unwrap()
@@ -395,7 +411,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
             (dst.len() * self.stride()) as u64,
             bytemuck::cast_slice_mut(dst),
         );
-        
+
         Ok(())
     }
 
@@ -416,9 +432,10 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
     pub fn splat(
         &mut self,
         range: impl RangeBounds<usize>,
-        val: T
+        val: T,
     ) -> Result<(), BufferSplatError> {
-        let (start, end) = self.convert_bounds(range)
+        let (start, end) = self
+            .convert_bounds(range)
             .ok_or(BufferSplatError::InvalidRange(self.length))?;
         let len = end - start;
 
@@ -477,7 +494,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
             source_offset,
             self.raw(),
             destination_offset,
-            copy_size
+            copy_size,
         );
         self.graphics.reuse([encoder]);
         Ok(())
@@ -541,20 +558,20 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
                 (self.length * self.stride()) as u64,
             );
             self.graphics.reuse([encoder]);
-            
+
             // Swap them out, and drop the last buffer
             let old = std::mem::replace(&mut self.buffer, buffer);
             drop(old);
 
             // Write using the same encoder
             self.length += slice.len();
-            self.write(slice, self.length-slice.len()).unwrap();
+            self.write(slice, self.length - slice.len()).unwrap();
         } else {
             // Just write into a sub-part of the buffer
             self.length += slice.len();
-            
+
             // Write using the same encoder
-            self.write(slice, self.length-slice.len()).unwrap();
+            self.write(slice, self.length - slice.len()).unwrap();
         }
 
         Ok(())
@@ -632,7 +649,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
                     size as u64,
                 )
                 .unwrap();
-            
+
             Ok(BufferViewMut::Mapped {
                 buffer: PhantomData,
                 data,

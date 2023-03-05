@@ -2,15 +2,20 @@ use assets::AssetsSettings;
 use graphics::{FrameRateLimit, WindowSettings};
 use mimalloc::MiMalloc;
 use platform_dirs::AppDirs;
+use std::{
+    any::type_name,
+    path::{Path, PathBuf},
+    str::FromStr,
+    sync::mpsc,
+};
 use utils::UtilsSettings;
-use std::{path::{PathBuf, Path}, str::FromStr, sync::mpsc, any::type_name};
 use winit::{
     event::{DeviceEvent, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
 use world::{
-    Event, Init, Shutdown, State, System, Systems, Tick, Update,
-    World, SystemId,
+    Event, Init, Shutdown, State, System, SystemId, Systems, Tick,
+    Update, World,
 };
 
 #[global_allocator]
@@ -179,11 +184,13 @@ impl App {
 
     // Initialize the global logger (also sets the output file)
     fn init_logger(&mut self, sender: mpsc::Sender<String>) {
-        use fern::*;
         use fern::colors::*;
+        use fern::*;
 
         // File logger with no colors. Will write into the given cache buffer
-        fn file_logger(sender: mpsc::Sender<String>) -> fern::Dispatch {
+        fn file_logger(
+            sender: mpsc::Sender<String>,
+        ) -> fern::Dispatch {
             fern::Dispatch::new()
                 .format(move |out, _, record| {
                     out.finish(format_args!(
@@ -199,7 +206,10 @@ impl App {
         }
 
         // Console logger with pwetty colors
-        fn console_logger(colors_level: ColoredLevelConfig, colors_line: ColoredLevelConfig) -> fern::Dispatch {
+        fn console_logger(
+            colors_level: ColoredLevelConfig,
+            colors_line: ColoredLevelConfig,
+        ) -> fern::Dispatch {
             fern::Dispatch::new().format(move |out, message, record| {
                 out.finish(format_args!(
                     "{color_line}[{thread_name}][{date}][{target}][{level}{color_line}] {message}\x1B[0m",
@@ -215,7 +225,6 @@ impl App {
                 ));
             }).chain(std::io::stdout())
         }
-
 
         // Color config for the line color
         let colors_line = ColoredLevelConfig::new()
@@ -240,7 +249,9 @@ impl App {
             .level_for("wgpu_hal", log::LevelFilter::Warn)
             .level(log::LevelFilter::Debug)
             .chain(console_logger(colors_level, colors_line))
-            .chain(file_logger(sender)).apply().unwrap();
+            .chain(file_logger(sender))
+            .apply()
+            .unwrap();
     }
 
     // Consume the App builder, and start the engine window
@@ -366,7 +377,10 @@ impl App {
     }
 
     // Insert the required default systems
-    fn insert_default_systems(mut self, receiver: mpsc::Receiver<String>) -> Self {
+    fn insert_default_systems(
+        mut self,
+        receiver: mpsc::Receiver<String>,
+    ) -> Self {
         // TODO: Create plugins to remove this shit
         self.regsys(input::system);
         self.regsys(ecs::system);
@@ -405,7 +419,8 @@ impl App {
         });
 
         // Insert the asset loader's user asset path
-        let assets_settings = AssetsSettings(self.user_assets_folder.take());
+        let assets_settings =
+            AssetsSettings(self.user_assets_folder.take());
         self.world.insert(assets_settings);
 
         // Insert the graphics API window resource
@@ -413,7 +428,9 @@ impl App {
         self.world.insert(window_settings);
 
         // Print app / author / engine data
-        log::info!("App Name: '{app_name}', App Version: '{app_version}'");
+        log::info!(
+            "App Name: '{app_name}', App Version: '{app_version}'"
+        );
         log::info!("Engine Name: '{engine_name}, Engine Version: '{engine_version}'");
         log::info!("Author Name: '{author_name}'");
         self

@@ -1,8 +1,8 @@
 use ahash::AHashMap;
 use itertools::Itertools;
 use slotmap::SlotMap;
-use utils::Time;
 use std::iter::once;
+use utils::Time;
 use world::{post_user, user, System, World};
 
 use crate::{

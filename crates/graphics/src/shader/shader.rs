@@ -21,8 +21,8 @@ impl Shader {
         vertex: &Compiled<VertexModule>,
         fragment: &Compiled<FragmentModule>,
     ) -> Self {
-        let (shader, layout) = super::merge_and_make_layout(vertex, fragment, graphics);
-
+        let (shader, layout) =
+            super::merge_and_make_layout(vertex, fragment, graphics);
 
         Self {
             vertex: vertex.clone(),

@@ -1,13 +1,14 @@
 use crate::{
     AlbedoMap, CameraBuffer, CameraUniform, EnabledMeshAttributes,
-    Mesh, NormalMap, Renderer, SceneBuffer, SceneUniform,
-    TimingBuffer, TimingUniform, SceneColor,
+    Mesh, NormalMap, Renderer, SceneBuffer, SceneColor, SceneUniform,
+    TimingBuffer, TimingUniform,
 };
 use assets::Assets;
 use graphics::{
-    BindGroup, BlendConfig, Compiled, DepthConfig, FragmentModule,
-    WindingOrder, Graphics, Normalized, PrimitiveConfig, StencilConfig,
-    Texture2D, UniformBuffer, VertexModule, RGBA, PushConstants, CompareFunction,
+    BindGroup, BlendConfig, CompareFunction, Compiled, DepthConfig,
+    FragmentModule, Graphics, Normalized, PrimitiveConfig,
+    PushConstants, StencilConfig, Texture2D, UniformBuffer,
+    VertexModule, WindingOrder, RGBA,
 };
 use world::World;
 
@@ -59,7 +60,7 @@ pub trait Material: 'static + Sized {
             write_enabled: true,
             depth_bias_constant: 0,
             depth_bias_slope_scale: 0.0,
-            depth_bias_clamp: 0.0
+            depth_bias_clamp: 0.0,
         })
     }
 
@@ -117,7 +118,7 @@ pub trait Material: 'static + Sized {
         renderer: &Renderer,
         resources: &'r mut Self::Resources<'w>,
         default: &DefaultMaterialResources<'r>,
-        push_constants: &mut PushConstants
+        push_constants: &mut PushConstants,
     ) {
     }
 }

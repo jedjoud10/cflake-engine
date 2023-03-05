@@ -9,7 +9,7 @@ pub struct Interface {
 
     // This is the current egui state given from winit whenever we receive a new window event
     pub(crate) state: egui_winit::State,
-    
+
     // This is the rasterizer that will actually draw stuff onto the screen
     pub(crate) rasterizer: Rasterizer,
 

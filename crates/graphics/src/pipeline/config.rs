@@ -1,4 +1,4 @@
-use crate::{Vertex, VertexInfo, ColorLayout, Texel};
+use crate::{ColorLayout, Texel, Vertex, VertexInfo};
 use std::marker::PhantomData;
 use wgpu::{ShaderLocation, VertexFormat, VertexStepMode};
 
@@ -20,7 +20,9 @@ pub type StencilConfig = wgpu::StencilState;
 pub use wgpu::{CompareFunction, Face};
 
 // Re-export blend state ops
-pub use wgpu::{BlendState, BlendFactor, BlendOperation, BlendComponent};
+pub use wgpu::{
+    BlendComponent, BlendFactor, BlendOperation, BlendState,
+};
 
 // How we will use color blending for each element
 pub type BlendConfig<C: ColorLayout> = C::BlendingArray;

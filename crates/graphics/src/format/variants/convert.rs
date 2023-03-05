@@ -1,4 +1,7 @@
-use crate::{AnyElement, Normalized, Texel, BGRA, R, RG, RGBA, Depth, DepthElement, StencilElement, Stencil, SBGRA, SRGBA};
+use crate::{
+    AnyElement, Depth, DepthElement, Normalized, Stencil,
+    StencilElement, Texel, BGRA, R, RG, RGBA, SBGRA, SRGBA,
+};
 use half::f16;
 
 // This trait is used to convert between texel storage types to intermediate types
@@ -9,10 +12,11 @@ pub trait Conversion: Texel {
     // For depth and stencil, this would be f32 and u32 respectively
     type Target;
 
-    // Convert an intermediate storage type repr to a texel 
+    // Convert an intermediate storage type repr to a texel
     // Must return None if the conversion fails
     // Extra channels must be zeroed out
-    fn try_from_target(target: Self::Target) -> Option<Self::Storage>;
+    fn try_from_target(target: Self::Target)
+        -> Option<Self::Storage>;
 
     // Converts the color texel to the intermediate storage type
     // Extra channels must be zeroed out
@@ -32,7 +36,7 @@ macro_rules! internal_impl_color_texel {
     ($vec:ident, $elem:ty, $channels:expr, $storagevec:ident, $conv:expr, $min:expr, $max:expr, $fromf32:expr, $tof32:expr) => {
         impl Conversion for $vec<$elem> {
             type Target = vek::Vec4<f32>;
-            
+
             fn try_from_target(
                 rgba: vek::Vec4<f32>,
             ) -> Option<Self::Storage> {
@@ -251,12 +255,16 @@ internal_impl_color_texel!(
     |v| v as f32 / u8::MAX as f32
 );
 
-
 // TODO: write macro for this
-impl Conversion for Depth<f32> where Self: Texel {
+impl Conversion for Depth<f32>
+where
+    Self: Texel,
+{
     type Target = f32;
 
-    fn try_from_target(target: Self::Target) -> Option<Self::Storage> {
+    fn try_from_target(
+        target: Self::Target,
+    ) -> Option<Self::Storage> {
         Some(target)
     }
 
@@ -266,10 +274,15 @@ impl Conversion for Depth<f32> where Self: Texel {
 }
 
 // TODO: write macro for this
-impl Conversion for Stencil<u8> where Self: Texel {
+impl Conversion for Stencil<u8>
+where
+    Self: Texel,
+{
     type Target = u32;
 
-    fn try_from_target(target: Self::Target) -> Option<Self::Storage> {
+    fn try_from_target(
+        target: Self::Target,
+    ) -> Option<Self::Storage> {
         target.try_into().ok()
     }
 

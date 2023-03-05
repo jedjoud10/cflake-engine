@@ -9,8 +9,8 @@ use ahash::AHashMap;
 use assets::Assets;
 use graphics::{
     BindGroup, Compiled, Compiler, FragmentModule, Graphics,
-    Normalized, Sampler, Shader, Texture2D, UniformBuffer,
-    VertexModule, RGBA, Texture, ValueFiller, PushConstants,
+    Normalized, PushConstants, Sampler, Shader, Texture, Texture2D,
+    UniformBuffer, ValueFiller, VertexModule, RGBA,
 };
 use utils::{Handle, Storage};
 
@@ -38,7 +38,9 @@ impl Material for Basic {
         assets: &mut Assets,
     ) -> Compiled<VertexModule> {
         let vert = assets
-            .load::<VertexModule>("engine/shaders/scene/basic/basic.vert")
+            .load::<VertexModule>(
+                "engine/shaders/scene/basic/basic.vert",
+            )
             .unwrap();
         Compiler::new(vert).compile(assets, graphics).unwrap()
     }
@@ -49,7 +51,9 @@ impl Material for Basic {
         assets: &mut Assets,
     ) -> Compiled<FragmentModule> {
         let frag = assets
-            .load::<FragmentModule>("engine/shaders/scene/basic/basic.frag")
+            .load::<FragmentModule>(
+                "engine/shaders/scene/basic/basic.frag",
+            )
             .unwrap();
         Compiler::new(frag).compile(assets, graphics).unwrap()
     }
@@ -73,8 +77,15 @@ impl Material for Basic {
         group.set_buffer("time", default.timing_buffer).unwrap();
 
         // Set the scene sky texture
-        group.set_texture("gradient_map", default.sky_gradient).unwrap();
-        group.set_sampler("gradient_map_sampler", default.sky_gradient.sampler()).unwrap();
+        group
+            .set_texture("gradient_map", default.sky_gradient)
+            .unwrap();
+        group
+            .set_sampler(
+                "gradient_map_sampler",
+                default.sky_gradient.sampler(),
+            )
+            .unwrap();
     }
 
     // Set the instance bindings that will change per material
@@ -97,19 +108,24 @@ impl Material for Basic {
             .normal_map
             .as_ref()
             .map_or(default.normal, |h| normal_maps.get(h));
-        
 
         // Set the material textures
         group.set_texture("albedo_map", albedo_map).unwrap();
-        group.set_sampler("albedo_map_sampler", albedo_map.sampler()).unwrap();
+        group
+            .set_sampler("albedo_map_sampler", albedo_map.sampler())
+            .unwrap();
         group.set_texture("normal_map", normal_map).unwrap();
-        group.set_sampler("normal_map_sampler", normal_map.sampler()).unwrap();
-        
+        group
+            .set_sampler("normal_map_sampler", normal_map.sampler())
+            .unwrap();
+
         // Fill the material UBO with the specified fields automatically
-        group.fill_ubo("material", |fill| {
-            fill.set_scalar("bumpiness", self.bumpiness).unwrap();
-            fill.set_vec3("tint", self.tint).unwrap();
-        }).unwrap();
+        group
+            .fill_ubo("material", |fill| {
+                fill.set_scalar("bumpiness", self.bumpiness).unwrap();
+                fill.set_vec3("tint", self.tint).unwrap();
+            })
+            .unwrap();
     }
 
     // Set the surface push constants
@@ -118,8 +134,10 @@ impl Material for Basic {
         renderer: &Renderer,
         resources: &'r mut Self::Resources<'w>,
         default: &DefaultMaterialResources<'r>,
-        push_constants: &mut PushConstants
+        push_constants: &mut PushConstants,
     ) {
-        push_constants.set_mat4x4("matrix", renderer.matrix.cols).unwrap();
+        push_constants
+            .set_mat4x4("matrix", renderer.matrix.cols)
+            .unwrap();
     }
 }

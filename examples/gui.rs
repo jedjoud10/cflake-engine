@@ -12,7 +12,7 @@ fn main() {
 fn update(world: &mut World) {
     let ui = world.get_mut::<Interface>().unwrap();
     let time = world.get::<Time>().unwrap();
-    
+
     egui::Window::new("Test window").show(&ui, |ui| {
         ui.horizontal(|ui| {
             ui.label("Delta (s/f): ");

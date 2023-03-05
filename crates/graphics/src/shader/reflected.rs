@@ -1,8 +1,9 @@
-use std::{
-    hash::Hash, sync::Arc,
-};
+use std::{hash::Hash, sync::Arc};
 
-use crate::{Graphics, ShaderModule, Compiled, FragmentModule, VertexModule, ModuleKind};
+use crate::{
+    Compiled, FragmentModule, Graphics, ModuleKind, ShaderModule,
+    VertexModule,
+};
 use ahash::{AHashMap, AHashSet};
 use naga::{AddressSpace, ResourceBinding, TypeInner};
 
@@ -97,12 +98,11 @@ pub enum StructMemberType {
 pub fn merge_and_make_layout(
     vertex: &Compiled<VertexModule>,
     fragment: &Compiled<FragmentModule>,
-    graphics: &Graphics
+    graphics: &Graphics,
 ) -> (ReflectedShader, Arc<wgpu::PipelineLayout>) {
     // Convert the reflected module to a reflected shader
     let modules = &[vertex.reflected(), fragment.reflected()];
-    let shader =
-        merge_reflected_modules_to_shader(modules);
+    let shader = merge_reflected_modules_to_shader(modules);
 
     // Convert the reflected shader to a layout
     let layout = create_pipeline_layout_from_shader(
@@ -123,7 +123,8 @@ fn merge_reflected_modules_to_shader(
         [None, None, None, None];
 
     // Stores mutliple push constants for each module (at max we will have 2 modules)
-    let mut push_constant_layouts: [Option<PushConstantLayout>; 2] = [None, None];
+    let mut push_constant_layouts: [Option<PushConstantLayout>; 2] =
+        [None, None];
 
     // Keep track of the last valid bind group layout index (max)
     let mut last_valid_bind_group_layout = 0;
@@ -131,14 +132,15 @@ fn merge_reflected_modules_to_shader(
     // Merge different modules into a ReflectedShader
     for (module_index, module) in modules.iter().enumerate() {
         // Add the bind group push constant layout (if it exists)
-        push_constant_layouts[module_index] = module.push_constant.clone();
-        last_valid_bind_group_layout = last_valid_bind_group_layout.max(
-            module.last_valid_bind_group_layout
-        );
+        push_constant_layouts[module_index] =
+            module.push_constant.clone();
+        last_valid_bind_group_layout = last_valid_bind_group_layout
+            .max(module.last_valid_bind_group_layout);
 
         // Merrge bind groups and their entries
-        for (group_index, bind_group_layout) in module.bind_group_layouts.iter().enumerate() {
-
+        for (group_index, bind_group_layout) in
+            module.bind_group_layouts.iter().enumerate()
+        {
             // Skip this bind group if it was hopped over in the shader
             let Some(bind_group_layout) = bind_group_layout else {
                 continue;
@@ -148,17 +150,26 @@ fn merge_reflected_modules_to_shader(
             if bind_group_layout.bind_entry_layouts.len() == 0 {
                 panic!("Bind group MUST contain at least ONE entry");
             }
-            
+
             // Get the merged group layout and merged group entry layouts
-            let merged_group_layout = &mut groups[group_index as usize];
-            let merged_group_entry_layouts = merged_group_layout.get_or_insert_with(|| Default::default());
+            let merged_group_layout =
+                &mut groups[group_index as usize];
+            let merged_group_entry_layouts = merged_group_layout
+                .get_or_insert_with(|| Default::default());
 
             // Merge each entry for this group individually
-            for bind_entry_layout in bind_group_layout.bind_entry_layouts.iter() {                
-                match merged_group_entry_layouts.entry(bind_entry_layout.binding) {
+            for bind_entry_layout in
+                bind_group_layout.bind_entry_layouts.iter()
+            {
+                match merged_group_entry_layouts
+                    .entry(bind_entry_layout.binding)
+                {
                     // Merge an already existing layout with the new one
-                    std::collections::hash_map::Entry::Occupied(mut occupied) => {
-                        let merged_bind_entry_layout = occupied.get_mut();
+                    std::collections::hash_map::Entry::Occupied(
+                        mut occupied,
+                    ) => {
+                        let merged_bind_entry_layout =
+                            occupied.get_mut();
                         let old = bind_entry_layout;
                         let merged = merged_bind_entry_layout;
 
@@ -170,12 +181,14 @@ fn merge_reflected_modules_to_shader(
 
                         // Merge the visibility to allow more modules to access this entry
                         merged.visiblity.insert(old.visiblity);
-                    },
+                    }
 
                     // If the spot is vacant, add the bind entry layout for the first time
-                    std::collections::hash_map::Entry::Vacant(vacant) => {
+                    std::collections::hash_map::Entry::Vacant(
+                        vacant,
+                    ) => {
                         vacant.insert(bind_entry_layout.clone());
-                    },
+                    }
                 }
             }
         }
@@ -186,11 +199,15 @@ fn merge_reflected_modules_to_shader(
         .into_iter()
         .map(|entries| {
             entries.map(|entries| BindGroupLayout {
-                bind_entry_layouts: entries.into_iter().map(|(_, x)| x).collect(),
+                bind_entry_layouts: entries
+                    .into_iter()
+                    .map(|(_, x)| x)
+                    .collect(),
             })
         })
         .collect::<Vec<_>>()
-        .try_into().unwrap();
+        .try_into()
+        .unwrap();
     ReflectedShader {
         bind_group_layouts: groups,
         push_constant_layouts,
@@ -245,21 +262,25 @@ fn create_pipeline_layout_from_shader(
 
     // Fetch (and cache if necessary) the empty bind group layout
     let cached = &graphics.0.cached;
-    let empty_bind_group_layout = cached.bind_group_layouts.entry(BindGroupLayout {
-        bind_entry_layouts: Vec::new(),
-    }).or_insert_with(|| {
-        // Create the BindGroupLayoutDescriptor for the BindGroupEntries
-        let descriptor = wgpu::BindGroupLayoutDescriptor {
-            label: None,
-            entries: &[],
-        };
+    let empty_bind_group_layout = cached
+        .bind_group_layouts
+        .entry(BindGroupLayout {
+            bind_entry_layouts: Vec::new(),
+        })
+        .or_insert_with(|| {
+            // Create the BindGroupLayoutDescriptor for the BindGroupEntries
+            let descriptor = wgpu::BindGroupLayoutDescriptor {
+                label: None,
+                entries: &[],
+            };
 
-        // Create the bind group layout and add it to the cache
-        Arc::new(graphics
-            .device()
-            .create_bind_group_layout(&descriptor))
-    });
-
+            // Create the bind group layout and add it to the cache
+            Arc::new(
+                graphics
+                    .device()
+                    .create_bind_group_layout(&descriptor),
+            )
+        });
 
     // Create the empty bind group
     cached.bind_groups.entry(Vec::new()).or_insert_with(|| {
@@ -273,14 +294,17 @@ fn create_pipeline_layout_from_shader(
     });
 
     // Add the uncached bind group entries to the graphics cache
-    for (bind_group_index, bind_group_layout) in shader.bind_group_layouts.iter().enumerate() {
+    for (bind_group_index, bind_group_layout) in
+        shader.bind_group_layouts.iter().enumerate()
+    {
         // If the bind group is hopped over, always use the default hop bind group layout
         let Some(bind_group_layout) = bind_group_layout else {
             continue;
         };
-        
+
         // Add the bind group to the cache if it's missing
-        if !cached.bind_group_layouts.contains_key(bind_group_layout) {
+        if !cached.bind_group_layouts.contains_key(bind_group_layout)
+        {
             log::warn!("Did not find cached bind group layout for set = {bind_group_index}, in {names:?}");
 
             // TODO: Validate the bindings and groups
@@ -307,7 +331,9 @@ fn create_pipeline_layout_from_shader(
                 .device()
                 .create_bind_group_layout(&descriptor);
             let layout = Arc::new(layout);
-            cached.bind_group_layouts.insert(bind_group_layout.clone(), layout);
+            cached
+                .bind_group_layouts
+                .insert(bind_group_layout.clone(), layout);
         }
     }
 
@@ -317,7 +343,10 @@ fn create_pipeline_layout_from_shader(
         .iter()
         .map(|bind_group_layout| {
             bind_group_layout.as_ref().map(|bind_group_layout| {
-                cached.bind_group_layouts.get(&bind_group_layout).unwrap()
+                cached
+                    .bind_group_layouts
+                    .get(&bind_group_layout)
+                    .unwrap()
             })
         })
         .collect::<Vec<_>>();
@@ -326,23 +355,21 @@ fn create_pipeline_layout_from_shader(
     let bind_group_layouts = bind_group_layouts
         .iter()
         .map(|x| {
-            x
-                .as_ref()
+            x.as_ref()
                 .map(|x| &***x)
                 .unwrap_or(&**empty_bind_group_layout)
         })
-        .take(shader.last_valid_bind_group_layout+1)
+        .take(shader.last_valid_bind_group_layout + 1)
         .collect::<Vec<_>>();
 
     // Convert the push constant range layouts to push constant ranges
-    let push_constant_ranges = shader.push_constant_layouts
+    let push_constant_ranges = shader
+        .push_constant_layouts
         .iter()
         .filter_map(|x| x.as_ref())
-        .map(|layout| {
-            wgpu::PushConstantRange {
-                stages: layout.stages,
-                range: 0..layout.size,
-            }
+        .map(|layout| wgpu::PushConstantRange {
+            stages: layout.stages,
+            range: 0..layout.size,
         })
         .collect::<Vec<_>>();
 
@@ -383,7 +410,7 @@ pub fn reflect_module<M: ShaderModule>(
     ReflectedModule {
         bind_group_layouts,
         last_valid_bind_group_layout,
-        push_constant
+        push_constant,
     }
 }
 
@@ -391,16 +418,20 @@ pub fn reflect_module<M: ShaderModule>(
 pub fn reflect_binding_group<M: ShaderModule>(
     naga: &naga::Module,
 ) -> [Option<BindGroupLayout>; 4] {
-    let mut bind_group_layouts: [Option<BindGroupLayout>; 4] = [None, None, None, None];
+    let mut bind_group_layouts: [Option<BindGroupLayout>; 4] =
+        [None, None, None, None];
     let entries = reflect_binding_entries::<M>(naga);
 
     // Merge the binding entries into their respective bind group layouts
     for bind_entry_layout in entries {
-        let bind_group_layout = 
+        let bind_group_layout =
             &mut bind_group_layouts[bind_entry_layout.group as usize];
-        let bind_group_layout = bind_group_layout.get_or_insert_with(|| BindGroupLayout {
-            bind_entry_layouts: Vec::new(),
-        });
+        let bind_group_layout =
+            bind_group_layout.get_or_insert_with(|| {
+                BindGroupLayout {
+                    bind_entry_layouts: Vec::new(),
+                }
+            });
 
         // Add the bind entry layout to the bind group layout
         bind_group_layout.bind_entry_layouts.push(bind_entry_layout);
@@ -423,7 +454,7 @@ pub fn reflect_binding_entries<M: ShaderModule>(
         })
         .filter(|value| {
             value.space == AddressSpace::Uniform
-            || value.space == AddressSpace::Handle
+                || value.space == AddressSpace::Handle
         })
         .map(|value| {
             // Get the type and address space of the variable
@@ -438,7 +469,9 @@ pub fn reflect_binding_entries<M: ShaderModule>(
                 TypeInner::Struct {
                     members,
                     span: size,
-                } => reflect_buffer(members, types, size, value.space),
+                } => {
+                    reflect_buffer(members, types, size, value.space)
+                }
 
                 // Uniform Textures
                 TypeInner::Image { dim, class, .. } => {
@@ -464,11 +497,13 @@ pub fn reflect_binding_entries<M: ShaderModule>(
 }
 
 // Fetches the used push constant of the given global variable
-pub fn reflect_push_constant<M: ShaderModule>(naga: &naga::Module,) -> Option<PushConstantLayout> {
+pub fn reflect_push_constant<M: ShaderModule>(
+    naga: &naga::Module,
+) -> Option<PushConstantLayout> {
     // Get the type and address space of the variable
     let types = &naga.types;
     let vars = &naga.global_variables;
-    
+
     // The push constant layout that we will return
     let mut output: Option<PushConstantLayout> = None;
 
@@ -480,12 +515,15 @@ pub fn reflect_push_constant<M: ShaderModule>(naga: &naga::Module,) -> Option<Pu
                 let type_inner = &typed.inner;
                 let name = value.name.clone().unwrap().clone();
 
-                let (members, size) =  match type_inner {
-                    TypeInner::Struct { members, span } => (members, *span),
-                    _ => panic!("")
+                let (members, size) = match type_inner {
+                    TypeInner::Struct { members, span } => {
+                        (members, *span)
+                    }
+                    _ => panic!(""),
                 };
 
-                let members = reflect_struct_member_layouts(members, types);
+                let members =
+                    reflect_struct_member_layouts(members, types);
 
                 output = Some(PushConstantLayout {
                     name,
@@ -493,7 +531,7 @@ pub fn reflect_push_constant<M: ShaderModule>(naga: &naga::Module,) -> Option<Pu
                     size,
                     stages: kind_to_wgpu_stage(&M::kind()),
                 })
-            },
+            }
             _ => {}
         }
     }
@@ -521,7 +559,10 @@ fn reflect_buffer(
 }
 
 // Fetch teh struct layout of the struct member layout
-fn reflect_struct_member_layouts(members: &Vec<naga::StructMember>, types: &naga::UniqueArena<naga::Type>) -> Vec<StructMemberLayout> {
+fn reflect_struct_member_layouts(
+    members: &Vec<naga::StructMember>,
+    types: &naga::UniqueArena<naga::Type>,
+) -> Vec<StructMemberLayout> {
     members
         .iter()
         .map(|member| {
@@ -644,7 +685,9 @@ fn reflect_texture(
                 panic!()
             }
 
-            _ => { panic!() }
+            _ => {
+                panic!()
+            }
         },
 
         // Convert Naga image dimensions to WGPU texture dimensions

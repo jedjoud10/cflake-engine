@@ -1,11 +1,14 @@
 use crate::{
-    AnyElement, TexelChannels, Depth, DepthElement, ElementType,
-    GpuPodRelaxed, Normalized, Stencil, VectorChannels, BGRA, R, RG,
-    RGBA, ColorTexel, SRGBA, SBGRA,
+    AnyElement, ColorTexel, Depth, DepthElement, ElementType,
+    GpuPodRelaxed, Normalized, Stencil, TexelChannels,
+    VectorChannels, BGRA, R, RG, RGBA, SBGRA, SRGBA,
 };
 use half::f16;
 use std::{any::Any, mem::size_of, ops::Add};
-use vek::{Vec2, Vec3, Vec4, num_traits::{NumOps, NumAssignOps}};
+use vek::{
+    num_traits::{NumAssignOps, NumOps},
+    Vec2, Vec3, Vec4,
+};
 use wgpu::TextureFormat;
 
 // This trait defines the layout for a single texel that will be stored within textures
@@ -15,7 +18,9 @@ pub trait Texel: 'static {
     type Base: GpuPodRelaxed;
 
     // The raw vector data type that we will use to access texture memory
-    type Storage: GpuPodRelaxed + NumOps<Self::Storage> + NumAssignOps<Self::Storage>;
+    type Storage: GpuPodRelaxed
+        + NumOps<Self::Storage>
+        + NumAssignOps<Self::Storage>;
 
     // Number of bytes in total
     fn size() -> u32 {

@@ -23,7 +23,7 @@ fn init(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
     let mut pipelines = world.get_mut::<Pipelines>().unwrap();
-    
+
     // Make the cursor invisible and locked
     let window = world.get::<Window>().unwrap();
     window
@@ -39,30 +39,31 @@ fn init(world: &mut World) {
     asset!(&mut assets, "assets/user/ignored/untitled.obj");
 
     // Load in the diffuse map and normal map textures asynchronously
-    let albedo = assets
-        .async_load::<AlbedoMap>((
-            "user/ignored/diffuse.jpg",
-            graphics.clone(),
-        ), &mut threadpool);
-    let normal = assets
-        .async_load::<NormalMap>((
-            "user/ignored/normal.jpg",
-            graphics.clone(),
-        ), &mut threadpool);
-    
+    let albedo = assets.async_load::<AlbedoMap>(
+        ("user/ignored/diffuse.jpg", graphics.clone()),
+        &mut threadpool,
+    );
+    let normal = assets.async_load::<NormalMap>(
+        ("user/ignored/normal.jpg", graphics.clone()),
+        &mut threadpool,
+    );
+
     // Fetch the loaded textures
     let diffuse = assets.wait(albedo).unwrap();
     let normal = assets.wait(normal).unwrap();
 
     // Add the textures to the storage
-    let mut diffuse_maps = world.get_mut::<Storage<AlbedoMap>>().unwrap();
-    let mut normal_maps = world.get_mut::<Storage<NormalMap>>().unwrap();
+    let mut diffuse_maps =
+        world.get_mut::<Storage<AlbedoMap>>().unwrap();
+    let mut normal_maps =
+        world.get_mut::<Storage<NormalMap>>().unwrap();
     let diffuse = diffuse_maps.insert(diffuse);
     let normal = normal_maps.insert(normal);
 
     // Get the material id (also registers the material pipeline)
-    let id = pipelines.register::<Basic>(&graphics, &mut assets).unwrap();
-    
+    let id =
+        pipelines.register::<Basic>(&graphics, &mut assets).unwrap();
+
     // Create a new material instance
     let material = basics.insert(Basic {
         albedo_map: Some(diffuse),
@@ -85,36 +86,34 @@ fn init(world: &mut World) {
     let mesh = meshes.insert(mesh);
 
     // Add multiple objects
-    scene.extend_from_iter((0..500).into_iter().map(|i| {
+    scene.extend_from_iter((0..5000).into_iter().map(|i| {
         // Create the new mesh entity components
         let x = i % 5;
         let y = (i % 25) / 5;
         let z = i / 25;
-        let surface = Surface::new(mesh.clone(), material.clone(), id.clone());
+        let surface =
+            Surface::new(mesh.clone(), material.clone(), id.clone());
         let renderer = Renderer::default();
         let position = Position::at_xyz(x as f32, y as f32, z as f32);
         (surface, renderer, position)
     }));
 
     // Get the material id (also registers the material pipeline)
-    let id = pipelines.register::<Sky>(&graphics, &mut assets).unwrap();
-    
+    let id =
+        pipelines.register::<Sky>(&graphics, &mut assets).unwrap();
+
     // Create a new material instance
-    let material = skies.insert(Sky {
-        gradient_map: None
-    });
+    let material = skies.insert(Sky { gradient_map: None });
 
     // Load the renderable mesh
     let mesh = assets
-        .load::<Mesh>((
-            "engine/meshes/sphere.obj",
-            graphics.clone(),
-        ))
+        .load::<Mesh>(("engine/meshes/sphere.obj", graphics.clone()))
         .unwrap();
     let mesh = meshes.insert(mesh);
 
     // Create the new sky entity components
-    let surface = Surface::new(mesh.clone(), material.clone(), id.clone());
+    let surface =
+        Surface::new(mesh.clone(), material.clone(), id.clone());
     let renderer = Renderer::default();
     scene.insert((surface, renderer));
 
@@ -140,16 +139,6 @@ fn update(world: &mut World) {
     let time = &*time;
     let input = world.get::<Input>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
-    let mut threadpool = world.get_mut::<ThreadPool>().unwrap();
-
-    scene.query_mut::<(&Renderer, &mut Position)>().for_each(
-        &mut threadpool,
-        |(_, pos)| {
-            **pos += vek::Vec3::broadcast(time.delta().as_secs_f32());
-        },
-        1
-    );
-
     let camera =
         scene.find_mut::<(&Camera, &mut Position, &mut Rotation)>();
     if let Some((_, position, rotation)) = camera {

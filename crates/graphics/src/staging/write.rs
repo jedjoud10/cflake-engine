@@ -1,6 +1,6 @@
+use crate::Graphics;
 use std::marker::PhantomData;
-use wgpu::{CommandEncoder, BufferAddress, Buffer, BufferViewMut};
-use crate::{Graphics};
+use wgpu::{Buffer, BufferAddress, BufferViewMut, CommandEncoder};
 
 // This is the view returned from the upload() method of the staging pool
 // This allows us to write to the given buffer (it will submit this write when this gets dropped)
@@ -14,7 +14,7 @@ pub struct StagingViewWrite<'a> {
     staging_offset: BufferAddress,
     size: BufferAddress,
 
-    // WGPU mutable buffer view into the staging buffer 
+    // WGPU mutable buffer view into the staging buffer
     staging: &'a Buffer,
     view: BufferViewMut<'a>,
 }

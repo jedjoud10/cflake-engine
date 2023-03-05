@@ -1,8 +1,8 @@
+use crate::{Interface, Rasterizer};
 use assets::Assets;
 use egui_winit::winit::event_loop::EventLoop;
 use graphics::{Graphics, Window};
-use world::{World, System, post_user, WindowEvent, user};
-use crate::{Interface, Rasterizer};
+use world::{post_user, user, System, WindowEvent, World};
 
 // Insert the required Egui resources and the render pass
 fn init(world: &mut World, el: &EventLoop<()>) {
@@ -22,7 +22,7 @@ fn init(world: &mut World, el: &EventLoop<()>) {
     drop(graphics);
     drop(assets);
     drop(window);
-    
+
     // Insert the resource into the world
     world.insert(ui);
 }
@@ -63,8 +63,11 @@ fn finish(world: &mut World) {
     }
 
     // Handle platform output and tesselate the shapes
-    interface.state
-        .handle_platform_output(window.raw(), &interface.egui, output.platform_output);
+    interface.state.handle_platform_output(
+        window.raw(),
+        &interface.egui,
+        output.platform_output,
+    );
     let tessellated = interface.tessellate(output.shapes);
 
     // Draw using the graphics API
@@ -79,24 +82,28 @@ fn finish(world: &mut World) {
 
 // Common system wil contain the DeviceEvent and will insert the Egui resources
 pub fn common(system: &mut System) {
-    system.insert_init(init)
+    system
+        .insert_init(init)
         .after(graphics::common)
         .before(post_user);
-    system.insert_window(event)
+    system
+        .insert_window(event)
         .after(post_user)
         .after(graphics::common);
 }
 
 // Acquire system will begin recording egui commands at the start of the frame
 pub fn acquire(system: &mut System) {
-    system.insert_update(begin)
+    system
+        .insert_update(begin)
         .before(user)
         .before(graphics::acquire);
 }
 
 // Display system will simply display the Egui elements to the screen
 pub fn display(system: &mut System) {
-    system.insert_update(finish)
+    system
+        .insert_update(finish)
         .after(post_user)
         .before(graphics::present)
         .after(rendering::systems::composite::system);

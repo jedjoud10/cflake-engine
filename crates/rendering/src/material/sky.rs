@@ -8,9 +8,10 @@ use crate::{
 use ahash::AHashMap;
 use assets::Assets;
 use graphics::{
-    BindGroup, Compiled, Compiler, FragmentModule, Graphics,
-    Normalized, Sampler, Shader, Texture2D, UniformBuffer,
-    VertexModule, RGBA, Texture, ValueFiller, PushConstants, PrimitiveConfig, WindingOrder, Face,
+    BindGroup, Compiled, Compiler, Face, FragmentModule, Graphics,
+    Normalized, PrimitiveConfig, PushConstants, Sampler, Shader,
+    Texture, Texture2D, UniformBuffer, ValueFiller, VertexModule,
+    WindingOrder, RGBA,
 };
 use utils::{Handle, Storage};
 
@@ -40,7 +41,9 @@ impl Material for Sky {
         assets: &mut Assets,
     ) -> Compiled<FragmentModule> {
         let frag = assets
-            .load::<FragmentModule>("engine/shaders/scene/sky/sky.frag")
+            .load::<FragmentModule>(
+                "engine/shaders/scene/sky/sky.frag",
+            )
             .unwrap();
         Compiler::new(frag).compile(assets, graphics).unwrap()
     }
@@ -88,9 +91,11 @@ impl Material for Sky {
             .gradient_map
             .as_ref()
             .map_or(default.sky_gradient, |h| gradient_maps.get(h));
-        
+
         // Set the material textures
         group.set_texture("gradient_map", albedo_map).unwrap();
-        group.set_sampler("gradient_map_sampler", albedo_map.sampler()).unwrap();
+        group
+            .set_sampler("gradient_map_sampler", albedo_map.sampler())
+            .unwrap();
     }
 }

@@ -1,5 +1,9 @@
-
-use std::{mem::transmute, num::{NonZeroU32, NonZeroU8}, sync::Arc, marker::PhantomData};
+use std::{
+    marker::PhantomData,
+    mem::transmute,
+    num::{NonZeroU32, NonZeroU8},
+    sync::Arc,
+};
 
 use smallvec::SmallVec;
 use wgpu::{
@@ -7,14 +11,13 @@ use wgpu::{
 };
 
 use crate::{
-    Extent, Graphics, MipLevelMut, MipLevelRef, Region, RenderTarget,
-    Sampler, SamplerSettings, SamplerWrap, Texel,
-    TextureAsTargetError, TextureInitializationError,
-    TextureMipLevelError, TextureMipMaps, TextureMode,
-    TextureSamplerError, TextureUsage, TextureResizeError, GpuPodRelaxed, Origin,
+    Extent, GpuPodRelaxed, Graphics, MipLevelMut, MipLevelRef,
+    Origin, Region, RenderTarget, Sampler, SamplerSettings,
+    SamplerWrap, Texel, TextureAsTargetError,
+    TextureInitializationError, TextureMipLevelError, TextureMipMaps,
+    TextureMode, TextureResizeError, TextureSamplerError,
+    TextureUsage,
 };
-
-
 
 // Possibly predefined texel data
 type Texels<'a, T> = Option<&'a [<T as Texel>::Storage]>;
@@ -71,14 +74,25 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
         }
 
         // Return an error if the texture usage flags are invalid
-        if usage.contains(TextureUsage::READ) && !usage.contains(TextureUsage::COPY_SRC) {
-            return Err(TextureInitializationError::ReadableWithoutCopySrc);
-        } else if usage.contains(TextureUsage::WRITE) && !usage.contains(TextureUsage::COPY_DST) {
-            return Err(TextureInitializationError::WritableWithoutCopyDst);
-        } else if !usage.contains(TextureUsage::COPY_DST) && (texels.is_some() || match mipmaps {
-            TextureMipMaps::Manual { mips } => mips.len() > 0,
-            _ => false
-        }) {
+        if usage.contains(TextureUsage::READ)
+            && !usage.contains(TextureUsage::COPY_SRC)
+        {
+            return Err(
+                TextureInitializationError::ReadableWithoutCopySrc,
+            );
+        } else if usage.contains(TextureUsage::WRITE)
+            && !usage.contains(TextureUsage::COPY_DST)
+        {
+            return Err(
+                TextureInitializationError::WritableWithoutCopyDst,
+            );
+        } else if !usage.contains(TextureUsage::COPY_DST)
+            && (texels.is_some()
+                || match mipmaps {
+                    TextureMipMaps::Manual { mips } => mips.len() > 0,
+                    _ => false,
+                })
+        {
             return Err(TextureInitializationError::PreinitializedWithoutCopyDst);
         }
 
@@ -129,18 +143,13 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
         let aspect = texture_aspect::<Self::T>();
 
         // Create a "zeroed" origin
-        let origin = <<Self::Region as Region>::O as Default>::default();
+        let origin =
+            <<Self::Region as Region>::O as Default>::default();
 
         // Always write to the first mip level
         if let Some(texels) = texels {
             write_to_level::<Self::T, Self::Region>(
-                origin,
-                extent,
-                texels,
-                &texture,
-                aspect,
-                0,
-                graphics
+                origin, extent, texels, &texture, aspect, 0, graphics,
             );
         }
 
@@ -148,10 +157,12 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
         match mipmaps {
             TextureMipMaps::Manual { mips } => {
                 // Manual mip map generation
-                let iter = mips.iter().enumerate().map(|(x, y)| (x + 1, y));
+                let iter =
+                    mips.iter().enumerate().map(|(x, y)| (x + 1, y));
                 for (i, texels) in iter {
                     // Downscale the texture extent by two
-                    let downscaled_extent = extent.mip_level_dimensions(i as u8); 
+                    let downscaled_extent =
+                        extent.mip_level_dimensions(i as u8);
 
                     log::debug!(
                         "Creating manual mip-map layer <{i}> for texture, {dimension:?}, <{name}>, {}x{}x{}",
@@ -168,13 +179,12 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
                         &texture,
                         aspect,
                         i as u32,
-                        graphics
+                        graphics,
                     );
                 }
-            },
+            }
             _ => {}
         }
-        
 
         // Create the texture's texture view descriptor
         let view_descriptor = TextureViewDescriptor {
@@ -191,8 +201,8 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
 
         Ok(unsafe {
             Self::from_raw_parts(
-                graphics, texture, views, sampler, sampling,
-                extent, usage, mode,
+                graphics, texture, views, sampler, sampling, extent,
+                usage, mode,
             )
         })
     }
@@ -249,20 +259,23 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
         todo!()
     }
 
-    // Try to use the texture as a renderable target. This will fail if the texture isn't supported as render target 
+    // Try to use the texture as a renderable target. This will fail if the texture isn't supported as render target
     // or if it has mipmapping on (the user can still use each mip layer as individual render targets though)
     fn as_render_target(
         &mut self,
     ) -> Result<RenderTarget<Self::T>, TextureAsTargetError> {
         Ok(RenderTarget {
             _phantom: PhantomData,
-            view: self.view()
+            view: self.view(),
         })
     }
 
     // Tries to resize the texture to a new size, whilst clearing the contents
     // Mipmapping currently no supported
-    fn resize(&mut self, extent: <Self::Region as Region>::E) -> Result<(), TextureResizeError> {
+    fn resize(
+        &mut self,
+        extent: <Self::Region as Region>::E,
+    ) -> Result<(), TextureResizeError> {
         let graphics = self.graphics();
         if self.views().len() > 1 {
             return Err(TextureResizeError::MipMappingUnsupported);
@@ -280,14 +293,14 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
             return Err(TextureResizeError::NotResizable);
         }
 
-
         // Same size; not going to resize
         if extent == self.dimensions() {
             return Ok(());
         }
 
         // Fetch dimensions, name, and texel format
-        let dimension = <<Self::Region as Region>::E as Extent>::dimensionality();
+        let dimension =
+            <<Self::Region as Region>::E as Extent>::dimensionality();
         let name = utils::pretty_type_name::<Self::T>();
         let format = <Self::T>::format();
         log::debug!(
@@ -339,27 +352,30 @@ fn mip_levels<T: Texel, E: Extent>(
     mipmaps: &TextureMipMaps<T>,
     extent: E,
 ) -> Result<u32, TextureInitializationError> {
-    let max_mip_levels = if matches!(mipmaps, TextureMipMaps::Disabled) {
-        1u8 as u32
-    } else {
-        let max = extent.levels().ok_or(TextureInitializationError::MipMapGenerationNPOT)?;
-        max.get() as u32
-    };
+    let max_mip_levels =
+        if matches!(mipmaps, TextureMipMaps::Disabled) {
+            1u8 as u32
+        } else {
+            let max = extent.levels().ok_or(
+                TextureInitializationError::MipMapGenerationNPOT,
+            )?;
+            max.get() as u32
+        };
 
     // Convert Auto to Zeroed (since if this texture was loaded from disk, it would've been Manual instead)
 
     let levels = match *mipmaps {
-        // Automatic mip level generation, but fills mips with zeroes  
+        // Automatic mip level generation, but fills mips with zeroes
         TextureMipMaps::Zeroed { clamp } => {
             let max = clamp.map(|x| x.get()).unwrap_or(u8::MAX);
             (max as u32).min(max_mip_levels)
-        },
+        }
 
-        // Manual mip level generatation, but fills mips with corresponding data 
+        // Manual mip level generatation, but fills mips with corresponding data
         TextureMipMaps::Manual { mips } => {
             let levels = mips.len() as u32 + 1;
             levels.min(max_mip_levels)
-        },
+        }
 
         // No mip maps
         TextureMipMaps::Disabled => 1,
@@ -387,18 +403,16 @@ pub(crate) fn write_to_level<T: Texel, R: Region>(
     graphics: &Graphics,
 ) {
     let bytes_per_channel = T::bytes_per_channel();
-    let bytes_per_texel = bytes_per_channel as u64 * T::channels().count() as u64;
+    let bytes_per_texel =
+        bytes_per_channel as u64 * T::channels().count() as u64;
     let extent_3d = extent_to_extent3d(extent);
 
     // Bytes per row of texel data
-    let bytes_per_row = NonZeroU32::new(
-        bytes_per_texel as u32 * extent.width(),
-    );
+    let bytes_per_row =
+        NonZeroU32::new(bytes_per_texel as u32 * extent.width());
 
     // Convert the texels to bytes
-    let bytes = bytemuck::cast_slice::<T::Storage, u8>(
-        texels,
-    );
+    let bytes = bytemuck::cast_slice::<T::Storage, u8>(texels);
 
     // FIXME: Does this work with 3D textures?
     let image_data_layout = wgpu::ImageDataLayout {
@@ -415,7 +429,7 @@ pub(crate) fn write_to_level<T: Texel, R: Region>(
         aspect,
     };
 
-    // Write to the base layer of the texture 
+    // Write to the base layer of the texture
     graphics.queue().write_texture(
         image_copy_texture,
         bytes,
@@ -439,12 +453,14 @@ pub(crate) fn read_from_level<T: Texel, E: Extent, O: Origin>(
 
 // Separated this into it's own trait since I didn't want there to be unsafe init/internal functions publicly
 pub(crate) mod raw {
-    use std::sync::Arc;
+    use crate::{
+        Graphics, Region, SamplerSettings, TextureMode, TextureUsage,
+    };
     use smallvec::SmallVec;
-    use crate::{Region, Graphics, SamplerSettings, TextureUsage, TextureMode};
+    use std::sync::Arc;
 
     pub trait RawTexture<R: Region> {
-        // Get the stored graphics context 
+        // Get the stored graphics context
         fn graphics(&self) -> Graphics;
 
         // Create a texture struct from it's raw components
@@ -472,7 +488,10 @@ pub(crate) mod raw {
 }
 
 // Check if the given extent is valid within device limits
-fn size_within_limits<E: Extent>(graphics: &Graphics, extent: E) -> bool {
+fn size_within_limits<E: Extent>(
+    graphics: &Graphics,
+    extent: E,
+) -> bool {
     // Create the max possible texture size from device limits
     let limits = graphics.device().limits();
     let max = match E::dimensionality() {
@@ -481,28 +500,26 @@ fn size_within_limits<E: Extent>(graphics: &Graphics, extent: E) -> bool {
         wgpu::TextureDimension::D3 => limits.max_texture_dimension_3d,
     };
     let max = E::broadcast(max);
-        
+
     // Check if the new texture size is physically possible
     max.is_larger_than(extent)
 }
 
 // Convert TextureDimension to TextureViewDimension
-fn dims_to_view_dims(dimension: wgpu::TextureDimension) -> wgpu::TextureViewDimension {
+fn dims_to_view_dims(
+    dimension: wgpu::TextureDimension,
+) -> wgpu::TextureViewDimension {
     match dimension {
-        wgpu::TextureDimension::D1 => {
-            wgpu::TextureViewDimension::D1
-        }
-        wgpu::TextureDimension::D2 => {
-            wgpu::TextureViewDimension::D2
-        }
-        wgpu::TextureDimension::D3 => {
-            wgpu::TextureViewDimension::D3
-        }
+        wgpu::TextureDimension::D1 => wgpu::TextureViewDimension::D1,
+        wgpu::TextureDimension::D2 => wgpu::TextureViewDimension::D2,
+        wgpu::TextureDimension::D3 => wgpu::TextureViewDimension::D3,
     }
 }
 
 // Convert the given origin to an Origin
-pub(crate) fn origin_to_origin3d<O: Origin>(origin: O) -> wgpu::Origin3d {
+pub(crate) fn origin_to_origin3d<O: Origin>(
+    origin: O,
+) -> wgpu::Origin3d {
     wgpu::Origin3d {
         x: origin.x(),
         y: origin.y(),
@@ -511,7 +528,9 @@ pub(crate) fn origin_to_origin3d<O: Origin>(origin: O) -> wgpu::Origin3d {
 }
 
 // Convert the given extent to an Extent3D
-pub(crate) fn extent_to_extent3d<E: Extent>(dimensions: E) -> wgpu::Extent3d {
+pub(crate) fn extent_to_extent3d<E: Extent>(
+    dimensions: E,
+) -> wgpu::Extent3d {
     wgpu::Extent3d {
         width: dimensions.width(),
         height: dimensions.height(),
@@ -521,7 +540,9 @@ pub(crate) fn extent_to_extent3d<E: Extent>(dimensions: E) -> wgpu::Extent3d {
 
 // Get the texture usages from the texture usage wrapper
 // Does not check for validity
-pub(crate) fn texture_usages(usage: TextureUsage) -> wgpu::TextureUsages {
+pub(crate) fn texture_usages(
+    usage: TextureUsage,
+) -> wgpu::TextureUsages {
     let mut usages = wgpu::TextureUsages::empty();
 
     if usage.contains(TextureUsage::SAMPLED) {
@@ -550,9 +571,7 @@ pub(crate) fn texture_aspect<T: Texel>() -> wgpu::TextureAspect {
         | crate::TexelChannels::Srgba { .. } => {
             wgpu::TextureAspect::All
         }
-        crate::TexelChannels::Depth => {
-            wgpu::TextureAspect::DepthOnly
-        }
+        crate::TexelChannels::Depth => wgpu::TextureAspect::DepthOnly,
         crate::TexelChannels::Stencil => {
             wgpu::TextureAspect::StencilOnly
         }

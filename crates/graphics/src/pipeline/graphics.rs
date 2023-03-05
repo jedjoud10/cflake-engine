@@ -2,7 +2,7 @@ use std::{marker::PhantomData, num::NonZeroU64, sync::Arc};
 
 use ahash::AHashMap;
 use itertools::Itertools;
-use wgpu::{PrimitiveState, VertexStepMode, BlendState};
+use wgpu::{BlendState, PrimitiveState, VertexStepMode};
 
 use crate::{
     BlendConfig, ColorLayout, DepthConfig, DepthStencilLayout,
@@ -69,7 +69,8 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
             &vertex_config,
             attributes,
         );
-        let targets = color_layout_to_color_target_state::<C>(&blend_config);
+        let targets =
+            color_layout_to_color_target_state::<C>(&blend_config);
         let primitive = primitive_config_to_state(primitive_config);
         let layout = shader_to_pipeline_layout(&shader);
 
@@ -127,7 +128,7 @@ fn shader_to_pipeline_layout(
 fn vertex_config_to_vertex_attributes(
     vertex_config: &VertexConfig,
 ) -> Vec<Vec<wgpu::VertexAttribute>> {
-    // TODO: Implement custom shader location + shader location checking + mapping + 
+    // TODO: Implement custom shader location + shader location checking + mapping +
     vertex_config
         .inputs
         .iter()
@@ -168,9 +169,12 @@ fn color_layout_to_color_target_state<C: ColorLayout>(
     blending: &Option<BlendConfig<C>>,
 ) -> Vec<Option<wgpu::ColorTargetState>> {
     // Convert the typed blending state array to a vector
-    let vec: Option<Vec<Option<BlendState>>> = blending.as_ref().map(|x| {
-        <C::BlendingArray as Into<Vec<Option<BlendState>>>>::into(*x)
-    });
+    let vec: Option<Vec<Option<BlendState>>> =
+        blending.as_ref().map(|x| {
+            <C::BlendingArray as Into<Vec<Option<BlendState>>>>::into(
+                *x,
+            )
+        });
 
     // Convert the typed layout targets to ColorTargetStates
     let targets = C::layout_info()
@@ -179,7 +183,10 @@ fn color_layout_to_color_target_state<C: ColorLayout>(
         .map(|(i, info)| {
             Some(wgpu::ColorTargetState {
                 format: info.format(),
-                blend: vec.as_ref().map(|vec| vec[i]).unwrap_or_default(),
+                blend: vec
+                    .as_ref()
+                    .map(|vec| vec[i])
+                    .unwrap_or_default(),
 
                 // FIXME: Let the user handle this
                 write_mask: wgpu::ColorWrites::ALL,

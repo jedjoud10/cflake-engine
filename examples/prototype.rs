@@ -16,8 +16,9 @@ fn init(world: &mut World) {
         &graphics,
         &[1],
         BufferMode::Resizable,
-        BufferUsage::WRITE | BufferUsage::READ
-    ).unwrap();
+        BufferUsage::WRITE | BufferUsage::READ,
+    )
+    .unwrap();
 
     let mut dst = [0u32; 1];
     buffer.read(&mut dst, 0).unwrap();
@@ -30,5 +31,4 @@ fn init(world: &mut World) {
 }
 
 // Camera controller update executed every tick
-fn update(world: &mut World) {
-}
+fn update(world: &mut World) {}

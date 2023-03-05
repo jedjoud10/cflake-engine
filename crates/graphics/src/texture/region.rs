@@ -90,7 +90,7 @@ pub trait Origin: Copy + Default {
 
     // Get the Y offset of the origin
     fn y(&self) -> u32;
-    
+
     // Get the Z offset of the origin
     fn z(&self) -> u32;
 }
@@ -259,7 +259,8 @@ pub trait Region: Copy {
     // Check if this region is larger than another region
     // Aka if the "other" region fits within self
     fn is_larger_than(self, other: Self) -> bool {
-        let e = other.extent() + Self::extent_from_origin(other.origin());
+        let e =
+            other.extent() + Self::extent_from_origin(other.origin());
         self.extent().is_larger_than(e)
     }
 

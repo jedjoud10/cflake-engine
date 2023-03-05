@@ -11,7 +11,7 @@ pub enum TextureInitializationError {
     TexelDimensionsMismatch {
         count: usize,
         w: u32,
-        h: u32, 
+        h: u32,
         d: u32,
     },
 
@@ -23,7 +23,7 @@ pub enum TextureInitializationError {
 
     #[error("Tried creating a mip map for a NPOT texture")]
     MipMapGenerationNPOT,
-    
+
     #[error("The given texture usage contains the READ flag, but there isn't the COPY_SRC flag")]
     ReadableWithoutCopySrc,
 
@@ -37,7 +37,7 @@ pub enum TextureInitializationError {
     UnexpectedMipLevelTexelCount {
         level: u8,
         expected: u64,
-        found: u64
+        found: u64,
     },
 }
 
@@ -69,19 +69,13 @@ pub enum MipLevelReadError {
 }
 
 #[derive(Error, Debug)]
-pub enum MipLevelWriteError {
-    
-}
+pub enum MipLevelWriteError {}
 
 #[derive(Error, Debug)]
-pub enum MipLevelClearError {
-    
-}
+pub enum MipLevelClearError {}
 
 #[derive(Error, Debug)]
-pub enum MipLevelCopyError {
-    
-}
+pub enum MipLevelCopyError {}
 
 #[derive(Error, Debug)]
 pub enum TextureResizeError {
@@ -95,7 +89,7 @@ pub enum TextureResizeError {
     InvalidExtent,
 
     #[error("Tried resizing a texture, but texture mode isn't TextureMode::Resizable")]
-    NotResizable
+    NotResizable,
 }
 
 #[derive(Error, Debug)]

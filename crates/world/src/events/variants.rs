@@ -1,7 +1,5 @@
 use crate::{Caller, Event, World};
-use winit::{
-    event_loop::EventLoop,
-};
+use winit::event_loop::EventLoop;
 
 pub use winit::event::{DeviceEvent, WindowEvent};
 

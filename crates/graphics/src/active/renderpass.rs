@@ -17,8 +17,10 @@ pub struct ActiveRenderPass<
 > {
     pub(crate) commands: Vec<RenderCommand<'r, C, DS>>,
     pub(crate) graphics: &'r Graphics,
-    pub(crate) color_attachments: Vec<Option<wgpu::RenderPassColorAttachment<'t>>>,
-    pub(crate) depth_stencil_attachment: Option<wgpu::RenderPassDepthStencilAttachment<'t>>,
+    pub(crate) color_attachments:
+        Vec<Option<wgpu::RenderPassColorAttachment<'t>>>,
+    pub(crate) depth_stencil_attachment:
+        Option<wgpu::RenderPassDepthStencilAttachment<'t>>,
     pub(crate) _phantom: PhantomData<&'t C>,
     pub(crate) _phantom2: PhantomData<&'t DS>,
 }
@@ -36,10 +38,8 @@ impl<'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         let cache = &self.graphics.0.cached;
 
         // Get the empty placeholder bind group
-        let empty_bind_group = cache
-            .bind_groups
-            .get(&Vec::new())
-            .unwrap();
+        let empty_bind_group =
+            cache.bind_groups.get(&Vec::new()).unwrap();
 
         // Get the bind group layouts from the reflected shader
         let reflected = &pipeline.shader().reflected;
@@ -47,26 +47,27 @@ impl<'r, 't, C: ColorLayout, DS: DepthStencilLayout>
             .bind_group_layouts
             .iter()
             .enumerate()
-            .take(reflected
-                .last_valid_bind_group_layout
-            );
+            .take(reflected.last_valid_bind_group_layout);
 
         // Set the empty bind groups for bind group layouts
         // that have been hopped over during reflection
         for (index, bind_group_layout) in iter {
             if bind_group_layout.is_none() {
-                self.commands.push(RenderCommand::SetBindGroup(index as u32, empty_bind_group.clone()))
+                self.commands.push(RenderCommand::SetBindGroup(
+                    index as u32,
+                    empty_bind_group.clone(),
+                ))
             }
         }
 
         // Get all the uniform fill buffers that are for this pipeline and reset their state (free)
-        let mut buffers = self.graphics.0.cached.uniform_buffers.lock();
+        let mut buffers =
+            self.graphics.0.cached.uniform_buffers.lock();
         for (_, buffers) in buffers.iter_mut() {
             for (_, free) in buffers {
                 *free = true;
             }
         }
-
 
         ActiveGraphicsPipeline {
             _phantom: PhantomData,
@@ -86,11 +87,14 @@ impl<'r, 't, C: ColorLayout, DS: DepthStencilLayout> Drop
         let mut encoder = self.graphics.acquire();
 
         // We actually record the render pass at the very end of this wrapper
-        let pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: None,
-            color_attachments: &self.color_attachments,
-            depth_stencil_attachment: self.depth_stencil_attachment.take(),
-        });
+        let pass =
+            encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: None,
+                color_attachments: &self.color_attachments,
+                depth_stencil_attachment: self
+                    .depth_stencil_attachment
+                    .take(),
+            });
 
         // Put the recorded render pass commands in the actual render pass
         super::record(pass, &self.commands);

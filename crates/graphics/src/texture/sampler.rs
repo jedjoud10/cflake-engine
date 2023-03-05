@@ -30,7 +30,7 @@ pub enum SamplerWrap {
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SamplerFilter {
     Nearest,
-    
+
     #[default]
     Linear,
 }
@@ -117,9 +117,9 @@ pub fn convert_wrap_to_address_mode(
     }
 }
 
-// Convert the sampler filter to the wgpu filter mode 
+// Convert the sampler filter to the wgpu filter mode
 pub fn convert_sampler_filter(
-    filter: SamplerFilter
+    filter: SamplerFilter,
 ) -> wgpu::FilterMode {
     match filter {
         SamplerFilter::Nearest => wgpu::FilterMode::Nearest,
@@ -162,7 +162,8 @@ pub fn get_or_insert_sampler(
                 super::convert_mip_map_anisotropic_clamp(
                     &sampling.mipmaps,
                 );
-            let filter = super::convert_sampler_filter(sampling.filter);
+            let filter =
+                super::convert_sampler_filter(sampling.filter);
 
             // Sampler configuration
             let descriptor = SamplerDescriptor {

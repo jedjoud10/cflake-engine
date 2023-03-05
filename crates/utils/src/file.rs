@@ -48,7 +48,7 @@ impl FileManager {
         let mut base = dirs.cache_dir.clone();
         base.push("log/");
         Self::init_directory(&base).unwrap();
-        
+
         Self {
             dirs,
             strings: Default::default(),
@@ -68,9 +68,7 @@ impl FileManager {
     }
 
     // Create an empty file with the given path if needed
-    pub fn init_file(
-        path: impl AsRef<Path>,
-    ) -> std::io::Result<()> {
+    pub fn init_file(path: impl AsRef<Path>) -> std::io::Result<()> {
         if !path.as_ref().exists() {
             let path = path.as_ref();
             std::fs::File::create(path).map(|_| ())
@@ -143,7 +141,7 @@ impl FileManager {
         if variant != FileType::Log {
             log::debug!("Writing to file {:?}...", path.as_ref());
         }
-        
+
         // Create the global path
         let global = self.local_path_to_global(path, variant);
 
@@ -166,7 +164,7 @@ impl FileManager {
             log::error!("{}", options.err().unwrap());
             return None;
         };
-        
+
         // Create a file reader
         Some(file)
     }

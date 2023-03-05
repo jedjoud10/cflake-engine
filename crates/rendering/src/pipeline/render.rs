@@ -1,12 +1,13 @@
 use crate::{
     attributes::{Position, RawPosition},
+    ActiveScenePipeline, ActiveSceneRenderPass,
     DefaultMaterialResources, EnabledMeshAttributes, Material, Mesh,
-    MeshAttribute, Renderer, Surface, ActiveSceneRenderPass, SceneColor, SceneDepth, ActiveScenePipeline,
+    MeshAttribute, Renderer, SceneColor, SceneDepth, Surface,
 };
 use ecs::Scene;
 use graphics::{
-    ActiveGraphicsPipeline, ActiveRenderPass, Graphics,
-    GraphicsPipeline, SwapchainFormat, Vertex, XYZ, PushConstants, Depth,
+    ActiveGraphicsPipeline, ActiveRenderPass, Depth, Graphics,
+    GraphicsPipeline, PushConstants, SwapchainFormat, Vertex, XYZ,
 };
 use utils::{Handle, Storage, Time};
 use world::World;
@@ -136,7 +137,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
                 renderer,
                 &mut resources,
                 default,
-                push_constants
+                push_constants,
             );
         });
 

@@ -1,7 +1,8 @@
 use crate::{
-    AlbedoMap, Sky, Camera, CameraUniform,
-    DefaultMaterialResources, ForwardRenderer,
-    SceneRenderPass, Mesh, NormalMap, Pipelines, Renderer, Basic, PostProcess, WindowUniform,
+    AlbedoMap, Basic, Camera, CameraUniform,
+    DefaultMaterialResources, ForwardRenderer, Mesh, NormalMap,
+    Pipelines, PostProcess, Renderer, SceneRenderPass, Sky,
+    WindowUniform,
 };
 use assets::Assets;
 use ecs::Scene;
@@ -11,8 +12,7 @@ use graphics::{
 };
 use std::{mem::ManuallyDrop, sync::Arc};
 use utils::{Storage, Time};
-use world::{post_user, user, System, World, WindowEvent};
-
+use world::{post_user, user, System, WindowEvent, World};
 
 // Add the scene resources and setup for rendering
 fn init(world: &mut World) {
@@ -21,7 +21,8 @@ fn init(world: &mut World) {
     let mut assets = world.get_mut::<Assets>().unwrap();
 
     // Create the scene renderer, pipeline manager, and post-processing
-    let renderer = ForwardRenderer::new(&graphics, &mut assets, window.size());
+    let renderer =
+        ForwardRenderer::new(&graphics, &mut assets, window.size());
     let pipelines = Pipelines::new();
 
     // Drop fetched resources
@@ -43,7 +44,6 @@ fn init(world: &mut World) {
     world.insert(Storage::<NormalMap>::default());
 }
 
-
 // Handle window resizing the depth texture
 fn event(world: &mut World, event: &mut WindowEvent) {
     match event {
@@ -56,7 +56,8 @@ fn event(world: &mut World, event: &mut WindowEvent) {
 
             // Handle resizing the depth texture
             let size = vek::Extent2::new(size.width, size.height);
-            let mut renderer = world.get_mut::<ForwardRenderer>().unwrap();
+            let mut renderer =
+                world.get_mut::<ForwardRenderer>().unwrap();
             let graphics = world.get::<Graphics>().unwrap();
 
             // Resize the color and depth texture
@@ -64,12 +65,16 @@ fn event(world: &mut World, event: &mut WindowEvent) {
             renderer.color_texture.resize(size).unwrap();
 
             // Update the uniform
-            renderer.window_buffer.write(
-            &[WindowUniform {
-                width: size.w,
-                height: size.h,
-            }],
-            0).unwrap();
+            renderer
+                .window_buffer
+                .write(
+                    &[WindowUniform {
+                        width: size.w,
+                        height: size.h,
+                    }],
+                    0,
+                )
+                .unwrap();
         }
 
         _ => (),
@@ -116,7 +121,7 @@ fn render(world: &mut World) {
     }
 
     drop(render_pass);
-} 
+}
 
 // The rendering system will be resposible for iterating through the entities and rendering them to the backbuffer texture
 pub fn system(system: &mut System) {

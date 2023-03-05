@@ -1,14 +1,21 @@
 use crate::{
     ColorLayout, DepthStencilLayout, GraphicsPipeline,
-    TriangleBuffer, UntypedBuffer, UniformBuffer,
+    TriangleBuffer, UniformBuffer, UntypedBuffer,
 };
-use std::{ops::{Range, Bound}, sync::Arc};
+use std::{
+    ops::{Bound, Range},
+    sync::Arc,
+};
 use wgpu::BindGroup;
 
 // Keep track of all render commands that we call upon the render pass
 // The whole reason I have to delegate this to a command type system is because
 // the render pass requires the BindGroups to live longer than itself, and I couldn't make it work
-pub(crate) enum RenderCommand<'a, C: ColorLayout, DS: DepthStencilLayout> {
+pub(crate) enum RenderCommand<
+    'a,
+    C: ColorLayout,
+    DS: DepthStencilLayout,
+> {
     // Bind graphics pipeline
     BindPipeline(&'a GraphicsPipeline<C, DS>),
 
@@ -19,14 +26,14 @@ pub(crate) enum RenderCommand<'a, C: ColorLayout, DS: DepthStencilLayout> {
         start: Bound<u64>,
         end: Bound<u64>,
     },
-    
+
     // Set index buffer for DrawIndexed
     SetIndexBuffer {
         buffer: &'a TriangleBuffer<u32>,
         start: Bound<u64>,
         end: Bound<u64>,
     },
-    
+
     // Set bind group
     SetBindGroup(u32, Arc<BindGroup>),
 
@@ -59,45 +66,51 @@ pub(crate) fn record<'r, C: ColorLayout, DS: DepthStencilLayout>(
         match render_command {
             RenderCommand::BindPipeline(pipeline) => {
                 render_pass.set_pipeline(pipeline.pipeline());
-            },
+            }
 
             RenderCommand::SetVertexBuffer {
                 slot,
                 buffer,
                 start,
-                end
+                end,
             } => {
                 let bound = (*start, *end);
-                render_pass
-                    .set_vertex_buffer(*slot, buffer.raw().slice(bound))
-            },
+                render_pass.set_vertex_buffer(
+                    *slot,
+                    buffer.raw().slice(bound),
+                )
+            }
 
-            RenderCommand::SetIndexBuffer {
-                buffer,
-                start,
-                end
-            } => {
+            RenderCommand::SetIndexBuffer { buffer, start, end } => {
                 let bound = (*start, *end);
                 render_pass.set_index_buffer(
                     buffer.raw().slice(bound),
                     wgpu::IndexFormat::Uint32,
                 );
-            },
+            }
 
             RenderCommand::SetBindGroup(index, bind_group) => {
                 render_pass.set_bind_group(*index, &bind_group, &[]);
-            },
+            }
 
-            RenderCommand::SetPushConstants { stages, offset, data } => {
-                render_pass.set_push_constants(*stages, *offset, data.as_slice());
-            },
+            RenderCommand::SetPushConstants {
+                stages,
+                offset,
+                data,
+            } => {
+                render_pass.set_push_constants(
+                    *stages,
+                    *offset,
+                    data.as_slice(),
+                );
+            }
 
             RenderCommand::Draw {
                 vertices,
                 instances,
             } => {
                 render_pass.draw(vertices.clone(), instances.clone());
-            },
+            }
 
             RenderCommand::DrawIndexed { indices, instances } => {
                 render_pass.draw_indexed(
@@ -105,7 +118,7 @@ pub(crate) fn record<'r, C: ColorLayout, DS: DepthStencilLayout>(
                     0,
                     instances.clone(),
                 );
-            },
+            }
         }
     }
 }

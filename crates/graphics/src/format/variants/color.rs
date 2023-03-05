@@ -1,9 +1,13 @@
-use crate::{AnyElement, Normalized, Texel, BGRA, R, RG, RGBA, Conversion};
+use crate::{
+    AnyElement, Conversion, Normalized, Texel, BGRA, R, RG, RGBA,
+};
 
 // Color texels are texels used for color attachments
 // TODO: Figure out if there are any limits to this
 // TODO: Maybe add saturation / hue control (since this is strictly color after all)
-pub trait ColorTexel: Texel + Conversion<Target = vek::Vec4<f32>> {
+pub trait ColorTexel:
+    Texel + Conversion<Target = vek::Vec4<f32>>
+{
     // Convert this texel to the wgpu color struct (if possible)
     // This returns None if the color data is not in the 0 - 1 range or simply not color data
     fn try_into_color(texel: Self::Storage) -> Option<wgpu::Color> {
@@ -33,4 +37,7 @@ pub trait ColorTexel: Texel + Conversion<Target = vek::Vec4<f32>> {
     }
 }
 
-impl<T: Texel + Conversion<Target = vek::Vec4<f32>>> ColorTexel for T {}
+impl<T: Texel + Conversion<Target = vek::Vec4<f32>>> ColorTexel
+    for T
+{
+}

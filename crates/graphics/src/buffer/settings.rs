@@ -35,4 +35,4 @@ impl Default for BufferUsage {
     fn default() -> Self {
         Self::READ | Self::COPY_DST
     }
-} 
+}

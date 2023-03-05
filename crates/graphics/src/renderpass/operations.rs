@@ -1,6 +1,6 @@
 use crate::{
-    ColorLayout, ColorTexel, Depth, DepthElement, DepthStencilLayout,
-    Stencil, StencilElement, Texel, Conversion,
+    ColorLayout, ColorTexel, Conversion, Depth, DepthElement,
+    DepthStencilLayout, Stencil, StencilElement, Texel,
 };
 
 // What we should do when loading in data from the render target
@@ -24,7 +24,9 @@ pub struct Operation<T: Texel> {
 }
 
 // Converts the Operation to a wgpu::Operations with the valid target type
-fn convert<C: Conversion>(input: &Operation<C>) -> wgpu::Operations<C::Target> {
+fn convert<C: Conversion>(
+    input: &Operation<C>,
+) -> wgpu::Operations<C::Target> {
     let load = match input.load {
         LoadOp::Load => wgpu::LoadOp::Load,
         LoadOp::Clear(storage) => {
@@ -83,7 +85,8 @@ impl DepthStencilOperations<()> for () {
     }
 }
 
-impl<D: DepthElement> DepthStencilOperations<Depth<D>> for Operation<Depth<D>>
+impl<D: DepthElement> DepthStencilOperations<Depth<D>>
+    for Operation<Depth<D>>
 where
     Depth<D>: Texel + DepthStencilLayout + Conversion<Target = f32>,
 {

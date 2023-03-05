@@ -1,4 +1,4 @@
-use crate::{TexelChannels, ElementType, VectorChannels};
+use crate::{ElementType, TexelChannels, VectorChannels};
 use paste::paste;
 use wgpu::{TextureFormat, VertexFormat};
 
@@ -98,10 +98,13 @@ pub const fn pick_texture_srgb_format(
     element: ElementType,
     swizzled: bool,
 ) -> Option<TextureFormat> {
-    if !matches!(element, ElementType::Eight {
-        signed: false,
-        normalized: true
-    }) {
+    if !matches!(
+        element,
+        ElementType::Eight {
+            signed: false,
+            normalized: true
+        }
+    ) {
         return None;
     }
 
@@ -123,10 +126,12 @@ pub const fn pick_texture_format(
             pick_texture_format_channels(element, channels)
         }
         TexelChannels::Depth => pick_texture_depth_format(element),
-        TexelChannels::Stencil => pick_texture_stencil_format(element),
-        TexelChannels::Srgba { swizzled } => { 
+        TexelChannels::Stencil => {
+            pick_texture_stencil_format(element)
+        }
+        TexelChannels::Srgba { swizzled } => {
             pick_texture_srgb_format(element, swizzled)
-        },
+        }
     }
 }
 

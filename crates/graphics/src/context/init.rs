@@ -40,8 +40,9 @@ pub(crate) unsafe fn init_context_and_window(
             force_fallback_adapter: false,
             compatible_surface: Some(&surface),
         },
-    )).unwrap();
-    
+    ))
+    .unwrap();
+
     // Print details about the chosen adapter
     let info = adapter.get_info();
     let name = info.name;
@@ -53,10 +54,21 @@ pub(crate) unsafe fn init_context_and_window(
     let w = limits.max_texture_dimension_1d;
     let h = limits.max_texture_dimension_2d;
     let d = limits.max_texture_dimension_3d;
-    log::debug!("Adapter Limits: Max Texture Dimensions: {w}x{h}x{d}");
-    log::debug!("Adapter Limits: Max bind groups: {}", limits.max_bind_groups);
-    log::debug!("Adapter Limits: Max bindings per group: {}", limits.max_bindings_per_bind_group);
-    log::debug!("Adapter Limits: Max Push Constants Size: {}", limits.max_push_constant_size);
+    log::debug!(
+        "Adapter Limits: Max Texture Dimensions: {w}x{h}x{d}"
+    );
+    log::debug!(
+        "Adapter Limits: Max bind groups: {}",
+        limits.max_bind_groups
+    );
+    log::debug!(
+        "Adapter Limits: Max bindings per group: {}",
+        limits.max_bindings_per_bind_group
+    );
+    log::debug!(
+        "Adapter Limits: Max Push Constants Size: {}",
+        limits.max_push_constant_size
+    );
 
     // Required device features
     let features = wgpu::Features::TEXTURE_FORMAT_16BIT_NORM

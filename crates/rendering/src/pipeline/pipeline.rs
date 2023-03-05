@@ -3,14 +3,15 @@ use crate::{
         Normal, Position, Tangent, TexCoord,
         MAX_MESH_VERTEX_ATTRIBUTES,
     },
-    DefaultMaterialResources, EnabledMeshAttributes,
-    SceneRenderPass, Material, Mesh, MeshAttribute, ActiveSceneRenderPass, SceneColor, SceneDepth,
+    ActiveSceneRenderPass, DefaultMaterialResources,
+    EnabledMeshAttributes, Material, Mesh, MeshAttribute, SceneColor,
+    SceneDepth, SceneRenderPass,
 };
 use assets::Assets;
 use graphics::{
-    ActiveRenderPass, Graphics, GraphicsPipeline,
-    PipelineInitializationError, RenderPass, Shader, SwapchainFormat,
-    VertexConfig, VertexInput, Depth, DepthConfig, CompareFunction,
+    ActiveRenderPass, CompareFunction, Depth, DepthConfig, Graphics,
+    GraphicsPipeline, PipelineInitializationError, RenderPass,
+    Shader, SwapchainFormat, VertexConfig, VertexInput,
 };
 use std::marker::PhantomData;
 use utils::Storage;

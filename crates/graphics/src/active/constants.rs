@@ -1,8 +1,8 @@
+use crate::{FillError, GpuPodRelaxed, ReflectedShader, ValueFiller};
 use std::{marker::PhantomData, sync::Arc};
-use crate::{ReflectedShader, ValueFiller, FillError, GpuPodRelaxed};
 
 // Push constants are tiny bits of memory that are going to get stored directly in a command encoder
-// They are mostly used to upload bits of data very rapidly to use within shaders 
+// They are mostly used to upload bits of data very rapidly to use within shaders
 pub struct PushConstants<'a> {
     pub(crate) reflected: Arc<ReflectedShader>,
     pub(crate) offsets: Vec<u32>,
@@ -13,7 +13,11 @@ pub struct PushConstants<'a> {
 
 impl ValueFiller for PushConstants<'_> {
     // Set the value of a push constant field
-    fn set<'s, T: GpuPodRelaxed>(&mut self, name: &'s str, value: T) -> Result<(), FillError<'s>> {
+    fn set<'s, T: GpuPodRelaxed>(
+        &mut self,
+        name: &'s str,
+        value: T,
+    ) -> Result<(), FillError<'s>> {
         // Get shader and it's reflected data
         let reflected = &self.reflected;
 
@@ -24,9 +28,10 @@ impl ValueFiller for PushConstants<'_> {
             .filter_map(|range| range.as_ref())
             .filter_map(|range| {
                 // Check if the push constant range layout contains the field
-                let member = range.members.iter().find(|members| {
-                    &members.name == name
-                });
+                let member = range
+                    .members
+                    .iter()
+                    .find(|members| &members.name == name);
 
                 member.map(|m| (m, range.stages))
             });
@@ -45,7 +50,7 @@ impl ValueFiller for PushConstants<'_> {
 
         // There is a possibility that the field is shared
         if valid.len() == 2 && valid[0].0 == valid[1].0 {
-            let entry = &valid[1].0;  
+            let entry = &valid[1].0;
             self.offsets.push(entry.offset);
             self.data.push(bytes.to_vec());
             self.stages.push(wgpu::ShaderStages::VERTEX_FRAGMENT);

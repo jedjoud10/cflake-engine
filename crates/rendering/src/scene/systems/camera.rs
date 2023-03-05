@@ -1,7 +1,8 @@
 use crate::{
-    AlbedoMap, Sky, Camera, CameraUniform,
-    DefaultMaterialResources, ForwardRenderer,
-    SceneRenderPass, Mesh, NormalMap, Pipelines, Renderer, Basic, PostProcess, WindowUniform,
+    AlbedoMap, Basic, Camera, CameraUniform,
+    DefaultMaterialResources, ForwardRenderer, Mesh, NormalMap,
+    Pipelines, PostProcess, Renderer, SceneRenderPass, Sky,
+    WindowUniform,
 };
 use assets::Assets;
 use ecs::Scene;
@@ -11,8 +12,7 @@ use graphics::{
 };
 use std::{mem::ManuallyDrop, sync::Arc};
 use utils::{Storage, Time};
-use world::{post_user, user, System, World, WindowEvent};
-
+use world::{post_user, user, System, WindowEvent, World};
 
 // Update event that will set/update the main perspective camera
 fn update_camera(world: &mut World) {
@@ -76,6 +76,7 @@ fn update_camera(world: &mut World) {
 
 // The camera system will be responsible for updating the camera UBO and matrices
 pub fn system(system: &mut System) {
-    system.insert_update(update_camera)
+    system
+        .insert_update(update_camera)
         .before(super::rendering::system);
 }

@@ -1,22 +1,20 @@
 use ahash::AHashMap;
 use dashmap::DashMap;
-use naga::{valid::Validator};
+use naga::valid::Validator;
 use parking_lot::Mutex;
-use thread_local::ThreadLocal;
 use std::{hash::BuildHasherDefault, sync::Arc};
+use thread_local::ThreadLocal;
 use utils::Storage;
-use wgpu::{
-    util::StagingBelt, Adapter, Device, Queue,
-    Sampler, Surface, SurfaceCapabilities, SurfaceConfiguration,
-    TextureView, Maintain,
-};
 pub use wgpu::CommandEncoder;
+use wgpu::{
+    util::StagingBelt, Adapter, Device, Maintain, Queue, Sampler,
+    Surface, SurfaceCapabilities, SurfaceConfiguration, TextureView,
+};
 
 use crate::{
-    BindGroupLayout, ReflectedShader, SamplerSettings, SamplerWrap,
-    StagingPool, UniformBuffer, BindEntryLayout,
+    BindEntryLayout, BindGroupLayout, ReflectedShader,
+    SamplerSettings, SamplerWrap, StagingPool, UniformBuffer,
 };
-
 
 // Cached graphics data
 pub(crate) struct Cached {
@@ -27,8 +25,12 @@ pub(crate) struct Cached {
         DashMap<ReflectedShader, Arc<wgpu::PipelineLayout>>,
     pub(crate) bind_groups:
         DashMap<Vec<wgpu::Id>, Arc<wgpu::BindGroup>>,
-    pub(crate) uniform_buffers:
-        Mutex<AHashMap<(u32, BindEntryLayout), Vec<(UniformBuffer<u8>, bool)>>>,
+    pub(crate) uniform_buffers: Mutex<
+        AHashMap<
+            (u32, BindEntryLayout),
+            Vec<(UniformBuffer<u8>, bool)>,
+        >,
+    >,
 }
 
 // Internnal graphics context that will eventually be wrapped within an Arc
@@ -98,9 +100,9 @@ impl Graphics {
         let mut locked = encoders.lock();
         *self.0.acquires.lock() += 1;
         locked.pop().unwrap_or_else(|| {
-            self.device().create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: None,
-            })
+            self.device().create_command_encoder(
+                &wgpu::CommandEncoderDescriptor { label: None },
+            )
         })
     }
 
@@ -109,7 +111,7 @@ impl Graphics {
     pub(crate) fn submit(
         &self,
         iter: impl IntoIterator<Item = CommandEncoder>,
-        wait: bool
+        wait: bool,
     ) {
         let finished = iter.into_iter().map(|x| x.finish());
         let i = self.queue().submit(finished);
@@ -122,10 +124,7 @@ impl Graphics {
     }
 
     // Submit all the currently unused command encoders and clears the thread local cache
-    pub(crate) fn submit_unused(
-        &self,
-        wait: bool
-    ) {
+    pub(crate) fn submit_unused(&self, wait: bool) {
         let encoders = self.0.encoders.get_or_default();
         let mut locked = encoders.lock();
         self.submit(locked.drain(..), wait);

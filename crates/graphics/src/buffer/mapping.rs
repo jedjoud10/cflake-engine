@@ -2,8 +2,8 @@ use crate::{
     Buffer, GpuPodRelaxed, StagingPool, StagingView, StagingViewWrite,
 };
 use parking_lot::MappedMutexGuard;
-use wgpu::CommandEncoder;
 use std::marker::PhantomData;
+use wgpu::CommandEncoder;
 
 // Allows  us to read the buffer as if it were an immutably slice
 pub struct BufferView<'a, T: GpuPodRelaxed, const TYPE: u32> {

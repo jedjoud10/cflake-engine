@@ -196,14 +196,3 @@ impl From<&Rotation> for math::RawMatrix {
         value.0.into()
     }
 }
-
-impl Mul<Rotation> for Rotation {
-    type Output = Rotation;
-
-    fn mul(self, rhs: Rotation) -> Self::Output {
-        #[cfg(not(feature = "two-dim"))]
-        return Rotation(self.0 * rhs.0);
-        #[cfg(feature = "two-dim")]
-        return Rotation(self.0 + rhs.0);
-    }
-}

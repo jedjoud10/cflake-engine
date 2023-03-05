@@ -4,8 +4,9 @@ use bytemuck::Zeroable;
 
 use super::{Region, Texture};
 use crate::{
-    Extent, RenderTarget, Texel, TextureAsTargetError,
-    TextureSamplerError, ColorTexel, MipLevelReadError, MipLevelWriteError, MipLevelCopyError, TextureUsage, Origin, MipLevelClearError,
+    ColorTexel, Extent, MipLevelClearError, MipLevelCopyError,
+    MipLevelReadError, MipLevelWriteError, Origin, RenderTarget,
+    Texel, TextureAsTargetError, TextureSamplerError, TextureUsage,
 };
 
 // This enum tells the texture how exactly it should create it's mipmaps
@@ -26,7 +27,7 @@ pub enum TextureMipMaps<'mip, 'map, T: Texel> {
     // Manual mip map generation with the specified texels at each mip level
     // Will be clamped to the maximum number of levels possible
 
-    // NOTE: If this is of length 0 and the texture is loaded from a file, then the 
+    // NOTE: If this is of length 0 and the texture is loaded from a file, then the
     // mips will be generated automatically based on image file contents
     Manual {
         mips: &'map [&'mip [T::Storage]],
@@ -45,8 +46,12 @@ impl<T: Texel> Clone for TextureMipMaps<'_, '_, T> {
     fn clone(&self) -> Self {
         match self {
             Self::Disabled => Self::Disabled,
-            Self::Zeroed { clamp } => Self::Zeroed { clamp: clamp.clone() },
-            Self::Manual { mips } => Self::Manual { mips: mips.clone() },
+            Self::Zeroed { clamp } => Self::Zeroed {
+                clamp: clamp.clone(),
+            },
+            Self::Manual { mips } => {
+                Self::Manual { mips: mips.clone() }
+            }
         }
     }
 }
@@ -62,24 +67,26 @@ pub fn generate_mip_map<T: ColorTexel, E: Extent>(
         location: vek::Vec3<usize>,
         extent: vek::Extent3<usize>,
     ) -> usize {
-        location.x + location.y * extent.w + location.z * (extent.w*extent.h)
+        location.x
+            + location.y * extent.w
+            + location.z * (extent.w * extent.h)
     }
 
     // Create manual mip maps for this texture
     let dimension = <E as Extent>::dimensionality();
     let name = utils::pretty_type_name::<T>();
     let levels = extent.levels()?.get() as u32;
-    let mut map = 
+    let mut map =
         Vec::<Vec<T::Storage>>::with_capacity(levels as usize);
     let mut temp = extent;
     let mut base = base.to_vec();
     log::debug!("Creating mip-data (max = {levels})for imported texture {dimension:?}, <{name}>");
 
     // Iterate over the levels and fill them up
-    // (like how ceddy weddy fills me up inside >.<) 
-    for i in 0..(levels-1) {
+    // (like how ceddy weddy fills me up inside >.<)
+    for i in 0..(levels - 1) {
         // Pre-allocate a vector that will contain the downscaled texels
-        let downscaled = extent.mip_level_dimensions(i as u8+1);
+        let downscaled = extent.mip_level_dimensions(i as u8 + 1);
         let mut texels: Vec<<T as Texel>::Storage> = vec![
             <T::Storage as Zeroable>::zeroed();
             downscaled.area() as usize
@@ -106,15 +113,11 @@ pub fn generate_mip_map<T: ColorTexel, E: Extent>(
         // Write to the downscaled texels
         for ox in 0..original.w {
             for oy in 0..original.h {
-                for oz in 0..original.d {                    
+                for oz in 0..original.d {
                     // Get the current texel value
                     let texel = base[xyz_to_index(
-                        vek::Vec3::new(
-                            ox,
-                            oy,
-                            oz
-                        ).as_::<usize>(),
-                        original.as_::<usize>()
+                        vek::Vec3::new(ox, oy, oz).as_::<usize>(),
+                        original.as_::<usize>(),
                     )];
 
                     // La division est vraiment importante pour qu'on evite un overflow
@@ -122,12 +125,9 @@ pub fn generate_mip_map<T: ColorTexel, E: Extent>(
 
                     // Get the destination texel value
                     let dst = &mut texels[xyz_to_index(
-                        vek::Vec3::new(
-                            ox / 2,
-                            oy / 2,
-                            oz / 2
-                        ).as_::<usize>(),
-                        new.as_::<usize>()
+                        vek::Vec3::new(ox / 2, oy / 2, oz / 2)
+                            .as_::<usize>(),
+                        new.as_::<usize>(),
                     )];
 
                     // Sum to the destination
@@ -138,7 +138,7 @@ pub fn generate_mip_map<T: ColorTexel, E: Extent>(
 
         // Overwrite temp buffers
         temp = downscaled;
-        base[..(downscaled.area() as usize)].copy_from_slice(&texels); 
+        base[..(downscaled.area() as usize)].copy_from_slice(&texels);
         map.push(texels);
     }
 
@@ -184,7 +184,7 @@ impl<'a, T: Texture> MipLevelRef<'a, T> {
     pub fn read(
         &self,
         dst: &mut [<T::T as Texel>::Storage],
-        subregion: Option<T::Region>, 
+        subregion: Option<T::Region>,
     ) -> Result<(), MipLevelReadError> {
         // Nothing to write to
         if dst.is_empty() {
@@ -196,9 +196,11 @@ impl<'a, T: Texture> MipLevelRef<'a, T> {
             return Err(MipLevelReadError::NonReadable);
         }
 
-        // Get the region for this mip level 
+        // Get the region for this mip level
         let mip_level_region = <T::Region as Region>::with_extent(
-            self.texture.dimensions().mip_level_dimensions(self.level)
+            self.texture
+                .dimensions()
+                .mip_level_dimensions(self.level),
         );
 
         // Make sure the "offset" doesn't cause reads outside the texture
@@ -209,11 +211,11 @@ impl<'a, T: Texture> MipLevelRef<'a, T> {
         }
 
         // Get the mip level subregion if the given one is None
-        let subregion = subregion.unwrap_or(mip_level_region); 
+        let subregion = subregion.unwrap_or(mip_level_region);
 
         // TODO: Actually handle reading here
         todo!();
-    } 
+    }
 }
 
 // A mutable mip level that we can use to write to the texture
@@ -262,7 +264,7 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
     pub fn read(
         &self,
         dst: &mut [<T::T as Texel>::Storage],
-        subregion: Option<T::Region>, 
+        subregion: Option<T::Region>,
     ) -> Result<(), MipLevelReadError> {
         // Nothing to write to
         if dst.is_empty() {
@@ -274,9 +276,11 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
             return Err(MipLevelReadError::NonReadable);
         }
 
-        // Get the region for this mip level 
+        // Get the region for this mip level
         let mip_level_region = <T::Region as Region>::with_extent(
-            self.texture.dimensions().mip_level_dimensions(self.level)
+            self.texture
+                .dimensions()
+                .mip_level_dimensions(self.level),
         );
 
         // Make sure the "offset" doesn't cause reads outside the texture
@@ -287,27 +291,27 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
         }
 
         // Get the mip level subregion if the given one is None
-        let subregion = subregion.unwrap_or(mip_level_region); 
+        let subregion = subregion.unwrap_or(mip_level_region);
 
         // TODO: Actually handle reading here
         todo!();
-    } 
+    }
 
     // Write some pixels to the mip level region from the given source
     pub fn write(
         &mut self,
         src: &[<T::T as Texel>::Storage],
-        subregion: Option<T::Region>, 
+        subregion: Option<T::Region>,
     ) -> Result<(), MipLevelWriteError> {
         todo!()
-    } 
+    }
 
     // Copy a sub-region from another level into this level
     pub fn copy_subregion_from(
         &mut self,
         other: impl AsRef<MipLevelRef<'a, T>>,
         src_subregion: Option<T::Region>,
-        dst_subregion: Option<T::Region>
+        dst_subregion: Option<T::Region>,
     ) -> Result<(), MipLevelCopyError> {
         todo!()
     }
@@ -324,10 +328,8 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
     pub fn splat(
         &mut self,
         subregion: Option<T::Region>,
-        val: <T::T as Texel>::Storage
+        val: <T::T as Texel>::Storage,
     ) -> Result<(), MipLevelWriteError> {
         todo!()
     }
-
-    
 }

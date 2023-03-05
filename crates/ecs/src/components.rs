@@ -1,3 +1,4 @@
+mod angular_velocity;
 mod local_position;
 mod local_rotation;
 mod local_scale;
@@ -5,6 +6,8 @@ mod position;
 mod relations;
 mod rotation;
 mod scale;
+mod velocity;
+pub use angular_velocity::*;
 pub use local_position::*;
 pub use local_rotation::*;
 pub use local_scale::*;
@@ -15,3 +18,4 @@ pub use rotation::*;
 pub use rotation::*;
 pub use scale::*;
 pub use scale::*;
+pub use velocity::*;

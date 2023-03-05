@@ -1,8 +1,8 @@
-mod system;
 mod interface;
 mod rasterizer;
-pub use rasterizer::*;
+mod system;
 pub use interface::*;
+pub use rasterizer::*;
 pub use system::*;
 
 // Egui re-exports

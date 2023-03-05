@@ -19,7 +19,7 @@ use std::{
 // This is a handle to a specific asset that we are currently loading in
 pub struct AsyncHandle<A: Asset> {
     _phantom: PhantomData<A>,
-    index: usize
+    index: usize,
 }
 
 // Used for async asset loading
@@ -36,14 +36,13 @@ type UserPath = Option<Arc<Path>>;
 type HijackPaths = AHashMap<PathBuf, PathBuf>;
 type AsyncHijackPaths = Arc<RwLock<HijackPaths>>;
 
-
 // This is the main asset manager resource that will load & cache newly loaded assets
 // This asset manager will also contain the persistent assets that are included by default into the engine executable
 pub struct Assets {
     // Receiver that will keep track of the assets that were loaded
     sender: Sender<AsyncChannelResult>,
     receiver: Receiver<AsyncChannelResult>,
-    
+
     // Keep track of the assets that were sucessfully loaded
     // The value corresponding to each key might be None in the case that the asset did not load (yet)
     loaded: Vec<Option<AsyncBoxedResult>>,
@@ -246,8 +245,12 @@ impl Assets {
             Self::validate::<A>(&owned)?;
 
             // Load the bytes dynamically or from cache
-            let bytes =
-                Self::load_bytes(&bytes, hijack, &user, owned.clone())?;
+            let bytes = Self::load_bytes(
+                &bytes,
+                hijack,
+                &user,
+                owned.clone(),
+            )?;
 
             // Split the path into it's name and extension
             let (name, extension) = Self::decompose_path(&owned);
@@ -297,7 +300,8 @@ impl Assets {
 
         // Load the asset bytes (either dynamically or fetch cached bytes)
         let hijack = self.hijack.clone();
-        let bytes = Self::load_bytes(&self.bytes, hijack, &self.user, owned)?;
+        let bytes =
+            Self::load_bytes(&self.bytes, hijack, &self.user, owned)?;
 
         // Deserialize the asset file
         A::deserialize(
@@ -364,7 +368,8 @@ impl Assets {
         // Create a new task that will load this asset
         threadpool.execute(move || {
             Self::async_load_inner::<A>(
-                owned, bytes, user, hijack, context, settings, sender, index
+                owned, bytes, user, hijack, context, settings,
+                sender, index,
             );
         });
         handle
@@ -423,7 +428,7 @@ impl Assets {
     // Fetches the loaded assets from the receiver and caches them locally
     pub fn refresh(&mut self) {
         for (result, index) in self.receiver.try_iter() {
-            let len = self.loaded.len().max(index+1);
+            let len = self.loaded.len().max(index + 1);
             self.loaded.resize_with(len, || None);
 
             self.loaded[index] = Some(result);
@@ -436,7 +441,10 @@ impl Assets {
         handle: &AsyncHandle<A>,
     ) -> bool {
         self.refresh();
-        self.loaded.get(handle.index).map(|x| x.is_some()).unwrap_or_default()
+        self.loaded
+            .get(handle.index)
+            .map(|x| x.is_some())
+            .unwrap_or_default()
     }
 
     // This will wait until the asset referenced by this handle has finished loading

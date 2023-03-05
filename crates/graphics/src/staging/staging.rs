@@ -1,15 +1,23 @@
-use crate::{Graphics, StagingView, GpuPod, GpuPodRelaxed};
+use crate::{GpuPod, GpuPodRelaxed, Graphics, StagingView};
 use parking_lot::Mutex;
-use std::{num::NonZeroU64, ops::DerefMut, sync::{Arc, atomic::Ordering}, marker::PhantomData};
-use utils::{ConcVec, AtomicBitSet};
-use wgpu::{CommandEncoder, Maintain, MapMode, Buffer, Texture, Extent3d, Origin3d, TextureAspect, ImageDataLayout};
+use std::{
+    marker::PhantomData,
+    num::NonZeroU64,
+    ops::DerefMut,
+    sync::{atomic::Ordering, Arc},
+};
+use utils::{AtomicBitSet, ConcVec};
+use wgpu::{
+    Buffer, CommandEncoder, Extent3d, ImageDataLayout, Maintain,
+    MapMode, Origin3d, Texture, TextureAspect,
+};
 
 // Helper struct that will temporarily store mapped buffers so we can have
-// StagingView / StagingViewMut that we can read and write from 
+// StagingView / StagingViewMut that we can read and write from
 // This will re-use unmapped buffers to avoid many many buffer creations
 pub(crate) struct StagingPool {
     // Keeps track of mapping buffers
-    pub(crate) allocations: Arc<ConcVec<Buffer>>, 
+    pub(crate) allocations: Arc<ConcVec<Buffer>>,
 
     // Keeps track of the mapping state
     pub(crate) states: AtomicBitSet,
@@ -30,11 +38,13 @@ impl StagingPool {
         &self,
         graphics: &Graphics,
         capacity: u64,
-        mode: MapMode
+        mode: MapMode,
     ) -> (usize, &Buffer) {
         // Usages for map reading and map writing
-        let read = wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST;
-        let write = wgpu::BufferUsages::MAP_WRITE | wgpu::BufferUsages::COPY_SRC;
+        let read = wgpu::BufferUsages::MAP_READ
+            | wgpu::BufferUsages::COPY_DST;
+        let write = wgpu::BufferUsages::MAP_WRITE
+            | wgpu::BufferUsages::COPY_SRC;
 
         log::debug!("Looking for staging buffer [cap = {capacity}b, mode = {mode:?}]");
 
@@ -116,20 +126,18 @@ impl StagingPool {
         dst: &mut [u8],
     ) {
         assert_eq!(size as usize, dst.len());
-        assert!(buffer.usage().contains(wgpu::BufferUsages::COPY_SRC));
+        assert!(buffer
+            .usage()
+            .contains(wgpu::BufferUsages::COPY_SRC));
 
         // Get a encoder (reused or not to perform a copy)
         let mut encoder = graphics.acquire();
-        let (i, staging) = self.find_or_allocate(graphics, size, MapMode::Read);
+        let (i, staging) =
+            self.find_or_allocate(graphics, size, MapMode::Read);
 
         // Copy to staging first
-        encoder.copy_buffer_to_buffer(
-            buffer,
-            offset,
-            staging,
-            0,
-            size
-        );
+        encoder
+            .copy_buffer_to_buffer(buffer, offset, staging, 0, size);
 
         // Put the encoder back into the cache, and submit ALL encoders
         graphics.reuse([encoder]);
@@ -146,7 +154,7 @@ impl StagingPool {
             tx.send(res).unwrap()
         });
         graphics.device().poll(wgpu::Maintain::Wait);
-    
+
         // Wait until the buffer is mapped, then read from the buffer
         if let Ok(Ok(_)) = rx.recv() {
             dst.copy_from_slice(&slice.get_mapped_range());
@@ -156,6 +164,6 @@ impl StagingPool {
         }
 
         // Reset the state of the staging buffer
-        self.states.remove(i, Ordering::Relaxed); 
+        self.states.remove(i, Ordering::Relaxed);
     }
 }

@@ -14,7 +14,9 @@ pub struct BGRA<T: AnyElement + Swizzable>(vek::Vec4<T>);
 pub trait SupportsSrgba {}
 impl SupportsSrgba for Normalized<u8> {}
 pub struct SRGBA<T: AnyElement + SupportsSrgba>(vek::Vec4<T>);
-pub struct SBGRA<T: AnyElement + Swizzable + SupportsSrgba>(vek::Vec4<T>);
+pub struct SBGRA<T: AnyElement + Swizzable + SupportsSrgba>(
+    vek::Vec4<T>,
+);
 
 // The channels that represent the vertices
 pub struct X<T: AnyElement>(T);
@@ -76,11 +78,9 @@ impl VectorChannels {
 pub enum TexelChannels {
     // 1-4
     Vector(VectorChannels),
-    
-    // Either SRGBA, or SBGRA 
-    Srgba {
-        swizzled: bool,
-    },
+
+    // Either SRGBA, or SBGRA
+    Srgba { swizzled: bool },
 
     // Always 1
     Depth,

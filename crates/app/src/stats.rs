@@ -29,13 +29,16 @@ pub(crate) fn update(world: &mut World) {
         ui.label(format!("Submissions: {submissions}"));
         ui.label(format!("Stalls: {stalls}"));
         ui.label(format!("Stg Buffers: {staging_buffers}"));
-        
+
         ui.heading("Cached Graphics Data");
         ui.label(format!("Samplers: {cached_samplers}"));
-        ui.label(format!("Pipeline Layouts: {cached_pipeline_layouts}"));
-        ui.label(format!("Bind Group Layouts: {cached_bind_group_layouts}"));
+        ui.label(format!(
+            "Pipeline Layouts: {cached_pipeline_layouts}"
+        ));
+        ui.label(format!(
+            "Bind Group Layouts: {cached_bind_group_layouts}"
+        ));
         ui.label(format!("Bind Group: {cached_bind_groups}"));
-
     });
 
     // General Performance
@@ -55,7 +58,13 @@ pub(crate) fn update(world: &mut World) {
     egui::Window::new("Rendering").show(&gui, |ui| {
         ui.horizontal(|ui| {
             ui.label("Render Entities: ");
-            ui.label(scene.query::<&Renderer>().into_iter().count().to_string());
+            ui.label(
+                scene
+                    .query::<&Renderer>()
+                    .into_iter()
+                    .count()
+                    .to_string(),
+            );
         });
     });
 }

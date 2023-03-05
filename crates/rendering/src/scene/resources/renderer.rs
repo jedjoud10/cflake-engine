@@ -1,18 +1,21 @@
 use crate::{
     AlbedoMap, AlbedoTexel, CameraBuffer, CameraUniform,
     DynamicPipeline, Material, MaterialId, NormalMap, NormalTexel,
-    Pipeline, SceneBuffer, SceneUniform, TimingBuffer, TimingUniform, WindowBuffer, WindowUniform,
+    Pipeline, SceneBuffer, SceneUniform, TimingBuffer, TimingUniform,
+    WindowBuffer, WindowUniform,
 };
 use ahash::AHashMap;
 use assets::Assets;
 use bytemuck::Zeroable;
 use ecs::Entity;
 use graphics::{
-    BufferMode, BufferUsage, GpuPod, Graphics, LoadOp, Normalized,
+    ActiveGraphicsPipeline, ActiveRenderPass, BufferMode,
+    BufferUsage, Depth, GpuPod, Graphics, LoadOp, Normalized,
     Operation, PipelineInitializationError, RenderPass,
-    SamplerSettings, StoreOp, SwapchainFormat, Texel, Texture,
-    Texture2D, TextureMipMaps, TextureMode, TextureUsage,
-    UniformBuffer, BGRA, RGBA, Depth, SamplerFilter, SamplerWrap, SamplerMipMaps, TextureImportSettings, ActiveRenderPass, ActiveGraphicsPipeline,
+    SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap,
+    StoreOp, SwapchainFormat, Texel, Texture, Texture2D,
+    TextureImportSettings, TextureMipMaps, TextureMode, TextureUsage,
+    UniformBuffer, BGRA, RGBA,
 };
 use std::{
     any::TypeId, cell::RefCell, marker::PhantomData,
@@ -23,14 +26,16 @@ use std::{
 pub type SceneColor = RGBA<Normalized<u8>>;
 pub type SceneDepth = Depth<f32>;
 pub type SceneRenderPass = RenderPass<SceneColor, SceneDepth>;
-pub type ActiveSceneRenderPass<'r, 't> = ActiveRenderPass<'r, 't, SceneColor, SceneDepth>;
-pub type ActiveScenePipeline<'a, 'r, 't> = ActiveGraphicsPipeline<'a, 'r, 't, SceneColor, SceneDepth>;
+pub type ActiveSceneRenderPass<'r, 't> =
+    ActiveRenderPass<'r, 't, SceneColor, SceneDepth>;
+pub type ActiveScenePipeline<'a, 'r, 't> =
+    ActiveGraphicsPipeline<'a, 'r, 't, SceneColor, SceneDepth>;
 
 // Keeps tracks of data that we use for rendering the scene
 pub struct ForwardRenderer {
     // Main render pass that we will use to render to the swapchain
     pub(crate) render_pass: SceneRenderPass,
-    
+
     // Since we use post processing, we will write to a texture instead
     pub(crate) color_texture: Texture2D<SceneColor>,
     pub(crate) depth_texture: Texture2D<SceneDepth>,
@@ -85,24 +90,30 @@ fn create_texture2d<T: Texel>(
 
 impl ForwardRenderer {
     // Create a new scene render pass and the forward renderer
-    pub(crate) fn new(graphics: &Graphics, assets: &mut Assets, extent: vek::Extent2<u32>) -> Self {
+    pub(crate) fn new(
+        graphics: &Graphics,
+        assets: &mut Assets,
+        extent: vek::Extent2<u32>,
+    ) -> Self {
         // Create the render pass color texture
-        let color_texture = Texture2D::<RGBA<Normalized<u8>>>::from_texels(
-            graphics,
-            None,
-            extent,
-            TextureMode::Resizable,
-            TextureUsage::RENDER_TARGET | TextureUsage::SAMPLED,
-            SamplerSettings {
-                filter: SamplerFilter::Linear,
-                wrap: SamplerWrap::Repeat,
-                mipmaps: SamplerMipMaps::Auto,
-            },
-            TextureMipMaps::Disabled
-        ).unwrap();
+        let color_texture =
+            Texture2D::<RGBA<Normalized<u8>>>::from_texels(
+                graphics,
+                None,
+                extent,
+                TextureMode::Resizable,
+                TextureUsage::RENDER_TARGET | TextureUsage::SAMPLED,
+                SamplerSettings {
+                    filter: SamplerFilter::Linear,
+                    wrap: SamplerWrap::Repeat,
+                    mipmaps: SamplerMipMaps::Auto,
+                },
+                TextureMipMaps::Disabled,
+            )
+            .unwrap();
 
         // Create the render pass depth texture
-        let depth_texture = Texture2D::<Depth::<f32>>::from_texels(
+        let depth_texture = Texture2D::<Depth<f32>>::from_texels(
             graphics,
             None,
             extent,
@@ -113,8 +124,9 @@ impl ForwardRenderer {
                 wrap: SamplerWrap::Repeat,
                 mipmaps: SamplerMipMaps::Auto,
             },
-            TextureMipMaps::Disabled
-        ).unwrap();
+            TextureMipMaps::Disabled,
+        )
+        .unwrap();
 
         // Create the forward shading scene pass
         let render_pass = SceneRenderPass::new(
@@ -127,23 +139,26 @@ impl ForwardRenderer {
                 load: LoadOp::Clear(1.0),
                 store: StoreOp::Store,
             },
-        ).unwrap();
+        )
+        .unwrap();
 
         // Load the default sky gradient texture
-        let sky_gradient = assets.load::<AlbedoMap>(
-            ("engine/textures/scene/sky.jpg",
-            TextureImportSettings {
-                mipmaps: TextureMipMaps::Disabled,
-                ..Default::default()
-            },
-            graphics.clone()            
-        )).unwrap();
+        let sky_gradient = assets
+            .load::<AlbedoMap>((
+                "engine/textures/scene/sky.jpg",
+                TextureImportSettings {
+                    mipmaps: TextureMipMaps::Disabled,
+                    ..Default::default()
+                },
+                graphics.clone(),
+            ))
+            .unwrap();
 
         // Create the default 1x1 textures colors
         let white = vek::Vec3::broadcast(255).with_w(255);
         let black = vek::Vec4::broadcast(0);
-        let normal = vek::Vec3::new(127, 127, 255).with_w(255); ;
-            
+        let normal = vek::Vec3::new(127, 127, 255).with_w(255);
+
         Self {
             // Render pass, color texture, and depth texture
             render_pass,

@@ -39,11 +39,13 @@ pub fn mask<T: Component>() -> Mask {
         Use the 'extended-bitmasks' feature to add more bits in the bitmask if needed";
         *bit =
             RawBitMask::from(copy).checked_shl(1).expect(ERR).into();
-        
+
         let name = utils::pretty_type_name::<T>();
-        log::debug!("Registered component '{name}' with bitmask 1<<{:?}", (copy.offset().unwrap()+1));
-        
-        
+        log::debug!(
+            "Registered component '{name}' with bitmask 1<<{:?}",
+            (copy.offset().unwrap() + 1)
+        );
+
         copy
     }
 }

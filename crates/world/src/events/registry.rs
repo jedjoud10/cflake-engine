@@ -134,12 +134,14 @@ impl<C: Caller> Registry<C> {
         );
 
         if self.events.len() > 0 {
-
             let slice = &self.events[..(self.events.len() - 1)];
             for (stage, _) in slice.iter() {
                 log::debug!("├── {}", stage.system.name);
             }
-            log::debug!("└── {}", self.events.last().unwrap().0.system.name);
+            log::debug!(
+                "└── {}",
+                self.events.last().unwrap().0.system.name
+            );
         }
 
         // 3x POUNCES ON YOU UWU YOU'RE SO WARM

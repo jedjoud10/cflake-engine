@@ -1,5 +1,9 @@
 use assets::Assets;
-use graphics::{SwapchainFormat, RenderPass, LoadOp, StoreOp, Operation, Graphics, Shader, VertexModule, FragmentModule, Compiler, GraphicsPipeline, VertexConfig, PrimitiveConfig};
+use graphics::{
+    Compiler, FragmentModule, Graphics, GraphicsPipeline, LoadOp,
+    Operation, PrimitiveConfig, RenderPass, Shader, StoreOp,
+    SwapchainFormat, VertexConfig, VertexModule,
+};
 
 // Container for post-processing parameters
 pub struct PostProcess {
@@ -10,7 +14,7 @@ pub struct PostProcess {
     // Vignette parameters
     pub vignette_strength: f32,
     pub vignette_size: f32,
-} 
+}
 
 impl Default for PostProcess {
     fn default() -> Self {

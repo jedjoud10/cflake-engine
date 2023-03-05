@@ -1,11 +1,14 @@
 use crate::{
-    AnyElement, TexelChannels, Depth, DepthElement, ElementType,
-    GpuPodRelaxed, Normalized, Stencil, VectorChannels, X, XY, XYZ,
+    AnyElement, Depth, DepthElement, ElementType, GpuPodRelaxed,
+    Normalized, Stencil, TexelChannels, VectorChannels, X, XY, XYZ,
     XYZW,
 };
 use half::f16;
 use std::mem::size_of;
-use vek::{Vec2, Vec3, Vec4, num_traits::{NumOps, NumAssignOps}};
+use vek::{
+    num_traits::{NumAssignOps, NumOps},
+    Vec2, Vec3, Vec4,
+};
 use wgpu::VertexFormat;
 
 // A vertex that represents a vertex within a rendered object
@@ -14,7 +17,9 @@ pub trait Vertex {
     type Base: GpuPodRelaxed;
 
     // The raw data type that we will use to access vertex memory
-    type Storage: GpuPodRelaxed + NumOps<Self::Storage> + NumAssignOps<Self::Storage>;
+    type Storage: GpuPodRelaxed
+        + NumOps<Self::Storage>
+        + NumAssignOps<Self::Storage>;
 
     // Number of bytes in total
     fn size() -> u32 {

@@ -1,10 +1,12 @@
 use std::{
+    fs::File,
+    io::{BufWriter, Write},
     num::{NonZeroU128, NonZeroU32},
+    sync::mpsc,
     time::{Duration, Instant},
-    io::{Write, BufWriter}, fs::File, sync::mpsc,
 };
 
-use crate::{FileManager, ThreadPool, Time, FileType};
+use crate::{FileManager, FileType, ThreadPool, Time};
 use world::{post_user, user, System, World};
 
 // Utils resources that is added to the world at the very start
@@ -21,7 +23,9 @@ pub fn threadpool(system: &mut System) {
     system
         .insert_init(|world: &mut World| {
             let settings = world.get::<UtilsSettings>().unwrap();
-            let num = settings.threadpool_threads.unwrap_or_else(num_cpus::get);
+            let num = settings
+                .threadpool_threads
+                .unwrap_or_else(num_cpus::get);
             drop(settings);
             world.insert(ThreadPool::with(num));
         })
@@ -43,7 +47,10 @@ pub fn io(system: &mut System) {
     system
         .insert_init(move |world: &mut World| {
             let settings = world.get::<UtilsSettings>().unwrap();
-            let manager = FileManager::new(&settings.author_name, &settings.app_name);
+            let manager = FileManager::new(
+                &settings.author_name,
+                &settings.app_name,
+            );
             drop(settings);
             world.insert(manager);
         })
@@ -53,25 +60,30 @@ pub fn io(system: &mut System) {
 // Add the file logger
 pub fn file_logger(system: &mut System) {
     // Get the file name
-    let file = chrono::Local::now().format("%Y-%m-%d.log").to_string();
+    let file =
+        chrono::Local::now().format("%Y-%m-%d.log").to_string();
 
     system
         .insert_init(move |world: &mut World| {
             // Get the utils settings that are added by the app
-            let mut settings = world.get_mut::<UtilsSettings>().unwrap();
+            let mut settings =
+                world.get_mut::<UtilsSettings>().unwrap();
             let receiver = settings.log_receiver.take().unwrap();
 
             // Get the file manager to get the log file
             let mut manager = world.get_mut::<FileManager>().unwrap();
-            let mut file = manager.write_file(&file, true, FileType::Log).unwrap();
+            let mut file = manager
+                .write_file(&file, true, FileType::Log)
+                .unwrap();
 
             // Create a secondary thread that will be responsible for logging these events
             std::thread::spawn(move || {
                 // This receiver will receive the logged messages from the fern dispatcher
-                for line in receiver.iter().filter(|x| !x.is_empty()) {
+                for line in receiver.iter().filter(|x| !x.is_empty())
+                {
                     write!(file, "{}", line).unwrap();
                 }
-            });            
+            });
         })
         .before(user)
         .after(io);

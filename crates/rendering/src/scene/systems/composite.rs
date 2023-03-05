@@ -1,7 +1,8 @@
 use crate::{
-    AlbedoMap, Sky, Camera, CameraUniform,
-    DefaultMaterialResources, ForwardRenderer,
-    SceneRenderPass, Mesh, NormalMap, Pipelines, Renderer, Basic, PostProcess, WindowUniform, Compositor,
+    AlbedoMap, Basic, Camera, CameraUniform, Compositor,
+    DefaultMaterialResources, ForwardRenderer, Mesh, NormalMap,
+    Pipelines, PostProcess, Renderer, SceneRenderPass, Sky,
+    WindowUniform,
 };
 use assets::Assets;
 use ecs::Scene;
@@ -11,8 +12,7 @@ use graphics::{
 };
 use std::{mem::ManuallyDrop, sync::Arc};
 use utils::{Storage, Time};
-use world::{post_user, user, System, World, WindowEvent};
-
+use world::{post_user, user, System, WindowEvent, World};
 
 // Inserts the compositor render pass and the composites
 fn init(world: &mut World) {
@@ -38,7 +38,7 @@ fn update(world: &mut World) {
     let dst = window.as_render_target().unwrap();
 
     // Begin the render pass
-    let mut render_pass = 
+    let mut render_pass =
         compositor.render_pass.begin(dst, ()).unwrap();
 
     // Bind the graphics pipeline
@@ -47,7 +47,9 @@ fn update(world: &mut World) {
     // Set the required shader uniforms
     active.set_bind_group(0, |group| {
         group.set_texture("color_map", src).unwrap();
-        group.set_sampler("color_map_sampler", src.sampler()).unwrap();
+        group
+            .set_sampler("color_map_sampler", src.sampler())
+            .unwrap();
         group.set_buffer("window", &renderer.window_buffer).unwrap();
     });
 
@@ -57,11 +59,13 @@ fn update(world: &mut World) {
 
 // The display system will be responsible for displaying the renderered scene textures to the scene
 pub fn system(system: &mut System) {
-    system.insert_init(init)
+    system
+        .insert_init(init)
         .before(user)
         .after(assets::system)
         .after(graphics::common);
-    system.insert_update(update)
+    system
+        .insert_update(update)
         .after(super::rendering::system)
         .after(graphics::acquire)
         .before(graphics::present);

@@ -2,7 +2,7 @@ use crate::{persistent, Assets};
 use std::path::PathBuf;
 use world::{user, System, World};
 
-// Simple resource that is temporarily added to world to pass user assets path 
+// Simple resource that is temporarily added to world to pass user assets path
 pub struct AssetsSettings(pub Option<PathBuf>);
 
 // Initialize a load and add it to the world
@@ -66,7 +66,6 @@ fn init(world: &mut World) {
     persistent!(loader, "engine/meshes/sphere.obj");
     persistent!(loader, "engine/meshes/icosphere.obj");
 
-
     // Insert the loader
     world.insert(loader);
 }
@@ -74,7 +73,5 @@ fn init(world: &mut World) {
 // This system will add the asset loader resource into the world and automatically pre-load the default assets as well
 // This system will also insert the GlobalPaths resource into the world
 pub fn system(system: &mut System) {
-    system
-        .insert_init(init)
-        .before(user);
+    system.insert_init(init).before(user);
 }

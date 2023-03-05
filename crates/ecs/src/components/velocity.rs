@@ -11,50 +11,50 @@ type Target = math::RawPoint;
 
 #[derive(Default, Clone, Copy, PartialEq, Component)]
 #[repr(transparent)]
-pub struct Position(Target);
+pub struct Velocity(Target);
 
 #[cfg(not(feature = "two-dim"))]
-impl Position {
-    // Construct a scale at the given X unit position
+impl Velocity {
+    // Construct a scale with the given X unit velocity
     pub fn at_x(x: Scalar) -> Self {
         Self(vek::Vec3::new(x, 0.0, 0.0))
     }
 
-    // Construct a scale at the given Y unit position
+    // Construct a scale with the given Y unit velocity
     pub fn at_y(y: Scalar) -> Self {
         Self(vek::Vec3::new(0.0, y, 0.0))
     }
 
-    // Construct a scale at the given Z unit position
+    // Construct a scale with the given Z unit velocity
     pub fn at_z(z: Scalar) -> Self {
         Self(vek::Vec3::new(0.0, 0.0, z))
     }
 
-    // Construct a scale at the given X, Y, Z position
+    // Construct a scale with the given X, Y, Z velocity
     pub fn at_xyz(x: Scalar, y: Scalar, z: Scalar) -> Self {
         Self((x, y, z).into())
     }
 }
 
 #[cfg(feature = "two-dim")]
-impl Position {
-    // Construct a scale at the given X unit position
+impl Velocity {
+    // Construct a scale with the given X unit velocity
     pub fn at_x(x: Scalar) -> Self {
         Self(vek::Vec2::new(x, 0.0))
     }
 
-    // Construct a scale at the given Y unit position
+    // Construct a scale with the given Y unit velocity
     pub fn at_y(y: Scalar) -> Self {
         Self(vek::Vec2::new(0.0, y))
     }
 
-    // Construct a scale at the given X, Y position
+    // Construct a scale with the given X, Y velocity
     pub fn at_xy(x: Scalar, y: Scalar) -> Self {
         Self((x, y).into())
     }
 }
 
-impl Debug for Position {
+impl Debug for Velocity {
     fn fmt(
         &self,
         f: &mut std::fmt::Formatter<'_>,
@@ -63,7 +63,7 @@ impl Debug for Position {
     }
 }
 
-impl Display for Position {
+impl Display for Velocity {
     fn fmt(
         &self,
         f: &mut std::fmt::Formatter<'_>,
@@ -72,7 +72,7 @@ impl Display for Position {
     }
 }
 
-impl Deref for Position {
+impl Deref for Velocity {
     type Target = Target;
 
     fn deref(&self) -> &Self::Target {
@@ -80,72 +80,44 @@ impl Deref for Position {
     }
 }
 
-impl DerefMut for Position {
+impl DerefMut for Velocity {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
-impl AsRef<Target> for Position {
+impl AsRef<Target> for Velocity {
     fn as_ref(&self) -> &Target {
         &self.0
     }
 }
 
-impl AsMut<Target> for Position {
+impl AsMut<Target> for Velocity {
     fn as_mut(&mut self) -> &mut Target {
         &mut self.0
     }
 }
 
-impl From<Position> for Target {
-    fn from(value: Position) -> Self {
+impl From<Velocity> for Target {
+    fn from(value: Velocity) -> Self {
         value.0
     }
 }
 
-impl From<&Position> for Target {
-    fn from(value: &Position) -> Self {
+impl From<&Velocity> for Target {
+    fn from(value: &Velocity) -> Self {
         value.0
     }
 }
 
-impl From<Target> for Position {
+impl From<Target> for Velocity {
     fn from(value: Target) -> Self {
         Self(value)
     }
 }
 
-impl From<&Target> for Position {
+impl From<&Target> for Velocity {
     fn from(value: &Target) -> Self {
         Self(*value)
-    }
-}
-
-impl From<Position> for math::RawMatrix {
-    fn from(value: Position) -> Self {
-        #[cfg(not(feature = "two-dim"))]
-        return vek::Mat4::translation_3d(value.0);
-
-        #[cfg(feature = "two-dim")]
-        return vek::Mat3::translation_2d(value.0);
-    }
-}
-
-impl From<&Position> for vek::Mat4<Scalar> {
-    fn from(value: &Position) -> Self {
-        #[cfg(not(feature = "two-dim"))]
-        return vek::Mat4::translation_3d(value.0);
-
-        #[cfg(feature = "two-dim")]
-        return vek::Mat3::translation_2d(value.0);
-    }
-}
-
-impl Add<Position> for Position {
-    type Output = Position;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        Self(self.0 + rhs.0)
     }
 }
