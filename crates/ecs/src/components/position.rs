@@ -15,22 +15,22 @@ pub struct Position(Target);
 
 #[cfg(not(feature = "two-dim"))]
 impl Position {
-    // Construct a scale at the given X unit position
+    // Construct a position at the given X unit position
     pub fn at_x(x: Scalar) -> Self {
         Self(vek::Vec3::new(x, 0.0, 0.0))
     }
 
-    // Construct a scale at the given Y unit position
+    // Construct a position at the given Y unit position
     pub fn at_y(y: Scalar) -> Self {
         Self(vek::Vec3::new(0.0, y, 0.0))
     }
 
-    // Construct a scale at the given Z unit position
+    // Construct a position at the given Z unit position
     pub fn at_z(z: Scalar) -> Self {
         Self(vek::Vec3::new(0.0, 0.0, z))
     }
 
-    // Construct a scale at the given X, Y, Z position
+    // Construct a position at the given X, Y, Z position
     pub fn at_xyz(x: Scalar, y: Scalar, z: Scalar) -> Self {
         Self((x, y, z).into())
     }
@@ -38,17 +38,17 @@ impl Position {
 
 #[cfg(feature = "two-dim")]
 impl Position {
-    // Construct a scale at the given X unit position
+    // Construct a position at the given X unit position
     pub fn at_x(x: Scalar) -> Self {
         Self(vek::Vec2::new(x, 0.0))
     }
 
-    // Construct a scale at the given Y unit position
+    // Construct a position at the given Y unit position
     pub fn at_y(y: Scalar) -> Self {
         Self(vek::Vec2::new(0.0, y))
     }
 
-    // Construct a scale at the given X, Y position
+    // Construct a position at the given X, Y position
     pub fn at_xy(x: Scalar, y: Scalar) -> Self {
         Self((x, y).into())
     }

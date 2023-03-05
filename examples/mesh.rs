@@ -86,7 +86,7 @@ fn init(world: &mut World) {
     let mesh = meshes.insert(mesh);
 
     // Add multiple objects
-    scene.extend_from_iter((0..5000).into_iter().map(|i| {
+    scene.extend_from_iter((0..125).into_iter().map(|i| {
         // Create the new mesh entity components
         let x = i % 5;
         let y = (i % 25) / 5;
@@ -95,7 +95,8 @@ fn init(world: &mut World) {
             Surface::new(mesh.clone(), material.clone(), id.clone());
         let renderer = Renderer::default();
         let position = Position::at_xyz(x as f32, y as f32, z as f32);
-        (surface, renderer, position)
+        let velocity = Velocity::with_y(10.0);
+        (surface, renderer, position, velocity)
     }));
 
     // Get the material id (also registers the material pipeline)
@@ -118,8 +119,13 @@ fn init(world: &mut World) {
     scene.insert((surface, renderer));
 
     // Create a movable camera (through the tick event)
-    let camera = Camera::new(120.0, 0.01, 500.0, 16.0 / 9.0);
-    scene.insert((Position::default(), Rotation::default(), camera));
+    let camera = Camera::new(120.0, 0.01, 5000.0, 16.0 / 9.0);
+    scene.insert((
+        Position::default(),
+        Rotation::default(),
+        Velocity::default(),
+        camera,
+    ));
 
     // Bind inputs to be used by the camera tick event
     let mut input = world.get_mut::<Input>().unwrap();
@@ -139,6 +145,8 @@ fn update(world: &mut World) {
     let time = &*time;
     let input = world.get::<Input>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
+    let mut threadpool = world.get_mut::<ThreadPool>().unwrap();
+
     let camera =
         scene.find_mut::<(&Camera, &mut Position, &mut Rotation)>();
     if let Some((_, position, rotation)) = camera {

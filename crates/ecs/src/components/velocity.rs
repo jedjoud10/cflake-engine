@@ -15,41 +15,41 @@ pub struct Velocity(Target);
 
 #[cfg(not(feature = "two-dim"))]
 impl Velocity {
-    // Construct a scale with the given X unit velocity
-    pub fn at_x(x: Scalar) -> Self {
+    // Construct a velocity with the given X unit velocity
+    pub fn with_x(x: Scalar) -> Self {
         Self(vek::Vec3::new(x, 0.0, 0.0))
     }
 
-    // Construct a scale with the given Y unit velocity
-    pub fn at_y(y: Scalar) -> Self {
+    // Construct a velocity with the given Y unit velocity
+    pub fn with_y(y: Scalar) -> Self {
         Self(vek::Vec3::new(0.0, y, 0.0))
     }
 
-    // Construct a scale with the given Z unit velocity
-    pub fn at_z(z: Scalar) -> Self {
+    // Construct a velocity with the given Z unit velocity
+    pub fn with_z(z: Scalar) -> Self {
         Self(vek::Vec3::new(0.0, 0.0, z))
     }
 
-    // Construct a scale with the given X, Y, Z velocity
-    pub fn at_xyz(x: Scalar, y: Scalar, z: Scalar) -> Self {
+    // Construct a velocity with the given X, Y, Z velocity
+    pub fn with_xyz(x: Scalar, y: Scalar, z: Scalar) -> Self {
         Self((x, y, z).into())
     }
 }
 
 #[cfg(feature = "two-dim")]
 impl Velocity {
-    // Construct a scale with the given X unit velocity
-    pub fn at_x(x: Scalar) -> Self {
+    // Construct a velocity with the given X unit velocity
+    pub fn with_x(x: Scalar) -> Self {
         Self(vek::Vec2::new(x, 0.0))
     }
 
-    // Construct a scale with the given Y unit velocity
-    pub fn at_y(y: Scalar) -> Self {
+    // Construct a velocity with the given Y unit velocity
+    pub fn with_y(y: Scalar) -> Self {
         Self(vek::Vec2::new(0.0, y))
     }
 
-    // Construct a scale with the given X, Y velocity
-    pub fn at_xy(x: Scalar, y: Scalar) -> Self {
+    // Construct a velocity with the given X, Y velocity
+    pub fn with_xy(x: Scalar, y: Scalar) -> Self {
         Self((x, y).into())
     }
 }

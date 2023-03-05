@@ -32,7 +32,7 @@ pub mod prelude {
     pub use serde;
     pub use serde::{Deserialize, Serialize};
     pub use vek;
-    pub use vek::{Extent2, Extent3, Quaternion, Vec2, Vec3, Vec4};
+    pub use vek::{Extent2, Extent3, Quaternion, Vec2, Vec3, Vec4, ops::*};
     pub use winit;
 
     // Gfx related
