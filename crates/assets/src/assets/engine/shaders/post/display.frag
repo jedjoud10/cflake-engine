@@ -8,6 +8,10 @@ layout(location = 0) out vec4 frag;
 layout(set = 0, binding = 0) uniform texture2D color_map;
 layout(set = 0, binding = 1) uniform sampler color_map_sampler;
 
+// Fetch the scene depth data
+layout(set = 0, binding = 2) uniform texture2D depth_map;
+layout(set = 0, binding = 4) uniform sampler depth_map_sampler;
+
 // Narkowicz 2015, "ACES Filmic Tone Mapping Curve"
 vec3 aces(vec3 x) {
     const float a = 2.51;
@@ -26,7 +30,7 @@ void main() {
 	// Fetch the color data
 	vec2 coords = vec2(x, y);
 	vec3 color = texture(sampler2D(color_map, color_map_sampler), coords).rgb;
-	color *= 1.0;
+	color *= 1.2;
 	color = pow(aces(color), vec3(1.0 / 2.2));
 
 	// Create a simple vignette

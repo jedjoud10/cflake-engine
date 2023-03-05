@@ -50,6 +50,8 @@ fn update(world: &mut World) {
         group
             .set_sampler("color_map_sampler", src.sampler())
             .unwrap();
+        group.set_texture("depth_map", depth).unwrap();
+        group.set_sampler("depth_map_sampler", depth.sampler()).unwrap();
         group.set_buffer("window", &renderer.window_buffer).unwrap();
     });
 

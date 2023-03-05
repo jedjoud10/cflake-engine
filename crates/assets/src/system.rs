@@ -16,6 +16,7 @@ fn init(world: &mut World) {
     persistent!(loader, "engine/shaders/common/scene.glsl");
     persistent!(loader, "engine/shaders/common/timing.glsl");
     persistent!(loader, "engine/shaders/common/window.glsl");
+    persistent!(loader, "engine/shaders/common/nms.glsl");
     persistent!(loader, "engine/shaders/scene/basic/basic.frag");
     persistent!(loader, "engine/shaders/scene/basic/basic.vert");
     persistent!(loader, "engine/shaders/scene/sky/sky.frag");
@@ -27,7 +28,7 @@ fn init(world: &mut World) {
 
     // Load the default textures
     persistent!(loader, "engine/textures/scene/sky.jpg");
-
+    persistent!(loader, "engine/textures/scene/bumps.jpg");
     /*
 
     persistent!(loader, "engine/shaders/scene/pbr/models.func.glsl");

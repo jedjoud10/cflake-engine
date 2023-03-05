@@ -75,7 +75,7 @@ fn init(world: &mut World) {
     // Load the renderable mesh
     let mesh = assets
         .load::<Mesh>((
-            "engine/meshes/sphere.obj",
+            "engine/meshes/cube.obj",
             MeshImportSettings {
                 invert_tex_coords: vek::Vec2::new(false, true),
                 ..Default::default()
@@ -145,7 +145,6 @@ fn update(world: &mut World) {
     let time = &*time;
     let input = world.get::<Input>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
-    let mut threadpool = world.get_mut::<ThreadPool>().unwrap();
 
     let camera =
         scene.find_mut::<(&Camera, &mut Position, &mut Rotation)>();

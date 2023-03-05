@@ -35,7 +35,7 @@ void main() {
 	// Fetch the albedo color and normal map value
 	vec3 albedo = texture(sampler2D(albedo_map, albedo_map_sampler), m_tex_coord).rgb;
 	vec3 bumps = texture(sampler2D(normal_map, normal_map_sampler), m_tex_coord).rgb * 2.0 - 1.0;
-	bumps.xy *= material.bumpiness;
+	bumps.xy *= material.bumpiness * 0.4;
 
 	// Calculate the world space normals
 	mat3 tbn = mat3(
@@ -47,12 +47,12 @@ void main() {
 	// Calculate ambient color
 	float y = normal.y;
 	y = clamp(y, 0, 1);
-	vec3 ambient = texture(sampler2D(gradient_map, gradient_map_sampler), vec2(0.5, 1-y)).rgb;
+	vec3 ambient = texture(sampler2D(gradient_map, gradient_map_sampler), vec2(0.5, 1.0)).rgb;
 
 	// Do some basic light calculations
-	vec3 direction = vec3(0, 1, 0);
-	vec3 lighting = vec3(clamp(dot(direction, normal), 0, 1));
-	lighting += ambient * 0.2;
+	vec3 direction = normalize(vec3(0, 1, 0));
+	float value = clamp(dot(direction, normal), 0, 1);
+	vec3 lighting = vec3(value*2.0) + ambient * 0.2;
 
 	// Calculate diffuse lighting
 	frag = vec4(lighting * albedo * material.tint, 1.0);
