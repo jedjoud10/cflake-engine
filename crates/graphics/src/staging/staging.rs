@@ -11,7 +11,7 @@ pub enum StagingTarget<'a> {
     // source layout must be divisible by COPY_BYTES_PER_ROW_ALIGNMENT
     Texture {
         texture: &'a Texture,
-        offset: Extent3d,
+        size: Extent3d,
         mip_level: u32,
         origin: Origin3d,
         aspect: TextureAspect,
@@ -145,7 +145,23 @@ impl StagingPool {
             },
             
             // Handle texture writing
-            _ => {
+            StagingTarget::Texture { 
+                texture,
+                size,
+                mip_level,
+                origin,
+                aspect,
+                data_layout,
+                stride
+            } => {
+                let texels = size.width * size.height * size.depth_or_array_layers;
+                debug_assert_eq!((texels as u64) * stride, src.len() as u64);
+                graphics.queue().write_texture(wgpu::ImageCopyTexture {
+                    texture,
+                    mip_level,
+                    origin,
+                    aspect,
+                }, src, data_layout, size);   
             }
         }
     }
@@ -160,7 +176,7 @@ impl StagingPool {
         dst: &mut [u8],
     ) {
         match target {
-            // Handle buffer writing
+            // Handle buffer reading
             StagingTarget::Buffer { buffer, offset, size } => {
                 assert_eq!(size as usize, dst.len());
                 assert!(buffer.usage().contains(wgpu::BufferUsages::COPY_SRC));
@@ -206,8 +222,18 @@ impl StagingPool {
                 self.states.remove(i, Ordering::Relaxed); 
             },
         
-            // Handle texture writing
-            _ => { todo!() }
+            // Handle texture reading
+            StagingTarget::Texture { 
+                texture,
+                size: offset,
+                mip_level,
+                origin,
+                aspect,
+                data_layout,
+                stride
+            } => {
+
+            }
         }
     }
 }

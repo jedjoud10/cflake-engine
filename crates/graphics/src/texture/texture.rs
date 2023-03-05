@@ -10,8 +10,8 @@ use crate::{
     Extent, Graphics, MipLevelMut, MipLevelRef, Region, RenderTarget,
     Sampler, SamplerSettings, SamplerWrap, Texel,
     TextureAsTargetError, TextureInitializationError,
-    TextureMipLayerError, TextureMipMaps, TextureMode,
-    TextureSamplerError, TextureUsage, TextureResizeError, GpuPodRelaxed,
+    TextureMipLevelError, TextureMipMaps, TextureMode,
+    TextureSamplerError, TextureUsage, TextureResizeError, GpuPodRelaxed, Origin,
 };
 
 
@@ -128,9 +128,13 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
         // Get color texture aspect for the texture view and ImageCopyTexture
         let aspect = texture_aspect::<Self::T>();
 
+        // Create a "zeroed" origin
+        let origin = <<Self::Region as Region>::O as Default>::default();
+
         // Always write to the first mip level
         if let Some(texels) = texels {
-            write_to_level::<Self::T, <Self::Region as Region>::E>(
+            write_to_level::<Self::T, Self::Region>(
+                origin,
                 extent,
                 texels,
                 &texture,
@@ -157,7 +161,8 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
                     );
 
                     // Write bytes to the level
-                    write_to_level::<Self::T, <Self::Region as Region>::E>(
+                    write_to_level::<Self::T, Self::Region>(
+                        origin,
                         downscaled_extent,
                         texels,
                         &texture,
@@ -232,7 +237,7 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
     fn mip(
         &self,
         _level: u8,
-    ) -> Result<MipLevelRef<Self>, TextureMipLayerError> {
+    ) -> Result<MipLevelRef<Self>, TextureMipLevelError> {
         todo!()
     }
 
@@ -240,7 +245,7 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
     fn mip_mut(
         &mut self,
         _level: u8,
-    ) -> Result<MipLevelMut<Self>, TextureMipLayerError> {
+    ) -> Result<MipLevelMut<Self>, TextureMipLevelError> {
         todo!()
     }
 
@@ -370,9 +375,11 @@ fn mip_levels<T: Texel, E: Extent>(
 }
 
 // Write texels to a single level of a texture
+// Assumes that the origin and extent are in mip-space
 // TODO: Test to check if this works with 3D
-fn write_to_level<T: Texel, E: Extent>(
-    extent: E,
+pub(crate) fn write_to_level<T: Texel, R: Region>(
+    origin: R::O,
+    extent: R::E,
     texels: &[T::Storage],
     texture: &wgpu::Texture,
     aspect: wgpu::TextureAspect,
@@ -397,7 +404,7 @@ fn write_to_level<T: Texel, E: Extent>(
     let image_data_layout = wgpu::ImageDataLayout {
         offset: 0,
         bytes_per_row,
-        rows_per_image: NonZeroU32::new(extent.height()),
+        rows_per_image: None,
     };
 
     // Create the image copy texture descriptor
@@ -415,6 +422,19 @@ fn write_to_level<T: Texel, E: Extent>(
         image_data_layout,
         extent_3d,
     );
+}
+
+// Read texels from a single level of a texture
+// Assumes that the origin and extent are in mip-space
+pub(crate) fn read_from_level<T: Texel, E: Extent, O: Origin>(
+    origin: O,
+    extent: E,
+    texels: &mut [T::Storage],
+    texture: &wgpu::Texture,
+    aspect: wgpu::TextureAspect,
+    level: u32,
+    graphics: &Graphics,
+) {
 }
 
 // Separated this into it's own trait since I didn't want there to be unsafe init/internal functions publicly
@@ -481,19 +501,27 @@ fn dims_to_view_dims(dimension: wgpu::TextureDimension) -> wgpu::TextureViewDime
     }
 }
 
+// Convert the given origin to an Origin
+pub(crate) fn origin_to_origin3d<O: Origin>(origin: O) -> wgpu::Origin3d {
+    wgpu::Origin3d {
+        x: origin.x(),
+        y: origin.y(),
+        z: origin.z(),
+    }
+}
+
 // Convert the given extent to an Extent3D
-fn extent_to_extent3d<E: Extent>(dimensions: E) -> wgpu::Extent3d {
-    let extent = wgpu::Extent3d {
+pub(crate) fn extent_to_extent3d<E: Extent>(dimensions: E) -> wgpu::Extent3d {
+    wgpu::Extent3d {
         width: dimensions.width(),
         height: dimensions.height(),
         depth_or_array_layers: dimensions.depth(),
-    };
-    extent
+    }
 }
 
 // Get the texture usages from the texture usage wrapper
 // Does not check for validity
-fn texture_usages(usage: TextureUsage) -> wgpu::TextureUsages {
+pub(crate) fn texture_usages(usage: TextureUsage) -> wgpu::TextureUsages {
     let mut usages = wgpu::TextureUsages::empty();
 
     if usage.contains(TextureUsage::SAMPLED) {
@@ -516,7 +544,7 @@ fn texture_usages(usage: TextureUsage) -> wgpu::TextureUsages {
 }
 
 // Get the texture aspect based on the texel type
-fn texture_aspect<T: Texel>() -> wgpu::TextureAspect {
+pub(crate) fn texture_aspect<T: Texel>() -> wgpu::TextureAspect {
     match T::channels() {
         crate::TexelChannels::Vector(_)
         | crate::TexelChannels::Srgba { .. } => {

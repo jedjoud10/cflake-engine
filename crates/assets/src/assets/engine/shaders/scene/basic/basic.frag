@@ -52,7 +52,7 @@ void main() {
 	// Do some basic light calculations
 	vec3 direction = vec3(0, 1, 0);
 	vec3 lighting = vec3(clamp(dot(direction, normal), 0, 1));
-	lighting += ambient * 0.3;
+	lighting += ambient * 0.2;
 
 	// Calculate diffuse lighting
 	frag = vec4(lighting * albedo * material.tint, 1.0);

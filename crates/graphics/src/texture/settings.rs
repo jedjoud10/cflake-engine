@@ -26,9 +26,11 @@ bitflags::bitflags! {
         const COPY_DST = 8;
 
         // The texture can be used for reading GPU data back
+        // Texture init will fail if this is set and Self::COPY_SRC is not set
         const READ = 16 | Self::COPY_SRC.bits;
 
         // The texture can be used to send data to the GPU
+        // Texture init will fail if this is set and Self::COPY_DST is not set
         const WRITE = 32 | Self::COPY_DST.bits;
     }
 }

@@ -38,7 +38,6 @@ fn init(world: &mut World) {
     asset!(&mut assets, "assets/user/ignored/normal.jpg");
     asset!(&mut assets, "assets/user/ignored/untitled.obj");
 
-    /*
     // Load in the diffuse map and normal map textures asynchronously
     let albedo = assets
         .async_load::<AlbedoMap>((
@@ -60,15 +59,14 @@ fn init(world: &mut World) {
     let mut normal_maps = world.get_mut::<Storage<NormalMap>>().unwrap();
     let diffuse = diffuse_maps.insert(diffuse);
     let normal = normal_maps.insert(normal);
-    */
 
     // Get the material id (also registers the material pipeline)
     let id = pipelines.register::<Basic>(&graphics, &mut assets).unwrap();
     
     // Create a new material instance
     let material = basics.insert(Basic {
-        albedo_map: None,
-        normal_map: None,
+        albedo_map: Some(diffuse),
+        normal_map: Some(normal),
         bumpiness: 1.0,
         tint: vek::Rgb::one(),
     });
@@ -87,13 +85,14 @@ fn init(world: &mut World) {
     let mesh = meshes.insert(mesh);
 
     // Add multiple objects
-    scene.extend_from_iter((0..25).into_iter().map(|i| {
+    scene.extend_from_iter((0..125).into_iter().map(|i| {
         // Create the new mesh entity components
         let x = i % 5;
-        let y = i / 5;
+        let y = (i % 25) / 5;
+        let z = i / 25;
         let surface = Surface::new(mesh.clone(), material.clone(), id.clone());
         let renderer = Renderer::default();
-        let position = Position::at_xyz(x as f32, y as f32, 0.0);
+        let position = Position::at_xyz(x as f32, y as f32, z as f32);
         (surface, renderer, position)
     }));
 
@@ -140,26 +139,6 @@ fn update(world: &mut World) {
     let time = world.get::<Time>().unwrap();
     let input = world.get::<Input>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
-    let ui = world.get_mut::<Interface>().unwrap();
-
-    egui::Window::new("General Performance").show(&ui, |ui| {
-        ui.horizontal(|ui| {
-            ui.label("Delta (s/f): ");
-            ui.label(time.delta().as_secs_f32().to_string());
-        });
-
-        ui.horizontal(|ui| {
-            ui.label("FPS (f/s): ");
-            ui.label((1.0 / time.delta().as_secs_f32()).to_string());
-        });
-    });
-
-    egui::Window::new("Rendering").show(&ui, |ui| {
-        ui.horizontal(|ui| {
-            ui.label("Render Entities: ");
-            ui.label(scene.query::<&Renderer>().into_iter().count().to_string());
-        });
-    });
 
     let camera =
         scene.find_mut::<(&Camera, &mut Position, &mut Rotation)>();

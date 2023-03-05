@@ -42,11 +42,11 @@ pub enum TextureInitializationError {
 }
 
 #[derive(Error, Debug)]
-pub enum TextureMipLayerError {
-    #[error("The given mip layer was already mutably borrowed")]
+pub enum TextureMipLevelError {
+    #[error("The given mip level was already mutably borrowed")]
     BorrowedMutably,
 
-    #[error("The given mip layer was already immutably borrowed")]
+    #[error("The given mip level was already immutably borrowed")]
     BorrowedImmutably,
 }
 
@@ -57,6 +57,30 @@ pub enum TextureAssetLoadError {
 
     #[error("{0}")]
     ImageError(ImageError),
+}
+
+#[derive(Error, Debug)]
+pub enum MipLevelReadError {
+    #[error("The given source region would overflow the region of the mip-level")]
+    InvalidRegion(),
+
+    #[error("The mip-level cannot be read since the texture's TextureUsages do not contain READ")]
+    NonReadable,
+}
+
+#[derive(Error, Debug)]
+pub enum MipLevelWriteError {
+    
+}
+
+#[derive(Error, Debug)]
+pub enum MipLevelClearError {
+    
+}
+
+#[derive(Error, Debug)]
+pub enum MipLevelCopyError {
+    
 }
 
 #[derive(Error, Debug)]

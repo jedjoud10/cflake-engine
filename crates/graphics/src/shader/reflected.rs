@@ -638,10 +638,13 @@ fn reflect_texture(
                 }
             }
             naga::ImageClass::Depth { multi: false } => {
-                wgpu::TextureSampleType::Depth
+                panic!()
+            }
+            naga::ImageClass::Storage { format, access } => {
+                panic!()
             }
 
-            _ => panic!(),
+            _ => { panic!() }
         },
 
         // Convert Naga image dimensions to WGPU texture dimensions

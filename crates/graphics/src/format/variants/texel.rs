@@ -25,6 +25,11 @@ pub trait Texel: 'static {
     // Number of bytes per channel
     fn bytes_per_channel() -> u32;
 
+    // Number of bytes per texel (stride)
+    fn stride() -> u32 {
+        Self::bytes_per_channel() * Self::channels().count()
+    }
+
     // Untyped representation of the underlying element
     fn element() -> ElementType;
 

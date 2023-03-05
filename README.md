@@ -22,7 +22,7 @@ Currently, cFlake engine is under heavy development (***very*** WIP), but pull r
 * [Trello dashboard](https://trello.com/b/9FsDb6Z1/cflake)
 
 # Examples
-Examples are in the **examples** foldder, but here is a quick and dirty setup to get you started (literally just the ``hello`` example)
+Examples are in the **examples** folder, but here is a quick and dirty setup to get you started (literally just the ``hello`` example)
 ```rs
 use cflake_engine::prelude::*;
 

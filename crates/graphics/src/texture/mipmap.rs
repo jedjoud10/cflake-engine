@@ -1,11 +1,11 @@
-use std::num::NonZeroU8;
+use std::{num::NonZeroU8, ops::DerefMut};
 
 use bytemuck::Zeroable;
 
 use super::{Region, Texture};
 use crate::{
     Extent, RenderTarget, Texel, TextureAsTargetError,
-    TextureSamplerError, ColorTexel,
+    TextureSamplerError, ColorTexel, MipLevelReadError, MipLevelWriteError, MipLevelCopyError, TextureUsage, Origin, MipLevelClearError,
 };
 
 // This enum tells the texture how exactly it should create it's mipmaps
@@ -153,11 +153,6 @@ pub struct MipLevelRef<'a, T: Texture> {
 
 // Helper methods
 impl<'a, T: Texture> MipLevelRef<'a, T> {
-    // Creat a mip level reference from it's raw parts
-    pub unsafe fn from_raw_parts(texture: &'a T, level: u8) -> Self {
-        Self { texture, level }
-    }
-
     // Get the underlying texture
     pub fn texture(&self) -> &T {
         self.texture
@@ -190,8 +185,33 @@ impl<'a, T: Texture> MipLevelRef<'a, T> {
         &self,
         dst: &mut [<T::T as Texel>::Storage],
         subregion: Option<T::Region>, 
-    ) {
-        todo!()
+    ) -> Result<(), MipLevelReadError> {
+        // Nothing to write to
+        if dst.is_empty() {
+            return Ok(());
+        }
+
+        // Make sure we can read from the texture
+        if !self.texture.usage().contains(TextureUsage::READ) {
+            return Err(MipLevelReadError::NonReadable);
+        }
+
+        let mip_level_region = <T::Region as Region>::with_extent(
+            self.texture.dimensions().mip_level_dimensions(self.level)
+        );
+
+        // Make sure the "offset" doesn't cause reads outside the texture
+        if let Some(subregion) = subregion {
+            if mip_level_region.is_larger_than(subregion) {
+                return Err(MipLevelReadError::InvalidRegion());
+            }
+        }
+
+        // Get the mip level subregion if the given one is None
+        let subregion = subregion.unwrap_or(mip_level_region); 
+
+        // TODO: Actually handle reading here
+        todo!();
     } 
 }
 
@@ -203,11 +223,6 @@ pub struct MipLevelMut<'a, T: Texture> {
 
 // Helper methods
 impl<'a, T: Texture> MipLevelMut<'a, T> {
-    // Creat a mip level mutable reference from it's raw parts
-    pub unsafe fn from_raw_parts(texture: &'a T, level: u8) -> Self {
-        Self { texture, level }
-    }
-
     // Get the underlying texture
     pub fn texture(&self) -> &T {
         self.texture
@@ -247,7 +262,7 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
         &self,
         dst: &mut [<T::T as Texel>::Storage],
         subregion: Option<T::Region>, 
-    ) {
+    ) -> Result<(), MipLevelReadError> {
         todo!()
     } 
 
@@ -256,16 +271,36 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
         &mut self,
         src: &[<T::T as Texel>::Storage],
         subregion: Option<T::Region>, 
-    ) {
+    ) -> Result<(), MipLevelWriteError> {
         todo!()
     } 
 
     // Copy a sub-region from another level into this level
     pub fn copy_subregion_from(
         &mut self,
-        other: &MipLevelRef<T>,
+        other: impl AsRef<MipLevelRef<'a, T>>,
         src_subregion: Option<T::Region>,
         dst_subregion: Option<T::Region>
-    ) {
+    ) -> Result<(), MipLevelCopyError> {
+        todo!()
     }
+
+    // Clear a region of the mip level to zero
+    pub fn clear(
+        &mut self,
+        subregion: Option<T::Region>,
+    ) -> Result<(), MipLevelClearError> {
+        todo!()
+    }
+
+    // Fill the mip level region with a repeating value specified by "val"
+    pub fn splat(
+        &mut self,
+        subregion: Option<T::Region>,
+        val: <T::T as Texel>::Storage
+    ) -> Result<(), MipLevelWriteError> {
+        let src = vec![val;]
+    }
+
+    
 }

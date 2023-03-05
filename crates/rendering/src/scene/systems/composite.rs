@@ -34,6 +34,7 @@ fn update(world: &mut World) {
 
     // Get textures, pipelines, and encoder
     let src = &renderer.color_texture;
+    let depth = &renderer.depth_texture;
     let dst = window.as_render_target().unwrap();
 
     // Begin the render pass

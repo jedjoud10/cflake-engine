@@ -15,7 +15,7 @@ use crate::{
     BufferInitializationError, BufferMode, BufferNotMappableError,
     BufferReadError, BufferUsage, BufferView, BufferViewMut,
     BufferWriteError, GpuPodRelaxed, Graphics, StagingPool, Vertex,
-    R, StagingTarget,
+    R, StagingTarget, BufferSplatError,
 };
 
 // Bitmask from Vulkan BufferUsages
@@ -415,12 +415,22 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
         Ok(())
     }
 
-    // Fill the buffer with a repeating value specified by "val"
+    // Fill a buffer region with a repeating value specified by "val"
     // This is a "fire and forget" command that does not stall the CPU
     // The user can do multiple splat calls and expect them to be batched together
-    pub fn splat(&mut self, val: T) -> Result<(), BufferWriteError> {
-        let src = vec![val; self.length];
-        self.write(&src, 0)
+    pub fn splat(
+        &mut self,
+        range: impl RangeBounds<usize>,
+        val: T
+    ) -> Result<(), BufferSplatError> {
+        let (start, end) = self.convert_bounds(range)
+            .ok_or(BufferSplatError::InvalidRange(self.length))?;
+        let len = end - start;
+
+        let src = vec![val; len];
+        self.write(&src, start).unwrap();
+
+        Ok(())
     }
 
     // Copy the data from another buffer into this buffer instantly

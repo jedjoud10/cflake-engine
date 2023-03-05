@@ -28,7 +28,7 @@ pub enum BufferExtendError {
     )]
     IllegalReallocation,
 
-    #[error("The buffer cannot be written since it's BufferUsages is not Write nor ReadWrite")]
+    #[error("The buffer cannot be written since it's BufferUsages do not contain the WRITE flag")]
     NonWritable,
 }
 
@@ -37,7 +37,7 @@ pub enum BufferReadError {
     #[error("The given destination slice of length {0} (or offset of {1}) would overflow the buffer of length {2}")]
     InvalidLen(usize, usize, usize),
 
-    #[error("The buffer cannot be read since it's BufferUsages is not Read nor ReadWrite")]
+    #[error("The buffer cannot be read since it's BufferUsages do not contain the READ flag")]
     NonReadable,
 }
 
@@ -46,7 +46,7 @@ pub enum BufferWriteError {
     #[error("The given source slice of length {0} (or offset of {1}) would overflow the buffer of length {2}")]
     InvalidLen(usize, usize, usize),
 
-    #[error("The buffer cannot be written since it's BufferUsages is not Write nor ReadWrite")]
+    #[error("The buffer cannot be written since it's BufferUsages do not contain the WRITE flag")]
     NonWritable,
 }
 
@@ -72,13 +72,22 @@ pub enum BufferClearError {
 }
 
 #[derive(Error, Debug)]
+pub enum BufferSplatError {
+    #[error("The buffer cannot be splatted since it's BufferUsages do not contain the WRITE flag")]
+    NonWritable,
+
+    #[error("The given range is invalid for buffer with {0} elements")]
+    InvalidRange(usize),
+}
+
+#[derive(Error, Debug)]
 pub enum BufferNotMappableError {
-    #[error("The buffer cannot be mapped (read) since it's BufferUsages is not Read nor ReadWrite")]
+    #[error("The buffer cannot be mapped (read) since it's BufferUsages do not contain the WRITE flag")]
     AsView,
 
-    #[error("The buffer cannot be mapped (for reading AND writing) since it's BufferUsages is not ReadWrite")]
+    #[error("The buffer cannot be mapped (for reading AND writing) since it's BufferUsages do not contain the WRITE and READ flags")]
     AsViewMut,
 
-    #[error("Invalid range")]
-    InvalidRange,
+    #[error("The given range is invalid for buffer with {0} elements")]
+    InvalidRange(usize),
 }

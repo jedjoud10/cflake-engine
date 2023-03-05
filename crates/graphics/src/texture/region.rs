@@ -83,6 +83,18 @@ pub trait Extent: Copy + std::ops::Div<u32, Output = Self> {
     fn dimensionality() -> TextureDimension;
 }
 
+// Texture offsets traits that are simply implemented for origins
+pub trait Origin: Copy + Default {
+    // Get the X offset of the origin
+    fn x(&self) -> u32;
+
+    // Get the Y offset of the origin
+    fn y(&self) -> u32;
+    
+    // Get the Z offset of the origin
+    fn z(&self) -> u32;
+}
+
 // Implementation of extent for 2D extent
 impl Extent for vek::Extent2<u32> {
     fn area(&self) -> u32 {
@@ -173,10 +185,41 @@ impl Extent for vek::Extent3<u32> {
     }
 }
 
+// Implementation of origin for 2D vec
+impl Origin for vek::Vec2<u32> {
+    fn x(&self) -> u32 {
+        self.x
+    }
+
+    fn y(&self) -> u32 {
+        self.y
+    }
+
+    fn z(&self) -> u32 {
+        0
+    }
+}
+
+// Implementation of origin for 3D vec
+impl Origin for vek::Vec3<u32> {
+    fn x(&self) -> u32 {
+        self.x
+    }
+
+    fn y(&self) -> u32 {
+        self.y
+    }
+
+    fn z(&self) -> u32 {
+        self.z
+    }
+}
+
 // Texture region trait that will be implemented for (origin, extent) tuples
 pub trait Region: Copy {
     // Regions are defined by their origin and extents
-    type O: Default
+    type O: Origin
+        + Default
         + Copy
         + Add<Self::O, Output = Self::O>
         + std::fmt::Debug;
@@ -212,6 +255,13 @@ pub trait Region: Copy {
 
     // Is this region a multi-layer region
     fn is_multi_layered() -> bool;
+
+    // Check if this region is larger than another region
+    // Aka if the "other" region fits within self
+    fn is_larger_than(self, other: Self) -> bool {
+        let e = other.extent() + Self::extent_from_origin(other.origin());
+        self.extent().is_larger_than(e)
+    }
 
     // Calculate the surface area of the region
     fn area(&self) -> u32;
