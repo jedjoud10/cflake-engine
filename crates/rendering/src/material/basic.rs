@@ -3,14 +3,14 @@ use std::any::TypeId;
 use crate::{
     AlbedoMap, CameraBuffer, CameraUniform, DefaultMaterialResources,
     EnabledMeshAttributes, Material, NormalMap, Renderer,
-    SceneBuffer, SceneUniform, TimingBuffer, TimingUniform,
+    SceneBuffer, SceneUniform, TimingBuffer, TimingUniform, AlbedoTexel, NormalTexel,
 };
 use ahash::AHashMap;
 use assets::Assets;
 use graphics::{
     BindGroup, Compiled, Compiler, FragmentModule, Graphics,
     Normalized, PushConstants, Sampler, Shader, Texture, Texture2D,
-    UniformBuffer, ValueFiller, VertexModule, RGBA,
+    UniformBuffer, ValueFiller, VertexModule, RGBA, BindLayout,
 };
 use utils::{Handle, Storage};
 
@@ -58,6 +58,20 @@ impl Material for Basic {
         Compiler::new(frag).compile(assets, graphics).unwrap()
     }
 
+    // Create the shader bindings for the basic shader
+    fn bindings(layout: &mut BindLayout) {
+        // Define the type layouts for the UBOs
+        layout.use_ubo::<CameraUniform>("camera").unwrap();
+        layout.use_ubo::<SceneUniform>("scene").unwrap();
+        layout.use_ubo::<TimingUniform>("time").unwrap();
+        layout.use_fill_ubo("material").unwrap();
+        
+        // Define the type layouts for the textures and samplers
+        layout.use_texture::<AlbedoTexel>("gradient_map").unwrap();
+        layout.use_texture::<AlbedoTexel>("albedo_map").unwrap();
+        layout.use_texture::<NormalTexel>("normal_map").unwrap();
+    }
+
     // Fetch the texture storages
     fn fetch<'w>(world: &'w world::World) -> Self::Resources<'w> {
         let albedo_maps = world.get::<Storage<AlbedoMap>>().unwrap();
@@ -79,12 +93,6 @@ impl Material for Basic {
         // Set the scene sky texture
         group
             .set_texture("gradient_map", default.sky_gradient)
-            .unwrap();
-        group
-            .set_sampler(
-                "gradient_map_sampler",
-                default.sky_gradient.sampler(),
-            )
             .unwrap();
     }
 
@@ -111,13 +119,7 @@ impl Material for Basic {
 
         // Set the material textures
         group.set_texture("albedo_map", albedo_map).unwrap();
-        group
-            .set_sampler("albedo_map_sampler", albedo_map.sampler())
-            .unwrap();
         group.set_texture("normal_map", normal_map).unwrap();
-        group
-            .set_sampler("normal_map_sampler", normal_map.sampler())
-            .unwrap();
 
         // Fill the material UBO with the specified fields automatically
         group
