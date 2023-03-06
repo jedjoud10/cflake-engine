@@ -3,7 +3,7 @@ use std::any::TypeId;
 use crate::{
     AlbedoMap, CameraBuffer, CameraUniform, DefaultMaterialResources,
     EnabledMeshAttributes, Material, NormalMap, Renderer,
-    SceneBuffer, SceneUniform, TimingBuffer, TimingUniform,
+    SceneBuffer, SceneUniform, TimingBuffer, TimingUniform, AlbedoTexel,
 };
 use ahash::AHashMap;
 use assets::Assets;
@@ -11,7 +11,7 @@ use graphics::{
     BindGroup, Compiled, Compiler, Face, FragmentModule, Graphics,
     Normalized, PrimitiveConfig, PushConstants, Sampler, Shader,
     Texture, Texture2D, UniformBuffer, ValueFiller, VertexModule,
-    WindingOrder, RGBA,
+    WindingOrder, RGBA, BindLayout,
 };
 use utils::{Handle, Storage};
 
@@ -46,6 +46,12 @@ impl Material for Sky {
             )
             .unwrap();
         Compiler::new(frag).compile(assets, graphics).unwrap()
+    }
+
+    // Create the shader bindings for the sky shader
+    fn bindings(layout: &mut BindLayout) {
+        layout.use_ubo::<CameraUniform>("camera").unwrap();
+        layout.use_texture::<AlbedoTexel>("gradient_map").unwrap();
     }
 
     // Get the required mesh attributes that we need to render a surface
@@ -94,8 +100,5 @@ impl Material for Sky {
 
         // Set the material textures
         group.set_texture("gradient_map", albedo_map).unwrap();
-        group
-            .set_sampler("gradient_map_sampler", albedo_map.sampler())
-            .unwrap();
     }
 }

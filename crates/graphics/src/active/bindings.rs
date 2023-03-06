@@ -97,6 +97,7 @@ impl<'a> BindGroup<'a> {
     }
 
     // Set the texture sampler so we can sample textures within the shader
+    // This is called automatically if the sampler is bound to the texture
     pub fn set_sampler<'s, T: Texel>(
         &mut self,
         name: &'s str,

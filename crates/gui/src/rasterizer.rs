@@ -8,9 +8,12 @@ use graphics::{
     SamplerMipMaps, SamplerSettings, SamplerWrap, Shader, StoreOp,
     Texture, Texture2D, TextureMipMaps, TextureMode, TextureUsage,
     TriangleBuffer, ValueFiller, VertexBuffer, VertexConfig,
-    VertexInput, VertexModule, Window, R, RGBA, XY, XYZW,
+    VertexInput, VertexModule, Window, R, RGBA, XY, XYZW, BindLayout,
 };
 use rendering::{FinalGraphicsPipeline, FinalRenderPass};
+
+
+type FontTexel = RGBA<Normalized<u8>>;
 
 // A global rasterizer that will draw the Egui elements onto the screen
 pub(crate) struct Rasterizer {
@@ -28,7 +31,7 @@ pub(crate) struct Rasterizer {
     triangles: TriangleBuffer<u32>,
 
     // Egui font texture
-    texture: Option<Texture2D<RGBA<Normalized<u8>>>>,
+    texture: Option<Texture2D<FontTexel>>,
 }
 
 fn create_vertex_buffer<V: graphics::Vertex>(
@@ -57,7 +60,7 @@ fn create_rf32_texture(
     graphics: &Graphics,
     extent: vek::Extent2<u32>,
     texels: &[f32],
-) -> Texture2D<RGBA<Normalized<u8>>> {
+) -> Texture2D<FontTexel> {
     let texels = texels
         .iter()
         .map(|x| vek::Vec4::broadcast(x * u8::MAX as f32).as_::<u8>())
@@ -100,8 +103,13 @@ impl Rasterizer {
             .compile(assets, graphics)
             .unwrap();
 
+        // Create the bind layout for the GUI shader
+        let mut layout = BindLayout::new();
+        layout.use_texture::<FontTexel>("font").unwrap();
+        layout.use_fill_ubo("window").unwrap();
+
         // Combine the modules to the shader
-        let shader = Shader::new(graphics, &vertex, &fragment);
+        let shader = Shader::new(graphics, layout, &vertex, &fragment);
 
         // Create the render pass that will write to the swapchain
         let render_pass = FinalRenderPass::new(
@@ -266,9 +274,6 @@ impl Rasterizer {
                 .unwrap();
 
             group.set_texture("font", texture).unwrap();
-            group
-                .set_sampler("font_sampler", texture.sampler())
-                .unwrap();
         });
 
         // Keep track of the vertex and triangle offset

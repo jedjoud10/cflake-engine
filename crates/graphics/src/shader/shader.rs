@@ -1,6 +1,6 @@
 use crate::{
     Compiled, ComputeModule, FragmentModule, Graphics,
-    ReflectedModule, ReflectedShader, VertexModule,
+    ReflectedModule, ReflectedShader, VertexModule, BindLayout,
 };
 use std::sync::Arc;
 
@@ -18,6 +18,7 @@ impl Shader {
     // Create a new shader from the vertex and fragment modules
     pub fn new(
         graphics: &Graphics,
+        layout: BindLayout,
         vertex: &Compiled<VertexModule>,
         fragment: &Compiled<FragmentModule>,
     ) -> Self {

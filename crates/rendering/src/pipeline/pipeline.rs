@@ -11,7 +11,7 @@ use assets::Assets;
 use graphics::{
     ActiveRenderPass, CompareFunction, Depth, DepthConfig, Graphics,
     GraphicsPipeline, PipelineInitializationError, RenderPass,
-    Shader, SwapchainFormat, VertexConfig, VertexInput,
+    Shader, SwapchainFormat, VertexConfig, VertexInput, BindLayout,
 };
 use std::marker::PhantomData;
 use utils::Storage;
@@ -44,7 +44,13 @@ impl<M: Material> Pipeline<M> {
         // Load the vertex and fragment modules, and create the shader
         let vertex = M::vertex(graphics, assets);
         let fragment = M::fragment(graphics, assets);
-        let shader = Shader::new(graphics, &vertex, &fragment);
+
+        // Create the bind layout from the material trait
+        let mut layout = BindLayout::new();
+        M::bindings(&mut layout);
+
+        // Create the shader and the underlying pipeline
+        let shader = Shader::new(graphics, layout, &vertex, &fragment);
 
         // Fetch the correct vertex config based on the material
         let vertex_config =

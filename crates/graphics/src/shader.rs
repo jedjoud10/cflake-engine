@@ -3,6 +3,8 @@ mod error;
 mod module;
 mod reflected;
 mod shader;
+mod layout;
+pub use layout::*;
 pub use compiler::*;
 pub use error::*;
 pub use module::*;

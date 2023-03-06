@@ -8,7 +8,7 @@ use graphics::{
     BindGroup, BlendConfig, CompareFunction, Compiled, DepthConfig,
     FragmentModule, Graphics, Normalized, PrimitiveConfig,
     PushConstants, StencilConfig, Texture2D, UniformBuffer,
-    VertexModule, WindingOrder, RGBA,
+    VertexModule, WindingOrder, RGBA, BindLayout,
 };
 use world::World;
 
@@ -46,6 +46,9 @@ pub trait Material: 'static + Sized {
         graphics: &Graphics,
         assets: &mut Assets,
     ) -> Compiled<FragmentModule>;
+
+    // Create the material shader bindings
+    fn bindings(layout: &mut BindLayout) {}
 
     // Get the required mesh attributes that we need to render a surface
     // If a surface does not support these attributes, it will not be rendered
