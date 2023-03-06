@@ -9,8 +9,8 @@ layout(set = 0, binding = 0) uniform texture2D color_map;
 layout(set = 0, binding = 1) uniform sampler color_map_sampler;
 
 // Fetch the scene depth data
-layout(set = 0, binding = 2) uniform texture2D depth_map;
-layout(set = 0, binding = 4) uniform sampler depth_map_sampler;
+//layout(set = 0, binding = 2) uniform texture2D depth_map;
+//layout(set = 0, binding = 4) uniform sampler depth_map_sampler;
 
 // Narkowicz 2015, "ACES Filmic Tone Mapping Curve"
 vec3 aces(vec3 x) {

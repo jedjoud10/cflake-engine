@@ -474,9 +474,11 @@ pub fn reflect_binding_entries<M: ShaderModule>(
                 }
 
                 // Uniform Textures
-                TypeInner::Image { dim, class, arrayed  } => {
-                    reflect_texture(class, dim)
-                }
+                TypeInner::Image {
+                    dim,
+                    class,
+                    arrayed,
+                } => reflect_texture(class, dim),
 
                 // Uniform Sampler
                 TypeInner::Sampler { comparison } => {

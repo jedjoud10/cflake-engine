@@ -9,9 +9,10 @@ use crate::{
 };
 use assets::Assets;
 use graphics::{
-    ActiveRenderPass, CompareFunction, Depth, DepthConfig, Graphics,
-    GraphicsPipeline, PipelineInitializationError, RenderPass,
-    Shader, SwapchainFormat, VertexConfig, VertexInput, BindLayout,
+    ActiveRenderPass, BindLayout, CompareFunction, Depth,
+    DepthConfig, Graphics, GraphicsPipeline,
+    PipelineInitializationError, RenderPass, Shader, SwapchainFormat,
+    VertexConfig, VertexInput,
 };
 use std::marker::PhantomData;
 use utils::Storage;
@@ -50,7 +51,8 @@ impl<M: Material> Pipeline<M> {
         M::bindings(&mut layout);
 
         // Create the shader and the underlying pipeline
-        let shader = Shader::new(graphics, layout, &vertex, &fragment);
+        let shader =
+            Shader::new(graphics, layout, &vertex, &fragment);
 
         // Fetch the correct vertex config based on the material
         let vertex_config =

@@ -47,7 +47,7 @@ fn update(world: &mut World) {
     // Set the required shader uniforms
     active.set_bind_group(0, |group| {
         group.set_texture("color_map", src).unwrap();
-        group.set_texture("depth_map", depth).unwrap();
+        //group.set_texture("depth_map", depth).unwrap();
         group.set_buffer("window", &renderer.window_buffer).unwrap();
     });
 

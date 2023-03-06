@@ -1,29 +1,25 @@
 use crate::{
-    BindEntryLayout, FillError, GpuPod, GpuPodRelaxed,
-    ReflectedShader, Sampler, Shader, StructMemberLayout, Texel,
-    Texture, UniformBuffer, ValueFiller,
+    BindEntryLayout, GpuPod, GpuPodRelaxed, ReflectedShader, Sampler,
+    SetFieldError, Shader, StructMemberLayout, Texel, Texture,
+    UniformBuffer, ValueFiller,
 };
 use ahash::AHashMap;
 use std::{marker::PhantomData, sync::Arc};
 use thiserror::Error;
 
+// Errors that might get returned whenever we try setting a resource
+// Most of the validation checking is done when the shader is created, using BindLayout
 #[derive(Debug, Error)]
 pub enum BindError<'a> {
-    #[error("The bind resource '{name}' at bind group '{group}' was not defined")]
+    #[error("The bind resource '{name}' at bind group '{group}' was not defined in the shader layout")]
     ResourceNotDefined { name: &'a str, group: u32 },
 
-    #[error("The given buffer at '{name}' has different strides (layout stride = {defined}, buffer stride = {inputted})")]
-    BufferDifferentStride {
+    #[error("The given buffer at '{name}' has a different type [size = {inputted}] than the one defined in the shader layout [size = {defined}]")]
+    BufferDifferentType {
         name: &'a str,
         defined: usize,
         inputted: usize,
     },
-
-    #[error("The texutre '{name}' does not have a correspodning sampler named '{name}_sampler'")]
-    TextureMissingSampler { name: &'a str },
-
-    #[error("The given resource is not the same type in the shader")]
-    DifferentType,
 }
 
 // A bind group allows us to set one or more bind entries to set them in the active render pass
@@ -69,20 +65,20 @@ impl<'a> BindGroup<'a> {
         name: &'s str,
         texture: &'a T,
     ) -> Result<(), BindError<'s>> {
+        // Try setting a sampler appropriate for this texture
+        let sampler = format!("{name}_sampler");
+        let res = self.set_sampler(&sampler, texture.sampler());
+        match res {
+            Err(err) => log::error!("Setting sampler for texture {name} failed. Error: {err}"),
+            _ => {}
+        }
+
         // Get the binding entry layout for the given texture
         let entry = Self::find_entry_layout(
             self.index,
             &self.reflected,
             name,
         )?;
-
-        // Return error if the type does not match
-        if !matches!(
-            entry.binding_type,
-            crate::BindingType::Texture { .. }
-        ) {
-            return Err(BindError::DifferentType);
-        }
 
         // Get values needed for the bind entry
         let id = texture.raw().global_id();
@@ -98,7 +94,8 @@ impl<'a> BindGroup<'a> {
 
     // Set the texture sampler so we can sample textures within the shader
     // This is called automatically if the sampler is bound to the texture
-    pub fn set_sampler<'s, T: Texel>(
+    // TODO: Figure this shit out. make it public
+    fn set_sampler<'s, T: Texel>(
         &mut self,
         name: &'s str,
         sampler: Sampler<'a, T>,
@@ -109,14 +106,6 @@ impl<'a> BindGroup<'a> {
             &self.reflected,
             name,
         )?;
-
-        // Return error if the type does not match
-        if !matches!(
-            entry.binding_type,
-            crate::BindingType::Sampler { .. }
-        ) {
-            return Err(BindError::DifferentType);
-        }
 
         // Get values needed for the bind entry
         let id = sampler.raw().global_id();
@@ -143,19 +132,11 @@ impl<'a> BindGroup<'a> {
             name,
         )?;
 
-        // Return error if the type does not match
-        if !matches!(
-            entry.binding_type,
-            crate::BindingType::Buffer { .. }
-        ) {
-            return Err(BindError::DifferentType);
-        }
-
         // Make sure the layout is the same size as buffer stride
         match entry.binding_type {
             crate::BindingType::Buffer { size, .. } => {
                 if (size as usize) != buffer.stride() {
-                    return Err(BindError::BufferDifferentStride {
+                    return Err(BindError::BufferDifferentType {
                         name,
                         defined: size as usize,
                         inputted: buffer.stride(),
@@ -189,14 +170,6 @@ impl<'a> BindGroup<'a> {
             &self.reflected,
             name,
         )?;
-
-        // Return error if the type does not match
-        if !matches!(
-            entry.binding_type,
-            crate::BindingType::Buffer { .. }
-        ) {
-            return Err(BindError::DifferentType);
-        }
 
         // Pre-allocate a vector with an appropriate size
         let (size, members) = match entry.binding_type {
@@ -240,7 +213,7 @@ impl ValueFiller for FillBuffer<'_> {
         &mut self,
         name: &'s str,
         value: T,
-    ) -> Result<(), crate::FillError<'s>> {
+    ) -> Result<(), crate::SetFieldError<'s>> {
         // Get the struct member layout for the proper field
         let valid = self
             .members
@@ -250,7 +223,7 @@ impl ValueFiller for FillBuffer<'_> {
 
         // Return early if we don't have a field to set
         let Some(valid) = valid else {
-            return Err(FillError::MissingField { name: name });
+            return Err(SetFieldError::MissingField { name: name });
         };
 
         // Convert the data to a byte slice

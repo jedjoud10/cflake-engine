@@ -1,6 +1,6 @@
 use crate::{
-    Compiled, ComputeModule, FragmentModule, Graphics,
-    ReflectedModule, ReflectedShader, VertexModule, BindLayout,
+    BindLayout, Compiled, ComputeModule, FragmentModule, Graphics,
+    ReflectedModule, ReflectedShader, VertexModule,
 };
 use std::sync::Arc;
 

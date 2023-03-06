@@ -25,3 +25,9 @@ pub enum ShaderCompilationError {
     #[error("Shader validation error. Check logs")]
     ValidationError,
 }
+
+#[derive(Error, Debug)]
+pub enum BindLayoutUseError<'a> {
+    #[error("The given resource {0} does not exist in the shader modules' source code")]
+    NotDefinedInSource(&'a str),
+}

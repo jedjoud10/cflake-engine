@@ -1,19 +1,20 @@
 use assets::Assets;
 use egui::{ClippedPrimitive, ImageData, TextureId, TexturesDelta};
 use graphics::{
-    BlendComponent, BlendFactor, BlendOperation, BlendState,
-    BufferMode, BufferUsage, ColorOperations, Compiler,
+    BindLayout, BlendComponent, BlendFactor, BlendOperation,
+    BlendState, BufferMode, BufferUsage, ColorOperations, Compiler,
     FragmentModule, GpuPod, Graphics, LoadOp, Normalized, Operation,
     PerVertex, PrimitiveConfig, RenderPass, SamplerFilter,
     SamplerMipMaps, SamplerSettings, SamplerWrap, Shader, StoreOp,
     Texture, Texture2D, TextureMipMaps, TextureMode, TextureUsage,
     TriangleBuffer, ValueFiller, VertexBuffer, VertexConfig,
-    VertexInput, VertexModule, Window, R, RGBA, XY, XYZW, BindLayout,
+    VertexInput, VertexModule, Window, R, RGBA, XY, XYZW,
 };
 use rendering::{FinalGraphicsPipeline, FinalRenderPass};
 
-
+// Font texel type and font map
 type FontTexel = RGBA<Normalized<u8>>;
+type FontMap = Texture2D<FontTexel>;
 
 // A global rasterizer that will draw the Egui elements onto the screen
 pub(crate) struct Rasterizer {
@@ -31,7 +32,7 @@ pub(crate) struct Rasterizer {
     triangles: TriangleBuffer<u32>,
 
     // Egui font texture
-    texture: Option<Texture2D<FontTexel>>,
+    texture: Option<FontMap>,
 }
 
 fn create_vertex_buffer<V: graphics::Vertex>(
@@ -105,11 +106,12 @@ impl Rasterizer {
 
         // Create the bind layout for the GUI shader
         let mut layout = BindLayout::new();
-        layout.use_texture::<FontTexel>("font").unwrap();
+        layout.use_texture::<FontMap>("font").unwrap();
         layout.use_fill_ubo("window").unwrap();
 
         // Combine the modules to the shader
-        let shader = Shader::new(graphics, layout, &vertex, &fragment);
+        let shader =
+            Shader::new(graphics, layout, &vertex, &fragment);
 
         // Create the render pass that will write to the swapchain
         let render_pass = FinalRenderPass::new(

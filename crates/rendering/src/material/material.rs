@@ -5,10 +5,10 @@ use crate::{
 };
 use assets::Assets;
 use graphics::{
-    BindGroup, BlendConfig, CompareFunction, Compiled, DepthConfig,
-    FragmentModule, Graphics, Normalized, PrimitiveConfig,
-    PushConstants, StencilConfig, Texture2D, UniformBuffer,
-    VertexModule, WindingOrder, RGBA, BindLayout,
+    BindGroup, BindLayout, BlendConfig, CompareFunction, Compiled,
+    DepthConfig, FragmentModule, Graphics, Normalized,
+    PrimitiveConfig, PushConstants, StencilConfig, Texture2D,
+    UniformBuffer, VertexModule, WindingOrder, RGBA,
 };
 use world::World;
 

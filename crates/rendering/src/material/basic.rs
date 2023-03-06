@@ -1,16 +1,17 @@
 use std::any::TypeId;
 
 use crate::{
-    AlbedoMap, CameraBuffer, CameraUniform, DefaultMaterialResources,
-    EnabledMeshAttributes, Material, NormalMap, Renderer,
-    SceneBuffer, SceneUniform, TimingBuffer, TimingUniform, AlbedoTexel, NormalTexel,
+    AlbedoMap, AlbedoTexel, CameraBuffer, CameraUniform,
+    DefaultMaterialResources, EnabledMeshAttributes, Material,
+    NormalMap, NormalTexel, Renderer, SceneBuffer, SceneUniform,
+    TimingBuffer, TimingUniform,
 };
 use ahash::AHashMap;
 use assets::Assets;
 use graphics::{
-    BindGroup, Compiled, Compiler, FragmentModule, Graphics,
-    Normalized, PushConstants, Sampler, Shader, Texture, Texture2D,
-    UniformBuffer, ValueFiller, VertexModule, RGBA, BindLayout,
+    BindGroup, BindLayout, Compiled, Compiler, FragmentModule,
+    Graphics, Normalized, PushConstants, Sampler, Shader, Texture,
+    Texture2D, UniformBuffer, ValueFiller, VertexModule, RGBA,
 };
 use utils::{Handle, Storage};
 
@@ -65,11 +66,11 @@ impl Material for Basic {
         layout.use_ubo::<SceneUniform>("scene").unwrap();
         layout.use_ubo::<TimingUniform>("time").unwrap();
         layout.use_fill_ubo("material").unwrap();
-        
+
         // Define the type layouts for the textures and samplers
-        layout.use_texture::<AlbedoTexel>("gradient_map").unwrap();
-        layout.use_texture::<AlbedoTexel>("albedo_map").unwrap();
-        layout.use_texture::<NormalTexel>("normal_map").unwrap();
+        layout.use_texture::<AlbedoMap>("gradient_map").unwrap();
+        layout.use_texture::<AlbedoMap>("albedo_map").unwrap();
+        layout.use_texture::<NormalMap>("normal_map").unwrap();
     }
 
     // Fetch the texture storages
@@ -124,8 +125,8 @@ impl Material for Basic {
         // Fill the material UBO with the specified fields automatically
         group
             .fill_ubo("material", |fill| {
-                fill.set_scalar("bumpiness", self.bumpiness).unwrap();
-                fill.set_vec3("tint", self.tint).unwrap();
+                fill.set("bumpiness", self.bumpiness).unwrap();
+                fill.set("tint", self.tint).unwrap();
             })
             .unwrap();
     }
@@ -139,7 +140,7 @@ impl Material for Basic {
         push_constants: &mut PushConstants,
     ) {
         push_constants
-            .set_mat4x4("matrix", renderer.matrix.cols)
+            .set("matrix", renderer.matrix.cols)
             .unwrap();
     }
 }
