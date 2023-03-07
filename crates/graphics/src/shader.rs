@@ -1,12 +1,10 @@
 mod compiler;
 mod error;
-mod layout;
 mod module;
 mod reflected;
 mod shader;
 pub use compiler::*;
 pub use error::*;
-pub use layout::*;
 pub use module::*;
 pub use reflected::*;
 pub use shader::*;

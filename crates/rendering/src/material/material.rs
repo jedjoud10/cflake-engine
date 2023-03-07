@@ -5,10 +5,10 @@ use crate::{
 };
 use assets::Assets;
 use graphics::{
-    BindGroup, BindLayout, BlendConfig, CompareFunction, Compiled,
+    BindGroup, BlendConfig, CompareFunction, Compiled,
     DepthConfig, FragmentModule, Graphics, Normalized,
     PrimitiveConfig, PushConstants, StencilConfig, Texture2D,
-    UniformBuffer, VertexModule, WindingOrder, RGBA,
+    UniformBuffer, VertexModule, WindingOrder, RGBA, Shader,
 };
 use world::World;
 
@@ -35,20 +35,11 @@ pub trait Material: 'static + Sized {
     // The resources that we need to fetch from the world to set the descriptor sets
     type Resources<'w>: 'w;
 
-    // Load the vertex module and process it
-    fn vertex(
+    // Create a shader for this material
+    fn shader(
         graphics: &Graphics,
         assets: &mut Assets,
-    ) -> Compiled<VertexModule>;
-
-    // Load the fragment module and process it
-    fn fragment(
-        graphics: &Graphics,
-        assets: &mut Assets,
-    ) -> Compiled<FragmentModule>;
-
-    // Create the material shader bindings
-    fn bindings(layout: &mut BindLayout) {}
+    ) -> Shader;
 
     // Get the required mesh attributes that we need to render a surface
     // If a surface does not support these attributes, it will not be rendered

@@ -1,7 +1,7 @@
 use assets::Assets;
 use egui::{ClippedPrimitive, ImageData, TextureId, TexturesDelta};
 use graphics::{
-    BindLayout, BlendComponent, BlendFactor, BlendOperation,
+    BlendComponent, BlendFactor, BlendOperation,
     BlendState, BufferMode, BufferUsage, ColorOperations, Compiler,
     FragmentModule, GpuPod, Graphics, LoadOp, Normalized, Operation,
     PerVertex, PrimitiveConfig, RenderPass, SamplerFilter,
@@ -93,25 +93,24 @@ impl Rasterizer {
         let vertex = assets
             .load::<VertexModule>("engine/shaders/post/gui.vert")
             .unwrap();
-        let vertex =
-            Compiler::new(vertex).compile(assets, graphics).unwrap();
 
         // Load the fragment module for the display shader
         let fragment = assets
             .load::<FragmentModule>("engine/shaders/post/gui.frag")
             .unwrap();
-        let fragment = Compiler::new(fragment)
-            .compile(assets, graphics)
-            .unwrap();
 
         // Create the bind layout for the GUI shader
-        let mut layout = BindLayout::new();
-        layout.use_texture::<FontMap>("font").unwrap();
-        layout.use_fill_ubo("window").unwrap();
+        let mut compiler = Compiler::new(assets);
+        compiler.use_texture::<FontMap>("font");
+        compiler.use_fill_ubo("window"); 
 
-        // Combine the modules to the shader
-        let shader =
-            Shader::new(graphics, layout, &vertex, &fragment);
+        // Compile the modules into a shader
+        let shader = Shader::new(
+            graphics,
+            vertex,
+            fragment,
+            compiler,
+        ).unwrap();
 
         // Create the render pass that will write to the swapchain
         let render_pass = FinalRenderPass::new(

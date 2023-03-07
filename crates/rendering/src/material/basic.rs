@@ -9,7 +9,7 @@ use crate::{
 use ahash::AHashMap;
 use assets::Assets;
 use graphics::{
-    BindGroup, BindLayout, Compiled, Compiler, FragmentModule,
+    BindGroup, Compiled, Compiler, FragmentModule,
     Graphics, Normalized, PushConstants, Sampler, Shader, Texture,
     Texture2D, UniformBuffer, ValueFiller, VertexModule, RGBA,
 };
@@ -33,44 +33,42 @@ impl Material for Basic {
         world::Read<'w, Storage<NormalMap>>,
     );
 
-    // Load the vertex shader for this material
-    fn vertex(
+    // Load the respective Basic shader modules and compile them
+    fn shader(
         graphics: &Graphics,
         assets: &mut Assets,
-    ) -> Compiled<VertexModule> {
+    ) -> Shader {
+        // Load the vertex module from the assets
         let vert = assets
             .load::<VertexModule>(
                 "engine/shaders/scene/basic/basic.vert",
-            )
-            .unwrap();
-        Compiler::new(vert).compile(assets, graphics).unwrap()
-    }
+            ).unwrap();
 
-    // Load the fragment shader for this material
-    fn fragment(
-        graphics: &Graphics,
-        assets: &mut Assets,
-    ) -> Compiled<FragmentModule> {
+        // Load the fragment module from the assets
         let frag = assets
             .load::<FragmentModule>(
                 "engine/shaders/scene/basic/basic.frag",
-            )
-            .unwrap();
-        Compiler::new(frag).compile(assets, graphics).unwrap()
-    }
+            ).unwrap();
 
-    // Create the shader bindings for the basic shader
-    fn bindings(layout: &mut BindLayout) {
         // Define the type layouts for the UBOs
-        layout.use_ubo::<CameraUniform>("camera").unwrap();
-        layout.use_ubo::<SceneUniform>("scene").unwrap();
-        layout.use_ubo::<TimingUniform>("time").unwrap();
-        layout.use_fill_ubo("material").unwrap();
+        let mut compiler = Compiler::new(assets);
+        compiler.use_ubo::<CameraUniform>("camera");
+        compiler.use_ubo::<SceneUniform>("scene");
+        compiler.use_ubo::<TimingUniform>("time");
+        compiler.use_fill_ubo("material");
 
         // Define the type layouts for the textures and samplers
-        layout.use_texture::<AlbedoMap>("gradient_map").unwrap();
-        layout.use_texture::<AlbedoMap>("albedo_map").unwrap();
-        layout.use_texture::<NormalMap>("normal_map").unwrap();
+        compiler.use_texture::<AlbedoMap>("gradient_map");
+        compiler.use_texture::<AlbedoMap>("albedo_map");
+        compiler.use_texture::<NormalMap>("normal_map");
+
+        // Compile the modules into a shader
+        Shader::new(
+            graphics,
+            vert,
+            frag,
+            compiler
+        ).unwrap()
     }
 
     // Fetch the texture storages

@@ -26,17 +26,17 @@ pub struct ReflectedModule {
 // A bind group contains one or more bind entries
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BindGroupLayout {
-    pub bind_entry_layouts: Vec<BindEntryLayout>,
+    pub bind_entry_layouts: Vec<BindResourceLayout>,
 }
 
 // A binding entry is a single binding resource from within a group
 // Eg. a uniform buffer, a sampler, a texture, or storage buffer
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct BindEntryLayout {
+pub struct BindResourceLayout {
     pub name: String,
     pub binding: u32,
     pub group: u32,
-    pub binding_type: BindingType,
+    pub resource_type: BindResourceType,
     pub visiblity: wgpu::ShaderStages,
 }
 
@@ -49,20 +49,24 @@ pub struct PushConstantLayout {
     pub size: u32,
 }
 
-// The type of BindingEntry.
+// The type of BindingEntry. This is fetched from the given
 // For now, only buffers, samplers, and texture are supported
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum BindingType {
+pub enum BindResourceType {
     Buffer {
         buffer_binding: wgpu::BufferBindingType,
         members: Vec<StructMemberLayout>,
-        size: u32,
+        size: usize,
     },
     Sampler {
         sampler_binding: wgpu::SamplerBindingType,
+        format: wgpu::TextureFormat,
+        comparison: bool,
     },
     Texture {
+        format: wgpu::TextureFormat,
         sample_type: wgpu::TextureSampleType,
+        comparison: bool,
         view_dimension: wgpu::TextureViewDimension,
     },
 }
@@ -95,11 +99,11 @@ pub enum StructMemberType {
 }
 
 // Reflect a vertex and fragment modules and create their respective pipeline layout
-pub fn merge_and_make_layout(
+pub(super) fn merge_and_make_layout(
     vertex: &Compiled<VertexModule>,
     fragment: &Compiled<FragmentModule>,
     graphics: &Graphics,
-) -> (ReflectedShader, Arc<wgpu::PipelineLayout>) {
+) -> (Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>) {
     // Convert the reflected module to a reflected shader
     let modules = &[vertex.reflected(), fragment.reflected()];
     let shader = merge_reflected_modules_to_shader(modules);
@@ -108,9 +112,9 @@ pub fn merge_and_make_layout(
     let layout = create_pipeline_layout_from_shader(
         graphics,
         &shader,
-        &[vertex.file_name(), fragment.file_name()],
+        &[vertex.name(), fragment.name()],
     );
-    (shader, layout)
+    (Arc::new(shader), layout)
 }
 
 // Merge multiple reflected modules to create a reflected shader
@@ -119,7 +123,7 @@ fn merge_reflected_modules_to_shader(
     modules: &[&ReflectedModule],
 ) -> ReflectedShader {
     // Stores multiple entries per set (max number of sets = 4)
-    let mut groups: [Option<AHashMap<u32, BindEntryLayout>>; 4] =
+    let mut groups: [Option<AHashMap<u32, BindResourceLayout>>; 4] =
         [None, None, None, None];
 
     // Stores mutliple push constants for each module (at max we will have 2 modules)
@@ -175,7 +179,7 @@ fn merge_reflected_modules_to_shader(
 
                         // Make sure the currently merged layout and the new layout
                         // have well... the same layout
-                        if old.binding_type != merged.binding_type {
+                        if old.resource_type != merged.resource_type {
                             panic!("Not the same layout");
                         }
 
@@ -224,22 +228,23 @@ fn create_pipeline_layout_from_shader(
 ) -> Arc<wgpu::PipelineLayout> {
     // Convert a reflected bind entry layout to a wgpu binding type
     fn map_binding_type(
-        value: &BindEntryLayout,
+        value: &BindResourceLayout,
     ) -> wgpu::BindingType {
-        match value.binding_type {
-            BindingType::Buffer { buffer_binding, .. } => {
+        match value.resource_type {
+            BindResourceType::Buffer { buffer_binding, .. } => {
                 wgpu::BindingType::Buffer {
                     ty: buffer_binding,
                     has_dynamic_offset: false,
                     min_binding_size: None,
                 }
             }
-            BindingType::Sampler { sampler_binding } => {
+            BindResourceType::Sampler { sampler_binding, .. } => {
                 wgpu::BindingType::Sampler(sampler_binding)
             }
-            BindingType::Texture {
+            BindResourceType::Texture {
                 sample_type,
                 view_dimension,
+                ..
             } => wgpu::BindingType::Texture {
                 sample_type,
                 view_dimension,
@@ -396,10 +401,11 @@ fn create_pipeline_layout_from_shader(
 }
 
 // Reflect a naga module's bindings and constants
-pub fn reflect_module<M: ShaderModule>(
+pub(super) fn reflect_module<M: ShaderModule>(
     naga: &naga::Module,
+    texture_formats: &super::TextureFormats,
 ) -> ReflectedModule {
-    let bind_group_layouts = reflect_binding_group::<M>(naga);
+    let bind_group_layouts = reflect_binding_group::<M>(naga, texture_formats);
     let push_constant = reflect_push_constant::<M>(naga);
 
     let last_valid_bind_group_layout = bind_group_layouts
@@ -415,12 +421,13 @@ pub fn reflect_module<M: ShaderModule>(
 }
 
 // Fetches the used binding groups of a given naga module
-pub fn reflect_binding_group<M: ShaderModule>(
+fn reflect_binding_group<M: ShaderModule>(
     naga: &naga::Module,
+    texture_formats: &super::TextureFormats,
 ) -> [Option<BindGroupLayout>; 4] {
     let mut bind_group_layouts: [Option<BindGroupLayout>; 4] =
         [None, None, None, None];
-    let entries = reflect_binding_entries::<M>(naga);
+    let entries = reflect_binding_entries::<M>(naga, texture_formats);
 
     // Merge the binding entries into their respective bind group layouts
     for bind_entry_layout in entries {
@@ -441,9 +448,10 @@ pub fn reflect_binding_group<M: ShaderModule>(
 }
 
 // Fetches the used binding entries of a given naga module
-pub fn reflect_binding_entries<M: ShaderModule>(
+fn reflect_binding_entries<M: ShaderModule>(
     naga: &naga::Module,
-) -> Vec<BindEntryLayout> {
+    texture_formats: &super::TextureFormats,
+) -> Vec<BindResourceLayout> {
     let types = &naga.types;
     let vars = &naga.global_variables;
 
@@ -478,20 +486,20 @@ pub fn reflect_binding_entries<M: ShaderModule>(
                     dim,
                     class,
                     arrayed,
-                } => reflect_texture(class, dim),
+                } => reflect_texture(&value.name.as_ref().unwrap(), class, dim, texture_formats),
 
                 // Uniform Sampler
                 TypeInner::Sampler { comparison } => {
-                    reflect_sampler(comparison)
+                    reflect_sampler(&value.name.as_ref().unwrap(), texture_formats)
                 }
                 _ => panic!("Not supported"),
             };
 
-            BindEntryLayout {
+            BindResourceLayout {
                 name: value.name.clone().unwrap(),
                 binding,
                 group,
-                binding_type,
+                resource_type: binding_type,
                 visiblity: kind_to_wgpu_stage(&M::kind()),
             }
         })
@@ -499,7 +507,7 @@ pub fn reflect_binding_entries<M: ShaderModule>(
 }
 
 // Fetches the used push constant of the given global variable
-pub fn reflect_push_constant<M: ShaderModule>(
+fn reflect_push_constant<M: ShaderModule>(
     naga: &naga::Module,
 ) -> Option<PushConstantLayout> {
     // Get the type and address space of the variable
@@ -547,16 +555,16 @@ fn reflect_buffer(
     types: &naga::UniqueArena<naga::Type>,
     size: &u32,
     space: AddressSpace,
-) -> BindingType {
+) -> BindResourceType {
     // Non UBO buffers not supported yet
     if space != AddressSpace::Uniform {
         panic!("Non UBO buffers not supported yet")
     }
 
-    BindingType::Buffer {
+    BindResourceType::Buffer {
         buffer_binding: wgpu::BufferBindingType::Uniform,
         members: reflect_struct_member_layouts(members, types),
-        size: *size,
+        size: *size as usize,
     }
 }
 
@@ -647,22 +655,25 @@ pub(super) fn kind_to_wgpu_stage(
 }
 
 // Fetch the BindingType of a naga Sampler
-fn reflect_sampler(comparison: &bool) -> BindingType {
-    BindingType::Sampler {
-        sampler_binding: if *comparison {
-            wgpu::SamplerBindingType::Comparison
-        } else {
-            wgpu::SamplerBindingType::Filtering
-        },
+fn reflect_sampler(
+    name: &str,
+    texture_formats: &super::TextureFormats,
+) -> BindResourceType {
+    BindResourceType::Sampler {
+        sampler_binding: wgpu::SamplerBindingType::Filtering,
+        format: texture_formats.get(name).unwrap().format(),
+        comparison: false,
     }
 }
 
 // Fetch the Bindingtype of a naga texture
 fn reflect_texture(
+    name: &str,
     class: &naga::ImageClass,
     dim: &naga::ImageDimension,
-) -> BindingType {
-    BindingType::Texture {
+    texture_formats: &super::TextureFormats,
+) -> BindResourceType {
+    BindResourceType::Texture {
         sample_type: match class {
             naga::ImageClass::Sampled { kind, multi: false } => {
                 match kind {
@@ -707,5 +718,8 @@ fn reflect_texture(
                 wgpu::TextureViewDimension::Cube
             }
         },
+
+        format: texture_formats.get(name).as_ref().unwrap().format(),
+        comparison: false,
     }
 }

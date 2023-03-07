@@ -9,7 +9,7 @@ use crate::{
 use ahash::AHashMap;
 use assets::Assets;
 use graphics::{
-    BindGroup, BindLayout, Compiled, Compiler, Face, FragmentModule,
+    BindGroup, Compiled, Compiler, Face, FragmentModule,
     Graphics, Normalized, PrimitiveConfig, PushConstants, Sampler,
     Shader, Texture, Texture2D, UniformBuffer, ValueFiller,
     VertexModule, WindingOrder, RGBA,
@@ -25,34 +25,35 @@ pub struct Sky {
 impl Material for Sky {
     type Resources<'w> = world::Read<'w, Storage<AlbedoMap>>;
 
-    // Load the vertex shader for this material
-    fn vertex(
+    // Load the respective Sky shader modules and compile them
+    fn shader(
         graphics: &Graphics,
         assets: &mut Assets,
-    ) -> Compiled<VertexModule> {
+    ) -> Shader {
+        // Load the vertex module from the assets
         let vert = assets
             .load::<VertexModule>("engine/shaders/scene/sky/sky.vert")
             .unwrap();
-        Compiler::new(vert).compile(assets, graphics).unwrap()
-    }
 
-    // Load the fragment shader for this material
-    fn fragment(
-        graphics: &Graphics,
-        assets: &mut Assets,
-    ) -> Compiled<FragmentModule> {
+        // Load the fragment module from the assets
         let frag = assets
             .load::<FragmentModule>(
                 "engine/shaders/scene/sky/sky.frag",
             )
             .unwrap();
-        Compiler::new(frag).compile(assets, graphics).unwrap()
-    }
 
-    // Create the shader bindings for the sky shader
-    fn bindings(layout: &mut BindLayout) {
-        layout.use_ubo::<CameraUniform>("camera").unwrap();
-        layout.use_texture::<AlbedoMap>("gradient_map").unwrap();
+        // Define the type layouts for the UBOs
+        let mut compiler = Compiler::new(assets);
+        compiler.use_ubo::<CameraUniform>("camera");
+        compiler.use_texture::<AlbedoMap>("gradient_map");
+
+        // Compile the modules into a shader
+        Shader::new(
+            graphics,
+            vert,
+            frag,
+            compiler
+        ).unwrap()
     }
 
     // Get the required mesh attributes that we need to render a surface

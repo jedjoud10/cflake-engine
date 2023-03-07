@@ -1,6 +1,6 @@
 use assets::Assets;
 use graphics::{
-    BindLayout, Compiler, FragmentModule, Graphics, GraphicsPipeline,
+    Compiler, FragmentModule, Graphics, GraphicsPipeline,
     LoadOp, Operation, PrimitiveConfig, RenderPass, Shader, StoreOp,
     SwapchainFormat, VertexConfig, VertexModule, Texture2D,
 };
@@ -31,28 +31,24 @@ impl Compositor {
         let vertex = assets
             .load::<VertexModule>("engine/shaders/post/display.vert")
             .unwrap();
-        let vertex =
-            Compiler::new(vertex).compile(assets, graphics).unwrap();
 
         // Load the fragment module for the display shader
         let fragment = assets
-            .load::<FragmentModule>(
-                "engine/shaders/post/display.frag",
-            )
-            .unwrap();
-        let fragment = Compiler::new(fragment)
-            .compile(assets, graphics)
-            .unwrap();
+            .load::<FragmentModule>("engine/shaders/post/display.frag").unwrap();
 
         // Create the bind layout for the compositor shader
-        let mut layout = BindLayout::new();
-        layout.use_texture::<Texture2D<SceneColor>>("color_map").unwrap();
-        layout.use_texture::<Texture2D<SceneDepth>>("depth_map").unwrap();
-        layout.use_ubo::<WindowUniform>("window").unwrap();
+        let mut compiler = Compiler::new(assets);
+        compiler.use_texture::<Texture2D<SceneColor>>("color_map");
+        compiler.use_texture::<Texture2D<SceneDepth>>("depth_map");
+        compiler.use_ubo::<WindowUniform>("window");
 
         // Combine the modules to the shader
-        let shader =
-            Shader::new(graphics, layout, &vertex, &fragment);
+        let shader = Shader::new(
+            graphics,
+            vertex,
+            fragment,
+            compiler
+        ).unwrap();
 
         // Create the display render pass
         let render_pass = FinalRenderPass::new(

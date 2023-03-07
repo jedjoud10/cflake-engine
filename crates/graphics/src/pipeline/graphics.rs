@@ -81,10 +81,7 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
                 layout: Some(layout),
                 vertex: wgpu::VertexState {
                     module: shader.vertex().module(),
-                    entry_point: shader
-                        .vertex()
-                        .entry_point()
-                        .unwrap(),
+                    entry_point: "main",
                     buffers: &buffers,
                 },
                 primitive,
@@ -92,10 +89,7 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
                 multisample: Default::default(),
                 fragment: Some(wgpu::FragmentState {
                     module: shader.fragment().module(),
-                    entry_point: shader
-                        .vertex()
-                        .entry_point()
-                        .unwrap(),
+                    entry_point: "main",
                     targets: &targets,
                 }),
                 multiview: None,

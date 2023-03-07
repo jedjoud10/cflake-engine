@@ -1,5 +1,5 @@
 use crate::{
-    BindEntryLayout, GpuPod, GpuPodRelaxed, ReflectedShader, Sampler,
+    BindResourceLayout, GpuPod, GpuPodRelaxed, ReflectedShader, Sampler,
     SetFieldError, Shader, StructMemberLayout, Texel, Texture,
     UniformBuffer, ValueFiller,
 };
@@ -28,7 +28,7 @@ pub struct BindGroup<'a> {
     pub(crate) index: u32,
     pub(crate) reflected: Arc<ReflectedShader>,
     pub(crate) resources: Vec<wgpu::BindingResource<'a>>,
-    pub(crate) fill_ubos: Vec<(Vec<u8>, BindEntryLayout)>,
+    pub(crate) fill_ubos: Vec<(Vec<u8>, BindResourceLayout)>,
     pub(crate) slots: Vec<u32>,
     pub(crate) ids: Vec<wgpu::Id>,
     pub(crate) _phantom: PhantomData<&'a ()>,
@@ -41,7 +41,7 @@ impl<'a> BindGroup<'a> {
         index: u32,
         reflected: &'c ReflectedShader,
         name: &'s str,
-    ) -> Result<&'c crate::BindEntryLayout, BindError<'s>> {
+    ) -> Result<&'c crate::BindResourceLayout, BindError<'s>> {
         let groups = &reflected.bind_group_layouts;
         let (_, group) = groups
             .iter()
@@ -133,8 +133,8 @@ impl<'a> BindGroup<'a> {
         )?;
 
         // Make sure the layout is the same size as buffer stride
-        match entry.binding_type {
-            crate::BindingType::Buffer { size, .. } => {
+        match entry.resource_type {
+            crate::BindResourceType::Buffer { size, .. } => {
                 if (size as usize) != buffer.stride() {
                     return Err(BindError::BufferDifferentType {
                         name,
@@ -172,8 +172,8 @@ impl<'a> BindGroup<'a> {
         )?;
 
         // Pre-allocate a vector with an appropriate size
-        let (size, members) = match entry.binding_type {
-            crate::BindingType::Buffer {
+        let (size, members) = match entry.resource_type {
+            crate::BindResourceType::Buffer {
                 size, ref members, ..
             } => (size as usize, members),
             _ => panic!(),

@@ -12,7 +12,7 @@ use wgpu::{
 };
 
 use crate::{
-    BindEntryLayout, BindGroupLayout, ReflectedShader,
+    BindResourceLayout, BindGroupLayout, ReflectedShader,
     SamplerSettings, SamplerWrap, StagingPool, UniformBuffer,
 };
 
@@ -27,7 +27,7 @@ pub(crate) struct Cached {
         DashMap<Vec<wgpu::Id>, Arc<wgpu::BindGroup>>,
     pub(crate) uniform_buffers: Mutex<
         AHashMap<
-            (u32, BindEntryLayout),
+            (u32, BindResourceLayout),
             Vec<(UniformBuffer<u8>, bool)>,
         >,
     >,

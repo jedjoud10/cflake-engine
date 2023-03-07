@@ -9,7 +9,7 @@ use crate::{
 };
 use assets::Assets;
 use graphics::{
-    ActiveRenderPass, BindLayout, CompareFunction, Depth,
+    ActiveRenderPass, CompareFunction, Depth,
     DepthConfig, Graphics, GraphicsPipeline,
     PipelineInitializationError, RenderPass, Shader, SwapchainFormat,
     VertexConfig, VertexInput,
@@ -38,21 +38,12 @@ pub struct Pipeline<M: Material> {
 impl<M: Material> Pipeline<M> {
     // Create a new material pipeline for the given material
     // This will load the shader, and create the graphics pipeline
-    pub fn new(
+    pub(crate) fn new(
         graphics: &Graphics,
         assets: &mut Assets,
     ) -> Result<Self, PipelineInitializationError> {
-        // Load the vertex and fragment modules, and create the shader
-        let vertex = M::vertex(graphics, assets);
-        let fragment = M::fragment(graphics, assets);
-
-        // Create the bind layout from the material trait
-        let mut layout = BindLayout::new();
-        M::bindings(&mut layout);
-
-        // Create the shader and the underlying pipeline
-        let shader =
-            Shader::new(graphics, layout, &vertex, &fragment);
+        // Load the material's shader
+        let shader = M::shader(graphics, assets);
 
         // Fetch the correct vertex config based on the material
         let vertex_config =
