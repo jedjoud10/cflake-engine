@@ -2,11 +2,11 @@ use assets::AssetLoadError;
 use naga::{valid::ValidationError, WithSpan};
 use thiserror::Error;
 
-#[derive(Error, Debug)]
-pub enum ShaderPreprocessorError {
-    #[error("Shader include directive is invalid or incomplete")]
-    InvalidIncludeDirective,
 
+// Only used internally to make error handling a bit easier
+// This will be converted to a string eventually
+#[derive(Error, Debug)]
+pub(crate) enum ShaderIncludeError {
     #[error("Shader include cylcic reference detected")]
     IncludeCyclicReference,
 
@@ -18,16 +18,5 @@ pub enum ShaderPreprocessorError {
 }
 
 #[derive(Error, Debug)]
-pub enum ShaderCompilationError {
-    #[error("{0:?}")]
-    PreprocessorError(ShaderPreprocessorError),
-
-    #[error("Shader validation error. Check logs")]
-    ValidationError,
-}
-
-#[derive(Error, Debug)]
-pub enum BindLayoutUseError<'a> {
-    #[error("The given resource {0} does not exist in the shader modules' source code")]
-    NotDefinedInSource(&'a str),
-}
+#[error("ShaderC compilation error. Check logs")]
+pub struct ShaderCompilationError;
