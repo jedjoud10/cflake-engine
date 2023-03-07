@@ -2,7 +2,7 @@ use std::{hash::Hash, sync::Arc};
 
 use crate::{
     Compiled, FragmentModule, Graphics, ModuleKind, ShaderModule,
-    VertexModule,
+    VertexModule, TexelChannels,
 };
 use ahash::{AHashMap, AHashSet};
 use naga::{AddressSpace, ResourceBinding, TypeInner};
@@ -673,6 +673,8 @@ fn reflect_texture(
     dim: &naga::ImageDimension,
     texture_formats: &super::TextureFormats,
 ) -> BindResourceType {
+    let info = **texture_formats.get(name).as_ref().unwrap();
+
     BindResourceType::Texture {
         sample_type: match class {
             naga::ImageClass::Sampled { kind, multi: false } => {
@@ -683,7 +685,11 @@ fn reflect_texture(
                     naga::ScalarKind::Uint => {
                         wgpu::TextureSampleType::Uint
                     }
-                    naga::ScalarKind::Float => {
+                    naga::ScalarKind::Float => if matches!(info.channels(), TexelChannels::Depth) {
+                        wgpu::TextureSampleType::Float {
+                            filterable: false,
+                        }
+                    } else {
                         wgpu::TextureSampleType::Float {
                             filterable: true,
                         }

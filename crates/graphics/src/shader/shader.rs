@@ -30,6 +30,7 @@ impl Shader {
         let fragment = compiler.compile(fragment, graphics)?;
         let (reflected, layout) =
             super::merge_and_make_layout(&vertex, &fragment, graphics);
+        log::warn!("{:#?}", reflected);
 
         Ok(Self {
             vertex,
