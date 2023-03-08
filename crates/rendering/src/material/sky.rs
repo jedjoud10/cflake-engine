@@ -61,6 +61,11 @@ impl Material for Sky {
         EnabledMeshAttributes::POSITIONS
     }
 
+    // The sky does NOT cast shadows 
+    fn casts_shadows() -> bool {
+        false
+    }
+
     // Sky-spheres are always flipped inside out
     fn primitive_config() -> PrimitiveConfig {
         PrimitiveConfig::Triangles {

@@ -15,14 +15,14 @@ layout(location = 4) in vec2 m_tex_coord;
 #include <engine/shaders/common/shadow.glsl>
 
 // Sky gradient texture map
-layout(set = 0, binding = 4) uniform texture2D gradient_map;
-layout(set = 0, binding = 5) uniform sampler gradient_map_sampler;
+layout(set = 0, binding = 5) uniform texture2D gradient_map;
+layout(set = 0, binding = 6) uniform sampler gradient_map_sampler;
 
 // Shadow-map texture map
-layout(set = 0, binding = 6) uniform texture2D shadow_map;
+layout(set = 0, binding = 7) uniform texture2D shadow_map;
 
 // Material scalar data
-layout(set = 1, binding = 4) uniform MaterialData {
+layout(set = 1, binding = 8) uniform MaterialData {
 	vec3 tint;
 	float bumpiness;
 } material;
@@ -55,10 +55,11 @@ void main() {
 
 	// Do some basic light calculations
 	vec3 direction = normalize(vec3(0, 1, 0));
-	float shadowed = calculate_shadowed(m_position, shadow_map, ubo);
-	float value = clamp(dot(direction, normal), 0, 1);
+	float shadowed = calculate_shadowed(m_position, shadow_map, shadow.lightspace);
+	float value = clamp(dot(direction, normal), 0, 1) * (1-shadowed);
 	vec3 lighting = vec3(value*2.0) + ambient * 0.2;
 
 	// Calculate diffuse lighting
-	frag = vec4(lighting * albedo * material.tint, 1.0);
+	frag = vec4(shadowed);
+	//frag = vec4(lighting * albedo * material.tint, 1.0);
 }

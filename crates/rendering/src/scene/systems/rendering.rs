@@ -27,7 +27,7 @@ fn init(world: &mut World) {
 
     // Create a nice shadow map
     let shadowmap = ShadowMapping::new(
-        4096f32,
+        20f32,
         100f32,
         4096,
         &graphics,
@@ -124,6 +124,9 @@ fn render(world: &mut World) {
     let mut render_pass = shadowmap
         .render_pass.begin((), depth).unwrap();
     let mut active = render_pass.bind_pipeline(&shadowmap.pipeline);
+    active.set_bind_group(0, |group| {
+        group.set_buffer("shadow", &shadowmap.buffer).unwrap();
+    });
 
     // Render the shadows first (fuck you)
     for pipeline in pipelines.iter() {

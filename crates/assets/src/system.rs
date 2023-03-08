@@ -24,7 +24,6 @@ fn init(world: &mut World) {
     persistent!(loader, "engine/shaders/scene/basic/basic.vert");
     persistent!(loader, "engine/shaders/scene/shadow/shadow.frag");
     persistent!(loader, "engine/shaders/scene/shadow/shadow.vert");
-    persistent!(loader, "engine/shaders/scene/shadow/calculate.glsl");
     persistent!(loader, "engine/shaders/scene/sky/sky.frag");
     persistent!(loader, "engine/shaders/scene/sky/sky.vert");
     persistent!(loader, "engine/shaders/post/display.frag");

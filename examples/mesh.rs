@@ -93,18 +93,34 @@ fn init(world: &mut World) {
         )).unwrap();
     let plane = meshes.insert(plane);
 
+    // Load a sphere mesh 
+    let sphere = assets
+        .load::<Mesh>((
+            "engine/meshes/icosphere.obj",
+            graphics.clone()
+        )).unwrap();
+    let sphere = meshes.insert(sphere);
+
     // Create a simple floor and add the entity
     let surface =
         Surface::new(plane.clone(), material.clone(), id.clone());
     let renderer = Renderer::default();
     let scale = Scale::uniform(10.0);
-    scene.insert((surface, renderer, scale));
+    let position = Position::at_y(-1.0 );
+    scene.insert((position, surface, renderer, scale));
 
     // Create a simple cube and add the entity 
     let surface =
         Surface::new(cube.clone(), material.clone(), id.clone());
     let renderer = Renderer::default();
     let position = Position::at_y(0.25);
+    scene.insert((surface, renderer, position));
+
+    // Create a simple sphere and add the entity 
+    let surface =
+        Surface::new(sphere.clone(), material.clone(), id.clone());
+    let renderer = Renderer::default();
+    let position = Position::at_y(1.5);
     scene.insert((surface, renderer, position));
 
     // Get the material id (also registers the material pipeline)

@@ -123,7 +123,6 @@ impl<M: Material> DynamicPipeline for Pipeline<M> {
             world,
             meshes,
             default,
-            &self.pipeline,
             active,
         );
     }

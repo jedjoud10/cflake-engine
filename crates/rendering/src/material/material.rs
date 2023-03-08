@@ -77,6 +77,12 @@ pub trait Material: 'static + Sized {
         None
     }
 
+    // Does this material support casting shadows onto other surfaces?
+    fn casts_shadows() -> bool {
+        true
+    }
+
+
     // Fetch the required resources from the world
     fn fetch<'w>(world: &'w World) -> Self::Resources<'w>;
 

@@ -4,7 +4,7 @@ use crate::{
     AlbedoMap, AlbedoTexel, CameraBuffer, CameraUniform,
     DefaultMaterialResources, EnabledMeshAttributes, Material,
     NormalMap, NormalTexel, Renderer, SceneBuffer, SceneUniform,
-    TimingBuffer, TimingUniform, ShadowMapping, ShadowTexel, ShadowMap,
+    TimingBuffer, TimingUniform, ShadowMapping, ShadowTexel, ShadowMap, ShadowUniform,
 };
 use ahash::AHashMap;
 use assets::Assets;
@@ -55,7 +55,7 @@ impl Material for Basic {
         let mut compiler = Compiler::new(assets);
         compiler.use_ubo::<CameraUniform>("camera");
         compiler.use_ubo::<SceneUniform>("scene");
-        compiler.use_ubo::<TimingUniform>("time");
+        compiler.use_ubo::<ShadowUniform>("shadow");
         compiler.use_fill_ubo("material");
 
         // Define the type layouts for the textures and samplers
@@ -90,7 +90,7 @@ impl Material for Basic {
         // Set the required common buffers
         group.set_buffer("camera", default.camera_buffer).unwrap();
         group.set_buffer("scene", default.scene_buffer).unwrap();
-        group.set_buffer("time", default.timing_buffer).unwrap();
+        group.set_buffer("shadow", &resources.2.buffer).unwrap();
 
         // Set the scene sky texture
         group

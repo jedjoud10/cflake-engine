@@ -1,6 +1,6 @@
 use assets::Assets;
 use bytemuck::{Pod, Zeroable};
-use graphics::{Texture2D, Normalized, Depth, GraphicsPipeline, RenderPass, Shader, Graphics, VertexModule, FragmentModule, Compiler, Operation, LoadOp, StoreOp, PrimitiveConfig, Texture, TextureMode, TextureUsage, SamplerSettings, TextureMipMaps, ActiveGraphicsPipeline};
+use graphics::{Texture2D, Normalized, Depth, GraphicsPipeline, RenderPass, Shader, Graphics, VertexModule, FragmentModule, Compiler, Operation, LoadOp, StoreOp, PrimitiveConfig, Texture, TextureMode, TextureUsage, SamplerSettings, TextureMipMaps, ActiveGraphicsPipeline, UniformBuffer, BufferUsage, BufferMode, DepthConfig, CompareFunction, WindingOrder};
 use vek::FrustumPlanes;
 
 use crate::EnabledMeshAttributes;
@@ -24,8 +24,7 @@ pub struct ShadowMapping {
     pub(crate) shader: Shader,    
 
     // This is the corresponding data that must be sent to the shader
-    pub(crate) view_matrix: vek::Mat4<f32>,
-    pub(crate) proj_matrix: vek::Mat4<f32>,
+    pub(crate) buffer: UniformBuffer<ShadowUniform>,
 }
 
 // This is the uniform that is defined in the Vertex Module
@@ -34,6 +33,7 @@ pub struct ShadowMapping {
 pub struct ShadowUniform {
     pub projection: vek::Vec4<vek::Vec4<f32>>,
     pub view: vek::Vec4<vek::Vec4<f32>>,
+    pub lightspace: vek::Vec4<vek::Vec4<f32>>,
 }
 
 impl ShadowMapping {
@@ -71,7 +71,7 @@ impl ShadowMapping {
             graphics,
             (),
             Operation {
-                load: LoadOp::Clear(0.0),
+                load: LoadOp::Clear(1.0),
                 store: StoreOp::Store,
             },
         )
@@ -80,14 +80,20 @@ impl ShadowMapping {
         // Create the shadow map graphics pipeline
         let pipeline = ShadowGraphicsPipeline::new(
             graphics,
-            None,
+            Some(DepthConfig {
+                compare: CompareFunction::LessEqual,
+                write_enabled: true,
+                depth_bias_constant: 0,
+                depth_bias_slope_scale: 0.0,
+                depth_bias_clamp: 0.0,
+            }),
             None,
             None,
             crate::attributes::enabled_to_vertex_config(
                 EnabledMeshAttributes::POSITIONS,
             ),
             PrimitiveConfig::Triangles {
-                winding_order: graphics::WindingOrder::Ccw,
+                winding_order: WindingOrder::Ccw,
                 cull_face: None,
                 wireframe: false,
             },
@@ -116,15 +122,34 @@ impl ShadowMapping {
         };
 
         // Create the projection matrix from the frustum
-        let proj_matrix = vek::Mat4::orthographic_rh_no(frustum);
+        let proj = vek::Mat4::orthographic_rh_zo(frustum);
+
+        // Create a temporary view matrix
+        let rot = vek::Quaternion::rotation_x(25f32.to_radians());
+        let rot = vek::Mat4::from(rot);
+        let view = vek::Mat4::<f32>::look_at_rh(
+            vek::Vec3::zero(),
+            rot.mul_point(vek::Vec3::unit_z()),
+            rot.mul_point(vek::Vec3::unit_y()),
+        );
+
+        let lightspace = proj * view; 
 
         Self {
             render_pass,
             shader,
             pipeline,
             depth_tex,
-            view_matrix: vek::Mat4::identity(),
-            proj_matrix,
+            buffer: UniformBuffer::from_slice(
+                graphics,
+                &[ShadowUniform {
+                    projection: proj.cols,
+                    view: view.cols,
+                    lightspace: lightspace.cols,
+                }],
+                BufferMode::Dynamic,
+                BufferUsage::WRITE,
+            ).unwrap()
         }
     }
 }
