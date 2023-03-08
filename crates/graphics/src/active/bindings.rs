@@ -67,11 +67,7 @@ impl<'a> BindGroup<'a> {
     ) -> Result<(), BindError<'s>> {
         // Try setting a sampler appropriate for this texture
         let sampler = format!("{name}_sampler");
-        let res = self.set_sampler(&sampler, texture.sampler());
-        match res {
-            Err(err) => log::error!("Setting sampler for texture {name} failed. Error: {err}"),
-            _ => {}
-        }
+        self.set_sampler(&sampler, texture.sampler());
 
         // Get the binding entry layout for the given texture
         let entry = Self::find_entry_layout(

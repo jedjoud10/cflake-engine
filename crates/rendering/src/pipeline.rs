@@ -1,4 +1,6 @@
 mod pipeline;
 mod render;
+mod shadow;
+use shadow::render_shadows;
 pub use pipeline::*;
-pub use render::*;
+use render::render_surfaces;

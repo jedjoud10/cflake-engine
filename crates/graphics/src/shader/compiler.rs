@@ -40,23 +40,7 @@ impl<'a> Compiler<'a> {
         }
     }
 
-    /*
-    TODO: Re-implement this
-    // Include a constant directive that will replace specialization constants (stored internally until compile time)
-    // TODO: Make dis work with bool pwease??
-    pub fn define_constant<T: GpuPodRelaxed>(
-        &mut self,
-        id: u32,
-        value: T,
-    ) {
-        let value = [value];
-        let slice = bytemuck::cast_slice::<T, u8>(&value);
-
-        self.constants.insert(id, slice.to_owned());
-    }
-    */
-
-    // Include a snippet directive that will replace ``#include`` lines that don't refer to a file
+    // Include a snippet directive that will replace #includes surrounded by ""
     pub fn use_snippet(
         &mut self,
         name: impl ToString,
@@ -222,7 +206,7 @@ fn compile(
     };
 
     // Compile the SPIRV to a Naga module
-    let mut module = naga::front::spv::parse_u8_slice(
+    let module = naga::front::spv::parse_u8_slice(
         artifact.as_binary_u8(),
         &options,
     )
@@ -278,7 +262,7 @@ fn load_snippet(
 
 // Include callback that will be passed to the ShaderC compiler
 fn include(
-    current: &str,
+    _current: &str,
     _type: shaderc::IncludeType,
     target: &str,
     depth: usize,

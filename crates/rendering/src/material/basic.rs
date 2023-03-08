@@ -4,7 +4,7 @@ use crate::{
     AlbedoMap, AlbedoTexel, CameraBuffer, CameraUniform,
     DefaultMaterialResources, EnabledMeshAttributes, Material,
     NormalMap, NormalTexel, Renderer, SceneBuffer, SceneUniform,
-    TimingBuffer, TimingUniform,
+    TimingBuffer, TimingUniform, ShadowMapping, ShadowTexel, ShadowMap,
 };
 use ahash::AHashMap;
 use assets::Assets;
@@ -31,6 +31,7 @@ impl Material for Basic {
     type Resources<'w> = (
         world::Read<'w, Storage<AlbedoMap>>,
         world::Read<'w, Storage<NormalMap>>,
+        world::Read<'w, ShadowMapping>,
     );
 
     // Load the respective Basic shader modules and compile them
@@ -59,6 +60,7 @@ impl Material for Basic {
 
         // Define the type layouts for the textures and samplers
         compiler.use_texture::<AlbedoMap>("gradient_map");
+        compiler.use_texture::<ShadowMap>("shadow_map");
         compiler.use_texture::<AlbedoMap>("albedo_map");
         compiler.use_texture::<NormalMap>("normal_map");
 
@@ -75,7 +77,8 @@ impl Material for Basic {
     fn fetch<'w>(world: &'w world::World) -> Self::Resources<'w> {
         let albedo_maps = world.get::<Storage<AlbedoMap>>().unwrap();
         let normal_maps = world.get::<Storage<NormalMap>>().unwrap();
-        (albedo_maps, normal_maps)
+        let shadow = world.get::<ShadowMapping>().unwrap();
+        (albedo_maps, normal_maps, shadow)
     }
 
     // Set the static bindings that will never change
@@ -93,6 +96,11 @@ impl Material for Basic {
         group
             .set_texture("gradient_map", default.sky_gradient)
             .unwrap();
+
+        // Set the scene shadow map
+        group
+            .set_texture("shadow_map", &resources.2.depth_tex)
+            .unwrap();
     }
 
     // Set the instance bindings that will change per material
@@ -102,7 +110,7 @@ impl Material for Basic {
         default: &DefaultMaterialResources<'r>,
         group: &mut BindGroup<'r>,
     ) {
-        let (albedo_maps, normal_maps) = resources;
+        let (albedo_maps, normal_maps, _) = resources;
 
         // Get the albedo texture, and fallback to a white one
         let albedo_map = self

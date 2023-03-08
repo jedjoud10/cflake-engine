@@ -5,7 +5,7 @@ use crate::{
     },
     ActiveSceneRenderPass, DefaultMaterialResources,
     EnabledMeshAttributes, Material, Mesh, MeshAttribute, SceneColor,
-    SceneDepth, SceneRenderPass,
+    SceneDepth, SceneRenderPass, ActiveShadowGraphicsPipeline,
 };
 use assets::Assets;
 use graphics::{
@@ -91,6 +91,16 @@ impl<M: Material> Pipeline<M> {
 
 // This trait will be implemented for Pipeline<T> to allow for dynamic dispatch
 pub trait DynamicPipeline {
+    // Executed before we call the "render" event in batch
+    // Used for shadow mapping
+    fn prerender<'r>(
+        &'r self,
+        world: &'r World,
+        meshes: &'r Storage<Mesh>,
+        default: &'r DefaultMaterialResources,
+        active: &mut ActiveShadowGraphicsPipeline<'_, 'r, '_>,
+    );
+
     // Render all surfaces that use the material of this pipeline
     fn render<'r>(
         &'r self,
@@ -102,6 +112,22 @@ pub trait DynamicPipeline {
 }
 
 impl<M: Material> DynamicPipeline for Pipeline<M> {
+    fn prerender<'r>(
+        &'r self,
+        world: &'r World,
+        meshes: &'r Storage<Mesh>,
+        default: &'r DefaultMaterialResources,
+        active: &mut ActiveShadowGraphicsPipeline<'_, 'r, '_>,
+    ) {
+        super::render_shadows::<M>(
+            world,
+            meshes,
+            default,
+            &self.pipeline,
+            active,
+        );
+    }
+    
     fn render<'r>(
         &'r self,
         world: &'r World,

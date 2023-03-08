@@ -2,6 +2,8 @@ mod compositor;
 mod pipelines;
 mod postprocess;
 mod renderer;
+mod shadowmap;
+pub use shadowmap::*;
 pub use compositor::*;
 pub use pipelines::*;
 pub use postprocess::*;

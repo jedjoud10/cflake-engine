@@ -72,8 +72,8 @@ fn init(world: &mut World) {
         tint: vek::Rgb::one(),
     });
 
-    // Load the renderable mesh
-    let mesh = assets
+    // Load a cube mesh
+    let cube = assets
         .load::<Mesh>((
             "engine/meshes/cube.obj",
             MeshImportSettings {
@@ -83,21 +83,29 @@ fn init(world: &mut World) {
             graphics.clone(),
         ))
         .unwrap();
-    let mesh = meshes.insert(mesh);
+    let cube = meshes.insert(cube);
 
-    // Add multiple objects
-    scene.extend_from_iter((0..125).into_iter().map(|i| {
-        // Create the new mesh entity components
-        let x = i % 5;
-        let y = (i % 25) / 5;
-        let z = i / 25;
-        let surface =
-            Surface::new(mesh.clone(), material.clone(), id.clone());
-        let renderer = Renderer::default();
-        let position = Position::at_xyz(x as f32, y as f32, z as f32);
-        let velocity = Velocity::with_y(10.0);
-        (surface, renderer, position, velocity)
-    }));
+    // Load a plane mesh 
+    let plane = assets
+        .load::<Mesh>((
+            "engine/meshes/plane.obj",
+            graphics.clone()
+        )).unwrap();
+    let plane = meshes.insert(plane);
+
+    // Create a simple floor and add the entity
+    let surface =
+        Surface::new(plane.clone(), material.clone(), id.clone());
+    let renderer = Renderer::default();
+    let scale = Scale::uniform(10.0);
+    scene.insert((surface, renderer, scale));
+
+    // Create a simple cube and add the entity 
+    let surface =
+        Surface::new(cube.clone(), material.clone(), id.clone());
+    let renderer = Renderer::default();
+    let position = Position::at_y(0.25);
+    scene.insert((surface, renderer, position));
 
     // Get the material id (also registers the material pipeline)
     let id =
@@ -118,7 +126,7 @@ fn init(world: &mut World) {
     let renderer = Renderer::default();
     scene.insert((surface, renderer));
 
-    // Create a movable camera (through the tick event)
+    // Create a movable camera
     let camera = Camera::new(120.0, 0.01, 5000.0, 16.0 / 9.0);
     scene.insert((
         Position::default(),

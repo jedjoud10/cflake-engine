@@ -2,7 +2,7 @@ use crate::{
     AlbedoMap, Basic, Camera, CameraUniform,
     DefaultMaterialResources, ForwardRenderer, Mesh, NormalMap,
     Pipelines, PostProcess, Renderer, SceneRenderPass, Sky,
-    WindowUniform,
+    WindowUniform, ShadowMapping,
 };
 use assets::Assets;
 use ecs::Scene;
@@ -20,10 +20,19 @@ fn init(world: &mut World) {
     let window = world.get::<Window>().unwrap();
     let mut assets = world.get_mut::<Assets>().unwrap();
 
-    // Create the scene renderer, pipeline manager, and post-processing
+    // Create the scene renderer, pipeline manager
     let renderer =
         ForwardRenderer::new(&graphics, &mut assets, window.size());
     let pipelines = Pipelines::new();
+
+    // Create a nice shadow map
+    let shadowmap = ShadowMapping::new(
+        4096f32,
+        100f32,
+        4096,
+        &graphics,
+        &mut assets
+    );
 
     // Drop fetched resources
     drop(graphics);
@@ -33,6 +42,7 @@ fn init(world: &mut World) {
     // Add composites and basic storages
     world.insert(renderer);
     world.insert(pipelines);
+    world.insert(shadowmap);
 
     // Add common storages
     world.insert(Storage::<Mesh>::default());
@@ -83,15 +93,12 @@ fn event(world: &mut World, event: &mut WindowEvent) {
 
 // Clear the window and render the entities to the texture
 fn render(world: &mut World) {
-    let graphics = world.get::<Graphics>().unwrap();
     let mut renderer = world.get_mut::<ForwardRenderer>().unwrap();
+    let mut _shadowmap = world.get_mut::<ShadowMapping>().unwrap();
     let renderer = &mut *renderer;
     let pipelines = world.get::<Pipelines>().unwrap();
     let meshes = world.get::<Storage<Mesh>>().unwrap();
 
-    // Get textures, pipelines, and encoder
-    let color = renderer.color_texture.as_render_target().unwrap();
-    let depth = renderer.depth_texture.as_render_target().unwrap();
     let pipelines = pipelines.extract_pipelines();
 
     // Skip if we don't have a camera to draw with
@@ -100,11 +107,7 @@ fn render(world: &mut World) {
         return;
     }
 
-    // Begin the render pass
-    let mut render_pass =
-        renderer.render_pass.begin(color, depth).unwrap();
-
-    // Create the shared material resources1
+    // Create the shared material resources
     let default = DefaultMaterialResources {
         camera_buffer: &renderer.camera_buffer,
         timing_buffer: &renderer.timing_buffer,
@@ -114,6 +117,28 @@ fn render(world: &mut World) {
         normal: &renderer.normal,
         sky_gradient: &renderer.sky_gradient,
     };
+
+    // Begin the scene shadow map render pass
+    let shadowmap = &mut *_shadowmap;
+    let depth = shadowmap.depth_tex.as_render_target().unwrap();
+    let mut render_pass = shadowmap
+        .render_pass.begin((), depth).unwrap();
+    let mut active = render_pass.bind_pipeline(&shadowmap.pipeline);
+
+    // Render the shadows first (fuck you)
+    for pipeline in pipelines.iter() {
+        pipeline.prerender(world, &meshes, &default, &mut active);
+    }
+    drop(active);
+    drop(render_pass);
+    drop(shadowmap);
+    drop(_shadowmap);
+
+    // Begin the scene color render pass
+    let color = renderer.color_texture.as_render_target().unwrap();
+    let depth = renderer.depth_texture.as_render_target().unwrap();
+    let mut render_pass =
+        renderer.render_pass.begin(color, depth).unwrap();
 
     // This will iterate over each material pipeline and draw the scene
     for pipeline in pipelines.iter() {

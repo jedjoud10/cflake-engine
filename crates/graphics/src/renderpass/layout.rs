@@ -14,6 +14,15 @@ pub trait ColorLayout {
     fn layout_info() -> Vec<TexelInfo>;
 }
 
+// No maidens
+impl ColorLayout for () {
+    type BlendingArray = [Option<BlendState>; 0];
+
+    fn layout_info() -> Vec<TexelInfo> {
+        Vec::new()
+    }
+}
+
 // Singular color attachment
 impl<T: ColorTexel> ColorLayout for T {
     type BlendingArray = [Option<BlendState>; 1];
