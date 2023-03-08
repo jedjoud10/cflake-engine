@@ -30,10 +30,10 @@ void main() {
 	float depth = linearize_depth(non_linear_depth, 0.01, 5000);
 
 	// Increase exposure
-	color *= 1.0;
+	color *= 1.2;
 
 	// Apply tonemapping and gamma mapping
-	color = pow(color, vec3(1.0 / 2.2));
+	color = pow(aces(color), vec3(1.0 / 2.2));
 
 	// Create a simple vignette
 	float vignette_size = 0.1;

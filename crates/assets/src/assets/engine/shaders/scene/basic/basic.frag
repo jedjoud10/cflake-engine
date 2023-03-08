@@ -55,11 +55,10 @@ void main() {
 
 	// Do some basic light calculations
 	vec3 direction = normalize(vec3(0, 1, 0));
-	vec3 shadowed = calculate_shadowed(m_position, shadow_map, shadow.lightspace, shadow.test);
-	float value = clamp(dot(direction, normal), 0, 1);
+	float shadowed = calculate_shadowed(m_position, shadow_map, shadow.lightspace);
+	float value = clamp(dot(direction, normal), 0, 1) * (1-shadowed);
 	vec3 lighting = vec3(value*2.0) + ambient * 0.2;
 
 	// Calculate diffuse lighting
-	frag = vec4(shadowed, 0);
-	//frag = vec4(lighting * albedo * material.tint, 1.0);
+	frag = vec4(lighting * albedo * material.tint, 1.0);
 }

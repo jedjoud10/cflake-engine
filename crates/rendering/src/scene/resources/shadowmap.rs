@@ -36,7 +36,6 @@ pub struct ShadowMapping {
 #[repr(C, align(64))]
 pub struct ShadowUniform {
     pub lightspace: vek::Vec4<vek::Vec4<f32>>,
-    pub test: vek::Vec4<vek::Vec4<f32>>,
 }
 
 impl ShadowMapping {
@@ -138,7 +137,6 @@ impl ShadowMapping {
                 graphics,
                 &[ShadowUniform {
                     lightspace: lightspace.cols,
-                    test: lightspace.cols,
                 }],
                 BufferMode::Dynamic,
                 BufferUsage::WRITE,
@@ -154,28 +152,16 @@ impl ShadowMapping {
         rotation: vek::Quaternion<f32>
     ) {
         let rot = vek::Mat4::from(rotation);
-        let view = vek::Mat4::<f32>::look_at_lh(
+        let view = vek::Mat4::<f32>::look_at_rh(
             vek::Vec3::zero(),
-            rot.mul_point(vek::Vec3::unit_z()),
-            rot.mul_point(vek::Vec3::unit_y()),
+            rot.mul_point(-vek::Vec3::unit_z()),
+            rot.mul_point(-vek::Vec3::unit_y()),
         );
-
-
-        let OPENGL_TO_WGPU_MATRIX: vek::Mat4<f32> = vek::Mat4::new(
-            1.0, 0.0, 0.0, 0.0,
-            0.0, 1.0, 0.0, 0.0,
-            0.0, 0.0, 0.5, 0.0,
-            0.0, 0.0, 0.5, 1.0,
-        );
-
         self.view = view;
-        let lightspace = self.projection * view; 
-        let test = lightspace;
-
+        let lightspace = self.projection * self.view;
         
         self.buffer.write(&[ShadowUniform {
             lightspace: lightspace.cols,
-            test: test.cols,
         }], 0).unwrap();
     }
 }
