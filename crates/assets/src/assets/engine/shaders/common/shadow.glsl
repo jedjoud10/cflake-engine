@@ -1,9 +1,8 @@
 // UBO set globally at the start of the frame
 layout(set = 0, binding = 4) uniform ShadowUniform {
     // Projection & view matices, and their mult
-    mat4 projection;
-    mat4 view;
     mat4 lightspace;
+    mat4 test;
 
     /*
     // Shadow uniform strength and params
@@ -16,17 +15,18 @@ layout(set = 0, binding = 4) uniform ShadowUniform {
 #extension GL_EXT_samplerless_texture_functions : require
 
 // Check if a pixel is obscured by the shadow map
-float calculate_shadowed(
+vec3 calculate_shadowed(
     in vec3 position,
     in texture2D shadow_map,
-    in mat4 lightspace
+    in mat4 lightspace,
+    in mat4 test
 ) {
     // Transform the world coordinates to NDC coordinates 
     vec4 ndc = lightspace * vec4(position, 1.0); 
     if(abs(ndc.x) > 1.0 ||
        abs(ndc.y) > 1.0 ||
        ndc.z > 1.0 || ndc.z < 0.0) {
-        return 0.0;
+        return vec3(0.0);
     }
 
     // Project the world point into uv coordinates to read from
@@ -38,6 +38,6 @@ float calculate_shadowed(
     float bias = 0.001;
 
     // Compare the greatest depth (from the shadowmap) and current depth
-    return closest;
+    return vec3(closest);
     //return current > (closest+bias) ? 1.0 : 0.0;
 }

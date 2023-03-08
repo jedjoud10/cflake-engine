@@ -35,7 +35,7 @@ impl Time {
     }
 
     // Calculate the elapsed time that have passed since the start of the engine
-    pub fn since_startup(&self) -> Duration {
+    pub fn elapsed(&self) -> Duration {
         Instant::now() - self.startup()
     }
 

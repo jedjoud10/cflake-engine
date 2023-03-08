@@ -23,6 +23,10 @@ pub struct ShadowMapping {
     pub(crate) pipeline: ShadowGraphicsPipeline,
     pub(crate) shader: Shader,    
 
+    // Cached matrices
+    pub(crate) projection: vek::Mat4<f32>,
+    pub(crate) view: vek::Mat4<f32>,
+
     // This is the corresponding data that must be sent to the shader
     pub(crate) buffer: UniformBuffer<ShadowUniform>,
 }
@@ -31,9 +35,8 @@ pub struct ShadowMapping {
 #[derive(Clone, Copy, PartialEq, Pod, Zeroable, Default)]
 #[repr(C, align(64))]
 pub struct ShadowUniform {
-    pub projection: vek::Vec4<vek::Vec4<f32>>,
-    pub view: vek::Vec4<vek::Vec4<f32>>,
     pub lightspace: vek::Vec4<vek::Vec4<f32>>,
+    pub test: vek::Vec4<vek::Vec4<f32>>,
 }
 
 impl ShadowMapping {
@@ -121,19 +124,10 @@ impl ShadowMapping {
             far: depth / 2.0,
         };
 
-        // Create the projection matrix from the frustum
-        let proj = vek::Mat4::orthographic_rh_zo(frustum);
-
-        // Create a temporary view matrix
-        let rot = vek::Quaternion::rotation_x(40f32.to_radians());
-        let rot = vek::Mat4::from(rot);
-        let view = vek::Mat4::<f32>::look_at_rh(
-            vek::Vec3::zero(),
-            rot.mul_point(vek::Vec3::unit_z()),
-            rot.mul_point(vek::Vec3::unit_y()),
-        );
-
-        let lightspace = proj * view; 
+        // Create the projection matrix and the view matrix (identity)
+        let projection = vek::Mat4::orthographic_rh_zo(frustum);
+        let view = vek::Mat4::identity();
+        let lightspace = projection*view; 
 
         Self {
             render_pass,
@@ -143,13 +137,45 @@ impl ShadowMapping {
             buffer: UniformBuffer::from_slice(
                 graphics,
                 &[ShadowUniform {
-                    projection: proj.cols,
-                    view: view.cols,
                     lightspace: lightspace.cols,
+                    test: lightspace.cols,
                 }],
                 BufferMode::Dynamic,
                 BufferUsage::WRITE,
-            ).unwrap()
+            ).unwrap(),
+            projection,
+            view,
         }
+    }
+
+    // Update the rotation of the sun shadows using a new rotation 
+    pub(crate) fn update(
+        &mut self, 
+        rotation: vek::Quaternion<f32>
+    ) {
+        let rot = vek::Mat4::from(rotation);
+        let view = vek::Mat4::<f32>::look_at_rh(
+            vek::Vec3::zero(),
+            rot.mul_point(-vek::Vec3::unit_z()),
+            rot.mul_point(-vek::Vec3::unit_y()),
+        );
+
+
+        let OPENGL_TO_WGPU_MATRIX: vek::Mat4<f32> = vek::Mat4::new(
+            1.0, 0.0, 0.0, 0.0,
+            0.0, 1.0, 0.0, 0.0,
+            0.0, 0.0, 0.5, 0.0,
+            0.0, 0.0, 0.5, 1.0,
+        );
+
+        self.view = view;
+        let lightspace = self.projection * view; 
+        let test = lightspace;
+
+        
+        self.buffer.write(&[ShadowUniform {
+            lightspace: lightspace.cols,
+            test: test.cols,
+        }], 0).unwrap();
     }
 }

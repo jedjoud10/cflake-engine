@@ -171,8 +171,8 @@ fn update(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
 
     let camera =
-        scene.find_mut::<(&Camera, &mut Position, &mut Rotation)>();
-    if let Some((_, position, rotation)) = camera {
+        scene.find_mut::<(&mut Camera, &mut Position, &mut Rotation)>();
+    if let Some((camera, position, rotation)) = camera {
         // Forward and right vectors relative to the camera
         let forward = rotation.forward();
         let right = rotation.right();
@@ -199,6 +199,11 @@ fn update(world: &mut World) {
         } else if input.get_button("down").held() {
             velocity += -up;
         }
+
+        // The scroll wheel will change the camera FOV
+        let delta = input.get_axis(Axis::MouseScrollDelta);
+        camera.hfov += delta * 10.0 * time.delta().as_secs_f32();
+        camera.update_projection();
 
         // Update the position with the new velocity
         **position += velocity * time.delta().as_secs_f32() * 20.0;

@@ -19,6 +19,7 @@ fn init(world: &mut World) {
 // Winit device event (called by handler when needed)
 fn event(world: &mut World, ev: &DeviceEvent) {
     let mut input = world.get_mut::<Input>().unwrap();
+
     match ev {
         // Update mouse position delta and summed  pos
         DeviceEvent::MouseMotion { delta } => {
@@ -81,6 +82,8 @@ fn event(world: &mut World, ev: &DeviceEvent) {
 // This will also read the state from gamepads using gilrs
 fn update(world: &mut World) {
     let mut input = world.get_mut::<Input>().unwrap();
+
+    // Update the state of the keys/buttons
     for (_, state) in input.keys.iter_mut() {
         *state = match state {
             crate::ButtonState::Pressed => ButtonState::Held,
@@ -88,6 +91,11 @@ fn update(world: &mut World) {
             crate::ButtonState::Held => ButtonState::Held,
             crate::ButtonState::None => ButtonState::None,
         };
+    }
+
+    // Reset the mouse scroll delta (since winit doesn't reset it for us)
+    if let Some(data) = input.axii.get_mut(&Axis::MouseScrollDelta) {
+        *data = 0f32;
     }
 
     // Try to get the currently used gamepad

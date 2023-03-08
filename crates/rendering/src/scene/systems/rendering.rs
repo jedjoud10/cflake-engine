@@ -68,7 +68,6 @@ fn event(world: &mut World, event: &mut WindowEvent) {
             let size = vek::Extent2::new(size.width, size.height);
             let mut renderer =
                 world.get_mut::<ForwardRenderer>().unwrap();
-            let graphics = world.get::<Graphics>().unwrap();
 
             // Resize the color and depth texture
             renderer.depth_texture.resize(size).unwrap();
@@ -98,6 +97,7 @@ fn render(world: &mut World) {
     let renderer = &mut *renderer;
     let pipelines = world.get::<Pipelines>().unwrap();
     let meshes = world.get::<Storage<Mesh>>().unwrap();
+    let time = world.get::<Time>().unwrap();
 
     let pipelines = pipelines.extract_pipelines();
 
@@ -120,6 +120,7 @@ fn render(world: &mut World) {
 
     // Begin the scene shadow map render pass
     let shadowmap = &mut *_shadowmap;
+    shadowmap.update(vek::Quaternion::rotation_x(time.elapsed().as_secs_f32() * 0.05));
     let depth = shadowmap.depth_tex.as_render_target().unwrap();
     let mut render_pass = shadowmap
         .render_pass.begin((), depth).unwrap();
