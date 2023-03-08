@@ -105,7 +105,7 @@ fn init(world: &mut World) {
     let surface =
         Surface::new(plane.clone(), material.clone(), id.clone());
     let renderer = Renderer::default();
-    let scale = Scale::uniform(10.0);
+    let scale = Scale::uniform(25.0);
     let position = Position::at_y(-1.0 );
     scene.insert((position, surface, renderer, scale));
 

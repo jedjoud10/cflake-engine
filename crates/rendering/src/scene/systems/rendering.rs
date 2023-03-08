@@ -27,8 +27,8 @@ fn init(world: &mut World) {
 
     // Create a nice shadow map
     let shadowmap = ShadowMapping::new(
-        20f32,
-        100f32,
+        10f32,
+        40f32,
         4096,
         &graphics,
         &mut assets

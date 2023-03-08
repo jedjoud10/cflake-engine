@@ -125,7 +125,7 @@ impl ShadowMapping {
         let proj = vek::Mat4::orthographic_rh_zo(frustum);
 
         // Create a temporary view matrix
-        let rot = vek::Quaternion::rotation_x(25f32.to_radians());
+        let rot = vek::Quaternion::rotation_x(40f32.to_radians());
         let rot = vek::Mat4::from(rot);
         let view = vek::Mat4::<f32>::look_at_rh(
             vek::Vec3::zero(),

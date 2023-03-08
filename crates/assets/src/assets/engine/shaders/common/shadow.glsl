@@ -25,8 +25,8 @@ float calculate_shadowed(
     vec4 ndc = lightspace * vec4(position, 1.0); 
     if(abs(ndc.x) > 1.0 ||
        abs(ndc.y) > 1.0 ||
-       abs(ndc.z) > 1.0) {
-        return 0.5;
+       ndc.z > 1.0 || ndc.z < 0.0) {
+        return 0.0;
     }
 
     // Project the world point into uv coordinates to read from
@@ -38,7 +38,6 @@ float calculate_shadowed(
     float bias = 0.001;
 
     // Compare the greatest depth (from the shadowmap) and current depth
-    return pow(closest, 5);
-    //return pow(current, 5)-pow(closest, 5);
-    //return current < (closest) ? 1.0 : 0.0;
+    return closest;
+    //return current > (closest+bias) ? 1.0 : 0.0;
 }
