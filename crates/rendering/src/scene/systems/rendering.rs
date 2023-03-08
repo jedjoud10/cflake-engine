@@ -120,7 +120,7 @@ fn render(world: &mut World) {
 
     // Begin the scene shadow map render pass
     let shadowmap = &mut *_shadowmap;
-    shadowmap.update(vek::Quaternion::rotation_x(time.elapsed().as_secs_f32() * 0.05));
+    shadowmap.update(vek::Quaternion::rotation_x(time.elapsed().as_secs_f32() * 0.2));
     let depth = shadowmap.depth_tex.as_render_target().unwrap();
     let mut render_pass = shadowmap
         .render_pass.begin((), depth).unwrap();

@@ -154,10 +154,10 @@ impl ShadowMapping {
         rotation: vek::Quaternion<f32>
     ) {
         let rot = vek::Mat4::from(rotation);
-        let view = vek::Mat4::<f32>::look_at_rh(
+        let view = vek::Mat4::<f32>::look_at_lh(
             vek::Vec3::zero(),
-            rot.mul_point(-vek::Vec3::unit_z()),
-            rot.mul_point(-vek::Vec3::unit_y()),
+            rot.mul_point(vek::Vec3::unit_z()),
+            rot.mul_point(vek::Vec3::unit_y()),
         );
 
 

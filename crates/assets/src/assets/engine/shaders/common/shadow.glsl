@@ -22,7 +22,7 @@ vec3 calculate_shadowed(
     in mat4 test
 ) {
     // Transform the world coordinates to NDC coordinates 
-    vec4 ndc = lightspace * vec4(position, 1.0); 
+    vec4 ndc = test * vec4(position, 1.0); 
     if(abs(ndc.x) > 1.0 ||
        abs(ndc.y) > 1.0 ||
        ndc.z > 1.0 || ndc.z < 0.0) {
@@ -33,6 +33,7 @@ vec3 calculate_shadowed(
     vec3 uvs = ndc.xyz;
     uvs.xy *= 0.5;
     uvs.xy += 0.5;
+    uvs.y = 1-uvs.y;
     float closest = texelFetch(shadow_map, ivec2(uvs.xy * 4096), 0).r;
     float current = uvs.z;
     float bias = 0.001;
