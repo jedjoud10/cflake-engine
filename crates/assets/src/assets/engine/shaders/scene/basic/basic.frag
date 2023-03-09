@@ -51,14 +51,24 @@ void main() {
 	// Calculate ambient color
 	float y = normal.y;
 	y = clamp(y, 0, 1);
-	vec3 ambient = texture(sampler2D(gradient_map, gradient_map_sampler), vec2(0.5, 1.0)).rgb;
+	vec3 ambient = texture(sampler2D(gradient_map, gradient_map_sampler), vec2(y, 1.0)).rgb;
 
-	// Do some basic light calculations
-	vec3 direction = normalize(vec3(0, 1, 0));
+	// Calculate light dir 
+	// TODO: Use scene uniform
+	vec3 light = normalize(vec3(0, 1, 0));
+	
+	// Check if the fragment is shadowed
 	float shadowed = calculate_shadowed(m_position, shadow_map, shadow.lightspace);
-	float value = clamp(dot(direction, normal), 0, 1) * (1-shadowed);
-	vec3 lighting = vec3(value*2.0) + ambient * 0.2;
+	
+	// Basic dot product light calculation
+	float value = clamp(dot(light, normal), 0, 1) * (1-shadowed);
+	vec3 lighting = (value*2.0) + ambient + 0.1; 
+
+	// Calculate specular reflections
+	vec3 view = normalize(camera.position.xyz - m_position);
+	vec3 reflected = reflect(-light, normal);
+	float specular = pow(max(dot(reflected, view), 0), 32);
 
 	// Calculate diffuse lighting
-	frag = vec4(lighting * albedo * material.tint, 1.0);
+	frag = vec4(lighting * albedo * material.tint + specular*0.2, 1.0);
 }

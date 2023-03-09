@@ -8,7 +8,6 @@ layout(location = 0) out vec4 frag;
 
 // Fetch the scene color data
 layout(set = 1, binding = 0) uniform texture2D color_map;
-layout(set = 1, binding = 1) uniform sampler color_map_sampler;
 
 // Fetch the scene depth data
 layout(set = 1, binding = 2) uniform texture2D depth_map;
@@ -23,7 +22,7 @@ void main() {
 
 	// Fetch the color data
 	vec2 coords = vec2(x, y);
-	vec3 color = texture(sampler2D(color_map, color_map_sampler), coords).rgb;
+	vec3 color = texelFetch(color_map, ivec2(gl_FragCoord.xy), 0).rgb;
 
 	// Fetch the depth data
 	float non_linear_depth = texelFetch(shadowmap, ivec2(gl_FragCoord.xy), 0).r;

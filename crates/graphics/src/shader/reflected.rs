@@ -6,6 +6,7 @@ use crate::{
 };
 use ahash::{AHashMap, AHashSet};
 use naga::{AddressSpace, ResourceBinding, TypeInner};
+use wgpu::TextureFormatFeatureFlags;
 
 // This container stores all data related to reflected shaders
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -402,10 +403,11 @@ fn create_pipeline_layout_from_shader(
 
 // Reflect a naga module's bindings and constants
 pub(super) fn reflect_module<M: ShaderModule>(
+    graphics: &Graphics,
     naga: &naga::Module,
     texture_formats: &super::TextureFormats,
 ) -> ReflectedModule {
-    let bind_group_layouts = reflect_binding_group::<M>(naga, texture_formats);
+    let bind_group_layouts = reflect_binding_group::<M>(graphics, naga, texture_formats);
     let push_constant = reflect_push_constant::<M>(naga);
 
     let last_valid_bind_group_layout = bind_group_layouts
@@ -422,12 +424,13 @@ pub(super) fn reflect_module<M: ShaderModule>(
 
 // Fetches the used binding groups of a given naga module
 fn reflect_binding_group<M: ShaderModule>(
+    graphics: &Graphics,
     naga: &naga::Module,
     texture_formats: &super::TextureFormats,
 ) -> [Option<BindGroupLayout>; 4] {
     let mut bind_group_layouts: [Option<BindGroupLayout>; 4] =
         [None, None, None, None];
-    let entries = reflect_binding_entries::<M>(naga, texture_formats);
+    let entries = reflect_binding_entries::<M>(graphics, naga, texture_formats);
 
     // Merge the binding entries into their respective bind group layouts
     for bind_entry_layout in entries {
@@ -449,6 +452,7 @@ fn reflect_binding_group<M: ShaderModule>(
 
 // Fetches the used binding entries of a given naga module
 fn reflect_binding_entries<M: ShaderModule>(
+    graphics: &Graphics,
     naga: &naga::Module,
     texture_formats: &super::TextureFormats,
 ) -> Vec<BindResourceLayout> {
@@ -486,7 +490,7 @@ fn reflect_binding_entries<M: ShaderModule>(
                     dim,
                     class,
                     arrayed,
-                } => reflect_texture(&value.name.as_ref().unwrap(), class, dim, texture_formats),
+                } => reflect_texture(&value.name.as_ref().unwrap(), class, dim, graphics, texture_formats),
 
                 // Uniform Sampler
                 TypeInner::Sampler { comparison } => {
@@ -671,6 +675,7 @@ fn reflect_texture(
     name: &str,
     class: &naga::ImageClass,
     dim: &naga::ImageDimension,
+    graphics: &Graphics,
     texture_formats: &super::TextureFormats,
 ) -> BindResourceType {
     let info = **texture_formats.get(name).as_ref().unwrap();
@@ -685,13 +690,16 @@ fn reflect_texture(
                     naga::ScalarKind::Uint => {
                         wgpu::TextureSampleType::Uint
                     }
-                    naga::ScalarKind::Float => if matches!(info.channels(), TexelChannels::Depth) {
-                        wgpu::TextureSampleType::Float {
-                            filterable: false,
-                        }
-                    } else {
-                        wgpu::TextureSampleType::Float {
-                            filterable: true,
+                    naga::ScalarKind::Float => {
+                        // Check if the format is filterable or not
+                        // TODO: REMOVE THIS SHIT
+                        let features = graphics.adapter().get_texture_format_features(info.format());
+                        let depth =  matches!(info.channels(), TexelChannels::Depth);    
+
+                        if features.flags.contains(TextureFormatFeatureFlags::FILTERABLE) && !depth {
+                            wgpu::TextureSampleType::Float { filterable: true }
+                        } else {
+                            wgpu::TextureSampleType::Float { filterable: false }
                         }
                     }
                     _ => panic!(),

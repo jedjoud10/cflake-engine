@@ -114,7 +114,7 @@ impl<'a> Compiler<'a> {
 
         // Reflect the module with the given bind layout
         let time = std::time::Instant::now();
-        let reflected = super::reflect_module::<M>(&naga, &self.texture_formats);
+        let reflected = super::reflect_module::<M>(&graphics, &naga, &self.texture_formats);
         log::debug!(
             "Reflected shader {name} sucessfully! Took {}ms",
             time.elapsed().as_millis()
