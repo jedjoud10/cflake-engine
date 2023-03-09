@@ -5,10 +5,10 @@ use crate::{
 };
 use assets::Assets;
 use graphics::{
-    BindGroup, BlendConfig, CompareFunction, Compiled, DepthConfig,
-    FragmentModule, Graphics, Normalized, PrimitiveConfig,
-    PushConstants, StencilConfig, Texture2D, UniformBuffer,
-    VertexModule, WindingOrder, RGBA,
+    BindGroup, BlendConfig, CompareFunction, Compiled,
+    DepthConfig, FragmentModule, Graphics, Normalized,
+    PrimitiveConfig, PushConstants, StencilConfig, Texture2D,
+    UniformBuffer, VertexModule, WindingOrder, RGBA, Shader,
 };
 use world::World;
 
@@ -35,17 +35,11 @@ pub trait Material: 'static + Sized {
     // The resources that we need to fetch from the world to set the descriptor sets
     type Resources<'w>: 'w;
 
-    // Load the vertex module and process it
-    fn vertex(
+    // Create a shader for this material
+    fn shader(
         graphics: &Graphics,
         assets: &mut Assets,
-    ) -> Compiled<VertexModule>;
-
-    // Load the fragment module and process it
-    fn fragment(
-        graphics: &Graphics,
-        assets: &mut Assets,
-    ) -> Compiled<FragmentModule>;
+    ) -> Shader;
 
     // Get the required mesh attributes that we need to render a surface
     // If a surface does not support these attributes, it will not be rendered
@@ -82,6 +76,12 @@ pub trait Material: 'static + Sized {
     fn blend_config() -> Option<BlendConfig<SceneColor>> {
         None
     }
+
+    // Does this material support casting shadows onto other surfaces?
+    fn casts_shadows() -> bool {
+        true
+    }
+
 
     // Fetch the required resources from the world
     fn fetch<'w>(world: &'w World) -> Self::Resources<'w>;

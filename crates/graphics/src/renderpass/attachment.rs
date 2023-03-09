@@ -53,6 +53,12 @@ impl<'a, T: Texel> RenderTarget<'a, T> {
     }
 }
 
+impl<'a> ColorAttachments<'a, ()> for () {
+    fn views(&self) -> Vec<&'a wgpu::TextureView> {
+        Vec::new()
+    }
+}
+
 impl<'a, T: ColorTexel> ColorAttachments<'a, T>
     for RenderTarget<'a, T>
 {

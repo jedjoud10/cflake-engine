@@ -1,8 +1,8 @@
 use assets::Assets;
 use egui::{ClippedPrimitive, ImageData, TextureId, TexturesDelta};
 use graphics::{
-    BlendComponent, BlendFactor, BlendOperation, BlendState,
-    BufferMode, BufferUsage, ColorOperations, Compiler,
+    BlendComponent, BlendFactor, BlendOperation,
+    BlendState, BufferMode, BufferUsage, ColorOperations, Compiler,
     FragmentModule, GpuPod, Graphics, LoadOp, Normalized, Operation,
     PerVertex, PrimitiveConfig, RenderPass, SamplerFilter,
     SamplerMipMaps, SamplerSettings, SamplerWrap, Shader, StoreOp,
@@ -11,6 +11,10 @@ use graphics::{
     VertexInput, VertexModule, Window, R, RGBA, XY, XYZW,
 };
 use rendering::{FinalGraphicsPipeline, FinalRenderPass};
+
+// Font texel type and font map
+type FontTexel = RGBA<Normalized<u8>>;
+type FontMap = Texture2D<FontTexel>;
 
 // A global rasterizer that will draw the Egui elements onto the screen
 pub(crate) struct Rasterizer {
@@ -28,7 +32,7 @@ pub(crate) struct Rasterizer {
     triangles: TriangleBuffer<u32>,
 
     // Egui font texture
-    texture: Option<Texture2D<RGBA<Normalized<u8>>>>,
+    texture: Option<FontMap>,
 }
 
 fn create_vertex_buffer<V: graphics::Vertex>(
@@ -57,7 +61,7 @@ fn create_rf32_texture(
     graphics: &Graphics,
     extent: vek::Extent2<u32>,
     texels: &[f32],
-) -> Texture2D<RGBA<Normalized<u8>>> {
+) -> Texture2D<FontTexel> {
     let texels = texels
         .iter()
         .map(|x| vek::Vec4::broadcast(x * u8::MAX as f32).as_::<u8>())
@@ -89,19 +93,24 @@ impl Rasterizer {
         let vertex = assets
             .load::<VertexModule>("engine/shaders/post/gui.vert")
             .unwrap();
-        let vertex =
-            Compiler::new(vertex).compile(assets, graphics).unwrap();
 
         // Load the fragment module for the display shader
         let fragment = assets
             .load::<FragmentModule>("engine/shaders/post/gui.frag")
             .unwrap();
-        let fragment = Compiler::new(fragment)
-            .compile(assets, graphics)
-            .unwrap();
 
-        // Combine the modules to the shader
-        let shader = Shader::new(graphics, &vertex, &fragment);
+        // Create the bind layout for the GUI shader
+        let mut compiler = Compiler::new(assets);
+        compiler.use_texture::<FontMap>("font");
+        compiler.use_fill_ubo("window"); 
+
+        // Compile the modules into a shader
+        let shader = Shader::new(
+            graphics,
+            vertex,
+            fragment,
+            compiler,
+        ).unwrap();
 
         // Create the render pass that will write to the swapchain
         let render_pass = FinalRenderPass::new(
@@ -266,9 +275,6 @@ impl Rasterizer {
                 .unwrap();
 
             group.set_texture("font", texture).unwrap();
-            group
-                .set_sampler("font_sampler", texture.sampler())
-                .unwrap();
         });
 
         // Keep track of the vertex and triangle offset

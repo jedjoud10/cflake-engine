@@ -8,17 +8,21 @@ layout(location = 2) in vec3 m_tangent;
 layout(location = 3) in vec3 m_bitangent;
 layout(location = 4) in vec2 m_tex_coord;
 
-// Camera, scene, and time shared objects
+// Camera, scene, and shadowmap shared objects
 #include <engine/shaders/common/camera.glsl>
 #include <engine/shaders/common/scene.glsl>
-#include <engine/shaders/common/timing.glsl>
+#include <engine/shaders/common/extensions.glsl>
+#include <engine/shaders/common/shadow.glsl>
 
 // Sky gradient texture map
-layout(set = 0, binding = 4) uniform texture2D gradient_map;
-layout(set = 0, binding = 5) uniform sampler gradient_map_sampler;
+layout(set = 0, binding = 5) uniform texture2D gradient_map;
+layout(set = 0, binding = 6) uniform sampler gradient_map_sampler;
+
+// Shadow-map texture map
+layout(set = 0, binding = 7) uniform texture2D shadow_map;
 
 // Material scalar data
-layout(set = 1, binding = 4) uniform MaterialData {
+layout(set = 1, binding = 8) uniform MaterialData {
 	vec3 tint;
 	float bumpiness;
 } material;
@@ -35,7 +39,7 @@ void main() {
 	// Fetch the albedo color and normal map value
 	vec3 albedo = texture(sampler2D(albedo_map, albedo_map_sampler), m_tex_coord).rgb;
 	vec3 bumps = texture(sampler2D(normal_map, normal_map_sampler), m_tex_coord).rgb * 2.0 - 1.0;
-	bumps.xy *= material.bumpiness;
+	bumps.xy *= material.bumpiness * 0.4;
 
 	// Calculate the world space normals
 	mat3 tbn = mat3(
@@ -47,13 +51,24 @@ void main() {
 	// Calculate ambient color
 	float y = normal.y;
 	y = clamp(y, 0, 1);
-	vec3 ambient = texture(sampler2D(gradient_map, gradient_map_sampler), vec2(0.5, 1-y)).rgb;
+	vec3 ambient = texture(sampler2D(gradient_map, gradient_map_sampler), vec2(y, 1.0)).rgb;
 
-	// Do some basic light calculations
-	vec3 direction = vec3(0, 1, 0);
-	vec3 lighting = vec3(clamp(dot(direction, normal), 0, 1));
-	lighting += ambient * 0.2;
+	// Calculate light dir 
+	// TODO: Use scene uniform
+	vec3 light = normalize(vec3(0, 1, 0));
+	
+	// Check if the fragment is shadowed
+	float shadowed = calculate_shadowed(m_position, shadow_map, shadow.lightspace);
+	
+	// Basic dot product light calculation
+	float value = clamp(dot(light, normal), 0, 1) * (1-shadowed);
+	vec3 lighting = (value*2.0) + ambient + 0.1; 
+
+	// Calculate specular reflections
+	vec3 view = normalize(camera.position.xyz - m_position);
+	vec3 reflected = reflect(-light, normal);
+	float specular = pow(max(dot(reflected, view), 0), 32);
 
 	// Calculate diffuse lighting
-	frag = vec4(lighting * albedo * material.tint, 1.0);
+	frag = vec4(lighting * albedo * material.tint + specular*0.2, 1.0);
 }

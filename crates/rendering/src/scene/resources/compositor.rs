@@ -1,9 +1,11 @@
 use assets::Assets;
 use graphics::{
-    Compiler, FragmentModule, Graphics, GraphicsPipeline, LoadOp,
-    Operation, PrimitiveConfig, RenderPass, Shader, StoreOp,
-    SwapchainFormat, VertexConfig, VertexModule,
+    Compiler, FragmentModule, Graphics, GraphicsPipeline,
+    LoadOp, Operation, PrimitiveConfig, RenderPass, Shader, StoreOp,
+    SwapchainFormat, VertexConfig, VertexModule, Texture2D,
 };
+
+use crate::{SceneColor, SceneDepth, WindowUniform, CameraUniform, ShadowMap};
 
 // This is what will write to the swapchain
 pub type FinalRenderPass = RenderPass<SwapchainFormat, ()>;
@@ -29,21 +31,26 @@ impl Compositor {
         let vertex = assets
             .load::<VertexModule>("engine/shaders/post/display.vert")
             .unwrap();
-        let vertex =
-            Compiler::new(vertex).compile(assets, graphics).unwrap();
 
         // Load the fragment module for the display shader
         let fragment = assets
-            .load::<FragmentModule>(
-                "engine/shaders/post/display.frag",
-            )
-            .unwrap();
-        let fragment = Compiler::new(fragment)
-            .compile(assets, graphics)
-            .unwrap();
+            .load::<FragmentModule>("engine/shaders/post/display.frag").unwrap();
+
+        // Create the bind layout for the compositor shader
+        let mut compiler = Compiler::new(assets);
+        compiler.use_texture::<Texture2D<SceneColor>>("color_map");
+        compiler.use_texture::<Texture2D<SceneDepth>>("depth_map");
+        compiler.use_texture::<ShadowMap>("shadowmap");
+        compiler.use_ubo::<WindowUniform>("window");
+        compiler.use_ubo::<CameraUniform>("camera");
 
         // Combine the modules to the shader
-        let shader = Shader::new(graphics, &vertex, &fragment);
+        let shader = Shader::new(
+            graphics,
+            vertex,
+            fragment,
+            compiler
+        ).unwrap();
 
         // Create the display render pass
         let render_pass = FinalRenderPass::new(

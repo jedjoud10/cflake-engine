@@ -48,6 +48,12 @@ pub trait ColorOperations<C: ColorLayout> {
     fn operations(&self) -> Vec<wgpu::Operations<wgpu::Color>>;
 }
 
+impl ColorOperations<()> for () {
+    fn operations(&self) -> Vec<wgpu::Operations<wgpu::Color>> {
+        Vec::new()
+    }
+}
+
 impl<T: ColorTexel> ColorOperations<T> for Operation<T> {
     fn operations(&self) -> Vec<wgpu::Operations<wgpu::Color>> {
         let load = match self.load {

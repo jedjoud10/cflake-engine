@@ -72,10 +72,10 @@ fn init(world: &mut World) {
         tint: vek::Rgb::one(),
     });
 
-    // Load the renderable mesh
-    let mesh = assets
+    // Load a cube mesh
+    let cube = assets
         .load::<Mesh>((
-            "engine/meshes/sphere.obj",
+            "engine/meshes/cube.obj",
             MeshImportSettings {
                 invert_tex_coords: vek::Vec2::new(false, true),
                 ..Default::default()
@@ -83,21 +83,45 @@ fn init(world: &mut World) {
             graphics.clone(),
         ))
         .unwrap();
-    let mesh = meshes.insert(mesh);
+    let cube = meshes.insert(cube);
 
-    // Add multiple objects
-    scene.extend_from_iter((0..125).into_iter().map(|i| {
-        // Create the new mesh entity components
-        let x = i % 5;
-        let y = (i % 25) / 5;
-        let z = i / 25;
-        let surface =
-            Surface::new(mesh.clone(), material.clone(), id.clone());
-        let renderer = Renderer::default();
-        let position = Position::at_xyz(x as f32, y as f32, z as f32);
-        let velocity = Velocity::with_y(10.0);
-        (surface, renderer, position, velocity)
-    }));
+    // Load a plane mesh 
+    let plane = assets
+        .load::<Mesh>((
+            "engine/meshes/plane.obj",
+            graphics.clone()
+        )).unwrap();
+    let plane = meshes.insert(plane);
+
+    // Load a sphere mesh 
+    let sphere = assets
+        .load::<Mesh>((
+            "engine/meshes/icosphere.obj",
+            graphics.clone()
+        )).unwrap();
+    let sphere = meshes.insert(sphere);
+
+    // Create a simple floor and add the entity
+    let surface =
+        Surface::new(plane.clone(), material.clone(), id.clone());
+    let renderer = Renderer::default();
+    let scale = Scale::uniform(25.0);
+    let position = Position::at_y(-1.0 );
+    scene.insert((position, surface, renderer, scale));
+
+    // Create a simple cube and add the entity 
+    let surface =
+        Surface::new(cube.clone(), material.clone(), id.clone());
+    let renderer = Renderer::default();
+    let position = Position::at_y(0.25);
+    scene.insert((surface, renderer, position));
+
+    // Create a simple sphere and add the entity 
+    let surface =
+        Surface::new(sphere.clone(), material.clone(), id.clone());
+    let renderer = Renderer::default();
+    let position = Position::at_y(1.5);
+    scene.insert((surface, renderer, position));
 
     // Get the material id (also registers the material pipeline)
     let id =
@@ -118,7 +142,7 @@ fn init(world: &mut World) {
     let renderer = Renderer::default();
     scene.insert((surface, renderer));
 
-    // Create a movable camera (through the tick event)
+    // Create a movable camera
     let camera = Camera::new(120.0, 0.01, 5000.0, 16.0 / 9.0);
     scene.insert((
         Position::default(),
@@ -145,11 +169,10 @@ fn update(world: &mut World) {
     let time = &*time;
     let input = world.get::<Input>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
-    let mut threadpool = world.get_mut::<ThreadPool>().unwrap();
 
     let camera =
-        scene.find_mut::<(&Camera, &mut Position, &mut Rotation)>();
-    if let Some((_, position, rotation)) = camera {
+        scene.find_mut::<(&mut Camera, &mut Position, &mut Rotation)>();
+    if let Some((camera, position, rotation)) = camera {
         // Forward and right vectors relative to the camera
         let forward = rotation.forward();
         let right = rotation.right();
@@ -176,6 +199,11 @@ fn update(world: &mut World) {
         } else if input.get_button("down").held() {
             velocity += -up;
         }
+
+        // The scroll wheel will change the camera FOV
+        let delta = input.get_axis(Axis::MouseScrollDelta);
+        camera.hfov += delta * 10.0 * time.delta().as_secs_f32();
+        camera.update_projection();
 
         // Update the position with the new velocity
         **position += velocity * time.delta().as_secs_f32() * 20.0;

@@ -1,16 +1,17 @@
 use std::any::TypeId;
 
 use crate::{
-    AlbedoMap, CameraBuffer, CameraUniform, DefaultMaterialResources,
-    EnabledMeshAttributes, Material, NormalMap, Renderer,
-    SceneBuffer, SceneUniform, TimingBuffer, TimingUniform,
+    AlbedoMap, AlbedoTexel, CameraBuffer, CameraUniform,
+    DefaultMaterialResources, EnabledMeshAttributes, Material,
+    NormalMap, NormalTexel, Renderer, SceneBuffer, SceneUniform,
+    TimingBuffer, TimingUniform, ShadowMapping, ShadowTexel, ShadowMap, ShadowUniform,
 };
 use ahash::AHashMap;
 use assets::Assets;
 use graphics::{
-    BindGroup, Compiled, Compiler, FragmentModule, Graphics,
-    Normalized, PushConstants, Sampler, Shader, Texture, Texture2D,
-    UniformBuffer, ValueFiller, VertexModule, RGBA,
+    BindGroup, Compiled, Compiler, FragmentModule,
+    Graphics, Normalized, PushConstants, Sampler, Shader, Texture,
+    Texture2D, UniformBuffer, ValueFiller, VertexModule, RGBA,
 };
 use utils::{Handle, Storage};
 
@@ -30,39 +31,54 @@ impl Material for Basic {
     type Resources<'w> = (
         world::Read<'w, Storage<AlbedoMap>>,
         world::Read<'w, Storage<NormalMap>>,
+        world::Read<'w, ShadowMapping>,
     );
 
-    // Load the vertex shader for this material
-    fn vertex(
+    // Load the respective Basic shader modules and compile them
+    fn shader(
         graphics: &Graphics,
         assets: &mut Assets,
-    ) -> Compiled<VertexModule> {
+    ) -> Shader {
+        // Load the vertex module from the assets
         let vert = assets
             .load::<VertexModule>(
                 "engine/shaders/scene/basic/basic.vert",
-            )
-            .unwrap();
-        Compiler::new(vert).compile(assets, graphics).unwrap()
-    }
+            ).unwrap();
 
-    // Load the fragment shader for this material
-    fn fragment(
-        graphics: &Graphics,
-        assets: &mut Assets,
-    ) -> Compiled<FragmentModule> {
+        // Load the fragment module from the assets
         let frag = assets
             .load::<FragmentModule>(
                 "engine/shaders/scene/basic/basic.frag",
-            )
-            .unwrap();
-        Compiler::new(frag).compile(assets, graphics).unwrap()
+            ).unwrap();
+
+        // Define the type layouts for the UBOs
+        let mut compiler = Compiler::new(assets);
+        compiler.use_ubo::<CameraUniform>("camera");
+        compiler.use_ubo::<SceneUniform>("scene");
+        compiler.use_ubo::<ShadowUniform>("shadow");
+        compiler.use_fill_ubo("material");
+
+        // Define the type layouts for the textures and samplers
+        compiler.use_texture::<AlbedoMap>("gradient_map");
+        compiler.use_texture::<ShadowMap>("shadow_map");
+        compiler.use_texture::<AlbedoMap>("albedo_map");
+        compiler.use_texture::<NormalMap>("normal_map");
+
+        // Compile the modules into a shader
+        Shader::new(
+            graphics,
+            vert,
+            frag,
+            compiler
+        ).unwrap()
     }
 
     // Fetch the texture storages
     fn fetch<'w>(world: &'w world::World) -> Self::Resources<'w> {
         let albedo_maps = world.get::<Storage<AlbedoMap>>().unwrap();
         let normal_maps = world.get::<Storage<NormalMap>>().unwrap();
-        (albedo_maps, normal_maps)
+        let shadow = world.get::<ShadowMapping>().unwrap();
+        (albedo_maps, normal_maps, shadow)
     }
 
     // Set the static bindings that will never change
@@ -74,17 +90,16 @@ impl Material for Basic {
         // Set the required common buffers
         group.set_buffer("camera", default.camera_buffer).unwrap();
         group.set_buffer("scene", default.scene_buffer).unwrap();
-        group.set_buffer("time", default.timing_buffer).unwrap();
+        group.set_buffer("shadow", &resources.2.buffer).unwrap();
 
         // Set the scene sky texture
         group
             .set_texture("gradient_map", default.sky_gradient)
             .unwrap();
+
+        // Set the scene shadow map
         group
-            .set_sampler(
-                "gradient_map_sampler",
-                default.sky_gradient.sampler(),
-            )
+            .set_texture("shadow_map", &resources.2.depth_tex)
             .unwrap();
     }
 
@@ -95,7 +110,7 @@ impl Material for Basic {
         default: &DefaultMaterialResources<'r>,
         group: &mut BindGroup<'r>,
     ) {
-        let (albedo_maps, normal_maps) = resources;
+        let (albedo_maps, normal_maps, _) = resources;
 
         // Get the albedo texture, and fallback to a white one
         let albedo_map = self
@@ -111,19 +126,13 @@ impl Material for Basic {
 
         // Set the material textures
         group.set_texture("albedo_map", albedo_map).unwrap();
-        group
-            .set_sampler("albedo_map_sampler", albedo_map.sampler())
-            .unwrap();
         group.set_texture("normal_map", normal_map).unwrap();
-        group
-            .set_sampler("normal_map_sampler", normal_map.sampler())
-            .unwrap();
 
         // Fill the material UBO with the specified fields automatically
         group
             .fill_ubo("material", |fill| {
-                fill.set_scalar("bumpiness", self.bumpiness).unwrap();
-                fill.set_vec3("tint", self.tint).unwrap();
+                fill.set("bumpiness", self.bumpiness).unwrap();
+                fill.set("tint", self.tint).unwrap();
             })
             .unwrap();
     }
@@ -137,7 +146,7 @@ impl Material for Basic {
         push_constants: &mut PushConstants,
     ) {
         push_constants
-            .set_mat4x4("matrix", renderer.matrix.cols)
+            .set("matrix", renderer.matrix.cols)
             .unwrap();
     }
 }

@@ -5,13 +5,14 @@ use crate::{
     },
     ActiveSceneRenderPass, DefaultMaterialResources,
     EnabledMeshAttributes, Material, Mesh, MeshAttribute, SceneColor,
-    SceneDepth, SceneRenderPass,
+    SceneDepth, SceneRenderPass, ActiveShadowGraphicsPipeline,
 };
 use assets::Assets;
 use graphics::{
-    ActiveRenderPass, CompareFunction, Depth, DepthConfig, Graphics,
-    GraphicsPipeline, PipelineInitializationError, RenderPass,
-    Shader, SwapchainFormat, VertexConfig, VertexInput,
+    ActiveRenderPass, CompareFunction, Depth,
+    DepthConfig, Graphics, GraphicsPipeline,
+    PipelineInitializationError, RenderPass, Shader, SwapchainFormat,
+    VertexConfig, VertexInput,
 };
 use std::marker::PhantomData;
 use utils::Storage;
@@ -37,14 +38,12 @@ pub struct Pipeline<M: Material> {
 impl<M: Material> Pipeline<M> {
     // Create a new material pipeline for the given material
     // This will load the shader, and create the graphics pipeline
-    pub fn new(
+    pub(crate) fn new(
         graphics: &Graphics,
         assets: &mut Assets,
     ) -> Result<Self, PipelineInitializationError> {
-        // Load the vertex and fragment modules, and create the shader
-        let vertex = M::vertex(graphics, assets);
-        let fragment = M::fragment(graphics, assets);
-        let shader = Shader::new(graphics, &vertex, &fragment);
+        // Load the material's shader
+        let shader = M::shader(graphics, assets);
 
         // Fetch the correct vertex config based on the material
         let vertex_config =
@@ -92,6 +91,16 @@ impl<M: Material> Pipeline<M> {
 
 // This trait will be implemented for Pipeline<T> to allow for dynamic dispatch
 pub trait DynamicPipeline {
+    // Executed before we call the "render" event in batch
+    // Used for shadow mapping
+    fn prerender<'r>(
+        &'r self,
+        world: &'r World,
+        meshes: &'r Storage<Mesh>,
+        default: &'r DefaultMaterialResources,
+        active: &mut ActiveShadowGraphicsPipeline<'_, 'r, '_>,
+    );
+
     // Render all surfaces that use the material of this pipeline
     fn render<'r>(
         &'r self,
@@ -103,6 +112,21 @@ pub trait DynamicPipeline {
 }
 
 impl<M: Material> DynamicPipeline for Pipeline<M> {
+    fn prerender<'r>(
+        &'r self,
+        world: &'r World,
+        meshes: &'r Storage<Mesh>,
+        default: &'r DefaultMaterialResources,
+        active: &mut ActiveShadowGraphicsPipeline<'_, 'r, '_>,
+    ) {
+        super::render_shadows::<M>(
+            world,
+            meshes,
+            default,
+            active,
+        );
+    }
+    
     fn render<'r>(
         &'r self,
         world: &'r World,

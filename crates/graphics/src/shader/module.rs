@@ -16,8 +16,11 @@ pub enum ModuleKind {
 // This trait is implemented for each shader module, like the vertex module or fragment module
 // Modules are uncompiled shaders that will later be converted to SPIRV and linked together
 pub trait ShaderModule: Sized {
+    // Create a new fake module with a name and source code
+    fn new(name: impl ToString, source: impl ToString) -> Self;
+
     // Get the main properties of the module
-    fn file_name(&self) -> &str;
+    fn name(&self) -> &str;
     fn source(&self) -> &str;
     fn kind() -> ModuleKind;
 
@@ -85,7 +88,14 @@ macro_rules! impl_asset_for_module {
 macro_rules! impl_module_trait {
     ($t: ty, $kind: expr) => {
         impl ShaderModule for $t {
-            fn file_name(&self) -> &str {
+            fn new(name: impl ToString, source: impl ToString) -> Self {
+                Self {
+                    name: name.to_string(),
+                    source: source.to_string(),
+                }
+            }
+
+            fn name(&self) -> &str {
                 &self.name
             }
 

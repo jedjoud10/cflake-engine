@@ -2,7 +2,7 @@ use crate::{
     AlbedoMap, Basic, Camera, CameraUniform, Compositor,
     DefaultMaterialResources, ForwardRenderer, Mesh, NormalMap,
     Pipelines, PostProcess, Renderer, SceneRenderPass, Sky,
-    WindowUniform,
+    WindowUniform, ShadowMapping,
 };
 use assets::Assets;
 use ecs::Scene;
@@ -14,7 +14,7 @@ use std::{mem::ManuallyDrop, sync::Arc};
 use utils::{Storage, Time};
 use world::{post_user, user, System, WindowEvent, World};
 
-// Inserts the compositor render pass and the composites
+// Inserts the compositor render pass
 fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
     let mut assets = world.get_mut::<Assets>().unwrap();
@@ -29,6 +29,7 @@ fn init(world: &mut World) {
 fn update(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
     let renderer = world.get::<ForwardRenderer>().unwrap();
+    let shadowmap = world.get::<ShadowMapping>().unwrap();
     let compositor = world.get::<Compositor>().unwrap();
     let mut window = world.get_mut::<Window>().unwrap();
 
@@ -44,13 +45,17 @@ fn update(world: &mut World) {
     // Bind the graphics pipeline
     let mut active = render_pass.bind_pipeline(&compositor.pipeline);
 
-    // Set the required shader uniforms
+    // Set the shared UBOs first (bind group 0)
     active.set_bind_group(0, |group| {
-        group.set_texture("color_map", src).unwrap();
-        group
-            .set_sampler("color_map_sampler", src.sampler())
-            .unwrap();
         group.set_buffer("window", &renderer.window_buffer).unwrap();
+        group.set_buffer("camera", &renderer.camera_buffer).unwrap();
+    });
+
+    // Set the maps that we will sample
+    active.set_bind_group(1, |group| {
+        group.set_texture("color_map", src).unwrap();
+        group.set_texture("depth_map", depth).unwrap();
+        group.set_texture("shadowmap", &shadowmap.depth_tex).unwrap();
     });
 
     // Draw 6 vertices (2 tris)

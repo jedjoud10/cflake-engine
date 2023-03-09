@@ -1,17 +1,18 @@
 use std::any::TypeId;
 
 use crate::{
-    AlbedoMap, CameraBuffer, CameraUniform, DefaultMaterialResources,
-    EnabledMeshAttributes, Material, NormalMap, Renderer,
-    SceneBuffer, SceneUniform, TimingBuffer, TimingUniform,
+    AlbedoMap, AlbedoTexel, CameraBuffer, CameraUniform,
+    DefaultMaterialResources, EnabledMeshAttributes, Material,
+    NormalMap, Renderer, SceneBuffer, SceneUniform, TimingBuffer,
+    TimingUniform,
 };
 use ahash::AHashMap;
 use assets::Assets;
 use graphics::{
-    BindGroup, Compiled, Compiler, Face, FragmentModule, Graphics,
-    Normalized, PrimitiveConfig, PushConstants, Sampler, Shader,
-    Texture, Texture2D, UniformBuffer, ValueFiller, VertexModule,
-    WindingOrder, RGBA,
+    BindGroup, Compiled, Compiler, Face, FragmentModule,
+    Graphics, Normalized, PrimitiveConfig, PushConstants, Sampler,
+    Shader, Texture, Texture2D, UniformBuffer, ValueFiller,
+    VertexModule, WindingOrder, RGBA,
 };
 use utils::{Handle, Storage};
 
@@ -24,33 +25,45 @@ pub struct Sky {
 impl Material for Sky {
     type Resources<'w> = world::Read<'w, Storage<AlbedoMap>>;
 
-    // Load the vertex shader for this material
-    fn vertex(
+    // Load the respective Sky shader modules and compile them
+    fn shader(
         graphics: &Graphics,
         assets: &mut Assets,
-    ) -> Compiled<VertexModule> {
+    ) -> Shader {
+        // Load the vertex module from the assets
         let vert = assets
             .load::<VertexModule>("engine/shaders/scene/sky/sky.vert")
             .unwrap();
-        Compiler::new(vert).compile(assets, graphics).unwrap()
-    }
 
-    // Load the fragment shader for this material
-    fn fragment(
-        graphics: &Graphics,
-        assets: &mut Assets,
-    ) -> Compiled<FragmentModule> {
+        // Load the fragment module from the assets
         let frag = assets
             .load::<FragmentModule>(
                 "engine/shaders/scene/sky/sky.frag",
             )
             .unwrap();
-        Compiler::new(frag).compile(assets, graphics).unwrap()
+
+        // Define the type layouts for the UBOs
+        let mut compiler = Compiler::new(assets);
+        compiler.use_ubo::<CameraUniform>("camera");
+        compiler.use_texture::<AlbedoMap>("gradient_map");
+
+        // Compile the modules into a shader
+        Shader::new(
+            graphics,
+            vert,
+            frag,
+            compiler
+        ).unwrap()
     }
 
     // Get the required mesh attributes that we need to render a surface
     fn attributes() -> EnabledMeshAttributes {
         EnabledMeshAttributes::POSITIONS
+    }
+
+    // The sky does NOT cast shadows 
+    fn casts_shadows() -> bool {
+        false
     }
 
     // Sky-spheres are always flipped inside out
@@ -94,8 +107,5 @@ impl Material for Sky {
 
         // Set the material textures
         group.set_texture("gradient_map", albedo_map).unwrap();
-        group
-            .set_sampler("gradient_map_sampler", albedo_map.sampler())
-            .unwrap();
     }
 }

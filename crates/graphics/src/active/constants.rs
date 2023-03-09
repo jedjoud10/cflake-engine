@@ -1,4 +1,9 @@
-use crate::{FillError, GpuPodRelaxed, ReflectedShader, ValueFiller};
+use arrayvec::ArrayVec;
+use itertools::Itertools;
+
+use crate::{
+    GpuPodRelaxed, ReflectedShader, SetFieldError, ValueFiller,
+};
 use std::{marker::PhantomData, sync::Arc};
 
 // Push constants are tiny bits of memory that are going to get stored directly in a command encoder
@@ -17,7 +22,7 @@ impl ValueFiller for PushConstants<'_> {
         &mut self,
         name: &'s str,
         value: T,
-    ) -> Result<(), FillError<'s>> {
+    ) -> Result<(), SetFieldError<'s>> {
         // Get shader and it's reflected data
         let reflected = &self.reflected;
 
@@ -32,36 +37,29 @@ impl ValueFiller for PushConstants<'_> {
                     .members
                     .iter()
                     .find(|members| &members.name == name);
-
                 member.map(|m| (m, range.stages))
             });
 
-        // Get the modules that contain the field
-        let valid = valid.collect::<Vec<_>>();
+        // Collect into an array instead of a vector
+        let array = valid.collect::<ArrayVec<_, 2>>();
 
-        // Return early if we don't have a field to set
-        if valid.is_empty() {
-            return Err(FillError::MissingField { name: name });
-        };
+        // Check if we can exit early (in case the field doesn't exist)
+        if array.is_empty() {
+            return Err(SetFieldError::MissingField { name });
+        }
 
         // Convert the data to a byte slice
         let value = [value];
         let bytes = bytemuck::cast_slice::<T, u8>(&value);
 
         // There is a possibility that the field is shared
-        if valid.len() == 2 && valid[0].0 == valid[1].0 {
-            let entry = &valid[1].0;
+        if array.len() == 2 && array[0].0 == array[1].0 {
+            let entry = &array[1].0;
             self.offsets.push(entry.offset);
             self.data.push(bytes.to_vec());
             self.stages.push(wgpu::ShaderStages::VERTEX_FRAGMENT);
         } else {
-            // Set the field separately
-            for (layout, stage) in valid {
-                // Return an error if the layout doesn't match the given data
-                if layout.size as usize != bytes.len() {
-                    return Err(FillError::WrongSize);
-                }
-
+            for (layout, stage) in array {
                 self.offsets.push(layout.offset);
                 self.data.push(bytes.to_vec());
                 self.stages.push(stage);

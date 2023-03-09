@@ -381,23 +381,41 @@ impl App {
         mut self,
         receiver: mpsc::Receiver<String>,
     ) -> Self {
-        // TODO: Create plugins to remove this shit
+        // Input system
         self.regsys(input::system);
-        self.regsys(ecs::system);
+
+        // Assets system
         self.regsys(assets::system);
+
+        // Scene systems
+        self.regsys(ecs::system);
         self.regsys(ecs::hierarchy);
+
+        // World system
         self.regsys(world::system);
+
+        // Utils systems
         self.regsys(utils::threadpool);
         self.regsys(utils::time);
+
+        // Audio system
         self.regsys(audio::system);
+
+        // Networking system
         self.regsys(networking::system);
+
+        // Graphics systems
         self.regsys(graphics::common);
         self.regsys(graphics::acquire);
         self.regsys(graphics::present);
+
+        // Rendering systems
         self.regsys(rendering::systems::camera::system);
         self.regsys(rendering::systems::composite::system);
         self.regsys(rendering::systems::matrix::system);
         self.regsys(rendering::systems::rendering::system);
+
+        // Gui system + stats update event
         self.regsys(gui::common);
         self.regsys(gui::acquire);
         self.regsys(gui::display);

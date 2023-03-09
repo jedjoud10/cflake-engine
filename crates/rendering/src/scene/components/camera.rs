@@ -14,7 +14,7 @@ pub struct Camera {
     projection: vek::Mat4<f32>,
 
     // Horizontal field of view of the camera
-    hfov: f32,
+    pub hfov: f32,
 
     // Aspect aspect_ratio of the camera
     aspect_ratio: f32,
@@ -38,7 +38,7 @@ fn new_projection_matrix(
     far: f32,
 ) -> vek::Mat4<f32> {
     let vfov = horizontal_to_vertical(hfov, aspect_ratio);
-    vek::Mat4::<f32>::perspective_rh_no(vfov, aspect_ratio, near, far)
+    vek::Mat4::<f32>::perspective_rh_zo(vfov, aspect_ratio, near, far)
 }
 
 // Create a new view matrix using a position and rotation

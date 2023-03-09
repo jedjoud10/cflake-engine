@@ -1,6 +1,6 @@
 use crate::{Asset, AssetInput, AssetLoadError, AsyncAsset};
 use ahash::AHashMap;
-use parking_lot::RwLock;
+use parking_lot::{RwLock, Mutex};
 
 use utils::ThreadPool;
 
@@ -25,6 +25,7 @@ pub struct AsyncHandle<A: Asset> {
 // Used for async asset loading
 type AsyncBoxedResult =
     Result<Box<dyn Any + Send + Sync>, AssetLoadError>;
+type AsyncLoadedAssets = Mutex<Vec<Option<AsyncBoxedResult>>>;
 type AsyncChannelResult = (AsyncBoxedResult, usize);
 type AsyncLoadedBytes = Arc<RwLock<AHashMap<PathBuf, Arc<[u8]>>>>;
 
@@ -45,7 +46,7 @@ pub struct Assets {
 
     // Keep track of the assets that were sucessfully loaded
     // The value corresponding to each key might be None in the case that the asset did not load (yet)
-    loaded: Vec<Option<AsyncBoxedResult>>,
+    loaded: AsyncLoadedAssets,
 
     // We can use these re-definitions to allow the user to change default asset paths
     hijack: AsyncHijackPaths,
@@ -285,7 +286,7 @@ impl Assets {
 impl Assets {
     // Load an asset using some explicit/default loading arguments
     pub fn load<'str, 'ctx, 'stg, A: Asset>(
-        &mut self,
+        &self,
         input: impl AssetInput<'str, 'ctx, 'stg, A>,
     ) -> Result<A, AssetLoadError> {
         // Check if the extension is valid
@@ -321,7 +322,7 @@ impl Assets {
 
     // Load multiple assets using some explicit/default loading arguments
     pub fn load_from_iter<'str, 'ctx, 'stg, A: Asset>(
-        &mut self,
+        &self,
         inputs: impl IntoIterator<
             Item = impl AssetInput<'str, 'ctx, 'stg, A>,
         >,
@@ -337,7 +338,7 @@ impl Assets {
 impl Assets {
     // Load an asset using some explicit/default loading arguments in another thread
     pub fn async_load<'str, A: AsyncAsset>(
-        &mut self,
+        &self,
         input: impl AssetInput<'str, 'static, 'static, A>,
         threadpool: &mut ThreadPool,
     ) -> AsyncHandle<A>
@@ -358,12 +359,12 @@ impl Assets {
         let hijack = self.hijack.clone();
 
         // Create the handle's key
-        let index = self.loaded.len();
+        let index = self.loaded.lock().len();
         let handle = AsyncHandle::<A> {
             _phantom: PhantomData,
             index,
         };
-        self.loaded.push(None);
+        self.loaded.lock().push(None);
 
         // Create a new task that will load this asset
         threadpool.execute(move || {
@@ -378,7 +379,7 @@ impl Assets {
     // Load multiple assets using some explicit/default loading arguments in another thread
     // This returns handle(s) that we can wait for and fetch later on
     pub fn async_load_from_iter<'s, A: AsyncAsset>(
-        &mut self,
+        &self,
         inputs: impl IntoIterator<
             Item = impl AssetInput<'s, 'static, 'static, A> + Send,
         >,
@@ -391,8 +392,9 @@ impl Assets {
         // Create a temporary threadpool scope for these assets only
         let mut outer = Vec::<AsyncHandle<A>>::new();
         let reference = &mut outer;
+        let mut loaded = self.loaded.lock();
         threadpool.scope(move |scope| {
-            for (offset, input) in inputs.into_iter().enumerate() {
+            for input in inputs.into_iter() {
                 // Check the extension on a per file basis
                 let (path, settings, context) = input.split();
                 let path = Path::new(OsStr::new(path));
@@ -406,12 +408,12 @@ impl Assets {
                 let hijack = self.hijack.clone();
 
                 // Create the handle's key and insert it
-                let index = self.loaded.len() + offset;
+                let index = loaded.len();
                 reference.push(AsyncHandle::<A> {
                     _phantom: PhantomData,
                     index,
                 });
-                self.loaded.push(None);
+                loaded.push(None);
 
                 // Start telling worker threads to begin loading the assets
                 scope.execute(move || {
@@ -427,11 +429,12 @@ impl Assets {
 
     // Fetches the loaded assets from the receiver and caches them locally
     pub fn refresh(&mut self) {
+        let loaded = self.loaded.get_mut();
         for (result, index) in self.receiver.try_iter() {
-            let len = self.loaded.len().max(index + 1);
-            self.loaded.resize_with(len, || None);
+            let len = loaded.len().max(index + 1);
+            loaded.resize_with(len, || None);
 
-            self.loaded[index] = Some(result);
+            loaded[index] = Some(result);
         }
     }
 
@@ -441,7 +444,7 @@ impl Assets {
         handle: &AsyncHandle<A>,
     ) -> bool {
         self.refresh();
-        self.loaded
+        self.loaded.get_mut()
             .get(handle.index)
             .map(|x| x.is_some())
             .unwrap_or_default()
@@ -458,7 +461,8 @@ impl Assets {
         }
 
         // Replace the slot with None
-        let old = self.loaded[handle.index].take().unwrap();
+        let loaded = self.loaded.get_mut();
+        let old = loaded[handle.index].take().unwrap();
         old.map(|b| *b.downcast::<A>().unwrap())
     }
 

@@ -23,7 +23,7 @@ use std::{
 };
 
 // Renderpass that will render the scene
-pub type SceneColor = RGBA<Normalized<u8>>;
+pub type SceneColor = RGBA<f32>;
 pub type SceneDepth = Depth<f32>;
 pub type SceneRenderPass = RenderPass<SceneColor, SceneDepth>;
 pub type ActiveSceneRenderPass<'r, 't> =
@@ -97,7 +97,7 @@ impl ForwardRenderer {
     ) -> Self {
         // Create the render pass color texture
         let color_texture =
-            Texture2D::<RGBA<Normalized<u8>>>::from_texels(
+            Texture2D::<RGBA<f32>>::from_texels(
                 graphics,
                 None,
                 extent,
@@ -118,7 +118,7 @@ impl ForwardRenderer {
             None,
             extent,
             TextureMode::Resizable,
-            TextureUsage::RENDER_TARGET,
+            TextureUsage::RENDER_TARGET | TextureUsage::SAMPLED,
             SamplerSettings {
                 filter: SamplerFilter::Linear,
                 wrap: SamplerWrap::Repeat,
@@ -132,7 +132,7 @@ impl ForwardRenderer {
         let render_pass = SceneRenderPass::new(
             &graphics,
             Operation {
-                load: LoadOp::Clear(vek::Vec4::broadcast(0)),
+                load: LoadOp::Clear(vek::Vec4::broadcast(0f32)),
                 store: StoreOp::Store,
             },
             Operation {
