@@ -53,16 +53,16 @@ impl Material for Basic {
 
         // Define the type layouts for the UBOs
         let mut compiler = Compiler::new(assets);
-        compiler.use_ubo::<CameraUniform>("camera");
-        compiler.use_ubo::<SceneUniform>("scene");
-        compiler.use_ubo::<ShadowUniform>("shadow");
-        compiler.use_fill_ubo("material");
+        compiler.use_ubo::<CameraUniform>("camera", 0, 0);
+        compiler.use_ubo::<SceneUniform>("scene", 0, 1);
+        compiler.use_ubo::<ShadowUniform>("shadow", 0, 2);
+        compiler.use_fill_ubo("material", 1, 0);
 
         // Define the type layouts for the textures and samplers
-        compiler.use_texture::<AlbedoMap>("gradient_map");
-        compiler.use_texture::<ShadowMap>("shadow_map");
-        compiler.use_texture::<AlbedoMap>("albedo_map");
-        compiler.use_texture::<NormalMap>("normal_map");
+        compiler.use_texture::<AlbedoMap>("gradient_map", 0, 3);
+        compiler.use_texture::<ShadowMap>("shadow_map", 0, 4);
+        compiler.use_texture::<AlbedoMap>("albedo_map", 1, 1);
+        compiler.use_texture::<NormalMap>("normal_map", 1, 2);
 
         // Compile the modules into a shader
         Shader::new(

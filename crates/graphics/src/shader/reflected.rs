@@ -41,7 +41,7 @@ pub struct BindResourceLayout {
     pub visiblity: wgpu::ShaderStages,
 }
 
-// Push constant uniform data
+// Push constant uniform data that we will fill field by field
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PushConstantLayout {
     pub name: String,
@@ -54,16 +54,28 @@ pub struct PushConstantLayout {
 // For now, only buffers, samplers, and texture are supported
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum BindResourceType {
+    // A UBO that we will copy data into directly (cpy)
+    // TODO: Implement storage buffers
     Buffer {
-        buffer_binding: wgpu::BufferBindingType,
         members: Vec<StructMemberLayout>,
         size: usize,
+        alignment: usize,
     },
+
+    // A UBO that we will fill up field by field manually
+    FillBuffer {
+        size: usize,
+        alignment: usize,
+    },
+
+    // A sampler type that we can use to sample textures (sampler2D)
     Sampler {
         sampler_binding: wgpu::SamplerBindingType,
         format: wgpu::TextureFormat,
         comparison: bool,
     },
+
+    // A texture type without a sampler (texture2D)
     Texture {
         format: wgpu::TextureFormat,
         sample_type: wgpu::TextureSampleType,

@@ -55,6 +55,8 @@ impl<'a> Compiler<'a> {
     pub fn use_ubo<T: GpuPodRelaxed>(
         &mut self,
         name: impl ToString,
+        set: u32,
+        binding: u32,
     ) {
     }
 
@@ -63,6 +65,8 @@ impl<'a> Compiler<'a> {
     pub fn use_fill_ubo(
         &mut self,
         name: impl ToString,
+        set: u32,
+        binding: u32,
     ) {
     }
 
@@ -70,18 +74,22 @@ impl<'a> Compiler<'a> {
     pub fn use_texture<T: Texture>(
         &mut self,
         name: impl ToString,
+        set: u32,
+        binding: u32,
     ) {
         let name = name.to_string();
         let sampler = format!("{name}_sampler");
         self.texture_formats.insert(name, <T::T as Texel>::info());
-        self.set_sampler::<T>(sampler);
+        //self.set_sampler::<T>(sampler);
     }
 
     // Define a uniform sampler's type and texel
     // This is called automatically if the sampler is bound to the texture
-    fn set_sampler<T: Texture>(
+    pub fn set_sampler<T: Texture>(
         &mut self,
         name: impl ToString,
+        set: u32,
+        binding: u32,
     ) {
         let name = name.to_string();
         self.texture_formats.insert(name, <T::T as Texel>::info());
