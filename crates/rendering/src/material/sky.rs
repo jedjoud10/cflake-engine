@@ -87,7 +87,7 @@ impl Material for Sky {
         default: &DefaultMaterialResources<'r>,
         group: &mut BindGroup<'r>,
     ) {
-        group.set_buffer("camera", default.camera_buffer).unwrap();
+        group.set_uniform_buffer("camera", default.camera_buffer).unwrap();
     }
 
     // Set the instance bindings that will change per material

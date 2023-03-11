@@ -126,7 +126,7 @@ fn render(world: &mut World) {
         .render_pass.begin((), depth).unwrap();
     let mut active = render_pass.bind_pipeline(&shadowmap.pipeline);
     active.set_bind_group(0, |group| {
-        group.set_buffer("shadow", &shadowmap.buffer).unwrap();
+        group.set_uniform_buffer("shadow", &shadowmap.buffer).unwrap();
     });
 
     // Render the shadows first (fuck you)

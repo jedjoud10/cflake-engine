@@ -1,6 +1,6 @@
 use crate::{
     AlbedoMap, AlbedoTexel, CameraBuffer, CameraUniform,
-    DynamicPipeline, Material, MaterialId, NormalMap, NormalTexel,
+    DynPipeline, Material, MaterialId, NormalMap, NormalTexel,
     Pipeline, SceneBuffer, SceneUniform, TimingBuffer, TimingUniform,
     WindowBuffer, WindowUniform,
 };

@@ -2,6 +2,8 @@ mod buffer;
 mod errors;
 mod mapping;
 mod settings;
+mod info;
+pub use info::*;
 pub use buffer::*;
 pub use errors::*;
 pub use mapping::*;

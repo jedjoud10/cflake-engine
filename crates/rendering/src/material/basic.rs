@@ -8,10 +8,11 @@ use crate::{
 };
 use ahash::AHashMap;
 use assets::Assets;
+use bytemuck::{Zeroable, Pod};
 use graphics::{
     BindGroup, Compiled, Compiler, FragmentModule,
     Graphics, Normalized, PushConstants, Sampler, Shader, Texture,
-    Texture2D, UniformBuffer, ValueFiller, VertexModule, RGBA,
+    Texture2D, UniformBuffer, ValueFiller, VertexModule, RGBA, ModuleKind,
 };
 use utils::{Handle, Storage};
 
@@ -25,6 +26,14 @@ pub struct Basic {
     // Simple Basic Parameters
     pub bumpiness: f32,
     pub tint: vek::Rgb<f32>,
+}
+
+// Uniform that contains the data for the "Basic" material
+#[derive(Clone, Copy, PartialEq, Pod, Zeroable, Default)]
+#[repr(C, align(64))]
+struct BasicUniform {
+    pub bumpiness: f32,
+    pub tint: vek::Rgba<f32>,
 }
 
 impl Material for Basic {
@@ -53,16 +62,20 @@ impl Material for Basic {
 
         // Define the type layouts for the UBOs
         let mut compiler = Compiler::new(assets);
-        compiler.use_ubo::<CameraUniform>("camera", 0, 0);
-        compiler.use_ubo::<SceneUniform>("scene", 0, 1);
-        compiler.use_ubo::<ShadowUniform>("shadow", 0, 2);
-        compiler.use_fill_ubo("material", 1, 0);
+
+        // Set the UBO types that we will use
+        compiler.use_ubo::<CameraUniform>("camera");
+        compiler.use_ubo::<SceneUniform>("scene");
+        compiler.use_ubo::<ShadowUniform>("shadow");
+        
+        // Set the dynamic ubo properties
+        compiler.use_ubo::<BasicUniform>("material");
 
         // Define the type layouts for the textures and samplers
-        compiler.use_texture::<AlbedoMap>("gradient_map", 0, 3);
-        compiler.use_texture::<ShadowMap>("shadow_map", 0, 4);
-        compiler.use_texture::<AlbedoMap>("albedo_map", 1, 1);
-        compiler.use_texture::<NormalMap>("normal_map", 1, 2);
+        compiler.use_texture::<AlbedoMap>("gradient_map");
+        compiler.use_texture::<ShadowMap>("shadow_map");
+        compiler.use_texture::<AlbedoMap>("albedo_map");
+        compiler.use_texture::<NormalMap>("normal_map");
 
         // Compile the modules into a shader
         Shader::new(
@@ -88,9 +101,9 @@ impl Material for Basic {
         group: &mut BindGroup<'r>,
     ) {
         // Set the required common buffers
-        group.set_buffer("camera", default.camera_buffer).unwrap();
-        group.set_buffer("scene", default.scene_buffer).unwrap();
-        group.set_buffer("shadow", &resources.2.buffer).unwrap();
+        group.set_uniform_buffer("camera", default.camera_buffer).unwrap();
+        group.set_uniform_buffer("scene", default.scene_buffer).unwrap();
+        group.set_uniform_buffer("shadow", &resources.2.buffer).unwrap();
 
         // Set the scene sky texture
         group
@@ -127,14 +140,6 @@ impl Material for Basic {
         // Set the material textures
         group.set_texture("albedo_map", albedo_map).unwrap();
         group.set_texture("normal_map", normal_map).unwrap();
-
-        // Fill the material UBO with the specified fields automatically
-        group
-            .fill_ubo("material", |fill| {
-                fill.set("bumpiness", self.bumpiness).unwrap();
-                fill.set("tint", self.tint).unwrap();
-            })
-            .unwrap();
     }
 
     // Set the surface push constants
@@ -143,10 +148,8 @@ impl Material for Basic {
         renderer: &Renderer,
         resources: &'r mut Self::Resources<'w>,
         default: &DefaultMaterialResources<'r>,
-        push_constants: &mut PushConstants,
+        push: &mut PushConstants,
     ) {
-        push_constants
-            .set("matrix", renderer.matrix.cols)
-            .unwrap();
+        push.set()
     }
 }

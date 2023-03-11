@@ -1,7 +1,7 @@
 use crate::{
     FunctionModule, GpuPodRelaxed, Graphics, ModuleKind,
     ReflectedModule, ShaderCompilationError, ShaderModule,
-    VertexModule, BindResourceType, Texture, Texel, TexelInfo, ShaderIncludeError,
+    VertexModule, BindResourceType, Texture, Texel, TexelInfo, ShaderIncludeError, Buffer,
 };
 use ahash::AHashMap;
 use assets::Assets;
@@ -50,51 +50,6 @@ impl<'a> Compiler<'a> {
         self.snippets.insert(name, value.to_string());
     }
 
-    // Define a uniform buffer type's inner struct type
-    // TODO: Figure out a way to make this useful
-    pub fn use_ubo<T: GpuPodRelaxed>(
-        &mut self,
-        name: impl ToString,
-        set: u32,
-        binding: u32,
-    ) {
-    }
-
-    // Define a "fill" uniform buffer whose layout is defined at runtime
-    // TODO: Figure out a way to make this useful
-    pub fn use_fill_ubo(
-        &mut self,
-        name: impl ToString,
-        set: u32,
-        binding: u32,
-    ) {
-    }
-
-    // Define a uniform texture's type and texel
-    pub fn use_texture<T: Texture>(
-        &mut self,
-        name: impl ToString,
-        set: u32,
-        binding: u32,
-    ) {
-        let name = name.to_string();
-        let sampler = format!("{name}_sampler");
-        self.texture_formats.insert(name, <T::T as Texel>::info());
-        //self.set_sampler::<T>(sampler);
-    }
-
-    // Define a uniform sampler's type and texel
-    // This is called automatically if the sampler is bound to the texture
-    pub fn set_sampler<T: Texture>(
-        &mut self,
-        name: impl ToString,
-        set: u32,
-        binding: u32,
-    ) {
-        let name = name.to_string();
-        self.texture_formats.insert(name, <T::T as Texel>::info());
-    }
-
     // Convert the given GLSL code to SPIRV code, then compile said SPIRV code
     // This uses the defined resoures defined in this compiler
     pub(crate) fn compile<M: ShaderModule>(
@@ -136,6 +91,49 @@ impl<'a> Compiler<'a> {
             _phantom: PhantomData,
             graphics: graphics.clone(),
         })
+    }
+}
+
+impl<'a> Compiler<'a> {
+    // Define a uniform buffer type's inner struct type
+    pub fn use_uniform_buffer<T: GpuPodRelaxed>(
+        &mut self,
+        name: impl ToString,
+        set: u32,
+        binding: u32,
+    ) {
+    }
+
+    /*
+    // Define a "fill" uniform buffer whose layout is defined at runtime
+    pub fn use_fill_ubo(
+        &mut self,
+        name: impl ToString,
+    ) {
+    }
+    */
+
+    // Define a uniform texture's type and texel
+    pub fn use_texture<T: Texture>(
+        &mut self,
+        name: impl ToString,
+        set: u32,
+        binding: u32,
+    ) {
+        let name = name.to_string();
+        self.texture_formats.insert(name, <T::T as Texel>::info());
+    }
+
+    // Define a uniform sampler's type and texel
+    // This is called automatically if the sampler is bound to the texture
+    pub fn use_sampler<T: Texture>(
+        &mut self,
+        name: impl ToString,
+        set: u32,
+        binding: u32,
+    ) {
+        let name = name.to_string();
+        self.texture_formats.insert(name, <T::T as Texel>::info());
     }
 }
 

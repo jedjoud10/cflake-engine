@@ -6,7 +6,7 @@ use std::{
 use super::attributes::*;
 use crate::MeshAabbComputeError;
 use graphics::{
-    Buffer, CommandEncoder, UntypedBuffer, Vertex, VertexBuffer,
+    Buffer, CommandEncoder, BufferInfo, Vertex, VertexBuffer,
 };
 use math::AABB;
 
@@ -41,7 +41,7 @@ impl<'a> VerticesRef<'a> {
     // Get all the available attribute buffers as untyped buffers types
     pub fn untyped_buffers(
         &self,
-    ) -> [Option<UntypedBuffer>; MAX_MESH_VERTEX_ATTRIBUTES] {
+    ) -> [Option<BufferInfo>; MAX_MESH_VERTEX_ATTRIBUTES] {
         [
             self.attribute::<Position>()
                 .map(|b| Buffer::as_untyped(b)),

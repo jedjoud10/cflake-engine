@@ -15,7 +15,7 @@ use crate::{
     BufferInitializationError, BufferMode, BufferNotMappableError,
     BufferReadError, BufferSplatError, BufferUsage, BufferView,
     BufferViewMut, BufferWriteError, GpuPodRelaxed, Graphics,
-    StagingPool, Vertex, R,
+    StagingPool, Vertex, R, BufferInfo,
 };
 
 // Bitmask from Vulkan BufferUsages
@@ -68,59 +68,6 @@ pub struct Buffer<T: GpuPodRelaxed, const TYPE: u32> {
 
     // Keep the graphics API alive
     graphics: Graphics,
-}
-
-// Untyped buffer that does not contain a generic type nor type ID
-pub struct UntypedBuffer<'a> {
-    buffer: &'a wgpu::Buffer,
-    variant: BufferVariant,
-    length: usize,
-    stride: usize,
-    capacity: usize,
-    usage: BufferUsage,
-    mode: BufferMode,
-}
-
-impl<'a> UntypedBuffer<'a> {
-    // Get the inner raw WGPU buffer
-    pub fn raw(&self) -> &'a wgpu::Buffer {
-        self.buffer
-    }
-
-    // Get the current length of the buffer
-    pub fn len(&self) -> usize {
-        self.length.try_into().unwrap()
-    }
-
-    // Check if the buffer is empty
-    pub fn is_empty(&self) -> bool {
-        self.length == 0
-    }
-
-    // Get the current capacity of the buffer
-    pub fn capacity(&self) -> usize {
-        self.capacity.try_into().unwrap()
-    }
-
-    // Get the buffer usage
-    pub fn usage(&self) -> BufferUsage {
-        self.usage
-    }
-
-    // Get the buffer mode
-    pub fn mode(&self) -> BufferMode {
-        self.mode
-    }
-
-    // Get the buffer's stride (length of each element)
-    pub fn stride(&self) -> usize {
-        self.stride
-    }
-
-    // Get the buffer variant type
-    pub fn variant(&self) -> BufferVariant {
-        self.variant
-    }
 }
 
 // Buffer initialization
@@ -290,8 +237,8 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
     }
 
     // Get the untyped buffer from this typed buffer
-    pub fn as_untyped(&self) -> UntypedBuffer {
-        UntypedBuffer {
+    pub fn as_untyped(&self) -> BufferInfo {
+        BufferInfo {
             buffer: &self.buffer,
             length: self.len(),
             stride: self.stride(),

@@ -1,6 +1,6 @@
 use crate::{
     ColorLayout, DepthStencilLayout, GraphicsPipeline,
-    TriangleBuffer, UniformBuffer, UntypedBuffer,
+    TriangleBuffer, UniformBuffer, BufferInfo,
 };
 use std::{
     ops::{Bound, Range},
@@ -22,7 +22,7 @@ pub(crate) enum RenderCommand<
     // Set vertex buffer for Draw and DrawIndexed
     SetVertexBuffer {
         slot: u32,
-        buffer: UntypedBuffer<'a>,
+        buffer: BufferInfo<'a>,
         start: Bound<u64>,
         end: Bound<u64>,
     },

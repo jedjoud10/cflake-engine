@@ -3,7 +3,7 @@ use wgpu::CommandEncoder;
 use crate::{
     ActiveGraphicsPipeline, ColorLayout, DepthStencilLayout,
     Graphics, GraphicsPipeline, RenderCommand, TriangleBuffer,
-    UntypedBuffer, Vertex, VertexBuffer,
+    BufferInfo, Vertex, VertexBuffer,
 };
 use std::{marker::PhantomData, ops::Range, sync::Arc};
 

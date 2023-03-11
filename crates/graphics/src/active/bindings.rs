@@ -1,7 +1,7 @@
 use crate::{
     BindResourceLayout, GpuPod, GpuPodRelaxed, ReflectedShader, Sampler,
-    SetFieldError, Shader, StructMemberLayout, Texel, Texture,
-    UniformBuffer, ValueFiller,
+    Shader, Texel, Texture,
+    UniformBuffer,
 };
 use ahash::AHashMap;
 use std::{marker::PhantomData, sync::Arc};
@@ -90,8 +90,7 @@ impl<'a> BindGroup<'a> {
 
     // Set the texture sampler so we can sample textures within the shader
     // This is called automatically if the sampler is bound to the texture
-    // TODO: Figure this shit out. make it public
-    fn set_sampler<'s, T: Texel>(
+    pub fn set_sampler<'s, T: Texel>(
         &mut self,
         name: &'s str,
         sampler: Sampler<'a, T>,
@@ -116,7 +115,7 @@ impl<'a> BindGroup<'a> {
     }
 
     // Set a uniform buffer that we can read from within shaders
-    pub fn set_buffer<'s, T: GpuPod>(
+    pub fn set_uniform_buffer<'s, T: GpuPod>(
         &mut self,
         name: &'s str,
         buffer: &'a UniformBuffer<T>,
@@ -154,6 +153,7 @@ impl<'a> BindGroup<'a> {
         Ok(())
     }
 
+    /*
     // Fetches an already allocated uniform buffer that we can fill up with data
     pub fn fill_ubo<'s>(
         &mut self,
@@ -193,45 +193,5 @@ impl<'a> BindGroup<'a> {
         self.fill_ubos.push((vector, entry.clone()));
         Ok(())
     }
-}
-
-// A fill buffer can be used to fill UBO data field by field instead of uploading raw bytes to the GPU
-// All it does is fetch field layout, write to a byte buffer, then upload when the bind group gets dropped
-pub struct FillBuffer<'a> {
-    data: &'a mut [u8],
-    members: &'a [StructMemberLayout],
-    _phantom: PhantomData<&'a ()>,
-}
-
-impl ValueFiller for FillBuffer<'_> {
-    // Set the value of a UBO field
-    fn set<'s, T: GpuPodRelaxed>(
-        &mut self,
-        name: &'s str,
-        value: T,
-    ) -> Result<(), crate::SetFieldError<'s>> {
-        // Get the struct member layout for the proper field
-        let valid = self
-            .members
-            .iter()
-            .filter(|member| member.name == name)
-            .next();
-
-        // Return early if we don't have a field to set
-        let Some(valid) = valid else {
-            return Err(SetFieldError::MissingField { name: name });
-        };
-
-        // Convert the data to a byte slice
-        let value = [value];
-        let bytes = bytemuck::cast_slice::<T, u8>(&value);
-
-        // Set the value within the pre-allocated memory
-        let offset = valid.offset as usize;
-        let size = valid.size as usize;
-        let out = &mut self.data[offset..][..size];
-        out.copy_from_slice(bytes);
-
-        Ok(())
-    }
+    */
 }

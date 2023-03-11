@@ -8,6 +8,18 @@ use ahash::{AHashMap, AHashSet};
 use naga::{AddressSpace, ResourceBinding, TypeInner};
 use wgpu::TextureFormatFeatureFlags;
 
+/*
+Reflection only needs to do a few things.
+It could either:
+    1) Fetch binding index / set index for a specific resource (NEEDED)
+    2) Check if a resource is shared (only in the case of vert - frag modules) (NEEDED)
+    3) Validate shader UBO memory layout with the user given one
+    4) Validate shader texture/sampler layout/format with the user given one
+ */
+
+
+
+
 // This container stores all data related to reflected shaders
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ReflectedShader {
@@ -45,69 +57,36 @@ pub struct BindResourceLayout {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PushConstantLayout {
     pub name: String,
-    pub stages: wgpu::ShaderStages,
-    pub members: Vec<StructMemberLayout>,
-    pub size: u32,
+    pub visiblity: wgpu::ShaderStages,
+    pub size: usize,
+    pub alignment: usize,
 }
 
 // The type of BindingEntry. This is fetched from the given
 // For now, only buffers, samplers, and texture are supported
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum BindResourceType {
-    // A UBO that we will copy data into directly (cpy)
-    // TODO: Implement storage buffers
+    // Either a Uniform buffer or a Storage buffer
     Buffer {
-        members: Vec<StructMemberLayout>,
         size: usize,
         alignment: usize,
-    },
-
-    // A UBO that we will fill up field by field manually
-    FillBuffer {
-        size: usize,
-        alignment: usize,
+        storage: bool,
+        read: bool,
+        write: bool
     },
 
     // A sampler type that we can use to sample textures (sampler2D)
     Sampler {
-        sampler_binding: wgpu::SamplerBindingType,
         format: wgpu::TextureFormat,
-        comparison: bool,
+        sampler_binding: wgpu::SamplerBindingType,
     },
 
     // A texture type without a sampler (texture2D)
     Texture {
         format: wgpu::TextureFormat,
         sample_type: wgpu::TextureSampleType,
-        comparison: bool,
+        sampler_binding: wgpu::SamplerBindingType,
         view_dimension: wgpu::TextureViewDimension,
-    },
-}
-
-// Struct member type for fields of Buffer structures
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct StructMemberLayout {
-    pub name: String,
-    pub offset: u32,
-    pub size: u32,
-    pub struct_type: StructMemberType,
-}
-
-// Types of buffer structure fields
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum StructMemberType {
-    Scalar {
-        kind: naga::ScalarKind,
-    },
-
-    Vector {
-        size: naga::VectorSize,
-        kind: naga::ScalarKind,
-    },
-
-    Matrix {
-        columns: naga::VectorSize,
-        rows: naga::VectorSize,
     },
 }
 
@@ -244,9 +223,14 @@ fn create_pipeline_layout_from_shader(
         value: &BindResourceLayout,
     ) -> wgpu::BindingType {
         match value.resource_type {
-            BindResourceType::Buffer { buffer_binding, .. } => {
+            BindResourceType::Buffer { size, alignment, storage, read, write } => {
                 wgpu::BindingType::Buffer {
-                    ty: buffer_binding,
+                    ty: match storage {
+                        true => wgpu::BufferBindingType::Storage {
+                            read_only: read && !write
+                        },
+                        false => wgpu::BufferBindingType::Uniform,
+                    },
                     has_dynamic_offset: false,
                     min_binding_size: None,
                 }
@@ -386,8 +370,8 @@ fn create_pipeline_layout_from_shader(
         .iter()
         .filter_map(|x| x.as_ref())
         .map(|layout| wgpu::PushConstantRange {
-            stages: layout.stages,
-            range: 0..layout.size,
+            stages: layout.visiblity,
+            range: 0..(layout.size as u32),
         })
         .collect::<Vec<_>>();
 
@@ -477,24 +461,28 @@ fn reflect_binding_entries<M: ShaderModule>(
             value.binding.as_ref().map(|_| value)
         })
         .filter(|value| {
-            value.space == AddressSpace::Uniform
-                || value.space == AddressSpace::Handle
+            matches!(value.space, AddressSpace::Uniform) |
+            matches!(value.space, AddressSpace::Storage { .. }) |
+            matches!(value.space, AddressSpace::Handle)
         })
-        .map(|value| {
+        .filter(|value| {
+            types.get_handle(value.ty).is_ok()
+        })
+        .filter_map(|value| {
             // Get the type and address space of the variable
             let ResourceBinding { group, binding } =
                 *value.binding.as_ref().unwrap();
             let typed = types.get_handle(value.ty).unwrap();
+            let space = value.space;
             let type_inner = &typed.inner;
 
-            //reflect_bind_entry::<M>(value, types);
             let binding_type = match type_inner {
                 // Uniform Buffers
                 TypeInner::Struct {
                     members,
                     span: size,
                 } => {
-                    reflect_buffer(members, types, size, value.space)
+                    Some(reflect_buffer(members, types, size, value.space))
                 }
 
                 // Uniform Textures
@@ -502,22 +490,25 @@ fn reflect_binding_entries<M: ShaderModule>(
                     dim,
                     class,
                     arrayed,
-                } => reflect_texture(&value.name.as_ref().unwrap(), class, dim, graphics, texture_formats),
+                } => Some(reflect_texture(&value.name.as_ref().unwrap(), class, dim, graphics, texture_formats)),
 
                 // Uniform Sampler
                 TypeInner::Sampler { comparison } => {
-                    reflect_sampler(&value.name.as_ref().unwrap(), texture_formats)
+                    Some(reflect_sampler(&value.name.as_ref().unwrap(), texture_formats))
                 }
-                _ => panic!("Not supported"),
+
+                // This will get ignored later on
+                // TODO: Is this okay?
+                _ => None,
             };
 
-            BindResourceLayout {
+            binding_type.map(|binding_type| BindResourceLayout {
                 name: value.name.clone().unwrap(),
                 binding,
                 group,
                 resource_type: binding_type,
                 visiblity: kind_to_wgpu_stage(&M::kind()),
-            }
+            })
         })
         .collect::<Vec<_>>()
 }
@@ -541,21 +532,11 @@ fn reflect_push_constant<M: ShaderModule>(
                 let type_inner = &typed.inner;
                 let name = value.name.clone().unwrap().clone();
 
-                let (members, size) = match type_inner {
-                    TypeInner::Struct { members, span } => {
-                        (members, *span)
-                    }
-                    _ => panic!(""),
-                };
-
-                let members =
-                    reflect_struct_member_layouts(members, types);
-
                 output = Some(PushConstantLayout {
                     name,
-                    members,
-                    size,
-                    stages: kind_to_wgpu_stage(&M::kind()),
+                    visiblity: kind_to_wgpu_stage(&M::kind()),
+                    alignment: alignment_of_inner_type(type_inner),
+                    size: size_of_inner_type(type_inner),
                 })
             }
             _ => {}
@@ -565,6 +546,38 @@ fn reflect_push_constant<M: ShaderModule>(
     output
 }
 
+// Get the size (in bytes) of the inner type
+fn size_of_inner_type(type_inner: &TypeInner) -> usize {
+    match type_inner {
+        TypeInner::Struct { members, span } => {
+            *span as usize
+        },
+        TypeInner::Scalar { kind, width } => {
+            todo!()
+        },
+        TypeInner::Vector { size, kind, width } => todo!(),
+        TypeInner::Matrix { columns, rows, width } => todo!(),
+        TypeInner::Array { base, size, stride } => todo!(),
+        _ => panic!("Tried getting the size of a non-data type"),
+    }
+}
+
+// Get the alignment (in bytes) of the inner type
+fn alignment_of_inner_type(type_inner: &TypeInner) -> usize {
+    match type_inner {
+        TypeInner::Struct { members, span } => {
+            todo!()
+        },
+        TypeInner::Scalar { kind, width } => {
+            todo!()
+        },
+        TypeInner::Vector { size, kind, width } => todo!(),
+        TypeInner::Matrix { columns, rows, width } => todo!(),
+        TypeInner::Array { base, size, stride } => todo!(),
+        _ => panic!("Tried getting the alignment of a non-data type"),
+    }
+}
+
 // Fetch the BindingType of a naga Struct (assuming it to be a buffer)
 fn reflect_buffer(
     members: &Vec<naga::StructMember>,
@@ -572,80 +585,7 @@ fn reflect_buffer(
     size: &u32,
     space: AddressSpace,
 ) -> BindResourceType {
-    // Non UBO buffers not supported yet
-    if space != AddressSpace::Uniform {
-        panic!("Non UBO buffers not supported yet")
-    }
-
-    BindResourceType::Buffer {
-        buffer_binding: wgpu::BufferBindingType::Uniform,
-        members: reflect_struct_member_layouts(members, types),
-        size: *size as usize,
-    }
-}
-
-// Fetch teh struct layout of the struct member layout
-fn reflect_struct_member_layouts(
-    members: &Vec<naga::StructMember>,
-    types: &naga::UniqueArena<naga::Type>,
-) -> Vec<StructMemberLayout> {
-    members
-        .iter()
-        .map(|member| {
-            let type_inner =
-                &types.get_handle(member.ty).unwrap().inner;
-            let (size, struct_type) = match type_inner {
-                TypeInner::Scalar { kind, width } => (
-                    *width as u32,
-                    StructMemberType::Scalar { kind: *kind },
-                ),
-                TypeInner::Vector { size, kind, width } => {
-                    let size2 =
-                        *width as u32 * vector_size_to_u32(size);
-                    (
-                        size2,
-                        StructMemberType::Vector {
-                            size: *size,
-                            kind: *kind,
-                        },
-                    )
-                }
-                TypeInner::Matrix {
-                    columns,
-                    rows,
-                    width,
-                } => {
-                    let size = *width as u32
-                        * vector_size_to_u32(columns)
-                        * vector_size_to_u32(rows);
-                    (
-                        size,
-                        StructMemberType::Matrix {
-                            columns: *columns,
-                            rows: *rows,
-                        },
-                    )
-                }
-                _ => panic!(),
-            };
-
-            StructMemberLayout {
-                name: member.name.clone().unwrap(),
-                offset: member.offset,
-                size,
-                struct_type,
-            }
-        })
-        .collect()
-}
-
-// Convert a VectorSize enum to it's corresponding u32 value
-fn vector_size_to_u32(size: &naga::VectorSize) -> u32 {
-    match size {
-        naga::VectorSize::Bi => 2,
-        naga::VectorSize::Tri => 3,
-        naga::VectorSize::Quad => 4,
-    }
+    todo!()
 }
 
 // Convert a module ind to Naga shader stage
@@ -678,7 +618,6 @@ fn reflect_sampler(
     BindResourceType::Sampler {
         sampler_binding: wgpu::SamplerBindingType::Filtering,
         format: texture_formats.get(name).unwrap().format(),
-        comparison: false,
     }
 }
 
@@ -690,62 +629,44 @@ fn reflect_texture(
     graphics: &Graphics,
     texture_formats: &super::TextureFormats,
 ) -> BindResourceType {
-    let info = **texture_formats.get(name).as_ref().unwrap();
+    // Reflects a comparison depth texture into a wgpu TextureSampleType
+    fn reflect_comparison_depth_texture(multi: bool) -> wgpu::TextureSampleType {
+        todo!()
+    }
+
+    // Refelcts a storage texture (not sampled) into a wgpu TextureSampleType
+    fn reflect_storage_texture(format: naga::StorageFormat, access: naga::StorageAccess) -> wgpu::TextureSampleType {
+        todo!()
+    }
+
+    // Reflects a sampled naga texture into a wgpu TextureSampleType
+    fn reflect_sampled_texture(kind: &naga::ScalarKind, multi: bool) -> wgpu::TextureSampleType {
+        match kind {
+            naga::ScalarKind::Sint => {
+                wgpu::TextureSampleType::Sint
+            }
+            naga::ScalarKind::Uint => {
+                wgpu::TextureSampleType::Uint
+            }
+            naga::ScalarKind::Float => {
+                todo!()
+            }
+            _ => panic!(),
+        }
+    }
+
 
     BindResourceType::Texture {
         sample_type: match class {
-            naga::ImageClass::Sampled { kind, multi: false } => {
-                match kind {
-                    naga::ScalarKind::Sint => {
-                        wgpu::TextureSampleType::Sint
-                    }
-                    naga::ScalarKind::Uint => {
-                        wgpu::TextureSampleType::Uint
-                    }
-                    naga::ScalarKind::Float => {
-                        // Check if the format is filterable or not
-                        // TODO: REMOVE THIS SHIT
-                        let features = graphics.adapter().get_texture_format_features(info.format());
-                        let depth =  matches!(info.channels(), TexelChannels::Depth);    
-
-                        if features.flags.contains(TextureFormatFeatureFlags::FILTERABLE) && !depth {
-                            wgpu::TextureSampleType::Float { filterable: true }
-                        } else {
-                            wgpu::TextureSampleType::Float { filterable: false }
-                        }
-                    }
-                    _ => panic!(),
-                }
+            naga::ImageClass::Sampled { kind, multi } => {
+                reflect_sampled_texture(kind, *multi)
             }
-            naga::ImageClass::Depth { multi: false } => {
-                panic!()
-            }
-            naga::ImageClass::Storage { format, access } => {
-                panic!()
-            }
-
-            _ => {
-                panic!()
-            }
+            naga::ImageClass::Depth { multi } => reflect_comparison_depth_texture(*multi),
+            naga::ImageClass::Storage { format, access } => reflect_storage_texture(*format, *access),
         },
 
-        // Convert Naga image dimensions to WGPU texture dimensions
-        view_dimension: match dim {
-            naga::ImageDimension::D1 => {
-                wgpu::TextureViewDimension::D1
-            }
-            naga::ImageDimension::D2 => {
-                wgpu::TextureViewDimension::D2
-            }
-            naga::ImageDimension::D3 => {
-                wgpu::TextureViewDimension::D3
-            }
-            naga::ImageDimension::Cube => {
-                wgpu::TextureViewDimension::Cube
-            }
-        },
-
-        format: texture_formats.get(name).as_ref().unwrap().format(),
-        comparison: false,
+        view_dimension: todo!(),
+        format: todo!(),
+        sampler_binding: todo!(),
     }
 }

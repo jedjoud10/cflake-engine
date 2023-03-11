@@ -90,7 +90,7 @@ impl<M: Material> Pipeline<M> {
 }
 
 // This trait will be implemented for Pipeline<T> to allow for dynamic dispatch
-pub trait DynamicPipeline {
+pub trait DynPipeline {
     // Executed before we call the "render" event in batch
     // Used for shadow mapping
     fn prerender<'r>(
@@ -111,7 +111,7 @@ pub trait DynamicPipeline {
     );
 }
 
-impl<M: Material> DynamicPipeline for Pipeline<M> {
+impl<M: Material> DynPipeline for Pipeline<M> {
     fn prerender<'r>(
         &'r self,
         world: &'r World,

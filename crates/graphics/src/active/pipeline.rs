@@ -5,7 +5,7 @@ use crate::{
     BindGroup, BufferMode, BufferUsage, ColorLayout,
     DepthStencilLayout, GpuPod, Graphics, GraphicsPipeline,
     ModuleKind, PushConstants, RenderCommand, TriangleBuffer,
-    UniformBuffer, UntypedBuffer, Vertex, VertexBuffer,
+    UniformBuffer, BufferInfo, Vertex, VertexBuffer,
 };
 use std::{
     collections::hash_map::Entry,

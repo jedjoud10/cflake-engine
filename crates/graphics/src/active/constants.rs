@@ -2,7 +2,7 @@ use arrayvec::ArrayVec;
 use itertools::Itertools;
 
 use crate::{
-    GpuPodRelaxed, ReflectedShader, SetFieldError, ValueFiller,
+    GpuPodRelaxed, ReflectedShader,
 };
 use std::{marker::PhantomData, sync::Arc};
 
@@ -16,6 +16,7 @@ pub struct PushConstants<'a> {
     pub(crate) _phantom: PhantomData<&'a ()>,
 }
 
+/*
 impl ValueFiller for PushConstants<'_> {
     // Set the value of a push constant field
     fn set<'s, T: GpuPodRelaxed>(
@@ -69,3 +70,4 @@ impl ValueFiller for PushConstants<'_> {
         Ok(())
     }
 }
+*/
