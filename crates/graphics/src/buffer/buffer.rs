@@ -14,8 +14,8 @@ use crate::{
     BufferClearError, BufferCopyError, BufferExtendError,
     BufferInitializationError, BufferMode, BufferNotMappableError,
     BufferReadError, BufferSplatError, BufferUsage, BufferView,
-    BufferViewMut, BufferWriteError, GpuPodRelaxed, Graphics,
-    StagingPool, Vertex, R, BufferInfo,
+    BufferViewMut, BufferWriteError, Graphics,
+    StagingPool, Vertex, R, BufferInfo, GpuPod,
 };
 
 // Bitmask from Vulkan BufferUsages
@@ -53,7 +53,7 @@ pub type IndirectBuffer<T> = Buffer<T, INDIRECT>;
 // A buffer abstraction over a valid WGPU buffer
 // This also takes a constant that represents it's Wgpu target at compile time
 // TODO: Handle async read writes and async command buf submissions
-pub struct Buffer<T: GpuPodRelaxed, const TYPE: u32> {
+pub struct Buffer<T: GpuPod, const TYPE: u32> {
     // Raw WGPU buffer
     buffer: wgpu::Buffer,
 
@@ -71,7 +71,7 @@ pub struct Buffer<T: GpuPodRelaxed, const TYPE: u32> {
 }
 
 // Buffer initialization
-impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
+impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
     // Try to create a buffer with the specified mode, usage, and slice data
     pub fn from_slice(
         graphics: &Graphics,
@@ -188,7 +188,7 @@ fn buffer_usages(
 }
 
 // Implementation of util methods
-impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
+impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
     // Get the inner raw WGPU buffer immutably
     pub fn raw(&self) -> &wgpu::Buffer {
         &self.buffer
@@ -282,7 +282,7 @@ impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
 }
 
 // Implementation of safe methods
-impl<T: GpuPodRelaxed, const TYPE: u32> Buffer<T, TYPE> {
+impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
     // Read from "src" and write to the buffer instantly
     // This is a "fire and forget" command that does not stall the CPU
     // The user can do multiple write calls and expect them to be batched together

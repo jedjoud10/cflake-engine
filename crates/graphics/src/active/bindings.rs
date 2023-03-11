@@ -1,5 +1,5 @@
 use crate::{
-    BindResourceLayout, GpuPod, GpuPodRelaxed, ReflectedShader, Sampler,
+    BindResourceLayout, GpuPod, ReflectedShader, Sampler,
     Shader, Texel, Texture,
     UniformBuffer,
 };

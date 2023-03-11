@@ -12,7 +12,7 @@ use bytemuck::{Zeroable, Pod};
 use graphics::{
     BindGroup, Compiled, Compiler, FragmentModule,
     Graphics, Normalized, PushConstants, Sampler, Shader, Texture,
-    Texture2D, UniformBuffer, ValueFiller, VertexModule, RGBA, ModuleKind,
+    Texture2D, UniformBuffer, ValueFiller, VertexModule, RGBA, ModuleKind, ModuleVisibility, GpuPod,
 };
 use utils::{Handle, Storage};
 
@@ -30,9 +30,10 @@ pub struct Basic {
 
 // Uniform that contains the data for the "Basic" material
 #[derive(Clone, Copy, PartialEq, Pod, Zeroable, Default)]
-#[repr(C, align(64))]
+#[repr(C, align(16))]
 struct BasicUniform {
     pub bumpiness: f32,
+    pub _padding: [f32; 3],
     pub tint: vek::Rgba<f32>,
 }
 
@@ -64,18 +65,22 @@ impl Material for Basic {
         let mut compiler = Compiler::new(assets);
 
         // Set the UBO types that we will use
-        compiler.use_ubo::<CameraUniform>("camera");
-        compiler.use_ubo::<SceneUniform>("scene");
-        compiler.use_ubo::<ShadowUniform>("shadow");
+        compiler.use_uniform_buffer::<CameraUniform>("camera");
+        compiler.use_uniform_buffer::<SceneUniform>("scene");
+        compiler.use_uniform_buffer::<ShadowUniform>("shadow");
         
         // Set the dynamic ubo properties
-        compiler.use_ubo::<BasicUniform>("material");
+        compiler.use_uniform_buffer::<BasicUniform>("material");
 
-        // Define the type layouts for the textures and samplers
+        // Define the types for the user textures
         compiler.use_texture::<AlbedoMap>("gradient_map");
         compiler.use_texture::<ShadowMap>("shadow_map");
         compiler.use_texture::<AlbedoMap>("albedo_map");
         compiler.use_texture::<NormalMap>("normal_map");
+
+        // Define the push ranges used by push constants
+        let size = <vek::Mat4::<f32> as GpuPod>::size();
+        compiler.use_push_constant_range(0..64, ModuleVisibility::Vertex);
 
         // Compile the modules into a shader
         Shader::new(
@@ -148,8 +153,8 @@ impl Material for Basic {
         renderer: &Renderer,
         resources: &'r mut Self::Resources<'w>,
         default: &DefaultMaterialResources<'r>,
-        push: &mut PushConstants,
+        constants: &mut PushConstants,
     ) {
-        push.set()
+        constants.push(bytes, offset);
     }
 }

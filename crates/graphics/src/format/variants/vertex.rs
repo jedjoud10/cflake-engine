@@ -1,5 +1,5 @@
 use crate::{
-    AnyElement, Depth, DepthElement, ElementType, GpuPodRelaxed,
+    AnyElement, Depth, DepthElement, ElementType, GpuPod,
     Normalized, Stencil, TexelChannels, VectorChannels, X, XY, XYZ,
     XYZW,
 };
@@ -14,10 +14,10 @@ use wgpu::VertexFormat;
 // A vertex that represents a vertex within a rendered object
 pub trait Vertex {
     // The raw RAW data type (u8 or shit like dat)
-    type Base: GpuPodRelaxed;
+    type Base: GpuPod;
 
     // The raw data type that we will use to access vertex memory
-    type Storage: GpuPodRelaxed
+    type Storage: GpuPod
         + NumOps<Self::Storage>
         + NumAssignOps<Self::Storage>;
 

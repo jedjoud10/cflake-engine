@@ -1,15 +1,20 @@
 use assets::Asset;
 
-// The type of shader module that the shader files represent
+// The type of shader module that the shader source represent
 #[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
 pub enum ModuleKind {
-    // Vertex shaders get executed on a per vertex basis
     Vertex,
-
-    // Fragment shaders get executed for each fragment, or each pixel (in case of no MSAA)
     Fragment,
+    Compute,
+}
 
-    // Compute shaders are arbitrary shaders that run on arbitrary input and output
+// Describes the types of shader modules that are
+// used by push constants and bind resources 
+#[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
+pub enum ModuleVisibility {
+    Vertex,
+    Fragment,
+    VertexFragment,
     Compute,
 }
 

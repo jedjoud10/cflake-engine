@@ -1,6 +1,6 @@
 use crate::{
     AnyElement, ColorTexel, Depth, DepthElement, ElementType,
-    GpuPodRelaxed, Normalized, Stencil, TexelChannels,
+    GpuPod, Normalized, Stencil, TexelChannels,
     VectorChannels, BGRA, R, RG, RGBA, SBGRA, SRGBA,
 };
 use half::f16;
@@ -15,10 +15,10 @@ use wgpu::TextureFormat;
 // The texel format of each texture is specified at compile time
 pub trait Texel: 'static {
     // The raw RAW data type (u8 or shit like dat)
-    type Base: GpuPodRelaxed;
+    type Base: GpuPod;
 
     // The raw vector data type that we will use to access texture memory
-    type Storage: GpuPodRelaxed
+    type Storage: GpuPod
         + NumOps<Self::Storage>
         + NumAssignOps<Self::Storage>;
 

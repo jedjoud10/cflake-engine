@@ -1,7 +1,7 @@
 use crate::{
-    FunctionModule, GpuPodRelaxed, Graphics, ModuleKind,
+    FunctionModule, Graphics, ModuleKind,
     ReflectedModule, ShaderCompilationError, ShaderModule,
-    VertexModule, BindResourceType, Texture, Texel, TexelInfo, ShaderIncludeError, Buffer,
+    VertexModule, BindResourceType, Texture, Texel, TexelInfo, ShaderIncludeError, Buffer, GpuPod,
 };
 use ahash::AHashMap;
 use assets::Assets;
@@ -96,41 +96,26 @@ impl<'a> Compiler<'a> {
 
 impl<'a> Compiler<'a> {
     // Define a uniform buffer type's inner struct type
-    pub fn use_uniform_buffer<T: GpuPodRelaxed>(
-        &mut self,
-        name: impl ToString,
-        set: u32,
-        binding: u32,
-    ) {
-    }
-
-    /*
-    // Define a "fill" uniform buffer whose layout is defined at runtime
-    pub fn use_fill_ubo(
+    pub fn use_uniform_buffer<T: GpuPod>(
         &mut self,
         name: impl ToString,
     ) {
     }
-    */
 
     // Define a uniform texture's type and texel
     pub fn use_texture<T: Texture>(
         &mut self,
         name: impl ToString,
-        set: u32,
-        binding: u32,
     ) {
         let name = name.to_string();
         self.texture_formats.insert(name, <T::T as Texel>::info());
     }
 
     // Define a uniform sampler's type and texel
-    // This is called automatically if the sampler is bound to the texture
+    // This is called automatically by the method above to set a texture's sampler automatically
     pub fn use_sampler<T: Texture>(
         &mut self,
         name: impl ToString,
-        set: u32,
-        binding: u32,
     ) {
         let name = name.to_string();
         self.texture_formats.insert(name, <T::T as Texel>::info());

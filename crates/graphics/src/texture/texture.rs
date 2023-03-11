@@ -11,7 +11,7 @@ use wgpu::{
 };
 
 use crate::{
-    Extent, GpuPodRelaxed, Graphics, MipLevelMut, MipLevelRef,
+    Extent, GpuPod, Graphics, MipLevelMut, MipLevelRef,
     Origin, Region, RenderTarget, Sampler, SamplerSettings,
     SamplerWrap, Texel, TextureAsTargetError,
     TextureInitializationError, TextureMipLevelError, TextureMipMaps,

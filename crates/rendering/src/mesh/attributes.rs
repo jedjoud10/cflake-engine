@@ -1,6 +1,6 @@
 use arrayvec::ArrayVec;
 use graphics::{
-    GpuPodRelaxed, Normalized, PerVertex, Vertex, VertexBuffer,
+    GpuPod, Normalized, PerVertex, Vertex, VertexBuffer,
     VertexConfig, VertexInfo, VertexInput, VertexInputInfo, XY, XYZ,
     XYZW,
 };

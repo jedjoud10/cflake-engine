@@ -1,4 +1,4 @@
-use crate::{GpuPod, GpuPodRelaxed, Graphics, StagingView};
+use crate::{GpuPod, Graphics, StagingView};
 use parking_lot::Mutex;
 use std::{
     marker::PhantomData,
