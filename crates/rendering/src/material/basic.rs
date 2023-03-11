@@ -12,7 +12,7 @@ use bytemuck::{Zeroable, Pod};
 use graphics::{
     BindGroup, Compiled, Compiler, FragmentModule,
     Graphics, Normalized, PushConstants, Sampler, Shader, Texture,
-    Texture2D, UniformBuffer, ValueFiller, VertexModule, RGBA, ModuleKind, ModuleVisibility, GpuPod,
+    Texture2D, UniformBuffer, VertexModule, RGBA, ModuleKind, ModuleVisibility, GpuPod,
 };
 use utils::{Handle, Storage};
 
@@ -79,8 +79,8 @@ impl Material for Basic {
         compiler.use_texture::<NormalMap>("normal_map");
 
         // Define the push ranges used by push constants
-        let size = <vek::Mat4::<f32> as GpuPod>::size();
-        compiler.use_push_constant_range(0..64, ModuleVisibility::Vertex);
+        //let size = <vek::Mat4::<f32> as GpuPod>::size();
+        //compiler.use_push_constant_range(0..64, ModuleVisibility::Vertex);
 
         // Compile the modules into a shader
         Shader::new(
@@ -155,6 +155,6 @@ impl Material for Basic {
         default: &DefaultMaterialResources<'r>,
         constants: &mut PushConstants,
     ) {
-        constants.push(bytes, offset);
+        //constants.push(bytes, offset);
     }
 }

@@ -70,6 +70,7 @@ pub struct Buffer<T: GpuPod, const TYPE: u32> {
     graphics: Graphics,
 }
 
+
 // Buffer initialization
 impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
     // Try to create a buffer with the specified mode, usage, and slice data

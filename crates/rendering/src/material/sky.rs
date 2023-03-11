@@ -44,7 +44,7 @@ impl Material for Sky {
 
         // Define the type layouts for the UBOs
         let mut compiler = Compiler::new(assets);
-        compiler.use_ubo::<CameraUniform>("camera");
+        compiler.use_uniform_buffer::<CameraUniform>("camera");
         compiler.use_texture::<AlbedoMap>("gradient_map");
 
         // Compile the modules into a shader
