@@ -41,8 +41,8 @@ impl Compositor {
         compiler.use_texture::<Texture2D<SceneColor>>("color_map");
         compiler.use_texture::<Texture2D<SceneDepth>>("depth_map");
         compiler.use_texture::<ShadowMap>("shadowmap");
-        compiler.use_ubo::<WindowUniform>("window");
-        compiler.use_ubo::<CameraUniform>("camera");
+        compiler.use_uniform_buffer::<WindowUniform>("window");
+        compiler.use_uniform_buffer::<CameraUniform>("camera");
 
         // Combine the modules to the shader
         let shader = Shader::new(

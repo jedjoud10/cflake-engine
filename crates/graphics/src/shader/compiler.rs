@@ -1,7 +1,7 @@
 use crate::{
     FunctionModule, Graphics, ModuleKind,
     ReflectedModule, ShaderCompilationError, ShaderModule,
-    VertexModule, BindResourceType, Texture, Texel, TexelInfo, ShaderIncludeError, Buffer, GpuPod,
+    VertexModule, BindResourceType, Texture, Texel, TexelInfo, Buffer, GpuPod, Dimension, GpuPodInfo,
 };
 use ahash::AHashMap;
 use assets::Assets;
@@ -20,6 +20,8 @@ use std::{
 // Type alias for snippets and resources
 pub(super) type Snippets = AHashMap<String, String>;
 pub(super) type TextureFormats = AHashMap<String, TexelInfo>; 
+pub(super) type TextureDimensions = AHashMap<String, Dimension>;
+pub(super) type UniformBufferPodTypes = AHashMap<String, GpuPodInfo>;
 
 // This is a compiler that will take was GLSL code, convert it to Naga, then to WGPU
 // This compiler also allows us to define constants and snippets before compilation
@@ -28,6 +30,8 @@ pub struct Compiler<'a> {
     assets: &'a Assets,
     snippets: Snippets,
     texture_formats: TextureFormats,
+    texture_dimensions: TextureDimensions,
+    uniform_buffer_pod_types: UniformBufferPodTypes,
 }
 
 impl<'a> Compiler<'a> {
@@ -37,6 +41,8 @@ impl<'a> Compiler<'a> {
             assets,
             snippets: Default::default(),
             texture_formats: Default::default(),
+            texture_dimensions: Default::default(),
+            uniform_buffer_pod_types: Default::default(),
         }
     }
 
@@ -77,7 +83,13 @@ impl<'a> Compiler<'a> {
 
         // Reflect the module with the given bind layout
         let time = std::time::Instant::now();
-        let reflected = super::reflect_module::<M>(&graphics, &naga, &self.texture_formats);
+        let reflected = super::reflect_module::<M>(
+            &graphics,
+            &naga,
+            &self.texture_formats,
+            &self.texture_dimensions,
+            &self.uniform_buffer_pod_types,
+        );
         log::debug!(
             "Reflected shader {name} sucessfully! Took {}ms",
             time.elapsed().as_millis()
@@ -96,10 +108,12 @@ impl<'a> Compiler<'a> {
 
 impl<'a> Compiler<'a> {
     // Define a uniform buffer type's inner struct type
+    // TODO: Fix the "buffer-trait" branch and fix this shit
     pub fn use_uniform_buffer<T: GpuPod>(
         &mut self,
         name: impl ToString,
     ) {
+        self.uniform_buffer_pod_types.insert(name.to_string(), T::info());
     }
 
     // Define a uniform texture's type and texel
@@ -107,6 +121,8 @@ impl<'a> Compiler<'a> {
         &mut self,
         name: impl ToString,
     ) {
+        let sampler_name = format!("{}_sampler", name.to_string());
+        self.use_sampler::<T>(sampler_name);
         let name = name.to_string();
         self.texture_formats.insert(name, <T::T as Texel>::info());
     }
@@ -184,7 +200,7 @@ fn compile(
                     log::error!("{}", line);
                 }
 
-                ShaderCompilationError
+                ShaderCompilationError::ShaderC
             }
             _ => todo!(),
         })?;
@@ -221,7 +237,7 @@ fn compile(
 fn load_function_module(
     path: &str,
     assets: &Assets,
-) -> Result<shaderc::ResolvedInclude, ShaderIncludeError> {
+) -> Result<shaderc::ResolvedInclude, String> {
     // Make sure the path is something we can load (.glsl file)
     let pathbuf = PathBuf::try_from(path).unwrap();
 
@@ -230,7 +246,7 @@ fn load_function_module(
     let content = assets
         .load::<FunctionModule>(path)
         .map(|x| x.source)
-        .map_err(ShaderIncludeError::FileAssetError)?;
+        .map_err(|err| format!("File include error: {err:?}"))?;
     Ok(shaderc::ResolvedInclude {
         resolved_name: path.to_string(),
         content,
@@ -241,9 +257,9 @@ fn load_function_module(
 fn load_snippet(
     name: &str,
     snippets: &AHashMap<String, String>,
-) -> Result<shaderc::ResolvedInclude, ShaderIncludeError> {
+) -> Result<shaderc::ResolvedInclude, String> {
     let snippet = snippets.get(name).ok_or(
-        ShaderIncludeError::SnippetNotDefined(name.to_string()),
+        format!("Snippet {} was not defined", name.to_string())
     )?;
     Ok(shaderc::ResolvedInclude {
         resolved_name: name.to_string(),
@@ -261,9 +277,9 @@ fn include(
     snippets: &Snippets,
 ) -> Result<shaderc::ResolvedInclude, String> {
     // If we're too deep, assume that the user caused a cyclic reference, and return an error
-    if depth > 20 {
+    if depth > 40 {
         return Err(
-            format!("{:?}", ShaderIncludeError::IncludeCyclicReference)
+            format!("Include cyclic reference detected")
         );
     }
 
@@ -285,12 +301,8 @@ fn include(
         load_snippet(&target, snippets)
     };
 
-    if output.is_err() {
-        log::warn!("Hang yourself");
-    }
-
     // Convert the error to a string instead
-    output.map_err(|err| format!("{err:?}"))
+    output
 }
 
 // This is a compiled shader module that we can use in multiple pipelines

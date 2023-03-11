@@ -1,6 +1,6 @@
 use std::{num::NonZeroU8, ops::Add};
 
-use wgpu::TextureDimension;
+pub type Dimension = wgpu::TextureDimension;
 
 // Texture dimensions traits that are simply implemented for extents
 pub trait Extent: Copy + std::ops::Div<u32, Output = Self> {
@@ -21,12 +21,12 @@ pub trait Extent: Copy + std::ops::Div<u32, Output = Self> {
     // Check if the extent is a power of 2 extent
     fn is_power_of_two(&self) -> bool {
         match Self::dimensionality() {
-            TextureDimension::D1 => self.width().is_power_of_two(),
-            TextureDimension::D2 => {
+            Dimension::D1 => self.width().is_power_of_two(),
+            Dimension::D2 => {
                 self.width().is_power_of_two()
                     && self.height().is_power_of_two()
             }
-            TextureDimension::D3 => {
+            Dimension::D3 => {
                 self.width().is_power_of_two()
                     && self.height().is_power_of_two()
                     && self.depth().is_power_of_two()
@@ -80,7 +80,7 @@ pub trait Extent: Copy + std::ops::Div<u32, Output = Self> {
     }
 
     // Get the dimensionality of the extent (1, 2, or 3)
-    fn dimensionality() -> TextureDimension;
+    fn dimensionality() -> Dimension;
 }
 
 // Texture offsets traits that are simply implemented for origins
@@ -113,8 +113,8 @@ impl Extent for vek::Extent2<u32> {
         self.cmpge(&other).reduce_and()
     }
 
-    fn dimensionality() -> TextureDimension {
-        TextureDimension::D2
+    fn dimensionality() -> Dimension {
+        Dimension::D2
     }
 
     fn width(&self) -> u32 {
@@ -160,8 +160,8 @@ impl Extent for vek::Extent3<u32> {
         self.cmpge(&other).reduce_and()
     }
 
-    fn dimensionality() -> TextureDimension {
-        TextureDimension::D3
+    fn dimensionality() -> Dimension {
+        Dimension::D3
     }
 
     fn width(&self) -> u32 {

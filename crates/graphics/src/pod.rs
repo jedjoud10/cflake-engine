@@ -34,7 +34,6 @@ pub unsafe trait GpuPod:
         bytemuck::cast_slice(bytes)
     }
 
-
     // Get the size of this POD
     fn size() -> usize {
         std::mem::size_of::<Self>()
@@ -44,8 +43,15 @@ pub unsafe trait GpuPod:
     fn alignment() -> usize {
         std::mem::align_of::<Self>()
     }
-}
 
+    // Get the untyped GPU pod info
+    fn info() -> GpuPodInfo {
+        GpuPodInfo {
+            size: Self::size(),
+            alignment: Self::alignment(),
+        }
+    }
+}
 
 unsafe impl<
         T: Clone
@@ -57,4 +63,22 @@ unsafe impl<
             + 'static,
     > GpuPod for T
 {
+}
+
+// Gpu pod info simply contains the size and alignment of a GPU pod type
+pub struct GpuPodInfo {
+    size: usize,
+    alignment: usize
+}
+
+impl GpuPodInfo {
+    // Get the size of this POD
+    pub fn size(&self) -> usize {
+        self.size
+    }
+
+    // Get the alignment value of this POD
+    pub fn alignment(&self) -> usize {
+        self.alignment
+    }
 }

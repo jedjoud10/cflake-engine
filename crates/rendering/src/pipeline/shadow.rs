@@ -7,7 +7,7 @@ use crate::{
 use ecs::Scene;
 use graphics::{
     ActiveGraphicsPipeline, ActiveRenderPass, Depth, Graphics,
-    GraphicsPipeline, PushConstants, SwapchainFormat, Vertex, XYZ, ValueFiller,
+    GraphicsPipeline, PushConstants, SwapchainFormat, Vertex, XYZ,
 };
 use utils::{Handle, Storage, Time};
 use world::World;
@@ -50,9 +50,11 @@ pub(super) fn render_shadows<'r, M: Material>(
 
         // Set the mesh matrix push constant
         active.set_push_constants(|push_constants| {
+            /*
             push_constants
                 .set("matrix", renderer.matrix.cols)
                 .unwrap();
+            */
         });
 
         // Set the position buffer

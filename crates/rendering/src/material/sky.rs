@@ -11,7 +11,7 @@ use assets::Assets;
 use graphics::{
     BindGroup, Compiled, Compiler, Face, FragmentModule,
     Graphics, Normalized, PrimitiveConfig, PushConstants, Sampler,
-    Shader, Texture, Texture2D, UniformBuffer, ValueFiller,
+    Shader, Texture, Texture2D, UniformBuffer,
     VertexModule, WindingOrder, RGBA,
 };
 use utils::{Handle, Storage};

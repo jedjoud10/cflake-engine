@@ -58,7 +58,7 @@ impl ShadowMapping {
 
         // Create the bind layout for the shadow map shader
         let mut compiler = Compiler::new(assets);
-        compiler.use_ubo::<ShadowUniform>("ubo");
+        compiler.use_uniform_buffer::<ShadowUniform>("ubo");
 
         // Combine the modules to the shader
         let shader = Shader::new(

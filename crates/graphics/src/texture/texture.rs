@@ -20,7 +20,7 @@ use crate::{
 };
 
 // Possibly predefined texel data
-type Texels<'a, T> = Option<&'a [<T as Texel>::Storage]>;
+pub type Texels<'a, T> = Option<&'a [<T as Texel>::Storage]>;
 
 // A texture is an abstraction over Vulkan images to allow us to access/modify them with ease
 // A texture is a container of multiple texels (like pixels, but for textures) that are stored on the GPU

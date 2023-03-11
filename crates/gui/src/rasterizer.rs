@@ -7,10 +7,10 @@ use graphics::{
     PerVertex, PrimitiveConfig, RenderPass, SamplerFilter,
     SamplerMipMaps, SamplerSettings, SamplerWrap, Shader, StoreOp,
     Texture, Texture2D, TextureMipMaps, TextureMode, TextureUsage,
-    TriangleBuffer, ValueFiller, VertexBuffer, VertexConfig,
+    TriangleBuffer, VertexBuffer, VertexConfig,
     VertexInput, VertexModule, Window, R, RGBA, XY, XYZW,
 };
-use rendering::{FinalGraphicsPipeline, FinalRenderPass};
+use rendering::{FinalGraphicsPipeline, FinalRenderPass, WindowUniform, WindowBuffer};
 
 // Font texel type and font map
 type FontTexel = RGBA<Normalized<u8>>;
@@ -102,7 +102,7 @@ impl Rasterizer {
         // Create the bind layout for the GUI shader
         let mut compiler = Compiler::new(assets);
         compiler.use_texture::<FontMap>("font");
-        compiler.use_fill_ubo("window"); 
+        compiler.use_uniform_buffer::<WindowUniform>("window"); 
 
         // Compile the modules into a shader
         let shader = Shader::new(
@@ -178,6 +178,7 @@ impl Rasterizer {
     pub(crate) fn draw(
         &mut self,
         graphics: &Graphics,
+        window_buffer: &WindowBuffer,
         window: &mut Window,
         _loader: &mut Assets,
         primitives: Vec<ClippedPrimitive>,
@@ -267,13 +268,7 @@ impl Rasterizer {
         // Set the required shader uniforms
         let texture = self.texture.as_ref().unwrap();
         active.set_bind_group(0, |group| {
-            group
-                .fill_ubo("window", |fill| {
-                    fill.set("width", extent.w).unwrap();
-                    fill.set("height", extent.h).unwrap();
-                })
-                .unwrap();
-
+            group.set_uniform_buffer("window", window_buffer).unwrap();
             group.set_texture("font", texture).unwrap();
         });
 
