@@ -59,11 +59,11 @@ pub(super) fn render_shadows<'r, M: Material>(
 
         // Set the position buffer
         let positions = mesh.vertices().attribute::<Position>().unwrap();
-        active.set_vertex_buffer::<<Position as crate::MeshAttribute>::V>(0, positions, ..);
+        active.set_vertex_buffer::<<Position as crate::MeshAttribute>::V>(0, positions, ..).unwrap();
 
         // Set the index buffer
         let triangles = mesh.triangles();
-        active.set_index_buffer(triangles.buffer(), ..);
+        active.set_index_buffer(triangles.buffer(), ..).unwrap();
 
         // Draw the triangulated mesh
         let indices = 0..(triangles.buffer().len() as u32 * 3);

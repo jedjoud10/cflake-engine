@@ -144,6 +144,7 @@ fn init(world: &mut World) {
 
     // Create a movable camera
     let camera = Camera::new(120.0, 0.01, 5000.0, 16.0 / 9.0);
+    
     scene.insert((
         Position::default(),
         Rotation::default(),

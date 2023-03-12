@@ -18,19 +18,14 @@ use crate::{
 
 // Cached graphics data
 pub(crate) struct Cached {
-    pub(crate) samplers: DashMap<SamplerSettings, Arc<Sampler>>,
+    pub(crate) samplers: 
+        DashMap<SamplerSettings, Arc<Sampler>>,
     pub(crate) bind_group_layouts:
         DashMap<BindGroupLayout, Arc<wgpu::BindGroupLayout>>,
     pub(crate) pipeline_layouts:
         DashMap<ReflectedShader, Arc<wgpu::PipelineLayout>>,
     pub(crate) bind_groups:
         DashMap<Vec<wgpu::Id>, Arc<wgpu::BindGroup>>,
-    pub(crate) uniform_buffers: Mutex<
-        AHashMap<
-            (u32, BindResourceLayout),
-            Vec<(UniformBuffer<u8>, bool)>,
-        >,
-    >,
 }
 
 // Internnal graphics context that will eventually be wrapped within an Arc

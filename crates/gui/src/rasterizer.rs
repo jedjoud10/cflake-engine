@@ -255,7 +255,7 @@ impl Rasterizer {
             .extend_from_slice(bytemuck::cast_slice(&triangles))
             .unwrap();
 
-        let extent = window.size();
+        // Get the destination render target we will render to
         let dst = window.as_render_target().unwrap();
 
         // Begin the render pass
@@ -287,22 +287,22 @@ impl Rasterizer {
                         0,
                         &self.positions,
                         vertex_offset..(vertex_offset + verts),
-                    );
+                    ).unwrap();
                     active.set_vertex_buffer::<XY<f32>>(
                         1,
                         &self.texcoords,
                         vertex_offset..(vertex_offset + verts),
-                    );
+                    ).unwrap();
                     active.set_vertex_buffer::<XYZW<Normalized<u8>>>(
                         2,
                         &self.colors,
                         vertex_offset..(vertex_offset + verts),
-                    );
+                    ).unwrap();
                     active.set_index_buffer(
                         &self.triangles,
                         triangle_offset
                             ..(triangle_offset + triangles),
-                    );
+                    ).unwrap();
                     active.draw_indexed(
                         0..(triangles as u32 * 3),
                         0..1,

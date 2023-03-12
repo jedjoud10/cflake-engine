@@ -5,7 +5,7 @@ use crate::{
     BindGroup, BufferMode, BufferUsage, ColorLayout,
     DepthStencilLayout, GpuPod, Graphics, GraphicsPipeline,
     ModuleKind, PushConstants, RenderCommand, TriangleBuffer,
-    UniformBuffer, BufferInfo, Vertex, VertexBuffer,
+    UniformBuffer, BufferInfo, Vertex, VertexBuffer, Buffer,
 };
 use std::{
     collections::hash_map::Entry,
@@ -25,6 +25,9 @@ pub struct ActiveGraphicsPipeline<
     pub(crate) pipeline: &'r GraphicsPipeline<C, DS>,
     pub(crate) commands: &'a mut Vec<RenderCommand<'r, C, DS>>,
     pub(crate) graphics: &'r Graphics,
+    pub(crate) push_constant: &'a mut Vec<u8>,
+    pub(crate) push_constant_internal_offset: usize,
+    pub(crate) push_constant_global_offset: usize,
     pub(crate) _phantom: PhantomData<&'t C>,
     pub(crate) _phantom2: PhantomData<&'t DS>,
 }
@@ -38,16 +41,14 @@ fn map<T, U, F: FnOnce(T) -> U>(bound: Bound<T>, map: F) -> Bound<U> {
     }
 }
 
-// Convert some buffer range bounds to byte starts / ends
-fn convert(
-    bounds: impl RangeBounds<usize>,
-    stride: usize,
-) -> (Bound<u64>, Bound<u64>) {
-    let stride = stride as u64;
-    let start =
-        map(bounds.start_bound().cloned(), |x| x as u64 * stride);
-    let end = map(bounds.end_bound().cloned(), |x| x as u64 * stride);
-    (start, end)
+// Validate the bounds and convert them to byte bounds
+fn convert<T: GpuPod, const TYPE: u32>(bounds: impl RangeBounds<usize>, buffer: &Buffer<T, TYPE>) -> Option<(Bound<u64>, Bound<u64>)> {
+    let start = bounds.start_bound().cloned();
+    let end = bounds.end_bound().cloned();
+    buffer.convert_bounds_to_indices((start, end))?;
+    let start = map(start, |x| x as u64 * buffer.stride() as u64);
+    let end = map(end, |x| x as u64 * buffer.stride() as u64);
+    Some((start, end))
 }
 
 impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
@@ -60,13 +61,8 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         buffer: &'r VertexBuffer<V>,
         bounds: impl RangeBounds<usize>,
     ) -> Option<()> {
-        // Get the bounds and cast them to usize
-        let (start, end) = convert(bounds, buffer.stride());
-        let r0 = map(start, |x| x as usize);
-        let r1 = map(end, |x| x as usize);
-
-        // Make sure the bounds fit within the buffer
-        buffer.convert_bounds_to_indices((r0, r1))?;
+        // Validate the bounds and convert them to byte bounds
+        let (start, end) = convert(bounds, buffer)?;
 
         // Store the command within the internal queue
         self.commands.push(RenderCommand::SetVertexBuffer {
@@ -85,13 +81,8 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         buffer: &'r TriangleBuffer<u32>,
         bounds: impl RangeBounds<usize>,
     ) -> Option<()> {
-        // Get the bounds and cast them to usize
-        let (start, end) = convert(bounds, buffer.stride());
-        let r0 = map(start, |x| x as usize);
-        let r1 = map(end, |x| x as usize);
-
-        // Make sure the bounds fit within the buffer
-        buffer.convert_bounds_to_indices((r0, r1))?;
+        // Validate the bounds and convert them to byte bounds
+        let (start, end) = convert(bounds, buffer)?;
 
         // Store the command wtihin the internal queue
         self.commands.push(RenderCommand::SetIndexBuffer {
@@ -111,22 +102,35 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         let shader = self.pipeline.shader();
 
         // Don't set the push constants if we don't have any to set
-        let valid = shader
+        let max = shader
             .reflected
             .push_constant_layouts
             .iter()
-            .any(|x| x.is_some());
-        if !valid {
+            .filter_map(|x| x.as_ref())
+            .map(|x| x.size)
+            .sum::<usize>();
+        if max == 0 {
             return;
         }
+
+        // Make sure we have enough bytes to store the push constants
+        let pc = self.push_constant.len() - self.push_constant_internal_offset;
+        if pc < 1024 {
+            self.push_constant.extend(std::iter::repeat(0).take(1024));
+        }
+
+        // Get the data that we will use
+        let start = self.push_constant_global_offset + self.push_constant_internal_offset;
+        let end = max + start;
+        let data = &mut self.push_constant[start..end];
 
         // Create push constants that we can set
         let mut push_constants = PushConstants {
             reflected: shader.reflected.clone(),
             offsets: Vec::new(),
-            data: Vec::new(),
+            sizes: Vec::new(),
             stages: Vec::new(),
-            _phantom: PhantomData,
+            data,
         };
 
         // Let the user modify the push constant
@@ -134,19 +138,20 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
 
         // Fetch data back from push constants
         let offsets = push_constants.offsets;
-        let data = push_constants.data;
+        let sizes = push_constants.sizes;
         let stages = push_constants.stages;
 
         // Create the render commands for settings for push constants
         let iter = stages
             .into_iter()
-            .zip(offsets.into_iter().zip(data.into_iter()));
-        for (stages, (offset, data)) in iter {
+            .zip(offsets.into_iter()).zip(sizes.into_iter());
+        for ((stages, offset), size) in iter {
             self.commands.push(RenderCommand::SetPushConstants {
                 stages,
-                offset,
-                data,
-            })
+                size,
+                global_offset: self.push_constant_global_offset,
+                local_offset: offset,
+            });
         }
     }
 
@@ -191,11 +196,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
 
         // Let the user modify the bind group
         callback(&mut bind_group);
-
-        // Check the cache, and create a new fill UBOs if needed
-        // This will also fill the buffers, but it won't bind them
         let cache = &self.graphics.0.cached;
-        let mut cached_ubos = cache.uniform_buffers.lock();
 
         // Extract the resources from bind group (dissociate the lifetime)
         let BindGroup::<'_> {
@@ -206,77 +207,6 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
             mut ids,
             ..
         } = bind_group;
-
-        // Contains the indices of a free UBO buffer of a specific layout that we can use
-        let mut filled_up_ubos =
-            Vec::<usize>::with_capacity(fill_ubos.len());
-
-        for (data, layout) in fill_ubos.iter() {
-            match cached_ubos.entry((binding, layout.clone())) {
-                // There is an already existing UBO buffer with the same layout and bind group, fill it up
-                Entry::Occupied(mut occupied) => {
-                    // Check if there's an unused buffer that we can use
-                    let buffers = occupied.get_mut();
-                    let buffer = buffers
-                        .iter_mut()
-                        .enumerate()
-                        .find(|(_, (_, x))| *x);
-
-                    if let Some((index, (buffer, free))) = buffer {
-                        // Write to the already existing fill ubo for this group
-                        buffer.write(&data, 0).unwrap();
-                        *free = false;
-                        filled_up_ubos.push(index);
-                    } else {
-                        // Add a new unused buffer
-                        log::warn!("Did not find free fill buffer for bind group (set = {binding}), allocating a new one...");
-                        let buffer = UniformBuffer::<u8>::from_slice(
-                            &self.graphics,
-                            &data,
-                            BufferMode::Dynamic,
-                            BufferUsage::WRITE,
-                        )
-                        .unwrap();
-                        filled_up_ubos.push(buffers.len());
-                        buffers.push((buffer, true));
-                    }
-                }
-
-                // Create a new UBO with the specified layout and bind group
-                Entry::Vacant(vacant) => {
-                    log::warn!("Did not find fill buffers ring buffer for bind group (set = {binding}), allocating a new one...");
-                    let buffer = UniformBuffer::<u8>::from_slice(
-                        &self.graphics,
-                        &data,
-                        BufferMode::Dynamic,
-                        BufferUsage::WRITE,
-                    )
-                    .unwrap();
-                    vacant.insert(vec![(buffer, true)]);
-                    filled_up_ubos.push(0);
-                }
-            }
-        }
-
-        // Update the bind group IDs based on the fetched UBOS
-        // (very important for the next step)
-        for (index, (_, layout)) in fill_ubos.iter().enumerate() {
-            let buffers =
-                cached_ubos.get(&(binding, layout.clone())).unwrap();
-            let (buffer, _) = &buffers[filled_up_ubos[index]];
-
-            // Get values needed for the bind entry
-            let id = buffer.raw().global_id();
-            let buffer_binding =
-                buffer.raw().as_entire_buffer_binding();
-            let resource =
-                wgpu::BindingResource::Buffer(buffer_binding);
-
-            // Save the bind entry for later
-            resources.push(resource);
-            ids.push(id);
-            slots.push(layout.binding);
-        }
 
         // Check the cache, and create a new bind group
         let bind_group = match cache.bind_groups.entry(ids.clone()) {

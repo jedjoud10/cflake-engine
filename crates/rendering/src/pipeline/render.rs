@@ -29,7 +29,7 @@ pub(crate) fn set_vertex_buffer_attribute<
 
     // Check if the mesh contains the attribute, and if it does, render it
     if let Some(buffer) = mesh.vertices().attribute::<A>() {
-        active.set_vertex_buffer::<A::V>(A::index(), buffer, ..);
+        active.set_vertex_buffer::<A::V>(A::index(), buffer, ..).unwrap();
     }
 }
 
@@ -143,7 +143,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
 
         // Set the index buffer
         let triangles = mesh.triangles();
-        active.set_index_buffer(triangles.buffer(), ..);
+        active.set_index_buffer(triangles.buffer(), ..).unwrap();
 
         // Draw the triangulated mesh
         let indices = 0..(triangles.buffer().len() as u32 * 3);

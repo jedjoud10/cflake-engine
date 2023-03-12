@@ -40,8 +40,9 @@ pub(crate) enum RenderCommand<
     // Set push constant range
     SetPushConstants {
         stages: wgpu::ShaderStages,
-        offset: u32,
-        data: Vec<u8>,
+        size: usize,
+        global_offset: usize,
+        local_offset: u32,
     },
 
     // Draw command without index buffer
@@ -60,6 +61,7 @@ pub(crate) enum RenderCommand<
 // Record the render commands to the given render pass
 pub(crate) fn record<'r, C: ColorLayout, DS: DepthStencilLayout>(
     mut render_pass: wgpu::RenderPass<'r>,
+    push_constants: Vec<u8>,
     render_commands: &'r [RenderCommand<'r, C, DS>],
 ) {
     for render_command in render_commands {
@@ -95,13 +97,17 @@ pub(crate) fn record<'r, C: ColorLayout, DS: DepthStencilLayout>(
 
             RenderCommand::SetPushConstants {
                 stages,
-                offset,
-                data,
+                size,
+                global_offset,
+                local_offset
             } => {
+                let start = *global_offset;
+                let end = global_offset + size;
+                let data = &push_constants[start..end];
                 render_pass.set_push_constants(
                     *stages,
-                    *offset,
-                    data.as_slice(),
+                    *local_offset,
+                    data
                 );
             }
 

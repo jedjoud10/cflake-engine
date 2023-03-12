@@ -1,7 +1,7 @@
 use crate::{
     FunctionModule, Graphics, ModuleKind,
     ReflectedModule, ShaderCompilationError, ShaderModule,
-    VertexModule, BindResourceType, Texture, Texel, TexelInfo, Buffer, GpuPod, Dimension, GpuPodInfo,
+    VertexModule, BindResourceType, Texture, Texel, TexelInfo, Buffer, GpuPod, Dimension, GpuPodInfo, ModuleVisibility,
 };
 use ahash::AHashMap;
 use assets::Assets;
@@ -14,7 +14,7 @@ use snailquote::unescape;
 use thiserror::Error;
 use std::{
     any::TypeId, borrow::Cow, ffi::CStr, marker::PhantomData,
-    path::PathBuf, sync::Arc, time::Instant,
+    path::PathBuf, sync::Arc, time::Instant, ops::{RangeBounds, Bound},
 };
 
 // Type alias for snippets and resources
@@ -22,6 +22,7 @@ pub(super) type Snippets = AHashMap<String, String>;
 pub(super) type TextureFormats = AHashMap<String, TexelInfo>; 
 pub(super) type TextureDimensions = AHashMap<String, Dimension>;
 pub(super) type UniformBufferPodTypes = AHashMap<String, GpuPodInfo>;
+pub(super) type PushConstantRanges = Vec<(Bound<usize>, Bound<usize>, ModuleVisibility)>;
 
 // This is a compiler that will take was GLSL code, convert it to Naga, then to WGPU
 // This compiler also allows us to define constants and snippets before compilation
@@ -32,6 +33,7 @@ pub struct Compiler<'a> {
     texture_formats: TextureFormats,
     texture_dimensions: TextureDimensions,
     uniform_buffer_pod_types: UniformBufferPodTypes,
+    push_constant_ranges: PushConstantRanges,
 }
 
 impl<'a> Compiler<'a> {
@@ -43,6 +45,7 @@ impl<'a> Compiler<'a> {
             texture_formats: Default::default(),
             texture_dimensions: Default::default(),
             uniform_buffer_pod_types: Default::default(),
+            push_constant_ranges: Default::default(),
         }
     }
 
@@ -97,7 +100,6 @@ impl<'a> Compiler<'a> {
 
         Ok(Compiled {
             raw: Arc::new(raw),
-            naga: Arc::new(naga),
             reflected: Arc::new(reflected),
             name: name.into(),
             _phantom: PhantomData,
@@ -136,6 +138,17 @@ impl<'a> Compiler<'a> {
         let name = name.to_string();
         self.texture_formats.insert(name, <T::T as Texel>::info());
     }
+
+    // Define a push constant range to be pushed
+    pub fn use_push_constant_range(
+        &mut self,
+        bound: impl RangeBounds<usize>,
+        visibility: ModuleVisibility,
+    ) {
+        let (start, end) = 
+            (bound.start_bound().cloned(), bound.end_bound().cloned());
+        self.push_constant_ranges.push((start, end, visibility));
+    }
 }
 
 // Parses the GLSL shader into a Naga module, then passes it to Wgpu
@@ -152,6 +165,7 @@ fn compile(
     let mut options = shaderc::CompileOptions::new().unwrap();
     // FIXME: OwO what's this??
     //options.set_auto_combined_image_sampler(auto_combine);
+    //options.set_invert_y(true);
 
     // Create a callback responsible for includes
     options.set_include_callback(|target, _type, current, depth| {
@@ -220,17 +234,17 @@ fn compile(
     .unwrap();
 
     // Compile the Wgpu shader
-    Ok((
-        graphics.device().create_shader_module(
-            wgpu::ShaderModuleDescriptor {
-                label: None,
-                source: wgpu::ShaderSource::Naga(Cow::Owned(
-                    module.clone(),
-                )),
-            },
-        ),
-        module,
-    ))
+    let wgpu = graphics.device().create_shader_module(
+        wgpu::ShaderModuleDescriptor {
+            label: None,
+            source: wgpu::ShaderSource::Naga(Cow::Owned(
+                module.clone(),
+            )),
+        },
+    );
+
+    // Return the compiled wgpu module and the naga mdule
+    Ok((wgpu, module))
 }
 
 // Load a function module and convert it to a ResolvedInclude
@@ -310,7 +324,6 @@ fn include(
 pub struct Compiled<M: ShaderModule> {
     // Wgpu related data
     raw: Arc<wgpu::ShaderModule>,
-    naga: Arc<naga::Module>,
     reflected: Arc<ReflectedModule>,
 
     // Helpers
@@ -325,7 +338,6 @@ impl<M: ShaderModule> Clone for Compiled<M> {
     fn clone(&self) -> Self {
         Self {
             raw: self.raw.clone(),
-            naga: self.naga.clone(),
             reflected: self.reflected.clone(),
             name: self.name.clone(),
             _phantom: self._phantom.clone(),
@@ -348,10 +360,5 @@ impl<M: ShaderModule> Compiled<M> {
     // Get the shader module name for this module
     pub fn name(&self) -> &str {
         &self.name
-    }
-
-    // Get the internally stored Naga representation of the shader
-    pub fn naga(&self) -> &naga::Module {
-        &self.naga
     }
 }

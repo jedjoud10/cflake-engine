@@ -79,8 +79,8 @@ impl Material for Basic {
         compiler.use_texture::<NormalMap>("normal_map");
 
         // Define the push ranges used by push constants
-        //let size = <vek::Mat4::<f32> as GpuPod>::size();
-        //compiler.use_push_constant_range(0..64, ModuleVisibility::Vertex);
+        let size = <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size();
+        compiler.use_push_constant_range(0..size, ModuleVisibility::Vertex);
 
         // Compile the modules into a shader
         Shader::new(
@@ -155,6 +155,10 @@ impl Material for Basic {
         default: &DefaultMaterialResources<'r>,
         constants: &mut PushConstants,
     ) {
-        //constants.push(bytes, offset);
+        // Send the raw bytes to the CPU
+        let matrix = renderer.matrix;
+        let cols = matrix.cols;
+        let bytes = GpuPod::into_bytes(&cols);
+        constants.push(bytes, 0, ModuleVisibility::Vertex);
     }
 }

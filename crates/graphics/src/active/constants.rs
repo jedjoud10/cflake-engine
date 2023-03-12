@@ -2,7 +2,7 @@ use arrayvec::ArrayVec;
 use itertools::Itertools;
 
 use crate::{
-    ReflectedShader,
+    ReflectedShader, ModuleVisibility,
 };
 use std::{marker::PhantomData, sync::Arc, ops::RangeBounds};
 
@@ -11,17 +11,18 @@ use std::{marker::PhantomData, sync::Arc, ops::RangeBounds};
 pub struct PushConstants<'a> {
     pub(crate) reflected: Arc<ReflectedShader>,
     pub(crate) offsets: Vec<u32>,
-    pub(crate) data: Vec<Vec<u8>>,
+    pub(crate) sizes: Vec<usize>,
+    pub(crate) data: &'a mut [u8],
     pub(crate) stages: Vec<wgpu::ShaderStages>,
-    pub(crate) _phantom: PhantomData<&'a ()>,
 }
 
 impl PushConstants<'_> {
     // Set the given push constants of a given range and push them
-    pub fn set(
+    pub fn push(
         &mut self,
         bytes: &[u8],
-        offset: usize,
+        offset: u32,
+        visibility: ModuleVisibility,
     ) {
     }
 }

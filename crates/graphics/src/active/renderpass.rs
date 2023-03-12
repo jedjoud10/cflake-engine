@@ -17,6 +17,7 @@ pub struct ActiveRenderPass<
 > {
     pub(crate) commands: Vec<RenderCommand<'r, C, DS>>,
     pub(crate) graphics: &'r Graphics,
+    pub(crate) push_constants: Vec<u8>,
     pub(crate) color_attachments:
         Vec<Option<wgpu::RenderPassColorAttachment<'t>>>,
     pub(crate) depth_stencil_attachment:
@@ -60,21 +61,15 @@ impl<'r, 't, C: ColorLayout, DS: DepthStencilLayout>
             }
         }
 
-        // Get all the uniform fill buffers that are for this pipeline and reset their state (free)
-        let mut buffers =
-            self.graphics.0.cached.uniform_buffers.lock();
-        for (_, buffers) in buffers.iter_mut() {
-            for (_, free) in buffers {
-                *free = true;
-            }
-        }
-
         ActiveGraphicsPipeline {
             _phantom: PhantomData,
             _phantom2: PhantomData,
             pipeline: &pipeline,
             graphics: self.graphics,
             commands: &mut self.commands,
+            push_constant_internal_offset: self.push_constants.len(),
+            push_constant_global_offset: 0,
+            push_constant: &mut self.push_constants,
         }
     }
 }
@@ -97,7 +92,8 @@ impl<'r, 't, C: ColorLayout, DS: DepthStencilLayout> Drop
             });
 
         // Put the recorded render pass commands in the actual render pass
-        super::record(pass, &self.commands);
+        let push_constants = std::mem::take(&mut self.push_constants);
+        super::record(pass, push_constants, &self.commands);
 
         // Submit (reuse) the given encoder
         self.graphics.reuse([encoder]);

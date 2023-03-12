@@ -127,7 +127,6 @@ pub(crate) unsafe fn init_context_and_window(
             pipeline_layouts: Default::default(),
             bind_groups: Default::default(),
             bind_group_layouts: Default::default(),
-            uniform_buffers: Default::default(),
         },
         shaderc: shaderc::Compiler::new().unwrap(),
         encoders: thread_local::ThreadLocal::default(),
