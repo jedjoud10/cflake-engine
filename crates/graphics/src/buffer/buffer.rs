@@ -250,8 +250,8 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         }
     }
 
-    // Convert the bounds of the RangeBounds trait
-    fn convert_bounds(
+    // Validate the bounds of the RangeBounds trait into (start, end)
+    pub(crate) fn convert_bounds_to_indices(
         &self,
         range: impl RangeBounds<usize>,
     ) -> Option<(usize, usize)> {
@@ -383,7 +383,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         val: T,
     ) -> Result<(), BufferSplatError> {
         let (start, end) = self
-            .convert_bounds(range)
+            .convert_bounds_to_indices(range)
             .ok_or(BufferSplatError::InvalidRange(self.length))?;
         let len = end - start;
 

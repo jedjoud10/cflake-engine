@@ -54,35 +54,53 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
     ActiveGraphicsPipeline<'a, 'r, 't, C, DS>
 {
     // Assign a vertex buffer to a slot with a specific range
-    // TODO: CHECK IF RANGE BOUNDS IS VALID
     pub fn set_vertex_buffer<V: Vertex>(
         &mut self,
         slot: u32,
         buffer: &'r VertexBuffer<V>,
         bounds: impl RangeBounds<usize>,
-    ) {
+    ) -> Option<()> {
+        // Get the bounds and cast them to usize
         let (start, end) = convert(bounds, buffer.stride());
+        let r0 = map(start, |x| x as usize);
+        let r1 = map(end, |x| x as usize);
+
+        // Make sure the bounds fit within the buffer
+        buffer.convert_bounds_to_indices((r0, r1))?;
+
+        // Store the command within the internal queue
         self.commands.push(RenderCommand::SetVertexBuffer {
             slot,
             buffer: buffer.as_untyped(),
             start,
             end,
-        })
+        });
+
+        Some(())
     }
 
     // Sets the active index buffer with a specific range
-    // TODO: CHECK IF RANGE BOUNDS IS VALID
     pub fn set_index_buffer(
         &mut self,
         buffer: &'r TriangleBuffer<u32>,
         bounds: impl RangeBounds<usize>,
-    ) {
+    ) -> Option<()> {
+        // Get the bounds and cast them to usize
         let (start, end) = convert(bounds, buffer.stride());
+        let r0 = map(start, |x| x as usize);
+        let r1 = map(end, |x| x as usize);
+
+        // Make sure the bounds fit within the buffer
+        buffer.convert_bounds_to_indices((r0, r1))?;
+
+        // Store the command wtihin the internal queue
         self.commands.push(RenderCommand::SetIndexBuffer {
             buffer: buffer,
             start,
             end,
-        })
+        });
+
+        Some(())
     }
 
     // Set push constants before rendering

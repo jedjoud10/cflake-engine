@@ -115,6 +115,7 @@ impl<'a> BindGroup<'a> {
     }
 
     // Set a uniform buffer that we can read from within shaders
+    // TODO: Fix the "buffer-trait" branch and fix this shit (aka make it "set_buffer" instead)
     pub fn set_uniform_buffer<'s, T: GpuPod>(
         &mut self,
         name: &'s str,
@@ -152,46 +153,4 @@ impl<'a> BindGroup<'a> {
         self.slots.push(entry.binding);
         Ok(())
     }
-
-    /*
-    // Fetches an already allocated uniform buffer that we can fill up with data
-    pub fn fill_ubo<'s>(
-        &mut self,
-        name: &'s str,
-        callback: impl FnOnce(&mut FillBuffer),
-    ) -> Result<(), BindError<'s>> {
-        // Get the binding entry layout for the given buffer
-        let entry = Self::find_entry_layout(
-            self.index,
-            &self.reflected,
-            name,
-        )?;
-
-        // Pre-allocate a vector with an appropriate size
-        let (size, members) = match entry.resource_type {
-            crate::BindResourceType::Buffer {
-                size, ref members, ..
-            } => (size as usize, members),
-            _ => panic!(),
-        };
-
-        // Le vecteur that contains le data
-        let mut vector = vec![0u8; size];
-
-        // Create the fill buffer
-        let mut fill_buffer = FillBuffer {
-            data: &mut vector,
-            members: members.as_slice(),
-            _phantom: PhantomData,
-        };
-
-        // Execute the call back to set the UBO fields
-        callback(&mut fill_buffer);
-        drop(fill_buffer);
-
-        // Set the fill UBO data
-        self.fill_ubos.push((vector, entry.clone()));
-        Ok(())
-    }
-    */
 }
