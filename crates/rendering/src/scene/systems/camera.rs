@@ -15,9 +15,8 @@ use utils::{Storage, Time};
 use world::{post_user, user, System, WindowEvent, World};
 
 // Update event that will set/update the main perspective camera
-fn update_camera(world: &mut World) {
+fn update(world: &mut World) {
     let mut ecs = world.get_mut::<Scene>().unwrap();
-    let graphics = world.get::<Graphics>().unwrap();
     let mut renderer = world.get_mut::<ForwardRenderer>().unwrap();
     let window = world.get::<Window>().unwrap();
 
@@ -61,7 +60,7 @@ fn update_camera(world: &mut World) {
         // Fill the camera UBO with the proper data
         renderer.camera_buffer.write(&[data], 0).unwrap();
     } else {
-        // Set the main camera if we did not find one
+        // Set the main camera if we find one
         let next = ecs.find::<(
             &Camera,
             &ecs::Position,
@@ -77,6 +76,6 @@ fn update_camera(world: &mut World) {
 // The camera system will be responsible for updating the camera UBO and matrices
 pub fn system(system: &mut System) {
     system
-        .insert_update(update_camera)
+        .insert_update(update)
         .before(super::rendering::system);
 }

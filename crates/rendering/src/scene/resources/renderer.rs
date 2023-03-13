@@ -43,6 +43,9 @@ pub struct ForwardRenderer {
     // Main camera entity that we use to render the scene
     pub main_camera: Option<Entity>,
 
+    // Main directional light that will enlighten our world
+    pub main_directional_light: Option<Entity>,
+
     // Default shader buffers that will be shared with each material
     pub camera_buffer: CameraBuffer,
     pub timing_buffer: TimingBuffer,
@@ -178,6 +181,7 @@ impl ForwardRenderer {
 
             // No default camera
             main_camera: None,
+            main_directional_light: None,
             sky_gradient,
         }
     }
