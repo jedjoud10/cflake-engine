@@ -25,14 +25,12 @@ impl Shader {
         graphics: &Graphics,
         vertex: VertexModule,
         fragment: FragmentModule,
-        mut compiler: Compiler,
+        compiler: Compiler,
     ) -> Result<Self, ShaderCompilationError> {
         let vertex = compiler.compile(vertex, graphics)?;
         let fragment = compiler.compile(fragment, graphics)?;
-        let (reflected, layout) = super::create_pipeline_layout(
-            &vertex, &fragment, graphics,
-        );
-        log::warn!("{:#?}", reflected);
+        let (reflected, layout) =
+            compiler.create_pipeline_layout(graphics);
 
         Ok(Self {
             vertex,

@@ -2,15 +2,11 @@ use crate::{
     BindResourceType, Buffer, Dimension, FunctionModule, GpuPod,
     GpuPodInfo, Graphics, ModuleKind, ModuleVisibility,
     ShaderCompilationError, ShaderModule, Texel,
-    TexelInfo, Texture, VertexModule, PushConstantRange,
+    TexelInfo, Texture, VertexModule, PushConstantRange, ReflectedShader,
 };
 use ahash::AHashMap;
 use assets::Assets;
 use itertools::Itertools;
-use naga::{
-    valid::{ModuleInfo, ValidationError},
-    Module, ShaderStage, WithSpan,
-};
 use snailquote::unescape;
 use std::{
     any::TypeId,
@@ -30,6 +26,7 @@ pub(super) type TextureFormats = AHashMap<String, TexelInfo>;
 pub(super) type TextureDimensions = AHashMap<String, Dimension>;
 pub(super) type UniformBufferPodTypes = AHashMap<String, GpuPodInfo>;
 pub(super) type PushConstantRanges = Vec<PushConstantRange>;
+pub(super) type ResourceLocations = Vec<(u64, u64)>;
 
 // This is a compiler that will take was GLSL code, convert it to Naga, then to WGPU
 // This compiler also allows us to define constants and snippets before compilation
@@ -41,6 +38,7 @@ pub struct Compiler<'a> {
     texture_dimensions: TextureDimensions,
     uniform_buffer_pod_types: UniformBufferPodTypes,
     push_constant_ranges: PushConstantRanges,
+    resource_locations: ResourceLocations,
 }
 
 impl<'a> Compiler<'a> {
@@ -53,6 +51,7 @@ impl<'a> Compiler<'a> {
             texture_dimensions: Default::default(),
             uniform_buffer_pod_types: Default::default(),
             push_constant_ranges: Default::default(),
+            resource_locations: Default::default(),
         }
     }
 
@@ -91,28 +90,28 @@ impl<'a> Compiler<'a> {
             time.elapsed().as_millis()
         );
 
-        // Reflect the module with the given bind layout
-        let time = std::time::Instant::now();
-        let reflected = super::reflect_module::<M>(
-            &graphics,
-            &naga,
-            &self.texture_formats,
-            &self.texture_dimensions,
-            &self.uniform_buffer_pod_types,
-            &self.push_constant_ranges,
-        );
-        log::debug!(
-            "Reflected shader {name} sucessfully! Took {}ms",
-            time.elapsed().as_millis()
-        );
-
         Ok(Compiled {
             raw: Arc::new(raw),
-            reflected: Arc::new(reflected),
             name: name.into(),
             _phantom: PhantomData,
             graphics: graphics.clone(),
         })
+    }
+
+    // Convert the given shader modules
+    pub(crate) fn create_pipeline_layout(
+        &self,
+        graphics: &Graphics
+    ) -> (Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>) {
+        super::create_pipeline_layout(
+            graphics,
+            &[],
+            &self.texture_formats,
+            &self.texture_dimensions,
+            &self.uniform_buffer_pod_types,
+            &self.push_constant_ranges,
+            &self.resource_locations,
+        )
     }
 }
 
@@ -122,22 +121,30 @@ impl<'a> Compiler<'a> {
     pub fn use_uniform_buffer<T: GpuPod>(
         &mut self,
         name: impl ToString,
+        set: u64,
+        binding: u64,
     ) {
         self.uniform_buffer_pod_types
             .insert(name.to_string(), T::info());
     }
 
     // Define a uniform texture's type and texel
-    pub fn use_texture<T: Texture>(&mut self, name: impl ToString) {
-        let sampler_name = format!("{}_sampler", name.to_string());
-        self.use_sampler::<T>(sampler_name);
+    pub fn use_texture<T: Texture>(
+        &mut self,
+        name: impl ToString,
+        set: u64,
+        binding: u64,) {
         let name = name.to_string();
         self.texture_formats.insert(name, <T::T as Texel>::info());
     }
 
     // Define a uniform sampler's type and texel
-    // This is called automatically by the method above to set a texture's sampler automatically
-    pub fn use_sampler<T: Texture>(&mut self, name: impl ToString) {
+    pub fn use_sampler<T: Texture>(
+        &mut self,
+        name: impl ToString,
+        set: u64,
+        binding: u64,
+    ) {
         let name = name.to_string();
         self.texture_formats.insert(name, <T::T as Texel>::info());
     }
@@ -255,9 +262,7 @@ fn compile(
     let wgpu = graphics.device().create_shader_module(
         wgpu::ShaderModuleDescriptor {
             label: None,
-            source: wgpu::ShaderSource::Naga(Cow::Owned(
-                module.clone(),
-            )),
+            source: todo!(),
         },
     );
 

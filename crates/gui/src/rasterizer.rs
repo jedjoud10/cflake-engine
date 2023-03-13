@@ -103,8 +103,8 @@ impl Rasterizer {
 
         // Create the bind layout for the GUI shader
         let mut compiler = Compiler::new(assets);
-        compiler.use_texture::<FontMap>("font");
-        compiler.use_uniform_buffer::<WindowUniform>("window");
+        compiler.use_texture::<FontMap>("font", 0, 0);
+        compiler.use_uniform_buffer::<WindowUniform>("window", 0, 0);
 
         // Compile the modules into a shader
         let shader =

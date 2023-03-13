@@ -115,19 +115,33 @@ fn map_binding_type(
 // Create a pipeline layout for a combination of shader modules using the specified definitions
 pub(super) fn create_pipeline_layout(
     graphics: &Graphics,
-    definitions: &InternalDefinitions,
     names: &[&str],
+    texture_formats: &super::TextureFormats,
+    texture_dimensions: &super::TextureDimensions,
+    uniform_buffer_pod_types: &super::UniformBufferPodTypes,
+    push_constant_ranges: &super::PushConstantRanges,
+    resource_locations: &super::ResourceLocations,
 ) -> (Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>) {
-    
+    let shader = ReflectedShader {
+        last_valid_bind_group_layout: 0,
+        bind_group_layouts: [None, None, None, None],
+        push_constant_ranges: push_constant_ranges.clone(),
+    };
+
+    fun_name(graphics, shader, names)
 }
 
-fn fun_name(graphics: &Graphics, shader: &ReflectedShader) -> (Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>) {
+fn fun_name(
+    graphics: &Graphics,
+    shader: ReflectedShader,
+    names: &[&str]
+) -> (Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>) {
     // Before creating the layout, check if we already have a corresponding one in cache
     if let Some(cached) =
         graphics.0.cached.pipeline_layouts.get(&shader)
     {
         log::debug!("Found pipeline layout in cache, using it...");
-        return cached.clone();
+        return (Arc::new(shader), cached.value().clone());
     } else {
         log::warn!(
             "Did not find cached pipeline layout for {names:?}"
