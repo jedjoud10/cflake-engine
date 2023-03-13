@@ -1,18 +1,18 @@
 use crate::{
-    AlbedoMap, Basic, Camera, CameraUniform,
+    AlbedoMap, Basic,
     DefaultMaterialResources, ForwardRenderer, Mesh, NormalMap,
-    Pipelines, PostProcess, Renderer, SceneRenderPass, Sky,
+    Pipelines, Sky,
     WindowUniform, ShadowMapping,
 };
 use assets::Assets;
-use ecs::Scene;
+
 use graphics::{
-    Graphics, LoadOp, Normalized, Operation, RenderPass, StoreOp,
-    Texture, Texture2D, TextureMode, TextureUsage, Window, BGRA,
+    Graphics,
+    Texture, Window,
 };
-use std::{mem::ManuallyDrop, sync::Arc};
+
 use utils::{Storage, Time};
-use world::{post_user, user, System, WindowEvent, World};
+use world::{user, System, WindowEvent, World};
 
 // Add the scene resources and setup for rendering
 fn init(world: &mut World) {

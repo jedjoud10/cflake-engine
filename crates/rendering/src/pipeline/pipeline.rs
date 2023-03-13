@@ -1,18 +1,12 @@
 use crate::{
-    attributes::{
-        Normal, Position, Tangent, TexCoord,
-        MAX_MESH_VERTEX_ATTRIBUTES,
-    },
-    ActiveSceneRenderPass, DefaultMaterialResources,
-    EnabledMeshAttributes, Material, Mesh, MeshAttribute, SceneColor,
-    SceneDepth, SceneRenderPass, ActiveShadowGraphicsPipeline,
+    ActiveSceneRenderPass, DefaultMaterialResources, Material, Mesh, SceneColor,
+    SceneDepth, ActiveShadowGraphicsPipeline,
 };
 use assets::Assets;
 use graphics::{
-    ActiveRenderPass, CompareFunction, Depth,
+    CompareFunction,
     DepthConfig, Graphics, GraphicsPipeline,
-    PipelineInitializationError, RenderPass, Shader, SwapchainFormat,
-    VertexConfig, VertexInput,
+    PipelineInitializationError, Shader,
 };
 use std::marker::PhantomData;
 use utils::Storage;

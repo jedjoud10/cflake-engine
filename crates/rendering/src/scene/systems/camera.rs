@@ -1,18 +1,14 @@
 use crate::{
-    AlbedoMap, Basic, Camera, CameraUniform,
-    DefaultMaterialResources, ForwardRenderer, Mesh, NormalMap,
-    Pipelines, PostProcess, Renderer, SceneRenderPass, Sky,
-    WindowUniform,
+    Camera, CameraUniform, ForwardRenderer,
 };
-use assets::Assets;
+
 use ecs::Scene;
 use graphics::{
-    Graphics, LoadOp, Normalized, Operation, RenderPass, StoreOp,
-    Texture, Texture2D, TextureMode, TextureUsage, Window, BGRA,
+    Window,
 };
-use std::{mem::ManuallyDrop, sync::Arc};
-use utils::{Storage, Time};
-use world::{post_user, user, System, WindowEvent, World};
+
+
+use world::{System, World};
 
 // Update event that will set/update the main perspective camera
 fn update(world: &mut World) {
@@ -39,8 +35,8 @@ fn update(world: &mut World) {
         camera.update(location, rotation);
 
         // Convert the camera to uniform data
-        let projection = (*camera.projection_matrix()).cols;
-        let view = (*camera.view_matrix()).cols;
+        let projection = camera.projection_matrix().cols;
+        let view = camera.view_matrix().cols;
         let inverse_projection =
             (camera.projection_matrix().inverted()).cols;
         let inverse_view = (camera.view_matrix().inverted()).cols;

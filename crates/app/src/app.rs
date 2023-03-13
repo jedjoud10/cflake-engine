@@ -1,11 +1,9 @@
 use assets::AssetsSettings;
 use graphics::{FrameRateLimit, WindowSettings};
 use mimalloc::MiMalloc;
-use platform_dirs::AppDirs;
+
 use std::{
-    any::type_name,
-    path::{Path, PathBuf},
-    str::FromStr,
+    path::{PathBuf},
     sync::mpsc,
 };
 use utils::UtilsSettings;
@@ -14,7 +12,7 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
 };
 use world::{
-    Event, Init, Shutdown, State, System, SystemId, Systems, Tick,
+    Event, Init, Shutdown, State, System, Systems, Tick,
     Update, World,
 };
 
@@ -185,7 +183,7 @@ impl App {
     // Initialize the global logger (also sets the output file)
     fn init_logger(&mut self, sender: mpsc::Sender<String>) {
         use fern::colors::*;
-        use fern::*;
+        
 
         // File logger with no colors. Will write into the given cache buffer
         fn file_logger(
@@ -199,7 +197,7 @@ impl App {
                         target = record.target(),
                         level = record.level(),
                         message = record.args(),
-                        thread_name = std::thread::current().name().unwrap_or_else(|| "none")
+                        thread_name = std::thread::current().name().unwrap_or("none")
                     ));
                 })
                 .chain(sender)
@@ -221,7 +219,7 @@ impl App {
                     target = record.target(),
                     level = colors_level.color(record.level()),
                     message = message,
-                    thread_name = std::thread::current().name().unwrap_or_else(|| "none"),
+                    thread_name = std::thread::current().name().unwrap_or("none"),
                 ));
             }).chain(std::io::stdout())
         }
@@ -236,7 +234,6 @@ impl App {
 
         // Color config for the level
         let colors_level = colors_line
-            .clone()
             .info(Color::Green)
             .debug(Color::Blue)
             .warn(Color::Yellow)

@@ -12,9 +12,9 @@ impl<T> Clone for SendPtr<T> {
 }
 impl<T> Copy for SendPtr<T> {}
 
-impl<T: 'static> Into<*const T> for SendPtr<T> {
-    fn into(self) -> *const T {
-        self.0
+impl<T: 'static> From<SendPtr<T>> for *const T {
+    fn from(val: SendPtr<T>) -> Self {
+        val.0
     }
 }
 
@@ -36,9 +36,9 @@ impl<T> Clone for SendMutPtr<T> {
 }
 impl<T> Copy for SendMutPtr<T> {}
 
-impl<T: 'static> Into<*mut T> for SendMutPtr<T> {
-    fn into(self) -> *mut T {
-        self.0
+impl<T: 'static> From<SendMutPtr<T>> for *mut T {
+    fn from(val: SendMutPtr<T>) -> Self {
+        val.0
     }
 }
 
@@ -51,9 +51,9 @@ impl<T: 'static> From<*mut T> for SendMutPtr<T> {
 // Unsafe untyped pointer that we can send to other threads
 pub struct UntypedPtr(*const (), TypeId);
 
-impl<T: 'static> Into<*const T> for UntypedPtr {
-    fn into(self) -> *const T {
-        self.0 as *const T
+impl<T: 'static> From<UntypedPtr> for *const T {
+    fn from(val: UntypedPtr) -> Self {
+        val.0 as *const T
     }
 }
 
@@ -69,9 +69,9 @@ unsafe impl Send for UntypedPtr {}
 // Unsafe untyped mut pointer that we can send to other threads
 pub struct UntypedMutPtr(*mut (), TypeId);
 
-impl<T: 'static> Into<*mut T> for UntypedMutPtr {
-    fn into(self) -> *mut T {
-        self.0 as *mut T
+impl<T: 'static> From<UntypedMutPtr> for *mut T {
+    fn from(val: UntypedMutPtr) -> Self {
+        val.0 as *mut T
     }
 }
 

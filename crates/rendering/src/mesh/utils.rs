@@ -43,25 +43,25 @@ pub fn apply_vec_settings(
     let matrix = translation * rotation * scale;
 
     if let Some(positions) = positions {
-        apply_settings_positions(*positions, matrix);
+        apply_settings_positions(positions, matrix);
     }
     if let Some(normals) = normals {
         apply_settings_normals(
-            *normals,
+            normals,
             matrix,
             settings.invert_normals,
         );
     }
     if let Some(tangents) = tangents {
         apply_settings_tangents(
-            *tangents,
+            tangents,
             matrix,
             settings.invert_tangents,
         );
     }
     if let Some(tex_coords) = tex_coords {
         apply_settings_tex_coords(
-            *tex_coords,
+            tex_coords,
             settings.invert_tex_coords,
         );
     }

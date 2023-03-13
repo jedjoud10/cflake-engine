@@ -1,15 +1,13 @@
 use crate::{
-    attributes::{Position, RawPosition},
     ActiveScenePipeline, ActiveSceneRenderPass,
     DefaultMaterialResources, EnabledMeshAttributes, Material, Mesh,
     MeshAttribute, Renderer, SceneColor, SceneDepth, Surface,
 };
 use ecs::Scene;
 use graphics::{
-    ActiveGraphicsPipeline, ActiveRenderPass, Depth, Graphics,
-    GraphicsPipeline, PushConstants, SwapchainFormat, Vertex, XYZ,
+    GraphicsPipeline,
 };
-use utils::{Handle, Storage, Time};
+use utils::{Handle, Storage};
 use world::World;
 
 // Set a mesh binding vertex buffer to the current render pass
@@ -99,7 +97,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
         // Set the surface group bindings
         active.set_bind_group(2, |group| {
             M::set_surface_bindings(
-                &renderer,
+                renderer,
                 &mut resources,
                 default,
                 group,

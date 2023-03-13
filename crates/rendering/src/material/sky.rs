@@ -1,18 +1,16 @@
-use std::any::TypeId;
+
 
 use crate::{
-    AlbedoMap, AlbedoTexel, CameraBuffer, CameraUniform,
+    AlbedoMap, CameraUniform,
     DefaultMaterialResources, EnabledMeshAttributes, Material,
-    NormalMap, Renderer, SceneBuffer, SceneUniform, TimingBuffer,
-    TimingUniform,
 };
-use ahash::AHashMap;
+
 use assets::Assets;
 use graphics::{
-    BindGroup, Compiled, Compiler, Face, FragmentModule,
-    Graphics, Normalized, PrimitiveConfig, PushConstants, Sampler,
-    Shader, Texture, Texture2D, UniformBuffer,
-    VertexModule, WindingOrder, RGBA,
+    BindGroup, Compiler, Face, FragmentModule,
+    Graphics, PrimitiveConfig,
+    Shader,
+    VertexModule, WindingOrder,
 };
 use utils::{Handle, Storage};
 
@@ -83,7 +81,7 @@ impl Material for Sky {
 
     // Set the static bindings that will never change
     fn set_global_bindings<'r, 'w>(
-        resources: &'r mut Self::Resources<'w>,
+        _resources: &'r mut Self::Resources<'w>,
         default: &DefaultMaterialResources<'r>,
         group: &mut BindGroup<'r>,
     ) {

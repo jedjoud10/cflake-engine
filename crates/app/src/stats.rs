@@ -30,7 +30,7 @@ pub(crate) fn update(world: &mut World) {
     let name = gpuinfo.name;
     let backend = gpuinfo.backend;
     let device = gpuinfo.device_type;
-    let driver = gpuinfo.driver;
+    let _driver = gpuinfo.driver;
 
     // Graphics Stats
     egui::Window::new("Graphics Stats").show(&gui, |ui| {

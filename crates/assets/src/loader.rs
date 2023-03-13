@@ -6,7 +6,6 @@ use utils::ThreadPool;
 
 use std::{
     any::Any,
-    cell::RefCell,
     ffi::OsStr,
     marker::PhantomData,
     path::{Path, PathBuf},

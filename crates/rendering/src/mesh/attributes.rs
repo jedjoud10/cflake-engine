@@ -1,12 +1,12 @@
-use arrayvec::ArrayVec;
+
 use graphics::{
-    GpuPod, Normalized, PerVertex, Vertex, VertexBuffer,
-    VertexConfig, VertexInfo, VertexInput, VertexInputInfo, XY, XYZ,
+    Normalized, PerVertex, Vertex, VertexBuffer,
+    VertexConfig, VertexInput, VertexInputInfo, XYZ,
     XYZW,
 };
 use paste::paste;
 use std::marker::PhantomData;
-use std::mem::MaybeUninit;
+
 
 use crate::{VerticesMut, VerticesRef};
 

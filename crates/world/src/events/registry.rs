@@ -133,7 +133,7 @@ impl<C: Caller> Registry<C> {
             pretty_type_name::pretty_type_name_str(self.caller.name),
         );
 
-        if self.events.len() > 0 {
+        if !self.events.is_empty() {
             let slice = &self.events[..(self.events.len() - 1)];
             for (stage, _) in slice.iter() {
                 log::debug!("├── {}", stage.system.name);

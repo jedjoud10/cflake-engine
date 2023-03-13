@@ -1,9 +1,5 @@
-use assets::Assets;
-use graphics::{
-    Compiler, FragmentModule, Graphics, GraphicsPipeline, LoadOp,
-    Operation, PrimitiveConfig, RenderPass, Shader, StoreOp,
-    SwapchainFormat, VertexConfig, VertexModule,
-};
+
+
 
 // Container for post-processing parameters
 pub struct PostProcess {

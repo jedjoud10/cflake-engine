@@ -142,8 +142,8 @@ impl<S: Sample> Asset for AudioClip<S> {
                     .map_err(AudioClipDeserializationError::Wav)?;
 
                 // Fetch the descriptor data
-                let bitrate = header.bytes_per_second as u32 * 8;
-                let sample_rate = header.sampling_rate as u32;
+                let bitrate = header.bytes_per_second * 8;
+                let sample_rate = header.sampling_rate;
                 let channels = header.channel_count;
                 let format = S::format();
 

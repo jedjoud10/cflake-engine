@@ -1,14 +1,12 @@
 use crate::{
-    AlbedoMap, CameraBuffer, CameraUniform, EnabledMeshAttributes,
-    Mesh, NormalMap, Renderer, SceneBuffer, SceneColor, SceneUniform,
-    TimingBuffer, TimingUniform,
+    AlbedoMap, CameraBuffer, EnabledMeshAttributes, NormalMap, Renderer, SceneBuffer, SceneColor,
+    TimingBuffer,
 };
 use assets::Assets;
 use graphics::{
-    BindGroup, BlendConfig, CompareFunction, Compiled,
-    DepthConfig, FragmentModule, Graphics, Normalized,
-    PrimitiveConfig, PushConstants, StencilConfig, Texture2D,
-    UniformBuffer, VertexModule, WindingOrder, RGBA, Shader,
+    BindGroup, BlendConfig, CompareFunction,
+    DepthConfig, Graphics,
+    PrimitiveConfig, PushConstants, StencilConfig, WindingOrder, Shader,
 };
 use world::World;
 
@@ -88,37 +86,37 @@ pub trait Material: 'static + Sized {
 
     // Set the static bindings
     fn set_global_bindings<'r, 'w>(
-        resources: &'r mut Self::Resources<'w>,
-        default: &DefaultMaterialResources<'r>,
-        group: &mut BindGroup<'r>,
+        _resources: &'r mut Self::Resources<'w>,
+        _default: &DefaultMaterialResources<'r>,
+        _group: &mut BindGroup<'r>,
     ) {
     }
 
     // Set the per instance bindings
     fn set_instance_bindings<'r, 'w>(
         &self,
-        resources: &'r mut Self::Resources<'w>,
-        default: &DefaultMaterialResources<'r>,
-        group: &mut BindGroup<'r>,
+        _resources: &'r mut Self::Resources<'w>,
+        _default: &DefaultMaterialResources<'r>,
+        _group: &mut BindGroup<'r>,
     ) {
     }
 
     // Set the per surface bindings
     fn set_surface_bindings<'r, 'w>(
-        renderer: &Renderer,
-        resources: &'r mut Self::Resources<'w>,
-        default: &DefaultMaterialResources<'r>,
-        group: &mut BindGroup<'r>,
+        _renderer: &Renderer,
+        _resources: &'r mut Self::Resources<'w>,
+        _default: &DefaultMaterialResources<'r>,
+        _group: &mut BindGroup<'r>,
     ) {
     }
 
     // Set push constants (per surface)
     fn set_push_constants<'r, 'w>(
         &self,
-        renderer: &Renderer,
-        resources: &'r mut Self::Resources<'w>,
-        default: &DefaultMaterialResources<'r>,
-        push_constants: &mut PushConstants,
+        _renderer: &Renderer,
+        _resources: &'r mut Self::Resources<'w>,
+        _default: &DefaultMaterialResources<'r>,
+        _push_constants: &mut PushConstants,
     ) {
     }
 }

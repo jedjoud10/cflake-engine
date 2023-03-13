@@ -101,8 +101,7 @@ fn update(world: &mut World) {
     // Try to get the currently used gamepad
     let gamepad = input
         .gamepad
-        .map(|main| input.gilrs.connected_gamepad(main))
-        .flatten();
+        .and_then(|main| input.gilrs.connected_gamepad(main));
 
     // Report battery level if critical
     if let Some(gamepad) = gamepad {

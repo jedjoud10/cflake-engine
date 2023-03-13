@@ -1,18 +1,14 @@
 use crate::{
-    AlbedoMap, CameraUniform, DynPipeline, Material, MaterialId,
-    NormalMap, Pipeline, SceneUniform, TimingUniform,
+    DynPipeline, Material, MaterialId, Pipeline,
 };
 use ahash::AHashMap;
 use assets::Assets;
-use bytemuck::Zeroable;
+
 use graphics::{
-    BufferMode, BufferUsage, GpuPod, Graphics, LoadOp, Normalized,
-    Operation, PipelineInitializationError, RenderPass, StoreOp,
-    SwapchainFormat, Texture2D, UniformBuffer, BGRA, RGBA,
+    Graphics, PipelineInitializationError,
 };
 use std::{
-    any::TypeId, cell::RefCell, marker::PhantomData,
-    mem::ManuallyDrop, rc::Rc,
+    any::TypeId, marker::PhantomData, rc::Rc,
 };
 
 // A pipeline manager will store and manager multiple material pipelines and their IDs

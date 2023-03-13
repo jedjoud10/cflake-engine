@@ -1,18 +1,15 @@
 use crate::{
-    AlbedoMap, Basic, Camera, CameraUniform, Compositor,
-    DefaultMaterialResources, ForwardRenderer, Mesh, NormalMap,
-    Pipelines, PostProcess, Renderer, SceneRenderPass, Sky,
-    WindowUniform, ShadowMapping,
+    Compositor, ForwardRenderer, PostProcess, ShadowMapping,
 };
 use assets::Assets;
-use ecs::Scene;
+
 use graphics::{
-    Graphics, LoadOp, Normalized, Operation, RenderPass, StoreOp,
-    Texture, Texture2D, TextureMode, TextureUsage, Window, BGRA,
+    Graphics,
+    Texture, Window,
 };
-use std::{mem::ManuallyDrop, sync::Arc};
-use utils::{Storage, Time};
-use world::{post_user, user, System, WindowEvent, World};
+
+
+use world::{user, System, World};
 
 // Inserts the compositor render pass
 fn init(world: &mut World) {
@@ -27,7 +24,7 @@ fn init(world: &mut World) {
 
 // Displays the rendered scene texture to the actual window texture (post-processing pass)
 fn update(world: &mut World) {
-    let graphics = world.get::<Graphics>().unwrap();
+    let _graphics = world.get::<Graphics>().unwrap();
     let renderer = world.get::<ForwardRenderer>().unwrap();
     let shadowmap = world.get::<ShadowMapping>().unwrap();
     let compositor = world.get::<Compositor>().unwrap();

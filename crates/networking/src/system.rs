@@ -29,8 +29,8 @@ fn update(world: &mut World) {
     let added = scene.query_with::<(&SyncedEntity, &Entity)>(filter);
 
     // If we're the server, we must send a "SpawnEntity" command to the respective clients
-    if let NetworkedSession::Server(server) = &mut *session {
-        for (synced, entity) in added {}
+    if let NetworkedSession::Server(_server) = &mut *session {
+        for (_synced, _entity) in added {}
     }
 }
 

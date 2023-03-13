@@ -1,18 +1,16 @@
-use std::any::TypeId;
+
 
 use crate::{
-    AlbedoMap, AlbedoTexel, CameraBuffer, CameraUniform,
-    DefaultMaterialResources, EnabledMeshAttributes, Material,
-    NormalMap, NormalTexel, Renderer, SceneBuffer, SceneUniform,
-    TimingBuffer, TimingUniform, ShadowMapping, ShadowTexel, ShadowMap, ShadowUniform,
+    AlbedoMap, CameraUniform,
+    DefaultMaterialResources, Material,
+    NormalMap, Renderer, SceneUniform, ShadowMapping, ShadowMap, ShadowUniform,
 };
-use ahash::AHashMap;
+
 use assets::Assets;
 use bytemuck::{Zeroable, Pod};
 use graphics::{
-    BindGroup, Compiled, Compiler, FragmentModule,
-    Graphics, Normalized, PushConstants, Sampler, Shader, Texture,
-    Texture2D, UniformBuffer, VertexModule, RGBA, ModuleKind, ModuleVisibility, GpuPod,
+    BindGroup, Compiler, FragmentModule,
+    Graphics, PushConstants, Shader, VertexModule, ModuleVisibility, GpuPod,
 };
 use utils::{Handle, Storage};
 
@@ -151,8 +149,8 @@ impl Material for Basic {
     fn set_push_constants<'r, 'w>(
         &self,
         renderer: &Renderer,
-        resources: &'r mut Self::Resources<'w>,
-        default: &DefaultMaterialResources<'r>,
+        _resources: &'r mut Self::Resources<'w>,
+        _default: &DefaultMaterialResources<'r>,
         constants: &mut PushConstants,
     ) {
         // Send the raw bytes to the GPU

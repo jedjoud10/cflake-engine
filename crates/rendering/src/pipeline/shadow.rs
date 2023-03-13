@@ -1,15 +1,12 @@
 use crate::{
-    attributes::{Position, RawPosition},
-    ActiveScenePipeline, ActiveSceneRenderPass,
-    DefaultMaterialResources, EnabledMeshAttributes, Material, Mesh,
-    MeshAttribute, Renderer, SceneColor, SceneDepth, Surface, ActiveShadowGraphicsPipeline,
+    attributes::{Position},
+    DefaultMaterialResources, EnabledMeshAttributes, Material, Mesh, Renderer, Surface, ActiveShadowGraphicsPipeline,
 };
 use ecs::Scene;
 use graphics::{
-    ActiveGraphicsPipeline, ActiveRenderPass, Depth, Graphics,
-    GraphicsPipeline, PushConstants, SwapchainFormat, Vertex, XYZ, GpuPod, ModuleVisibility,
+    GpuPod, ModuleVisibility,
 };
-use utils::{Handle, Storage, Time};
+use utils::{Storage};
 use world::World;
 
 // Returns true if the entity should cast shadows, false otherwise
@@ -25,7 +22,7 @@ fn filter(mesh: &Mesh, renderer: &Renderer) -> bool {
 pub(super) fn render_shadows<'r, M: Material>(
     world: &'r World,
     meshes: &'r Storage<Mesh>,
-    default: &'r DefaultMaterialResources,
+    _default: &'r DefaultMaterialResources,
     active: &mut ActiveShadowGraphicsPipeline<'_, 'r, '_>,
 ) {
     // Don't do shit if we won't cast shadows

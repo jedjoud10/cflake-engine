@@ -1,5 +1,5 @@
 use graphics::{
-    BufferInitializationError, BufferNotMappableError, BufferUsage,
+    BufferInitializationError, BufferNotMappableError,
 };
 use obj::ObjError;
 use thiserror::Error;

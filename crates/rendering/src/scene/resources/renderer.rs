@@ -1,26 +1,21 @@
 use crate::{
-    AlbedoMap, AlbedoTexel, CameraBuffer, CameraUniform,
-    DynPipeline, Material, MaterialId, NormalMap, NormalTexel,
-    Pipeline, SceneBuffer, SceneUniform, TimingBuffer, TimingUniform,
-    WindowBuffer, WindowUniform,
+    AlbedoMap, CameraBuffer, NormalMap, SceneBuffer, TimingBuffer,
+    WindowBuffer,
 };
-use ahash::AHashMap;
+
 use assets::Assets;
-use bytemuck::Zeroable;
+
 use ecs::Entity;
 use graphics::{
     ActiveGraphicsPipeline, ActiveRenderPass, BufferMode,
-    BufferUsage, Depth, GpuPod, Graphics, LoadOp, Normalized,
-    Operation, PipelineInitializationError, RenderPass,
+    BufferUsage, Depth, GpuPod, Graphics, LoadOp,
+    Operation, RenderPass,
     SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap,
-    StoreOp, SwapchainFormat, Texel, Texture, Texture2D,
+    StoreOp, Texel, Texture, Texture2D,
     TextureImportSettings, TextureMipMaps, TextureMode, TextureUsage,
-    UniformBuffer, BGRA, RGBA,
+    UniformBuffer, RGBA,
 };
-use std::{
-    any::TypeId, cell::RefCell, marker::PhantomData,
-    mem::ManuallyDrop, rc::Rc,
-};
+
 
 // Renderpass that will render the scene
 pub type SceneColor = RGBA<f32>;
@@ -133,7 +128,7 @@ impl ForwardRenderer {
 
         // Create the forward shading scene pass
         let render_pass = SceneRenderPass::new(
-            &graphics,
+            graphics,
             Operation {
                 load: LoadOp::Clear(vek::Vec4::broadcast(0f32)),
                 store: StoreOp::Store,

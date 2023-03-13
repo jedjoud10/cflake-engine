@@ -1,6 +1,6 @@
 use assets::Assets;
 use bytemuck::{Pod, Zeroable};
-use graphics::{Texture2D, Normalized, Depth, GraphicsPipeline, RenderPass, Shader, Graphics, VertexModule, FragmentModule, Compiler, Operation, LoadOp, StoreOp, PrimitiveConfig, Texture, TextureMode, TextureUsage, SamplerSettings, TextureMipMaps, ActiveGraphicsPipeline, UniformBuffer, BufferUsage, BufferMode, DepthConfig, CompareFunction, WindingOrder};
+use graphics::{Texture2D, Depth, GraphicsPipeline, RenderPass, Shader, Graphics, VertexModule, FragmentModule, Compiler, Operation, LoadOp, StoreOp, PrimitiveConfig, Texture, TextureMode, TextureUsage, SamplerSettings, TextureMipMaps, ActiveGraphicsPipeline, UniformBuffer, BufferUsage, BufferMode, DepthConfig, CompareFunction, WindingOrder};
 use vek::FrustumPlanes;
 
 use crate::EnabledMeshAttributes;

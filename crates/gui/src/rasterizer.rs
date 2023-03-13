@@ -2,13 +2,13 @@ use assets::Assets;
 use egui::{ClippedPrimitive, ImageData, TextureId, TexturesDelta};
 use graphics::{
     BlendComponent, BlendFactor, BlendOperation,
-    BlendState, BufferMode, BufferUsage, ColorOperations, Compiler,
+    BlendState, BufferMode, BufferUsage, Compiler,
     FragmentModule, GpuPod, Graphics, LoadOp, Normalized, Operation,
-    PerVertex, PrimitiveConfig, RenderPass, SamplerFilter,
+    PerVertex, PrimitiveConfig, SamplerFilter,
     SamplerMipMaps, SamplerSettings, SamplerWrap, Shader, StoreOp,
     Texture, Texture2D, TextureMipMaps, TextureMode, TextureUsage,
     TriangleBuffer, VertexBuffer, VertexConfig,
-    VertexInput, VertexModule, Window, R, RGBA, XY, XYZW,
+    VertexInput, VertexModule, Window, RGBA, XY, XYZW,
 };
 use rendering::{FinalGraphicsPipeline, FinalRenderPass, WindowUniform, WindowBuffer};
 
