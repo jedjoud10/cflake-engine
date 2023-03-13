@@ -1,4 +1,4 @@
-use crate::{GpuPod, Graphics, StagingView};
+use crate::{GpuPod, Graphics, StagingView, StagingViewWrite};
 use parking_lot::Mutex;
 use std::{
     marker::PhantomData,
@@ -46,7 +46,7 @@ impl StagingPool {
         let write = wgpu::BufferUsages::MAP_WRITE
             | wgpu::BufferUsages::COPY_SRC;
 
-        log::debug!("Looking for staging buffer [cap = {capacity}b, mode = {mode:?}]");
+        //log::debug!("Looking for staging buffer [cap = {capacity}b, mode = {mode:?}]");
 
         // Try to find a free buffer
         // If that's not possible, simply create a new one
@@ -87,15 +87,69 @@ impl StagingPool {
         })
     }
 
-    // Map a target for writing only (maps an intermediate staging buffer)
+    // Map a target for reading only (maps an intermediate staging buffer)
     // Src target must have the COPY_SRC buffer usage flag
     pub fn map_buffer_read<'a>(
+        &'a self,
+        graphics: &'a Graphics,
+        buffer: &Buffer,
+        offset: u64,
+        size: u64,
+    ) -> Option<StagingView<'a>> {
+        assert!(buffer
+            .usage()
+            .contains(wgpu::BufferUsages::COPY_SRC));
+
+        // Get a encoder (reused or not to perform a copy)
+        let mut encoder = graphics.acquire();
+        let (i, staging) =
+            self.find_or_allocate(graphics, size, MapMode::Read);
+
+        // Copy to staging first
+        encoder
+            .copy_buffer_to_buffer(buffer, offset, staging, 0, size);
+
+        // Put the encoder back into the cache, and submit ALL encoders
+        graphics.reuse([encoder]);
+        // (Also wait for their subbmission)
+        graphics.submit_unused(true);
+
+        // Map the staging buffer
+        type MapResult = Result<(), wgpu::BufferAsyncError>;
+        let (tx, rx) = std::sync::mpsc::channel::<MapResult>();
+
+        // Map synchronously
+        let slice = staging.slice(0..size);
+        slice.map_async(wgpu::MapMode::Read, move |res| {
+            tx.send(res).unwrap()
+        });
+        graphics.device().poll(wgpu::Maintain::Wait);
+
+        // Wait until the buffer is mapped, then read from the buffer
+        if let Ok(Ok(_)) = rx.recv() {
+            return Some(StagingView {
+                graphics,
+                dst_offset: offset,
+                staging_offset: 0,
+                size,
+                index: i,
+                states: &&self.states,
+                staging,
+                view: slice.get_mapped_range(),
+            });
+        } else {
+            panic!("Could not receive read map async")
+        }
+    }
+
+    // Map a target for writing only
+    pub fn map_buffer_write<'a>(
         &'a self,
         graphics: &Graphics,
         buffer: &Buffer,
         offset: u64,
         size: u64,
-    ) -> Option<StagingView<'a>> {
+    ) -> Option<StagingViewWrite<'a>> {
         None
     }
 

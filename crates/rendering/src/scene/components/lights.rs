@@ -1,13 +1,15 @@
+use ecs::Component;
+
 // A directional light is a type of light that emits light in a single direction (like the sun)
-#[derive(Clone, Copy)]
-#[repr(C, align(4))]
+#[derive(Component, Clone, Copy)]
 pub struct DirectionalLight {
-    // The strength the light
-    pub strength: f32,
+    pub color: vek::Rgb<f32>,
 }
 
 impl Default for DirectionalLight {
     fn default() -> Self {
-        Self { strength: 1.0 }
+        Self {
+            color: vek::Rgb::broadcast(1.0)
+        }
     }
 }

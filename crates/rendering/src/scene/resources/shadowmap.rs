@@ -32,6 +32,7 @@ pub struct ShadowMapping {
     // Cached matrices
     pub(crate) projection: vek::Mat4<f32>,
     pub(crate) view: vek::Mat4<f32>,
+    pub(crate) resolution: u32,
 
     // This is the corresponding data that must be sent to the shader
     pub(crate) buffer: UniformBuffer<ShadowUniform>,
@@ -39,9 +40,13 @@ pub struct ShadowMapping {
 
 // This is the uniform that is defined in the Vertex Module
 #[derive(Clone, Copy, PartialEq, Pod, Zeroable, Default)]
-#[repr(C, align(64))]
+#[repr(C)]
 pub struct ShadowUniform {
     pub lightspace: vek::Vec4<vek::Vec4<f32>>,
+    pub strength: f32,
+    pub spread: f32,
+    pub resolution: u32,
+    _padding: f32,
 }
 
 impl ShadowMapping {
@@ -147,6 +152,10 @@ impl ShadowMapping {
                 graphics,
                 &[ShadowUniform {
                     lightspace: lightspace.cols,
+                    strength: 1.0,
+                    spread: 0.01,
+                    resolution,
+                    _padding: 0.0f32,
                 }],
                 BufferMode::Dynamic,
                 BufferUsage::WRITE,
@@ -154,6 +163,7 @@ impl ShadowMapping {
             .unwrap(),
             projection,
             view,
+            resolution,
         }
     }
 
@@ -172,6 +182,11 @@ impl ShadowMapping {
             .write(
                 &[ShadowUniform {
                     lightspace: lightspace.cols,
+                    strength: 1.0,
+                    spread: 0.01,
+                    resolution: self.resolution,
+                    _padding: 0.0f32,
+                    
                 }],
                 0,
             )

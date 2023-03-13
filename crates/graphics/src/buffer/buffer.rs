@@ -530,27 +530,25 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         &self,
         bounds: impl RangeBounds<usize>,
     ) -> Result<BufferView<T, TYPE>, BufferNotMappableError> {
-        todo!()
-        /*
         if !self.usage.contains(BufferUsage::READ) {
             return Err(BufferNotMappableError::AsView);
         }
 
         // Size and offset of the slice
         let (start, end) = self
-            .convert_bounds(bounds)
-            .ok_or(BufferNotMappableError::InvalidRange)?;
+            .convert_bounds_to_indices(bounds)
+            .ok_or(BufferNotMappableError::InvalidRange(self.length))?;
         let size = (end - start) * self.stride();
         let offset = start * self.stride();
 
         // Get the staging pool for download
         let staging = self.graphics.staging_pool();
         let data = staging
-            .map_read(
-                StagingTarget::Buffer(&self.buffer),
+            .map_buffer_read(
                 &self.graphics,
+                &self.buffer,
                 offset as u64,
-                size as u64,
+                size as u64
             )
             .unwrap();
 
@@ -558,7 +556,6 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
             buffer: &self,
             data,
         })
-        */
     }
 
     // Try to view the buffer mutably (for writing AND reading) immediately
@@ -568,16 +565,14 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         &mut self,
         bounds: impl RangeBounds<usize>,
     ) -> Result<BufferViewMut<T, TYPE>, BufferNotMappableError> {
-        todo!()
-        /*
         if !self.usage.contains(BufferUsage::WRITE) {
             return Err(BufferNotMappableError::AsViewMut);
         }
 
         // Size and offset of the slice
         let (start, end) = self
-            .convert_bounds(bounds)
-            .ok_or(BufferNotMappableError::InvalidRange)?;
+            .convert_bounds_to_indices(bounds)
+            .ok_or(BufferNotMappableError::InvalidRange(self.length))?;
         let size = (end - start) * self.stride();
         let offset = start * self.stride();
 
@@ -585,11 +580,13 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         let write = self.usage.contains(BufferUsage::WRITE);
 
         if write && !read {
+            todo!()
+            /*
             // Write only, map staging buffer
             // Get the staging pool for upload
             let staging = self.graphics.staging_pool();
             let data = staging
-                .map_write(
+                .write_buffer(
                     StagingTarget::Buffer(&self.buffer),
                     &self.graphics,
                     offset as u64,
@@ -601,6 +598,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
                 buffer: PhantomData,
                 data,
             })
+            */
         } else if read && write {
             // Read and write, clone first, then write
             // Create a temporary vector that will store the contents of the buffer
@@ -614,7 +612,6 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         } else {
             panic!()
         }
-        */
     }
 
     // Read buffer and call the callback with the data when done

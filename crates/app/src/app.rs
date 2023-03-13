@@ -407,6 +407,7 @@ impl App {
         self.regsys(rendering::systems::composite::system);
         self.regsys(rendering::systems::matrix::system);
         self.regsys(rendering::systems::rendering::system);
+        self.regsys(rendering::systems::lights::system);
 
         // Gui system + stats update event
         self.regsys(gui::common);

@@ -1,6 +1,6 @@
 use crate::{Camera, CameraUniform, ForwardRenderer};
 
-use ecs::Scene;
+use ecs::{Scene, Rotation, Position};
 use graphics::Window;
 
 use world::{System, World};
@@ -23,7 +23,7 @@ fn update(world: &mut World) {
 
         // Fetch it's components,and update them
         let (camera, location, rotation) = entry
-            .as_query_mut::<(&mut Camera, &ecs::Position, &ecs::Rotation)>()
+            .as_query_mut::<(&mut Camera, &Position, &Rotation)>()
             .unwrap();
         let aspect = window.size().w as f32 / window.size().h as f32;
         camera.set_aspect_ratio(aspect);
@@ -54,8 +54,8 @@ fn update(world: &mut World) {
         // Set the main camera if we find one
         let next = ecs.find::<(
             &Camera,
-            &ecs::Position,
-            &ecs::Rotation,
+            &Position,
+            &Rotation,
             &ecs::Entity,
         )>();
         if let Some((_, _, _, entity)) = next {

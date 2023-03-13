@@ -1,4 +1,4 @@
-use crate::{Camera, ForwardRenderer};
+use crate::{Camera, ForwardRenderer, DirectionalLight};
 
 use ecs::Scene;
 use graphics::{Graphics, Window};
@@ -24,13 +24,12 @@ fn update(world: &mut World) {
     } else {
         // Set the main directioanl light if we find one
         let next = ecs.find::<(
-            &Camera,
-            &ecs::Position,
+            &DirectionalLight,
             &ecs::Rotation,
             &ecs::Entity,
         )>();
-        if let Some((_, _, _, entity)) = next {
-            renderer.main_camera = Some(*entity);
+        if let Some((_, _, entity)) = next {
+            renderer.main_directional_light = Some(*entity);
         }
     }
 }

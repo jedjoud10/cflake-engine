@@ -1,9 +1,10 @@
 use crate::{
     AlbedoMap, Basic, DefaultMaterialResources, ForwardRenderer,
-    Mesh, NormalMap, Pipelines, ShadowMapping, Sky, WindowUniform,
+    Mesh, NormalMap, Pipelines, ShadowMapping, Sky, WindowUniform, DirectionalLight,
 };
 use assets::Assets;
 
+use ecs::{Scene, Rotation};
 use graphics::{Graphics, Texture, Window};
 
 use utils::{Storage, Time};
@@ -24,7 +25,7 @@ fn init(world: &mut World) {
     let shadowmap = ShadowMapping::new(
         10f32,
         40f32,
-        4096,
+        256,
         &graphics,
         &mut assets,
     );
@@ -90,6 +91,7 @@ fn render(world: &mut World) {
     let mut renderer = world.get_mut::<ForwardRenderer>().unwrap();
     let mut _shadowmap = world.get_mut::<ShadowMapping>().unwrap();
     let renderer = &mut *renderer;
+    let scene = world.get::<Scene>().unwrap();
     let pipelines = world.get::<Pipelines>().unwrap();
     let meshes = world.get::<Storage<Mesh>>().unwrap();
     let time = world.get::<Time>().unwrap();
@@ -101,6 +103,24 @@ fn render(world: &mut World) {
         log::warn!("No active camera to draw with!");
         return;
     }
+
+    // Skip if we don't have a light to draw with
+    if renderer.main_directional_light.is_none() {
+        log::warn!("No directional light to draw with!");
+        return;
+    }
+
+    // Get the directioanl light and rotation of the light
+    let id = renderer.main_directional_light.unwrap();
+    let entity = scene.entry(id).unwrap();
+    let light = entity.get::<DirectionalLight>().unwrap();
+    let rotation = entity.get::<Rotation>().unwrap();
+
+    let mut view = renderer.scene_buffer.as_view_mut(..).unwrap();
+    let element = &mut view.as_slice_mut()[0];
+    element.sun_direction = rotation.forward().with_w(0.0);
+    element.sun_color = vek::Rgba::<f32>::from(light.color);
+    drop(view);
 
     // Create the shared material resources
     let default = DefaultMaterialResources {
@@ -115,9 +135,7 @@ fn render(world: &mut World) {
 
     // Begin the scene shadow map render pass
     let shadowmap = &mut *_shadowmap;
-    shadowmap.update(vek::Quaternion::rotation_x(
-        time.elapsed().as_secs_f32() * 0.2,
-    ));
+    shadowmap.update(**rotation);
     let depth = shadowmap.depth_tex.as_render_target().unwrap();
     let mut render_pass =
         shadowmap.render_pass.begin((), depth).unwrap();

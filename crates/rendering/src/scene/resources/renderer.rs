@@ -62,7 +62,7 @@ fn create_uniform_buffer<T: GpuPod + Default>(
         graphics,
         &[T::default()],
         BufferMode::Dynamic,
-        BufferUsage::WRITE,
+        BufferUsage::WRITE | BufferUsage::READ,
     )
     .unwrap()
 }

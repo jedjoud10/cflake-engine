@@ -76,10 +76,6 @@ fn init(world: &mut World) {
     let cube = assets
         .load::<Mesh>((
             "engine/meshes/cube.obj",
-            MeshImportSettings {
-                invert_tex_coords: vek::Vec2::new(false, true),
-                ..Default::default()
-            },
             graphics.clone(),
         ))
         .unwrap();
@@ -104,8 +100,7 @@ fn init(world: &mut World) {
     let surface = Surface::new(plane, material.clone(), id.clone());
     let renderer = Renderer::default();
     let scale = Scale::uniform(25.0);
-    let position = Position::at_y(-1.0);
-    scene.insert((position, surface, renderer, scale));
+    scene.insert((surface, renderer, scale));
 
     // Create a simple cube and add the entity
     let surface = Surface::new(cube, material.clone(), id.clone());
@@ -139,12 +134,19 @@ fn init(world: &mut World) {
 
     // Create a movable camera
     let camera = Camera::new(120.0, 0.01, 5000.0, 16.0 / 9.0);
-
     scene.insert((
         Position::default(),
         Rotation::default(),
         Velocity::default(),
         camera,
+    ));
+
+    // Create a directional light
+    let light = DirectionalLight::default();
+    let rotation = vek::Quaternion::rotation_x(-25.0f32.to_radians()).rotated_y(45f32.to_radians());
+    scene.insert((
+        light,
+        Rotation::from(rotation)
     ));
 
     // Bind inputs to be used by the camera tick event

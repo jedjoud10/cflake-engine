@@ -43,13 +43,5 @@ void main() {
 	vignette = clamp(vignette, 0, 1);
 	vignette = pow(vignette, 4.0) * clamp(vignette_strength, 0.0, 2.0);
 	color = mix(color, vec3(0), vignette);
-
-	// DEBUG DATA
-	if ((window.width-gl_FragCoord.x) < 256 && gl_FragCoord.y < 256) {
-		ivec2 shadowmap_coord = ivec2(window.width-gl_FragCoord.x, gl_FragCoord.y);
-		float shadowmap_depth = texelFetch(shadowmap, ivec2(shadowmap_coord * 16), 0).r;
-		color = vec3(shadowmap_depth);
-	}
-
 	frag = vec4(color, 0);
 }
