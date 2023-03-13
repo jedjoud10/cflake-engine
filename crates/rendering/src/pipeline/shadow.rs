@@ -7,7 +7,7 @@ use crate::{
 use ecs::Scene;
 use graphics::{
     ActiveGraphicsPipeline, ActiveRenderPass, Depth, Graphics,
-    GraphicsPipeline, PushConstants, SwapchainFormat, Vertex, XYZ,
+    GraphicsPipeline, PushConstants, SwapchainFormat, Vertex, XYZ, GpuPod, ModuleVisibility,
 };
 use utils::{Handle, Storage, Time};
 use world::World;
@@ -49,12 +49,11 @@ pub(super) fn render_shadows<'r, M: Material>(
         }
 
         // Set the mesh matrix push constant
-        active.set_push_constants(|push_constants| {
-            /*
-            push_constants
-                .set("matrix", renderer.matrix.cols)
-                .unwrap();
-            */
+        active.set_push_constants(|constants| {
+            let matrix = renderer.matrix;
+            let cols = matrix.cols;
+            let bytes = GpuPod::into_bytes(&cols);
+            constants.push(bytes, 0, ModuleVisibility::Vertex);
         });
 
         // Set the position buffer

@@ -155,7 +155,7 @@ impl Material for Basic {
         default: &DefaultMaterialResources<'r>,
         constants: &mut PushConstants,
     ) {
-        // Send the raw bytes to the CPU
+        // Send the raw bytes to the GPU
         let matrix = renderer.matrix;
         let cols = matrix.cols;
         let bytes = GpuPod::into_bytes(&cols);

@@ -92,6 +92,7 @@ impl<'a> Compiler<'a> {
             &self.texture_formats,
             &self.texture_dimensions,
             &self.uniform_buffer_pod_types,
+            &self.push_constant_ranges,
         );
         log::debug!(
             "Reflected shader {name} sucessfully! Took {}ms",

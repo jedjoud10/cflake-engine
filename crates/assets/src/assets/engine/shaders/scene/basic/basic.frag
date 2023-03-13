@@ -69,7 +69,7 @@ void main() {
 	// Calculate specular reflections
 	vec3 view = normalize(camera.position.xyz - m_position);
 	vec3 reflected = reflect(-light, normal);
-	float specular = pow(max(dot(reflected, view), 0), 32);
+	float specular = pow(max(dot(reflected, view), 0), 32) * (1-shadowed);
 
 	// Calculate diffuse lighting
 	frag = vec4(lighting * albedo + specular*0.2, 1.0);

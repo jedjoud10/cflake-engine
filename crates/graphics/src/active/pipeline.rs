@@ -26,7 +26,6 @@ pub struct ActiveGraphicsPipeline<
     pub(crate) commands: &'a mut Vec<RenderCommand<'r, C, DS>>,
     pub(crate) graphics: &'r Graphics,
     pub(crate) push_constant: &'a mut Vec<u8>,
-    pub(crate) push_constant_internal_offset: usize,
     pub(crate) push_constant_global_offset: usize,
     pub(crate) _phantom: PhantomData<&'t C>,
     pub(crate) _phantom2: PhantomData<&'t DS>,
@@ -102,57 +101,50 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         let shader = self.pipeline.shader();
 
         // Don't set the push constants if we don't have any to set
-        let max = shader
+        let size = shader
             .reflected
             .push_constant_layouts
             .iter()
             .filter_map(|x| x.as_ref())
             .map(|x| x.size)
             .sum::<usize>();
-        if max == 0 {
+        if size == 0 {
             return;
         }
 
         // Make sure we have enough bytes to store the push constants
-        let pc = self.push_constant.len() - self.push_constant_internal_offset;
+        let pc = self.push_constant.len() - self.push_constant_global_offset;
         if pc < 1024 {
             self.push_constant.extend(std::iter::repeat(0).take(1024));
         }
 
         // Get the data that we will use
-        let start = self.push_constant_global_offset + self.push_constant_internal_offset;
-        let end = max + start;
+        let start = self.push_constant_global_offset;
+        let end = size + start;
         let data = &mut self.push_constant[start..end];
 
         // Create push constants that we can set
         let mut push_constants = PushConstants {
             reflected: shader.reflected.clone(),
-            offsets: Vec::new(),
-            sizes: Vec::new(),
-            stages: Vec::new(),
+            ranges: Vec::new(),
             data,
         };
 
         // Let the user modify the push constant
         callback(&mut push_constants);
 
-        // Fetch data back from push constants
-        let offsets = push_constants.offsets;
-        let sizes = push_constants.sizes;
-        let stages = push_constants.stages;
-
-        // Create the render commands for settings for push constants
-        let iter = stages
-            .into_iter()
-            .zip(offsets.into_iter()).zip(sizes.into_iter());
-        for ((stages, offset), size) in iter {
+        // Iterate over all the push constant ranges and create commands
+        let mut new_internal_offset = 0;
+        for range in push_constants.ranges {
             self.commands.push(RenderCommand::SetPushConstants {
-                stages,
+                stages: range.stages,
                 size,
                 global_offset: self.push_constant_global_offset,
-                local_offset: offset,
+                local_offset: range.offset,
             });
+            new_internal_offset += size;
         }
+        self.push_constant_global_offset += new_internal_offset;
     }
 
     // Execute a callback that we will use to fill a bind group

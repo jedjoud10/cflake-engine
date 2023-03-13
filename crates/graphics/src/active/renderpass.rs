@@ -67,8 +67,7 @@ impl<'r, 't, C: ColorLayout, DS: DepthStencilLayout>
             pipeline: &pipeline,
             graphics: self.graphics,
             commands: &mut self.commands,
-            push_constant_internal_offset: self.push_constants.len(),
-            push_constant_global_offset: 0,
+            push_constant_global_offset: self.push_constants.len(),
             push_constant: &mut self.push_constants,
         }
     }

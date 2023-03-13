@@ -9,20 +9,10 @@ use naga::{AddressSpace, ResourceBinding, TypeInner};
 use wgpu::TextureFormatFeatureFlags;
 
 /*
-Reflection only needs to do a few things.
-It could either:
-    1) Fetch binding index / set index for a specific resource (NEEDED)
-    2) Check if a resource is shared (only in the case of vert - frag modules) (NEEDED)
-    3) Validate shader UBO memory layout with the user given one
-    4) Validate shader texture/sampler layout/format with the user given one
-*/
-
-/*
 I have no idea if I should keep naga as a crate because it's kinda useless
 The only thing it helps with is just making sure the source code can run on the backend and for
 getting the set and binding indices so we don't have to specify them when defining resources in the compiler
- */
-
+*/
 
 // This container stores all data related to reflected shaders
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -63,7 +53,6 @@ pub struct PushConstantLayout {
     pub name: String,
     pub visiblity: wgpu::ShaderStages,
     pub size: usize,
-    pub alignment: usize,
 }
 
 // The type of BindingEntry. This is fetched from the given
@@ -73,7 +62,6 @@ pub enum BindResourceType {
     // Either a Uniform buffer or a Storage buffer
     Buffer {
         size: usize,
-        alignment: usize,
         storage: bool,
         read: bool,
         write: bool
@@ -100,6 +88,7 @@ struct InternalDefinitions<'a> {
     texture_formats: &'a super::TextureFormats,
     texture_dimensions: &'a super::TextureDimensions,
     uniform_buffer_pod_types: &'a super::UniformBufferPodTypes,
+    push_constant_ranges: &'a super::PushConstantRanges,
 }
 
 // Reflect a vertex and fragment modules and create their respective pipeline layout
@@ -235,7 +224,7 @@ fn create_pipeline_layout_from_shader(
         value: &BindResourceLayout,
     ) -> wgpu::BindingType {
         match value.resource_type {
-            BindResourceType::Buffer { size, alignment, storage, read, write } => {
+            BindResourceType::Buffer { size, storage, read, write } => {
                 wgpu::BindingType::Buffer {
                     ty: match storage {
                         true => wgpu::BufferBindingType::Storage {
@@ -416,11 +405,13 @@ pub(super) fn reflect_module<M: ShaderModule>(
     texture_formats: &super::TextureFormats,
     texture_dimensions: &super::TextureDimensions,
     uniform_buffer_pod_types: &super::UniformBufferPodTypes,
+    push_constant_ranges: &super::PushConstantRanges,
 ) -> ReflectedModule {
     let definitions = InternalDefinitions {
         texture_formats,
         texture_dimensions,
         uniform_buffer_pod_types,
+        push_constant_ranges,
     };
 
     let bind_group_layouts = reflect_binding_group::<M>(graphics, naga, &definitions);
@@ -555,7 +546,6 @@ fn reflect_push_constant<M: ShaderModule>(
                 output = Some(PushConstantLayout {
                     name,
                     visiblity: kind_to_wgpu_stage(&M::kind()),
-                    alignment: /*alignment_of_inner_type(types, type_inner)*/0,
                     size: size_of_inner_type(type_inner),
                 })
             }
@@ -613,7 +603,6 @@ fn reflect_buffer(
 
     BindResourceType::Buffer {
         size: *size as usize,
-        alignment: 0,
         storage: false,
         read: true,
         write: false
