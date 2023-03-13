@@ -57,28 +57,39 @@ pub(crate) fn update(world: &mut World) {
 
     // General Performance
     egui::Window::new("General Performance").show(&gui, |ui| {
-        ui.horizontal(|ui| {
-            ui.label("Delta (s/f): ");
-            ui.label(time.delta().as_secs_f32().to_string());
+        let last = time.delta().as_secs_f32();
+        let mut out = 0.0;
+        ui.memory_mut(|memory| {
+            let indeed = memory.data.get_temp_mut_or_insert_with(egui::Id::new(0), || last);
+            *indeed = *indeed * 0.99 + last * 0.01;
+            out = *indeed;
         });
-
-        ui.horizontal(|ui| {
-            ui.label("FPS (f/s): ");
-            ui.label((1.0 / time.delta().as_secs_f32()).to_string());
-        });
+        
+        let ms = out * 1000.0;
+        ui.label(format!("Delta (ms/f): {:.3}", ms));
+        
+        let fps = 1.0 / out;
+        ui.label(format!("FPS (f/s): {:.0}", fps));
     });
 
-    // Rendering Stats
-    egui::Window::new("Rendering").show(&gui, |ui| {
-        ui.horizontal(|ui| {
-            ui.label("Render Entities: ");
-            ui.label(
-                scene
-                    .query::<&Renderer>()
-                    .into_iter()
-                    .count()
-                    .to_string(),
+    // ECS Stats
+    egui::Window::new("Entity Components").show(&gui, |ui| {
+        ui.label(format!("Entities: {}", scene.entities().len().to_string()));
+        
+        let iter = scene
+            .archetypes()
+            .iter()
+            .map(|x| 
+                x.1.entities().len() * (x.1.mask().count_ones() as usize)
             );
-        });
+        ui.label(format!("Components: {}", iter.sum::<usize>()));
+
+        ui.label(format!("Registered Components: {}", ecs::count()));
+
+        ui.label(format!("Archetypes: {}", 
+            scene
+                .archetypes()
+                .len())
+        );
     });
 }

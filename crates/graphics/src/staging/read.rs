@@ -3,18 +3,9 @@ use std::{marker::PhantomData, sync::atomic::Ordering};
 use utils::AtomicBitSet;
 use wgpu::{BufferAddress, BufferView, CommandEncoder};
 
-// This is the view returned from the download() method of the staging pool
+// This is the view returned from the map_buffer_read() method of the staging pool
 // This allows us to read the data of the given buffer at the given offset and slice
-// T is target, it could either be a buffer or a texture
 pub(crate) struct StagingView<'a> {
-    // API, encoder, and target
-    pub(crate) graphics: &'a Graphics,
-
-    // Memory parameters
-    pub(crate) dst_offset: BufferAddress,
-    pub(crate) staging_offset: BufferAddress,
-    pub(crate) size: BufferAddress,
-
     // WGPU buffer view into the staging buffer
     pub(super) index: usize,
     pub(super) states: &'a AtomicBitSet,

@@ -576,30 +576,25 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         let size = (end - start) * self.stride();
         let offset = start * self.stride();
 
+        // Check if we can read the buffer 
         let read = self.usage.contains(BufferUsage::READ);
-        let write = self.usage.contains(BufferUsage::WRITE);
 
-        if write && !read {
-            todo!()
-            /*
-            // Write only, map staging buffer
-            // Get the staging pool for upload
+        if !read {
+            // Write only buffer view, uses QueueWriteBufferView
             let staging = self.graphics.staging_pool();
             let data = staging
-                .write_buffer(
-                    StagingTarget::Buffer(&self.buffer),
+                .map_buffer_write(
                     &self.graphics,
+                    &self.buffer,
                     offset as u64,
                     size as u64,
                 )
                 .unwrap();
-
             Ok(BufferViewMut::Mapped {
                 buffer: PhantomData,
                 data,
             })
-            */
-        } else if read && write {
+        } else {
             // Read and write, clone first, then write
             // Create a temporary vector that will store the contents of the buffer
             let mut vector = vec![T::zeroed(); end - start];
@@ -609,8 +604,6 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
                 buffer: self,
                 data: vector,
             })
-        } else {
-            panic!()
         }
     }
 

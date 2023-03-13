@@ -186,7 +186,6 @@ impl ShadowMapping {
                     spread: 0.01,
                     resolution: self.resolution,
                     _padding: 0.0f32,
-                    
                 }],
                 0,
             )

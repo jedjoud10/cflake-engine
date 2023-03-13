@@ -1,6 +1,6 @@
 use crate::{
     AlbedoMap, CameraUniform, DefaultMaterialResources,
-    EnabledMeshAttributes, Material,
+    EnabledMeshAttributes, Material, SceneUniform,
 };
 
 use assets::Assets;
@@ -36,6 +36,7 @@ impl Material for Sky {
         // Define the type layouts for the UBOs
         let mut compiler = Compiler::new(assets);
         compiler.use_uniform_buffer::<CameraUniform>("camera");
+        compiler.use_uniform_buffer::<SceneUniform>("scene");
         compiler.use_texture::<AlbedoMap>("gradient_map");
 
         // Compile the modules into a shader
@@ -75,6 +76,9 @@ impl Material for Sky {
     ) {
         group
             .set_uniform_buffer("camera", default.camera_buffer)
+            .unwrap();
+        group
+            .set_uniform_buffer("scene", default.scene_buffer)
             .unwrap();
     }
 

@@ -37,14 +37,14 @@ float calculate_shadowed(
     float bias = 0.005;
 
     float shadowed = 0.0;
-    for (int x = -1; x <= 1; x++) {
-        for (int y = -1; y <= 1; y++) {
+    for (int x = -0; x <= 0; x++) {
+        for (int y = -0; y <= 0; y++) {
             // Compare the greatest depth (from the shadowmap) and current depth
             float closest = texelFetch(shadow_map, ivec2((uvs.xy + vec2(x * 0.002, y * 0.002)) * size), 0).r;
             shadowed += current > (closest+bias) ? 1.0 : 0.0;
         }
     }
-    shadowed /= 9.0;
+    shadowed /= 1.0;
 
 
 

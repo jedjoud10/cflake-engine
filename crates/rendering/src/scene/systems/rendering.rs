@@ -1,6 +1,6 @@
 use crate::{
     AlbedoMap, Basic, DefaultMaterialResources, ForwardRenderer,
-    Mesh, NormalMap, Pipelines, ShadowMapping, Sky, WindowUniform, DirectionalLight,
+    Mesh, NormalMap, Pipelines, ShadowMapping, Sky, WindowUniform, DirectionalLight, SceneUniform, Renderer,
 };
 use assets::Assets;
 
@@ -23,9 +23,9 @@ fn init(world: &mut World) {
 
     // Create a nice shadow map
     let shadowmap = ShadowMapping::new(
-        10f32,
-        40f32,
-        256,
+        20f32,
+        100f32,
+        512,
         &graphics,
         &mut assets,
     );
@@ -94,7 +94,6 @@ fn render(world: &mut World) {
     let scene = world.get::<Scene>().unwrap();
     let pipelines = world.get::<Pipelines>().unwrap();
     let meshes = world.get::<Storage<Mesh>>().unwrap();
-    let time = world.get::<Time>().unwrap();
 
     let pipelines = pipelines.extract_pipelines();
 
@@ -116,11 +115,11 @@ fn render(world: &mut World) {
     let light = entity.get::<DirectionalLight>().unwrap();
     let rotation = entity.get::<Rotation>().unwrap();
 
-    let mut view = renderer.scene_buffer.as_view_mut(..).unwrap();
-    let element = &mut view.as_slice_mut()[0];
-    element.sun_direction = rotation.forward().with_w(0.0);
-    element.sun_color = vek::Rgba::<f32>::from(light.color);
-    drop(view);
+    renderer.scene_buffer.write(&[SceneUniform {
+        sun_direction: rotation.forward().with_w(0.0),
+        sun_color: vek::Rgba::<f32>::from(light.color),
+        ..Default::default()
+    }], 0).unwrap();
 
     // Create the shared material resources
     let default = DefaultMaterialResources {
@@ -133,28 +132,35 @@ fn render(world: &mut World) {
         sky_gradient: &renderer.sky_gradient,
     };
 
-    // Begin the scene shadow map render pass
-    let shadowmap = &mut *_shadowmap;
-    shadowmap.update(**rotation);
-    let depth = shadowmap.depth_tex.as_render_target().unwrap();
-    let mut render_pass =
-        shadowmap.render_pass.begin((), depth).unwrap();
-    let mut active = render_pass.bind_pipeline(&shadowmap.pipeline);
-    active.set_bind_group(0, |group| {
-        group
-            .set_uniform_buffer("shadow", &shadowmap.buffer)
-            .unwrap();
-    });
+    let f1 = ecs::modified::<ecs::Position>();
+    let f2 = ecs::modified::<ecs::Rotation>();
+    let f3 = ecs::modified::<ecs::Scale>();
+    let f4 = f1 | f2 | f3;
 
-    // Render the shadows first (fuck you)
-    for pipeline in pipelines.iter() {
-        pipeline.prerender(world, &meshes, &default, &mut active);
+    if scene.query_with::<&Renderer>(f4).into_iter().count() > 0 {
+        // Begin the scene shadow map render pass
+        let shadowmap = &mut *_shadowmap;
+        shadowmap.update(**rotation);
+        let depth = shadowmap.depth_tex.as_render_target().unwrap();
+        let mut render_pass =
+            shadowmap.render_pass.begin((), depth).unwrap();
+        let mut active = render_pass.bind_pipeline(&shadowmap.pipeline);
+        active.set_bind_group(0, |group| {
+            group
+                .set_uniform_buffer("shadow", &shadowmap.buffer)
+                .unwrap();
+        });
+
+        // Render the shadows first (fuck you)
+        for pipeline in pipelines.iter() {
+            pipeline.prerender(world, &meshes, &default, &mut active);
+        }
+        drop(active);
+        drop(render_pass);
+        drop(shadowmap);
     }
-    drop(active);
-    drop(render_pass);
-    drop(shadowmap);
     drop(_shadowmap);
-
+    
     // Begin the scene color render pass
     let color = renderer.color_texture.as_render_target().unwrap();
     let depth = renderer.depth_texture.as_render_target().unwrap();

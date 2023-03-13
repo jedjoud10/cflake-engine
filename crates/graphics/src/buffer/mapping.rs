@@ -102,7 +102,7 @@ impl<'a, T: GpuPod, const TYPE: u32> Drop
         match self {
             // Write the cloned data back into the buffer when we drop the view
             BufferViewMut::Cloned { buffer, data } => {
-                buffer.write(&data, 0);
+                buffer.write(&data, 0).unwrap();
             }
             _ => {}
         }

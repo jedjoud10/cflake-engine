@@ -22,7 +22,6 @@ fn init(world: &mut World) {
 fn update(world: &mut World) {
     let _graphics = world.get::<Graphics>().unwrap();
     let renderer = world.get::<ForwardRenderer>().unwrap();
-    let shadowmap = world.get::<ShadowMapping>().unwrap();
     let compositor = world.get::<Compositor>().unwrap();
     let mut window = world.get_mut::<Window>().unwrap();
 
@@ -52,9 +51,6 @@ fn update(world: &mut World) {
     active.set_bind_group(1, |group| {
         group.set_texture("color_map", src).unwrap();
         group.set_texture("depth_map", depth).unwrap();
-        group
-            .set_texture("shadowmap", &shadowmap.depth_tex)
-            .unwrap();
     });
 
     // Draw 6 vertices (2 tris)

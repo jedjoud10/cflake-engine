@@ -46,8 +46,6 @@ impl StagingPool {
         let write = wgpu::BufferUsages::MAP_WRITE
             | wgpu::BufferUsages::COPY_SRC;
 
-        //log::debug!("Looking for staging buffer [cap = {capacity}b, mode = {mode:?}]");
-
         // Try to find a free buffer
         // If that's not possible, simply create a new one
         self.allocations.iter().enumerate().find(|(i, buffer)| {
@@ -128,10 +126,6 @@ impl StagingPool {
         // Wait until the buffer is mapped, then read from the buffer
         if let Ok(Ok(_)) = rx.recv() {
             return Some(StagingView {
-                graphics,
-                dst_offset: offset,
-                staging_offset: 0,
-                size,
                 index: i,
                 states: &&self.states,
                 staging,
@@ -143,19 +137,23 @@ impl StagingPool {
     }
 
     // Map a target for writing only
+    // This is a "fire and forget" command that does not stall the CPU
     pub fn map_buffer_write<'a>(
         &'a self,
-        graphics: &Graphics,
-        buffer: &Buffer,
+        graphics: &'a Graphics,
+        buffer: &'a Buffer,
         offset: u64,
         size: u64,
     ) -> Option<StagingViewWrite<'a>> {
-        None
+        let size = NonZeroU64::new(size);
+        let write = graphics.queue().write_buffer_with(buffer, offset, size.unwrap())?;
+        Some(StagingViewWrite {
+            write,
+        })
     }
 
     // Writes to the destination buffer using the source byte buffer
     // This is a "fire and forget" command that does not stall the CPU
-    // The user can do multiple write calls and expect them to be batched together
     pub fn write_buffer<'a>(
         &'a self,
         graphics: &Graphics,

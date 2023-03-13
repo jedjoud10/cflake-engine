@@ -67,7 +67,7 @@ void main() {
 	
 	// Basic dot product light calculation
 	float value = clamp(dot(light, normal), 0, 1) * (1-shadowed);
-	vec3 lighting = (value*2.0) + ambient + scene.ambient_color_strength; 
+	vec3 lighting = value + ambient * 0.5; 
 
 	// Calculate specular reflections
 	vec3 view = normalize(camera.position.xyz - m_position);
@@ -75,5 +75,5 @@ void main() {
 	float specular = pow(max(dot(reflected, view), 0), 256) * (1-shadowed);
 
 	// Calculate diffuse lighting
-	frag = vec4(lighting * albedo + specular*1.0, 1.0);
+	frag = vec4(lighting * albedo + specular*1.4, 1.0);
 }

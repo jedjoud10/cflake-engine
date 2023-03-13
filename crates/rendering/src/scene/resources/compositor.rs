@@ -45,7 +45,6 @@ impl Compositor {
         let mut compiler = Compiler::new(assets);
         compiler.use_texture::<Texture2D<SceneColor>>("color_map");
         compiler.use_texture::<Texture2D<SceneDepth>>("depth_map");
-        compiler.use_texture::<ShadowMap>("shadowmap");
         compiler.use_uniform_buffer::<WindowUniform>("window");
         compiler.use_uniform_buffer::<CameraUniform>("camera");
 

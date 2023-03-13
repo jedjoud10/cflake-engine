@@ -3,7 +3,7 @@ use crate::{
     DefaultMaterialResources, EnabledMeshAttributes, Material, Mesh,
     Renderer, Surface,
 };
-use ecs::Scene;
+use ecs::{Scene, modified, Rotation, Scale};
 use graphics::{GpuPod, ModuleVisibility};
 use utils::Storage;
 use world::World;
