@@ -1,5 +1,5 @@
 use cflake_engine::prelude::*;
-use std::{fs::OpenOptions, io::Write};
+
 
 // An empty game window
 fn main() {

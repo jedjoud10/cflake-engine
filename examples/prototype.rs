@@ -31,4 +31,4 @@ fn init(world: &mut World) {
 }
 
 // Camera controller update executed every tick
-fn update(world: &mut World) {}
+fn update(_world: &mut World) {}

@@ -1,4 +1,4 @@
-use std::time::Duration;
+
 
 use cflake_engine::prelude::*;
 
@@ -24,10 +24,10 @@ fn init(world: &mut World) {
     asset!(&mut assets, "assets/user/ignored/bruh.wav");
 
     // Load the clips from their relative paths
-    let clip1 = assets
+    let _clip1 = assets
         .load::<AudioClip<i16>>("user/ignored/bruh.mp3")
         .unwrap();
-    let clip2 = assets
+    let _clip2 = assets
         .load::<AudioClip<i16>>("user/ignored/bruh.wav")
         .unwrap();
     let clip3 = assets

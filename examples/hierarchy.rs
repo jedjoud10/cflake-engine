@@ -23,6 +23,6 @@ fn init(world: &mut World) {
 // Check the position of the child
 fn update(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
-    let (pos, _) =
+    let (_pos, _) =
         scene.find_mut::<(&mut Position, &Child)>().unwrap();
 }

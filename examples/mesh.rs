@@ -103,7 +103,7 @@ fn init(world: &mut World) {
 
     // Create a simple floor and add the entity
     let surface =
-        Surface::new(plane.clone(), material.clone(), id.clone());
+        Surface::new(plane, material.clone(), id.clone());
     let renderer = Renderer::default();
     let scale = Scale::uniform(25.0);
     let position = Position::at_y(-1.0 );
@@ -111,14 +111,14 @@ fn init(world: &mut World) {
 
     // Create a simple cube and add the entity 
     let surface =
-        Surface::new(cube.clone(), material.clone(), id.clone());
+        Surface::new(cube, material.clone(), id.clone());
     let renderer = Renderer::default();
     let position = Position::at_y(0.25);
     scene.insert((surface, renderer, position));
 
     // Create a simple sphere and add the entity 
     let surface =
-        Surface::new(sphere.clone(), material.clone(), id.clone());
+        Surface::new(sphere, material, id);
     let renderer = Renderer::default();
     let position = Position::at_y(1.5);
     scene.insert((surface, renderer, position));
@@ -138,7 +138,7 @@ fn init(world: &mut World) {
 
     // Create the new sky entity components
     let surface =
-        Surface::new(mesh.clone(), material.clone(), id.clone());
+        Surface::new(mesh, material, id);
     let renderer = Renderer::default();
     scene.insert((surface, renderer));
 
@@ -213,7 +213,7 @@ fn update(world: &mut World) {
         let pos_x = input.get_axis("x rotation");
         let pos_y = input.get_axis("y rotation");
         **rotation =
-            vek::Quaternion::rotation_y(-pos_x as f32 * 0.0007)
-                * vek::Quaternion::rotation_x(-pos_y as f32 * 0.0007);
+            vek::Quaternion::rotation_y(-pos_x * 0.0007)
+                * vek::Quaternion::rotation_x(-pos_y * 0.0007);
     }
 }
