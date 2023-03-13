@@ -10,12 +10,93 @@ pub enum ModuleKind {
 
 // Describes the types of shader modules that are
 // used by push constants and bind resources
+
+// Normally, a sane person would use bitflags for this
+// However, I have lost sanity a long time ago, so fuck you
+// Cope with this shit
+// (real reason is cause bitflags could be zero/empty, and I don't want this to be zero since it don't make sense)
 #[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
 pub enum ModuleVisibility {
     Vertex,
     Fragment,
     VertexFragment,
     Compute,
+}
+
+impl ModuleVisibility {
+    // Combine other into self (panics if not possible)
+    pub fn insert(&mut self, other: Self) {
+        match self {
+            ModuleVisibility::Vertex | ModuleVisibility::Fragment => if !matches!(other, Self::Compute) {
+                *self = ModuleVisibility::VertexFragment;
+            } 
+            
+            ModuleVisibility::VertexFragment => if matches!(other, Self::Compute) {
+                panic!()
+            },
+
+            ModuleVisibility::Compute => if !matches!(other, Self::Compute) {
+                panic!()
+            },
+        }
+    }
+
+    // Check if Self contains other
+    pub fn contains(&self, other: Self) -> bool {
+        match self {
+            ModuleVisibility::Vertex => matches!(other, Self::Vertex),
+            ModuleVisibility::Fragment => matches!(other, Self::Fragment),
+            ModuleVisibility::VertexFragment => !matches!(other, Self::Compute),
+            ModuleVisibility::Compute => matches!(other, Self::Compute),
+        }
+    }
+
+    // Check if the given ShaderModule is visible
+    pub fn visible<M: ShaderModule>(&self) -> bool {
+        let visibility = M::visibility();
+        self.contains(visibility)
+    }
+}
+
+// Convert module visibility to wgpu ShaderStages
+pub(crate) fn visibility_to_wgpu_stage(visibility: &ModuleVisibility) -> wgpu::ShaderStages {
+    match visibility {
+        ModuleVisibility::Vertex => wgpu::ShaderStages::VERTEX,
+        ModuleVisibility::Fragment => wgpu::ShaderStages::FRAGMENT,
+        ModuleVisibility::VertexFragment => wgpu::ShaderStages::VERTEX_FRAGMENT,
+        ModuleVisibility::Compute => wgpu::ShaderStages::COMPUTE,
+    }
+}
+
+// Convert module kind to module visibility
+pub(crate) fn kind_to_visibility(kind: &ModuleKind) -> ModuleVisibility {
+    match kind {
+        ModuleKind::Vertex => ModuleVisibility::Vertex,
+        ModuleKind::Fragment => ModuleVisibility::Fragment,
+        ModuleKind::Compute => ModuleVisibility::Compute,
+    }
+}
+
+// Convert a module kind to Naga shader stage
+pub(crate) fn kind_to_naga_stage(
+    kind: &ModuleKind,
+) -> naga::ShaderStage {
+    match *kind {
+        ModuleKind::Vertex => naga::ShaderStage::Vertex,
+        ModuleKind::Fragment => naga::ShaderStage::Fragment,
+        ModuleKind::Compute => naga::ShaderStage::Compute,
+    }
+}
+
+// Convert a module kind to WGPU shader stage bitfield
+pub(crate) fn kind_to_wgpu_stage(
+    kind: &ModuleKind,
+) -> wgpu::ShaderStages {
+    match *kind {
+        ModuleKind::Vertex => wgpu::ShaderStages::VERTEX,
+        ModuleKind::Fragment => wgpu::ShaderStages::FRAGMENT,
+        ModuleKind::Compute => wgpu::ShaderStages::COMPUTE,
+    }
 }
 
 // This trait is implemented for each shader module, like the vertex module or fragment module
@@ -28,6 +109,7 @@ pub trait ShaderModule: Sized {
     fn name(&self) -> &str;
     fn source(&self) -> &str;
     fn kind() -> ModuleKind;
+    fn visibility() -> ModuleVisibility;
 
     // Convert the module into it's source code and name
     fn into_raw_parts(self) -> (String, String);
@@ -91,7 +173,7 @@ macro_rules! impl_asset_for_module {
 
 // I love procedural programming
 macro_rules! impl_module_trait {
-    ($t: ty, $kind: expr) => {
+    ($t: ty, $kind: ident) => {
         impl ShaderModule for $t {
             fn new(
                 name: impl ToString,
@@ -112,7 +194,11 @@ macro_rules! impl_module_trait {
             }
 
             fn kind() -> ModuleKind {
-                $kind
+                ModuleKind::$kind
+            }
+
+            fn visibility() -> ModuleVisibility {
+                ModuleVisibility::$kind
             }
 
             fn into_raw_parts(self) -> (String, String) {
@@ -123,9 +209,9 @@ macro_rules! impl_module_trait {
 }
 
 // Implement the module trait
-impl_module_trait!(VertexModule, ModuleKind::Vertex);
-impl_module_trait!(FragmentModule, ModuleKind::Fragment);
-impl_module_trait!(ComputeModule, ModuleKind::Compute);
+impl_module_trait!(VertexModule, Vertex);
+impl_module_trait!(FragmentModule, Fragment);
+impl_module_trait!(ComputeModule, Compute);
 
 // Implement the asset trait
 impl_asset_for_module!(VertexModule, "vert");

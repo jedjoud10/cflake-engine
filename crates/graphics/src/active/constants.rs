@@ -1,13 +1,7 @@
-use crate::{ModuleVisibility, ReflectedShader};
+use crate::{ModuleVisibility, ReflectedShader, PushConstantRange};
 use arrayvec::ArrayVec;
 use itertools::Itertools;
 use std::{marker::PhantomData, ops::RangeBounds, sync::Arc};
-
-pub(crate) struct PushConstantRange {
-    pub(crate) offset: u32,
-    pub(crate) size: usize,
-    pub(crate) stages: wgpu::ShaderStages,
-}
 
 // Push constants are tiny bits of memory that are going to get stored directly in a command encoder
 // They are mostly used to upload bits of data very rapidly to use within shaders
@@ -28,17 +22,17 @@ impl PushConstants<'_> {
     ) {
         self.data.copy_from_slice(bytes);
 
+        let visibility = match visibility {
+            ModuleVisibility::Vertex => wgpu::ShaderStages::VERTEX,
+            ModuleVisibility::Fragment => wgpu::ShaderStages::FRAGMENT,
+            ModuleVisibility::VertexFragment => wgpu::ShaderStages::VERTEX_FRAGMENT,
+            ModuleVisibility::Compute => wgpu::ShaderStages::COMPUTE,
+        };
+
         self.ranges.push(PushConstantRange {
-            offset,
-            size: bytes.len(),
-            stages: match visibility {
-                ModuleVisibility::Vertex => {
-                    wgpu::ShaderStages::VERTEX
-                }
-                ModuleVisibility::Fragment => todo!(),
-                ModuleVisibility::VertexFragment => todo!(),
-                ModuleVisibility::Compute => todo!(),
-            },
+            visibility: todo!(),
+            start: todo!(),
+            end: todo!(),
         });
     }
 }

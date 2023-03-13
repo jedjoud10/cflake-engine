@@ -118,18 +118,19 @@ pub(crate) unsafe fn init_context_and_window(
 
     // Create the Graphics context wrapper
     let graphics = Graphics(Arc::new(InternalGraphics {
+        instance,
         device,
-        queue,
         adapter,
+        queue,
+        encoders: thread_local::ThreadLocal::default(),
         staging: StagingPool::new(),
+        shaderc: shaderc::Compiler::new().unwrap(),
         cached: Cached {
             samplers: Default::default(),
             pipeline_layouts: Default::default(),
             bind_groups: Default::default(),
             bind_group_layouts: Default::default(),
         },
-        shaderc: shaderc::Compiler::new().unwrap(),
-        encoders: thread_local::ThreadLocal::default(),
         acquires: Default::default(),
         submissions: Default::default(),
         stalls: Default::default(),

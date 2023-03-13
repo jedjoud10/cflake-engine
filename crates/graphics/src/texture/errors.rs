@@ -62,14 +62,20 @@ pub enum TextureAssetLoadError {
 #[derive(Error, Debug)]
 pub enum MipLevelReadError {
     #[error("The given source region would overflow the region of the mip-level")]
-    InvalidRegion(),
+    InvalidRegion,
 
     #[error("The mip-level cannot be read since the texture's TextureUsages do not contain READ")]
     NonReadable,
 }
 
 #[derive(Error, Debug)]
-pub enum MipLevelWriteError {}
+pub enum MipLevelWriteError {
+    #[error("The given source region would overflow the region of the mip-level")]
+    InvalidRegion,
+
+    #[error("The mip-level cannot be written since the texture's TextureUsages do not contain WRITE")]
+    NonWritable,
+}
 
 #[derive(Error, Debug)]
 pub enum MipLevelClearError {}

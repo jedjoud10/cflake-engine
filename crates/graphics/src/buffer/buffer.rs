@@ -606,16 +606,4 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
             })
         }
     }
-
-    // Read buffer and call the callback with the data when done
-    // This is not called immediately. Only called when complete
-    // The user will not be able to write to the buffer on the GPU or CPU whilst this is in progress
-    pub fn async_read(
-        &mut self,
-        encoder: &mut CommandEncoder,
-        bounds: impl RangeBounds<usize>,
-        callback: impl FnOnce(&[T]) + Send + Sync,
-    ) -> Result<(), BufferReadError> {
-        todo!()
-    }
 }

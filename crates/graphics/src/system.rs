@@ -23,16 +23,30 @@ fn update(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
     let mut stats = world.get_mut::<GraphicsStats>().unwrap();
     let cached = &graphics.0.cached;
+    let report = graphics.instance().generate_report();
+    let vulkan = report.vulkan.as_ref().unwrap();
     *stats = GraphicsStats {
-        submissions: *graphics.0.submissions.lock(),
-        acquires: *graphics.0.acquires.lock(),
-        stalls: *graphics.0.stalls.lock(),
-        staging_buffers: graphics.0.staging.allocations.len() as u32,
-        cached_samplers: cached.samplers.len() as u32,
-        cached_bind_group_layouts: cached.bind_group_layouts.len()
-            as u32,
-        cached_pipeline_layouts: cached.pipeline_layouts.len() as u32,
-        cached_bind_groups: cached.bind_groups.len() as u32,
+        submissions: *graphics.0.submissions.lock() as usize,
+        acquires: *graphics.0.acquires.lock() as usize,
+        stalls: *graphics.0.stalls.lock() as usize,
+        staging_buffers: graphics.0.staging.allocations.len(),
+        cached_samplers: cached.samplers.len(),
+        cached_bind_group_layouts: cached.bind_group_layouts.len(),
+        cached_pipeline_layouts: cached.pipeline_layouts.len(),
+        cached_bind_groups: cached.bind_groups.len(),
+
+        adapters: vulkan.adapters.num_occupied,
+        devices: vulkan.adapters.num_occupied,
+        pipeline_layouts: vulkan.pipeline_layouts.num_occupied,
+        shader_modules: vulkan.shader_modules.num_occupied,
+        bind_group_layouts: vulkan.bind_group_layouts.num_occupied,
+        bind_groups: vulkan.bind_groups.num_occupied,
+        command_buffers: vulkan.command_buffers.num_occupied,
+        render_pipelines: vulkan.render_pipelines.num_occupied,
+        buffers: vulkan.buffers.num_occupied,
+        textures: vulkan.textures.num_occupied,
+        texture_views: vulkan.texture_views.num_occupied,
+        samplers: vulkan.samplers.num_occupied,
     };
     *graphics.0.submissions.lock() = 0;
     *graphics.0.acquires.lock() = 0;

@@ -23,6 +23,18 @@ pub(crate) fn update(world: &mut World) {
         cached_bind_group_layouts,
         cached_pipeline_layouts,
         cached_bind_groups,
+        adapters,
+        devices,
+        pipeline_layouts,
+        shader_modules,
+        bind_group_layouts,
+        bind_groups,
+        command_buffers,
+        render_pipelines,
+        buffers,
+        textures,
+        texture_views,
+        samplers,
     } = *stats;
 
     // Get the GPU stats
@@ -53,6 +65,20 @@ pub(crate) fn update(world: &mut World) {
         ui.label(format!("Name: {name}"));
         ui.label(format!("Backend: {backend:#?}"));
         ui.label(format!("Type: {device:#?}"));
+
+        ui.heading("WGPU Raw Data Types");
+        ui.label(format!("Adapters: {}", adapters));
+        ui.label(format!("Devices: {}", devices));
+        ui.label(format!("Pipeline Layouts: {}", pipeline_layouts));
+        ui.label(format!("Shader Modules: {}", shader_modules));
+        ui.label(format!("Bind Group Layouts: {}", bind_group_layouts));
+        ui.label(format!("Bind Groups: {}", bind_groups));
+        ui.label(format!("Command Buffers: {}", command_buffers));
+        ui.label(format!("Graphic Pipelines: {}", render_pipelines));
+        ui.label(format!("Buffers: {}", buffers));
+        ui.label(format!("Textures: {}", textures));
+        ui.label(format!("Texture Views: {}", texture_views));
+        ui.label(format!("Samplers: {}", samplers));
     });
 
     // General Performance

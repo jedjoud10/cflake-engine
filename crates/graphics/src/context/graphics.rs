@@ -8,7 +8,7 @@ use utils::Storage;
 pub use wgpu::CommandEncoder;
 use wgpu::{
     util::StagingBelt, Adapter, Device, Maintain, Queue, Sampler,
-    Surface, SurfaceCapabilities, SurfaceConfiguration, TextureView,
+    Surface, SurfaceCapabilities, SurfaceConfiguration, TextureView, Instance,
 };
 
 use crate::{
@@ -29,7 +29,8 @@ pub(crate) struct Cached {
 
 // Internnal graphics context that will eventually be wrapped within an Arc
 pub(crate) struct InternalGraphics {
-    // Device and queue
+    // Main WGPU instance, device, and shenanigans
+    pub(crate) instance: Instance,
     pub(crate) device: Device,
     pub(crate) adapter: Adapter,
     pub(crate) queue: Queue,
@@ -51,14 +52,28 @@ pub(crate) struct InternalGraphics {
 // Stats that can be displayed using egui
 #[derive(Default, Clone, Copy)]
 pub struct GraphicsStats {
-    pub acquires: u32,
-    pub submissions: u32,
-    pub stalls: u32,
-    pub staging_buffers: u32,
-    pub cached_samplers: u32,
-    pub cached_bind_group_layouts: u32,
-    pub cached_pipeline_layouts: u32,
-    pub cached_bind_groups: u32,
+    pub acquires: usize,
+    pub submissions: usize,
+    pub stalls: usize,
+    pub staging_buffers: usize,
+
+    pub cached_samplers: usize,
+    pub cached_bind_group_layouts: usize,
+    pub cached_pipeline_layouts: usize,
+    pub cached_bind_groups: usize,
+
+    pub adapters: usize,
+    pub devices: usize,
+    pub pipeline_layouts: usize,
+    pub shader_modules: usize,
+    pub bind_group_layouts: usize,
+    pub bind_groups: usize,
+    pub command_buffers: usize,
+    pub render_pipelines: usize,
+    pub buffers: usize,
+    pub textures: usize,
+    pub texture_views: usize,
+    pub samplers: usize,
 }
 
 // Graphical context that we will wrap around the WGPU instance
@@ -67,6 +82,11 @@ pub struct GraphicsStats {
 pub struct Graphics(pub(crate) Arc<InternalGraphics>);
 
 impl Graphics {
+    // Get the internally stored instance
+    pub fn instance(&self) -> &Instance {
+        &self.0.instance
+    }
+
     // Get the internally stored device
     pub fn device(&self) -> &Device {
         &self.0.device

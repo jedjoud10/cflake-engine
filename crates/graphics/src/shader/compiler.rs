@@ -1,8 +1,8 @@
 use crate::{
     BindResourceType, Buffer, Dimension, FunctionModule, GpuPod,
     GpuPodInfo, Graphics, ModuleKind, ModuleVisibility,
-    ReflectedModule, ShaderCompilationError, ShaderModule, Texel,
-    TexelInfo, Texture, VertexModule,
+    ShaderCompilationError, ShaderModule, Texel,
+    TexelInfo, Texture, VertexModule, PushConstantRange,
 };
 use ahash::AHashMap;
 use assets::Assets;
@@ -29,8 +29,7 @@ pub(super) type Snippets = AHashMap<String, String>;
 pub(super) type TextureFormats = AHashMap<String, TexelInfo>;
 pub(super) type TextureDimensions = AHashMap<String, Dimension>;
 pub(super) type UniformBufferPodTypes = AHashMap<String, GpuPodInfo>;
-pub(super) type PushConstantRanges =
-    Vec<(Bound<usize>, Bound<usize>, ModuleVisibility)>;
+pub(super) type PushConstantRanges = Vec<PushConstantRange>;
 
 // This is a compiler that will take was GLSL code, convert it to Naga, then to WGPU
 // This compiler also allows us to define constants and snippets before compilation
@@ -146,14 +145,29 @@ impl<'a> Compiler<'a> {
     // Define a push constant range to be pushed
     pub fn use_push_constant_range(
         &mut self,
-        bound: impl RangeBounds<usize>,
+        bound: std::ops::Range<usize>,
         visibility: ModuleVisibility,
     ) {
         let (start, end) = (
             bound.start_bound().cloned(),
             bound.end_bound().cloned(),
         );
-        self.push_constant_ranges.push((start, end, visibility));
+
+        let start = match start {
+            Bound::Included(x) => x,
+            _ => panic!()
+        };
+
+        let end = match end {
+            Bound::Excluded(x) => x,
+            _ => todo!(),
+        };
+
+        self.push_constant_ranges.push(PushConstantRange {
+            visibility,
+            start,
+            end,
+        });
     }
 }
 
@@ -323,7 +337,6 @@ fn include(
 pub struct Compiled<M: ShaderModule> {
     // Wgpu related data
     raw: Arc<wgpu::ShaderModule>,
-    reflected: Arc<ReflectedModule>,
 
     // Helpers
     name: Arc<str>,
@@ -337,7 +350,6 @@ impl<M: ShaderModule> Clone for Compiled<M> {
     fn clone(&self) -> Self {
         Self {
             raw: self.raw.clone(),
-            reflected: self.reflected.clone(),
             name: self.name.clone(),
             _phantom: self._phantom.clone(),
             graphics: self.graphics.clone(),
@@ -349,11 +361,6 @@ impl<M: ShaderModule> Compiled<M> {
     // Get the raw wgpu hidden module
     pub fn module(&self) -> &wgpu::ShaderModule {
         &self.raw
-    }
-
-    // Get the reflected shader representation
-    pub fn reflected(&self) -> &ReflectedModule {
-        &self.reflected
     }
 
     // Get the shader module name for this module

@@ -104,14 +104,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         let shader = self.pipeline.shader();
 
         // Don't set the push constants if we don't have any to set
-        let size = shader
-            .reflected
-            .push_constant_layouts
-            .iter()
-            .filter_map(|x| x.as_ref())
-            .map(|x| x.size)
-            .sum::<usize>();
-        if size == 0 {
+        if shader.reflected.push_constant_ranges.is_empty() {
             return;
         }
 
@@ -122,6 +115,14 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
             self.push_constant
                 .extend(std::iter::repeat(0).take(1024));
         }
+
+        // Get the max size that we must allocate (at minimum) to be able to use ALL the defined push constants
+        let size = shader
+            .reflected
+            .push_constant_ranges
+            .iter()
+            .map(|range| range.end - range.start)
+            .sum::<usize>();
 
         // Get the data that we will use
         let start = self.push_constant_global_offset;
@@ -142,10 +143,10 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         let mut new_internal_offset = 0;
         for range in push_constants.ranges {
             self.commands.push(RenderCommand::SetPushConstants {
-                stages: range.stages,
-                size,
+                stages: crate::visibility_to_wgpu_stage(&range.visibility),
+                size: range.end - range.start,
                 global_offset: self.push_constant_global_offset,
-                local_offset: range.offset,
+                local_offset: range.start as u32,
             });
             new_internal_offset += size;
         }
