@@ -1,10 +1,4 @@
-use crate::{
-    Renderer,
-};
-
-
-
-
+use crate::Renderer;
 
 use world::{post_user, System, World};
 

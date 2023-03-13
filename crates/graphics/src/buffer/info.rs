@@ -1,4 +1,4 @@
-use crate::{BufferVariant, BufferUsage, BufferMode};
+use crate::{BufferMode, BufferUsage, BufferVariant};
 
 // Untyped buffer that does not contain a generic type nor type ID
 pub struct BufferInfo<'a> {

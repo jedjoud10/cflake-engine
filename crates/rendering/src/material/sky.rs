@@ -1,16 +1,12 @@
-
-
 use crate::{
-    AlbedoMap, CameraUniform,
-    DefaultMaterialResources, EnabledMeshAttributes, Material,
+    AlbedoMap, CameraUniform, DefaultMaterialResources,
+    EnabledMeshAttributes, Material,
 };
 
 use assets::Assets;
 use graphics::{
-    BindGroup, Compiler, Face, FragmentModule,
-    Graphics, PrimitiveConfig,
-    Shader,
-    VertexModule, WindingOrder,
+    BindGroup, Compiler, Face, FragmentModule, Graphics,
+    PrimitiveConfig, Shader, VertexModule, WindingOrder,
 };
 use utils::{Handle, Storage};
 
@@ -24,10 +20,7 @@ impl Material for Sky {
     type Resources<'w> = world::Read<'w, Storage<AlbedoMap>>;
 
     // Load the respective Sky shader modules and compile them
-    fn shader(
-        graphics: &Graphics,
-        assets: &mut Assets,
-    ) -> Shader {
+    fn shader(graphics: &Graphics, assets: &mut Assets) -> Shader {
         // Load the vertex module from the assets
         let vert = assets
             .load::<VertexModule>("engine/shaders/scene/sky/sky.vert")
@@ -46,12 +39,7 @@ impl Material for Sky {
         compiler.use_texture::<AlbedoMap>("gradient_map");
 
         // Compile the modules into a shader
-        Shader::new(
-            graphics,
-            vert,
-            frag,
-            compiler
-        ).unwrap()
+        Shader::new(graphics, vert, frag, compiler).unwrap()
     }
 
     // Get the required mesh attributes that we need to render a surface
@@ -59,7 +47,7 @@ impl Material for Sky {
         EnabledMeshAttributes::POSITIONS
     }
 
-    // The sky does NOT cast shadows 
+    // The sky does NOT cast shadows
     fn casts_shadows() -> bool {
         false
     }
@@ -85,7 +73,9 @@ impl Material for Sky {
         default: &DefaultMaterialResources<'r>,
         group: &mut BindGroup<'r>,
     ) {
-        group.set_uniform_buffer("camera", default.camera_buffer).unwrap();
+        group
+            .set_uniform_buffer("camera", default.camera_buffer)
+            .unwrap();
     }
 
     // Set the instance bindings that will change per material

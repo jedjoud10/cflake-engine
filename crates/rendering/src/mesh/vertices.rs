@@ -5,9 +5,7 @@ use std::{
 
 use super::attributes::*;
 use crate::MeshAabbComputeError;
-use graphics::{
-    Buffer, CommandEncoder, BufferInfo, VertexBuffer,
-};
+use graphics::{Buffer, BufferInfo, CommandEncoder, VertexBuffer};
 use math::AABB;
 
 // Immutable access to the mesh vertices
@@ -43,14 +41,11 @@ impl<'a> VerticesRef<'a> {
         &self,
     ) -> [Option<BufferInfo>; MAX_MESH_VERTEX_ATTRIBUTES] {
         [
-            self.attribute::<Position>()
-                .map(Buffer::as_untyped),
+            self.attribute::<Position>().map(Buffer::as_untyped),
             self.attribute::<Normal>().map(Buffer::as_untyped),
-            self.attribute::<Tangent>()
-                .map(Buffer::as_untyped),
+            self.attribute::<Tangent>().map(Buffer::as_untyped),
             //self.attribute::<Color>().map(|b| Buffer::untyped(b)),
-            self.attribute::<TexCoord>()
-                .map(Buffer::as_untyped),
+            self.attribute::<TexCoord>().map(Buffer::as_untyped),
         ]
     }
 

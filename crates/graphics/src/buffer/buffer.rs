@@ -11,11 +11,11 @@ use std::{
 use wgpu::{util::DeviceExt, CommandEncoder, Maintain};
 
 use crate::{
-    BufferClearError, BufferCopyError, BufferExtendError,
+    BufferClearError, BufferCopyError, BufferExtendError, BufferInfo,
     BufferInitializationError, BufferMode, BufferNotMappableError,
     BufferReadError, BufferSplatError, BufferUsage, BufferView,
-    BufferViewMut, BufferWriteError, Graphics,
-    StagingPool, Vertex, R, BufferInfo, GpuPod,
+    BufferViewMut, BufferWriteError, GpuPod, Graphics, StagingPool,
+    Vertex, R,
 };
 
 // Bitmask from Vulkan BufferUsages
@@ -69,7 +69,6 @@ pub struct Buffer<T: GpuPod, const TYPE: u32> {
     // Keep the graphics API alive
     graphics: Graphics,
 }
-
 
 // Buffer initialization
 impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {

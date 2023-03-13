@@ -2,7 +2,7 @@ use std::{hash::Hash, sync::Arc};
 
 use crate::{
     Compiled, FragmentModule, Graphics, ModuleKind, ShaderModule,
-    VertexModule, TexelChannels,
+    TexelChannels, VertexModule,
 };
 use ahash::{AHashMap, AHashSet};
 use naga::{AddressSpace, ResourceBinding, TypeInner};
@@ -64,7 +64,7 @@ pub enum BindResourceType {
         size: usize,
         storage: bool,
         read: bool,
-        write: bool
+        write: bool,
     },
 
     // A sampler type that we can use to sample textures (sampler2D)
@@ -224,21 +224,24 @@ fn create_pipeline_layout_from_shader(
         value: &BindResourceLayout,
     ) -> wgpu::BindingType {
         match value.resource_type {
-            BindResourceType::Buffer { size, storage, read, write } => {
-                wgpu::BindingType::Buffer {
-                    ty: match storage {
-                        true => wgpu::BufferBindingType::Storage {
-                            read_only: read && !write
-                        },
-                        false => wgpu::BufferBindingType::Uniform,
+            BindResourceType::Buffer {
+                size,
+                storage,
+                read,
+                write,
+            } => wgpu::BindingType::Buffer {
+                ty: match storage {
+                    true => wgpu::BufferBindingType::Storage {
+                        read_only: read && !write,
                     },
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                }
-            }
-            BindResourceType::Sampler { sampler_binding, .. } => {
-                wgpu::BindingType::Sampler(sampler_binding)
-            }
+                    false => wgpu::BufferBindingType::Uniform,
+                },
+                has_dynamic_offset: false,
+                min_binding_size: None,
+            },
+            BindResourceType::Sampler {
+                sampler_binding, ..
+            } => wgpu::BindingType::Sampler(sampler_binding),
             BindResourceType::Texture {
                 sample_type,
                 view_dimension,
@@ -414,7 +417,8 @@ pub(super) fn reflect_module<M: ShaderModule>(
         push_constant_ranges,
     };
 
-    let bind_group_layouts = reflect_binding_group::<M>(graphics, naga, &definitions);
+    let bind_group_layouts =
+        reflect_binding_group::<M>(graphics, naga, &definitions);
     let push_constant = reflect_push_constant::<M>(naga);
 
     let last_valid_bind_group_layout = bind_group_layouts
@@ -437,7 +441,8 @@ fn reflect_binding_group<M: ShaderModule>(
 ) -> [Option<BindGroupLayout>; 4] {
     let mut bind_group_layouts: [Option<BindGroupLayout>; 4] =
         [None, None, None, None];
-    let entries = reflect_binding_entries::<M>(graphics, naga, definitions);
+    let entries =
+        reflect_binding_entries::<M>(graphics, naga, definitions);
 
     // Merge the binding entries into their respective bind group layouts
     for bind_entry_layout in entries {
@@ -472,13 +477,11 @@ fn reflect_binding_entries<M: ShaderModule>(
             value.binding.as_ref().map(|_| value)
         })
         .filter(|value| {
-            matches!(value.space, AddressSpace::Uniform) |
-            matches!(value.space, AddressSpace::Storage { .. }) |
-            matches!(value.space, AddressSpace::Handle)
+            matches!(value.space, AddressSpace::Uniform)
+                | matches!(value.space, AddressSpace::Storage { .. })
+                | matches!(value.space, AddressSpace::Handle)
         })
-        .filter(|value| {
-            types.get_handle(value.ty).is_ok()
-        })
+        .filter(|value| types.get_handle(value.ty).is_ok())
         .filter_map(|value| {
             // Get the type and address space of the variable
             let ResourceBinding { group, binding } =
@@ -492,20 +495,35 @@ fn reflect_binding_entries<M: ShaderModule>(
                 TypeInner::Struct {
                     members,
                     span: size,
-                } => {
-                    Some(reflect_buffer(members, types, size, value.space, definitions))
-                }
+                } => Some(reflect_buffer(
+                    members,
+                    types,
+                    size,
+                    value.space,
+                    definitions,
+                )),
 
                 // Uniform Textures
                 TypeInner::Image {
                     dim,
                     class,
                     arrayed,
-                } => Some(reflect_texture(&value.name.as_ref().unwrap(), class, dim, graphics, definitions, *arrayed)),
+                } => Some(reflect_texture(
+                    &value.name.as_ref().unwrap(),
+                    class,
+                    dim,
+                    graphics,
+                    definitions,
+                    *arrayed,
+                )),
 
                 // Uniform Sampler
                 TypeInner::Sampler { comparison } => {
-                    Some(reflect_sampler(&value.name.as_ref().unwrap(), definitions, *comparison))
+                    Some(reflect_sampler(
+                        &value.name.as_ref().unwrap(),
+                        definitions,
+                        *comparison,
+                    ))
                 }
 
                 // This will get ignored later on
@@ -559,12 +577,14 @@ fn reflect_push_constant<M: ShaderModule>(
 // Get the size (in bytes) of the inner type
 fn size_of_inner_type(type_inner: &TypeInner) -> usize {
     match type_inner {
-        TypeInner::Struct { members, span } => {
-            *span as usize
-        },
+        TypeInner::Struct { members, span } => *span as usize,
         TypeInner::Scalar { kind, width } => todo!(),
         TypeInner::Vector { size, kind, width } => todo!(),
-        TypeInner::Matrix { columns, rows, width } => todo!(),
+        TypeInner::Matrix {
+            columns,
+            rows,
+            width,
+        } => todo!(),
         TypeInner::Array { base, size, stride } => todo!(),
         _ => panic!("Tried getting the size of a non-data type"),
     }
@@ -573,19 +593,25 @@ fn size_of_inner_type(type_inner: &TypeInner) -> usize {
 // Get the alignment (in bytes) of the inner type
 fn alignment_of_inner_type(
     types: &naga::UniqueArena<naga::Type>,
-    type_inner: &TypeInner
+    type_inner: &TypeInner,
 ) -> usize {
     match type_inner {
-        TypeInner::Struct { members, span } => {
-            members.iter().map(|x| {
+        TypeInner::Struct { members, span } => members
+            .iter()
+            .map(|x| {
                 let _type = types.get_handle(x.ty).unwrap();
-                let inner = &_type.inner; 
+                let inner = &_type.inner;
                 alignment_of_inner_type(types, inner)
-            }).max().unwrap()
-        },
+            })
+            .max()
+            .unwrap(),
         TypeInner::Scalar { kind, width } => todo!(),
         TypeInner::Vector { size, kind, width } => todo!(),
-        TypeInner::Matrix { columns, rows, width } => todo!(),
+        TypeInner::Matrix {
+            columns,
+            rows,
+            width,
+        } => todo!(),
         TypeInner::Array { base, size, stride } => todo!(),
         _ => panic!("Tried getting the alignment of a non-data type"),
     }
@@ -605,7 +631,7 @@ fn reflect_buffer(
         size: *size as usize,
         storage: false,
         read: true,
-        write: false
+        write: false,
     }
 }
 
@@ -639,7 +665,11 @@ fn reflect_sampler(
 ) -> BindResourceType {
     BindResourceType::Sampler {
         sampler_binding: wgpu::SamplerBindingType::Filtering,
-        format: definitions.texture_formats.get(name).unwrap().format(),
+        format: definitions
+            .texture_formats
+            .get(name)
+            .unwrap()
+            .format(),
     }
 }
 
@@ -654,54 +684,80 @@ fn reflect_texture(
 ) -> BindResourceType {
     BindResourceType::Texture {
         sample_type: match class {
-            naga::ImageClass::Sampled { kind, multi } => {
-                match kind {
-                    naga::ScalarKind::Sint => {
-                        wgpu::TextureSampleType::Sint
-                    }
-                    naga::ScalarKind::Uint => {
-                        wgpu::TextureSampleType::Uint
-                    }
-                    naga::ScalarKind::Float => {
-                        let adapter = graphics.adapter();
-                        let info = definitions.texture_formats.get(name).unwrap();
-                        let format = info.format();
-                        let flags = adapter.get_texture_format_features(format).flags;
-                        
-                        let depth =  matches!(info.channels(), TexelChannels::Depth);    
-            
-                        if flags.contains(TextureFormatFeatureFlags::FILTERABLE) && !depth {
-                            wgpu::TextureSampleType::Float { filterable: true }
-                        } else {
-                            wgpu::TextureSampleType::Float { filterable: false }
+            naga::ImageClass::Sampled { kind, multi } => match kind {
+                naga::ScalarKind::Sint => {
+                    wgpu::TextureSampleType::Sint
+                }
+                naga::ScalarKind::Uint => {
+                    wgpu::TextureSampleType::Uint
+                }
+                naga::ScalarKind::Float => {
+                    let adapter = graphics.adapter();
+                    let info = definitions
+                        .texture_formats
+                        .get(name)
+                        .unwrap();
+                    let format = info.format();
+                    let flags = adapter
+                        .get_texture_format_features(format)
+                        .flags;
+
+                    let depth = matches!(
+                        info.channels(),
+                        TexelChannels::Depth
+                    );
+
+                    if flags.contains(
+                        TextureFormatFeatureFlags::FILTERABLE,
+                    ) && !depth
+                    {
+                        wgpu::TextureSampleType::Float {
+                            filterable: true,
+                        }
+                    } else {
+                        wgpu::TextureSampleType::Float {
+                            filterable: false,
                         }
                     }
-                    _ => panic!(),
                 }
-            }
+                _ => panic!(),
+            },
             naga::ImageClass::Depth { multi } => todo!(),
             naga::ImageClass::Storage { format, access } => todo!(),
         },
 
         view_dimension: match dim {
-            naga::ImageDimension::D1 => wgpu::TextureViewDimension::D1,
-            naga::ImageDimension::D2 => wgpu::TextureViewDimension::D2,
-            naga::ImageDimension::D3 => wgpu::TextureViewDimension::D3,
-            naga::ImageDimension::Cube => wgpu::TextureViewDimension::Cube,
+            naga::ImageDimension::D1 => {
+                wgpu::TextureViewDimension::D1
+            }
+            naga::ImageDimension::D2 => {
+                wgpu::TextureViewDimension::D2
+            }
+            naga::ImageDimension::D3 => {
+                wgpu::TextureViewDimension::D3
+            }
+            naga::ImageDimension::Cube => {
+                wgpu::TextureViewDimension::Cube
+            }
         },
         format: {
-            let format = definitions.texture_formats.get(name).unwrap();
+            let format =
+                definitions.texture_formats.get(name).unwrap();
             format.format()
         },
         sampler_binding: {
             let adapter = graphics.adapter();
             let info = definitions.texture_formats.get(name).unwrap();
             let format = info.format();
-            let flags = adapter.get_texture_format_features(format).flags;
-            
-            let depth =  matches!(info.channels(), TexelChannels::Depth);    
+            let flags =
+                adapter.get_texture_format_features(format).flags;
 
-            if flags.contains(TextureFormatFeatureFlags::FILTERABLE) && !depth {
+            let depth =
+                matches!(info.channels(), TexelChannels::Depth);
+
+            if flags.contains(TextureFormatFeatureFlags::FILTERABLE)
+                && !depth
+            {
                 wgpu::SamplerBindingType::Filtering
             } else {
                 wgpu::SamplerBindingType::NonFiltering

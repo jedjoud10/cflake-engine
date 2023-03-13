@@ -3,11 +3,7 @@ use crate::{
 };
 use assets::Assets;
 
-use graphics::{
-    Graphics,
-    Texture, Window,
-};
-
+use graphics::{Graphics, Texture, Window};
 
 use world::{user, System, World};
 
@@ -44,15 +40,21 @@ fn update(world: &mut World) {
 
     // Set the shared UBOs first (bind group 0)
     active.set_bind_group(0, |group| {
-        group.set_uniform_buffer("window", &renderer.window_buffer).unwrap();
-        group.set_uniform_buffer("camera", &renderer.camera_buffer).unwrap();
+        group
+            .set_uniform_buffer("window", &renderer.window_buffer)
+            .unwrap();
+        group
+            .set_uniform_buffer("camera", &renderer.camera_buffer)
+            .unwrap();
     });
 
     // Set the maps that we will sample
     active.set_bind_group(1, |group| {
         group.set_texture("color_map", src).unwrap();
         group.set_texture("depth_map", depth).unwrap();
-        group.set_texture("shadowmap", &shadowmap.depth_tex).unwrap();
+        group
+            .set_texture("shadowmap", &shadowmap.depth_tex)
+            .unwrap();
     });
 
     // Draw 6 vertices (2 tris)

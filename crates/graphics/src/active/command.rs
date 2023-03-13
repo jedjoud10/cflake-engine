@@ -1,6 +1,6 @@
 use crate::{
-    ColorLayout, DepthStencilLayout, GraphicsPipeline,
-    TriangleBuffer, UniformBuffer, BufferInfo,
+    BufferInfo, ColorLayout, DepthStencilLayout, GraphicsPipeline,
+    TriangleBuffer, UniformBuffer,
 };
 use std::{
     ops::{Bound, Range},
@@ -99,7 +99,7 @@ pub(crate) fn record<'r, C: ColorLayout, DS: DepthStencilLayout>(
                 stages,
                 size,
                 global_offset,
-                local_offset
+                local_offset,
             } => {
                 let start = *global_offset;
                 let end = global_offset + size;
@@ -107,7 +107,7 @@ pub(crate) fn record<'r, C: ColorLayout, DS: DepthStencilLayout>(
                 render_pass.set_push_constants(
                     *stages,
                     *local_offset,
-                    data
+                    data,
                 );
             }
 

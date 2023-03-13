@@ -1,9 +1,9 @@
 use wgpu::CommandEncoder;
 
 use crate::{
-    ActiveGraphicsPipeline, ColorLayout, DepthStencilLayout,
-    Graphics, GraphicsPipeline, RenderCommand, TriangleBuffer,
-    BufferInfo, Vertex, VertexBuffer,
+    ActiveGraphicsPipeline, BufferInfo, ColorLayout,
+    DepthStencilLayout, Graphics, GraphicsPipeline, RenderCommand,
+    TriangleBuffer, Vertex, VertexBuffer,
 };
 use std::{marker::PhantomData, ops::Range, sync::Arc};
 

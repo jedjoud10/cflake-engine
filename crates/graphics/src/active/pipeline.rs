@@ -2,10 +2,10 @@ use ahash::AHashMap;
 use wgpu::CommandEncoder;
 
 use crate::{
-    BindGroup, BufferMode, BufferUsage, ColorLayout,
-    DepthStencilLayout, GpuPod, Graphics, GraphicsPipeline,
-    ModuleKind, PushConstants, RenderCommand, TriangleBuffer,
-    UniformBuffer, BufferInfo, Vertex, VertexBuffer, Buffer,
+    BindGroup, Buffer, BufferInfo, BufferMode, BufferUsage,
+    ColorLayout, DepthStencilLayout, GpuPod, Graphics,
+    GraphicsPipeline, ModuleKind, PushConstants, RenderCommand,
+    TriangleBuffer, UniformBuffer, Vertex, VertexBuffer,
 };
 use std::{
     collections::hash_map::Entry,
@@ -41,7 +41,10 @@ fn map<T, U, F: FnOnce(T) -> U>(bound: Bound<T>, map: F) -> Bound<U> {
 }
 
 // Validate the bounds and convert them to byte bounds
-fn convert<T: GpuPod, const TYPE: u32>(bounds: impl RangeBounds<usize>, buffer: &Buffer<T, TYPE>) -> Option<(Bound<u64>, Bound<u64>)> {
+fn convert<T: GpuPod, const TYPE: u32>(
+    bounds: impl RangeBounds<usize>,
+    buffer: &Buffer<T, TYPE>,
+) -> Option<(Bound<u64>, Bound<u64>)> {
     let start = bounds.start_bound().cloned();
     let end = bounds.end_bound().cloned();
     buffer.convert_bounds_to_indices((start, end))?;
@@ -113,9 +116,11 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         }
 
         // Make sure we have enough bytes to store the push constants
-        let pc = self.push_constant.len() - self.push_constant_global_offset;
+        let pc = self.push_constant.len()
+            - self.push_constant_global_offset;
         if pc < 1024 {
-            self.push_constant.extend(std::iter::repeat(0).take(1024));
+            self.push_constant
+                .extend(std::iter::repeat(0).take(1024));
         }
 
         // Get the data that we will use

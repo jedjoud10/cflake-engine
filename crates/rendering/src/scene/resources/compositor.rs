@@ -1,11 +1,13 @@
 use assets::Assets;
 use graphics::{
-    Compiler, FragmentModule, Graphics, GraphicsPipeline,
-    LoadOp, Operation, PrimitiveConfig, RenderPass, Shader, StoreOp,
-    SwapchainFormat, VertexConfig, VertexModule, Texture2D,
+    Compiler, FragmentModule, Graphics, GraphicsPipeline, LoadOp,
+    Operation, PrimitiveConfig, RenderPass, Shader, StoreOp,
+    SwapchainFormat, Texture2D, VertexConfig, VertexModule,
 };
 
-use crate::{SceneColor, SceneDepth, WindowUniform, CameraUniform, ShadowMap};
+use crate::{
+    CameraUniform, SceneColor, SceneDepth, ShadowMap, WindowUniform,
+};
 
 // This is what will write to the swapchain
 pub type FinalRenderPass = RenderPass<SwapchainFormat, ()>;
@@ -34,7 +36,10 @@ impl Compositor {
 
         // Load the fragment module for the display shader
         let fragment = assets
-            .load::<FragmentModule>("engine/shaders/post/display.frag").unwrap();
+            .load::<FragmentModule>(
+                "engine/shaders/post/display.frag",
+            )
+            .unwrap();
 
         // Create the bind layout for the compositor shader
         let mut compiler = Compiler::new(assets);
@@ -45,12 +50,9 @@ impl Compositor {
         compiler.use_uniform_buffer::<CameraUniform>("camera");
 
         // Combine the modules to the shader
-        let shader = Shader::new(
-            graphics,
-            vertex,
-            fragment,
-            compiler
-        ).unwrap();
+        let shader =
+            Shader::new(graphics, vertex, fragment, compiler)
+                .unwrap();
 
         // Create the display render pass
         let render_pass = FinalRenderPass::new(

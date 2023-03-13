@@ -1,12 +1,12 @@
 use crate::{
-    AlbedoMap, CameraBuffer, EnabledMeshAttributes, NormalMap, Renderer, SceneBuffer, SceneColor,
-    TimingBuffer,
+    AlbedoMap, CameraBuffer, EnabledMeshAttributes, NormalMap,
+    Renderer, SceneBuffer, SceneColor, TimingBuffer,
 };
 use assets::Assets;
 use graphics::{
-    BindGroup, BlendConfig, CompareFunction,
-    DepthConfig, Graphics,
-    PrimitiveConfig, PushConstants, StencilConfig, WindingOrder, Shader,
+    BindGroup, BlendConfig, CompareFunction, DepthConfig, Graphics,
+    PrimitiveConfig, PushConstants, Shader, StencilConfig,
+    WindingOrder,
 };
 use world::World;
 
@@ -34,10 +34,7 @@ pub trait Material: 'static + Sized {
     type Resources<'w>: 'w;
 
     // Create a shader for this material
-    fn shader(
-        graphics: &Graphics,
-        assets: &mut Assets,
-    ) -> Shader;
+    fn shader(graphics: &Graphics, assets: &mut Assets) -> Shader;
 
     // Get the required mesh attributes that we need to render a surface
     // If a surface does not support these attributes, it will not be rendered
@@ -79,7 +76,6 @@ pub trait Material: 'static + Sized {
     fn casts_shadows() -> bool {
         true
     }
-
 
     // Fetch the required resources from the world
     fn fetch<'w>(world: &'w World) -> Self::Resources<'w>;

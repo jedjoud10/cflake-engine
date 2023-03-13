@@ -8,14 +8,12 @@ use assets::Assets;
 use ecs::Entity;
 use graphics::{
     ActiveGraphicsPipeline, ActiveRenderPass, BufferMode,
-    BufferUsage, Depth, GpuPod, Graphics, LoadOp,
-    Operation, RenderPass,
-    SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap,
-    StoreOp, Texel, Texture, Texture2D,
+    BufferUsage, Depth, GpuPod, Graphics, LoadOp, Operation,
+    RenderPass, SamplerFilter, SamplerMipMaps, SamplerSettings,
+    SamplerWrap, StoreOp, Texel, Texture, Texture2D,
     TextureImportSettings, TextureMipMaps, TextureMode, TextureUsage,
     UniformBuffer, RGBA,
 };
-
 
 // Renderpass that will render the scene
 pub type SceneColor = RGBA<f32>;
@@ -94,21 +92,20 @@ impl ForwardRenderer {
         extent: vek::Extent2<u32>,
     ) -> Self {
         // Create the render pass color texture
-        let color_texture =
-            Texture2D::<RGBA<f32>>::from_texels(
-                graphics,
-                None,
-                extent,
-                TextureMode::Resizable,
-                TextureUsage::RENDER_TARGET | TextureUsage::SAMPLED,
-                SamplerSettings {
-                    filter: SamplerFilter::Linear,
-                    wrap: SamplerWrap::Repeat,
-                    mipmaps: SamplerMipMaps::Auto,
-                },
-                TextureMipMaps::Disabled,
-            )
-            .unwrap();
+        let color_texture = Texture2D::<RGBA<f32>>::from_texels(
+            graphics,
+            None,
+            extent,
+            TextureMode::Resizable,
+            TextureUsage::RENDER_TARGET | TextureUsage::SAMPLED,
+            SamplerSettings {
+                filter: SamplerFilter::Linear,
+                wrap: SamplerWrap::Repeat,
+                mipmaps: SamplerMipMaps::Auto,
+            },
+            TextureMipMaps::Disabled,
+        )
+        .unwrap();
 
         // Create the render pass depth texture
         let depth_texture = Texture2D::<Depth<f32>>::from_texels(

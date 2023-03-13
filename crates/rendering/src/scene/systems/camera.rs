@@ -1,12 +1,7 @@
-use crate::{
-    Camera, CameraUniform, ForwardRenderer,
-};
+use crate::{Camera, CameraUniform, ForwardRenderer};
 
 use ecs::Scene;
-use graphics::{
-    Window,
-};
-
+use graphics::Window;
 
 use world::{System, World};
 

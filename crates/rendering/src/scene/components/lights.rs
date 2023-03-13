@@ -8,8 +8,6 @@ pub struct DirectionalLight {
 
 impl Default for DirectionalLight {
     fn default() -> Self {
-        Self {
-            strength: 1.0
-        }
+        Self { strength: 1.0 }
     }
 }

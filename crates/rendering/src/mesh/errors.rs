@@ -1,6 +1,4 @@
-use graphics::{
-    BufferInitializationError, BufferNotMappableError,
-};
+use graphics::{BufferInitializationError, BufferNotMappableError};
 use obj::ObjError;
 use thiserror::Error;
 

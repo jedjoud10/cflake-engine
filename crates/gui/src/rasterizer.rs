@@ -1,16 +1,18 @@
 use assets::Assets;
 use egui::{ClippedPrimitive, ImageData, TextureId, TexturesDelta};
 use graphics::{
-    BlendComponent, BlendFactor, BlendOperation,
-    BlendState, BufferMode, BufferUsage, Compiler,
-    FragmentModule, GpuPod, Graphics, LoadOp, Normalized, Operation,
-    PerVertex, PrimitiveConfig, SamplerFilter,
-    SamplerMipMaps, SamplerSettings, SamplerWrap, Shader, StoreOp,
-    Texture, Texture2D, TextureMipMaps, TextureMode, TextureUsage,
-    TriangleBuffer, VertexBuffer, VertexConfig,
-    VertexInput, VertexModule, Window, RGBA, XY, XYZW,
+    BlendComponent, BlendFactor, BlendOperation, BlendState,
+    BufferMode, BufferUsage, Compiler, FragmentModule, GpuPod,
+    Graphics, LoadOp, Normalized, Operation, PerVertex,
+    PrimitiveConfig, SamplerFilter, SamplerMipMaps, SamplerSettings,
+    SamplerWrap, Shader, StoreOp, Texture, Texture2D, TextureMipMaps,
+    TextureMode, TextureUsage, TriangleBuffer, VertexBuffer,
+    VertexConfig, VertexInput, VertexModule, Window, RGBA, XY, XYZW,
 };
-use rendering::{FinalGraphicsPipeline, FinalRenderPass, WindowUniform, WindowBuffer};
+use rendering::{
+    FinalGraphicsPipeline, FinalRenderPass, WindowBuffer,
+    WindowUniform,
+};
 
 // Font texel type and font map
 type FontTexel = RGBA<Normalized<u8>>;
@@ -102,15 +104,12 @@ impl Rasterizer {
         // Create the bind layout for the GUI shader
         let mut compiler = Compiler::new(assets);
         compiler.use_texture::<FontMap>("font");
-        compiler.use_uniform_buffer::<WindowUniform>("window"); 
+        compiler.use_uniform_buffer::<WindowUniform>("window");
 
         // Compile the modules into a shader
-        let shader = Shader::new(
-            graphics,
-            vertex,
-            fragment,
-            compiler,
-        ).unwrap();
+        let shader =
+            Shader::new(graphics, vertex, fragment, compiler)
+                .unwrap();
 
         // Create the render pass that will write to the swapchain
         let render_pass = FinalRenderPass::new(
@@ -268,7 +267,9 @@ impl Rasterizer {
         // Set the required shader uniforms
         let texture = self.texture.as_ref().unwrap();
         active.set_bind_group(0, |group| {
-            group.set_uniform_buffer("window", window_buffer).unwrap();
+            group
+                .set_uniform_buffer("window", window_buffer)
+                .unwrap();
             group.set_texture("font", texture).unwrap();
         });
 
@@ -283,26 +284,34 @@ impl Rasterizer {
                     let verts = mesh.vertices.len();
                     let triangles = mesh.indices.len() / 3;
 
-                    active.set_vertex_buffer::<XY<f32>>(
-                        0,
-                        &self.positions,
-                        vertex_offset..(vertex_offset + verts),
-                    ).unwrap();
-                    active.set_vertex_buffer::<XY<f32>>(
-                        1,
-                        &self.texcoords,
-                        vertex_offset..(vertex_offset + verts),
-                    ).unwrap();
-                    active.set_vertex_buffer::<XYZW<Normalized<u8>>>(
-                        2,
-                        &self.colors,
-                        vertex_offset..(vertex_offset + verts),
-                    ).unwrap();
-                    active.set_index_buffer(
-                        &self.triangles,
-                        triangle_offset
-                            ..(triangle_offset + triangles),
-                    ).unwrap();
+                    active
+                        .set_vertex_buffer::<XY<f32>>(
+                            0,
+                            &self.positions,
+                            vertex_offset..(vertex_offset + verts),
+                        )
+                        .unwrap();
+                    active
+                        .set_vertex_buffer::<XY<f32>>(
+                            1,
+                            &self.texcoords,
+                            vertex_offset..(vertex_offset + verts),
+                        )
+                        .unwrap();
+                    active
+                        .set_vertex_buffer::<XYZW<Normalized<u8>>>(
+                            2,
+                            &self.colors,
+                            vertex_offset..(vertex_offset + verts),
+                        )
+                        .unwrap();
+                    active
+                        .set_index_buffer(
+                            &self.triangles,
+                            triangle_offset
+                                ..(triangle_offset + triangles),
+                        )
+                        .unwrap();
                     active.draw_indexed(
                         0..(triangles as u32 * 3),
                         0..1,

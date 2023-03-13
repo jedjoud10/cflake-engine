@@ -1,6 +1,3 @@
-
-
-
 // Container for post-processing parameters
 pub struct PostProcess {
     // Lighting parameters

@@ -1,15 +1,10 @@
 use crate::{
-    AlbedoMap, Basic,
-    DefaultMaterialResources, ForwardRenderer, Mesh, NormalMap,
-    Pipelines, Sky,
-    WindowUniform, ShadowMapping,
+    AlbedoMap, Basic, DefaultMaterialResources, ForwardRenderer,
+    Mesh, NormalMap, Pipelines, ShadowMapping, Sky, WindowUniform,
 };
 use assets::Assets;
 
-use graphics::{
-    Graphics,
-    Texture, Window,
-};
+use graphics::{Graphics, Texture, Window};
 
 use utils::{Storage, Time};
 use world::{user, System, WindowEvent, World};
@@ -31,7 +26,7 @@ fn init(world: &mut World) {
         40f32,
         4096,
         &graphics,
-        &mut assets
+        &mut assets,
     );
 
     // Drop fetched resources
@@ -120,13 +115,17 @@ fn render(world: &mut World) {
 
     // Begin the scene shadow map render pass
     let shadowmap = &mut *_shadowmap;
-    shadowmap.update(vek::Quaternion::rotation_x(time.elapsed().as_secs_f32() * 0.2));
+    shadowmap.update(vek::Quaternion::rotation_x(
+        time.elapsed().as_secs_f32() * 0.2,
+    ));
     let depth = shadowmap.depth_tex.as_render_target().unwrap();
-    let mut render_pass = shadowmap
-        .render_pass.begin((), depth).unwrap();
+    let mut render_pass =
+        shadowmap.render_pass.begin((), depth).unwrap();
     let mut active = render_pass.bind_pipeline(&shadowmap.pipeline);
     active.set_bind_group(0, |group| {
-        group.set_uniform_buffer("shadow", &shadowmap.buffer).unwrap();
+        group
+            .set_uniform_buffer("shadow", &shadowmap.buffer)
+            .unwrap();
     });
 
     // Render the shadows first (fuck you)

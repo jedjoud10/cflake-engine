@@ -1,6 +1,6 @@
 use std::{
-    io::{Write},
-    num::{NonZeroU32},
+    io::Write,
+    num::NonZeroU32,
     sync::mpsc,
     time::{Duration, Instant},
 };

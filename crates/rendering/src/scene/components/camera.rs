@@ -1,8 +1,6 @@
 use arrayvec::ArrayVec;
 use ecs::{Component, Position, Rotation};
 
-
-
 // A perspective camera component that will be used to render the main scene
 // The camera entity does not *need* to have a transform to render, since we can set the matrices directly
 #[derive(Component, Clone)]

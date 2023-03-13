@@ -1,16 +1,14 @@
-
-
 use crate::{
-    AlbedoMap, CameraUniform,
-    DefaultMaterialResources, Material,
-    NormalMap, Renderer, SceneUniform, ShadowMapping, ShadowMap, ShadowUniform,
+    AlbedoMap, CameraUniform, DefaultMaterialResources, Material,
+    NormalMap, Renderer, SceneUniform, ShadowMap, ShadowMapping,
+    ShadowUniform,
 };
 
 use assets::Assets;
-use bytemuck::{Zeroable, Pod};
+use bytemuck::{Pod, Zeroable};
 use graphics::{
-    BindGroup, Compiler, FragmentModule,
-    Graphics, PushConstants, Shader, VertexModule, ModuleVisibility, GpuPod,
+    BindGroup, Compiler, FragmentModule, GpuPod, Graphics,
+    ModuleVisibility, PushConstants, Shader, VertexModule,
 };
 use utils::{Handle, Storage};
 
@@ -43,21 +41,20 @@ impl Material for Basic {
     );
 
     // Load the respective Basic shader modules and compile them
-    fn shader(
-        graphics: &Graphics,
-        assets: &mut Assets,
-    ) -> Shader {
+    fn shader(graphics: &Graphics, assets: &mut Assets) -> Shader {
         // Load the vertex module from the assets
         let vert = assets
             .load::<VertexModule>(
                 "engine/shaders/scene/basic/basic.vert",
-            ).unwrap();
+            )
+            .unwrap();
 
         // Load the fragment module from the assets
         let frag = assets
             .load::<FragmentModule>(
                 "engine/shaders/scene/basic/basic.frag",
-            ).unwrap();
+            )
+            .unwrap();
 
         // Define the type layouts for the UBOs
         let mut compiler = Compiler::new(assets);
@@ -66,7 +63,7 @@ impl Material for Basic {
         compiler.use_uniform_buffer::<CameraUniform>("camera");
         compiler.use_uniform_buffer::<SceneUniform>("scene");
         compiler.use_uniform_buffer::<ShadowUniform>("shadow");
-        
+
         // Set the dynamic ubo properties
         compiler.use_uniform_buffer::<BasicUniform>("material");
 
@@ -78,15 +75,13 @@ impl Material for Basic {
 
         // Define the push ranges used by push constants
         let size = <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size();
-        compiler.use_push_constant_range(0..size, ModuleVisibility::Vertex);
+        compiler.use_push_constant_range(
+            0..size,
+            ModuleVisibility::Vertex,
+        );
 
         // Compile the modules into a shader
-        Shader::new(
-            graphics,
-            vert,
-            frag,
-            compiler
-        ).unwrap()
+        Shader::new(graphics, vert, frag, compiler).unwrap()
     }
 
     // Fetch the texture storages
@@ -104,9 +99,15 @@ impl Material for Basic {
         group: &mut BindGroup<'r>,
     ) {
         // Set the required common buffers
-        group.set_uniform_buffer("camera", default.camera_buffer).unwrap();
-        group.set_uniform_buffer("scene", default.scene_buffer).unwrap();
-        group.set_uniform_buffer("shadow", &resources.2.buffer).unwrap();
+        group
+            .set_uniform_buffer("camera", default.camera_buffer)
+            .unwrap();
+        group
+            .set_uniform_buffer("scene", default.scene_buffer)
+            .unwrap();
+        group
+            .set_uniform_buffer("shadow", &resources.2.buffer)
+            .unwrap();
 
         // Set the scene sky texture
         group

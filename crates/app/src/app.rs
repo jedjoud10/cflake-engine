@@ -2,18 +2,15 @@ use assets::AssetsSettings;
 use graphics::{FrameRateLimit, WindowSettings};
 use mimalloc::MiMalloc;
 
-use std::{
-    path::{PathBuf},
-    sync::mpsc,
-};
+use std::{path::PathBuf, sync::mpsc};
 use utils::UtilsSettings;
 use winit::{
     event::{DeviceEvent, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
 use world::{
-    Event, Init, Shutdown, State, System, Systems, Tick,
-    Update, World,
+    Event, Init, Shutdown, State, System, Systems, Tick, Update,
+    World,
 };
 
 #[global_allocator]
@@ -183,7 +180,6 @@ impl App {
     // Initialize the global logger (also sets the output file)
     fn init_logger(&mut self, sender: mpsc::Sender<String>) {
         use fern::colors::*;
-        
 
         // File logger with no colors. Will write into the given cache buffer
         fn file_logger(

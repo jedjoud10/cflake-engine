@@ -4,9 +4,7 @@ use crate::{
     MeshAttribute, Renderer, SceneColor, SceneDepth, Surface,
 };
 use ecs::Scene;
-use graphics::{
-    GraphicsPipeline,
-};
+use graphics::GraphicsPipeline;
 use utils::{Handle, Storage};
 use world::World;
 
@@ -27,7 +25,9 @@ pub(crate) fn set_vertex_buffer_attribute<
 
     // Check if the mesh contains the attribute, and if it does, render it
     if let Some(buffer) = mesh.vertices().attribute::<A>() {
-        active.set_vertex_buffer::<A::V>(A::index(), buffer, ..).unwrap();
+        active
+            .set_vertex_buffer::<A::V>(A::index(), buffer, ..)
+            .unwrap();
     }
 }
 

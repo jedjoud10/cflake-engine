@@ -1,12 +1,9 @@
-
 use graphics::{
-    Normalized, PerVertex, Vertex, VertexBuffer,
-    VertexConfig, VertexInput, VertexInputInfo, XYZ,
-    XYZW,
+    Normalized, PerVertex, Vertex, VertexBuffer, VertexConfig,
+    VertexInput, VertexInputInfo, XYZ, XYZW,
 };
 use paste::paste;
 use std::marker::PhantomData;
-
 
 use crate::{VerticesMut, VerticesRef};
 

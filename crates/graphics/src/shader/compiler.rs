@@ -1,7 +1,8 @@
 use crate::{
-    FunctionModule, Graphics, ModuleKind,
-    ReflectedModule, ShaderCompilationError, ShaderModule,
-    VertexModule, BindResourceType, Texture, Texel, TexelInfo, Buffer, GpuPod, Dimension, GpuPodInfo, ModuleVisibility,
+    BindResourceType, Buffer, Dimension, FunctionModule, GpuPod,
+    GpuPodInfo, Graphics, ModuleKind, ModuleVisibility,
+    ReflectedModule, ShaderCompilationError, ShaderModule, Texel,
+    TexelInfo, Texture, VertexModule,
 };
 use ahash::AHashMap;
 use assets::Assets;
@@ -11,18 +12,25 @@ use naga::{
     Module, ShaderStage, WithSpan,
 };
 use snailquote::unescape;
-use thiserror::Error;
 use std::{
-    any::TypeId, borrow::Cow, ffi::CStr, marker::PhantomData,
-    path::PathBuf, sync::Arc, time::Instant, ops::{RangeBounds, Bound},
+    any::TypeId,
+    borrow::Cow,
+    ffi::CStr,
+    marker::PhantomData,
+    ops::{Bound, RangeBounds},
+    path::PathBuf,
+    sync::Arc,
+    time::Instant,
 };
+use thiserror::Error;
 
 // Type alias for snippets and resources
 pub(super) type Snippets = AHashMap<String, String>;
-pub(super) type TextureFormats = AHashMap<String, TexelInfo>; 
+pub(super) type TextureFormats = AHashMap<String, TexelInfo>;
 pub(super) type TextureDimensions = AHashMap<String, Dimension>;
 pub(super) type UniformBufferPodTypes = AHashMap<String, GpuPodInfo>;
-pub(super) type PushConstantRanges = Vec<(Bound<usize>, Bound<usize>, ModuleVisibility)>;
+pub(super) type PushConstantRanges =
+    Vec<(Bound<usize>, Bound<usize>, ModuleVisibility)>;
 
 // This is a compiler that will take was GLSL code, convert it to Naga, then to WGPU
 // This compiler also allows us to define constants and snippets before compilation
@@ -37,7 +45,7 @@ pub struct Compiler<'a> {
 }
 
 impl<'a> Compiler<'a> {
-    // Create a new default compiler with the asset loader 
+    // Create a new default compiler with the asset loader
     pub fn new(assets: &'a Assets) -> Self {
         Self {
             assets,
@@ -68,7 +76,7 @@ impl<'a> Compiler<'a> {
     ) -> Result<Compiled<M>, ShaderCompilationError> {
         // Decompose the module into file name and source
         let (name, source) = module.into_raw_parts();
-        
+
         // Compile GLSL to Naga then to Wgpu
         let time = std::time::Instant::now();
         let (raw, naga) = compile(
@@ -116,14 +124,12 @@ impl<'a> Compiler<'a> {
         &mut self,
         name: impl ToString,
     ) {
-        self.uniform_buffer_pod_types.insert(name.to_string(), T::info());
+        self.uniform_buffer_pod_types
+            .insert(name.to_string(), T::info());
     }
 
     // Define a uniform texture's type and texel
-    pub fn use_texture<T: Texture>(
-        &mut self,
-        name: impl ToString,
-    ) {
+    pub fn use_texture<T: Texture>(&mut self, name: impl ToString) {
         let sampler_name = format!("{}_sampler", name.to_string());
         self.use_sampler::<T>(sampler_name);
         let name = name.to_string();
@@ -132,10 +138,7 @@ impl<'a> Compiler<'a> {
 
     // Define a uniform sampler's type and texel
     // This is called automatically by the method above to set a texture's sampler automatically
-    pub fn use_sampler<T: Texture>(
-        &mut self,
-        name: impl ToString,
-    ) {
+    pub fn use_sampler<T: Texture>(&mut self, name: impl ToString) {
         let name = name.to_string();
         self.texture_formats.insert(name, <T::T as Texel>::info());
     }
@@ -146,8 +149,10 @@ impl<'a> Compiler<'a> {
         bound: impl RangeBounds<usize>,
         visibility: ModuleVisibility,
     ) {
-        let (start, end) = 
-            (bound.start_bound().cloned(), bound.end_bound().cloned());
+        let (start, end) = (
+            bound.start_bound().cloned(),
+            bound.end_bound().cloned(),
+        );
         self.push_constant_ranges.push((start, end, visibility));
     }
 }
@@ -161,7 +166,8 @@ fn compile(
     snippets: &Snippets,
     source: String,
     file: &str,
-) -> Result<(wgpu::ShaderModule, naga::Module), ShaderCompilationError> {
+) -> Result<(wgpu::ShaderModule, naga::Module), ShaderCompilationError>
+{
     // Custom ShaderC compiler options
     let mut options = shaderc::CompileOptions::new().unwrap();
     // FIXME: OwO what's this??
@@ -170,10 +176,7 @@ fn compile(
 
     // Create a callback responsible for includes
     options.set_include_callback(|target, _type, current, depth| {
-        include(
-            current, _type, target, depth, assets,
-            &snippets,
-        )
+        include(current, _type, target, depth, assets, &snippets)
     });
 
     // Pass the source by ShaderC first cause Naga's errors suck ass
@@ -208,7 +211,7 @@ fn compile(
                 log::error!("Failed compilation of shader '{file}'");
 
                 // Print a preview of the file with counted lines
-                log::error!("Source code: \n\n{source}\n\n");                
+                log::error!("Source code: \n\n{source}\n\n");
 
                 // Print the error message
                 for line in value.lines() {
@@ -273,9 +276,10 @@ fn load_snippet(
     name: &str,
     snippets: &AHashMap<String, String>,
 ) -> Result<shaderc::ResolvedInclude, String> {
-    let snippet = snippets.get(name).ok_or(
-        format!("Snippet {} was not defined", name.to_string())
-    )?;
+    let snippet = snippets.get(name).ok_or(format!(
+        "Snippet {} was not defined",
+        name.to_string()
+    ))?;
     Ok(shaderc::ResolvedInclude {
         resolved_name: name.to_string(),
         content: snippet.clone(),
@@ -293,9 +297,7 @@ fn include(
 ) -> Result<shaderc::ResolvedInclude, String> {
     // If we're too deep, assume that the user caused a cyclic reference, and return an error
     if depth > 40 {
-        return Err(
-            format!("Include cyclic reference detected")
-        );
+        return Err(format!("Include cyclic reference detected"));
     }
 
     // Check if the user wants to load a snippet or asset
@@ -305,14 +307,10 @@ fn include(
 
     // Either load it as an asset or a snippet
     let output = if resembles {
-        log::debug!(
-            "Loading shader function module '{target}'"
-        );
+        log::debug!("Loading shader function module '{target}'");
         load_function_module(&target, assets)
     } else {
-        log::debug!(
-            "Loading shader source snippet '{target}'"
-        );
+        log::debug!("Loading shader source snippet '{target}'");
         load_snippet(&target, snippets)
     };
 

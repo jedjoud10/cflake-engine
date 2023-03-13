@@ -1,5 +1,5 @@
 use crate::{
-    Buffer, StagingPool, StagingView, StagingViewWrite, GpuPod,
+    Buffer, GpuPod, StagingPool, StagingView, StagingViewWrite,
 };
 use parking_lot::MappedMutexGuard;
 use std::marker::PhantomData;
@@ -55,9 +55,7 @@ pub enum BufferViewMut<'a, T: GpuPod, const TYPE: u32> {
     },
 }
 
-impl<'a, T: GpuPod, const TYPE: u32>
-    BufferViewMut<'a, T, TYPE>
-{
+impl<'a, T: GpuPod, const TYPE: u32> BufferViewMut<'a, T, TYPE> {
     // Get an immutable slice that we can read from
     pub fn as_slice(&self) -> &[T] {
         match self {

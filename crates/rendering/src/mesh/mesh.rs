@@ -265,12 +265,9 @@ impl Asset for Mesh {
         });
 
         // Remap the attributes into a slices and options
-        let mut normals =
-            normals.as_deref_mut();
-        let mut tangents =
-            tangents.as_deref_mut();
-        let mut tex_coords =
-            tex_coords.as_deref_mut();
+        let mut normals = normals.as_deref_mut();
+        let mut tangents = tangents.as_deref_mut();
+        let mut tex_coords = tex_coords.as_deref_mut();
 
         // Apply the mesh settings to the attributes
         let mut positions = Some(positions.as_mut_slice());

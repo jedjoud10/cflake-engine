@@ -1,15 +1,9 @@
-use crate::{
-    DynPipeline, Material, MaterialId, Pipeline,
-};
+use crate::{DynPipeline, Material, MaterialId, Pipeline};
 use ahash::AHashMap;
 use assets::Assets;
 
-use graphics::{
-    Graphics, PipelineInitializationError,
-};
-use std::{
-    any::TypeId, marker::PhantomData, rc::Rc,
-};
+use graphics::{Graphics, PipelineInitializationError};
+use std::{any::TypeId, marker::PhantomData, rc::Rc};
 
 // A pipeline manager will store and manager multiple material pipelines and their IDs
 pub struct Pipelines {

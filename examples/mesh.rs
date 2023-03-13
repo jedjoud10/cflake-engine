@@ -85,40 +85,36 @@ fn init(world: &mut World) {
         .unwrap();
     let cube = meshes.insert(cube);
 
-    // Load a plane mesh 
+    // Load a plane mesh
     let plane = assets
-        .load::<Mesh>((
-            "engine/meshes/plane.obj",
-            graphics.clone()
-        )).unwrap();
+        .load::<Mesh>(("engine/meshes/plane.obj", graphics.clone()))
+        .unwrap();
     let plane = meshes.insert(plane);
 
-    // Load a sphere mesh 
+    // Load a sphere mesh
     let sphere = assets
         .load::<Mesh>((
             "engine/meshes/icosphere.obj",
-            graphics.clone()
-        )).unwrap();
+            graphics.clone(),
+        ))
+        .unwrap();
     let sphere = meshes.insert(sphere);
 
     // Create a simple floor and add the entity
-    let surface =
-        Surface::new(plane, material.clone(), id.clone());
+    let surface = Surface::new(plane, material.clone(), id.clone());
     let renderer = Renderer::default();
     let scale = Scale::uniform(25.0);
-    let position = Position::at_y(-1.0 );
+    let position = Position::at_y(-1.0);
     scene.insert((position, surface, renderer, scale));
 
-    // Create a simple cube and add the entity 
-    let surface =
-        Surface::new(cube, material.clone(), id.clone());
+    // Create a simple cube and add the entity
+    let surface = Surface::new(cube, material.clone(), id.clone());
     let renderer = Renderer::default();
     let position = Position::at_y(0.25);
     scene.insert((surface, renderer, position));
 
-    // Create a simple sphere and add the entity 
-    let surface =
-        Surface::new(sphere, material, id);
+    // Create a simple sphere and add the entity
+    let surface = Surface::new(sphere, material, id);
     let renderer = Renderer::default();
     let position = Position::at_y(1.5);
     scene.insert((surface, renderer, position));
@@ -137,14 +133,13 @@ fn init(world: &mut World) {
     let mesh = meshes.insert(mesh);
 
     // Create the new sky entity components
-    let surface =
-        Surface::new(mesh, material, id);
+    let surface = Surface::new(mesh, material, id);
     let renderer = Renderer::default();
     scene.insert((surface, renderer));
 
     // Create a movable camera
     let camera = Camera::new(120.0, 0.01, 5000.0, 16.0 / 9.0);
-    
+
     scene.insert((
         Position::default(),
         Rotation::default(),
@@ -171,8 +166,8 @@ fn update(world: &mut World) {
     let input = world.get::<Input>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
 
-    let camera =
-        scene.find_mut::<(&mut Camera, &mut Position, &mut Rotation)>();
+    let camera = scene
+        .find_mut::<(&mut Camera, &mut Position, &mut Rotation)>();
     if let Some((camera, position, rotation)) = camera {
         // Forward and right vectors relative to the camera
         let forward = rotation.forward();
@@ -212,8 +207,7 @@ fn update(world: &mut World) {
         // Calculate a new rotation and apply it
         let pos_x = input.get_axis("x rotation");
         let pos_y = input.get_axis("y rotation");
-        **rotation =
-            vek::Quaternion::rotation_y(-pos_x * 0.0007)
-                * vek::Quaternion::rotation_x(-pos_y * 0.0007);
+        **rotation = vek::Quaternion::rotation_y(-pos_x * 0.0007)
+            * vek::Quaternion::rotation_x(-pos_y * 0.0007);
     }
 }

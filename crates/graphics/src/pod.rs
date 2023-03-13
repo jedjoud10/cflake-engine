@@ -1,11 +1,7 @@
 // Plain old data type that can be sent to the gpu
 // This is a bit of a hack tbh since bool doesn't implement
 pub unsafe trait GpuPod:
-    bytemuck::Pod
-    + bytemuck::Zeroable
-    + Sync
-    + Send
-    + 'static
+    bytemuck::Pod + bytemuck::Zeroable + Sync + Send + 'static
 {
     // Convert the data type to raw bytes
     fn into_bytes(&self) -> &[u8] {
@@ -13,7 +9,10 @@ pub unsafe trait GpuPod:
 
         // This is safe since the type implements bytemuck::Pod, and we are only casting one element
         unsafe {
-            core::slice::from_raw_parts(ptr as *const u8, Self::size())
+            core::slice::from_raw_parts(
+                ptr as *const u8,
+                Self::size(),
+            )
         }
     }
 
@@ -28,7 +27,7 @@ pub unsafe trait GpuPod:
     fn slice_into_bytes(slice: &[Self]) -> &[u8] {
         bytemuck::cast_slice(slice)
     }
-    
+
     // Convert a slice of bytes into GpuPods
     fn bytes_into_slice(bytes: &[u8]) -> &[Self] {
         bytemuck::cast_slice(bytes)
@@ -68,7 +67,7 @@ unsafe impl<
 // Gpu pod info simply contains the size and alignment of a GPU pod type
 pub struct GpuPodInfo {
     size: usize,
-    alignment: usize
+    alignment: usize,
 }
 
 impl GpuPodInfo {

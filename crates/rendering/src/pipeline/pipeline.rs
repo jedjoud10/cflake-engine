@@ -1,11 +1,10 @@
 use crate::{
-    ActiveSceneRenderPass, DefaultMaterialResources, Material, Mesh, SceneColor,
-    SceneDepth, ActiveShadowGraphicsPipeline,
+    ActiveSceneRenderPass, ActiveShadowGraphicsPipeline,
+    DefaultMaterialResources, Material, Mesh, SceneColor, SceneDepth,
 };
 use assets::Assets;
 use graphics::{
-    CompareFunction,
-    DepthConfig, Graphics, GraphicsPipeline,
+    CompareFunction, DepthConfig, Graphics, GraphicsPipeline,
     PipelineInitializationError, Shader,
 };
 use std::marker::PhantomData;
@@ -113,14 +112,9 @@ impl<M: Material> DynPipeline for Pipeline<M> {
         default: &'r DefaultMaterialResources,
         active: &mut ActiveShadowGraphicsPipeline<'_, 'r, '_>,
     ) {
-        super::render_shadows::<M>(
-            world,
-            meshes,
-            default,
-            active,
-        );
+        super::render_shadows::<M>(world, meshes, default, active);
     }
-    
+
     fn render<'r>(
         &'r self,
         world: &'r World,

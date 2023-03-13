@@ -9,7 +9,7 @@ pub enum ModuleKind {
 }
 
 // Describes the types of shader modules that are
-// used by push constants and bind resources 
+// used by push constants and bind resources
 #[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
 pub enum ModuleVisibility {
     Vertex,
@@ -93,7 +93,10 @@ macro_rules! impl_asset_for_module {
 macro_rules! impl_module_trait {
     ($t: ty, $kind: expr) => {
         impl ShaderModule for $t {
-            fn new(name: impl ToString, source: impl ToString) -> Self {
+            fn new(
+                name: impl ToString,
+                source: impl ToString,
+            ) -> Self {
                 Self {
                     name: name.to_string(),
                     source: source.to_string(),

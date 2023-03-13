@@ -1,7 +1,7 @@
 use crate::{
-    AnyElement, ColorTexel, Depth, DepthElement, ElementType,
-    GpuPod, Normalized, Stencil, TexelChannels,
-    VectorChannels, BGRA, R, RG, RGBA, SBGRA, SRGBA,
+    AnyElement, ColorTexel, Depth, DepthElement, ElementType, GpuPod,
+    Normalized, Stencil, TexelChannels, VectorChannels, BGRA, R, RG,
+    RGBA, SBGRA, SRGBA,
 };
 use half::f16;
 use std::{any::Any, mem::size_of, ops::Add};

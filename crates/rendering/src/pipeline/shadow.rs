@@ -1,19 +1,20 @@
 use crate::{
-    attributes::{Position},
-    DefaultMaterialResources, EnabledMeshAttributes, Material, Mesh, Renderer, Surface, ActiveShadowGraphicsPipeline,
+    attributes::Position, ActiveShadowGraphicsPipeline,
+    DefaultMaterialResources, EnabledMeshAttributes, Material, Mesh,
+    Renderer, Surface,
 };
 use ecs::Scene;
-use graphics::{
-    GpuPod, ModuleVisibility,
-};
-use utils::{Storage};
+use graphics::{GpuPod, ModuleVisibility};
+use utils::Storage;
 use world::World;
 
 // Returns true if the entity should cast shadows, false otherwise
 fn filter(mesh: &Mesh, renderer: &Renderer) -> bool {
     let enabled = renderer.visible;
-    let attribute =
-        mesh.vertices().enabled().contains(EnabledMeshAttributes::POSITIONS);
+    let attribute = mesh
+        .vertices()
+        .enabled()
+        .contains(EnabledMeshAttributes::POSITIONS);
     let validity = mesh.vertices().len().is_some();
     enabled && validity && attribute
 }
@@ -54,7 +55,8 @@ pub(super) fn render_shadows<'r, M: Material>(
         });
 
         // Set the position buffer
-        let positions = mesh.vertices().attribute::<Position>().unwrap();
+        let positions =
+            mesh.vertices().attribute::<Position>().unwrap();
         active.set_vertex_buffer::<<Position as crate::MeshAttribute>::V>(0, positions, ..).unwrap();
 
         // Set the index buffer

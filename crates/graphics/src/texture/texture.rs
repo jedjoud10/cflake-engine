@@ -11,12 +11,11 @@ use wgpu::{
 };
 
 use crate::{
-    Extent, GpuPod, Graphics, MipLevelMut, MipLevelRef,
-    Origin, Region, RenderTarget, Sampler, SamplerSettings,
-    SamplerWrap, Texel, TextureAsTargetError,
-    TextureInitializationError, TextureMipLevelError, TextureMipMaps,
-    TextureMode, TextureResizeError, TextureSamplerError,
-    TextureUsage,
+    Extent, GpuPod, Graphics, MipLevelMut, MipLevelRef, Origin,
+    Region, RenderTarget, Sampler, SamplerSettings, SamplerWrap,
+    Texel, TextureAsTargetError, TextureInitializationError,
+    TextureMipLevelError, TextureMipMaps, TextureMode,
+    TextureResizeError, TextureSamplerError, TextureUsage,
 };
 
 // Possibly predefined texel data

@@ -1,6 +1,6 @@
 use crate::{Asset, AssetInput, AssetLoadError, AsyncAsset};
 use ahash::AHashMap;
-use parking_lot::{RwLock, Mutex};
+use parking_lot::{Mutex, RwLock};
 
 use utils::ThreadPool;
 
@@ -443,7 +443,8 @@ impl Assets {
         handle: &AsyncHandle<A>,
     ) -> bool {
         self.refresh();
-        self.loaded.get_mut()
+        self.loaded
+            .get_mut()
             .get(handle.index)
             .map(|x| x.is_some())
             .unwrap_or_default()

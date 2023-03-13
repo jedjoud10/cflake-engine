@@ -1,7 +1,6 @@
 use crate::{
-    AnyElement, Depth, DepthElement, ElementType, GpuPod,
-    Normalized, Stencil, TexelChannels, VectorChannels, X, XY, XYZ,
-    XYZW,
+    AnyElement, Depth, DepthElement, ElementType, GpuPod, Normalized,
+    Stencil, TexelChannels, VectorChannels, X, XY, XYZ, XYZW,
 };
 use half::f16;
 use std::mem::size_of;
