@@ -20,6 +20,8 @@ use std::{
 };
 use thiserror::Error;
 
+use super::create_pipeline_layout;
+
 // Type alias for snippets and resources
 pub(super) type Snippets = AHashMap<String, String>;
 pub(super) type TextureFormats = AHashMap<String, TexelInfo>;
@@ -95,22 +97,25 @@ impl<'a> Compiler<'a> {
             name: name.into(),
             _phantom: PhantomData,
             graphics: graphics.clone(),
+            naga: Arc::new(naga),
         })
     }
 
     // Convert the given shader modules
     pub(crate) fn create_pipeline_layout(
         &self,
-        graphics: &Graphics
+        graphics: &Graphics,
+        names: &[&str],
+        modules: &[&naga::Module],
     ) -> (Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>) {
-        super::create_pipeline_layout(
+        create_pipeline_layout(
             graphics,
-            &[],
+            names,
+            modules,
             &self.texture_formats,
             &self.texture_dimensions,
             &self.uniform_buffer_pod_types,
             &self.push_constant_ranges,
-            &self.resource_locations,
         )
     }
 }
@@ -121,8 +126,6 @@ impl<'a> Compiler<'a> {
     pub fn use_uniform_buffer<T: GpuPod>(
         &mut self,
         name: impl ToString,
-        set: u64,
-        binding: u64,
     ) {
         self.uniform_buffer_pod_types
             .insert(name.to_string(), T::info());
@@ -132,8 +135,7 @@ impl<'a> Compiler<'a> {
     pub fn use_texture<T: Texture>(
         &mut self,
         name: impl ToString,
-        set: u64,
-        binding: u64,) {
+    ) {
         let name = name.to_string();
         self.texture_formats.insert(name, <T::T as Texel>::info());
     }
@@ -142,8 +144,6 @@ impl<'a> Compiler<'a> {
     pub fn use_sampler<T: Texture>(
         &mut self,
         name: impl ToString,
-        set: u64,
-        binding: u64,
     ) {
         let name = name.to_string();
         self.texture_formats.insert(name, <T::T as Texel>::info());
@@ -258,11 +258,14 @@ fn compile(
     )
     .unwrap();
 
+    // TODO: Figure out if we should keep naga here or simply not use it
+    // Sole reason we have it rn is so we can get the binding index and set index automatically 
+
     // Compile the Wgpu shader
     let wgpu = graphics.device().create_shader_module(
         wgpu::ShaderModuleDescriptor {
             label: None,
-            source: todo!(),
+            source: wgpu::ShaderSource::Naga(Cow::Owned(module.clone())),
         },
     );
 
@@ -342,6 +345,9 @@ fn include(
 pub struct Compiled<M: ShaderModule> {
     // Wgpu related data
     raw: Arc<wgpu::ShaderModule>,
+    
+    // FIXME: Possibly remove this shit?
+    naga: Arc<naga::Module>,
 
     // Helpers
     name: Arc<str>,
@@ -358,6 +364,7 @@ impl<M: ShaderModule> Clone for Compiled<M> {
             name: self.name.clone(),
             _phantom: self._phantom.clone(),
             graphics: self.graphics.clone(),
+            naga: self.naga.clone(),
         }
     }
 }
@@ -367,6 +374,12 @@ impl<M: ShaderModule> Compiled<M> {
     pub fn module(&self) -> &wgpu::ShaderModule {
         &self.raw
     }
+
+    // Get the underlying raw Naga module
+    // FIXME: Possible remove this shit?
+    pub fn naga(&self) -> &naga::Module {
+        &self.naga
+    } 
 
     // Get the shader module name for this module
     pub fn name(&self) -> &str {

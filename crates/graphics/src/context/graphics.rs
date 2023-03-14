@@ -1,6 +1,5 @@
 use ahash::AHashMap;
 use dashmap::DashMap;
-use naga::valid::Validator;
 use parking_lot::Mutex;
 use std::{hash::BuildHasherDefault, sync::Arc};
 use thread_local::ThreadLocal;

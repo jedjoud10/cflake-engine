@@ -5,7 +5,7 @@ use crate::{
     TexelChannels, VertexModule, ModuleVisibility, visibility_to_wgpu_stage,
 };
 use ahash::{AHashMap, AHashSet};
-use naga::{AddressSpace, ResourceBinding, TypeInner};
+use naga::{AddressSpace, TypeInner};
 use wgpu::TextureFormatFeatureFlags;
 
 // This container stores all data related to reflected shaders
@@ -116,22 +116,101 @@ fn map_binding_type(
 pub(super) fn create_pipeline_layout(
     graphics: &Graphics,
     names: &[&str],
+    modules: &[&naga::Module],
     texture_formats: &super::TextureFormats,
     texture_dimensions: &super::TextureDimensions,
     uniform_buffer_pod_types: &super::UniformBufferPodTypes,
     push_constant_ranges: &super::PushConstantRanges,
-    resource_locations: &super::ResourceLocations,
-) -> (Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>) {
+) -> (Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>) {    
+    // Create the bind group layouts that we will fill
+    let mut bind_group_layouts: [Option<BindGroupLayout>; 4] = [
+        None, None, None, None
+    ];
+
+    let definitions = InternalDefinitions {
+        texture_formats,
+        texture_dimensions,
+        uniform_buffer_pod_types,
+        push_constant_ranges
+    };
+
+    // Iterate through the sets and create the bind groups for each of the resources
+    for set in 0..4 {
+        for module in modules {
+            let types = &module.types;
+            let vars = &module.global_variables;
+
+            // Iterate over the global variables and get their binding entry
+            let iter = vars.iter()
+                .filter(|(_, value)| {
+                    value.binding.is_some() && value.name.is_some()
+                })
+                .map(|(_, x)| x)
+                .filter(|value| {
+                    matches!(value.space, AddressSpace::Uniform) |
+                    matches!(value.space, AddressSpace::Storage { .. }) |
+                    matches!(value.space, AddressSpace::Handle)
+                })
+                .filter(|value| {
+                    types.get_handle(value.ty).is_ok()
+                });
+
+            for value in iter {
+                let name = &value.name.as_ref().unwrap();
+                let binding = &value.binding.as_ref().unwrap();
+                let set = binding.group;
+                let binding = binding.binding;
+                let type_ = types.get_handle(value.ty).unwrap();
+                let inner = &type_.inner;
+
+                // Get the binding type for this global variable
+                let binding_type = match inner {
+                    // Uniform Buffers
+                    TypeInner::Struct {
+                        span: size,
+                        ..
+                    } => {
+                        // TODO: VALIDATE BUFFER (make sure it's same size and alignment)
+                        Some(reflect_buffer(&name, graphics, &definitions))
+                    }
+                
+                    // Uniform Textures
+                    TypeInner::Image {
+                        dim,
+                        class,
+                        arrayed,
+                    } => {
+                        // TODO: VALIDATE TEXTURE (make sure it's same dimension, type, and texel type)
+                        Some(reflect_texture(&name, class, dim, graphics, &definitions, *arrayed))
+                    },
+                
+                    // Uniform Sampler
+                    TypeInner::Sampler { comparison } => {
+                        // TODO: VALIDATE SAMPLEr (make sure it's same texel type, type)
+                        Some(reflect_sampler(&name, graphics, &definitions, *comparison))
+                    }
+
+                    _ => None
+                };
+
+
+            }
+        }
+    }
+
+    // Create a reflected shader with the given compiler params
     let shader = ReflectedShader {
         last_valid_bind_group_layout: 0,
         bind_group_layouts: [None, None, None, None],
         push_constant_ranges: push_constant_ranges.clone(),
     };
 
-    fun_name(graphics, shader, names)
+    // Create the pipeline layout and return it
+    internal_create_pipeline_layout(graphics, shader, names)
 }
 
-fn fun_name(
+// Internal function that will take a reflected shader and create a pipeline layout for it
+fn internal_create_pipeline_layout(
     graphics: &Graphics,
     shader: ReflectedShader,
     names: &[&str]
@@ -303,6 +382,7 @@ fn reflect_sampler(
     name: &str,
     graphics: &Graphics,
     definitions: &InternalDefinitions,
+    comparison: bool,
 ) -> BindResourceType {
     BindResourceType::Sampler {
         sampler_binding: wgpu::SamplerBindingType::Filtering,
@@ -316,92 +396,66 @@ fn reflect_sampler(
 
 fn reflect_texture(
     name: &str,
+    class: &naga::ImageClass,
+    dim: &naga::ImageDimension,
     graphics: &Graphics,
     definitions: &InternalDefinitions,
+    arrayed: bool,
 ) -> BindResourceType {
-    todo!()
-    /*
     BindResourceType::Texture {
         sample_type: match class {
-            naga::ImageClass::Sampled { kind, multi } => match kind {
-                naga::ScalarKind::Sint => {
-                    wgpu::TextureSampleType::Sint
-                }
-                naga::ScalarKind::Uint => {
-                    wgpu::TextureSampleType::Uint
-                }
-                naga::ScalarKind::Float => {
-                    let adapter = graphics.adapter();
-                    let info = definitions
-                        .texture_formats
-                        .get(name)
-                        .unwrap();
-                    let format = info.format();
-                    let flags = adapter
-                        .get_texture_format_features(format)
-                        .flags;
-
-                    let depth = matches!(
-                        info.channels(),
-                        TexelChannels::Depth
-                    );
-
-                    if flags.contains(
-                        TextureFormatFeatureFlags::FILTERABLE,
-                    ) && !depth
-                    {
-                        wgpu::TextureSampleType::Float {
-                            filterable: true,
-                        }
-                    } else {
-                        wgpu::TextureSampleType::Float {
-                            filterable: false,
+            naga::ImageClass::Sampled { kind, multi } => {
+                match kind {
+                    naga::ScalarKind::Sint => {
+                        wgpu::TextureSampleType::Sint
+                    }
+                    naga::ScalarKind::Uint => {
+                        wgpu::TextureSampleType::Uint
+                    }
+                    naga::ScalarKind::Float => {
+                        let adapter = graphics.adapter();
+                        let info = definitions.texture_formats.get(name).unwrap();
+                        let format = info.format();
+                        let flags = adapter.get_texture_format_features(format).flags;
+                        
+                        let depth =  matches!(info.channels(), TexelChannels::Depth);    
+            
+                        if flags.contains(TextureFormatFeatureFlags::FILTERABLE) && !depth {
+                            wgpu::TextureSampleType::Float { filterable: true }
+                        } else {
+                            wgpu::TextureSampleType::Float { filterable: false }
                         }
                     }
+                    _ => panic!(),
                 }
-                _ => panic!(),
-            },
+            }
             naga::ImageClass::Depth { multi } => todo!(),
             naga::ImageClass::Storage { format, access } => todo!(),
         },
 
         view_dimension: match dim {
-            naga::ImageDimension::D1 => {
-                wgpu::TextureViewDimension::D1
-            }
-            naga::ImageDimension::D2 => {
-                wgpu::TextureViewDimension::D2
-            }
-            naga::ImageDimension::D3 => {
-                wgpu::TextureViewDimension::D3
-            }
-            naga::ImageDimension::Cube => {
-                wgpu::TextureViewDimension::Cube
-            }
+            naga::ImageDimension::D1 => wgpu::TextureViewDimension::D1,
+            naga::ImageDimension::D2 => wgpu::TextureViewDimension::D2,
+            naga::ImageDimension::D3 => wgpu::TextureViewDimension::D3,
+            naga::ImageDimension::Cube => wgpu::TextureViewDimension::Cube,
         },
         format: {
-            let format =
-                definitions.texture_formats.get(name).unwrap();
+            let format = definitions.texture_formats.get(name).unwrap();
             format.format()
         },
         sampler_binding: {
             let adapter = graphics.adapter();
             let info = definitions.texture_formats.get(name).unwrap();
             let format = info.format();
-            let flags =
-                adapter.get_texture_format_features(format).flags;
+            let flags = adapter.get_texture_format_features(format).flags;
+            
+            let depth =  matches!(info.channels(), TexelChannels::Depth);    
 
-            let depth =
-                matches!(info.channels(), TexelChannels::Depth);
-
-            if flags.contains(TextureFormatFeatureFlags::FILTERABLE)
-                && !depth
-            {
+            if flags.contains(TextureFormatFeatureFlags::FILTERABLE) && !depth {
                 wgpu::SamplerBindingType::Filtering
             } else {
                 wgpu::SamplerBindingType::NonFiltering
             }
         },
     }
-    */
 }

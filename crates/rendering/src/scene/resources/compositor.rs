@@ -43,10 +43,10 @@ impl Compositor {
 
         // Create the bind layout for the compositor shader
         let mut compiler = Compiler::new(assets);
-        compiler.use_texture::<Texture2D<SceneColor>>("color_map", 0, 0);
-        compiler.use_texture::<Texture2D<SceneDepth>>("depth_map", 0, 0);
-        compiler.use_uniform_buffer::<WindowUniform>("window", 0, 0);
-        compiler.use_uniform_buffer::<CameraUniform>("camera", 0, 0);
+        compiler.use_texture::<Texture2D<SceneColor>>("color_map");
+        compiler.use_texture::<Texture2D<SceneDepth>>("depth_map");
+        compiler.use_uniform_buffer::<WindowUniform>("window");
+        compiler.use_uniform_buffer::<CameraUniform>("camera");
 
         // Combine the modules to the shader
         let shader =

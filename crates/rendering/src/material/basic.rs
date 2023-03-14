@@ -60,18 +60,15 @@ impl Material for Basic {
         let mut compiler = Compiler::new(assets);
 
         // Set the UBO types that we will use
-        compiler.use_uniform_buffer::<CameraUniform>("camera", 0, 0);
-        compiler.use_uniform_buffer::<SceneUniform>("scene", 0, 1);
-        compiler.use_uniform_buffer::<ShadowUniform>("shadow", 0, 4);
+        compiler.use_uniform_buffer::<CameraUniform>("camera");
+        compiler.use_uniform_buffer::<SceneUniform>("scene");
+        compiler.use_uniform_buffer::<ShadowUniform>("shadow");
 
         // Define the types for the user textures
-        compiler.use_texture::<AlbedoMap>("gradient_map", 0, 5);
-        compiler.use_sampler::<AlbedoMap>("gradient_map_sampler", 0, 6);
-        compiler.use_texture::<ShadowMap>("shadow_map", 0, 7);
-        compiler.use_texture::<AlbedoMap>("albedo_map", 1, 0);
-        compiler.use_sampler::<AlbedoMap>("albedo_map_sampler", 1, 1);
-        compiler.use_texture::<NormalMap>("normal_map", 1, 2);
-        compiler.use_texture::<NormalMap>("normal_map_sampler", 1, 3);
+        compiler.use_texture::<AlbedoMap>("gradient_map");
+        compiler.use_texture::<ShadowMap>("shadow_map");
+        compiler.use_texture::<AlbedoMap>("albedo_map");
+        compiler.use_texture::<NormalMap>("normal_map");
 
         // Define the push ranges used by push constants
         let size = <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size();

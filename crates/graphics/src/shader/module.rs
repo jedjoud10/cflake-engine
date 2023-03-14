@@ -77,17 +77,6 @@ pub(crate) fn kind_to_visibility(kind: &ModuleKind) -> ModuleVisibility {
     }
 }
 
-// Convert a module kind to Naga shader stage
-pub(crate) fn kind_to_naga_stage(
-    kind: &ModuleKind,
-) -> naga::ShaderStage {
-    match *kind {
-        ModuleKind::Vertex => naga::ShaderStage::Vertex,
-        ModuleKind::Fragment => naga::ShaderStage::Fragment,
-        ModuleKind::Compute => naga::ShaderStage::Compute,
-    }
-}
-
 // Convert a module kind to WGPU shader stage bitfield
 pub(crate) fn kind_to_wgpu_stage(
     kind: &ModuleKind,

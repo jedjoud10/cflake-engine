@@ -1,5 +1,4 @@
 use assets::AssetLoadError;
-use naga::{valid::ValidationError, WithSpan};
 use thiserror::Error;
 
 #[derive(Error, Debug)]

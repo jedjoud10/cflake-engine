@@ -29,8 +29,10 @@ impl Shader {
     ) -> Result<Self, ShaderCompilationError> {
         let vertex = compiler.compile(vertex, graphics)?;
         let fragment = compiler.compile(fragment, graphics)?;
+        let names = [vertex.name(), fragment.name()];
+        let modules = [vertex.naga(), fragment.naga()];
         let (reflected, layout) =
-            compiler.create_pipeline_layout(graphics);
+            compiler.create_pipeline_layout(graphics, &names, &modules);
 
         Ok(Self {
             vertex,
