@@ -8,7 +8,7 @@ use crate::{
     GraphicsPipeline, ModuleKind, PushConstantBitset, PushConstants,
     RenderCommand, SetIndexBufferError, SetPushConstantsError,
     SetVertexBufferError, TriangleBuffer, UniformBuffer, Vertex,
-    VertexBuffer,
+    VertexBuffer, PushConstantVisibilityBitset, ModuleVisibility,
 };
 use std::{
     collections::hash_map::Entry,
@@ -164,13 +164,18 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         // Iterate over all the push constant ranges and create commands
         let mut new_internal_offset: usize = 0;
         for range in push_constants.ranges {
-            // Return a warning if the user triest to set push constants that are not defined
+            // Get the bitset for the bytes written by this range
             let bits = enable_in_range::<u128>(
                 range.start as usize,
                 range.end as usize,
             );
-            if bits & !defined.set != 0 {
-                log::warn!("Trying to set push constants that are not defined, ignoring");
+            
+            // Return a warning if the user triest to set push constants that are not defined
+            if bits & !defined.as_ref().unwrap().set != 0 {
+                let start = range.start;
+                let end = range.end;
+                let visibility = range.visibility;
+                log::warn!("Trying to set push constants ({start}..{end}) with visibility {visibility:?} that is not defined in shader layout, cancelling command");
                 continue;
             }
 
@@ -184,6 +189,14 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
                 local_offset: range.start as u32,
             });
             new_internal_offset += size as usize;
+
+            // Keep track of the written bytes internally
+            self.push_constant_bitset.set |= bits;
+
+            // Create a new PushConstantBitset and add it
+            let visibility_bitset = 
+                PushConstantVisibilityBitset::new(range.visibility, bits);
+            self.push_constant_bitset.visibility.insert(visibility_bitset);
         }
         self.push_constant_global_offset += new_internal_offset;
         Ok(())
@@ -290,6 +303,18 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
             .push(RenderCommand::SetBindGroup(binding, bind_group));
     }
 
+    // Executed before any draw call to make sure that we have
+    // all the necessities (bind groups, push constants, buffers) to be able to draw
+    pub fn validate(&self) {
+        let defined = self.pipeline.shader().reflected().push_constant_bitset.as_ref();
+
+        if let Some(defined) = defined {
+            if self.push_constant_bitset != *defined {
+                panic!();
+            }
+        }
+    }
+
     // Draw a number of primitives using the currently bound vertex buffers
     // TODO: VALIDATION: Make sure all bind groups, push constants, and buffers, have been set
     pub fn draw(
@@ -297,6 +322,8 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         vertices: Range<u32>,
         instances: Range<u32>,
     ) {
+        self.validate();
+
         self.commands.push(RenderCommand::Draw {
             vertices,
             instances,
@@ -310,6 +337,8 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         indices: Range<u32>,
         instances: Range<u32>,
     ) {
+        self.validate();
+
         self.commands
             .push(RenderCommand::DrawIndexed { indices, instances });
     }

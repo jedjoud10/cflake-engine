@@ -145,7 +145,7 @@ impl Assets {
         } else if user.is_some() {
             !bytes.read().contains_key(path)
         } else {
-            false
+            !bytes.read().contains_key(path)
         }
     }
 

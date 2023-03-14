@@ -119,9 +119,9 @@ pub(crate) fn update(world: &mut World) {
             x.1.entities().len() * (x.1.mask().count_ones() as usize)
         });
         ui.label(format!("Components: {}", iter.sum::<usize>()));
-
         ui.label(format!("Registered Components: {}", ecs::count()));
-
         ui.label(format!("Archetypes: {}", scene.archetypes().len()));
+        let ratio = scene.entities().len() as f32 / scene.archetypes().len() as f32;
+        ui.label(format!("E/A Ratio: {:.1}", ratio))
     });
 }

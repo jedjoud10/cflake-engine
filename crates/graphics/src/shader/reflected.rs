@@ -17,7 +17,7 @@ pub struct ReflectedShader {
     pub last_valid_bind_group_layout: usize,
     pub bind_group_layouts: [Option<BindGroupLayout>; 4],
     pub push_constant_ranges: Vec<PushConstantRange>,
-    pub push_constant_bitset: PushConstantBitset,
+    pub push_constant_bitset: Option<PushConstantBitset>,
 }
 
 // A bind group contains one or more bind entries
@@ -55,6 +55,35 @@ pub enum PushConstantVisibilityBitset {
     Compute,
 }
 
+impl PushConstantVisibilityBitset {
+    // Create a new PushConstantVisibilityBitset from a visibility and some bits
+    pub fn new(visibility: ModuleVisibility, bits: PushConstantEnabledBitset) -> Self {
+        match visibility {
+            ModuleVisibility::Vertex => Self::VertexFragment { vertex: bits, fragment: 0 },
+            ModuleVisibility::Fragment => Self::VertexFragment { vertex: 0, fragment: bits },
+            ModuleVisibility::VertexFragment => Self::VertexFragment { vertex: bits, fragment: bits },
+            ModuleVisibility::Compute => Self::Compute,
+        }
+    }
+
+    // Insert (combine) a PushConstantVisibilityBitset into self
+    pub fn insert(&mut self, other: Self) {
+        match (self, other) {
+            // If both are VertexFragment, we can add them up
+            (Self::VertexFragment { vertex: vertex_bitset_a, fragment: fragment_bitset_a }, 
+                Self::VertexFragment { vertex: vertex_bitset_b, fragment: fragment_bitset_b }) => 
+            {
+                *vertex_bitset_a |= vertex_bitset_b;
+                *fragment_bitset_a |= fragment_bitset_b;
+            },
+
+            // If both are Compute, we can add them up (don't do anything)
+            (Self::Compute, Self::Compute) => {},
+            _ => panic!()
+        }       
+    }
+}
+
 // Bitset that contains the bytes that were set using the push constants
 pub type PushConstantEnabledBitset = u128;
 
@@ -63,6 +92,22 @@ pub type PushConstantEnabledBitset = u128;
 pub struct PushConstantBitset {
     pub set: PushConstantEnabledBitset,
     pub visibility: PushConstantVisibilityBitset,
+}
+
+impl PushConstantBitset {
+    // Create a new PushConstantBitset from a visibility and some bits
+    pub fn new(visibility: ModuleVisibility, bits: PushConstantEnabledBitset) -> Self {
+        Self {
+            set: bits,
+            visibility: PushConstantVisibilityBitset::new(visibility, bits),
+        }
+    }
+
+    // Insert (combine) a PushConstantBitset into self
+    pub fn insert(&mut self, other: Self) {
+        self.set |= other.set;
+        self.visibility.insert(other.visibility);
+    }
 }
 
 // The type of BindingEntry. This is fetched from the given
@@ -301,25 +346,10 @@ pub(super) fn create_pipeline_layout(
         })
         .collect::<ArrayVec<Option<BindGroupLayout>, 4>>();
 
-    log::warn!("{:?}", visibility);
-    log::warn!("{:#?}", bind_group_layouts);
-
     // Calculate the last valid bind group layout before we see the first None (starting from the back)
     let last_valid_bind_group_layout = bind_group_layouts
         .iter()
         .rposition(|x| x.is_some())
-        .unwrap_or_default();
-
-    // Create the push constant enabled bitset
-    let push_constant_enabled_bitset = push_constant_ranges
-        .iter()
-        .map(|range| {
-            enable_in_range::<u128>(
-                range.start as usize,
-                range.end as usize,
-            )
-        })
-        .reduce(|a, b| a | b)
         .unwrap_or_default();
 
     // Create the push constant visibility bitset
@@ -327,13 +357,7 @@ pub(super) fn create_pipeline_layout(
     //    0: vertex
     //    1: fragment
     // In case of Compute: Always compute
-    let push_constant_visibility_bitset = if matches!(
-        visibility[0],
-        ModuleVisibility::Compute
-    ) {
-        PushConstantVisibilityBitset::Compute
-    } else {
-        push_constant_ranges
+    let push_constant_bitset = push_constant_ranges
             .iter()
             .map(|range| {
                 let enabled = enable_in_range::<u128>(
@@ -342,49 +366,20 @@ pub(super) fn create_pipeline_layout(
                 );
                 let visibility = range.visibility;
 
-                // Convert the visibility to the PushConstantVisibilityBitset
-                match visibility {
-                    ModuleVisibility::Vertex => PushConstantVisibilityBitset::VertexFragment {
-                        vertex: enabled,
-                        fragment: enabled
-                    },
-                    ModuleVisibility::Fragment => PushConstantVisibilityBitset::VertexFragment {
-                        vertex: 0,
-                        fragment: enabled
-                    },
-                    ModuleVisibility::VertexFragment => PushConstantVisibilityBitset::VertexFragment {
-                        vertex: 0,
-                        fragment: enabled
-                    },
-                    ModuleVisibility::Compute => panic!(),
-                }                
+                // Convert the visibility to the PushConstantBitset
+                PushConstantBitset::new(visibility, enabled)         
             })
-            .reduce(|a, b| {
-                // Decompose the VertexFragment enum variant to it's raw bitsets and combine them
-                let PushConstantVisibilityBitset::VertexFragment { vertex: vertex_bitset_a, fragment: fragment_bitset_a } = a else { panic!() };
-                let PushConstantVisibilityBitset::VertexFragment { vertex: vertex_bitset_b, fragment: fragment_bitset_b } = b else { panic!() };
-
-                // Combine both of them using OR statements
-                PushConstantVisibilityBitset::VertexFragment {
-                    vertex: vertex_bitset_a | vertex_bitset_b,
-                    fragment: fragment_bitset_a | fragment_bitset_b
-                }
-            })
-            .unwrap_or(PushConstantVisibilityBitset::VertexFragment {
-                vertex: 0,
-                fragment: 0
-            })
-    };
+            .reduce(|mut a, b| {
+                a.insert(b);
+                a
+            });
 
     // Create a reflected shader with the given compiler params
     let shader = ReflectedShader {
         last_valid_bind_group_layout,
         bind_group_layouts: bind_group_layouts.into_inner().unwrap(),
         push_constant_ranges: push_constant_ranges.clone(),
-        push_constant_bitset: PushConstantBitset {
-            set: push_constant_enabled_bitset,
-            visibility: push_constant_visibility_bitset,
-        },
+        push_constant_bitset,
     };
 
     // Create the pipeline layout and return it

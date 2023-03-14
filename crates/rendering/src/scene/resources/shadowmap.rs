@@ -6,7 +6,7 @@ use graphics::{
     GraphicsPipeline, LoadOp, Operation, PrimitiveConfig, RenderPass,
     SamplerSettings, Shader, StoreOp, Texture, Texture2D,
     TextureMipMaps, TextureMode, TextureUsage, UniformBuffer,
-    VertexModule, WindingOrder,
+    VertexModule, WindingOrder, ModuleVisibility, Face,
 };
 use vek::FrustumPlanes;
 
@@ -75,6 +75,7 @@ impl ShadowMapping {
         // Create the bind layout for the shadow map shader
         let mut compiler = Compiler::new(assets);
         compiler.use_uniform_buffer::<ShadowUniform>("shadow");
+        compiler.use_push_constant_range(0..64, ModuleVisibility::Vertex);
 
         // Combine the modules to the shader
         let shader =
@@ -109,7 +110,7 @@ impl ShadowMapping {
             ),
             PrimitiveConfig::Triangles {
                 winding_order: WindingOrder::Ccw,
-                cull_face: None,
+                cull_face: Some(Face::Front),
                 wireframe: false,
             },
             &shader,

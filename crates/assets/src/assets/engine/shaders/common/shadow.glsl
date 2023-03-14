@@ -34,7 +34,7 @@ float calculate_shadowed(
     uvs.xy += 0.5;
     uvs.y = 1-uvs.y;
     float current = uvs.z;
-    float bias = 0.005;
+    float bias = -0.0001;
 
     float shadowed = 0.0;
     for (int x = -0; x <= 0; x++) {

@@ -4,7 +4,6 @@ use cflake_engine::prelude::*;
 fn main() {
     App::default()
         .set_app_name("cflake engine GUI example")
-        .set_user_assets_path(user_assets_path!("/examples/assets/"))
         .insert_update(update)
         .execute();
 }

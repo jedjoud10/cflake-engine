@@ -390,6 +390,8 @@ impl App {
         // Utils systems
         self.regsys(utils::threadpool);
         self.regsys(utils::time);
+        self.regsys(utils::io);
+        self.regsys(utils::file_logger);
 
         // Audio system
         self.regsys(audio::system);
