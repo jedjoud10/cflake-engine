@@ -40,7 +40,7 @@ pub struct SceneUniform {
 
     // Ambient color of the environment
     pub ambient_color_strength: f32,
-    
+
     // Procedural sun parameters
     pub sun_circle_strength: f32,
     pub sun_circle_size: f32,

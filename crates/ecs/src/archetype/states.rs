@@ -62,7 +62,8 @@ impl StateColumn {
                 usize::saturating_sub(new_len, start).min(BITS);
 
             // Bit magic that will enable all the bits between local_start and local_end;
-            let range: usize = enable_in_range(local_start, local_end);
+            let range: usize =
+                enable_in_range(local_start, local_end);
             chunk.added |= range & added;
             chunk.modified |= range & modified;
         }

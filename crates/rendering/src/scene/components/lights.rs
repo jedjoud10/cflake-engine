@@ -9,7 +9,7 @@ pub struct DirectionalLight {
 impl Default for DirectionalLight {
     fn default() -> Self {
         Self {
-            color: vek::Rgb::broadcast(1.0)
+            color: vek::Rgb::broadcast(1.0),
         }
     }
 }

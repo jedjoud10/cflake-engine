@@ -19,7 +19,9 @@ pub enum SetBindResourceError<'a> {
 
 #[derive(Error, Debug)]
 pub enum SetVertexBufferError {
-    #[error("The given range is invalid for buffer with {0} elements")]
+    #[error(
+        "The given range is invalid for buffer with {0} elements"
+    )]
     InvalidRange(usize),
 
     #[error("There isn't a vertex buffer layout for slot {0}")]
@@ -31,7 +33,9 @@ pub enum SetVertexBufferError {
 
 #[derive(Error, Debug)]
 pub enum SetIndexBufferError {
-    #[error("The given range is invalid for buffer with {0} elements")]
+    #[error(
+        "The given range is invalid for buffer with {0} elements"
+    )]
     InvalidRange(usize),
 }
 
@@ -41,7 +45,7 @@ pub enum SetPushConstantsError {
     MissingRange(usize, usize, ModuleVisibility),
 
     #[error("The given range range ({0}..{1}) is greater than minimum required size (128)")]
-    GreaterThanMinLimit(usize, usize)
+    GreaterThanMinLimit(usize, usize),
 }
 
 #[derive(Error, Debug)]

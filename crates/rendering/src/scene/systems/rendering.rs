@@ -1,10 +1,11 @@
 use crate::{
-    AlbedoMap, Basic, DefaultMaterialResources, ForwardRenderer,
-    Mesh, NormalMap, Pipelines, ShadowMapping, Sky, WindowUniform, DirectionalLight, SceneUniform, Renderer,
+    AlbedoMap, Basic, DefaultMaterialResources, DirectionalLight,
+    ForwardRenderer, Mesh, NormalMap, Pipelines, Renderer,
+    SceneUniform, ShadowMapping, Sky, WindowUniform,
 };
 use assets::Assets;
 
-use ecs::{Scene, Rotation};
+use ecs::{Rotation, Scene};
 use graphics::{Graphics, Texture, Window};
 
 use utils::{Storage, Time};
@@ -115,11 +116,17 @@ fn render(world: &mut World) {
     let light = entity.get::<DirectionalLight>().unwrap();
     let rotation = entity.get::<Rotation>().unwrap();
 
-    renderer.scene_buffer.write(&[SceneUniform {
-        sun_direction: rotation.forward().with_w(0.0),
-        sun_color: vek::Rgba::<f32>::from(light.color),
-        ..Default::default()
-    }], 0).unwrap();
+    renderer
+        .scene_buffer
+        .write(
+            &[SceneUniform {
+                sun_direction: rotation.forward().with_w(0.0),
+                sun_color: vek::Rgba::<f32>::from(light.color),
+                ..Default::default()
+            }],
+            0,
+        )
+        .unwrap();
 
     // Create the shared material resources
     let default = DefaultMaterialResources {
@@ -144,7 +151,8 @@ fn render(world: &mut World) {
         let depth = shadowmap.depth_tex.as_render_target().unwrap();
         let mut render_pass =
             shadowmap.render_pass.begin((), depth).unwrap();
-        let mut active = render_pass.bind_pipeline(&shadowmap.pipeline);
+        let mut active =
+            render_pass.bind_pipeline(&shadowmap.pipeline);
         active.set_bind_group(0, |group| {
             group
                 .set_uniform_buffer("shadow", &shadowmap.buffer)
@@ -160,7 +168,7 @@ fn render(world: &mut World) {
         drop(shadowmap);
     }
     drop(_shadowmap);
-    
+
     // Begin the scene color render pass
     let color = renderer.color_texture.as_render_target().unwrap();
     let depth = renderer.depth_texture.as_render_target().unwrap();

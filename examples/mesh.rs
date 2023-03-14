@@ -47,8 +47,13 @@ fn init(world: &mut World) {
         ("user/ignored/normal.jpg", graphics.clone()),
         &mut threadpool,
     );
+    let normal = assets.async_load_from_iter::<NormalMap>(
+        std::iter::repeat(("user/ignored/normal.jpg", graphics.clone())).take(100),
+        &mut threadpool,
+    );
 
     // Fetch the loaded textures
+    /*
     let diffuse = assets.wait(albedo).unwrap();
     let normal = assets.wait(normal).unwrap();
 
@@ -59,6 +64,7 @@ fn init(world: &mut World) {
         world.get_mut::<Storage<NormalMap>>().unwrap();
     let diffuse = diffuse_maps.insert(diffuse);
     let normal = normal_maps.insert(normal);
+    */
 
     // Get the material id (also registers the material pipeline)
     let id =
@@ -66,18 +72,15 @@ fn init(world: &mut World) {
 
     // Create a new material instance
     let material = basics.insert(Basic {
-        albedo_map: Some(diffuse),
-        normal_map: Some(normal),
+        albedo_map: None,
+        normal_map: None,
         bumpiness: 1.0,
         tint: vek::Rgb::one(),
     });
 
     // Load a cube mesh
     let cube = assets
-        .load::<Mesh>((
-            "engine/meshes/cube.obj",
-            graphics.clone(),
-        ))
+        .load::<Mesh>(("engine/meshes/cube.obj", graphics.clone()))
         .unwrap();
     let cube = meshes.insert(cube);
 
@@ -143,11 +146,9 @@ fn init(world: &mut World) {
 
     // Create a directional light
     let light = DirectionalLight::default();
-    let rotation = vek::Quaternion::rotation_x(-25.0f32.to_radians()).rotated_y(45f32.to_radians());
-    scene.insert((
-        light,
-        Rotation::from(rotation)
-    ));
+    let rotation = vek::Quaternion::rotation_x(-25.0f32.to_radians())
+        .rotated_y(45f32.to_radians());
+    scene.insert((light, Rotation::from(rotation)));
 
     // Bind inputs to be used by the camera tick event
     let mut input = world.get_mut::<Input>().unwrap();

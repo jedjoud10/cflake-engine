@@ -5,8 +5,10 @@ use wgpu::CommandEncoder;
 use crate::{
     BindGroup, Buffer, BufferInfo, BufferMode, BufferUsage,
     ColorLayout, DepthStencilLayout, GpuPod, Graphics,
-    GraphicsPipeline, ModuleKind, PushConstants, RenderCommand,
-    TriangleBuffer, UniformBuffer, Vertex, VertexBuffer, SetVertexBufferError, SetIndexBufferError, SetPushConstantsError,
+    GraphicsPipeline, ModuleKind, PushConstantBitset, PushConstants,
+    RenderCommand, SetIndexBufferError, SetPushConstantsError,
+    SetVertexBufferError, TriangleBuffer, UniformBuffer, Vertex,
+    VertexBuffer,
 };
 use std::{
     collections::hash_map::Entry,
@@ -27,6 +29,7 @@ pub struct ActiveGraphicsPipeline<
     pub(crate) commands: &'a mut Vec<RenderCommand<'r, C, DS>>,
     pub(crate) graphics: &'r Graphics,
     pub(crate) push_constant: &'a mut Vec<u8>,
+    pub(crate) push_constant_bitset: PushConstantBitset,
     pub(crate) push_constant_global_offset: usize,
     pub(crate) _phantom: PhantomData<&'t C>,
     pub(crate) _phantom2: PhantomData<&'t DS>,
@@ -65,15 +68,20 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         bounds: impl RangeBounds<usize>,
     ) -> Result<(), SetVertexBufferError> {
         // Check if we can even set the vertex buffer
-        let info = self.pipeline.vertex_config().inputs.get(slot as usize)
+        let info = self
+            .pipeline
+            .vertex_config()
+            .inputs
+            .get(slot as usize)
             .ok_or(SetVertexBufferError::InvalidSlot(slot))?;
         if info.vertex_info() != V::info() {
-            return Err(SetVertexBufferError::InvalidVertexInfo(slot))
+            return Err(SetVertexBufferError::InvalidVertexInfo(slot));
         }
 
         // Validate the bounds and convert them to byte bounds
-        let (start, end) = convert(bounds, buffer)
-            .ok_or(SetVertexBufferError::InvalidRange(buffer.len()))?;
+        let (start, end) = convert(bounds, buffer).ok_or(
+            SetVertexBufferError::InvalidRange(buffer.len()),
+        )?;
 
         // Store the command within the internal queue
         self.commands.push(RenderCommand::SetVertexBuffer {
@@ -151,40 +159,33 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
 
         // Create a bitset that contains the bytes that we MUST write to
         let shader = self.pipeline.shader();
-        let defined = shader.reflected().push_constant_bitset;
-        let mut current = 0;
-        let mut ranges = 0;
+        let defined = &shader.reflected().push_constant_bitset;
 
         // Iterate over all the push constant ranges and create commands
         let mut new_internal_offset: usize = 0;
         for range in push_constants.ranges {
             // Return a warning if the user triest to set push constants that are not defined
-            let bits = enable_in_range::<u128>(range.start as usize, range.end as usize);
-            if bits & !defined != 0 {
+            let bits = enable_in_range::<u128>(
+                range.start as usize,
+                range.end as usize,
+            );
+            if bits & !defined.set != 0 {
                 log::warn!("Trying to set push constants that are not defined, ignoring");
                 continue;
-            } 
+            }
 
             // Create a command to set the push constant
             self.commands.push(RenderCommand::SetPushConstants {
-                stages: crate::visibility_to_wgpu_stage(&range.visibility),
+                stages: crate::visibility_to_wgpu_stage(
+                    &range.visibility,
+                ),
                 size: (range.end - range.start) as usize,
                 global_offset: self.push_constant_global_offset,
                 local_offset: range.start as u32,
             });
             new_internal_offset += size as usize;
-            ranges += 1;
-
-            // Set the written bytes to the bitset
-            current |= bits;
         }
         self.push_constant_global_offset += new_internal_offset;
-
-        // If there are any missing fields, return an error
-        if !current & defined == 0 {
-            panic!()
-        }
-
         Ok(())
     }
 
@@ -224,7 +225,6 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
             resources: Vec::with_capacity(count),
             ids: Vec::with_capacity(count),
             slots: Vec::with_capacity(count),
-            fill_ubos: Vec::with_capacity(count),
         };
 
         // Let the user modify the bind group
@@ -234,10 +234,9 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         // Extract the resources from bind group (dissociate the lifetime)
         let BindGroup::<'_> {
             reflected,
-            fill_ubos,
-            mut resources,
-            mut slots,
-            mut ids,
+            resources,
+            slots,
+            ids,
             ..
         } = bind_group;
 
@@ -292,6 +291,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
     }
 
     // Draw a number of primitives using the currently bound vertex buffers
+    // TODO: VALIDATION: Make sure all bind groups, push constants, and buffers, have been set
     pub fn draw(
         &mut self,
         vertices: Range<u32>,
@@ -304,6 +304,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
     }
 
     // Draw a number of primitives using the currently bound vertex buffers and index buffer
+    // TODO: VALIDATION: Make sure all bind groups, push constants, and buffers, have been set
     pub fn draw_indexed(
         &mut self,
         indices: Range<u32>,

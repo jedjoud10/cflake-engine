@@ -6,8 +6,9 @@ use thread_local::ThreadLocal;
 use utils::Storage;
 pub use wgpu::CommandEncoder;
 use wgpu::{
-    util::StagingBelt, Adapter, Device, Maintain, Queue, Sampler,
-    Surface, SurfaceCapabilities, SurfaceConfiguration, TextureView, Instance,
+    util::StagingBelt, Adapter, Device, Instance, Maintain, Queue,
+    Sampler, Surface, SurfaceCapabilities, SurfaceConfiguration,
+    TextureView,
 };
 
 use crate::{

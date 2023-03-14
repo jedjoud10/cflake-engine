@@ -1,6 +1,6 @@
 use crate::{
-    BindResourceLayout, GpuPod, ReflectedShader, Sampler, Shader,
-    Texel, Texture, UniformBuffer, SetBindResourceError,
+    BindResourceLayout, GpuPod, ReflectedShader, Sampler,
+    SetBindResourceError, Shader, Texel, Texture, UniformBuffer,
 };
 use ahash::AHashMap;
 use std::{marker::PhantomData, sync::Arc};
@@ -11,7 +11,6 @@ pub struct BindGroup<'a> {
     pub(crate) index: u32,
     pub(crate) reflected: Arc<ReflectedShader>,
     pub(crate) resources: Vec<wgpu::BindingResource<'a>>,
-    pub(crate) fill_ubos: Vec<(Vec<u8>, BindResourceLayout)>,
     pub(crate) slots: Vec<u32>,
     pub(crate) ids: Vec<wgpu::Id>,
     pub(crate) _phantom: PhantomData<&'a ()>,
@@ -24,7 +23,8 @@ impl<'a> BindGroup<'a> {
         index: u32,
         reflected: &'c ReflectedShader,
         name: &'s str,
-    ) -> Result<&'c crate::BindResourceLayout, SetBindResourceError<'s>> {
+    ) -> Result<&'c crate::BindResourceLayout, SetBindResourceError<'s>>
+    {
         let groups = &reflected.bind_group_layouts;
         let (_, group) = groups
             .iter()
@@ -115,11 +115,13 @@ impl<'a> BindGroup<'a> {
         match entry.resource_type {
             crate::BindResourceType::Buffer { size, .. } => {
                 if (size as usize) != buffer.stride() {
-                    return Err(SetBindResourceError::BufferDifferentType {
-                        name,
-                        defined: size as usize,
-                        inputted: buffer.stride(),
-                    });
+                    return Err(
+                        SetBindResourceError::BufferDifferentType {
+                            name,
+                            defined: size as usize,
+                            inputted: buffer.stride(),
+                        },
+                    );
                 }
             }
             _ => panic!(),

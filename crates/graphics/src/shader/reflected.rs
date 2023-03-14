@@ -1,8 +1,9 @@
 use std::{hash::Hash, sync::Arc};
 
 use crate::{
-    Compiled, FragmentModule, Graphics, ModuleKind, ShaderModule,
-    TexelChannels, VertexModule, ModuleVisibility, visibility_to_wgpu_stage,
+    visibility_to_wgpu_stage, Compiled, FragmentModule, Graphics,
+    ModuleKind, ModuleVisibility, ShaderModule, TexelChannels,
+    VertexModule,
 };
 use ahash::{AHashMap, AHashSet};
 use arrayvec::ArrayVec;
@@ -16,7 +17,7 @@ pub struct ReflectedShader {
     pub last_valid_bind_group_layout: usize,
     pub bind_group_layouts: [Option<BindGroupLayout>; 4],
     pub push_constant_ranges: Vec<PushConstantRange>,
-    pub push_constant_bitset: u128,
+    pub push_constant_bitset: PushConstantBitset,
 }
 
 // A bind group contains one or more bind entries
@@ -42,6 +43,26 @@ pub struct PushConstantRange {
     pub visibility: ModuleVisibility,
     pub start: u32,
     pub end: u32,
+}
+
+// Visiblity for the set push constants bitset
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum PushConstantVisibilityBitset {
+    VertexFragment { vertex: u128, fragment: u128 },
+
+    // Nothing to store since we know the visibility
+    // is always Compute
+    Compute,
+}
+
+// Bitset that contains the bytes that were set using the push constants
+pub type PushConstantEnabledBitset = u128;
+
+// Push constant bitset that tells us the bytes that have been set
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct PushConstantBitset {
+    pub set: PushConstantEnabledBitset,
+    pub visibility: PushConstantVisibilityBitset,
 }
 
 // The type of BindingEntry. This is fetched from the given
@@ -81,9 +102,7 @@ struct InternalDefinitions<'a> {
 }
 
 // Convert a reflected bind entry layout to a wgpu binding type
-fn map_binding_type(
-    value: &BindResourceLayout,
-) -> wgpu::BindingType {
+fn map_binding_type(value: &BindResourceLayout) -> wgpu::BindingType {
     match value.resource_type {
         BindResourceType::Buffer {
             size,
@@ -125,7 +144,7 @@ pub(super) fn create_pipeline_layout(
     texture_dimensions: &super::TextureDimensions,
     uniform_buffer_pod_types: &super::UniformBufferPodTypes,
     push_constant_ranges: &super::PushConstantRanges,
-) -> (Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>) {    
+) -> (Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>) {
     // Stores multiple entries per set (max number of sets = 4)
     let mut groups: [Option<AHashMap<u32, BindResourceLayout>>; 4] =
         [None, None, None, None];
@@ -138,7 +157,7 @@ pub(super) fn create_pipeline_layout(
         texture_formats,
         texture_dimensions,
         uniform_buffer_pod_types,
-        push_constant_ranges
+        push_constant_ranges,
     };
 
     // Iterate through the sets and create the bind groups for each of the resources
@@ -149,19 +168,21 @@ pub(super) fn create_pipeline_layout(
             let vars = &module.global_variables;
 
             // Iterate over the global variables and get their binding entry
-            let iter = vars.iter()
+            let iter = vars
+                .iter()
                 .filter(|(_, value)| {
                     value.binding.is_some() && value.name.is_some()
                 })
                 .map(|(_, x)| x)
                 .filter(|value| {
-                    matches!(value.space, AddressSpace::Uniform) |
-                    matches!(value.space, AddressSpace::Storage { .. }) |
-                    matches!(value.space, AddressSpace::Handle)
+                    matches!(value.space, AddressSpace::Uniform)
+                        | matches!(
+                            value.space,
+                            AddressSpace::Storage { .. }
+                        )
+                        | matches!(value.space, AddressSpace::Handle)
                 })
-                .filter(|value| {
-                    types.get_handle(value.ty).is_ok()
-                });
+                .filter(|value| types.get_handle(value.ty).is_ok());
 
             for value in iter {
                 let name = &value.name.as_ref().unwrap();
@@ -172,22 +193,22 @@ pub(super) fn create_pipeline_layout(
                 let inner = &type_.inner;
 
                 // Get the merged group layout and merged group entry layouts
-                let merged_group_layout =
-                    &mut groups[set as usize];
+                let merged_group_layout = &mut groups[set as usize];
                 let merged_group_entry_layouts = merged_group_layout
                     .get_or_insert_with(|| Default::default());
 
                 // Get the binding type for this global variable
                 let binding_type = match inner {
                     // Uniform Buffers
-                    TypeInner::Struct {
-                        span: size,
-                        ..
-                    } => {
+                    TypeInner::Struct { span: size, .. } => {
                         // TODO: VALIDATE BUFFER (make sure it's same size and alignment)
-                        Some(reflect_buffer(&name, graphics, &definitions))
+                        Some(reflect_buffer(
+                            &name,
+                            graphics,
+                            &definitions,
+                        ))
                     }
-                
+
                     // Uniform Textures
                     TypeInner::Image {
                         dim,
@@ -195,16 +216,28 @@ pub(super) fn create_pipeline_layout(
                         arrayed,
                     } => {
                         // TODO: VALIDATE TEXTURE (make sure it's same dimension, type, and texel type)
-                        Some(reflect_texture(&name, class, dim, graphics, &definitions, *arrayed))
-                    },
-                
+                        Some(reflect_texture(
+                            &name,
+                            class,
+                            dim,
+                            graphics,
+                            &definitions,
+                            *arrayed,
+                        ))
+                    }
+
                     // Uniform Sampler
                     TypeInner::Sampler { comparison } => {
                         // TODO: VALIDATE SAMPLEr (make sure it's same texel type, type)
-                        Some(reflect_sampler(&name, graphics, &definitions, *comparison))
+                        Some(reflect_sampler(
+                            &name,
+                            graphics,
+                            &definitions,
+                            *comparison,
+                        ))
                     }
 
-                    _ => None
+                    _ => None,
                 };
 
                 // If none, ignore
@@ -222,9 +255,7 @@ pub(super) fn create_pipeline_layout(
                 };
 
                 // Merge each entry for this group individually
-                match merged_group_entry_layouts
-                    .entry(binding)
-                {
+                match merged_group_entry_layouts.entry(binding) {
                     // Merge an already existing layout with the new one
                     std::collections::hash_map::Entry::Occupied(
                         mut occupied,
@@ -233,17 +264,17 @@ pub(super) fn create_pipeline_layout(
                             occupied.get_mut();
                         let old = bind_entry_layout;
                         let merged = merged_bind_entry_layout;
-                    
+
                         // Make sure the currently merged layout and the new layout
                         // have well... the same layout
                         if old.resource_type != merged.resource_type {
                             panic!("Not the same layout");
                         }
-                    
+
                         // Merge the visibility to allow more modules to access this entry
                         merged.visibility.insert(old.visibility);
                     }
-                
+
                     // If the spot is vacant, add the bind entry layout for the first time
                     std::collections::hash_map::Entry::Vacant(
                         vacant,
@@ -260,15 +291,15 @@ pub(super) fn create_pipeline_layout(
         .into_iter()
         .map(|hashmap| {
             hashmap.map(|hashmap| {
-                let bind_entry_layouts = hashmap.into_iter().map(|(_, entry)| {
-                    entry
-                }).collect::<Vec<_>>();
-    
-                BindGroupLayout {
-                    bind_entry_layouts,
-                }
-            })            
-        }).collect::<ArrayVec<Option<BindGroupLayout>, 4>>();
+                let bind_entry_layouts = hashmap
+                    .into_iter()
+                    .map(|(_, entry)| entry)
+                    .collect::<Vec<_>>();
+
+                BindGroupLayout { bind_entry_layouts }
+            })
+        })
+        .collect::<ArrayVec<Option<BindGroupLayout>, 4>>();
 
     log::warn!("{:?}", visibility);
     log::warn!("{:#?}", bind_group_layouts);
@@ -279,24 +310,81 @@ pub(super) fn create_pipeline_layout(
         .rposition(|x| x.is_some())
         .unwrap_or_default();
 
-    // Create the push constant byte bitset
-    let push_constant_bitset = push_constant_ranges
+    // Create the push constant enabled bitset
+    let push_constant_enabled_bitset = push_constant_ranges
         .iter()
         .map(|range| {
             enable_in_range::<u128>(
                 range.start as usize,
-                range.end as usize
+                range.end as usize,
             )
         })
         .reduce(|a, b| a | b)
         .unwrap_or_default();
+
+    // Create the push constant visibility bitset
+    // In case of Vertex & Fragment
+    //    0: vertex
+    //    1: fragment
+    // In case of Compute: Always compute
+    let push_constant_visibility_bitset = if matches!(
+        visibility[0],
+        ModuleVisibility::Compute
+    ) {
+        PushConstantVisibilityBitset::Compute
+    } else {
+        push_constant_ranges
+            .iter()
+            .map(|range| {
+                let enabled = enable_in_range::<u128>(
+                    range.start as usize,
+                    range.end as usize
+                );
+                let visibility = range.visibility;
+
+                // Convert the visibility to the PushConstantVisibilityBitset
+                match visibility {
+                    ModuleVisibility::Vertex => PushConstantVisibilityBitset::VertexFragment {
+                        vertex: enabled,
+                        fragment: enabled
+                    },
+                    ModuleVisibility::Fragment => PushConstantVisibilityBitset::VertexFragment {
+                        vertex: 0,
+                        fragment: enabled
+                    },
+                    ModuleVisibility::VertexFragment => PushConstantVisibilityBitset::VertexFragment {
+                        vertex: 0,
+                        fragment: enabled
+                    },
+                    ModuleVisibility::Compute => panic!(),
+                }                
+            })
+            .reduce(|a, b| {
+                // Decompose the VertexFragment enum variant to it's raw bitsets and combine them
+                let PushConstantVisibilityBitset::VertexFragment { vertex: vertex_bitset_a, fragment: fragment_bitset_a } = a else { panic!() };
+                let PushConstantVisibilityBitset::VertexFragment { vertex: vertex_bitset_b, fragment: fragment_bitset_b } = b else { panic!() };
+
+                // Combine both of them using OR statements
+                PushConstantVisibilityBitset::VertexFragment {
+                    vertex: vertex_bitset_a | vertex_bitset_b,
+                    fragment: fragment_bitset_a | fragment_bitset_b
+                }
+            })
+            .unwrap_or(PushConstantVisibilityBitset::VertexFragment {
+                vertex: 0,
+                fragment: 0
+            })
+    };
 
     // Create a reflected shader with the given compiler params
     let shader = ReflectedShader {
         last_valid_bind_group_layout,
         bind_group_layouts: bind_group_layouts.into_inner().unwrap(),
         push_constant_ranges: push_constant_ranges.clone(),
-        push_constant_bitset,
+        push_constant_bitset: PushConstantBitset {
+            set: push_constant_enabled_bitset,
+            visibility: push_constant_visibility_bitset,
+        },
     };
 
     // Create the pipeline layout and return it
@@ -307,7 +395,7 @@ pub(super) fn create_pipeline_layout(
 fn internal_create_pipeline_layout(
     graphics: &Graphics,
     shader: ReflectedShader,
-    names: &[&str]
+    names: &[&str],
 ) -> (Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>) {
     // Before creating the layout, check if we already have a corresponding one in cache
     if let Some(cached) =
@@ -364,7 +452,8 @@ fn internal_create_pipeline_layout(
         };
 
         // Add the bind group to the cache if it's missing
-        if !cached.bind_group_layouts.contains_key(bind_group_layout) {
+        if !cached.bind_group_layouts.contains_key(bind_group_layout)
+        {
             log::warn!("Did not find cached bind group layout for set = {bind_group_index}, in {names:?}");
 
             // TODO: Validate the bindings and groups
@@ -374,7 +463,9 @@ fn internal_create_pipeline_layout(
                 .iter()
                 .map(|value| wgpu::BindGroupLayoutEntry {
                     binding: value.binding,
-                    visibility: visibility_to_wgpu_stage(&value.visibility),
+                    visibility: visibility_to_wgpu_stage(
+                        &value.visibility,
+                    ),
                     ty: map_binding_type(value),
                     count: None,
                 })
@@ -461,7 +552,8 @@ fn reflect_buffer(
     definitions: &InternalDefinitions,
 ) -> BindResourceType {
     // TODO: Implement storage buffers
-    let pod_info = definitions.uniform_buffer_pod_types.get(name).unwrap();
+    let pod_info =
+        definitions.uniform_buffer_pod_types.get(name).unwrap();
     let size = pod_info.size();
 
     BindResourceType::Buffer {
@@ -498,54 +590,80 @@ fn reflect_texture(
 ) -> BindResourceType {
     BindResourceType::Texture {
         sample_type: match class {
-            naga::ImageClass::Sampled { kind, multi } => {
-                match kind {
-                    naga::ScalarKind::Sint => {
-                        wgpu::TextureSampleType::Sint
-                    }
-                    naga::ScalarKind::Uint => {
-                        wgpu::TextureSampleType::Uint
-                    }
-                    naga::ScalarKind::Float => {
-                        let adapter = graphics.adapter();
-                        let info = definitions.texture_formats.get(name).unwrap();
-                        let format = info.format();
-                        let flags = adapter.get_texture_format_features(format).flags;
-                        
-                        let depth =  matches!(info.channels(), TexelChannels::Depth);    
-            
-                        if flags.contains(TextureFormatFeatureFlags::FILTERABLE) && !depth {
-                            wgpu::TextureSampleType::Float { filterable: true }
-                        } else {
-                            wgpu::TextureSampleType::Float { filterable: false }
+            naga::ImageClass::Sampled { kind, multi } => match kind {
+                naga::ScalarKind::Sint => {
+                    wgpu::TextureSampleType::Sint
+                }
+                naga::ScalarKind::Uint => {
+                    wgpu::TextureSampleType::Uint
+                }
+                naga::ScalarKind::Float => {
+                    let adapter = graphics.adapter();
+                    let info = definitions
+                        .texture_formats
+                        .get(name)
+                        .unwrap();
+                    let format = info.format();
+                    let flags = adapter
+                        .get_texture_format_features(format)
+                        .flags;
+
+                    let depth = matches!(
+                        info.channels(),
+                        TexelChannels::Depth
+                    );
+
+                    if flags.contains(
+                        TextureFormatFeatureFlags::FILTERABLE,
+                    ) && !depth
+                    {
+                        wgpu::TextureSampleType::Float {
+                            filterable: true,
+                        }
+                    } else {
+                        wgpu::TextureSampleType::Float {
+                            filterable: false,
                         }
                     }
-                    _ => panic!(),
                 }
-            }
+                _ => panic!(),
+            },
             naga::ImageClass::Depth { multi } => todo!(),
             naga::ImageClass::Storage { format, access } => todo!(),
         },
 
         view_dimension: match dim {
-            naga::ImageDimension::D1 => wgpu::TextureViewDimension::D1,
-            naga::ImageDimension::D2 => wgpu::TextureViewDimension::D2,
-            naga::ImageDimension::D3 => wgpu::TextureViewDimension::D3,
-            naga::ImageDimension::Cube => wgpu::TextureViewDimension::Cube,
+            naga::ImageDimension::D1 => {
+                wgpu::TextureViewDimension::D1
+            }
+            naga::ImageDimension::D2 => {
+                wgpu::TextureViewDimension::D2
+            }
+            naga::ImageDimension::D3 => {
+                wgpu::TextureViewDimension::D3
+            }
+            naga::ImageDimension::Cube => {
+                wgpu::TextureViewDimension::Cube
+            }
         },
         format: {
-            let format = definitions.texture_formats.get(name).unwrap();
+            let format =
+                definitions.texture_formats.get(name).unwrap();
             format.format()
         },
         sampler_binding: {
             let adapter = graphics.adapter();
             let info = definitions.texture_formats.get(name).unwrap();
             let format = info.format();
-            let flags = adapter.get_texture_format_features(format).flags;
-            
-            let depth =  matches!(info.channels(), TexelChannels::Depth);    
+            let flags =
+                adapter.get_texture_format_features(format).flags;
 
-            if flags.contains(TextureFormatFeatureFlags::FILTERABLE) && !depth {
+            let depth =
+                matches!(info.channels(), TexelChannels::Depth);
+
+            if flags.contains(TextureFormatFeatureFlags::FILTERABLE)
+                && !depth
+            {
                 wgpu::SamplerBindingType::Filtering
             } else {
                 wgpu::SamplerBindingType::NonFiltering

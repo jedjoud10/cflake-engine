@@ -392,37 +392,36 @@ impl Assets {
         let mut outer = Vec::<AsyncHandle<A>>::new();
         let reference = &mut outer;
         let mut loaded = self.loaded.lock();
-        threadpool.scope(move |scope| {
-            for input in inputs.into_iter() {
-                // Check the extension on a per file basis
-                let (path, settings, context) = input.split();
-                let path = Path::new(OsStr::new(path));
-                log::debug!("Asynchronously loading asset {path:?} in batch...",);
-                let owned = path.to_owned();
+        
+        for input in inputs.into_iter() {
+            // Check the extension on a per file basis
+            let (path, settings, context) = input.split();
+            let path = Path::new(OsStr::new(path));
+            log::debug!("Asynchronously loading asset {path:?} in batch...",);
+            let owned = path.to_owned();
 
-                // Clone the things that must be sent to the thread
-                let bytes = self.bytes.clone();
-                let sender = self.sender.clone();
-                let user = self.user.clone();
-                let hijack = self.hijack.clone();
+            // Clone the things that must be sent to the thread
+            let bytes = self.bytes.clone();
+            let sender = self.sender.clone();
+            let user = self.user.clone();
+            let hijack = self.hijack.clone();
 
-                // Create the handle's key and insert it
-                let index = loaded.len();
-                reference.push(AsyncHandle::<A> {
-                    _phantom: PhantomData,
-                    index,
-                });
-                loaded.push(None);
+            // Create the handle's key and insert it
+            let index = loaded.len();
+            reference.push(AsyncHandle::<A> {
+                _phantom: PhantomData,
+                index,
+            });
+            loaded.push(None);
 
-                // Start telling worker threads to begin loading the assets
-                scope.execute(move || {
-                    Self::async_load_inner::<A>(
-                        owned, bytes, user, hijack, context,
-                        settings, sender, index,
-                    );
-                });
-            }
-        });
+            // Start telling worker threads to begin loading the assets
+            threadpool.execute(move || {
+                Self::async_load_inner::<A>(
+                    owned, bytes, user, hijack, context,
+                    settings, sender, index,
+                );
+            });
+        }
         outer
     }
 

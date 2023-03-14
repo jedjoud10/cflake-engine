@@ -1,7 +1,6 @@
 use crate::{
     Compiled, Compiler, ComputeModule, FragmentModule, Graphics,
-    ReflectedShader, ShaderCompilationError,
-    VertexModule,
+    ReflectedShader, ShaderCompilationError, VertexModule,
 };
 use std::sync::Arc;
 
@@ -32,8 +31,12 @@ impl Shader {
         let names = [vertex.name(), fragment.name()];
         let modules = [vertex.naga(), fragment.naga()];
         let visibility = [vertex.visibility(), fragment.visibility()];
-        let (reflected, layout) =
-            compiler.create_pipeline_layout(graphics, &names, &modules, &visibility);
+        let (reflected, layout) = compiler.create_pipeline_layout(
+            graphics,
+            &names,
+            &modules,
+            &visibility,
+        );
 
         Ok(Self {
             vertex,

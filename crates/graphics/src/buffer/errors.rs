@@ -78,7 +78,9 @@ pub enum BufferSplatError {
     #[error("The buffer cannot be splatted since it's BufferUsages do not contain the WRITE flag")]
     NonWritable,
 
-    #[error("The given range is invalid for buffer with {0} elements")]
+    #[error(
+        "The given range is invalid for buffer with {0} elements"
+    )]
     InvalidRange(usize),
 }
 
@@ -90,6 +92,8 @@ pub enum BufferNotMappableError {
     #[error("The buffer cannot be mapped (for reading AND writing) since it's BufferUsages do not contain the WRITE and READ flags")]
     AsViewMut,
 
-    #[error("The given range is invalid for buffer with {0} elements")]
+    #[error(
+        "The given range is invalid for buffer with {0} elements"
+    )]
     InvalidRange(usize),
 }

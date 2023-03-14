@@ -117,7 +117,7 @@ impl Scene {
             (mask, vec)
         }
 
-        // TODO: Itertools' group_by only groups consecutive elements, so fix this shit bro 
+        // TODO: Itertools' group_by only groups consecutive elements, so fix this shit bro
 
         // Group the entities based on their archetype
         let binding = iter.into_iter().group_by(|entity| {

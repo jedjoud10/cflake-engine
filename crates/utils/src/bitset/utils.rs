@@ -1,5 +1,5 @@
-use std::mem::size_of;
 use num_traits::PrimInt;
+use std::mem::size_of;
 
 // Update a value in a specific bitmask, though return the unwritten value first
 pub fn toggle_bit<T: PrimInt>(
@@ -29,7 +29,8 @@ pub fn enable_in_range<T: PrimInt>(start: usize, end: usize) -> T {
     } else if start == bits {
         T::zero()
     } else {
-        ((T::one() << (start)) - T::one()) ^ ((T::one() << end) - T::one())
+        ((T::one() << (start)) - T::one())
+            ^ ((T::one() << end) - T::one())
     }
 }
 

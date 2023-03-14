@@ -1,6 +1,6 @@
 use crate::{Camera, CameraUniform, ForwardRenderer};
 
-use ecs::{Scene, Rotation, Position};
+use ecs::{Position, Rotation, Scene};
 use graphics::Window;
 
 use world::{System, World};
@@ -52,12 +52,8 @@ fn update(world: &mut World) {
         renderer.camera_buffer.write(&[data], 0).unwrap();
     } else {
         // Set the main camera if we find one
-        let next = ecs.find::<(
-            &Camera,
-            &Position,
-            &Rotation,
-            &ecs::Entity,
-        )>();
+        let next = ecs
+            .find::<(&Camera, &Position, &Rotation, &ecs::Entity)>();
         if let Some((_, _, _, entity)) = next {
             renderer.main_camera = Some(*entity);
         }

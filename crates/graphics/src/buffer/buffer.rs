@@ -535,9 +535,10 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         }
 
         // Size and offset of the slice
-        let (start, end) = self
-            .convert_bounds_to_indices(bounds)
-            .ok_or(BufferNotMappableError::InvalidRange(self.length))?;
+        let (start, end) =
+            self.convert_bounds_to_indices(bounds).ok_or(
+                BufferNotMappableError::InvalidRange(self.length),
+            )?;
         let size = (end - start) * self.stride();
         let offset = start * self.stride();
 
@@ -548,7 +549,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
                 &self.graphics,
                 &self.buffer,
                 offset as u64,
-                size as u64
+                size as u64,
             )
             .unwrap();
 
@@ -570,13 +571,14 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         }
 
         // Size and offset of the slice
-        let (start, end) = self
-            .convert_bounds_to_indices(bounds)
-            .ok_or(BufferNotMappableError::InvalidRange(self.length))?;
+        let (start, end) =
+            self.convert_bounds_to_indices(bounds).ok_or(
+                BufferNotMappableError::InvalidRange(self.length),
+            )?;
         let size = (end - start) * self.stride();
         let offset = start * self.stride();
 
-        // Check if we can read the buffer 
+        // Check if we can read the buffer
         let read = self.usage.contains(BufferUsage::READ);
 
         if !read {

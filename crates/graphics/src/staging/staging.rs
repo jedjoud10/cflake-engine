@@ -2,7 +2,7 @@ use crate::{GpuPod, Graphics, StagingView, StagingViewWrite};
 use parking_lot::Mutex;
 use std::{
     marker::PhantomData,
-    num::{NonZeroU64, NonZeroU32},
+    num::{NonZeroU32, NonZeroU64},
     ops::DerefMut,
     sync::{atomic::Ordering, Arc},
 };
@@ -148,10 +148,12 @@ impl StagingPool {
         size: u64,
     ) -> Option<StagingViewWrite<'a>> {
         let size = NonZeroU64::new(size);
-        let write = graphics.queue().write_buffer_with(buffer, offset, size.unwrap())?;
-        Some(StagingViewWrite {
-            write,
-        })
+        let write = graphics.queue().write_buffer_with(
+            buffer,
+            offset,
+            size.unwrap(),
+        )?;
+        Some(StagingViewWrite { write })
     }
 
     // Writes to the destination buffer using the source byte buffer
@@ -253,7 +255,7 @@ impl StagingPool {
         origin: wgpu::Origin3d,
         extent: wgpu::Extent3d,
         aspect: wgpu::TextureAspect,
-        offset: u64, 
+        offset: u64,
         bytes_per_row: Option<NonZeroU32>,
         rows_per_image: Option<NonZeroU32>,
         src: &[u8],
@@ -275,7 +277,7 @@ impl StagingPool {
             image_copy_texture,
             src,
             data_layout,
-            extent
+            extent,
         );
     }
 

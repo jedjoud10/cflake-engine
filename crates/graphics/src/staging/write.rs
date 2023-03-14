@@ -1,6 +1,9 @@
 use crate::Graphics;
 use std::marker::PhantomData;
-use wgpu::{Buffer, BufferAddress, BufferViewMut, CommandEncoder, QueueWriteBufferView};
+use wgpu::{
+    Buffer, BufferAddress, BufferViewMut, CommandEncoder,
+    QueueWriteBufferView,
+};
 
 // This is the view returned from the map_buffer_write() method of the staging pool
 pub struct StagingViewWrite<'a> {

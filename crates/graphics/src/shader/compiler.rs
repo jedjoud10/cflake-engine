@@ -1,8 +1,8 @@
 use crate::{
     BindResourceType, Buffer, Dimension, FunctionModule, GpuPod,
     GpuPodInfo, Graphics, ModuleKind, ModuleVisibility,
-    ShaderCompilationError, ShaderModule, Texel,
-    TexelInfo, Texture, VertexModule, PushConstantRange, ReflectedShader,
+    PushConstantRange, ReflectedShader, ShaderCompilationError,
+    ShaderModule, Texel, TexelInfo, Texture, VertexModule,
 };
 use ahash::AHashMap;
 use assets::Assets;
@@ -107,7 +107,7 @@ impl<'a> Compiler<'a> {
         graphics: &Graphics,
         names: &[&str],
         modules: &[&naga::Module],
-        visibility: &[ModuleVisibility]
+        visibility: &[ModuleVisibility],
     ) -> (Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>) {
         create_pipeline_layout(
             graphics,
@@ -134,10 +134,7 @@ impl<'a> Compiler<'a> {
     }
 
     // Define a uniform texture's type and texel
-    pub fn use_texture<T: Texture>(
-        &mut self,
-        name: impl ToString,
-    ) {
+    pub fn use_texture<T: Texture>(&mut self, name: impl ToString) {
         let sampler_name = format!("{}_sampler", name.to_string());
         self.use_sampler::<T>(sampler_name);
         let name = name.to_string();
@@ -145,10 +142,7 @@ impl<'a> Compiler<'a> {
     }
 
     // Define a uniform sampler's type and texel
-    pub fn use_sampler<T: Texture>(
-        &mut self,
-        name: impl ToString,
-    ) {
+    pub fn use_sampler<T: Texture>(&mut self, name: impl ToString) {
         let name = name.to_string();
         self.texture_formats.insert(name, <T::T as Texel>::info());
     }
@@ -166,7 +160,7 @@ impl<'a> Compiler<'a> {
 
         let start = match start {
             Bound::Included(x) => x,
-            _ => panic!()
+            _ => panic!(),
         };
 
         let end = match end {
@@ -263,13 +257,15 @@ fn compile(
     .unwrap();
 
     // TODO: Figure out if we should keep naga here or simply not use it
-    // Sole reason we have it rn is so we can get the binding index and set index automatically 
+    // Sole reason we have it rn is so we can get the binding index and set index automatically
 
     // Compile the Wgpu shader
     let wgpu = graphics.device().create_shader_module(
         wgpu::ShaderModuleDescriptor {
             label: None,
-            source: wgpu::ShaderSource::Naga(Cow::Owned(module.clone())),
+            source: wgpu::ShaderSource::Naga(Cow::Owned(
+                module.clone(),
+            )),
         },
     );
 
@@ -349,7 +345,7 @@ fn include(
 pub struct Compiled<M: ShaderModule> {
     // Wgpu related data
     raw: Arc<wgpu::ShaderModule>,
-    
+
     // FIXME: Possibly remove this shit?
     naga: Arc<naga::Module>,
 
@@ -379,7 +375,7 @@ impl<M: ShaderModule> Compiled<M> {
         &self.raw
     }
 
-    // Get the visibility of this module 
+    // Get the visibility of this module
     pub fn visibility(&self) -> ModuleVisibility {
         M::visibility()
     }
@@ -387,7 +383,7 @@ impl<M: ShaderModule> Compiled<M> {
     // Get the underlying raw Naga module
     pub fn naga(&self) -> &naga::Module {
         &self.naga
-    } 
+    }
 
     // Get the shader module name for this module
     pub fn name(&self) -> &str {

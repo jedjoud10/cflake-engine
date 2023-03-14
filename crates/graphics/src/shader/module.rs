@@ -27,21 +27,29 @@ impl ModuleVisibility {
     // Combine other into self (panics if not possible)
     pub fn insert(&mut self, other: Self) {
         match self {
-            ModuleVisibility::Vertex => if !matches!(other, Self::Fragment) {
-                *self = ModuleVisibility::VertexFragment;
-            },
+            ModuleVisibility::Vertex => {
+                if !matches!(other, Self::Fragment) {
+                    *self = ModuleVisibility::VertexFragment;
+                }
+            }
 
-            ModuleVisibility::Fragment => if !matches!(other, Self::Vertex) {
-                *self = ModuleVisibility::VertexFragment;
-            },
-            
-            ModuleVisibility::VertexFragment => if matches!(other, Self::Compute) {
-                panic!()
-            },
+            ModuleVisibility::Fragment => {
+                if !matches!(other, Self::Vertex) {
+                    *self = ModuleVisibility::VertexFragment;
+                }
+            }
 
-            ModuleVisibility::Compute => if !matches!(other, Self::Compute) {
-                panic!()
-            },
+            ModuleVisibility::VertexFragment => {
+                if matches!(other, Self::Compute) {
+                    panic!()
+                }
+            }
+
+            ModuleVisibility::Compute => {
+                if !matches!(other, Self::Compute) {
+                    panic!()
+                }
+            }
         }
     }
 
@@ -49,9 +57,15 @@ impl ModuleVisibility {
     pub fn contains(&self, other: Self) -> bool {
         match self {
             ModuleVisibility::Vertex => matches!(other, Self::Vertex),
-            ModuleVisibility::Fragment => matches!(other, Self::Fragment),
-            ModuleVisibility::VertexFragment => !matches!(other, Self::Compute),
-            ModuleVisibility::Compute => matches!(other, Self::Compute),
+            ModuleVisibility::Fragment => {
+                matches!(other, Self::Fragment)
+            }
+            ModuleVisibility::VertexFragment => {
+                !matches!(other, Self::Compute)
+            }
+            ModuleVisibility::Compute => {
+                matches!(other, Self::Compute)
+            }
         }
     }
 
@@ -63,17 +77,23 @@ impl ModuleVisibility {
 }
 
 // Convert module visibility to wgpu ShaderStages
-pub(crate) fn visibility_to_wgpu_stage(visibility: &ModuleVisibility) -> wgpu::ShaderStages {
+pub(crate) fn visibility_to_wgpu_stage(
+    visibility: &ModuleVisibility,
+) -> wgpu::ShaderStages {
     match visibility {
         ModuleVisibility::Vertex => wgpu::ShaderStages::VERTEX,
         ModuleVisibility::Fragment => wgpu::ShaderStages::FRAGMENT,
-        ModuleVisibility::VertexFragment => wgpu::ShaderStages::VERTEX_FRAGMENT,
+        ModuleVisibility::VertexFragment => {
+            wgpu::ShaderStages::VERTEX_FRAGMENT
+        }
         ModuleVisibility::Compute => wgpu::ShaderStages::COMPUTE,
     }
 }
 
 // Convert module kind to module visibility
-pub(crate) fn kind_to_visibility(kind: &ModuleKind) -> ModuleVisibility {
+pub(crate) fn kind_to_visibility(
+    kind: &ModuleKind,
+) -> ModuleVisibility {
     match kind {
         ModuleKind::Vertex => ModuleVisibility::Vertex,
         ModuleKind::Fragment => ModuleVisibility::Fragment,

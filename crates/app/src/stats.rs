@@ -44,8 +44,12 @@ pub(crate) fn update(world: &mut World) {
     let device = gpuinfo.device_type;
     let _driver = gpuinfo.driver;
 
+    let mut frame = egui::containers::Frame::window(&gui.style());
+    frame.rounding = egui::epaint::Rounding::none();
+    frame.shadow = egui::epaint::Shadow::NONE;
+
     // Graphics Stats
-    egui::Window::new("Graphics Stats").show(&gui, |ui| {
+    egui::Window::new("Graphics Stats").frame(frame).show(&gui, |ui| {
         ui.label(format!("Acquires: {acquires}"));
         ui.label(format!("Submissions: {submissions}"));
         ui.label(format!("Stalls: {stalls}"));
@@ -71,7 +75,10 @@ pub(crate) fn update(world: &mut World) {
         ui.label(format!("Devices: {}", devices));
         ui.label(format!("Pipeline Layouts: {}", pipeline_layouts));
         ui.label(format!("Shader Modules: {}", shader_modules));
-        ui.label(format!("Bind Group Layouts: {}", bind_group_layouts));
+        ui.label(format!(
+            "Bind Group Layouts: {}",
+            bind_group_layouts
+        ));
         ui.label(format!("Bind Groups: {}", bind_groups));
         ui.label(format!("Command Buffers: {}", command_buffers));
         ui.label(format!("Graphic Pipelines: {}", render_pipelines));
@@ -82,40 +89,39 @@ pub(crate) fn update(world: &mut World) {
     });
 
     // General Performance
-    egui::Window::new("General Performance").show(&gui, |ui| {
+    egui::Window::new("General Performance").frame(frame).show(&gui, |ui| {
         let last = time.delta().as_secs_f32();
         let mut out = 0.0;
         ui.memory_mut(|memory| {
-            let indeed = memory.data.get_temp_mut_or_insert_with(egui::Id::new(0), || last);
+            let indeed = memory.data.get_temp_mut_or_insert_with(
+                egui::Id::new(0),
+                || last,
+            );
             *indeed = *indeed * 0.99 + last * 0.01;
             out = *indeed;
         });
-        
+
         let ms = out * 1000.0;
         ui.label(format!("Delta (ms/f): {:.3}", ms));
-        
+
         let fps = 1.0 / out;
         ui.label(format!("FPS (f/s): {:.0}", fps));
     });
 
     // ECS Stats
-    egui::Window::new("Entity Components").show(&gui, |ui| {
-        ui.label(format!("Entities: {}", scene.entities().len().to_string()));
-        
-        let iter = scene
-            .archetypes()
-            .iter()
-            .map(|x| 
-                x.1.entities().len() * (x.1.mask().count_ones() as usize)
-            );
+    egui::Window::new("Entity Components").frame(frame).show(&gui, |ui| {
+        ui.label(format!(
+            "Entities: {}",
+            scene.entities().len().to_string()
+        ));
+
+        let iter = scene.archetypes().iter().map(|x| {
+            x.1.entities().len() * (x.1.mask().count_ones() as usize)
+        });
         ui.label(format!("Components: {}", iter.sum::<usize>()));
 
         ui.label(format!("Registered Components: {}", ecs::count()));
 
-        ui.label(format!("Archetypes: {}", 
-            scene
-                .archetypes()
-                .len())
-        );
+        ui.label(format!("Archetypes: {}", scene.archetypes().len()));
     });
 }

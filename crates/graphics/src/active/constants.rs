@@ -1,4 +1,4 @@
-use crate::{ModuleVisibility, ReflectedShader, PushConstantRange};
+use crate::{ModuleVisibility, PushConstantRange, ReflectedShader};
 use arrayvec::ArrayVec;
 use itertools::Itertools;
 use std::{marker::PhantomData, ops::RangeBounds, sync::Arc};
@@ -19,7 +19,7 @@ impl PushConstants<'_> {
         bytes: &[u8],
         offset: u32,
         visibility: ModuleVisibility,
-    ){
+    ) {
         self.data.copy_from_slice(bytes);
         self.ranges.push(PushConstantRange {
             visibility,
