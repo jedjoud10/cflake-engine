@@ -31,8 +31,9 @@ impl Shader {
         let fragment = compiler.compile(fragment, graphics)?;
         let names = [vertex.name(), fragment.name()];
         let modules = [vertex.naga(), fragment.naga()];
+        let visibility = [vertex.visibility(), fragment.visibility()];
         let (reflected, layout) =
-            compiler.create_pipeline_layout(graphics, &names, &modules);
+            compiler.create_pipeline_layout(graphics, &names, &modules, &visibility);
 
         Ok(Self {
             vertex,

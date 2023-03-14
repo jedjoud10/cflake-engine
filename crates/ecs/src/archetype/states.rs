@@ -1,3 +1,5 @@
+use utils::{enable_in_range, is_bit_enabled, toggle_bit};
+
 // Number of bits in a usize as an usize
 const BITS: usize = usize::BITS as usize;
 
@@ -21,42 +23,6 @@ pub struct StateFlags {
 // A single column of archetype entity states
 #[derive(Default, Debug)]
 pub struct StateColumn(Vec<StateColumnChunk>, usize);
-
-// Update a value in a specific bitmask, though return the unwritten value first
-fn toggle_bit(
-    bitmask: &mut usize,
-    index: usize,
-    value: bool,
-) -> bool {
-    let copy = (*bitmask >> index) & 1 == 1;
-
-    if value {
-        *bitmask |= 1 << index;
-    } else {
-        *bitmask &= !(1 << index);
-    }
-
-    copy
-}
-
-// Enable all the bits between "start" and "end" in the binary representation of a usize
-// Start is inclusive, end is exclusive
-pub(crate) fn enable_in_range(start: usize, end: usize) -> usize {
-    assert!(end >= start);
-
-    if end == BITS {
-        !((1usize << (start)) - 1usize)
-    } else if start == BITS {
-        0
-    } else {
-        ((1usize << (start)) - 1usize) ^ ((1usize << end) - 1usize)
-    }
-}
-
-// Check if a bit at a specific index is set
-fn is_bit_enabled(bitset: usize, index: usize) -> bool {
-    bitset >> index & 1 == 1
-}
 
 impl StateColumn {
     // Add new n number of entries that all contain the same state flags
@@ -96,7 +62,7 @@ impl StateColumn {
                 usize::saturating_sub(new_len, start).min(BITS);
 
             // Bit magic that will enable all the bits between local_start and local_end;
-            let range = enable_in_range(local_start, local_end);
+            let range: usize = enable_in_range(local_start, local_end);
             chunk.added |= range & added;
             chunk.modified |= range & modified;
         }

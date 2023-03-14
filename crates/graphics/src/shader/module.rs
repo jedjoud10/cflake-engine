@@ -27,9 +27,13 @@ impl ModuleVisibility {
     // Combine other into self (panics if not possible)
     pub fn insert(&mut self, other: Self) {
         match self {
-            ModuleVisibility::Vertex | ModuleVisibility::Fragment => if !matches!(other, Self::Compute) {
+            ModuleVisibility::Vertex => if !matches!(other, Self::Fragment) {
                 *self = ModuleVisibility::VertexFragment;
-            } 
+            },
+
+            ModuleVisibility::Fragment => if !matches!(other, Self::Vertex) {
+                *self = ModuleVisibility::VertexFragment;
+            },
             
             ModuleVisibility::VertexFragment => if matches!(other, Self::Compute) {
                 panic!()

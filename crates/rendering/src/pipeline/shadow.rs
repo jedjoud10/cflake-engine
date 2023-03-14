@@ -52,7 +52,7 @@ pub(super) fn render_shadows<'r, M: Material>(
             let cols = matrix.cols;
             let bytes = GpuPod::into_bytes(&cols);
             constants.push(bytes, 0, ModuleVisibility::Vertex);
-        });
+        }).unwrap();
 
         // Set the position buffer
         let positions =

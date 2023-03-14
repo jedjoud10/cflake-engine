@@ -13,26 +13,18 @@ pub struct PushConstants<'a> {
 
 impl PushConstants<'_> {
     // Set the given push constants of a given range and push them
-    // TODO: Validate this shit
+    // There's no validation here since we do it using bitsets later on
     pub fn push(
         &mut self,
         bytes: &[u8],
         offset: u32,
         visibility: ModuleVisibility,
-    ) {
+    ){
         self.data.copy_from_slice(bytes);
-
-        let visibility = match visibility {
-            ModuleVisibility::Vertex => wgpu::ShaderStages::VERTEX,
-            ModuleVisibility::Fragment => wgpu::ShaderStages::FRAGMENT,
-            ModuleVisibility::VertexFragment => wgpu::ShaderStages::VERTEX_FRAGMENT,
-            ModuleVisibility::Compute => wgpu::ShaderStages::COMPUTE,
-        };
-
         self.ranges.push(PushConstantRange {
-            visibility: todo!(),
-            start: todo!(),
-            end: todo!(),
+            visibility,
+            start: offset,
+            end: offset + bytes.len() as u32,
         });
     }
 }

@@ -71,7 +71,7 @@ impl Material for Basic {
         compiler.use_texture::<NormalMap>("normal_map");
 
         // Define the push ranges used by push constants
-        let size = <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size();
+        let size = <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size() as u32;
         compiler.use_push_constant_range(
             0..size,
             ModuleVisibility::Vertex,

@@ -3090,6 +3090,7 @@ dependencies = [
  "crossbeam-deque",
  "itertools",
  "log",
+ "num-traits",
  "num_cpus",
  "parking_lot",
  "paste",

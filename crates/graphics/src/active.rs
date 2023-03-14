@@ -3,6 +3,8 @@ mod command;
 mod constants;
 mod pipeline;
 mod renderpass;
+mod errors;
+pub use errors::*;
 pub use bindings::*;
 pub use command::*;
 pub use constants::*;

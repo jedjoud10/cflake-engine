@@ -1,11 +1,12 @@
 use ahash::AHashMap;
+use utils::enable_in_range;
 use wgpu::CommandEncoder;
 
 use crate::{
     BindGroup, Buffer, BufferInfo, BufferMode, BufferUsage,
     ColorLayout, DepthStencilLayout, GpuPod, Graphics,
     GraphicsPipeline, ModuleKind, PushConstants, RenderCommand,
-    TriangleBuffer, UniformBuffer, Vertex, VertexBuffer,
+    TriangleBuffer, UniformBuffer, Vertex, VertexBuffer, SetVertexBufferError, SetIndexBufferError, SetPushConstantsError,
 };
 use std::{
     collections::hash_map::Entry,
@@ -62,9 +63,17 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         slot: u32,
         buffer: &'r VertexBuffer<V>,
         bounds: impl RangeBounds<usize>,
-    ) -> Option<()> {
+    ) -> Result<(), SetVertexBufferError> {
+        // Check if we can even set the vertex buffer
+        let info = self.pipeline.vertex_config().inputs.get(slot as usize)
+            .ok_or(SetVertexBufferError::InvalidSlot(slot))?;
+        if info.vertex_info() != V::info() {
+            return Err(SetVertexBufferError::InvalidVertexInfo(slot))
+        }
+
         // Validate the bounds and convert them to byte bounds
-        let (start, end) = convert(bounds, buffer)?;
+        let (start, end) = convert(bounds, buffer)
+            .ok_or(SetVertexBufferError::InvalidRange(buffer.len()))?;
 
         // Store the command within the internal queue
         self.commands.push(RenderCommand::SetVertexBuffer {
@@ -74,7 +83,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
             end,
         });
 
-        Some(())
+        Ok(())
     }
 
     // Sets the active index buffer with a specific range
@@ -82,9 +91,10 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         &mut self,
         buffer: &'r TriangleBuffer<u32>,
         bounds: impl RangeBounds<usize>,
-    ) -> Option<()> {
+    ) -> Result<(), SetIndexBufferError> {
         // Validate the bounds and convert them to byte bounds
-        let (start, end) = convert(bounds, buffer)?;
+        let (start, end) = convert(bounds, buffer)
+            .ok_or(SetIndexBufferError::InvalidRange(buffer.len()))?;
 
         // Store the command wtihin the internal queue
         self.commands.push(RenderCommand::SetIndexBuffer {
@@ -93,19 +103,19 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
             end,
         });
 
-        Some(())
+        Ok(())
     }
 
     // Set push constants before rendering
     pub fn set_push_constants(
         &mut self,
         callback: impl FnOnce(&mut PushConstants),
-    ) {
+    ) -> Result<(), SetPushConstantsError> {
         let shader = self.pipeline.shader();
 
         // Don't set the push constants if we don't have any to set
         if shader.reflected.push_constant_ranges.is_empty() {
-            return;
+            return Ok(());
         }
 
         // Make sure we have enough bytes to store the push constants
@@ -122,10 +132,10 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
             .push_constant_ranges
             .iter()
             .map(|range| range.end - range.start)
-            .sum::<usize>();
+            .sum::<u32>() as usize;
 
         // Get the data that we will use
-        let start = self.push_constant_global_offset;
+        let start = self.push_constant_global_offset as usize;
         let end = size + start;
         let data = &mut self.push_constant[start..end];
 
@@ -139,18 +149,43 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         // Let the user modify the push constant
         callback(&mut push_constants);
 
+        // Create a bitset that contains the bytes that we MUST write to
+        let shader = self.pipeline.shader();
+        let defined = shader.reflected().push_constant_bitset;
+        let mut current = 0;
+        let mut ranges = 0;
+
         // Iterate over all the push constant ranges and create commands
-        let mut new_internal_offset = 0;
+        let mut new_internal_offset: usize = 0;
         for range in push_constants.ranges {
+            // Return a warning if the user triest to set push constants that are not defined
+            let bits = enable_in_range::<u128>(range.start as usize, range.end as usize);
+            if bits & !defined != 0 {
+                log::warn!("Trying to set push constants that are not defined, ignoring");
+                continue;
+            } 
+
+            // Create a command to set the push constant
             self.commands.push(RenderCommand::SetPushConstants {
                 stages: crate::visibility_to_wgpu_stage(&range.visibility),
-                size: range.end - range.start,
+                size: (range.end - range.start) as usize,
                 global_offset: self.push_constant_global_offset,
                 local_offset: range.start as u32,
             });
-            new_internal_offset += size;
+            new_internal_offset += size as usize;
+            ranges += 1;
+
+            // Set the written bytes to the bitset
+            current |= bits;
         }
         self.push_constant_global_offset += new_internal_offset;
+
+        // If there are any missing fields, return an error
+        if !current & defined == 0 {
+            panic!()
+        }
+
+        Ok(())
     }
 
     // Execute a callback that we will use to fill a bind group

@@ -1,25 +1,9 @@
 use crate::{
     BindResourceLayout, GpuPod, ReflectedShader, Sampler, Shader,
-    Texel, Texture, UniformBuffer,
+    Texel, Texture, UniformBuffer, SetBindResourceError,
 };
 use ahash::AHashMap;
 use std::{marker::PhantomData, sync::Arc};
-use thiserror::Error;
-
-// Errors that might get returned whenever we try setting a resource
-// Most of the validation checking is done when the shader is created, using BindLayout
-#[derive(Debug, Error)]
-pub enum BindError<'a> {
-    #[error("The bind resource '{name}' at bind group '{group}' was not defined in the shader layout")]
-    ResourceNotDefined { name: &'a str, group: u32 },
-
-    #[error("The given buffer at '{name}' has a different type [size = {inputted}] than the one defined in the shader layout [size = {defined}]")]
-    BufferDifferentType {
-        name: &'a str,
-        defined: usize,
-        inputted: usize,
-    },
-}
 
 // A bind group allows us to set one or more bind entries to set them in the active render pass
 // Bind groups are created using the set_bind_group method on the render pass
@@ -40,7 +24,7 @@ impl<'a> BindGroup<'a> {
         index: u32,
         reflected: &'c ReflectedShader,
         name: &'s str,
-    ) -> Result<&'c crate::BindResourceLayout, BindError<'s>> {
+    ) -> Result<&'c crate::BindResourceLayout, SetBindResourceError<'s>> {
         let groups = &reflected.bind_group_layouts;
         let (_, group) = groups
             .iter()
@@ -52,7 +36,7 @@ impl<'a> BindGroup<'a> {
             .bind_entry_layouts
             .iter()
             .find(|x| x.name == name)
-            .ok_or(BindError::ResourceNotDefined {
+            .ok_or(SetBindResourceError::ResourceNotDefined {
                 name,
                 group: index,
             })
@@ -63,7 +47,7 @@ impl<'a> BindGroup<'a> {
         &mut self,
         name: &'s str,
         texture: &'a T,
-    ) -> Result<(), BindError<'s>> {
+    ) -> Result<(), SetBindResourceError<'s>> {
         // Try setting a sampler appropriate for this texture
         let sampler = format!("{name}_sampler");
         self.set_sampler(&sampler, texture.sampler());
@@ -93,7 +77,7 @@ impl<'a> BindGroup<'a> {
         &mut self,
         name: &'s str,
         sampler: Sampler<'a, T>,
-    ) -> Result<(), BindError<'s>> {
+    ) -> Result<(), SetBindResourceError<'s>> {
         // Get the binding entry layout for the given sampler
         let entry = Self::find_entry_layout(
             self.index,
@@ -119,7 +103,7 @@ impl<'a> BindGroup<'a> {
         &mut self,
         name: &'s str,
         buffer: &'a UniformBuffer<T>,
-    ) -> Result<(), BindError<'s>> {
+    ) -> Result<(), SetBindResourceError<'s>> {
         // Get the binding entry layout for the given buffer
         let entry = Self::find_entry_layout(
             self.index,
@@ -131,7 +115,7 @@ impl<'a> BindGroup<'a> {
         match entry.resource_type {
             crate::BindResourceType::Buffer { size, .. } => {
                 if (size as usize) != buffer.stride() {
-                    return Err(BindError::BufferDifferentType {
+                    return Err(SetBindResourceError::BufferDifferentType {
                         name,
                         defined: size as usize,
                         inputted: buffer.stride(),

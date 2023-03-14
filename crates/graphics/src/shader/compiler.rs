@@ -107,11 +107,13 @@ impl<'a> Compiler<'a> {
         graphics: &Graphics,
         names: &[&str],
         modules: &[&naga::Module],
+        visibility: &[ModuleVisibility]
     ) -> (Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>) {
         create_pipeline_layout(
             graphics,
             names,
             modules,
+            visibility,
             &self.texture_formats,
             &self.texture_dimensions,
             &self.uniform_buffer_pod_types,
@@ -136,6 +138,8 @@ impl<'a> Compiler<'a> {
         &mut self,
         name: impl ToString,
     ) {
+        let sampler_name = format!("{}_sampler", name.to_string());
+        self.use_sampler::<T>(sampler_name);
         let name = name.to_string();
         self.texture_formats.insert(name, <T::T as Texel>::info());
     }
@@ -152,7 +156,7 @@ impl<'a> Compiler<'a> {
     // Define a push constant range to be pushed
     pub fn use_push_constant_range(
         &mut self,
-        bound: std::ops::Range<usize>,
+        bound: std::ops::Range<u32>,
         visibility: ModuleVisibility,
     ) {
         let (start, end) = (
@@ -375,8 +379,12 @@ impl<M: ShaderModule> Compiled<M> {
         &self.raw
     }
 
+    // Get the visibility of this module 
+    pub fn visibility(&self) -> ModuleVisibility {
+        M::visibility()
+    }
+
     // Get the underlying raw Naga module
-    // FIXME: Possible remove this shit?
     pub fn naga(&self) -> &naga::Module {
         &self.naga
     } 

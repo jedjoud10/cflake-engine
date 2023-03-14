@@ -5,7 +5,9 @@ use crate::{
     TexelChannels, VertexModule, ModuleVisibility, visibility_to_wgpu_stage,
 };
 use ahash::{AHashMap, AHashSet};
+use arrayvec::ArrayVec;
 use naga::{AddressSpace, TypeInner};
+use utils::enable_in_range;
 use wgpu::TextureFormatFeatureFlags;
 
 // This container stores all data related to reflected shaders
@@ -14,6 +16,7 @@ pub struct ReflectedShader {
     pub last_valid_bind_group_layout: usize,
     pub bind_group_layouts: [Option<BindGroupLayout>; 4],
     pub push_constant_ranges: Vec<PushConstantRange>,
+    pub push_constant_bitset: u128,
 }
 
 // A bind group contains one or more bind entries
@@ -30,15 +33,15 @@ pub struct BindResourceLayout {
     pub binding: u32,
     pub group: u32,
     pub resource_type: BindResourceType,
-    pub visiblity: ModuleVisibility,
+    pub visibility: ModuleVisibility,
 }
 
 // Push constant uniform data that we will fill field by field
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PushConstantRange {
     pub visibility: ModuleVisibility,
-    pub start: usize,
-    pub end: usize,
+    pub start: u32,
+    pub end: u32,
 }
 
 // The type of BindingEntry. This is fetched from the given
@@ -117,16 +120,20 @@ pub(super) fn create_pipeline_layout(
     graphics: &Graphics,
     names: &[&str],
     modules: &[&naga::Module],
+    visibility: &[ModuleVisibility],
     texture_formats: &super::TextureFormats,
     texture_dimensions: &super::TextureDimensions,
     uniform_buffer_pod_types: &super::UniformBufferPodTypes,
     push_constant_ranges: &super::PushConstantRanges,
 ) -> (Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>) {    
-    // Create the bind group layouts that we will fill
-    let mut bind_group_layouts: [Option<BindGroupLayout>; 4] = [
-        None, None, None, None
-    ];
+    // Stores multiple entries per set (max number of sets = 4)
+    let mut groups: [Option<AHashMap<u32, BindResourceLayout>>; 4] =
+        [None, None, None, None];
 
+    // Keep track of the last valid bind group layout index (max)
+    let mut last_valid_bind_group_layout = 0;
+
+    // Ease of use
     let definitions = InternalDefinitions {
         texture_formats,
         texture_dimensions,
@@ -135,8 +142,9 @@ pub(super) fn create_pipeline_layout(
     };
 
     // Iterate through the sets and create the bind groups for each of the resources
-    for set in 0..4 {
-        for module in modules {
+    for (index, module) in modules.iter().enumerate() {
+        let visibility = visibility[index];
+        for set in 0..4 {
             let types = &module.types;
             let vars = &module.global_variables;
 
@@ -162,6 +170,12 @@ pub(super) fn create_pipeline_layout(
                 let binding = binding.binding;
                 let type_ = types.get_handle(value.ty).unwrap();
                 let inner = &type_.inner;
+
+                // Get the merged group layout and merged group entry layouts
+                let merged_group_layout =
+                    &mut groups[set as usize];
+                let merged_group_entry_layouts = merged_group_layout
+                    .get_or_insert_with(|| Default::default());
 
                 // Get the binding type for this global variable
                 let binding_type = match inner {
@@ -193,16 +207,96 @@ pub(super) fn create_pipeline_layout(
                     _ => None
                 };
 
+                // If none, ignore
+                let Some(resource_type) = binding_type else {
+                    continue
+                };
 
+                // Create a bind entry layout
+                let bind_entry_layout = BindResourceLayout {
+                    name: name.to_string(),
+                    binding,
+                    group: set,
+                    resource_type,
+                    visibility,
+                };
+
+                // Merge each entry for this group individually
+                match merged_group_entry_layouts
+                    .entry(binding)
+                {
+                    // Merge an already existing layout with the new one
+                    std::collections::hash_map::Entry::Occupied(
+                        mut occupied,
+                    ) => {
+                        let merged_bind_entry_layout =
+                            occupied.get_mut();
+                        let old = bind_entry_layout;
+                        let merged = merged_bind_entry_layout;
+                    
+                        // Make sure the currently merged layout and the new layout
+                        // have well... the same layout
+                        if old.resource_type != merged.resource_type {
+                            panic!("Not the same layout");
+                        }
+                    
+                        // Merge the visibility to allow more modules to access this entry
+                        merged.visibility.insert(old.visibility);
+                    }
+                
+                    // If the spot is vacant, add the bind entry layout for the first time
+                    std::collections::hash_map::Entry::Vacant(
+                        vacant,
+                    ) => {
+                        vacant.insert(bind_entry_layout.clone());
+                    }
+                }
             }
         }
     }
 
+    // Convert the hashmaps that contain the bind resource layouts to arrays
+    let bind_group_layouts = groups
+        .into_iter()
+        .map(|hashmap| {
+            hashmap.map(|hashmap| {
+                let bind_entry_layouts = hashmap.into_iter().map(|(_, entry)| {
+                    entry
+                }).collect::<Vec<_>>();
+    
+                BindGroupLayout {
+                    bind_entry_layouts,
+                }
+            })            
+        }).collect::<ArrayVec<Option<BindGroupLayout>, 4>>();
+
+    log::warn!("{:?}", visibility);
+    log::warn!("{:#?}", bind_group_layouts);
+
+    // Calculate the last valid bind group layout before we see the first None (starting from the back)
+    let last_valid_bind_group_layout = bind_group_layouts
+        .iter()
+        .rposition(|x| x.is_some())
+        .unwrap_or_default();
+
+    // Create the push constant byte bitset
+    let push_constant_bitset = push_constant_ranges
+        .iter()
+        .map(|range| {
+            enable_in_range::<u128>(
+                range.start as usize,
+                range.end as usize
+            )
+        })
+        .reduce(|a, b| a | b)
+        .unwrap_or_default();
+
     // Create a reflected shader with the given compiler params
     let shader = ReflectedShader {
-        last_valid_bind_group_layout: 0,
-        bind_group_layouts: [None, None, None, None],
+        last_valid_bind_group_layout,
+        bind_group_layouts: bind_group_layouts.into_inner().unwrap(),
         push_constant_ranges: push_constant_ranges.clone(),
+        push_constant_bitset,
     };
 
     // Create the pipeline layout and return it
@@ -280,7 +374,7 @@ fn internal_create_pipeline_layout(
                 .iter()
                 .map(|value| wgpu::BindGroupLayoutEntry {
                     binding: value.binding,
-                    visibility: visibility_to_wgpu_stage(&value.visiblity),
+                    visibility: visibility_to_wgpu_stage(&value.visibility),
                     ty: map_binding_type(value),
                     count: None,
                 })
