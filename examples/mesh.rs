@@ -39,6 +39,7 @@ fn init(world: &mut World) {
     asset!(&mut assets, "assets/user/ignored/untitled.obj");
 
     // Load in the diffuse map and normal map textures asynchronously
+    /*
     let albedo = assets.async_load::<AlbedoMap>(
         ("user/ignored/diffuse.jpg", graphics.clone()),
         &mut threadpool,
@@ -47,8 +48,10 @@ fn init(world: &mut World) {
         ("user/ignored/normal.jpg", graphics.clone()),
         &mut threadpool,
     );
+    */
     
     // Fetch the loaded textures
+    /*
     let diffuse = assets.wait(albedo).unwrap();
     let normal = assets.wait(normal).unwrap();
 
@@ -59,6 +62,7 @@ fn init(world: &mut World) {
         world.get_mut::<Storage<NormalMap>>().unwrap();
     let diffuse = diffuse_maps.insert(diffuse);
     let normal = normal_maps.insert(normal);
+    */
     
     // Get the material id (also registers the material pipeline)
     let id =
@@ -66,8 +70,8 @@ fn init(world: &mut World) {
 
     // Create a new material instance
     let material = basics.insert(Basic {
-        albedo_map: Some(diffuse),
-        normal_map: Some(normal),
+        albedo_map: None,
+        normal_map: None,
         bumpiness: 1.0,
         tint: vek::Rgb::one(),
     });

@@ -3,7 +3,7 @@ use std::{hash::Hash, sync::Arc};
 use crate::{
     visibility_to_wgpu_stage, Compiled, FragmentModule, Graphics,
     ModuleKind, ModuleVisibility, ShaderModule, TexelChannels,
-    VertexModule,
+    VertexModule, ComputeModule,
 };
 use ahash::{AHashMap, AHashSet};
 use arrayvec::ArrayVec;
@@ -16,8 +16,7 @@ use wgpu::TextureFormatFeatureFlags;
 pub struct ReflectedShader {
     pub last_valid_bind_group_layout: usize,
     pub bind_group_layouts: [Option<BindGroupLayout>; 4],
-    pub push_constant_ranges: Vec<PushConstantRange>,
-    pub push_constant_bitset: Option<PushConstantBitset>,
+    pub push_constant_layout: Option<PushConstantLayout>,
 }
 
 // A bind group contains one or more bind entries
@@ -37,76 +36,43 @@ pub struct BindResourceLayout {
     pub visibility: ModuleVisibility,
 }
 
-// Push constant uniform data that we will fill field by field
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct PushConstantRange {
-    pub visibility: ModuleVisibility,
-    pub start: u32,
-    pub end: u32,
-}
-
 // Visiblity for the set push constants bitset
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum PushConstantVisibilityBitset {
-    VertexFragment { vertex: u128, fragment: u128 },
-
-    // Nothing to store since we know the visibility
-    // is always Compute
-    Compute,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum PushConstantLayout {
+    SharedVertexFragment(u32),
+    VertexFragment {
+        vertex: u32,
+        fragment: u32
+    },
+    Compute(u32),
 }
 
-impl PushConstantVisibilityBitset {
-    // Create a new PushConstantVisibilityBitset from a visibility and some bits
-    pub fn new(visibility: ModuleVisibility, bits: PushConstantEnabledBitset) -> Self {
+impl PushConstantLayout {
+    // Create a new PushConstantLayout from a visibility and a size
+    pub fn new(visibility: ModuleVisibility, size: u32) -> Self {
         match visibility {
-            ModuleVisibility::Vertex => Self::VertexFragment { vertex: bits, fragment: 0 },
-            ModuleVisibility::Fragment => Self::VertexFragment { vertex: 0, fragment: bits },
-            ModuleVisibility::VertexFragment => Self::VertexFragment { vertex: bits, fragment: bits },
-            ModuleVisibility::Compute => Self::Compute,
+            ModuleVisibility::Vertex => Self::VertexFragment { vertex: size, fragment: 0 },
+            ModuleVisibility::Fragment => Self::VertexFragment { vertex: 0, fragment: size },
+            ModuleVisibility::VertexFragment => Self::SharedVertexFragment(size),
+            ModuleVisibility::Compute => Self::Compute(size),
         }
     }
 
-    // Insert (combine) a PushConstantVisibilityBitset into self
+    // Insert (combine) another PushConstantLayout into self
     pub fn insert(&mut self, other: Self) {
         match (self, other) {
-            // If both are VertexFragment, we can add them up
-            (Self::VertexFragment { vertex: vertex_bitset_a, fragment: fragment_bitset_a }, 
-                Self::VertexFragment { vertex: vertex_bitset_b, fragment: fragment_bitset_b }) => 
-            {
-                *vertex_bitset_a |= vertex_bitset_b;
-                *fragment_bitset_a |= fragment_bitset_b;
+            (PushConstantLayout::SharedVertexFragment(size_a), PushConstantLayout::SharedVertexFragment(size_b)) if *size_a == size_b => {},
+            (PushConstantLayout::VertexFragment { vertex: vertex_a, fragment: fragment_a }, PushConstantLayout::VertexFragment { vertex: vertex_b, fragment:fragment_b }) => {
+                if (*vertex_a == 0) == (vertex_b == 0) {
+                    panic!()
+                }
+                
+                *vertex_a += vertex_b;
+                *fragment_a += fragment_b;
             },
-
-            // If both are Compute, we can add them up (don't do anything)
-            (Self::Compute, Self::Compute) => {},
+            (PushConstantLayout::Compute(_), PushConstantLayout::Compute(_)) => {},
             _ => panic!()
-        }       
-    }
-}
-
-// Bitset that contains the bytes that were set using the push constants
-pub type PushConstantEnabledBitset = u128;
-
-// Push constant bitset that tells us the bytes that have been set
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct PushConstantBitset {
-    pub set: PushConstantEnabledBitset,
-    pub visibility: PushConstantVisibilityBitset,
-}
-
-impl PushConstantBitset {
-    // Create a new PushConstantBitset from a visibility and some bits
-    pub fn new(visibility: ModuleVisibility, bits: PushConstantEnabledBitset) -> Self {
-        Self {
-            set: bits,
-            visibility: PushConstantVisibilityBitset::new(visibility, bits),
-        }
-    }
-
-    // Insert (combine) a PushConstantBitset into self
-    pub fn insert(&mut self, other: Self) {
-        self.set |= other.set;
-        self.visibility.insert(other.visibility);
+        } 
     }
 }
 
@@ -143,7 +109,7 @@ struct InternalDefinitions<'a> {
     texture_formats: &'a super::TextureFormats,
     texture_dimensions: &'a super::TextureDimensions,
     uniform_buffer_pod_types: &'a super::UniformBufferPodTypes,
-    push_constant_ranges: &'a super::PushConstantRanges,
+    push_constant_ranges: &'a super::MaybePushConstantRange,
 }
 
 // Convert a reflected bind entry layout to a wgpu binding type
@@ -188,21 +154,22 @@ pub(super) fn create_pipeline_layout(
     texture_formats: &super::TextureFormats,
     texture_dimensions: &super::TextureDimensions,
     uniform_buffer_pod_types: &super::UniformBufferPodTypes,
-    push_constant_ranges: &super::PushConstantRanges,
+    push_constant_range: &super::MaybePushConstantRange,
 ) -> (Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>) {
     // Stores multiple entries per set (max number of sets = 4)
     let mut groups: [Option<AHashMap<u32, BindResourceLayout>>; 4] =
         [None, None, None, None];
 
-    // Keep track of the last valid bind group layout index (max)
-    let mut last_valid_bind_group_layout = 0;
+    // Return error if the user defined a push constant that is greater than the device size
+    // or the push constant range re-defines a stage visibility
+    // TODO: Implement this
 
     // Ease of use
     let definitions = InternalDefinitions {
         texture_formats,
         texture_dimensions,
         uniform_buffer_pod_types,
-        push_constant_ranges,
+        push_constant_ranges: push_constant_range,
     };
 
     // Iterate through the sets and create the bind groups for each of the resources
@@ -352,36 +319,14 @@ pub(super) fn create_pipeline_layout(
         .rposition(|x| x.is_some())
         .unwrap_or_default();
 
-    // Create the push constant visibility bitset
-    // In case of Vertex & Fragment
-    //    0: vertex
-    //    1: fragment
-    // In case of Compute: Always compute
-    // TODO: VALIDATE PUSH CONSTANTS (make sure they are defined)
-    let push_constant_bitset = push_constant_ranges
-            .iter()
-            .map(|range| {
-                let enabled = enable_in_range::<u128>(
-                    range.start as usize,
-                    range.end as usize
-                );
-                let visibility = range.visibility;
-
-                // Convert the visibility to the PushConstantBitset
-                PushConstantBitset::new(visibility, enabled)         
-            })
-            .reduce(|mut a, b| {
-                a.insert(b);
-                a
-            });
-
     // Create a reflected shader with the given compiler params
     let shader = ReflectedShader {
         last_valid_bind_group_layout,
         bind_group_layouts: bind_group_layouts.into_inner().unwrap(),
-        push_constant_ranges: push_constant_ranges.clone(),
-        push_constant_bitset,
+        push_constant_layout: push_constant_range.clone(),
     };
+
+    log::warn!("{:#?}", shader);
 
     // Create the pipeline layout and return it
     internal_create_pipeline_layout(graphics, shader, names)
@@ -509,15 +454,31 @@ fn internal_create_pipeline_layout(
         .take(shader.last_valid_bind_group_layout + 1)
         .collect::<Vec<_>>();
 
-    // Convert the custom push constant ranges to wgpu push constant ranges
-    let push_constant_ranges = shader
-        .push_constant_ranges
-        .iter()
-        .map(|layout| wgpu::PushConstantRange {
-            stages: visibility_to_wgpu_stage(&layout.visibility),
-            range: (layout.start as u32)..(layout.end as u32),
-        })
-        .collect::<Vec<_>>();
+    // Convert the custom push constant range to wgpu push constant ranges
+    let mut push_constant_ranges = if let Some(range) = shader.push_constant_layout {
+        match range {
+            PushConstantLayout::SharedVertexFragment(size) => vec![wgpu::PushConstantRange {
+                stages: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                range: 0..size,
+            }],
+            PushConstantLayout::VertexFragment { vertex: vertex_size, fragment: fragment_size } => vec![
+                wgpu::PushConstantRange {
+                    stages: wgpu::ShaderStages::VERTEX,
+                    range: 0..vertex_size,
+                },
+                wgpu::PushConstantRange {
+                    stages: wgpu::ShaderStages::FRAGMENT,
+                    range: vertex_size..(vertex_size+fragment_size),
+                }
+            ],
+            PushConstantLayout::Compute(size) => vec![wgpu::PushConstantRange {
+                stages: wgpu::ShaderStages::COMPUTE,
+                range: 0..size,
+            }],
+        }
+    } else { Vec::default() };
+    push_constant_ranges.retain(|x| x.range.end > 0);
+    log::warn!("{:#?}", push_constant_ranges);
 
     // Create the pipeline layout
     let layout = graphics.device().create_pipeline_layout(

@@ -5,10 +5,10 @@ use wgpu::CommandEncoder;
 use crate::{
     BindGroup, Buffer, BufferInfo, BufferMode, BufferUsage,
     ColorLayout, DepthStencilLayout, GpuPod, Graphics,
-    GraphicsPipeline, ModuleKind, PushConstantBitset, PushConstants,
+    GraphicsPipeline, ModuleKind, PushConstants,
     RenderCommand, SetIndexBufferError, SetPushConstantsError,
     SetVertexBufferError, TriangleBuffer, UniformBuffer, Vertex,
-    VertexBuffer, PushConstantVisibilityBitset, ModuleVisibility,
+    VertexBuffer, PushConstantLayout, ModuleVisibility,
 };
 use std::{
     collections::hash_map::Entry,
@@ -29,7 +29,6 @@ pub struct ActiveGraphicsPipeline<
     pub(crate) commands: &'a mut Vec<RenderCommand<'r, C, DS>>,
     pub(crate) graphics: &'r Graphics,
     pub(crate) push_constant: &'a mut Vec<u8>,
-    pub(crate) push_constant_bitset: PushConstantBitset,
     pub(crate) push_constant_global_offset: usize,
     pub(crate) _phantom: PhantomData<&'t C>,
     pub(crate) _phantom2: PhantomData<&'t DS>,
@@ -122,9 +121,9 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         let shader = self.pipeline.shader();
 
         // Don't set the push constants if we don't have any to set
-        if shader.reflected.push_constant_ranges.is_empty() {
+        let Some(layout) = shader.reflected.push_constant_layout else {
             return Ok(());
-        }
+        };
 
         // Make sure we have enough bytes to store the push constants
         let pc = self.push_constant.len()
@@ -135,70 +134,65 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         }
 
         // Get the max size that we must allocate (at minimum) to be able to use ALL the defined push constants
-        let size = shader
-            .reflected
-            .push_constant_ranges
-            .iter()
-            .map(|range| range.end - range.start)
-            .sum::<u32>() as usize;
+        let size = match layout {
+            PushConstantLayout::SharedVertexFragment(size) | PushConstantLayout::Compute(size) => size,
+            PushConstantLayout::VertexFragment { vertex: vertex_size, fragment: fragment_size } => vertex_size + fragment_size,
+        };
 
         // Get the data that we will use
         let start = self.push_constant_global_offset as usize;
-        let end = size + start;
+        let end = size as usize + start;
         let data = &mut self.push_constant[start..end];
 
         // Create push constants that we can set
+        dbg!(data.len());
         let mut push_constants = PushConstants {
-            reflected: shader.reflected.clone(),
-            ranges: Vec::new(),
             data,
+            layout,
         };
 
         // Let the user modify the push constant
+        dbg!(layout);
         callback(&mut push_constants);
+        
+        // Create a command to set the push constant bytes
+        match layout {
+            PushConstantLayout::SharedVertexFragment(size) | PushConstantLayout::Compute(size) => {
+                let compute = matches!(layout, PushConstantLayout::Compute(_));
+                let stages = if compute {
+                    wgpu::ShaderStages::COMPUTE
+                } else {
+                    wgpu::ShaderStages::VERTEX_FRAGMENT
+                };
 
-        // Create a bitset that contains the bytes that we MUST write to
-        let shader = self.pipeline.shader();
-        let defined = &shader.reflected().push_constant_bitset;
+                self.commands.push(RenderCommand::SetPushConstants {
+                    stages,
+                    size: size as usize,
+                    global_offset: self.push_constant_global_offset,
+                    local_offset: 0,
+                });
+            },
+            PushConstantLayout::VertexFragment { vertex, fragment } => {
+                if vertex != 0 {
+                    self.commands.push(RenderCommand::SetPushConstants {
+                        stages: wgpu::ShaderStages::VERTEX,
+                        size: vertex as usize,
+                        global_offset: self.push_constant_global_offset,
+                        local_offset: 0,
+                    });
+                }
 
-        // Iterate over all the push constant ranges and create commands
-        let mut new_internal_offset: usize = 0;
-        for range in push_constants.ranges {
-            // Get the bitset for the bytes written by this range
-            let bits = enable_in_range::<u128>(
-                range.start as usize,
-                range.end as usize,
-            );
-            
-            // Return a warning if the user triest to set push constants that are not defined
-            if bits & !defined.as_ref().unwrap().set != 0 {
-                let start = range.start;
-                let end = range.end;
-                let visibility = range.visibility;
-                log::warn!("Trying to set push constants ({start}..{end}) with visibility {visibility:?} that is not defined in shader layout, cancelling command");
-                continue;
-            }
-
-            // Create a command to set the push constant
-            self.commands.push(RenderCommand::SetPushConstants {
-                stages: crate::visibility_to_wgpu_stage(
-                    &range.visibility,
-                ),
-                size: (range.end - range.start) as usize,
-                global_offset: self.push_constant_global_offset,
-                local_offset: range.start as u32,
-            });
-            new_internal_offset += size as usize;
-
-            // Keep track of the written bytes internally
-            self.push_constant_bitset.set |= bits;
-
-            // Create a new PushConstantBitset and add it
-            let visibility_bitset = 
-                PushConstantVisibilityBitset::new(range.visibility, bits);
-            self.push_constant_bitset.visibility.insert(visibility_bitset);
+                if fragment != 0 {
+                    self.commands.push(RenderCommand::SetPushConstants {
+                        stages: wgpu::ShaderStages::FRAGMENT,
+                        size: fragment as usize,
+                        global_offset: self.push_constant_global_offset,
+                        local_offset: vertex as usize,
+                    });
+                }
+            },
         }
-        self.push_constant_global_offset += new_internal_offset;
+        self.push_constant_global_offset += size as usize;
         Ok(())
     }
 
@@ -306,24 +300,17 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
     // Executed before any draw call to make sure that we have
     // all the necessities (bind groups, push constants, buffers) to be able to draw
     pub fn validate(&self) {
-        let defined = self.pipeline.shader().reflected().push_constant_bitset.as_ref();
-
-        if let Some(defined) = defined {
-            if self.push_constant_bitset != *defined {
-                panic!();
-            }
-        }
+        // TODO: VALIDATION: Make sure all bind groups, push constants, and buffers, have been set
     }
 
     // Draw a number of primitives using the currently bound vertex buffers
-    // TODO: VALIDATION: Make sure all bind groups, push constants, and buffers, have been set
+
     pub fn draw(
         &mut self,
         vertices: Range<u32>,
         instances: Range<u32>,
     ) {
         self.validate();
-
         self.commands.push(RenderCommand::Draw {
             vertices,
             instances,
@@ -331,14 +318,12 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
     }
 
     // Draw a number of primitives using the currently bound vertex buffers and index buffer
-    // TODO: VALIDATION: Make sure all bind groups, push constants, and buffers, have been set
     pub fn draw_indexed(
         &mut self,
         indices: Range<u32>,
         instances: Range<u32>,
     ) {
         self.validate();
-
         self.commands
             .push(RenderCommand::DrawIndexed { indices, instances });
     }

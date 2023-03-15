@@ -6,7 +6,7 @@ use crate::{
 use assets::Assets;
 
 use ecs::{Rotation, Scene};
-use graphics::{Graphics, Texture, Window};
+use graphics::{Graphics, Texture, Window, UniformBuffer};
 
 use utils::{Storage, Time, Handle};
 use world::{user, System, WindowEvent, World};

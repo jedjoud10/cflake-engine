@@ -1,7 +1,7 @@
 use crate::{
     BindResourceType, Buffer, Dimension, FunctionModule, GpuPod,
     GpuPodInfo, Graphics, ModuleKind, ModuleVisibility,
-    PushConstantRange, ReflectedShader, ShaderCompilationError,
+    PushConstantLayout, ReflectedShader, ShaderCompilationError,
     ShaderModule, Texel, TexelInfo, Texture, VertexModule,
 };
 use ahash::AHashMap;
@@ -27,8 +27,7 @@ pub(super) type Snippets = AHashMap<String, String>;
 pub(super) type TextureFormats = AHashMap<String, TexelInfo>;
 pub(super) type TextureDimensions = AHashMap<String, Dimension>;
 pub(super) type UniformBufferPodTypes = AHashMap<String, GpuPodInfo>;
-pub(super) type PushConstantRanges = Vec<PushConstantRange>;
-pub(super) type ResourceLocations = Vec<(u64, u64)>;
+pub(super) type MaybePushConstantRange = Option<PushConstantLayout>;
 
 // This is a compiler that will take was GLSL code, convert it to Naga, then to WGPU
 // This compiler also allows us to define constants and snippets before compilation
@@ -39,8 +38,7 @@ pub struct Compiler<'a> {
     texture_formats: TextureFormats,
     texture_dimensions: TextureDimensions,
     uniform_buffer_pod_types: UniformBufferPodTypes,
-    push_constant_ranges: PushConstantRanges,
-    resource_locations: ResourceLocations,
+    maybe_push_constant_layout: MaybePushConstantRange,
 }
 
 impl<'a> Compiler<'a> {
@@ -52,8 +50,7 @@ impl<'a> Compiler<'a> {
             texture_formats: Default::default(),
             texture_dimensions: Default::default(),
             uniform_buffer_pod_types: Default::default(),
-            push_constant_ranges: Default::default(),
-            resource_locations: Default::default(),
+            maybe_push_constant_layout: Default::default(),
         }
     }
 
@@ -117,7 +114,7 @@ impl<'a> Compiler<'a> {
             &self.texture_formats,
             &self.texture_dimensions,
             &self.uniform_buffer_pod_types,
-            &self.push_constant_ranges,
+            &self.maybe_push_constant_layout,
         )
     }
 }
@@ -150,29 +147,18 @@ impl<'a> Compiler<'a> {
     // Define a push constant range to be pushed
     pub fn use_push_constant_range(
         &mut self,
-        bound: std::ops::Range<u32>,
+        size: u32,
         visibility: ModuleVisibility,
     ) {
-        let (start, end) = (
-            bound.start_bound().cloned(),
-            bound.end_bound().cloned(),
-        );
-
-        let start = match start {
-            Bound::Included(x) => x,
-            _ => panic!(),
-        };
-
-        let end = match end {
-            Bound::Excluded(x) => x,
-            _ => todo!(),
-        };
-
-        self.push_constant_ranges.push(PushConstantRange {
-            visibility,
-            start,
-            end,
-        });
+        match &mut self.maybe_push_constant_layout {
+            Some(range) => {
+                range.insert(PushConstantLayout::new(visibility, size))
+            },
+            None => {
+                let new = Some(PushConstantLayout::new(visibility, size));
+                self.maybe_push_constant_layout = new;
+            },
+        }
     }
 }
 

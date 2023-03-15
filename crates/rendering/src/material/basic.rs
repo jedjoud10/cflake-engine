@@ -24,15 +24,6 @@ pub struct Basic {
     pub tint: vek::Rgb<f32>,
 }
 
-// Uniform that contains the data for the "Basic" material
-#[derive(Clone, Copy, PartialEq, Pod, Zeroable, Default)]
-#[repr(C, align(16))]
-struct BasicUniform {
-    pub bumpiness: f32,
-    pub _padding: [f32; 3],
-    pub tint: vek::Rgba<f32>,
-}
-
 impl Material for Basic {
     type Resources<'w> = (
         world::Read<'w, Storage<AlbedoMap>>,
@@ -70,12 +61,21 @@ impl Material for Basic {
         compiler.use_texture::<AlbedoMap>("albedo_map");
         compiler.use_texture::<NormalMap>("normal_map");
 
-        // Define the push ranges used by push constants
+        // Define the push ranges used by push constants (vertex)
         let size =
             <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size() as u32;
         compiler.use_push_constant_range(
-            0..size,
+            size,
             ModuleVisibility::Vertex,
+        );
+
+        // Define the push ranges used by push constants (fragment)
+        let mut size =
+            <vek::Rgb<f32> as GpuPod>::size() as u32;
+        size += <f32 as GpuPod>::size() as u32;
+        compiler.use_push_constant_range(
+            size,
+            ModuleVisibility::Fragment,
         );
 
         // Compile the modules into a shader
@@ -152,10 +152,17 @@ impl Material for Basic {
         _default: &DefaultMaterialResources<'r>,
         constants: &mut PushConstants,
     ) {
-        // Send the raw bytes to the GPU
+        // Send the raw vertex bytes to the GPU
         let matrix = renderer.matrix;
         let cols = matrix.cols;
         let bytes = GpuPod::into_bytes(&cols);
         constants.push(bytes, 0, ModuleVisibility::Vertex);
+
+        // Send the raw fragment bytes to the GPU
+        let bytes = GpuPod::into_bytes(&self.tint);
+        let offset = bytes.len() as u32;
+        constants.push(bytes, 0, ModuleVisibility::Fragment);
+        let bytes = GpuPod::into_bytes(&self.bumpiness);
+        constants.push(bytes, offset, ModuleVisibility::Fragment);
     }
 }

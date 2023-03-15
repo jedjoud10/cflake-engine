@@ -3,7 +3,7 @@ use wgpu::CommandEncoder;
 use crate::{
     ActiveGraphicsPipeline, BufferInfo, ColorLayout,
     DepthStencilLayout, Graphics, GraphicsPipeline,
-    PushConstantBitset, RenderCommand, TriangleBuffer, Vertex,
+    RenderCommand, TriangleBuffer, Vertex,
     VertexBuffer,
 };
 use std::{marker::PhantomData, ops::Range, sync::Arc};
@@ -70,13 +70,6 @@ impl<'r, 't, C: ColorLayout, DS: DepthStencilLayout>
             commands: &mut self.commands,
             push_constant_global_offset: self.push_constants.len(),
             push_constant: &mut self.push_constants,
-            push_constant_bitset: PushConstantBitset {
-                set: 0,
-                visibility: crate::PushConstantVisibilityBitset::VertexFragment {
-                    vertex: 0,
-                    fragment: 0
-                },
-            },
         }
     }
 }

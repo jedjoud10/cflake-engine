@@ -83,7 +83,13 @@ pub trait Material: 'static + Sized {
     }
 
     // Insert the required resources for this material into the world
-    fn insert(world: &mut World) {}
+
+    // This function will be deferred to the very last minute of the rendering system
+    // because it needs mutable access to world, so don't expect it to run whenever
+    // you are registering a new material
+    /*
+    fn insert(_world: &mut World) {}
+    */
 
     // Fetch the required resources from the world
     fn fetch<'w>(world: &'w World) -> Self::Resources<'w>;

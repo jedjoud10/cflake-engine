@@ -42,7 +42,7 @@ pub(crate) enum RenderCommand<
         stages: wgpu::ShaderStages,
         size: usize,
         global_offset: usize,
-        local_offset: u32,
+        local_offset: usize,
     },
 
     // Draw command without index buffer
@@ -104,9 +104,14 @@ pub(crate) fn record<'r, C: ColorLayout, DS: DepthStencilLayout>(
                 let start = *global_offset;
                 let end = global_offset + size;
                 let data = &push_constants[start..end];
+                dbg!(start);
+                dbg!(end);
+                dbg!(data.len());
+                dbg!(stages);
+                dbg!(local_offset);
                 render_pass.set_push_constants(
                     *stages,
-                    *local_offset,
+                    *local_offset as u32,
                     data,
                 );
             }
