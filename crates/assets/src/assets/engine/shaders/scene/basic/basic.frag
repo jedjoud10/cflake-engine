@@ -70,9 +70,13 @@ void main() {
 
 	// Calculate specular reflections
 	vec3 view = normalize(camera.position.xyz - m_position);
-	vec3 reflected = reflect(-light, normal);
-	float specular = pow(max(dot(reflected, view), 0), 256) * (1-shadowed);
+	vec3 reflected_light_normal = reflect(-light, normal);
+	float specular = pow(max(dot(reflected_light_normal, view), 0), 256) * (1-shadowed);
+
+	// Caclulate a fresnel effect
+	vec3 reflected_view_normal = reflect(-view, normal);
+	vec3 fresnel = calculate_sky_color(reflected_view_normal, scene.sun_direction.xyz) * 0.2;
 
 	// Calculate diffuse lighting
-	frag = vec4(lighting * albedo * material.tint + specular*1.4, 1.0);
+	frag = vec4(lighting * albedo * material.tint + specular + fresnel, 1.0);
 }

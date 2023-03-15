@@ -66,8 +66,8 @@ fn init(world: &mut World) {
 
     // Create a new material instance
     let material = basics.insert(Basic {
-        albedo_map: Some(diffuse),
-        normal_map: Some(normal),
+        albedo_map: None,
+        normal_map: None,
         bumpiness: 1.4,
         tint: vek::Rgb::one(),
     });
@@ -101,7 +101,7 @@ fn init(world: &mut World) {
 
     // Create a simple cube and add the entity
     for x in 0..25 {
-        let surface = Surface::new(cube.clone(), material.clone(), id.clone());
+        let surface = Surface::new(sphere.clone(), material.clone(), id.clone());
         let renderer = Renderer::default();
         let position = Position::at_xyz((x / 5) as f32, 0.25, (x % 5) as f32);
         scene.insert((surface, renderer, position));

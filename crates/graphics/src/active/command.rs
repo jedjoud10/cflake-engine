@@ -59,7 +59,7 @@ pub(crate) enum RenderCommand<
 }
 
 // Record the render commands to the given render pass
-pub(crate) fn record<'r, C: ColorLayout, DS: DepthStencilLayout>(
+pub(crate) fn record_render_commands<'r, C: ColorLayout, DS: DepthStencilLayout>(
     mut render_pass: wgpu::RenderPass<'r>,
     push_constants: Vec<u8>,
     render_commands: &'r [RenderCommand<'r, C, DS>],

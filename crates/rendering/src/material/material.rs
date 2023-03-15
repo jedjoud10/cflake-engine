@@ -8,7 +8,7 @@ use graphics::{
     PrimitiveConfig, PushConstants, Shader, StencilConfig,
     WindingOrder,
 };
-use utils::{Handle, UntypedHandle};
+use utils::{Handle};
 use world::World;
 
 // These are the default settings that we pass to each material
@@ -87,6 +87,7 @@ pub trait Material: 'static + Sized {
     // This function will be deferred to the very last minute of the rendering system
     // because it needs mutable access to world, so don't expect it to run whenever
     // you are registering a new material
+    // TODO: Implement dis
     /*
     fn insert(_world: &mut World) {}
     */

@@ -14,6 +14,7 @@ use graphics::{
     TextureImportSettings, TextureMipMaps, TextureMode, TextureUsage,
     UniformBuffer, RGBA,
 };
+use utils::{Handle, Storage};
 
 // Renderpass that will render the scene
 pub type SceneColor = RGBA<f32>;
@@ -46,9 +47,9 @@ pub struct ForwardRenderer {
     pub window_buffer: WindowBuffer,
 
     // Default textures that will be shared with each material
-    pub white: AlbedoMap,
-    pub black: AlbedoMap,
-    pub normal: NormalMap,
+    pub white: Handle<AlbedoMap>,
+    pub black: Handle<AlbedoMap>,
+    pub normal: Handle<NormalMap>,
 
     // Default sky gradient texture
     pub sky_gradient: AlbedoMap,
@@ -90,6 +91,8 @@ impl ForwardRenderer {
         graphics: &Graphics,
         assets: &mut Assets,
         extent: vek::Extent2<u32>,
+        albedo_maps: &mut Storage<AlbedoMap>,
+        normal_maps: &mut Storage<NormalMap>,
     ) -> Self {
         // Create the render pass color texture
         let color_texture = Texture2D::<RGBA<f32>>::from_texels(
@@ -154,6 +157,11 @@ impl ForwardRenderer {
         let black = vek::Vec4::broadcast(0);
         let normal = vek::Vec3::new(127, 127, 255).with_w(255);
 
+        // Create the 1x1 default textures
+        let white = albedo_maps.insert(create_texture2d(graphics, white));
+        let black = albedo_maps.insert(create_texture2d(graphics, black));
+        let normal = normal_maps.insert(create_texture2d(graphics, normal));
+
         Self {
             // Render pass, color texture, and depth texture
             render_pass,
@@ -166,15 +174,17 @@ impl ForwardRenderer {
             scene_buffer: create_uniform_buffer(graphics),
             window_buffer: create_uniform_buffer(graphics),
 
-            // Create the 1x1 common textures
-            white: create_texture2d(graphics, white),
-            black: create_texture2d(graphics, black),
-            normal: create_texture2d(graphics, normal),
+            // Use the handles of the default textures
+            white,
+            black,
+            normal,
+
 
             // No default camera
             main_camera: None,
             main_directional_light: None,
             sky_gradient,
+
         }
     }
 }

@@ -16,17 +16,19 @@ fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
     let window = world.get::<Window>().unwrap();
     let mut assets = world.get_mut::<Assets>().unwrap();
+    let mut albedo_maps = Storage::<AlbedoMap>::default();
+    let mut normal_maps = Storage::<NormalMap>::default();
 
     // Create the scene renderer, pipeline manager
     let renderer =
-        ForwardRenderer::new(&graphics, &mut assets, window.size());
+        ForwardRenderer::new(&graphics, &mut assets, window.size(), &mut albedo_maps, &mut normal_maps);
     let pipelines = Pipelines::new();
 
     // Create a nice shadow map
     let shadowmap = ShadowMapping::new(
         20f32,
         100f32,
-        4096,
+        512,
         &graphics,
         &mut assets,
     );
@@ -47,8 +49,8 @@ fn init(world: &mut World) {
     // Add the storages that contain the materials and their resources
     world.insert(Storage::<Basic>::default());
     world.insert(Storage::<Sky>::default());
-    world.insert(Storage::<AlbedoMap>::default());
-    world.insert(Storage::<NormalMap>::default());
+    world.insert(albedo_maps);
+    world.insert(normal_maps);
 }
 
 // Handle window resizing the depth texture
@@ -93,8 +95,11 @@ fn render(world: &mut World) {
     let mut _shadowmap = world.get_mut::<ShadowMapping>().unwrap();
     let renderer = &mut *renderer;
     let scene = world.get::<Scene>().unwrap();
+    let time = world.get::<Time>().unwrap();
     let pipelines = world.get::<Pipelines>().unwrap();
     let meshes = world.get::<Storage<Mesh>>().unwrap();
+    let albedo_maps = world.get::<Storage<AlbedoMap>>().unwrap();
+    let normal_maps = world.get::<Storage<NormalMap>>().unwrap();
 
     let pipelines = pipelines.extract_pipelines();
 
@@ -133,9 +138,9 @@ fn render(world: &mut World) {
         camera_buffer: &renderer.camera_buffer,
         timing_buffer: &renderer.timing_buffer,
         scene_buffer: &renderer.scene_buffer,
-        white: &renderer.white,
-        black: &renderer.black,
-        normal: &renderer.normal,
+        white: &albedo_maps[&renderer.white],
+        black: &albedo_maps[&renderer.black],
+        normal: &normal_maps[&renderer.normal],
         sky_gradient: &renderer.sky_gradient,
         material_index: 0,
         draw_call_index: 0,
