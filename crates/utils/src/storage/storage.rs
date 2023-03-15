@@ -139,4 +139,3 @@ impl<T: 'static> Drop for Storage<T> {
         }
     }
 }
-

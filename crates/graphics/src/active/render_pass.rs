@@ -92,7 +92,11 @@ impl<'r, 't, C: ColorLayout, DS: DepthStencilLayout> Drop
 
         // Put the recorded render pass commands in the actual render pass
         let push_constants = std::mem::take(&mut self.push_constants);
-        super::record_render_commands(pass, push_constants, &self.commands);
+        super::record_render_commands(
+            pass,
+            push_constants,
+            &self.commands,
+        );
 
         // Submit (reuse) the given encoder
         self.graphics.reuse([encoder]);

@@ -1,10 +1,10 @@
 use wgpu::CommandEncoder;
 
 use crate::{
-    ActiveRenderPass, ColorAttachments, ColorLayout, ColorOperations,
-    DepthStencilAttachment, DepthStencilLayout,
-    DepthStencilOperations, Graphics, GraphicsPipeline, Vertex,
-    VertexBuffer, ActiveComputePass,
+    ActiveComputePass, ActiveRenderPass, ColorAttachments,
+    ColorLayout, ColorOperations, DepthStencilAttachment,
+    DepthStencilLayout, DepthStencilOperations, Graphics,
+    GraphicsPipeline, Vertex, VertexBuffer,
 };
 use std::marker::PhantomData;
 
@@ -16,9 +16,7 @@ pub struct ComputePass {
 
 impl ComputePass {
     // Create a new compute pass to be used later on (not really)
-    pub fn new(
-        graphics: &Graphics,
-    ) -> Self {
+    pub fn new(graphics: &Graphics) -> Self {
         Self {
             graphics: graphics.clone(),
         }
@@ -26,13 +24,11 @@ impl ComputePass {
 
     // Begin the compute pass and return an active compute pass that we can use to bind multiple
     // compute pipelines to so we can compute some stuff on the GPU
-    pub fn begin<'r>(
-        &'r self,
-    ) -> ActiveComputePass {
+    pub fn begin<'r>(&'r self) -> ActiveComputePass {
         ActiveComputePass {
             commands: Vec::new(),
             graphics: &self.graphics,
-            push_constants: Vec::new()
+            push_constants: Vec::new(),
         }
     }
 }

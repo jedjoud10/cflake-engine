@@ -1,4 +1,7 @@
-use crate::{ModuleVisibility, PushConstantLayout, ReflectedShader, PushConstantBytesError};
+use crate::{
+    ModuleVisibility, PushConstantBytesError, PushConstantLayout,
+    ReflectedShader,
+};
 use arrayvec::ArrayVec;
 use itertools::Itertools;
 use std::{marker::PhantomData, ops::RangeBounds, sync::Arc};
@@ -25,7 +28,9 @@ impl PushConstants<'_> {
 
         // Make sure we won't overwrite the buffer
         if (bytes.len() + offset as usize) > self.data.len() {
-            return Err(PushConstantBytesError::OffsetOrSizeIsTooLarge)
+            return Err(
+                PushConstantBytesError::OffsetOrSizeIsTooLarge,
+            );
         }
 
         // Make sure the visibility matches up
@@ -36,12 +41,12 @@ impl PushConstants<'_> {
             ) => {}
             (
                 ModuleVisibility::Fragment,
-                PushConstantLayout::SplitVertexFragment { vertex, .. },
+                PushConstantLayout::SplitVertexFragment {
+                    vertex,
+                    ..
+                },
             ) => offset += vertex.get(),
-            (
-                a,
-                PushConstantLayout::Single(_, b),
-            ) if a == b => {}
+            (a, PushConstantLayout::Single(_, b)) if a == b => {}
             _ => return Err(PushConstantBytesError::NotAsDefined),
         }
 

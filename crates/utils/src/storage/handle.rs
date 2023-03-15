@@ -1,6 +1,6 @@
-use std::{rc::Rc, marker::PhantomData};
-use slotmap::DefaultKey;
 use super::Trackers;
+use slotmap::DefaultKey;
+use std::{marker::PhantomData, rc::Rc};
 
 // A handle is what keeps the values within Storage<T> alive
 // Fetching data using this type of Handle is always successful
@@ -51,7 +51,7 @@ impl<T: 'static> Clone for Handle<T> {
         unsafe {
             self.increment_count();
         }
-        
+
         Self {
             trackers: self.trackers.clone(),
             key: self.key,

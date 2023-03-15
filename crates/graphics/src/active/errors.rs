@@ -40,8 +40,7 @@ pub enum SetIndexBufferError {
 }
 
 #[derive(Error, Debug)]
-pub enum SetPushConstantsError {
-}
+pub enum SetPushConstantsError {}
 
 #[derive(Error, Debug)]
 pub enum PushConstantBytesError {

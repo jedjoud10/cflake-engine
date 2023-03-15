@@ -8,7 +8,7 @@ use graphics::{
     PrimitiveConfig, PushConstants, Shader, StencilConfig,
     WindingOrder,
 };
-use utils::{Handle};
+use utils::Handle;
 use world::World;
 
 // These are the default settings that we pass to each material

@@ -31,8 +31,7 @@ fn update(world: &mut World) {
     let dst = window.as_render_target().unwrap();
 
     // Begin the render pass
-    let mut render_pass =
-        compositor.render_pass.begin(dst, ());
+    let mut render_pass = compositor.render_pass.begin(dst, ());
 
     // Bind the graphics pipeline
     let mut active = render_pass.bind_pipeline(&compositor.pipeline);

@@ -20,8 +20,13 @@ fn init(world: &mut World) {
     let mut normal_maps = Storage::<NormalMap>::default();
 
     // Create the scene renderer, pipeline manager
-    let renderer =
-        ForwardRenderer::new(&graphics, &mut assets, window.size(), &mut albedo_maps, &mut normal_maps);
+    let renderer = ForwardRenderer::new(
+        &graphics,
+        &mut assets,
+        window.size(),
+        &mut albedo_maps,
+        &mut normal_maps,
+    );
     let pipelines = Pipelines::new();
 
     // Create a nice shadow map
@@ -153,7 +158,11 @@ fn render(world: &mut World) {
     let f4 = f1 | f2 | f3;
     let mut update =
         scene.query_with::<&Renderer>(f4).into_iter().count() > 0;
-    update |= scene.query_with::<&DirectionalLight>(f2).into_iter().count() > 0;
+    update |= scene
+        .query_with::<&DirectionalLight>(f2)
+        .into_iter()
+        .count()
+        > 0;
 
     if update {
         // Update the shadow map lightspace matrix
@@ -164,8 +173,7 @@ fn render(world: &mut World) {
         let depth = shadowmap.depth_tex.as_render_target().unwrap();
 
         // Create a new active shadowmap render pass
-        let mut render_pass =
-            shadowmap.render_pass.begin((), depth);
+        let mut render_pass = shadowmap.render_pass.begin((), depth);
 
         // Bind the default shadowmap graphics pipeline
         let mut active =
@@ -191,8 +199,7 @@ fn render(world: &mut World) {
     // Begin the scene color render pass
     let color = renderer.color_texture.as_render_target().unwrap();
     let depth = renderer.depth_texture.as_render_target().unwrap();
-    let mut render_pass =
-        renderer.render_pass.begin(color, depth);
+    let mut render_pass = renderer.render_pass.begin(color, depth);
 
     // This will iterate over each material pipeline and draw the scene
     for pipeline in pipelines.iter() {

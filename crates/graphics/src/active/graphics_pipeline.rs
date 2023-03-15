@@ -3,12 +3,12 @@ use utils::enable_in_range;
 use wgpu::CommandEncoder;
 
 use crate::{
-    BindGroup, Buffer, BufferInfo, BufferMode, BufferUsage,
-    ColorLayout, DepthStencilLayout, GpuPod, Graphics,
-    GraphicsPipeline, ModuleKind, ModuleVisibility,
+    visibility_to_wgpu_stage, BindGroup, Buffer, BufferInfo,
+    BufferMode, BufferUsage, ColorLayout, DepthStencilLayout, GpuPod,
+    Graphics, GraphicsPipeline, ModuleKind, ModuleVisibility,
     PushConstantLayout, PushConstants, RenderCommand,
     SetIndexBufferError, SetPushConstantsError, SetVertexBufferError,
-    TriangleBuffer, UniformBuffer, Vertex, VertexBuffer, visibility_to_wgpu_stage,
+    TriangleBuffer, UniformBuffer, Vertex, VertexBuffer,
 };
 use std::{
     collections::hash_map::Entry,
@@ -165,7 +165,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
                     global_offset: self.push_constant_global_offset,
                     local_offset: 0,
                 });
-            },
+            }
 
             // Set the push constants for vertex/fragment modules
             PushConstantLayout::SplitVertexFragment {
@@ -173,27 +173,21 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
                 fragment,
             } => {
                 // Set the vertex push constants if its bytes are defined
-                self.commands.push(
-                    RenderCommand::SetPushConstants {
-                        stages: wgpu::ShaderStages::VERTEX,
-                        size: vertex.get() as usize,
-                        global_offset: self
-                            .push_constant_global_offset,
-                        local_offset: 0,
-                    },
-                );
+                self.commands.push(RenderCommand::SetPushConstants {
+                    stages: wgpu::ShaderStages::VERTEX,
+                    size: vertex.get() as usize,
+                    global_offset: self.push_constant_global_offset,
+                    local_offset: 0,
+                });
 
                 // Set the fragment push constants if its bytes are defined
-                self.commands.push(
-                    RenderCommand::SetPushConstants {
-                        stages: wgpu::ShaderStages::FRAGMENT,
-                        size: fragment.get() as usize,
-                        global_offset: self
-                            .push_constant_global_offset
-                            + vertex.get() as usize,
-                        local_offset: vertex.get() as usize,
-                    },
-                );
+                self.commands.push(RenderCommand::SetPushConstants {
+                    stages: wgpu::ShaderStages::FRAGMENT,
+                    size: fragment.get() as usize,
+                    global_offset: self.push_constant_global_offset
+                        + vertex.get() as usize,
+                    local_offset: vertex.get() as usize,
+                });
             }
         }
         self.push_constant_global_offset += size as usize;

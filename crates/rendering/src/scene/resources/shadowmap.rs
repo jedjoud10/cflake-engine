@@ -4,9 +4,9 @@ use graphics::{
     ActiveGraphicsPipeline, BufferMode, BufferUsage, CompareFunction,
     Compiler, Depth, DepthConfig, Face, FragmentModule, GpuPod,
     Graphics, GraphicsPipeline, LoadOp, ModuleVisibility, Operation,
-    PrimitiveConfig, RenderPass, SamplerSettings, Shader, StoreOp,
-    Texture, Texture2D, TextureMipMaps, TextureMode, TextureUsage,
-    UniformBuffer, VertexModule, WindingOrder, PushConstantLayout,
+    PrimitiveConfig, PushConstantLayout, RenderPass, SamplerSettings,
+    Shader, StoreOp, Texture, Texture2D, TextureMipMaps, TextureMode,
+    TextureUsage, UniformBuffer, VertexModule, WindingOrder,
 };
 use vek::FrustumPlanes;
 
@@ -76,7 +76,11 @@ impl ShadowMapping {
         let mut compiler = Compiler::new(assets);
         compiler.use_uniform_buffer::<ShadowUniform>("shadow");
         let bytes = <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size();
-        let layout = PushConstantLayout::single(bytes, ModuleVisibility::Vertex).unwrap();
+        let layout = PushConstantLayout::single(
+            bytes,
+            ModuleVisibility::Vertex,
+        )
+        .unwrap();
         compiler.use_push_constant_layout(layout);
 
         // Combine the modules to the shader

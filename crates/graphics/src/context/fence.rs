@@ -16,7 +16,6 @@ impl Fence {
         todo!()
     }
 
-
     // Force the GPU to complete the fence's task (and every task before it), but don't wait
     pub fn flush(self) {
         todo!()

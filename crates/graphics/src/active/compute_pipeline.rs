@@ -3,12 +3,13 @@ use utils::enable_in_range;
 use wgpu::CommandEncoder;
 
 use crate::{
-    BindGroup, Buffer, BufferInfo, BufferMode, BufferUsage,
-    ColorLayout, DepthStencilLayout, GpuPod, Graphics,
+    visibility_to_wgpu_stage, BindGroup, Buffer, BufferInfo,
+    BufferMode, BufferUsage, ColorLayout, ComputeCommand,
+    ComputePipeline, DepthStencilLayout, Fence, GpuPod, Graphics,
     GraphicsPipeline, ModuleKind, ModuleVisibility,
     PushConstantLayout, PushConstants, RenderCommand,
     SetIndexBufferError, SetPushConstantsError, SetVertexBufferError,
-    TriangleBuffer, UniformBuffer, Vertex, VertexBuffer, visibility_to_wgpu_stage, ComputePipeline, ComputeCommand, Fence,
+    TriangleBuffer, UniformBuffer, Vertex, VertexBuffer,
 };
 use std::{
     collections::hash_map::Entry,
@@ -72,18 +73,23 @@ impl<'a, 'r> ActiveComputePipeline<'a, 'r> {
             // Set the push constants for the compute module
             PushConstantLayout::Single(size, visibility) => {
                 assert_eq!(visibility, ModuleVisibility::Compute);
-                self.commands.push(ComputeCommand::SetPushConstants {
-                    size: size.get() as usize,
-                    global_offset: self.push_constant_global_offset,
-                    local_offset: 0,
-                });
-            },
+                self.commands.push(
+                    ComputeCommand::SetPushConstants {
+                        size: size.get() as usize,
+                        global_offset: self
+                            .push_constant_global_offset,
+                        local_offset: 0,
+                    },
+                );
+            }
 
             // Set the push constants for vertex/fragment modules
             PushConstantLayout::SplitVertexFragment {
                 vertex,
                 fragment,
-            } => { panic!() }
+            } => {
+                panic!()
+            }
         }
         self.push_constant_global_offset += size as usize;
         Ok(())
@@ -203,7 +209,7 @@ impl<'a, 'r> ActiveComputePipeline<'a, 'r> {
         self.commands.push(ComputeCommand::Dispatch {
             x: size.x,
             y: size.y,
-            z: size.z
+            z: size.z,
         });
     }
 

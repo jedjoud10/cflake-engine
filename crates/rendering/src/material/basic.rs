@@ -8,7 +8,8 @@ use assets::Assets;
 use bytemuck::{Pod, Zeroable};
 use graphics::{
     BindGroup, Compiler, FragmentModule, GpuPod, Graphics,
-    ModuleVisibility, PushConstants, Shader, VertexModule, PushConstantLayout,
+    ModuleVisibility, PushConstantLayout, PushConstants, Shader,
+    VertexModule,
 };
 use utils::{Handle, Storage};
 
@@ -62,11 +63,13 @@ impl Material for Basic {
         compiler.use_texture::<NormalMap>("normal_map");
 
         // Define the push ranges used by push constants
-        compiler
-            .use_push_constant_layout(PushConstantLayout::split(
+        compiler.use_push_constant_layout(
+            PushConstantLayout::split(
                 <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size(),
                 <vek::Rgba<f32> as GpuPod>::size(),
-            ).unwrap());
+            )
+            .unwrap(),
+        );
 
         // Compile the modules into a shader
         Shader::new(graphics, vert, frag, compiler).unwrap()
@@ -151,8 +154,12 @@ impl Material for Basic {
         // Send the raw fragment bytes to the GPU
         let bytes = GpuPod::into_bytes(&self.tint);
         let offset = bytes.len() as u32;
-        constants.push(bytes, 0, ModuleVisibility::Fragment).unwrap();
+        constants
+            .push(bytes, 0, ModuleVisibility::Fragment)
+            .unwrap();
         let bytes = GpuPod::into_bytes(&self.bumpiness);
-        constants.push(bytes, offset, ModuleVisibility::Fragment).unwrap();
+        constants
+            .push(bytes, offset, ModuleVisibility::Fragment)
+            .unwrap();
     }
 }

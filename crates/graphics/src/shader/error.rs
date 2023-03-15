@@ -7,7 +7,7 @@ pub enum ShaderError {
     Compilation(ShaderCompilationError),
 
     #[error("{0}")]
-    Reflection(ShaderReflectionError)
+    Reflection(ShaderReflectionError),
 }
 
 #[derive(Error, Debug)]
@@ -17,18 +17,13 @@ pub enum ShaderCompilationError {
 }
 
 #[derive(Error, Debug)]
-pub enum BufferValidationError {
-}
-
+pub enum BufferValidationError {}
 
 #[derive(Error, Debug)]
-pub enum TextureValidationError {
-}
-
+pub enum TextureValidationError {}
 
 #[derive(Error, Debug)]
-pub enum SamplerValidationError {
-}
+pub enum SamplerValidationError {}
 
 #[derive(Error, Debug)]
 pub enum ShaderReflectionError {
@@ -40,10 +35,10 @@ pub enum ShaderReflectionError {
 
     #[error("{0}")]
     BufferValidation(BufferValidationError),
-    
+
     #[error("{0}")]
     TextureValidation(TextureValidationError),
-    
+
     #[error("{0}")]
     SamplerValidation(SamplerValidationError),
 

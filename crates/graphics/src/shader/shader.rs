@@ -1,6 +1,7 @@
 use crate::{
     Compiled, Compiler, ComputeModule, FragmentModule, Graphics,
-    ReflectedShader, ShaderCompilationError, VertexModule, ShaderError,
+    ReflectedShader, ShaderCompilationError, ShaderError,
+    VertexModule,
 };
 use std::sync::Arc;
 

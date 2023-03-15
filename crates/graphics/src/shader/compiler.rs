@@ -2,7 +2,8 @@ use crate::{
     BindResourceType, Buffer, Dimension, FunctionModule, GpuPod,
     GpuPodInfo, Graphics, ModuleKind, ModuleVisibility,
     PushConstantLayout, ReflectedShader, ShaderCompilationError,
-    ShaderModule, Texel, TexelInfo, Texture, VertexModule, ShaderReflectionError, ShaderError,
+    ShaderError, ShaderModule, ShaderReflectionError, Texel,
+    TexelInfo, Texture, VertexModule,
 };
 use ahash::AHashMap;
 use assets::Assets;
@@ -83,7 +84,8 @@ impl<'a> Compiler<'a> {
             &self.snippets,
             source,
             &name,
-        ).map_err(ShaderError::Compilation)?;
+        )
+        .map_err(ShaderError::Compilation)?;
         log::debug!(
             "Compiled shader {name} sucessfully! Took {}ms",
             time.elapsed().as_millis()
@@ -105,7 +107,10 @@ impl<'a> Compiler<'a> {
         names: &[&str],
         modules: &[&naga::Module],
         visibility: &[ModuleVisibility],
-    ) -> Result<(Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>), ShaderError> {
+    ) -> Result<
+        (Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>),
+        ShaderError,
+    > {
         create_pipeline_layout(
             graphics,
             names,
@@ -115,7 +120,8 @@ impl<'a> Compiler<'a> {
             &self.texture_dimensions,
             &self.uniform_buffer_pod_types,
             &self.maybe_push_constant_layout,
-        ).map_err(ShaderError::Reflection)
+        )
+        .map_err(ShaderError::Reflection)
     }
 }
 
@@ -147,7 +153,7 @@ impl<'a> Compiler<'a> {
     // Define a push constant range to be pushed
     pub fn use_push_constant_layout(
         &mut self,
-        layout: PushConstantLayout
+        layout: PushConstantLayout,
     ) {
         self.maybe_push_constant_layout = Some(layout);
     }

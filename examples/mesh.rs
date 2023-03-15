@@ -101,9 +101,14 @@ fn init(world: &mut World) {
 
     // Create a simple cube and add the entity
     for x in 0..25 {
-        let surface = Surface::new(sphere.clone(), material.clone(), id.clone());
+        let surface = Surface::new(
+            sphere.clone(),
+            material.clone(),
+            id.clone(),
+        );
         let renderer = Renderer::default();
-        let position = Position::at_xyz((x / 5) as f32, 0.25, (x % 5) as f32);
+        let position =
+            Position::at_xyz((x / 5) as f32, 0.25, (x % 5) as f32);
         scene.insert((surface, renderer, position));
     }
 
@@ -166,7 +171,9 @@ fn update(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
 
     // Rotation the light
-    if let Some((rotation, _)) = scene.find_mut::<(&mut Rotation, &DirectionalLight)>() {
+    if let Some((rotation, _)) =
+        scene.find_mut::<(&mut Rotation, &DirectionalLight)>()
+    {
         rotation.rotate_x(-0.1 * time.delta().as_secs_f32());
     }
 

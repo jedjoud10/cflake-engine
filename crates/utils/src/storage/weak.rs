@@ -1,6 +1,6 @@
-use std::{rc::Rc, marker::PhantomData};
-use slotmap::DefaultKey;
 use crate::Handle;
+use slotmap::DefaultKey;
+use std::{marker::PhantomData, rc::Rc};
 
 use super::Trackers;
 

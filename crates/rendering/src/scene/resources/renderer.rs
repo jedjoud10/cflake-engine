@@ -157,9 +157,12 @@ impl ForwardRenderer {
         let normal = vek::Vec3::new(127, 127, 255).with_w(255);
 
         // Create the 1x1 default textures
-        let white = albedo_maps.insert(create_texture2d(graphics, white));
-        let black = albedo_maps.insert(create_texture2d(graphics, black));
-        let normal = normal_maps.insert(create_texture2d(graphics, normal));
+        let white =
+            albedo_maps.insert(create_texture2d(graphics, white));
+        let black =
+            albedo_maps.insert(create_texture2d(graphics, black));
+        let normal =
+            normal_maps.insert(create_texture2d(graphics, normal));
 
         Self {
             // Render pass, color texture, and depth texture
@@ -178,12 +181,10 @@ impl ForwardRenderer {
             black,
             normal,
 
-
             // No default camera
             main_camera: None,
             main_directional_light: None,
             sky_gradient,
-
         }
     }
 }

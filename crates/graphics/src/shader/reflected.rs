@@ -1,9 +1,11 @@
-use std::{hash::Hash, sync::Arc, num::NonZeroU32};
+use std::{hash::Hash, num::NonZeroU32, sync::Arc};
 
 use crate::{
-    visibility_to_wgpu_stage, Compiled, ComputeModule,
-    FragmentModule, Graphics, ModuleKind, ModuleVisibility,
-    ShaderModule, TexelChannels, VertexModule, ShaderReflectionError, BufferValidationError, SamplerValidationError, TextureValidationError,
+    visibility_to_wgpu_stage, BufferValidationError, Compiled,
+    ComputeModule, FragmentModule, Graphics, ModuleKind,
+    ModuleVisibility, SamplerValidationError, ShaderModule,
+    ShaderReflectionError, TexelChannels, TextureValidationError,
+    VertexModule,
 };
 use ahash::{AHashMap, AHashSet};
 use arrayvec::ArrayVec;
@@ -40,12 +42,18 @@ pub struct BindResourceLayout {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PushConstantLayout {
     Single(NonZeroU32, ModuleVisibility),
-    SplitVertexFragment { vertex: NonZeroU32, fragment: NonZeroU32 },
+    SplitVertexFragment {
+        vertex: NonZeroU32,
+        fragment: NonZeroU32,
+    },
 }
 
 impl PushConstantLayout {
     // Create a push constant layout for a single module or SharedVG modules
-    pub fn single(size: usize, visibility: ModuleVisibility) -> Option<Self> {
+    pub fn single(
+        size: usize,
+        visibility: ModuleVisibility,
+    ) -> Option<Self> {
         let size = NonZeroU32::new(size as u32)?;
         Some(Self::Single(size, visibility))
     }
@@ -61,8 +69,9 @@ impl PushConstantLayout {
     pub fn visibility(&self) -> ModuleVisibility {
         match self {
             PushConstantLayout::Single(_, visibility) => *visibility,
-            PushConstantLayout::SplitVertexFragment { .. } => 
-                ModuleVisibility::VertexFragment,
+            PushConstantLayout::SplitVertexFragment { .. } => {
+                ModuleVisibility::VertexFragment
+            }
         }
     }
 }
@@ -146,14 +155,16 @@ pub(super) fn create_pipeline_layout(
     texture_dimensions: &super::TextureDimensions,
     uniform_buffer_pod_types: &super::UniformBufferPodTypes,
     maybe_push_constant_layout: &super::MaybePushConstantLayout,
-) -> Result<(Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>), ShaderReflectionError> {
+) -> Result<
+    (Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>),
+    ShaderReflectionError,
+> {
     // Stores multiple entries per set (max number of sets = 4)
     let mut groups: [Option<AHashMap<u32, BindResourceLayout>>; 4] =
         [None, None, None, None];
 
     // Return error if the user defined a push constant that is greater than the device size
     // or if there isn't push constants for the specified module in the shaders
-    
 
     // TODO: Implement this
 
@@ -460,16 +471,19 @@ fn internal_create_pipeline_layout(
                 },
                 wgpu::PushConstantRange {
                     stages: wgpu::ShaderStages::FRAGMENT,
-                    range: vertex_size.get()..(fragment_size.get() + vertex_size.get()),
+                    range: vertex_size.get()
+                        ..(fragment_size.get() + vertex_size.get()),
                 },
             ],
 
             PushConstantLayout::Single(size, visibility) => {
                 vec![wgpu::PushConstantRange {
-                    stages: super::visibility_to_wgpu_stage(&visibility),
+                    stages: super::visibility_to_wgpu_stage(
+                        &visibility,
+                    ),
                     range: 0..size.get(),
                 }]
-            },
+            }
         }
     } else {
         Vec::default()
@@ -544,58 +558,43 @@ fn reflect_texture(
     arrayed: bool,
 ) -> Result<BindResourceType, TextureValidationError> {
     let sample_type = match class {
-            naga::ImageClass::Sampled { kind, multi } => match kind {
-                naga::ScalarKind::Sint => {
-                    wgpu::TextureSampleType::Sint
-                }
-                naga::ScalarKind::Uint => {
-                    wgpu::TextureSampleType::Uint
-                }
-                naga::ScalarKind::Float => {
-                    let adapter = graphics.adapter();
-                    let info = definitions
-                        .texture_formats
-                        .get(name)
-                        .unwrap();
-                    let format = info.format();
-                    let flags = adapter
-                        .get_texture_format_features(format)
-                        .flags;
+        naga::ImageClass::Sampled { kind, multi } => match kind {
+            naga::ScalarKind::Sint => wgpu::TextureSampleType::Sint,
+            naga::ScalarKind::Uint => wgpu::TextureSampleType::Uint,
+            naga::ScalarKind::Float => {
+                let adapter = graphics.adapter();
+                let info =
+                    definitions.texture_formats.get(name).unwrap();
+                let format = info.format();
+                let flags =
+                    adapter.get_texture_format_features(format).flags;
 
-                    let depth = matches!(
-                        info.channels(),
-                        TexelChannels::Depth
-                    );
+                let depth =
+                    matches!(info.channels(), TexelChannels::Depth);
 
-                    if flags.contains(
-                        TextureFormatFeatureFlags::FILTERABLE,
-                    ) && !depth
-                    {
-                        wgpu::TextureSampleType::Float {
-                            filterable: true,
-                        }
-                    } else {
-                        wgpu::TextureSampleType::Float {
-                            filterable: false,
-                        }
+                if flags
+                    .contains(TextureFormatFeatureFlags::FILTERABLE)
+                    && !depth
+                {
+                    wgpu::TextureSampleType::Float {
+                        filterable: true,
+                    }
+                } else {
+                    wgpu::TextureSampleType::Float {
+                        filterable: false,
                     }
                 }
-                _ => panic!(),
-            },
-            naga::ImageClass::Depth { multi } => todo!(),
-            naga::ImageClass::Storage { format, access } => todo!(),
-        };
+            }
+            _ => panic!(),
+        },
+        naga::ImageClass::Depth { multi } => todo!(),
+        naga::ImageClass::Storage { format, access } => todo!(),
+    };
 
     let view_dimension = match dim {
-        naga::ImageDimension::D1 => {
-            wgpu::TextureViewDimension::D1
-        }
-        naga::ImageDimension::D2 => {
-            wgpu::TextureViewDimension::D2
-        }
-        naga::ImageDimension::D3 => {
-            wgpu::TextureViewDimension::D3
-        }
+        naga::ImageDimension::D1 => wgpu::TextureViewDimension::D1,
+        naga::ImageDimension::D2 => wgpu::TextureViewDimension::D2,
+        naga::ImageDimension::D3 => wgpu::TextureViewDimension::D3,
         naga::ImageDimension::Cube => {
             wgpu::TextureViewDimension::Cube
         }
@@ -610,11 +609,9 @@ fn reflect_texture(
         let adapter = graphics.adapter();
         let info = definitions.texture_formats.get(name).unwrap();
         let format = info.format();
-        let flags =
-            adapter.get_texture_format_features(format).flags;
+        let flags = adapter.get_texture_format_features(format).flags;
 
-        let depth =
-            matches!(info.channels(), TexelChannels::Depth);
+        let depth = matches!(info.channels(), TexelChannels::Depth);
 
         if flags.contains(TextureFormatFeatureFlags::FILTERABLE)
             && !depth
@@ -630,6 +627,6 @@ fn reflect_texture(
 
         view_dimension,
         format,
-        sampler_binding
+        sampler_binding,
     })
 }

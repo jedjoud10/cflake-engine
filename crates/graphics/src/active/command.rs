@@ -1,6 +1,6 @@
 use crate::{
-    BufferInfo, ColorLayout, DepthStencilLayout, GraphicsPipeline,
-    TriangleBuffer, UniformBuffer, ComputePipeline,
+    BufferInfo, ColorLayout, ComputePipeline, DepthStencilLayout,
+    GraphicsPipeline, TriangleBuffer, UniformBuffer,
 };
 use std::{
     ops::{Bound, Range},
@@ -78,11 +78,15 @@ pub(crate) enum ComputeCommand<'a> {
         x: u32,
         y: u32,
         z: u32,
-    }
+    },
 }
 
 // Record the render commands to the given render pass
-pub(crate) fn record_render_commands<'r, C: ColorLayout, DS: DepthStencilLayout>(
+pub(crate) fn record_render_commands<
+    'r,
+    C: ColorLayout,
+    DS: DepthStencilLayout,
+>(
     mut render_pass: wgpu::RenderPass<'r>,
     push_constants: Vec<u8>,
     render_commands: &'r [RenderCommand<'r, C, DS>],
@@ -176,15 +180,13 @@ pub(crate) fn record_compute_commands<'r>(
                 let start = *global_offset;
                 let end = global_offset + size;
                 let data = &push_constants[start..end];
-                compute_pass.set_push_constants(
-                    *local_offset as u32,
-                    data,
-                );
+                compute_pass
+                    .set_push_constants(*local_offset as u32, data);
             }
-            
+
             ComputeCommand::Dispatch { x, y, z } => {
                 compute_pass.dispatch_workgroups(*x, *y, *z);
-            },
+            }
         }
     }
 }

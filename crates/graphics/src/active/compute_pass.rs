@@ -1,9 +1,10 @@
 use wgpu::CommandEncoder;
 
 use crate::{
-    ActiveGraphicsPipeline, BufferInfo, ColorLayout,
-    DepthStencilLayout, Graphics, GraphicsPipeline, RenderCommand,
-    TriangleBuffer, Vertex, VertexBuffer, ComputeCommand, ComputePipeline, ActiveComputePipeline,
+    ActiveComputePipeline, ActiveGraphicsPipeline, BufferInfo,
+    ColorLayout, ComputeCommand, ComputePipeline, DepthStencilLayout,
+    Graphics, GraphicsPipeline, RenderCommand, TriangleBuffer,
+    Vertex, VertexBuffer,
 };
 use std::{marker::PhantomData, ops::Range, sync::Arc};
 
@@ -63,14 +64,17 @@ impl<'r> Drop for ActiveComputePass<'r> {
         let mut encoder = self.graphics.acquire();
 
         // We actually record the compute pass at the very end of this wrapper
-        let pass =
-            encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
-                label: None,
-            });
+        let pass = encoder.begin_compute_pass(
+            &wgpu::ComputePassDescriptor { label: None },
+        );
 
         // Put the recorded compute pass commands in the actual compute pass
         let push_constants = std::mem::take(&mut self.push_constants);
-        super::record_compute_commands(pass, push_constants, &self.commands);
+        super::record_compute_commands(
+            pass,
+            push_constants,
+            &self.commands,
+        );
 
         // Submit (reuse) the given encoder
         self.graphics.reuse([encoder]);
