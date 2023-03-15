@@ -1,26 +1,9 @@
 use crate::{
-    BindResourceLayout, GpuPod, GpuPodRelaxed, ReflectedShader, Sampler,
-    SetFieldError, Shader, StructMemberLayout, Texel, Texture,
-    UniformBuffer, ValueFiller,
+    BindResourceLayout, GpuPod, ReflectedShader, Sampler,
+    SetBindResourceError, Shader, Texel, Texture, UniformBuffer,
 };
 use ahash::AHashMap;
 use std::{marker::PhantomData, sync::Arc};
-use thiserror::Error;
-
-// Errors that might get returned whenever we try setting a resource
-// Most of the validation checking is done when the shader is created, using BindLayout
-#[derive(Debug, Error)]
-pub enum BindError<'a> {
-    #[error("The bind resource '{name}' at bind group '{group}' was not defined in the shader layout")]
-    ResourceNotDefined { name: &'a str, group: u32 },
-
-    #[error("The given buffer at '{name}' has a different type [size = {inputted}] than the one defined in the shader layout [size = {defined}]")]
-    BufferDifferentType {
-        name: &'a str,
-        defined: usize,
-        inputted: usize,
-    },
-}
 
 // A bind group allows us to set one or more bind entries to set them in the active render pass
 // Bind groups are created using the set_bind_group method on the render pass
@@ -28,7 +11,6 @@ pub struct BindGroup<'a> {
     pub(crate) index: u32,
     pub(crate) reflected: Arc<ReflectedShader>,
     pub(crate) resources: Vec<wgpu::BindingResource<'a>>,
-    pub(crate) fill_ubos: Vec<(Vec<u8>, BindResourceLayout)>,
     pub(crate) slots: Vec<u32>,
     pub(crate) ids: Vec<wgpu::Id>,
     pub(crate) _phantom: PhantomData<&'a ()>,
@@ -41,7 +23,8 @@ impl<'a> BindGroup<'a> {
         index: u32,
         reflected: &'c ReflectedShader,
         name: &'s str,
-    ) -> Result<&'c crate::BindResourceLayout, BindError<'s>> {
+    ) -> Result<&'c crate::BindResourceLayout, SetBindResourceError<'s>>
+    {
         let groups = &reflected.bind_group_layouts;
         let (_, group) = groups
             .iter()
@@ -53,7 +36,7 @@ impl<'a> BindGroup<'a> {
             .bind_entry_layouts
             .iter()
             .find(|x| x.name == name)
-            .ok_or(BindError::ResourceNotDefined {
+            .ok_or(SetBindResourceError::ResourceNotDefined {
                 name,
                 group: index,
             })
@@ -64,7 +47,7 @@ impl<'a> BindGroup<'a> {
         &mut self,
         name: &'s str,
         texture: &'a T,
-    ) -> Result<(), BindError<'s>> {
+    ) -> Result<(), SetBindResourceError<'s>> {
         // Try setting a sampler appropriate for this texture
         let sampler = format!("{name}_sampler");
         self.set_sampler(&sampler, texture.sampler());
@@ -90,12 +73,11 @@ impl<'a> BindGroup<'a> {
 
     // Set the texture sampler so we can sample textures within the shader
     // This is called automatically if the sampler is bound to the texture
-    // TODO: Figure this shit out. make it public
-    fn set_sampler<'s, T: Texel>(
+    pub fn set_sampler<'s, T: Texel>(
         &mut self,
         name: &'s str,
         sampler: Sampler<'a, T>,
-    ) -> Result<(), BindError<'s>> {
+    ) -> Result<(), SetBindResourceError<'s>> {
         // Get the binding entry layout for the given sampler
         let entry = Self::find_entry_layout(
             self.index,
@@ -116,11 +98,12 @@ impl<'a> BindGroup<'a> {
     }
 
     // Set a uniform buffer that we can read from within shaders
-    pub fn set_buffer<'s, T: GpuPod>(
+    // TODO: Fix the "buffer-trait" branch and fix this shit (aka make it "set_buffer" instead)
+    pub fn set_uniform_buffer<'s, T: GpuPod>(
         &mut self,
         name: &'s str,
         buffer: &'a UniformBuffer<T>,
-    ) -> Result<(), BindError<'s>> {
+    ) -> Result<(), SetBindResourceError<'s>> {
         // Get the binding entry layout for the given buffer
         let entry = Self::find_entry_layout(
             self.index,
@@ -132,11 +115,13 @@ impl<'a> BindGroup<'a> {
         match entry.resource_type {
             crate::BindResourceType::Buffer { size, .. } => {
                 if (size as usize) != buffer.stride() {
-                    return Err(BindError::BufferDifferentType {
-                        name,
-                        defined: size as usize,
-                        inputted: buffer.stride(),
-                    });
+                    return Err(
+                        SetBindResourceError::BufferDifferentType {
+                            name,
+                            defined: size as usize,
+                            inputted: buffer.stride(),
+                        },
+                    );
                 }
             }
             _ => panic!(),
@@ -151,87 +136,6 @@ impl<'a> BindGroup<'a> {
         self.resources.push(resource);
         self.ids.push(id);
         self.slots.push(entry.binding);
-        Ok(())
-    }
-
-    // Fetches an already allocated uniform buffer that we can fill up with data
-    pub fn fill_ubo<'s>(
-        &mut self,
-        name: &'s str,
-        callback: impl FnOnce(&mut FillBuffer),
-    ) -> Result<(), BindError<'s>> {
-        // Get the binding entry layout for the given buffer
-        let entry = Self::find_entry_layout(
-            self.index,
-            &self.reflected,
-            name,
-        )?;
-
-        // Pre-allocate a vector with an appropriate size
-        let (size, members) = match entry.resource_type {
-            crate::BindResourceType::Buffer {
-                size, ref members, ..
-            } => (size as usize, members),
-            _ => panic!(),
-        };
-
-        // Le vecteur that contains le data
-        let mut vector = vec![0u8; size];
-
-        // Create the fill buffer
-        let mut fill_buffer = FillBuffer {
-            data: &mut vector,
-            members: members.as_slice(),
-            _phantom: PhantomData,
-        };
-
-        // Execute the call back to set the UBO fields
-        callback(&mut fill_buffer);
-        drop(fill_buffer);
-
-        // Set the fill UBO data
-        self.fill_ubos.push((vector, entry.clone()));
-        Ok(())
-    }
-}
-
-// A fill buffer can be used to fill UBO data field by field instead of uploading raw bytes to the GPU
-// All it does is fetch field layout, write to a byte buffer, then upload when the bind group gets dropped
-pub struct FillBuffer<'a> {
-    data: &'a mut [u8],
-    members: &'a [StructMemberLayout],
-    _phantom: PhantomData<&'a ()>,
-}
-
-impl ValueFiller for FillBuffer<'_> {
-    // Set the value of a UBO field
-    fn set<'s, T: GpuPodRelaxed>(
-        &mut self,
-        name: &'s str,
-        value: T,
-    ) -> Result<(), crate::SetFieldError<'s>> {
-        // Get the struct member layout for the proper field
-        let valid = self
-            .members
-            .iter()
-            .filter(|member| member.name == name)
-            .next();
-
-        // Return early if we don't have a field to set
-        let Some(valid) = valid else {
-            return Err(SetFieldError::MissingField { name: name });
-        };
-
-        // Convert the data to a byte slice
-        let value = [value];
-        let bytes = bytemuck::cast_slice::<T, u8>(&value);
-
-        // Set the value within the pre-allocated memory
-        let offset = valid.offset as usize;
-        let size = valid.size as usize;
-        let out = &mut self.data[offset..][..size];
-        out.copy_from_slice(bytes);
-
         Ok(())
     }
 }

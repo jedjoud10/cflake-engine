@@ -5,9 +5,7 @@ use std::{
 
 use super::attributes::*;
 use crate::MeshAabbComputeError;
-use graphics::{
-    Buffer, CommandEncoder, UntypedBuffer, Vertex, VertexBuffer,
-};
+use graphics::{Buffer, BufferInfo, CommandEncoder, VertexBuffer};
 use math::AABB;
 
 // Immutable access to the mesh vertices
@@ -41,16 +39,13 @@ impl<'a> VerticesRef<'a> {
     // Get all the available attribute buffers as untyped buffers types
     pub fn untyped_buffers(
         &self,
-    ) -> [Option<UntypedBuffer>; MAX_MESH_VERTEX_ATTRIBUTES] {
+    ) -> [Option<BufferInfo>; MAX_MESH_VERTEX_ATTRIBUTES] {
         [
-            self.attribute::<Position>()
-                .map(|b| Buffer::as_untyped(b)),
-            self.attribute::<Normal>().map(|b| Buffer::as_untyped(b)),
-            self.attribute::<Tangent>()
-                .map(|b| Buffer::as_untyped(b)),
+            self.attribute::<Position>().map(Buffer::as_untyped),
+            self.attribute::<Normal>().map(Buffer::as_untyped),
+            self.attribute::<Tangent>().map(Buffer::as_untyped),
             //self.attribute::<Color>().map(|b| Buffer::untyped(b)),
-            self.attribute::<TexCoord>()
-                .map(|b| Buffer::as_untyped(b)),
+            self.attribute::<TexCoord>().map(Buffer::as_untyped),
         ]
     }
 
@@ -152,7 +147,6 @@ impl<'a> VerticesMut<'a> {
     // Try to compute the AABB of the mesh using updated position vertices
     pub fn compute_aabb(
         &mut self,
-        encoder: &mut CommandEncoder,
     ) -> Result<AABB, MeshAabbComputeError> {
         let attribute = self.attribute::<Position>().ok_or(
             MeshAabbComputeError::MissingPositionAttributeBuffer,

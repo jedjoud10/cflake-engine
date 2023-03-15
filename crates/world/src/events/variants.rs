@@ -206,7 +206,7 @@ impl Caller for Tick {
 impl<F: FnMut(&mut World) + 'static> Event<Tick, &mut World> for F {
     type Args<'a, 'p> = &'p mut World where 'a: 'p;
 
-    fn boxed(mut self) -> Box<<Tick as Caller>::DynFn> {
+    fn boxed(self) -> Box<<Tick as Caller>::DynFn> {
         Box::new(self)
     }
 }

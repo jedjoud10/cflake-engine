@@ -87,6 +87,7 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPass<C, DS> {
             commands: Vec::new(),
             color_attachments,
             depth_stencil_attachment,
+            push_constants: Vec::new(),
         })
     }
 }

@@ -9,12 +9,19 @@ pub struct Renderer {
 
     // Is the model currently enabled for rendering (this ignores if the model is culled or not)
     pub visible: bool,
+
+    // Is the model currently culled by the camera?
+    pub culled: bool,
 }
 
 impl Renderer {
     // Create a new visible entity renderer with a default matrix
     pub fn new(visible: bool, matrix: vek::Mat4<f32>) -> Self {
-        Self { matrix, visible }
+        Self {
+            matrix,
+            visible,
+            culled: false,
+        }
     }
 }
 
@@ -23,6 +30,7 @@ impl Default for Renderer {
         Self {
             matrix: vek::Mat4::identity(),
             visible: true,
+            culled: false,
         }
     }
 }

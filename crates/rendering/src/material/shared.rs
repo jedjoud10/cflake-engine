@@ -3,7 +3,7 @@ use graphics::{Normalized, Texture2D, UniformBuffer, RGBA, SRGBA};
 
 // Camera data that will be stored in a UBO
 #[derive(Clone, Copy, PartialEq, Pod, Zeroable, Default)]
-#[repr(C, align(64))]
+#[repr(C)]
 pub struct CameraUniform {
     // Projection & inv projection matrix
     pub projection: vek::Vec4<vek::Vec4<f32>>,
@@ -22,7 +22,7 @@ pub struct CameraUniform {
 
 // Timing data that will be stored in a UBO
 #[derive(Clone, Copy, PartialEq, Pod, Zeroable, Default)]
-#[repr(C, align(4))]
+#[repr(C)]
 // TODO: IMPLEMENT
 pub struct TimingUniform {
     pub frame_count: u32,
@@ -32,17 +32,19 @@ pub struct TimingUniform {
 
 // Scene data that will be stored in a UBO
 #[derive(Clone, Copy, PartialEq, Pod, Zeroable, Default)]
-#[repr(C, align(16))]
-// TODO: IMPLEMENT
+#[repr(C)]
 pub struct SceneUniform {
-    // Ambient color of the environment
-    pub ambient_color: vek::Vec4<f32>,
-
     // Sun related parameters
     pub sun_direction: vek::Vec4<f32>,
-    pub sun_strength: f32,
-    pub sun_size: f32,
-    pub _padding: [f32; 2],
+    pub sun_color: vek::Rgba<f32>,
+
+    // Ambient color of the environment
+    pub ambient_color_strength: f32,
+
+    // Procedural sun parameters
+    pub sun_circle_strength: f32,
+    pub sun_circle_size: f32,
+    pub sun_circle_fade: f32,
 }
 
 // Window/monitor data thw ill be stored in a UBO

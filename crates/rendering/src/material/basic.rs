@@ -1,17 +1,14 @@
-use std::any::TypeId;
-
 use crate::{
-    AlbedoMap, AlbedoTexel, CameraBuffer, CameraUniform,
-    DefaultMaterialResources, EnabledMeshAttributes, Material,
-    NormalMap, NormalTexel, Renderer, SceneBuffer, SceneUniform,
-    TimingBuffer, TimingUniform, ShadowMapping, ShadowTexel, ShadowMap, ShadowUniform,
+    AlbedoMap, CameraUniform, DefaultMaterialResources, Material,
+    NormalMap, Renderer, SceneUniform, ShadowMap, ShadowMapping,
+    ShadowUniform,
 };
-use ahash::AHashMap;
+
 use assets::Assets;
+use bytemuck::{Pod, Zeroable};
 use graphics::{
-    BindGroup, Compiled, Compiler, FragmentModule,
-    Graphics, Normalized, PushConstants, Sampler, Shader, Texture,
-    Texture2D, UniformBuffer, ValueFiller, VertexModule, RGBA,
+    BindGroup, Compiler, FragmentModule, GpuPod, Graphics,
+    ModuleVisibility, PushConstants, Shader, VertexModule, PushConstantLayout,
 };
 use utils::{Handle, Storage};
 
@@ -35,42 +32,44 @@ impl Material for Basic {
     );
 
     // Load the respective Basic shader modules and compile them
-    fn shader(
-        graphics: &Graphics,
-        assets: &mut Assets,
-    ) -> Shader {
+    fn shader(graphics: &Graphics, assets: &mut Assets) -> Shader {
         // Load the vertex module from the assets
         let vert = assets
             .load::<VertexModule>(
                 "engine/shaders/scene/basic/basic.vert",
-            ).unwrap();
+            )
+            .unwrap();
 
         // Load the fragment module from the assets
         let frag = assets
             .load::<FragmentModule>(
                 "engine/shaders/scene/basic/basic.frag",
-            ).unwrap();
+            )
+            .unwrap();
 
         // Define the type layouts for the UBOs
         let mut compiler = Compiler::new(assets);
-        compiler.use_ubo::<CameraUniform>("camera");
-        compiler.use_ubo::<SceneUniform>("scene");
-        compiler.use_ubo::<ShadowUniform>("shadow");
-        compiler.use_fill_ubo("material");
 
-        // Define the type layouts for the textures and samplers
+        // Set the UBO types that we will use
+        compiler.use_uniform_buffer::<CameraUniform>("camera");
+        compiler.use_uniform_buffer::<SceneUniform>("scene");
+        compiler.use_uniform_buffer::<ShadowUniform>("shadow");
+
+        // Define the types for the user textures
         compiler.use_texture::<AlbedoMap>("gradient_map");
         compiler.use_texture::<ShadowMap>("shadow_map");
         compiler.use_texture::<AlbedoMap>("albedo_map");
         compiler.use_texture::<NormalMap>("normal_map");
 
+        // Define the push ranges used by push constants
+        compiler
+            .use_push_constant_layout(PushConstantLayout::split(
+                <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size(),
+                <vek::Rgba<f32> as GpuPod>::size(),
+            ).unwrap());
+
         // Compile the modules into a shader
-        Shader::new(
-            graphics,
-            vert,
-            frag,
-            compiler
-        ).unwrap()
+        Shader::new(graphics, vert, frag, compiler).unwrap()
     }
 
     // Fetch the texture storages
@@ -84,13 +83,19 @@ impl Material for Basic {
     // Set the static bindings that will never change
     fn set_global_bindings<'r, 'w>(
         resources: &'r mut Self::Resources<'w>,
-        default: &DefaultMaterialResources<'r>,
         group: &mut BindGroup<'r>,
+        default: &DefaultMaterialResources<'r>,
     ) {
         // Set the required common buffers
-        group.set_buffer("camera", default.camera_buffer).unwrap();
-        group.set_buffer("scene", default.scene_buffer).unwrap();
-        group.set_buffer("shadow", &resources.2.buffer).unwrap();
+        group
+            .set_uniform_buffer("camera", default.camera_buffer)
+            .unwrap();
+        group
+            .set_uniform_buffer("scene", default.scene_buffer)
+            .unwrap();
+        group
+            .set_uniform_buffer("shadow", &resources.2.buffer)
+            .unwrap();
 
         // Set the scene sky texture
         group
@@ -127,26 +132,27 @@ impl Material for Basic {
         // Set the material textures
         group.set_texture("albedo_map", albedo_map).unwrap();
         group.set_texture("normal_map", normal_map).unwrap();
-
-        // Fill the material UBO with the specified fields automatically
-        group
-            .fill_ubo("material", |fill| {
-                fill.set("bumpiness", self.bumpiness).unwrap();
-                fill.set("tint", self.tint).unwrap();
-            })
-            .unwrap();
     }
 
     // Set the surface push constants
     fn set_push_constants<'r, 'w>(
         &self,
         renderer: &Renderer,
-        resources: &'r mut Self::Resources<'w>,
-        default: &DefaultMaterialResources<'r>,
-        push_constants: &mut PushConstants,
+        _resources: &'r mut Self::Resources<'w>,
+        _default: &DefaultMaterialResources<'r>,
+        constants: &mut PushConstants,
     ) {
-        push_constants
-            .set("matrix", renderer.matrix.cols)
-            .unwrap();
+        // Send the raw vertex bytes to the GPU
+        let matrix = renderer.matrix;
+        let cols = matrix.cols;
+        let bytes = GpuPod::into_bytes(&cols);
+        constants.push(bytes, 0, ModuleVisibility::Vertex).unwrap();
+
+        // Send the raw fragment bytes to the GPU
+        let bytes = GpuPod::into_bytes(&self.tint);
+        let offset = bytes.len() as u32;
+        constants.push(bytes, 0, ModuleVisibility::Fragment).unwrap();
+        let bytes = GpuPod::into_bytes(&self.bumpiness);
+        constants.push(bytes, offset, ModuleVisibility::Fragment).unwrap();
     }
 }

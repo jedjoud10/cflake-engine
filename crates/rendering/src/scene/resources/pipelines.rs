@@ -1,24 +1,14 @@
-use crate::{
-    AlbedoMap, CameraUniform, DynamicPipeline, Material, MaterialId,
-    NormalMap, Pipeline, SceneUniform, TimingUniform,
-};
+use crate::{DynPipeline, Material, MaterialId, Pipeline};
 use ahash::AHashMap;
 use assets::Assets;
-use bytemuck::Zeroable;
-use graphics::{
-    BufferMode, BufferUsage, GpuPod, Graphics, LoadOp, Normalized,
-    Operation, PipelineInitializationError, RenderPass, StoreOp,
-    SwapchainFormat, Texture2D, UniformBuffer, BGRA, RGBA,
-};
-use std::{
-    any::TypeId, cell::RefCell, marker::PhantomData,
-    mem::ManuallyDrop, rc::Rc,
-};
+
+use graphics::{Graphics, PipelineInitializationError};
+use std::{any::TypeId, marker::PhantomData, rc::Rc};
 
 // A pipeline manager will store and manager multiple material pipelines and their IDs
 pub struct Pipelines {
     // Material pipelines that we will use to render the surfaces
-    pipelines: AHashMap<TypeId, Rc<dyn DynamicPipeline>>,
+    pipelines: AHashMap<TypeId, Rc<dyn DynPipeline>>,
 }
 
 impl Pipelines {
@@ -63,7 +53,7 @@ impl Pipelines {
     // Extract the internally stored material pipelines
     pub(crate) fn extract_pipelines(
         &self,
-    ) -> Vec<Rc<dyn DynamicPipeline>> {
+    ) -> Vec<Rc<dyn DynPipeline>> {
         self.pipelines
             .iter()
             .map(|(_key, value)| value.clone())

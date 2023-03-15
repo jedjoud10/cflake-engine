@@ -1,12 +1,11 @@
 use crate::{Asset, AssetInput, AssetLoadError, AsyncAsset};
 use ahash::AHashMap;
-use parking_lot::{RwLock, Mutex};
+use parking_lot::{Mutex, RwLock};
 
 use utils::ThreadPool;
 
 use std::{
     any::Any,
-    cell::RefCell,
     ffi::OsStr,
     marker::PhantomData,
     path::{Path, PathBuf},
@@ -146,7 +145,7 @@ impl Assets {
         } else if user.is_some() {
             !bytes.read().contains_key(path)
         } else {
-            false
+            !bytes.read().contains_key(path)
         }
     }
 
@@ -393,37 +392,38 @@ impl Assets {
         let mut outer = Vec::<AsyncHandle<A>>::new();
         let reference = &mut outer;
         let mut loaded = self.loaded.lock();
-        threadpool.scope(move |scope| {
-            for input in inputs.into_iter() {
-                // Check the extension on a per file basis
-                let (path, settings, context) = input.split();
-                let path = Path::new(OsStr::new(path));
-                log::debug!("Asynchronously loading asset {path:?} in batch...",);
-                let owned = path.to_owned();
 
-                // Clone the things that must be sent to the thread
-                let bytes = self.bytes.clone();
-                let sender = self.sender.clone();
-                let user = self.user.clone();
-                let hijack = self.hijack.clone();
+        for input in inputs.into_iter() {
+            // Check the extension on a per file basis
+            let (path, settings, context) = input.split();
+            let path = Path::new(OsStr::new(path));
+            log::debug!(
+                "Asynchronously loading asset {path:?} in batch...",
+            );
+            let owned = path.to_owned();
 
-                // Create the handle's key and insert it
-                let index = loaded.len();
-                reference.push(AsyncHandle::<A> {
-                    _phantom: PhantomData,
-                    index,
-                });
-                loaded.push(None);
+            // Clone the things that must be sent to the thread
+            let bytes = self.bytes.clone();
+            let sender = self.sender.clone();
+            let user = self.user.clone();
+            let hijack = self.hijack.clone();
 
-                // Start telling worker threads to begin loading the assets
-                scope.execute(move || {
-                    Self::async_load_inner::<A>(
-                        owned, bytes, user, hijack, context,
-                        settings, sender, index,
-                    );
-                });
-            }
-        });
+            // Create the handle's key and insert it
+            let index = loaded.len();
+            reference.push(AsyncHandle::<A> {
+                _phantom: PhantomData,
+                index,
+            });
+            loaded.push(None);
+
+            // Start telling worker threads to begin loading the assets
+            threadpool.execute(move || {
+                Self::async_load_inner::<A>(
+                    owned, bytes, user, hijack, context, settings,
+                    sender, index,
+                );
+            });
+        }
         outer
     }
 
@@ -433,7 +433,6 @@ impl Assets {
         for (result, index) in self.receiver.try_iter() {
             let len = loaded.len().max(index + 1);
             loaded.resize_with(len, || None);
-
             loaded[index] = Some(result);
         }
     }
@@ -444,7 +443,8 @@ impl Assets {
         handle: &AsyncHandle<A>,
     ) -> bool {
         self.refresh();
-        self.loaded.get_mut()
+        self.loaded
+            .get_mut()
             .get(handle.index)
             .map(|x| x.is_some())
             .unwrap_or_default()

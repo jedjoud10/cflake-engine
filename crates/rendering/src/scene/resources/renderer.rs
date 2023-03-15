@@ -1,25 +1,18 @@
 use crate::{
-    AlbedoMap, AlbedoTexel, CameraBuffer, CameraUniform,
-    DynamicPipeline, Material, MaterialId, NormalMap, NormalTexel,
-    Pipeline, SceneBuffer, SceneUniform, TimingBuffer, TimingUniform,
-    WindowBuffer, WindowUniform,
+    AlbedoMap, CameraBuffer, NormalMap, SceneBuffer, TimingBuffer,
+    WindowBuffer,
 };
-use ahash::AHashMap;
+
 use assets::Assets;
-use bytemuck::Zeroable;
+
 use ecs::Entity;
 use graphics::{
     ActiveGraphicsPipeline, ActiveRenderPass, BufferMode,
-    BufferUsage, Depth, GpuPod, Graphics, LoadOp, Normalized,
-    Operation, PipelineInitializationError, RenderPass,
-    SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap,
-    StoreOp, SwapchainFormat, Texel, Texture, Texture2D,
+    BufferUsage, Depth, GpuPod, Graphics, LoadOp, Operation,
+    RenderPass, SamplerFilter, SamplerMipMaps, SamplerSettings,
+    SamplerWrap, StoreOp, Texel, Texture, Texture2D,
     TextureImportSettings, TextureMipMaps, TextureMode, TextureUsage,
-    UniformBuffer, BGRA, RGBA,
-};
-use std::{
-    any::TypeId, cell::RefCell, marker::PhantomData,
-    mem::ManuallyDrop, rc::Rc,
+    UniformBuffer, RGBA,
 };
 
 // Renderpass that will render the scene
@@ -42,6 +35,9 @@ pub struct ForwardRenderer {
 
     // Main camera entity that we use to render the scene
     pub main_camera: Option<Entity>,
+
+    // Main directional light that will enlighten our world
+    pub main_directional_light: Option<Entity>,
 
     // Default shader buffers that will be shared with each material
     pub camera_buffer: CameraBuffer,
@@ -66,7 +62,7 @@ fn create_uniform_buffer<T: GpuPod + Default>(
         graphics,
         &[T::default()],
         BufferMode::Dynamic,
-        BufferUsage::WRITE,
+        BufferUsage::WRITE | BufferUsage::READ,
     )
     .unwrap()
 }
@@ -96,21 +92,20 @@ impl ForwardRenderer {
         extent: vek::Extent2<u32>,
     ) -> Self {
         // Create the render pass color texture
-        let color_texture =
-            Texture2D::<RGBA<f32>>::from_texels(
-                graphics,
-                None,
-                extent,
-                TextureMode::Resizable,
-                TextureUsage::RENDER_TARGET | TextureUsage::SAMPLED,
-                SamplerSettings {
-                    filter: SamplerFilter::Linear,
-                    wrap: SamplerWrap::Repeat,
-                    mipmaps: SamplerMipMaps::Auto,
-                },
-                TextureMipMaps::Disabled,
-            )
-            .unwrap();
+        let color_texture = Texture2D::<RGBA<f32>>::from_texels(
+            graphics,
+            None,
+            extent,
+            TextureMode::Resizable,
+            TextureUsage::RENDER_TARGET | TextureUsage::SAMPLED,
+            SamplerSettings {
+                filter: SamplerFilter::Linear,
+                wrap: SamplerWrap::Repeat,
+                mipmaps: SamplerMipMaps::Auto,
+            },
+            TextureMipMaps::Disabled,
+        )
+        .unwrap();
 
         // Create the render pass depth texture
         let depth_texture = Texture2D::<Depth<f32>>::from_texels(
@@ -130,7 +125,7 @@ impl ForwardRenderer {
 
         // Create the forward shading scene pass
         let render_pass = SceneRenderPass::new(
-            &graphics,
+            graphics,
             Operation {
                 load: LoadOp::Clear(vek::Vec4::broadcast(0f32)),
                 store: StoreOp::Store,
@@ -178,6 +173,7 @@ impl ForwardRenderer {
 
             // No default camera
             main_camera: None,
+            main_directional_light: None,
             sky_gradient,
         }
     }

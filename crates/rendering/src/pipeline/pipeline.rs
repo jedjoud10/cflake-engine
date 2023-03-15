@@ -1,18 +1,12 @@
 use crate::{
-    attributes::{
-        Normal, Position, Tangent, TexCoord,
-        MAX_MESH_VERTEX_ATTRIBUTES,
-    },
-    ActiveSceneRenderPass, DefaultMaterialResources,
-    EnabledMeshAttributes, Material, Mesh, MeshAttribute, SceneColor,
-    SceneDepth, SceneRenderPass, ActiveShadowGraphicsPipeline,
+    ActiveSceneRenderPass, ActiveShadowGraphicsPipeline,
+    DefaultMaterialResources, Material, Mesh, SceneColor, SceneDepth,
 };
+use ahash::AHashMap;
 use assets::Assets;
 use graphics::{
-    ActiveRenderPass, CompareFunction, Depth,
-    DepthConfig, Graphics, GraphicsPipeline,
-    PipelineInitializationError, RenderPass, Shader, SwapchainFormat,
-    VertexConfig, VertexInput,
+    CompareFunction, DepthConfig, Graphics, GraphicsPipeline,
+    PipelineInitializationError, Shader,
 };
 use std::marker::PhantomData;
 use utils::Storage;
@@ -90,14 +84,13 @@ impl<M: Material> Pipeline<M> {
 }
 
 // This trait will be implemented for Pipeline<T> to allow for dynamic dispatch
-pub trait DynamicPipeline {
+pub trait DynPipeline {
     // Executed before we call the "render" event in batch
     // Used for shadow mapping
     fn prerender<'r>(
         &'r self,
         world: &'r World,
         meshes: &'r Storage<Mesh>,
-        default: &'r DefaultMaterialResources,
         active: &mut ActiveShadowGraphicsPipeline<'_, 'r, '_>,
     );
 
@@ -106,32 +99,26 @@ pub trait DynamicPipeline {
         &'r self,
         world: &'r World,
         meshes: &'r Storage<Mesh>,
-        default: &'r DefaultMaterialResources,
+        default: &mut DefaultMaterialResources<'r>,
         render_pass: &mut ActiveSceneRenderPass<'r, '_>,
     );
 }
 
-impl<M: Material> DynamicPipeline for Pipeline<M> {
+impl<M: Material> DynPipeline for Pipeline<M> {
     fn prerender<'r>(
         &'r self,
         world: &'r World,
         meshes: &'r Storage<Mesh>,
-        default: &'r DefaultMaterialResources,
         active: &mut ActiveShadowGraphicsPipeline<'_, 'r, '_>,
     ) {
-        super::render_shadows::<M>(
-            world,
-            meshes,
-            default,
-            active,
-        );
+        super::render_shadows::<M>(world, meshes, active);
     }
-    
+
     fn render<'r>(
         &'r self,
         world: &'r World,
         meshes: &'r Storage<Mesh>,
-        default: &'r DefaultMaterialResources,
+        default: &mut DefaultMaterialResources<'r>,
         render_pass: &mut ActiveSceneRenderPass<'r, '_>,
     ) {
         super::render_surfaces::<M>(

@@ -147,6 +147,14 @@ pub(super) fn generate_bitset_chunks<'a, F: QueryFilter>(
 // We need a wrapper to be able to implemented the rust bitwise operators
 pub struct Wrap<T: QueryFilter>(PhantomData<T>);
 
+impl<T: QueryFilter> Clone for Wrap<T> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
+
+impl<T: QueryFilter> Copy for Wrap<T> {}
+
 // Filter sources based on components
 pub struct Added<T: Component>(PhantomData<T>);
 pub struct Modified<T: Component>(PhantomData<T>);

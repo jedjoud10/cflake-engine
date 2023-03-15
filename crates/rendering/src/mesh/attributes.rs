@@ -1,12 +1,9 @@
-use arrayvec::ArrayVec;
 use graphics::{
-    GpuPodRelaxed, Normalized, PerVertex, Vertex, VertexBuffer,
-    VertexConfig, VertexInfo, VertexInput, VertexInputInfo, XY, XYZ,
-    XYZW,
+    Normalized, PerVertex, Vertex, VertexBuffer, VertexConfig,
+    VertexInput, VertexInputInfo, XYZ, XYZW,
 };
 use paste::paste;
 use std::marker::PhantomData;
-use std::mem::MaybeUninit;
 
 use crate::{VerticesMut, VerticesRef};
 

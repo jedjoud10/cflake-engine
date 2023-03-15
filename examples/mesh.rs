@@ -68,57 +68,47 @@ fn init(world: &mut World) {
     let material = basics.insert(Basic {
         albedo_map: Some(diffuse),
         normal_map: Some(normal),
-        bumpiness: 1.0,
+        bumpiness: 1.4,
         tint: vek::Rgb::one(),
     });
 
     // Load a cube mesh
     let cube = assets
-        .load::<Mesh>((
-            "engine/meshes/cube.obj",
-            MeshImportSettings {
-                invert_tex_coords: vek::Vec2::new(false, true),
-                ..Default::default()
-            },
-            graphics.clone(),
-        ))
+        .load::<Mesh>(("engine/meshes/cube.obj", graphics.clone()))
         .unwrap();
     let cube = meshes.insert(cube);
 
-    // Load a plane mesh 
+    // Load a plane mesh
     let plane = assets
-        .load::<Mesh>((
-            "engine/meshes/plane.obj",
-            graphics.clone()
-        )).unwrap();
+        .load::<Mesh>(("engine/meshes/plane.obj", graphics.clone()))
+        .unwrap();
     let plane = meshes.insert(plane);
 
-    // Load a sphere mesh 
+    // Load a sphere mesh
     let sphere = assets
         .load::<Mesh>((
             "engine/meshes/icosphere.obj",
-            graphics.clone()
-        )).unwrap();
+            graphics.clone(),
+        ))
+        .unwrap();
     let sphere = meshes.insert(sphere);
 
     // Create a simple floor and add the entity
-    let surface =
-        Surface::new(plane.clone(), material.clone(), id.clone());
+    let surface = Surface::new(plane, material.clone(), id.clone());
     let renderer = Renderer::default();
     let scale = Scale::uniform(25.0);
-    let position = Position::at_y(-1.0 );
-    scene.insert((position, surface, renderer, scale));
+    scene.insert((surface, renderer, scale));
 
-    // Create a simple cube and add the entity 
-    let surface =
-        Surface::new(cube.clone(), material.clone(), id.clone());
-    let renderer = Renderer::default();
-    let position = Position::at_y(0.25);
-    scene.insert((surface, renderer, position));
+    // Create a simple cube and add the entity
+    for x in 0..25 {
+        let surface = Surface::new(cube.clone(), material.clone(), id.clone());
+        let renderer = Renderer::default();
+        let position = Position::at_xyz((x / 5) as f32, 0.25, (x % 5) as f32);
+        scene.insert((surface, renderer, position));
+    }
 
-    // Create a simple sphere and add the entity 
-    let surface =
-        Surface::new(sphere.clone(), material.clone(), id.clone());
+    // Create a simple sphere and add the entity
+    let surface = Surface::new(sphere, material, id);
     let renderer = Renderer::default();
     let position = Position::at_y(1.5);
     scene.insert((surface, renderer, position));
@@ -137,8 +127,7 @@ fn init(world: &mut World) {
     let mesh = meshes.insert(mesh);
 
     // Create the new sky entity components
-    let surface =
-        Surface::new(mesh.clone(), material.clone(), id.clone());
+    let surface = Surface::new(mesh, material, id);
     let renderer = Renderer::default();
     scene.insert((surface, renderer));
 
@@ -150,6 +139,12 @@ fn init(world: &mut World) {
         Velocity::default(),
         camera,
     ));
+
+    // Create a directional light
+    let light = DirectionalLight::default();
+    let rotation = vek::Quaternion::rotation_x(-25.0f32.to_radians())
+        .rotated_y(45f32.to_radians());
+    scene.insert((light, Rotation::from(rotation)));
 
     // Bind inputs to be used by the camera tick event
     let mut input = world.get_mut::<Input>().unwrap();
@@ -170,8 +165,13 @@ fn update(world: &mut World) {
     let input = world.get::<Input>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
 
-    let camera =
-        scene.find_mut::<(&mut Camera, &mut Position, &mut Rotation)>();
+    // Rotation the light
+    if let Some((rotation, _)) = scene.find_mut::<(&mut Rotation, &DirectionalLight)>() {
+        rotation.rotate_x(-0.1 * time.delta().as_secs_f32());
+    }
+
+    let camera = scene
+        .find_mut::<(&mut Camera, &mut Position, &mut Rotation)>();
     if let Some((camera, position, rotation)) = camera {
         // Forward and right vectors relative to the camera
         let forward = rotation.forward();
@@ -211,8 +211,7 @@ fn update(world: &mut World) {
         // Calculate a new rotation and apply it
         let pos_x = input.get_axis("x rotation");
         let pos_y = input.get_axis("y rotation");
-        **rotation =
-            vek::Quaternion::rotation_y(-pos_x as f32 * 0.0007)
-                * vek::Quaternion::rotation_x(-pos_y as f32 * 0.0007);
+        **rotation = vek::Quaternion::rotation_y(-pos_x * 0.0007)
+            * vek::Quaternion::rotation_x(-pos_y * 0.0007);
     }
 }

@@ -1,6 +1,6 @@
 use crate::{
-    ColorLayout, DepthStencilLayout, GraphicsPipeline,
-    TriangleBuffer, UniformBuffer, UntypedBuffer,
+    BufferInfo, ColorLayout, DepthStencilLayout, GraphicsPipeline,
+    TriangleBuffer, UniformBuffer,
 };
 use std::{
     ops::{Bound, Range},
@@ -22,7 +22,7 @@ pub(crate) enum RenderCommand<
     // Set vertex buffer for Draw and DrawIndexed
     SetVertexBuffer {
         slot: u32,
-        buffer: UntypedBuffer<'a>,
+        buffer: BufferInfo<'a>,
         start: Bound<u64>,
         end: Bound<u64>,
     },
@@ -40,8 +40,9 @@ pub(crate) enum RenderCommand<
     // Set push constant range
     SetPushConstants {
         stages: wgpu::ShaderStages,
-        offset: u32,
-        data: Vec<u8>,
+        size: usize,
+        global_offset: usize,
+        local_offset: usize,
     },
 
     // Draw command without index buffer
@@ -60,6 +61,7 @@ pub(crate) enum RenderCommand<
 // Record the render commands to the given render pass
 pub(crate) fn record<'r, C: ColorLayout, DS: DepthStencilLayout>(
     mut render_pass: wgpu::RenderPass<'r>,
+    push_constants: Vec<u8>,
     render_commands: &'r [RenderCommand<'r, C, DS>],
 ) {
     for render_command in render_commands {
@@ -95,13 +97,17 @@ pub(crate) fn record<'r, C: ColorLayout, DS: DepthStencilLayout>(
 
             RenderCommand::SetPushConstants {
                 stages,
-                offset,
-                data,
+                size,
+                global_offset,
+                local_offset,
             } => {
+                let start = *global_offset;
+                let end = global_offset + size;
+                let data = &push_constants[start..end];
                 render_pass.set_push_constants(
                     *stages,
-                    *offset,
-                    data.as_slice(),
+                    *local_offset as u32,
+                    data,
                 );
             }
 

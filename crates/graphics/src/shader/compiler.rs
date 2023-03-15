@@ -1,25 +1,33 @@
 use crate::{
-    FunctionModule, GpuPodRelaxed, Graphics, ModuleKind,
-    ReflectedModule, ShaderCompilationError, ShaderModule,
-    VertexModule, BindResourceType, Texture, Texel, TexelInfo, ShaderIncludeError,
+    BindResourceType, Buffer, Dimension, FunctionModule, GpuPod,
+    GpuPodInfo, Graphics, ModuleKind, ModuleVisibility,
+    PushConstantLayout, ReflectedShader, ShaderCompilationError,
+    ShaderModule, Texel, TexelInfo, Texture, VertexModule, ShaderReflectionError, ShaderError,
 };
 use ahash::AHashMap;
 use assets::Assets;
 use itertools::Itertools;
-use naga::{
-    valid::{ModuleInfo, ValidationError},
-    Module, ShaderStage, WithSpan,
-};
 use snailquote::unescape;
-use thiserror::Error;
 use std::{
-    any::TypeId, borrow::Cow, ffi::CStr, marker::PhantomData,
-    path::PathBuf, sync::Arc, time::Instant,
+    any::TypeId,
+    borrow::Cow,
+    ffi::CStr,
+    marker::PhantomData,
+    ops::{Bound, RangeBounds},
+    path::PathBuf,
+    sync::Arc,
+    time::Instant,
 };
+use thiserror::Error;
+
+use super::create_pipeline_layout;
 
 // Type alias for snippets and resources
 pub(super) type Snippets = AHashMap<String, String>;
-pub(super) type TextureFormats = AHashMap<String, TexelInfo>; 
+pub(super) type TextureFormats = AHashMap<String, TexelInfo>;
+pub(super) type TextureDimensions = AHashMap<String, Dimension>;
+pub(super) type UniformBufferPodTypes = AHashMap<String, GpuPodInfo>;
+pub(super) type MaybePushConstantLayout = Option<PushConstantLayout>;
 
 // This is a compiler that will take was GLSL code, convert it to Naga, then to WGPU
 // This compiler also allows us to define constants and snippets before compilation
@@ -28,15 +36,21 @@ pub struct Compiler<'a> {
     assets: &'a Assets,
     snippets: Snippets,
     texture_formats: TextureFormats,
+    texture_dimensions: TextureDimensions,
+    uniform_buffer_pod_types: UniformBufferPodTypes,
+    maybe_push_constant_layout: MaybePushConstantLayout,
 }
 
 impl<'a> Compiler<'a> {
-    // Create a new default compiler with the asset loader 
+    // Create a new default compiler with the asset loader
     pub fn new(assets: &'a Assets) -> Self {
         Self {
             assets,
             snippets: Default::default(),
             texture_formats: Default::default(),
+            texture_dimensions: Default::default(),
+            uniform_buffer_pod_types: Default::default(),
+            maybe_push_constant_layout: Default::default(),
         }
     }
 
@@ -50,53 +64,16 @@ impl<'a> Compiler<'a> {
         self.snippets.insert(name, value.to_string());
     }
 
-    // Define a uniform buffer type's inner struct type
-    // TODO: Figure out a way to make this useful
-    pub fn use_ubo<T: GpuPodRelaxed>(
-        &mut self,
-        name: impl ToString,
-    ) {
-    }
-
-    // Define a "fill" uniform buffer whose layout is defined at runtime
-    // TODO: Figure out a way to make this useful
-    pub fn use_fill_ubo(
-        &mut self,
-        name: impl ToString,
-    ) {
-    }
-
-    // Define a uniform texture's type and texel
-    pub fn use_texture<T: Texture>(
-        &mut self,
-        name: impl ToString,
-    ) {
-        let name = name.to_string();
-        let sampler = format!("{name}_sampler");
-        self.texture_formats.insert(name, <T::T as Texel>::info());
-        self.set_sampler::<T>(sampler);
-    }
-
-    // Define a uniform sampler's type and texel
-    // This is called automatically if the sampler is bound to the texture
-    fn set_sampler<T: Texture>(
-        &mut self,
-        name: impl ToString,
-    ) {
-        let name = name.to_string();
-        self.texture_formats.insert(name, <T::T as Texel>::info());
-    }
-
     // Convert the given GLSL code to SPIRV code, then compile said SPIRV code
     // This uses the defined resoures defined in this compiler
     pub(crate) fn compile<M: ShaderModule>(
         &self,
         module: M,
         graphics: &Graphics,
-    ) -> Result<Compiled<M>, ShaderCompilationError> {
+    ) -> Result<Compiled<M>, ShaderError> {
         // Decompose the module into file name and source
         let (name, source) = module.into_raw_parts();
-        
+
         // Compile GLSL to Naga then to Wgpu
         let time = std::time::Instant::now();
         let (raw, naga) = compile(
@@ -106,28 +83,73 @@ impl<'a> Compiler<'a> {
             &self.snippets,
             source,
             &name,
-        )?;
+        ).map_err(ShaderError::Compilation)?;
         log::debug!(
             "Compiled shader {name} sucessfully! Took {}ms",
             time.elapsed().as_millis()
         );
 
-        // Reflect the module with the given bind layout
-        let time = std::time::Instant::now();
-        let reflected = super::reflect_module::<M>(&graphics, &naga, &self.texture_formats);
-        log::debug!(
-            "Reflected shader {name} sucessfully! Took {}ms",
-            time.elapsed().as_millis()
-        );
-
         Ok(Compiled {
             raw: Arc::new(raw),
-            naga: Arc::new(naga),
-            reflected: Arc::new(reflected),
             name: name.into(),
             _phantom: PhantomData,
             graphics: graphics.clone(),
+            naga: Arc::new(naga),
         })
+    }
+
+    // Convert the given shader modules
+    pub(crate) fn create_pipeline_layout(
+        &self,
+        graphics: &Graphics,
+        names: &[&str],
+        modules: &[&naga::Module],
+        visibility: &[ModuleVisibility],
+    ) -> Result<(Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>), ShaderError> {
+        create_pipeline_layout(
+            graphics,
+            names,
+            modules,
+            visibility,
+            &self.texture_formats,
+            &self.texture_dimensions,
+            &self.uniform_buffer_pod_types,
+            &self.maybe_push_constant_layout,
+        ).map_err(ShaderError::Reflection)
+    }
+}
+
+impl<'a> Compiler<'a> {
+    // Define a uniform buffer type's inner struct type
+    // TODO: Fix the "buffer-trait" branch and fix this shit
+    pub fn use_uniform_buffer<T: GpuPod>(
+        &mut self,
+        name: impl ToString,
+    ) {
+        self.uniform_buffer_pod_types
+            .insert(name.to_string(), T::info());
+    }
+
+    // Define a uniform texture's type and texel
+    pub fn use_texture<T: Texture>(&mut self, name: impl ToString) {
+        let sampler_name = format!("{}_sampler", name.to_string());
+        self.use_sampler::<T>(sampler_name);
+        let name = name.to_string();
+        self.texture_formats.insert(name, <T::T as Texel>::info());
+    }
+
+    // Define a uniform sampler's type and texel
+    pub fn use_sampler<T: Texture>(&mut self, name: impl ToString) {
+        let name = name.to_string();
+        self.texture_formats.insert(name, <T::T as Texel>::info());
+    }
+
+    // Define a push constant range to be pushed
+    pub fn use_push_constant_layout(
+        &mut self,
+        layout: PushConstantLayout
+    ) {
+        self.maybe_push_constant_layout = Some(layout);
     }
 }
 
@@ -140,18 +162,14 @@ fn compile(
     snippets: &Snippets,
     source: String,
     file: &str,
-) -> Result<(wgpu::ShaderModule, naga::Module), ShaderCompilationError> {
+) -> Result<(wgpu::ShaderModule, naga::Module), ShaderCompilationError>
+{
     // Custom ShaderC compiler options
     let mut options = shaderc::CompileOptions::new().unwrap();
-    // FIXME: OwO what's this??
-    //options.set_auto_combined_image_sampler(auto_combine);
 
     // Create a callback responsible for includes
     options.set_include_callback(|target, _type, current, depth| {
-        include(
-            current, _type, target, depth, assets,
-            &snippets,
-        )
+        include(current, _type, target, depth, assets, &snippets)
     });
 
     // Pass the source by ShaderC first cause Naga's errors suck ass
@@ -186,14 +204,14 @@ fn compile(
                 log::error!("Failed compilation of shader '{file}'");
 
                 // Print a preview of the file with counted lines
-                log::error!("Source code: \n\n{source}\n\n");                
+                log::error!("Source code: \n\n{source}\n\n");
 
                 // Print the error message
                 for line in value.lines() {
                     log::error!("{}", line);
                 }
 
-                ShaderCompilationError
+                ShaderCompilationError::ShaderC
             }
             _ => todo!(),
         })?;
@@ -212,25 +230,28 @@ fn compile(
     )
     .unwrap();
 
+    // TODO: Figure out if we should keep naga here or simply not use it
+    // Sole reason we have it rn is so we can get the binding index and set index automatically
+
     // Compile the Wgpu shader
-    Ok((
-        graphics.device().create_shader_module(
-            wgpu::ShaderModuleDescriptor {
-                label: None,
-                source: wgpu::ShaderSource::Naga(Cow::Owned(
-                    module.clone(),
-                )),
-            },
-        ),
-        module,
-    ))
+    let wgpu = graphics.device().create_shader_module(
+        wgpu::ShaderModuleDescriptor {
+            label: None,
+            source: wgpu::ShaderSource::Naga(Cow::Owned(
+                module.clone(),
+            )),
+        },
+    );
+
+    // Return the compiled wgpu module and the naga mdule
+    Ok((wgpu, module))
 }
 
 // Load a function module and convert it to a ResolvedInclude
 fn load_function_module(
     path: &str,
     assets: &Assets,
-) -> Result<shaderc::ResolvedInclude, ShaderIncludeError> {
+) -> Result<shaderc::ResolvedInclude, String> {
     // Make sure the path is something we can load (.glsl file)
     let pathbuf = PathBuf::try_from(path).unwrap();
 
@@ -239,7 +260,7 @@ fn load_function_module(
     let content = assets
         .load::<FunctionModule>(path)
         .map(|x| x.source)
-        .map_err(ShaderIncludeError::FileAssetError)?;
+        .map_err(|err| format!("File include error: {err:?}"))?;
     Ok(shaderc::ResolvedInclude {
         resolved_name: path.to_string(),
         content,
@@ -250,10 +271,11 @@ fn load_function_module(
 fn load_snippet(
     name: &str,
     snippets: &AHashMap<String, String>,
-) -> Result<shaderc::ResolvedInclude, ShaderIncludeError> {
-    let snippet = snippets.get(name).ok_or(
-        ShaderIncludeError::SnippetNotDefined(name.to_string()),
-    )?;
+) -> Result<shaderc::ResolvedInclude, String> {
+    let snippet = snippets.get(name).ok_or(format!(
+        "Snippet {} was not defined",
+        name.to_string()
+    ))?;
     Ok(shaderc::ResolvedInclude {
         resolved_name: name.to_string(),
         content: snippet.clone(),
@@ -270,10 +292,8 @@ fn include(
     snippets: &Snippets,
 ) -> Result<shaderc::ResolvedInclude, String> {
     // If we're too deep, assume that the user caused a cyclic reference, and return an error
-    if depth > 20 {
-        return Err(
-            format!("{:?}", ShaderIncludeError::IncludeCyclicReference)
-        );
+    if depth > 40 {
+        return Err(format!("Include cyclic reference detected"));
     }
 
     // Check if the user wants to load a snippet or asset
@@ -283,23 +303,15 @@ fn include(
 
     // Either load it as an asset or a snippet
     let output = if resembles {
-        log::debug!(
-            "Loading shader function module '{target}'"
-        );
+        log::debug!("Loading shader function module '{target}'");
         load_function_module(&target, assets)
     } else {
-        log::debug!(
-            "Loading shader source snippet '{target}'"
-        );
+        log::debug!("Loading shader source snippet '{target}'");
         load_snippet(&target, snippets)
     };
 
-    if output.is_err() {
-        log::warn!("Hang yourself");
-    }
-
     // Convert the error to a string instead
-    output.map_err(|err| format!("{err:?}"))
+    output
 }
 
 // This is a compiled shader module that we can use in multiple pipelines
@@ -307,8 +319,9 @@ fn include(
 pub struct Compiled<M: ShaderModule> {
     // Wgpu related data
     raw: Arc<wgpu::ShaderModule>,
+
+    // FIXME: Possibly remove this shit?
     naga: Arc<naga::Module>,
-    reflected: Arc<ReflectedModule>,
 
     // Helpers
     name: Arc<str>,
@@ -322,11 +335,10 @@ impl<M: ShaderModule> Clone for Compiled<M> {
     fn clone(&self) -> Self {
         Self {
             raw: self.raw.clone(),
-            naga: self.naga.clone(),
-            reflected: self.reflected.clone(),
             name: self.name.clone(),
             _phantom: self._phantom.clone(),
             graphics: self.graphics.clone(),
+            naga: self.naga.clone(),
         }
     }
 }
@@ -337,18 +349,18 @@ impl<M: ShaderModule> Compiled<M> {
         &self.raw
     }
 
-    // Get the reflected shader representation
-    pub fn reflected(&self) -> &ReflectedModule {
-        &self.reflected
+    // Get the visibility of this module
+    pub fn visibility(&self) -> ModuleVisibility {
+        M::visibility()
+    }
+
+    // Get the underlying raw Naga module
+    pub fn naga(&self) -> &naga::Module {
+        &self.naga
     }
 
     // Get the shader module name for this module
     pub fn name(&self) -> &str {
         &self.name
-    }
-
-    // Get the internally stored Naga representation of the shader
-    pub fn naga(&self) -> &naga::Module {
-        &self.naga
     }
 }

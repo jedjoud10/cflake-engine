@@ -1,18 +1,6 @@
-use crate::{
-    AlbedoMap, Basic, Camera, CameraUniform,
-    DefaultMaterialResources, ForwardRenderer, Mesh, NormalMap,
-    Pipelines, PostProcess, Renderer, SceneRenderPass, Sky,
-    WindowUniform,
-};
-use assets::Assets;
-use ecs::Scene;
-use graphics::{
-    Graphics, LoadOp, Normalized, Operation, RenderPass, StoreOp,
-    Texture, Texture2D, TextureMode, TextureUsage, Window, BGRA,
-};
-use std::{mem::ManuallyDrop, sync::Arc};
-use utils::{Storage, Time};
-use world::{post_user, user, System, WindowEvent, World};
+use crate::Renderer;
+
+use world::{post_user, System, World};
 
 // Update the global mesh matrices of objects that have been modified
 fn update(world: &mut World) {
@@ -42,6 +30,9 @@ fn update(world: &mut World) {
         matrix *=
             scale.map_or(matrix, |s| matrix * vek::Mat4::from(s));
         renderer.matrix = matrix;
+
+        // Also update the culling state of the renderer
+        // TODO: Implement this shit
     }
 }
 

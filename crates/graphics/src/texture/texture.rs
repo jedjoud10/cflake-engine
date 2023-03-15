@@ -11,16 +11,15 @@ use wgpu::{
 };
 
 use crate::{
-    Extent, GpuPodRelaxed, Graphics, MipLevelMut, MipLevelRef,
-    Origin, Region, RenderTarget, Sampler, SamplerSettings,
-    SamplerWrap, Texel, TextureAsTargetError,
-    TextureInitializationError, TextureMipLevelError, TextureMipMaps,
-    TextureMode, TextureResizeError, TextureSamplerError,
-    TextureUsage,
+    Extent, GpuPod, Graphics, MipLevelMut, MipLevelRef, Origin,
+    Region, RenderTarget, Sampler, SamplerSettings, SamplerWrap,
+    Texel, TextureAsTargetError, TextureInitializationError,
+    TextureMipLevelError, TextureMipMaps, TextureMode,
+    TextureResizeError, TextureSamplerError, TextureUsage,
 };
 
 // Possibly predefined texel data
-type Texels<'a, T> = Option<&'a [<T as Texel>::Storage]>;
+pub type Texels<'a, T> = Option<&'a [<T as Texel>::Storage]>;
 
 // A texture is an abstraction over Vulkan images to allow us to access/modify them with ease
 // A texture is a container of multiple texels (like pixels, but for textures) that are stored on the GPU
@@ -195,9 +194,28 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
         };
 
         // Create an texture view of the whole texture
-        // TODO: Create MULTIPLE views for the texture
         let view = texture.create_view(&view_descriptor);
-        let views = SmallVec::from_buf([view]);
+        let mut views = SmallVec::from_buf([view]);
+
+        // If the texture uses mipmaps, create the other mip level views
+        if levels > 1 {
+            for i in 1..levels {
+                // Create the texture's texture view descriptor
+                let view_descriptor = TextureViewDescriptor {
+                    format: Some(format),
+                    dimension: Some(dims_to_view_dims(dimension)),
+                    aspect,
+                    base_mip_level: i,
+                    mip_level_count: Some(
+                        NonZeroU32::new(1).unwrap(),
+                    ),
+                    ..Default::default()
+                };
+
+                // Create an texture view of the whole texture
+                views.push(texture.create_view(&view_descriptor));
+            }
+        }
 
         Ok(unsafe {
             Self::from_raw_parts(
@@ -363,7 +381,6 @@ fn mip_levels<T: Texel, E: Extent>(
         };
 
     // Convert Auto to Zeroed (since if this texture was loaded from disk, it would've been Manual instead)
-
     let levels = match *mipmaps {
         // Automatic mip level generation, but fills mips with zeroes
         TextureMipMaps::Zeroed { clamp } => {

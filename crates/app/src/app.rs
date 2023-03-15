@@ -1,21 +1,16 @@
 use assets::AssetsSettings;
 use graphics::{FrameRateLimit, WindowSettings};
 use mimalloc::MiMalloc;
-use platform_dirs::AppDirs;
-use std::{
-    any::type_name,
-    path::{Path, PathBuf},
-    str::FromStr,
-    sync::mpsc,
-};
+
+use std::{path::PathBuf, sync::mpsc};
 use utils::UtilsSettings;
 use winit::{
     event::{DeviceEvent, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
 use world::{
-    Event, Init, Shutdown, State, System, SystemId, Systems, Tick,
-    Update, World,
+    Event, Init, Shutdown, State, System, Systems, Tick, Update,
+    World,
 };
 
 #[global_allocator]
@@ -185,7 +180,6 @@ impl App {
     // Initialize the global logger (also sets the output file)
     fn init_logger(&mut self, sender: mpsc::Sender<String>) {
         use fern::colors::*;
-        use fern::*;
 
         // File logger with no colors. Will write into the given cache buffer
         fn file_logger(
@@ -199,7 +193,7 @@ impl App {
                         target = record.target(),
                         level = record.level(),
                         message = record.args(),
-                        thread_name = std::thread::current().name().unwrap_or_else(|| "none")
+                        thread_name = std::thread::current().name().unwrap_or("none")
                     ));
                 })
                 .chain(sender)
@@ -221,7 +215,7 @@ impl App {
                     target = record.target(),
                     level = colors_level.color(record.level()),
                     message = message,
-                    thread_name = std::thread::current().name().unwrap_or_else(|| "none"),
+                    thread_name = std::thread::current().name().unwrap_or("none"),
                 ));
             }).chain(std::io::stdout())
         }
@@ -236,7 +230,6 @@ impl App {
 
         // Color config for the level
         let colors_level = colors_line
-            .clone()
             .info(Color::Green)
             .debug(Color::Blue)
             .warn(Color::Yellow)
@@ -397,6 +390,8 @@ impl App {
         // Utils systems
         self.regsys(utils::threadpool);
         self.regsys(utils::time);
+        self.regsys(utils::io);
+        self.regsys(utils::file_logger);
 
         // Audio system
         self.regsys(audio::system);
@@ -414,6 +409,7 @@ impl App {
         self.regsys(rendering::systems::composite::system);
         self.regsys(rendering::systems::matrix::system);
         self.regsys(rendering::systems::rendering::system);
+        self.regsys(rendering::systems::lights::system);
 
         // Gui system + stats update event
         self.regsys(gui::common);

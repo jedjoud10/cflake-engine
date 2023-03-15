@@ -3,7 +3,6 @@ use std::{
 };
 
 use assets::Asset;
-use naga::Sampling;
 use smallvec::SmallVec;
 
 use crate::{

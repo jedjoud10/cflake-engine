@@ -1,18 +1,12 @@
-use std::any::TypeId;
-
 use crate::{
-    AlbedoMap, AlbedoTexel, CameraBuffer, CameraUniform,
-    DefaultMaterialResources, EnabledMeshAttributes, Material,
-    NormalMap, Renderer, SceneBuffer, SceneUniform, TimingBuffer,
-    TimingUniform,
+    AlbedoMap, CameraUniform, DefaultMaterialResources,
+    EnabledMeshAttributes, Material, SceneUniform,
 };
-use ahash::AHashMap;
+
 use assets::Assets;
 use graphics::{
-    BindGroup, Compiled, Compiler, Face, FragmentModule,
-    Graphics, Normalized, PrimitiveConfig, PushConstants, Sampler,
-    Shader, Texture, Texture2D, UniformBuffer, ValueFiller,
-    VertexModule, WindingOrder, RGBA,
+    BindGroup, Compiler, Face, FragmentModule, Graphics,
+    PrimitiveConfig, Shader, VertexModule, WindingOrder,
 };
 use utils::{Handle, Storage};
 
@@ -26,10 +20,7 @@ impl Material for Sky {
     type Resources<'w> = world::Read<'w, Storage<AlbedoMap>>;
 
     // Load the respective Sky shader modules and compile them
-    fn shader(
-        graphics: &Graphics,
-        assets: &mut Assets,
-    ) -> Shader {
+    fn shader(graphics: &Graphics, assets: &mut Assets) -> Shader {
         // Load the vertex module from the assets
         let vert = assets
             .load::<VertexModule>("engine/shaders/scene/sky/sky.vert")
@@ -44,16 +35,12 @@ impl Material for Sky {
 
         // Define the type layouts for the UBOs
         let mut compiler = Compiler::new(assets);
-        compiler.use_ubo::<CameraUniform>("camera");
+        compiler.use_uniform_buffer::<CameraUniform>("camera");
+        compiler.use_uniform_buffer::<SceneUniform>("scene");
         compiler.use_texture::<AlbedoMap>("gradient_map");
 
         // Compile the modules into a shader
-        Shader::new(
-            graphics,
-            vert,
-            frag,
-            compiler
-        ).unwrap()
+        Shader::new(graphics, vert, frag, compiler).unwrap()
     }
 
     // Get the required mesh attributes that we need to render a surface
@@ -61,7 +48,7 @@ impl Material for Sky {
         EnabledMeshAttributes::POSITIONS
     }
 
-    // The sky does NOT cast shadows 
+    // The sky does NOT cast shadows
     fn casts_shadows() -> bool {
         false
     }
@@ -83,11 +70,16 @@ impl Material for Sky {
 
     // Set the static bindings that will never change
     fn set_global_bindings<'r, 'w>(
-        resources: &'r mut Self::Resources<'w>,
-        default: &DefaultMaterialResources<'r>,
+        _resources: &'r mut Self::Resources<'w>,
         group: &mut BindGroup<'r>,
+        default: &DefaultMaterialResources<'r>,
     ) {
-        group.set_buffer("camera", default.camera_buffer).unwrap();
+        group
+            .set_uniform_buffer("camera", default.camera_buffer)
+            .unwrap();
+        group
+            .set_uniform_buffer("scene", default.scene_buffer)
+            .unwrap();
     }
 
     // Set the instance bindings that will change per material

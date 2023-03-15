@@ -1,25 +1,25 @@
 use crate::{
-    Buffer, GpuPodRelaxed, StagingPool, StagingView, StagingViewWrite,
+    Buffer, GpuPod, StagingPool, StagingView, StagingViewWrite,
 };
 use parking_lot::MappedMutexGuard;
 use std::marker::PhantomData;
 use wgpu::CommandEncoder;
 
 // Allows  us to read the buffer as if it were an immutably slice
-pub struct BufferView<'a, T: GpuPodRelaxed, const TYPE: u32> {
+pub struct BufferView<'a, T: GpuPod, const TYPE: u32> {
     pub(crate) buffer: &'a Buffer<T, TYPE>,
     pub(crate) data: StagingView<'a>,
 }
 
-impl<'a, T: GpuPodRelaxed, const TYPE: u32> BufferView<'a, T, TYPE> {
+impl<'a, T: GpuPod, const TYPE: u32> BufferView<'a, T, TYPE> {
     // Get an immutable slice that we can read from
     pub fn as_slice(&self) -> &[T] {
         let bytes = self.data.as_ref();
-        bytemuck::cast_slice(bytes)
+        T::bytes_into_slice(bytes)
     }
 }
 
-impl<'a, T: GpuPodRelaxed, const TYPE: u32> AsRef<[T]>
+impl<'a, T: GpuPod, const TYPE: u32> AsRef<[T]>
     for BufferView<'a, T, TYPE>
 {
     fn as_ref(&self) -> &[T] {
@@ -27,7 +27,7 @@ impl<'a, T: GpuPodRelaxed, const TYPE: u32> AsRef<[T]>
     }
 }
 
-impl<'a, T: GpuPodRelaxed, const TYPE: u32> std::ops::Deref
+impl<'a, T: GpuPod, const TYPE: u32> std::ops::Deref
     for BufferView<'a, T, TYPE>
 {
     type Target = [T];
@@ -38,7 +38,7 @@ impl<'a, T: GpuPodRelaxed, const TYPE: u32> std::ops::Deref
 }
 
 // Allows us to read the buffer as if it were a mutable slice
-pub enum BufferViewMut<'a, T: GpuPodRelaxed, const TYPE: u32> {
+pub enum BufferViewMut<'a, T: GpuPod, const TYPE: u32> {
     // The buffer's staging buffer is mapped mutably
     // Only used when WRITING ONLY
     Mapped {
@@ -55,9 +55,7 @@ pub enum BufferViewMut<'a, T: GpuPodRelaxed, const TYPE: u32> {
     },
 }
 
-impl<'a, T: GpuPodRelaxed, const TYPE: u32>
-    BufferViewMut<'a, T, TYPE>
-{
+impl<'a, T: GpuPod, const TYPE: u32> BufferViewMut<'a, T, TYPE> {
     // Get an immutable slice that we can read from
     pub fn as_slice(&self) -> &[T] {
         match self {
@@ -81,7 +79,7 @@ impl<'a, T: GpuPodRelaxed, const TYPE: u32>
     }
 }
 
-impl<'a, T: GpuPodRelaxed, const TYPE: u32> AsRef<[T]>
+impl<'a, T: GpuPod, const TYPE: u32> AsRef<[T]>
     for BufferViewMut<'a, T, TYPE>
 {
     fn as_ref(&self) -> &[T] {
@@ -89,7 +87,7 @@ impl<'a, T: GpuPodRelaxed, const TYPE: u32> AsRef<[T]>
     }
 }
 
-impl<'a, T: GpuPodRelaxed, const TYPE: u32> AsMut<[T]>
+impl<'a, T: GpuPod, const TYPE: u32> AsMut<[T]>
     for BufferViewMut<'a, T, TYPE>
 {
     fn as_mut(&mut self) -> &mut [T] {
@@ -97,14 +95,14 @@ impl<'a, T: GpuPodRelaxed, const TYPE: u32> AsMut<[T]>
     }
 }
 
-impl<'a, T: GpuPodRelaxed, const TYPE: u32> Drop
+impl<'a, T: GpuPod, const TYPE: u32> Drop
     for BufferViewMut<'a, T, TYPE>
 {
     fn drop(&mut self) {
         match self {
             // Write the cloned data back into the buffer when we drop the view
             BufferViewMut::Cloned { buffer, data } => {
-                buffer.write(&data, 0);
+                buffer.write(&data, 0).unwrap();
             }
             _ => {}
         }

@@ -1,8 +1,8 @@
-use crate::{GpuPod, GpuPodRelaxed, Graphics, StagingView};
+use crate::{GpuPod, Graphics, StagingView, StagingViewWrite};
 use parking_lot::Mutex;
 use std::{
     marker::PhantomData,
-    num::NonZeroU64,
+    num::{NonZeroU32, NonZeroU64},
     ops::DerefMut,
     sync::{atomic::Ordering, Arc},
 };
@@ -46,8 +46,6 @@ impl StagingPool {
         let write = wgpu::BufferUsages::MAP_WRITE
             | wgpu::BufferUsages::COPY_SRC;
 
-        log::debug!("Looking for staging buffer [cap = {capacity}b, mode = {mode:?}]");
-
         // Try to find a free buffer
         // If that's not possible, simply create a new one
         self.allocations.iter().enumerate().find(|(i, buffer)| {
@@ -86,22 +84,80 @@ impl StagingPool {
             (index, &self.allocations[index])
         })
     }
+}
 
-    // Map a target for writing only (maps an intermediate staging buffer)
+impl StagingPool {
+    // Map a target for reading only (maps an intermediate staging buffer)
     // Src target must have the COPY_SRC buffer usage flag
     pub fn map_buffer_read<'a>(
         &'a self,
-        graphics: &Graphics,
+        graphics: &'a Graphics,
         buffer: &Buffer,
         offset: u64,
         size: u64,
     ) -> Option<StagingView<'a>> {
-        None
+        assert!(buffer
+            .usage()
+            .contains(wgpu::BufferUsages::COPY_SRC));
+
+        // Get a encoder (reused or not to perform a copy)
+        let mut encoder = graphics.acquire();
+        let (i, staging) =
+            self.find_or_allocate(graphics, size, MapMode::Read);
+
+        // Copy to staging first
+        encoder
+            .copy_buffer_to_buffer(buffer, offset, staging, 0, size);
+
+        // Put the encoder back into the cache, and submit ALL encoders
+        graphics.reuse([encoder]);
+        // (Also wait for their subbmission)
+        graphics.submit_unused(true);
+
+        // Map the staging buffer
+        type MapResult = Result<(), wgpu::BufferAsyncError>;
+        let (tx, rx) = std::sync::mpsc::channel::<MapResult>();
+
+        // Map synchronously
+        let slice = staging.slice(0..size);
+        slice.map_async(wgpu::MapMode::Read, move |res| {
+            tx.send(res).unwrap()
+        });
+        graphics.device().poll(wgpu::Maintain::Wait);
+
+        // Wait until the buffer is mapped, then read from the buffer
+        if let Ok(Ok(_)) = rx.recv() {
+            return Some(StagingView {
+                index: i,
+                states: &&self.states,
+                staging,
+                view: slice.get_mapped_range(),
+            });
+        } else {
+            panic!("Could not receive read map async")
+        }
+    }
+
+    // Map a target for writing only
+    // This is a "fire and forget" command that does not stall the CPU
+    pub fn map_buffer_write<'a>(
+        &'a self,
+        graphics: &'a Graphics,
+        buffer: &'a Buffer,
+        offset: u64,
+        size: u64,
+    ) -> Option<StagingViewWrite<'a>> {
+        let size = NonZeroU64::new(size);
+        let write = graphics.queue().write_buffer_with(
+            buffer,
+            offset,
+            size.unwrap(),
+        )?;
+        Some(StagingViewWrite { write })
     }
 
     // Writes to the destination buffer using the source byte buffer
     // This is a "fire and forget" command that does not stall the CPU
-    // The user can do multiple write calls and expect them to be batched together
     pub fn write_buffer<'a>(
         &'a self,
         graphics: &Graphics,
@@ -165,5 +221,74 @@ impl StagingPool {
 
         // Reset the state of the staging buffer
         self.states.remove(i, Ordering::Relaxed);
+    }
+}
+
+impl StagingPool {
+    // Map an texture for reading only (maps an intermediate staging buffer)
+    // Src texture must have the COPY_SRC texture usage flag
+    pub fn map_texture_read<'a>(
+        &'a self,
+        graphics: &'a Graphics,
+        texture: &wgpu::Texture,
+    ) -> Option<StagingView<'a>> {
+        todo!()
+    }
+
+    // Map a texture for writing only
+    // This is a "fire and forget" command that does not stall the CPU
+    pub fn map_texture_write<'a>(
+        &'a self,
+        graphics: &'a Graphics,
+        texture: &'a wgpu::Texture,
+    ) -> Option<StagingViewWrite<'a>> {
+        todo!()
+    }
+
+    // Writes to the destination texture using the source byte buffer
+    // This is a "fire and forget" command that does not stall the CPU
+    pub fn write_texture<'a>(
+        &'a self,
+        graphics: &Graphics,
+        texture: &wgpu::Texture,
+        mip_level: u32,
+        origin: wgpu::Origin3d,
+        extent: wgpu::Extent3d,
+        aspect: wgpu::TextureAspect,
+        offset: u64,
+        bytes_per_row: Option<NonZeroU32>,
+        rows_per_image: Option<NonZeroU32>,
+        src: &[u8],
+    ) {
+        let image_copy_texture = wgpu::ImageCopyTexture {
+            texture,
+            mip_level,
+            origin,
+            aspect,
+        };
+
+        let data_layout = wgpu::ImageDataLayout {
+            offset,
+            bytes_per_row,
+            rows_per_image,
+        };
+
+        graphics.queue().write_texture(
+            image_copy_texture,
+            src,
+            data_layout,
+            extent,
+        );
+    }
+
+    // Reads the given buffer into the destination buffer
+    // Will stall the CPU, since this is waiting for GPU data
+    // TODO: Make it submit the current recorder only when it was written to recently
+    pub fn read_texture<'a>(
+        &'a self,
+        graphics: &'a Graphics,
+        texture: &wgpu::Texture,
+        dst: &mut [u8],
+    ) {
     }
 }

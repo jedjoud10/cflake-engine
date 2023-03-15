@@ -12,9 +12,6 @@ layout(set = 1, binding = 0) uniform texture2D color_map;
 // Fetch the scene depth data
 layout(set = 1, binding = 2) uniform texture2D depth_map;
 
-// Fetch the shadowmap depth data
-layout(set = 1, binding = 3) uniform texture2D shadowmap;
-
 void main() {
 	// Get the scaled down coordinates
 	float x = gl_FragCoord.x / float(window.width);
@@ -25,8 +22,12 @@ void main() {
 	vec3 color = texelFetch(color_map, ivec2(gl_FragCoord.xy), 0).rgb;
 
 	// Fetch the depth data
-	float non_linear_depth = texelFetch(shadowmap, ivec2(gl_FragCoord.xy), 0).r;
+	/*
+	float non_linear_depth = texelFetch(depth_map, ivec2(gl_FragCoord.xy), 0).r;
 	float depth = linearize_depth(non_linear_depth, 0.01, 5000);
+	vec3 fog = mix(color, vec3(1), depth / 100.0);
+	color = fog;
+	*/
 
 	// Increase exposure
 	color *= 1.2;
@@ -43,13 +44,5 @@ void main() {
 	vignette = clamp(vignette, 0, 1);
 	vignette = pow(vignette, 4.0) * clamp(vignette_strength, 0.0, 2.0);
 	color = mix(color, vec3(0), vignette);
-
-	// DEBUG DATA
-	if ((window.width-gl_FragCoord.x) < 256 && gl_FragCoord.y < 256) {
-		ivec2 shadowmap_coord = ivec2(window.width-gl_FragCoord.x, gl_FragCoord.y);
-		float shadowmap_depth = texelFetch(shadowmap, ivec2(shadowmap_coord * 16), 0).r;
-		color = vec3(shadowmap_depth);
-	}
-
 	frag = vec4(color, 0);
 }

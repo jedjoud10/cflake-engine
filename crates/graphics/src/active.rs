@@ -1,12 +1,12 @@
 mod bindings;
 mod command;
 mod constants;
-mod filler;
+mod errors;
 mod pipeline;
 mod renderpass;
 pub use bindings::*;
 pub use command::*;
 pub use constants::*;
-pub use filler::*;
+pub use errors::*;
 pub use pipeline::*;
 pub use renderpass::*;

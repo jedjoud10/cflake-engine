@@ -8,7 +8,6 @@ use crate::{
 use assets::Asset;
 use graphics::{
     BufferMode, BufferUsage, Graphics, Triangle, TriangleBuffer,
-    Vertex, VertexBuffer,
 };
 use obj::TexturedVertex;
 use std::cell::{Cell, RefCell};
@@ -48,30 +47,30 @@ impl Mesh {
     ) -> Result<Self, MeshInitializationError> {
         let positions = positions.map(|slice| {
             AttributeBuffer::<Position>::from_slice(
-                graphics, &slice, mode, usage,
+                graphics, slice, mode, usage,
             )
             .unwrap()
         });
         let normals = normals.map(|slice| {
             AttributeBuffer::<Normal>::from_slice(
-                graphics, &slice, mode, usage,
+                graphics, slice, mode, usage,
             )
             .unwrap()
         });
         let tangents = tangents.map(|slice| {
             AttributeBuffer::<Tangent>::from_slice(
-                graphics, &slice, mode, usage,
+                graphics, slice, mode, usage,
             )
             .unwrap()
         });
         let tex_coords = tex_coords.map(|slice| {
             AttributeBuffer::<TexCoord>::from_slice(
-                graphics, &slice, mode, usage,
+                graphics, slice, mode, usage,
             )
             .unwrap()
         });
         let triangles = TriangleBuffer::from_slice(
-            graphics, &triangles, mode, usage,
+            graphics, triangles, mode, usage,
         )
         .unwrap();
         Self::from_buffers(
@@ -266,12 +265,9 @@ impl Asset for Mesh {
         });
 
         // Remap the attributes into a slices and options
-        let mut normals =
-            normals.as_mut().map(|vec| vec.as_mut_slice());
-        let mut tangents =
-            tangents.as_mut().map(|vec| vec.as_mut_slice());
-        let mut tex_coords =
-            tex_coords.as_mut().map(|vec| vec.as_mut_slice());
+        let mut normals = normals.as_deref_mut();
+        let mut tangents = tangents.as_deref_mut();
+        let mut tex_coords = tex_coords.as_deref_mut();
 
         // Apply the mesh settings to the attributes
         let mut positions = Some(positions.as_mut_slice());

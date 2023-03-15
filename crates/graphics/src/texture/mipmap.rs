@@ -206,7 +206,7 @@ impl<'a, T: Texture> MipLevelRef<'a, T> {
         // Make sure the "offset" doesn't cause reads outside the texture
         if let Some(subregion) = subregion {
             if mip_level_region.is_larger_than(subregion) {
-                return Err(MipLevelReadError::InvalidRegion());
+                return Err(MipLevelReadError::InvalidRegion);
             }
         }
 
@@ -286,7 +286,7 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
         // Make sure the "offset" doesn't cause reads outside the texture
         if let Some(subregion) = subregion {
             if mip_level_region.is_larger_than(subregion) {
-                return Err(MipLevelReadError::InvalidRegion());
+                return Err(MipLevelReadError::InvalidRegion);
             }
         }
 
@@ -303,7 +303,35 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
         src: &[<T::T as Texel>::Storage],
         subregion: Option<T::Region>,
     ) -> Result<(), MipLevelWriteError> {
-        todo!()
+        // Nothing to write to
+        if src.is_empty() {
+            return Ok(());
+        }
+
+        // Make sure we can write to the texture
+        if !self.texture.usage().contains(TextureUsage::WRITE) {
+            return Err(MipLevelWriteError::NonWritable);
+        }
+
+        // Get the region for this mip level
+        let mip_level_region = <T::Region as Region>::with_extent(
+            self.texture
+                .dimensions()
+                .mip_level_dimensions(self.level),
+        );
+
+        // Make sure the "offset" doesn't cause reads outside the texture
+        if let Some(subregion) = subregion {
+            if mip_level_region.is_larger_than(subregion) {
+                return Err(MipLevelWriteError::InvalidRegion);
+            }
+        }
+
+        // Get the mip level subregion if the given one is None
+        let subregion = subregion.unwrap_or(mip_level_region);
+
+        // TODO: Actually handle writing here
+        todo!();
     }
 
     // Copy a sub-region from another level into this level

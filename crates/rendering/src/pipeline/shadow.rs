@@ -1,22 +1,20 @@
 use crate::{
-    attributes::{Position, RawPosition},
-    ActiveScenePipeline, ActiveSceneRenderPass,
+    attributes::Position, ActiveShadowGraphicsPipeline,
     DefaultMaterialResources, EnabledMeshAttributes, Material, Mesh,
-    MeshAttribute, Renderer, SceneColor, SceneDepth, Surface, ActiveShadowGraphicsPipeline,
+    Renderer, Surface,
 };
-use ecs::Scene;
-use graphics::{
-    ActiveGraphicsPipeline, ActiveRenderPass, Depth, Graphics,
-    GraphicsPipeline, PushConstants, SwapchainFormat, Vertex, XYZ, ValueFiller,
-};
-use utils::{Handle, Storage, Time};
+use ecs::{modified, Rotation, Scale, Scene};
+use graphics::{GpuPod, ModuleVisibility};
+use utils::Storage;
 use world::World;
 
 // Returns true if the entity should cast shadows, false otherwise
 fn filter(mesh: &Mesh, renderer: &Renderer) -> bool {
     let enabled = renderer.visible;
-    let attribute =
-        mesh.vertices().enabled().contains(EnabledMeshAttributes::POSITIONS);
+    let attribute = mesh
+        .vertices()
+        .enabled()
+        .contains(EnabledMeshAttributes::POSITIONS);
     let validity = mesh.vertices().len().is_some();
     enabled && validity && attribute
 }
@@ -25,7 +23,6 @@ fn filter(mesh: &Mesh, renderer: &Renderer) -> bool {
 pub(super) fn render_shadows<'r, M: Material>(
     world: &'r World,
     meshes: &'r Storage<Mesh>,
-    default: &'r DefaultMaterialResources,
     active: &mut ActiveShadowGraphicsPipeline<'_, 'r, '_>,
 ) {
     // Don't do shit if we won't cast shadows
@@ -49,19 +46,23 @@ pub(super) fn render_shadows<'r, M: Material>(
         }
 
         // Set the mesh matrix push constant
-        active.set_push_constants(|push_constants| {
-            push_constants
-                .set("matrix", renderer.matrix.cols)
-                .unwrap();
-        });
+        active
+            .set_push_constants(|constants| {
+                let matrix = renderer.matrix;
+                let cols = matrix.cols;
+                let bytes = GpuPod::into_bytes(&cols);
+                constants.push(bytes, 0, ModuleVisibility::Vertex);
+            })
+            .unwrap();
 
         // Set the position buffer
-        let positions = mesh.vertices().attribute::<Position>().unwrap();
-        active.set_vertex_buffer::<<Position as crate::MeshAttribute>::V>(0, positions, ..);
+        let positions =
+            mesh.vertices().attribute::<Position>().unwrap();
+        active.set_vertex_buffer::<<Position as crate::MeshAttribute>::V>(0, positions, ..).unwrap();
 
         // Set the index buffer
         let triangles = mesh.triangles();
-        active.set_index_buffer(triangles.buffer(), ..);
+        active.set_index_buffer(triangles.buffer(), ..).unwrap();
 
         // Draw the triangulated mesh
         let indices = 0..(triangles.buffer().len() as u32 * 3);

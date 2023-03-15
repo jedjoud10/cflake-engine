@@ -1,6 +1,13 @@
 use assets::Assets;
 use bytemuck::{Pod, Zeroable};
-use graphics::{Texture2D, Normalized, Depth, GraphicsPipeline, RenderPass, Shader, Graphics, VertexModule, FragmentModule, Compiler, Operation, LoadOp, StoreOp, PrimitiveConfig, Texture, TextureMode, TextureUsage, SamplerSettings, TextureMipMaps, ActiveGraphicsPipeline, UniformBuffer, BufferUsage, BufferMode, DepthConfig, CompareFunction, WindingOrder};
+use graphics::{
+    ActiveGraphicsPipeline, BufferMode, BufferUsage, CompareFunction,
+    Compiler, Depth, DepthConfig, Face, FragmentModule, GpuPod,
+    Graphics, GraphicsPipeline, LoadOp, ModuleVisibility, Operation,
+    PrimitiveConfig, RenderPass, SamplerSettings, Shader, StoreOp,
+    Texture, Texture2D, TextureMipMaps, TextureMode, TextureUsage,
+    UniformBuffer, VertexModule, WindingOrder, PushConstantLayout,
+};
 use vek::FrustumPlanes;
 
 use crate::EnabledMeshAttributes;
@@ -9,10 +16,9 @@ use crate::EnabledMeshAttributes;
 pub type ShadowTexel = Depth<f32>;
 pub type ShadowMap = Texture2D<ShadowTexel>;
 pub type ShadowRenderPass = RenderPass<(), ShadowTexel>;
-pub type ShadowGraphicsPipeline =
-    GraphicsPipeline<(), ShadowTexel>;
-pub type ActiveShadowGraphicsPipeline<'a, 'r, 't> 
-    = ActiveGraphicsPipeline<'a, 'r, 't, (), ShadowTexel>;
+pub type ShadowGraphicsPipeline = GraphicsPipeline<(), ShadowTexel>;
+pub type ActiveShadowGraphicsPipeline<'a, 'r, 't> =
+    ActiveGraphicsPipeline<'a, 'r, 't, (), ShadowTexel>;
 
 // Directional shadow mapping for the main sun light
 // The shadows must be rendered before we render the main frame
@@ -21,11 +27,12 @@ pub struct ShadowMapping {
     pub(crate) depth_tex: ShadowMap,
     pub(crate) render_pass: ShadowRenderPass,
     pub(crate) pipeline: ShadowGraphicsPipeline,
-    pub(crate) shader: Shader,    
+    pub(crate) shader: Shader,
 
     // Cached matrices
     pub(crate) projection: vek::Mat4<f32>,
     pub(crate) view: vek::Mat4<f32>,
+    pub(crate) resolution: u32,
 
     // This is the corresponding data that must be sent to the shader
     pub(crate) buffer: UniformBuffer<ShadowUniform>,
@@ -33,9 +40,13 @@ pub struct ShadowMapping {
 
 // This is the uniform that is defined in the Vertex Module
 #[derive(Clone, Copy, PartialEq, Pod, Zeroable, Default)]
-#[repr(C, align(64))]
+#[repr(C)]
 pub struct ShadowUniform {
     pub lightspace: vek::Vec4<vek::Vec4<f32>>,
+    pub strength: f32,
+    pub spread: f32,
+    pub resolution: u32,
+    _padding: f32,
 }
 
 impl ShadowMapping {
@@ -49,24 +60,29 @@ impl ShadowMapping {
     ) -> Self {
         // Load the vertex module for the shadowmap shader
         let vertex = assets
-            .load::<VertexModule>("engine/shaders/scene/shadow/shadow.vert")
+            .load::<VertexModule>(
+                "engine/shaders/scene/shadow/shadow.vert",
+            )
             .unwrap();
 
         // Load the fragment module for the shadowmap shader
         let fragment = assets
-            .load::<FragmentModule>("engine/shaders/scene/shadow/shadow.frag").unwrap();
+            .load::<FragmentModule>(
+                "engine/shaders/scene/shadow/shadow.frag",
+            )
+            .unwrap();
 
         // Create the bind layout for the shadow map shader
         let mut compiler = Compiler::new(assets);
-        compiler.use_ubo::<ShadowUniform>("ubo");
+        compiler.use_uniform_buffer::<ShadowUniform>("shadow");
+        let bytes = <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size();
+        let layout = PushConstantLayout::single(bytes, ModuleVisibility::Vertex).unwrap();
+        compiler.use_push_constant_layout(layout);
 
         // Combine the modules to the shader
-        let shader = Shader::new(
-            graphics,
-            vertex,
-            fragment,
-            compiler
-        ).unwrap();
+        let shader =
+            Shader::new(graphics, vertex, fragment, compiler)
+                .unwrap();
 
         // Create the shadow map render pass
         let render_pass = ShadowRenderPass::new(
@@ -96,22 +112,24 @@ impl ShadowMapping {
             ),
             PrimitiveConfig::Triangles {
                 winding_order: WindingOrder::Ccw,
-                cull_face: None,
+                cull_face: Some(Face::Front),
                 wireframe: false,
             },
             &shader,
-        ).unwrap();
+        )
+        .unwrap();
 
         // Create the depth texture that we will render to
-        let depth_tex = Texture2D::<Depth::<f32>>::from_texels(
+        let depth_tex = Texture2D::<Depth<f32>>::from_texels(
             graphics,
             None,
             vek::Extent2::broadcast(resolution),
             TextureMode::Dynamic,
             TextureUsage::RENDER_TARGET | TextureUsage::SAMPLED,
             SamplerSettings::default(),
-            TextureMipMaps::Disabled
-        ).unwrap();
+            TextureMipMaps::Disabled,
+        )
+        .unwrap();
 
         // The shadow frustum is the cuboid that will contain the shadow map
         let frustum = FrustumPlanes::<f32> {
@@ -126,7 +144,7 @@ impl ShadowMapping {
         // Create the projection matrix and the view matrix (identity)
         let projection = vek::Mat4::orthographic_rh_zo(frustum);
         let view = vek::Mat4::identity();
-        let lightspace = projection*view; 
+        let lightspace = projection * view;
 
         Self {
             render_pass,
@@ -137,20 +155,23 @@ impl ShadowMapping {
                 graphics,
                 &[ShadowUniform {
                     lightspace: lightspace.cols,
+                    strength: 1.0,
+                    spread: 0.01,
+                    resolution,
+                    _padding: 0.0f32,
                 }],
                 BufferMode::Dynamic,
                 BufferUsage::WRITE,
-            ).unwrap(),
+            )
+            .unwrap(),
             projection,
             view,
+            resolution,
         }
     }
 
-    // Update the rotation of the sun shadows using a new rotation 
-    pub(crate) fn update(
-        &mut self, 
-        rotation: vek::Quaternion<f32>
-    ) {
+    // Update the rotation of the sun shadows using a new rotation
+    pub(crate) fn update(&mut self, rotation: vek::Quaternion<f32>) {
         let rot = vek::Mat4::from(rotation);
         let view = vek::Mat4::<f32>::look_at_rh(
             vek::Vec3::zero(),
@@ -159,9 +180,18 @@ impl ShadowMapping {
         );
         self.view = view;
         let lightspace = self.projection * self.view;
-        
-        self.buffer.write(&[ShadowUniform {
-            lightspace: lightspace.cols,
-        }], 0).unwrap();
+
+        self.buffer
+            .write(
+                &[ShadowUniform {
+                    lightspace: lightspace.cols,
+                    strength: 1.0,
+                    spread: 0.01,
+                    resolution: self.resolution,
+                    _padding: 0.0f32,
+                }],
+                0,
+            )
+            .unwrap();
     }
 }

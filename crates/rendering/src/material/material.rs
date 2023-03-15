@@ -1,18 +1,17 @@
 use crate::{
-    AlbedoMap, CameraBuffer, CameraUniform, EnabledMeshAttributes,
-    Mesh, NormalMap, Renderer, SceneBuffer, SceneColor, SceneUniform,
-    TimingBuffer, TimingUniform,
+    AlbedoMap, CameraBuffer, EnabledMeshAttributes, Mesh, NormalMap,
+    Renderer, SceneBuffer, SceneColor, TimingBuffer,
 };
 use assets::Assets;
 use graphics::{
-    BindGroup, BlendConfig, CompareFunction, Compiled,
-    DepthConfig, FragmentModule, Graphics, Normalized,
-    PrimitiveConfig, PushConstants, StencilConfig, Texture2D,
-    UniformBuffer, VertexModule, WindingOrder, RGBA, Shader,
+    BindGroup, BlendConfig, CompareFunction, DepthConfig, Graphics,
+    PrimitiveConfig, PushConstants, Shader, StencilConfig,
+    WindingOrder,
 };
+use utils::{Handle, UntypedHandle};
 use world::World;
 
-// These are the default resources that we pass to any/each material
+// These are the default settings that we pass to each material
 pub struct DefaultMaterialResources<'a> {
     // Main scene uniform buffers
     // TODO: Make use of crevice to implement Std130, Std140
@@ -27,6 +26,10 @@ pub struct DefaultMaterialResources<'a> {
 
     // Default sky gradient texture
     pub sky_gradient: &'a AlbedoMap,
+
+    // Currently used indicies
+    pub material_index: usize,
+    pub draw_call_index: usize,
 }
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
@@ -36,10 +39,7 @@ pub trait Material: 'static + Sized {
     type Resources<'w>: 'w;
 
     // Create a shader for this material
-    fn shader(
-        graphics: &Graphics,
-        assets: &mut Assets,
-    ) -> Shader;
+    fn shader(graphics: &Graphics, assets: &mut Assets) -> Shader;
 
     // Get the required mesh attributes that we need to render a surface
     // If a surface does not support these attributes, it will not be rendered
@@ -82,43 +82,51 @@ pub trait Material: 'static + Sized {
         true
     }
 
+    // Insert the required resources for this material into the world
+
+    // This function will be deferred to the very last minute of the rendering system
+    // because it needs mutable access to world, so don't expect it to run whenever
+    // you are registering a new material
+    /*
+    fn insert(_world: &mut World) {}
+    */
 
     // Fetch the required resources from the world
     fn fetch<'w>(world: &'w World) -> Self::Resources<'w>;
 
     // Set the static bindings
     fn set_global_bindings<'r, 'w>(
-        resources: &'r mut Self::Resources<'w>,
-        default: &DefaultMaterialResources<'r>,
-        group: &mut BindGroup<'r>,
+        _resources: &'r mut Self::Resources<'w>,
+        _group: &mut BindGroup<'r>,
+        _default: &DefaultMaterialResources<'r>,
     ) {
     }
 
     // Set the per instance bindings
     fn set_instance_bindings<'r, 'w>(
         &self,
-        resources: &'r mut Self::Resources<'w>,
-        default: &DefaultMaterialResources<'r>,
-        group: &mut BindGroup<'r>,
+        _resources: &'r mut Self::Resources<'w>,
+        _default: &DefaultMaterialResources<'r>,
+        _group: &mut BindGroup<'r>,
     ) {
     }
 
     // Set the per surface bindings
     fn set_surface_bindings<'r, 'w>(
-        renderer: &Renderer,
-        resources: &'r mut Self::Resources<'w>,
-        default: &DefaultMaterialResources<'r>,
-        group: &mut BindGroup<'r>,
+        _renderer: &Renderer,
+        _resources: &'r mut Self::Resources<'w>,
+        _default: &mut DefaultMaterialResources<'w>,
+        _group: &mut BindGroup<'r>,
     ) {
     }
 
-    // Set push constants (per surface)
+    // Set the required push constants
     fn set_push_constants<'r, 'w>(
         &self,
-        renderer: &Renderer,
-        resources: &'r mut Self::Resources<'w>,
-        default: &DefaultMaterialResources<'r>,
-        push_constants: &mut PushConstants,
+        _renderer: &Renderer,
+        _resources: &'r mut Self::Resources<'w>,
+        _default: &DefaultMaterialResources<'r>,
+        _push_constants: &mut PushConstants,
     ) {
     }
 }
