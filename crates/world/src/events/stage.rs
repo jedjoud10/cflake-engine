@@ -12,7 +12,7 @@ pub struct StageId {
 }
 
 // Single int to depict what caller we are using
-#[derive(Clone, Copy, Eq, Ord, Debug)]
+#[derive(Clone, Copy, Eq, Debug)]
 pub struct CallerId {
     pub name: &'static str,
     pub id: TypeId,
@@ -30,6 +30,12 @@ impl PartialEq for CallerId {
     }
 }
 
+impl Ord for CallerId {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.id.cmp(&other.id)
+    }
+}
+
 impl PartialOrd for CallerId {
     fn partial_cmp(
         &self,
@@ -40,7 +46,7 @@ impl PartialOrd for CallerId {
 }
 
 // System id that contains the name and type ID of the system
-#[derive(Clone, Copy, Eq, Ord, Debug)]
+#[derive(Clone, Copy, Eq, Debug)]
 pub struct SystemId {
     pub name: &'static str,
     pub id: TypeId,
@@ -64,6 +70,12 @@ impl PartialOrd for SystemId {
         other: &Self,
     ) -> Option<std::cmp::Ordering> {
         self.id.partial_cmp(&other.id)
+    }
+}
+
+impl Ord for SystemId {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.id.cmp(&other.id)
     }
 }
 
