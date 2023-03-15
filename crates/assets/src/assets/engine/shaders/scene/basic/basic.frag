@@ -13,6 +13,7 @@ layout(location = 4) in vec2 m_tex_coord;
 #include <engine/shaders/common/scene.glsl>
 #include <engine/shaders/common/extensions.glsl>
 #include <engine/shaders/common/shadow.glsl>
+#include <engine/shaders/common/sky.glsl>
 
 // Sky gradient texture map
 layout(set = 0, binding = 5) uniform texture2D gradient_map;
@@ -54,10 +55,8 @@ void main() {
 		normalize(m_normal));
 	vec3 normal = normalize(tbn * normalize(bumps));
 
-	// Calculate ambient color
-	float y = normal.y;
-	y = clamp(y, 0, 1);
-	vec3 ambient = texture(sampler2D(gradient_map, gradient_map_sampler), vec2(y, 1.0)).rgb;
+	// Calculate ambient sky color
+	vec3 ambient = calculate_sky_color(normal, scene.sun_direction.xyz);
 
 	// Calculate light dir 
 	vec3 light = normalize(-scene.sun_direction.xyz);
@@ -67,7 +66,7 @@ void main() {
 	
 	// Basic dot product light calculation
 	float value = clamp(dot(light, normal), 0, 1) * (1-shadowed);
-	vec3 lighting = value + ambient * 0.5; 
+	vec3 lighting = value + (ambient * 0.5 + vec3(0.08)); 
 
 	// Calculate specular reflections
 	vec3 view = normalize(camera.position.xyz - m_position);

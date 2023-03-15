@@ -147,7 +147,6 @@ impl<'a> VerticesMut<'a> {
     // Try to compute the AABB of the mesh using updated position vertices
     pub fn compute_aabb(
         &mut self,
-        _encoder: &mut CommandEncoder,
     ) -> Result<AABB, MeshAabbComputeError> {
         let attribute = self.attribute::<Position>().ok_or(
             MeshAabbComputeError::MissingPositionAttributeBuffer,

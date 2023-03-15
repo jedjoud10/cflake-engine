@@ -26,7 +26,7 @@ fn init(world: &mut World) {
     let shadowmap = ShadowMapping::new(
         20f32,
         100f32,
-        512,
+        4096,
         &graphics,
         &mut assets,
     );
@@ -146,8 +146,9 @@ fn render(world: &mut World) {
     let f2 = ecs::modified::<ecs::Rotation>();
     let f3 = ecs::modified::<ecs::Scale>();
     let f4 = f1 | f2 | f3;
-    let update =
+    let mut update =
         scene.query_with::<&Renderer>(f4).into_iter().count() > 0;
+    update |= scene.query_with::<&DirectionalLight>(f2).into_iter().count() > 0;
 
     if update {
         // Update the shadow map lightspace matrix

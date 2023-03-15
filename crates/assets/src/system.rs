@@ -17,6 +17,7 @@ fn init(world: &mut World) {
     persistent!(loader, "engine/shaders/common/timing.glsl");
     persistent!(loader, "engine/shaders/common/shadow.glsl");
     persistent!(loader, "engine/shaders/common/window.glsl");
+    persistent!(loader, "engine/shaders/common/sky.glsl");
     persistent!(loader, "engine/shaders/common/extensions.glsl");
     persistent!(loader, "engine/shaders/math/conversions.glsl");
 

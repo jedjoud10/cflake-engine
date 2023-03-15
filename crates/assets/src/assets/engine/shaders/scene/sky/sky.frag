@@ -2,6 +2,7 @@
 layout(location = 0) out vec4 frag;
 
 #include <engine/shaders/common/scene.glsl>
+#include <engine/shaders/common/sky.glsl>
 
 // Data given by the vertex shader
 layout(location = 0) in vec3 m_position;
@@ -17,7 +18,7 @@ void main() {
 	y = clamp(y, 0, 1);
 	
 	// Get background sky color based on elevation
-	vec3 albedo = texture(sampler2D(gradient_map, gradient_map_sampler), vec2(0.5, 1-y)).rgb;
+	vec3 albedo = calculate_sky_color(normal, scene.sun_direction.xyz);
 
 	// Create a procedural sun with the scene params
 	float sun = dot(normal, -scene.sun_direction.xyz);

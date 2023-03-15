@@ -38,7 +38,6 @@ fn init(world: &mut World) {
     asset!(&mut assets, "assets/user/ignored/normal.jpg");
     asset!(&mut assets, "assets/user/ignored/untitled.obj");
 
-    /*
     // Load in the diffuse map and normal map textures asynchronously
     let albedo = assets.async_load::<AlbedoMap>(
         ("user/ignored/diffuse.jpg", graphics.clone()),
@@ -60,7 +59,6 @@ fn init(world: &mut World) {
         world.get_mut::<Storage<NormalMap>>().unwrap();
     let diffuse = diffuse_maps.insert(diffuse);
     let normal = normal_maps.insert(normal);
-    */
 
     // Get the material id (also registers the material pipeline)
     let id =
@@ -68,8 +66,8 @@ fn init(world: &mut World) {
 
     // Create a new material instance
     let material = basics.insert(Basic {
-        albedo_map: None,
-        normal_map: None,
+        albedo_map: Some(diffuse),
+        normal_map: Some(normal),
         bumpiness: 1.4,
         tint: vek::Rgb::one(),
     });
@@ -164,6 +162,11 @@ fn update(world: &mut World) {
     let time = &*time;
     let input = world.get::<Input>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
+
+    // Rotation the light
+    if let Some((rotation, _)) = scene.find_mut::<(&mut Rotation, &DirectionalLight)>() {
+        rotation.rotate_x(-0.1 * time.delta().as_secs_f32());
+    }
 
     let camera = scene
         .find_mut::<(&mut Camera, &mut Position, &mut Rotation)>();
