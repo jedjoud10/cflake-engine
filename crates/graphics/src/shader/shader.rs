@@ -63,8 +63,47 @@ impl Shader {
 }
 
 // A compute shader used for general computing work
+// This is used for compute work, and nothing else.
+// Shaders are clonable since they can be shared between multiple graphics pipelines
+#[derive(Clone)]
 pub struct ComputeShader {
     compiled: Compiled<ComputeModule>,
     pub(crate) layout: Arc<wgpu::PipelineLayout>,
     pub(crate) reflected: Arc<ReflectedShader>,
+}
+
+impl ComputeShader {
+    // Create a new compute shader from the compute module
+    pub fn new(
+        graphics: &Graphics,
+        module: ComputeModule,
+        compiler: Compiler,
+    ) -> Result<Self, ShaderError> {
+        let compiled = compiler.compile(module, graphics)?;
+        let names = [compiled.name()];
+        let modules = [compiled.naga()];
+        let visibility = [compiled.visibility()];
+        let (reflected, layout) = compiler.create_pipeline_layout(
+            graphics,
+            &names,
+            &modules,
+            &visibility,
+        )?;
+
+        Ok(Self {
+            compiled,
+            layout,
+            reflected,
+        })
+    }
+
+    // Get the compute module
+    pub fn compute(&self) -> &Compiled<ComputeModule> {
+        &self.compiled
+    }
+
+    // Get the underlying reflected shader
+    pub fn reflected(&self) -> &ReflectedShader {
+        &self.reflected
+    }
 }

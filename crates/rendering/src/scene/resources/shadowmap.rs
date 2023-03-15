@@ -92,8 +92,7 @@ impl ShadowMapping {
                 load: LoadOp::Clear(1.0),
                 store: StoreOp::Store,
             },
-        )
-        .unwrap();
+        );
 
         // Create the shadow map graphics pipeline
         let pipeline = ShadowGraphicsPipeline::new(

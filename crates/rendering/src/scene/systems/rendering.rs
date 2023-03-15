@@ -165,7 +165,7 @@ fn render(world: &mut World) {
 
         // Create a new active shadowmap render pass
         let mut render_pass =
-            shadowmap.render_pass.begin((), depth).unwrap();
+            shadowmap.render_pass.begin((), depth);
 
         // Bind the default shadowmap graphics pipeline
         let mut active =
@@ -192,7 +192,7 @@ fn render(world: &mut World) {
     let color = renderer.color_texture.as_render_target().unwrap();
     let depth = renderer.depth_texture.as_render_target().unwrap();
     let mut render_pass =
-        renderer.render_pass.begin(color, depth).unwrap();
+        renderer.render_pass.begin(color, depth);
 
     // This will iterate over each material pipeline and draw the scene
     for pipeline in pipelines.iter() {

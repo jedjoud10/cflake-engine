@@ -119,8 +119,7 @@ impl Rasterizer {
                 store: StoreOp::Store,
             },
             (),
-        )
-        .unwrap();
+        );
 
         // Create the appropriate vertex config for Egui
         let vertex_config = VertexConfig {
@@ -259,7 +258,7 @@ impl Rasterizer {
 
         // Begin the render pass
         let mut render_pass =
-            self.render_pass.begin(dst, ()).unwrap();
+            self.render_pass.begin(dst, ());
 
         // Bind the graphics pipeline
         let mut active = render_pass.bind_pipeline(&self.pipeline);

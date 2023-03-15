@@ -72,7 +72,7 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
         let targets =
             color_layout_to_color_target_state::<C>(&blend_config);
         let primitive = primitive_config_to_state(primitive_config);
-        let layout = shader_to_pipeline_layout(&shader);
+        let layout = &shader.layout;
 
         // Create the WGPU pipeline using the given configuration
         let pipeline = graphics.device().create_render_pipeline(
@@ -109,13 +109,6 @@ impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
             blend_config,
         })
     }
-}
-
-// Fetches the pipeline layout from the given shader
-fn shader_to_pipeline_layout(
-    shader: &Shader,
-) -> &wgpu::PipelineLayout {
-    &shader.layout
 }
 
 // Convert the given vertex config to the vertex attributes used by the vertex buffer layout

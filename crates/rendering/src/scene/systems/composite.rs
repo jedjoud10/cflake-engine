@@ -32,7 +32,7 @@ fn update(world: &mut World) {
 
     // Begin the render pass
     let mut render_pass =
-        compositor.render_pass.begin(dst, ()).unwrap();
+        compositor.render_pass.begin(dst, ());
 
     // Bind the graphics pipeline
     let mut active = render_pass.bind_pipeline(&compositor.pipeline);

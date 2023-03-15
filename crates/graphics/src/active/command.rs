@@ -1,6 +1,6 @@
 use crate::{
     BufferInfo, ColorLayout, DepthStencilLayout, GraphicsPipeline,
-    TriangleBuffer, UniformBuffer,
+    TriangleBuffer, UniformBuffer, ComputePipeline,
 };
 use std::{
     ops::{Bound, Range},
@@ -56,6 +56,29 @@ pub(crate) enum RenderCommand<
         indices: Range<u32>,
         instances: Range<u32>,
     },
+}
+
+// Keep track of all compute commands that we call upon the compute pass
+pub(crate) enum ComputeCommand<'a> {
+    // Bind compute pipeline
+    BindPipeline(&'a ComputePipeline),
+
+    // Set bind group
+    SetBindGroup(u32, Arc<BindGroup>),
+
+    // Set push constant range
+    SetPushConstants {
+        size: usize,
+        global_offset: usize,
+        local_offset: usize,
+    },
+
+    // Dispatch the compute pipeline
+    Dispatch {
+        x: u32,
+        y: u32,
+        z: u32,
+    }
 }
 
 // Record the render commands to the given render pass
@@ -125,6 +148,43 @@ pub(crate) fn record_render_commands<'r, C: ColorLayout, DS: DepthStencilLayout>
                     instances.clone(),
                 );
             }
+        }
+    }
+}
+
+// Record the compute commands to the given compute pass
+pub(crate) fn record_compute_commands<'r>(
+    mut compute_pass: wgpu::ComputePass<'r>,
+    push_constants: Vec<u8>,
+    compute_commands: &'r [ComputeCommand<'r>],
+) {
+    for compute_command in compute_commands {
+        match compute_command {
+            ComputeCommand::BindPipeline(pipeline) => {
+                compute_pass.set_pipeline(pipeline.pipeline());
+            }
+
+            ComputeCommand::SetBindGroup(index, bind_group) => {
+                compute_pass.set_bind_group(*index, &bind_group, &[]);
+            }
+
+            ComputeCommand::SetPushConstants {
+                size,
+                global_offset,
+                local_offset,
+            } => {
+                let start = *global_offset;
+                let end = global_offset + size;
+                let data = &push_constants[start..end];
+                compute_pass.set_push_constants(
+                    *local_offset as u32,
+                    data,
+                );
+            }
+            
+            ComputeCommand::Dispatch { x, y, z } => {
+                compute_pass.dispatch_workgroups(*x, *y, *z);
+            },
         }
     }
 }

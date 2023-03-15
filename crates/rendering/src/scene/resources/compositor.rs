@@ -61,8 +61,7 @@ impl Compositor {
                 store: StoreOp::Store,
             },
             (),
-        )
-        .unwrap();
+        );
 
         // Create the display graphics pipeline
         let pipeline = FinalGraphicsPipeline::new(

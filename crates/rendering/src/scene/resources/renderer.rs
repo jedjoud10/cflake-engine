@@ -137,8 +137,7 @@ impl ForwardRenderer {
                 load: LoadOp::Clear(1.0),
                 store: StoreOp::Store,
             },
-        )
-        .unwrap();
+        );
 
         // Load the default sky gradient texture
         let sky_gradient = assets
