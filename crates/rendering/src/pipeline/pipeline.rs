@@ -2,6 +2,7 @@ use crate::{
     ActiveSceneRenderPass, ActiveShadowGraphicsPipeline,
     DefaultMaterialResources, Material, Mesh, SceneColor, SceneDepth,
 };
+use ahash::AHashMap;
 use assets::Assets;
 use graphics::{
     CompareFunction, DepthConfig, Graphics, GraphicsPipeline,
@@ -90,7 +91,6 @@ pub trait DynPipeline {
         &'r self,
         world: &'r World,
         meshes: &'r Storage<Mesh>,
-        default: &'r DefaultMaterialResources,
         active: &mut ActiveShadowGraphicsPipeline<'_, 'r, '_>,
     );
 
@@ -99,7 +99,7 @@ pub trait DynPipeline {
         &'r self,
         world: &'r World,
         meshes: &'r Storage<Mesh>,
-        default: &'r DefaultMaterialResources,
+        default: &mut DefaultMaterialResources<'r>,
         render_pass: &mut ActiveSceneRenderPass<'r, '_>,
     );
 }
@@ -109,17 +109,16 @@ impl<M: Material> DynPipeline for Pipeline<M> {
         &'r self,
         world: &'r World,
         meshes: &'r Storage<Mesh>,
-        default: &'r DefaultMaterialResources,
         active: &mut ActiveShadowGraphicsPipeline<'_, 'r, '_>,
     ) {
-        super::render_shadows::<M>(world, meshes, default, active);
+        super::render_shadows::<M>(world, meshes, active);
     }
 
     fn render<'r>(
         &'r self,
         world: &'r World,
         meshes: &'r Storage<Mesh>,
-        default: &'r DefaultMaterialResources,
+        default: &mut DefaultMaterialResources<'r>,
         render_pass: &mut ActiveSceneRenderPass<'r, '_>,
     ) {
         super::render_surfaces::<M>(

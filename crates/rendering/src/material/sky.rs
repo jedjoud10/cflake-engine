@@ -71,8 +71,8 @@ impl Material for Sky {
     // Set the static bindings that will never change
     fn set_global_bindings<'r, 'w>(
         _resources: &'r mut Self::Resources<'w>,
-        default: &DefaultMaterialResources<'r>,
         group: &mut BindGroup<'r>,
+        default: &DefaultMaterialResources<'r>,
     ) {
         group
             .set_uniform_buffer("camera", default.camera_buffer)

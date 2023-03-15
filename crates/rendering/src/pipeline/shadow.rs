@@ -23,7 +23,6 @@ fn filter(mesh: &Mesh, renderer: &Renderer) -> bool {
 pub(super) fn render_shadows<'r, M: Material>(
     world: &'r World,
     meshes: &'r Storage<Mesh>,
-    _default: &'r DefaultMaterialResources,
     active: &mut ActiveShadowGraphicsPipeline<'_, 'r, '_>,
 ) {
     // Don't do shit if we won't cast shadows

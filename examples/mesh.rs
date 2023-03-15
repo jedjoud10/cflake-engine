@@ -48,13 +48,6 @@ fn init(world: &mut World) {
         &mut threadpool,
     );
     
-    /*
-    let normal = assets.async_load_from_iter::<NormalMap>(
-        std::iter::repeat(("user/ignored/normal.jpg", graphics.clone())).take(100),
-        &mut threadpool,
-    );
-    */
-
     // Fetch the loaded textures
     let diffuse = assets.wait(albedo).unwrap();
     let normal = assets.wait(normal).unwrap();
@@ -66,7 +59,7 @@ fn init(world: &mut World) {
         world.get_mut::<Storage<NormalMap>>().unwrap();
     let diffuse = diffuse_maps.insert(diffuse);
     let normal = normal_maps.insert(normal);
-
+    
     // Get the material id (also registers the material pipeline)
     let id =
         pipelines.register::<Basic>(&graphics, &mut assets).unwrap();

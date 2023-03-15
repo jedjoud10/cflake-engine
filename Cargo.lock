@@ -2428,6 +2428,7 @@ dependencies = [
  "obj-rs",
  "parking_lot",
  "paste",
+ "slotmap",
  "thiserror",
  "utils",
  "vek",

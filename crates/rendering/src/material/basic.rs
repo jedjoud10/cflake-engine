@@ -93,8 +93,8 @@ impl Material for Basic {
     // Set the static bindings that will never change
     fn set_global_bindings<'r, 'w>(
         resources: &'r mut Self::Resources<'w>,
-        default: &DefaultMaterialResources<'r>,
         group: &mut BindGroup<'r>,
+        default: &DefaultMaterialResources<'r>,
     ) {
         // Set the required common buffers
         group

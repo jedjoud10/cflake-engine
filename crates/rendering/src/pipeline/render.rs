@@ -45,9 +45,13 @@ pub(super) fn render_surfaces<'r, M: Material>(
     world: &'r World,
     meshes: &'r Storage<Mesh>,
     pipeline: &'r GraphicsPipeline<SceneColor, SceneDepth>,
-    default: &'r DefaultMaterialResources,
+    default: &mut DefaultMaterialResources<'r>,
     render_pass: &mut ActiveSceneRenderPass<'r, '_>,
 ) {
+    // Reset the material resources for this new material type
+    default.material_index = 0;
+    default.draw_call_index = 0;
+
     // Get a rasterizer for the current render pass by binding a pipeline
     let mut active = render_pass.bind_pipeline(pipeline);
     let supported = M::attributes();
@@ -58,7 +62,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
 
     // Set the global material bindings
     active.set_bind_group(0, |group| {
-        M::set_global_bindings(&mut resources, default, group);
+        M::set_global_bindings(&mut resources, group, default);
     });
 
     // Get all the entities that contain a visible surface
@@ -67,6 +71,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
 
     // Keep track of the last material
     let mut last: Option<Handle<M>> = None;
+    let mut switched_instances;
 
     // Iterate over all the surface of this material
     for (surface, renderer) in query {
@@ -75,6 +80,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
 
         // Check if we changed material instances
         if last != Some(surface.material.clone()) {
+            switched_instances = true;
             last = Some(surface.material.clone());
             let material = materials.get(&surface.material);
 
@@ -87,6 +93,8 @@ pub(super) fn render_surfaces<'r, M: Material>(
                     group,
                 );
             })
+        } else {
+            switched_instances = false;
         }
 
         // Skip rendering if not needed
@@ -137,7 +145,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
                 default,
                 push_constants,
             );
-        });
+        }).unwrap();
 
         // Set the index buffer
         let triangles = mesh.triangles();
@@ -146,5 +154,11 @@ pub(super) fn render_surfaces<'r, M: Material>(
         // Draw the triangulated mesh
         let indices = 0..(triangles.buffer().len() as u32 * 3);
         active.draw_indexed(indices, 0..1);
+        default.draw_call_index += 1;
+
+        // Add 1 to the material index when we switch instances
+        if switched_instances {
+            default.material_index += 1;
+        }
     }
 }

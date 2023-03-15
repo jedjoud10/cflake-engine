@@ -431,7 +431,6 @@ impl Assets {
         for (result, index) in self.receiver.try_iter() {
             let len = loaded.len().max(index + 1);
             loaded.resize_with(len, || None);
-
             loaded[index] = Some(result);
         }
     }

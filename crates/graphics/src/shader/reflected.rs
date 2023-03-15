@@ -357,6 +357,7 @@ pub(super) fn create_pipeline_layout(
     //    0: vertex
     //    1: fragment
     // In case of Compute: Always compute
+    // TODO: VALIDATE PUSH CONSTANTS (make sure they are defined)
     let push_constant_bitset = push_constant_ranges
             .iter()
             .map(|range| {

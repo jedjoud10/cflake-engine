@@ -8,7 +8,7 @@ use assets::Assets;
 use ecs::{Rotation, Scene};
 use graphics::{Graphics, Texture, Window};
 
-use utils::{Storage, Time};
+use utils::{Storage, Time, Handle};
 use world::{user, System, WindowEvent, World};
 
 // Add the scene resources and setup for rendering
@@ -129,7 +129,7 @@ fn render(world: &mut World) {
         .unwrap();
 
     // Create the shared material resources
-    let default = DefaultMaterialResources {
+    let mut default = DefaultMaterialResources {
         camera_buffer: &renderer.camera_buffer,
         timing_buffer: &renderer.timing_buffer,
         scene_buffer: &renderer.scene_buffer,
@@ -137,22 +137,34 @@ fn render(world: &mut World) {
         black: &renderer.black,
         normal: &renderer.normal,
         sky_gradient: &renderer.sky_gradient,
+        material_index: 0,
+        draw_call_index: 0,
     };
 
+    // Create some ECS filters to check if we should update the shadow map texture
     let f1 = ecs::modified::<ecs::Position>();
     let f2 = ecs::modified::<ecs::Rotation>();
     let f3 = ecs::modified::<ecs::Scale>();
     let f4 = f1 | f2 | f3;
+    let update = scene.query_with::<&Renderer>(f4).into_iter().count() > 0;
 
-    if scene.query_with::<&Renderer>(f4).into_iter().count() > 0 {
-        // Begin the scene shadow map render pass
+    if update {
+        // Update the shadow map lightspace matrix
         let shadowmap = &mut *_shadowmap;
         shadowmap.update(**rotation);
+
+        // Get the depth texture we will render to
         let depth = shadowmap.depth_tex.as_render_target().unwrap();
+        
+        // Create a new active shadowmap render pass
         let mut render_pass =
             shadowmap.render_pass.begin((), depth).unwrap();
+        
+        // Bind the default shadowmap graphics pipeline
         let mut active =
             render_pass.bind_pipeline(&shadowmap.pipeline);
+
+        // Bind the shadow map UBO that contains the matrices and parameters
         active.set_bind_group(0, |group| {
             group
                 .set_uniform_buffer("shadow", &shadowmap.buffer)
@@ -161,7 +173,7 @@ fn render(world: &mut World) {
 
         // Render the shadows first (fuck you)
         for pipeline in pipelines.iter() {
-            pipeline.prerender(world, &meshes, &default, &mut active);
+            pipeline.prerender(world, &meshes, &mut active);
         }
         drop(active);
         drop(render_pass);
@@ -177,7 +189,7 @@ fn render(world: &mut World) {
 
     // This will iterate over each material pipeline and draw the scene
     for pipeline in pipelines.iter() {
-        pipeline.render(world, &meshes, &default, &mut render_pass);
+        pipeline.render(world, &meshes, &mut default, &mut render_pass);
     }
 
     drop(render_pass);

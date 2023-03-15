@@ -1,6 +1,6 @@
 use crate::{
     AlbedoMap, CameraBuffer, EnabledMeshAttributes, NormalMap,
-    Renderer, SceneBuffer, SceneColor, TimingBuffer,
+    Renderer, SceneBuffer, SceneColor, TimingBuffer, Mesh,
 };
 use assets::Assets;
 use graphics::{
@@ -8,9 +8,10 @@ use graphics::{
     PrimitiveConfig, PushConstants, Shader, StencilConfig,
     WindingOrder,
 };
+use utils::{Handle, UntypedHandle};
 use world::World;
 
-// These are the default resources that we pass to any/each material
+// These are the default settings that we pass to each material
 pub struct DefaultMaterialResources<'a> {
     // Main scene uniform buffers
     // TODO: Make use of crevice to implement Std130, Std140
@@ -25,6 +26,10 @@ pub struct DefaultMaterialResources<'a> {
 
     // Default sky gradient texture
     pub sky_gradient: &'a AlbedoMap,
+
+    // Currently used indicies
+    pub material_index: usize,
+    pub draw_call_index: usize,
 }
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
@@ -77,14 +82,17 @@ pub trait Material: 'static + Sized {
         true
     }
 
+    // Insert the required resources for this material into the world
+    fn insert(world: &mut World) {}
+
     // Fetch the required resources from the world
     fn fetch<'w>(world: &'w World) -> Self::Resources<'w>;
 
     // Set the static bindings
     fn set_global_bindings<'r, 'w>(
         _resources: &'r mut Self::Resources<'w>,
-        _default: &DefaultMaterialResources<'r>,
         _group: &mut BindGroup<'r>,
+        _default: &DefaultMaterialResources<'r>,
     ) {
     }
 
@@ -101,12 +109,12 @@ pub trait Material: 'static + Sized {
     fn set_surface_bindings<'r, 'w>(
         _renderer: &Renderer,
         _resources: &'r mut Self::Resources<'w>,
-        _default: &DefaultMaterialResources<'r>,
+        _default: &mut DefaultMaterialResources<'w>,
         _group: &mut BindGroup<'r>,
     ) {
     }
 
-    // Set push constants (per surface)
+    // Set the required push constants
     fn set_push_constants<'r, 'w>(
         &self,
         _renderer: &Renderer,
