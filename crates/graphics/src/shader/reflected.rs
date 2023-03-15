@@ -3,7 +3,7 @@ use std::{hash::Hash, sync::Arc};
 use crate::{
     visibility_to_wgpu_stage, Compiled, ComputeModule,
     FragmentModule, Graphics, ModuleKind, ModuleVisibility,
-    ShaderModule, TexelChannels, VertexModule,
+    ShaderModule, TexelChannels, VertexModule, ShaderReflectionError,
 };
 use ahash::{AHashMap, AHashSet};
 use arrayvec::ArrayVec;
@@ -129,7 +129,7 @@ struct InternalDefinitions<'a> {
     texture_formats: &'a super::TextureFormats,
     texture_dimensions: &'a super::TextureDimensions,
     uniform_buffer_pod_types: &'a super::UniformBufferPodTypes,
-    push_constant_ranges: &'a super::MaybePushConstantRange,
+    push_constant_ranges: &'a super::PushConstantRanges,
 }
 
 // Convert a reflected bind entry layout to a wgpu binding type
@@ -174,14 +174,15 @@ pub(super) fn create_pipeline_layout(
     texture_formats: &super::TextureFormats,
     texture_dimensions: &super::TextureDimensions,
     uniform_buffer_pod_types: &super::UniformBufferPodTypes,
-    push_constant_range: &super::MaybePushConstantRange,
-) -> (Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>) {
+    push_constant_range: &super::PushConstantRanges,
+) -> Result<(Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>), ShaderReflectionError> {
     // Stores multiple entries per set (max number of sets = 4)
     let mut groups: [Option<AHashMap<u32, BindResourceLayout>>; 4] =
         [None, None, None, None];
 
     // Return error if the user defined a push constant that is greater than the device size
-    // or the push constant range re-defines a stage visibility
+    
+
     // TODO: Implement this
 
     // Ease of use
@@ -347,7 +348,7 @@ pub(super) fn create_pipeline_layout(
     };
 
     // Create the pipeline layout and return it
-    internal_create_pipeline_layout(graphics, shader, names)
+    Ok(internal_create_pipeline_layout(graphics, shader, names))
 }
 
 // Internal function that will take a reflected shader and create a pipeline layout for it

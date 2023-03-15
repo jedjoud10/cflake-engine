@@ -30,6 +30,9 @@ fn update(world: &mut World) {
         matrix *=
             scale.map_or(matrix, |s| matrix * vek::Mat4::from(s));
         renderer.matrix = matrix;
+
+        // Also update the culling state of the renderer
+        // TODO: Implement this shit
     }
 }
 

@@ -1,6 +1,6 @@
 use crate::{
     Compiled, Compiler, ComputeModule, FragmentModule, Graphics,
-    ReflectedShader, ShaderCompilationError, VertexModule,
+    ReflectedShader, ShaderCompilationError, VertexModule, ShaderError,
 };
 use std::sync::Arc;
 
@@ -25,7 +25,7 @@ impl Shader {
         vertex: VertexModule,
         fragment: FragmentModule,
         compiler: Compiler,
-    ) -> Result<Self, ShaderCompilationError> {
+    ) -> Result<Self, ShaderError> {
         let vertex = compiler.compile(vertex, graphics)?;
         let fragment = compiler.compile(fragment, graphics)?;
         let names = [vertex.name(), fragment.name()];
@@ -36,7 +36,7 @@ impl Shader {
             &names,
             &modules,
             &visibility,
-        );
+        )?;
 
         Ok(Self {
             vertex,

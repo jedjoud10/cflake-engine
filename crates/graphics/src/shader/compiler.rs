@@ -2,7 +2,7 @@ use crate::{
     BindResourceType, Buffer, Dimension, FunctionModule, GpuPod,
     GpuPodInfo, Graphics, ModuleKind, ModuleVisibility,
     PushConstantLayout, ReflectedShader, ShaderCompilationError,
-    ShaderModule, Texel, TexelInfo, Texture, VertexModule,
+    ShaderModule, Texel, TexelInfo, Texture, VertexModule, ShaderReflectionError, ShaderError,
 };
 use ahash::AHashMap;
 use assets::Assets;
@@ -27,7 +27,7 @@ pub(super) type Snippets = AHashMap<String, String>;
 pub(super) type TextureFormats = AHashMap<String, TexelInfo>;
 pub(super) type TextureDimensions = AHashMap<String, Dimension>;
 pub(super) type UniformBufferPodTypes = AHashMap<String, GpuPodInfo>;
-pub(super) type MaybePushConstantRange = Option<PushConstantLayout>;
+pub(super) type PushConstantRanges = Vec<PushConstantLayout>;
 
 // This is a compiler that will take was GLSL code, convert it to Naga, then to WGPU
 // This compiler also allows us to define constants and snippets before compilation
@@ -38,7 +38,7 @@ pub struct Compiler<'a> {
     texture_formats: TextureFormats,
     texture_dimensions: TextureDimensions,
     uniform_buffer_pod_types: UniformBufferPodTypes,
-    maybe_push_constant_layout: MaybePushConstantRange,
+    push_constant_ranges: PushConstantRanges,
 }
 
 impl<'a> Compiler<'a> {
@@ -50,7 +50,7 @@ impl<'a> Compiler<'a> {
             texture_formats: Default::default(),
             texture_dimensions: Default::default(),
             uniform_buffer_pod_types: Default::default(),
-            maybe_push_constant_layout: Default::default(),
+            push_constant_ranges: Default::default(),
         }
     }
 
@@ -70,7 +70,7 @@ impl<'a> Compiler<'a> {
         &self,
         module: M,
         graphics: &Graphics,
-    ) -> Result<Compiled<M>, ShaderCompilationError> {
+    ) -> Result<Compiled<M>, ShaderError> {
         // Decompose the module into file name and source
         let (name, source) = module.into_raw_parts();
 
@@ -83,7 +83,7 @@ impl<'a> Compiler<'a> {
             &self.snippets,
             source,
             &name,
-        )?;
+        ).map_err(ShaderError::Compilation)?;
         log::debug!(
             "Compiled shader {name} sucessfully! Took {}ms",
             time.elapsed().as_millis()
@@ -105,7 +105,7 @@ impl<'a> Compiler<'a> {
         names: &[&str],
         modules: &[&naga::Module],
         visibility: &[ModuleVisibility],
-    ) -> (Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>) {
+    ) -> Result<(Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>), ShaderError> {
         create_pipeline_layout(
             graphics,
             names,
@@ -114,8 +114,8 @@ impl<'a> Compiler<'a> {
             &self.texture_formats,
             &self.texture_dimensions,
             &self.uniform_buffer_pod_types,
-            &self.maybe_push_constant_layout,
-        )
+            &self.push_constant_ranges,
+        ).map_err(ShaderError::Reflection)
     }
 }
 
@@ -150,15 +150,8 @@ impl<'a> Compiler<'a> {
         size: u32,
         visibility: ModuleVisibility,
     ) {
-        match &mut self.maybe_push_constant_layout {
-            Some(range) => range
-                .insert(PushConstantLayout::new(visibility, size)),
-            None => {
-                let new =
-                    Some(PushConstantLayout::new(visibility, size));
-                self.maybe_push_constant_layout = new;
-            }
-        }
+        // Do NOT care about validation for now, since we will check for that when we actually compile a shader
+        self.push_constant_ranges.push(PushConstantLayout::new(visibility, size));
     }
 }
 
