@@ -8,7 +8,10 @@ use std::{
     sync::Arc,
 };
 use utils::Handle;
-use wgpu::{AddressMode, SamplerBorderColor, SamplerDescriptor};
+use wgpu::{
+    AddressMode, CompareFunction, SamplerBorderColor,
+    SamplerDescriptor,
+};
 
 // Wrapping mode utilized by the sampler address mode
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -137,6 +140,19 @@ pub fn convert_mip_map_anisotropic_clamp(
     }
 }
 
+// Convert the mip mapping settings to the LOD clamping values
+pub fn convert_mip_map_lod_clamp(
+    mip_mapping: &SamplerMipMaps,
+) -> (f32, f32) {
+    match mip_mapping {
+        SamplerMipMaps::Clamped { min_lod, max_lod }
+        | SamplerMipMaps::ClampedAniso {
+            min_lod, max_lod, ..
+        } => (min_lod.get() as f32, max_lod.get() as f32),
+        _ => (0f32, f32::MAX),
+    }
+}
+
 // Tries to fetch an already existing sampler from the graphics context
 // If no sampler exist, this will create a completely new one
 pub fn get_or_insert_sampler(
@@ -157,13 +173,12 @@ pub fn get_or_insert_sampler(
                 sampling.mipmaps
             );
             let (address_mode, border_color) =
-                super::convert_wrap_to_address_mode(&sampling.wrap);
+                convert_wrap_to_address_mode(&sampling.wrap);
             let anisotropy_clamp =
-                super::convert_mip_map_anisotropic_clamp(
-                    &sampling.mipmaps,
-                );
-            let filter =
-                super::convert_sampler_filter(sampling.filter);
+                convert_mip_map_anisotropic_clamp(&sampling.mipmaps);
+            let filter = convert_sampler_filter(sampling.filter);
+            let (lod_min_clamp, lod_max_clamp) =
+                convert_mip_map_lod_clamp(&sampling.mipmaps);
 
             // Sampler configuration
             let descriptor = SamplerDescriptor {
@@ -175,6 +190,8 @@ pub fn get_or_insert_sampler(
                 mipmap_filter: filter,
                 anisotropy_clamp,
                 border_color,
+                lod_min_clamp,
+                lod_max_clamp,
                 ..Default::default()
             };
 

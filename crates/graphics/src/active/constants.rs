@@ -12,6 +12,7 @@ pub struct PushConstants<'a> {
 
 impl PushConstants<'_> {
     // Set the given push constants of a given range and push them
+    // TODO: Document and remove shit code
     pub fn push(
         &mut self,
         bytes: &[u8],
@@ -27,11 +28,23 @@ impl PushConstants<'_> {
         }
 
         match (visibility, self.layout) {
-            (ModuleVisibility::Vertex, PushConstantLayout::VertexFragment { vertex, .. }) => {},
-            (ModuleVisibility::Fragment, PushConstantLayout::VertexFragment { vertex, .. }) => offset += vertex,
-            (ModuleVisibility::VertexFragment, PushConstantLayout::SharedVertexFragment(_)) => {},
-            (ModuleVisibility::Compute, PushConstantLayout::Compute(_)) => {},
-            _ => panic!()
+            (
+                ModuleVisibility::Vertex,
+                PushConstantLayout::VertexFragment { vertex, .. },
+            ) => {}
+            (
+                ModuleVisibility::Fragment,
+                PushConstantLayout::VertexFragment { vertex, .. },
+            ) => offset += vertex,
+            (
+                ModuleVisibility::VertexFragment,
+                PushConstantLayout::SharedVertexFragment(_),
+            ) => {}
+            (
+                ModuleVisibility::Compute,
+                PushConstantLayout::Compute(_),
+            ) => {}
+            _ => panic!(),
         }
 
         let start = offset as usize;

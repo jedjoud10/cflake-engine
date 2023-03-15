@@ -392,12 +392,14 @@ impl Assets {
         let mut outer = Vec::<AsyncHandle<A>>::new();
         let reference = &mut outer;
         let mut loaded = self.loaded.lock();
-        
+
         for input in inputs.into_iter() {
             // Check the extension on a per file basis
             let (path, settings, context) = input.split();
             let path = Path::new(OsStr::new(path));
-            log::debug!("Asynchronously loading asset {path:?} in batch...",);
+            log::debug!(
+                "Asynchronously loading asset {path:?} in batch...",
+            );
             let owned = path.to_owned();
 
             // Clone the things that must be sent to the thread
@@ -417,8 +419,8 @@ impl Assets {
             // Start telling worker threads to begin loading the assets
             threadpool.execute(move || {
                 Self::async_load_inner::<A>(
-                    owned, bytes, user, hijack, context,
-                    settings, sender, index,
+                    owned, bytes, user, hijack, context, settings,
+                    sender, index,
                 );
             });
         }

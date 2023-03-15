@@ -64,21 +64,16 @@ impl Material for Basic {
         // Define the push ranges used by push constants (vertex)
         let size =
             <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size() as u32;
-        compiler.use_push_constant_range(
-            size,
-            ModuleVisibility::Vertex,
-        );
+        compiler
+            .use_push_constant_range(size, ModuleVisibility::Vertex);
 
         // Define the push ranges used by push constants (fragment)
-        /*
-        let mut size =
-            <vek::Rgb<f32> as GpuPod>::size() as u32;
+        let mut size = <vek::Rgb<f32> as GpuPod>::size() as u32;
         size += <f32 as GpuPod>::size() as u32;
         compiler.use_push_constant_range(
             size,
             ModuleVisibility::Fragment,
         );
-        */
 
         // Compile the modules into a shader
         Shader::new(graphics, vert, frag, compiler).unwrap()
@@ -161,11 +156,10 @@ impl Material for Basic {
         constants.push(bytes, 0, ModuleVisibility::Vertex);
 
         // Send the raw fragment bytes to the GPU
-        /*
         let bytes = GpuPod::into_bytes(&self.tint);
         let offset = bytes.len() as u32;
         constants.push(bytes, 0, ModuleVisibility::Fragment);
         let bytes = GpuPod::into_bytes(&self.bumpiness);
-        */
+        constants.push(bytes, offset, ModuleVisibility::Fragment);
     }
 }

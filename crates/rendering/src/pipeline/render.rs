@@ -136,16 +136,18 @@ pub(super) fn render_surfaces<'r, M: Material>(
         );
 
         // Set the push constant ranges right before rendering (in the hot loop!)
-        active.set_push_constants(|push_constants| {
-            let material = materials.get(&surface.material);
-            M::set_push_constants(
-                material,
-                renderer,
-                &mut resources,
-                default,
-                push_constants,
-            );
-        }).unwrap();
+        active
+            .set_push_constants(|push_constants| {
+                let material = materials.get(&surface.material);
+                M::set_push_constants(
+                    material,
+                    renderer,
+                    &mut resources,
+                    default,
+                    push_constants,
+                );
+            })
+            .unwrap();
 
         // Set the index buffer
         let triangles = mesh.triangles();

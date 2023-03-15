@@ -151,13 +151,13 @@ impl<'a> Compiler<'a> {
         visibility: ModuleVisibility,
     ) {
         match &mut self.maybe_push_constant_layout {
-            Some(range) => {
-                range.insert(PushConstantLayout::new(visibility, size))
-            },
+            Some(range) => range
+                .insert(PushConstantLayout::new(visibility, size)),
             None => {
-                let new = Some(PushConstantLayout::new(visibility, size));
+                let new =
+                    Some(PushConstantLayout::new(visibility, size));
                 self.maybe_push_constant_layout = new;
-            },
+            }
         }
     }
 }

@@ -2,11 +2,11 @@ use assets::Assets;
 use bytemuck::{Pod, Zeroable};
 use graphics::{
     ActiveGraphicsPipeline, BufferMode, BufferUsage, CompareFunction,
-    Compiler, Depth, DepthConfig, FragmentModule, Graphics,
-    GraphicsPipeline, LoadOp, Operation, PrimitiveConfig, RenderPass,
-    SamplerSettings, Shader, StoreOp, Texture, Texture2D,
-    TextureMipMaps, TextureMode, TextureUsage, UniformBuffer,
-    VertexModule, WindingOrder, ModuleVisibility, Face, GpuPod,
+    Compiler, Depth, DepthConfig, Face, FragmentModule, GpuPod,
+    Graphics, GraphicsPipeline, LoadOp, ModuleVisibility, Operation,
+    PrimitiveConfig, RenderPass, SamplerSettings, Shader, StoreOp,
+    Texture, Texture2D, TextureMipMaps, TextureMode, TextureUsage,
+    UniformBuffer, VertexModule, WindingOrder,
 };
 use vek::FrustumPlanes;
 
@@ -75,8 +75,10 @@ impl ShadowMapping {
         // Create the bind layout for the shadow map shader
         let mut compiler = Compiler::new(assets);
         compiler.use_uniform_buffer::<ShadowUniform>("shadow");
-        let bytes = <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size() as u32;
-        compiler.use_push_constant_range(bytes, ModuleVisibility::Vertex);
+        let bytes =
+            <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size() as u32;
+        compiler
+            .use_push_constant_range(bytes, ModuleVisibility::Vertex);
 
         // Combine the modules to the shader
         let shader =

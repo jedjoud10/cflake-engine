@@ -5,10 +5,10 @@ use wgpu::CommandEncoder;
 use crate::{
     BindGroup, Buffer, BufferInfo, BufferMode, BufferUsage,
     ColorLayout, DepthStencilLayout, GpuPod, Graphics,
-    GraphicsPipeline, ModuleKind, PushConstants,
-    RenderCommand, SetIndexBufferError, SetPushConstantsError,
-    SetVertexBufferError, TriangleBuffer, UniformBuffer, Vertex,
-    VertexBuffer, PushConstantLayout, ModuleVisibility,
+    GraphicsPipeline, ModuleKind, ModuleVisibility,
+    PushConstantLayout, PushConstants, RenderCommand,
+    SetIndexBufferError, SetPushConstantsError, SetVertexBufferError,
+    TriangleBuffer, UniformBuffer, Vertex, VertexBuffer,
 };
 use std::{
     collections::hash_map::Entry,
@@ -74,7 +74,9 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
             .get(slot as usize)
             .ok_or(SetVertexBufferError::InvalidSlot(slot))?;
         if info.vertex_info() != V::info() {
-            return Err(SetVertexBufferError::InvalidVertexInfo(slot));
+            return Err(SetVertexBufferError::InvalidVertexInfo(
+                slot,
+            ));
         }
 
         // Validate the bounds and convert them to byte bounds
@@ -135,8 +137,12 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
 
         // Get the max size that we must allocate (at minimum) to be able to use ALL the defined push constants
         let size = match layout {
-            PushConstantLayout::SharedVertexFragment(size) | PushConstantLayout::Compute(size) => size,
-            PushConstantLayout::VertexFragment { vertex: vertex_size, fragment: fragment_size } => vertex_size + fragment_size,
+            PushConstantLayout::SharedVertexFragment(size)
+            | PushConstantLayout::Compute(size) => size,
+            PushConstantLayout::VertexFragment {
+                vertex: vertex_size,
+                fragment: fragment_size,
+            } => vertex_size + fragment_size,
         };
 
         // Get the data that we will use
@@ -145,18 +151,18 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         let data = &mut self.push_constant[start..end];
 
         // Create push constants that we can set
-        let mut push_constants = PushConstants {
-            data,
-            layout,
-        };
+        let mut push_constants = PushConstants { data, layout };
 
         // Let the user modify the push constant
         callback(&mut push_constants);
-        
+
         // Create a command to set the push constant bytes
         match layout {
-            PushConstantLayout::SharedVertexFragment(size) | PushConstantLayout::Compute(size) => {
-                let compute = matches!(layout, PushConstantLayout::Compute(_));
+            // Set the push constants for SharedVG or Compute modules
+            PushConstantLayout::SharedVertexFragment(size)
+            | PushConstantLayout::Compute(size) => {
+                let compute =
+                    matches!(layout, PushConstantLayout::Compute(_));
                 let stages = if compute {
                     wgpu::ShaderStages::COMPUTE
                 } else {
@@ -169,26 +175,40 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
                     global_offset: self.push_constant_global_offset,
                     local_offset: 0,
                 });
-            },
-            PushConstantLayout::VertexFragment { vertex, fragment } => {
+            }
+
+            // Set the push constants for vertex/fragment modules
+            PushConstantLayout::VertexFragment {
+                vertex,
+                fragment,
+            } => {
+                // Set the vertex shader if its bytes are defined
                 if vertex != 0 {
-                    self.commands.push(RenderCommand::SetPushConstants {
-                        stages: wgpu::ShaderStages::VERTEX,
-                        size: vertex as usize,
-                        global_offset: self.push_constant_global_offset,
-                        local_offset: 0,
-                    });
+                    self.commands.push(
+                        RenderCommand::SetPushConstants {
+                            stages: wgpu::ShaderStages::VERTEX,
+                            size: vertex as usize,
+                            global_offset: self
+                                .push_constant_global_offset,
+                            local_offset: 0,
+                        },
+                    );
                 }
 
+                // Set the fragment shader if its bytes are defined
                 if fragment != 0 {
-                    self.commands.push(RenderCommand::SetPushConstants {
-                        stages: wgpu::ShaderStages::FRAGMENT,
-                        size: fragment as usize,
-                        global_offset: self.push_constant_global_offset,
-                        local_offset: 0,
-                    });
+                    self.commands.push(
+                        RenderCommand::SetPushConstants {
+                            stages: wgpu::ShaderStages::FRAGMENT,
+                            size: fragment as usize,
+                            global_offset: self
+                                .push_constant_global_offset
+                                + vertex as usize,
+                            local_offset: vertex as usize,
+                        },
+                    );
                 }
-            },
+            }
         }
         self.push_constant_global_offset += size as usize;
         Ok(())

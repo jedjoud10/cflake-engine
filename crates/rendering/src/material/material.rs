@@ -1,6 +1,6 @@
 use crate::{
-    AlbedoMap, CameraBuffer, EnabledMeshAttributes, NormalMap,
-    Renderer, SceneBuffer, SceneColor, TimingBuffer, Mesh,
+    AlbedoMap, CameraBuffer, EnabledMeshAttributes, Mesh, NormalMap,
+    Renderer, SceneBuffer, SceneColor, TimingBuffer,
 };
 use assets::Assets;
 use graphics::{

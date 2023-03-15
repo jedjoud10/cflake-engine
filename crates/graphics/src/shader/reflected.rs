@@ -1,9 +1,9 @@
 use std::{hash::Hash, sync::Arc};
 
 use crate::{
-    visibility_to_wgpu_stage, Compiled, FragmentModule, Graphics,
-    ModuleKind, ModuleVisibility, ShaderModule, TexelChannels,
-    VertexModule, ComputeModule,
+    visibility_to_wgpu_stage, Compiled, ComputeModule,
+    FragmentModule, Graphics, ModuleKind, ModuleVisibility,
+    ShaderModule, TexelChannels, VertexModule,
 };
 use ahash::{AHashMap, AHashSet};
 use arrayvec::ArrayVec;
@@ -40,10 +40,7 @@ pub struct BindResourceLayout {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PushConstantLayout {
     SharedVertexFragment(u32),
-    VertexFragment {
-        vertex: u32,
-        fragment: u32
-    },
+    VertexFragment { vertex: u32, fragment: u32 },
     Compute(u32),
 }
 
@@ -51,9 +48,17 @@ impl PushConstantLayout {
     // Create a new PushConstantLayout from a visibility and a size
     pub fn new(visibility: ModuleVisibility, size: u32) -> Self {
         match visibility {
-            ModuleVisibility::Vertex => Self::VertexFragment { vertex: size, fragment: 0 },
-            ModuleVisibility::Fragment => Self::VertexFragment { vertex: 0, fragment: size },
-            ModuleVisibility::VertexFragment => Self::SharedVertexFragment(size),
+            ModuleVisibility::Vertex => Self::VertexFragment {
+                vertex: size,
+                fragment: 0,
+            },
+            ModuleVisibility::Fragment => Self::VertexFragment {
+                vertex: 0,
+                fragment: size,
+            },
+            ModuleVisibility::VertexFragment => {
+                Self::SharedVertexFragment(size)
+            }
             ModuleVisibility::Compute => Self::Compute(size),
         }
     }
@@ -61,18 +66,33 @@ impl PushConstantLayout {
     // Insert (combine) another PushConstantLayout into self
     pub fn insert(&mut self, other: Self) {
         match (self, other) {
-            (PushConstantLayout::SharedVertexFragment(size_a), PushConstantLayout::SharedVertexFragment(size_b)) if *size_a == size_b => {},
-            (PushConstantLayout::VertexFragment { vertex: vertex_a, fragment: fragment_a }, PushConstantLayout::VertexFragment { vertex: vertex_b, fragment:fragment_b }) => {
+            (
+                PushConstantLayout::SharedVertexFragment(size_a),
+                PushConstantLayout::SharedVertexFragment(size_b),
+            ) if *size_a == size_b => {}
+            (
+                PushConstantLayout::VertexFragment {
+                    vertex: vertex_a,
+                    fragment: fragment_a,
+                },
+                PushConstantLayout::VertexFragment {
+                    vertex: vertex_b,
+                    fragment: fragment_b,
+                },
+            ) => {
                 if (*vertex_a == 0) == (vertex_b == 0) {
                     panic!()
                 }
-                
+
                 *vertex_a += vertex_b;
                 *fragment_a += fragment_b;
-            },
-            (PushConstantLayout::Compute(_), PushConstantLayout::Compute(_)) => {},
-            _ => panic!()
-        } 
+            }
+            (
+                PushConstantLayout::Compute(_),
+                PushConstantLayout::Compute(_),
+            ) => {}
+            _ => panic!(),
+        }
     }
 }
 
@@ -326,8 +346,6 @@ pub(super) fn create_pipeline_layout(
         push_constant_layout: push_constant_range.clone(),
     };
 
-    log::warn!("{:#?}", shader);
-
     // Create the pipeline layout and return it
     internal_create_pipeline_layout(graphics, shader, names)
 }
@@ -455,13 +473,20 @@ fn internal_create_pipeline_layout(
         .collect::<Vec<_>>();
 
     // Convert the custom push constant range to wgpu push constant ranges
-    let mut push_constant_ranges = if let Some(range) = shader.push_constant_layout {
+    let mut push_constant_ranges = if let Some(range) =
+        shader.push_constant_layout
+    {
         match range {
-            PushConstantLayout::SharedVertexFragment(size) => vec![wgpu::PushConstantRange {
-                stages: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                range: 0..size,
-            }],
-            PushConstantLayout::VertexFragment { vertex: vertex_size, fragment: fragment_size } => vec![
+            PushConstantLayout::SharedVertexFragment(size) => {
+                vec![wgpu::PushConstantRange {
+                    stages: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                    range: 0..size,
+                }]
+            }
+            PushConstantLayout::VertexFragment {
+                vertex: vertex_size,
+                fragment: fragment_size,
+            } => vec![
                 wgpu::PushConstantRange {
                     stages: wgpu::ShaderStages::VERTEX,
                     range: 0..vertex_size,
@@ -469,16 +494,20 @@ fn internal_create_pipeline_layout(
                 wgpu::PushConstantRange {
                     stages: wgpu::ShaderStages::FRAGMENT,
                     range: vertex_size..(fragment_size + vertex_size),
-                }
+                },
             ],
-            PushConstantLayout::Compute(size) => vec![wgpu::PushConstantRange {
-                stages: wgpu::ShaderStages::COMPUTE,
-                range: 0..size,
-            }],
+            PushConstantLayout::Compute(size) => {
+                vec![wgpu::PushConstantRange {
+                    stages: wgpu::ShaderStages::COMPUTE,
+                    range: 0..size,
+                }]
+            }
         }
-    } else { Vec::default() };
-    push_constant_ranges.retain(|x| (x.range.end-x.range.start) > 0);
-    log::warn!("{:#?}", push_constant_ranges);
+    } else {
+        Vec::default()
+    };
+    push_constant_ranges
+        .retain(|x| (x.range.end - x.range.start) > 0);
 
     // Create the pipeline layout
     let layout = graphics.device().create_pipeline_layout(

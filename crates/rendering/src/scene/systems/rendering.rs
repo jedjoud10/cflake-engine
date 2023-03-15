@@ -6,9 +6,9 @@ use crate::{
 use assets::Assets;
 
 use ecs::{Rotation, Scene};
-use graphics::{Graphics, Texture, Window, UniformBuffer};
+use graphics::{Graphics, Texture, UniformBuffer, Window};
 
-use utils::{Storage, Time, Handle};
+use utils::{Handle, Storage, Time};
 use world::{user, System, WindowEvent, World};
 
 // Add the scene resources and setup for rendering
@@ -146,7 +146,8 @@ fn render(world: &mut World) {
     let f2 = ecs::modified::<ecs::Rotation>();
     let f3 = ecs::modified::<ecs::Scale>();
     let f4 = f1 | f2 | f3;
-    let update = scene.query_with::<&Renderer>(f4).into_iter().count() > 0;
+    let update =
+        scene.query_with::<&Renderer>(f4).into_iter().count() > 0;
 
     if update {
         // Update the shadow map lightspace matrix
@@ -155,11 +156,11 @@ fn render(world: &mut World) {
 
         // Get the depth texture we will render to
         let depth = shadowmap.depth_tex.as_render_target().unwrap();
-        
+
         // Create a new active shadowmap render pass
         let mut render_pass =
             shadowmap.render_pass.begin((), depth).unwrap();
-        
+
         // Bind the default shadowmap graphics pipeline
         let mut active =
             render_pass.bind_pipeline(&shadowmap.pipeline);
@@ -189,7 +190,12 @@ fn render(world: &mut World) {
 
     // This will iterate over each material pipeline and draw the scene
     for pipeline in pipelines.iter() {
-        pipeline.render(world, &meshes, &mut default, &mut render_pass);
+        pipeline.render(
+            world,
+            &meshes,
+            &mut default,
+            &mut render_pass,
+        );
     }
 
     drop(render_pass);
