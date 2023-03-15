@@ -41,11 +41,18 @@ pub enum SetIndexBufferError {
 
 #[derive(Error, Debug)]
 pub enum SetPushConstantsError {
-    #[error("Missing push constant range ({0}..{1}) with visibility {2:?}")]
-    MissingRange(usize, usize, ModuleVisibility),
+}
 
-    #[error("The given range range ({0}..{1}) is greater than minimum required size (128)")]
-    GreaterThanMinLimit(usize, usize),
+#[derive(Error, Debug)]
+pub enum PushConstantBytesError {
+    #[error("No bytes were defined to be pushed")]
+    NoBytes,
+
+    #[error("The given byte offset or byte size are too large and would overflow the defined push constant layout size")]
+    OffsetOrSizeIsTooLarge,
+
+    #[error("The visibility of the given push command does not match the push constant layout defined in the Compiler")]
+    NotAsDefined,
 }
 
 #[derive(Error, Debug)]

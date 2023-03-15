@@ -1,9 +1,9 @@
-use std::{hash::Hash, sync::Arc};
+use std::{hash::Hash, sync::Arc, num::NonZeroU32};
 
 use crate::{
     visibility_to_wgpu_stage, Compiled, ComputeModule,
     FragmentModule, Graphics, ModuleKind, ModuleVisibility,
-    ShaderModule, TexelChannels, VertexModule, ShaderReflectionError,
+    ShaderModule, TexelChannels, VertexModule, ShaderReflectionError, BufferValidationError, SamplerValidationError, TextureValidationError,
 };
 use ahash::{AHashMap, AHashSet};
 use arrayvec::ArrayVec;
@@ -39,59 +39,30 @@ pub struct BindResourceLayout {
 // Visiblity for the set push constants bitset
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PushConstantLayout {
-    SharedVertexFragment(u32),
-    VertexFragment { vertex: u32, fragment: u32 },
-    Compute(u32),
+    Single(NonZeroU32, ModuleVisibility),
+    SplitVertexFragment { vertex: NonZeroU32, fragment: NonZeroU32 },
 }
 
 impl PushConstantLayout {
-    // Create a new PushConstantLayout from a visibility and a size
-    pub fn new(visibility: ModuleVisibility, size: u32) -> Self {
-        match visibility {
-            ModuleVisibility::Vertex => Self::VertexFragment {
-                vertex: size,
-                fragment: 0,
-            },
-            ModuleVisibility::Fragment => Self::VertexFragment {
-                vertex: 0,
-                fragment: size,
-            },
-            ModuleVisibility::VertexFragment => {
-                Self::SharedVertexFragment(size)
-            }
-            ModuleVisibility::Compute => Self::Compute(size),
-        }
+    // Create a push constant layout for a single module or SharedVG modules
+    pub fn single(size: usize, visibility: ModuleVisibility) -> Option<Self> {
+        let size = NonZeroU32::new(size as u32)?;
+        Some(Self::Single(size, visibility))
     }
 
-    // Insert (combine) another PushConstantLayout into self
-    pub fn insert(&mut self, other: Self) {
-        match (self, other) {
-            (
-                PushConstantLayout::SharedVertexFragment(size_a),
-                PushConstantLayout::SharedVertexFragment(size_b),
-            ) if *size_a == size_b => {}
-            (
-                PushConstantLayout::VertexFragment {
-                    vertex: vertex_a,
-                    fragment: fragment_a,
-                },
-                PushConstantLayout::VertexFragment {
-                    vertex: vertex_b,
-                    fragment: fragment_b,
-                },
-            ) => {
-                if (*vertex_a == 0) == (vertex_b == 0) {
-                    panic!()
-                }
+    // Create a push constant layout for split vertex / fragment modules
+    pub fn split(vertex: usize, fragment: usize) -> Option<Self> {
+        let vertex = NonZeroU32::new(vertex as u32)?;
+        let fragment = NonZeroU32::new(fragment as u32)?;
+        Some(Self::SplitVertexFragment { vertex, fragment })
+    }
 
-                *vertex_a += vertex_b;
-                *fragment_a += fragment_b;
-            }
-            (
-                PushConstantLayout::Compute(_),
-                PushConstantLayout::Compute(_),
-            ) => {}
-            _ => panic!(),
+    // Convert this push constant layout to it's ModuleVisibility
+    pub fn visibility(&self) -> ModuleVisibility {
+        match self {
+            PushConstantLayout::Single(_, visibility) => *visibility,
+            PushConstantLayout::SplitVertexFragment { .. } => 
+                ModuleVisibility::VertexFragment,
         }
     }
 }
@@ -129,7 +100,7 @@ struct InternalDefinitions<'a> {
     texture_formats: &'a super::TextureFormats,
     texture_dimensions: &'a super::TextureDimensions,
     uniform_buffer_pod_types: &'a super::UniformBufferPodTypes,
-    push_constant_ranges: &'a super::PushConstantRanges,
+    maybe_push_constant_layout: &'a super::MaybePushConstantLayout,
 }
 
 // Convert a reflected bind entry layout to a wgpu binding type
@@ -174,13 +145,14 @@ pub(super) fn create_pipeline_layout(
     texture_formats: &super::TextureFormats,
     texture_dimensions: &super::TextureDimensions,
     uniform_buffer_pod_types: &super::UniformBufferPodTypes,
-    push_constant_range: &super::PushConstantRanges,
+    maybe_push_constant_layout: &super::MaybePushConstantLayout,
 ) -> Result<(Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>), ShaderReflectionError> {
     // Stores multiple entries per set (max number of sets = 4)
     let mut groups: [Option<AHashMap<u32, BindResourceLayout>>; 4] =
         [None, None, None, None];
 
     // Return error if the user defined a push constant that is greater than the device size
+    // or if there isn't push constants for the specified module in the shaders
     
 
     // TODO: Implement this
@@ -190,7 +162,7 @@ pub(super) fn create_pipeline_layout(
         texture_formats,
         texture_dimensions,
         uniform_buffer_pod_types,
-        push_constant_ranges: push_constant_range,
+        maybe_push_constant_layout,
     };
 
     // Iterate through the sets and create the bind groups for each of the resources
@@ -234,12 +206,11 @@ pub(super) fn create_pipeline_layout(
                 let binding_type = match inner {
                     // Uniform Buffers
                     TypeInner::Struct { span: size, .. } => {
-                        // TODO: VALIDATE BUFFER (make sure it's same size and alignment)
                         Some(reflect_buffer(
                             &name,
                             graphics,
                             &definitions,
-                        ))
+                        ).map_err(ShaderReflectionError::BufferValidation))
                     }
 
                     // Uniform Textures
@@ -248,7 +219,6 @@ pub(super) fn create_pipeline_layout(
                         class,
                         arrayed,
                     } => {
-                        // TODO: VALIDATE TEXTURE (make sure it's same dimension, type, and texel type)
                         Some(reflect_texture(
                             &name,
                             class,
@@ -256,18 +226,17 @@ pub(super) fn create_pipeline_layout(
                             graphics,
                             &definitions,
                             *arrayed,
-                        ))
+                        ).map_err(ShaderReflectionError::TextureValidation))
                     }
 
                     // Uniform Sampler
                     TypeInner::Sampler { comparison } => {
-                        // TODO: VALIDATE SAMPLEr (make sure it's same texel type, type)
                         Some(reflect_sampler(
                             &name,
                             graphics,
                             &definitions,
                             *comparison,
-                        ))
+                        ).map_err(ShaderReflectionError::SamplerValidation))
                     }
 
                     _ => None,
@@ -277,6 +246,9 @@ pub(super) fn create_pipeline_layout(
                 let Some(resource_type) = binding_type else {
                     continue
                 };
+
+                // Extract error if needed
+                let resource_type = resource_type?;
 
                 // Create a bind entry layout
                 let bind_entry_layout = BindResourceLayout {
@@ -344,7 +316,7 @@ pub(super) fn create_pipeline_layout(
     let shader = ReflectedShader {
         last_valid_bind_group_layout,
         bind_group_layouts: bind_group_layouts.into_inner().unwrap(),
-        push_constant_layout: push_constant_range.clone(),
+        push_constant_layout: maybe_push_constant_layout.clone(),
     };
 
     // Create the pipeline layout and return it
@@ -474,41 +446,34 @@ fn internal_create_pipeline_layout(
         .collect::<Vec<_>>();
 
     // Convert the custom push constant range to wgpu push constant ranges
-    let mut push_constant_ranges = if let Some(range) =
+    let push_constant_ranges = if let Some(range) =
         shader.push_constant_layout
     {
         match range {
-            PushConstantLayout::SharedVertexFragment(size) => {
-                vec![wgpu::PushConstantRange {
-                    stages: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                    range: 0..size,
-                }]
-            }
-            PushConstantLayout::VertexFragment {
+            PushConstantLayout::SplitVertexFragment {
                 vertex: vertex_size,
                 fragment: fragment_size,
             } => vec![
                 wgpu::PushConstantRange {
                     stages: wgpu::ShaderStages::VERTEX,
-                    range: 0..vertex_size,
+                    range: 0..(vertex_size.get()),
                 },
                 wgpu::PushConstantRange {
                     stages: wgpu::ShaderStages::FRAGMENT,
-                    range: vertex_size..(fragment_size + vertex_size),
+                    range: vertex_size.get()..(fragment_size.get() + vertex_size.get()),
                 },
             ],
-            PushConstantLayout::Compute(size) => {
+
+            PushConstantLayout::Single(size, visibility) => {
                 vec![wgpu::PushConstantRange {
-                    stages: wgpu::ShaderStages::COMPUTE,
-                    range: 0..size,
+                    stages: super::visibility_to_wgpu_stage(&visibility),
+                    range: 0..size.get(),
                 }]
-            }
+            },
         }
     } else {
         Vec::default()
     };
-    push_constant_ranges
-        .retain(|x| (x.range.end - x.range.start) > 0);
 
     // Create the pipeline layout
     let layout = graphics.device().create_pipeline_layout(
@@ -533,40 +498,43 @@ fn internal_create_pipeline_layout(
     (Arc::new(shader), layout)
 }
 
+// TODO: VALIDATE BUFFER (make sure it's same size and alignment)
 fn reflect_buffer(
     name: &str,
     graphics: &Graphics,
     definitions: &InternalDefinitions,
-) -> BindResourceType {
+) -> Result<BindResourceType, BufferValidationError> {
     // TODO: Implement storage buffers
     let pod_info =
         definitions.uniform_buffer_pod_types.get(name).unwrap();
     let size = pod_info.size();
 
-    BindResourceType::Buffer {
+    Ok(BindResourceType::Buffer {
         size,
         storage: false,
         read: true,
         write: false,
-    }
+    })
 }
 
+// TODO: VALIDATE TEXTURE (make sure it's same dimension, type, and texel type)
 fn reflect_sampler(
     name: &str,
     graphics: &Graphics,
     definitions: &InternalDefinitions,
     comparison: bool,
-) -> BindResourceType {
-    BindResourceType::Sampler {
+) -> Result<BindResourceType, SamplerValidationError> {
+    Ok(BindResourceType::Sampler {
         sampler_binding: wgpu::SamplerBindingType::Filtering,
         format: definitions
             .texture_formats
             .get(name)
             .unwrap()
             .format(),
-    }
+    })
 }
 
+// TODO: VALIDATE SAMPLEr (make sure it's same texel type, type)
 fn reflect_texture(
     name: &str,
     class: &naga::ImageClass,
@@ -574,9 +542,8 @@ fn reflect_texture(
     graphics: &Graphics,
     definitions: &InternalDefinitions,
     arrayed: bool,
-) -> BindResourceType {
-    BindResourceType::Texture {
-        sample_type: match class {
+) -> Result<BindResourceType, TextureValidationError> {
+    let sample_type = match class {
             naga::ImageClass::Sampled { kind, multi } => match kind {
                 naga::ScalarKind::Sint => {
                     wgpu::TextureSampleType::Sint
@@ -617,44 +584,52 @@ fn reflect_texture(
             },
             naga::ImageClass::Depth { multi } => todo!(),
             naga::ImageClass::Storage { format, access } => todo!(),
-        },
+        };
 
-        view_dimension: match dim {
-            naga::ImageDimension::D1 => {
-                wgpu::TextureViewDimension::D1
-            }
-            naga::ImageDimension::D2 => {
-                wgpu::TextureViewDimension::D2
-            }
-            naga::ImageDimension::D3 => {
-                wgpu::TextureViewDimension::D3
-            }
-            naga::ImageDimension::Cube => {
-                wgpu::TextureViewDimension::Cube
-            }
-        },
-        format: {
-            let format =
-                definitions.texture_formats.get(name).unwrap();
-            format.format()
-        },
-        sampler_binding: {
-            let adapter = graphics.adapter();
-            let info = definitions.texture_formats.get(name).unwrap();
-            let format = info.format();
-            let flags =
-                adapter.get_texture_format_features(format).flags;
+    let view_dimension = match dim {
+        naga::ImageDimension::D1 => {
+            wgpu::TextureViewDimension::D1
+        }
+        naga::ImageDimension::D2 => {
+            wgpu::TextureViewDimension::D2
+        }
+        naga::ImageDimension::D3 => {
+            wgpu::TextureViewDimension::D3
+        }
+        naga::ImageDimension::Cube => {
+            wgpu::TextureViewDimension::Cube
+        }
+    };
 
-            let depth =
-                matches!(info.channels(), TexelChannels::Depth);
+    let format = {
+        let _format = definitions.texture_formats.get(name).unwrap();
+        _format.format()
+    };
 
-            if flags.contains(TextureFormatFeatureFlags::FILTERABLE)
-                && !depth
-            {
-                wgpu::SamplerBindingType::Filtering
-            } else {
-                wgpu::SamplerBindingType::NonFiltering
-            }
-        },
-    }
+    let sampler_binding = {
+        let adapter = graphics.adapter();
+        let info = definitions.texture_formats.get(name).unwrap();
+        let format = info.format();
+        let flags =
+            adapter.get_texture_format_features(format).flags;
+
+        let depth =
+            matches!(info.channels(), TexelChannels::Depth);
+
+        if flags.contains(TextureFormatFeatureFlags::FILTERABLE)
+            && !depth
+        {
+            wgpu::SamplerBindingType::Filtering
+        } else {
+            wgpu::SamplerBindingType::NonFiltering
+        }
+    };
+
+    Ok(BindResourceType::Texture {
+        sample_type,
+
+        view_dimension,
+        format,
+        sampler_binding
+    })
 }

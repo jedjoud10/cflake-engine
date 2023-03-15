@@ -23,7 +23,6 @@ pub enum BufferValidationError {
 
 #[derive(Error, Debug)]
 pub enum TextureValidationError {
-
 }
 
 

@@ -27,7 +27,7 @@ pub(super) type Snippets = AHashMap<String, String>;
 pub(super) type TextureFormats = AHashMap<String, TexelInfo>;
 pub(super) type TextureDimensions = AHashMap<String, Dimension>;
 pub(super) type UniformBufferPodTypes = AHashMap<String, GpuPodInfo>;
-pub(super) type PushConstantRanges = Vec<PushConstantLayout>;
+pub(super) type MaybePushConstantLayout = Option<PushConstantLayout>;
 
 // This is a compiler that will take was GLSL code, convert it to Naga, then to WGPU
 // This compiler also allows us to define constants and snippets before compilation
@@ -38,7 +38,7 @@ pub struct Compiler<'a> {
     texture_formats: TextureFormats,
     texture_dimensions: TextureDimensions,
     uniform_buffer_pod_types: UniformBufferPodTypes,
-    push_constant_ranges: PushConstantRanges,
+    maybe_push_constant_layout: MaybePushConstantLayout,
 }
 
 impl<'a> Compiler<'a> {
@@ -50,7 +50,7 @@ impl<'a> Compiler<'a> {
             texture_formats: Default::default(),
             texture_dimensions: Default::default(),
             uniform_buffer_pod_types: Default::default(),
-            push_constant_ranges: Default::default(),
+            maybe_push_constant_layout: Default::default(),
         }
     }
 
@@ -114,7 +114,7 @@ impl<'a> Compiler<'a> {
             &self.texture_formats,
             &self.texture_dimensions,
             &self.uniform_buffer_pod_types,
-            &self.push_constant_ranges,
+            &self.maybe_push_constant_layout,
         ).map_err(ShaderError::Reflection)
     }
 }
@@ -145,13 +145,11 @@ impl<'a> Compiler<'a> {
     }
 
     // Define a push constant range to be pushed
-    pub fn use_push_constant_range(
+    pub fn use_push_constant_layout(
         &mut self,
-        size: u32,
-        visibility: ModuleVisibility,
+        layout: PushConstantLayout
     ) {
-        // Do NOT care about validation for now, since we will check for that when we actually compile a shader
-        self.push_constant_ranges.push(PushConstantLayout::new(visibility, size));
+        self.maybe_push_constant_layout = Some(layout);
     }
 }
 
@@ -168,9 +166,6 @@ fn compile(
 {
     // Custom ShaderC compiler options
     let mut options = shaderc::CompileOptions::new().unwrap();
-    // FIXME: OwO what's this??
-    //options.set_auto_combined_image_sampler(auto_combine);
-    //options.set_invert_y(true);
 
     // Create a callback responsible for includes
     options.set_include_callback(|target, _type, current, depth| {

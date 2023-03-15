@@ -8,7 +8,7 @@ use assets::Assets;
 use bytemuck::{Pod, Zeroable};
 use graphics::{
     BindGroup, Compiler, FragmentModule, GpuPod, Graphics,
-    ModuleVisibility, PushConstants, Shader, VertexModule,
+    ModuleVisibility, PushConstants, Shader, VertexModule, PushConstantLayout,
 };
 use utils::{Handle, Storage};
 
@@ -61,19 +61,12 @@ impl Material for Basic {
         compiler.use_texture::<AlbedoMap>("albedo_map");
         compiler.use_texture::<NormalMap>("normal_map");
 
-        // Define the push ranges used by push constants (vertex)
-        let size =
-            <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size() as u32;
+        // Define the push ranges used by push constants
         compiler
-            .use_push_constant_range(size, ModuleVisibility::Vertex);
-
-        // Define the push ranges used by push constants (fragment)
-        let mut size = <vek::Rgb<f32> as GpuPod>::size() as u32;
-        size += <f32 as GpuPod>::size() as u32;
-        compiler.use_push_constant_range(
-            size,
-            ModuleVisibility::Fragment,
-        );
+            .use_push_constant_layout(PushConstantLayout::split(
+                <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size(),
+                <vek::Rgba<f32> as GpuPod>::size(),
+            ).unwrap());
 
         // Compile the modules into a shader
         Shader::new(graphics, vert, frag, compiler).unwrap()
@@ -153,13 +146,13 @@ impl Material for Basic {
         let matrix = renderer.matrix;
         let cols = matrix.cols;
         let bytes = GpuPod::into_bytes(&cols);
-        constants.push(bytes, 0, ModuleVisibility::Vertex);
+        constants.push(bytes, 0, ModuleVisibility::Vertex).unwrap();
 
         // Send the raw fragment bytes to the GPU
         let bytes = GpuPod::into_bytes(&self.tint);
         let offset = bytes.len() as u32;
-        constants.push(bytes, 0, ModuleVisibility::Fragment);
+        constants.push(bytes, 0, ModuleVisibility::Fragment).unwrap();
         let bytes = GpuPod::into_bytes(&self.bumpiness);
-        constants.push(bytes, offset, ModuleVisibility::Fragment);
+        constants.push(bytes, offset, ModuleVisibility::Fragment).unwrap();
     }
 }

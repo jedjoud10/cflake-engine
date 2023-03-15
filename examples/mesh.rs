@@ -100,10 +100,12 @@ fn init(world: &mut World) {
     scene.insert((surface, renderer, scale));
 
     // Create a simple cube and add the entity
-    let surface = Surface::new(cube, material.clone(), id.clone());
-    let renderer = Renderer::default();
-    let position = Position::at_y(0.25);
-    scene.insert((surface, renderer, position));
+    for x in 0..25 {
+        let surface = Surface::new(cube.clone(), material.clone(), id.clone());
+        let renderer = Renderer::default();
+        let position = Position::at_xyz((x / 5) as f32, 0.25, (x % 5) as f32);
+        scene.insert((surface, renderer, position));
+    }
 
     // Create a simple sphere and add the entity
     let surface = Surface::new(sphere, material, id);
