@@ -468,7 +468,7 @@ fn internal_create_pipeline_layout(
                 },
                 wgpu::PushConstantRange {
                     stages: wgpu::ShaderStages::FRAGMENT,
-                    range: vertex_size..(vertex_size+fragment_size),
+                    range: vertex_size..(fragment_size + vertex_size),
                 }
             ],
             PushConstantLayout::Compute(size) => vec![wgpu::PushConstantRange {
@@ -477,7 +477,7 @@ fn internal_create_pipeline_layout(
             }],
         }
     } else { Vec::default() };
-    push_constant_ranges.retain(|x| x.range.end > 0);
+    push_constant_ranges.retain(|x| (x.range.end-x.range.start) > 0);
     log::warn!("{:#?}", push_constant_ranges);
 
     // Create the pipeline layout

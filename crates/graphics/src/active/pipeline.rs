@@ -145,14 +145,12 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         let data = &mut self.push_constant[start..end];
 
         // Create push constants that we can set
-        dbg!(data.len());
         let mut push_constants = PushConstants {
             data,
             layout,
         };
 
         // Let the user modify the push constant
-        dbg!(layout);
         callback(&mut push_constants);
         
         // Create a command to set the push constant bytes
@@ -187,7 +185,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
                         stages: wgpu::ShaderStages::FRAGMENT,
                         size: fragment as usize,
                         global_offset: self.push_constant_global_offset,
-                        local_offset: vertex as usize,
+                        local_offset: 0,
                     });
                 }
             },

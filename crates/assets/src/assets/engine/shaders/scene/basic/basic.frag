@@ -23,11 +23,12 @@ layout(set = 0, binding = 7) uniform texture2D shadow_map;
 
 // Material scalar data
 
+/*
 // Push constants for the material data
 layout(push_constant) uniform PushConstants {
-	vec3 tint;
-	float bumpiness;
+	vec4 tint_bumpiness;
 } material;
+*/
 
 // Albedo / diffuse map
 layout(set = 1, binding = 0) uniform texture2D albedo_map;
@@ -45,7 +46,7 @@ void main() {
 	// Fetch the albedo color and normal map value
 	vec3 albedo = texture(sampler2D(albedo_map, albedo_map_sampler), uv).rgb;
 	vec3 bumps = texture(sampler2D(normal_map, normal_map_sampler), uv).rgb * 2.0 - 1.0;
-	bumps.xy *= material.bumpiness;
+	bumps.xy *= 1.0;
 
 	// Calculate the world space normals
 	mat3 tbn = mat3(
@@ -75,6 +76,6 @@ void main() {
 	float specular = pow(max(dot(reflected, view), 0), 256) * (1-shadowed);
 
 	// Calculate diffuse lighting
-	//frag = vec4(lighting * albedo * material.tint + specular*1.4, 1.0);
-	frag = vec4(material.bumpiness);
+	frag = vec4(lighting * albedo + specular*1.4, 1.0);
+	//frag = vec4(material.tint_bumpiness.w);
 }
