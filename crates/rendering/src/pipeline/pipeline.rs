@@ -2,7 +2,7 @@ use crate::{
     ActiveSceneRenderPass, ActiveShadowGraphicsPipeline,
     DefaultMaterialResources, Material, Mesh, SceneColor, SceneDepth,
 };
-use ahash::AHashMap;
+
 use assets::Assets;
 use graphics::{
     CompareFunction, DepthConfig, Graphics, GraphicsPipeline,

@@ -5,7 +5,7 @@ use std::{
 
 use super::attributes::*;
 use crate::MeshAabbComputeError;
-use graphics::{Buffer, BufferInfo, CommandEncoder, VertexBuffer};
+use graphics::{Buffer, BufferInfo, VertexBuffer};
 use math::AABB;
 
 // Immutable access to the mesh vertices

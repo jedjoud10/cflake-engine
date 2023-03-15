@@ -5,9 +5,7 @@ use graphics::{
     SwapchainFormat, Texture2D, VertexConfig, VertexModule,
 };
 
-use crate::{
-    CameraUniform, SceneColor, SceneDepth, ShadowMap, WindowUniform,
-};
+use crate::{CameraUniform, SceneColor, SceneDepth, WindowUniform};
 
 // This is what will write to the swapchain
 pub type FinalRenderPass = RenderPass<SwapchainFormat, ()>;

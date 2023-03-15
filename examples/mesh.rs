@@ -57,8 +57,8 @@ fn init(world: &mut World) {
         world.get_mut::<Storage<AlbedoMap>>().unwrap();
     let mut normal_maps =
         world.get_mut::<Storage<NormalMap>>().unwrap();
-    let diffuse = diffuse_maps.insert(diffuse);
-    let normal = normal_maps.insert(normal);
+    let _diffuse = diffuse_maps.insert(diffuse);
+    let _normal = normal_maps.insert(normal);
 
     // Get the material id (also registers the material pipeline)
     let id =
@@ -76,7 +76,7 @@ fn init(world: &mut World) {
     let cube = assets
         .load::<Mesh>(("engine/meshes/cube.obj", graphics.clone()))
         .unwrap();
-    let cube = meshes.insert(cube);
+    let _cube = meshes.insert(cube);
 
     // Load a plane mesh
     let plane = assets

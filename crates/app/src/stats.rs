@@ -1,7 +1,7 @@
 use ecs::Scene;
 use graphics::{Graphics, GraphicsStats};
 use gui::{egui, Interface};
-use rendering::Renderer;
+
 use utils::Time;
 use world::World;
 
@@ -124,10 +124,7 @@ pub(crate) fn update(world: &mut World) {
     egui::Window::new("Entity Components").frame(frame).show(
         &gui,
         |ui| {
-            ui.label(format!(
-                "Entities: {}",
-                scene.entities().len().to_string()
-            ));
+            ui.label(format!("Entities: {}", scene.entities().len()));
 
             let iter = scene.archetypes().iter().map(|x| {
                 x.1.entities().len()

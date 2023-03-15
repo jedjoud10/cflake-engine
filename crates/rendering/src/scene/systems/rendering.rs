@@ -6,9 +6,9 @@ use crate::{
 use assets::Assets;
 
 use ecs::{Rotation, Scene};
-use graphics::{Graphics, Texture, UniformBuffer, Window};
+use graphics::{Graphics, Texture, Window};
 
-use utils::{Handle, Storage, Time};
+use utils::{Storage, Time};
 use world::{user, System, WindowEvent, World};
 
 // Add the scene resources and setup for rendering
@@ -100,7 +100,7 @@ fn render(world: &mut World) {
     let mut _shadowmap = world.get_mut::<ShadowMapping>().unwrap();
     let renderer = &mut *renderer;
     let scene = world.get::<Scene>().unwrap();
-    let time = world.get::<Time>().unwrap();
+    let _time = world.get::<Time>().unwrap();
     let pipelines = world.get::<Pipelines>().unwrap();
     let meshes = world.get::<Storage<Mesh>>().unwrap();
     let albedo_maps = world.get::<Storage<AlbedoMap>>().unwrap();

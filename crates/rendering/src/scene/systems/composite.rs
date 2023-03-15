@@ -1,6 +1,4 @@
-use crate::{
-    Compositor, ForwardRenderer, PostProcess, ShadowMapping,
-};
+use crate::{Compositor, ForwardRenderer, PostProcess};
 use assets::Assets;
 
 use graphics::{Graphics, Texture, Window};

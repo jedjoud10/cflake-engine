@@ -1,5 +1,5 @@
 use crate::{
-    AlbedoMap, CameraBuffer, EnabledMeshAttributes, Mesh, NormalMap,
+    AlbedoMap, CameraBuffer, EnabledMeshAttributes, NormalMap,
     Renderer, SceneBuffer, SceneColor, TimingBuffer,
 };
 use assets::Assets;
@@ -8,7 +8,7 @@ use graphics::{
     PrimitiveConfig, PushConstants, Shader, StencilConfig,
     WindingOrder,
 };
-use utils::Handle;
+
 use world::World;
 
 // These are the default settings that we pass to each material

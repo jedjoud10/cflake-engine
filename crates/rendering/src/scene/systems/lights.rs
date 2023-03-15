@@ -1,4 +1,4 @@
-use crate::{Camera, DirectionalLight, ForwardRenderer};
+use crate::{DirectionalLight, ForwardRenderer};
 
 use ecs::Scene;
 use graphics::{Graphics, Window};

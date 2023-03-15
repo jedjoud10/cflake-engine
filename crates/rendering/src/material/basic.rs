@@ -5,7 +5,7 @@ use crate::{
 };
 
 use assets::Assets;
-use bytemuck::{Pod, Zeroable};
+
 use graphics::{
     BindGroup, Compiler, FragmentModule, GpuPod, Graphics,
     ModuleVisibility, PushConstantLayout, PushConstants, Shader,

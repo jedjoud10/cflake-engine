@@ -1,9 +1,8 @@
 use crate::{
     attributes::Position, ActiveShadowGraphicsPipeline,
-    DefaultMaterialResources, EnabledMeshAttributes, Material, Mesh,
-    Renderer, Surface,
+    EnabledMeshAttributes, Material, Mesh, Renderer, Surface,
 };
-use ecs::{modified, Rotation, Scale, Scene};
+use ecs::Scene;
 use graphics::{GpuPod, ModuleVisibility};
 use utils::Storage;
 use world::World;
