@@ -32,6 +32,7 @@ impl Material for PhysicallyBased {
     type Resources<'w> = (
         world::Read<'w, Storage<AlbedoMap>>,
         world::Read<'w, Storage<NormalMap>>,
+        world::Read<'w, Storage<MaskMap>>,
         world::Read<'w, ShadowMapping>,
     );
 
@@ -81,8 +82,9 @@ impl Material for PhysicallyBased {
     fn fetch<'w>(world: &'w world::World) -> Self::Resources<'w> {
         let albedo_maps = world.get::<Storage<AlbedoMap>>().unwrap();
         let normal_maps = world.get::<Storage<NormalMap>>().unwrap();
+        let mask_maps = world.get::<Storage<MaskMap>>().unwrap();
         let shadow = world.get::<ShadowMapping>().unwrap();
-        (albedo_maps, normal_maps, shadow)
+        (albedo_maps, normal_maps, mask_maps, shadow)
     }
 
     // Set the static bindings that will never change
@@ -91,7 +93,6 @@ impl Material for PhysicallyBased {
         group: &mut BindGroup<'r>,
         default: &DefaultMaterialResources<'r>,
     ) {
-        /*
         // Set the required common buffers
         group
             .set_uniform_buffer("camera", default.camera_buffer)
@@ -100,19 +101,13 @@ impl Material for PhysicallyBased {
             .set_uniform_buffer("scene", default.scene_buffer)
             .unwrap();
         group
-            .set_uniform_buffer("shadow", &resources.2.buffer)
-            .unwrap();
-
-        // Set the scene sky texture
-        group
-            .set_texture("gradient_map", default.sky_gradient)
+            .set_uniform_buffer("shadow", &resources.3.buffer)
             .unwrap();
 
         // Set the scene shadow map
         group
-            .set_texture("shadow_map", &resources.2.depth_tex)
+            .set_texture("shadow_map", &resources.3.depth_tex)
             .unwrap();
-        */
     }
 
     // Set the instance bindings that will change per material
@@ -122,8 +117,7 @@ impl Material for PhysicallyBased {
         default: &DefaultMaterialResources<'r>,
         group: &mut BindGroup<'r>,
     ) {
-        /*
-        let (albedo_maps, normal_maps, _) = resources;
+        let (albedo_maps, normal_maps, mask_maps, _) = resources;
 
         // Get the albedo texture, and fallback to a white one
         let albedo_map = self
@@ -137,10 +131,16 @@ impl Material for PhysicallyBased {
             .as_ref()
             .map_or(default.normal, |h| normal_maps.get(h));
 
+        // Get the mask map, and fallback to the default one
+        let mask_map = self
+            .mask_map
+            .as_ref()
+            .map_or(default.mask, |h| mask_maps.get(h));
+
         // Set the material textures
         group.set_texture("albedo_map", albedo_map).unwrap();
         group.set_texture("normal_map", normal_map).unwrap();
-        */
+        group.set_texture("mask_map", mask_map).unwrap();
     }
 
     // Set the surface push constants
@@ -157,17 +157,18 @@ impl Material for PhysicallyBased {
         let bytes = GpuPod::into_bytes(&cols);
         constants.push(bytes, 0, ModuleVisibility::Vertex).unwrap();
 
-        /*
+        // Convert the material parameters into a vec4
+        let vector = vek::Vec4::new(
+            self.bumpiness,
+            self.metallic,
+            self.ambient_occlusion,
+            self.roughness
+        );
+
         // Send the raw fragment bytes to the GPU
-        let bytes = GpuPod::into_bytes(&self.tint);
-        let offset = bytes.len() as u32;
+        let bytes = GpuPod::into_bytes(&vector);
         constants
             .push(bytes, 0, ModuleVisibility::Fragment)
             .unwrap();
-        let bytes = GpuPod::into_bytes(&self.bumpiness);
-        constants
-            .push(bytes, offset, ModuleVisibility::Fragment)
-            .unwrap();
-        */
     }
 }

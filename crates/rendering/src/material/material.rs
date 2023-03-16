@@ -1,6 +1,6 @@
 use crate::{
     AlbedoMap, CameraBuffer, EnabledMeshAttributes, NormalMap,
-    Renderer, SceneBuffer, SceneColor, TimingBuffer,
+    Renderer, SceneBuffer, SceneColor, TimingBuffer, MaskMap,
 };
 use assets::Assets;
 use graphics::{
@@ -23,6 +23,7 @@ pub struct DefaultMaterialResources<'a> {
     pub white: &'a AlbedoMap,
     pub black: &'a AlbedoMap,
     pub normal: &'a NormalMap,
+    pub mask: &'a MaskMap,
 
     // Default sky gradient texture
     pub sky_gradient: &'a AlbedoMap,

@@ -25,7 +25,6 @@ members = [
 ]
 
 [features]
-double-precision = ["app/double-precision"]
 two-dim = ["app/two-dim"]
 extended-tuples = ["app/extended-tuples"]
 extended-bitmasks = ["app/extended-bitmasks"]

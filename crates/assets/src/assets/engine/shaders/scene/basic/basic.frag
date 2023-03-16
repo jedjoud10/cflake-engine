@@ -40,6 +40,7 @@ void main() {
 	// Fetch the albedo color and normal map value
 	vec3 albedo = texture(sampler2D(albedo_map, albedo_map_sampler), uv).rgb;
 	vec3 bumps = texture(sampler2D(normal_map, normal_map_sampler), uv).rgb * 2.0 - 1.0;
+	bumps.z = sqrt(1 - bumps.x*bumps.x + bumps.y*bumps.y);
 	bumps.xy *= material.bumpiness;
 
 	// Calculate the world space normals
@@ -69,7 +70,7 @@ void main() {
 
 	// Caclulate a fresnel effect
 	vec3 reflected_view_normal = reflect(-view, normal);
-	vec3 fresnel = calculate_sky_color(reflected_view_normal, scene.sun_direction.xyz) * 0.2;
+	vec3 fresnel = calculate_sky_color(reflected_view_normal, scene.sun_direction.xyz) * 0.05;
 
 	// Calculate diffuse lighting
 	frag = vec4(lighting * albedo * material.tint + specular + fresnel, 1.0);

@@ -1,6 +1,6 @@
 use crate::{
     AlbedoMap, CameraBuffer, NormalMap, SceneBuffer, TimingBuffer,
-    WindowBuffer,
+    WindowBuffer, MaskMap,
 };
 
 use assets::Assets;
@@ -50,6 +50,7 @@ pub struct ForwardRenderer {
     pub white: Handle<AlbedoMap>,
     pub black: Handle<AlbedoMap>,
     pub normal: Handle<NormalMap>,
+    pub mask: Handle<MaskMap>,
 
     // Default sky gradient texture
     pub sky_gradient: AlbedoMap,
@@ -93,6 +94,7 @@ impl ForwardRenderer {
         extent: vek::Extent2<u32>,
         albedo_maps: &mut Storage<AlbedoMap>,
         normal_maps: &mut Storage<NormalMap>,
+        mask_maps: &mut Storage<MaskMap>,
     ) -> Self {
         // Create the render pass color texture
         let color_texture = Texture2D::<RGBA<f32>>::from_texels(
@@ -152,9 +154,10 @@ impl ForwardRenderer {
             .unwrap();
 
         // Create the default 1x1 textures colors
-        let white = vek::Vec3::broadcast(255).with_w(255);
+        let white = vek::Vec4::broadcast(255);
         let black = vek::Vec4::broadcast(0);
-        let normal = vek::Vec3::new(127, 127, 255).with_w(255);
+        let normal = vek::Vec2::new(127, 127);
+        let mask = vek::Vec4::new(255u8, 255, 255, 0);
 
         // Create the 1x1 default textures
         let white =
@@ -163,6 +166,8 @@ impl ForwardRenderer {
             albedo_maps.insert(create_texture2d(graphics, black));
         let normal =
             normal_maps.insert(create_texture2d(graphics, normal));
+        let mask = 
+            mask_maps.insert(create_texture2d(graphics, mask));
 
         Self {
             // Render pass, color texture, and depth texture
@@ -180,6 +185,7 @@ impl ForwardRenderer {
             white,
             black,
             normal,
+            mask,
 
             // No default camera
             main_camera: None,

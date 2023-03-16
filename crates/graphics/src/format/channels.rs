@@ -18,6 +18,21 @@ pub struct SBGRA<T: AnyElement + Swizzable + SupportsSrgba>(
     vek::Vec4<T>,
 );
 
+// In WGPU, only specific data types support compression
+// RGBA<Normalized<UDXT1>>
+// SRGBA<Normalized<UDXT1>>
+// RGBA<Normalized<UDXT3>>
+// SRGBA<Normalized<UDXT3>>
+// R<Normalized<URGTC>>
+// R<Normalized<SGTC>>
+// RG<Normalized<URGTC>>
+// RG<Normalized<SGTC>>
+// RGB<UBPTC> uf16
+// RGB<SBPTC> sf16
+// RGBA<UBPTC> u8
+// SRGBA<UBPTC> u8
+
+
 // The channels that represent the vertices
 pub struct X<T: AnyElement>(T);
 pub struct XY<T: AnyElement>(vek::Vec2<T>);

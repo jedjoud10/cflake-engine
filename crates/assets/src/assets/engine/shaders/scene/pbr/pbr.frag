@@ -21,11 +21,10 @@ layout(set = 0, binding = 7) uniform texture2D shadow_map;
 
 // Push constants for the material data
 layout(push_constant) uniform PushConstants {
-	layout(offset = 64) vec3 tint;
-	layout(offset = 76) float bumpiness;
-    layout(offset = 80) float metallic;
-    layout(offset = 84) float ambient_occlusion;
-    layout(offset = 88) float smoothness;
+	layout(offset = 64) float bumpiness;
+    layout(offset = 68) float metallic;
+    layout(offset = 72) float ambient_occlusion;
+    layout(offset = 76) float roughness;
 } material;
 
 // Albedo / diffuse map

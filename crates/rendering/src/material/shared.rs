@@ -1,5 +1,5 @@
 use bytemuck::{Pod, Zeroable};
-use graphics::{Normalized, Texture2D, UniformBuffer, RGBA, SRGBA};
+use graphics::{Normalized, Texture2D, UniformBuffer, RGBA, SRGBA, RG};
 
 // Camera data that will be stored in a UBO
 #[derive(Clone, Copy, PartialEq, Pod, Zeroable, Default)]
@@ -57,7 +57,7 @@ pub struct WindowUniform {
 
 // Type aliases for texels
 pub type AlbedoTexel = SRGBA<Normalized<u8>>;
-pub type NormalTexel = RGBA<Normalized<u8>>;
+pub type NormalTexel = RG<Normalized<u8>>;
 pub type MaskTexel = RGBA<Normalized<u8>>;
 
 // Type aliases for textures

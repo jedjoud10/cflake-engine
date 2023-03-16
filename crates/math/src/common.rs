@@ -1,8 +1,5 @@
-// Scalar type, f32 or f64 based on precision
-#[cfg(not(feature = "double-precision"))]
+// Scalar type, always f32
 pub type Scalar = f32;
-#[cfg(feature = "double-precision")]
-pub type Scalar = f64;
 
 // Rotation type
 #[cfg(not(feature = "two-dim"))]

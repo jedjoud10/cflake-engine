@@ -22,6 +22,7 @@ math = { path = "../math" }
 gui = { path = "../gui" }
 audio = { path = "../audio" }
 utils = { path = "../utils" }
+terrain = { path = "../terrain" }
 fern = { version = "0.6.1", features = ["colored"] }
 chrono = "0.4.23"
 serde = "1.0.145"  
@@ -30,7 +31,6 @@ vek = { workspace = true }
 ahash = { workspace = true }
 
 [features]
-double-precision = ["ecs/double-precision", "math/double-precision"]
 two-dim = ["ecs/two-dim", "rendering/two-dim", "math/two-dim"]
 extended-tuples = ["ecs/extended-tuples", "utils/extended-tuples", "graphics/extended-tuples"]
 extended-bitmasks = ["ecs/extended-bitmasks"]

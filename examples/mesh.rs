@@ -57,8 +57,8 @@ fn init(world: &mut World) {
         world.get_mut::<Storage<AlbedoMap>>().unwrap();
     let mut normal_maps =
         world.get_mut::<Storage<NormalMap>>().unwrap();
-    let _diffuse = diffuse_maps.insert(diffuse);
-    let _normal = normal_maps.insert(normal);
+    let diffuse = diffuse_maps.insert(diffuse);
+    let normal = normal_maps.insert(normal);
 
     // Get the material id (also registers the material pipeline)
     let id =
@@ -66,8 +66,8 @@ fn init(world: &mut World) {
 
     // Create a new material instance
     let material = basics.insert(Basic {
-        albedo_map: None,
-        normal_map: None,
+        albedo_map: Some(diffuse),
+        normal_map: Some(normal),
         bumpiness: 1.4,
         tint: vek::Rgb::one(),
     });

@@ -133,6 +133,7 @@ dependencies = [
  "rendering",
  "serde",
  "spin_sleep",
+ "terrain",
  "utils",
  "vek",
  "winit",
@@ -2879,6 +2880,14 @@ dependencies = [
 [[package]]
 name = "terrain"
 version = "0.1.0"
+dependencies = [
+ "assets",
+ "ecs",
+ "graphics",
+ "math",
+ "utils",
+ "world",
+]
 
 [[package]]
 name = "thiserror"

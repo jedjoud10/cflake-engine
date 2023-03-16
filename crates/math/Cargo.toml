@@ -15,4 +15,3 @@ itertools = "0.10.3"
 
 [features]
 two-dim = []
-double-precision = []

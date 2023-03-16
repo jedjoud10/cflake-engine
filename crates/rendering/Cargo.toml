@@ -26,5 +26,4 @@ parking_lot = { workspace = true }
 thiserror = { workspace = true }
 
 [features]
-double-precision = ["ecs/double-precision"]
 two-dim = ["ecs/two-dim"]

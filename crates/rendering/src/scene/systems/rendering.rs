@@ -1,7 +1,7 @@
 use crate::{
     AlbedoMap, Basic, DefaultMaterialResources, DirectionalLight,
     ForwardRenderer, Mesh, NormalMap, Pipelines, Renderer,
-    SceneUniform, ShadowMapping, Sky, WindowUniform,
+    SceneUniform, ShadowMapping, Sky, WindowUniform, MaskMap,
 };
 use assets::Assets;
 
@@ -18,6 +18,7 @@ fn init(world: &mut World) {
     let mut assets = world.get_mut::<Assets>().unwrap();
     let mut albedo_maps = Storage::<AlbedoMap>::default();
     let mut normal_maps = Storage::<NormalMap>::default();
+    let mut mask_maps = Storage::<MaskMap>::default();
 
     // Create the scene renderer, pipeline manager
     let renderer = ForwardRenderer::new(
@@ -26,6 +27,7 @@ fn init(world: &mut World) {
         window.size(),
         &mut albedo_maps,
         &mut normal_maps,
+        &mut mask_maps,
     );
     let pipelines = Pipelines::new();
 
@@ -56,6 +58,7 @@ fn init(world: &mut World) {
     world.insert(Storage::<Sky>::default());
     world.insert(albedo_maps);
     world.insert(normal_maps);
+    world.insert(mask_maps);
 }
 
 // Handle window resizing the depth texture
@@ -105,6 +108,7 @@ fn render(world: &mut World) {
     let meshes = world.get::<Storage<Mesh>>().unwrap();
     let albedo_maps = world.get::<Storage<AlbedoMap>>().unwrap();
     let normal_maps = world.get::<Storage<NormalMap>>().unwrap();
+    let mask_maps = world.get::<Storage<MaskMap>>().unwrap();
 
     let pipelines = pipelines.extract_pipelines();
 
@@ -146,6 +150,7 @@ fn render(world: &mut World) {
         white: &albedo_maps[&renderer.white],
         black: &albedo_maps[&renderer.black],
         normal: &normal_maps[&renderer.normal],
+        mask: &mask_maps[&renderer.mask],
         sky_gradient: &renderer.sky_gradient,
         material_index: 0,
         draw_call_index: 0,

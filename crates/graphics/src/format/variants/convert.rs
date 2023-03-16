@@ -202,7 +202,6 @@ macro_rules! impl_color_texels {
     };
 }
 
-type Scalar<T> = T;
 impl_color_texels!(
     R,
     ChannelsType::Vector(VectorChannels::One),
