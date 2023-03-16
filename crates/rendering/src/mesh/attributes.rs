@@ -35,7 +35,7 @@ pub trait MeshAttribute {
 
     // Try to get the references to the underlying vertex buffers
     // Forgive me my children, for I have failed to bring you salvation, from this cold, dark, world...
-    // AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+    // WWAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
     fn from_ref_as_ref<'a>(
         vertices: &VerticesRef<'a>,
     ) -> Option<&'a AttributeBuffer<Self>>;

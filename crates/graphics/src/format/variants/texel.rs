@@ -1,7 +1,7 @@
 use crate::{
     AnyElement, ColorTexel, Depth, DepthElement, ElementType, GpuPod,
     Normalized, Stencil, TexelChannels, VertexChannels, BGRA, R, RG,
-    RGBA, SBGRA, SRGBA,
+    RGBA, SBGRA, SRGBA, UBC1, UBC2, UBC3, UBC7, UBC4, SBC4, SBC5, UBC5,
 };
 use half::f16;
 use std::{any::Any, mem::size_of, ops::Add};
@@ -28,6 +28,7 @@ pub trait Texel: 'static {
     }
 
     // Number of bytes per channel
+    // Note: This does not take in consideration the "actual" sizes of each channel (compressed formats)
     fn bytes_per_channel() -> u32;
 
     // Number of bytes per texel (stride)
@@ -161,6 +162,21 @@ macro_rules! impl_color_texels {
     };
 }
 
+macro_rules! impl_compressed_rgba_variants {
+    ($elem:ty) => {
+        internal_impl_texel!(RGBA, $elem, TexelChannels::Four { swizzled: false }, Vec4);
+        internal_impl_texel!(SRGBA, $elem, TexelChannels::Srgba { swizzled: false }, Vec4);
+    };
+}
+
+macro_rules! impl_compressed_signed_unsigned_variants {
+    ($vec:ident, $channels:expr, $storagevec: ident, $unsigned:ty, $signed:ty) => {
+        internal_impl_texel!($vec, $unsigned, $channels, $storagevec);
+        internal_impl_texel!($vec, $signed, $channels, $storagevec);
+    };
+}
+
+// Implement basic formats 
 type Scalar<T> = T;
 impl_color_texels!(
     R,
@@ -183,6 +199,8 @@ internal_impl_texel!(
     TexelChannels::Four { swizzled: true },
     Vec4
 );
+
+// Implement basic SRGBA formats
 internal_impl_texel!(
     SRGBA,
     Normalized<u8>,
@@ -196,6 +214,51 @@ internal_impl_texel!(
     Vec4
 );
 
+// RGBA<Normalized<UBC1>> R5G6B5A1
+// SRGBA<Normalized<UBC1>> R5G6B5A1
+impl_compressed_rgba_variants!(
+    Normalized<UBC1>
+);
+
+// RGBA<Normalized<UBC2>> R5G6B5A4
+// SRGBA<Normalized<UBC2>> R5G6B5A4
+impl_compressed_rgba_variants!(
+    Normalized<UBC2>
+);
+
+// RGBA<Normalized<UBC2>> R5G6B5A8
+// SRGBA<Normalized<UBC2>> R5G6B5A8
+impl_compressed_rgba_variants!(
+    Normalized<UBC3>
+);
+
+// R<Normalized<UBC4>> 
+// R<Normalized<SBC4>>
+impl_compressed_signed_unsigned_variants!(
+    R,
+    TexelChannels::Two,
+    Vec2,
+    Normalized<UBC4>,
+    Normalized<SBC4>
+);
+
+// RG<Normalized<UBC5>>
+// RG<Normalized<SBC5>>
+impl_compressed_signed_unsigned_variants!(
+    R,
+    TexelChannels::Two,
+    Vec2,
+    Normalized<UBC5>,
+    Normalized<SBC5>
+);
+
+// RGBA<Normalized<UBC7>>
+// SRGBA<Normalized<UBC7>>
+impl_compressed_rgba_variants!(
+    Normalized<UBC7>
+);
+
+// Implement special depth / stencil formats
 internal_impl_texel!(
     Depth,
     Normalized<u16>,

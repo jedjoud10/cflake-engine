@@ -142,6 +142,39 @@ mod texels {
         );
         assert_eq!(Stencil::<u8>::format(), TextureFormat::Stencil8);
     }
+
+    #[test]
+    fn compressed() {
+        assert_eq!(
+            RGBA::<Normalized<UBC1>>::format(),
+            TextureFormat::Bc1RgbaUnorm
+        );
+
+        assert_eq!(
+            SRGBA::<Normalized<UBC1>>::format(),
+            TextureFormat::Bc1RgbaUnormSrgb
+        );
+
+        assert_eq!(
+            RGBA::<Normalized<UBC2>>::format(),
+            TextureFormat::Bc2RgbaUnorm
+        );
+
+        assert_eq!(
+            SRGBA::<Normalized<UBC2>>::format(),
+            TextureFormat::Bc2RgbaUnormSrgb
+        );
+
+        assert_eq!(
+            RGBA::<Normalized<UBC3>>::format(),
+            TextureFormat::Bc3RgbaUnorm
+        );
+
+        assert_eq!(
+            SRGBA::<Normalized<UBC3>>::format(),
+            TextureFormat::Bc3RgbaUnormSrgb
+        );
+    }
 }
 
 #[cfg(test)]

@@ -1,9 +1,10 @@
-use crate::{Normalized, Normalizable, Base};
+use crate::{Normalized, Normalizable, Base, AnyElement, SupportsSrgba};
+use paste::paste;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum CompressionType {
-    // RGBA<Normalized<UBC2>> R5G6B5A1
-    // SRGBA<Normalized<UBC2>> R5G6B5A1
+    // RGBA<Normalized<UBC1>> R5G6B5A1
+    // SRGBA<Normalized<UBC1>> R5G6B5A1
     UBC1,
 
     // RGBA<Normalized<UBC2>> R5G6B5A4
@@ -28,15 +29,19 @@ pub enum CompressionType {
     UBC7
 }
 
-// In WGPU, only specific data types support compression
-pub struct UBC1;
+macro_rules! impl_compressed_any_element {
+    ($t:ty, $storage:ty, $variant:expr) => {
+        impl AnyElement for $t {
+            type Storage = $storage;
+            const ELEMENT_TYPE: crate::ElementType = crate::ElementType::Compressed($variant);
+        }
 
-impl Base for UBC1 {
-    const TYPE: crate::BaseType = crate::BaseType::;
-
-    const SIGNED: bool = false;
+        impl Normalizable for $t {}
+    };
 }
 
+// In WGPU, only specific data types support compression
+pub struct UBC1;
 pub struct UBC2;
 pub struct UBC3;
 pub struct UBC4;
@@ -45,6 +50,18 @@ pub struct UBC5;
 pub struct SBC5;
 pub struct UBC7;
 
+impl_compressed_any_element!(UBC1, u8, CompressionType::UBC1);
+impl_compressed_any_element!(UBC2, u8, CompressionType::UBC2);
+impl_compressed_any_element!(UBC3, u8, CompressionType::UBC3);
+impl_compressed_any_element!(UBC4, u8, CompressionType::BC4 { signed: false });
+impl_compressed_any_element!(SBC4, u8, CompressionType::BC4 { signed: true });
+impl_compressed_any_element!(UBC5, u8, CompressionType::BC5 { signed: false });
+impl_compressed_any_element!(SBC5, u8, CompressionType::BC5 { signed: true });
+impl_compressed_any_element!(UBC7, u8, CompressionType::UBC7);
 
+impl SupportsSrgba for Normalized<UBC1> {}
+impl SupportsSrgba for Normalized<UBC2> {}
+impl SupportsSrgba for Normalized<UBC3> {}
+impl SupportsSrgba for Normalized<UBC7> {}
 
 

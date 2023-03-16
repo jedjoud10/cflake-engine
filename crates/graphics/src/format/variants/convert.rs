@@ -254,7 +254,6 @@ internal_impl_color_texel!(
     |v| v as f32 / u8::MAX as f32
 );
 
-// TODO: write macro for this
 impl Conversion for Depth<f32>
 where
     Self: Texel,
@@ -272,7 +271,6 @@ where
     }
 }
 
-// TODO: write macro for this
 impl Conversion for Stencil<u8>
 where
     Self: Texel,

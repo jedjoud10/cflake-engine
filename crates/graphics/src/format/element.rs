@@ -1,6 +1,6 @@
 use std::any::TypeId;
 
-use crate::{Base, BaseType, GpuPod, CompressionType};
+use crate::{Base, GpuPod, CompressionType};
 
 // Elements are just values that can be stored within channels, like u32, Normalized<i8> or i8
 pub trait AnyElement: 'static {
@@ -14,21 +14,7 @@ pub trait AnyElement: 'static {
 impl<T: Base> AnyElement for T {
     type Storage = T;
 
-    const ELEMENT_TYPE: ElementType = match T::TYPE {
-        BaseType::Eight => ElementType::Eight {
-            signed: T::SIGNED,
-            normalized: false,
-        },
-        BaseType::Sixteen => ElementType::Sixteen {
-            signed: T::SIGNED,
-            normalized: false,
-        },
-        BaseType::ThirtyTwo => {
-            ElementType::ThirtyTwo { signed: T::SIGNED }
-        }
-        BaseType::FloatSixteen => ElementType::FloatSixteen,
-        BaseType::FloatThirtyTwo => ElementType::FloatThirtyTwo,
-    };
+    const ELEMENT_TYPE: ElementType = <T as Base>::ELEMENT_TYPE;
 }
 
 // Untyped element type that will be used to fetch the WGPU TextureFormat
@@ -48,7 +34,8 @@ pub enum ElementType {
 }
 
 // This trait represents bases that can be normalized
-pub trait Normalizable: Base {}
+pub trait Normalizable: AnyElement {}
+
 impl Normalizable for i8 {}
 impl Normalizable for u8 {}
 impl Normalizable for i16 {}
@@ -57,22 +44,23 @@ impl Normalizable for u16 {}
 // A normalized texel limiter that will the texture that the integer must be accessed as a floating point value, and that it must be in
 //  the -1 - 1 range if it's a signed integer and the 0 - 1 range if it's an unsigned integer
 #[derive(Default, Copy, Clone)]
-pub struct Normalized<T: Base + Normalizable>(T);
+pub struct Normalized<T: Normalizable>(T);
 
-impl<T: Base + Normalizable> AnyElement for Normalized<T> {
-    type Storage = T;
+impl<T: Normalizable> AnyElement for Normalized<T> {
+    type Storage = T::Storage;
 
-    const ELEMENT_TYPE: ElementType = match T::TYPE {
-        BaseType::Eight => ElementType::Eight {
-            signed: T::SIGNED,
+    const ELEMENT_TYPE: ElementType = match <T as AnyElement>::ELEMENT_TYPE {
+        ElementType::Eight { signed, .. } => ElementType::Eight {
+            signed,
             normalized: true,
         },
-        BaseType::Sixteen => ElementType::Sixteen {
-            signed: T::SIGNED,
+        ElementType::Sixteen { signed, .. } => ElementType::Sixteen {
+            signed,
             normalized: true,
         },
+        ElementType::Compressed(x) => ElementType::Compressed(x),
 
-        // Not supported by WGPU
+        // Due to type safety (trait bound Normalizable), this panic will never be able to occur
         _ => panic!(),
     };
 }

@@ -168,8 +168,7 @@ fn compile(
     snippets: &Snippets,
     source: String,
     file: &str,
-) -> Result<(wgpu::ShaderModule, naga::Module), ShaderCompilationError>
-{
+) -> Result<(wgpu::ShaderModule, naga::Module), ShaderCompilationError> {
     // Custom ShaderC compiler options
     let mut options = shaderc::CompileOptions::new().unwrap();
 

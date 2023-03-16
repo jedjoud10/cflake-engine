@@ -1,46 +1,31 @@
 use crate::GpuPod;
 use half::f16;
+use paste::paste;
+use crate::ElementType;
 
 // Base underlying type used for TextureFormat and VertexFormat
 pub trait Base:
     Clone + Copy + Send + Sync + 'static + GpuPod
 {
-    const TYPE: BaseType;
-    const SIGNED: bool;
+    const ELEMENT_TYPE: ElementType;
 }
 
 macro_rules! impl_base {
-    ($t:ty, $b: ident, $signed: ident) => {
+    ($t:ty, $b: expr) => {
         impl Base for $t {
-            const TYPE: BaseType = BaseType::$b;
-            const SIGNED: bool = $signed;
+            const ELEMENT_TYPE: ElementType = $b;
         }
     };
 }
 
 // Integer types
-impl_base!(i8, Eight, true);
-impl_base!(u8, Eight, false);
-impl_base!(i16, Sixteen, true);
-impl_base!(u16, Sixteen, false);
-impl_base!(i32, ThirtyTwo, true);
-impl_base!(u32, ThirtyTwo, false);
+impl_base!(i8, ElementType::Eight { signed: true, normalized: false });
+impl_base!(u8, ElementType::Eight { signed: false, normalized: false } );
+impl_base!(i16, ElementType::Sixteen { signed: true, normalized: false });
+impl_base!(u16, ElementType::Sixteen { signed: false, normalized: false });
+impl_base!(i32, ElementType::ThirtyTwo { signed: true });
+impl_base!(u32, ElementType::ThirtyTwo { signed: false });
 
 // Floating point types
-impl_base!(f16, FloatSixteen, true);
-impl_base!(f32, FloatThirtyTwo, true);
-
-// Untyped representation of "base" needed for texel
-// TODO: RENAME
-#[derive(Clone, Copy, Hash, PartialEq, Eq)]
-pub enum BaseType {
-    Eight,
-    Sixteen,
-    ThirtyTwo,
-
-    FloatSixteen,
-    FloatThirtyTwo,
-
-    // Compressed element type, only to be used with compressed textures
-    Compressed(CompressionType)
-}
+impl_base!(f16, ElementType::FloatSixteen);
+impl_base!(f32, ElementType::FloatThirtyTwo);
