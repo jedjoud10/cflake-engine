@@ -1210,6 +1210,7 @@ dependencies = [
  "shaderc",
  "smallvec",
  "snailquote",
+ "tbc",
  "thiserror",
  "thread_local",
  "utils",
@@ -2867,6 +2868,12 @@ dependencies = [
  "quote",
  "unicode-ident",
 ]
+
+[[package]]
+name = "tbc"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5488807ecc13530932d661bc4ea7ea621080fdbf354b7f54506fcc46d4d63bf5"
 
 [[package]]
 name = "termcolor"

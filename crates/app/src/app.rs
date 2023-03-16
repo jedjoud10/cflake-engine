@@ -30,7 +30,6 @@ pub struct App {
     engine_version: u32,
 
     // Main app resources
-    inserted_events: usize,
     systems: Systems,
     world: World,
     el: EventLoop<()>,
@@ -51,7 +50,6 @@ impl Default for App {
             app_version: 1,
             engine_name: "cFlake Game Engine".to_string(),
             engine_version: 1,
-            inserted_events: 1,
             user_assets_folder: None,
             systems,
             el: EventLoop::new(),

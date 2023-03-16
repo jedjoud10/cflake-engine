@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use image::ImageError;
 use thiserror::Error;
 use wgpu::TextureFormat;
@@ -23,6 +25,9 @@ pub enum TextureInitializationError {
 
     #[error("Tried creating a mip map for a NPOT texture")]
     MipMapGenerationNPOT,
+
+    #[error("The given texture size is not valid for the block compression algorithm given")]
+    SizeNotValidForCompression,
 
     #[error("The given texture usage contains the READ flag, but there isn't the COPY_SRC flag")]
     ReadableWithoutCopySrc,

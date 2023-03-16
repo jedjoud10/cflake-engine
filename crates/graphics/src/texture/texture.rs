@@ -15,7 +15,7 @@ use crate::{
     Region, RenderTarget, Sampler, SamplerSettings, SamplerWrap,
     Texel, TextureAsTargetError, TextureInitializationError,
     TextureMipLevelError, TextureMipMaps, TextureMode,
-    TextureResizeError, TextureSamplerError, TextureUsage,
+    TextureResizeError, TextureSamplerError, TextureUsage, TexelSize,
 };
 
 // Possibly predefined texel data
@@ -156,8 +156,11 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
         match mipmaps {
             TextureMipMaps::Manual { mips } => {
                 // Manual mip map generation
-                let iter =
-                    mips.iter().enumerate().map(|(x, y)| (x + 1, y));
+                let iter = mips
+                    .iter()
+                    .take(levels as usize-1)
+                    .enumerate()
+                    .map(|(x, y)| (x + 1, y));
                 for (i, texels) in iter {
                     // Downscale the texture extent by two
                     let downscaled_extent =
@@ -370,15 +373,23 @@ fn mip_levels<T: Texel, E: Extent>(
     mipmaps: &TextureMipMaps<T>,
     extent: E,
 ) -> Result<u32, TextureInitializationError> {
-    let max_mip_levels =
-        if matches!(mipmaps, TextureMipMaps::Disabled) {
-            1u8 as u32
-        } else {
-            let max = extent.levels().ok_or(
-                TextureInitializationError::MipMapGenerationNPOT,
-            )?;
-            max.get() as u32
-        };
+    let max_mip_levels = if matches!(mipmaps, TextureMipMaps::Disabled) {
+        1u8 as u32
+    } else {
+        let max = extent.levels().ok_or(
+            TextureInitializationError::MipMapGenerationNPOT,
+        )?;
+
+        // If we are using compression, we must make sure the lowest level is at least the block size
+        match T::size() {
+            TexelSize::Uncompressed(_) => max.get() as u32,
+            TexelSize::Compressed(c) => {
+                let val = max.get() as u32;
+                let logged = (c.block_size() as f32).log2() + 2.0;
+                val - (logged as u32)
+            },
+        }
+    };
 
     // Convert Auto to Zeroed (since if this texture was loaded from disk, it would've been Manual instead)
     let levels = match *mipmaps {
@@ -416,13 +427,11 @@ fn create_image_data_layout<T: Texel, E: Extent>(
     let size = T::size();
 
     // Bytes per row change if we are using compressed textures
-    dbg!(extent.width());
     let bytes_per_row = match size {
-        crate::TexelSize::Uncompressed(size) => NonZeroU32::new(size * extent.width()),
-        crate::TexelSize::Compressed(compression) => {
+        TexelSize::Uncompressed(size) => NonZeroU32::new(size * extent.width()),
+        TexelSize::Compressed(compression) => {
             // TODO: Actually try understanding wtf bytes_per_row means when using compression
-            //NonZeroU32::new(compression.bytes_per_block() * (extent.width() / compression.block_size()))
-            todo!()
+            NonZeroU32::new(compression.bytes_per_block() * (extent.width() / compression.block_size()))
         },
     };
 

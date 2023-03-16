@@ -14,7 +14,5 @@ fn update(world: &mut World) {
     let _time = world.get::<Time>().unwrap();
 
     egui::Window::new("Test window").show(&ui, |ui| {
-        ui.label("Catgirl enjoyer idk test text");
-        ui.label("ABCDabcd1234");
     });
 }
