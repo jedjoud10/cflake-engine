@@ -44,3 +44,4 @@ lazy_static = { workspace = true }
 [features]
 headless = []
 extended-tuples = []
+shaderc-build-from-source = ["shaderc/build-from-source"]

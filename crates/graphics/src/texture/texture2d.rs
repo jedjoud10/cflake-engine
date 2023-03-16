@@ -125,7 +125,7 @@ impl<T: Texel> Default for TextureImportSettings<'_, T> {
             sampling: SamplerSettings::default(),
             mode: TextureMode::default(),
             usage: TextureUsage::default(),
-            mipmaps: TextureMipMaps::Disabled,
+            mipmaps: TextureMipMaps::Manual { mips: &[] },
         }
     }
 }

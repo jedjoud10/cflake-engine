@@ -36,3 +36,4 @@ extended-tuples = ["ecs/extended-tuples", "utils/extended-tuples", "graphics/ext
 extended-bitmasks = ["ecs/extended-bitmasks"]
 headless = ["graphics/headless"]
 debug-assets = ["assets/debug-assets"]
+shaderc-build-from-source = ["graphics/shaderc-build-from-source"]
