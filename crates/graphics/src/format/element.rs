@@ -1,6 +1,6 @@
 use std::any::TypeId;
 
-use crate::{Base, BaseType, GpuPod};
+use crate::{Base, BaseType, GpuPod, CompressionType};
 
 // Elements are just values that can be stored within channels, like u32, Normalized<i8> or i8
 pub trait AnyElement: 'static {
@@ -26,16 +26,12 @@ impl<T: Base> AnyElement for T {
         BaseType::ThirtyTwo => {
             ElementType::ThirtyTwo { signed: T::SIGNED }
         }
-        BaseType::SixtyFour => {
-            ElementType::SixtyFour { signed: T::SIGNED }
-        }
         BaseType::FloatSixteen => ElementType::FloatSixteen,
         BaseType::FloatThirtyTwo => ElementType::FloatThirtyTwo,
-        BaseType::FloatSixtyFour => ElementType::FloatSixtyFour,
     };
 }
 
-// Untyped element type that will be used to fetch VkFormat
+// Untyped element type that will be used to fetch the WGPU TextureFormat
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum ElementType {
     // Integer types
@@ -43,15 +39,12 @@ pub enum ElementType {
     Sixteen { signed: bool, normalized: bool },
     ThirtyTwo { signed: bool },
 
-    // ONLY SUPPORTED FOR VERTEX FORMATS
-    SixtyFour { signed: bool },
-
     // Floating point types
     FloatSixteen,
     FloatThirtyTwo,
 
-    // ONLY SUPPORTED FOR VERTEX FORMATS
-    FloatSixtyFour,
+    // Compressed element type, only to be used with compressed textures
+    Compressed(CompressionType)
 }
 
 // This trait represents bases that can be normalized
@@ -79,7 +72,7 @@ impl<T: Base + Normalizable> AnyElement for Normalized<T> {
             normalized: true,
         },
 
-        // Not supported by VkFormat
+        // Not supported by WGPU
         _ => panic!(),
     };
 }

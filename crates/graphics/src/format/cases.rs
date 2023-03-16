@@ -1,4 +1,4 @@
-use crate::{ElementType, TexelChannels, VectorChannels};
+use crate::{ElementType, TexelChannels, VertexChannels, CompressionType};
 use paste::paste;
 use wgpu::{TextureFormat, VertexFormat};
 
@@ -37,7 +37,7 @@ macro_rules! impl_texel_conversion_specific_channels {
 // Converts the given vector channels to the proper texture format
 pub const fn pick_texture_format_channels(
     element: ElementType,
-    channels: VectorChannels,
+    channels: TexelChannels,
 ) -> Option<TextureFormat> {
     impl_texel_conversion_specific_channels!(R, r);
     impl_texel_conversion_specific_channels!(Rg, rg);
@@ -56,11 +56,47 @@ pub const fn pick_texture_format_channels(
         }
     }
 
+    // Handle compressed formats early since I don't want to deal with them in the macro
+    match element {
+        ElementType::Compressed(compressed) => {
+            match (channels, compressed) {
+                (TexelChannels::One, CompressionType::BC4 { signed }) => {
+                    return Some(match signed {
+                        true => TextureFormat::Bc4RSnorm,
+                        false => TextureFormat::Bc4RUnorm,
+                    });
+                },
+                (TexelChannels::Two, CompressionType::BC5 { signed }) => {
+                    return Some(match signed {
+                        true => TextureFormat::Bc5RgSnorm,
+                        false => TextureFormat::Bc5RgUnorm,
+                    });
+                },
+                (TexelChannels::Four { swizzled: false }, CompressionType::UBC1) => {
+                    return Some(TextureFormat::Bc1RgbaUnorm);
+                },
+                (TexelChannels::Four { swizzled: false }, CompressionType::UBC2) => {
+                    return Some(TextureFormat::Bc2RgbaUnorm);
+                },
+                (TexelChannels::Four { swizzled: false }, CompressionType::UBC3) => {
+                    return Some(TextureFormat::Bc3RgbaUnorm);
+                },
+                (TexelChannels::Four { swizzled: false }, CompressionType::UBC7) => {
+                    return Some(TextureFormat::Bc7RgbaUnorm);
+                },
+                _ => {}
+            }
+        },
+        _ => {}
+    }
+
     match channels {
-        VectorChannels::One => handle_r_formats(element),
-        VectorChannels::Two => handle_rg_formats(element),
-        VectorChannels::Four => handle_rgba_formats(element),
-        VectorChannels::FourSwizzled => handle_bgra_formats(element),
+        TexelChannels::One => handle_r_formats(element),
+        TexelChannels::Two => handle_rg_formats(element),
+        TexelChannels::Four { swizzled } => match swizzled {
+            true => handle_bgra_formats(element),
+            false => handle_rgba_formats(element),
+        },
         _ => None,
     }
 }
@@ -98,20 +134,23 @@ pub const fn pick_texture_srgb_format(
     element: ElementType,
     swizzled: bool,
 ) -> Option<TextureFormat> {
-    if !matches!(
-        element,
-        ElementType::Eight {
+    match element {
+        ElementType::Eight { 
             signed: false,
             normalized: true
-        }
-    ) {
-        return None;
+        } => Some(match swizzled {
+            true => TextureFormat::Bgra8UnormSrgb,
+            false => TextureFormat::Rgba8UnormSrgb,
+        }),
+        ElementType::Compressed(compression) => match compression {
+            CompressionType::UBC1 => Some(TextureFormat::Bc1RgbaUnormSrgb),
+            CompressionType::UBC2 => Some(TextureFormat::Bc2RgbaUnormSrgb),
+            CompressionType::UBC3 => Some(TextureFormat::Bc3RgbaUnormSrgb),
+            CompressionType::UBC7 => Some(TextureFormat::Bc7RgbaUnormSrgb),
+            _ => None
+        },
+        _ => None
     }
-
-    Some(match swizzled {
-        true => TextureFormat::Bgra8UnormSrgb,
-        false => TextureFormat::Rgba8UnormSrgb,
-    })
 }
 
 // Converts the given data to the proper texel format
@@ -122,13 +161,16 @@ pub const fn pick_texture_format(
     channels: TexelChannels,
 ) -> Option<TextureFormat> {
     match channels {
-        TexelChannels::Vector(channels) => {
-            pick_texture_format_channels(element, channels)
-        }
+        TexelChannels::One
+        | TexelChannels::Two
+        | TexelChannels::Four { .. } => pick_texture_format_channels(element, channels),
+
         TexelChannels::Depth => pick_texture_depth_format(element),
+
         TexelChannels::Stencil => {
             pick_texture_stencil_format(element)
         }
+
         TexelChannels::Srgba { swizzled } => {
             pick_texture_srgb_format(element, swizzled)
         }
@@ -140,10 +182,10 @@ pub const fn pick_texture_format(
 // The given input might not always be supported (for example, XYZ), and in which case, this function would return None
 pub const fn pick_vertex_format(
     element: ElementType,
-    channels: VectorChannels,
+    channels: VertexChannels,
 ) -> Option<VertexFormat> {
     match channels {
-        VectorChannels::One => match element {
+        VertexChannels::One => match element {
             ElementType::ThirtyTwo { signed } => Some(match signed {
                 true => VertexFormat::Sint32,
                 false => VertexFormat::Uint32,
@@ -153,7 +195,7 @@ pub const fn pick_vertex_format(
             }
             _ => None,
         },
-        VectorChannels::Two => match element {
+        VertexChannels::Two => match element {
             ElementType::Eight { signed, normalized } => {
                 Some(match (signed, normalized) {
                     (true, true) => VertexFormat::Snorm8x2,
@@ -182,7 +224,7 @@ pub const fn pick_vertex_format(
             }
             _ => None,
         },
-        VectorChannels::Three => match element {
+        VertexChannels::Three => match element {
             ElementType::ThirtyTwo { signed } => Some(match signed {
                 true => VertexFormat::Sint32x3,
                 false => VertexFormat::Uint32x3,
@@ -192,7 +234,7 @@ pub const fn pick_vertex_format(
             }
             _ => None,
         },
-        VectorChannels::Four => match element {
+        VertexChannels::Four => match element {
             ElementType::Eight { signed, normalized } => {
                 Some(match (signed, normalized) {
                     (true, true) => VertexFormat::Snorm8x4,

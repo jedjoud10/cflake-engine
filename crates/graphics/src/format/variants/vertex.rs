@@ -1,6 +1,6 @@
 use crate::{
     AnyElement, Depth, DepthElement, ElementType, GpuPod, Normalized,
-    Stencil, TexelChannels, VectorChannels, X, XY, XYZ, XYZW,
+    Stencil, TexelChannels, VertexChannels, X, XY, XYZ, XYZW,
 };
 use half::f16;
 use std::mem::size_of;
@@ -32,7 +32,7 @@ pub trait Vertex {
     fn element() -> ElementType;
 
     // Type of channels (either X, XY, XYZ, XYZW)
-    fn channels() -> VectorChannels;
+    fn channels() -> VertexChannels;
 
     // Compile time WGPU format
     fn format() -> VertexFormat;
@@ -53,7 +53,7 @@ pub trait Vertex {
 pub struct VertexInfo {
     bytes_per_channel: u32,
     element: ElementType,
-    channels: VectorChannels,
+    channels: VertexChannels,
     format: VertexFormat,
 }
 
@@ -74,7 +74,7 @@ impl VertexInfo {
     }
 
     // Type of channels (either X, XY, XYZ, XYZW)
-    pub fn channels(&self) -> VectorChannels {
+    pub fn channels(&self) -> VertexChannels {
         self.channels
     }
 
@@ -98,7 +98,7 @@ macro_rules! internal_impl_vertex {
                 <$elem as AnyElement>::ELEMENT_TYPE
             }
 
-            fn channels() -> VectorChannels {
+            fn channels() -> VertexChannels {
                 $channels
             }
 
@@ -163,20 +163,20 @@ macro_rules! impl_vertex_32 {
 type Scalar<T> = T;
 
 // 4 bytes for 1 channel (4)
-impl_vertex_32!(X, VectorChannels::One, Scalar);
+impl_vertex_32!(X, VertexChannels::One, Scalar);
 
 // 2 bytes for 2 channels (4), 4 bytes for 2 channels (8)
-impl_vertex_16!(XY, VectorChannels::Two, Vec2);
-impl_vertex_32!(XY, VectorChannels::Two, Vec2);
+impl_vertex_16!(XY, VertexChannels::Two, Vec2);
+impl_vertex_32!(XY, VertexChannels::Two, Vec2);
 
 // 4 bytes for 3 channels (12)
-impl_vertex_32!(XYZ, VectorChannels::Three, Vec3);
+impl_vertex_32!(XYZ, VertexChannels::Three, Vec3);
 
 // 1 byte for 4 channels (4),
-impl_vertex_8!(XYZW, VectorChannels::Four, Vec4);
+impl_vertex_8!(XYZW, VertexChannels::Four, Vec4);
 
 // 2 bytes for 4 channels (8),
-impl_vertex_16!(XYZW, VectorChannels::Four, Vec4);
+impl_vertex_16!(XYZW, VertexChannels::Four, Vec4);
 
 // 4 bytes for 4 channels (16),
-impl_vertex_32!(XYZW, VectorChannels::Four, Vec4);
+impl_vertex_32!(XYZW, VertexChannels::Four, Vec4);

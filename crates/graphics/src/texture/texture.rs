@@ -588,13 +588,8 @@ pub(crate) fn texture_usages(
 // Get the texture aspect based on the texel type
 pub(crate) fn texture_aspect<T: Texel>() -> wgpu::TextureAspect {
     match T::channels() {
-        crate::TexelChannels::Vector(_)
-        | crate::TexelChannels::Srgba { .. } => {
-            wgpu::TextureAspect::All
-        }
         crate::TexelChannels::Depth => wgpu::TextureAspect::DepthOnly,
-        crate::TexelChannels::Stencil => {
-            wgpu::TextureAspect::StencilOnly
-        }
+        crate::TexelChannels::Stencil => wgpu::TextureAspect::StencilOnly,
+        _ => wgpu::TextureAspect::All
     }
 }

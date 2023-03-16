@@ -1,6 +1,6 @@
 use crate::{
     AnyElement, ColorTexel, Depth, DepthElement, ElementType, GpuPod,
-    Normalized, Stencil, TexelChannels, VectorChannels, BGRA, R, RG,
+    Normalized, Stencil, TexelChannels, VertexChannels, BGRA, R, RG,
     RGBA, SBGRA, SRGBA,
 };
 use half::f16;
@@ -164,23 +164,23 @@ macro_rules! impl_color_texels {
 type Scalar<T> = T;
 impl_color_texels!(
     R,
-    TexelChannels::Vector(VectorChannels::One),
+    TexelChannels::One,
     Scalar
 );
 impl_color_texels!(
     RG,
-    TexelChannels::Vector(VectorChannels::Two),
+    TexelChannels::Two,
     Vec2
 );
 impl_color_texels!(
     RGBA,
-    TexelChannels::Vector(VectorChannels::Four),
+    TexelChannels::Four { swizzled: false },
     Vec4
 );
 internal_impl_texel!(
     BGRA,
     Normalized<u8>,
-    TexelChannels::Vector(VectorChannels::FourSwizzled),
+    TexelChannels::Four { swizzled: true },
     Vec4
 );
 internal_impl_texel!(
