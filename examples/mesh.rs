@@ -174,7 +174,7 @@ fn update(world: &mut World) {
     if let Some((rotation, _)) =
         scene.find_mut::<(&mut Rotation, &DirectionalLight)>()
     {
-        rotation.rotate_x(-0.1 * time.delta().as_secs_f32());
+        //rotation.rotate_x(-0.1 * time.delta().as_secs_f32());
     }
 
     let camera = scene

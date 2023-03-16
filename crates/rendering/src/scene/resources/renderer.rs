@@ -100,7 +100,7 @@ impl ForwardRenderer {
             None,
             extent,
             TextureMode::Resizable,
-            TextureUsage::RENDER_TARGET | TextureUsage::SAMPLED,
+            TextureUsage::TARGET | TextureUsage::SAMPLED,
             SamplerSettings {
                 filter: SamplerFilter::Linear,
                 wrap: SamplerWrap::Repeat,
@@ -116,7 +116,7 @@ impl ForwardRenderer {
             None,
             extent,
             TextureMode::Resizable,
-            TextureUsage::RENDER_TARGET | TextureUsage::SAMPLED,
+            TextureUsage::TARGET | TextureUsage::SAMPLED,
             SamplerSettings {
                 filter: SamplerFilter::Linear,
                 wrap: SamplerWrap::Repeat,

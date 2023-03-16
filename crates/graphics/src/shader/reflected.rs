@@ -5,7 +5,7 @@ use crate::{
     ComputeModule, FragmentModule, Graphics, ModuleKind,
     ModuleVisibility, SamplerValidationError, ShaderModule,
     ShaderReflectionError, TexelChannels, TextureValidationError,
-    VertexModule,
+    VertexModule, PushConstantValidationError,
 };
 use ahash::{AHashMap, AHashSet};
 use arrayvec::ArrayVec;
@@ -72,6 +72,15 @@ impl PushConstantLayout {
             PushConstantLayout::SplitVertexFragment { .. } => {
                 ModuleVisibility::VertexFragment
             }
+        }
+    }
+
+    // Get the MAX size required to set the push constant bytes
+    pub fn size(&self) -> NonZeroU32 {
+        match self {
+            PushConstantLayout::Single(x, _) => *x,
+            PushConstantLayout::SplitVertexFragment { vertex, fragment } => 
+                NonZeroU32::new(vertex.get() + fragment.get()).unwrap(),
         }
     }
 }
@@ -165,8 +174,31 @@ pub(super) fn create_pipeline_layout(
 
     // Return error if the user defined a push constant that is greater than the device size
     // or if there isn't push constants for the specified module in the shaders
+    if let Some(push_constant_layout) = maybe_push_constant_layout {
+        // We always assume that the "visibility" array given is either [Vertex, Fragment] or [Compute]
+        // Under that assumption, all we really need to check is the compute module and if it contains the proper push constant
+        let compute = matches!(visibility[0], ModuleVisibility::Compute);
+        match (push_constant_layout.visibility(), compute) {
+            (ModuleVisibility::Vertex, false) => {},
+            (ModuleVisibility::Fragment, false) => {},
+            (ModuleVisibility::VertexFragment, false) => {},
+            (ModuleVisibility::Compute, true) => {},                
+            _ => return Err(ShaderReflectionError::PushConstantValidation(
+                PushConstantValidationError::PushConstantVisibilityIntersect
+            )),
+        }
 
-    // TODO: Implement this
+        // Check size and make sure it's valid
+        let defined = push_constant_layout.size().get();
+        let max = graphics.device().limits().max_push_constant_size;
+        if defined > max {
+            return Err(ShaderReflectionError::PushConstantValidation(PushConstantValidationError::PushConstantSizeTooBig(
+                defined, max
+            )))
+        }
+
+        // TODO: Check for defined in shader/compiler and handle logic
+    }
 
     // Ease of use
     let definitions = InternalDefinitions {
@@ -216,11 +248,12 @@ pub(super) fn create_pipeline_layout(
                 // Get the binding type for this global variable
                 let binding_type = match inner {
                     // Uniform Buffers
-                    TypeInner::Struct { span: size, .. } => {
+                    TypeInner::Struct { span, .. } => {
                         Some(reflect_buffer(
                             &name,
                             graphics,
                             &definitions,
+                            *span,
                         ).map_err(ShaderReflectionError::BufferValidation))
                     }
 
@@ -517,6 +550,7 @@ fn reflect_buffer(
     name: &str,
     graphics: &Graphics,
     definitions: &InternalDefinitions,
+    size: u32,
 ) -> Result<BindResourceType, BufferValidationError> {
     // TODO: Implement storage buffers
     let pod_info =

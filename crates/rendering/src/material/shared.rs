@@ -55,11 +55,15 @@ pub struct WindowUniform {
     pub height: u32,
 }
 
-// Type aliases for textures
+// Type aliases for texels
 pub type AlbedoTexel = SRGBA<Normalized<u8>>;
 pub type NormalTexel = RGBA<Normalized<u8>>;
+pub type MaskTexel = RGBA<Normalized<u8>>;
+
+// Type aliases for textures
 pub type AlbedoMap = Texture2D<AlbedoTexel>;
 pub type NormalMap = Texture2D<NormalTexel>;
+pub type MaskMap = Texture2D<MaskTexel>;
 
 // Type aliases for buffers
 pub type CameraBuffer = UniformBuffer<CameraUniform>;

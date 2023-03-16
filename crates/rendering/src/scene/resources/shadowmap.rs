@@ -128,7 +128,7 @@ impl ShadowMapping {
             None,
             vek::Extent2::broadcast(resolution),
             TextureMode::Dynamic,
-            TextureUsage::RENDER_TARGET | TextureUsage::SAMPLED,
+            TextureUsage::TARGET | TextureUsage::SAMPLED,
             SamplerSettings::default(),
             TextureMipMaps::Disabled,
         )
@@ -174,7 +174,7 @@ impl ShadowMapping {
     }
 
     // Update the rotation of the sun shadows using a new rotation
-    pub(crate) fn update(&mut self, rotation: vek::Quaternion<f32>) {
+    pub(crate) fn update(&mut self, rotation: vek::Quaternion<f32>, camera: vek::Vec3<f32>) {
         let rot = vek::Mat4::from(rotation);
         let view = vek::Mat4::<f32>::look_at_rh(
             vek::Vec3::zero(),
@@ -182,7 +182,7 @@ impl ShadowMapping {
             rot.mul_point(-vek::Vec3::unit_y()),
         );
         self.view = view;
-        let lightspace = self.projection * self.view;
+        let lightspace = self.projection * self.view * vek::Mat4::translation_3d(-camera);
 
         self.buffer
             .write(

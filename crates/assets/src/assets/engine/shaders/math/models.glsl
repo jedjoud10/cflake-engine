@@ -48,3 +48,44 @@ vec3 specular(vec3 f0, float roughness, vec3 v, vec3 l, vec3 n, vec3 h) {
 	float denom = 4 * max(dot(v, n), 0.0) * max(dot(l, n), 0.0) + 0.01;
 	return num / denom;
 }
+
+// Sun data struct
+struct SunData {
+	vec3 backward;
+	vec3 color;
+	float strength;
+};
+
+// Camera data struct
+struct CameraData {
+	vec3 view;
+	vec3 half_view;
+	vec3 position;
+};
+
+// Surface data struct 
+struct SurfaceData {
+	vec3 diffuse;
+	vec3 mask;
+	vec3 normal;
+	vec3 position;
+};
+
+// Bidirectional reflectance distribution function, aka PBRRRR
+vec3 brdf(SurfaceData surface, CameraData camera, SunData sun) {
+	// Constants
+	float roughness = max(surface.mask.r, 0.05);
+	float metallic = pow(surface.mask.g, 5);
+	float visibility = min(surface.mask.b, 1.0);
+	vec3 f0 = mix(vec3(0.04), surface.diffuse, metallic);
+	
+	// Ks and Kd
+	vec3 ks = fresnel(f0, camera.view, camera.half_view, surface.normal);
+	vec3 kd = (1 - ks) * (1 - metallic);
+
+	// Calculate diffuse and specular
+	vec3 brdf = kd * (surface.diffuse / PI) + specular(f0, roughness, camera.view, sun.backward, surface.normal, camera.half_view);
+	vec3 outgoing = brdf * sun.color * sun.strength * max(dot(sun.backward, surface.normal), 0.0);
+	outgoing += 0.03 * surface.diffuse * visibility;
+	return outgoing;
+}

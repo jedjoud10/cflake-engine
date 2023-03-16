@@ -14,6 +14,7 @@ layout(location = 4) in vec2 m_tex_coord;
 #include <engine/shaders/common/extensions.glsl>
 #include <engine/shaders/common/shadow.glsl>
 #include <engine/shaders/common/sky.glsl>
+#include <engine/shaders/math/models.glsl>
 
 // Shadow-map texture map
 layout(set = 0, binding = 7) uniform texture2D shadow_map;
@@ -22,6 +23,9 @@ layout(set = 0, binding = 7) uniform texture2D shadow_map;
 layout(push_constant) uniform PushConstants {
 	layout(offset = 64) vec3 tint;
 	layout(offset = 76) float bumpiness;
+    layout(offset = 80) float metallic;
+    layout(offset = 84) float ambient_occlusion;
+    layout(offset = 88) float smoothness;
 } material;
 
 // Albedo / diffuse map
@@ -32,14 +36,20 @@ layout(set = 1, binding = 1) uniform sampler albedo_map_sampler;
 layout(set = 1, binding = 2) uniform texture2D normal_map;
 layout(set = 1, binding = 3) uniform sampler normal_map_sampler;
 
+// Mask map
+layout(set = 1, binding = 4) uniform texture2D mask_map;
+layout(set = 1, binding = 5) uniform sampler mask_map_sampler;
+
 void main() {
 	// Flip the Y coordinate (dunno why bruv)
 	vec2 uv = m_tex_coord;
 	uv.y = 1 - m_tex_coord.y;
 
-	// Fetch the albedo color and normal map value
+	// Fetch the albedo color, normal map value, and mask values
 	vec3 albedo = texture(sampler2D(albedo_map, albedo_map_sampler), uv).rgb;
 	vec3 bumps = texture(sampler2D(normal_map, normal_map_sampler), uv).rgb * 2.0 - 1.0;
+    vec3 mask = texture(sampler2D(mask_map, mask_map_sampler), uv).rgb;
+    mask *= vec3(material.roughness, material.metallic, 1 / material.ambient_occlusion);
 	bumps.xy *= material.bumpiness;
 
 	// Calculate the world space normals
@@ -49,28 +59,11 @@ void main() {
 		normalize(m_normal));
 	vec3 normal = normalize(tbn * normalize(bumps));
 
-	// Calculate ambient sky color
-	vec3 ambient = calculate_sky_color(normal, scene.sun_direction.xyz);
-
-	// Calculate light dir 
-	vec3 light = normalize(-scene.sun_direction.xyz);
-	
 	// Check if the fragment is shadowed
 	float shadowed = calculate_shadowed(m_position, shadow_map, shadow.lightspace, shadow.strength, shadow.spread, shadow.size);
-	
-	// Basic dot product light calculation
-	float value = clamp(dot(light, normal), 0, 1) * (1-shadowed);
-	vec3 lighting = value + (ambient * 0.5 + vec3(0.08)); 
 
-	// Calculate specular reflections
-	vec3 view = normalize(camera.position.xyz - m_position);
-	vec3 reflected_light_normal = reflect(-light, normal);
-	float specular = pow(max(dot(reflected_light_normal, view), 0), 256) * (1-shadowed);
-
-	// Caclulate a fresnel effect
-	vec3 reflected_view_normal = reflect(-view, normal);
-	vec3 fresnel = calculate_sky_color(reflected_view_normal, scene.sun_direction.xyz) * 0.2;
+    // TODO: Implement PBR functionality here
 
 	// Calculate diffuse lighting
-	frag = vec4(lighting * albedo * material.tint + specular + fresnel, 1.0);
+	frag = vec4(1.0-shadowed);
 }

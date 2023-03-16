@@ -5,7 +5,6 @@ use crate::{SliceTuple, ThreadPoolScope};
 use parking_lot::Mutex;
 use std::{
     any::Any,
-    slice::SliceIndex,
     sync::{
         atomic::{AtomicU32, Ordering},
         mpsc::{Receiver, Sender},

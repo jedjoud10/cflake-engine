@@ -49,13 +49,7 @@ impl<'a, 'r> ActiveComputePipeline<'a, 'r> {
         }
 
         // Get the max size that we must allocate (at minimum) to be able to use ALL the defined push constants
-        let size = match layout {
-            PushConstantLayout::SplitVertexFragment {
-                vertex: vertex_size,
-                fragment: fragment_size,
-            } => vertex_size.get() + fragment_size.get(),
-            PushConstantLayout::Single(size, _) => size.get(),
-        };
+        let size = layout.size().get();
 
         // Get the data that we will use
         let start = self.push_constant_global_offset as usize;

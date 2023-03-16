@@ -566,8 +566,12 @@ pub(crate) fn texture_usages(
         usages |= wgpu::TextureUsages::TEXTURE_BINDING;
     }
 
-    if usage.contains(TextureUsage::RENDER_TARGET) {
+    if usage.contains(TextureUsage::TARGET) {
         usages |= wgpu::TextureUsages::RENDER_ATTACHMENT;
+    }
+
+    if usage.contains(TextureUsage::STORAGE) {
+        usages |= wgpu::TextureUsages::STORAGE_BINDING;
     }
 
     if usage.contains(TextureUsage::COPY_SRC) {

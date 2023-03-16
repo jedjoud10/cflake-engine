@@ -1,6 +1,8 @@
 use assets::AssetLoadError;
 use thiserror::Error;
 
+use crate::ModuleVisibility;
+
 #[derive(Error, Debug)]
 pub enum ShaderError {
     #[error("{0}")]
@@ -26,12 +28,24 @@ pub enum TextureValidationError {}
 pub enum SamplerValidationError {}
 
 #[derive(Error, Debug)]
-pub enum ShaderReflectionError {
+pub enum PushConstantValidationError {
     #[error("The defined push constant size ({0}) is greater than the adapter's supported push constant size ({1})")]
     PushConstantSizeTooBig(u32, u32),
 
     #[error("The defined push constant ranges cannot be merged since there is a visibility intersection")]
     PushConstantVisibilityIntersect,
+
+    #[error("The shader defined push constant {0} is not defined in the Compiler")]
+    NotDefinedInCompiler(String),
+
+    #[error("The Compiler defined resource {0} (visibility {1:?}) is not defined in the shader (or was partially defined)")]
+    NotDefinedInShader(String, ModuleVisibility),
+}
+
+#[derive(Error, Debug)]
+pub enum ShaderReflectionError {
+    #[error("{0}")]
+    PushConstantValidation(PushConstantValidationError), 
 
     #[error("{0}")]
     BufferValidation(BufferValidationError),

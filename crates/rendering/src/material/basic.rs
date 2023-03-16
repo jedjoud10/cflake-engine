@@ -57,7 +57,6 @@ impl Material for Basic {
         compiler.use_uniform_buffer::<ShadowUniform>("shadow");
 
         // Define the types for the user textures
-        compiler.use_texture::<AlbedoMap>("gradient_map");
         compiler.use_texture::<ShadowMap>("shadow_map");
         compiler.use_texture::<AlbedoMap>("albedo_map");
         compiler.use_texture::<NormalMap>("normal_map");
@@ -98,11 +97,6 @@ impl Material for Basic {
             .unwrap();
         group
             .set_uniform_buffer("shadow", &resources.2.buffer)
-            .unwrap();
-
-        // Set the scene sky texture
-        group
-            .set_texture("gradient_map", default.sky_gradient)
             .unwrap();
 
         // Set the scene shadow map
