@@ -2,7 +2,7 @@ use wgpu::CommandEncoder;
 
 use crate::{
     ActiveGraphicsPipeline, BufferInfo, ColorLayout,
-    DepthStencilLayout, Graphics, GraphicsPipeline, RenderCommand,
+    DepthStencilLayout, Graphics, RenderPipeline, RenderCommand,
     TriangleBuffer, Vertex, VertexBuffer,
 };
 use std::{marker::PhantomData, ops::Range, sync::Arc};
@@ -33,7 +33,7 @@ impl<'r, 't, C: ColorLayout, DS: DepthStencilLayout>
     // Returns an active graphics pipeline that we can render to
     pub fn bind_pipeline<'a>(
         &'a mut self,
-        pipeline: &'r GraphicsPipeline<C, DS>,
+        pipeline: &'r RenderPipeline<C, DS>,
     ) -> ActiveGraphicsPipeline<'a, 'r, 't, C, DS> {
         self.commands.push(RenderCommand::BindPipeline(&pipeline));
         let cache = &self.graphics.0.cached;

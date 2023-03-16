@@ -1,7 +1,7 @@
 use crate::{
     AnyElement, ColorTexel, Depth, DepthElement, ElementType, GpuPod,
     Normalized, Stencil, TexelChannels, VertexChannels, BGRA, R, RG,
-    RGBA, SBGRA, SRGBA, UBC1, UBC2, UBC3, UBC7, UBC4, SBC4, SBC5, UBC5,
+    RGBA, SBGRA, SRGBA, UBC1, UBC2, UBC3, UBC7, UBC4, SBC4, SBC5, UBC5, CompressionType,
 };
 use half::f16;
 use std::{any::Any, mem::size_of, ops::Add};
@@ -10,6 +10,31 @@ use vek::{
     Vec2, Vec3, Vec4,
 };
 use wgpu::TextureFormat;
+
+// Texel size that represents the total size of a texel in bytes
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum TexelSize {
+    Uncompressed(u32),
+    Compressed(CompressionType),
+}
+
+impl TexelSize {
+    // Try matching against Self::Uncompressed, and return the result
+    pub fn as_uncompressed(self) -> Option<u32> {
+        match self {
+            TexelSize::Uncompressed(x) => Some(x),
+            _ => None
+        }
+    }
+
+    // try matching against Self::Compresssed, and return the result
+    pub fn as_compressed(self) -> Option<CompressionType> {
+        match self {
+            TexelSize::Compressed(x) => Some(x),
+            _ => None
+        }
+    }
+}
 
 // This trait defines the layout for a single texel that will be stored within textures
 // The texel format of each texture is specified at compile time
@@ -22,19 +47,8 @@ pub trait Texel: 'static {
         + NumOps<Self::Storage>
         + NumAssignOps<Self::Storage>;
 
-    // Number of bytes in total
-    fn size() -> u32 {
-        Self::bytes_per_channel() * Self::channels().count()
-    }
-
-    // Number of bytes per channel
-    // Note: This does not take in consideration the "actual" sizes of each channel (compressed formats)
-    fn bytes_per_channel() -> u32;
-
-    // Number of bytes per texel (stride)
-    fn stride() -> u32 {
-        Self::bytes_per_channel() * Self::channels().count()
-    }
+    // Get the byte size of this texel
+    fn size() -> TexelSize;
 
     // Untyped representation of the underlying element
     fn element() -> ElementType;
@@ -48,7 +62,7 @@ pub trait Texel: 'static {
     // Get the untyped texel info
     fn info() -> TexelInfo {
         TexelInfo {
-            bytes_per_channel: Self::bytes_per_channel(),
+            size: Self::size(),
             element: Self::element(),
             channels: Self::channels(),
             format: Self::format(),
@@ -59,21 +73,16 @@ pub trait Texel: 'static {
 // Untyped texel info that does not contain typed information about the texel nor base types
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct TexelInfo {
-    bytes_per_channel: u32,
+    size: TexelSize,
     element: ElementType,
     channels: TexelChannels,
     format: TextureFormat,
 }
 
 impl TexelInfo {
-    // Number of bytes in total
-    pub fn size(&self) -> u32 {
-        self.bytes_per_channel * self.channels.count()
-    }
-
-    // Number of bytes per channel
-    pub fn bytes_per_channel(&self) -> u32 {
-        self.bytes_per_channel
+    // Get the byte size of this texel
+    fn size(&self) -> TexelSize {
+        self.size
     }
 
     // Untyped representation of the underlying element
@@ -98,8 +107,14 @@ macro_rules! internal_impl_texel {
             type Base = <$elem as AnyElement>::Storage;
             type Storage = $storagevec<Self::Base>;
 
-            fn bytes_per_channel() -> u32 {
-                size_of::<$elem>() as u32
+            fn size() -> TexelSize {
+                // TODO: Check if this gets resolved at compile time?
+                match <$elem as AnyElement>::ELEMENT_TYPE {
+                    ElementType::Compressed(x) => TexelSize::Compressed(x),
+                    _ => TexelSize::Uncompressed(
+                        size_of::<$elem>() as u32 * Self::channels().count()
+                    )
+                }
             }
 
             fn element() -> ElementType {
@@ -236,8 +251,8 @@ impl_compressed_rgba_variants!(
 // R<Normalized<SBC4>>
 impl_compressed_signed_unsigned_variants!(
     R,
-    TexelChannels::Two,
-    Vec2,
+    TexelChannels::One,
+    Scalar,
     Normalized<UBC4>,
     Normalized<SBC4>
 );
@@ -245,7 +260,7 @@ impl_compressed_signed_unsigned_variants!(
 // RG<Normalized<UBC5>>
 // RG<Normalized<SBC5>>
 impl_compressed_signed_unsigned_variants!(
-    R,
+    RG,
     TexelChannels::Two,
     Vec2,
     Normalized<UBC5>,

@@ -1,6 +1,7 @@
 use crate::{
     AnyElement, Depth, DepthElement, Normalized, Stencil,
     StencilElement, Texel, BGRA, R, RG, RGBA, SBGRA, SRGBA,
+    UBC1, UBC2, UBC3, UBC4, UBC5, UBC7, SBC4, SBC5
 };
 use half::f16;
 
@@ -33,7 +34,7 @@ fn map<T: Texel>(
 
 // Do NOT FUCKING TOUCH THIS
 macro_rules! internal_impl_color_texel {
-    ($vec:ident, $elem:ty, $channels:expr, $storagevec:ident, $conv:expr, $min:expr, $max:expr, $fromf32:expr, $tof32:expr) => {
+    ($vec:ident, $elem:ty, $storagevec:ident, $conv:expr, $min:expr, $max:expr, $fromf32:expr, $tof32:expr) => {
         impl Conversion for $vec<$elem> {
             type Target = vek::Vec4<f32>;
 
@@ -63,11 +64,10 @@ macro_rules! internal_impl_color_texel {
 
 // I deserve to be in the deepest layers of hell
 macro_rules! impl_color_texels {
-    ($vec:ident, $channels:expr, $storagevec:ident, $conv:expr) => {
+    ($vec:ident, $storagevec:ident, $conv:expr) => {
         internal_impl_color_texel!(
             $vec,
             u8,
-            $channels,
             $storagevec,
             $conv,
             u8::MIN as f32,
@@ -78,7 +78,6 @@ macro_rules! impl_color_texels {
         internal_impl_color_texel!(
             $vec,
             i8,
-            $channels,
             $storagevec,
             $conv,
             i8::MIN as f32,
@@ -89,7 +88,6 @@ macro_rules! impl_color_texels {
         internal_impl_color_texel!(
             $vec,
             Normalized<u8>,
-            $channels,
             $storagevec,
             $conv,
             0.0,
@@ -100,7 +98,6 @@ macro_rules! impl_color_texels {
         internal_impl_color_texel!(
             $vec,
             Normalized<i8>,
-            $channels,
             $storagevec,
             $conv,
             -1.0,
@@ -112,7 +109,6 @@ macro_rules! impl_color_texels {
         internal_impl_color_texel!(
             $vec,
             u16,
-            $channels,
             $storagevec,
             $conv,
             u16::MIN as f32,
@@ -123,18 +119,17 @@ macro_rules! impl_color_texels {
         internal_impl_color_texel!(
             $vec,
             i16,
-            $channels,
             $storagevec,
             $conv,
             i16::MIN as f32,
             i16::MAX as f32,
             |f| f as i16,
             |v| v as f32
+
         );
         internal_impl_color_texel!(
             $vec,
             Normalized<u16>,
-            $channels,
             $storagevec,
             $conv,
             0.0,
@@ -145,7 +140,6 @@ macro_rules! impl_color_texels {
         internal_impl_color_texel!(
             $vec,
             Normalized<i16>,
-            $channels,
             $storagevec,
             $conv,
             -1.0,
@@ -157,7 +151,6 @@ macro_rules! impl_color_texels {
         internal_impl_color_texel!(
             $vec,
             u32,
-            $channels,
             $storagevec,
             $conv,
             u32::MIN as f32,
@@ -168,7 +161,6 @@ macro_rules! impl_color_texels {
         internal_impl_color_texel!(
             $vec,
             i32,
-            $channels,
             $storagevec,
             $conv,
             i32::MIN as f32,
@@ -180,7 +172,6 @@ macro_rules! impl_color_texels {
         internal_impl_color_texel!(
             $vec,
             f16,
-            $channels,
             $storagevec,
             $conv,
             f32::from(f16::MIN),
@@ -191,7 +182,6 @@ macro_rules! impl_color_texels {
         internal_impl_color_texel!(
             $vec,
             f32,
-            $channels,
             $storagevec,
             $conv,
             f32::MIN,
@@ -202,28 +192,50 @@ macro_rules! impl_color_texels {
     };
 }
 
+macro_rules! impl_compressed_rgba_color_texel_variant {
+    ($elem:ty) => {
+        internal_impl_color_texel!(
+            RGBA,
+            $elem,
+            Vec4,
+            |v: vek::Vec4<Self::Base>| vek::Vec4::from(v),
+            0.0,
+            1.0,
+            |f| (f * u8::MAX as f32) as u8,
+            |v| v as f32 / u8::MAX as f32
+        );
+
+        internal_impl_color_texel!(
+            SRGBA,
+            $elem,
+            Vec4,
+            |v: vek::Vec4<Self::Base>| vek::Vec4::from(v),
+            0.0,
+            1.0,
+            |f| (f * u8::MAX as f32) as u8,
+            |v| v as f32 / u8::MAX as f32
+        );
+    };
+}
+
 impl_color_texels!(
     R,
-    ChannelsType::Vector(VectorChannels::One),
     Scalar,
     |v: vek::Vec4<Self::Base>| v[0]
 );
 impl_color_texels!(
     RG,
-    ChannelsType::Vector(VectorChannels::Two),
     Vec2,
     |v: vek::Vec4<Self::Base>| vek::Vec2::from(v)
 );
 impl_color_texels!(
     RGBA,
-    ChannelsType::Vector(VectorChannels::Four),
     Vec4,
     |v: vek::Vec4<Self::Base>| vek::Vec4::from(v)
 );
 internal_impl_color_texel!(
     SRGBA,
     Normalized<u8>,
-    ChannelsType::Vector(VectorChannels::Four),
     Vec4,
     |v: vek::Vec4<Self::Base>| vek::Vec4::from(v),
     0.0,
@@ -234,7 +246,6 @@ internal_impl_color_texel!(
 internal_impl_color_texel!(
     BGRA,
     Normalized<u8>,
-    TexelChannels::Srgba { swizzled: false },
     Vec4,
     |v: vek::Vec4<Self::Base>| vek::Vec4::from(v),
     0.0,
@@ -245,7 +256,6 @@ internal_impl_color_texel!(
 internal_impl_color_texel!(
     SBGRA,
     Normalized<u8>,
-    TexelChannels::Srgba { swizzled: true },
     Vec4,
     |v: vek::Vec4<Self::Base>| vek::Vec4::from(v),
     0.0,
@@ -253,6 +263,58 @@ internal_impl_color_texel!(
     |f| (f * u8::MAX as f32) as u8,
     |v| v as f32 / u8::MAX as f32
 );
+
+impl_compressed_rgba_color_texel_variant!(Normalized<UBC1>);
+impl_compressed_rgba_color_texel_variant!(Normalized<UBC2>);
+impl_compressed_rgba_color_texel_variant!(Normalized<UBC3>);
+impl_compressed_rgba_color_texel_variant!(Normalized<UBC7>);
+
+// R<Normalized<UBC4>> 
+// R<Normalized<SBC4>>
+internal_impl_color_texel!(
+    R,
+    Normalized<UBC4>,
+    Scalar,
+    |v: vek::Vec4<Self::Base>| v[0],
+    0.0,
+    1.0,
+    |f| (f * u8::MAX as f32) as u8,
+    |v| v as f32 / u8::MAX as f32
+);
+internal_impl_color_texel!(
+    R,
+    Normalized<SBC4>,
+    Scalar,
+    |v: vek::Vec4<Self::Base>| v[0],
+    -1.0,
+    1.0,
+    |f| (f * i8::MAX as f32) as i8,
+    |v| v as f32 / i8::MAX as f32
+);
+
+// RG<Normalized<UBC5>>
+// RG<Normalized<SBC5>>
+internal_impl_color_texel!(
+    RG,
+    Normalized<UBC5>,
+    Vec2,
+    |v: vek::Vec4<Self::Base>| vek::Vec2::from(v),
+    0.0,
+    1.0,
+    |f| (f * u8::MAX as f32) as u8,
+    |v| v as f32 / u8::MAX as f32
+);
+internal_impl_color_texel!(
+    RG,
+    Normalized<SBC5>,
+    Vec2,
+    |v: vek::Vec4<Self::Base>| vek::Vec2::from(v),
+    -1.0,
+    1.0,
+    |f| (f * i8::MAX as f32) as i8,
+    |v| v as f32 / i8::MAX as f32
+);
+
 
 impl Conversion for Depth<f32>
 where

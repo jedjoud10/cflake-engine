@@ -1,6 +1,6 @@
 use crate::{
     BufferInfo, ColorLayout, ComputePipeline, DepthStencilLayout,
-    GraphicsPipeline, TriangleBuffer, UniformBuffer,
+    RenderPipeline, TriangleBuffer, UniformBuffer,
 };
 use std::{
     ops::{Bound, Range},
@@ -17,7 +17,7 @@ pub(crate) enum RenderCommand<
     DS: DepthStencilLayout,
 > {
     // Bind graphics pipeline
-    BindPipeline(&'a GraphicsPipeline<C, DS>),
+    BindPipeline(&'a RenderPipeline<C, DS>),
 
     // Set vertex buffer for Draw and DrawIndexed
     SetVertexBuffer {

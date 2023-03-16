@@ -1,8 +1,8 @@
 mod compute;
 mod config;
 mod errors;
-mod graphics;
-pub use self::graphics::*;
+mod render;
+pub use self::render::*;
 pub use compute::*;
 pub use config::*;
 pub use errors::*;

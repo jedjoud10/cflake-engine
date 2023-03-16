@@ -4,7 +4,7 @@ use crate::{
     ActiveComputePass, ActiveRenderPass, ColorAttachments,
     ColorLayout, ColorOperations, DepthStencilAttachment,
     DepthStencilLayout, DepthStencilOperations, Graphics,
-    GraphicsPipeline, Vertex, VertexBuffer,
+    RenderPipeline, Vertex, VertexBuffer,
 };
 use std::marker::PhantomData;
 

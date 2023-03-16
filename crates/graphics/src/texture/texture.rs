@@ -407,6 +407,29 @@ fn mip_levels<T: Texel, E: Extent>(
     Ok(levels)
 }
 
+// Create an image data layout based on the extent and texel type
+// This should support compression textures too, though I haven't tested all cases yet
+// FIXME: Make this work with 3d textures
+fn create_image_data_layout<T: Texel, E: Extent>(
+    extent: E
+) -> wgpu::ImageDataLayout {
+    let size = T::size();
+
+    // Bytes per row change if we are using compressed textures
+    let bytes_per_row = match size {
+        crate::TexelSize::Uncompressed(size) => NonZeroU32::new(size * extent.width()),
+        crate::TexelSize::Compressed(_) => {
+            todo!()
+        },
+    };
+
+    wgpu::ImageDataLayout {
+        offset: 0,
+        bytes_per_row,
+        rows_per_image: None,
+    }
+}
+
 // Write texels to a single level of a texture
 // Assumes that the origin and extent are in mip-space
 // TODO: Test to check if this works with 3D
@@ -419,30 +442,18 @@ pub(crate) fn write_to_level<T: Texel, R: Region>(
     level: u32,
     graphics: &Graphics,
 ) {
-    let bytes_per_channel = T::bytes_per_channel();
-    let bytes_per_texel =
-        bytes_per_channel as u64 * T::channels().count() as u64;
-    let extent_3d = extent_to_extent3d(extent);
-
-    // Bytes per row of texel data
-    let bytes_per_row =
-        NonZeroU32::new(bytes_per_texel as u32 * extent.width());
+    // This should handle compression types too
+    let image_data_layout = 
+        create_image_data_layout::<T, <R as Region>::E>(extent);
 
     // Convert the texels to bytes
     let bytes = bytemuck::cast_slice::<T::Storage, u8>(texels);
-
-    // FIXME: Does this work with 3D textures?
-    let image_data_layout = wgpu::ImageDataLayout {
-        offset: 0,
-        bytes_per_row,
-        rows_per_image: None,
-    };
 
     // Create the image copy texture descriptor
     let image_copy_texture = wgpu::ImageCopyTexture {
         texture: texture,
         mip_level: level,
-        origin: wgpu::Origin3d::ZERO,
+        origin: origin_to_origin3d(origin),
         aspect,
     };
 
@@ -451,7 +462,7 @@ pub(crate) fn write_to_level<T: Texel, R: Region>(
         image_copy_texture,
         bytes,
         image_data_layout,
-        extent_3d,
+        extent_to_extent3d(extent),
     );
 }
 

@@ -3,7 +3,7 @@ use wgpu::CommandEncoder;
 use crate::{
     ActiveRenderPass, ColorAttachments, ColorLayout, ColorOperations,
     DepthStencilAttachment, DepthStencilLayout,
-    DepthStencilOperations, Graphics, GraphicsPipeline, Vertex,
+    DepthStencilOperations, Graphics, RenderPipeline, Vertex,
     VertexBuffer,
 };
 use std::marker::PhantomData;

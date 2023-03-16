@@ -56,6 +56,7 @@ pub struct WindowUniform {
 }
 
 // Type aliases for texels
+//pub type AlbedoTexel = SRGBA<Normalized<graphics::UBC1>>;
 pub type AlbedoTexel = SRGBA<Normalized<u8>>;
 pub type NormalTexel = RG<Normalized<u8>>;
 pub type MaskTexel = RGBA<Normalized<u8>>;

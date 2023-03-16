@@ -3,7 +3,7 @@ use bytemuck::{Pod, Zeroable};
 use graphics::{
     ActiveGraphicsPipeline, BufferMode, BufferUsage, CompareFunction,
     Compiler, Depth, DepthConfig, Face, FragmentModule, GpuPod,
-    Graphics, GraphicsPipeline, LoadOp, ModuleVisibility, Operation,
+    Graphics, RenderPipeline, LoadOp, ModuleVisibility, Operation,
     PrimitiveConfig, PushConstantLayout, RenderPass, SamplerSettings,
     Shader, StoreOp, Texture, Texture2D, TextureMipMaps, TextureMode,
     TextureUsage, UniformBuffer, VertexModule, WindingOrder,
@@ -16,7 +16,7 @@ use crate::EnabledMeshAttributes;
 pub type ShadowTexel = Depth<f32>;
 pub type ShadowMap = Texture2D<ShadowTexel>;
 pub type ShadowRenderPass = RenderPass<(), ShadowTexel>;
-pub type ShadowGraphicsPipeline = GraphicsPipeline<(), ShadowTexel>;
+pub type ShadowGraphicsPipeline = RenderPipeline<(), ShadowTexel>;
 pub type ActiveShadowGraphicsPipeline<'a, 'r, 't> =
     ActiveGraphicsPipeline<'a, 'r, 't, (), ShadowTexel>;
 

@@ -1,6 +1,6 @@
 use assets::Assets;
 use graphics::{
-    Compiler, FragmentModule, Graphics, GraphicsPipeline, LoadOp,
+    Compiler, FragmentModule, Graphics, RenderPipeline, LoadOp,
     Operation, PrimitiveConfig, RenderPass, Shader, StoreOp,
     SwapchainFormat, Texture2D, VertexConfig, VertexModule,
 };
@@ -10,7 +10,7 @@ use crate::{CameraUniform, SceneColor, SceneDepth, WindowUniform};
 // This is what will write to the swapchain
 pub type FinalRenderPass = RenderPass<SwapchainFormat, ()>;
 pub type FinalGraphicsPipeline =
-    GraphicsPipeline<SwapchainFormat, ()>;
+    RenderPipeline<SwapchainFormat, ()>;
 
 // Overlays post-processing effects and multiple layers
 // This will also render out the final composed image to the window

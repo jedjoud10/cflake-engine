@@ -4,7 +4,7 @@ use crate::{
     MeshAttribute, Renderer, SceneColor, SceneDepth, Surface,
 };
 use ecs::Scene;
-use graphics::GraphicsPipeline;
+use graphics::RenderPipeline;
 use utils::{Handle, Storage};
 use world::World;
 
@@ -44,7 +44,7 @@ fn filter<M: Material>(mesh: &Mesh, renderer: &Renderer) -> bool {
 pub(super) fn render_surfaces<'r, M: Material>(
     world: &'r World,
     meshes: &'r Storage<Mesh>,
-    pipeline: &'r GraphicsPipeline<SceneColor, SceneDepth>,
+    pipeline: &'r RenderPipeline<SceneColor, SceneDepth>,
     default: &mut DefaultMaterialResources<'r>,
     render_pass: &mut ActiveSceneRenderPass<'r, '_>,
 ) {

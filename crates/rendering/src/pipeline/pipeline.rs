@@ -5,7 +5,7 @@ use crate::{
 
 use assets::Assets;
 use graphics::{
-    CompareFunction, DepthConfig, Graphics, GraphicsPipeline,
+    CompareFunction, DepthConfig, Graphics, RenderPipeline,
     PipelineInitializationError, Shader,
 };
 use std::marker::PhantomData;
@@ -24,7 +24,7 @@ impl<M: Material> Clone for MaterialId<M> {
 // A material pipeline will be responsible for rendering surface and
 // entities that correspond to a specific material type.
 pub struct Pipeline<M: Material> {
-    pipeline: GraphicsPipeline<SceneColor, SceneDepth>,
+    pipeline: RenderPipeline<SceneColor, SceneDepth>,
     shader: Shader,
     _phantom: PhantomData<M>,
 }
@@ -55,7 +55,7 @@ impl<M: Material> Pipeline<M> {
         });
 
         // Create the graphics pipeline
-        let pipeline = GraphicsPipeline::new(
+        let pipeline = RenderPipeline::new(
             graphics,
             Some(depth_config),
             M::stencil_config(),

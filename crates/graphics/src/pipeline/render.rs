@@ -11,7 +11,7 @@ use crate::{
 };
 
 // Wrapper around a WGPU render pipeline just to help me instantiate them
-pub struct GraphicsPipeline<C: ColorLayout, DS: DepthStencilLayout> {
+pub struct RenderPipeline<C: ColorLayout, DS: DepthStencilLayout> {
     pipeline: wgpu::RenderPipeline,
 
     // Immutable data set at build time
@@ -31,7 +31,7 @@ pub struct GraphicsPipeline<C: ColorLayout, DS: DepthStencilLayout> {
 }
 
 // Initialization of the graphics pipeline
-impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
+impl<C: ColorLayout, DS: DepthStencilLayout> RenderPipeline<C, DS> {
     // Create a new pipeline with the specified configs
     pub fn new(
         graphics: &Graphics,
@@ -264,7 +264,7 @@ fn primitive_config_to_state(
     }
 }
 
-impl<C: ColorLayout, DS: DepthStencilLayout> GraphicsPipeline<C, DS> {
+impl<C: ColorLayout, DS: DepthStencilLayout> RenderPipeline<C, DS> {
     // Get the underlying raw WGPU pipeline
     pub fn pipeline(&self) -> &wgpu::RenderPipeline {
         &self.pipeline

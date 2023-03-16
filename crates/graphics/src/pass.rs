@@ -1,14 +1,14 @@
 mod attachment;
-mod compute_pass;
+mod compute;
 mod errors;
 mod layout;
 mod macros;
 mod operations;
-mod render_pass;
+mod render;
 pub use attachment::*;
-pub use compute_pass::*;
+pub use compute::*;
 pub use errors::*;
 pub use layout::*;
 pub use macros::*;
 pub use operations::*;
-pub use render_pass::*;
+pub use render::*;
