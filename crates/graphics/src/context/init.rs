@@ -49,29 +49,14 @@ pub(crate) unsafe fn init_context_and_window(
     let backend = info.backend;
     log::debug!("Chosen Adapter: '{name}', Backend: {backend:?} ");
 
-    // Print details about adapter features & limits
-    let limits = adapter.limits();
-    let w = limits.max_texture_dimension_1d;
-    let h = limits.max_texture_dimension_2d;
-    let d = limits.max_texture_dimension_3d;
-    log::debug!(
-        "Adapter Limits: Max Texture Dimensions: {w}x{h}x{d}"
-    );
-    log::debug!(
-        "Adapter Limits: Max bind groups: {}",
-        limits.max_bind_groups
-    );
-    log::debug!(
-        "Adapter Limits: Max bindings per group: {}",
-        limits.max_bindings_per_bind_group
-    );
-    log::debug!(
-        "Adapter Limits: Max Push Constants Size: {}",
-        limits.max_push_constant_size
-    );
+    // Modified default limits are sufficient
+    let mut limits = wgpu::Limits::default();
+    limits.max_push_constant_size = 128;
 
     // Required device features
-    let features = wgpu::Features::TEXTURE_FORMAT_16BIT_NORM
+    let features = wgpu::Features::TEXTURE_COMPRESSION_BC
+        | wgpu::Features::DEPTH32FLOAT_STENCIL8
+        | wgpu::Features::TEXTURE_FORMAT_16BIT_NORM
         | wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES
         | wgpu::Features::ADDRESS_MODE_CLAMP_TO_ZERO
         | wgpu::Features::POLYGON_MODE_LINE

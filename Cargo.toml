@@ -19,6 +19,7 @@ members = [
     "crates/math",
     "crates/graphics",
     "crates/networking",
+    "crates/terrain",
     "crates/rendering",
     "crates/world",
 ]
