@@ -33,8 +33,8 @@ pub enum CompressionType {
 
 impl CompressionType {
     // Get the compression block size for the current compression type
-    pub fn block_size(self) -> vek::Vec2<u32> {
-        vek::Vec2::broadcast(4)
+    pub fn block_size(self) -> u32 {
+        4
     }
 
     // Get the number of bytes per block

@@ -416,9 +416,12 @@ fn create_image_data_layout<T: Texel, E: Extent>(
     let size = T::size();
 
     // Bytes per row change if we are using compressed textures
+    dbg!(extent.width());
     let bytes_per_row = match size {
         crate::TexelSize::Uncompressed(size) => NonZeroU32::new(size * extent.width()),
-        crate::TexelSize::Compressed(_) => {
+        crate::TexelSize::Compressed(compression) => {
+            // TODO: Actually try understanding wtf bytes_per_row means when using compression
+            //NonZeroU32::new(compression.bytes_per_block() * (extent.width() / compression.block_size()))
             todo!()
         },
     };

@@ -76,8 +76,8 @@ fn create_texture2d<T: Texel>(
 ) -> Texture2D<T> {
     Texture2D::<T>::from_texels(
         graphics,
-        Some(&[value]),
-        vek::Extent2::broadcast(1),
+        Some(&[value; 16]),
+        vek::Extent2::broadcast(4),
         TextureMode::Dynamic,
         TextureUsage::SAMPLED | TextureUsage::COPY_DST,
         SamplerSettings::default(),
