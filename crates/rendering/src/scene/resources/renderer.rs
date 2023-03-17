@@ -51,9 +51,6 @@ pub struct ForwardRenderer {
     pub black: Handle<AlbedoMap>,
     pub normal: Handle<NormalMap>,
     pub mask: Handle<MaskMap>,
-
-    // Default sky gradient texture
-    pub sky_gradient: AlbedoMap,
 }
 
 // Create a new uniform buffer with default contents
@@ -141,18 +138,6 @@ impl ForwardRenderer {
             },
         );
 
-        // Load the default sky gradient texture
-        let sky_gradient = assets
-            .load::<AlbedoMap>((
-                "engine/textures/scene/sky.jpg",
-                TextureImportSettings {
-                    mipmaps: TextureMipMaps::Disabled,
-                    ..Default::default()
-                },
-                graphics.clone(),
-            ))
-            .unwrap();
-
         // Create the default 1x1 textures colors
         let white = vek::Vec4::broadcast(255);
         let black = vek::Vec4::broadcast(0);
@@ -190,7 +175,6 @@ impl ForwardRenderer {
             // No default camera
             main_camera: None,
             main_directional_light: None,
-            sky_gradient,
         }
     }
 }

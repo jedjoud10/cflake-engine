@@ -134,7 +134,7 @@ fn init(world: &mut World) {
         pipelines.register::<Sky>(&graphics, &mut assets).unwrap();
 
     // Create a new material instance
-    let material = skies.insert(Sky { gradient_map: None });
+    let material = skies.insert(Sky { });
 
     // Load the renderable mesh
     let mesh = assets

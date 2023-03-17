@@ -10,11 +10,8 @@ use graphics::{
 };
 use utils::{Handle, Storage};
 
-// A very simple sky material which uses a sky color gradient
-pub struct Sky {
-    // sky gradient texture map
-    pub gradient_map: Option<Handle<AlbedoMap>>,
-}
+// A very simple sky material which uses a procedural sky system
+pub struct Sky {}
 
 impl Material for Sky {
     type Resources<'w> = world::Read<'w, Storage<AlbedoMap>>;
@@ -37,7 +34,6 @@ impl Material for Sky {
         let mut compiler = Compiler::new(assets);
         compiler.use_uniform_buffer::<CameraUniform>("camera");
         compiler.use_uniform_buffer::<SceneUniform>("scene");
-        compiler.use_texture::<AlbedoMap>("gradient_map");
 
         // Compile the modules into a shader
         Shader::new(graphics, vert, frag, compiler).unwrap()
@@ -80,24 +76,5 @@ impl Material for Sky {
         group
             .set_uniform_buffer("scene", default.scene_buffer)
             .unwrap();
-    }
-
-    // Set the instance bindings that will change per material
-    fn set_instance_bindings<'r, 'w>(
-        &self,
-        resources: &'r mut Self::Resources<'w>,
-        default: &DefaultMaterialResources<'r>,
-        group: &mut BindGroup<'r>,
-    ) {
-        let gradient_maps = resources;
-
-        // Get the gradient texture, and fallback to the default one
-        let albedo_map = self
-            .gradient_map
-            .as_ref()
-            .map_or(default.sky_gradient, |h| gradient_maps.get(h));
-
-        // Set the material textures
-        group.set_texture("gradient_map", albedo_map).unwrap();
     }
 }

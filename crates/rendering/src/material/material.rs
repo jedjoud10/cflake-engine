@@ -25,9 +25,6 @@ pub struct DefaultMaterialResources<'a> {
     pub normal: &'a NormalMap,
     pub mask: &'a MaskMap,
 
-    // Default sky gradient texture
-    pub sky_gradient: &'a AlbedoMap,
-
     // Currently used indicies
     pub material_index: usize,
     pub draw_call_index: usize,
@@ -82,17 +79,7 @@ pub trait Material: 'static + Sized {
     fn casts_shadows() -> bool {
         true
     }
-
-    // Insert the required resources for this material into the world
-
-    // This function will be deferred to the very last minute of the rendering system
-    // because it needs mutable access to world, so don't expect it to run whenever
-    // you are registering a new material
-    // TODO: Implement dis
-    /*
-    fn insert(_world: &mut World) {}
-    */
-
+    
     // Fetch the required resources from the world
     fn fetch<'w>(world: &'w World) -> Self::Resources<'w>;
 

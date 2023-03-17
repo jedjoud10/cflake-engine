@@ -54,9 +54,6 @@ fn init(world: &mut World) {
     world.insert(Storage::<Mesh>::default());
 
     // Add the storages that contain the materials and their resources
-    world.insert(Storage::<Basic>::default());
-    world.insert(Storage::<Sky>::default());
-    world.insert(Storage::<PhysicallyBased>::default());
     world.insert(albedo_maps);
     world.insert(normal_maps);
     world.insert(mask_maps);
@@ -100,17 +97,16 @@ fn event(world: &mut World, event: &mut WindowEvent) {
 
 // Clear the window and render the entities to the texture
 fn render(world: &mut World) {
+    // Fetch the resources that we will use for rendering the scene 
     let mut renderer = world.get_mut::<ForwardRenderer>().unwrap();
     let mut _shadowmap = world.get_mut::<ShadowMapping>().unwrap();
     let renderer = &mut *renderer;
     let scene = world.get::<Scene>().unwrap();
-    let _time = world.get::<Time>().unwrap();
     let pipelines = world.get::<Pipelines>().unwrap();
     let meshes = world.get::<Storage<Mesh>>().unwrap();
     let albedo_maps = world.get::<Storage<AlbedoMap>>().unwrap();
     let normal_maps = world.get::<Storage<NormalMap>>().unwrap();
     let mask_maps = world.get::<Storage<MaskMap>>().unwrap();
-
     let pipelines = pipelines.extract_pipelines();
 
     // Skip if we don't have a camera to draw with
@@ -152,7 +148,6 @@ fn render(world: &mut World) {
         black: &albedo_maps[&renderer.black],
         normal: &normal_maps[&renderer.normal],
         mask: &mask_maps[&renderer.mask],
-        sky_gradient: &renderer.sky_gradient,
         material_index: 0,
         draw_call_index: 0,
     };
@@ -192,8 +187,8 @@ fn render(world: &mut World) {
         });
 
         // Render the shadows first (fuck you)
-        for pipeline in pipelines.iter() {
-            pipeline.prerender(world, &meshes, &mut active);
+        for stored in pipelines.iter() {
+            stored.prerender(world, &meshes, &mut active);
         }
         drop(active);
         drop(render_pass);
@@ -207,8 +202,8 @@ fn render(world: &mut World) {
     let mut render_pass = renderer.render_pass.begin(color, depth);
 
     // This will iterate over each material pipeline and draw the scene
-    for pipeline in pipelines.iter() {
-        pipeline.render(
+    for stored in pipelines.iter() {
+        stored.render(
             world,
             &meshes,
             &mut default,

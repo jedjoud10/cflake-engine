@@ -35,7 +35,6 @@ fn init(world: &mut World) {
     persistent!(loader, "engine/shaders/post/gui.frag");
 
     // Load the default textures
-    persistent!(loader, "engine/textures/scene/sky.jpg");
     persistent!(loader, "engine/textures/scene/bumps.jpg");
 
     // Load the default meshes
