@@ -7,10 +7,6 @@ layout(location = 0) out vec4 frag;
 // Data given by the vertex shader
 layout(location = 0) in vec3 m_position;
 
-// Sky gradient texture map
-layout(set = 1, binding = 0) uniform texture2D gradient_map;
-layout(set = 1, binding = 1) uniform sampler gradient_map_sampler;
-
 void main() {
 	// Calculate elevation
 	vec3 normal = normalize(m_position);

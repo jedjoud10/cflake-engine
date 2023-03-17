@@ -36,6 +36,11 @@ impl AudioPlayer {
             .ok()?
             .collect::<Vec<_>>();
 
+        // Logging the supported output configs
+        for config in supported_output_configs.iter() {
+            log::debug!("{config:#?}");
+        }
+
         Some(Self {
             host,
             device,
@@ -50,12 +55,18 @@ impl AudioPlayer {
         channels: u16,
         sample_rate: u32,
     ) -> Option<StreamConfig> {
+        log::debug!("Looking for audio stream config for sample rate = {sample_rate} with {channels} channels");
+
         self.supported_output_configs
             .iter()
             .find(|config_range| {
-                config_range.channels() == channels
-                    && config_range.max_sample_rate().0 > sample_rate
-                    && config_range.min_sample_rate().0 < sample_rate
+                let channels = config_range.channels() == channels;
+                let max = config_range.max_sample_rate().0 > sample_rate;
+                let min = config_range.min_sample_rate().0 < sample_rate;
+                log::debug!("Channels supported: {channels}");
+                log::debug!("Max sample rate supported: {max}");
+                log::debug!("Min sample rate supported: {min}");
+                channels & max & min
             })
             .map(|p| {
                 p.clone()

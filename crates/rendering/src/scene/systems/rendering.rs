@@ -54,6 +54,9 @@ fn init(world: &mut World) {
     world.insert(Storage::<Mesh>::default());
 
     // Add the storages that contain the materials and their resources
+    world.insert(Storage::<Basic>::default());
+    world.insert(Storage::<Sky>::default());
+    world.insert(Storage::<PhysicallyBased>::default());
     world.insert(albedo_maps);
     world.insert(normal_maps);
     world.insert(mask_maps);
