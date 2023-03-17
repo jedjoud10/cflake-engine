@@ -5,13 +5,9 @@ use graphics::{Normalized, Texture2D, UniformBuffer, RGBA, SRGBA, RG};
 #[derive(Clone, Copy, PartialEq, Pod, Zeroable, Default)]
 #[repr(C)]
 pub struct CameraUniform {
-    // Projection & inv projection matrix
+    // Projection & view matrix
     pub projection: vek::Vec4<vek::Vec4<f32>>,
-    pub inverse_projection: vek::Vec4<vek::Vec4<f32>>,
-
-    // View & inv view matrix
     pub view: vek::Vec4<vek::Vec4<f32>>,
-    pub inverse_view: vek::Vec4<vek::Vec4<f32>>,
 
     // Position and direction vectors
     pub position: vek::Vec4<f32>,

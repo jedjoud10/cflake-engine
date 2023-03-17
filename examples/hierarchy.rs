@@ -3,6 +3,7 @@ use cflake_engine::prelude::*;
 // An empty game window
 fn main() {
     App::default()
+        .set_app_name("cflake engine hierarchy example")
         .insert_init(init)
         .insert_update(update)
         .execute();

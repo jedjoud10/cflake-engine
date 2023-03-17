@@ -30,7 +30,7 @@ void main() {
 	*/
 
 	// Increase exposure
-	color *= 1.2;
+	color *= 1.9;
 
 	// Apply tonemapping and gamma mapping
 	color = pow(aces(color), vec3(1.0 / 2.2));

@@ -3,10 +3,10 @@ use cflake_engine::prelude::*;
 // An empty game window
 fn main() {
     App::default()
+        .set_app_name("cflake engine client example")
         .insert_init(init)
         .insert_update(update)
         .set_frame_rate_limit(FrameRateLimit::Limited(10))
-        .set_app_name("Client!")
         .execute();
 }
 

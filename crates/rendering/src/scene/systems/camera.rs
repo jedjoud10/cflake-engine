@@ -22,27 +22,23 @@ fn update(world: &mut World) {
         };
 
         // Fetch it's components,and update them
-        let (camera, location, rotation) = entry
+        let (camera, position, rotation) = entry
             .as_query_mut::<(&mut Camera, &Position, &Rotation)>()
             .unwrap();
         let aspect = window.size().w as f32 / window.size().h as f32;
-        camera.set_aspect_ratio(aspect);
-        camera.update(location, rotation);
+        camera.aspect_ratio = aspect;
+        let projection = camera.projection_matrix();
+        let view = camera.view_matrix(position, rotation);
 
         // Convert the camera to uniform data
-        let projection = camera.projection_matrix().cols;
-        let view = camera.view_matrix().cols;
-        let inverse_projection =
-            (camera.projection_matrix().inverted()).cols;
-        let inverse_view = (camera.view_matrix().inverted()).cols;
+        let projection = projection.cols;
+        let view = view.cols;
 
         // Create the struct that contains the UBO data
         let data = CameraUniform {
             projection,
-            inverse_projection,
             view,
-            inverse_view,
-            position: (*location).with_w(0.0),
+            position: (*position).with_w(0.0),
             forward: rotation.forward().with_w(0.0),
             right: rotation.right().with_w(0.0),
             up: rotation.up().with_w(0.0),

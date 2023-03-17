@@ -58,11 +58,22 @@ void main() {
 		normalize(m_normal));
 	vec3 normal = normalize(tbn * normalize(bumps));
 
-	// Check if the fragment is shadowed
-	float shadowed = calculate_shadowed(m_position, shadow_map, shadow.lightspace, shadow.strength, shadow.spread, shadow.size);
+	// Compute PBR values
+	mask = pow(mask, vec3(2));
+	float roughness = clamp(mask.g, 0.02, 1.0);
+	float metallic = clamp(mask.b, 0.01, 1.0);
+	float visibility = clamp(mask.r, 0.0, 1.0);
+	vec3 f0 = mix(vec3(0.04), albedo, metallic);
 
-    // TODO: Implement PBR functionality here
+	// Create the data structs
+	SunData sun = SunData(scene.sun_direction.xyz, scene.sun_color.rgb, 1.6);
+	SurfaceData surface = SurfaceData(albedo, normal, m_position, roughness, metallic, visibility, f0);
+	vec3 view = normalize(-camera.position.xyz + m_position);
+	CameraData camera = CameraData(view, normalize(view + scene.sun_direction.xyz), camera.position.xyz);
+
+	// Check if the fragment is shadowed
+	vec3 color = brdf(shadow_map, surface, camera, sun);
 
 	// Calculate diffuse lighting
-	frag = vec4(1.0-shadowed);
+	frag = vec4(color, 0.0);
 }

@@ -1,7 +1,7 @@
 use crate::{
     AlbedoMap, Basic, DefaultMaterialResources, DirectionalLight,
     ForwardRenderer, Mesh, NormalMap, Pipelines, Renderer,
-    SceneUniform, ShadowMapping, Sky, WindowUniform, MaskMap,
+    SceneUniform, ShadowMapping, Sky, WindowUniform, MaskMap, PhysicallyBased,
 };
 use assets::Assets;
 
@@ -56,6 +56,7 @@ fn init(world: &mut World) {
     // Add the storages that contain the materials and their resources
     world.insert(Storage::<Basic>::default());
     world.insert(Storage::<Sky>::default());
+    world.insert(Storage::<PhysicallyBased>::default());
     world.insert(albedo_maps);
     world.insert(normal_maps);
     world.insert(mask_maps);

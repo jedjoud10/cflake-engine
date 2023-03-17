@@ -3,6 +3,7 @@ use cflake_engine::prelude::*;
 // An empty game window
 fn main() {
     App::default()
+        .set_app_name("cflake engine staging example")
         .insert_system(first)
         .insert_system(second)
         .insert_init(default)

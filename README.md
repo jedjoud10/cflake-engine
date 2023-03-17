@@ -70,7 +70,7 @@ At the moment, cFlake uses a custom built graphics API abstraction that wraps ov
 * Lionel Stanway (MoldyToeMan)
 * Logan McLennan (PigSteel)
 * Dimev (Skythedragon)
-
+* Poly Haven for their awesome textures and models (used in examples folder)
 # LICENSE
 Dual-Licensed under
  * Apache License, Version 2.0

@@ -3,8 +3,8 @@ use cflake_engine::prelude::*;
 // An empty game window
 fn main() {
     App::default()
+        .set_app_name("cflake engine hello example")
         .insert_init(init)
-        .set_app_name("Hello World!")
         .execute();
 }
 

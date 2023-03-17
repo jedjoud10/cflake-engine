@@ -1,6 +1,8 @@
-
-
 #define PI 3.1415926538
+
+// Literally the whole implementation is stolen from
+// https://www.youtube.com/watch?v=RRE-F57fbXw&ab_channel=VictorGordan
+// and https://learnopengl.com/PBR/Lighting
 
 // Normal distribution function
 // GGX/Trowbridge-reitz model
@@ -31,15 +33,9 @@ float gsf(float roughness, vec3 n, vec3 v, vec3 l) {
 }
 
 // Fresnel function
-vec3 fresnel(vec3 f0, vec3 v, vec3 x) {
-	float cosTheta = clamp(1.0 - max(dot(v, x), 0), 0, 1);
+vec3 fresnel(vec3 f0, vec3 v, vec3 h) {
+	float cosTheta = clamp(1.0 - max(dot(v, h), 0), 0, 1);
 	return f0 + (1.0 - f0) * pow(cosTheta, 5.0);
-}
-
-// Fresnel function with roughness
-vec3 fresnelRoughness(vec3 f0, vec3 v, vec3 x, float roughness) {
-	float cosTheta = clamp(1.0 - max(dot(v, x), 0), 0, 1);
-	return f0 + (max(vec3(1.0 - roughness), f0) - f0) * pow(cosTheta, 5.0);
 }
 
 // Cook-torrence model for specular
@@ -66,26 +62,35 @@ struct CameraData {
 // Surface data struct 
 struct SurfaceData {
 	vec3 diffuse;
-	vec3 mask;
 	vec3 normal;
 	vec3 position;
+	float roughness;
+	float metallic;
+	float visibility;
+	vec3 f0;
 };
 
 // Bidirectional reflectance distribution function, aka PBRRRR
-vec3 brdf(SurfaceData surface, CameraData camera, SunData sun) {
-	// Constants
-	float roughness = max(surface.mask.r, 0.05);
-	float metallic = pow(surface.mask.g, 5);
-	float visibility = min(surface.mask.b, 1.0);
-	vec3 f0 = mix(vec3(0.04), surface.diffuse, metallic);
-	
-	// Ks and Kd
-	vec3 ks = fresnel(f0, camera.view, camera.half_view, surface.normal);
-	vec3 kd = (1 - ks) * (1 - metallic);
+vec3 brdf(
+	in texture2D shadow_map,
+	SurfaceData surface,
+	CameraData camera,
+	SunData light
+) {
+	// Calculate kS and kD
+	vec3 ks = fresnel(surface.f0, camera.half_view, camera.view);
+	vec3 kd = (1 - ks) * (1 - surface.metallic);
+
+	// Calculate ambient sky color
+	vec3 ambient = calculate_sky_color(surface.normal, light.backward);
+
+	// Calculate if the pixel is shadowed
+	float shadowed = calculate_shadowed(surface.position, shadow_map, shadow.lightspace, shadow.strength, shadow.spread, shadow.size);
 
 	// Calculate diffuse and specular
-	vec3 brdf = kd * (surface.diffuse / PI) + specular(f0, roughness, camera.view, sun.backward, surface.normal, camera.half_view);
-	vec3 outgoing = brdf * sun.color * sun.strength * max(dot(sun.backward, surface.normal), 0.0);
-	outgoing += 0.03 * surface.diffuse * visibility;
-	return outgoing;
+	vec3 brdf = kd * (surface.diffuse / PI) + specular(surface.f0, surface.roughness, camera.view, light.backward, surface.normal, camera.half_view) * (1-shadowed);
+	vec3 lighting = vec3(max(dot(light.backward, surface.normal), 0.0)) * (1-shadowed);
+	lighting += ambient * 0.4;
+	brdf = brdf * light.color * light.strength * lighting;
+	return brdf;
 }

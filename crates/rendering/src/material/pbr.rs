@@ -64,6 +64,7 @@ impl Material for PhysicallyBased {
         compiler.use_texture::<ShadowMap>("shadow_map");
         compiler.use_texture::<AlbedoMap>("albedo_map");
         compiler.use_texture::<NormalMap>("normal_map");
+        compiler.use_texture::<MaskMap>("mask_map");
 
         // Define the push ranges used by push constants
         compiler.use_push_constant_layout(

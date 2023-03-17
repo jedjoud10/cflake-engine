@@ -17,7 +17,7 @@ fn init(world: &mut World) {
     let mut assets = world.get_mut::<Assets>().unwrap();
     let mut threadpool = world.get_mut::<ThreadPool>().unwrap();
     let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
-    let mut basics = world.get_mut::<Storage<Basic>>().unwrap();
+    let mut pbrs = world.get_mut::<Storage<PhysicallyBased>>().unwrap();
     let mut interface = world.get_mut::<Interface>().unwrap();
     let mut skies = world.get_mut::<Storage<Sky>>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
@@ -33,50 +33,61 @@ fn init(world: &mut World) {
     window.raw().set_cursor_visible(false);
     interface.enabled = false;
 
-    // Import the diffuse map and normal map
-    asset!(&mut assets, "assets/user/ignored/diffuse.jpg");
-    asset!(&mut assets, "assets/user/ignored/normal.jpg");
-    asset!(&mut assets, "assets/user/ignored/untitled.obj");
+    // Import the diffuse map, normal map, mask map
+    asset!(&mut assets, "assets/user/textures/diffuse.jpg");
+    asset!(&mut assets, "assets/user/textures/normal.jpg");
+    asset!(&mut assets, "assets/user/textures/mask.jpg");
 
-    // Load in the diffuse map and normal map textures asynchronously
+    // Load in the diffuse map, normal map, and mask map textures asynchronously
     let albedo = assets.async_load::<AlbedoMap>(
-        ("user/ignored/diffuse.jpg", graphics.clone()),
+        ("user/textures/diffuse.jpg", graphics.clone()),
         &mut threadpool,
     );
     let normal = assets.async_load::<NormalMap>(
-        ("user/ignored/normal.jpg", graphics.clone()),
+        ("user/textures/normal.jpg", graphics.clone()),
         &mut threadpool,
+    );
+    let mask = assets.async_load::<MaskMap>(
+        ("user/textures/mask.jpg", graphics.clone()),
+        &mut threadpool
     );
 
     // Fetch the loaded textures
     let diffuse = assets.wait(albedo).unwrap();
     let normal = assets.wait(normal).unwrap();
+    let mask = assets.wait(mask).unwrap();
 
     // Add the textures to the storage
     let mut diffuse_maps =
         world.get_mut::<Storage<AlbedoMap>>().unwrap();
     let mut normal_maps =
         world.get_mut::<Storage<NormalMap>>().unwrap();
+    let mut mask_maps =
+        world.get_mut::<Storage<MaskMap>>().unwrap();
     let diffuse = diffuse_maps.insert(diffuse);
     let normal = normal_maps.insert(normal);
+    let mask = mask_maps.insert(mask);
 
     // Get the material id (also registers the material pipeline)
     let id =
-        pipelines.register::<Basic>(&graphics, &mut assets).unwrap();
+        pipelines.register::<PhysicallyBased>(&graphics, &mut assets).unwrap();
 
     // Create a new material instance
-    let material = basics.insert(Basic {
+    let material = pbrs.insert(PhysicallyBased {
         albedo_map: Some(diffuse),
         normal_map: Some(normal),
-        bumpiness: 1.4,
-        tint: vek::Rgb::one(),
+        mask_map: Some(mask),
+        bumpiness: 1.0,
+        roughness: 1.0,
+        metallic: 1.0,
+        ambient_occlusion: 1.0,
     });
 
     // Load a cube mesh
     let cube = assets
         .load::<Mesh>(("engine/meshes/cube.obj", graphics.clone()))
         .unwrap();
-    let _cube = meshes.insert(cube);
+    let cube = meshes.insert(cube);
 
     // Load a plane mesh
     let plane = assets
@@ -102,7 +113,7 @@ fn init(world: &mut World) {
     // Create a simple cube and add the entity
     for x in 0..25 {
         let surface = Surface::new(
-            sphere.clone(),
+            cube.clone(),
             material.clone(),
             id.clone(),
         );
@@ -137,12 +148,11 @@ fn init(world: &mut World) {
     scene.insert((surface, renderer));
 
     // Create a movable camera
-    let camera = Camera::new(120.0, 0.01, 5000.0, 16.0 / 9.0);
     scene.insert((
         Position::default(),
         Rotation::default(),
         Velocity::default(),
-        camera,
+        Camera::default(),
     ));
 
     // Create a directional light
@@ -166,6 +176,7 @@ fn init(world: &mut World) {
 // Camera controller update executed every tick
 fn update(world: &mut World) {
     let time = world.get::<Time>().unwrap();
+    let mut state = world.get_mut::<State>().unwrap();
     let time = &*time;
     let input = world.get::<Input>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
@@ -174,7 +185,12 @@ fn update(world: &mut World) {
     if let Some((rotation, _)) =
         scene.find_mut::<(&mut Rotation, &DirectionalLight)>()
     {
-        //rotation.rotate_x(-0.1 * time.delta().as_secs_f32());
+        rotation.rotate_x(-0.1 * time.delta().as_secs_f32());
+    }
+
+    // Exit the game when the user pressed Escape
+    if input.get_button(Button::Escape).pressed() {
+        *state = State::Stopped;
     }
 
     let camera = scene
@@ -210,7 +226,6 @@ fn update(world: &mut World) {
         // The scroll wheel will change the camera FOV
         let delta = input.get_axis(Axis::MouseScrollDelta);
         camera.hfov += delta * 10.0 * time.delta().as_secs_f32();
-        camera.update_projection();
 
         // Update the position with the new velocity
         **position += velocity * time.delta().as_secs_f32() * 20.0;

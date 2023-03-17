@@ -23,6 +23,7 @@ fn init(world: &mut World) {
     persistent!(loader, "engine/shaders/math/conversions.glsl");
 
     persistent!(loader, "engine/shaders/scene/basic/basic.frag");
+    persistent!(loader, "engine/shaders/scene/pbr/pbr.frag");
     persistent!(loader, "engine/shaders/scene/basic/basic.vert");
     persistent!(loader, "engine/shaders/scene/shadow/shadow.frag");
     persistent!(loader, "engine/shaders/scene/shadow/shadow.vert");
