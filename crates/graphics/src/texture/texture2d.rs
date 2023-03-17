@@ -26,10 +26,6 @@ pub struct Texture2D<T: Texel> {
     mode: TextureMode,
     _phantom: PhantomData<T>,
 
-    // Shader Sampler
-    sampler: Arc<wgpu::Sampler>,
-    sampling: SamplerSettings,
-
     // Keep the graphics API alive
     graphics: Graphics,
 }
@@ -46,8 +42,6 @@ impl<T: Texel>
         graphics: &Graphics,
         texture: wgpu::Texture,
         views: SmallVec<[wgpu::TextureView; 1]>,
-        sampler: Arc<wgpu::Sampler>,
-        sampling: SamplerSettings,
         dimensions: vek::Extent2<u32>,
         usage: TextureUsage,
         mode: TextureMode,
@@ -60,8 +54,6 @@ impl<T: Texel>
             mode,
             _phantom: PhantomData,
             graphics: graphics.clone(),
-            sampler,
-            sampling,
         }
     }
 
@@ -100,20 +92,11 @@ impl<T: Texel> Texture for Texture2D<T> {
     fn views(&self) -> &[wgpu::TextureView] {
         &self.views
     }
-
-    fn sampler(&self) -> Sampler<Self::T> {
-        Sampler {
-            sampler: &self.sampler,
-            _phantom: PhantomData,
-            settings: &self.sampling,
-        }
-    }
 }
 
 // Texture settings that we shall use when loading in a new texture
 #[derive(Clone)]
 pub struct TextureImportSettings<'m, T: Texel> {
-    pub sampling: SamplerSettings,
     pub mode: TextureMode,
     pub usage: TextureUsage,
     pub mipmaps: TextureMipMaps<'m, 'm, T>,
@@ -122,7 +105,6 @@ pub struct TextureImportSettings<'m, T: Texel> {
 impl<T: Texel> Default for TextureImportSettings<'_, T> {
     fn default() -> Self {
         Self {
-            sampling: SamplerSettings::default(),
             mode: TextureMode::default(),
             usage: TextureUsage::default(),
             mipmaps: TextureMipMaps::Manual { mips: &[] },
@@ -204,7 +186,6 @@ impl<T: ImageTexel> Asset for Texture2D<T> {
             dimensions,
             settings.mode,
             settings.usage,
-            settings.sampling,
             mipmaps,
         )
         .map_err(TextureAssetLoadError::Initialization)

@@ -100,35 +100,17 @@ impl Scene {
         &mut self,
         iter: impl IntoIterator<Item = Entity>,
     ) {
-        // Convert the mask and group to vector of entities and linkings
-        fn map(
-            entities: &EntitySet,
-            mask: Mask,
-            group: impl IntoIterator<Item = Entity>,
-        ) -> (Mask, Vec<(Entity, EntityLinkings)>) {
-            let vec = group
-                .into_iter()
-                .map(|entity| {
-                    let linkings =
-                        entities.get(entity).cloned().unwrap();
-                    (entity, linkings)
-                })
-                .collect::<Vec<_>>();
-            (mask, vec)
-        }
-
-        // TODO: Itertools' group_by only groups consecutive elements, so fix this shit bro
+        // Sort the entities by their masks (we can use unstable since the ordering of the entities does not matter)
+        let mut entities = iter.into_iter().map(|e| 
+            (e, *self.entities.get(e).unwrap())
+        ).collect::<Vec<_>>();
+        entities.sort_unstable_by_key(|(_, l)| l.mask);
 
         // Group the entities based on their archetype
-        let binding = iter.into_iter().group_by(|entity| {
-            let linkings = self.entities.get(*entity).unwrap();
-            linkings.mask()
-        });
+        let grouped = entities.iter().group_by(|(_, l)| l.mask);
 
         // Fetch the entities that correspond to each archetype
-        let iter = binding
-            .into_iter()
-            .map(|(mask, group)| map(&self.entities, mask, group))
+        let iter = grouped
             .into_iter()
             .collect::<Vec<_>>();
 
@@ -139,7 +121,7 @@ impl Scene {
             // Remove the entities from the group
             archetype.remove_from_iter(
                 &mut self.entities,
-                group.into_iter(),
+                group.into_iter().cloned(),
                 &mut self.removed,
             );
         }

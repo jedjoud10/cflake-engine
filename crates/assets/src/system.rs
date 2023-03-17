@@ -11,7 +11,7 @@ fn init(world: &mut World) {
     let user = world.get::<AssetsSettings>().unwrap().0.clone();
     let loader = Assets::new(user);
 
-    // Load the default shaders
+    // Load the default common shaders
     persistent!(loader, "engine/shaders/common/camera.glsl");
     persistent!(loader, "engine/shaders/common/scene.glsl");
     persistent!(loader, "engine/shaders/common/timing.glsl");
@@ -19,9 +19,12 @@ fn init(world: &mut World) {
     persistent!(loader, "engine/shaders/common/window.glsl");
     persistent!(loader, "engine/shaders/common/sky.glsl");
     persistent!(loader, "engine/shaders/common/extensions.glsl");
+
+    // Load the default math shaders
     persistent!(loader, "engine/shaders/math/models.glsl");
     persistent!(loader, "engine/shaders/math/conversions.glsl");
 
+    // Load the default rendering shaders
     persistent!(loader, "engine/shaders/scene/basic/basic.frag");
     persistent!(loader, "engine/shaders/scene/pbr/pbr.frag");
     persistent!(loader, "engine/shaders/scene/basic/basic.vert");
@@ -29,10 +32,16 @@ fn init(world: &mut World) {
     persistent!(loader, "engine/shaders/scene/shadow/shadow.vert");
     persistent!(loader, "engine/shaders/scene/sky/sky.frag");
     persistent!(loader, "engine/shaders/scene/sky/sky.vert");
+
+    // Load the default post-rendering shaders
     persistent!(loader, "engine/shaders/post/display.frag");
     persistent!(loader, "engine/shaders/post/display.vert");
     persistent!(loader, "engine/shaders/post/gui.vert");
     persistent!(loader, "engine/shaders/post/gui.frag");
+
+    // Load the default terrain shaders
+    persistent!(loader, "engine/shaders/terrain/voxel.compute");
+    persistent!(loader, "engine/shaders/terrain/mesh.compute");
 
     // Load the default textures
     persistent!(loader, "engine/textures/scene/bumps.jpg");

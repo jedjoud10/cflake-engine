@@ -19,7 +19,7 @@ vec3 calculate_sky_color(
 
     // Mix in night color
     float time_of_day = min(max(-sun.y, 0), 0.25) * 4;
-    day_color = mix(day_color, vec3(0.001), 1-time_of_day);
+    vec3 color = mix(day_color, vec3(0.001), 1-time_of_day);
 
-    return day_color;
+    return color;
 }

@@ -35,7 +35,7 @@ fn init(world: &mut World) {
     let shadowmap = ShadowMapping::new(
         20f32,
         100f32,
-        4096,
+        1024,
         &graphics,
         &mut assets,
     );
@@ -114,13 +114,13 @@ fn render(world: &mut World) {
 
     // Skip if we don't have a camera to draw with
     if renderer.main_camera.is_none() {
-        log::warn!("No active camera to draw with!");
+        //log::warn!("No active camera to draw with!");
         return;
     }
 
     // Skip if we don't have a light to draw with
     if renderer.main_directional_light.is_none() {
-        log::warn!("No directional light to draw with!");
+        //log::warn!("No directional light to draw with!");
         return;
     }
 

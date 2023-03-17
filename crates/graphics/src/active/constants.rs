@@ -1,6 +1,6 @@
 use crate::{
     ModuleVisibility, PushConstantBytesError, PushConstantLayout,
-    ReflectedShader,
+    ReflectedShader, Graphics, SetPushConstantsError,
 };
 use arrayvec::ArrayVec;
 use itertools::Itertools;
@@ -11,6 +11,43 @@ use std::{marker::PhantomData, ops::RangeBounds, sync::Arc};
 pub struct PushConstants<'a> {
     pub(crate) data: &'a mut [u8],
     pub(crate) layout: PushConstantLayout,
+}
+
+// Create some push constants that the user can set
+pub(super) fn handle_push_constants<'b>(
+    reflected: Arc<ReflectedShader>,
+    push_constant: &'b mut Vec<u8>,
+    push_constant_global_offset: &mut usize,
+    callback: impl FnOnce(&mut PushConstants<'b>),
+) -> Option<PushConstantLayout> {
+    // Don't set the push constants if we don't have any to set
+    let Some(layout) = reflected.push_constant_layout else {
+        return None;
+    };
+
+    // Make sure we have enough bytes to store the push constants
+    let pc = push_constant.len()
+        - *push_constant_global_offset;
+    if pc < 1024 {
+        push_constant
+            .extend(std::iter::repeat(0).take(1024));
+    }
+
+    // Get the max size that we must allocate (at minimum) to be able to use ALL the defined push constants
+    let size = layout.size().get();
+
+    // Get the data that we will use
+    let start = *push_constant_global_offset as usize;
+    let end = size as usize + start;
+    let data = &mut push_constant[start..end];
+
+    // Create push constants that we can set
+    let mut push_constants = PushConstants { data, layout };
+
+    // Let the user modify the push constant
+    callback(&mut push_constants);
+    *push_constant_global_offset += size as usize;
+    return Some(layout);
 }
 
 impl PushConstants<'_> {
@@ -47,7 +84,7 @@ impl PushConstants<'_> {
                 },
             ) => offset += vertex.get(),
             (a, PushConstantLayout::Single(_, b)) if a == b => {}
-            _ => return Err(PushConstantBytesError::NotAsDefined),
+            _ => return Err(PushConstantBytesError::VisibilityNotValid(visibility, self.layout.visibility())),
         }
 
         // Set the bytes properly

@@ -2,8 +2,6 @@ use thiserror::Error;
 
 use crate::ModuleVisibility;
 
-// Errors that might get returned whenever we try setting a resource
-// Most of the validation checking is done when the shader is created, using BindLayout
 #[derive(Error, Debug)]
 pub enum SetBindResourceError<'a> {
     #[error("The bind resource '{name}' at bind group '{group}' was not defined in the shader layout")]
@@ -50,8 +48,8 @@ pub enum PushConstantBytesError {
     #[error("The given byte offset or byte size are too large and would overflow the defined push constant layout size")]
     OffsetOrSizeIsTooLarge,
 
-    #[error("The visibility of the given push command does not match the push constant layout defined in the Compiler")]
-    NotAsDefined,
+    #[error("Tried setting a push constant with visibility {0:?}, but the current shader {1:?} does not support it")]
+    VisibilityNotValid(ModuleVisibility, ModuleVisibility),
 }
 
 #[derive(Error, Debug)]

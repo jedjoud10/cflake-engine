@@ -1,4 +1,4 @@
-mod systems;
+mod system;
 mod resources;
-pub use systems::*;
+pub use system::*;
 pub use resources::*;

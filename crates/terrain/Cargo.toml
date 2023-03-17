@@ -11,4 +11,7 @@ utils = { path = "../utils" }
 math = { path = "../math" }
 ecs = { path = "../ecs" }
 graphics = { path = "../graphics" }
+rendering = { path = "../rendering" }
 assets = { path = "../assets" }
+vek = { workspace = true }
+log = { workspace = true }

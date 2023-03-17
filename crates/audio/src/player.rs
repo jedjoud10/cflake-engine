@@ -36,11 +36,6 @@ impl AudioPlayer {
             .ok()?
             .collect::<Vec<_>>();
 
-        // Logging the supported output configs
-        for config in supported_output_configs.iter() {
-            log::debug!("{config:#?}");
-        }
-
         Some(Self {
             host,
             device,
@@ -50,6 +45,7 @@ impl AudioPlayer {
     }
 
     // Try to find an audio stream config that supports the given sample rate and given channels
+    // TODO: Fix this shit on logan pc it don't workey
     pub fn find_audio_stream_config(
         &self,
         channels: u16,

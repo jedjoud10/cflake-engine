@@ -409,6 +409,9 @@ impl App {
         self.regsys(rendering::systems::rendering::system);
         self.regsys(rendering::systems::lights::system);
 
+        // Terrain systems
+        self.regsys(terrain::system);
+
         // Gui system + stats update event
         self.regsys(gui::common);
         self.regsys(gui::acquire);

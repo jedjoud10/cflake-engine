@@ -17,7 +17,7 @@ float sample_shadow_texel(
     ivec2 pixel,
     float compare
 ) {
-    float bias = -0.0001;
+    float bias = 0.000;
     float closest = texelFetch(tex, pixel, 0).r;
     return compare > (closest+bias) ? 1.0 : 0.0;
 }
@@ -54,6 +54,8 @@ float calculate_shadowed(
     float spread,
     uint size
 ) {
+    //position = floor(position * 5.0) / 5.0;
+
     // Transform the world coordinates to NDC coordinates 
     vec4 ndc = lightspace * vec4(position, 1.0); 
     if(abs(ndc.x) > 1.0 ||
@@ -69,6 +71,7 @@ float calculate_shadowed(
     uvs.y = 1-uvs.y;
     float current = uvs.z;
     
+    /*
     float shadowed = 0.0;
     for (int x = -2; x <= 2; x++) {
         for (int y = -2; y <= 2; y++) {
@@ -77,8 +80,8 @@ float calculate_shadowed(
     }
     shadowed /= 25.0;
     return shadowed;
+    */
     
-
     //return sample_shadow_texel(shadow_map, ivec2(uvs.xy * size), current);
-    //return shadow_linear(shadow_map, uvs.xy, size, current);
+    return shadow_linear(shadow_map, uvs.xy, size, current);
 }

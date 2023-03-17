@@ -5,6 +5,8 @@ mod sampler;
 mod settings;
 mod texture;
 mod texture2d;
+mod texture3d;
+pub use texture3d::*;
 pub use errors::*;
 pub use mipmap::*;
 pub use region::*;

@@ -1,6 +1,6 @@
 use crate::{
     BindResourceLayout, GpuPod, ReflectedShader, Sampler,
-    SetBindResourceError, Shader, Texel, Texture, UniformBuffer,
+    SetBindResourceError, Shader, Texel, Texture, UniformBuffer, Graphics,
 };
 use ahash::AHashMap;
 use std::{marker::PhantomData, sync::Arc};
@@ -14,6 +14,100 @@ pub struct BindGroup<'a> {
     pub(crate) slots: Vec<u32>,
     pub(crate) ids: Vec<wgpu::Id>,
     pub(crate) _phantom: PhantomData<&'a ()>,
+}
+
+// Generate a new bind group from a callback (if needed)
+pub(super) fn create_bind_group<'b>(
+    graphics: &Graphics,
+    reflected: Arc<ReflectedShader>,
+    binding: u32,
+    callback: impl FnOnce(&mut BindGroup<'b>),
+) -> Option<Arc<wgpu::BindGroup>> {
+    // 4 is the minimum supported number of bind groups by WGPU spec
+    if binding >= 4 {
+        return None;
+    }
+
+    // Try to fetch the bind group layout from the reflected shader
+    let bind_group_layout = reflected
+        .bind_group_layouts
+        .get(binding as usize)
+        .unwrap();
+
+    // Don't do anything if the shader doesn't have this bind group
+    let Some(bind_group_layout) = bind_group_layout else {
+        return None;
+    };
+
+    // Pre-allocates vectors with the appropriate number of resources
+    let count = bind_group_layout.bind_entry_layouts.len();
+    let mut bind_group = BindGroup {
+        _phantom: PhantomData,
+        reflected: reflected.clone(),
+        index: binding,
+        resources: Vec::with_capacity(count),
+        ids: Vec::with_capacity(count),
+        slots: Vec::with_capacity(count),
+    };
+    callback(&mut bind_group);
+
+    // Create the bind group that the user will interact with
+    let BindGroup::<'_> {
+        reflected,
+        resources,
+        slots,
+        ids,
+        ..
+    } = bind_group;
+    
+    // Check the cache for a bind group with the given resources
+    // If we do not find a bind group with the valid parametrs the nwe will create a new one and cache it instead
+    let cache = &graphics.0.cached;
+    let bind_group = match cache.bind_groups.entry(ids.clone()) {
+        dashmap::mapref::entry::Entry::Occupied(occupied) => {
+            occupied.get().clone()
+        }
+        dashmap::mapref::entry::Entry::Vacant(vacant) => {
+            log::warn!("Did not find cached bind group (set = {binding}), creating new one...");
+
+            // Get the bind group layout of the bind group
+            let layout = &reflected.bind_group_layouts
+                [binding as usize]
+                .as_ref()
+                .unwrap();
+            let layout = graphics
+                .0
+                .cached
+                .bind_group_layouts
+                .get(layout)
+                .unwrap();
+
+            // Get the bind group entries
+            let entries = resources
+                .into_iter()
+                .zip(slots.into_iter())
+                .map(|(resource, binding)| wgpu::BindGroupEntry {
+                    binding,
+                    resource,
+                })
+                .collect::<Vec<_>>();
+
+            // Create a bind group descriptor of the entries
+            let desc = wgpu::BindGroupDescriptor {
+                label: None,
+                layout: &layout,
+                entries: &entries,
+            };
+
+            // Create the bind group and cache it for later use
+            let bind_group =
+                graphics.device().create_bind_group(&desc);
+            let bind_group = Arc::new(bind_group);
+            vacant.insert(bind_group.clone());
+            bind_group
+        }
+    };
+    Some(bind_group)
 }
 
 impl<'a> BindGroup<'a> {
@@ -42,16 +136,12 @@ impl<'a> BindGroup<'a> {
             })
     }
 
-    // Set a texture that can be read / sampler with the help of a sampler
+    // Set a texture that can be read / written inside shaders
     pub fn set_texture<'s, T: Texture>(
         &mut self,
         name: &'s str,
         texture: &'a T,
     ) -> Result<(), SetBindResourceError<'s>> {
-        // Try setting a sampler appropriate for this texture
-        let sampler = format!("{name}_sampler");
-        self.set_sampler(&sampler, texture.sampler());
-
         // Get the binding entry layout for the given texture
         let entry = Self::find_entry_layout(
             self.index,
@@ -71,8 +161,7 @@ impl<'a> BindGroup<'a> {
         Ok(())
     }
 
-    // Set the texture sampler so we can sample textures within the shader
-    // This is called automatically if the sampler is bound to the texture
+    // Set a texture sampler so we can sample textures within the shader
     pub fn set_sampler<'s, T: Texel>(
         &mut self,
         name: &'s str,
