@@ -52,36 +52,9 @@ fn init(world: &mut World) {
         &mut threadpool
     );
 
-    // Fetch the loaded textures
-    let diffuse = assets.wait(albedo).unwrap();
-    let normal = assets.wait(normal).unwrap();
-    let mask = assets.wait(mask).unwrap();
-
-    // Add the textures to the storage
-    let mut diffuse_maps =
-        world.get_mut::<Storage<AlbedoMap>>().unwrap();
-    let mut normal_maps =
-        world.get_mut::<Storage<NormalMap>>().unwrap();
-    let mut mask_maps =
-        world.get_mut::<Storage<MaskMap>>().unwrap();
-    let diffuse = diffuse_maps.insert(diffuse);
-    let normal = normal_maps.insert(normal);
-    let mask = mask_maps.insert(mask);
-
     // Get the material id (also registers the material pipeline)
     let id =
         pipelines.register::<PhysicallyBased>(&graphics, &mut assets).unwrap();
-
-    // Create a new material instance
-    let material = pbrs.insert(PhysicallyBased {
-        albedo_map: Some(diffuse),
-        normal_map: Some(normal),
-        mask_map: Some(mask),
-        bumpiness: 1.0,
-        roughness: 1.0,
-        metallic: 1.0,
-        ambient_occlusion: 1.0,
-    });
 
     // Load a cube mesh
     let cube = assets
@@ -103,6 +76,33 @@ fn init(world: &mut World) {
         ))
         .unwrap();
     let sphere = meshes.insert(sphere);
+
+    // Fetch the loaded textures
+    let diffuse = assets.wait(albedo).unwrap();
+    let normal = assets.wait(normal).unwrap();
+    let mask = assets.wait(mask).unwrap();
+
+    // Add the textures to the storage
+    let mut diffuse_maps =
+        world.get_mut::<Storage<AlbedoMap>>().unwrap();
+    let mut normal_maps =
+        world.get_mut::<Storage<NormalMap>>().unwrap();
+    let mut mask_maps =
+        world.get_mut::<Storage<MaskMap>>().unwrap();
+    let diffuse = diffuse_maps.insert(diffuse);
+    let normal = normal_maps.insert(normal);
+    let mask = mask_maps.insert(mask);
+
+    // Create a new material instance
+    let material = pbrs.insert(PhysicallyBased {
+        albedo_map: None,
+        normal_map: None,
+        mask_map: None,
+        bumpiness: 1.0,
+        roughness: 1.0,
+        metallic: 1.0,
+        ambient_occlusion: 1.0,
+    });
 
     // Create a simple floor and add the entity
     let surface = Surface::new(plane, material.clone(), id.clone());

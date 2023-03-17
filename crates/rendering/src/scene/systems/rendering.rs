@@ -33,7 +33,7 @@ fn init(world: &mut World) {
 
     // Create a nice shadow map
     let shadowmap = ShadowMapping::new(
-        160f32,
+        20f32,
         100f32,
         4096,
         &graphics,
@@ -169,22 +169,9 @@ fn render(world: &mut World) {
         .into_iter()
         .count()
         > 0;
-    /*
-    update |= scene
-        .query_with::<&crate::Camera>(f1)
-        .into_iter()
-        .count()
-        > 0;
-    */
-
     if update {
         // Update the shadow map lightspace matrix
         let shadowmap = &mut *_shadowmap;
-
-        // Get the main camera's location
-        let camera = renderer.main_camera.unwrap();
-        let entry = scene.entry(camera).unwrap();
-        let component = entry.get::<ecs::Position>();
         shadowmap.update(**rotation, vek::Vec3::zero());
 
         // Get the depth texture we will render to

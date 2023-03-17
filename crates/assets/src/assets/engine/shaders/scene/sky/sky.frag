@@ -14,8 +14,6 @@ layout(set = 1, binding = 1) uniform sampler gradient_map_sampler;
 void main() {
 	// Calculate elevation
 	vec3 normal = normalize(m_position);
-	float y = normal.y;
-	y = clamp(y, 0, 1);
 	
 	// Get background sky color based on elevation
 	vec3 albedo = calculate_sky_color(normal, scene.sun_direction.xyz);

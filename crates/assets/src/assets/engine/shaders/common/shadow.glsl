@@ -69,17 +69,16 @@ float calculate_shadowed(
     uvs.y = 1-uvs.y;
     float current = uvs.z;
     
-    /*
     float shadowed = 0.0;
     for (int x = -2; x <= 2; x++) {
         for (int y = -2; y <= 2; y++) {
-            shadowed += shadow_linear(shadow_map, uvs.xy + vec2(x, y) * 0.001, size, current);
+            shadowed += shadow_linear(shadow_map, uvs.xy + vec2(x, y) * 0.0002, size, current);
         }
     }
     shadowed /= 25.0;
     return shadowed;
-    */
+    
 
-    return sample_shadow_texel(shadow_map, ivec2(uvs.xy * size), current);
+    //return sample_shadow_texel(shadow_map, ivec2(uvs.xy * size), current);
     //return shadow_linear(shadow_map, uvs.xy, size, current);
 }

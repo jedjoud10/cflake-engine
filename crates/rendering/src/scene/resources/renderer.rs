@@ -157,7 +157,7 @@ impl ForwardRenderer {
         let white = vek::Vec4::broadcast(255);
         let black = vek::Vec4::broadcast(0);
         let normal = vek::Vec2::new(127, 127);
-        let mask = vek::Vec4::new(255u8, 255, 255, 0);
+        let mask = vek::Vec4::new(255u8, 255, 0, 0);
 
         // Create the 1x1 default textures
         let white =
