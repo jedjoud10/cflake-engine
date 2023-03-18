@@ -1,6 +1,6 @@
 use crate::{
     BindResourceLayout, GpuPod, ReflectedShader, Sampler,
-    SetBindResourceError, Shader, Texel, Texture, UniformBuffer, Graphics,
+    SetBindResourceError, Shader, Texel, Texture, UniformBuffer, Graphics, TextureUsage,
 };
 use ahash::AHashMap;
 use std::{marker::PhantomData, sync::Arc};
@@ -136,16 +136,51 @@ impl<'a> BindGroup<'a> {
             })
     }
 
-    // Set a texture that can be read / written inside shaders
-    pub fn set_texture<'s, T: Texture>(
+    // Set a texture that can be sampled inside shaders using it's sampler
+    pub fn set_sampled_texture<'s, T: Texture>(
         &mut self,
         name: &'s str,
         texture: &'a T,
     ) -> Result<(), SetBindResourceError<'s>> {
+        // Make sure it's a sampled texture
+        if !texture.usage().contains(TextureUsage::SAMPLED) {
+            todo!()
+        }
+
         // Try setting a sampler appropriate for this texture
         let sampler = format!("{name}_sampler");
         self.set_sampler(&sampler, texture.sampler());
             
+        // Get the binding entry layout for the given texture
+        let entry = Self::find_entry_layout(
+            self.index,
+            &self.reflected,
+            name,
+        )?;
+
+        // Get values needed for the bind entry
+        let id = texture.raw().global_id();
+        let resource =
+            wgpu::BindingResource::TextureView(texture.view());
+
+        // Save the bind entry for later
+        self.resources.push(resource);
+        self.ids.push(id);
+        self.slots.push(entry.binding);
+        Ok(())
+    }
+
+    // Set a storage texture that we can write / read from / to
+    pub fn set_storage_texture<'s, T: Texture>(
+        &mut self,
+        name: &'s str,
+        texture: &'a mut T,
+    ) -> Result<(), SetBindResourceError<'s>> {       
+        // Make sure it's a storage texture
+        if !texture.usage().contains(TextureUsage::STORAGE) {
+            todo!()
+        }
+
         // Get the binding entry layout for the given texture
         let entry = Self::find_entry_layout(
             self.index,
@@ -191,7 +226,6 @@ impl<'a> BindGroup<'a> {
     }
 
     // Set a uniform buffer that we can read from within shaders
-    // TODO: Fix the "buffer-trait" branch and fix this shit (aka make it "set_buffer" instead)
     pub fn set_uniform_buffer<'s, T: GpuPod>(
         &mut self,
         name: &'s str,

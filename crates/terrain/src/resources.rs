@@ -1,5 +1,5 @@
 use assets::Assets;
-use graphics::{ComputeShader, Texture3D, RGBA, Normalized, R, Graphics, Compiler, ComputeModule, Texture, TextureMode, TextureUsage, TextureMipMaps, SamplerSettings};
+use graphics::{ComputeShader, Texture3D, RGBA, Normalized, R, Graphics, Compiler, ComputeModule, Texture, TextureMode, TextureUsage, TextureMipMaps, SamplerSettings, ComputePass};
 
 // This mesh generator will take in the voxel data given from the voxel texture
 // and will use a compute shader that will utilize the surface nets algorithm
@@ -54,7 +54,8 @@ impl VoxelGenerator {
         ).unwrap();
 
         // Create a simple compute shader compiler
-        let compiler = Compiler::new(assets, graphics);
+        let mut compiler = Compiler::new(assets, graphics);
+        compiler.use_storage_texture::<Texture3D::<R<f32>>>("densities", false, true);
 
         // Compile the compute shader
         let shader = ComputeShader::new(module, compiler).unwrap();
@@ -63,7 +64,7 @@ impl VoxelGenerator {
         let densities = Texture3D::<R<f32>>::from_texels(
             graphics,
             None,
-            vek::Extent3::broadcast(32),
+            vek::Extent3::broadcast(64),
             TextureMode::Dynamic,
             TextureUsage::STORAGE,
             SamplerSettings::default(),

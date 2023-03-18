@@ -32,11 +32,11 @@ pub(super) type MaybePushConstantLayout = Option<PushConstantLayout>;
 // This compiler also allows us to define constants and snippets before compilation
 // This compiler will be used within the Shader and ComputeShader to compile the modules in batch
 pub struct Compiler<'a> {
-    assets: &'a Assets,
-    graphics: &'a Graphics,
-    snippets: Snippets,
-    resource_types: ResourceBindingTypes,
-    maybe_push_constant_layout: MaybePushConstantLayout,
+    pub(crate) assets: &'a Assets,
+    pub(crate) graphics: &'a Graphics,
+    pub(super) snippets: Snippets,
+    pub(super) resource_types: ResourceBindingTypes,
+    pub(super) maybe_push_constant_layout: MaybePushConstantLayout,
 }
 
 impl<'a> Compiler<'a> {
@@ -195,6 +195,31 @@ impl<'a> Compiler<'a> {
                 format: format,
                 sampler_binding: super::map_sampler_binding_type(&self.graphics, info)
             });
+    }
+
+    // Define a storage texture that we can read / write to
+    pub fn use_storage_texture<T: Texture>(
+        &mut self,
+        name: impl ToString,
+        read: bool,
+        write: bool,
+    ) {
+        let dimensionality = <<T::Region as Region>::E as Extent>::view_dimension();
+        let info = <T::T as Texel>::info();
+        let format = info.format();
+
+        self.resource_types
+        .insert(name.to_string(), BindResourceType::StorageTexture {
+            access: match (read, write) {
+                (true, true) => wgpu::StorageTextureAccess::ReadWrite,
+                (true, false) => wgpu::StorageTextureAccess::ReadOnly,
+                (false, true) => wgpu::StorageTextureAccess::WriteOnly,
+                _ => todo!()
+            },
+            format,
+            sample_type: super::map_texture_sample_type(&self.graphics, info),
+            view_dimension: dimensionality
+        });
     }
 
     // Define a push constant range to be pushed

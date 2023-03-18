@@ -5,11 +5,11 @@ use wgpu::CommandEncoder;
 use crate::{
     visibility_to_wgpu_stage, BindGroup, Buffer, BufferInfo,
     BufferMode, BufferUsage, ColorLayout, ComputeCommand,
-    ComputePipeline, DepthStencilLayout, Fence, GpuPod, Graphics,
+    DepthStencilLayout, Fence, GpuPod, Graphics,
     RenderPipeline, ModuleKind, ModuleVisibility,
     PushConstantLayout, PushConstants, RenderCommand,
     SetIndexBufferError, SetPushConstantsError, SetVertexBufferError,
-    TriangleBuffer, UniformBuffer, Vertex, VertexBuffer,
+    TriangleBuffer, UniformBuffer, Vertex, VertexBuffer, ComputeShader,
 };
 use std::{
     collections::hash_map::Entry,
@@ -19,15 +19,15 @@ use std::{
 };
 
 // An active compute pipeline that is bound to a compute pass
-pub struct ActiveComputePipeline<'a, 'r> {
-    pub(crate) pipeline: &'r ComputePipeline,
+pub struct ActiveComputeDispatcher<'a, 'r> {
+    pub(crate) shader: &'r ComputeShader,
     pub(crate) commands: &'a mut Vec<ComputeCommand<'r>>,
     pub(crate) graphics: &'r Graphics,
     pub(crate) push_constant: &'a mut Vec<u8>,
     pub(crate) push_constant_global_offset: usize,
 }
 
-impl<'a, 'r> ActiveComputePipeline<'a, 'r> {
+impl<'a, 'r> ActiveComputeDispatcher<'a, 'r> {
     // Set push constants before dispatching a compute call
     pub fn set_push_constants(
         &mut self,
@@ -37,7 +37,7 @@ impl<'a, 'r> ActiveComputePipeline<'a, 'r> {
         // and push new bytes onto the internally stored constants
         let copied_push_constant_global_offset = self.push_constant_global_offset;
         let Some(layout) = super::handle_push_constants(
-            self.pipeline.shader().reflected.clone(),
+            self.shader.reflected.clone(),
             &mut self.push_constant,
             &mut self.push_constant_global_offset,
             callback
@@ -71,7 +71,7 @@ impl<'a, 'r> ActiveComputePipeline<'a, 'r> {
     ) {
         if let Some(bind_group) = super::create_bind_group(
             self.graphics,
-            self.pipeline.shader().reflected.clone(),
+            self.shader.reflected.clone(),
             binding,
             callback
         ) {
@@ -97,8 +97,8 @@ impl<'a, 'r> ActiveComputePipeline<'a, 'r> {
         });
     }
 
-    // Get the underlying compute pipeline that is currently bound
-    pub fn pipeline(&self) -> &ComputePipeline {
-        self.pipeline
+    // Get the underlying compute shader that is currently bound
+    pub fn shader(&self) -> &ComputeShader {
+        self.shader
     }
 }

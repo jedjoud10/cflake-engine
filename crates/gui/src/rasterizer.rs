@@ -268,7 +268,7 @@ impl Rasterizer {
             group
                 .set_uniform_buffer("window", window_buffer)
                 .unwrap();
-            group.set_texture("font", texture).unwrap();
+            group.set_sampled_texture("font", texture).unwrap();
         });
 
         // Keep track of the vertex and triangle offset

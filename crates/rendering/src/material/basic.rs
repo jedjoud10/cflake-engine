@@ -101,7 +101,7 @@ impl Material for Basic {
 
         // Set the scene shadow map
         group
-            .set_texture("shadow_map", &resources.2.depth_tex)
+            .set_sampled_texture("shadow_map", &resources.2.depth_tex)
             .unwrap();
     }
 
@@ -127,8 +127,8 @@ impl Material for Basic {
             .map_or(default.normal, |h| normal_maps.get(h));
 
         // Set the material textures
-        group.set_texture("albedo_map", albedo_map).unwrap();
-        group.set_texture("normal_map", normal_map).unwrap();
+        group.set_sampled_texture("albedo_map", albedo_map).unwrap();
+        group.set_sampled_texture("normal_map", normal_map).unwrap();
     }
 
     // Set the surface push constants

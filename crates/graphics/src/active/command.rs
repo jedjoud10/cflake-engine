@@ -1,6 +1,6 @@
 use crate::{
-    BufferInfo, ColorLayout, ComputePipeline, DepthStencilLayout,
-    RenderPipeline, TriangleBuffer, UniformBuffer,
+    BufferInfo, ColorLayout, DepthStencilLayout,
+    RenderPipeline, TriangleBuffer, UniformBuffer, ComputeShader,
 };
 use std::{
     ops::{Bound, Range},
@@ -60,8 +60,8 @@ pub(crate) enum RenderCommand<
 
 // Keep track of all compute commands that we call upon the compute pass
 pub(crate) enum ComputeCommand<'a> {
-    // Bind compute pipeline
-    BindPipeline(&'a ComputePipeline),
+    // Bind compute shader
+    BindShader(&'a ComputeShader),
 
     // Set bind group
     SetBindGroup(u32, Arc<BindGroup>),
@@ -164,8 +164,8 @@ pub(crate) fn record_compute_commands<'r>(
 ) {
     for compute_command in compute_commands {
         match compute_command {
-            ComputeCommand::BindPipeline(pipeline) => {
-                compute_pass.set_pipeline(pipeline.pipeline());
+            ComputeCommand::BindShader(shader) => {
+                compute_pass.set_pipeline(shader.pipeline());
             }
 
             ComputeCommand::SetBindGroup(index, bind_group) => {

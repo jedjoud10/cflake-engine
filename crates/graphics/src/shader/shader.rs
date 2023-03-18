@@ -69,6 +69,7 @@ pub struct ComputeShader {
     compiled: Compiled<ComputeModule>,
     pub(crate) layout: Arc<wgpu::PipelineLayout>,
     pub(crate) reflected: Arc<ReflectedShader>,
+    pub(crate) pipeline: Arc<wgpu::ComputePipeline>,
 }
 
 impl ComputeShader {
@@ -87,7 +88,17 @@ impl ComputeShader {
             &visibility,
         )?;
 
+        let pipeline = compiler.graphics.device().create_compute_pipeline(
+            &wgpu::ComputePipelineDescriptor {
+                label: None,
+                layout: Some(&layout),
+                module: compiled.module(),
+                entry_point: "main",
+            },
+        );
+
         Ok(Self {
+            pipeline: Arc::new(pipeline),
             compiled,
             layout,
             reflected,
@@ -102,5 +113,10 @@ impl ComputeShader {
     // Get the underlying reflected shader
     pub fn reflected(&self) -> &ReflectedShader {
         &self.reflected
+    }
+
+    // Get the underlying compute pipeline
+    pub fn pipeline(&self) -> &wgpu::ComputePipeline {
+        &&self.pipeline
     }
 }

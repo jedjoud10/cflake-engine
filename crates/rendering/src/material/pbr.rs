@@ -108,7 +108,7 @@ impl Material for PhysicallyBased {
 
         // Set the scene shadow map
         group
-            .set_texture("shadow_map", &resources.3.depth_tex)
+            .set_sampled_texture("shadow_map", &resources.3.depth_tex)
             .unwrap();
     }
 
@@ -140,9 +140,9 @@ impl Material for PhysicallyBased {
             .map_or(default.mask, |h| mask_maps.get(h));
 
         // Set the material textures
-        group.set_texture("albedo_map", albedo_map).unwrap();
-        group.set_texture("normal_map", normal_map).unwrap();
-        group.set_texture("mask_map", mask_map).unwrap();
+        group.set_sampled_texture("albedo_map", albedo_map).unwrap();
+        group.set_sampled_texture("normal_map", normal_map).unwrap();
+        group.set_sampled_texture("mask_map", mask_map).unwrap();
     }
 
     // Set the surface push constants

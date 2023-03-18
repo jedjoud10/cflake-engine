@@ -1,10 +1,10 @@
 use wgpu::CommandEncoder;
 
 use crate::{
-    ActiveComputePipeline, ActiveGraphicsPipeline, BufferInfo,
-    ColorLayout, ComputeCommand, ComputePipeline, DepthStencilLayout,
+    ActiveComputeDispatcher, ActiveGraphicsPipeline, BufferInfo,
+    ColorLayout, ComputeCommand, DepthStencilLayout,
     Graphics, RenderPipeline, RenderCommand, TriangleBuffer,
-    Vertex, VertexBuffer,
+    Vertex, VertexBuffer, ComputeShader,
 };
 use std::{marker::PhantomData, ops::Range, sync::Arc};
 
@@ -16,13 +16,13 @@ pub struct ActiveComputePass<'r> {
 }
 
 impl<'r> ActiveComputePass<'r> {
-    // Bind a compute pipeline, which takes mutable access of the compute pass temporarily
-    // Returns an active compute pipeline that we can dispatch
-    pub fn bind_pipeline<'a>(
+    // Bind a compute shader, which takes mutable access of the compute pass temporarily
+    // Returns an active compute dispatcher that we can dispatch
+    pub fn bind_shader<'a>(
         &'a mut self,
-        pipeline: &'r ComputePipeline,
-    ) -> ActiveComputePipeline<'a, 'r> {
-        self.commands.push(ComputeCommand::BindPipeline(&pipeline));
+        shader: &'r ComputeShader,
+    ) -> ActiveComputeDispatcher<'a, 'r> {
+        self.commands.push(ComputeCommand::BindShader(&shader));
         let cache = &self.graphics.0.cached;
 
         // Get the empty placeholder bind group
@@ -30,7 +30,7 @@ impl<'r> ActiveComputePass<'r> {
             cache.bind_groups.get(&Vec::new()).unwrap();
 
         // Get the bind group layouts from the reflected shader
-        let reflected = &pipeline.shader().reflected;
+        let reflected = &shader.reflected;
         let iter = reflected
             .bind_group_layouts
             .iter()
@@ -48,8 +48,8 @@ impl<'r> ActiveComputePass<'r> {
             }
         }
 
-        ActiveComputePipeline {
-            pipeline: &pipeline,
+        ActiveComputeDispatcher {
+            shader: &shader,
             graphics: self.graphics,
             commands: &mut self.commands,
             push_constant_global_offset: self.push_constants.len(),
