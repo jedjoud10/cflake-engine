@@ -87,7 +87,7 @@ impl ForwardRenderer {
     // Create a new scene render pass and the forward renderer
     pub(crate) fn new(
         graphics: &Graphics,
-        assets: &mut Assets,
+        assets: &Assets,
         extent: vek::Extent2<u32>,
         albedo_maps: &mut Storage<AlbedoMap>,
         normal_maps: &mut Storage<NormalMap>,

@@ -13,11 +13,12 @@ use wgpu::{
 
 use crate::{
     BindGroupLayout, BindResourceLayout, ReflectedShader,
-    SamplerSettings, SamplerWrap, StagingPool, UniformBuffer,
+    SamplerSettings, SamplerWrap, StagingPool, UniformBuffer, Snippets,
 };
 
 // Cached graphics data
 pub(crate) struct Cached {
+    pub(crate) shaders: DashMap<(Snippets, String), (Arc<wgpu::ShaderModule>, Arc<naga::Module>)>,
     pub(crate) samplers: DashMap<SamplerSettings, Arc<Sampler>>,
     pub(crate) bind_group_layouts:
         DashMap<BindGroupLayout, Arc<wgpu::BindGroupLayout>>,
@@ -57,6 +58,7 @@ pub struct GraphicsStats {
     pub stalls: usize,
     pub staging_buffers: usize,
 
+    pub cached_shaders: usize,
     pub cached_samplers: usize,
     pub cached_bind_group_layouts: usize,
     pub cached_pipeline_layouts: usize,

@@ -30,6 +30,7 @@ fn update(world: &mut World) {
         acquires: *graphics.0.acquires.lock() as usize,
         stalls: *graphics.0.stalls.lock() as usize,
         staging_buffers: graphics.0.staging.allocations.len(),
+        cached_shaders: cached.shaders.len(),
         cached_samplers: cached.samplers.len(),
         cached_bind_group_layouts: cached.bind_group_layouts.len(),
         cached_pipeline_layouts: cached.pipeline_layouts.len(),

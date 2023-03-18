@@ -16,6 +16,27 @@ Currently, cFlake engine is under heavy development (***very*** WIP), but pull r
 * Asynchronous asset loader and utility thread pool
 * Input handling with gamepad support (gilrs) and keybinding serialization / deserialization
 * Custom sound support through CPAL and directional audio through HRTF (TODO)
+
+# State of each crate:
+## Legend
+* ❌ = TODO
+* 🚧 = WIP, not complete
+* ⚠️ = Semi complete, needs finishing touches
+* ✅ = complete
+
+## Crates
+* World: ⚠️
+* Utils: ⚠️
+* Terrain: 🚧
+* Graphics: 🚧
+* Rendering: 🚧
+* Networking: ❌
+* Math: 🚧
+* Input: ✅
+* ECS: ✅
+* Asset loader: ✅
+* Audio: ❌
+* GUI (eGUI): 🚧
   
 # Main links
 * [YouTube Development Channel](https://www.youtube.com/channel/UCaeZjQFw4QIi5vdfonAmsvA)

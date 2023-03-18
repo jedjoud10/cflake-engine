@@ -33,7 +33,7 @@ impl Material for Basic {
     );
 
     // Load the respective Basic shader modules and compile them
-    fn shader(graphics: &Graphics, assets: &mut Assets) -> Shader {
+    fn shader(graphics: &Graphics, assets: &Assets) -> Shader {
         // Load the vertex module from the assets
         let vert = assets
             .load::<VertexModule>(

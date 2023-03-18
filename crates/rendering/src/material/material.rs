@@ -37,7 +37,7 @@ pub trait Material: 'static + Sized {
     type Resources<'w>: 'w;
 
     // Create a shader for this material
-    fn shader(graphics: &Graphics, assets: &mut Assets) -> Shader;
+    fn shader(graphics: &Graphics, assets: &Assets) -> Shader;
 
     // Get the required mesh attributes that we need to render a surface
     // If a surface does not support these attributes, it will not be rendered

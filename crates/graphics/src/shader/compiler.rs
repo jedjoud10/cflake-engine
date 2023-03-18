@@ -18,17 +18,17 @@ use std::{
     ops::{Bound, RangeBounds},
     path::PathBuf,
     sync::Arc,
-    time::Instant,
+    time::Instant, collections::BTreeMap,
 };
 use thiserror::Error;
 
 use super::create_pipeline_layout;
 
 // Type alias for snippets and resources
-pub(super) type Snippets = AHashMap<String, String>;
-pub(super) type ResourceBindingTypes =
+pub(crate) type Snippets = BTreeMap<String, String>;
+pub(crate) type ResourceBindingTypes =
     AHashMap<String, BindResourceType>;
-pub(super) type MaybePushConstantLayout = Option<PushConstantLayout>;
+pub(crate) type MaybePushConstantLayout = Option<PushConstantLayout>;
 
 // This is a compiler that will take was GLSL code, convert it to Naga, then to WGPU
 // This compiler also allows us to define constants and snippets before compilation
@@ -36,9 +36,9 @@ pub(super) type MaybePushConstantLayout = Option<PushConstantLayout>;
 pub struct Compiler<'a> {
     pub(crate) assets: &'a Assets,
     pub(crate) graphics: &'a Graphics,
-    pub(super) snippets: Snippets,
-    pub(super) resource_types: ResourceBindingTypes,
-    pub(super) maybe_push_constant_layout: MaybePushConstantLayout,
+    pub(crate) snippets: Snippets,
+    pub(crate) resource_types: ResourceBindingTypes,
+    pub(crate) maybe_push_constant_layout: MaybePushConstantLayout,
 }
 
 impl<'a> Compiler<'a> {
@@ -89,11 +89,11 @@ impl<'a> Compiler<'a> {
         );
 
         Ok(Compiled {
-            raw: Arc::new(raw),
+            raw,
             name: name.into(),
             _phantom: PhantomData,
             graphics: self.graphics.clone(),
-            naga: Arc::new(naga),
+            naga,
         })
     }
 
@@ -269,8 +269,19 @@ fn compile(
     snippets: &Snippets,
     source: String,
     file: &str,
-) -> Result<(wgpu::ShaderModule, naga::Module), ShaderCompilationError>
+) -> Result<(Arc<wgpu::ShaderModule>, Arc<naga::Module>), ShaderCompilationError>
 {
+    // If the shader cache already contains the compiled shader, simply reuse it
+    // TODO: Holy fuck please optimize this
+    // TODO: Also change cache to LruCache or smthing like that
+    if let Some(value) = graphics.0.cached.shaders.get(&(snippets.clone(), file.to_string())) {
+        let (raw, naga) = value.value();
+        log::debug!("Found shader module in cache for {file}, using it...");
+        return Ok((raw.clone(), naga.clone()));
+    } else {
+        log::warn!("Did not find cached shader module for {file}");
+    }
+
     // Custom ShaderC compiler options
     let mut options = shaderc::CompileOptions::new().unwrap();
 
@@ -337,9 +348,6 @@ fn compile(
     )
     .unwrap();
 
-    // TODO: Figure out if we should keep naga here or simply not use it
-    // Sole reason we have it rn is so we can get the binding index and set index automatically
-
     // Compile the Wgpu shader
     let wgpu = graphics.device().create_shader_module(
         wgpu::ShaderModuleDescriptor {
@@ -350,8 +358,14 @@ fn compile(
         },
     );
 
+    // Cache the result first
+    let raw = Arc::new(wgpu);
+    let naga = Arc::new(module);
+    graphics.0.cached.shaders.insert((snippets.clone(), file.to_string()), (raw.clone(), naga.clone()));
+    log::debug!("Saved shader module for {file} in graphics cache");
+
     // Return the compiled wgpu module and the naga mdule
-    Ok((wgpu, module))
+    Ok((raw, naga))
 }
 
 // Load a function module and convert it to a ResolvedInclude
@@ -377,7 +391,7 @@ fn load_function_module(
 // Load a snippet from the snippets and convert it to a ResolvedInclude
 fn load_snippet(
     name: &str,
-    snippets: &AHashMap<String, String>,
+    snippets: &Snippets,
 ) -> Result<shaderc::ResolvedInclude, String> {
     let snippet = snippets.get(name).ok_or(format!(
         "Snippet {} was not defined",

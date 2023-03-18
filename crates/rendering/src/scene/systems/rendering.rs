@@ -24,13 +24,18 @@ fn init(world: &mut World) {
     // Create the scene renderer, pipeline manager
     let renderer = ForwardRenderer::new(
         &graphics,
-        &mut assets,
+        &assets,
         window.size(),
         &mut albedo_maps,
         &mut normal_maps,
         &mut mask_maps,
     );
-    let pipelines = Pipelines::new();
+
+    // Pre-initialize the pipeline with the material types
+    let mut pipelines = Pipelines::new();
+    pipelines.register::<Basic>(&graphics, &assets).unwrap();
+    pipelines.register::<Sky>(&graphics, &assets).unwrap();
+    pipelines.register::<PhysicallyBased>(&graphics, &assets).unwrap();
 
     // Create a nice shadow map
     let shadowmap = ShadowMapping::new(
@@ -162,7 +167,7 @@ fn render(world: &mut World) {
     let f3 = ecs::modified::<ecs::Scale>();
     let f4 = f1 | f2 | f3;
     let mut update =
-        scene.query_with::<&Renderer>(f4).into_iter().count() > 0;
+        scene.query_with::<&Renderer>(f4).into_iter().filter(|r| r.visible).count() > 0;
     update |= scene
         .query_with::<&DirectionalLight>(f2)
         .into_iter()

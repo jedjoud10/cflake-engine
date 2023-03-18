@@ -111,6 +111,7 @@ pub(crate) unsafe fn init_context_and_window(
         staging: StagingPool::new(),
         shaderc: shaderc::Compiler::new().unwrap(),
         cached: Cached {
+            shaders: Default::default(),
             samplers: Default::default(),
             pipeline_layouts: Default::default(),
             bind_groups: Default::default(),

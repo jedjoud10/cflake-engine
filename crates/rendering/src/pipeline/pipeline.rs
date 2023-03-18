@@ -34,7 +34,7 @@ impl<M: Material> Pipeline<M> {
     // This will load the shader, and create the graphics pipeline
     pub(crate) fn new(
         graphics: &Graphics,
-        assets: &mut Assets,
+        assets: &Assets,
     ) -> Result<Self, PipelineInitializationError> {
         // Load the material's shader
         let shader = M::shader(graphics, assets);

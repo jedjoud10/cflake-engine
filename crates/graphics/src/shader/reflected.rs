@@ -548,12 +548,10 @@ fn internal_create_pipeline_layout(
     if let Some(cached) =
         graphics.0.cached.pipeline_layouts.get(&shader)
     {
-        log::debug!("Found pipeline layout in cache, using it...");
+        log::debug!("Found pipeline layout in cache for {names:?}, using it...");
         return (Arc::new(shader), cached.value().clone());
     } else {
-        log::warn!(
-            "Did not find cached pipeline layout for {names:?}"
-        );
+        log::warn!("Did not find cached pipeline layout for {names:?}");
     }
 
     // Fetch (and cache if necessary) the empty bind group layout

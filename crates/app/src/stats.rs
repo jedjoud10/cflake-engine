@@ -35,6 +35,7 @@ pub(crate) fn update(world: &mut World) {
         textures,
         texture_views,
         samplers,
+        cached_shaders,
     } = *stats;
 
     // Get the GPU stats
@@ -58,6 +59,7 @@ pub(crate) fn update(world: &mut World) {
             ui.label(format!("Stg Buffers: {staging_buffers}"));
 
             ui.heading("Cached Graphics Data");
+            ui.label(format!("Shaders: {cached_shaders}"));
             ui.label(format!("Samplers: {cached_samplers}"));
             ui.label(format!(
                 "Pipeline Layouts: {cached_pipeline_layouts}"

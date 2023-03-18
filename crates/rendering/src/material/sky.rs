@@ -17,7 +17,7 @@ impl Material for Sky {
     type Resources<'w> = world::Read<'w, Storage<AlbedoMap>>;
 
     // Load the respective Sky shader modules and compile them
-    fn shader(graphics: &Graphics, assets: &mut Assets) -> Shader {
+    fn shader(graphics: &Graphics, assets: &Assets) -> Shader {
         // Load the vertex module from the assets
         let vert = assets
             .load::<VertexModule>("engine/shaders/scene/sky/sky.vert")
