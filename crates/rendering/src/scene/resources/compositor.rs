@@ -1,7 +1,7 @@
 use assets::Assets;
 use graphics::{
-    Compiler, FragmentModule, Graphics, RenderPipeline, LoadOp,
-    Operation, PrimitiveConfig, RenderPass, Shader, StoreOp,
+    Compiler, FragmentModule, Graphics, LoadOp, Operation,
+    PrimitiveConfig, RenderPass, RenderPipeline, Shader, StoreOp,
     SwapchainFormat, Texture2D, VertexConfig, VertexModule,
 };
 
@@ -9,8 +9,7 @@ use crate::{CameraUniform, SceneColor, SceneDepth, WindowUniform};
 
 // This is what will write to the swapchain
 pub type FinalRenderPass = RenderPass<SwapchainFormat, ()>;
-pub type FinalGraphicsPipeline =
-    RenderPipeline<SwapchainFormat, ()>;
+pub type FinalGraphicsPipeline = RenderPipeline<SwapchainFormat, ()>;
 
 // Overlays post-processing effects and multiple layers
 // This will also render out the final composed image to the window
@@ -41,15 +40,17 @@ impl Compositor {
 
         // Create the bind layout for the compositor shader
         let mut compiler = Compiler::new(assets, graphics);
-        compiler.use_sampled_texture::<Texture2D<SceneColor>>("color_map");
-        compiler.use_sampled_texture::<Texture2D<SceneDepth>>("depth_map");
+        compiler.use_sampled_texture::<Texture2D<SceneColor>>(
+            "color_map",
+        );
+        compiler.use_sampled_texture::<Texture2D<SceneDepth>>(
+            "depth_map",
+        );
         compiler.use_uniform_buffer::<WindowUniform>("window");
         compiler.use_uniform_buffer::<CameraUniform>("camera");
 
         // Combine the modules to the shader
-        let shader =
-            Shader::new(vertex, fragment, compiler)
-                .unwrap();
+        let shader = Shader::new(vertex, fragment, compiler).unwrap();
 
         // Create the display render pass
         let render_pass = FinalRenderPass::new(

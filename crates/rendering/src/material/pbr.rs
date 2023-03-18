@@ -1,8 +1,7 @@
-
 use crate::{
-    AlbedoMap, CameraUniform, DefaultMaterialResources, Material,
-    NormalMap, Renderer, SceneUniform, ShadowMap, ShadowMapping,
-    ShadowUniform, MaskMap,
+    AlbedoMap, CameraUniform, DefaultMaterialResources, MaskMap,
+    Material, NormalMap, Renderer, SceneUniform, ShadowMap,
+    ShadowMapping, ShadowUniform,
 };
 
 use assets::Assets;
@@ -164,7 +163,7 @@ impl Material for PhysicallyBased {
             self.bumpiness,
             self.metallic,
             self.ambient_occlusion,
-            self.roughness
+            self.roughness,
         );
 
         // Send the raw fragment bytes to the GPU

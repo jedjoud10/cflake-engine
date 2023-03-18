@@ -1,5 +1,7 @@
 use bytemuck::{Pod, Zeroable};
-use graphics::{Normalized, Texture2D, UniformBuffer, RGBA, SRGBA, RG};
+use graphics::{
+    Normalized, Texture2D, UniformBuffer, RG, RGBA, SRGBA,
+};
 
 // Camera data that will be stored in a UBO
 #[derive(Clone, Copy, PartialEq, Pod, Zeroable, Default)]

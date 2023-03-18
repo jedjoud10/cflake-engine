@@ -18,8 +18,7 @@ pub struct Camera {
 
 // Convert a horizontal FOV to a vertical FOV (this returns the FOV in radians)
 pub fn horizontal_to_vertical(hfov: f32, ratio: f32) -> f32 {
-    2.0 * ((hfov.to_radians() / 2.0).tan() * (1.0 / (ratio)))
-        .atan()
+    2.0 * ((hfov.to_radians() / 2.0).tan() * (1.0 / (ratio))).atan()
 }
 
 impl Camera {

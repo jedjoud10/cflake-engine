@@ -57,8 +57,10 @@ impl AudioPlayer {
             .iter()
             .find(|config_range| {
                 let channels = config_range.channels() == channels;
-                let max = config_range.max_sample_rate().0 > sample_rate;
-                let min = config_range.min_sample_rate().0 < sample_rate;
+                let max =
+                    config_range.max_sample_rate().0 > sample_rate;
+                let min =
+                    config_range.min_sample_rate().0 < sample_rate;
                 log::debug!("Channels supported: {channels}");
                 log::debug!("Max sample rate supported: {max}");
                 log::debug!("Min sample rate supported: {min}");

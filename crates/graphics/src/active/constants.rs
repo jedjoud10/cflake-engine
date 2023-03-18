@@ -1,6 +1,6 @@
 use crate::{
-    ModuleVisibility, PushConstantBytesError, PushConstantLayout,
-    ReflectedShader, Graphics, SetPushConstantsError,
+    Graphics, ModuleVisibility, PushConstantBytesError,
+    PushConstantLayout, ReflectedShader, SetPushConstantsError,
 };
 use arrayvec::ArrayVec;
 use itertools::Itertools;
@@ -26,11 +26,9 @@ pub(super) fn handle_push_constants<'b>(
     };
 
     // Make sure we have enough bytes to store the push constants
-    let pc = push_constant.len()
-        - *push_constant_global_offset;
+    let pc = push_constant.len() - *push_constant_global_offset;
     if pc < 1024 {
-        push_constant
-            .extend(std::iter::repeat(0).take(1024));
+        push_constant.extend(std::iter::repeat(0).take(1024));
     }
 
     // Get the max size that we must allocate (at minimum) to be able to use ALL the defined push constants
@@ -84,7 +82,14 @@ impl PushConstants<'_> {
                 },
             ) => offset += vertex.get(),
             (a, PushConstantLayout::Single(_, b)) if a == b => {}
-            _ => return Err(PushConstantBytesError::VisibilityNotValid(visibility, self.layout.visibility())),
+            _ => {
+                return Err(
+                    PushConstantBytesError::VisibilityNotValid(
+                        visibility,
+                        self.layout.visibility(),
+                    ),
+                )
+            }
         }
 
         // Set the bytes properly

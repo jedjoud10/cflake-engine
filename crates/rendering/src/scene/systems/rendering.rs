@@ -1,7 +1,8 @@
 use crate::{
     AlbedoMap, Basic, DefaultMaterialResources, DirectionalLight,
-    ForwardRenderer, Mesh, NormalMap, Pipelines, Renderer,
-    SceneUniform, ShadowMapping, Sky, WindowUniform, MaskMap, PhysicallyBased,
+    ForwardRenderer, MaskMap, Mesh, NormalMap, PhysicallyBased,
+    Pipelines, Renderer, SceneUniform, ShadowMapping, Sky,
+    WindowUniform,
 };
 use assets::Assets;
 
@@ -100,7 +101,7 @@ fn event(world: &mut World, event: &mut WindowEvent) {
 
 // Clear the window and render the entities to the texture
 fn render(world: &mut World) {
-    // Fetch the resources that we will use for rendering the scene 
+    // Fetch the resources that we will use for rendering the scene
     let mut renderer = world.get_mut::<ForwardRenderer>().unwrap();
     let mut _shadowmap = world.get_mut::<ShadowMapping>().unwrap();
     let renderer = &mut *renderer;
@@ -206,12 +207,7 @@ fn render(world: &mut World) {
 
     // This will iterate over each material pipeline and draw the scene
     for stored in pipelines.iter() {
-        stored.render(
-            world,
-            &meshes,
-            &mut default,
-            &mut render_pass,
-        );
+        stored.render(world, &meshes, &mut default, &mut render_pass);
     }
 
     drop(render_pass);

@@ -1,9 +1,10 @@
 use crate::{
-    BindResourceType, Buffer, ViewDimension, FunctionModule, GpuPod,
+    BindResourceType, Buffer, Extent, FunctionModule, GpuPod,
     GpuPodInfo, Graphics, ModuleKind, ModuleVisibility,
-    PushConstantLayout, ReflectedShader, ShaderCompilationError,
-    ShaderError, ShaderModule, ShaderReflectionError, Texel,
-    TexelInfo, Texture, VertexModule, Region, Extent,
+    PushConstantLayout, ReflectedShader, Region,
+    ShaderCompilationError, ShaderError, ShaderModule,
+    ShaderReflectionError, Texel, TexelInfo, Texture, VertexModule,
+    ViewDimension,
 };
 use ahash::AHashMap;
 use assets::Assets;
@@ -25,7 +26,8 @@ use super::create_pipeline_layout;
 
 // Type alias for snippets and resources
 pub(super) type Snippets = AHashMap<String, String>;
-pub(super) type ResourceBindingTypes = AHashMap<String, BindResourceType>;
+pub(super) type ResourceBindingTypes =
+    AHashMap<String, BindResourceType>;
 pub(super) type MaybePushConstantLayout = Option<PushConstantLayout>;
 
 // This is a compiler that will take was GLSL code, convert it to Naga, then to WGPU
@@ -127,13 +129,15 @@ impl<'a> Compiler<'a> {
     ) {
         let name = name.to_string();
         match self.resource_types.entry(name.clone()) {
-            std::collections::hash_map::Entry::Occupied(mut occupied) => {
+            std::collections::hash_map::Entry::Occupied(
+                mut occupied,
+            ) => {
                 log::info!("Binding resource '{name}' was replaced");
                 occupied.insert(resource);
-            },
+            }
             std::collections::hash_map::Entry::Vacant(vacant) => {
                 vacant.insert(resource);
-            },
+            }
         }
     }
 
@@ -145,7 +149,7 @@ impl<'a> Compiler<'a> {
         let size = T::size();
         self.use_resource_type(
             name,
-            BindResourceType::UniformBuffer { size }
+            BindResourceType::UniformBuffer { size },
         );
     }
 
@@ -159,30 +163,38 @@ impl<'a> Compiler<'a> {
         let size = T::size();
         self.use_resource_type(
             name,
-            BindResourceType::StorageBuffer {
-                size,
-                read,
-                write
-            }
+            BindResourceType::StorageBuffer { size, read, write },
         );
     }
 
     // Define a uniform sampled texture's type and texel
-    pub fn use_sampled_texture<T: Texture>(&mut self, name: impl ToString) {
+    pub fn use_sampled_texture<T: Texture>(
+        &mut self,
+        name: impl ToString,
+    ) {
         let sampler_name = format!("{}_sampler", name.to_string());
         self.use_sampler::<T::T>(sampler_name);
-        
-        let dimensionality = <<T::Region as Region>::E as Extent>::view_dimension();
+
+        let dimensionality =
+            <<T::Region as Region>::E as Extent>::view_dimension();
         let info = <T::T as Texel>::info();
         let format = info.format();
 
-        self.resource_types
-            .insert(name.to_string(), BindResourceType::SampledTexture {
+        self.resource_types.insert(
+            name.to_string(),
+            BindResourceType::SampledTexture {
                 format,
-                sample_type: super::map_texture_sample_type(&self.graphics, info),
-                sampler_binding: super::map_sampler_binding_type(&self.graphics, info),
+                sample_type: super::map_texture_sample_type(
+                    &self.graphics,
+                    info,
+                ),
+                sampler_binding: super::map_sampler_binding_type(
+                    &self.graphics,
+                    info,
+                ),
                 view_dimension: dimensionality,
-            });
+            },
+        );
     }
 
     // Define a uniform sampler's type and texel
@@ -190,11 +202,16 @@ impl<'a> Compiler<'a> {
         let info = <T as Texel>::info();
         let format = info.format();
 
-        self.resource_types
-            .insert(name.to_string(), BindResourceType::Sampler {
+        self.resource_types.insert(
+            name.to_string(),
+            BindResourceType::Sampler {
                 format: format,
-                sampler_binding: super::map_sampler_binding_type(&self.graphics, info)
-            });
+                sampler_binding: super::map_sampler_binding_type(
+                    &self.graphics,
+                    info,
+                ),
+            },
+        );
     }
 
     // Define a storage texture that we can read / write to
@@ -204,22 +221,34 @@ impl<'a> Compiler<'a> {
         read: bool,
         write: bool,
     ) {
-        let dimensionality = <<T::Region as Region>::E as Extent>::view_dimension();
+        let dimensionality =
+            <<T::Region as Region>::E as Extent>::view_dimension();
         let info = <T::T as Texel>::info();
         let format = info.format();
 
-        self.resource_types
-        .insert(name.to_string(), BindResourceType::StorageTexture {
-            access: match (read, write) {
-                (true, true) => wgpu::StorageTextureAccess::ReadWrite,
-                (true, false) => wgpu::StorageTextureAccess::ReadOnly,
-                (false, true) => wgpu::StorageTextureAccess::WriteOnly,
-                _ => todo!()
+        self.resource_types.insert(
+            name.to_string(),
+            BindResourceType::StorageTexture {
+                access: match (read, write) {
+                    (true, true) => {
+                        wgpu::StorageTextureAccess::ReadWrite
+                    }
+                    (true, false) => {
+                        wgpu::StorageTextureAccess::ReadOnly
+                    }
+                    (false, true) => {
+                        wgpu::StorageTextureAccess::WriteOnly
+                    }
+                    _ => todo!(),
+                },
+                format,
+                sample_type: super::map_texture_sample_type(
+                    &self.graphics,
+                    info,
+                ),
+                view_dimension: dimensionality,
             },
-            format,
-            sample_type: super::map_texture_sample_type(&self.graphics, info),
-            view_dimension: dimensionality
-        });
+        );
     }
 
     // Define a push constant range to be pushed
@@ -240,7 +269,8 @@ fn compile(
     snippets: &Snippets,
     source: String,
     file: &str,
-) -> Result<(wgpu::ShaderModule, naga::Module), ShaderCompilationError> {
+) -> Result<(wgpu::ShaderModule, naga::Module), ShaderCompilationError>
+{
     // Custom ShaderC compiler options
     let mut options = shaderc::CompileOptions::new().unwrap();
 

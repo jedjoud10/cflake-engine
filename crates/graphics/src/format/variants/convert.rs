@@ -1,7 +1,7 @@
 use crate::{
     AnyElement, Depth, DepthElement, Normalized, Stencil,
-    StencilElement, Texel, BGRA, R, RG, RGBA, SBGRA, SRGBA,
-    UBC1, UBC2, UBC3, UBC4, UBC5, UBC7, SBC4, SBC5
+    StencilElement, Texel, BGRA, R, RG, RGBA, SBC4, SBC5, SBGRA,
+    SRGBA, UBC1, UBC2, UBC3, UBC4, UBC5, UBC7,
 };
 use half::f16;
 
@@ -125,7 +125,6 @@ macro_rules! impl_color_texels {
             i16::MAX as f32,
             |f| f as i16,
             |v| v as f32
-
         );
         internal_impl_color_texel!(
             $vec,
@@ -218,21 +217,13 @@ macro_rules! impl_compressed_rgba_color_texel_variant {
     };
 }
 
-impl_color_texels!(
-    R,
-    Scalar,
-    |v: vek::Vec4<Self::Base>| v[0]
-);
-impl_color_texels!(
-    RG,
-    Vec2,
-    |v: vek::Vec4<Self::Base>| vek::Vec2::from(v)
-);
-impl_color_texels!(
-    RGBA,
-    Vec4,
-    |v: vek::Vec4<Self::Base>| vek::Vec4::from(v)
-);
+impl_color_texels!(R, Scalar, |v: vek::Vec4<Self::Base>| v[0]);
+impl_color_texels!(RG, Vec2, |v: vek::Vec4<Self::Base>| {
+    vek::Vec2::from(v)
+});
+impl_color_texels!(RGBA, Vec4, |v: vek::Vec4<Self::Base>| {
+    vek::Vec4::from(v)
+});
 internal_impl_color_texel!(
     SRGBA,
     Normalized<u8>,
@@ -269,7 +260,7 @@ impl_compressed_rgba_color_texel_variant!(Normalized<UBC2>);
 impl_compressed_rgba_color_texel_variant!(Normalized<UBC3>);
 impl_compressed_rgba_color_texel_variant!(Normalized<UBC7>);
 
-// R<Normalized<UBC4>> 
+// R<Normalized<UBC4>>
 // R<Normalized<SBC4>>
 internal_impl_color_texel!(
     R,
@@ -314,7 +305,6 @@ internal_impl_color_texel!(
     |f| (f * i8::MAX as f32) as i8,
     |v| v as f32 / i8::MAX as f32
 );
-
 
 impl Conversion for Depth<f32>
 where

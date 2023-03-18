@@ -88,14 +88,15 @@ impl ComputeShader {
             &visibility,
         )?;
 
-        let pipeline = compiler.graphics.device().create_compute_pipeline(
-            &wgpu::ComputePipelineDescriptor {
-                label: None,
-                layout: Some(&layout),
-                module: compiled.module(),
-                entry_point: "main",
-            },
-        );
+        let pipeline =
+            compiler.graphics.device().create_compute_pipeline(
+                &wgpu::ComputePipelineDescriptor {
+                    label: None,
+                    layout: Some(&layout),
+                    module: compiled.module(),
+                    entry_point: "main",
+                },
+            );
 
         Ok(Self {
             pipeline: Arc::new(pipeline),

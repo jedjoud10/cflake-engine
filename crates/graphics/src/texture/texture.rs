@@ -13,9 +13,10 @@ use wgpu::{
 use crate::{
     Extent, GpuPod, Graphics, MipLevelMut, MipLevelRef, Origin,
     Region, RenderTarget, Sampler, SamplerSettings, SamplerWrap,
-    Texel, TextureAsTargetError, TextureInitializationError,
-    TextureMipLevelError, TextureMipMaps, TextureMode,
-    TextureResizeError, TextureSamplerError, TextureUsage, TexelSize,
+    Texel, TexelSize, TextureAsTargetError,
+    TextureInitializationError, TextureMipLevelError, TextureMipMaps,
+    TextureMode, TextureResizeError, TextureSamplerError,
+    TextureUsage,
 };
 
 // Possibly predefined texel data
@@ -32,10 +33,10 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
     type T: Texel;
 
     // Create a new texture with some possibly predefined data
-    
+
     // TODO: Remove "sampling" paramater from this method and separate the sampler into it's own type
     // (cannot use type validation since it would not be needed and it would add a lot of boilerplate)
-    // OR 
+    // OR
     // Make it optional, and do runtime checks to check if the texture usage is TextureUsage::SAMPLED,
     // and enforce the sampling parameter if it is
     fn from_texels(
@@ -66,7 +67,7 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
         // Get the image type using the dimensionality
         let view_dimensions =
             <<Self::Region as Region>::E as Extent>::view_dimension();
-        let dimension = 
+        let dimension =
             <<Self::Region as Region>::E as Extent>::dimension();
         let extent_3d = extent_to_extent3d(extent);
 
@@ -166,7 +167,7 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
                 // Manual mip map generation
                 let iter = mips
                     .iter()
-                    .take(levels as usize-1)
+                    .take(levels as usize - 1)
                     .enumerate()
                     .map(|(x, y)| (x + 1, y));
                 for (i, texels) in iter {
@@ -383,23 +384,24 @@ fn mip_levels<T: Texel, E: Extent>(
     mipmaps: &TextureMipMaps<T>,
     extent: E,
 ) -> Result<u32, TextureInitializationError> {
-    let max_mip_levels = if matches!(mipmaps, TextureMipMaps::Disabled) {
-        1u8 as u32
-    } else {
-        let max = extent.levels().ok_or(
-            TextureInitializationError::MipMapGenerationNPOT,
-        )?;
+    let max_mip_levels =
+        if matches!(mipmaps, TextureMipMaps::Disabled) {
+            1u8 as u32
+        } else {
+            let max = extent.levels().ok_or(
+                TextureInitializationError::MipMapGenerationNPOT,
+            )?;
 
-        // If we are using compression, we must make sure the lowest level is at least the block size
-        match T::size() {
-            TexelSize::Uncompressed(_) => max.get() as u32,
-            TexelSize::Compressed(c) => {
-                let val = max.get() as u32;
-                let logged = (c.block_size() as f32).log2() + 2.0;
-                val - (logged as u32)
-            },
-        }
-    };
+            // If we are using compression, we must make sure the lowest level is at least the block size
+            match T::size() {
+                TexelSize::Uncompressed(_) => max.get() as u32,
+                TexelSize::Compressed(c) => {
+                    let val = max.get() as u32;
+                    let logged = (c.block_size() as f32).log2() + 2.0;
+                    val - (logged as u32)
+                }
+            }
+        };
 
     // Convert Auto to Zeroed (since if this texture was loaded from disk, it would've been Manual instead)
     let levels = match *mipmaps {
@@ -432,17 +434,22 @@ fn mip_levels<T: Texel, E: Extent>(
 // This should support compression textures too, though I haven't tested all cases yet
 // FIXME: Make this work with 3d textures
 fn create_image_data_layout<T: Texel, E: Extent>(
-    extent: E
+    extent: E,
 ) -> wgpu::ImageDataLayout {
     let size = T::size();
 
     // Bytes per row change if we are using compressed textures
     let bytes_per_row = match size {
-        TexelSize::Uncompressed(size) => NonZeroU32::new(size * extent.width()),
+        TexelSize::Uncompressed(size) => {
+            NonZeroU32::new(size * extent.width())
+        }
         TexelSize::Compressed(compression) => {
             // TODO: Actually try understanding wtf bytes_per_row means when using compression
-            NonZeroU32::new(compression.bytes_per_block() * (extent.width() / compression.block_size()))
-        },
+            NonZeroU32::new(
+                compression.bytes_per_block()
+                    * (extent.width() / compression.block_size()),
+            )
+        }
     };
 
     wgpu::ImageDataLayout {
@@ -465,7 +472,7 @@ pub(crate) fn write_to_level<T: Texel, R: Region>(
     graphics: &Graphics,
 ) {
     // This should handle compression types too
-    let image_data_layout = 
+    let image_data_layout =
         create_image_data_layout::<T, <R as Region>::E>(extent);
 
     // Convert the texels to bytes
@@ -611,7 +618,9 @@ pub(crate) fn texture_usages(
 pub(crate) fn texture_aspect<T: Texel>() -> wgpu::TextureAspect {
     match T::channels() {
         crate::TexelChannels::Depth => wgpu::TextureAspect::DepthOnly,
-        crate::TexelChannels::Stencil => wgpu::TextureAspect::StencilOnly,
-        _ => wgpu::TextureAspect::All
+        crate::TexelChannels::Stencil => {
+            wgpu::TextureAspect::StencilOnly
+        }
+        _ => wgpu::TextureAspect::All,
     }
 }

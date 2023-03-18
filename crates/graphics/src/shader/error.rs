@@ -39,7 +39,7 @@ pub enum PushConstantValidationError {
 #[derive(Error, Debug)]
 pub enum ShaderReflectionError {
     #[error("{0}")]
-    PushConstantValidation(PushConstantValidationError), 
+    PushConstantValidation(PushConstantValidationError),
 
     #[error("{0}")]
     BufferValidation(BufferValidationError),

@@ -9,10 +9,10 @@ pub struct XYZW<T: AnyElement>(vek::Vec4<T>);
 // Used for vertex formats ONLY
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum VertexChannels {
-    One,    // X
-    Two,    // XY
-    Three,  // XYZ
-    Four,   // XYZW
+    One,   // X
+    Two,   // XY
+    Three, // XYZ
+    Four,  // XYZW
 }
 
 impl VertexChannels {

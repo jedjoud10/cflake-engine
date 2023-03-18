@@ -11,8 +11,14 @@ mod texels {
         assert_eq!(R::<u32>::size().as_uncompressed(), Some(4));
         assert_eq!(R::<f16>::size().as_uncompressed(), Some(2));
         assert_eq!(R::<f32>::size().as_uncompressed(), Some(4));
-        assert_eq!(R::<Normalized<u8>>::size().as_uncompressed(), Some(1));
-        assert_eq!(R::<Normalized<u16>>::size().as_uncompressed(), Some(2));
+        assert_eq!(
+            R::<Normalized<u8>>::size().as_uncompressed(),
+            Some(1)
+        );
+        assert_eq!(
+            R::<Normalized<u16>>::size().as_uncompressed(),
+            Some(2)
+        );
     }
 
     #[test]

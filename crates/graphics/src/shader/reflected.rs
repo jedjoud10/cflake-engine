@@ -2,10 +2,10 @@ use std::{hash::Hash, num::NonZeroU32, sync::Arc};
 
 use crate::{
     visibility_to_wgpu_stage, BufferValidationError, Compiled,
-    ComputeModule, FragmentModule, Graphics, ModuleKind,
-    ModuleVisibility, SamplerValidationError, ShaderModule,
-    ShaderReflectionError, TexelChannels, TextureValidationError,
-    VertexModule, PushConstantValidationError, TexelInfo, ElementType,
+    ComputeModule, ElementType, FragmentModule, Graphics, ModuleKind,
+    ModuleVisibility, PushConstantValidationError,
+    SamplerValidationError, ShaderModule, ShaderReflectionError,
+    TexelChannels, TexelInfo, TextureValidationError, VertexModule,
 };
 use ahash::{AHashMap, AHashSet};
 use arrayvec::ArrayVec;
@@ -79,8 +79,11 @@ impl PushConstantLayout {
     pub fn size(&self) -> NonZeroU32 {
         match self {
             PushConstantLayout::Single(x, _) => *x,
-            PushConstantLayout::SplitVertexFragment { vertex, fragment } => 
-                NonZeroU32::new(vertex.get() + fragment.get()).unwrap(),
+            PushConstantLayout::SplitVertexFragment {
+                vertex,
+                fragment,
+            } => NonZeroU32::new(vertex.get() + fragment.get())
+                .unwrap(),
         }
     }
 }
@@ -132,25 +135,27 @@ struct InternalDefinitions<'a> {
 }
 
 // Convert a reflected bind entry layout to a wgpu binding type
-pub(super) fn map_binding_type(value: &BindResourceLayout) -> wgpu::BindingType {
+pub(super) fn map_binding_type(
+    value: &BindResourceLayout,
+) -> wgpu::BindingType {
     match value.resource_type {
-        BindResourceType::UniformBuffer {
-            size,
-        } => wgpu::BindingType::Buffer {
-            ty: wgpu::BufferBindingType::Uniform,
-            has_dynamic_offset: false,
-            min_binding_size: None,
-        },
+        BindResourceType::UniformBuffer { size } => {
+            wgpu::BindingType::Buffer {
+                ty: wgpu::BufferBindingType::Uniform,
+                has_dynamic_offset: false,
+                min_binding_size: None,
+            }
+        }
 
-        BindResourceType::StorageBuffer {
-            size,
-            read,
-            write
-        } => wgpu::BindingType::Buffer {
-            ty: wgpu::BufferBindingType::Storage { read_only: read && !write },
-            has_dynamic_offset: false,
-            min_binding_size: None
-        },
+        BindResourceType::StorageBuffer { size, read, write } => {
+            wgpu::BindingType::Buffer {
+                ty: wgpu::BufferBindingType::Storage {
+                    read_only: read && !write,
+                },
+                has_dynamic_offset: false,
+                min_binding_size: None,
+            }
+        }
 
         BindResourceType::Sampler {
             sampler_binding, ..
@@ -170,65 +175,75 @@ pub(super) fn map_binding_type(value: &BindResourceLayout) -> wgpu::BindingType 
             format,
             sample_type,
             access,
-            view_dimension
+            view_dimension,
         } => wgpu::BindingType::StorageTexture {
             access,
             format,
-            view_dimension
+            view_dimension,
         },
     }
 }
 
 // Create a wgpu TextureSampleType out of some basic TexelInfo
-pub(super) fn map_texture_sample_type(graphics: &Graphics, info: TexelInfo) -> wgpu::TextureSampleType {
+pub(super) fn map_texture_sample_type(
+    graphics: &Graphics,
+    info: TexelInfo,
+) -> wgpu::TextureSampleType {
     match info.element() {
-        ElementType::Eight { signed, normalized: false }
-        | ElementType::Sixteen { signed, normalized: false }
+        ElementType::Eight {
+            signed,
+            normalized: false,
+        }
+        | ElementType::Sixteen {
+            signed,
+            normalized: false,
+        }
         | ElementType::ThirtyTwo { signed } => match signed {
             true => wgpu::TextureSampleType::Sint,
             false => wgpu::TextureSampleType::Uint,
         },
 
-        ElementType::FloatSixteen 
-        | ElementType::Eight { normalized: true, .. }
-        | ElementType::Sixteen { normalized: true, .. }
-        | ElementType::FloatThirtyTwo =>  {
+        ElementType::FloatSixteen
+        | ElementType::Eight {
+            normalized: true, ..
+        }
+        | ElementType::Sixteen {
+            normalized: true, ..
+        }
+        | ElementType::FloatThirtyTwo => {
             let adapter = graphics.adapter();
             let format = info.format();
             let flags =
                 adapter.get_texture_format_features(format).flags;
-        
+
             let depth =
                 matches!(info.channels(), TexelChannels::Depth);
-        
-            if flags
-                .contains(TextureFormatFeatureFlags::FILTERABLE)
+
+            if flags.contains(TextureFormatFeatureFlags::FILTERABLE)
                 && !depth
             {
-                wgpu::TextureSampleType::Float {
-                    filterable: true,
-                }
+                wgpu::TextureSampleType::Float { filterable: true }
             } else {
-                wgpu::TextureSampleType::Float {
-                    filterable: false,
-                }
+                wgpu::TextureSampleType::Float { filterable: false }
             }
-        },
+        }
 
-        ElementType::Compressed(_) => todo!()
+        ElementType::Compressed(_) => todo!(),
     }
 }
 
 // Create a wgpu SamplerBindingType out of some basic TexelInfo
-pub(super) fn map_sampler_binding_type(graphics: &Graphics, info: TexelInfo) -> wgpu::SamplerBindingType {
+pub(super) fn map_sampler_binding_type(
+    graphics: &Graphics,
+    info: TexelInfo,
+) -> wgpu::SamplerBindingType {
     let adapter = graphics.adapter();
     let format = info.format();
     let flags = adapter.get_texture_format_features(format).flags;
 
     let depth = matches!(info.channels(), TexelChannels::Depth);
 
-    if flags.contains(TextureFormatFeatureFlags::FILTERABLE)
-        && !depth
+    if flags.contains(TextureFormatFeatureFlags::FILTERABLE) && !depth
     {
         wgpu::SamplerBindingType::Filtering
     } else {
@@ -257,7 +272,8 @@ pub(super) fn create_pipeline_layout(
     if let Some(push_constant_layout) = maybe_push_constant_layout {
         // We always assume that the "visibility" array given is either [Vertex, Fragment] or [Compute]
         // Under that assumption, all we really need to check is the compute module and if it contains the proper push constant
-        let compute = matches!(visibility[0], ModuleVisibility::Compute);
+        let compute =
+            matches!(visibility[0], ModuleVisibility::Compute);
         match (push_constant_layout.visibility(), compute) {
             (ModuleVisibility::Vertex, false) => {},
             (ModuleVisibility::Fragment, false) => {},
@@ -274,33 +290,49 @@ pub(super) fn create_pipeline_layout(
         if defined > max {
             return Err(ShaderReflectionError::PushConstantValidation(PushConstantValidationError::PushConstantSizeTooBig(
                 defined, max
-            )))
+            )));
         }
 
         // Get the push constant sizes as defined in the shader modules
-        let mut iter = modules.iter()
-            .flat_map(|module| module.global_variables.iter().map(move |x| (module, x)))
-            .filter(|(_, (_, val))| matches!(val.space, AddressSpace::PushConstant))
-            .map(|(module, (_, val))| (module, module.types.get_handle(val.ty).unwrap()))
-            .map(|(module, _type)| _type.inner.size(&module.constants));
+        let mut iter = modules
+            .iter()
+            .flat_map(|module| {
+                module
+                    .global_variables
+                    .iter()
+                    .map(move |x| (module, x))
+            })
+            .filter(|(_, (_, val))| {
+                matches!(val.space, AddressSpace::PushConstant)
+            })
+            .map(|(module, (_, val))| {
+                (module, module.types.get_handle(val.ty).unwrap())
+            })
+            .map(|(module, _type)| {
+                _type.inner.size(&module.constants)
+            });
         let (first, second) = (iter.next(), iter.next());
-        
+
         // Validate the push constants and check if they were defined properly in the shader
         match push_constant_layout {
             PushConstantLayout::Single(size, _) => {
-                if second.is_none()  {
+                if second.is_none() {
                     size.get() == first.unwrap()
                 } else {
                     todo!()
                 }
-            },
-            PushConstantLayout::SplitVertexFragment { vertex, fragment } => {
+            }
+            PushConstantLayout::SplitVertexFragment {
+                vertex,
+                fragment,
+            } => {
                 if first.is_some() && second.is_some() {
-                    vertex.get() == first.unwrap() && fragment.get() == second.unwrap()
+                    vertex.get() == first.unwrap()
+                        && fragment.get() == second.unwrap()
                 } else {
                     todo!()
                 }
-            },
+            }
         };
     }
 
@@ -347,7 +379,6 @@ pub(super) fn create_pipeline_layout(
                 let merged_group_layout = &mut groups[set as usize];
                 let merged_group_entry_layouts = merged_group_layout
                     .get_or_insert_with(|| Default::default());
-
 
                 // Get the binding type for this global variable
                 let binding_type = match inner {
@@ -685,7 +716,6 @@ fn internal_create_pipeline_layout(
     (Arc::new(shader), layout)
 }
 
-
 fn reflect_buffer(
     name: &str,
     graphics: &Graphics,
@@ -695,11 +725,13 @@ fn reflect_buffer(
     write: bool,
 ) -> Result<BindResourceType, BufferValidationError> {
     // TODO: VALIDATE BUFFER (make sure it's same size, access)
-    let binding =
-        definitions.resource_binding_types.get(name).unwrap().clone();
+    let binding = definitions
+        .resource_binding_types
+        .get(name)
+        .unwrap()
+        .clone();
     Ok(binding)
 }
-
 
 fn reflect_sampler(
     name: &str,
@@ -708,8 +740,11 @@ fn reflect_sampler(
     comparison: bool,
 ) -> Result<BindResourceType, SamplerValidationError> {
     // TODO: VALIDATE SAMPLER (make sure it's same texel type, type)
-    let binding =
-        definitions.resource_binding_types.get(name).unwrap().clone();
+    let binding = definitions
+        .resource_binding_types
+        .get(name)
+        .unwrap()
+        .clone();
     Ok(binding)
     /*
     Ok(BindResourceType::Sampler {
@@ -734,71 +769,72 @@ fn reflect_texture(
     write: bool,
 ) -> Result<BindResourceType, TextureValidationError> {
     // TODO: VALIDATE TEXTURE (make sure it's same dimension, type, and texel type)
-    let binding =
-        definitions.resource_binding_types.get(name).unwrap().clone();
+    let binding = definitions
+        .resource_binding_types
+        .get(name)
+        .unwrap()
+        .clone();
     Ok(binding)
 
+    /*
+    let sample_type = match class {
+            naga::ImageClass::Sampled { kind, multi } => match kind {
+                naga::ScalarKind::Sint => wgpu::TextureSampleType::Sint,
+                naga::ScalarKind::Uint => wgpu::TextureSampleType::Uint,
+                naga::ScalarKind::Float => {
+                    let adapter = graphics.adapter();
+                    let info =
+                        definitions.texture_formats.get(name).unwrap();
+                    let format = info.format();
+                    let flags =
+                        adapter.get_texture_format_features(format).flags;
 
+                    let depth =
+                        matches!(info.channels(), TexelChannels::Depth);
 
-/*
-let sample_type = match class {
-        naga::ImageClass::Sampled { kind, multi } => match kind {
-            naga::ScalarKind::Sint => wgpu::TextureSampleType::Sint,
-            naga::ScalarKind::Uint => wgpu::TextureSampleType::Uint,
-            naga::ScalarKind::Float => {
-                let adapter = graphics.adapter();
-                let info =
-                    definitions.texture_formats.get(name).unwrap();
-                let format = info.format();
-                let flags =
-                    adapter.get_texture_format_features(format).flags;
-
-                let depth =
-                    matches!(info.channels(), TexelChannels::Depth);
-
-                if flags
-                    .contains(TextureFormatFeatureFlags::FILTERABLE)
-                    && !depth
-                {
-                    wgpu::TextureSampleType::Float {
-                        filterable: true,
-                    }
-                } else {
-                    wgpu::TextureSampleType::Float {
-                        filterable: false,
+                    if flags
+                        .contains(TextureFormatFeatureFlags::FILTERABLE)
+                        && !depth
+                    {
+                        wgpu::TextureSampleType::Float {
+                            filterable: true,
+                        }
+                    } else {
+                        wgpu::TextureSampleType::Float {
+                            filterable: false,
+                        }
                     }
                 }
+                _ => panic!(),
+            },
+            naga::ImageClass::Depth { multi } => todo!(),
+            naga::ImageClass::Storage { format, access } => wgpu::TextureSamplerType,
+        };
+
+        let view_dimension = match dim {
+            naga::ImageDimension::D1 => wgpu::TextureViewDimension::D1,
+            naga::ImageDimension::D2 => wgpu::TextureViewDimension::D2,
+            naga::ImageDimension::D3 => wgpu::TextureViewDimension::D3,
+            naga::ImageDimension::Cube => {
+                wgpu::TextureViewDimension::Cube
             }
-            _ => panic!(),
-        },
-        naga::ImageClass::Depth { multi } => todo!(),
-        naga::ImageClass::Storage { format, access } => wgpu::TextureSamplerType,
-    };
+        };
 
-    let view_dimension = match dim {
-        naga::ImageDimension::D1 => wgpu::TextureViewDimension::D1,
-        naga::ImageDimension::D2 => wgpu::TextureViewDimension::D2,
-        naga::ImageDimension::D3 => wgpu::TextureViewDimension::D3,
-        naga::ImageDimension::Cube => {
-            wgpu::TextureViewDimension::Cube
-        }
-    };
+        let format = {
+            let _format = definitions.texture_formats.get(name).unwrap();
+            _format.format()
+        };
 
-    let format = {
-        let _format = definitions.texture_formats.get(name).unwrap();
-        _format.format()
-    };
+        let sampler_binding = {
 
-    let sampler_binding = {
-        
-    };
+        };
 
-    Ok(BindResourceType::Texture {
-        sample_type,
+        Ok(BindResourceType::Texture {
+            sample_type,
 
-        view_dimension,
-        format,
-        sampler_binding,
-    })
- */
+            view_dimension,
+            format,
+            sampler_binding,
+        })
+     */
 }

@@ -1,4 +1,6 @@
-use crate::{ElementType, TexelChannels, VertexChannels, CompressionType};
+use crate::{
+    CompressionType, ElementType, TexelChannels, VertexChannels,
+};
 use paste::paste;
 use wgpu::{TextureFormat, VertexFormat};
 
@@ -60,33 +62,51 @@ pub const fn pick_texture_format_channels(
     match element {
         ElementType::Compressed(compressed) => {
             match (channels, compressed) {
-                (TexelChannels::One, CompressionType::BC4 { signed }) => {
+                (
+                    TexelChannels::One,
+                    CompressionType::BC4 { signed },
+                ) => {
                     return Some(match signed {
                         true => TextureFormat::Bc4RSnorm,
                         false => TextureFormat::Bc4RUnorm,
                     });
-                },
-                (TexelChannels::Two, CompressionType::BC5 { signed }) => {
+                }
+                (
+                    TexelChannels::Two,
+                    CompressionType::BC5 { signed },
+                ) => {
                     return Some(match signed {
                         true => TextureFormat::Bc5RgSnorm,
                         false => TextureFormat::Bc5RgUnorm,
                     });
-                },
-                (TexelChannels::Four { swizzled: false }, CompressionType::UBC1) => {
+                }
+                (
+                    TexelChannels::Four { swizzled: false },
+                    CompressionType::UBC1,
+                ) => {
                     return Some(TextureFormat::Bc1RgbaUnorm);
-                },
-                (TexelChannels::Four { swizzled: false }, CompressionType::UBC2) => {
+                }
+                (
+                    TexelChannels::Four { swizzled: false },
+                    CompressionType::UBC2,
+                ) => {
                     return Some(TextureFormat::Bc2RgbaUnorm);
-                },
-                (TexelChannels::Four { swizzled: false }, CompressionType::UBC3) => {
+                }
+                (
+                    TexelChannels::Four { swizzled: false },
+                    CompressionType::UBC3,
+                ) => {
                     return Some(TextureFormat::Bc3RgbaUnorm);
-                },
-                (TexelChannels::Four { swizzled: false }, CompressionType::UBC7) => {
+                }
+                (
+                    TexelChannels::Four { swizzled: false },
+                    CompressionType::UBC7,
+                ) => {
                     return Some(TextureFormat::Bc7RgbaUnorm);
-                },
+                }
                 _ => {}
             }
-        },
+        }
         _ => {}
     }
 
@@ -135,21 +155,29 @@ pub const fn pick_texture_srgb_format(
     swizzled: bool,
 ) -> Option<TextureFormat> {
     match element {
-        ElementType::Eight { 
+        ElementType::Eight {
             signed: false,
-            normalized: true
+            normalized: true,
         } => Some(match swizzled {
             true => TextureFormat::Bgra8UnormSrgb,
             false => TextureFormat::Rgba8UnormSrgb,
         }),
         ElementType::Compressed(compression) => match compression {
-            CompressionType::UBC1 => Some(TextureFormat::Bc1RgbaUnormSrgb),
-            CompressionType::UBC2 => Some(TextureFormat::Bc2RgbaUnormSrgb),
-            CompressionType::UBC3 => Some(TextureFormat::Bc3RgbaUnormSrgb),
-            CompressionType::UBC7 => Some(TextureFormat::Bc7RgbaUnormSrgb),
-            _ => None
+            CompressionType::UBC1 => {
+                Some(TextureFormat::Bc1RgbaUnormSrgb)
+            }
+            CompressionType::UBC2 => {
+                Some(TextureFormat::Bc2RgbaUnormSrgb)
+            }
+            CompressionType::UBC3 => {
+                Some(TextureFormat::Bc3RgbaUnormSrgb)
+            }
+            CompressionType::UBC7 => {
+                Some(TextureFormat::Bc7RgbaUnormSrgb)
+            }
+            _ => None,
         },
-        _ => None
+        _ => None,
     }
 }
 
@@ -163,7 +191,9 @@ pub const fn pick_texture_format(
     match channels {
         TexelChannels::One
         | TexelChannels::Two
-        | TexelChannels::Four { .. } => pick_texture_format_channels(element, channels),
+        | TexelChannels::Four { .. } => {
+            pick_texture_format_channels(element, channels)
+        }
 
         TexelChannels::Depth => pick_texture_depth_format(element),
 

@@ -1,7 +1,8 @@
 use crate::{
-    AnyElement, ColorTexel, Depth, DepthElement, ElementType, GpuPod,
-    Normalized, Stencil, TexelChannels, VertexChannels, BGRA, R, RG,
-    RGBA, SBGRA, SRGBA, UBC1, UBC2, UBC3, UBC7, UBC4, SBC4, SBC5, UBC5, CompressionType,
+    AnyElement, ColorTexel, CompressionType, Depth, DepthElement,
+    ElementType, GpuPod, Normalized, Stencil, TexelChannels,
+    VertexChannels, BGRA, R, RG, RGBA, SBC4, SBC5, SBGRA, SRGBA,
+    UBC1, UBC2, UBC3, UBC4, UBC5, UBC7,
 };
 use half::f16;
 use std::{any::Any, mem::size_of, ops::Add};
@@ -23,7 +24,7 @@ impl TexelSize {
     pub fn as_uncompressed(self) -> Option<u32> {
         match self {
             TexelSize::Uncompressed(x) => Some(x),
-            _ => None
+            _ => None,
         }
     }
 
@@ -31,7 +32,7 @@ impl TexelSize {
     pub fn as_compressed(self) -> Option<CompressionType> {
         match self {
             TexelSize::Compressed(x) => Some(x),
-            _ => None
+            _ => None,
         }
     }
 }
@@ -110,10 +111,13 @@ macro_rules! internal_impl_texel {
             fn size() -> TexelSize {
                 // TODO: Check if this gets resolved at compile time?
                 match <$elem as AnyElement>::ELEMENT_TYPE {
-                    ElementType::Compressed(x) => TexelSize::Compressed(x),
+                    ElementType::Compressed(x) => {
+                        TexelSize::Compressed(x)
+                    }
                     _ => TexelSize::Uncompressed(
-                        size_of::<$elem>() as u32 * Self::channels().count()
-                    )
+                        size_of::<$elem>() as u32
+                            * Self::channels().count(),
+                    ),
                 }
             }
 
@@ -179,8 +183,18 @@ macro_rules! impl_color_texels {
 
 macro_rules! impl_compressed_rgba_variants {
     ($elem:ty) => {
-        internal_impl_texel!(RGBA, $elem, TexelChannels::Four { swizzled: false }, Vec4);
-        internal_impl_texel!(SRGBA, $elem, TexelChannels::Srgba { swizzled: false }, Vec4);
+        internal_impl_texel!(
+            RGBA,
+            $elem,
+            TexelChannels::Four { swizzled: false },
+            Vec4
+        );
+        internal_impl_texel!(
+            SRGBA,
+            $elem,
+            TexelChannels::Srgba { swizzled: false },
+            Vec4
+        );
     };
 }
 
@@ -191,18 +205,10 @@ macro_rules! impl_compressed_signed_unsigned_variants {
     };
 }
 
-// Implement basic formats 
+// Implement basic formats
 type Scalar<T> = T;
-impl_color_texels!(
-    R,
-    TexelChannels::One,
-    Scalar
-);
-impl_color_texels!(
-    RG,
-    TexelChannels::Two,
-    Vec2
-);
+impl_color_texels!(R, TexelChannels::One, Scalar);
+impl_color_texels!(RG, TexelChannels::Two, Vec2);
 impl_color_texels!(
     RGBA,
     TexelChannels::Four { swizzled: false },
@@ -231,23 +237,17 @@ internal_impl_texel!(
 
 // RGBA<Normalized<UBC1>> R5G6B5A1
 // SRGBA<Normalized<UBC1>> R5G6B5A1
-impl_compressed_rgba_variants!(
-    Normalized<UBC1>
-);
+impl_compressed_rgba_variants!(Normalized<UBC1>);
 
 // RGBA<Normalized<UBC2>> R5G6B5A4
 // SRGBA<Normalized<UBC2>> R5G6B5A4
-impl_compressed_rgba_variants!(
-    Normalized<UBC2>
-);
+impl_compressed_rgba_variants!(Normalized<UBC2>);
 
 // RGBA<Normalized<UBC2>> R5G6B5A8
 // SRGBA<Normalized<UBC2>> R5G6B5A8
-impl_compressed_rgba_variants!(
-    Normalized<UBC3>
-);
+impl_compressed_rgba_variants!(Normalized<UBC3>);
 
-// R<Normalized<UBC4>> 
+// R<Normalized<UBC4>>
 // R<Normalized<SBC4>>
 impl_compressed_signed_unsigned_variants!(
     R,
@@ -269,9 +269,7 @@ impl_compressed_signed_unsigned_variants!(
 
 // RGBA<Normalized<UBC7>>
 // SRGBA<Normalized<UBC7>>
-impl_compressed_rgba_variants!(
-    Normalized<UBC7>
-);
+impl_compressed_rgba_variants!(Normalized<UBC7>);
 
 // Implement special depth / stencil formats
 internal_impl_texel!(

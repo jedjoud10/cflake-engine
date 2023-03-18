@@ -5,8 +5,8 @@ use crate::{
 
 use assets::Assets;
 use graphics::{
-    CompareFunction, DepthConfig, Graphics, RenderPipeline,
-    PipelineInitializationError, Shader,
+    CompareFunction, DepthConfig, Graphics,
+    PipelineInitializationError, RenderPipeline, Shader,
 };
 use std::marker::PhantomData;
 use utils::Storage;

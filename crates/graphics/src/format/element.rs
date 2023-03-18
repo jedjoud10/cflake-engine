@@ -1,6 +1,6 @@
 use std::any::TypeId;
 
-use crate::{Base, GpuPod, CompressionType};
+use crate::{Base, CompressionType, GpuPod};
 
 // Elements are just values that can be stored within channels, like u32, Normalized<i8> or i8
 pub trait AnyElement: 'static {
@@ -30,7 +30,7 @@ pub enum ElementType {
     FloatThirtyTwo,
 
     // Compressed element type, only to be used with compressed textures
-    Compressed(CompressionType)
+    Compressed(CompressionType),
 }
 
 // This trait represents bases that can be normalized
@@ -49,18 +49,21 @@ pub struct Normalized<T: Normalizable>(T);
 impl<T: Normalizable> AnyElement for Normalized<T> {
     type Storage = T::Storage;
 
-    const ELEMENT_TYPE: ElementType = match <T as AnyElement>::ELEMENT_TYPE {
-        ElementType::Eight { signed, .. } => ElementType::Eight {
-            signed,
-            normalized: true,
-        },
-        ElementType::Sixteen { signed, .. } => ElementType::Sixteen {
-            signed,
-            normalized: true,
-        },
-        ElementType::Compressed(x) => ElementType::Compressed(x),
+    const ELEMENT_TYPE: ElementType =
+        match <T as AnyElement>::ELEMENT_TYPE {
+            ElementType::Eight { signed, .. } => ElementType::Eight {
+                signed,
+                normalized: true,
+            },
+            ElementType::Sixteen { signed, .. } => {
+                ElementType::Sixteen {
+                    signed,
+                    normalized: true,
+                }
+            }
+            ElementType::Compressed(x) => ElementType::Compressed(x),
 
-        // Due to type safety (trait bound Normalizable), this panic will never be able to occur
-        _ => panic!(),
-    };
+            // Due to type safety (trait bound Normalizable), this panic will never be able to occur
+            _ => panic!(),
+        };
 }

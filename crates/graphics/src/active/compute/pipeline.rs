@@ -5,11 +5,11 @@ use wgpu::CommandEncoder;
 use crate::{
     visibility_to_wgpu_stage, BindGroup, Buffer, BufferInfo,
     BufferMode, BufferUsage, ColorLayout, ComputeCommand,
-    DepthStencilLayout, Fence, GpuPod, Graphics,
-    RenderPipeline, ModuleKind, ModuleVisibility,
-    PushConstantLayout, PushConstants, RenderCommand,
-    SetIndexBufferError, SetPushConstantsError, SetVertexBufferError,
-    TriangleBuffer, UniformBuffer, Vertex, VertexBuffer, ComputeShader,
+    ComputeShader, DepthStencilLayout, Fence, GpuPod, Graphics,
+    ModuleKind, ModuleVisibility, PushConstantLayout, PushConstants,
+    RenderCommand, RenderPipeline, SetIndexBufferError,
+    SetPushConstantsError, SetVertexBufferError, TriangleBuffer,
+    UniformBuffer, Vertex, VertexBuffer,
 };
 use std::{
     collections::hash_map::Entry,
@@ -35,7 +35,8 @@ impl<'a, 'r> ActiveComputeDispatcher<'a, 'r> {
     ) -> Result<(), SetPushConstantsError> {
         // Get the push constant layout used by the shader
         // and push new bytes onto the internally stored constants
-        let copied_push_constant_global_offset = self.push_constant_global_offset;
+        let copied_push_constant_global_offset =
+            self.push_constant_global_offset;
         let Some(layout) = super::handle_push_constants(
             self.shader.reflected.clone(),
             &mut self.push_constant,
@@ -46,11 +47,15 @@ impl<'a, 'r> ActiveComputeDispatcher<'a, 'r> {
         // Create a command to set the push constant bytes
         match layout {
             // Set the push constants for the compute module
-            PushConstantLayout::Single(size, ModuleVisibility::Compute) => {
+            PushConstantLayout::Single(
+                size,
+                ModuleVisibility::Compute,
+            ) => {
                 self.commands.push(
                     ComputeCommand::SetPushConstants {
                         size: size.get() as usize,
-                        global_offset: copied_push_constant_global_offset,
+                        global_offset:
+                            copied_push_constant_global_offset,
                         local_offset: 0,
                     },
                 );
@@ -73,10 +78,11 @@ impl<'a, 'r> ActiveComputeDispatcher<'a, 'r> {
             self.graphics,
             self.shader.reflected.clone(),
             binding,
-            callback
+            callback,
         ) {
-            self.commands
-                .push(ComputeCommand::SetBindGroup(binding, bind_group));
+            self.commands.push(ComputeCommand::SetBindGroup(
+                binding, bind_group,
+            ));
         }
     }
 

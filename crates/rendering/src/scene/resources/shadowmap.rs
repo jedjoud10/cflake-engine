@@ -3,8 +3,8 @@ use bytemuck::{Pod, Zeroable};
 use graphics::{
     ActiveGraphicsPipeline, BufferMode, BufferUsage, CompareFunction,
     Compiler, Depth, DepthConfig, Face, FragmentModule, GpuPod,
-    Graphics, RenderPipeline, LoadOp, ModuleVisibility, Operation,
-    PrimitiveConfig, PushConstantLayout, RenderPass, SamplerSettings,
+    Graphics, LoadOp, ModuleVisibility, Operation, PrimitiveConfig,
+    PushConstantLayout, RenderPass, RenderPipeline, SamplerSettings,
     Shader, StoreOp, Texture, Texture2D, TextureMipMaps, TextureMode,
     TextureUsage, UniformBuffer, VertexModule, WindingOrder,
 };
@@ -84,9 +84,7 @@ impl ShadowMapping {
         compiler.use_push_constant_layout(layout);
 
         // Combine the modules to the shader
-        let shader =
-            Shader::new(vertex, fragment, compiler)
-                .unwrap();
+        let shader = Shader::new(vertex, fragment, compiler).unwrap();
 
         // Create the shadow map render pass
         let render_pass = ShadowRenderPass::new(
@@ -174,7 +172,11 @@ impl ShadowMapping {
     }
 
     // Update the rotation of the sun shadows using a new rotation
-    pub(crate) fn update(&mut self, rotation: vek::Quaternion<f32>, camera: vek::Vec3<f32>) {
+    pub(crate) fn update(
+        &mut self,
+        rotation: vek::Quaternion<f32>,
+        camera: vek::Vec3<f32>,
+    ) {
         let rot = vek::Mat4::from(rotation);
         let view = vek::Mat4::<f32>::look_at_rh(
             vek::Vec3::zero(),
@@ -182,7 +184,9 @@ impl ShadowMapping {
             rot.mul_point(-vek::Vec3::unit_y()),
         );
         self.view = view;
-        let lightspace = self.projection * self.view * vek::Mat4::translation_3d(-camera);
+        let lightspace = self.projection
+            * self.view
+            * vek::Mat4::translation_3d(-camera);
 
         self.buffer
             .write(

@@ -1,6 +1,6 @@
 use crate::{
-    AlbedoMap, CameraBuffer, EnabledMeshAttributes, NormalMap,
-    Renderer, SceneBuffer, SceneColor, TimingBuffer, MaskMap,
+    AlbedoMap, CameraBuffer, EnabledMeshAttributes, MaskMap,
+    NormalMap, Renderer, SceneBuffer, SceneColor, TimingBuffer,
 };
 use assets::Assets;
 use graphics::{
@@ -79,7 +79,7 @@ pub trait Material: 'static + Sized {
     fn casts_shadows() -> bool {
         true
     }
-    
+
     // Fetch the required resources from the world
     fn fetch<'w>(world: &'w World) -> Self::Resources<'w>;
 

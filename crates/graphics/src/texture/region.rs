@@ -80,10 +80,10 @@ pub trait Extent: Copy + std::ops::Div<u32, Output = Self> {
         vek::Extent3::new(self.width(), self.height(), self.depth())
     }
 
-    // Get the view dimensions of the extent (1, 2, 3, or layered / cube maps)    
+    // Get the view dimensions of the extent (1, 2, 3, or layered / cube maps)
     fn view_dimension() -> ViewDimension;
 
-    // Get the dimensionality of the underlying texels (1, 2, 3) 
+    // Get the dimensionality of the underlying texels (1, 2, 3)
     fn dimension() -> Dimension {
         match Self::view_dimension() {
             ViewDimension::D1 => Dimension::D1,

@@ -1,5 +1,9 @@
 use assets::Assets;
-use graphics::{ComputeShader, Texture3D, RGBA, Normalized, R, Graphics, Compiler, ComputeModule, Texture, TextureMode, TextureUsage, TextureMipMaps, SamplerSettings, ComputePass};
+use graphics::{
+    Compiler, ComputeModule, ComputePass, ComputeShader, Graphics,
+    Normalized, SamplerSettings, Texture, Texture3D, TextureMipMaps,
+    TextureMode, TextureUsage, R, RGBA,
+};
 
 // This mesh generator will take in the voxel data given from the voxel texture
 // and will use a compute shader that will utilize the surface nets algorithm
@@ -13,9 +17,9 @@ impl MeshGenerator {
     // Create a new mesh generator to be used with the terrain system
     pub(crate) fn new(graphics: &Graphics, assets: &Assets) -> Self {
         // Load the mesh compute shader
-        let module = assets.load::<ComputeModule>(
-            "engine/shaders/terrain/mesh.comp"
-        ).unwrap();
+        let module = assets
+            .load::<ComputeModule>("engine/shaders/terrain/mesh.comp")
+            .unwrap();
 
         // Create a simple compute shader compiler
         let compiler = Compiler::new(assets, graphics);
@@ -24,15 +28,17 @@ impl MeshGenerator {
         let compute = ComputeShader::new(module, compiler).unwrap();
 
         // Create a 3D texture that will contain the local positions of the SurfaceNets vertices
-        let positions = Texture3D::<RGBA<Normalized<u8>>>::from_texels(
-            graphics,
-            None,
-            vek::Extent3::broadcast(32),
-            TextureMode::Dynamic,
-            TextureUsage::STORAGE,
-            SamplerSettings::default(),
-            TextureMipMaps::Disabled,
-        ).unwrap();
+        let positions =
+            Texture3D::<RGBA<Normalized<u8>>>::from_texels(
+                graphics,
+                None,
+                vek::Extent3::broadcast(32),
+                TextureMode::Dynamic,
+                TextureUsage::STORAGE,
+                SamplerSettings::default(),
+                TextureMipMaps::Disabled,
+            )
+            .unwrap();
 
         todo!()
     }
@@ -49,13 +55,19 @@ impl VoxelGenerator {
     // Create a new voxel generator to be used with the terrain system
     pub(crate) fn new(graphics: &Graphics, assets: &Assets) -> Self {
         // Load the voxel compute shader
-        let module = assets.load::<ComputeModule>(
-            "engine/shaders/terrain/voxel.comp"
-        ).unwrap();
+        let module = assets
+            .load::<ComputeModule>(
+                "engine/shaders/terrain/voxel.comp",
+            )
+            .unwrap();
 
         // Create a simple compute shader compiler
         let mut compiler = Compiler::new(assets, graphics);
-        compiler.use_storage_texture::<Texture3D::<R<f32>>>("densities", false, true);
+        compiler.use_storage_texture::<Texture3D<R<f32>>>(
+            "densities",
+            false,
+            true,
+        );
 
         // Compile the compute shader
         let shader = ComputeShader::new(module, compiler).unwrap();
@@ -69,11 +81,9 @@ impl VoxelGenerator {
             TextureUsage::STORAGE,
             SamplerSettings::default(),
             TextureMipMaps::Disabled,
-        ).unwrap();
+        )
+        .unwrap();
 
-        Self {
-            shader,
-            densities,
-        }
+        Self { shader, densities }
     }
 }

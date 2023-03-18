@@ -1,6 +1,7 @@
 use crate::{
-    BindResourceLayout, GpuPod, ReflectedShader, Sampler,
-    SetBindResourceError, Shader, Texel, Texture, UniformBuffer, Graphics, TextureUsage,
+    BindResourceLayout, GpuPod, Graphics, ReflectedShader, Sampler,
+    SetBindResourceError, Shader, Texel, Texture, TextureUsage,
+    UniformBuffer,
 };
 use ahash::AHashMap;
 use std::{marker::PhantomData, sync::Arc};
@@ -29,10 +30,8 @@ pub(super) fn create_bind_group<'b>(
     }
 
     // Try to fetch the bind group layout from the reflected shader
-    let bind_group_layout = reflected
-        .bind_group_layouts
-        .get(binding as usize)
-        .unwrap();
+    let bind_group_layout =
+        reflected.bind_group_layouts.get(binding as usize).unwrap();
 
     // Don't do anything if the shader doesn't have this bind group
     let Some(bind_group_layout) = bind_group_layout else {
@@ -59,7 +58,7 @@ pub(super) fn create_bind_group<'b>(
         ids,
         ..
     } = bind_group;
-    
+
     // Check the cache for a bind group with the given resources
     // If we do not find a bind group with the valid parametrs the nwe will create a new one and cache it instead
     let cache = &graphics.0.cached;
@@ -150,7 +149,7 @@ impl<'a> BindGroup<'a> {
         // Try setting a sampler appropriate for this texture
         let sampler = format!("{name}_sampler");
         self.set_sampler(&sampler, texture.sampler());
-            
+
         // Get the binding entry layout for the given texture
         let entry = Self::find_entry_layout(
             self.index,
@@ -175,7 +174,7 @@ impl<'a> BindGroup<'a> {
         &mut self,
         name: &'s str,
         texture: &'a mut T,
-    ) -> Result<(), SetBindResourceError<'s>> {       
+    ) -> Result<(), SetBindResourceError<'s>> {
         // Make sure it's a storage texture
         if !texture.usage().contains(TextureUsage::STORAGE) {
             todo!()
@@ -240,7 +239,9 @@ impl<'a> BindGroup<'a> {
 
         // Make sure the layout is the same size as buffer stride
         match entry.resource_type {
-            crate::BindResourceType::UniformBuffer { size, .. } => {
+            crate::BindResourceType::UniformBuffer {
+                size, ..
+            } => {
                 if (size as usize) != buffer.stride() {
                     return Err(
                         SetBindResourceError::BufferDifferentType {

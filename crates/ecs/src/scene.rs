@@ -101,18 +101,17 @@ impl Scene {
         iter: impl IntoIterator<Item = Entity>,
     ) {
         // Sort the entities by their masks (we can use unstable since the ordering of the entities does not matter)
-        let mut entities = iter.into_iter().map(|e| 
-            (e, *self.entities.get(e).unwrap())
-        ).collect::<Vec<_>>();
+        let mut entities = iter
+            .into_iter()
+            .map(|e| (e, *self.entities.get(e).unwrap()))
+            .collect::<Vec<_>>();
         entities.sort_unstable_by_key(|(_, l)| l.mask);
 
         // Group the entities based on their archetype
         let grouped = entities.iter().group_by(|(_, l)| l.mask);
 
         // Fetch the entities that correspond to each archetype
-        let iter = grouped
-            .into_iter()
-            .collect::<Vec<_>>();
+        let iter = grouped.into_iter().collect::<Vec<_>>();
 
         // Batch remove the entities per archetype
         for (mask, group) in iter {

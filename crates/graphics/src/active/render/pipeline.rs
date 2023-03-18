@@ -5,8 +5,8 @@ use wgpu::CommandEncoder;
 use crate::{
     visibility_to_wgpu_stage, BindGroup, Buffer, BufferInfo,
     BufferMode, BufferUsage, ColorLayout, DepthStencilLayout, GpuPod,
-    Graphics, RenderPipeline, ModuleKind, ModuleVisibility,
-    PushConstantLayout, PushConstants, RenderCommand,
+    Graphics, ModuleKind, ModuleVisibility, PushConstantLayout,
+    PushConstants, RenderCommand, RenderPipeline,
     SetIndexBufferError, SetPushConstantsError, SetVertexBufferError,
     TriangleBuffer, UniformBuffer, Vertex, VertexBuffer,
 };
@@ -122,7 +122,8 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
     ) -> Result<(), SetPushConstantsError> {
         // Get the push constant layout used by the shader
         // and push new bytes onto the internally stored constants
-        let copied_push_constant_global_offset = self.push_constant_global_offset;
+        let copied_push_constant_global_offset =
+            self.push_constant_global_offset;
         let Some(layout) = super::handle_push_constants(
             self.pipeline.shader().reflected.clone(),
             &mut self.push_constant,
@@ -179,10 +180,11 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
             self.graphics,
             self.pipeline.shader().reflected.clone(),
             binding,
-            callback
+            callback,
         ) {
-            self.commands
-                .push(RenderCommand::SetBindGroup(binding, bind_group));
+            self.commands.push(RenderCommand::SetBindGroup(
+                binding, bind_group,
+            ));
         }
     }
 

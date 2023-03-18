@@ -1,9 +1,9 @@
 mod bindings;
 mod command;
 mod compute;
-mod render;
 mod constants;
 mod errors;
+mod render;
 pub use bindings::*;
 pub use command::*;
 pub use compute::*;

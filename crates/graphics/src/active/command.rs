@@ -1,6 +1,6 @@
 use crate::{
-    BufferInfo, ColorLayout, DepthStencilLayout,
-    RenderPipeline, TriangleBuffer, UniformBuffer, ComputeShader,
+    BufferInfo, ColorLayout, ComputeShader, DepthStencilLayout,
+    RenderPipeline, TriangleBuffer, UniformBuffer,
 };
 use std::{
     ops::{Bound, Range},

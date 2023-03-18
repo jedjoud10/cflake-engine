@@ -32,7 +32,7 @@ pub enum BufferVariant {
     Index = INDEX,
     Uniform = UNIFORM,
     Indirect = INDIRECT,
-    Unknown
+    Unknown,
 }
 
 // Special vertex buffer (for vertices only)

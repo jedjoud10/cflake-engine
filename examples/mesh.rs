@@ -17,7 +17,8 @@ fn init(world: &mut World) {
     let mut assets = world.get_mut::<Assets>().unwrap();
     let mut threadpool = world.get_mut::<ThreadPool>().unwrap();
     let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
-    let mut pbrs = world.get_mut::<Storage<PhysicallyBased>>().unwrap();
+    let mut pbrs =
+        world.get_mut::<Storage<PhysicallyBased>>().unwrap();
     let mut interface = world.get_mut::<Interface>().unwrap();
     let mut skies = world.get_mut::<Storage<Sky>>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
@@ -49,12 +50,13 @@ fn init(world: &mut World) {
     );
     let mask = assets.async_load::<MaskMap>(
         ("user/textures/mask.jpg", graphics.clone()),
-        &mut threadpool
+        &mut threadpool,
     );
 
     // Get the material id (also registers the material pipeline)
-    let id =
-        pipelines.register::<PhysicallyBased>(&graphics, &mut assets).unwrap();
+    let id = pipelines
+        .register::<PhysicallyBased>(&graphics, &mut assets)
+        .unwrap();
 
     // Load a cube mesh
     let cube = assets
@@ -87,8 +89,7 @@ fn init(world: &mut World) {
         world.get_mut::<Storage<AlbedoMap>>().unwrap();
     let mut normal_maps =
         world.get_mut::<Storage<NormalMap>>().unwrap();
-    let mut mask_maps =
-        world.get_mut::<Storage<MaskMap>>().unwrap();
+    let mut mask_maps = world.get_mut::<Storage<MaskMap>>().unwrap();
     let diffuse = diffuse_maps.insert(diffuse);
     let normal = normal_maps.insert(normal);
     let mask = mask_maps.insert(mask);
@@ -116,7 +117,7 @@ fn init(world: &mut World) {
         let renderer = Renderer::default();
         let position =
             Position::at_xyz((x / 5) as f32, 0.25, (x % 5) as f32);
-        
+
         let material = pbrs.insert(PhysicallyBased {
             albedo_map: None,
             normal_map: Some(normal.clone()),
@@ -125,15 +126,16 @@ fn init(world: &mut World) {
             roughness: 0.2,
             metallic: 0.2,
             ambient_occlusion: 1.0,
-            tint: vek::Rgb::new(position.x / 5.0, position.z / 5.0, 0.0),
+            tint: vek::Rgb::new(
+                position.x / 5.0,
+                position.z / 5.0,
+                0.0,
+            ),
         });
 
-        let surface = Surface::new(
-            cube.clone(),
-            material.clone(),
-            id.clone(),
-        );
-        
+        let surface =
+            Surface::new(cube.clone(), material.clone(), id.clone());
+
         scene.insert((surface, renderer, position));
     }
 
@@ -148,7 +150,7 @@ fn init(world: &mut World) {
         pipelines.register::<Sky>(&graphics, &mut assets).unwrap();
 
     // Create a new material instance
-    let material = skies.insert(Sky { });
+    let material = skies.insert(Sky {});
 
     // Load the renderable mesh
     let mesh = assets

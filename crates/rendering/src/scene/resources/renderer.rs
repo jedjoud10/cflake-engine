@@ -1,6 +1,6 @@
 use crate::{
-    AlbedoMap, CameraBuffer, NormalMap, SceneBuffer, TimingBuffer,
-    WindowBuffer, MaskMap,
+    AlbedoMap, CameraBuffer, MaskMap, NormalMap, SceneBuffer,
+    TimingBuffer, WindowBuffer,
 };
 
 use assets::Assets;
@@ -151,8 +151,7 @@ impl ForwardRenderer {
             albedo_maps.insert(create_texture2d(graphics, black));
         let normal =
             normal_maps.insert(create_texture2d(graphics, normal));
-        let mask = 
-            mask_maps.insert(create_texture2d(graphics, mask));
+        let mask = mask_maps.insert(create_texture2d(graphics, mask));
 
         Self {
             // Render pass, color texture, and depth texture

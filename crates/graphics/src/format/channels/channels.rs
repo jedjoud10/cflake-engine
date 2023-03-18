@@ -29,7 +29,7 @@ impl TexelChannels {
         match self {
             TexelChannels::Four { swizzled }
             | TexelChannels::Srgba { swizzled } => *swizzled,
-            _ => false
+            _ => false,
         }
     }
 }
