@@ -38,6 +38,7 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
         extent: <Self::Region as Region>::E,
         mode: TextureMode,
         usage: TextureUsage,
+        sampling: SamplerSettings,
         mipmaps: TextureMipMaps<Self::T>,
     ) -> Result<Self, TextureInitializationError> {
         let format = <Self::T as Texel>::format();
@@ -133,6 +134,10 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
             extent.depth()
         );
 
+        // Fetch a new sampler for the given sampling settings
+        let sampler =
+            crate::get_or_insert_sampler(graphics, sampling);
+
         // Get color texture aspect for the texture view and ImageCopyTexture
         let aspect = texture_aspect::<Self::T>();
 
@@ -217,7 +222,7 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
 
         Ok(unsafe {
             Self::from_raw_parts(
-                graphics, texture, views, extent,
+                graphics, texture, views, sampler, sampling, extent,
                 usage, mode,
             )
         })
@@ -247,6 +252,9 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
 
     // Get the underlying WGPU Texture immutably
     fn raw(&self) -> &wgpu::Texture;
+
+    // Get the sampler associated with this texture
+    fn sampler(&self) -> Sampler<Self::T>;
 
     // Get the underlying Texture view
     fn view(&self) -> &wgpu::TextureView {
@@ -502,6 +510,8 @@ pub(crate) mod raw {
             graphics: &Graphics,
             texture: wgpu::Texture,
             views: SmallVec<[wgpu::TextureView; 1]>,
+            sampler: Arc<wgpu::Sampler>,
+            sampling: SamplerSettings,
             dimensions: <R as Region>::E,
             usage: TextureUsage,
             mode: TextureMode,

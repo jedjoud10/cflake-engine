@@ -1,5 +1,5 @@
 use assets::Assets;
-use graphics::{ComputeShader, Texture3D, RGBA, Normalized, R, Graphics, Compiler, ComputeModule, Texture, TextureMode, TextureUsage, SamplerSettings, TextureMipMaps};
+use graphics::{ComputeShader, Texture3D, RGBA, Normalized, R, Graphics, Compiler, ComputeModule, Texture, TextureMode, TextureUsage, TextureMipMaps, SamplerSettings};
 
 // This mesh generator will take in the voxel data given from the voxel texture
 // and will use a compute shader that will utilize the surface nets algorithm
@@ -24,14 +24,17 @@ impl MeshGenerator {
         let compute = ComputeShader::new(graphics, module, compiler).unwrap();
 
         // Create a 3D texture that will contain the local positions of the SurfaceNets vertices
-        let positions = Texture3D::<RGBA<Normalized<u8>>::from_texels(
+        let positions = Texture3D::<RGBA<Normalized<u8>>>::from_texels(
             graphics,
             None,
-            vek::Vec3::broadcast(32u32),
+            vek::Extent3::broadcast(32),
             TextureMode::Dynamic,
             TextureUsage::STORAGE,
+            SamplerSettings::default(),
             TextureMipMaps::Disabled,
         ).unwrap();
+
+        todo!()
     }
 }
 
@@ -45,6 +48,6 @@ pub struct VoxelGenerator {
 impl VoxelGenerator {
     // Create a new voxel generator to be used with the terrain system
     pub(crate) fn new(graphics: &Graphics) -> Self {
-
+        todo!()
     }
 }

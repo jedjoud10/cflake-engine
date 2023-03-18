@@ -26,6 +26,10 @@ pub struct Texture3D<T: Texel> {
     mode: TextureMode,
     _phantom: PhantomData<T>,
 
+    // Shader Sampler
+    sampler: Arc<wgpu::Sampler>,
+    sampling: SamplerSettings,
+
     // Keep the graphics API alive
     graphics: Graphics,
 }
@@ -42,6 +46,8 @@ impl<T: Texel>
         graphics: &Graphics,
         texture: wgpu::Texture,
         views: SmallVec<[wgpu::TextureView; 1]>,
+        sampler: Arc<wgpu::Sampler>,
+        sampling: SamplerSettings,
         dimensions: vek::Extent3<u32>,
         usage: TextureUsage,
         mode: TextureMode,
@@ -54,6 +60,8 @@ impl<T: Texel>
             mode,
             _phantom: PhantomData,
             graphics: graphics.clone(),
+            sampler,
+            sampling,
         }
     }
 
@@ -91,5 +99,13 @@ impl<T: Texel> Texture for Texture3D<T> {
 
     fn views(&self) -> &[wgpu::TextureView] {
         &self.views
+    }
+
+    fn sampler(&self) -> Sampler<Self::T> {
+        Sampler {
+            sampler: &self.sampler,
+            _phantom: PhantomData,
+            settings: &self.sampling,
+        }
     }
 }

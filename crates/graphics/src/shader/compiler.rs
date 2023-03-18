@@ -3,7 +3,7 @@ use crate::{
     GpuPodInfo, Graphics, ModuleKind, ModuleVisibility,
     PushConstantLayout, ReflectedShader, ShaderCompilationError,
     ShaderError, ShaderModule, ShaderReflectionError, Texel,
-    TexelInfo, Texture, VertexModule,
+    TexelInfo, Texture, VertexModule, Region, Extent,
 };
 use ahash::AHashMap;
 use assets::Assets;
@@ -139,15 +139,17 @@ impl<'a> Compiler<'a> {
     // Define a uniform texture's type and texel
     pub fn use_texture<T: Texture>(&mut self, name: impl ToString) {
         let sampler_name = format!("{}_sampler", name.to_string());
-        self.use_sampler::<T>(sampler_name);
+        self.use_sampler::<T::T>(sampler_name);
         let name = name.to_string();
-        self.texture_formats.insert(name, <T::T as Texel>::info());
+        self.texture_formats.insert(name.clone(), <T::T as Texel>::info());
+        let dimensionality = <<T::Region as Region>::E as Extent>::dimensionality();
+        self.texture_dimensions.insert(name, dimensionality);
     }
 
     // Define a uniform sampler's type and texel
-    pub fn use_sampler<T: Texture>(&mut self, name: impl ToString) {
+    pub fn use_sampler<T: Texel>(&mut self, name: impl ToString) {
         let name = name.to_string();
-        self.texture_formats.insert(name, <T::T as Texel>::info());
+        self.texture_formats.insert(name, <T as Texel>::info());
     }
 
     // Define a push constant range to be pushed

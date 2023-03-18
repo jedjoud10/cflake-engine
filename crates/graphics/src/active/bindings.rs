@@ -142,6 +142,10 @@ impl<'a> BindGroup<'a> {
         name: &'s str,
         texture: &'a T,
     ) -> Result<(), SetBindResourceError<'s>> {
+        // Try setting a sampler appropriate for this texture
+        let sampler = format!("{name}_sampler");
+        self.set_sampler(&sampler, texture.sampler());
+            
         // Get the binding entry layout for the given texture
         let entry = Self::find_entry_layout(
             self.index,
