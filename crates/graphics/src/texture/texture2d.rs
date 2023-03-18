@@ -110,12 +110,28 @@ impl<T: Texel> Texture for Texture2D<T> {
     }
 }
 
+// Texture resolution scale that we can use to downsample or upsample imported textures
+pub type TextureResizeFilter = image::imageops::FilterType;
+#[derive(Default, Copy, Clone, PartialEq)]
+pub enum TextureScale {
+    // This will not affect the texture scale
+    #[default]
+    Default,
+
+    // This will scale the texture size with the "scaling" parameter
+    Scale {
+        scaling: f32,
+        filter: TextureResizeFilter,
+    },
+}
+
 // Texture settings that we shall use when loading in a new texture
 #[derive(Clone)]
 pub struct TextureImportSettings<'m, T: Texel> {
     pub sampling: SamplerSettings,
     pub mode: TextureMode,
     pub usage: TextureUsage,
+    pub scale: TextureScale,
     pub mipmaps: TextureMipMaps<'m, 'm, T>,
 }
 
@@ -124,6 +140,7 @@ impl<T: Texel> Default for TextureImportSettings<'_, T> {
         Self {
             sampling: SamplerSettings::default(),
             mode: TextureMode::default(),
+            scale: TextureScale::Default,
             usage: TextureUsage::default(),
             mipmaps: TextureMipMaps::Manual { mips: &[] },
         }
@@ -142,18 +159,28 @@ impl<T: ImageTexel> Asset for Texture2D<T> {
     fn deserialize<'c, 's>(
         data: assets::Data,
         graphics: Self::Context<'c>,
-        mut settings: Self::Settings<'s>,
+        settings: Self::Settings<'s>,
     ) -> Result<Self, Self::Err> {
         let i = Instant::now();
 
         // Load the texture using the Image crate
-        let image = image::load_from_memory(data.bytes())
+        let mut image = image::load_from_memory(data.bytes())
             .map_err(TextureAssetLoadError::ImageError)?;
         log::debug!(
             "Took {:?} to deserialize texture {:?}",
             i.elapsed(),
             data.path()
         );
+
+        // Scale the texture if needed
+        if let TextureScale::Scale { scaling, filter } = settings.scale {
+            let nheight = ((image.height() as f32) * scaling) as u32;
+            let nwidth = ((image.width() as f32) * scaling) as u32;
+            
+            if nheight != 0 && nwidth != 0 {
+                image = image.resize(nwidth, nheight, filter);
+            }
+        }        
 
         // Get 2D dimensions and texel data
         let dimensions =

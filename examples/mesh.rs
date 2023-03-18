@@ -198,11 +198,13 @@ fn update(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
 
     // Rotation the light
+    /*
     if let Some((rotation, _)) =
         scene.find_mut::<(&mut Rotation, &DirectionalLight)>()
     {
         rotation.rotate_x(-0.1 * time.delta().as_secs_f32());
     }
+    */
 
     // Exit the game when the user pressed Escape
     if input.get_button(Button::Escape).pressed() {
