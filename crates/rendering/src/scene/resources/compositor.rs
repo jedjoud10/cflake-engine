@@ -40,15 +40,15 @@ impl Compositor {
             .unwrap();
 
         // Create the bind layout for the compositor shader
-        let mut compiler = Compiler::new(assets);
-        compiler.use_texture::<Texture2D<SceneColor>>("color_map");
-        compiler.use_texture::<Texture2D<SceneDepth>>("depth_map");
+        let mut compiler = Compiler::new(assets, graphics);
+        compiler.use_sampled_texture::<Texture2D<SceneColor>>("color_map");
+        compiler.use_sampled_texture::<Texture2D<SceneDepth>>("depth_map");
         compiler.use_uniform_buffer::<WindowUniform>("window");
         compiler.use_uniform_buffer::<CameraUniform>("camera");
 
         // Combine the modules to the shader
         let shader =
-            Shader::new(graphics, vertex, fragment, compiler)
+            Shader::new(vertex, fragment, compiler)
                 .unwrap();
 
         // Create the display render pass

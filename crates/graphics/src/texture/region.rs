@@ -1,5 +1,6 @@
 use std::{num::NonZeroU8, ops::Add};
 
+pub type ViewDimension = wgpu::TextureViewDimension;
 pub type Dimension = wgpu::TextureDimension;
 
 // Texture dimensions traits that are simply implemented for extents
@@ -20,7 +21,7 @@ pub trait Extent: Copy + std::ops::Div<u32, Output = Self> {
 
     // Check if the extent is a power of 2 extent
     fn is_power_of_two(&self) -> bool {
-        match Self::dimensionality() {
+        match Self::dimension() {
             Dimension::D1 => self.width().is_power_of_two(),
             Dimension::D2 => {
                 self.width().is_power_of_two()
@@ -79,8 +80,20 @@ pub trait Extent: Copy + std::ops::Div<u32, Output = Self> {
         vek::Extent3::new(self.width(), self.height(), self.depth())
     }
 
-    // Get the dimensionality of the extent (1, 2, or 3)
-    fn dimensionality() -> Dimension;
+    // Get the view dimensions of the extent (1, 2, 3, or layered / cube maps)    
+    fn view_dimension() -> ViewDimension;
+
+    // Get the dimensionality of the underlying texels (1, 2, 3) 
+    fn dimension() -> Dimension {
+        match Self::view_dimension() {
+            ViewDimension::D1 => Dimension::D1,
+            ViewDimension::D2 => Dimension::D2,
+            ViewDimension::D2Array => Dimension::D2,
+            ViewDimension::Cube => Dimension::D2,
+            ViewDimension::CubeArray => Dimension::D2,
+            ViewDimension::D3 => Dimension::D3,
+        }
+    }
 }
 
 // Texture offsets traits that are simply implemented for origins
@@ -113,8 +126,8 @@ impl Extent for vek::Extent2<u32> {
         self.cmpge(&other).reduce_and()
     }
 
-    fn dimensionality() -> Dimension {
-        Dimension::D2
+    fn view_dimension() -> ViewDimension {
+        ViewDimension::D2
     }
 
     fn width(&self) -> u32 {
@@ -160,8 +173,8 @@ impl Extent for vek::Extent3<u32> {
         self.cmpge(&other).reduce_and()
     }
 
-    fn dimensionality() -> Dimension {
-        Dimension::D3
+    fn view_dimension() -> ViewDimension {
+        ViewDimension::D3
     }
 
     fn width(&self) -> u32 {

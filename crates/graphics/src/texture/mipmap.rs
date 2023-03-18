@@ -73,7 +73,7 @@ pub fn generate_mip_map<T: ColorTexel, E: Extent>(
     }
 
     // Create manual mip maps for this texture
-    let dimension = <E as Extent>::dimensionality();
+    let dimension = <E as Extent>::view_dimension();
     let name = utils::pretty_type_name::<T>();
     let levels = extent.levels()?.get() as u32;
     let mut map =
@@ -98,9 +98,12 @@ pub fn generate_mip_map<T: ColorTexel, E: Extent>(
 
         // Division factor is either 2, 4, or 8 (based on dims)
         let factor = match dimension {
-            wgpu::TextureDimension::D1 => 2,
-            wgpu::TextureDimension::D2 => 4,
-            wgpu::TextureDimension::D3 => 8,
+            wgpu::TextureViewDimension::D1 => 2,
+            wgpu::TextureViewDimension::D2 => 4,
+            wgpu::TextureViewDimension::D2Array => 4,
+            wgpu::TextureViewDimension::Cube => 4,
+            wgpu::TextureViewDimension::CubeArray => 4,
+            wgpu::TextureViewDimension::D3 => 8,
         };
 
         log::debug!(

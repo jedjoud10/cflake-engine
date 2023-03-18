@@ -13,21 +13,24 @@ pub enum BufferMode {
 }
 
 bitflags::bitflags! {
-    // How exactly are we going to use the texture?
+    // How exactly are we going to use the buffer?
     pub struct BufferUsage: u8 {
+        // This buffer will be used as a storage buffer that we can read/write to
+        const STORAGE = 1;
+
         // Data can be copied from the buffer on the GPU side
         const COPY_SRC = 2;
 
         // Data can be copied into the buffer on the GPU side
-        const COPY_DST = 1;
+        const COPY_DST = 4;
 
         // The buffer can be used for reading GPU data back
         // Example: Data generated from a compute shader read back to the CPU
-        const READ = 4 | Self::COPY_SRC.bits;
+        const READ = 8 | Self::COPY_SRC.bits;
 
         // The buffer can be used to send data to the GPU
         // Example: Non-readable vertex buffers
-        const WRITE = 8 | Self::COPY_DST.bits;
+        const WRITE = 16 | Self::COPY_DST.bits;
     }
 }
 

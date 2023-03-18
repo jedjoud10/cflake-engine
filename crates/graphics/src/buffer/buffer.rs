@@ -21,7 +21,6 @@ use crate::{
 // Bitmask from Vulkan BufferUsages
 const VERTEX: u32 = wgpu::BufferUsages::VERTEX.bits();
 const INDEX: u32 = wgpu::BufferUsages::INDEX.bits();
-const STORAGE: u32 = wgpu::BufferUsages::STORAGE.bits();
 const UNIFORM: u32 = wgpu::BufferUsages::UNIFORM.bits();
 const INDIRECT: u32 = wgpu::BufferUsages::INDIRECT.bits();
 
@@ -31,9 +30,9 @@ const INDIRECT: u32 = wgpu::BufferUsages::INDIRECT.bits();
 pub enum BufferVariant {
     Vertex = VERTEX,
     Index = INDEX,
-    Storage = STORAGE,
     Uniform = UNIFORM,
     Indirect = INDIRECT,
+    Unknown
 }
 
 // Special vertex buffer (for vertices only)
@@ -44,7 +43,6 @@ pub type Triangle<T> = [T; 3];
 pub type TriangleBuffer<T> = Buffer<Triangle<T>, INDEX>;
 
 // TODO: Implemenent std430 + std130 for these types of buffers
-pub type StorageBuffer<T> = Buffer<T, STORAGE>;
 pub type UniformBuffer<T> = Buffer<T, UNIFORM>;
 
 // Indirect command buffer
@@ -224,10 +222,9 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         match TYPE {
             VERTEX => BufferVariant::Vertex,
             INDEX => BufferVariant::Index,
-            STORAGE => BufferVariant::Storage,
             UNIFORM => BufferVariant::Uniform,
             INDIRECT => BufferVariant::Indirect,
-            _ => panic!(),
+            _ => BufferVariant::Unknown,
         }
     }
 

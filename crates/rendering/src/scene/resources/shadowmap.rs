@@ -73,7 +73,7 @@ impl ShadowMapping {
             .unwrap();
 
         // Create the bind layout for the shadow map shader
-        let mut compiler = Compiler::new(assets);
+        let mut compiler = Compiler::new(assets, graphics);
         compiler.use_uniform_buffer::<ShadowUniform>("shadow");
         let bytes = <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size();
         let layout = PushConstantLayout::single(
@@ -85,7 +85,7 @@ impl ShadowMapping {
 
         // Combine the modules to the shader
         let shader =
-            Shader::new(graphics, vertex, fragment, compiler)
+            Shader::new(vertex, fragment, compiler)
                 .unwrap();
 
         // Create the shadow map render pass

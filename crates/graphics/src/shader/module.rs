@@ -160,7 +160,7 @@ macro_rules! impl_asset_for_module {
             type Err = std::string::FromUtf8Error;
 
             fn extensions() -> &'static [&'static str] {
-                &[$ext]
+                $ext
             }
 
             fn deserialize<'c, 's>(
@@ -227,7 +227,7 @@ impl_module_trait!(FragmentModule, Fragment);
 impl_module_trait!(ComputeModule, Compute);
 
 // Implement the asset trait
-impl_asset_for_module!(VertexModule, "vert");
-impl_asset_for_module!(FragmentModule, "frag");
-impl_asset_for_module!(ComputeModule, "comp");
-impl_asset_for_module!(FunctionModule, "glsl");
+impl_asset_for_module!(VertexModule, &["vert", "vertex"]);
+impl_asset_for_module!(FragmentModule, &["frag", "fragment"]);
+impl_asset_for_module!(ComputeModule, &["comp", "compute"]);
+impl_asset_for_module!(FunctionModule, &["glsl"]);

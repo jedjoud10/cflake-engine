@@ -102,13 +102,13 @@ impl Rasterizer {
             .unwrap();
 
         // Create the bind layout for the GUI shader
-        let mut compiler = Compiler::new(assets);
-        compiler.use_texture::<FontMap>("font");
+        let mut compiler = Compiler::new(assets, graphics);
+        compiler.use_sampled_texture::<FontMap>("font");
         compiler.use_uniform_buffer::<WindowUniform>("window");
 
         // Compile the modules into a shader
         let shader =
-            Shader::new(graphics, vertex, fragment, compiler)
+            Shader::new(vertex, fragment, compiler)
                 .unwrap();
 
         // Create the render pass that will write to the swapchain

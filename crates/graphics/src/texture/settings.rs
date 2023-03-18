@@ -18,7 +18,7 @@ bitflags::bitflags! {
         // This texture will be used as a render target attachment
         const TARGET = 2 | Self::COPY_SRC.bits;
 
-        // This texture will be used as a storage texture that we can read/write to
+        // This texture will be used as a storage texture that we can read/write to within shaders
         const STORAGE = 4;
 
         // Data can be copied from the texture on the GPU side

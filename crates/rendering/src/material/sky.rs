@@ -31,12 +31,12 @@ impl Material for Sky {
             .unwrap();
 
         // Define the type layouts for the UBOs
-        let mut compiler = Compiler::new(assets);
+        let mut compiler = Compiler::new(assets, graphics);
         compiler.use_uniform_buffer::<CameraUniform>("camera");
         compiler.use_uniform_buffer::<SceneUniform>("scene");
 
         // Compile the modules into a shader
-        Shader::new(graphics, vert, frag, compiler).unwrap()
+        Shader::new(vert, frag, compiler).unwrap()
     }
 
     // Get the required mesh attributes that we need to render a surface

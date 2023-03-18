@@ -40,8 +40,8 @@ fn init(world: &mut World) {
     persistent!(loader, "engine/shaders/post/gui.frag");
 
     // Load the default terrain shaders
-    persistent!(loader, "engine/shaders/terrain/voxel.compute");
-    persistent!(loader, "engine/shaders/terrain/mesh.compute");
+    persistent!(loader, "engine/shaders/terrain/voxel.comp");
+    persistent!(loader, "engine/shaders/terrain/mesh.comp");
 
     // Load the default textures
     persistent!(loader, "engine/textures/scene/bumps.jpg");

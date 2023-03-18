@@ -26,6 +26,7 @@ pub struct PhysicallyBased {
     pub roughness: f32,
     pub metallic: f32,
     pub ambient_occlusion: f32,
+    pub tint: vek::Rgb<f32>,
 }
 
 impl Material for PhysicallyBased {
@@ -53,7 +54,7 @@ impl Material for PhysicallyBased {
             .unwrap();
 
         // Define the type layouts for the UBOs
-        let mut compiler = Compiler::new(assets);
+        let mut compiler = Compiler::new(assets, graphics);
 
         // Set the UBO types that we will use
         compiler.use_uniform_buffer::<CameraUniform>("camera");
@@ -61,22 +62,22 @@ impl Material for PhysicallyBased {
         compiler.use_uniform_buffer::<ShadowUniform>("shadow");
 
         // Define the types for the user textures
-        compiler.use_texture::<ShadowMap>("shadow_map");
-        compiler.use_texture::<AlbedoMap>("albedo_map");
-        compiler.use_texture::<NormalMap>("normal_map");
-        compiler.use_texture::<MaskMap>("mask_map");
+        compiler.use_sampled_texture::<ShadowMap>("shadow_map");
+        compiler.use_sampled_texture::<AlbedoMap>("albedo_map");
+        compiler.use_sampled_texture::<NormalMap>("normal_map");
+        compiler.use_sampled_texture::<MaskMap>("mask_map");
 
         // Define the push ranges used by push constants
         compiler.use_push_constant_layout(
             PushConstantLayout::split(
                 <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size(),
-                <vek::Rgba<f32> as GpuPod>::size(),
+                <vek::Rgba<f32> as GpuPod>::size() * 2,
             )
             .unwrap(),
         );
 
         // Compile the modules into a shader
-        Shader::new(graphics, vert, frag, compiler).unwrap()
+        Shader::new(vert, frag, compiler).unwrap()
     }
 
     // Fetch the texture storages
@@ -168,8 +169,15 @@ impl Material for PhysicallyBased {
 
         // Send the raw fragment bytes to the GPU
         let bytes = GpuPod::into_bytes(&vector);
+        let offset = bytes.len();
         constants
             .push(bytes, 0, ModuleVisibility::Fragment)
+            .unwrap();
+
+        let vector = vek::Rgba::<f32>::from(self.tint);
+        let bytes = GpuPod::into_bytes(&vector);
+        constants
+            .push(bytes, offset as u32, ModuleVisibility::Fragment)
             .unwrap();
     }
 }

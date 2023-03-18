@@ -29,11 +29,11 @@ void main() {
 
     // Set the output variables
     m_position = world_pos.xyz;
-    m_normal = normalize((mesh.matrix * vec4(normal, 0)).xyz);
-    m_tangent = normalize((mesh.matrix * vec4(tangent.xyz, 0)).xyz);
+    m_normal = (mesh.matrix * vec4(normal, 0)).xyz;
+    m_tangent = (mesh.matrix * vec4(tangent.xyz, 0)).xyz;
     m_tex_coord = tex_coord;
 
     // Calculate world space bitangent
 	vec3 bitangent = cross(normalize(m_normal), normalize(tangent.xyz)) * tangent.w;
-	m_bitangent = normalize((mesh.matrix * vec4(bitangent, 0.0)).xyz);    
+	m_bitangent = (mesh.matrix * vec4(bitangent, 0.0)).xyz;    
 }

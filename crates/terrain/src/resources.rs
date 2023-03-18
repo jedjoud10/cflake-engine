@@ -14,14 +14,14 @@ impl MeshGenerator {
     pub(crate) fn new(graphics: &Graphics, assets: &Assets) -> Self {
         // Load the mesh compute shader
         let module = assets.load::<ComputeModule>(
-            "assets/engine/shaders/terrain/mesh.comp"
+            "engine/shaders/terrain/mesh.comp"
         ).unwrap();
 
         // Create a simple compute shader compiler
-        let compiler = Compiler::new(assets);
+        let compiler = Compiler::new(assets, graphics);
 
         // Compile the compute shader
-        let compute = ComputeShader::new(graphics, module, compiler).unwrap();
+        let compute = ComputeShader::new(module, compiler).unwrap();
 
         // Create a 3D texture that will contain the local positions of the SurfaceNets vertices
         let positions = Texture3D::<RGBA<Normalized<u8>>>::from_texels(
@@ -47,7 +47,32 @@ pub struct VoxelGenerator {
 
 impl VoxelGenerator {
     // Create a new voxel generator to be used with the terrain system
-    pub(crate) fn new(graphics: &Graphics) -> Self {
-        todo!()
+    pub(crate) fn new(graphics: &Graphics, assets: &Assets) -> Self {
+        // Load the voxel compute shader
+        let module = assets.load::<ComputeModule>(
+            "engine/shaders/terrain/voxel.comp"
+        ).unwrap();
+
+        // Create a simple compute shader compiler
+        let compiler = Compiler::new(assets, graphics);
+
+        // Compile the compute shader
+        let shader = ComputeShader::new(module, compiler).unwrap();
+
+        // Create a 3D texture that will contain the local positions of the SurfaceNets vertices
+        let densities = Texture3D::<R<f32>>::from_texels(
+            graphics,
+            None,
+            vek::Extent3::broadcast(32),
+            TextureMode::Dynamic,
+            TextureUsage::STORAGE,
+            SamplerSettings::default(),
+            TextureMipMaps::Disabled,
+        ).unwrap();
+
+        Self {
+            shader,
+            densities,
+        }
     }
 }

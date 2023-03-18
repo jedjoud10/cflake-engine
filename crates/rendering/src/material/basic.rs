@@ -49,7 +49,7 @@ impl Material for Basic {
             .unwrap();
 
         // Define the type layouts for the UBOs
-        let mut compiler = Compiler::new(assets);
+        let mut compiler = Compiler::new(assets, graphics);
 
         // Set the UBO types that we will use
         compiler.use_uniform_buffer::<CameraUniform>("camera");
@@ -57,9 +57,9 @@ impl Material for Basic {
         compiler.use_uniform_buffer::<ShadowUniform>("shadow");
 
         // Define the types for the user textures
-        compiler.use_texture::<ShadowMap>("shadow_map");
-        compiler.use_texture::<AlbedoMap>("albedo_map");
-        compiler.use_texture::<NormalMap>("normal_map");
+        compiler.use_sampled_texture::<ShadowMap>("shadow_map");
+        compiler.use_sampled_texture::<AlbedoMap>("albedo_map");
+        compiler.use_sampled_texture::<NormalMap>("normal_map");
 
         // Define the push ranges used by push constants
         compiler.use_push_constant_layout(
@@ -71,7 +71,7 @@ impl Material for Basic {
         );
 
         // Compile the modules into a shader
-        Shader::new(graphics, vert, frag, compiler).unwrap()
+        Shader::new(vert, frag, compiler).unwrap()
     }
 
     // Fetch the texture storages

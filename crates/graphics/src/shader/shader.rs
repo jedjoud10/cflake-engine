@@ -22,18 +22,16 @@ pub struct Shader {
 impl Shader {
     // Create a new shader from the vertex and fragment source modules
     pub fn new(
-        graphics: &Graphics,
         vertex: VertexModule,
         fragment: FragmentModule,
         compiler: Compiler,
     ) -> Result<Self, ShaderError> {
-        let vertex = compiler.compile(vertex, graphics)?;
-        let fragment = compiler.compile(fragment, graphics)?;
+        let vertex = compiler.compile(vertex)?;
+        let fragment = compiler.compile(fragment)?;
         let names = [vertex.name(), fragment.name()];
         let modules = [vertex.naga(), fragment.naga()];
         let visibility = [vertex.visibility(), fragment.visibility()];
         let (reflected, layout) = compiler.create_pipeline_layout(
-            graphics,
             &names,
             &modules,
             &visibility,
@@ -76,16 +74,14 @@ pub struct ComputeShader {
 impl ComputeShader {
     // Create a new compute shader from the compute module
     pub fn new(
-        graphics: &Graphics,
         module: ComputeModule,
         compiler: Compiler,
     ) -> Result<Self, ShaderError> {
-        let compiled = compiler.compile(module, graphics)?;
+        let compiled = compiler.compile(module)?;
         let names = [compiled.name()];
         let modules = [compiled.naga()];
         let visibility = [compiled.visibility()];
         let (reflected, layout) = compiler.create_pipeline_layout(
-            graphics,
             &names,
             &modules,
             &visibility,

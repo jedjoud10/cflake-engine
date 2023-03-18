@@ -1,5 +1,5 @@
 use crate::{
-    BindResourceType, Buffer, Dimension, FunctionModule, GpuPod,
+    BindResourceType, Buffer, ViewDimension, FunctionModule, GpuPod,
     GpuPodInfo, Graphics, ModuleKind, ModuleVisibility,
     PushConstantLayout, ReflectedShader, ShaderCompilationError,
     ShaderError, ShaderModule, ShaderReflectionError, Texel,
@@ -25,9 +25,7 @@ use super::create_pipeline_layout;
 
 // Type alias for snippets and resources
 pub(super) type Snippets = AHashMap<String, String>;
-pub(super) type TextureFormats = AHashMap<String, TexelInfo>;
-pub(super) type TextureDimensions = AHashMap<String, Dimension>;
-pub(super) type UniformBufferPodTypes = AHashMap<String, GpuPodInfo>;
+pub(super) type ResourceBindingTypes = AHashMap<String, BindResourceType>;
 pub(super) type MaybePushConstantLayout = Option<PushConstantLayout>;
 
 // This is a compiler that will take was GLSL code, convert it to Naga, then to WGPU
@@ -35,22 +33,20 @@ pub(super) type MaybePushConstantLayout = Option<PushConstantLayout>;
 // This compiler will be used within the Shader and ComputeShader to compile the modules in batch
 pub struct Compiler<'a> {
     assets: &'a Assets,
+    graphics: &'a Graphics,
     snippets: Snippets,
-    texture_formats: TextureFormats,
-    texture_dimensions: TextureDimensions,
-    uniform_buffer_pod_types: UniformBufferPodTypes,
+    resource_types: ResourceBindingTypes,
     maybe_push_constant_layout: MaybePushConstantLayout,
 }
 
 impl<'a> Compiler<'a> {
     // Create a new default compiler with the asset loader
-    pub fn new(assets: &'a Assets) -> Self {
+    pub fn new(assets: &'a Assets, graphics: &'a Graphics) -> Self {
         Self {
             assets,
+            graphics,
             snippets: Default::default(),
-            texture_formats: Default::default(),
-            texture_dimensions: Default::default(),
-            uniform_buffer_pod_types: Default::default(),
+            resource_types: Default::default(),
             maybe_push_constant_layout: Default::default(),
         }
     }
@@ -70,7 +66,6 @@ impl<'a> Compiler<'a> {
     pub(crate) fn compile<M: ShaderModule>(
         &self,
         module: M,
-        graphics: &Graphics,
     ) -> Result<Compiled<M>, ShaderError> {
         // Decompose the module into file name and source
         let (name, source) = module.into_raw_parts();
@@ -79,7 +74,7 @@ impl<'a> Compiler<'a> {
         let time = std::time::Instant::now();
         let (raw, naga) = compile(
             &M::kind(),
-            graphics,
+            &self.graphics,
             &self.assets,
             &self.snippets,
             source,
@@ -95,7 +90,7 @@ impl<'a> Compiler<'a> {
             raw: Arc::new(raw),
             name: name.into(),
             _phantom: PhantomData,
-            graphics: graphics.clone(),
+            graphics: self.graphics.clone(),
             naga: Arc::new(naga),
         })
     }
@@ -103,7 +98,6 @@ impl<'a> Compiler<'a> {
     // Convert the given shader modules
     pub(crate) fn create_pipeline_layout(
         &self,
-        graphics: &Graphics,
         names: &[&str],
         modules: &[&naga::Module],
         visibility: &[ModuleVisibility],
@@ -112,13 +106,11 @@ impl<'a> Compiler<'a> {
         ShaderError,
     > {
         create_pipeline_layout(
-            graphics,
+            self.graphics,
             names,
             modules,
             visibility,
-            &self.texture_formats,
-            &self.texture_dimensions,
-            &self.uniform_buffer_pod_types,
+            &self.resource_types,
             &self.maybe_push_constant_layout,
         )
         .map_err(ShaderError::Reflection)
@@ -126,30 +118,83 @@ impl<'a> Compiler<'a> {
 }
 
 impl<'a> Compiler<'a> {
+    // Inserts a bind resource type into the compiler resource definitions
+    // Logs out a debug message if one of the resources gets overwritten
+    pub fn use_resource_type(
+        &mut self,
+        name: impl ToString,
+        resource: BindResourceType,
+    ) {
+        let name = name.to_string();
+        match self.resource_types.entry(name.clone()) {
+            std::collections::hash_map::Entry::Occupied(mut occupied) => {
+                log::info!("Binding resource '{name}' was replaced");
+                occupied.insert(resource);
+            },
+            std::collections::hash_map::Entry::Vacant(vacant) => {
+                vacant.insert(resource);
+            },
+        }
+    }
+
     // Define a uniform buffer type's inner struct type
-    // TODO: Fix the "buffer-trait" branch and fix this shit
     pub fn use_uniform_buffer<T: GpuPod>(
         &mut self,
         name: impl ToString,
     ) {
-        self.uniform_buffer_pod_types
-            .insert(name.to_string(), T::info());
+        let size = T::size();
+        self.use_resource_type(
+            name,
+            BindResourceType::UniformBuffer { size }
+        );
     }
 
-    // Define a uniform texture's type and texel
-    pub fn use_texture<T: Texture>(&mut self, name: impl ToString) {
+    // Define a storage buffer type's inner struct type
+    pub fn use_storage_buffer<T: GpuPod>(
+        &mut self,
+        name: impl ToString,
+        read: bool,
+        write: bool,
+    ) {
+        let size = T::size();
+        self.use_resource_type(
+            name,
+            BindResourceType::StorageBuffer {
+                size,
+                read,
+                write
+            }
+        );
+    }
+
+    // Define a uniform sampled texture's type and texel
+    pub fn use_sampled_texture<T: Texture>(&mut self, name: impl ToString) {
         let sampler_name = format!("{}_sampler", name.to_string());
         self.use_sampler::<T::T>(sampler_name);
-        let name = name.to_string();
-        self.texture_formats.insert(name.clone(), <T::T as Texel>::info());
-        let dimensionality = <<T::Region as Region>::E as Extent>::dimensionality();
-        self.texture_dimensions.insert(name, dimensionality);
+        
+        let dimensionality = <<T::Region as Region>::E as Extent>::view_dimension();
+        let info = <T::T as Texel>::info();
+        let format = info.format();
+
+        self.resource_types
+            .insert(name.to_string(), BindResourceType::SampledTexture {
+                format,
+                sample_type: super::map_texture_sample_type(&self.graphics, info),
+                sampler_binding: super::map_sampler_binding_type(&self.graphics, info),
+                view_dimension: dimensionality,
+            });
     }
 
     // Define a uniform sampler's type and texel
     pub fn use_sampler<T: Texel>(&mut self, name: impl ToString) {
-        let name = name.to_string();
-        self.texture_formats.insert(name, <T as Texel>::info());
+        let info = <T as Texel>::info();
+        let format = info.format();
+
+        self.resource_types
+            .insert(name.to_string(), BindResourceType::Sampler {
+                format: format,
+                sampler_binding: super::map_sampler_binding_type(&self.graphics, info)
+            });
     }
 
     // Define a push constant range to be pushed

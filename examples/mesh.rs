@@ -99,9 +99,10 @@ fn init(world: &mut World) {
         normal_map: None,
         mask_map: None,
         bumpiness: 1.0,
-        roughness: 1.0,
-        metallic: 1.0,
+        roughness: 0.2,
+        metallic: 0.2,
         ambient_occlusion: 1.0,
+        tint: vek::Rgb::red(),
     });
 
     // Create a simple floor and add the entity
@@ -112,14 +113,27 @@ fn init(world: &mut World) {
 
     // Create a simple cube and add the entity
     for x in 0..25 {
+        let renderer = Renderer::default();
+        let position =
+            Position::at_xyz((x / 5) as f32, 0.25, (x % 5) as f32);
+        
+        let material = pbrs.insert(PhysicallyBased {
+            albedo_map: None,
+            normal_map: Some(normal.clone()),
+            mask_map: Some(mask.clone()),
+            bumpiness: 4.0,
+            roughness: 0.2,
+            metallic: 0.2,
+            ambient_occlusion: 1.0,
+            tint: vek::Rgb::new(position.x / 5.0, position.z / 5.0, 0.0),
+        });
+
         let surface = Surface::new(
             cube.clone(),
             material.clone(),
             id.clone(),
         );
-        let renderer = Renderer::default();
-        let position =
-            Position::at_xyz((x / 5) as f32, 0.25, (x % 5) as f32);
+        
         scene.insert((surface, renderer, position));
     }
 

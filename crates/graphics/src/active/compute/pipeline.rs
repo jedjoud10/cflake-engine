@@ -35,6 +35,7 @@ impl<'a, 'r> ActiveComputePipeline<'a, 'r> {
     ) -> Result<(), SetPushConstantsError> {
         // Get the push constant layout used by the shader
         // and push new bytes onto the internally stored constants
+        let copied_push_constant_global_offset = self.push_constant_global_offset;
         let Some(layout) = super::handle_push_constants(
             self.pipeline.shader().reflected.clone(),
             &mut self.push_constant,
@@ -49,8 +50,7 @@ impl<'a, 'r> ActiveComputePipeline<'a, 'r> {
                 self.commands.push(
                     ComputeCommand::SetPushConstants {
                         size: size.get() as usize,
-                        global_offset: self
-                            .push_constant_global_offset,
+                        global_offset: copied_push_constant_global_offset,
                         local_offset: 0,
                     },
                 );

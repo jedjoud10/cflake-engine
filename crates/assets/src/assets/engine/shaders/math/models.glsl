@@ -38,6 +38,12 @@ vec3 fresnel(vec3 f0, vec3 v, vec3 h) {
 	return f0 + (1.0 - f0) * pow(cosTheta, 5.0);
 }
 
+// Fresnel function with roughness
+vec3 fresnelRoughness(vec3 f0, vec3 v, vec3 x, float roughness) {
+	float cosTheta = clamp(1.0 - max(dot(v, x), 0), 0, 1);
+	return f0 + (max(vec3(1.0 - roughness), f0) - f0) * pow(cosTheta, 5.0);
+}
+
 // Cook-torrence model for specular
 vec3 specular(vec3 f0, float roughness, vec3 v, vec3 l, vec3 n, vec3 h) {
 	vec3 num = ndf(roughness, n, h) * gsf(roughness, n, v, l) * fresnel(f0, v, h);
@@ -92,5 +98,6 @@ vec3 brdf(
 	vec3 lighting = vec3(max(dot(light.backward, surface.normal), 0.0)) * (1-shadowed);
 	lighting += ambient * 0.2;
 	brdf = brdf * light.color * light.strength * lighting;
+	brdf += calculate_sky_color(reflect(camera.view, -surface.normal), light.backward) * fresnelRoughness(surface.f0, camera.view, surface.normal, surface.roughness) * 0.1;
 	return brdf;
 }

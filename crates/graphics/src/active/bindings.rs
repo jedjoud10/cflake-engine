@@ -206,7 +206,7 @@ impl<'a> BindGroup<'a> {
 
         // Make sure the layout is the same size as buffer stride
         match entry.resource_type {
-            crate::BindResourceType::Buffer { size, .. } => {
+            crate::BindResourceType::UniformBuffer { size, .. } => {
                 if (size as usize) != buffer.stride() {
                     return Err(
                         SetBindResourceError::BufferDifferentType {

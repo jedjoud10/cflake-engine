@@ -34,12 +34,6 @@ pub enum PushConstantValidationError {
 
     #[error("The defined push constant ranges cannot be merged since there is a visibility intersection")]
     PushConstantVisibilityIntersect,
-
-    #[error("The shader defined push constant {0} is not defined in the Compiler")]
-    NotDefinedInCompiler(String),
-
-    #[error("The Compiler defined resource {0} (visibility {1:?}) is not defined in the shader (or was partially defined)")]
-    NotDefinedInShader(String, ModuleVisibility),
 }
 
 #[derive(Error, Debug)]

@@ -5,7 +5,7 @@ use crate::{
     ComputeModule, FragmentModule, Graphics, ModuleKind,
     ModuleVisibility, SamplerValidationError, ShaderModule,
     ShaderReflectionError, TexelChannels, TextureValidationError,
-    VertexModule, PushConstantValidationError,
+    VertexModule, PushConstantValidationError, TexelInfo, ElementType,
 };
 use ahash::{AHashMap, AHashSet};
 use arrayvec::ArrayVec;
@@ -89,10 +89,14 @@ impl PushConstantLayout {
 // For now, only buffers, samplers, and texture are supported
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum BindResourceType {
-    // Either a Uniform buffer or a Storage buffer
-    Buffer {
+    // A uniform buffer
+    UniformBuffer {
         size: usize,
-        storage: bool,
+    },
+
+    // A storage buffer
+    StorageBuffer {
+        size: usize,
         read: bool,
         write: bool,
     },
@@ -103,11 +107,19 @@ pub enum BindResourceType {
         sampler_binding: wgpu::SamplerBindingType,
     },
 
-    // A texture type without a sampler (texture2D)
-    Texture {
+    // A sampled texture (texture2D with separate sampler)
+    SampledTexture {
         format: wgpu::TextureFormat,
         sample_type: wgpu::TextureSampleType,
         sampler_binding: wgpu::SamplerBindingType,
+        view_dimension: wgpu::TextureViewDimension,
+    },
+
+    // A storage texture
+    StorageTexture {
+        access: wgpu::StorageTextureAccess,
+        format: wgpu::TextureFormat,
+        sample_type: wgpu::TextureSampleType,
         view_dimension: wgpu::TextureViewDimension,
     },
 }
@@ -115,34 +127,36 @@ pub enum BindResourceType {
 // Internal data that is passed to module creation
 // This is used by the compiler to define formats and types used by shaders
 struct InternalDefinitions<'a> {
-    texture_formats: &'a super::TextureFormats,
-    texture_dimensions: &'a super::TextureDimensions,
-    uniform_buffer_pod_types: &'a super::UniformBufferPodTypes,
+    resource_binding_types: &'a super::ResourceBindingTypes,
     maybe_push_constant_layout: &'a super::MaybePushConstantLayout,
 }
 
 // Convert a reflected bind entry layout to a wgpu binding type
-fn map_binding_type(value: &BindResourceLayout) -> wgpu::BindingType {
+pub(super) fn map_binding_type(value: &BindResourceLayout) -> wgpu::BindingType {
     match value.resource_type {
-        BindResourceType::Buffer {
+        BindResourceType::UniformBuffer {
             size,
-            storage,
-            read,
-            write,
         } => wgpu::BindingType::Buffer {
-            ty: match storage {
-                true => wgpu::BufferBindingType::Storage {
-                    read_only: read && !write,
-                },
-                false => wgpu::BufferBindingType::Uniform,
-            },
+            ty: wgpu::BufferBindingType::Uniform,
             has_dynamic_offset: false,
             min_binding_size: None,
         },
+
+        BindResourceType::StorageBuffer {
+            size,
+            read,
+            write
+        } => wgpu::BindingType::Buffer {
+            ty: wgpu::BufferBindingType::Storage { read_only: read && !write },
+            has_dynamic_offset: false,
+            min_binding_size: None
+        },
+
         BindResourceType::Sampler {
             sampler_binding, ..
         } => wgpu::BindingType::Sampler(sampler_binding),
-        BindResourceType::Texture {
+
+        BindResourceType::SampledTexture {
             sample_type,
             view_dimension,
             ..
@@ -151,6 +165,74 @@ fn map_binding_type(value: &BindResourceLayout) -> wgpu::BindingType {
             view_dimension,
             multisampled: false,
         },
+
+        BindResourceType::StorageTexture {
+            format,
+            sample_type,
+            access,
+            view_dimension
+        } => wgpu::BindingType::StorageTexture {
+            access,
+            format,
+            view_dimension
+        },
+    }
+}
+
+// Create a wgpu TextureSampleType out of some basic TexelInfo
+pub(super) fn map_texture_sample_type(graphics: &Graphics, info: TexelInfo) -> wgpu::TextureSampleType {
+    match info.element() {
+        ElementType::Eight { signed, normalized: false }
+        | ElementType::Sixteen { signed, normalized: false }
+        | ElementType::ThirtyTwo { signed } => match signed {
+            true => wgpu::TextureSampleType::Sint,
+            false => wgpu::TextureSampleType::Uint,
+        },
+
+        ElementType::FloatSixteen 
+        | ElementType::Eight { normalized: true, .. }
+        | ElementType::Sixteen { normalized: true, .. }
+        | ElementType::FloatThirtyTwo =>  {
+            let adapter = graphics.adapter();
+            let format = info.format();
+            let flags =
+                adapter.get_texture_format_features(format).flags;
+        
+            let depth =
+                matches!(info.channels(), TexelChannels::Depth);
+        
+            if flags
+                .contains(TextureFormatFeatureFlags::FILTERABLE)
+                && !depth
+            {
+                wgpu::TextureSampleType::Float {
+                    filterable: true,
+                }
+            } else {
+                wgpu::TextureSampleType::Float {
+                    filterable: false,
+                }
+            }
+        },
+
+        ElementType::Compressed(_) => todo!()
+    }
+}
+
+// Create a wgpu SamplerBindingType out of some basic TexelInfo
+pub(super) fn map_sampler_binding_type(graphics: &Graphics, info: TexelInfo) -> wgpu::SamplerBindingType {
+    let adapter = graphics.adapter();
+    let format = info.format();
+    let flags = adapter.get_texture_format_features(format).flags;
+
+    let depth = matches!(info.channels(), TexelChannels::Depth);
+
+    if flags.contains(TextureFormatFeatureFlags::FILTERABLE)
+        && !depth
+    {
+        wgpu::SamplerBindingType::Filtering
+    } else {
+        wgpu::SamplerBindingType::NonFiltering
     }
 }
 
@@ -160,9 +242,7 @@ pub(super) fn create_pipeline_layout(
     names: &[&str],
     modules: &[&naga::Module],
     visibility: &[ModuleVisibility],
-    texture_formats: &super::TextureFormats,
-    texture_dimensions: &super::TextureDimensions,
-    uniform_buffer_pod_types: &super::UniformBufferPodTypes,
+    resource_binding_types: &super::ResourceBindingTypes,
     maybe_push_constant_layout: &super::MaybePushConstantLayout,
 ) -> Result<
     (Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>),
@@ -197,14 +277,36 @@ pub(super) fn create_pipeline_layout(
             )))
         }
 
-        // TODO: Check for defined in shader/compiler and handle logic
+        // Get the push constant sizes as defined in the shader modules
+        let mut iter = modules.iter()
+            .flat_map(|module| module.global_variables.iter().map(move |x| (module, x)))
+            .filter(|(_, (_, val))| matches!(val.space, AddressSpace::PushConstant))
+            .map(|(module, (_, val))| (module, module.types.get_handle(val.ty).unwrap()))
+            .map(|(module, _type)| _type.inner.size(&module.constants));
+        let (first, second) = (iter.next(), iter.next());
+        
+        // Validate the push constants and check if they were defined properly in the shader
+        match push_constant_layout {
+            PushConstantLayout::Single(size, _) => {
+                if second.is_none()  {
+                    size.get() == first.unwrap()
+                } else {
+                    todo!()
+                }
+            },
+            PushConstantLayout::SplitVertexFragment { vertex, fragment } => {
+                if first.is_some() && second.is_some() {
+                    vertex.get() == first.unwrap() && fragment.get() == second.unwrap()
+                } else {
+                    todo!()
+                }
+            },
+        };
     }
 
     // Ease of use
     let definitions = InternalDefinitions {
-        texture_formats,
-        texture_dimensions,
-        uniform_buffer_pod_types,
+        resource_binding_types,
         maybe_push_constant_layout,
     };
 
@@ -237,6 +339,7 @@ pub(super) fn create_pipeline_layout(
                 let binding = &value.binding.as_ref().unwrap();
                 let set = binding.group;
                 let binding = binding.binding;
+                let space = value.space;
                 let type_ = types.get_handle(value.ty).unwrap();
                 let inner = &type_.inner;
 
@@ -245,15 +348,34 @@ pub(super) fn create_pipeline_layout(
                 let merged_group_entry_layouts = merged_group_layout
                     .get_or_insert_with(|| Default::default());
 
+
                 // Get the binding type for this global variable
                 let binding_type = match inner {
                     // Uniform Buffers
-                    TypeInner::Struct { span, .. } => {
+                    TypeInner::Struct { span, .. } if matches!(space, AddressSpace::Uniform) | matches!(space, AddressSpace::Storage { .. }) => {
+                        // Get the read flag of this buffer
+                        let read = match space {
+                            AddressSpace::Storage { access } => access.contains(
+                                naga::StorageAccess::LOAD
+                            ),
+                            _ => true,
+                        };
+
+                        // Get the write flag of this buffer
+                        let write = match space {
+                            AddressSpace::Storage { access } => access.contains(
+                                naga::StorageAccess::STORE
+                            ),
+                            _ => false,
+                        };
+
                         Some(reflect_buffer(
                             &name,
                             graphics,
                             &definitions,
                             *span,
+                            read,
+                            write,
                         ).map_err(ShaderReflectionError::BufferValidation))
                     }
 
@@ -262,7 +384,23 @@ pub(super) fn create_pipeline_layout(
                         dim,
                         class,
                         arrayed,
-                    } => {
+                    } if matches!(space, AddressSpace::Handle) | matches!(space, AddressSpace::Storage { .. }) => {
+                        // Get the read flag of this image
+                        let read = match space {
+                            AddressSpace::Storage { access } => access.contains(
+                                naga::StorageAccess::LOAD
+                            ),
+                            _ => true,
+                        };
+
+                        // Get the write flag of this image
+                        let write = match space {
+                            AddressSpace::Storage { access } => access.contains(
+                                naga::StorageAccess::STORE
+                            ),
+                            _ => false,
+                        };
+
                         Some(reflect_texture(
                             &name,
                             class,
@@ -270,11 +408,13 @@ pub(super) fn create_pipeline_layout(
                             graphics,
                             &definitions,
                             *arrayed,
+                            read,
+                            write
                         ).map_err(ShaderReflectionError::TextureValidation))
                     }
 
                     // Uniform Sampler
-                    TypeInner::Sampler { comparison } => {
+                    TypeInner::Sampler { comparison } if matches!(space, AddressSpace::Handle) => {
                         Some(reflect_sampler(
                             &name,
                             graphics,
@@ -545,33 +685,33 @@ fn internal_create_pipeline_layout(
     (Arc::new(shader), layout)
 }
 
-// TODO: VALIDATE BUFFER (make sure it's same size and alignment)
+
 fn reflect_buffer(
     name: &str,
     graphics: &Graphics,
     definitions: &InternalDefinitions,
     size: u32,
+    read: bool,
+    write: bool,
 ) -> Result<BindResourceType, BufferValidationError> {
-    // TODO: Implement storage buffers
-    let pod_info =
-        definitions.uniform_buffer_pod_types.get(name).unwrap();
-    let size = pod_info.size();
-
-    Ok(BindResourceType::Buffer {
-        size,
-        storage: false,
-        read: true,
-        write: false,
-    })
+    // TODO: VALIDATE BUFFER (make sure it's same size, access)
+    let binding =
+        definitions.resource_binding_types.get(name).unwrap().clone();
+    Ok(binding)
 }
 
-// TODO: VALIDATE TEXTURE (make sure it's same dimension, type, and texel type)
+
 fn reflect_sampler(
     name: &str,
     graphics: &Graphics,
     definitions: &InternalDefinitions,
     comparison: bool,
 ) -> Result<BindResourceType, SamplerValidationError> {
+    // TODO: VALIDATE SAMPLER (make sure it's same texel type, type)
+    let binding =
+        definitions.resource_binding_types.get(name).unwrap().clone();
+    Ok(binding)
+    /*
     Ok(BindResourceType::Sampler {
         sampler_binding: wgpu::SamplerBindingType::Filtering,
         format: definitions
@@ -580,9 +720,9 @@ fn reflect_sampler(
             .unwrap()
             .format(),
     })
+    */
 }
 
-// TODO: VALIDATE SAMPLEr (make sure it's same texel type, type)
 fn reflect_texture(
     name: &str,
     class: &naga::ImageClass,
@@ -590,8 +730,18 @@ fn reflect_texture(
     graphics: &Graphics,
     definitions: &InternalDefinitions,
     arrayed: bool,
+    read: bool,
+    write: bool,
 ) -> Result<BindResourceType, TextureValidationError> {
-    let sample_type = match class {
+    // TODO: VALIDATE TEXTURE (make sure it's same dimension, type, and texel type)
+    let binding =
+        definitions.resource_binding_types.get(name).unwrap().clone();
+    Ok(binding)
+
+
+
+/*
+let sample_type = match class {
         naga::ImageClass::Sampled { kind, multi } => match kind {
             naga::ScalarKind::Sint => wgpu::TextureSampleType::Sint,
             naga::ScalarKind::Uint => wgpu::TextureSampleType::Uint,
@@ -622,7 +772,7 @@ fn reflect_texture(
             _ => panic!(),
         },
         naga::ImageClass::Depth { multi } => todo!(),
-        naga::ImageClass::Storage { format, access } => todo!(),
+        naga::ImageClass::Storage { format, access } => wgpu::TextureSamplerType,
     };
 
     let view_dimension = match dim {
@@ -640,20 +790,7 @@ fn reflect_texture(
     };
 
     let sampler_binding = {
-        let adapter = graphics.adapter();
-        let info = definitions.texture_formats.get(name).unwrap();
-        let format = info.format();
-        let flags = adapter.get_texture_format_features(format).flags;
-
-        let depth = matches!(info.channels(), TexelChannels::Depth);
-
-        if flags.contains(TextureFormatFeatureFlags::FILTERABLE)
-            && !depth
-        {
-            wgpu::SamplerBindingType::Filtering
-        } else {
-            wgpu::SamplerBindingType::NonFiltering
-        }
+        
     };
 
     Ok(BindResourceType::Texture {
@@ -663,4 +800,5 @@ fn reflect_texture(
         format,
         sampler_binding,
     })
+ */
 }

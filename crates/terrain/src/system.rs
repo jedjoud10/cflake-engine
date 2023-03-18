@@ -1,9 +1,21 @@
+use assets::Assets;
 use graphics::Graphics;
 use world::{System, World};
+
+use crate::VoxelGenerator;
 
 // Called at the start of the app to add the resources
 fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
+    let assets = world.get::<Assets>().unwrap();
+
+    // Create the voxel generator
+    let voxel = VoxelGenerator::new(&graphics, &assets);
+
+    // Add the resources to the world
+    drop(graphics);
+    drop(assets);
+    world.insert(voxel);
 }
 
 

@@ -32,6 +32,12 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
     type T: Texel;
 
     // Create a new texture with some possibly predefined data
+    
+    // TODO: Remove "sampling" paramater from this method and separate the sampler into it's own type
+    // (cannot use type validation since it would not be needed and it would add a lot of boilerplate)
+    // OR 
+    // Make it optional, and do runtime checks to check if the texture usage is TextureUsage::SAMPLED,
+    // and enforce the sampling parameter if it is
     fn from_texels(
         graphics: &Graphics,
         texels: Texels<Self::T>,
@@ -58,8 +64,10 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
         }
 
         // Get the image type using the dimensionality
-        let dimension =
-            <<Self::Region as Region>::E as Extent>::dimensionality();
+        let view_dimensions =
+            <<Self::Region as Region>::E as Extent>::view_dimension();
+        let dimension = 
+            <<Self::Region as Region>::E as Extent>::dimension();
         let extent_3d = extent_to_extent3d(extent);
 
         // If the extent contains a 0 in any axii, it's invalid
@@ -191,7 +199,7 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
         // Create the texture's texture view descriptor
         let view_descriptor = TextureViewDescriptor {
             format: Some(format),
-            dimension: Some(dims_to_view_dims(dimension)),
+            dimension: Some(view_dimensions),
             aspect,
             ..Default::default()
         };
@@ -206,7 +214,7 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
                 // Create the texture's texture view descriptor
                 let view_descriptor = TextureViewDescriptor {
                     format: Some(format),
-                    dimension: Some(dims_to_view_dims(dimension)),
+                    dimension: Some(view_dimensions),
                     aspect,
                     base_mip_level: i,
                     mip_level_count: Some(
@@ -320,8 +328,10 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
         }
 
         // Fetch dimensions, name, and texel format
+        let view_dimensions =
+            <<Self::Region as Region>::E as Extent>::view_dimension();
         let dimension =
-            <<Self::Region as Region>::E as Extent>::dimensionality();
+            <<Self::Region as Region>::E as Extent>::dimension();
         let name = utils::pretty_type_name::<Self::T>();
         let format = <Self::T>::format();
         log::debug!(
@@ -352,7 +362,7 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
         // Create the texture's texture view descriptor
         let view_descriptor = TextureViewDescriptor {
             format: Some(format),
-            dimension: Some(dims_to_view_dims(dimension)),
+            dimension: Some(view_dimensions),
             aspect,
             ..Default::default()
         };
@@ -534,7 +544,7 @@ fn size_within_limits<E: Extent>(
 ) -> bool {
     // Create the max possible texture size from device limits
     let limits = graphics.device().limits();
-    let max = match E::dimensionality() {
+    let max = match E::dimension() {
         wgpu::TextureDimension::D1 => limits.max_texture_dimension_1d,
         wgpu::TextureDimension::D2 => limits.max_texture_dimension_2d,
         wgpu::TextureDimension::D3 => limits.max_texture_dimension_3d,
@@ -543,17 +553,6 @@ fn size_within_limits<E: Extent>(
 
     // Check if the new texture size is physically possible
     max.is_larger_than(extent)
-}
-
-// Convert TextureDimension to TextureViewDimension
-fn dims_to_view_dims(
-    dimension: wgpu::TextureDimension,
-) -> wgpu::TextureViewDimension {
-    match dimension {
-        wgpu::TextureDimension::D1 => wgpu::TextureViewDimension::D1,
-        wgpu::TextureDimension::D2 => wgpu::TextureViewDimension::D2,
-        wgpu::TextureDimension::D3 => wgpu::TextureViewDimension::D3,
-    }
 }
 
 // Convert the given origin to an Origin

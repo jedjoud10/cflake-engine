@@ -122,6 +122,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
     ) -> Result<(), SetPushConstantsError> {
         // Get the push constant layout used by the shader
         // and push new bytes onto the internally stored constants
+        let copied_push_constant_global_offset = self.push_constant_global_offset;
         let Some(layout) = super::handle_push_constants(
             self.pipeline.shader().reflected.clone(),
             &mut self.push_constant,
@@ -136,7 +137,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
                 self.commands.push(RenderCommand::SetPushConstants {
                     stages: visibility_to_wgpu_stage(&visibility),
                     size: size.get() as usize,
-                    global_offset: self.push_constant_global_offset,
+                    global_offset: copied_push_constant_global_offset,
                     local_offset: 0,
                 });
             }
@@ -150,7 +151,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
                 self.commands.push(RenderCommand::SetPushConstants {
                     stages: wgpu::ShaderStages::VERTEX,
                     size: vertex.get() as usize,
-                    global_offset: self.push_constant_global_offset,
+                    global_offset: copied_push_constant_global_offset,
                     local_offset: 0,
                 });
 
@@ -158,7 +159,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
                 self.commands.push(RenderCommand::SetPushConstants {
                     stages: wgpu::ShaderStages::FRAGMENT,
                     size: fragment.get() as usize,
-                    global_offset: self.push_constant_global_offset
+                    global_offset: copied_push_constant_global_offset
                         + vertex.get() as usize,
                     local_offset: vertex.get() as usize,
                 });
