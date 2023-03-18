@@ -70,8 +70,11 @@ pub(super) fn render_surfaces<'r, M: Material>(
     let query = scene.query::<(&Surface<M>, &Renderer)>();
 
     // Keep track of the last material
-    let mut last: Option<Handle<M>> = None;
-    let mut switched_instances;
+    let mut last_material: Option<Handle<M>> = None;
+    let mut switched_material_instances;
+
+    // Keep track of the last model
+    let mut last_mesh: Option<Handle<Mesh>> = None;
 
     // Iterate over all the surface of this material
     for (surface, renderer) in query {
@@ -79,9 +82,9 @@ pub(super) fn render_surfaces<'r, M: Material>(
         let mesh = meshes.get(&surface.mesh);
 
         // Check if we changed material instances
-        if last != Some(surface.material.clone()) {
-            switched_instances = true;
-            last = Some(surface.material.clone());
+        if last_material != Some(surface.material.clone()) {
+            switched_material_instances = true;
+            last_material = Some(surface.material.clone());
             let material = materials.get(&surface.material);
 
             // Set the instance group bindings
@@ -94,7 +97,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
                 );
             })
         } else {
-            switched_instances = false;
+            switched_material_instances = false;
         }
 
         // Skip rendering if not needed
@@ -112,28 +115,35 @@ pub(super) fn render_surfaces<'r, M: Material>(
             );
         });
 
-        // Bind the mesh's vertex buffers
-        use crate::attributes::*;
-        set_vertex_buffer_attribute::<Position>(
-            supported,
-            mesh,
-            &mut active,
-        );
-        set_vertex_buffer_attribute::<Normal>(
-            supported,
-            mesh,
-            &mut active,
-        );
-        set_vertex_buffer_attribute::<Tangent>(
-            supported,
-            mesh,
-            &mut active,
-        );
-        set_vertex_buffer_attribute::<TexCoord>(
-            supported,
-            mesh,
-            &mut active,
-        );
+        // Set the vertex buffers and index buffers when we change meshes
+        if last_mesh != Some(surface.mesh.clone()) {
+            use crate::attributes::*;
+            set_vertex_buffer_attribute::<Position>(
+                supported,
+                mesh,
+                &mut active,
+            );
+            set_vertex_buffer_attribute::<Normal>(
+                supported,
+                mesh,
+                &mut active,
+            );
+            set_vertex_buffer_attribute::<Tangent>(
+                supported,
+                mesh,
+                &mut active,
+            );
+            set_vertex_buffer_attribute::<TexCoord>(
+                supported,
+                mesh,
+                &mut active,
+            );
+
+            // Set the index buffer
+            let triangles = mesh.triangles();
+            active.set_index_buffer(triangles.buffer(), ..).unwrap();
+            last_mesh = Some(surface.mesh.clone());
+        }
 
         // Set the push constant ranges right before rendering (in the hot loop!)
         active
@@ -149,17 +159,13 @@ pub(super) fn render_surfaces<'r, M: Material>(
             })
             .unwrap();
 
-        // Set the index buffer
-        let triangles = mesh.triangles();
-        active.set_index_buffer(triangles.buffer(), ..).unwrap();
-
         // Draw the triangulated mesh
-        let indices = 0..(triangles.buffer().len() as u32 * 3);
+        let indices = 0..(mesh.triangles().buffer().len() as u32 * 3);
         active.draw_indexed(indices, 0..1);
         default.draw_call_index += 1;
 
         // Add 1 to the material index when we switch instances
-        if switched_instances {
+        if switched_material_instances {
             default.material_index += 1;
         }
     }

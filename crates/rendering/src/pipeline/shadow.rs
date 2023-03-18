@@ -4,7 +4,7 @@ use crate::{
 };
 use ecs::Scene;
 use graphics::{GpuPod, ModuleVisibility};
-use utils::Storage;
+use utils::{Storage, Handle};
 use world::World;
 
 // Returns true if the entity should cast shadows, false otherwise
@@ -33,6 +33,9 @@ pub(super) fn render_shadows<'r, M: Material>(
     let scene = world.get::<Scene>().unwrap();
     let query = scene.query::<(&Surface<M>, &Renderer)>();
 
+    // Keep track of the last model so we don't have to rebind buffers
+    let mut last: Option<Handle<Mesh>> = None;
+
     // Iterate over all the surfaces of this material
     for (surface, renderer) in query {
         // Get the mesh and material that correspond to this surface
@@ -50,21 +53,25 @@ pub(super) fn render_shadows<'r, M: Material>(
                 let matrix = renderer.matrix;
                 let cols = matrix.cols;
                 let bytes = GpuPod::into_bytes(&cols);
-                constants.push(bytes, 0, ModuleVisibility::Vertex);
+                constants.push(bytes, 0, ModuleVisibility::Vertex).unwrap();
             })
             .unwrap();
 
-        // Set the position buffer
-        let positions =
+        // Set the vertex buffers and index buffers when we change models
+        if last != Some(surface.mesh.clone()) {
+            // Set the position buffer
+            let positions =
             mesh.vertices().attribute::<Position>().unwrap();
-        active.set_vertex_buffer::<<Position as crate::MeshAttribute>::V>(0, positions, ..).unwrap();
+            active.set_vertex_buffer::<<Position as crate::MeshAttribute>::V>(0, positions, ..).unwrap();
 
-        // Set the index buffer
-        let triangles = mesh.triangles();
-        active.set_index_buffer(triangles.buffer(), ..).unwrap();
+            // Set the index buffer
+            let triangles = mesh.triangles();
+            active.set_index_buffer(triangles.buffer(), ..).unwrap();
+            last = Some(surface.mesh.clone());
+        }
 
         // Draw the triangulated mesh
-        let indices = 0..(triangles.buffer().len() as u32 * 3);
+        let indices = 0..(mesh.triangles().buffer().len() as u32 * 3);
         active.draw_indexed(indices, 0..1);
     }
 }
