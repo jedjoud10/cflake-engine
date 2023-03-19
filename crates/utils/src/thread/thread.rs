@@ -53,7 +53,6 @@ impl ThreadPool {
         };
 
         // Spawn the worker threads
-        let num = 1;
         let joins = (0..num)
             .into_iter()
             .map(|i| spawn(&threadpool, i))
@@ -227,7 +226,6 @@ impl ThreadPool {
 
     // Execute a raw task. Only should be used internally
     pub(super) fn append(&mut self, task: ThreadedTask) {
-        log::trace!("append: added task to thread pool");
         self.waiting.fetch_add(1, Ordering::Relaxed);
         self.task_sender.as_ref().unwrap().send(task).unwrap();
     }
@@ -274,13 +272,11 @@ impl ThreadPool {
 
     // Wait till all the threads finished executing
     pub fn join(&self) {
-        log::trace!("join: waiting for threads to complete tasks...");
         while self.num_active_threads() > 0
             || self.num_idling_jobs() > 0
         {
             std::hint::spin_loop();
         }
-        log::trace!("join: thread finished tasks");
     }
 }
 

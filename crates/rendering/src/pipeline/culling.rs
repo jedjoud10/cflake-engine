@@ -59,6 +59,6 @@ pub(super) fn cull_surfaces<'r, M: Material>(
         let mesh = meshes.get(&surface.mesh);
         let aabb = mesh.vertices().aabb().unwrap();
         surface.culled = !intersects_frustum(&default.camera_frustum, aabb, &renderer.matrix)
-    }, 1);
+    }, 256);
     */
 }

@@ -32,6 +32,7 @@ pub struct App {
     // Main app resources
     systems: Systems,
     world: World,
+    logging_level: log::LevelFilter,
     el: EventLoop<()>,
 }
 
@@ -53,6 +54,7 @@ impl Default for App {
             user_assets_folder: None,
             systems,
             el: EventLoop::new(),
+            logging_level: log::LevelFilter::Debug,
             world,
         }
     }
@@ -175,6 +177,15 @@ impl App {
         })
     }
 
+    // Set the logger level that can hide/show log messages
+    pub fn set_logging_level(
+        mut self,
+        level: log::LevelFilter
+    ) -> Self {
+        self.logging_level = level;
+        self
+    }
+
     // Initialize the global logger (also sets the output file)
     fn init_logger(&mut self, sender: mpsc::Sender<String>) {
         use fern::colors::*;
@@ -238,7 +249,7 @@ impl App {
             .level_for("wgpu", log::LevelFilter::Warn)
             .level_for("wgpu_core", log::LevelFilter::Warn)
             .level_for("wgpu_hal", log::LevelFilter::Warn)
-            .level(log::LevelFilter::Trace)
+            .level(self.logging_level)
             .chain(console_logger(colors_level, colors_line))
             .chain(file_logger(sender))
             .apply()
@@ -443,9 +454,7 @@ impl App {
         self.world.insert(window_settings);
 
         // Print app / author / engine data
-        log::info!(
-            "App Name: '{app_name}', App Version: '{app_version}'"
-        );
+        log::info!("App Name: '{app_name}', App Version: '{app_version}'");
         log::info!("Engine Name: '{engine_name}, Engine Version: '{engine_version}'");
         log::info!("Author Name: '{author_name}'");
         self

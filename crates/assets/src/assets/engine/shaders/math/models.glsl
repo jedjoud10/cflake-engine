@@ -98,6 +98,6 @@ vec3 brdf(
 	vec3 lighting = vec3(max(dot(light.backward, surface.normal), 0.0)) * (1-shadowed);
 	lighting += ambient * 0.2;
 	brdf = brdf * light.color * light.strength * lighting;
-	brdf += calculate_sky_color(reflect(camera.view, -surface.normal), light.backward) * fresnelRoughness(surface.f0, camera.view, surface.normal, surface.roughness) * 0.1;
+	brdf += calculate_sky_color(reflect(camera.view, -surface.normal), light.backward) * fresnelRoughness(surface.f0, camera.view, surface.normal, surface.roughness) * 0.06;
 	return brdf;
 }

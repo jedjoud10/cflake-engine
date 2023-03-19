@@ -35,7 +35,7 @@ fn update(world: &mut World) {
             matrix *=
                 scale.map_or(matrix, |s| matrix * vek::Mat4::from(s));
             renderer.matrix = matrix;
-    }, 1);
+    }, 256);
 }
 
 // The matrix system will be responsible for updating the matrices of the renderer

@@ -49,7 +49,7 @@ void main() {
 	vec3 albedo = texture(sampler2D(albedo_map, albedo_map_sampler), uv).rgb * material.tint.rgb;
 	vec3 bumps = texture(sampler2D(normal_map, normal_map_sampler), uv).rgb * 2.0 - 1.0;
     vec3 mask = texture(sampler2D(mask_map, mask_map_sampler), uv).rgb;
-    mask *= vec3(material.roughness, material.metallic, 1 / material.ambient_occlusion);
+    mask *= vec3(1 / material.ambient_occlusion, material.roughness, material.metallic);
 	bumps.xy *= material.bumpiness;
 
 	// Calculate the world space normals

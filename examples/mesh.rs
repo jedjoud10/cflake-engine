@@ -100,7 +100,7 @@ fn init(world: &mut World) {
         normal_map: None,
         mask_map: None,
         bumpiness: 1.0,
-        roughness: 0.2,
+        roughness: 1.0,
         metallic: 0.2,
         ambient_occlusion: 1.0,
         tint: vek::Rgb::red(),
@@ -123,7 +123,7 @@ fn init(world: &mut World) {
             normal_map: Some(normal.clone()),
             mask_map: Some(mask.clone()),
             bumpiness: 4.0,
-            roughness: 0.2,
+            roughness: 0.5,
             metallic: 0.2,
             ambient_occlusion: 1.0,
             tint: vek::Rgb::new(
@@ -197,19 +197,12 @@ fn update(world: &mut World) {
     let input = world.get::<Input>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
 
-    for (_, pos) in scene.query_mut::<(&Renderer, &mut Position)>() {
-        **pos += vek::Vec3::broadcast(time.delta().as_secs_f32());
-    }
-    
-
     // Rotation the light
-    /*
     if let Some((rotation, _)) =
         scene.find_mut::<(&mut Rotation, &DirectionalLight)>()
     {
-        rotation.rotate_x(-0.1 * time.delta().as_secs_f32());
+        rotation.rotate_y(-0.1 * time.delta().as_secs_f32());
     }
-    */
 
     // Exit the game when the user pressed Escape
     if input.get_button(Button::Escape).pressed() {

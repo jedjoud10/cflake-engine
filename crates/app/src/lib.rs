@@ -36,6 +36,7 @@ pub mod prelude {
         ops::*, Extent2, Extent3, Quaternion, Vec2, Vec3, Vec4, Rgb, Rgba
     };
     pub use half::f16;
+    pub use log::LevelFilter;
     pub use winit;
 
     // Gfx related
