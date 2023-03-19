@@ -107,10 +107,11 @@ fn init(world: &mut World) {
     });
 
     // Create a simple floor and add the entity
-    let surface = Surface::new(plane, material.clone(), id.clone());
+    let surface = Surface::new(plane.clone(), material.clone(), id.clone());
     let renderer = Renderer::default();
     let scale = Scale::uniform(25.0);
-    scene.insert((surface, renderer, scale));
+    let culler = Culler::from_mesh(plane);
+    scene.insert((surface, renderer, scale, culler));
 
     // Create a simple cube and add the entity
     for x in 0..25 {
@@ -133,10 +134,11 @@ fn init(world: &mut World) {
             ),
         });
 
+        let culler = Culler::from_mesh(cube.clone());
         let surface =
             Surface::new(cube.clone(), material.clone(), id.clone());
 
-        scene.insert((surface, renderer, position));
+        scene.insert((surface, renderer, position, culler));
     }
 
     // Create a simple sphere and add the entity

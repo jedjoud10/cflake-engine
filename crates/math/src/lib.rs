@@ -2,7 +2,7 @@ mod bounds;
 mod common;
 mod intersect;
 mod octrees;
-mod shapes;
+pub mod shapes;
 mod tests;
 pub use bounds::*;
 pub use common::*;

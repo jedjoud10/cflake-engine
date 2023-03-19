@@ -1,5 +1,5 @@
 use graphics::Triangle;
-use math::AABB;
+use math::Aabb;
 use std::ops::Neg;
 
 use super::attributes::{

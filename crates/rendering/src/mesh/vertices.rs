@@ -6,7 +6,7 @@ use std::{
 use super::attributes::*;
 use crate::MeshAabbComputeError;
 use graphics::{Buffer, BufferInfo, VertexBuffer};
-use math::AABB;
+use math::Aabb;
 
 // Immutable access to the mesh vertices
 pub struct VerticesRef<'a> {

@@ -1,7 +1,7 @@
 use crate::{
     ActiveScenePipeline, ActiveSceneRenderPass,
     DefaultMaterialResources, EnabledMeshAttributes, Material, Mesh,
-    MeshAttribute, Renderer, SceneColor, SceneDepth, Surface,
+    MeshAttribute, Renderer, SceneColor, SceneDepth, Surface, Culler,
 };
 use ecs::Scene;
 use graphics::RenderPipeline;
@@ -31,15 +31,6 @@ pub(crate) fn set_vertex_buffer_attribute<
     }
 }
 
-// Returns true if the pipeline should render the given entity, false otherwise
-fn filter<M: Material>(mesh: &Mesh, renderer: &Renderer) -> bool {
-    let enabled = renderer.visible;
-    let attribute =
-        mesh.vertices().enabled().contains(M::attributes());
-    let validity = mesh.vertices().len().is_some();
-    enabled && validity && attribute
-}
-
 // Render all the visible surfaces of a specific material type
 pub(super) fn render_surfaces<'r, M: Material>(
     world: &'r World,
@@ -67,7 +58,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
 
     // Get all the entities that contain a visible surface
     let scene = world.get::<Scene>().unwrap();
-    let query = scene.query::<(&Surface<M>, &Renderer)>();
+    let query = scene.query::<(&Surface<M>, &Renderer, Option<&Culler>)>();
 
     // Keep track of the last material
     let mut last_material: Option<Handle<M>> = None;
@@ -77,7 +68,19 @@ pub(super) fn render_surfaces<'r, M: Material>(
     let mut last_mesh: Option<Handle<Mesh>> = None;
 
     // Iterate over all the surface of this material
-    for (surface, renderer) in query {
+    for (surface, renderer, culler) in query {
+        // If we use a bound culler, make sure we don't render culled meshes
+        if let Some(culler) = culler {
+            if culler.culled {
+                continue;
+            }
+        }
+
+        // If the mesh isn't visible, don't render is
+        if !renderer.visible {
+            continue;
+        }
+
         // Get the mesh and material that correspond to this surface
         let mesh = meshes.get(&surface.mesh);
 
@@ -100,8 +103,11 @@ pub(super) fn render_surfaces<'r, M: Material>(
             switched_material_instances = false;
         }
 
-        // Skip rendering if not needed
-        if !filter::<M>(mesh, renderer) {
+        // Skip rendering if the mesh is invalid
+        let attribute =
+            mesh.vertices().enabled().contains(M::attributes());
+        let validity = mesh.vertices().len().is_some();
+        if !(attribute && validity) {
             continue;
         }
 

@@ -7,6 +7,9 @@ pub use sphere::*;
 
 // A shape is a 3D geometrical object that takes space
 // For simplicity's sake, shapes can only be composed of real numbers, although I am going to remove this restriction later on
+
+// TODO: Figure out if we should use the trait system or stay consistent with vek and use macros
+// currently we use macros but idk if that's a good idea
 pub trait Shape<T: Real>: Movable<T> + Boundable<T> + Volume<T> + SurfaceArea<T> {}
 
 // Shapes that have a concrete positions
