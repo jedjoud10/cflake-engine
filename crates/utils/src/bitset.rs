@@ -5,4 +5,4 @@ mod utils;
 pub use atomic::*;
 pub use bitset::*;
 pub use hibitset::*;
-pub use utils::*;
+pub use self::utils::*;

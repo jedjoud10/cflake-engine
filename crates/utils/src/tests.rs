@@ -135,6 +135,22 @@ mod bitset {
         assert_eq!(bitset.find_one_from(2), Some(2));
         assert_eq!(bitset.find_one_from(3), Some(4));
     }
+
+    #[test]
+    fn pattern_all_set() {
+        let mut bitset = BitSet::new();
+        bitset.set(0);
+        bitset.set(1);
+        bitset.set(2);
+        bitset.set(3);
+        bitset.set(4);
+
+        assert_eq!(bitset.count_ones(), 5);
+        assert_eq!(bitset.find_one_from(0), Some(0));
+        assert_eq!(bitset.find_one_from(1), Some(1));
+        assert_eq!(bitset.find_one_from(2), Some(2));
+        assert_eq!(bitset.find_one_from(3), Some(3));
+    }
 }
 
 #[cfg(test)]

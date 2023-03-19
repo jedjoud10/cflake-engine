@@ -106,8 +106,6 @@ impl ThreadPool {
             function: &F,
             bitset: Option<&BitSet>,
         ) {
-            // TODO: Bug occurs when bitset filtering is enabled and when we execute on multiple threads at the same time
-            // idk why this is caused but it's probably cause I do bit checking wrong or offset / length is wrong
             if let Some(bitset) = &bitset {
                 // With a bitset filter
                 let mut i = 0;
@@ -116,7 +114,7 @@ impl ThreadPool {
                     if let Some(hop) =
                         bitset.find_one_from(i + offset)
                     {
-                        i = hop;
+                        i = hop - offset;
                     } else {
                         return;
                     }
