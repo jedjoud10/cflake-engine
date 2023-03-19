@@ -53,6 +53,7 @@ impl ThreadPool {
         };
 
         // Spawn the worker threads
+        let num = 1;
         let joins = (0..num)
             .into_iter()
             .map(|i| spawn(&threadpool, i))
@@ -105,6 +106,8 @@ impl ThreadPool {
             function: &F,
             bitset: Option<&BitSet>,
         ) {
+            // TODO: Bug occurs when bitset filtering is enabled and when we execute on multiple threads at the same time
+            // idk why this is caused but it's probably cause I do bit checking wrong or offset / length is wrong
             if let Some(bitset) = &bitset {
                 // With a bitset filter
                 let mut i = 0;
@@ -226,6 +229,7 @@ impl ThreadPool {
 
     // Execute a raw task. Only should be used internally
     pub(super) fn append(&mut self, task: ThreadedTask) {
+        log::trace!("append: added task to thread pool");
         self.waiting.fetch_add(1, Ordering::Relaxed);
         self.task_sender.as_ref().unwrap().send(task).unwrap();
     }

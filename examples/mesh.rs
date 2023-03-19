@@ -198,9 +198,9 @@ fn update(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
 
     for (_, pos) in scene.query_mut::<(&Renderer, &mut Position)>() {
-        //**pos += vek::Vec3::broadcast(time.delta().as_secs_f32());
+        **pos += vek::Vec3::broadcast(time.delta().as_secs_f32());
     }
-
+    
 
     // Rotation the light
     /*

@@ -38,6 +38,10 @@ pub(super) fn cull_surfaces<'r, M: Material>(
     meshes: &'r Storage<Mesh>,
     default: &mut DefaultMaterialResources<'r>,
 ) {
+    // TODO: Disabled this cause the CPU mesh AABB readback is slow
+    // gotta implement buffer CPU caching or mesh AABB caching for that
+
+    /*
     // Don't cull if there's no need
     if !M::frustum_culling() {
         return;
@@ -56,4 +60,5 @@ pub(super) fn cull_surfaces<'r, M: Material>(
         let aabb = mesh.vertices().aabb().unwrap();
         surface.culled = !intersects_frustum(&default.camera_frustum, aabb, &renderer.matrix)
     }, 1);
+    */
 }

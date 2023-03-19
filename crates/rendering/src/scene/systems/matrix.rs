@@ -16,12 +16,12 @@ fn update(world: &mut World) {
     let f3 = modified::<Scale>();
     let f4 = added::<Renderer>();
     let filter = f1 | f2 | f3 | f4;
-    let query = scene.query_mut_with::<(
+    let query = scene.query_mut::<(
         &mut Renderer,
         Option<&ecs::Position>,
         Option<&ecs::Rotation>,
         Option<&ecs::Scale>,
-    )>(filter);
+    )>();
 
     // Update the matrices of objects that might contain location, rotation, or scale
     query.for_each(

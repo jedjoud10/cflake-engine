@@ -94,7 +94,7 @@ pub trait Material: 'static + Sized + Sync + Send {
 
     // Should surfaces using this material use frustum culling?
     fn frustum_culling() -> bool {
-        false
+        true
     }
 
     // Fetch the required resources from the world
