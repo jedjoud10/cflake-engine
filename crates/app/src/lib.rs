@@ -33,8 +33,9 @@ pub mod prelude {
     pub use serde::{Deserialize, Serialize};
     pub use vek;
     pub use vek::{
-        ops::*, Extent2, Extent3, Quaternion, Vec2, Vec3, Vec4,
+        ops::*, Extent2, Extent3, Quaternion, Vec2, Vec3, Vec4, Rgb, Rgba
     };
+    pub use half::f16;
     pub use winit;
 
     // Gfx related

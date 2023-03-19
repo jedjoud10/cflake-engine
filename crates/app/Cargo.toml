@@ -26,6 +26,7 @@ terrain = { path = "../terrain" }
 fern = { version = "0.6.1", features = ["colored"] }
 chrono = "0.4.23"
 serde = "1.0.145"  
+half = { version = "2.1.0", features = ["bytemuck", "num-traits"] }
 log = { workspace = true }
 vek = { workspace = true }
 ahash = { workspace = true }

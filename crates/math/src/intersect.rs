@@ -1,45 +1,35 @@
-use vek::Clamp;
+use std::cmp::PartialOrd;
 
-use crate::{Sphere, AABB};
+use vek::{Clamp, num_traits::real::Real};
+
+use crate::{Sphere, Aabb};
 
 // Check if an AABB intersects another AABB
-pub fn aabb_aabb(aabb: &AABB, other: &AABB) -> bool {
+pub fn aabb_aabb<T>(aabb: &Aabb<T>, other: &Aabb<T>) -> bool where T: PartialOrd {
     let max = aabb.min.partial_cmple(&other.max).reduce_and();
     let min = other.min.partial_cmplt(&aabb.max).reduce_and();
     max && min
 }
 
 // Check if a point is inside an AABB
-pub fn point_aabb(point: &vek::Vec3<f32>, aabb: &AABB) -> bool {
+pub fn point_aabb<T>(point: &vek::Vec3<T>, aabb: &Aabb<T>) -> bool where T: PartialOrd {
     aabb.min.partial_cmple(point).reduce_and()
         && aabb.max.partial_cmpgt(point).reduce_and()
 }
 
 // Check if an AABB is intersecting a sphere
-pub fn aabb_sphere(aabb: &AABB, sphere: &Sphere) -> bool {
+pub fn aabb_sphere<T>(aabb: &Aabb<T>, sphere: &Sphere<T>) -> bool where T: PartialOrd + Real, vek::Vec3<T>: vek::ops::Clamp {
     let nearest_point = sphere.center.clamped(aabb.min, aabb.max);
     point_sphere(&nearest_point, sphere)
 }
 
 // Check if a sphere is intersecting a sphere
-pub fn sphere_sphere(first: &Sphere, second: &Sphere) -> bool {
+pub fn sphere_sphere<T>(first: &Sphere<T>, second: &Sphere<T>) -> bool where T: Real {
     vek::Vec3::distance(second.center, second.center)
         < (first.radius + second.radius)
 }
 
 // Check if a point is inside a sphere
-pub fn point_sphere(point: &vek::Vec3<f32>, sphere: &Sphere) -> bool {
+pub fn point_sphere<T>(point: &vek::Vec3<T>, sphere: &Sphere<T>) -> bool where T: Real {
     point.distance(sphere.center) < sphere.radius
 }
-
-/*
-// Check if some shapes intersect an octree, and if they do, return the node indices for the nodes that intersect the shapes
-pub fn shapes_octree<'a>(shapes: &[&dyn Shape], octree: &'a Octree) -> Vec<&'a Node> {
-    octree.recurse(|node| {
-        shapes
-            .iter()
-            .map(|shape| shape.bounds())
-            .any(|bound| aabb_aabb(&node.aabb(), &bound))
-    })
-}
-*/

@@ -3,44 +3,44 @@ mod shapes {
     #[cfg(test)]
     mod cuboid {
         use crate::{
-            Boundable, Cuboid, Movable, SurfaceArea, Volume, AABB,
+            Boundable, Cuboid, Movable, SurfaceArea, Volume, Aabb,
         };
         use vek::{Extent3, Vec3};
 
         #[test]
         fn volume() {
-            let cuboid = Cuboid::cube(Vec3::zero(), 1.0);
+            let cuboid = Cuboid::cube(Vec3::zero(), 1.0f32);
             assert_eq!(cuboid.volume(), 1.0f32);
-            let cuboid = Cuboid::cube(Vec3::zero(), 2.0);
+            let cuboid = Cuboid::cube(Vec3::zero(), 2.0f32);
             assert_eq!(cuboid.volume(), 8.0f32);
         }
 
         #[test]
         fn surface_area() {
-            let cuboid = Cuboid::cube(Vec3::zero(), 1.0);
-            assert_eq!(cuboid.surface_area(), 6.0f32);
-            let cuboid = Cuboid::cube(Vec3::zero(), 2.0);
-            assert_eq!(cuboid.surface_area(), 24.0f32);
+            let cuboid = Cuboid::cube(Vec3::zero(), 1.0f32);
+            assert_eq!(cuboid.area(), 6.0f32);
+            let cuboid = Cuboid::cube(Vec3::zero(), 2.0f32);
+            assert_eq!(cuboid.area(), 24.0f32);
         }
 
         #[test]
         fn bounds() {
             let mut cuboid = Cuboid::cube(Vec3::zero(), 1.0);
-            let aabb: AABB = cuboid.bounds();
+            let aabb: Aabb<f32> = cuboid.bounds();
             assert_eq!(aabb.min, Vec3::broadcast(-0.5f32));
             assert_eq!(aabb.max, Vec3::broadcast(0.5f32));
             cuboid.expand_by(1.0);
-            let aabb: AABB = cuboid.bounds();
+            let aabb: Aabb<f32> = cuboid.bounds();
             assert_eq!(cuboid.extent, Extent3::broadcast(2.0f32));
             assert_eq!(aabb.min, Vec3::broadcast(-1f32));
             assert_eq!(aabb.max, Vec3::broadcast(1f32));
 
             let mut cuboid = Cuboid::cube(Vec3::zero(), 2.0);
-            let aabb: AABB = cuboid.bounds();
+            let aabb: Aabb<f32> = cuboid.bounds();
             assert_eq!(aabb.min, Vec3::broadcast(-1f32));
             assert_eq!(aabb.max, Vec3::broadcast(1f32));
             cuboid.expand_by(1.0);
-            let aabb: AABB = cuboid.bounds();
+            let aabb: Aabb<f32> = cuboid.bounds();
             assert_eq!(cuboid.extent, Extent3::broadcast(3.0f32));
             assert_eq!(aabb.min, Vec3::broadcast(-1.5f32));
             assert_eq!(aabb.max, Vec3::broadcast(1.5f32));
@@ -60,35 +60,35 @@ mod shapes {
     #[cfg(test)]
     mod sphere {
         use crate::{
-            Boundable, Movable, Sphere, SurfaceArea, Volume, AABB,
+            Boundable, Movable, Sphere, SurfaceArea, Volume, Aabb,
         };
         use vek::Vec3;
 
         #[test]
         fn volume() {
-            let sphere = Sphere::new(Vec3::zero(), 1.0);
+            let sphere = Sphere::new(Vec3::zero(), 1.0f32);
             assert_eq!(sphere.volume(), 4.188_790_3_f32);
-            let sphere = Sphere::new(Vec3::zero(), 2.0);
+            let sphere = Sphere::new(Vec3::zero(), 2.0f32);
             assert_eq!(sphere.volume(), 33.510_323_f32);
         }
 
         #[test]
         fn surface_area() {
-            let sphere = Sphere::new(Vec3::zero(), 1.0);
-            assert_eq!(sphere.surface_area(), 12.566_371);
-            let sphere = Sphere::new(Vec3::zero(), 2.0);
-            assert_eq!(sphere.surface_area(), 50.265_484_f32);
+            let sphere = Sphere::new(Vec3::zero(), 1.0f32);
+            assert_eq!(sphere.area(), 12.566_371);
+            let sphere = Sphere::new(Vec3::zero(), 2.0f32);
+            assert_eq!(sphere.area(), 50.265_484_f32);
         }
 
         #[test]
         fn bounds() {
             let sphere = Sphere::new(Vec3::zero(), 1.0);
-            let aabb: AABB = sphere.bounds();
+            let aabb: Aabb<f32> = sphere.bounds();
             assert_eq!(aabb.min, Vec3::broadcast(-1f32));
             assert_eq!(aabb.max, Vec3::broadcast(1f32));
 
             let sphere = Sphere::new(Vec3::zero(), 2.0);
-            let aabb: AABB = sphere.bounds();
+            let aabb: Aabb<f32> = sphere.bounds();
             assert_eq!(aabb.min, Vec3::broadcast(-2f32));
             assert_eq!(aabb.max, Vec3::broadcast(2f32));
         }

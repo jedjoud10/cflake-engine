@@ -1,54 +1,56 @@
 mod cuboid;
 mod sphere;
-use crate::AABB;
+use crate::Aabb;
 pub use cuboid::*;
+use num_traits::real::Real;
 pub use sphere::*;
 
 // A shape is a 3D geometrical object that takes space
-pub trait Shape: Movable + Boundable + Volume + SurfaceArea {}
+// For simplicity's sake, shapes can only be composed of real numbers, although I am going to remove this restriction later on
+pub trait Shape<T: Real>: Movable<T> + Boundable<T> + Volume<T> + SurfaceArea<T> {}
 
 // Shapes that have a concrete positions
-pub trait Movable {
-    fn center(&self) -> vek::Vec3<f32>;
-    fn set_center(&mut self, new: vek::Vec3<f32>);
+pub trait Movable<T: Real> {
+    fn center(&self) -> vek::Vec3<T>;
+    fn set_center(&mut self, new: vek::Vec3<T>);
 }
 
 // Implemented for shapes that have sharp points / corners
-pub trait SharpVertices {
+pub trait SharpVertices<T: Real> {
     type Points: 'static + Clone;
     fn points(&self) -> Self::Points;
 }
 
 // Implemented for shapes that have implicit points / corners
-pub trait ImplicitVertices {
+pub trait ImplicitVertices<T: Real> {
     type Points: 'static + Clone;
     type Settings: 'static;
     fn points(&self, settings: Self::Settings) -> Self::Points;
 }
 
 // Auto implement implicit for explicit
-impl<T: SharpVertices> ImplicitVertices for T {
-    type Points = <T as SharpVertices>::Points;
+impl<T: Real, SV: SharpVertices<T>> ImplicitVertices<T> for SV {
+    type Points = <SV as SharpVertices<T>>::Points;
     type Settings = ();
 
     fn points(&self, _: Self::Settings) -> Self::Points {
-        <T as SharpVertices>::points(self)
+        <SV as SharpVertices<T>>::points(self)
     }
 }
 
 // Implemented for shapes that have concrete bounds
-pub trait Boundable {
-    fn bounds(&self) -> AABB;
-    fn scale_by(&mut self, scale: f32);
-    fn expand_by(&mut self, expand_units: f32);
+pub trait Boundable<T: Real> {
+    fn bounds(&self) -> crate::Aabb<T>;
+    fn scale_by(&mut self, scale: T);
+    fn expand_by(&mut self, units: T);
 }
 
 // Implemented for shapes that can calculate their own volume
-pub trait Volume {
-    fn volume(&self) -> f32;
+pub trait Volume<T: Real> {
+    fn volume(&self) -> T;
 }
 
 // Implemented for shapes that can calculate their own surface area
-pub trait SurfaceArea {
-    fn surface_area(&self) -> f32;
+pub trait SurfaceArea<T: Real> {
+    fn area(&self) -> T;
 }

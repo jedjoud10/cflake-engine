@@ -53,6 +53,23 @@ impl<'a> VerticesRef<'a> {
     pub fn len(&self) -> Option<usize> {
         self.len
     }
+
+    // Try to compute the AABB of the mesh using updated position vertices
+    pub fn aabb(
+        &self,
+    ) -> Result<math::Aabb<f32>, MeshAabbComputeError> {
+        let attribute = self.attribute::<Position>().ok_or(
+            MeshAabbComputeError::MissingPositionAttributeBuffer,
+        )?;
+        let view = attribute
+            .as_view(..)
+            .map_err(MeshAabbComputeError::NotHostMapped)?;
+        let slice = view.as_slice();
+        let aabb = super::aabb_from_points(slice).ok_or(
+            MeshAabbComputeError::EmptyPositionAttributeBuffer,
+        )?;
+        Ok(aabb)
+    }
 }
 
 // Mutable access to the mesh vertices
@@ -145,9 +162,9 @@ impl<'a> VerticesMut<'a> {
     }
 
     // Try to compute the AABB of the mesh using updated position vertices
-    pub fn compute_aabb(
-        &mut self,
-    ) -> Result<AABB, MeshAabbComputeError> {
+    pub fn aabb(
+        &self,
+    ) -> Result<math::Aabb<f32>, MeshAabbComputeError> {
         let attribute = self.attribute::<Position>().ok_or(
             MeshAabbComputeError::MissingPositionAttributeBuffer,
         )?;

@@ -1,8 +1,35 @@
 use crate::Renderer;
-
 use world::{post_user, System, World};
 
+// Check if an AABB intersects all the given frustum planes
+// TODO: Use space partioning algorithms to make this faster (ex. Octree)
+// TODO: Use multithreading to make it faster as well
+// https://subscription.packtpub.com/book/game+development/9781787123663/9/ch09lvl1sec89/obb-to-plane
+// https://www.braynzarsoft.net/viewtutorial/q16390-34-aabb-cpu-side-frustum-culling
+pub fn intersects_frustum(planes: &vek::FrustumPlanes<f32>, aabb: vek::Aabb<f32>, matrix: &vek::Mat4<f32>) -> bool {
+    let mut corners = aabb.points();
+
+    for corner in corners.iter_mut() {
+        *corner = matrix.mul_point(*corner);
+    }
+
+    let aabb = MeshUtils::aabb_from_points(&corners).unwrap();
+
+    let corners = [aabb.min, aabb.max];
+
+    planes.iter().all(|plane| {
+        let mut furthest = vek::Vec3::zero();
+        furthest.iter_mut().enumerate().for_each(|(i, e)| {
+            *e = corners[(plane.normal[i] > 0.0) as usize][i];
+        });
+        let signed = furthest.dot(plane.normal) + plane.distance;
+
+        signed > 0.0
+    })
+}
+
 // Update the global mesh matrices of objects that have been modified
+// This will also handle frustum culling 
 fn update(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
     use ecs::*;
@@ -30,10 +57,10 @@ fn update(world: &mut World) {
         matrix *=
             scale.map_or(matrix, |s| matrix * vek::Mat4::from(s));
         renderer.matrix = matrix;
-
-        // Also update the culling state of the renderer
-        // TODO: Implement this shit
     }
+
+    // Handle frustum culling of the scene objects
+    let query = scene.query_mut::<(&mut Culler, &Renderer)>()
 }
 
 // The matrix system will be responsible for updating the matrices of the renderer

@@ -123,6 +123,7 @@ dependencies = [
  "fern",
  "graphics",
  "gui",
+ "half",
  "input",
  "lazy_static",
  "log",
@@ -1627,7 +1628,9 @@ version = "0.0.1"
 dependencies = [
  "ahash 0.7.6",
  "arrayvec",
+ "half",
  "itertools",
+ "num-traits",
  "slotmap",
  "smallvec",
  "vek",

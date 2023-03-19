@@ -281,7 +281,7 @@ pub fn compute_tangents(
 }
 
 // Create a new AABB from a list of vertices in 3D space
-pub fn aabb_from_points(points: &[vek::Vec3<f32>]) -> Option<AABB> {
+pub fn aabb_from_points(points: &[vek::Vec3<f32>]) -> Option<math::Aabb<f32>> {
     if points.len() < 2 {
         return None;
     }
@@ -307,5 +307,5 @@ pub fn aabb_from_points(points: &[vek::Vec3<f32>]) -> Option<AABB> {
     }
 
     // Check if the AABB would be valid
-    (min != max).then_some(AABB { min, max })
+    (min != max).then_some(math::Aabb { min, max })
 }
