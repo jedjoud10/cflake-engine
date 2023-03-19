@@ -121,6 +121,12 @@ impl<M: Material> DynPipeline for Pipeline<M> {
         default: &mut DefaultMaterialResources<'r>,
         render_pass: &mut ActiveSceneRenderPass<'r, '_>,
     ) {
+        super::cull_surfaces::<M>(
+            world,
+            meshes,
+            default
+        );
+
         super::render_surfaces::<M>(
             world,
             meshes,

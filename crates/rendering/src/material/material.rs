@@ -3,12 +3,14 @@ use crate::{
     NormalMap, Renderer, SceneBuffer, SceneColor, TimingBuffer,
 };
 use assets::Assets;
+use ecs::Rotation;
 use graphics::{
     BindGroup, BlendConfig, CompareFunction, DepthConfig, Graphics,
     PrimitiveConfig, PushConstants, Shader, StencilConfig,
     WindingOrder,
 };
 
+use math::Frustum;
 use world::World;
 
 // These are the default settings that we pass to each material
@@ -18,6 +20,16 @@ pub struct DefaultMaterialResources<'a> {
     pub camera_buffer: &'a CameraBuffer,
     pub timing_buffer: &'a TimingBuffer,
     pub scene_buffer: &'a SceneBuffer,
+
+    // Main camera values
+    pub camera: crate::Camera,
+    pub camera_frustum: Frustum<f32>,
+    pub camera_position: ecs::Position,
+    pub camera_rotation: ecs::Rotation,
+
+    // Main directional light values
+    pub directional_light: crate::DirectionalLight,
+    pub directional_light_rotation: ecs::Rotation,
 
     // Main scene textures
     pub white: &'a AlbedoMap,
@@ -32,7 +44,7 @@ pub struct DefaultMaterialResources<'a> {
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
 // Materials correspond to a specific WGPU render pipeline based on it's config parameters
-pub trait Material: 'static + Sized {
+pub trait Material: 'static + Sized + Sync + Send {
     // The resources that we need to fetch from the world to set the descriptor sets
     type Resources<'w>: 'w;
 
@@ -78,6 +90,11 @@ pub trait Material: 'static + Sized {
     // Does this material support casting shadows onto other surfaces?
     fn casts_shadows() -> bool {
         true
+    }
+
+    // Should surfaces using this material use frustum culling?
+    fn frustum_culling() -> bool {
+        false
     }
 
     // Fetch the required resources from the world

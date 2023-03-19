@@ -4,7 +4,7 @@ use math::Frustum;
 
 // A perspective camera component that will be used to render the main scene
 // The camera entity does not *need* to have a transform to render, since we can set the matrices directly
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Copy)]
 pub struct Camera {
     // Horizontal field of view of the camera
     pub hfov: f32,

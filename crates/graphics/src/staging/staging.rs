@@ -99,6 +99,7 @@ impl StagingPool {
         assert!(buffer
             .usage()
             .contains(wgpu::BufferUsages::COPY_SRC));
+        log::trace!("map_buffer_read: offset: {offset}, size: {size}");
 
         // Get a encoder (reused or not to perform a copy)
         let mut encoder = graphics.acquire();
@@ -131,7 +132,7 @@ impl StagingPool {
                 index: i,
                 states: &&self.states,
                 staging,
-                view: slice.get_mapped_range(),
+                view: Some(slice.get_mapped_range()),
             });
         } else {
             panic!("Could not receive read map async")
@@ -147,6 +148,7 @@ impl StagingPool {
         offset: u64,
         size: u64,
     ) -> Option<StagingViewWrite<'a>> {
+        log::trace!("map_buffer_write: offset: {offset}, size: {size}");
         let size = NonZeroU64::new(size);
         let write = graphics.queue().write_buffer_with(
             buffer,
@@ -167,6 +169,7 @@ impl StagingPool {
         src: &[u8],
     ) {
         debug_assert_eq!(size as usize, src.len());
+        log::trace!("write_buffer: offset: {offset}, size: {size}");
         graphics.queue().write_buffer(buffer, offset, src);
     }
 
@@ -185,6 +188,7 @@ impl StagingPool {
         assert!(buffer
             .usage()
             .contains(wgpu::BufferUsages::COPY_SRC));
+        log::trace!("read_buffer: offset: {offset}, size: {size}");
 
         // Get a encoder (reused or not to perform a copy)
         let mut encoder = graphics.acquire();

@@ -10,17 +10,18 @@ pub(crate) struct StagingView<'a> {
     pub(super) index: usize,
     pub(super) states: &'a AtomicBitSet,
     pub(super) staging: &'a wgpu::Buffer,
-    pub(super) view: BufferView<'a>,
+    pub(super) view: Option<BufferView<'a>>,
 }
 
 impl<'a> AsRef<[u8]> for StagingView<'a> {
     fn as_ref(&self) -> &[u8] {
-        &self.view
+        &self.view.as_ref().unwrap()
     }
 }
 
 impl<'a> Drop for StagingView<'a> {
     fn drop(&mut self) {
+        self.view.take().unwrap();
         self.states.remove(self.index, Ordering::Relaxed);
         self.staging.unmap();
     }

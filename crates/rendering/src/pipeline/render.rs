@@ -1,7 +1,7 @@
 use crate::{
     ActiveScenePipeline, ActiveSceneRenderPass,
     DefaultMaterialResources, EnabledMeshAttributes, Material, Mesh,
-    MeshAttribute, Renderer, SceneColor, SceneDepth, Surface, Culler,
+    MeshAttribute, Renderer, SceneColor, SceneDepth, Surface,
 };
 use ecs::Scene;
 use graphics::RenderPipeline;
@@ -58,7 +58,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
 
     // Get all the entities that contain a visible surface
     let scene = world.get::<Scene>().unwrap();
-    let query = scene.query::<(&Surface<M>, &Renderer, Option<&Culler>)>();
+    let query = scene.query::<(&Surface<M>, &Renderer)>();
 
     // Keep track of the last material
     let mut last_material: Option<Handle<M>> = None;
@@ -68,16 +68,9 @@ pub(super) fn render_surfaces<'r, M: Material>(
     let mut last_mesh: Option<Handle<Mesh>> = None;
 
     // Iterate over all the surface of this material
-    for (surface, renderer, culler) in query {
-        // If we use a bound culler, make sure we don't render culled meshes
-        if let Some(culler) = culler {
-            if culler.culled {
-                continue;
-            }
-        }
-
-        // If the mesh isn't visible, don't render is
-        if !renderer.visible {
+    for (surface, renderer) in query {
+        // Handle non visible surfaces, renderers, and culled surfaces
+        if surface.culled || !surface.visible || !renderer.visible {
             continue;
         }
 

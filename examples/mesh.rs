@@ -110,8 +110,7 @@ fn init(world: &mut World) {
     let surface = Surface::new(plane.clone(), material.clone(), id.clone());
     let renderer = Renderer::default();
     let scale = Scale::uniform(25.0);
-    let culler = Culler::from_mesh(plane);
-    scene.insert((surface, renderer, scale, culler));
+    scene.insert((surface, renderer, scale));
 
     // Create a simple cube and add the entity
     for x in 0..25 {
@@ -134,11 +133,10 @@ fn init(world: &mut World) {
             ),
         });
 
-        let culler = Culler::from_mesh(cube.clone());
         let surface =
             Surface::new(cube.clone(), material.clone(), id.clone());
 
-        scene.insert((surface, renderer, position, culler));
+        scene.insert((surface, renderer, position));
     }
 
     // Create a simple sphere and add the entity
@@ -198,6 +196,11 @@ fn update(world: &mut World) {
     let time = &*time;
     let input = world.get::<Input>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
+
+    for (_, pos) in scene.query_mut::<(&Renderer, &mut Position)>() {
+        //**pos += vek::Vec3::broadcast(time.delta().as_secs_f32());
+    }
+
 
     // Rotation the light
     /*

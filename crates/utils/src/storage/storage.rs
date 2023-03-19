@@ -1,10 +1,11 @@
+use parking_lot::{Mutex, RwLock};
 use slotmap::{DefaultKey, SecondaryMap, SlotMap};
 
 use std::{
     cell::{Cell, RefCell},
     marker::PhantomData,
     ops::{Index, IndexMut},
-    rc::Rc,
+    rc::Rc, sync::{atomic::{AtomicBool, Ordering, AtomicU32}, Arc},
 };
 
 use crate::Handle;
@@ -12,26 +13,26 @@ use crate::Handle;
 use super::Weak;
 
 pub(super) struct Trackers {
-    pub(super) dropped: RefCell<Vec<DefaultKey>>,
-    pub(super) counters: RefCell<SecondaryMap<DefaultKey, u32>>,
-    pub(super) cleaned: Cell<bool>,
+    pub(super) dropped: Mutex<Vec<DefaultKey>>,
+    pub(super) counters: RwLock<SecondaryMap<DefaultKey, AtomicU32>>,
+    pub(super) cleaned: AtomicBool,
 }
 
 // TODO: Rewrite tracking logic
 
 pub struct Storage<T: 'static> {
     map: SlotMap<DefaultKey, Option<T>>,
-    trackers: Rc<Trackers>,
+    trackers: Arc<Trackers>,
 }
 
 impl<T: 'static> Default for Storage<T> {
     fn default() -> Self {
         Self {
             map: Default::default(),
-            trackers: Rc::new(Trackers {
-                dropped: RefCell::new(Default::default()),
-                counters: RefCell::new(Default::default()),
-                cleaned: Cell::new(true),
+            trackers: Arc::new(Trackers {
+                dropped: Mutex::new(Default::default()),
+                counters: RwLock::new(Default::default()),
+                cleaned: AtomicBool::new(true),
             }),
         }
     }
@@ -42,7 +43,7 @@ impl<T: 'static> Storage<T> {
     pub fn insert(&mut self, value: T) -> Handle<T> {
         self.clean();
         let key = self.map.insert(Some(value));
-        self.trackers.counters.borrow_mut().insert(key, 1);
+        self.trackers.counters.write().insert(key, AtomicU32::new(1));
 
         Handle {
             _phantom: PhantomData::default(),
@@ -87,10 +88,10 @@ impl<T: 'static> Storage<T> {
 
     // Clean the storage of any values that do not have any strong handles any more
     pub fn clean(&mut self) {
-        if !self.trackers.cleaned.get() {
-            self.trackers.cleaned.set(true);
-            let mut dropped = self.trackers.dropped.borrow_mut();
-            let mut counters = self.trackers.counters.borrow_mut();
+        if !self.trackers.cleaned.load(Ordering::Relaxed) {
+            self.trackers.cleaned.store(true, Ordering::Relaxed);
+            let mut dropped = self.trackers.dropped.lock();
+            let mut counters = self.trackers.counters.write();
             for i in dropped.drain(..) {
                 self.map.remove(i);
                 counters.remove(i);
@@ -129,10 +130,10 @@ impl<T: 'static> IndexMut<&'_ Handle<T>> for Storage<T> {
 
 impl<T: 'static> Drop for Storage<T> {
     fn drop(&mut self) {
-        let counters = self.trackers.counters.borrow();
+        let counters = self.trackers.counters.write();
 
         for count in counters.values() {
-            if *count != 0 {
+            if count.load(Ordering::Relaxed) != 0 {
                 // TODO: Handle this
                 //panic!("Cannot drop storage that has dangling handles");
             }

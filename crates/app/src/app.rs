@@ -238,7 +238,7 @@ impl App {
             .level_for("wgpu", log::LevelFilter::Warn)
             .level_for("wgpu_core", log::LevelFilter::Warn)
             .level_for("wgpu_hal", log::LevelFilter::Warn)
-            .level(log::LevelFilter::Debug)
+            .level(log::LevelFilter::Trace)
             .chain(console_logger(colors_level, colors_line))
             .chain(file_logger(sender))
             .apply()

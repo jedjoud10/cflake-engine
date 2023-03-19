@@ -1,12 +1,12 @@
 use super::Trackers;
 use slotmap::DefaultKey;
-use std::{marker::PhantomData, rc::Rc};
+use std::{marker::PhantomData, rc::Rc, sync::{Arc, atomic::Ordering}};
 
 // A handle is what keeps the values within Storage<T> alive
 // Fetching data using this type of Handle is always successful
 pub struct Handle<T: 'static> {
     pub(super) _phantom: PhantomData<T>,
-    pub(super) trackers: Rc<Trackers>,
+    pub(super) trackers: Arc<Trackers>,
     pub(super) key: DefaultKey,
 }
 
@@ -21,27 +21,25 @@ impl<T: 'static> Eq for Handle<T> {}
 impl<T: 'static> Handle<T> {
     // Get the current reference count for this handle
     pub fn count(&self) -> u32 {
-        *self.trackers.counters.borrow().get(self.key).unwrap()
+        self.trackers.counters.read().get(self.key).unwrap().load(Ordering::Relaxed)
     }
 
     // Overwrite the current reference counted value directly
     pub unsafe fn set_count(&self, count: u32) {
-        let mut borrowed = self.trackers.counters.borrow_mut();
-        *borrowed.get_mut(self.key).unwrap() = count;
+        let borrowed = self.trackers.counters.read();
+        borrowed.get(self.key).unwrap().store(count, Ordering::Relaxed);
     }
 
     // This will manually incremememnt the underlying reference counter
     pub unsafe fn increment_count(&self) -> u32 {
-        let value = self.count().saturating_add(1);
-        self.set_count(value);
-        value
+        let borrowed = self.trackers.counters.read();
+        borrowed.get(self.key).unwrap().fetch_add(1, Ordering::Relaxed)
     }
 
     // This will manually decrement the underlying reference counter
     pub unsafe fn decrement_count(&self) -> u32 {
-        let value = self.count().saturating_sub(1);
-        self.set_count(value);
-        value
+        let borrowed = self.trackers.counters.read();
+        borrowed.get(self.key).unwrap().fetch_sub(1, Ordering::Relaxed)
     }
 }
 
@@ -66,8 +64,8 @@ impl<T: 'static> Drop for Handle<T> {
     fn drop(&mut self) {
         // If the counter reaches 0, it means that we must drop the inner value
         if unsafe { self.decrement_count() } == 0 {
-            self.trackers.dropped.borrow_mut().push(self.key);
-            self.trackers.cleaned.set(false);
+            self.trackers.dropped.lock().push(self.key);
+            self.trackers.cleaned.store(false, Ordering::Relaxed);
         }
     }
 }

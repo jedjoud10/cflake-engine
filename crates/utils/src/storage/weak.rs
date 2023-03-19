@@ -1,6 +1,6 @@
 use crate::Handle;
 use slotmap::DefaultKey;
-use std::{marker::PhantomData, rc::Rc};
+use std::{marker::PhantomData, rc::Rc, sync::{Arc, atomic::Ordering}};
 
 use super::Trackers;
 
@@ -10,7 +10,7 @@ use super::Trackers;
 // for faillible fetching of values
 pub struct Weak<T: 'static> {
     pub(super) _phantom: PhantomData<T>,
-    pub(super) trackers: Rc<Trackers>,
+    pub(super) trackers: Arc<Trackers>,
     pub(super) key: DefaultKey,
 }
 
@@ -23,11 +23,6 @@ impl<T: 'static> PartialEq for Weak<T> {
 impl<T: 'static> Eq for Weak<T> {}
 
 impl<T: 'static> Weak<T> {
-    // Get the current reference count for this handle
-    pub fn count(&self) -> u32 {
-        *self.trackers.counters.borrow().get(self.key).unwrap()
-    }
-
     // Check if the owned value is still alive in the corresponding storage
     pub fn valid(&self) -> bool {
         self.count() > 0
@@ -45,24 +40,27 @@ impl<T: 'static> Weak<T> {
         })
     }
 
+    // Get the current reference count for this handle
+    pub fn count(&self) -> u32 {
+        self.trackers.counters.read().get(self.key).unwrap().load(Ordering::Relaxed)
+    }
+
     // Overwrite the current reference counted value directly
     pub unsafe fn set_count(&self, count: u32) {
-        let mut borrowed = self.trackers.counters.borrow_mut();
-        *borrowed.get_mut(self.key).unwrap() = count;
+        let borrowed = self.trackers.counters.read();
+        borrowed.get(self.key).unwrap().store(count, Ordering::Relaxed);
     }
 
     // This will manually incremememnt the underlying reference counter
     pub unsafe fn increment_count(&self) -> u32 {
-        let value = self.count().saturating_add(1);
-        self.set_count(value);
-        value
+        let borrowed = self.trackers.counters.read();
+        borrowed.get(self.key).unwrap().fetch_add(1, Ordering::Relaxed)
     }
 
     // This will manually decrement the underlying reference counter
     pub unsafe fn decrement_count(&self) -> u32 {
-        let value = self.count().saturating_sub(1);
-        self.set_count(value);
-        value
+        let borrowed = self.trackers.counters.read();
+        borrowed.get(self.key).unwrap().fetch_sub(1, Ordering::Relaxed)
     }
 }
 

@@ -2,13 +2,14 @@ use crate::{
     AlbedoMap, Basic, DefaultMaterialResources, DirectionalLight,
     ForwardRenderer, MaskMap, Mesh, NormalMap, PhysicallyBased,
     Pipelines, Renderer, SceneUniform, ShadowMapping, Sky,
-    WindowUniform,
+    WindowUniform, Camera,
 };
 use assets::Assets;
 
 use ecs::{Rotation, Scene};
 use graphics::{Graphics, Texture, Window};
 
+use log::LevelFilter;
 use utils::{Storage, Time};
 use world::{user, System, WindowEvent, World};
 
@@ -119,34 +120,40 @@ fn render(world: &mut World) {
     let pipelines = pipelines.extract_pipelines();
 
     // Skip if we don't have a camera to draw with
-    if renderer.main_camera.is_none() {
+    let Some(camera) = renderer.main_camera else {
         //log::warn!("No active camera to draw with!");
         return;
-    }
+    };
 
     // Skip if we don't have a light to draw with
-    if renderer.main_directional_light.is_none() {
+    let Some(directional_light)  = renderer.main_directional_light else {
         //log::warn!("No directional light to draw with!");
         return;
-    }
+    };
 
     // Get the directioanl light and rotation of the light
-    let id = renderer.main_directional_light.unwrap();
-    let entity = scene.entry(id).unwrap();
-    let light = entity.get::<DirectionalLight>().unwrap();
-    let rotation = entity.get::<Rotation>().unwrap();
+    let directional_light = scene.entry(directional_light).unwrap();
+    let (&directional_light, &directional_light_rotation) = 
+        directional_light.as_query::<(&DirectionalLight, &ecs::Rotation)>().unwrap();
 
+    // Update the scene uniform using the appropriate values
     renderer
         .scene_buffer
         .write(
             &[SceneUniform {
-                sun_direction: rotation.forward().with_w(0.0),
-                sun_color: vek::Rgba::<f32>::from(light.color),
+                sun_direction: directional_light_rotation.forward().with_w(0.0),
+                sun_color: vek::Rgba::<f32>::from(directional_light.color),
                 ..Default::default()
             }],
             0,
         )
         .unwrap();
+
+    // Get the camera and it's values
+    let camera = scene.entry(camera).unwrap();
+    let (&camera, &camera_position, &camera_rotation) =
+        camera.as_query::<(&Camera, &ecs::Position, &ecs::Rotation)>().unwrap();
+    let camera_frustum = camera.frustum(&camera_position, &camera_rotation);
 
     // Create the shared material resources
     let mut default = DefaultMaterialResources {
@@ -159,6 +166,12 @@ fn render(world: &mut World) {
         mask: &mask_maps[&renderer.mask],
         material_index: 0,
         draw_call_index: 0,
+        camera,
+        camera_position,
+        camera_rotation,
+        camera_frustum,
+        directional_light,
+        directional_light_rotation,
     };
 
     // Create some ECS filters to check if we should update the shadow map texture
@@ -176,7 +189,7 @@ fn render(world: &mut World) {
     if update {
         // Update the shadow map lightspace matrix
         let shadowmap = &mut *_shadowmap;
-        shadowmap.update(**rotation, vek::Vec3::zero());
+        shadowmap.update(*directional_light_rotation, vek::Vec3::zero());
 
         // Get the depth texture we will render to
         let depth = shadowmap.depth_tex.as_render_target().unwrap();
@@ -211,6 +224,7 @@ fn render(world: &mut World) {
     let mut render_pass = renderer.render_pass.begin(color, depth);
 
     // This will iterate over each material pipeline and draw the scene
+    drop(scene);
     for stored in pipelines.iter() {
         stored.render(world, &meshes, &mut default, &mut render_pass);
     }

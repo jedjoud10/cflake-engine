@@ -49,6 +49,11 @@ impl Material for Sky {
         false
     }
 
+    // The sky does NOT use frustum culling
+    fn frustum_culling() -> bool {
+        false
+    }
+
     // Sky-spheres are always flipped inside out
     fn primitive_config() -> PrimitiveConfig {
         PrimitiveConfig::Triangles {
