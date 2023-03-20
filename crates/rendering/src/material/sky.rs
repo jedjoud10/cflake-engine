@@ -1,6 +1,6 @@
 use crate::{
     AlbedoMap, CameraUniform, DefaultMaterialResources,
-    EnabledMeshAttributes, Material, SceneUniform,
+    MeshAttributes, Material, SceneUniform,
 };
 
 use assets::Assets;
@@ -40,8 +40,8 @@ impl Material for Sky {
     }
 
     // Get the required mesh attributes that we need to render a surface
-    fn attributes() -> EnabledMeshAttributes {
-        EnabledMeshAttributes::POSITIONS
+    fn attributes() -> MeshAttributes {
+        MeshAttributes::POSITIONS
     }
 
     // The sky does NOT cast shadows

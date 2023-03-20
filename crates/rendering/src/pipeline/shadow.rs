@@ -1,6 +1,6 @@
 use crate::{
     attributes::Position, ActiveShadowGraphicsPipeline,
-    EnabledMeshAttributes, Material, Mesh, Renderer, Surface,
+    MeshAttributes, Material, Mesh, Renderer, Surface,
 };
 use ecs::Scene;
 use graphics::{GpuPod, ModuleVisibility};
@@ -13,7 +13,7 @@ fn filter(mesh: &Mesh, renderer: &Renderer) -> bool {
     let attribute = mesh
         .vertices()
         .enabled()
-        .contains(EnabledMeshAttributes::POSITIONS);
+        .contains(MeshAttributes::POSITIONS);
     let validity = mesh.vertices().len().is_some();
     enabled && validity && attribute
 }

@@ -1,5 +1,5 @@
 use crate::{
-    AlbedoMap, CameraBuffer, EnabledMeshAttributes, MaskMap,
+    AlbedoMap, CameraBuffer, MeshAttributes, MaskMap,
     NormalMap, Renderer, SceneBuffer, SceneColor, TimingBuffer,
 };
 use assets::Assets;
@@ -53,8 +53,8 @@ pub trait Material: 'static + Sized + Sync + Send {
 
     // Get the required mesh attributes that we need to render a surface
     // If a surface does not support these attributes, it will not be rendered
-    fn attributes() -> EnabledMeshAttributes {
-        EnabledMeshAttributes::all()
+    fn attributes() -> MeshAttributes {
+        MeshAttributes::all()
     }
 
     // Get the depth config for this material

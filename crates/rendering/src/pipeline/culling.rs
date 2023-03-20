@@ -7,7 +7,7 @@ use crate::{Material, DefaultMaterialResources, Mesh, Surface, Renderer};
 
 // Check if an AABB intersects all the given frustum planes
 // TODO: Use space partioning algorithms to make this faster (ex. Octree)
-// TODO: Use multithreading to make it faster as well
+// TODO: Optimize this shit
 // https://subscription.packtpub.com/book/game+development/9781787123663/9/ch09lvl1sec89/obb-to-plane
 // https://www.braynzarsoft.net/viewtutorial/q16390-34-aabb-cpu-side-frustum-culling
 pub fn intersects_frustum(planes: &math::Frustum<f32>, aabb: math::Aabb<f32>, matrix: &vek::Mat4<f32>) -> bool {
@@ -38,10 +38,6 @@ pub(super) fn cull_surfaces<'r, M: Material>(
     meshes: &'r Storage<Mesh>,
     default: &mut DefaultMaterialResources<'r>,
 ) {
-    // TODO: Disabled this cause the CPU mesh AABB readback is slow
-    // gotta implement buffer CPU caching or mesh AABB caching for that
-
-    /*
     // Don't cull if there's no need
     if !M::frustum_culling() {
         return;
@@ -60,5 +56,4 @@ pub(super) fn cull_surfaces<'r, M: Material>(
         let aabb = mesh.vertices().aabb().unwrap();
         surface.culled = !intersects_frustum(&default.camera_frustum, aabb, &renderer.matrix)
     }, 256);
-    */
 }

@@ -9,7 +9,7 @@ use crate::{VerticesMut, VerticesRef};
 
 bitflags::bitflags! {
     // This specifies the buffers that the mesh uses internally
-    pub struct EnabledMeshAttributes: u8 {
+    pub struct MeshAttributes: u8 {
         const POSITIONS = 1;
         const NORMALS = 1 << 1;
         const TANGENTS = 1 << 2;
@@ -22,7 +22,7 @@ bitflags::bitflags! {
 
 // This is the maximum number of active attributes that we can have inside a mesh
 pub const MAX_MESH_VERTEX_ATTRIBUTES: usize =
-    EnabledMeshAttributes::all().bits.count_ones() as usize;
+    MeshAttributes::all().bits.count_ones() as usize;
 
 // Contains the underlying array buffer for a specific attribute
 pub type AttributeBuffer<A> = VertexBuffer<<A as MeshAttribute>::V>;
@@ -31,7 +31,7 @@ pub type AttributeBuffer<A> = VertexBuffer<<A as MeshAttribute>::V>;
 pub trait MeshAttribute {
     type V: Vertex;
     type Input: VertexInput<Self::V>;
-    const ATTRIBUTE: EnabledMeshAttributes;
+    const ATTRIBUTE: MeshAttributes;
 
     // Try to get the references to the underlying vertex buffers
     // Forgive me my children, for I have failed to bring you salvation, from this cold, dark, world...
@@ -66,11 +66,11 @@ pub trait MeshAttribute {
 
 // Get a list of the untyped attributes from the enabled mesh attributes
 pub(crate) fn enabled_to_vertex_config(
-    attributes: EnabledMeshAttributes,
+    attributes: MeshAttributes,
 ) -> VertexConfig {
     // This will push the mesh attribute's input to the vector if the bitflags contain the vertex input
     fn push<M: MeshAttribute>(
-        attributes: EnabledMeshAttributes,
+        attributes: MeshAttributes,
         inputs: &mut Vec<VertexInputInfo>,
     ) {
         if attributes.contains(M::ATTRIBUTE) {
@@ -98,7 +98,7 @@ macro_rules! impl_vertex_attribute {
             impl MeshAttribute for $attribute {
                 type V = $vertex;
                 type Input = $input<Self::V>;
-                const ATTRIBUTE: EnabledMeshAttributes = EnabledMeshAttributes::[<$enabled>];
+                const ATTRIBUTE: MeshAttributes = MeshAttributes::[<$enabled>];
 
                 fn from_ref_as_ref<'a>(vertices: &VerticesRef<'a>) -> Option<&'a AttributeBuffer<Self>> {
                     vertices.is_enabled::<Self>().then(|| unsafe {

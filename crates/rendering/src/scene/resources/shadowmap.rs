@@ -10,7 +10,7 @@ use graphics::{
 };
 use vek::FrustumPlanes;
 
-use crate::EnabledMeshAttributes;
+use crate::MeshAttributes;
 
 // This is what will write to the depth texture
 pub type ShadowTexel = Depth<f32>;
@@ -109,7 +109,7 @@ impl ShadowMapping {
             None,
             None,
             crate::attributes::enabled_to_vertex_config(
-                EnabledMeshAttributes::POSITIONS,
+                MeshAttributes::POSITIONS,
             ),
             PrimitiveConfig::Triangles {
                 winding_order: WindingOrder::Ccw,

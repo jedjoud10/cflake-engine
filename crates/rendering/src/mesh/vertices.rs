@@ -10,17 +10,18 @@ use math::Aabb;
 
 // Immutable access to the mesh vertices
 pub struct VerticesRef<'a> {
-    pub(super) enabled: EnabledMeshAttributes,
+    pub(super) enabled: MeshAttributes,
     pub(super) positions: &'a MaybeUninit<AttributeBuffer<Position>>,
     pub(super) normals: &'a MaybeUninit<AttributeBuffer<Normal>>,
     pub(super) tangents: &'a MaybeUninit<AttributeBuffer<Tangent>>,
     pub(super) tex_coords: &'a MaybeUninit<AttributeBuffer<TexCoord>>,
     pub(super) len: Option<usize>,
+    pub(super) aabb: Option<math::Aabb<f32>>,
 }
 
 impl<'a> VerticesRef<'a> {
     // Get the enabled mesh attributes bitflags
-    pub fn enabled(&self) -> EnabledMeshAttributes {
+    pub fn enabled(&self) -> MeshAttributes {
         self.enabled
     }
 
@@ -54,27 +55,17 @@ impl<'a> VerticesRef<'a> {
         self.len
     }
 
-    // Try to compute the AABB of the mesh using updated position vertices
-    pub fn aabb(
-        &self,
-    ) -> Result<math::Aabb<f32>, MeshAabbComputeError> {
-        let attribute = self.attribute::<Position>().ok_or(
-            MeshAabbComputeError::MissingPositionAttributeBuffer,
-        )?;
-        let view = attribute
-            .as_view(..)
-            .map_err(MeshAabbComputeError::NotHostMapped)?;
-        let slice = view.as_slice();
-        let aabb = super::aabb_from_points(slice).ok_or(
-            MeshAabbComputeError::EmptyPositionAttributeBuffer,
-        )?;
-        Ok(aabb)
+    // Get the axis-aligned bounding box for this mesh
+    // Returns None if the AABB wasn't computed yet or if computation failed
+    pub fn aabb(&mut self) -> Option<math::Aabb<f32>> {
+        self.aabb
     }
 }
 
 // Mutable access to the mesh vertices
 pub struct VerticesMut<'a> {
-    pub(super) enabled: &'a mut EnabledMeshAttributes,
+    // Attributes
+    pub(super) enabled: &'a mut MeshAttributes,
     pub(super) positions:
         &'a mut MaybeUninit<AttributeBuffer<Position>>,
     pub(super) normals: &'a mut MaybeUninit<AttributeBuffer<Normal>>,
@@ -82,13 +73,19 @@ pub struct VerticesMut<'a> {
         &'a mut MaybeUninit<AttributeBuffer<Tangent>>,
     pub(super) tex_coords:
         &'a mut MaybeUninit<AttributeBuffer<TexCoord>>,
+
+    // Cached parameters
     pub(super) len: RefCell<&'a mut Option<usize>>,
-    pub(super) dirty: Cell<bool>,
+    pub(super) aabb: RefCell<&'a mut Option<math::Aabb<f32>>>,
+    
+    // Parameters to keep track of cached data
+    pub(super) length_dirty: Cell<bool>,
+    pub(super) aabb_dirty: Cell<bool>,    
 }
 
 impl<'a> VerticesMut<'a> {
     // Get the enabled mesh attributes bitflags
-    pub fn enabled(&self) -> EnabledMeshAttributes {
+    pub fn enabled(&self) -> MeshAttributes {
         *self.enabled
     }
 
@@ -108,7 +105,7 @@ impl<'a> VerticesMut<'a> {
     pub fn attribute_mut<T: MeshAttribute>(
         &mut self,
     ) -> Option<&mut AttributeBuffer<T>> {
-        self.dirty.set(true);
+        self.set_as_dirty::<T>();
         T::from_mut_as_mut(self)
     }
 
@@ -117,7 +114,7 @@ impl<'a> VerticesMut<'a> {
         &mut self,
         buffer: AttributeBuffer<T>,
     ) {
-        self.dirty.set(true);
+        self.set_as_dirty::<T>();
         T::insert(self, buffer);
     }
 
@@ -125,12 +122,23 @@ impl<'a> VerticesMut<'a> {
     pub fn remove<T: MeshAttribute>(
         &mut self,
     ) -> Option<AttributeBuffer<T>> {
+        self.set_as_dirty::<T>();
         T::remove(self)
+    }
+
+    // Called whenever we access an attribute mutably
+    // Only used internally to set the dirty states
+    fn set_as_dirty<T: MeshAttribute>(&self) {
+        self.length_dirty.set(true);
+
+        if T::ATTRIBUTE.contains(MeshAttributes::POSITIONS) {
+            self.aabb_dirty.set(true);
+        } 
     }
 
     // Get the number of vertices that we have (will return None if we have buffers of mismatching lengths)
     pub fn len(&self) -> Option<usize> {
-        if self.dirty.get() {
+        if self.length_dirty.take() {
             // Fetch the length of each of the attribute (even if they don't actually exist)
             let positions =
                 self.attribute::<Position>().map(|x| x.len());
@@ -153,28 +161,35 @@ impl<'a> VerticesMut<'a> {
                 })
                 .unwrap();
 
-            // Update and remove the "dirty" state
+            // Update length
             **self.len.borrow_mut() = length;
-            self.dirty.set(true);
         }
 
         **self.len.borrow()
     }
 
-    // Try to compute the AABB of the mesh using updated position vertices
-    pub fn aabb(
-        &self,
-    ) -> Result<math::Aabb<f32>, MeshAabbComputeError> {
-        let attribute = self.attribute::<Position>().ok_or(
-            MeshAabbComputeError::MissingPositionAttributeBuffer,
-        )?;
-        let view = attribute
-            .as_view(..)
-            .map_err(MeshAabbComputeError::NotHostMapped)?;
-        let slice = view.as_slice();
-        let aabb = super::aabb_from_points(slice).ok_or(
-            MeshAabbComputeError::EmptyPositionAttributeBuffer,
-        )?;
-        Ok(aabb)
+    // Calculate an Axis-Aligned Bounding Box, and returns an error if not possible
+    pub fn aabb(&self) -> Result<math::Aabb<f32>, MeshAabbComputeError> {
+        if self.aabb_dirty.take() {
+            // Fetch the position attribute buffer
+            let attribute = self.attribute::<Position>().ok_or(
+                MeshAabbComputeError::MissingPositionAttributeBuffer,
+            )?;
+
+            // Create a view into the buffer (if possible)
+            let view = attribute
+                .as_view(..)
+                .map_err(MeshAabbComputeError::NotHostMapped)?;
+
+            // Create a visible rust slice of the buffer view
+            let slice = view.as_slice();
+
+            // Generate the AABB from the buffer view
+            **self.aabb.borrow_mut() = Some(super::aabb_from_points(slice).ok_or(
+                MeshAabbComputeError::EmptyPositionAttributeBuffer,
+            )?);
+        }
+
+        Ok(self.aabb.borrow().unwrap())
     }
 }

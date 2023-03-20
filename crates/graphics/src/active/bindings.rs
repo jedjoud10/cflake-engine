@@ -136,6 +136,7 @@ impl<'a> BindGroup<'a> {
     }
 
     // Set a texture that can be sampled inside shaders using it's sampler
+    // TODO: Validate sampled texture using SetBindResourceError
     pub fn set_sampled_texture<'s, T: Texture>(
         &mut self,
         name: &'s str,
@@ -170,6 +171,7 @@ impl<'a> BindGroup<'a> {
     }
 
     // Set a storage texture that we can write / read from / to
+    // TODO: Validate storage texture using SetBindResourceError
     pub fn set_storage_texture<'s, T: Texture>(
         &mut self,
         name: &'s str,
@@ -200,6 +202,7 @@ impl<'a> BindGroup<'a> {
     }
 
     // Set a texture sampler so we can sample textures within the shader
+    // TODO: Validate sampler using SetBindResourceError
     pub fn set_sampler<'s, T: Texel>(
         &mut self,
         name: &'s str,
@@ -225,6 +228,7 @@ impl<'a> BindGroup<'a> {
     }
 
     // Set a uniform buffer that we can read from within shaders
+    // TODO: Validate UBO using SetBindResourceError
     pub fn set_uniform_buffer<'s, T: GpuPod>(
         &mut self,
         name: &'s str,
@@ -236,24 +240,6 @@ impl<'a> BindGroup<'a> {
             &self.reflected,
             name,
         )?;
-
-        // Make sure the layout is the same size as buffer stride
-        match entry.resource_type {
-            crate::BindResourceType::UniformBuffer {
-                size, ..
-            } => {
-                if (size as usize) != buffer.stride() {
-                    return Err(
-                        SetBindResourceError::BufferDifferentType {
-                            name,
-                            defined: size as usize,
-                            inputted: buffer.stride(),
-                        },
-                    );
-                }
-            }
-            _ => panic!(),
-        }
 
         // Get values needed for the bind entry
         let id = buffer.raw().global_id();
@@ -268,11 +254,28 @@ impl<'a> BindGroup<'a> {
     }
 
     // Set a storage buffer that we can write / read from / to
+    // TODO: Validate storage buffer using SetBindResourceError
     pub fn set_storage_buffer<'s, T: GpuPod, const TYPE: u32>(
         &mut self,
         name: &'s str,
         buffer: &'a Buffer<T, TYPE>,
     ) -> Result<(), SetBindResourceError<'s>> {
-        todo!()
+        // Get the binding entry layout for the given buffer
+        let entry = Self::find_entry_layout(
+            self.index,
+            &self.reflected,
+            name,
+        )?;
+
+        // Get values needed for the bind entry
+        let id = buffer.raw().global_id();
+        let buffer_binding = buffer.raw().as_entire_buffer_binding();
+        let resource = wgpu::BindingResource::Buffer(buffer_binding);
+
+        // Save the bind entry for later
+        self.resources.push(resource);
+        self.ids.push(id);
+        self.slots.push(entry.binding);
+        Ok(())
     }
 }

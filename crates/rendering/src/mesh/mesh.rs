@@ -1,7 +1,7 @@
 use super::attributes::*;
 use crate::mesh::attributes::{Normal, Position, Tangent, TexCoord};
 use crate::{
-    AttributeBuffer, EnabledMeshAttributes, MeshAttribute,
+    AttributeBuffer, MeshAttributes, MeshAttribute,
     MeshImportError, MeshImportSettings, MeshInitializationError,
     TrianglesMut, TrianglesRef, VerticesMut, VerticesRef,
 };
@@ -10,13 +10,14 @@ use graphics::{
     BufferMode, BufferUsage, Graphics, Triangle, TriangleBuffer,
 };
 use obj::TexturedVertex;
+use parking_lot::Mutex;
 use std::cell::{Cell, RefCell};
 use std::mem::MaybeUninit;
 
 // A mesh is a collection of 3D vertices connected by triangles
 pub struct Mesh {
     // Enabled mesh attributes
-    enabled: EnabledMeshAttributes,
+    enabled: MeshAttributes,
 
     // Vertex attribute buffers
     positions: MaybeUninit<AttributeBuffer<Position>>,
@@ -30,6 +31,9 @@ pub struct Mesh {
 
     // The triangle buffer
     triangles: TriangleBuffer<u32>,
+
+    // Cached AABB that we can use for frustum culling
+    aabb: Option<math::Aabb<f32>>,
 }
 
 // Mesh initialization for 3D meshes
@@ -87,13 +91,14 @@ impl Mesh {
         triangles: TriangleBuffer<u32>,
     ) -> Result<Self, MeshInitializationError> {
         let mut mesh = Self {
-            enabled: EnabledMeshAttributes::empty(),
+            enabled: MeshAttributes::empty(),
             positions: MaybeUninit::uninit(),
             normals: MaybeUninit::uninit(),
             tangents: MaybeUninit::uninit(),
             tex_coords: MaybeUninit::uninit(),
             len: Some(0),
             triangles,
+            aabb: None,
         };
 
         // "Set"s a buffer, basically insert it if it's Some and removing it if it's None
@@ -115,8 +120,12 @@ impl Mesh {
         set::<Normal>(&mut vertices, normals);
         set::<Tangent>(&mut vertices, tangents);
         set::<TexCoord>(&mut vertices, tex_coords);
-        let len = vertices.len();
-        mesh.len = len;
+        
+        // We don't have to do shit with these since
+        // they internally set the data automatically for us
+        let _ = vertices.len();
+        let _ = vertices.aabb();
+
         Ok(mesh)
     }
 }
@@ -132,6 +141,7 @@ impl Mesh {
             tangents: &self.tangents,
             tex_coords: &self.tex_coords,
             len: self.len,
+            aabb: self.aabb,
         }
     }
 
@@ -143,8 +153,10 @@ impl Mesh {
             normals: &mut self.normals,
             tangents: &mut self.tangents,
             tex_coords: &mut self.tex_coords,
+            length_dirty: Cell::new(false),
+            aabb_dirty: Cell::new(false),
             len: RefCell::new(&mut self.len),
-            dirty: Cell::new(false),
+            aabb: RefCell::new(&mut self.aabb),
         }
     }
 
@@ -169,6 +181,7 @@ impl Mesh {
                 tangents: &self.tangents,
                 tex_coords: &self.tex_coords,
                 len: self.len,
+                aabb: self.aabb,
             },
         )
     }
@@ -183,10 +196,18 @@ impl Mesh {
                 normals: &mut self.normals,
                 tangents: &mut self.tangents,
                 tex_coords: &mut self.tex_coords,
+                length_dirty: Cell::new(false),
+                aabb_dirty: Cell::new(false),
                 len: RefCell::new(&mut self.len),
-                dirty: Cell::new(false),
+                aabb: RefCell::new(&mut self.aabb),
             },
         )
+    }
+    
+    // Get the axis-aligned bounding box for this mesh
+    // Returns None if the AABB wasn't computed yet or if computation failed
+    pub fn aabb(&mut self) -> Option<math::Aabb<f32>> {
+        self.aabb
     }
 }
 

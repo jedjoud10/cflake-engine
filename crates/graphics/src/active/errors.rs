@@ -7,12 +7,14 @@ pub enum SetBindResourceError<'a> {
     #[error("The bind resource '{name}' at bind group '{group}' was not defined in the shader layout")]
     ResourceNotDefined { name: &'a str, group: u32 },
 
-    #[error("The given buffer at '{name}' has a different type [size = {inputted}] than the one defined in the shader layout [size = {defined}]")]
-    BufferDifferentType {
-        name: &'a str,
-        defined: usize,
-        inputted: usize,
-    },
+    #[error("{0}")]
+    SetTexture(SetTextureError),
+
+    #[error("{0}")]
+    SetSampler(SetSamplerError),
+
+    #[error("{0}")]
+    SetBuffer(SetBufferError),
 }
 
 #[derive(Error, Debug)]
@@ -39,6 +41,15 @@ pub enum SetIndexBufferError {
 
 #[derive(Error, Debug)]
 pub enum SetPushConstantsError {}
+
+#[derive(Error, Debug)]
+pub enum SetTextureError {}
+
+#[derive(Error, Debug)]
+pub enum SetSamplerError {}
+
+#[derive(Error, Debug)]
+pub enum SetBufferError {}
 
 #[derive(Error, Debug)]
 pub enum PushConstantBytesError {

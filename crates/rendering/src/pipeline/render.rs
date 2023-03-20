@@ -1,6 +1,6 @@
 use crate::{
     ActiveScenePipeline, ActiveSceneRenderPass,
-    DefaultMaterialResources, EnabledMeshAttributes, Material, Mesh,
+    DefaultMaterialResources, MeshAttributes, Material, Mesh,
     MeshAttribute, Renderer, SceneColor, SceneDepth, Surface,
 };
 use ecs::Scene;
@@ -14,7 +14,7 @@ pub(crate) fn set_vertex_buffer_attribute<
     'r,
     A: MeshAttribute,
 >(
-    supported: EnabledMeshAttributes,
+    supported: MeshAttributes,
     mesh: &'r Mesh,
     active: &mut ActiveScenePipeline<'a, 'r, '_>,
 ) {
