@@ -1,7 +1,7 @@
 use crate::{
     BindResourceLayout, GpuPod, Graphics, ReflectedShader, Sampler,
     SetBindResourceError, Shader, Texel, Texture, TextureUsage,
-    UniformBuffer,
+    UniformBuffer, Buffer,
 };
 use ahash::AHashMap;
 use std::{marker::PhantomData, sync::Arc};
@@ -265,5 +265,14 @@ impl<'a> BindGroup<'a> {
         self.ids.push(id);
         self.slots.push(entry.binding);
         Ok(())
+    }
+
+    // Set a storage buffer that we can write / read from / to
+    pub fn set_storage_buffer<'s, T: GpuPod, const TYPE: u32>(
+        &mut self,
+        name: &'s str,
+        buffer: &'a Buffer<T, TYPE>,
+    ) -> Result<(), SetBindResourceError<'s>> {
+        todo!()
     }
 }

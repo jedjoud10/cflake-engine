@@ -2,7 +2,11 @@
 layout (local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
 layout(set=0, binding=0, r32f) writeonly uniform image3D densities;
 
+float density(vec3 position) {
+    return sin(position).x;
+}
+
 void main() {
-    float density = sin(gl_GlobalInvocationID.x);
+    float density = density(vec3(gl_GlobalInvocationID.xyz));
     imageStore(densities, ivec3(gl_GlobalInvocationID.xyz), vec4(density));
 }

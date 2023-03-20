@@ -15,7 +15,7 @@ use wgpu::{
 // Helper struct that will temporarily store mapped buffers so we can have
 // StagingView / StagingViewMut that we can read and write from
 // This will re-use unmapped buffers to avoid many many buffer creations
-pub(crate) struct StagingPool {
+pub struct StagingPool {
     // Keeps track of mapping buffers
     pub(crate) allocations: Arc<ConcVec<Buffer>>,
 

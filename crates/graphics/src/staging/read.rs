@@ -5,7 +5,7 @@ use wgpu::{BufferAddress, BufferView, CommandEncoder};
 
 // This is the view returned from the map_buffer_read() method of the staging pool
 // This allows us to read the data of the given buffer at the given offset and slice
-pub(crate) struct StagingView<'a> {
+pub struct StagingView<'a> {
     // WGPU buffer view into the staging buffer
     pub(super) index: usize,
     pub(super) states: &'a AtomicBitSet,

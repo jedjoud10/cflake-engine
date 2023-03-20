@@ -24,7 +24,6 @@ fn update(world: &mut World) {
     let mut _voxels = world.get_mut::<VoxelGenerator>().unwrap();
     let voxels = &mut *_voxels;
 
-    /*
     let mut pass = ComputePass::begin(&graphics);
     let mut active = pass.bind_shader(&voxels.shader);
     active.set_bind_group(0, |set| {
@@ -32,7 +31,6 @@ fn update(world: &mut World) {
             .unwrap();
     });
     active.dispatch(vek::Vec3::broadcast(16));
-    */
 }
 
 // Responsible for terrain generation and rendering
