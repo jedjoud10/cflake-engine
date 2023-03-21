@@ -39,6 +39,17 @@ fn init(world: &mut World) {
     persistent!(loader, "engine/shaders/post/gui.vert");
     persistent!(loader, "engine/shaders/post/gui.frag");
 
+    // Load the default noise shaders
+    persistent!(loader, "engine/shaders/noises/cellular2D.glsl");
+    persistent!(loader, "engine/shaders/noises/cellular2x2.glsl");
+    persistent!(loader, "engine/shaders/noises/cellular2x2x2.glsl");
+    persistent!(loader, "engine/shaders/noises/cellular3D.glsl");
+    persistent!(loader, "engine/shaders/noises/common.glsl");
+    persistent!(loader, "engine/shaders/noises/noise2D.glsl");
+    persistent!(loader, "engine/shaders/noises/noise3D.glsl");
+    persistent!(loader, "engine/shaders/noises/noise3Dgrad.glsl");
+    persistent!(loader, "engine/shaders/noises/noise4D.glsl");
+
     // Load the default terrain shaders
     persistent!(loader, "engine/shaders/terrain/voxel.comp");
     persistent!(loader, "engine/shaders/terrain/mesh.comp");

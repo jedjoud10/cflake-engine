@@ -1,6 +1,6 @@
 use crate::{
     ActiveSceneRenderPass, ActiveShadowGraphicsPipeline,
-    DefaultMaterialResources, Material, Mesh, SceneColor, SceneDepth,
+    DefaultMaterialResources, Material, Mesh, SceneColor, SceneDepth, MeshAttributes,
 };
 
 use assets::Assets;

@@ -2,6 +2,36 @@ use bytemuck::{Pod, Zeroable};
 use graphics::{
     Normalized, Texture2D, UniformBuffer, RG, RGBA, SRGBA,
 };
+use math::Frustum;
+
+// These are the default settings that we pass to each material
+pub struct DefaultMaterialResources<'a> {
+    // Main scene uniform buffers
+    // TODO: Make use of crevice to implement Std130, Std140
+    pub camera_buffer: &'a CameraBuffer,
+    pub timing_buffer: &'a TimingBuffer,
+    pub scene_buffer: &'a SceneBuffer,
+
+    // Main camera values
+    pub camera: crate::Camera,
+    pub camera_frustum: Frustum<f32>,
+    pub camera_position: ecs::Position,
+    pub camera_rotation: ecs::Rotation,
+
+    // Main directional light values
+    pub directional_light: crate::DirectionalLight,
+    pub directional_light_rotation: ecs::Rotation,
+
+    // Main scene textures
+    pub white: &'a AlbedoMap,
+    pub black: &'a AlbedoMap,
+    pub normal: &'a NormalMap,
+    pub mask: &'a MaskMap,
+
+    // Currently used indicies
+    pub material_index: usize,
+    pub draw_call_index: usize,
+}
 
 // Camera data that will be stored in a UBO
 #[derive(Clone, Copy, PartialEq, Pod, Zeroable, Default)]

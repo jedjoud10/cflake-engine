@@ -63,6 +63,7 @@ void main() {
 	mask = pow(mask, vec3(2));
 	float roughness = clamp(mask.g, 0.02, 1.0);
 	float metallic = clamp(mask.b, 0.01, 1.0);
+	metallic = roughness;
 	float visibility = clamp(mask.r, 0.0, 1.0);
 	vec3 f0 = mix(vec3(0.04), albedo, metallic);
 

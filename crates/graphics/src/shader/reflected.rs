@@ -345,6 +345,7 @@ pub(super) fn create_pipeline_layout(
     // Iterate through the sets and create the bind groups for each of the resources
     for (index, module) in modules.iter().enumerate() {
         let visibility = visibility[index];
+        let constants = &module.constants;
         for set in 0..4 {
             let types = &module.types;
             let vars = &module.global_variables;
@@ -373,6 +374,7 @@ pub(super) fn create_pipeline_layout(
                 let binding = binding.binding;
                 let space = value.space;
                 let type_ = types.get_handle(value.ty).unwrap();
+                
                 let inner = &type_.inner;
 
                 // Get the merged group layout and merged group entry layouts
@@ -382,8 +384,12 @@ pub(super) fn create_pipeline_layout(
 
                 // Get the binding type for this global variable
                 let binding_type = match inner {
-                    // Uniform Buffers
-                    TypeInner::Struct { span, .. } if matches!(space, AddressSpace::Uniform) | matches!(space, AddressSpace::Storage { .. }) => {
+                    // Uniform and Storage Buffers
+                    TypeInner::Atomic { .. }
+                    | TypeInner::Struct { .. }
+                    | TypeInner::Vector { .. }
+                    | TypeInner::Scalar { .. } 
+                    | TypeInner::Matrix { .. } if matches!(space, AddressSpace::Uniform) | matches!(space, AddressSpace::Storage { .. }) => {
                         // Get the read flag of this buffer
                         let read = match space {
                             AddressSpace::Storage { access } => access.contains(
@@ -404,7 +410,7 @@ pub(super) fn create_pipeline_layout(
                             &name,
                             graphics,
                             &definitions,
-                            *span,
+                            inner.size(constants),
                             read,
                             write,
                         ).map_err(ShaderReflectionError::BufferValidation))
