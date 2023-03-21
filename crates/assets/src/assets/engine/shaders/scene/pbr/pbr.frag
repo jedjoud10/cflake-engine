@@ -60,7 +60,6 @@ void main() {
 	vec3 normal = normalize(tbn * normalize(bumps));
 
 	// Compute PBR values
-	mask = pow(mask, vec3(2));
 	float roughness = clamp(mask.g, 0.02, 1.0);
 	float metallic = clamp(mask.b, 0.01, 1.0);
 	metallic = roughness;

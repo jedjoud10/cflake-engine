@@ -32,7 +32,7 @@ pub enum BufferVariant {
     Index = INDEX,
     Uniform = UNIFORM,
     Indirect = INDIRECT,
-    Unknown,
+    None,
 }
 
 // Special vertex buffer (for vertices only)
@@ -51,7 +51,7 @@ pub type IndirectBuffer<T> = Buffer<T, INDIRECT>;
 // A buffer abstraction over a valid WGPU buffer
 // This also takes a constant that represents it's Wgpu target at compile time
 // TODO: Handle async read writes and async command buf submissions
-pub struct Buffer<T: GpuPod, const TYPE: u32> {
+pub struct Buffer<T: GpuPod, const TYPE: u32 = 0> {
     // Raw WGPU buffer
     buffer: wgpu::Buffer,
 
@@ -224,7 +224,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
             INDEX => BufferVariant::Index,
             UNIFORM => BufferVariant::Uniform,
             INDIRECT => BufferVariant::Indirect,
-            _ => BufferVariant::Unknown,
+            _ => BufferVariant::None,
         }
     }
 
