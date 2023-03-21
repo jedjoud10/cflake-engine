@@ -2,13 +2,13 @@ use assets::Assets;
 use graphics::{
     Compiler, ComputeModule, ComputePass, ComputeShader, Graphics,
     Normalized, SamplerSettings, Texture, Texture3D, TextureMipMaps,
-    TextureMode, TextureUsage, R, RGBA, Buffer, TriangleBuffer, VertexBuffer, XYZ, XYZW, Vertex, BufferMode, BufferUsage,
+    TextureMode, TextureUsage, R, RGBA, Buffer, TriangleBuffer, VertexBuffer, XYZ, XYZW, Vertex, BufferMode, BufferUsage, DrawIndexedIndirectBuffer,
 };
+use rendering::Mesh;
+use utils::{Handle, Storage};
 
 // Type aliases for textures and buffers
 pub(crate) type CachedIndices = Texture3D<R<u32>>;
-pub(crate) type Vertices = VertexBuffer<XYZW<u8>>;
-pub(crate) type Triangles = TriangleBuffer<u32>;
 pub(crate) type Densities = Texture3D<R<f32>>;
 pub(crate) type Counters = Buffer<u32>;
 
@@ -19,15 +19,21 @@ pub(crate) type Counters = Buffer<u32>;
 pub struct MeshGenerator {
     pub(crate) shader: ComputeShader,
     pub(crate) cached_indices: CachedIndices,
-    pub(crate) vertices: Vertices,
-    pub(crate) triangles: Triangles,
+    pub(crate) mesh: Handle<Mesh>,
     pub(crate) counters: Counters,
     pub(crate) dispatch: u32,
+    pub(crate) indirect: Handle<DrawIndexedIndirectBuffer>,
 }
 
 impl MeshGenerator {
     // Create a new mesh generator to be used with the terrain system
-    pub(crate) fn new(graphics: &Graphics, assets: &Assets, size: u32) -> Self {
+    pub(crate) fn new(
+        graphics: &Graphics,
+        assets: &Assets,
+        indirect: &mut Storage<DrawIndexedIndirectBuffer>,
+        mesh: &mut Storage<Mesh>,
+        size: u32
+    ) -> Self {
         // Load the mesh compute shader
         let module = assets
             .load::<ComputeModule>("engine/shaders/terrain/mesh.comp")
@@ -39,7 +45,7 @@ impl MeshGenerator {
         // Set the required shader resources
         compiler.use_storage_texture::<Densities>("densities", true, false);
         compiler.use_storage_texture::<CachedIndices>("cached_indices", true, true);
-        compiler.use_storage_buffer::<<XYZW<u8> as Vertex>::Storage>("vertices", false, true);
+        compiler.use_storage_buffer::<<XYZ<f32> as Vertex>::Storage>("vertices", false, true);
         compiler.use_storage_buffer::<[u32; 3]>("triangles", false, true);
         compiler.use_storage_buffer::<[u32; 2]>("counters", true, true);
 
@@ -59,7 +65,7 @@ impl MeshGenerator {
 
         // Create the vertex buffer (make sure size can contain ALL possible vertices)
         let vertex_capacity = (size as usize).pow(3);
-        let vertices = Vertices::zeroed(
+        let vertices = VertexBuffer::<XYZ<f32>>::zeroed(
             graphics, 
             vertex_capacity,
             BufferMode::Parital,
@@ -68,12 +74,21 @@ impl MeshGenerator {
         
         // Create the triangle buffer (make sure size can contain ALL possible triangles)
         let triangle_capacity = (size as usize - 1).pow(3) * 4;
-        let triangles = Triangles::zeroed(
+        let triangles = TriangleBuffer::<u32>::zeroed(
             graphics, 
             triangle_capacity,
             BufferMode::Parital,
             BufferUsage::STORAGE
         ).unwrap();
+
+        // Create a mesh that uses the buffers
+        let mesh = mesh.insert(Mesh::from_buffers(
+            Some(vertices),
+            None,
+            None,
+            None,
+            triangles
+        ).unwrap());
 
         // Create the atomic counter buffer
         let counters = Buffer::from_slice(
@@ -86,13 +101,20 @@ impl MeshGenerator {
         // Calculate the dispatch size for mesh generation by assuming local size is 4
         let dispatch = size / 4;
 
+        // Create an indexed indirect draw buffer and add into the storage
+        let indirect = indirect.insert(DrawIndexedIndirectBuffer::zeroed(
+            graphics,
+            1,
+            BufferMode::Dynamic,
+            BufferUsage::STORAGE
+        ).unwrap());
         Self {
             shader: compute,
             cached_indices,
-            vertices,
-            triangles,
             counters,
             dispatch,
+            indirect,
+            mesh
         }
     }
 }

@@ -1,5 +1,7 @@
 use assets::Assets;
-use graphics::{ComputePass, Graphics};
+use graphics::{ComputePass, Graphics, DrawIndexedIndirectBuffer};
+use rendering::Mesh;
+use utils::Storage;
 use world::{System, World};
 
 use crate::{VoxelGenerator, MeshGenerator};
@@ -8,17 +10,21 @@ use crate::{VoxelGenerator, MeshGenerator};
 fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
     let assets = world.get::<Assets>().unwrap();
+    let mut indirect = world.get_mut::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
+    let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
 
     // Global chunk resolution
     let size = 32;
 
     // Create the compute generators
     let voxel = VoxelGenerator::new(&graphics, &assets, size);
-    let mesh = MeshGenerator::new(&graphics, &assets, size);
+    let mesh = MeshGenerator::new(&graphics, &assets, &mut indirect, &mut meshes, size);
 
     // Add the resources to the world
     drop(graphics);
     drop(assets);
+    drop(indirect);
+    drop(meshes);
     world.insert(voxel);
     world.insert(mesh);
 }
@@ -28,6 +34,8 @@ fn update(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
     let mut _voxels = world.get_mut::<VoxelGenerator>().unwrap();
     let voxels = &mut *_voxels;
+    let mut indirect = world.get_mut::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
+    let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
 
     // Create a compute pass for both the voxel and mesh compute shaders
     let mut pass = ComputePass::begin(&graphics);
@@ -40,7 +48,7 @@ fn update(world: &mut World) {
     });
     active.dispatch(vek::Vec3::broadcast(voxels.dispatch));
 
-    
+    // Create the mesh every frame (DEBUG)
 }
 
 // Responsible for terrain generation and rendering
