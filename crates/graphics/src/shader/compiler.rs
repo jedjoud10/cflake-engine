@@ -334,12 +334,17 @@ fn compile(
             _ => todo!(),
         })?;
 
+    log::trace!("{}", artifact.as_binary());
+    
     // [SPIRV -> Naga] parsing options
     let options = naga::front::spv::Options {
         adjust_coordinate_space: false,
         strict_capabilities: false,
         block_ctx_dump_prefix: None,
     };
+
+    
+
 
     // Compile the SPIRV to a Naga module
     let module = naga::front::spv::parse_u8_slice(
