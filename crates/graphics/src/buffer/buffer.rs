@@ -8,6 +8,7 @@ use std::{
     ops::{Range, RangeBounds},
 };
 
+use bytemuck::{Pod, Zeroable};
 use wgpu::{util::DeviceExt, CommandEncoder, Maintain};
 
 use crate::{
@@ -15,7 +16,7 @@ use crate::{
     BufferInitializationError, BufferMode, BufferNotMappableError,
     BufferReadError, BufferSplatError, BufferUsage, BufferView,
     BufferViewMut, BufferWriteError, GpuPod, Graphics, StagingPool,
-    Vertex, R,
+    Vertex, R, DrawIndirect, DrawIndexedIndirect, DispatchIndirect,
 };
 
 // Bitmask from Vulkan BufferUsages
@@ -45,8 +46,10 @@ pub type TriangleBuffer<T> = Buffer<Triangle<T>, INDEX>;
 // TODO: Implemenent std430 + std130 for these types of buffers
 pub type UniformBuffer<T> = Buffer<T, UNIFORM>;
 
-// Indirect command buffer
-pub type IndirectBuffer<T> = Buffer<T, INDIRECT>;
+// Indirect buffers for GPU rendering
+pub type DrawIndirectBuffer = Buffer<DrawIndirect, INDIRECT>;
+pub type DrawIndexedIndirectBuffer = Buffer<DrawIndexedIndirect, INDIRECT>;
+pub type DispatchIndirectBuffer = Buffer<DispatchIndirect, INDIRECT>;
 
 // A buffer abstraction over a valid WGPU buffer
 // This also takes a constant that represents it's Wgpu target at compile time
@@ -93,11 +96,6 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
 
         // Return an error if the buffer type isn't supported
         let variant = wgpu::BufferUsages::from_bits(TYPE);
-        let Some(variant) = variant else {
-            return Err(
-                BufferInitializationError::InvalidVariantType,
-            );
-        };
 
         // Return an error if the buffer usage flags are invalid
         if usage.contains(BufferUsage::READ)
@@ -122,7 +120,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         }
 
         // Wgpu usages for this buffer
-        let wgpu_usages = buffer_usages(variant, usage);
+        let wgpu_usages = buffer_usages(variant, usage)?;
 
         // Convert the slice into bytes
         let bytes = bytemuck::cast_slice::<T, u8>(slice);
@@ -168,21 +166,47 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         buffer.length = 0;
         Ok(buffer)
     }
+
+    // Create a buffer that contains zeroed out data
+    pub fn zeroed(
+        graphics: &Graphics,
+        length: usize,
+        mode: BufferMode,
+        usage: BufferUsage,
+    ) -> Result<Self, BufferInitializationError> {
+        let vec = vec![T::zeroed(); length];
+        Self::from_slice(graphics, &vec, mode, usage)
+    }
 }
 
 // Get the buffer usages from the buffer variant and usage wrapper
 fn buffer_usages(
-    variant: wgpu::BufferUsages,
+    variant: Option<wgpu::BufferUsages>,
     usage: BufferUsage,
-) -> wgpu::BufferUsages {
-    let mut wgpu_usages = variant;
+) -> Result<wgpu::BufferUsages, BufferInitializationError> {
+    // If the user does not specify a usage and there isn't a valid variant, return error
+    let mut base = if let Some(variant) = variant {
+        variant
+    } else {
+        if usage.is_empty() {
+            return Err(BufferInitializationError::UnkownBufferUsageOrType);
+        } else {
+            wgpu::BufferUsages::empty()
+        }
+    };
+
+    // map the wrapper BufferUsages to wgpu BufferUsages
     if usage.contains(BufferUsage::COPY_SRC) {
-        wgpu_usages |= wgpu::BufferUsages::COPY_SRC;
+        base |= wgpu::BufferUsages::COPY_SRC;
     }
     if usage.contains(BufferUsage::COPY_DST) {
-        wgpu_usages |= wgpu::BufferUsages::COPY_DST;
+        base |= wgpu::BufferUsages::COPY_DST;
     }
-    wgpu_usages
+    if usage.contains(BufferUsage::STORAGE) {
+        base |= wgpu::BufferUsages::STORAGE;
+    }
+
+    Ok(base)
 }
 
 // Implementation of util methods
@@ -473,7 +497,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         let variant = wgpu::BufferUsages::from_bits(TYPE).unwrap();
 
         // Wgpu usages for primary buffer
-        let usage = buffer_usages(variant, self.usage);
+        let usage = buffer_usages(Some(variant), self.usage).unwrap();
 
         // Check if we need to allocate a new buffer
         if slice.len() + self.length > self.capacity {

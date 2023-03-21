@@ -7,7 +7,7 @@ use crate::{
 use assets::Assets;
 
 use ecs::{Rotation, Scene};
-use graphics::{Graphics, Texture, Window};
+use graphics::{Graphics, Texture, Window, DrawIndexedIndirectBuffer};
 
 use log::LevelFilter;
 use utils::{Storage, Time};
@@ -64,6 +64,7 @@ fn init(world: &mut World) {
     world.insert(Storage::<Basic>::default());
     world.insert(Storage::<Sky>::default());
     world.insert(Storage::<PhysicallyBased>::default());
+    world.insert(Storage::<DrawIndexedIndirectBuffer>::default());
     world.insert(albedo_maps);
     world.insert(normal_maps);
     world.insert(mask_maps);
@@ -114,6 +115,7 @@ fn render(world: &mut World) {
     let scene = world.get::<Scene>().unwrap();
     let pipelines = world.get::<Pipelines>().unwrap();
     let meshes = world.get::<Storage<Mesh>>().unwrap();
+    let indirect = world.get::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
     let albedo_maps = world.get::<Storage<AlbedoMap>>().unwrap();
     let normal_maps = world.get::<Storage<NormalMap>>().unwrap();
     let mask_maps = world.get::<Storage<MaskMap>>().unwrap();
@@ -210,7 +212,7 @@ fn render(world: &mut World) {
 
         // Render the shadows first (fuck you)
         for stored in pipelines.iter() {
-            stored.prerender(world, &meshes, &mut active);
+            stored.prerender(world, &meshes, &indirect,&mut active);
         }
         drop(active);
         drop(render_pass);
@@ -226,7 +228,7 @@ fn render(world: &mut World) {
     // This will iterate over each material pipeline and draw the scene
     drop(scene);
     for stored in pipelines.iter() {
-        stored.render(world, &meshes, &mut default, &mut render_pass);
+        stored.render(world, &meshes, &indirect, &mut default, &mut render_pass);
     }
 
     drop(render_pass);

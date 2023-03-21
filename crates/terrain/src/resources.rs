@@ -59,7 +59,7 @@ impl MeshGenerator {
 
         // Create the vertex buffer (make sure size can contain ALL possible vertices)
         let vertex_capacity = (size as usize).pow(3);
-        let vertices = Vertices::with_capacity(
+        let vertices = Vertices::zeroed(
             graphics, 
             vertex_capacity,
             BufferMode::Parital,
@@ -68,7 +68,7 @@ impl MeshGenerator {
         
         // Create the triangle buffer (make sure size can contain ALL possible triangles)
         let triangle_capacity = (size as usize - 1).pow(3) * 4;
-        let triangles = Triangles::with_capacity(
+        let triangles = Triangles::zeroed(
             graphics, 
             triangle_capacity,
             BufferMode::Parital,

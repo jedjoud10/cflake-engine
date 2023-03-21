@@ -1,4 +1,5 @@
 use ecs::Component;
+use graphics::{DrawIndirectBuffer, DrawIndexedIndirectBuffer};
 use utils::Handle;
 use crate::{Material, MaterialId, Mesh};
 
@@ -16,6 +17,10 @@ pub struct Surface<M: Material> {
 
     // TODO: Figure out culling bounds maybe?
 
+    // Indirect draw buffer that we can use to render this surface
+    // TODO: Move this to it's own component probably
+    pub indirect: Option<Handle<DrawIndexedIndirectBuffer>>,
+
     // This does nothing and it has a size of 0, but let's keep it for clarity
     pub id: MaterialId<M>,
 }
@@ -31,7 +36,25 @@ impl<M: Material> Surface<M> {
             mesh,
             material,
             visible: true,
+            indirect: None,
             culled: false,
+            id,
+        }
+    }
+
+    // Create a new visible indirect rendering surface
+    pub fn indirect(
+        mesh: Handle<Mesh>,
+        material: Handle<M>,
+        indirect: Handle<DrawIndexedIndirectBuffer>,
+        id: MaterialId<M>,
+    ) -> Self {
+        Self {
+            mesh,
+            material,
+            visible: true,
+            culled: false,
+            indirect: Some(indirect),
             id,
         }
     }

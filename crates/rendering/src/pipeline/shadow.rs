@@ -1,9 +1,9 @@
 use crate::{
     attributes::Position, ActiveShadowGraphicsPipeline,
-    MeshAttributes, Material, Mesh, Renderer, Surface,
+    MeshAttributes, Material, Mesh, Renderer, Surface, draw,
 };
 use ecs::Scene;
-use graphics::{GpuPod, ModuleVisibility};
+use graphics::{GpuPod, ModuleVisibility, DrawIndexedIndirectBuffer};
 use utils::{Storage, Handle};
 use world::World;
 
@@ -22,6 +22,7 @@ fn filter(mesh: &Mesh, renderer: &Renderer) -> bool {
 pub(super) fn render_shadows<'r, M: Material>(
     world: &'r World,
     meshes: &'r Storage<Mesh>,
+    indirect: &'r Storage<DrawIndexedIndirectBuffer>,
     active: &mut ActiveShadowGraphicsPipeline<'_, 'r, '_>,
 ) {
     // Don't do shit if we won't cast shadows
@@ -70,8 +71,7 @@ pub(super) fn render_shadows<'r, M: Material>(
             last = Some(surface.mesh.clone());
         }
 
-        // Draw the triangulated mesh
-        let indices = 0..(mesh.triangles().buffer().len() as u32 * 3);
-        active.draw_indexed(indices, 0..1);
+        // Draw the mesh
+        draw(surface, indirect, mesh, active);
     }
 }

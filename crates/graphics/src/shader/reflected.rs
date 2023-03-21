@@ -560,6 +560,8 @@ fn internal_create_pipeline_layout(
         log::warn!("Did not find cached pipeline layout for {names:?}");
     }
 
+    log::trace!("internal_create_pipeline_layout: Start");
+
     // Fetch (and cache if necessary) the empty bind group layout
     let cached = &graphics.0.cached;
     let empty_bind_group_layout = cached
@@ -580,9 +582,11 @@ fn internal_create_pipeline_layout(
                     .device()
                     .create_bind_group_layout(&descriptor),
             )
-        });
+        })
+        .clone();
 
     // Create the empty bind group
+    log::trace!("internal_create_pipeline_layout: Empty Bind Group Start");
     cached.bind_groups.entry(Vec::new()).or_insert_with(|| {
         let desc = wgpu::BindGroupDescriptor {
             label: None,
@@ -592,8 +596,10 @@ fn internal_create_pipeline_layout(
 
         Arc::new(graphics.device().create_bind_group(&desc))
     });
+    log::trace!("internal_create_pipeline_layout: Empty Bind Group End");
 
     // Add the uncached bind group entries to the graphics cache
+    log::trace!("internal_create_pipeline_layout: Bind Groups Start");
     for (bind_group_index, bind_group_layout) in
         shader.bind_group_layouts.iter().enumerate()
     {
@@ -638,8 +644,10 @@ fn internal_create_pipeline_layout(
                 .insert(bind_group_layout.clone(), layout);
         }
     }
+    log::trace!("internal_create_pipeline_layout: Bind Groups End");
 
     // Fetch the bind group layouts from the cache
+    log::trace!("internal_create_pipeline_layout: Bind Group Layouts Start");
     let bind_group_layouts = shader
         .bind_group_layouts
         .iter()
@@ -659,10 +667,11 @@ fn internal_create_pipeline_layout(
         .map(|x| {
             x.as_ref()
                 .map(|x| &***x)
-                .unwrap_or(&**empty_bind_group_layout)
+                .unwrap_or(&*empty_bind_group_layout)
         })
         .take(shader.last_valid_bind_group_layout + 1)
         .collect::<Vec<_>>();
+    log::trace!("internal_create_pipeline_layout: Bind Group Layouts End");
 
     // Convert the custom push constant range to wgpu push constant ranges
     let push_constant_ranges = if let Some(range) =
@@ -716,6 +725,9 @@ fn internal_create_pipeline_layout(
     log::debug!(
         "Saved pipeline layout for {names:?} in graphics cache"
     );
+
+        
+    log::trace!("internal_create_pipeline_layout: End");
 
     (Arc::new(shader), layout)
 }

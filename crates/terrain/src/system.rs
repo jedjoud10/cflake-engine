@@ -38,7 +38,9 @@ fn update(world: &mut World) {
         set.set_storage_texture("densities", &mut voxels.densities)
             .unwrap();
     });
-    active.dispatch(vek::Vec3::broadcast(16));
+    active.dispatch(vek::Vec3::broadcast(voxels.dispatch));
+
+    
 }
 
 // Responsible for terrain generation and rendering

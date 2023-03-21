@@ -5,9 +5,6 @@ pub enum BufferInitializationError {
     #[error("The given buffer mode must be BufferMode::Resizable if the slice is empty")]
     EmptySliceNotResizable,
 
-    #[error("Given buffer variant type is invalid. Must be VERTEX, INDEX, STORAGE, UNIFORM, or INDIRECT")]
-    InvalidVariantType,
-
     #[error("The given buffer usage contains the WRITE flag, but there isn't the COPY_DST flag")]
     WritableWithoutCopyDst,
 
@@ -16,6 +13,9 @@ pub enum BufferInitializationError {
 
     #[error("The given buffer mode is Resizable, but there isn't the COPY_SRC flag in the usages")]
     ResizableWithoutCopySrc,
+
+    #[error("Cannot create a buffer with no usages or without valid type")]
+    UnkownBufferUsageOrType,
 }
 
 #[derive(Error, Debug)]

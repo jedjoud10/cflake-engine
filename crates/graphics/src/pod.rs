@@ -1,3 +1,5 @@
+use bytemuck::{Zeroable, Pod};
+
 // Plain old data type that can be sent to the gpu
 // This is a bit of a hack tbh since bool doesn't implement
 pub unsafe trait GpuPod:
@@ -80,4 +82,48 @@ impl GpuPodInfo {
     pub fn alignment(&self) -> usize {
         self.alignment
     }
+}
+
+// Sole reason I copied over the WGPU types is because they don't implement Pod and Zeroable
+// Cmon wgpu be better (maybe I should make pull request??)
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, Default, Pod, Zeroable)]
+pub struct DrawIndirect {
+    /// The number of vertices to draw.
+    pub vertex_count: u32,
+    /// The number of instances to draw.
+    pub instance_count: u32,
+    /// The Index of the first vertex to draw.
+    pub base_vertex: u32,
+    /// The instance ID of the first instance to draw.
+    /// Has to be 0, unless [`Features::INDIRECT_FIRST_INSTANCE`](crate::Features::INDIRECT_FIRST_INSTANCE) is enabled.
+    pub base_instance: u32,
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, Default, Pod, Zeroable)]
+pub struct DrawIndexedIndirect {
+    /// The number of vertices to draw.
+    pub vertex_count: u32,
+    /// The number of instances to draw.
+    pub instance_count: u32,
+    /// The base index within the index buffer.
+    pub base_index: u32,
+    /// The value added to the vertex index before indexing into the vertex buffer.
+    pub vertex_offset: i32,
+    /// The instance ID of the first instance to draw.
+    /// Has to be 0, unless [`Features::INDIRECT_FIRST_INSTANCE`](crate::Features::INDIRECT_FIRST_INSTANCE) is enabled.
+    pub base_instance: u32,
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, Default, Pod, Zeroable)]
+pub struct DispatchIndirect {
+    /// The number of work groups in X dimension.
+    pub x: u32,
+    /// The number of work groups in Y dimension.
+    pub y: u32,
+    /// The number of work groups in Z dimension.
+    pub z: u32,
 }

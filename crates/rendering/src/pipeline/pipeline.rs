@@ -6,7 +6,7 @@ use crate::{
 use assets::Assets;
 use graphics::{
     CompareFunction, DepthConfig, Graphics,
-    PipelineInitializationError, RenderPipeline, Shader,
+    PipelineInitializationError, RenderPipeline, Shader, DrawIndexedIndirectBuffer,
 };
 use std::marker::PhantomData;
 use utils::Storage;
@@ -91,6 +91,7 @@ pub trait DynPipeline {
         &'r self,
         world: &'r World,
         meshes: &'r Storage<Mesh>,
+        indirect: &'r Storage<DrawIndexedIndirectBuffer>,
         active: &mut ActiveShadowGraphicsPipeline<'_, 'r, '_>,
     );
 
@@ -99,6 +100,7 @@ pub trait DynPipeline {
         &'r self,
         world: &'r World,
         meshes: &'r Storage<Mesh>,
+        indirect: &'r Storage<DrawIndexedIndirectBuffer>,
         default: &mut DefaultMaterialResources<'r>,
         render_pass: &mut ActiveSceneRenderPass<'r, '_>,
     );
@@ -109,15 +111,17 @@ impl<M: Material> DynPipeline for Pipeline<M> {
         &'r self,
         world: &'r World,
         meshes: &'r Storage<Mesh>,
+        indirect: &'r Storage<DrawIndexedIndirectBuffer>,
         active: &mut ActiveShadowGraphicsPipeline<'_, 'r, '_>,
     ) {
-        super::render_shadows::<M>(world, meshes, active);
+        super::render_shadows::<M>(world, meshes, indirect, active);
     }
 
     fn render<'r>(
         &'r self,
         world: &'r World,
         meshes: &'r Storage<Mesh>,
+        indirect: &'r Storage<DrawIndexedIndirectBuffer>,
         default: &mut DefaultMaterialResources<'r>,
         render_pass: &mut ActiveSceneRenderPass<'r, '_>,
     ) {
@@ -130,6 +134,7 @@ impl<M: Material> DynPipeline for Pipeline<M> {
         super::render_surfaces::<M>(
             world,
             meshes,
+            indirect, 
             &self.pipeline,
             default,
             render_pass,

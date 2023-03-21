@@ -4,9 +4,11 @@ use crate::{
     MeshAttribute, Renderer, SceneColor, SceneDepth, Surface,
 };
 use ecs::Scene;
-use graphics::RenderPipeline;
+use graphics::{RenderPipeline, DrawIndexedIndirectBuffer};
 use utils::{Handle, Storage};
 use world::World;
+
+use super::draw;
 
 // Set a mesh binding vertex buffer to the current render pass
 pub(crate) fn set_vertex_buffer_attribute<
@@ -35,6 +37,7 @@ pub(crate) fn set_vertex_buffer_attribute<
 pub(super) fn render_surfaces<'r, M: Material>(
     world: &'r World,
     meshes: &'r Storage<Mesh>,
+    indirect: &'r Storage<DrawIndexedIndirectBuffer>,
     pipeline: &'r RenderPipeline<SceneColor, SceneDepth>,
     default: &mut DefaultMaterialResources<'r>,
     render_pass: &mut ActiveSceneRenderPass<'r, '_>,
@@ -158,10 +161,8 @@ pub(super) fn render_surfaces<'r, M: Material>(
             })
             .unwrap();
 
-        // Draw the triangulated mesh
-        let indices = 0..(mesh.triangles().buffer().len() as u32 * 3);
-        active.draw_indexed(indices, 0..1);
-        default.draw_call_index += 1;
+        // Draw the mesh
+        draw(surface, indirect, mesh, &mut active);
 
         // Add 1 to the material index when we switch instances
         if switched_material_instances {
