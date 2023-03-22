@@ -16,7 +16,6 @@ pub type FinalGraphicsPipeline = RenderPipeline<SwapchainFormat, ()>;
 pub struct Compositor {
     // Display render pass, shader, and pipeline
     pub(crate) render_pass: FinalRenderPass,
-    pub(crate) shader: Shader,
     pub(crate) pipeline: FinalGraphicsPipeline,
 }
 
@@ -43,11 +42,7 @@ impl Compositor {
         compiler.use_sampled_texture::<Texture2D<SceneColor>>(
             "color_map",
         );
-        compiler.use_sampled_texture::<Texture2D<SceneDepth>>(
-            "depth_map",
-        );
         compiler.use_uniform_buffer::<WindowUniform>("window");
-        compiler.use_uniform_buffer::<CameraUniform>("camera");
 
         // Combine the modules to the shader
         let shader = Shader::new(vertex, fragment, compiler).unwrap();
@@ -80,7 +75,6 @@ impl Compositor {
 
         Self {
             render_pass,
-            shader,
             pipeline,
         }
     }

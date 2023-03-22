@@ -245,7 +245,6 @@ impl App {
             .error(Color::Red);
 
         fern::Dispatch::new()
-            .level_for("naga", log::LevelFilter::Warn)
             .level_for("wgpu", log::LevelFilter::Warn)
             .level_for("wgpu_core", log::LevelFilter::Warn)
             .level_for("wgpu_hal", log::LevelFilter::Warn)

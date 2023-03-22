@@ -24,32 +24,22 @@ pub enum ModuleVisibility {
 }
 
 impl ModuleVisibility {
-    // Combine other into self (panics if not possible)
-    pub fn insert(&mut self, other: Self) {
+    // Combine other into self
+    // Returns None if the operation failed (in case it's not possible)
+    pub fn try_insert(&mut self, other: Self) -> Option<()> {
         match self {
-            ModuleVisibility::Vertex => {
-                if !matches!(other, Self::Fragment) {
-                    *self = ModuleVisibility::VertexFragment;
-                }
-            }
+            ModuleVisibility::Vertex if matches!(other, Self::Fragment) => {
+                *self = ModuleVisibility::VertexFragment;
+                Some(())
+            },
 
-            ModuleVisibility::Fragment => {
-                if !matches!(other, Self::Vertex) {
-                    *self = ModuleVisibility::VertexFragment;
-                }
-            }
+            ModuleVisibility::Fragment if matches!(other, Self::Vertex) => {
+                *self = ModuleVisibility::VertexFragment;
+                Some(())
+            },
 
-            ModuleVisibility::VertexFragment => {
-                if matches!(other, Self::Compute) {
-                    panic!()
-                }
-            }
-
-            ModuleVisibility::Compute => {
-                if !matches!(other, Self::Compute) {
-                    panic!()
-                }
-            }
+            ModuleVisibility::Compute if matches!(other, Self::Compute) => Some(()),
+            _ => None,
         }
     }
 

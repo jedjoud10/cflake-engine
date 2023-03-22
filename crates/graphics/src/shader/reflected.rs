@@ -357,8 +357,6 @@ pub(super) fn create_pipeline_layout(
             let vec = sets.entry(set).or_default();
             vec.push(variable.clone());
         }
-
-        log::warn!("{:#?}", sets);
         
         for set in 0..4 {
             if !sets.contains_key(&set) {
@@ -449,7 +447,7 @@ pub(super) fn create_pipeline_layout(
                         }
 
                         // Merge the visibility to allow more modules to access this entry
-                        merged.visibility.insert(old.visibility);
+                        merged.visibility.try_insert(old.visibility).unwrap();
                     }
 
                     // If the spot is vacant, add the bind entry layout for the first time
@@ -676,7 +674,6 @@ fn internal_create_pipeline_layout(
     log::debug!(
         "Saved pipeline layout for {names:?} in graphics cache"
     );
-
         
     log::trace!("internal_create_pipeline_layout: End");
 

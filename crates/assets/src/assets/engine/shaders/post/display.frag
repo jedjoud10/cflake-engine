@@ -3,14 +3,10 @@ layout(location = 0) out vec4 frag;
 
 #include <engine/shaders/common/extensions.glsl>
 #include <engine/shaders/common/window.glsl>
-#include <engine/shaders/common/camera.glsl>
 #include <engine/shaders/math/conversions.glsl>
 
 // Fetch the scene color data
 layout(set = 1, binding = 0) uniform texture2D color_map;
-
-// Fetch the scene depth data
-layout(set = 1, binding = 2) uniform texture2D depth_map;
 
 void main() {
 	// Get the scaled down coordinates
@@ -20,15 +16,7 @@ void main() {
 	// Fetch the color data
 	vec2 coords = vec2(x, y);
 	vec3 color = texelFetch(color_map, ivec2(gl_FragCoord.xy), 0).rgb;
-
-	// Fetch the depth data
-	/*
-	float non_linear_depth = texelFetch(depth_map, ivec2(gl_FragCoord.xy), 0).r;
-	float depth = linearize_depth(non_linear_depth, 0.01, 5000);
-	vec3 fog = mix(color, vec3(1), depth / 100.0);
-	color = fog;
-	*/
-
+	
 	// Increase exposure
 	color *= 1.9;
 

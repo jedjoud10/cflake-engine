@@ -30,7 +30,7 @@ pub(crate) type ResourceBindingTypes =
     AHashMap<String, BindResourceType>;
 pub(crate) type MaybePushConstantLayout = Option<PushConstantLayout>;
 
-// This is a compiler that will take was GLSL code, convert it to Naga, then to WGPU
+// This is a compiler that will take GLSL code and create a WGPU module
 // This compiler also allows us to define constants and snippets before compilation
 // This compiler will be used within the Shader and ComputeShader to compile the modules in batch
 pub struct Compiler<'a> {
@@ -72,7 +72,7 @@ impl<'a> Compiler<'a> {
         // Decompose the module into file name and source
         let (name, source) = module.into_raw_parts();
 
-        // Compile GLSL to Naga then to Wgpu
+        // Compile GLSL to SPIRV then to Wgpu
         let time = std::time::Instant::now();
         let (raw, reflected) = compile(
             &M::kind(),
@@ -260,7 +260,7 @@ impl<'a> Compiler<'a> {
     }
 }
 
-// Parses the GLSL shader into a Naga module, then passes it to Wgpu
+// Parses the GLSL shader into a SPIRV module, then passes it to Wgpu
 // If the underlying shader module is cached, it will use that
 fn compile(
     kind: &ModuleKind,
@@ -275,22 +275,25 @@ fn compile(
     // TODO: Holy fuck please optimize this
     // TODO: Also change cache to LruCache or smthing like that
     if let Some(value) = graphics.0.cached.shaders.get(&(snippets.clone(), file.to_string())) {
-        let (raw, naga) = value.value();
+        let (raw, reflected) = value.value();
         log::debug!("Found shader module in cache for {file}, using it...");
-        return Ok((raw.clone(), naga.clone()));
+        return Ok((raw.clone(), reflected.clone()));
     } else {
         log::warn!("Did not find cached shader module for {file}");
     }
 
     // Custom ShaderC compiler options
     let mut options = shaderc::CompileOptions::new().unwrap();
+    options.set_generate_debug_info();
+    options.set_optimization_level(shaderc::OptimizationLevel::Performance);
+    options.set_invert_y(false);
 
     // Create a callback responsible for includes
     options.set_include_callback(|target, _type, current, depth| {
         include(current, _type, target, depth, assets, &snippets)
     });
 
-    // Pass the source by ShaderC first cause Naga's errors suck ass
+    // Compile using ShaderC (my love)
     let artifact = graphics
         .0
         .shaderc
@@ -334,6 +337,11 @@ fn compile(
             _ => todo!(),
         })?;
     
+    // Print out possible warning messages during shader compilation
+    if !artifact.get_warning_messages().is_empty() {
+        log::warn!("ShaderC warning: {}", artifact.get_warning_messages());
+    }
+
     // Create a spirv_reflect shader module
     let mut reflect = spirq::ReflectConfig::new()
         .spv(artifact.as_binary())
@@ -355,12 +363,12 @@ fn compile(
 
     // Cache the result first
     let raw = Arc::new(wgpu);
-    let naga = Arc::new(reflect);
-    graphics.0.cached.shaders.insert((snippets.clone(), file.to_string()), (raw.clone(), naga.clone()));
+    let reflected = Arc::new(reflect);
+    graphics.0.cached.shaders.insert((snippets.clone(), file.to_string()), (raw.clone(), reflected.clone()));
     log::debug!("Saved shader module for {file} in graphics cache");
 
-    // Return the compiled wgpu module and the naga mdule
-    Ok((raw, naga))
+    // Return the compiled wgpu module and the reflected mdule
+    Ok((raw, reflected))
 }
 
 // Load a function module and convert it to a ResolvedInclude
