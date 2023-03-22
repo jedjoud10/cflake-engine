@@ -9,7 +9,7 @@ use crate::{
 };
 use ahash::{AHashMap, AHashSet};
 use arrayvec::ArrayVec;
-use naga::{AddressSpace, TypeInner};
+use spirv_reflect::types::ReflectDescriptorType;
 use utils::enable_in_range;
 use wgpu::TextureFormatFeatureFlags;
 
@@ -255,7 +255,7 @@ pub(super) fn map_sampler_binding_type(
 pub(super) fn create_pipeline_layout(
     graphics: &Graphics,
     names: &[&str],
-    modules: &[&naga::Module],
+    modules: &[&spirv_reflect::ShaderModule],
     visibility: &[ModuleVisibility],
     resource_binding_types: &super::ResourceBindingTypes,
     maybe_push_constant_layout: &super::MaybePushConstantLayout,
@@ -296,20 +296,11 @@ pub(super) fn create_pipeline_layout(
         // Get the push constant sizes as defined in the shader modules
         let mut iter = modules
             .iter()
-            .flat_map(|module| {
-                module
-                    .global_variables
-                    .iter()
-                    .map(move |x| (module, x))
-            })
-            .filter(|(_, (_, val))| {
-                matches!(val.space, AddressSpace::PushConstant)
-            })
-            .map(|(module, (_, val))| {
-                (module, module.types.get_handle(val.ty).unwrap())
-            })
-            .map(|(module, _type)| {
-                _type.inner.size(&module.constants)
+            .map(|module| module.enumerate_push_constant_blocks(None))
+            .filter_map(|res| res.ok())
+            .map(|vec| {
+                let first = vec.into_iter().next().unwrap();
+                first.size
             });
         let (first, second) = (iter.next(), iter.next());
 
@@ -345,37 +336,19 @@ pub(super) fn create_pipeline_layout(
     // Iterate through the sets and create the bind groups for each of the resources
     for (index, module) in modules.iter().enumerate() {
         let visibility = visibility[index];
-        let constants = &module.constants;
+
+        // Get the descriptor sets of the current module and convert to hashmap
+        let sets = module.enumerate_descriptor_sets(None).unwrap();
+        let sets = AHashMap::from_iter(
+            sets.into_iter().map(|x| (x.set, x.bindings))
+        );
+        
         for set in 0..4 {
-            let types = &module.types;
-            let vars = &module.global_variables;
-
-            // Iterate over the global variables and get their binding entry
-            let iter = vars
-                .iter()
-                .filter(|(_, value)| {
-                    value.binding.is_some() && value.name.is_some()
-                })
-                .map(|(_, x)| x)
-                .filter(|value| {
-                    matches!(value.space, AddressSpace::Uniform)
-                        | matches!(
-                            value.space,
-                            AddressSpace::Storage { .. }
-                        )
-                        | matches!(value.space, AddressSpace::Handle)
-                })
-                .filter(|value| types.get_handle(value.ty).is_ok());
-
-            for value in iter {
-                let name = &value.name.as_ref().unwrap();
-                let binding = &value.binding.as_ref().unwrap();
-                let set = binding.group;
-                let binding = binding.binding;
-                let space = value.space;
-                let type_ = types.get_handle(value.ty).unwrap();
-                
-                let inner = &type_.inner;
+            // Iterate over the descriptor bindings
+            for value in sets.get(&set).unwrap() {
+                // Get the name, binding, and required values for this var
+                let name = value.name.clone();
+                let binding = value.binding;
 
                 // Get the merged group layout and merged group entry layouts
                 let merged_group_layout = &mut groups[set as usize];
@@ -383,6 +356,35 @@ pub(super) fn create_pipeline_layout(
                     .get_or_insert_with(|| Default::default());
 
                 // Get the binding type for this global variable
+                let binding_type = match value.descriptor_type {
+                    ReflectDescriptorType::Sampler => {
+                        Some(reflect_sampler(&name, graphics, &definitions)
+                            .map_err(ShaderReflectionError::SamplerValidation))
+                    },
+                    
+                    ReflectDescriptorType::SampledImage => {
+                        Some(reflect_sampled_texture(&name, graphics, &definitions)
+                            .map_err(ShaderReflectionError::TextureValidation))
+                    },
+                    
+                    ReflectDescriptorType::StorageImage => {
+                        Some(reflect_storage_texture(&name, graphics, &definitions)
+                            .map_err(ShaderReflectionError::TextureValidation))
+                    },
+                    
+                    ReflectDescriptorType::UniformBuffer => {
+                        Some(reflect_uniform_buffer(&name, graphics, &definitions)
+                            .map_err(ShaderReflectionError::BufferValidation))
+                    },
+
+                    ReflectDescriptorType::StorageBuffer => {
+                        Some(reflect_storage_buffer(&name, graphics, &definitions)
+                            .map_err(ShaderReflectionError::BufferValidation))
+                    },
+
+                    _ => None,
+                };
+                /*
                 let binding_type = match inner {
                     // Uniform and Storage Buffers
                     TypeInner::Atomic { .. }
@@ -462,6 +464,7 @@ pub(super) fn create_pipeline_layout(
 
                     _ => None,
                 };
+                */
 
                 // If none, ignore
                 let Some(resource_type) = binding_type else {
@@ -732,13 +735,24 @@ fn internal_create_pipeline_layout(
     (Arc::new(shader), layout)
 }
 
-fn reflect_buffer(
+fn reflect_uniform_buffer(
     name: &str,
     graphics: &Graphics,
     definitions: &InternalDefinitions,
-    size: u32,
-    read: bool,
-    write: bool,
+) -> Result<BindResourceType, BufferValidationError> {
+    // TODO: VALIDATE BUFFER (make sure it's same size, access)
+    let binding = definitions
+        .resource_binding_types
+        .get(name)
+        .unwrap()
+        .clone();
+    Ok(binding)
+}
+
+fn reflect_storage_buffer(
+    name: &str,
+    graphics: &Graphics,
+    definitions: &InternalDefinitions,
 ) -> Result<BindResourceType, BufferValidationError> {
     // TODO: VALIDATE BUFFER (make sure it's same size, access)
     let binding = definitions
@@ -753,7 +767,6 @@ fn reflect_sampler(
     name: &str,
     graphics: &Graphics,
     definitions: &InternalDefinitions,
-    comparison: bool,
 ) -> Result<BindResourceType, SamplerValidationError> {
     // TODO: VALIDATE SAMPLER (make sure it's same texel type, type)
     let binding = definitions
@@ -762,27 +775,12 @@ fn reflect_sampler(
         .unwrap()
         .clone();
     Ok(binding)
-    /*
-    Ok(BindResourceType::Sampler {
-        sampler_binding: wgpu::SamplerBindingType::Filtering,
-        format: definitions
-            .texture_formats
-            .get(name)
-            .unwrap()
-            .format(),
-    })
-    */
 }
 
-fn reflect_texture(
+fn reflect_storage_texture(
     name: &str,
-    class: &naga::ImageClass,
-    dim: &naga::ImageDimension,
     graphics: &Graphics,
     definitions: &InternalDefinitions,
-    arrayed: bool,
-    read: bool,
-    write: bool,
 ) -> Result<BindResourceType, TextureValidationError> {
     // TODO: VALIDATE TEXTURE (make sure it's same dimension, type, and texel type)
     let binding = definitions
@@ -791,66 +789,18 @@ fn reflect_texture(
         .unwrap()
         .clone();
     Ok(binding)
+}
 
-    /*
-    let sample_type = match class {
-            naga::ImageClass::Sampled { kind, multi } => match kind {
-                naga::ScalarKind::Sint => wgpu::TextureSampleType::Sint,
-                naga::ScalarKind::Uint => wgpu::TextureSampleType::Uint,
-                naga::ScalarKind::Float => {
-                    let adapter = graphics.adapter();
-                    let info =
-                        definitions.texture_formats.get(name).unwrap();
-                    let format = info.format();
-                    let flags =
-                        adapter.get_texture_format_features(format).flags;
-
-                    let depth =
-                        matches!(info.channels(), TexelChannels::Depth);
-
-                    if flags
-                        .contains(TextureFormatFeatureFlags::FILTERABLE)
-                        && !depth
-                    {
-                        wgpu::TextureSampleType::Float {
-                            filterable: true,
-                        }
-                    } else {
-                        wgpu::TextureSampleType::Float {
-                            filterable: false,
-                        }
-                    }
-                }
-                _ => panic!(),
-            },
-            naga::ImageClass::Depth { multi } => todo!(),
-            naga::ImageClass::Storage { format, access } => wgpu::TextureSamplerType,
-        };
-
-        let view_dimension = match dim {
-            naga::ImageDimension::D1 => wgpu::TextureViewDimension::D1,
-            naga::ImageDimension::D2 => wgpu::TextureViewDimension::D2,
-            naga::ImageDimension::D3 => wgpu::TextureViewDimension::D3,
-            naga::ImageDimension::Cube => {
-                wgpu::TextureViewDimension::Cube
-            }
-        };
-
-        let format = {
-            let _format = definitions.texture_formats.get(name).unwrap();
-            _format.format()
-        };
-
-        let sampler_binding = {
-
-        };
-
-        Ok(BindResourceType::Texture {
-            sample_type,
-
-            view_dimension,
-            format,
-            sampler_binding,
-        })
-     */
+fn reflect_sampled_texture(
+    name: &str,
+    graphics: &Graphics,
+    definitions: &InternalDefinitions,
+) -> Result<BindResourceType, TextureValidationError> {
+    // TODO: VALIDATE TEXTURE (make sure it's same dimension, type, and texel type)
+    let binding = definitions
+        .resource_binding_types
+        .get(name)
+        .unwrap()
+        .clone();
+    Ok(binding)
 }

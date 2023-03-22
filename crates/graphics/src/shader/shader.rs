@@ -29,7 +29,7 @@ impl Shader {
         let vertex = compiler.compile(vertex)?;
         let fragment = compiler.compile(fragment)?;
         let names = [vertex.name(), fragment.name()];
-        let modules = [vertex.naga(), fragment.naga()];
+        let modules = [vertex.reflected(), fragment.reflected()];
         let visibility = [vertex.visibility(), fragment.visibility()];
         let (reflected, layout) = compiler.create_pipeline_layout(
             &names,
@@ -80,7 +80,7 @@ impl ComputeShader {
     ) -> Result<Self, ShaderError> {
         let compiled = compiler.compile(module)?;
         let names = [compiled.name()];
-        let modules = [compiled.naga()];
+        let modules = [compiled.reflected()];
         let visibility = [compiled.visibility()];
         let (reflected, layout) = compiler.create_pipeline_layout(
             &names,

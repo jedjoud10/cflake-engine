@@ -74,7 +74,7 @@ impl<'a> Compiler<'a> {
 
         // Compile GLSL to Naga then to Wgpu
         let time = std::time::Instant::now();
-        let (raw, naga) = compile(
+        let (raw, reflected) = compile(
             &M::kind(),
             &self.graphics,
             &self.assets,
@@ -93,7 +93,7 @@ impl<'a> Compiler<'a> {
             name: name.into(),
             _phantom: PhantomData,
             graphics: self.graphics.clone(),
-            naga,
+            reflected,
         })
     }
 
@@ -101,7 +101,7 @@ impl<'a> Compiler<'a> {
     pub(crate) fn create_pipeline_layout(
         &self,
         names: &[&str],
-        modules: &[&naga::Module],
+        modules: &[&spirv_reflect::ShaderModule],
         visibility: &[ModuleVisibility],
     ) -> Result<
         (Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>),
@@ -269,7 +269,7 @@ fn compile(
     snippets: &Snippets,
     source: String,
     file: &str,
-) -> Result<(Arc<wgpu::ShaderModule>, Arc<naga::Module>), ShaderCompilationError>
+) -> Result<(Arc<wgpu::ShaderModule>, Arc<spirv_reflect::ShaderModule>), ShaderCompilationError>
 {
     // If the shader cache already contains the compiled shader, simply reuse it
     // TODO: Holy fuck please optimize this
@@ -333,39 +333,23 @@ fn compile(
             }
             _ => todo!(),
         })?;
-
-    log::trace!("{}", artifact.as_binary());
     
-    // [SPIRV -> Naga] parsing options
-    let options = naga::front::spv::Options {
-        adjust_coordinate_space: false,
-        strict_capabilities: false,
-        block_ctx_dump_prefix: None,
+    // Create a spirv_reflect shader module
+    let reflect = spirv_reflect::create_shader_module(artifact.as_binary_u8()).unwrap();
+
+    // Compile the Wgpu shader (raw spirv passthrough)
+    let wgpu = unsafe { 
+        graphics.device().create_shader_module_spirv(
+            &wgpu::ShaderModuleDescriptorSpirV {
+                label: None,
+                source: Cow::Borrowed(artifact.as_binary()),
+            },
+        )
     };
-
-    
-
-
-    // Compile the SPIRV to a Naga module
-    let module = naga::front::spv::parse_u8_slice(
-        artifact.as_binary_u8(),
-        &options,
-    )
-    .unwrap();
-
-    // Compile the Wgpu shader
-    let wgpu = graphics.device().create_shader_module(
-        wgpu::ShaderModuleDescriptor {
-            label: None,
-            source: wgpu::ShaderSource::Naga(Cow::Owned(
-                module.clone(),
-            )),
-        },
-    );
 
     // Cache the result first
     let raw = Arc::new(wgpu);
-    let naga = Arc::new(module);
+    let naga = Arc::new(reflect);
     graphics.0.cached.shaders.insert((snippets.clone(), file.to_string()), (raw.clone(), naga.clone()));
     log::debug!("Saved shader module for {file} in graphics cache");
 
@@ -443,11 +427,9 @@ fn include(
 // This is a compiled shader module that we can use in multiple pipelines
 // We can clone this shader module since we should be able to share them
 pub struct Compiled<M: ShaderModule> {
-    // Wgpu related data
+    // Wgpu module and spirv reflected module
     raw: Arc<wgpu::ShaderModule>,
-
-    // FIXME: Possibly remove this shit?
-    naga: Arc<naga::Module>,
+    reflected: Arc<spirv_reflect::ShaderModule>,
 
     // Helpers
     name: Arc<str>,
@@ -464,7 +446,7 @@ impl<M: ShaderModule> Clone for Compiled<M> {
             name: self.name.clone(),
             _phantom: self._phantom.clone(),
             graphics: self.graphics.clone(),
-            naga: self.naga.clone(),
+            reflected: self.reflected.clone(),
         }
     }
 }
@@ -480,9 +462,9 @@ impl<M: ShaderModule> Compiled<M> {
         M::visibility()
     }
 
-    // Get the underlying raw Naga module
-    pub fn naga(&self) -> &naga::Module {
-        &self.naga
+    // Get the underlying raw reflected module
+    pub fn reflected(&self) -> &spirv_reflect::ShaderModule {
+        &self.reflected
     }
 
     // Get the shader module name for this module
