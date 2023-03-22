@@ -9,7 +9,7 @@ use crate::{
 };
 use ahash::{AHashMap, AHashSet};
 use arrayvec::ArrayVec;
-use spirv_reflect::types::ReflectDescriptorType;
+use spirq::DescriptorType;
 use utils::enable_in_range;
 use wgpu::TextureFormatFeatureFlags;
 
@@ -255,7 +255,7 @@ pub(super) fn map_sampler_binding_type(
 pub(super) fn create_pipeline_layout(
     graphics: &Graphics,
     names: &[&str],
-    modules: &[&spirv_reflect::ShaderModule],
+    modules: &[&spirq::EntryPoint],
     visibility: &[ModuleVisibility],
     resource_binding_types: &super::ResourceBindingTypes,
     maybe_push_constant_layout: &super::MaybePushConstantLayout,
@@ -296,12 +296,14 @@ pub(super) fn create_pipeline_layout(
         // Get the push constant sizes as defined in the shader modules
         let mut iter = modules
             .iter()
-            .map(|module| module.enumerate_push_constant_blocks(None))
-            .filter_map(|res| res.ok())
-            .map(|vec| {
-                let first = vec.into_iter().next().unwrap();
-                first.size
-            });
+            .flat_map(|module| module
+                .vars
+                .iter()
+                .filter_map(|x| match x {
+                    spirq::Variable::PushConstant { name, ty } => ty.nbyte().map(|x| x as u32),
+                    _ => None
+                })
+            );
         let (first, second) = (iter.next(), iter.next());
 
         // Validate the push constants and check if they were defined properly in the shader
@@ -337,18 +339,45 @@ pub(super) fn create_pipeline_layout(
     for (index, module) in modules.iter().enumerate() {
         let visibility = visibility[index];
 
-        // Get the descriptor sets of the current module and convert to hashmap
-        let sets = module.enumerate_descriptor_sets(None).unwrap();
-        let sets = AHashMap::from_iter(
-            sets.into_iter().map(|x| (x.set, x.bindings))
-        );
+        // Create a hashmap that contains all the variables per group
+        let mut sets = AHashMap::<u32, Vec<spirq::Variable>>::default();
+
+        let iter = module
+            .vars
+            .iter()
+            .filter_map(|variable| if let spirq::Variable::Descriptor { desc_bind, .. } = variable {
+                Some((desc_bind.set(), variable))
+            } else {
+                None
+            });
+
+
+        // Add the binded variables to the hashmap
+        for (set, variable) in iter {
+            let vec = sets.entry(set).or_default();
+            vec.push(variable.clone());
+        }
+
+        log::warn!("{:#?}", sets);
         
         for set in 0..4 {
+            if !sets.contains_key(&set) {
+                continue;
+            }
+
             // Iterate over the descriptor bindings
-            for value in sets.get(&set).unwrap() {
+            for variable in sets.get(&set).unwrap() {
+                let spirq::Variable::Descriptor { name, desc_bind, desc_ty, ty, nbind } = variable else {
+                    panic!()
+                };
+
+                if name.is_none() {
+                    continue;
+                }
+
                 // Get the name, binding, and required values for this var
-                let name = value.name.clone();
-                let binding = value.binding;
+                let name = name.as_ref().unwrap().clone();
+                let binding = desc_bind.bind();
 
                 // Get the merged group layout and merged group entry layouts
                 let merged_group_layout = &mut groups[set as usize];
@@ -356,115 +385,34 @@ pub(super) fn create_pipeline_layout(
                     .get_or_insert_with(|| Default::default());
 
                 // Get the binding type for this global variable
-                let binding_type = match value.descriptor_type {
-                    ReflectDescriptorType::Sampler => {
+                let binding_type = match desc_ty {
+                    DescriptorType::Sampler() => {
                         Some(reflect_sampler(&name, graphics, &definitions)
                             .map_err(ShaderReflectionError::SamplerValidation))
                     },
                     
-                    ReflectDescriptorType::SampledImage => {
+                    DescriptorType::SampledImage() => {
                         Some(reflect_sampled_texture(&name, graphics, &definitions)
                             .map_err(ShaderReflectionError::TextureValidation))
                     },
                     
-                    ReflectDescriptorType::StorageImage => {
+                    DescriptorType::StorageImage(access) => {
                         Some(reflect_storage_texture(&name, graphics, &definitions)
                             .map_err(ShaderReflectionError::TextureValidation))
                     },
                     
-                    ReflectDescriptorType::UniformBuffer => {
+                    DescriptorType::UniformBuffer() => {
                         Some(reflect_uniform_buffer(&name, graphics, &definitions)
                             .map_err(ShaderReflectionError::BufferValidation))
                     },
 
-                    ReflectDescriptorType::StorageBuffer => {
+                    DescriptorType::StorageBuffer(access) => {
                         Some(reflect_storage_buffer(&name, graphics, &definitions)
                             .map_err(ShaderReflectionError::BufferValidation))
                     },
 
                     _ => None,
                 };
-                /*
-                let binding_type = match inner {
-                    // Uniform and Storage Buffers
-                    TypeInner::Atomic { .. }
-                    | TypeInner::Struct { .. }
-                    | TypeInner::Vector { .. }
-                    | TypeInner::Scalar { .. } 
-                    | TypeInner::Matrix { .. } if matches!(space, AddressSpace::Uniform) | matches!(space, AddressSpace::Storage { .. }) => {
-                        // Get the read flag of this buffer
-                        let read = match space {
-                            AddressSpace::Storage { access } => access.contains(
-                                naga::StorageAccess::LOAD
-                            ),
-                            _ => true,
-                        };
-
-                        // Get the write flag of this buffer
-                        let write = match space {
-                            AddressSpace::Storage { access } => access.contains(
-                                naga::StorageAccess::STORE
-                            ),
-                            _ => false,
-                        };
-
-                        Some(reflect_buffer(
-                            &name,
-                            graphics,
-                            &definitions,
-                            inner.size(constants),
-                            read,
-                            write,
-                        ).map_err(ShaderReflectionError::BufferValidation))
-                    }
-
-                    // Uniform Textures
-                    TypeInner::Image {
-                        dim,
-                        class,
-                        arrayed,
-                    } if matches!(space, AddressSpace::Handle) | matches!(space, AddressSpace::Storage { .. }) => {
-                        // Get the read flag of this image
-                        let read = match space {
-                            AddressSpace::Storage { access } => access.contains(
-                                naga::StorageAccess::LOAD
-                            ),
-                            _ => true,
-                        };
-
-                        // Get the write flag of this image
-                        let write = match space {
-                            AddressSpace::Storage { access } => access.contains(
-                                naga::StorageAccess::STORE
-                            ),
-                            _ => false,
-                        };
-
-                        Some(reflect_texture(
-                            &name,
-                            class,
-                            dim,
-                            graphics,
-                            &definitions,
-                            *arrayed,
-                            read,
-                            write
-                        ).map_err(ShaderReflectionError::TextureValidation))
-                    }
-
-                    // Uniform Sampler
-                    TypeInner::Sampler { comparison } if matches!(space, AddressSpace::Handle) => {
-                        Some(reflect_sampler(
-                            &name,
-                            graphics,
-                            &definitions,
-                            *comparison,
-                        ).map_err(ShaderReflectionError::SamplerValidation))
-                    }
-
-                    _ => None,
-                };
-                */
 
                 // If none, ignore
                 let Some(resource_type) = binding_type else {

@@ -18,7 +18,7 @@ use crate::{
 
 // Cached graphics data
 pub(crate) struct Cached {
-    pub(crate) shaders: DashMap<(Snippets, String), (Arc<wgpu::ShaderModule>, Arc<naga::Module>)>,
+    pub(crate) shaders: DashMap<(Snippets, String), (Arc<wgpu::ShaderModule>, Arc<spirq::EntryPoint>)>,
     pub(crate) samplers: DashMap<SamplerSettings, Arc<Sampler>>,
     pub(crate) bind_group_layouts:
         DashMap<BindGroupLayout, Arc<wgpu::BindGroupLayout>>,

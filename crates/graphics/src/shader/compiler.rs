@@ -101,7 +101,7 @@ impl<'a> Compiler<'a> {
     pub(crate) fn create_pipeline_layout(
         &self,
         names: &[&str],
-        modules: &[&spirv_reflect::ShaderModule],
+        modules: &[&spirq::EntryPoint],
         visibility: &[ModuleVisibility],
     ) -> Result<
         (Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>),
@@ -269,7 +269,7 @@ fn compile(
     snippets: &Snippets,
     source: String,
     file: &str,
-) -> Result<(Arc<wgpu::ShaderModule>, Arc<spirv_reflect::ShaderModule>), ShaderCompilationError>
+) -> Result<(Arc<wgpu::ShaderModule>, Arc<spirq::EntryPoint>), ShaderCompilationError>
 {
     // If the shader cache already contains the compiled shader, simply reuse it
     // TODO: Holy fuck please optimize this
@@ -335,14 +335,20 @@ fn compile(
         })?;
     
     // Create a spirv_reflect shader module
-    let reflect = spirv_reflect::create_shader_module(artifact.as_binary_u8()).unwrap();
+    let mut reflect = spirq::ReflectConfig::new()
+        .spv(artifact.as_binary())
+        .combine_img_samplers(false)
+        .ref_all_rscs(true)
+        .gen_unique_names(false)
+        .reflect().unwrap();
+    let reflect = reflect.pop().unwrap();
 
     // Compile the Wgpu shader (raw spirv passthrough)
     let wgpu = unsafe { 
         graphics.device().create_shader_module_spirv(
             &wgpu::ShaderModuleDescriptorSpirV {
                 label: None,
-                source: Cow::Borrowed(artifact.as_binary()),
+                source: wgpu::util::make_spirv_raw(artifact.as_binary_u8()),
             },
         )
     };
@@ -429,7 +435,7 @@ fn include(
 pub struct Compiled<M: ShaderModule> {
     // Wgpu module and spirv reflected module
     raw: Arc<wgpu::ShaderModule>,
-    reflected: Arc<spirv_reflect::ShaderModule>,
+    reflected: Arc<spirq::EntryPoint>,
 
     // Helpers
     name: Arc<str>,
@@ -463,7 +469,7 @@ impl<M: ShaderModule> Compiled<M> {
     }
 
     // Get the underlying raw reflected module
-    pub fn reflected(&self) -> &spirv_reflect::ShaderModule {
+    pub fn reflected(&self) -> &spirq::EntryPoint {
         &self.reflected
     }
 

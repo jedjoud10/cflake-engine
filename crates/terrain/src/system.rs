@@ -31,6 +31,7 @@ fn init(world: &mut World) {
 
 // Called each frame before rendering to generate the required voxel data and mesh data for each chunk
 fn update(world: &mut World) {
+    /*
     let graphics = world.get::<Graphics>().unwrap();
     let mut _voxels = world.get_mut::<VoxelGenerator>().unwrap();
     let voxels = &mut *_voxels;
@@ -49,6 +50,7 @@ fn update(world: &mut World) {
     active.dispatch(vek::Vec3::broadcast(voxels.dispatch));
 
     // Create the mesh every frame (DEBUG)
+    */
 }
 
 // Responsible for terrain generation and rendering

@@ -23,9 +23,14 @@ pub(crate) unsafe fn init_context_and_window(
         window.inner_size(),
     ));
 
+    // TODO: Try to find a pure rust alternative to SHADERC to compile glsl
+    // Don't use naga since it's shit (the glsl interface at least)
+    // and NO I AM NOT GOING TO USE WGLSL
+    let backends = wgpu::Backends::VULKAN;
+
     // Create the WGPU instance that will pick an appropriate backend
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-        backends: wgpu::Backends::PRIMARY,
+        backends,
         dx12_shader_compiler: Default::default(),
     });
 
@@ -60,7 +65,7 @@ pub(crate) unsafe fn init_context_and_window(
         | wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES
         | wgpu::Features::ADDRESS_MODE_CLAMP_TO_ZERO
         | wgpu::Features::POLYGON_MODE_LINE
-        | wgpu::Features::PUSH_CONSTANTS;
+        | wgpu::Features::PUSH_CONSTANTS | wgpu::Features::SPIRV_SHADER_PASSTHROUGH;
 
     // Create a device for the adapter
     let (device, queue) = pollster::block_on(adapter.request_device(
