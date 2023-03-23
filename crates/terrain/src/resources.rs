@@ -2,7 +2,7 @@ use assets::Assets;
 use graphics::{
     Compiler, ComputeModule, ComputePass, ComputeShader, Graphics,
     Normalized, SamplerSettings, Texture, Texture3D, TextureMipMaps,
-    TextureMode, TextureUsage, R, RGBA, Buffer, TriangleBuffer, VertexBuffer, XYZ, XYZW, Vertex, BufferMode, BufferUsage, DrawIndexedIndirectBuffer, DrawIndexedIndirect,
+    TextureMode, TextureUsage, R, RGBA, Buffer, TriangleBuffer, VertexBuffer, XYZ, XYZW, Vertex, BufferMode, BufferUsage, DrawIndexedIndirectBuffer, DrawIndexedIndirect, PushConstantLayout, ModuleVisibility,
 };
 use rendering::Mesh;
 use utils::{Handle, Storage};
@@ -46,9 +46,9 @@ impl MeshGenerator {
         compiler.use_storage_texture::<Densities>("densities", true, false);
         compiler.use_storage_texture::<CachedIndices>("cached_indices", true, true);
         compiler.use_storage_buffer::<<XYZ<f32> as Vertex>::Storage>("vertices", false, true);
-        compiler.use_storage_buffer::<[u32; 3]>("triangles", false, true);
+        compiler.use_storage_buffer::<u32>("triangles", false, true);
         compiler.use_storage_buffer::<[u32; 2]>("counters", true, true);
-        compiler.use_storage_buffer::<[u32; 2]>("indirect", true, true);
+        compiler.use_storage_buffer::<DrawIndexedIndirect>("indirect", true, true);
 
         // Compile the compute shader
         let compute = ComputeShader::new(module, compiler).unwrap();
@@ -66,20 +66,20 @@ impl MeshGenerator {
 
         // Create the vertex buffer (make sure size can contain ALL possible vertices)
         let vertex_capacity = (size as usize).pow(3);
-        let vertices = VertexBuffer::<XYZ<f32>>::zeroed(
+        let vertices = VertexBuffer::<XYZW<f32>>::zeroed(
             graphics, 
             vertex_capacity,
-            BufferMode::Parital,
-            BufferUsage::STORAGE
+            BufferMode::Dynamic,
+            BufferUsage::STORAGE | BufferUsage::WRITE
         ).unwrap();
         
         // Create the triangle buffer (make sure size can contain ALL possible triangles)
-        let triangle_capacity = (size as usize - 1).pow(3) * 4;
+        let triangle_capacity = (size as usize - 1).pow(3) * 4 * 6;
         let triangles = TriangleBuffer::<u32>::zeroed(
             graphics, 
             triangle_capacity,
-            BufferMode::Parital,
-            BufferUsage::STORAGE
+            BufferMode::Dynamic,
+            BufferUsage::STORAGE | BufferUsage::WRITE
         ).unwrap();
 
         // Create a mesh that uses the buffers
@@ -151,6 +151,8 @@ impl VoxelGenerator {
             false,
             true,
         );
+
+        compiler.use_push_constant_layout(PushConstantLayout::single(4, ModuleVisibility::Compute).unwrap());
 
         // Compile the compute shader
         let shader = ComputeShader::new(module, compiler).unwrap();

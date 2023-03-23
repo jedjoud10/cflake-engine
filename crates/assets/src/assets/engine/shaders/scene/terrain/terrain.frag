@@ -5,5 +5,5 @@ layout(location = 0) out vec4 frag;
 layout(location = 0) in vec3 m_position;
 
 void main() {
-	frag = vec4(m_position, 1.0);
+	frag = vec4(vec3(1), 1.0);
 }

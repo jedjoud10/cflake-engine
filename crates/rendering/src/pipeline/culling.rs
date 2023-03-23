@@ -11,13 +11,15 @@ use crate::{Material, DefaultMaterialResources, Mesh, Surface, Renderer};
 // https://subscription.packtpub.com/book/game+development/9781787123663/9/ch09lvl1sec89/obb-to-plane
 // https://www.braynzarsoft.net/viewtutorial/q16390-34-aabb-cpu-side-frustum-culling
 pub fn intersects_frustum(planes: &math::Frustum<f32>, aabb: math::Aabb<f32>, matrix: &vek::Mat4<f32>) -> bool {
-    let mut corners = <math::Aabb<f32> as SharpVertices<f32>>::points(&aabb);
+    let corners = <math::Aabb<f32> as SharpVertices<f32>>::points(&aabb);
+    let mut out: [vek::Vec4<f32>; 8] = [vek::Vec4::zero(); 8];
 
-    for corner in corners.iter_mut() {
-        *corner = matrix.mul_point(*corner);
+    for (input, output) in corners.iter().zip(out.iter_mut()) {
+        let vec = matrix.mul_point(*input);
+        *output = vec.with_w(0.0);
     }
 
-    let aabb = crate::aabb_from_points(&corners).unwrap();
+    let aabb = crate::aabb_from_points(&out).unwrap();
 
     let corners = [aabb.min, aabb.max];
 

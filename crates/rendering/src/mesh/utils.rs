@@ -188,7 +188,7 @@ pub fn compute_normals(
         // Create the cross product to find the normal face
         let d1 = b - a;
         let d2 = c - a;
-        let cross = vek::Vec3::<f32>::cross(d1, d2).normalized();
+        let cross = vek::Vec3::<f32>::cross(d1.xyz(), d2.xyz()).normalized();
 
         // Add the face normal to each vertex sum
         normals[i1] += cross;
@@ -238,7 +238,7 @@ pub fn compute_tangents(
 
         fn position(&self, face: usize, vert: usize) -> [f32; 3] {
             let i = self.triangles[face][vert] as usize;
-            self.positions[i].into_array()
+            self.positions[i].xyz().into_array()
         }
 
         fn normal(&self, face: usize, vert: usize) -> [f32; 3] {
@@ -281,7 +281,7 @@ pub fn compute_tangents(
 }
 
 // Create a new AABB from a list of vertices in 3D space
-pub fn aabb_from_points(points: &[vek::Vec3<f32>]) -> Option<math::Aabb<f32>> {
+pub fn aabb_from_points(points: &[vek::Vec4<f32>]) -> Option<math::Aabb<f32>> {
     if points.len() < 2 {
         return None;
     }

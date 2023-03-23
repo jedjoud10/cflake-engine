@@ -19,4 +19,5 @@ void main() {
     vec4 world_pos = mesh.matrix * vec4(position, 1);
     vec4 projected = (camera.projection * camera.view) * world_pos; 
     gl_Position = projected;
+    gl_PointSize = 8.0;
 }

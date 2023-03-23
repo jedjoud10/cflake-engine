@@ -65,6 +65,10 @@ impl Material for Terrain {
         ()
     }
 
+    fn primitive_config() -> graphics::PrimitiveConfig {
+        graphics::PrimitiveConfig::Points
+    }
+
     // Set the static bindings that will never change
     fn set_global_bindings<'r, 'w>(
         resources: &'r mut Self::Resources<'w>,

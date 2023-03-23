@@ -252,7 +252,7 @@ impl Asset for Mesh {
         // Convert the vertices into the separate buffer
         for vertex in parsed.vertices {
             // Read and add the position
-            positions.push(vek::Vec3::from_slice(&vertex.position));
+            positions.push(vek::Vec3::from_slice(&vertex.position).with_w(0f32));
 
             // Read and add the normal
             if let Some(normals) = &mut normals {

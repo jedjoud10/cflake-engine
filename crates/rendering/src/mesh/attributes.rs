@@ -143,7 +143,7 @@ macro_rules! impl_vertex_attribute {
 impl_vertex_attribute!(
     Position,
     positions,
-    XYZ<f32>,
+    XYZW<f32>,
     POSITIONS,
     PerVertex
 );
