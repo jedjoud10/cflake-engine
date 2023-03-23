@@ -7,17 +7,6 @@ use graphics::{GpuPod, ModuleVisibility, DrawIndexedIndirectBuffer};
 use utils::{Storage, Handle};
 use world::World;
 
-// Returns true if the entity should cast shadows, false otherwise
-fn filter(mesh: &Mesh, renderer: &Renderer) -> bool {
-    let enabled = renderer.visible;
-    let attribute = mesh
-        .vertices()
-        .enabled()
-        .contains(MeshAttributes::POSITIONS);
-    let validity = mesh.vertices().len().is_some();
-    enabled && validity && attribute
-}
-
 // Render all the visible surfaces of a specific material type
 pub(super) fn render_shadows<'r, M: Material>(
     world: &'r World,
@@ -39,12 +28,19 @@ pub(super) fn render_shadows<'r, M: Material>(
 
     // Iterate over all the surfaces of this material
     for (surface, renderer) in query {
+        // Handle non visible surfaces, renderers, and culled surfaces
+        if !surface.visible || !renderer.visible {
+            continue;
+        }
+        
         // Get the mesh and material that correspond to this surface
         let mesh = meshes.get(&surface.mesh);
 
-        // Set the push constant ranges right before rendering (in the hot loop!)
-        // Skip rendering if not needed
-        if !filter(mesh, renderer) {
+        // Skip rendering if the mesh is invalid
+        let attribute =
+            mesh.vertices().enabled().contains(MeshAttributes::POSITIONS);
+        let validity = mesh.vertices().len().is_some();
+        if !(attribute && validity) && surface.indirect.is_none() {
             continue;
         }
 

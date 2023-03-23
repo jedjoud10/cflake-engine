@@ -1,6 +1,6 @@
 use assets::Assets;
 use ecs::Scene;
-use graphics::{ComputePass, Graphics, DrawIndexedIndirectBuffer, DrawIndexedIndirect};
+use graphics::{ComputePass, Graphics, DrawIndexedIndirectBuffer, DrawIndexedIndirect, Texture};
 use rendering::{Mesh, Pipelines, Surface, Basic, Renderer};
 use utils::{Storage, Time};
 use world::{System, World};
@@ -64,6 +64,7 @@ fn update(world: &mut World) {
     let triangles = _triangles.buffer_mut();
 
     mesh_generator.counters.write(&[0, 0], 0).unwrap();
+    mesh_generator.cached_indices.mip_mut(0).unwrap().splat(None, 0).unwrap();
     indirect.write(&[DrawIndexedIndirect {
         vertex_count: 0,
         instance_count: 1,
@@ -90,24 +91,34 @@ fn update(world: &mut World) {
     });
     active.dispatch(vek::Vec3::broadcast(voxel_generator.dispatch));
 
-    // Create the mesh every frame (DEBUG)
-    let mut active = pass.bind_shader(&mesh_generator.shader);
+    // Execute the vertex generation shader first
+    let mut active = pass.bind_shader(&mesh_generator.compute_vertices);
+    active.set_bind_group(0, |set| {
+        set.set_storage_texture("densities", &mut voxel_generator.densities).unwrap();
+        set.set_storage_texture("cached_indices", &mut mesh_generator.cached_indices).unwrap();
+    });
+    active.set_bind_group(1, |set| {
+        set.set_storage_buffer("vertices", vertices).unwrap();
+        set.set_storage_buffer("indirect", indirect).unwrap();
+    });
 
-    // First bind group is global
+    /*
+
+    // Execute the quad generation shader second
+    let mut active = pass.bind_shader(&mesh_generator.compute_quads);
     active.set_bind_group(0, |set| {
         set.set_storage_texture("densities", &mut voxel_generator.densities).unwrap();
         set.set_storage_texture("cached_indices", &mut mesh_generator.cached_indices).unwrap();
         set.set_storage_buffer("counters", &mut mesh_generator.counters).unwrap();
     });
-
-    // The resources used here might change
     active.set_bind_group(1, |set| {
         set.set_storage_buffer("vertices", vertices).unwrap();
-        set.set_storage_buffer("triangles", triangles).unwrap();
         set.set_storage_buffer("indirect", indirect).unwrap();
+        set.set_storage_buffer("triangles", triangles).unwrap();
     });
 
-    active.dispatch(vek::Vec3::broadcast(mesh_generator.dispatch));     
+    active.dispatch(vek::Vec3::broadcast(mesh_generator.dispatch));    
+    */ 
 }
 
 // Responsible for terrain generation and rendering

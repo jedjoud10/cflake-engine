@@ -17,7 +17,8 @@ pub(crate) type Counters = Buffer<u32>;
 // and will use a compute shader that will utilize the surface nets algorithm
 // to generate an appropriate mesh for a chunk
 pub struct MeshGenerator {
-    pub(crate) shader: ComputeShader,
+    pub(crate) compute_quads: ComputeShader,
+    pub(crate) compute_vertices: ComputeShader,
     pub(crate) cached_indices: CachedIndices,
     pub(crate) mesh: Handle<Mesh>,
     pub(crate) counters: Counters,
@@ -34,24 +35,29 @@ impl MeshGenerator {
         mesh: &mut Storage<Mesh>,
         size: u32
     ) -> Self {
-        // Load the mesh compute shader
+        // Load the compute shader that will generate vertex positions
         let module = assets
-            .load::<ComputeModule>("engine/shaders/terrain/mesh.comp")
+            .load::<ComputeModule>("engine/shaders/terrain/vertices.comp")
             .unwrap();
-
-        // Create a simple compute shader compiler
         let mut compiler = Compiler::new(assets, graphics);
         
         // Set the required shader resources
         compiler.use_storage_texture::<Densities>("densities", true, false);
         compiler.use_storage_texture::<CachedIndices>("cached_indices", true, true);
-        compiler.use_storage_buffer::<<XYZ<f32> as Vertex>::Storage>("vertices", false, true);
+        compiler.use_storage_buffer::<<XYZW<f32> as Vertex>::Storage>("vertices", false, true);
+        compiler.use_storage_buffer::<DrawIndexedIndirect>("indirect", true, true);
+        let compute_vertices = ComputeShader::new(module, compiler).unwrap();
+
+        // Load the compute shader that will generate quads
+        let module = assets
+            .load::<ComputeModule>("engine/shaders/terrain/quads.comp")
+            .unwrap();
+        let mut compiler = Compiler::new(assets, graphics);
+        compiler.use_storage_texture::<Densities>("densities", true, false);
+        compiler.use_storage_texture::<CachedIndices>("cached_indices", true, false);
         compiler.use_storage_buffer::<u32>("triangles", false, true);
         compiler.use_storage_buffer::<[u32; 2]>("counters", true, true);
-        compiler.use_storage_buffer::<DrawIndexedIndirect>("indirect", true, true);
-
-        // Compile the compute shader
-        let compute = ComputeShader::new(module, compiler).unwrap();
+        let compute_quads = ComputeShader::new(module, compiler).unwrap();
 
         // Create cached indices atomic texture
         let cached_indices = CachedIndices::from_texels(
@@ -59,7 +65,7 @@ impl MeshGenerator {
             None,
             vek::Extent3::broadcast(size),
             TextureMode::Dynamic,
-            TextureUsage::STORAGE,
+            TextureUsage::STORAGE | TextureUsage::WRITE,
             SamplerSettings::default(),
             TextureMipMaps::Disabled,
         ).unwrap();
@@ -116,12 +122,13 @@ impl MeshGenerator {
             BufferUsage::STORAGE | BufferUsage::WRITE
         ).unwrap());
         Self {
-            shader: compute,
+            compute_vertices,
+            compute_quads,
             cached_indices,
             counters,
             dispatch,
             indirect,
-            mesh
+            mesh,
         }
     }
 }

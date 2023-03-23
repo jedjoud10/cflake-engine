@@ -255,28 +255,11 @@ impl StagingPool {
         &'a self,
         graphics: &Graphics,
         texture: &wgpu::Texture,
-        mip_level: u32,
-        origin: wgpu::Origin3d,
+        image_copy_texture: wgpu::ImageCopyTexture,
+        data_layout: wgpu::ImageDataLayout,
         extent: wgpu::Extent3d,
-        aspect: wgpu::TextureAspect,
-        offset: u64,
-        bytes_per_row: Option<NonZeroU32>,
-        rows_per_image: Option<NonZeroU32>,
         src: &[u8],
     ) {
-        let image_copy_texture = wgpu::ImageCopyTexture {
-            texture,
-            mip_level,
-            origin,
-            aspect,
-        };
-
-        let data_layout = wgpu::ImageDataLayout {
-            offset,
-            bytes_per_row,
-            rows_per_image,
-        };
-
         graphics.queue().write_texture(
             image_copy_texture,
             src,

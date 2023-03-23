@@ -150,8 +150,8 @@ pub fn generate_mip_map<T: ColorTexel, E: Extent>(
 
 // An immutable mip level that we can use to read from the texture
 pub struct MipLevelRef<'a, T: Texture> {
-    texture: &'a T,
-    level: u8,
+    pub(super) texture: &'a T,
+    pub(super) level: u8,
 }
 
 // Helper methods
@@ -223,8 +223,8 @@ impl<'a, T: Texture> MipLevelRef<'a, T> {
 
 // A mutable mip level that we can use to write to the texture
 pub struct MipLevelMut<'a, T: Texture> {
-    texture: &'a T,
-    level: u8,
+    pub(crate) texture: &'a T,
+    pub(crate) level: u8,
 }
 
 // Helper methods
@@ -333,8 +333,17 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
         // Get the mip level subregion if the given one is None
         let subregion = subregion.unwrap_or(mip_level_region);
 
-        // TODO: Actually handle writing here
-        todo!();
+        // Write to the mip level level
+        crate::write_to_level::<T::T, T::Region>(
+            subregion.origin(),
+            subregion.extent(),
+            src,
+            &self.texture.raw(),
+            self.level as u32,
+            &self.texture.graphics()
+        );
+
+        Ok(())
     }
 
     // Copy a sub-region from another level into this level
@@ -361,6 +370,17 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
         subregion: Option<T::Region>,
         val: <T::T as Texel>::Storage,
     ) -> Result<(), MipLevelWriteError> {
-        todo!()
+        // Get the region for this mip level
+        let mip_level_region = <T::Region as Region>::with_extent(
+            self.texture
+                .dimensions()
+                .mip_level_dimensions(self.level),
+        );
+
+        // Get the mip level subregion if the given one is None
+        let region = subregion.unwrap_or(mip_level_region);
+        let area = region.area() as usize;
+        let texels = vec![val; area];
+        self.write(&texels, subregion)
     }
 }

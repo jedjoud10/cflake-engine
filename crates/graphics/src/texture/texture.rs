@@ -147,9 +147,6 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
         let sampler =
             crate::get_or_insert_sampler(graphics, sampling);
 
-        // Get color texture aspect for the texture view and ImageCopyTexture
-        let aspect = texture_aspect::<Self::T>();
-
         // Create a "zeroed" origin
         let origin =
             <<Self::Region as Region>::O as Default>::default();
@@ -157,7 +154,7 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
         // Always write to the first mip level
         if let Some(texels) = texels {
             write_to_level::<Self::T, Self::Region>(
-                origin, extent, texels, &texture, aspect, 0, graphics,
+                origin, extent, texels, &texture, 0, graphics,
             );
         }
 
@@ -188,7 +185,6 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
                         downscaled_extent,
                         texels,
                         &texture,
-                        aspect,
                         i as u32,
                         graphics,
                     );
@@ -201,7 +197,7 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
         let view_descriptor = TextureViewDescriptor {
             format: Some(format),
             dimension: Some(view_dimensions),
-            aspect,
+            aspect: texture_aspect::<Self::T>(),
             ..Default::default()
         };
 
@@ -216,7 +212,7 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
                 let view_descriptor = TextureViewDescriptor {
                     format: Some(format),
                     dimension: Some(view_dimensions),
-                    aspect,
+                    aspect: texture_aspect::<Self::T>(),
                     base_mip_level: i,
                     mip_level_count: Some(
                         NonZeroU32::new(1).unwrap(),
@@ -278,7 +274,10 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
         &self,
         level: u8,
     ) -> Result<MipLevelRef<Self>, TextureMipLevelError> {
-        todo!()
+        Ok(MipLevelRef {
+            texture: self,
+            level,
+        })
     }
 
     // Get a single mip level from the texture mutably
@@ -286,7 +285,10 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
         &mut self,
         level: u8,
     ) -> Result<MipLevelMut<Self>, TextureMipLevelError> {
-        todo!()
+        Ok(MipLevelMut {
+            texture: self,
+            level,
+        })
     }
 
     // Try to use the texture as a renderable target. This will fail if the texture isn't supported as render target
@@ -432,8 +434,7 @@ fn mip_levels<T: Texel, E: Extent>(
 
 // Create an image data layout based on the extent and texel type
 // This should support compression textures too, though I haven't tested all cases yet
-// FIXME: Make this work with 3d textures
-fn create_image_data_layout<T: Texel, E: Extent>(
+pub(crate) fn create_image_data_layout<T: Texel, E: Extent>(
     extent: E,
 ) -> wgpu::ImageDataLayout {
     let size = T::size();
@@ -455,7 +456,10 @@ fn create_image_data_layout<T: Texel, E: Extent>(
     wgpu::ImageDataLayout {
         offset: 0,
         bytes_per_row,
-        rows_per_image: None,
+        rows_per_image: match E::dimension() {
+            wgpu::TextureDimension::D3 => NonZeroU32::new(extent.width()),
+            _ => None
+        },
     }
 }
 
@@ -467,7 +471,6 @@ pub(crate) fn write_to_level<T: Texel, R: Region>(
     extent: R::E,
     texels: &[T::Storage],
     texture: &wgpu::Texture,
-    aspect: wgpu::TextureAspect,
     level: u32,
     graphics: &Graphics,
 ) {
@@ -483,15 +486,17 @@ pub(crate) fn write_to_level<T: Texel, R: Region>(
         texture: texture,
         mip_level: level,
         origin: origin_to_origin3d(origin),
-        aspect,
+        aspect: texture_aspect::<T>(),
     };
-
-    // Write to the base layer of the texture
-    graphics.queue().write_texture(
+    
+    // Write to the mip level of the texture
+    graphics.staging_pool().write_texture(
+        &graphics,
+        texture,
         image_copy_texture,
-        bytes,
         image_data_layout,
         extent_to_extent3d(extent),
+        bytes
     );
 }
 

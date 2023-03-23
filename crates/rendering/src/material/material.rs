@@ -59,6 +59,7 @@ pub trait Material: 'static + Sized + Sync + Send {
     }
 
     // Does this material support casting shadows onto other surfaces?
+    // TODO: Use custom ()
     fn casts_shadows() -> bool {
         true
     }
