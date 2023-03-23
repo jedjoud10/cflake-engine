@@ -11,7 +11,7 @@ layout(push_constant) uniform PushConstants {
 float density(vec3 position) {
     //return position.z + 32.0;
     //return length(position - 16) - 10;
-    return snoise(position * 0.02 + vec3(test.time, 0, 0)*0.01)*10.0 + position.y - 20;
+    return snoise(position * 0.02 + vec3(test.time, 0, 0)*0.01)*80.0 + position.y - 20;
 }
 
 void main() {

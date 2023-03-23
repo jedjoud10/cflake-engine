@@ -34,15 +34,63 @@ layout(std430, set = 1, binding = 2) buffer Indirect {
     uint base_instance;
 } indirect;
 
+uvec3 edge_positions1[12] =
+{
+    uvec3(0, 1, 0),
+    uvec3(1, 1, 0),
+    uvec3(1, 0, 0),
+    uvec3(1, 0, 0),
+    uvec3(0, 1, 1),
+    uvec3(1, 1, 1),
+    uvec3(1, 0, 1),
+    uvec3(0, 0, 1),
+    uvec3(0, 0, 1),
+    uvec3(0, 1, 1),
+    uvec3(1, 1, 1),
+    uvec3(1, 0, 1),
+};
+
+uvec3 edge_positions2[12] =
+{
+    uvec3(0, 0, 0),
+    uvec3(0, 1, 0),
+    uvec3(1, 1, 0),
+    uvec3(0, 0, 0),
+    uvec3(0, 0, 1),
+    uvec3(0, 1, 1),
+    uvec3(1, 1, 1),
+    uvec3(1, 0, 1),
+    uvec3(0, 0, 0),
+    uvec3(0, 1, 0),
+    uvec3(1, 1, 0),
+    uvec3(1, 0, 0),
+};
+
 // Calculate the position for a vertex
-vec3 calculate_vertex_position(uvec3 vertex) {
-    return vec3(vertex);
+vec3 calculate_vertex_position(uvec3 vertex, uvec3 offset) {
+    vec3 summed = vec3(0);
+    int count = 1;
+    
+    for (int edge = 0; edge < 12; edge++) {
+        uvec3 edge_start = edge_positions1[edge];
+        uvec3 edge_end = edge_positions2[edge];
+
+        float density0 = imageLoad(densities, ivec3(edge_start + vertex - offset)).x;
+        float density1 = imageLoad(densities, ivec3(edge_end + vertex - offset)).x;
+
+        if (density0 > 0.0 ^^ density1 > 0.0) {
+            summed += edge_end + vertex;
+            count++;
+        }
+    }
+
+    return vec3(summed / count);
 }
 
 // Add a new vertex to the mesh. Return its index
-uint add_vertex(uvec3 vertex) {
+uint add_vertex(uvec3 vertex, uvec3 offset) {
     uint index = atomicAdd(counters.vertices, 1);
-    vertices.data[index] = calculate_vertex_position(vertex);
+    vertices.data[index] = calculate_vertex_position(vertex+offset, offset);
     return index;
     
     /*
@@ -65,13 +113,14 @@ void add_quad(
     uvec3 quad1,
     uvec3 quad2,
     uvec3 quad3,
+    uvec3 offset,
     bool flip
 ) {
     // Add the vertices
-    uint index0 = add_vertex(quad0);
-    uint index1 = add_vertex(quad1);
-    uint index2 = add_vertex(quad2);
-    uint index3 = add_vertex(quad3);
+    uint index0 = add_vertex(quad0, offset);
+    uint index1 = add_vertex(quad1, offset);
+    uint index2 = add_vertex(quad2, offset);
+    uint index3 = add_vertex(quad3, offset);
 
     // Add the triangles
     uint base = atomicAdd(counters.triangles, 6);
@@ -108,18 +157,15 @@ void check_edge(
     float density0 = imageLoad(densities, ivec3(start)).x;
     float density1 = imageLoad(densities, ivec3(end)).x;
 
-    // Check if the density functions represent solid matter or not
-    bool positive0 = density0 > 0.0;
-    bool positive1 = density1 > 0.0;
-
     // Create a quad if they do
-    if ((positive0 ^^ positive1)) {
+    if ((density0 > 0.0 ^^ density1 > 0.0)) {
         add_quad(
-            quad0 + uvec3(end),
-            quad1 + uvec3(end),
-            quad2 + uvec3(end),
-            quad3 + uvec3(end),
-            positive1
+            quad0,
+            quad1,
+            quad2,
+            quad3,
+            uvec3(end),
+            density1 > 0.0
         );
     }
 }
