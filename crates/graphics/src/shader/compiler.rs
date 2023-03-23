@@ -39,6 +39,7 @@ pub struct Compiler<'a> {
     pub(crate) snippets: Snippets,
     pub(crate) resource_types: ResourceBindingTypes,
     pub(crate) maybe_push_constant_layout: MaybePushConstantLayout,
+    optimization: shaderc::OptimizationLevel,
 }
 
 impl<'a> Compiler<'a> {
@@ -50,6 +51,7 @@ impl<'a> Compiler<'a> {
             snippets: Default::default(),
             resource_types: Default::default(),
             maybe_push_constant_layout: Default::default(),
+            optimization: shaderc::OptimizationLevel::Zero,
         }
     }
 
@@ -61,6 +63,14 @@ impl<'a> Compiler<'a> {
     ) {
         let name = name.to_string();
         self.snippets.insert(name, value.to_string());
+    }
+
+    // Set the optimization level used by the ShaderC compiler
+    pub fn use_optimization_level(
+        &mut self,
+        level: shaderc::OptimizationLevel
+    ) {
+        self.optimization = level;
     }
 
     // Convert the given GLSL code to SPIRV code, then compile said SPIRV code
@@ -79,6 +89,7 @@ impl<'a> Compiler<'a> {
             &self.graphics,
             &self.assets,
             &self.snippets,
+            self.optimization,
             source,
             &name,
         )
@@ -267,6 +278,7 @@ fn compile(
     graphics: &Graphics,
     assets: &Assets,
     snippets: &Snippets,
+    optimization: shaderc::OptimizationLevel,
     source: String,
     file: &str,
 ) -> Result<(Arc<wgpu::ShaderModule>, Arc<spirq::EntryPoint>), ShaderCompilationError>
@@ -285,7 +297,7 @@ fn compile(
     // Custom ShaderC compiler options
     let mut options = shaderc::CompileOptions::new().unwrap();
     options.set_generate_debug_info();
-    options.set_optimization_level(shaderc::OptimizationLevel::Performance);
+    options.set_optimization_level(optimization);
     options.set_invert_y(false);
 
     // Create a callback responsible for includes

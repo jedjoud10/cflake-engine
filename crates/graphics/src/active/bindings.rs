@@ -1,7 +1,7 @@
 use crate::{
     BindResourceLayout, GpuPod, Graphics, ReflectedShader, Sampler,
     SetBindResourceError, Shader, Texel, Texture, TextureUsage,
-    UniformBuffer, Buffer,
+    UniformBuffer, Buffer, Id, IdVariant,
 };
 use ahash::AHashMap;
 use std::{marker::PhantomData, sync::Arc};
@@ -13,13 +13,14 @@ pub struct BindGroup<'a> {
     pub(crate) reflected: Arc<ReflectedShader>,
     pub(crate) resources: Vec<wgpu::BindingResource<'a>>,
     pub(crate) slots: Vec<u32>,
-    pub(crate) ids: Vec<wgpu::Id>,
+    pub(crate) ids: Vec<Id>,
     pub(crate) _phantom: PhantomData<&'a ()>,
 }
 
 // Generate a new bind group from a callback (if needed)
 pub(super) fn create_bind_group<'b>(
     graphics: &Graphics,
+    modules: &[&str],
     reflected: Arc<ReflectedShader>,
     binding: u32,
     callback: impl FnOnce(&mut BindGroup<'b>),
@@ -67,7 +68,7 @@ pub(super) fn create_bind_group<'b>(
             occupied.get().clone()
         }
         dashmap::mapref::entry::Entry::Vacant(vacant) => {
-            log::warn!("Did not find cached bind group (set = {binding}), creating new one...");
+            log::warn!("Did not find cached bind group (set = {binding}) {:?}, creating new one...", modules);
 
             // Get the bind group layout of the bind group
             let layout = &reflected.bind_group_layouts
@@ -165,7 +166,7 @@ impl<'a> BindGroup<'a> {
 
         // Save the bind entry for later
         self.resources.push(resource);
-        self.ids.push(id);
+        self.ids.push(Id(id, IdVariant::Texture));
         self.slots.push(entry.binding);
         Ok(())
     }
@@ -196,7 +197,7 @@ impl<'a> BindGroup<'a> {
 
         // Save the bind entry for later
         self.resources.push(resource);
-        self.ids.push(id);
+        self.ids.push(Id(id, IdVariant::Texture));
         self.slots.push(entry.binding);
         Ok(())
     }
@@ -222,7 +223,7 @@ impl<'a> BindGroup<'a> {
 
         // Save the bind entry for later
         self.resources.push(resource);
-        self.ids.push(id);
+        self.ids.push(Id(id, IdVariant::Sampler));
         self.slots.push(entry.binding);
         Ok(())
     }
@@ -248,7 +249,7 @@ impl<'a> BindGroup<'a> {
 
         // Save the bind entry for later
         self.resources.push(resource);
-        self.ids.push(id);
+        self.ids.push(Id(id, IdVariant::Buffer));
         self.slots.push(entry.binding);
         Ok(())
     }
@@ -274,7 +275,7 @@ impl<'a> BindGroup<'a> {
 
         // Save the bind entry for later
         self.resources.push(resource);
-        self.ids.push(id);
+        self.ids.push(Id(id, IdVariant::Buffer));
         self.slots.push(entry.binding);
         Ok(())
     }

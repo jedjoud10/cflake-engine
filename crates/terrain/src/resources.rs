@@ -2,7 +2,7 @@ use assets::Assets;
 use graphics::{
     Compiler, ComputeModule, ComputePass, ComputeShader, Graphics,
     Normalized, SamplerSettings, Texture, Texture3D, TextureMipMaps,
-    TextureMode, TextureUsage, R, RGBA, Buffer, TriangleBuffer, VertexBuffer, XYZ, XYZW, Vertex, BufferMode, BufferUsage, DrawIndexedIndirectBuffer,
+    TextureMode, TextureUsage, R, RGBA, Buffer, TriangleBuffer, VertexBuffer, XYZ, XYZW, Vertex, BufferMode, BufferUsage, DrawIndexedIndirectBuffer, DrawIndexedIndirect,
 };
 use rendering::Mesh;
 use utils::{Handle, Storage};
@@ -48,6 +48,7 @@ impl MeshGenerator {
         compiler.use_storage_buffer::<<XYZ<f32> as Vertex>::Storage>("vertices", false, true);
         compiler.use_storage_buffer::<[u32; 3]>("triangles", false, true);
         compiler.use_storage_buffer::<[u32; 2]>("counters", true, true);
+        compiler.use_storage_buffer::<[u32; 2]>("indirect", true, true);
 
         // Compile the compute shader
         let compute = ComputeShader::new(module, compiler).unwrap();
@@ -102,9 +103,15 @@ impl MeshGenerator {
         let dispatch = size / 4;
 
         // Create an indexed indirect draw buffer and add into the storage
-        let indirect = indirect.insert(DrawIndexedIndirectBuffer::zeroed(
+        let indirect = indirect.insert(DrawIndexedIndirectBuffer::from_slice(
             graphics,
-            1,
+            &[DrawIndexedIndirect {
+                vertex_count: 0,
+                instance_count: 1,
+                base_index: 0,
+                vertex_offset: 0,
+                base_instance: 0,
+            }],
             BufferMode::Dynamic,
             BufferUsage::STORAGE
         ).unwrap());

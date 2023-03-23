@@ -5,7 +5,6 @@ fn main() {
     App::default()
         .set_app_name("cflake engine mesh example")
         .set_user_assets_path(user_assets_path!("/examples/assets/"))
-        .set_window_fullscreen(true)
         .insert_init(init)
         .insert_update(update)
         .execute();
@@ -40,6 +39,7 @@ fn init(world: &mut World) {
     asset!(&mut assets, "assets/user/textures/mask.jpg");
 
     // Load in the diffuse map, normal map, and mask map textures asynchronously
+    /*
     let albedo = assets.async_load::<AlbedoMap>(
         ("user/textures/diffuse.jpg", graphics.clone()),
         &mut threadpool,
@@ -52,6 +52,7 @@ fn init(world: &mut World) {
         ("user/textures/mask.jpg", graphics.clone()),
         &mut threadpool,
     );
+    */
 
     // Get the material id (also registers the material pipeline)
     let id = pipelines
@@ -79,6 +80,7 @@ fn init(world: &mut World) {
         .unwrap();
     let sphere = meshes.insert(sphere);
 
+    /*
     // Fetch the loaded textures
     let diffuse = assets.wait(albedo).unwrap();
     let normal = assets.wait(normal).unwrap();
@@ -93,6 +95,7 @@ fn init(world: &mut World) {
     let diffuse = diffuse_maps.insert(diffuse);
     let normal = normal_maps.insert(normal);
     let mask = mask_maps.insert(mask);
+    */
 
     // Create a new material instance
     let material = pbrs.insert(PhysicallyBased {
@@ -120,8 +123,8 @@ fn init(world: &mut World) {
 
         let material = pbrs.insert(PhysicallyBased {
             albedo_map: None,
-            normal_map: Some(normal.clone()),
-            mask_map: Some(mask.clone()),
+            normal_map: None,
+            mask_map: None,
             bumpiness: 4.0,
             roughness: 0.5,
             metallic: 0.2,

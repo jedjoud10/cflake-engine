@@ -32,6 +32,8 @@ fn init(world: &mut World) {
     persistent!(loader, "engine/shaders/scene/shadow/shadow.vert");
     persistent!(loader, "engine/shaders/scene/sky/sky.frag");
     persistent!(loader, "engine/shaders/scene/sky/sky.vert");
+    persistent!(loader, "engine/shaders/scene/terrain/terrain.vert");
+    persistent!(loader, "engine/shaders/scene/terrain/terrain.frag");
 
     // Load the default post-rendering shaders
     persistent!(loader, "engine/shaders/post/display.frag");

@@ -76,6 +76,7 @@ impl<'a, 'r> ActiveComputeDispatcher<'a, 'r> {
     ) {
         if let Some(bind_group) = super::create_bind_group(
             self.graphics,
+                &[self.shader.compute().name()],
             self.shader.reflected.clone(),
             binding,
             callback,

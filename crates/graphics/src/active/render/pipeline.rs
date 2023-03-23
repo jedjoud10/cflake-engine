@@ -176,8 +176,10 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         binding: u32,
         callback: impl FnOnce(&mut BindGroup<'b>),
     ) {
+        let shader = self.pipeline.shader();
         if let Some(bind_group) = super::create_bind_group(
             self.graphics,
+            &[shader.vertex().name(), shader.fragment().name()],
             self.pipeline.shader().reflected.clone(),
             binding,
             callback,

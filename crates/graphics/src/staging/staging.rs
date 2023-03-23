@@ -113,7 +113,7 @@ impl StagingPool {
         // Put the encoder back into the cache, and submit ALL encoders
         graphics.reuse([encoder]);
         // (Also wait for their subbmission)
-        graphics.submit_unused(true);
+        graphics.submit(true);
 
         // Map the staging buffer
         type MapResult = Result<(), wgpu::BufferAsyncError>;
@@ -202,7 +202,7 @@ impl StagingPool {
         // Put the encoder back into the cache, and submit ALL encoders
         graphics.reuse([encoder]);
         // (Also wait for their subbmission)
-        graphics.submit_unused(true);
+        graphics.submit(true);
 
         // Map the staging buffer
         type MapResult = Result<(), wgpu::BufferAsyncError>;

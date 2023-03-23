@@ -26,14 +26,14 @@ impl Material for Terrain {
         // Load the vertex module from the assets
         let vert = assets
             .load::<VertexModule>(
-                "engine/shaders/scene/basic/basic.vert",
+                "engine/shaders/scene/terrain/terrain.vert",
             )
             .unwrap();
 
         // Load the fragment module from the assets
         let frag = assets
             .load::<FragmentModule>(
-                "engine/shaders/scene/basic/basic.frag",
+                "engine/shaders/scene/terrain/terrain.frag",
             )
             .unwrap();
 
@@ -42,7 +42,6 @@ impl Material for Terrain {
 
         // Set the UBO types that we will use
         compiler.use_uniform_buffer::<CameraUniform>("camera");
-        compiler.use_uniform_buffer::<SceneUniform>("scene");
 
         // Define the push ranges used by push constants
         compiler.use_push_constant_layout(
@@ -55,6 +54,10 @@ impl Material for Terrain {
 
         // Compile the modules into a shader
         Shader::new(vert, frag, compiler).unwrap()
+    }
+
+    fn attributes() -> rendering::MeshAttributes {
+        rendering::MeshAttributes::POSITIONS
     }
 
     // Fetch the texture storages
@@ -71,9 +74,6 @@ impl Material for Terrain {
         // Set the required common buffers
         group
             .set_uniform_buffer("camera", default.camera_buffer)
-            .unwrap();
-        group
-            .set_uniform_buffer("scene", default.scene_buffer)
             .unwrap();
     }
 

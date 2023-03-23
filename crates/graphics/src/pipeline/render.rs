@@ -74,10 +74,13 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPipeline<C, DS> {
         let primitive = primitive_config_to_state(primitive_config);
         let layout = &shader.layout;
 
+        // Create a name for the render pipeline
+        let name = format!("{:?}", [shader.vertex().name(), shader.fragment().name()]);
+
         // Create the WGPU pipeline using the given configuration
         let pipeline = graphics.device().create_render_pipeline(
             &wgpu::RenderPipelineDescriptor {
-                label: None,
+                label: Some(&name),
                 layout: Some(layout),
                 vertex: wgpu::VertexState {
                     module: shader.vertex().module(),

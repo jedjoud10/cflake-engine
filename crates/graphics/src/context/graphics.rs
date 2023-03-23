@@ -13,7 +13,7 @@ use wgpu::{
 
 use crate::{
     BindGroupLayout, BindResourceLayout, ReflectedShader,
-    SamplerSettings, SamplerWrap, StagingPool, UniformBuffer, Snippets,
+    SamplerSettings, SamplerWrap, StagingPool, UniformBuffer, Snippets, Id,
 };
 
 // Cached graphics data
@@ -25,7 +25,7 @@ pub(crate) struct Cached {
     pub(crate) pipeline_layouts:
         DashMap<ReflectedShader, Arc<wgpu::PipelineLayout>>,
     pub(crate) bind_groups:
-        DashMap<Vec<wgpu::Id>, Arc<wgpu::BindGroup>>,
+        DashMap<Vec<Id>, Arc<wgpu::BindGroup>>,
 }
 
 // Internnal graphics context that will eventually be wrapped within an Arc
@@ -105,13 +105,13 @@ impl Graphics {
     }
 
     // Get the global staging buffer allocator
-    pub(crate) fn staging_pool(&self) -> &StagingPool {
+    pub fn staging_pool(&self) -> &StagingPool {
         &self.0.staging
     }
 
     // Create a new command encoder to record commands
     // This might fetch an already existing command encoder (for this thread), or it will create a new one
-    pub(crate) fn acquire(&self) -> CommandEncoder {
+    pub fn acquire(&self) -> CommandEncoder {
         let encoders = self.0.encoders.get_or_default();
         let mut locked = encoders.lock();
         *self.0.acquires.lock() += 1;
@@ -124,7 +124,7 @@ impl Graphics {
 
     // Submit one or multiple command encoders and possibly waits for the GPU to complete them
     // The submitted command encoders cannot be reused for new commands
-    pub(crate) fn submit(
+    pub fn submit_from_iter(
         &self,
         iter: impl IntoIterator<Item = CommandEncoder>,
         wait: bool,
@@ -140,14 +140,14 @@ impl Graphics {
     }
 
     // Submit all the currently unused command encoders and clears the thread local cache
-    pub(crate) fn submit_unused(&self, wait: bool) {
+    pub fn submit(&self, wait: bool) {
         let encoders = self.0.encoders.get_or_default();
         let mut locked = encoders.lock();
-        self.submit(locked.drain(..), wait);
+        self.submit_from_iter(locked.drain(..), wait);
     }
 
     // Pushes some unfinished command encoders to be re-used by the current thread
-    pub(crate) fn reuse(
+    pub fn reuse(
         &self,
         iter: impl IntoIterator<Item = CommandEncoder>,
     ) {
