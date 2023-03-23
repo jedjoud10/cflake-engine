@@ -1,7 +1,7 @@
 use assets::Assets;
 use ecs::Scene;
-use graphics::{ComputePass, Graphics, DrawIndexedIndirectBuffer};
-use rendering::{Mesh, Pipelines, Surface, Basic};
+use graphics::{ComputePass, Graphics, DrawIndexedIndirectBuffer, DrawIndexedIndirect};
+use rendering::{Mesh, Pipelines, Surface, Basic, Renderer};
 use utils::Storage;
 use world::{System, World};
 
@@ -31,7 +31,7 @@ fn init(world: &mut World) {
 
     // Add the debug mesh into the world
     let surface = Surface::indirect(mesh.mesh.clone(), material, mesh.indirect.clone(), id);
-    scene.insert(surface);
+    scene.insert((surface, Renderer::default()));
 
     // Add the resources to the world
     drop(graphics);
@@ -47,7 +47,6 @@ fn init(world: &mut World) {
 
 // Called each frame before rendering to generate the required voxel data and mesh data for each chunk
 fn update(world: &mut World) {
-    /*
     let graphics = world.get::<Graphics>().unwrap();
     let mut _voxel_generator = world.get_mut::<VoxelGenerator>().unwrap();
     let voxel_generator = &mut *_voxel_generator;
@@ -63,6 +62,15 @@ fn update(world: &mut World) {
     let vertices = _vertices.attribute_mut::<rendering::attributes::Position>().unwrap();
     let triangles = _triangles.buffer_mut();
 
+    mesh_generator.counters.write(&[0, 0], 0).unwrap();
+    indirect.write(&[DrawIndexedIndirect {
+        vertex_count: 0,
+        instance_count: 1,
+        base_index: 0,
+        vertex_offset: 0,
+        base_instance: 0,
+    }], 0).unwrap();
+
     // Create a compute pass for both the voxel and mesh compute shaders
     let mut pass = ComputePass::begin(&graphics);
 
@@ -73,6 +81,7 @@ fn update(world: &mut World) {
             .unwrap();
     });
     active.dispatch(vek::Vec3::broadcast(voxel_generator.dispatch));
+
 
     // Create the mesh every frame (DEBUG)
     let mut active = pass.bind_shader(&mesh_generator.shader);
@@ -86,7 +95,6 @@ fn update(world: &mut World) {
     });
     active.dispatch(vek::Vec3::broadcast(mesh_generator.dispatch));
     graphics.submit(true);
-    */
 }
 
 // Responsible for terrain generation and rendering

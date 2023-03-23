@@ -96,7 +96,7 @@ impl MeshGenerator {
             graphics,
             &[0, 0],
             BufferMode::Dynamic,
-            BufferUsage::STORAGE
+            BufferUsage::STORAGE | BufferUsage::WRITE
         ).unwrap();
 
         // Calculate the dispatch size for mesh generation by assuming local size is 4
@@ -113,7 +113,7 @@ impl MeshGenerator {
                 base_instance: 0,
             }],
             BufferMode::Dynamic,
-            BufferUsage::STORAGE
+            BufferUsage::STORAGE | BufferUsage::WRITE
         ).unwrap());
         Self {
             shader: compute,

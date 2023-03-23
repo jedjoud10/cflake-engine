@@ -4,18 +4,18 @@ use crate::{Material, Surface, Mesh};
 
 
 // Common draw method that will simply draw a mesh onto the active graphics pipeline
-pub fn draw<M: Material, C: ColorLayout, DS: DepthStencilLayout>(
+pub fn draw<'a, M: Material, C: ColorLayout, DS: DepthStencilLayout>(
     surface: &Surface<M>,
-    indirect: &Storage<DrawIndexedIndirectBuffer>,
-    mesh: &Mesh,
-    active: &mut ActiveGraphicsPipeline<C, DS>
+    indirect: &'a Storage<DrawIndexedIndirectBuffer>,
+    mesh: &'a Mesh,
+    active: &mut ActiveGraphicsPipeline<'_, 'a, '_, C, DS>
 ) {
     // Draw the triangulated mesh
     match surface.indirect.as_ref() {
         // Draw using indirect buffer
         Some(handle) => {
             let buffer = indirect.get(handle);
-            //active.draw_indexed_indirect();
+            active.draw_indexed_indirect(buffer, 0);
         },
     
         // Draw the mesh normally

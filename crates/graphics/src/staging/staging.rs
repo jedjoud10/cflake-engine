@@ -65,7 +65,7 @@ impl StagingPool {
 
             // Create the buffer descriptor for a new buffer
             let desc = wgpu::BufferDescriptor {
-                label: None,
+                label: Some("graphics-staging-buffer"),
                 size: capacity,
                 usage: match mode {
                     MapMode::Read => read,

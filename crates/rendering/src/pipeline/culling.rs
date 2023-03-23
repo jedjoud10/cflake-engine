@@ -53,7 +53,10 @@ pub(super) fn cull_surfaces<'r, M: Material>(
         &mut threadpool,
         |(surface, renderer)| {
         let mesh = meshes.get(&surface.mesh);
-        let aabb = mesh.vertices().aabb().unwrap();
-        surface.culled = !intersects_frustum(&default.camera_frustum, aabb, &renderer.matrix)
+        if let Some(aabb) = mesh.vertices().aabb() {
+            surface.culled = !intersects_frustum(&default.camera_frustum, aabb, &renderer.matrix)
+        } else {
+            surface.culled = false;
+        }
     }, 256);
 }

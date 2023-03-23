@@ -103,7 +103,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
         let attribute =
             mesh.vertices().enabled().contains(M::attributes());
         let validity = mesh.vertices().len().is_some();
-        if !(attribute && validity) {
+        if !(attribute && validity) && surface.indirect.is_none() {
             continue;
         }
 

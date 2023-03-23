@@ -367,7 +367,7 @@ fn compile(
     let wgpu = unsafe { 
         graphics.device().create_shader_module_spirv(
             &wgpu::ShaderModuleDescriptorSpirV {
-                label: None,
+                label: Some(&format!("shader-module-{file}")),
                 source: wgpu::util::make_spirv_raw(artifact.as_binary_u8()),
             },
         )
