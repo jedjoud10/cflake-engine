@@ -17,6 +17,7 @@ layout(location = 0) out vec3 m_position;
 void main() {
 	// Model space -> World space -> Clip space
     vec4 world_pos = mesh.matrix * vec4(position, 1);
+    m_position = world_pos.xyz;
     vec4 projected = (camera.projection * camera.view) * world_pos; 
     gl_Position = projected;
     gl_PointSize = 8.0;

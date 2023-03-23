@@ -19,7 +19,7 @@ fn init(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
 
     // Global chunk resolution
-    let size = 32;
+    let size = 64;
 
     // Create the compute generators
     let voxel = VoxelGenerator::new(&graphics, &assets, size);
@@ -78,10 +78,12 @@ fn update(world: &mut World) {
     // Create the voxel data and store it in the image
     let mut active = pass.bind_shader(&voxel_generator.shader);
 
+    // Set voxel noise parameters
     active.set_push_constants(|x| {
         x.push(&time.elapsed().as_secs_f32().to_ne_bytes(), 0, graphics::ModuleVisibility::Compute).unwrap()
     }).unwrap();
 
+    // One glboal bind group for voxel generation
     active.set_bind_group(0, |set| {
         set.set_storage_texture("densities", &mut voxel_generator.densities)
             .unwrap();
@@ -91,17 +93,21 @@ fn update(world: &mut World) {
     // Create the mesh every frame (DEBUG)
     let mut active = pass.bind_shader(&mesh_generator.shader);
 
+    // First bind group is global
     active.set_bind_group(0, |set| {
         set.set_storage_texture("densities", &mut voxel_generator.densities).unwrap();
         set.set_storage_texture("cached_indices", &mut mesh_generator.cached_indices).unwrap();
+        set.set_storage_buffer("counters", &mut mesh_generator.counters).unwrap();
+    });
+
+    // The resources used here might change
+    active.set_bind_group(1, |set| {
         set.set_storage_buffer("vertices", vertices).unwrap();
         set.set_storage_buffer("triangles", triangles).unwrap();
-        set.set_storage_buffer("counters", &mut mesh_generator.counters).unwrap();
         set.set_storage_buffer("indirect", indirect).unwrap();
     });
-    active.dispatch(vek::Vec3::broadcast(mesh_generator.dispatch));
-    drop(active);
-    graphics.submit(true);
+
+    active.dispatch(vek::Vec3::broadcast(mesh_generator.dispatch));     
 }
 
 // Responsible for terrain generation and rendering

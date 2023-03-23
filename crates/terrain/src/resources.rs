@@ -70,7 +70,7 @@ impl MeshGenerator {
             graphics, 
             vertex_capacity,
             BufferMode::Dynamic,
-            BufferUsage::STORAGE | BufferUsage::WRITE
+            BufferUsage::STORAGE
         ).unwrap();
         
         // Create the triangle buffer (make sure size can contain ALL possible triangles)
@@ -79,7 +79,7 @@ impl MeshGenerator {
             graphics, 
             triangle_capacity,
             BufferMode::Dynamic,
-            BufferUsage::STORAGE | BufferUsage::WRITE
+            BufferUsage::STORAGE
         ).unwrap();
 
         // Create a mesh that uses the buffers

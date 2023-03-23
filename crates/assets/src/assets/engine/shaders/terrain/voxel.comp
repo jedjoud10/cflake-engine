@@ -9,7 +9,9 @@ layout(push_constant) uniform PushConstants {
 #include <engine/shaders/noises/noise3D.glsl>
 
 float density(vec3 position) {
-    return snoise(position * 0.02 + vec3(test.time, 0, 0)*0.01)*20.0;
+    //return position.z + 32.0;
+    //return length(position - 16) - 10;
+    return snoise(position * 0.02 + vec3(test.time, 0, 0)*0.01)*10.0 + position.y - 20;
 }
 
 void main() {

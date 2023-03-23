@@ -10,13 +10,13 @@ layout(set = 0, binding = 0, r32f) readonly uniform image3D densities;
 layout(set = 0, binding = 1, r32ui) uniform uimage3D cached_indices;
 
 // Output vertices
-layout(std430, set = 0, binding = 2) writeonly buffer Vertices {
-    vec3 data[32*32*32];
+layout(std430, set = 1, binding = 0) writeonly buffer Vertices {
+    vec3 data[64*64*64];
 } vertices;
 
 // Output triangles
-layout(std430, set = 0, binding = 3) writeonly buffer Triangles {
-    uint data[31*31*31*4];
+layout(std430, set = 1, binding = 1) writeonly buffer Triangles {
+    uint data[63*63*63*4];
 } triangles;
 
 // Atomic counters
@@ -26,7 +26,7 @@ layout(std430, set = 0, binding = 4) buffer Counters {
 } counters;
 
 // Indirect drawing buffer
-layout(std430, set = 0, binding = 5) buffer Indirect {
+layout(std430, set = 1, binding = 2) buffer Indirect {
     uint vertex_count;
     uint instance_count;
     uint base_index;
@@ -34,10 +34,15 @@ layout(std430, set = 0, binding = 5) buffer Indirect {
     uint base_instance;
 } indirect;
 
+// Calculate the position for a vertex
+vec3 calculate_vertex_position(uvec3 vertex) {
+    return vec3(vertex);
+}
+
 // Add a new vertex to the mesh. Return its index
-uint add_vertex(vec3 vertex) {
+uint add_vertex(uvec3 vertex) {
     uint index = atomicAdd(counters.vertices, 1);
-    vertices.data[index] = vertex;
+    vertices.data[index] = calculate_vertex_position(vertex);
     return index;
     
     /*
@@ -56,10 +61,10 @@ uint add_vertex(vec3 vertex) {
 
 // Add a new quad to the mesh
 void add_quad(
-    vec3 quad0,
-    vec3 quad1,
-    vec3 quad2,
-    vec3 quad3,
+    uvec3 quad0,
+    uvec3 quad1,
+    uvec3 quad2,
+    uvec3 quad3,
     bool flip
 ) {
     // Add the vertices
@@ -84,7 +89,8 @@ void add_quad(
     atomicAdd(indirect.vertex_count, 6);
 }
 
-float unlerp(float a, float b, float x)
+// Takes two values and find where x lies on them (0 - 1 range)
+float unmix(float a, float b, float x)
 {
     return (x - a) / (b - a);
 }
@@ -93,91 +99,59 @@ float unlerp(float a, float b, float x)
 void check_edge(
     uvec3 start,
     uvec3 end,
-    vec3 quad0,
-    vec3 quad1,
-    vec3 quad2,
-    vec3 quad3,
-    bool flip
+    uvec3 quad0,
+    uvec3 quad1,
+    uvec3 quad2,
+    uvec3 quad3
 ) {
+    // Get the densities of the edge
     float density0 = imageLoad(densities, ivec3(start)).x;
     float density1 = imageLoad(densities, ivec3(end)).x;
+
+    // Check if the density functions represent solid matter or not
     bool positive0 = density0 > 0.0;
     bool positive1 = density1 > 0.0;
 
-    if (positive0 ^^ positive1) {
-        float guess = unlerp(density0, density1, 0.0);
-        vec3 pos = mix(vec3(start), vec3(end), guess);
-        uint index0 = add_vertex(pos);
-        uint base = atomicAdd(counters.triangles, 3);
-        triangles.data[base] = index0;
-        triangles.data[base+1] = index0;
-        triangles.data[base+2] = index0;
-        atomicAdd(indirect.vertex_count, 3);
-        /*
+    // Create a quad if they do
+    if ((positive0 ^^ positive1)) {
         add_quad(
-            quad0 + vec3(start),
-            quad1 + vec3(start),
-            quad2 + vec3(start),
-            quad3 + vec3(start),
-            (flip ? positive1 : !positive1)
+            quad0 + uvec3(end),
+            quad1 + uvec3(end),
+            quad2 + uvec3(end),
+            quad3 + uvec3(end),
+            positive1
         );
-        */
     }
 }
 
-const uvec3 edge_positions1[12] =
-{
-    uvec3(0, 1, 0),
-    uvec3(1, 1, 0),
-    uvec3(1, 0, 0),
-    uvec3(1, 0, 0),
-    uvec3(0, 1, 1),
-    uvec3(1, 1, 1),
-    uvec3(1, 0, 1),
-    uvec3(0, 0, 1),
-    uvec3(0, 0, 1),
-    uvec3(0, 1, 1),
-    uvec3(1, 1, 1),
-    uvec3(1, 0, 1)
-};
-
-const uvec3 edge_positions2[12] =
-{
-    uvec3(0, 0, 0),
-    uvec3(0, 1, 0),
-    uvec3(1, 1, 0),
-    uvec3(0, 0, 0),
-    uvec3(0, 0, 1),
-    uvec3(0, 1, 1),
-    uvec3(1, 1, 1),
-    uvec3(1, 0, 1),
-    uvec3(0, 0, 0),
-    uvec3(0, 1, 0),
-    uvec3(1, 1, 0),
-    uvec3(1, 0, 0)
-};
-
 void main() {
+    // Check the Z axis edge
     check_edge(
         gl_GlobalInvocationID,
         gl_GlobalInvocationID + uvec3(0, 0, 1),
-        vec3(0, 0, 0),
-        vec3(0, 1, 0),
-        vec3(1, 0, 0),
-        vec3(1, 1, 0),
-        false
+        uvec3(0, 0, 0),
+        uvec3(0, 1, 0),
+        uvec3(1, 0, 0),
+        uvec3(1, 1, 0)
     );
     
-
-    /*
+    // Check the X axis edge
     check_edge(
         gl_GlobalInvocationID,
-        gl_GlobalInvocationID + uvec3(0, 0, 1),
-        vec3(0, 0, 0),
-        vec3(0, 1, 0),
-        vec3(1, 0, 0),
-        vec3(1, 1, 0),
-        false
+        gl_GlobalInvocationID + uvec3(1, 0, 0),
+        uvec3(0, 0, 0),
+        uvec3(0, 0, 1),
+        uvec3(0, 1, 0),
+        uvec3(0, 1, 1)
     );
-    */
+
+    // Check the Y axis edge
+    check_edge(
+        gl_GlobalInvocationID,
+        gl_GlobalInvocationID + uvec3(0, 1, 0),
+        uvec3(0, 0, 0),
+        uvec3(1, 0, 0),
+        uvec3(0, 0, 1),
+        uvec3(1, 0, 1)
+    );
 }
