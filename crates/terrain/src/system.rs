@@ -61,6 +61,7 @@ fn update(world: &mut World) {
     let mesh = meshes.get_mut(&mesh_generator.mesh);
     let (mut _triangles, mut _vertices) = mesh.both_mut();
     let mut vertices = _vertices.attribute_mut::<rendering::attributes::Position>().unwrap();
+    let mut normals = _vertices.attribute_mut::<rendering::attributes::Normal>().unwrap();
     let triangles = _triangles.buffer_mut();
 
     mesh_generator.counters.write(&[0, 0], 0).unwrap();
@@ -99,7 +100,7 @@ fn update(world: &mut World) {
     });
     active.set_bind_group(1, |set| {
         set.set_storage_buffer("vertices", &mut vertices).unwrap();
-        //set.set_storage_buffer("normals", normals).unwrap();
+        set.set_storage_buffer("normals", &mut normals).unwrap();
     });
     active.dispatch(vek::Vec3::broadcast(mesh_generator.dispatch)); 
 

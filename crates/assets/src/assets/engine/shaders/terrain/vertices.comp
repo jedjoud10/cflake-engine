@@ -13,11 +13,9 @@ layout(std430, set = 1, binding = 0) writeonly buffer Vertices {
 } vertices;
 
 // Output normals
-/*
-layout(std430, set = 1, binding = 0) writeonly buffer Normals {
+layout(std430, set = 1, binding = 1) writeonly buffer Normals {
     vec4 data[64*64*64];
 } normals;
-*/
 
 // Atomic counters
 layout(std430, set = 0, binding = 2) buffer Counters {
@@ -98,8 +96,7 @@ void main() {
     if (count > 0) {
         uint index = atomicAdd(counters.vertices, 1);
         vertices.data[index] = vec4(sum / count, 0) + vec4(gl_GlobalInvocationID, 0);
-        //vertices.data[index] = vec4(gl_GlobalInvocationID, 0);
+        normals.data[index] = vec4(gl_GlobalInvocationID+1, 0.0);
         imageStore(cached_indices, ivec3(gl_GlobalInvocationID+1), uvec4(index));
-        //imageStore(cached_indices, ivec3(gl_GlobalInvocationID+1), uvec4(count));
     }
 }
