@@ -1,6 +1,6 @@
 use assets::Assets;
 use ecs::Scene;
-use graphics::{ComputePass, Graphics, DrawIndexedIndirectBuffer, DrawIndexedIndirect, Texture};
+use graphics::{ComputePass, Graphics, DrawIndexedIndirectBuffer, DrawIndexedIndirect, Texture, GpuPod};
 use rendering::{Mesh, Pipelines, Surface, Basic, Renderer};
 use utils::{Storage, Time};
 use world::{System, World};
@@ -80,7 +80,7 @@ fn update(world: &mut World) {
 
     // Set voxel noise parameters
     active.set_push_constants(|x| {
-        x.push(&time.elapsed().as_secs_f32().to_ne_bytes(), 0, graphics::ModuleVisibility::Compute).unwrap()
+        x.push(GpuPod::into_bytes(&time.elapsed().as_secs_f32()), 0, graphics::ModuleVisibility::Compute).unwrap()
     }).unwrap();
 
     // One glboal bind group for voxel generation

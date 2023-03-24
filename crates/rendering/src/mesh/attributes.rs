@@ -2,6 +2,7 @@ use graphics::{
     Normalized, PerVertex, Vertex, VertexBuffer, VertexConfig,
     VertexInput, VertexInputInfo, XYZ, XYZW,
 };
+use std::cell::{Ref, RefMut};
 use paste::paste;
 use std::marker::PhantomData;
 
@@ -38,13 +39,13 @@ pub trait MeshAttribute {
     // WWAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
     fn from_ref_as_ref<'a>(
         vertices: &VerticesRef<'a>,
-    ) -> Option<&'a AttributeBuffer<Self>>;
+    ) -> Option<Ref<'a, AttributeBuffer<Self>>>;
     fn from_mut_as_mut<'a>(
-        vertices: &'a mut VerticesMut,
-    ) -> Option<&'a mut AttributeBuffer<Self>>;
+        vertices: &VerticesMut<'a>,
+    ) -> Option<RefMut<'a, AttributeBuffer<Self>>>;
     fn from_mut_as_ref<'a>(
-        vertices: &'a VerticesMut,
-    ) -> Option<&'a AttributeBuffer<Self>>;
+        vertices: &VerticesMut<'a>,
+    ) -> Option<Ref<'a, AttributeBuffer<Self>>>;
 
     // Insert a mesh attribute vertex buffer into the vertices
     fn insert(
@@ -100,22 +101,31 @@ macro_rules! impl_vertex_attribute {
                 type Input = $input<Self::V>;
                 const ATTRIBUTE: MeshAttributes = MeshAttributes::[<$enabled>];
 
-                fn from_ref_as_ref<'a>(vertices: &VerticesRef<'a>) -> Option<&'a AttributeBuffer<Self>> {
+                fn from_ref_as_ref<'a>(vertices: &VerticesRef<'a>) -> Option<Ref<'a, AttributeBuffer<Self>>> {
+                    None
+                    /*
                     vertices.is_enabled::<Self>().then(|| unsafe {
                         vertices.$name.assume_init_ref()
                     })
+                    */
                 }
 
-                fn from_mut_as_mut<'a>(vertices: &'a mut VerticesMut) -> Option<&'a mut AttributeBuffer<Self>> {
+                fn from_mut_as_mut<'a>(vertices: &VerticesMut<'a>) -> Option<RefMut<'a, AttributeBuffer<Self>>> {
+                    None
+                    /*
                     vertices.is_enabled::<Self>().then(|| unsafe {
                         vertices.$name.assume_init_mut()
                     })
+                    */
                 }
 
-                fn from_mut_as_ref<'a>(vertices: &'a VerticesMut) -> Option<&'a AttributeBuffer<Self>> {
+                fn from_mut_as_ref<'a>(vertices: &VerticesMut<'a>) -> Option<Ref<'a, AttributeBuffer<Self>>> {
+                    None
+                    /*
                     vertices.is_enabled::<Self>().then(|| unsafe {
                         vertices.$name.assume_init_ref()
                     })
+                    */
                 }
 
                 fn insert(vertices: &mut VerticesMut, buffer: AttributeBuffer<Self>) {

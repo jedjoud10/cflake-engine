@@ -1,4 +1,4 @@
-use std::{num::NonZeroU8, ops::DerefMut};
+use std::{num::NonZeroU8, ops::DerefMut, cell::Cell};
 
 use bytemuck::Zeroable;
 
@@ -6,7 +6,7 @@ use super::{Region, Texture};
 use crate::{
     ColorTexel, Extent, MipLevelClearError, MipLevelCopyError,
     MipLevelReadError, MipLevelWriteError, Origin, RenderTarget,
-    Texel, TextureAsTargetError, TextureSamplerError, TextureUsage,
+    Texel, TextureAsTargetError, TextureSamplerError, TextureUsage, TextureMipLevelError,
 };
 
 // This enum tells the texture how exactly it should create it's mipmaps
@@ -148,10 +148,69 @@ pub fn generate_mip_map<T: ColorTexel, E: Extent>(
     Some(map)
 }
 
+// Collection of multiple immutable mip levels
+pub struct MipLevelsRef<'a, T: Texture> {
+    pub(super) texture: &'a T,
+}
+
+impl<'a, T: Texture> MipLevelsRef<'a, T> {
+    // Borrow a mip-level from the mip collection immutably
+    pub fn level(&'a self, level: u8) -> Result<MipLevelRef<'a, T>, TextureMipLevelError> {
+        let range = (self.texture.views().len()-1) as u8;
+        if level > range {
+            Ok(MipLevelRef {
+                texture: self.texture,
+                level,
+                borrowed: None,
+            })
+        } else {
+            Err(TextureMipLevelError::OutOfRange(level, range))
+        }
+    }
+}
+
+// Collection of multiple mutable mip levels
+pub struct MipLevelsMut<'a, T: Texture> {
+    pub(super) texture: &'a mut T,
+    pub(super) mutated: Cell<u32>,
+    pub(crate) borrowed: Cell<u32>,
+}
+
+impl<'a, T: Texture> MipLevelsMut<'a, T> {
+    // Borrow a mip-level from the mip collection immutably
+    pub fn level(&'a self, level: u8) -> Result<MipLevelRef<'a, T>, TextureMipLevelError> {
+        let range = (self.texture.views().len()-1) as u8;
+        if level > range {
+            Ok(MipLevelRef {
+                texture: self.texture,
+                level,
+                borrowed: Some(&self.borrowed),
+            })
+        } else {
+            Err(TextureMipLevelError::OutOfRange(level, range))
+        }
+    }
+
+    // Borrow a mip-level from the mip collection mutably
+    pub fn level_mut(&'a self, level: u8) -> Result<MipLevelMut<'a, T>, TextureMipLevelError> {
+        let range = (self.texture.views().len()-1) as u8;
+        if level > range {
+            Ok(MipLevelMut {
+                texture: self.texture,
+                level,
+                mutated: &self.mutated,
+            })
+        } else {
+            Err(TextureMipLevelError::OutOfRange(level, range))
+        }
+    }
+}
+
 // An immutable mip level that we can use to read from the texture
 pub struct MipLevelRef<'a, T: Texture> {
     pub(super) texture: &'a T,
     pub(super) level: u8,
+    pub(crate) borrowed: Option<&'a Cell<u32>>,
 }
 
 // Helper methods
@@ -221,10 +280,20 @@ impl<'a, T: Texture> MipLevelRef<'a, T> {
     }
 }
 
+impl<'a, T: Texture> Drop for MipLevelRef<'a, T> {
+    fn drop(&mut self) {
+        if let Some(borrowed) = self.borrowed {
+            let copied = borrowed.get();
+            borrowed.set(copied & !(1u32 << self.level));
+        }
+    }
+}
+
 // A mutable mip level that we can use to write to the texture
 pub struct MipLevelMut<'a, T: Texture> {
     pub(crate) texture: &'a T,
     pub(crate) level: u8,
+    pub(super) mutated: &'a Cell<u32>,
 }
 
 // Helper methods
@@ -382,5 +451,12 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
         let area = region.area() as usize;
         let texels = vec![val; area];
         self.write(&texels, subregion)
+    }
+}
+
+impl<'a, T: Texture> Drop for MipLevelMut<'a, T> {
+    fn drop(&mut self) {
+        let copied = self.mutated.get();
+        self.mutated.set(copied & !(1u32 << self.level));
     }
 }

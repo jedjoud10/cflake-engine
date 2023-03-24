@@ -2,7 +2,7 @@ use std::{
     marker::PhantomData,
     mem::transmute,
     num::{NonZeroU32, NonZeroU8},
-    sync::Arc,
+    sync::Arc, cell::Cell,
 };
 
 use smallvec::SmallVec;
@@ -16,7 +16,7 @@ use crate::{
     Texel, TexelSize, TextureAsTargetError,
     TextureInitializationError, TextureMipLevelError, TextureMipMaps,
     TextureMode, TextureResizeError, TextureSamplerError,
-    TextureUsage,
+    TextureUsage, MipLevelsRef, MipLevelsMut,
 };
 
 // Possibly predefined texel data
@@ -269,26 +269,20 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
     // Get all the allocated texture views
     fn views(&self) -> &[wgpu::TextureView];
 
-    // Get a single mip level from the texture immutably
-    fn mip(
-        &self,
-        level: u8,
-    ) -> Result<MipLevelRef<Self>, TextureMipLevelError> {
-        Ok(MipLevelRef {
-            texture: self,
-            level,
-        })
+    // Get the mip levels of the texture immutably
+    fn mips(&self) -> MipLevelsRef::<Self> {
+        MipLevelsRef {
+            texture: self
+        }
     }
-
-    // Get a single mip level from the texture mutably
-    fn mip_mut(
-        &mut self,
-        level: u8,
-    ) -> Result<MipLevelMut<Self>, TextureMipLevelError> {
-        Ok(MipLevelMut {
+    
+    // Get the mip levels of the texture mutably
+    fn mips_mut(&mut self) -> MipLevelsMut::<Self> {
+        MipLevelsMut {
             texture: self,
-            level,
-        })
+            mutated: Cell::new(0),
+            borrowed: Cell::new(0)
+        }
     }
 
     // Try to use the texture as a renderable target. This will fail if the texture isn't supported as render target

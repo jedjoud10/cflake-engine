@@ -156,7 +156,7 @@ impl VoxelGenerator {
         // Load the voxel compute shader
         let module = assets
             .load::<ComputeModule>(
-                "engine/shaders/terrain/voxel.comp",
+                "engine/shaders/terrain/voxels.comp",
             )
             .unwrap();
 
