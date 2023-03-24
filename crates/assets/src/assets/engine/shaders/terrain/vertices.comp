@@ -66,6 +66,7 @@ float unmix(float a, float b, float x)
 void main() {
     vec3 sum = vec3(0);
     uint count = 0;
+
     
     // Check each edge in the cell for intersections
     for (int edge = 0; edge < 12; edge++) {
@@ -89,11 +90,15 @@ void main() {
         }
     }
 
+    //imageStore(cached_indices, ivec3(gl_GlobalInvocationID+1), uvec4(imageLoad(densities, ivec3(gl_GlobalInvocationID)).x * 10.0));
+
+    // TODO: FIX EXCESS VERTICES
     // If we found at least one intersecting edge, add the vertex
     if (count > 0) {
         uint index = atomicAdd(counters.vertices, 1);
         vertices.data[index] = vec4(sum / count, 0);
         //vertices.data[index] = vec4(gl_GlobalInvocationID, 0);
         imageStore(cached_indices, ivec3(gl_GlobalInvocationID+1), uvec4(index));
+        //imageStore(cached_indices, ivec3(gl_GlobalInvocationID+1), uvec4(count));
     }
 }
