@@ -67,12 +67,12 @@ pub struct VerticesMut<'a> {
     // Attributes
     pub(super) enabled: &'a mut MeshAttributes,
     pub(super) positions:
-        &'a mut MaybeUninit<AttributeBuffer<Position>>,
-    pub(super) normals: &'a mut MaybeUninit<AttributeBuffer<Normal>>,
+        RefCell<&'a mut MaybeUninit<AttributeBuffer<Position>>>,
+    pub(super) normals: RefCell<&'a mut MaybeUninit<AttributeBuffer<Normal>>>,
     pub(super) tangents:
-        &'a mut MaybeUninit<AttributeBuffer<Tangent>>,
+        RefCell<&'a mut MaybeUninit<AttributeBuffer<Tangent>>>,
     pub(super) tex_coords:
-        &'a mut MaybeUninit<AttributeBuffer<TexCoord>>,
+        RefCell<&'a mut MaybeUninit<AttributeBuffer<TexCoord>>>,
 
     // Cached parameters
     pub(super) len: RefCell<&'a mut Option<usize>>,
@@ -103,7 +103,7 @@ impl<'a> VerticesMut<'a> {
 
     // Get a mutable reference to an attribute buffer
     pub fn attribute_mut<T: MeshAttribute>(
-        &mut self,
+        &self,
     ) -> Option<&mut AttributeBuffer<T>> {
         self.set_as_dirty::<T>();
         T::from_mut_as_mut(self)
