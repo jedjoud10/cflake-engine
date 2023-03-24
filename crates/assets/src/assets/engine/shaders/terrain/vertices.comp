@@ -64,9 +64,9 @@ float unmix(float a, float b, float x)
 }
 
 void main() {
+    // Do an average sum to get vertex location 
     vec3 sum = vec3(0);
     uint count = 0;
-
     
     // Check each edge in the cell for intersections
     for (int edge = 0; edge < 12; edge++) {
@@ -85,18 +85,19 @@ void main() {
             // Calculate vertex along the edge
             vec3 interpolated = mix(vec3(edge_positions1[edge]), vec3(edge_positions2[edge]), value);
 
-            sum += interpolated + vec3(gl_GlobalInvocationID);
+            sum += interpolated;
             count += 1;
         }
     }
 
-    //imageStore(cached_indices, ivec3(gl_GlobalInvocationID+1), uvec4(imageLoad(densities, ivec3(gl_GlobalInvocationID)).x * 10.0));
+    // Note: For some reason, when debugging this shader in renderdoc the output texture would look messed up
+    // and it would hint that there's some sort of duplicate vertices. I've checked manually and the reason this happens is because it's a bug within renderdoc
+    // whenever the user uses a push constant in the compute shader the whole thing just breaks and outputs wrong debug textures, but within the engine it works perfectly fine
 
-    // TODO: FIX EXCESS VERTICES
     // If we found at least one intersecting edge, add the vertex
     if (count > 0) {
         uint index = atomicAdd(counters.vertices, 1);
-        vertices.data[index] = vec4(sum / count, 0);
+        vertices.data[index] = vec4(sum / count, 0) + vec4(gl_GlobalInvocationID, 0);
         //vertices.data[index] = vec4(gl_GlobalInvocationID, 0);
         imageStore(cached_indices, ivec3(gl_GlobalInvocationID+1), uvec4(index));
         //imageStore(cached_indices, ivec3(gl_GlobalInvocationID+1), uvec4(count));
