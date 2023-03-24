@@ -45,7 +45,8 @@ impl MeshGenerator {
         compiler.use_storage_texture::<Densities>("densities", true, false);
         compiler.use_storage_texture::<CachedIndices>("cached_indices", true, true);
         compiler.use_storage_buffer::<<XYZW<f32> as Vertex>::Storage>("vertices", false, true);
-        compiler.use_storage_buffer::<DrawIndexedIndirect>("indirect", true, true);
+        compiler.use_storage_buffer::<<XYZW<Normalized<i8>> as Vertex>::Storage>("normals", false, true);
+        compiler.use_storage_buffer::<[u32; 2]>("counters", true, true);
         let compute_vertices = ComputeShader::new(module, compiler).unwrap();
 
         // Load the compute shader that will generate quads
@@ -56,7 +57,7 @@ impl MeshGenerator {
         compiler.use_storage_texture::<Densities>("densities", true, false);
         compiler.use_storage_texture::<CachedIndices>("cached_indices", true, false);
         compiler.use_storage_buffer::<u32>("triangles", false, true);
-        compiler.use_storage_buffer::<[u32; 2]>("counters", true, true);
+        compiler.use_storage_buffer::<DrawIndexedIndirect>("indirect", true, true);
         let compute_quads = ComputeShader::new(module, compiler).unwrap();
 
         // Create cached indices atomic texture
@@ -78,6 +79,14 @@ impl MeshGenerator {
             BufferMode::Dynamic,
             BufferUsage::STORAGE
         ).unwrap();
+
+        // Create the normal buffer (make sure size can contain ALL possible normals)
+        let normals = VertexBuffer::<XYZW<Normalized<i8>>>::zeroed(
+            graphics, 
+            vertex_capacity,
+            BufferMode::Dynamic,
+            BufferUsage::STORAGE
+        ).unwrap();
         
         // Create the triangle buffer (make sure size can contain ALL possible triangles)
         let triangle_capacity = (size as usize - 1).pow(3) * 4 * 6;
@@ -91,7 +100,7 @@ impl MeshGenerator {
         // Create a mesh that uses the buffers
         let mesh = mesh.insert(Mesh::from_buffers(
             Some(vertices),
-            None,
+            Some(normals),
             None,
             None,
             triangles

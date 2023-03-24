@@ -64,7 +64,6 @@ fn update(world: &mut World) {
     let triangles = _triangles.buffer_mut();
 
     mesh_generator.counters.write(&[0, 0], 0).unwrap();
-    mesh_generator.cached_indices.mip_mut(0).unwrap().splat(None, 0).unwrap();
     indirect.write(&[DrawIndexedIndirect {
         vertex_count: 0,
         instance_count: 1,
@@ -96,29 +95,26 @@ fn update(world: &mut World) {
     active.set_bind_group(0, |set| {
         set.set_storage_texture("densities", &mut voxel_generator.densities).unwrap();
         set.set_storage_texture("cached_indices", &mut mesh_generator.cached_indices).unwrap();
+        set.set_storage_buffer("counters", &mut mesh_generator.counters).unwrap();
     });
     active.set_bind_group(1, |set| {
         set.set_storage_buffer("vertices", vertices).unwrap();
-        set.set_storage_buffer("indirect", indirect).unwrap();
+        //set.set_storage_buffer("normals", normals).unwrap();
     });
-
-    /*
+    active.dispatch(vek::Vec3::broadcast(mesh_generator.dispatch)); 
 
     // Execute the quad generation shader second
     let mut active = pass.bind_shader(&mesh_generator.compute_quads);
     active.set_bind_group(0, |set| {
         set.set_storage_texture("densities", &mut voxel_generator.densities).unwrap();
         set.set_storage_texture("cached_indices", &mut mesh_generator.cached_indices).unwrap();
-        set.set_storage_buffer("counters", &mut mesh_generator.counters).unwrap();
     });
     active.set_bind_group(1, |set| {
-        set.set_storage_buffer("vertices", vertices).unwrap();
-        set.set_storage_buffer("indirect", indirect).unwrap();
         set.set_storage_buffer("triangles", triangles).unwrap();
+        set.set_storage_buffer("indirect", indirect).unwrap();
     });
 
     active.dispatch(vek::Vec3::broadcast(mesh_generator.dispatch));    
-    */ 
 }
 
 // Responsible for terrain generation and rendering

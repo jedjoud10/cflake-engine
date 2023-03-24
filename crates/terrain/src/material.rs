@@ -66,7 +66,7 @@ impl Material for Terrain {
     }
 
     fn casts_shadows() -> bool {
-        false
+        true
     }
 
     // Set the static bindings that will never change

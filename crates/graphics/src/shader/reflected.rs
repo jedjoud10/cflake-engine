@@ -443,6 +443,8 @@ pub(super) fn create_pipeline_layout(
                         // Make sure the currently merged layout and the new layout
                         // have well... the same layout
                         if old.resource_type != merged.resource_type {
+                            log::warn!("{:?}", old.resource_type);
+                            log::warn!("{:?}", merged.resource_type);
                             panic!("Not the same layout");
                         }
 

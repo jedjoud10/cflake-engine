@@ -10,15 +10,18 @@ layout(set = 0, binding = 0, r32f) readonly uniform image3D densities;
 layout(set = 0, binding = 1, r32ui) readonly uniform uimage3D cached_indices;
 
 // Output triangles
-layout(std430, set = 1, binding = 1) writeonly buffer Triangles {
+layout(std430, set = 1, binding = 0) writeonly buffer Triangles {
     uint data[63*63*63*4];
 } triangles;
 
-// Atomic counters
-layout(std430, set = 0, binding = 1) buffer Counters {
-    uint vertices;
-    uint triangles;
-} counters;
+// Indirect drawing buffer
+layout(std430, set = 1, binding = 1) buffer Indirect {
+    uint vertex_count;
+    uint instance_count;
+    uint base_index;
+    int vertex_offset;
+    uint base_instance;
+} indirect;
 
 // Add a new quad to the mesh
 void add_quad(
@@ -30,13 +33,13 @@ void add_quad(
     bool flip
 ) {
     // Add the vertices
-    uint index0 = uint(imageLoad(cached_indices, ivec3(quad0)).x);
-    uint index1 = uint(imageLoad(cached_indices, ivec3(quad1)).x);
-    uint index2 = uint(imageLoad(cached_indices, ivec3(quad2)).x);
-    uint index3 = uint(imageLoad(cached_indices, ivec3(quad3)).x);
+    uint index0 = uint(imageLoad(cached_indices, ivec3(quad0+offset)).x);
+    uint index1 = uint(imageLoad(cached_indices, ivec3(quad1+offset)).x);
+    uint index2 = uint(imageLoad(cached_indices, ivec3(quad2+offset)).x);
+    uint index3 = uint(imageLoad(cached_indices, ivec3(quad3+offset)).x);
 
     // Add the triangles
-    uint base = atomicAdd(counters.triangles, 6);
+    uint base = atomicAdd(indirect.vertex_count, 6);
     
     // First triangle
     triangles.data[base + (flip ? 0 : 2)] = index2;
@@ -76,6 +79,11 @@ void check_edge(
 }
 
 void main() {
+    // Skip chunk faces since they will return incorrect data
+    if (any(equal(gl_GlobalInvocationID, uvec3(0))) || any(equal(gl_GlobalInvocationID, uvec3(63)))) {
+        return;
+    }
+
     // Check the Z axis edge
     check_edge(
         gl_GlobalInvocationID,
