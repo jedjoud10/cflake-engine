@@ -301,6 +301,7 @@ fn compile(
     options.set_invert_y(false);
 
     // Create a callback responsible for includes
+    // TODO: Handle include callback
     options.set_include_callback(|target, _type, current, depth| {
         include(current, _type, target, depth, assets, &snippets)
     });

@@ -1,10 +1,10 @@
 use std::{
-    cell::{Cell, RefCell},
+    cell::{Cell, RefCell, Ref, RefMut},
     mem::MaybeUninit,
 };
 
 use super::attributes::*;
-use crate::MeshAabbComputeError;
+use crate::{MeshAabbComputeError, AttributeError};
 use graphics::{Buffer, BufferInfo, VertexBuffer};
 use math::Aabb;
 
@@ -33,14 +33,14 @@ impl<'a> VerticesRef<'a> {
     // Get an immutable reference to an attribute buffer
     pub fn attribute<T: MeshAttribute>(
         &self,
-    ) -> Option<&'a VertexBuffer<T::V>> {
+    ) -> Result<&'a VertexBuffer<T::V>, AttributeError> {
         T::from_ref_as_ref(self)
     }
 
     // Get all the available attribute buffers as untyped buffers types
     pub fn untyped_buffers(
         &self,
-    ) -> [Option<BufferInfo>; MAX_MESH_VERTEX_ATTRIBUTES] {
+    ) -> [Result<BufferInfo, AttributeError>; MAX_MESH_VERTEX_ATTRIBUTES] {
         [
             self.attribute::<Position>().map(Buffer::as_untyped),
             self.attribute::<Normal>().map(Buffer::as_untyped),
@@ -97,14 +97,14 @@ impl<'a> VerticesMut<'a> {
     // Get an immutable reference to an attribute buffer
     pub fn attribute<T: MeshAttribute>(
         &self,
-    ) -> Option<&AttributeBuffer<T>> {
+    ) -> Result<Ref<AttributeBuffer<T>>, AttributeError> {
         T::from_mut_as_ref(self)
     }
 
     // Get a mutable reference to an attribute buffer
     pub fn attribute_mut<T: MeshAttribute>(
         &self,
-    ) -> Option<&mut AttributeBuffer<T>> {
+    ) -> Result<RefMut<AttributeBuffer<T>>, AttributeError> {
         self.set_as_dirty::<T>();
         T::from_mut_as_mut(self)
     }
@@ -121,7 +121,7 @@ impl<'a> VerticesMut<'a> {
     // Remove an old vertex buffer from the vertices
     pub fn remove<T: MeshAttribute>(
         &mut self,
-    ) -> Option<AttributeBuffer<T>> {
+    ) -> Result<AttributeBuffer<T>, AttributeError> {
         self.set_as_dirty::<T>();
         T::remove(self)
     }
@@ -152,6 +152,7 @@ impl<'a> VerticesMut<'a> {
             let array = [positions, normals, tangents, tex_coords];
             let length = array
                 .into_iter()
+                .map(|x| x.ok())
                 .reduce(|accum, actual| {
                     if accum.is_some() && accum == actual {
                         accum
@@ -172,8 +173,8 @@ impl<'a> VerticesMut<'a> {
     pub fn aabb(&self) -> Result<math::Aabb<f32>, MeshAabbComputeError> {
         if self.aabb_dirty.take() {
             // Fetch the position attribute buffer
-            let attribute = self.attribute::<Position>().ok_or(
-                MeshAabbComputeError::MissingPositionAttributeBuffer,
+            let attribute = self.attribute::<Position>().map_err(|x|
+                MeshAabbComputeError::AttributeBuffer(x)
             )?;
 
             // Create a view into the buffer (if possible)

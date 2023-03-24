@@ -60,7 +60,7 @@ fn update(world: &mut World) {
     // Get the mesh that we will write to
     let mesh = meshes.get_mut(&mesh_generator.mesh);
     let (mut _triangles, mut _vertices) = mesh.both_mut();
-    let vertices = _vertices.attribute_mut::<rendering::attributes::Position>().unwrap();
+    let mut vertices = _vertices.attribute_mut::<rendering::attributes::Position>().unwrap();
     let triangles = _triangles.buffer_mut();
 
     mesh_generator.counters.write(&[0, 0], 0).unwrap();
@@ -98,7 +98,7 @@ fn update(world: &mut World) {
         set.set_storage_buffer("counters", &mut mesh_generator.counters).unwrap();
     });
     active.set_bind_group(1, |set| {
-        set.set_storage_buffer("vertices", vertices).unwrap();
+        set.set_storage_buffer("vertices", &mut vertices).unwrap();
         //set.set_storage_buffer("normals", normals).unwrap();
     });
     active.dispatch(vek::Vec3::broadcast(mesh_generator.dispatch)); 

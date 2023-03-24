@@ -6,7 +6,7 @@ use std::cell::{Ref, RefMut};
 use paste::paste;
 use std::marker::PhantomData;
 
-use crate::{VerticesMut, VerticesRef};
+use crate::{VerticesMut, VerticesRef, AttributeError};
 
 bitflags::bitflags! {
     // This specifies the buffers that the mesh uses internally
@@ -39,24 +39,26 @@ pub trait MeshAttribute {
     // WWAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
     fn from_ref_as_ref<'a>(
         vertices: &VerticesRef<'a>,
-    ) -> Option<Ref<'a, AttributeBuffer<Self>>>;
+    ) -> Result<&'a AttributeBuffer<Self>, AttributeError>;
     fn from_mut_as_mut<'a>(
-        vertices: &VerticesMut<'a>,
-    ) -> Option<RefMut<'a, AttributeBuffer<Self>>>;
+        vertices: &'a VerticesMut,
+    ) -> Result<RefMut<'a, AttributeBuffer<Self>>, AttributeError>;
     fn from_mut_as_ref<'a>(
-        vertices: &VerticesMut<'a>,
-    ) -> Option<Ref<'a, AttributeBuffer<Self>>>;
+        vertices: &'a VerticesMut,
+    ) -> Result<Ref<'a, AttributeBuffer<Self>>, AttributeError>;
 
     // Insert a mesh attribute vertex buffer into the vertices
+    // Replaces already existing attribute buffers
     fn insert(
         vertices: &mut VerticesMut,
         buffer: AttributeBuffer<Self>,
     );
 
     // Try to remove the mesh attribute vertex buffer from the vertices
+    // This will return the removed attribute buffer if successful
     fn remove(
         vertices: &mut VerticesMut,
-    ) -> Option<AttributeBuffer<Self>>;
+    ) -> Result<AttributeBuffer<Self>, AttributeError>;
 
     // Get the attribute's index
     fn index() -> u32 {
@@ -101,49 +103,52 @@ macro_rules! impl_vertex_attribute {
                 type Input = $input<Self::V>;
                 const ATTRIBUTE: MeshAttributes = MeshAttributes::[<$enabled>];
 
-                fn from_ref_as_ref<'a>(vertices: &VerticesRef<'a>) -> Option<Ref<'a, AttributeBuffer<Self>>> {
-                    None
-                    /*
+                fn from_ref_as_ref<'a>(vertices: &VerticesRef<'a>) -> Result<&'a AttributeBuffer<Self>, AttributeError> {
                     vertices.is_enabled::<Self>().then(|| unsafe {
                         vertices.$name.assume_init_ref()
-                    })
-                    */
+                    }).ok_or(AttributeError::MissingAttribute)
                 }
 
-                fn from_mut_as_mut<'a>(vertices: &VerticesMut<'a>) -> Option<RefMut<'a, AttributeBuffer<Self>>> {
-                    None
-                    /*
-                    vertices.is_enabled::<Self>().then(|| unsafe {
-                        vertices.$name.assume_init_mut()
-                    })
-                    */
+                fn from_mut_as_mut<'a>(vertices: &'a VerticesMut) -> Result<RefMut<'a, AttributeBuffer<Self>>, AttributeError> {
+                    if vertices.is_enabled::<Self>() {
+                        let borrowed = vertices.$name.try_borrow_mut();
+                        borrowed.map(|borrowed| {
+                            RefMut::map(borrowed, |x| unsafe { x.assume_init_mut() }) 
+                        }).map_err(AttributeError::BorrowMutError)
+                    } else {
+                        Err(AttributeError::MissingAttribute)
+                    }
                 }
 
-                fn from_mut_as_ref<'a>(vertices: &VerticesMut<'a>) -> Option<Ref<'a, AttributeBuffer<Self>>> {
-                    None
-                    /*
-                    vertices.is_enabled::<Self>().then(|| unsafe {
-                        vertices.$name.assume_init_ref()
-                    })
-                    */
+                fn from_mut_as_ref<'a>(vertices: &'a VerticesMut) -> Result<Ref<'a, AttributeBuffer<Self>>, AttributeError> {
+                    if vertices.is_enabled::<Self>() {
+                        let borrowed = vertices.$name.try_borrow();
+                        borrowed.map(|borrowed| {
+                            Ref::map(borrowed, |x| unsafe { x.assume_init_ref() }) 
+                        }).map_err(AttributeError::BorrowError)
+                    } else {
+                        Err(AttributeError::MissingAttribute)
+                    }
                 }
 
                 fn insert(vertices: &mut VerticesMut, buffer: AttributeBuffer<Self>) {
-                    if vertices.is_enabled::<Self>() {
-                        let mut old = std::mem::replace(vertices.$name, std::mem::MaybeUninit::new(buffer));
+                    let is_enabled = vertices.is_enabled::<Self>(); 
+                    let borrowed = vertices.$name.get_mut();
+                    if is_enabled {
+                        let mut old = std::mem::replace(*borrowed, std::mem::MaybeUninit::new(buffer));
                         unsafe { old.assume_init_drop() }
                     } else {
-                        *vertices.$name = std::mem::MaybeUninit::new(buffer);
+                        **borrowed = std::mem::MaybeUninit::new(buffer);
                     }
-
                     vertices.enabled.insert(Self::ATTRIBUTE);
                 }
 
-                fn remove<'a>(vertices: &mut VerticesMut<'a>) -> Option<AttributeBuffer<Self>> {
+                fn remove<'a>(vertices: &mut VerticesMut<'a>) -> Result<AttributeBuffer<Self>, AttributeError> {
                     vertices.enabled.remove(Self::ATTRIBUTE);
                     vertices.is_enabled::<Self>().then(|| {
-                        std::mem::replace(vertices.$name, std::mem::MaybeUninit::uninit())
-                    }).map(|x| unsafe { x.assume_init() })
+                        let borrowed = vertices.$name.get_mut();
+                        std::mem::replace(*borrowed, std::mem::MaybeUninit::uninit())
+                    }).map(|x| unsafe { x.assume_init() }).ok_or(AttributeError::MissingAttribute)
                 }
             }
         }

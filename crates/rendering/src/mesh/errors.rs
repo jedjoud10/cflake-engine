@@ -1,3 +1,5 @@
+use std::cell::{BorrowMutError, BorrowError};
+
 use graphics::{BufferInitializationError, BufferNotMappableError};
 use obj::ObjError;
 use thiserror::Error;
@@ -12,15 +14,15 @@ pub enum MeshImportError {
 }
 
 #[derive(Debug, Error)]
-pub enum MeshAttributeError {
-    #[error("The given mip level was already mutably borrowed")]
-    BorrowedMutably,
+pub enum AttributeError {
+    #[error("{0}")]
+    BorrowError(BorrowError),
 
-    #[error("The given mip level was already immutably borrowed")]
-    BorrowedImmutably,
+    #[error("{0}")]
+    BorrowMutError(BorrowMutError),
 
-    #[error("The given mip level ({0}) is out of the mip levels within the texture ({1})")]
-    OutOfRange(u8, u8)
+    #[error("The given attribute does not exist on the mesh")]
+    MissingAttribute,
 }
 
 #[derive(Error, Debug)]
@@ -41,6 +43,6 @@ pub enum MeshAabbComputeError {
     )]
     NotHostMapped(BufferNotMappableError),
 
-    #[error("The position attribute buffer does not exist. Cannot create the AABB")]
-    MissingPositionAttributeBuffer,
+    #[error("{0}")]
+    AttributeBuffer(AttributeError),
 }
