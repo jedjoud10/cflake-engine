@@ -51,6 +51,8 @@ fn init(world: &mut World) {
     persistent!(loader, "engine/shaders/noises/noise3D.glsl");
     persistent!(loader, "engine/shaders/noises/noise3Dgrad.glsl");
     persistent!(loader, "engine/shaders/noises/noise4D.glsl");
+    persistent!(loader, "engine/shaders/noises/fbm.glsl");
+    persistent!(loader, "engine/shaders/noises/gnoise.glsl");
 
     // Load the default terrain shaders
     persistent!(loader, "engine/shaders/terrain/voxels.comp");
