@@ -15,3 +15,4 @@ rendering = { path = "../rendering" }
 assets = { path = "../assets" }
 vek = { workspace = true }
 log = { workspace = true }
+ahash = { workspace = true } 

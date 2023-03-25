@@ -15,7 +15,7 @@ use utils::{Handle, Storage};
 
 // A basic forward rendering material that will read from a diffuse map and normal map
 // This does not implement the PBR workflow, and it's only used for simplicity at first
-pub struct Basic {
+pub struct BasicMaterial {
     // Textures used by this basic material
     pub albedo_map: Option<Handle<AlbedoMap>>,
     pub normal_map: Option<Handle<NormalMap>>,
@@ -25,7 +25,7 @@ pub struct Basic {
     pub tint: vek::Rgb<f32>,
 }
 
-impl Material for Basic {
+impl Material for BasicMaterial {
     type Resources<'w> = (
         world::Read<'w, Storage<AlbedoMap>>,
         world::Read<'w, Storage<NormalMap>>,

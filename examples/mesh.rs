@@ -13,16 +13,27 @@ fn main() {
 
 // Executed at the start
 fn init(world: &mut World) {
+    let assets = world.get::<Assets>().unwrap();
+    let graphics = world.get::<Graphics>().unwrap();
+
+    let terrain = ProceduralTerrain::new(&graphics, &assets, 64);
+    
+    // TODO: Figure out a way to remove the &mut restriction fwhen inserting into the world
+    drop(assets);
+    drop(graphics);
+    world.insert(terrain);
+
+
     // Fetch the required resources from the world
     let mut assets = world.get_mut::<Assets>().unwrap();
+    let graphics = world.get::<Graphics>().unwrap();
     let mut threadpool = world.get_mut::<ThreadPool>().unwrap();
     let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
     let mut pbrs =
-        world.get_mut::<Storage<PhysicallyBased>>().unwrap();
+        world.get_mut::<Storage<PhysicallyBasedMaterial>>().unwrap();
     let mut interface = world.get_mut::<Interface>().unwrap();
-    let mut skies = world.get_mut::<Storage<Sky>>().unwrap();
+    let mut skies = world.get_mut::<Storage<SkyMaterial>>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
-    let graphics = world.get::<Graphics>().unwrap();
     let mut pipelines = world.get_mut::<Pipelines>().unwrap();
 
     // Make the cursor invisible and locked
@@ -33,6 +44,9 @@ fn init(world: &mut World) {
         .unwrap();
     window.raw().set_cursor_visible(false);
     interface.enabled = false;
+
+    // Create a terrain generator (frfr)
+    
 
     // Import the diffuse map, normal map, mask map
     asset!(&mut assets, "assets/user/textures/diffuse.jpg");
@@ -57,7 +71,7 @@ fn init(world: &mut World) {
 
     // Get the material id (also registers the material pipeline)
     let id = pipelines
-        .register::<PhysicallyBased>(&graphics, &mut assets)
+        .register::<PhysicallyBasedMaterial>(&graphics, &mut assets)
         .unwrap();
 
     // Load a cube mesh
@@ -99,7 +113,7 @@ fn init(world: &mut World) {
     */
 
     // Create a new material instance
-    let material = pbrs.insert(PhysicallyBased {
+    let material = pbrs.insert(PhysicallyBasedMaterial {
         albedo_map: None,
         normal_map: None,
         mask_map: None,
@@ -122,7 +136,7 @@ fn init(world: &mut World) {
         let position =
             Position::at_xyz((x / 5) as f32, 0.25, (x % 5) as f32);
 
-        let material = pbrs.insert(PhysicallyBased {
+        let material = pbrs.insert(PhysicallyBasedMaterial {
             albedo_map: None,
             normal_map: None,
             mask_map: None,
@@ -150,10 +164,10 @@ fn init(world: &mut World) {
 
     // Get the material id (also registers the material pipeline)
     let id =
-        pipelines.register::<Sky>(&graphics, &mut assets).unwrap();
+        pipelines.register::<SkyMaterial>(&graphics, &mut assets).unwrap();
 
     // Create a new material instance
-    let material = skies.insert(Sky {});
+    let material = skies.insert(SkyMaterial {});
 
     // Load the renderable mesh
     let mesh = assets

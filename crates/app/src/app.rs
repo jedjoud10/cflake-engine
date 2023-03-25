@@ -420,7 +420,8 @@ impl App {
         self.regsys(rendering::systems::lights::system);
 
         // Terrain systems
-        self.regsys(terrain::system);
+        self.regsys(terrain::systems::manager);
+        self.regsys(terrain::systems::generation);
 
         // Gui system + stats update event
         self.regsys(gui::common);

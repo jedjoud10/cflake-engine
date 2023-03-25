@@ -1,57 +1,8 @@
-use assets::Assets;
-use ecs::Scene;
-use graphics::{ComputePass, Graphics, DrawIndexedIndirectBuffer, DrawIndexedIndirect, Texture, GpuPod};
-use rendering::{Mesh, Pipelines, Surface, Basic, Renderer};
-use utils::{Storage, Time};
 use world::{System, World};
 
-use crate::{VoxelGenerator, MeshGenerator, Terrain};
-
-// Called at the start of the app to add the resources
-fn init(world: &mut World) {
-    world.insert::<Storage<Terrain>>(Default::default());
-    let graphics = world.get::<Graphics>().unwrap();
-    let assets = world.get::<Assets>().unwrap();
-    let mut pipelines = world.get_mut::<Pipelines>().unwrap();
-    let mut indirect = world.get_mut::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
-    let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
-    let mut materials = world.get_mut::<Storage<Terrain>>().unwrap();
-    let mut scene = world.get_mut::<Scene>().unwrap();
-
-    // Global chunk resolution
-    let size = 64;
-
-    // Create the compute generators
-    let voxel = VoxelGenerator::new(&graphics, &assets, size);
-    let mesh = MeshGenerator::new(&graphics, &assets, &mut indirect, &mut meshes, size);
-
-    // Create a basic terrain material
-    let id = pipelines.register::<Terrain>(&graphics, &assets).unwrap();
-    let material = materials.insert(Terrain {
-        bumpiness: 1.0,
-        roughness: 0.9,
-        metallic: 0.0,
-        ambient_occlusion: 0.0,
-    });
-
-    // Add the debug mesh into the world
-    let surface = Surface::indirect(mesh.mesh.clone(), material, mesh.indirect.clone(), id);
-    scene.insert((surface, Renderer::default()));
-
-    // Add the resources to the world
-    drop(graphics);
-    drop(assets);
-    drop(indirect);
-    drop(meshes);
-    drop(materials);
-    drop(scene);
-    drop(pipelines);
-    world.insert(voxel);
-    world.insert(mesh);
-}
-
-// Called each frame before rendering to generate the required voxel data and mesh data for each chunk
-fn update(world: &mut World) {
+// Look in the world for any chunks that need their mesh generated and generate it
+fn update(world: &mut World) {  
+    /*
     let graphics = world.get::<Graphics>().unwrap();
     let time = world.get::<Time>().unwrap();
     let mut _voxel_generator = world.get_mut::<VoxelGenerator>().unwrap();
@@ -121,13 +72,10 @@ fn update(world: &mut World) {
         set.set_storage_buffer("indirect", indirect).unwrap();
     });
 
-    active.dispatch(vek::Vec3::broadcast(mesh_generator.dispatch));    
+    active.dispatch(vek::Vec3::broadcast(mesh_generator.dispatch));  
+    */ 
 }
 
-// Responsible for terrain generation and rendering
-pub fn system(system: &mut System) {
-    system.insert_init(init);
-    system
-        .insert_update(update)
-        .before(rendering::systems::rendering::system);
+// Generates the voxels and appropriate mesh for each of the visible chunks 
+pub fn generation(system: &mut System) {
 }

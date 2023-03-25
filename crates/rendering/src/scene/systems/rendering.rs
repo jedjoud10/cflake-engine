@@ -1,7 +1,7 @@
 use crate::{
-    AlbedoMap, Basic, DefaultMaterialResources, DirectionalLight,
-    ForwardRenderer, MaskMap, Mesh, NormalMap, PhysicallyBased,
-    Pipelines, Renderer, SceneUniform, ShadowMapping, Sky,
+    AlbedoMap, BasicMaterial, DefaultMaterialResources, DirectionalLight,
+    ForwardRenderer, MaskMap, Mesh, NormalMap, PhysicallyBasedMaterial,
+    Pipelines, Renderer, SceneUniform, ShadowMapping, SkyMaterial,
     WindowUniform, Camera,
 };
 use assets::Assets;
@@ -34,9 +34,9 @@ fn init(world: &mut World) {
 
     // Pre-initialize the pipeline with the material types
     let mut pipelines = Pipelines::new();
-    pipelines.register::<Basic>(&graphics, &assets).unwrap();
-    pipelines.register::<Sky>(&graphics, &assets).unwrap();
-    pipelines.register::<PhysicallyBased>(&graphics, &assets).unwrap();
+    pipelines.register::<BasicMaterial>(&graphics, &assets).unwrap();
+    pipelines.register::<SkyMaterial>(&graphics, &assets).unwrap();
+    pipelines.register::<PhysicallyBasedMaterial>(&graphics, &assets).unwrap();
 
     // Create a nice shadow map
     let shadowmap = ShadowMapping::new(
@@ -61,9 +61,9 @@ fn init(world: &mut World) {
     world.insert(Storage::<Mesh>::default());
 
     // Add the storages that contain the materials and their resources
-    world.insert(Storage::<Basic>::default());
-    world.insert(Storage::<Sky>::default());
-    world.insert(Storage::<PhysicallyBased>::default());
+    world.insert(Storage::<BasicMaterial>::default());
+    world.insert(Storage::<SkyMaterial>::default());
+    world.insert(Storage::<PhysicallyBasedMaterial>::default());
     world.insert(Storage::<DrawIndexedIndirectBuffer>::default());
     world.insert(albedo_maps);
     world.insert(normal_maps);

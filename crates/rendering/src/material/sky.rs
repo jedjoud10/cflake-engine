@@ -11,9 +11,9 @@ use graphics::{
 use utils::{Handle, Storage};
 
 // A very simple sky material which uses a procedural sky system
-pub struct Sky {}
+pub struct SkyMaterial {}
 
-impl Material for Sky {
+impl Material for SkyMaterial {
     type Resources<'w> = world::Read<'w, Storage<AlbedoMap>>;
 
     // Load the respective Sky shader modules and compile them

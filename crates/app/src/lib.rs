@@ -11,6 +11,7 @@ pub use math;
 pub use networking;
 pub use utils;
 pub use world;
+pub use terrain;
 
 // Gfx related
 pub use graphics;
@@ -26,6 +27,7 @@ pub mod prelude {
     pub use crate::networking::*;
     pub use crate::utils::*;
     pub use crate::world::*;
+    pub use crate::terrain::*;
 
     // Re-exports
     pub use log;

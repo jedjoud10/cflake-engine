@@ -1,8 +1,8 @@
 mod components;
 mod resources;
-mod system;
+pub mod systems;
 mod material;
 pub use material::*;
 pub use components::*;
 pub use resources::*;
-pub use system::*;
+pub use systems::*;

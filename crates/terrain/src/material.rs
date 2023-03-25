@@ -13,9 +13,8 @@ use graphics::{
 };
 use utils::{Handle, Storage};
 
-// This is a simple terrain shader that I will use personally for debugging
-// I will switch this to a proper terrain system later on (trust)
-pub struct Terrain {
+// Terrain shader that contains physically based lighting, but suited for terrain rendering
+pub struct TerrainMaterial {
     // PBR Parameters
     pub bumpiness: f32,
     pub roughness: f32,
@@ -23,7 +22,7 @@ pub struct Terrain {
     pub ambient_occlusion: f32,
 }
 
-impl Material for Terrain {
+impl Material for TerrainMaterial {
     type Resources<'w> = world::Read<'w, ShadowMapping>;
 
     // Load the terrain material shaders and compile them
@@ -66,6 +65,7 @@ impl Material for Terrain {
         Shader::new(vert, frag, compiler).unwrap()
     }
 
+    // Terrain only needs positions and normals
     fn attributes() -> rendering::MeshAttributes {
         rendering::MeshAttributes::POSITIONS | rendering::MeshAttributes::NORMALS
     }
