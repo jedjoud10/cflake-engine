@@ -33,7 +33,7 @@ fn update(world: &mut World) {
         chunk.state = ChunkState::Generated;
 
         //chunk.state = ChunkState::Generated;
-        log::warn!("generate for chunk {}", chunk.coords);
+        log::debug!("Generate voxels and mesh for chunk {}", chunk.coords);
 
         terrain.counters.write(&[0, 0], 0).unwrap();
 

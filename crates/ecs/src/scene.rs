@@ -127,7 +127,7 @@ impl Scene {
     }
 
     // Fetch all the removed components of a specific type immutably
-    pub fn removed<T: Component + Default>(&self) -> &[T] {
+    pub fn removed<T: Component>(&self) -> &[T] {
         self.removed
             .get(&mask::<T>())
             .map(|untyped| {
@@ -307,6 +307,11 @@ fn reset_states(world: &mut World) {
         for (_, column) in archetype.table_mut().iter_mut() {
             column.states_mut().reset();
         }
+    }
+
+    // Get rid of the removed components after one frame
+    for (_, vec) in scene.removed.iter_mut() {
+        vec.clear();
     }
 }
 

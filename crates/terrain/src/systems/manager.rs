@@ -95,12 +95,11 @@ fn update(world: &mut World) {
     let mut chunks = AHashSet::<ChunkCoords>::new();
 
     // Check if it moved since last frame
-    if added {
-        const RENDER_DISTANCE: i32 = 2;
-
-        for x in -RENDER_DISTANCE..RENDER_DISTANCE {
-            for y in -RENDER_DISTANCE..RENDER_DISTANCE {
-                for z in -RENDER_DISTANCE..RENDER_DISTANCE {
+    if old != new || added {
+        let distance = terrain.chunk_render_distance as i32;
+        for x in -distance..distance {
+            for y in -distance..distance {
+                for z in -distance..distance {
                     let chunk = vek::Vec3::new(x, y, z);
                     let view = terrain.viewer.unwrap().1;
                     chunks.insert(chunk + view);
@@ -115,11 +114,31 @@ fn update(world: &mut World) {
             .cloned()
             .collect::<Vec<_>>();
         for coords in removed {
-            log::debug!("remove chunk at {coords}");
+            log::debug!("Remove terrain chunk with coords {coords}");
             let entity = terrain.entities.remove(&coords).unwrap();
             if scene.contains(entity) {
                 scene.remove(entity);
             }
+        }
+
+        // Get the removed surfaces and add the mesh and indirect buffer handles back to the pool
+        for surface in scene.removed::<Surface<TerrainMaterial>>() {
+            let (_, free) = terrain
+                .indirect_buffers
+                .iter_mut()
+                .find(|(handle, _)| {
+                    *handle
+                        == surface.indirect.as_ref().cloned().unwrap()
+                })
+                .unwrap();
+            *free = true;
+
+            let (_, free) = terrain
+                .meshes
+                .iter_mut()
+                .find(|(handle, _)| *handle == surface.mesh)
+                .unwrap();
+            *free = true;
         }
 
         // Detect the chunks that we must generate and add them
@@ -129,10 +148,11 @@ fn update(world: &mut World) {
             .collect::<Vec<_>>();
         let entities =
             scene.extend_from_iter(added.iter().map(|coords| {
-                log::debug!("add chunk at {coords}");
+                log::debug!("Add terrain chunk with coords {coords}");
                 create_chunk_components(&mut terrain, *coords)
             }));
 
+        // Add the new chunks into the chunk entities of the terrain
         for (coords, entity) in added.iter().zip(entities.iter()) {
             terrain.entities.insert(*coords, *entity);
         }

@@ -48,6 +48,7 @@ pub struct Terrain {
     pub(crate) meshes: Vec<(Handle<Mesh>, bool)>,
     pub(crate) indirect_buffers:
         Vec<(Handle<DrawIndexedIndirectBuffer>, bool)>,
+    pub(crate) chunk_render_distance: u32,
 
     // Location of the chunk viewer
     pub(crate) viewer: Option<(Entity, ChunkCoords)>,
@@ -117,6 +118,7 @@ impl Terrain {
             viewer: None,
             meshes,
             indirect_buffers,
+            chunk_render_distance,
         }
     }
 }
@@ -127,7 +129,28 @@ fn preallocate_indirect_buffers(
     indirect_buffers: &mut Storage<DrawIndexedIndirectBuffer>,
     render_distance: u32,
 ) -> Vec<(Handle<DrawIndexedIndirectBuffer>, bool)> {
-    todo!()
+    let count = (render_distance * 2 + 1).pow(3);
+
+    let mut vec = Vec::new();
+    for _ in 0..count {
+        let indirect = DrawIndexedIndirectBuffer::from_slice(
+            graphics,
+            &[DrawIndexedIndirect {
+                vertex_count: 0,
+                instance_count: 1,
+                base_index: 0,
+                vertex_offset: 0,
+                base_instance: 0,
+            }],
+            BufferMode::Dynamic,
+            BufferUsage::STORAGE | BufferUsage::WRITE,
+        )
+        .unwrap();
+
+        let handle = indirect_buffers.insert(indirect);
+        vec.push((handle, true));
+    }
+    vec
 }
 
 // Create the meshes that we will use for terrain generation before hand
@@ -137,7 +160,54 @@ fn preallocate_meshes(
     render_distance: u32,
     size: u32,
 ) -> Vec<(Handle<Mesh>, bool)> {
-    todo!()
+    let count = (render_distance * 2 + 1).pow(3);
+
+    let mut vec = Vec::new();
+
+    for _ in 0..count {
+        // Calculate the maximum number of vertices that we can store
+        let vertex_count = (size as usize).pow(3) / 3;
+        let triangle_count = (size as usize - 1).pow(3) * 1;
+
+        // Create the vertex buffer (make sure size can contain ALL possible vertices)
+        let vertices = VertexBuffer::<XYZW<f32>>::zeroed(
+            graphics,
+            vertex_count,
+            BufferMode::Dynamic,
+            BufferUsage::STORAGE,
+        )
+        .unwrap();
+
+        // Create the normal buffer (make sure size can contain ALL possible normals)
+        let normals = VertexBuffer::<XYZW<Normalized<i8>>>::zeroed(
+            graphics,
+            vertex_count,
+            BufferMode::Dynamic,
+            BufferUsage::STORAGE,
+        )
+        .unwrap();
+
+        // Create the triangle buffer (make sure size can contain ALL possible triangles)
+        let triangles = TriangleBuffer::<u32>::zeroed(
+            graphics,
+            triangle_count,
+            BufferMode::Dynamic,
+            BufferUsage::STORAGE,
+        )
+        .unwrap();
+
+        // Create a mesh that uses the buffers
+        let mesh = Mesh::from_buffers(
+            Some(vertices),
+            Some(normals),
+            None,
+            None,
+            triangles,
+        )
+        .unwrap();
+        vec.push((meshes.insert(mesh), true));
+    }
+    vec
 }
 
 // Create counters that will help us generate the vertices
