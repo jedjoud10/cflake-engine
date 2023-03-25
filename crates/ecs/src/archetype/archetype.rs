@@ -106,7 +106,14 @@ impl Archetype {
         for (entity, linking) in iter {
             // Remove the entities from the scene and from the archetype
             let index = linking.index;
-            self.entities.remove(index);
+            self.entities.swap_remove(index);
+
+            // Update the linkings of the entity that was pushed in it's place (swap_remove)
+            if index < (self.entities.len()) {
+                let linkings = &mut entities[self.entities[index]];
+                linkings.index = index;
+            }
+
             entities.remove(entity);
 
             // Remove the components and decompose them

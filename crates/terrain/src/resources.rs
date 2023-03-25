@@ -1,10 +1,10 @@
-use ahash::AHashSet;
+use ahash::{AHashSet, AHashMap};
 use assets::Assets;
 use ecs::Entity;
 use graphics::{
     Compiler, ComputeModule, ComputePass, ComputeShader, Graphics,
     Normalized, SamplerSettings, Texture, Texture3D, TextureMipMaps,
-    TextureMode, TextureUsage, R, RGBA, Buffer, TriangleBuffer, VertexBuffer, XYZ, XYZW, Vertex, BufferMode, BufferUsage, DrawIndexedIndirectBuffer, DrawIndexedIndirect, PushConstantLayout, ModuleVisibility, Texel,
+    TextureMode, TextureUsage, R, RGBA, Buffer, TriangleBuffer, VertexBuffer, XYZ, XYZW, Vertex, BufferMode, BufferUsage, DrawIndexedIndirectBuffer, DrawIndexedIndirect, PushConstantLayout, ModuleVisibility, Texel, GpuPod,
 };
 use rendering::{Mesh, Pipelines, MaterialId};
 use utils::{Handle, Storage};
@@ -36,6 +36,7 @@ pub struct Terrain {
 
     // Terrain generator will also be responsible for chunks
     pub(crate) chunks: AHashSet<ChunkCoords>,
+    pub(crate) entities: AHashMap<ChunkCoords, Entity>,
     pub(crate) size: u32,
     pub(crate) material: Handle<TerrainMaterial>,
     pub(crate) id: MaterialId<TerrainMaterial>,
@@ -76,6 +77,7 @@ impl Terrain {
             densities,
             compute_voxels,
             chunks: Default::default(),
+            entities: Default::default(),
             size,
             material: materials.insert(TerrainMaterial {
                 bumpiness: 0.1,
@@ -165,7 +167,11 @@ fn load_compute_voxels_shaders(assets: &Assets, graphics: &Graphics) -> ComputeS
         true,
     );
 
-    compiler.use_push_constant_layout(PushConstantLayout::single(4, ModuleVisibility::Compute).unwrap());
+    compiler.use_push_constant_layout(
+        PushConstantLayout::single(
+            <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size() * 2,
+            ModuleVisibility::Compute
+    ).unwrap());
 
     // Compile the compute shader
     let shader = ComputeShader::new(module, compiler).unwrap();

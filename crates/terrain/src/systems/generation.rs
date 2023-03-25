@@ -19,9 +19,10 @@ fn update(world: &mut World) {
     // Iterate over the chunks that we need to generate
     for (chunk, position, surface) in scene.query_mut::<(&mut Chunk, &Position, &Surface<TerrainMaterial>)>() {
         if let ChunkState::Generated = chunk.state {
-            return;
+            continue;
         }
         chunk.state = ChunkState::Generated;
+        log::warn!("generate for chunk {}", chunk.coords);
 
         terrain.counters.write(&[0, 0], 0).unwrap();
         
@@ -47,13 +48,15 @@ fn update(world: &mut World) {
         let mut active = pass.bind_shader(&terrain.compute_voxels);
 
         // Set voxel noise parameters
+        let factor = (terrain.size as f32) / (terrain.size as f32 - 2.0);
         active.set_push_constants(|x| {
-            let position = GpuPod::into_bytes(&**position);
+            let offset = position.with_w(0.0f32) * (1.0/factor);
+            let offset = GpuPod::into_bytes(&offset);
             let time = time.elapsed().as_secs_f32();
             let time = GpuPod::into_bytes(&time);
 
-            x.push(position, 0, graphics::ModuleVisibility::Compute).unwrap();
-            x.push(time, position.len() as u32, graphics::ModuleVisibility::Compute).unwrap();
+            x.push(offset, 0, graphics::ModuleVisibility::Compute).unwrap();
+            x.push(time, offset.len() as u32, graphics::ModuleVisibility::Compute).unwrap();
         }).unwrap();
 
         // One global bind group for voxel generation
@@ -89,6 +92,7 @@ fn update(world: &mut World) {
         });
 
         active.dispatch(vek::Vec3::broadcast(terrain.dispatch));  
+        return;
     }
 }
 

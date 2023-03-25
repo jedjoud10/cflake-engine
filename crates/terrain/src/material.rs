@@ -9,7 +9,7 @@ use assets::Assets;
 use graphics::{
     BindGroup, Compiler, FragmentModule, GpuPod, Graphics,
     ModuleVisibility, PushConstantLayout, PushConstants, Shader,
-    VertexModule,
+    VertexModule, WindingOrder, PrimitiveConfig,
 };
 use utils::{Handle, Storage};
 

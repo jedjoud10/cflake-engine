@@ -22,7 +22,7 @@ fn init(world: &mut World) {
     let terrain = Terrain::new(
         &graphics,
         &assets,
-        128,
+        64,
         true,
         &mut materials,
         &mut pipelines
@@ -146,7 +146,7 @@ fn init(world: &mut World) {
     scene.extend_from_iter((0..25).into_iter().map(|x| {
         let renderer = Renderer::default();
         let position =
-            Position::at_xyz((x / 5) as f32, 0.25, (x % 5) as f32);
+            Position::at_xyz((x / 5) as f32 * 4.0, 0.25, (x % 5) as f32 * 4.0);
 
         let material = pbrs.insert(PhysicallyBasedMaterial {
             albedo_map: None,

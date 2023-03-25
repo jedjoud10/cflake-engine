@@ -16,35 +16,31 @@ fn update(world: &mut World) {
     let f3 = modified::<Scale>();
     let f4 = added::<Renderer>();
     let filter = f1 | f2 | f3 | f4;
-    let query = scene.query_mut_with::<(
+    let query = scene.query_mut::<(
         &mut Renderer,
         Option<&ecs::Position>,
         Option<&ecs::Rotation>,
         Option<&ecs::Scale>,
-    )>(filter);
+    )>();
 
     // Update the matrices of objects that might contain location, rotation, or scale
-    // TODO: rotation and scale (Option<>) keep returning true even though they are None (multithreaded context)
-    for (renderer, position, rotation, scale) in query {
-        let mut matrix = vek::Mat4::<f32>::identity();
-        matrix = position.map_or(matrix, |l| matrix * vek::Mat4::from(l));
-        matrix *= rotation.map_or(matrix, |r| matrix * vek::Mat4::from(r));
-        matrix *= scale.map_or(matrix, |s| matrix * vek::Mat4::from(s));
-        renderer.matrix = matrix;
-    }
-
-    /*
     query.for_each(
         &mut threadpool, 
-        | (renderer, location, rotation, scale)| {
+        | (renderer, position, rotation, scale)| {
             let mut matrix = vek::Mat4::<f32>::identity();
-            matrix = location.map_or(matrix, |l| matrix * vek::Mat4::from(l));
-            //matrix *= rotation.map_or(matrix, |r| matrix * vek::Mat4::from(r));
-            //matrix *= scale.map_or(matrix, |s| matrix * vek::Mat4::from(s));
-            dbg!(matrix);
+            if let Some(position) = position {
+                matrix *= vek::Mat4::from(position);
+            }
+            
+            if let Some(rotation) = rotation {
+                matrix *= vek::Mat4::from(rotation);
+            }
+
+            if let Some(scale) = scale {
+                matrix *= vek::Mat4::from(scale);
+            }
             renderer.matrix = matrix;
     }, 256);
-    */
 }
 
 // The matrix system will be responsible for updating the matrices of the renderer

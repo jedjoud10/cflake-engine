@@ -1,3 +1,4 @@
+use ahash::AHashSet;
 use ecs::{Scene, Position, Entity, Rotation, Scale};
 use graphics::{Graphics, XYZW, VertexBuffer, BufferMode, BufferUsage, Normalized, TriangleBuffer, DrawIndexedIndirectBuffer, DrawIndexedIndirect};
 use rendering::{Mesh, Surface, Renderer};
@@ -10,15 +11,14 @@ fn init(world: &mut World) {
     world.insert(Storage::<TerrainMaterial>::default());
 }
 
-// Creates a chunk entity and inserts it in the world
-fn spawn_chunk(
+// Creates the appropriate components for creating a new chunk entity
+fn create_chunk_components(
     terrain: &Terrain,
-    scene: &mut Scene,
     meshes: &mut Storage<Mesh>,
     indirects: &mut Storage<DrawIndexedIndirectBuffer>,
     graphics: &Graphics,
     coords: ChunkCoords,
-) -> Entity {
+) -> (Position, Renderer, Surface<TerrainMaterial>, Chunk) {
     // Calculate the maximum number of vertices that we can store
     let vertex_count = (terrain.size as usize).pow(3);
     let triangle_count = (terrain.size as usize - 1).pow(3) * 4;
@@ -85,9 +85,10 @@ fn spawn_chunk(
         coords,
     };
 
-    // Add the terrain chunk entity
-    scene.insert((position, renderer, surface, chunk))    
+    // Return the components of the new chunk
+    (position, renderer, surface, chunk)
 }
+
 
 // Dynamically generate the chunks based on camera position
 fn update(world: &mut World) {  
@@ -109,27 +110,57 @@ fn update(world: &mut World) {
     };
     
     // Set the main viewer location and fetches the oldvalue
-    let new = (**position / vek::Vec3::broadcast(terrain.size as f32)).as_::<i32>();
+    let mut added = false;
+    let new = (**position / vek::Vec3::broadcast(terrain.size as f32)).round().as_::<i32>();
     let old = if let Some((_, old)) = &mut terrain.viewer {
         std::mem::replace(old, new)
     } else {
         terrain.viewer = Some((*entity, new));
+        added = true;
         new
     };
     
-    // Check if it moved since last frame
-    if new != old {
-        
-    }
+    // Keep a hashset of all the chunks around the viewer
+    let mut chunks = AHashSet::<ChunkCoords>::new();
 
-    if time.frame_count() == 10 {
-        for x in 0..2 {
-            let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
-            let mut indirects = world.get_mut::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
-            let graphics = world.get::<Graphics>().unwrap();
-            log::debug!("manager: chunk viewer moved with delta of {}", new - old);
-            spawn_chunk(&mut terrain, &mut scene, &mut meshes, &mut indirects, &graphics, vek::Vec3::new(x, 0, 0));
+    // Check if it moved since last frame
+    if new != old || added {
+        const RENDER_DISTANCE: i32 = 2;
+
+        for x in -RENDER_DISTANCE..RENDER_DISTANCE {
+            for y in -RENDER_DISTANCE..RENDER_DISTANCE {
+                for z in -RENDER_DISTANCE..RENDER_DISTANCE {
+                    let chunk = vek::Vec3::new(x, y, z);
+                    let view = terrain.viewer.unwrap().1;
+                    chunks.insert(chunk + view);
+                }
+            }    
         }
+
+        let removed = terrain.chunks.difference(&chunks).cloned().collect::<Vec<_>>();
+
+        for coords in removed {
+            log::debug!("remove chunk at {coords}");
+            let entity = terrain.entities.remove(&coords).unwrap();
+            if scene.contains(entity) {
+                scene.remove(entity);
+            }
+        }
+
+        let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
+        let mut indirects = world.get_mut::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
+        let graphics = world.get::<Graphics>().unwrap();
+        let added = chunks.difference(&terrain.chunks).cloned().collect::<Vec<_>>();
+        let entities = scene.extend_from_iter(added.iter().map(|coords| {
+            log::debug!("add chunk at {coords}");
+            create_chunk_components(&mut terrain, &mut meshes, &mut indirects, &graphics, *coords)
+        }));
+
+        for (coords, entity) in added.iter().zip(entities.iter()) {
+            terrain.entities.insert(*coords, *entity);
+        }
+
+        terrain.chunks = chunks;
     }
 }
 

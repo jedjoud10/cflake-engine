@@ -138,6 +138,15 @@ fn states() {
         contains::<Name>() & contains::<Health>(),
     );
     assert_eq!(query.len(), 128);
+
+    cleanup(&mut manager);
+    manager.extend_from_iter(
+        std::iter::repeat((Name("Test 2"), Health(100))).take(100),
+    );
+    let query = manager.query_with::<&Entity>(
+        contains::<Name>() & contains::<Health>(),
+    );
+    assert_eq!(query.len(), 228);
 }
 
 #[test]

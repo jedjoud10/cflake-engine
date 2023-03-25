@@ -74,8 +74,10 @@ impl StateColumn {
         let current = self.0.len();
         let new = ((self.1 + additional) as f32 / BITS as f32).ceil()
             as usize;
-        assert!(new >= current);
-        self.0.reserve(new - current);
+
+        if new >= current {
+            self.0.reserve(new - current);
+        }
     }
 
     // Shrink the memory allocation so it takes less space

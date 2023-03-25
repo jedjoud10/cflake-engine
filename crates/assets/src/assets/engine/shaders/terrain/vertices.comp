@@ -120,7 +120,11 @@ void main() {
     // If we found at least one intersecting edge, add the vertex
     if (count > 0) {
         uint index = atomicAdd(counters.vertices, 1);
-        vertices.data[index] = vec4(smoothing ? (vertex / count) : vec3(gl_GlobalInvocationID), 0) + vec4(gl_GlobalInvocationID, 0);
+
+        // Meshes are always n-2 size, so each voxel has a size of 1 / n-2
+        vec3 final = (smoothing ? (vertex / count) : vec3(gl_GlobalInvocationID)) + vec3(gl_GlobalInvocationID);
+        float factor = (float(size)) / (float(size) - 2);
+        vertices.data[index] = vec4(final * factor, 0);
         
         // We have to do this since we store the normal data as 4 signed normalized bytes, and glsl doesn't have a byte vector 4
         //ivec3 ranged = normal * 127;

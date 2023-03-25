@@ -22,12 +22,3 @@ impl EntityLinkings {
         self.index
     }
 }
-
-impl Default for EntityLinkings {
-    fn default() -> Self {
-        Self {
-            mask: Mask::zero(),
-            index: Default::default(),
-        }
-    }
-}

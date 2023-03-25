@@ -450,7 +450,6 @@ fn include(
     snippets: &Snippets,
     included: &Included,
 ) -> Result<shaderc::ResolvedInclude, String> {
-    log::error!("{target}, {_type:?}");
     // If we're too deep, assume that the user caused a cyclic reference, and return an error
     if depth > 40 {
         return Err(format!("Include cyclic reference detected"));
