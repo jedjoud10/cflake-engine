@@ -18,7 +18,15 @@ fn init(world: &mut World) {
     let mut pipelines = world.get_mut::<Pipelines>().unwrap();
     let mut materials = world.get_mut::<Storage<TerrainMaterial>>().unwrap();
 
-    let terrain = Terrain::new(&graphics, &assets, 128, true, &mut materials, &mut pipelines);
+    // Create some procedural terrain
+    let terrain = Terrain::new(
+        &graphics,
+        &assets,
+        128,
+        true,
+        &mut materials,
+        &mut pipelines
+    );
     
     // TODO: Figure out a way to remove the &mut restriction fwhen inserting into the world
     drop(assets);

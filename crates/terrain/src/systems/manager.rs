@@ -1,4 +1,4 @@
-use ecs::{Scene, Position, Entity};
+use ecs::{Scene, Position, Entity, Rotation, Scale};
 use graphics::{Graphics, XYZW, VertexBuffer, BufferMode, BufferUsage, Normalized, TriangleBuffer, DrawIndexedIndirectBuffer, DrawIndexedIndirect};
 use rendering::{Mesh, Surface, Renderer};
 use utils::{Storage, Time};
@@ -20,7 +20,7 @@ fn spawn_chunk(
     coords: ChunkCoords,
 ) -> Entity {
     // Calculate the maximum number of vertices that we can store
-    let vertex_count = (terrain.size as usize - 50).pow(3);
+    let vertex_count = (terrain.size as usize).pow(3);
     let triangle_count = (terrain.size as usize - 1).pow(3) * 4;
 
     // Create the vertex buffer (make sure size can contain ALL possible vertices)
@@ -77,7 +77,7 @@ fn spawn_chunk(
     // Create the surface for rendering
     let surface = Surface::indirect(mesh, terrain.material.clone(), indirect, terrain.id.clone());
     let renderer = Renderer::default();
-    let position = Position::from(coords.as_::<f32>() * (terrain.size as f32));
+    let position = Position::from(coords.as_::<f32>() * terrain.size as f32);
 
     // Create the chunk component
     let chunk = Chunk {
@@ -119,14 +119,17 @@ fn update(world: &mut World) {
     
     // Check if it moved since last frame
     if new != old {
+        
     }
 
     if time.frame_count() == 10 {
-        let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
-        let mut indirects = world.get_mut::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
-        let graphics = world.get::<Graphics>().unwrap();
-        log::debug!("manager: chunk viewer moved with delta of {}", new - old);
-        spawn_chunk(&mut terrain, &mut scene, &mut meshes, &mut indirects, &graphics, vek::Vec3::zero());
+        for x in 0..2 {
+            let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
+            let mut indirects = world.get_mut::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
+            let graphics = world.get::<Graphics>().unwrap();
+            log::debug!("manager: chunk viewer moved with delta of {}", new - old);
+            spawn_chunk(&mut terrain, &mut scene, &mut meshes, &mut indirects, &graphics, vek::Vec3::new(x, 0, 0));
+        }
     }
 }
 

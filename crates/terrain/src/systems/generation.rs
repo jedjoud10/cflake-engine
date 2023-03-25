@@ -21,6 +21,7 @@ fn update(world: &mut World) {
         if let ChunkState::Generated = chunk.state {
             return;
         }
+        chunk.state = ChunkState::Generated;
 
         terrain.counters.write(&[0, 0], 0).unwrap();
         
@@ -47,7 +48,12 @@ fn update(world: &mut World) {
 
         // Set voxel noise parameters
         active.set_push_constants(|x| {
-            x.push(GpuPod::into_bytes(&time.elapsed().as_secs_f32()), 0, graphics::ModuleVisibility::Compute).unwrap()
+            let position = GpuPod::into_bytes(&**position);
+            let time = time.elapsed().as_secs_f32();
+            let time = GpuPod::into_bytes(&time);
+
+            x.push(position, 0, graphics::ModuleVisibility::Compute).unwrap();
+            x.push(time, position.len() as u32, graphics::ModuleVisibility::Compute).unwrap();
         }).unwrap();
 
         // One global bind group for voxel generation
@@ -84,17 +90,6 @@ fn update(world: &mut World) {
 
         active.dispatch(vek::Vec3::broadcast(terrain.dispatch));  
     }
-
-    /*
-    // Get the mesh that we will write to
-    let mesh = meshes.get_mut(&mesh_generator.mesh);
-    let (mut _triangles, mut _vertices) = mesh.both_mut();
-    let mut vertices = _vertices.attribute_mut::<rendering::attributes::Position>().unwrap();
-    let mut normals = _vertices.attribute_mut::<rendering::attributes::Normal>().unwrap();
-    let triangles = _triangles.buffer_mut();
-
-    
-    */ 
 }
 
 // Generates the voxels and appropriate mesh for each of the visible chunks 

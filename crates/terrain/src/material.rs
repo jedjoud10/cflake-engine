@@ -56,7 +56,7 @@ impl Material for TerrainMaterial {
         compiler.use_push_constant_layout(
             PushConstantLayout::split(
                 <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size(),
-                <vek::Rgba<f32> as GpuPod>::size() * 2,
+                <vek::Rgba<f32> as GpuPod>::size(),
             )
             .unwrap(),
         );

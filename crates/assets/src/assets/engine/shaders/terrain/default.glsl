@@ -6,6 +6,7 @@ layout(push_constant) uniform PushConstants {
 
 // Load up some noise functions
 #include <engine/shaders/noises/noise3D.glsl>
+#include <engine/shaders/noises/cellular3D.glsl>
 #include <engine/shaders/noises/fbm.glsl>
 
 // Main density function that will create the shape of the terrain
