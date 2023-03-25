@@ -82,7 +82,7 @@ pub struct TexelInfo {
 
 impl TexelInfo {
     // Get the byte size of this texel
-    fn size(&self) -> TexelSize {
+    pub fn size(&self) -> TexelSize {
         self.size
     }
 

@@ -25,11 +25,12 @@ fn update(world: &mut World) {
     for (chunk, position, surface) in scene.query_mut::<(
         &mut Chunk,
         &Position,
-        &Surface<TerrainMaterial>,
+        &mut Surface<TerrainMaterial>,
     )>() {
         if let ChunkState::Generated = chunk.state {
             continue;
         }
+        surface.visible = true;
         chunk.state = ChunkState::Generated;
 
         //chunk.state = ChunkState::Generated;

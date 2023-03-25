@@ -26,17 +26,17 @@ layout(push_constant) uniform PushConstants {
 
 void main() {
 	// Fetch the albedo color, normal map value, and mask values
-	vec3 albedo = vec3(1.0);
+	
     vec3 mask = vec3(1 / material.ambient_occlusion, material.roughness, material.metallic);
 
 	// Assume world space normals
 	//vec3 normal = normalize(m_normal);
 	vec3 normal = -normalize(cross(dFdy(m_position), dFdx(m_position)));
+	vec3 albedo = vec3(1, 1, 1);
 
 	// Compute PBR values
 	float roughness = clamp(mask.g, 0.02, 1.0);
-	float metallic = clamp(mask.b, 0.01, 1.0);
-	metallic = roughness;
+	float metallic = clamp(mask.b, 0.01, 1.0) * 0.0;
 	float visibility = clamp(mask.r, 0.0, 1.0);
 	vec3 f0 = mix(vec3(0.04), albedo, metallic);
 

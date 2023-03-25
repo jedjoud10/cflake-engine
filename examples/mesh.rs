@@ -27,8 +27,8 @@ fn init(world: &mut World) {
     let terrain = Terrain::new(
         &graphics,
         &assets,
-        32,
-        3,
+        64,
+        1,
         true,
         &mut meshes,
         &mut indirect,

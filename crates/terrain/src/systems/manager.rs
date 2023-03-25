@@ -37,12 +37,13 @@ fn create_chunk_components(
     *free = false;
 
     // Create the surface for rendering
-    let surface = Surface::indirect(
+    let mut surface = Surface::indirect(
         mesh.clone(),
         terrain.material.clone(),
         indirect.clone(),
         terrain.id.clone(),
     );
+    surface.visible = false;
     let renderer = Renderer::default();
     let position =
         Position::from(coords.as_::<f32>() * terrain.size as f32);
