@@ -14,7 +14,7 @@ layout(std430, set = 1, binding = 0) writeonly buffer Vertices {
 
 // Output normals
 layout(std430, set = 1, binding = 1) writeonly buffer Normals {
-    vec4 data[64*64*64];
+    uvec4 data[64*64*64];
 } normals;
 
 // Atomic counters
@@ -55,6 +55,19 @@ uvec3 edge_positions2[12] = {
     uvec3(1, 0, 0),
 };
 
+// Calculate normals for a specific coordinate using the density texture
+vec3 calculate_normal(uvec3 position) {
+    float density0 = imageLoad(densities, ivec3(position)).x;
+    float density1 = imageLoad(densities, ivec3(position) + ivec3(1, 0, 0)).x;
+    float density2 = imageLoad(densities, ivec3(position) + ivec3(0, 1, 0)).x;
+    float density3 = imageLoad(densities, ivec3(position) + ivec3(0, 0, 1)).x;
+    return vec3(
+        density0 - density1,
+        density0 - density2,
+        density0 - density3
+    );
+}
+
 // Takes two values and find where x lies on them (0 - 1 range)
 float unmix(float a, float b, float x)
 {
@@ -63,8 +76,11 @@ float unmix(float a, float b, float x)
 
 void main() {
     // Do an average sum to get vertex location 
-    vec3 sum = vec3(0);
+    vec3 vertex = vec3(0);
     uint count = 0;
+
+    // Do an average sum to get normals
+    vec3 normal = vec3(0);
     
     // Check each edge in the cell for intersections
     for (int edge = 0; edge < 12; edge++) {
@@ -81,9 +97,15 @@ void main() {
             float value = unmix(density1, density2, 0.0);
             
             // Calculate vertex along the edge
-            vec3 interpolated = mix(vec3(edge_positions1[edge]), vec3(edge_positions2[edge]), value);
+            vertex += mix(vec3(edge_positions1[edge]), vec3(edge_positions2[edge]), value);
 
-            sum += interpolated;
+            // Calculate the normal for the first and second corners
+            vec3 normal0 = calculate_normal(start);
+            vec3 normal1 = calculate_normal(end);
+
+            // Calculate normal along the edge
+            normal += mix(normal0, normal1, value);
+
             count += 1;
         }
     }
@@ -95,8 +117,14 @@ void main() {
     // If we found at least one intersecting edge, add the vertex
     if (count > 0) {
         uint index = atomicAdd(counters.vertices, 1);
-        vertices.data[index] = vec4(sum / count, 0) + vec4(gl_GlobalInvocationID, 0);
-        normals.data[index] = vec4(gl_GlobalInvocationID+1, 0.0);
+        vertices.data[index] = vec4(vertex / count, 0) + vec4(gl_GlobalInvocationID, 0);
+        
+        // We have to do this since we store the normal data as 4 signed normalized bytes, and glsl doesn't have a byte vector 4
+        //ivec3 ranged = normal * 127;
+        //uint compressed = uint(normal.y * 127);        
+        normals.data[index / 4][index % 4] = packSnorm4x8(vec4(normal, 0.0));
+
+
         imageStore(cached_indices, ivec3(gl_GlobalInvocationID+1), uvec4(index));
     }
 }

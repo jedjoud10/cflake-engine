@@ -6,5 +6,8 @@ layout(location = 0) in vec3 m_position;
 layout(location = 1) in vec3 m_normal;
 
 void main() {
-	frag = vec4(m_normal / 400.0, 0.0);
+	vec3 normal = normalize(-m_normal);
+	//vec3 normal = cross(dFdy(m_position), dFdx(m_position));
+	float value = clamp(dot(normalize(normal), vec3(0, 1, 0)), 0, 1);
+	frag = vec4(value);
 }
