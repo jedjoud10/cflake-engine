@@ -3,6 +3,8 @@ mod error;
 mod module;
 mod reflected;
 mod shader;
+mod constant;
+pub use constant::*;
 pub use compiler::*;
 pub use error::*;
 pub use module::*;

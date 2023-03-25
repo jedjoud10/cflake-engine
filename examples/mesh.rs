@@ -15,12 +15,16 @@ fn main() {
 fn init(world: &mut World) {
     let assets = world.get::<Assets>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
+    let mut pipelines = world.get_mut::<Pipelines>().unwrap();
+    let mut materials = world.get_mut::<Storage<TerrainMaterial>>().unwrap();
 
-    let terrain = ProceduralTerrain::new(&graphics, &assets, 64);
+    let terrain = Terrain::new(&graphics, &assets, 128, true, &mut materials, &mut pipelines);
     
     // TODO: Figure out a way to remove the &mut restriction fwhen inserting into the world
     drop(assets);
     drop(graphics);
+    drop(pipelines);
+    drop(materials);
     world.insert(terrain);
 
 
@@ -186,6 +190,7 @@ fn init(world: &mut World) {
         Rotation::default(),
         Velocity::default(),
         Camera::default(),
+        ChunkViewer::default(),
     ));
 
     // Create a directional light

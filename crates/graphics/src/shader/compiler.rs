@@ -4,7 +4,7 @@ use crate::{
     PushConstantLayout, ReflectedShader, Region,
     ShaderCompilationError, ShaderError, ShaderModule,
     ShaderReflectionError, Texel, TexelInfo, Texture, VertexModule,
-    ViewDimension,
+    ViewDimension, SpecConstant,
 };
 use ahash::{AHashMap, AHashSet};
 use assets::Assets;
@@ -31,6 +31,7 @@ pub(crate) type ResourceBindingTypes =
     AHashMap<String, BindResourceType>;
 pub(crate) type MaybePushConstantLayout = Option<PushConstantLayout>;
 pub(crate) type Included = Arc<Mutex<AHashSet<String>>>;
+pub(crate) type Constants = AHashMap<u32, spirq::ConstantValue>;
 
 // This is a compiler that will take GLSL code and create a WGPU module
 // This compiler also allows us to define constants and snippets before compilation
@@ -39,6 +40,7 @@ pub struct Compiler<'a> {
     pub(crate) assets: &'a Assets,
     pub(crate) graphics: &'a Graphics,
     pub(crate) snippets: Snippets,
+    pub(crate) constants: Constants,
     pub(crate) resource_types: ResourceBindingTypes,
     pub(crate) maybe_push_constant_layout: MaybePushConstantLayout,
     optimization: shaderc::OptimizationLevel,
@@ -51,10 +53,21 @@ impl<'a> Compiler<'a> {
             assets,
             graphics,
             snippets: Default::default(),
+            constants: Default::default(),
             resource_types: Default::default(),
             maybe_push_constant_layout: Default::default(),
             optimization: shaderc::OptimizationLevel::Zero,
         }
+    }
+
+    // Set the value of a specilization constant within the shader
+    // TODO: Find a library that will specialize the constants at runtime ffs
+    pub fn use_specialization_constant(
+        &mut self,
+        id: u32,
+        value: impl SpecConstant
+    ) {
+        todo!()
     }
 
     // Include a snippet directive that will replace #includes surrounded by ""
@@ -91,6 +104,7 @@ impl<'a> Compiler<'a> {
             &self.graphics,
             &self.assets,
             &self.snippets,
+            &self.constants,
             self.optimization,
             source,
             &name,
@@ -280,6 +294,7 @@ fn compile(
     graphics: &Graphics,
     assets: &Assets,
     snippets: &Snippets,
+    constants: &Constants,
     optimization: shaderc::OptimizationLevel,
     source: String,
     file: &str,
@@ -360,14 +375,16 @@ fn compile(
         log::warn!("ShaderC warning: {}", artifact.get_warning_messages());
     }
 
-    // Create a spirv_reflect shader module
-    let mut reflect = spirq::ReflectConfig::new()
+    // Setup basic config spirq option
+    let reflect = spirq::ReflectConfig::new()
         .spv(artifact.as_binary())
         .combine_img_samplers(false)
         .ref_all_rscs(true)
         .gen_unique_names(false)
-        .reflect().unwrap();
-    let reflect = reflect.pop().unwrap();
+        .reflect()
+        .unwrap()
+        .pop()
+        .unwrap();
 
     // Compile the Wgpu shader (raw spirv passthrough)
     let wgpu = unsafe { 
@@ -433,6 +450,7 @@ fn include(
     snippets: &Snippets,
     included: &Included,
 ) -> Result<shaderc::ResolvedInclude, String> {
+    log::error!("{target}, {_type:?}");
     // If we're too deep, assume that the user caused a cyclic reference, and return an error
     if depth > 40 {
         return Err(format!("Include cyclic reference detected"));
