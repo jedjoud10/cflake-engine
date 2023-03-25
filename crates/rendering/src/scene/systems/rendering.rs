@@ -40,9 +40,9 @@ fn init(world: &mut World) {
 
     // Create a nice shadow map
     let shadowmap = ShadowMapping::new(
-        20f32,
+        200f32,
         100f32,
-        1024,
+        1024*4,
         &graphics,
         &mut assets,
     );
@@ -191,7 +191,7 @@ fn render(world: &mut World) {
     if update {
         // Update the shadow map lightspace matrix
         let shadowmap = &mut *_shadowmap;
-        shadowmap.update(*directional_light_rotation, vek::Vec3::zero());
+        shadowmap.update(*directional_light_rotation, *camera_position);
 
         // Get the depth texture we will render to
         let depth = shadowmap.depth_tex.as_render_target().unwrap();

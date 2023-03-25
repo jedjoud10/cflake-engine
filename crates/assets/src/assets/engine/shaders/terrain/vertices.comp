@@ -95,7 +95,7 @@ void main() {
         if ((density1 > 0.0 ^^ density2 > 0.0)) {
             // Find the lerp factor for the iso-threshold value 
             float value = unmix(density1, density2, 0.0);
-            
+
             // Calculate vertex along the edge
             vertex += mix(vec3(edge_positions1[edge]), vec3(edge_positions2[edge]), value);
 
@@ -105,7 +105,6 @@ void main() {
 
             // Calculate normal along the edge
             normal += mix(normal0, normal1, value);
-
             count += 1;
         }
     }

@@ -15,6 +15,9 @@ layout(push_constant) uniform PushConstants {
 // Data to give to the fragment shader
 layout(location = 0) out vec3 m_position;
 layout(location = 1) out vec3 m_normal;
+layout(location = 2) out vec3 m_tangent;
+layout(location = 3) out vec3 m_bitangent;
+layout(location = 4) out vec2 m_tex_coord;
 
 void main() {
 	// Model space -> World space -> Clip space

@@ -6,9 +6,10 @@ use crate::{
     ShaderReflectionError, Texel, TexelInfo, Texture, VertexModule,
     ViewDimension,
 };
-use ahash::AHashMap;
+use ahash::{AHashMap, AHashSet};
 use assets::Assets;
 use itertools::Itertools;
+use parking_lot::Mutex;
 use snailquote::unescape;
 use std::{
     any::TypeId,
@@ -29,6 +30,7 @@ pub(crate) type Snippets = BTreeMap<String, String>;
 pub(crate) type ResourceBindingTypes =
     AHashMap<String, BindResourceType>;
 pub(crate) type MaybePushConstantLayout = Option<PushConstantLayout>;
+pub(crate) type Included = Arc<Mutex<AHashSet<String>>>;
 
 // This is a compiler that will take GLSL code and create a WGPU module
 // This compiler also allows us to define constants and snippets before compilation
@@ -300,10 +302,13 @@ fn compile(
     options.set_optimization_level(optimization);
     options.set_invert_y(false);
 
+    // Keeps track of what files/snippets where included
+    // TODO: File bug report cause I'm pretty sure it's supposed to *not* add duplicate includes
+    let included = Included::default();
+
     // Create a callback responsible for includes
-    // TODO: Handle include callback
-    options.set_include_callback(|target, _type, current, depth| {
-        include(current, _type, target, depth, assets, &snippets)
+    options.set_include_callback(move |target, _type, current, depth| {
+        include(current, _type, target, depth, assets, &snippets, &included)
     });
 
     // Compile using ShaderC (my love)
@@ -393,9 +398,8 @@ fn load_function_module(
     let pathbuf = PathBuf::try_from(path).unwrap();
 
     // Load the path from the asset manager
-    let path = pathbuf.as_os_str().to_str().unwrap();
     let content = assets
-        .load::<FunctionModule>(path)
+        .load::<FunctionModule>(pathbuf.as_os_str().to_str().unwrap())
         .map(|x| x.source)
         .map_err(|err| format!("File include error: {err:?}"))?;
     Ok(shaderc::ResolvedInclude {
@@ -427,6 +431,7 @@ fn include(
     depth: usize,
     assets: &Assets,
     snippets: &Snippets,
+    included: &Included,
 ) -> Result<shaderc::ResolvedInclude, String> {
     // If we're too deep, assume that the user caused a cyclic reference, and return an error
     if depth > 40 {
@@ -438,6 +443,15 @@ fn include(
     // If it's an asset, then the name of the file should be surrounded with <>
     let resembles = matches!(_type, shaderc::IncludeType::Standard);
 
+    // Check if this file/snippet was already loaded before
+    let mut locked = included.lock();
+    if locked.contains(target) {
+        return Ok(shaderc::ResolvedInclude {
+            resolved_name: target.to_string(),
+            content: "".to_string(),
+        })
+    }
+
     // Either load it as an asset or a snippet
     let output = if resembles {
         log::debug!("Loading shader function module '{target}'");
@@ -448,6 +462,7 @@ fn include(
     };
 
     // Convert the error to a string instead
+    locked.insert(target.to_string());
     output
 }
 

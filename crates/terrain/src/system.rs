@@ -27,7 +27,12 @@ fn init(world: &mut World) {
 
     // Create a basic terrain material
     let id = pipelines.register::<Terrain>(&graphics, &assets).unwrap();
-    let material = materials.insert(Terrain {});
+    let material = materials.insert(Terrain {
+        bumpiness: 1.0,
+        roughness: 0.9,
+        metallic: 0.0,
+        ambient_occlusion: 0.0,
+    });
 
     // Add the debug mesh into the world
     let surface = Surface::indirect(mesh.mesh.clone(), material, mesh.indirect.clone(), id);
@@ -93,6 +98,7 @@ fn update(world: &mut World) {
 
     // Execute the vertex generation shader first
     let mut active = pass.bind_shader(&mesh_generator.compute_vertices);
+
     active.set_bind_group(0, |set| {
         set.set_storage_texture("densities", &mut voxel_generator.densities).unwrap();
         set.set_storage_texture("cached_indices", &mut mesh_generator.cached_indices).unwrap();

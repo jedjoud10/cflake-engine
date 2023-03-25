@@ -16,10 +16,15 @@ use utils::{Handle, Storage};
 // This is a simple terrain shader that I will use personally for debugging
 // I will switch this to a proper terrain system later on (trust)
 pub struct Terrain {
+    // PBR Parameters
+    pub bumpiness: f32,
+    pub roughness: f32,
+    pub metallic: f32,
+    pub ambient_occlusion: f32,
 }
 
 impl Material for Terrain {
-    type Resources<'w> = ();
+    type Resources<'w> = world::Read<'w, ShadowMapping>;
 
     // Load the terrain material shaders and compile them
     fn shader(graphics: &Graphics, assets: &Assets) -> Shader {
@@ -42,12 +47,17 @@ impl Material for Terrain {
 
         // Set the UBO types that we will use
         compiler.use_uniform_buffer::<CameraUniform>("camera");
+        compiler.use_uniform_buffer::<SceneUniform>("scene");
+        compiler.use_uniform_buffer::<ShadowUniform>("shadow");
+
+        // Define the types for the user textures
+        compiler.use_sampled_texture::<ShadowMap>("shadow_map");
 
         // Define the push ranges used by push constants
         compiler.use_push_constant_layout(
-            PushConstantLayout::single(
+            PushConstantLayout::split(
                 <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size(),
-                ModuleVisibility::Vertex
+                <vek::Rgba<f32> as GpuPod>::size() * 2,
             )
             .unwrap(),
         );
@@ -62,11 +72,7 @@ impl Material for Terrain {
 
     // Fetch the texture storages
     fn fetch<'w>(world: &'w world::World) -> Self::Resources<'w> {
-        ()
-    }
-
-    fn casts_shadows() -> bool {
-        true
+        world.get::<ShadowMapping>().unwrap()
     }
 
     // Set the static bindings that will never change
@@ -78,6 +84,17 @@ impl Material for Terrain {
         // Set the required common buffers
         group
             .set_uniform_buffer("camera", default.camera_buffer)
+            .unwrap();
+        group
+            .set_uniform_buffer("scene", default.scene_buffer)
+            .unwrap();
+        group
+            .set_uniform_buffer("shadow", &resources.buffer)
+            .unwrap();
+
+        // Set the scene shadow map
+        group
+            .set_sampled_texture("shadow_map", &resources.depth_tex)
             .unwrap();
     }
 
@@ -94,5 +111,19 @@ impl Material for Terrain {
         let cols = matrix.cols;
         let bytes = GpuPod::into_bytes(&cols);
         constants.push(bytes, 0, ModuleVisibility::Vertex).unwrap();
+
+        // Convert the material parameters into a vec4
+        let vector = vek::Vec4::new(
+            self.bumpiness,
+            self.metallic,
+            self.ambient_occlusion,
+            self.roughness,
+        );
+
+        // Send the raw fragment bytes to the GPU
+        let bytes = GpuPod::into_bytes(&vector);
+        constants
+            .push(bytes, 0, ModuleVisibility::Fragment)
+            .unwrap();
     }
 }

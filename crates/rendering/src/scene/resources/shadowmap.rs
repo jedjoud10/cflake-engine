@@ -24,18 +24,18 @@ pub type ActiveShadowGraphicsPipeline<'a, 'r, 't> =
 // The shadows must be rendered before we render the main frame
 pub struct ShadowMapping {
     // Everything required to render to the depth texture
-    pub(crate) depth_tex: ShadowMap,
-    pub(crate) render_pass: ShadowRenderPass,
-    pub(crate) pipeline: ShadowGraphicsPipeline,
-    pub(crate) shader: Shader,
+    pub depth_tex: ShadowMap,
+    pub render_pass: ShadowRenderPass,
+    pub pipeline: ShadowGraphicsPipeline,
+    pub shader: Shader,
 
     // Cached matrices
-    pub(crate) projection: vek::Mat4<f32>,
-    pub(crate) view: vek::Mat4<f32>,
-    pub(crate) resolution: u32,
+    pub projection: vek::Mat4<f32>,
+    pub view: vek::Mat4<f32>,
+    pub resolution: u32,
 
     // This is the corresponding data that must be sent to the shader
-    pub(crate) buffer: UniformBuffer<ShadowUniform>,
+    pub buffer: UniformBuffer<ShadowUniform>,
 }
 
 // This is the uniform that is defined in the Vertex Module
@@ -113,7 +113,8 @@ impl ShadowMapping {
             ),
             PrimitiveConfig::Triangles {
                 winding_order: WindingOrder::Ccw,
-                cull_face: Some(Face::Front),
+                //cull_face: Some(Face::Front),
+                cull_face: None,
                 wireframe: false,
             },
             &shader,

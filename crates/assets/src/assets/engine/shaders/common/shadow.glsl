@@ -17,7 +17,7 @@ float sample_shadow_texel(
     ivec2 pixel,
     float compare
 ) {
-    float bias = 0.0003;
+    float bias = 0.009;
     float closest = texelFetch(tex, pixel, 0).r;
     return compare > (closest+bias) ? 1.0 : 0.0;
 }
@@ -70,11 +70,12 @@ float calculate_shadowed(
     uvs.xy += 0.5;
     uvs.y = 1-uvs.y;
     float current = uvs.z;
+    vec2 inv = vec2(1)/vec2(size);
     
     float shadowed = 0.0;
     for (int x = -2; x <= 2; x++) {
         for (int y = -2; y <= 2; y++) {
-            shadowed += shadow_linear(shadow_map, uvs.xy + vec2(x, y) * 0.0012, size, current);
+            shadowed += shadow_linear(shadow_map, uvs.xy + vec2(x, y) * inv, size, current);
         }
     }
     shadowed /= 25.0;
