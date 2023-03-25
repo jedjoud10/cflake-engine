@@ -1,6 +1,6 @@
 use crate::{
-    AlbedoMap, CameraUniform, DefaultMaterialResources,
-    MeshAttributes, Material, SceneUniform,
+    AlbedoMap, CameraUniform, DefaultMaterialResources, Material,
+    MeshAttributes, SceneUniform,
 };
 
 use assets::Assets;

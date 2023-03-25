@@ -1,10 +1,17 @@
+use crate::{
+    Chunk, ChunkCoords, ChunkState, ChunkViewer, Terrain,
+    TerrainMaterial,
+};
 use ahash::AHashSet;
-use ecs::{Scene, Position, Entity, Rotation, Scale};
-use graphics::{Graphics, XYZW, VertexBuffer, BufferMode, BufferUsage, Normalized, TriangleBuffer, DrawIndexedIndirectBuffer, DrawIndexedIndirect};
-use rendering::{Mesh, Surface, Renderer};
+use ecs::{Entity, Position, Rotation, Scale, Scene};
+use graphics::{
+    BufferMode, BufferUsage, DrawIndexedIndirect,
+    DrawIndexedIndirectBuffer, Graphics, Normalized, TriangleBuffer,
+    VertexBuffer, XYZW,
+};
+use rendering::{Mesh, Renderer, Surface};
 use utils::{Storage, Time};
-use world::{System, World, user};
-use crate::{ChunkCoords, Terrain, TerrainMaterial, Chunk, ChunkState, ChunkViewer};
+use world::{user, System, World};
 
 // Creates the default material storage for the terrain material
 fn init(world: &mut World) {
@@ -13,71 +20,32 @@ fn init(world: &mut World) {
 
 // Creates the appropriate components for creating a new chunk entity
 fn create_chunk_components(
-    terrain: &Terrain,
-    meshes: &mut Storage<Mesh>,
-    indirects: &mut Storage<DrawIndexedIndirectBuffer>,
-    graphics: &Graphics,
+    terrain: &mut Terrain,
     coords: ChunkCoords,
 ) -> (Position, Renderer, Surface<TerrainMaterial>, Chunk) {
-    // Calculate the maximum number of vertices that we can store
-    let vertex_count = (terrain.size as usize).pow(3);
-    let triangle_count = (terrain.size as usize - 1).pow(3) * 4;
+    // Get a mesh from the terrain mesh pool
+    let (mesh, free) =
+        terrain.meshes.iter_mut().find(|(_, free)| *free).unwrap();
+    *free = false;
 
-    // Create the vertex buffer (make sure size can contain ALL possible vertices)
-    let vertices = VertexBuffer::<XYZW<f32>>::zeroed(
-        graphics, 
-        vertex_count,
-        BufferMode::Dynamic,
-        BufferUsage::STORAGE
-    ).unwrap();
-
-    // Create the normal buffer (make sure size can contain ALL possible normals)
-    let normals = VertexBuffer::<XYZW<Normalized<i8>>>::zeroed(
-        graphics, 
-        vertex_count,
-        BufferMode::Dynamic,
-        BufferUsage::STORAGE
-    ).unwrap();
-    
-    // Create the triangle buffer (make sure size can contain ALL possible triangles)
-    let triangles = TriangleBuffer::<u32>::zeroed(
-        graphics, 
-        triangle_count,
-        BufferMode::Dynamic,
-        BufferUsage::STORAGE
-    ).unwrap();
-
-    // Create a mesh that uses the buffers
-    let mesh = Mesh::from_buffers(
-        Some(vertices),
-        Some(normals),
-        None,
-        None,
-        triangles
-    ).unwrap();
-
-    // Create an indexed indirect draw buffer
-    let indirect = DrawIndexedIndirectBuffer::from_slice(
-        graphics,
-        &[DrawIndexedIndirect {
-            vertex_count: 0,
-            instance_count: 1,
-            base_index: 0,
-            vertex_offset: 0,
-            base_instance: 0,
-        }],
-        BufferMode::Dynamic,
-        BufferUsage::STORAGE | BufferUsage::WRITE
-    ).unwrap();
-
-    // Add the values to the storages
-    let mesh = meshes.insert(mesh);
-    let indirect = indirects.insert(indirect);
+    // Get an indirect buffer from the terrain indirect buffer pool
+    let (indirect, free) = terrain
+        .indirect_buffers
+        .iter_mut()
+        .find(|(_, free)| *free)
+        .unwrap();
+    *free = false;
 
     // Create the surface for rendering
-    let surface = Surface::indirect(mesh, terrain.material.clone(), indirect, terrain.id.clone());
+    let surface = Surface::indirect(
+        mesh.clone(),
+        terrain.material.clone(),
+        indirect.clone(),
+        terrain.id.clone(),
+    );
     let renderer = Renderer::default();
-    let position = Position::from(coords.as_::<f32>() * terrain.size as f32);
+    let position =
+        Position::from(coords.as_::<f32>() * terrain.size as f32);
 
     // Create the chunk component
     let chunk = Chunk {
@@ -89,14 +57,14 @@ fn create_chunk_components(
     (position, renderer, surface, chunk)
 }
 
-
 // Dynamically generate the chunks based on camera position
-fn update(world: &mut World) {  
-    // Tries to find a chunk viewer and the terrain generator 
+fn update(world: &mut World) {
+    // Tries to find a chunk viewer and the terrain generator
     let time = world.get::<Time>().unwrap();
     let terrain = world.get_mut::<Terrain>();
     let mut scene = world.get_mut::<Scene>().unwrap();
-    let viewer = scene.find_mut::<(&Entity, &mut ChunkViewer, &Position)>();
+    let viewer =
+        scene.find_mut::<(&Entity, &mut ChunkViewer, &Position)>();
 
     // If we don't have terrain, don't do shit
     let Ok(mut terrain) = terrain else {
@@ -108,10 +76,13 @@ fn update(world: &mut World) {
         terrain.viewer = None;
         return;
     };
-    
+
     // Set the main viewer location and fetches the oldvalue
     let mut added = false;
-    let new = (**position / vek::Vec3::broadcast(terrain.size as f32)).round().as_::<i32>();
+    let new = (**position
+        / vek::Vec3::broadcast(terrain.size as f32))
+    .round()
+    .as_::<i32>();
     let old = if let Some((_, old)) = &mut terrain.viewer {
         std::mem::replace(old, new)
     } else {
@@ -119,12 +90,12 @@ fn update(world: &mut World) {
         added = true;
         new
     };
-    
+
     // Keep a hashset of all the chunks around the viewer
     let mut chunks = AHashSet::<ChunkCoords>::new();
 
     // Check if it moved since last frame
-    if new != old || added {
+    if added {
         const RENDER_DISTANCE: i32 = 2;
 
         for x in -RENDER_DISTANCE..RENDER_DISTANCE {
@@ -134,11 +105,15 @@ fn update(world: &mut World) {
                     let view = terrain.viewer.unwrap().1;
                     chunks.insert(chunk + view);
                 }
-            }    
+            }
         }
 
-        let removed = terrain.chunks.difference(&chunks).cloned().collect::<Vec<_>>();
-
+        // Detect the chunks that we should remove and remove them
+        let removed = terrain
+            .chunks
+            .difference(&chunks)
+            .cloned()
+            .collect::<Vec<_>>();
         for coords in removed {
             log::debug!("remove chunk at {coords}");
             let entity = terrain.entities.remove(&coords).unwrap();
@@ -147,14 +122,16 @@ fn update(world: &mut World) {
             }
         }
 
-        let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
-        let mut indirects = world.get_mut::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
-        let graphics = world.get::<Graphics>().unwrap();
-        let added = chunks.difference(&terrain.chunks).cloned().collect::<Vec<_>>();
-        let entities = scene.extend_from_iter(added.iter().map(|coords| {
-            log::debug!("add chunk at {coords}");
-            create_chunk_components(&mut terrain, &mut meshes, &mut indirects, &graphics, *coords)
-        }));
+        // Detect the chunks that we must generate and add them
+        let added = chunks
+            .difference(&terrain.chunks)
+            .cloned()
+            .collect::<Vec<_>>();
+        let entities =
+            scene.extend_from_iter(added.iter().map(|coords| {
+                log::debug!("add chunk at {coords}");
+                create_chunk_components(&mut terrain, *coords)
+            }));
 
         for (coords, entity) in added.iter().zip(entities.iter()) {
             terrain.entities.insert(*coords, *entity);
@@ -167,7 +144,8 @@ fn update(world: &mut World) {
 // Adds/removes the chunk entities from the world
 pub fn system(system: &mut System) {
     system.insert_init(init).before(user);
-    system.insert_update(update)
+    system
+        .insert_update(update)
         .before(rendering::systems::rendering::system)
         .after(user);
 }

@@ -1,10 +1,10 @@
-use crate::{Renderer, ForwardRenderer, Camera, Mesh};
+use crate::{Camera, ForwardRenderer, Mesh, Renderer};
 use math::shapes::*;
 use utils::{Storage, ThreadPool};
 use world::{post_user, System, World};
 
 // Update the global mesh matrices of objects that have been modified
-// This will also handle frustum culling 
+// This will also handle frustum culling
 fn update(world: &mut World) {
     let mut threadpool = world.get_mut::<ThreadPool>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
@@ -25,13 +25,13 @@ fn update(world: &mut World) {
 
     // Update the matrices of objects that might contain location, rotation, or scale
     query.for_each(
-        &mut threadpool, 
-        | (renderer, position, rotation, scale)| {
+        &mut threadpool,
+        |(renderer, position, rotation, scale)| {
             let mut matrix = vek::Mat4::<f32>::identity();
             if let Some(position) = position {
                 matrix *= vek::Mat4::from(position);
             }
-            
+
             if let Some(rotation) = rotation {
                 matrix *= vek::Mat4::from(rotation);
             }
@@ -40,7 +40,9 @@ fn update(world: &mut World) {
                 matrix *= vek::Mat4::from(scale);
             }
             renderer.matrix = matrix;
-    }, 256);
+        },
+        256,
+    );
 }
 
 // The matrix system will be responsible for updating the matrices of the renderer

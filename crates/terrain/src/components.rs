@@ -5,7 +5,7 @@ use ecs::Component;
 #[derive(Default, Component)]
 pub struct ChunkViewer;
 
-// State of the indirect mesh of each chunk 
+// State of the indirect mesh of each chunk
 #[derive(Clone, Copy)]
 pub enum ChunkState {
     // The chunk is waiting for the compute shader to generate it's mesh
@@ -32,7 +32,7 @@ impl Chunk {
     pub fn coords(&self) -> ChunkCoords {
         self.coords
     }
-    
+
     // Get the current chunk state
     pub fn state(&self) -> ChunkState {
         self.state

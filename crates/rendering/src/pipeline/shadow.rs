@@ -1,10 +1,10 @@
 use crate::{
-    attributes::Position, ActiveShadowGraphicsPipeline,
-    MeshAttributes, Material, Mesh, Renderer, Surface, draw,
+    attributes::Position, draw, ActiveShadowGraphicsPipeline,
+    Material, Mesh, MeshAttributes, Renderer, Surface,
 };
 use ecs::Scene;
-use graphics::{GpuPod, ModuleVisibility, DrawIndexedIndirectBuffer};
-use utils::{Storage, Handle};
+use graphics::{DrawIndexedIndirectBuffer, GpuPod, ModuleVisibility};
+use utils::{Handle, Storage};
 use world::World;
 
 // Render all the visible surfaces of a specific material type
@@ -32,13 +32,15 @@ pub(super) fn render_shadows<'r, M: Material>(
         if !surface.visible || !renderer.visible {
             continue;
         }
-        
+
         // Get the mesh and material that correspond to this surface
         let mesh = meshes.get(&surface.mesh);
 
         // Skip rendering if the mesh is invalid
-        let attribute =
-            mesh.vertices().enabled().contains(MeshAttributes::POSITIONS);
+        let attribute = mesh
+            .vertices()
+            .enabled()
+            .contains(MeshAttributes::POSITIONS);
         let validity = mesh.vertices().len().is_some();
         if !(attribute && validity) && surface.indirect.is_none() {
             continue;
@@ -50,7 +52,9 @@ pub(super) fn render_shadows<'r, M: Material>(
                 let matrix = renderer.matrix;
                 let cols = matrix.cols;
                 let bytes = GpuPod::into_bytes(&cols);
-                constants.push(bytes, 0, ModuleVisibility::Vertex).unwrap();
+                constants
+                    .push(bytes, 0, ModuleVisibility::Vertex)
+                    .unwrap();
             })
             .unwrap();
 
@@ -58,7 +62,7 @@ pub(super) fn render_shadows<'r, M: Material>(
         if last != Some(surface.mesh.clone()) {
             // Set the position buffer
             let positions =
-            mesh.vertices().attribute::<Position>().unwrap();
+                mesh.vertices().attribute::<Position>().unwrap();
             active.set_vertex_buffer::<<Position as crate::MeshAttribute>::V>(0, positions, ..).unwrap();
 
             // Set the index buffer

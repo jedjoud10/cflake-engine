@@ -12,20 +12,23 @@ use wgpu::{
 };
 
 use crate::{
-    BindGroupLayout, BindResourceLayout, ReflectedShader,
-    SamplerSettings, SamplerWrap, StagingPool, UniformBuffer, Snippets, Id,
+    BindGroupLayout, BindResourceLayout, Id, ReflectedShader,
+    SamplerSettings, SamplerWrap, Snippets, StagingPool,
+    UniformBuffer,
 };
 
 // Cached graphics data
 pub(crate) struct Cached {
-    pub(crate) shaders: DashMap<(Snippets, String), (Arc<wgpu::ShaderModule>, Arc<spirq::EntryPoint>)>,
+    pub(crate) shaders: DashMap<
+        (Snippets, String),
+        (Arc<wgpu::ShaderModule>, Arc<spirq::EntryPoint>),
+    >,
     pub(crate) samplers: DashMap<SamplerSettings, Arc<Sampler>>,
     pub(crate) bind_group_layouts:
         DashMap<BindGroupLayout, Arc<wgpu::BindGroupLayout>>,
     pub(crate) pipeline_layouts:
         DashMap<ReflectedShader, Arc<wgpu::PipelineLayout>>,
-    pub(crate) bind_groups:
-        DashMap<Vec<Id>, Arc<wgpu::BindGroup>>,
+    pub(crate) bind_groups: DashMap<Vec<Id>, Arc<wgpu::BindGroup>>,
 }
 
 // Internnal graphics context that will eventually be wrapped within an Arc

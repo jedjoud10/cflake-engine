@@ -1,10 +1,10 @@
 use std::{
-    cell::{Cell, RefCell, Ref, RefMut},
+    cell::{Cell, Ref, RefCell, RefMut},
     mem::MaybeUninit,
 };
 
 use super::attributes::*;
-use crate::{MeshAabbComputeError, AttributeError};
+use crate::{AttributeError, MeshAabbComputeError};
 use graphics::{Buffer, BufferInfo, VertexBuffer};
 use math::Aabb;
 
@@ -40,7 +40,8 @@ impl<'a> VerticesRef<'a> {
     // Get all the available attribute buffers as untyped buffers types
     pub fn untyped_buffers(
         &self,
-    ) -> [Result<BufferInfo, AttributeError>; MAX_MESH_VERTEX_ATTRIBUTES] {
+    ) -> [Result<BufferInfo, AttributeError>;
+           MAX_MESH_VERTEX_ATTRIBUTES] {
         [
             self.attribute::<Position>().map(Buffer::as_untyped),
             self.attribute::<Normal>().map(Buffer::as_untyped),
@@ -68,7 +69,8 @@ pub struct VerticesMut<'a> {
     pub(super) enabled: &'a mut MeshAttributes,
     pub(super) positions:
         RefCell<&'a mut MaybeUninit<AttributeBuffer<Position>>>,
-    pub(super) normals: RefCell<&'a mut MaybeUninit<AttributeBuffer<Normal>>>,
+    pub(super) normals:
+        RefCell<&'a mut MaybeUninit<AttributeBuffer<Normal>>>,
     pub(super) tangents:
         RefCell<&'a mut MaybeUninit<AttributeBuffer<Tangent>>>,
     pub(super) tex_coords:
@@ -77,10 +79,10 @@ pub struct VerticesMut<'a> {
     // Cached parameters
     pub(super) len: RefCell<&'a mut Option<usize>>,
     pub(super) aabb: RefCell<&'a mut Option<math::Aabb<f32>>>,
-    
+
     // Parameters to keep track of cached data
     pub(super) length_dirty: Cell<bool>,
-    pub(super) aabb_dirty: Cell<bool>,    
+    pub(super) aabb_dirty: Cell<bool>,
 }
 
 impl<'a> VerticesMut<'a> {
@@ -133,7 +135,7 @@ impl<'a> VerticesMut<'a> {
 
         if T::ATTRIBUTE.contains(MeshAttributes::POSITIONS) {
             self.aabb_dirty.set(true);
-        } 
+        }
     }
 
     // Get the number of vertices that we have (will return None if we have buffers of mismatching lengths)
@@ -170,12 +172,15 @@ impl<'a> VerticesMut<'a> {
     }
 
     // Calculate an Axis-Aligned Bounding Box, and returns an error if not possible
-    pub fn aabb(&self) -> Result<math::Aabb<f32>, MeshAabbComputeError> {
+    pub fn aabb(
+        &self,
+    ) -> Result<math::Aabb<f32>, MeshAabbComputeError> {
         if self.aabb_dirty.take() {
             // Fetch the position attribute buffer
-            let attribute = self.attribute::<Position>().map_err(|x|
-                MeshAabbComputeError::AttributeBuffer(x)
-            )?;
+            let attribute =
+                self.attribute::<Position>().map_err(|x| {
+                    MeshAabbComputeError::AttributeBuffer(x)
+                })?;
 
             // Create a view into the buffer (if possible)
             let view = attribute

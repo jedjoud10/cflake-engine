@@ -15,8 +15,9 @@ use crate::{
     BufferClearError, BufferCopyError, BufferExtendError, BufferInfo,
     BufferInitializationError, BufferMode, BufferNotMappableError,
     BufferReadError, BufferSplatError, BufferUsage, BufferView,
-    BufferViewMut, BufferWriteError, GpuPod, Graphics, StagingPool,
-    Vertex, R, DrawIndirect, DrawIndexedIndirect, DispatchIndirect,
+    BufferViewMut, BufferWriteError, DispatchIndirect,
+    DrawIndexedIndirect, DrawIndirect, GpuPod, Graphics, StagingPool,
+    Vertex, R,
 };
 
 // Bitmask from Vulkan BufferUsages
@@ -48,7 +49,8 @@ pub type UniformBuffer<T> = Buffer<T, UNIFORM>;
 
 // Indirect buffers for GPU rendering
 pub type DrawIndirectBuffer = Buffer<DrawIndirect, INDIRECT>;
-pub type DrawIndexedIndirectBuffer = Buffer<DrawIndexedIndirect, INDIRECT>;
+pub type DrawIndexedIndirectBuffer =
+    Buffer<DrawIndexedIndirect, INDIRECT>;
 pub type DispatchIndirectBuffer = Buffer<DispatchIndirect, INDIRECT>;
 
 // A buffer abstraction over a valid WGPU buffer
@@ -189,7 +191,9 @@ fn buffer_usages(
         variant
     } else {
         if usage.is_empty() {
-            return Err(BufferInitializationError::UnkownBufferUsageOrType);
+            return Err(
+                BufferInitializationError::UnkownBufferUsageOrType,
+            );
         } else {
             wgpu::BufferUsages::empty()
         }

@@ -5,7 +5,11 @@ use std::{
     cell::{Cell, RefCell},
     marker::PhantomData,
     ops::{Index, IndexMut},
-    rc::Rc, sync::{atomic::{AtomicBool, Ordering, AtomicU32}, Arc},
+    rc::Rc,
+    sync::{
+        atomic::{AtomicBool, AtomicU32, Ordering},
+        Arc,
+    },
 };
 
 use crate::Handle;
@@ -43,7 +47,10 @@ impl<T: 'static> Storage<T> {
     pub fn insert(&mut self, value: T) -> Handle<T> {
         self.clean();
         let key = self.map.insert(Some(value));
-        self.trackers.counters.write().insert(key, AtomicU32::new(1));
+        self.trackers
+            .counters
+            .write()
+            .insert(key, AtomicU32::new(1));
 
         Handle {
             _phantom: PhantomData::default(),

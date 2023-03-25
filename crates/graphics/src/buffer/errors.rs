@@ -14,7 +14,9 @@ pub enum BufferInitializationError {
     #[error("The given buffer mode is Resizable, but there isn't the COPY_SRC flag in the usages")]
     ResizableWithoutCopySrc,
 
-    #[error("Cannot create a buffer with no usages or without valid type")]
+    #[error(
+        "Cannot create a buffer with no usages or without valid type"
+    )]
     UnkownBufferUsageOrType,
 }
 

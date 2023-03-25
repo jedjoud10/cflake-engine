@@ -1,5 +1,5 @@
 use crate::{
-    Boundable, Movable, SharpVertices, SurfaceArea, Volume, Aabb,
+    Aabb, Boundable, Movable, SharpVertices, SurfaceArea, Volume,
 };
 
 // A 3D cuboid that is defined by it's center and it's extent
@@ -22,7 +22,10 @@ impl<T> Cuboid<T> {
     }
 
     // Create a cube from a center and an extent
-    pub fn cube(center: vek::Vec3<T>, extent: T) -> Self where T: Copy {
+    pub fn cube(center: vek::Vec3<T>, extent: T) -> Self
+    where
+        T: Copy,
+    {
         Self {
             center,
             extent: vek::Extent3::broadcast(extent),
@@ -31,7 +34,7 @@ impl<T> Cuboid<T> {
 }
 
 macro_rules! impl_shape_traits {
-    ($t:ty) => {        
+    ($t:ty) => {
         impl From<crate::Aabb<$t>> for Cuboid<$t> {
             fn from(aabb: crate::Aabb<$t>) -> Self {
                 Self {
@@ -45,7 +48,7 @@ macro_rules! impl_shape_traits {
             fn center(&self) -> vek::Vec3<$t> {
                 self.center
             }
-        
+
             fn set_center(&mut self, new: vek::Vec3<$t>) {
                 self.center = new
             }
@@ -58,11 +61,11 @@ macro_rules! impl_shape_traits {
                     max: self.center + self.extent / 2.0,
                 }
             }
-        
+
             fn scale_by(&mut self, scale: $t) {
                 self.extent *= scale;
             }
-        
+
             fn expand_by(&mut self, expand_units: $t) {
                 self.extent += vek::Extent3::broadcast(expand_units);
             }
@@ -85,14 +88,14 @@ macro_rules! impl_shape_traits {
 
         impl SharpVertices<$t> for Cuboid<$t> {
             type Points = [vek::Vec3<$t>; 8];
-        
+
             // http://paulbourke.net/geometry/polygonise/
             fn points(&self) -> Self::Points {
-                let max =
-                    self.center + vek::Vec3::<$t>::from(self.extent / 2.0);
-                let min =
-                    self.center - vek::Vec3::<$t>::from(self.extent / 2.0);
-            
+                let max = self.center
+                    + vek::Vec3::<$t>::from(self.extent / 2.0);
+                let min = self.center
+                    - vek::Vec3::<$t>::from(self.extent / 2.0);
+
                 [
                     min,
                     vek::Vec3::new(max.x, min.y, min.z),
@@ -105,7 +108,7 @@ macro_rules! impl_shape_traits {
                 ]
             }
         }
-    }
+    };
 }
 
 impl_shape_traits!(f32);

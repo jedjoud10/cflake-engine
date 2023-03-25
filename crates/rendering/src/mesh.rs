@@ -7,7 +7,7 @@ mod utils;
 mod vertices;
 pub use self::utils::*;
 pub use attributes::{
-    AttributeBuffer, MeshAttributes, MeshAttribute,
+    AttributeBuffer, MeshAttribute, MeshAttributes,
 };
 pub use errors::*;
 pub use mesh::*;

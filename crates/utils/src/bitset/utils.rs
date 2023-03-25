@@ -61,7 +61,7 @@ pub fn toggle_bit<T: PrimInt>(
 // Start is inclusive, end is exclusive
 pub fn enable_in_range<T: PrimInt>(start: usize, end: usize) -> T {
     assert!(end >= start);
-    let bits = size_of::<T>()*8;
+    let bits = size_of::<T>() * 8;
 
     if end == bits {
         !((T::one() << (start)) - T::one())

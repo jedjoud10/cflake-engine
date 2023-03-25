@@ -8,8 +8,8 @@ use assets::Assets;
 
 use graphics::{
     BindGroup, Compiler, FragmentModule, GpuPod, Graphics,
-    ModuleVisibility, PushConstantLayout, PushConstants, Shader,
-    VertexModule, WindingOrder, PrimitiveConfig,
+    ModuleVisibility, PrimitiveConfig, PushConstantLayout,
+    PushConstants, Shader, VertexModule, WindingOrder,
 };
 use utils::{Handle, Storage};
 
@@ -67,7 +67,8 @@ impl Material for TerrainMaterial {
 
     // Terrain only needs positions and normals
     fn attributes() -> rendering::MeshAttributes {
-        rendering::MeshAttributes::POSITIONS | rendering::MeshAttributes::NORMALS
+        rendering::MeshAttributes::POSITIONS
+            | rendering::MeshAttributes::NORMALS
     }
 
     // Fetch the texture storages

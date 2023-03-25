@@ -4,11 +4,12 @@ use wgpu::CommandEncoder;
 
 use crate::{
     visibility_to_wgpu_stage, BindGroup, Buffer, BufferInfo,
-    BufferMode, BufferUsage, ColorLayout, DepthStencilLayout, GpuPod,
-    Graphics, ModuleKind, ModuleVisibility, PushConstantLayout,
-    PushConstants, RenderCommand, RenderPipeline,
-    SetIndexBufferError, SetPushConstantsError, SetVertexBufferError,
-    TriangleBuffer, UniformBuffer, Vertex, VertexBuffer, DrawIndexedIndirectBuffer, DrawIndirectBuffer,
+    BufferMode, BufferUsage, ColorLayout, DepthStencilLayout,
+    DrawIndexedIndirectBuffer, DrawIndirectBuffer, GpuPod, Graphics,
+    ModuleKind, ModuleVisibility, PushConstantLayout, PushConstants,
+    RenderCommand, RenderPipeline, SetIndexBufferError,
+    SetPushConstantsError, SetVertexBufferError, TriangleBuffer,
+    UniformBuffer, Vertex, VertexBuffer,
 };
 use std::{
     collections::hash_map::Entry,
@@ -212,14 +213,12 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
     // Draw a number of primitives using the currently bound vertex buffers and the given draw indirect buffer
     pub fn draw_indirect(
         &mut self,
-        buffer: &'r DrawIndirectBuffer, 
+        buffer: &'r DrawIndirectBuffer,
         element: usize,
     ) {
         self.validate();
-        self.commands.push(RenderCommand::DrawIndirect {
-            buffer,
-            element,
-        });
+        self.commands
+            .push(RenderCommand::DrawIndirect { buffer, element });
     }
 
     // Draw a number of indexed primitives using the currently bound vertex buffers and index buffer

@@ -28,17 +28,25 @@ impl ModuleVisibility {
     // Returns None if the operation failed (in case it's not possible)
     pub fn try_insert(&mut self, other: Self) -> Option<()> {
         match self {
-            ModuleVisibility::Vertex if matches!(other, Self::Fragment) => {
+            ModuleVisibility::Vertex
+                if matches!(other, Self::Fragment) =>
+            {
                 *self = ModuleVisibility::VertexFragment;
                 Some(())
-            },
+            }
 
-            ModuleVisibility::Fragment if matches!(other, Self::Vertex) => {
+            ModuleVisibility::Fragment
+                if matches!(other, Self::Vertex) =>
+            {
                 *self = ModuleVisibility::VertexFragment;
                 Some(())
-            },
+            }
 
-            ModuleVisibility::Compute if matches!(other, Self::Compute) => Some(()),
+            ModuleVisibility::Compute
+                if matches!(other, Self::Compute) =>
+            {
+                Some(())
+            }
             _ => None,
         }
     }

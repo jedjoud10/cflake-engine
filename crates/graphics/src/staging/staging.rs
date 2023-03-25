@@ -99,7 +99,9 @@ impl StagingPool {
         assert!(buffer
             .usage()
             .contains(wgpu::BufferUsages::COPY_SRC));
-        log::trace!("map_buffer_read: offset: {offset}, size: {size}");
+        log::trace!(
+            "map_buffer_read: offset: {offset}, size: {size}"
+        );
 
         // Get a encoder (reused or not to perform a copy)
         let mut encoder = graphics.acquire();
@@ -148,7 +150,9 @@ impl StagingPool {
         offset: u64,
         size: u64,
     ) -> Option<StagingViewWrite<'a>> {
-        log::trace!("map_buffer_write: offset: {offset}, size: {size}");
+        log::trace!(
+            "map_buffer_write: offset: {offset}, size: {size}"
+        );
         let size = NonZeroU64::new(size);
         let write = graphics.queue().write_buffer_with(
             buffer,

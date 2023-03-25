@@ -2,11 +2,11 @@ use graphics::{
     Normalized, PerVertex, Vertex, VertexBuffer, VertexConfig,
     VertexInput, VertexInputInfo, XYZ, XYZW,
 };
-use std::cell::{Ref, RefMut};
 use paste::paste;
+use std::cell::{Ref, RefMut};
 use std::marker::PhantomData;
 
-use crate::{VerticesMut, VerticesRef, AttributeError};
+use crate::{AttributeError, VerticesMut, VerticesRef};
 
 bitflags::bitflags! {
     // This specifies the buffers that the mesh uses internally
@@ -113,7 +113,7 @@ macro_rules! impl_vertex_attribute {
                     if vertices.is_enabled::<Self>() {
                         let borrowed = vertices.$name.try_borrow_mut();
                         borrowed.map(|borrowed| {
-                            RefMut::map(borrowed, |x| unsafe { x.assume_init_mut() }) 
+                            RefMut::map(borrowed, |x| unsafe { x.assume_init_mut() })
                         }).map_err(AttributeError::BorrowMutError)
                     } else {
                         Err(AttributeError::MissingAttribute)
@@ -124,7 +124,7 @@ macro_rules! impl_vertex_attribute {
                     if vertices.is_enabled::<Self>() {
                         let borrowed = vertices.$name.try_borrow();
                         borrowed.map(|borrowed| {
-                            Ref::map(borrowed, |x| unsafe { x.assume_init_ref() }) 
+                            Ref::map(borrowed, |x| unsafe { x.assume_init_ref() })
                         }).map_err(AttributeError::BorrowError)
                     } else {
                         Err(AttributeError::MissingAttribute)
@@ -132,7 +132,7 @@ macro_rules! impl_vertex_attribute {
                 }
 
                 fn insert(vertices: &mut VerticesMut, buffer: AttributeBuffer<Self>) {
-                    let is_enabled = vertices.is_enabled::<Self>(); 
+                    let is_enabled = vertices.is_enabled::<Self>();
                     let borrowed = vertices.$name.get_mut();
                     if is_enabled {
                         let mut old = std::mem::replace(*borrowed, std::mem::MaybeUninit::new(buffer));

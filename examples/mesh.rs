@@ -16,25 +16,34 @@ fn init(world: &mut World) {
     let assets = world.get::<Assets>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
     let mut pipelines = world.get_mut::<Pipelines>().unwrap();
-    let mut materials = world.get_mut::<Storage<TerrainMaterial>>().unwrap();
+    let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
+    let mut indirect = world
+        .get_mut::<Storage<DrawIndexedIndirectBuffer>>()
+        .unwrap();
+    let mut materials =
+        world.get_mut::<Storage<TerrainMaterial>>().unwrap();
 
     // Create some procedural terrain
     let terrain = Terrain::new(
         &graphics,
         &assets,
         64,
+        2,
         true,
+        &mut meshes,
+        &mut indirect,
         &mut materials,
-        &mut pipelines
+        &mut pipelines,
     );
-    
+
     // TODO: Figure out a way to remove the &mut restriction fwhen inserting into the world
     drop(assets);
     drop(graphics);
     drop(pipelines);
     drop(materials);
+    drop(meshes);
+    drop(indirect);
     world.insert(terrain);
-
 
     // Fetch the required resources from the world
     let mut assets = world.get_mut::<Assets>().unwrap();
@@ -58,7 +67,6 @@ fn init(world: &mut World) {
     interface.enabled = false;
 
     // Create a terrain generator (frfr)
-    
 
     // Import the diffuse map, normal map, mask map
     asset!(&mut assets, "assets/user/textures/diffuse.jpg");
@@ -137,7 +145,8 @@ fn init(world: &mut World) {
     });
 
     // Create a simple floor and add the entity
-    let surface = Surface::new(plane.clone(), material.clone(), id.clone());
+    let surface =
+        Surface::new(plane.clone(), material.clone(), id.clone());
     let renderer = Renderer::default();
     let scale = Scale::uniform(25.0);
     scene.insert((surface, renderer, scale));
@@ -145,8 +154,11 @@ fn init(world: &mut World) {
     // Create a simple cube and add the entity
     scene.extend_from_iter((0..25).into_iter().map(|x| {
         let renderer = Renderer::default();
-        let position =
-            Position::at_xyz((x / 5) as f32 * 4.0, 0.25, (x % 5) as f32 * 4.0);
+        let position = Position::at_xyz(
+            (x / 5) as f32 * 4.0,
+            0.25,
+            (x % 5) as f32 * 4.0,
+        );
 
         let material = pbrs.insert(PhysicallyBasedMaterial {
             albedo_map: None,
@@ -175,8 +187,9 @@ fn init(world: &mut World) {
     scene.insert((surface, renderer, position));
 
     // Get the material id (also registers the material pipeline)
-    let id =
-        pipelines.register::<SkyMaterial>(&graphics, &mut assets).unwrap();
+    let id = pipelines
+        .register::<SkyMaterial>(&graphics, &mut assets)
+        .unwrap();
 
     // Create a new material instance
     let material = skies.insert(SkyMaterial {});

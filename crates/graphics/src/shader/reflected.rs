@@ -294,16 +294,14 @@ pub(super) fn create_pipeline_layout(
         }
 
         // Get the push constant sizes as defined in the shader modules
-        let mut iter = modules
-            .iter()
-            .flat_map(|module| module
-                .vars
-                .iter()
-                .filter_map(|x| match x {
-                    spirq::Variable::PushConstant { name, ty } => ty.nbyte().map(|x| x as u32),
-                    _ => None
-                })
-            );
+        let mut iter = modules.iter().flat_map(|module| {
+            module.vars.iter().filter_map(|x| match x {
+                spirq::Variable::PushConstant { name, ty } => {
+                    ty.nbyte().map(|x| x as u32)
+                }
+                _ => None,
+            })
+        });
         let (first, second) = (iter.next(), iter.next());
 
         // Validate the push constants and check if they were defined properly in the shader
@@ -340,24 +338,25 @@ pub(super) fn create_pipeline_layout(
         let visibility = visibility[index];
 
         // Create a hashmap that contains all the variables per group
-        let mut sets = AHashMap::<u32, Vec<spirq::Variable>>::default();
+        let mut sets =
+            AHashMap::<u32, Vec<spirq::Variable>>::default();
 
-        let iter = module
-            .vars
-            .iter()
-            .filter_map(|variable| if let spirq::Variable::Descriptor { desc_bind, .. } = variable {
+        let iter = module.vars.iter().filter_map(|variable| {
+            if let spirq::Variable::Descriptor { desc_bind, .. } =
+                variable
+            {
                 Some((desc_bind.set(), variable))
             } else {
                 None
-            });
-
+            }
+        });
 
         // Add the binded variables to the hashmap
         for (set, variable) in iter {
             let vec = sets.entry(set).or_default();
             vec.push(variable.clone());
         }
-        
+
         for set in 0..4 {
             if !sets.contains_key(&set) {
                 continue;
@@ -384,30 +383,60 @@ pub(super) fn create_pipeline_layout(
 
                 // Get the binding type for this global variable
                 let binding_type = match desc_ty {
-                    DescriptorType::Sampler() => {
-                        Some(reflect_sampler(&name, graphics, &definitions)
-                            .map_err(ShaderReflectionError::SamplerValidation))
-                    },
-                    
-                    DescriptorType::SampledImage() => {
-                        Some(reflect_sampled_texture(&name, graphics, &definitions)
-                            .map_err(ShaderReflectionError::TextureValidation))
-                    },
-                    
-                    DescriptorType::StorageImage(access) => {
-                        Some(reflect_storage_texture(&name, graphics, &definitions)
-                            .map_err(ShaderReflectionError::TextureValidation))
-                    },
-                    
-                    DescriptorType::UniformBuffer() => {
-                        Some(reflect_uniform_buffer(&name, graphics, &definitions)
-                            .map_err(ShaderReflectionError::BufferValidation))
-                    },
+                    DescriptorType::Sampler() => Some(
+                        reflect_sampler(
+                            &name,
+                            graphics,
+                            &definitions,
+                        )
+                        .map_err(
+                            ShaderReflectionError::SamplerValidation,
+                        ),
+                    ),
 
-                    DescriptorType::StorageBuffer(access) => {
-                        Some(reflect_storage_buffer(&name, graphics, &definitions)
-                            .map_err(ShaderReflectionError::BufferValidation))
-                    },
+                    DescriptorType::SampledImage() => Some(
+                        reflect_sampled_texture(
+                            &name,
+                            graphics,
+                            &definitions,
+                        )
+                        .map_err(
+                            ShaderReflectionError::TextureValidation,
+                        ),
+                    ),
+
+                    DescriptorType::StorageImage(access) => Some(
+                        reflect_storage_texture(
+                            &name,
+                            graphics,
+                            &definitions,
+                        )
+                        .map_err(
+                            ShaderReflectionError::TextureValidation,
+                        ),
+                    ),
+
+                    DescriptorType::UniformBuffer() => Some(
+                        reflect_uniform_buffer(
+                            &name,
+                            graphics,
+                            &definitions,
+                        )
+                        .map_err(
+                            ShaderReflectionError::BufferValidation,
+                        ),
+                    ),
+
+                    DescriptorType::StorageBuffer(access) => Some(
+                        reflect_storage_buffer(
+                            &name,
+                            graphics,
+                            &definitions,
+                        )
+                        .map_err(
+                            ShaderReflectionError::BufferValidation,
+                        ),
+                    ),
 
                     _ => None,
                 };
@@ -449,7 +478,10 @@ pub(super) fn create_pipeline_layout(
                         }
 
                         // Merge the visibility to allow more modules to access this entry
-                        merged.visibility.try_insert(old.visibility).unwrap();
+                        merged
+                            .visibility
+                            .try_insert(old.visibility)
+                            .unwrap();
                     }
 
                     // If the spot is vacant, add the bind entry layout for the first time
@@ -508,7 +540,9 @@ fn internal_create_pipeline_layout(
         log::debug!("Found pipeline layout in cache for {names:?}, using it...");
         return (Arc::new(shader), cached.value().clone());
     } else {
-        log::warn!("Did not find cached pipeline layout for {names:?}");
+        log::warn!(
+            "Did not find cached pipeline layout for {names:?}"
+        );
     }
 
     log::trace!("internal_create_pipeline_layout: Start");
@@ -537,7 +571,9 @@ fn internal_create_pipeline_layout(
         .clone();
 
     // Create the empty bind group
-    log::trace!("internal_create_pipeline_layout: Empty Bind Group Start");
+    log::trace!(
+        "internal_create_pipeline_layout: Empty Bind Group Start"
+    );
     cached.bind_groups.entry(Vec::new()).or_insert_with(|| {
         let desc = wgpu::BindGroupDescriptor {
             label: None,
@@ -547,7 +583,9 @@ fn internal_create_pipeline_layout(
 
         Arc::new(graphics.device().create_bind_group(&desc))
     });
-    log::trace!("internal_create_pipeline_layout: Empty Bind Group End");
+    log::trace!(
+        "internal_create_pipeline_layout: Empty Bind Group End"
+    );
 
     // Add the uncached bind group entries to the graphics cache
     log::trace!("internal_create_pipeline_layout: Bind Groups Start");
@@ -598,7 +636,9 @@ fn internal_create_pipeline_layout(
     log::trace!("internal_create_pipeline_layout: Bind Groups End");
 
     // Fetch the bind group layouts from the cache
-    log::trace!("internal_create_pipeline_layout: Bind Group Layouts Start");
+    log::trace!(
+        "internal_create_pipeline_layout: Bind Group Layouts Start"
+    );
     let bind_group_layouts = shader
         .bind_group_layouts
         .iter()
@@ -622,7 +662,9 @@ fn internal_create_pipeline_layout(
         })
         .take(shader.last_valid_bind_group_layout + 1)
         .collect::<Vec<_>>();
-    log::trace!("internal_create_pipeline_layout: Bind Group Layouts End");
+    log::trace!(
+        "internal_create_pipeline_layout: Bind Group Layouts End"
+    );
 
     // Convert the custom push constant range to wgpu push constant ranges
     let push_constant_ranges = if let Some(range) =
@@ -676,7 +718,7 @@ fn internal_create_pipeline_layout(
     log::debug!(
         "Saved pipeline layout for {names:?} in graphics cache"
     );
-        
+
     log::trace!("internal_create_pipeline_layout: End");
 
     (Arc::new(shader), layout)

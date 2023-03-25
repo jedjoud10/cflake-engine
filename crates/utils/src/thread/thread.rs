@@ -89,10 +89,10 @@ impl ThreadPool {
         // Create the scheduler config
         let batch_size = batch_size.max(1);
         let num_tasks =
-        (length as f32 / batch_size as f32).ceil() as usize;
+            (length as f32 / batch_size as f32).ceil() as usize;
         let remaining = length % batch_size;
         log::trace!("for_each_async: elems: {length}, batch size: {batch_size}, threads: {num_tasks}, remaining: {remaining}");
-        
+
         // Internal function that will be wrapped within a closure and executed on the main thread / other threads
         // This will simply loop over all the elements specified by 'ptrs', 'length', and 'offset'
         fn iterate<

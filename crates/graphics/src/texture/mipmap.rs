@@ -1,4 +1,4 @@
-use std::{num::NonZeroU8, ops::DerefMut, cell::Cell};
+use std::{cell::Cell, num::NonZeroU8, ops::DerefMut};
 
 use bytemuck::Zeroable;
 
@@ -6,7 +6,8 @@ use super::{Region, Texture};
 use crate::{
     ColorTexel, Extent, MipLevelClearError, MipLevelCopyError,
     MipLevelReadError, MipLevelWriteError, Origin, RenderTarget,
-    Texel, TextureAsTargetError, TextureSamplerError, TextureUsage, TextureMipLevelError,
+    Texel, TextureAsTargetError, TextureMipLevelError,
+    TextureSamplerError, TextureUsage,
 };
 
 // This enum tells the texture how exactly it should create it's mipmaps
@@ -155,8 +156,11 @@ pub struct MipLevelsRef<'a, T: Texture> {
 
 impl<'a, T: Texture> MipLevelsRef<'a, T> {
     // Borrow a mip-level from the mip collection immutably
-    pub fn level(&'a self, level: u8) -> Result<MipLevelRef<'a, T>, TextureMipLevelError> {
-        let range = (self.texture.views().len()-1) as u8;
+    pub fn level(
+        &'a self,
+        level: u8,
+    ) -> Result<MipLevelRef<'a, T>, TextureMipLevelError> {
+        let range = (self.texture.views().len() - 1) as u8;
         if level > range {
             Ok(MipLevelRef {
                 texture: self.texture,
@@ -178,8 +182,11 @@ pub struct MipLevelsMut<'a, T: Texture> {
 
 impl<'a, T: Texture> MipLevelsMut<'a, T> {
     // Borrow a mip-level from the mip collection immutably
-    pub fn level(&'a self, level: u8) -> Result<MipLevelRef<'a, T>, TextureMipLevelError> {
-        let range = (self.texture.views().len()-1) as u8;
+    pub fn level(
+        &'a self,
+        level: u8,
+    ) -> Result<MipLevelRef<'a, T>, TextureMipLevelError> {
+        let range = (self.texture.views().len() - 1) as u8;
         if level > range {
             Ok(MipLevelRef {
                 texture: self.texture,
@@ -192,8 +199,11 @@ impl<'a, T: Texture> MipLevelsMut<'a, T> {
     }
 
     // Borrow a mip-level from the mip collection mutably
-    pub fn level_mut(&'a self, level: u8) -> Result<MipLevelMut<'a, T>, TextureMipLevelError> {
-        let range = (self.texture.views().len()-1) as u8;
+    pub fn level_mut(
+        &'a self,
+        level: u8,
+    ) -> Result<MipLevelMut<'a, T>, TextureMipLevelError> {
+        let range = (self.texture.views().len() - 1) as u8;
         if level > range {
             Ok(MipLevelMut {
                 texture: self.texture,
@@ -409,7 +419,7 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
             src,
             &self.texture.raw(),
             self.level as u32,
-            &self.texture.graphics()
+            &self.texture.graphics(),
         );
 
         Ok(())

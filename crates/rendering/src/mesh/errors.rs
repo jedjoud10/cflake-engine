@@ -1,4 +1,4 @@
-use std::cell::{BorrowMutError, BorrowError};
+use std::cell::{BorrowError, BorrowMutError};
 
 use graphics::{BufferInitializationError, BufferNotMappableError};
 use obj::ObjError;

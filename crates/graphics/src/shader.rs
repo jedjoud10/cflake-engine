@@ -1,11 +1,11 @@
 mod compiler;
+mod constant;
 mod error;
 mod module;
 mod reflected;
 mod shader;
-mod constant;
-pub use constant::*;
 pub use compiler::*;
+pub use constant::*;
 pub use error::*;
 pub use module::*;
 pub use reflected::*;

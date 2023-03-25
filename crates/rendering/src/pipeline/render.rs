@@ -1,10 +1,10 @@
 use crate::{
     ActiveScenePipeline, ActiveSceneRenderPass,
-    DefaultMaterialResources, MeshAttributes, Material, Mesh,
-    MeshAttribute, Renderer, SceneColor, SceneDepth, Surface,
+    DefaultMaterialResources, Material, Mesh, MeshAttribute,
+    MeshAttributes, Renderer, SceneColor, SceneDepth, Surface,
 };
 use ecs::Scene;
-use graphics::{RenderPipeline, DrawIndexedIndirectBuffer};
+use graphics::{DrawIndexedIndirectBuffer, RenderPipeline};
 use utils::{Handle, Storage};
 use world::World;
 

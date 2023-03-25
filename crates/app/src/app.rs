@@ -180,7 +180,7 @@ impl App {
     // Set the logger level that can hide/show log messages
     pub fn set_logging_level(
         mut self,
-        level: log::LevelFilter
+        level: log::LevelFilter,
     ) -> Self {
         self.logging_level = level;
         self
@@ -454,7 +454,9 @@ impl App {
         self.world.insert(window_settings);
 
         // Print app / author / engine data
-        log::info!("App Name: '{app_name}', App Version: '{app_version}'");
+        log::info!(
+            "App Name: '{app_name}', App Version: '{app_version}'"
+        );
         log::info!("Engine Name: '{engine_name}, Engine Version: '{engine_version}'");
         log::info!("Author Name: '{author_name}'");
         self

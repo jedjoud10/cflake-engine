@@ -3,7 +3,7 @@ mod shapes {
     #[cfg(test)]
     mod cuboid {
         use crate::{
-            Boundable, Cuboid, Movable, SurfaceArea, Volume, Aabb,
+            Aabb, Boundable, Cuboid, Movable, SurfaceArea, Volume,
         };
         use vek::{Extent3, Vec3};
 
@@ -60,7 +60,7 @@ mod shapes {
     #[cfg(test)]
     mod sphere {
         use crate::{
-            Boundable, Movable, Sphere, SurfaceArea, Volume, Aabb,
+            Aabb, Boundable, Movable, Sphere, SurfaceArea, Volume,
         };
         use vek::Vec3;
 

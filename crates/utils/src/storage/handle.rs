@@ -1,6 +1,10 @@
 use super::Trackers;
 use slotmap::DefaultKey;
-use std::{marker::PhantomData, rc::Rc, sync::{Arc, atomic::Ordering}};
+use std::{
+    marker::PhantomData,
+    rc::Rc,
+    sync::{atomic::Ordering, Arc},
+};
 
 // A handle is what keeps the values within Storage<T> alive
 // Fetching data using this type of Handle is always successful
@@ -21,25 +25,39 @@ impl<T: 'static> Eq for Handle<T> {}
 impl<T: 'static> Handle<T> {
     // Get the current reference count for this handle
     pub fn count(&self) -> u32 {
-        self.trackers.counters.read().get(self.key).unwrap().load(Ordering::Relaxed)
+        self.trackers
+            .counters
+            .read()
+            .get(self.key)
+            .unwrap()
+            .load(Ordering::Relaxed)
     }
 
     // Overwrite the current reference counted value directly
     pub unsafe fn set_count(&self, count: u32) {
         let borrowed = self.trackers.counters.read();
-        borrowed.get(self.key).unwrap().store(count, Ordering::Relaxed);
+        borrowed
+            .get(self.key)
+            .unwrap()
+            .store(count, Ordering::Relaxed);
     }
 
     // This will manually incremememnt the underlying reference counter
     pub unsafe fn increment_count(&self) -> u32 {
         let borrowed = self.trackers.counters.read();
-        borrowed.get(self.key).unwrap().fetch_add(1, Ordering::Relaxed)
+        borrowed
+            .get(self.key)
+            .unwrap()
+            .fetch_add(1, Ordering::Relaxed)
     }
 
     // This will manually decrement the underlying reference counter
     pub unsafe fn decrement_count(&self) -> u32 {
         let borrowed = self.trackers.counters.read();
-        borrowed.get(self.key).unwrap().fetch_sub(1, Ordering::Relaxed)
+        borrowed
+            .get(self.key)
+            .unwrap()
+            .fetch_sub(1, Ordering::Relaxed)
     }
 }
 

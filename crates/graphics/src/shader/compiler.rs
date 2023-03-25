@@ -3,8 +3,8 @@ use crate::{
     GpuPodInfo, Graphics, ModuleKind, ModuleVisibility,
     PushConstantLayout, ReflectedShader, Region,
     ShaderCompilationError, ShaderError, ShaderModule,
-    ShaderReflectionError, Texel, TexelInfo, Texture, VertexModule,
-    ViewDimension, SpecConstant,
+    ShaderReflectionError, SpecConstant, Texel, TexelInfo, Texture,
+    VertexModule, ViewDimension,
 };
 use ahash::{AHashMap, AHashSet};
 use assets::Assets;
@@ -14,12 +14,13 @@ use snailquote::unescape;
 use std::{
     any::TypeId,
     borrow::Cow,
+    collections::BTreeMap,
     ffi::CStr,
     marker::PhantomData,
     ops::{Bound, RangeBounds},
     path::PathBuf,
     sync::Arc,
-    time::Instant, collections::BTreeMap,
+    time::Instant,
 };
 use thiserror::Error;
 
@@ -65,7 +66,7 @@ impl<'a> Compiler<'a> {
     pub fn use_specialization_constant(
         &mut self,
         id: u32,
-        value: impl SpecConstant
+        value: impl SpecConstant,
     ) {
         todo!()
     }
@@ -83,7 +84,7 @@ impl<'a> Compiler<'a> {
     // Set the optimization level used by the ShaderC compiler
     pub fn use_optimization_level(
         &mut self,
-        level: shaderc::OptimizationLevel
+        level: shaderc::OptimizationLevel,
     ) {
         self.optimization = level;
     }
@@ -298,14 +299,23 @@ fn compile(
     optimization: shaderc::OptimizationLevel,
     source: String,
     file: &str,
-) -> Result<(Arc<wgpu::ShaderModule>, Arc<spirq::EntryPoint>), ShaderCompilationError>
-{
+) -> Result<
+    (Arc<wgpu::ShaderModule>, Arc<spirq::EntryPoint>),
+    ShaderCompilationError,
+> {
     // If the shader cache already contains the compiled shader, simply reuse it
     // TODO: Holy fuck please optimize this
     // TODO: Also change cache to LruCache or smthing like that
-    if let Some(value) = graphics.0.cached.shaders.get(&(snippets.clone(), file.to_string())) {
+    if let Some(value) = graphics
+        .0
+        .cached
+        .shaders
+        .get(&(snippets.clone(), file.to_string()))
+    {
         let (raw, reflected) = value.value();
-        log::debug!("Found shader module in cache for {file}, using it...");
+        log::debug!(
+            "Found shader module in cache for {file}, using it..."
+        );
         return Ok((raw.clone(), reflected.clone()));
     } else {
         log::warn!("Did not find cached shader module for {file}");
@@ -322,9 +332,14 @@ fn compile(
     let included = Included::default();
 
     // Create a callback responsible for includes
-    options.set_include_callback(move |target, _type, current, depth| {
-        include(current, _type, target, depth, assets, &snippets, &included)
-    });
+    options.set_include_callback(
+        move |target, _type, current, depth| {
+            include(
+                current, _type, target, depth, assets, &snippets,
+                &included,
+            )
+        },
+    );
 
     // Compile using ShaderC (my love)
     let artifact = graphics
@@ -369,10 +384,13 @@ fn compile(
             }
             _ => todo!(),
         })?;
-    
+
     // Print out possible warning messages during shader compilation
     if !artifact.get_warning_messages().is_empty() {
-        log::warn!("ShaderC warning: {}", artifact.get_warning_messages());
+        log::warn!(
+            "ShaderC warning: {}",
+            artifact.get_warning_messages()
+        );
     }
 
     // Setup basic config spirq option
@@ -387,11 +405,13 @@ fn compile(
         .unwrap();
 
     // Compile the Wgpu shader (raw spirv passthrough)
-    let wgpu = unsafe { 
+    let wgpu = unsafe {
         graphics.device().create_shader_module_spirv(
             &wgpu::ShaderModuleDescriptorSpirV {
                 label: Some(&format!("shader-module-{file}")),
-                source: wgpu::util::make_spirv_raw(artifact.as_binary_u8()),
+                source: wgpu::util::make_spirv_raw(
+                    artifact.as_binary_u8(),
+                ),
             },
         )
     };
@@ -399,7 +419,10 @@ fn compile(
     // Cache the result first
     let raw = Arc::new(wgpu);
     let reflected = Arc::new(reflect);
-    graphics.0.cached.shaders.insert((snippets.clone(), file.to_string()), (raw.clone(), reflected.clone()));
+    graphics.0.cached.shaders.insert(
+        (snippets.clone(), file.to_string()),
+        (raw.clone(), reflected.clone()),
+    );
     log::debug!("Saved shader module for {file} in graphics cache");
 
     // Return the compiled wgpu module and the reflected mdule
@@ -466,7 +489,7 @@ fn include(
         return Ok(shaderc::ResolvedInclude {
             resolved_name: target.to_string(),
             content: "".to_string(),
-        })
+        });
     }
 
     // Either load it as an asset or a snippet

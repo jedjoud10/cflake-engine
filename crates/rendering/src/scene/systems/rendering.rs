@@ -1,13 +1,15 @@
 use crate::{
-    AlbedoMap, BasicMaterial, DefaultMaterialResources, DirectionalLight,
-    ForwardRenderer, MaskMap, Mesh, NormalMap, PhysicallyBasedMaterial,
-    Pipelines, Renderer, SceneUniform, ShadowMapping, SkyMaterial,
-    WindowUniform, Camera,
+    AlbedoMap, BasicMaterial, Camera, DefaultMaterialResources,
+    DirectionalLight, ForwardRenderer, MaskMap, Mesh, NormalMap,
+    PhysicallyBasedMaterial, Pipelines, Renderer, SceneUniform,
+    ShadowMapping, SkyMaterial, WindowUniform,
 };
 use assets::Assets;
 
 use ecs::{Rotation, Scene};
-use graphics::{Graphics, Texture, Window, DrawIndexedIndirectBuffer};
+use graphics::{
+    DrawIndexedIndirectBuffer, Graphics, Texture, Window,
+};
 
 use log::LevelFilter;
 use utils::{Storage, Time};
@@ -34,15 +36,21 @@ fn init(world: &mut World) {
 
     // Pre-initialize the pipeline with the material types
     let mut pipelines = Pipelines::new();
-    pipelines.register::<BasicMaterial>(&graphics, &assets).unwrap();
-    pipelines.register::<SkyMaterial>(&graphics, &assets).unwrap();
-    pipelines.register::<PhysicallyBasedMaterial>(&graphics, &assets).unwrap();
+    pipelines
+        .register::<BasicMaterial>(&graphics, &assets)
+        .unwrap();
+    pipelines
+        .register::<SkyMaterial>(&graphics, &assets)
+        .unwrap();
+    pipelines
+        .register::<PhysicallyBasedMaterial>(&graphics, &assets)
+        .unwrap();
 
     // Create a nice shadow map
     let shadowmap = ShadowMapping::new(
         200f32,
         100f32,
-        1024*4,
+        1024 * 4,
         &graphics,
         &mut assets,
     );
@@ -115,7 +123,8 @@ fn render(world: &mut World) {
     let scene = world.get::<Scene>().unwrap();
     let pipelines = world.get::<Pipelines>().unwrap();
     let meshes = world.get::<Storage<Mesh>>().unwrap();
-    let indirect = world.get::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
+    let indirect =
+        world.get::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
     let albedo_maps = world.get::<Storage<AlbedoMap>>().unwrap();
     let normal_maps = world.get::<Storage<NormalMap>>().unwrap();
     let mask_maps = world.get::<Storage<MaskMap>>().unwrap();
@@ -135,16 +144,22 @@ fn render(world: &mut World) {
 
     // Get the directioanl light and rotation of the light
     let directional_light = scene.entry(directional_light).unwrap();
-    let (&directional_light, &directional_light_rotation) = 
-        directional_light.as_query::<(&DirectionalLight, &ecs::Rotation)>().unwrap();
+    let (&directional_light, &directional_light_rotation) =
+        directional_light
+            .as_query::<(&DirectionalLight, &ecs::Rotation)>()
+            .unwrap();
 
     // Update the scene uniform using the appropriate values
     renderer
         .scene_buffer
         .write(
             &[SceneUniform {
-                sun_direction: directional_light_rotation.forward().with_w(0.0),
-                sun_color: vek::Rgba::<f32>::from(directional_light.color),
+                sun_direction: directional_light_rotation
+                    .forward()
+                    .with_w(0.0),
+                sun_color: vek::Rgba::<f32>::from(
+                    directional_light.color,
+                ),
                 ..Default::default()
             }],
             0,
@@ -153,9 +168,11 @@ fn render(world: &mut World) {
 
     // Get the camera and it's values
     let camera = scene.entry(camera).unwrap();
-    let (&camera, &camera_position, &camera_rotation) =
-        camera.as_query::<(&Camera, &ecs::Position, &ecs::Rotation)>().unwrap();
-    let camera_frustum = camera.frustum(&camera_position, &camera_rotation);
+    let (&camera, &camera_position, &camera_rotation) = camera
+        .as_query::<(&Camera, &ecs::Position, &ecs::Rotation)>()
+        .unwrap();
+    let camera_frustum =
+        camera.frustum(&camera_position, &camera_rotation);
 
     // Create the shared material resources
     let mut default = DefaultMaterialResources {
@@ -181,8 +198,12 @@ fn render(world: &mut World) {
     let f2 = ecs::modified::<ecs::Rotation>();
     let f3 = ecs::modified::<ecs::Scale>();
     let f4 = f1 | f2 | f3;
-    let mut update =
-        scene.query_with::<&Renderer>(f4).into_iter().filter(|r| r.visible).count() > 0;
+    let mut update = scene
+        .query_with::<&Renderer>(f4)
+        .into_iter()
+        .filter(|r| r.visible)
+        .count()
+        > 0;
     update |= scene
         .query_with::<&DirectionalLight>(f2)
         .into_iter()
@@ -191,7 +212,8 @@ fn render(world: &mut World) {
     if update {
         // Update the shadow map lightspace matrix
         let shadowmap = &mut *_shadowmap;
-        shadowmap.update(*directional_light_rotation, *camera_position);
+        shadowmap
+            .update(*directional_light_rotation, *camera_position);
 
         // Get the depth texture we will render to
         let depth = shadowmap.depth_tex.as_render_target().unwrap();
@@ -212,7 +234,7 @@ fn render(world: &mut World) {
 
         // Render the shadows first (fuck you)
         for stored in pipelines.iter() {
-            stored.prerender(world, &meshes, &indirect,&mut active);
+            stored.prerender(world, &meshes, &indirect, &mut active);
         }
         drop(active);
         drop(render_pass);
@@ -228,7 +250,13 @@ fn render(world: &mut World) {
     // This will iterate over each material pipeline and draw the scene
     drop(scene);
     for stored in pipelines.iter() {
-        stored.render(world, &meshes, &indirect, &mut default, &mut render_pass);
+        stored.render(
+            world,
+            &meshes,
+            &indirect,
+            &mut default,
+            &mut render_pass,
+        );
     }
 
     drop(render_pass);

@@ -13,12 +13,8 @@ layout(push_constant) uniform PushConstants {
 // Main density function that will create the shape of the terrain
 float density(vec3 position) {
     position += parameters.offset.xyz;
-    return snoise(position * 0.02) * 10.0 + position.y;
-
-    /*
     float density = position.y - 20;
     position *= 0.06f;
-    density += (fbm(position * 40.03, 1, 0.5f, 2.0f) * 0.25f) + (fbm(position * 1.96, 2, 0.5f, 2.0f) * 0.50f) + (fbm(position * 1.01, 3, 0.5f, 2.0f) * 1.00f);
-    return density * 0.06f;
-    */
+    density += fbm(position * 0.1 * vec3(1, 2, 1), 6, 0.4f, 2.1f) * 35.25f;
+    return density * 1010.0;
 }

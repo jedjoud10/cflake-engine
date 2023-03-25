@@ -55,7 +55,7 @@ pub enum TextureMipLevelError {
     BorrowedImmutably,
 
     #[error("The given mip level ({0}) is out of the mip levels within the texture ({1})")]
-    OutOfRange(u8, u8)
+    OutOfRange(u8, u8),
 }
 
 #[derive(Error, Debug)]

@@ -1,9 +1,9 @@
 use super::attributes::*;
 use crate::mesh::attributes::{Normal, Position, Tangent, TexCoord};
 use crate::{
-    AttributeBuffer, MeshAttributes, MeshAttribute,
-    MeshImportError, MeshImportSettings, MeshInitializationError,
-    TrianglesMut, TrianglesRef, VerticesMut, VerticesRef,
+    AttributeBuffer, MeshAttribute, MeshAttributes, MeshImportError,
+    MeshImportSettings, MeshInitializationError, TrianglesMut,
+    TrianglesRef, VerticesMut, VerticesRef,
 };
 use assets::Asset;
 use graphics::{
@@ -120,7 +120,7 @@ impl Mesh {
         set::<Normal>(&mut vertices, normals);
         set::<Tangent>(&mut vertices, tangents);
         set::<TexCoord>(&mut vertices, tex_coords);
-        
+
         // We don't have to do shit with these since
         // they internally set the data automatically for us
         let _ = vertices.len();
@@ -203,7 +203,7 @@ impl Mesh {
             },
         )
     }
-    
+
     // Get the axis-aligned bounding box for this mesh
     // Returns None if the AABB wasn't computed yet or if computation failed
     pub fn aabb(&mut self) -> Option<math::Aabb<f32>> {
@@ -252,7 +252,9 @@ impl Asset for Mesh {
         // Convert the vertices into the separate buffer
         for vertex in parsed.vertices {
             // Read and add the position
-            positions.push(vek::Vec3::from_slice(&vertex.position).with_w(0f32));
+            positions.push(
+                vek::Vec3::from_slice(&vertex.position).with_w(0f32),
+            );
 
             // Read and add the normal
             if let Some(normals) = &mut normals {

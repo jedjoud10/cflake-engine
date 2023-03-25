@@ -1,8 +1,9 @@
 use std::{
+    cell::Cell,
     marker::PhantomData,
     mem::transmute,
     num::{NonZeroU32, NonZeroU8},
-    sync::Arc, cell::Cell,
+    sync::Arc,
 };
 
 use smallvec::SmallVec;
@@ -11,12 +12,12 @@ use wgpu::{
 };
 
 use crate::{
-    Extent, GpuPod, Graphics, MipLevelMut, MipLevelRef, Origin,
-    Region, RenderTarget, Sampler, SamplerSettings, SamplerWrap,
-    Texel, TexelSize, TextureAsTargetError,
-    TextureInitializationError, TextureMipLevelError, TextureMipMaps,
-    TextureMode, TextureResizeError, TextureSamplerError,
-    TextureUsage, MipLevelsRef, MipLevelsMut,
+    Extent, GpuPod, Graphics, MipLevelMut, MipLevelRef, MipLevelsMut,
+    MipLevelsRef, Origin, Region, RenderTarget, Sampler,
+    SamplerSettings, SamplerWrap, Texel, TexelSize,
+    TextureAsTargetError, TextureInitializationError,
+    TextureMipLevelError, TextureMipMaps, TextureMode,
+    TextureResizeError, TextureSamplerError, TextureUsage,
 };
 
 // Possibly predefined texel data
@@ -270,18 +271,16 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
     fn views(&self) -> &[wgpu::TextureView];
 
     // Get the mip levels of the texture immutably
-    fn mips(&self) -> MipLevelsRef::<Self> {
-        MipLevelsRef {
-            texture: self
-        }
+    fn mips(&self) -> MipLevelsRef<Self> {
+        MipLevelsRef { texture: self }
     }
-    
+
     // Get the mip levels of the texture mutably
-    fn mips_mut(&mut self) -> MipLevelsMut::<Self> {
+    fn mips_mut(&mut self) -> MipLevelsMut<Self> {
         MipLevelsMut {
             texture: self,
             mutated: Cell::new(0),
-            borrowed: Cell::new(0)
+            borrowed: Cell::new(0),
         }
     }
 
@@ -451,8 +450,10 @@ pub(crate) fn create_image_data_layout<T: Texel, E: Extent>(
         offset: 0,
         bytes_per_row,
         rows_per_image: match E::dimension() {
-            wgpu::TextureDimension::D3 => NonZeroU32::new(extent.width()),
-            _ => None
+            wgpu::TextureDimension::D3 => {
+                NonZeroU32::new(extent.width())
+            }
+            _ => None,
         },
     }
 }
@@ -482,7 +483,7 @@ pub(crate) fn write_to_level<T: Texel, R: Region>(
         origin: origin_to_origin3d(origin),
         aspect: texture_aspect::<T>(),
     };
-    
+
     // Write to the mip level of the texture
     graphics.staging_pool().write_texture(
         &graphics,
@@ -490,7 +491,7 @@ pub(crate) fn write_to_level<T: Texel, R: Region>(
         image_copy_texture,
         image_data_layout,
         extent_to_extent3d(extent),
-        bytes
+        bytes,
     );
 }
 

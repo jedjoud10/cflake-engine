@@ -173,14 +173,16 @@ impl<T: ImageTexel> Asset for Texture2D<T> {
         );
 
         // Scale the texture if needed
-        if let TextureScale::Scale { scaling, filter } = settings.scale {
+        if let TextureScale::Scale { scaling, filter } =
+            settings.scale
+        {
             let nheight = ((image.height() as f32) * scaling) as u32;
             let nwidth = ((image.width() as f32) * scaling) as u32;
-            
+
             if nheight != 0 && nwidth != 0 {
                 image = image.resize(nwidth, nheight, filter);
             }
-        }        
+        }
 
         // Get 2D dimensions and texel data
         let dimensions =

@@ -3,15 +3,22 @@ use math::SharpVertices;
 use utils::{Storage, ThreadPool};
 use world::World;
 
-use crate::{Material, DefaultMaterialResources, Mesh, Surface, Renderer};
+use crate::{
+    DefaultMaterialResources, Material, Mesh, Renderer, Surface,
+};
 
 // Check if an AABB intersects all the given frustum planes
 // TODO: Use space partioning algorithms to make this faster (ex. Octree)
 // TODO: Optimize this shit
 // https://subscription.packtpub.com/book/game+development/9781787123663/9/ch09lvl1sec89/obb-to-plane
 // https://www.braynzarsoft.net/viewtutorial/q16390-34-aabb-cpu-side-frustum-culling
-pub fn intersects_frustum(planes: &math::Frustum<f32>, aabb: math::Aabb<f32>, matrix: &vek::Mat4<f32>) -> bool {
-    let corners = <math::Aabb<f32> as SharpVertices<f32>>::points(&aabb);
+pub fn intersects_frustum(
+    planes: &math::Frustum<f32>,
+    aabb: math::Aabb<f32>,
+    matrix: &vek::Mat4<f32>,
+) -> bool {
+    let corners =
+        <math::Aabb<f32> as SharpVertices<f32>>::points(&aabb);
     let mut out: [vek::Vec4<f32>; 8] = [vek::Vec4::zero(); 8];
 
     for (input, output) in corners.iter().zip(out.iter_mut()) {
@@ -54,11 +61,17 @@ pub(super) fn cull_surfaces<'r, M: Material>(
     query.for_each(
         &mut threadpool,
         |(surface, renderer)| {
-        let mesh = meshes.get(&surface.mesh);
-        if let Some(aabb) = mesh.vertices().aabb() {
-            surface.culled = !intersects_frustum(&default.camera_frustum, aabb, &renderer.matrix)
-        } else {
-            surface.culled = false;
-        }
-    }, 256);
+            let mesh = meshes.get(&surface.mesh);
+            if let Some(aabb) = mesh.vertices().aabb() {
+                surface.culled = !intersects_frustum(
+                    &default.camera_frustum,
+                    aabb,
+                    &renderer.matrix,
+                )
+            } else {
+                surface.culled = false;
+            }
+        },
+        256,
+    );
 }

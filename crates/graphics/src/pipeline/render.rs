@@ -75,7 +75,10 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPipeline<C, DS> {
         let layout = &shader.layout;
 
         // Create a name for the render pipeline
-        let name = format!("render-pipeline-{:?}", [shader.vertex().name(), shader.fragment().name()]);
+        let name = format!(
+            "render-pipeline-{:?}",
+            [shader.vertex().name(), shader.fragment().name()]
+        );
 
         // Create the WGPU pipeline using the given configuration
         let pipeline = graphics.device().create_render_pipeline(

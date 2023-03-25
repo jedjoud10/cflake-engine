@@ -1,7 +1,7 @@
-use ecs::Component;
-use graphics::{DrawIndirectBuffer, DrawIndexedIndirectBuffer};
-use utils::Handle;
 use crate::{Material, MaterialId, Mesh};
+use ecs::Component;
+use graphics::{DrawIndexedIndirectBuffer, DrawIndirectBuffer};
+use utils::Handle;
 
 // A surface is a combination of a sub mesh and a specific material handle
 // A renderable entity can have multiple surfaces that each have their own material
@@ -10,7 +10,7 @@ pub struct Surface<M: Material> {
     // Graphic object handles
     pub mesh: Handle<Mesh>,
     pub material: Handle<M>,
-    
+
     // Surface settings
     pub visible: bool,
     pub culled: bool,

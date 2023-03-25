@@ -1,12 +1,13 @@
 use crate::{
     BufferInfo, ColorLayout, ComputeShader, DepthStencilLayout,
-    RenderPipeline, TriangleBuffer, UniformBuffer, DrawIndirectBuffer, DrawIndexedIndirectBuffer,
+    DrawIndexedIndirectBuffer, DrawIndirectBuffer, RenderPipeline,
+    TriangleBuffer, UniformBuffer,
 };
 use std::{
     ops::{Bound, Range},
     sync::Arc,
 };
-use wgpu::{BindGroup, util::RenderEncoder};
+use wgpu::{util::RenderEncoder, BindGroup};
 
 // Keep track of all render commands that we call upon the render pass
 // The whole reason I have to delegate this to a command type system is because
@@ -165,15 +166,24 @@ pub(crate) fn record_render_commands<
                 );
             }
 
-            RenderCommand::DrawIndirect { buffer, element} => {
+            RenderCommand::DrawIndirect { buffer, element } => {
                 let indirect_offset = element * buffer.stride();
-                render_pass.draw_indirect(buffer.raw(), indirect_offset as u64)
-            },
+                render_pass.draw_indirect(
+                    buffer.raw(),
+                    indirect_offset as u64,
+                )
+            }
 
-            RenderCommand::DrawIndexedIndirect { buffer, element} => {
+            RenderCommand::DrawIndexedIndirect {
+                buffer,
+                element,
+            } => {
                 let indirect_offset = element * buffer.stride();
-                render_pass.draw_indexed_indirect(buffer.raw(), indirect_offset as u64)
-            },
+                render_pass.draw_indexed_indirect(
+                    buffer.raw(),
+                    indirect_offset as u64,
+                )
+            }
         }
     }
 }

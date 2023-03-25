@@ -1,4 +1,4 @@
-use bytemuck::{Zeroable, Pod};
+use bytemuck::{Pod, Zeroable};
 
 // Plain old data type that can be sent to the gpu
 // This is a bit of a hack tbh since bool doesn't implement
