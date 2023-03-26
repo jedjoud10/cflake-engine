@@ -4,7 +4,7 @@ use std::{
 };
 
 use super::attributes::*;
-use crate::{AttributeError, MeshAabbComputeError};
+use crate::{AttributeError, MeshAabbComputeError, RenderPath, Direct, Indirect};
 use graphics::{Buffer, BufferInfo, VertexBuffer, DrawIndexedIndirectBuffer};
 use math::Aabb;
 use utils::Handle;

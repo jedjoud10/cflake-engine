@@ -1,37 +1,12 @@
 use crate::{
     ActiveScenePipeline, ActiveSceneRenderPass,
     DefaultMaterialResources, Material, Mesh, MeshAttribute,
-    MeshAttributes, Renderer, SceneColor, SceneDepth, Surface, RenderPath,
+    MeshAttributes, Renderer, SceneColor, SceneDepth, Surface, RenderPath, set_vertex_buffer_attribute,
 };
 use ecs::Scene;
 use graphics::{DrawIndexedIndirectBuffer, RenderPipeline};
 use utils::{Handle, Storage};
 use world::World;
-
-// Set a mesh binding vertex buffer to the current render pass
-pub(crate) fn set_vertex_buffer_attribute<
-    'a,
-    'r,
-    A: MeshAttribute,
->(
-    supported: MeshAttributes,
-    mesh: &'r Mesh,
-    active: &mut ActiveScenePipeline<'a, 'r, '_>,
-    index: &mut u32,
-) {
-    // If the material doesn't support the attribute, no need to set it
-    if !supported.contains(A::ATTRIBUTE) {
-        return;
-    }
-
-    // Check if the mesh contains the attribute, and if it does, render it
-    if let Ok(buffer) = mesh.vertices().attribute::<A>() {
-        active
-            .set_vertex_buffer::<A::V>(*index, buffer, ..)
-            .unwrap();
-        *index += 1;
-    }
-}
 
 // Render all the visible surfaces of a specific material type
 pub(super) fn render_surfaces<'r, M: Material>(
@@ -97,15 +72,13 @@ pub(super) fn render_surfaces<'r, M: Material>(
             switched_material_instances = false;
         }
 
-        /*
         // Skip rendering if the mesh is invalid
         let attribute =
             mesh.vertices().enabled().contains(M::attributes());
-        let validity = mesh.vertices().len().is_some();
-        if !(attribute && validity) && surface.indirect.is_none() {
+        let validity = <M::RenderPath as RenderPath>::is_valid(mesh);
+        if !(attribute && validity) {
             continue;
         }
-        */
 
         // Set the surface group bindings
         active.set_bind_group(2, |group| {
@@ -117,42 +90,45 @@ pub(super) fn render_surfaces<'r, M: Material>(
             );
         });
 
-        /*
         // Set the vertex buffers and index buffers when we change meshes
+        // TODO: Optimize this further by not setting the same vertex buffer twice in case of indirectly drawn meshes (shared vetex buffer handles)
         if last_mesh != Some(surface.mesh.clone()) {
             use crate::attributes::*;
             let mut index = 0;
-            set_vertex_buffer_attribute::<Position>(
+            set_vertex_buffer_attribute::<Position, M::RenderPath, _, _>(
                 supported,
                 mesh,
+                defaults,
                 &mut active,
                 &mut index,
             );
-            set_vertex_buffer_attribute::<Normal>(
+            set_vertex_buffer_attribute::<Normal, M::RenderPath, _, _>(
                 supported,
                 mesh,
+                defaults,
                 &mut active,
                 &mut index,
             );
-            set_vertex_buffer_attribute::<Tangent>(
+            set_vertex_buffer_attribute::<Tangent, M::RenderPath, _, _>(
                 supported,
                 mesh,
+                defaults,
                 &mut active,
                 &mut index,
             );
-            set_vertex_buffer_attribute::<TexCoord>(
+            set_vertex_buffer_attribute::<TexCoord, M::RenderPath, _, _>(
                 supported,
                 mesh,
+                defaults,
                 &mut active,
                 &mut index,
             );
 
             // Set the index buffer
             let triangles = mesh.triangles();
-            active.set_index_buffer(triangles.buffer(), ..).unwrap();
+            <M::RenderPath as RenderPath>::set_index_buffer(.., triangles.buffer(), defaults, &mut active).unwrap();
             last_mesh = Some(surface.mesh.clone());
         }
-        */
 
         // Set the push constant ranges right before rendering (in the hot loop!)
         active

@@ -1,13 +1,14 @@
 use graphics::{
     Normalized, PerVertex, Vertex, VertexBuffer, VertexConfig,
-    VertexInput, VertexInputInfo, XYZ, XYZW, TriangleBuffer, GpuPod, DrawIndexedIndirectBuffer, ColorLayout, DepthStencilLayout, ActiveGraphicsPipeline,
+    VertexInput, VertexInputInfo, XYZ, XYZW, TriangleBuffer, GpuPod, DrawIndexedIndirectBuffer, ColorLayout, DepthStencilLayout, ActiveGraphicsPipeline, SetVertexBufferError, SetIndexBufferError,
 };
 use paste::paste;
 use utils::{Handle, Storage};
 use std::cell::{Ref, RefMut};
 use std::marker::PhantomData;
+use std::ops::RangeBounds;
 
-use crate::{AttributeError, VerticesMut, VerticesRef, Mesh, DefaultMaterialResources, Material, Surface};
+use crate::{AttributeError, VerticesMut, VerticesRef, Mesh, DefaultMaterialResources, Material, Surface, RenderPath};
 
 bitflags::bitflags! {
     // This specifies the buffers that the mesh uses internally
@@ -27,91 +28,7 @@ pub const MAX_MESH_VERTEX_ATTRIBUTES: usize =
     MeshAttributes::all().bits.count_ones() as usize;
 
 // Contains the underlying array buffer for a specific attribute
-pub type DirectAttributeBuffer<A> = VertexBuffer<<A as MeshAttribute>::V>;
-pub type IndirectAttributeBuffer<A> = Handle<VertexBuffer<<A as MeshAttribute>::V>>;
-
-// TODO: Rename this since it's not really a rendering thing, more like mesh thing
-// TODO: Move this out of here. It does not fit in this file
-pub trait RenderPath: 'static + Send + Sync + Sized { 
-    type AttributeBuffer<A: MeshAttribute>: 'static + Send + Sync + Sized;
-    type TriangleBuffer<T: GpuPod>: 'static + Send + Sync + Sized;
-    type Count: 'static + Send + Sync + Sized;
-
-    fn get<'a>(
-        defaults: &DefaultMaterialResources<'a>,
-        handle: &Handle<Mesh<Self>>
-    ) -> &'a Mesh<Self>;
-
-    fn draw<
-        'a,
-        C: ColorLayout,
-        DS: DepthStencilLayout,
-    >(
-        mesh: &'a Mesh<Self>,
-        defaults: &DefaultMaterialResources<'a>,
-        active: &mut ActiveGraphicsPipeline<'_, 'a, '_, C, DS>,
-    );
-}
-
-// Direct and indirect mesh variants
-pub struct Direct;
-pub struct Indirect;
-
-
-impl RenderPath for Direct { 
-    type AttributeBuffer<A: MeshAttribute> = DirectAttributeBuffer<A>;
-    type TriangleBuffer<T: GpuPod> = TriangleBuffer<T>;
-    type Count = Option<usize>;
-
-    fn get<'a>(
-        defaults: &DefaultMaterialResources<'a>,
-        handle: &Handle<Mesh<Self>>
-    ) -> &'a Mesh<Self> {
-        defaults.meshes.get(&handle)
-    }
-
-    fn draw<
-        'a,
-        C: ColorLayout,
-        DS: DepthStencilLayout,
-    >(
-        mesh: &'a Mesh<Self>,
-        defaults: &DefaultMaterialResources<'a>,
-        active: &mut ActiveGraphicsPipeline<'_, 'a, '_, C, DS>,
-    ) {
-        let indices =
-            0..(mesh.triangles().buffer().len() as u32 * 3);
-        active.draw_indexed(indices, 0..1);
-    }
-}
-
-impl RenderPath for Indirect {
-    type AttributeBuffer<A: MeshAttribute> = IndirectAttributeBuffer<A>;
-    type TriangleBuffer<T: GpuPod> = Handle<TriangleBuffer<T>>;
-    type Count = Handle<DrawIndexedIndirectBuffer>;
-
-    fn get<'a>(
-        defaults: &DefaultMaterialResources<'a>,
-        handle: &Handle<Mesh<Self>>
-    ) -> &'a Mesh<Self> {
-        defaults.indirect_meshes.get(&handle)
-    }
-
-    fn draw<
-        'a,
-        C: ColorLayout,
-        DS: DepthStencilLayout,
-    >(
-        mesh: &'a Mesh<Self>,
-        defaults: &DefaultMaterialResources<'a>,
-        active: &mut ActiveGraphicsPipeline<'_, 'a, '_, C, DS>,
-    ) {
-        let handle = mesh.vertices().indirect().clone();
-        let buffer = defaults.draw_indexed_indirect_buffers.get(&handle);
-        active.draw_indexed_indirect(buffer, 0);
-    }
-}
-
+pub type AttributeBuffer<A> = VertexBuffer<<A as MeshAttribute>::V>;
 
 // A named attribute that has a specific name, like "Position", or "Normal"
 pub trait MeshAttribute: Sized {
@@ -131,6 +48,12 @@ pub trait MeshAttribute: Sized {
     fn from_mut_as_ref<'a, R: RenderPath>(
         vertices: &'a VerticesMut<'_, R>,
     ) -> Result<Ref<'a, R::AttributeBuffer<Self>>, AttributeError>;
+
+    // Get an buffer used for indirect meshes from the default material resources
+    fn indirect_buffer_from_defaults<'a>(
+        defaults: &DefaultMaterialResources<'a>,
+        handle: &Handle<AttributeBuffer<Self>>
+    ) -> &'a VertexBuffer<Self::V>;
 
     // Insert a mesh attribute vertex buffer into the vertices
     // Replaces already existing attribute buffers
@@ -220,6 +143,13 @@ macro_rules! impl_vertex_attribute {
                     } else {
                         Err(AttributeError::MissingAttribute)
                     }
+                }
+
+                fn indirect_buffer_from_defaults<'a>(
+                    defaults: &DefaultMaterialResources<'a>,
+                    handle: &Handle<AttributeBuffer<Self>>
+                ) -> &'a VertexBuffer<Self::V> {
+                    defaults.[<indirect _ $name>].get(handle)
                 }
 
                 fn insert<R: RenderPath>(

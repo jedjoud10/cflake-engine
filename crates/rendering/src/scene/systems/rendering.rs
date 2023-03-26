@@ -2,13 +2,13 @@ use crate::{
     AlbedoMap, BasicMaterial, Camera, DefaultMaterialResources,
     DirectionalLight, ForwardRenderer, MaskMap, Mesh, NormalMap,
     PhysicallyBasedMaterial, Pipelines, Renderer, SceneUniform,
-    ShadowMapping, SkyMaterial, WindowUniform, Indirect, IndirectAttributeBuffer,
+    ShadowMapping, SkyMaterial, WindowUniform, Indirect, AttributeBuffer,
 };
 use assets::Assets;
 
 use ecs::{Rotation, Scene};
 use graphics::{
-    DrawIndexedIndirectBuffer, Graphics, Texture, Window,
+    DrawIndexedIndirectBuffer, Graphics, Texture, Window, TriangleBuffer,
 };
 
 use log::LevelFilter;
@@ -68,10 +68,11 @@ fn init(world: &mut World) {
     // Add common storages
     world.insert(Storage::<Mesh>::default());
     world.insert(Storage::<Mesh<Indirect>>::default());
-    world.insert(Storage::<IndirectAttributeBuffer<crate::attributes::Position>>::default());
-    world.insert(Storage::<IndirectAttributeBuffer<crate::attributes::Normal>>::default());
-    world.insert(Storage::<IndirectAttributeBuffer<crate::attributes::Tangent>>::default());
-    world.insert(Storage::<IndirectAttributeBuffer<crate::attributes::TexCoord>>::default());
+    world.insert(Storage::<AttributeBuffer<crate::attributes::Position>>::default());
+    world.insert(Storage::<AttributeBuffer<crate::attributes::Normal>>::default());
+    world.insert(Storage::<AttributeBuffer<crate::attributes::Tangent>>::default());
+    world.insert(Storage::<AttributeBuffer<crate::attributes::TexCoord>>::default());
+    world.insert(Storage::<TriangleBuffer<u32>>::default());
     world.insert(Storage::<DrawIndexedIndirectBuffer>::default());
 
     // Add the storages that contain the materials and their resources
@@ -133,12 +134,13 @@ fn render(world: &mut World) {
     
     // Needed for indirect rendering
     let indirect_meshes = world.get::<Storage<Mesh<Indirect>>>().unwrap();
-    let indirect_position_attribute = world.get::<Storage<IndirectAttributeBuffer<crate::attributes::Position>>>().unwrap();
-    let indirect_normal_attribute = world.get::<Storage<IndirectAttributeBuffer<crate::attributes::Normal>>>().unwrap();
-    let indirect_tangents_attribute = world.get::<Storage<IndirectAttributeBuffer<crate::attributes::Tangent>>>().unwrap();
-    let indirect_tex_coords_attribute = world.get::<Storage<IndirectAttributeBuffer<crate::attributes::TexCoord>>>().unwrap();
+    let indirect_position_attribute = world.get::<Storage<AttributeBuffer<crate::attributes::Position>>>().unwrap();
+    let indirect_normal_attribute = world.get::<Storage<AttributeBuffer<crate::attributes::Normal>>>().unwrap();
+    let indirect_tangents_attribute = world.get::<Storage<AttributeBuffer<crate::attributes::Tangent>>>().unwrap();
+    let indirect_tex_coords_attribute = world.get::<Storage<AttributeBuffer<crate::attributes::TexCoord>>>().unwrap();
     let indexed_indirect_buffers =
         world.get::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
+    let indirect_triangles = world.get::<Storage<TriangleBuffer<u32>>>().unwrap();
 
     let albedo_maps = world.get::<Storage<AlbedoMap>>().unwrap();
     let normal_maps = world.get::<Storage<NormalMap>>().unwrap();
@@ -208,10 +210,11 @@ fn render(world: &mut World) {
         directional_light_rotation,
         meshes: &meshes,
         indirect_meshes: &indirect_meshes,
-        indirect_position_attribute: &indirect_position_attribute,
-        indirect_normal_attribute: &indirect_normal_attribute,
-        indirect_tangents_attribute: &indirect_tangents_attribute,
-        indirect_tex_coords_attribute: &indirect_tex_coords_attribute,
+        indirect_positions: &indirect_position_attribute,
+        indirect_normals: &indirect_normal_attribute,
+        indirect_tangents: &indirect_tangents_attribute,
+        indirect_tex_coords: &indirect_tex_coords_attribute,
+        indirect_triangles: &indirect_triangles,
         draw_indexed_indirect_buffers: &indexed_indirect_buffers,
     };
 

@@ -3,6 +3,8 @@ mod material;
 mod pbr;
 mod shared;
 mod sky;
+mod path;
+pub use path::*;
 pub use basic::*;
 pub use material::*;
 pub use pbr::*;

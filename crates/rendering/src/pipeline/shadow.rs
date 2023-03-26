@@ -23,7 +23,7 @@ pub(super) fn render_shadows<'r, M: Material>(
     let query = scene.query::<(&Surface<M>, &Renderer)>();
 
     // Keep track of the last model so we don't have to rebind buffers
-    let mut last: Option<Handle<Mesh>> = None;
+    let mut last: Option<Handle<Mesh<M::RenderPath>>> = None;
 
     // Iterate over all the surfaces of this material
     for (surface, renderer) in query {
@@ -35,17 +35,15 @@ pub(super) fn render_shadows<'r, M: Material>(
         // Get the mesh and material that correspond to this surface
         let mesh = <M::RenderPath as RenderPath>::get(&defaults, &surface.mesh);
 
-        /*
         // Skip rendering if the mesh is invalid
         let attribute = mesh
             .vertices()
             .enabled()
             .contains(MeshAttributes::POSITIONS);
-        let validity = mesh.vertices().len().is_some();
-        if !(attribute && validity) && surface.indirect.is_none() {
+        let validity = <M::RenderPath as RenderPath>::is_valid(mesh);
+        if !(attribute && validity) {
             continue;
         }
-        */
 
         // Set the mesh matrix push constant
         active
@@ -59,22 +57,18 @@ pub(super) fn render_shadows<'r, M: Material>(
             })
             .unwrap();
 
-        /*
         // Set the vertex buffers and index buffers when we change models
         if last != Some(surface.mesh.clone()) {
             // Set the position buffer
             let positions =
                 mesh.vertices().attribute::<Position>().unwrap();
-            active.set_vertex_buffer::<<Position as crate::MeshAttribute>::V>(0, positions, ..).unwrap();
+            <M::RenderPath as RenderPath>::set_vertex_buffer(0, .., positions, defaults, active).unwrap();
 
             // Set the index buffer
             let triangles = mesh.triangles();
-            active.set_index_buffer(triangles.buffer(), ..).unwrap();
+            <M::RenderPath as RenderPath>::set_index_buffer(.., triangles.buffer(), defaults, active).unwrap();
             last = Some(surface.mesh.clone());
         }
-        */
-
-        
 
         // Draw the mesh
         <M::RenderPath as RenderPath>::draw(mesh, &defaults, active);

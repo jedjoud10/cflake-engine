@@ -8,7 +8,7 @@ mod vertices;
 mod indirect;
 pub use self::utils::*;
 pub use attributes::{
-    Direct, Indirect, DirectAttributeBuffer, IndirectAttributeBuffer, RenderPath, MeshAttribute, MeshAttributes,
+    AttributeBuffer, MeshAttribute, MeshAttributes,
 };
 pub use errors::*;
 pub use mesh::*;

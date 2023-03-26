@@ -1,9 +1,9 @@
 use super::attributes::*;
 use crate::mesh::attributes::{Normal, Position, Tangent, TexCoord};
 use crate::{
-    DirectAttributeBuffer, MeshAttribute, MeshAttributes, MeshImportError,
+    AttributeBuffer, MeshAttribute, MeshAttributes, MeshImportError,
     MeshImportSettings, MeshInitializationError, TrianglesMut,
-    TrianglesRef, VerticesMut, VerticesRef,
+    TrianglesRef, VerticesMut, VerticesRef, RenderPath, Direct, Indirect,
 };
 use assets::Asset;
 use graphics::{
@@ -52,25 +52,25 @@ impl Mesh<Direct> {
         triangles: &[Triangle<u32>],
     ) -> Result<Self, MeshInitializationError> {
         let positions = positions.map(|slice| {
-            DirectAttributeBuffer::<Position>::from_slice(
+            AttributeBuffer::<Position>::from_slice(
                 graphics, slice, mode, usage,
             )
             .unwrap()
         });
         let normals = normals.map(|slice| {
-            DirectAttributeBuffer::<Normal>::from_slice(
+            AttributeBuffer::<Normal>::from_slice(
                 graphics, slice, mode, usage,
             )
             .unwrap()
         });
         let tangents = tangents.map(|slice| {
-            DirectAttributeBuffer::<Tangent>::from_slice(
+            AttributeBuffer::<Tangent>::from_slice(
                 graphics, slice, mode, usage,
             )
             .unwrap()
         });
         let tex_coords = tex_coords.map(|slice| {
-            DirectAttributeBuffer::<TexCoord>::from_slice(
+            AttributeBuffer::<TexCoord>::from_slice(
                 graphics, slice, mode, usage,
             )
             .unwrap()
@@ -86,10 +86,10 @@ impl Mesh<Direct> {
 
     // Create a new mesh from the attribute buffers
     pub fn from_buffers(
-        positions: Option<DirectAttributeBuffer<Position>>,
-        normals: Option<DirectAttributeBuffer<Normal>>,
-        tangents: Option<DirectAttributeBuffer<Tangent>>,
-        tex_coords: Option<DirectAttributeBuffer<TexCoord>>,
+        positions: Option<AttributeBuffer<Position>>,
+        normals: Option<AttributeBuffer<Normal>>,
+        tangents: Option<AttributeBuffer<Tangent>>,
+        tex_coords: Option<AttributeBuffer<TexCoord>>,
         triangles: TriangleBuffer<u32>,
     ) -> Result<Self, MeshInitializationError> {
         let mut mesh = Self {
@@ -106,7 +106,7 @@ impl Mesh<Direct> {
         // "Set"s a buffer, basically insert it if it's Some and removing it if it's None
         pub fn set<T: MeshAttribute>(
             vertices: &mut VerticesMut<Direct>,
-            buffer: Option<DirectAttributeBuffer<T>>,
+            buffer: Option<AttributeBuffer<T>>,
         ) {
             match buffer {
                 Some(x) => vertices.insert::<T>(x),
@@ -138,10 +138,10 @@ impl Mesh<Direct> {
 impl Mesh<Indirect> {
     // Create a new mesh from the attribute buffers' handles
     pub fn from_handles(
-        positions: Option<IndirectAttributeBuffer<Position>>,
-        normals: Option<IndirectAttributeBuffer<Normal>>,
-        tangents: Option<IndirectAttributeBuffer<Tangent>>,
-        tex_coords: Option<IndirectAttributeBuffer<TexCoord>>,
+        positions: Option<Handle<AttributeBuffer<Position>>>,
+        normals: Option<Handle<AttributeBuffer<Normal>>>,
+        tangents: Option<Handle<AttributeBuffer<Tangent>>>,
+        tex_coords: Option<Handle<AttributeBuffer<TexCoord>>>,
         triangles: Handle<TriangleBuffer<u32>>,
         indirect: Handle<DrawIndexedIndirectBuffer>,
     ) -> Self {
@@ -151,7 +151,7 @@ impl Mesh<Indirect> {
         // Inserts the MeshAttribute bitflag of the correspodning attribute if needed
         fn insert<T: MeshAttribute>(
             output: &mut MeshAttributes,
-            handle: &Option<Handle<DirectAttributeBuffer<T>>>,
+            handle: &Option<Handle<AttributeBuffer<T>>>,
         ) {
             if handle.is_some() {
                 output.insert(T::ATTRIBUTE);
@@ -171,9 +171,9 @@ impl Mesh<Indirect> {
             normals,
             tangents,
             tex_coords,
-            count: todo!(),
+            count: indirect,
             triangles,
-            aabb: todo!(),
+            aabb: None,
         }
     }
 }
