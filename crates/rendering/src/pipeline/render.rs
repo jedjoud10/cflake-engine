@@ -19,6 +19,7 @@ pub(crate) fn set_vertex_buffer_attribute<
     supported: MeshAttributes,
     mesh: &'r Mesh,
     active: &mut ActiveScenePipeline<'a, 'r, '_>,
+    index: &mut u32,
 ) {
     // If the material doesn't support the attribute, no need to set it
     if !supported.contains(A::ATTRIBUTE) {
@@ -28,8 +29,9 @@ pub(crate) fn set_vertex_buffer_attribute<
     // Check if the mesh contains the attribute, and if it does, render it
     if let Ok(buffer) = mesh.vertices().attribute::<A>() {
         active
-            .set_vertex_buffer::<A::V>(A::index(), buffer, ..)
+            .set_vertex_buffer::<A::V>(*index, buffer, ..)
             .unwrap();
+        *index += 1;
     }
 }
 
@@ -120,25 +122,30 @@ pub(super) fn render_surfaces<'r, M: Material>(
         // Set the vertex buffers and index buffers when we change meshes
         if last_mesh != Some(surface.mesh.clone()) {
             use crate::attributes::*;
+            let mut index = 0;
             set_vertex_buffer_attribute::<Position>(
                 supported,
                 mesh,
                 &mut active,
+                &mut index,
             );
             set_vertex_buffer_attribute::<Normal>(
                 supported,
                 mesh,
                 &mut active,
+                &mut index,
             );
             set_vertex_buffer_attribute::<Tangent>(
                 supported,
                 mesh,
                 &mut active,
+                &mut index,
             );
             set_vertex_buffer_attribute::<TexCoord>(
                 supported,
                 mesh,
                 &mut active,
+                &mut index,
             );
 
             // Set the index buffer

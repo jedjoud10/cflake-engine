@@ -69,10 +69,10 @@ fn update(world: &mut World) {
 
         // Set voxel noise parameters
         let factor =
-            (terrain.size as f32) / (terrain.size as f32 - 2.0);
+            (terrain.size as f32 - 2.0) / (terrain.size as f32);
         active
             .set_push_constants(|x| {
-                let offset = position.with_w(0.0f32) * (1.0 / factor);
+                let offset = position.with_w(0.0f32) * factor;
                 let offset = GpuPod::into_bytes(&offset);
                 let time = time.elapsed().as_secs_f32();
                 let time = GpuPod::into_bytes(&time);

@@ -65,10 +65,13 @@ impl Material for TerrainMaterial {
         Shader::new(vert, frag, compiler).unwrap()
     }
 
+    fn frustum_culling() -> bool {
+        false
+    }
+
     // Terrain only needs positions and normals
     fn attributes() -> rendering::MeshAttributes {
-        rendering::MeshAttributes::POSITIONS
-            | rendering::MeshAttributes::NORMALS
+        rendering::MeshAttributes::POSITIONS | rendering::MeshAttributes::NORMALS
     }
 
     // Fetch the texture storages

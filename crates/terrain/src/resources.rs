@@ -160,14 +160,14 @@ fn preallocate_meshes(
     render_distance: u32,
     size: u32,
 ) -> Vec<(Handle<Mesh>, bool)> {
-    let count = (render_distance * 2 + 1).pow(3);
+    let count = (render_distance * 2 + 1).pow(2) * 2;
 
     let mut vec = Vec::new();
 
     for _ in 0..count {
         // Calculate the maximum number of vertices that we can store
-        let vertex_count = (size as usize).pow(3) / 3;
-        let triangle_count = (size as usize - 1).pow(3) * 1;
+        let vertex_count = (size as usize).pow(3);
+        let triangle_count = (size as usize - 1).pow(3) * 3;
 
         // Create the vertex buffer (make sure size can contain ALL possible vertices)
         let vertices = VertexBuffer::<XYZW<f32>>::zeroed(

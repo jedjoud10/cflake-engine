@@ -15,7 +15,7 @@ pub(super) fn render_shadows<'r, M: Material>(
     active: &mut ActiveShadowGraphicsPipeline<'_, 'r, '_>,
 ) {
     // Don't do shit if we won't cast shadows
-    if !M::casts_shadows() {
+    if !M::casts_shadows() || !M::attributes().contains(MeshAttributes::POSITIONS) {
         return;
     }
 

@@ -1,4 +1,3 @@
-#version 120
 #include <engine/shaders/noises/common.glsl>
 
 // Cellular noise ("Worley noise") in 2D in GLSL.
