@@ -5,21 +5,22 @@ use std::{
 
 use super::attributes::*;
 use crate::{AttributeError, MeshAabbComputeError};
-use graphics::{Buffer, BufferInfo, VertexBuffer};
+use graphics::{Buffer, BufferInfo, VertexBuffer, DrawIndexedIndirectBuffer};
 use math::Aabb;
+use utils::Handle;
 
 // Immutable access to the mesh vertices
-pub struct VerticesRef<'a> {
+pub struct VerticesRef<'a, R: RenderPath> {
     pub(super) enabled: MeshAttributes,
-    pub(super) positions: &'a Option<AttributeBuffer<Position>>,
-    pub(super) normals: &'a Option<AttributeBuffer<Normal>>,
-    pub(super) tangents: &'a Option<AttributeBuffer<Tangent>>,
-    pub(super) tex_coords: &'a Option<AttributeBuffer<TexCoord>>,
-    pub(super) len: Option<usize>,
+    pub(super) positions: &'a Option<R::AttributeBuffer<Position>>,
+    pub(super) normals: &'a Option<R::AttributeBuffer<Normal>>,
+    pub(super) tangents: &'a Option<R::AttributeBuffer<Tangent>>,
+    pub(super) tex_coords: &'a Option<R::AttributeBuffer<TexCoord>>,
+    pub(super) count: &'a R::Count,
     pub(super) aabb: Option<math::Aabb<f32>>,
 }
 
-impl<'a> VerticesRef<'a> {
+impl<'a, R: RenderPath> VerticesRef<'a, R> {
     // Get the enabled mesh attributes bitflags
     pub fn enabled(&self) -> MeshAttributes {
         self.enabled
@@ -33,27 +34,8 @@ impl<'a> VerticesRef<'a> {
     // Get an immutable reference to an attribute buffer
     pub fn attribute<T: MeshAttribute>(
         &self,
-    ) -> Result<&'a VertexBuffer<T::V>, AttributeError> {
+    ) -> Result<&'a R::AttributeBuffer<T>, AttributeError> {
         T::from_ref_as_ref(self)
-    }
-
-    // Get all the available attribute buffers as untyped buffers types
-    pub fn untyped_buffers(
-        &self,
-    ) -> [Result<BufferInfo, AttributeError>;
-           MAX_MESH_VERTEX_ATTRIBUTES] {
-        [
-            self.attribute::<Position>().map(Buffer::as_untyped),
-            self.attribute::<Normal>().map(Buffer::as_untyped),
-            self.attribute::<Tangent>().map(Buffer::as_untyped),
-            //self.attribute::<Color>().map(|b| Buffer::untyped(b)),
-            self.attribute::<TexCoord>().map(Buffer::as_untyped),
-        ]
-    }
-
-    // Get the number of vertices that we have (will return None if we have buffers of mismatching lengths)
-    pub fn len(&self) -> Option<usize> {
-        self.len
     }
 
     // Get the axis-aligned bounding box for this mesh
@@ -63,21 +45,35 @@ impl<'a> VerticesRef<'a> {
     }
 }
 
+impl<'a> VerticesRef<'a, Direct> {
+    // Get the number of vertices that we have (will return None if we have buffers of mismatching lengths)
+    pub fn len(&self) -> Option<usize> {
+        *self.count
+    }
+}
+
+impl<'a> VerticesRef<'a, Indirect> {
+    // Get the indexed indirect buffer handle immutably
+    pub fn indirect(&self) -> &Handle<DrawIndexedIndirectBuffer> {
+        self.count
+    }
+}
+
 // Mutable access to the mesh vertices
-pub struct VerticesMut<'a> {
+pub struct VerticesMut<'a, R: RenderPath> {
     // Attributes
     pub(super) enabled: &'a mut MeshAttributes,
     pub(super) positions:
-        RefCell<&'a mut Option<AttributeBuffer<Position>>>,
+        RefCell<&'a mut Option<R::AttributeBuffer<Position>>>,
     pub(super) normals:
-        RefCell<&'a mut Option<AttributeBuffer<Normal>>>,
+        RefCell<&'a mut Option<R::AttributeBuffer<Normal>>>,
     pub(super) tangents:
-        RefCell<&'a mut Option<AttributeBuffer<Tangent>>>,
+        RefCell<&'a mut Option<R::AttributeBuffer<Tangent>>>,
     pub(super) tex_coords:
-        RefCell<&'a mut Option<AttributeBuffer<TexCoord>>>,
+        RefCell<&'a mut Option<R::AttributeBuffer<TexCoord>>>,
 
     // Cached parameters
-    pub(super) len: RefCell<&'a mut Option<usize>>,
+    pub(super) count: RefCell<&'a mut R::Count>,
     pub(super) aabb: RefCell<&'a mut Option<math::Aabb<f32>>>,
 
     // Parameters to keep track of cached data
@@ -85,7 +81,7 @@ pub struct VerticesMut<'a> {
     pub(super) aabb_dirty: Cell<bool>,
 }
 
-impl<'a> VerticesMut<'a> {
+impl<'a, P: RenderPath> VerticesMut<'a, P> {
     // Get the enabled mesh attributes bitflags
     pub fn enabled(&self) -> MeshAttributes {
         *self.enabled
@@ -99,14 +95,14 @@ impl<'a> VerticesMut<'a> {
     // Get an immutable reference to an attribute buffer
     pub fn attribute<T: MeshAttribute>(
         &self,
-    ) -> Result<Ref<AttributeBuffer<T>>, AttributeError> {
+    ) -> Result<Ref<P::AttributeBuffer<T>>, AttributeError> {
         T::from_mut_as_ref(self)
     }
 
     // Get a mutable reference to an attribute buffer
     pub fn attribute_mut<T: MeshAttribute>(
         &self,
-    ) -> Result<RefMut<AttributeBuffer<T>>, AttributeError> {
+    ) -> Result<RefMut<P::AttributeBuffer<T>>, AttributeError> {
         self.set_as_dirty::<T>();
         T::from_mut_as_mut(self)
     }
@@ -114,7 +110,7 @@ impl<'a> VerticesMut<'a> {
     // Insert a new vertex buffer to the vertices
     pub fn insert<T: MeshAttribute>(
         &mut self,
-        buffer: AttributeBuffer<T>,
+        buffer: P::AttributeBuffer<T>,
     ) {
         self.set_as_dirty::<T>();
         T::insert(self, buffer);
@@ -123,7 +119,7 @@ impl<'a> VerticesMut<'a> {
     // Remove an old vertex buffer from the vertices
     pub fn remove<T: MeshAttribute>(
         &mut self,
-    ) -> Result<AttributeBuffer<T>, AttributeError> {
+    ) -> Result<P::AttributeBuffer<T>, AttributeError> {
         self.set_as_dirty::<T>();
         T::remove(self)
     }
@@ -137,7 +133,9 @@ impl<'a> VerticesMut<'a> {
             self.aabb_dirty.set(true);
         }
     }
+}
 
+impl<'a> VerticesMut<'a, Direct> {
     // Get the number of vertices that we have (will return None if we have buffers of mismatching lengths)
     pub fn len(&self) -> Option<usize> {
         if self.length_dirty.take() {
@@ -165,10 +163,10 @@ impl<'a> VerticesMut<'a> {
                 .unwrap();
 
             // Update length
-            **self.len.borrow_mut() = length;
+            **self.count.borrow_mut() = length;
         }
 
-        **self.len.borrow()
+        **self.count.borrow()
     }
 
     // Calculate an Axis-Aligned Bounding Box, and returns an error if not possible
@@ -197,5 +195,17 @@ impl<'a> VerticesMut<'a> {
         }
 
         Ok(self.aabb.borrow().unwrap())
+    }
+}
+
+impl<'a> VerticesMut<'a, Indirect> {
+    // Get the indexed indirect buffer handle mutably
+    pub fn indirect_mut(&mut self) -> &mut Handle<DrawIndexedIndirectBuffer> {
+        self.count.get_mut()
+    }
+
+    // Get the indexed indirect buffer handle immutably
+    pub fn indirect(&self) -> Handle<DrawIndexedIndirectBuffer> {
+        self.count.borrow().clone()
     }
 }

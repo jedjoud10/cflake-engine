@@ -1,14 +1,12 @@
 use crate::{
     ActiveScenePipeline, ActiveSceneRenderPass,
     DefaultMaterialResources, Material, Mesh, MeshAttribute,
-    MeshAttributes, Renderer, SceneColor, SceneDepth, Surface,
+    MeshAttributes, Renderer, SceneColor, SceneDepth, Surface, RenderPath,
 };
 use ecs::Scene;
 use graphics::{DrawIndexedIndirectBuffer, RenderPipeline};
 use utils::{Handle, Storage};
 use world::World;
-
-use super::draw;
 
 // Set a mesh binding vertex buffer to the current render pass
 pub(crate) fn set_vertex_buffer_attribute<
@@ -38,15 +36,13 @@ pub(crate) fn set_vertex_buffer_attribute<
 // Render all the visible surfaces of a specific material type
 pub(super) fn render_surfaces<'r, M: Material>(
     world: &'r World,
-    meshes: &'r Storage<Mesh>,
-    indirect: &'r Storage<DrawIndexedIndirectBuffer>,
     pipeline: &'r RenderPipeline<SceneColor, SceneDepth>,
-    default: &mut DefaultMaterialResources<'r>,
+    defaults: &mut DefaultMaterialResources<'r>,
     render_pass: &mut ActiveSceneRenderPass<'r, '_>,
 ) {
     // Reset the material resources for this new material type
-    default.material_index = 0;
-    default.draw_call_index = 0;
+    defaults.material_index = 0;
+    defaults.draw_call_index = 0;
 
     // Get a rasterizer for the current render pass by binding a pipeline
     let mut active = render_pass.bind_pipeline(pipeline);
@@ -58,7 +54,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
 
     // Set the global material bindings
     active.set_bind_group(0, |group| {
-        M::set_global_bindings(&mut resources, group, default);
+        M::set_global_bindings(&mut resources, group, defaults);
     });
 
     // Get all the entities that contain a visible surface
@@ -70,7 +66,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
     let mut switched_material_instances;
 
     // Keep track of the last model
-    let mut last_mesh: Option<Handle<Mesh>> = None;
+    let mut last_mesh: Option<Handle<Mesh<M::RenderPath>>> = None;
 
     // Iterate over all the surface of this material
     for (surface, renderer) in query {
@@ -80,7 +76,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
         }
 
         // Get the mesh and material that correspond to this surface
-        let mesh = meshes.get(&surface.mesh);
+        let mesh = <M::RenderPath as RenderPath>::get(&defaults, &surface.mesh);
 
         // Check if we changed material instances
         if last_material != Some(surface.material.clone()) {
@@ -93,7 +89,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
                 M::set_instance_bindings(
                     material,
                     &mut resources,
-                    default,
+                    defaults,
                     group,
                 );
             })
@@ -101,6 +97,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
             switched_material_instances = false;
         }
 
+        /*
         // Skip rendering if the mesh is invalid
         let attribute =
             mesh.vertices().enabled().contains(M::attributes());
@@ -108,17 +105,19 @@ pub(super) fn render_surfaces<'r, M: Material>(
         if !(attribute && validity) && surface.indirect.is_none() {
             continue;
         }
+        */
 
         // Set the surface group bindings
         active.set_bind_group(2, |group| {
             M::set_surface_bindings(
                 renderer,
                 &mut resources,
-                default,
+                defaults,
                 group,
             );
         });
 
+        /*
         // Set the vertex buffers and index buffers when we change meshes
         if last_mesh != Some(surface.mesh.clone()) {
             use crate::attributes::*;
@@ -153,6 +152,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
             active.set_index_buffer(triangles.buffer(), ..).unwrap();
             last_mesh = Some(surface.mesh.clone());
         }
+        */
 
         // Set the push constant ranges right before rendering (in the hot loop!)
         active
@@ -162,18 +162,18 @@ pub(super) fn render_surfaces<'r, M: Material>(
                     material,
                     renderer,
                     &mut resources,
-                    default,
+                    defaults,
                     push_constants,
                 );
             })
             .unwrap();
 
         // Draw the mesh
-        draw(surface, indirect, mesh, &mut active);
+        <M::RenderPath as RenderPath>::draw(mesh, &defaults, &mut active);
 
         // Add 1 to the material index when we switch instances
         if switched_material_instances {
-            default.material_index += 1;
+            defaults.material_index += 1;
         }
     }
 }

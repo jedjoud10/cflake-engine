@@ -1,7 +1,7 @@
 use crate::{
     AlbedoMap, CameraUniform, DefaultMaterialResources, MaskMap,
     Material, NormalMap, Renderer, SceneUniform, ShadowMap,
-    ShadowMapping, ShadowUniform,
+    ShadowMapping, ShadowUniform, Direct,
 };
 
 use assets::Assets;
@@ -35,6 +35,8 @@ impl Material for PhysicallyBasedMaterial {
         world::Read<'w, Storage<MaskMap>>,
         world::Read<'w, ShadowMapping>,
     );
+
+    type RenderPath = Direct;
 
     // Load the respective PBR shader modules and compile them
     fn shader(graphics: &Graphics, assets: &Assets) -> Shader {

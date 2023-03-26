@@ -23,6 +23,7 @@ fn create_chunk_components(
     terrain: &mut Terrain,
     coords: ChunkCoords,
 ) -> (Position, Renderer, Surface<TerrainMaterial>, Chunk) {
+    /*
     // Get a mesh from the terrain mesh pool
     let (mesh, free) =
         terrain.meshes.iter_mut().find(|(_, free)| *free).unwrap();
@@ -40,7 +41,6 @@ fn create_chunk_components(
     let mut surface = Surface::indirect(
         mesh.clone(),
         terrain.material.clone(),
-        indirect.clone(),
         terrain.id.clone(),
     );
 
@@ -64,6 +64,8 @@ fn create_chunk_components(
 
     // Return the components of the new chunk
     (position, renderer, surface, chunk)
+    */
+    todo!()
 }
 
 // Dynamically generate the chunks based on camera position
@@ -116,6 +118,7 @@ fn update(world: &mut World) {
             }
         }
 
+        /*
         // Detect the chunks that we should remove and remove them
         let removed = terrain
             .chunks
@@ -165,6 +168,7 @@ fn update(world: &mut World) {
         for (coords, entity) in added.iter().zip(entities.iter()) {
             terrain.entities.insert(*coords, *entity);
         }
+        */
 
         terrain.chunks = chunks;
     }

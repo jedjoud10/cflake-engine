@@ -44,8 +44,7 @@ pub fn intersects_frustum(
 // Update the "culled" paramter of each surface
 pub(super) fn cull_surfaces<'r, M: Material>(
     world: &'r World,
-    meshes: &'r Storage<Mesh>,
-    default: &mut DefaultMaterialResources<'r>,
+    default: &mut DefaultMaterialResources<'r>
 ) {
     // Don't cull if there's no need
     if !M::frustum_culling() {
@@ -61,6 +60,7 @@ pub(super) fn cull_surfaces<'r, M: Material>(
     query.for_each(
         &mut threadpool,
         |(surface, renderer)| {
+            /*
             let mesh = meshes.get(&surface.mesh);
 
             // Get the user defined AABB and fallback to the mesh one if needed
@@ -76,6 +76,7 @@ pub(super) fn cull_surfaces<'r, M: Material>(
             } else {
                 surface.culled = false;
             }
+            */
         },
         256,
     );

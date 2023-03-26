@@ -1,7 +1,7 @@
 use super::attributes::*;
 use crate::mesh::attributes::{Normal, Position, Tangent, TexCoord};
 use crate::{
-    AttributeBuffer, MeshAttribute, MeshAttributes, MeshImportError,
+    MeshAttribute, MeshAttributes, MeshImportError,
     MeshImportSettings, MeshInitializationError, TrianglesMut,
     TrianglesRef, VerticesMut, VerticesRef,
 };

@@ -49,6 +49,7 @@ fn update(world: &mut World) {
 
         terrain.counters.write(&[0, 0], 0).unwrap();
 
+        /*
         let indirect =
             indirects.get_mut(surface.indirect.as_ref().unwrap());
         let mesh = meshes.get_mut(&surface.mesh);
@@ -157,6 +158,7 @@ fn update(world: &mut World) {
         });
 
         active.dispatch(vek::Vec3::broadcast(terrain.dispatch));
+        */
         return;
     }
 }

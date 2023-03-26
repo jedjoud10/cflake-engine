@@ -1,7 +1,7 @@
 use crate::{
     AlbedoMap, CameraUniform, DefaultMaterialResources, Material,
     NormalMap, Renderer, SceneUniform, ShadowMap, ShadowMapping,
-    ShadowUniform,
+    ShadowUniform, Direct,
 };
 
 use assets::Assets;
@@ -31,6 +31,8 @@ impl Material for BasicMaterial {
         world::Read<'w, Storage<NormalMap>>,
         world::Read<'w, ShadowMapping>,
     );
+
+    type RenderPath = Direct;
 
     // Load the respective Basic shader modules and compile them
     fn shader(graphics: &Graphics, assets: &Assets) -> Shader {

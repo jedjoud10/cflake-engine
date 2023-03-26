@@ -1,6 +1,6 @@
 use crate::{
-    attributes::Position, draw, ActiveShadowGraphicsPipeline,
-    Material, Mesh, MeshAttributes, Renderer, Surface,
+    attributes::Position, ActiveShadowGraphicsPipeline,
+    Material, Mesh, MeshAttributes, Renderer, Surface, DefaultMaterialResources, RenderPath,
 };
 use ecs::Scene;
 use graphics::{DrawIndexedIndirectBuffer, GpuPod, ModuleVisibility};
@@ -10,8 +10,7 @@ use world::World;
 // Render all the visible surfaces of a specific material type
 pub(super) fn render_shadows<'r, M: Material>(
     world: &'r World,
-    meshes: &'r Storage<Mesh>,
-    indirect: &'r Storage<DrawIndexedIndirectBuffer>,
+    defaults: &DefaultMaterialResources<'r>,
     active: &mut ActiveShadowGraphicsPipeline<'_, 'r, '_>,
 ) {
     // Don't do shit if we won't cast shadows
@@ -34,8 +33,9 @@ pub(super) fn render_shadows<'r, M: Material>(
         }
 
         // Get the mesh and material that correspond to this surface
-        let mesh = meshes.get(&surface.mesh);
+        let mesh = <M::RenderPath as RenderPath>::get(&defaults, &surface.mesh);
 
+        /*
         // Skip rendering if the mesh is invalid
         let attribute = mesh
             .vertices()
@@ -45,6 +45,7 @@ pub(super) fn render_shadows<'r, M: Material>(
         if !(attribute && validity) && surface.indirect.is_none() {
             continue;
         }
+        */
 
         // Set the mesh matrix push constant
         active
@@ -58,6 +59,7 @@ pub(super) fn render_shadows<'r, M: Material>(
             })
             .unwrap();
 
+        /*
         // Set the vertex buffers and index buffers when we change models
         if last != Some(surface.mesh.clone()) {
             // Set the position buffer
@@ -70,8 +72,11 @@ pub(super) fn render_shadows<'r, M: Material>(
             active.set_index_buffer(triangles.buffer(), ..).unwrap();
             last = Some(surface.mesh.clone());
         }
+        */
+
+        
 
         // Draw the mesh
-        draw(surface, indirect, mesh, active);
+        <M::RenderPath as RenderPath>::draw(mesh, &defaults, active);
     }
 }

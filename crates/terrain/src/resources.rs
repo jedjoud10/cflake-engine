@@ -9,7 +9,7 @@ use graphics::{
     Texture3D, TextureMipMaps, TextureMode, TextureUsage,
     TriangleBuffer, Vertex, VertexBuffer, R, RGBA, XYZ, XYZW,
 };
-use rendering::{MaterialId, Mesh, Pipelines};
+use rendering::{MaterialId, Mesh, Pipelines, IndirectMesh};
 use utils::{Handle, Storage};
 
 use crate::{ChunkCoords, TerrainMaterial};
@@ -18,6 +18,13 @@ use crate::{ChunkCoords, TerrainMaterial};
 pub(crate) type CachedIndices = Texture3D<R<u32>>;
 pub(crate) type Densities = Texture3D<R<f32>>;
 pub(crate) type Counters = Buffer<u32>;
+
+// Terrain generator settings that the user will need to add to configure the terrain gen
+pub struct TerrainSettings {
+    pub size: u32,
+    pub smoothing: bool,
+    pub chunk_render_distance: u32,
+}
 
 // Le terrain generator
 // TODO: EXPLAIN
@@ -45,9 +52,7 @@ pub struct Terrain {
     pub(crate) id: MaterialId<TerrainMaterial>,
 
     // Keep a pool of all meshes and indirect buffers
-    pub(crate) meshes: Vec<(Handle<Mesh>, bool)>,
-    pub(crate) indirect_buffers:
-        Vec<(Handle<DrawIndexedIndirectBuffer>, bool)>,
+    pub(crate) meshes: Vec<(Handle<IndirectMesh>, bool)>,
     pub(crate) chunk_render_distance: u32,
 
     // Location of the chunk viewer
@@ -62,7 +67,7 @@ impl Terrain {
         size: u32,
         chunk_render_distance: u32,
         smoothing: bool,
-        meshes: &mut Storage<Mesh>,
+        meshes: &mut Storage<IndirectMesh>,
         indirect_buffers: &mut Storage<DrawIndexedIndirectBuffer>,
         materials: &mut Storage<TerrainMaterial>,
         pipelines: &mut Pipelines,
@@ -88,11 +93,6 @@ impl Terrain {
             chunk_render_distance,
             size,
         );
-        let indirect_buffers = preallocate_indirect_buffers(
-            graphics,
-            indirect_buffers,
-            chunk_render_distance,
-        );
 
         // Calculate the dispatch size for mesh generation by assuming local size is 4
         let dispatch = (size) / 4;
@@ -117,49 +117,19 @@ impl Terrain {
             id: pipelines.register(graphics, assets).unwrap(),
             viewer: None,
             meshes,
-            indirect_buffers,
             chunk_render_distance,
         }
     }
 }
 
-// Create the indirect buffers for indirect surfaces before hand
-fn preallocate_indirect_buffers(
-    graphics: &Graphics,
-    indirect_buffers: &mut Storage<DrawIndexedIndirectBuffer>,
-    render_distance: u32,
-) -> Vec<(Handle<DrawIndexedIndirectBuffer>, bool)> {
-    let count = (render_distance * 2 + 1).pow(3);
-
-    let mut vec = Vec::new();
-    for _ in 0..count {
-        let indirect = DrawIndexedIndirectBuffer::from_slice(
-            graphics,
-            &[DrawIndexedIndirect {
-                vertex_count: 0,
-                instance_count: 1,
-                base_index: 0,
-                vertex_offset: 0,
-                base_instance: 0,
-            }],
-            BufferMode::Dynamic,
-            BufferUsage::STORAGE | BufferUsage::WRITE,
-        )
-        .unwrap();
-
-        let handle = indirect_buffers.insert(indirect);
-        vec.push((handle, true));
-    }
-    vec
-}
-
 // Create the meshes that we will use for terrain generation before hand
 fn preallocate_meshes(
     graphics: &Graphics,
-    meshes: &mut Storage<Mesh>,
+    meshes: &mut Storage<IndirectMesh>,
     render_distance: u32,
     size: u32,
-) -> Vec<(Handle<Mesh>, bool)> {
+) -> Vec<(Handle<IndirectMesh>, bool)> {
+    /*
     let count = (render_distance * 2 + 1).pow(2) * 2;
 
     let mut vec = Vec::new();
@@ -208,6 +178,8 @@ fn preallocate_meshes(
         vec.push((meshes.insert(mesh), true));
     }
     vec
+    */ 
+    todo!()
 }
 
 // Create counters that will help us generate the vertices

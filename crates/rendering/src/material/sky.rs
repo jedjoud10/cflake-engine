@@ -1,6 +1,6 @@
 use crate::{
     AlbedoMap, CameraUniform, DefaultMaterialResources, Material,
-    MeshAttributes, SceneUniform,
+    MeshAttributes, SceneUniform, Direct,
 };
 
 use assets::Assets;
@@ -15,6 +15,7 @@ pub struct SkyMaterial {}
 
 impl Material for SkyMaterial {
     type Resources<'w> = world::Read<'w, Storage<AlbedoMap>>;
+    type RenderPath = Direct;
 
     // Load the respective Sky shader modules and compile them
     fn shader(graphics: &Graphics, assets: &Assets) -> Shader {

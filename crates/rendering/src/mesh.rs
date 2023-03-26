@@ -6,10 +6,9 @@ mod triangles;
 mod utils;
 mod vertices;
 mod indirect;
-pub use indirect::*;
 pub use self::utils::*;
 pub use attributes::{
-    AttributeBuffer, MeshAttribute, MeshAttributes,
+    Direct, Indirect, DirectAttributeBuffer, IndirectAttributeBuffer, RenderPath, MeshAttribute, MeshAttributes,
 };
 pub use errors::*;
 pub use mesh::*;

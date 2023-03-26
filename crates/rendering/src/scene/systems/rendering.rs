@@ -2,7 +2,7 @@ use crate::{
     AlbedoMap, BasicMaterial, Camera, DefaultMaterialResources,
     DirectionalLight, ForwardRenderer, MaskMap, Mesh, NormalMap,
     PhysicallyBasedMaterial, Pipelines, Renderer, SceneUniform,
-    ShadowMapping, SkyMaterial, WindowUniform,
+    ShadowMapping, SkyMaterial, WindowUniform, Indirect, IndirectAttributeBuffer,
 };
 use assets::Assets;
 
@@ -67,12 +67,17 @@ fn init(world: &mut World) {
 
     // Add common storages
     world.insert(Storage::<Mesh>::default());
+    world.insert(Storage::<Mesh<Indirect>>::default());
+    world.insert(Storage::<IndirectAttributeBuffer<crate::attributes::Position>>::default());
+    world.insert(Storage::<IndirectAttributeBuffer<crate::attributes::Normal>>::default());
+    world.insert(Storage::<IndirectAttributeBuffer<crate::attributes::Tangent>>::default());
+    world.insert(Storage::<IndirectAttributeBuffer<crate::attributes::TexCoord>>::default());
+    world.insert(Storage::<DrawIndexedIndirectBuffer>::default());
 
     // Add the storages that contain the materials and their resources
     world.insert(Storage::<BasicMaterial>::default());
     world.insert(Storage::<SkyMaterial>::default());
     world.insert(Storage::<PhysicallyBasedMaterial>::default());
-    world.insert(Storage::<DrawIndexedIndirectBuffer>::default());
     world.insert(albedo_maps);
     world.insert(normal_maps);
     world.insert(mask_maps);
@@ -122,9 +127,19 @@ fn render(world: &mut World) {
     let renderer = &mut *renderer;
     let scene = world.get::<Scene>().unwrap();
     let pipelines = world.get::<Pipelines>().unwrap();
+
+    // Needed for direct rendering
     let meshes = world.get::<Storage<Mesh>>().unwrap();
-    let indirect =
+    
+    // Needed for indirect rendering
+    let indirect_meshes = world.get::<Storage<Mesh<Indirect>>>().unwrap();
+    let indirect_position_attribute = world.get::<Storage<IndirectAttributeBuffer<crate::attributes::Position>>>().unwrap();
+    let indirect_normal_attribute = world.get::<Storage<IndirectAttributeBuffer<crate::attributes::Normal>>>().unwrap();
+    let indirect_tangents_attribute = world.get::<Storage<IndirectAttributeBuffer<crate::attributes::Tangent>>>().unwrap();
+    let indirect_tex_coords_attribute = world.get::<Storage<IndirectAttributeBuffer<crate::attributes::TexCoord>>>().unwrap();
+    let indexed_indirect_buffers =
         world.get::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
+
     let albedo_maps = world.get::<Storage<AlbedoMap>>().unwrap();
     let normal_maps = world.get::<Storage<NormalMap>>().unwrap();
     let mask_maps = world.get::<Storage<MaskMap>>().unwrap();
@@ -191,6 +206,13 @@ fn render(world: &mut World) {
         camera_frustum,
         directional_light,
         directional_light_rotation,
+        meshes: &meshes,
+        indirect_meshes: &indirect_meshes,
+        indirect_position_attribute: &indirect_position_attribute,
+        indirect_normal_attribute: &indirect_normal_attribute,
+        indirect_tangents_attribute: &indirect_tangents_attribute,
+        indirect_tex_coords_attribute: &indirect_tex_coords_attribute,
+        draw_indexed_indirect_buffers: &indexed_indirect_buffers,
     };
 
     // Create some ECS filters to check if we should update the shadow map texture
@@ -234,7 +256,7 @@ fn render(world: &mut World) {
 
         // Render the shadows first (fuck you)
         for stored in pipelines.iter() {
-            stored.prerender(world, &meshes, &indirect, &mut active);
+            stored.prerender(world, &mut default, &mut active);
         }
         drop(active);
         drop(render_pass);
@@ -252,8 +274,6 @@ fn render(world: &mut World) {
     for stored in pipelines.iter() {
         stored.render(
             world,
-            &meshes,
-            &indirect,
             &mut default,
             &mut render_pass,
         );

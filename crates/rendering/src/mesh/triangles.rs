@@ -1,26 +1,28 @@
 use graphics::TriangleBuffer;
 
-// Immutable access to the mesh indices
-pub struct TrianglesRef<'a>(pub(crate) &'a TriangleBuffer<u32>);
+use crate::RenderPath;
 
-impl<'a> TrianglesRef<'a> {
+// Immutable access to the mesh indices
+pub struct TrianglesRef<'a, R: RenderPath>(pub(crate) &'a R::TriangleBuffer<u32>);
+
+impl<'a, R: RenderPath> TrianglesRef<'a, R> {
     // Get an immutable reference to the inner buffer
-    pub fn buffer(&self) -> &'a TriangleBuffer<u32> {
+    pub fn buffer(&self) -> &'a R::TriangleBuffer<u32> {
         self.0
     }
 }
 
 // Mutable access to the mesh indices
-pub struct TrianglesMut<'a>(pub(crate) &'a mut TriangleBuffer<u32>);
+pub struct TrianglesMut<'a, R: RenderPath>(pub(crate) &'a mut R::TriangleBuffer<u32>);
 
-impl TrianglesMut<'_> {
+impl<'a, R: RenderPath> TrianglesMut<'a, R> {
     // Get an immutable reference to the inner buffer
-    pub fn buffer(&self) -> &TriangleBuffer<u32> {
+    pub fn buffer(&self) -> &R::TriangleBuffer<u32> {
         self.0
     }
 
     // Get a mutable reference to the inner buffer
-    pub fn buffer_mut(&mut self) -> &mut TriangleBuffer<u32> {
+    pub fn buffer_mut(&mut self) -> &mut R::TriangleBuffer<u32> {
         self.0
     }
 }

@@ -1,7 +1,7 @@
 use super::attributes::*;
 use crate::mesh::attributes::{Normal, Position, Tangent, TexCoord};
 use crate::{
-    AttributeBuffer, MeshAttribute, MeshAttributes, MeshImportError,
+    DirectAttributeBuffer, MeshAttribute, MeshAttributes, MeshImportError,
     MeshImportSettings, MeshInitializationError, TrianglesMut,
     TrianglesRef, VerticesMut, VerticesRef,
 };
@@ -15,29 +15,31 @@ use utils::Handle;
 use std::cell::{Cell, RefCell};
 
 // A mesh is a collection of 3D vertices connected by triangles
-pub struct Mesh {
+pub struct Mesh<R: RenderPath = Direct> {
     // Enabled mesh attributes
     enabled: MeshAttributes,
 
     // Vertex attribute buffers
-    positions: Option<AttributeBuffer<Position>>,
-    normals: Option<AttributeBuffer<Normal>>,
-    tangents: Option<AttributeBuffer<Tangent>>,
-    tex_coords: Option<AttributeBuffer<TexCoord>>,
+    positions: Option<R::AttributeBuffer<Position>>,
+    normals: Option<R::AttributeBuffer<Normal>>,
+    tangents: Option<R::AttributeBuffer<Tangent>>,
+    tex_coords: Option<R::AttributeBuffer<TexCoord>>,
 
     // The number of vertices stored in this mesh
     // None if the buffers contain different sizes
-    len: Option<usize>,
+    count: R::Count,
 
     // The triangle buffer
-    triangles: TriangleBuffer<u32>,
+    triangles: R::TriangleBuffer<u32>,
 
     // Cached AABB that we can use for frustum culling
     aabb: Option<math::Aabb<f32>>,
 }
 
-// Mesh initialization for 3D meshes
-impl Mesh {
+pub type IndirectMesh = Mesh<Indirect>;
+
+// Initialization of directly rendered meshes
+impl Mesh<Direct> {
     // Create a new mesh from the mesh attributes, context, and buffer settings
     pub fn from_slices(
         graphics: &Graphics,
@@ -50,25 +52,25 @@ impl Mesh {
         triangles: &[Triangle<u32>],
     ) -> Result<Self, MeshInitializationError> {
         let positions = positions.map(|slice| {
-            AttributeBuffer::<Position>::from_slice(
+            DirectAttributeBuffer::<Position>::from_slice(
                 graphics, slice, mode, usage,
             )
             .unwrap()
         });
         let normals = normals.map(|slice| {
-            AttributeBuffer::<Normal>::from_slice(
+            DirectAttributeBuffer::<Normal>::from_slice(
                 graphics, slice, mode, usage,
             )
             .unwrap()
         });
         let tangents = tangents.map(|slice| {
-            AttributeBuffer::<Tangent>::from_slice(
+            DirectAttributeBuffer::<Tangent>::from_slice(
                 graphics, slice, mode, usage,
             )
             .unwrap()
         });
         let tex_coords = tex_coords.map(|slice| {
-            AttributeBuffer::<TexCoord>::from_slice(
+            DirectAttributeBuffer::<TexCoord>::from_slice(
                 graphics, slice, mode, usage,
             )
             .unwrap()
@@ -84,10 +86,10 @@ impl Mesh {
 
     // Create a new mesh from the attribute buffers
     pub fn from_buffers(
-        positions: Option<AttributeBuffer<Position>>,
-        normals: Option<AttributeBuffer<Normal>>,
-        tangents: Option<AttributeBuffer<Tangent>>,
-        tex_coords: Option<AttributeBuffer<TexCoord>>,
+        positions: Option<DirectAttributeBuffer<Position>>,
+        normals: Option<DirectAttributeBuffer<Normal>>,
+        tangents: Option<DirectAttributeBuffer<Tangent>>,
+        tex_coords: Option<DirectAttributeBuffer<TexCoord>>,
         triangles: TriangleBuffer<u32>,
     ) -> Result<Self, MeshInitializationError> {
         let mut mesh = Self {
@@ -96,15 +98,15 @@ impl Mesh {
             normals: None,
             tangents: None,
             tex_coords: None,
-            len: Some(0),
+            count: Some(0),
             triangles,
             aabb: None,
         };
 
         // "Set"s a buffer, basically insert it if it's Some and removing it if it's None
         pub fn set<T: MeshAttribute>(
-            vertices: &mut VerticesMut,
-            buffer: Option<AttributeBuffer<T>>,
+            vertices: &mut VerticesMut<Direct>,
+            buffer: Option<DirectAttributeBuffer<T>>,
         ) {
             match buffer {
                 Some(x) => vertices.insert::<T>(x),
@@ -123,125 +125,23 @@ impl Mesh {
 
         // We don't have to do shit with these since
         // they internally set the data automatically for us
+        /*
         let _ = vertices.len();
         let _ = vertices.aabb();
+        */
 
         Ok(mesh)
     }
 }
 
-// Helper functions
-impl Mesh {
-    // Get a reference to the vertices immutably
-    pub fn vertices<'a>(&'a self) -> VerticesRef<'a> {
-        VerticesRef {
-            enabled: self.enabled,
-            positions: &self.positions,
-            normals: &self.normals,
-            tangents: &self.tangents,
-            tex_coords: &self.tex_coords,
-            len: self.len,
-            aabb: self.aabb,
-        }
-    }
-
-    // Get a reference to the vertices mutably
-    pub fn vertices_mut(&mut self) -> VerticesMut {
-        VerticesMut {
-            enabled: &mut self.enabled,
-            positions: RefCell::new(&mut self.positions),
-            normals: RefCell::new(&mut self.normals),
-            tangents: RefCell::new(&mut self.tangents),
-            tex_coords: RefCell::new(&mut self.tex_coords),
-            length_dirty: Cell::new(false),
-            aabb_dirty: Cell::new(false),
-            len: RefCell::new(&mut self.len),
-            aabb: RefCell::new(&mut self.aabb),
-        }
-    }
-
-    // Get a reference to the triangles immutably
-    pub fn triangles(&self) -> TrianglesRef {
-        TrianglesRef(&self.triangles)
-    }
-
-    // Get a reference to the triangles mutably
-    pub fn triangles_mut(&mut self) -> TrianglesMut {
-        TrianglesMut(&mut self.triangles)
-    }
-
-    // Get the triangles and vertices both at the same time, immutably
-    pub fn both(&self) -> (TrianglesRef, VerticesRef) {
-        (
-            TrianglesRef(&self.triangles),
-            VerticesRef {
-                enabled: self.enabled,
-                positions: &self.positions,
-                normals: &self.normals,
-                tangents: &self.tangents,
-                tex_coords: &self.tex_coords,
-                len: self.len,
-                aabb: self.aabb,
-            },
-        )
-    }
-
-    // Get thr triangles and vertices both at the same time, mutably
-    pub fn both_mut(&mut self) -> (TrianglesMut, VerticesMut) {
-        (
-            TrianglesMut(&mut self.triangles),
-            VerticesMut {
-                enabled: &mut self.enabled,
-                positions: RefCell::new(&mut self.positions),
-                normals: RefCell::new(&mut self.normals),
-                tangents: RefCell::new(&mut self.tangents),
-                tex_coords: RefCell::new(&mut self.tex_coords),
-                length_dirty: Cell::new(false),
-                aabb_dirty: Cell::new(false),
-                len: RefCell::new(&mut self.len),
-                aabb: RefCell::new(&mut self.aabb),
-            },
-        )
-    }
-
-    // Get the axis-aligned bounding box for this mesh
-    // Returns None if the AABB wasn't computed yet or if computation failed
-    pub fn aabb(&mut self) -> Option<math::Aabb<f32>> {
-        self.aabb
-    }
-}
-
-// An indirect mesh contains a handle to multiple buffers. It doesn't own them directly
-// Sole reason I did this is because we can set the vertex buffers only one, and use the
-// offset within DrawIndexedIndirect to offset it for each mesh. A lot more memory can be saved
-pub struct IndirectMesh {
-    // Enabled mesh attributes
-    enabled: MeshAttributes,
-
-    // Vertex attribute buffers
-    positions: Option<Handle<AttributeBuffer<Position>>>,
-    normals: Option<Handle<AttributeBuffer<Normal>>>,
-    tangents: Option<Handle<AttributeBuffer<Tangent>>>,
-    tex_coords: Option<Handle<AttributeBuffer<TexCoord>>>,
-
-    // The triangle buffer
-    triangles: Handle<TriangleBuffer<u32>>,
-
-    // Indirect draw buffer
-    indirect: Handle<DrawIndexedIndirectBuffer>,
-
-    // Manual AABB that we can use for frustum culling
-    aabb: Option<math::Aabb<f32>>,
-}
-
-// Mesh initialization for 3D meshes
-impl IndirectMesh {
+// Initialization of indirectly rendered meshes
+impl Mesh<Indirect> {
     // Create a new mesh from the attribute buffers' handles
     pub fn from_handles(
-        positions: Option<Handle<AttributeBuffer<Position>>>,
-        normals: Option<Handle<AttributeBuffer<Normal>>>,
-        tangents: Option<Handle<AttributeBuffer<Tangent>>>,
-        tex_coords: Option<Handle<AttributeBuffer<TexCoord>>>,
+        positions: Option<IndirectAttributeBuffer<Position>>,
+        normals: Option<IndirectAttributeBuffer<Normal>>,
+        tangents: Option<IndirectAttributeBuffer<Tangent>>,
+        tex_coords: Option<IndirectAttributeBuffer<TexCoord>>,
         triangles: Handle<TriangleBuffer<u32>>,
         indirect: Handle<DrawIndexedIndirectBuffer>,
     ) -> Self {
@@ -251,7 +151,7 @@ impl IndirectMesh {
         // Inserts the MeshAttribute bitflag of the correspodning attribute if needed
         fn insert<T: MeshAttribute>(
             output: &mut MeshAttributes,
-            handle: &Option<Handle<AttributeBuffer<T>>>,
+            handle: &Option<Handle<DirectAttributeBuffer<T>>>,
         ) {
             if handle.is_some() {
                 output.insert(T::ATTRIBUTE);
@@ -266,20 +166,97 @@ impl IndirectMesh {
 
         // Create the mesh and return it
         Self {
-            aabb: None,
-            indirect,
-            triangles,
             enabled,
             positions,
             normals,
             tangents,
             tex_coords,
+            count: todo!(),
+            triangles,
+            aabb: todo!(),
         }
     }
 }
 
 // Helper functions
-impl IndirectMesh {
+impl<R: RenderPath> Mesh<R> {
+    // Get a reference to the vertices immutably
+    pub fn vertices<'a>(&'a self) -> VerticesRef<'a, R> {
+        VerticesRef {
+            enabled: self.enabled,
+            positions: &self.positions,
+            normals: &self.normals,
+            tangents: &self.tangents,
+            tex_coords: &self.tex_coords,
+            count: &self.count,
+            aabb: self.aabb,
+        }
+    }
+
+    // Get a reference to the vertices mutably
+    pub fn vertices_mut(&mut self) -> VerticesMut<R> {
+        VerticesMut {
+            enabled: &mut self.enabled,
+            positions: RefCell::new(&mut self.positions),
+            normals: RefCell::new(&mut self.normals),
+            tangents: RefCell::new(&mut self.tangents),
+            tex_coords: RefCell::new(&mut self.tex_coords),
+            length_dirty: Cell::new(false),
+            aabb_dirty: Cell::new(false),
+            count: RefCell::new(&mut self.count),
+            aabb: RefCell::new(&mut self.aabb),
+        }
+    }
+
+    // Get a reference to the triangles immutably
+    pub fn triangles(&self) -> TrianglesRef<R> {
+        TrianglesRef(&self.triangles)
+    }
+
+    // Get a reference to the triangles mutably
+    pub fn triangles_mut(&mut self) -> TrianglesMut<R> {
+        TrianglesMut(&mut self.triangles)
+    }
+
+    // Get the triangles and vertices both at the same time, immutably
+    pub fn both(&self) -> (TrianglesRef<R>, VerticesRef<R>) {
+        (
+            TrianglesRef(&self.triangles),
+            VerticesRef {
+                enabled: self.enabled,
+                positions: &self.positions,
+                normals: &self.normals,
+                tangents: &self.tangents,
+                tex_coords: &self.tex_coords,
+                count: &self.count,
+                aabb: self.aabb,
+            },
+        )
+    }
+
+    // Get thr triangles and vertices both at the same time, mutably
+    pub fn both_mut(&mut self) -> (TrianglesMut<R>, VerticesMut<R>) {
+        (
+            TrianglesMut(&mut self.triangles),
+            VerticesMut {
+                enabled: &mut self.enabled,
+                positions: RefCell::new(&mut self.positions),
+                normals: RefCell::new(&mut self.normals),
+                tangents: RefCell::new(&mut self.tangents),
+                tex_coords: RefCell::new(&mut self.tex_coords),
+                length_dirty: Cell::new(false),
+                aabb_dirty: Cell::new(false),
+                aabb: RefCell::new(&mut self.aabb),
+                count: RefCell::new(&mut self.count),
+            },
+        )
+    }
+
+    // Get the axis-aligned bounding box for this mesh
+    // Returns None if the AABB wasn't computed yet or if computation failed
+    pub fn aabb(&mut self) -> Option<math::Aabb<f32>> {
+        self.aabb
+    }
 }
 
 impl Asset for Mesh {

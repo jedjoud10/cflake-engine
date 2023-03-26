@@ -1,7 +1,7 @@
 use crate::{
     AlbedoMap, CameraBuffer, DefaultMaterialResources, MaskMap,
     MeshAttributes, NormalMap, Renderer, SceneBuffer, SceneColor,
-    TimingBuffer,
+    TimingBuffer, RenderPath,
 };
 use assets::Assets;
 use ecs::Rotation;
@@ -19,6 +19,8 @@ use world::World;
 pub trait Material: 'static + Sized + Sync + Send {
     // The resources that we need to fetch from the world to set the descriptor sets
     type Resources<'w>: 'w;
+
+    type RenderPath: RenderPath;
 
     // Create a shader for this material
     fn shader(graphics: &Graphics, assets: &Assets) -> Shader;

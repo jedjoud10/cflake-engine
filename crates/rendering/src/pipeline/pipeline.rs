@@ -91,8 +91,7 @@ pub trait DynPipeline {
     fn prerender<'r>(
         &'r self,
         world: &'r World,
-        meshes: &'r Storage<Mesh>,
-        indirect: &'r Storage<DrawIndexedIndirectBuffer>,
+        default: &DefaultMaterialResources<'r>,
         active: &mut ActiveShadowGraphicsPipeline<'_, 'r, '_>,
     );
 
@@ -100,8 +99,6 @@ pub trait DynPipeline {
     fn render<'r>(
         &'r self,
         world: &'r World,
-        meshes: &'r Storage<Mesh>,
-        indirect: &'r Storage<DrawIndexedIndirectBuffer>,
         default: &mut DefaultMaterialResources<'r>,
         render_pass: &mut ActiveSceneRenderPass<'r, '_>,
     );
@@ -111,27 +108,22 @@ impl<M: Material> DynPipeline for Pipeline<M> {
     fn prerender<'r>(
         &'r self,
         world: &'r World,
-        meshes: &'r Storage<Mesh>,
-        indirect: &'r Storage<DrawIndexedIndirectBuffer>,
+        default: &DefaultMaterialResources<'r>,
         active: &mut ActiveShadowGraphicsPipeline<'_, 'r, '_>,
     ) {
-        super::render_shadows::<M>(world, meshes, indirect, active);
+        super::render_shadows::<M>(world, default, active);
     }
 
     fn render<'r>(
         &'r self,
         world: &'r World,
-        meshes: &'r Storage<Mesh>,
-        indirect: &'r Storage<DrawIndexedIndirectBuffer>,
         default: &mut DefaultMaterialResources<'r>,
         render_pass: &mut ActiveSceneRenderPass<'r, '_>,
     ) {
-        super::cull_surfaces::<M>(world, meshes, default);
+        super::cull_surfaces::<M>(world, default);
 
         super::render_surfaces::<M>(
             world,
-            meshes,
-            indirect,
             &self.pipeline,
             default,
             render_pass,

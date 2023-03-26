@@ -13,38 +13,13 @@ fn main() {
 
 // Executed at the start
 fn init(world: &mut World) {
-    let assets = world.get::<Assets>().unwrap();
-    let graphics = world.get::<Graphics>().unwrap();
-    let mut pipelines = world.get_mut::<Pipelines>().unwrap();
-    let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
-    let mut indirect = world
-        .get_mut::<Storage<DrawIndexedIndirectBuffer>>()
-        .unwrap();
-    let mut materials =
-        world.get_mut::<Storage<TerrainMaterial>>().unwrap();
-
     // Create some procedural terrain
-    let terrain = Terrain::new(
-        &graphics,
-        &assets,
-        32,
-        8,
-        true,
-        &mut meshes,
-        &mut indirect,
-        &mut materials,
-        &mut pipelines,
-    );
-
-    // TODO: Figure out a way to remove the &mut restriction fwhen inserting into the world
-    drop(assets);
-    drop(graphics);
-    drop(pipelines);
-    drop(materials);
-    drop(meshes);
-    drop(indirect);
-    world.insert(terrain);
-
+    world.insert(TerrainSettings {
+        size: 32,
+        smoothing: true,
+        chunk_render_distance: 8,
+    });
+    
     // Fetch the required resources from the world
     let mut assets = world.get_mut::<Assets>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();

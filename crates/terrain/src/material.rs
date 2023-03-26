@@ -1,7 +1,7 @@
 use rendering::{
     AlbedoMap, CameraUniform, DefaultMaterialResources, Material,
     NormalMap, Renderer, SceneUniform, ShadowMap, ShadowMapping,
-    ShadowUniform,
+    ShadowUniform, Indirect,
 };
 
 use assets::Assets;
@@ -126,4 +126,6 @@ impl Material for TerrainMaterial {
             .push(bytes, 0, ModuleVisibility::Fragment)
             .unwrap();
     }
+
+    type RenderPath = Indirect;
 }

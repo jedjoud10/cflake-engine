@@ -1,8 +1,11 @@
 use bytemuck::{Pod, Zeroable};
 use graphics::{
-    Normalized, Texture2D, UniformBuffer, RG, RGBA, SRGBA,
+    Normalized, Texture2D, UniformBuffer, RG, RGBA, SRGBA, DrawIndexedIndirectBuffer,
 };
 use math::Frustum;
+use utils::Storage;
+
+use crate::{IndirectMesh, IndirectAttributeBuffer, attributes, Mesh, ShadowMapping};
 
 // These are the default settings that we pass to each material
 pub struct DefaultMaterialResources<'a> {
@@ -27,6 +30,17 @@ pub struct DefaultMaterialResources<'a> {
     pub black: &'a AlbedoMap,
     pub normal: &'a NormalMap,
     pub mask: &'a MaskMap,
+
+    // Common direct mesh storages
+    pub meshes: &'a Storage<Mesh>,
+
+    // Common indirect mesh storages
+    pub indirect_meshes: &'a Storage<IndirectMesh>,
+    pub indirect_position_attribute: &'a Storage<IndirectAttributeBuffer<attributes::Position>>,
+    pub indirect_normal_attribute: &'a Storage<IndirectAttributeBuffer<attributes::Normal>>,
+    pub indirect_tangents_attribute: &'a Storage<IndirectAttributeBuffer<attributes::Tangent>>,
+    pub indirect_tex_coords_attribute: &'a Storage<IndirectAttributeBuffer<attributes::TexCoord>>,
+    pub draw_indexed_indirect_buffers: &'a Storage<DrawIndexedIndirectBuffer>,
 
     // Currently used indicies
     pub material_index: usize,
