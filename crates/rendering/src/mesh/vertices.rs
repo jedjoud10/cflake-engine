@@ -11,10 +11,10 @@ use math::Aabb;
 // Immutable access to the mesh vertices
 pub struct VerticesRef<'a> {
     pub(super) enabled: MeshAttributes,
-    pub(super) positions: &'a MaybeUninit<AttributeBuffer<Position>>,
-    pub(super) normals: &'a MaybeUninit<AttributeBuffer<Normal>>,
-    pub(super) tangents: &'a MaybeUninit<AttributeBuffer<Tangent>>,
-    pub(super) tex_coords: &'a MaybeUninit<AttributeBuffer<TexCoord>>,
+    pub(super) positions: &'a Option<AttributeBuffer<Position>>,
+    pub(super) normals: &'a Option<AttributeBuffer<Normal>>,
+    pub(super) tangents: &'a Option<AttributeBuffer<Tangent>>,
+    pub(super) tex_coords: &'a Option<AttributeBuffer<TexCoord>>,
     pub(super) len: Option<usize>,
     pub(super) aabb: Option<math::Aabb<f32>>,
 }
@@ -68,13 +68,13 @@ pub struct VerticesMut<'a> {
     // Attributes
     pub(super) enabled: &'a mut MeshAttributes,
     pub(super) positions:
-        RefCell<&'a mut MaybeUninit<AttributeBuffer<Position>>>,
+        RefCell<&'a mut Option<AttributeBuffer<Position>>>,
     pub(super) normals:
-        RefCell<&'a mut MaybeUninit<AttributeBuffer<Normal>>>,
+        RefCell<&'a mut Option<AttributeBuffer<Normal>>>,
     pub(super) tangents:
-        RefCell<&'a mut MaybeUninit<AttributeBuffer<Tangent>>>,
+        RefCell<&'a mut Option<AttributeBuffer<Tangent>>>,
     pub(super) tex_coords:
-        RefCell<&'a mut MaybeUninit<AttributeBuffer<TexCoord>>>,
+        RefCell<&'a mut Option<AttributeBuffer<TexCoord>>>,
 
     // Cached parameters
     pub(super) len: RefCell<&'a mut Option<usize>>,

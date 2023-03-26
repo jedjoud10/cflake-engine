@@ -10,7 +10,27 @@ fn main() {
 }
 
 // Executed at the start
-fn init(world: &mut World) {}
+fn init(world: &mut World) {
+    let graphics = world.get::<Graphics>().unwrap();
+
+    let buffer = Buffer::<i32, 0>::from_slice(
+        &graphics, 
+        &[0, 1],
+        BufferMode::Dynamic,
+        BufferUsage::READ
+    ).unwrap();
+    graphics.submit(true);
+
+    let instant = std::time::Instant::now();
+    let view = buffer.as_view(..).unwrap();
+    dbg!(&view.as_slice());
+    dbg!(instant.elapsed());
+
+    let instant = std::time::Instant::now();
+    let view = buffer.as_view(..).unwrap();
+    dbg!(&view.as_slice());
+    dbg!(instant.elapsed());
+}
 
 // Camera controller update executed every tick
 fn update(_world: &mut World) {}

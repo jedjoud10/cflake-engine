@@ -29,7 +29,7 @@ fn init(world: &mut World) {
         &assets,
         32,
         8,
-        false,
+        true,
         &mut meshes,
         &mut indirect,
         &mut materials,

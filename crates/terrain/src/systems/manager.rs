@@ -43,7 +43,15 @@ fn create_chunk_components(
         indirect.clone(),
         terrain.id.clone(),
     );
+
+    // Hide the surface at first and define an AABB bound
     surface.visible = false;
+    surface.bounds = Some(math::Aabb {
+        min: vek::Vec3::zero(),
+        max: vek::Vec3::one() * terrain.size as f32,
+    });
+
+    // Create a renderer an a position component
     let renderer = Renderer::default();
     let position =
         Position::from(coords.as_::<f32>() * terrain.size as f32);

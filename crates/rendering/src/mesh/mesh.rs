@@ -7,12 +7,12 @@ use crate::{
 };
 use assets::Asset;
 use graphics::{
-    BufferMode, BufferUsage, Graphics, Triangle, TriangleBuffer,
+    BufferMode, BufferUsage, Graphics, Triangle, TriangleBuffer, DrawIndexedIndirectBuffer,
 };
 use obj::TexturedVertex;
 use parking_lot::Mutex;
+use utils::Handle;
 use std::cell::{Cell, RefCell};
-use std::mem::MaybeUninit;
 
 // A mesh is a collection of 3D vertices connected by triangles
 pub struct Mesh {
@@ -20,10 +20,10 @@ pub struct Mesh {
     enabled: MeshAttributes,
 
     // Vertex attribute buffers
-    positions: MaybeUninit<AttributeBuffer<Position>>,
-    normals: MaybeUninit<AttributeBuffer<Normal>>,
-    tangents: MaybeUninit<AttributeBuffer<Tangent>>,
-    tex_coords: MaybeUninit<AttributeBuffer<TexCoord>>,
+    positions: Option<AttributeBuffer<Position>>,
+    normals: Option<AttributeBuffer<Normal>>,
+    tangents: Option<AttributeBuffer<Tangent>>,
+    tex_coords: Option<AttributeBuffer<TexCoord>>,
 
     // The number of vertices stored in this mesh
     // None if the buffers contain different sizes
@@ -92,10 +92,10 @@ impl Mesh {
     ) -> Result<Self, MeshInitializationError> {
         let mut mesh = Self {
             enabled: MeshAttributes::empty(),
-            positions: MaybeUninit::uninit(),
-            normals: MaybeUninit::uninit(),
-            tangents: MaybeUninit::uninit(),
-            tex_coords: MaybeUninit::uninit(),
+            positions: None,
+            normals: None,
+            tangents: None,
+            tex_coords: None,
             len: Some(0),
             triangles,
             aabb: None,
@@ -209,6 +209,77 @@ impl Mesh {
     pub fn aabb(&mut self) -> Option<math::Aabb<f32>> {
         self.aabb
     }
+}
+
+// An indirect mesh contains a handle to multiple buffers. It doesn't own them directly
+// Sole reason I did this is because we can set the vertex buffers only one, and use the
+// offset within DrawIndexedIndirect to offset it for each mesh. A lot more memory can be saved
+pub struct IndirectMesh {
+    // Enabled mesh attributes
+    enabled: MeshAttributes,
+
+    // Vertex attribute buffers
+    positions: Option<Handle<AttributeBuffer<Position>>>,
+    normals: Option<Handle<AttributeBuffer<Normal>>>,
+    tangents: Option<Handle<AttributeBuffer<Tangent>>>,
+    tex_coords: Option<Handle<AttributeBuffer<TexCoord>>>,
+
+    // The triangle buffer
+    triangles: Handle<TriangleBuffer<u32>>,
+
+    // Indirect draw buffer
+    indirect: Handle<DrawIndexedIndirectBuffer>,
+
+    // Manual AABB that we can use for frustum culling
+    aabb: Option<math::Aabb<f32>>,
+}
+
+// Mesh initialization for 3D meshes
+impl IndirectMesh {
+    // Create a new mesh from the attribute buffers' handles
+    pub fn from_handles(
+        positions: Option<Handle<AttributeBuffer<Position>>>,
+        normals: Option<Handle<AttributeBuffer<Normal>>>,
+        tangents: Option<Handle<AttributeBuffer<Tangent>>>,
+        tex_coords: Option<Handle<AttributeBuffer<TexCoord>>>,
+        triangles: Handle<TriangleBuffer<u32>>,
+        indirect: Handle<DrawIndexedIndirectBuffer>,
+    ) -> Self {
+        // Keep track of the enabled mesh buffers
+        let mut enabled = MeshAttributes::empty();
+
+        // Inserts the MeshAttribute bitflag of the correspodning attribute if needed
+        fn insert<T: MeshAttribute>(
+            output: &mut MeshAttributes,
+            handle: &Option<Handle<AttributeBuffer<T>>>,
+        ) {
+            if handle.is_some() {
+                output.insert(T::ATTRIBUTE);
+            }
+        }
+
+        // Update the bitflags
+        insert::<Position>(&mut enabled, &positions);
+        insert::<Normal>(&mut enabled, &normals);
+        insert::<Tangent>(&mut enabled, &tangents);
+        insert::<TexCoord>(&mut enabled, &tex_coords);
+
+        // Create the mesh and return it
+        Self {
+            aabb: None,
+            indirect,
+            triangles,
+            enabled,
+            positions,
+            normals,
+            tangents,
+            tex_coords,
+        }
+    }
+}
+
+// Helper functions
+impl IndirectMesh {
 }
 
 impl Asset for Mesh {

@@ -14,14 +14,12 @@ pub struct Surface<M: Material> {
     // Surface settings
     pub visible: bool,
     pub culled: bool,
-
-    // TODO: Figure out culling bounds maybe?
+    pub bounds: Option<math::Aabb<f32>>,
 
     // Indirect draw buffer that we can use to render this surface
-    // TODO: Move this to it's own component probably
     pub indirect: Option<Handle<DrawIndexedIndirectBuffer>>,
 
-    // This does nothing and it has a size of 0, but let's keep it for clarity
+    // Needed to force the user to initialize the material
     pub id: MaterialId<M>,
 }
 
@@ -37,6 +35,7 @@ impl<M: Material> Surface<M> {
             material,
             visible: true,
             indirect: None,
+            bounds: None,
             culled: false,
             id,
         }
@@ -55,6 +54,7 @@ impl<M: Material> Surface<M> {
             visible: true,
             culled: false,
             indirect: Some(indirect),
+            bounds: None,
             id,
         }
     }

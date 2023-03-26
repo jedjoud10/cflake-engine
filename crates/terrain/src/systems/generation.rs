@@ -13,7 +13,13 @@ use crate::{Chunk, ChunkState, Terrain, TerrainMaterial};
 fn update(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
     let time = world.get::<Time>().unwrap();
-    let mut _terrain = world.get_mut::<Terrain>().unwrap();
+    let _terrain = world.get_mut::<Terrain>();
+
+    // If we don't have terrain, don't do shit
+    let Ok(mut _terrain) = _terrain else {
+        return;
+    };
+
     let terrain = &mut *_terrain;
     let mut scene = world.get_mut::<Scene>().unwrap();
     let mut indirects = world
@@ -27,6 +33,11 @@ fn update(world: &mut World) {
         &Position,
         &mut Surface<TerrainMaterial>,
     )>() {
+        // Don't generate the voxels and mesh for culled chunks
+        if surface.culled {
+            continue;
+        }
+
         if let ChunkState::Generated = chunk.state {
             continue;
         }

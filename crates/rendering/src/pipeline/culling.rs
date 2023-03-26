@@ -62,7 +62,12 @@ pub(super) fn cull_surfaces<'r, M: Material>(
         &mut threadpool,
         |(surface, renderer)| {
             let mesh = meshes.get(&surface.mesh);
-            if let Some(aabb) = mesh.vertices().aabb() {
+
+            // Get the user defined AABB and fallback to the mesh one if needed
+            let aabb = surface.bounds.or_else(|| mesh.vertices().aabb());
+
+            // If we have a valid AABB, check if the surface is visible within the frustum
+            if let Some(aabb) = aabb {
                 surface.culled = !intersects_frustum(
                     &default.camera_frustum,
                     aabb,

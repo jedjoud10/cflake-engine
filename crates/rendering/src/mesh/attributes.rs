@@ -3,6 +3,7 @@ use graphics::{
     VertexInput, VertexInputInfo, XYZ, XYZW,
 };
 use paste::paste;
+use utils::Handle;
 use std::cell::{Ref, RefMut};
 use std::marker::PhantomData;
 
@@ -27,6 +28,11 @@ pub const MAX_MESH_VERTEX_ATTRIBUTES: usize =
 
 // Contains the underlying array buffer for a specific attribute
 pub type AttributeBuffer<A> = VertexBuffer<<A as MeshAttribute>::V>;
+pub type IndirectAttributeBuffer<A> = Handle<VertexBuffer<<A as MeshAttribute>::V>>;
+
+// Type of mesh rendering path
+pub trait RenderPath {}
+
 
 // A named attribute that has a specific name, like "Position", or "Normal"
 pub trait MeshAttribute {
@@ -104,8 +110,8 @@ macro_rules! impl_vertex_attribute {
                 const ATTRIBUTE: MeshAttributes = MeshAttributes::[<$enabled>];
 
                 fn from_ref_as_ref<'a>(vertices: &VerticesRef<'a>) -> Result<&'a AttributeBuffer<Self>, AttributeError> {
-                    vertices.is_enabled::<Self>().then(|| unsafe {
-                        vertices.$name.assume_init_ref()
+                    vertices.is_enabled::<Self>().then(|| {
+                        vertices.$name.as_ref().unwrap()
                     }).ok_or(AttributeError::MissingAttribute)
                 }
 
@@ -113,7 +119,7 @@ macro_rules! impl_vertex_attribute {
                     if vertices.is_enabled::<Self>() {
                         let borrowed = vertices.$name.try_borrow_mut();
                         borrowed.map(|borrowed| {
-                            RefMut::map(borrowed, |x| unsafe { x.assume_init_mut() })
+                            RefMut::map(borrowed, |x| x.as_mut().unwrap())
                         }).map_err(AttributeError::BorrowMutError)
                     } else {
                         Err(AttributeError::MissingAttribute)
@@ -124,7 +130,7 @@ macro_rules! impl_vertex_attribute {
                     if vertices.is_enabled::<Self>() {
                         let borrowed = vertices.$name.try_borrow();
                         borrowed.map(|borrowed| {
-                            Ref::map(borrowed, |x| unsafe { x.assume_init_ref() })
+                            Ref::map(borrowed, |x| x.as_ref().unwrap())
                         }).map_err(AttributeError::BorrowError)
                     } else {
                         Err(AttributeError::MissingAttribute)
@@ -132,23 +138,13 @@ macro_rules! impl_vertex_attribute {
                 }
 
                 fn insert(vertices: &mut VerticesMut, buffer: AttributeBuffer<Self>) {
-                    let is_enabled = vertices.is_enabled::<Self>();
-                    let borrowed = vertices.$name.get_mut();
-                    if is_enabled {
-                        let mut old = std::mem::replace(*borrowed, std::mem::MaybeUninit::new(buffer));
-                        unsafe { old.assume_init_drop() }
-                    } else {
-                        **borrowed = std::mem::MaybeUninit::new(buffer);
-                    }
+                    **vertices.$name.get_mut() = Some(buffer);
                     vertices.enabled.insert(Self::ATTRIBUTE);
                 }
 
                 fn remove<'a>(vertices: &mut VerticesMut<'a>) -> Result<AttributeBuffer<Self>, AttributeError> {
                     vertices.enabled.remove(Self::ATTRIBUTE);
-                    vertices.is_enabled::<Self>().then(|| {
-                        let borrowed = vertices.$name.get_mut();
-                        std::mem::replace(*borrowed, std::mem::MaybeUninit::uninit())
-                    }).map(|x| unsafe { x.assume_init() }).ok_or(AttributeError::MissingAttribute)
+                    vertices.$name.get_mut().take().ok_or(AttributeError::MissingAttribute)
                 }
             }
         }
