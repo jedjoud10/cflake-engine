@@ -113,8 +113,8 @@ fn init(world: &mut World) {
         normal_map: None,
         mask_map: None,
         bumpiness: 1.0,
-        roughness: 1.0,
-        metallic: 0.2,
+        roughness: 0.1,
+        metallic: 0.0,
         ambient_occlusion: 1.0,
         tint: vek::Rgb::red(),
     });
@@ -131,7 +131,7 @@ fn init(world: &mut World) {
         let renderer = Renderer::default();
         let position = Position::at_xyz(
             (x / 5) as f32 * 4.0,
-            0.25,
+            1.0,
             (x % 5) as f32 * 4.0,
         );
 
@@ -140,7 +140,7 @@ fn init(world: &mut World) {
             normal_map: None,
             mask_map: None,
             bumpiness: 4.0,
-            roughness: 0.5,
+            roughness: 1.0,
             metallic: 0.2,
             ambient_occlusion: 1.0,
             tint: vek::Rgb::new(
@@ -158,7 +158,7 @@ fn init(world: &mut World) {
     // Create a simple sphere and add the entity
     let surface = Surface::new(sphere, material, id);
     let renderer = Renderer::default();
-    let position = Position::at_y(1.5);
+    let position = Position::at_y(3.5);
     scene.insert((surface, renderer, position));
 
     // Get the material id (also registers the material pipeline)

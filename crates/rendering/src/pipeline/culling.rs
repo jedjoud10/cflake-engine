@@ -4,7 +4,7 @@ use utils::{Storage, ThreadPool};
 use world::World;
 
 use crate::{
-    DefaultMaterialResources, Material, Mesh, Renderer, Surface,
+    DefaultMaterialResources, Material, Mesh, Renderer, Surface, RenderPath,
 };
 
 // Check if an AABB intersects all the given frustum planes
@@ -60,11 +60,9 @@ pub(super) fn cull_surfaces<'r, M: Material>(
     query.for_each(
         &mut threadpool,
         |(surface, renderer)| {
-            /*
-            let mesh = meshes.get(&surface.mesh);
-
-            // Get the user defined AABB and fallback to the mesh one if needed
-            let aabb = surface.bounds.or_else(|| mesh.vertices().aabb());
+            // Get the mesh and it's AABB
+            let mesh = <M::RenderPath as RenderPath>::get(&default, &surface.mesh);
+            let aabb = mesh.vertices().aabb();
 
             // If we have a valid AABB, check if the surface is visible within the frustum
             if let Some(aabb) = aabb {
@@ -76,7 +74,6 @@ pub(super) fn cull_surfaces<'r, M: Material>(
             } else {
                 surface.culled = false;
             }
-            */
         },
         256,
     );

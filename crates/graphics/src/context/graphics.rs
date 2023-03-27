@@ -28,6 +28,8 @@ pub(crate) struct Cached {
         DashMap<BindGroupLayout, Arc<wgpu::BindGroupLayout>>,
     pub(crate) pipeline_layouts:
         DashMap<ReflectedShader, Arc<wgpu::PipelineLayout>>,
+
+    // TODO: Memory leak happening cause we don't remove the bindg groups when we delete textures/buffers
     pub(crate) bind_groups: DashMap<Vec<Id>, Arc<wgpu::BindGroup>>,
 }
 

@@ -17,7 +17,7 @@ float sample_shadow_texel(
     ivec2 pixel,
     float compare
 ) {
-    float bias = 0.009;
+    float bias = 0.007;
     float closest = texelFetch(tex, pixel, 0).r;
     return compare > (closest+bias) ? 1.0 : 0.0;
 }

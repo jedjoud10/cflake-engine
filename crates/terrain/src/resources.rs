@@ -61,7 +61,7 @@ pub struct Terrain {
 
 impl Terrain {
     // Create a new mesh generator to be used with the terrain system
-    pub fn new(
+    pub(crate) fn new(
         graphics: &Graphics,
         assets: &Assets,
         size: u32,
