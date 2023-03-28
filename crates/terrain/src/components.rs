@@ -6,7 +6,7 @@ use ecs::Component;
 pub struct ChunkViewer;
 
 // State of the indirect mesh of each chunk
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum ChunkState {
     // The chunk is waiting for the compute shader to generate it's mesh
     Pending,

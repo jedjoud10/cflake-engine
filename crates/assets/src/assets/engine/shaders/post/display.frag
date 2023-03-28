@@ -16,7 +16,7 @@ void main() {
 	// Fetch the color data
 	vec2 coords = vec2(x, y);
 	vec3 color = texelFetch(color_map, ivec2(gl_FragCoord.xy), 0).rgb;
-	
+
 	// Increase exposure
 	color *= 1.7;
 

@@ -10,10 +10,16 @@ layout(set = 0, binding = 0, r32f) readonly uniform image3D densities;
 // Texture that contains the index of each vertex
 layout(set = 0, binding = 1, r32ui) readonly uniform uimage3D cached_indices;
 
-// Output triangles
+// Output temp triangles
 layout(std430, set = 1, binding = 0) writeonly buffer Triangles {
     uint data[(size - 1)*(size - 1)*(size - 1)*4*6];
 } triangles;
+
+// Atomic counters
+layout(std430, set = 0, binding = 2) buffer Counters {
+    uint vertices;
+    uint triangles;
+} counters;
 
 // Indirect drawing buffer
 layout(std430, set = 1, binding = 1) buffer Indirect {
@@ -40,6 +46,7 @@ void add_quad(
     uint index3 = uint(imageLoad(cached_indices, ivec3(quad3+offset)).x);
 
     // Add the triangles
+    atomicAdd(counters.triangles, 6);
     uint base = atomicAdd(indirect.vertex_count, 6);
     
     // First triangle

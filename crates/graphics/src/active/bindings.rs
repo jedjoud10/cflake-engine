@@ -18,6 +18,10 @@ pub struct BindGroup<'a> {
 }
 
 // Generate a new bind group from a callback (if needed)
+// TODO: MUST FIX:
+// currently requires the user to set the resources in the order they were defined
+// pls fix
+
 pub(super) fn create_bind_group<'b>(
     graphics: &Graphics,
     modules: &[&str],

@@ -1,21 +1,55 @@
 use crate::{
     Chunk, ChunkCoords, ChunkState, ChunkViewer, Terrain,
-    TerrainMaterial,
+    TerrainMaterial, TerrainSettings,
 };
 use ahash::AHashSet;
+use assets::Assets;
 use ecs::{Entity, Position, Rotation, Scale, Scene};
 use graphics::{
     BufferMode, BufferUsage, DrawIndexedIndirect,
     DrawIndexedIndirectBuffer, Graphics, Normalized, TriangleBuffer,
     VertexBuffer, XYZW,
 };
-use rendering::{Mesh, Renderer, Surface};
+use rendering::{Mesh, Renderer, Surface, IndirectMesh, AttributeBuffer, attributes, Pipelines};
 use utils::{Storage, Time};
-use world::{user, System, World};
+use world::{user, System, World, post_user};
 
-// Creates the default material storage for the terrain material
+// Creates the terrain if there was terrain settings present
 fn init(world: &mut World) {
-    world.insert(Storage::<TerrainMaterial>::default());
+    if let Some(settings) = world.remove::<TerrainSettings>() {
+        world.insert(Storage::<TerrainMaterial>::default());
+        let graphics = world.get::<Graphics>().unwrap();
+        let assets = world.get::<Assets>().unwrap();
+        let mut indirect_meshes = world.get_mut::<Storage<IndirectMesh>>().unwrap();
+        let mut indirect_buffers = world.get_mut::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
+        let mut vertices = world.get_mut::<Storage<AttributeBuffer<attributes::Position>>>().unwrap();
+        let mut triangles = world.get_mut::<Storage<TriangleBuffer<u32>>>().unwrap();
+        let mut materials = world.get_mut::<Storage<TerrainMaterial>>().unwrap();
+        let mut pipelines = world.get_mut::<Pipelines>().unwrap();
+
+        let terrain = Terrain::new(
+            &graphics, 
+            &assets,
+            settings,
+            &mut indirect_meshes,
+            &mut indirect_buffers,
+            &mut vertices,
+            &mut triangles,
+            &mut materials,
+            &mut pipelines,
+        );
+        
+        drop(graphics);
+        drop(assets);
+        drop(indirect_meshes);
+        drop(indirect_buffers);
+        drop(vertices);
+        drop(triangles);
+        drop(materials);
+        drop(pipelines);
+
+        world.insert(terrain);
+    }
 }
 
 // Creates the appropriate components for creating a new chunk entity
@@ -23,18 +57,9 @@ fn create_chunk_components(
     terrain: &mut Terrain,
     coords: ChunkCoords,
 ) -> (Position, Renderer, Surface<TerrainMaterial>, Chunk) {
-    /*
     // Get a mesh from the terrain mesh pool
     let (mesh, free) =
-        terrain.meshes.iter_mut().find(|(_, free)| *free).unwrap();
-    *free = false;
-
-    // Get an indirect buffer from the terrain indirect buffer pool
-    let (indirect, free) = terrain
-        .indirect_buffers
-        .iter_mut()
-        .find(|(_, free)| *free)
-        .unwrap();
+        terrain.indirect_meshes.iter_mut().find(|(_, free)| *free).unwrap();
     *free = false;
 
     // Create the surface for rendering
@@ -44,12 +69,8 @@ fn create_chunk_components(
         terrain.id.clone(),
     );
 
-    // Hide the surface at first and define an AABB bound
+    // Hide the surface at first
     surface.visible = false;
-    surface.bounds = Some(math::Aabb {
-        min: vek::Vec3::zero(),
-        max: vek::Vec3::one() * terrain.size as f32,
-    });
 
     // Create a renderer an a position component
     let renderer = Renderer::default();
@@ -64,8 +85,6 @@ fn create_chunk_components(
 
     // Return the components of the new chunk
     (position, renderer, surface, chunk)
-    */
-    todo!()
 }
 
 // Dynamically generate the chunks based on camera position
@@ -90,10 +109,9 @@ fn update(world: &mut World) {
 
     // Set the main viewer location and fetches the oldvalue
     let mut added = false;
-    let new = (**position
-        / vek::Vec3::broadcast(terrain.size as f32))
-    .round()
-    .as_::<i32>();
+    let new = (**position / vek::Vec3::broadcast(terrain.size as f32))
+        .round()
+        .as_::<i32>();
     let old = if let Some((_, old)) = &mut terrain.viewer {
         std::mem::replace(old, new)
     } else {
@@ -108,9 +126,9 @@ fn update(world: &mut World) {
     // Check if it moved since last frame
     if  added {
         let distance = terrain.chunk_render_distance as i32;
-        for x in -distance..distance {
-            for y in -1..1 {
-                for z in -distance..distance {
+        for x in 0..1 {
+            for y in 0..1 {
+                for z in 0..2 {
                     let chunk = vek::Vec3::new(x, y, z);
                     let view = terrain.viewer.unwrap().1;
                     chunks.insert(chunk + view);
@@ -118,7 +136,6 @@ fn update(world: &mut World) {
             }
         }
 
-        /*
         // Detect the chunks that we should remove and remove them
         let removed = terrain
             .chunks
@@ -136,19 +153,11 @@ fn update(world: &mut World) {
         // Get the removed surfaces and add the mesh and indirect buffer handles back to the pool
         for surface in scene.removed::<Surface<TerrainMaterial>>() {
             let (_, free) = terrain
-                .indirect_buffers
+                .indirect_meshes
                 .iter_mut()
                 .find(|(handle, _)| {
-                    *handle
-                        == surface.indirect.as_ref().cloned().unwrap()
+                    *handle == surface.mesh.clone()
                 })
-                .unwrap();
-            *free = true;
-
-            let (_, free) = terrain
-                .meshes
-                .iter_mut()
-                .find(|(handle, _)| *handle == surface.mesh)
                 .unwrap();
             *free = true;
         }
@@ -168,7 +177,6 @@ fn update(world: &mut World) {
         for (coords, entity) in added.iter().zip(entities.iter()) {
             terrain.entities.insert(*coords, *entity);
         }
-        */
 
         terrain.chunks = chunks;
     }
@@ -176,7 +184,7 @@ fn update(world: &mut World) {
 
 // Adds/removes the chunk entities from the world
 pub fn system(system: &mut System) {
-    system.insert_init(init).before(user);
+    system.insert_init(init).after(post_user);
     system
         .insert_update(update)
         .before(rendering::systems::rendering::system)

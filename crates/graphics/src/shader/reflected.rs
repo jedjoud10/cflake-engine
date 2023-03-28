@@ -34,6 +34,7 @@ pub struct BindResourceLayout {
     pub name: String,
     pub binding: u32,
     pub group: u32,
+    pub count: Option<NonZeroU32>,
     pub resource_type: BindResourceType,
     pub visibility: ModuleVisibility,
 }
@@ -368,6 +369,8 @@ pub(super) fn create_pipeline_layout(
                     panic!()
                 };
 
+                log::warn!("{:#?}", variable);
+
                 if name.is_none() {
                     continue;
                 }
@@ -456,6 +459,7 @@ pub(super) fn create_pipeline_layout(
                     group: set,
                     resource_type,
                     visibility,
+                    count: (*nbind > 1).then(|| NonZeroU32::new(*nbind-1).unwrap()),
                 };
 
                 // Merge each entry for this group individually
@@ -613,7 +617,7 @@ fn internal_create_pipeline_layout(
                         &value.visibility,
                     ),
                     ty: map_binding_type(value),
-                    count: None,
+                    count: value.count,
                 })
                 .collect::<Vec<_>>();
 

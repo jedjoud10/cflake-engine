@@ -1,4 +1,4 @@
-use crate::{Mask, RawBitMask};
+use crate::{Mask, RawBitMask, MaskHashMap};
 use ahash::AHashMap;
 pub use ecs_derive::Component;
 use lazy_static::lazy_static;
@@ -17,6 +17,8 @@ lazy_static! {
     static ref NEXT: Mutex<Mask> = Mutex::new(Mask::one());
     static ref REGISTERED: RwLock<AHashMap<TypeId, Mask>> =
         RwLock::new(AHashMap::new());
+    static ref NAMES: RwLock<MaskHashMap<String>> = 
+        RwLock::new(MaskHashMap::default());
 }
 
 // Return the registered mask of the component (or register it if needed)
@@ -34,13 +36,14 @@ pub fn mask<T: Component>() -> Mask {
 
         // Le bitshifting
         let copy = *bit;
+        let name = utils::pretty_type_name::<T>();
         locked.insert(TypeId::of::<T>(), copy);
+        NAMES.write().insert(copy, name.clone());
         const ERR: &str = "Ran out of component bits to use!
         Use the 'extended-bitmasks' feature to add more bits in the bitmask if needed";
         *bit =
             RawBitMask::from(copy).checked_shl(1).expect(ERR).into();
 
-        let name = utils::pretty_type_name::<T>();
         log::debug!(
             "Registered component '{name}' with bitmask 1<<{:?}",
             (copy.offset().unwrap() + 1)
@@ -48,6 +51,16 @@ pub fn mask<T: Component>() -> Mask {
 
         copy
     }
+}
+
+// Get the name of a component mask
+pub fn name(mask: Mask) -> Option<String> {
+    if mask.count_ones() != 1 {
+        return None
+    }
+
+    let names = NAMES.read();
+    names.get(&mask).cloned()
 }
 
 // Get the number of registered components

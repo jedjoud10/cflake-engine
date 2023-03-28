@@ -160,7 +160,7 @@ impl<'a> Compiler<'a> {
             std::collections::hash_map::Entry::Occupied(
                 mut occupied,
             ) => {
-                log::info!("Binding resource '{name}' was replaced");
+                log::debug!("Binding resource '{name}' was replaced");
                 occupied.insert(resource);
             }
             std::collections::hash_map::Entry::Vacant(vacant) => {

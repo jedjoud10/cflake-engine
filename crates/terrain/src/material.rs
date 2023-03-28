@@ -67,7 +67,7 @@ impl Material for TerrainMaterial {
 
     // Terrain only needs positions and normals
     fn attributes() -> rendering::MeshAttributes {
-        rendering::MeshAttributes::POSITIONS | rendering::MeshAttributes::NORMALS
+        rendering::MeshAttributes::POSITIONS
     }
 
     // Fetch the texture storages

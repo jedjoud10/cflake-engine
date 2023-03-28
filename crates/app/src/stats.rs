@@ -103,22 +103,34 @@ pub(crate) fn update(world: &mut World) {
     egui::Window::new("General Performance").frame(frame).show(
         &gui,
         |ui| {
-            let last = time.delta().as_secs_f32();
-            let mut out = 0.0;
+            let last_delta = time.delta().as_secs_f32();
+            let last_ticks_to_exec = time.ticks_to_execute().map(|x| x.get()).unwrap_or(0) as f32;
+            let mut out_delta = 0.0;
+            let mut out_ticks_to_exec = 0.0;
             ui.memory_mut(|memory| {
                 let indeed = memory.data.get_temp_mut_or_insert_with(
                     egui::Id::new(0),
-                    || last,
+                    || last_delta,
                 );
-                *indeed = *indeed * 0.99 + last * 0.01;
-                out = *indeed;
+                *indeed = *indeed * 0.99 + last_delta * 0.01;
+                out_delta = *indeed;
+
+                let indeed2 = memory.data.get_temp_mut_or_insert_with(
+                    egui::Id::new(1),
+                    || last_ticks_to_exec,
+                );
+                *indeed2 = *indeed2 * 0.99 + last_ticks_to_exec * 0.01;
+                out_ticks_to_exec = *indeed2;
             });
 
-            let ms = out * 1000.0;
+            let ms = out_delta * 1000.0;
             ui.label(format!("Delta (ms/f): {:.3}", ms));
 
-            let fps = 1.0 / out;
+            let fps = 1.0 / out_delta;
             ui.label(format!("FPS (f/s): {:.0}", fps));
+
+            let ticks = out_ticks_to_exec;
+            ui.label(format!("Ticks to execute: {:.3}", ticks));
         },
     );
 
@@ -143,7 +155,38 @@ pub(crate) fn update(world: &mut World) {
             ));
             let ratio = scene.entities().len() as f32
                 / scene.archetypes().len() as f32;
-            ui.label(format!("E/A Ratio: {:.1}", ratio))
+            ui.label(format!("E/A Ratio: {:.1}", ratio));
+
+            ui.heading("Registered Components Table");
+
+            egui::Grid::new("components")
+                .min_col_width(0f32)
+                .max_col_width(400f32)
+                .striped(true)
+                .show(ui, |ui| {
+                    for count in 0..ecs::count() {
+                        let mask = ecs::Mask::one() << count;
+                        ui.label(format!("Mask: 1 << {count}",));
+                        ui.label(format!("Name: {}", ecs::name(mask).unwrap()));
+                        ui.end_row();
+                    }
+                }
+            );
+
+            ui.heading("Archetypes Table");
+
+            egui::Grid::new("archetypes")
+                .min_col_width(0f32)
+                .max_col_width(400f32)
+                .striped(true)
+                .show(ui, |ui| {
+                    for (mask, archetype) in scene.archetypes().iter() {
+                        ui.label(format!("Mask: {mask}"));
+                        ui.label(format!("Entities: {}", archetype.entities().len()));
+                        ui.end_row();
+                    }
+                }
+            );
         },
     );
 }

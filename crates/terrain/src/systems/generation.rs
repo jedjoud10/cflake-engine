@@ -1,9 +1,9 @@
 use ecs::{Position, Scene};
 use graphics::{
     ComputePass, DrawIndexedIndirect, DrawIndexedIndirectBuffer,
-    GpuPod, Graphics,
+    GpuPod, Graphics, TriangleBuffer,
 };
-use rendering::{attributes, Mesh, Surface};
+use rendering::{attributes, Mesh, Surface, IndirectMesh, AttributeBuffer};
 use utils::{Storage, Time};
 use world::{System, World};
 
@@ -25,7 +25,9 @@ fn update(world: &mut World) {
     let mut indirects = world
         .get_mut::<Storage<DrawIndexedIndirectBuffer>>()
         .unwrap();
-    let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
+    let mut vertices = world.get_mut::<Storage<AttributeBuffer<attributes::Position>>>().unwrap();
+    let mut triangles = world.get_mut::<Storage<TriangleBuffer<u32>>>().unwrap();
+    let mut meshes = world.get_mut::<Storage<IndirectMesh>>().unwrap();
 
     // Iterate over the chunks that we need to generate
     for (chunk, position, surface) in scene.query_mut::<(
@@ -33,32 +35,22 @@ fn update(world: &mut World) {
         &Position,
         &mut Surface<TerrainMaterial>,
     )>() {
-        // Don't generate the voxels and mesh for culled chunks
-        if surface.culled {
+        // Don't generate the voxels and mesh for culled chunks or chunks that had
+        // their mesh already generated
+        if /* surface.culled || */ chunk.state == ChunkState::Generated {
             continue;
         }
 
-        if let ChunkState::Generated = chunk.state {
-            continue;
-        }
         surface.visible = true;
         chunk.state = ChunkState::Generated;
 
         //chunk.state = ChunkState::Generated;
         log::debug!("Generate voxels and mesh for chunk {}", chunk.coords);
 
-        terrain.counters.write(&[0, 0], 0).unwrap();
-
-        /*
-        let indirect =
-            indirects.get_mut(surface.indirect.as_ref().unwrap());
-        let mesh = meshes.get_mut(&surface.mesh);
-        let (mut triangles, vertices) = mesh.both_mut();
-        let triangles = triangles.buffer_mut();
-        let mut positions =
-            vertices.attribute_mut::<attributes::Position>().unwrap();
-        let mut normals =
-            vertices.attribute_mut::<attributes::Normal>().unwrap();
+        //terrain.counters.write(&[0, 0], 0).unwrap();
+        let mesh = meshes.get(&surface.mesh);
+        let indirect = mesh.indirect();
+        let indirect = indirects.get_mut(indirect);
 
         indirect
             .write(
@@ -72,6 +64,16 @@ fn update(world: &mut World) {
                 0,
             )
             .unwrap();
+
+        // Fetch the buffer used by this chunk from the terrain pool
+        let output_vertices = vertices.get_mut(&terrain.shared_vertex_buffer);
+        let output_triangles = triangles.get_mut(&terrain.shared_triangle_buffer);
+
+        output_vertices.splat(.., vek::Vec4::zero()).unwrap();
+        output_triangles.splat(.., [0; 3]).unwrap();
+
+        let temp_vertices = &mut terrain.temp_vertices;
+        let temp_triangles = &mut terrain.temp_triangles;
 
         // Create a compute pass for both the voxel and mesh compute shaders
         let mut pass = ComputePass::begin(&graphics);
@@ -113,7 +115,7 @@ fn update(world: &mut World) {
             .unwrap();
         });
         active.dispatch(vek::Vec3::broadcast(terrain.dispatch));
-
+        
         // Execute the vertex generation shader first
         let mut active = pass.bind_shader(&terrain.compute_vertices);
 
@@ -132,33 +134,53 @@ fn update(world: &mut World) {
                 .unwrap();
         });
         active.set_bind_group(1, |set| {
-            set.set_storage_buffer("vertices", &mut positions)
+            set.set_storage_buffer("vertices", temp_vertices)
                 .unwrap();
-            set.set_storage_buffer("normals", &mut normals).unwrap();
         });
         active.dispatch(vek::Vec3::broadcast(terrain.dispatch));
 
+        
         // Execute the quad generation shader second
         let mut active = pass.bind_shader(&terrain.compute_quads);
         active.set_bind_group(0, |set| {
+            set.set_storage_texture(
+                "cached_indices",
+                &mut terrain.cached_indices,
+            )            .unwrap();
             set.set_storage_texture(
                 "densities",
                 &mut terrain.densities,
             )
             .unwrap();
-            set.set_storage_texture(
-                "cached_indices",
-                &mut terrain.cached_indices,
-            )
-            .unwrap();
+            set.set_storage_buffer("counters", &mut terrain.counters).unwrap();
         });
         active.set_bind_group(1, |set| {
-            set.set_storage_buffer("triangles", triangles).unwrap();
+            set.set_storage_buffer("triangles", temp_triangles).unwrap();
             set.set_storage_buffer("indirect", indirect).unwrap();
         });
-
         active.dispatch(vek::Vec3::broadcast(terrain.dispatch));
-        */
+
+        // Copy the generated vertex and tri data to the permanent buffer 
+        let mut active = pass.bind_shader(&terrain.compute_copy);
+        active.set_bind_group(0, |set| {
+            set.set_storage_buffer("temporary_vertices", temp_vertices)
+                .unwrap();
+            set.set_storage_buffer("temporary_triangles", temp_triangles)
+                .unwrap();
+            set.set_storage_buffer("counters", &mut terrain.counters2)
+                .unwrap();
+        });
+        active.set_bind_group(1, |set| {
+            set.set_storage_buffer("output_vertices", output_vertices)
+                .unwrap();
+            set.set_storage_buffer("output_triangles", output_triangles)
+                .unwrap();
+            set.set_storage_buffer("indirect", indirect).unwrap();
+        });
+        active.dispatch(vek::Vec3::new(32*32, 1, 1));
+
+        terrain.counters2.copy_from(&terrain.counters, 0, 0, 1).unwrap();
+
         return;
     }
 }

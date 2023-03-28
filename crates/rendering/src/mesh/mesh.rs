@@ -176,6 +176,11 @@ impl Mesh<Indirect> {
             aabb: None,
         }
     }
+
+    // Get the indexed indirect buffer handle immutably
+    pub fn indirect(&self) -> &Handle<DrawIndexedIndirectBuffer> {
+        &self.count
+    }
 }
 
 // Helper functions
@@ -254,8 +259,13 @@ impl<R: RenderPath> Mesh<R> {
 
     // Get the axis-aligned bounding box for this mesh
     // Returns None if the AABB wasn't computed yet or if computation failed
-    pub fn aabb(&mut self) -> Option<math::Aabb<f32>> {
+    pub fn aabb(&self) -> Option<math::Aabb<f32>> {
         self.aabb
+    }
+
+    // Override the axis aligned bounding box for this mesh
+    pub fn set_aabb(&mut self, aabb: Option<math::Aabb<f32>>) {
+        self.aabb = aabb;
     }
 }
 

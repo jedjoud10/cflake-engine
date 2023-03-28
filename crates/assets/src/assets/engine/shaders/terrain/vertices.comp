@@ -11,15 +11,10 @@ layout(set = 0, binding = 0, r32f) readonly uniform image3D densities;
 // Texture that contains the index of each vertex
 layout(set = 0, binding = 1, r32ui) uniform uimage3D cached_indices;
 
-// Output vertices
+// Output temp vertices
 layout(std430, set = 1, binding = 0) writeonly buffer Vertices {
     vec4 data[size*size*size];
 } vertices;
-
-// Output normals
-layout(std430, set = 1, binding = 1) writeonly buffer Normals {
-    uvec4 data[size*size*size];
-} normals;
 
 // Atomic counters
 layout(std430, set = 0, binding = 2) buffer Counters {
@@ -124,13 +119,9 @@ void main() {
         // Meshes are always n-2 size, so each voxel has a size of 1 / n-2
         vec3 final = (smoothing ? (vertex / count) : vec3(0)) + vec3(gl_GlobalInvocationID);
         float factor = (float(size)) / (float(size) - 2);
-        vertices.data[index] = vec4(final * factor, 0);
-        
-        // We have to do this since we store the normal data as 4 signed normalized bytes, and glsl doesn't have a byte vector 4
-        //ivec3 ranged = normal * 127;
-        //uint compressed = uint(normal.y * 127);        
-        normals.data[index / 4][index % 4] = packSnorm4x8(vec4(normal, 0.0));
 
+        // TODO: Compress normals into W field of the positions
+        vertices.data[index] = vec4(final * factor, 0);
 
         imageStore(cached_indices, ivec3(gl_GlobalInvocationID+1), uvec4(index));
     }

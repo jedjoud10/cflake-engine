@@ -52,13 +52,6 @@ impl<'a> VerticesRef<'a, Direct> {
     }
 }
 
-impl<'a> VerticesRef<'a, Indirect> {
-    // Get the indexed indirect buffer handle immutably
-    pub fn indirect(&self) -> &Handle<DrawIndexedIndirectBuffer> {
-        self.count
-    }
-}
-
 // Mutable access to the mesh vertices
 pub struct VerticesMut<'a, R: RenderPath> {
     // Attributes

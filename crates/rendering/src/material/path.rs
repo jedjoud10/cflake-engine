@@ -168,7 +168,7 @@ impl RenderPath for Indirect {
         defaults: &DefaultMaterialResources<'a>,
         active: &mut ActiveGraphicsPipeline<'_, 'a, '_, C, DS>,
     ) {
-        let handle = mesh.vertices().indirect().clone();
+        let handle = mesh.indirect().clone();
         let buffer = defaults.draw_indexed_indirect_buffers.get(&handle);
         active.draw_indexed_indirect(buffer, 0);
     }

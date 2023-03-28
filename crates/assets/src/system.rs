@@ -59,6 +59,8 @@ fn init(world: &mut World) {
     persistent!(loader, "engine/shaders/terrain/default.glsl");
     persistent!(loader, "engine/shaders/terrain/vertices.comp");
     persistent!(loader, "engine/shaders/terrain/quads.comp");
+    persistent!(loader, "engine/shaders/terrain/copy.comp");
+    persistent!(loader, "engine/shaders/terrain/try_find.comp");
 
     // Load the default textures
     persistent!(loader, "engine/textures/scene/bumps.jpg");

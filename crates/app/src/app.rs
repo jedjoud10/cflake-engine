@@ -457,7 +457,7 @@ impl App {
         log::info!(
             "App Name: '{app_name}', App Version: '{app_version}'"
         );
-        log::info!("Engine Name: '{engine_name}, Engine Version: '{engine_version}'");
+        log::info!("Engine Name: '{engine_name}', Engine Version: '{engine_version}'");
         log::info!("Author Name: '{author_name}'");
         self
     }

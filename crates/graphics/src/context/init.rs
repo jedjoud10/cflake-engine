@@ -57,9 +57,15 @@ pub(crate) unsafe fn init_context_and_window(
     // Modified default limits are sufficient
     let mut limits = wgpu::Limits::default();
     limits.max_push_constant_size = 128;
+    limits.max_storage_buffer_binding_size = 128 << 20;
 
     // Required device features
     let features = wgpu::Features::TEXTURE_COMPRESSION_BC
+        | wgpu::Features::STORAGE_RESOURCE_BINDING_ARRAY 
+        | wgpu::Features::BUFFER_BINDING_ARRAY 
+        | wgpu::Features::TEXTURE_BINDING_ARRAY
+        | wgpu::Features::SAMPLED_TEXTURE_AND_STORAGE_BUFFER_ARRAY_NON_UNIFORM_INDEXING
+        | wgpu::Features::UNIFORM_BUFFER_AND_STORAGE_TEXTURE_ARRAY_NON_UNIFORM_INDEXING
         | wgpu::Features::DEPTH32FLOAT_STENCIL8
         | wgpu::Features::TEXTURE_FORMAT_16BIT_NORM
         | wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES
