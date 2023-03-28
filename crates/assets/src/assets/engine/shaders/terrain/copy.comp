@@ -43,14 +43,16 @@ layout(std430, set = 1, binding = 2) writeonly buffer OutputTriangles {
 
 void main() {
     if (gl_GlobalInvocationID.x < output_vertices_count) {
+    //if (gl_GlobalInvocationID.x < size*size*size) {
         output_vertices.data[gl_GlobalInvocationID.x + counters.vertices] = temporary_vertices.data[gl_GlobalInvocationID.x];
     }
 
     if (gl_GlobalInvocationID.x < output_triangles_count) {
+    //if (gl_GlobalInvocationID.x < ((size - 1)*(size - 1)*(size - 1)*4*6)) {
         output_triangles.data[gl_GlobalInvocationID.x + counters.triangles] = temporary_triangles.data[gl_GlobalInvocationID.x];
     }
 
     indirect.vertex_offset = int(counters.vertices);
 
-    //indirect.base_index = counters.triangles*3;
+    indirect.base_index = counters.triangles;
 }

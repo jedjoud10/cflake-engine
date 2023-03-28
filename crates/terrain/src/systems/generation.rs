@@ -69,8 +69,8 @@ fn update(world: &mut World) {
         let output_vertices = vertices.get_mut(&terrain.shared_vertex_buffer);
         let output_triangles = triangles.get_mut(&terrain.shared_triangle_buffer);
 
-        output_vertices.splat(.., vek::Vec4::zero()).unwrap();
-        output_triangles.splat(.., [0; 3]).unwrap();
+        //output_vertices.splat(.., vek::Vec4::zero()).unwrap();
+        //output_triangles.splat(.., [0; 3]).unwrap();
 
         let temp_vertices = &mut terrain.temp_vertices;
         let temp_triangles = &mut terrain.temp_triangles;
@@ -180,7 +180,7 @@ fn update(world: &mut World) {
         active.dispatch(vek::Vec3::new(32*32, 1, 1));
 
         terrain.counters2.copy_from(&terrain.counters, 0, 0, 1).unwrap();
-
+        graphics.submit(false);
         return;
     }
 }
