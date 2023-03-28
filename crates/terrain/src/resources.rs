@@ -58,8 +58,9 @@ pub struct Terrain {
     pub(crate) compute_vertices: ComputeShader,
     pub(crate) compute_voxels: ComputeShader,
     pub(crate) cached_indices: CachedIndices,
-    pub(crate) counters: Counters,
-    pub(crate) counters2: Counters,
+    pub(crate) old_counters: Counters,
+    pub(crate) new_counters: Counters,
+    pub(crate) current_counters: Counters,
 
     // Guesser compute shader that will look into the memory chunks and 
     // try to find a free chunk of memory that we can use
@@ -124,8 +125,9 @@ impl Terrain {
 
         // Create cached data used for generation
         let cached_indices = create_texture3d(graphics, size);
-        let counters = create_counters(graphics);
-        let counters2 = create_counters(graphics);
+        let old_counters = create_counters(graphics);
+        let new_counters = create_counters(graphics);
+        let current_counters = create_counters(graphics);
         let densities = create_texture3d(graphics, size);
         let temp_vertices = create_temp_vertices(graphics, size);
         let temp_triangles = create_temp_triangles(graphics, size);
@@ -162,7 +164,9 @@ impl Terrain {
             compute_vertices,
             compute_quads,
             cached_indices,
-            counters,
+            old_counters,
+            new_counters,
+            current_counters,
             dispatch,
             densities,
             compute_voxels,
@@ -186,7 +190,6 @@ impl Terrain {
             temp_vertices,
             temp_triangles,
             compute_copy,
-            counters2,
         }
     }
 }
@@ -295,7 +298,7 @@ fn create_counters(graphics: &Graphics) -> Buffer<[u32; 2]> {
         graphics,
         &[[0, 0]],
         BufferMode::Dynamic,
-        BufferUsage::STORAGE | BufferUsage::COPY_SRC | BufferUsage::COPY_DST,
+        BufferUsage::STORAGE | BufferUsage::COPY_SRC | BufferUsage::COPY_DST | BufferUsage::WRITE,
     )
     .unwrap();
     counters
@@ -441,7 +444,9 @@ fn load_compute_copy_shader(
 
     // Create a simple compute shader compiler
     let mut compiler = Compiler::new(assets, graphics);
-    compiler.use_storage_buffer::<[u32; 2]>("counters", true, true);
+    compiler.use_storage_buffer::<[u32; 2]>("current_counters", true, true);
+    compiler.use_storage_buffer::<[u32; 2]>("old_counters", true, true);
+    compiler.use_storage_buffer::<[u32; 2]>("new_counters", true, true);
     compiler
         .use_snippet("size", format!("const uint size = {size};"));
     compiler
@@ -451,15 +456,7 @@ fn load_compute_copy_shader(
     compiler.use_storage_buffer::<DrawIndexedIndirect>(
         "indirect", false, true,
     );
-    compiler.use_storage_buffer::<<XYZW<f32> as Vertex>::Storage>(
-        "temporary_vertices", true, false,
-    );
-    compiler.use_storage_buffer::<u32>("temporary_triangles", true, false);
-    compiler.use_storage_buffer::<<XYZW<f32> as Vertex>::Storage>(
-        "output_vertices", false, true,
-    );
-    compiler.use_storage_buffer::<u32>("output_triangles", false, true);
-
+    
     // Compile the compute shader
     let shader = ComputeShader::new(module, compiler).unwrap();
     shader

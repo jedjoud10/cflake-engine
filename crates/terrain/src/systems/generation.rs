@@ -64,6 +64,8 @@ fn update(world: &mut World) {
                 0,
             )
             .unwrap();
+        //terrain.current_counters.write(&[[0, 0]], 0).unwrap();
+        terrain.old_counters.copy_from(&terrain.current_counters, 0, 0, 1).unwrap();
 
         // Fetch the buffer used by this chunk from the terrain pool
         let output_vertices = vertices.get_mut(&terrain.shared_vertex_buffer);
@@ -72,8 +74,11 @@ fn update(world: &mut World) {
         //output_vertices.splat(.., vek::Vec4::zero()).unwrap();
         //output_triangles.splat(.., [0; 3]).unwrap();
 
-        let temp_vertices = &mut terrain.temp_vertices;
-        let temp_triangles = &mut terrain.temp_triangles;
+        let temp_vertices = output_vertices;
+        let temp_triangles = output_triangles;
+
+        //let temp_vertices = &mut terrain.temp_vertices;
+        //let temp_triangles = &mut terrain.temp_triangles;
 
         // Create a compute pass for both the voxel and mesh compute shaders
         let mut pass = ComputePass::begin(&graphics);
@@ -130,7 +135,7 @@ fn update(world: &mut World) {
                 &mut terrain.cached_indices,
             )
             .unwrap();
-            set.set_storage_buffer("counters", &mut terrain.counters)
+            set.set_storage_buffer("counters", &mut terrain.current_counters)
                 .unwrap();
         });
         active.set_bind_group(1, |set| {
@@ -152,7 +157,7 @@ fn update(world: &mut World) {
                 &mut terrain.densities,
             )
             .unwrap();
-            set.set_storage_buffer("counters", &mut terrain.counters).unwrap();
+            set.set_storage_buffer("counters", &mut terrain.current_counters).unwrap();
         });
         active.set_bind_group(1, |set| {
             set.set_storage_buffer("triangles", temp_triangles).unwrap();
@@ -163,23 +168,18 @@ fn update(world: &mut World) {
         // Copy the generated vertex and tri data to the permanent buffer 
         let mut active = pass.bind_shader(&terrain.compute_copy);
         active.set_bind_group(0, |set| {
-            set.set_storage_buffer("temporary_vertices", temp_vertices)
+            set.set_storage_buffer("old_counters", &mut terrain.old_counters)
                 .unwrap();
-            set.set_storage_buffer("temporary_triangles", temp_triangles)
+            set.set_storage_buffer("new_counters", &mut terrain.new_counters)
                 .unwrap();
-            set.set_storage_buffer("counters", &mut terrain.counters2)
+            set.set_storage_buffer("current_counters", &mut terrain.current_counters)
                 .unwrap();
         });
         active.set_bind_group(1, |set| {
-            set.set_storage_buffer("output_vertices", output_vertices)
-                .unwrap();
-            set.set_storage_buffer("output_triangles", output_triangles)
-                .unwrap();
             set.set_storage_buffer("indirect", indirect).unwrap();
         });
         active.dispatch(vek::Vec3::new(32*32, 1, 1));
 
-        terrain.counters2.copy_from(&terrain.counters, 0, 0, 1).unwrap();
         graphics.submit(false);
         return;
     }

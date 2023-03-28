@@ -17,7 +17,7 @@ fn init(world: &mut World) {
     world.insert(TerrainSettings {
         size: 32,
         smoothing: true,
-        chunk_render_distance: 1,
+        chunk_render_distance: 4,
     });
     
     // Fetch the required resources from the world

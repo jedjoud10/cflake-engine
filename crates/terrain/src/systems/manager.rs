@@ -126,9 +126,9 @@ fn update(world: &mut World) {
     // Check if it moved since last frame
     if  added {
         let distance = terrain.chunk_render_distance as i32;
-        for x in 0..1 {
-            for y in 0..1 {
-                for z in 0..4 {
+        for x in -distance..distance {
+            for y in -distance..distance {
+                for z in -distance..distance {
                     let chunk = vek::Vec3::new(x, y, z);
                     let view = terrain.viewer.unwrap().1;
                     chunks.insert(chunk + view);
