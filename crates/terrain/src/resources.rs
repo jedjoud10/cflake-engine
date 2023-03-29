@@ -128,8 +128,8 @@ impl Terrain {
         let compute_voxels = load_compute_voxels_shaders(assets, graphics);
         let compute_vertices = load_compute_vertices_shader(assets, graphics, size, smoothing);
         let compute_quads = load_compute_quads_shader(assets, graphics, size);
-        let compute_copy =  load_compute_copy_shader(assets, graphics,  output_triangle_buffer_length, output_vertex_buffer_length, size);
-        let compute_find = load_compute_find_shader(assets, graphics, size, allocations, output_triangle_buffer_length, output_vertex_buffer_length);
+        let compute_copy =  load_compute_copy_shader(assets, graphics,  output_triangle_buffer_length, output_vertex_buffer_length, allocations, chunks, size);
+        let compute_find = load_compute_find_shader(assets, graphics, allocations, chunks, size);
 
         // Create cached data used for generation
         let cached_indices = create_texture3d(graphics, size);
@@ -223,7 +223,16 @@ fn create_ranges(
     allocations: usize,
     chunks_count: u32
 ) -> Vec<Buffer<vek::Vec4<u32>>> {
-    todo!()
+    let ranges_per_allocations = chunks_count as usize / allocations;
+
+    (0..allocations).into_iter().map(|_| {
+        Buffer::<vek::Vec4<u32>>::zeroed(
+            graphics,
+            ranges_per_allocations,
+            BufferMode::Dynamic,
+            BufferUsage::STORAGE
+        ).unwrap()
+    }).collect()
 }
 
 
@@ -476,20 +485,8 @@ fn load_compute_voxels_shaders(
 fn load_compute_find_shader(
     assets: &Assets,
     graphics: &Graphics,
-    size: u32,
     allocations: usize,
-    output_triangle_buffer_length: u32,
-    output_vertex_buffer_length: u32,
-) -> ComputeShader {
-    todo!()
-}
-
-// Load the compute shader that will copy the temp data to perm allocation space
-fn load_compute_copy_shader(
-    assets: &Assets,
-    graphics: &Graphics,
-    output_triangle_buffer_length: u32,
-    output_vertex_buffer_length: u32,
+    chunks: u32,
     size: u32,
 ) -> ComputeShader {
     let module = assets
@@ -498,25 +495,53 @@ fn load_compute_copy_shader(
 
     // Create a simple compute shader compiler
     let mut compiler = Compiler::new(assets, graphics);
-    //compiler.use_storage_buffer::<[u32; 2]>("current_counters", true, true);
-    compiler.use_storage_buffer::<[u32; 2]>("old_counters", true, true);
-    compiler.use_storage_buffer::<[u32; 2]>("new_counters", true, true);
+    compiler.use_storage_buffer::<u32>("current_counters", true, false);
+    compiler.use_storage_buffer::<u32>("offsets", true, false);
+    
+    compiler
+        .use_snippet("allocation_count", format!("const uint allocation_count = {allocations};"));
+    
+    compiler.use_storage_buffer::<vek::Vec4<u32>>("ranges", true, true);
+    
+    // Compile the compute shader
+    let shader = ComputeShader::new(module, compiler).unwrap();
+    shader
+}
+
+// Load the compute shader that will copy the temp data to perm allocation space
+fn load_compute_copy_shader(
+    assets: &Assets,
+    graphics: &Graphics,
+    output_triangle_buffer_length: u32,
+    output_vertex_buffer_length: u32,
+    allocations: usize,
+    chunks: u32,
+    size: u32,
+) -> ComputeShader {
+    let module = assets
+        .load::<ComputeModule>("engine/shaders/terrain/copy.comp")
+        .unwrap();
+
+    // Create a simple compute shader compiler
+    let mut compiler = Compiler::new(assets, graphics);
+    compiler.use_storage_buffer::<u32>("current_counters", true, false);
+    compiler.use_storage_buffer::<u32>("offsets", true, false);
+    
     compiler
         .use_snippet("size", format!("const uint size = {size};"));
     compiler
         .use_snippet("output_triangles_count", format!("const uint output_triangles_count = {output_triangle_buffer_length};"));
     compiler
         .use_snippet("output_vertices_count", format!("const uint output_vertices_count = {output_vertex_buffer_length};"));
-    compiler.use_storage_buffer::<DrawIndexedIndirect>(
-        "indirect", false, true,
-    );
-    compiler.use_storage_buffer::<<XYZW<f32> as Vertex>::Storage>(
-        "temporary_vertices", true, false,
-    );
+    compiler
+        .use_snippet("allocation_count", format!("const uint allocation_count = {allocations};"));
+    compiler
+        .use_snippet("max_chunk_count", format!("const uint max_chunk_count = {chunks};"));
+    
+    compiler.use_storage_buffer::<DrawIndexedIndirect>("indirect", false, true);
+    compiler.use_storage_buffer::<<XYZW<f32> as Vertex>::Storage>("temporary_vertices", true, false);
     compiler.use_storage_buffer::<u32>("temporary_triangles", true, false);
-    compiler.use_storage_buffer::<<XYZW<f32> as Vertex>::Storage>(
-        "output_vertices", false, true,
-    );
+    compiler.use_storage_buffer::<<XYZW<f32> as Vertex>::Storage>("output_vertices", false, true);
     compiler.use_storage_buffer::<u32>("output_triangles", false, true);
     
     // Compile the compute shader

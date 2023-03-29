@@ -486,6 +486,7 @@ fn include(
     // Check if this file/snippet was already loaded before
     let mut locked = included.lock();
     if locked.contains(target) {
+        log::warn!("{target} was already loaded, no need to load it again");
         return Ok(shaderc::ResolvedInclude {
             resolved_name: target.to_string(),
             content: "".to_string(),

@@ -6,6 +6,7 @@ layout (local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
 #include "output_triangles_count"
 #include "output_vertices_count"
 #include "allocation_count"
+#include "max_chunk_count"
 
 // Input temp vertices
 layout(std430, set = 0, binding = 1) readonly buffer TemporaryVertices {
@@ -31,7 +32,6 @@ layout(std430, set = 1, binding = 2) writeonly buffer OutputTriangles {
 layout(std430, set = 0, binding = 3) readonly buffer FoundOffsets {
     uint vertices;
     uint triangles;
-    uint allocation;
 } offsets;
 
 // Atomic counters
@@ -40,16 +40,21 @@ layout(std430, set = 0, binding = 4) readonly buffer NewCounters {
     uint triangles;
 } current_counters;
 
-// Indirect drawing buffer
-layout(std430, set = 1, binding = 0) writeonly buffer Indirect {
+struct IndexedIndirectDrawArgs {
     uint vertex_count;
     uint instance_count;
     uint base_index;
     int vertex_offset;
     uint base_instance;
+};
+
+// Indirect drawing buffer
+layout(std430, set = 1, binding = 0) writeonly buffer IndirectBuffer {
+    IndexedIndirectDrawArgs data[];
 } indirect;
 
 void main() {
+    /*
     uint added_vertices = new_counters.vertices;
     uint added_triangles = new_counters.triangles;
     uint vertex_offset = old_counters.vertices;
@@ -64,4 +69,5 @@ void main() {
     }
 
     indirect.base_index = triangle_offset;
+    */
 }

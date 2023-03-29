@@ -22,7 +22,6 @@ layout(std430, set = 0, binding = 0) buffer FreeMemoryRanges {
 layout(std430, set = 0, binding = 0) buffer FoundOffsets {
     uint vertices;
     uint triangles;
-    uint allocation;
 } offsets;
 
 // Atomic counters
