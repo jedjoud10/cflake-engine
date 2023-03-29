@@ -8,16 +8,17 @@ fn main() {
         .set_window_fullscreen(true)
         .insert_init(init)
         .insert_update(update)
-        .execute();
+        .execute();             
 }
 
 // Executed at the start
 fn init(world: &mut World) {
     // Create some procedural terrain
     world.insert(TerrainSettings {
-        size: 32,
+        size: 64,
         smoothing: true,
-        chunk_render_distance: 4,
+        chunk_render_distance: 12,
+        allocations: 4,
     });
     
     // Fetch the required resources from the world
