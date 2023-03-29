@@ -127,7 +127,7 @@ fn update(world: &mut World) {
     if  added {
         let distance = terrain.chunk_render_distance as i32;
         for x in -distance..distance {
-            for y in -distance..distance {
+            for y in -1..1 {
                 for z in -distance..distance {
                     let chunk = vek::Vec3::new(x, y, z);
                     let view = terrain.viewer.unwrap().1;

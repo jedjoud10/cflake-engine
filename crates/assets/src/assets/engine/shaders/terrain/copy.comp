@@ -5,21 +5,37 @@ layout (local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
 #include "size"
 #include "output_triangles_count"
 #include "output_vertices_count"
+#include "allocation_count"
 
-// Atomic counters
-layout(std430, set = 0, binding = 2) readonly buffer OldCounters {
+// Input temp vertices
+layout(std430, set = 0, binding = 1) readonly buffer TemporaryVertices {
+    vec4 data[size*size*size];
+} temporary_vertices;
+
+// Input temp triangles
+layout(std430, set = 0, binding = 2) readonly buffer TemporaryTriangles {
+    uint data[(size - 1)*(size - 1)*(size - 1)*4*6];
+} temporary_triangles;
+
+// Output vertices
+layout(std430, set = 1, binding = 1) writeonly buffer OutputVertices {
+    vec4 data[output_vertices_count];
+} output_vertices;
+
+// Output triangles
+layout(std430, set = 1, binding = 2) writeonly buffer OutputTriangles {
+    uint data[output_triangles_count];
+} output_triangles;
+
+// Allocation offsets
+layout(std430, set = 0, binding = 3) readonly buffer FoundOffsets {
     uint vertices;
     uint triangles;
-} old_counters;
+    uint allocation;
+} offsets;
 
 // Atomic counters
-layout(std430, set = 0, binding = 3) writeonly buffer NewCounters {
-    uint vertices;
-    uint triangles;
-} new_counters;
-
-// Atomic counters
-layout(std430, set = 0, binding = 4) readonly buffer CurrentCounters {
+layout(std430, set = 0, binding = 4) readonly buffer NewCounters {
     uint vertices;
     uint triangles;
 } current_counters;
@@ -34,10 +50,8 @@ layout(std430, set = 1, binding = 0) writeonly buffer Indirect {
 } indirect;
 
 void main() {
-    indirect.base_index = old_counters.triangles;
-    /*
-    uint added_vertices = current_counters.vertices;
-    uint added_triangles = current_counters.triangles;
+    uint added_vertices = new_counters.vertices;
+    uint added_triangles = new_counters.triangles;
     uint vertex_offset = old_counters.vertices;
     uint triangle_offset = old_counters.triangles;
 
@@ -48,9 +62,6 @@ void main() {
     if (gl_GlobalInvocationID.x < added_triangles) {
         output_triangles.data[gl_GlobalInvocationID.x + triangle_offset] = temporary_triangles.data[gl_GlobalInvocationID.x];
     }
-    
-    new_counters.vertices = vertex_offset + added_vertices;
-    new_counters.triangles = triangle_offset + added_triangles;
-    */
-    //indirect.vertex_count = 6000;
+
+    indirect.base_index = triangle_offset;
 }

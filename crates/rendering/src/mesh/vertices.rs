@@ -190,15 +190,3 @@ impl<'a> VerticesMut<'a, Direct> {
         Ok(self.aabb.borrow().unwrap())
     }
 }
-
-impl<'a> VerticesMut<'a, Indirect> {
-    // Get the indexed indirect buffer handle mutably
-    pub fn indirect_mut(&mut self) -> &mut Handle<DrawIndexedIndirectBuffer> {
-        self.count.get_mut()
-    }
-
-    // Get the indexed indirect buffer handle immutably
-    pub fn indirect(&self) -> Handle<DrawIndexedIndirectBuffer> {
-        self.count.borrow().clone()
-    }
-}

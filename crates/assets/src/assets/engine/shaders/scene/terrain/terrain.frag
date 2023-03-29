@@ -32,7 +32,7 @@ void main() {
 	// Assume world space normals
 	//vec3 normal = normalize(m_normal);
 	vec3 normal = -normalize(cross(dFdy(m_position), dFdx(m_position)));
-	vec3 albedo = vec3(1, 1, 1);
+	vec3 albedo = vec3(1);
 
 	// Compute PBR values
 	float roughness = clamp(mask.g, 0.02, 1.0);

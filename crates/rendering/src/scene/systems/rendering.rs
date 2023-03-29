@@ -48,9 +48,9 @@ fn init(world: &mut World) {
 
     // Create a nice shadow map
     let shadowmap = ShadowMapping::new(
-        20f32,
-        100f32,
-        1024,
+        600f32,
+        300f32,
+        1024*4,
         &graphics,
         &mut assets,
     );
@@ -222,9 +222,10 @@ fn render(world: &mut World) {
     let f1 = ecs::modified::<ecs::Position>();
     let f2 = ecs::modified::<ecs::Rotation>();
     let f3 = ecs::modified::<ecs::Scale>();
-    let f4 = f1 | f2 | f3;
+    let f4 = ecs::added::<Renderer>();
+    let f5 = f1 | f2 | f3 | f4;
     let mut update = scene
-        .query_with::<&Renderer>(f4)
+        .query_with::<&Renderer>(f5)
         .into_iter()
         .filter(|r| r.visible)
         .count()

@@ -141,7 +141,7 @@ impl RenderPath for Direct {
 impl RenderPath for Indirect {
     type AttributeBuffer<A: MeshAttribute> = Handle<AttributeBuffer<A>>;
     type TriangleBuffer<T: GpuPod> = Handle<TriangleBuffer<T>>;
-    type Count = Handle<DrawIndexedIndirectBuffer>;
+    type Count = (Handle<DrawIndexedIndirectBuffer>, usize);
 
     #[inline(always)]
     fn get<'a>(
@@ -170,7 +170,7 @@ impl RenderPath for Indirect {
     ) {
         let handle = mesh.indirect().clone();
         let buffer = defaults.draw_indexed_indirect_buffers.get(&handle);
-        active.draw_indexed_indirect(buffer, 0);
+        active.draw_indexed_indirect(buffer, mesh.offset());
     }
 
     #[inline(always)]

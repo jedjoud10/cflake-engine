@@ -17,12 +17,12 @@ use crate::{ChunkCoords, TerrainMaterial};
 // Type aliases for textures and buffers
 pub(crate) type CachedIndices = Texture3D<R<u32>>;
 pub(crate) type Densities = Texture3D<R<f32>>;
-pub(crate) type Counters = Buffer<[u32; 2]>;
 
 // Terrain generator settings that the user will need to add to configure the terrain gen
 pub struct TerrainSettings {
     pub size: u32,
     pub chunk_render_distance: u32,
+    pub allocations: usize,
     pub smoothing: bool,
 }
 
@@ -32,9 +32,9 @@ pub struct TerrainSettings {
 // bind temp vert+triangle buffer that will store worst case scenario vertices and tris
 // run voxel compute shader
 // run mesh compute shader
-// run "guesser" compute that will try to find free memory location based on last draw indexed indirect vertex count and shiz
+// run "finder" compute that will try to find free memory location based on ranges and current counter values (to get size limits required)
 // run copy compute shader that will copy temp memory to the free one
-// gg ez but no dynamic chunks cause hard for me
+// gg ez
 
 // Le terrain generator
 // TODO: EXPLAIN
@@ -45,8 +45,8 @@ pub struct Terrain {
     pub(crate) densities: Densities,
 
     // Container for all the memory chunks that we pre-allocate
-    pub(crate) shared_vertex_buffer: Handle<AttributeBuffer<attributes::Position>>,
-    pub(crate) shared_triangle_buffer: Handle<TriangleBuffer<u32>>,
+    pub(crate) shared_vertex_buffers: Vec<Handle<AttributeBuffer<attributes::Position>>>,
+    pub(crate) shared_triangle_buffers: Vec<Handle<TriangleBuffer<u32>>>,
 
     // Temporary buffers where we will write the mesh data
     pub(crate) temp_vertices: VertexBuffer<XYZW<f32>>,
@@ -58,16 +58,20 @@ pub struct Terrain {
     pub(crate) compute_vertices: ComputeShader,
     pub(crate) compute_voxels: ComputeShader,
     pub(crate) cached_indices: CachedIndices,
-    pub(crate) old_counters: Counters,
-    pub(crate) new_counters: Counters,
-    pub(crate) current_counters: Counters,
-
+    
     // Guesser compute shader that will look into the memory chunks and 
     // try to find a free chunk of memory that we can use
-    /*
-    pub(crate) compute_try_find: ComputeShader,
-    */
+    pub(crate) compute_find: ComputeShader,
 
+    // Length = 4
+    pub(crate) offsets: Buffer<u32>,
+    
+    // Length = 3
+    pub(crate) counters: Buffer<u32>,
+
+    // Vec4<u32>
+    pub(crate) ranges: Vec<Buffer<vek::Vec4<u32>>>,
+    
     // Copy shader that will copy the temporary vertices and triangles to the
     // output vertices and shaders within each block 
     pub(crate) compute_copy: ComputeShader,
@@ -106,54 +110,72 @@ impl Terrain {
         let TerrainSettings {
             size,
             chunk_render_distance,
+            allocations,
             smoothing,
         } = settings;
 
-        let shared_vertex_buffer_size = graphics.device().limits().max_storage_buffer_binding_size / 4 / 4;
-        let shared_triangle_buffer_size = graphics.device().limits().max_storage_buffer_binding_size / 4 / 3;
+        // Calculate the number of elements required for each triangle/vertex buffer allocation
+        let output_vertex_buffer_length = graphics.device().limits().max_storage_buffer_binding_size / 4 / 4;
+        let output_triangle_buffer_length = graphics.device().limits().max_storage_buffer_binding_size / 4 / 3;
 
-        // Load the required generationcompute shaders
-        let compute_voxels =
-            load_compute_voxels_shaders(assets, graphics);
-        let compute_vertices = load_compute_vertices_shader(
-            assets, graphics, size, smoothing,
-        );
-        let compute_quads =
-            load_compute_quads_shader(assets, graphics, size);
-        let compute_copy = 
-            load_compute_copy_shader(assets, graphics,  shared_triangle_buffer_size, shared_vertex_buffer_size, size);
+        // Calculate the number of chunk meshes/indirect elements that must be created
+        let mut chunks = (chunk_render_distance * 2 + 1).pow(3);
+        
+        // Do this so each allocation contains the same amount of chunks
+        chunks = ((chunks as f32 / allocations as f32).ceil() * (allocations as f32)) as u32;
+
+        // Load the required generation compute shaders
+        let compute_voxels = load_compute_voxels_shaders(assets, graphics);
+        let compute_vertices = load_compute_vertices_shader(assets, graphics, size, smoothing);
+        let compute_quads = load_compute_quads_shader(assets, graphics, size);
+        let compute_copy =  load_compute_copy_shader(assets, graphics,  output_triangle_buffer_length, output_vertex_buffer_length, size);
+        let compute_find = load_compute_find_shader(assets, graphics, size, allocations, output_triangle_buffer_length, output_vertex_buffer_length);
 
         // Create cached data used for generation
         let cached_indices = create_texture3d(graphics, size);
-        let old_counters = create_counters(graphics);
-        let new_counters = create_counters(graphics);
-        let current_counters = create_counters(graphics);
         let densities = create_texture3d(graphics, size);
         let temp_vertices = create_temp_vertices(graphics, size);
         let temp_triangles = create_temp_triangles(graphics, size);
 
-        // Create the memory chunk vertices
-        let shared_vertex_buffer = create_shared_vertex_buffer(
+        // Create a counter that will store the currently stored values
+        let counters = create_counters(graphics, 2);
+
+        // Create counters that will be used to find free mem allocation
+        let offsets = create_counters(graphics, 3);
+
+        // A buffer that will contain the ranges of free memory for each allocation
+        let ranges = create_ranges(graphics, allocations, chunks);
+
+        // Create buffers for vertices
+        let shared_vertex_buffer = create_vertex_buffers(
             graphics,
             vertices,
-            shared_vertex_buffer_size
+            allocations,
+            output_vertex_buffer_length
         );
 
-        // Create the memory chunk triangles
-        let shared_triangle_buffer = create_shared_triangle_buffer(
+        // Create buffers for triangles
+        let shared_triangle_buffer = create_triangle_buffers(
             graphics,
             triangles,
-            shared_triangle_buffer_size
+            allocations,
+            output_triangle_buffer_length
         );
 
-        // Pre-allocate the meshes and indirect buffers
-        let indirect_meshes = preallocate_meshes(
+        // Create ONE buffer that will store the indirect arguments
+        let indirect_buffers = create_draw_indexed_indirect_buffer(
             graphics,
+            indirect_buffers,
+            chunks,
+        );
+
+        // Pre-allocate the meshes
+        let indirect_meshes = preallocate_meshes(
             shared_vertex_buffer.clone(),
             shared_triangle_buffer.clone(),
             indirect_meshes,
             indirect_buffers,
-            chunk_render_distance,
+            chunks,
             size,
         );
 
@@ -164,9 +186,6 @@ impl Terrain {
             compute_vertices,
             compute_quads,
             cached_indices,
-            old_counters,
-            new_counters,
-            current_counters,
             dispatch,
             densities,
             compute_voxels,
@@ -184,43 +203,62 @@ impl Terrain {
             indirect_meshes,
             chunk_render_distance,
             
-            shared_vertex_buffer,
-            shared_triangle_buffer,
+            shared_vertex_buffers: shared_vertex_buffer,
+            shared_triangle_buffers: shared_triangle_buffer,
 
             temp_vertices,
             temp_triangles,
             compute_copy,
+            offsets,
+            counters,
+            compute_find,
+            ranges,
         }
     }
 }
 
-
-// Creates one big triangle buffer that will contain all of our data
-fn create_shared_triangle_buffer(
+// Create multiple buffers that contain the free ranges of each allocation
+fn create_ranges(
     graphics: &Graphics,
-    triangles: &mut Storage<TriangleBuffer<u32>>,
-    triangle_buffer_size: u32,
-) -> Handle<TriangleBuffer<u32>> {
-    triangles.insert(TriangleBuffer::zeroed(
-        graphics,
-        triangle_buffer_size as usize,
-        BufferMode::Dynamic,
-        BufferUsage::STORAGE | BufferUsage::WRITE
-    ).unwrap())
+    allocations: usize,
+    chunks_count: u32
+) -> Vec<Buffer<vek::Vec4<u32>>> {
+    todo!()
 }
 
-// Creates one big vertex buffer that will contain all of our data
-fn create_shared_vertex_buffer(
+
+// Creates multiple big triangle buffers that will contain our data
+fn create_triangle_buffers(
+    graphics: &Graphics,
+    triangles: &mut Storage<TriangleBuffer<u32>>,
+    allocations: usize,
+    output_triangle_buffer_length: u32,
+) -> Vec<Handle<TriangleBuffer<u32>>> {
+    (0..allocations).into_iter().map(|_| {
+        triangles.insert(TriangleBuffer::zeroed(
+            graphics,
+            output_triangle_buffer_length as usize,
+            BufferMode::Dynamic,
+            BufferUsage::STORAGE | BufferUsage::WRITE
+        ).unwrap())
+    }).collect::<Vec<_>>()
+}
+
+// Creates multiple big vertex buffers that will contain our data
+fn create_vertex_buffers(
     graphics: &Graphics,
     vertices: &mut Storage<AttributeBuffer<attributes::Position>>,
-    vertex_buffer_size: u32,
-) -> Handle<AttributeBuffer<attributes::Position>> {
-    vertices.insert(AttributeBuffer::<attributes::Position>::zeroed(
-        graphics,
-        vertex_buffer_size as usize,
-        BufferMode::Dynamic,
-        BufferUsage::STORAGE | BufferUsage::WRITE
-    ).unwrap())
+    allocations: usize,
+    output_vertex_buffer_length: u32,
+) -> Vec<Handle<AttributeBuffer<attributes::Position>>> {
+    (0..allocations).into_iter().map(|_| {
+        vertices.insert(AttributeBuffer::<attributes::Position>::zeroed(
+            graphics,
+            output_vertex_buffer_length as usize,
+            BufferMode::Dynamic,
+            BufferUsage::STORAGE | BufferUsage::WRITE
+        ).unwrap())
+    }).collect::<Vec<_>>()
 }
 
 // Create some temporary triangles that we will write to first
@@ -245,63 +283,77 @@ fn create_temp_vertices(graphics: &Graphics, size: u32) -> VertexBuffer<XYZW<f32
     ).unwrap()
 }
 
+// Create a buffer that will contain all DrawIndexedIndirect elements
+fn create_draw_indexed_indirect_buffer(
+    graphics: &Graphics,
+    buffers: &mut Storage<DrawIndexedIndirectBuffer>,
+    chunks_count: u32,
+) -> Handle<DrawIndexedIndirectBuffer> {
+    let elements = vec![DrawIndexedIndirect {
+        vertex_count: 0,
+        instance_count: 1,
+        base_index: 0,
+        vertex_offset: 0,
+        base_instance: 0,
+    }; chunks_count as usize];
+
+    buffers.insert(DrawIndexedIndirectBuffer::from_slice(
+        graphics,
+        &elements,
+        BufferMode::Dynamic,
+        BufferUsage::STORAGE | BufferUsage::WRITE
+        ).unwrap()
+    )
+}
+
 // Create the meshes that we will use for terrain generation before hand
 fn preallocate_meshes(
-    graphics: &Graphics,
-    shared_vertex_buffer: Handle<AttributeBuffer<attributes::Position>>,
-    shared_triangle_buffer: Handle<TriangleBuffer<u32>>,
+    shared_vertex_buffers: Vec<Handle<AttributeBuffer<attributes::Position>>>,
+    shared_triangle_buffers: Vec<Handle<TriangleBuffer<u32>>>,
     meshes: &mut Storage<IndirectMesh>,
-    buffers: &mut Storage<DrawIndexedIndirectBuffer>,
-    render_distance: u32,
+    indexed_indirect_buffer: Handle<DrawIndexedIndirectBuffer>,
+    chunks_count: u32,
     chunk_size: u32,
 ) -> Vec<(Handle<IndirectMesh>, bool)> {
-    let count = (render_distance * 2 + 1).pow(3);
+    (0..(chunks_count as usize)).into_iter().map(|i| {
+        // Get the allocation index for this chunk
+        let allocation = 0;
 
-    (0..count).into_iter().map(|_| {
-        let indirect = buffers.insert(DrawIndexedIndirectBuffer::from_slice(
-            graphics,
-            &[DrawIndexedIndirect {
-                vertex_count: 0,
-                instance_count: 1,
-                base_index: 0,
-                vertex_offset: 0,
-                base_instance: 0,
-            }],
-            BufferMode::Dynamic,
-            BufferUsage::STORAGE | BufferUsage::WRITE
-        ).unwrap());
+        // Get the vertex and triangle buffers that will be shared for this group
+        let vertex_buffer = &shared_vertex_buffers[allocation];
+        let triangle_buffer = &shared_triangle_buffers[allocation];
 
+        // Create the indirect mesh
         let mut mesh = IndirectMesh::from_handles(
-            Some(shared_vertex_buffer.clone()),
+            Some(vertex_buffer.clone()),
             None,
             None,
             None,
-            shared_triangle_buffer.clone(),
-            indirect
+            triangle_buffer.clone(),
+            indexed_indirect_buffer.clone(),
+            i
         );
 
+        // Set the bounding box of the mesh before hand
         mesh.set_aabb(Some(math::Aabb {
             min: vek::Vec3::zero(),
             max: vek::Vec3::one() * chunk_size as f32,
         }));
 
+        // Insert the mesh into the storage
         let handle = meshes.insert(mesh);
-
         (handle, true)
     }).collect()
 }
 
 // Create counters that will help us generate the vertices
-fn create_counters(graphics: &Graphics) -> Buffer<[u32; 2]> {
-    // Create the atomic counter buffer
-    let counters = Buffer::from_slice(
+fn create_counters(graphics: &Graphics, count: usize) -> Buffer<u32> {
+    Buffer::zeroed(
         graphics,
-        &[[0, 0]],
+        count,
         BufferMode::Dynamic,
-        BufferUsage::STORAGE | BufferUsage::COPY_SRC | BufferUsage::COPY_DST | BufferUsage::WRITE,
-    )
-    .unwrap();
-    counters
+        BufferUsage::STORAGE | BufferUsage::WRITE,
+    ).unwrap()
 }
 
 // Create a 3D storage texture with null contents with the specified size
@@ -421,11 +473,13 @@ fn load_compute_voxels_shaders(
 }
 
 // Load the compute shader that will find a free memory range
-fn load_compute_try_find_shader(
+fn load_compute_find_shader(
     assets: &Assets,
     graphics: &Graphics,
     size: u32,
-    memory_chunks_count: u32,
+    allocations: usize,
+    output_triangle_buffer_length: u32,
+    output_vertex_buffer_length: u32,
 ) -> ComputeShader {
     todo!()
 }
@@ -434,8 +488,8 @@ fn load_compute_try_find_shader(
 fn load_compute_copy_shader(
     assets: &Assets,
     graphics: &Graphics,
-    output_triangles_count: u32,
-    output_vertices_count: u32,
+    output_triangle_buffer_length: u32,
+    output_vertex_buffer_length: u32,
     size: u32,
 ) -> ComputeShader {
     let module = assets
@@ -444,18 +498,26 @@ fn load_compute_copy_shader(
 
     // Create a simple compute shader compiler
     let mut compiler = Compiler::new(assets, graphics);
-    compiler.use_storage_buffer::<[u32; 2]>("current_counters", true, true);
+    //compiler.use_storage_buffer::<[u32; 2]>("current_counters", true, true);
     compiler.use_storage_buffer::<[u32; 2]>("old_counters", true, true);
     compiler.use_storage_buffer::<[u32; 2]>("new_counters", true, true);
     compiler
         .use_snippet("size", format!("const uint size = {size};"));
     compiler
-        .use_snippet("output_triangles_count", format!("const uint output_triangles_count = {output_triangles_count};"));
+        .use_snippet("output_triangles_count", format!("const uint output_triangles_count = {output_triangle_buffer_length};"));
     compiler
-        .use_snippet("output_vertices_count", format!("const uint output_vertices_count = {output_vertices_count};"));
+        .use_snippet("output_vertices_count", format!("const uint output_vertices_count = {output_vertex_buffer_length};"));
     compiler.use_storage_buffer::<DrawIndexedIndirect>(
         "indirect", false, true,
     );
+    compiler.use_storage_buffer::<<XYZW<f32> as Vertex>::Storage>(
+        "temporary_vertices", true, false,
+    );
+    compiler.use_storage_buffer::<u32>("temporary_triangles", true, false);
+    compiler.use_storage_buffer::<<XYZW<f32> as Vertex>::Storage>(
+        "output_vertices", false, true,
+    );
+    compiler.use_storage_buffer::<u32>("output_triangles", false, true);
     
     // Compile the compute shader
     let shader = ComputeShader::new(module, compiler).unwrap();

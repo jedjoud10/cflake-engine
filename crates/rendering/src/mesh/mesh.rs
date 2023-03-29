@@ -144,6 +144,7 @@ impl Mesh<Indirect> {
         tex_coords: Option<Handle<AttributeBuffer<TexCoord>>>,
         triangles: Handle<TriangleBuffer<u32>>,
         indirect: Handle<DrawIndexedIndirectBuffer>,
+        offset: usize,
     ) -> Self {
         // Keep track of the enabled mesh buffers
         let mut enabled = MeshAttributes::empty();
@@ -171,7 +172,7 @@ impl Mesh<Indirect> {
             normals,
             tangents,
             tex_coords,
-            count: indirect,
+            count: (indirect, offset),
             triangles,
             aabb: None,
         }
@@ -179,7 +180,12 @@ impl Mesh<Indirect> {
 
     // Get the indexed indirect buffer handle immutably
     pub fn indirect(&self) -> &Handle<DrawIndexedIndirectBuffer> {
-        &self.count
+        &self.count.0
+    }
+
+    // Get the element offset within the DrawIndexedIndirectBuffer
+    pub fn offset(&self) -> usize {
+        self.count.1
     }
 }
 

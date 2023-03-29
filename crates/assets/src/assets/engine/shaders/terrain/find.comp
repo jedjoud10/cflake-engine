@@ -1,0 +1,37 @@
+#version 460 core
+layout (local_size_x = 4, local_size_y = 1, local_size_z = 1) in;
+
+#extension GL_EXT_nonuniform_qualifier :  require
+
+#include "allocation_count"
+
+// A single memory range 
+struct FreeMemoryRange {
+    uint vertices_start;
+    uint vertices_end;
+    uint triangles_start;
+    uint triangles_end;
+}
+
+// Free ranges of memory
+layout(std430, set = 0, binding = 0) buffer FreeMemoryRanges {
+    FreeMemoryRange[] data;
+} ranges[allocation_count];
+
+// Allocation offsets
+layout(std430, set = 0, binding = 0) buffer FoundOffsets {
+    uint vertices;
+    uint triangles;
+    uint allocation;
+} offsets;
+
+// Atomic counters
+layout(std430, set = 0, binding = 1) readonly buffer CurrentCounters {
+    uint vertices;
+    uint triangles;
+} current_counters;
+
+void main() {
+    // Loop through every allocation (dispatch)
+    // Iterate through ranges in each allocation
+}

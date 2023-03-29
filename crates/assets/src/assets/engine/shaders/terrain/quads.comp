@@ -46,8 +46,8 @@ void add_quad(
     uint index3 = uint(imageLoad(cached_indices, ivec3(quad3+offset)).x);
 
     // Add the triangles
-    atomicAdd(indirect.vertex_count, 6);
-    uint base = atomicAdd(counters.triangles, 6);
+    atomicAdd(counters.triangles, 6);
+    uint base = atomicAdd(indirect.vertex_count, 6);
     
     // First triangle
     triangles.data[base + (flip ? 0 : 2)] = index2;
