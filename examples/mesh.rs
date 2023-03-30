@@ -6,6 +6,7 @@ fn main() {
         .set_app_name("cflake engine mesh example")
         .set_user_assets_path(user_assets_path!("/examples/assets/"))
         .set_window_fullscreen(true)
+        //.set_logging_level(LevelFilter::Trace)
         .insert_init(init)
         .insert_update(update)
         .execute();             

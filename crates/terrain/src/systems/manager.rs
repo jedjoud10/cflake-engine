@@ -77,10 +77,19 @@ fn create_chunk_components(
     let position =
         Position::from(coords.as_::<f32>() * terrain.size as f32);
 
+    // Offset chunk coords to remove negatives
+    let positive  = coords.map(|x| (x + terrain.chunk_render_distance as i32) as u32);
+    let max = vek::Vec3::broadcast(terrain.chunk_render_distance * 2 + 1);
+
+    let index = (positive.x + positive.y * max.x + positive.z * max.x * max.y) as usize;
+    let allocation = index / terrain.chunks_per_allocation;
+    log::trace!("terrain manager: using allocation {allocation} for chunk {coords}");
+
     // Create the chunk component
     let chunk = Chunk {
         state: ChunkState::Pending,
         coords,
+        allocation,
     };
 
     // Return the components of the new chunk
@@ -143,7 +152,7 @@ fn update(world: &mut World) {
             .cloned()
             .collect::<Vec<_>>();
         for coords in removed {
-            log::debug!("Remove terrain chunk with coords {coords}");
+            log::trace!("terrain manager: remove chunk with coords {coords}");
             let entity = terrain.entities.remove(&coords).unwrap();
             if scene.contains(entity) {
                 scene.remove(entity);
@@ -169,7 +178,7 @@ fn update(world: &mut World) {
             .collect::<Vec<_>>();
         let entities =
             scene.extend_from_iter(added.iter().map(|coords| {
-                log::debug!("Add terrain chunk with coords {coords}");
+                log::trace!("terrain manager: add chunk with coords {coords}");
                 create_chunk_components(&mut terrain, *coords)
             }));
 

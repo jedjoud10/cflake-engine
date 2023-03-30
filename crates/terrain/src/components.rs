@@ -23,6 +23,7 @@ pub type ChunkCoords = vek::Vec3<i32>;
 // Each chunk has a specific state associated with it that represents what stage it's in for terrain generation
 #[derive(Component)]
 pub struct Chunk {
+    pub(crate) allocation: usize,
     pub(crate) state: ChunkState,
     pub(crate) coords: ChunkCoords,
 }

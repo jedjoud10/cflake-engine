@@ -45,7 +45,7 @@ fn update(world: &mut World) {
         chunk.state = ChunkState::Generated;
 
         //chunk.state = ChunkState::Generated;
-        log::debug!("Generate voxels and mesh for chunk {}", chunk.coords);
+        log::trace!("terrain generation: voxels and mesh for chunk {}", chunk.coords);
 
         //terrain.counters.write(&[0, 0], 0).unwrap();
         let mesh = meshes.get(&surface.mesh);
@@ -68,15 +68,12 @@ fn update(world: &mut World) {
 
         // Reset the current counters
         terrain.counters.write(&[0; 2], 0).unwrap();
+        terrain.offsets.write(&[u32::MAX, u32::MAX, u32::MAX], 0).unwrap();
 
-        /*
         // Fetch the buffer used by this chunk from the terrain pool
-        let output_vertices = vertices.get_mut(&terrain.shared_vertex_buffers);
-        let output_triangles = triangles.get_mut(&terrain.shared_triangle_buffers);
-
-        //output_vertices.splat(.., vek::Vec4::zero()).unwrap();
-        //output_triangles.splat(.., [0; 3]).unwrap();
-
+        let output_vertices = vertices.get_mut(&terrain.shared_vertex_buffers[chunk.allocation]);
+        let output_triangles = triangles.get_mut(&terrain.shared_triangle_buffers[chunk.allocation]);
+        let ranges = &mut terrain.ranges[chunk.allocation];
         let temp_vertices = &mut terrain.temp_vertices;
         let temp_triangles = &mut terrain.temp_triangles;
 
@@ -165,6 +162,15 @@ fn update(world: &mut World) {
         });
         active.dispatch(vek::Vec3::broadcast(terrain.dispatch));
 
+        // Run a compute shader that will iterate over the ranges and find a free one 
+        let mut active = pass.bind_shader(&terrain.compute_find);
+        active.set_bind_group(0, |set| {
+            set.set_storage_buffer("ranges", ranges).unwrap();
+            set.set_storage_buffer("offsets", &mut terrain.offsets).unwrap();
+            set.set_storage_buffer("counters", &mut terrain.counters).unwrap();
+        });
+
+        /*
         // Copy the generated vertex and tri data to the permanent buffer 
         let mut active = pass.bind_shader(&terrain.compute_copy);
         active.set_bind_group(0, |set| {
@@ -188,9 +194,10 @@ fn update(world: &mut World) {
                 .unwrap();
             set.set_storage_buffer("indirect", indirect).unwrap();
         });
-        active.dispatch(vek::Vec3::new(32*32, 1, 1));
-        return;
         */
+
+        active.dispatch(vek::Vec3::new(1, 1, 1));
+        return;
     }
 }
 

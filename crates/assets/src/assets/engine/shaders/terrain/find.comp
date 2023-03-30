@@ -1,36 +1,40 @@
 #version 460 core
-layout (local_size_x = 4, local_size_y = 1, local_size_z = 1) in;
+layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
-#extension GL_EXT_nonuniform_qualifier :  require
-
-#include "allocation_count"
+#include "chunks_per_allocation"
 
 // A single memory range 
-struct FreeMemoryRange {
+struct UsedMemoryRange {
     uint vertices_start;
     uint vertices_end;
     uint triangles_start;
     uint triangles_end;
-}
+};
 
-// Free ranges of memory
-layout(std430, set = 0, binding = 0) buffer FreeMemoryRanges {
-    FreeMemoryRange[] data;
-} ranges[allocation_count];
+// Used ranges of memory
+layout(std430, set = 0, binding = 0) buffer UsedMemoryRanges {
+    UsedMemoryRange[chunks_per_allocation] data;
+} ranges;
 
 // Allocation offsets
-layout(std430, set = 0, binding = 0) buffer FoundOffsets {
+layout(std430, set = 0, binding = 1) buffer FoundOffsets {
     uint vertices;
     uint triangles;
+    uint range;
 } offsets;
 
 // Atomic counters
-layout(std430, set = 0, binding = 1) readonly buffer CurrentCounters {
+layout(std430, set = 0, binding = 2) readonly buffer Counters {
     uint vertices;
     uint triangles;
-} current_counters;
+} counters;
 
 void main() {
-    // Loop through every allocation (dispatch)
-    // Iterate through ranges in each allocation
+    // If there are no used memory blocks, return early  
+    bool empty = true;
+    for (uint i = 0; i < chunks_per_allocation; i++) {
+        UsedMemoryRange range = ranges.data[i];
+        empty = empty && (range.vertices_start == 0 && range.vertices_end == 0);
+        empty = empty && (range.triangles_start == 0 && range.triangles_end == 0); 
+    }
 }

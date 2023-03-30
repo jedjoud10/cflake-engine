@@ -83,6 +83,8 @@ pub struct Terrain {
     pub(crate) chunks: AHashSet<ChunkCoords>,
     pub(crate) entities: AHashMap<ChunkCoords, Entity>,
     pub(crate) size: u32,
+    pub(crate) allocations: usize,
+    pub(crate) chunks_per_allocation: usize,
     pub(crate) material: Handle<TerrainMaterial>,
     pub(crate) id: MaterialId<TerrainMaterial>,
 
@@ -129,7 +131,7 @@ impl Terrain {
         let compute_vertices = load_compute_vertices_shader(assets, graphics, size, smoothing);
         let compute_quads = load_compute_quads_shader(assets, graphics, size);
         let compute_copy =  load_compute_copy_shader(assets, graphics,  output_triangle_buffer_length, output_vertex_buffer_length, allocations, chunks, size);
-        let compute_find = load_compute_find_shader(assets, graphics, allocations, chunks, size);
+        let compute_find = load_compute_find_shader(assets, graphics, allocations, (chunks as usize) / allocations, size);
 
         // Create cached data used for generation
         let cached_indices = create_texture3d(graphics, size);
@@ -213,6 +215,8 @@ impl Terrain {
             counters,
             compute_find,
             ranges,
+            allocations,
+            chunks_per_allocation: (chunks as usize) / allocations,
         }
     }
 }
@@ -486,22 +490,22 @@ fn load_compute_find_shader(
     assets: &Assets,
     graphics: &Graphics,
     allocations: usize,
-    chunks: u32,
+    chunks_per_allocation: usize,
     size: u32,
 ) -> ComputeShader {
     let module = assets
-        .load::<ComputeModule>("engine/shaders/terrain/copy.comp")
+        .load::<ComputeModule>("engine/shaders/terrain/find.comp")
         .unwrap();
 
     // Create a simple compute shader compiler
     let mut compiler = Compiler::new(assets, graphics);
-    compiler.use_storage_buffer::<u32>("current_counters", true, false);
+    compiler.use_storage_buffer::<u32>("counters", true, true);
     compiler.use_storage_buffer::<u32>("offsets", true, false);
     
     compiler
-        .use_snippet("allocation_count", format!("const uint allocation_count = {allocations};"));
+        .use_snippet("chunks_per_allocation", format!("const uint chunks_per_allocation = {};", chunks_per_allocation));
     
-    compiler.use_storage_buffer::<vek::Vec4<u32>>("ranges", true, true);
+    compiler.use_storage_buffer::<vek::Vec4<u32>>("ranges", true, false);
     
     // Compile the compute shader
     let shader = ComputeShader::new(module, compiler).unwrap();
@@ -524,7 +528,7 @@ fn load_compute_copy_shader(
 
     // Create a simple compute shader compiler
     let mut compiler = Compiler::new(assets, graphics);
-    compiler.use_storage_buffer::<u32>("current_counters", true, false);
+    compiler.use_storage_buffer::<u32>("counters", true, false);
     compiler.use_storage_buffer::<u32>("offsets", true, false);
     
     compiler
