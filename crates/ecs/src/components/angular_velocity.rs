@@ -11,10 +11,10 @@ type Target = math::RawRotation;
 
 #[derive(Default, Clone, Copy, PartialEq, Component)]
 #[repr(transparent)]
-pub struct AngularRotation(Target);
+pub struct AngularVelocity(Target);
 
 #[cfg(not(feature = "two-dim"))]
-impl AngularRotation {
+impl AngularVelocity {
     // Construct an angular rotation using an X rotation (radians)
     pub fn angular_rotation_x(angle_radians: Scalar) -> Self {
         Self(vek::Quaternion::rotation_x(angle_radians))
@@ -32,14 +32,14 @@ impl AngularRotation {
 }
 
 #[cfg(feature = "two-dim")]
-impl AngularRotation {
+impl AngularVelocity {
     // Construct a 2D angular rotation using an angle (radians)
     pub fn angular_from_angle(angle_radians: Scalar) -> Self {
         Self(angle_radians)
     }
 }
 
-impl Debug for AngularRotation {
+impl Debug for AngularVelocity {
     fn fmt(
         &self,
         f: &mut std::fmt::Formatter<'_>,
@@ -49,7 +49,7 @@ impl Debug for AngularRotation {
 }
 
 #[cfg(feature = "two-dim")]
-impl Display for AngularRotation {
+impl Display for AngularVelocity {
     fn fmt(
         &self,
         f: &mut std::fmt::Formatter<'_>,
@@ -58,7 +58,7 @@ impl Display for AngularRotation {
     }
 }
 
-impl Deref for AngularRotation {
+impl Deref for AngularVelocity {
     type Target = Target;
 
     fn deref(&self) -> &Self::Target {
@@ -66,56 +66,56 @@ impl Deref for AngularRotation {
     }
 }
 
-impl DerefMut for AngularRotation {
+impl DerefMut for AngularVelocity {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
-impl AsRef<Target> for AngularRotation {
+impl AsRef<Target> for AngularVelocity {
     fn as_ref(&self) -> &Target {
         &self.0
     }
 }
 
-impl AsMut<Target> for AngularRotation {
+impl AsMut<Target> for AngularVelocity {
     fn as_mut(&mut self) -> &mut Target {
         &mut self.0
     }
 }
 
-impl From<AngularRotation> for Target {
-    fn from(value: AngularRotation) -> Self {
+impl From<AngularVelocity> for Target {
+    fn from(value: AngularVelocity) -> Self {
         value.0
     }
 }
 
-impl From<&AngularRotation> for Target {
-    fn from(value: &AngularRotation) -> Self {
+impl From<&AngularVelocity> for Target {
+    fn from(value: &AngularVelocity) -> Self {
         value.0
     }
 }
 
-impl From<Target> for AngularRotation {
+impl From<Target> for AngularVelocity {
     fn from(q: Target) -> Self {
         Self(q)
     }
 }
 
-impl From<&Target> for AngularRotation {
+impl From<&Target> for AngularVelocity {
     fn from(q: &Target) -> Self {
         Self(*q)
     }
 }
 
-impl From<AngularRotation> for math::RawMatrix {
-    fn from(value: AngularRotation) -> Self {
+impl From<AngularVelocity> for math::RawMatrix {
+    fn from(value: AngularVelocity) -> Self {
         value.0.into()
     }
 }
 
-impl From<&AngularRotation> for math::RawMatrix {
-    fn from(value: &AngularRotation) -> Self {
+impl From<&AngularVelocity> for math::RawMatrix {
+    fn from(value: &AngularVelocity) -> Self {
         value.0.into()
     }
 }
