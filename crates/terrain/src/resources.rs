@@ -120,6 +120,9 @@ impl Terrain {
         let output_vertex_buffer_length = graphics.device().limits().max_storage_buffer_binding_size / 4 / 4;
         let output_triangle_buffer_length = graphics.device().limits().max_storage_buffer_binding_size / 4 / 3;
 
+        let output_vertex_buffer_length = 16_000;
+        let output_triangle_buffer_length = 5000;
+
         // Calculate the number of chunk meshes/indirect elements that must be created
         let mut chunks = (chunk_render_distance * 2 + 1).pow(3);
         
@@ -143,7 +146,7 @@ impl Terrain {
         let counters = create_counters(graphics, 2);
 
         // Create counters that will be used to find free mem allocation
-        let offsets = create_counters(graphics, 3);
+        let offsets = create_counters(graphics, 2);
 
         // A buffer that will contain the ranges of free memory for each allocation
         let ranges = create_ranges(graphics, allocations, chunks);
@@ -501,6 +504,14 @@ fn load_compute_find_shader(
     let mut compiler = Compiler::new(assets, graphics);
     compiler.use_storage_buffer::<u32>("counters", true, true);
     compiler.use_storage_buffer::<u32>("offsets", true, false);
+
+    compiler.use_push_constant_layout(
+        PushConstantLayout::single(
+            <u32 as GpuPod>::size(),
+            ModuleVisibility::Compute,
+        )
+        .unwrap(),
+    );
     
     compiler
         .use_snippet("chunks_per_allocation", format!("const uint chunks_per_allocation = {};", chunks_per_allocation));
@@ -530,6 +541,14 @@ fn load_compute_copy_shader(
     let mut compiler = Compiler::new(assets, graphics);
     compiler.use_storage_buffer::<u32>("counters", true, false);
     compiler.use_storage_buffer::<u32>("offsets", true, false);
+
+    compiler.use_push_constant_layout(
+        PushConstantLayout::single(
+            <u32 as GpuPod>::size(),
+            ModuleVisibility::Compute,
+        )
+        .unwrap(),
+    );
     
     compiler
         .use_snippet("size", format!("const uint size = {size};"));

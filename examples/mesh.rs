@@ -19,9 +19,9 @@ fn init(world: &mut World) {
         size: 64,
         smoothing: true,
         chunk_render_distance: 12,
-        allocations: 4,
+        allocations: 16,
     });
-    
+
     // Fetch the required resources from the world
     let mut assets = world.get_mut::<Assets>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();

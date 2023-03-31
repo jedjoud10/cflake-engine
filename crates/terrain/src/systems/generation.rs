@@ -68,7 +68,7 @@ fn update(world: &mut World) {
 
         // Reset the current counters
         terrain.counters.write(&[0; 2], 0).unwrap();
-        terrain.offsets.write(&[u32::MAX, u32::MAX, u32::MAX], 0).unwrap();
+        terrain.offsets.write(&[u32::MAX, u32::MAX], 0).unwrap();
 
         // Fetch the buffer used by this chunk from the terrain pool
         let output_vertices = vertices.get_mut(&terrain.shared_vertex_buffers[chunk.allocation]);
@@ -154,7 +154,7 @@ fn update(world: &mut World) {
                 &mut terrain.densities,
             )
             .unwrap();
-            set.set_storage_buffer("counters", &mut terrain.counters).unwrap();
+            set.set_storage_buffer("counters", &mut terrain.couDispatch 0nters).unwrap();
         });
         active.set_bind_group(1, |set| {
             set.set_storage_buffer("triangles", temp_triangles).unwrap();
@@ -169,6 +169,22 @@ fn update(world: &mut World) {
             set.set_storage_buffer("offsets", &mut terrain.offsets).unwrap();
             set.set_storage_buffer("counters", &mut terrain.counters).unwrap();
         });
+
+        active
+            .set_push_constants(|x| {
+                let index = chunk.index as u32;
+                let index = GpuPod::into_bytes(&index);
+                x.push(
+                    index,
+                    0,
+                    graphics::ModuleVisibility::Compute,
+                )
+                .unwrap();
+            })
+            .unwrap();
+
+        let dispatch = (terrain.chunks_per_allocation as f32 / 64 as f32).ceil() as u32; 
+        active.dispatch(vek::Vec3::new(dispatch, 1, 1));
 
         /*
         // Copy the generated vertex and tri data to the permanent buffer 
@@ -196,7 +212,7 @@ fn update(world: &mut World) {
         });
         */
 
-        active.dispatch(vek::Vec3::new(1, 1, 1));
+
         return;
     }
 }

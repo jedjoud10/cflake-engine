@@ -24,6 +24,7 @@ pub type ChunkCoords = vek::Vec3<i32>;
 #[derive(Component)]
 pub struct Chunk {
     pub(crate) allocation: usize,
+    pub(crate) index: usize,
     pub(crate) state: ChunkState,
     pub(crate) coords: ChunkCoords,
 }

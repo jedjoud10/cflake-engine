@@ -90,6 +90,7 @@ fn create_chunk_components(
         state: ChunkState::Pending,
         coords,
         allocation,
+        index: index % terrain.chunks_per_allocation,
     };
 
     // Return the components of the new chunk
