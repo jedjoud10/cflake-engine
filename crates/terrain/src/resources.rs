@@ -69,8 +69,8 @@ pub struct Terrain {
     // Length = 3
     pub(crate) counters: Buffer<u32>,
 
-    // Vec4<u32>
-    pub(crate) ranges: Vec<Buffer<vek::Vec4<u32>>>,
+    // Used sub-memory chunks that contains a specific size of bytes per allocations
+    pub(crate) sub_allocation_chunk_indices: Vec<Buffer<u32>>,
     
     // Copy shader that will copy the temporary vertices and triangles to the
     // output vertices and shaders within each block 
@@ -84,6 +84,7 @@ pub struct Terrain {
     pub(crate) entities: AHashMap<ChunkCoords, Entity>,
     pub(crate) size: u32,
     pub(crate) allocations: usize,
+    pub(crate) sub_allocations: usize,
     pub(crate) chunks_per_allocation: usize,
     pub(crate) material: Handle<TerrainMaterial>,
     pub(crate) id: MaterialId<TerrainMaterial>,
@@ -117,24 +118,36 @@ impl Terrain {
         } = settings;
 
         // Calculate the number of elements required for each triangle/vertex buffer allocation
-        let output_vertex_buffer_length = graphics.device().limits().max_storage_buffer_binding_size / 4 / 4;
-        let output_triangle_buffer_length = graphics.device().limits().max_storage_buffer_binding_size / 4 / 3;
-
         let output_vertex_buffer_length = 16_000;
-        let output_triangle_buffer_length = 5000;
-
+        let output_triangle_buffer_length = 6400;
+        log::warn!("output vertex buffer length: {output_vertex_buffer_length}");
+        log::warn!("output triangle buffer length: {output_triangle_buffer_length}");
+        
         // Calculate the number of chunk meshes/indirect elements that must be created
         let mut chunks = (chunk_render_distance * 2 + 1).pow(3);
         
         // Do this so each allocation contains the same amount of chunks
         chunks = ((chunks as f32 / allocations as f32).ceil() * (allocations as f32)) as u32;
 
+        // Get the size of each sub-allocation
+        // Number of sub allocations stays constant, the only thing that is
+        // changed is the number of vertices and triangles per sub allocation
+        let sub_allocations = 512;
+        
+        // Get number of sub-allocation chunks for two buffer types (vertices and triangles)
+        let vertex_sub_allocations_length = (output_vertex_buffer_length as f32) / sub_allocations as f32;
+        let triangle_sub_allocations_length = (output_triangle_buffer_length as f32) / sub_allocations as f32;
+        let vertex_sub_allocations_length = (vertex_sub_allocations_length.floor() as u32).next_power_of_two();
+        let triangle_sub_allocations_length = (triangle_sub_allocations_length.floor() as u32).next_power_of_two();
+        log::warn!("vertex sub allocations length: {}", vertex_sub_allocations_length);
+        log::warn!("triangle sub allocations length: {}", triangle_sub_allocations_length);
+
         // Load the required generation compute shaders
         let compute_voxels = load_compute_voxels_shaders(assets, graphics);
         let compute_vertices = load_compute_vertices_shader(assets, graphics, size, smoothing);
         let compute_quads = load_compute_quads_shader(assets, graphics, size);
         let compute_copy =  load_compute_copy_shader(assets, graphics,  output_triangle_buffer_length, output_vertex_buffer_length, allocations, chunks, size);
-        let compute_find = load_compute_find_shader(assets, graphics, allocations, (chunks as usize) / allocations, size);
+        let compute_find = load_compute_find_shader(assets, graphics, allocations, (chunks as usize) / allocations, sub_allocations, vertex_sub_allocations_length, triangle_sub_allocations_length, size);
 
         // Create cached data used for generation
         let cached_indices = create_texture3d(graphics, size);
@@ -149,7 +162,8 @@ impl Terrain {
         let offsets = create_counters(graphics, 2);
 
         // A buffer that will contain the ranges of free memory for each allocation
-        let ranges = create_ranges(graphics, allocations, chunks);
+        // Multiple buffers (per allocation) that will contain the used chunk indices for each sub allocation
+        let sub_allocation_chunk_indices = create_sub_allocation_chunk_indices(graphics, allocations, sub_allocations);
 
         // Create buffers for vertices
         let shared_vertex_buffer = create_vertex_buffers(
@@ -217,11 +231,28 @@ impl Terrain {
             offsets,
             counters,
             compute_find,
-            ranges,
             allocations,
             chunks_per_allocation: (chunks as usize) / allocations,
+            sub_allocation_chunk_indices,
+            sub_allocations,
         }
     }
+}
+
+fn create_sub_allocation_chunk_indices(
+    graphics: &Graphics,
+    allocations: usize,
+    sub_allocations: usize
+) -> Vec<Buffer<u32>> {
+    (0..allocations).into_iter().map(|_| {
+        Buffer::<u32>::splatted(
+            graphics,
+            sub_allocations,
+            u32::MAX,
+            BufferMode::Dynamic,
+            BufferUsage::STORAGE
+        ).unwrap()
+    }).collect::<Vec<_>>()
 }
 
 // Create multiple buffers that contain the free ranges of each allocation
@@ -455,7 +486,7 @@ fn load_compute_vertices_shader(
     );
     let compute_vertices =
         ComputeShader::new(module, compiler).unwrap();
-    compute_vertices
+    compute_vertices 
 }
 
 // Load the voxel compute shader
@@ -494,6 +525,9 @@ fn load_compute_find_shader(
     graphics: &Graphics,
     allocations: usize,
     chunks_per_allocation: usize,
+    sub_allocations: usize,
+    vertices_per_sub_allocation: u32,
+    triangles_per_sub_allocation: u32,
     size: u32,
 ) -> ComputeShader {
     let module = assets
@@ -514,9 +548,13 @@ fn load_compute_find_shader(
     );
     
     compiler
-        .use_snippet("chunks_per_allocation", format!("const uint chunks_per_allocation = {};", chunks_per_allocation));
+        .use_snippet("sub_allocations", format!("const uint sub_allocations = {};", sub_allocations));
+    compiler
+        .use_snippet("vertices_per_sub_allocation", format!("const uint vertices_per_sub_allocation = {};", vertices_per_sub_allocation));
+    compiler
+        .use_snippet("triangles_per_sub_allocation", format!("const uint triangles_per_sub_allocation = {};", triangles_per_sub_allocation));
     
-    compiler.use_storage_buffer::<vek::Vec4<u32>>("ranges", true, false);
+    compiler.use_storage_buffer::<u32>("indices", true, true);
     
     // Compile the compute shader
     let shader = ComputeShader::new(module, compiler).unwrap();

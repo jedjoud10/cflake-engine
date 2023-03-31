@@ -179,6 +179,18 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         let vec = vec![T::zeroed(); length];
         Self::from_slice(graphics, &vec, mode, usage)
     }
+
+    // Creates a buffer that contains one element repeated multiple times
+    pub fn splatted(
+        graphics: &Graphics,
+        length: usize,
+        value: T,
+        mode: BufferMode,
+        usage: BufferUsage,
+    ) -> Result<Self, BufferInitializationError> {
+        let vec = vec![value; length];
+        Self::from_slice(graphics, &vec, mode, usage)
+    }
 }
 
 // Get the buffer usages from the buffer variant and usage wrapper

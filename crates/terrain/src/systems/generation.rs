@@ -73,7 +73,7 @@ fn update(world: &mut World) {
         // Fetch the buffer used by this chunk from the terrain pool
         let output_vertices = vertices.get_mut(&terrain.shared_vertex_buffers[chunk.allocation]);
         let output_triangles = triangles.get_mut(&terrain.shared_triangle_buffers[chunk.allocation]);
-        let ranges = &mut terrain.ranges[chunk.allocation];
+        let sub_allocation_chunk_indices = &mut terrain.sub_allocation_chunk_indices[chunk.allocation];
         let temp_vertices = &mut terrain.temp_vertices;
         let temp_triangles = &mut terrain.temp_triangles;
 
@@ -154,7 +154,7 @@ fn update(world: &mut World) {
                 &mut terrain.densities,
             )
             .unwrap();
-            set.set_storage_buffer("counters", &mut terrain.couDispatch 0nters).unwrap();
+            set.set_storage_buffer("counters", &mut terrain.counters).unwrap();
         });
         active.set_bind_group(1, |set| {
             set.set_storage_buffer("triangles", temp_triangles).unwrap();
@@ -165,7 +165,7 @@ fn update(world: &mut World) {
         // Run a compute shader that will iterate over the ranges and find a free one 
         let mut active = pass.bind_shader(&terrain.compute_find);
         active.set_bind_group(0, |set| {
-            set.set_storage_buffer("ranges", ranges).unwrap();
+            set.set_storage_buffer("indices", sub_allocation_chunk_indices).unwrap();
             set.set_storage_buffer("offsets", &mut terrain.offsets).unwrap();
             set.set_storage_buffer("counters", &mut terrain.counters).unwrap();
         });
@@ -183,8 +183,8 @@ fn update(world: &mut World) {
             })
             .unwrap();
 
-        let dispatch = (terrain.chunks_per_allocation as f32 / 64 as f32).ceil() as u32; 
-        active.dispatch(vek::Vec3::new(dispatch, 1, 1));
+        //let dispatch = (terrain.sub_allocations as f32 / 32 as f32).ceil() as u32; 
+        active.dispatch(vek::Vec3::new(1, 1, 1));
 
         /*
         // Copy the generated vertex and tri data to the permanent buffer 

@@ -1,143 +1,88 @@
 #version 460 core
-layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+layout (local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 
-#include "chunks_per_allocation"
-
-// A single memory range 
-struct UsedMemoryRange {
-    uint vertices_start;
-    uint vertices_end;
-    uint triangles_start;
-    uint triangles_end;
-};
+#include "sub_allocations"
+#include "triangles_per_sub_allocation"
+#include "vertices_per_sub_allocation"
 
 // Contains the chunk index
 layout(push_constant) uniform PushConstants {
     uint chunk_index;
 } push_constants;
 
-// Used ranges of memory
-layout(std430, set = 0, binding = 0) buffer UsedMemoryRanges {
-    UsedMemoryRange[chunks_per_allocation] data;
-} ranges;
+// Sub allocation chunk indices
+layout(std430, set = 0, binding = 0) buffer SubAllocationChunkIndices {
+    uint[sub_allocations] data;
+} indices;
 
 // Allocation offsets
-layout(std430, set = 0, binding = 2) buffer FoundOffsets {
+layout(std430, set = 0, binding = 1) buffer FoundOffsets {
     uint vertices;
     uint triangles;
 } offsets;
 
 // Atomic counters
-layout(std430, set = 0, binding = 3) readonly buffer Counters {
+layout(std430, set = 0, binding = 2) readonly buffer Counters {
     uint vertices;
     uint triangles;
 } counters;
 
+// Sub-allocations:         [-1] [-1] [3] [3] [3] [-1] [2] [2]
+// Sub-allocation groups:   [               ] [              ]
 void main() {
-    // Quit if there's nothing else to do
-    if (gl_GlobalInvocationID.x > chunks_per_allocation) {
+    // Dispatch invocations are sub allocation GROUPS btw
+    if (gl_GlobalInvocationID.x > (sub_allocations / 4)) {
         return;
     }
 
+    // Checks if we are within a free region or not
+    bool within_free = false;
 
-    // Offsets that we will write to the end
-    uint vertex_offset = 0;
-    uint triangles_offset = 0;
+    // Keeps count of the number of empty sub allocations that we passed through 
+    uint free_sub_allocations = 0;
 
-    // Lengths that we must check against
-    uint vertex_length = counters.vertices;
-    uint triangles_length = counters.triangles;
+    // Temp values for now 
+    uint temp_sub_allocation_index = 0;
+    uint temp_sub_allocation_count = 1;
+    uint chosen_sub_allocation_index = 0;
+    uint chosen_sub_allocation_count = 0;
 
-    /*
-    // Get the memory range of the current exec
-    UsedMemoryRange old = ranges.data[gl_GlobalInvocationID.x];
-
-    // Check 
-    if (old.vertices_end == old.vertices_start && old.vertices_start == 0) {
-        atomicAdd(offsets.vertices, 1);
-    }
-
-    memoryBarrier();
-    barrier();
-
-    // Reset this value to 0 (since it always start at 0 anyways)
-    // If this is equal to chunks_per_allocation, then, we must exit early
-    uint value = atomicExchange(offsets.vertices, 0);
-
-    memoryBarrier();
-    barrier();
-
-    // If the allocation is empty, use offsets of 0
-    if (value == chunks_per_allocation) {
-        atomicExchange(offsets.vertices, 0);
-        atomicExchange(offsets.triangles, 0);
-
-        // Since only one invocation is writing to this we can do this
-        ranges.data[push_constants.chunk_index].vertices_end = counters.vertices;
-        ranges.data[push_constants.chunk_index].triangles_end = counters.triangles;
-        return;
-    }
-
-    memoryBarrier();
-    barrier();
-
-    atomicExchange(offsets.vertices, 4294967295);
-    atomicExchange(offsets.triangles, 4294967295);
-    */
-
-    // Iterate over the ranges of the sub-sub-allocation
-    uint offset = gl_GlobalInvocationID.x * 64;
-    uint vertex_start_offset_min = 4294967295;
-    uint triangles_start_offset_min = 4294967295;
-    for (uint i = 0; i < 64; i++) {
-        uint index = offset + i;
-        UsedMemoryRange new = ranges.data[index];
-
-        // Blocks must be succeeding (there must be a gap)
-        if (new.vertices_start > old.vertices_end && new.triangles_start > old.triangles_end) {
-            vertex_start_offset_min = min(vertex_start_offset_min, new.vertices_start);
-            triangles_start_offset_min = min(triangles_start_offset_min, new.triangles_start);
+    // Find a free memory range for this specific sub-allocation GROUP
+    uint base = gl_GlobalInvocationID.x * 32;
+    for (uint i = base; i < (base + 32); i++) {
+        bool free = indices.data[i] == uint(-1);
+        
+        // We just moved into a free allocation
+        if (!within_free && free) {
+            temp_sub_allocation_index = i;
         }
 
-        // If this block comes after the old one EXACLTY, then we will never find a free region
-        if (new.vertices_start == old.vertices_end && new.triangles_start == old.triangles_end) {
+        // We stayed within a free allocation
+        if (within_free && free) {
+            temp_sub_allocation_count += 1;
+        }
+        
+        // Check if the counted free slots suffice
+        uint free_vertex_length = temp_sub_allocation_count * vertices_per_sub_allocation;
+        uint free_triangles_length = temp_sub_allocation_count * triangles_per_sub_allocation;
+        
+        // If this is a possible candidate for a memory alloc offset, then use it
+        if (within_free && free_vertex_length > counters.vertices && free_triangles_length > counters.triangles) {
+            chosen_sub_allocation_index = temp_sub_allocation_index;
+            chosen_sub_allocation_count = temp_sub_allocation_count;
             break;
         }
-    }
-    
-    /*
-    
-    
 
-
-
-    memoryBarrier();
-    barrier();
-
-    // Don't do anything if this range is invalid
-    if (old.vertices_end == old.vertices_start && old.vertices_start == 0) {
-        return;
+        // Update to take delta
+        within_free = free;
     }
 
-    // Iterate over the blocks that touch this one and succeeds it 
-    uint vertex_start_offset_min = 4294967295;
-    uint triangles_start_offset_min = 4294967295;
-    for (uint i = 0; i < chunks_per_allocation; i++) {
-        
-
-        
+    // After finding the right block, we can write to it
+    for (uint i = chosen_sub_allocation_index; i < (chosen_sub_allocation_index + chosen_sub_allocation_count); i++) {
+        indices.data[i] = push_constants.chunk_index;
     }
 
-    // If we changed something, keep track of it
-    if (vertex_start_offset_min != 4294967295 && triangles_start_offset_min != 4294967295) {
-        // Ignore if the size difference cannot fit our new buffer
-        uint vertex_length_delta = vertex_start_offset_min - old.vertices_end;  
-        uint triangles_length_delta = triangles_start_offset_min - old.triangles_end;    
-        if (vertex_length_delta < vertex_length && triangles_length_delta < triangles_length) {
-            // We must do something here since we have found a possible block that we can use
-            atomicMin(offsets.vertices, old.vertices_end);
-            atomicMin(offsets.vertices, old.vertices_end);
-        }
-    }
-    */
+    // Offsets that we will write eventually
+    offsets.vertices = chosen_sub_allocation_index * vertices_per_sub_allocation;
+    offsets.triangles = chosen_sub_allocation_index * triangles_per_sub_allocation; 
 }
