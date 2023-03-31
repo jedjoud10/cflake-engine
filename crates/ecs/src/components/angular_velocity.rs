@@ -32,8 +32,18 @@ impl AngularVelocity {
     }
 
     /// Construct an angular rotation using a rotation (radians)
+    /// YOU HAVE FALLEN FOR THE TRAP LOGAN
+    /// Fyi, xyz within the quaternion represents a complex number so you can't just use angles for it
+    /// I have fixed it for u bby (srry)
     pub fn angular_rotation_xyz(x_angle_radians: Scalar, y_angle_radians: Scalar, z_angle_radians: Scalar) -> Self {
+        let mut q: Quaternion<f32> = Quaternion::identity();
+        q.rotate_x(x_angle_radians);
+        q.rotate_y(y_angle_radians);
+        q.rotate_z(z_angle_radians);
+
+        /*
         let q: Quaternion<f32> = Quaternion { x: x_angle_radians, y: y_angle_radians, z: z_angle_radians, w: () };
+        */
 
         Self(q)
     }
