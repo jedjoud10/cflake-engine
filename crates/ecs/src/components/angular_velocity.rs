@@ -1,4 +1,5 @@
 use math::Scalar;
+use vek::Quaternion;
 
 use crate::Component;
 use std::{
@@ -15,19 +16,26 @@ pub struct AngularVelocity(Target);
 
 #[cfg(not(feature = "two-dim"))]
 impl AngularVelocity {
-    // Construct an angular rotation using an X rotation (radians)
+    /// Construct an angular rotation using an X rotation (radians)
     pub fn angular_rotation_x(angle_radians: Scalar) -> Self {
         Self(vek::Quaternion::rotation_x(angle_radians))
     }
 
-    // Construct an angular rotation using a Y rotation (radians)
+    /// Construct an angular rotation using a Y rotation (radians)
     pub fn angular_rotation_y(angle_radians: Scalar) -> Self {
         Self(vek::Quaternion::rotation_y(angle_radians))
     }
 
-    // Construct an angular rotation using a Z rotation (radians)
+    /// Construct an angular rotation using a Z rotation (radians)
     pub fn angular_rotation_z(angle_radians: Scalar) -> Self {
         Self(vek::Quaternion::rotation_z(angle_radians))
+    }
+
+    /// Construct an angular rotation using a rotation (radians)
+    pub fn angular_rotation_xyz(x_angle_radians: Scalar, y_angle_radians: Scalar, z_angle_radians: Scalar) -> Self {
+        let q: Quaternion<f32> = Quaternion { x: x_angle_radians, y: y_angle_radians, z: z_angle_radians, w: () };
+
+        Self(q)
     }
 }
 
