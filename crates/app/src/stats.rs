@@ -104,7 +104,9 @@ pub(crate) fn update(world: &mut World) {
         &gui,
         |ui| {
             let last_delta = time.delta().as_secs_f32();
-            let last_ticks_to_exec = time.ticks_to_execute().map(|x| x.get()).unwrap_or(0) as f32;
+            let last_ticks_to_exec =
+                time.ticks_to_execute().map(|x| x.get()).unwrap_or(0)
+                    as f32;
             let mut out_delta = 0.0;
             let mut out_ticks_to_exec = 0.0;
             ui.memory_mut(|memory| {
@@ -115,11 +117,13 @@ pub(crate) fn update(world: &mut World) {
                 *indeed = *indeed * 0.99 + last_delta * 0.01;
                 out_delta = *indeed;
 
-                let indeed2 = memory.data.get_temp_mut_or_insert_with(
-                    egui::Id::new(1),
-                    || last_ticks_to_exec,
-                );
-                *indeed2 = *indeed2 * 0.99 + last_ticks_to_exec * 0.01;
+                let indeed2 =
+                    memory.data.get_temp_mut_or_insert_with(
+                        egui::Id::new(1),
+                        || last_ticks_to_exec,
+                    );
+                *indeed2 =
+                    *indeed2 * 0.99 + last_ticks_to_exec * 0.01;
                 out_ticks_to_exec = *indeed2;
             });
 
@@ -167,11 +171,13 @@ pub(crate) fn update(world: &mut World) {
                     for count in 0..ecs::count() {
                         let mask = ecs::Mask::one() << count;
                         ui.label(format!("Mask: 1 << {count}",));
-                        ui.label(format!("Name: {}", ecs::name(mask).unwrap()));
+                        ui.label(format!(
+                            "Name: {}",
+                            ecs::name(mask).unwrap()
+                        ));
                         ui.end_row();
                     }
-                }
-            );
+                });
 
             ui.heading("Archetypes Table");
 
@@ -180,13 +186,16 @@ pub(crate) fn update(world: &mut World) {
                 .max_col_width(400f32)
                 .striped(true)
                 .show(ui, |ui| {
-                    for (mask, archetype) in scene.archetypes().iter() {
+                    for (mask, archetype) in scene.archetypes().iter()
+                    {
                         ui.label(format!("Mask: {mask}"));
-                        ui.label(format!("Entities: {}", archetype.entities().len()));
+                        ui.label(format!(
+                            "Entities: {}",
+                            archetype.entities().len()
+                        ));
                         ui.end_row();
                     }
-                }
-            );
+                });
         },
     );
 }

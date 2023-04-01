@@ -1,7 +1,7 @@
 use crate::{
     AlbedoMap, CameraBuffer, DefaultMaterialResources, MaskMap,
-    MeshAttributes, NormalMap, Renderer, SceneBuffer, SceneColor,
-    TimingBuffer, RenderPath,
+    MeshAttributes, NormalMap, RenderPath, Renderer, SceneBuffer,
+    SceneColor, TimingBuffer,
 };
 use assets::Assets;
 use ecs::Rotation;

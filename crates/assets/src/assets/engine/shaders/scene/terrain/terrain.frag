@@ -26,6 +26,8 @@ layout(push_constant) uniform PushConstants {
 } material;
 
 void main() {
+	frag = vec4(m_color, 0.0);
+	/*
 	// Fetch the albedo color, normal map value, and mask values
 	
     vec3 mask = vec3(1 / material.ambient_occlusion, material.roughness, material.metallic);
@@ -52,4 +54,5 @@ void main() {
 
 	// Calculate diffuse lighting
 	frag = vec4(color * m_color, 0.0);
+	*/
 }

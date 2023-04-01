@@ -1,4 +1,7 @@
-use crate::{Material, MaterialId, Mesh, Indirect, IndirectMesh, RenderPath, Direct};
+use crate::{
+    Direct, Indirect, IndirectMesh, Material, MaterialId, Mesh,
+    RenderPath,
+};
 use ecs::Component;
 use graphics::{DrawIndexedIndirectBuffer, DrawIndirectBuffer};
 use utils::Handle;

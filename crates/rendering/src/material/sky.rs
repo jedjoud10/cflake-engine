@@ -1,6 +1,6 @@
 use crate::{
-    AlbedoMap, CameraUniform, DefaultMaterialResources, Material,
-    MeshAttributes, SceneUniform, Direct,
+    AlbedoMap, CameraUniform, DefaultMaterialResources, Direct,
+    Material, MeshAttributes, SceneUniform,
 };
 
 use assets::Assets;
@@ -77,10 +77,10 @@ impl Material for SkyMaterial {
         default: &DefaultMaterialResources<'r>,
     ) {
         group
-            .set_uniform_buffer("camera", default.camera_buffer)
+            .set_uniform_buffer("camera", default.camera_buffer, ..)
             .unwrap();
         group
-            .set_uniform_buffer("scene", default.scene_buffer)
+            .set_uniform_buffer("scene", default.scene_buffer, ..)
             .unwrap();
     }
 }

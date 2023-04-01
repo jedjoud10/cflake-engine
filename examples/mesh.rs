@@ -9,7 +9,7 @@ fn main() {
         //.set_logging_level(LevelFilter::Trace)
         .insert_init(init)
         .insert_update(update)
-        .execute();             
+        .execute();
 }
 
 // Executed at the start
@@ -225,7 +225,7 @@ fn update(world: &mut World) {
         rotation.rotate_y(-0.1 * time.delta().as_secs_f32());
     }
     */
-    
+
     // Exit the game when the user pressed Escape
     if input.get_button(Button::Escape).pressed() {
         *state = State::Stopped;

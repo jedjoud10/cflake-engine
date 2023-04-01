@@ -7,9 +7,10 @@ use crate::{
 };
 use assets::Asset;
 use graphics::{
-    BufferMode, BufferUsage, Graphics, Triangle, TriangleBuffer, DrawIndexedIndirectBuffer,
+    BufferMode, BufferUsage, DrawIndexedIndirectBuffer, Graphics,
+    Triangle, TriangleBuffer,
 };
 use obj::TexturedVertex;
 use parking_lot::Mutex;
-use utils::Handle;
 use std::cell::{Cell, RefCell};
+use utils::Handle;

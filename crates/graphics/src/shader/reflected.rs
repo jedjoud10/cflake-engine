@@ -457,7 +457,9 @@ pub(super) fn create_pipeline_layout(
                     group: set,
                     resource_type,
                     visibility,
-                    count: (*nbind > 1).then(|| NonZeroU32::new(*nbind-1).unwrap()),
+                    count: (*nbind > 1).then(|| {
+                        NonZeroU32::new(*nbind - 1).unwrap()
+                    }),
                 };
 
                 // Merge each entry for this group individually

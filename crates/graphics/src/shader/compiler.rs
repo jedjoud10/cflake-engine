@@ -3,15 +3,14 @@ use crate::{
     GpuPodInfo, Graphics, ModuleKind, ModuleVisibility,
     PushConstantLayout, ReflectedShader, Region,
     ShaderCompilationError, ShaderError, ShaderModule,
-    ShaderReflectionError, Texel, TexelInfo, Texture,
-    VertexModule, ViewDimension, SpecConstant,
+    ShaderReflectionError, SpecConstant, Texel, TexelInfo, Texture,
+    VertexModule, ViewDimension,
 };
 use ahash::{AHashMap, AHashSet};
 use assets::Assets;
 use itertools::Itertools;
 use parking_lot::Mutex;
 use snailquote::unescape;
-use vek::serde::__private::de;
 use std::{
     any::TypeId,
     borrow::Cow,
@@ -24,6 +23,7 @@ use std::{
     time::Instant,
 };
 use thiserror::Error;
+use vek::serde::__private::de;
 
 use super::create_pipeline_layout;
 
@@ -392,6 +392,10 @@ fn compile(
         );
     }
 
+    // Parse the spirv manually to be able to handle specialization constants
+    let mut binary = artifact.as_binary().to_vec();
+    specialize_spec_constants(&mut binary, &constants);
+
     // Setup basic config spirq option
     let reflect = spirq::ReflectConfig::new()
         .spv(artifact.as_binary().to_vec())
@@ -402,10 +406,6 @@ fn compile(
         .unwrap()
         .pop()
         .unwrap();
-
-    // Parse the spirv manually to be able to handle specialization constants
-    let mut binary = artifact.as_binary().to_vec();
-    specialize_spec_constants(&mut binary, &constants);
 
     // Compile the Wgpu shader (raw spirv passthrough)
     let wgpu = unsafe {
@@ -433,23 +433,54 @@ fn compile(
 }
 
 // Specialize spec constants ourselves cause there's no other way to do it (fuck)
-fn specialize_spec_constants(binary: &mut [u32], constants: &Constants) {
+fn specialize_spec_constants(
+    binary: &mut [u32],
+    constants: &Constants,
+) {
     // Converts a SpecConstant op code to it's specialized variant (Constant)
     // TODO: Type checking pls
     fn specialize(
-        literal: &mut u32,
+        op_code_index: usize,
+        binary: &mut [u32],
         defined: SpecConstant,
     ) {
+        // Get the op code of the spec constant
+        let op_code = binary[op_code_index] & 0x0000ffff;
+
+        // Get the index of the spec constant literal
+        let literal_index = match op_code {
+            48 | 49 => op_code_index + 2,
+            50 => op_code_index + 3,
+            _ => panic!(),
+        };
+
+        // Write to the literal value if it's not a boolean
+        let literal = &mut binary[literal_index];
         *literal = match defined {
             SpecConstant::I32(val) => bytemuck::cast(val),
             SpecConstant::U32(val) => val,
             SpecConstant::F32(val) => bytemuck::cast(val),
-            SpecConstant::BOOL(val) => if val {
-                1
-            } else {
-                0
-            },
-        }
+            _ => *literal,
+        };
+
+        // Update the OpCode of the spec constant to the proper one in case it's a boolean
+        let new = match op_code {
+            48 | 49 => {
+                if let SpecConstant::BOOL(val) = defined {
+                    match val {
+                        true => 48,
+                        false => 49,
+                    }
+                } else {
+                    panic!()
+                }
+            }
+            x => x,
+        };
+
+        // Write new op code heheheha
+        binary[op_code_index] &= 0xffff0000;
+        binary[op_code_index] |= new;
     }
 
     // List of op codes that we must change
@@ -459,6 +490,9 @@ fn specialize_spec_constants(binary: &mut [u32], constants: &Constants) {
     let mut spec_ids = AHashMap::<u32, u32>::default();
 
     // Loop till we find an OpSpecConstant
+
+    // TODO: Atm this will just look into the spirv and find words that match up with the predefined ones
+    // Very unsafe cause it could lead to corrupted data. Must find a way to make it safe
     for i in 0..binary.len() {
         // Get the op code and argument count
         let word = binary[i];
@@ -466,22 +500,22 @@ fn specialize_spec_constants(binary: &mut [u32], constants: &Constants) {
         let count = (word & 0xffff0000) >> 16;
 
         // Keep track of SpecId decorations
-        if op == 71 && count == 4 && binary[i+2] == 1 {
-            spec_ids.insert(binary[i+1], binary[i+3]);
+        if op == 71 && count == 4 && binary[i + 2] == 1 {
+            spec_ids.insert(binary[i + 1], binary[i + 3]);
         }
 
         // For now, we only support 32 bit types
-        if spec_consts_op_codes.contains(&op) && count == 4 {
+        if spec_consts_op_codes.contains(&op)
+            && (count == 4 || count == 3)
+        {
             // Get the literal value that this spec constant is defaulted to
-            let id = binary[i+2];
+            let id = binary[i + 2];
             let spec_id = spec_ids.get(&id).unwrap();
-            let mut defaulted = &mut binary[i + 3];
 
             // Get the value specified by the user
             if let Some(value) = constants.get(spec_id) {
-                specialize(&mut defaulted, *value);
+                specialize(i, binary, *value);
             } else {
-                log::warn!("Spec constant with id {spec_id} not specified");
             }
         }
     }
@@ -544,7 +578,9 @@ fn include(
     // Check if this file/snippet was already loaded before
     let mut locked = included.lock();
     if locked.contains(target) {
-        log::warn!("{target} was already loaded, no need to load it again");
+        log::warn!(
+            "{target} was already loaded, no need to load it again"
+        );
         return Ok(shaderc::ResolvedInclude {
             resolved_name: target.to_string(),
             content: "".to_string(),

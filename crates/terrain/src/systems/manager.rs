@@ -10,9 +10,12 @@ use graphics::{
     DrawIndexedIndirectBuffer, Graphics, Normalized, TriangleBuffer,
     VertexBuffer, XYZW,
 };
-use rendering::{Mesh, Renderer, Surface, IndirectMesh, AttributeBuffer, attributes, Pipelines};
+use rendering::{
+    attributes, AttributeBuffer, IndirectMesh, Mesh, Pipelines,
+    Renderer, Surface,
+};
 use utils::{Storage, Time};
-use world::{user, System, World, post_user};
+use world::{post_user, user, System, World};
 
 // Creates the terrain if there was terrain settings present
 fn init(world: &mut World) {
@@ -20,15 +23,20 @@ fn init(world: &mut World) {
         world.insert(Storage::<TerrainMaterial>::default());
         let graphics = world.get::<Graphics>().unwrap();
         let assets = world.get::<Assets>().unwrap();
-        let mut indirect_meshes = world.get_mut::<Storage<IndirectMesh>>().unwrap();
-        let mut indirect_buffers = world.get_mut::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
+        let mut indirect_meshes =
+            world.get_mut::<Storage<IndirectMesh>>().unwrap();
+        let mut indirect_buffers = world
+            .get_mut::<Storage<DrawIndexedIndirectBuffer>>()
+            .unwrap();
         let mut vertices = world.get_mut::<Storage<AttributeBuffer<attributes::Position>>>().unwrap();
-        let mut triangles = world.get_mut::<Storage<TriangleBuffer<u32>>>().unwrap();
-        let mut materials = world.get_mut::<Storage<TerrainMaterial>>().unwrap();
+        let mut triangles =
+            world.get_mut::<Storage<TriangleBuffer<u32>>>().unwrap();
+        let mut materials =
+            world.get_mut::<Storage<TerrainMaterial>>().unwrap();
         let mut pipelines = world.get_mut::<Pipelines>().unwrap();
 
         let terrain = Terrain::new(
-            &graphics, 
+            &graphics,
             &assets,
             settings,
             &mut indirect_meshes,
@@ -38,7 +46,7 @@ fn init(world: &mut World) {
             &mut materials,
             &mut pipelines,
         );
-        
+
         drop(graphics);
         drop(assets);
         drop(indirect_meshes);
@@ -58,9 +66,13 @@ fn create_chunk_components(
     coords: ChunkCoords,
 ) -> (Position, Renderer, Surface<TerrainMaterial>, Chunk) {
     // Offset chunk coords to remove negatives
-    let positive  = coords.map(|x| (x + terrain.chunk_render_distance as i32) as u32);
-    let max = vek::Vec3::broadcast(terrain.chunk_render_distance * 2 + 1);
-    let index = (positive.x + positive.y * max.x + positive.z * max.x * max.y) as usize;
+    let positive = coords
+        .map(|x| (x + terrain.chunk_render_distance as i32) as u32);
+    let max =
+        vek::Vec3::broadcast(terrain.chunk_render_distance * 2 + 1);
+    let index = (positive.x
+        + positive.y * max.x
+        + positive.z * max.x * max.y) as usize;
 
     // Get a mesh from the terrain mesh pool
     let mesh = &terrain.indirect_meshes[index];
@@ -117,9 +129,10 @@ fn update(world: &mut World) {
 
     // Set the main viewer location and fetches the oldvalue
     let mut added = false;
-    let new = (**position / vek::Vec3::broadcast(terrain.size as f32))
-        .round()
-        .as_::<i32>();
+    let new = (**position
+        / vek::Vec3::broadcast(terrain.size as f32))
+    .round()
+    .as_::<i32>();
     let old = if let Some((_, old)) = &mut terrain.viewer {
         std::mem::replace(old, new)
     } else {
@@ -151,7 +164,9 @@ fn update(world: &mut World) {
             .cloned()
             .collect::<Vec<_>>();
         for coords in removed {
-            log::trace!("terrain manager: remove chunk with coords {coords}");
+            log::trace!(
+                "terrain manager: remove chunk with coords {coords}"
+            );
             let entity = terrain.entities.remove(&coords).unwrap();
             if scene.contains(entity) {
                 scene.remove(entity);
@@ -159,8 +174,7 @@ fn update(world: &mut World) {
         }
 
         // Get the removed surfaces and add the mesh and indirect buffer handles back to the pool
-        for surface in scene.removed::<Surface<TerrainMaterial>>() {
-        }
+        for surface in scene.removed::<Surface<TerrainMaterial>>() {}
 
         // Detect the chunks that we must generate and add them
         let added = chunks
@@ -169,7 +183,9 @@ fn update(world: &mut World) {
             .collect::<Vec<_>>();
         let entities =
             scene.extend_from_iter(added.iter().map(|coords| {
-                log::trace!("terrain manager: add chunk with coords {coords}");
+                log::trace!(
+                    "terrain manager: add chunk with coords {coords}"
+                );
                 create_chunk_components(&mut terrain, *coords)
             }));
 

@@ -19,7 +19,7 @@ macro_rules! impl_spec_constant {
                     $v(self)
                 }
             }
-        }       
+        }
     };
 }
 

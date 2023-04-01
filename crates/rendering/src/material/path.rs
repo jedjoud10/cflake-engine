@@ -1,15 +1,24 @@
+use crate::{
+    AttributeBuffer, DefaultMaterialResources, Mesh, MeshAttribute,
+};
+use graphics::{
+    ActiveGraphicsPipeline, ColorLayout, DepthStencilLayout,
+    DrawIndexedIndirectBuffer, GpuPod, SetIndexBufferError,
+    SetVertexBufferError, TriangleBuffer,
+};
 use std::ops::RangeBounds;
-use graphics::{GpuPod, DepthStencilLayout, ColorLayout, ActiveGraphicsPipeline, SetVertexBufferError, SetIndexBufferError, TriangleBuffer, DrawIndexedIndirectBuffer};
 use utils::Handle;
-use crate::{MeshAttribute, DefaultMaterialResources, Mesh, AttributeBuffer};
 
 // This is a render path that a material can use to render it's meshes and surfaces
 // There are two render paths currently available: Direct and Indirect
 // The direct rendering path is for normal meshes that use normal buffers
 // The indirect rendering path is for meshes that share buffers and use a DrawIndexedIndirect buffer to draw their surfaces
-pub trait RenderPath: 'static + Send + Sync + Sized { 
+pub trait RenderPath: 'static + Send + Sync + Sized {
     // Attribute buffer types used by meshes that use this render path
-    type AttributeBuffer<A: MeshAttribute>: 'static + Send + Sync + Sized;
+    type AttributeBuffer<A: MeshAttribute>: 'static
+        + Send
+        + Sync
+        + Sized;
 
     // Triangle buffer type used by meshes that use this render path
     type TriangleBuffer<T: GpuPod>: 'static + Send + Sync + Sized;
@@ -20,20 +29,18 @@ pub trait RenderPath: 'static + Send + Sync + Sized {
     // Get a mesh using it's handles from the shared material resources
     fn get<'a>(
         defaults: &DefaultMaterialResources<'a>,
-        handle: &Handle<Mesh<Self>>
+        handle: &Handle<Mesh<Self>>,
     ) -> &'a Mesh<Self>;
 
     // Checks if a mesh is valid for rendering
-    fn is_valid(
-        mesh: &Mesh<Self>,
-    ) -> bool;
+    fn is_valid(mesh: &Mesh<Self>) -> bool;
 
     // Sets the vertex buffer of a specific mesh into the given active graphics pipeline
     fn set_vertex_buffer<
         'a,
         C: ColorLayout,
         DS: DepthStencilLayout,
-        A: MeshAttribute
+        A: MeshAttribute,
     >(
         slot: u32,
         bounds: impl RangeBounds<usize>,
@@ -42,13 +49,8 @@ pub trait RenderPath: 'static + Send + Sync + Sized {
         active: &mut ActiveGraphicsPipeline<'_, 'a, '_, C, DS>,
     ) -> Result<(), SetVertexBufferError>;
 
-
     // Sets the triangle buffer of a specific mesh into the given active graphics pipeline
-    fn set_index_buffer<
-        'a,
-        C: ColorLayout,
-        DS: DepthStencilLayout,
-    >(
+    fn set_index_buffer<'a, C: ColorLayout, DS: DepthStencilLayout>(
         bounds: impl RangeBounds<usize>,
         buffer: &'a Self::TriangleBuffer<u32>,
         defaults: &DefaultMaterialResources<'a>,
@@ -56,11 +58,7 @@ pub trait RenderPath: 'static + Send + Sync + Sized {
     ) -> Result<(), SetIndexBufferError>;
 
     // Draws a mesh surface into the given active graphics pipeline
-    fn draw<
-        'a,
-        C: ColorLayout,
-        DS: DepthStencilLayout,
-    >(
+    fn draw<'a, C: ColorLayout, DS: DepthStencilLayout>(
         mesh: &'a Mesh<Self>,
         defaults: &DefaultMaterialResources<'a>,
         active: &mut ActiveGraphicsPipeline<'_, 'a, '_, C, DS>,
@@ -71,8 +69,7 @@ pub trait RenderPath: 'static + Send + Sync + Sized {
 pub struct Direct;
 pub struct Indirect;
 
-
-impl RenderPath for Direct { 
+impl RenderPath for Direct {
     type AttributeBuffer<A: MeshAttribute> = AttributeBuffer<A>;
     type TriangleBuffer<T: GpuPod> = TriangleBuffer<T>;
     type Count = Option<usize>;
@@ -80,30 +77,23 @@ impl RenderPath for Direct {
     #[inline(always)]
     fn get<'a>(
         defaults: &DefaultMaterialResources<'a>,
-        handle: &Handle<Mesh<Self>>
+        handle: &Handle<Mesh<Self>>,
     ) -> &'a Mesh<Self> {
         defaults.meshes.get(&handle)
     }
 
     #[inline(always)]
-    fn is_valid(
-        mesh: &Mesh<Self>,
-    ) -> bool {
+    fn is_valid(mesh: &Mesh<Self>) -> bool {
         mesh.vertices().len().is_some()
     }
 
     #[inline(always)]
-    fn draw<
-        'a,
-        C: ColorLayout,
-        DS: DepthStencilLayout,
-    >(
+    fn draw<'a, C: ColorLayout, DS: DepthStencilLayout>(
         mesh: &'a Mesh<Self>,
         defaults: &DefaultMaterialResources<'a>,
         active: &mut ActiveGraphicsPipeline<'_, 'a, '_, C, DS>,
     ) {
-        let indices =
-            0..(mesh.triangles().buffer().len() as u32 * 3);
+        let indices = 0..(mesh.triangles().buffer().len() as u32 * 3);
         active.draw_indexed(indices, 0..1);
     }
 
@@ -112,7 +102,7 @@ impl RenderPath for Direct {
         'a,
         C: ColorLayout,
         DS: DepthStencilLayout,
-        A: MeshAttribute
+        A: MeshAttribute,
     >(
         slot: u32,
         bounds: impl RangeBounds<usize>,
@@ -139,37 +129,33 @@ impl RenderPath for Direct {
 }
 
 impl RenderPath for Indirect {
-    type AttributeBuffer<A: MeshAttribute> = Handle<AttributeBuffer<A>>;
+    type AttributeBuffer<A: MeshAttribute> =
+        Handle<AttributeBuffer<A>>;
     type TriangleBuffer<T: GpuPod> = Handle<TriangleBuffer<T>>;
     type Count = (Handle<DrawIndexedIndirectBuffer>, usize);
 
     #[inline(always)]
     fn get<'a>(
         defaults: &DefaultMaterialResources<'a>,
-        handle: &Handle<Mesh<Self>>
+        handle: &Handle<Mesh<Self>>,
     ) -> &'a Mesh<Self> {
         defaults.indirect_meshes.get(&handle)
     }
 
     #[inline(always)]
-    fn is_valid(
-        _: &Mesh<Self>,
-    ) -> bool {
+    fn is_valid(_: &Mesh<Self>) -> bool {
         true
     }
 
     #[inline(always)]
-    fn draw<
-        'a,
-        C: ColorLayout,
-        DS: DepthStencilLayout,
-    >(
+    fn draw<'a, C: ColorLayout, DS: DepthStencilLayout>(
         mesh: &'a Mesh<Self>,
         defaults: &DefaultMaterialResources<'a>,
         active: &mut ActiveGraphicsPipeline<'_, 'a, '_, C, DS>,
     ) {
         let handle = mesh.indirect().clone();
-        let buffer = defaults.draw_indexed_indirect_buffers.get(&handle);
+        let buffer =
+            defaults.draw_indexed_indirect_buffers.get(&handle);
         active.draw_indexed_indirect(buffer, mesh.offset());
     }
 
@@ -178,15 +164,16 @@ impl RenderPath for Indirect {
         'a,
         C: ColorLayout,
         DS: DepthStencilLayout,
-        A: MeshAttribute
+        A: MeshAttribute,
     >(
         slot: u32,
         bounds: impl RangeBounds<usize>,
         buffer: &Self::AttributeBuffer<A>,
         defaults: &DefaultMaterialResources<'a>,
         active: &mut ActiveGraphicsPipeline<'_, 'a, '_, C, DS>,
-    ) -> Result<(), SetVertexBufferError>  {
-        let buffer = A::indirect_buffer_from_defaults(defaults, &buffer);
+    ) -> Result<(), SetVertexBufferError> {
+        let buffer =
+            A::indirect_buffer_from_defaults(defaults, &buffer);
         active.set_vertex_buffer::<A::V>(slot, &buffer, bounds)
     }
 

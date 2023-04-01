@@ -1,7 +1,8 @@
 use crate::{
-    ActiveScenePipeline, ActiveSceneRenderPass,
-    DefaultMaterialResources, Material, Mesh, MeshAttribute,
-    MeshAttributes, Renderer, SceneColor, SceneDepth, Surface, RenderPath, set_vertex_buffer_attribute,
+    set_vertex_buffer_attribute, ActiveScenePipeline,
+    ActiveSceneRenderPass, DefaultMaterialResources, Material, Mesh,
+    MeshAttribute, MeshAttributes, RenderPath, Renderer, SceneColor,
+    SceneDepth, Surface,
 };
 use ecs::Scene;
 use graphics::{DrawIndexedIndirectBuffer, RenderPipeline};
@@ -51,7 +52,10 @@ pub(super) fn render_surfaces<'r, M: Material>(
         }
 
         // Get the mesh and material that correspond to this surface
-        let mesh = <M::RenderPath as RenderPath>::get(&defaults, &surface.mesh);
+        let mesh = <M::RenderPath as RenderPath>::get(
+            &defaults,
+            &surface.mesh,
+        );
 
         // Check if we changed material instances
         if last_material != Some(surface.material.clone()) {
@@ -95,12 +99,13 @@ pub(super) fn render_surfaces<'r, M: Material>(
         if last_mesh != Some(surface.mesh.clone()) {
             use crate::attributes::*;
             let mut index = 0;
-            set_vertex_buffer_attribute::<Position, M::RenderPath, _, _>(
-                supported,
-                mesh,
-                defaults,
-                &mut active,
-                &mut index,
+            set_vertex_buffer_attribute::<
+                Position,
+                M::RenderPath,
+                _,
+                _,
+            >(
+                supported, mesh, defaults, &mut active, &mut index
             );
             set_vertex_buffer_attribute::<Normal, M::RenderPath, _, _>(
                 supported,
@@ -116,17 +121,24 @@ pub(super) fn render_surfaces<'r, M: Material>(
                 &mut active,
                 &mut index,
             );
-            set_vertex_buffer_attribute::<TexCoord, M::RenderPath, _, _>(
-                supported,
-                mesh,
-                defaults,
-                &mut active,
-                &mut index,
+            set_vertex_buffer_attribute::<
+                TexCoord,
+                M::RenderPath,
+                _,
+                _,
+            >(
+                supported, mesh, defaults, &mut active, &mut index
             );
 
             // Set the index buffer
             let triangles = mesh.triangles();
-            <M::RenderPath as RenderPath>::set_index_buffer(.., triangles.buffer(), defaults, &mut active).unwrap();
+            <M::RenderPath as RenderPath>::set_index_buffer(
+                ..,
+                triangles.buffer(),
+                defaults,
+                &mut active,
+            )
+            .unwrap();
             last_mesh = Some(surface.mesh.clone());
         }
 
@@ -145,7 +157,11 @@ pub(super) fn render_surfaces<'r, M: Material>(
             .unwrap();
 
         // Draw the mesh
-        <M::RenderPath as RenderPath>::draw(mesh, &defaults, &mut active);
+        <M::RenderPath as RenderPath>::draw(
+            mesh,
+            &defaults,
+            &mut active,
+        );
 
         // Add 1 to the material index when we switch instances
         if switched_material_instances {

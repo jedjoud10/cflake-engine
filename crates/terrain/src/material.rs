@@ -1,7 +1,7 @@
 use rendering::{
-    AlbedoMap, CameraUniform, DefaultMaterialResources, Material,
-    NormalMap, Renderer, SceneUniform, ShadowMap, ShadowMapping,
-    ShadowUniform, Indirect,
+    AlbedoMap, CameraUniform, DefaultMaterialResources, Indirect,
+    Material, NormalMap, Renderer, SceneUniform, ShadowMap,
+    ShadowMapping, ShadowUniform,
 };
 
 use assets::Assets;
@@ -91,13 +91,13 @@ impl Material for TerrainMaterial {
     ) {
         // Set the required common buffers
         group
-            .set_uniform_buffer("camera", default.camera_buffer)
+            .set_uniform_buffer("camera", default.camera_buffer, ..)
             .unwrap();
         group
-            .set_uniform_buffer("scene", default.scene_buffer)
+            .set_uniform_buffer("scene", default.scene_buffer, ..)
             .unwrap();
         group
-            .set_uniform_buffer("shadow", &resources.buffer)
+            .set_uniform_buffer("shadow", &resources.buffer, ..)
             .unwrap();
 
         // Set the scene shadow map

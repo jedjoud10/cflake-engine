@@ -1,8 +1,8 @@
 #version 460 core
 layout (local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
 
-// TODO: Please implement spec constants instead of this shit
-#include "size"
+// Spec constants for size
+layout (constant_id = 0) const uint size = 1;
 
 // Contains the chunk index
 layout(push_constant) uniform PushConstants {

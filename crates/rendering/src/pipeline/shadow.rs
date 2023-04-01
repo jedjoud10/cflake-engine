@@ -1,6 +1,7 @@
 use crate::{
     attributes::Position, ActiveShadowGraphicsPipeline,
-    Material, Mesh, MeshAttributes, Renderer, Surface, DefaultMaterialResources, RenderPath,
+    DefaultMaterialResources, Material, Mesh, MeshAttributes,
+    RenderPath, Renderer, Surface,
 };
 use ecs::Scene;
 use graphics::{DrawIndexedIndirectBuffer, GpuPod, ModuleVisibility};
@@ -14,7 +15,9 @@ pub(super) fn render_shadows<'r, M: Material>(
     active: &mut ActiveShadowGraphicsPipeline<'_, 'r, '_>,
 ) {
     // Don't do shit if we won't cast shadows
-    if !M::casts_shadows() || !M::attributes().contains(MeshAttributes::POSITIONS) {
+    if !M::casts_shadows()
+        || !M::attributes().contains(MeshAttributes::POSITIONS)
+    {
         return;
     }
 
@@ -33,7 +36,10 @@ pub(super) fn render_shadows<'r, M: Material>(
         }
 
         // Get the mesh and material that correspond to this surface
-        let mesh = <M::RenderPath as RenderPath>::get(&defaults, &surface.mesh);
+        let mesh = <M::RenderPath as RenderPath>::get(
+            &defaults,
+            &surface.mesh,
+        );
 
         // Skip rendering if the mesh is invalid
         let attribute = mesh
@@ -62,11 +68,24 @@ pub(super) fn render_shadows<'r, M: Material>(
             // Set the position buffer
             let positions =
                 mesh.vertices().attribute::<Position>().unwrap();
-            <M::RenderPath as RenderPath>::set_vertex_buffer(0, .., positions, defaults, active).unwrap();
+            <M::RenderPath as RenderPath>::set_vertex_buffer(
+                0,
+                ..,
+                positions,
+                defaults,
+                active,
+            )
+            .unwrap();
 
             // Set the index buffer
             let triangles = mesh.triangles();
-            <M::RenderPath as RenderPath>::set_index_buffer(.., triangles.buffer(), defaults, active).unwrap();
+            <M::RenderPath as RenderPath>::set_index_buffer(
+                ..,
+                triangles.buffer(),
+                defaults,
+                active,
+            )
+            .unwrap();
             last = Some(surface.mesh.clone());
         }
 

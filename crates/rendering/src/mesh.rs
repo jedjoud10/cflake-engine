@@ -1,11 +1,11 @@
 pub mod attributes;
 mod errors;
+mod indirect;
 mod mesh;
 pub mod settings;
 mod triangles;
 mod utils;
 mod vertices;
-mod indirect;
 pub use self::utils::*;
 pub use attributes::{
     AttributeBuffer, MeshAttribute, MeshAttributes,

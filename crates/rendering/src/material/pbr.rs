@@ -1,7 +1,7 @@
 use crate::{
-    AlbedoMap, CameraUniform, DefaultMaterialResources, MaskMap,
-    Material, NormalMap, Renderer, SceneUniform, ShadowMap,
-    ShadowMapping, ShadowUniform, Direct,
+    AlbedoMap, CameraUniform, DefaultMaterialResources, Direct,
+    MaskMap, Material, NormalMap, Renderer, SceneUniform, ShadowMap,
+    ShadowMapping, ShadowUniform,
 };
 
 use assets::Assets;
@@ -98,13 +98,13 @@ impl Material for PhysicallyBasedMaterial {
     ) {
         // Set the required common buffers
         group
-            .set_uniform_buffer("camera", default.camera_buffer)
+            .set_uniform_buffer("camera", default.camera_buffer, ..)
             .unwrap();
         group
-            .set_uniform_buffer("scene", default.scene_buffer)
+            .set_uniform_buffer("scene", default.scene_buffer, ..)
             .unwrap();
         group
-            .set_uniform_buffer("shadow", &resources.3.buffer)
+            .set_uniform_buffer("shadow", &resources.3.buffer, ..)
             .unwrap();
 
         // Set the scene shadow map

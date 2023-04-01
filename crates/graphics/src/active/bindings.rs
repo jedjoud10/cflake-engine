@@ -4,7 +4,7 @@ use crate::{
     Texture, TextureUsage, UniformBuffer,
 };
 use ahash::AHashMap;
-use std::{marker::PhantomData, sync::Arc};
+use std::{marker::PhantomData, ops::RangeBounds, sync::Arc};
 
 // A bind group allows us to set one or more bind entries to set them in the active render pass
 // Bind groups are created using the set_bind_group method on the render pass
@@ -238,6 +238,7 @@ impl<'a> BindGroup<'a> {
         &mut self,
         name: &'s str,
         buffer: &'a UniformBuffer<T>,
+        bounds: impl RangeBounds<usize>,
     ) -> Result<(), SetBindResourceError<'s>> {
         // Get the binding entry layout for the given buffer
         let entry = Self::find_entry_layout(
@@ -246,10 +247,16 @@ impl<'a> BindGroup<'a> {
             name,
         )?;
 
+        // Get the buffer binding bounds
+        let binding = buffer
+            .convert_bounds_to_binding(bounds)
+            .ok_or(SetBindResourceError::InvalidBufferRange(
+                buffer.len(),
+            ))?;
+
         // Get values needed for the bind entry
         let id = buffer.raw().global_id();
-        let buffer_binding = buffer.raw().as_entire_buffer_binding();
-        let resource = wgpu::BindingResource::Buffer(buffer_binding);
+        let resource = wgpu::BindingResource::Buffer(binding);
 
         // Save the bind entry for later
         self.resources.push(resource);
@@ -264,6 +271,7 @@ impl<'a> BindGroup<'a> {
         &mut self,
         name: &'s str,
         buffer: &'a Buffer<T, TYPE>,
+        bounds: impl RangeBounds<usize>,
     ) -> Result<(), SetBindResourceError<'s>> {
         // Get the binding entry layout for the given buffer
         let entry = Self::find_entry_layout(
@@ -272,10 +280,16 @@ impl<'a> BindGroup<'a> {
             name,
         )?;
 
+        // Get the buffer binding bounds
+        let binding = buffer
+            .convert_bounds_to_binding(bounds)
+            .ok_or(SetBindResourceError::InvalidBufferRange(
+                buffer.len(),
+            ))?;
+
         // Get values needed for the bind entry
         let id = buffer.raw().global_id();
-        let buffer_binding = buffer.raw().as_entire_buffer_binding();
-        let resource = wgpu::BindingResource::Buffer(buffer_binding);
+        let resource = wgpu::BindingResource::Buffer(binding);
 
         // Save the bind entry for later
         self.resources.push(resource);

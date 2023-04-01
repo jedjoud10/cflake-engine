@@ -14,11 +14,12 @@ fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
 
     let buffer = Buffer::<i32, 0>::from_slice(
-        &graphics, 
+        &graphics,
         &[0, 1],
         BufferMode::Dynamic,
-        BufferUsage::READ
-    ).unwrap();
+        BufferUsage::READ,
+    )
+    .unwrap();
     graphics.submit(true);
 
     let instant = std::time::Instant::now();

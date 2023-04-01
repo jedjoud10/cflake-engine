@@ -1,6 +1,11 @@
-use graphics::{ActiveGraphicsPipeline, DepthStencilLayout, ColorLayout};
+use graphics::{
+    ActiveGraphicsPipeline, ColorLayout, DepthStencilLayout,
+};
 
-use crate::{MeshAttribute, RenderPath, Mesh, ActiveScenePipeline, DefaultMaterialResources, MeshAttributes};
+use crate::{
+    ActiveScenePipeline, DefaultMaterialResources, Mesh,
+    MeshAttribute, MeshAttributes, RenderPath,
+};
 
 // Set a mesh binding vertex buffer to the current render pass
 pub(crate) fn set_vertex_buffer_attribute<
@@ -24,7 +29,8 @@ pub(crate) fn set_vertex_buffer_attribute<
 
     // Check if the mesh contains the attribute, and if it does, render it
     if let Ok(buffer) = mesh.vertices().attribute::<A>() {
-        R::set_vertex_buffer(*index, .., buffer, defaults, active).unwrap();
+        R::set_vertex_buffer(*index, .., buffer, defaults, active)
+            .unwrap();
         *index += 1;
     }
 }

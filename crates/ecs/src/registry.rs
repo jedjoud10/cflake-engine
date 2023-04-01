@@ -1,4 +1,4 @@
-use crate::{Mask, RawBitMask, MaskHashMap};
+use crate::{Mask, MaskHashMap, RawBitMask};
 use ahash::AHashMap;
 pub use ecs_derive::Component;
 use lazy_static::lazy_static;
@@ -17,7 +17,7 @@ lazy_static! {
     static ref NEXT: Mutex<Mask> = Mutex::new(Mask::one());
     static ref REGISTERED: RwLock<AHashMap<TypeId, Mask>> =
         RwLock::new(AHashMap::new());
-    static ref NAMES: RwLock<MaskHashMap<String>> = 
+    static ref NAMES: RwLock<MaskHashMap<String>> =
         RwLock::new(MaskHashMap::default());
 }
 
@@ -56,7 +56,7 @@ pub fn mask<T: Component>() -> Mask {
 // Get the name of a component mask
 pub fn name(mask: Mask) -> Option<String> {
     if mask.count_ones() != 1 {
-        return None
+        return None;
     }
 
     let names = NAMES.read();

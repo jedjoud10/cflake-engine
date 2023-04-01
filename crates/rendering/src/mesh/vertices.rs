@@ -4,8 +4,13 @@ use std::{
 };
 
 use super::attributes::*;
-use crate::{AttributeError, MeshAabbComputeError, RenderPath, Direct, Indirect};
-use graphics::{Buffer, BufferInfo, VertexBuffer, DrawIndexedIndirectBuffer};
+use crate::{
+    AttributeError, Direct, Indirect, MeshAabbComputeError,
+    RenderPath,
+};
+use graphics::{
+    Buffer, BufferInfo, DrawIndexedIndirectBuffer, VertexBuffer,
+};
 use math::Aabb;
 use utils::Handle;
 

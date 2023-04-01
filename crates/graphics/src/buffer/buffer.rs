@@ -5,7 +5,7 @@ use std::{
     marker::PhantomData,
     mem::{size_of, ManuallyDrop},
     num::NonZeroU64,
-    ops::{Range, RangeBounds},
+    ops::{Bound, Range, RangeBounds},
 };
 
 use bytemuck::{Pod, Zeroable};
@@ -287,20 +287,20 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
     }
 
     // Validate the bounds of the RangeBounds trait into (start, end)
-    pub(crate) fn convert_bounds_to_indices(
+    pub fn convert_bounds_to_indices(
         &self,
         range: impl RangeBounds<usize>,
     ) -> Option<(usize, usize)> {
         let start = match range.start_bound() {
-            std::ops::Bound::Included(start) => *start,
-            std::ops::Bound::Excluded(_) => panic!(),
-            std::ops::Bound::Unbounded => 0,
+            Bound::Included(start) => *start,
+            Bound::Excluded(_) => panic!(),
+            Bound::Unbounded => 0,
         };
 
         let end = match range.end_bound() {
-            std::ops::Bound::Included(end) => *end + 1,
-            std::ops::Bound::Excluded(end) => *end,
-            std::ops::Bound::Unbounded => self.length,
+            Bound::Included(end) => *end + 1,
+            Bound::Excluded(end) => *end,
+            Bound::Unbounded => self.length,
         };
 
         let valid_start_index = start < self.length;
@@ -315,6 +315,35 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         }
 
         Some((start, end))
+    }
+
+    // Convert the bounds of the RangeBounds trait into a wgpu BufferBinding
+    pub(crate) fn convert_bounds_to_binding(
+        &self,
+        range: impl RangeBounds<usize>,
+    ) -> Option<wgpu::BufferBinding> {
+        // Full range, exit early
+        if range.start_bound() == Bound::Unbounded
+            && range.end_bound() == range.start_bound()
+        {
+            return Some(self.buffer.as_entire_buffer_binding());
+        }
+
+        // Custom range, gotta make sure it's valid
+        let (start, end) = self.convert_bounds_to_indices(range)?;
+
+        // Calculate byte offset and size (if needed)
+        let offset = (start * self.stride()) as u64;
+        let size = (end != self.len()).then(|| {
+            let size = (start * self.stride()) as u64;
+            NonZeroU64::new(size).unwrap()
+        });
+
+        Some(wgpu::BufferBinding {
+            buffer: &self.buffer,
+            offset,
+            size,
+        })
     }
 }
 

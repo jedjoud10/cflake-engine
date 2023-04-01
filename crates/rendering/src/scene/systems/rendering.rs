@@ -1,14 +1,16 @@
 use crate::{
-    AlbedoMap, BasicMaterial, Camera, DefaultMaterialResources,
-    DirectionalLight, ForwardRenderer, MaskMap, Mesh, NormalMap,
-    PhysicallyBasedMaterial, Pipelines, Renderer, SceneUniform,
-    ShadowMapping, SkyMaterial, WindowUniform, Indirect, AttributeBuffer,
+    AlbedoMap, AttributeBuffer, BasicMaterial, Camera,
+    DefaultMaterialResources, DirectionalLight, ForwardRenderer,
+    Indirect, MaskMap, Mesh, NormalMap, PhysicallyBasedMaterial,
+    Pipelines, Renderer, SceneUniform, ShadowMapping, SkyMaterial,
+    WindowUniform,
 };
 use assets::Assets;
 
 use ecs::{Rotation, Scene};
 use graphics::{
-    DrawIndexedIndirectBuffer, Graphics, Texture, Window, TriangleBuffer,
+    DrawIndexedIndirectBuffer, Graphics, Texture, TriangleBuffer,
+    Window,
 };
 
 use log::LevelFilter;
@@ -68,10 +70,16 @@ fn init(world: &mut World) {
     // Add common storages
     world.insert(Storage::<Mesh>::default());
     world.insert(Storage::<Mesh<Indirect>>::default());
-    world.insert(Storage::<AttributeBuffer<crate::attributes::Position>>::default());
+    world.insert(Storage::<
+        AttributeBuffer<crate::attributes::Position>,
+    >::default());
     world.insert(Storage::<AttributeBuffer<crate::attributes::Normal>>::default());
-    world.insert(Storage::<AttributeBuffer<crate::attributes::Tangent>>::default());
-    world.insert(Storage::<AttributeBuffer<crate::attributes::TexCoord>>::default());
+    world.insert(Storage::<
+        AttributeBuffer<crate::attributes::Tangent>,
+    >::default());
+    world.insert(Storage::<
+        AttributeBuffer<crate::attributes::TexCoord>,
+    >::default());
     world.insert(Storage::<TriangleBuffer<u32>>::default());
     world.insert(Storage::<DrawIndexedIndirectBuffer>::default());
 
@@ -131,16 +139,28 @@ fn render(world: &mut World) {
 
     // Needed for direct rendering
     let meshes = world.get::<Storage<Mesh>>().unwrap();
-    
+
     // Needed for indirect rendering
-    let indirect_meshes = world.get::<Storage<Mesh<Indirect>>>().unwrap();
-    let indirect_position_attribute = world.get::<Storage<AttributeBuffer<crate::attributes::Position>>>().unwrap();
-    let indirect_normal_attribute = world.get::<Storage<AttributeBuffer<crate::attributes::Normal>>>().unwrap();
-    let indirect_tangents_attribute = world.get::<Storage<AttributeBuffer<crate::attributes::Tangent>>>().unwrap();
-    let indirect_tex_coords_attribute = world.get::<Storage<AttributeBuffer<crate::attributes::TexCoord>>>().unwrap();
+    let indirect_meshes =
+        world.get::<Storage<Mesh<Indirect>>>().unwrap();
+    let indirect_position_attribute = world
+        .get::<Storage<AttributeBuffer<crate::attributes::Position>>>(
+        )
+        .unwrap();
+    let indirect_normal_attribute = world
+        .get::<Storage<AttributeBuffer<crate::attributes::Normal>>>()
+        .unwrap();
+    let indirect_tangents_attribute = world
+        .get::<Storage<AttributeBuffer<crate::attributes::Tangent>>>()
+        .unwrap();
+    let indirect_tex_coords_attribute = world
+        .get::<Storage<AttributeBuffer<crate::attributes::TexCoord>>>(
+        )
+        .unwrap();
     let indexed_indirect_buffers =
         world.get::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
-    let indirect_triangles = world.get::<Storage<TriangleBuffer<u32>>>().unwrap();
+    let indirect_triangles =
+        world.get::<Storage<TriangleBuffer<u32>>>().unwrap();
 
     let albedo_maps = world.get::<Storage<AlbedoMap>>().unwrap();
     let normal_maps = world.get::<Storage<NormalMap>>().unwrap();
@@ -254,7 +274,7 @@ fn render(world: &mut World) {
         // Bind the shadow map UBO that contains the matrices and parameters
         active.set_bind_group(0, |group| {
             group
-                .set_uniform_buffer("shadow", &shadowmap.buffer)
+                .set_uniform_buffer("shadow", &shadowmap.buffer, ..)
                 .unwrap();
         });
 
@@ -276,11 +296,7 @@ fn render(world: &mut World) {
     // This will iterate over each material pipeline and draw the scene
     drop(scene);
     for stored in pipelines.iter() {
-        stored.render(
-            world,
-            &mut default,
-            &mut render_pass,
-        );
+        stored.render(world, &mut default, &mut render_pass);
     }
 
     drop(render_pass);

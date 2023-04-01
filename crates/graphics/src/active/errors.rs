@@ -15,6 +15,11 @@ pub enum SetBindResourceError<'a> {
 
     #[error("{0}")]
     SetBuffer(SetBufferError),
+
+    #[error(
+        "The given range is invalid for buffer with {0} elements"
+    )]
+    InvalidBufferRange(usize),
 }
 
 #[derive(Error, Debug)]

@@ -264,7 +264,7 @@ impl Rasterizer {
         let texture = self.texture.as_ref().unwrap();
         active.set_bind_group(0, |group| {
             group
-                .set_uniform_buffer("window", window_buffer)
+                .set_uniform_buffer("window", window_buffer, ..)
                 .unwrap();
             group.set_sampled_texture("font", texture).unwrap();
         });

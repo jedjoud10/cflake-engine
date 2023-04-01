@@ -1,14 +1,20 @@
 use graphics::{
-    Normalized, PerVertex, Vertex, VertexBuffer, VertexConfig,
-    VertexInput, VertexInputInfo, XYZ, XYZW, TriangleBuffer, GpuPod, DrawIndexedIndirectBuffer, ColorLayout, DepthStencilLayout, ActiveGraphicsPipeline, SetVertexBufferError, SetIndexBufferError,
+    ActiveGraphicsPipeline, ColorLayout, DepthStencilLayout,
+    DrawIndexedIndirectBuffer, GpuPod, Normalized, PerVertex,
+    SetIndexBufferError, SetVertexBufferError, TriangleBuffer,
+    Vertex, VertexBuffer, VertexConfig, VertexInput, VertexInputInfo,
+    XYZ, XYZW,
 };
 use paste::paste;
-use utils::{Handle, Storage};
 use std::cell::{Ref, RefMut};
 use std::marker::PhantomData;
 use std::ops::RangeBounds;
+use utils::{Handle, Storage};
 
-use crate::{AttributeError, VerticesMut, VerticesRef, Mesh, DefaultMaterialResources, Material, Surface, RenderPath};
+use crate::{
+    AttributeError, DefaultMaterialResources, Material, Mesh,
+    RenderPath, Surface, VerticesMut, VerticesRef,
+};
 
 bitflags::bitflags! {
     // This specifies the buffers that the mesh uses internally
@@ -52,7 +58,7 @@ pub trait MeshAttribute: Sized {
     // Get an buffer used for indirect meshes from the default material resources
     fn indirect_buffer_from_defaults<'a>(
         defaults: &DefaultMaterialResources<'a>,
-        handle: &Handle<AttributeBuffer<Self>>
+        handle: &Handle<AttributeBuffer<Self>>,
     ) -> &'a VertexBuffer<Self::V>;
 
     // Insert a mesh attribute vertex buffer into the vertices

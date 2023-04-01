@@ -1,18 +1,19 @@
 use super::attributes::*;
 use crate::mesh::attributes::{Normal, Position, Tangent, TexCoord};
 use crate::{
-    AttributeBuffer, MeshAttribute, MeshAttributes, MeshImportError,
-    MeshImportSettings, MeshInitializationError, TrianglesMut,
-    TrianglesRef, VerticesMut, VerticesRef, RenderPath, Direct, Indirect,
+    AttributeBuffer, Direct, Indirect, MeshAttribute, MeshAttributes,
+    MeshImportError, MeshImportSettings, MeshInitializationError,
+    RenderPath, TrianglesMut, TrianglesRef, VerticesMut, VerticesRef,
 };
 use assets::Asset;
 use graphics::{
-    BufferMode, BufferUsage, Graphics, Triangle, TriangleBuffer, DrawIndexedIndirectBuffer,
+    BufferMode, BufferUsage, DrawIndexedIndirectBuffer, Graphics,
+    Triangle, TriangleBuffer,
 };
 use obj::TexturedVertex;
 use parking_lot::Mutex;
-use utils::Handle;
 use std::cell::{Cell, RefCell};
+use utils::Handle;
 
 // A mesh is a collection of 3D vertices connected by triangles
 pub struct Mesh<R: RenderPath = Direct> {
