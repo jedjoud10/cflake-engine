@@ -3,14 +3,15 @@ use crate::{
     GpuPodInfo, Graphics, ModuleKind, ModuleVisibility,
     PushConstantLayout, ReflectedShader, Region,
     ShaderCompilationError, ShaderError, ShaderModule,
-    ShaderReflectionError, SpecConstant, Texel, TexelInfo, Texture,
-    VertexModule, ViewDimension,
+    ShaderReflectionError, Texel, TexelInfo, Texture,
+    VertexModule, ViewDimension, SpecConstant,
 };
 use ahash::{AHashMap, AHashSet};
 use assets::Assets;
 use itertools::Itertools;
 use parking_lot::Mutex;
 use snailquote::unescape;
+use vek::serde::__private::de;
 use std::{
     any::TypeId,
     borrow::Cow,
@@ -32,7 +33,7 @@ pub(crate) type ResourceBindingTypes =
     AHashMap<String, BindResourceType>;
 pub(crate) type MaybePushConstantLayout = Option<PushConstantLayout>;
 pub(crate) type Included = Arc<Mutex<AHashSet<String>>>;
-pub(crate) type Constants = AHashMap<u32, spirq::ConstantValue>;
+pub(crate) type Constants = AHashMap<u32, SpecConstant>;
 
 // This is a compiler that will take GLSL code and create a WGPU module
 // This compiler also allows us to define constants and snippets before compilation
@@ -62,13 +63,12 @@ impl<'a> Compiler<'a> {
     }
 
     // Set the value of a specilization constant within the shader
-    // TODO: Find a library that will specialize the constants at runtime ffs
-    pub fn use_specialization_constant(
+    pub fn use_constant(
         &mut self,
-        id: u32,
-        value: impl SpecConstant,
+        specid: u32,
+        value: impl Into<SpecConstant>,
     ) {
-        todo!()
+        self.constants.insert(specid, value.into());
     }
 
     // Include a snippet directive that will replace #includes surrounded by ""
@@ -77,8 +77,7 @@ impl<'a> Compiler<'a> {
         name: impl ToString,
         value: impl ToString,
     ) {
-        let name = name.to_string();
-        self.snippets.insert(name, value.to_string());
+        self.snippets.insert(name.to_string(), value.to_string());
     }
 
     // Set the optimization level used by the ShaderC compiler
@@ -323,7 +322,7 @@ fn compile(
 
     // Custom ShaderC compiler options
     let mut options = shaderc::CompileOptions::new().unwrap();
-    options.set_generate_debug_info();
+    //options.set_generate_debug_info();
     options.set_optimization_level(optimization);
     options.set_invert_y(false);
 
@@ -395,7 +394,7 @@ fn compile(
 
     // Setup basic config spirq option
     let reflect = spirq::ReflectConfig::new()
-        .spv(artifact.as_binary())
+        .spv(artifact.as_binary().to_vec())
         .combine_img_samplers(false)
         .ref_all_rscs(true)
         .gen_unique_names(false)
@@ -404,13 +403,17 @@ fn compile(
         .pop()
         .unwrap();
 
+    // Parse the spirv manually to be able to handle specialization constants
+    let mut binary = artifact.as_binary().to_vec();
+    specialize_spec_constants(&mut binary, &constants);
+
     // Compile the Wgpu shader (raw spirv passthrough)
     let wgpu = unsafe {
         graphics.device().create_shader_module_spirv(
             &wgpu::ShaderModuleDescriptorSpirV {
                 label: Some(&format!("shader-module-{file}")),
                 source: wgpu::util::make_spirv_raw(
-                    artifact.as_binary_u8(),
+                    bytemuck::cast_slice(&binary),
                 ),
             },
         )
@@ -427,6 +430,61 @@ fn compile(
 
     // Return the compiled wgpu module and the reflected mdule
     Ok((raw, reflected))
+}
+
+// Specialize spec constants ourselves cause there's no other way to do it (fuck)
+fn specialize_spec_constants(binary: &mut [u32], constants: &Constants) {
+    // Converts a SpecConstant op code to it's specialized variant (Constant)
+    // TODO: Type checking pls
+    fn specialize(
+        literal: &mut u32,
+        defined: SpecConstant,
+    ) {
+        *literal = match defined {
+            SpecConstant::I32(val) => bytemuck::cast(val),
+            SpecConstant::U32(val) => val,
+            SpecConstant::F32(val) => bytemuck::cast(val),
+            SpecConstant::BOOL(val) => if val {
+                1
+            } else {
+                0
+            },
+        }
+    }
+
+    // List of op codes that we must change
+    let spec_consts_op_codes = [48u32, 49, 50];
+
+    // Contains the SpecId decorations for each constant
+    let mut spec_ids = AHashMap::<u32, u32>::default();
+
+    // Loop till we find an OpSpecConstant
+    for i in 0..binary.len() {
+        // Get the op code and argument count
+        let word = binary[i];
+        let op = word & 0x0000ffff;
+        let count = (word & 0xffff0000) >> 16;
+
+        // Keep track of SpecId decorations
+        if op == 71 && count == 4 && binary[i+2] == 1 {
+            spec_ids.insert(binary[i+1], binary[i+3]);
+        }
+
+        // For now, we only support 32 bit types
+        if spec_consts_op_codes.contains(&op) && count == 4 {
+            // Get the literal value that this spec constant is defaulted to
+            let id = binary[i+2];
+            let spec_id = spec_ids.get(&id).unwrap();
+            let mut defaulted = &mut binary[i + 3];
+
+            // Get the value specified by the user
+            if let Some(value) = constants.get(spec_id) {
+                specialize(&mut defaulted, *value);
+            } else {
+                log::warn!("Spec constant with id {spec_id} not specified");
+            }
+        }
+    }
 }
 
 // Load a function module and convert it to a ResolvedInclude
@@ -493,7 +551,7 @@ fn include(
         });
     }
 
-    // Either load it as an asset or a snippet
+    // Either load it as an asset or a sniponst uinpet
     let output = if resembles {
         log::debug!("Loading shader function module '{target}'");
         load_function_module(&target, assets)

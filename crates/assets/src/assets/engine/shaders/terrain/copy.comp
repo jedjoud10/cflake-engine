@@ -1,12 +1,9 @@
 #version 460 core
 layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 
-// TODO: Please implement spec constants instead of this shit
-#include "size"
-#include "output_triangles_count"
-#include "output_vertices_count"
-#include "allocation_count"
-#include "max_chunk_count"
+layout (constant_id = 0) const uint size = 1;
+layout (constant_id = 1) const uint output_triangles_count = 1;
+layout (constant_id = 2) const uint output_vertices_count = 1;
 
 // Contains the chunk index
 layout(push_constant) uniform PushConstants {

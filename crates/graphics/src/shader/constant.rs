@@ -1,26 +1,29 @@
-// Specialization constant trait for ease of use
-// Does not implement GpuPod cause we need bools and spirq handles it automatically for us
-pub trait SpecConstant {
-    // Convert self to a spirq constant
-    fn into_const_value(self) -> spirq::ConstantValue;
+use paste::paste;
+
+// Specialization constant enum
+// Stored within an enum so we can differentiate between the types of values
+// TODO: Implement 64 bit types
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub enum SpecConstant {
+    I32(i32),
+    U32(u32),
+    F32(f32),
+    BOOL(bool),
 }
 
 macro_rules! impl_spec_constant {
-    ($t:ty) => {
-        impl SpecConstant for $t {
-            fn into_const_value(self) -> spirq::ConstantValue {
-                spirq::ConstantValue::from(self)
+    ($t:ty, $v:ty) => {
+        paste! {
+            impl Into<SpecConstant> for $t {
+                fn into(self) -> SpecConstant {
+                    $v(self)
+                }
             }
-        }
+        }       
     };
 }
 
-impl_spec_constant!(i32);
-impl_spec_constant!(u32);
-impl_spec_constant!(i64);
-impl_spec_constant!(u64);
-impl_spec_constant!(f32);
-impl_spec_constant!(f64);
-impl_spec_constant!(bool);
-impl_spec_constant!([u8; 8]);
-impl_spec_constant!([u8; 4]);
+impl_spec_constant!(i32, SpecConstant::I32);
+impl_spec_constant!(u32, SpecConstant::U32);
+impl_spec_constant!(f32, SpecConstant::F32);
+impl_spec_constant!(bool, SpecConstant::BOOL);

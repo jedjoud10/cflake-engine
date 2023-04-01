@@ -310,7 +310,6 @@ fn create_vertex_buffers(
             BufferMode::Dynamic,
             BufferUsage::STORAGE | BufferUsage::WRITE
         ).unwrap();
-        dbg!(value.raw());
         vertices.insert(value)
     }).collect::<Vec<_>>()
 }
@@ -604,16 +603,9 @@ fn load_compute_copy_shader(
         .unwrap(),
     );
     
-    compiler
-        .use_snippet("size", format!("const uint size = {size};"));
-    compiler
-        .use_snippet("output_triangles_count", format!("const uint output_triangles_count = {output_triangle_buffer_length};"));
-    compiler
-        .use_snippet("output_vertices_count", format!("const uint output_vertices_count = {output_vertex_buffer_length};"));
-    compiler
-        .use_snippet("allocation_count", format!("const uint allocation_count = {allocations};"));
-    compiler
-        .use_snippet("max_chunk_count", format!("const uint max_chunk_count = {chunks};"));
+    compiler.use_constant(0, size);
+    compiler.use_constant(1, output_triangle_buffer_length);
+    compiler.use_constant(2, output_vertex_buffer_length);
     
     compiler.use_storage_buffer::<DrawIndexedIndirect>("indirect", false, true);
     compiler.use_storage_buffer::<<XYZW<f32> as Vertex>::Storage>("temporary_vertices", true, false);
