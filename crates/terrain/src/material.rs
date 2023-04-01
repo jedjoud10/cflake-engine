@@ -70,6 +70,14 @@ impl Material for TerrainMaterial {
         rendering::MeshAttributes::POSITIONS
     }
 
+    fn primitive_config() -> PrimitiveConfig {
+        PrimitiveConfig::Triangles {
+            winding_order: WindingOrder::Cw,
+            cull_face: Some(graphics::Face::Front),
+            wireframe: false,
+        }
+    }
+
     // Fetch the texture storages
     fn fetch<'w>(world: &'w world::World) -> Self::Resources<'w> {
         world.get::<ShadowMapping>().unwrap()

@@ -19,7 +19,7 @@ fn init(world: &mut World) {
         size: 64,
         smoothing: true,
         chunk_render_distance: 12,
-        allocations: 16,
+        allocations: 8,
     });
 
     // Fetch the required resources from the world

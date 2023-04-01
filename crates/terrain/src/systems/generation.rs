@@ -70,10 +70,19 @@ fn update(world: &mut World) {
         terrain.counters.write(&[0; 2], 0).unwrap();
         terrain.offsets.write(&[u32::MAX, u32::MAX], 0).unwrap();
 
+        dbg!(chunk.allocation);
+        dbg!(chunk.index);
+        dbg!(mesh.offset());
+
         // Fetch the buffer used by this chunk from the terrain pool
-        let output_vertices = vertices.get_mut(&terrain.shared_vertex_buffers[chunk.allocation]);
-        let output_triangles = triangles.get_mut(&terrain.shared_triangle_buffers[chunk.allocation]);
-        let sub_allocation_chunk_indices = &mut terrain.sub_allocation_chunk_indices[chunk.allocation];
+        let output_vertices = vertices.get_mut(mesh.vertices().attribute::<attributes::Position>().unwrap());
+        let output_triangles = triangles.get_mut(mesh.triangles().buffer());
+        let test = terrain.shared_triangle_buffers.iter().position(|x| x == mesh.triangles().buffer()).unwrap();
+        dbg!(test);
+        //let output_vertices = vertices.get_mut(&terrain.shared_vertex_buffers[chunk.allocation]);
+        //let output_triangles = triangles.get_mut(&terrain.shared_triangle_buffers[test]);
+        //dbg!(output_vertices.raw());
+        let sub_allocation_chunk_indices = &mut terrain.sub_allocation_chunk_indices[test];
         let temp_vertices = &mut terrain.temp_vertices;
         let temp_triangles = &mut terrain.temp_triangles;
 
@@ -160,6 +169,18 @@ fn update(world: &mut World) {
             set.set_storage_buffer("triangles", temp_triangles).unwrap();
             set.set_storage_buffer("indirect", indirect).unwrap();
         });
+        active
+        .set_push_constants(|x| {
+            let index = mesh.offset() as u32;
+            let index = GpuPod::into_bytes(&index);
+            x.push(
+                index,
+                0,
+                graphics::ModuleVisibility::Compute,
+            )
+            .unwrap();
+        })
+        .unwrap();
         active.dispatch(vek::Vec3::broadcast(terrain.dispatch));
 
         // Run a compute shader that will iterate over the ranges and find a free one 
@@ -172,7 +193,7 @@ fn update(world: &mut World) {
 
         active
             .set_push_constants(|x| {
-                let index = chunk.index as u32;
+                let index = chunk.index as u32 % terrain.chunks_per_allocation as u32;
                 let index = GpuPod::into_bytes(&index);
                 x.push(
                     index,
@@ -186,7 +207,6 @@ fn update(world: &mut World) {
         //let dispatch = (terrain.sub_allocations as f32 / 32 as f32).ceil() as u32; 
         active.dispatch(vek::Vec3::new(1, 1, 1));
 
-        /*
         // Copy the generated vertex and tri data to the permanent buffer 
         let mut active = pass.bind_shader(&terrain.compute_copy);
         active.set_bind_group(0, |set| {
@@ -194,14 +214,10 @@ fn update(world: &mut World) {
                 .unwrap();
             set.set_storage_buffer("temporary_triangles", temp_triangles)
                 .unwrap();
-            set.set_storage_buffer("old_counters", &mut terrain.old_counters)
+            set.set_storage_buffer("counters", &mut terrain.counters)
                 .unwrap();
-            set.set_storage_buffer("new_counters", &mut terrain.counters)
+            set.set_storage_buffer("offsets", &mut terrain.offsets)
                 .unwrap();
-            /*
-            set.set_storage_buffer("current_counters", &mut terrain.current_counters)
-                .unwrap();
-            */
         });
         active.set_bind_group(1, |set| {
             set.set_storage_buffer("output_vertices", output_vertices)
@@ -210,7 +226,19 @@ fn update(world: &mut World) {
                 .unwrap();
             set.set_storage_buffer("indirect", indirect).unwrap();
         });
-        */
+        active
+        .set_push_constants(|x| {
+            let index = mesh.offset() as u32;
+            let index = GpuPod::into_bytes(&index);
+            x.push(
+                index,
+                0,
+                graphics::ModuleVisibility::Compute,
+            )
+            .unwrap();
+        })
+        .unwrap();
+        active.dispatch(vek::Vec3::new(2048, 1, 1));
 
 
         return;

@@ -1,5 +1,5 @@
 #version 460 core
-layout (local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
+layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 
 // TODO: Please implement spec constants instead of this shit
 #include "size"
@@ -10,7 +10,7 @@ layout (local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
 
 // Contains the chunk index
 layout(push_constant) uniform PushConstants {
-    uint index;
+    uint global_chunk_index;
 } push_constants;
 
 // Input temp vertices
@@ -59,20 +59,22 @@ layout(std430, set = 1, binding = 0) writeonly buffer IndirectBuffer {
 } indirect;
 
 void main() {
-    /*
-    uint added_vertices = new_counters.vertices;
-    uint added_triangles = new_counters.triangles;
-    uint vertex_offset = old_counters.vertices;
-    uint triangle_offset = old_counters.triangles;
+    uint added_vertices = counters.vertices;
+    uint added_triangles = counters.triangles;
+    uint vertex_offset = offsets.vertices;
+    uint triangle_offset = offsets.triangles;
 
+    // Copy the vertices into the appropriate location within the allocation buffer
     if (gl_GlobalInvocationID.x < added_vertices) {
         output_vertices.data[gl_GlobalInvocationID.x + vertex_offset] = temporary_vertices.data[gl_GlobalInvocationID.x];
     }
 
+    // Copy the triangles into the appropriate location within the allocation buffer
     if (gl_GlobalInvocationID.x < added_triangles) {
         output_triangles.data[gl_GlobalInvocationID.x + triangle_offset] = temporary_triangles.data[gl_GlobalInvocationID.x];
     }
 
-    indirect.base_index = triangle_offset;
-    */
+    // Set the indirect draw data
+    indirect.data[push_constants.global_chunk_index].base_index = triangle_offset;
+    indirect.data[push_constants.global_chunk_index].vertex_offset = int(vertex_offset);
 }

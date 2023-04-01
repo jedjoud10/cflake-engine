@@ -83,6 +83,8 @@ fn create_chunk_components(
 
     let index = (positive.x + positive.y * max.x + positive.z * max.x * max.y) as usize;
     let allocation = index / terrain.chunks_per_allocation;
+    dbg!(allocation);
+    dbg!(index);
     log::trace!("terrain manager: using allocation {allocation} for chunk {coords}");
 
     // Create the chunk component
@@ -90,7 +92,7 @@ fn create_chunk_components(
         state: ChunkState::Pending,
         coords,
         allocation,
-        index: index % terrain.chunks_per_allocation,
+        index: index,
     };
 
     // Return the components of the new chunk
@@ -134,10 +136,10 @@ fn update(world: &mut World) {
     let mut chunks = AHashSet::<ChunkCoords>::new();
 
     // Check if it moved since last frame
-    if  added {
+    if added {
         let distance = terrain.chunk_render_distance as i32;
         for x in -distance..distance {
-            for y in -1..1 {
+            for y in -2..2 {
                 for z in -distance..distance {
                     let chunk = vek::Vec3::new(x, y, z);
                     let view = terrain.viewer.unwrap().1;

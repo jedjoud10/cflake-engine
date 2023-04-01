@@ -114,6 +114,7 @@ void main() {
 
     // If we found at least one intersecting edge, add the vertex
     if (count > 0) {
+        // TODO: False positive happening here
         uint index = atomicAdd(counters.vertices, 1);
 
         // Meshes are always n-2 size, so each voxel has a size of 1 / n-2

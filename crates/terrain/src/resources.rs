@@ -118,8 +118,9 @@ impl Terrain {
         } = settings;
 
         // Calculate the number of elements required for each triangle/vertex buffer allocation
-        let output_vertex_buffer_length = 16_000;
-        let output_triangle_buffer_length = 6400;
+        let scale_down = 1;
+        let output_vertex_buffer_length = graphics.device().limits().max_storage_buffer_binding_size / 4 / 4 / scale_down;
+        let output_triangle_buffer_length = graphics.device().limits().max_storage_buffer_binding_size / 4 / 3 / scale_down;
         log::warn!("output vertex buffer length: {output_vertex_buffer_length}");
         log::warn!("output triangle buffer length: {output_triangle_buffer_length}");
         
@@ -132,22 +133,23 @@ impl Terrain {
         // Get the size of each sub-allocation
         // Number of sub allocations stays constant, the only thing that is
         // changed is the number of vertices and triangles per sub allocation
-        let sub_allocations = 512;
+        let sub_allocations = 1024;
         
         // Get number of sub-allocation chunks for two buffer types (vertices and triangles)
         let vertex_sub_allocations_length = (output_vertex_buffer_length as f32) / sub_allocations as f32;
         let triangle_sub_allocations_length = (output_triangle_buffer_length as f32) / sub_allocations as f32;
-        let vertex_sub_allocations_length = (vertex_sub_allocations_length.floor() as u32).next_power_of_two();
-        let triangle_sub_allocations_length = (triangle_sub_allocations_length.floor() as u32).next_power_of_two();
-        log::warn!("vertex sub allocations length: {}", vertex_sub_allocations_length);
-        log::warn!("triangle sub allocations length: {}", triangle_sub_allocations_length);
+        let vertices_per_sub_allocation = (vertex_sub_allocations_length.floor() as u32).next_power_of_two();
+        let triangles_per_sub_allocation = (triangle_sub_allocations_length.floor() as u32).next_power_of_two();
+        log::warn!("vertex sub allocations length: {}", vertices_per_sub_allocation);
+        log::warn!("triangle sub allocations length: {}", triangles_per_sub_allocation);
 
         // Load the required generation compute shaders
+        let chunks_per_allocation = (chunks as usize) / allocations;
         let compute_voxels = load_compute_voxels_shaders(assets, graphics);
         let compute_vertices = load_compute_vertices_shader(assets, graphics, size, smoothing);
         let compute_quads = load_compute_quads_shader(assets, graphics, size);
         let compute_copy =  load_compute_copy_shader(assets, graphics,  output_triangle_buffer_length, output_vertex_buffer_length, allocations, chunks, size);
-        let compute_find = load_compute_find_shader(assets, graphics, allocations, (chunks as usize) / allocations, sub_allocations, vertex_sub_allocations_length, triangle_sub_allocations_length, size);
+        let compute_find = load_compute_find_shader(assets, graphics, allocations, chunks_per_allocation, sub_allocations, vertices_per_sub_allocation, triangles_per_sub_allocation, size);
 
         // Create cached data used for generation
         let cached_indices = create_texture3d(graphics, size);
@@ -166,7 +168,7 @@ impl Terrain {
         let sub_allocation_chunk_indices = create_sub_allocation_chunk_indices(graphics, allocations, sub_allocations);
 
         // Create buffers for vertices
-        let shared_vertex_buffer = create_vertex_buffers(
+        let shared_vertex_buffers = create_vertex_buffers(
             graphics,
             vertices,
             allocations,
@@ -174,7 +176,7 @@ impl Terrain {
         );
 
         // Create buffers for triangles
-        let shared_triangle_buffer = create_triangle_buffers(
+        let shared_triangle_buffers = create_triangle_buffers(
             graphics,
             triangles,
             allocations,
@@ -190,12 +192,14 @@ impl Terrain {
 
         // Pre-allocate the meshes
         let indirect_meshes = preallocate_meshes(
-            shared_vertex_buffer.clone(),
-            shared_triangle_buffer.clone(),
+            shared_vertex_buffers.clone(),
+            shared_triangle_buffers.clone(),
             indirect_meshes,
+            vertices,
             indirect_buffers,
             chunks,
             size,
+            chunks_per_allocation,
         );
 
         // Calculate the dispatch size for mesh generation by assuming local size is 4
@@ -222,8 +226,8 @@ impl Terrain {
             indirect_meshes,
             chunk_render_distance,
             
-            shared_vertex_buffers: shared_vertex_buffer,
-            shared_triangle_buffers: shared_triangle_buffer,
+            shared_vertex_buffers,
+            shared_triangle_buffers,
 
             temp_vertices,
             temp_triangles,
@@ -232,7 +236,7 @@ impl Terrain {
             counters,
             compute_find,
             allocations,
-            chunks_per_allocation: (chunks as usize) / allocations,
+            chunks_per_allocation,
             sub_allocation_chunk_indices,
             sub_allocations,
         }
@@ -299,12 +303,14 @@ fn create_vertex_buffers(
     output_vertex_buffer_length: u32,
 ) -> Vec<Handle<AttributeBuffer<attributes::Position>>> {
     (0..allocations).into_iter().map(|_| {
-        vertices.insert(AttributeBuffer::<attributes::Position>::zeroed(
+        let value = AttributeBuffer::<attributes::Position>::zeroed(
             graphics,
             output_vertex_buffer_length as usize,
             BufferMode::Dynamic,
             BufferUsage::STORAGE | BufferUsage::WRITE
-        ).unwrap())
+        ).unwrap();
+        dbg!(value.raw());
+        vertices.insert(value)
     }).collect::<Vec<_>>()
 }
 
@@ -358,17 +364,23 @@ fn preallocate_meshes(
     shared_vertex_buffers: Vec<Handle<AttributeBuffer<attributes::Position>>>,
     shared_triangle_buffers: Vec<Handle<TriangleBuffer<u32>>>,
     meshes: &mut Storage<IndirectMesh>,
+    vertices: &mut Storage<AttributeBuffer<attributes::Position>>,
     indexed_indirect_buffer: Handle<DrawIndexedIndirectBuffer>,
     chunks_count: u32,
     chunk_size: u32,
+    chunks_per_allocation: usize,
 ) -> Vec<(Handle<IndirectMesh>, bool)> {
     (0..(chunks_count as usize)).into_iter().map(|i| {
         // Get the allocation index for this chunk
-        let allocation = 0;
+        let allocation = ((i as f32) / (chunks_per_allocation as f32)).floor() as usize;
+        dbg!(allocation);
+        dbg!(i);
 
         // Get the vertex and triangle buffers that will be shared for this group
         let vertex_buffer = &shared_vertex_buffers[allocation];
         let triangle_buffer = &shared_triangle_buffers[allocation];
+
+        dbg!(vertices.get(&vertex_buffer).raw().global_id());
 
         // Create the indirect mesh
         let mut mesh = IndirectMesh::from_handles(
@@ -447,6 +459,13 @@ fn load_compute_quads_shader(
     );
     compiler
         .use_snippet("size", format!("const uint size = {size};"));
+    compiler.use_push_constant_layout(
+        PushConstantLayout::single(
+            <u32 as GpuPod>::size(),
+            ModuleVisibility::Compute,
+        )
+        .unwrap(),
+    );
     let compute_quads = ComputeShader::new(module, compiler).unwrap();
     compute_quads
 }
