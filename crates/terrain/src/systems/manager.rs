@@ -57,10 +57,13 @@ fn create_chunk_components(
     terrain: &mut Terrain,
     coords: ChunkCoords,
 ) -> (Position, Renderer, Surface<TerrainMaterial>, Chunk) {
+    // Offset chunk coords to remove negatives
+    let positive  = coords.map(|x| (x + terrain.chunk_render_distance as i32) as u32);
+    let max = vek::Vec3::broadcast(terrain.chunk_render_distance * 2 + 1);
+    let index = (positive.x + positive.y * max.x + positive.z * max.x * max.y) as usize;
+
     // Get a mesh from the terrain mesh pool
-    let (mesh, free) =
-        terrain.indirect_meshes.iter_mut().find(|(_, free)| *free).unwrap();
-    *free = false;
+    let mesh = &terrain.indirect_meshes[index];
 
     // Create the surface for rendering
     let mut surface = Surface::indirect(
@@ -77,14 +80,7 @@ fn create_chunk_components(
     let position =
         Position::from(coords.as_::<f32>() * terrain.size as f32);
 
-    // Offset chunk coords to remove negatives
-    let positive  = coords.map(|x| (x + terrain.chunk_render_distance as i32) as u32);
-    let max = vek::Vec3::broadcast(terrain.chunk_render_distance * 2 + 1);
-
-    let index = (positive.x + positive.y * max.x + positive.z * max.x * max.y) as usize;
     let allocation = index / terrain.chunks_per_allocation;
-    dbg!(allocation);
-    dbg!(index);
     log::trace!("terrain manager: using allocation {allocation} for chunk {coords}");
 
     // Create the chunk component
@@ -139,7 +135,7 @@ fn update(world: &mut World) {
     if added {
         let distance = terrain.chunk_render_distance as i32;
         for x in -distance..distance {
-            for y in -2..2 {
+            for y in -distance..distance {
                 for z in -distance..distance {
                     let chunk = vek::Vec3::new(x, y, z);
                     let view = terrain.viewer.unwrap().1;
@@ -164,14 +160,6 @@ fn update(world: &mut World) {
 
         // Get the removed surfaces and add the mesh and indirect buffer handles back to the pool
         for surface in scene.removed::<Surface<TerrainMaterial>>() {
-            let (_, free) = terrain
-                .indirect_meshes
-                .iter_mut()
-                .find(|(handle, _)| {
-                    *handle == surface.mesh.clone()
-                })
-                .unwrap();
-            *free = true;
         }
 
         // Detect the chunks that we must generate and add them

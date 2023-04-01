@@ -121,8 +121,10 @@ void main() {
         vec3 final = (smoothing ? (vertex / count) : vec3(0)) + vec3(gl_GlobalInvocationID);
         float factor = (float(size)) / (float(size) - 2);
 
-        // TODO: Compress normals into W field of the positions
-        vertices.data[index] = vec4(final * factor, 0);
+        // Pack some extra data into the W field of the positions vector
+        uint packed = packUnorm4x8(vec4(1));
+        float part = uintBitsToFloat(packed);
+        vertices.data[index] = vec4(final * factor, part);
 
         imageStore(cached_indices, ivec3(gl_GlobalInvocationID+1), uvec4(index));
     }

@@ -90,7 +90,7 @@ pub struct Terrain {
     pub(crate) id: MaterialId<TerrainMaterial>,
 
     // Keep a pool of all meshes and indirect buffers
-    pub(crate) indirect_meshes: Vec<(Handle<IndirectMesh>, bool)>,
+    pub(crate) indirect_meshes: Vec<Handle<IndirectMesh>>,
     pub(crate) chunk_render_distance: u32,
 
     // Location of the chunk viewer
@@ -199,6 +199,7 @@ impl Terrain {
             indirect_buffers,
             chunks,
             size,
+            chunk_render_distance,
             chunks_per_allocation,
         );
 
@@ -368,20 +369,16 @@ fn preallocate_meshes(
     indexed_indirect_buffer: Handle<DrawIndexedIndirectBuffer>,
     chunks_count: u32,
     chunk_size: u32,
+    chunk_render_distance: u32,
     chunks_per_allocation: usize,
-) -> Vec<(Handle<IndirectMesh>, bool)> {
+) -> Vec<Handle<IndirectMesh>> {
     (0..(chunks_count as usize)).into_iter().map(|i| {
         // Get the allocation index for this chunk
         let allocation = ((i as f32) / (chunks_per_allocation as f32)).floor() as usize;
-        dbg!(allocation);
-        dbg!(i);
 
         // Get the vertex and triangle buffers that will be shared for this group
         let vertex_buffer = &shared_vertex_buffers[allocation];
         let triangle_buffer = &shared_triangle_buffers[allocation];
-
-        dbg!(vertices.get(&vertex_buffer).raw().global_id());
-
         // Create the indirect mesh
         let mut mesh = IndirectMesh::from_handles(
             Some(vertex_buffer.clone()),
@@ -401,7 +398,7 @@ fn preallocate_meshes(
 
         // Insert the mesh into the storage
         let handle = meshes.insert(mesh);
-        (handle, true)
+        handle
     }).collect()
 }
 
@@ -527,7 +524,7 @@ fn load_compute_voxels_shaders(
 
     compiler.use_push_constant_layout(
         PushConstantLayout::single(
-            <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size() * 2,
+            <vek::Vec4<f32> as GpuPod>::size() + u32::size() * 2,
             ModuleVisibility::Compute,
         )
         .unwrap(),

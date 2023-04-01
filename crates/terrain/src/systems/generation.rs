@@ -47,7 +47,6 @@ fn update(world: &mut World) {
         //chunk.state = ChunkState::Generated;
         log::trace!("terrain generation: voxels and mesh for chunk {}", chunk.coords);
 
-        //terrain.counters.write(&[0, 0], 0).unwrap();
         let mesh = meshes.get(&surface.mesh);
         let indirect = mesh.indirect();
         let indirect = indirects.get_mut(indirect);
@@ -70,19 +69,10 @@ fn update(world: &mut World) {
         terrain.counters.write(&[0; 2], 0).unwrap();
         terrain.offsets.write(&[u32::MAX, u32::MAX], 0).unwrap();
 
-        dbg!(chunk.allocation);
-        dbg!(chunk.index);
-        dbg!(mesh.offset());
-
         // Fetch the buffer used by this chunk from the terrain pool
-        let output_vertices = vertices.get_mut(mesh.vertices().attribute::<attributes::Position>().unwrap());
-        let output_triangles = triangles.get_mut(mesh.triangles().buffer());
-        let test = terrain.shared_triangle_buffers.iter().position(|x| x == mesh.triangles().buffer()).unwrap();
-        dbg!(test);
-        //let output_vertices = vertices.get_mut(&terrain.shared_vertex_buffers[chunk.allocation]);
-        //let output_triangles = triangles.get_mut(&terrain.shared_triangle_buffers[test]);
-        //dbg!(output_vertices.raw());
-        let sub_allocation_chunk_indices = &mut terrain.sub_allocation_chunk_indices[test];
+        let output_vertices = vertices.get_mut(&terrain.shared_vertex_buffers[chunk.allocation]);
+        let output_triangles = triangles.get_mut(&terrain.shared_triangle_buffers[chunk.allocation]);
+        let sub_allocation_chunk_indices = &mut terrain.sub_allocation_chunk_indices[chunk.allocation];
         let temp_vertices = &mut terrain.temp_vertices;
         let temp_triangles = &mut terrain.temp_triangles;
 
@@ -99,8 +89,8 @@ fn update(world: &mut World) {
             .set_push_constants(|x| {
                 let offset = position.with_w(0.0f32) * factor;
                 let offset = GpuPod::into_bytes(&offset);
-                let time = time.elapsed().as_secs_f32();
-                let time = GpuPod::into_bytes(&time);
+                let packed = vek::Vec2::new(chunk.index, chunk.allocation).as_::<u32>();
+                let time = GpuPod::into_bytes(&packed);
 
                 x.push(
                     offset,

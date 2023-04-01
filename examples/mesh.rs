@@ -17,9 +17,9 @@ fn init(world: &mut World) {
     // Create some procedural terrain
     world.insert(TerrainSettings {
         size: 64,
-        smoothing: true,
-        chunk_render_distance: 12,
-        allocations: 8,
+        smoothing: false,
+        chunk_render_distance: 8,
+        allocations: 6,
     });
 
     // Fetch the required resources from the world
@@ -225,7 +225,7 @@ fn update(world: &mut World) {
         rotation.rotate_y(-0.1 * time.delta().as_secs_f32());
     }
     */
-
+    
     // Exit the game when the user pressed Escape
     if input.get_button(Button::Escape).pressed() {
         *state = State::Stopped;
