@@ -36,6 +36,7 @@ impl MemoryManager {
         settings: &TerrainSettings
     ) -> Self {
         Self {
+            // TODO: fix
             shared_vertex_buffers: create_vertex_buffers(graphics, vertices, settings.allocations_count, settings.output_vertex_buffer_length),
             shared_triangle_buffers: create_triangle_buffers(graphics, triangles, settings.allocations_count, settings.output_triangle_buffer_length),
             compute_find: load_compute_find_shader(assets, graphics, settings.sub_allocations_count, settings.vertices_per_sub_allocation, settings.triangles_per_sub_allocation),
@@ -83,7 +84,7 @@ fn create_triangle_buffers(
                     graphics,
                     output_triangle_buffer_length,
                     BufferMode::Dynamic,
-                    BufferUsage::STORAGE | BufferUsage::WRITE,
+                    BufferUsage::STORAGE,
                 )
                 .unwrap(),
             )
@@ -106,7 +107,7 @@ fn create_vertex_buffers(
                     graphics,
                     output_vertex_buffer_length as usize,
                     BufferMode::Dynamic,
-                    BufferUsage::STORAGE | BufferUsage::WRITE,
+                    BufferUsage::STORAGE,
                 )
                 .unwrap();
             vertices.insert(value)

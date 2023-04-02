@@ -75,4 +75,5 @@ void main() {
     // Set the indirect draw data
     indirect.data[push_constants.global_chunk_index].base_index = triangle_offset;
     indirect.data[push_constants.global_chunk_index].vertex_offset = int(vertex_offset);
+    indirect.data[push_constants.global_chunk_index].vertex_count = counters.triangles;
 }

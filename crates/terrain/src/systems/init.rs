@@ -43,7 +43,11 @@ fn init(world: &mut World) {
         let mut triangles = world.get_mut::<Storage<Triangles>>().unwrap();
 
         // Create a voxel generator
-        //let voxel = VoxelGenerator::new()
+        let voxel = VoxelGenerator::new(
+            &assets,
+            &graphics,
+            &settings
+        );
 
         // Create a mesh generator
         let mesher = MeshGenerator::new(
@@ -75,7 +79,7 @@ fn init(world: &mut World) {
 
         // Combine all the terrain generator composites into the one terrain generator struct
         let terrain = Terrain {
-            voxel: todo!(),
+            voxelizer: todo!(),
             mesher,
             memory,
             manager,

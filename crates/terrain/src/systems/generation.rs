@@ -8,9 +8,8 @@ use rendering::{
 };
 use utils::{Storage, Time};
 use world::{System, World};
-use crate::{Chunk, ChunkState, Terrain, TerrainMaterial};
+use crate::{Chunk, ChunkState, Terrain, TerrainMaterial, VoxelGenerator, TerrainSettings};
 
-/*
 // Look in the world for any chunks that need their mesh generated and generate it
 fn update(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
@@ -22,6 +21,7 @@ fn update(world: &mut World) {
         return;
     };
 
+    // Get the required resources from the world
     let terrain = &mut *_terrain;
     let mut scene = world.get_mut::<Scene>().unwrap();
     let mut indirects = world
@@ -35,6 +35,19 @@ fn update(world: &mut World) {
     let mut meshes =
         world.get_mut::<Storage<IndirectMesh>>().unwrap();
 
+    // Get the required sub-resources from the terrain resource
+    let (manager, voxelizer, mesher, memory, settings) = (
+        &mut terrain.manager,
+        &mut terrain.voxelizer,
+        &mut terrain.mesher,
+        &mut terrain.memory,
+        &mut terrain.settings,
+    );
+
+    // Temp buffers are always borrowed
+    let temp_vertices = &mut mesher.temp_vertices;
+    let temp_triangles = &mut mesher.temp_triangles;
+
     // Iterate over the chunks that we need to generate
     for (chunk, position, surface) in scene.query_mut::<(
         &mut Chunk,
@@ -47,50 +60,25 @@ fn update(world: &mut World) {
             continue;
         }
 
-        surface.visible = true;
-        chunk.state = ChunkState::Generated;
-
-        //chunk.state = ChunkState::Generated;
-        log::trace!(
-            "terrain generation: voxels and mesh for chunk {}",
-            chunk.coords
-        );
-
+        // Get the mesh that is used by this chunk
         let mesh = meshes.get(&surface.mesh);
         let indirect = mesh.indirect();
         let indirect = indirects.get_mut(indirect);
 
-        // Reset the DrawIndexedIndirect element for this chunk
-        indirect
-            .write(
-                &[DrawIndexedIndirect {
-                    vertex_count: 0,
-                    instance_count: 1,
-                    base_index: 0,
-                    vertex_offset: 0,
-                    base_instance: 0,
-                }],
-                mesh.offset(),
-            )
-            .unwrap();
-
         // Reset the current counters
-        terrain.counters.write(&[0; 2], 0).unwrap();
-        terrain.offsets.write(&[u32::MAX, u32::MAX], 0).unwrap();
+        mesher.counters.write(&[0; 2], 0).unwrap();
+        memory.offsets.write(&[u32::MAX, u32::MAX], 0).unwrap();
 
         // Fetch the buffer used by this chunk from the terrain pool
         let output_vertices = vertices.get_mut(
-            &terrain.shared_vertex_buffers[chunk.allocation],
+            &memory.shared_vertex_buffers[chunk.allocation],
         );
         let output_triangles = triangles.get_mut(
-            &terrain.shared_triangle_buffers[chunk.allocation],
+            &memory.shared_triangle_buffers[chunk.allocation],
         );
-        let temp_vertices = &mut terrain.temp_vertices;
-        let temp_triangles = &mut terrain.temp_triangles;
 
         // Create a compute pass for both the voxel and mesh compute shaders
         let mut pass = ComputePass::begin(&graphics);
-
 
         // 3 compute shaders that will generate the data and write it to
         // temp_vertices and temp_triangles TEMPORARILY
@@ -124,6 +112,10 @@ fn update(world: &mut World) {
             mesh,
         );
 
+        // Make the surface visible and set it's state
+        surface.visible = true;
+        chunk.state = ChunkState::Generated;
+
         return;
     }
 }
@@ -131,7 +123,6 @@ fn update(world: &mut World) {
 // Create an active compute shader pass that will generate the vertices
 fn generate_vertices(
     pass: &mut ActiveComputePass,
-    borrowed: &mut BorrowedTerrainData,
 ) {
     // Execute the vertex generation shader first
     let mut active = pass.bind_shader(&terrain.compute_vertices);
@@ -157,7 +148,6 @@ fn generate_vertices(
 // Create an active compute shader pass that will generate the quads
 fn generate_quads(
     pass: &mut ActiveComputePass,
-    borrowed: &mut BorrowedTerrainData,
     indirect: &mut DrawIndexedIndirectBuffer,
     mesh: &Mesh<rendering::Indirect>,
 ) {
@@ -194,7 +184,6 @@ fn generate_quads(
 // Create an active compute shader pass that will find some free memory that we can copy to
 fn find_free_memory(
     pass: &mut ActiveComputePass,
-    borrowed: &mut BorrowedTerrainData,
 ) {
     // Run a compute shader that will iterate over the ranges and find a free one
     let mut active = pass.bind_shader(&compute_find);
@@ -229,7 +218,6 @@ fn find_free_memory(
 fn copy_to_free_memory(
     mut pass: ActiveComputePass,
     terrain: &mut Terrain,
-    borrowed: &mut BorrowedTerrainData,
     indirect: &mut DrawIndexedIndirectBuffer,
     mesh: &Mesh<rendering::Indirect>,
 ) {
@@ -281,25 +269,32 @@ fn copy_to_free_memory(
 
 // Create an active compute shader pass that will generate the voxels and voxel colors
 fn generate_voxels(
+    voxelizer: &mut VoxelGenerator,
+    settings: &TerrainSettings,
     pass: &mut ActiveComputePass,
-    borrowed: &mut BorrowedTerrainData,
     position: &Position,
     chunk: &mut Chunk,
 ) {
     // Create the voxel data and store it in the image
-    let mut active = pass.bind_shader(&terrain.compute_voxels);
+    let mut active = pass.bind_shader(&voxelizer.compute_voxels);
 
-    // Set voxel noise parameters
-    let factor = (terrain.size as f32 - 2.0) / (terrain.size as f32);
+    // Needed since SN only runs for a volume 2 units smaller than a perfect cube
+    let factor = (settings.size as f32 - 2.0) / (settings.size as f32);
+
+    // Set the push constants
     active
         .set_push_constants(|x| {
+            // Use offset * factor as position offset
             let offset = position.with_w(0.0f32) * factor;
             let offset = GpuPod::into_bytes(&offset);
+
+            // Combine chunk index and allocation into the same vector 
             let packed =
                 vek::Vec2::new(chunk.index, chunk.allocation)
                     .as_::<u32>();
             let time = GpuPod::into_bytes(&packed);
 
+            // Push the bytes to the GPU
             x.push(offset, 0, graphics::ModuleVisibility::Compute)
                 .unwrap();
             x.push(
@@ -318,7 +313,6 @@ fn generate_voxels(
     });
     active.dispatch(vek::Vec3::broadcast(terrain.dispatch));
 }
-*/
 
 // Generates the voxels and appropriate mesh for each of the visible chunks
 pub fn system(system: &mut System) {

@@ -105,7 +105,7 @@ impl TerrainSettings {
 // TODO: EXPLAIN
 pub struct Terrain {
     // Compute generators and managers
-    pub voxel: VoxelGenerator,
+    pub voxelizer: VoxelGenerator,
     pub mesher: MeshGenerator,
     pub memory: MemoryManager,
 
