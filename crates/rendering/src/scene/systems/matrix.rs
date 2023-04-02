@@ -2,6 +2,7 @@ use crate::{Camera, ForwardRenderer, Mesh, Renderer};
 use math::shapes::*;
 use utils::{Storage, ThreadPool};
 use world::{post_user, System, World};
+use coords::{Position, Rotation, Scale};
 
 // Update the global mesh matrices of objects that have been modified
 // This will also handle frustum culling
@@ -18,9 +19,9 @@ fn update(world: &mut World) {
     let filter = f1 | f2 | f3 | f4;
     let query = scene.query_mut_with::<(
         &mut Renderer,
-        Option<&ecs::Position>,
-        Option<&ecs::Rotation>,
-        Option<&ecs::Scale>,
+        Option<&Position>,
+        Option<&Rotation>,
+        Option<&Scale>,
     )>(filter);
 
     // Update the matrices of objects that might contain location, rotation, or scale

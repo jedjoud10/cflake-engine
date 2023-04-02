@@ -119,17 +119,20 @@ dependencies = [
  "assets",
  "audio",
  "chrono",
+ "coords",
  "ecs",
  "fern",
  "graphics",
  "gui",
  "half",
+ "hierarchy",
  "input",
  "lazy_static",
  "log",
  "math",
  "mimalloc",
  "networking",
+ "physics",
  "platform-dirs",
  "rendering",
  "serde",
@@ -553,6 +556,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "coords"
+version = "0.1.0"
+dependencies = [
+ "ecs",
+ "math",
+ "vek",
+]
+
+[[package]]
 name = "core-foundation"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -846,7 +858,6 @@ dependencies = [
  "itertools",
  "lazy_static",
  "log",
- "math",
  "nohash-hasher",
  "parking_lot",
  "paste",
@@ -1286,6 +1297,10 @@ checksum = "ee512640fe35acbfb4bb779db6f0d80704c2cacfa2e39b601ef3e3f47d1ae4c7"
 dependencies = [
  "libc",
 ]
+
+[[package]]
+name = "hierarchy"
+version = "0.1.0"
 
 [[package]]
 name = "hrtf"
@@ -2196,6 +2211,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "478c572c3d73181ff3c2539045f6eb99e5491218eae919370993b890cdbdd98e"
 
 [[package]]
+name = "physics"
+version = "0.1.0"
+dependencies = [
+ "ecs",
+ "math",
+ "vek",
+]
+
+[[package]]
 name = "pin-project"
 version = "1.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2420,6 +2444,7 @@ dependencies = [
  "assets",
  "bitflags",
  "bytemuck",
+ "coords",
  "ecs",
  "graphics",
  "log",
@@ -2905,6 +2930,7 @@ version = "0.1.0"
 dependencies = [
  "ahash 0.7.6",
  "assets",
+ "coords",
  "ecs",
  "graphics",
  "log",

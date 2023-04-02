@@ -12,6 +12,8 @@ pub use networking;
 pub use terrain;
 pub use utils;
 pub use world;
+pub use coords;
+pub use physics;
 
 // Gfx related
 pub use graphics;
@@ -28,6 +30,8 @@ pub mod prelude {
     pub use crate::terrain::*;
     pub use crate::utils::*;
     pub use crate::world::*;
+    pub use crate::coords::*;
+    pub use crate::physics::*;
 
     // Re-exports
     pub use half::f16;

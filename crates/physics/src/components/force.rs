@@ -1,11 +1,12 @@
 use math::Scalar;
-use crate::Component;
+use ecs::Component;
 
 pub struct Forces {
-    forces: Vec<Vec3>
+    forces: Vec<vek::Vec3<f32>>
 }
 
-impl Force {
+impl Forces {
+    /*
     pub fn new() -> Self {
         Self(Vec3::new);
     }
@@ -28,4 +29,5 @@ impl Force {
 
         *forces.clear();
     }
+    */
 }

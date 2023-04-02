@@ -1,6 +1,7 @@
 use crate::{Camera, CameraUniform, ForwardRenderer};
 
-use ecs::{Position, Rotation, Scene};
+use coords::{Position, Rotation};
+use ecs::{Scene};
 use graphics::Window;
 
 use world::{System, World};

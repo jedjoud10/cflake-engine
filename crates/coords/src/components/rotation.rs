@@ -1,6 +1,6 @@
 use math::Scalar;
 
-use crate::Component;
+use ecs::Component;
 use std::{
     fmt::Debug,
     ops::{Deref, DerefMut, Mul},

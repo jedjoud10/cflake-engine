@@ -4,7 +4,7 @@ use crate::{
     SceneColor, TimingBuffer, ActiveScenePipeline,
 };
 use assets::Assets;
-use ecs::Rotation;
+use coords::Rotation;
 use graphics::{
     BindGroup, BlendConfig, CompareFunction, DepthConfig, Graphics,
     PrimitiveConfig, PushConstants, Shader, StencilConfig,

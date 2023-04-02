@@ -1,6 +1,7 @@
 use std::cmp::Ordering;
 
-use ecs::{Position, Scene};
+use coords::Position;
+use ecs::{Scene};
 use graphics::{
     ComputePass, DrawIndexedIndirect, DrawIndexedIndirectBuffer,
     GpuPod, Graphics, TriangleBuffer, Buffer, ActiveComputePass, XYZW, VertexBuffer, ComputeShader, Vertex, ActivePipeline,

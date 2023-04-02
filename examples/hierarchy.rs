@@ -1,3 +1,5 @@
+fn main() {}
+/*
 use cflake_engine::prelude::*;
 
 // An empty game window
@@ -27,3 +29,5 @@ fn update(world: &mut World) {
     let (_pos, _) =
         scene.find_mut::<(&mut Position, &Child)>().unwrap();
 }
+
+*/

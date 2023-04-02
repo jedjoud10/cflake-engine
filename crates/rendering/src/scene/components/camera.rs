@@ -1,5 +1,6 @@
 use arrayvec::ArrayVec;
-use ecs::{Component, Position, Rotation};
+use ecs::{Component};
+use coords::{Position, Rotation};
 use math::Frustum;
 
 // A perspective camera component that will be used to render the main scene

@@ -7,7 +7,8 @@ use crate::{
 };
 use assets::Assets;
 
-use ecs::{Rotation, Scene};
+use coords::{Position, Rotation, Scale};
+use ecs::{Scene};
 use graphics::{
     DrawIndexedIndirectBuffer, Graphics, Texture, TriangleBuffer,
     Window, ActivePipeline,
@@ -183,7 +184,7 @@ fn render(world: &mut World) {
     let directional_light = scene.entry(directional_light).unwrap();
     let (&directional_light, &directional_light_rotation) =
         directional_light
-            .as_query::<(&DirectionalLight, &ecs::Rotation)>()
+            .as_query::<(&DirectionalLight, &coords::Rotation)>()
             .unwrap();
 
     // Update the scene uniform using the appropriate values
@@ -206,7 +207,7 @@ fn render(world: &mut World) {
     // Get the camera and it's values
     let camera = scene.entry(camera).unwrap();
     let (&camera, &camera_position, &camera_rotation) = camera
-        .as_query::<(&Camera, &ecs::Position, &ecs::Rotation)>()
+        .as_query::<(&Camera, &coords::Position, &coords::Rotation)>()
         .unwrap();
     let camera_frustum =
         camera.frustum(&camera_position, &camera_rotation);
@@ -239,9 +240,9 @@ fn render(world: &mut World) {
     };
 
     // Create some ECS filters to check if we should update the shadow map texture
-    let f1 = ecs::modified::<ecs::Position>();
-    let f2 = ecs::modified::<ecs::Rotation>();
-    let f3 = ecs::modified::<ecs::Scale>();
+    let f1 = ecs::modified::<coords::Position>();
+    let f2 = ecs::modified::<coords::Rotation>();
+    let f3 = ecs::modified::<coords::Scale>();
     let f4 = ecs::added::<Renderer>();
     let f5 = f1 | f2 | f3 | f4;
     let mut update = scene

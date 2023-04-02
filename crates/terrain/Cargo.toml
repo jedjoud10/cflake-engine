@@ -10,6 +10,7 @@ world = { path = "../world" }
 utils = { path = "../utils" }
 math = { path = "../math" }
 ecs = { path = "../ecs" }
+coords = { path = "../coords" }
 graphics = { path = "../graphics" }
 rendering = { path = "../rendering" }
 assets = { path = "../assets" }

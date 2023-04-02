@@ -23,6 +23,9 @@ gui = { path = "../gui" }
 audio = { path = "../audio" }
 utils = { path = "../utils" }
 terrain = { path = "../terrain" }
+coords = { path = "../coords" }
+hierarchy = { path = "../hierarchy" }
+physics = { path = "../physics" }
 fern = { version = "0.6.1", features = ["colored"] }
 chrono = "0.4.23"
 serde = "1.0.145"  
@@ -32,7 +35,8 @@ vek = { workspace = true }
 ahash = { workspace = true }
 
 [features]
-two-dim = ["ecs/two-dim", "rendering/two-dim", "math/two-dim"]
+# TODO: Figure out how to handle this
+#two-dim = ["rendering/two-dim", "math/two-dim", "coords/two-dim", "hierarchy/two-dim", "physics/two-dim"]
 extended-tuples = ["ecs/extended-tuples", "utils/extended-tuples", "graphics/extended-tuples"]
 extended-bitmasks = ["ecs/extended-bitmasks"]
 headless = ["graphics/headless"]

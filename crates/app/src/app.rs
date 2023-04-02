@@ -390,7 +390,6 @@ impl App {
 
         // Scene systems
         self.regsys(ecs::system);
-        self.regsys(ecs::hierarchy);
 
         // World system
         self.regsys(world::system);

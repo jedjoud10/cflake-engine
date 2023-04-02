@@ -4,7 +4,8 @@ use crate::{
 };
 use ahash::AHashSet;
 use assets::Assets;
-use ecs::{Entity, Position, Rotation, Scale, Scene};
+use coords::{Position, Rotation, Scale};
+use ecs::{Entity, Scene};
 use graphics::{
     BufferMode, BufferUsage, DrawIndexedIndirect,
     DrawIndexedIndirectBuffer, Graphics, Normalized, TriangleBuffer,

@@ -1,4 +1,4 @@
-use crate::Component;
+use ecs::Component;
 use std::{
     fmt::{Debug, Display},
     ops::{Deref, DerefMut},

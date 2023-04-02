@@ -21,12 +21,12 @@ pub struct DefaultMaterialResources<'a> {
     // Main camera values
     pub camera: crate::Camera,
     pub camera_frustum: Frustum<f32>,
-    pub camera_position: ecs::Position,
-    pub camera_rotation: ecs::Rotation,
+    pub camera_position: coords::Position,
+    pub camera_rotation: coords::Rotation,
 
     // Main directional light values
     pub directional_light: crate::DirectionalLight,
-    pub directional_light_rotation: ecs::Rotation,
+    pub directional_light_rotation: coords::Rotation,
 
     // Main scene textures
     pub white: &'a AlbedoMap,

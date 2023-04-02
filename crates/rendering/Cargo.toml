@@ -10,6 +10,7 @@ world = { path = "../world" }
 utils = { path = "../utils" }
 math = { path = "../math" }
 ecs = { path = "../ecs" }
+coords = { path = "../coords" }
 graphics = { path = "../graphics" }
 assets = { path = "../assets" }
 paste = "1.0.7"
@@ -26,4 +27,4 @@ parking_lot = { workspace = true }
 thiserror = { workspace = true }
 
 [features]
-two-dim = ["ecs/two-dim"]
+two-dim = ["math/two-dim"]
