@@ -51,6 +51,7 @@ pub struct TerrainSettings {
 
 impl TerrainSettings {
     // Create some new terrain settings for terrain generation
+    // TODO: Handle validation
     pub fn new(
         graphics: &Graphics,
         resolution: u32,

@@ -17,8 +17,8 @@ fn init(world: &mut World) {
     // Create some procedural terrain
     let graphics = world.get::<Graphics>().unwrap();
     let settings = TerrainSettings::new(&graphics,
-        128,
-        5,
+        64,
+    10,
         true,
         8,
         1024
