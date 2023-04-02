@@ -11,6 +11,8 @@ layout(location = 2) in vec3 m_color;
 #include <engine/shaders/common/scene.glsl>
 #include <engine/shaders/common/extensions.glsl>
 #include <engine/shaders/common/shadow.glsl>
+#include <engine/shaders/noises/noise3D.glsl>
+#include <engine/shaders/noises/fbm.glsl>
 #include <engine/shaders/common/sky.glsl>
 #include <engine/shaders/math/models.glsl>
 
@@ -33,13 +35,12 @@ void main() {
 	//vec3 normal = normalize(m_normal);
 	vec3 normal = -normalize(cross(dFdy(m_position), dFdx(m_position)));
 	vec3 albedo = vec3(1);
-	/*
 	vec3 rock = vec3(128, 128, 128) / 255.0;
 	vec3 dirt = vec3(54, 30, 7) / 255.0;
 
 	vec3 grass = vec3(69, 107, 35) / 255.0;
 	
-	vec3 albedo = grass;
+	albedo = grass;
 
 	if (normal.y > -0.95) {
 		albedo = grass;
@@ -48,7 +49,6 @@ void main() {
 	if (normal.y > -0.85) {
 		albedo = rock;
 	}
-	*/
 
 	// Compute PBR values
 	float roughness = clamp(mask.g, 0.02, 1.0);
