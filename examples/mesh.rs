@@ -209,6 +209,7 @@ fn init(world: &mut World) {
     input.bind_button("down", Button::LControl);
     input.bind_button("left", Button::A);
     input.bind_button("right", Button::D);
+    input.bind_button("lshift", Button::LShift);
     input.bind_axis("x rotation", Axis::MousePositionX);
     input.bind_axis("y rotation", Axis::MousePositionY);
 }
@@ -241,6 +242,12 @@ fn update(world: &mut World) {
         let right = rotation.right();
         let up = rotation.up();
         let mut velocity = vek::Vec3::<f32>::default();
+        let mut speed: f32 = 1.0f32;
+
+        // Update velocity scale
+        if input.get_button("lshift").held() {
+            speed = 3.0f32;
+        }
 
         // Update the velocity in the forward and backward directions
         if input.get_button("forward").held() {
@@ -262,6 +269,9 @@ fn update(world: &mut World) {
         } else if input.get_button("down").held() {
             velocity += -up;
         }
+
+        // Finally multiply velocity by desired speed
+        velocity *= speed;
 
         // The scroll wheel will change the camera FOV
         let delta = input.get_axis(Axis::MouseScrollDelta);
