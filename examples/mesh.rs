@@ -15,12 +15,16 @@ fn main() {
 // Executed at the start
 fn init(world: &mut World) {
     // Create some procedural terrain
-    world.insert(TerrainSettings {
-        size: 64,
-        smoothing: false,
-        chunk_render_distance: 8,
-        allocations: 6,
-    });
+    let graphics = world.get::<Graphics>().unwrap();
+    let settings = TerrainSettings::new(&graphics,
+        64,
+        10,
+        true,
+        6,
+        512
+    );
+    drop(graphics);
+    world.insert(settings);
 
     // Fetch the required resources from the world
     let mut assets = world.get_mut::<Assets>().unwrap();

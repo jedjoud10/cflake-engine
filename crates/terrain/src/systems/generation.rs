@@ -8,44 +8,9 @@ use rendering::{
 };
 use utils::{Storage, Time};
 use world::{System, World};
-use crate::{Chunk, ChunkState, Terrain, TerrainMaterial, Densities, CachedIndices};
+use crate::{Chunk, ChunkState, Terrain, TerrainMaterial};
 
-// Utility struct that contains all data mutably borrowed from terrain
-struct BorrowedTerrainData<'a> {
-    pub(crate) compute_quads: &'a ComputeShader,
-    pub(crate) densities: &'a mut Densities,
-
-    pub(crate) shared_vertex_buffers:
-        &'a mut AttributeBuffer<attributes::Position>,
-    pub(crate) shared_triangle_buffers:
-        &'a mut TriangleBuffer<u32>,
-
-    pub(crate) temp_vertices: &'a mut Buffer<<XYZW<f32> as Vertex>::Storage>,
-    pub(crate) temp_triangles: &'a mut Buffer<[u32; 3]>,
-
-    pub(crate) compute_vertices: &'a ComputeShader,
-    pub(crate) compute_voxels: &'a ComputeShader,
-    pub(crate) cached_indices: &'a CachedIndices,
-
-    pub(crate) compute_find: &'a ComputeShader,
-
-    pub(crate) offsets: &'a mut Buffer<u32>,
-
-    pub(crate) counters: &'a mut Buffer<u32>,
-
-    pub(crate) sub_allocation_chunk_indices: &'a mut Buffer<u32>,
-
-    pub(crate) compute_copy: &'a ComputeShader,
-
-    pub(crate) dispatch: u32,
-
-    pub(crate) size: u32,
-    pub(crate) allocations: usize,
-    pub(crate) sub_allocations: usize,
-    pub(crate) chunks_per_allocation: usize,
-    pub(crate) chunk_render_distance: u32,
-}
-
+/*
 // Look in the world for any chunks that need their mesh generated and generate it
 fn update(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
@@ -113,31 +78,6 @@ fn update(world: &mut World) {
         terrain.counters.write(&[0; 2], 0).unwrap();
         terrain.offsets.write(&[u32::MAX, u32::MAX], 0).unwrap();
 
-        // Create big struct that will contain most of the shit
-        let util = BorrowedTerrainData {
-            compute_quads: todo!(),
-            densities: todo!(),
-            shared_vertex_buffers: todo!(),
-            shared_triangle_buffers: todo!(),
-            temp_vertices: todo!(),
-            temp_triangles: todo!(),
-            compute_vertices: todo!(),
-            compute_voxels: todo!(),
-            cached_indices: todo!(),
-            compute_find: todo!(),
-            offsets: todo!(),
-            counters: todo!(),
-            sub_allocation_chunk_indices: &mut terrain.sub_allocation_chunk_indices[chunk.allocation],
-            compute_copy: &terrain.compute_copy,
-            dispatch: terrain.dispatch,
-            
-            size: terrain.size,
-            allocations: terrain.allocations,
-            sub_allocations: terrain.sub_allocations,
-            chunks_per_allocation: terrain.chunks_per_allocation,
-            chunk_render_distance: terrain.chunk_render_distance,
-        };
-
         // Fetch the buffer used by this chunk from the terrain pool
         let output_vertices = vertices.get_mut(
             &terrain.shared_vertex_buffers[chunk.allocation],
@@ -145,7 +85,6 @@ fn update(world: &mut World) {
         let output_triangles = triangles.get_mut(
             &terrain.shared_triangle_buffers[chunk.allocation],
         );
-        let sub_allocation_chunk_indices = ;
         let temp_vertices = &mut terrain.temp_vertices;
         let temp_triangles = &mut terrain.temp_triangles;
 
@@ -379,10 +318,13 @@ fn generate_voxels(
     });
     active.dispatch(vek::Vec3::broadcast(terrain.dispatch));
 }
+*/
 
 // Generates the voxels and appropriate mesh for each of the visible chunks
 pub fn system(system: &mut System) {
+    /*
     system
         .insert_update(update)
         .before(rendering::systems::rendering::system);
+    */
 }
