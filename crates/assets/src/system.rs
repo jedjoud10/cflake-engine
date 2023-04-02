@@ -24,6 +24,10 @@ fn init(world: &mut World) {
     persistent!(loader, "engine/shaders/math/models.glsl");
     persistent!(loader, "engine/shaders/math/conversions.glsl");
 
+    // Load the default SDF shaders
+    persistent!(loader, "engine/shaders/sdf/common.glsl");
+    persistent!(loader, "engine/shaders/sdf/operations.glsl");
+
     // Load the default rendering shaders
     persistent!(loader, "engine/shaders/scene/basic/basic.frag");
     persistent!(loader, "engine/shaders/scene/pbr/pbr.frag");
