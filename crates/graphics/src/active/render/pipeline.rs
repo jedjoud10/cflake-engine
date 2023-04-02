@@ -9,7 +9,7 @@ use crate::{
     ModuleKind, ModuleVisibility, PushConstantLayout, PushConstants,
     RenderCommand, RenderPipeline, SetIndexBufferError,
     SetPushConstantsError, SetVertexBufferError, TriangleBuffer,
-    UniformBuffer, Vertex, VertexBuffer,
+    UniformBuffer, Vertex, VertexBuffer, active::pipeline::ActivePipeline,
 };
 use std::{
     collections::hash_map::Entry,
@@ -116,10 +116,62 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         Ok(())
     }
 
-    // Set push constants before rendering
-    pub fn set_push_constants(
+    // Draw a number of primitives using the currently bound vertex buffers
+    pub fn draw(
         &mut self,
-        callback: impl FnOnce(&mut PushConstants),
+        vertices: Range<u32>,
+        instances: Range<u32>,
+    ) {
+        self.validate();
+        self.commands.push(RenderCommand::Draw {
+            vertices,
+            instances,
+        });
+    }
+
+    // Draw a number of primitives using the currently bound vertex buffers and the given draw indirect buffer
+    pub fn draw_indirect(
+        &mut self,
+        buffer: &'r DrawIndirectBuffer,
+        element: usize,
+    ) {
+        self.validate();
+        self.commands
+            .push(RenderCommand::DrawIndirect { buffer, element });
+    }
+
+    // Draw a number of indexed primitives using the currently bound vertex buffers and index buffer
+    pub fn draw_indexed(
+        &mut self,
+        indices: Range<u32>,
+        instances: Range<u32>,
+    ) {
+        self.validate();
+        self.commands
+            .push(RenderCommand::DrawIndexed { indices, instances });
+    }
+
+    // Draw a number of indexed primitives using the currently bound vertex buffers, index buffer, and draw indexed indirect buffer
+    pub fn draw_indexed_indirect(
+        &mut self,
+        buffer: &'r DrawIndexedIndirectBuffer,
+        element: usize,
+    ) {
+        self.validate();
+        self.commands.push(RenderCommand::DrawIndexedIndirect {
+            buffer,
+            element,
+        });
+    }
+}
+
+impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout> ActivePipeline for ActiveGraphicsPipeline<'a, 'r, 't, C, DS> {
+    type Pipeline = &'r RenderPipeline<C, DS>;
+
+    // Set push constants before rendering
+    fn set_push_constants(
+        &mut self,
+        callback: impl FnOnce(&mut PushConstants<Self>),
     ) -> Result<(), SetPushConstantsError> {
         // Get the push constant layout used by the shader
         // and push new bytes onto the internally stored constants
@@ -172,7 +224,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
     }
 
     // Execute a callback that we will use to fill a bind group
-    pub fn set_bind_group<'b>(
+    fn set_bind_group<'b>(
         &mut self,
         binding: u32,
         callback: impl FnOnce(&mut BindGroup<'b>),
@@ -193,60 +245,12 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
 
     // Executed before any draw call to make sure that we have
     // all the necessities (bind groups, push constants, buffers) to be able to draw
-    pub fn validate(&self) {
+    fn validate(&self) {
         // TODO: VALIDATION: Make sure all bind groups, push constants, and buffers, have been set
     }
 
-    // Draw a number of primitives using the currently bound vertex buffers
-    pub fn draw(
-        &mut self,
-        vertices: Range<u32>,
-        instances: Range<u32>,
-    ) {
-        self.validate();
-        self.commands.push(RenderCommand::Draw {
-            vertices,
-            instances,
-        });
-    }
-
-    // Draw a number of primitives using the currently bound vertex buffers and the given draw indirect buffer
-    pub fn draw_indirect(
-        &mut self,
-        buffer: &'r DrawIndirectBuffer,
-        element: usize,
-    ) {
-        self.validate();
-        self.commands
-            .push(RenderCommand::DrawIndirect { buffer, element });
-    }
-
-    // Draw a number of indexed primitives using the currently bound vertex buffers and index buffer
-    pub fn draw_indexed(
-        &mut self,
-        indices: Range<u32>,
-        instances: Range<u32>,
-    ) {
-        self.validate();
-        self.commands
-            .push(RenderCommand::DrawIndexed { indices, instances });
-    }
-
-    // Draw a number of indexed primitives using the currently bound vertex buffers, index buffer, and draw indexed indirect buffer
-    pub fn draw_indexed_indirect(
-        &mut self,
-        buffer: &'r DrawIndexedIndirectBuffer,
-        element: usize,
-    ) {
-        self.validate();
-        self.commands.push(RenderCommand::DrawIndexedIndirect {
-            buffer,
-            element,
-        });
-    }
-
     // Get the underlying graphics pipeline that is currently bound
-    pub fn pipeline(&self) -> &RenderPipeline<C, DS> {
+    fn inner(&self) -> Self::Pipeline {
         self.pipeline
     }
 }

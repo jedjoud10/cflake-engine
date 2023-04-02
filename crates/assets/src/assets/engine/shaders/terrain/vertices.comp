@@ -122,7 +122,7 @@ void main() {
         float factor = (float(size)) / (float(size) - 2);
 
         // Pack some extra data into the W field of the positions vector
-        uint packed = packUnorm4x8(vec4(vec3(gl_GlobalInvocationID.xyz) / float(size), 0));
+        uint packed = packUnorm4x8(vec4(1));
         float part = uintBitsToFloat(packed);
         vertices.data[index] = vec4(final * factor, part);
 

@@ -14,3 +14,11 @@ vec3 aces(vec3 x) {
     const float e = 0.14;
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
 }
+
+// randomly found here https://www.shadertoy.com/view/Ml2cWG
+vec3 jodieReinhardTonemap(vec3 c){
+    float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+    vec3 tc = c / (c + 1.0);
+
+    return mix(c / (l + 1.0), tc, tc);
+}

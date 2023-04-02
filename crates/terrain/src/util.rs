@@ -1,6 +1,9 @@
-use graphics::{BufferMode, BufferUsage, Buffer, Graphics, Texture3D, R, Texel, TextureMode, TextureUsage, SamplerSettings, TextureMipMaps, Texture, TriangleBuffer};
+use graphics::{BufferMode, BufferUsage, Buffer, Graphics, Texture3D, R, Texel, TextureMode, TextureUsage, SamplerSettings, TextureMipMaps, Texture, TriangleBuffer, Vertex, XYZW};
 use rendering::{attributes, AttributeBuffer};
 
+// Common types used througohut the crate
+pub type TempVertices = Buffer<<XYZW<f32> as Vertex>::Storage>;
+pub type TempTriangles = Buffer<[u32; 3]>;
 pub type Vertices = AttributeBuffer<attributes::Position>;
 pub type Triangles = TriangleBuffer<u32>;
 

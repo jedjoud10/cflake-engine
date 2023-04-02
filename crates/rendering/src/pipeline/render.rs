@@ -5,7 +5,7 @@ use crate::{
     SceneDepth, Surface,
 };
 use ecs::Scene;
-use graphics::{DrawIndexedIndirectBuffer, RenderPipeline};
+use graphics::{DrawIndexedIndirectBuffer, RenderPipeline, ActivePipeline};
 use utils::{Handle, Storage};
 use world::World;
 

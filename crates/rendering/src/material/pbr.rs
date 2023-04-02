@@ -1,7 +1,7 @@
 use crate::{
     AlbedoMap, CameraUniform, DefaultMaterialResources, Direct,
     MaskMap, Material, NormalMap, Renderer, SceneUniform, ShadowMap,
-    ShadowMapping, ShadowUniform,
+    ShadowMapping, ShadowUniform, ActiveScenePipeline,
 };
 
 use assets::Assets;
@@ -152,7 +152,7 @@ impl Material for PhysicallyBasedMaterial {
         renderer: &Renderer,
         _resources: &'r mut Self::Resources<'w>,
         _default: &DefaultMaterialResources<'r>,
-        constants: &mut PushConstants,
+        constants: &mut PushConstants<ActiveScenePipeline>,
     ) {
         // Send the raw vertex bytes to the GPU
         let matrix = renderer.matrix;

@@ -7,7 +7,7 @@ use graphics::{
     PrimitiveConfig, SamplerFilter, SamplerMipMaps, SamplerSettings,
     SamplerWrap, Shader, StoreOp, Texture, Texture2D, TextureMipMaps,
     TextureMode, TextureUsage, TriangleBuffer, VertexBuffer,
-    VertexConfig, VertexInput, VertexModule, Window, RGBA, XY, XYZW,
+    VertexConfig, VertexInput, VertexModule, Window, RGBA, XY, XYZW, ActivePipeline,
 };
 use rendering::{
     FinalGraphicsPipeline, FinalRenderPass, WindowBuffer,

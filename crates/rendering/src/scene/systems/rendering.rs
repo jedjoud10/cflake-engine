@@ -10,7 +10,7 @@ use assets::Assets;
 use ecs::{Rotation, Scene};
 use graphics::{
     DrawIndexedIndirectBuffer, Graphics, Texture, TriangleBuffer,
-    Window,
+    Window, ActivePipeline,
 };
 
 use log::LevelFilter;
@@ -50,9 +50,9 @@ fn init(world: &mut World) {
 
     // Create a nice shadow map
     let shadowmap = ShadowMapping::new(
-        100f32,
         200f32,
-        1024,
+        400f32,
+        4096,
         &graphics,
         &mut assets,
     );

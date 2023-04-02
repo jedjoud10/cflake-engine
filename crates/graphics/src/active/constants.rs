@@ -1,24 +1,27 @@
 use crate::{
     Graphics, ModuleVisibility, PushConstantBytesError,
-    PushConstantLayout, ReflectedShader, SetPushConstantsError,
+    PushConstantLayout, ReflectedShader, SetPushConstantsError, ActiveGraphicsPipeline, ColorLayout, DepthStencilLayout, ActiveComputeDispatcher,
 };
 use arrayvec::ArrayVec;
 use itertools::Itertools;
 use std::{marker::PhantomData, ops::RangeBounds, sync::Arc};
 
+use super::pipeline::ActivePipeline;
+
 // Push constants are tiny bits of memory that are going to get stored directly in a command encoder
 // They are mostly used to upload bits of data very rapidly to use within shaders
-pub struct PushConstants<'a> {
+pub struct PushConstants<'a, AP: ActivePipeline> {
     pub(crate) data: &'a mut [u8],
     pub(crate) layout: PushConstantLayout,
+    pub(crate) _phantom: PhantomData<AP>,
 }
 
 // Create some push constants that the user can set
-pub(super) fn handle_push_constants<'b>(
+pub(super) fn handle_push_constants<'b, AP: ActivePipeline>(
     reflected: Arc<ReflectedShader>,
     push_constant: &'b mut Vec<u8>,
     push_constant_global_offset: &mut usize,
-    callback: impl FnOnce(&mut PushConstants<'b>),
+    callback: impl FnOnce(&mut PushConstants<'b, AP>),
 ) -> Option<PushConstantLayout> {
     // Don't set the push constants if we don't have any to set
     let Some(layout) = reflected.push_constant_layout else {
@@ -40,7 +43,11 @@ pub(super) fn handle_push_constants<'b>(
     let data = &mut push_constant[start..end];
 
     // Create push constants that we can set
-    let mut push_constants = PushConstants { data, layout };
+    let mut push_constants = PushConstants {
+        data,
+        layout,
+        _phantom: PhantomData
+    };
 
     // Let the user modify the push constant
     callback(&mut push_constants);
@@ -48,8 +55,11 @@ pub(super) fn handle_push_constants<'b>(
     return Some(layout);
 }
 
-impl PushConstants<'_> {
+
+// For graphics pipelines only
+impl<C: ColorLayout, DS: DepthStencilLayout> PushConstants<'_, ActiveGraphicsPipeline<'_, '_, '_, C, DS>> {
     // Push a sub-region of push constant data to be stored afterwards
+    // This method variant is specifically used for graphics pipelines (since we can set both vertex AND fragment shaders)
     pub fn push(
         &mut self,
         bytes: &[u8],
@@ -91,6 +101,38 @@ impl PushConstants<'_> {
                 )
             }
         }
+
+        // Set the bytes properly
+        let start = offset as usize;
+        let end = start + bytes.len();
+        self.data[start..end].copy_from_slice(bytes);
+        Ok(())
+    }
+}
+
+
+// For compute pipelines only
+impl PushConstants<'_, ActiveComputeDispatcher<'_, '_>> {
+    // Push a sub-region of push constant data to be stored afterwards
+    // This method variant is specifically used for compute dispatchers
+    pub fn push(
+        &mut self,
+        bytes: &[u8],
+        mut offset: u32,
+    ) -> Result<(), PushConstantBytesError> {
+        // Make sure we have bytes to write with
+        if bytes.is_empty() {
+            return Err(PushConstantBytesError::NoBytes);
+        }
+
+        // Make sure we won't overwrite the buffer
+        if (bytes.len() + offset as usize) > self.data.len() {
+            return Err(
+                PushConstantBytesError::OffsetOrSizeIsTooLarge,
+            );
+        }
+
+        // No need to do any checking since it's type checked anyways lul
 
         // Set the bytes properly
         let start = offset as usize;

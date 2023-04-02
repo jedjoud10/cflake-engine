@@ -27,6 +27,7 @@ pub struct Chunk {
     pub(crate) index: usize,
     pub(crate) state: ChunkState,
     pub(crate) coords: ChunkCoords,
+    pub(crate) priority: f32,
 }
 
 impl Chunk {

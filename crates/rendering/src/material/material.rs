@@ -1,7 +1,7 @@
 use crate::{
     AlbedoMap, CameraBuffer, DefaultMaterialResources, MaskMap,
     MeshAttributes, NormalMap, RenderPath, Renderer, SceneBuffer,
-    SceneColor, TimingBuffer,
+    SceneColor, TimingBuffer, ActiveScenePipeline,
 };
 use assets::Assets;
 use ecs::Rotation;
@@ -107,7 +107,7 @@ pub trait Material: 'static + Sized + Sync + Send {
         _renderer: &Renderer,
         _resources: &'r mut Self::Resources<'w>,
         _default: &DefaultMaterialResources<'r>,
-        _push_constants: &mut PushConstants,
+        _push_constants: &mut PushConstants<ActiveScenePipeline>,
     ) {
     }
 }

@@ -4,7 +4,7 @@ use crate::{
     RenderPath, Renderer, Surface,
 };
 use ecs::Scene;
-use graphics::{DrawIndexedIndirectBuffer, GpuPod, ModuleVisibility};
+use graphics::{DrawIndexedIndirectBuffer, GpuPod, ModuleVisibility, ActivePipeline};
 use utils::{Handle, Storage};
 use world::World;
 

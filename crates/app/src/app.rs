@@ -422,6 +422,7 @@ impl App {
         // Terrain systems
         self.regsys(terrain::systems::manager::system);
         self.regsys(terrain::systems::generation::system);
+        self.regsys(terrain::systems::init::system);
 
         // Gui system + stats update event
         self.regsys(gui::common);

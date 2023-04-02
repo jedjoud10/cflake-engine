@@ -1,7 +1,7 @@
 use crate::{Compositor, ForwardRenderer, PostProcess};
 use assets::Assets;
 
-use graphics::{Graphics, Texture, Window};
+use graphics::{Graphics, Texture, Window, ActivePipeline};
 
 use world::{user, System, World};
 

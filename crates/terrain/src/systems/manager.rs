@@ -19,6 +19,7 @@ use world::{post_user, user, System, World};
 
 // Creates the appropriate components for creating a new chunk entity
 fn create_chunk_components(
+    viewer: &Position,
     coords: ChunkCoords,
     manager: &ChunkManager,
     settings: &TerrainSettings,
@@ -58,6 +59,7 @@ fn create_chunk_components(
         coords,
         allocation,
         index: index,
+        priority: viewer.distance(*position),
     };
 
     // Return the components of the new chunk
@@ -111,7 +113,7 @@ fn update(world: &mut World) {
         // Generate the chunks around ze player
         let distance = settings.chunk_render_distance as i32;
         for x in -distance..distance {
-            for y in -2..2 {
+            for y in -distance..distance {
                 for z in -distance..distance {
                     let chunk = vek::Vec3::new(x, y, z);
                     let view = manager.viewer.unwrap().1;
@@ -143,7 +145,7 @@ fn update(world: &mut World) {
             .collect::<Vec<_>>();
         let entities =
             scene.extend_from_iter(added.iter().map(|coords| {
-                create_chunk_components(*coords, &manager, &settings)
+                create_chunk_components(position, *coords, &manager, &settings)
             }));
 
         // Add the new chunks into the chunk entities of the terrain

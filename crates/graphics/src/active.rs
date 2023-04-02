@@ -4,6 +4,8 @@ mod compute;
 mod constants;
 mod errors;
 mod render;
+mod pipeline;
+pub use pipeline::*;
 pub use bindings::*;
 pub use command::*;
 pub use compute::*;

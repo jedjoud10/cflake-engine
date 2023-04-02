@@ -6,9 +6,9 @@ layout (constant_id = 0) const uint sub_allocations = 1;
 layout (constant_id = 1) const uint triangles_per_sub_allocation = 1;
 layout (constant_id = 2) const uint vertices_per_sub_allocation = 1;
 
-// Contains the chunk index
+// Contains the alloc-local chunk index
 layout(push_constant) uniform PushConstants {
-    uint chunk_index;
+    uint allocation_local_chunk_index;
 } push_constants;
 
 // Sub allocation chunk indices
@@ -45,6 +45,16 @@ void main() {
     // Keeps count of the number of empty sub allocations that we passed through 
     uint free_sub_allocations = 0;
 
+    // Length of what we need to find sub allocs for
+    uint vertices = counters.vertices;
+    uint triangles = counters.triangles;
+
+    /*
+    if (triangles == 0) {
+        vertices = 0;
+    }
+    */
+
     // Temp values for now 
     uint temp_sub_allocation_index = 0;
     uint temp_sub_allocation_count = 1;
@@ -77,7 +87,7 @@ void main() {
         uint free_triangles_length = temp_sub_allocation_count * triangles_per_sub_allocation;
         
         // If this is a possible candidate for a memory alloc offset, then use it
-        if (within_free && free_vertex_length > counters.vertices && free_triangles_length > counters.triangles) {
+        if (within_free && free_vertex_length > vertices && free_triangles_length > triangles) {
             atomicMin(chosen_sub_allocation_index, temp_sub_allocation_index);
             invocation_local_chosen_sub_alloction_index = temp_sub_allocation_index;
             break;
@@ -87,20 +97,17 @@ void main() {
         within_free = free;
     }
 
-    //barrier();
-    //memoryBarrier();
-
     // Only let one invocation do this shit
     if (invocation_local_chosen_sub_alloction_index != chosen_sub_allocation_index) {
         return;
     } 
 
     // Doesn't really matter since we can calculate it anyways 
-    uint chosen_sub_allocation_count = int(max(ceil(float(counters.vertices) / float(vertices_per_sub_allocation)), ceil(float(counters.triangles) / float(triangles_per_sub_allocation))));
+    uint chosen_sub_allocation_count = int(max(ceil(float(vertices) / float(vertices_per_sub_allocation)), ceil(float(triangles) / float(triangles_per_sub_allocation))));
 
     // After finding the right block, we can write to it
     for (uint i = chosen_sub_allocation_index; i < (chosen_sub_allocation_index + chosen_sub_allocation_count); i++) {
-        indices.data[i] = push_constants.chunk_index;
+        indices.data[i] = push_constants.allocation_local_chunk_index;
     }
 
     // Offsets that we will write eventually

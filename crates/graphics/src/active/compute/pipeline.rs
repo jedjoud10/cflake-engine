@@ -9,7 +9,7 @@ use crate::{
     ModuleKind, ModuleVisibility, PushConstantLayout, PushConstants,
     RenderCommand, RenderPipeline, SetIndexBufferError,
     SetPushConstantsError, SetVertexBufferError, TriangleBuffer,
-    UniformBuffer, Vertex, VertexBuffer,
+    UniformBuffer, Vertex, VertexBuffer, active::pipeline::ActivePipeline,
 };
 use std::{
     collections::hash_map::Entry,
@@ -28,10 +28,25 @@ pub struct ActiveComputeDispatcher<'a, 'r> {
 }
 
 impl<'a, 'r> ActiveComputeDispatcher<'a, 'r> {
+    // Execute the current compute shader call
+    // TODO: Handle fence shenanigans
+    pub fn dispatch(&mut self, size: vek::Vec3<u32>) {
+        self.validate();
+        self.commands.push(ComputeCommand::Dispatch {
+            x: size.x,
+            y: size.y,
+            z: size.z,
+        });
+    }
+}
+
+impl<'a, 'r> ActivePipeline for ActiveComputeDispatcher<'a, 'r> {
+    type Pipeline = &'r ComputeShader;
+    
     // Set push constants before dispatching a compute call
-    pub fn set_push_constants(
+    fn set_push_constants(
         &mut self,
-        callback: impl FnOnce(&mut PushConstants),
+        callback: impl FnOnce(&mut PushConstants<Self>),
     ) -> Result<(), SetPushConstantsError> {
         // Get the push constant layout used by the shader
         // and push new bytes onto the internally stored constants
@@ -69,7 +84,7 @@ impl<'a, 'r> ActiveComputeDispatcher<'a, 'r> {
     }
 
     // Execute a callback that we will use to fill a bind group
-    pub fn set_bind_group<'b>(
+    fn set_bind_group<'b>(
         &mut self,
         binding: u32,
         callback: impl FnOnce(&mut BindGroup<'b>),
@@ -89,23 +104,12 @@ impl<'a, 'r> ActiveComputeDispatcher<'a, 'r> {
 
     // Executed before any dispatch calls to make sure that we have
     // all the necessities (bind groups, push constants) to be able to dispatch
-    pub fn validate(&self) {
+    fn validate(&self) {
         // TODO: VALIDATION: Make sure all bind groups, push constants, have been set
     }
 
-    // Execute the current compute shader call
-    // TODO: Handle fence shenanigans
-    pub fn dispatch(&mut self, size: vek::Vec3<u32>) {
-        self.validate();
-        self.commands.push(ComputeCommand::Dispatch {
-            x: size.x,
-            y: size.y,
-            z: size.z,
-        });
-    }
-
     // Get the underlying compute shader that is currently bound
-    pub fn shader(&self) -> &ComputeShader {
+    fn inner(&self) -> Self::Pipeline {
         self.shader
     }
 }

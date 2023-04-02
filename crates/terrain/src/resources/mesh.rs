@@ -15,12 +15,12 @@ use rendering::{
 };
 use utils::{Handle, Storage};
 
-use crate::{ChunkCoords, TerrainMaterial, TerrainSettings, create_texture3d, create_counters};
+use crate::{ChunkCoords, TerrainMaterial, TerrainSettings, create_texture3d, create_counters, TempVertices, TempTriangles};
 
 // Mesh generator that will be solely used to generate the mesh from voxels
 pub struct MeshGenerator {
-    pub(crate) temp_vertices: Buffer<<XYZW<f32> as Vertex>::Storage>,
-    pub(crate) temp_triangles: Buffer<[u32; 3]>,
+    pub(crate) temp_vertices: TempVertices,
+    pub(crate) temp_triangles: TempTriangles,
     pub(crate) compute_vertices: ComputeShader,
     pub(crate) compute_quads: ComputeShader,
     pub(crate) cached_indices: Texture3D<R<u32>>,
