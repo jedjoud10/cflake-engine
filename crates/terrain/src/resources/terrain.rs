@@ -1,21 +1,13 @@
-use ahash::{AHashMap, AHashSet};
-use assets::Assets;
-use ecs::Entity;
-use graphics::{
-    Buffer, BufferMode, BufferUsage, Compiler, ComputeModule,
-    ComputePass, ComputeShader, DrawIndexedIndirect,
-    DrawIndexedIndirectBuffer, GpuPod, Graphics, ModuleVisibility,
-    Normalized, PushConstantLayout, SamplerSettings, Texel, Texture,
-    Texture3D, TextureMipMaps, TextureMode, TextureUsage,
-    TriangleBuffer, Vertex, VertexBuffer, R, RGBA, XYZ, XYZW,
-};
-use rendering::{
-    attributes, AttributeBuffer, IndirectMesh, MaterialId, Mesh,
-    Pipelines,
-};
-use utils::{Handle, Storage};
 
-use crate::{ChunkCoords, TerrainMaterial, VoxelGenerator, MeshGenerator, MemoryManager, ChunkManager};
+
+
+use graphics::{
+    Graphics,
+};
+
+
+
+use crate::{VoxelGenerator, MeshGenerator, MemoryManager, ChunkManager};
 
 // Terrain generator settings that the user will need to add to configure the terrain gen
 // This will also contain computed common data like number of sub allocations and such
@@ -84,7 +76,7 @@ impl TerrainSettings {
         let triangle_sub_allocations_length = (output_triangle_buffer_length as f32) / sub_allocations as f32;
         let vertices_per_sub_allocation = (vertex_sub_allocations_length.floor() as u32).next_power_of_two();
         let triangles_per_sub_allocation = (triangle_sub_allocations_length.floor() as u32).next_power_of_two();
-        let chunks_per_allocation = (over_allocated_chunks_count as usize) / allocations;
+        let chunks_per_allocation = over_allocated_chunks_count / allocations;
 
         Self {
             size: resolution,
@@ -92,7 +84,7 @@ impl TerrainSettings {
             smoothing,
             allocations_count: allocations,
             sub_allocations_count: sub_allocations,
-            chunks_count: chunks as usize,
+            chunks_count: chunks,
             over_allocated_chunks_count,
             output_triangle_buffer_length,
             output_vertex_buffer_length,

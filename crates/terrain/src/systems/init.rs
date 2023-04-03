@@ -1,21 +1,18 @@
 use crate::{
-    Chunk, ChunkCoords, ChunkState, ChunkViewer, Terrain,
+    Terrain,
     TerrainMaterial, TerrainSettings, Vertices, Triangles, VoxelGenerator, MeshGenerator, MemoryManager, ChunkManager,
 };
-use ahash::AHashSet;
+
 use assets::Assets;
-use ecs::{Entity, Scene};
+
 use graphics::{
-    BufferMode, BufferUsage, DrawIndexedIndirect,
-    DrawIndexedIndirectBuffer, Graphics, Normalized, TriangleBuffer,
-    VertexBuffer, XYZW,
+    DrawIndexedIndirectBuffer, Graphics,
 };
 use rendering::{
-    attributes, AttributeBuffer, IndirectMesh, Mesh, Pipelines,
-    Renderer, Surface,
+    IndirectMesh, Pipelines,
 };
-use utils::{Storage, Time};
-use world::{post_user, user, System, World};
+use utils::{Storage};
+use world::{post_user, System, World};
 
 // Creates the terrain if there was terrain settings present
 fn init(world: &mut World) {

@@ -1,4 +1,4 @@
-use arrayvec::ArrayVec;
+
 use ecs::{Component};
 use coords::{Position, Rotation};
 use math::Frustum;

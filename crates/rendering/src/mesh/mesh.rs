@@ -11,7 +11,7 @@ use graphics::{
     Triangle, TriangleBuffer,
 };
 use obj::TexturedVertex;
-use parking_lot::Mutex;
+
 use std::cell::{Cell, RefCell};
 use utils::Handle;
 

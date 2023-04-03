@@ -45,7 +45,7 @@ impl AtomicBitSet {
         callback: impl FnMut(usize) -> bool,
         count: usize,
     ) -> Self {
-        let iter = (0..count).into_iter().map(callback);
+        let iter = (0..count).map(callback);
         Self::from_iter(iter)
     }
 
@@ -83,7 +83,6 @@ impl AtomicBitSet {
             let num = chunk - len;
             self.0.write().extend(
                 (0..(num + 1))
-                    .into_iter()
                     .map(|_| AtomicUsize::new(splat)),
             );
         }

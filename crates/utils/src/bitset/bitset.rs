@@ -34,7 +34,7 @@ impl BitSet {
         callback: impl FnMut(usize) -> bool,
         count: usize,
     ) -> Self {
-        let iter = (0..count).into_iter().map(callback);
+        let iter = (0..count).map(callback);
         Self::from_iter(iter)
     }
 

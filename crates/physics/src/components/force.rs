@@ -1,5 +1,5 @@
-use math::Scalar;
-use ecs::Component;
+
+
 
 pub struct Forces {
     forces: Vec<vek::Vec3<f32>>

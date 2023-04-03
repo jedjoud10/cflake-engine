@@ -7,7 +7,7 @@ use math::Frustum;
 use utils::Storage;
 
 use crate::{
-    attributes, AttributeBuffer, IndirectMesh, Mesh, ShadowMapping,
+    attributes, AttributeBuffer, IndirectMesh, Mesh,
 };
 
 // These are the default settings that we pass to each material

@@ -1,21 +1,16 @@
-use ahash::{AHashMap, AHashSet};
+
 use assets::Assets;
-use ecs::Entity;
+
 use graphics::{
-    Buffer, BufferMode, BufferUsage, Compiler, ComputeModule,
-    ComputePass, ComputeShader, DrawIndexedIndirect,
-    DrawIndexedIndirectBuffer, GpuPod, Graphics, ModuleVisibility,
-    Normalized, PushConstantLayout, SamplerSettings, Texel, Texture,
-    Texture3D, TextureMipMaps, TextureMode, TextureUsage,
-    TriangleBuffer, Vertex, VertexBuffer, R, RGBA, XYZ, XYZW,
+    Buffer, BufferMode, BufferUsage, Compiler, ComputeModule, ComputeShader, DrawIndexedIndirect, GpuPod, Graphics, ModuleVisibility, PushConstantLayout, Texel,
+    TriangleBuffer, Vertex, XYZW,
 };
 use rendering::{
-    attributes, AttributeBuffer, IndirectMesh, MaterialId, Mesh,
-    Pipelines,
+    attributes, AttributeBuffer,
 };
 use utils::{Handle, Storage};
 
-use crate::{ChunkCoords, TerrainMaterial, TerrainSettings, create_counters, Vertices, Triangles};
+use crate::{TerrainSettings, create_counters, Vertices, Triangles};
 
 // Memory manager will be responsible for finding free memory and copying chunks there
 pub struct MemoryManager {
@@ -54,7 +49,6 @@ fn create_sub_allocation_chunk_indices(
     sub_allocations: usize,
 ) -> Vec<Buffer<u32>> {
     (0..allocations)
-        .into_iter()
         .map(|_| {
             Buffer::<u32>::splatted(
                 graphics,
@@ -77,7 +71,6 @@ fn create_triangle_buffers(
     output_triangle_buffer_length: usize,
 ) -> Vec<Handle<TriangleBuffer<u32>>> {
     (0..allocations)
-        .into_iter()
         .map(|_| {
             triangles.insert(
                 TriangleBuffer::zeroed(
@@ -100,12 +93,11 @@ fn create_vertex_buffers(
     output_vertex_buffer_length: usize,
 ) -> Vec<Handle<AttributeBuffer<attributes::Position>>> {
     (0..allocations)
-        .into_iter()
         .map(|_| {
             let value =
                 AttributeBuffer::<attributes::Position>::zeroed(
                     graphics,
-                    output_vertex_buffer_length as usize,
+                    output_vertex_buffer_length,
                     BufferMode::Dynamic,
                     BufferUsage::STORAGE,
                 )
@@ -161,7 +153,7 @@ fn load_compute_copy_shader(
     graphics: &Graphics,
     output_triangle_buffer_length: usize,
     output_vertex_buffer_length: usize,
-    allocations: usize,
+    _allocations: usize,
     size: u32,
 ) -> ComputeShader {
     let module = assets

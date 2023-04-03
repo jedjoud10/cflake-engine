@@ -2,20 +2,16 @@ use ahash::{AHashMap, AHashSet};
 use assets::Assets;
 use ecs::Entity;
 use graphics::{
-    Buffer, BufferMode, BufferUsage, Compiler, ComputeModule,
-    ComputePass, ComputeShader, DrawIndexedIndirect,
-    DrawIndexedIndirectBuffer, GpuPod, Graphics, ModuleVisibility,
-    Normalized, PushConstantLayout, SamplerSettings, Texel, Texture,
-    Texture3D, TextureMipMaps, TextureMode, TextureUsage,
-    TriangleBuffer, Vertex, VertexBuffer, R, RGBA, XYZ, XYZW,
+    BufferMode, BufferUsage, DrawIndexedIndirect,
+    DrawIndexedIndirectBuffer, GpuPod, Graphics, Texel, Vertex,
 };
 use rendering::{
-    attributes, AttributeBuffer, IndirectMesh, MaterialId, Mesh,
+    IndirectMesh, MaterialId,
     Pipelines,
 };
 use utils::{Handle, Storage};
 
-use crate::{ChunkCoords, TerrainMaterial, TerrainSettings, MemoryManager, Vertices, Triangles};
+use crate::{ChunkCoords, TerrainMaterial, TerrainSettings, MemoryManager};
 
 // Chunk manager will store a handle to the terrain material and shit needed for rendering the chunks
 pub struct ChunkManager {
@@ -59,7 +55,6 @@ impl ChunkManager {
 
         // Create the indirect meshes and fetch their handles
         let indirect_meshes = (0..(settings.chunks_count))
-            .into_iter()
             .map(|i| {
                 // Get the allocation index for this chunk
                 let allocation = ((i as f32)
@@ -88,8 +83,8 @@ impl ChunkManager {
                 }));
 
                 // Insert the mesh into the storage
-                let handle = indirect_meshes.insert(mesh);
-                handle
+                
+                indirect_meshes.insert(mesh)
             })
             .collect();
 

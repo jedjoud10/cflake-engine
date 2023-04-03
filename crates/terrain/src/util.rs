@@ -1,4 +1,4 @@
-use graphics::{BufferMode, BufferUsage, Buffer, Graphics, Texture3D, R, Texel, TextureMode, TextureUsage, SamplerSettings, TextureMipMaps, Texture, TriangleBuffer, Vertex, XYZW};
+use graphics::{BufferMode, BufferUsage, Buffer, Graphics, Texture3D, Texel, TextureMode, TextureUsage, SamplerSettings, TextureMipMaps, Texture, TriangleBuffer, Vertex, XYZW};
 use rendering::{attributes, AttributeBuffer};
 
 // Common types used througohut the crate

@@ -4,8 +4,8 @@ use crate::{
     RenderPath, Renderer, Surface,
 };
 use ecs::Scene;
-use graphics::{DrawIndexedIndirectBuffer, GpuPod, ModuleVisibility, ActivePipeline};
-use utils::{Handle, Storage};
+use graphics::{GpuPod, ModuleVisibility, ActivePipeline};
+use utils::{Handle};
 use world::World;
 
 // Render all the visible surfaces of a specific material type
@@ -37,7 +37,7 @@ pub(super) fn render_shadows<'r, M: Material>(
 
         // Get the mesh and material that correspond to this surface
         let mesh = <M::RenderPath as RenderPath>::get(
-            &defaults,
+            defaults,
             &surface.mesh,
         );
 
@@ -90,6 +90,6 @@ pub(super) fn render_shadows<'r, M: Material>(
         }
 
         // Draw the mesh
-        <M::RenderPath as RenderPath>::draw(mesh, &defaults, active);
+        <M::RenderPath as RenderPath>::draw(mesh, defaults, active);
     }
 }

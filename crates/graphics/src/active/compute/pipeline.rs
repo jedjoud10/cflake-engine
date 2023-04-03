@@ -6,10 +6,8 @@ use crate::{
     visibility_to_wgpu_stage, BindGroup, Buffer, BufferInfo,
     BufferMode, BufferUsage, ColorLayout, ComputeCommand,
     ComputeShader, DepthStencilLayout, GpuPod, Graphics,
-    ModuleKind, ModuleVisibility, PushConstantLayout, PushConstants,
-    RenderCommand, RenderPipeline, SetIndexBufferError,
-    SetPushConstantsError, SetVertexBufferError, TriangleBuffer,
-    UniformBuffer, Vertex, VertexBuffer, active::pipeline::ActivePipeline,
+    ModuleVisibility, PushConstantLayout, PushConstants,
+    SetPushConstantsError, active::pipeline::ActivePipeline,
 };
 use std::{
     collections::hash_map::Entry,
@@ -28,8 +26,7 @@ pub struct ActiveComputeDispatcher<'a, 'r> {
 }
 
 impl<'a, 'r> ActiveComputeDispatcher<'a, 'r> {
-    // Execute the current compute shader call
-    // TODO: Handle fence shenanigans
+    // Dispatch the current compute shader using the specified size
     pub fn dispatch(&mut self, size: vek::Vec3<u32>) {
         self.validate();
         self.commands.push(ComputeCommand::Dispatch {

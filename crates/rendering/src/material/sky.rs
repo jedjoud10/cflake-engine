@@ -8,7 +8,7 @@ use graphics::{
     BindGroup, Compiler, Face, FragmentModule, Graphics,
     PrimitiveConfig, Shader, VertexModule, WindingOrder,
 };
-use utils::{Handle, Storage};
+use utils::{Storage};
 
 // A very simple sky material which uses a procedural sky system
 pub struct SkyMaterial {}

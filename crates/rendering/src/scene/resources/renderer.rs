@@ -10,8 +10,7 @@ use graphics::{
     ActiveGraphicsPipeline, ActiveRenderPass, BufferMode,
     BufferUsage, Depth, GpuPod, Graphics, LoadOp, Operation,
     RenderPass, SamplerFilter, SamplerMipMaps, SamplerSettings,
-    SamplerWrap, StoreOp, Texel, Texture, Texture2D,
-    TextureImportSettings, TextureMipMaps, TextureMode, TextureUsage,
+    SamplerWrap, StoreOp, Texel, Texture, Texture2D, TextureMipMaps, TextureMode, TextureUsage,
     UniformBuffer, RGBA,
 };
 use utils::{Handle, Storage};
@@ -87,7 +86,7 @@ impl ForwardRenderer {
     // Create a new scene render pass and the forward renderer
     pub(crate) fn new(
         graphics: &Graphics,
-        assets: &Assets,
+        _assets: &Assets,
         extent: vek::Extent2<u32>,
         albedo_maps: &mut Storage<AlbedoMap>,
         normal_maps: &mut Storage<NormalMap>,

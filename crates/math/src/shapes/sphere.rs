@@ -1,4 +1,4 @@
-use crate::{Aabb, Boundable, Movable, Shape, SurfaceArea, Volume};
+use crate::{Boundable, Movable, Shape, SurfaceArea, Volume};
 use num_traits::FloatConst;
 use vek::num_traits::Pow;
 

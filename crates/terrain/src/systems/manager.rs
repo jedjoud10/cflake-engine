@@ -3,20 +3,15 @@ use crate::{
     TerrainMaterial, TerrainSettings, ChunkManager,
 };
 use ahash::AHashSet;
-use assets::Assets;
-use coords::{Position, Rotation, Scale};
+
+use coords::{Position};
 use ecs::{Entity, Scene};
-use graphics::{
-    BufferMode, BufferUsage, DrawIndexedIndirect,
-    DrawIndexedIndirectBuffer, Graphics, Normalized, TriangleBuffer,
-    VertexBuffer, XYZW,
-};
+
 use rendering::{
-    attributes, AttributeBuffer, IndirectMesh, Mesh, Pipelines,
     Renderer, Surface,
 };
-use utils::{Storage, Time};
-use world::{post_user, user, System, World};
+use utils::{Time};
+use world::{user, System, World};
 
 // Creates the appropriate components for creating a new chunk entity
 fn create_chunk_components(
@@ -59,7 +54,7 @@ fn create_chunk_components(
         state: ChunkState::Pending,
         coords,
         allocation,
-        index: index,
+        index,
         priority: viewer.distance(*position),
     };
 
@@ -70,7 +65,7 @@ fn create_chunk_components(
 // Dynamically generate the chunks based on camera position
 fn update(world: &mut World) {
     // Tries to find a chunk viewer and the terrain generator
-    let time = world.get::<Time>().unwrap();
+    let _time = world.get::<Time>().unwrap();
     let terrain = world.get_mut::<Terrain>();
     let mut scene = world.get_mut::<Scene>().unwrap();
     let viewer =
@@ -98,7 +93,7 @@ fn update(world: &mut World) {
         / vek::Vec3::broadcast(settings.size as f32))
     .round()
     .as_::<i32>();
-    let old = if let Some((_, old)) = &mut manager.viewer {
+    let _old = if let Some((_, old)) = &mut manager.viewer {
         std::mem::replace(old, new)
     } else {
         manager.viewer = Some((*entity, new));
@@ -137,7 +132,7 @@ fn update(world: &mut World) {
         }
 
         // Get the removed surfaces and add the mesh and indirect buffer handles back to the pool
-        for surface in scene.removed::<Surface<TerrainMaterial>>() {}
+        for _surface in scene.removed::<Surface<TerrainMaterial>>() {}
 
         // Detect the chunks that we must generate and add them
         let added = chunks
@@ -146,7 +141,7 @@ fn update(world: &mut World) {
             .collect::<Vec<_>>();
         let entities =
             scene.extend_from_iter(added.iter().map(|coords| {
-                create_chunk_components(position, *coords, &manager, &settings)
+                create_chunk_components(position, *coords, manager, settings)
             }));
 
         // Add the new chunks into the chunk entities of the terrain

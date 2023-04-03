@@ -2,7 +2,6 @@ use crate::Handle;
 use slotmap::DefaultKey;
 use std::{
     marker::PhantomData,
-    rc::Rc,
     sync::{atomic::Ordering, Arc},
 };
 

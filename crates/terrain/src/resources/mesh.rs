@@ -1,21 +1,14 @@
-use ahash::{AHashMap, AHashSet};
-use assets::Assets;
-use ecs::Entity;
-use graphics::{
-    Buffer, BufferMode, BufferUsage, Compiler, ComputeModule,
-    ComputePass, ComputeShader, DrawIndexedIndirect,
-    DrawIndexedIndirectBuffer, GpuPod, Graphics, ModuleVisibility,
-    Normalized, PushConstantLayout, SamplerSettings, Texel, Texture,
-    Texture3D, TextureMipMaps, TextureMode, TextureUsage,
-    TriangleBuffer, Vertex, VertexBuffer, R, RGBA, XYZ, XYZW,
-};
-use rendering::{
-    attributes, AttributeBuffer, IndirectMesh, MaterialId, Mesh,
-    Pipelines,
-};
-use utils::{Handle, Storage};
 
-use crate::{ChunkCoords, TerrainMaterial, TerrainSettings, create_texture3d, create_counters, TempVertices, TempTriangles};
+use assets::Assets;
+
+use graphics::{
+    Buffer, BufferMode, BufferUsage, Compiler, ComputeModule, ComputeShader, GpuPod, Graphics, Texel,
+    Texture3D, Vertex, R, XYZW,
+};
+
+
+
+use crate::{TerrainSettings, create_texture3d, create_counters, TempVertices, TempTriangles};
 
 // Mesh generator that will be solely used to generate the mesh from voxels
 pub struct MeshGenerator {

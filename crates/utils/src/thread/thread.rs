@@ -54,7 +54,6 @@ impl ThreadPool {
 
         // Spawn the worker threads
         let joins = (0..num)
-            .into_iter()
             .map(|i| spawn(&threadpool, i))
             .collect::<Vec<_>>();
         threadpool.joins = joins;

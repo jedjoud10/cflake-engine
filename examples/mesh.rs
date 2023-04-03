@@ -29,7 +29,7 @@ fn init(world: &mut World) {
     // Fetch the required resources from the world
     let mut assets = world.get_mut::<Assets>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
-    let mut threadpool = world.get_mut::<ThreadPool>().unwrap();
+    let _threadpool = world.get_mut::<ThreadPool>().unwrap();
     let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
     let mut pbrs =
         world.get_mut::<Storage<PhysicallyBasedMaterial>>().unwrap();
@@ -127,13 +127,13 @@ fn init(world: &mut World) {
 
     // Create a simple floor and add the entity
     let surface =
-        Surface::new(plane.clone(), material.clone(), id.clone());
+        Surface::new(plane, material.clone(), id.clone());
     let renderer = Renderer::default();
     let scale = Scale::uniform(25.0);
     scene.insert((surface, renderer, scale));
 
     // Create a simple cube and add the entity
-    scene.extend_from_iter((0..25).into_iter().map(|x| {
+    scene.extend_from_iter((0..25).map(|x| {
         let renderer = Renderer::default();
         let position = Position::at_xyz(
             (x / 5) as f32 * 4.0,
@@ -157,7 +157,7 @@ fn init(world: &mut World) {
         });
 
         let surface =
-            Surface::new(cube.clone(), material.clone(), id.clone());
+            Surface::new(cube.clone(), material, id.clone());
         (surface, renderer, position)
     }));
 

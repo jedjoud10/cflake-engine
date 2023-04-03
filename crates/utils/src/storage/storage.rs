@@ -2,10 +2,8 @@ use parking_lot::{Mutex, RwLock};
 use slotmap::{DefaultKey, SecondaryMap, SlotMap};
 
 use std::{
-    cell::{Cell, RefCell},
     marker::PhantomData,
     ops::{Index, IndexMut},
-    rc::Rc,
     sync::{
         atomic::{AtomicBool, AtomicU32, Ordering},
         Arc,

@@ -1,5 +1,5 @@
 use crate::{
-    Aabb, Boundable, Movable, SharpVertices, SurfaceArea, Volume,
+    Boundable, Movable, SharpVertices, SurfaceArea, Volume,
 };
 
 // A 3D cuboid that is defined by it's center and it's extent

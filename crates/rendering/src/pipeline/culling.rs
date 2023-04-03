@@ -1,10 +1,10 @@
 use ecs::Scene;
 use math::SharpVertices;
-use utils::{Storage, ThreadPool};
+use utils::{ThreadPool};
 use world::World;
 
 use crate::{
-    DefaultMaterialResources, Material, Mesh, RenderPath, Renderer,
+    DefaultMaterialResources, Material, RenderPath, Renderer,
     Surface,
 };
 
@@ -63,7 +63,7 @@ pub(super) fn cull_surfaces<'r, M: Material>(
         |(surface, renderer)| {
             // Get the mesh and it's AABB
             let mesh = <M::RenderPath as RenderPath>::get(
-                &default,
+                default,
                 &surface.mesh,
             );
             let aabb = mesh.vertices().aabb();

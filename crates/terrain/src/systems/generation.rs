@@ -1,22 +1,22 @@
-use std::cmp::Ordering;
+
 
 use coords::Position;
 use ecs::{Scene};
 use graphics::{
-    ComputePass, DrawIndexedIndirect, DrawIndexedIndirectBuffer,
-    GpuPod, Graphics, TriangleBuffer, Buffer, ActiveComputePass, XYZW, VertexBuffer, ComputeShader, Vertex, ActivePipeline,
+    ComputePass, DrawIndexedIndirectBuffer,
+    GpuPod, Graphics, TriangleBuffer, Vertex, ActivePipeline,
 };
 use rendering::{
-    attributes, AttributeBuffer, IndirectMesh, Mesh, Surface,
+    attributes, AttributeBuffer, IndirectMesh, Surface,
 };
 use utils::{Storage, Time};
 use world::{System, World};
-use crate::{Chunk, ChunkState, Terrain, TerrainMaterial, VoxelGenerator, TerrainSettings, MeshGenerator, TempVertices, TempTriangles, MemoryManager, Vertices, Triangles};
+use crate::{Chunk, ChunkState, Terrain, TerrainMaterial};
 
 // Look in the world for any chunks that need their mesh generated and generate it
 fn update(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
-    let time = world.get::<Time>().unwrap();
+    let _time = world.get::<Time>().unwrap();
     let _terrain = world.get_mut::<Terrain>();
 
     // If we don't have terrain, don't do shit
@@ -35,7 +35,7 @@ fn update(world: &mut World) {
         .unwrap();
     let mut triangles =
         world.get_mut::<Storage<TriangleBuffer<u32>>>().unwrap();
-    let mut meshes =
+    let meshes =
         world.get_mut::<Storage<IndirectMesh>>().unwrap();
 
     // Get the required sub-resources from the terrain resource

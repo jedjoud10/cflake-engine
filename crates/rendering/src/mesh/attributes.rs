@@ -1,19 +1,16 @@
 use graphics::{
-    ActiveGraphicsPipeline, ColorLayout, DepthStencilLayout,
-    DrawIndexedIndirectBuffer, GpuPod, Normalized, PerVertex,
-    SetIndexBufferError, SetVertexBufferError, TriangleBuffer,
-    Vertex, VertexBuffer, VertexConfig, VertexInput, VertexInputInfo,
-    XYZ, XYZW,
+    Normalized, PerVertex,
+    Vertex, VertexBuffer, VertexConfig, VertexInput, VertexInputInfo, XYZW,
 };
 use paste::paste;
 use std::cell::{Ref, RefMut};
 use std::marker::PhantomData;
 use std::ops::RangeBounds;
-use utils::{Handle, Storage};
+use utils::{Handle};
 
 use crate::{
-    AttributeError, DefaultMaterialResources, Material, Mesh,
-    RenderPath, Surface, VerticesMut, VerticesRef,
+    AttributeError, DefaultMaterialResources,
+    RenderPath, VerticesMut, VerticesRef,
 };
 
 bitflags::bitflags! {

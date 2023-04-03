@@ -3,7 +3,7 @@ use graphics::{
 };
 
 use crate::{
-    ActiveScenePipeline, DefaultMaterialResources, Mesh,
+    DefaultMaterialResources, Mesh,
     MeshAttribute, MeshAttributes, RenderPath,
 };
 

@@ -1,16 +1,16 @@
 use crate::{
     ActiveSceneRenderPass, ActiveShadowGraphicsPipeline,
-    DefaultMaterialResources, Material, Mesh, MeshAttributes,
+    DefaultMaterialResources, Material,
     SceneColor, SceneDepth,
 };
 
 use assets::Assets;
 use graphics::{
-    CompareFunction, DepthConfig, DrawIndexedIndirectBuffer,
+    CompareFunction, DepthConfig,
     Graphics, PipelineInitializationError, RenderPipeline, Shader,
 };
 use std::marker::PhantomData;
-use utils::Storage;
+
 use world::World;
 
 // A material ID is used to make sure the user has initialized the proper material pipeline

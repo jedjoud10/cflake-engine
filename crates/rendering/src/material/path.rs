@@ -79,7 +79,7 @@ impl RenderPath for Direct {
         defaults: &DefaultMaterialResources<'a>,
         handle: &Handle<Mesh<Self>>,
     ) -> &'a Mesh<Self> {
-        defaults.meshes.get(&handle)
+        defaults.meshes.get(handle)
     }
 
     #[inline(always)]
@@ -90,7 +90,7 @@ impl RenderPath for Direct {
     #[inline(always)]
     fn draw<'a, C: ColorLayout, DS: DepthStencilLayout>(
         mesh: &'a Mesh<Self>,
-        defaults: &DefaultMaterialResources<'a>,
+        _defaults: &DefaultMaterialResources<'a>,
         active: &mut ActiveGraphicsPipeline<'_, 'a, '_, C, DS>,
     ) {
         let indices = 0..(mesh.triangles().buffer().len() as u32 * 3);
@@ -107,7 +107,7 @@ impl RenderPath for Direct {
         slot: u32,
         bounds: impl RangeBounds<usize>,
         buffer: &'a Self::AttributeBuffer<A>,
-        defaults: &DefaultMaterialResources<'a>,
+        _defaults: &DefaultMaterialResources<'a>,
         active: &mut ActiveGraphicsPipeline<'_, 'a, '_, C, DS>,
     ) -> Result<(), SetVertexBufferError> {
         active.set_vertex_buffer::<A::V>(slot, buffer, bounds)
@@ -121,7 +121,7 @@ impl RenderPath for Direct {
     >(
         bounds: impl RangeBounds<usize>,
         buffer: &'a Self::TriangleBuffer<u32>,
-        defaults: &DefaultMaterialResources<'a>,
+        _defaults: &DefaultMaterialResources<'a>,
         active: &mut ActiveGraphicsPipeline<'_, 'a, '_, C, DS>,
     ) -> Result<(), SetIndexBufferError> {
         active.set_index_buffer(buffer, bounds)
@@ -139,7 +139,7 @@ impl RenderPath for Indirect {
         defaults: &DefaultMaterialResources<'a>,
         handle: &Handle<Mesh<Self>>,
     ) -> &'a Mesh<Self> {
-        defaults.indirect_meshes.get(&handle)
+        defaults.indirect_meshes.get(handle)
     }
 
     #[inline(always)]
@@ -173,8 +173,8 @@ impl RenderPath for Indirect {
         active: &mut ActiveGraphicsPipeline<'_, 'a, '_, C, DS>,
     ) -> Result<(), SetVertexBufferError> {
         let buffer =
-            A::indirect_buffer_from_defaults(defaults, &buffer);
-        active.set_vertex_buffer::<A::V>(slot, &buffer, bounds)
+            A::indirect_buffer_from_defaults(defaults, buffer);
+        active.set_vertex_buffer::<A::V>(slot, buffer, bounds)
     }
 
     #[inline(always)]
@@ -188,7 +188,7 @@ impl RenderPath for Indirect {
         defaults: &DefaultMaterialResources<'a>,
         active: &mut ActiveGraphicsPipeline<'_, 'a, '_, C, DS>,
     ) -> Result<(), SetIndexBufferError> {
-        let buffer = defaults.indirect_triangles.get(&buffer);
-        active.set_index_buffer(&buffer, bounds)
+        let buffer = defaults.indirect_triangles.get(buffer);
+        active.set_index_buffer(buffer, bounds)
     }
 }

@@ -2,7 +2,7 @@ use assets::Assets;
 use bytemuck::{Pod, Zeroable};
 use graphics::{
     ActiveGraphicsPipeline, BufferMode, BufferUsage, CompareFunction,
-    Compiler, Depth, DepthConfig, Face, FragmentModule, GpuPod,
+    Compiler, Depth, DepthConfig, FragmentModule, GpuPod,
     Graphics, LoadOp, ModuleVisibility, Operation, PrimitiveConfig,
     PushConstantLayout, RenderPass, RenderPipeline, SamplerSettings,
     Shader, StoreOp, Texture, Texture2D, TextureMipMaps, TextureMode,

@@ -1,6 +1,6 @@
 use rendering::{
-    AlbedoMap, CameraUniform, DefaultMaterialResources, Indirect,
-    Material, NormalMap, Renderer, SceneUniform, ShadowMap,
+    CameraUniform, DefaultMaterialResources, Indirect,
+    Material, Renderer, SceneUniform, ShadowMap,
     ShadowMapping, ShadowUniform, ActiveScenePipeline,
 };
 
@@ -11,7 +11,7 @@ use graphics::{
     ModuleVisibility, PrimitiveConfig, PushConstantLayout,
     PushConstants, Shader, VertexModule, WindingOrder,
 };
-use utils::{Handle, Storage};
+
 
 // Terrain shader that contains physically based lighting, but suited for terrain rendering
 pub struct TerrainMaterial {

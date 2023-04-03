@@ -13,5 +13,5 @@ fn update(world: &mut World) {
     let ui = world.get_mut::<Interface>().unwrap();
     let _time = world.get::<Time>().unwrap();
 
-    egui::Window::new("Test window").show(&ui, |ui| {});
+    egui::Window::new("Test window").show(&ui, |_ui| {});
 }

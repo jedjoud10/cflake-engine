@@ -7,15 +7,15 @@ use crate::{
 };
 use assets::Assets;
 
-use coords::{Position, Rotation, Scale};
+
 use ecs::{Scene};
 use graphics::{
     DrawIndexedIndirectBuffer, Graphics, Texture, TriangleBuffer,
     Window, ActivePipeline,
 };
 
-use log::LevelFilter;
-use utils::{Storage, Time};
+
+use utils::{Storage};
 use world::{user, System, WindowEvent, World};
 
 // Add the scene resources and setup for rendering

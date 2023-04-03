@@ -1,6 +1,6 @@
-use crate::{Camera, ForwardRenderer, Mesh, Renderer};
-use math::shapes::*;
-use utils::{Storage, ThreadPool};
+use crate::{Renderer};
+
+use utils::{ThreadPool};
 use world::{post_user, System, World};
 use coords::{Position, Rotation, Scale};
 

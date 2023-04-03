@@ -1,9 +1,8 @@
 use crate::{
     Direct, Indirect, IndirectMesh, Material, MaterialId, Mesh,
-    RenderPath,
 };
 use ecs::Component;
-use graphics::{DrawIndexedIndirectBuffer, DrawIndirectBuffer};
+
 use utils::Handle;
 
 // A surface is a combination of a sub mesh and a specific material handle

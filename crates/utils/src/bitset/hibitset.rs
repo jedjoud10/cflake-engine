@@ -22,7 +22,6 @@ impl HiBitSet {
     // Create a new empty hierchichal bit set
     pub fn new() -> Self {
         let vector = (0..LAYER_COUNT)
-            .into_iter()
             .map(|i| {
                 let len = (DEFAULT_BASE_CHUNK_CAPACITY as f32
                     * usize::BITS as f32)

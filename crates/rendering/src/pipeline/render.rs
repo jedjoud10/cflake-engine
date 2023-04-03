@@ -1,11 +1,10 @@
 use crate::{
-    set_vertex_buffer_attribute, ActiveScenePipeline,
-    ActiveSceneRenderPass, DefaultMaterialResources, Material, Mesh,
-    MeshAttribute, MeshAttributes, RenderPath, Renderer, SceneColor,
+    set_vertex_buffer_attribute,
+    ActiveSceneRenderPass, DefaultMaterialResources, Material, Mesh, RenderPath, Renderer, SceneColor,
     SceneDepth, Surface,
 };
 use ecs::Scene;
-use graphics::{DrawIndexedIndirectBuffer, RenderPipeline, ActivePipeline};
+use graphics::{RenderPipeline, ActivePipeline};
 use utils::{Handle, Storage};
 use world::World;
 
@@ -53,7 +52,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
 
         // Get the mesh and material that correspond to this surface
         let mesh = <M::RenderPath as RenderPath>::get(
-            &defaults,
+            defaults,
             &surface.mesh,
         );
 
@@ -159,7 +158,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
         // Draw the mesh
         <M::RenderPath as RenderPath>::draw(
             mesh,
-            &defaults,
+            defaults,
             &mut active,
         );
 
