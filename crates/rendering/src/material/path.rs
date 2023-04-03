@@ -18,10 +18,11 @@ pub trait RenderPath: 'static + Send + Sync + Sized {
     type AttributeBuffer<A: MeshAttribute>: 'static
         + Send
         + Sync
-        + Sized;
+        + Sized
+        + PartialEq<Self::AttributeBuffer<A>>;
 
     // Triangle buffer type used by meshes that use this render path
-    type TriangleBuffer<T: GpuPod>: 'static + Send + Sync + Sized;
+    type TriangleBuffer<T: GpuPod>: 'static + Send + Sync + Sized + PartialEq<Self::TriangleBuffer<T>>;
 
     // Either Option<usize> or a handle to DrawIndexedIndirectBuffer
     type Count: 'static + Send + Sync + Sized;

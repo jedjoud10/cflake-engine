@@ -1,7 +1,7 @@
 use crate::{
     set_vertex_buffer_attribute,
     ActiveSceneRenderPass, DefaultMaterialResources, Material, Mesh, RenderPath, Renderer, SceneColor,
-    SceneDepth, Surface,
+    SceneDepth, Surface, set_index_buffer_attribute,
 };
 use ecs::Scene;
 use graphics::{RenderPipeline, ActivePipeline};
@@ -42,6 +42,13 @@ pub(super) fn render_surfaces<'r, M: Material>(
 
     // Keep track of the last model
     let mut last_mesh: Option<Handle<Mesh<M::RenderPath>>> = None;
+
+    // Keep track of the last attribute buffers
+    let mut last_positions_buffer: Option<&<M::RenderPath as RenderPath>::AttributeBuffer<crate::attributes::Position>> = None; 
+    let mut last_normals_buffer: Option<&<M::RenderPath as RenderPath>::AttributeBuffer<crate::attributes::Normal>> = None; 
+    let mut last_tangents_buffer: Option<&<M::RenderPath as RenderPath>::AttributeBuffer<crate::attributes::Tangent>> = None; 
+    let mut last_tex_coords_buffer: Option<&<M::RenderPath as RenderPath>::AttributeBuffer<crate::attributes::TexCoord>> = None; 
+    let mut last_index_buffer: Option<&<M::RenderPath as RenderPath>::TriangleBuffer<u32>> = None;
 
     // Iterate over all the surface of this material
     for (surface, renderer) in query {
@@ -94,50 +101,59 @@ pub(super) fn render_surfaces<'r, M: Material>(
         });
 
         // Set the vertex buffers and index buffers when we change meshes
-        // TODO: Optimize this further by not setting the same vertex buffer twice in case of indirectly drawn meshes (shared vetex buffer handles)
         if last_mesh != Some(surface.mesh.clone()) {
             use crate::attributes::*;
             let mut index = 0;
+
+            // Set the position buffer attribute 
             set_vertex_buffer_attribute::<
                 Position,
                 M::RenderPath,
                 _,
                 _,
             >(
-                supported, mesh, defaults, &mut active, &mut index
+                supported, mesh, defaults, &mut active, &mut index, &mut last_positions_buffer
             );
+
+            // Set the normal buffer attribute
             set_vertex_buffer_attribute::<Normal, M::RenderPath, _, _>(
                 supported,
                 mesh,
                 defaults,
                 &mut active,
                 &mut index,
+                &mut last_normals_buffer,
             );
+
+            // Set the tangent buffer attribute
             set_vertex_buffer_attribute::<Tangent, M::RenderPath, _, _>(
                 supported,
                 mesh,
                 defaults,
                 &mut active,
                 &mut index,
+                &mut last_tangents_buffer
             );
-            set_vertex_buffer_attribute::<
-                TexCoord,
-                M::RenderPath,
-                _,
-                _,
-            >(
-                supported, mesh, defaults, &mut active, &mut index
+
+            // Set the texture coordinate buffer attribute
+            set_vertex_buffer_attribute::<TexCoord, M::RenderPath, _, _>(
+                supported,
+                mesh,
+                defaults,
+                &mut active,
+                &mut index,
+                &mut last_tex_coords_buffer
             );
 
             // Set the index buffer
-            let triangles = mesh.triangles();
-            <M::RenderPath as RenderPath>::set_index_buffer(
-                ..,
-                triangles.buffer(),
+            set_index_buffer_attribute::<M::RenderPath, _, _>(
+                mesh,
                 defaults,
                 &mut active,
-            )
-            .unwrap();
+                &mut last_index_buffer,
+            );
+
+            // Set the mesh handle
             last_mesh = Some(surface.mesh.clone());
         }
 

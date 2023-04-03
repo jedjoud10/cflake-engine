@@ -6,6 +6,8 @@ mod settings;
 mod texture;
 mod texture2d;
 mod texture3d;
+mod cubemap;
+pub use cubemap::*;
 pub use errors::*;
 pub use mipmap::*;
 pub use region::*;

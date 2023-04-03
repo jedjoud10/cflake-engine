@@ -20,7 +20,7 @@ fn init(world: &mut World) {
         64,
     5,
         true,
-        10,
+        7,
         1024
     );
     drop(graphics);

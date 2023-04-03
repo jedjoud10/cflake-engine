@@ -1,7 +1,7 @@
 use crate::{
     attributes::Position, ActiveShadowGraphicsPipeline,
     DefaultMaterialResources, Material, Mesh, MeshAttributes,
-    RenderPath, Renderer, Surface,
+    RenderPath, Renderer, Surface, set_index_buffer_attribute, set_vertex_buffer_attribute,
 };
 use ecs::Scene;
 use graphics::{GpuPod, ModuleVisibility, ActivePipeline};
@@ -27,6 +27,10 @@ pub(super) fn render_shadows<'r, M: Material>(
 
     // Keep track of the last model so we don't have to rebind buffers
     let mut last: Option<Handle<Mesh<M::RenderPath>>> = None;
+
+    // Keep track of the last attribute buffers
+    let mut last_positions_buffer: Option<&<M::RenderPath as RenderPath>::AttributeBuffer<crate::attributes::Position>> = None; 
+    let mut last_index_buffer: Option<&<M::RenderPath as RenderPath>::TriangleBuffer<u32>> = None;
 
     // Iterate over all the surfaces of this material
     for (surface, renderer) in query {
@@ -65,27 +69,25 @@ pub(super) fn render_shadows<'r, M: Material>(
 
         // Set the vertex buffers and index buffers when we change models
         if last != Some(surface.mesh.clone()) {
-            // Set the position buffer
-            let positions =
-                mesh.vertices().attribute::<Position>().unwrap();
-            <M::RenderPath as RenderPath>::set_vertex_buffer(
-                0,
-                ..,
-                positions,
-                defaults,
-                active,
-            )
-            .unwrap();
+            // Set the position buffer attribute 
+            set_vertex_buffer_attribute::<
+                Position,
+                M::RenderPath,
+                _,
+                _,
+            >(
+                MeshAttributes::POSITIONS, mesh, defaults, active, &mut 0, &mut last_positions_buffer
+            );
 
             // Set the index buffer
-            let triangles = mesh.triangles();
-            <M::RenderPath as RenderPath>::set_index_buffer(
-                ..,
-                triangles.buffer(),
+            set_index_buffer_attribute::<M::RenderPath, _, _>(
+                mesh,
                 defaults,
                 active,
-            )
-            .unwrap();
+                &mut last_index_buffer,
+            );
+
+            // Set the mesh handle
             last = Some(surface.mesh.clone());
         }
 

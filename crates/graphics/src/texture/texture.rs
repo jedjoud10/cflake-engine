@@ -241,10 +241,7 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
 
     // Checks if we can access a region of the texture
     fn is_region_accessible(&self, region: Self::Region) -> bool {
-        let extent = <Self::Region as Region>::extent_from_origin(
-            region.origin(),
-        ) + region.extent();
-        self.dimensions().is_larger_than(extent)
+        self.region().is_larger_than(region)
     }
 
     // Get the texture's dimensions

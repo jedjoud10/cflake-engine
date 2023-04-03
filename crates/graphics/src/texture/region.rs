@@ -1,5 +1,7 @@
 use std::{num::NonZeroU8, ops::Add};
 
+use crate::Graphics;
+
 pub type ViewDimension = wgpu::TextureViewDimension;
 pub type Dimension = wgpu::TextureDimension;
 
@@ -257,25 +259,18 @@ pub trait Region: Copy {
     // Set the region's extent
     fn set_extent(&mut self, extent: Self::E);
 
-    // Create an extent from an origin
-    fn extent_from_origin(origin: Self::O) -> Self::E;
-
     // Create a region with a default origin using an extent
     fn with_extent(extent: Self::E) -> Self;
 
     // Create a region with it's raw components
     fn from_raw_parts(origin: Self::O, extent: Self::E) -> Self;
 
-    // Is this region a multi-layer region
+    // Is this region a multi-layer region (cubemap / layered texture)
     fn is_multi_layered() -> bool;
 
     // Check if this region is larger than another region
     // Aka if the "other" region fits within self
-    fn is_larger_than(self, other: Self) -> bool {
-        let e =
-            other.extent() + Self::extent_from_origin(other.origin());
-        self.extent().is_larger_than(e)
-    }
+    fn is_larger_than(self, other: Self) -> bool;
 
     // Calculate the surface area of the region
     fn area(&self) -> u32;
@@ -306,10 +301,6 @@ impl Region for (vek::Vec2<u32>, vek::Extent2<u32>) {
         self.1 = extent;
     }
 
-    fn extent_from_origin(origin: Self::O) -> Self::E {
-        origin.into()
-    }
-
     fn with_extent(extent: Self::E) -> Self {
         (Default::default(), extent)
     }
@@ -320,6 +311,12 @@ impl Region for (vek::Vec2<u32>, vek::Extent2<u32>) {
 
     fn is_multi_layered() -> bool {
         false
+    }
+
+    fn is_larger_than(self, other: Self) -> bool {
+        let e =
+            other.extent() + vek::Extent2::<u32>::from(other.origin());
+        self.extent().is_larger_than(e)
     }
 
     fn area(&self) -> u32 {
@@ -352,10 +349,6 @@ impl Region for (vek::Vec3<u32>, vek::Extent3<u32>) {
         self.1 = extent;
     }
 
-    fn extent_from_origin(origin: Self::O) -> Self::E {
-        origin.into()
-    }
-
     fn with_extent(extent: Self::E) -> Self {
         (Default::default(), extent)
     }
@@ -368,7 +361,66 @@ impl Region for (vek::Vec3<u32>, vek::Extent3<u32>) {
         false
     }
 
+    fn is_larger_than(self, other: Self) -> bool {
+        let e =
+            other.extent() + vek::Extent3::<u32>::from(other.origin());
+        self.extent().is_larger_than(e)
+    }
+
     fn area(&self) -> u32 {
         self.extent().area()
+    }
+}
+
+// CubeMap2D
+impl Region for (vek::Vec3<u32>, vek::Extent2<u32>) {
+    type O = vek::Vec3<u32>;
+    type E = vek::Extent2<u32>;
+
+    fn unit() -> Self {
+        (vek::Vec3::zero(), vek::Extent2::one())
+    }
+
+    fn origin(&self) -> Self::O {
+        self.0
+    }
+
+    fn extent(&self) -> Self::E {
+        self.1
+    }
+
+    fn set_origin(&mut self, origin: Self::O) {
+        self.0 = origin;
+    }
+
+    fn set_extent(&mut self, extent: Self::E) {
+        self.1 = extent;
+    }
+
+    fn with_extent(extent: Self::E) -> Self {
+        (Default::default(), extent)
+    }
+
+    fn from_raw_parts(origin: Self::O, extent: Self::E) -> Self {
+        (origin, extent)
+    }
+
+    fn is_larger_than(self, other: Self) -> bool {
+        if self.origin().z >= 6 {
+            return false;
+        }
+
+        let e = other.extent() + vek::Extent2::<u32>::from(other.origin().xy());
+        self.extent().is_larger_than(e)
+    }
+
+    fn is_multi_layered() -> bool {
+        true
+    }
+
+    fn area(&self) -> u32 {
+        let h = self.extent().h;
+        let w = self.extent().w;
+        (h*w) * 6
     }
 }

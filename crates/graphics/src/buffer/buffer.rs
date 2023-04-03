@@ -73,6 +73,17 @@ pub struct Buffer<T: GpuPod, const TYPE: u32 = 0> {
     graphics: Graphics,
 }
 
+// PartialEq implementation
+impl<T: GpuPod, const TYPE: u32> PartialEq for Buffer<T, TYPE> {
+    fn eq(&self, other: &Self) -> bool {
+        self.buffer.global_id() == other.buffer.global_id() &&
+        self.length == other.length &&
+        self.capacity == other.capacity &&
+        self.usage == other.usage &&
+        self.mode == other.mode
+    }
+}
+
 // Buffer initialization
 impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
     // Try to create a buffer with the specified mode, usage, and slice data
@@ -426,6 +437,18 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         );
 
         Ok(())
+    }
+
+    // Read the buffer ASYNCHRONOUSLY without stalling
+    // The read will be completeed at the end of the frame when WGPU polls the device
+    // Only works on dynamic buffers since they have a constant length througouht their lifetime
+    // TODO: implement
+    pub fn async_read<'a>(
+        &'a self,
+        range: impl RangeBounds<usize>,
+        callback: impl FnOnce(&[T]) + Sync + Send,
+    ) {
+        
     }
 
     // Clear the buffer and reset it's length
