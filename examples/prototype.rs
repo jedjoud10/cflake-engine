@@ -20,7 +20,7 @@ fn init(world: &mut World) {
         BufferUsage::READ,
     )
     .unwrap();
-    graphics.submit(true);
+    
 
     let instant = std::time::Instant::now();
     let view = buffer.as_view(..).unwrap();
