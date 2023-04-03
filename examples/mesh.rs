@@ -20,7 +20,7 @@ fn init(world: &mut World) {
         64,
     5,
         true,
-        8,
+        10,
         1024
     );
     drop(graphics);
@@ -222,12 +222,14 @@ fn update(world: &mut World) {
     let input = world.get::<Input>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
 
+    /*
     // Rotation the light
     if let Some((rotation, _)) =
         scene.find_mut::<(&mut Rotation, &DirectionalLight)>()
     {
         rotation.rotate_y(-0.1 * time.delta().as_secs_f32());
     }
+    */
 
     // Exit the game when the user pressed Escape
     if input.get_button(Button::Escape).pressed() {

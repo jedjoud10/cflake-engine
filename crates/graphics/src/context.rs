@@ -1,10 +1,8 @@
 mod errors;
-mod fence;
 mod graphics;
 mod init;
 mod window;
 pub use self::graphics::*;
 pub use errors::*;
-pub use fence::*;
 pub use init::*;
 pub use window::*;

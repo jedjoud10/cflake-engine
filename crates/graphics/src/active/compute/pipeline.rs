@@ -5,7 +5,7 @@ use wgpu::CommandEncoder;
 use crate::{
     visibility_to_wgpu_stage, BindGroup, Buffer, BufferInfo,
     BufferMode, BufferUsage, ColorLayout, ComputeCommand,
-    ComputeShader, DepthStencilLayout, Fence, GpuPod, Graphics,
+    ComputeShader, DepthStencilLayout, GpuPod, Graphics,
     ModuleKind, ModuleVisibility, PushConstantLayout, PushConstants,
     RenderCommand, RenderPipeline, SetIndexBufferError,
     SetPushConstantsError, SetVertexBufferError, TriangleBuffer,

@@ -244,6 +244,7 @@ fn render(world: &mut World) {
     let f2 = ecs::modified::<coords::Rotation>();
     let f3 = ecs::modified::<coords::Scale>();
     let f4 = ecs::added::<Renderer>();
+    // TODO: Detect if surfaces have been modified too 
     let f5 = f1 | f2 | f3 | f4;
     let mut update = scene
         .query_with::<&Renderer>(f5)

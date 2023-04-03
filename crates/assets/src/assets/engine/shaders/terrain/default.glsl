@@ -14,16 +14,11 @@ layout(push_constant) uniform PushConstants {
 
 // Main density function that will create the shape of the terrain
 float density(vec3 position) {
-    position += parameters.offset.xyz - vec3(0, 1, 0);
+    position += parameters.offset.xyz;
 
-    /*
-    //float density = length(position) - 20;
-    float density = position.y;
-    //density += ;
-    */
-
-    float density = opSmoothUnion(-erosion(position.xz * 0.04, 0.1).x * 180 + position.y + 70, position.y, 20);
-    
+    float density = opSmoothUnion(-erosion(position.xz * 0.04, 0.212).x * 180 + position.y + 70, position.y, 20);
+    //float density = (1-cellular(position * 0.01 * vec3(1, 2, 1)).y) * 150 + position.y;
+    //return position.y + sin(position.x * 0.2 + cos(position.z) * 0.1) * 5;
     return density;
 }
 
