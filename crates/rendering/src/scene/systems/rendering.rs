@@ -1,3 +1,5 @@
+use std::num::NonZeroU8;
+
 use crate::{
     AlbedoMap, AttributeBuffer, BasicMaterial, Camera,
     DefaultMaterialResources, DirectionalLight, ForwardRenderer,
@@ -11,7 +13,7 @@ use assets::Assets;
 use ecs::{Scene};
 use graphics::{
     DrawIndexedIndirectBuffer, Graphics, Texture, TriangleBuffer,
-    Window, ActivePipeline,
+    Window, ActivePipeline, GpuPod, ModuleVisibility,
 };
 
 
@@ -53,7 +55,8 @@ fn init(world: &mut World) {
     let shadowmap = ShadowMapping::new(
         200f32,
         400f32,
-        4096,
+        1024,
+        NonZeroU8::new(8).unwrap(),
         &graphics,
         &mut assets,
     );
@@ -170,13 +173,11 @@ fn render(world: &mut World) {
 
     // Skip if we don't have a camera to draw with
     let Some(camera) = renderer.main_camera else {
-        //log::warn!("No active camera to draw with!");
         return;
     };
 
     // Skip if we don't have a light to draw with
     let Some(directional_light)  = renderer.main_directional_light else {
-        //log::warn!("No directional light to draw with!");
         return;
     };
 
@@ -239,35 +240,26 @@ fn render(world: &mut World) {
         draw_indexed_indirect_buffers: &indexed_indirect_buffers,
     };
 
-    // Create some ECS filters to check if we should update the shadow map texture
-    let f1 = ecs::modified::<coords::Position>();
-    let f2 = ecs::modified::<coords::Rotation>();
-    let f3 = ecs::modified::<coords::Scale>();
-    let f4 = ecs::added::<Renderer>();
-    // TODO: Detect if surfaces have been modified too 
-    let f5 = f1 | f2 | f3 | f4;
-    let mut update = scene
-        .query_with::<&Renderer>(f5)
-        .into_iter()
-        .filter(|r| r.visible)
-        .count()
-        > 0;
-    update |= scene
-        .query_with::<&DirectionalLight>(f2)
-        .into_iter()
-        .count()
-        > 0;
-    if update {
-        // Update the shadow map lightspace matrix
-        let shadowmap = &mut *_shadowmap;
-        shadowmap
-            .update(*directional_light_rotation, *camera_position);
+    // Update the shadow map lightspace matrix
+    let shadowmap = &mut *_shadowmap;
+    shadowmap
+        .update(*directional_light_rotation, *camera_position);
+    let mips = shadowmap.depth_tex.mips_mut();
 
+    // Create multiple render passes for each shadow cascade
+    for i in 0..mips.len() {
         // Get the depth texture we will render to
-        let depth = shadowmap.depth_tex.as_render_target().unwrap();
+        let mut level = mips.level_mut(i as u8).unwrap();
+        
+        // Get the mip level as a factor
+        let factor = (level.dimensions().w as f32 / shadowmap.resolution as f32);
+        
+        // Use mip as target
+        let target = level.as_render_target().unwrap();
+        
 
         // Create a new active shadowmap render pass
-        let mut render_pass = shadowmap.render_pass.begin((), depth);
+        let mut render_pass = shadowmap.render_pass.begin((), target);
 
         // Bind the default shadowmap graphics pipeline
         let mut active =
@@ -284,11 +276,7 @@ fn render(world: &mut World) {
         for stored in pipelines.iter() {
             stored.prerender(world, &mut default, &mut active);
         }
-        drop(active);
-        drop(render_pass);
-        drop(shadowmap);
     }
-    drop(_shadowmap);
 
     // Begin the scene color render pass
     let color = renderer.color_texture.as_render_target().unwrap();
@@ -296,6 +284,7 @@ fn render(world: &mut World) {
     let mut render_pass = renderer.render_pass.begin(color, depth);
 
     // This will iterate over each material pipeline and draw the scene
+    drop(_shadowmap);
     drop(scene);
     for stored in pipelines.iter() {
         stored.render(world, &mut default, &mut render_pass);

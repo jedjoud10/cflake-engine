@@ -1,3 +1,5 @@
+use std::num::{NonZeroU32, NonZeroU8};
+
 use assets::Assets;
 use bytemuck::{Pod, Zeroable};
 use graphics::{
@@ -55,6 +57,7 @@ impl ShadowMapping {
         size: f32,
         depth: f32,
         resolution: u32,
+        clamp: NonZeroU8,
         graphics: &Graphics,
         assets: &mut Assets,
     ) -> Self {
@@ -75,9 +78,8 @@ impl ShadowMapping {
         // Create the bind layout for the shadow map shader
         let mut compiler = Compiler::new(assets, graphics);
         compiler.use_uniform_buffer::<ShadowUniform>("shadow");
-        let bytes = <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size();
         let layout = PushConstantLayout::single(
-            bytes,
+            <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size(),
             ModuleVisibility::Vertex,
         )
         .unwrap();
@@ -129,7 +131,7 @@ impl ShadowMapping {
             TextureMode::Dynamic,
             TextureUsage::TARGET | TextureUsage::SAMPLED,
             SamplerSettings::default(),
-            TextureMipMaps::Disabled,
+            TextureMipMaps::Zeroed { clamp: Some(clamp) },
         )
         .unwrap();
 

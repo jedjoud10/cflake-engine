@@ -1,4 +1,4 @@
-use std::{cell::Cell, num::NonZeroU8, ops::DerefMut};
+use std::{cell::Cell, num::NonZeroU8, ops::DerefMut, marker::PhantomData};
 
 use bytemuck::Zeroable;
 
@@ -155,16 +155,21 @@ pub struct MipLevelsRef<'a, T: Texture> {
 }
 
 impl<'a, T: Texture> MipLevelsRef<'a, T> {
+    // Get the number of mip levels contained within the texture
+    pub fn len(&self) -> usize {
+        self.texture.views().len() - 1
+    }
+
     // Borrow a mip-level from the mip collection immutably
     pub fn level(
         &'a self,
         level: u8,
     ) -> Result<MipLevelRef<'a, T>, TextureMipLevelError> {
-        let range = (self.texture.views().len() - 1) as u8;
+        let range = self.texture.views().len() as u8 - 1;
         if level > range {
             Ok(MipLevelRef {
                 texture: self.texture,
-                level,
+                level: level,
                 borrowed: None,
             })
         } else {
@@ -181,16 +186,21 @@ pub struct MipLevelsMut<'a, T: Texture> {
 }
 
 impl<'a, T: Texture> MipLevelsMut<'a, T> {
+    // Get the number of mip levels contained within the texture
+    pub fn len(&self) -> usize {
+        self.texture.views().len() - 1
+    }
+
     // Borrow a mip-level from the mip collection immutably
     pub fn level(
         &'a self,
         level: u8,
     ) -> Result<MipLevelRef<'a, T>, TextureMipLevelError> {
-        let range = (self.texture.views().len() - 1) as u8;
+        let range = self.texture.views().len() as u8 - 1;
         if level > range {
             Ok(MipLevelRef {
                 texture: self.texture,
-                level,
+                level: level,
                 borrowed: Some(&self.borrowed),
             })
         } else {
@@ -203,11 +213,11 @@ impl<'a, T: Texture> MipLevelsMut<'a, T> {
         &'a self,
         level: u8,
     ) -> Result<MipLevelMut<'a, T>, TextureMipLevelError> {
-        let range = (self.texture.views().len() - 1) as u8;
-        if level > range {
+        let range = self.texture.views().len() as u8 - 1;
+        if level < range {
             Ok(MipLevelMut {
                 texture: self.texture,
-                level,
+                level: level,
                 mutated: &self.mutated,
             })
         } else {
@@ -237,7 +247,7 @@ impl<'a, T: Texture> MipLevelRef<'a, T> {
 
     // Get the view for this mip
     pub fn view(&self) -> &wgpu::TextureView {
-        &self.texture().views()[self.level as usize]
+        &self.texture().views()[self.level as usize + 1]
     }
 
     // Get the mip level's dimensions
@@ -320,7 +330,7 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
 
     // Get the view for this mip
     pub fn view(&self) -> &wgpu::TextureView {
-        &self.texture().views()[self.level as usize]
+        &self.texture().views()[self.level as usize + 1]
     }
 
     // Get the mip level's dimensions
@@ -337,7 +347,14 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
     pub fn as_render_target(
         &mut self,
     ) -> Result<RenderTarget<T::T>, TextureAsTargetError> {
-        todo!()
+        if !self.texture().usage().contains(TextureUsage::TARGET) {
+            return Err(TextureAsTargetError::MipLevelMissingFlags);
+        }
+
+        Ok(RenderTarget {
+            _phantom: PhantomData,
+            view: self.view(),
+        })
     }
 }
 

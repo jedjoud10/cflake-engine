@@ -23,7 +23,7 @@ layout(location = 4) out vec2 m_tex_coord;
 
 void main() {
 	// Model space -> World space -> Clip space
-    vec4 world_pos = mesh.matrix * vec4(position, 1);
+    vec4 world_pos = mesh.matrix * vec4(position * 1.0, 1);
     vec4 projected = (camera.projection * camera.view) * world_pos; 
     gl_Position = projected;
 

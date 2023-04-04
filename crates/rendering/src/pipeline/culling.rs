@@ -79,6 +79,6 @@ pub(super) fn cull_surfaces<'r, M: Material>(
                 surface.culled = false;
             }
         },
-        256,
+        1024,
     );
 }

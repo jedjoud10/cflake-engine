@@ -42,7 +42,7 @@ fn update(world: &mut World) {
             }
             renderer.matrix = matrix;
         },
-        256,
+        1024,
     );
 }
 

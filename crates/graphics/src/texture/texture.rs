@@ -208,7 +208,7 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
 
         // If the texture uses mipmaps, create the other mip level views
         if levels > 1 {
-            for i in 1..levels {
+            for i in 0..levels {
                 // Create the texture's texture view descriptor
                 let view_descriptor = TextureViewDescriptor {
                     format: Some(format),
@@ -268,11 +268,13 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
     fn views(&self) -> &[wgpu::TextureView];
 
     // Get the mip levels of the texture immutably
+    // Doesn't include the "whole" texture view
     fn mips(&self) -> MipLevelsRef<Self> {
         MipLevelsRef { texture: self }
     }
 
     // Get the mip levels of the texture mutably
+    // Doesn't include the "whole" texture view
     fn mips_mut(&mut self) -> MipLevelsMut<Self> {
         MipLevelsMut {
             texture: self,
@@ -286,6 +288,14 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
     fn as_render_target(
         &mut self,
     ) -> Result<RenderTarget<Self::T>, TextureAsTargetError> {
+        if !self.usage().contains(TextureUsage::TARGET) {
+            return Err(TextureAsTargetError::WholeTextureMissingFlags);
+        }
+
+        if self.mips().len() > 1 {
+            return Err(TextureAsTargetError::WholeTextureMultipleMips);
+        }
+
         Ok(RenderTarget {
             _phantom: PhantomData,
             view: self.view(),
