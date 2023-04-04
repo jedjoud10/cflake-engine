@@ -14,6 +14,7 @@ utils = { path = "../utils" }
 # Wgpu and Window creation
 wgpu = { version = "0.15", default-features = false, features = ["vulkan-portability", "expose-ids"] }
 spirq = "0.6.3"
+spirv = "0.2.0+1.5.4"
 winit = "0.28.0"
 pollster = "0.2.5"
 shaderc = "0.8.2"

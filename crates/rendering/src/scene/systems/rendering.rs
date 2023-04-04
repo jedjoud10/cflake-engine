@@ -54,9 +54,8 @@ fn init(world: &mut World) {
     // Create a nice shadow map
     let shadowmap = ShadowMapping::new(
         200f32,
-        400f32,
         1024,
-        NonZeroU8::new(8).unwrap(),
+        &[0.3, 0.5, 1.0],
         &graphics,
         &mut assets,
     );
@@ -239,7 +238,8 @@ fn render(world: &mut World) {
         indirect_triangles: &indirect_triangles,
         draw_indexed_indirect_buffers: &indexed_indirect_buffers,
     };
-
+    
+    /*
     // Update the shadow map lightspace matrix
     let shadowmap = &mut *_shadowmap;
     shadowmap
@@ -277,6 +277,7 @@ fn render(world: &mut World) {
             stored.prerender(world, &mut default, &mut active);
         }
     }
+    */
 
     // Begin the scene color render pass
     let color = renderer.color_texture.as_render_target().unwrap();

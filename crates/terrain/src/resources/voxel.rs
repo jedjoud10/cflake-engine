@@ -3,7 +3,7 @@ use assets::Assets;
 
 use graphics::{
     Compiler, ComputeModule, ComputeShader, GpuPod, Graphics, ModuleVisibility, PushConstantLayout, Texel,
-    Texture3D, Vertex, R,
+    Texture3D, Vertex, R, StorageAccess,
 };
 
 
@@ -28,8 +28,7 @@ impl VoxelGenerator {
         // Use the 3D densities texture that we will write to
         compiler.use_storage_texture::<Texture3D<R<f32>>>(
             "densities",
-            false,
-            true,
+            StorageAccess::WriteOnly
         );
 
         // TODO: Create 3D color texture as well

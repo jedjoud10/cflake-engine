@@ -8,7 +8,7 @@ use graphics::{
     Graphics, LoadOp, ModuleVisibility, Operation, PrimitiveConfig,
     PushConstantLayout, RenderPass, RenderPipeline, SamplerSettings,
     Shader, StoreOp, Texture, Texture2D, TextureMipMaps, TextureMode,
-    TextureUsage, UniformBuffer, VertexModule, WindingOrder,
+    TextureUsage, UniformBuffer, VertexModule, WindingOrder, Face,
 };
 use vek::FrustumPlanes;
 
@@ -32,32 +32,37 @@ pub struct ShadowMapping {
     pub shader: Shader,
 
     // Cached matrices
-    pub projection: vek::Mat4<f32>,
     pub view: vek::Mat4<f32>,
-    pub resolution: u32,
 
-    // This is the corresponding data that must be sent to the shader
-    pub buffer: UniformBuffer<ShadowUniform>,
+    // Contains the frustum percentage of each cascade
+    pub percentages: Vec<f32>,
+
+    // Resolution of the base level
+    pub resolution: u32,
+    pub depth: f32,
+
+    // Contains shadow parameters
+    pub parameter_buffer: UniformBuffer<ShadowUniform>,
+
+    // Contains the light space shadow matrices
+    pub lightspace_buffer: UniformBuffer<vek::Vec4<vek::Vec4<f32>>>,
 }
 
 // This is the uniform that is defined in the Vertex Module
 #[derive(Clone, Copy, PartialEq, Pod, Zeroable, Default)]
 #[repr(C)]
 pub struct ShadowUniform {
-    pub lightspace: vek::Vec4<vek::Vec4<f32>>,
     pub strength: f32,
     pub spread: f32,
     pub resolution: u32,
-    _padding: f32,
 }
 
 impl ShadowMapping {
     // Create a new shadow mapper that will create some nice crispy shadows
     pub(crate) fn new(
-        size: f32,
         depth: f32,
         resolution: u32,
-        clamp: NonZeroU8,
+        percentages: &[f32],
         graphics: &Graphics,
         assets: &mut Assets,
     ) -> Self {
@@ -77,9 +82,14 @@ impl ShadowMapping {
 
         // Create the bind layout for the shadow map shader
         let mut compiler = Compiler::new(assets, graphics);
-        compiler.use_uniform_buffer::<ShadowUniform>("shadow");
+    
+        // Shadow parameters
+        compiler.use_uniform_buffer::<ShadowUniform>("shadow_parameters");
+        compiler.use_uniform_buffer::<vek::Vec4<vek::Vec4<f32>>>("shadow_lightspace_matrices");
+
+        // Contains the mesh matrix and the lightspace uniforms
         let layout = PushConstantLayout::single(
-            <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size(),
+            <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size() + u32::size(),
             ModuleVisibility::Vertex,
         )
         .unwrap();
@@ -115,8 +125,7 @@ impl ShadowMapping {
             ),
             PrimitiveConfig::Triangles {
                 winding_order: WindingOrder::Ccw,
-                //cull_face: Some(Face::Front),
-                cull_face: None,
+                cull_face: Some(Face::Front),
                 wireframe: false,
             },
             &shader,
@@ -131,46 +140,43 @@ impl ShadowMapping {
             TextureMode::Dynamic,
             TextureUsage::TARGET | TextureUsage::SAMPLED,
             SamplerSettings::default(),
-            TextureMipMaps::Zeroed { clamp: Some(clamp) },
+            TextureMipMaps::Zeroed { clamp: Some(NonZeroU8::new(percentages.len() as u8).unwrap()) },
         )
         .unwrap();
 
-        // The shadow frustum is the cuboid that will contain the shadow map
-        let frustum = FrustumPlanes::<f32> {
-            left: -size,
-            right: size,
-            bottom: -size,
-            top: size,
-            near: -depth / 2.0,
-            far: depth / 2.0,
-        };
-
-        // Create the projection matrix and the view matrix (identity)
-        let projection = vek::Mat4::orthographic_rh_zo(frustum);
         let view = vek::Mat4::identity();
-        let lightspace = projection * view;
+
+        // Create a buffer that will contain shadow parameters
+        let parameter_buffer = UniformBuffer::from_slice(
+            graphics,
+            &[ShadowUniform {
+                strength: 1.0,
+                spread: 0.01,
+                resolution,
+            }],
+            BufferMode::Dynamic,
+            BufferUsage::WRITE,
+        ).unwrap();
+
+        // We can initialize these to zero since the first frame would update the buffer anyways
+        let lightspace_buffer = UniformBuffer::<vek::Vec4<vek::Vec4<f32>>>::zeroed(
+            graphics,
+            percentages.len(),
+            BufferMode::Dynamic,
+            BufferUsage::WRITE,
+        ).unwrap();
 
         Self {
             render_pass,
             shader,
             pipeline,
             depth_tex,
-            buffer: UniformBuffer::from_slice(
-                graphics,
-                &[ShadowUniform {
-                    lightspace: lightspace.cols,
-                    strength: 1.0,
-                    spread: 0.01,
-                    resolution,
-                    _padding: 0.0f32,
-                }],
-                BufferMode::Dynamic,
-                BufferUsage::WRITE,
-            )
-            .unwrap(),
-            projection,
             view,
             resolution,
+            percentages: percentages.to_vec(),
+            parameter_buffer,
+            lightspace_buffer,
+            depth,
         }
     }
 
@@ -179,29 +185,41 @@ impl ShadowMapping {
         &mut self,
         rotation: vek::Quaternion<f32>,
         camera: vek::Vec3<f32>,
+        frustum: math::Frustum<f32>,
     ) {
+        // Calculate a new view matrix and set it
         let rot = vek::Mat4::from(rotation);
-        let view = vek::Mat4::<f32>::look_at_rh(
+        self.view = vek::Mat4::<f32>::look_at_rh(
             vek::Vec3::zero(),
             rot.mul_point(-vek::Vec3::unit_z()),
             rot.mul_point(-vek::Vec3::unit_y()),
         );
-        self.view = view;
-        let lightspace = self.projection
-            * self.view
-            * vek::Mat4::translation_3d(-camera);
+        
+        // Use the camera frustum to calculate it's corners to be able to make each cascade fit the camera nicely
 
-        self.buffer
-            .write(
-                &[ShadowUniform {
-                    lightspace: lightspace.cols,
-                    strength: 1.0,
-                    spread: 0.01,
-                    resolution: self.resolution,
-                    _padding: 0.0f32,
-                }],
-                0,
-            )
-            .unwrap();
+        /*
+        // Create some new lightspace matrices using new parameters
+        let matrices = self.cascade_sizes.iter().map(|&size| {
+            // The shadow frustum is the cuboid that will contain the shadow map
+            let frustum = FrustumPlanes::<f32> {
+                left: -size,
+                right: size,
+                bottom: -size,
+                top: size,
+                near: -self.depth / 2.0,
+                far: self.depth / 2.0,
+            };
+
+            // Create the projection matrix (orthographic)
+            let proj = vek::Mat4::orthographic_rh_zo(frustum);
+
+            // Calculate light skin rizz (real) (I have gone insane)
+            let mat = proj * self.view;
+
+            // Convert to vec vec matrix
+            mat.cols
+        }).collect::<Vec<_>>();
+        self.lightspace_buffer.write(&matrices, 0).unwrap()
+        */
     }
 }

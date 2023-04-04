@@ -56,7 +56,10 @@ impl Material for BasicMaterial {
         // Set the UBO types that we will use
         compiler.use_uniform_buffer::<CameraUniform>("camera");
         compiler.use_uniform_buffer::<SceneUniform>("scene");
-        compiler.use_uniform_buffer::<ShadowUniform>("shadow");
+
+        // Shadow parameters
+        compiler.use_uniform_buffer::<ShadowUniform>("shadow_parameters");
+        compiler.use_uniform_buffer::<vek::Vec4<vek::Vec4<f32>>>("shadow_lightspace_matrices");
 
         // Define the types for the user textures
         compiler.use_sampled_texture::<ShadowMap>("shadow_map");
@@ -98,7 +101,10 @@ impl Material for BasicMaterial {
             .set_uniform_buffer("scene", default.scene_buffer, ..)
             .unwrap();
         group
-            .set_uniform_buffer("shadow", &resources.2.buffer, ..)
+            .set_uniform_buffer("shadow_parameters", &resources.2.parameter_buffer, ..)
+            .unwrap();
+        group
+            .set_uniform_buffer("shadow_lightspace_matrices", &resources.2.lightspace_buffer, ..)
             .unwrap();
 
         // Set the scene shadow map

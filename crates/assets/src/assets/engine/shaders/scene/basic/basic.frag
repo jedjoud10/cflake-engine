@@ -57,8 +57,9 @@ void main() {
 	vec3 light = normalize(-scene.sun_direction.xyz);
 	
 	// Check if the fragment is shadowed
-	float shadowed = calculate_shadowed(m_position, camera.position.xyz, shadow_map, shadow.lightspace, shadow.strength, shadow.spread, shadow.size);
-	
+	//float shadowed = calculate_shadowed(m_position, camera.position.xyz, shadow_map, shadow.lightspace, shadow.strength, shadow.spread, shadow.size);
+	float shadowed = 0.0;
+
 	// Basic dot product light calculation
 	float value = clamp(dot(light, normal), 0, 1) * (1-shadowed);
 	vec3 lighting = value + (ambient * 0.5 + vec3(0.08)); 

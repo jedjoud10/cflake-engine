@@ -3,7 +3,7 @@ use assets::Assets;
 
 use graphics::{
     Buffer, BufferMode, BufferUsage, Compiler, ComputeModule, ComputeShader, DrawIndexedIndirect, GpuPod, Graphics, ModuleVisibility, PushConstantLayout, Texel,
-    TriangleBuffer, Vertex, XYZW,
+    TriangleBuffer, Vertex, XYZW, StorageAccess,
 };
 use rendering::{
     attributes, AttributeBuffer,
@@ -124,9 +124,9 @@ fn load_compute_find_shader(
     let mut compiler = Compiler::new(assets, graphics);
 
     // Set storage buffers and counters
-    compiler.use_storage_buffer::<u32>("counters", true, true);
-    compiler.use_storage_buffer::<u32>("offsets", true, false);
-    compiler.use_storage_buffer::<u32>("indices", true, true);
+    compiler.use_storage_buffer::<u32>("counters", StorageAccess::ReadOnly);
+    compiler.use_storage_buffer::<u32>("offsets", StorageAccess::ReadWrite);
+    compiler.use_storage_buffer::<u32>("indices", StorageAccess::ReadWrite);
 
     // Needed to pass in the chunk index
     compiler.use_push_constant_layout(
@@ -164,8 +164,8 @@ fn load_compute_copy_shader(
     let mut compiler = Compiler::new(assets, graphics);
 
     // Needed to find how many and where should we copy data
-    compiler.use_storage_buffer::<u32>("counters", true, false);
-    compiler.use_storage_buffer::<u32>("offsets", true, false);
+    compiler.use_storage_buffer::<u32>("counters", StorageAccess::ReadOnly);
+    compiler.use_storage_buffer::<u32>("offsets", StorageAccess::ReadOnly);
 
     // Required since we must write to the right indirect buffer element
     compiler.use_push_constant_layout(
@@ -184,28 +184,24 @@ fn load_compute_copy_shader(
     // Temporary buffers
     compiler.use_storage_buffer::<<XYZW<f32> as Vertex>::Storage>(
         "temporary_vertices",
-        true,
-        false,
+        StorageAccess::ReadOnly
     );
     compiler.use_storage_buffer::<u32>(
         "temporary_triangles",
-        true,
-        false,
+        StorageAccess::ReadOnly
     );
 
     // Permanent buffer allocations
     compiler.use_storage_buffer::<DrawIndexedIndirect>(
-        "indirect", false, true,
+        "indirect", StorageAccess::WriteOnly
     );
     compiler.use_storage_buffer::<<XYZW<f32> as Vertex>::Storage>(
         "output_vertices",
-        false,
-        true,
+        StorageAccess::WriteOnly
     );
     compiler.use_storage_buffer::<u32>(
         "output_triangles",
-        false,
-        true,
+        StorageAccess::WriteOnly
     );
 
     // Create copy the compute shader

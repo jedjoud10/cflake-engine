@@ -91,7 +91,8 @@ vec3 brdf(
 	vec3 ambient = calculate_sky_color(-surface.normal, light.backward);
 
 	// Calculate if the pixel is shadowed
-	float shadowed = calculate_shadowed(surface.position, camera.position, shadow_map, shadow.lightspace, shadow.strength, shadow.spread, shadow.size);
+	//float shadowed = calculate_shadowed(surface.position, camera.position, shadow_map, shadow.lightspace, shadow.strength, shadow.spread, shadow.size);
+	float shadowed = 0.0;
 
 	// Calculate diffuse and specular
 	vec3 brdf = kd * (surface.diffuse / PI) + specular(surface.f0, surface.roughness, camera.view, light.backward, surface.normal, camera.half_view) * (1-shadowed);

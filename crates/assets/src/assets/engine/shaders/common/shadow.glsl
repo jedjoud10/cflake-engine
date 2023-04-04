@@ -1,16 +1,18 @@
 // UBO set globally at the start of the frame
 layout(set = 0, binding = 4) uniform ShadowUniform {
-    // Projection & view matices, and their mult
-    mat4 lightspace;
-
-    // Shadow uniform strength and params
     float strength;
     float spread;
     uint size;
-} shadow;
+} shadow_parameters;
+
+// Contains all the lightspace matrices for each cascade
+layout(set = 0, binding = 5) uniform ShadowLightSpaceMatrices {
+    mat4 matrices[];
+} shadow_lightspace_matrices;
 
 #extension GL_EXT_samplerless_texture_functions : require
 
+/*
 // Sample a single shadow texel at the specified pixel coords
 float sample_shadow_texel(
     in texture2D tex,
@@ -46,6 +48,7 @@ float shadow_linear(
     // Interpolate results in the y axis
     return mix(bottom, top, frac.y);
 }
+*/
 
 // Check if a pixel is obscured by the shadow map
 float calculate_shadowed(
@@ -57,6 +60,8 @@ float calculate_shadowed(
     float spread,
     uint size
 ) {
+    return 0.0;
+    /*
     //position = floor(position * 5.0) / 5.0;
 
     vec4 ndc = lightspace * vec4(position, 1.0); 
@@ -75,6 +80,7 @@ float calculate_shadowed(
     float current = uvs.z;
     vec2 inv = vec2(1)/vec2(size);
     float lod = min(floor(distance(position, camera) / 10.0), 3);
+    lod = 0;
 
     // Calculate size scaler
     int scaler = int(pow(2.0, lod)); 
@@ -92,6 +98,6 @@ float calculate_shadowed(
     return shadowed;
     */
 
-    return sample_shadow_texel(shadow_map, int(lod), ivec2(uvs.xy * (size / scaler)), current);
+    //return sample_shadow_texel(shadow_map, int(lod), ivec2(uvs.xy * (size / scaler)), current);
     //return shadow_linear(shadow_map, int(lod), uvs.xy, size / testino, current);
 }

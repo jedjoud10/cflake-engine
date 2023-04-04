@@ -89,6 +89,9 @@ impl PushConstantLayout {
     }
 }
 
+// Accessing types for storage buffer and storage resources
+pub type StorageAccess = spirq::AccessType;
+
 // The type of BindingEntry. This is fetched from the given
 // For now, only buffers, samplers, and texture are supported
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -101,8 +104,7 @@ pub enum BindResourceType {
     // A storage buffer
     StorageBuffer {
         size: usize,
-        read: bool,
-        write: bool,
+        access: StorageAccess,
     },
 
     // A sampler type that we can use to sample textures (sampler2D)
@@ -121,9 +123,8 @@ pub enum BindResourceType {
 
     // A storage texture
     StorageTexture {
-        access: wgpu::StorageTextureAccess,
+        access: StorageAccess,
         format: wgpu::TextureFormat,
-        sample_type: wgpu::TextureSampleType,
         view_dimension: wgpu::TextureViewDimension,
     },
 }
@@ -148,10 +149,14 @@ pub(super) fn map_binding_type(
             }
         }
 
-        BindResourceType::StorageBuffer { size, read, write } => {
+        BindResourceType::StorageBuffer { size, access } => {
             wgpu::BindingType::Buffer {
                 ty: wgpu::BufferBindingType::Storage {
-                    read_only: read && !write,
+                    read_only: if let StorageAccess::ReadOnly = access {
+                        true
+                    } else {
+                        false
+                    },
                 },
                 has_dynamic_offset: false,
                 min_binding_size: None,
@@ -174,11 +179,14 @@ pub(super) fn map_binding_type(
 
         BindResourceType::StorageTexture {
             format,
-            sample_type,
             access,
             view_dimension,
         } => wgpu::BindingType::StorageTexture {
-            access,
+            access: match access {
+                spirq::AccessType::ReadOnly => wgpu::StorageTextureAccess::ReadOnly,
+                spirq::AccessType::WriteOnly => wgpu::StorageTextureAccess::WriteOnly,
+                spirq::AccessType::ReadWrite => wgpu::StorageTextureAccess::ReadWrite,
+            },
             format,
             view_dimension,
         },
@@ -249,6 +257,88 @@ pub(super) fn map_sampler_binding_type(
         wgpu::SamplerBindingType::Filtering
     } else {
         wgpu::SamplerBindingType::NonFiltering
+    }
+}
+
+// Convert a spirv dimension into a wgpu TextureViewDimension
+pub(super) fn map_spirv_dim(
+    dim: spirv::Dim,
+    array: bool,
+) -> wgpu::TextureViewDimension {
+    match (dim, array) {
+        (spirv::Dim::Dim1D, false) => wgpu::TextureViewDimension::D1,
+        (spirv::Dim::Dim2D, true) => wgpu::TextureViewDimension::D2Array,
+        (spirv::Dim::Dim2D, false) => wgpu::TextureViewDimension::D2,
+        (spirv::Dim::Dim3D, true) => wgpu::TextureViewDimension::D3,
+        (spirv::Dim::DimCube, true) => wgpu::TextureViewDimension::CubeArray,
+        (spirv::Dim::DimCube, false) => wgpu::TextureViewDimension::Cube,
+        _ => panic!("Not supported ")
+    }
+}
+
+// Convert a spirv format into a wgpu TextureFormat
+pub(super) fn map_spirv_format(
+    format: spirv::ImageFormat
+) -> wgpu::TextureFormat {
+    use wgpu::TextureFormat as T;
+    use spirv::ImageFormat as F;
+
+    match format {
+        F::Rgba32f => T::Rgba32Float,
+        F::Rgba16f => T::Rgba16Float,
+        F::R32f => T::R32Float,
+        //F::Rgba8 => Y::Rgba8,
+        F::Rgba8Snorm => T::Rgba8Snorm,
+        F::Rg32f => T::Rg32Float,
+        F::Rg16f => T::Rg16Float,
+        F::R11fG11fB10f => T::Rg11b10Float,
+        F::R16f => T::R16Float,
+        //F::Rgba16 => T::Rgba16,
+        //F::Rgb10A2 => T::Rgb10,
+        //F::Rg16 => todo!(),
+        //F::Rg8 => todo!(),
+        //F::R16 => todo!(),
+        //F::R8 => todo!(),
+        F::Rgba16Snorm => T::Rgba16Snorm,
+        F::Rg16Snorm => T::Rg16Snorm,
+        F::Rg8Snorm => T::Rg8Snorm,
+        F::R16Snorm => T::R16Snorm,
+        F::R8Snorm => T::R8Snorm,
+        F::Rgba32i => T::Rgba32Sint,
+        F::Rgba16i => T::Rgba16Sint,
+        F::Rgba8i => T::Rgba32Sint,
+        F::R32i => T::R32Sint,
+        F::Rg32i => T::Rg32Sint,
+        F::Rg16i => T::Rg16Sint,
+        F::Rg8i => T::Rg8Sint,
+        F::R16i => T::R16Sint,
+        F::R8i => T::R8Sint,
+        F::Rgba32ui => T::Rgba32Uint,
+        F::Rgba16ui => T::Rgba16Uint,
+        F::Rgba8ui => T::Rgba8Uint,
+        F::R32ui => T::R32Uint,
+        //F::Rgb10a2ui => T::Rgb10,
+        F::Rg32ui => T::Rg32Uint,
+        F::Rg16ui => T::Rg16Uint,
+        F::Rg8ui => T::Rg8Uint,
+        F::R16ui => T::R16Uint,
+        F::R8ui => T::R8Uint,
+        _ => panic!("Not supported")
+    }
+}
+
+// Convert a spirq scalar type into a wgpu sample type
+pub(super) fn map_spirv_scalar_type(
+    scalar_type: spirq::ty::ScalarType,
+    format: wgpu::TextureFormat,
+) -> wgpu::TextureSampleType {
+    match scalar_type {
+        spirq::ty::ScalarType::Signed(_) => wgpu::TextureSampleType::Sint,
+        spirq::ty::ScalarType::Unsigned(_) => wgpu::TextureSampleType::Uint,
+        spirq::ty::ScalarType::Float(_) => {
+            todo!()
+        },
+        _ => panic!("Not supported")
     }
 }
 
@@ -328,7 +418,6 @@ pub(super) fn create_pipeline_layout(
         };
     }
 
-    // Ease of use
     let definitions = InternalDefinitions {
         resource_binding_types,
         maybe_push_constant_layout,
@@ -359,6 +448,7 @@ pub(super) fn create_pipeline_layout(
         }
 
         for set in 0..4 {
+            // Skip this set if no variables are defined within it
             if !sets.contains_key(&set) {
                 continue;
             }
@@ -382,60 +472,89 @@ pub(super) fn create_pipeline_layout(
                 let merged_group_entry_layouts = merged_group_layout
                     .get_or_insert_with(|| Default::default());
 
+                // Make sure the resource is defined within the compiler
+                let resource = definitions.resource_binding_types
+                    .get(&name)
+                    .ok_or(ShaderReflectionError::NotDefinedInCompiler(name.clone()))?;
+
+                dbg!(&name);
+                dbg!(ty);
+                dbg!(desc_ty);
+
                 // Get the binding type for this global variable
                 let binding_type = match desc_ty {
+                    // Reflect sampler type
                     DescriptorType::Sampler() => Some(
                         reflect_sampler(
-                            &name,
-                            graphics,
-                            &definitions,
+                            &resource,
                         )
-                        .map_err(
-                            ShaderReflectionError::SamplerValidation,
+                        .map_err(|error|
+                            ShaderReflectionError::SamplerValidation {
+                                resource: name.clone(),
+                                error,
+                            }
                         ),
                     ),
 
+                    // Reflect sampled texture type
                     DescriptorType::SampledImage() => Some(
                         reflect_sampled_texture(
                             &name,
                             graphics,
-                            &definitions,
+                            &resource,
+                            ty.as_sampled_img().unwrap(),
                         )
-                        .map_err(
-                            ShaderReflectionError::TextureValidation,
+                        .map_err(|error|
+                            ShaderReflectionError::TextureValidation {
+                                resource: name.clone(),
+                                error,
+                            }
                         ),
                     ),
 
+                    // Reflect storage texture type
                     DescriptorType::StorageImage(access) => Some(
                         reflect_storage_texture(
                             &name,
                             graphics,
-                            &definitions,
+                            &resource,
+                            access,
+                            ty.as_storage_img().unwrap(),
                         )
-                        .map_err(
-                            ShaderReflectionError::TextureValidation,
+                        .map_err(|error|
+                            ShaderReflectionError::TextureValidation {
+                                resource: name.clone(),
+                                error,
+                            }
                         ),
                     ),
 
+                    // Reflect uniform buffer type
                     DescriptorType::UniformBuffer() => Some(
                         reflect_uniform_buffer(
-                            &name,
-                            graphics,
-                            &definitions,
+                            &resource,
+                            ty,
                         )
-                        .map_err(
-                            ShaderReflectionError::BufferValidation,
+                        .map_err(|error|
+                            ShaderReflectionError::BufferValidation {
+                                resource: name.clone(),
+                                error,
+                            }
                         ),
                     ),
 
+                    // Reflect storage buffer type
                     DescriptorType::StorageBuffer(access) => Some(
                         reflect_storage_buffer(
-                            &name,
-                            graphics,
-                            &definitions,
+                            &resource,
+                            access,
+                            ty,
                         )
-                        .map_err(
-                            ShaderReflectionError::BufferValidation,
+                        .map_err(|error|
+                            ShaderReflectionError::BufferValidation {
+                                resource: name.clone(),
+                                error,
+                            }
                         ),
                     ),
 
@@ -597,7 +716,6 @@ fn internal_create_pipeline_layout(
         {
             log::warn!("Did not find cached bind group layout for set = {bind_group_index}, in {names:?}");
 
-            // TODO: Validate the bindings and groups
             // Convert each entry from this group to a WGPU BindGroupLayoutEntry
             let entries = bind_group_layout
                 .bind_entry_layouts
@@ -710,72 +828,158 @@ fn internal_create_pipeline_layout(
     (Arc::new(shader), layout)
 }
 
+// Reflects a uniform buffer using user's shader settings
+// Note: (assumes that user will never define a struct with the last element being a dynamic array)
 fn reflect_uniform_buffer(
-    name: &str,
-    graphics: &Graphics,
-    definitions: &InternalDefinitions,
+    resource: &BindResourceType,
+    _type: &spirq::ty::Type,
 ) -> Result<BindResourceType, BufferValidationError> {
-    // TODO: VALIDATE BUFFER (make sure it's same size, access)
-    let binding = definitions
-        .resource_binding_types
-        .get(name)
-        .unwrap()
-        .clone();
-    Ok(binding)
+    // Make sure the resource is a uniform buffer
+    let BindResourceType::UniformBuffer { size: compiler } = resource else {
+        return Err(BufferValidationError::NotUniformBuffer)  
+    };
+
+    // Get the size of the type 
+    let shader = _type.nbyte().unwrap();
+
+    // Make sure the sizes matches up
+    if shader != *compiler {
+        return Err(BufferValidationError::MismatchSize {
+            compiler: *compiler,
+            shader,
+        });
+    }
+
+    Ok(resource.clone())
 }
 
+// Reflects a storage buffer using user's shader settings
+// Note: (assumes that user will never define a struct with the last element being a dynamic array)
 fn reflect_storage_buffer(
-    name: &str,
-    graphics: &Graphics,
-    definitions: &InternalDefinitions,
+    resource: &BindResourceType,
+    shader_access: &spirq::AccessType,
+    _type: &spirq::ty::Type,
 ) -> Result<BindResourceType, BufferValidationError> {
-    // TODO: VALIDATE BUFFER (make sure it's same size, access)
-    let binding = definitions
-        .resource_binding_types
-        .get(name)
-        .unwrap()
-        .clone();
-    Ok(binding)
+    // Make sure the resource is a storage buffer
+    let BindResourceType::StorageBuffer { size: compiler_size, access: compiler_access } = resource else {
+        return Err(BufferValidationError::NotUniformBuffer)  
+    };
+
+    // Get the size of the type 
+    let shader_size = _type.nbyte().unwrap();
+
+    // Make sure the sizes matches up
+    if shader_size != *compiler_size {
+        return Err(BufferValidationError::MismatchSize {
+            compiler: *compiler_size,
+            shader: shader_size,
+        });
+    }
+
+    // Make sure the accesses match up
+    if shader_access != compiler_access {
+        return Err(BufferValidationError::MismatchAccess {
+            compiler: *compiler_access,
+            shader: *shader_access
+        });
+    }
+
+    Ok(resource.clone())
 }
 
+// Reflects a sampler using user's shader settings
 fn reflect_sampler(
-    name: &str,
-    graphics: &Graphics,
-    definitions: &InternalDefinitions,
+    resource: &BindResourceType,
 ) -> Result<BindResourceType, SamplerValidationError> {
-    // TODO: VALIDATE SAMPLER (make sure it's same texel type, type)
-    let binding = definitions
-        .resource_binding_types
-        .get(name)
-        .unwrap()
-        .clone();
-    Ok(binding)
+    // Make sure the resource is a sampler
+    let BindResourceType::Sampler { .. } = resource else {
+        return Err(SamplerValidationError::NotSampler)  
+    };
+
+    Ok(resource.clone())
 }
 
+
+// Reflects a storage texture using user's shader settings
 fn reflect_storage_texture(
     name: &str,
     graphics: &Graphics,
-    definitions: &InternalDefinitions,
+    resource: &BindResourceType,
+    shader_access: &spirq::AccessType,
+    _type: &spirq::ty::StorageImageType,
 ) -> Result<BindResourceType, TextureValidationError> {
-    // TODO: VALIDATE TEXTURE (make sure it's same dimension, type, and texel type)
-    let binding = definitions
-        .resource_binding_types
-        .get(name)
-        .unwrap()
-        .clone();
-    Ok(binding)
+    // Make sure the resource is a storage texture
+    let BindResourceType::StorageTexture { 
+        access: compiler_access,
+        format,
+        view_dimension
+    } = resource else {
+        return Err(TextureValidationError::NotSampledTexture)  
+    };
+
+    // Make sure the view dimensions match up
+    if *view_dimension != map_spirv_dim(_type.dim, _type.is_array) {
+        return Err(TextureValidationError::MismatchViewDimension {
+            compiler: *view_dimension,
+            shader: map_spirv_dim(_type.dim, _type.is_array)
+        })
+    }
+
+    // Make sure the format matches up
+    if *format != map_spirv_format(_type.fmt) {
+        return Err(TextureValidationError::MismatchFormat {
+            compiler: *format,
+            shader: map_spirv_format(_type.fmt)
+        })
+    }
+
+    // Make sure the accesses match up
+    if shader_access != compiler_access {
+        return Err(TextureValidationError::MismatchAccess {
+            compiler: *compiler_access,
+            shader: *shader_access
+        });
+    }
+
+
+    Ok(resource.clone())
 }
 
+// Reflects a sampled texture using user's shader settings
 fn reflect_sampled_texture(
     name: &str,
     graphics: &Graphics,
-    definitions: &InternalDefinitions,
+    resource: &BindResourceType,
+    _type: &spirq::ty::SampledImageType,
 ) -> Result<BindResourceType, TextureValidationError> {
-    // TODO: VALIDATE TEXTURE (make sure it's same dimension, type, and texel type)
-    let binding = definitions
-        .resource_binding_types
-        .get(name)
-        .unwrap()
-        .clone();
-    Ok(binding)
+    // Make sure the resource is a sampled texture
+    let BindResourceType::SampledTexture {
+        sample_type,
+        sampler_binding,
+        view_dimension,
+        format,
+    } = resource else {
+        return Err(TextureValidationError::NotSampledTexture)  
+    };
+
+    // Make sure the view dimensions match up
+    if *view_dimension != map_spirv_dim(_type.dim, _type.is_array) {
+        return Err(TextureValidationError::MismatchViewDimension {
+            compiler: *view_dimension,
+            shader: map_spirv_dim(_type.dim, _type.is_array)
+        })
+    }
+
+    // Make sure the sample type matches up
+    /*
+    if *format != map_spirv_format(_type.scalar_ty) {
+        return Err(TextureValidationError::MismatchFormat {
+            compiler: *format,
+            shader: map_spirv_format(_type.fmt)
+        })
+    }
+    */
+
+
+    Ok(resource.clone())
 }

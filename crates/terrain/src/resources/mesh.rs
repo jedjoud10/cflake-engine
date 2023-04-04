@@ -3,7 +3,7 @@ use assets::Assets;
 
 use graphics::{
     Buffer, BufferMode, BufferUsage, Compiler, ComputeModule, ComputeShader, GpuPod, Graphics, Texel,
-    Texture3D, Vertex, R, XYZW,
+    Texture3D, Vertex, R, XYZW, StorageAccess,
 };
 
 
@@ -50,22 +50,20 @@ impl MeshGenerator {
         // Set the densitites texture that we will sample
         compiler.use_storage_texture::<Texture3D<R<f32>>>(
             "densities",
-            true,
-            false,
+            StorageAccess::ReadOnly
         );
 
         // Set the cached indices that we will use to reuse vertices
         compiler.use_storage_texture::<Texture3D<R<u32>>>(
             "cached_indices",
-            false,
-            true,
+            StorageAccess::WriteOnly
         );
 
         // Set storage buffers and counters
         compiler.use_storage_buffer::<<XYZW<f32> as Vertex>::Storage>(
-            "vertices", false, true,
+            "vertices", StorageAccess::WriteOnly
         );
-        compiler.use_storage_buffer::<[u32; 2]>("counters", true, true);
+        compiler.use_storage_buffer::<[u32; 2]>("counters", StorageAccess::ReadWrite);
 
         // Set vertex generation parameters (constants)
         compiler.use_constant(0, settings.size);
@@ -83,20 +81,18 @@ impl MeshGenerator {
         // Set the densitites texture that we will sample
         compiler.use_storage_texture::<Texture3D<R<f32>>>(
             "densities",
-            true,
-            false,
+            StorageAccess::ReadOnly
         );
 
         // Set the cached indices that we will use to reuse vertices
         compiler.use_storage_texture::<Texture3D<R<u32>>>(
             "cached_indices",
-            true,
-            false,
+            StorageAccess::ReadOnly
         );
 
         // Set counters and storage buffers
-        compiler.use_storage_buffer::<[u32; 2]>("counters", true, true);
-        compiler.use_storage_buffer::<u32>("triangles", false, true);
+        compiler.use_storage_buffer::<[u32; 2]>("counters", StorageAccess::ReadWrite);
+        compiler.use_storage_buffer::<u32>("triangles", StorageAccess::WriteOnly);
 
         // Set size constants
         compiler.use_constant(0, settings.size);

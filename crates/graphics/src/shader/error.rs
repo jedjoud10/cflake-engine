@@ -19,13 +19,58 @@ pub enum ShaderCompilationError {
 }
 
 #[derive(Error, Debug)]
-pub enum BufferValidationError {}
+pub enum BufferValidationError {
+    #[error("The compiler resource is not a uniform buffer, as defined in the shader")]
+    NotUniformBuffer,
+
+    #[error("The compiler resource is not a storage buffer, as defined in the shader")]
+    NotStorageBuffer,
+
+    #[error("The compiler defined type (of size {compiler}), does not match up with the one defined in the shader (size {shader})")]
+    MismatchSize {
+        compiler: usize,
+        shader: usize,
+    },
+
+    #[error("The compiler defined buffer storage access {compiler:?} does not match up with the shader defined access {shader:?}")]
+    MismatchAccess {
+        compiler: spirq::AccessType,
+        shader: spirq::AccessType,
+    }
+}
 
 #[derive(Error, Debug)]
-pub enum TextureValidationError {}
+pub enum TextureValidationError {
+    #[error("The compiler resource is not a sampled texture, as defined in the shader")]
+    NotSampledTexture,
+
+    #[error("The compiler resource is not a storage texture, as defined in the shader")]
+    NotStorageTexture,
+
+    #[error("The compiler defined texture format {compiler:?} does not match up with the shader defined format {shader:?}")]
+    MismatchFormat {
+        compiler: wgpu::TextureFormat,
+        shader: wgpu::TextureFormat,
+    },
+
+    #[error("The compiler defined view dimensions {compiler:?} does not match up with the shader defined view dimensions {shader:?}")]
+    MismatchViewDimension {
+        compiler: wgpu::TextureViewDimension,
+        shader: wgpu::TextureViewDimension,
+    },
+
+    #[error("The compiler defined texture storage access {compiler:?} does not match up with the shader defined access {shader:?}")]
+    MismatchAccess {
+        compiler: spirq::AccessType,
+        shader: spirq::AccessType,
+    }
+}
 
 #[derive(Error, Debug)]
-pub enum SamplerValidationError {}
+pub enum SamplerValidationError {
+    #[error("The given resource is not a sampler, as defined in the shader")]
+    NotSampler,
+}
 
 #[derive(Error, Debug)]
 pub enum PushConstantValidationError {
@@ -41,18 +86,24 @@ pub enum ShaderReflectionError {
     #[error("{0}")]
     PushConstantValidation(PushConstantValidationError),
 
-    #[error("{0}")]
-    BufferValidation(BufferValidationError),
+    #[error("buffer resource: {resource}, error: {error}")]
+    BufferValidation {
+        resource: String,
+        error: BufferValidationError, 
+    },
 
-    #[error("{0}")]
-    TextureValidation(TextureValidationError),
+    #[error("texture resource: {resource}, error: {error}")]
+    TextureValidation {
+        resource: String,
+        error: TextureValidationError, 
+    },
 
-    #[error("{0}")]
-    SamplerValidation(SamplerValidationError),
+    #[error("sampler resource: {resource}, error: {error}")]
+    SamplerValidation {
+        resource: String,
+        error: SamplerValidationError, 
+    },
 
     #[error("The shader defined resource {0} is not defined in the Compiler")]
     NotDefinedInCompiler(String),
-
-    #[error("The Compiler defined resource {0} is not defined in the shader")]
-    NotDefinedInShader(String),
 }

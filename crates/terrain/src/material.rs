@@ -97,7 +97,10 @@ impl Material for TerrainMaterial {
             .set_uniform_buffer("scene", default.scene_buffer, ..)
             .unwrap();
         group
-            .set_uniform_buffer("shadow", &resources.buffer, ..)
+            .set_uniform_buffer("shadow_parameters", &resources.parameter_buffer, ..)
+            .unwrap();
+        group
+            .set_uniform_buffer("shadow_lightspace_matrices", &resources.lightspace_buffer, ..)
             .unwrap();
 
         // Set the scene shadow map

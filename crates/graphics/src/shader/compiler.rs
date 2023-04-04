@@ -4,7 +4,7 @@ use crate::{
     PushConstantLayout, ReflectedShader, Region,
     ShaderCompilationError, ShaderError, ShaderModule,
     ShaderReflectionError, SpecConstant, Texel, TexelInfo, Texture,
-    VertexModule, ViewDimension,
+    VertexModule, ViewDimension, StorageAccess,
 };
 use ahash::{AHashMap, AHashSet};
 use assets::Assets;
@@ -184,13 +184,15 @@ impl<'a> Compiler<'a> {
     pub fn use_storage_buffer<T: GpuPod>(
         &mut self,
         name: impl ToString,
-        read: bool,
-        write: bool,
+        access: StorageAccess
     ) {
         let size = T::size();
         self.use_resource_type(
             name,
-            BindResourceType::StorageBuffer { size, read, write },
+            BindResourceType::StorageBuffer { 
+                size,
+                access,
+            }
         );
     }
 
@@ -245,8 +247,7 @@ impl<'a> Compiler<'a> {
     pub fn use_storage_texture<T: Texture>(
         &mut self,
         name: impl ToString,
-        read: bool,
-        write: bool,
+        access: StorageAccess
     ) {
         let dimensionality =
             <<T::Region as Region>::E as Extent>::view_dimension();
@@ -256,23 +257,8 @@ impl<'a> Compiler<'a> {
         self.resource_types.insert(
             name.to_string(),
             BindResourceType::StorageTexture {
-                access: match (read, write) {
-                    (true, true) => {
-                        wgpu::StorageTextureAccess::ReadWrite
-                    }
-                    (true, false) => {
-                        wgpu::StorageTextureAccess::ReadOnly
-                    }
-                    (false, true) => {
-                        wgpu::StorageTextureAccess::WriteOnly
-                    }
-                    _ => todo!(),
-                },
+                access,
                 format,
-                sample_type: super::map_texture_sample_type(
-                    &self.graphics,
-                    info,
-                ),
                 view_dimension: dimensionality,
             },
         );

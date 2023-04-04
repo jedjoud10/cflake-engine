@@ -1211,6 +1211,7 @@ dependencies = [
  "smallvec",
  "snailquote",
  "spirq",
+ "spirv",
  "tbc",
  "thiserror",
  "thread_local",
