@@ -5,6 +5,7 @@ layout(location = 0) out vec4 frag;
 layout(location = 0) in vec3 m_position;
 layout(location = 1) in vec3 m_normal;
 layout(location = 2) in vec3 m_color;
+layout(location = 3) in flat float factor;
 
 // Camera, scene, and shadowmap shared objects
 #include <engine/shaders/common/camera.glsl>
@@ -33,21 +34,27 @@ void main() {
 
 	// Assume world space normals
 	//vec3 normal = normalize(m_normal);
-	vec3 normal = -normalize(cross(dFdy(m_position), dFdx(m_position)));
+	vec3 normal = normalize(cross(dFdy(m_position), dFdx(m_position)));
 	vec3 albedo = vec3(1);
 	vec3 rock = vec3(128, 128, 128) / 255.0;
 	vec3 dirt = vec3(54, 30, 7) / 255.0;
 
 	vec3 grass = vec3(69, 107, 35) / 255.0;
 	
-	albedo = grass;
+	//factor = 1.0;
 
-	if (normal.y > -0.95) {
-		albedo = grass;
-	}
+	albedo = grass * factor;
 
+	/*
 	if (normal.y > -0.85) {
-		albedo = rock;
+		albedo = dirt;
+	}
+	*/
+
+	//albedo = mix(rock, grass, clamp(clamp(normal.y - 0.85, 0, 1) * 10, 0, 1));
+
+	if (normal.y < 0.85) {
+		albedo = rock * factor;
 	}
 
 	// Compute PBR values
@@ -59,7 +66,7 @@ void main() {
 
 	// Create the data structs
 	SunData sun = SunData(scene.sun_direction.xyz, scene.sun_color.rgb, 1.6);
-	SurfaceData surface = SurfaceData(albedo, normal, m_position, roughness, metallic, visibility, f0);
+	SurfaceData surface = SurfaceData(albedo, -normal, m_position, roughness, metallic, visibility, f0);
 	vec3 view = normalize(-camera.position.xyz + m_position);
 	CameraData camera = CameraData(view, normalize(view + scene.sun_direction.xyz), camera.position.xyz);
 

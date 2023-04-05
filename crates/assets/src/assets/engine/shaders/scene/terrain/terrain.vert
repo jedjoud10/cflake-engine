@@ -5,6 +5,7 @@ layout(location = 0) in vec4 position;
 
 // Camera bind group buffer (creates a 'camera' object)
 #include <engine/shaders/common/camera.glsl>
+#include <engine/shaders/noises/noise3D.glsl>
 
 // Push constants for the mesh matrix
 layout(push_constant) uniform PushConstants {
@@ -15,6 +16,7 @@ layout(push_constant) uniform PushConstants {
 layout(location = 0) out vec3 m_position;
 layout(location = 1) out vec3 m_normal;
 layout(location = 2) out vec3 m_color;
+layout(location = 3) out float effect;
 
 void main() {
 	// Model space -> World space -> Clip space
@@ -25,6 +27,8 @@ void main() {
     // Decode the normal data that was written in the W component of position
     uint part = floatBitsToUint(position.w);
     vec4 unpacked = unpackUnorm4x8(part);
+
+    effect = ((snoise(world_pos.xyz * 2.3) * 0.5 + 0.5) * 0.2 + 0.8);
 
     // Set the output variables
     m_position = world_pos.xyz;

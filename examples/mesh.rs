@@ -18,9 +18,9 @@ fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
     let settings = TerrainSettings::new(&graphics,
         64,
-        3,
+        5,
         true,
-        4,
+        7,
         1024
     );
     drop(graphics);
@@ -237,14 +237,19 @@ fn update(world: &mut World) {
     }
 
     let camera = scene
-        .find_mut::<(&mut Camera, &mut Position, &mut Rotation)>();
-    if let Some((camera, position, rotation)) = camera {
+        .find_mut::<(&mut Camera, &mut Velocity, &mut Position, &mut Rotation)>();
+    if let Some((camera, output, position, rotation)) = camera {
         // Forward and right vectors relative to the camera
         let forward = rotation.forward();
         let right = rotation.right();
         let up = rotation.up();
         let mut velocity = vek::Vec3::<f32>::default();
         let mut speed: f32 = 1.0f32;
+        let sensivity: f32 = 0.0007;
+
+        // Controls the "strength" of the camera smoothness
+        // Higher means more smooth, lower means less smooth
+        let smoothness = 0.1;
 
         // Update velocity scale
         if input.get_button("lshift").held() {
@@ -275,17 +280,26 @@ fn update(world: &mut World) {
         // Finally multiply velocity by desired speed
         velocity *= speed;
 
+        // Smooth velocity calculation
+        let factor = (time.delta().as_secs_f32() * (1.0 / smoothness)).clamped01();
+        **output = vek::Vec3::lerp(**output, velocity, (factor * 2.0).clamped01());
+
         // The scroll wheel will change the camera FOV
         let delta = input.get_axis(Axis::MouseScrollDelta);
         camera.hfov += delta * 10.0 * time.delta().as_secs_f32();
 
         // Update the position with the new velocity
-        **position += velocity * time.delta().as_secs_f32() * 20.0;
+        **position += **output * time.delta().as_secs_f32() * 20.0;
 
         // Calculate a new rotation and apply it
         let pos_x = input.get_axis("x rotation");
         let pos_y = input.get_axis("y rotation");
-        **rotation = vek::Quaternion::rotation_y(-pos_x * 0.0007)
-            * vek::Quaternion::rotation_x(-pos_y * 0.0007);
+
+        // Smooth rotation
+        **rotation = vek::Quaternion::lerp(**rotation, 
+            vek::Quaternion::rotation_y(-pos_x * sensivity) *
+            vek::Quaternion::rotation_x(-pos_y * sensivity),
+            (factor * 5.0).clamped01()
+        );
     }
 }
