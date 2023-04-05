@@ -23,6 +23,7 @@ fn init(world: &mut World) {
     // Load the default math shaders
     persistent!(loader, "engine/shaders/math/models.glsl");
     persistent!(loader, "engine/shaders/math/conversions.glsl");
+    persistent!(loader, "engine/shaders/math/dither.glsl");
 
     // Load the default SDF shaders
     persistent!(loader, "engine/shaders/sdf/common.glsl");

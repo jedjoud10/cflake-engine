@@ -7,7 +7,7 @@ use graphics::{
     GpuPod, Graphics, TriangleBuffer, Vertex, ActivePipeline,
 };
 use rendering::{
-    attributes, AttributeBuffer, IndirectMesh, Surface,
+    attributes, AttributeBuffer, IndirectMesh, Surface, Renderer,
 };
 use utils::{Storage, Time};
 use world::{System, World};
@@ -51,16 +51,19 @@ fn update(world: &mut World) {
         &mut Chunk,
         &Position,
         &mut Surface<TerrainMaterial>,
+        &mut Renderer,
     )>().into_iter().collect::<Vec<_>>();
-    vec.sort_by(|(a, _, _), (b, _, _)| a.priority.total_cmp(&b.priority));
+    vec.sort_by(|(a, _, _, _), (b, _, _, _)| a.priority.total_cmp(&b.priority));
 
     // Iterate over the chunks that we need to generate
-    for (chunk, position, surface) in vec {
+    for (chunk, position, surface, renderer) in vec {
         // Don't generate the voxels and mesh for culled chunks or chunks that had
         // their mesh already generated
         if surface.culled || chunk.state == ChunkState::Generated {
             continue;
         }
+
+        renderer.instant_initialized = Some(std::time::Instant::now());
 
         // Get the mesh that is used by this chunk
         let mesh = meshes.get(&surface.mesh);

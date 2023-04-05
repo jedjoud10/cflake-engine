@@ -17,7 +17,7 @@ use graphics::{
 };
 
 
-use utils::{Storage};
+use utils::{Storage, Time};
 use world::{user, System, WindowEvent, World};
 
 // Add the scene resources and setup for rendering
@@ -133,6 +133,19 @@ fn event(world: &mut World, event: &mut WindowEvent) {
 
 // Clear the window and render the entities to the texture
 fn render(world: &mut World) {
+    /*
+    // Initializes the "instant" field of each new renderer
+    let mut scene = world.get_mut::<Scene>().unwrap();
+    let time = world.get::<Time>().unwrap();
+    let query = scene.query_mut_with::<&mut Renderer>(ecs::added::<Renderer>());
+    for renderer in query {
+        if renderer.instant_initialized.is_none() {
+            renderer.instant_initialized = Some(time.frame_start());
+        }
+    }
+    drop(scene);
+    */
+
     // Fetch the resources that we will use for rendering the scene
     let mut renderer = world.get_mut::<ForwardRenderer>().unwrap();
     let mut _shadowmap = world.get_mut::<ShadowMapping>().unwrap();

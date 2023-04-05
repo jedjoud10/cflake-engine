@@ -43,11 +43,11 @@ fn create_chunk_components(
     surface.visible = false;
 
     // Create a renderer an a position component
-    let renderer = Renderer::default();
+    let mut renderer = Renderer::default();
+    renderer.instant_initialized = None;
     let position =
         Position::from(coords.as_::<f32>() * settings.size as f32);
     let allocation = index / settings.chunks_per_allocation;
-
 
     // Create the chunk component
     let chunk = Chunk {

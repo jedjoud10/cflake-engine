@@ -11,6 +11,7 @@ use graphics::{
     ModuleVisibility, PrimitiveConfig, PushConstantLayout,
     PushConstants, Shader, VertexModule, WindingOrder,
 };
+use utils::Time;
 
 
 // Terrain shader that contains physically based lighting, but suited for terrain rendering
@@ -23,7 +24,7 @@ pub struct TerrainMaterial {
 }
 
 impl Material for TerrainMaterial {
-    type Resources<'w> = world::Read<'w, ShadowMapping>;
+    type Resources<'w> = (world::Read<'w, ShadowMapping>, world::Read<'w, Time>);
 
     // Load the terrain material shaders and compile them
     fn shader(graphics: &Graphics, assets: &Assets) -> Shader {
@@ -59,7 +60,7 @@ impl Material for TerrainMaterial {
         compiler.use_push_constant_layout(
             PushConstantLayout::split(
                 <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size(),
-                <vek::Rgba<f32> as GpuPod>::size(),
+                <vek::Rgba<f32> as GpuPod>::size() + f32::size(),
             )
             .unwrap(),
         );
@@ -83,7 +84,7 @@ impl Material for TerrainMaterial {
 
     // Fetch the texture storages
     fn fetch<'w>(world: &'w world::World) -> Self::Resources<'w> {
-        world.get::<ShadowMapping>().unwrap()
+        (world.get::<ShadowMapping>().unwrap(), world.get::<Time>().unwrap())
     }
 
     // Set the static bindings that will never change
@@ -100,15 +101,15 @@ impl Material for TerrainMaterial {
             .set_uniform_buffer("scene", default.scene_buffer, ..)
             .unwrap();
         group
-            .set_uniform_buffer("shadow_parameters", &resources.parameter_buffer, ..)
+            .set_uniform_buffer("shadow_parameters", &resources.0.parameter_buffer, ..)
             .unwrap();
         group
-            .set_uniform_buffer("shadow_lightspace_matrices", &resources.lightspace_buffer, ..)
+            .set_uniform_buffer("shadow_lightspace_matrices", &resources.0.lightspace_buffer, ..)
             .unwrap();
 
         // Set the scene shadow map
         group
-            .set_sampled_texture("shadow_map", &resources.depth_tex)
+            .set_sampled_texture("shadow_map", &resources.0.depth_tex)
             .unwrap();
     }
 
@@ -116,7 +117,7 @@ impl Material for TerrainMaterial {
     fn set_push_constants<'r, 'w>(
         &self,
         renderer: &Renderer,
-        _resources: &'r mut Self::Resources<'w>,
+        resources: &'r mut Self::Resources<'w>,
         _default: &DefaultMaterialResources<'r>,
         constants: &mut PushConstants<ActiveScenePipeline>,
     ) {
@@ -138,6 +139,16 @@ impl Material for TerrainMaterial {
         let bytes = GpuPod::into_bytes(&vector);
         constants
             .push(bytes, 0, ModuleVisibility::Fragment)
+            .unwrap();
+
+        // Calculate "fade" effect
+        let duration =  resources.1.frame_start().saturating_duration_since(renderer.instant_initialized.unwrap());
+        let fade = duration.as_secs_f32().clamp(0.0, 1.0);
+
+        // Upload the fade effect to GPU
+        let bytes2 = GpuPod::into_bytes(&fade);
+        constants
+            .push(bytes2, bytes.len() as u32, ModuleVisibility::Fragment)
             .unwrap();
     }
 

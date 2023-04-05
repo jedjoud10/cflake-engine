@@ -16,6 +16,7 @@ layout(location = 3) in flat float factor;
 #include <engine/shaders/noises/fbm.glsl>
 #include <engine/shaders/common/sky.glsl>
 #include <engine/shaders/math/models.glsl>
+#include <engine/shaders/math/dither.glsl>
 
 // Shadow-map texture map
 layout(set = 0, binding = 7) uniform texture2D shadow_map;
@@ -26,9 +27,15 @@ layout(push_constant) uniform PushConstants {
     layout(offset = 68) float metallic;
     layout(offset = 72) float ambient_occlusion;
     layout(offset = 76) float roughness;
+	layout(offset = 80) float fade;
 } material;
 
 void main() {
+	// We do a bit of fading
+	if (dither(ivec2(gl_FragCoord.xy), material.fade * 3)) {
+		discard;
+	}
+
 	// Fetch the albedo color, normal map value, and mask values
     vec3 mask = vec3(1 / material.ambient_occlusion, material.roughness, material.metallic);
 

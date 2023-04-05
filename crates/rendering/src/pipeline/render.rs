@@ -22,11 +22,11 @@ pub(super) fn render_surfaces<'r, M: Material>(
     // Get a rasterizer for the current render pass by binding a pipeline
     let mut active = render_pass.bind_pipeline(pipeline);
     let supported = M::attributes();
-
+    
     // Get the material storage and resources for this material
     let materials = world.get::<Storage<M>>().unwrap();
     let mut resources = M::fetch(world);
-
+    
     // Set the global material bindings
     active.set_bind_group(0, |group| {
         M::set_global_bindings(&mut resources, group, defaults);

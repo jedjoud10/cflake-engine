@@ -9,6 +9,9 @@ pub struct Renderer {
 
     // Is the model currently enabled for rendering (this ignores if the model is culled or not)
     pub visible: bool,
+
+    // Contains the frame timings the surface was created
+    pub instant_initialized: Option<std::time::Instant>,
 }
 
 impl Default for Renderer {
@@ -16,6 +19,7 @@ impl Default for Renderer {
         Self {
             matrix: vek::Mat4::identity(),
             visible: true,
+            instant_initialized: Some(std::time::Instant::now()),
         }
     }
 }
