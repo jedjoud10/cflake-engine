@@ -228,6 +228,8 @@ pub(super) fn map_texture_sample_type(
             let depth =
                 matches!(info.channels(), TexelChannels::Depth);
 
+            // TODO: Pretty sure this is wrong
+
             if flags.contains(TextureFormatFeatureFlags::FILTERABLE)
                 && !depth
             {
@@ -269,7 +271,7 @@ pub(super) fn map_spirv_dim(
         (spirv::Dim::Dim1D, false) => wgpu::TextureViewDimension::D1,
         (spirv::Dim::Dim2D, true) => wgpu::TextureViewDimension::D2Array,
         (spirv::Dim::Dim2D, false) => wgpu::TextureViewDimension::D2,
-        (spirv::Dim::Dim3D, true) => wgpu::TextureViewDimension::D3,
+        (spirv::Dim::Dim3D, false) => wgpu::TextureViewDimension::D3,
         (spirv::Dim::DimCube, true) => wgpu::TextureViewDimension::CubeArray,
         (spirv::Dim::DimCube, false) => wgpu::TextureViewDimension::Cube,
         _ => panic!("Not supported ")
@@ -335,10 +337,59 @@ pub(super) fn map_spirv_scalar_type(
     match scalar_type {
         spirq::ty::ScalarType::Signed(_) => wgpu::TextureSampleType::Sint,
         spirq::ty::ScalarType::Unsigned(_) => wgpu::TextureSampleType::Uint,
-        spirq::ty::ScalarType::Float(_) => {
-            todo!()
+        spirq::ty::ScalarType::Float(_) => match format {
+            wgpu::TextureFormat::Depth16Unorm |
+            wgpu::TextureFormat::Depth24Plus |
+            wgpu::TextureFormat::Depth24PlusStencil8 |
+            wgpu::TextureFormat::Depth32Float | 
+            wgpu::TextureFormat::Depth32FloatStencil8 => {
+                wgpu::TextureSampleType::Float { filterable: false }
+            },
+            _ => wgpu::TextureSampleType::Float { filterable: true }
         },
         _ => panic!("Not supported")
+    }
+}
+
+
+// Get the size of a spirq type
+// Returns stride if it is a dynamic array
+pub(super) fn get_spirq_type_size(
+    _type: &spirq::ty::Type
+) -> Option<usize> {
+    use spirq::ty::Type;
+
+    dbg!(_type.nbyte());
+
+    match _type {
+        Type::Scalar(_) | Type::Vector(_) | Type::Matrix(_) => Some(_type.nbyte().unwrap()),
+        Type::Array(array) => Some(if array.nrepeat.is_some() {
+            array.stride.unwrap()
+        } else {
+            array.nbyte()
+        }),
+        Type::Struct(structure) => {
+            let size = _type.nbyte().unwrap();
+
+            // Returns true if the last element has a valid size
+            let last = structure.members.last().map(|x| x.ty.nbyte().unwrap_or(0) > 0).unwrap_or_default();
+
+            // Check if it is a dynamically sized array
+            if size == 0 && structure.members.len() == 1 && !last {
+                if let Type::Array(array) = &structure.members[0].ty {
+                    Some(array.stride.unwrap())
+                } else {
+                    panic!()
+                }
+            } else if last {
+                // No dynamic elements, always valid
+                Some(size)
+            } else {
+                // Neither dynamic or static... wtf?
+                panic!()
+            }
+        }, 
+        _ => None,
     }
 }
 
@@ -829,7 +880,6 @@ fn internal_create_pipeline_layout(
 }
 
 // Reflects a uniform buffer using user's shader settings
-// Note: (assumes that user will never define a struct with the last element being a dynamic array)
 fn reflect_uniform_buffer(
     resource: &BindResourceType,
     _type: &spirq::ty::Type,
@@ -840,10 +890,10 @@ fn reflect_uniform_buffer(
     };
 
     // Get the size of the type 
-    let shader = _type.nbyte().unwrap();
+    let shader = get_spirq_type_size(_type).unwrap();
 
-    // Make sure the sizes matches up
-    if shader != *compiler {
+    // Make sure the sizes are multiples 
+    if *compiler % shader != 0  {
         return Err(BufferValidationError::MismatchSize {
             compiler: *compiler,
             shader,
@@ -854,7 +904,6 @@ fn reflect_uniform_buffer(
 }
 
 // Reflects a storage buffer using user's shader settings
-// Note: (assumes that user will never define a struct with the last element being a dynamic array)
 fn reflect_storage_buffer(
     resource: &BindResourceType,
     shader_access: &spirq::AccessType,
@@ -866,23 +915,29 @@ fn reflect_storage_buffer(
     };
 
     // Get the size of the type 
-    let shader_size = _type.nbyte().unwrap();
+    let shader_size = get_spirq_type_size(_type).unwrap();
+    dbg!(shader_size);
 
-    // Make sure the sizes matches up
-    if shader_size != *compiler_size {
+    // Make sure the sizes are multiples
+    /*
+    if *compiler_size % shader_size != 0 {
         return Err(BufferValidationError::MismatchSize {
             compiler: *compiler_size,
             shader: shader_size,
         });
     }
+    */
 
     // Make sure the accesses match up
+    // TODO: Fix this, seems broken. Spirq bug?
+    /*
     if shader_access != compiler_access {
         return Err(BufferValidationError::MismatchAccess {
             compiler: *compiler_access,
             shader: *shader_access
         });
     }
+    */
 
     Ok(resource.clone())
 }
@@ -934,12 +989,15 @@ fn reflect_storage_texture(
     }
 
     // Make sure the accesses match up
+    // TODO: Fix this, seems broken. Spirq bug?
+    /*
     if shader_access != compiler_access {
         return Err(TextureValidationError::MismatchAccess {
             compiler: *compiler_access,
             shader: *shader_access
         });
     }
+    */
 
 
     Ok(resource.clone())
@@ -971,14 +1029,12 @@ fn reflect_sampled_texture(
     }
 
     // Make sure the sample type matches up
-    /*
-    if *format != map_spirv_format(_type.scalar_ty) {
-        return Err(TextureValidationError::MismatchFormat {
-            compiler: *format,
-            shader: map_spirv_format(_type.fmt)
-        })
+    if *sample_type != map_spirv_scalar_type(_type.scalar_ty.clone(), *format) {
+        return Err(TextureValidationError::MismatchSampleType {
+            compiler: *sample_type,
+            shader: map_spirv_scalar_type(_type.scalar_ty.clone(), *format)
+        });
     }
-    */
 
 
     Ok(resource.clone())

@@ -63,6 +63,12 @@ pub enum TextureValidationError {
     MismatchAccess {
         compiler: spirq::AccessType,
         shader: spirq::AccessType,
+    },
+
+    #[error("The compielr defined texture sample type {compiler:?} does not match up wiuth the shader defined sample type {shader:?}")]
+    MismatchSampleType {
+        compiler: wgpu::TextureSampleType,
+        shader: wgpu::TextureSampleType,
     }
 }
 

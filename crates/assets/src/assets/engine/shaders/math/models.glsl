@@ -97,8 +97,8 @@ vec3 brdf(
 	// Calculate diffuse and specular
 	vec3 brdf = kd * (surface.diffuse / PI) + specular(surface.f0, surface.roughness, camera.view, light.backward, surface.normal, camera.half_view) * (1-shadowed);
 	vec3 lighting = vec3(max(dot(light.backward, surface.normal), 0.0)) * (1-shadowed);
-	lighting += ambient * 0.2;
+	lighting += ambient * 0.4;
 	brdf = brdf * light.color * light.strength * lighting;
-	brdf += calculate_sky_color(reflect(camera.view, -surface.normal), light.backward) * fresnelRoughness(surface.f0, camera.view, surface.normal, surface.roughness) * 0.32;
+	brdf += calculate_sky_color(reflect(camera.view, -surface.normal), light.backward) * fresnelRoughness(surface.f0, camera.view, surface.normal, surface.roughness) * 0.52;
 	return brdf;
 }

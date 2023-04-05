@@ -36,7 +36,7 @@ pub struct CubeMap<T: Texel> {
 }
 
 impl<T: Texel>
-    super::raw::RawTexture<(vek::Vec3<u32>, vek::Extent2<u32>)>
+    super::raw::RawTexture<((vek::Vec2<u32>, u32), vek::Extent2<u32>)>
     for CubeMap<T>
 {
     fn graphics(&self) -> Graphics {
@@ -79,7 +79,7 @@ impl<T: Texel>
 }
 
 impl<T: Texel> Texture for CubeMap<T> {
-    type Region = (vek::Vec3<u32>, vek::Extent2<u32>);
+    type Region = ((vek::Vec2<u32>, u32), vek::Extent2<u32>);
     type T = T;
 
     fn dimensions(&self) -> <Self::Region as crate::Region>::E {

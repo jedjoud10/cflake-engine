@@ -18,13 +18,13 @@ fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
     let settings = TerrainSettings::new(&graphics,
         64,
-    3,
+        3,
         true,
         4,
         1024
     );
     drop(graphics);
-    //world.insert(settings);
+    world.insert(settings);
 
     // Fetch the required resources from the world
     let mut assets = world.get_mut::<Assets>().unwrap();

@@ -45,7 +45,7 @@ pub struct Compiler<'a> {
     pub(crate) constants: Constants,
     pub(crate) resource_types: ResourceBindingTypes,
     pub(crate) maybe_push_constant_layout: MaybePushConstantLayout,
-    optimization: shaderc::OptimizationLevel,
+    //optimization: shaderc::OptimizationLevel,
 }
 
 impl<'a> Compiler<'a> {
@@ -58,7 +58,9 @@ impl<'a> Compiler<'a> {
             constants: Default::default(),
             resource_types: Default::default(),
             maybe_push_constant_layout: Default::default(),
-            optimization: shaderc::OptimizationLevel::Zero,
+
+            // TODO: Fix vulkan erors
+            //optimization: shaderc::OptimizationLevel::Performance,
         }
     }
 
@@ -81,12 +83,14 @@ impl<'a> Compiler<'a> {
     }
 
     // Set the optimization level used by the ShaderC compiler
+    /*
     pub fn use_optimization_level(
         &mut self,
         level: shaderc::OptimizationLevel,
     ) {
         self.optimization = level;
     }
+    */
 
     // Convert the given GLSL code to SPIRV code, then compile said SPIRV code
     // This uses the defined resoures defined in this compiler
@@ -105,7 +109,7 @@ impl<'a> Compiler<'a> {
             &self.assets,
             &self.snippets,
             &self.constants,
-            self.optimization,
+            shaderc::OptimizationLevel::Zero,
             source,
             &name,
         )
@@ -309,6 +313,7 @@ fn compile(
     // Custom ShaderC compiler options
     let mut options = shaderc::CompileOptions::new().unwrap();
     //options.set_generate_debug_info();
+    //options.set_target_spirv(shaderc::SpirvVersion::V1_0);
     options.set_optimization_level(optimization);
     options.set_invert_y(false);
 
@@ -383,15 +388,15 @@ fn compile(
     specialize_spec_constants(&mut binary, &constants);
 
     // Setup basic config spirq option
-    let reflect = spirq::ReflectConfig::new()
+    let mut reflect = spirq::ReflectConfig::new()
         .spv(artifact.as_binary().to_vec())
         .combine_img_samplers(false)
         .ref_all_rscs(true)
         .gen_unique_names(false)
         .reflect()
-        .unwrap()
-        .pop()
         .unwrap();
+    assert!(reflect.len() == 1);
+    let reflect = reflect.pop().unwrap();
 
     // Compile the Wgpu shader (raw spirv passthrough)
     let wgpu = unsafe {

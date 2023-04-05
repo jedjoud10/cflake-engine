@@ -6,7 +6,7 @@ pub type ViewDimension = wgpu::TextureViewDimension;
 pub type Dimension = wgpu::TextureDimension;
 
 // Texture dimensions traits that are simply implemented for extents
-pub trait Extent: Copy + std::ops::Div<u32, Output = Self> {
+pub trait Extent: Copy {
     // Get the surface area of a superficial rectangle that uses these extents as it's dimensions
     fn area(&self) -> u32;
 
@@ -56,7 +56,8 @@ pub trait Extent: Copy + std::ops::Div<u32, Output = Self> {
     // Calculate the dimensions of a mip map level using it's index
     // Level equal to 0 meaning that it will return the base extent
     fn mip_level_dimensions(self, level: u8) -> Self {
-        self / 2u32.pow(level as u32)
+        todo!()
+        //self / 2u32.pow(level as u32)
     }
 
     // Check if an extent is larger in all axii than another one
@@ -168,7 +169,7 @@ impl Extent for vek::Extent3<u32> {
     }
 
     fn reduce_min(&self) -> u32 {
-        vek::Extent3::reduce_max(*self)
+        vek::Extent3::reduce_min(*self)
     }
 
     fn is_larger_than(self, other: Self) -> bool {
@@ -197,6 +198,54 @@ impl Extent for vek::Extent3<u32> {
 
     fn new(w: u32, h: u32, d: u32) -> Self {
         vek::Extent3::new(w, h, d)
+    }
+}
+
+
+// Implementation of extent for 2D layered texture extent
+impl Extent for (vek::Extent2<u32>, u32) {
+    fn area(&self) -> u32 {
+        self.0.as_::<u32>().product() * self.1
+    }
+
+    fn is_valid(&self) -> bool {
+        self.0 != vek::Extent2::zero() && self.1 != 0 
+    }
+
+    fn reduce_max(&self) -> u32 {
+        vek::Extent3::new(self.0.w, self.0.h, self.1).reduce_max()
+    }
+
+    fn reduce_min(&self) -> u32 {
+        vek::Extent3::new(self.0.w, self.0.h, self.1).reduce_min()
+    }
+
+    fn is_larger_than(self, other: Self) -> bool {
+        self.0.cmpge(&other.0).reduce_and() && self.1 > other.1
+    }
+
+    fn view_dimension() -> ViewDimension {
+        ViewDimension::D3
+    }
+
+    fn width(&self) -> u32 {
+        self.0.w
+    }
+
+    fn height(&self) -> u32 {
+        self.0.h
+    }
+
+    fn depth(&self) -> u32 {
+        self.1
+    }
+
+    fn broadcast(val: u32) -> Self {
+        (vek::Extent2::broadcast(val), val)
+    }
+
+    fn new(w: u32, h: u32, d: u32) -> Self {
+        (vek::Extent2::new(w, h), d)
     }
 }
 
@@ -230,17 +279,31 @@ impl Origin for vek::Vec3<u32> {
     }
 }
 
+
+// Implementation of origin for layered 2D / cubemap
+impl Origin for (vek::Vec2<u32>, u32) {
+    fn x(&self) -> u32 {
+        self.0.x
+    }
+
+    fn y(&self) -> u32 {
+        self.0.y
+    }
+
+    fn z(&self) -> u32 {
+        self.1
+    }
+}
+
 // Texture region trait that will be implemented for (origin, extent) tuples
 pub trait Region: Copy {
     // Regions are defined by their origin and extents
     type O: Origin
         + Default
         + Copy
-        + Add<Self::O, Output = Self::O>
         + std::fmt::Debug;
     type E: Extent
         + Copy
-        + Add<Self::E, Output = Self::E>
         + PartialEq
         + std::fmt::Debug;
 
@@ -373,12 +436,12 @@ impl Region for (vek::Vec3<u32>, vek::Extent3<u32>) {
 }
 
 // CubeMap2D
-impl Region for (vek::Vec3<u32>, vek::Extent2<u32>) {
-    type O = vek::Vec3<u32>;
+impl Region for ((vek::Vec2<u32>, u32), vek::Extent2<u32>) {
+    type O = (vek::Vec2<u32>, u32);
     type E = vek::Extent2<u32>;
 
     fn unit() -> Self {
-        (vek::Vec3::zero(), vek::Extent2::one())
+        ((vek::Vec2::zero(), 0), vek::Extent2::one())
     }
 
     fn origin(&self) -> Self::O {
@@ -406,11 +469,11 @@ impl Region for (vek::Vec3<u32>, vek::Extent2<u32>) {
     }
 
     fn is_larger_than(self, other: Self) -> bool {
-        if self.origin().z >= 6 {
+        if self.origin().1 >= 6 {
             return false;
         }
 
-        let e = other.extent() + vek::Extent2::<u32>::from(other.origin().xy());
+        let e = other.extent() + vek::Extent2::<u32>::from(other.origin().0);
         self.extent().is_larger_than(e)
     }
 
@@ -422,5 +485,57 @@ impl Region for (vek::Vec3<u32>, vek::Extent2<u32>) {
         let h = self.extent().h;
         let w = self.extent().w;
         (h*w) * 6
+    }
+}
+
+
+// LayeredTexture2D
+impl Region for ((vek::Vec2<u32>, u32), (vek::Extent2<u32>, u32)) {
+    type O = (vek::Vec2<u32>, u32);
+    type E = (vek::Extent2<u32>, u32);
+
+    fn unit() -> Self {
+        ((vek::Vec2::zero(), 0), (vek::Extent2::one(), 1))
+    }
+
+    fn origin(&self) -> Self::O {
+        self.0
+    }
+
+    fn extent(&self) -> Self::E {
+        self.1
+    }
+
+    fn set_origin(&mut self, origin: Self::O) {
+        self.0 = origin;
+    }
+
+    fn set_extent(&mut self, extent: Self::E) {
+        self.1 = extent;
+    }
+
+    fn with_extent(extent: Self::E) -> Self {
+        (Default::default(), extent)
+    }
+
+    fn from_raw_parts(origin: Self::O, extent: Self::E) -> Self {
+        (origin, extent)
+    }
+
+    fn is_larger_than(self, other: Self) -> bool {
+        if self.origin().1 >= 6 {
+            return false;
+        }
+
+        let e = other.extent().0 + vek::Extent2::<u32>::from(other.origin().0);
+        self.1.0.is_larger_than(e) && self.1.1 > other.1.1
+    }
+
+    fn is_multi_layered() -> bool {
+        true
+    }
+
+    fn area(&self) -> u32 {
+        self.extent().0.area() * self.extent().1
     }
 }

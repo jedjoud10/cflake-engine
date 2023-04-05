@@ -47,8 +47,11 @@ impl Material for TerrainMaterial {
         // Set the UBO types that we will use
         compiler.use_uniform_buffer::<CameraUniform>("camera");
         compiler.use_uniform_buffer::<SceneUniform>("scene");
-        compiler.use_uniform_buffer::<ShadowUniform>("shadow");
 
+        // Shadow parameters
+        compiler.use_uniform_buffer::<ShadowUniform>("shadow_parameters");
+        compiler.use_uniform_buffer::<vek::Vec4<vek::Vec4<f32>>>("shadow_lightspace_matrices");
+    
         // Define the types for the user textures
         compiler.use_sampled_texture::<ShadowMap>("shadow_map");
 

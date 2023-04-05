@@ -7,6 +7,8 @@ mod texture;
 mod texture2d;
 mod texture3d;
 mod cubemap;
+mod layered2d;
+pub use layered2d::*;
 pub use cubemap::*;
 pub use errors::*;
 pub use mipmap::*;
