@@ -32,6 +32,7 @@ void main() {
 
     // Set the output variables
     m_position = world_pos.xyz;
-    m_normal = vec3(0);
-    m_color = unpacked.xyz;
+    m_normal = -(unpacked.xyz * 2 - 1.0);
+    m_color = vec3(1);
+    //m_color = unpacked.xyz;
 }

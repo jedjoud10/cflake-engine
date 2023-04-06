@@ -104,8 +104,11 @@ fn update(world: &mut World) {
 
         // One global bind group for voxel generation
         active.set_bind_group(0, |set| {
-            set.set_storage_texture("densities", &mut voxelizer.densities)
+            set.set_storage_texture("voxels", &mut voxelizer.voxels)
                 .unwrap();
+
+            // Call the set group callback
+            (voxelizer.set_group_callback)(set);
         });
         active.dispatch(vek::Vec3::broadcast(settings.size / 4));
 
@@ -113,7 +116,7 @@ fn update(world: &mut World) {
         let mut active = pass.bind_shader(&mesher.compute_vertices);
 
         active.set_bind_group(0, |set| {
-            set.set_storage_texture("densities", &mut voxelizer.densities)
+            set.set_storage_texture("voxels", &mut voxelizer.voxels)
                 .unwrap();
             set.set_storage_texture(
                 "cached_indices",
@@ -137,7 +140,7 @@ fn update(world: &mut World) {
                 &mut mesher.cached_indices,
             )
             .unwrap();
-            set.set_storage_texture("densities", &mut voxelizer.densities)
+            set.set_storage_texture("voxels", &mut voxelizer.voxels)
                 .unwrap();
             set.set_storage_buffer("counters", &mut mesher.counters, ..)
                 .unwrap();

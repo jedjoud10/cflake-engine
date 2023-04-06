@@ -16,7 +16,7 @@ use world::{post_user, System, World};
 
 // Creates the terrain if there was terrain settings present
 fn init(world: &mut World) {
-    if let Some(settings) = world.remove::<TerrainSettings>() {
+    if let Some(mut settings) = world.remove::<TerrainSettings>() {
         // Add materials and fetch them
         world.insert(Storage::<TerrainMaterial>::default());
         let mut materials = world.get_mut::<Storage<TerrainMaterial>>().unwrap();
@@ -43,7 +43,7 @@ fn init(world: &mut World) {
         let voxelizer = VoxelGenerator::new(
             &assets,
             &graphics,
-            &settings
+            &mut settings
         );
 
         // Create a mesh generator

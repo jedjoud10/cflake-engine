@@ -1,8 +1,10 @@
 
 
 
+use std::rc::Rc;
+
 use graphics::{
-    Graphics,
+    Graphics, Compiler, BindGroup,
 };
 
 
@@ -39,6 +41,10 @@ pub struct TerrainSettings {
     // Vertices and triangles per sub allocation
     pub(crate) vertices_per_sub_allocation: u32,
     pub(crate) triangles_per_sub_allocation: u32,
+
+    // Callbacks for custom voxel data
+    pub(crate) compiler_callback: Option<Box<dyn FnOnce(&mut Compiler) + 'static>>,
+    pub(crate) set_group_callback: Option<Box<dyn Fn(&mut BindGroup) + 'static>>,
 }
 
 impl TerrainSettings {
@@ -51,6 +57,8 @@ impl TerrainSettings {
         smoothing: bool,
         allocations: usize,
         sub_allocations: usize,
+        voxel_compiler_callback: impl FnOnce(&mut Compiler) + 'static,
+        voxel_set_bind_group_callback: impl Fn(&mut BindGroup) + 'static,
     ) -> Self {
         let output_vertex_buffer_length = graphics
             .device()
@@ -91,6 +99,8 @@ impl TerrainSettings {
             vertices_per_sub_allocation,
             triangles_per_sub_allocation,
             chunks_per_allocation,
+            compiler_callback: Some(Box::new(voxel_compiler_callback)),
+            set_group_callback: Some(Box::new(voxel_set_bind_group_callback)),
         }
     }
 }

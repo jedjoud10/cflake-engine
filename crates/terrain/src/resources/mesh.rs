@@ -3,7 +3,7 @@ use assets::Assets;
 
 use graphics::{
     Buffer, BufferMode, BufferUsage, Compiler, ComputeModule, ComputeShader, GpuPod, Graphics, Texel,
-    Texture3D, Vertex, R, XYZW, StorageAccess,
+    Texture3D, Vertex, R, XYZW, StorageAccess, RGBA, Normalized, RG,
 };
 
 
@@ -47,9 +47,9 @@ impl MeshGenerator {
             .unwrap();
         let mut compiler = Compiler::new(assets, graphics);
 
-        // Set the densitites texture that we will sample
-        compiler.use_storage_texture::<Texture3D<R<f32>>>(
-            "densities",
+        // Set the voxels texture that we will sample
+        compiler.use_storage_texture::<Texture3D<RG<f32>>>(
+            "voxels",
             StorageAccess::ReadOnly
         );
 
@@ -78,9 +78,9 @@ impl MeshGenerator {
             .unwrap();
         let mut compiler = Compiler::new(assets, graphics);
 
-        // Set the densitites texture that we will sample
-        compiler.use_storage_texture::<Texture3D<R<f32>>>(
-            "densities",
+        // Set the voxels texture that we will sample
+        compiler.use_storage_texture::<Texture3D<RG<f32>>>(
+            "voxels",
             StorageAccess::ReadOnly
         );
 

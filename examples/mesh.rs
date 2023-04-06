@@ -21,7 +21,9 @@ fn init(world: &mut World) {
         5,
         true,
         7,
-        1024
+        1024,
+        |_| {},
+        |_| {},
     );
     drop(graphics);
     world.insert(settings);
