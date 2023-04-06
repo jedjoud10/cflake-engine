@@ -57,8 +57,10 @@ impl TerrainSettings {
         smoothing: bool,
         allocations: usize,
         sub_allocations: usize,
+        /*
         voxel_compiler_callback: impl FnOnce(&mut Compiler) + 'static,
         voxel_set_bind_group_callback: impl Fn(&mut BindGroup) + 'static,
+        */
     ) -> Self {
         let output_vertex_buffer_length = graphics
             .device()
@@ -99,8 +101,8 @@ impl TerrainSettings {
             vertices_per_sub_allocation,
             triangles_per_sub_allocation,
             chunks_per_allocation,
-            compiler_callback: Some(Box::new(voxel_compiler_callback)),
-            set_group_callback: Some(Box::new(voxel_set_bind_group_callback)),
+            compiler_callback: Some(Box::new(|_| {})),
+            set_group_callback: Some(Box::new(|_| {})),
         }
     }
 }

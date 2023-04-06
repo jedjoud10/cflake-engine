@@ -78,7 +78,7 @@ struct SurfaceData {
 
 // Bidirectional reflectance distribution function, aka PBRRRR
 vec3 brdf(
-	in texture2D shadow_map,
+	in texture2DArray shadow_map,
 	SurfaceData surface,
 	CameraData camera,
 	SunData light

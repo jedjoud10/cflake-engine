@@ -54,7 +54,7 @@ float shadow_linear(
 float calculate_shadowed(
     vec3 position,
     vec3 camera,
-    in texture2D shadow_map,
+    in texture2DArray shadow_map,
     mat4 lightspace,
     float strength,
     float spread,

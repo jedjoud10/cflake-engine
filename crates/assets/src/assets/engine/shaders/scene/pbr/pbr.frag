@@ -17,7 +17,7 @@ layout(location = 4) in vec2 m_tex_coord;
 #include <engine/shaders/math/models.glsl>
 
 // Shadow-map texture map
-layout(set = 0, binding = 7) uniform texture2D shadow_map;
+layout(set = 0, binding = 7) uniform texture2DArray shadow_map;
 
 // Push constants for the material data
 layout(push_constant) uniform PushConstants {

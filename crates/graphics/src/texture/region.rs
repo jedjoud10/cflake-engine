@@ -225,7 +225,7 @@ impl Extent for (vek::Extent2<u32>, u32) {
     }
 
     fn view_dimension() -> ViewDimension {
-        ViewDimension::D3
+        ViewDimension::D2Array
     }
 
     fn width(&self) -> u32 {

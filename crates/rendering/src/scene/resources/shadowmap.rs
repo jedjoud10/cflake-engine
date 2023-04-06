@@ -8,7 +8,7 @@ use graphics::{
     Graphics, LoadOp, ModuleVisibility, Operation, PrimitiveConfig,
     PushConstantLayout, RenderPass, RenderPipeline, SamplerSettings,
     Shader, StoreOp, Texture, Texture2D, TextureMipMaps, TextureMode,
-    TextureUsage, UniformBuffer, VertexModule, WindingOrder, Face,
+    TextureUsage, UniformBuffer, VertexModule, WindingOrder, Face, LayeredTexture2D,
 };
 use vek::FrustumPlanes;
 
@@ -16,7 +16,7 @@ use crate::MeshAttributes;
 
 // This is what will write to the depth texture
 pub type ShadowTexel = Depth<f32>;
-pub type ShadowMap = Texture2D<ShadowTexel>;
+pub type ShadowMap = LayeredTexture2D<ShadowTexel>;
 pub type ShadowRenderPass = RenderPass<(), ShadowTexel>;
 pub type ShadowGraphicsPipeline = RenderPipeline<(), ShadowTexel>;
 pub type ActiveShadowGraphicsPipeline<'a, 'r, 't> =
@@ -26,16 +26,19 @@ pub type ActiveShadowGraphicsPipeline<'a, 'r, 't> =
 // The shadows must be rendered before we render the main frame
 pub struct ShadowMapping {
     // Everything required to render to the depth texture
-    pub depth_tex: ShadowMap,
     pub render_pass: ShadowRenderPass,
     pub pipeline: ShadowGraphicsPipeline,
     pub shader: Shader,
-
+    
+    // Multilayered shadow map texture
+    pub depth_tex: ShadowMap,
+    
     // Cached matrices
     pub view: vek::Mat4<f32>,
 
-    // Contains the frustum percentage of each cascade
-    pub percentages: Vec<f32>,
+    // Contains the lightspace size of each cascade
+    // TODO: Convert to frustum percentages
+    pub sizes: Vec<f32>,
 
     // Resolution of the base level
     pub resolution: u32,
@@ -62,7 +65,7 @@ impl ShadowMapping {
     pub(crate) fn new(
         depth: f32,
         resolution: u32,
-        percentages: &[f32],
+        sizes: &[f32],
         graphics: &Graphics,
         assets: &mut Assets,
     ) -> Self {
@@ -132,15 +135,15 @@ impl ShadowMapping {
         )
         .unwrap();
 
-        // Create the depth texture that we will render to
-        let depth_tex = Texture2D::<Depth<f32>>::from_texels(
+        // Create the depth textures that we will render to
+        let depth_tex = LayeredTexture2D::<Depth<f32>>::from_texels(
             graphics,
             None,
-            vek::Extent2::broadcast(resolution),
+            (vek::Extent2::broadcast(resolution), sizes.len() as u32),
             TextureMode::Dynamic,
             TextureUsage::TARGET | TextureUsage::SAMPLED,
             SamplerSettings::default(),
-            TextureMipMaps::Zeroed { clamp: Some(NonZeroU8::new(percentages.len() as u8).unwrap()) },
+            TextureMipMaps::Zeroed { clamp: Some(NonZeroU8::new(sizes.len() as u8).unwrap()) },
         )
         .unwrap();
 
@@ -161,7 +164,7 @@ impl ShadowMapping {
         // We can initialize these to zero since the first frame would update the buffer anyways
         let lightspace_buffer = UniformBuffer::<vek::Vec4<vek::Vec4<f32>>>::zeroed(
             graphics,
-            percentages.len(),
+            sizes.len(),
             BufferMode::Dynamic,
             BufferUsage::WRITE,
         ).unwrap();
@@ -173,7 +176,7 @@ impl ShadowMapping {
             depth_tex,
             view,
             resolution,
-            percentages: percentages.to_vec(),
+            sizes: sizes.to_vec(),
             parameter_buffer,
             lightspace_buffer,
             depth,

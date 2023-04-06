@@ -116,5 +116,13 @@ vec3 calculate_sky_color(
     float time_of_day = min(max(-sun.y, 0), 0.25) * 4;
     vec3 color = mix(day_color, vec3(0.001), 1-time_of_day);
 
+    /*
+    // TODO: Readd when we have proper PBR ambient and specular lighting
+    // Create a procedural sun with the scene params
+	float sun_value = dot(normal, -sun);
+	sun_value = pow(max(sun_value, 0), 1300) * 30;
+    color += vec3(sun_value);
+    */
+
     return color;
 }

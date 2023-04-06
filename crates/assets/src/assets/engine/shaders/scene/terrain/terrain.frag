@@ -19,7 +19,7 @@ layout(location = 3) in float factor;
 #include <engine/shaders/math/dither.glsl>
 
 // Shadow-map texture map
-layout(set = 0, binding = 7) uniform texture2D shadow_map;
+layout(set = 0, binding = 7) uniform texture2DArray shadow_map;
 
 // Push constants for the material data
 layout(push_constant) uniform PushConstants {
@@ -71,6 +71,7 @@ void main() {
 
 	// Compute PBR values
 	float roughness = clamp(mask.g, 0.02, 1.0);
+	//roughness = 0.01;
 	float metallic = clamp(mask.b, 0.01, 1.0) * 0.0;
 	float visibility = clamp(mask.r, 0.0, 1.0);
 
