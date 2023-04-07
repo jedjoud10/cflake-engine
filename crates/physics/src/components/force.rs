@@ -1,33 +1,42 @@
+use std::ops::Div;
 
+use math::Scalar;
+use ecs::Component;
 
+use super::angular_velocity;
 
-pub struct Forces {
-    forces: Vec<vek::Vec3<f32>>
-}
+pub fn impulse_real(velocity: &mut vek::Vec3<f32>, angular_velocity: &mut vek::Quaternion<f32>, force: &vek::Vec3<f32>, collision_point: &vek::Vec3<f32>, position: &vek::Vec3<f32>, dt: &f32, mass: &f32) {
+    // LINEAR FORCE RELATED
 
-impl Forces {
-    /*
-    pub fn new() -> Self {
-        Self(Vec3::new);
-    }
+    let acceleration = force / mass;
+    *velocity += acceleration * *dt;
 
-    pub fn force_linear(&mut self, force: Vec3) {
-        self::forces::push(force);
-    }
+    // TORQUE RELATED
 
-    pub fn force(&mut self, force: Vec3, contact: Vec3, axis_pos: Vec3) {
-        let d: f32;
-        f32::sqrt(f32::pow(contact::x - axis_pos::x, 2) + f32::pow(contact::y - axis_pos::y, 2) + f32::pow(contact::z - axis_pos::z, 2));
-        
-    }
+    // Moment arm for torque calculation
+    let moment_arm = collision_point - position;
 
-    pub fn apply(&mut self, &mut velocity: Vec3, mass: f32) {
-        // Blasphemous code (real)
-        for i in forces.iter_mut() {
-            velocity += i / mass;
-        }
+    // Fuck moment of inertia all my homies hate realistic angular velocity calc
+    let ixx = (mass / 12.0) * (2.0);
+    let iyy = (mass / 12.0) * (2.0);
+    let izz = (mass / 12.0) * (2.0);
+    let moment_of_inertia = vek::Vec3::new(ixx, iyy, izz);
 
-        *forces.clear();
-    }
-    */
+    // Calculate the torque and linear acceleration exerted on the object
+    let torque: vek::Vec3<f32> = moment_arm.cross(*force);
+
+    // Update the object's angular velocity based on the torque and the object's moment of inertia
+    let angular_acceleration = torque.div(&moment_of_inertia);
+ 
+    // Integrate the angular velocity to update the rotation quaternion
+    let mut delta_rotation: vek::Quaternion::<f32> = vek::Quaternion::<f32>::identity();
+    delta_rotation.rotate_x(angular_acceleration.x * *dt / 2.0);
+    delta_rotation.rotate_y(angular_acceleration.y * *dt / 2.0);
+    delta_rotation.rotate_z(angular_acceleration.z * *dt / 2.0);
+
+    // Integrate the velocity to update the position
+    angular_velocity.rotate_x(delta_rotation.x);
+    angular_velocity.rotate_y(delta_rotation.y);
+    angular_velocity.rotate_z(delta_rotation.z);
+
 }
