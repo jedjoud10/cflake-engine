@@ -21,7 +21,8 @@ pub struct TerrainSettings {
     pub(crate) chunk_render_distance: usize,
     
     // Mesh generation parameters
-    pub(crate) smoothing: bool,
+    pub(crate) blocky: bool,
+    pub(crate) lowpoly: bool,
 
     // Memory managing settings
     pub(crate) allocations_count: usize,
@@ -54,7 +55,8 @@ impl TerrainSettings {
         graphics: &Graphics,
         resolution: u32,
         render_distance: usize,
-        smoothing: bool,
+        blocky: bool,
+        lowpoly: bool,
         allocations: usize,
         sub_allocations: usize,
         /*
@@ -91,7 +93,8 @@ impl TerrainSettings {
         Self {
             size: resolution,
             chunk_render_distance: render_distance,
-            smoothing,
+            blocky,
+            lowpoly,
             allocations_count: allocations,
             sub_allocations_count: sub_allocations,
             chunks_count: chunks,

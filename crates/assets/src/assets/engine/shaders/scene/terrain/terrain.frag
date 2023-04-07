@@ -32,7 +32,7 @@ layout(push_constant) uniform PushConstants {
 
 void main() {
 	// We do a bit of fading
-	if (dither(ivec2(gl_FragCoord.xy), material.fade * 3)) {
+	if (dither(ivec2(gl_FragCoord.xy), pow(material.fade * 1, 4))) {
 		discard;
 	}
 

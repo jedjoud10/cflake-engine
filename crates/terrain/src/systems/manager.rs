@@ -56,7 +56,7 @@ fn update(world: &mut World) {
     };
     
     // Check if it moved since last frame
-    if added || new != old {
+    if added /*|| new != old*/ {
         // Keep a hashset of all the chunks around the viewer
         let mut chunks = AHashSet::<ChunkCoords>::new();
         let mut entities = AHashMap::<ChunkCoords, Entity>::new();
@@ -102,6 +102,9 @@ fn update(world: &mut World) {
                 vertex_offset: 0,
                 base_instance: 0,
             }], chunk.global_index).unwrap();
+            
+            let indices = &mut memory.sub_allocation_chunk_indices[chunk.allocation];
+            //indices.splat(chunk.)
 
             manager.entities.remove(i).unwrap();
         }

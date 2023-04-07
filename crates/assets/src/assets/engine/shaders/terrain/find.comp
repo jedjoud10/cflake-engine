@@ -49,12 +49,6 @@ void main() {
     uint vertices = counters.vertices;
     uint triangles = counters.triangles;
 
-    /*
-    if (triangles == 0) {
-        vertices = 0;
-    }
-    */
-
     // Temp values for now 
     uint temp_sub_allocation_index = 0;
     uint temp_sub_allocation_count = 1;

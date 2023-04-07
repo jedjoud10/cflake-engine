@@ -133,8 +133,7 @@ impl ChunkManager {
                 local_index: i % settings.chunks_per_allocation,
                 global_index: i,
                 priority: f32::MIN,
-                vertex_ranges: None,
-                triangle_ranges: None,
+                ranges: None,
             };
 
             // Create the bundle

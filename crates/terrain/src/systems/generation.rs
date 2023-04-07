@@ -238,16 +238,24 @@ fn update(world: &mut World) {
         drop(active);
         drop(pass);
 
-        // Logon pls uncomment this block pls and check changes in FPS
-        /*/
+        // Submit the work to the GPU, and fetch counters and offsets
         graphics.submit(true);
         let _counters = mesher.counters.as_view(..).unwrap();
         let counters = _counters.to_vec();
-        drop(_counters);
         let _offsets = memory.offsets.as_view(..).unwrap();
         let offsets = _offsets.to_vec();
-        drop(_offsets);
-        */
+
+        // Read as vertex and triangle separately
+        let vertices_count = counters[0];
+        let triangle_indices_count = counters[1];
+        let vertices_offset = offsets[0];
+        let triangle_indices_offset = offsets[1];
+
+        // Calculate sub-allocation index and length
+        assert_eq!(vertices_offset / settings.vertices_per_sub_allocation, triangle_indices_offset / settings.triangles_per_sub_allocation);
+        let index = vertices_offset / settings.vertices_per_sub_allocation;
+        let count = u32::max(vertices_count / settings.vertices_per_sub_allocation, triangle_indices_count / settings.triangles_per_sub_allocation); 
+        dbg!(count);
 
         // Make the surface visible and set it's state
         surface.visible = true;
