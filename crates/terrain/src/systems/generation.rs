@@ -246,16 +246,25 @@ fn update(world: &mut World) {
         let offsets = _offsets.to_vec();
 
         // Read as vertex and triangle separately
-        let vertices_count = counters[0];
-        let triangle_indices_count = counters[1];
+        let vertex_count = counters[0];
+        let triangle_count = counters[1];
         let vertices_offset = offsets[0];
         let triangle_indices_offset = offsets[1];
 
         // Calculate sub-allocation index and length
+        /*
+        dbg!(vertices_offset);
+        dbg!(triangle_indices_offset);
+        dbg!(vertices_offset / settings.vertices_per_sub_allocation);
+        dbg!(triangle_indices_offset / settings.triangles_per_sub_allocation);
+        */
         assert_eq!(vertices_offset / settings.vertices_per_sub_allocation, triangle_indices_offset / settings.triangles_per_sub_allocation);
-        let index = vertices_offset / settings.vertices_per_sub_allocation;
-        let count = u32::max(vertices_count / settings.vertices_per_sub_allocation, triangle_indices_count / settings.triangles_per_sub_allocation); 
-        dbg!(count);
+        let count = f32::max(vertex_count as f32 / settings.vertices_per_sub_allocation as f32, triangle_count as f32 / settings.triangles_per_sub_allocation as f32); 
+        let count = count.ceil() as u32;
+        let offset = vertices_offset / settings.vertices_per_sub_allocation;
+        
+        // Update chunk range
+        chunk.ranges = Some(vek::Vec2::new(offset, count + offset));
 
         // Make the surface visible and set it's state
         surface.visible = true;

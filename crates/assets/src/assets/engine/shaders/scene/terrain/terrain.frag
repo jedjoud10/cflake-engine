@@ -32,9 +32,11 @@ layout(push_constant) uniform PushConstants {
 
 void main() {
 	// We do a bit of fading
+	/*
 	if (dither(ivec2(gl_FragCoord.xy), pow(material.fade * 1, 4))) {
 		discard;
 	}
+	*/
 
 	// Fetch the albedo color, normal map value, and mask values
     vec3 mask = vec3(1 / material.ambient_occlusion, material.roughness, material.metallic);

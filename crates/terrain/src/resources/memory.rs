@@ -37,7 +37,7 @@ impl MemoryManager {
                 settings.sub_allocations_count,
                 u32::MAX,
                 BufferMode::Dynamic,
-                BufferUsage::STORAGE,
+                BufferUsage::STORAGE | BufferUsage::WRITE | BufferUsage::READ,
             )
             .unwrap()
         })

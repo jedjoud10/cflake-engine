@@ -18,7 +18,7 @@ fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
     let settings = TerrainSettings::new(&graphics,
         64,
-        9,
+        2,
         false,
         true,
         7,
@@ -212,6 +212,8 @@ fn init(world: &mut World) {
     input.bind_button("right", Button::D);
     input.bind_button("lshift", Button::LShift);
     input.bind_button("reset", Button::R);
+    input.bind_button("zoom-in", Button::Z);
+    input.bind_button("zoom-out", Button::X);
     input.bind_axis("x rotation", Axis::MousePositionX);
     input.bind_axis("y rotation", Axis::MousePositionY);
 }
@@ -253,7 +255,13 @@ fn update(world: &mut World) {
 
         // Controls the "strength" of the camera smoothness
         // Higher means more smooth, lower means less smooth
-        let smoothness = 1.0;
+        let smoothness = 0.1;
+
+        // Reset the camera rotation and position
+        if input.get_button("reset").pressed() {
+            **position = vek::Vec3::zero();
+            **output = vek::Vec3::zero();
+        }
 
         // Update velocity scale
         if input.get_button("lshift").held() {
@@ -288,9 +296,18 @@ fn update(world: &mut World) {
         let factor = (time.delta().as_secs_f32() * (1.0 / smoothness)).clamped01();
         **output = vek::Vec3::lerp(**output, velocity, (factor * 2.0).clamped01());
 
-        // The scroll wheel will change the camera FOV
-        let delta = input.get_axis(Axis::MouseScrollDelta);
-        camera.hfov += delta * -1000.0 * time.delta().as_secs_f32();
+        // The scroll wheel OR the X and Z buttons will change the camera FOV
+        let mut delta = input.get_axis(Axis::MouseScrollDelta);
+        
+        // Update based on buttons instead
+        if input.get_button("zoom-in").held() {
+            delta = 50.0f32;
+        } else if input.get_button("zoom-out").held() {
+            delta = -50.0f32;
+        }
+        
+        // Update FOV
+        camera.hfov += delta * time.delta().as_secs_f32();
 
         // Update the position with the new velocity
         **position += **output * time.delta().as_secs_f32() * 20.0;

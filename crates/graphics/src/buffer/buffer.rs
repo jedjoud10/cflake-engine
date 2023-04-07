@@ -475,7 +475,10 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         let len = end - start;
 
         let src = vec![val; len];
-        self.write(&src, start).unwrap();
+        self.write(&src, start).map_err(|err| match err {
+            BufferWriteError::InvalidLen(_, _, _) => panic!(),
+            BufferWriteError::NonWritable => BufferSplatError::NonWritable,
+        })?;
 
         Ok(())
     }

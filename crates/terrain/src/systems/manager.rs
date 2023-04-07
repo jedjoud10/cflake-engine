@@ -19,6 +19,7 @@ fn update(world: &mut World) {
     // Tries to find a chunk viewer and the terrain generator
     let _time = world.get::<Time>().unwrap();
     let terrain = world.get_mut::<Terrain>();
+    let graphics = world.get::<Graphics>().unwrap();
     let mut indexed_indirect_buffers = world.get_mut::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
     let viewer =
@@ -56,17 +57,15 @@ fn update(world: &mut World) {
     };
     
     // Check if it moved since last frame
-    if added /*|| new != old*/ {
+    if added || new != old {
         // Keep a hashset of all the chunks around the viewer
         let mut chunks = AHashSet::<ChunkCoords>::new();
-        let mut entities = AHashMap::<ChunkCoords, Entity>::new();
 
         // Get the global indirect draw buffer 
         let indirect = indexed_indirect_buffers.get_mut(&manager.indexed_indirect_buffer);
 
         // Generate the chunks around ze player
         let distance = settings.chunk_render_distance as i32;
-        //let distance = 2;
         for x in -distance..=distance {
             for y in -distance..=distance {
                 for z in -distance..=distance {
@@ -83,18 +82,18 @@ fn update(world: &mut World) {
             .difference(&chunks)
             .cloned()
             .collect::<Vec<_>>();
-
-        // Keep track of the indices of the removed chunks
-        let mut indices = AHashMap::<usize, Vec::<u32>>::new();
         
         // Set the chunk state to "free" and reset the value of the indirect buffers
         for i in removed.iter() {
             let entity = manager.entities.get(i).unwrap();
             let mut entry = scene.entry_mut(*entity).unwrap();
             let (chunk, surface) = entry.as_query_mut::<(&mut Chunk, &mut Surface<TerrainMaterial>)>().unwrap();
+            
+            // Update chunk state and hide it
             chunk.state = ChunkState::Free;
             surface.visible = false;
-            indices.entry(chunk.allocation).or_default().push(chunk.local_index as u32);
+
+            // Update draw indexed indirect values
             indirect.write(&[DrawIndexedIndirect {
                 vertex_count: 0,
                 instance_count: 1,
@@ -103,8 +102,13 @@ fn update(world: &mut World) {
                 base_instance: 0,
             }], chunk.global_index).unwrap();
             
-            let indices = &mut memory.sub_allocation_chunk_indices[chunk.allocation];
-            //indices.splat(chunk.)
+            // Clear used memory range
+            if let Some(range) = chunk.ranges {
+                if range.y > range.x {
+                    let indices = &mut memory.sub_allocation_chunk_indices[chunk.allocation];
+                    indices.splat((range.x as usize)..(range.y as usize), u32::MAX).unwrap();
+                }
+            }
 
             manager.entities.remove(i).unwrap();
         }
@@ -122,11 +126,10 @@ fn update(world: &mut World) {
             chunk.coords = *coords;
             **position = coords.as_::<f32>() * (terrain.settings.size as f32);
             chunk.priority = viewer_position.distance(**position);
-            entities.insert(*coords, *entity);
+            manager.entities.insert(*coords, *entity);
         }
 
         manager.chunks = chunks;
-        manager.entities.extend(entities);
     }
 }
 

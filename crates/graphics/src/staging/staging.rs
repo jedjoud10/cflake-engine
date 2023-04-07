@@ -115,8 +115,8 @@ impl StagingPool {
 
         // Put the encoder back into the cache, and submit ALL encoders
         graphics.reuse([encoder]);
-        graphics.poll();
-        //graphics.submit(false);
+        //graphics.poll();
+        graphics.submit(true);
 
         // Map the staging buffer
         type MapResult = Result<(), wgpu::BufferAsyncError>;
@@ -128,8 +128,8 @@ impl StagingPool {
         slice.map_async(wgpu::MapMode::Read, move |res| {
             tx.send(res).unwrap()
         });
-        //graphics.device().poll(wgpu::Maintain::Wait);
-        graphics.device().poll(wgpu::Maintain::Poll);
+        graphics.device().poll(wgpu::Maintain::Wait);
+        //graphics.device().poll(wgpu::Maintain::Poll);
 
         // Wait until the buffer is mapped, then read from the buffer
         if let Ok(Ok(_)) = rx.recv() {
