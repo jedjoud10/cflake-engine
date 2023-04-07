@@ -66,7 +66,7 @@ fn update(world: &mut World) {
         // Generate the chunks around ze player
         let distance = settings.chunk_render_distance as i32;
         for x in -distance..=distance {
-            for y in -2..=2 {
+            for y in -4..=4 {
                 for z in -distance..=distance {
                     let chunk = vek::Vec3::new(x, y, z);
                     let view = manager.viewer.unwrap().1;
@@ -121,8 +121,13 @@ fn update(world: &mut World) {
             chunk.ranges = None;
             chunk.coords = *coords;
             **position = coords.as_::<f32>() * (terrain.settings.size as f32);
-            chunk.priority = viewer_position.distance(**position) * 10.0;
+            chunk.priority = 0.0;
             manager.entities.insert(*coords, *entity);
+        }
+
+        // Update priority for EACH chunk
+        for (chunk, position) in scene.query_mut::<(&mut Chunk, &Position)>() {
+            chunk.priority = viewer_position.distance(**position);
         }
 
         manager.chunks = chunks;
