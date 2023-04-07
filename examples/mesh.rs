@@ -210,6 +210,7 @@ fn init(world: &mut World) {
     input.bind_button("left", Button::A);
     input.bind_button("right", Button::D);
     input.bind_button("lshift", Button::LShift);
+    input.bind_button("reset", Button::R);
     input.bind_axis("x rotation", Axis::MousePositionX);
     input.bind_axis("y rotation", Axis::MousePositionY);
 }
@@ -221,6 +222,8 @@ fn update(world: &mut World) {
     let time = &*time;
     let input = world.get::<Input>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
+
+
 
     /*
     // Rotation the light
@@ -249,7 +252,7 @@ fn update(world: &mut World) {
 
         // Controls the "strength" of the camera smoothness
         // Higher means more smooth, lower means less smooth
-        let smoothness = 0.1;
+        let smoothness = 1.0;
 
         // Update velocity scale
         if input.get_button("lshift").held() {
@@ -286,7 +289,7 @@ fn update(world: &mut World) {
 
         // The scroll wheel will change the camera FOV
         let delta = input.get_axis(Axis::MouseScrollDelta);
-        camera.hfov += delta * 10.0 * time.delta().as_secs_f32();
+        camera.hfov += delta * -1000.0 * time.delta().as_secs_f32();
 
         // Update the position with the new velocity
         **position += **output * time.delta().as_secs_f32() * 20.0;
