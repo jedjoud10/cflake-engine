@@ -122,8 +122,8 @@ impl MemoryManager {
 
         // Sizes of the temp and perm buffers
         compiler.use_constant(0, settings.size);
-        compiler.use_constant(1, settings.output_triangle_buffer_length as u32);
-        compiler.use_constant(2, settings.output_vertex_buffer_length as u32);
+        compiler.use_constant(1, settings.output_vertex_buffer_length as u32);
+        compiler.use_constant(2, settings.output_triangle_buffer_length as u32);
 
         // Temporary buffers
         compiler.use_storage_buffer::<<XYZW<f32> as Vertex>::Storage>(

@@ -125,13 +125,18 @@ impl ChunkManager {
             renderer.instant_initialized = None;
             let position = Position::default();
 
+            // TODO: Implement algo that will swizzle the i value and randomize it (but keep it unique an in range)
+            let allocation = i / settings.chunks_per_allocation;
+            let local_index = i % settings.chunks_per_allocation;
+            let global_index = i;
+
             // Create the chunk component
             let chunk = Chunk {
                 state: ChunkState::Free,
                 coords: ChunkCoords::zero(),
-                allocation: i / settings.chunks_per_allocation,
-                local_index: i % settings.chunks_per_allocation,
-                global_index: i,
+                allocation,
+                local_index,
+                global_index,
                 priority: f32::MIN,
                 ranges: None,
             };

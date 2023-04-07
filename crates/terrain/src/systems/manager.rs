@@ -17,9 +17,8 @@ use world::{user, System, World};
 // Dynamically generate the chunks based on camera position
 fn update(world: &mut World) {
     // Tries to find a chunk viewer and the terrain generator
-    let _time = world.get::<Time>().unwrap();
+    let time = world.get::<Time>().unwrap();
     let terrain = world.get_mut::<Terrain>();
-    let graphics = world.get::<Graphics>().unwrap();
     let mut indexed_indirect_buffers = world.get_mut::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
     let viewer =
@@ -33,7 +32,7 @@ fn update(world: &mut World) {
     // Get the terrain chunk manager and terrain settings
     let terrain = &mut *_terrain;
     let mut manager = &mut terrain.manager;
-    let mut memory = &mut terrain.memory;
+    let memory = &mut terrain.memory;
     let settings = &terrain.settings;
 
     // If we don't have a chunk viewer, don't do shit
@@ -67,7 +66,7 @@ fn update(world: &mut World) {
         // Generate the chunks around ze player
         let distance = settings.chunk_render_distance as i32;
         for x in -distance..=distance {
-            for y in -distance..=distance {
+            for y in -2..=2 {
                 for z in -distance..=distance {
                     let chunk = vek::Vec3::new(x, y, z);
                     let view = manager.viewer.unwrap().1;
@@ -88,12 +87,8 @@ fn update(world: &mut World) {
             let entity = manager.entities.get(i).unwrap();
             let mut entry = scene.entry_mut(*entity).unwrap();
             let (chunk, surface) = entry.as_query_mut::<(&mut Chunk, &mut Surface<TerrainMaterial>)>().unwrap();
-            
-            // Update chunk state and hide it
             chunk.state = ChunkState::Free;
             surface.visible = false;
-
-            // Update draw indexed indirect values
             indirect.write(&[DrawIndexedIndirect {
                 vertex_count: 0,
                 instance_count: 1,
@@ -102,7 +97,7 @@ fn update(world: &mut World) {
                 base_instance: 0,
             }], chunk.global_index).unwrap();
             
-            // Clear used memory range
+            // Write to the indices the updated ranges if needed
             if let Some(range) = chunk.ranges {
                 if range.y > range.x {
                     let indices = &mut memory.sub_allocation_chunk_indices[chunk.allocation];
@@ -112,7 +107,7 @@ fn update(world: &mut World) {
 
             manager.entities.remove(i).unwrap();
         }
-
+        
         // Detect the chunks that we must generate and add them
         let added = chunks
             .difference(&manager.chunks)
@@ -123,9 +118,10 @@ fn update(world: &mut World) {
         let query = scene.query_mut::<(&mut Chunk, &mut Position, &Entity)>().into_iter().filter(|(x, _, _)| x.state == ChunkState::Free);
         for ((chunk, position, entity), coords) in query.zip(added.iter()) {
             chunk.state = ChunkState::Pending;
+            chunk.ranges = None;
             chunk.coords = *coords;
             **position = coords.as_::<f32>() * (terrain.settings.size as f32);
-            chunk.priority = viewer_position.distance(**position);
+            chunk.priority = viewer_position.distance(**position) * 10.0;
             manager.entities.insert(*coords, *entity);
         }
 

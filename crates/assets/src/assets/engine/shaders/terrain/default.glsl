@@ -24,12 +24,16 @@ Voxel voxel(vec3 position) {
     position *= 0.3;
 
     //float density = snoise(position * 0.03) * 50;
-    
     float density1 = (1-fbmCellular(position * 0.01 * vec3(1, 2, 1), 10, 0.5, 2.0).y) * 50;
     float density2 = opSmoothUnion(-erosion(position.xz * 0.04, 0.112).x * 420 + position.y + 200, position.y, 40) + 5;
 
     float density = mix(density1, density2, clamp(snoise(position.xz * 0.003) * 0.5 + 0.5, 0, 1)) + position.y;
     float randomized = random(position) * 0.1;
+    
+
+    //float randomized = random(position) * 0.4;
+    //float density = snoise(position * 0.01) * 10 + position.y;
+
     // Create a voxel and return it
     return Voxel(density + randomized, vec3(1));
 }

@@ -251,14 +251,12 @@ fn update(world: &mut World) {
         let vertices_offset = offsets[0];
         let triangle_indices_offset = offsets[1];
 
+        // Check if we are OOM lol
+        if vertices_offset / settings.vertices_per_sub_allocation != triangle_indices_offset / settings.triangles_per_sub_allocation {
+            panic!("Out of memory xD MDR");
+        }
+        
         // Calculate sub-allocation index and length
-        /*
-        dbg!(vertices_offset);
-        dbg!(triangle_indices_offset);
-        dbg!(vertices_offset / settings.vertices_per_sub_allocation);
-        dbg!(triangle_indices_offset / settings.triangles_per_sub_allocation);
-        */
-        assert_eq!(vertices_offset / settings.vertices_per_sub_allocation, triangle_indices_offset / settings.triangles_per_sub_allocation);
         let count = f32::max(vertex_count as f32 / settings.vertices_per_sub_allocation as f32, triangle_count as f32 / settings.triangles_per_sub_allocation as f32); 
         let count = count.ceil() as u32;
         let offset = vertices_offset / settings.vertices_per_sub_allocation;

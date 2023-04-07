@@ -6,6 +6,10 @@ layout (constant_id = 0) const uint sub_allocations = 1;
 layout (constant_id = 1) const uint vertices_per_sub_allocation = 1;
 layout (constant_id = 2) const uint triangles_per_sub_allocation = 1;
 
+// Each group consists of 32 sub allocations
+const uint sub_allocation_groups = sub_allocations / 32;
+const uint sub_allocations_per_sub_allocation_group = 32;
+
 // Contains the alloc-local chunk index
 layout(push_constant) uniform PushConstants {
     uint allocation_local_chunk_index;
@@ -32,15 +36,15 @@ layout(std430, set = 0, binding = 2) readonly buffer Counters {
 shared uint chosen_sub_allocation_index;
 
 // Sub-allocations:         [-1] [-1] [3] [3] [3] [-1] [2] [2]
-// Sub-allocation groups:   [               ] [              ]
+// Sub-allocation groups:   [                                ]
+// Dispatch invocations are sub allocation groups
 void main() {
-    // Dispatch invocations are sub allocation GROUPS btw
-    if (gl_GlobalInvocationID.x > (sub_allocations / 4)) {
+    if (gl_GlobalInvocationID.x > sub_allocation_groups) {
         return;
     }
 
     // Checks if we are within a free region or not
-    bool within_free = indices.data[0] == uint(-1);
+    bool within_free = false;
 
     // Keeps count of the number of empty sub allocations that we passed through 
     uint free_sub_allocations = 0;
@@ -49,20 +53,29 @@ void main() {
     uint vertices = counters.vertices;
     uint triangles = counters.triangles;
 
+    // Doesn't really matter since we can calculate it anyways 
+    uint chosen_sub_allocation_count = int(max(ceil(float(vertices) / float(vertices_per_sub_allocation)), ceil(float(triangles) / float(triangles_per_sub_allocation))));
+
     // Temp values for now 
     uint temp_sub_allocation_index = 0;
     uint temp_sub_allocation_count = 1;
 
     uint invocation_local_chosen_sub_alloction_index = 0;
 
+    memoryBarrier();
+    barrier();
+
     // If we are the first group, update temporarily
     if (gl_GlobalInvocationID.x == 0) {
         atomicExchange(chosen_sub_allocation_index, uint(-1));
     }
 
-    // Find a free memory range for this specific sub-allocation GROUP
-    uint base = gl_GlobalInvocationID.x * 32;
-    for (uint i = base; i < (base + 32); i++) {
+    memoryBarrier();
+    barrier();
+
+    // Find a free memory range for this specific sub-allocation group
+    uint base = gl_GlobalInvocationID.x * sub_allocations_per_sub_allocation_group;
+    for (uint i = base; i < (base + sub_allocations_per_sub_allocation_group); i++) {
         bool free = indices.data[i] == uint(-1);
         
         // We just moved into a free allocation
@@ -76,12 +89,8 @@ void main() {
             temp_sub_allocation_count += 1;
         }
         
-        // Check if the counted free slots suffice
-        uint free_vertex_length = temp_sub_allocation_count * vertices_per_sub_allocation;
-        uint free_triangles_length = temp_sub_allocation_count * triangles_per_sub_allocation;
-        
         // If this is a possible candidate for a memory alloc offset, then use it
-        if (within_free && free_vertex_length > vertices && free_triangles_length > triangles) {
+        if (within_free && temp_sub_allocation_count >= chosen_sub_allocation_count) {
             atomicMin(chosen_sub_allocation_index, temp_sub_allocation_index);
             invocation_local_chosen_sub_alloction_index = temp_sub_allocation_index;
             break;
@@ -91,13 +100,16 @@ void main() {
         within_free = free;
     }
 
+    memoryBarrier();
+    barrier();
+
     // Only let one invocation do this shit
     if (invocation_local_chosen_sub_alloction_index != chosen_sub_allocation_index) {
         return;
     } 
 
-    // Doesn't really matter since we can calculate it anyways 
-    uint chosen_sub_allocation_count = int(max(ceil(float(vertices) / float(vertices_per_sub_allocation)), ceil(float(triangles) / float(triangles_per_sub_allocation))));
+    memoryBarrier();
+    barrier();
 
     // After finding the right block, we can write to it
     for (uint i = chosen_sub_allocation_index; i < (chosen_sub_allocation_index + chosen_sub_allocation_count); i++) {
