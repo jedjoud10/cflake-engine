@@ -28,7 +28,7 @@ void main() {
     uint part = floatBitsToUint(position.w);
     vec4 unpacked = unpackUnorm4x8(part);
 
-    effect = ((snoise(world_pos.xyz * 2.3) * 0.5 + 0.5) * 0.2 + 0.8);
+    effect = ((snoise(world_pos.xyz * 2.3) * 0.5 + 0.5) * 0.4 + 0.7);
 
     // Set the output variables
     m_position = world_pos.xyz;

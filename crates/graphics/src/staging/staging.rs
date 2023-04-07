@@ -20,7 +20,7 @@ pub struct StagingPool {
     pub(crate) allocations: Arc<ConcVec<Buffer>>,
 
     // Keeps track of the mapping state
-    pub(crate) states: AtomicBitSet,
+    pub(crate) used: AtomicBitSet,
 }
 
 impl StagingPool {
@@ -28,7 +28,7 @@ impl StagingPool {
     pub fn new() -> Self {
         Self {
             allocations: Arc::new(ConcVec::new()),
-            states: AtomicBitSet::new(),
+            used: AtomicBitSet::new(),
         }
     }
 
@@ -48,14 +48,14 @@ impl StagingPool {
 
         // Try to find a free buffer
         // If that's not possible, simply create a new one
-        self.allocations.iter().enumerate().find(|(i, buffer)| {
+        let (i, buffer) = self.allocations.iter().enumerate().find(|(i, buffer)| {
             let cap = buffer.size() >= capacity;
             let mode = match mode {
                 MapMode::Read => buffer.usage().contains(read),
                 MapMode::Write => buffer.usage().contains(write),
             };
-            let used = !self.states.get(*i, Ordering::Relaxed);
-            cap && mode && used
+            let free = !self.used.get(*i, Ordering::Relaxed);
+            cap && mode && free
         }).unwrap_or_else(|| {
             log::warn!("Did not find staging buffer with the proper requirements [cap = {capacity}b, mode = {mode:?}]");
             
@@ -78,11 +78,12 @@ impl StagingPool {
             let buffer = graphics.device().create_buffer(&desc);
             log::warn!("Allocating new staging buffer [cap = {capacity}b, mode = {mode:?}]");
             let index = self.allocations.push(buffer);
-
-            // Also add the "used" buffer state to the state tracker
-            self.states.set(index, Ordering::Relaxed);
             (index, &self.allocations[index])
-        })
+        });
+
+        // Also add the "used" buffer state to the state tracker since we will use the buffer
+        self.used.set(i, Ordering::Relaxed);
+        (i, buffer)
     }
 }
 
@@ -114,8 +115,8 @@ impl StagingPool {
 
         // Put the encoder back into the cache, and submit ALL encoders
         graphics.reuse([encoder]);
-        // (Also wait for their subbmission)
-        graphics.submit(true);
+        graphics.poll();
+        //graphics.submit(false);
 
         // Map the staging buffer
         type MapResult = Result<(), wgpu::BufferAsyncError>;
@@ -123,16 +124,19 @@ impl StagingPool {
 
         // Map synchronously
         let slice = staging.slice(0..size);
+        log::trace!("map buffer read: map async called");
         slice.map_async(wgpu::MapMode::Read, move |res| {
             tx.send(res).unwrap()
         });
-        graphics.device().poll(wgpu::Maintain::Wait);
+        //graphics.device().poll(wgpu::Maintain::Wait);
+        graphics.device().poll(wgpu::Maintain::Poll);
 
         // Wait until the buffer is mapped, then read from the buffer
         if let Ok(Ok(_)) = rx.recv() {
+            log::trace!("map buffer read: map async resolved, rx received");
             return Some(StagingView {
                 index: i,
-                states: &&self.states,
+                used: &&self.used,
                 staging,
                 view: Some(slice.get_mapped_range()),
             });
@@ -205,8 +209,6 @@ impl StagingPool {
 
         // Put the encoder back into the cache, and submit ALL encoders
         graphics.reuse([encoder]);
-        // (Also wait for their subbmission)
-        graphics.submit(true);
 
         // Map the staging buffer
         type MapResult = Result<(), wgpu::BufferAsyncError>;
@@ -217,7 +219,7 @@ impl StagingPool {
         slice.map_async(wgpu::MapMode::Read, move |res| {
             tx.send(res).unwrap()
         });
-        graphics.device().poll(wgpu::Maintain::Wait);
+        graphics.device().poll(wgpu::Maintain::Poll);
 
         // Wait until the buffer is mapped, then read from the buffer
         if let Ok(Ok(_)) = rx.recv() {
@@ -228,7 +230,7 @@ impl StagingPool {
         }
 
         // Reset the state of the staging buffer
-        self.states.remove(i, Ordering::Relaxed);
+        self.used.remove(i, Ordering::Relaxed);
     }
 }
 

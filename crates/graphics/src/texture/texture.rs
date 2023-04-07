@@ -26,7 +26,7 @@ pub type Texels<'a, T> = Option<&'a [<T as Texel>::Storage]>;
 // A texture is an abstraction over Vulkan images to allow us to access/modify them with ease
 // A texture is a container of multiple texels (like pixels, but for textures) that are stored on the GPU
 // This trait is implemented for all variants of textures (1D, 2D, 3D, Layered)
-pub trait Texture: Sized + raw::RawTexture<Self::Region> {
+pub trait Texture: Sized {
     // Texel region (position + extent)
     type Region: Region;
 
@@ -379,6 +379,31 @@ pub trait Texture: Sized + raw::RawTexture<Self::Region> {
 
         Ok(())
     }
+
+    // Get the stored graphics context
+    fn graphics(&self) -> Graphics;
+
+    // Create a texture struct from it's raw components
+    // This will simply create the texture struct, and it assumes
+    // that the texture was already created externally with the right parameters
+    unsafe fn from_raw_parts(
+        graphics: &Graphics,
+        texture: wgpu::Texture,
+        views: SmallVec<[wgpu::TextureView; 1]>,
+        sampler: Arc<wgpu::Sampler>,
+        sampling: SamplerSettings,
+        dimensions: <Self::Region as Region>::E,
+        usage: TextureUsage,
+        mode: TextureMode,
+    ) -> Self;
+
+    // Replace the underlying raw data with the given new data
+    unsafe fn replace_raw_parts(
+        &mut self,
+        texture: wgpu::Texture,
+        views: SmallVec<[wgpu::TextureView; 1]>,
+        dimensions: <Self::Region as Region>::E,
+    );
 }
 
 // Get the number of mip levels that the texture should use
@@ -513,42 +538,6 @@ pub(crate) fn read_from_level<T: Texel, E: Extent, O: Origin>(
     level: u32,
     graphics: &Graphics,
 ) {
-}
-
-// Separated this into it's own trait since I didn't want there to be unsafe init/internal functions publicly
-pub(crate) mod raw {
-    use crate::{
-        Graphics, Region, SamplerSettings, TextureMode, TextureUsage,
-    };
-    use smallvec::SmallVec;
-    use std::sync::Arc;
-
-    pub trait RawTexture<R: Region> {
-        // Get the stored graphics context
-        fn graphics(&self) -> Graphics;
-
-        // Create a texture struct from it's raw components
-        // This will simply create the texture struct, and it assumes
-        // that the texture was already created externally with the right parameters
-        unsafe fn from_raw_parts(
-            graphics: &Graphics,
-            texture: wgpu::Texture,
-            views: SmallVec<[wgpu::TextureView; 1]>,
-            sampler: Arc<wgpu::Sampler>,
-            sampling: SamplerSettings,
-            dimensions: <R as Region>::E,
-            usage: TextureUsage,
-            mode: TextureMode,
-        ) -> Self;
-
-        // Replace the underlying raw data with the given new data
-        unsafe fn replace_raw_parts(
-            &mut self,
-            texture: wgpu::Texture,
-            views: SmallVec<[wgpu::TextureView; 1]>,
-            dimensions: <R as Region>::E,
-        );
-    }
 }
 
 // Check if the given extent is valid within device limits

@@ -13,6 +13,9 @@ pub enum ChunkState {
 
     // The chunk's mesh is generated successfully
     Generated,
+
+    // The chunk is free and is not currently used by the generator
+    Free,
 }
 
 // Coordniate system for chunks
@@ -24,7 +27,10 @@ pub type ChunkCoords = vek::Vec3<i32>;
 #[derive(Component)]
 pub struct Chunk {
     pub(crate) allocation: usize,
-    pub(crate) index: usize,
+    pub(crate) local_index: usize,
+    pub(crate) global_index: usize,
+    pub(crate) vertex_ranges: Option<vek::Vec2<usize>>,
+    pub(crate) triangle_ranges: Option<vek::Vec2<usize>>,
     pub(crate) state: ChunkState,
     pub(crate) coords: ChunkCoords,
     pub(crate) priority: f32,

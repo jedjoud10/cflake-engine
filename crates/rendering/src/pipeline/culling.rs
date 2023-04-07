@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use ecs::Scene;
 use math::SharpVertices;
 use utils::{ThreadPool};

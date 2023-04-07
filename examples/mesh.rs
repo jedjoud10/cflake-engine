@@ -18,7 +18,7 @@ fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
     let settings = TerrainSettings::new(&graphics,
         64,
-        5,
+        9,
         true,
         7,
         1024,

@@ -439,19 +439,16 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         Ok(())
     }
 
-    /*
     // Read the buffer ASYNCHRONOUSLY without stalling
-    // The read will be completeed at the end of the frame when WGPU polls the device
-    // Only works on dynamic buffers since they have a constant length througouht their lifetime
-    // TODO: implement
+    // The read will be completed at the end of the frame when WGPU polls the device
+    // Only works on dynamic buffers since they have a constant length throuhgout their lifetime
     pub fn async_read<'a>(
         &'a self,
         range: impl RangeBounds<usize>,
         callback: impl FnOnce(&[T]) + Sync + Send,
     ) {
-        
+        todo!()
     }
-    */
 
     // Clear the buffer and reset it's length
     // This doesn't enqueue a GPU command

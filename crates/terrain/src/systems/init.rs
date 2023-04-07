@@ -5,6 +5,7 @@ use crate::{
 
 use assets::Assets;
 
+use ecs::Scene;
 use graphics::{
     DrawIndexedIndirectBuffer, Graphics,
 };
@@ -20,6 +21,7 @@ fn init(world: &mut World) {
         // Add materials and fetch them
         world.insert(Storage::<TerrainMaterial>::default());
         let mut materials = world.get_mut::<Storage<TerrainMaterial>>().unwrap();
+        let mut scene = world.get_mut::<Scene>().unwrap();
         let mut pipelines = world.get_mut::<Pipelines>().unwrap();
         
         // Get graphics API and assets
@@ -68,6 +70,7 @@ fn init(world: &mut World) {
             &graphics,
             &settings,
             &memory,
+            &mut scene,
             &mut indirect_meshes,
             &mut indirect_buffers,
             &mut materials,
@@ -92,6 +95,7 @@ fn init(world: &mut World) {
         drop(triangles);
         drop(materials);
         drop(pipelines);
+        drop(scene);
 
         // Insert terrain
         world.insert(terrain);

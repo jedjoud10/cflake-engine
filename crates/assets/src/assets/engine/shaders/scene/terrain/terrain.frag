@@ -5,7 +5,7 @@ layout(location = 0) out vec4 frag;
 layout(location = 0) in vec3 m_position;
 layout(location = 1) in vec3 m_normal;
 layout(location = 2) in vec3 m_color;
-layout(location = 3) in float factor;
+layout(location = 3) in flat float factor;
 
 // Camera, scene, and shadowmap shared objects
 #include <engine/shaders/common/camera.glsl>
@@ -61,13 +61,11 @@ void main() {
 	}
 	*/
 
-	albedo = mix(rock, grass, clamp(clamp(normal.y - 0.85, 0, 1) * 10, 0, 1));
+	//albedo = mix(rock, grass, clamp(clamp(normal.y - 0.85, 0, 1) * 10, 0, 1));
 
-	/*
 	if (normal.y < 0.85) {
-		albedo = rock;
+		albedo = rock * factor;
 	}
-	*/
 
 	// Compute PBR values
 	float roughness = clamp(mask.g, 0.02, 1.0);

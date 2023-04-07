@@ -35,10 +35,38 @@ pub struct CubeMap<T: Texel> {
     graphics: Graphics,
 }
 
-impl<T: Texel>
-    super::raw::RawTexture<((vek::Vec2<u32>, u32), vek::Extent2<u32>)>
-    for CubeMap<T>
-{
+impl<T: Texel> Texture for CubeMap<T> {
+    type Region = ((vek::Vec2<u32>, u32), vek::Extent2<u32>);
+    type T = T;
+
+    fn dimensions(&self) -> <Self::Region as crate::Region>::E {
+        self.dimensions
+    }
+
+    fn mode(&self) -> TextureMode {
+        self.mode
+    }
+
+    fn usage(&self) -> TextureUsage {
+        self.usage
+    }
+
+    fn raw(&self) -> &wgpu::Texture {
+        &self.texture
+    }
+
+    fn views(&self) -> &[wgpu::TextureView] {
+        &self.views
+    }
+
+    fn sampler(&self) -> Sampler<Self::T> {
+        Sampler {
+            sampler: &self.sampler,
+            _phantom: PhantomData,
+            settings: &self.sampling,
+        }
+    }
+
     fn graphics(&self) -> Graphics {
         self.graphics.clone()
     }
@@ -75,39 +103,6 @@ impl<T: Texel>
         self.texture = texture;
         self.views = views;
         self.dimensions = dimensions;
-    }
-}
-
-impl<T: Texel> Texture for CubeMap<T> {
-    type Region = ((vek::Vec2<u32>, u32), vek::Extent2<u32>);
-    type T = T;
-
-    fn dimensions(&self) -> <Self::Region as crate::Region>::E {
-        self.dimensions
-    }
-
-    fn mode(&self) -> TextureMode {
-        self.mode
-    }
-
-    fn usage(&self) -> TextureUsage {
-        self.usage
-    }
-
-    fn raw(&self) -> &wgpu::Texture {
-        &self.texture
-    }
-
-    fn views(&self) -> &[wgpu::TextureView] {
-        &self.views
-    }
-
-    fn sampler(&self) -> Sampler<Self::T> {
-        Sampler {
-            sampler: &self.sampler,
-            _phantom: PhantomData,
-            settings: &self.sampling,
-        }
     }
 }
 

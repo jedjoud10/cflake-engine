@@ -359,7 +359,7 @@ pub(super) fn get_spirq_type_size(
 ) -> Option<usize> {
     use spirq::ty::Type;
 
-    dbg!(_type.nbyte());
+    //dbg!(_type.nbyte());
 
     match _type {
         Type::Scalar(_) | Type::Vector(_) | Type::Matrix(_) => Some(_type.nbyte().unwrap()),
@@ -528,9 +528,9 @@ pub(super) fn create_pipeline_layout(
                     .get(&name)
                     .ok_or(ShaderReflectionError::NotDefinedInCompiler(name.clone()))?;
 
-                dbg!(&name);
-                dbg!(ty);
-                dbg!(desc_ty);
+                //dbg!(&name);
+                //dbg!(ty);
+                //dbg!(desc_ty);
 
                 // Get the binding type for this global variable
                 let binding_type = match desc_ty {
@@ -916,7 +916,7 @@ fn reflect_storage_buffer(
 
     // Get the size of the type 
     let shader_size = get_spirq_type_size(_type).unwrap();
-    dbg!(shader_size);
+    //dbg!(shader_size);
 
     // Make sure the sizes are multiples
     /*

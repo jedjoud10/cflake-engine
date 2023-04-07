@@ -30,180 +30,134 @@ impl MemoryManager {
         triangles: &mut Storage<Triangles>,
         settings: &TerrainSettings
     ) -> Self {
-        Self {
-            // TODO: fix
-            shared_vertex_buffers: create_vertex_buffers(graphics, vertices, settings.allocations_count, settings.output_vertex_buffer_length),
-            shared_triangle_buffers: create_triangle_buffers(graphics, triangles, settings.allocations_count, settings.output_triangle_buffer_length),
-            compute_find: load_compute_find_shader(assets, graphics, settings.sub_allocations_count, settings.vertices_per_sub_allocation, settings.triangles_per_sub_allocation),
-            offsets: create_counters(graphics, 2),
-            sub_allocation_chunk_indices: create_sub_allocation_chunk_indices(graphics, settings.allocations_count, settings.sub_allocations_count),
-            compute_copy: load_compute_copy_shader(assets, graphics, settings.output_triangle_buffer_length, settings.output_vertex_buffer_length, settings.allocations_count, settings.size),
-        }
-    }
-}
-
-
-fn create_sub_allocation_chunk_indices(
-    graphics: &Graphics,
-    allocations: usize,
-    sub_allocations: usize,
-) -> Vec<Buffer<u32>> {
-    (0..allocations)
+        let sub_allocation_chunk_indices = (0..settings.allocations_count)
         .map(|_| {
             Buffer::<u32>::splatted(
                 graphics,
-                sub_allocations,
+                settings.sub_allocations_count,
                 u32::MAX,
                 BufferMode::Dynamic,
                 BufferUsage::STORAGE,
             )
             .unwrap()
         })
-        .collect::<Vec<_>>()
-}
+        .collect::<Vec<_>>();
 
+        let shared_vertex_buffers = (0..settings.allocations_count)
+            .map(|_| {
+                let value =
+                    AttributeBuffer::<attributes::Position>::zeroed(
+                        graphics,
+                        settings.output_vertex_buffer_length,
+                        BufferMode::Dynamic,
+                        BufferUsage::STORAGE,
+                    )
+                    .unwrap();
+                vertices.insert(value)
+            })
+            .collect::<Vec<_>>();
 
-// Creates multiple big triangle buffers that will contain our data
-fn create_triangle_buffers(
-    graphics: &Graphics,
-    triangles: &mut Storage<TriangleBuffer<u32>>,
-    allocations: usize,
-    output_triangle_buffer_length: usize,
-) -> Vec<Handle<TriangleBuffer<u32>>> {
-    (0..allocations)
-        .map(|_| {
-            triangles.insert(
-                TriangleBuffer::zeroed(
-                    graphics,
-                    output_triangle_buffer_length,
-                    BufferMode::Dynamic,
-                    BufferUsage::STORAGE,
+        let shared_triangle_buffers = (0..settings.allocations_count)
+            .map(|_| {
+                triangles.insert(
+                    TriangleBuffer::zeroed(
+                        graphics,
+                        settings.output_triangle_buffer_length,
+                        BufferMode::Dynamic,
+                        BufferUsage::STORAGE,
+                    )
+                    .unwrap(),
                 )
-                .unwrap(),
+            })
+            .collect::<Vec<_>>();
+
+        let module = assets
+            .load::<ComputeModule>("engine/shaders/terrain/find.comp")
+            .unwrap();
+
+        // Create a simple compute shader compiler
+        let mut compiler = Compiler::new(assets, graphics);
+
+        // Set storage buffers and counters
+        compiler.use_storage_buffer::<u32>("counters", StorageAccess::ReadOnly);
+        compiler.use_storage_buffer::<u32>("offsets", StorageAccess::ReadWrite);
+        compiler.use_storage_buffer::<u32>("indices", StorageAccess::ReadWrite);
+
+        // Needed to pass in the chunk index
+        compiler.use_push_constant_layout(
+            PushConstantLayout::single(
+                <u32 as GpuPod>::size(),
+                ModuleVisibility::Compute,
             )
-        })
-        .collect::<Vec<_>>()
-}
+            .unwrap(),
+        );
 
-// Creates multiple big vertex buffers that will contain our data
-fn create_vertex_buffers(
-    graphics: &Graphics,
-    vertices: &mut Storage<AttributeBuffer<attributes::Position>>,
-    allocations: usize,
-    output_vertex_buffer_length: usize,
-) -> Vec<Handle<AttributeBuffer<attributes::Position>>> {
-    (0..allocations)
-        .map(|_| {
-            let value =
-                AttributeBuffer::<attributes::Position>::zeroed(
-                    graphics,
-                    output_vertex_buffer_length,
-                    BufferMode::Dynamic,
-                    BufferUsage::STORAGE,
-                )
-                .unwrap();
-            vertices.insert(value)
-        })
-        .collect::<Vec<_>>()
-}
+        // Spec constants
+        compiler.use_constant(0, settings.sub_allocations_count as u32);
+        compiler.use_constant(1, settings.vertices_per_sub_allocation);
+        compiler.use_constant(2, settings.triangles_per_sub_allocation);
 
+        // Create the compute shader that will find a free memory allocation
+        let compute_find = ComputeShader::new(module, compiler).unwrap();
 
-// Load the compute shader that will find a free memory range
-fn load_compute_find_shader(
-    assets: &Assets,
-    graphics: &Graphics,
-    sub_allocations: usize,
-    vertices_per_sub_allocation: u32,
-    triangles_per_sub_allocation: u32,
-) -> ComputeShader {
-    let module = assets
-        .load::<ComputeModule>("engine/shaders/terrain/find.comp")
-        .unwrap();
+        let module = assets
+            .load::<ComputeModule>("engine/shaders/terrain/copy.comp")
+            .unwrap();
 
-    // Create a simple compute shader compiler
-    let mut compiler = Compiler::new(assets, graphics);
+        // Create a simple compute shader compiler
+        let mut compiler = Compiler::new(assets, graphics);
 
-    // Set storage buffers and counters
-    compiler.use_storage_buffer::<u32>("counters", StorageAccess::ReadOnly);
-    compiler.use_storage_buffer::<u32>("offsets", StorageAccess::ReadWrite);
-    compiler.use_storage_buffer::<u32>("indices", StorageAccess::ReadWrite);
+        // Needed to find how many and where should we copy data
+        compiler.use_storage_buffer::<u32>("counters", StorageAccess::ReadOnly);
+        compiler.use_storage_buffer::<u32>("offsets", StorageAccess::ReadOnly);
 
-    // Needed to pass in the chunk index
-    compiler.use_push_constant_layout(
-        PushConstantLayout::single(
-            <u32 as GpuPod>::size(),
-            ModuleVisibility::Compute,
-        )
-        .unwrap(),
-    );
+        // Required since we must write to the right indirect buffer element
+        compiler.use_push_constant_layout(
+            PushConstantLayout::single(
+                <u32 as GpuPod>::size(),
+                ModuleVisibility::Compute,
+            )
+            .unwrap(),
+        );
 
-    // Spec constants
-    compiler.use_constant(0, sub_allocations as u32);
-    compiler.use_constant(1, vertices_per_sub_allocation);
-    compiler.use_constant(2, triangles_per_sub_allocation);
+        // Sizes of the temp and perm buffers
+        compiler.use_constant(0, settings.size);
+        compiler.use_constant(1, settings.output_triangle_buffer_length as u32);
+        compiler.use_constant(2, settings.output_vertex_buffer_length as u32);
 
-    // Create the compute shader that will find a free memory allocation
-    ComputeShader::new(module, compiler).unwrap()
-}
+        // Temporary buffers
+        compiler.use_storage_buffer::<<XYZW<f32> as Vertex>::Storage>(
+            "temporary_vertices",
+            StorageAccess::ReadOnly
+        );
+        compiler.use_storage_buffer::<u32>(
+            "temporary_triangles",
+            StorageAccess::ReadOnly
+        );
 
+        // Permanent buffer allocations
+        compiler.use_storage_buffer::<DrawIndexedIndirect>(
+            "indirect", StorageAccess::WriteOnly
+        );
+        compiler.use_storage_buffer::<<XYZW<f32> as Vertex>::Storage>(
+            "output_vertices",
+            StorageAccess::WriteOnly
+        );
+        compiler.use_storage_buffer::<u32>(
+            "output_triangles",
+            StorageAccess::WriteOnly
+        );
 
-// Load the compute shader that will copy the temp data to perm allocation space
-fn load_compute_copy_shader(
-    assets: &Assets,
-    graphics: &Graphics,
-    output_triangle_buffer_length: usize,
-    output_vertex_buffer_length: usize,
-    _allocations: usize,
-    size: u32,
-) -> ComputeShader {
-    let module = assets
-        .load::<ComputeModule>("engine/shaders/terrain/copy.comp")
-        .unwrap();
-
-    // Create a simple compute shader compiler
-    let mut compiler = Compiler::new(assets, graphics);
-
-    // Needed to find how many and where should we copy data
-    compiler.use_storage_buffer::<u32>("counters", StorageAccess::ReadOnly);
-    compiler.use_storage_buffer::<u32>("offsets", StorageAccess::ReadOnly);
-
-    // Required since we must write to the right indirect buffer element
-    compiler.use_push_constant_layout(
-        PushConstantLayout::single(
-            <u32 as GpuPod>::size(),
-            ModuleVisibility::Compute,
-        )
-        .unwrap(),
-    );
-
-    // Sizes of the temp and perm buffers
-    compiler.use_constant(0, size);
-    compiler.use_constant(1, output_triangle_buffer_length as u32);
-    compiler.use_constant(2, output_vertex_buffer_length as u32);
-
-    // Temporary buffers
-    compiler.use_storage_buffer::<<XYZW<f32> as Vertex>::Storage>(
-        "temporary_vertices",
-        StorageAccess::ReadOnly
-    );
-    compiler.use_storage_buffer::<u32>(
-        "temporary_triangles",
-        StorageAccess::ReadOnly
-    );
-
-    // Permanent buffer allocations
-    compiler.use_storage_buffer::<DrawIndexedIndirect>(
-        "indirect", StorageAccess::WriteOnly
-    );
-    compiler.use_storage_buffer::<<XYZW<f32> as Vertex>::Storage>(
-        "output_vertices",
-        StorageAccess::WriteOnly
-    );
-    compiler.use_storage_buffer::<u32>(
-        "output_triangles",
-        StorageAccess::WriteOnly
-    );
-
-    // Create copy the compute shader
-    ComputeShader::new(module, compiler).unwrap()
+        // Create copy the compute shader
+        let compute_copy = ComputeShader::new(module, compiler).unwrap();
+        
+        Self {
+            shared_vertex_buffers,
+            shared_triangle_buffers,
+            compute_find,
+            offsets: create_counters(graphics, 2, BufferUsage::READ | BufferUsage::WRITE),
+            sub_allocation_chunk_indices,
+            compute_copy,
+        }
+    }
 }

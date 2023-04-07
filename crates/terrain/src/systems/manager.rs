@@ -2,71 +2,24 @@ use crate::{
     Chunk, ChunkCoords, ChunkState, ChunkViewer, Terrain,
     TerrainMaterial, TerrainSettings, ChunkManager,
 };
-use ahash::AHashSet;
+use ahash::{AHashSet, AHashMap};
 
 use coords::{Position};
 use ecs::{Entity, Scene};
 
+use graphics::{ComputePass, Graphics, DrawIndexedIndirectBuffer, DrawIndexedIndirect, ActivePipeline};
 use rendering::{
-    Renderer, Surface,
+    Renderer, Surface, IndirectMesh,
 };
-use utils::{Time};
+use utils::{Time, Storage};
 use world::{user, System, World};
-
-// Creates the appropriate components for creating a new chunk entity
-fn create_chunk_components(
-    viewer: &Position,
-    coords: ChunkCoords,
-    manager: &ChunkManager,
-    settings: &TerrainSettings,
-) -> (Position, Renderer, Surface<TerrainMaterial>, Chunk) {
-    // Offset chunk coords to remove negatives
-    let positive = coords
-        .map(|x| (x + settings.chunk_render_distance as i32) as u32);
-    let max =
-        vek::Vec3::broadcast(settings.chunk_render_distance as u32 * 2 + 1);
-    let index = (positive.x
-        + positive.y * max.x
-        + positive.z * max.x * max.y) as usize;
-
-    // Get a mesh from the terrain mesh pool
-    let mesh = &manager.indirect_meshes[index];
-
-    // Create the surface for rendering
-    let mut surface = Surface::indirect(
-        mesh.clone(),
-        manager.material.clone(),
-        manager.id.clone(),
-    );
-
-    // Hide the surface at first
-    surface.visible = false;
-
-    // Create a renderer an a position component
-    let mut renderer = Renderer::default();
-    renderer.instant_initialized = None;
-    let position =
-        Position::from(coords.as_::<f32>() * settings.size as f32);
-    let allocation = index / settings.chunks_per_allocation;
-
-    // Create the chunk component
-    let chunk = Chunk {
-        state: ChunkState::Pending,
-        coords,
-        allocation,
-        index,
-        priority: viewer.distance(*position),
-    };
-
-    // Return the components of the new chunk
-    (position, renderer, surface, chunk)
-}
 
 // Dynamically generate the chunks based on camera position
 fn update(world: &mut World) {
     // Tries to find a chunk viewer and the terrain generator
     let _time = world.get::<Time>().unwrap();
     let terrain = world.get_mut::<Terrain>();
+    let mut indexed_indirect_buffers = world.get_mut::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
     let viewer =
         scene.find_mut::<(&Entity, &mut ChunkViewer, &Position)>();
@@ -79,38 +32,44 @@ fn update(world: &mut World) {
     // Get the terrain chunk manager and terrain settings
     let terrain = &mut *_terrain;
     let mut manager = &mut terrain.manager;
+    let mut memory = &mut terrain.memory;
     let settings = &terrain.settings;
 
     // If we don't have a chunk viewer, don't do shit
-    let Some((entity, _, position)) = viewer else {
+    let Some((entity, _, viewer_position)) = viewer else {
         manager.viewer = None;
         return;
     };
 
     // Set the main viewer location and fetches the oldvalue
     let mut added = false;
-    let new = (**position
+    let new = (**viewer_position
         / vek::Vec3::broadcast(settings.size as f32))
     .round()
     .as_::<i32>();
-    let _old = if let Some((_, old)) = &mut manager.viewer {
+    let old = if let Some((_, old)) = &mut manager.viewer {
         std::mem::replace(old, new)
     } else {
         manager.viewer = Some((*entity, new));
         added = true;
         new
     };
-
-    // Keep a hashset of all the chunks around the viewer
-    let mut chunks = AHashSet::<ChunkCoords>::new();
-
+    
     // Check if it moved since last frame
-    if added {
+    if added || new != old {
+        // Keep a hashset of all the chunks around the viewer
+        let mut chunks = AHashSet::<ChunkCoords>::new();
+        let mut entities = AHashMap::<ChunkCoords, Entity>::new();
+
+        // Get the global indirect draw buffer 
+        let indirect = indexed_indirect_buffers.get_mut(&manager.indexed_indirect_buffer);
+
         // Generate the chunks around ze player
         let distance = settings.chunk_render_distance as i32;
-        for x in -distance..distance {
-            for y in -distance..distance {
-                for z in -distance..distance {
+        //let distance = 2;
+        for x in -distance..=distance {
+            for y in -distance..=distance {
+                for z in -distance..=distance {
                     let chunk = vek::Vec3::new(x, y, z);
                     let view = manager.viewer.unwrap().1;
                     chunks.insert(chunk + view);
@@ -118,38 +77,53 @@ fn update(world: &mut World) {
             }
         }
 
-        // Detect the chunks that we should remove and remove them
+        // Detect the chunks that we should remove and "remove" them
         let removed = manager
             .chunks
             .difference(&chunks)
             .cloned()
             .collect::<Vec<_>>();
-        for coords in removed {
-            let entity = manager.entities.remove(&coords).unwrap();
-            if scene.contains(entity) {
-                scene.remove(entity);
-            }
-        }
 
-        // Get the removed surfaces and add the mesh and indirect buffer handles back to the pool
-        for _surface in scene.removed::<Surface<TerrainMaterial>>() {}
+        // Keep track of the indices of the removed chunks
+        let mut indices = AHashMap::<usize, Vec::<u32>>::new();
+        
+        // Set the chunk state to "free" and reset the value of the indirect buffers
+        for i in removed.iter() {
+            let entity = manager.entities.get(i).unwrap();
+            let mut entry = scene.entry_mut(*entity).unwrap();
+            let (chunk, surface) = entry.as_query_mut::<(&mut Chunk, &mut Surface<TerrainMaterial>)>().unwrap();
+            chunk.state = ChunkState::Free;
+            surface.visible = false;
+            indices.entry(chunk.allocation).or_default().push(chunk.local_index as u32);
+            indirect.write(&[DrawIndexedIndirect {
+                vertex_count: 0,
+                instance_count: 1,
+                base_index: 0,
+                vertex_offset: 0,
+                base_instance: 0,
+            }], chunk.global_index).unwrap();
+
+            manager.entities.remove(i).unwrap();
+        }
 
         // Detect the chunks that we must generate and add them
         let added = chunks
             .difference(&manager.chunks)
             .cloned()
             .collect::<Vec<_>>();
-        let entities =
-            scene.extend_from_iter(added.iter().map(|coords| {
-                create_chunk_components(position, *coords, manager, settings)
-            }));
 
-        // Add the new chunks into the chunk entities of the terrain
-        for (coords, entity) in added.iter().zip(entities.iter()) {
-            manager.entities.insert(*coords, *entity);
+        // We won't actually create new entities, only update the old ones
+        let query = scene.query_mut::<(&mut Chunk, &mut Position, &Entity)>().into_iter().filter(|(x, _, _)| x.state == ChunkState::Free);
+        for ((chunk, position, entity), coords) in query.zip(added.iter()) {
+            chunk.state = ChunkState::Pending;
+            chunk.coords = *coords;
+            **position = coords.as_::<f32>() * (terrain.settings.size as f32);
+            chunk.priority = viewer_position.distance(**position);
+            entities.insert(*coords, *entity);
         }
 
         manager.chunks = chunks;
+        manager.entities.extend(entities);
     }
 }
 

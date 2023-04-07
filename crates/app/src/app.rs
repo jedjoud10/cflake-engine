@@ -244,10 +244,17 @@ impl App {
             .warn(Color::Yellow)
             .error(Color::Red);
 
+        // Level filter for wgpu and company
+        let wgpu_filter = if self.logging_level == log::LevelFilter::Trace {
+            log::LevelFilter::Debug
+        } else {
+            log::LevelFilter::Warn
+        };
+
         fern::Dispatch::new()
-            .level_for("wgpu", log::LevelFilter::Warn)
-            .level_for("wgpu_core", log::LevelFilter::Warn)
-            .level_for("wgpu_hal", log::LevelFilter::Warn)
+            .level_for("wgpu", wgpu_filter)
+            .level_for("wgpu_core", wgpu_filter)
+            .level_for("wgpu_hal", wgpu_filter)
             .level(self.logging_level)
             .chain(console_logger(colors_level, colors_line))
             .chain(file_logger(sender))

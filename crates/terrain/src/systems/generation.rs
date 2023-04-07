@@ -1,5 +1,7 @@
 
 
+use std::time::Instant;
+
 use coords::Position;
 use ecs::{Scene};
 use graphics::{
@@ -59,7 +61,7 @@ fn update(world: &mut World) {
     for (chunk, position, surface, renderer) in vec {
         // Don't generate the voxels and mesh for culled chunks or chunks that had
         // their mesh already generated
-        if surface.culled || chunk.state == ChunkState::Generated {
+        if surface.culled || chunk.state != ChunkState::Pending {
             continue;
         }
 
@@ -92,7 +94,7 @@ fn update(world: &mut World) {
 
                 // Combine chunk index and allocation into the same vector 
                 let packed =
-                    vek::Vec2::new(chunk.index, chunk.allocation)
+                    vek::Vec2::new(chunk.local_index, chunk.allocation)
                         .as_::<u32>();
                 let time = GpuPod::into_bytes(&packed);
 
@@ -169,7 +171,7 @@ fn update(world: &mut World) {
         // Get the local chunk index for the current allocation 
         active
             .set_push_constants(|x| {
-                let index = chunk.index % settings.chunks_per_allocation;
+                let index = chunk.local_index;
                 let index = index as u32;
                 let bytes= GpuPod::into_bytes(&(index));
                 x.push(bytes, 0).unwrap();
@@ -232,11 +234,24 @@ fn update(world: &mut World) {
             })
             .unwrap();
         active.dispatch(vek::Vec3::new(2048, 1, 1));
+        
+        drop(active);
+        drop(pass);
+
+        // Logon pls uncomment this block pls and check changes in FPS
+        /*/
+        graphics.submit(true);
+        let _counters = mesher.counters.as_view(..).unwrap();
+        let counters = _counters.to_vec();
+        drop(_counters);
+        let _offsets = memory.offsets.as_view(..).unwrap();
+        let offsets = _offsets.to_vec();
+        drop(_offsets);
+        */
 
         // Make the surface visible and set it's state
         surface.visible = true;
         chunk.state = ChunkState::Generated;
-
         return;
     }
 }

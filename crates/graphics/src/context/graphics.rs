@@ -117,6 +117,7 @@ impl Graphics {
     // Create a new command encoder to record commands
     // This might fetch an already existing command encoder (for this thread), or it will create a new one
     pub fn acquire(&self) -> CommandEncoder {
+        log::trace!("graphics context: acquire");
         let encoders = self.0.encoders.get_or_default();
         let mut locked = encoders.lock();
         *self.0.acquires.lock() += 1;
@@ -134,6 +135,7 @@ impl Graphics {
         iter: impl IntoIterator<Item = CommandEncoder>,
         wait: bool,
     ) {
+        log::trace!("graphics context: submit from iter");
         let finished = iter.into_iter().map(|x| x.finish());
         let i = self.queue().submit(finished);
         *self.0.submissions.lock() += 1;
@@ -146,9 +148,14 @@ impl Graphics {
 
     // Submit all the currently unused command encoders and clears the thread local cache
     pub fn submit(&self, wait: bool) {
+        log::trace!("graphics context: submit, wait: {wait}");
         let encoders = self.0.encoders.get_or_default();
         let mut locked = encoders.lock();
         self.submit_from_iter(locked.drain(..), wait);
+    }
+
+    pub fn poll(&self) {
+        self.device().poll(wgpu::MaintainBase::Poll);
     }
 
     // Pushes some unfinished command encoders to be re-used by the current thread
@@ -156,6 +163,7 @@ impl Graphics {
         &self,
         iter: impl IntoIterator<Item = CommandEncoder>,
     ) {
+        log::trace!("graphics context: reuse");
         let encoders = self.0.encoders.get_or_default();
         let mut locked = encoders.lock();
         locked.extend(iter);

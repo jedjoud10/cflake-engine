@@ -106,7 +106,7 @@ impl MeshGenerator {
             compute_vertices,
             compute_quads,
             cached_indices: create_texture3d(graphics, settings.size),
-            counters: create_counters(graphics, 2),
+            counters: create_counters(graphics, 2, BufferUsage::WRITE | BufferUsage::READ),
         }
     }
 }

@@ -8,12 +8,12 @@ pub type Vertices = AttributeBuffer<attributes::Position>;
 pub type Triangles = TriangleBuffer<u32>;
 
 // Create counters that will help us generate the vertices
-pub fn create_counters(graphics: &Graphics, count: usize) -> Buffer<u32> {
+pub fn create_counters(graphics: &Graphics, count: usize, extra: BufferUsage) -> Buffer<u32> {
     Buffer::zeroed(
         graphics,
         count,
         BufferMode::Dynamic,
-        BufferUsage::STORAGE | BufferUsage::WRITE,
+        BufferUsage::STORAGE | extra,
     )
     .unwrap()
 }
