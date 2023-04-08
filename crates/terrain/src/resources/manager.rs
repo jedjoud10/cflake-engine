@@ -6,6 +6,7 @@ use graphics::{
     BufferMode, BufferUsage, DrawIndexedIndirect,
     DrawIndexedIndirectBuffer, GpuPod, Graphics, Texel, Vertex,
 };
+use rand::seq::SliceRandom;
 use rendering::{
     IndirectMesh, MaterialId,
     Pipelines, Surface, Renderer,
@@ -64,11 +65,16 @@ impl ChunkManager {
             .unwrap(),
         );
 
+        // Create vector of indices, and shuffle it
+        let mut vector = (0..(settings.chunks_count)).into_iter().collect::<Vec<_>>();
+        let mut rng = rand::thread_rng();
+        vector.shuffle(&mut rng);
+
         // Create the indirect meshes and fetch their handles, but keep it as an iterator
-        let indirect_meshes = (0..(settings.chunks_count))
+        let indirect_meshes = vector.iter()
             .map(|i| {
                 // Get the allocation index for this chunk
-                let allocation = ((i as f32)
+                let allocation = ((*i as f32)
                     / (settings.chunks_per_allocation as f32))
                     .floor() as usize;
 
@@ -84,7 +90,7 @@ impl ChunkManager {
                     None,
                     triangle_buffer.clone(),
                     indexed_indirect_buffer.clone(),
-                    i,
+                    *i,
                 );
 
                 // Set the bounding box of the mesh before hand
@@ -106,10 +112,10 @@ impl ChunkManager {
         });
 
         // Material Id
-        let id = pipelines.register(graphics, assets).unwrap();
+        let id = pipelines.register(graphics, assets).unwrap();        
 
         // Add the required chunk entities
-        scene.extend_from_iter((0..(settings.chunks_count)).into_iter().zip(indirect_meshes).map(|(i, mesh)| {
+        scene.extend_from_iter(vector.iter().zip(indirect_meshes).map(|(i, mesh)| {
             // Create the surface for rendering
             let mut surface = Surface::indirect(
                 mesh.clone(),
@@ -125,10 +131,10 @@ impl ChunkManager {
             renderer.instant_initialized = None;
             let position = Position::default();
 
-            // TODO: Implement algo that will swizzle the i value and randomize it (but keep it unique an in range)
+            // Indices *should* be shuffled now
             let allocation = i / settings.chunks_per_allocation;
             let local_index = i % settings.chunks_per_allocation;
-            let global_index = i;
+            let global_index = *i;
 
             // Create the chunk component
             let chunk = Chunk {

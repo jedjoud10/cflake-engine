@@ -47,13 +47,12 @@ void main() {
 	vec3 grass = vec3(69, 107, 35) / 255.0;
 	albedo = m_color;
 
-	/*
+
 	albedo = grass;
 
 	if (normal.y < 0.85) {
 		albedo = rock;
 	}
-	*/
 
 	// Compute PBR values
 	float roughness = clamp(mask.g, 0.02, 1.0);

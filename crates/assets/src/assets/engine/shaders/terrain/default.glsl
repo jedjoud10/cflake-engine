@@ -35,7 +35,6 @@ Voxel voxel(vec3 position) {
     position += parameters.offset.xyz;
     position *= 0.4;
 
-    /*
     //float density = snoise(position * 0.03) * 50;
     float density1 = (1-fbmCellular(position * 0.01 * vec3(1, 2, 1), 10, 0.4, 2.0).y) * 20;
     float density2 = opSmoothUnion(-erosion(position.xz * 0.04, 0.112).x * 420 + position.y + 200, position.y, 40) + 5;
@@ -47,10 +46,10 @@ Voxel voxel(vec3 position) {
     //float density = position.y + (1-fbmCellular(position * 0.01 * vec3(1, 0.5, 1), 3, 0.5, 2.0).x) * 20;
 
     // Create a voxel and return it
-    return Voxel(density + randomized, vec3(-density2));
-    */
+    return Voxel(density + randomized, vec3(1.0));
 
 
+    /*
     //TEST 1
     vec3 col = vec3(156, 63, 12) / 255.0;
     vec3 col1 = vec3(168, 68, 25) / 255.0;
@@ -62,14 +61,14 @@ Voxel voxel(vec3 position) {
     col = mix(col, col1, fac0); 
     col = mix(col, col3, fac1);
 
-    float density = (1-fbmCellular(position * 0.02 * vec3(1, 5.0, 1), 10, 0.5, 2.0).x) * 10;
-    float d2 = (1-fbmCellular(position * 0.008 * vec3(1, 0.1, 1), 20, 0.3, 2.1).x) * 140;
+    float density = (1-fbmCellular(position * 0.02 * vec3(1, 5.0, 1), 5, 0.5, 2.0).x) * 10;
+    float d2 = (1-fbmCellular(position * 0.008 * vec3(1, 0.1, 1), 5, 0.3, 2.1).x) * 140;
     d2 = smooth_floor(d2 / 50) * 50;
 
     d2 += position.y;
     d2 = opSmoothUnion(d2, position.y + 140, 10);
     d2 = opSmoothSubtraction(-d2, position.y + 100, 50);
     density += d2 - 140;
-
     return Voxel(density, col);
+    */
 }

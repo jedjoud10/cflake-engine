@@ -104,7 +104,7 @@ void main() {
     barrier();
 
     // Only let one invocation do this shit
-    if (invocation_local_chosen_sub_alloction_index != chosen_sub_allocation_index) {
+    if (gl_GlobalInvocationID.x != 0) {
         return;
     } 
 

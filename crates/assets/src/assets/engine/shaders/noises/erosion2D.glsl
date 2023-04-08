@@ -116,7 +116,7 @@ vec3 erosion(vec2 p, float s) {
     vec3 h = vec3(0.0);
     float a = 0.7*(smoothstep(0.3, 0.5,n.x*0.5+0.5)); //smooth the valleys
     float f = 1.0;
-    for (int i=0;i<5;i++) {
+    for (int i=0;i<7;i++) {
         h+= erosion(p*f, dir+h.zy*vec2(1.0, -1.0))*a*vec3(1.0, f, f);
         a*=0.4;
         f*=2.0;

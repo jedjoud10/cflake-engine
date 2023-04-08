@@ -51,28 +51,11 @@ fn update(world: &mut World) {
     let indirect = indirects.get_mut(&manager.indexed_indirect_buffer);
 
     // Convert "Regenerated" chunks into "Pending"
-    let query = scene.query_mut::<&mut Chunk>().into_iter();
-    for chunk in query.filter(|c| c.state == ChunkState::Dirty) {
+    let query = scene.query_mut::<(&mut Chunk, &mut Surface<TerrainMaterial>)>().into_iter();
+    for (chunk, surface) in query.filter(|(c, _)| c.state == ChunkState::Dirty) {
         chunk.state = ChunkState::Pending;
-    }
+        surface.visible = false;
 
-    // Find the closest chunk to the camera 
-    let mut vec = scene.query_mut::<(
-        &mut Chunk,
-        &Position,
-        &mut Surface<TerrainMaterial>,
-        &mut Renderer,
-    )>().into_iter().collect::<Vec<_>>();
-    vec.sort_by(|(a, _, _, _), (b, _, _, _)| a.priority.total_cmp(&b.priority));
-
-    // Iterate over the chunks that we need to generate
-    for (chunk, position, surface, renderer) in vec {
-        // Don't generate the voxels and mesh for culled chunks or chunks that had
-        // their mesh already generated
-        if surface.culled || chunk.state != ChunkState::Pending {
-            continue;
-        }
-            
         // Write to the indices the updated ranges if needed
         if let Some(range) = chunk.ranges {
             if range.y > range.x {
@@ -81,8 +64,7 @@ fn update(world: &mut World) {
             }
         }
 
-        // Update ranges, indirect buffer, and hide surface
-        chunk.ranges = None;
+        // Update indirect buffer
         indirect.write(&[DrawIndexedIndirect {
             vertex_count: 0,
             instance_count: 1,
@@ -90,6 +72,28 @@ fn update(world: &mut World) {
             vertex_offset: 0,
             base_instance: 0,
         }], chunk.global_index).unwrap();
+
+        chunk.ranges = None;
+    }
+
+    graphics.submit(false);
+
+    // Find the closest chunk to the camera 
+    let mut vec = scene.query_mut::<(
+        &mut Chunk,
+        &Position,
+        &mut Surface<TerrainMaterial>,
+        &mut Renderer,
+    )>().into_iter().collect::<Vec<_>>();
+    vec.sort_by(|(a, _, _, _), (b, _, _, _)| b.priority.total_cmp(&a.priority));
+
+    // Iterate over the chunks that we need to generate
+    for (chunk, position, surface, renderer) in vec {
+        // Don't generate the voxels and mesh for culled chunks or chunks that had
+        // their mesh already generated
+        if surface.culled || chunk.state != ChunkState::Pending {
+            continue;
+        }
         
         // The renderer is initialized when the mesh get it's surface
         renderer.instant_initialized = Some(std::time::Instant::now());
@@ -276,6 +280,7 @@ fn update(world: &mut World) {
         // Check if we are OOM lol
         if vertices_offset / settings.vertices_per_sub_allocation != triangle_indices_offset / settings.triangles_per_sub_allocation {
             panic!("Out of memory xD MDR");
+            //log::error!("Out of memory xD MDR")
         }
         
         // Calculate sub-allocation index and length

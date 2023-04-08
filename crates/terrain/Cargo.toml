@@ -14,6 +14,7 @@ coords = { path = "../coords" }
 graphics = { path = "../graphics" }
 rendering = { path = "../rendering" }
 assets = { path = "../assets" }
+rand = "0.8.5"
 vek = { workspace = true }
 log = { workspace = true }
 ahash = { workspace = true } 
