@@ -81,45 +81,31 @@ fn update(world: &mut World) {
             .difference(&chunks)
             .cloned()
             .collect::<Vec<_>>();
-        
-        // Set the chunk state to "free" and reset the value of the indirect buffers
-        for i in removed.iter() {
-            let entity = manager.entities.get(i).unwrap();
-            let mut entry = scene.entry_mut(*entity).unwrap();
-            let (chunk, surface) = entry.as_query_mut::<(&mut Chunk, &mut Surface<TerrainMaterial>)>().unwrap();
-            chunk.state = ChunkState::Free;
-            surface.visible = false;
-            indirect.write(&[DrawIndexedIndirect {
-                vertex_count: 0,
-                instance_count: 1,
-                base_index: 0,
-                vertex_offset: 0,
-                base_instance: 0,
-            }], chunk.global_index).unwrap();
-            
-            // Write to the indices the updated ranges if needed
-            if let Some(range) = chunk.ranges {
-                if range.y > range.x {
-                    let indices = &mut memory.sub_allocation_chunk_indices[chunk.allocation];
-                    indices.splat((range.x as usize)..(range.y as usize), u32::MAX).unwrap();
-                }
-            }
 
-            manager.entities.remove(i).unwrap();
-        }
-        
         // Detect the chunks that we must generate and add them
         let added = chunks
             .difference(&manager.chunks)
             .cloned()
             .collect::<Vec<_>>();
-
+        
+        // Set the chunk state to "free" and reset the value of the indirect buffers
+        for coord in removed {
+            let entity = manager.entities.remove(&coord).unwrap();
+            let mut entry = scene.entry_mut(entity).unwrap();
+            let chunk = entry.get_mut::<Chunk>().unwrap();
+            chunk.state = ChunkState::Free;
+        }
+        
         // We won't actually create new entities, only update the old ones
-        let query = scene.query_mut::<(&mut Chunk, &mut Position, &Entity)>().into_iter().filter(|(x, _, _)| x.state == ChunkState::Free);
-        for ((chunk, position, entity), coords) in query.zip(added.iter()) {
-            chunk.state = ChunkState::Pending;
-            chunk.ranges = None;
+        let query = scene.query_mut::<(&mut Chunk, &mut Position, &Entity, &mut Surface<TerrainMaterial>)>()
+            .into_iter()
+            .filter(|(x, _, _, _)| 
+                x.state == ChunkState::Free
+            );
+        for ((chunk, position, entity, surface), coords) in query.zip(added.iter()) {
+            chunk.state = ChunkState::Dirty;
             chunk.coords = *coords;
+            surface.visible = false;
             **position = coords.as_::<f32>() * (terrain.settings.size as f32);
             chunk.priority = 0.0;
             manager.entities.insert(*coords, *entity);

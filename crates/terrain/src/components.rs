@@ -8,14 +8,17 @@ pub struct ChunkViewer;
 // State of the indirect mesh of each chunk
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum ChunkState {
+    // Only used as an internal state for removing/adding chunks
+    Free,
+
+    // Chunk *must* be regenerated, doesn't mean it currently will be though
+    Dirty,
+
     // The chunk is waiting for the compute shader to generate it's mesh
     Pending,
 
-    // The chunk's mesh is generated successfully
+    // The chunk's mesh has been generated successfully
     Generated,
-
-    // The chunk is free and is not currently used by the generator
-    Free,
 }
 
 // Coordniate system for chunks
@@ -44,5 +47,10 @@ impl Chunk {
     // Get the current chunk state
     pub fn state(&self) -> ChunkState {
         self.state
+    }
+
+    // Force the regeneration of a specific chunk
+    pub fn regenerate(&mut self) {
+        self.state = ChunkState::Dirty;
     }
 }

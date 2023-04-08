@@ -6,7 +6,7 @@ use coords::Position;
 use ecs::{Scene};
 use graphics::{
     ComputePass, DrawIndexedIndirectBuffer,
-    GpuPod, Graphics, TriangleBuffer, Vertex, ActivePipeline,
+    GpuPod, Graphics, TriangleBuffer, Vertex, ActivePipeline, DrawIndexedIndirect,
 };
 use rendering::{
     attributes, AttributeBuffer, IndirectMesh, Surface, Renderer,
@@ -18,7 +18,7 @@ use crate::{Chunk, ChunkState, Terrain, TerrainMaterial};
 // Look in the world for any chunks that need their mesh generated and generate it
 fn update(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
-    let _time = world.get::<Time>().unwrap();
+    let time = world.get::<Time>().unwrap();
     let _terrain = world.get_mut::<Terrain>();
 
     // If we don't have terrain, don't do shit
@@ -37,16 +37,24 @@ fn update(world: &mut World) {
         .unwrap();
     let mut triangles =
         world.get_mut::<Storage<TriangleBuffer<u32>>>().unwrap();
-    let meshes =
-        world.get_mut::<Storage<IndirectMesh>>().unwrap();
 
     // Get the required sub-resources from the terrain resource
-    let (voxelizer, mesher, memory, settings) = (
+    let (manager, voxelizer, mesher, memory, settings) = (
+        &mut terrain.manager,
         &mut terrain.voxelizer,
         &mut terrain.mesher,
         &mut terrain.memory,
         &mut terrain.settings,
     );
+
+    // Get global indexed indirect draw buffer
+    let indirect = indirects.get_mut(&manager.indexed_indirect_buffer);
+
+    // Convert "Regenerated" chunks into "Pending"
+    let query = scene.query_mut::<&mut Chunk>().into_iter();
+    for chunk in query.filter(|c| c.state == ChunkState::Dirty) {
+        chunk.state = ChunkState::Pending;
+    }
 
     // Find the closest chunk to the camera 
     let mut vec = scene.query_mut::<(
@@ -64,13 +72,27 @@ fn update(world: &mut World) {
         if surface.culled || chunk.state != ChunkState::Pending {
             continue;
         }
+            
+        // Write to the indices the updated ranges if needed
+        if let Some(range) = chunk.ranges {
+            if range.y > range.x {
+                let indices = &mut memory.sub_allocation_chunk_indices[chunk.allocation];
+                indices.splat((range.x as usize)..(range.y as usize), u32::MAX).unwrap();
+            }
+        }
 
+        // Update ranges, indirect buffer, and hide surface
+        chunk.ranges = None;
+        indirect.write(&[DrawIndexedIndirect {
+            vertex_count: 0,
+            instance_count: 1,
+            base_index: 0,
+            vertex_offset: 0,
+            base_instance: 0,
+        }], chunk.global_index).unwrap();
+        
+        // The renderer is initialized when the mesh get it's surface
         renderer.instant_initialized = Some(std::time::Instant::now());
-
-        // Get the mesh that is used by this chunk
-        let mesh = meshes.get(&surface.mesh);
-        let indirect = mesh.indirect();
-        let indirect = indirects.get_mut(indirect);
 
         // Reset the current counters
         mesher.counters.write(&[0; 2], 0).unwrap();
@@ -94,7 +116,7 @@ fn update(world: &mut World) {
 
                 // Combine chunk index and allocation into the same vector 
                 let packed =
-                    vek::Vec2::new(chunk.local_index, chunk.allocation)
+                    vek::Vec2::new(chunk.global_index, chunk.allocation)
                         .as_::<u32>();
                 let time = GpuPod::into_bytes(&packed);
 
@@ -228,7 +250,7 @@ fn update(world: &mut World) {
         });
         active
             .set_push_constants(|x| {
-                let index = mesh.offset() as u32;
+                let index = chunk.global_index as u32;
                 let index = GpuPod::into_bytes(&index);
                 x.push(index, 0).unwrap();
             })
@@ -275,5 +297,6 @@ fn update(world: &mut World) {
 pub fn system(system: &mut System) {
     system
         .insert_update(update)
+        .after(crate::systems::manager::system)
         .before(rendering::systems::rendering::system);
 }

@@ -19,9 +19,9 @@ fn init(world: &mut World) {
     let settings = TerrainSettings::new(&graphics,
         64,
         9,
+        false,
         true,
-        true,
-        7,
+        8,
         1024,
     );
     drop(graphics);
@@ -265,7 +265,7 @@ fn update(world: &mut World) {
 
         // Update velocity scale
         if input.get_button("lshift").held() {
-            speed = 3.0f32;
+            speed = 6.0f32;
         }
 
         // Update the velocity in the forward and backward directions

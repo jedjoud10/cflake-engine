@@ -16,7 +16,6 @@ layout(push_constant) uniform PushConstants {
 layout(location = 0) out vec3 m_position;
 layout(location = 1) out vec3 m_normal;
 layout(location = 2) out vec3 m_color;
-layout(location = 3) out float effect;
 
 void main() {
 	// Model space -> World space -> Clip space
@@ -28,11 +27,10 @@ void main() {
     uint part = floatBitsToUint(position.w);
     vec4 unpacked = unpackUnorm4x8(part);
 
-    effect = ((snoise(world_pos.xyz * 2.3) * 0.5 + 0.5) * 0.4 + 0.7);
-
     // Set the output variables
     m_position = world_pos.xyz;
     m_normal = -(unpacked.xyz * 2 - 1.0);
-    m_color = vec3(1);
-    //m_color = unpacked.xyz;
+    
+    //m_color = vec3(1);
+    m_color = unpacked.xyz;
 }
