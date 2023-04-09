@@ -3,7 +3,7 @@ use wgpu::CommandEncoder;
 use crate::{
     ActiveGraphicsPipeline, BufferInfo, ColorLayout,
     DepthStencilLayout, Graphics, RenderCommand, RenderPipeline,
-    TriangleBuffer, Vertex, VertexBuffer,
+    TriangleBuffer, Vertex, VertexBuffer, calculate_refleced_group_bitset,
 };
 use std::{marker::PhantomData, ops::Range, sync::Arc};
 
@@ -69,6 +69,10 @@ impl<'r, 't, C: ColorLayout, DS: DepthStencilLayout>
             commands: &mut self.commands,
             push_constant_global_offset: self.push_constants.len(),
             push_constant: &mut self.push_constants,
+            set_groups_bitflags: 0,
+            reflected_groups_bitflags: calculate_refleced_group_bitset(&pipeline.shader().reflected),
+            set_vertex_buffer_slots: 0,
+            set_index_buffer: false,
         }
     }
 }

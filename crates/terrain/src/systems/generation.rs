@@ -144,8 +144,8 @@ fn update(world: &mut World) {
             if let Some(callback) = voxelizer.set_bind_group_callback.as_ref() {
                 (callback)(set);
             } 
-        });
-        active.dispatch(vek::Vec3::broadcast(settings.size / 4));
+        }).unwrap();
+        active.dispatch(vek::Vec3::broadcast(settings.size / 4)).unwrap();
 
         // Execute the vertex generation shader first
         let mut active = pass.bind_shader(&mesher.compute_vertices);
@@ -160,12 +160,12 @@ fn update(world: &mut World) {
             .unwrap();
             set.set_storage_buffer("counters", &mut mesher.counters, ..)
                 .unwrap();
-        });
+        }).unwrap();
         active.set_bind_group(1, |set| {
             set.set_storage_buffer("vertices", &mut mesher.temp_vertices, ..)
                 .unwrap();
         });
-        active.dispatch(vek::Vec3::broadcast(settings.size / 4));
+        active.dispatch(vek::Vec3::broadcast(settings.size / 4)).unwrap();
 
         // Execute the quad generation shader second
         let mut active = pass.bind_shader(&mesher.compute_quads);
@@ -179,12 +179,12 @@ fn update(world: &mut World) {
                 .unwrap();
             set.set_storage_buffer("counters", &mut mesher.counters, ..)
                 .unwrap();
-        });
+        }).unwrap();
         active.set_bind_group(1, |set| {
             set.set_storage_buffer("triangles", &mut mesher.temp_triangles, ..)
                 .unwrap();
-        });
-        active.dispatch(vek::Vec3::broadcast(settings.size / 4));
+        }).unwrap();
+        active.dispatch(vek::Vec3::broadcast(settings.size / 4)).unwrap();
         
         // Run a compute shader that will iterate over the ranges and find a free one
         let mut active = pass.bind_shader(&memory.compute_find);
@@ -199,7 +199,7 @@ fn update(world: &mut World) {
                 .unwrap();
             set.set_storage_buffer("counters", &mut mesher.counters, ..)
                 .unwrap();
-        });
+        }).unwrap();
 
         // Get the local chunk index for the current allocation 
         active
@@ -243,7 +243,7 @@ fn update(world: &mut World) {
                 .unwrap();
             set.set_storage_buffer("counters", &mut mesher.counters, ..)
                 .unwrap();
-        });
+        }).unwrap();
         active.set_bind_group(1, |set| {
             set.set_storage_buffer(
                 "output_vertices",
@@ -258,7 +258,7 @@ fn update(world: &mut World) {
             )
             .unwrap();
             set.set_storage_buffer("indirect", indirect, ..).unwrap();
-        });
+        }).unwrap();
         active
             .set_push_constants(|x| {
                 let index = chunk.global_index as u32;
@@ -266,7 +266,7 @@ fn update(world: &mut World) {
                 x.push(index, 0).unwrap();
             })
             .unwrap();
-        active.dispatch(vek::Vec3::new(2048, 1, 1));
+        active.dispatch(vek::Vec3::new(2048, 1, 1)).unwrap();
         
         drop(active);
         drop(pass);

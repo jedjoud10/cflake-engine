@@ -75,11 +75,11 @@ fn create_rf32_texture(
         extent,
         TextureMode::Dynamic,
         TextureUsage::SAMPLED | TextureUsage::COPY_DST,
-        SamplerSettings {
+        Some(SamplerSettings {
             filter: SamplerFilter::Linear,
             wrap: SamplerWrap::ClampToEdge,
             mipmaps: SamplerMipMaps::Auto,
-        },
+        }),
         TextureMipMaps::Disabled,
     )
     .unwrap()
@@ -267,7 +267,7 @@ impl Rasterizer {
                 .set_uniform_buffer("window", window_buffer, ..)
                 .unwrap();
             group.set_sampled_texture("font", texture).unwrap();
-        });
+        }).unwrap();
 
         // Keep track of the vertex and triangle offset
         let mut vertex_offset = 0;

@@ -4,7 +4,7 @@ use crate::{
     ActiveComputeDispatcher, ActiveGraphicsPipeline, BufferInfo,
     ColorLayout, ComputeCommand, ComputeShader, DepthStencilLayout,
     Graphics, RenderCommand, RenderPipeline, TriangleBuffer, Vertex,
-    VertexBuffer,
+    VertexBuffer, calculate_refleced_group_bitset,
 };
 use std::{marker::PhantomData, ops::Range, sync::Arc};
 
@@ -54,6 +54,8 @@ impl<'r> ActiveComputePass<'r> {
             commands: &mut self.commands,
             push_constant_global_offset: self.push_constants.len(),
             push_constant: &mut self.push_constants,
+            set_groups_bitflags: 0,
+            reflected_groups_bitflags: calculate_refleced_group_bitset(&shader.reflected),
         }
     }
 }

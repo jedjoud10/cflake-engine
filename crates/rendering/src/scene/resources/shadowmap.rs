@@ -142,7 +142,7 @@ impl ShadowMapping {
             (vek::Extent2::broadcast(resolution), sizes.len() as u32),
             TextureMode::Dynamic,
             TextureUsage::TARGET | TextureUsage::SAMPLED,
-            SamplerSettings::default(),
+            Some(SamplerSettings::default()),
             TextureMipMaps::Zeroed { clamp: Some(NonZeroU8::new(sizes.len() as u8).unwrap()) },
         )
         .unwrap();

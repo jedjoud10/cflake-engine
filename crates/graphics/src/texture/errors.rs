@@ -99,6 +99,9 @@ pub enum TextureResizeError {
     #[error("Tried resizing a texture which contains mip maps, which isn't supported *yet*")]
     MipMappingUnsupported,
 
+    #[error("Tried resizing a texture which contains multiple layers, which isn't supported *yet*")]
+    LayeredUnsupported,
+
     #[error("Tried resizing a texture above the physical device's max texture size")]
     ExtentLimit,
 

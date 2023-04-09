@@ -101,7 +101,7 @@ impl<T: Texel> Texture for Texture2D<T> {
     }
 
     fn graphics(&self) -> Graphics {
-        todo!()
+        self.graphics.clone()
     }
 }
 

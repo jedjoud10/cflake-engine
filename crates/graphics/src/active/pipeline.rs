@@ -1,4 +1,6 @@
-use crate::{PushConstants, SetPushConstantsError, BindGroup};
+use std::error::Error;
+
+use crate::{PushConstants, SetPushConstantsError, BindGroup, SetBindGroupError};
 
 // Common pipeline trait that will be implemented by ActiveComputeDispatcher and ActiveGraphicsPipeline
 pub trait ActivePipeline {
@@ -12,16 +14,12 @@ pub trait ActivePipeline {
     ) -> Result<(), SetPushConstantsError>;
 
     // Execute a callback that we will use to fill a bind group
+    // Might fail if the user forgets to set a bind resource or if the index is too high
     fn set_bind_group<'b>(
         &mut self,
         binding: u32,
         callback: impl FnOnce(&mut BindGroup<'b>),
-    );
-
-    // Executed before any draw call to make sure that we have
-    // all the necessities (bind groups, push constants, buffers) to be able to draw
-    // TODO: VALIDATION: Make sure all bind groups, push constants, and buffers, have been set
-    fn validate(&self);
+    ) -> Result<(), SetBindGroupError>;
 
     // Get the underlying pipeline that was borrowed
     fn inner(&self) -> Self::Pipeline;

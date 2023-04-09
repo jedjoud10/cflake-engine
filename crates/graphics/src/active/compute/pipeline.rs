@@ -7,7 +7,7 @@ use crate::{
     BufferMode, BufferUsage, ColorLayout, ComputeCommand,
     ComputeShader, DepthStencilLayout, GpuPod, Graphics,
     ModuleVisibility, PushConstantLayout, PushConstants,
-    SetPushConstantsError, active::pipeline::ActivePipeline,
+    SetPushConstantsError, active::pipeline::ActivePipeline, SetBindGroupError, DispatchError,
 };
 use std::{
     collections::hash_map::Entry,
@@ -23,17 +23,27 @@ pub struct ActiveComputeDispatcher<'a, 'r> {
     pub(crate) graphics: &'r Graphics,
     pub(crate) push_constant: &'a mut Vec<u8>,
     pub(crate) push_constant_global_offset: usize,
+    pub(crate) set_groups_bitflags: u32,
+    pub(crate) reflected_groups_bitflags: u32,
 }
 
 impl<'a, 'r> ActiveComputeDispatcher<'a, 'r> {
     // Dispatch the current compute shader using the specified size
-    pub fn dispatch(&mut self, size: vek::Vec3<u32>) {
-        self.validate();
+    // Executed before any dispatch calls to make sure that we have
+    // all the necessities (bind groups, push constants) to be able to dispatch
+    pub fn dispatch(&mut self, size: vek::Vec3<u32>) -> Result<(), DispatchError> {
+        // Handle the missing bind groups
+        if let Err(value) = crate::validate_set_bind_groups(self.reflected_groups_bitflags, self.set_groups_bitflags) {
+            return Err(DispatchError::MissingValidBindGroup(value));
+        }
+
         self.commands.push(ComputeCommand::Dispatch {
             x: size.x,
             y: size.y,
             z: size.z,
         });
+
+        Ok(())
     }
 }
 
@@ -85,24 +95,23 @@ impl<'a, 'r> ActivePipeline for ActiveComputeDispatcher<'a, 'r> {
         &mut self,
         binding: u32,
         callback: impl FnOnce(&mut BindGroup<'b>),
-    ) {
+    ) -> Result<(), SetBindGroupError> {
+        self.set_groups_bitflags &= !(1 << binding);
         if let Some(bind_group) = super::create_bind_group(
             self.graphics,
             &[self.shader.compute().name()],
             self.shader.reflected.clone(),
             binding,
             callback,
-        ) {
+        )? {
             self.commands.push(ComputeCommand::SetBindGroup(
                 binding, bind_group,
             ));
         }
-    }
 
-    // Executed before any dispatch calls to make sure that we have
-    // all the necessities (bind groups, push constants) to be able to dispatch
-    fn validate(&self) {
-        // TODO: VALIDATION: Make sure all bind groups, push constants, have been set
+        self.set_groups_bitflags |= 1 << binding;
+
+        Ok(())
     }
 
     // Get the underlying compute shader that is currently bound

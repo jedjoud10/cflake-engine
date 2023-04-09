@@ -239,6 +239,7 @@ fn render(world: &mut World) {
         draw_indexed_indirect_buffers: &indexed_indirect_buffers,
     };
     
+    /*
     // Update the shadow map lightspace matrix
     let shadowmap = &mut *_shadowmap;
     shadowmap
@@ -276,6 +277,7 @@ fn render(world: &mut World) {
             stored.prerender(world, &mut default, &mut active);
         }
     }
+    */
 
     // Begin the scene color render pass
     let color = renderer.color_texture.as_render_target().unwrap();

@@ -29,7 +29,7 @@ pub fn create_texture3d<T: Texel>(
         vek::Extent3::broadcast(size),
         TextureMode::Dynamic,
         TextureUsage::STORAGE,
-        SamplerSettings::default(),
+        None,
         TextureMipMaps::Disabled,
     )
     .unwrap()

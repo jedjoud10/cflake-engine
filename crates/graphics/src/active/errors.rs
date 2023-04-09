@@ -1,6 +1,17 @@
 use thiserror::Error;
-
 use crate::ModuleVisibility;
+
+#[derive(Error, Debug)]
+pub enum SetBindGroupError {
+    #[error("The given bind group index {current} is greater than the adapter's supported bind group index {supported}")]
+    BindGroupAdapterIndexInvalid {
+        current: u32,
+        supported: u32
+    },
+
+    #[error("The bind resource '{0}' was not set")]
+    MissingResource(String),
+}
 
 #[derive(Error, Debug)]
 pub enum SetBindResourceError<'a> {
@@ -76,4 +87,37 @@ pub enum PushConstantBytesError {
 }
 
 #[derive(Error, Debug)]
-pub enum SetBindGroupError {}
+pub enum DispatchError {
+    #[error("Missing valid bind group for index {0}")]
+    MissingValidBindGroup(u32),
+
+    #[error("Given indirect buffer element index overruns the given indirect buffer")]
+    InvalidIndirectIndex,
+}
+
+#[derive(Error, Debug)]
+pub enum DrawError {
+    #[error("Missing valid bind group for index {0}")]
+    MissingValidBindGroup(u32),
+
+    #[error("Missing vertex buffer for slot {0}")]
+    MissingVertexBuffer(u32),
+
+    #[error("Given indirect buffer element index overruns the given indirect buffer")]
+    InvalidIndirectIndex,
+}
+
+#[derive(Error, Debug)]
+pub enum DrawIndexedError {
+    #[error("Missing valid bind group for index {0}")]
+    MissingValidBindGroup(u32),
+
+    #[error("Missing vertex buffer for slot {0}")]
+    MissingVertexBuffer(u32),
+
+    #[error("Missing index buffer")]
+    MissingIndexBuffer,
+
+    #[error("Given indirect buffer element index overruns the given indirect buffer")]
+    InvalidIndirectIndex,
+}
