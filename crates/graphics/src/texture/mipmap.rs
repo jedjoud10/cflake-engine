@@ -245,11 +245,6 @@ impl<'a, T: Texture> MipLevelRef<'a, T> {
         self.level
     }
 
-    // Get the view for this mip
-    pub fn view(&self) -> &wgpu::TextureView {
-        &self.texture().views()[self.level as usize + 1]
-    }
-
     // Get the mip level's dimensions
     pub fn dimensions(&self) -> <T::Region as Region>::E {
         self.texture.dimensions().mip_level_dimensions(self.level)
@@ -328,11 +323,6 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
         self.level
     }
 
-    // Get the view for this mip
-    pub fn view(&self) -> &wgpu::TextureView {
-        &self.texture().views()[self.level as usize + 1]
-    }
-
     // Get the mip level's dimensions
     pub fn dimensions(&self) -> <T::Region as Region>::E {
         self.texture.dimensions().mip_level_dimensions(self.level)
@@ -343,14 +333,42 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
         T::Region::with_extent(self.dimensions())
     }
 
-    // Try to get a render target so we can render to this one mip level
+    // Try to get a render target so we can render to this one mip level as a whole (or to a subregion if needed)
+    // Returns an Error if the texture is not renderable or if no subregion is specified in the case of layered textures
     pub fn as_render_target(
         &mut self,
+        subregion: Option<T::Region>,
     ) -> Result<RenderTarget<T::T>, TextureAsTargetError> {
         if !self.texture().usage().contains(TextureUsage::TARGET) {
-            return Err(TextureAsTargetError::MipLevelMissingFlags);
+            return Err(TextureAsTargetError::MissingTargetUsage);
         }
 
+        // Get the region for this mip level
+        let mip_level_region = <T::Region as Region>::with_extent(
+            self.texture
+                .dimensions()
+                .mip_level_dimensions(self.level),
+        );
+
+        // Make sure the "offset" doesn't cause reads outside the texture
+        if let Some(subregion) = subregion {
+            if mip_level_region.is_larger_than(subregion) {
+                return Err(TextureAsTargetError::InvalidRegion);
+            }
+        }
+
+        // Get the mip level subregion if the given one is None
+        let subregion = subregion.unwrap_or(mip_level_region);
+
+        // Make sure we can render to it
+        if subregion.can_render_to_mip() {
+            return Err(TextureAsTargetError::RegionIsNot2D);
+        }
+
+        // Get the view for the specific subregion, and create a new one if needed
+        let view = 
+        
+        // Return the render target that we will render to
         Ok(RenderTarget {
             _phantom: PhantomData,
             view: self.view(),
