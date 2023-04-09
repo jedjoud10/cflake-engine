@@ -15,11 +15,6 @@ pub enum SetBindResourceError<'a> {
 
     #[error("{0}")]
     SetBuffer(SetBufferError),
-
-    #[error(
-        "The given range is invalid for buffer with {0} elements"
-    )]
-    InvalidBufferRange(usize),
 }
 
 #[derive(Error, Debug)]
@@ -60,7 +55,13 @@ pub enum SetTextureError {
 pub enum SetSamplerError {}
 
 #[derive(Error, Debug)]
-pub enum SetBufferError {}
+pub enum SetBufferError {
+    #[error("The given range is invalid for buffer with {0} elements")]
+    InvalidRange(usize),
+
+    #[error("The given storage buffer does not contain the STORAGE usage")]
+    MissingStorageUsage,
+}
 
 #[derive(Error, Debug)]
 pub enum PushConstantBytesError {

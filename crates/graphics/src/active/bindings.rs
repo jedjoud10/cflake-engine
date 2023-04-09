@@ -1,7 +1,7 @@
 use crate::{
     BindResourceLayout, Buffer, GpuPod, Graphics, Id, IdVariant,
     ReflectedShader, Sampler, SetBindResourceError, Shader, Texel,
-    Texture, TextureUsage, UniformBuffer, SetTextureError,
+    Texture, TextureUsage, UniformBuffer, SetTextureError, SetBufferError, BufferUsage,
 };
 use ahash::AHashMap;
 use std::{marker::PhantomData, ops::RangeBounds, sync::Arc};
@@ -153,7 +153,7 @@ impl<'a> BindGroup<'a> {
 
         // Try setting a sampler appropriate for this texture
         let sampler = format!("{name}_sampler");
-        self.set_sampler(&sampler, texture.sampler());
+        self.set_sampler(&sampler, texture.sampler().unwrap());
 
         // Get the binding entry layout for the given texture
         let entry = Self::find_entry_layout(
@@ -165,7 +165,7 @@ impl<'a> BindGroup<'a> {
         // Get values needed for the bind entry
         let id = texture.raw().global_id();
         let resource =
-            wgpu::BindingResource::TextureView(texture.view());
+            wgpu::BindingResource::TextureView(texture.view().unwrap());
 
         // Save the bind entry for later
         self.resources.push(resource);
@@ -180,10 +180,10 @@ impl<'a> BindGroup<'a> {
         name: &'s str,
         texture: &'a mut T,
     ) -> Result<(), SetBindResourceError<'s>> {
-       // Make sure it's a sampled texture
-       if !texture.usage().contains(TextureUsage::STORAGE) {
-        return Err(SetBindResourceError::SetTexture(SetTextureError::MissingStorageUsage));
-    }
+        // Make sure it's a sampled texture
+        if !texture.usage().contains(TextureUsage::STORAGE) {
+            return Err(SetBindResourceError::SetTexture(SetTextureError::MissingStorageUsage));
+        }
 
         // Get the binding entry layout for the given texture
         let entry = Self::find_entry_layout(
@@ -195,7 +195,7 @@ impl<'a> BindGroup<'a> {
         // Get values needed for the bind entry
         let id = texture.raw().global_id();
         let resource =
-            wgpu::BindingResource::TextureView(texture.view());
+            wgpu::BindingResource::TextureView(texture.view().unwrap());
 
         // Save the bind entry for later
         self.resources.push(resource);
@@ -205,7 +205,6 @@ impl<'a> BindGroup<'a> {
     }
 
     // Set a texture sampler so we can sample textures within the shader
-    // TODO: Validate sampler using SetBindResourceError
     pub fn set_sampler<'s, T: Texel>(
         &mut self,
         name: &'s str,
@@ -231,7 +230,6 @@ impl<'a> BindGroup<'a> {
     }
 
     // Set a uniform buffer that we can read from within shaders
-    // TODO: Validate UBO using SetBindResourceError
     pub fn set_uniform_buffer<'s, T: GpuPod>(
         &mut self,
         name: &'s str,
@@ -248,8 +246,8 @@ impl<'a> BindGroup<'a> {
         // Get the buffer binding bounds
         let binding = buffer
             .convert_bounds_to_binding(bounds)
-            .ok_or(SetBindResourceError::InvalidBufferRange(
-                buffer.len(),
+            .ok_or(SetBindResourceError::SetBuffer(
+                SetBufferError::InvalidRange(buffer.len())
             ))?;
 
         // Get values needed for the bind entry
@@ -264,13 +262,17 @@ impl<'a> BindGroup<'a> {
     }
 
     // Set a storage buffer that we can write / read from / to
-    // TODO: Validate storage buffer using SetBindResourceError
     pub fn set_storage_buffer<'s, T: GpuPod, const TYPE: u32>(
         &mut self,
         name: &'s str,
         buffer: &'a Buffer<T, TYPE>,
         bounds: impl RangeBounds<usize>,
     ) -> Result<(), SetBindResourceError<'s>> {
+        // Make sure it's a storage buffer
+        if !buffer.usage().contains(BufferUsage::STORAGE) {
+            return Err(SetBindResourceError::SetBuffer(SetBufferError::MissingStorageUsage));
+        }
+
         // Get the binding entry layout for the given buffer
         let entry = Self::find_entry_layout(
             self.index,
@@ -281,8 +283,8 @@ impl<'a> BindGroup<'a> {
         // Get the buffer binding bounds
         let binding = buffer
             .convert_bounds_to_binding(bounds)
-            .ok_or(SetBindResourceError::InvalidBufferRange(
-                buffer.len(),
+            .ok_or(SetBindResourceError::SetBuffer(
+                SetBufferError::InvalidRange(buffer.len())
             ))?;
 
         // Get values needed for the bind entry

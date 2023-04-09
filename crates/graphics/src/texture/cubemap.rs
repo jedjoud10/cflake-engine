@@ -17,7 +17,7 @@ use crate::{
 pub struct CubeMap<T: Texel> {
     // Raw WGPU
     texture: wgpu::Texture,
-    views: SmallVec<[wgpu::TextureView; 1]>,
+    views: Option<Vec<wgpu::TextureView>>,
 
     // Main texture settings
     dimensions: vek::Extent2<u32>,
@@ -28,8 +28,8 @@ pub struct CubeMap<T: Texel> {
     _phantom: PhantomData<T>,
 
     // Shader Sampler
-    sampler: Arc<wgpu::Sampler>,
-    sampling: SamplerSettings,
+    sampler: Option<Arc<wgpu::Sampler>>,
+    sampling: Option<SamplerSettings>,
 
     // Keep the graphics API alive
     graphics: Graphics,
@@ -55,16 +55,16 @@ impl<T: Texel> Texture for CubeMap<T> {
         &self.texture
     }
 
-    fn views(&self) -> &[wgpu::TextureView] {
-        &self.views
+    fn views(&self) -> Option<&[wgpu::TextureView]> {
+        self.views.as_ref().map(|x| x.as_slice())
     }
 
-    fn sampler(&self) -> Sampler<Self::T> {
-        Sampler {
-            sampler: &self.sampler,
+    fn sampler(&self) -> Option<Sampler<Self::T>> {
+        self.sampler.as_ref().zip(self.sampling.as_ref()).map(|(sampler, settings)| Sampler {
+            sampler,
             _phantom: PhantomData,
-            settings: &self.sampling,
-        }
+            settings,
+        })
     }
 
     fn graphics(&self) -> Graphics {
@@ -74,9 +74,9 @@ impl<T: Texel> Texture for CubeMap<T> {
     unsafe fn from_raw_parts(
         graphics: &Graphics,
         texture: wgpu::Texture,
-        views: SmallVec<[wgpu::TextureView; 1]>,
-        sampler: Arc<wgpu::Sampler>,
-        sampling: SamplerSettings,
+        views: Option<Vec<wgpu::TextureView>>,
+        sampler: Option<Arc<wgpu::Sampler>>,
+        sampling: Option<SamplerSettings>,
         dimensions: vek::Extent2<u32>,
         usage: TextureUsage,
         mode: TextureMode,
@@ -94,11 +94,11 @@ impl<T: Texel> Texture for CubeMap<T> {
         }
     }
 
-    unsafe fn resize_raw_parts(
+    unsafe fn replace_raw_parts(
         &mut self,
         texture: wgpu::Texture,
-        views: SmallVec<[wgpu::TextureView; 1]>,
-        dimensions: vek::Extent2<u32>,
+        views: Option<Vec<wgpu::TextureView>>,
+        dimensions: <Self::Region as crate::Region>::E,
     ) {
         self.texture = texture;
         self.views = views;

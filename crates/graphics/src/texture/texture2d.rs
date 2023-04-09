@@ -16,8 +16,7 @@ use crate::{
 pub struct Texture2D<T: Texel> {
     // Raw WGPU
     texture: wgpu::Texture,
-    base: Option<wgpu::TextureView>,
-    views: Vec<wgpu::TextureView>,
+    views: Option<Vec<wgpu::TextureView>>,
 
     // Main texture settings
     dimensions: vek::Extent2<u32>,
@@ -55,26 +54,22 @@ impl<T: Texel> Texture for Texture2D<T> {
         &self.texture
     }
 
-    fn views(&self) -> &[wgpu::TextureView] {
-        &self.views
+    fn views(&self) -> Option<&[wgpu::TextureView]> {
+        self.views.as_ref().map(|x| x.as_slice())
     }
 
     fn sampler(&self) -> Option<Sampler<Self::T>> {
-        self.sampler.as_ref().map(|sampler| Sampler {
-            sampler: &self.sampler,
+        self.sampler.as_ref().zip(self.sampling.as_ref()).map(|(sampler, settings)| Sampler {
+            sampler,
             _phantom: PhantomData,
-            settings: &self.sampling,
+            settings,
         })
     }
     
-    fn graphics(&self) -> Graphics {
-        self.graphics.clone()
-    }
-
     unsafe fn from_raw_parts(
         graphics: &Graphics,
         texture: wgpu::Texture,
-        base: Option<wgpu::TextureView>,
+        views: Option<Vec<wgpu::TextureView>>,
         sampler: Option<Arc<wgpu::Sampler>>,
         sampling: Option<SamplerSettings>,
         dimensions: vek::Extent2<u32>,
@@ -83,6 +78,7 @@ impl<T: Texel> Texture for Texture2D<T> {
     ) -> Self {
         Self {
             texture,
+            views,
             dimensions,
             usage,
             mode,
@@ -90,25 +86,22 @@ impl<T: Texel> Texture for Texture2D<T> {
             graphics: graphics.clone(),
             sampler,
             sampling,
-            base,
-            views: Vec::new(),
         }
     }
 
-    unsafe fn resize_raw_parts(
+    unsafe fn replace_raw_parts(
         &mut self,
         texture: wgpu::Texture,
+        views: Option<Vec<wgpu::TextureView>>,
         dimensions: vek::Extent2<u32>,
     ) {
         self.texture = texture;
+        self.views = views;
         self.dimensions = dimensions;
     }
 
-    unsafe fn add_extra_raw_views(
-        &mut self,
-        views: Vec<wgpu::TextureView>
-    ) {
-        self.views.extend(views);
+    fn graphics(&self) -> Graphics {
+        todo!()
     }
 }
 
@@ -130,7 +123,7 @@ pub enum TextureScale {
 // Texture settings that we shall use when loading in a new texture
 #[derive(Clone)]
 pub struct TextureImportSettings<'m, T: Texel> {
-    pub sampling: SamplerSettings,
+    pub sampling: Option<SamplerSettings>,
     pub mode: TextureMode,
     pub usage: TextureUsage,
     pub scale: TextureScale,
@@ -140,7 +133,7 @@ pub struct TextureImportSettings<'m, T: Texel> {
 impl<T: Texel> Default for TextureImportSettings<'_, T> {
     fn default() -> Self {
         Self {
-            sampling: SamplerSettings::default(),
+            sampling: Some(SamplerSettings::default()),
             mode: TextureMode::default(),
             scale: TextureScale::Default,
             usage: TextureUsage::default(),

@@ -117,6 +117,9 @@ pub trait Origin: Copy + Default {
     fn layer(&self) -> u32;
 }
 
+// Only used for layered textures for their views
+pub trait LayeredOrigin: Copy + Default + Origin {}
+
 // Implementation of extent for 2D extent
 impl Extent for vek::Extent2<u32> {
     fn area(&self) -> u32 {
@@ -324,6 +327,7 @@ impl Origin for (vek::Vec2<u32>, u32) {
         self.1
     }
 }
+impl LayeredOrigin for (vek::Vec2<u32>, u32) {}
 
 // Texture region trait that will be implemented for (origin, extent) tuples
 pub trait Region: Copy {

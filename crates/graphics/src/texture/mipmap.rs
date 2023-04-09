@@ -7,7 +7,7 @@ use crate::{
     ColorTexel, Extent, MipLevelClearError, MipLevelCopyError,
     MipLevelReadError, MipLevelWriteError, Origin, RenderTarget,
     Texel, TextureAsTargetError, TextureMipLevelError,
-    TextureSamplerError, TextureUsage,
+    TextureSamplerError, TextureUsage, LayeredOrigin,
 };
 
 // This enum tells the texture how exactly it should create it's mipmaps
@@ -156,8 +156,8 @@ pub struct MipLevelsRef<'a, T: Texture> {
 
 impl<'a, T: Texture> MipLevelsRef<'a, T> {
     // Get the number of mip levels contained within the texture
-    pub fn len(&self) -> usize {
-        self.texture.views().len() - 1
+    pub fn len(&self) -> u32 {
+        self.texture.levels()
     }
 
     // Borrow a mip-level from the mip collection immutably
@@ -165,7 +165,7 @@ impl<'a, T: Texture> MipLevelsRef<'a, T> {
         &'a self,
         level: u8,
     ) -> Result<MipLevelRef<'a, T>, TextureMipLevelError> {
-        let range = self.texture.views().len() as u8 - 1;
+        let range = self.len() as u8;
         if level > range {
             Ok(MipLevelRef {
                 texture: self.texture,
@@ -187,8 +187,8 @@ pub struct MipLevelsMut<'a, T: Texture> {
 
 impl<'a, T: Texture> MipLevelsMut<'a, T> {
     // Get the number of mip levels contained within the texture
-    pub fn len(&self) -> usize {
-        self.texture.views().len() - 1
+    pub fn len(&self) -> u32 {
+        self.texture.levels()
     }
 
     // Borrow a mip-level from the mip collection immutably
@@ -196,7 +196,7 @@ impl<'a, T: Texture> MipLevelsMut<'a, T> {
         &'a self,
         level: u8,
     ) -> Result<MipLevelRef<'a, T>, TextureMipLevelError> {
-        let range = self.texture.views().len() as u8 - 1;
+        let range = self.len() as u8;
         if level > range {
             Ok(MipLevelRef {
                 texture: self.texture,
@@ -213,7 +213,7 @@ impl<'a, T: Texture> MipLevelsMut<'a, T> {
         &'a self,
         level: u8,
     ) -> Result<MipLevelMut<'a, T>, TextureMipLevelError> {
-        let range = self.texture.views().len() as u8 - 1;
+        let range = self.len() as u8;
         if level < range {
             Ok(MipLevelMut {
                 texture: self.texture,
@@ -238,6 +238,40 @@ impl<'a, T: Texture> MipLevelRef<'a, T> {
     // Get the underlying texture
     pub fn texture(&self) -> &T {
         self.texture
+    }
+
+    // Get a view for this mip
+    // Returns None if a view is not needed (no SAMPLED, TARGET, or STORAGE usages)
+    pub fn view(&self) -> Option<&wgpu::TextureView> {
+        // all mips, all layers
+        // all mips, first layer
+        // all mips, second layer
+        // first mip, all layers
+        // first mip, first layer
+        // first mip, second layer
+        // second mip, all layers
+        // second mip, first layer
+        // second mip, second  layer
+        // We only care about the "n mips, all layers"
+        let index = (self.level as usize + 1) * self.texture.dimensions().layers() as usize;
+        self.texture.views().map(|x| x.get(index)).flatten()
+    } 
+
+    // Get the view of a specific layer of the current mip
+    // TODO: Use custom error
+    fn layer_view(&self, layer: u32) -> Option<&wgpu::TextureView> where <T::Region as Region>::O: LayeredOrigin  {
+        // all mips, all layers
+        // all mips, first layer
+        // all mips, second layer
+        // first mip, all layers
+        // first mip, first layer
+        // first mip, second layer
+        // second mip, all layers
+        // second mip, first layer
+        // second mip, second  layer
+        // We only care about the "n mips, n layers"
+        let index = (self.level as usize + 1) * self.texture.dimensions().layers() as usize + 1 + layer as usize;
+        self.texture.views().map(|x| x.get(index)).flatten()
     }
 
     // Get the mip level of the current level
@@ -366,12 +400,12 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
         }
 
         // Get the view for the specific subregion, and create a new one if needed
-        let view = 
+        let view = todo!();
         
         // Return the render target that we will render to
         Ok(RenderTarget {
             _phantom: PhantomData,
-            view: self.view(),
+            view,
         })
     }
 }
@@ -410,8 +444,17 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
         // Get the mip level subregion if the given one is None
         let subregion = subregion.unwrap_or(mip_level_region);
 
-        // TODO: Actually handle reading here
-        todo!();
+        // Read from the mip level level
+        crate::read_from_level::<T::T, T::Region>(
+            subregion.origin(),
+            subregion.extent(),
+            dst,
+            &self.texture.raw(),
+            self.level as u32,
+            &self.texture.graphics(),
+        );
+
+        Ok(())
     }
 
     // Write some pixels to the mip level region from the given source
