@@ -16,14 +16,16 @@ fn main() {
 fn init(world: &mut World) {
     // Create some procedural terrain
     let graphics = world.get::<Graphics>().unwrap();
-    let settings = TerrainSettings::new(&graphics,
+    let settings = TerrainSettings::new(
+        &graphics,
         64,
         5,
-        false,
+        true,
         true,
         8,
         1024,
-    );
+        None, None, None
+    ).unwrap();
     drop(graphics);
     world.insert(settings);
 

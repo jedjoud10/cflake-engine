@@ -34,10 +34,6 @@ pub trait Texture: Sized {
     type T: Texel;
 
     // Create a new texture with some possibly predefined data
-
-    // TODO: Remove "sampling" paramater from this method and separate the sampler into it's own type
-    // (cannot use type validation since it would not be needed and it would add a lot of boilerplate)
-    // OR
     // Make it optional, and do runtime checks to check if the texture usage is TextureUsage::SAMPLED,
     // and enforce the sampling parameter if it is
     fn from_texels(
@@ -46,7 +42,7 @@ pub trait Texture: Sized {
         extent: <Self::Region as Region>::E,
         mode: TextureMode,
         usage: TextureUsage,
-        sampling: SamplerSettings,
+        sampling: Option<SamplerSettings>,
         mipmaps: TextureMipMaps<Self::T>,
     ) -> Result<Self, TextureInitializationError> {
         let format = <Self::T as Texel>::format();
@@ -144,9 +140,13 @@ pub trait Texture: Sized {
             extent.depth()
         );
 
-        // Fetch a new sampler for the given sampling settings
-        let sampler =
-            crate::get_or_insert_sampler(graphics, sampling);
+        // Fetch a new sampler for the given sampling settings (if needed)
+        let sampler = if usage.contains(TextureUsage::SAMPLED) {
+            let sampling = sampling.ok_or(TextureInitializationError::TextureUsageSampledMissingSettings)?;
+            Some(crate::get_or_insert_sampler(graphics, sampling))
+        } else {
+            None
+        };
 
         // Create a "zeroed" origin
         let origin =
@@ -194,16 +194,25 @@ pub trait Texture: Sized {
             _ => {}
         }
 
-        // Create the texture's texture view descriptor
-        let view_descriptor = TextureViewDescriptor {
+        // Check if we need texture views
+        let needs_views = usage.contains(TextureUsage::SAMPLED) | 
+            usage.contains(TextureUsage::STORAGE) |
+            usage.contains(TextureUsage::TARGET);
+
+        // Create the texture's texture view descriptor (if the texture needs it)
+        let descriptor = needs_views.then(|| TextureViewDescriptor {
             format: Some(format),
             dimension: Some(view_dimensions),
             aspect: texture_aspect::<Self::T>(),
             ..Default::default()
-        };
+        });
 
         // Create an texture view of the whole texture
-        let view = texture.create_view(&view_descriptor);
+        let view =  descriptor.map(|desc| texture.create_view(&desc));
+
+        // Don't worry about the mip-mapped views since we handle those by ourselves
+
+        /*
         let mut views = SmallVec::from_buf([view]);
 
         // If the texture uses mipmaps, create the other mip level views
@@ -225,10 +234,11 @@ pub trait Texture: Sized {
                 views.push(texture.create_view(&view_descriptor));
             }
         }
+        */
 
         Ok(unsafe {
             Self::from_raw_parts(
-                graphics, texture, views, sampler, sampling, extent,
+                graphics, texture, view, sampler, sampling, extent,
                 usage, mode,
             )
         })
@@ -257,15 +267,16 @@ pub trait Texture: Sized {
     fn raw(&self) -> &wgpu::Texture;
 
     // Get the sampler associated with this texture
-    fn sampler(&self) -> Sampler<Self::T>;
+    // Returns none if the texture cannot be sampled
+    fn sampler(&self) -> Option<Sampler<Self::T>>;
 
-    // Get the underlying Texture view
-    fn view(&self) -> &wgpu::TextureView {
-        &self.views()[0]
-    }
+    // Get the whole Texture view (if there is one)
+    fn view(&self) -> Option<&wgpu::TextureView>;
 
     // Get all the allocated texture views
-    fn views(&self) -> &[wgpu::TextureView];
+    // This might have a length of zero in case the texture cannot be viewed
+    // If it's zero, this will return None
+    fn views(&self) -> Option<&[wgpu::TextureView]>;
 
     // Get the mip levels of the texture immutably
     // Doesn't include the "whole" texture view
@@ -289,16 +300,20 @@ pub trait Texture: Sized {
         &mut self,
     ) -> Result<RenderTarget<Self::T>, TextureAsTargetError> {
         if !self.usage().contains(TextureUsage::TARGET) {
-            return Err(TextureAsTargetError::WholeTextureMissingFlags);
+            return Err(TextureAsTargetError::MissingTargetUsage);
         }
 
         if self.mips().len() > 1 {
-            return Err(TextureAsTargetError::WholeTextureMultipleMips);
+            return Err(TextureAsTargetError::TextureMultipleMips);
+        }
+
+        if self.dimensions().depth() > 1 {
+            return Err(TextureAsTargetError::RegionIsNot2D);    
         }
 
         Ok(RenderTarget {
             _phantom: PhantomData,
-            view: self.view(),
+            view: self.view().unwrap(),
         })
     }
 
@@ -308,8 +323,11 @@ pub trait Texture: Sized {
         &mut self,
         extent: <Self::Region as Region>::E,
     ) -> Result<(), TextureResizeError> {
+        todo!()
+        /*
         let graphics = self.graphics();
-        if self.views().len() > 1 {
+
+        if self.views().is_some() {
             return Err(TextureResizeError::MipMappingUnsupported);
         }
 
@@ -374,10 +392,11 @@ pub trait Texture: Sized {
         let view = texture.create_view(&view_descriptor);
         let views = SmallVec::from_buf([view]);
         unsafe {
-            self.replace_raw_parts(texture, views, extent);
+            self.resize_raw_parts(texture, extent);
         }
 
         Ok(())
+        */
     }
 
     // Get the stored graphics context
@@ -389,21 +408,41 @@ pub trait Texture: Sized {
     unsafe fn from_raw_parts(
         graphics: &Graphics,
         texture: wgpu::Texture,
-        views: SmallVec<[wgpu::TextureView; 1]>,
-        sampler: Arc<wgpu::Sampler>,
-        sampling: SamplerSettings,
+        view: Option<wgpu::TextureView>,
+        sampler: Option<Arc<wgpu::Sampler>>,
+        sampling: Option<SamplerSettings>,
         dimensions: <Self::Region as Region>::E,
         usage: TextureUsage,
         mode: TextureMode,
     ) -> Self;
 
-    // Replace the underlying raw data with the given new data
-    unsafe fn replace_raw_parts(
+    // Called when the user resizes the texture
+    // Should not be called manually. 
+    unsafe fn resize_raw_parts(
         &mut self,
         texture: wgpu::Texture,
-        views: SmallVec<[wgpu::TextureView; 1]>,
         dimensions: <Self::Region as Region>::E,
     );
+
+    // Add some views (for a specific mip) to the texture
+    // Used to add sampled/target/storage views 
+    // Should not be called manually
+    unsafe fn add_raw_mip_level_views(
+        &mut self,
+        mip: u32,
+        views: Vec<(wgpu::TextureView, Self::Region)>
+    );
+
+    // Clear the internally stored views 
+    unsafe fn clear_texture_mip_level_views(
+        &mut self
+    );
+
+    // Get the internally stored views for a specific mip level
+    unsafe fn get_texture_mip_level_views(
+        &mut self,
+        mip: u32,
+    ) -> &[(wgpu::TextureView, Self::Region)];
 }
 
 // Get the number of mip levels that the texture should use
@@ -538,6 +577,7 @@ pub(crate) fn read_from_level<T: Texel, E: Extent, O: Origin>(
     level: u32,
     graphics: &Graphics,
 ) {
+    todo!()
 }
 
 // Check if the given extent is valid within device limits

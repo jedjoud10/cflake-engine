@@ -93,7 +93,7 @@ impl<T: Texel> Texture for LayeredTexture2D<T> {
         }
     }
 
-    unsafe fn replace_raw_parts(
+    unsafe fn resize_raw_parts(
         &mut self,
         texture: wgpu::Texture,
         views: SmallVec<[wgpu::TextureView; 1]>,

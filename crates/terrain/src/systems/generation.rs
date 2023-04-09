@@ -127,6 +127,11 @@ fn update(world: &mut World) {
                 // Push the bytes to the GPU
                 x.push(offset, 0).unwrap();
                 x.push(time,offset.len() as u32).unwrap();
+
+                // Call the set group callback
+                if let Some(callback) = voxelizer.set_push_constant_callback.as_ref() {
+                    (callback)(x);
+                } 
             })
             .unwrap();
 
@@ -136,7 +141,9 @@ fn update(world: &mut World) {
                 .unwrap();
 
             // Call the set group callback
-            (voxelizer.set_group_callback)(set);
+            if let Some(callback) = voxelizer.set_bind_group_callback.as_ref() {
+                (callback)(set);
+            } 
         });
         active.dispatch(vek::Vec3::broadcast(settings.size / 4));
 

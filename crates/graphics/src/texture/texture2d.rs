@@ -16,7 +16,8 @@ use crate::{
 pub struct Texture2D<T: Texel> {
     // Raw WGPU
     texture: wgpu::Texture,
-    views: SmallVec<[wgpu::TextureView; 1]>,
+    base: Option<wgpu::TextureView>,
+    views: Vec<wgpu::TextureView>,
 
     // Main texture settings
     dimensions: vek::Extent2<u32>,
@@ -27,8 +28,8 @@ pub struct Texture2D<T: Texel> {
     _phantom: PhantomData<T>,
 
     // Shader Sampler
-    sampler: Arc<wgpu::Sampler>,
-    sampling: SamplerSettings,
+    sampler: Option<Arc<wgpu::Sampler>>,
+    sampling: Option<SamplerSettings>,
 
     // Keep the graphics API alive
     graphics: Graphics,
@@ -58,12 +59,12 @@ impl<T: Texel> Texture for Texture2D<T> {
         &self.views
     }
 
-    fn sampler(&self) -> Sampler<Self::T> {
-        Sampler {
+    fn sampler(&self) -> Option<Sampler<Self::T>> {
+        self.sampler.as_ref().map(|sampler| Sampler {
             sampler: &self.sampler,
             _phantom: PhantomData,
             settings: &self.sampling,
-        }
+        })
     }
     
     fn graphics(&self) -> Graphics {
@@ -73,16 +74,15 @@ impl<T: Texel> Texture for Texture2D<T> {
     unsafe fn from_raw_parts(
         graphics: &Graphics,
         texture: wgpu::Texture,
-        views: SmallVec<[wgpu::TextureView; 1]>,
-        sampler: Arc<wgpu::Sampler>,
-        sampling: SamplerSettings,
+        base: Option<wgpu::TextureView>,
+        sampler: Option<Arc<wgpu::Sampler>>,
+        sampling: Option<SamplerSettings>,
         dimensions: vek::Extent2<u32>,
         usage: TextureUsage,
         mode: TextureMode,
     ) -> Self {
         Self {
             texture,
-            views,
             dimensions,
             usage,
             mode,
@@ -90,18 +90,25 @@ impl<T: Texel> Texture for Texture2D<T> {
             graphics: graphics.clone(),
             sampler,
             sampling,
+            base,
+            views: Vec::new(),
         }
     }
 
-    unsafe fn replace_raw_parts(
+    unsafe fn resize_raw_parts(
         &mut self,
         texture: wgpu::Texture,
-        views: SmallVec<[wgpu::TextureView; 1]>,
         dimensions: vek::Extent2<u32>,
     ) {
         self.texture = texture;
-        self.views = views;
         self.dimensions = dimensions;
+    }
+
+    unsafe fn add_extra_raw_views(
+        &mut self,
+        views: Vec<wgpu::TextureView>
+    ) {
+        self.views.extend(views);
     }
 }
 

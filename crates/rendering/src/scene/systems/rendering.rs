@@ -133,19 +133,6 @@ fn event(world: &mut World, event: &mut WindowEvent) {
 
 // Clear the window and render the entities to the texture
 fn render(world: &mut World) {
-    /*
-    // Initializes the "instant" field of each new renderer
-    let mut scene = world.get_mut::<Scene>().unwrap();
-    let time = world.get::<Time>().unwrap();
-    let query = scene.query_mut_with::<&mut Renderer>(ecs::added::<Renderer>());
-    for renderer in query {
-        if renderer.instant_initialized.is_none() {
-            renderer.instant_initialized = Some(time.frame_start());
-        }
-    }
-    drop(scene);
-    */
-
     // Fetch the resources that we will use for rendering the scene
     let mut renderer = world.get_mut::<ForwardRenderer>().unwrap();
     let mut _shadowmap = world.get_mut::<ShadowMapping>().unwrap();
@@ -252,24 +239,23 @@ fn render(world: &mut World) {
         draw_indexed_indirect_buffers: &indexed_indirect_buffers,
     };
     
-    /*
     // Update the shadow map lightspace matrix
     let shadowmap = &mut *_shadowmap;
     shadowmap
-        .update(*directional_light_rotation, *camera_position);
+        .update(*directional_light_rotation, *camera_position, camera_frustum);
     let mips = shadowmap.depth_tex.mips_mut();
+    let level = mips.level_mut(0).unwrap();
 
     // Create multiple render passes for each shadow cascade
     for i in 0..mips.len() {
-        // Get the depth texture we will render to
-        let mut level = mips.level_mut(i as u8).unwrap();
-        
+        // Use layer as render target
+        let target = level.as_render_target(Some((
+            (vek::Vec2::zero(), i as u32),
+            (vek::Extent2::broadcast(shadowmap.resolution), 1)
+        ))).unwrap();
+
         // Get the mip level as a factor
         let factor = (level.dimensions().w as f32 / shadowmap.resolution as f32);
-        
-        // Use mip as target
-        let target = level.as_render_target().unwrap();
-        
 
         // Create a new active shadowmap render pass
         let mut render_pass = shadowmap.render_pass.begin((), target);
@@ -290,7 +276,6 @@ fn render(world: &mut World) {
             stored.prerender(world, &mut default, &mut active);
         }
     }
-    */
 
     // Begin the scene color render pass
     let color = renderer.color_texture.as_render_target().unwrap();

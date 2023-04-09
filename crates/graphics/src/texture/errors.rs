@@ -17,6 +17,9 @@ pub enum TextureInitializationError {
         d: u32,
     },
 
+    #[error("The texture is set with a usage of SAMPLED, but there are no sampling settings defined (set to none)")]
+    TextureUsageSampledMissingSettings,
+
     #[error("Tried creating a texture with extent above the physical device's max texture size")]
     ExtentLimit,
 
@@ -112,12 +115,15 @@ pub struct TextureSamplerError;
 
 #[derive(Error, Debug)]
 pub enum TextureAsTargetError {
-    #[error("Cannot use the texture mip level as a render target since it does not have the appropriate usage flags")]
-    MipLevelMissingFlags,
+    #[error("The given source region would overflow the region of the mip-level")]
+    InvalidRegion,
 
-    #[error("Cannot use the whole texture as a render target since it does not have the appropriate usage flags")]
-    WholeTextureMissingFlags,
+    #[error("Cannot use the texture as a render target since it does not have the appropriate usage flags")]
+    MissingTargetUsage,
+
+    #[error("Cannot use the texture as a render target because the texture region is layered / 3D")]
+    RegionIsNot2D,
 
     #[error("Cannot use the whole texture as a render target since it contains multiple mip levels")]
-    WholeTextureMultipleMips,
+    TextureMultipleMips,
 }

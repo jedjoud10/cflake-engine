@@ -48,7 +48,13 @@ pub enum SetIndexBufferError {
 pub enum SetPushConstantsError {}
 
 #[derive(Error, Debug)]
-pub enum SetTextureError {}
+pub enum SetTextureError {
+    #[error("The given sampled texture does not contain the SAMPLE usage")]
+    MissingSampleUsage,
+
+    #[error("The given storage texture does not contain the STORAGE usage")]
+    MissingStorageUsage,
+}
 
 #[derive(Error, Debug)]
 pub enum SetSamplerError {}

@@ -1,14 +1,7 @@
-
-
-
-use std::rc::Rc;
-
 use graphics::{
-    Graphics, Compiler, BindGroup,
+    Graphics, Compiler, BindGroup, PushConstants, ActiveComputeDispatcher,
 };
-
-
-
+use thiserror::Error;
 use crate::{VoxelGenerator, MeshGenerator, MemoryManager, ChunkManager};
 
 // Terrain generator settings that the user will need to add to configure the terrain gen
@@ -44,13 +37,13 @@ pub struct TerrainSettings {
     pub(crate) triangles_per_sub_allocation: u32,
 
     // Callbacks for custom voxel data
-    pub(crate) compiler_callback: Option<Box<dyn FnOnce(&mut Compiler) + 'static>>,
-    pub(crate) set_group_callback: Option<Box<dyn Fn(&mut BindGroup) + 'static>>,
+    pub(crate) voxel_compiler_callback: Option<Box<dyn FnOnce(&mut Compiler) + 'static>>,
+    pub(crate) voxel_set_push_constants_callback: Option<Box<dyn Fn(&mut PushConstants<ActiveComputeDispatcher>) + 'static>>,
+    pub(crate) voxel_set_group_callback: Option<Box<dyn Fn(&mut BindGroup) + 'static>>,
 }
 
 impl TerrainSettings {
     // Create some new terrain settings for terrain generation
-    // TODO: Handle validation
     pub fn new(
         graphics: &Graphics,
         resolution: u32,
@@ -59,11 +52,10 @@ impl TerrainSettings {
         lowpoly: bool,
         allocations: usize,
         sub_allocations: usize,
-        /*
-        voxel_compiler_callback: impl FnOnce(&mut Compiler) + 'static,
-        voxel_set_bind_group_callback: impl Fn(&mut BindGroup) + 'static,
-        */
-    ) -> Self {
+        voxel_compiler_callback: Option<Box<dyn FnOnce(&mut Compiler) + 'static>>,
+        voxel_set_push_constants_callback: Option<Box<dyn Fn(&mut PushConstants<ActiveComputeDispatcher>) + 'static>>,
+        voxel_set_group_callback: Option<Box<dyn Fn(&mut BindGroup) + 'static>>,
+    ) -> Result<Self, TerrainSettingsError>  {
         let output_vertex_buffer_length = graphics
             .device()
             .limits()
@@ -75,6 +67,19 @@ impl TerrainSettings {
             .max_storage_buffer_binding_size as usize
             / 12;
 
+        // Validate resolution
+        if resolution < 16 {
+            return Err(TerrainSettingsError::ChunkSizeTooSmall);
+        } else if resolution >= 128 {
+            return Err(TerrainSettingsError::ChunkSizeTooBig);
+        } else if !resolution.is_power_of_two() {
+            return Err(TerrainSettingsError::ChunkSizeNotPowerOfTwo);
+        }
+
+        // Validate sub-allocations count
+        if !sub_allocations.is_power_of_two() {
+            return Err(TerrainSettingsError::SubAllocationCountNotPowerOfTwo);
+        }
 
         // Calculate the number of chunk meshes/indirect elements that must be created
         let chunks = (render_distance * 2 + 1).pow(3);
@@ -90,7 +95,14 @@ impl TerrainSettings {
         let triangles_per_sub_allocation = (triangle_sub_allocations_length.floor() as u32).next_power_of_two();
         let chunks_per_allocation = over_allocated_chunks_count / allocations;
 
-        Self {
+        // Decompose the "callbacks" struct into raw options
+        /*
+        let (vpc, vspc, vsgc) = callbacks.map(|c| {
+            (Some(Box::new(c.compiler)), Some(Box::new(c.set_group_callback)), Some(Box::new(c.set_push_constants)))
+        }).unwrap_or_default();
+        */
+
+        Ok(Self {
             size: resolution,
             chunk_render_distance: render_distance,
             blocky,
@@ -104,10 +116,27 @@ impl TerrainSettings {
             vertices_per_sub_allocation,
             triangles_per_sub_allocation,
             chunks_per_allocation,
-            compiler_callback: Some(Box::new(|_| {})),
-            set_group_callback: Some(Box::new(|_| {})),
-        }
+            voxel_compiler_callback,
+            voxel_set_push_constants_callback,
+            voxel_set_group_callback,
+        })
     }
+}
+
+// Errors that could possibly get returned when trying to initialize a terrain
+#[derive(Debug, Error)]
+pub enum TerrainSettingsError {
+    #[error("Given chunk size is not a power of two")]
+    ChunkSizeNotPowerOfTwo,
+
+    #[error("Given chunk size is too small (less than 16)")]
+    ChunkSizeTooSmall,
+
+    #[error("Given chunk size is too big (greater than or equal to 128)")]
+    ChunkSizeTooBig,
+
+    #[error("Given sub allocation count is not a power of two")]
+    SubAllocationCountNotPowerOfTwo,
 }
 
 // TODO: EXPLAIN

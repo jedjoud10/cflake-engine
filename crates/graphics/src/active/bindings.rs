@@ -1,7 +1,7 @@
 use crate::{
     BindResourceLayout, Buffer, GpuPod, Graphics, Id, IdVariant,
     ReflectedShader, Sampler, SetBindResourceError, Shader, Texel,
-    Texture, TextureUsage, UniformBuffer,
+    Texture, TextureUsage, UniformBuffer, SetTextureError,
 };
 use ahash::AHashMap;
 use std::{marker::PhantomData, ops::RangeBounds, sync::Arc};
@@ -141,7 +141,6 @@ impl<'a> BindGroup<'a> {
     }
 
     // Set a texture that can be sampled inside shaders using it's sampler
-    // TODO: Validate sampled texture using SetBindResourceError
     pub fn set_sampled_texture<'s, T: Texture>(
         &mut self,
         name: &'s str,
@@ -149,7 +148,7 @@ impl<'a> BindGroup<'a> {
     ) -> Result<(), SetBindResourceError<'s>> {
         // Make sure it's a sampled texture
         if !texture.usage().contains(TextureUsage::SAMPLED) {
-            todo!()
+            return Err(SetBindResourceError::SetTexture(SetTextureError::MissingSampleUsage));
         }
 
         // Try setting a sampler appropriate for this texture
@@ -176,16 +175,15 @@ impl<'a> BindGroup<'a> {
     }
 
     // Set a storage texture that we can write / read from / to
-    // TODO: Validate storage texture using SetBindResourceError
     pub fn set_storage_texture<'s, T: Texture>(
         &mut self,
         name: &'s str,
         texture: &'a mut T,
     ) -> Result<(), SetBindResourceError<'s>> {
-        // Make sure it's a storage texture
-        if !texture.usage().contains(TextureUsage::STORAGE) {
-            todo!()
-        }
+       // Make sure it's a sampled texture
+       if !texture.usage().contains(TextureUsage::STORAGE) {
+        return Err(SetBindResourceError::SetTexture(SetTextureError::MissingStorageUsage));
+    }
 
         // Get the binding entry layout for the given texture
         let entry = Self::find_entry_layout(

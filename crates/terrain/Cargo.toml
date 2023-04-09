@@ -18,3 +18,4 @@ rand = "0.8.5"
 vek = { workspace = true }
 log = { workspace = true }
 ahash = { workspace = true } 
+thiserror = { workspace = true }
