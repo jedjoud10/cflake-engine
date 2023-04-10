@@ -6,6 +6,7 @@ fn main() {
         .set_app_name("cflake engine mesh example")
         .set_user_assets_path(user_assets_path!("/examples/assets/"))
         .set_window_fullscreen(true)
+        .set_stats_enabled(false)
         //.set_logging_level(LevelFilter::Trace)
         .insert_init(init)
         .insert_update(update)
@@ -27,7 +28,7 @@ fn init(world: &mut World) {
         None, None, None
     ).unwrap();
     drop(graphics);
-    //world.insert(settings);
+    world.insert(settings);
 
 
     // Fetch the required resources from the world
@@ -229,16 +230,12 @@ fn update(world: &mut World) {
     let input = world.get::<Input>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
 
-
-
-    /*
     // Rotation the light
     if let Some((rotation, _)) =
         scene.find_mut::<(&mut Rotation, &DirectionalLight)>()
     {
         rotation.rotate_y(-0.1 * time.delta().as_secs_f32());
     }
-    */
 
     // Exit the game when the user pressed Escape
     if input.get_button(Button::Escape).pressed() {

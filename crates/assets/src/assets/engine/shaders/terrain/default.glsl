@@ -33,8 +33,11 @@ vec3 generic_desaturate(vec3 color, float factor)
 // Main voxel function that will create the shape of the terrain
 Voxel voxel(vec3 position) {
     position += parameters.offset.xyz;
+
+    /*
+    //TEST 2
     position *= 0.4;
-    //position += fbmCellular(position.xz * 0.01, 2, 0.5, 2.0).x * 30.0 * vec3(1, 0, 1);
+    position += fbmCellular(position.xz * 0.01, 2, 0.5, 2.0).x * 30.0 * vec3(1, 0, 1);
 
     //float density = snoise(position * 0.03) * 50;
     float density1 = (1-fbmCellular(position * 0.01 * vec3(1, 2, 1), 10, 0.5, 2.1).y) * 30;
@@ -47,11 +50,22 @@ Voxel voxel(vec3 position) {
     //float density = position.y + (1-fbmCellular(position * 0.01 * vec3(1, 0.5, 1), 3, 0.5, 2.0).x) * 20;
 
     // Create a voxel and return it
-    return Voxel(density + randomized, vec3(1.0));
+    return Voxel(density1 + randomized + position.y, vec3(1.0));
+    */
 
 
     /*
+
+    float density = opSmoothUnion((1-fbmCellular(position * 0.005 * vec3(1, 0.2, 1), 10, 0.4, 2.1).y) * 90 - 60 + position.y, position.y, 4);
+    density = max(density, -sdSphere(vec3(position.xz, 0), 20));
+
+    
+    return Voxel(density, vec3(parameters.global_chunk_index / 400.0));
+    */
+
+
     //TEST 1
+    position *= 0.2;
     vec3 col = vec3(156, 63, 12) / 255.0;
     vec3 col1 = vec3(168, 68, 25) / 255.0;
     //vec3 col2 = vec3(255.0, 112.0, 5.0) / 255.0;
@@ -62,8 +76,8 @@ Voxel voxel(vec3 position) {
     col = mix(col, col1, fac0); 
     col = mix(col, col3, fac1);
 
-    float density = (1-fbmCellular(position * 0.02 * vec3(1, 5.0, 1), 5, 0.5, 2.0).x) * 10;
-    float d2 = (1-fbmCellular(position * 0.008 * vec3(1, 0.1, 1), 5, 0.3, 2.1).x) * 140;
+    float density = (1-fbmCellular(position * 0.02 * vec3(1, 5.0, 1), 8, 0.5, 2.0).x) * 10;
+    float d2 = (1-fbmCellular(position * 0.008 * vec3(1, 0.1, 1), 8, 0.3, 2.1).x) * 140;
     d2 = smooth_floor(d2 / 50) * 50;
 
     d2 += position.y;
@@ -71,5 +85,4 @@ Voxel voxel(vec3 position) {
     d2 = opSmoothSubtraction(-d2, position.y + 100, 50);
     density += d2 - 140;
     return Voxel(density, col);
-    */
 }

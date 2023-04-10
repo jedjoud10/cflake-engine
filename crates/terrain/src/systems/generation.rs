@@ -76,8 +76,6 @@ fn update(world: &mut World) {
         chunk.ranges = None;
     }
 
-    graphics.submit(false);
-
     // Find the closest chunk to the camera 
     let mut vec = scene.query_mut::<(
         &mut Chunk,
@@ -164,7 +162,7 @@ fn update(world: &mut World) {
         active.set_bind_group(1, |set| {
             set.set_storage_buffer("vertices", &mut mesher.temp_vertices, ..)
                 .unwrap();
-        });
+        }).unwrap();
         active.dispatch(vek::Vec3::broadcast(settings.size / 4)).unwrap();
 
         // Execute the quad generation shader second
@@ -212,7 +210,7 @@ fn update(world: &mut World) {
             .unwrap();
 
         //let dispatch = (terrain.sub_allocations as f32 / 32 as f32).ceil() as u32;
-        active.dispatch(vek::Vec3::new(1, 1, 1));
+        active.dispatch(vek::Vec3::new(1, 1, 1)).unwrap();
 
         // Get the output vertices from resource storage
         let output_vertices = vertices.get_mut(
@@ -272,7 +270,7 @@ fn update(world: &mut World) {
         drop(pass);
 
         // Submit the work to the GPU, and fetch counters and offsets
-        graphics.submit(true);
+        graphics.submit(false);
         let _counters = mesher.counters.as_view(..).unwrap();
         let counters = _counters.to_vec();
         let _offsets = memory.offsets.as_view(..).unwrap();
@@ -295,11 +293,15 @@ fn update(world: &mut World) {
         let count = count.ceil() as u32;
         let offset = vertices_offset / settings.vertices_per_sub_allocation;
         
-        // Update chunk range
-        chunk.ranges = Some(vek::Vec2::new(offset, count + offset));
-
-        // Make the surface visible and set it's state
-        surface.visible = true;
+        // Update chunk range (if valid) and set visibility
+        if count > 0 {
+            surface.visible = true;
+            chunk.ranges = Some(vek::Vec2::new(offset, count + offset));
+        } else {
+            chunk.ranges = None;
+            surface.visible = false;
+        }
+        
         chunk.state = ChunkState::Generated;
         return;
     }

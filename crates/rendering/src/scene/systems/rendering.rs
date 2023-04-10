@@ -53,9 +53,9 @@ fn init(world: &mut World) {
 
     // Create a nice shadow map
     let shadowmap = ShadowMapping::new(
-        200f32,
+        2000f32,
         1024,
-        &[50f32, 100.0, 200.0],
+        &[50f32, 100.0, 400.0],
         &graphics,
         &mut assets,
     );
@@ -238,6 +238,7 @@ fn render(world: &mut World) {
         indirect_triangles: &indirect_triangles,
         draw_indexed_indirect_buffers: &indexed_indirect_buffers,
     };
+    drop(scene);
 
     // Update the shadow map lightspace matrix
     let shadowmap = &mut *_shadowmap;
@@ -247,7 +248,6 @@ fn render(world: &mut World) {
     let lightspaces = &shadowmap.lightspaces;
     let mips = shadowmap.depth_tex.mips_mut();
     let mut level = mips.level_mut(0).unwrap();
-    log::debug!("{:?}", shadowmap.shader.reflected());
 
     // Create multiple render passes for each shadow cascade
     for i in 0..layers {
@@ -262,19 +262,9 @@ fn render(world: &mut World) {
         let mut active =
             render_pass.bind_pipeline(&shadowmap.pipeline);
 
-        // Set the lightspace matrix push constant
-        active
-            .set_push_constants(|constants| {
-                let bytes = GpuPod::into_bytes(&lightspace);
-                constants
-                    .push(bytes, size_of::<vek::Mat4::<f32>>() as u32, ModuleVisibility::Vertex)
-                    .unwrap();
-            })
-            .unwrap();
-
         // Render the shadows first (fuck you)
         for stored in pipelines.iter() {
-            stored.prerender(world, &mut default, &mut active);
+            stored.prerender(world, &mut default, &mut active, lightspace);
         }
     }
     drop(level);
@@ -288,7 +278,6 @@ fn render(world: &mut World) {
     let mut render_pass = renderer.render_pass.begin(color, depth);
 
     // This will iterate over each material pipeline and draw the scene
-    drop(scene);
     for stored in pipelines.iter() {
         stored.render(world, &mut default, &mut render_pass);
     }

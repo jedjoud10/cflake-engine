@@ -158,9 +158,7 @@ use world::{user, System, World};
 // Dynamically generate the chunks based on camera position
 fn update(world: &mut World) {
     // Tries to find a chunk viewer and the terrain generator
-    let time = world.get::<Time>().unwrap();
     let terrain = world.get_mut::<Terrain>();
-    let mut indexed_indirect_buffers = world.get_mut::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
     let viewer =
         scene.find_mut::<(&Entity, &mut ChunkViewer, &Position)>();
@@ -173,7 +171,6 @@ fn update(world: &mut World) {
     // Get the terrain chunk manager and terrain settings
     let terrain = &mut *_terrain;
     let mut manager = &mut terrain.manager;
-    let memory = &mut terrain.memory;
     let settings = &terrain.settings;
 
     // If we don't have a chunk viewer, don't do shit
@@ -204,7 +201,7 @@ fn update(world: &mut World) {
         // Generate the chunks around ze player
         let distance = settings.chunk_render_distance as i32;
         for x in -distance..=distance {
-            for y in -4..=4 {
+            for y in -2..=2 {
                 for z in -distance..=distance {
                     let chunk = vek::Vec3::new(x, y, z);
                     let view = manager.viewer.unwrap().1;

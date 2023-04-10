@@ -16,9 +16,6 @@ layout(location = 4) in vec2 m_tex_coord;
 #include <engine/shaders/common/sky.glsl>
 #include <engine/shaders/math/models.glsl>
 
-// Shadow-map texture map
-layout(set = 0, binding = 7) uniform texture2DArray shadow_map;
-
 // Push constants for the material data
 layout(push_constant) uniform PushConstants {
 	layout(offset = 64) float bumpiness;
@@ -72,7 +69,7 @@ void main() {
 	CameraData camera = CameraData(view, normalize(view + scene.sun_direction.xyz), camera.position.xyz);
 
 	// Check if the fragment is shadowed
-	vec3 color = brdf(shadow_map, surface, camera, sun);
+	vec3 color = brdf(surface, camera, sun);
 
 	// Calculate diffuse lighting
 	frag = vec4(color, 0.0);

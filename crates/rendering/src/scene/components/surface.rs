@@ -20,6 +20,7 @@ pub struct Surface<M: Material> {
     // Shadow parameters
     pub shadow_caster: bool,
     pub shadow_receiver: bool,
+    pub shadow_culled: bool,
 
     // Needed to force the user to initialize the material
     pub id: MaterialId<M>,
@@ -40,6 +41,7 @@ impl<M: Material<RenderPath = Direct>> Surface<M> {
             id,
             shadow_caster: true,
             shadow_receiver: true,
+            shadow_culled: false,
         }
     }
 }
@@ -59,6 +61,7 @@ impl<M: Material<RenderPath = Indirect>> Surface<M> {
             id,
             shadow_caster: true,
             shadow_receiver: true,
+            shadow_culled: false,
         }
     }
 }

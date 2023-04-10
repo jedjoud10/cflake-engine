@@ -10,4 +10,5 @@ layout(push_constant) uniform PushConstants {
 void main() {
     vec4 world_pos = constants.mesh * vec4(position, 1);
     vec4 projected = constants.lightspace * world_pos; 
+    gl_Position = projected;
 }

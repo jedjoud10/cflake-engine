@@ -5,7 +5,7 @@ use graphics::{
     SwapchainFormat, Texture2D, VertexConfig, VertexModule,
 };
 
-use crate::{SceneColor, WindowUniform};
+use crate::{SceneColor, WindowUniform, SceneDepth};
 
 // This is what will write to the swapchain
 pub type FinalRenderPass = RenderPass<SwapchainFormat, ()>;
@@ -41,6 +41,9 @@ impl Compositor {
         let mut compiler = Compiler::new(assets, graphics);
         compiler.use_sampled_texture::<Texture2D<SceneColor>>(
             "color_map",
+        );
+        compiler.use_sampled_texture::<Texture2D<SceneDepth>>(
+            "depth_map",
         );
         compiler.use_uniform_buffer::<WindowUniform>("window");
 

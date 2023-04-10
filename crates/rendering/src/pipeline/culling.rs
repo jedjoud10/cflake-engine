@@ -47,7 +47,7 @@ pub fn intersects_frustum(
 // Update the "culled" paramter of each surface
 pub(super) fn cull_surfaces<'r, M: Material>(
     world: &'r World,
-    default: &mut DefaultMaterialResources<'r>,
+    defaults: &mut DefaultMaterialResources<'r>,
 ) {
     // Don't cull if there's no need
     if !M::frustum_culling() {
@@ -65,7 +65,7 @@ pub(super) fn cull_surfaces<'r, M: Material>(
         |(surface, renderer)| {
             // Get the mesh and it's AABB
             let mesh = <M::RenderPath as RenderPath>::get(
-                default,
+                defaults,
                 &surface.mesh,
             );
             let aabb = mesh.vertices().aabb();
@@ -73,7 +73,7 @@ pub(super) fn cull_surfaces<'r, M: Material>(
             // If we have a valid AABB, check if the surface is visible within the frustum
             if let Some(aabb) = aabb {
                 surface.culled = !intersects_frustum(
-                    &default.camera_frustum,
+                    &defaults.camera_frustum,
                     aabb,
                     &renderer.matrix,
                 )

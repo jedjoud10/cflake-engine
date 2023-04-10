@@ -405,9 +405,9 @@ pub(super) fn create_pipeline_layout(
     (Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>),
     ShaderReflectionError,
 > {
-    // Stores multiple entries per set (max number of sets = defined by adapter)
+    // Stores multiple entries per set (max number of sets = 4)
     let mut groups: Vec<Option<AHashMap<u32, BindResourceLayout>>> =
-        (0..(graphics.adapter().limits().max_bind_groups)).map(|_| None).collect();
+        (0..4).map(|_| None).collect();
 
     // Return error if the user defined a push constant that is greater than the device size
     // or if there isn't push constants for the specified module in the shaders
@@ -897,6 +897,7 @@ fn reflect_uniform_buffer(
     // Get the size of the type 
     let shader = get_spirq_type_size(_type).unwrap();
 
+    /*
     // Make sure the sizes are multiples 
     if *compiler % shader != 0  {
         return Err(BufferValidationError::MismatchSize {
@@ -904,6 +905,7 @@ fn reflect_uniform_buffer(
             shader,
         });
     }
+    */
 
     Ok(resource.clone())
 }

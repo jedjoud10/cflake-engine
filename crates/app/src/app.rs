@@ -28,6 +28,7 @@ pub struct App {
     app_version: u32,
     engine_name: String,
     engine_version: u32,
+    stats_enabled: bool,
 
     // Main app resources
     systems: Systems,
@@ -52,6 +53,7 @@ impl Default for App {
             engine_name: "cFlake Game Engine".to_string(),
             engine_version: 1,
             user_assets_folder: None,
+            stats_enabled: true,
             systems,
             el: EventLoop::new(),
             logging_level: log::LevelFilter::Debug,
@@ -75,6 +77,12 @@ impl App {
         self.window.fullscreen = toggled;
         self
     }
+
+    // Enable or disable GUI statistics 
+    pub fn set_stats_enabled(mut self, toggle: bool) -> Self {
+        self.stats_enabled = toggle;
+        self
+    } 
 
     // Set the assets folder for the user defined assets
     pub fn set_user_assets_path(
@@ -434,7 +442,10 @@ impl App {
         self.regsys(gui::common);
         self.regsys(gui::acquire);
         self.regsys(gui::display);
-        self = self.insert_update(crate::update);
+
+        if self.stats_enabled {
+            self = self.insert_update(crate::update);
+        }
 
         // Fetch names and versions
         let app_name = self.app_name.clone();

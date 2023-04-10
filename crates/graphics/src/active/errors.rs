@@ -3,11 +3,8 @@ use crate::ModuleVisibility;
 
 #[derive(Error, Debug)]
 pub enum SetBindGroupError {
-    #[error("The given bind group index {current} is greater than the adapter's supported bind group index {supported}")]
-    BindGroupAdapterIndexInvalid {
-        current: u32,
-        supported: u32
-    },
+    #[error("The given bind group index {0} is greater than 4")]
+    BindGroupAdapterIndexInvalid(u32),
 
     #[error("The bind resource '{0}' was not set")]
     MissingResource(String),

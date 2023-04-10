@@ -1,3 +1,5 @@
+use std::mem::size_of;
+
 use crate::{
     attributes::Position, ActiveShadowGraphicsPipeline,
     DefaultMaterialResources, Material, Mesh, MeshAttributes,
@@ -5,14 +7,37 @@ use crate::{
 };
 use ecs::Scene;
 use graphics::{GpuPod, ModuleVisibility, ActivePipeline};
-use utils::{Handle};
+use math::SharpVertices;
+use utils::{Handle, ThreadPool};
 use world::World;
+
+// Check if an AABB intersects the shadow lightspace matrix
+pub fn intersects_lightspace(
+    lightspace: &vek::Mat4<f32>,
+    aabb: math::Aabb<f32>,
+    matrix: &vek::Mat4<f32>,
+) -> bool {
+    let corners =
+        <math::Aabb<f32> as SharpVertices<f32>>::points(&aabb);
+
+    for input in corners.iter() {
+        let vec = matrix.mul_point(*input);
+        let uv = lightspace.mul_point(vec);
+
+        if uv.x.abs() < 1.0 && uv.y.abs() < 1.0 {
+            return true;
+        }
+    }
+
+    return false;
+}
 
 // Render all the visible surfaces of a specific material type
 pub(super) fn render_shadows<'r, M: Material>(
     world: &'r World,
     defaults: &DefaultMaterialResources<'r>,
     active: &mut ActiveShadowGraphicsPipeline<'_, 'r, '_>,
+    lightspace: vek::Vec4<vek::Vec4<f32>>,
 ) {
     // Don't do shit if we won't cast shadows
     if !M::casts_shadows()
@@ -22,8 +47,8 @@ pub(super) fn render_shadows<'r, M: Material>(
     }
 
     // Get all the entities that contain a visible surface
-    let scene = world.get::<Scene>().unwrap();
-    let query = scene.query::<(&Surface<M>, &Renderer)>();
+    let mut scene = world.get_mut::<Scene>().unwrap();
+    let mut threadpool = world.get_mut::<ThreadPool>().unwrap();
 
     // Keep track of the last model so we don't have to rebind buffers
     let mut last: Option<Handle<Mesh<M::RenderPath>>> = None;
@@ -32,10 +57,38 @@ pub(super) fn render_shadows<'r, M: Material>(
     let mut last_positions_buffer: Option<&<M::RenderPath as RenderPath>::AttributeBuffer<crate::attributes::Position>> = None; 
     let mut last_index_buffer: Option<&<M::RenderPath as RenderPath>::TriangleBuffer<u32>> = None;
 
+    // Cull the surfaces that the shadow texture won't see
+    scene.query_mut::<(&mut Surface<M>, &Renderer)>().for_each(
+        &mut threadpool,
+        |(surface, renderer)| {
+            // Get the mesh and it's AABB
+            let mesh = <M::RenderPath as RenderPath>::get(
+                defaults,
+                &surface.mesh,
+            );
+            let aabb = mesh.vertices().aabb();
+
+            // If we have a valid AABB, check if the surface is visible within the frustum
+            if let Some(aabb) = aabb {
+                surface.culled = !intersects_lightspace(
+                    &vek::Mat4 {
+                        cols: lightspace,
+                    },
+                    aabb,
+                    &renderer.matrix,
+                )
+            } else {
+                surface.culled = false;
+            }
+        }, 
+        1024,
+    );
+
     // Iterate over all the surfaces of this material
+    let query = scene.query::<(&Surface<M>, &Renderer)>();
     for (surface, renderer) in query {
-        // Handle non visible surfaces, renderers, and culled surfaces
-        if !surface.visible || !renderer.visible {
+        // Handle non visible surfaces, renderers, or if it's culled (shadow culled)
+        if !surface.visible || !renderer.visible || surface.shadow_culled {
             continue;
         }
 
@@ -63,6 +116,11 @@ pub(super) fn render_shadows<'r, M: Material>(
                 let bytes = GpuPod::into_bytes(&cols);
                 constants
                     .push(bytes, 0, ModuleVisibility::Vertex)
+                    .unwrap();
+                // TODO: Implement push constant compositing so we can remove this
+                let bytes = GpuPod::into_bytes(&lightspace);
+                constants
+                    .push(bytes, size_of::<vek::Mat4::<f32>>() as u32, ModuleVisibility::Vertex)
                     .unwrap();
             })
             .unwrap();

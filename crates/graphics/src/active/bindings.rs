@@ -56,12 +56,8 @@ pub(super) fn create_bind_group<'b>(
     callback: impl FnOnce(&mut BindGroup<'b>),
 ) -> Result<Option<Arc<wgpu::BindGroup>>, SetBindGroupError> {
     // Check if the bind group index is supported
-    let max_bind_groups = graphics.adapter().limits().max_bind_groups.min(32);
-    if binding >= max_bind_groups {
-        return Err(SetBindGroupError::BindGroupAdapterIndexInvalid {
-            current: binding,
-            supported: max_bind_groups
-        });
+    if binding >= 4 {
+        return Err(SetBindGroupError::BindGroupAdapterIndexInvalid(binding));
     }
 
     // Try to fetch the bind group layout from the reflected shader

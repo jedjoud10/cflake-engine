@@ -7,6 +7,7 @@ layout(location = 0) out vec4 frag;
 
 // Fetch the scene color data
 layout(set = 1, binding = 0) uniform texture2D color_map;
+layout(set = 1, binding = 1) uniform texture2D depth_map;
 
 void main() {
 	// Get the scaled down coordinates
@@ -20,6 +21,14 @@ void main() {
 	// Increase exposure
 	color *= 1.7;
 	color = max(color, vec3(0));
+
+	// Fetch the depth data
+	/*
+	float non_linear_depth = texelFetch(depth_map, ivec2(gl_FragCoord.xy), 0).r;
+	float depth = linearize_depth(non_linear_depth, 0.01, 5000);
+	vec3 fog = mix(color, vec3(1), clamp(depth / 400.0, 0, 1));
+	color = fog;
+	*/
 
 	// Apply tonemapping and gamma mapping
 	color = pow(aces(color), vec3(1.0 / 2.2));

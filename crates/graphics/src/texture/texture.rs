@@ -476,8 +476,6 @@ pub(crate) fn get_specific_view<T: Texture>(
 ) -> Option<&wgpu::TextureView> {
     let max_layers = texture.dimensions().layers();
     let max_levels = texture.levels();
-    dbg!(max_layers);
-    dbg!(max_levels);
 
     // Return if the layer index is invalid
     if let Some(layer) = layer {
@@ -502,17 +500,12 @@ pub(crate) fn get_specific_view<T: Texture>(
     // second mip, all layers
     // second mip, first layer
     // second mip, second  layer
-    dbg!(layer);
-    dbg!(level);
     let views = texture.views()?;
     let offset = layer.map(|x| x + (max_layers-1).min(1)).unwrap_or_default();
-    dbg!(offset);
     let base = level.map(|x| x + (max_levels-1).min(1)).unwrap_or_default();
-    dbg!(base);
 
     let index = base * max_layers + offset;
     let index = index as usize;
-    dbg!(index);
     views.get(index)
 }
 
@@ -628,11 +621,7 @@ pub(crate) fn create_texture_views<T: Texel, E: Extent>(
                 extent.depth(),
                 extent.layers()
             );
-
             log::debug!("Level: {level:?}, Layer: {layer:?}");
-
-            log::debug!("{:#?}", desc);
-    
         
             // Create an texture view of the whole texture
             views.push(texture.create_view(&desc));

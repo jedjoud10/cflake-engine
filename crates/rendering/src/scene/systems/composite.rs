@@ -25,6 +25,7 @@ fn update(world: &mut World) {
 
     // Get textures, pipelines, and encoder
     let src = &renderer.color_texture;
+    let depth = &renderer.depth_texture;
     let dst = window.as_render_target().unwrap();
 
     // Begin the render pass
@@ -38,15 +39,16 @@ fn update(world: &mut World) {
         group
             .set_uniform_buffer("window", &renderer.window_buffer, ..)
             .unwrap();
-    });
+    }).unwrap();
 
     // Set the maps that we will sample
     active.set_bind_group(1, |group| {
         group.set_sampled_texture("color_map", src).unwrap();
-    });
+        group.set_sampled_texture("depth_map", depth).unwrap();
+    }).unwrap();
 
     // Draw 6 vertices (2 tris)
-    active.draw(0..6, 0..1);
+    active.draw(0..6, 0..1).unwrap();
 }
 
 // The display system will be responsible for displaying the renderered scene textures to the scene

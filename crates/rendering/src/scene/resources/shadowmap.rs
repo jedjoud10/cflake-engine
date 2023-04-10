@@ -123,7 +123,7 @@ impl ShadowMapping {
             ),
             PrimitiveConfig::Triangles {
                 winding_order: WindingOrder::Ccw,
-                cull_face: Some(Face::Front),
+                cull_face: Some(Face::Back),
                 wireframe: false,
             },
             &shader,
@@ -211,11 +211,12 @@ impl ShadowMapping {
             rot.mul_point(-vek::Vec3::unit_z()),
             rot.mul_point(-vek::Vec3::unit_y()),
         );
+        let camera = vek::Mat4::<f32>::translation_3d(-camera);
         
         // Update the internally stored lightspace matrices
         for (lightspace, projection) in self.lightspaces.iter_mut().zip(self.projections.iter()) {
             // Calculate light skin rizz (real) (I have gone insane)
-            *lightspace = (*projection * self.view).cols;
+            *lightspace = (*projection * self.view * camera).cols;
         }
 
         // Update the internally stored buffer
