@@ -72,6 +72,9 @@ pub trait Extent: Copy {
     // Get the depth of the extent
     fn depth(&self) -> u32;
 
+    // Get the number of layers in the extent
+    fn layers(&self) -> u32;
+
     // Create a new extent by cloning a value for all axii
     fn broadcast(val: u32) -> Self;
 
@@ -107,9 +110,15 @@ pub trait Origin: Copy + Default {
     // Get the Y offset of the origin
     fn y(&self) -> u32;
 
-    // Get the Z offset of the origin
+    // Get the Z offset of the origin (3d texture)
     fn z(&self) -> u32;
+
+    // Get the layer offset of the origin (layered textures)
+    fn layer(&self) -> u32;
 }
+
+// Only used for layered textures for their views
+pub trait LayeredOrigin: Copy + Default + Origin {}
 
 // Implementation of extent for 2D extent
 impl Extent for vek::Extent2<u32> {
@@ -129,10 +138,6 @@ impl Extent for vek::Extent2<u32> {
         self.cmpge(&other).reduce_and()
     }
 
-    fn view_dimension() -> ViewDimension {
-        ViewDimension::D2
-    }
-
     fn width(&self) -> u32 {
         self.w
     }
@@ -145,6 +150,10 @@ impl Extent for vek::Extent2<u32> {
         1
     }
 
+    fn layers(&self) -> u32 {
+        1
+    }
+
     fn broadcast(val: u32) -> Self {
         vek::Extent2::broadcast(val)
     }
@@ -152,16 +161,16 @@ impl Extent for vek::Extent2<u32> {
     fn new(w: u32, h: u32, _: u32) -> Self {
         vek::Extent2::new(w, h)
     }
+
+    fn view_dimension() -> ViewDimension {
+        ViewDimension::D2
+    }
 }
 
 // Implementation of extent for 3D extent
 impl Extent for vek::Extent3<u32> {
     fn area(&self) -> u32 {
         self.as_::<u32>().product()
-    }
-
-    fn is_valid(&self) -> bool {
-        *self != vek::Extent3::zero()
     }
 
     fn reduce_max(&self) -> u32 {
@@ -172,12 +181,12 @@ impl Extent for vek::Extent3<u32> {
         vek::Extent3::reduce_min(*self)
     }
 
-    fn is_larger_than(self, other: Self) -> bool {
-        self.cmpge(&other).reduce_and()
+    fn is_valid(&self) -> bool {
+        *self != vek::Extent3::zero()
     }
 
-    fn view_dimension() -> ViewDimension {
-        ViewDimension::D3
+    fn is_larger_than(self, other: Self) -> bool {
+        self.cmpge(&other).reduce_and()
     }
 
     fn width(&self) -> u32 {
@@ -192,12 +201,20 @@ impl Extent for vek::Extent3<u32> {
         self.d
     }
 
+    fn layers(&self) -> u32 {
+        1
+    }
+
     fn broadcast(val: u32) -> Self {
         vek::Extent3::broadcast(val)
     }
 
     fn new(w: u32, h: u32, d: u32) -> Self {
         vek::Extent3::new(w, h, d)
+    }
+
+    fn view_dimension() -> ViewDimension {
+        ViewDimension::D3
     }
 }
 
@@ -208,10 +225,6 @@ impl Extent for (vek::Extent2<u32>, u32) {
         self.0.as_::<u32>().product() * self.1
     }
 
-    fn is_valid(&self) -> bool {
-        self.0 != vek::Extent2::zero() && self.1 != 0 
-    }
-
     fn reduce_max(&self) -> u32 {
         vek::Extent3::new(self.0.w, self.0.h, self.1).reduce_max()
     }
@@ -220,12 +233,12 @@ impl Extent for (vek::Extent2<u32>, u32) {
         vek::Extent3::new(self.0.w, self.0.h, self.1).reduce_min()
     }
 
-    fn is_larger_than(self, other: Self) -> bool {
-        self.0.cmpge(&other.0).reduce_and() && self.1 > other.1
+    fn is_valid(&self) -> bool {
+        self.0 != vek::Extent2::zero() && self.1 != 0 
     }
 
-    fn view_dimension() -> ViewDimension {
-        ViewDimension::D2Array
+    fn is_larger_than(self, other: Self) -> bool {
+        self.0.cmpge(&other.0).reduce_and() && self.1 > other.1
     }
 
     fn width(&self) -> u32 {
@@ -237,6 +250,10 @@ impl Extent for (vek::Extent2<u32>, u32) {
     }
 
     fn depth(&self) -> u32 {
+        1
+    }
+
+    fn layers(&self) -> u32 {
         self.1
     }
 
@@ -246,6 +263,10 @@ impl Extent for (vek::Extent2<u32>, u32) {
 
     fn new(w: u32, h: u32, d: u32) -> Self {
         (vek::Extent2::new(w, h), d)
+    }
+
+    fn view_dimension() -> ViewDimension {
+        ViewDimension::D2Array
     }
 }
 
@@ -260,6 +281,10 @@ impl Origin for vek::Vec2<u32> {
     }
 
     fn z(&self) -> u32 {
+        0
+    }
+
+    fn layer(&self) -> u32 {
         0
     }
 }
@@ -277,6 +302,10 @@ impl Origin for vek::Vec3<u32> {
     fn z(&self) -> u32 {
         self.z
     }
+
+    fn layer(&self) -> u32 {
+        0
+    }
 }
 
 
@@ -291,9 +320,14 @@ impl Origin for (vek::Vec2<u32>, u32) {
     }
 
     fn z(&self) -> u32 {
+        0
+    }
+
+    fn layer(&self) -> u32 {
         self.1
     }
 }
+impl LayeredOrigin for (vek::Vec2<u32>, u32) {}
 
 // Texture region trait that will be implemented for (origin, extent) tuples
 pub trait Region: Copy {
@@ -334,6 +368,27 @@ pub trait Region: Copy {
     // Check if this region is larger than another region
     // Aka if the "other" region fits within self
     fn is_larger_than(self, other: Self) -> bool;
+
+    // Check if we can use a texture mip level (with specific region of Self) as a render target directly
+    fn can_render_to_mip(&self) -> bool {
+        let Some(layers) = self.extent().layers().checked_sub(self.origin().layer()) else {
+            return false
+        };
+
+        let Some(width) = self.extent().width().checked_sub(self.origin().x()) else {
+            return false
+        };
+
+        let Some(height) = self.extent().height().checked_sub(self.origin().y()) else {
+            return false
+        };
+
+        let Some(depth) = self.extent().depth().checked_sub(self.origin().z()) else {
+            return false
+        };
+        
+        return layers == 1 && width > 0 && height > 0 && depth == 1;
+    }
 
     // Calculate the surface area of the region
     fn area(&self) -> u32;

@@ -16,7 +16,7 @@ use crate::{
 pub struct Texture2D<T: Texel> {
     // Raw WGPU
     texture: wgpu::Texture,
-    views: SmallVec<[wgpu::TextureView; 1]>,
+    views: Option<Vec<wgpu::TextureView>>,
 
     // Main texture settings
     dimensions: vek::Extent2<u32>,
@@ -27,8 +27,8 @@ pub struct Texture2D<T: Texel> {
     _phantom: PhantomData<T>,
 
     // Shader Sampler
-    sampler: Arc<wgpu::Sampler>,
-    sampling: SamplerSettings,
+    sampler: Option<Arc<wgpu::Sampler>>,
+    sampling: Option<SamplerSettings>,
 
     // Keep the graphics API alive
     graphics: Graphics,
@@ -54,28 +54,24 @@ impl<T: Texel> Texture for Texture2D<T> {
         &self.texture
     }
 
-    fn views(&self) -> &[wgpu::TextureView] {
-        &self.views
+    fn views(&self) -> Option<&[wgpu::TextureView]> {
+        self.views.as_ref().map(|x| x.as_slice())
     }
 
-    fn sampler(&self) -> Sampler<Self::T> {
-        Sampler {
-            sampler: &self.sampler,
+    fn sampler(&self) -> Option<Sampler<Self::T>> {
+        self.sampler.as_ref().zip(self.sampling.as_ref()).map(|(sampler, settings)| Sampler {
+            sampler,
             _phantom: PhantomData,
-            settings: &self.sampling,
-        }
+            settings,
+        })
     }
     
-    fn graphics(&self) -> Graphics {
-        self.graphics.clone()
-    }
-
     unsafe fn from_raw_parts(
         graphics: &Graphics,
         texture: wgpu::Texture,
-        views: SmallVec<[wgpu::TextureView; 1]>,
-        sampler: Arc<wgpu::Sampler>,
-        sampling: SamplerSettings,
+        views: Option<Vec<wgpu::TextureView>>,
+        sampler: Option<Arc<wgpu::Sampler>>,
+        sampling: Option<SamplerSettings>,
         dimensions: vek::Extent2<u32>,
         usage: TextureUsage,
         mode: TextureMode,
@@ -96,12 +92,16 @@ impl<T: Texel> Texture for Texture2D<T> {
     unsafe fn replace_raw_parts(
         &mut self,
         texture: wgpu::Texture,
-        views: SmallVec<[wgpu::TextureView; 1]>,
+        views: Option<Vec<wgpu::TextureView>>,
         dimensions: vek::Extent2<u32>,
     ) {
         self.texture = texture;
         self.views = views;
         self.dimensions = dimensions;
+    }
+
+    fn graphics(&self) -> Graphics {
+        self.graphics.clone()
     }
 }
 
@@ -123,7 +123,7 @@ pub enum TextureScale {
 // Texture settings that we shall use when loading in a new texture
 #[derive(Clone)]
 pub struct TextureImportSettings<'m, T: Texel> {
-    pub sampling: SamplerSettings,
+    pub sampling: Option<SamplerSettings>,
     pub mode: TextureMode,
     pub usage: TextureUsage,
     pub scale: TextureScale,
@@ -133,7 +133,7 @@ pub struct TextureImportSettings<'m, T: Texel> {
 impl<T: Texel> Default for TextureImportSettings<'_, T> {
     fn default() -> Self {
         Self {
-            sampling: SamplerSettings::default(),
+            sampling: Some(SamplerSettings::default()),
             mode: TextureMode::default(),
             scale: TextureScale::Default,
             usage: TextureUsage::default(),

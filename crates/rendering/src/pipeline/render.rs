@@ -30,7 +30,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
     // Set the global material bindings
     active.set_bind_group(0, |group| {
         M::set_global_bindings(&mut resources, group, defaults);
-    });
+    }).unwrap();
 
     // Get all the entities that contain a visible surface
     let scene = world.get::<Scene>().unwrap();
@@ -77,7 +77,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
                     defaults,
                     group,
                 );
-            })
+            }).unwrap();
         } else {
             switched_material_instances = false;
         }
@@ -98,7 +98,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
                 defaults,
                 group,
             );
-        });
+        }).unwrap();
 
         // Set the vertex buffers and index buffers when we change meshes
         if last_mesh != Some(surface.mesh.clone()) {

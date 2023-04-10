@@ -34,6 +34,7 @@ pub(crate) type ResourceBindingTypes =
 pub(crate) type MaybePushConstantLayout = Option<PushConstantLayout>;
 pub(crate) type Included = Arc<Mutex<AHashSet<String>>>;
 pub(crate) type Constants = AHashMap<u32, SpecConstant>;
+pub(crate) type Defines = AHashMap<String, String>;
 
 // This is a compiler that will take GLSL code and create a WGPU module
 // This compiler also allows us to define constants and snippets before compilation
@@ -43,6 +44,7 @@ pub struct Compiler<'a> {
     pub(crate) graphics: &'a Graphics,
     pub(crate) snippets: Snippets,
     pub(crate) constants: Constants,
+    pub(crate) defines: Defines,
     pub(crate) resource_types: ResourceBindingTypes,
     pub(crate) maybe_push_constant_layout: MaybePushConstantLayout,
     //optimization: shaderc::OptimizationLevel,
@@ -58,6 +60,7 @@ impl<'a> Compiler<'a> {
             constants: Default::default(),
             resource_types: Default::default(),
             maybe_push_constant_layout: Default::default(),
+            defines: Default::default(),
 
             // TODO: Fix vulkan erors
             //optimization: shaderc::OptimizationLevel::Performance,
@@ -80,6 +83,17 @@ impl<'a> Compiler<'a> {
         value: impl ToString,
     ) {
         self.snippets.insert(name.to_string(), value.to_string());
+    }
+
+    // Set the value of a "#define" pre-processor macro
+    // A define is different than a snippet in that you do not load it within the shader
+    // It automatically gets added to the top of the shader
+    pub fn use_define(
+        &mut self,
+        name: impl ToString,
+        value: impl ToString,
+    ) {
+        self.defines.insert(name.to_string(), value.to_string());
     }
 
     // Set the optimization level used by the ShaderC compiler
@@ -109,6 +123,7 @@ impl<'a> Compiler<'a> {
             &self.assets,
             &self.snippets,
             &self.constants,
+            &self.defines,
             shaderc::OptimizationLevel::Zero,
             source,
             &name,
@@ -285,8 +300,9 @@ fn compile(
     assets: &Assets,
     snippets: &Snippets,
     constants: &Constants,
+    defines: &Defines,
     optimization: shaderc::OptimizationLevel,
-    source: String,
+    mut source: String,
     file: &str,
 ) -> Result<
     (Arc<wgpu::ShaderModule>, Arc<spirq::EntryPoint>),
@@ -308,6 +324,11 @@ fn compile(
         return Ok((raw.clone(), reflected.clone()));
     } else {
         log::warn!("Did not find cached shader module for {file}");
+    }
+
+    // Add the defines to the top of the file
+    for (name, define) in defines {
+        source.insert_str(0, &format!("#define {name} {define}")); 
     }
 
     // Custom ShaderC compiler options

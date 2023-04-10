@@ -2218,6 +2218,7 @@ dependencies = [
  "ecs",
  "math",
  "vek",
+ "world",
 ]
 
 [[package]]
@@ -2974,6 +2975,7 @@ dependencies = [
  "math",
  "rand",
  "rendering",
+ "thiserror",
  "utils",
  "vek",
  "world",

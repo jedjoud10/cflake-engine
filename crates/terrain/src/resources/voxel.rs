@@ -5,7 +5,7 @@ use assets::Assets;
 
 use graphics::{
     Compiler, ComputeModule, ComputeShader, GpuPod, Graphics, ModuleVisibility, PushConstantLayout, Texel,
-    Texture3D, Vertex, R, StorageAccess, RGBA, Normalized, RG, BindGroup,
+    Texture3D, Vertex, R, StorageAccess, RGBA, Normalized, RG, BindGroup, PushConstants, ActiveComputeDispatcher,
 };
 
 
@@ -16,7 +16,8 @@ use crate::{TerrainSettings, create_texture3d};
 pub struct VoxelGenerator {
     pub(crate) compute_voxels: ComputeShader,
     pub(crate) voxels: Texture3D<RG<f32>>,
-    pub(crate) set_group_callback: Box<dyn Fn(&mut BindGroup) + 'static>,
+    pub(crate) set_bind_group_callback: Option<Box<dyn Fn(&mut BindGroup) + 'static>>,
+    pub(crate) set_push_constant_callback: Option<Box<dyn Fn(&mut PushConstants<ActiveComputeDispatcher>) + 'static>>
 }
 
 impl VoxelGenerator {
@@ -43,11 +44,14 @@ impl VoxelGenerator {
             .unwrap(),
         );
 
-        let compiler_callback = settings.compiler_callback.take().unwrap();
-        let set_group_callback = settings.set_group_callback.take().unwrap();
+        let compiler_callback = settings.voxel_compiler_callback.take();
+        let set_bind_group_callback = settings.voxel_set_group_callback.take();
+        let set_push_constant_callback = settings.voxel_set_push_constants_callback.take();
 
         // Call the compiler callback
-        (compiler_callback)(&mut compiler);
+        if let Some(callback) = compiler_callback {
+            (callback)(&mut compiler);
+        }
 
         // Compile the compute shader
         let compute_voxels = ComputeShader::new(module, compiler).unwrap();
@@ -55,7 +59,8 @@ impl VoxelGenerator {
         Self {
             compute_voxels,
             voxels: create_texture3d(graphics, settings.size),
-            set_group_callback,
+            set_bind_group_callback,
+            set_push_constant_callback,
         }
     }
 }

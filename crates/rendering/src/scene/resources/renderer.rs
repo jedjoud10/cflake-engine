@@ -76,7 +76,7 @@ fn create_texture2d<T: Texel>(
         vek::Extent2::broadcast(4),
         TextureMode::Dynamic,
         TextureUsage::SAMPLED | TextureUsage::COPY_DST,
-        SamplerSettings::default(),
+        Some(SamplerSettings::default()),
         TextureMipMaps::Disabled,
     )
     .unwrap()
@@ -99,11 +99,11 @@ impl ForwardRenderer {
             extent,
             TextureMode::Resizable,
             TextureUsage::TARGET | TextureUsage::SAMPLED,
-            SamplerSettings {
+            Some(SamplerSettings {
                 filter: SamplerFilter::Linear,
                 wrap: SamplerWrap::Repeat,
                 mipmaps: SamplerMipMaps::Auto,
-            },
+            }),
             TextureMipMaps::Disabled,
         )
         .unwrap();
@@ -115,11 +115,11 @@ impl ForwardRenderer {
             extent,
             TextureMode::Resizable,
             TextureUsage::TARGET | TextureUsage::SAMPLED,
-            SamplerSettings {
+            Some(SamplerSettings {
                 filter: SamplerFilter::Linear,
                 wrap: SamplerWrap::Repeat,
                 mipmaps: SamplerMipMaps::Auto,
-            },
+            }),
             TextureMipMaps::Disabled,
         )
         .unwrap();

@@ -16,8 +16,8 @@ use wgpu::TextureFormatFeatureFlags;
 // This container stores all data related to reflected shaders
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ReflectedShader {
-    pub last_valid_bind_group_layout: usize,
-    pub bind_group_layouts: [Option<BindGroupLayout>; 4],
+    pub taken_bind_group_layouts: usize,
+    pub bind_group_layouts: Vec<Option<BindGroupLayout>>,
     pub push_constant_layout: Option<PushConstantLayout>,
 }
 
@@ -405,9 +405,9 @@ pub(super) fn create_pipeline_layout(
     (Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>),
     ShaderReflectionError,
 > {
-    // Stores multiple entries per set (max number of sets = 4)
-    let mut groups: [Option<AHashMap<u32, BindResourceLayout>>; 4] =
-        [None, None, None, None];
+    // Stores multiple entries per set (max number of sets = defined by adapter)
+    let mut groups: Vec<Option<AHashMap<u32, BindResourceLayout>>> =
+        (0..(graphics.adapter().limits().max_bind_groups)).map(|_| None).collect();
 
     // Return error if the user defined a push constant that is greater than the device size
     // or if there isn't push constants for the specified module in the shaders
@@ -682,18 +682,19 @@ pub(super) fn create_pipeline_layout(
                 BindGroupLayout { bind_entry_layouts }
             })
         })
-        .collect::<ArrayVec<Option<BindGroupLayout>, 4>>();
+        .collect::<Vec<Option<BindGroupLayout>>>();
 
-    // Calculate the last valid bind group layout before we see the first None (starting from the back)
-    let last_valid_bind_group_layout = bind_group_layouts
+    // Calculate the number of group layouts that we must use (starting from the back)
+    let taken_bind_group_layouts = bind_group_layouts
         .iter()
         .rposition(|x| x.is_some())
+        .map(|x| x + 1)
         .unwrap_or_default();
 
     // Create a reflected shader with the given compiler params
     let shader = ReflectedShader {
-        last_valid_bind_group_layout,
-        bind_group_layouts: bind_group_layouts.into_inner().unwrap(),
+        taken_bind_group_layouts,
+        bind_group_layouts,
         push_constant_layout: maybe_push_constant_layout.clone(),
     };
 
@@ -820,7 +821,7 @@ fn internal_create_pipeline_layout(
                 .map(|x| &***x)
                 .unwrap_or(&*empty_bind_group_layout)
         })
-        .take(shader.last_valid_bind_group_layout + 1)
+        .take(shader.taken_bind_group_layouts)
         .collect::<Vec<_>>();
 
     // Convert the custom push constant range to wgpu push constant ranges
@@ -855,6 +856,10 @@ fn internal_create_pipeline_layout(
     } else {
         Vec::default()
     };
+
+    // Some logging now
+    log::debug!("Using {} bind group layout(s)", bind_group_layouts.len());
+    log::debug!("Using {} push constants range(s)", push_constant_ranges.len());
 
     // Create the pipeline layout
     let layout = graphics.device().create_pipeline_layout(

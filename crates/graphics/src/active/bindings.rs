@@ -1,7 +1,7 @@
 use crate::{
     BindResourceLayout, Buffer, GpuPod, Graphics, Id, IdVariant,
     ReflectedShader, Sampler, SetBindResourceError, Shader, Texel,
-    Texture, TextureUsage, UniformBuffer,
+    Texture, TextureUsage, UniformBuffer, SetTextureError, SetBufferError, BufferUsage, SetBindGroupError,
 };
 use ahash::AHashMap;
 use std::{marker::PhantomData, ops::RangeBounds, sync::Arc};
@@ -17,21 +17,51 @@ pub struct BindGroup<'a> {
     pub(crate) _phantom: PhantomData<&'a ()>,
 }
 
+// Calculate the reflect bind group bitset of a specific reflect shader
+pub(crate) fn calculate_refleced_group_bitset(
+    shader: &ReflectedShader
+) -> u32 {
+    shader.bind_group_layouts
+        .iter()
+        .enumerate()
+        .filter_map(|(index, val)| val.as_ref().map(|_| index))
+        .fold(0u32, |current, offset| current | (1 << offset))
+}
+
+
+// Check if the user set the required bind groups
+// Returns Err(n) if the user did *not* set the value, with the specified index value returned as well
+pub(crate) fn validate_set_bind_groups(
+    needed: u32,
+    set: u32,
+) -> Result<(), u32> {
+    if (set & needed) != needed {
+        let missing = !set & needed;
+        let missing = missing.leading_zeros();
+        Err(missing)
+    } else {
+        Ok(())
+    }
+}
+
 // Generate a new bind group from a callback (if needed)
 // TODO: MUST FIX:
 // currently requires the user to set the resources in the order they were defined
-// pls fix
-
+// uhhh no? checked and it seems fine. idk what you're on abt
 pub(super) fn create_bind_group<'b>(
     graphics: &Graphics,
     modules: &[&str],
     reflected: Arc<ReflectedShader>,
     binding: u32,
     callback: impl FnOnce(&mut BindGroup<'b>),
-) -> Option<Arc<wgpu::BindGroup>> {
-    // 4 is the minimum supported number of bind groups by WGPU spec
-    if binding >= 4 {
-        return None;
+) -> Result<Option<Arc<wgpu::BindGroup>>, SetBindGroupError> {
+    // Check if the bind group index is supported
+    let max_bind_groups = graphics.adapter().limits().max_bind_groups.min(32);
+    if binding >= max_bind_groups {
+        return Err(SetBindGroupError::BindGroupAdapterIndexInvalid {
+            current: binding,
+            supported: max_bind_groups
+        });
     }
 
     // Try to fetch the bind group layout from the reflected shader
@@ -40,7 +70,7 @@ pub(super) fn create_bind_group<'b>(
 
     // Don't do anything if the shader doesn't have this bind group
     let Some(bind_group_layout) = bind_group_layout else {
-        return None;
+        return Ok(None);
     };
 
     // Pre-allocates vectors with the appropriate number of resources
@@ -111,7 +141,7 @@ pub(super) fn create_bind_group<'b>(
             bind_group
         }
     };
-    Some(bind_group)
+    Ok(Some(bind_group))
 }
 
 impl<'a> BindGroup<'a> {
@@ -141,7 +171,6 @@ impl<'a> BindGroup<'a> {
     }
 
     // Set a texture that can be sampled inside shaders using it's sampler
-    // TODO: Validate sampled texture using SetBindResourceError
     pub fn set_sampled_texture<'s, T: Texture>(
         &mut self,
         name: &'s str,
@@ -149,12 +178,12 @@ impl<'a> BindGroup<'a> {
     ) -> Result<(), SetBindResourceError<'s>> {
         // Make sure it's a sampled texture
         if !texture.usage().contains(TextureUsage::SAMPLED) {
-            todo!()
+            return Err(SetBindResourceError::SetTexture(SetTextureError::MissingSampleUsage));
         }
 
         // Try setting a sampler appropriate for this texture
         let sampler = format!("{name}_sampler");
-        self.set_sampler(&sampler, texture.sampler());
+        self.set_sampler(&sampler, texture.sampler().unwrap());
 
         // Get the binding entry layout for the given texture
         let entry = Self::find_entry_layout(
@@ -166,7 +195,7 @@ impl<'a> BindGroup<'a> {
         // Get values needed for the bind entry
         let id = texture.raw().global_id();
         let resource =
-            wgpu::BindingResource::TextureView(texture.view());
+            wgpu::BindingResource::TextureView(texture.view().unwrap());
 
         // Save the bind entry for later
         self.resources.push(resource);
@@ -176,15 +205,14 @@ impl<'a> BindGroup<'a> {
     }
 
     // Set a storage texture that we can write / read from / to
-    // TODO: Validate storage texture using SetBindResourceError
     pub fn set_storage_texture<'s, T: Texture>(
         &mut self,
         name: &'s str,
         texture: &'a mut T,
     ) -> Result<(), SetBindResourceError<'s>> {
-        // Make sure it's a storage texture
+        // Make sure it's a sampled texture
         if !texture.usage().contains(TextureUsage::STORAGE) {
-            todo!()
+            return Err(SetBindResourceError::SetTexture(SetTextureError::MissingStorageUsage));
         }
 
         // Get the binding entry layout for the given texture
@@ -197,7 +225,7 @@ impl<'a> BindGroup<'a> {
         // Get values needed for the bind entry
         let id = texture.raw().global_id();
         let resource =
-            wgpu::BindingResource::TextureView(texture.view());
+            wgpu::BindingResource::TextureView(texture.view().unwrap());
 
         // Save the bind entry for later
         self.resources.push(resource);
@@ -207,7 +235,6 @@ impl<'a> BindGroup<'a> {
     }
 
     // Set a texture sampler so we can sample textures within the shader
-    // TODO: Validate sampler using SetBindResourceError
     pub fn set_sampler<'s, T: Texel>(
         &mut self,
         name: &'s str,
@@ -233,7 +260,6 @@ impl<'a> BindGroup<'a> {
     }
 
     // Set a uniform buffer that we can read from within shaders
-    // TODO: Validate UBO using SetBindResourceError
     pub fn set_uniform_buffer<'s, T: GpuPod>(
         &mut self,
         name: &'s str,
@@ -250,8 +276,8 @@ impl<'a> BindGroup<'a> {
         // Get the buffer binding bounds
         let binding = buffer
             .convert_bounds_to_binding(bounds)
-            .ok_or(SetBindResourceError::InvalidBufferRange(
-                buffer.len(),
+            .ok_or(SetBindResourceError::SetBuffer(
+                SetBufferError::InvalidRange(buffer.len())
             ))?;
 
         // Get values needed for the bind entry
@@ -266,13 +292,17 @@ impl<'a> BindGroup<'a> {
     }
 
     // Set a storage buffer that we can write / read from / to
-    // TODO: Validate storage buffer using SetBindResourceError
     pub fn set_storage_buffer<'s, T: GpuPod, const TYPE: u32>(
         &mut self,
         name: &'s str,
         buffer: &'a Buffer<T, TYPE>,
         bounds: impl RangeBounds<usize>,
     ) -> Result<(), SetBindResourceError<'s>> {
+        // Make sure it's a storage buffer
+        if !buffer.usage().contains(BufferUsage::STORAGE) {
+            return Err(SetBindResourceError::SetBuffer(SetBufferError::MissingStorageUsage));
+        }
+
         // Get the binding entry layout for the given buffer
         let entry = Self::find_entry_layout(
             self.index,
@@ -283,8 +313,8 @@ impl<'a> BindGroup<'a> {
         // Get the buffer binding bounds
         let binding = buffer
             .convert_bounds_to_binding(bounds)
-            .ok_or(SetBindResourceError::InvalidBufferRange(
-                buffer.len(),
+            .ok_or(SetBindResourceError::SetBuffer(
+                SetBufferError::InvalidRange(buffer.len())
             ))?;
 
         // Get values needed for the bind entry
