@@ -35,10 +35,10 @@ pub struct ShadowMapping {
     
     // Cached matrices
     pub view: vek::Mat4<f32>,
+    pub projections: Vec<vek::Mat4<f32>>,
 
-    // Contains the lightspace size of each cascade
-    // TODO: Convert to frustum percentages
-    pub sizes: Vec<f32>,
+    // TODO: I rlly should make a PR to add bytemuck support for vek matrices
+    pub lightspaces: Vec<vek::Vec4<vek::Vec4<f32>>>,
 
     // Resolution of the base level
     pub resolution: u32,
@@ -57,7 +57,6 @@ pub struct ShadowMapping {
 pub struct ShadowUniform {
     pub strength: f32,
     pub spread: f32,
-    pub resolution: u32,
 }
 
 impl ShadowMapping {
@@ -85,14 +84,10 @@ impl ShadowMapping {
 
         // Create the bind layout for the shadow map shader
         let mut compiler = Compiler::new(assets, graphics);
-    
-        // Shadow parameters
-        compiler.use_uniform_buffer::<ShadowUniform>("shadow_parameters");
-        compiler.use_uniform_buffer::<vek::Vec4<vek::Vec4<f32>>>("shadow_lightspace_matrices");
 
         // Contains the mesh matrix and the lightspace uniforms
         let layout = PushConstantLayout::single(
-            <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size() + u32::size(),
+            <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size() * 2,
             ModuleVisibility::Vertex,
         )
         .unwrap();
@@ -143,11 +138,9 @@ impl ShadowMapping {
             TextureMode::Dynamic,
             TextureUsage::TARGET | TextureUsage::SAMPLED,
             Some(SamplerSettings::default()),
-            TextureMipMaps::Zeroed { clamp: Some(NonZeroU8::new(sizes.len() as u8).unwrap()) },
+            TextureMipMaps::Disabled,
         )
         .unwrap();
-
-        let view = vek::Mat4::identity();
 
         // Create a buffer that will contain shadow parameters
         let parameter_buffer = UniformBuffer::from_slice(
@@ -155,7 +148,6 @@ impl ShadowMapping {
             &[ShadowUniform {
                 strength: 1.0,
                 spread: 0.01,
-                resolution,
             }],
             BufferMode::Dynamic,
             BufferUsage::WRITE,
@@ -169,17 +161,39 @@ impl ShadowMapping {
             BufferUsage::WRITE,
         ).unwrap();
 
+        // Pre-initialize the projection matrices
+        let projections = sizes.iter().map(|&size| {
+            // The shadow frustum is the cuboid that will contain the shadow map
+            let frustum = FrustumPlanes::<f32> {
+                left: -size,
+                right: size,
+                bottom: -size,
+                top: size,
+                near: -depth / 2.0,
+                far: depth / 2.0,
+            };
+
+            // Create the projection matrix (orthographic)
+            vek::Mat4::orthographic_rh_zo(frustum)
+        }).collect::<Vec<_>>();
+
+        // Pre-initialize the lightspace matrices as projection matrices
+        let lightspaces = sizes.iter().map(|_|
+            vek::Mat4::identity().cols
+        ).collect::<Vec<_>>();
+
         Self {
             render_pass,
             shader,
             pipeline,
             depth_tex,
-            view,
+            view: vek::Mat4::identity(),
             resolution,
-            sizes: sizes.to_vec(),
             parameter_buffer,
             lightspace_buffer,
             depth,
+            projections,
+            lightspaces,
         }
     }
 
@@ -198,31 +212,13 @@ impl ShadowMapping {
             rot.mul_point(-vek::Vec3::unit_y()),
         );
         
-        // Use the camera frustum to calculate it's corners to be able to make each cascade fit the camera nicely
-
-        /*
-        // Create some new lightspace matrices using new parameters
-        let matrices = self.cascade_sizes.iter().map(|&size| {
-            // The shadow frustum is the cuboid that will contain the shadow map
-            let frustum = FrustumPlanes::<f32> {
-                left: -size,
-                right: size,
-                bottom: -size,
-                top: size,
-                near: -self.depth / 2.0,
-                far: self.depth / 2.0,
-            };
-
-            // Create the projection matrix (orthographic)
-            let proj = vek::Mat4::orthographic_rh_zo(frustum);
-
+        // Update the internally stored lightspace matrices
+        for (lightspace, projection) in self.lightspaces.iter_mut().zip(self.projections.iter()) {
             // Calculate light skin rizz (real) (I have gone insane)
-            let mat = proj * self.view;
+            *lightspace = (*projection * self.view).cols;
+        }
 
-            // Convert to vec vec matrix
-            mat.cols
-        }).collect::<Vec<_>>();
-        self.lightspace_buffer.write(&matrices, 0).unwrap()
-        */
+        // Update the internally stored buffer
+        self.lightspace_buffer.write(&self.lightspaces, 0).unwrap();
     }
 }

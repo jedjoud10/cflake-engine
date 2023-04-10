@@ -20,14 +20,15 @@ fn init(world: &mut World) {
         &graphics,
         64,
         5,
-        true,
+        false,
         true,
         8,
         1024,
         None, None, None
     ).unwrap();
     drop(graphics);
-    world.insert(settings);
+    //world.insert(settings);
+
 
     // Fetch the required resources from the world
     let mut assets = world.get_mut::<Assets>().unwrap();

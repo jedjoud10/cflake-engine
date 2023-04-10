@@ -2,7 +2,6 @@
 layout(set = 0, binding = 4) uniform ShadowUniform {
     float strength;
     float spread;
-    uint size;
 } shadow_parameters;
 
 // Contains all the lightspace matrices for each cascade

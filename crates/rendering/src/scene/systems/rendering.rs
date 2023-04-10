@@ -1,4 +1,4 @@
-use std::num::NonZeroU8;
+use std::{num::NonZeroU8, mem::size_of};
 
 use crate::{
     AlbedoMap, AttributeBuffer, BasicMaterial, Camera,
@@ -238,25 +238,22 @@ fn render(world: &mut World) {
         indirect_triangles: &indirect_triangles,
         draw_indexed_indirect_buffers: &indexed_indirect_buffers,
     };
-    
-    /*
+
     // Update the shadow map lightspace matrix
     let shadowmap = &mut *_shadowmap;
     shadowmap
         .update(*directional_light_rotation, *camera_position, camera_frustum);
+    let layers = shadowmap.depth_tex.layers();
+    let lightspaces = &shadowmap.lightspaces;
     let mips = shadowmap.depth_tex.mips_mut();
-    let level = mips.level_mut(0).unwrap();
+    let mut level = mips.level_mut(0).unwrap();
+    log::debug!("{:?}", shadowmap.shader.reflected());
 
     // Create multiple render passes for each shadow cascade
-    for i in 0..mips.len() {
+    for i in 0..layers {
         // Use layer as render target
-        let target = level.as_render_target(Some((
-            (vek::Vec2::zero(), i as u32),
-            (vek::Extent2::broadcast(shadowmap.resolution), 1)
-        ))).unwrap();
-
-        // Get the mip level as a factor
-        let factor = (level.dimensions().w as f32 / shadowmap.resolution as f32);
+        let lightspace = lightspaces[i as usize];
+        let target = level.layer_as_render_target(i).unwrap();
 
         // Create a new active shadowmap render pass
         let mut render_pass = shadowmap.render_pass.begin((), target);
@@ -265,19 +262,25 @@ fn render(world: &mut World) {
         let mut active =
             render_pass.bind_pipeline(&shadowmap.pipeline);
 
-        // Bind the shadow map UBO that contains the matrices and parameters
-        active.set_bind_group(0, |group| {
-            group
-                .set_uniform_buffer("shadow", &shadowmap.buffer, ..)
-                .unwrap();
-        });
+        // Set the lightspace matrix push constant
+        active
+            .set_push_constants(|constants| {
+                let bytes = GpuPod::into_bytes(&lightspace);
+                constants
+                    .push(bytes, size_of::<vek::Mat4::<f32>>() as u32, ModuleVisibility::Vertex)
+                    .unwrap();
+            })
+            .unwrap();
 
         // Render the shadows first (fuck you)
         for stored in pipelines.iter() {
             stored.prerender(world, &mut default, &mut active);
         }
     }
-    */
+    drop(level);
+    drop(mips);
+    drop(shadowmap);
+    drop(_shadowmap);
 
     // Begin the scene color render pass
     let color = renderer.color_texture.as_render_target().unwrap();
@@ -285,7 +288,6 @@ fn render(world: &mut World) {
     let mut render_pass = renderer.render_pass.begin(color, depth);
 
     // This will iterate over each material pipeline and draw the scene
-    drop(_shadowmap);
     drop(scene);
     for stored in pipelines.iter() {
         stored.render(world, &mut default, &mut render_pass);

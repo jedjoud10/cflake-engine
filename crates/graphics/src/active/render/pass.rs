@@ -48,7 +48,7 @@ impl<'r, 't, C: ColorLayout, DS: DepthStencilLayout>
             .bind_group_layouts
             .iter()
             .enumerate()
-            .take(reflected.last_valid_bind_group_layout);
+            .take(reflected.taken_bind_group_layouts);
 
         // Set the empty bind groups for bind group layouts
         // that have been hopped over during reflection

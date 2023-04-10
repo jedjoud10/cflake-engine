@@ -476,6 +476,8 @@ pub(crate) fn get_specific_view<T: Texture>(
 ) -> Option<&wgpu::TextureView> {
     let max_layers = texture.dimensions().layers();
     let max_levels = texture.levels();
+    dbg!(max_layers);
+    dbg!(max_levels);
 
     // Return if the layer index is invalid
     if let Some(layer) = layer {
@@ -500,15 +502,17 @@ pub(crate) fn get_specific_view<T: Texture>(
     // second mip, all layers
     // second mip, first layer
     // second mip, second  layer
-    //dbg!(layer);
-    //dbg!(level);
+    dbg!(layer);
+    dbg!(level);
     let views = texture.views()?;
-    let offset = layer.map(|x| x + 1).unwrap_or_default();
-    let base = level.map(|x| x + 1).unwrap_or_default();
+    let offset = layer.map(|x| x + (max_layers-1).min(1)).unwrap_or_default();
+    dbg!(offset);
+    let base = level.map(|x| x + (max_levels-1).min(1)).unwrap_or_default();
+    dbg!(base);
 
     let index = base * max_layers + offset;
     let index = index as usize;
-    //dbg!(index);
+    dbg!(index);
     views.get(index)
 }
 
@@ -598,12 +602,18 @@ pub(crate) fn create_texture_views<T: Texel, E: Extent>(
             // Check if we should create a view with all layers
             let layer = (layer > 0).then(|| layer - 1);
 
-            log::debug!("level: {level:?}, layer: {layer:?}");
+            // Modify the dimension view based on the current layer
+            let dimension = match (layer, E::view_dimension()) {
+                (Some(_), wgpu::TextureViewDimension::D2Array) => wgpu::TextureViewDimension::D2,
+                (Some(_), wgpu::TextureViewDimension::CubeArray) => wgpu::TextureViewDimension::Cube,
+                (None, x) => x,
+                _ => panic!("Not supported"),
+            };
 
             // Create the texture's texture view descriptor
             let desc = TextureViewDescriptor {
                 format: Some(format),
-                dimension: Some(view_dimensions),
+                dimension: Some(dimension),
                 aspect,
                 base_mip_level: level.unwrap_or_default(),
                 mip_level_count: level.map(|_| NonZeroU32::new(1).unwrap()),
@@ -619,7 +629,9 @@ pub(crate) fn create_texture_views<T: Texel, E: Extent>(
                 extent.layers()
             );
 
-            //dbg!(&desc);
+            log::debug!("Level: {level:?}, Layer: {layer:?}");
+
+            log::debug!("{:#?}", desc);
     
         
             // Create an texture view of the whole texture
