@@ -8,14 +8,14 @@ use graphics::{
     Graphics, LoadOp, ModuleVisibility, Operation, PrimitiveConfig,
     PushConstantLayout, RenderPass, RenderPipeline, SamplerSettings,
     Shader, StoreOp, Texture, Texture2D, TextureMipMaps, TextureMode,
-    TextureUsage, UniformBuffer, VertexModule, WindingOrder, Face, LayeredTexture2D,
+    TextureUsage, UniformBuffer, VertexModule, WindingOrder, Face, LayeredTexture2D, Normalized,
 };
 use vek::FrustumPlanes;
 
 use crate::MeshAttributes;
 
 // This is what will write to the depth texture
-pub type ShadowTexel = Depth<f32>;
+pub type ShadowTexel = Depth<Normalized<u16>>;
 pub type ShadowMap = LayeredTexture2D<ShadowTexel>;
 pub type ShadowRenderPass = RenderPass<(), ShadowTexel>;
 pub type ShadowGraphicsPipeline = RenderPipeline<(), ShadowTexel>;
@@ -36,9 +36,6 @@ pub struct ShadowMapping {
     // Cached matrices
     pub view: vek::Mat4<f32>,
     pub projections: Vec<vek::Mat4<f32>>,
-
-    // TODO: I rlly should make a PR to add bytemuck support for vek matrices
-    pub lightspaces: Vec<vek::Vec4<vek::Vec4<f32>>>,
 
     // Resolution of the base level
     pub resolution: u32,
@@ -101,7 +98,7 @@ impl ShadowMapping {
             graphics,
             (),
             Operation {
-                load: LoadOp::Clear(1.0),
+                load: LoadOp::Clear(u16::MAX),
                 store: StoreOp::Store,
             },
         );
@@ -131,7 +128,7 @@ impl ShadowMapping {
         .unwrap();
 
         // Create the depth textures that we will render to
-        let depth_tex = LayeredTexture2D::<Depth<f32>>::from_texels(
+        let depth_tex = ShadowMap::from_texels(
             graphics,
             None,
             (vek::Extent2::broadcast(resolution), sizes.len() as u32),
@@ -158,7 +155,7 @@ impl ShadowMapping {
             graphics,
             sizes.len(),
             BufferMode::Dynamic,
-            BufferUsage::WRITE,
+            BufferUsage::WRITE | BufferUsage::STORAGE,
         ).unwrap();
 
         // Pre-initialize the projection matrices
@@ -177,11 +174,6 @@ impl ShadowMapping {
             vek::Mat4::orthographic_rh_zo(frustum)
         }).collect::<Vec<_>>();
 
-        // Pre-initialize the lightspace matrices as projection matrices
-        let lightspaces = sizes.iter().map(|_|
-            vek::Mat4::identity().cols
-        ).collect::<Vec<_>>();
-
         Self {
             render_pass,
             shader,
@@ -193,17 +185,18 @@ impl ShadowMapping {
             lightspace_buffer,
             depth,
             projections,
-            lightspaces,
         }
     }
 
     // Update the rotation of the sun shadows using a new rotation
+    // Returns the newly created lightspace matrix (only one)
     pub(crate) fn update(
         &mut self,
         rotation: vek::Quaternion<f32>,
-        camera: vek::Vec3<f32>,
+        camera: (vek::Vec3<f32>, vek::Quaternion<f32>),
         frustum: math::Frustum<f32>,
-    ) {
+        i: u32,
+    ) -> vek::Mat4<f32> {
         // Calculate a new view matrix and set it
         let rot = vek::Mat4::from(rotation);
         self.view = vek::Mat4::<f32>::look_at_rh(
@@ -211,15 +204,18 @@ impl ShadowMapping {
             rot.mul_point(-vek::Vec3::unit_z()),
             rot.mul_point(-vek::Vec3::unit_y()),
         );
-        let camera = vek::Mat4::<f32>::translation_3d(-camera);
+        let camera = vek::Mat4::<f32>::translation_3d(-camera.0);
+
+        // TODO: Do funky shit with the matrix
         
-        // Update the internally stored lightspace matrices
-        for (lightspace, projection) in self.lightspaces.iter_mut().zip(self.projections.iter()) {
-            // Calculate light skin rizz (real) (I have gone insane)
-            *lightspace = (*projection * self.view * camera).cols;
-        }
+        // Update ONE of the internally stored lightspace matrices
+        let projection = &self.projections[i as usize];
+
+        // Calculate light skin rizz (real) (I have gone insane)
+        let lightspace = *projection * self.view * camera;
 
         // Update the internally stored buffer
-        self.lightspace_buffer.write(&self.lightspaces, 0).unwrap();
+        self.lightspace_buffer.write(&[lightspace.cols],i as usize).unwrap();
+        lightspace
     }
 }

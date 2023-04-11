@@ -5,8 +5,8 @@ layout(set = 0, binding = 4) uniform ShadowUniform {
 } shadow_parameters;
 
 // Contains all the lightspace matrices for each cascade
-layout(set = 0, binding = 5) uniform ShadowLightSpaceMatrices {
-    mat4 matrices[3];
+layout(std430, set = 0, binding = 5) buffer readonly ShadowLightSpaceMatrices {
+    mat4 matrices[];
 } shadow_lightspace_matrices;
 
 // Shadow-map texture map
@@ -20,7 +20,7 @@ float sample_shadow_texel(
     ivec2 pixel,
     float compare
 ) {
-    float bias = 0.0010 * (layer+1);
+    float bias = 0.00017 * (layer*2+1);
     float closest = texelFetch(shadow_map, ivec3(pixel, int(layer)), 0).r;
     return compare > (closest+bias) ? 1.0 : 0.0;
 }
@@ -51,11 +51,16 @@ float shadow_linear(
 // Check if a pixel is obscured by the shadow map
 float calculate_shadowed(
     vec3 position,
+    vec3 normal,
+    vec3 light_dir,
     vec3 camera
 ) {
+    // Offset more when the normal is perpendicular to the light dir
+    float normal_offset_factor = 1 - abs(dot(normal, light_dir));
+
     // Calculates what shadow layer we must use
-    uint index = 2;
-    for(int i = 0; i < 2; i++) {
+    uint index = shadow_lightspace_matrices.matrices.length();
+    for(int i = 0; i < index; i++) {
         mat4 lightspace = shadow_lightspace_matrices.matrices[i];
         vec4 ndc = lightspace * vec4(position, 1.0); 
 
@@ -74,7 +79,7 @@ float calculate_shadowed(
     mat4 lightspace = shadow_lightspace_matrices.matrices[layer];
     
     // Transform the world coordinates to NDC coordinates 
-    vec4 ndc = lightspace * vec4(position, 1.0); 
+    vec4 ndc = lightspace * vec4(position + normal * normal_offset_factor * 0.03, 1.0); 
     
     /*
     if(abs(ndc.x) > 1.0 ||
@@ -94,6 +99,7 @@ float calculate_shadowed(
     // Get texture size
     uint size = uint(textureSize(shadow_map, 0).x);
 
+    /*
     float shadowed = 0.0;
     for (int x = -2; x <= 2; x++) {
         for (int y = -2; y <= 2; y++) {
@@ -102,8 +108,9 @@ float calculate_shadowed(
     }
     shadowed /= 25.0;
     return shadowed;
+    */
     
 
-    //return sample_shadow_texel(layer, ivec2(uvs.xy * size), current);
+    return sample_shadow_texel(layer, ivec2(uvs.xy * size), current);
     //return shadow_linear(shadow_map, layer, uvs.xy, current);
 }

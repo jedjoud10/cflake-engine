@@ -9,7 +9,7 @@ use assets::Assets;
 use graphics::{
     BindGroup, Compiler, FragmentModule, GpuPod, Graphics,
     ModuleVisibility, PushConstantLayout, PushConstants, Shader,
-    VertexModule,
+    VertexModule, StorageAccess,
 };
 use utils::{Handle, Storage};
 
@@ -59,7 +59,7 @@ impl Material for BasicMaterial {
 
         // Shadow parameters
         compiler.use_uniform_buffer::<ShadowUniform>("shadow_parameters");
-        compiler.use_uniform_buffer::<vek::Vec4<vek::Vec4<f32>>>("shadow_lightspace_matrices");
+        compiler.use_storage_buffer::<vek::Vec4<vek::Vec4<f32>>>("shadow_lightspace_matrices", StorageAccess::ReadOnly);
 
         // Define the types for the user textures
         compiler.use_sampled_texture::<ShadowMap>("shadow_map");
@@ -104,7 +104,7 @@ impl Material for BasicMaterial {
             .set_uniform_buffer("shadow_parameters", &resources.2.parameter_buffer, ..)
             .unwrap();
         group
-            .set_uniform_buffer("shadow_lightspace_matrices", &resources.2.lightspace_buffer, ..)
+            .set_storage_buffer("shadow_lightspace_matrices", &resources.2.lightspace_buffer, ..)
             .unwrap();
 
         // Set the scene shadow map

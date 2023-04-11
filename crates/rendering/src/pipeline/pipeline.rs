@@ -93,7 +93,7 @@ pub trait DynPipeline {
         world: &'r World,
         default: &DefaultMaterialResources<'r>,
         active: &mut ActiveShadowGraphicsPipeline<'_, 'r, '_>,
-        lightspace: vek::Vec4<vek::Vec4<f32>>,
+        lightspace: vek::Mat4<f32>,
     );
 
     // Render all surfaces that use the material of this pipeline
@@ -111,7 +111,7 @@ impl<M: Material> DynPipeline for Pipeline<M> {
         world: &'r World,
         default: &DefaultMaterialResources<'r>,
         active: &mut ActiveShadowGraphicsPipeline<'_, 'r, '_>,
-        lightspace: vek::Vec4<vek::Vec4<f32>>,
+        lightspace: vek::Mat4<f32>,
     ) {
         super::render_shadows::<M>(world, default, active, lightspace);
     }

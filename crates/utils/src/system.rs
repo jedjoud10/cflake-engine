@@ -89,7 +89,7 @@ pub fn file_logger(system: &mut System) {
 }
 
 // Number of ticks that should execute per second
-const TICKS_PER_SEC: f32 = 120.0f32;
+const TICKS_PER_SEC: f32 = 240.0f32;
 
 // Add the Time manager
 pub fn time(system: &mut System) {
@@ -107,6 +107,9 @@ pub fn time(system: &mut System) {
                 tick_delta: Duration::from_secs_f32(
                     1.0 / TICKS_PER_SEC,
                 ),
+                tick_interpolation: 0.0,
+                tick_target_interpolation: 0.0,
+                local_tick_count: 0,
             });
         })
         .before(user);
@@ -142,7 +145,12 @@ pub fn time(system: &mut System) {
                 // Add divided tick count to accumulator
                 time.last_tick_start = now;
                 time.tick_count += count as u128;
+                time.local_tick_count = 0;
                 time.ticks_to_execute = NonZeroU32::new(count);
+
+                // Might have a non-whole remainder left in the accumulator
+                let remainder = divided - count as f32;
+                time.tick_target_interpolation = remainder;
             } else {
                 time.ticks_to_execute = None;
             }
@@ -154,6 +162,12 @@ pub fn time(system: &mut System) {
         .insert_tick(|world: &mut World| {
             let mut time = world.get_mut::<Time>().unwrap();
             time.tick_count += 1;
+            time.local_tick_count += 1;
+            time.tick_interpolation = 1.0;
+
+            if time.local_tick_count == (time.ticks_to_execute().unwrap().get()-1) {
+                time.tick_interpolation = time.tick_target_interpolation;
+            }
         })
         .before(user);
 }

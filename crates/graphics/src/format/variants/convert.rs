@@ -323,6 +323,28 @@ where
     }
 }
 
+impl Conversion for Depth<Normalized<u16>>
+where
+    Self: Texel,
+{
+    type Target = f32;
+
+    fn try_from_target(
+        target: Self::Target,
+    ) -> Option<Self::Storage> {
+        if target > 0.0 && target < 1.0 {
+            return Some((target * u16::MAX as f32) as u16);
+        } else {
+            return None
+        }
+    }
+
+    fn into_target(texel: Self::Storage) -> Self::Target {
+        texel as f32 / (u16::MAX as f32)
+    }
+}
+
+
 impl Conversion for Stencil<u8>
 where
     Self: Texel,

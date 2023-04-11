@@ -29,7 +29,7 @@ pub struct ChunkManager {
 
     // Hashmap for each chunk entity
     pub(crate) entities: AHashMap<ChunkCoords, Entity>,
-    pub(crate) viewer: Option<(Entity, ChunkCoords)>,
+    pub(crate) viewer: Option<(Entity, ChunkCoords, vek::Quaternion<f32>)>,
 
 }
 

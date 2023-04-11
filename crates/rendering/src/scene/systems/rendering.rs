@@ -54,7 +54,7 @@ fn init(world: &mut World) {
     // Create a nice shadow map
     let shadowmap = ShadowMapping::new(
         2000f32,
-        1024,
+        2048,
         &[50f32, 100.0, 400.0],
         &graphics,
         &mut assets,
@@ -139,6 +139,7 @@ fn render(world: &mut World) {
     let renderer = &mut *renderer;
     let scene = world.get::<Scene>().unwrap();
     let pipelines = world.get::<Pipelines>().unwrap();
+    let time = world.get::<Time>().unwrap();
 
     // Needed for direct rendering
     let meshes = world.get::<Storage<Mesh>>().unwrap();
@@ -242,31 +243,37 @@ fn render(world: &mut World) {
 
     // Update the shadow map lightspace matrix
     let shadowmap = &mut *_shadowmap;
-    shadowmap
-        .update(*directional_light_rotation, *camera_position, camera_frustum);
     let layers = shadowmap.depth_tex.layers();
-    let lightspaces = &shadowmap.lightspaces;
+    let index = (time.frame_count() as u32) % layers;
+    let lightspace = shadowmap.update(
+        *directional_light_rotation,
+        (*camera_position, *camera_rotation),
+        camera_frustum,
+        index
+    );
     let mips = shadowmap.depth_tex.mips_mut();
     let mut level = mips.level_mut(0).unwrap();
 
-    // Create multiple render passes for each shadow cascade
-    for i in 0..layers {
-        // Use layer as render target
-        let lightspace = lightspaces[i as usize];
-        let target = level.layer_as_render_target(i).unwrap();
+    // Use layer as render target
+    let target = level.layer_as_render_target(index).unwrap();
 
-        // Create a new active shadowmap render pass
-        let mut render_pass = shadowmap.render_pass.begin((), target);
+    // Create a new active shadowmap render pass
+    let mut render_pass = shadowmap.render_pass.begin((), target);
 
-        // Bind the default shadowmap graphics pipeline
-        let mut active =
-            render_pass.bind_pipeline(&shadowmap.pipeline);
+    // Bind the default shadowmap graphics pipeline
+    let mut active =
+        render_pass.bind_pipeline(&shadowmap.pipeline);
 
-        // Render the shadows first (fuck you)
-        for stored in pipelines.iter() {
-            stored.prerender(world, &mut default, &mut active, lightspace);
-        }
+    // Render the shadows first (fuck you)
+    for stored in pipelines.iter() {
+        stored.prerender(world, &mut default, &mut active, lightspace);
     }
+    
+    // Send the command encoder
+    drop(active);
+    drop(render_pass);
+
+    // Drop resources
     drop(level);
     drop(mips);
     drop(shadowmap);

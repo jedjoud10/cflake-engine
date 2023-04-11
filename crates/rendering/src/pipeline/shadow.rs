@@ -37,7 +37,7 @@ pub(super) fn render_shadows<'r, M: Material>(
     world: &'r World,
     defaults: &DefaultMaterialResources<'r>,
     active: &mut ActiveShadowGraphicsPipeline<'_, 'r, '_>,
-    lightspace: vek::Vec4<vek::Vec4<f32>>,
+    lightspace: vek::Mat4<f32>,
 ) {
     // Don't do shit if we won't cast shadows
     if !M::casts_shadows()
@@ -70,15 +70,13 @@ pub(super) fn render_shadows<'r, M: Material>(
 
             // If we have a valid AABB, check if the surface is visible within the frustum
             if let Some(aabb) = aabb {
-                surface.culled = !intersects_lightspace(
-                    &vek::Mat4 {
-                        cols: lightspace,
-                    },
+                surface.shadow_culled = !intersects_lightspace(
+                    &lightspace,
                     aabb,
                     &renderer.matrix,
                 )
             } else {
-                surface.culled = false;
+                surface.shadow_culled = false;
             }
         }, 
         1024,
@@ -118,7 +116,7 @@ pub(super) fn render_shadows<'r, M: Material>(
                     .push(bytes, 0, ModuleVisibility::Vertex)
                     .unwrap();
                 // TODO: Implement push constant compositing so we can remove this
-                let bytes = GpuPod::into_bytes(&lightspace);
+                let bytes = GpuPod::into_bytes(&lightspace.cols);
                 constants
                     .push(bytes, size_of::<vek::Mat4::<f32>>() as u32, ModuleVisibility::Vertex)
                     .unwrap();

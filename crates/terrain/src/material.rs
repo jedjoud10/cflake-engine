@@ -9,12 +9,14 @@ use assets::Assets;
 use graphics::{
     BindGroup, Compiler, FragmentModule, GpuPod, Graphics,
     ModuleVisibility, PrimitiveConfig, PushConstantLayout,
-    PushConstants, Shader, VertexModule, WindingOrder,
+    PushConstants, Shader, VertexModule, WindingOrder, StorageAccess,
 };
 use utils::Time;
 
 
 // Terrain shader that contains physically based lighting, but suited for terrain rendering
+// Contains multiple Layered2D textures for each PBR parameters
+// Currently, there is no blending that is occuring between different terrain sub-materials
 pub struct TerrainMaterial {
     // PBR Parameters
     pub bumpiness: f32,
@@ -51,7 +53,7 @@ impl Material for TerrainMaterial {
 
         // Shadow parameters
         compiler.use_uniform_buffer::<ShadowUniform>("shadow_parameters");
-        compiler.use_uniform_buffer::<vek::Vec4<vek::Vec4<f32>>>("shadow_lightspace_matrices");
+        compiler.use_storage_buffer::<vek::Vec4<vek::Vec4<f32>>>("shadow_lightspace_matrices", StorageAccess::ReadOnly);
     
         // Define the types for the user textures
         compiler.use_sampled_texture::<ShadowMap>("shadow_map");
@@ -104,7 +106,7 @@ impl Material for TerrainMaterial {
             .set_uniform_buffer("shadow_parameters", &resources.0.parameter_buffer, ..)
             .unwrap();
         group
-            .set_uniform_buffer("shadow_lightspace_matrices", &resources.0.lightspace_buffer, ..)
+            .set_storage_buffer("shadow_lightspace_matrices", &resources.0.lightspace_buffer, ..)
             .unwrap();
 
         // Set the scene shadow map

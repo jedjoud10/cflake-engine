@@ -204,7 +204,7 @@ impl<'a> BindGroup<'a> {
     pub fn set_storage_texture<'s, T: Texture>(
         &mut self,
         name: &'s str,
-        texture: &'a mut T,
+        texture: &'a T,
     ) -> Result<(), SetBindResourceError<'s>> {
         // Make sure it's a sampled texture
         if !texture.usage().contains(TextureUsage::STORAGE) {

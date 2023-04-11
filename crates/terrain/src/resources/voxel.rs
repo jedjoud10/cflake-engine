@@ -1,14 +1,9 @@
-
 use std::rc::Rc;
-
 use assets::Assets;
-
 use graphics::{
     Compiler, ComputeModule, ComputeShader, GpuPod, Graphics, ModuleVisibility, PushConstantLayout, Texel,
     Texture3D, Vertex, R, StorageAccess, RGBA, Normalized, RG, BindGroup, PushConstants, ActiveComputeDispatcher,
 };
-
-
 
 use crate::{TerrainSettings, create_texture3d};
 

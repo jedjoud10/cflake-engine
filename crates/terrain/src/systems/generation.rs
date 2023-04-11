@@ -76,7 +76,7 @@ fn update(world: &mut World) {
         chunk.ranges = None;
     }
 
-    // Find the closest chunk to the camera 
+    // Find the chunk with the highest priority
     let mut vec = scene.query_mut::<(
         &mut Chunk,
         &Position,
@@ -87,9 +87,8 @@ fn update(world: &mut World) {
 
     // Iterate over the chunks that we need to generate
     for (chunk, position, surface, renderer) in vec {
-        // Don't generate the voxels and mesh for culled chunks or chunks that had
-        // their mesh already generated
-        if surface.culled || chunk.state != ChunkState::Pending {
+        // Don't generate the voxels and mesh for chunks that had their mesh already generated
+        if chunk.state != ChunkState::Pending {
             continue;
         }
         
@@ -270,7 +269,6 @@ fn update(world: &mut World) {
         drop(pass);
 
         // Submit the work to the GPU, and fetch counters and offsets
-        graphics.submit(false);
         let _counters = mesher.counters.as_view(..).unwrap();
         let counters = _counters.to_vec();
         let _offsets = memory.offsets.as_view(..).unwrap();
