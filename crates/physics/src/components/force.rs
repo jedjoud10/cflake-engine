@@ -1,11 +1,17 @@
 use std::ops::Div;
-
 use math::Scalar;
 use ecs::Component;
-
 use super::angular_velocity;
 
-pub fn impulse_real(velocity: &mut vek::Vec3<f32>, angular_velocity: &mut vek::Quaternion<f32>, force: &vek::Vec3<f32>, collision_point: &vek::Vec3<f32>, position: &vek::Vec3<f32>, dt: &f32, mass: &f32) {
+pub fn impulse_real(
+    velocity: &mut vek::Vec3<f32>,
+    angular_velocity: &mut vek::Quaternion<f32>,
+    force: &vek::Vec3<f32>,
+    collision_point: &vek::Vec3<f32>,
+    position: &vek::Vec3<f32>,
+    dt: &f32,
+    mass: &f32
+) {
     // LINEAR FORCE RELATED
 
     let acceleration = force / mass;

@@ -6,7 +6,6 @@ fn main() {
         .set_app_name("cflake engine mesh example")
         .set_user_assets_path(user_assets_path!("/examples/assets/"))
         .set_window_fullscreen(true)
-        .set_stats_enabled(false)
         //.set_logging_level(LevelFilter::Trace)
         .insert_init(init)
         .insert_update(update)
@@ -137,35 +136,6 @@ fn init(world: &mut World) {
     let scale = Scale::uniform(25.0);
     scene.insert((surface, renderer, scale));
 
-    // Create a simple cube and add the entity
-    scene.extend_from_iter((0..25).map(|x| {
-        let renderer = Renderer::default();
-        let position = Position::at_xyz(
-            (x / 5) as f32 * 4.0,
-            1.0,
-            (x % 5) as f32 * 4.0,
-        );
-
-        let material = pbrs.insert(PhysicallyBasedMaterial {
-            albedo_map: None,
-            normal_map: None,
-            mask_map: None,
-            bumpiness: 4.0,
-            roughness: 1.0,
-            metallic: 0.2,
-            ambient_occlusion: 1.0,
-            tint: vek::Rgb::new(
-                position.x / 5.0,
-                position.z / 5.0,
-                0.0,
-            ),
-        });
-
-        let surface =
-            Surface::new(cube.clone(), material, id.clone());
-        (surface, renderer, position)
-    }));
-
     // Create a simple sphere and add the entity
     let surface = Surface::new(sphere, material, id);
     let renderer = Renderer::default();
@@ -250,12 +220,12 @@ fn update(world: &mut World) {
         let right = rotation.right();
         let up = rotation.up();
         let mut velocity = vek::Vec3::<f32>::default();
-        let mut speed: f32 = 1.0f32;
+        let mut speed: f32 = 20.0f32;
         let sensivity: f32 = 0.0007;
 
         // Controls the "strength" of the camera smoothness
         // Higher means more smooth, lower means less smooth
-        let smoothness = 0.1;
+        let smoothness = 0.2;
 
         // Reset the camera rotation and position
         if input.get_button("reset").pressed() {
@@ -265,7 +235,7 @@ fn update(world: &mut World) {
 
         // Update velocity scale
         if input.get_button("lshift").held() {
-            speed = 6.0f32;
+            speed = 120.0f32;
         }
 
         // Update the velocity in the forward and backward directions
@@ -308,9 +278,6 @@ fn update(world: &mut World) {
         
         // Update FOV
         camera.hfov += delta * time.delta().as_secs_f32();
-
-        // Update the position with the new velocity
-        **position += **output * time.delta().as_secs_f32() * 20.0;
 
         // Calculate a new rotation and apply it
         let pos_x = input.get_axis("x rotation");

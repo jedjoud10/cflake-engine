@@ -7,7 +7,7 @@ use crate::{
 };
 use ecs::Scene;
 use graphics::{GpuPod, ModuleVisibility, ActivePipeline};
-use math::SharpVertices;
+use math::ExplicitVertices;
 use utils::{Handle, ThreadPool};
 use world::World;
 
@@ -18,7 +18,7 @@ pub fn intersects_lightspace(
     matrix: &vek::Mat4<f32>,
 ) -> bool {
     let corners =
-        <math::Aabb<f32> as SharpVertices<f32>>::points(&aabb);
+        <math::Aabb<f32> as ExplicitVertices<f32>>::points(&aabb);
 
     for input in corners.iter() {
         let vec = matrix.mul_point(*input);

@@ -1,5 +1,5 @@
 use crate::{
-    Boundable, Movable, SharpVertices, SurfaceArea, Volume,
+    Boundable, Movable, ExplicitVertices, SurfaceArea, Volume,
 };
 
 // A 3D cuboid that is defined by it's center and it's extent
@@ -86,7 +86,7 @@ macro_rules! impl_shape_traits {
             }
         }
 
-        impl SharpVertices<$t> for Cuboid<$t> {
+        impl ExplicitVertices<$t> for Cuboid<$t> {
             type Points = [vek::Vec3<$t>; 8];
 
             // http://paulbourke.net/geometry/polygonise/

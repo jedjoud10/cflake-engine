@@ -54,17 +54,15 @@ Voxel voxel(vec3 position) {
     */
 
 
-    /*
-
-    float density = opSmoothUnion((1-fbmCellular(position * 0.005 * vec3(1, 0.2, 1), 10, 0.4, 2.1).y) * 90 - 60 + position.y, position.y, 4);
+    float density = opSmoothUnion((1-fbmCellular(position * 0.005 * vec3(1, 0.2, 1), 10, 0.4, 2.1).y) * 40 - 60 + position.y, position.y, 4);
     density = max(density, -sdSphere(vec3(position.xz, 0), 20));
 
     
     return Voxel(density, vec3(parameters.global_chunk_index / 400.0));
-    */
 
 
     //TEST 1
+    /*
     position *= 0.2;
     vec3 col = vec3(156, 63, 12) / 255.0;
     vec3 col1 = vec3(168, 68, 25) / 255.0;
@@ -85,4 +83,5 @@ Voxel voxel(vec3 position) {
     d2 = opSmoothSubtraction(-d2, position.y + 100, 50);
     density += d2 - 140;
     return Voxel(density, col);
+    */
 }

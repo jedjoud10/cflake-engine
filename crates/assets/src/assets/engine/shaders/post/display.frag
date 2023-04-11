@@ -35,7 +35,7 @@ void main() {
 
 	// Create a simple vignette
 	float vignette_size = 0.1;
-	float vignette_strength = 1.2;
+	float vignette_strength = 0.4;
 	vec2 uv = vec2(x, y);
 	float vignette = length(abs(uv - 0.5));
 	vignette += vignette_size;

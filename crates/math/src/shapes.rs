@@ -22,7 +22,7 @@ pub trait Movable<T: Real> {
 }
 
 // Implemented for shapes that have sharp points / corners
-pub trait SharpVertices<T: Real> {
+pub trait ExplicitVertices<T: Real> {
     type Points: 'static + Clone;
     fn points(&self) -> Self::Points;
 }
@@ -35,12 +35,12 @@ pub trait ImplicitVertices<T: Real> {
 }
 
 // Auto implement implicit for explicit
-impl<T: Real, SV: SharpVertices<T>> ImplicitVertices<T> for SV {
-    type Points = <SV as SharpVertices<T>>::Points;
+impl<T: Real, SV: ExplicitVertices<T>> ImplicitVertices<T> for SV {
+    type Points = <SV as ExplicitVertices<T>>::Points;
     type Settings = ();
 
     fn points(&self, _: Self::Settings) -> Self::Points {
-        <SV as SharpVertices<T>>::points(self)
+        <SV as ExplicitVertices<T>>::points(self)
     }
 }
 

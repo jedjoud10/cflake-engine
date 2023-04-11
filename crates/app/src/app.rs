@@ -438,6 +438,10 @@ impl App {
         self.regsys(terrain::systems::generation::system);
         self.regsys(terrain::systems::init::system);
 
+        // Physics systems
+        self.regsys(physics::systems::collisions::system);
+        self.regsys(physics::systems::dynamics::system);
+
         // Gui system + stats update event
         self.regsys(gui::common);
         self.regsys(gui::acquire);

@@ -9,6 +9,8 @@ edition = "2021"
 world = { path = "../world" }
 math = { path = "../math" }
 ecs = { path = "../ecs" }
+coords = { path = "../coords" }
+utils = { path = "../utils" }
 vek = { workspace = true }
 
 [features]

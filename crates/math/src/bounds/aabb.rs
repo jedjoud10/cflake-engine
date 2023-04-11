@@ -1,4 +1,4 @@
-use crate::{Boundable, Movable, SharpVertices, SurfaceArea, Volume};
+use crate::{Boundable, Movable, ExplicitVertices, SurfaceArea, Volume};
 
 // An axis aligned bounding box
 #[derive(Debug, Clone, Copy)]
@@ -68,7 +68,7 @@ macro_rules! impl_shape_traits {
             }
         }
 
-        impl SharpVertices<$t> for Aabb<$t> {
+        impl ExplicitVertices<$t> for Aabb<$t> {
             type Points = [vek::Vec3<$t>; 8];
 
             // http://paulbourke.net/geometry/polygonise/

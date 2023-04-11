@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use ecs::Scene;
-use math::SharpVertices;
+use math::ExplicitVertices;
 use utils::{ThreadPool};
 use world::World;
 
@@ -21,7 +21,7 @@ pub fn intersects_frustum(
     matrix: &vek::Mat4<f32>,
 ) -> bool {
     let corners =
-        <math::Aabb<f32> as SharpVertices<f32>>::points(&aabb);
+        <math::Aabb<f32> as ExplicitVertices<f32>>::points(&aabb);
     let mut out: [vek::Vec4<f32>; 8] = [vek::Vec4::zero(); 8];
 
     for (input, output) in corners.iter().zip(out.iter_mut()) {
