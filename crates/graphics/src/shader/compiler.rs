@@ -35,6 +35,7 @@ pub(crate) type MaybePushConstantLayout = Option<PushConstantLayout>;
 pub(crate) type Included = Arc<Mutex<AHashSet<String>>>;
 pub(crate) type Constants = AHashMap<u32, SpecConstant>;
 pub(crate) type Defines = AHashMap<String, String>;
+pub type OptimizationLevel = shaderc::OptimizationLevel;
 
 // This is a compiler that will take GLSL code and create a WGPU module
 // This compiler also allows us to define constants and snippets before compilation
@@ -47,7 +48,7 @@ pub struct Compiler<'a> {
     pub(crate) defines: Defines,
     pub(crate) resource_types: ResourceBindingTypes,
     pub(crate) maybe_push_constant_layout: MaybePushConstantLayout,
-    //optimization: shaderc::OptimizationLevel,
+    optimization: shaderc::OptimizationLevel,
 }
 
 impl<'a> Compiler<'a> {
@@ -63,7 +64,7 @@ impl<'a> Compiler<'a> {
             defines: Default::default(),
 
             // TODO: Fix vulkan erors
-            //optimization: shaderc::OptimizationLevel::Performance,
+            optimization: shaderc::OptimizationLevel::Zero,
         }
     }
 
@@ -96,8 +97,9 @@ impl<'a> Compiler<'a> {
         self.defines.insert(name.to_string(), value.to_string());
     }
 
-    // Set the optimization level used by the ShaderC compiler
     /*
+    // TODO: Fix vulkan erors. More specifically, spirq doesn't detect bind groups and shaderc output is kinda odd
+    // Set the optimization level used by the ShaderC compiler
     pub fn use_optimization_level(
         &mut self,
         level: shaderc::OptimizationLevel,
@@ -124,7 +126,7 @@ impl<'a> Compiler<'a> {
             &self.snippets,
             &self.constants,
             &self.defines,
-            shaderc::OptimizationLevel::Zero,
+            self.optimization,
             source,
             &name,
         )

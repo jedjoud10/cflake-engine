@@ -191,12 +191,13 @@ impl ShadowMapping {
         rotation: vek::Quaternion<f32>,
         view: vek::Mat4<f32>,
         mut projection: vek::Mat4<f32>,
+        camera: vek::Vec3<f32>,
         camera_near_plane: f32,
         camera_far_plane: f32,
         i: usize,
     ) -> vek::Mat4<f32> {
         // Update the projection matrix' far and near planes
-        let near = self.percents.get(i-1).map(|x| x * &camera_far_plane).unwrap_or(camera_near_plane);
+        let near = self.percents.get(i.wrapping_sub(1)).map(|x| x * &camera_far_plane).unwrap_or(camera_near_plane);
         let far = self.percents.get(i).map(|x| x * &camera_far_plane).unwrap_or(camera_far_plane);
         let m22 = far / (near - far);
         let m23 = -(far*near) / (far-near);
@@ -211,16 +212,13 @@ impl ShadowMapping {
             vec4.xyz() / vec4.w
         });
 
-        // Calculate the center of the view frustum
-        let center = corners.iter().cloned().sum::<vek::Vec3<f32>>() / 8.0;
-
         // Calculate a new view matrix and set it
         let rot = vek::Mat4::from(rotation);
         
         // Calculate light view matrix
         let view = vek::Mat4::<f32>::look_at_rh(
-            center + rot.mul_point(vek::Vec3::unit_z()),
-            center,
+            vek::Vec3::zero(),
+            rot.mul_point(-vek::Vec3::unit_z()),
             rot.mul_point(-vek::Vec3::unit_y()),
         );
 
@@ -230,7 +228,8 @@ impl ShadowMapping {
     
         for point in corners {
             // Project point using view matrix
-            let point = view * point.with_w(1.0);
+            // Note: W component should be 1 since it is not a projection matrix, only view matrix
+            let point = view * (point).with_w(1.0);
 
             // Update the "max" bound element wise
             min.x = min.x.min(point.x);
@@ -249,8 +248,8 @@ impl ShadowMapping {
             right: max.x,
             bottom: min.y,
             top: max.y,
-            near: -4000.0,
-            far: 4000.0,
+            near: -self.depth,
+            far: self.depth,
         };
 
         // Create the projection matrix (orthographic)

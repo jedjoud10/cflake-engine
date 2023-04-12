@@ -53,8 +53,8 @@ Voxel voxel(vec3 position) {
     return Voxel(density1 + randomized + position.y, vec3(1.0));
     */
 
-    float density = opSmoothUnion((1-fbmCellular(position * 0.005 * vec3(1, 0.2, 1), 10, 0.4, 2.1).y) * 150 - 120 + position.y, position.y, 30);
-    density = max(density, -sdSphere(vec3(position.xz, 0), 20));
+    float density = opSmoothUnion((1-fbmCellular(position * 0.005 * vec3(1, 0.2, 1), 5, 0.4, 2.1).y) * 150 - 120 + position.y, position.y, 30);
+    density = max(density, -sdSphere(position + vec3(0, 10, 0), 30));
     //density = position.y - 2.00;
     return Voxel(density, vec3(random(parameters.global_chunk_index / 400.0)));
 

@@ -58,35 +58,37 @@ pub(super) fn render_shadows<'r, M: Material>(
     let mut last_index_buffer: Option<&<M::RenderPath as RenderPath>::TriangleBuffer<u32>> = None;
 
     // Cull the surfaces that the shadow texture won't see
-    scene.query_mut::<(&mut Surface<M>, &Renderer)>().for_each(
-        &mut threadpool,
-        |(surface, renderer)| {
-            // Get the mesh and it's AABB
-            let mesh = <M::RenderPath as RenderPath>::get(
-                defaults,
-                &surface.mesh,
-            );
-            let aabb = mesh.vertices().aabb();
+    if M::frustum_culling() {
+        scene.query_mut::<(&mut Surface<M>, &Renderer)>().for_each(
+            &mut threadpool,
+            |(surface, renderer)| {
+                // Get the mesh and it's AABB
+                let mesh = <M::RenderPath as RenderPath>::get(
+                    defaults,
+                    &surface.mesh,
+                );
+                let aabb = mesh.vertices().aabb();
 
-            // If we have a valid AABB, check if the surface is visible within the frustum
-            if let Some(aabb) = aabb {
-                surface.shadow_culled = !intersects_lightspace(
-                    &lightspace,
-                    aabb,
-                    &renderer.matrix,
-                )
-            } else {
-                surface.shadow_culled = false;
-            }
-        }, 
-        1024,
-    );
+                // If we have a valid AABB, check if the surface is visible within the frustum
+                if let Some(aabb) = aabb {
+                    surface.shadow_culled = !intersects_lightspace(
+                        &lightspace,
+                        aabb,
+                        &renderer.matrix,
+                    )
+                } else {
+                    surface.shadow_culled = false;
+                }
+            }, 
+            1024,
+        );
+    }
 
     // Iterate over all the surfaces of this material
     let query = scene.query::<(&Surface<M>, &Renderer)>();
     for (surface, renderer) in query {
         // Handle non visible surfaces, renderers, or if it's culled (shadow culled)
-        if !surface.visible || !renderer.visible /*|| surface.shadow_culled*/ {
+        if !surface.visible || !renderer.visible || surface.shadow_culled {
             continue;
         }
 

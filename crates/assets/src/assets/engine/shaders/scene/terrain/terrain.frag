@@ -29,7 +29,7 @@ layout(push_constant) uniform PushConstants {
 void main() {
 	// We do a bit of fading
 	if (dither(ivec2(gl_FragCoord.xy), pow(material.fade, 4))) {
-		//discard;
+		discard;
 	}
 
 	// Fetch the albedo color, normal map value, and mask values
@@ -43,13 +43,11 @@ void main() {
 	vec3 dirt = vec3(54, 30, 7) / 255.0;
 	vec3 grass = vec3(69, 107, 35) / 255.0;
 	albedo = m_color;
-	/*
 	albedo = grass;
 
 	if (normal.y < 0.85) {
 		albedo = rock;
 	}
-	*/
 
 	// Compute PBR values
 	float roughness = clamp(mask.g, 0.02, 1.0);
