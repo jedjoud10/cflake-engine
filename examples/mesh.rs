@@ -29,7 +29,7 @@ fn init(world: &mut World) {
         None, None, None
     ).unwrap();
     drop(graphics);
-    world.insert(settings);
+    //world.insert(settings);
 
 
     // Fetch the required resources from the world

@@ -10,6 +10,7 @@ use graphics::{
     Shader, StoreOp, Texture, Texture2D, TextureMipMaps, TextureMode,
     TextureUsage, UniformBuffer, VertexModule, WindingOrder, Face, LayeredTexture2D, Normalized,
 };
+use math::ExplicitVertices;
 use vek::FrustumPlanes;
 
 use crate::MeshAttributes;
@@ -34,8 +35,7 @@ pub struct ShadowMapping {
     pub depth_tex: ShadowMap,
     
     // Cached matrices
-    pub view: vek::Mat4<f32>,
-    pub projections: Vec<vek::Mat4<f32>>,
+    pub percents: [f32; 4],
 
     // Resolution of the base level
     pub resolution: u32,
@@ -46,6 +46,9 @@ pub struct ShadowMapping {
 
     // Contains the light space shadow matrices
     pub lightspace_buffer: UniformBuffer<vek::Vec4<vek::Vec4<f32>>>,
+
+    // Contains the depth distances for each plane
+    pub cascade_distances: UniformBuffer<f32>,
 }
 
 // This is the uniform that is defined in the Vertex Module
@@ -61,7 +64,7 @@ impl ShadowMapping {
     pub(crate) fn new(
         depth: f32,
         resolution: u32,
-        sizes: &[f32],
+        percents: [f32; 4],
         graphics: &Graphics,
         assets: &mut Assets,
     ) -> Self {
@@ -131,7 +134,7 @@ impl ShadowMapping {
         let depth_tex = ShadowMap::from_texels(
             graphics,
             None,
-            (vek::Extent2::broadcast(resolution), sizes.len() as u32),
+            (vek::Extent2::broadcast(resolution), 4),
             TextureMode::Dynamic,
             TextureUsage::TARGET | TextureUsage::SAMPLED,
             Some(SamplerSettings::default()),
@@ -153,69 +156,112 @@ impl ShadowMapping {
         // We can initialize these to zero since the first frame would update the buffer anyways
         let lightspace_buffer = UniformBuffer::<vek::Vec4<vek::Vec4<f32>>>::zeroed(
             graphics,
-            sizes.len(),
+            4,
             BufferMode::Dynamic,
-            BufferUsage::WRITE | BufferUsage::STORAGE,
+            BufferUsage::WRITE,
         ).unwrap();
 
-        // Pre-initialize the projection matrices
-        let projections = sizes.iter().map(|&size| {
-            // The shadow frustum is the cuboid that will contain the shadow map
-            let frustum = FrustumPlanes::<f32> {
-                left: -size,
-                right: size,
-                bottom: -size,
-                top: size,
-                near: -depth / 2.0,
-                far: depth / 2.0,
-            };
-
-            // Create the projection matrix (orthographic)
-            vek::Mat4::orthographic_rh_zo(frustum)
-        }).collect::<Vec<_>>();
+        // We can initialize these to zero since the first frame would update the buffer anyways
+        let cascade_distances = UniformBuffer::<f32>::zeroed(
+            graphics,
+            4,
+            BufferMode::Dynamic,
+            BufferUsage::WRITE,
+        ).unwrap();
 
         Self {
             render_pass,
             shader,
             pipeline,
             depth_tex,
-            view: vek::Mat4::identity(),
             resolution,
             parameter_buffer,
             lightspace_buffer,
             depth,
-            projections,
+            percents,
+            cascade_distances,
         }
     }
 
     // Update the rotation of the sun shadows using a new rotation
     // Returns the newly created lightspace matrix (only one)
+    // https://learnopengl.com/Guest-Articles/2021/CSM
     pub(crate) fn update(
         &mut self,
         rotation: vek::Quaternion<f32>,
-        camera: (vek::Vec3<f32>, vek::Quaternion<f32>),
-        frustum: math::Frustum<f32>,
-        i: u32,
+        view: vek::Mat4<f32>,
+        mut projection: vek::Mat4<f32>,
+        camera_near_plane: f32,
+        camera_far_plane: f32,
+        i: usize,
     ) -> vek::Mat4<f32> {
+        // Update the projection matrix' far and near planes
+        let near = self.percents.get(i-1).map(|x| x * &camera_far_plane).unwrap_or(camera_near_plane);
+        let far = self.percents.get(i).map(|x| x * &camera_far_plane).unwrap_or(camera_far_plane);
+        let m22 = far / (near - far);
+        let m23 = -(far*near) / (far-near);
+        projection.cols[2][2] = m22;
+        projection.cols[3][2] = m23;
+
+        // Get the corners of the frustum matrix
+        let ndc = math::Aabb::<f32>::ndc();
+        let inverse = (projection * view).inverted();
+        let corners = ndc.points().map(|x| {
+            let vec4 = inverse * vek::Vec4::<f32>::from_point(x);
+            vec4.xyz() / vec4.w
+        });
+
+        // Calculate the center of the view frustum
+        let center = corners.iter().cloned().sum::<vek::Vec3<f32>>() / 8.0;
+
         // Calculate a new view matrix and set it
         let rot = vek::Mat4::from(rotation);
-        self.view = vek::Mat4::<f32>::look_at_rh(
-            vek::Vec3::zero(),
-            rot.mul_point(-vek::Vec3::unit_z()),
+        
+        // Calculate light view matrix
+        let view = vek::Mat4::<f32>::look_at_rh(
+            center + rot.mul_point(vek::Vec3::unit_z()),
+            center,
             rot.mul_point(-vek::Vec3::unit_y()),
         );
-        let camera = vek::Mat4::<f32>::translation_3d(-camera.0);
 
-        // TODO: Do funky shit with the matrix
-        
-        // Update ONE of the internally stored lightspace matrices
-        let projection = &self.projections[i as usize];
+        // Get the AABB that contains the whole corners
+        let mut min = vek::Vec3::broadcast(f32::MAX);
+        let mut max = vek::Vec3::broadcast(f32::MIN);
+    
+        for point in corners {
+            // Project point using view matrix
+            let point = view * point.with_w(1.0);
+
+            // Update the "max" bound element wise
+            min.x = min.x.min(point.x);
+            min.y = min.y.min(point.y);
+            min.z = min.z.min(point.z);
+
+            // Update the "min" bound element wise
+            max.x = max.x.max(point.x);
+            max.y = max.y.max(point.y);
+            max.z = max.z.max(point.z);
+        }
+
+        // The shadow frustum is the cuboid that will contain the shadow map
+        let frustum = FrustumPlanes::<f32> {
+            left: min.x,
+            right: max.x,
+            bottom: min.y,
+            top: max.y,
+            near: -4000.0,
+            far: 4000.0,
+        };
+
+        // Create the projection matrix (orthographic)
+        let projection = vek::Mat4::orthographic_rh_zo(frustum);
 
         // Calculate light skin rizz (real) (I have gone insane)
-        let lightspace = *projection * self.view * camera;
+        let lightspace = projection * view;
 
         // Update the internally stored buffer
-        self.lightspace_buffer.write(&[lightspace.cols],i as usize).unwrap();
+        self.lightspace_buffer.write(&[lightspace.cols],i).unwrap();
+        self.cascade_distances.write(&[far], i).unwrap();
         lightspace
     }
 }

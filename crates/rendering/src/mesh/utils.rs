@@ -285,30 +285,6 @@ pub fn compute_tangents(
 pub fn aabb_from_points(
     points: &[vek::Vec4<f32>],
 ) -> Option<math::Aabb<f32>> {
-    if points.len() < 2 {
-        return None;
-    }
-
-    // Initial values set to their inverse (since we have multiple iterations)
-    let mut min = vek::Vec3::broadcast(f32::MAX);
-    let mut max = vek::Vec3::broadcast(f32::MIN);
-
-    for point in points {
-        // Update the "max" bound element wise
-        for (point_element, max_element) in
-            point.as_slice().iter().zip(max.as_mut_slice().iter_mut())
-        {
-            *max_element = f32::max(*max_element, *point_element)
-        }
-
-        // Update the "min" bound element wise
-        for (point_element, min_element) in
-            point.as_slice().iter().zip(min.as_mut_slice().iter_mut())
-        {
-            *min_element = f32::min(*min_element, *point_element)
-        }
-    }
-
-    // Check if the AABB would be valid
-    (min != max).then_some(math::Aabb { min, max })
+    let points = points.iter().map(|x| x.xyz()).collect::<Vec<_>>();
+    math::Aabb::from_points(&points)
 }

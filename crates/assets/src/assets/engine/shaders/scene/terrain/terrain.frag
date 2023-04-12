@@ -43,13 +43,14 @@ void main() {
 	vec3 dirt = vec3(54, 30, 7) / 255.0;
 	vec3 grass = vec3(69, 107, 35) / 255.0;
 	albedo = m_color;
-	
+	/*
 	albedo = grass;
 
 	if (normal.y < 0.85) {
 		albedo = rock;
 	}
-	
+	*/
+
 	// Compute PBR values
 	float roughness = clamp(mask.g, 0.02, 1.0);
 	float metallic = clamp(mask.b, 0.01, 1.0);
@@ -59,9 +60,9 @@ void main() {
 
 	// Create the data structs
 	SunData sun = SunData(scene.sun_direction.xyz, scene.sun_color.rgb, 2.6);
-	SurfaceData surface = SurfaceData(albedo, -normal, m_position, roughness, metallic, visibility, f0);
+	SurfaceData surface = SurfaceData(albedo, -normal, m_position, gl_FragCoord.z, roughness, metallic, visibility, f0);
 	vec3 view = normalize(-camera.position.xyz + m_position);
-	CameraData camera = CameraData(view, normalize(view + scene.sun_direction.xyz), camera.position.xyz);
+	CameraData camera = CameraData(view, normalize(view + scene.sun_direction.xyz), camera.position.xyz, camera.view, camera.projection);
 
 	// Check if the fragment is shadowed
 	vec3 color = brdf(surface, camera, sun);

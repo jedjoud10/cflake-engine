@@ -55,7 +55,7 @@ fn init(world: &mut World) {
     let shadowmap = ShadowMapping::new(
         2000f32,
         2048,
-        &[50f32, 100.0, 400.0],
+        [0.005, 0.02, 0.1, 0.3],
         &graphics,
         &mut assets,
     );
@@ -210,8 +210,9 @@ fn render(world: &mut World) {
     let (&camera, &camera_position, &camera_rotation) = camera
         .as_query::<(&Camera, &coords::Position, &coords::Rotation)>()
         .unwrap();
-    let camera_frustum =
-        camera.frustum(&camera_position, &camera_rotation);
+    let camera_view = camera.view_matrix(&camera_position, &camera_rotation);
+    let camera_projection = camera.projection_matrix();
+    let camera_frustum = math::Frustum::<f32>::from_camera_matrices(camera_projection, camera_view);
 
     // Create the shared material resources
     let mut default = DefaultMaterialResources {
@@ -243,13 +244,14 @@ fn render(world: &mut World) {
 
     // Update the shadow map lightspace matrix
     let shadowmap = &mut *_shadowmap;
-    let layers = shadowmap.depth_tex.layers();
-    let index = (time.frame_count() as u32) % layers;
+    let index = (time.frame_count() as u32) % 4;
     let lightspace = shadowmap.update(
         *directional_light_rotation,
-        (*camera_position, *camera_rotation),
-        camera_frustum,
-        index
+        camera_view,
+        camera_projection,
+        camera.near,
+        camera.far,
+        index as usize
     );
     let mips = shadowmap.depth_tex.mips_mut();
     let mut level = mips.level_mut(0).unwrap();
@@ -272,11 +274,11 @@ fn render(world: &mut World) {
     // Send the command encoder
     drop(active);
     drop(render_pass);
-
-    // Drop resources
     drop(level);
     drop(mips);
     drop(shadowmap);
+
+    // Drop resources
     drop(_shadowmap);
 
     // Begin the scene color render pass

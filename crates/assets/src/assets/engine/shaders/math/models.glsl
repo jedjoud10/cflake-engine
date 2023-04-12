@@ -63,6 +63,8 @@ struct CameraData {
 	vec3 view;
 	vec3 half_view;
 	vec3 position;
+	mat4 view_matrix;
+	mat4 proj_matrix;
 };
 
 // Surface data struct 
@@ -70,6 +72,7 @@ struct SurfaceData {
 	vec3 diffuse;
 	vec3 normal;
 	vec3 position;
+	float depth;
 	float roughness;
 	float metallic;
 	float visibility;
@@ -90,7 +93,7 @@ vec3 brdf(
 	vec3 ambient = calculate_sky_color(-surface.normal, light.backward);
 
 	// Calculate if the pixel is shadowed
-	float shadowed = calculate_shadowed(surface.position, surface.normal, light.backward, camera.position);
+	float shadowed = calculate_shadowed(surface.position, surface.depth, surface.normal, light.backward, camera.position);
 	
 	// Calculate diffuse and specular
 	vec3 brdf = kd * (surface.diffuse / PI) + specular(surface.f0, surface.roughness, camera.view, light.backward, surface.normal, camera.half_view) * (1-shadowed);

@@ -53,7 +53,8 @@ impl Material for TerrainMaterial {
 
         // Shadow parameters
         compiler.use_uniform_buffer::<ShadowUniform>("shadow_parameters");
-        compiler.use_storage_buffer::<vek::Vec4<vek::Vec4<f32>>>("shadow_lightspace_matrices", StorageAccess::ReadOnly);
+        compiler.use_uniform_buffer::<vek::Vec4<vek::Vec4<f32>>>("shadow_lightspace_matrices");
+        compiler.use_uniform_buffer::<f32>("cascade_plane_distances");
     
         // Define the types for the user textures
         compiler.use_sampled_texture::<ShadowMap>("shadow_map");
@@ -106,8 +107,12 @@ impl Material for TerrainMaterial {
             .set_uniform_buffer("shadow_parameters", &resources.0.parameter_buffer, ..)
             .unwrap();
         group
-            .set_storage_buffer("shadow_lightspace_matrices", &resources.0.lightspace_buffer, ..)
+            .set_uniform_buffer("shadow_lightspace_matrices", &resources.0.lightspace_buffer, ..)
             .unwrap();
+        group
+            .set_uniform_buffer("cascade_plane_distances", &resources.0.cascade_distances, ..)
+            .unwrap();
+
 
         // Set the scene shadow map
         group

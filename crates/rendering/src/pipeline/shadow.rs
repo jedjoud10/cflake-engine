@@ -86,7 +86,7 @@ pub(super) fn render_shadows<'r, M: Material>(
     let query = scene.query::<(&Surface<M>, &Renderer)>();
     for (surface, renderer) in query {
         // Handle non visible surfaces, renderers, or if it's culled (shadow culled)
-        if !surface.visible || !renderer.visible || surface.shadow_culled {
+        if !surface.visible || !renderer.visible /*|| surface.shadow_culled*/ {
             continue;
         }
 

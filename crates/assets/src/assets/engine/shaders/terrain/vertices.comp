@@ -132,7 +132,7 @@ void main() {
         uint index = atomicAdd(counters.vertices, 1);
 
         // Meshes are always n-2 size, so each voxel has a size of 1 / n-2
-        vec3 final = (blocky ? vec3(0) : (vertex / count)) + vec3(gl_GlobalInvocationID);
+        vec3 final = (blocky ? vec3(0) : ((vertex / count) - vec3(0.5))) + vec3(gl_GlobalInvocationID);
         float factor = (float(size)) / (float(size) - 2);
 
         // Pack some extra data into the W field of the positions vector

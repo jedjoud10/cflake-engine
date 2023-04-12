@@ -1,3 +1,8 @@
+// Stolen from https://learnopengl.com/Guest-Articles/2021/CSM
+// Thanks
+
+#include <engine/shaders/math/conversions.glsl>
+
 // UBO set globally at the start of the frame
 layout(set = 0, binding = 4) uniform ShadowUniform {
     float strength;
@@ -5,12 +10,17 @@ layout(set = 0, binding = 4) uniform ShadowUniform {
 } shadow_parameters;
 
 // Contains all the lightspace matrices for each cascade
-layout(std430, set = 0, binding = 5) buffer readonly ShadowLightSpaceMatrices {
-    mat4 matrices[];
+layout(set = 0, binding = 5) uniform ShadowLightSpaceMatrices {
+    mat4 matrices[4];
 } shadow_lightspace_matrices;
 
+// Contains all the cascade plane distances
+layout(set = 0, binding = 6) uniform ShadowPlaneDistances {
+    vec4 distances;
+} cascade_plane_distances;
+
 // Shadow-map texture map
-layout(set = 0, binding = 6) uniform texture2DArray shadow_map;
+layout(set = 0, binding = 7) uniform texture2DArray shadow_map;
 
 #extension GL_EXT_samplerless_texture_functions : require
 
@@ -51,46 +61,29 @@ float shadow_linear(
 // Check if a pixel is obscured by the shadow map
 float calculate_shadowed(
     vec3 position,
+    float depth,
     vec3 normal,
     vec3 light_dir,
     vec3 camera
 ) {
+    //return clamp(linearize_depth(depth, 0.01, 5000), 0, 1);
+
     // Offset more when the normal is perpendicular to the light dir
     float normal_offset_factor = 1 - abs(dot(normal, light_dir));
 
-    // Calculates what shadow layer we must use
-    uint index = shadow_lightspace_matrices.matrices.length();
-    for(int i = 0; i < index; i++) {
-        mat4 lightspace = shadow_lightspace_matrices.matrices[i];
-        vec4 ndc = lightspace * vec4(position, 1.0); 
-
-        // TODO: pls fix coed
-        if(!(abs(ndc.x) > 1.0 ||
-       abs(ndc.y) > 1.0 ||
-       ndc.z > 1.0 || ndc.z < 0.0)) {
-            index = i;
-            break;
-       }
-    }
-    uint layer = index;
-    //uint layer = uint(min(floor(distance(position, camera) / 10.0), 2));
+    // Taken from a comment by Octavius Ace from the same learn OpenGL website 
+    vec4 res = step(cascade_plane_distances.distances, vec4(linearize_depth(depth, 0.01, 5000)));
+    uint layer = uint(res.x + res.y + res.z + res.w);
+    //return float(layer) / 4.0;
 
     // Get the proper lightspace matrix that we will use
     mat4 lightspace = shadow_lightspace_matrices.matrices[layer];
     
     // Transform the world coordinates to NDC coordinates 
     vec4 ndc = lightspace * vec4(position + normal * normal_offset_factor * 0.03, 1.0); 
-    
-    /*
-    if(abs(ndc.x) > 1.0 ||
-       abs(ndc.y) > 1.0 ||
-       ndc.z > 1.0 || ndc.z < 0.0) {
-        return 0.0;
-    }
-    */
 
     // Project the world point into uv coordinates to read from
-    vec3 uvs = ndc.xyz;
+    vec3 uvs = ndc.xyz / ndc.w;
     uvs.xy *= 0.5;
     uvs.xy += 0.5;
     uvs.y = 1-uvs.y;

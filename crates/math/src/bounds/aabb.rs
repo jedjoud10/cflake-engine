@@ -1,3 +1,5 @@
+use num_traits::real::Real;
+
 use crate::{Boundable, Movable, ExplicitVertices, SurfaceArea, Volume};
 
 // An axis aligned bounding box
@@ -15,6 +17,40 @@ impl<T> Aabb<T> {
     {
         let mask = self.max.partial_cmpgt(&self.min);
         mask.x & mask.y & mask.z
+    }
+
+    // Make an AABB that represents WGPU NDC
+    pub fn ndc() -> Self where T: Real {
+        Self {
+            min: vek::Vec3::<T>::new(-T::one(), -T::one(), T::zero()),
+            max: vek::Vec3::<T>::broadcast(T::one()),
+        }
+    }
+
+    // Create an AABB from points
+    pub fn from_points(points: &[vek::Vec3<T>]) -> Option<Self> where T: Real {
+        if points.len() < 2 {
+            return None;
+        }
+    
+        // Initial values set to their inverse (since we have multiple iterations)
+        let mut min = vek::Vec3::broadcast(T::max_value());
+        let mut max = vek::Vec3::broadcast(T::min_value());
+    
+        for point in points {
+            // Update the "max" bound element wise
+            min.x = min.x.min(point.x);
+            min.y = min.y.min(point.y);
+            min.z = min.z.min(point.z);
+
+            // Update the "min" bound element wise
+            max.x = max.x.max(point.x);
+            max.y = max.y.max(point.y);
+            max.z = max.z.max(point.z);
+        }
+    
+        // Check if the AABB would be valid
+        (min != max).then_some(Aabb { min, max })
     }
 }
 
