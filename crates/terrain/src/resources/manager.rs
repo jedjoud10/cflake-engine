@@ -39,7 +39,7 @@ impl ChunkManager {
     pub(crate) fn new(
         assets: &Assets,
         graphics: &Graphics,
-        settings: &TerrainSettings,
+        settings: &mut TerrainSettings,
         memory: &MemoryManager,
         scene: &mut Scene,
         indirect_meshes: &mut Storage<IndirectMesh>,
@@ -104,12 +104,8 @@ impl ChunkManager {
             });
 
         // Initial value for the terrain material
-        let material = materials.insert(TerrainMaterial {
-            bumpiness: 0.1,
-            roughness: 1.0,
-            metallic: 0.0,
-            ambient_occlusion: 0.0,
-        });
+        let material = settings.material.take().unwrap();
+        let material = materials.insert(material);
 
         // Material Id
         let id = pipelines.register(graphics, assets).unwrap();        

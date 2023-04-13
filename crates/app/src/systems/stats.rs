@@ -1,12 +1,7 @@
-use ecs::Scene;
-use graphics::{Graphics, GraphicsStats};
-use gui::{egui, Interface};
-
-use utils::Time;
-use world::World;
+use crate::prelude::*;
 
 // Render some debug statistical EGUI windows
-pub(crate) fn update(world: &mut World) {
+fn update(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
     let stats = world.get::<GraphicsStats>().unwrap();
     let scene = world.get::<Scene>().unwrap();
@@ -198,4 +193,9 @@ pub(crate) fn update(world: &mut World) {
                 });
         },
     );
+}
+
+// Statistics system
+pub fn system(system: &mut System) {
+    system.insert_update(update);
 }

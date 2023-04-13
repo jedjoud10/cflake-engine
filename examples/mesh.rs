@@ -6,36 +6,17 @@ fn main() {
         .set_app_name("cflake engine mesh example")
         .set_user_assets_path(user_assets_path!("/examples/assets/"))
         .set_window_fullscreen(true)
-        //.set_frame_rate_limit(FrameRateLimit::Limited(120))
-        .set_stats_enabled(false)
-        //.set_logging_level(LevelFilter::Trace)
         .insert_init(init)
         .insert_update(update)
         .execute();
 }
 
-// Executed at the start
+// Creates a movable camera, and sky entity
 fn init(world: &mut World) {
-    // Create some procedural terrain
-    let graphics = world.get::<Graphics>().unwrap();
-    let settings = TerrainSettings::new(
-        &graphics,
-        64,
-        6,
-        false,
-        true,
-        8,
-        1024,
-        None, None, None
-    ).unwrap();
-    drop(graphics);
-    world.insert(settings);
-
-
     // Fetch the required resources from the world
     let mut assets = world.get_mut::<Assets>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
-    let _threadpool = world.get_mut::<ThreadPool>().unwrap();
+    let mut threadpool = world.get_mut::<ThreadPool>().unwrap();
     let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
     let mut pbrs =
         world.get_mut::<Storage<PhysicallyBasedMaterial>>().unwrap();
@@ -51,9 +32,7 @@ fn init(world: &mut World) {
         .set_cursor_grab(winit::window::CursorGrabMode::Confined)
         .unwrap();
     window.raw().set_cursor_visible(false);
-    interface.enabled = false;
-
-    // Create a terrain generator (frfr)
+    interface.consumes_window_events = false;
 
     // Import the diffuse map, normal map, mask map
     asset!(&mut assets, "assets/user/textures/diffuse.jpg");
@@ -61,7 +40,6 @@ fn init(world: &mut World) {
     asset!(&mut assets, "assets/user/textures/mask.jpg");
 
     // Load in the diffuse map, normal map, and mask map textures asynchronously
-    /*
     let albedo = assets.async_load::<AlbedoMap>(
         ("user/textures/diffuse.jpg", graphics.clone()),
         &mut threadpool,
@@ -74,18 +52,11 @@ fn init(world: &mut World) {
         ("user/textures/mask.jpg", graphics.clone()),
         &mut threadpool,
     );
-    */
 
     // Get the material id (also registers the material pipeline)
     let id = pipelines
         .register::<PhysicallyBasedMaterial>(&graphics, &mut assets)
         .unwrap();
-
-    // Load a cube mesh
-    let cube = assets
-        .load::<Mesh>(("engine/meshes/cube.obj", graphics.clone()))
-        .unwrap();
-    let cube = meshes.insert(cube);
 
     // Load a plane mesh
     let plane = assets
@@ -96,13 +67,12 @@ fn init(world: &mut World) {
     // Load a sphere mesh
     let sphere = assets
         .load::<Mesh>((
-            "engine/meshes/icosphere.obj",
+            "engine/meshes/sphere.obj",
             graphics.clone(),
         ))
         .unwrap();
     let sphere = meshes.insert(sphere);
 
-    /*
     // Fetch the loaded textures
     let diffuse = assets.wait(albedo).unwrap();
     let normal = assets.wait(normal).unwrap();
@@ -117,18 +87,17 @@ fn init(world: &mut World) {
     let diffuse = diffuse_maps.insert(diffuse);
     let normal = normal_maps.insert(normal);
     let mask = mask_maps.insert(mask);
-    */
 
     // Create a new material instance
     let material = pbrs.insert(PhysicallyBasedMaterial {
-        albedo_map: None,
-        normal_map: None,
-        mask_map: None,
+        albedo_map: Some(diffuse),
+        normal_map: Some(normal),
+        mask_map: Some(mask),
         bumpiness: 1.0,
-        roughness: 0.1,
-        metallic: 0.0,
+        roughness: 1.0,
+        metallic: 1.0,
         ambient_occlusion: 1.0,
-        tint: vek::Rgb::red(),
+        tint: vek::Rgb::white(),
     });
 
     // Create a simple floor and add the entity
@@ -169,7 +138,6 @@ fn init(world: &mut World) {
         Rotation::default(),
         Velocity::default(),
         Camera::default(),
-        ChunkViewer::default(),
     ));
 
     // Create a directional light
@@ -177,24 +145,9 @@ fn init(world: &mut World) {
     let rotation = vek::Quaternion::rotation_x(-25.0f32.to_radians())
         .rotated_y(45f32.to_radians());
     scene.insert((light, Rotation::from(rotation)));
-
-    // Bind inputs to be used by the camera tick event
-    let mut input = world.get_mut::<Input>().unwrap();
-    input.bind_button("forward", Button::W);
-    input.bind_button("backward", Button::S);
-    input.bind_button("up", Button::Space);
-    input.bind_button("down", Button::LControl);
-    input.bind_button("left", Button::A);
-    input.bind_button("right", Button::D);
-    input.bind_button("lshift", Button::LShift);
-    input.bind_button("reset", Button::R);
-    input.bind_button("zoom-in", Button::Z);
-    input.bind_button("zoom-out", Button::X);
-    input.bind_axis("x rotation", Axis::MousePositionX);
-    input.bind_axis("y rotation", Axis::MousePositionY);
 }
 
-// Camera controller update executed every tick
+// Updates the light direction and quites from the engine
 fn update(world: &mut World) {
     let time = world.get::<Time>().unwrap();
     let mut state = world.get_mut::<State>().unwrap();
@@ -206,90 +159,11 @@ fn update(world: &mut World) {
     if let Some((rotation, _)) =
         scene.find_mut::<(&mut Rotation, &DirectionalLight)>()
     {
-        //rotation.rotate_y(-0.1 * time.delta().as_secs_f32());
+        rotation.rotate_y(-0.1 * time.delta().as_secs_f32());
     }
 
     // Exit the game when the user pressed Escape
     if input.get_button(Button::Escape).pressed() {
         *state = State::Stopped;
-    }
-
-    let camera = scene
-        .find_mut::<(&mut Camera, &mut Velocity, &mut Position, &mut Rotation)>();
-    if let Some((camera, output, position, rotation)) = camera {
-        // Forward and right vectors relative to the camera
-        let forward = rotation.forward();
-        let right = rotation.right();
-        let up = rotation.up();
-        let mut velocity = vek::Vec3::<f32>::default();
-        let mut speed: f32 = 20.0f32;
-        let sensivity: f32 = 0.0007;
-
-        // Controls the "strength" of the camera smoothness
-        // Higher means more smooth, lower means less smooth
-        let smoothness = 0.2;
-
-        // Reset the camera rotation and position
-        if input.get_button("reset").pressed() {
-            **position = vek::Vec3::zero();
-            **output = vek::Vec3::zero();
-        }
-
-        // Update velocity scale
-        if input.get_button("lshift").held() {
-            speed = 120.0f32;
-        }
-
-        // Update the velocity in the forward and backward directions
-        if input.get_button("forward").held() {
-            velocity += forward;
-        } else if input.get_button("backward").held() {
-            velocity += -forward;
-        }
-
-        // Update the velocity in the left and right directions
-        if input.get_button("left").held() {
-            velocity += -right;
-        } else if input.get_button("right").held() {
-            velocity += right;
-        }
-
-        // Update the velocity in the left and right directions
-        if input.get_button("up").held() {
-            velocity += up;
-        } else if input.get_button("down").held() {
-            velocity += -up;
-        }
-
-        // Finally multiply velocity by desired speed
-        velocity *= speed;
-
-        // Smooth velocity calculation
-        let factor = (time.delta().as_secs_f32() * (1.0 / smoothness)).clamped01();
-        **output = vek::Vec3::lerp(**output, velocity, (factor * 2.0).clamped01());
-
-        // The scroll wheel OR the X and Z buttons will change the camera FOV
-        let mut delta = input.get_axis(Axis::MouseScrollDelta);
-        
-        // Update based on buttons instead
-        if input.get_button("zoom-in").held() {
-            delta = 50.0f32;
-        } else if input.get_button("zoom-out").held() {
-            delta = -50.0f32;
-        }
-        
-        // Update FOV
-        camera.hfov += delta * time.delta().as_secs_f32();
-
-        // Calculate a new rotation and apply it
-        let pos_x = input.get_axis("x rotation");
-        let pos_y = input.get_axis("y rotation");
-
-        // Smooth rotation
-        **rotation = vek::Quaternion::slerp(**rotation, 
-            vek::Quaternion::rotation_y(-pos_x * sensivity) *
-            vek::Quaternion::rotation_x(-pos_y * sensivity),
-            (factor * 5.0).clamped01()
-        );
     }
 }

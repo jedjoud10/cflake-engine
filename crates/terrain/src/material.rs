@@ -150,7 +150,7 @@ impl Material for TerrainMaterial {
 
         // Calculate "fade" effect
         let duration =  resources.1.frame_start().saturating_duration_since(renderer.instant_initialized.unwrap());
-        let fade = duration.as_secs_f32().clamp(0.0, 1.0);
+        let fade = duration.as_secs_f32().clamp(0.0, 10.0);
 
         // Upload the fade effect to GPU
         let bytes2 = GpuPod::into_bytes(&fade);

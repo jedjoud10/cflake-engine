@@ -55,10 +55,7 @@ pub trait Extent: Copy {
 
     // Calculate the dimensions of a mip map level using it's index
     // Level equal to 0 meaning that it will return the base extent
-    fn mip_level_dimensions(self, level: u8) -> Self {
-        todo!()
-        //self / 2u32.pow(level as u32)
-    }
+    fn mip_level_dimensions(self, level: u8) -> Self;
 
     // Check if an extent is larger in all axii than another one
     fn is_larger_than(self, other: Self) -> bool;
@@ -165,6 +162,10 @@ impl Extent for vek::Extent2<u32> {
     fn view_dimension() -> ViewDimension {
         ViewDimension::D2
     }
+
+    fn mip_level_dimensions(self, level: u8) -> Self {
+        self / 2u32.pow(level as u32)
+    }
 }
 
 // Implementation of extent for 3D extent
@@ -215,6 +216,10 @@ impl Extent for vek::Extent3<u32> {
 
     fn view_dimension() -> ViewDimension {
         ViewDimension::D3
+    }
+
+    fn mip_level_dimensions(self, level: u8) -> Self {
+        self / 2u32.pow(level as u32)
     }
 }
 
@@ -267,6 +272,10 @@ impl Extent for (vek::Extent2<u32>, u32) {
 
     fn view_dimension() -> ViewDimension {
         ViewDimension::D2Array
+    }
+
+    fn mip_level_dimensions(self, level: u8) -> Self {
+        (self.0 / 2u32.pow(level as u32), self.1)
     }
 }
 

@@ -53,7 +53,7 @@ impl Default for App {
             engine_name: "cFlake Game Engine".to_string(),
             engine_version: 1,
             user_assets_folder: None,
-            stats_enabled: true,
+            stats_enabled: false,
             systems,
             el: EventLoop::new(),
             logging_level: log::LevelFilter::Debug,
@@ -447,8 +447,12 @@ impl App {
         self.regsys(gui::acquire);
         self.regsys(gui::display);
 
+        // Camera system
+        self.regsys(crate::systems::camera::system);
+
+        // Statistics system
         if self.stats_enabled {
-            self = self.insert_update(crate::update);
+            self.regsys(crate::systems::stats::system);
         }
 
         // Fetch names and versions

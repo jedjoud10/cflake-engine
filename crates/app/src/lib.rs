@@ -1,7 +1,4 @@
 pub mod app;
-mod stats;
-pub(crate) use stats::*;
-
 pub use assets;
 pub use audio;
 pub use ecs;
@@ -14,6 +11,7 @@ pub use utils;
 pub use world;
 pub use coords;
 pub use physics;
+pub(crate) mod systems;
 
 // Gfx related
 pub use graphics;

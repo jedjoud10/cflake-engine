@@ -14,7 +14,7 @@ pub struct Interface {
     pub(crate) rasterizer: Rasterizer,
 
     // Tells egui if it's currently taking window events or not
-    pub enabled: bool,
+    pub consumes_window_events: bool,
 }
 
 impl Deref for Interface {

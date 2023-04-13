@@ -68,7 +68,7 @@ fn init(world: &mut World) {
         let manager = ChunkManager::new(
             &assets,
             &graphics,
-            &settings,
+            &mut settings,
             &memory,
             &mut scene,
             &mut indirect_meshes,

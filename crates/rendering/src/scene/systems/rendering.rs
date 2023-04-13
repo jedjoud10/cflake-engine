@@ -55,7 +55,7 @@ fn init(world: &mut World) {
     let shadowmap = ShadowMapping::new(
         2000f32,
         2048,
-        [0.005, 0.02, 0.1, 0.3],
+        [0.01, 0.02, 0.05, 0.1],
         &graphics,
         &mut assets,
     );
@@ -242,7 +242,6 @@ fn render(world: &mut World) {
     };
     drop(scene);
 
-    /*
     // Update the shadow map lightspace matrix
     let shadowmap = &mut *_shadowmap;
     let index = (time.frame_count() as u32) % 4;
@@ -279,7 +278,6 @@ fn render(world: &mut World) {
     drop(level);
     drop(mips);
     drop(shadowmap);
-    */
 
     // Drop resources
     drop(_shadowmap);

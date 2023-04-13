@@ -27,17 +27,29 @@ layout(push_constant) uniform PushConstants {
 } material;
 
 void main() {
-	// We do a bit of fading
-	if (dither(ivec2(gl_FragCoord.xy), pow(material.fade, 4))) {
+	/*
+	// We do a bit of fading V2
+	if ((1-cellular(floor(m_position) * 0.01).y) > (material.fade-1)) {
 		discard;
 	}
+	*/
+
+	/*
+	// We do a bit of fading
+	float fade = min(material.fade / 2, 2);
+	if (dither(ivec3(m_position.xyz), 0.3)) {
+		discard;
+	}
+	*/
 
 	// Fetch the albedo color, normal map value, and mask values
-    vec3 mask = vec3(1 / material.ambient_occlusion, material.roughness, material.metallic);
+	vec3 mask = vec3(0.0, 0.85, 0.0);
+    mask *= vec3(1 / material.ambient_occlusion, material.roughness, material.metallic);
 
 	// Assume world space normals
 	//vec3 normal = normalize(m_normal);
 	vec3 normal = normalize(cross(dFdy(m_position), dFdx(m_position)));
+
 	vec3 albedo = vec3(1);
 	vec3 rock = vec3(128, 128, 128) / 255.0;
 	vec3 dirt = vec3(54, 30, 7) / 255.0;

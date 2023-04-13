@@ -16,7 +16,7 @@ fn init(world: &mut World, el: &EventLoop<()>) {
         egui: Default::default(),
         state: egui_winit::State::new(el),
         rasterizer: Rasterizer::new(&graphics, &mut assets),
-        enabled: true,
+        consumes_window_events: true,
     };
 
     // TODO: Pls remove. It's kinda getting annoying now tbh
@@ -34,7 +34,7 @@ fn event(world: &mut World, event: &mut WindowEvent) {
     let interface = &mut *interface;
 
     // Only take window events if the interface says so
-    if interface.enabled {
+    if interface.consumes_window_events {
         let _ = interface.state.on_event(&mut interface.egui, event);
     }
 }
@@ -60,7 +60,7 @@ fn finish(world: &mut World) {
     let mut output = interface.egui.end_frame();
 
     // Hide the cursor if we are not taking events
-    if !interface.enabled {
+    if !interface.consumes_window_events {
         output.platform_output.cursor_icon = egui::CursorIcon::None;
     }
 

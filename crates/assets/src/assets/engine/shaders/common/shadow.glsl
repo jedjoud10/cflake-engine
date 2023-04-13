@@ -75,7 +75,7 @@ float calculate_shadowed(
     // Transform the world coordinates to NDC coordinates 
     float perpendicularity = 1 - abs(dot(normal, light_dir));
     vec4 ndc = lightspace * vec4(position + normal, 1.0); 
-    float factor = pow(1.2, layer);
+    float factor = pow(1.25, layer) * 2;
     float bias = -0.0006 - perpendicularity * 0.0003;
     bias *= factor;
 
@@ -89,10 +89,13 @@ float calculate_shadowed(
     // Get texture size
     uint size = uint(textureSize(shadow_map, 0).x);
 
+    // TODO: Spread size is calculated based on distance
+    float spread = 0.0004;
+
     float shadowed = 0.0;
     for (int x = -1; x <= 1; x++) {
         for (int y = -1; y <= 1; y++) {
-            shadowed += shadow_linear(layer, uvs.xy + vec2(x, y) * 0.001, size, current + bias);
+            shadowed += shadow_linear(layer, uvs.xy + vec2(x, y) * spread, size, current + bias);
         }
     }
     shadowed /= 9.0;

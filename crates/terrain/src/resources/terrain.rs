@@ -1,8 +1,10 @@
 use graphics::{
     Graphics, Compiler, BindGroup, PushConstants, ActiveComputeDispatcher,
 };
+use rendering::MaterialId;
 use thiserror::Error;
-use crate::{VoxelGenerator, MeshGenerator, MemoryManager, ChunkManager};
+use utils::Handle;
+use crate::{VoxelGenerator, MeshGenerator, MemoryManager, ChunkManager, TerrainMaterial};
 
 // Terrain generator settings that the user will need to add to configure the terrain gen
 // This will also contain computed common data like number of sub allocations and such
@@ -40,6 +42,9 @@ pub struct TerrainSettings {
     pub(crate) voxel_compiler_callback: Option<Box<dyn FnOnce(&mut Compiler) + 'static>>,
     pub(crate) voxel_set_push_constants_callback: Option<Box<dyn Fn(&mut PushConstants<ActiveComputeDispatcher>) + 'static>>,
     pub(crate) voxel_set_group_callback: Option<Box<dyn Fn(&mut BindGroup) + 'static>>,
+
+    // Terrain material that we shall use
+    pub(crate) material: Option<TerrainMaterial>,
 }
 
 impl TerrainSettings {
@@ -52,9 +57,7 @@ impl TerrainSettings {
         lowpoly: bool,
         allocations: usize,
         sub_allocations: usize,
-        voxel_compiler_callback: Option<Box<dyn FnOnce(&mut Compiler) + 'static>>,
-        voxel_set_push_constants_callback: Option<Box<dyn Fn(&mut PushConstants<ActiveComputeDispatcher>) + 'static>>,
-        voxel_set_group_callback: Option<Box<dyn Fn(&mut BindGroup) + 'static>>,
+        material: TerrainMaterial,
     ) -> Result<Self, TerrainSettingsError>  {
         let output_vertex_buffer_length = graphics
             .device()
@@ -116,9 +119,10 @@ impl TerrainSettings {
             vertices_per_sub_allocation,
             triangles_per_sub_allocation,
             chunks_per_allocation,
-            voxel_compiler_callback,
-            voxel_set_push_constants_callback,
-            voxel_set_group_callback,
+            voxel_compiler_callback: None,
+            voxel_set_push_constants_callback: None,
+            voxel_set_group_callback: None,
+            material: Some(material),
         })
     }
 }
