@@ -1,12 +1,35 @@
 use crate::prelude::*;
 
+// Simple type to check if stats are enabled or not
+struct StatsState(bool);
+
+// Map a button to be able to hide/show the stats
+fn init(world: &mut World) {
+    world.insert(StatsState(false));
+    let mut input = world.get_mut::<Input>().unwrap();
+    input.bind_button("toggle-stats", Button::P);
+}
+
 // Render some debug statistical EGUI windows
 fn update(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
     let stats = world.get::<GraphicsStats>().unwrap();
+    let mut state = world.get_mut::<StatsState>().unwrap();
+    let input = world.get::<Input>().unwrap();
     let scene = world.get::<Scene>().unwrap();
     let gui = world.get_mut::<Interface>().unwrap();
     let time = world.get::<Time>().unwrap();
+
+    // Check if stats are enabled at the moment
+    match input.get_button("toggle-stats") {
+        ButtonState::Pressed => state.0 = !state.0,
+        _ => {}
+    };
+
+    // If the stats are disabled, then donm't continue
+    if !state.0 {
+        return;
+    } 
 
     // Get the graphics stats
     let GraphicsStats {
@@ -197,5 +220,6 @@ fn update(world: &mut World) {
 
 // Statistics system
 pub fn system(system: &mut System) {
+    system.insert_init(init);
     system.insert_update(update);
 }

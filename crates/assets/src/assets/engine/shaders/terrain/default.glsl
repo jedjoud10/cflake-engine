@@ -34,13 +34,11 @@ vec3 generic_desaturate(vec3 color, float factor)
 Voxel voxel(vec3 position) {
     position += parameters.offset.xyz;
 
-    /*
     //TEST 2
     position *= 0.4;
-    position += fbmCellular(position.xz * 0.01, 2, 0.5, 2.0).x * 30.0 * vec3(1, 0, 1);
 
     //float density = snoise(position * 0.03) * 50;
-    float density1 = (1-fbmCellular(position * 0.01 * vec3(1, 2, 1), 10, 0.5, 2.1).y) * 30;
+    float density1 = (1-fbmCellular(position * 0.01 * vec3(1, 2, 1), 6, 0.5, 2.1).y) * 30;
     float density2 = opSmoothUnion(-erosion(position.xz * 0.04, 0.112).x * 420 + position.y + 200, position.y, 40) + 5;
 
     float density = mix(density1, density2, clamp(snoise(position.xz * 0.003) * 0.5 + 0.5, 0, 1)) + position.y;
@@ -50,14 +48,15 @@ Voxel voxel(vec3 position) {
     //float density = position.y + (1-fbmCellular(position * 0.01 * vec3(1, 0.5, 1), 3, 0.5, 2.0).x) * 20;
 
     // Create a voxel and return it
-    return Voxel(density1 + randomized + position.y, vec3(1.0));
-    */
+    return Voxel(density + randomized, vec3(1.0));
+    
 
+    /*
     float density = opSmoothUnion((1-fbmCellular(position * 0.005 * vec3(1, 0.2, 1), 5, 0.4, 2.1).y) * 150 - 120 + position.y, position.y, 30);
     density = max(density, -sdSphere(position + vec3(0, 10, 0), 30));
     //density = position.y - 2.00;
     return Voxel(density, vec3(random(parameters.global_chunk_index / 400.0)));
-
+    */
     
 
     //TEST 1

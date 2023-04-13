@@ -10,7 +10,8 @@ fn main() {
 
 // Update the UI and render some cool text
 fn update(world: &mut World) {
-    let ui = world.get_mut::<Interface>().unwrap();
+    let mut ui = world.get_mut::<Interface>().unwrap();
+    ui.consumes_window_events = true;
     let _time = world.get::<Time>().unwrap();
 
     egui::Window::new("Test window").show(&ui, |_ui| {});

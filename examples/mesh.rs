@@ -20,7 +20,6 @@ fn init(world: &mut World) {
     let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
     let mut pbrs =
         world.get_mut::<Storage<PhysicallyBasedMaterial>>().unwrap();
-    let mut interface = world.get_mut::<Interface>().unwrap();
     let mut skies = world.get_mut::<Storage<SkyMaterial>>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
     let mut pipelines = world.get_mut::<Pipelines>().unwrap();
@@ -32,24 +31,23 @@ fn init(world: &mut World) {
         .set_cursor_grab(winit::window::CursorGrabMode::Confined)
         .unwrap();
     window.raw().set_cursor_visible(false);
-    interface.consumes_window_events = false;
 
     // Import the diffuse map, normal map, mask map
-    asset!(&mut assets, "assets/user/textures/diffuse.jpg");
-    asset!(&mut assets, "assets/user/textures/normal.jpg");
-    asset!(&mut assets, "assets/user/textures/mask.jpg");
+    asset!(&mut assets, "assets/user/textures/diffuse2.jpg");
+    asset!(&mut assets, "assets/user/textures/normal2.jpg");
+    asset!(&mut assets, "assets/user/textures/mask2.jpg");
 
     // Load in the diffuse map, normal map, and mask map textures asynchronously
     let albedo = assets.async_load::<AlbedoMap>(
-        ("user/textures/diffuse.jpg", graphics.clone()),
+        ("user/textures/diffuse2.jpg", graphics.clone()),
         &mut threadpool,
     );
     let normal = assets.async_load::<NormalMap>(
-        ("user/textures/normal.jpg", graphics.clone()),
+        ("user/textures/normal2.jpg", graphics.clone()),
         &mut threadpool,
     );
     let mask = assets.async_load::<MaskMap>(
-        ("user/textures/mask.jpg", graphics.clone()),
+        ("user/textures/mask2.jpg", graphics.clone()),
         &mut threadpool,
     );
 
@@ -141,8 +139,8 @@ fn init(world: &mut World) {
     ));
 
     // Create a directional light
-    let light = DirectionalLight::default();
-    let rotation = vek::Quaternion::rotation_x(-25.0f32.to_radians())
+    let light = DirectionalLight { color: vek::Rgb::one() * 3.6 };
+    let rotation = vek::Quaternion::rotation_x(-15.0f32.to_radians())
         .rotated_y(45f32.to_radians());
     scene.insert((light, Rotation::from(rotation)));
 }

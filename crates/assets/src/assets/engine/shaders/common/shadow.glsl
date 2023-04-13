@@ -75,8 +75,8 @@ float calculate_shadowed(
     // Transform the world coordinates to NDC coordinates 
     float perpendicularity = 1 - abs(dot(normal, light_dir));
     vec4 ndc = lightspace * vec4(position + normal, 1.0); 
-    float factor = pow(1.25, layer) * 2;
-    float bias = -0.0006 - perpendicularity * 0.0003;
+    float factor = pow(1.35, layer);
+    float bias = -0.0006 - perpendicularity * 0.0009;
     bias *= factor;
 
     // Project the world point into uv coordinates to read from

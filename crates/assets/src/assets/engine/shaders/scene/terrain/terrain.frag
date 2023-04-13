@@ -69,8 +69,8 @@ void main() {
 	vec3 f0 = mix(vec3(0.04), albedo, metallic);
 
 	// Create the data structs
-	SunData sun = SunData(scene.sun_direction.xyz, scene.sun_color.rgb, 2.6);
-	SurfaceData surface = SurfaceData(albedo, -normal, m_position, gl_FragCoord.z, roughness, metallic, visibility, f0);
+	SunData sun = SunData(scene.sun_direction.xyz, scene.sun_color.rgb);
+	SurfaceData surface = SurfaceData(albedo, -normal, -normal, m_position, gl_FragCoord.z, roughness, metallic, visibility, f0);
 	vec3 view = normalize(-camera.position.xyz + m_position);
 	CameraData camera = CameraData(view, normalize(view + scene.sun_direction.xyz), camera.position.xyz, camera.view, camera.projection);
 

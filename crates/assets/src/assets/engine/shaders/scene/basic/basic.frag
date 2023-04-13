@@ -44,7 +44,7 @@ void main() {
 	mat3 tbn = mat3(
 		normalize(m_tangent),
 		normalize(m_bitangent),
-		normalize(m_normal));
+		normalize(-m_normal));
 	vec3 normal = normalize(tbn * normalize(bumps));
 
 	// Calculate ambient sky color

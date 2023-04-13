@@ -55,7 +55,6 @@ vec3 specular(vec3 f0, float roughness, vec3 v, vec3 l, vec3 n, vec3 h) {
 struct SunData {
 	vec3 backward;
 	vec3 color;
-	float strength;
 };
 
 // Camera data struct
@@ -71,6 +70,7 @@ struct CameraData {
 struct SurfaceData {
 	vec3 diffuse;
 	vec3 normal;
+	vec3 surface_normal;
 	vec3 position;
 	float depth;
 	float roughness;
@@ -94,13 +94,13 @@ vec3 brdf(
 
 	// Calculate if the pixel is shadowed
 	float depth = abs((camera.view_matrix * vec4(surface.position, 1)).z);
-	float shadowed = calculate_shadowed(surface.position, depth, surface.normal, light.backward, camera.position);	
+	float shadowed = calculate_shadowed(surface.position, depth, surface.surface_normal, light.backward, camera.position);	
 
 	// Calculate diffuse and specular
 	vec3 brdf = kd * (surface.diffuse / PI) + specular(surface.f0, surface.roughness, camera.view, light.backward, surface.normal, camera.half_view) * (1-shadowed);
 	vec3 lighting = vec3(max(dot(light.backward, surface.normal), 0.0)) * (1-shadowed);
 	lighting += ambient * 0.4;
-	brdf = brdf * light.color * light.strength * lighting;
+	brdf = brdf * light.color * lighting;
 	brdf += calculate_sky_color(reflect(camera.view, -surface.normal), light.backward) * fresnelRoughness(surface.f0, camera.view, surface.normal, surface.roughness) * 0.22;
 	return brdf;
 }

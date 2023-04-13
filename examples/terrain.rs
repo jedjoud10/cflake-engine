@@ -46,7 +46,6 @@ fn init(world: &mut World) {
     let mut assets = world.get_mut::<Assets>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
     let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
-    let mut interface = world.get_mut::<Interface>().unwrap();
     let mut skies = world.get_mut::<Storage<SkyMaterial>>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
     let mut pipelines = world.get_mut::<Pipelines>().unwrap();
@@ -58,7 +57,6 @@ fn init(world: &mut World) {
         .set_cursor_grab(winit::window::CursorGrabMode::Confined)
         .unwrap();
     window.raw().set_cursor_visible(false);
-    interface.consumes_window_events = false;
 
     // Get the material id (also registers the material pipeline)
     let id = pipelines
@@ -89,8 +87,8 @@ fn init(world: &mut World) {
     ));
 
     // Create a directional light
-    let light = DirectionalLight::default();
-    let rotation = vek::Quaternion::rotation_x(-25.0f32.to_radians())
+    let light = DirectionalLight { color: vek::Rgb::one() * 3.6 };
+    let rotation = vek::Quaternion::rotation_x(-15.0f32.to_radians())
         .rotated_y(45f32.to_radians());
     scene.insert((light, Rotation::from(rotation)));
 }
