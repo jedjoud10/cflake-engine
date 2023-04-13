@@ -327,11 +327,27 @@ fn compile(
     } else {
         log::warn!("Did not find cached shader module for {file}");
     }
+    
+    // TODO: OPTIMIZE
+    // Get version line index
+    let version_line_index = source.lines().position(|x| x.starts_with("#version")).unwrap();
+
+    // Convert to lines
+    let mut lines = source.lines().map(|x| x.to_string()).collect::<Vec<String>>();
 
     // Add the defines to the top of the file
     for (name, define) in defines {
-        source.insert_str(0, &format!("#define {name} {define}")); 
+        lines.insert(version_line_index+1, format!("#define {name} {define}\n")); 
     }
+
+    // Default extensions
+    let extensions = ["GL_EXT_samplerless_texture_functions"];
+    for ext in extensions {
+        lines.insert(version_line_index+1, format!("#extension {ext} : require\n"));     
+    }
+
+    // Convert back to string
+    let source = lines.join("\n");
 
     // Custom ShaderC compiler options
     let mut options = shaderc::CompileOptions::new().unwrap();
