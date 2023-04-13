@@ -271,7 +271,7 @@ fn render(world: &mut World) {
     for stored in pipelines.iter() {
         stored.prerender(world, &mut default, &mut active, lightspace);
     }
-    
+
     // Send the command encoder
     drop(active);
     drop(render_pass);
