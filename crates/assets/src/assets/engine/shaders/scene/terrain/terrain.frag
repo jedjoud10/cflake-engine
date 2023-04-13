@@ -9,7 +9,6 @@ layout(location = 2) in flat vec3 m_color;
 // Camera, scene, and shadowmap shared objects
 #include <engine/shaders/common/camera.glsl>
 #include <engine/shaders/common/scene.glsl>
-#include <engine/shaders/common/extensions.glsl>
 #include <engine/shaders/common/shadow.glsl>
 #include <engine/shaders/noises/noise3D.glsl>
 #include <engine/shaders/noises/fbm.glsl>

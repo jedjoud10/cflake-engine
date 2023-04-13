@@ -1,7 +1,6 @@
 #version 460 core
 layout(location = 0) out vec4 frag;
 
-#include <engine/shaders/common/extensions.glsl>
 #include <engine/shaders/common/window.glsl>
 #include <engine/shaders/math/conversions.glsl>
 

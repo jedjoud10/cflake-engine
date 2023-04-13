@@ -11,7 +11,6 @@ layout(location = 4) in vec2 m_tex_coord;
 // Camera, scene, and shadowmap shared objects
 #include <engine/shaders/common/camera.glsl>
 #include <engine/shaders/common/scene.glsl>
-#include <engine/shaders/common/extensions.glsl>
 #include <engine/shaders/common/shadow.glsl>
 #include <engine/shaders/common/sky.glsl>
 #include <engine/shaders/math/models.glsl>

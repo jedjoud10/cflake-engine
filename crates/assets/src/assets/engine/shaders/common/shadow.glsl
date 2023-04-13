@@ -22,8 +22,6 @@ layout(set = 0, binding = 6) uniform ShadowPlaneDistances {
 // Shadow-map texture map
 layout(set = 0, binding = 7) uniform texture2DArray shadow_map;
 
-#extension GL_EXT_samplerless_texture_functions : require
-
 // Sample a single shadow texel at the specified pixel coords
 float sample_shadow_texel(
     uint layer,
