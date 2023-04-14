@@ -19,7 +19,7 @@ fn init(world: &mut World) {
     // Load the glTF scene into the world LMAO!!
     let context = GtlfContext::from_world(world).unwrap();
     let settings = GltfSettings::default();
-    assets.load::<GltfScene>(("user/scenes/test.gtlf", settings, context)).unwrap();
+    assets.load::<GltfScene>(("user/scenes/test.gltf", settings, context)).unwrap();
 
     let graphics = world.get::<Graphics>().unwrap();
     let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();

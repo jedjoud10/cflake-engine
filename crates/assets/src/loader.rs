@@ -42,8 +42,9 @@ pub struct UserAssets {
     pub files: Vec<(PathBuf, Vec<u8>)>,
 }
 
-pub use include_dir::{include_dir, Dir};
+//pub use include_dir::{include_dir, Dir};
 pub use with_builtin_macros::*;
+pub use include_dir;
 // This is the main asset manager resource that will load & cache newly loaded assets
 // This asset manager will also contain the persistent assets that are included by default into the engine executable
 pub struct Assets {
@@ -87,6 +88,8 @@ impl Assets {
         let path = if let Some(user) = user {
             // ADD THE FILES NOW!!! (keep yourself safe)
             for (path, bytes) in user.files {
+                let prefix = Path::new("./assets/");
+                let path = prefix.join(&path);
                 loader.import(path, bytes);
             }
             
@@ -100,13 +103,18 @@ impl Assets {
         loader
     }
 
-    // Import a persistent asset using it's global asset path and it's raw bytes
+    // Import a persistent asset using it's asset path (not global) and it's raw bytes
+    // Will panic if given an absolute path
     pub fn import(&self, path: impl AsRef<Path>, bytes: Vec<u8>) {
+        assert!(!path.as_ref().is_absolute(), "Told you, dumbass");
+
+        // Only strip the prefix if needed
         let path = path
             .as_ref()
             .strip_prefix("./assets/")
-            .unwrap()
+            .unwrap_or(path.as_ref())
             .to_path_buf();
+
         self.bytes
             .write()
             .entry(path)
