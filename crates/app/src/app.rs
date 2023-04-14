@@ -1,4 +1,4 @@
-use assets::AssetsSettings;
+use assets::{AssetsSettings, UserAssets};
 use graphics::{FrameRateLimit, WindowSettings};
 use mimalloc::MiMalloc;
 
@@ -22,7 +22,7 @@ pub struct App {
     window: WindowSettings,
 
     // Asset and IO
-    user_assets_folder: Option<PathBuf>,
+    user_assets: Option<UserAssets>,
     author_name: String,
     app_name: String,
     app_version: u32,
@@ -51,7 +51,7 @@ impl Default for App {
             app_version: 1,
             engine_name: "cFlake Game Engine".to_string(),
             engine_version: 1,
-            user_assets_folder: None,
+            user_assets: None,
             systems,
             el: EventLoop::new(),
             logging_level: log::LevelFilter::Debug,
@@ -81,11 +81,7 @@ impl App {
         mut self,
         path: Option<UserAssets>,
     ) -> Self {
-        self.user_assets_folder = Some(
-            path.try_into()
-                .ok()
-                .expect("Input path failed to convert into PathBuf"),
-        );
+        self.user_assets = path;
         self
     }
 
@@ -460,7 +456,7 @@ impl App {
 
         // Insert the asset loader's user asset path
         let assets_settings =
-            AssetsSettings(self.user_assets_folder.take());
+            AssetsSettings(self.user_assets.take());
         self.world.insert(assets_settings);
 
         // Insert the graphics API window resource

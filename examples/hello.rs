@@ -4,6 +4,7 @@ use cflake_engine::prelude::*;
 fn main() {
     App::default()
         .set_app_name("cflake engine hello example")
+        .set_user_assets(user_assets!("/examples/assets/"))
         .insert_init(init)
         .execute();
 }

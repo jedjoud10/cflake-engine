@@ -1,5 +1,4 @@
 use std::{path::Path, sync::Arc};
-
 use crate::Assets;
 
 // File data is what will be given to assets whenever we try to deserialize them
@@ -13,6 +12,23 @@ pub struct Data<'a> {
 }
 
 impl<'a> Data<'a> {
+    // Create a new "Data" struct that potentially contains a loader
+    pub fn new(
+        name: &'a str,
+        extension: &'a str,
+        bytes: Arc<[u8]>,
+        path: &'a Path,
+        loader: Option<&'a Assets>
+    ) -> Self { 
+        Self {
+            name,
+            extension,
+            bytes,
+            path,
+            loader,
+        }
+    }
+
     // Get the name of the loaded file
     pub fn name(&self) -> &str {
         self.name

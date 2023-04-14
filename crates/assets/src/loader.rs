@@ -1,9 +1,7 @@
 use crate::{Asset, AssetInput, AssetLoadError, AsyncAsset};
 use ahash::AHashMap;
 use parking_lot::{Mutex, RwLock};
-
 use utils::ThreadPool;
-
 use std::{
     any::Any,
     ffi::OsStr,
@@ -36,6 +34,16 @@ type UserPath = Option<Arc<Path>>;
 type HijackPaths = AHashMap<PathBuf, PathBuf>;
 type AsyncHijackPaths = Arc<RwLock<HijackPaths>>;
 
+// Type that contains all files that are (possibly linked) when we call the "assets!" macro
+// Contains a list of all the files within the given directory and stores their binary data
+// Also contains the path of the directory that contains the files. All file paths are relative to this one
+pub struct UserAssets {
+    pub path: Arc<Path>,
+    pub files: Vec<(PathBuf, Vec<u8>)>,
+}
+
+pub use include_dir::{include_dir, Dir};
+pub use with_builtin_macros::*;
 // This is the main asset manager resource that will load & cache newly loaded assets
 // This asset manager will also contain the persistent assets that are included by default into the engine executable
 pub struct Assets {
@@ -55,25 +63,41 @@ pub struct Assets {
     // The path buf contains the local path of each asset
     bytes: AsyncLoadedBytes,
 
-    // Path that references the main user assets
+    // Path that references the user assets
     user: UserPath,
 }
 
 impl Assets {
-    // Create a new asset loader using a path to the user defined asset folder (if there is one)
-    pub fn new(user: Option<PathBuf>) -> Self {
-        let user = user.map(|p| p.into());
+    // Create a new asset loader using a pre-defined user assets (if supplied)
+    pub fn new(user: Option<UserAssets>) -> Self {
         let (sender, receiver) =
             std::sync::mpsc::channel::<AsyncChannelResult>();
 
-        Self {
+        // Create the loader before hand
+        let mut loader = Self {
             loaded: Default::default(),
             bytes: Default::default(),
             receiver,
             sender,
-            user,
             hijack: Default::default(),
-        }
+            user: None,
+        };
+
+        // Automatically insert the user assets as "persistent" assets if defined
+        let path = if let Some(user) = user {
+            // ADD THE FILES NOW!!! (keep yourself safe)
+            for (path, bytes) in user.files {
+                loader.import(path, bytes);
+            }
+            
+            // Return UserPath
+            Some(user.path)
+        } else {
+            None
+        };
+
+        loader.user = path;
+        loader
     }
 
     // Import a persistent asset using it's global asset path and it's raw bytes
@@ -134,21 +158,6 @@ impl Assets {
         (name, extension)
     }
 
-    // Check if we must load the bytes dynamically or load cached bytes
-    fn should_load_dynamically(
-        bytes: &AsyncLoadedBytes,
-        user: &UserPath,
-        path: &Path,
-    ) -> bool {
-        if path.is_absolute() {
-            true
-        } else if user.is_some() {
-            !bytes.read().contains_key(path)
-        } else {
-            !bytes.read().contains_key(path)
-        }
-    }
-
     // Load bytes either dynamically or load cached bytes
     fn load_bytes(
         bytes: &AsyncLoadedBytes,
@@ -156,16 +165,16 @@ impl Assets {
         user: &UserPath,
         owned: PathBuf,
     ) -> Result<Arc<[u8]>, AssetLoadError> {
-        // Check if we must load dynamically
-        let dynamic =
-            Self::should_load_dynamically(bytes, user, &owned);
+        // Load the bytes from cached bytes first
+        let mut loaded = Self::load_cached_bytes(bytes, &owned);
 
-        // Load the bytes dynamically or load them from cache
-        if dynamic {
-            Self::load_bytes_dynamically(bytes, hijack, user, owned)
-        } else {
-            Self::load_cached_bytes(bytes, &owned)
-        }
+        // If that fails, try loading from user defined asset path
+        if let Err(AssetLoadError::CachedNotFound(_)) = &loaded {
+            loaded = Self::load_bytes_dynamically(bytes, hijack, user, owned);
+        } 
+
+        // Return the (hopefully loaded) asset
+        loaded
     }
 
     // Load the already cached bytes

@@ -15,9 +15,26 @@ macro_rules! persistent {
     };
 }
 
+/*
+        {
+       	    /*
+            with_builtin!(let $cock = concat!(env!("CARGO_MANIFEST_DIR"), $path) in {
+                include_dir!($cock)
+            });
+            */           
+	    
+            // idk how to do this shit bro pls help
+            // include_dir! requires a string literal, but we can only combine strings to make a string slice   
+            Some(UserAssets {
+                path: todo!(),
+                files: todo!(),
+            })
+        }
+ */
+
 #[macro_export]
-macro_rules! assets {
-    ($suffix:expr) => {
-        
+macro_rules! user_assets {
+    ($path:expr) => {
+        None
     };
 }

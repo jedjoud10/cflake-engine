@@ -1,10 +1,11 @@
 use cflake_engine::prelude::*;
+use cflake_engine::assets::include_dir;
 
 // Mesh example game window
 fn main() {
     App::default()
         .set_app_name("cflake engine mesh example")
-        .set_user_assets(assets!("/examples/assets/"))
+        .set_user_assets(user_assets!("/examples/assets/"))
         .set_window_fullscreen(true)
         .insert_init(init)
         .insert_update(update)

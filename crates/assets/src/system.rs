@@ -1,15 +1,15 @@
-use crate::{persistent, Assets};
+use crate::{persistent, Assets, UserAssets};
 use std::path::PathBuf;
 use world::{user, System, World};
 
-// Simple resource that is temporarily added to world to pass user assets path
-pub struct AssetsSettings(pub Option<PathBuf>);
+// Simple resource that is temporarily added to world to pass user assets
+pub struct AssetsSettings(pub Option<UserAssets>);
 
 // Initialize a load and add it to the world
 fn init(world: &mut World) {
     // Create a new asset loader / cacher
-    let user = world.get::<AssetsSettings>().unwrap().0.clone();
-    let loader = Assets::new(user);
+    let user = world.remove::<AssetsSettings>().unwrap();
+    let loader = Assets::new(user.0);
 
     // Load the default common shaders
     persistent!(loader, "engine/shaders/common/camera.glsl");

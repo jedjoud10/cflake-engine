@@ -51,12 +51,21 @@ impl<'a> GtlfContext<'a> {
 }
 
 // These are the settings that must be given to the gltf importer so it can deserialize the scene
-pub struct GltfSettings<'stg> {
+pub struct GltfSettings {
     // We can only load one scene at a time
-    pub scene_index: &'stg usize,
+    pub scene: Option<usize>,
 
     // Should we use async asset loading to load in buffers and textures?
     pub asynchronous: bool,
+}
+
+impl Default for GltfSettings {
+    fn default() -> Self {
+        Self {
+            scene: None,
+            asynchronous: true
+        }
+    }
 }
 
 // Marker type that implements asset
@@ -69,7 +78,7 @@ pub struct GltfScene;
 
 impl Asset for GltfScene {
     type Context<'ctx> = GtlfContext<'ctx>;
-    type Settings<'stg> = GltfSettings<'stg>;
+    type Settings<'stg> = GltfSettings;
     type Err = gltf::Error;
 
     // Gtlfs can be loaded from their binary or json formats
@@ -87,6 +96,12 @@ impl Asset for GltfScene {
         let bytes = data.bytes();
         let reader = std::io::Cursor::new(bytes);
         let gltf = gltf::Gltf::from_reader(reader)?;
+
+        // Get the asset loader for recrusive asset loading
+        let loader = data.loader().unwrap();
+
+        todo!();
+        
 
         Ok(GltfScene)
     }

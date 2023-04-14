@@ -4,7 +4,7 @@ use cflake_engine::prelude::*;
 fn main() {
     App::default()
         .set_app_name("cflake engine mesh example")
-        .set_user_assets(assets!("/examples/assets/"))
+        .set_user_assets(user_assets!("/examples/assets/"))
         .set_window_fullscreen(true)
         .insert_init(init)
         .insert_update(update)
@@ -17,7 +17,9 @@ fn init(world: &mut World) {
     let assets = world.get::<Assets>().unwrap();
 
     // Load the glTF scene into the world LMAO!!
-    todo!();
+    let context = GtlfContext::from_world(world).unwrap();
+    let settings = GltfSettings::default();
+    assets.load::<GltfScene>(("user/scenes/test.gtlf", settings, context)).unwrap();
 
     let graphics = world.get::<Graphics>().unwrap();
     let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();

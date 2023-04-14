@@ -4,7 +4,7 @@ use cflake_engine::prelude::*;
 fn main() {
     App::default()
         .set_app_name("cflake engine mesh example")
-        .set_user_assets(assets!("/examples/assets/"))
+//        .set_user_assets(assets!("/examples/assets/"))
         .set_window_fullscreen(true)
         .set_frame_rate_limit(FrameRateLimit::Limited(120))
         //.set_stats_enabled(true)
