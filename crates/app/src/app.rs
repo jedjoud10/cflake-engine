@@ -77,9 +77,9 @@ impl App {
     }
 
     // Set the assets folder for the user defined assets
-    pub fn set_user_assets_path(
+    pub fn set_user_assets(
         mut self,
-        path: impl TryInto<PathBuf>,
+        path: Option<UserAssets>,
     ) -> Self {
         self.user_assets_folder = Some(
             path.try_into()

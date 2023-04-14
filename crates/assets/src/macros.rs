@@ -1,20 +1,4 @@
 #[macro_export]
-macro_rules! asset {
-    ($assets:expr, $file:expr) => {
-        // Include an asset into the binary if we are in release
-        #[cfg(not(debug_assertions))]
-        {
-            let bytes = include_bytes!($file);
-            $assets.import(concat!("./", $file), bytes.to_vec());
-        }
-        // Don't do anything in debug since it'll read it from the file system
-        {
-            let x = &mut $assets;
-        }
-    };
-}
-
-#[macro_export]
 macro_rules! persistent {
     ($assets:expr, $file:expr) => {
         // If the "CFLAKE_DEBUG_ASSETS" feature is set, then this
@@ -32,8 +16,8 @@ macro_rules! persistent {
 }
 
 #[macro_export]
-macro_rules! user_assets_path {
+macro_rules! assets {
     ($suffix:expr) => {
-        concat!(env!("CARGO_MANIFEST_DIR"), $suffix);
+        
     };
 }

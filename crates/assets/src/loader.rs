@@ -262,6 +262,7 @@ impl Assets {
                     extension,
                     bytes,
                     path: owned.as_path(),
+                    loader: None,
                 },
                 context,
                 settings,
@@ -310,6 +311,7 @@ impl Assets {
                 extension,
                 bytes,
                 path,
+                loader: Some(self),
             },
             context,
             settings,
@@ -428,8 +430,8 @@ impl Assets {
     }
 
     // Fetches the loaded assets from the receiver and caches them locally
-    pub fn refresh(&mut self) {
-        let loaded = self.loaded.get_mut();
+    pub fn refresh(&self) {
+        let mut loaded = self.loaded.lock();
         for (result, index) in self.receiver.try_iter() {
             let len = loaded.len().max(index + 1);
             loaded.resize_with(len, || None);
@@ -439,12 +441,12 @@ impl Assets {
 
     // This will check if the asset loader finished loading a specific asset using it's handle
     pub fn has_finished_loading<A: AsyncAsset>(
-        &mut self,
+        &self,
         handle: &AsyncHandle<A>,
     ) -> bool {
         self.refresh();
         self.loaded
-            .get_mut()
+            .lock()
             .get(handle.index)
             .map(|x| x.is_some())
             .unwrap_or_default()
@@ -452,7 +454,7 @@ impl Assets {
 
     // This will wait until the asset referenced by this handle has finished loading
     pub fn wait<A: AsyncAsset>(
-        &mut self,
+        &self,
         handle: AsyncHandle<A>,
     ) -> Result<A, AssetLoadError> {
         // Spin lock whilst whilst waiting for an asset to load
@@ -461,16 +463,17 @@ impl Assets {
         }
 
         // Replace the slot with None
-        let loaded = self.loaded.get_mut();
+        let mut loaded = self.loaded.lock();
         let old = loaded[handle.index].take().unwrap();
         old.map(|b| *b.downcast::<A>().unwrap())
     }
 
     // This will wait until all the assets reference by these handles have finished loading
     pub fn wait_from_iter<A: AsyncAsset>(
-        &mut self,
+        &self,
         handles: impl IntoIterator<Item = AsyncHandle<A>>,
     ) -> Vec<Result<A, AssetLoadError>> {
+        // TODO: Optimize this by not waiting for assets one by one
         log::debug!("Waiting for async assets to load...");
         handles
             .into_iter()
