@@ -149,6 +149,27 @@ pub fn generate_mip_map<T: ColorTexel, E: Extent>(
     Some(map)
 }
 
+// Given the texture dimensions and the given optional sub-region,return a valid sub-region
+// Returns None if the given subregion is greater than the miup level region (so it's invalid)
+fn handle_optional_subregion<T: Texture>(texture: &T, level: u8, optional: Option<T::Region>) -> Option<T::Region> {    
+    // Get the region for this mip level
+    let mip_level_region = <T::Region as Region>::with_extent(
+        texture
+            .dimensions()
+            .mip_level_dimensions(level),
+    );
+
+    // Make sure the "offset" doesn't cause reads outside the texture
+    if let Some(subregion) = optional {
+        if mip_level_region.is_larger_than(subregion) {
+            return None;
+        }
+    }
+
+    // Get the mip level subregion if the given one is None
+    return Some(optional.unwrap_or(mip_level_region))
+}
+
 // Collection of multiple immutable mip levels
 pub struct MipLevelsRef<'a, T: Texture> {
     pub(super) texture: &'a T,
@@ -283,25 +304,26 @@ impl<'a, T: Texture> MipLevelRef<'a, T> {
             return Err(MipLevelReadError::NonReadable);
         }
 
-        // Get the region for this mip level
-        let mip_level_region = <T::Region as Region>::with_extent(
-            self.texture
-                .dimensions()
-                .mip_level_dimensions(self.level),
+        // Get a proper subregion with the given opt subregion
+        let Some(subregion) = handle_optional_subregion(
+            self.texture,
+            self.level,
+            subregion
+        ) else {
+            return Err(MipLevelReadError::InvalidRegion);
+        };
+
+        // Read from the mip level and from the specified sub-region
+        super::read_from_level::<T::T, T::Region>(
+            subregion.origin(),
+            subregion.extent(),
+            dst,
+            self.texture.raw(),
+            self.level as u32,
+            &self.texture.graphics()
         );
 
-        // Make sure the "offset" doesn't cause reads outside the texture
-        if let Some(subregion) = subregion {
-            if mip_level_region.is_larger_than(subregion) {
-                return Err(MipLevelReadError::InvalidRegion);
-            }
-        }
-
-        // Get the mip level subregion if the given one is None
-        let subregion = subregion.unwrap_or(mip_level_region);
-
-        // TODO: Actually handle reading here
-        todo!();
+        Ok(())
     }
 }
 
@@ -402,31 +424,23 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
             return Err(MipLevelReadError::NonReadable);
         }
 
-        // Get the region for this mip level
-        let mip_level_region = <T::Region as Region>::with_extent(
-            self.texture
-                .dimensions()
-                .mip_level_dimensions(self.level),
-        );
+        // Get a proper subregion with the given opt subregion
+        let Some(subregion) = handle_optional_subregion(
+            self.texture,
+            self.level,
+            subregion
+        ) else {
+            return Err(MipLevelReadError::InvalidRegion);
+        };
 
-        // Make sure the "offset" doesn't cause reads outside the texture
-        if let Some(subregion) = subregion {
-            if mip_level_region.is_larger_than(subregion) {
-                return Err(MipLevelReadError::InvalidRegion);
-            }
-        }
-
-        // Get the mip level subregion if the given one is None
-        let subregion = subregion.unwrap_or(mip_level_region);
-
-        // Read from the mip level level
-        crate::read_from_level::<T::T, T::Region>(
+        // Read from the mip level and from the specified sub-region
+        super::read_from_level::<T::T, T::Region>(
             subregion.origin(),
             subregion.extent(),
             dst,
-            &self.texture.raw(),
+            self.texture.raw(),
             self.level as u32,
-            &self.texture.graphics(),
+            &self.texture.graphics()
         );
 
         Ok(())
@@ -447,25 +461,17 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
         if !self.texture.usage().contains(TextureUsage::WRITE) {
             return Err(MipLevelWriteError::NonWritable);
         }
+ 
+        // Get a proper subregion with the given opt subregion
+        let Some(subregion) = handle_optional_subregion(
+            self.texture,
+            self.level,
+            subregion
+        ) else {
+            return Err(MipLevelWriteError::InvalidRegion);
+        };
 
-        // Get the region for this mip level
-        let mip_level_region = <T::Region as Region>::with_extent(
-            self.texture
-                .dimensions()
-                .mip_level_dimensions(self.level),
-        );
-
-        // Make sure the "offset" doesn't cause reads outside the texture
-        if let Some(subregion) = subregion {
-            if mip_level_region.is_larger_than(subregion) {
-                return Err(MipLevelWriteError::InvalidRegion);
-            }
-        }
-
-        // Get the mip level subregion if the given one is None
-        let subregion = subregion.unwrap_or(mip_level_region);
-
-        // Write to the mip level level
+        // Write to the mip level level and into the specified sub-region
         crate::write_to_level::<T::T, T::Region>(
             subregion.origin(),
             subregion.extent(),
@@ -485,7 +491,39 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
         src_subregion: Option<T::Region>,
         dst_subregion: Option<T::Region>,
     ) -> Result<(), MipLevelCopyError> {
-        todo!()
+        let other = other.as_ref();
+        
+        // Make sure we can use the texture as copy src
+        if !other.texture.usage().contains(TextureUsage::COPY_SRC) {
+            return Err(MipLevelCopyError::NonCopySrc);
+        }
+
+        // Make sure we can use the texture as copy dst
+        if !self.texture.usage().contains(TextureUsage::COPY_DST) {
+            return Err(MipLevelCopyError::NonCopyDst);
+        }
+    
+        // Get a proper subregion with the given opt subregion for dst
+        let Some(dst_subregion) = handle_optional_subregion(
+            self.texture,
+            self.level,
+            dst_subregion
+        ) else {
+            return Err(MipLevelCopyError::InvalidSrcRegion);
+        };
+
+        // Get a proper subregion with the given opt subregion for src
+        let Some(src_subregion) = handle_optional_subregion(
+            other.texture,
+            other.level,
+            src_subregion
+        ) else {
+            return Err(MipLevelCopyError::InvalidDstRegion);
+        };
+
+        todo!();
+
+        Ok(())
     }
 
     // Clear a region of the mip level to zero
@@ -493,6 +531,20 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
         &mut self,
         subregion: Option<T::Region>,
     ) -> Result<(), MipLevelClearError> {
+        // Make sure we can write to the texture
+        if !self.texture.usage().contains(TextureUsage::WRITE) {
+            return Err(MipLevelClearError::NonWritable);
+        }
+ 
+        // Get a proper subregion with the given opt subregion
+        let Some(subregion) = handle_optional_subregion(
+            self.texture,
+            self.level,
+            subregion
+        ) else {
+            return Err(MipLevelClearError::InvalidRegion);
+        };
+
         todo!()
     }
 

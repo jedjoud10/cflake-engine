@@ -25,12 +25,12 @@ fn init(world: &mut World) {
     let _clip1 = assets
         .load::<AudioClip<i16>>("user/audio/bruh.mp3")
         .unwrap();
-    let _clip2 = assets
+    let clip2 = assets
         .load::<AudioClip<i16>>("user/audio/bruh.wav")
         .unwrap();
     let clip3 = assets
         .load::<AudioClip<i16>>("user/audio/nicolas.mp3")
         .unwrap();
 
-    scene.insert(AudioSource::new(clip3));
+    scene.insert(AudioSource::new(clip2));
 }

@@ -197,33 +197,6 @@ pub trait Texture: Sized {
             usage.contains(TextureUsage::STORAGE) |
             usage.contains(TextureUsage::TARGET);
 
-        /*
-
-        // Create an texture view of the whole texture (with increasing layers if needed)
-        let view = needs_views.then(|| {
-
-        }).map(|desc| &desc));
-        let mut views = view.map(|x| vec![x]);
-
-        // If the texture uses mipmaps, create the other mip level views
-        if levels > 1 {
-            for i in 0..levels {
-                // Create the texture's texture view descriptor
-                let view_descriptor = TextureViewDescriptor {
-                    format: Some(format),
-                    dimension: Some(view_dimensions),
-                    aspect: texture_aspect::<Self::T>(),
-                    base_mip_level: i,
-                    mip_level_count: NonZeroU32::new(1),
-                    ..Default::default()
-                };
-
-                // Create an texture view of the whole texture
-                views.push(texture.create_view(&view_descriptor));
-            }
-        }
-        */
-
         // Create the texture views when deemed necessary
         let views = needs_views.then(|| {
             create_texture_views::<Self::T, <Self::Region as Region>::E>(
@@ -353,7 +326,7 @@ pub trait Texture: Sized {
 
         Ok(RenderTarget {
             _phantom: PhantomData,
-            view: self.view().unwrap(),
+            view: self.layer_view(layer).unwrap(),
         })
     }
 

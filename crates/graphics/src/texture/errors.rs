@@ -89,10 +89,34 @@ pub enum MipLevelWriteError {
 }
 
 #[derive(Error, Debug)]
-pub enum MipLevelClearError {}
+pub enum MipLevelClearError {
+    #[error("The given source region would overflow the region of the mip-level")]
+    InvalidRegion,
+
+    #[error("The mip-level cannot be cleared since the texture's TextureUsages do not contain WRITE")]
+    NonWritable,
+}
 
 #[derive(Error, Debug)]
-pub enum MipLevelCopyError {}
+pub enum MipLevelCopyError {
+    #[error("The given source region would overflow the region of the mip-level")]
+    InvalidSrcRegion,
+
+    #[error("The given destination region would overflow the region of the mip-level")]
+    InvalidDstRegion,
+
+    #[error("The mip-level cannot be copied into since the texture's TextureUsages do not contain COPY_DST")]
+    NonCopyDst,
+
+    #[error("The mip-level cannot be copied from since the texture's TextureUsages do not contain COPY_SRC")]
+    NonCopySrc,
+
+    #[error("The subregions must have the same number of texels to be able to copy them")]
+    TexelCountNotEqual,
+
+    #[error("The given texture level cannot be copied if it is a multisampled or depth texture")]
+    CannotUseSubregion,
+}
 
 #[derive(Error, Debug)]
 pub enum TextureResizeError {
