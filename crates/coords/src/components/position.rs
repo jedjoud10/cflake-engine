@@ -34,6 +34,11 @@ impl Position {
     pub fn at_xyz(x: Scalar, y: Scalar, z: Scalar) -> Self {
         Self((x, y, z).into())
     }
+
+    // Construct a position at the given X, Y, Z position (stored in an array)
+    pub fn at_xyz_array(array: [Scalar; 3]) -> Self {
+        Self::at_xyz(array[0], array[1], array[2])
+    }
 }
 
 #[cfg(feature = "two-dim")]

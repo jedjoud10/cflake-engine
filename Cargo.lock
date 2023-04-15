@@ -2560,6 +2560,7 @@ dependencies = [
  "parking_lot",
  "paste",
  "slotmap",
+ "smallvec",
  "thiserror",
  "utils",
  "vek",

@@ -15,6 +15,17 @@ pub struct Rotation(Target);
 
 #[cfg(not(feature = "two-dim"))]
 impl Rotation {
+    // Create a new rotation based on the RAW quaternion components (stored in an array)
+    pub fn new_xyzw_array(array: [Scalar; 4]) -> Self {
+        Self::new_xyzw(array[0], array[1], array[2], array[3])
+    }
+
+    // Creates a new rotation based on the RAW quaternion components
+    // Only use this if you know what you are doing
+    pub fn new_xyzw(x: Scalar, y: Scalar, z: Scalar, w: Scalar) -> Self {
+        Self(Target::from_xyzw(x, y, z, w))
+    }
+
     // Calculate the forward vector (-Z)
     pub fn forward(&self) -> vek::Vec3<Scalar> {
         vek::Mat4::from(self).mul_point(-vek::Vec3::unit_z())
@@ -57,13 +68,12 @@ impl Rotation {
         Self::rotation_x(scalar.to_radians())
     }
 
-    /*
-    TODO: Test
     // Construct a rotation that is looking directly right (forward => (1, 0, 0))
+    // TODO: Not sure if this is it or if I should inver it
     pub fn looking_right() -> Self {
-        Self::rotation_y(90.0Scalar.to_radians())
+        let scalar: Scalar = 90.0;
+        Self::rotation_y(scalar.to_radians())
     }
-    */
 }
 
 #[cfg(feature = "two-dim")]
