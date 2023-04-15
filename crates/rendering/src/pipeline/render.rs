@@ -1,7 +1,7 @@
 use crate::{
     set_vertex_buffer_attribute,
     ActiveSceneRenderPass, DefaultMaterialResources, Material, Mesh, RenderPath, Renderer, SceneColor,
-    SceneDepth, Surface, set_index_buffer_attribute,
+    SceneDepth, Surface, set_index_buffer_attribute, SubSurface,
 };
 use ecs::Scene;
 use graphics::{RenderPipeline, ActivePipeline};
@@ -50,6 +50,11 @@ pub(super) fn render_surfaces<'r, M: Material>(
     let mut last_tex_coords_buffer: Option<&<M::RenderPath as RenderPath>::AttributeBuffer<crate::attributes::TexCoord>> = None; 
     let mut last_index_buffer: Option<&<M::RenderPath as RenderPath>::TriangleBuffer<u32>> = None;
 
+    // TODO: Sort and group material instances / meshes
+    // instead of [(mt1, mh1), (mt2, mh2), (mt1, mh1), (mt1, mh2)]
+    // should be [(mt1, mh1), (mt1, mh1), (mt1, mh2), (mt2, mh2)]
+    // Materials should have priority over meshes since they require you to set more shit
+
     // Iterate over all the surface of this material
     for (surface, renderer) in query {
         // Handle non visible surfaces, renderers, and culled surfaces
@@ -57,130 +62,133 @@ pub(super) fn render_surfaces<'r, M: Material>(
             continue;
         }
 
-        // Get the mesh and material that correspond to this surface
-        let mesh = <M::RenderPath as RenderPath>::get(
-            defaults,
-            &surface.mesh,
-        );
+        // Iterate over the sub-surfaces of the surface
+        for subsurface in surface.subsurfaces.iter() {
+            // Get the mesh and material that correspond to this surface
+            let mesh = <M::RenderPath as RenderPath>::get(
+                defaults,
+                &subsurface.mesh,
+            );
 
-        // Check if we changed material instances
-        if last_material != Some(surface.material.clone()) {
-            switched_material_instances = true;
-            last_material = Some(surface.material.clone());
-            let material = materials.get(&surface.material);
+            // Check if we changed material instances
+            if last_material != Some(subsurface.material.clone()) {
+                switched_material_instances = true;
+                last_material = Some(subsurface.material.clone());
+                let material = materials.get(&subsurface.material);
 
-            // Set the instance group bindings
-            active.set_bind_group(1, |group| {
-                M::set_instance_bindings(
-                    material,
+                // Set the instance group bindings
+                active.set_bind_group(1, |group| {
+                    M::set_instance_bindings(
+                        material,
+                        &mut resources,
+                        defaults,
+                        group,
+                    );
+                }).unwrap();
+            } else {
+                switched_material_instances = false;
+            }
+
+            // Skip rendering if the mesh is invalid
+            let attribute =
+                mesh.vertices().enabled().contains(M::attributes());
+            let validity = <M::RenderPath as RenderPath>::is_valid(mesh);
+            if !(attribute && validity) {
+                continue;
+            }
+
+            // Set the surface group bindings
+            active.set_bind_group(2, |group| {
+                M::set_surface_bindings(
+                    renderer,
                     &mut resources,
                     defaults,
                     group,
                 );
             }).unwrap();
-        } else {
-            switched_material_instances = false;
-        }
 
-        // Skip rendering if the mesh is invalid
-        let attribute =
-            mesh.vertices().enabled().contains(M::attributes());
-        let validity = <M::RenderPath as RenderPath>::is_valid(mesh);
-        if !(attribute && validity) {
-            continue;
-        }
+            // Set the vertex buffers and index buffers when we change meshes
+            if last_mesh != Some(subsurface.mesh.clone()) {
+                use crate::attributes::*;
+                let mut index = 0;
 
-        // Set the surface group bindings
-        active.set_bind_group(2, |group| {
-            M::set_surface_bindings(
-                renderer,
-                &mut resources,
-                defaults,
-                group,
-            );
-        }).unwrap();
-
-        // Set the vertex buffers and index buffers when we change meshes
-        if last_mesh != Some(surface.mesh.clone()) {
-            use crate::attributes::*;
-            let mut index = 0;
-
-            // Set the position buffer attribute 
-            set_vertex_buffer_attribute::<
-                Position,
-                M::RenderPath,
-                _,
-                _,
-            >(
-                supported, mesh, defaults, &mut active, &mut index, &mut last_positions_buffer
-            );
-
-            // Set the normal buffer attribute
-            set_vertex_buffer_attribute::<Normal, M::RenderPath, _, _>(
-                supported,
-                mesh,
-                defaults,
-                &mut active,
-                &mut index,
-                &mut last_normals_buffer,
-            );
-
-            // Set the tangent buffer attribute
-            set_vertex_buffer_attribute::<Tangent, M::RenderPath, _, _>(
-                supported,
-                mesh,
-                defaults,
-                &mut active,
-                &mut index,
-                &mut last_tangents_buffer
-            );
-
-            // Set the texture coordinate buffer attribute
-            set_vertex_buffer_attribute::<TexCoord, M::RenderPath, _, _>(
-                supported,
-                mesh,
-                defaults,
-                &mut active,
-                &mut index,
-                &mut last_tex_coords_buffer
-            );
-
-            // Set the index buffer
-            set_index_buffer_attribute::<M::RenderPath, _, _>(
-                mesh,
-                defaults,
-                &mut active,
-                &mut last_index_buffer,
-            );
-
-            // Set the mesh handle
-            last_mesh = Some(surface.mesh.clone());
-        }
-
-        // Set the push constant ranges right before rendering (in the hot loop!)
-        active
-            .set_push_constants(|push_constants| {
-                let material = materials.get(&surface.material);
-                M::set_push_constants(
-                    material,
-                    renderer,
-                    &mut resources,
-                    defaults,
-                    push_constants,
+                // Set the position buffer attribute 
+                set_vertex_buffer_attribute::<
+                    Position,
+                    M::RenderPath,
+                    _,
+                    _,
+                >(
+                    supported, mesh, defaults, &mut active, &mut index, &mut last_positions_buffer
                 );
-            })
-            .unwrap();
 
-        // Draw the mesh
-        <M::RenderPath as RenderPath>::draw(
-            mesh,
-            defaults,
-            &mut active,
-        );
+                // Set the normal buffer attribute
+                set_vertex_buffer_attribute::<Normal, M::RenderPath, _, _>(
+                    supported,
+                    mesh,
+                    defaults,
+                    &mut active,
+                    &mut index,
+                    &mut last_normals_buffer,
+                );
 
-        // Add 1 to the material index when we switch instances
-        if switched_material_instances {
-            defaults.material_index += 1;
+                // Set the tangent buffer attribute
+                set_vertex_buffer_attribute::<Tangent, M::RenderPath, _, _>(
+                    supported,
+                    mesh,
+                    defaults,
+                    &mut active,
+                    &mut index,
+                    &mut last_tangents_buffer
+                );
+
+                // Set the texture coordinate buffer attribute
+                set_vertex_buffer_attribute::<TexCoord, M::RenderPath, _, _>(
+                    supported,
+                    mesh,
+                    defaults,
+                    &mut active,
+                    &mut index,
+                    &mut last_tex_coords_buffer
+                );
+
+                // Set the index buffer
+                set_index_buffer_attribute::<M::RenderPath, _, _>(
+                    mesh,
+                    defaults,
+                    &mut active,
+                    &mut last_index_buffer,
+                );
+
+                // Set the mesh handle
+                last_mesh = Some(subsurface.mesh.clone());
+            }
+
+            // Set the push constant ranges right before rendering (in the hot loop!)
+            active
+                .set_push_constants(|push_constants| {
+                    let material = materials.get(&subsurface.material);
+                    M::set_push_constants(
+                        material,
+                        renderer,
+                        &mut resources,
+                        defaults,
+                        push_constants,
+                    );
+                })
+                .unwrap();
+
+            // Draw the mesh
+            <M::RenderPath as RenderPath>::draw(
+                mesh,
+                defaults,
+                &mut active,
+            );
+
+            // Add 1 to the material index when we switch instances
+            if switched_material_instances {
+                defaults.material_index += 1;
+            }
         }
     }
 }

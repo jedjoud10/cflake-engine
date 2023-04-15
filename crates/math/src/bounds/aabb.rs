@@ -3,7 +3,7 @@ use num_traits::real::Real;
 use crate::{Boundable, Movable, ExplicitVertices, SurfaceArea, Volume};
 
 // An axis aligned bounding box
-#[derive(Debug, Clone, Copy)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub struct Aabb<T> {
     pub min: vek::Vec3<T>,
     pub max: vek::Vec3<T>,

@@ -5,13 +5,20 @@ use ecs::Component;
 use smallvec::SmallVec;
 use utils::Handle;
 
-// A surface is a combination of multiple meshes and a specific material handle
+
+// A sub surface is a combination of a mesh and a material
+// We can store multiple sub-surfaces into a surface to create multi-material systems
+pub struct SubSurface<M: Material> {
+    pub mesh: Handle<Mesh<M::RenderPath>>,
+    pub material: Handle<M>,
+}
+
+// A surface is a combination of multiple subsurfaces to create a whole "mesh cluster" that a material can render
 // A renderable entity can have multiple surfaces that each have their own different material type
 #[derive(Component)]
 pub struct Surface<M: Material> {
-    // Graphic object handles
-    pub meshes: SmallVec<[Handle<Mesh<M::RenderPath>>; 1]>,
-    pub material: Handle<M>,
+    // I LOVE SUBSURFACES
+    pub subsurfaces: SmallVec<[SubSurface<M>; 1]>,
 
     // Surface settings
     pub visible: bool,
@@ -34,8 +41,12 @@ impl<M: Material> Surface<M> {
         id: MaterialId<M>,
     ) -> Self {
         Self {
-            meshes: SmallVec::from_buf([mesh]),
-            material,
+            subsurfaces: SmallVec::from_buf([
+                SubSurface {
+                    mesh,
+                    material,
+                }
+            ]),
             visible: true,
             culled: false,
             id,
@@ -43,20 +54,5 @@ impl<M: Material> Surface<M> {
             shadow_receiver: true,
             shadow_culled: false,
         }
-    }
-
-    // Add a new mesh to the list of meshes to render using this material
-    pub fn push(&mut self, mesh: Handle<Mesh<M::RenderPath>>,) {
-        self.meshes.push(mesh);
-    }
-
-    // List the internally stored meshes immutably
-    pub fn meshes(&self) -> &[Handle<Mesh<M::RenderPath>>] {
-        &self.meshes
-    }
-    
-    // List the internally stored meshes mutably
-    pub fn meshes_mut(&mut self) -> &mut [Handle<Mesh<M::RenderPath>>] {
-        self.meshes.as_mut_slice()
     }
 }

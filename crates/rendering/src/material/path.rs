@@ -25,7 +25,7 @@ pub trait RenderPath: 'static + Send + Sync + Sized {
     type TriangleBuffer<T: GpuPod>: 'static + Send + Sync + Sized + PartialEq<Self::TriangleBuffer<T>>;
 
     // Either Option<usize> or a handle to DrawIndexedIndirectBuffer
-    type Count: 'static + Send + Sync + Sized;
+    type Count: 'static + Send + Sync + Sized + PartialEq<Self::Count>;
 
     // Get a mesh using it's handles from the shared material resources
     fn get<'a>(

@@ -90,7 +90,7 @@ impl Asset for GltfScene {
     // Load up the GTLF scene
     fn deserialize<'c, 's>(
         data: assets::Data,
-        context: Self::Context<'c>,
+        mut context: Self::Context<'c>,
         settings: Self::Settings<'s>,
     ) -> Result<Self, Self::Err> {
         // Loads the GTLF file from the loaded up bytes
@@ -139,9 +139,11 @@ impl Asset for GltfScene {
                 let primitives = &json.meshes[i].primitives;
 
                 // Loop over the "surfaces" 
+                /*
                 for surface in primitive {
 
                 }
+                */
 
                 /*
                 // Get the graphics mesh (if cached) and JSON mesh

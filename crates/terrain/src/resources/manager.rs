@@ -113,7 +113,7 @@ impl ChunkManager {
         // Add the required chunk entities
         scene.extend_from_iter(vector.iter().zip(indirect_meshes).map(|(i, mesh)| {
             // Create the surface for rendering
-            let mut surface = Surface::indirect(
+            let mut surface = Surface::new(
                 mesh.clone(),
                 material.clone(),
                 id.clone(),
