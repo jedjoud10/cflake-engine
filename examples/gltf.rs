@@ -67,8 +67,6 @@ fn init(world: &mut World) {
     let rotation = vek::Quaternion::rotation_x(-15.0f32.to_radians())
         .rotated_y(45f32.to_radians());
     scene.insert((light, Rotation::from(rotation)));
-
-    // Load in a GTLF scene from a file
 }
 
 // Updates the light direction and quites from the engine

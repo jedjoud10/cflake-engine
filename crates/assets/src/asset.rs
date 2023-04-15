@@ -1,4 +1,4 @@
-use std::{path::Path, sync::Arc};
+use std::{path::Path, sync::Arc, convert::Infallible};
 use crate::Assets;
 
 // File data is what will be given to assets whenever we try to deserialize them
@@ -94,6 +94,7 @@ where
 {
 }
 
+// UTF8 string decoder
 impl Asset for String {
     type Context<'ctx> = ();
     type Settings<'stg> = ();
@@ -109,5 +110,24 @@ impl Asset for String {
         _: Self::Settings<'s>,
     ) -> Result<Self, Self::Err> {
         String::from_utf8(data.bytes().to_vec())
+    }
+}
+
+// Raw binary reader
+impl Asset for Vec<u8> {
+    type Context<'ctx> = ();
+    type Settings<'stg> = ();
+    type Err = Infallible;
+
+    fn extensions() -> &'static [&'static str] {
+        &["bin"]
+    }
+
+    fn deserialize<'c, 's>(
+        data: Data,
+        context: Self::Context<'c>,
+        settings: Self::Settings<'s>,
+    ) -> Result<Self, Self::Err> {
+        Ok(data.bytes.to_vec())
     }
 }
