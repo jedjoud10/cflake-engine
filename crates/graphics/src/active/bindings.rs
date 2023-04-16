@@ -29,9 +29,9 @@ pub(crate) fn calculate_refleced_group_bitset(
 }
 
 
-// Check if the user set the required bind groups
+// Check if the user set the required bitset groups
 // Returns Err(n) if the user did *not* set the value, with the specified index value returned as well
-pub(crate) fn validate_set_bind_groups(
+pub(crate) fn validate_set(
     needed: u32,
     set: u32,
 ) -> Result<(), u32> {
@@ -112,15 +112,36 @@ pub(super) fn create_bind_group<'b>(
                 .get(layout)
                 .unwrap();
 
+            // Keep track of the resources we will set
+            let mut set = 0u32;
+
             // Get the bind group entries
             let entries = resources
                 .into_iter()
                 .zip(slots.into_iter())
-                .map(|(resource, binding)| wgpu::BindGroupEntry {
-                    binding,
-                    resource,
+                .map(|(resource, binding)| {
+                    set |= 1 << binding;
+                    wgpu::BindGroupEntry {
+                        binding,
+                        resource,
+                    }
                 })
                 .collect::<Vec<_>>();
+
+            // Make sure we set ALL the required resources
+            let reflected = reflected.bind_group_layouts[binding as usize]
+                .as_ref()
+                .unwrap()
+                .bind_entry_layouts
+                .iter()
+                .map(|x| x.binding)
+                .fold(0u32, |a, b| a | 1 << b);
+
+            // Handle missing resources
+            if let Err(index) = validate_set(reflected, set) {
+                return Err(SetBindGroupError::MissingResource(index));
+            }
+            
 
             // Create a bind group descriptor of the entries
             let desc = wgpu::BindGroupDescriptor {

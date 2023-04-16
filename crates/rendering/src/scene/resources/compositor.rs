@@ -5,7 +5,7 @@ use graphics::{
     SwapchainFormat, Texture2D, VertexConfig, VertexModule,
 };
 
-use crate::{SceneColor, WindowUniform, SceneDepth};
+use crate::{SceneColor, WindowUniform, SceneDepth, CameraUniform};
 
 // This is what will write to the swapchain
 pub type FinalRenderPass = RenderPass<SwapchainFormat, ()>;
@@ -45,6 +45,7 @@ impl Compositor {
         compiler.use_sampled_texture::<Texture2D<SceneDepth>>(
             "depth_map",
         );
+        compiler.use_uniform_buffer::<CameraUniform>("camera");
         compiler.use_uniform_buffer::<WindowUniform>("window");
 
         // Combine the modules to the shader

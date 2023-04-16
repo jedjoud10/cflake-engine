@@ -2,6 +2,7 @@
 layout(location = 0) out vec4 frag;
 
 #include <engine/shaders/common/window.glsl>
+#include <engine/shaders/common/camera.glsl>
 #include <engine/shaders/math/conversions.glsl>
 
 // Fetch the scene color data

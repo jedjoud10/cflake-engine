@@ -3,7 +3,7 @@ use cflake_engine::prelude::*;
 // Terrain example game window
 fn main() {
     App::default()
-        .set_app_name("cflake engine mesh example")
+        .set_app_name("cflake engine terrain example")
 //        .set_user_assets(assets!("/examples/assets/"))
         .set_window_fullscreen(true)
         .set_frame_rate_limit(FrameRateLimit::Limited(120))
@@ -16,6 +16,7 @@ fn main() {
 
 // Creates a movable camera, sky entity, and procedural terrain
 fn init(world: &mut World) {
+    /*
     let graphics = world.get::<Graphics>().unwrap();
 
     // Create a new terrain material
@@ -44,6 +45,7 @@ fn init(world: &mut World) {
     // Drop (needed) to insert settings
     drop(graphics);
     world.insert(settings);
+    */
 
     // Fetch the required resources from the world
     let assets = world.get::<Assets>().unwrap();
