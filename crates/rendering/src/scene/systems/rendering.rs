@@ -243,6 +243,7 @@ fn render(world: &mut World) {
     drop(scene);
 
     // Update the shadow map lightspace matrix
+    /*
     let shadowmap = &mut *_shadowmap;
     let index = (time.frame_count() as u32) % 4;
     let lightspace = shadowmap.update(
@@ -278,6 +279,7 @@ fn render(world: &mut World) {
     drop(level);
     drop(mips);
     drop(shadowmap);
+    */
 
     // Drop resources
     drop(_shadowmap);

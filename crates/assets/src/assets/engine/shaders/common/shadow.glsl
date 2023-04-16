@@ -63,6 +63,10 @@ float calculate_shadowed(
     vec3 light_dir,
     vec3 camera
 ) {
+    // TODO: FUCKING FIX SHADOWS FFS
+    // AAAAAAAAAAAAAAAAAAAAAAAAAAA
+    return 0.0;
+
     // Taken from a comment by Octavius Ace from the same learn OpenGL website 
     vec4 res = step(cascade_plane_distances.distances, vec4(depth));
     uint layer = uint(res.x + res.y + res.z + res.w);

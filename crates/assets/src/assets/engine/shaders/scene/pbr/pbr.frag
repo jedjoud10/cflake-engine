@@ -45,8 +45,9 @@ void main() {
 	vec3 albedo = texture(sampler2D(albedo_map, albedo_map_sampler), uv).rgb * material.tint.rgb;
 	vec3 bumps = texture(sampler2D(normal_map, normal_map_sampler), uv).rgb * 2.0 - 1.0;
     vec3 mask = texture(sampler2D(mask_map, mask_map_sampler), uv).rgb;
-    mask *= vec3(1 / material.ambient_occlusion, material.roughness, material.metallic);
+    mask *= vec3(1, material.roughness, material.metallic);
 	bumps.xy *= material.bumpiness;
+	mask.r *= pow(mask.r, material.ambient_occlusion + 10);
 
 	// Calculate the world space normals
 	mat3 tbn = mat3(
@@ -62,10 +63,10 @@ void main() {
 	vec3 f0 = mix(vec3(0.04), albedo, metallic);
 
 	// Create the data structs
-	SunData sun = SunData(scene.sun_direction.xyz, scene.sun_color.rgb);
-	SurfaceData surface = SurfaceData(albedo, -normal, -normalize(m_normal), m_position, gl_FragCoord.z, roughness, metallic, visibility, f0);
-	vec3 view = normalize(-camera.position.xyz + m_position);
-	CameraData camera = CameraData(view, normalize(view + scene.sun_direction.xyz), camera.position.xyz, camera.view, camera.projection);
+	SunData sun = SunData(-scene.sun_direction.xyz, scene.sun_color.rgb);
+	SurfaceData surface = SurfaceData(albedo, normal, normalize(m_normal), m_position, roughness, metallic, visibility, f0);
+	vec3 view = normalize(camera.position.xyz - m_position);
+	CameraData camera = CameraData(view, normalize(view - scene.sun_direction.xyz), camera.position.xyz, camera.view, camera.projection);
 
 	// Check if the fragment is shadowed
 	vec3 color = brdf(surface, camera, sun);
