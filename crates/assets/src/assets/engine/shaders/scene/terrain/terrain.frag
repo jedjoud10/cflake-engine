@@ -53,18 +53,19 @@ void main() {
 	vec3 rock = vec3(128, 128, 128) / 255.0;
 	vec3 dirt = vec3(54, 30, 7) / 255.0;
 	vec3 grass = vec3(69, 107, 35) / 255.0;
-	albedo = m_color;
+	albedo = vec3(1);
 	albedo = grass;
 
 	if (normal.y < 0.85) {
 		albedo = rock;
 	}
 
+	albedo *= m_color;
+
 	// Compute PBR values
 	float roughness = clamp(mask.g, 0.02, 1.0);
 	float metallic = clamp(mask.b, 0.01, 1.0);
 	float visibility = clamp(mask.r, 0.0, 1.0);
-
 	vec3 f0 = mix(vec3(0.04), albedo, metallic);
 
 	// Create the data structs

@@ -87,8 +87,8 @@ fn init(world: &mut World) {
     ));
 
     // Create a directional light
-    let light = DirectionalLight { color: vek::Rgb::one() * 3.6 };
-    let rotation = vek::Quaternion::rotation_x(-15.0f32.to_radians())
+    let light = DirectionalLight { color: vek::Rgb::one() * 2.6 };
+    let rotation = vek::Quaternion::rotation_x(-90.0f32.to_radians())
         .rotated_y(45f32.to_radians());
     scene.insert((light, Rotation::from(rotation)));
 }
@@ -102,11 +102,13 @@ fn update(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
 
     // Rotation the light
+    /*
     if let Some((rotation, _)) =
         scene.find_mut::<(&mut Rotation, &DirectionalLight)>()
     {
         rotation.rotate_y(-0.1 * time.delta().as_secs_f32());
     }
+    */
 
     // Exit the game when the user pressed Escape
     if input.get_button(Button::Escape).pressed() {

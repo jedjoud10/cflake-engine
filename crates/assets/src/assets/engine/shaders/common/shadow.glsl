@@ -74,7 +74,7 @@ float calculate_shadowed(
     float perpendicularity = 1 - abs(dot(normal, light_dir));
     vec4 ndc = lightspace * vec4(position + normal, 1.0); 
     float factor = pow(1.35, layer);
-    float bias = -0.001 - (perpendicularity * 0.0009 * 0);
+    float bias = -0.001 - (perpendicularity * 0.0009);
     bias *= factor;
 
     // Project the world point into uv coordinates to read from
@@ -90,6 +90,7 @@ float calculate_shadowed(
     // TODO: Spread size is calculated based on distance
     float spread = 0.0004;
 
+    /*
     float shadowed = 0.0;
     for (int x = -1; x <= 1; x++) {
         for (int y = -1; y <= 1; y++) {
@@ -98,8 +99,9 @@ float calculate_shadowed(
     }
     shadowed /= 9.0;
     return shadowed;   
+    */
 
 
-    //return sample_shadow_texel(layer, ivec2(uvs.xy * size), current + bias);
+    return sample_shadow_texel(layer, ivec2(uvs.xy * size), current + bias);
     //return shadow_linear(shadow_map, layer, uvs.xy, current);
 }
