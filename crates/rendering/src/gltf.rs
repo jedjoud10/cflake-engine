@@ -4,10 +4,11 @@ use ahash::{AHashSet, AHashMap};
 use assets::{Asset, Data};
 use base64::{engine::{GeneralPurposeConfig, GeneralPurpose}, alphabet, Engine};
 use ecs::Scene;
-use graphics::{Graphics, Texture2D, Texture, SamplerSettings, SamplerFilter, SamplerWrap, SamplerMipMaps, TextureMode, TextureUsage, TextureMipMaps, TextureImportSettings, TextureScale, Texel, ImageTexel};
+use gltf::json::accessor::GenericComponentType;
+use graphics::{Graphics, Texture2D, Texture, SamplerSettings, SamplerFilter, SamplerWrap, SamplerMipMaps, TextureMode, TextureUsage, TextureMipMaps, TextureImportSettings, TextureScale, Texel, ImageTexel, BufferMode, BufferUsage};
 use utils::{Storage, Handle, ThreadPool};
 use world::{World, Read, Write};
-use crate::{Mesh, MaskMap, NormalMap, AlbedoMap, Pipelines, PhysicallyBasedMaterial};
+use crate::{Mesh, MaskMap, NormalMap, AlbedoMap, Pipelines, PhysicallyBasedMaterial, attributes::RawPosition};
 
 // These are the context values that must be given to the GltfScene to load it
 pub struct GtlfContext<'a> {
@@ -199,7 +200,8 @@ impl Asset for GltfScene {
             let view = &views[accessor.buffer_view.unwrap().value()];
             assert!(accessor.sparse.is_none());
             let offset = accessor.byte_offset as usize;
-            &view[offset..]
+            let _type = accessor.component_type.as_ref().unwrap();
+            (&view[offset..], _type)
         }).collect::<Vec<_>>();
 
         // Map PBR materials (map textures and their samplers as well)
@@ -266,10 +268,59 @@ impl Asset for GltfScene {
             context.pbr_materials.insert(material)
         }).collect::<Vec<Handle<PhysicallyBasedMaterial>>>();
         
-        // Map entities (meshes). Returns array of meshes and materials
-        let meshes = meshes.iter().map(|meshes| {
-            todo!()
-        }).collect::<Vec<_>>();
+        // Map meshes and create their handles
+        type CachedMeshKey = (Option<usize>, Option<usize>, Option<usize>, Option<usize>, usize);
+        let mut cached_meshes = AHashMap::<CachedMeshKey, Handle<Mesh>>::new();
+        let meshes = meshes.iter().map(|mesh| {
+            let mut meshes = Vec::<Handle<Mesh>>::new();
+            
+            for primitive in mesh.primitives.iter() {
+                // Get the accessor indices for the attributes used by this mesh
+                let mut key = (None, None, None, None, usize::MAX);
+                for (semantic, attribute) in primitive.attributes.iter() {
+                    let index = Some(attribute.value());
+                    let semantic = semantic.as_ref().unwrap();
+
+                    match semantic {
+                        gltf::Semantic::Positions => key.0 = index,
+                        gltf::Semantic::Normals => key.1 = index,
+                        gltf::Semantic::Tangents => key.2 = index,
+                        gltf::Semantic::TexCoords(_) => key.3 = index,
+                        _ => {},
+                    }
+                }
+                key.4 = primitive.indices.unwrap().value();
+
+                // Create a new mesh if the accessors aren't cached
+                // TODO: Implement multi-buffer per allocation support to optimize this
+                let handle = cached_meshes.entry(key).or_insert_with(|| {
+                    let positions = key.0.map(|index| create_positions_vec(&accessors[index]));
+                    let normals = key.1.map(|index| create_normals_vec(&accessors[index]));
+                    let tangents = key.2.map(|index| create_tangents_Vec(&accessors[index]));
+                    let tex_coords = key.3.map(|index| create_tex_coords_vec(&accessors[index]));
+                    let triangles = [];
+
+                    // Create a new mesh for the accessors used 
+                    let mesh = Mesh::from_slices(
+                        &context.graphics,
+                        BufferMode::Dynamic,
+                        BufferUsage::empty(),
+                        positions.as_deref(),
+                        normals.as_deref(),
+                        tangents.as_deref(),
+                        tex_coords.as_deref(),
+                        &triangles
+                    ).unwrap();
+
+                    context.meshes.insert(mesh)
+                }).clone();
+
+                // Add the mesh handle into the list
+                meshes.push(handle);
+            }
+
+            meshes
+        }).collect::<Vec<Vec<Handle<Mesh>>>>();
 
         // Get the scene that we will load
         let scene = settings.scene.map(|defined| scenes
@@ -307,6 +358,22 @@ impl Asset for GltfScene {
         
         todo!();
     }
+}
+
+fn create_tex_coords_vec(index: &(&[u8], &GenericComponentType)) -> Vec<vek::Vec4<u8>> {
+    todo!()
+}
+
+fn create_tangents_Vec(index: &(&[u8], &GenericComponentType)) -> Vec<vek::Vec4<i8>> {
+    todo!()
+}
+
+fn create_normals_vec(index: &(&[u8], &GenericComponentType)) -> Vec<vek::Vec4<i8>> {
+    todo!()
+}
+
+fn create_positions_vec(unwrap: &(&[u8], &GenericComponentType)) -> Vec<vek::Vec4<f32>> {
+    todo!()
 }
 
 fn create_material_texture<T: Texel + ImageTexel>(

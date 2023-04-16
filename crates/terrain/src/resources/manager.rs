@@ -51,7 +51,7 @@ impl ChunkManager {
         let indexed_indirect_buffer = indirect_buffers.insert(
             DrawIndexedIndirectBuffer::splatted(
                 graphics,
-                settings.chunks_count,
+                settings.chunk_count,
                 DrawIndexedIndirect {
                     vertex_count: 0,
                     instance_count: 1,
@@ -66,7 +66,7 @@ impl ChunkManager {
         );
 
         // Create vector of indices, and shuffle it
-        let mut vector = (0..(settings.chunks_count)).into_iter().collect::<Vec<_>>();
+        let mut vector = (0..(settings.chunk_count)).into_iter().collect::<Vec<_>>();
         let mut rng = rand::thread_rng();
         vector.shuffle(&mut rng);
 

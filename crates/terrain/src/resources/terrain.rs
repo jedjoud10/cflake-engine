@@ -20,11 +20,11 @@ pub struct TerrainSettings {
     pub(crate) lowpoly: bool,
 
     // Memory managing settings
-    pub(crate) allocations_count: usize,
-    pub(crate) sub_allocations_count: usize,
+    pub(crate) allocation_count: usize,
+    pub(crate) sub_allocation_count: usize,
 
     // Number of chunks sepcified by the render distance 
-    pub(crate) chunks_count: usize,
+    pub(crate) chunk_count: usize,
 
     // Same as chunk count, but rounded up to a multiple of allocations_count
     pub(crate) over_allocated_chunks_count: usize,
@@ -110,9 +110,9 @@ impl TerrainSettings {
             chunk_render_distance: render_distance,
             blocky,
             lowpoly,
-            allocations_count: allocations,
-            sub_allocations_count: sub_allocations,
-            chunks_count: chunks,
+            allocation_count: allocations,
+            sub_allocation_count: sub_allocations,
+            chunk_count: chunks,
             over_allocated_chunks_count,
             output_triangle_buffer_length,
             output_vertex_buffer_length,
@@ -124,6 +124,36 @@ impl TerrainSettings {
             voxel_set_group_callback: None,
             material: Some(material),
         })
+    }
+
+    // Get the resolution of the terrain chunks
+    pub fn resolution(&self) -> u32 {
+        self.size
+    }
+
+    // Get the total number of chunks
+    pub fn chunks_count(&self) -> usize {
+        self.chunk_count
+    }
+
+    // Is the terrain blocky looking?
+    pub fn blocky(&self) -> bool {
+        self.blocky
+    }
+
+    // Is the terrain low-poly looking?
+    pub fn lowpoly(&self) -> bool {
+        self.lowpoly
+    }
+
+    // Number of allocations used for vertices and indices
+    pub fn allocation_count(&self) -> usize {
+        self.allocation_count
+    }
+
+    // Number of sub allocations used
+    pub fn sub_allocation_count(&self) -> usize {
+        self.sub_allocation_count
     }
 }
 
