@@ -20,10 +20,13 @@ fn init(world: &mut World) {
 
     // Create a new terrain material
     let material = TerrainMaterial {
+        layered_albedo_map,
+        layered_normal_map,
+        layered_mask_map,
         bumpiness: 1.0,
         roughness: 1.0,
         metallic: 1.0,
-        ambient_occlusion: 1.0
+        ambient_occlusion: 1.0,
     };
 
     // Create the terrain generator's settings

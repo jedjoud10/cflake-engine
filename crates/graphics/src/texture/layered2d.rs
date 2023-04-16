@@ -8,7 +8,7 @@ use smallvec::SmallVec;
 use crate::{
     Extent, Graphics, ImageTexel, Sampler, SamplerSettings, Texel,
     Texture, TextureAssetLoadError, TextureInitializationError,
-    TextureMipMaps, TextureMode, TextureUsage,
+    TextureMipMaps, TextureMode, TextureUsage, Texture2D,
 };
 
 // A layered 2D texture that contains multiple texels that are stored in multiple layers
@@ -103,4 +103,38 @@ impl<T: Texel> Texture for LayeredTexture2D<T> {
         self.views = views;
         self.dimensions = dimensions;
     }
+}
+
+// Combine multiple Texture2Ds into a single LayeredTexture2D texture
+// Returns None if the textures don't have the same size or if we can't read them
+pub fn combine_into_layered<T: Texel + ImageTexel>(
+    graphics: &Graphics,
+    textures: Vec<Texture2D<T>>,
+    sampling: Option<SamplerSettings>,
+    mut mipmaps: TextureMipMaps<T>,
+    mode: TextureMode,
+    usage: TextureUsage,
+) -> Option<LayeredTexture2D<T>> {
+    // Can't have shit in ohio
+    if textures.is_empty() {
+        return None;
+    }
+
+    // Make sure the textures are the same size
+    let extent = textures[0].dimensions();
+    if !textures.iter().any(|tex| tex.dimensions() != extent) {
+        return None;
+    }
+
+    let texels = todo!();
+
+    Some(LayeredTexture2D::from_texels(
+        graphics,
+        texels,
+        (extent, textures.len() as u32),
+        mode,
+        usage,
+        sampling,
+        mipmaps
+    ).unwrap())
 }

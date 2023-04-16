@@ -25,6 +25,18 @@ layout(push_constant) uniform PushConstants {
 	layout(offset = 80) float fade;
 } material;
 
+// Albedo / diffuse map texture array
+layout(set = 1, binding = 0) uniform texture2DArray layered_albedo_map;
+layout(set = 1, binding = 1) uniform sampler layered_albedo_map_sampler;
+
+// Normal map texture array
+layout(set = 1, binding = 2) uniform texture2DArray layered_normal_map;
+layout(set = 1, binding = 3) uniform sampler layered_normal_map_sampler;
+
+// Mask map texture array
+layout(set = 1, binding = 4) uniform texture2DArray layered_mask_map;
+layout(set = 1, binding = 5) uniform sampler layered_mask_map_sampler;
+
 void main() {
 	/*
 	// We do a bit of fading V2
