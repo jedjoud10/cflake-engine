@@ -39,7 +39,7 @@ layout(set = 1, binding = 5) uniform sampler mask_map_sampler;
 void main() {
 	// Flip the Y coordinate (dunno why bruv)
 	vec2 uv = m_tex_coord;
-	uv.y = 1 - m_tex_coord.y;
+	//uv.y = 1 - m_tex_coord.y;
 
 	// Fetch the albedo color, normal map value, and mask values
 	vec3 albedo = texture(sampler2D(albedo_map, albedo_map_sampler), uv).rgb * material.tint.rgb;

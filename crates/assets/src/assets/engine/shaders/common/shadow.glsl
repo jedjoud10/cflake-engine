@@ -65,7 +65,7 @@ float calculate_shadowed(
 ) {
     // TODO: FUCKING FIX SHADOWS FFS
     // AAAAAAAAAAAAAAAAAAAAAAAAAAA
-    return 0.0;
+    //return 0.0;
 
     // Taken from a comment by Octavius Ace from the same learn OpenGL website 
     vec4 res = step(cascade_plane_distances.distances, vec4(depth));
@@ -94,7 +94,6 @@ float calculate_shadowed(
     // TODO: Spread size is calculated based on distance
     float spread = 0.0004;
 
-    /*
     float shadowed = 0.0;
     for (int x = -1; x <= 1; x++) {
         for (int y = -1; y <= 1; y++) {
@@ -103,9 +102,8 @@ float calculate_shadowed(
     }
     shadowed /= 9.0;
     return shadowed;   
-    */
 
 
-    return sample_shadow_texel(layer, ivec2(uvs.xy * size), current + bias);
+    //return sample_shadow_texel(layer, ivec2(uvs.xy * size), current + bias);
     //return shadow_linear(shadow_map, layer, uvs.xy, current);
 }

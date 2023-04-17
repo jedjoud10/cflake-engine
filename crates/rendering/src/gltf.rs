@@ -4,11 +4,11 @@ use ahash::{AHashSet, AHashMap};
 use assets::{Asset, Data};
 use base64::{engine::{GeneralPurposeConfig, GeneralPurpose}, alphabet, Engine};
 use ecs::Scene;
-use gltf::json::accessor::GenericComponentType;
+use gltf::json::accessor::{GenericComponentType, Type, ComponentType};
 use graphics::{Graphics, Texture2D, Texture, SamplerSettings, SamplerFilter, SamplerWrap, SamplerMipMaps, TextureMode, TextureUsage, TextureMipMaps, TextureImportSettings, TextureScale, Texel, ImageTexel, BufferMode, BufferUsage};
 use utils::{Storage, Handle, ThreadPool};
 use world::{World, Read, Write};
-use crate::{Mesh, MaskMap, NormalMap, AlbedoMap, Pipelines, PhysicallyBasedMaterial, attributes::RawPosition};
+use crate::{Mesh, MaskMap, NormalMap, AlbedoMap, Pipelines, PhysicallyBasedMaterial, attributes::RawPosition, SubSurface, Surface};
 
 // These are the context values that must be given to the GltfScene to load it
 pub struct GtlfContext<'a> {
@@ -152,7 +152,7 @@ impl Asset for GltfScene {
         );
         
         // Map (raw) JSON buffers and store their raw byte values
-        let contents = buffers.iter().map(|buffer| {
+        let mapped_contents = buffers.iter().map(|buffer| {
             let string = buffer.uri.as_ref().unwrap();
             let bytes = if string.starts_with("data:application/octet-stream;base64,") {
                 // Data is contained within the URI itself
@@ -177,8 +177,8 @@ impl Asset for GltfScene {
         log::debug!("Mapped {} glTF buffers", buffers.len());
         
         // Map buffer views as buffer slices
-        let views = buffer_views.iter().map(|view| {
-            let buffer = &contents[view.buffer.value()];
+        let mapped_views = buffer_views.iter().map(|view| {
+            let buffer = &mapped_contents[view.buffer.value()];
             let len = view.byte_length as usize;
             let offset = view.byte_offset.unwrap() as usize;
             assert!(view.byte_stride.is_none());
@@ -187,21 +187,22 @@ impl Asset for GltfScene {
         log::debug!("Mapped {} glTF buffer views", buffer_views.len());
 
         // Map images and store their raw byte values (and extension)
-        let images = images.iter().map(|image| {
-            let view = &views[image.buffer_view.unwrap().value()];
+        let mapped_images = images.iter().map(|image| {
+            let view = &mapped_views[image.buffer_view.unwrap().value()];
             assert!(image.uri.is_none());
             let ext = &image.mime_type.as_ref().unwrap().0;
             (*view, ext.strip_prefix("image/").unwrap())
         }).collect::<Vec<_>>();
-        log::debug!("Mapped {} glTF images", images.len());
+        log::debug!("Mapped {} glTF images", mapped_images.len());
 
         // Map buffer accessors and store their component values
-        let accessors = accessors.iter().map(|accessor| {
-            let view = &views[accessor.buffer_view.unwrap().value()];
+        let mapped_accessors = accessors.iter().map(|accessor| {
+            let view = &mapped_views[accessor.buffer_view.unwrap().value()];
             assert!(accessor.sparse.is_none());
             let offset = accessor.byte_offset as usize;
-            let _type = accessor.component_type.as_ref().unwrap();
-            (&view[offset..], _type)
+            let _type = accessor.type_.as_ref().unwrap();
+            let generic_component_type = accessor.component_type.as_ref().unwrap();
+            (&view[offset..], (_type, &generic_component_type.0))
         }).collect::<Vec<_>>();
 
         // Map PBR materials (map textures and their samplers as well)
@@ -209,7 +210,7 @@ impl Asset for GltfScene {
         let mut cached_albedo_maps = AHashMap::<usize, Handle<AlbedoMap>>::new();
         let mut cached_normal_maps = AHashMap::<usize, Handle<NormalMap>>::new();
         let mut cached_mask_maps = AHashMap::<(Option<usize>, Option<usize>), Handle<MaskMap>>::new(); 
-        let materials = materials.iter().map(|material| {
+        let mapped_materials = materials.iter().map(|material| {
             // Decompose into Optional indices
             let pbr = &material.pbr_metallic_roughness;
             let albedo_map = pbr.base_color_texture.as_ref();
@@ -231,7 +232,7 @@ impl Asset for GltfScene {
                     create_material_texture(
                         context.graphics.clone(),
                         texture,
-                        &images,
+                        &mapped_images,
                         loader,
                         &mut context.albedo_maps
                     )
@@ -245,7 +246,7 @@ impl Asset for GltfScene {
                     create_material_texture(
                         context.graphics.clone(),
                         texture,
-                        &images,
+                        &mapped_images,
                         loader,
                         &mut context.normal_maps
                     )
@@ -269,20 +270,20 @@ impl Asset for GltfScene {
         }).collect::<Vec<Handle<PhysicallyBasedMaterial>>>();
         
         // Map meshes and create their handles
-        type CachedMeshKey = (Option<usize>, Option<usize>, Option<usize>, Option<usize>, usize);
+        type CachedMeshKey = (usize, Option<usize>, Option<usize>, Option<usize>, usize);
         let mut cached_meshes = AHashMap::<CachedMeshKey, Handle<Mesh>>::new();
-        let meshes = meshes.iter().map(|mesh| {
+        let mapped_meshes = meshes.iter().map(|mesh| {
             let mut meshes = Vec::<Handle<Mesh>>::new();
             
             for primitive in mesh.primitives.iter() {
                 // Get the accessor indices for the attributes used by this mesh
-                let mut key = (None, None, None, None, usize::MAX);
+                let mut key = (usize::MAX, None, None, None, usize::MAX);
                 for (semantic, attribute) in primitive.attributes.iter() {
                     let index = Some(attribute.value());
                     let semantic = semantic.as_ref().unwrap();
 
                     match semantic {
-                        gltf::Semantic::Positions => key.0 = index,
+                        gltf::Semantic::Positions => key.0 = attribute.value(),
                         gltf::Semantic::Normals => key.1 = index,
                         gltf::Semantic::Tangents => key.2 = index,
                         gltf::Semantic::TexCoords(_) => key.3 = index,
@@ -294,23 +295,36 @@ impl Asset for GltfScene {
                 // Create a new mesh if the accessors aren't cached
                 // TODO: Implement multi-buffer per allocation support to optimize this
                 let handle = cached_meshes.entry(key).or_insert_with(|| {
-                    let positions = key.0.map(|index| create_positions_vec(&accessors[index]));
-                    let normals = key.1.map(|index| create_normals_vec(&accessors[index]));
-                    let tangents = key.2.map(|index| create_tangents_Vec(&accessors[index]));
-                    let tex_coords = key.3.map(|index| create_tex_coords_vec(&accessors[index]));
-                    let triangles = [];
+                    let positions = create_positions_vec(&mapped_accessors[key.0]);
+                    let normals = key.1.map(|index| create_normals_vec(&mapped_accessors[index]));
+                    let mut tangents = key.2.map(|index| create_tangents_vec(&mapped_accessors[index]));
+                    let tex_coords = key.3.map(|index| create_tex_coords_vec(&mapped_accessors[index]));
+                    let triangles = create_triangles_vec(&mapped_accessors[key.4]);
+
+                    // Optionally generate the tangents
+                    if let (Some(normals), Some(tex_coords)) = (normals.as_ref(), tex_coords.as_ref()) {
+                        tangents = Some(super::compute_tangents(
+                            &positions,
+                            normals,
+                            tex_coords,
+                            &triangles,
+                        )
+                        .unwrap());
+                    }
 
                     // Create a new mesh for the accessors used 
                     let mesh = Mesh::from_slices(
                         &context.graphics,
                         BufferMode::Dynamic,
                         BufferUsage::empty(),
-                        positions.as_deref(),
+                        Some(&positions),
                         normals.as_deref(),
                         tangents.as_deref(),
                         tex_coords.as_deref(),
                         &triangles
                     ).unwrap();
+
+                    
 
                     context.meshes.insert(mesh)
                 }).clone();
@@ -332,49 +346,117 @@ impl Asset for GltfScene {
             .clone()
         ).or(scene.as_ref().map(|i| scenes[i.value()].clone())).unwrap();
 
+        /*
         // Create storages that will contain the *handles* that are themselves stored within storages   
         let mut meshes: Vec<Handle<Mesh>> = Vec::new();
         let mut albedo_maps: Vec<Handle<AlbedoMap>> = Vec::new();
         let mut normal_maps: Vec<Handle<NormalMap>> = Vec::new();
         let mut mask_maps: Vec<Handle<MaskMap>> = Vec::new();
         let mut pbr_materials: Vec<Handle<PhysicallyBasedMaterial>> = Vec::new();
+        */
 
         // Keep track of the renderable entities that we will add
-        let mut entities: Vec<(coords::Position, coords::Rotation, crate::Surface<PhysicallyBasedMaterial>, crate::Renderer)> = Vec::new();
+        let mut entities: Vec<(coords::Position, coords::Rotation, Surface<PhysicallyBasedMaterial>, crate::Renderer)> = Vec::new();
 
         // Iterate over the nodes now (or objects in the scene)
-        for node in nodes {
+        for index in scene.nodes {
+            let node = &nodes[index.value()];
+            
             // Convert translation, rotation, and scale to proper components
             let position = node.translation.map(|slice |coords::Position::at_xyz_array(slice)).unwrap_or_default();
             let rotation = node.rotation.map(|quat| coords::Rotation::new_xyzw_array(quat.0)).unwrap_or_default();
 
             // Handle renderable entities
-            if let Some(mesh) = node.mesh {
+            if let Some(mesh_index) = node.mesh {
+                let mesh = &meshes[mesh_index.value()];
+                let meshes = &mapped_meshes[mesh_index.value()];
+
+                // Sub-Surfaces that we must render
+                let mut subsurfaces = Vec::<SubSurface<PhysicallyBasedMaterial>>::new();
+
+                for (submesh_index, primitive) in mesh.primitives.iter().enumerate() {
+                    let mesh = &meshes[submesh_index];
+                    let material = &mapped_materials[primitive.material.unwrap().value()];
+                    subsurfaces.push(SubSurface { mesh: mesh.clone(), material: material.clone() });
+                } 
+
+                // Create a proper surface
+                let surface = Surface {
+                    subsurfaces: subsurfaces.into(),
+                    visible: true,
+                    culled: false,
+                    shadow_caster: true,
+                    shadow_receiver: true,
+                    shadow_culled: false,
+                    id: context.pipelines.get::<PhysicallyBasedMaterial>().unwrap(),
+                };
+
+                entities.push((position, rotation, surface, crate::Renderer::default()));
             }
         }
 
         // Add the entities into the world
         context.scene.extend_from_iter(entities);
         
-        todo!();
+        Ok(GltfScene)
     }
 }
 
-fn create_tex_coords_vec(index: &(&[u8], &GenericComponentType)) -> Vec<vek::Vec4<u8>> {
-    todo!()
+
+type MeshAttributeValues<'a, 'b> = &'a (&'b [u8], (&'b Type, &'b ComponentType));
+
+fn create_positions_vec(value: MeshAttributeValues) -> Vec<vek::Vec4<f32>> {
+    let (bytes, (_type, _component)) = value;
+    assert_eq!(**_type, Type::Vec3);
+    assert_eq!(**_component, ComponentType::F32);
+    let data: &[vek::Vec3<f32>] = bytemuck::cast_slice(bytes);
+    data.into_iter().map(|vec3| vec3.with_w(0.0)).collect::<Vec::<vek::Vec4<f32>>>()
 }
 
-fn create_tangents_Vec(index: &(&[u8], &GenericComponentType)) -> Vec<vek::Vec4<i8>> {
-    todo!()
+fn create_normals_vec(value: MeshAttributeValues) -> Vec<vek::Vec4<i8>> {
+    let (bytes, (_type, _component)) = value;
+    assert_eq!(**_type, Type::Vec3);
+    assert_eq!(**_component, ComponentType::F32);
+    let data: &[vek::Vec3<f32>] = bytemuck::cast_slice(bytes);
+    data.into_iter().map(|vec3| (vec3.with_w(1.0) * 127.0).as_::<i8>()).collect::<Vec::<vek::Vec4<i8>>>()
 }
 
-fn create_normals_vec(index: &(&[u8], &GenericComponentType)) -> Vec<vek::Vec4<i8>> {
-    todo!()
+fn create_tex_coords_vec(value: MeshAttributeValues) -> Vec<vek::Vec2<f32>> {
+    let (bytes, (_type, _component)) = value;
+    assert_eq!(**_type, Type::Vec2);
+    assert_eq!(**_component, ComponentType::F32);
+    let data: &[vek::Vec2<f32>] = bytemuck::cast_slice(bytes);
+    data.to_vec()
 }
 
-fn create_positions_vec(unwrap: &(&[u8], &GenericComponentType)) -> Vec<vek::Vec4<f32>> {
-    todo!()
+fn create_tangents_vec(value: MeshAttributeValues) -> Vec<vek::Vec4<i8>> {
+    let (bytes, (_type, _component)) = value;
+    assert_eq!(**_type, Type::Vec4);
+    assert_eq!(**_component, ComponentType::F32);
+    let data: &[vek::Vec4<f32>] = bytemuck::cast_slice(bytes);
+    data.into_iter().map(|vec4| (vec4 * 127.0).as_::<i8>()).collect::<Vec::<vek::Vec4<i8>>>()
 }
+
+fn create_triangles_vec(value: MeshAttributeValues) -> Vec<[u32; 3]> {
+    let (bytes, (_type, _component)) = value;
+    assert_eq!(**_type, Type::Scalar);
+
+    match _component {
+        ComponentType::U16 => {
+            let data: &[u16] = bytemuck::cast_slice(bytes);
+            data.chunks_exact(3).into_iter().map(|x| {
+                [x[0] as u32, x[1] as u32, x[2] as u32]
+            }).collect()
+        },
+        ComponentType::U32 => {
+            let data: &[[u32; 3]] = bytemuck::cast_slice(bytes);
+            data.to_vec()
+        },
+        _ => panic!("jed is dumb")
+    }
+}
+
+
 
 fn create_material_texture<T: Texel + ImageTexel>(
     graphics: Graphics,
@@ -384,12 +466,13 @@ fn create_material_texture<T: Texel + ImageTexel>(
     storage: &mut Storage<Texture2D<T>>,
 ) -> Handle<Texture2D<T>> {
     let (bytes, extension) = &images[texture.source.value()];
-                    
+    let name = texture.name.as_ref().map(|x| &**x).unwrap_or("Untitled Texture");
+
     let data = Data::new(
-        texture.name.as_ref().map(|x| &**x).unwrap_or("Untitled Texture"),
+        name,
         extension,
         Arc::from(bytes.to_vec()),
-        Path::new(""),
+        Path::new(name),
         Some(loader)
     );
 
@@ -399,7 +482,7 @@ fn create_material_texture<T: Texel + ImageTexel>(
         TextureImportSettings {
             sampling: Some(SamplerSettings {
                 filter: SamplerFilter::Nearest,
-                wrap: SamplerWrap::Repeat,
+                wrap: SamplerWrap::MirroredRepeat,
                 mipmaps: SamplerMipMaps::Auto,
             }),
             mode: TextureMode::Dynamic,

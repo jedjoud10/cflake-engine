@@ -427,6 +427,13 @@ mod vertex {
             XY::<Normalized<u16>>::format(),
             VertexFormat::Unorm16x2,
         );
+
+        /*
+        assert_eq!(
+            XY::<Normalized<u8>>::format(),
+            VertexFormat::Unorm8x2,
+        );
+        */
     }
 }
 

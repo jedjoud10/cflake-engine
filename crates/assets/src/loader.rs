@@ -45,6 +45,8 @@ pub struct UserAssets {
 //pub use include_dir::{include_dir, Dir};
 pub use with_builtin_macros::*;
 pub use include_dir;
+pub use cfg_if;
+
 // This is the main asset manager resource that will load & cache newly loaded assets
 // This asset manager will also contain the persistent assets that are included by default into the engine executable
 pub struct Assets {

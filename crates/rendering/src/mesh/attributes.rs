@@ -1,6 +1,6 @@
 use graphics::{
     Normalized, PerVertex,
-    Vertex, VertexBuffer, VertexConfig, VertexInput, VertexInputInfo, XYZW,
+    Vertex, VertexBuffer, VertexConfig, VertexInput, VertexInputInfo, XYZW, XY,
 };
 use paste::paste;
 use std::cell::{Ref, RefMut};
@@ -199,7 +199,7 @@ impl_vertex_attribute!(
 impl_vertex_attribute!(
     TexCoord,
     tex_coords,
-    XYZW<Normalized<u8>>,
+    XY<f32>,
     TEX_COORDS,
     PerVertex
 );

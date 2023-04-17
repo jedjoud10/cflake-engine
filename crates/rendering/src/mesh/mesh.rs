@@ -344,8 +344,7 @@ impl Asset for Mesh {
             // Read and add the texture coordinate
             if let Some(tex_coords) = &mut tex_coords {
                 let read = Vec2::from_slice(&vertex.texture);
-                let viewed = read.map(|f| (f * 255.0) as u8);
-                tex_coords.push(viewed.with_w(0));
+                tex_coords.push(read);
             }
         }
 

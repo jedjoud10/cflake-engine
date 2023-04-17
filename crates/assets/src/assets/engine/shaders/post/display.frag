@@ -19,7 +19,7 @@ void main() {
 	vec3 color = texelFetch(color_map, ivec2(gl_FragCoord.xy), 0).rgb;
 
 	// Increase exposure
-	color *= 1.7;
+	color *= 2.7;
 	color = max(color, vec3(0));
 
 	// Apply tonemapping and gamma mapping
