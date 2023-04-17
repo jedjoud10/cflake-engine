@@ -45,7 +45,7 @@ pub trait Extent: Copy {
             return None;
         }
 
-        let cur = self.reduce_max() as f32;
+        let cur = self.reduce_min() as f32;
         let num = cur.log2().floor();
         Some(
             NonZeroU8::new(u8::try_from(num as u8 + 1).unwrap())
@@ -231,11 +231,11 @@ impl Extent for (vek::Extent2<u32>, u32) {
     }
 
     fn reduce_max(&self) -> u32 {
-        vek::Extent3::new(self.0.w, self.0.h, self.1).reduce_max()
+        vek::Extent2::new(self.0.w, self.0.h).reduce_max()
     }
 
     fn reduce_min(&self) -> u32 {
-        vek::Extent3::new(self.0.w, self.0.h, self.1).reduce_min()
+        vek::Extent2::new(self.0.w, self.0.h).reduce_min()
     }
 
     fn is_valid(&self) -> bool {

@@ -253,7 +253,18 @@ impl Asset for GltfScene {
                 }).clone()
             });
 
-            //let mask_map = (metallic_roughness_map.xor(optb), occlusion_map)
+            // Create or load a cached mask map texture
+            // r: ambient occlusion, g: roughness, b: metallic
+            /*
+            let mask_map = {
+                let metallic_roughness_map = metallic_roughness_map.map(|x| x.index.value());
+                let occlusion_map = occlusion_map.map(|x| x.index.value());
+
+                cached_mask_maps.entry((metallic_roughness_map, occlusion_map)).or_insert_with(|| {
+                    todo!()
+                })
+            }
+            */
 
             PhysicallyBasedMaterial {
                 albedo_map,
@@ -313,7 +324,7 @@ impl Asset for GltfScene {
                     }
 
                     // Create a new mesh for the accessors used 
-                    let mesh = Mesh::from_slices(
+                    context.meshes.insert(Mesh::from_slices(
                         &context.graphics,
                         BufferMode::Dynamic,
                         BufferUsage::empty(),
@@ -322,11 +333,7 @@ impl Asset for GltfScene {
                         tangents.as_deref(),
                         tex_coords.as_deref(),
                         &triangles
-                    ).unwrap();
-
-                    
-
-                    context.meshes.insert(mesh)
+                    ).unwrap())
                 }).clone();
 
                 // Add the mesh handle into the list
@@ -345,15 +352,6 @@ impl Asset for GltfScene {
             .unwrap()
             .clone()
         ).or(scene.as_ref().map(|i| scenes[i.value()].clone())).unwrap();
-
-        /*
-        // Create storages that will contain the *handles* that are themselves stored within storages   
-        let mut meshes: Vec<Handle<Mesh>> = Vec::new();
-        let mut albedo_maps: Vec<Handle<AlbedoMap>> = Vec::new();
-        let mut normal_maps: Vec<Handle<NormalMap>> = Vec::new();
-        let mut mask_maps: Vec<Handle<MaskMap>> = Vec::new();
-        let mut pbr_materials: Vec<Handle<PhysicallyBasedMaterial>> = Vec::new();
-        */
 
         // Keep track of the renderable entities that we will add
         let mut entities: Vec<(coords::Position, coords::Rotation, Surface<PhysicallyBasedMaterial>, crate::Renderer)> = Vec::new();

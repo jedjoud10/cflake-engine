@@ -65,7 +65,7 @@ float calculate_shadowed(
 ) {
     // TODO: FUCKING FIX SHADOWS FFS
     // AAAAAAAAAAAAAAAAAAAAAAAAAAA
-    //return 0.0;
+    return 0.0;
 
     // Taken from a comment by Octavius Ace from the same learn OpenGL website 
     vec4 res = step(cascade_plane_distances.distances, vec4(depth));

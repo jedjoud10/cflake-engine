@@ -202,6 +202,7 @@ impl Assets {
         let path = if owned.is_absolute() {
             owned.clone()
         } else {
+            dbg!(&owned);
             todo!()
         };
 
