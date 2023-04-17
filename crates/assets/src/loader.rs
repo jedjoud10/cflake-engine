@@ -26,9 +26,6 @@ type AsyncLoadedAssets = Mutex<Vec<Option<AsyncBoxedResult>>>;
 type AsyncChannelResult = (AsyncBoxedResult, usize);
 type AsyncLoadedBytes = Arc<RwLock<AHashMap<PathBuf, Arc<[u8]>>>>;
 
-// Dynamic Asset Path specified by the user
-type UserPath = Option<Arc<Path>>;
-
 // Paths we can use to hijack default engine assets
 // TODO: This might not be safe but tbh I couldn't care
 type HijackPaths = AHashMap<PathBuf, PathBuf>;
@@ -65,44 +62,27 @@ pub struct Assets {
     // The value might be none in the case that the bytes were not loaded
     // The path buf contains the local path of each asset
     bytes: AsyncLoadedBytes,
-
-    // Path that references the user assets
-    user: UserPath,
 }
 
-impl Assets {
-    // Create a new asset loader using a pre-defined user assets (if supplied)
-    pub fn new(user: Option<UserAssets>) -> Self {
+impl Default for Assets {
+    fn default() -> Self {
         let (sender, receiver) =
             std::sync::mpsc::channel::<AsyncChannelResult>();
 
-        // Create the loader before hand
-        let mut loader = Self {
+        Self {
             loaded: Default::default(),
             bytes: Default::default(),
             receiver,
             sender,
             hijack: Default::default(),
-            user: None,
-        };
+        }
+    }
+}
 
-        // Automatically insert the user assets as "persistent" assets if defined
-        let path = if let Some(user) = user {
-            // ADD THE FILES NOW!!! (keep yourself safe)
-            for (path, bytes) in user.files {
-                let prefix = Path::new("./assets/");
-                let path = prefix.join(&path);
-                loader.import(path, bytes);
-            }
-            
-            // Return UserPath
-            Some(user.path)
-        } else {
-            None
-        };
-
-        loader.user = path;
-        loader
+impl Assets {
+    // Create a new asset loader using a pre-defined user assets (if supplied)
+    pub fn new() -> Self {
+        Self::default()
     }
 
     // Import a persistent asset using it's asset path (not global) and it's raw bytes
@@ -172,7 +152,6 @@ impl Assets {
     fn load_bytes(
         bytes: &AsyncLoadedBytes,
         hijack: AsyncHijackPaths,
-        user: &UserPath,
         owned: PathBuf,
     ) -> Result<Arc<[u8]>, AssetLoadError> {
         // Load the bytes from cached bytes first
@@ -180,7 +159,7 @@ impl Assets {
 
         // If that fails, try loading from user defined asset path
         if let Err(AssetLoadError::CachedNotFound(_)) = &loaded {
-            loaded = Self::load_bytes_dynamically(bytes, hijack, user, owned);
+            loaded = Self::load_bytes_dynamically(bytes, hijack, owned);
         } 
 
         // Return the (hopefully loaded) asset
@@ -207,7 +186,6 @@ impl Assets {
     fn load_bytes_dynamically(
         bytes: &AsyncLoadedBytes,
         hijack: AsyncHijackPaths,
-        user: &UserPath,
         owned: PathBuf,
     ) -> Result<Arc<[u8]>, AssetLoadError> {
         log::warn!(
@@ -224,14 +202,7 @@ impl Assets {
         let path = if owned.is_absolute() {
             owned.clone()
         } else {
-            // Sometimes the user path is not specified
-            let user = user
-                .as_ref()
-                .ok_or(AssetLoadError::UserPathNotSpecified)?;
-
-            let mut path = user.to_path_buf();
-            path.push(owned.clone());
-            path
+            todo!()
         };
 
         // Load the asset dynamically
@@ -251,7 +222,6 @@ impl Assets {
     fn async_load_inner<A: AsyncAsset>(
         owned: PathBuf,
         bytes: AsyncLoadedBytes,
-        user: UserPath,
         hijack: AsyncHijackPaths,
         context: <A as Asset>::Context<'_>,
         settings: <A as Asset>::Settings<'_>,
@@ -267,7 +237,6 @@ impl Assets {
             let bytes = Self::load_bytes(
                 &bytes,
                 hijack,
-                &user,
                 owned.clone(),
             )?;
 
@@ -321,7 +290,7 @@ impl Assets {
         // Load the asset bytes (either dynamically or fetch cached bytes)
         let hijack = self.hijack.clone();
         let bytes =
-            Self::load_bytes(&self.bytes, hijack, &self.user, owned)?;
+            Self::load_bytes(&self.bytes, hijack, owned)?;
 
         // Deserialize the asset file
         A::deserialize(
@@ -375,7 +344,6 @@ impl Assets {
         // Clone the things that must be sent to the thread
         let bytes = self.bytes.clone();
         let sender = self.sender.clone();
-        let user = self.user.clone();
         let hijack = self.hijack.clone();
 
         // Create the handle's key
@@ -389,7 +357,7 @@ impl Assets {
         // Create a new task that will load this asset
         threadpool.execute(move || {
             Self::async_load_inner::<A>(
-                owned, bytes, user, hijack, context, settings,
+                owned, bytes, hijack, context, settings,
                 sender, index,
             );
         });
@@ -426,7 +394,6 @@ impl Assets {
             // Clone the things that must be sent to the thread
             let bytes = self.bytes.clone();
             let sender = self.sender.clone();
-            let user = self.user.clone();
             let hijack = self.hijack.clone();
 
             // Create the handle's key and insert it
@@ -440,7 +407,7 @@ impl Assets {
             // Start telling worker threads to begin loading the assets
             threadpool.execute(move || {
                 Self::async_load_inner::<A>(
-                    owned, bytes, user, hijack, context, settings,
+                    owned, bytes, hijack, context, settings,
                     sender, index,
                 );
             });
