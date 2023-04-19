@@ -1242,6 +1242,7 @@ dependencies = [
  "bytemuck",
  "dashmap",
  "half",
+ "hdrldr",
  "image",
  "itertools",
  "lazy_static",
@@ -1326,6 +1327,12 @@ dependencies = [
  "widestring",
  "winapi",
 ]
+
+[[package]]
+name = "hdrldr"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b6cb717c5ebe824622289dc405a0415152ce835d162d43bf05fd902e394d5609"
 
 [[package]]
 name = "hermit-abi"

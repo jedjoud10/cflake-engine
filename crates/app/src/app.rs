@@ -1,4 +1,3 @@
-use assets::{AssetsSettings, UserAssets};
 use graphics::{FrameRateLimit, WindowSettings};
 use mimalloc::MiMalloc;
 
@@ -22,7 +21,6 @@ pub struct App {
     window: WindowSettings,
 
     // Asset and IO
-    user_assets: Option<UserAssets>,
     author_name: String,
     app_name: String,
     app_version: u32,
@@ -51,7 +49,6 @@ impl Default for App {
             app_version: 1,
             engine_name: "cFlake Game Engine".to_string(),
             engine_version: 1,
-            user_assets: None,
             systems,
             el: EventLoop::new(),
             logging_level: log::LevelFilter::Debug,
@@ -73,15 +70,6 @@ impl App {
     // Set window fullscreen mode
     pub fn set_window_fullscreen(mut self, toggled: bool) -> Self {
         self.window.fullscreen = toggled;
-        self
-    }
-
-    // Set the assets folder for the user defined assets
-    pub fn set_user_assets(
-        mut self,
-        path: Option<UserAssets>,
-    ) -> Self {
-        self.user_assets = path;
         self
     }
 
@@ -453,11 +441,6 @@ impl App {
             app_name: app_name.clone(),
             log_receiver: Some(receiver),
         });
-
-        // Insert the asset loader's user asset path
-        let assets_settings =
-            AssetsSettings(self.user_assets.take());
-        self.world.insert(assets_settings);
 
         // Insert the graphics API window resource
         let window_settings = self.window.clone();

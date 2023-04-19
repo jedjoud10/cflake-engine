@@ -5,7 +5,7 @@ use assets::{Asset, Data};
 use base64::{engine::{GeneralPurposeConfig, GeneralPurpose}, alphabet, Engine};
 use ecs::Scene;
 use gltf::json::accessor::{GenericComponentType, Type, ComponentType};
-use graphics::{Graphics, Texture2D, Texture, SamplerSettings, SamplerFilter, SamplerWrap, SamplerMipMaps, TextureMode, TextureUsage, TextureMipMaps, TextureImportSettings, TextureScale, Texel, ImageTexel, BufferMode, BufferUsage};
+use graphics::{Graphics, Texture2D, Texture, SamplerSettings, SamplerFilter, SamplerWrap, SamplerMipMaps, TextureMode, TextureUsage, TextureMipMaps, TextureImportSettings, TextureScale, Texel, ImageTexel, BufferMode, BufferUsage, RawTexels, RG, Normalized, texture2d_from_raw, R, RGBA};
 use utils::{Storage, Handle, ThreadPool};
 use world::{World, Read, Write};
 use crate::{Mesh, MaskMap, NormalMap, AlbedoMap, Pipelines, PhysicallyBasedMaterial, attributes::RawPosition, SubSurface, Surface};
@@ -56,13 +56,14 @@ impl<'a> GtlfContext<'a> {
 // These are the settings that must be given to the gltf importer so it can deserialize the scene
 pub struct GltfSettings<'a> {
     // Default material that we should use when we don't have a material applied to objects
-    pub fallback_material: PhysicallyBasedMaterial,
+    pub fallback: PhysicallyBasedMaterial,
 
     // We can only load one scene at a time
     // If this is default, then it uses the default scene
     pub scene: Option<&'a str>,
 
     // Should we use async asset loading to load in buffers and textures?
+    // TODO: Implement this lul
     pub asynchronous: bool,
 }
 
@@ -71,7 +72,7 @@ impl<'a> Default for GltfSettings<'a> {
         Self {
             scene: None,
             asynchronous: true,
-            fallback_material: PhysicallyBasedMaterial {
+            fallback: PhysicallyBasedMaterial {
                 albedo_map: None,
                 normal_map: None,
                 mask_map: None,
@@ -232,6 +233,7 @@ impl Asset for GltfScene {
                     create_material_texture(
                         context.graphics.clone(),
                         texture,
+                        &samplers,
                         &mapped_images,
                         loader,
                         &mut context.albedo_maps
@@ -246,6 +248,7 @@ impl Asset for GltfScene {
                     create_material_texture(
                         context.graphics.clone(),
                         texture,
+                        &samplers,
                         &mapped_images,
                         loader,
                         &mut context.normal_maps
@@ -253,12 +256,32 @@ impl Asset for GltfScene {
                 }).clone()
             });
 
-            //let mask_map = (metallic_roughness_map.xor(optb), occlusion_map)
+            // Create or load a cached mask map texture
+            // r: ambient occlusion, g: roughness, b: metallic
+            let mask_map = (metallic_roughness_map.is_some() || occlusion_map.is_some()).then(|| {
+                let metallic_roughness_map = metallic_roughness_map.map(|x| x.index.value());
+                let occlusion_map = occlusion_map.map(|x| x.index.value());
+
+                cached_mask_maps.entry((metallic_roughness_map, occlusion_map)).or_insert_with(|| {
+                    let metallic_roughness_map = metallic_roughness_map.map(|x| &textures[x]);
+                    let occlusion_map = occlusion_map.map(|x| &textures[x]);
+
+                    create_material_mask_texture(
+                        context.graphics.clone(),
+                        metallic_roughness_map,
+                        occlusion_map,
+                        &samplers,
+                        &mapped_images,
+                        loader,
+                        &mut context.mask_maps
+                    )
+                }).clone()
+            });
 
             PhysicallyBasedMaterial {
                 albedo_map,
                 normal_map,
-                mask_map: None,
+                mask_map,
                 bumpiness,
                 roughness,
                 metallic,
@@ -313,7 +336,7 @@ impl Asset for GltfScene {
                     }
 
                     // Create a new mesh for the accessors used 
-                    let mesh = Mesh::from_slices(
+                    context.meshes.insert(Mesh::from_slices(
                         &context.graphics,
                         BufferMode::Dynamic,
                         BufferUsage::empty(),
@@ -322,11 +345,7 @@ impl Asset for GltfScene {
                         tangents.as_deref(),
                         tex_coords.as_deref(),
                         &triangles
-                    ).unwrap();
-
-                    
-
-                    context.meshes.insert(mesh)
+                    ).unwrap())
                 }).clone();
 
                 // Add the mesh handle into the list
@@ -346,17 +365,11 @@ impl Asset for GltfScene {
             .clone()
         ).or(scene.as_ref().map(|i| scenes[i.value()].clone())).unwrap();
 
-        /*
-        // Create storages that will contain the *handles* that are themselves stored within storages   
-        let mut meshes: Vec<Handle<Mesh>> = Vec::new();
-        let mut albedo_maps: Vec<Handle<AlbedoMap>> = Vec::new();
-        let mut normal_maps: Vec<Handle<NormalMap>> = Vec::new();
-        let mut mask_maps: Vec<Handle<MaskMap>> = Vec::new();
-        let mut pbr_materials: Vec<Handle<PhysicallyBasedMaterial>> = Vec::new();
-        */
-
         // Keep track of the renderable entities that we will add
-        let mut entities: Vec<(coords::Position, coords::Rotation, Surface<PhysicallyBasedMaterial>, crate::Renderer)> = Vec::new();
+        let mut entities: Vec<(coords::Position, coords::Rotation, coords::Scale, Surface<PhysicallyBasedMaterial>, crate::Renderer)> = Vec::new();
+
+        // Add a "default" PBR material
+        let default = context.pbr_materials.insert(settings.fallback);
 
         // Iterate over the nodes now (or objects in the scene)
         for index in scene.nodes {
@@ -365,6 +378,7 @@ impl Asset for GltfScene {
             // Convert translation, rotation, and scale to proper components
             let position = node.translation.map(|slice |coords::Position::at_xyz_array(slice)).unwrap_or_default();
             let rotation = node.rotation.map(|quat| coords::Rotation::new_xyzw_array(quat.0)).unwrap_or_default();
+            let scale = node.scale.map(|scale| coords::Scale::uniform(vek::Vec3::from_slice(&scale).reduce_partial_max())).unwrap_or_default();
 
             // Handle renderable entities
             if let Some(mesh_index) = node.mesh {
@@ -374,9 +388,11 @@ impl Asset for GltfScene {
                 // Sub-Surfaces that we must render
                 let mut subsurfaces = Vec::<SubSurface<PhysicallyBasedMaterial>>::new();
 
+                // Create the sub-surfaces of the entity (mesh)
                 for (submesh_index, primitive) in mesh.primitives.iter().enumerate() {
                     let mesh = &meshes[submesh_index];
-                    let material = &mapped_materials[primitive.material.unwrap().value()];
+                    let material = primitive.material.as_ref().map(|i| mapped_materials[i.value()].clone())
+                        .unwrap_or(default.clone());
                     subsurfaces.push(SubSurface { mesh: mesh.clone(), material: material.clone() });
                 } 
 
@@ -391,7 +407,7 @@ impl Asset for GltfScene {
                     id: context.pipelines.get::<PhysicallyBasedMaterial>().unwrap(),
                 };
 
-                entities.push((position, rotation, surface, crate::Renderer::default()));
+                entities.push((position, rotation, scale, surface, crate::Renderer::default()));
             }
         }
 
@@ -403,9 +419,10 @@ impl Asset for GltfScene {
 }
 
 
-type MeshAttributeValues<'a, 'b> = &'a (&'b [u8], (&'b Type, &'b ComponentType));
+type Value<'a, 'b> = &'a (&'b [u8], (&'b Type, &'b ComponentType));
 
-fn create_positions_vec(value: MeshAttributeValues) -> Vec<vek::Vec4<f32>> {
+// Create the position vertices required by all meshes
+fn create_positions_vec(value: Value) -> Vec<vek::Vec4<f32>> {
     let (bytes, (_type, _component)) = value;
     assert_eq!(**_type, Type::Vec3);
     assert_eq!(**_component, ComponentType::F32);
@@ -413,7 +430,8 @@ fn create_positions_vec(value: MeshAttributeValues) -> Vec<vek::Vec4<f32>> {
     data.into_iter().map(|vec3| vec3.with_w(0.0)).collect::<Vec::<vek::Vec4<f32>>>()
 }
 
-fn create_normals_vec(value: MeshAttributeValues) -> Vec<vek::Vec4<i8>> {
+// Create the normal coordinates required by the PBR material
+fn create_normals_vec(value: Value) -> Vec<vek::Vec4<i8>> {
     let (bytes, (_type, _component)) = value;
     assert_eq!(**_type, Type::Vec3);
     assert_eq!(**_component, ComponentType::F32);
@@ -421,7 +439,8 @@ fn create_normals_vec(value: MeshAttributeValues) -> Vec<vek::Vec4<i8>> {
     data.into_iter().map(|vec3| (vec3.with_w(1.0) * 127.0).as_::<i8>()).collect::<Vec::<vek::Vec4<i8>>>()
 }
 
-fn create_tex_coords_vec(value: MeshAttributeValues) -> Vec<vek::Vec2<f32>> {
+// Create the UV coordinates required by the PBR material 
+fn create_tex_coords_vec(value: Value) -> Vec<vek::Vec2<f32>> {
     let (bytes, (_type, _component)) = value;
     assert_eq!(**_type, Type::Vec2);
     assert_eq!(**_component, ComponentType::F32);
@@ -429,7 +448,8 @@ fn create_tex_coords_vec(value: MeshAttributeValues) -> Vec<vek::Vec2<f32>> {
     data.to_vec()
 }
 
-fn create_tangents_vec(value: MeshAttributeValues) -> Vec<vek::Vec4<i8>> {
+// Create the tangents (if supplied) required by the PBR material
+fn create_tangents_vec(value: Value) -> Vec<vek::Vec4<i8>> {
     let (bytes, (_type, _component)) = value;
     assert_eq!(**_type, Type::Vec4);
     assert_eq!(**_component, ComponentType::F32);
@@ -437,7 +457,8 @@ fn create_tangents_vec(value: MeshAttributeValues) -> Vec<vek::Vec4<i8>> {
     data.into_iter().map(|vec4| (vec4 * 127.0).as_::<i8>()).collect::<Vec::<vek::Vec4<i8>>>()
 }
 
-fn create_triangles_vec(value: MeshAttributeValues) -> Vec<[u32; 3]> {
+// Convert raw bytes to a triangle index buffer
+fn create_triangles_vec(value: Value) -> Vec<[u32; 3]> {
     let (bytes, (_type, _component)) = value;
     assert_eq!(**_type, Type::Scalar);
 
@@ -456,11 +477,39 @@ fn create_triangles_vec(value: MeshAttributeValues) -> Vec<[u32; 3]> {
     }
 }
 
+// Get sampling parameters from a sampling index of a texture
+fn sampling(
+    samplers: &[gltf::json::texture::Sampler],
+    sampler: Option<gltf::json::Index<gltf::json::texture::Sampler>>
+) -> SamplerSettings {
+    sampler.map(|index| {
+        let sampler = &samplers[index.value()];
 
+        let filter = sampler.mag_filter.map(|x| match x.unwrap() {
+            gltf::texture::MagFilter::Nearest => SamplerFilter::Nearest,
+            gltf::texture::MagFilter::Linear => SamplerFilter::Linear,
+        }).or(sampler.min_filter.map(|x| match x.unwrap() {
+            gltf::texture::MinFilter::Nearest => SamplerFilter::Nearest,
+            _ => SamplerFilter::Linear,    
+        })).unwrap_or(SamplerFilter::Linear);
 
+        SamplerSettings {
+            filter,
+            wrap: SamplerWrap::MirroredRepeat,
+            mipmaps: SamplerMipMaps::Auto,
+        }
+    }).unwrap_or(SamplerSettings {
+        filter: SamplerFilter::Linear,
+        wrap: SamplerWrap::MirroredRepeat,
+        mipmaps: SamplerMipMaps::Auto,
+    })
+}
+
+// Create a texture used for a material used in the glTF scene
 fn create_material_texture<T: Texel + ImageTexel>(
     graphics: Graphics,
     texture: &gltf::json::Texture,
+    samplers: &[gltf::json::texture::Sampler],
     images: &[(&[u8], &str)],
     loader: &assets::Assets,
     storage: &mut Storage<Texture2D<T>>,
@@ -476,21 +525,111 @@ fn create_material_texture<T: Texel + ImageTexel>(
         Some(loader)
     );
 
+    let sampler = sampling(samplers, texture.sampler);
+
     let texture = Texture2D::<T>::deserialize(
         data,
         graphics,
         TextureImportSettings {
-            sampling: Some(SamplerSettings {
-                filter: SamplerFilter::Nearest,
-                wrap: SamplerWrap::MirroredRepeat,
-                mipmaps: SamplerMipMaps::Auto,
-            }),
+            sampling: Some(sampler),
             mode: TextureMode::Dynamic,
             usage: TextureUsage::SAMPLED | TextureUsage::COPY_DST,
             scale: TextureScale::Default,
-            mipmaps: TextureMipMaps::Disabled,
+            mipmaps: TextureMipMaps::Manual { mips: &[] },
         }
     ).unwrap();
+
+    storage.insert(texture)
+}
+
+// r: ambient occlusion, g: roughness, b: metallic
+fn create_material_mask_texture(
+    graphics: Graphics,
+    metallic_roughness: Option<&gltf::json::Texture>,
+    occlusion: Option<&gltf::json::Texture>, 
+    samplers: &[gltf::json::texture::Sampler],
+    images: &[(&[u8], &str)],
+    loader: &assets::Assets,
+    storage: &mut Storage<MaskMap>,
+) -> Handle<MaskMap> {
+    assert!(metallic_roughness.is_some() || occlusion.is_some());
+
+    let sampler = match (metallic_roughness, occlusion) {
+        (None, Some(a)) | (Some(a), None) | (Some(a), Some(_)) => sampling(samplers, a.sampler),
+        _ => panic!()
+    };
+
+    let metallic_roughness = metallic_roughness.map(|i| (&images[i.source.value()], i));
+    let occlusion = occlusion.map(|i| (&images[i.source.value()], i));
+
+    let metallic_roughness = metallic_roughness.map(|((bytes, extension), texture)| {
+        let name = texture.name.as_ref().map(|x| &**x).unwrap_or("Untitled Texture");
+
+        let data = Data::new(
+            name,
+            extension,
+            Arc::from(bytes.to_vec()),
+            Path::new(name),
+            Some(loader)
+        );
+
+        RawTexels::<RGBA<Normalized<u8>>>::deserialize(
+            data,
+            (),
+            TextureScale::Default
+        ).unwrap()
+    });
+
+    let occlusion = occlusion.map(|((bytes, extension), texture)| {
+        let name = texture.name.as_ref().map(|x| &**x).unwrap_or("Untitled Texture");
+
+        let data = Data::new(
+            name,
+            extension,
+            Arc::from(bytes.to_vec()),
+            Path::new(name),
+            Some(loader)
+        );
+
+        RawTexels::<R<Normalized<u8>>>::deserialize(
+            data,
+            (),
+            TextureScale::Default
+        ).unwrap()
+    });
+
+    let mut extent = metallic_roughness.as_ref().map(|x| x.1);
+
+    if let Some(extent2) = extent {
+        if let Some(occlusion) = &occlusion {
+            assert_eq!(occlusion.1, extent2);
+            extent = Some(occlusion.1);
+        }
+    }
+
+    // r: ambient occlusion, g: roughness, b: metallic
+    let data: Vec<vek::Vec4<u8>> = match (metallic_roughness, occlusion) {
+        (None, Some(raw)) => {
+            raw.0.into_iter().map(|ao| vek::Vec4::new(ao, 255, 255, 0)).collect()
+        },
+        (Some(raw), None) => {
+            raw.0.into_iter().map(|vec| vek::Vec4::new(255, vec.y, vec.z, 0)).collect()
+        },
+        (Some(raw0), Some(raw1)) => {
+            raw0.0.into_iter().zip(raw1.0.into_iter()).map(|(vec, ao)| vek::Vec4::new(ao, vec.y, vec.z, 0)).collect()
+        },
+        _ => todo!()
+    };
+
+    let raw = RawTexels(data, extent.unwrap());
+
+    let texture = texture2d_from_raw(graphics, TextureImportSettings {
+        sampling: Some(sampler),
+        mode: TextureMode::Dynamic,
+        usage: TextureUsage::SAMPLED | TextureUsage::COPY_DST,
+        scale: TextureScale::Default,
+        mipmaps: TextureMipMaps::Manual { mips: &[] },
+    }, raw).unwrap();
 
     storage.insert(texture)
 }

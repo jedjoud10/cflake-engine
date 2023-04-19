@@ -5,7 +5,6 @@ fn main() {
     App::default()
         .set_app_name("cflake engine audio example")
         .insert_init(init)
-        .set_user_assets(user_assets!("/examples/assets/"))
         .execute();
 }
 
