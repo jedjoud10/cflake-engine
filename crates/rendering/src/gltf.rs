@@ -466,6 +466,35 @@ fn create_triangles_vec(value: Value) -> Vec<[u32; 3]> {
     }
 }
 
+// Get sampling parameters from a sampling index of a texture
+fn sampling(
+    samplers: &[gltf::json::texture::Sampler],
+    sampler: Option<gltf::json::Index<gltf::json::texture::Sampler>>
+) -> SamplerSettings {
+    sampler.map(|index| {
+        let sampler = &samplers[index.value()];
+
+        let filter = sampler.mag_filter.map(|x| match x.unwrap() {
+            gltf::texture::MagFilter::Nearest => SamplerFilter::Nearest,
+            gltf::texture::MagFilter::Linear => SamplerFilter::Linear,
+        }).or(sampler.min_filter.map(|x| match x.unwrap() {
+            gltf::texture::MinFilter::Nearest => SamplerFilter::Nearest,
+            _ => SamplerFilter::Linear,    
+        })).unwrap_or(SamplerFilter::Linear);
+
+        SamplerSettings {
+            filter,
+            wrap: SamplerWrap::MirroredRepeat,
+            mipmaps: SamplerMipMaps::Auto,
+        }
+    }).unwrap_or(SamplerSettings {
+        filter: SamplerFilter::Linear,
+        wrap: SamplerWrap::MirroredRepeat,
+        mipmaps: SamplerMipMaps::Auto,
+    })
+}
+
+
 fn create_material_texture<T: Texel + ImageTexel>(
     graphics: Graphics,
     texture: &gltf::json::Texture,
@@ -485,15 +514,13 @@ fn create_material_texture<T: Texel + ImageTexel>(
         Some(loader)
     );
 
+    let sampler = sampling(samplers, texture.sampler);
+
     let texture = Texture2D::<T>::deserialize(
         data,
         graphics,
         TextureImportSettings {
-            sampling: Some(SamplerSettings {
-                filter: SamplerFilter::Linear,
-                wrap: SamplerWrap::MirroredRepeat,
-                mipmaps: SamplerMipMaps::Auto,
-            }),
+            sampling: Some(sampler),
             mode: TextureMode::Dynamic,
             usage: TextureUsage::SAMPLED | TextureUsage::COPY_DST,
             scale: TextureScale::Default,
@@ -515,6 +542,11 @@ fn create_material_mask_texture(
     storage: &mut Storage<MaskMap>,
 ) -> Handle<MaskMap> {
     assert!(metallic_roughness.is_some() || occlusion.is_some());
+
+    let sampler = match (metallic_roughness, occlusion) {
+        (None, Some(a)) | (Some(a), None) | (Some(a), Some(_)) => sampling(samplers, a.sampler),
+        _ => panic!()
+    };
 
     let metallic_roughness = metallic_roughness.map(|i| (&images[i.source.value()], i));
     let occlusion = occlusion.map(|i| (&images[i.source.value()], i));
@@ -581,11 +613,7 @@ fn create_material_mask_texture(
     let raw = RawTexels(data, extent.unwrap());
 
     let texture = texture2d_from_raw(graphics, TextureImportSettings {
-        sampling: Some(SamplerSettings {
-            filter: SamplerFilter::Linear,
-            wrap: SamplerWrap::MirroredRepeat,
-            mipmaps: SamplerMipMaps::Auto,
-        }),
+        sampling: Some(sampler),
         mode: TextureMode::Dynamic,
         usage: TextureUsage::SAMPLED | TextureUsage::COPY_DST,
         scale: TextureScale::Default,
