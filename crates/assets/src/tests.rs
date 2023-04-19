@@ -1,5 +1,8 @@
 #[cfg(test)]
 mod tests {
+    use with_builtin_macros::builtin_macros::*;
+    use with_builtin_macros::with_builtin;
+
     use crate::{asset, AssetLoadError, Assets};
 
     #[test]
