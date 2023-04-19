@@ -94,6 +94,16 @@ In this engine, assets are defined as structs that can be deserialized and loade
 
 You can define a "Context" and "Settings" that can be used to customize how each asset is loaded. Asset deserialization *must* be faillible, and due to that restriction, I made it so you *must* define an ``Error`` type that gets returned whenever asset conversion fails. There is also asnychronous asset loading supported within the engine, and this is implemented using the ``AsyncAsset`` trait that gets automatically gets implemented for ``Asset``s that are Sync + Send and have their Settings + Context be Sync and Send.
 
+For now, these are the types of assets that are loadable/deseriazable by default and their respective extensions.
+* Texture2D: .png, .jpg
+* glTF scene: .gltf
+* AudioClip: .wav, .mp3
+* Vertex Shader: .vert
+* Fragment Shader: .frag
+* Compute Shader: .comp
+* Raw GLSL (only for includes): .glsl
+* Raw UTF8 text: .txt
+
 # Thanks to:
 * Lionel Stanway (MoldyToeMan)
 * Logan McLennan (PigSteel)
