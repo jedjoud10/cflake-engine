@@ -152,7 +152,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         instances: Range<u32>,
     ) -> Result<(), DrawError> {
         // Handle the missing bind groups
-        if let Err(value) = crate::validate_set_bind_groups(self.reflected_groups_bitflags, self.set_groups_bitflags) {
+        if let Err(value) = crate::validate_set(self.reflected_groups_bitflags, self.set_groups_bitflags) {
             return Err(DrawError::MissingValidBindGroup(value));
         }
 
@@ -177,7 +177,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         element: usize,
     ) -> Result<(), DrawError> {
         // Handle the missing bind groups
-        if let Err(value) = crate::validate_set_bind_groups(self.reflected_groups_bitflags, self.set_groups_bitflags) {
+        if let Err(value) = crate::validate_set(self.reflected_groups_bitflags, self.set_groups_bitflags) {
             return Err(DrawError::MissingValidBindGroup(value));
         }
 
@@ -205,7 +205,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         instances: Range<u32>,
     ) -> Result<(), DrawIndexedError> {
         // Handle the missing bind groups
-        if let Err(value) = crate::validate_set_bind_groups(self.reflected_groups_bitflags, self.set_groups_bitflags) {
+        if let Err(value) = crate::validate_set(self.reflected_groups_bitflags, self.set_groups_bitflags) {
             return Err(DrawIndexedError::MissingValidBindGroup(value));
         }
 
@@ -233,7 +233,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
         element: usize,
     ) -> Result<(), DrawIndexedError> {
         // Handle the missing bind groups
-        if let Err(value) = crate::validate_set_bind_groups(self.reflected_groups_bitflags, self.set_groups_bitflags) {
+        if let Err(value) = crate::validate_set(self.reflected_groups_bitflags, self.set_groups_bitflags) {
             return Err(DrawIndexedError::MissingValidBindGroup(value));
         }
 

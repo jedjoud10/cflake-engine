@@ -95,7 +95,7 @@ vec3 calculate_sky_color(
     TODO: Implement cube map and diffuse IBL to re-enable this
     vec2 test_normal = sample_spherical_map(normal);
     vec2 test_sun = sample_spherical_map(-sun);
-    return pow(getAtmosphericScattering(screen2world(test_normal), screen2world(test_sun)), vec3(2.2));
+    return pow(getAtmosphericScattering(screen2world(test_normal), screen2world(test_sun)) / 3, vec3(2.2));
     */
 
     // Get up component of vector and remap to 0 - 1 range

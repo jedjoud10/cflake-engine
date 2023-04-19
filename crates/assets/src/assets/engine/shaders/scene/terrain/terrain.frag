@@ -25,6 +25,18 @@ layout(push_constant) uniform PushConstants {
 	layout(offset = 80) float fade;
 } material;
 
+// Albedo / diffuse map texture array
+layout(set = 1, binding = 0) uniform texture2DArray layered_albedo_map;
+layout(set = 1, binding = 1) uniform sampler layered_albedo_map_sampler;
+
+// Normal map texture array
+layout(set = 1, binding = 2) uniform texture2DArray layered_normal_map;
+layout(set = 1, binding = 3) uniform sampler layered_normal_map_sampler;
+
+// Mask map texture array
+layout(set = 1, binding = 4) uniform texture2DArray layered_mask_map;
+layout(set = 1, binding = 5) uniform sampler layered_mask_map_sampler;
+
 void main() {
 	/*
 	// We do a bit of fading V2
@@ -53,25 +65,26 @@ void main() {
 	vec3 rock = vec3(128, 128, 128) / 255.0;
 	vec3 dirt = vec3(54, 30, 7) / 255.0;
 	vec3 grass = vec3(69, 107, 35) / 255.0;
-	albedo = m_color;
+	albedo = vec3(1);
 	albedo = grass;
 
 	if (normal.y < 0.85) {
 		albedo = rock;
 	}
 
+	albedo *= m_color;
+
 	// Compute PBR values
 	float roughness = clamp(mask.g, 0.02, 1.0);
 	float metallic = clamp(mask.b, 0.01, 1.0);
 	float visibility = clamp(mask.r, 0.0, 1.0);
-
 	vec3 f0 = mix(vec3(0.04), albedo, metallic);
 
 	// Create the data structs
-	SunData sun = SunData(scene.sun_direction.xyz, scene.sun_color.rgb);
-	SurfaceData surface = SurfaceData(albedo, -normal, -normal, m_position, gl_FragCoord.z, roughness, metallic, visibility, f0);
-	vec3 view = normalize(-camera.position.xyz + m_position);
-	CameraData camera = CameraData(view, normalize(view + scene.sun_direction.xyz), camera.position.xyz, camera.view, camera.projection);
+	SunData sun = SunData(-scene.sun_direction.xyz, scene.sun_color.rgb);
+	SurfaceData surface = SurfaceData(albedo, normal, normal, m_position, roughness, metallic, visibility, f0);
+	vec3 view = normalize(camera.position.xyz - m_position);
+	CameraData camera = CameraData(view, normalize(view - scene.sun_direction.xyz), camera.position.xyz, camera.view, camera.projection);
 
 	// Check if the fragment is shadowed
 	vec3 color = brdf(surface, camera, sun);

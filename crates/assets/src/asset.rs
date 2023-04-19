@@ -1,4 +1,5 @@
-use std::{path::Path, sync::Arc};
+use std::{path::Path, sync::Arc, convert::Infallible};
+use crate::Assets;
 
 // File data is what will be given to assets whenever we try to deserialize them
 // We will assume that all assets are files
@@ -7,9 +8,27 @@ pub struct Data<'a> {
     pub(super) extension: &'a str,
     pub(super) bytes: Arc<[u8]>,
     pub(super) path: &'a Path,
+    pub(crate) loader: Option<&'a Assets>
 }
 
 impl<'a> Data<'a> {
+    // Create a new "Data" struct that potentially contains a loader
+    pub fn new(
+        name: &'a str,
+        extension: &'a str,
+        bytes: Arc<[u8]>,
+        path: &'a Path,
+        loader: Option<&'a Assets>
+    ) -> Self { 
+        Self {
+            name,
+            extension,
+            bytes,
+            path,
+            loader,
+        }
+    }
+
     // Get the name of the loaded file
     pub fn name(&self) -> &str {
         self.name
@@ -28,6 +47,13 @@ impl<'a> Data<'a> {
     // Get the bytes of the loaded file
     pub fn bytes(&self) -> &[u8] {
         &self.bytes
+    }
+
+    // Get the recursive asset loader 
+    // This is only Some when the user loads in a synchronous asset
+    // Can't use the recursive asset loader for async assets because it would cause deadlocks
+    pub fn loader(&self) -> Option<&'a Assets> {
+        self.loader
     }
 }
 
@@ -68,6 +94,7 @@ where
 {
 }
 
+// UTF8 string decoder
 impl Asset for String {
     type Context<'ctx> = ();
     type Settings<'stg> = ();
@@ -83,5 +110,24 @@ impl Asset for String {
         _: Self::Settings<'s>,
     ) -> Result<Self, Self::Err> {
         String::from_utf8(data.bytes().to_vec())
+    }
+}
+
+// Raw binary reader
+impl Asset for Vec<u8> {
+    type Context<'ctx> = ();
+    type Settings<'stg> = ();
+    type Err = Infallible;
+
+    fn extensions() -> &'static [&'static str] {
+        &["bin"]
+    }
+
+    fn deserialize<'c, 's>(
+        data: Data,
+        context: Self::Context<'c>,
+        settings: Self::Settings<'s>,
+    ) -> Result<Self, Self::Err> {
+        Ok(data.bytes.to_vec())
     }
 }

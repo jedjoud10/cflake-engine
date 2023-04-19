@@ -1,10 +1,10 @@
 use cflake_engine::prelude::*;
+use cflake_engine::assets::include_dir;
 
 // Mesh example game window
 fn main() {
     App::default()
         .set_app_name("cflake engine mesh example")
-        .set_user_assets_path(user_assets_path!("/examples/assets/"))
         .set_window_fullscreen(true)
         .insert_init(init)
         .insert_update(update)
@@ -31,11 +31,6 @@ fn init(world: &mut World) {
         .set_cursor_grab(winit::window::CursorGrabMode::Confined)
         .unwrap();
     window.raw().set_cursor_visible(false);
-
-    // Import the diffuse map, normal map, mask map
-    asset!(&mut assets, "assets/user/textures/diffuse2.jpg");
-    asset!(&mut assets, "assets/user/textures/normal2.jpg");
-    asset!(&mut assets, "assets/user/textures/mask2.jpg");
 
     // Load in the diffuse map, normal map, and mask map textures asynchronously
     let albedo = assets.async_load::<AlbedoMap>(

@@ -1,11 +1,14 @@
 #[cfg(test)]
 mod tests {
-    use crate::{persistent, AssetLoadError, Assets};
+    use with_builtin_macros::builtin_macros::*;
+    use with_builtin_macros::with_builtin;
+
+    use crate::{asset, AssetLoadError, Assets};
 
     #[test]
     fn read() {
-        let loader = Assets::new(None);
-        persistent!(loader, "test/text.txt");
+        let loader = Assets::new();
+        asset!(loader, "test/text.txt", "src/assets/");
         let string = loader.load::<String>("test/text.txt");
         assert_eq!(
             string.unwrap(),
@@ -15,23 +18,23 @@ mod tests {
 
     #[test]
     fn not_found() {
-        let loader = Assets::new(None);
+        let loader = Assets::new();
         let string = loader.load::<String>("test/text.txt");
         assert!(string.is_err());
     }
 
     #[test]
     fn parse_error() {
-        let loader = Assets::new(None);
-        persistent!(loader, "test/invalid.txt");
+        let loader = Assets::new();
+        asset!(loader, "test/invalid.txt", "src/assets/");
         let string = loader.load::<String>("test/invalid.txt");
         assert!(string.is_err());
     }
 
     #[test]
     fn read_iter() {
-        let loader = Assets::new(None);
-        persistent!(loader, "test/text.txt");
+        let loader = Assets::new();
+        asset!(loader, "test/text.txt", "src/assets/");
         let mut strings =
             loader.load_from_iter::<String>(["test/text.txt"]);
         let string = strings.pop().unwrap();
@@ -43,7 +46,7 @@ mod tests {
 
     #[test]
     fn not_found_iter() {
-        let loader = Assets::new(None);
+        let loader = Assets::new();
         let mut strings =
             loader.load_from_iter::<String>(["test/text.txt"]);
         let string = strings.pop().unwrap();
@@ -56,8 +59,8 @@ mod tests {
     #[test]
     fn read_async() {
         let mut threadpool = utils::ThreadPool::default();
-        let mut loader = Assets::new(None);
-        persistent!(loader, "test/text.txt");
+        let mut loader = Assets::new();
+        asset!(loader, "test/text.txt", "src/assets/");
         let handle = loader
             .async_load::<String>("test/text.txt", &mut threadpool);
         let string = loader.wait(handle).unwrap();
@@ -67,7 +70,7 @@ mod tests {
     #[test]
     fn not_found_async() {
         let mut threadpool = utils::ThreadPool::default();
-        let mut loader = Assets::new(None);
+        let mut loader = Assets::new();
         let handle = loader
             .async_load::<String>("test/text.txt", &mut threadpool);
         let string = loader.wait(handle);
@@ -80,8 +83,8 @@ mod tests {
     #[test]
     fn read_async_iter() {
         let mut threadpool = utils::ThreadPool::default();
-        let mut loader = Assets::new(None);
-        persistent!(loader, "test/text.txt");
+        let mut loader = Assets::new();
+        asset!(loader, "test/text.txt", "src/assets/");
         let mut handles = loader.async_load_from_iter::<String>(
             ["test/text.txt"],
             &mut threadpool,
@@ -96,7 +99,7 @@ mod tests {
     #[test]
     fn not_found_async_iter() {
         let mut threadpool = utils::ThreadPool::default();
-        let mut loader = Assets::new(None);
+        let mut loader = Assets::new();
         let mut handles = loader.async_load_from_iter::<String>(
             ["test/text.txt"],
             &mut threadpool,
@@ -134,8 +137,8 @@ mod tests {
             }
         }
 
-        let loader = Assets::new(None);
-        persistent!(loader, "test/text.txt");
+        let loader = Assets::new();
+        asset!(loader, "test/text.txt", "src/assets/");
         let context = 69u32;
         let string =
             loader.load::<Contextual>(("test/text.txt", &context));

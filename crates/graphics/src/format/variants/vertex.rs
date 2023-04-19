@@ -169,6 +169,10 @@ impl_vertex_32!(X, VertexChannels::One, Scalar);
 impl_vertex_16!(XY, VertexChannels::Two, Vec2);
 impl_vertex_32!(XY, VertexChannels::Two, Vec2);
 
+// 1 byte for 2 channels (2)
+// FIXME: Cannot have this because of VERTEX_STRIDE_ALIGNMENT 
+//impl_vertex_8!(XYZW, VertexChannels::Four, Vec4);
+
 // 4 bytes for 3 channels (12)
 impl_vertex_32!(XYZ, VertexChannels::Three, Vec3);
 

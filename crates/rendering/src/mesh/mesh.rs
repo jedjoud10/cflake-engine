@@ -37,6 +37,19 @@ pub struct Mesh<R: RenderPath = Direct> {
     aabb: Option<math::Aabb<f32>>,
 }
 
+impl<R: RenderPath> PartialEq for Mesh<R> {
+    fn eq(&self, other: &Self) -> bool {
+        self.enabled == other.enabled &&
+        self.positions == other.positions &&
+        self.normals == other.normals &&
+        self.tangents == other.tangents &&
+        self.tex_coords == other.tex_coords &&
+        self.count == other.count &&
+        self.triangles == other.triangles &&
+        self.aabb == other.aabb
+    }
+}
+
 pub type IndirectMesh = Mesh<Indirect>;
 
 // Initialization of directly rendered meshes
@@ -331,8 +344,7 @@ impl Asset for Mesh {
             // Read and add the texture coordinate
             if let Some(tex_coords) = &mut tex_coords {
                 let read = Vec2::from_slice(&vertex.texture);
-                let viewed = read.map(|f| (f * 255.0) as u8);
-                tex_coords.push(viewed.with_w(0));
+                tex_coords.push(read);
             }
         }
 

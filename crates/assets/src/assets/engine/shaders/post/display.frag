@@ -2,6 +2,7 @@
 layout(location = 0) out vec4 frag;
 
 #include <engine/shaders/common/window.glsl>
+#include <engine/shaders/common/camera.glsl>
 #include <engine/shaders/math/conversions.glsl>
 
 // Fetch the scene color data
@@ -18,7 +19,7 @@ void main() {
 	vec3 color = texelFetch(color_map, ivec2(gl_FragCoord.xy), 0).rgb;
 
 	// Increase exposure
-	color *= 1.7;
+	color *= 2.0;
 	color = max(color, vec3(0));
 
 	// Apply tonemapping and gamma mapping

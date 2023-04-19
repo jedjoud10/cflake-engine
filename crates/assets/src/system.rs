@@ -1,80 +1,84 @@
-use crate::{persistent, Assets};
+use crate::{asset, Assets, UserAssets};
 use std::path::PathBuf;
 use world::{user, System, World};
 
-// Simple resource that is temporarily added to world to pass user assets path
-pub struct AssetsSettings(pub Option<PathBuf>);
-
 // Initialize a load and add it to the world
 fn init(world: &mut World) {
-    // Create a new asset loader / cacher
-    let user = world.get::<AssetsSettings>().unwrap().0.clone();
-    let loader = Assets::new(user);
+    let loader = Assets::new();
+    use with_builtin_macros::with_builtin;
+    use with_builtin_macros::builtin_macros::include_bytes_from_root::*;
+
+    macro_rules! internal {
+        ($assets:expr, $file:expr) => {
+            asset!($assets, $file, "/src/assets/");
+        };
+    }
+
 
     // Load the default common shaders
-    persistent!(loader, "engine/shaders/common/camera.glsl");
-    persistent!(loader, "engine/shaders/common/scene.glsl");
-    persistent!(loader, "engine/shaders/common/timing.glsl");
-    persistent!(loader, "engine/shaders/common/shadow.glsl");
-    persistent!(loader, "engine/shaders/common/window.glsl");
-    persistent!(loader, "engine/shaders/common/sky.glsl");
+    internal!(loader, "engine/shaders/common/camera.glsl");
+    internal!(loader, "engine/shaders/common/scene.glsl");
+    internal!(loader, "engine/shaders/common/timing.glsl");
+    internal!(loader, "engine/shaders/common/shadow.glsl");
+    internal!(loader, "engine/shaders/common/window.glsl");
+    internal!(loader, "engine/shaders/common/sky.glsl");
 
     // Load the default math shaders
-    persistent!(loader, "engine/shaders/math/models.glsl");
-    persistent!(loader, "engine/shaders/math/conversions.glsl");
-    persistent!(loader, "engine/shaders/math/dither.glsl");
+    internal!(loader, "engine/shaders/math/models.glsl");
+    internal!(loader, "engine/shaders/math/conversions.glsl");
+    internal!(loader, "engine/shaders/math/dither.glsl");
 
     // Load the default SDF shaders
-    persistent!(loader, "engine/shaders/sdf/common.glsl");
-    persistent!(loader, "engine/shaders/sdf/operations.glsl");
+    internal!(loader, "engine/shaders/sdf/common.glsl");
+    internal!(loader, "engine/shaders/sdf/operations.glsl");
 
     // Load the default rendering shaders
-    persistent!(loader, "engine/shaders/scene/basic/basic.frag");
-    persistent!(loader, "engine/shaders/scene/pbr/pbr.frag");
-    persistent!(loader, "engine/shaders/scene/basic/basic.vert");
-    persistent!(loader, "engine/shaders/scene/shadow/shadow.frag");
-    persistent!(loader, "engine/shaders/scene/shadow/shadow.vert");
-    persistent!(loader, "engine/shaders/scene/sky/sky.frag");
-    persistent!(loader, "engine/shaders/scene/sky/sky.vert");
-    persistent!(loader, "engine/shaders/scene/terrain/terrain.vert");
-    persistent!(loader, "engine/shaders/scene/terrain/terrain.frag");
+    internal!(loader, "engine/shaders/scene/basic/basic.frag");
+    internal!(loader, "engine/shaders/scene/pbr/pbr.frag");
+    internal!(loader, "engine/shaders/scene/basic/basic.vert");
+    internal!(loader, "engine/shaders/scene/shadow/shadow.frag");
+    internal!(loader, "engine/shaders/scene/shadow/shadow.vert");
+    internal!(loader, "engine/shaders/scene/sky/sky.frag");
+    internal!(loader, "engine/shaders/scene/sky/sky.vert");
+    internal!(loader, "engine/shaders/scene/terrain/terrain.vert");
+    internal!(loader, "engine/shaders/scene/terrain/terrain.frag");
 
     // Load the default post-rendering shaders
-    persistent!(loader, "engine/shaders/post/display.frag");
-    persistent!(loader, "engine/shaders/post/display.vert");
-    persistent!(loader, "engine/shaders/post/gui.vert");
-    persistent!(loader, "engine/shaders/post/gui.frag");
+    internal!(loader, "engine/shaders/post/display.frag");
+    internal!(loader, "engine/shaders/post/display.vert");
+    internal!(loader, "engine/shaders/post/gui.vert");
+    internal!(loader, "engine/shaders/post/gui.frag");
 
     // Load the default noise shaders
-    persistent!(loader, "engine/shaders/noises/cellular2D.glsl");
-    persistent!(loader, "engine/shaders/noises/cellular2x2.glsl");
-    persistent!(loader, "engine/shaders/noises/cellular2x2x2.glsl");
-    persistent!(loader, "engine/shaders/noises/cellular3D.glsl");
-    persistent!(loader, "engine/shaders/noises/common.glsl");
-    persistent!(loader, "engine/shaders/noises/noise2D.glsl");
-    persistent!(loader, "engine/shaders/noises/noise3D.glsl");
-    persistent!(loader, "engine/shaders/noises/noise3Dgrad.glsl");
-    persistent!(loader, "engine/shaders/noises/noise4D.glsl");
-    persistent!(loader, "engine/shaders/noises/fbm.glsl");
-    persistent!(loader, "engine/shaders/noises/gnoise.glsl");
-    persistent!(loader, "engine/shaders/noises/erosion2D.glsl");
+    internal!(loader, "engine/shaders/noises/cellular2D.glsl");
+    internal!(loader, "engine/shaders/noises/cellular2x2.glsl");
+    internal!(loader, "engine/shaders/noises/cellular2x2x2.glsl");
+    internal!(loader, "engine/shaders/noises/cellular3D.glsl");
+    internal!(loader, "engine/shaders/noises/common.glsl");
+    internal!(loader, "engine/shaders/noises/noise2D.glsl");
+    internal!(loader, "engine/shaders/noises/noise3D.glsl");
+    internal!(loader, "engine/shaders/noises/noise3Dgrad.glsl");
+    internal!(loader, "engine/shaders/noises/noise4D.glsl");
+    internal!(loader, "engine/shaders/noises/fbm.glsl");
+    internal!(loader, "engine/shaders/noises/gnoise.glsl");
+    internal!(loader, "engine/shaders/noises/erosion2D.glsl");
 
     // Load the default terrain shaders
-    persistent!(loader, "engine/shaders/terrain/voxels.comp");
-    persistent!(loader, "engine/shaders/terrain/default.glsl");
-    persistent!(loader, "engine/shaders/terrain/vertices.comp");
-    persistent!(loader, "engine/shaders/terrain/quads.comp");
-    persistent!(loader, "engine/shaders/terrain/copy.comp");
-    persistent!(loader, "engine/shaders/terrain/find.comp");
+    internal!(loader, "engine/shaders/terrain/voxels.comp");
+    internal!(loader, "engine/shaders/terrain/default.glsl");
+    internal!(loader, "engine/shaders/terrain/vertices.comp");
+    internal!(loader, "engine/shaders/terrain/quads.comp");
+    internal!(loader, "engine/shaders/terrain/copy.comp");
+    internal!(loader, "engine/shaders/terrain/find.comp");
 
     // Load the default textures
-    persistent!(loader, "engine/textures/scene/bumps.jpg");
+    internal!(loader, "engine/textures/scene/bumps.jpg");
 
     // Load the default meshes
-    persistent!(loader, "engine/meshes/cube.obj");
-    persistent!(loader, "engine/meshes/sphere.obj");
-    persistent!(loader, "engine/meshes/icosphere.obj");
-    persistent!(loader, "engine/meshes/plane.obj");
+    internal!(loader, "engine/meshes/cube.obj");
+    internal!(loader, "engine/meshes/sphere.obj");
+    internal!(loader, "engine/meshes/icosphere.obj");
+    internal!(loader, "engine/meshes/plane.obj");
 
     // Insert the loader
     world.insert(loader);

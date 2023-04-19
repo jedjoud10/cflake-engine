@@ -216,6 +216,32 @@ fn update(world: &mut World) {
                 });
         },
     );
+
+    // Terrain stats
+    if let Ok(terrain) = world.get::<Terrain>() {
+        egui::Window::new("Terrain").frame(frame).show(
+            &gui,
+            |ui| {
+                let settings = &terrain.settings;
+                ui.heading("Manager settings");
+                ui.label(format!("Chunk resolution: {}", settings.resolution()));
+                ui.label(format!("Chunk count: {}", settings.chunks_count()));
+                ui.label(format!("Is Blocky?: {}", settings.blocky()));
+                ui.label(format!("Is Low-Poly?: {}", settings.lowpoly()));
+                ui.heading("Memory settings");
+                ui.label(format!("Allocation count: {}", settings.allocation_count()));
+                ui.label(format!("Sub-allocation count: {}", settings.sub_allocation_count()));
+
+                let pending = scene.query::<&Chunk>().into_iter().filter(|c| c.state() == ChunkState::Pending).count();
+                let generated = scene.query::<&Chunk>().into_iter().filter(|c| c.state() == ChunkState::Generated).count();
+                let visible = scene.query::<(&Chunk, &Surface<TerrainMaterial>)>().into_iter().filter(|(_, s)| s.visible).count();
+                ui.heading("Real-time stats");
+                ui.label(format!("Pending chunks count: {}", pending));
+                ui.label(format!("Generated chunks count: {}", generated));
+                ui.label(format!("Visible chunks count: {}", visible));
+            },
+        );
+    }
 }
 
 // Statistics system

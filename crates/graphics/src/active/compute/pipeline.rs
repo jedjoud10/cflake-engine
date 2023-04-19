@@ -33,7 +33,7 @@ impl<'a, 'r> ActiveComputeDispatcher<'a, 'r> {
     // all the necessities (bind groups, push constants) to be able to dispatch
     pub fn dispatch(&mut self, size: vek::Vec3<u32>) -> Result<(), DispatchError> {
         // Handle the missing bind groups
-        if let Err(value) = crate::validate_set_bind_groups(self.reflected_groups_bitflags, self.set_groups_bitflags) {
+        if let Err(value) = crate::validate_set(self.reflected_groups_bitflags, self.set_groups_bitflags) {
             return Err(DispatchError::MissingValidBindGroup(value));
         }
 

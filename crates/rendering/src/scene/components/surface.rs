@@ -1,17 +1,24 @@
 use crate::{
-    Direct, Indirect, IndirectMesh, Material, MaterialId, Mesh,
+    Direct, Indirect, IndirectMesh, Material, MaterialId, Mesh, RenderPath,
 };
 use ecs::Component;
-
+use smallvec::SmallVec;
 use utils::Handle;
 
-// A surface is a combination of a sub mesh and a specific material handle
-// A renderable entity can have multiple surfaces that each have their own material
-#[derive(Component)]
-pub struct Surface<M: Material> {
-    // Graphic object handles
+
+// A sub surface is a combination of a mesh and a material
+// We can store multiple sub-surfaces into a surface to create multi-material systems
+pub struct SubSurface<M: Material> {
     pub mesh: Handle<Mesh<M::RenderPath>>,
     pub material: Handle<M>,
+}
+
+// A surface is a combination of multiple subsurfaces to create a whole "mesh cluster" that a material can render
+// A renderable entity can have multiple surfaces that each have their own different material type
+#[derive(Component)]
+pub struct Surface<M: Material> {
+    // I LOVE SUBSURFACES
+    pub subsurfaces: SmallVec<[SubSurface<M>; 1]>,
 
     // Surface settings
     pub visible: bool,
@@ -26,36 +33,20 @@ pub struct Surface<M: Material> {
     pub id: MaterialId<M>,
 }
 
-impl<M: Material<RenderPath = Direct>> Surface<M> {
+impl<M: Material> Surface<M> {
     // Create a new visible surface from a mesh handle, material handle, and material ID
     pub fn new(
-        mesh: Handle<Mesh>,
+        mesh: Handle<Mesh<M::RenderPath>>,
         material: Handle<M>,
         id: MaterialId<M>,
     ) -> Self {
         Self {
-            mesh,
-            material,
-            visible: true,
-            culled: false,
-            id,
-            shadow_caster: true,
-            shadow_receiver: true,
-            shadow_culled: false,
-        }
-    }
-}
-
-impl<M: Material<RenderPath = Indirect>> Surface<M> {
-    // Create a new visible surface from a mesh handle, material handle, and material ID
-    pub fn indirect(
-        mesh: Handle<IndirectMesh>,
-        material: Handle<M>,
-        id: MaterialId<M>,
-    ) -> Self {
-        Self {
-            mesh,
-            material,
+            subsurfaces: SmallVec::from_buf([
+                SubSurface {
+                    mesh,
+                    material,
+                }
+            ]),
             visible: true,
             culled: false,
             id,

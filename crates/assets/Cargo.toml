@@ -15,6 +15,8 @@ slotmap = "1.0.6"
 world = { path = "../world" }
 utils = { path = "../utils" }
 cfg-if = "1.0.0"
+include_dir = "0.7.3"
+with_builtin_macros = "0.0.3"
 
 [features]
 debug-assets = []

@@ -8,6 +8,8 @@ mod texture2d;
 mod texture3d;
 mod cubemap;
 mod layered2d;
+mod loader;
+pub use loader::*;
 pub use layered2d::*;
 pub use cubemap::*;
 pub use errors::*;

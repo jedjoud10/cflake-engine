@@ -30,11 +30,11 @@ impl MemoryManager {
         triangles: &mut Storage<Triangles>,
         settings: &TerrainSettings
     ) -> Self {
-        let sub_allocation_chunk_indices = (0..settings.allocations_count)
+        let sub_allocation_chunk_indices = (0..settings.allocation_count)
         .map(|_| {
             Buffer::<u32>::splatted(
                 graphics,
-                settings.sub_allocations_count,
+                settings.sub_allocation_count,
                 u32::MAX,
                 BufferMode::Dynamic,
                 BufferUsage::STORAGE | BufferUsage::WRITE | BufferUsage::READ,
@@ -43,7 +43,7 @@ impl MemoryManager {
         })
         .collect::<Vec<_>>();
 
-        let shared_vertex_buffers = (0..settings.allocations_count)
+        let shared_vertex_buffers = (0..settings.allocation_count)
             .map(|_| {
                 let value =
                     AttributeBuffer::<attributes::Position>::zeroed(
@@ -57,7 +57,7 @@ impl MemoryManager {
             })
             .collect::<Vec<_>>();
 
-        let shared_triangle_buffers = (0..settings.allocations_count)
+        let shared_triangle_buffers = (0..settings.allocation_count)
             .map(|_| {
                 triangles.insert(
                     TriangleBuffer::zeroed(
@@ -93,7 +93,7 @@ impl MemoryManager {
         );
 
         // Spec constants
-        compiler.use_constant(0, settings.sub_allocations_count as u32);
+        compiler.use_constant(0, settings.sub_allocation_count as u32);
         compiler.use_constant(1, settings.vertices_per_sub_allocation);
         compiler.use_constant(2, settings.triangles_per_sub_allocation);
 

@@ -3,8 +3,8 @@ use cflake_engine::prelude::*;
 // Terrain example game window
 fn main() {
     App::default()
-        .set_app_name("cflake engine mesh example")
-        .set_user_assets_path(user_assets_path!("/examples/assets/"))
+        .set_app_name("cflake engine terrain example")
+//        .set_user_assets(assets!("/examples/assets/"))
         .set_window_fullscreen(true)
         .set_frame_rate_limit(FrameRateLimit::Limited(120))
         //.set_stats_enabled(true)
@@ -16,14 +16,18 @@ fn main() {
 
 // Creates a movable camera, sky entity, and procedural terrain
 fn init(world: &mut World) {
+    /*
     let graphics = world.get::<Graphics>().unwrap();
 
     // Create a new terrain material
     let material = TerrainMaterial {
+        layered_albedo_map,
+        layered_normal_map,
+        layered_mask_map,
         bumpiness: 1.0,
         roughness: 1.0,
         metallic: 1.0,
-        ambient_occlusion: 1.0
+        ambient_occlusion: 1.0,
     };
 
     // Create the terrain generator's settings
@@ -41,9 +45,10 @@ fn init(world: &mut World) {
     // Drop (needed) to insert settings
     drop(graphics);
     world.insert(settings);
+    */
 
     // Fetch the required resources from the world
-    let mut assets = world.get_mut::<Assets>().unwrap();
+    let assets = world.get::<Assets>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
     let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
     let mut skies = world.get_mut::<Storage<SkyMaterial>>().unwrap();
@@ -60,7 +65,7 @@ fn init(world: &mut World) {
 
     // Get the material id (also registers the material pipeline)
     let id = pipelines
-        .register::<SkyMaterial>(&graphics, &mut assets)
+        .register::<SkyMaterial>(&graphics, &assets)
         .unwrap();
 
     // Create a new material instance
@@ -87,8 +92,8 @@ fn init(world: &mut World) {
     ));
 
     // Create a directional light
-    let light = DirectionalLight { color: vek::Rgb::one() * 3.6 };
-    let rotation = vek::Quaternion::rotation_x(-15.0f32.to_radians())
+    let light = DirectionalLight { color: vek::Rgb::one() * 2.6 };
+    let rotation = vek::Quaternion::rotation_x(-90.0f32.to_radians())
         .rotated_y(45f32.to_radians());
     scene.insert((light, Rotation::from(rotation)));
 }
@@ -102,11 +107,13 @@ fn update(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
 
     // Rotation the light
+    /*
     if let Some((rotation, _)) =
         scene.find_mut::<(&mut Rotation, &DirectionalLight)>()
     {
         rotation.rotate_y(-0.1 * time.delta().as_secs_f32());
     }
+    */
 
     // Exit the game when the user pressed Escape
     if input.get_button(Button::Escape).pressed() {

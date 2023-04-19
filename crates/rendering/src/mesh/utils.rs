@@ -108,11 +108,11 @@ pub fn update_tex_coord(
     flip: vek::Vec2<bool>,
 ) -> RawTexCoord {
     if flip.x {
-        tex_coord.x = 255 - tex_coord.x;
+        tex_coord.x = 1.0 - tex_coord.x;
     }
 
     if flip.y {
-        tex_coord.y = 255 - tex_coord.y;
+        tex_coord.y = 1.0 - tex_coord.y;
     }
 
     tex_coord
@@ -250,8 +250,6 @@ pub fn compute_tangents(
         fn tex_coord(&self, face: usize, vert: usize) -> [f32; 2] {
             let i = self.triangles[face][vert] as usize;
             self.tex_coords[i]
-                .map(|x| x as f32 / 255.0)
-                .xy()
                 .into_array()
         }
 

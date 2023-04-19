@@ -37,6 +37,9 @@ fn update(world: &mut World) {
     // Set the shared UBOs first (bind group 0)
     active.set_bind_group(0, |group| {
         group
+            .set_uniform_buffer("camera", &renderer.camera_buffer, ..)
+            .unwrap();
+        group
             .set_uniform_buffer("window", &renderer.window_buffer, ..)
             .unwrap();
     }).unwrap();

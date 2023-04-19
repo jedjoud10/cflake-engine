@@ -3,7 +3,7 @@ use std::mem::size_of;
 use crate::{
     attributes::Position, ActiveShadowGraphicsPipeline,
     DefaultMaterialResources, Material, Mesh, MeshAttributes,
-    RenderPath, Renderer, Surface, set_index_buffer_attribute, set_vertex_buffer_attribute,
+    RenderPath, Renderer, Surface, set_index_buffer_attribute, set_vertex_buffer_attribute, SubSurface,
 };
 use ecs::Scene;
 use graphics::{GpuPod, ModuleVisibility, ActivePipeline};
@@ -58,31 +58,37 @@ pub(super) fn render_shadows<'r, M: Material>(
     let mut last_index_buffer: Option<&<M::RenderPath as RenderPath>::TriangleBuffer<u32>> = None;
 
     // Cull the surfaces that the shadow texture won't see
+    /*
+    // With cascaded shadow mapping this doesn't fucking work lmfao
     if M::frustum_culling() {
         scene.query_mut::<(&mut Surface<M>, &Renderer)>().for_each(
             &mut threadpool,
             |(surface, renderer)| {
-                // Get the mesh and it's AABB
-                let mesh = <M::RenderPath as RenderPath>::get(
-                    defaults,
-                    &surface.mesh,
-                );
-                let aabb = mesh.vertices().aabb();
+                // A surface is culled *only* if all of it's sub-surface are not visible
+                surface.shadow_culled = surface.subsurfaces.iter().all(|SubSurface { mesh, material }| {
+                    // Get the mesh and it's AABB
+                    let mesh = <M::RenderPath as RenderPath>::get(
+                        defaults,
+                        &mesh,
+                    );
+                    let aabb = mesh.vertices().aabb();
 
-                // If we have a valid AABB, check if the surface is visible within the frustum
-                if let Some(aabb) = aabb {
-                    surface.shadow_culled = !intersects_lightspace(
-                        &lightspace,
-                        aabb,
-                        &renderer.matrix,
-                    )
-                } else {
-                    surface.shadow_culled = false;
-                }
+                    // If we have a valid AABB, check if the surface is visible within the frustum
+                    if let Some(aabb) = aabb {
+                        !intersects_lightspace(
+                            &lightspace,
+                            aabb,
+                            &renderer.matrix,
+                        )
+                    } else {
+                        false
+                    }
+                })                
             }, 
             1024,
         );
     }
+    */
 
     // Iterate over all the surfaces of this material
     let query = scene.query::<(&Surface<M>, &Renderer)>();
@@ -92,64 +98,67 @@ pub(super) fn render_shadows<'r, M: Material>(
             continue;
         }
 
-        // Get the mesh and material that correspond to this surface
-        let mesh = <M::RenderPath as RenderPath>::get(
-            defaults,
-            &surface.mesh,
-        );
-
-        // Skip rendering if the mesh is invalid
-        let attribute = mesh
-            .vertices()
-            .enabled()
-            .contains(MeshAttributes::POSITIONS);
-        let validity = <M::RenderPath as RenderPath>::is_valid(mesh);
-        if !(attribute && validity) {
-            continue;
-        }
-
-        // Set the mesh matrix push constant
-        active
-            .set_push_constants(|constants| {
-                let matrix = renderer.matrix;
-                let cols = matrix.cols;
-                let bytes = GpuPod::into_bytes(&cols);
-                constants
-                    .push(bytes, 0, ModuleVisibility::Vertex)
-                    .unwrap();
-                // TODO: Implement push constant compositing so we can remove this
-                let bytes = GpuPod::into_bytes(&lightspace.cols);
-                constants
-                    .push(bytes, size_of::<vek::Mat4::<f32>>() as u32, ModuleVisibility::Vertex)
-                    .unwrap();
-            })
-            .unwrap();
-
-        // Set the vertex buffers and index buffers when we change models
-        if last != Some(surface.mesh.clone()) {
-            // Set the position buffer attribute 
-            set_vertex_buffer_attribute::<
-                Position,
-                M::RenderPath,
-                _,
-                _,
-            >(
-                MeshAttributes::POSITIONS, mesh, defaults, active, &mut 0, &mut last_positions_buffer
-            );
-
-            // Set the index buffer
-            set_index_buffer_attribute::<M::RenderPath, _, _>(
-                mesh,
+        // Iterate over the sub-surfaces of the surface
+        for subsurface in surface.subsurfaces.iter() {
+            // Get the mesh and material that correspond to this surface
+            let mesh = <M::RenderPath as RenderPath>::get(
                 defaults,
-                active,
-                &mut last_index_buffer,
+                &subsurface.mesh,
             );
 
-            // Set the mesh handle
-            last = Some(surface.mesh.clone());
-        }
+            // Skip rendering if the mesh is invalid
+            let attribute = mesh
+                .vertices()
+                .enabled()
+                .contains(MeshAttributes::POSITIONS);
+            let validity = <M::RenderPath as RenderPath>::is_valid(mesh);
+            if !(attribute && validity) {
+                continue;
+            }
 
-        // Draw the mesh
-        <M::RenderPath as RenderPath>::draw(mesh, defaults, active);
+            // Set the mesh matrix push constant
+            active
+                .set_push_constants(|constants| {
+                    let matrix = renderer.matrix;
+                    let cols = matrix.cols;
+                    let bytes = GpuPod::into_bytes(&cols);
+                    constants
+                        .push(bytes, 0, ModuleVisibility::Vertex)
+                        .unwrap();
+                    // TODO: Implement push constant compositing so we can remove this
+                    let bytes = GpuPod::into_bytes(&lightspace.cols);
+                    constants
+                        .push(bytes, size_of::<vek::Mat4::<f32>>() as u32, ModuleVisibility::Vertex)
+                        .unwrap();
+                })
+                .unwrap();
+
+            // Set the vertex buffers and index buffers when we change models
+            if last != Some(subsurface.mesh.clone()) {
+                // Set the position buffer attribute 
+                set_vertex_buffer_attribute::<
+                    Position,
+                    M::RenderPath,
+                    _,
+                    _,
+                >(
+                    MeshAttributes::POSITIONS, mesh, defaults, active, &mut 0, &mut last_positions_buffer
+                );
+
+                // Set the index buffer
+                set_index_buffer_attribute::<M::RenderPath, _, _>(
+                    mesh,
+                    defaults,
+                    active,
+                    &mut last_index_buffer,
+                );
+
+                // Set the mesh handle
+                last = Some(subsurface.mesh.clone());
+            }
+
+            // Draw the mesh
+            <M::RenderPath as RenderPath>::draw(mesh, defaults, active);
+        }
     }
 }
