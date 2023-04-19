@@ -8,7 +8,7 @@ use smallvec::SmallVec;
 use crate::{
     Extent, Graphics, ImageTexel, Sampler, SamplerSettings, Texel,
     Texture, TextureAssetLoadError, TextureInitializationError,
-    TextureMipMaps, TextureMode, TextureUsage,
+    TextureMipMaps, TextureMode, TextureUsage, TextureScale, RawTexels,
 };
 
 // A 2D texture that contains multiple texels that have their own channels
@@ -105,24 +105,10 @@ impl<T: Texel> Texture for Texture2D<T> {
     }
 }
 
-// Texture resolution scale that we can use to downsample or upsample imported textures
-pub type TextureResizeFilter = image::imageops::FilterType;
-#[derive(Default, Copy, Clone, PartialEq)]
-pub enum TextureScale {
-    // This will not affect the texture scale
-    #[default]
-    Default,
-
-    // This will scale the texture size with the "scaling" parameter
-    Scale {
-        scaling: f32,
-        filter: TextureResizeFilter,
-    },
-}
 
 // Texture settings that we shall use when loading in a new texture
 #[derive(Clone)]
-pub struct TextureImportSettings<'m, T: Texel> {
+pub struct TextureImportSettings<'m, T: ImageTexel> {
     pub sampling: Option<SamplerSettings>,
     pub mode: TextureMode,
     pub usage: TextureUsage,
@@ -130,7 +116,7 @@ pub struct TextureImportSettings<'m, T: Texel> {
     pub mipmaps: TextureMipMaps<'m, 'm, T>,
 }
 
-impl<T: Texel> Default for TextureImportSettings<'_, T> {
+impl<T: ImageTexel> Default for TextureImportSettings<'_, T> {
     fn default() -> Self {
         Self {
             sampling: Some(SamplerSettings::default()),
@@ -156,81 +142,70 @@ impl<T: ImageTexel> Asset for Texture2D<T> {
         graphics: Self::Context<'c>,
         settings: Self::Settings<'s>,
     ) -> Result<Self, Self::Err> {
-        let i = Instant::now();
-
-        // Load the texture using the Image crate
-        let mut image = image::load_from_memory(data.bytes())
-            .map_err(TextureAssetLoadError::ImageError)?;
-        log::debug!(
-            "Took {:?} to deserialize texture {:?}",
-            i.elapsed(),
-            data.path()
-        );
-
-        // Scale the texture if needed
-        if let TextureScale::Scale { scaling, filter } =
+        // Load the raw texels from the file
+        let raw = RawTexels::<T>::deserialize(
+            data,
+            (),
             settings.scale
-        {
-            let nheight = ((image.height() as f32) * scaling) as u32;
-            let nwidth = ((image.width() as f32) * scaling) as u32;
+        ).map_err(TextureAssetLoadError::RawTexelsError)?;
 
-            if nheight != 0 && nwidth != 0 {
-                image = image.resize(nwidth, nheight, filter);
-            }
-        }
+        // Convert raw texels to texture
+        texture2d_from_raw(graphics, settings, raw)
+            .map_err(TextureAssetLoadError::Initialization)
+    }
+}
 
-        // Get 2D dimensions and texel data
-        let dimensions =
-            vek::Extent2::new(image.width(), image.height());
-        let texels = T::to_image_texels(image);
+// Load in a texture from the raw texels
+pub fn texture2d_from_raw<T: ImageTexel>(
+    graphics: Graphics,
+    settings: TextureImportSettings<T>,
+    raw: RawTexels<T>,
+) -> Result<Texture2D<T>, TextureInitializationError> {
+    let RawTexels(texels, dimensions) = raw;
 
-        // Check if we must generate mip maps
-        let generate_mip_maps =
-            if let TextureMipMaps::Manual { mips: &[] } =
-                settings.mipmaps
-            {
-                true
-            } else {
-                false
-            };
-
-        // Generate each mip's texel data
-        let mips =
-            if generate_mip_maps {
-                Some(super::generate_mip_map::<T, vek::Extent2<u32>>(
-                &texels,
-                dimensions
-            ).ok_or(TextureAssetLoadError::Initialization(
-                TextureInitializationError::MipMapGenerationNPOT
-            ))?)
-            } else {
-                None
-            };
-
-        // Convert the vecs to slices
-        let mips = mips.as_ref().map(|mips| {
-            mips.iter().map(|x| x.as_slice()).collect::<Vec<_>>()
-        });
-
-        // Overwrite the Manual mip map layers if they were empty to begin with
-        let mipmaps = if generate_mip_maps {
-            TextureMipMaps::Manual {
-                mips: &mips.as_ref().unwrap(),
-            }
-        } else {
+    // Check if we must generate mip maps
+    let generate_mip_maps =
+        if let TextureMipMaps::Manual { mips: &[] } =
             settings.mipmaps
+        {
+            true
+        } else {
+            false
         };
 
-        // Create the texture
-        Self::from_texels(
-            &graphics,
-            Some(&texels),
-            dimensions,
-            settings.mode,
-            settings.usage,
-            settings.sampling,
-            mipmaps,
-        )
-        .map_err(TextureAssetLoadError::Initialization)
-    }
+    // Generate each mip's texel data
+    let mips =
+        if generate_mip_maps {
+            Some(super::generate_mip_map::<T, vek::Extent2<u32>>(
+            &texels,
+            dimensions
+        ).ok_or(TextureInitializationError::MipMapGenerationNPOT)?)
+        } else {
+            None
+        };
+
+    // Convert the vecs to slices
+    let mips = mips.as_ref().map(|mips| {
+        mips.iter().map(|x| x.as_slice()).collect::<Vec<_>>()
+    });
+
+    // Overwrite the Manual mip map layers if they were empty to begin with
+    let mipmaps = if generate_mip_maps {
+        TextureMipMaps::Manual {
+            mips: &mips.as_ref().unwrap(),
+        }
+    } else {
+        settings.mipmaps
+    };
+
+    // Create the texture
+    Texture2D::<T>::from_texels(
+        &graphics,
+        Some(&texels),
+        dimensions,
+        settings.mode,
+        settings.usage,
+        settings.sampling,
+        mipmaps,
+    )
 }

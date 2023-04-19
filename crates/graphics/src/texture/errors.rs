@@ -4,6 +4,8 @@ use image::ImageError;
 use thiserror::Error;
 use wgpu::TextureFormat;
 
+use crate::RawTexelsError;
+
 #[derive(Error, Debug)]
 pub enum TextureInitializationError {
     #[error("The given texture format {0:?} is not supported with the given options")]
@@ -67,7 +69,7 @@ pub enum TextureAssetLoadError {
     Initialization(TextureInitializationError),
 
     #[error("{0}")]
-    ImageError(ImageError),
+    RawTexelsError(RawTexelsError),
 }
 
 #[derive(Error, Debug)]
