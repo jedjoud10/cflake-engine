@@ -10,7 +10,7 @@ fn init(world: &mut World) {
 
     macro_rules! internal {
         ($assets:expr, $file:expr) => {
-            asset!($assets, $file, "./src/assets/");
+            asset!($assets, $file, "/src/assets/");
         };
     }
 

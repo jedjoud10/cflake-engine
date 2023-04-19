@@ -8,9 +8,11 @@ macro_rules! asset {
                 let path = concat!(env!("CARGO_MANIFEST_DIR"), $prefix, $file);
                 $assets.hijack($file, path);
             } else {
-                with_builtin!(let $bytes = include_bytes_from_root!(concat!($prefix, $file)) in {
+                /*
+                with_builtin!(let $bytes = include_bytes_from_root!(concat!("./", $prefix, $file)) in {
                    $assets.import($file, $bytes.to_vec());
                 });
+                */
             }
         }
     };

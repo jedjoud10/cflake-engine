@@ -56,13 +56,14 @@ impl<'a> GtlfContext<'a> {
 // These are the settings that must be given to the gltf importer so it can deserialize the scene
 pub struct GltfSettings<'a> {
     // Default material that we should use when we don't have a material applied to objects
-    pub fallback_material: PhysicallyBasedMaterial,
+    pub fallback: PhysicallyBasedMaterial,
 
     // We can only load one scene at a time
     // If this is default, then it uses the default scene
     pub scene: Option<&'a str>,
 
     // Should we use async asset loading to load in buffers and textures?
+    // TODO: Implement this lul
     pub asynchronous: bool,
 }
 
@@ -71,7 +72,7 @@ impl<'a> Default for GltfSettings<'a> {
         Self {
             scene: None,
             asynchronous: true,
-            fallback_material: PhysicallyBasedMaterial {
+            fallback: PhysicallyBasedMaterial {
                 albedo_map: None,
                 normal_map: None,
                 mask_map: None,
@@ -367,6 +368,9 @@ impl Asset for GltfScene {
         // Keep track of the renderable entities that we will add
         let mut entities: Vec<(coords::Position, coords::Rotation, coords::Scale, Surface<PhysicallyBasedMaterial>, crate::Renderer)> = Vec::new();
 
+        // Add a "default" PBR material
+        let default = context.pbr_materials.insert(settings.fallback);
+
         // Iterate over the nodes now (or objects in the scene)
         for index in scene.nodes {
             let node = &nodes[index.value()];
@@ -384,9 +388,11 @@ impl Asset for GltfScene {
                 // Sub-Surfaces that we must render
                 let mut subsurfaces = Vec::<SubSurface<PhysicallyBasedMaterial>>::new();
 
+                // Create the sub-surfaces of the entity (mesh)
                 for (submesh_index, primitive) in mesh.primitives.iter().enumerate() {
                     let mesh = &meshes[submesh_index];
-                    let material = &mapped_materials[primitive.material.unwrap().value()];
+                    let material = primitive.material.as_ref().map(|i| mapped_materials[i.value()].clone())
+                        .unwrap_or(default.clone());
                     subsurfaces.push(SubSurface { mesh: mesh.clone(), material: material.clone() });
                 } 
 
@@ -415,6 +421,7 @@ impl Asset for GltfScene {
 
 type Value<'a, 'b> = &'a (&'b [u8], (&'b Type, &'b ComponentType));
 
+// Create the position vertices required by all meshes
 fn create_positions_vec(value: Value) -> Vec<vek::Vec4<f32>> {
     let (bytes, (_type, _component)) = value;
     assert_eq!(**_type, Type::Vec3);
@@ -423,6 +430,7 @@ fn create_positions_vec(value: Value) -> Vec<vek::Vec4<f32>> {
     data.into_iter().map(|vec3| vec3.with_w(0.0)).collect::<Vec::<vek::Vec4<f32>>>()
 }
 
+// Create the normal coordinates required by the PBR material
 fn create_normals_vec(value: Value) -> Vec<vek::Vec4<i8>> {
     let (bytes, (_type, _component)) = value;
     assert_eq!(**_type, Type::Vec3);
@@ -431,6 +439,7 @@ fn create_normals_vec(value: Value) -> Vec<vek::Vec4<i8>> {
     data.into_iter().map(|vec3| (vec3.with_w(1.0) * 127.0).as_::<i8>()).collect::<Vec::<vek::Vec4<i8>>>()
 }
 
+// Create the UV coordinates required by the PBR material 
 fn create_tex_coords_vec(value: Value) -> Vec<vek::Vec2<f32>> {
     let (bytes, (_type, _component)) = value;
     assert_eq!(**_type, Type::Vec2);
@@ -439,6 +448,7 @@ fn create_tex_coords_vec(value: Value) -> Vec<vek::Vec2<f32>> {
     data.to_vec()
 }
 
+// Create the tangents (if supplied) required by the PBR material
 fn create_tangents_vec(value: Value) -> Vec<vek::Vec4<i8>> {
     let (bytes, (_type, _component)) = value;
     assert_eq!(**_type, Type::Vec4);
@@ -447,6 +457,7 @@ fn create_tangents_vec(value: Value) -> Vec<vek::Vec4<i8>> {
     data.into_iter().map(|vec4| (vec4 * 127.0).as_::<i8>()).collect::<Vec::<vek::Vec4<i8>>>()
 }
 
+// Convert raw bytes to a triangle index buffer
 fn create_triangles_vec(value: Value) -> Vec<[u32; 3]> {
     let (bytes, (_type, _component)) = value;
     assert_eq!(**_type, Type::Scalar);
@@ -494,7 +505,7 @@ fn sampling(
     })
 }
 
-
+// Create a texture used for a material used in the glTF scene
 fn create_material_texture<T: Texel + ImageTexel>(
     graphics: Graphics,
     texture: &gltf::json::Texture,
