@@ -582,9 +582,9 @@ pub(crate) fn create_texture_views<T: Texel, E: Extent>(
                 dimension: Some(dimension),
                 aspect,
                 base_mip_level: level.unwrap_or_default(),
-                mip_level_count: level.map(|_| NonZeroU32::new(1).unwrap()),
+                mip_level_count: level.map(|_| 1),
                 base_array_layer: layer.unwrap_or_default(),
-                array_layer_count: layer.map(|_| NonZeroU32::new(1).unwrap()),
+                array_layer_count: layer.map(|_| 1),
                 ..Default::default()
             };
             
@@ -614,14 +614,12 @@ pub(crate) fn create_image_data_layout<T: Texel, E: Extent>(
     // Bytes per row change if we are using compressed textures
     let bytes_per_row = match size {
         TexelSize::Uncompressed(size) => {
-            NonZeroU32::new(size * extent.width())
+            Some(size * extent.width())
         }
         TexelSize::Compressed(compression) => {
             // TODO: Actually try understanding wtf bytes_per_row means when using compression
-            NonZeroU32::new(
-                compression.bytes_per_block()
-                    * (extent.width() / compression.block_size()),
-            )
+            Some(compression.bytes_per_block()
+                * (extent.width() / compression.block_size()))
         }
     };
 
@@ -630,11 +628,11 @@ pub(crate) fn create_image_data_layout<T: Texel, E: Extent>(
         bytes_per_row,
         rows_per_image: match (E::dimension(), E::view_dimension()) {
             (wgpu::TextureDimension::D3, wgpu::TextureViewDimension::D3)  => {
-                NonZeroU32::new(extent.width())
+                Some(extent.width())
             },
 
             (wgpu::TextureDimension::D2, wgpu::TextureViewDimension::D2Array)  => {
-                NonZeroU32::new(extent.width())
+                Some(extent.width())
             }
 
             _ => None,
@@ -668,13 +666,6 @@ pub(crate) fn write_to_level<T: Texel, R: Region>(
         origin: origin_to_origin3d(origin),
         aspect: texture_aspect::<T>(),
     };
-
-    /*
-    dbg!(&image_copy_texture);
-    dbg!(&image_data_layout);
-    dbg!(extent_to_extent3d(extent));
-    dbg!(bytes.len());
-    */
 
     // Write to the mip level of the texture
     graphics.staging_pool().write_texture(

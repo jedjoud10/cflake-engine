@@ -216,7 +216,7 @@ impl<'a> BindGroup<'a> {
 
         // Save the bind entry for later
         self.resources.push(resource);
-        self.ids.push(Id(id, IdVariant::Texture));
+        self.ids.push(Id::new(id, IdVariant::Texture));
         self.slots.push(entry.binding);
         Ok(())
     }
@@ -246,7 +246,7 @@ impl<'a> BindGroup<'a> {
 
         // Save the bind entry for later
         self.resources.push(resource);
-        self.ids.push(Id(id, IdVariant::Texture));
+        self.ids.push(Id::new(id, IdVariant::Texture));
         self.slots.push(entry.binding);
         Ok(())
     }
@@ -271,7 +271,7 @@ impl<'a> BindGroup<'a> {
 
         // Save the bind entry for later
         self.resources.push(resource);
-        self.ids.push(Id(id, IdVariant::Sampler));
+        self.ids.push(Id::new(id, IdVariant::Sampler));
         self.slots.push(entry.binding);
         Ok(())
     }
@@ -303,7 +303,7 @@ impl<'a> BindGroup<'a> {
 
         // Save the bind entry for later
         self.resources.push(resource);
-        self.ids.push(Id(id, IdVariant::Buffer));
+        self.ids.push(Id::new(id, IdVariant::Buffer));
         self.slots.push(entry.binding);
         Ok(())
     }
@@ -340,7 +340,7 @@ impl<'a> BindGroup<'a> {
 
         // Save the bind entry for later
         self.resources.push(resource);
-        self.ids.push(Id(id, IdVariant::Buffer));
+        self.ids.push(Id::new(id, IdVariant::Buffer));
         self.slots.push(entry.binding);
         Ok(())
     }

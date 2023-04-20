@@ -112,7 +112,7 @@ pub fn convert_wrap_to_address_mode(
             (wgpu::AddressMode::ClampToBorder, Some(*color))
         }
         SamplerWrap::Repeat => {
-            (wgpu::AddressMode::MirrorRepeat, None)
+            (wgpu::AddressMode::Repeat, None)
         }
         SamplerWrap::MirroredRepeat => {
             (wgpu::AddressMode::MirrorRepeat, None)
@@ -133,10 +133,10 @@ pub fn convert_sampler_filter(
 // Convert the mip mapping settings to the anisotropic values used by the Wgpu sampler
 pub fn convert_mip_map_anisotropic_clamp(
     mip_mapping: &SamplerMipMaps,
-) -> Option<NonZeroU8> {
+) -> u16 {
     match mip_mapping {
-        SamplerMipMaps::AutoAniso => NonZeroU8::new(16),
-        _ => None,
+        SamplerMipMaps::AutoAniso => 16,
+        _ => 1,
     }
 }
 

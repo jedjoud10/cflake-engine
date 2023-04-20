@@ -15,6 +15,7 @@ layout(location = 2) in flat vec3 m_color;
 #include <engine/shaders/common/sky.glsl>
 #include <engine/shaders/math/models.glsl>
 #include <engine/shaders/math/dither.glsl>
+#include <engine/shaders/math/triplanar.glsl>
 
 // Push constants for the material data
 layout(push_constant) uniform PushConstants {
@@ -32,6 +33,57 @@ layout(set = 1, binding = 3) uniform sampler layered_normal_map_sampler;
 // Mask map texture array
 layout(set = 1, binding = 4) uniform texture2DArray layered_mask_map;
 layout(set = 1, binding = 5) uniform sampler layered_mask_map_sampler;
+
+// Triplanar mapping offset and UV scale
+const float offset = 0.0;
+const vec2 scale = vec2(0.1) * vec2(-1, 1); 
+const float normal_strength = 1.0;
+
+// Get the blending offset to be used internally in the triplanar texture
+vec3 get_blend(vec3 normal) {
+	normal = abs(normal);
+	vec3 weights = (max(normal + offset, 0));
+	weights /= weights.x + weights.y + weights.z;
+	return weights;
+}
+
+vec3 triplanar_albedo(float layer, vec3 normal) {
+	vec3 blending = get_blend(normalize(normal));
+
+	// Sample the diffuse texture three times to make the triplanar texture
+	vec3 diffusex = texture(sampler2DArray(layered_albedo_map, layered_albedo_map_sampler), vec3(m_position.zy * scale, layer)).xyz * blending.x;
+	vec3 diffusey = texture(sampler2DArray(layered_albedo_map, layered_albedo_map_sampler), vec3(m_position.xz * scale, layer)).xyz * blending.y;
+	vec3 diffusez = texture(sampler2DArray(layered_albedo_map, layered_albedo_map_sampler), vec3(m_position.xy * scale, layer)).xyz * blending.z;
+	vec3 diffuse_final = diffusex + diffusey + diffusez;
+	return diffuse_final;
+}
+
+vec3 triplanar_mask(float layer, vec3 normal) {
+	vec3 blending = get_blend(normalize(normal));
+
+	// Sample the diffuse texture three times to make the triplanar texture
+	vec3 diffusex = texture(sampler2DArray(layered_mask_map, layered_mask_map_sampler), vec3(m_position.zy * scale, layer)).xyz * blending.x;
+	vec3 diffusey = texture(sampler2DArray(layered_mask_map, layered_mask_map_sampler), vec3(m_position.xz * scale, layer)).xyz * blending.y;
+	vec3 diffusez = texture(sampler2DArray(layered_mask_map, layered_mask_map_sampler), vec3(m_position.xy * scale, layer)).xyz * blending.z;
+	vec3 diffuse_final = diffusex + diffusey + diffusez;
+	return diffuse_final;
+}
+
+// https://bgolus.medium.com/normal-mapping-for-a-triplanar-shader-10bf39dca05a
+vec3 triplanar_normal(float layer, vec3 normal) {
+	vec3 wnormal =  normalize(normal);
+	vec3 blending = get_blend(wnormal);
+
+	// Do the same for the normal map
+	vec3 normalx = texture(sampler2DArray(layered_normal_map, layered_normal_map_sampler), vec3(m_position.zy * scale, layer)).xyz * 2 - 1;
+	vec3 normaly = texture(sampler2DArray(layered_normal_map, layered_normal_map_sampler), vec3(m_position.xz * scale, layer)).xyz * 2 - 1;
+	vec3 normalz = texture(sampler2DArray(layered_normal_map, layered_normal_map_sampler), vec3(m_position.xy * scale, layer)).xyz * 2 - 1;
+	normalx = vec3(vec2(normalx.x, normalx.y) * normal_strength + wnormal.zy, wnormal.x) * blending.x;
+	normaly = vec3(vec2(normaly.x, normaly.y) * normal_strength + wnormal.xz, wnormal.y) * blending.y;
+	normalz = vec3(vec2(normalz.x, normalz.y) * normal_strength + wnormal.xy, wnormal.z) * blending.z;
+	vec3 normal_final = normalize(normalx.zyx + normaly.xzy + normalz.xyz);
+	return normal_final;
+}
 
 void main() {
 	/*
@@ -51,19 +103,24 @@ void main() {
 		
 	// Assume world space normals
 	//vec3 normal = normalize(m_normal);
-	vec3 normal = normalize(cross(dFdy(m_position), dFdx(m_position)));
+	vec3 surface_normal = normalize(cross(dFdy(m_position), dFdx(m_position)));
 
 	float scale = 0.2;
 	uint material = 0;
 
-	if (normal.y < 0.85) {
+	if (surface_normal.y < 0.9) {
 		material = 1;
 	}
 
+	if (surface_normal.y < 0.8) {
+		material = 2;
+	}
+
 	// Fetch the albedo color, normal map value, and mask values
-	vec3 albedo = texture(sampler2DArray(layered_albedo_map, layered_albedo_map_sampler), vec3(m_position.xz * scale, float(material))).rgb;
-	vec3 mask = texture(sampler2DArray(layered_mask_map, layered_mask_map_sampler), vec3(m_position.xz * scale, float(material))).rgb;
-	mask *= vec3(pow(mask.r, 22), 1.3, 0.4);
+	vec3 albedo = triplanar_albedo(float(material), surface_normal);
+	vec3 mask = triplanar_mask(float(material), surface_normal);
+	vec3 normal = triplanar_normal(float(material), surface_normal);
+	mask *= vec3(pow(mask.r, 2), 1.3, 0.4);
 
 	// Compute PBR values
 	float roughness = clamp(mask.g, 0.02, 1.0);
@@ -73,7 +130,7 @@ void main() {
 
 	// Create the data structs
 	SunData sun = SunData(-scene.sun_direction.xyz, scene.sun_color.rgb);
-	SurfaceData surface = SurfaceData(albedo, normal, normal, m_position, roughness, metallic, visibility, f0);
+	SurfaceData surface = SurfaceData(albedo, normal, surface_normal, m_position, roughness, metallic, visibility, f0);
 	vec3 view = normalize(camera.position.xyz - m_position);
 	CameraData camera = CameraData(view, normalize(view - scene.sun_direction.xyz), camera.position.xyz, camera.view, camera.projection);
 

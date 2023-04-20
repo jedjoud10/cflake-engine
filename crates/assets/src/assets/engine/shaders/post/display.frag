@@ -23,6 +23,7 @@ void main() {
 	color = max(color, vec3(0));
 
 	// Apply tonemapping and gamma mapping
+	//color = pow(color, vec3(1.0 / 2.2));
 	color = pow(aces(color), vec3(1.0 / 2.2));
 
 	// Create a simple vignette
