@@ -88,11 +88,21 @@ To actually handle modifying data related to components, one must use a scene ``
 At the moment, cFlake uses a custom built graphics API abstraction that wraps over WGPU and ShaderC. This however, was a recent change (~4 months in the making) due to limitations with the original backend (OpenGL) the engine. I had realized that OpenGL was not going to scale well with all the new multi-threaded features that I've implemented like a multithreaded asset loader and multithreaded ECS system. After tinkering with Vulkan (raw Vulkan, Vulkano), I decided to not use it (even after I pathetically tried to implement it, which took me 2-3 months), I decided to use Wgpu, since I simply could not cope with the manual state tracking of Vulkan. 
 
 # Asset Managment
-Currerntly, there are a few way to load in external assets (and to ship them) within your binary to be able to make your published executables more portable. There is a an ``Assets`` resource that is automatically added to the world that allows you to load and deserialize assets from the file system or pre-defined persistent assets. 
+Currently, there are a few way to load in external assets (and to ship them) within your binary to be able to make your published executables more portable. There is a an ``Assets`` resource that is automatically added to the world that allows you to load and deserialize assets from the file system or pre-defined persistent assets. 
 
 In this engine, assets are defined as structs that can be deserialized and loaded from raw binary data (that is most probably file binary data). You can customize how assets are loaded in within the engine using the ``Asset`` trait, and you can implement it on any structure that can be deserialized from a raw stream of bytes. 
 
 You can define a "Context" and "Settings" that can be used to customize how each asset is loaded. Asset deserialization *must* be faillible, and due to that restriction, I made it so you *must* define an ``Error`` type that gets returned whenever asset conversion fails. There is also asnychronous asset loading supported within the engine, and this is implemented using the ``AsyncAsset`` trait that gets automatically gets implemented for ``Asset``s that are Sync + Send and have their Settings + Context be Sync and Send.
+
+For now, these are the types of assets that are loadable/deseriazable by default and their respective extensions.
+* Texture2D: .png, .jpg
+* glTF scene: .gltf
+* AudioClip: .wav, .mp3
+* Vertex Shader: .vert
+* Fragment Shader: .frag
+* Compute Shader: .comp
+* Raw GLSL (only for includes): .glsl
+* Raw UTF8 text: .txt
 
 # Thanks to:
 * Lionel Stanway (MoldyToeMan)
