@@ -146,7 +146,7 @@ impl ChunkManager {
         let material = materials.insert(material);
 
         // Material Id
-        let id = pipelines.register(graphics, assets).unwrap();        
+        let id = pipelines.register_with(graphics, &*settings, assets).unwrap();        
 
         // Add the required chunk entities
         scene.extend_from_iter(vector.iter().zip(indirect_meshes).map(|(i, mesh)| {

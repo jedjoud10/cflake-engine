@@ -102,8 +102,8 @@ void main() {
 
 		
 	// Assume world space normals
-	//vec3 normal = normalize(m_normal);
-	vec3 surface_normal = normalize(cross(dFdy(m_position), dFdx(m_position)));
+	vec3 surface_normal = normalize(m_normal);
+	//vec3 surface_normal = normalize(cross(dFdy(m_position), dFdx(m_position)));
 
 	float scale = 0.2;
 	uint material = 0;

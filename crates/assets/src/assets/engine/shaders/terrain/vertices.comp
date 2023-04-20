@@ -75,7 +75,7 @@ float unmix(float a, float b, float x)
 
 void main() {
     // Required to remove the false positive
-    if (any(equal(ivec3(gl_GlobalInvocationID), ivec3(63)))) {
+    if (any(equal(ivec3(gl_GlobalInvocationID), ivec3(size-2)))) {
         return;
     }
 
@@ -131,15 +131,28 @@ void main() {
     if (count > 0) {
         uint index = atomicAdd(counters.vertices, 1);
 
-        // Meshes are always n-2 size, so each voxel has a size of 1 / n-2
-        vec3 final = (blocky ? vec3(0) : ((vertex / count) - vec3(0.5))) + vec3(gl_GlobalInvocationID);
-        float factor = (float(size)) / (float(size) - 2);
+        // Meshes are always n-3 size, so each voxel has a size of 1 / n-3
+        vec3 final = blocky ? vec3(0) : ((vertex / count) - vec3(0.5));
 
-        // Pack some extra data into the W field of the positions vector
-        //uint packed = packUnorm4x8(vec4(normalize(normal / count) * 0.5 + 0.5 , 0));
-        uint packed = packUnorm4x8(vec4(color / count, 0));
-        float part = uintBitsToFloat(packed);
-        vertices.data[index] = vec4(final * factor, part);
+        // Positions only need 16 bits (1 byte for cell coord, 1 byte for inner vertex coord)
+        uint packed_cell_position = packUnorm4x8(vec4(gl_GlobalInvocationID, 0) / 255);
+        uint packed_inner_position = packSnorm4x8(vec4(final, 0));
+
+        // Pack normals and colors as well
+        uint packed_normals = packSnorm4x8(vec4(normalize(normal / count), 0));
+        uint packed_colors = packUnorm4x8(vec4(color / count, 0));
+
+        // Convert to 4 floats to store within the texture
+        float float_packed_cell_position = uintBitsToFloat(packed_cell_position);
+        float float_packed_inner_position = uintBitsToFloat(packed_inner_position);
+        float float_packed_normals = uintBitsToFloat(packed_normals);
+        float float_packed_colors = uintBitsToFloat(packed_colors);
+        vertices.data[index] = vec4(
+            float_packed_cell_position,
+            float_packed_inner_position,
+            float_packed_normals,
+            float_packed_colors
+        );
 
         imageStore(cached_indices, ivec3(gl_GlobalInvocationID+1), uvec4(index));
     }

@@ -16,9 +16,10 @@ pub struct SkyMaterial {}
 impl Material for SkyMaterial {
     type Resources<'w> = world::Read<'w, Storage<AlbedoMap>>;
     type RenderPath = Direct;
+    type Settings<'s> = ();
 
     // Load the respective Sky shader modules and compile them
-    fn shader(graphics: &Graphics, assets: &Assets) -> Shader {
+    fn shader(settings: Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader {
         // Load the vertex module from the assets
         let vert = assets
             .load::<VertexModule>("engine/shaders/scene/sky/sky.vert")

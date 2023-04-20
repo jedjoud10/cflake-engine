@@ -13,6 +13,8 @@ use graphics::{
 };
 use utils::{Time, Handle, Storage};
 
+use crate::TerrainSettings;
+
 // Type aliases for layered textures
 pub type LayeredAlbedoMap = LayeredTexture2D<AlbedoTexel>;
 pub type LayeredNormalMap = LayeredTexture2D<NormalTexel>;
@@ -38,8 +40,10 @@ impl Material for TerrainMaterial {
         world::Read<'w, Time>,
     );
 
+    type Settings<'s> = &'s TerrainSettings;
+
     // Load the terrain material shaders and compile them
-    fn shader(graphics: &Graphics, assets: &Assets) -> Shader {
+    fn shader(settings: Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader {
         // Load the vertex module from the assets
         let vert = assets
             .load::<VertexModule>(
@@ -73,6 +77,9 @@ impl Material for TerrainMaterial {
     
         // Define the types for the user textures
         compiler.use_sampled_texture::<ShadowMap>("shadow_map");
+
+        // Set the scaling factor for the vertex positions
+        compiler.use_constant(0, (settings.size as f32) / (settings.size as f32 - 3.0));
 
         // Define the push ranges used by push constants
         compiler.use_push_constant_layout(

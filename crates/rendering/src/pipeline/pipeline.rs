@@ -34,11 +34,12 @@ impl<M: Material> Pipeline<M> {
     // Create a new material pipeline for the given material
     // This will load the shader, and create the graphics pipeline
     pub(crate) fn new(
+        settings: M::Settings<'_>,
         graphics: &Graphics,
         assets: &Assets,
     ) -> Result<Self, PipelineInitializationError> {
         // Load the material's shader
-        let shader = M::shader(graphics, assets);
+        let shader = M::shader(settings, graphics, assets);
 
         // Fetch the correct vertex config based on the material
         let vertex_config =

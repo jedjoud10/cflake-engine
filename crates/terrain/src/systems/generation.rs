@@ -106,7 +106,7 @@ fn update(world: &mut World) {
         let mut active = pass.bind_shader(&voxelizer.compute_voxels);
 
         // Needed since SN only runs for a volume 2 units smaller than a perfect cube
-        let factor = (settings.size as f32 - 2.0) / (settings.size as f32);
+        let factor = (settings.size as f32 - 3.0) / (settings.size as f32);
 
         // Set the push constants
         active

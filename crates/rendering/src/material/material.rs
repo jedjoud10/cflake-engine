@@ -19,11 +19,11 @@ use world::World;
 pub trait Material: 'static + Sized + Sync + Send {
     // The resources that we need to fetch from the world to set the descriptor sets
     type Resources<'w>: 'w;
-
     type RenderPath: RenderPath;
+    type Settings<'s>;
 
     // Create a shader for this material
-    fn shader(graphics: &Graphics, assets: &Assets) -> Shader;
+    fn shader(settings: Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader;
 
     // Get the required mesh attributes that we need to render a surface
     // If a surface does not support these attributes, it will not be rendered

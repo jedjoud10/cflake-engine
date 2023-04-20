@@ -20,9 +20,21 @@ impl Pipelines {
     }
 
     // Register a new material pipeline within the renderer
+    // Assumes that the material does not use any custom settings
     pub fn register<M: Material>(
         &mut self,
         graphics: &Graphics,
+        assets: &Assets,
+    ) -> Result<MaterialId<M>, PipelineInitializationError> where for<'x> M::Settings<'x>: Default {
+        self.register_with(graphics, Default::default(), assets)
+    }
+
+    // Register a new material pipeline within the renderer
+    // using the given custom material settings
+    pub fn register_with<M: Material>(
+        &mut self,
+        graphics: &Graphics,
+        settings: M::Settings<'_>,
         assets: &Assets,
     ) -> Result<MaterialId<M>, PipelineInitializationError> {
         // Initialize the pipeline and register it if needed
@@ -32,7 +44,7 @@ impl Pipelines {
                 "Creating pipeline for material {}...",
                 utils::pretty_type_name::<M>()
             );
-            let pipeline = Pipeline::<M>::new(graphics, assets)?;
+            let pipeline = Pipeline::<M>::new(settings, graphics, assets)?;
             self.pipelines.insert(key, Rc::new(pipeline));
             log::debug!(
                 "Registered pipeline for material {}",

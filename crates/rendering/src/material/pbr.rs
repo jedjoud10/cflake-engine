@@ -38,8 +38,10 @@ impl Material for PhysicallyBasedMaterial {
 
     type RenderPath = Direct;
 
+    type Settings<'s> = ();
+
     // Load the respective PBR shader modules and compile them
-    fn shader(graphics: &Graphics, assets: &Assets) -> Shader {
+    fn shader(settings: Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader {
         // Load the vertex module from the assets
         let vert = assets
             .load::<VertexModule>(

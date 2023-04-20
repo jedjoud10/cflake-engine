@@ -26,6 +26,7 @@ impl Shader {
         fragment: FragmentModule,
         compiler: Compiler,
     ) -> Result<Self, ShaderError> {
+        // TODO: Split this if needed?
         let vertex = compiler.compile(vertex)?;
         let fragment = compiler.compile(fragment)?;
         let names = [vertex.name(), fragment.name()];
