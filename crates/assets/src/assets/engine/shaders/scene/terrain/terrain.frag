@@ -94,7 +94,7 @@ void main() {
 	*/
 
 	// We do a bit of fading
-	float fade = min(material.fade / 2, 2);
+	float fade = min(material.fade, 1);
 	if (dither(ivec2(gl_FragCoord.xy), fade)) {
 		discard;
 	}
@@ -104,8 +104,22 @@ void main() {
 	// Assume world space normals
 	vec3 surface_normal = normalize(m_normal);
 	//vec3 surface_normal = normalize(cross(dFdy(m_position), dFdx(m_position)));
+	
+	vec3 albedo1 = triplanar_albedo(float(0), surface_normal);
+	vec3 mask1 = triplanar_mask(float(0), surface_normal);
+	vec3 normal1 = triplanar_normal(float(0), surface_normal);
 
-	float scale = 0.2;
+	vec3 albedo2 = triplanar_albedo(float(1), surface_normal);
+	vec3 mask2 = triplanar_mask(float(1), surface_normal);
+	vec3 normal2 = triplanar_normal(float(1), surface_normal);
+
+	float blending_factor = 1 - clamp((surface_normal.y - 0.7) * 6, 0, 1);
+
+	vec3 albedo = mix(albedo1, albedo2, blending_factor);
+	//vec3 mask = mix(mask1, mask2, blending_factor);
+	vec3 normal = mix(normal1, normal2, blending_factor);
+
+	/*
 	uint material = 0;
 
 	if (surface_normal.y < 0.9) {
@@ -115,12 +129,16 @@ void main() {
 	if (surface_normal.y < 0.8) {
 		material = 2;
 	}
+	*/
 
 	// Fetch the albedo color, normal map value, and mask values
+	/*
 	vec3 albedo = triplanar_albedo(float(material), surface_normal);
 	vec3 mask = triplanar_mask(float(material), surface_normal);
 	vec3 normal = triplanar_normal(float(material), surface_normal);
-	mask *= vec3(pow(mask.r, 2), 1.3, 0.4);
+	*/
+	vec3 mask = vec3(1, 0, 0);
+	//mask *= vec3(pow(mask.r, 2), 1.3, 0.4);
 
 	// Compute PBR values
 	float roughness = clamp(mask.g, 0.02, 1.0);
