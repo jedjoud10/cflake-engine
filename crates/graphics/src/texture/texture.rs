@@ -52,7 +52,7 @@ pub trait Texture: Sized {
                         count: texels.len(),
                         w: extent.width(),
                         h: extent.height(),
-                        d: extent.depth(),
+                        d: extent.depth_or_layers(),
                     },
                 );
             }
@@ -628,10 +628,15 @@ pub(crate) fn create_image_data_layout<T: Texel, E: Extent>(
     wgpu::ImageDataLayout {
         offset: 0,
         bytes_per_row,
-        rows_per_image: match E::dimension() {
-            wgpu::TextureDimension::D3 => {
+        rows_per_image: match (E::dimension(), E::view_dimension()) {
+            (wgpu::TextureDimension::D3, wgpu::TextureViewDimension::D3)  => {
+                NonZeroU32::new(extent.width())
+            },
+
+            (wgpu::TextureDimension::D2, wgpu::TextureViewDimension::D2Array)  => {
                 NonZeroU32::new(extent.width())
             }
+
             _ => None,
         },
     }
@@ -721,14 +726,10 @@ pub(crate) fn origin_to_origin3d<O: Origin>(
 pub(crate) fn extent_to_extent3d<E: Extent>(
     dimensions: E,
 ) -> wgpu::Extent3d {
-    if dimensions.depth() > 1 && dimensions.layers() > 1 {
-        panic!("Layered 3D textures not supported in WGPU")
-    }
-
     wgpu::Extent3d {
         width: dimensions.width(),
         height: dimensions.height(),
-        depth_or_array_layers: dimensions.depth().max(dimensions.layers()),
+        depth_or_array_layers: dimensions.depth_or_layers(),
     }
 }
 

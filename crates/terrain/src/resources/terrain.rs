@@ -1,7 +1,8 @@
+use assets::{Asset, Assets};
 use graphics::{
-    Graphics, Compiler, BindGroup, PushConstants, ActiveComputeDispatcher,
+    Graphics, Compiler, BindGroup, PushConstants, ActiveComputeDispatcher, RawTexels, combine_into_layered, SamplerSettings, SamplerFilter, SamplerWrap, SamplerMipMaps, TextureMipMaps, TextureMode, TextureUsage,
 };
-use rendering::MaterialId;
+use rendering::{MaterialId, AlbedoTexel, NormalTexel, MaskTexel};
 use thiserror::Error;
 use utils::Handle;
 use crate::{VoxelGenerator, MeshGenerator, MemoryManager, ChunkManager, TerrainMaterial};
@@ -43,8 +44,21 @@ pub struct TerrainSettings {
     pub(crate) voxel_set_push_constants_callback: Option<Box<dyn Fn(&mut PushConstants<ActiveComputeDispatcher>) + 'static>>,
     pub(crate) voxel_set_group_callback: Option<Box<dyn Fn(&mut BindGroup) + 'static>>,
 
+    /*
     // Terrain material that we shall use
-    pub(crate) material: Option<TerrainMaterial>,
+    pub(crate) material: TerrainMaterial,   
+    */
+    pub(crate) sub_materials: Vec<TerrainSubMaterial>,
+}
+
+// Terrain "sub-materials" (aka layered textures) that we can load in
+// Contains the paths of the sub material textures that we will load
+// TODO: Please find a way to *not* do this
+#[derive(Clone)]
+pub struct TerrainSubMaterial {
+    pub diffuse: String,
+    pub normal: String,
+    pub mask: String,
 }
 
 impl TerrainSettings {
@@ -57,7 +71,7 @@ impl TerrainSettings {
         lowpoly: bool,
         allocations: usize,
         sub_allocations: usize,
-        material: TerrainMaterial,
+        sub_materials: &[TerrainSubMaterial],
     ) -> Result<Self, TerrainSettingsError>  {
         let output_vertex_buffer_length = graphics
             .device()
@@ -122,7 +136,7 @@ impl TerrainSettings {
             voxel_compiler_callback: None,
             voxel_set_push_constants_callback: None,
             voxel_set_group_callback: None,
-            material: Some(material),
+            sub_materials: sub_materials.to_vec(),
         })
     }
 

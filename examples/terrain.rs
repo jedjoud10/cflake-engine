@@ -16,19 +16,19 @@ fn main() {
 
 // Creates a movable camera, sky entity, and procedural terrain
 fn init(world: &mut World) {
-    /*
     let graphics = world.get::<Graphics>().unwrap();
+    let assets = world.get::<Assets>().unwrap();
 
-    // Create a new terrain material
-    let material = TerrainMaterial {
-        layered_albedo_map,
-        layered_normal_map,
-        layered_mask_map,
-        bumpiness: 1.0,
-        roughness: 1.0,
-        metallic: 1.0,
-        ambient_occlusion: 1.0,
-    };
+    // Setup the assets that will be loaded
+    asset!(assets, "user/textures/diffuse.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/normal.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/mask.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/diffuse1.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/normal1.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/mask1.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/diffuse2.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/normal2.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/mask2.jpg", "/examples/assets/");
 
     // Create the terrain generator's settings
     let settings = TerrainSettings::new(
@@ -39,13 +39,31 @@ fn init(world: &mut World) {
         false,
         8,
         1024,
-        material,
+        &[
+            TerrainSubMaterial {
+                diffuse: "user/textures/diffuse.jpg".to_string(),
+                normal: "user/textures/normal.jpg".to_string(),
+                mask: "user/textures/mask.jpg".to_string(),
+            },
+
+            TerrainSubMaterial {
+                diffuse: "user/textures/diffuse1.jpg".to_string(),
+                normal: "user/textures/normal1.jpg".to_string(),
+                mask: "user/textures/mask1.jpg".to_string(),
+            },
+
+            TerrainSubMaterial {
+                diffuse: "user/textures/diffuse2.jpg".to_string(),
+                normal: "user/textures/normal2.jpg".to_string(),
+                mask: "user/textures/mask2.jpg".to_string(),
+            },
+        ],
     ).unwrap();
 
     // Drop (needed) to insert settings
     drop(graphics);
+    drop(assets);
     world.insert(settings);
-    */
 
     // Fetch the required resources from the world
     let assets = world.get::<Assets>().unwrap();
@@ -93,7 +111,7 @@ fn init(world: &mut World) {
 
     // Create a directional light
     let light = DirectionalLight { color: vek::Rgb::one() * 2.6 };
-    let rotation = vek::Quaternion::rotation_x(-90.0f32.to_radians())
+    let rotation = vek::Quaternion::rotation_x(-15.0f32.to_radians())
         .rotated_y(45f32.to_radians());
     scene.insert((light, Rotation::from(rotation)));
 }

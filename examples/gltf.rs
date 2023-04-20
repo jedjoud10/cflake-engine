@@ -15,6 +15,7 @@ fn init(world: &mut World) {
     // Fetch the required resources from the world
     let assets = world.get::<Assets>().unwrap();
 
+    // Setup the assets that will be loaded
     asset!(assets, "user/scenes/cube1.gltf", "/examples/assets/");
 
     // Load the glTF scene into the world LMAO!!

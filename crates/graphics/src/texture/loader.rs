@@ -31,6 +31,23 @@ pub enum RawTexelsError {
 // Represents an intermediate texture that contains raw texels from a file
 pub struct RawTexels<T: ImageTexel>(pub Vec<T::Storage>, pub vek::Extent2<u32>);
 
+impl<T: ImageTexel> RawTexels<T> {
+    // Get the underlying texels immutably
+    pub fn texels(&self) -> &[T::Storage] {
+        &self.0
+    }
+    
+    // Get the underlying texels mutably
+    pub fn texels_mut(&mut self) -> &mut [T::Storage] {
+        &mut self.0
+    }
+    
+    // Get the dimensions of the raw texels
+    pub fn dimensions(&self) -> vek::Extent2<u32> {
+        self.1
+    }
+}
+
 impl<T: ImageTexel> Asset for RawTexels<T> {
     type Context<'ctx> = ();
     type Settings<'stg> = TextureScale;

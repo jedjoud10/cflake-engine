@@ -18,21 +18,15 @@ pub type LayeredAlbedoMap = LayeredTexture2D<AlbedoTexel>;
 pub type LayeredNormalMap = LayeredTexture2D<NormalTexel>;
 pub type LayeredMaskMap = LayeredTexture2D<MaskTexel>;
 
-
 // Terrain shader that contains physically based lighting, but suited for terrain rendering
 // Contains multiple Layered2D textures for each PBR parameters
 // Currently, there is no blending that is occuring between different terrain sub-materials
+
+// TODO: Maybe use the builtin rendering multi-material system?
 pub struct TerrainMaterial {
-    // Layered textures and their material index 
     pub layered_albedo_map: Handle<LayeredAlbedoMap>,
     pub layered_normal_map: Handle<LayeredNormalMap>,
     pub layered_mask_map: Handle<LayeredMaskMap>,
-
-    // PBR Parameters
-    pub bumpiness: f32,
-    pub roughness: f32,
-    pub metallic: f32,
-    pub ambient_occlusion: f32,
 }
 
 impl Material for TerrainMaterial {
@@ -180,20 +174,6 @@ impl Material for TerrainMaterial {
         let bytes = GpuPod::into_bytes(&cols);
         constants.push(bytes, 0, ModuleVisibility::Vertex).unwrap();
 
-        // Convert the material parameters into a vec4
-        let vector = vek::Vec4::new(
-            self.bumpiness,
-            self.metallic,
-            self.ambient_occlusion,
-            self.roughness,
-        );
-
-        // Send the raw fragment bytes to the GPU
-        let bytes = GpuPod::into_bytes(&vector);
-        constants
-            .push(bytes, 0, ModuleVisibility::Fragment)
-            .unwrap();
-
         // Calculate "fade" effect
         let duration =  resources.4.frame_start().saturating_duration_since(renderer.instant_initialized.unwrap());
         let fade = duration.as_secs_f32().clamp(0.0, 10.0);
@@ -201,7 +181,7 @@ impl Material for TerrainMaterial {
         // Upload the fade effect to GPU
         let bytes2 = GpuPod::into_bytes(&fade);
         constants
-            .push(bytes2, bytes.len() as u32, ModuleVisibility::Fragment)
+            .push(bytes2, 0, ModuleVisibility::Fragment)
             .unwrap();
     }
 

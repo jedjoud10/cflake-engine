@@ -8,7 +8,7 @@ use smallvec::SmallVec;
 use crate::{
     Extent, Graphics, ImageTexel, Sampler, SamplerSettings, Texel,
     Texture, TextureAssetLoadError, TextureInitializationError,
-    TextureMipMaps, TextureMode, TextureUsage, Texture2D,
+    TextureMipMaps, TextureMode, TextureUsage, Texture2D, RawTexels,
 };
 
 // A layered 2D texture that contains multiple texels that are stored in multiple layers
@@ -105,36 +105,69 @@ impl<T: Texel> Texture for LayeredTexture2D<T> {
     }
 }
 
-// Combine multiple Texture2Ds into a single LayeredTexture2D texture
+// Combine multiple raw texels into a single LayeredTexture2D texture
 // Returns None if the textures don't have the same size or if we can't read them
 pub fn combine_into_layered<T: Texel + ImageTexel>(
     graphics: &Graphics,
-    textures: Vec<Texture2D<T>>,
+    raw: Vec<RawTexels<T>>,
     sampling: Option<SamplerSettings>,
     mut mipmaps: TextureMipMaps<T>,
     mode: TextureMode,
     usage: TextureUsage,
 ) -> Option<LayeredTexture2D<T>> {
     // Can't have shit in ohio
-    if textures.is_empty() {
+    if raw.is_empty() {
         return None;
     }
 
     // Make sure the textures are the same size
-    let extent = textures[0].dimensions();
-    if !textures.iter().any(|tex| tex.dimensions() != extent) {
+    let dimensions = raw[0].dimensions();
+    if raw.iter().any(|tex| tex.dimensions() != dimensions) {
         return None;
     }
 
-    let texels = todo!();
+    // Get the (packed) texels from the textures
+    let texels = raw.iter()
+        .flat_map(|raw| raw.texels().iter().cloned())
+        .collect::<Vec<_>>();
+
+    /*
+    // Check if we must generate mip maps
+    let generate_mip_maps =
+        if let TextureMipMaps::Manual { mips: &[] } =
+            mipmaps
+        {
+            true
+        } else {
+            false
+        };
+
+    // Generate each mip's texel data
+    let mips =
+        if generate_mip_maps {
+            Some(super::generate_mip_map::<T, vek::Extent2<u32>>(
+            &texels,
+            dimensions
+        ).ok_or(TextureInitializationError::MipMapGenerationNPOT)?)
+        } else {
+            None
+        };
+
+    // Convert the vecs to slices
+    let mips = mips.as_ref().map(|mips| {
+        mips.iter().map(|x| x.as_slice()).collect::<Vec<_>>()
+    });
+    */
+
+    dbg!(raw.len());
 
     Some(LayeredTexture2D::from_texels(
         graphics,
-        texels,
-        (extent, textures.len() as u32),
+        Some(&texels),
+        (dimensions, raw.len() as u32),
         mode,
         usage,
         sampling,
-        mipmaps
+        TextureMipMaps::Disabled
     ).unwrap())
 }

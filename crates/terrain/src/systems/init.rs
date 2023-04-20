@@ -1,6 +1,6 @@
 use crate::{
     Terrain,
-    TerrainMaterial, TerrainSettings, Vertices, Triangles, VoxelGenerator, MeshGenerator, MemoryManager, ChunkManager,
+    TerrainMaterial, TerrainSettings, Vertices, Triangles, VoxelGenerator, MeshGenerator, MemoryManager, ChunkManager, LayeredAlbedoMap, LayeredMaskMap, LayeredNormalMap,
 };
 
 use assets::Assets;
@@ -20,6 +20,13 @@ fn init(world: &mut World) {
     if let Some(mut settings) = world.remove::<TerrainSettings>() {
         // Add materials and fetch them
         world.insert(Storage::<TerrainMaterial>::default());
+        world.insert(Storage::<LayeredAlbedoMap>::default());
+        world.insert(Storage::<LayeredNormalMap>::default());
+        world.insert(Storage::<LayeredMaskMap>::default());
+
+        let mut layered_albedo_maps = world.get_mut::<Storage<LayeredAlbedoMap>>().unwrap();
+        let mut layered_normal_maps = world.get_mut::<Storage<LayeredNormalMap>>().unwrap();
+        let mut layered_mask_maps = world.get_mut::<Storage<LayeredMaskMap>>().unwrap();
         let mut materials = world.get_mut::<Storage<TerrainMaterial>>().unwrap();
         let mut scene = world.get_mut::<Scene>().unwrap();
         let mut pipelines = world.get_mut::<Pipelines>().unwrap();
@@ -74,6 +81,9 @@ fn init(world: &mut World) {
             &mut indirect_meshes,
             &mut indirect_buffers,
             &mut materials,
+            &mut layered_albedo_maps,
+            &mut layered_normal_maps,
+            &mut layered_mask_maps,
             &mut pipelines,
         );
 
@@ -94,6 +104,9 @@ fn init(world: &mut World) {
         drop(vertices);
         drop(triangles);
         drop(materials);
+        drop(layered_albedo_maps);
+        drop(layered_normal_maps);
+        drop(layered_mask_maps);
         drop(pipelines);
         drop(scene);
 

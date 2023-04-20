@@ -4,16 +4,16 @@ use coords::Position;
 use ecs::{Entity, Scene};
 use graphics::{
     BufferMode, BufferUsage, DrawIndexedIndirect,
-    DrawIndexedIndirectBuffer, GpuPod, Graphics, Texel, Vertex,
+    DrawIndexedIndirectBuffer, GpuPod, Graphics, Texel, Vertex, RawTexels, combine_into_layered, LayeredTexture2D, ImageTexel, SamplerSettings, SamplerFilter, SamplerWrap, SamplerMipMaps, TextureMipMaps, TextureMode, TextureUsage,
 };
 use rand::seq::SliceRandom;
 use rendering::{
     IndirectMesh, MaterialId,
-    Pipelines, Surface, Renderer,
+    Pipelines, Surface, Renderer, AlbedoTexel,
 };
 use utils::{Handle, Storage};
 
-use crate::{ChunkCoords, TerrainMaterial, TerrainSettings, MemoryManager, Chunk, ChunkState};
+use crate::{ChunkCoords, TerrainMaterial, TerrainSettings, MemoryManager, Chunk, ChunkState, LayeredAlbedoMap, LayeredMaskMap, LayeredNormalMap, TerrainSubMaterial};
 
 // Chunk manager will store a handle to the terrain material and shit needed for rendering the chunks
 pub struct ChunkManager {
@@ -45,6 +45,9 @@ impl ChunkManager {
         indirect_meshes: &mut Storage<IndirectMesh>,
         indirect_buffers: &mut Storage<DrawIndexedIndirectBuffer>,
         materials: &mut Storage<TerrainMaterial>,
+        layered_albedo_maps: &mut Storage<LayeredAlbedoMap>,
+        layered_normal_maps: &mut Storage<LayeredNormalMap>,
+        layered_mask_maps: &mut Storage<LayeredMaskMap>,
         pipelines: &mut Pipelines,
     ) -> Self {
         // Create ONE buffer that will store the indirect arguments
@@ -103,8 +106,43 @@ impl ChunkManager {
                 indirect_meshes.insert(mesh)
             });
 
+        
+
+        // Create a layered texture 2D that contains the diffuse maps
+        let layered_albedo_map = i_got_the_new_forgis_on_the_jeep(
+            &settings,
+            &assets,
+            &graphics,
+            layered_albedo_maps,
+            |x| &x.diffuse
+        );
+
+        // Create a layered texture 2D that contains the normal maps
+        let layered_normal_map = i_got_the_new_forgis_on_the_jeep(
+            &settings,
+            &assets,
+            &graphics,
+            layered_normal_maps,
+            |x| &x.normal
+        );
+
+        // Create a layered texture 2D that contains the mask maps
+        let layered_mask_map = i_got_the_new_forgis_on_the_jeep(
+            &settings,
+            &assets,
+            &graphics,
+            layered_mask_maps,
+            |x| &x.mask
+        );
+
+        // Create a new material
+        let material = TerrainMaterial {
+            layered_albedo_map,
+            layered_normal_map,
+            layered_mask_map,
+        };
+
         // Initial value for the terrain material
-        let material = settings.material.take().unwrap();
         let material = materials.insert(material);
 
         // Material Id
@@ -157,4 +195,29 @@ impl ChunkManager {
             indexed_indirect_buffer,
         }
     }
+}
+
+fn i_got_the_new_forgis_on_the_jeep<T: ImageTexel>(
+    settings: &TerrainSettings,
+    assets: &Assets,
+    graphics: &Graphics,
+    storage: &mut Storage<LayeredTexture2D<T>>,
+    get_name_callback: impl Fn(&TerrainSubMaterial) -> &str,
+) -> Handle<LayeredTexture2D<T>> {
+    let raw = settings.sub_materials.iter().map(|sub| {
+        assets.load::<RawTexels<T>>(get_name_callback(&sub)).unwrap()
+    }).collect::<Vec<_>>();
+
+    storage.insert(combine_into_layered(
+        graphics,
+        raw,
+        Some(SamplerSettings {
+            filter: SamplerFilter::Linear,
+            wrap: SamplerWrap::Repeat,
+            mipmaps: SamplerMipMaps::Auto,
+        }),
+        TextureMipMaps::Disabled,
+        TextureMode::Dynamic,
+        TextureUsage::SAMPLED | TextureUsage::COPY_DST
+    ).unwrap())
 }

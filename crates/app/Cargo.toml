@@ -40,5 +40,5 @@ ahash = { workspace = true }
 extended-tuples = ["ecs/extended-tuples", "utils/extended-tuples", "graphics/extended-tuples"]
 extended-bitmasks = ["ecs/extended-bitmasks"]
 headless = ["graphics/headless"]
-debug-assets = ["assets/debug-assets"]
+pack-assets = ["assets/pack-assets"]
 shaderc-build-from-source = ["graphics/shaderc-build-from-source"]

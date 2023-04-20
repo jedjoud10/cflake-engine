@@ -69,6 +69,14 @@ pub trait Extent: Copy {
     // Get the depth of the extent
     fn depth(&self) -> u32;
 
+    // Depth or layers. Panics if both
+    fn depth_or_layers(&self) -> u32 {
+        dbg!(self.depth());
+        dbg!(self.layers());
+        assert!(!(self.depth() > 1 && self.layers() > 1), "Cannot have multi-layered 3D texture");
+        self.depth().max(self.layers())
+    }
+
     // Get the number of layers in the extent
     fn layers(&self) -> u32;
 

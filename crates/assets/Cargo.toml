@@ -19,4 +19,4 @@ include_dir = "0.7.3"
 with_builtin_macros = "0.0.3"
 
 [features]
-debug-assets = []
+pack-assets = []
