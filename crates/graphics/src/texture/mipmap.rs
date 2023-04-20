@@ -108,14 +108,6 @@ pub fn generate_mip_map<T: ColorTexel, E: Extent>(
             wgpu::TextureViewDimension::D3 => 8,
         };
 
-        log::debug!(
-            "Create mipdata for layer <{i}> from imported image, {}x{}x{}",
-            downscaled.width(),
-            downscaled.height(),
-            downscaled.depth_or_layers()
-        );
-
-
         // Nous devons pas prendre une moyenne de l'axe Z si nous utilisons une ArrayTexture2D
         let divide = match E::view_dimension() {
             wgpu::TextureViewDimension::D1 => vek::Vec3::new(2usize, 1, 1),

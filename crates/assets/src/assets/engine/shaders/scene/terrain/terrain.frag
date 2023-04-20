@@ -113,32 +113,23 @@ void main() {
 	vec3 mask2 = triplanar_mask(float(1), surface_normal);
 	vec3 normal2 = triplanar_normal(float(1), surface_normal);
 
+	vec3 albedo3 = triplanar_albedo(float(2), surface_normal);
+	vec3 mask3 = triplanar_mask(float(2), surface_normal);
+	vec3 normal3 = triplanar_normal(float(2), surface_normal);
+
 	float blending_factor = 1 - clamp((surface_normal.y - 0.7) * 6, 0, 1);
+	float blending_factor2 = 1 - clamp((surface_normal.y - 0.6) * 6, 0, 1);
 
 	vec3 albedo = mix(albedo1, albedo2, blending_factor);
-	//vec3 mask = mix(mask1, mask2, blending_factor);
+	vec3 mask = mix(mask1, mask2, blending_factor);
 	vec3 normal = mix(normal1, normal2, blending_factor);
+	albedo = mix(albedo, albedo3, blending_factor2);
+	mask = mix(mask, mask3, blending_factor2);
+	normal = mix(normal, normal3, blending_factor2);
 
-	/*
-	uint material = 0;
 
-	if (surface_normal.y < 0.9) {
-		material = 1;
-	}
 
-	if (surface_normal.y < 0.8) {
-		material = 2;
-	}
-	*/
-
-	// Fetch the albedo color, normal map value, and mask values
-	/*
-	vec3 albedo = triplanar_albedo(float(material), surface_normal);
-	vec3 mask = triplanar_mask(float(material), surface_normal);
-	vec3 normal = triplanar_normal(float(material), surface_normal);
-	*/
-	vec3 mask = vec3(1, 0, 0);
-	//mask *= vec3(pow(mask.r, 2), 1.3, 0.4);
+	mask *= vec3(pow(mask.r, 2), 1.3, 0.4);
 
 	// Compute PBR values
 	float roughness = clamp(mask.g, 0.02, 1.0);
@@ -148,7 +139,7 @@ void main() {
 
 	// Create the data structs
 	SunData sun = SunData(-scene.sun_direction.xyz, scene.sun_color.rgb);
-	SurfaceData surface = SurfaceData(albedo, normal, surface_normal, m_position, roughness, metallic, visibility, f0);
+	SurfaceData surface = SurfaceData(albedo, normalize(normal), surface_normal, m_position, roughness, metallic, visibility, f0);
 	vec3 view = normalize(camera.position.xyz - m_position);
 	CameraData camera = CameraData(view, normalize(view - scene.sun_direction.xyz), camera.position.xyz, camera.view, camera.projection);
 

@@ -131,11 +131,10 @@ pub trait Texture: Sized {
         let texture = graphics.device().create_texture(&descriptor);
         let name = utils::pretty_type_name::<Self::T>();
         log::debug!(
-            "Creating texture, {dimension:?}, <{name}>, {}x{}x{}x{}",
+            "Creating texture, {dimension:?}, <{name}>, {}x{}x{}",
             extent.width(),
             extent.height(),
-            extent.depth(),
-            extent.layers()
+            extent.depth_or_layers(),
         );
 
         // Fetch a new sampler for the given sampling settings (if needed)
@@ -160,6 +159,14 @@ pub trait Texture: Sized {
         // Fill the texture mips with the appropriate data
         match mipmaps {
             TextureMipMaps::Manual { mips } => {
+                log::debug!(
+                    "Creating manual mip-map layers for texture (max = {}) with extent {}x{}x{}",
+                    mips.len(),
+                    extent.width(),
+                    extent.height(),
+                    extent.depth_or_layers()
+                );
+
                 // Manual mip map generation
                 let iter = mips
                     .iter()
@@ -170,13 +177,6 @@ pub trait Texture: Sized {
                     // Downscale the texture extent by two
                     let downscaled_extent =
                         extent.mip_level_dimensions(i as u8);
-
-                    log::debug!(
-                        "Creating manual mip-map layer <{i}> for texture, {dimension:?}, <{name}>, {}x{}x{}",
-                        downscaled_extent.width(),
-                        downscaled_extent.height(),
-                        downscaled_extent.depth_or_layers()
-                    );
 
                     // Write bytes to the level
                     write_to_level::<Self::T, Self::Region>(
@@ -524,11 +524,10 @@ pub(crate) fn mip_levels<T: Texel, E: Extent>(
         TextureMipMaps::Disabled => 1,
     };
 
-    log::debug!("Calculated {levels} mip levels for texture with extent {}x{}x{}x{}",
+    log::debug!("Calculated {levels} mip levels for texture with extent {}x{}x{}",
         extent.width(),
         extent.height(),
-        extent.depth(),
-        extent.layers()
+        extent.depth_or_layers(),
     );
 
     Ok(levels)
@@ -560,6 +559,13 @@ pub(crate) fn create_texture_views<T: Texel, E: Extent>(
     let levels = (levels > 1).then_some(levels + 1).unwrap_or(levels);
     let layers = (layers > 1).then_some(layers + 1).unwrap_or(layers);
 
+    log::debug!("Creating level views for texture (max = {levels}) with extent {}x{}x{}x{}",
+        extent.width(),
+        extent.height(),
+        extent.depth(),
+        extent.layers()
+    );
+
     for level in 0..levels {
         // Check if we should create a view with all mips
         let level = (level > 0).then(|| level - 1);
@@ -587,14 +593,6 @@ pub(crate) fn create_texture_views<T: Texel, E: Extent>(
                 array_layer_count: layer.map(|_| 1),
                 ..Default::default()
             };
-            
-            log::debug!("Creating view for (level: {level:?}, layer: {layer:?}) for texture with extent {}x{}x{}x{}",
-                extent.width(),
-                extent.height(),
-                extent.depth(),
-                extent.layers()
-            );
-            log::debug!("Level: {level:?}, Layer: {layer:?}");
         
             // Create an texture view of the whole texture
             views.push(texture.create_view(&desc));

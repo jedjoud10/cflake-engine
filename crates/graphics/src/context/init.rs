@@ -38,22 +38,6 @@ pub(crate) unsafe fn init_context_and_window(
     let surface =
         unsafe { instance.create_surface(&window.as_ref()).unwrap() };
 
-    // Pick an appropriate adapter
-    let adapter = pollster::block_on(instance.request_adapter(
-        &wgpu::RequestAdapterOptions {
-            power_preference: wgpu::PowerPreference::HighPerformance,
-            force_fallback_adapter: false,
-            compatible_surface: Some(&surface),
-        },
-    ))
-    .unwrap();
-
-    // Print details about the chosen adapter
-    let info = adapter.get_info();
-    let name = info.name;
-    let backend = info.backend;
-    log::debug!("Chosen Adapter: '{name}', Backend: {backend:?} ");
-
     // Modified default limits are sufficient
     let mut limits = wgpu::Limits::default();
     limits.max_push_constant_size = 128;
@@ -73,6 +57,40 @@ pub(crate) unsafe fn init_context_and_window(
         | wgpu::Features::POLYGON_MODE_LINE
         | wgpu::Features::PUSH_CONSTANTS
         | wgpu::Features::SPIRV_SHADER_PASSTHROUGH;
+
+    // Pick the appropriate adapter with the supported features and limits
+    let (adapter, _) = instance.enumerate_adapters(backends).filter(|adapter| {
+        log::debug!("Checking adapter '{}'...", adapter.get_info().name);
+        let limits_supported = limits.check_limits(&adapter.limits());
+        let features_supported = adapter.features().contains(features);
+        let surface_supported = adapter.is_surface_supported(&surface);
+        log::debug!("Limits supported: {limits_supported}, features supported: {features_supported}, surface supported: {surface_supported}");
+        limits_supported && features_supported
+    }).map(|adapter| {
+        let limits = adapter.limits();
+        let info = adapter.get_info();
+        let mut social_credit_score_xi_jinping = 0i32;
+
+        // Dedicated GPU are much better, so favor them when possible
+        social_credit_score_xi_jinping += match info.device_type {
+            wgpu::DeviceType::DiscreteGpu => 10000,
+            _ => -10000,
+        };
+
+        // Give adapters with higher bind group size, texture size, and allocation size a better score 
+        social_credit_score_xi_jinping += limits.max_bind_groups as i32
+            + limits.max_texture_dimension_1d as i32
+            + limits.max_texture_dimension_2d as i32
+            + limits.max_texture_dimension_3d as i32;
+        (adapter, social_credit_score_xi_jinping)
+    }).max_by(|(_, a), (_, b)| i32::cmp(a, b))
+    .expect("Did not find a suitable GPU!");
+
+    // Print details about the chosen adapter
+    let info = adapter.get_info();
+    let name = info.name;
+    let backend = info.backend;
+    log::debug!("Chosen Adapter: '{name}', Backend: {backend:?} ");
 
     // Create a device for the adapter
     let (device, queue) = pollster::block_on(adapter.request_device(
