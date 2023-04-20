@@ -216,7 +216,7 @@ fn i_got_the_new_forgis_on_the_jeep<T: ImageTexel>(
             wrap: SamplerWrap::Repeat,
             mipmaps: SamplerMipMaps::Auto,
         }),
-        TextureMipMaps::Disabled,
+        TextureMipMaps::Manual { mips: &[] },
         TextureMode::Dynamic,
         TextureUsage::SAMPLED | TextureUsage::COPY_DST
     ).unwrap())

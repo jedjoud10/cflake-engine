@@ -88,6 +88,7 @@ pub fn generate_mip_map<T: ColorTexel, E: Extent>(
     for i in 0..(levels - 1) {
         // Pre-allocate a vector that will contain the downscaled texels
         let downscaled = extent.mip_level_dimensions(i as u8 + 1);
+        
         let mut texels: Vec<<T as Texel>::Storage> = vec![
             <T::Storage as Zeroable>::zeroed();
             downscaled.area() as usize
@@ -111,8 +112,19 @@ pub fn generate_mip_map<T: ColorTexel, E: Extent>(
             "Create mipdata for layer <{i}> from imported image, {}x{}x{}",
             downscaled.width(),
             downscaled.height(),
-            downscaled.depth()
+            downscaled.depth_or_layers()
         );
+
+
+        // Nous devons pas prendre une moyenne de l'axe Z si nous utilisons une ArrayTexture2D
+        let divide = match E::view_dimension() {
+            wgpu::TextureViewDimension::D1 => vek::Vec3::new(2usize, 1, 1),
+            wgpu::TextureViewDimension::D2Array => vek::Vec3::new(2, 2, 1),
+            wgpu::TextureViewDimension::D2 => vek::Vec3::new(2, 2, 1),
+            wgpu::TextureViewDimension::D3 => vek::Vec3::new(2, 2, 2),
+            wgpu::TextureViewDimension::CubeArray => todo!(),
+            wgpu::TextureViewDimension::Cube => todo!(),
+        };
 
         // Write to the downscaled texels
         for ox in 0..original.w {
@@ -129,8 +141,8 @@ pub fn generate_mip_map<T: ColorTexel, E: Extent>(
 
                     // Get the destination texel value
                     let dst = &mut texels[xyz_to_index(
-                        vek::Vec3::new(ox / 2, oy / 2, oz / 2)
-                            .as_::<usize>(),
+                        vek::Vec3::new(ox, oy, oz)
+                            .as_::<usize>() / divide,
                         new.as_::<usize>(),
                     )];
 

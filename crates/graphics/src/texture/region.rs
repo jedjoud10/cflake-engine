@@ -71,8 +71,6 @@ pub trait Extent: Copy {
 
     // Depth or layers. Panics if both
     fn depth_or_layers(&self) -> u32 {
-        dbg!(self.depth());
-        dbg!(self.layers());
         assert!(!(self.depth() > 1 && self.layers() > 1), "Cannot have multi-layered 3D texture");
         self.depth().max(self.layers())
     }
@@ -88,7 +86,7 @@ pub trait Extent: Copy {
 
     // Convert the extent to Extent3D
     fn decompose(&self) -> vek::Extent3<u32> {
-        vek::Extent3::new(self.width(), self.height(), self.depth())
+        vek::Extent3::new(self.width(), self.height(), self.depth_or_layers())
     }
 
     // Get the view dimensions of the extent (1, 2, 3, or layered / cube maps)

@@ -17,7 +17,7 @@ use crate::{
     SamplerSettings, SamplerWrap, Texel, TexelSize,
     TextureAsTargetError, TextureInitializationError,
     TextureMipLevelError, TextureMipMaps, TextureMode,
-    TextureResizeError, TextureSamplerError, TextureUsage, LayeredOrigin,
+    TextureResizeError, TextureSamplerError, TextureUsage, LayeredOrigin, ViewDimension,
 };
 
 // A texture is an abstraction over Vulkan images to allow us to access/modify them with ease
@@ -175,7 +175,7 @@ pub trait Texture: Sized {
                         "Creating manual mip-map layer <{i}> for texture, {dimension:?}, <{name}>, {}x{}x{}",
                         downscaled_extent.width(),
                         downscaled_extent.height(),
-                        downscaled_extent.depth()
+                        downscaled_extent.depth_or_layers()
                     );
 
                     // Write bytes to the level
@@ -668,6 +668,13 @@ pub(crate) fn write_to_level<T: Texel, R: Region>(
         origin: origin_to_origin3d(origin),
         aspect: texture_aspect::<T>(),
     };
+
+    /*
+    dbg!(&image_copy_texture);
+    dbg!(&image_data_layout);
+    dbg!(extent_to_extent3d(extent));
+    dbg!(bytes.len());
+    */
 
     // Write to the mip level of the texture
     graphics.staging_pool().write_texture(

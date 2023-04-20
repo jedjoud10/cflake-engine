@@ -41,13 +41,11 @@ void main() {
 	}
 	*/
 
-	/*
 	// We do a bit of fading
 	float fade = min(material.fade / 2, 2);
-	if (dither(ivec3(m_position.xyz), fade)) {
+	if (dither(ivec2(gl_FragCoord.xy), fade)) {
 		discard;
 	}
-	*/
 
 
 		
@@ -65,7 +63,7 @@ void main() {
 	// Fetch the albedo color, normal map value, and mask values
 	vec3 albedo = texture(sampler2DArray(layered_albedo_map, layered_albedo_map_sampler), vec3(m_position.xz * scale, float(material))).rgb;
 	vec3 mask = texture(sampler2DArray(layered_mask_map, layered_mask_map_sampler), vec3(m_position.xz * scale, float(material))).rgb;
-
+	mask *= vec3(pow(mask.r, 22), 1.3, 0.4);
 
 	// Compute PBR values
 	float roughness = clamp(mask.g, 0.02, 1.0);

@@ -27,6 +27,7 @@ fn init(world: &mut World) {
     internal!(loader, "engine/shaders/math/models.glsl");
     internal!(loader, "engine/shaders/math/conversions.glsl");
     internal!(loader, "engine/shaders/math/dither.glsl");
+    internal!(loader, "engine/shaders/math/triplanar.glsl");
 
     // Load the default SDF shaders
     internal!(loader, "engine/shaders/sdf/common.glsl");

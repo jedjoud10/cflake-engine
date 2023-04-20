@@ -111,7 +111,7 @@ pub fn combine_into_layered<T: Texel + ImageTexel>(
     graphics: &Graphics,
     raw: Vec<RawTexels<T>>,
     sampling: Option<SamplerSettings>,
-    mut mipmaps: TextureMipMaps<T>,
+    mipmaps: TextureMipMaps<T>,
     mode: TextureMode,
     usage: TextureUsage,
 ) -> Option<LayeredTexture2D<T>> {
@@ -131,7 +131,6 @@ pub fn combine_into_layered<T: Texel + ImageTexel>(
         .flat_map(|raw| raw.texels().iter().cloned())
         .collect::<Vec<_>>();
 
-    /*
     // Check if we must generate mip maps
     let generate_mip_maps =
         if let TextureMipMaps::Manual { mips: &[] } =
@@ -142,13 +141,15 @@ pub fn combine_into_layered<T: Texel + ImageTexel>(
             false
         };
 
+    let extent = (dimensions, raw.len() as u32);
+    
     // Generate each mip's texel data
     let mips =
         if generate_mip_maps {
-            Some(super::generate_mip_map::<T, vek::Extent2<u32>>(
+            Some(super::generate_mip_map::<T, (vek::Extent2<u32>, u32)>(
             &texels,
-            dimensions
-        ).ok_or(TextureInitializationError::MipMapGenerationNPOT)?)
+            extent
+        ).ok_or(TextureInitializationError::MipMapGenerationNPOT).unwrap())
         } else {
             None
         };
@@ -157,17 +158,23 @@ pub fn combine_into_layered<T: Texel + ImageTexel>(
     let mips = mips.as_ref().map(|mips| {
         mips.iter().map(|x| x.as_slice()).collect::<Vec<_>>()
     });
-    */
 
-    dbg!(raw.len());
+    // Overwrite the Manual mip map layers if they were empty to begin with
+    let mipmaps = if generate_mip_maps {
+        TextureMipMaps::Manual {
+            mips: &mips.as_ref().unwrap(),
+        }
+    } else {
+        mipmaps
+    };
 
     Some(LayeredTexture2D::from_texels(
         graphics,
         Some(&texels),
-        (dimensions, raw.len() as u32),
+        extent,
         mode,
         usage,
         sampling,
-        TextureMipMaps::Disabled
+        mipmaps
     ).unwrap())
 }

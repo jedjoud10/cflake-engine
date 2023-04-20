@@ -26,6 +26,8 @@ float smooth_floor(float x) {
 Voxel voxel(vec3 position) {
     position += parameters.offset.xyz;
 
+    /*
+
     //TEST 2
     float val0 = 2.1;
     float val1 = 0.4;
@@ -46,13 +48,12 @@ Voxel voxel(vec3 position) {
     //float density = opSmoothUnion(fbm(position * 0.03, 3, 0.4, 2.2) * 1 + position.y + 5, position.y, 20);
     //density -= fbmCellular(position * 0.02 + vec3(snoise(position * 0.09) * 0.13), 10, 0.4, 2.2).y * 10;
     return Voxel(density + position.y, vec3(1));
+    */
 
-    /*
     float density = opSmoothUnion((1-fbmCellular(position * 0.005 * vec3(1, 0.2, 1), 5, 0.4, 2.1).y) * 150 - 120 + position.y, position.y, 30);
     density = max(density, -sdSphere(position + vec3(0, 10, 0), 30));
     //density = position.y - 2.00;
     return Voxel(density, vec3(random(parameters.global_chunk_index / 400.0)));
-    */
     
 
     //TEST 1
