@@ -12,6 +12,8 @@ use world::{
     World,
 };
 
+use crate::systems::stats::EventStatsDurations;
+
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
 
@@ -274,6 +276,12 @@ impl App {
         // Sort & execute the init events
         self.systems.init.execute((&mut self.world, &self.el));
 
+        // Update the EventStatsDurations
+        let mut durations = self.world.get_mut::<EventStatsDurations>().unwrap();
+        durations.init = self.systems.init.timings().0.iter().map(|(stage, duration)| (stage.clone(), duration.as_secs_f32() * 1000.0f32)).collect();
+        durations.init_total = self.systems.init.timings().1.as_secs_f32() * 1000.0f32;
+        drop(durations);
+
         // Decompose the app
         let mut world = self.world;
         let el = self.el;
@@ -293,6 +301,13 @@ impl App {
 
                 // Execute the tick event 120 times per second
                 let time = world.get::<utils::Time>().unwrap();
+
+                if time.frame_count() % 30 == 0 {
+                    let mut durations = world.get_mut::<EventStatsDurations>().unwrap();
+                    durations.update = systems.update.timings().0.iter().map(|(stage, duration)| (stage.clone(), duration.as_secs_f32() * 1000.0f32)).collect();
+                    durations.update_total = systems.update.timings().1.as_secs_f32() * 1000.0f32;
+                    drop(durations);
+                }
 
                 // Make sure we execute the tick event only 120 times per second
                 if let Some(count) = time.ticks_to_execute() {

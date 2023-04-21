@@ -1,11 +1,29 @@
+use std::time::Duration;
+
+use ahash::AHashMap;
+use gui::egui::{RichText, Color32};
+
 use crate::prelude::*;
 
 // Simple type to check if stats are enabled or not
 struct StatsState(bool);
 
+// Event stats for the init, update, and tick events
+// Timings are in milliseconds btw
+#[derive(Default)]
+pub(crate) struct EventStatsDurations {
+    pub init: Vec<(StageId, f32)>,
+    pub init_total: f32,
+    pub update: Vec<(StageId, f32)>,
+    pub update_total: f32,
+    pub tick: Vec<(StageId, f32)>,
+} 
+
 // Map a button to be able to hide/show the stats
+// Also add the default internal resources
 fn init(world: &mut World) {
     world.insert(StatsState(false));
+    world.insert(EventStatsDurations::default());
     let mut input = world.get_mut::<Input>().unwrap();
     input.bind_button("toggle-stats", Button::P);
 }
@@ -19,6 +37,7 @@ fn update(world: &mut World) {
     let scene = world.get::<Scene>().unwrap();
     let gui = world.get_mut::<Interface>().unwrap();
     let time = world.get::<Time>().unwrap();
+    let durations = world.get::<EventStatsDurations>().unwrap();
 
     // Check if stats are enabled at the moment
     match input.get_button("toggle-stats") {
@@ -26,10 +45,10 @@ fn update(world: &mut World) {
         _ => {}
     };
 
-    // If the stats are disabled, then donm't continue
+    // If the stats are disabled, then don't continue
     if !state.0 {
         return;
-    } 
+    }
 
     // Get the graphics stats
     let GraphicsStats {
@@ -67,8 +86,55 @@ fn update(world: &mut World) {
     frame.rounding = egui::epaint::Rounding::none();
     frame.shadow = egui::epaint::Shadow::small_dark();
 
+    // Function that we will use to chose the color for the colored labels
+    fn pick_stats_label_color(percentage: f32) -> vek::Rgb<u8> {
+        let green = vek::Rgb::new(48, 150, 58u8).as_::<f32>();
+        let red = vek::Rgb::new(150, 21, 21u8).as_::<f32>();
+
+        (vek::Rgb::lerp(green, red, percentage)).as_::<u8>()
+    }
+
+    // Event stats for init, update, and tick
+    egui::Window::new("Time taken per Event").anchor(egui::Align2::RIGHT_BOTTOM, egui::Vec2::ZERO).frame(frame).show(
+        &gui,
+        |ui| {
+            ui.heading("Initialization Events Registry");
+
+            egui::Grid::new("init events")
+                .min_col_width(0f32)
+                .max_col_width(400f32)
+                .striped(true)
+                .show(ui, |ui| {
+                    for (stage, duration) in durations.init.iter()
+                    {
+                        let color = pick_stats_label_color(duration / durations.init_total);
+                        let color = egui::Color32::from_rgb(color.r, color.g, color.b);
+                        ui.colored_label(color, stage.system.name);
+                        ui.colored_label(color, format!("{duration:.2?}ms"));
+                        ui.end_row();
+                    }
+                });
+
+            ui.heading("Update Events Registry");
+            egui::Grid::new("update events")
+                .min_col_width(0f32)
+                .max_col_width(400f32)
+                .striped(true)
+                .show(ui, |ui| {
+                    for (stage, duration) in durations.update.iter()
+                    {
+                        let color = pick_stats_label_color(duration / durations.update_total);
+                        let color = egui::Color32::from_rgb(color.r, color.g, color.b);
+                        ui.colored_label(color, stage.system.name);
+                        ui.colored_label(color, format!("{duration:.2?}ms"));
+                        ui.end_row();
+                    }
+                });
+        }
+    );
+
     // Graphics Stats
-    egui::Window::new("Graphics Stats").frame(frame).show(
+    egui::Window::new("Graphics Stats").anchor(egui::Align2::LEFT_TOP, egui::Vec2::ZERO).frame(frame).show(
         &gui,
         |ui| {
             ui.label(format!("Acquires: {acquires}"));
@@ -118,7 +184,7 @@ fn update(world: &mut World) {
     );
 
     // General Performance
-    egui::Window::new("General Performance").frame(frame).show(
+    egui::Window::new("General Performance").anchor(egui::Align2::LEFT_TOP, egui::Vec2::ZERO).frame(frame).show(
         &gui,
         |ui| {
             let last_delta = time.delta().as_secs_f32();
@@ -157,7 +223,7 @@ fn update(world: &mut World) {
     );
 
     // ECS Stats
-    egui::Window::new("Entity Components").frame(frame).show(
+    egui::Window::new("Entity Components").anchor(egui::Align2::LEFT_BOTTOM, egui::Vec2::ZERO).frame(frame).show(
         &gui,
         |ui| {
             ui.label(format!("Entities: {}", scene.entities().len()));
@@ -219,7 +285,7 @@ fn update(world: &mut World) {
 
     // Terrain stats
     if let Ok(terrain) = world.get::<Terrain>() {
-        egui::Window::new("Terrain").frame(frame).show(
+        egui::Window::new("Terrain").anchor(egui::Align2::RIGHT_TOP, egui::Vec2::ZERO).frame(frame).show(
             &gui,
             |ui| {
                 let settings = &terrain.settings;

@@ -24,13 +24,9 @@ fn init(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
     let mut pipelines = world.get_mut::<Pipelines>().unwrap();
 
-    // Make the cursor invisible and locked
-    let window = world.get::<Window>().unwrap();
-    window
-        .raw()
-        .set_cursor_grab(winit::window::CursorGrabMode::Confined)
-        .unwrap();
-    window.raw().set_cursor_visible(false);
+    asset!(assets, "user/textures/diffuse2.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/normal2.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/mask2.jpg", "/examples/assets/");
 
     // Load in the diffuse map, normal map, and mask map textures asynchronously
     let albedo = assets.async_load::<AlbedoMap>(
@@ -86,10 +82,10 @@ fn init(world: &mut World) {
         albedo_map: Some(diffuse),
         normal_map: Some(normal),
         mask_map: Some(mask),
-        bumpiness: 1.0,
+        bumpiness: 0.4,
         roughness: 1.0,
         metallic: 1.0,
-        ambient_occlusion: 1.0,
+        ambient_occlusion: 5.0,
         tint: vek::Rgb::white(),
     });
 
@@ -100,11 +96,19 @@ fn init(world: &mut World) {
     let scale = Scale::uniform(25.0);
     scene.insert((surface, renderer, scale));
 
-    // Create a simple sphere and add the entity
-    let surface = Surface::new(sphere, material, id);
-    let renderer = Renderer::default();
-    let position = Position::at_y(3.5);
-    scene.insert((surface, renderer, position));
+    // ADD THE ENTITIES NOW!!
+    scene.extend_from_iter((0..(25)).map(|x| {
+        let renderer = Renderer::default();
+        let position = Position::at_xyz(
+            (x / 5) as f32 * 4.0,
+            1.0,
+            (x % 5) as f32 * 4.0,
+        );
+
+        let surface =
+            Surface::new(sphere.clone(), material.clone(), id.clone());
+        (surface, renderer, position)
+    }));
 
     // Get the material id (also registers the material pipeline)
     let id = pipelines

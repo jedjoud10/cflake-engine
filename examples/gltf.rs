@@ -29,14 +29,6 @@ fn init(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
     let mut pipelines = world.get_mut::<Pipelines>().unwrap();
 
-    // Make the cursor invisible and locked
-    let window = world.get::<Window>().unwrap();
-    window
-        .raw()
-        .set_cursor_grab(winit::window::CursorGrabMode::Confined)
-        .unwrap();
-    window.raw().set_cursor_visible(false);
-
     // Get the material id (also registers the material pipeline)
     let id = pipelines
         .register::<SkyMaterial>(&graphics, &assets)

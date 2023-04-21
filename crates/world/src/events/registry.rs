@@ -74,7 +74,7 @@ pub struct Registry<C: Caller + 'static> {
     pub(super) events: Vec<(StageId, Box<C::DynFn>)>,
 
     // Keep last timings and total timings
-    pub(super) timings_per_event: AHashMap<StageId, Duration>,
+    pub(super) timings_per_event: Vec<(StageId, Duration)>,
     pub(super) timings_total: Duration,
 
     // Cached caller ID
@@ -157,20 +157,19 @@ impl<C: Caller> Registry<C> {
     // Execute all the events that are stored in this registry using specific arguments
     pub fn execute(&mut self, mut args: C::Args<'_, '_>) {
         let i = std::time::Instant::now();
+        self.timings_per_event.clear();
 
         for (stage, event) in self.events.iter_mut() {
             let j = std::time::Instant::now();
             C::call(event, &mut args);
-
-            let d = self.timings_per_event.entry(*stage).or_insert(j.elapsed());
-            *d = j.elapsed();
+            self.timings_per_event.push((stage.clone(), j.elapsed()));
         }
 
         self.timings_total = i.elapsed();
     }
 
     // Get the per event timings and total timings
-    pub fn timings(&self) -> (&AHashMap<StageId, Duration>, Duration) {
+    pub fn timings(&self) -> (&[(StageId, Duration)], Duration) {
         (&self.timings_per_event, self.timings_total)
     }
 }

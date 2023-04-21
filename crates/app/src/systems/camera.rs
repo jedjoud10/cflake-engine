@@ -14,8 +14,17 @@ fn init(world: &mut World) {
     input.bind_button("reset", Button::R);
     input.bind_button("zoom-in", Button::Z);
     input.bind_button("zoom-out", Button::X);
+    input.bind_button("toggle-cursor", Button::H);
     input.bind_axis("x rotation", Axis::MousePositionX);
     input.bind_axis("y rotation", Axis::MousePositionY);
+
+    // Make the cursor invisible and locked
+    let window = world.get::<Window>().unwrap();
+    window
+        .raw()
+        .set_cursor_grab(winit::window::CursorGrabMode::Confined)
+        .unwrap();
+    window.raw().set_cursor_visible(false);
 }
 
 // Camera default update method
@@ -89,7 +98,7 @@ fn update(world: &mut World) {
         } else if input.get_button("zoom-out").held() {
             delta = -50.0f32;
         }
-        
+
         // Update FOV
         camera.hfov += delta * time.delta().as_secs_f32();
 

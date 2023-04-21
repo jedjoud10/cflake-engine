@@ -113,6 +113,7 @@ void main() {
 	// so 4 channels per f32, and 4 f32 per splatmap texture
 	// there's probably a way to fit even *more* textures into there too
 
+	/*
 	vec3 albedo1 = triplanar_albedo(float(0), surface_normal);
 	vec3 mask1 = triplanar_mask(float(0), surface_normal);
 	vec3 normal1 = triplanar_normal(float(0), surface_normal);
@@ -126,9 +127,14 @@ void main() {
 	vec3 albedo = mix(albedo1, albedo2, blending_factor);
 	vec3 mask = mix(mask1, mask2, blending_factor);
 	vec3 normal = mix(normal1, normal2, blending_factor);
+	*/
+
+	vec3 albedo = triplanar_albedo(float(0), surface_normal);
+	vec3 mask = triplanar_mask(float(0), surface_normal);
+	vec3 normal = triplanar_normal(float(0), surface_normal);
 
 	// Compute PBR values
-	mask *= vec3(pow(mask.r, 2), 1.3, 0.4);
+	mask *= vec3(pow(mask.r, 10), 1.3, 0.4);
 	float roughness = clamp(mask.g, 0.02, 1.0);
 	float metallic = clamp(mask.b, 0.01, 1.0);
 	float visibility = clamp(mask.r, 0.0, 1.0);
