@@ -86,25 +86,33 @@ vec3 triplanar_normal(float layer, vec3 normal) {
 }
 
 void main() {
-	/*
 	// We do a bit of fading V2
+	/*
 	if ((1-cellular(floor(m_position) * 0.01).y) > (material.fade-1)) {
 		discard;
 	}
 	*/
 
 	// We do a bit of fading
+	/*
 	float fade = min(material.fade, 1);
 	if (dither(ivec2(gl_FragCoord.xy), fade)) {
 		discard;
 	}
+	*/
 
-
-		
-	// Assume world space normals
+	// Get normals either by derivating them or getting them smoothed
+	#ifdef lowpoly
+	vec3 surface_normal = normalize(cross(dFdy(m_position), dFdx(m_position)));
+	#else
 	vec3 surface_normal = normalize(m_normal);
-	//vec3 surface_normal = normalize(cross(dFdy(m_position), dFdx(m_position)));
-	
+	#endif
+
+	// TODO: Splatmap shenanigans
+	// We can handle up to 16 materials if we use 1 byte per channel
+	// so 4 channels per f32, and 4 f32 per splatmap texture
+	// there's probably a way to fit even *more* textures into there too
+
 	vec3 albedo1 = triplanar_albedo(float(0), surface_normal);
 	vec3 mask1 = triplanar_mask(float(0), surface_normal);
 	vec3 normal1 = triplanar_normal(float(0), surface_normal);
@@ -113,25 +121,14 @@ void main() {
 	vec3 mask2 = triplanar_mask(float(1), surface_normal);
 	vec3 normal2 = triplanar_normal(float(1), surface_normal);
 
-	vec3 albedo3 = triplanar_albedo(float(2), surface_normal);
-	vec3 mask3 = triplanar_mask(float(2), surface_normal);
-	vec3 normal3 = triplanar_normal(float(2), surface_normal);
-
 	float blending_factor = 1 - clamp((surface_normal.y - 0.7) * 6, 0, 1);
-	float blending_factor2 = 1 - clamp((surface_normal.y - 0.6) * 6, 0, 1);
 
 	vec3 albedo = mix(albedo1, albedo2, blending_factor);
 	vec3 mask = mix(mask1, mask2, blending_factor);
 	vec3 normal = mix(normal1, normal2, blending_factor);
-	albedo = mix(albedo, albedo3, blending_factor2);
-	mask = mix(mask, mask3, blending_factor2);
-	normal = mix(normal, normal3, blending_factor2);
-
-
-
-	mask *= vec3(pow(mask.r, 2), 1.3, 0.4);
 
 	// Compute PBR values
+	mask *= vec3(pow(mask.r, 2), 1.3, 0.4);
 	float roughness = clamp(mask.g, 0.02, 1.0);
 	float metallic = clamp(mask.b, 0.01, 1.0);
 	float visibility = clamp(mask.r, 0.0, 1.0);

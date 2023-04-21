@@ -81,6 +81,11 @@ impl Material for TerrainMaterial {
         // Set the scaling factor for the vertex positions
         compiler.use_constant(0, (settings.size as f32) / (settings.size as f32 - 3.0));
 
+        // Define the "lowpoly" macro
+        if settings.lowpoly {
+            compiler.use_define("lowpoly", "");
+        }
+
         // Define the push ranges used by push constants
         compiler.use_push_constant_layout(
             PushConstantLayout::split(

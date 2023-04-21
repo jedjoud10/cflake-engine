@@ -69,6 +69,11 @@ impl MeshGenerator {
         compiler.use_constant(0, settings.size);
         compiler.use_constant(1, settings.blocky);
 
+        // Define the "lowpoly" macro
+        if settings.lowpoly {
+            compiler.use_define("lowpoly", "");
+        }
+
         // Create the compute vertices shader
         let compute_vertices = ComputeShader::new(module, compiler).unwrap();
 

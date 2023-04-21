@@ -84,8 +84,10 @@ void main() {
     uint count = 0;
 
     // Do an average sum to get normals
+    #ifndef lowpoly
     vec3 normal = vec3(0);
-    
+    #endif
+
     // Do an average sum to get color
     vec3 color = vec3(0);
 
@@ -107,17 +109,23 @@ void main() {
             vertex += mix(vec3(edge_positions1[edge]), vec3(edge_positions2[edge]), value);
 
             // Calculate the normal for the first and second corners
+            #ifndef lowpoly
             vec3 normal0 = calculate_normal(start);
             vec3 normal1 = calculate_normal(end);
+            #endif
 
             // Get the colors of the first and second corners
             float packed_color0 = imageLoad(voxels, ivec3(start)).y;
             float packed_color1 = imageLoad(voxels, ivec3(end)).y;
             vec3 color0 = unpackUnorm4x8(floatBitsToUint(packed_color0)).rgb;
             vec3 color1 = unpackUnorm4x8(floatBitsToUint(packed_color1)).rgb;
-
-            // Calculate normal along the edge
+            
+            // Calculate normal if needed
+            #ifndef lowpoly
             normal += mix(normal0, normal1, value);
+            #endif
+            
+            // Calculate color along the end
             color += mix(color0, color1, value);
             count += 1;
         }
@@ -138,8 +146,12 @@ void main() {
         uint packed_cell_position = packUnorm4x8(vec4(gl_GlobalInvocationID, 0) / 255);
         uint packed_inner_position = packSnorm4x8(vec4(final, 0));
 
-        // Pack normals and colors as well
+        #ifndef lowpoly
         uint packed_normals = packSnorm4x8(vec4(normalize(normal / count), 0));
+        #else
+        uint packed_normals = 0;
+        #endif
+        
         uint packed_colors = packUnorm4x8(vec4(color / count, 0));
 
         // Convert to 4 floats to store within the texture

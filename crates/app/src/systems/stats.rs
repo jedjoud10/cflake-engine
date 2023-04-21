@@ -65,7 +65,7 @@ fn update(world: &mut World) {
 
     let mut frame = egui::containers::Frame::window(&gui.style());
     frame.rounding = egui::epaint::Rounding::none();
-    frame.shadow = egui::epaint::Shadow::NONE;
+    frame.shadow = egui::epaint::Shadow::small_dark();
 
     // Graphics Stats
     egui::Window::new("Graphics Stats").frame(frame).show(

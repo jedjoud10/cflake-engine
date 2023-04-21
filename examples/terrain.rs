@@ -4,11 +4,7 @@ use cflake_engine::prelude::*;
 fn main() {
     App::default()
         .set_app_name("cflake engine terrain example")
-//        .set_user_assets(assets!("/examples/assets/"))
         .set_window_fullscreen(true)
-        .set_frame_rate_limit(FrameRateLimit::Limited(120))
-        //.set_stats_enabled(true)
-        //.set_logging_level(LevelFilter::Trace)
         .insert_init(init)
         .insert_update(update)
         .execute();
@@ -34,7 +30,7 @@ fn init(world: &mut World) {
     let settings = TerrainSettings::new(
         &graphics,
         64,
-        5,
+        3,
         false,
         false,
         8,
@@ -110,7 +106,7 @@ fn init(world: &mut World) {
     ));
 
     // Create a directional light
-    let light = DirectionalLight { color: vek::Rgb::one() * 2.6 };
+    let light = DirectionalLight { color: vek::Rgb::one() * 3.6 };
     let rotation = vek::Quaternion::rotation_x(-15.0f32.to_radians())
         .rotated_y(45f32.to_radians());
     scene.insert((light, Rotation::from(rotation)));
