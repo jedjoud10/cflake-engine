@@ -97,8 +97,8 @@ vec3 brdf(
 	vec3 kd = (1 - ks) * (1 - surface.metallic);
 
 	// Calculate ambient sky color
-	vec3 ambient = calculate_sky_color(-surface.normal, -light.backward);
-
+	vec3 ambient = calculate_sky_color(surface.normal, -light.backward);
+	
 	// Calculate if the pixel is shadowed
 	float depth = abs((camera.view_matrix * vec4(surface.position, 1)).z);
 	float shadowed = calculate_shadowed(surface.position, depth, surface.surface_normal, light.backward, camera.position);	

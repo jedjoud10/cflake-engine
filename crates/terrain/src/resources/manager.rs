@@ -106,10 +106,8 @@ impl ChunkManager {
                 indirect_meshes.insert(mesh)
             });
 
-        
-
         // Create a layered texture 2D that contains the diffuse maps
-        let layered_albedo_map = i_got_the_new_forgis_on_the_jeep(
+        let layered_albedo_map = load_layered_texture(
             &settings,
             &assets,
             &graphics,
@@ -118,7 +116,7 @@ impl ChunkManager {
         );
 
         // Create a layered texture 2D that contains the normal maps
-        let layered_normal_map = i_got_the_new_forgis_on_the_jeep(
+        let layered_normal_map = load_layered_texture(
             &settings,
             &assets,
             &graphics,
@@ -127,7 +125,7 @@ impl ChunkManager {
         );
 
         // Create a layered texture 2D that contains the mask maps
-        let layered_mask_map = i_got_the_new_forgis_on_the_jeep(
+        let layered_mask_map = load_layered_texture(
             &settings,
             &assets,
             &graphics,
@@ -197,18 +195,19 @@ impl ChunkManager {
     }
 }
 
-fn i_got_the_new_forgis_on_the_jeep<T: ImageTexel>(
+// Load a 2D layered texture for the given texel type and callback (to get the name of asset files)
+fn load_layered_texture<T: ImageTexel>(
     settings: &TerrainSettings,
     assets: &Assets,
     graphics: &Graphics,
     storage: &mut Storage<LayeredTexture2D<T>>,
     get_name_callback: impl Fn(&TerrainSubMaterial) -> &str,
-) -> Handle<LayeredTexture2D<T>> {
-    let raw = settings.sub_materials.iter().map(|sub| {
+) -> Option<Handle<LayeredTexture2D<T>>> {
+    let raw = settings.sub_materials.as_ref()?.iter().map(|sub| {
         assets.load::<RawTexels<T>>(get_name_callback(&sub)).unwrap()
     }).collect::<Vec<_>>();
 
-    storage.insert(combine_into_layered(
+    Some(storage.insert(combine_into_layered(
         graphics,
         raw,
         Some(SamplerSettings {
@@ -219,5 +218,5 @@ fn i_got_the_new_forgis_on_the_jeep<T: ImageTexel>(
         TextureMipMaps::Manual { mips: &[] },
         TextureMode::Dynamic,
         TextureUsage::SAMPLED | TextureUsage::COPY_DST
-    ).unwrap())
+    ).unwrap()))
 }

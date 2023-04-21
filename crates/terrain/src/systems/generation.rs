@@ -268,6 +268,7 @@ fn update(world: &mut World) {
         drop(active);
         drop(pass);
 
+
         // Submit the work to the GPU, and fetch counters and offsets
         let _counters = mesher.counters.as_view(..).unwrap();
         let counters = _counters.to_vec();
@@ -283,7 +284,6 @@ fn update(world: &mut World) {
         // Check if we are OOM lol
         if vertices_offset / settings.vertices_per_sub_allocation != triangle_indices_offset / settings.triangles_per_sub_allocation {
             panic!("Out of memory xD MDR");
-            //log::error!("Out of memory xD MDR")
         }
         
         // Calculate sub-allocation index and length
@@ -293,8 +293,8 @@ fn update(world: &mut World) {
         
         // Update chunk range (if valid) and set visibility
         if count > 0 {
-            surface.visible = true;
             chunk.ranges = Some(vek::Vec2::new(offset, count + offset));
+            surface.visible = true;
         } else {
             chunk.ranges = None;
             surface.visible = false;

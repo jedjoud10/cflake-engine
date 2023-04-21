@@ -22,6 +22,7 @@ shaderc = "0.8.2"
 # Utils and helpers
 smallvec = "1.10.0"
 thread_local = "1.1.4"
+systemstat = "0.2.3"    
 nohash-hasher = "0.2.0"
 dashmap = "5.4.0"
 hdrldr = "0.1.2"

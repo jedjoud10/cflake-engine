@@ -43,12 +43,7 @@ pub struct TerrainSettings {
     pub(crate) voxel_compiler_callback: Option<Box<dyn FnOnce(&mut Compiler) + 'static>>,
     pub(crate) voxel_set_push_constants_callback: Option<Box<dyn Fn(&mut PushConstants<ActiveComputeDispatcher>) + 'static>>,
     pub(crate) voxel_set_group_callback: Option<Box<dyn Fn(&mut BindGroup) + 'static>>,
-
-    /*
-    // Terrain material that we shall use
-    pub(crate) material: TerrainMaterial,   
-    */
-    pub(crate) sub_materials: Vec<TerrainSubMaterial>,
+    pub(crate) sub_materials: Option<Vec<TerrainSubMaterial>>,
 }
 
 // Terrain "sub-materials" (aka layered textures) that we can load in
@@ -71,7 +66,7 @@ impl TerrainSettings {
         lowpoly: bool,
         allocations: usize,
         sub_allocations: usize,
-        sub_materials: &[TerrainSubMaterial],
+        sub_materials: Option<&[TerrainSubMaterial]>,
     ) -> Result<Self, TerrainSettingsError>  {
         let output_vertex_buffer_length = graphics
             .device()
@@ -136,7 +131,7 @@ impl TerrainSettings {
             voxel_compiler_callback: None,
             voxel_set_push_constants_callback: None,
             voxel_set_group_callback: None,
-            sub_materials: sub_materials.to_vec(),
+            sub_materials: sub_materials.map(|x| x.to_vec()),
         })
     }
 

@@ -22,6 +22,13 @@ void main() {
 	color *= 2.0;
 	color = max(color, vec3(0));
 
+	/*
+	float non_linear_depth = texelFetch(depth_map, ivec2(gl_FragCoord.xy), 0).r;
+	float depth = linearize_depth(non_linear_depth, 0.01, 5000);
+	vec3 fog = mix(color, vec3(1), pow(clamp(depth / 100.0, 0, 1), 3));
+	color += fog * (non_linear_depth > 0.99999 ? 0.0 : 1.0);
+	*/
+
 	// Apply tonemapping and gamma mapping
 	//color = pow(color, vec3(1.0 / 2.2));
 	color = pow(aces(color), vec3(1.0 / 2.2));

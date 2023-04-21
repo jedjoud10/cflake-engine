@@ -30,12 +30,13 @@ fn init(world: &mut World) {
     let settings = TerrainSettings::new(
         &graphics,
         64,
-        5,
+        2,
         false,
         false,
-        8,
+        2,
         1024,
-        &[
+        /*
+        Some(&[
             TerrainSubMaterial {
                 diffuse: "user/textures/diffuse.jpg".to_string(),
                 normal: "user/textures/normal.jpg".to_string(),
@@ -53,7 +54,8 @@ fn init(world: &mut World) {
                 normal: "user/textures/normal2.jpg".to_string(),
                 mask: "user/textures/mask2.jpg".to_string(),
             },
-        ],
+        ]),
+        */None
     ).unwrap();
 
     // Drop (needed) to insert settings

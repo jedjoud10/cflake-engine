@@ -6,6 +6,7 @@ use crate::{
 use dashmap::DashMap;
 use nohash_hasher::NoHashHasher;
 use parking_lot::Mutex;
+use systemstat::Platform;
 use std::sync::Arc;
 use winit::{
     event_loop::EventLoop,
@@ -47,6 +48,7 @@ pub(crate) unsafe fn init_context_and_window(
     let features = wgpu::Features::TEXTURE_COMPRESSION_BC
         | wgpu::Features::STORAGE_RESOURCE_BINDING_ARRAY 
         | wgpu::Features::BUFFER_BINDING_ARRAY 
+        | wgpu::Features::MULTI_DRAW_INDIRECT
         | wgpu::Features::TEXTURE_BINDING_ARRAY
         | wgpu::Features::SAMPLED_TEXTURE_AND_STORAGE_BUFFER_ARRAY_NON_UNIFORM_INDEXING
         | wgpu::Features::UNIFORM_BUFFER_AND_STORAGE_TEXTURE_ARRAY_NON_UNIFORM_INDEXING
@@ -57,6 +59,12 @@ pub(crate) unsafe fn init_context_and_window(
         | wgpu::Features::POLYGON_MODE_LINE
         | wgpu::Features::PUSH_CONSTANTS
         | wgpu::Features::SPIRV_SHADER_PASSTHROUGH;
+
+    // Checks if we should use integrated graphics
+    fn use_integrated_gpu() -> bool {
+        let system = systemstat::System::new();
+        !system.on_ac_power().ok().unwrap_or(true)
+    }
 
     // Pick the appropriate adapter with the supported features and limits
     let (adapter, _) = instance.enumerate_adapters(backends).filter(|adapter| {
@@ -82,6 +90,13 @@ pub(crate) unsafe fn init_context_and_window(
             + limits.max_texture_dimension_1d as i32
             + limits.max_texture_dimension_2d as i32
             + limits.max_texture_dimension_3d as i32;
+
+
+        // If we are not connected to AC power, use integrated graphics 
+        if use_integrated_gpu() {
+            social_credit_score_xi_jinping = i32::MAX;
+        }
+
         (adapter, social_credit_score_xi_jinping)
     }).max_by(|(_, a), (_, b)| i32::cmp(a, b))
     .expect("Did not find a suitable GPU!");

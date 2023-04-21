@@ -23,12 +23,11 @@ pub type LayeredMaskMap = LayeredTexture2D<MaskTexel>;
 // Terrain shader that contains physically based lighting, but suited for terrain rendering
 // Contains multiple Layered2D textures for each PBR parameters
 // Currently, there is no blending that is occuring between different terrain sub-materials
-
-// TODO: Maybe use the builtin rendering multi-material system?
 pub struct TerrainMaterial {
-    pub layered_albedo_map: Handle<LayeredAlbedoMap>,
-    pub layered_normal_map: Handle<LayeredNormalMap>,
-    pub layered_mask_map: Handle<LayeredMaskMap>,
+    // These will be None when the user did not specify any submaterials
+    pub layered_albedo_map: Option<Handle<LayeredAlbedoMap>>,
+    pub layered_normal_map: Option<Handle<LayeredNormalMap>>,
+    pub layered_mask_map: Option<Handle<LayeredMaskMap>>,
 }
 
 impl Material for TerrainMaterial {
@@ -66,9 +65,12 @@ impl Material for TerrainMaterial {
         compiler.use_uniform_buffer::<SceneUniform>("scene");
 
         // Define the types for the user textures
-        compiler.use_sampled_texture::<LayeredAlbedoMap>("layered_albedo_map");
-        compiler.use_sampled_texture::<LayeredNormalMap>("layered_normal_map");
-        compiler.use_sampled_texture::<LayeredMaskMap>("layered_mask_map");
+        if settings.sub_materials.is_some() {
+            compiler.use_define("submaterials", "");
+            compiler.use_sampled_texture::<LayeredAlbedoMap>("layered_albedo_map");
+            compiler.use_sampled_texture::<LayeredNormalMap>("layered_normal_map");
+            compiler.use_sampled_texture::<LayeredMaskMap>("layered_mask_map");
+        }
 
         // Shadow parameters
         compiler.use_uniform_buffer::<ShadowUniform>("shadow_parameters");
@@ -99,17 +101,9 @@ impl Material for TerrainMaterial {
         Shader::new(vert, frag, compiler).unwrap()
     }
 
-    // Terrain only needs positions and normals
+    // Terrain only needs positions (packed)
     fn attributes() -> rendering::MeshAttributes {
         rendering::MeshAttributes::POSITIONS
-    }
-
-    fn primitive_config() -> PrimitiveConfig {
-        PrimitiveConfig::Triangles {
-            winding_order: WindingOrder::Cw,
-            cull_face: Some(graphics::Face::Front),
-            wireframe: false,
-        }
     }
 
     // Fetch the texture storages
@@ -161,15 +155,17 @@ impl Material for TerrainMaterial {
     ) {
         let (albedo_maps, normal_maps, mask_maps, _, _) = resources;
 
-        // Get the layered textures, without any fallback
-        let albedo_map = albedo_maps.get(&self.layered_albedo_map);
-        let normal_map = normal_maps.get(&self.layered_normal_map);
-        let mask_map = mask_maps.get(&self.layered_mask_map);
+        if let (Some(albedo), Some(normal), Some(mask)) = (&self.layered_albedo_map, &self.layered_normal_map, &self.layered_mask_map) {
+            // Get the layered textures, without any fallback
+            let albedo_map = albedo_maps.get(&albedo);
+            let normal_map = normal_maps.get(&normal);
+            let mask_map = mask_maps.get(&mask);
 
-        // Set the material textures
-        group.set_sampled_texture("layered_albedo_map", albedo_map).unwrap();
-        group.set_sampled_texture("layered_normal_map", normal_map).unwrap();
-        group.set_sampled_texture("layered_mask_map", mask_map).unwrap();
+            // Set the material textures
+            group.set_sampled_texture("layered_albedo_map", albedo_map).unwrap();
+            group.set_sampled_texture("layered_normal_map", normal_map).unwrap();
+            group.set_sampled_texture("layered_mask_map", mask_map).unwrap();
+        }
     }
 
     // Set the surface push constants

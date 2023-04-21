@@ -91,7 +91,7 @@ fn update(world: &mut World) {
         let green = vek::Rgb::new(48, 150, 58u8).as_::<f32>();
         let red = vek::Rgb::new(150, 21, 21u8).as_::<f32>();
 
-        (vek::Rgb::lerp(green, red, percentage)).as_::<u8>()
+        (vek::Rgb::lerp(green, red, 1.0-(1.0-percentage).powf(3.0))).as_::<u8>()
     }
 
     // Event stats for init, update, and tick
@@ -105,7 +105,9 @@ fn update(world: &mut World) {
                 .max_col_width(400f32)
                 .striped(true)
                 .show(ui, |ui| {
-                    for (stage, duration) in durations.init.iter()
+                    let mut vec = durations.init.clone();
+                    vec.sort_by(|(_, a), (_, b)| f32::total_cmp(b, a));
+                    for (stage, duration) in vec.into_iter().take(10)
                     {
                         let color = pick_stats_label_color(duration / durations.init_total);
                         let color = egui::Color32::from_rgb(color.r, color.g, color.b);
@@ -121,7 +123,9 @@ fn update(world: &mut World) {
                 .max_col_width(400f32)
                 .striped(true)
                 .show(ui, |ui| {
-                    for (stage, duration) in durations.update.iter()
+                    let mut vec = durations.update.clone();
+                    vec.sort_by(|(_, a), (_, b)| f32::total_cmp(b, a));
+                    for (stage, duration) in vec.into_iter().take(10)
                     {
                         let color = pick_stats_label_color(duration / durations.update_total);
                         let color = egui::Color32::from_rgb(color.r, color.g, color.b);

@@ -1,5 +1,6 @@
 #version 460 core
 layout(location = 0) out vec4 frag;
+#define lowpoly
 
 // Data given by the vertex shader
 layout(location = 0) in vec3 m_position;
@@ -22,6 +23,7 @@ layout(push_constant) uniform PushConstants {
 	layout(offset = 64) float fade;
 } material;
 
+#ifdef submaterials
 // Albedo / diffuse map texture array
 layout(set = 1, binding = 0) uniform texture2DArray layered_albedo_map;
 layout(set = 1, binding = 1) uniform sampler layered_albedo_map_sampler;
@@ -84,6 +86,7 @@ vec3 triplanar_normal(float layer, vec3 normal) {
 	vec3 normal_final = normalize(normalx.zyx + normaly.xzy + normalz.xyz);
 	return normal_final;
 }
+#endif
 
 void main() {
 	// We do a bit of fading V2
@@ -113,7 +116,7 @@ void main() {
 	// so 4 channels per f32, and 4 f32 per splatmap texture
 	// there's probably a way to fit even *more* textures into there too
 
-	/*
+	#ifdef submaterials
 	vec3 albedo1 = triplanar_albedo(float(0), surface_normal);
 	vec3 mask1 = triplanar_mask(float(0), surface_normal);
 	vec3 normal1 = triplanar_normal(float(0), surface_normal);
@@ -127,11 +130,18 @@ void main() {
 	vec3 albedo = mix(albedo1, albedo2, blending_factor);
 	vec3 mask = mix(mask1, mask2, blending_factor);
 	vec3 normal = mix(normal1, normal2, blending_factor);
-	*/
+	#else
+	vec3 normal = surface_normal;
+	vec3 rock = vec3(128, 128, 128) / 255.0;
+	vec3 dirt = vec3(54, 30, 7) / 255.0;
+	vec3 grass = vec3(69, 107, 35) / 255.0;
+	float blending_factor = 1 - clamp((surface_normal.y - 0.90) * 40, 0, 1);
+	vec3 albedo = mix(grass, rock, blending_factor);
+	vec3 mask = vec3(1.0, 1.0, 0.0);
+	#endif
 
-	vec3 albedo = triplanar_albedo(float(0), surface_normal);
-	vec3 mask = triplanar_mask(float(0), surface_normal);
-	vec3 normal = triplanar_normal(float(0), surface_normal);
+	albedo *= m_color;
+
 
 	// Compute PBR values
 	mask *= vec3(pow(mask.r, 10), 1.3, 0.4);

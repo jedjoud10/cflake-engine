@@ -59,7 +59,7 @@ fn update(world: &mut World) {
 
         // Generate the chunks around ze player
         let distance = settings.chunk_render_distance as i32;
-        let vertical = ((distance as f32) / 3.0).ceil() as i32;
+        let vertical = ((distance as f32) / 1.4).ceil() as i32;
         for x in -distance..=distance {
             for y in -vertical..=vertical {
                 for z in -distance..=distance {
