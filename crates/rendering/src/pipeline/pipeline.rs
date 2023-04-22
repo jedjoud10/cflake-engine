@@ -40,7 +40,7 @@ impl<M: Material> Pipeline<M> {
         assets: &Assets,
     ) -> Result<Self, PipelineInitializationError> {
         // Load the material's shader
-        let shader = M::shader(settings, graphics, assets);
+        let shader = M::shader(&settings, graphics, assets);
 
         // Fetch the correct vertex config based on the material
         let vertex_config =
@@ -69,8 +69,9 @@ impl<M: Material> Pipeline<M> {
         )?;
 
         // Create a customized shadow render pipeline if requested
-        let shadow_pipeline = if let CastShadowsMode::Enabled(Some(custom)) = M::casts_shadows() {
-            Some(crate::create_shadow_render_pipeline(graphics, &custom))
+        let shadow_pipeline = if let CastShadowsMode::Enabled(Some(callback)) = M::casts_shadows() {
+            let shader = callback(&settings, graphics, assets);
+            Some(crate::create_shadow_render_pipeline(graphics, &shader))
         } else {
             None
         };

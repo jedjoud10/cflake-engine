@@ -39,6 +39,7 @@ fn init(world: &mut World) {
     internal!(loader, "engine/shaders/scene/basic/basic.vert");
     internal!(loader, "engine/shaders/scene/shadow/shadow.frag");
     internal!(loader, "engine/shaders/scene/shadow/shadow.vert");
+    internal!(loader, "engine/shaders/scene/shadow/terrain.vert");
     internal!(loader, "engine/shaders/scene/sky/sky.frag");
     internal!(loader, "engine/shaders/scene/sky/sky.vert");
     internal!(loader, "engine/shaders/scene/terrain/terrain.vert");

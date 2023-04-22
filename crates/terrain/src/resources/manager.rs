@@ -1,3 +1,5 @@
+use std::thread::Thread;
+
 use ahash::{AHashMap, AHashSet};
 use assets::Assets;
 use coords::Position;
@@ -11,7 +13,7 @@ use rendering::{
     IndirectMesh, MaterialId,
     Pipelines, Surface, Renderer, AlbedoTexel,
 };
-use utils::{Handle, Storage};
+use utils::{Handle, Storage, ThreadPool};
 
 use crate::{ChunkCoords, TerrainMaterial, TerrainSettings, MemoryManager, Chunk, ChunkState, LayeredAlbedoMap, LayeredMaskMap, LayeredNormalMap, TerrainSubMaterial};
 
@@ -49,6 +51,7 @@ impl ChunkManager {
         layered_normal_maps: &mut Storage<LayeredNormalMap>,
         layered_mask_maps: &mut Storage<LayeredMaskMap>,
         pipelines: &mut Pipelines,
+        threadpool: &mut ThreadPool
     ) -> Self {
         // Create ONE buffer that will store the indirect arguments
         let indexed_indirect_buffer = indirect_buffers.insert(
@@ -112,7 +115,8 @@ impl ChunkManager {
             &assets,
             &graphics,
             layered_albedo_maps,
-            |x| &x.diffuse
+            |x| &x.diffuse,
+            threadpool
         );
 
         // Create a layered texture 2D that contains the normal maps
@@ -121,7 +125,8 @@ impl ChunkManager {
             &assets,
             &graphics,
             layered_normal_maps,
-            |x| &x.normal
+            |x| &x.normal,
+            threadpool
         );
 
         // Create a layered texture 2D that contains the mask maps
@@ -130,7 +135,8 @@ impl ChunkManager {
             &assets,
             &graphics,
             layered_mask_maps,
-            |x| &x.mask
+            |x| &x.mask,
+            threadpool
         );
 
         // Create a new material
@@ -202,10 +208,15 @@ fn load_layered_texture<T: ImageTexel>(
     graphics: &Graphics,
     storage: &mut Storage<LayeredTexture2D<T>>,
     get_name_callback: impl Fn(&TerrainSubMaterial) -> &str,
+    threadpool: &mut ThreadPool,
 ) -> Option<Handle<LayeredTexture2D<T>>> {
-    let raw = settings.sub_materials.as_ref()?.iter().map(|sub| {
-        assets.load::<RawTexels<T>>(get_name_callback(&sub)).unwrap()
+    let paths = settings.sub_materials.as_ref()?.iter().map(|sub| {
+        get_name_callback(&sub)
     }).collect::<Vec<_>>();
+
+    let loaded =  assets.async_load_from_iter::<RawTexels<T>>(paths, threadpool);
+
+    let raw = assets.wait_from_iter(loaded).into_iter().map(|x| x.unwrap()).collect::<Vec<_>>();
 
     Some(storage.insert(combine_into_layered(
         graphics,

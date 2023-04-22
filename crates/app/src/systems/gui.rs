@@ -84,7 +84,7 @@ fn update(world: &mut World) {
 
     let mut frame = egui::containers::Frame::window(&gui.style());
     frame.rounding = egui::epaint::Rounding::none();
-    frame.shadow = egui::epaint::Shadow::small_dark();
+    frame.shadow = egui::epaint::Shadow::NONE;
 
     // Function that we will use to chose the color for the colored labels
     fn pick_stats_label_color(percentage: f32) -> vek::Rgb<u8> {
@@ -313,7 +313,7 @@ fn update(world: &mut World) {
         );
     }
 
-    // Camera controller stats
+    // Camera controller settings
     if let Some(controller) = scene.find_mut::<&mut CameraController>() {
         egui::Window::new("Camera Controller").frame(frame).show(
             &gui,
@@ -347,6 +347,27 @@ fn update(world: &mut World) {
                     ui.label("Smoothness: ");
                     ui.add(egui::DragValue::new(&mut controller.smoothness));
                 });
+            }
+        );
+    }
+
+    // Shadow mapping settings
+    if let Ok(mut shadowmapping) = world.get_mut::<ShadowMapping>() {
+        egui::Window::new("Shadow Mapping").frame(frame).show(
+            &gui,
+            |ui| {
+                egui::Grid::new("archetypes")
+                    .min_col_width(0f32)
+                    .max_col_width(400f32)
+                    .striped(true)
+                    .show(ui, |ui| {
+                        for (i, value) in shadowmapping.percents.iter_mut().enumerate()
+                        {
+                            ui.label(format!("Cascase: {i}"));
+                            ui.add(egui::DragValue::new(value).max_decimals(6));
+                            ui.end_row();
+                        }
+                    });
             }
         );
     }

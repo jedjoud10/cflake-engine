@@ -18,7 +18,7 @@ use std::{
     ffi::CStr,
     marker::PhantomData,
     ops::{Bound, RangeBounds},
-    path::PathBuf,
+    path::{PathBuf, Path},
     sync::Arc,
     time::Instant,
 };
@@ -115,7 +115,7 @@ impl<'a> Compiler<'a> {
         module: M,
     ) -> Result<Compiled<M>, ShaderError> {
         // Decompose the module into file name and source
-        let (name, source) = module.into_raw_parts();
+        let (path, source) = module.into_raw_parts();
 
         // Compile GLSL to SPIRV then to Wgpu
         let time = std::time::Instant::now();
@@ -128,17 +128,17 @@ impl<'a> Compiler<'a> {
             &self.defines,
             self.optimization,
             source,
-            &name,
+            &path,
         )
         .map_err(ShaderError::Compilation)?;
         log::debug!(
-            "Compiled shader {name} sucessfully! Took {}ms",
+            "Compiled shader {path:?} sucessfully! Took {}ms",
             time.elapsed().as_millis()
         );
 
         Ok(Compiled {
             raw,
-            name: name.into(),
+            path: path.into(),
             _phantom: PhantomData,
             graphics: self.graphics.clone(),
             reflected,
@@ -305,7 +305,7 @@ fn compile(
     defines: &Defines,
     optimization: shaderc::OptimizationLevel,
     mut source: String,
-    file: &str,
+    path: &Path,
 ) -> Result<
     (Arc<wgpu::ShaderModule>, Arc<spirq::EntryPoint>),
     ShaderCompilationError,
@@ -317,16 +317,17 @@ fn compile(
         .0
         .cached
         .shaders
-        .get(&(snippets.clone(), file.to_string()))
+        .get(&(snippets.clone(), path.to_path_buf()))
     {
         let (raw, reflected) = value.value();
         log::debug!(
-            "Found shader module in cache for {file}, using it..."
+            "Found shader module in cache for {path:?}, using it..."
         );
         return Ok((raw.clone(), reflected.clone()));
     } else {
-        log::warn!("Did not find cached shader module for {file}");
+        log::warn!("Did not find cached shader module for {path:?}");
     }
+    let file = path.file_name().unwrap().to_str().unwrap();
     
     // TODO: OPTIMIZE
     // Get version line index
@@ -441,7 +442,7 @@ fn compile(
     let wgpu = unsafe {
         graphics.device().create_shader_module_spirv(
             &wgpu::ShaderModuleDescriptorSpirV {
-                label: Some(&format!("shader-module-{file}")),
+                label: Some(&format!("shader-module-{path:?}")),
                 source: wgpu::util::make_spirv_raw(
                     bytemuck::cast_slice(&binary),
                 ),
@@ -453,7 +454,7 @@ fn compile(
     let raw = Arc::new(wgpu);
     let reflected = Arc::new(reflect);
     graphics.0.cached.shaders.insert(
-        (snippets.clone(), file.to_string()),
+        (snippets.clone(), path.to_path_buf()),
         (raw.clone(), reflected.clone()),
     );
     log::debug!("Saved shader module for {file} in graphics cache");
@@ -639,7 +640,7 @@ pub struct Compiled<M: ShaderModule> {
     reflected: Arc<spirq::EntryPoint>,
 
     // Helpers
-    name: Arc<str>,
+    path: Arc<Path>,
     _phantom: PhantomData<M>,
 
     // Keep the graphics API alive
@@ -650,7 +651,7 @@ impl<M: ShaderModule> Clone for Compiled<M> {
     fn clone(&self) -> Self {
         Self {
             raw: self.raw.clone(),
-            name: self.name.clone(),
+            path: self.path.clone(),
             _phantom: self._phantom.clone(),
             graphics: self.graphics.clone(),
             reflected: self.reflected.clone(),
@@ -674,8 +675,13 @@ impl<M: ShaderModule> Compiled<M> {
         &self.reflected
     }
 
+    // Get the shader module path for this module
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+
     // Get the shader module name for this module
     pub fn name(&self) -> &str {
-        &self.name
+        self.path.file_name().unwrap().to_str().unwrap()
     }
 }

@@ -42,7 +42,7 @@ impl Material for TerrainMaterial {
     type Settings<'s> = &'s TerrainSettings;
 
     // Load the terrain material shaders and compile them
-    fn shader(settings: Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader {
+    fn shader(settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader {
         // Load the vertex module from the assets
         let vert = assets
             .load::<VertexModule>(
@@ -104,6 +104,44 @@ impl Material for TerrainMaterial {
     // Terrain only needs positions (packed)
     fn attributes() -> rendering::MeshAttributes {
         rendering::MeshAttributes::POSITIONS
+    }
+
+    // Custom shadow mapper (due to packed positions)
+    fn casts_shadows() -> rendering::CastShadowsMode<Self> {
+        let callback: Box<dyn FnOnce(&Self::Settings<'_>, &Graphics, &Assets) -> Shader> = Box::new(|settings, graphics, assets| {
+            // Load the modified vertex module for the shadowmap shader
+            let vertex = assets
+                .load::<VertexModule>(
+                    "engine/shaders/scene/shadow/terrain.vert",
+                )
+                .unwrap();
+
+            // Load the fragment module for the shadowmap shader
+            let fragment = assets
+                .load::<FragmentModule>(
+                    "engine/shaders/scene/shadow/shadow.frag",
+                )
+                .unwrap();
+
+            // Create the bind layout for the shadow map shader
+            let mut compiler = Compiler::new(assets, graphics);
+
+            // Set the scaling factor for the vertex positions
+            compiler.use_constant(0, (settings.size as f32) / (settings.size as f32 - 3.0));
+
+            // Contains the mesh matrix and the lightspace uniforms
+            let layout = PushConstantLayout::single(
+                <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size() * 2,
+                ModuleVisibility::Vertex,
+            )
+            .unwrap();
+            compiler.use_push_constant_layout(layout);
+
+            // Combine the modules to the shader
+            Shader::new(vertex, fragment, compiler).unwrap()
+        });
+
+        rendering::CastShadowsMode::Enabled(Some(callback))
     }
 
     // Fetch the texture storages

@@ -12,7 +12,7 @@ use graphics::{
 use rendering::{
     IndirectMesh, Pipelines,
 };
-use utils::{Storage};
+use utils::{Storage, ThreadPool};
 use world::{post_user, System, World};
 
 // Creates the terrain if there was terrain settings present
@@ -30,6 +30,7 @@ fn init(world: &mut World) {
         let mut materials = world.get_mut::<Storage<TerrainMaterial>>().unwrap();
         let mut scene = world.get_mut::<Scene>().unwrap();
         let mut pipelines = world.get_mut::<Pipelines>().unwrap();
+        let mut threadpool = world.get_mut::<ThreadPool>().unwrap();
         
         // Get graphics API and assets
         let graphics = world.get::<Graphics>().unwrap();
@@ -85,6 +86,7 @@ fn init(world: &mut World) {
             &mut layered_normal_maps,
             &mut layered_mask_maps,
             &mut pipelines,
+            &mut threadpool,
         );
 
         // Combine all the terrain generator composites into the one terrain generator struct
@@ -109,6 +111,7 @@ fn init(world: &mut World) {
         drop(layered_mask_maps);
         drop(pipelines);
         drop(scene);
+        drop(threadpool);
 
         // Insert terrain
         world.insert(terrain);

@@ -85,10 +85,6 @@ fn update(world: &mut World) {
     )>().into_iter().collect::<Vec<_>>();
     vec.sort_by(|(a, _, _, _), (b, _, _, _)| b.priority.total_cmp(&a.priority));
 
-    if time.frame_count() % 5 == 0 {
-        return;
-    }
-
     // Iterate over the chunks that we need to generate
     for (chunk, position, surface, renderer) in vec {
         // Don't generate the voxels and mesh for chunks that had their mesh already generated

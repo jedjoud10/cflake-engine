@@ -1,7 +1,7 @@
 use ahash::AHashMap;
 use dashmap::DashMap;
 use parking_lot::Mutex;
-use std::{hash::BuildHasherDefault, sync::Arc};
+use std::{hash::BuildHasherDefault, sync::Arc, path::PathBuf};
 use thread_local::ThreadLocal;
 use utils::Storage;
 pub use wgpu::CommandEncoder;
@@ -20,7 +20,7 @@ use crate::{
 // Cached graphics data
 pub(crate) struct Cached {
     pub(crate) shaders: DashMap<
-        (Snippets, String),
+        (Snippets, PathBuf),
         (Arc<wgpu::ShaderModule>, Arc<spirq::EntryPoint>),
     >,
     pub(crate) samplers: DashMap<SamplerSettings, Arc<Sampler>>,

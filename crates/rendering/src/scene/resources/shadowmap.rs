@@ -173,6 +173,18 @@ impl ShadowMapping {
         self.percents = distances;
     }
 
+    // Set the shadow uniform that is stored within the shadow map
+    pub fn set_shadow_uniform(
+        &mut self,
+        strength: f32,
+        spread: f32
+    ) {
+        self.parameter_buffer.write(&[ShadowUniform {
+            strength,
+            spread,
+        }], 0).unwrap();
+    }
+
     // Update the rotation of the sun shadows using a new rotation
     // Returns the newly created lightspace matrix (only one)
     // https://learnopengl.com/Guest-Articles/2021/CSM

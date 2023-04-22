@@ -36,7 +36,7 @@ impl Material for BasicMaterial {
     type Settings<'s> = ();
 
     // Load the respective Basic shader modules and compile them
-    fn shader(_settings: Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader {
+    fn shader(_settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader {
         // Load the vertex module from the assets
         let vert = assets
             .load::<VertexModule>(

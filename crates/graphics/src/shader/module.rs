@@ -1,3 +1,5 @@
+use std::path::{PathBuf, Path};
+
 use assets::Asset;
 
 // The type of shader module that the shader source represent
@@ -114,40 +116,40 @@ pub(crate) fn kind_to_wgpu_stage(
 // Modules are uncompiled shaders that will later be converted to SPIRV and linked together
 pub trait ShaderModule: Sized {
     // Create a new fake module with a name and source code
-    fn new(name: impl ToString, source: impl ToString) -> Self;
+    fn new(path: impl AsRef<Path>, source: impl ToString) -> Self;
 
     // Get the main properties of the module
-    fn name(&self) -> &str;
+    fn path(&self) -> &Path;
     fn source(&self) -> &str;
     fn kind() -> ModuleKind;
     fn visibility() -> ModuleVisibility;
 
-    // Convert the module into it's source code and name
-    fn into_raw_parts(self) -> (String, String);
+    // Convert the module into it's source code and path
+    fn into_raw_parts(self) -> (PathBuf, String);
 }
 
 // A vertex module that will be loaded from .vrtx files
 pub struct VertexModule {
-    source: String,
-    name: String,
+    pub source: String,
+    pub path: PathBuf,
 }
 
 // A fragment module that will be loaded from .frag files
 pub struct FragmentModule {
-    source: String,
-    name: String,
+    pub source: String,
+    pub path: PathBuf,
 }
 
 // A compute module (only for compute shaders) that will be loaded from .cmpt files
 pub struct ComputeModule {
-    source: String,
-    name: String,
+    pub source: String,
+    pub path: PathBuf,
 }
 
 // A function module is fucking useless
 pub struct FunctionModule {
-    pub(crate) source: String,
-    name: String,
+    pub source: String,
+    pub path: PathBuf,
 }
 
 macro_rules! impl_asset_for_module {
@@ -168,15 +170,11 @@ macro_rules! impl_asset_for_module {
             ) -> Result<Self, Self::Err> {
                 let source =
                     String::from_utf8(data.bytes().to_vec())?;
-                let name = data
+                let path = data
                     .path()
-                    .file_name()
-                    .unwrap()
-                    .to_str()
-                    .unwrap()
-                    .to_string();
+                    .to_path_buf();
 
-                Ok(Self { source, name })
+                Ok(Self { source, path })
             }
         }
     };
@@ -187,17 +185,17 @@ macro_rules! impl_module_trait {
     ($t: ty, $kind: ident) => {
         impl ShaderModule for $t {
             fn new(
-                name: impl ToString,
+                path: impl AsRef<Path>,
                 source: impl ToString,
             ) -> Self {
                 Self {
-                    name: name.to_string(),
+                    path: path.as_ref().to_path_buf(),
                     source: source.to_string(),
                 }
             }
 
-            fn name(&self) -> &str {
-                &self.name
+            fn path(&self) -> &Path {
+                &self.path
             }
 
             fn source(&self) -> &str {
@@ -212,8 +210,8 @@ macro_rules! impl_module_trait {
                 ModuleVisibility::$kind
             }
 
-            fn into_raw_parts(self) -> (String, String) {
-                (self.name, self.source)
+            fn into_raw_parts(self) -> (PathBuf, String) {
+                (self.path, self.source)
             }
         }
     };

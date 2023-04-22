@@ -15,12 +15,12 @@ use world::World;
 
 // If materials can cast shadows onto other objects
 // Also allows us to use a custom shadow shader
-pub enum CastShadowsMode {
+pub enum CastShadowsMode<M: Material> {
     Disabled,
 
     // If you *are* going to use a custom shadow shader you should note that only the position attribute is given
     // and other atrributes are NOT given
-    Enabled(Option<Shader>),
+    Enabled(Option<Box<dyn FnOnce(&M::Settings<'_>, &Graphics, &Assets) -> Shader>>),
 }
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
@@ -32,7 +32,7 @@ pub trait Material: 'static + Sized + Sync + Send {
     type Settings<'s>;
 
     // Create a shader for this material
-    fn shader(settings: Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader;
+    fn shader(settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader;
 
     // Get the required mesh attributes that we need to render a surface
     // If a surface does not support these attributes, it will not be rendered
@@ -71,7 +71,7 @@ pub trait Material: 'static + Sized + Sync + Send {
     }
 
     // Does this material support casting shadows onto other surfaces?
-    fn casts_shadows() -> CastShadowsMode {
+    fn casts_shadows() -> CastShadowsMode<Self> {
         CastShadowsMode::Enabled(None)
     }
 

@@ -19,7 +19,7 @@ impl Material for SkyMaterial {
     type Settings<'s> = ();
 
     // Load the respective Sky shader modules and compile them
-    fn shader(settings: Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader {
+    fn shader(settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader {
         // Load the vertex module from the assets
         let vert = assets
             .load::<VertexModule>("engine/shaders/scene/sky/sky.vert")
@@ -47,7 +47,7 @@ impl Material for SkyMaterial {
     }
 
     // The sky does NOT cast shadows
-    fn casts_shadows() -> CastShadowsMode {
+    fn casts_shadows() -> CastShadowsMode<Self> {
         CastShadowsMode::Disabled
     }
 
