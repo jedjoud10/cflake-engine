@@ -1,8 +1,5 @@
 use super::Entity;
-use crate::{
-    Archetype, Bundle, Component, EntityLinkings, QueryLayoutRef,
-    Scene,
-};
+use crate::{Archetype, Bundle, Component, EntityLinkings, QueryLayoutRef, Scene};
 
 // Immutable entity entries allow the user to be able to read and get some data about a specific entity
 // This data can represent the archetype of the entity or even an immutable reference to a component
@@ -13,13 +10,9 @@ pub struct EntryRef<'a> {
 
 impl<'a> EntryRef<'a> {
     // Create an immutable entity entry from the ecs manager and an entity
-    pub(crate) fn new(
-        manager: &'a Scene,
-        entity: Entity,
-    ) -> Option<Self> {
+    pub(crate) fn new(manager: &'a Scene, entity: Entity) -> Option<Self> {
         let linkings = *manager.entities.get(entity)?;
-        let archetype =
-            manager.archetypes.get(&linkings.mask()).unwrap();
+        let archetype = manager.archetypes.get(&linkings.mask()).unwrap();
 
         Some(Self {
             archetype,
@@ -60,9 +53,7 @@ impl<'a> EntryRef<'a> {
 
         // Fetch the layout from the archetype
         let index = self.linkings().index;
-        let ptrs = unsafe {
-            L::ptrs_from_archetype_unchecked(self.archetype())
-        };
+        let ptrs = unsafe { L::ptrs_from_archetype_unchecked(self.archetype()) };
         let layout = unsafe { L::read_unchecked(ptrs, index) };
         Some(layout)
     }

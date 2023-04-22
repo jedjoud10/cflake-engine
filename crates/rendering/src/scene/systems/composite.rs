@@ -1,7 +1,7 @@
 use crate::{Compositor, ForwardRenderer, PostProcess};
 use assets::Assets;
 
-use graphics::{Graphics, Texture, Window, ActivePipeline};
+use graphics::{ActivePipeline, Graphics, Texture, Window};
 
 use world::{user, System, World};
 
@@ -35,20 +35,24 @@ fn update(world: &mut World) {
     let mut active = render_pass.bind_pipeline(&compositor.pipeline);
 
     // Set the shared UBOs first (bind group 0)
-    active.set_bind_group(0, |group| {
-        group
-            .set_uniform_buffer("camera", &renderer.camera_buffer, ..)
-            .unwrap();
-        group
-            .set_uniform_buffer("window", &renderer.window_buffer, ..)
-            .unwrap();
-    }).unwrap();
+    active
+        .set_bind_group(0, |group| {
+            group
+                .set_uniform_buffer("camera", &renderer.camera_buffer, ..)
+                .unwrap();
+            group
+                .set_uniform_buffer("window", &renderer.window_buffer, ..)
+                .unwrap();
+        })
+        .unwrap();
 
     // Set the maps that we will sample
-    active.set_bind_group(1, |group| {
-        group.set_sampled_texture("color_map", src).unwrap();
-        group.set_sampled_texture("depth_map", depth).unwrap();
-    }).unwrap();
+    active
+        .set_bind_group(1, |group| {
+            group.set_sampled_texture("color_map", src).unwrap();
+            group.set_sampled_texture("depth_map", depth).unwrap();
+        })
+        .unwrap();
 
     // Draw 6 vertices (2 tris)
     active.draw(0..6, 0..1).unwrap();

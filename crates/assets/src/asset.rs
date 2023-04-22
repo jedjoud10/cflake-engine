@@ -1,5 +1,5 @@
-use std::{path::Path, sync::Arc, convert::Infallible};
 use crate::Assets;
+use std::{convert::Infallible, path::Path, sync::Arc};
 
 // File data is what will be given to assets whenever we try to deserialize them
 // We will assume that all assets are files
@@ -8,7 +8,7 @@ pub struct Data<'a> {
     pub(super) extension: &'a str,
     pub(super) bytes: Arc<[u8]>,
     pub(super) path: &'a Path,
-    pub(crate) loader: Option<&'a Assets>
+    pub(crate) loader: Option<&'a Assets>,
 }
 
 impl<'a> Data<'a> {
@@ -18,8 +18,8 @@ impl<'a> Data<'a> {
         extension: &'a str,
         bytes: Arc<[u8]>,
         path: &'a Path,
-        loader: Option<&'a Assets>
-    ) -> Self { 
+        loader: Option<&'a Assets>,
+    ) -> Self {
         Self {
             name,
             extension,
@@ -49,7 +49,7 @@ impl<'a> Data<'a> {
         &self.bytes
     }
 
-    // Get the recursive asset loader 
+    // Get the recursive asset loader
     // This is only Some when the user loads in a synchronous asset
     // Can't use the recursive asset loader for async assets because it would cause deadlocks
     pub fn loader(&self) -> Option<&'a Assets> {

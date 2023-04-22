@@ -1,13 +1,11 @@
 use crate::{
-    ActiveSceneRenderPass, ActiveShadowRenderPipeline,
-    DefaultMaterialResources, Material,
-    SceneColor, SceneDepth, ShadowRenderPipeline, ActiveShadowRenderPass, CastShadowsMode,
+    ActiveSceneRenderPass, ActiveShadowRenderPass, ActiveShadowRenderPipeline, CastShadowsMode,
+    DefaultMaterialResources, Material, SceneColor, SceneDepth, ShadowRenderPipeline,
 };
 
 use assets::Assets;
 use graphics::{
-    CompareFunction, DepthConfig,
-    Graphics, PipelineInitializationError, RenderPipeline, Shader,
+    CompareFunction, DepthConfig, Graphics, PipelineInitializationError, RenderPipeline, Shader,
 };
 use std::marker::PhantomData;
 
@@ -43,10 +41,7 @@ impl<M: Material> Pipeline<M> {
         let shader = M::shader(&settings, graphics, assets);
 
         // Fetch the correct vertex config based on the material
-        let vertex_config =
-            crate::attributes::enabled_to_vertex_config(
-                M::attributes(),
-            );
+        let vertex_config = crate::attributes::enabled_to_vertex_config(M::attributes());
 
         // We must always have a depth config
         let depth_config = M::depth_config().unwrap_or(DepthConfig {
@@ -125,7 +120,10 @@ impl<M: Material> DynPipeline for Pipeline<M> {
         default_shadow_pipeline: &'r ShadowRenderPipeline,
         lightspace: vek::Mat4<f32>,
     ) {
-        let shadow_pipeline = self.shadow_pipeline.as_ref().unwrap_or(default_shadow_pipeline);
+        let shadow_pipeline = self
+            .shadow_pipeline
+            .as_ref()
+            .unwrap_or(default_shadow_pipeline);
         super::render_shadows::<M>(world, default, active, shadow_pipeline, lightspace);
     }
 
@@ -137,11 +135,6 @@ impl<M: Material> DynPipeline for Pipeline<M> {
     ) {
         super::cull_surfaces::<M>(world, default);
 
-        super::render_surfaces::<M>(
-            world,
-            &self.pipeline,
-            default,
-            render_pass,
-        );
+        super::render_surfaces::<M>(world, &self.pipeline, default, render_pass);
     }
 }

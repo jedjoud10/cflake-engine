@@ -1,17 +1,16 @@
 use rendering::{
-    CameraUniform, DefaultMaterialResources, Indirect,
-    Material, Renderer, SceneUniform, ShadowMap,
-    ShadowMapping, ShadowUniform, ActiveScenePipeline, AlbedoTexel, NormalTexel, MaskTexel,
+    ActiveScenePipeline, AlbedoTexel, CameraUniform, DefaultMaterialResources, Indirect, MaskTexel,
+    Material, NormalTexel, Renderer, SceneUniform, ShadowMap, ShadowMapping, ShadowUniform,
 };
 
 use assets::Assets;
 
 use graphics::{
-    BindGroup, Compiler, FragmentModule, GpuPod, Graphics,
-    ModuleVisibility, PrimitiveConfig, PushConstantLayout,
-    PushConstants, Shader, VertexModule, WindingOrder, StorageAccess, LayeredTexture2D,
+    BindGroup, Compiler, FragmentModule, GpuPod, Graphics, LayeredTexture2D, ModuleVisibility,
+    PrimitiveConfig, PushConstantLayout, PushConstants, Shader, StorageAccess, VertexModule,
+    WindingOrder,
 };
-use utils::{Time, Handle, Storage};
+use utils::{Handle, Storage, Time};
 
 use crate::TerrainSettings;
 
@@ -45,16 +44,12 @@ impl Material for TerrainMaterial {
     fn shader(settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader {
         // Load the vertex module from the assets
         let vert = assets
-            .load::<VertexModule>(
-                "engine/shaders/scene/terrain/terrain.vert",
-            )
+            .load::<VertexModule>("engine/shaders/scene/terrain/terrain.vert")
             .unwrap();
 
         // Load the fragment module from the assets
         let frag = assets
-            .load::<FragmentModule>(
-                "engine/shaders/scene/terrain/terrain.frag",
-            )
+            .load::<FragmentModule>("engine/shaders/scene/terrain/terrain.frag")
             .unwrap();
 
         // Define the type layouts for the UBOs
@@ -76,7 +71,7 @@ impl Material for TerrainMaterial {
         compiler.use_uniform_buffer::<ShadowUniform>("shadow_parameters");
         compiler.use_uniform_buffer::<vek::Vec4<vek::Vec4<f32>>>("shadow_lightspace_matrices");
         compiler.use_uniform_buffer::<f32>("cascade_plane_distances");
-    
+
         // Define the types for the user textures
         compiler.use_sampled_texture::<ShadowMap>("shadow_map");
 
@@ -108,38 +103,35 @@ impl Material for TerrainMaterial {
 
     // Custom shadow mapper (due to packed positions)
     fn casts_shadows() -> rendering::CastShadowsMode<Self> {
-        let callback: Box<dyn FnOnce(&Self::Settings<'_>, &Graphics, &Assets) -> Shader> = Box::new(|settings, graphics, assets| {
-            // Load the modified vertex module for the shadowmap shader
-            let vertex = assets
-                .load::<VertexModule>(
-                    "engine/shaders/scene/shadow/terrain.vert",
+        let callback: Box<dyn FnOnce(&Self::Settings<'_>, &Graphics, &Assets) -> Shader> =
+            Box::new(|settings, graphics, assets| {
+                // Load the modified vertex module for the shadowmap shader
+                let vertex = assets
+                    .load::<VertexModule>("engine/shaders/scene/shadow/terrain.vert")
+                    .unwrap();
+
+                // Load the fragment module for the shadowmap shader
+                let fragment = assets
+                    .load::<FragmentModule>("engine/shaders/scene/shadow/shadow.frag")
+                    .unwrap();
+
+                // Create the bind layout for the shadow map shader
+                let mut compiler = Compiler::new(assets, graphics);
+
+                // Set the scaling factor for the vertex positions
+                compiler.use_constant(0, (settings.size as f32) / (settings.size as f32 - 3.0));
+
+                // Contains the mesh matrix and the lightspace uniforms
+                let layout = PushConstantLayout::single(
+                    <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size() * 2,
+                    ModuleVisibility::Vertex,
                 )
                 .unwrap();
+                compiler.use_push_constant_layout(layout);
 
-            // Load the fragment module for the shadowmap shader
-            let fragment = assets
-                .load::<FragmentModule>(
-                    "engine/shaders/scene/shadow/shadow.frag",
-                )
-                .unwrap();
-
-            // Create the bind layout for the shadow map shader
-            let mut compiler = Compiler::new(assets, graphics);
-
-            // Set the scaling factor for the vertex positions
-            compiler.use_constant(0, (settings.size as f32) / (settings.size as f32 - 3.0));
-
-            // Contains the mesh matrix and the lightspace uniforms
-            let layout = PushConstantLayout::single(
-                <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size() * 2,
-                ModuleVisibility::Vertex,
-            )
-            .unwrap();
-            compiler.use_push_constant_layout(layout);
-
-            // Combine the modules to the shader
-            Shader::new(vertex, fragment, compiler).unwrap()
-        });
+                // Combine the modules to the shader
+                Shader::new(vertex, fragment, compiler).unwrap()
+            });
 
         rendering::CastShadowsMode::Enabled(Some(callback))
     }
@@ -171,12 +163,19 @@ impl Material for TerrainMaterial {
             .set_uniform_buffer("shadow_parameters", &resources.3.parameter_buffer, ..)
             .unwrap();
         group
-            .set_uniform_buffer("shadow_lightspace_matrices", &resources.3.lightspace_buffer, ..)
+            .set_uniform_buffer(
+                "shadow_lightspace_matrices",
+                &resources.3.lightspace_buffer,
+                ..,
+            )
             .unwrap();
         group
-            .set_uniform_buffer("cascade_plane_distances", &resources.3.cascade_distances, ..)
+            .set_uniform_buffer(
+                "cascade_plane_distances",
+                &resources.3.cascade_distances,
+                ..,
+            )
             .unwrap();
-
 
         // Set the scene shadow map
         group
@@ -193,16 +192,26 @@ impl Material for TerrainMaterial {
     ) {
         let (albedo_maps, normal_maps, mask_maps, _, _) = resources;
 
-        if let (Some(albedo), Some(normal), Some(mask)) = (&self.layered_albedo_map, &self.layered_normal_map, &self.layered_mask_map) {
+        if let (Some(albedo), Some(normal), Some(mask)) = (
+            &self.layered_albedo_map,
+            &self.layered_normal_map,
+            &self.layered_mask_map,
+        ) {
             // Get the layered textures, without any fallback
             let albedo_map = albedo_maps.get(&albedo);
             let normal_map = normal_maps.get(&normal);
             let mask_map = mask_maps.get(&mask);
 
             // Set the material textures
-            group.set_sampled_texture("layered_albedo_map", albedo_map).unwrap();
-            group.set_sampled_texture("layered_normal_map", normal_map).unwrap();
-            group.set_sampled_texture("layered_mask_map", mask_map).unwrap();
+            group
+                .set_sampled_texture("layered_albedo_map", albedo_map)
+                .unwrap();
+            group
+                .set_sampled_texture("layered_normal_map", normal_map)
+                .unwrap();
+            group
+                .set_sampled_texture("layered_mask_map", mask_map)
+                .unwrap();
         }
     }
 
@@ -221,7 +230,10 @@ impl Material for TerrainMaterial {
         constants.push(bytes, 0, ModuleVisibility::Vertex).unwrap();
 
         // Calculate "fade" effect
-        let duration =  resources.4.frame_start().saturating_duration_since(renderer.instant_initialized.unwrap());
+        let duration = resources
+            .4
+            .frame_start()
+            .saturating_duration_since(renderer.instant_initialized.unwrap());
         let fade = duration.as_secs_f32().clamp(0.0, 10.0);
 
         // Upload the fade effect to GPU

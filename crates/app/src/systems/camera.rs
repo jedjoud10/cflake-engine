@@ -29,7 +29,7 @@ impl Default for CameraController {
             boost_speed: 120.0,
             fov_change_scroll_speed: 200.0,
             fov_change_key_speed: 50.0,
-            smoothness: 0.2
+            smoothness: 0.2,
         }
     }
 }
@@ -70,8 +70,13 @@ fn update(world: &mut World) {
     let mut gui = world.get_mut::<Interface>().unwrap();
     let window = world.get::<Window>().unwrap();
 
-    let camera = scene
-        .find_mut::<(&mut Camera, &mut Velocity, &mut Position, &mut Rotation, &CameraController)>();
+    let camera = scene.find_mut::<(
+        &mut Camera,
+        &mut Velocity,
+        &mut Position,
+        &mut Rotation,
+        &CameraController,
+    )>();
     if let Some((camera, output, position, rotation, controller)) = camera {
         // Decompose the controller settings
         let CameraController {
@@ -80,7 +85,7 @@ fn update(world: &mut World) {
             boost_speed,
             fov_change_scroll_speed,
             fov_change_key_speed,
-            smoothness
+            smoothness,
         } = *controller;
 
         // Forward and right vectors relative to the camera
@@ -104,7 +109,7 @@ fn update(world: &mut World) {
                     .unwrap();
                 window.raw().set_cursor_visible(false);
             } else {
-                **output = vek::Vec3::<f32>::zero(); 
+                **output = vek::Vec3::<f32>::zero();
                 return;
             }
         }
@@ -161,7 +166,7 @@ fn update(world: &mut World) {
 
         // The scroll wheel OR the X and Z buttons will change the camera FOV
         let mut delta = input.get_axis(Axis::MouseScrollDelta) * fov_change_scroll_speed;
-        
+
         // Update based on buttons instead
         if input.get_button("zoom-in").held() {
             delta = fov_change_key_speed;
@@ -177,10 +182,11 @@ fn update(world: &mut World) {
         let pos_y = input.get_axis("y rotation");
 
         // Smooth rotation
-        **rotation = vek::Quaternion::slerp(**rotation, 
-            vek::Quaternion::rotation_y(-pos_x * sensivity * 0.0007) *
-            vek::Quaternion::rotation_x(-pos_y * sensivity * 0.0007),
-            (factor * 5.0).clamped01()
+        **rotation = vek::Quaternion::slerp(
+            **rotation,
+            vek::Quaternion::rotation_y(-pos_x * sensivity * 0.0007)
+                * vek::Quaternion::rotation_x(-pos_y * sensivity * 0.0007),
+            (factor * 5.0).clamped01(),
         );
     }
 }

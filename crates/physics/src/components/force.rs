@@ -1,7 +1,7 @@
-use std::ops::Div;
-use math::Scalar;
-use ecs::Component;
 use super::angular_velocity;
+use ecs::Component;
+use math::Scalar;
+use std::ops::Div;
 
 pub fn impulse_real(
     velocity: &mut vek::Vec3<f32>,
@@ -10,7 +10,7 @@ pub fn impulse_real(
     collision_point: &vek::Vec3<f32>,
     position: &vek::Vec3<f32>,
     dt: &f32,
-    mass: &f32
+    mass: &f32,
 ) {
     // LINEAR FORCE RELATED
 
@@ -33,9 +33,9 @@ pub fn impulse_real(
 
     // Update the object's angular velocity based on the torque and the object's moment of inertia
     let angular_acceleration = torque.div(&moment_of_inertia);
- 
+
     // Integrate the angular velocity to update the rotation quaternion
-    let mut delta_rotation: vek::Quaternion::<f32> = vek::Quaternion::<f32>::identity();
+    let mut delta_rotation: vek::Quaternion<f32> = vek::Quaternion::<f32>::identity();
     delta_rotation.rotate_x(angular_acceleration.x * *dt / 2.0);
     delta_rotation.rotate_y(angular_acceleration.y * *dt / 2.0);
     delta_rotation.rotate_z(angular_acceleration.z * *dt / 2.0);
@@ -44,5 +44,4 @@ pub fn impulse_real(
     angular_velocity.rotate_x(delta_rotation.x);
     angular_velocity.rotate_y(delta_rotation.y);
     angular_velocity.rotate_z(delta_rotation.z);
-
 }

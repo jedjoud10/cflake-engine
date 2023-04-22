@@ -1,4 +1,4 @@
-use std::path::{PathBuf, Path};
+use std::path::{Path, PathBuf};
 
 use assets::Asset;
 
@@ -30,25 +30,17 @@ impl ModuleVisibility {
     // Returns None if the operation failed (in case it's not possible)
     pub fn try_insert(&mut self, other: Self) -> Option<()> {
         match self {
-            ModuleVisibility::Vertex
-                if matches!(other, Self::Fragment) =>
-            {
+            ModuleVisibility::Vertex if matches!(other, Self::Fragment) => {
                 *self = ModuleVisibility::VertexFragment;
                 Some(())
             }
 
-            ModuleVisibility::Fragment
-                if matches!(other, Self::Vertex) =>
-            {
+            ModuleVisibility::Fragment if matches!(other, Self::Vertex) => {
                 *self = ModuleVisibility::VertexFragment;
                 Some(())
             }
 
-            ModuleVisibility::Compute
-                if matches!(other, Self::Compute) =>
-            {
-                Some(())
-            }
+            ModuleVisibility::Compute if matches!(other, Self::Compute) => Some(()),
             _ => None,
         }
     }
@@ -60,9 +52,7 @@ impl ModuleVisibility {
             ModuleVisibility::Fragment => {
                 matches!(other, Self::Fragment)
             }
-            ModuleVisibility::VertexFragment => {
-                !matches!(other, Self::Compute)
-            }
+            ModuleVisibility::VertexFragment => !matches!(other, Self::Compute),
             ModuleVisibility::Compute => {
                 matches!(other, Self::Compute)
             }
@@ -77,23 +67,17 @@ impl ModuleVisibility {
 }
 
 // Convert module visibility to wgpu ShaderStages
-pub(crate) fn visibility_to_wgpu_stage(
-    visibility: &ModuleVisibility,
-) -> wgpu::ShaderStages {
+pub(crate) fn visibility_to_wgpu_stage(visibility: &ModuleVisibility) -> wgpu::ShaderStages {
     match visibility {
         ModuleVisibility::Vertex => wgpu::ShaderStages::VERTEX,
         ModuleVisibility::Fragment => wgpu::ShaderStages::FRAGMENT,
-        ModuleVisibility::VertexFragment => {
-            wgpu::ShaderStages::VERTEX_FRAGMENT
-        }
+        ModuleVisibility::VertexFragment => wgpu::ShaderStages::VERTEX_FRAGMENT,
         ModuleVisibility::Compute => wgpu::ShaderStages::COMPUTE,
     }
 }
 
 // Convert module kind to module visibility
-pub(crate) fn kind_to_visibility(
-    kind: &ModuleKind,
-) -> ModuleVisibility {
+pub(crate) fn kind_to_visibility(kind: &ModuleKind) -> ModuleVisibility {
     match kind {
         ModuleKind::Vertex => ModuleVisibility::Vertex,
         ModuleKind::Fragment => ModuleVisibility::Fragment,
@@ -102,9 +86,7 @@ pub(crate) fn kind_to_visibility(
 }
 
 // Convert a module kind to WGPU shader stage bitfield
-pub(crate) fn kind_to_wgpu_stage(
-    kind: &ModuleKind,
-) -> wgpu::ShaderStages {
+pub(crate) fn kind_to_wgpu_stage(kind: &ModuleKind) -> wgpu::ShaderStages {
     match *kind {
         ModuleKind::Vertex => wgpu::ShaderStages::VERTEX,
         ModuleKind::Fragment => wgpu::ShaderStages::FRAGMENT,
@@ -168,11 +150,8 @@ macro_rules! impl_asset_for_module {
                 _: Self::Context<'c>,
                 _: Self::Settings<'s>,
             ) -> Result<Self, Self::Err> {
-                let source =
-                    String::from_utf8(data.bytes().to_vec())?;
-                let path = data
-                    .path()
-                    .to_path_buf();
+                let source = String::from_utf8(data.bytes().to_vec())?;
+                let path = data.path().to_path_buf();
 
                 Ok(Self { source, path })
             }
@@ -184,10 +163,7 @@ macro_rules! impl_asset_for_module {
 macro_rules! impl_module_trait {
     ($t: ty, $kind: ident) => {
         impl ShaderModule for $t {
-            fn new(
-                path: impl AsRef<Path>,
-                source: impl ToString,
-            ) -> Self {
+            fn new(path: impl AsRef<Path>, source: impl ToString) -> Self {
                 Self {
                     path: path.as_ref().to_path_buf(),
                     source: source.to_string(),

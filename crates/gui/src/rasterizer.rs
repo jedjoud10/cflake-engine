@@ -1,18 +1,13 @@
 use assets::Assets;
 use egui::{ClippedPrimitive, ImageData, TextureId, TexturesDelta};
 use graphics::{
-    BlendComponent, BlendFactor, BlendOperation, BlendState,
-    BufferMode, BufferUsage, Compiler, FragmentModule, GpuPod,
-    Graphics, LoadOp, Normalized, Operation, PerVertex,
-    PrimitiveConfig, SamplerFilter, SamplerMipMaps, SamplerSettings,
-    SamplerWrap, Shader, StoreOp, Texture, Texture2D, TextureMipMaps,
-    TextureMode, TextureUsage, TriangleBuffer, VertexBuffer,
-    VertexConfig, VertexInput, VertexModule, Window, RGBA, XY, XYZW, ActivePipeline,
+    ActivePipeline, BlendComponent, BlendFactor, BlendOperation, BlendState, BufferMode,
+    BufferUsage, Compiler, FragmentModule, GpuPod, Graphics, LoadOp, Normalized, Operation,
+    PerVertex, PrimitiveConfig, SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap,
+    Shader, StoreOp, Texture, Texture2D, TextureMipMaps, TextureMode, TextureUsage, TriangleBuffer,
+    VertexBuffer, VertexConfig, VertexInput, VertexModule, Window, RGBA, XY, XYZW,
 };
-use rendering::{
-    FinalRenderPipeline, FinalRenderPass, WindowBuffer,
-    WindowUniform,
-};
+use rendering::{FinalRenderPass, FinalRenderPipeline, WindowBuffer, WindowUniform};
 
 // Font texel type and font map
 type FontTexel = RGBA<Normalized<u8>>;
@@ -37,9 +32,7 @@ pub(crate) struct Rasterizer {
     texture: Option<FontMap>,
 }
 
-fn create_vertex_buffer<V: graphics::Vertex>(
-    graphics: &Graphics,
-) -> VertexBuffer<V> {
+fn create_vertex_buffer<V: graphics::Vertex>(graphics: &Graphics) -> VertexBuffer<V> {
     VertexBuffer::<V>::from_slice(
         graphics,
         &[],
@@ -87,10 +80,7 @@ fn create_rf32_texture(
 
 impl Rasterizer {
     // Create a new rasterizer using an asset loader and a WGPU context
-    pub(super) fn new(
-        graphics: &Graphics,
-        assets: &mut Assets,
-    ) -> Self {
+    pub(super) fn new(graphics: &Graphics, assets: &mut Assets) -> Self {
         // Load the vertex module for the display shader
         let vertex = assets
             .load::<VertexModule>("engine/shaders/post/gui.vert")
@@ -162,9 +152,7 @@ impl Rasterizer {
             pipeline,
             positions: create_vertex_buffer::<XY<f32>>(graphics),
             texcoords: create_vertex_buffer::<XY<f32>>(graphics),
-            colors: create_vertex_buffer::<XYZW<Normalized<u8>>>(
-                graphics,
-            ),
+            colors: create_vertex_buffer::<XYZW<Normalized<u8>>>(graphics),
             triangles: create_index_buffer(graphics),
             texture: None,
         }
@@ -187,17 +175,13 @@ impl Rasterizer {
         {
             // Insert the texture if we don't have it already
             self.texture.get_or_insert_with(|| {
-                let dimensions =
-                    vek::Extent2::from_slice(&delta.image.size())
-                        .as_::<u32>();
+                let dimensions = vek::Extent2::from_slice(&delta.image.size()).as_::<u32>();
 
                 // For now, we only support the font texture
                 match &delta.image {
-                    ImageData::Font(font) => create_rf32_texture(
-                        graphics,
-                        dimensions,
-                        &font.pixels,
-                    ),
+                    ImageData::Font(font) => {
+                        create_rf32_texture(graphics, dimensions, &font.pixels)
+                    }
                     _ => todo!(),
                 }
             });
@@ -222,12 +206,8 @@ impl Rasterizer {
                 egui::epaint::Primitive::Mesh(mesh) => {
                     triangles.extend_from_slice(&mesh.indices);
                     for vertex in mesh.vertices.iter() {
-                        let pos = vek::Vec2::new(
-                            vertex.pos.x,
-                            vertex.pos.y,
-                        );
-                        let uvs =
-                            vek::Vec2::new(vertex.uv.x, vertex.uv.y);
+                        let pos = vek::Vec2::new(vertex.pos.x, vertex.pos.y);
+                        let uvs = vek::Vec2::new(vertex.uv.x, vertex.uv.y);
                         let color = vek::Vec4::new(
                             vertex.color.r(),
                             vertex.color.g(),
@@ -262,12 +242,14 @@ impl Rasterizer {
 
         // Set the required shader uniforms
         let texture = self.texture.as_ref().unwrap();
-        active.set_bind_group(0, |group| {
-            group
-                .set_uniform_buffer("window", window_buffer, ..)
-                .unwrap();
-            group.set_sampled_texture("font", texture).unwrap();
-        }).unwrap();
+        active
+            .set_bind_group(0, |group| {
+                group
+                    .set_uniform_buffer("window", window_buffer, ..)
+                    .unwrap();
+                group.set_sampled_texture("font", texture).unwrap();
+            })
+            .unwrap();
 
         // Keep track of the vertex and triangle offset
         let mut vertex_offset = 0;
@@ -304,14 +286,10 @@ impl Rasterizer {
                     active
                         .set_index_buffer(
                             &self.triangles,
-                            triangle_offset
-                                ..(triangle_offset + triangles),
+                            triangle_offset..(triangle_offset + triangles),
                         )
                         .unwrap();
-                    active.draw_indexed(
-                        0..(triangles as u32 * 3),
-                        0..1,
-                    );
+                    active.draw_indexed(0..(triangles as u32 * 3), 0..1);
 
                     vertex_offset += verts;
                     triangle_offset += triangles;

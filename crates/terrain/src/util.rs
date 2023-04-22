@@ -1,4 +1,7 @@
-use graphics::{BufferMode, BufferUsage, Buffer, Graphics, Texture3D, Texel, TextureMode, TextureUsage, SamplerSettings, TextureMipMaps, Texture, TriangleBuffer, Vertex, XYZW};
+use graphics::{
+    Buffer, BufferMode, BufferUsage, Graphics, SamplerSettings, Texel, Texture, Texture3D,
+    TextureMipMaps, TextureMode, TextureUsage, TriangleBuffer, Vertex, XYZW,
+};
 use rendering::{attributes, AttributeBuffer};
 
 // Common types used througohut the crate
@@ -19,10 +22,7 @@ pub fn create_counters(graphics: &Graphics, count: usize, extra: BufferUsage) ->
 }
 
 // Create a 3D storage texture with null contents with the specified size
-pub fn create_texture3d<T: Texel>(
-    graphics: &Graphics,
-    size: u32,
-) -> Texture3D<T> {
+pub fn create_texture3d<T: Texel>(graphics: &Graphics, size: u32) -> Texture3D<T> {
     Texture3D::<T>::from_texels(
         graphics,
         None,

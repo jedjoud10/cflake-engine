@@ -27,11 +27,7 @@ pub struct StateColumn(Vec<StateColumnChunk>, usize);
 impl StateColumn {
     // Add new n number of entries that all contain the same state flags
     // This requires the old_len and new_len calculated within the extend_from_slice method inside the Archetype
-    pub(crate) fn extend_with_flags(
-        &mut self,
-        additional: usize,
-        flags: StateFlags,
-    ) {
+    pub(crate) fn extend_with_flags(&mut self, additional: usize, flags: StateFlags) {
         // Make sure the states have enough chunks to deal with
         let old_len = self.1;
         let new_len = self.1 + additional;
@@ -56,14 +52,11 @@ impl StateColumn {
             }
 
             // Create start and end ranges that will be clamped to old_len and new_len respectively
-            let local_start =
-                usize::saturating_sub(old_len, start).min(BITS - 1);
-            let local_end =
-                usize::saturating_sub(new_len, start).min(BITS);
+            let local_start = usize::saturating_sub(old_len, start).min(BITS - 1);
+            let local_end = usize::saturating_sub(new_len, start).min(BITS);
 
             // Bit magic that will enable all the bits between local_start and local_end;
-            let range: usize =
-                enable_in_range(local_start, local_end);
+            let range: usize = enable_in_range(local_start, local_end);
             chunk.added |= range & added;
             chunk.modified |= range & modified;
         }
@@ -72,8 +65,7 @@ impl StateColumn {
     // Reserve a specific amount of entries within the state column
     pub(crate) fn reserve(&mut self, additional: usize) {
         let current = self.0.len();
-        let new = ((self.1 + additional) as f32 / BITS as f32).ceil()
-            as usize;
+        let new = ((self.1 + additional) as f32 / BITS as f32).ceil() as usize;
 
         if new >= current {
             self.0.reserve(new - current);
@@ -86,10 +78,7 @@ impl StateColumn {
     }
 
     // Remove a specific element and replace it's current location with the last element
-    pub(crate) fn swap_remove(
-        &mut self,
-        index: usize,
-    ) -> Option<StateFlags> {
+    pub(crate) fn swap_remove(&mut self, index: usize) -> Option<StateFlags> {
         // Cannot remove non-existant index
         if index >= self.1 {
             return None;
@@ -100,10 +89,7 @@ impl StateColumn {
             let last_local_index = self.1 % BITS;
             StateFlags {
                 added: is_bit_enabled(chunk.added, last_local_index),
-                modified: is_bit_enabled(
-                    chunk.modified,
-                    last_local_index,
-                ),
+                modified: is_bit_enabled(chunk.modified, last_local_index),
             }
         });
 
@@ -118,19 +104,14 @@ impl StateColumn {
             let StateFlags { added, modified } = flags;
 
             let added = toggle_bit(&mut chunk.added, local, added);
-            let modified =
-                toggle_bit(&mut chunk.modified, local, modified);
+            let modified = toggle_bit(&mut chunk.modified, local, modified);
             StateFlags { added, modified }
         })
     }
 
     // Remove a specific element and replace it's current location with the last element
     // This will also insert the removed element as a new entry into another state column
-    pub(crate) fn swap_remove_move(
-        &mut self,
-        index: usize,
-        other: &mut Self,
-    ) {
+    pub(crate) fn swap_remove_move(&mut self, index: usize, other: &mut Self) {
         let removed = self.swap_remove(index);
 
         if let Some(removed) = removed {
@@ -139,11 +120,7 @@ impl StateColumn {
     }
 
     // Update a specific entry using a callback and it's index
-    pub(crate) fn update(
-        &mut self,
-        index: usize,
-        update: impl FnOnce(&mut StateFlags),
-    ) {
+    pub(crate) fn update(&mut self, index: usize, update: impl FnOnce(&mut StateFlags)) {
         let chunk = index / BITS;
         let location = index % BITS;
         let chunk = &mut self.0[chunk];
@@ -168,10 +145,7 @@ impl StateColumn {
     }
 
     // Get a specific state column chunk immutably
-    pub fn get_chunk(
-        &self,
-        index: usize,
-    ) -> Option<&StateColumnChunk> {
+    pub fn get_chunk(&self, index: usize) -> Option<&StateColumnChunk> {
         self.0.get(index)
     }
 
@@ -190,14 +164,6 @@ impl StateColumn {
             modified: is_bit_enabled(chunk.modified, location),
         };
         Some(flags)
-    }
-
-    // Get a specific state column chunk mutably
-    pub(crate) fn get_mut_chunk(
-        &mut self,
-        index: usize,
-    ) -> Option<&mut StateColumnChunk> {
-        self.0.get_mut(index)
     }
 
     // Get the number of component states we have

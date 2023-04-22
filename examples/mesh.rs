@@ -1,5 +1,5 @@
-use cflake_engine::prelude::*;
 use cflake_engine::assets::include_dir;
+use cflake_engine::prelude::*;
 
 // Mesh example game window
 fn main() {
@@ -18,8 +18,7 @@ fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
     let mut threadpool = world.get_mut::<ThreadPool>().unwrap();
     let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
-    let mut pbrs =
-        world.get_mut::<Storage<PhysicallyBasedMaterial>>().unwrap();
+    let mut pbrs = world.get_mut::<Storage<PhysicallyBasedMaterial>>().unwrap();
     let mut skies = world.get_mut::<Storage<SkyMaterial>>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
     let mut pipelines = world.get_mut::<Pipelines>().unwrap();
@@ -55,10 +54,7 @@ fn init(world: &mut World) {
 
     // Load a sphere mesh
     let sphere = assets
-        .load::<Mesh>((
-            "engine/meshes/sphere.obj",
-            graphics.clone(),
-        ))
+        .load::<Mesh>(("engine/meshes/sphere.obj", graphics.clone()))
         .unwrap();
     let sphere = meshes.insert(sphere);
 
@@ -68,10 +64,8 @@ fn init(world: &mut World) {
     let mask = assets.wait(mask).unwrap();
 
     // Add the textures to the storage
-    let mut diffuse_maps =
-        world.get_mut::<Storage<AlbedoMap>>().unwrap();
-    let mut normal_maps =
-        world.get_mut::<Storage<NormalMap>>().unwrap();
+    let mut diffuse_maps = world.get_mut::<Storage<AlbedoMap>>().unwrap();
+    let mut normal_maps = world.get_mut::<Storage<NormalMap>>().unwrap();
     let mut mask_maps = world.get_mut::<Storage<MaskMap>>().unwrap();
     let diffuse = diffuse_maps.insert(diffuse);
     let normal = normal_maps.insert(normal);
@@ -90,8 +84,7 @@ fn init(world: &mut World) {
     });
 
     // Create a simple floor and add the entity
-    let surface =
-        Surface::new(plane, material.clone(), id.clone());
+    let surface = Surface::new(plane, material.clone(), id.clone());
     let renderer = Renderer::default();
     let scale = Scale::uniform(25.0);
     scene.insert((surface, renderer, scale));
@@ -99,14 +92,9 @@ fn init(world: &mut World) {
     // ADD THE ENTITIES NOW!!
     scene.extend_from_iter((0..(25)).map(|x| {
         let renderer = Renderer::default();
-        let position = Position::at_xyz(
-            (x / 5) as f32 * 4.0,
-            1.0,
-            (x % 5) as f32 * 4.0,
-        );
+        let position = Position::at_xyz((x / 5) as f32 * 4.0, 1.0, (x % 5) as f32 * 4.0);
 
-        let surface =
-            Surface::new(sphere.clone(), material.clone(), id.clone());
+        let surface = Surface::new(sphere.clone(), material.clone(), id.clone());
         (surface, renderer, position)
     }));
 
@@ -139,9 +127,10 @@ fn init(world: &mut World) {
     ));
 
     // Create a directional light
-    let light = DirectionalLight { color: vek::Rgb::one() * 3.6 };
-    let rotation = vek::Quaternion::rotation_x(-15.0f32.to_radians())
-        .rotated_y(45f32.to_radians());
+    let light = DirectionalLight {
+        color: vek::Rgb::one() * 3.6,
+    };
+    let rotation = vek::Quaternion::rotation_x(-15.0f32.to_radians()).rotated_y(45f32.to_radians());
     scene.insert((light, Rotation::from(rotation)));
 }
 
@@ -154,9 +143,7 @@ fn update(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
 
     // Rotation the light
-    if let Some((rotation, _)) =
-        scene.find_mut::<(&mut Rotation, &DirectionalLight)>()
-    {
+    if let Some((rotation, _)) = scene.find_mut::<(&mut Rotation, &DirectionalLight)>() {
         rotation.rotate_y(-0.1 * time.delta().as_secs_f32());
     }
 

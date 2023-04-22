@@ -1,15 +1,7 @@
-use std::{
-    cell::{Cell, Ref, RefCell, RefMut},
-};
+use std::cell::{Cell, Ref, RefCell, RefMut};
 
 use super::attributes::*;
-use crate::{
-    AttributeError, Direct, MeshAabbComputeError,
-    RenderPath,
-};
-
-
-
+use crate::{AttributeError, Direct, MeshAabbComputeError, RenderPath};
 
 // Immutable access to the mesh vertices
 pub struct VerticesRef<'a, R: RenderPath> {
@@ -34,9 +26,7 @@ impl<'a, R: RenderPath> VerticesRef<'a, R> {
     }
 
     // Get an immutable reference to an attribute buffer
-    pub fn attribute<T: MeshAttribute>(
-        &self,
-    ) -> Result<&'a R::AttributeBuffer<T>, AttributeError> {
+    pub fn attribute<T: MeshAttribute>(&self) -> Result<&'a R::AttributeBuffer<T>, AttributeError> {
         T::from_ref_as_ref(self)
     }
 
@@ -58,14 +48,10 @@ impl<'a> VerticesRef<'a, Direct> {
 pub struct VerticesMut<'a, R: RenderPath> {
     // Attributes
     pub(super) enabled: &'a mut MeshAttributes,
-    pub(super) positions:
-        RefCell<&'a mut Option<R::AttributeBuffer<Position>>>,
-    pub(super) normals:
-        RefCell<&'a mut Option<R::AttributeBuffer<Normal>>>,
-    pub(super) tangents:
-        RefCell<&'a mut Option<R::AttributeBuffer<Tangent>>>,
-    pub(super) tex_coords:
-        RefCell<&'a mut Option<R::AttributeBuffer<TexCoord>>>,
+    pub(super) positions: RefCell<&'a mut Option<R::AttributeBuffer<Position>>>,
+    pub(super) normals: RefCell<&'a mut Option<R::AttributeBuffer<Normal>>>,
+    pub(super) tangents: RefCell<&'a mut Option<R::AttributeBuffer<Tangent>>>,
+    pub(super) tex_coords: RefCell<&'a mut Option<R::AttributeBuffer<TexCoord>>>,
 
     // Cached parameters
     pub(super) count: RefCell<&'a mut R::Count>,
@@ -103,18 +89,13 @@ impl<'a, P: RenderPath> VerticesMut<'a, P> {
     }
 
     // Insert a new vertex buffer to the vertices
-    pub fn insert<T: MeshAttribute>(
-        &mut self,
-        buffer: P::AttributeBuffer<T>,
-    ) {
+    pub fn insert<T: MeshAttribute>(&mut self, buffer: P::AttributeBuffer<T>) {
         self.set_as_dirty::<T>();
         T::insert(self, buffer);
     }
 
     // Remove an old vertex buffer from the vertices
-    pub fn remove<T: MeshAttribute>(
-        &mut self,
-    ) -> Result<P::AttributeBuffer<T>, AttributeError> {
+    pub fn remove<T: MeshAttribute>(&mut self) -> Result<P::AttributeBuffer<T>, AttributeError> {
         self.set_as_dirty::<T>();
         T::remove(self)
     }
@@ -135,13 +116,10 @@ impl<'a> VerticesMut<'a, Direct> {
     pub fn len(&self) -> Option<usize> {
         if self.length_dirty.take() {
             // Fetch the length of each of the attribute (even if they don't actually exist)
-            let positions =
-                self.attribute::<Position>().map(|x| x.len());
+            let positions = self.attribute::<Position>().map(|x| x.len());
             let normals = self.attribute::<Normal>().map(|x| x.len());
-            let tangents =
-                self.attribute::<Tangent>().map(|x| x.len());
-            let tex_coords =
-                self.attribute::<TexCoord>().map(|x| x.len());
+            let tangents = self.attribute::<Tangent>().map(|x| x.len());
+            let tex_coords = self.attribute::<TexCoord>().map(|x| x.len());
 
             // Convert the options into a fixed sized array and iterate over it
             let array = [positions, normals, tangents, tex_coords];
@@ -165,15 +143,12 @@ impl<'a> VerticesMut<'a, Direct> {
     }
 
     // Calculate an Axis-Aligned Bounding Box, and returns an error if not possible
-    pub fn aabb(
-        &self,
-    ) -> Result<math::Aabb<f32>, MeshAabbComputeError> {
+    pub fn aabb(&self) -> Result<math::Aabb<f32>, MeshAabbComputeError> {
         if self.aabb_dirty.take() {
             // Fetch the position attribute buffer
-            let attribute =
-                self.attribute::<Position>().map_err(|x| {
-                    MeshAabbComputeError::AttributeBuffer(x)
-                })?;
+            let attribute = self
+                .attribute::<Position>()
+                .map_err(|x| MeshAabbComputeError::AttributeBuffer(x))?;
 
             // Create a view into the buffer (if possible)
             let view = attribute
@@ -184,9 +159,10 @@ impl<'a> VerticesMut<'a, Direct> {
             let slice = view.as_slice();
 
             // Generate the AABB from the buffer view
-            **self.aabb.borrow_mut() = Some(super::aabb_from_points(slice).ok_or(
-                MeshAabbComputeError::EmptyPositionAttributeBuffer,
-            )?);
+            **self.aabb.borrow_mut() = Some(
+                super::aabb_from_points(slice)
+                    .ok_or(MeshAabbComputeError::EmptyPositionAttributeBuffer)?,
+            );
         }
 
         Ok(self.aabb.borrow().unwrap())

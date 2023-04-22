@@ -27,8 +27,7 @@ impl TexelChannels {
     // Check if the R (X) and B (Z) channels are swizzled
     pub const fn is_swizzled(&self) -> bool {
         match self {
-            TexelChannels::Four { swizzled }
-            | TexelChannels::Srgba { swizzled } => *swizzled,
+            TexelChannels::Four { swizzled } | TexelChannels::Srgba { swizzled } => *swizzled,
             _ => false,
         }
     }

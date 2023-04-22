@@ -1,8 +1,7 @@
 use super::Entity;
 use crate::{
-    add_bundle, remove_bundle, Archetype, ArchetypeSet, Bundle,
-    Component, EntityLinkings, EntitySet, QueryLayoutMut,
-    QueryLayoutRef, RemovedComponents, Scene,
+    add_bundle, remove_bundle, Archetype, ArchetypeSet, Bundle, Component, EntityLinkings,
+    EntitySet, QueryLayoutMut, QueryLayoutRef, RemovedComponents, Scene,
 };
 
 // Mutable entity entries allow the user to be able to modify components that are linked to the entity
@@ -17,10 +16,7 @@ pub struct EntryMut<'a> {
 
 impl<'a> EntryMut<'a> {
     // Create a mutable entry from the ecs manager and an entity
-    pub(crate) fn new(
-        manager: &'a mut Scene,
-        entity: Entity,
-    ) -> Option<Self> {
+    pub(crate) fn new(manager: &'a mut Scene, entity: Entity) -> Option<Self> {
         let linkings = *manager.entities.get(entity)?;
         let archetypes = &mut manager.archetypes;
         let entities = &mut manager.entities;
@@ -81,12 +77,7 @@ impl<'a> EntryMut<'a> {
             "Bundle is not valid, check the bundle for component collisions"
         );
 
-        add_bundle(
-            self.archetypes,
-            self.entity,
-            self.entities,
-            bundle,
-        )?;
+        add_bundle(self.archetypes, self.entity, self.entities, bundle)?;
         self.linkings = self.entities[self.entity];
         Some(())
     }
@@ -100,12 +91,7 @@ impl<'a> EntryMut<'a> {
         );
 
         // Move the entity to a new archetype
-        let rizz = remove_bundle::<B>(
-            self.archetypes,
-            self.entity,
-            self.entities,
-            self.removed,
-        );
+        let rizz = remove_bundle::<B>(self.archetypes, self.entity, self.entities, self.removed);
         self.linkings = self.entities[self.entity];
         rizz
     }
@@ -126,9 +112,7 @@ impl<'a> EntryMut<'a> {
 
         // Fetch the layout from the archetype
         let index = self.linkings().index;
-        let ptrs = unsafe {
-            L::ptrs_from_archetype_unchecked(self.archetype())
-        };
+        let ptrs = unsafe { L::ptrs_from_archetype_unchecked(self.archetype()) };
         let layout = unsafe { L::read_unchecked(ptrs, index) };
         Some(layout)
     }
@@ -149,9 +133,7 @@ impl<'a> EntryMut<'a> {
 
         // Fetch the layout from the archetype
         let index = self.linkings().index;
-        let ptrs = unsafe {
-            L::ptrs_from_mut_archetype_unchecked(self.archetype_mut())
-        };
+        let ptrs = unsafe { L::ptrs_from_mut_archetype_unchecked(self.archetype_mut()) };
         let layout = unsafe { L::read_mut_unchecked(ptrs, index) };
 
         // Get a mask of changed components from the archetype

@@ -24,8 +24,7 @@ pub trait Sample: 'static + Send + Sync + Clone + CpalSample {
 
 impl Sample for i16 {
     fn mix(self, other: Self, mix: f32) -> Self {
-        (self.to_f32() * mix + (1.0f32 - mix) * other.to_f32())
-            .to_i16()
+        (self.to_f32() * mix + (1.0f32 - mix) * other.to_f32()).to_i16()
     }
 
     fn format() -> SampleFormat {

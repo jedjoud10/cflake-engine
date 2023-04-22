@@ -1,12 +1,12 @@
+use crate::{Aabb, Sphere};
 use std::cmp::PartialOrd;
 use vek::{num_traits::real::Real, Clamp};
-use crate::{Aabb, Sphere};
 /*
 // TODO: Halp idk where to put this
 // Struct that contains collision data
 pub struct Collision {
     pub normal: vek::Vec3<f32>,
-    pub depth: f32, 
+    pub depth: f32,
 }
 
 // Trait implemented for two objects that we can check collisions for
@@ -45,7 +45,7 @@ impl<T: PartialOrd> CollideTwo<Aabb<T>, Aabb<T>> for TwoColliders<Aabb<T>, Aabb<
     }
 }
 
-// Check if 
+// Check if
 impl<T: PartialOrd> CollideTwo<vek::Vec3<f32>, Aabb<T>> for TwoColliders<vek::Vec3<f32>, Aabb<T>> {
     fn check(a: &vek::Vec3<f32>, b: &Aabb<T>) -> Option<Collision> {
         todo!()
@@ -69,8 +69,7 @@ pub fn point_aabb<T>(point: &vek::Vec3<T>, aabb: &Aabb<T>) -> bool
 where
     T: PartialOrd,
 {
-    aabb.min.partial_cmple(point).reduce_and()
-        && aabb.max.partial_cmpgt(point).reduce_and()
+    aabb.min.partial_cmple(point).reduce_and() && aabb.max.partial_cmpgt(point).reduce_and()
 }
 
 // Check if an AABB is intersecting a sphere
@@ -88,15 +87,11 @@ pub fn sphere_sphere<T>(first: &Sphere<T>, second: &Sphere<T>) -> bool
 where
     T: Real,
 {
-    vek::Vec3::distance(second.center, second.center)
-        < (first.radius + second.radius)
+    vek::Vec3::distance(second.center, second.center) < (first.radius + second.radius)
 }
 
 // Check if a point is inside a sphere
-pub fn point_sphere<T>(
-    point: &vek::Vec3<T>,
-    sphere: &Sphere<T>,
-) -> bool
+pub fn point_sphere<T>(point: &vek::Vec3<T>, sphere: &Sphere<T>) -> bool
 where
     T: Real,
 {

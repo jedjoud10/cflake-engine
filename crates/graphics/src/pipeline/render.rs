@@ -5,9 +5,9 @@ use itertools::Itertools;
 use wgpu::{BlendState, PrimitiveState, VertexStepMode};
 
 use crate::{
-    BlendConfig, ColorLayout, DepthConfig, DepthStencilLayout,
-    Graphics, PipelineInitializationError, PrimitiveConfig, Shader,
-    StencilConfig, VertexConfig, VertexInfo, VertexInputInfo,
+    BlendConfig, ColorLayout, DepthConfig, DepthStencilLayout, Graphics,
+    PipelineInitializationError, PrimitiveConfig, Shader, StencilConfig, VertexConfig, VertexInfo,
+    VertexInputInfo,
 };
 
 // Wrapper around a WGPU render pipeline just to help me instantiate them
@@ -48,7 +48,9 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPipeline<C, DS> {
 
         // Check if the DepthStencilLayout does not contain a stencil format, return warning if appropriate
         if !stencil_config_enabled && stencil_config.is_none() {
-            log::warn!("Tried using stencil config for a graphics pipeline without a stencil texel");
+            log::warn!(
+                "Tried using stencil config for a graphics pipeline without a stencil texel"
+            );
         }
 
         // Check if the DepthStencilLayout does not contain a depth format, return warning if appropriate
@@ -57,20 +59,11 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPipeline<C, DS> {
         }
 
         // Get all the configuration settings required for the RenderPipeline
-        let depth_stencil = depth_stencil_config_to_state::<DS>(
-            &depth_config,
-            &stencil_config,
-        );
-        let attributes =
-            vertex_config_to_vertex_attributes(&vertex_config);
-        let attributes =
-            attributes.iter().map(|x| x.as_slice()).collect();
-        let buffers = vertex_config_to_buffer_layout(
-            &vertex_config,
-            attributes,
-        );
-        let targets =
-            color_layout_to_color_target_state::<C>(&blend_config);
+        let depth_stencil = depth_stencil_config_to_state::<DS>(&depth_config, &stencil_config);
+        let attributes = vertex_config_to_vertex_attributes(&vertex_config);
+        let attributes = attributes.iter().map(|x| x.as_slice()).collect();
+        let buffers = vertex_config_to_buffer_layout(&vertex_config, attributes);
+        let targets = color_layout_to_color_target_state::<C>(&blend_config);
         let primitive = primitive_config_to_state(primitive_config);
         let layout = &shader.layout;
 
@@ -81,8 +74,9 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPipeline<C, DS> {
         );
 
         // Create the WGPU pipeline using the given configuration
-        let pipeline = graphics.device().create_render_pipeline(
-            &wgpu::RenderPipelineDescriptor {
+        let pipeline = graphics
+            .device()
+            .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                 label: Some(&name),
                 layout: Some(layout),
                 vertex: wgpu::VertexState {
@@ -99,8 +93,7 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPipeline<C, DS> {
                     targets: &targets,
                 }),
                 multiview: None,
-            },
-        );
+            });
 
         Ok(Self {
             pipeline,
@@ -162,12 +155,9 @@ fn color_layout_to_color_target_state<C: ColorLayout>(
     blending: &Option<BlendConfig<C>>,
 ) -> Vec<Option<wgpu::ColorTargetState>> {
     // Convert the typed blending state array to a vector
-    let vec: Option<Vec<Option<BlendState>>> =
-        blending.as_ref().map(|x| {
-            <C::BlendingArray as Into<Vec<Option<BlendState>>>>::into(
-                *x,
-            )
-        });
+    let vec: Option<Vec<Option<BlendState>>> = blending
+        .as_ref()
+        .map(|x| <C::BlendingArray as Into<Vec<Option<BlendState>>>>::into(*x));
 
     // Convert the typed layout targets to ColorTargetStates
     let targets = C::layout_info()
@@ -176,10 +166,7 @@ fn color_layout_to_color_target_state<C: ColorLayout>(
         .map(|(i, info)| {
             Some(wgpu::ColorTargetState {
                 format: info.format(),
-                blend: vec
-                    .as_ref()
-                    .map(|vec| vec[i])
-                    .unwrap_or_default(),
+                blend: vec.as_ref().map(|vec| vec[i]).unwrap_or_default(),
 
                 // FIXME: Let the user handle this
                 write_mask: wgpu::ColorWrites::ALL,
@@ -206,13 +193,11 @@ fn depth_stencil_config_to_state<DS: DepthStencilLayout>(
     };
 
     // Get stencil, depth comparison function, depth write
-    let stencil =
-        stencil_config.as_ref().cloned().unwrap_or_default();
+    let stencil = stencil_config.as_ref().cloned().unwrap_or_default();
     let depth_compare = depth_config
         .map(|dc| dc.compare)
         .unwrap_or(wgpu::CompareFunction::Never);
-    let depth_write_enabled =
-        depth_config.map(|dc| dc.write_enabled).unwrap_or_default();
+    let depth_write_enabled = depth_config.map(|dc| dc.write_enabled).unwrap_or_default();
     DS::info().map(|format| wgpu::DepthStencilState {
         format: format.format(),
         depth_write_enabled,
@@ -223,23 +208,15 @@ fn depth_stencil_config_to_state<DS: DepthStencilLayout>(
 }
 
 // Convert the primitive config to primitive state
-fn primitive_config_to_state(
-    primitive_config: PrimitiveConfig,
-) -> PrimitiveState {
+fn primitive_config_to_state(primitive_config: PrimitiveConfig) -> PrimitiveState {
     let topology = match primitive_config {
-        PrimitiveConfig::Triangles { .. } => {
-            wgpu::PrimitiveTopology::TriangleList
-        }
-        PrimitiveConfig::Lines { .. } => {
-            wgpu::PrimitiveTopology::LineList
-        }
+        PrimitiveConfig::Triangles { .. } => wgpu::PrimitiveTopology::TriangleList,
+        PrimitiveConfig::Lines { .. } => wgpu::PrimitiveTopology::LineList,
         PrimitiveConfig::Points => wgpu::PrimitiveTopology::PointList,
     };
 
     let front_face = match primitive_config {
-        PrimitiveConfig::Triangles { winding_order, .. } => {
-            winding_order
-        }
+        PrimitiveConfig::Triangles { winding_order, .. } => winding_order,
         _ => wgpu::FrontFace::Cw,
     };
 

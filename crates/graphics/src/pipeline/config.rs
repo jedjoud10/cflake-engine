@@ -20,9 +20,7 @@ pub type StencilConfig = wgpu::StencilState;
 pub use wgpu::{CompareFunction, Face};
 
 // Re-export blend state ops
-pub use wgpu::{
-    BlendComponent, BlendFactor, BlendOperation, BlendState,
-};
+pub use wgpu::{BlendComponent, BlendFactor, BlendOperation, BlendState};
 
 // How we will use color blending for each element
 pub type BlendConfig<C: ColorLayout> = C::BlendingArray;

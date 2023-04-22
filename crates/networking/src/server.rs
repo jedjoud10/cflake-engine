@@ -1,9 +1,7 @@
 use std::{
     collections::HashMap,
     io::{Read, Write},
-    net::{
-        Ipv4Addr, SocketAddr, SocketAddrV4, TcpListener, TcpStream,
-    },
+    net::{Ipv4Addr, SocketAddr, SocketAddrV4, TcpListener, TcpStream},
 };
 use uuid::Uuid;
 
@@ -46,11 +44,7 @@ impl Server {
     }
 
     // Handle the connection of a new client
-    fn handle_client_connection(
-        &mut self,
-        mut stream: TcpStream,
-        address: SocketAddr,
-    ) {
+    fn handle_client_connection(&mut self, mut stream: TcpStream, address: SocketAddr) {
         log::debug!("Client {address} has connected to the server");
 
         // Create a UUID for this client
@@ -99,8 +93,7 @@ impl Server {
                 }
 
                 // Get the TypeID hash in the first 8 bytes of data
-                let hash =
-                    u64::from_be_bytes(buf[0..8].try_into().unwrap());
+                let hash = u64::from_be_bytes(buf[0..8].try_into().unwrap());
 
                 // Read the rest of the data as a string
                 let data = (buf[8..][..(len - 8)]).to_vec();

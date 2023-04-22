@@ -27,16 +27,13 @@ pub enum BufferValidationError {
     NotStorageBuffer,
 
     #[error("The compiler defined type (of size {compiler}), does not match up with the one defined in the shader (size {shader})")]
-    MismatchSize {
-        compiler: usize,
-        shader: usize,
-    },
+    MismatchSize { compiler: usize, shader: usize },
 
     #[error("The compiler defined buffer storage access {compiler:?} does not match up with the shader defined access {shader:?}")]
     MismatchAccess {
         compiler: spirq::AccessType,
         shader: spirq::AccessType,
-    }
+    },
 }
 
 #[derive(Error, Debug)]
@@ -69,7 +66,7 @@ pub enum TextureValidationError {
     MismatchSampleType {
         compiler: wgpu::TextureSampleType,
         shader: wgpu::TextureSampleType,
-    }
+    },
 }
 
 #[derive(Error, Debug)]
@@ -95,19 +92,19 @@ pub enum ShaderReflectionError {
     #[error("buffer resource: {resource}, error: {error}")]
     BufferValidation {
         resource: String,
-        error: BufferValidationError, 
+        error: BufferValidationError,
     },
 
     #[error("texture resource: {resource}, error: {error}")]
     TextureValidation {
         resource: String,
-        error: TextureValidationError, 
+        error: TextureValidationError,
     },
 
     #[error("sampler resource: {resource}, error: {error}")]
     SamplerValidation {
         resource: String,
-        error: SamplerValidationError, 
+        error: SamplerValidationError,
     },
 
     #[error("The shader defined resource {0} is not defined in the Compiler")]

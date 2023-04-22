@@ -1,14 +1,11 @@
-
 use assets::Assets;
 
 use graphics::{
-    Buffer, BufferMode, BufferUsage, Compiler, ComputeModule, ComputeShader, GpuPod, Graphics, Texel,
-    Texture3D, Vertex, R, XYZW, StorageAccess, RGBA, Normalized, RG,
+    Buffer, BufferMode, BufferUsage, Compiler, ComputeModule, ComputeShader, GpuPod, Graphics,
+    Normalized, StorageAccess, Texel, Texture3D, Vertex, R, RG, RGBA, XYZW,
 };
 
-
-
-use crate::{TerrainSettings, create_texture3d, create_counters, TempVertices, TempTriangles};
+use crate::{create_counters, create_texture3d, TempTriangles, TempVertices, TerrainSettings};
 
 // Mesh generator that will be solely used to generate the mesh from voxels
 pub struct MeshGenerator {
@@ -30,7 +27,8 @@ impl MeshGenerator {
             (settings.size as usize).pow(3),
             BufferMode::Dynamic,
             BufferUsage::STORAGE,
-        ).unwrap();
+        )
+        .unwrap();
 
         // Create some temporary triangles that we will write to first
         // Note: These should be able to handle a complex mesh in the worst case scenario
@@ -39,7 +37,8 @@ impl MeshGenerator {
             (settings.size as usize - 1).pow(3) * 2,
             BufferMode::Dynamic,
             BufferUsage::STORAGE,
-        ).unwrap();
+        )
+        .unwrap();
 
         // Load the compute module for vertex generation
         let module = assets
@@ -48,20 +47,16 @@ impl MeshGenerator {
         let mut compiler = Compiler::new(assets, graphics);
 
         // Set the voxels texture that we will sample
-        compiler.use_storage_texture::<Texture3D<RG<f32>>>(
-            "voxels",
-            StorageAccess::ReadOnly
-        );
+        compiler.use_storage_texture::<Texture3D<RG<f32>>>("voxels", StorageAccess::ReadOnly);
 
         // Set the cached indices that we will use to reuse vertices
-        compiler.use_storage_texture::<Texture3D<R<u32>>>(
-            "cached_indices",
-            StorageAccess::WriteOnly
-        );
+        compiler
+            .use_storage_texture::<Texture3D<R<u32>>>("cached_indices", StorageAccess::WriteOnly);
 
         // Set storage buffers and counters
         compiler.use_storage_buffer::<<XYZW<f32> as Vertex>::Storage>(
-            "vertices", StorageAccess::WriteOnly
+            "vertices",
+            StorageAccess::WriteOnly,
         );
         compiler.use_storage_buffer::<[u32; 2]>("counters", StorageAccess::ReadWrite);
 
@@ -84,16 +79,11 @@ impl MeshGenerator {
         let mut compiler = Compiler::new(assets, graphics);
 
         // Set the voxels texture that we will sample
-        compiler.use_storage_texture::<Texture3D<RG<f32>>>(
-            "voxels",
-            StorageAccess::ReadOnly
-        );
+        compiler.use_storage_texture::<Texture3D<RG<f32>>>("voxels", StorageAccess::ReadOnly);
 
         // Set the cached indices that we will use to reuse vertices
-        compiler.use_storage_texture::<Texture3D<R<u32>>>(
-            "cached_indices",
-            StorageAccess::ReadOnly
-        );
+        compiler
+            .use_storage_texture::<Texture3D<R<u32>>>("cached_indices", StorageAccess::ReadOnly);
 
         // Set counters and storage buffers
         compiler.use_storage_buffer::<[u32; 2]>("counters", StorageAccess::ReadWrite);

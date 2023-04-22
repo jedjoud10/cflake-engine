@@ -11,11 +11,7 @@ pub trait UntypedVec {
 
     // Remove a component from the storage, and insert the return value into another untyped column
     // This assumes that "other" is of the same type as Self
-    fn swap_remove_move(
-        &mut self,
-        index: usize,
-        other: &mut dyn UntypedVec,
-    );
+    fn swap_remove_move(&mut self, index: usize, other: &mut dyn UntypedVec);
 
     // Reserve some allocation space for the storage
     fn reserve(&mut self, additional: usize);
@@ -46,14 +42,9 @@ impl<T: 'static> UntypedVec for Vec<T> {
         Vec::<T>::swap_remove(self, index);
     }
 
-    fn swap_remove_move(
-        &mut self,
-        index: usize,
-        other: &mut dyn UntypedVec,
-    ) {
+    fn swap_remove_move(&mut self, index: usize, other: &mut dyn UntypedVec) {
         let removed = Vec::swap_remove(self, index);
-        let other =
-            other.as_any_mut().downcast_mut::<Self>().unwrap();
+        let other = other.as_any_mut().downcast_mut::<Self>().unwrap();
 
         other.push(removed);
     }

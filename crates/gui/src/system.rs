@@ -65,11 +65,9 @@ fn finish(world: &mut World) {
     }
 
     // Handle platform output and tesselate the shapes
-    interface.state.handle_platform_output(
-        window.raw(),
-        &interface.egui,
-        output.platform_output,
-    );
+    interface
+        .state
+        .handle_platform_output(window.raw(), &interface.egui, output.platform_output);
     let tessellated = interface.tessellate(output.shapes);
 
     // Draw using the graphics API

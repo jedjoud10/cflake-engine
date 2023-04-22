@@ -1,7 +1,4 @@
-use crate::{
-    mask, Archetype, Component, Mask, MaskHashMap, StateColumn,
-    StateFlags, UntypedVec,
-};
+use crate::{mask, Archetype, Component, Mask, MaskHashMap, StateColumn, StateFlags, UntypedVec};
 
 // An owned layout trait will be implemented for owned tuples that contain a set of components
 // This will also handle the synchronization between the states/component columns whenever we add bundles
@@ -22,9 +19,7 @@ pub trait Bundle: Sized + 'static {
     }
 
     // Get the storage tables once and for all
-    fn prepare<'a>(
-        archetype: &'a mut Archetype,
-    ) -> Option<Self::Storages<'a>>;
+    fn prepare<'a>(archetype: &'a mut Archetype) -> Option<Self::Storages<'a>>;
 
     // Push multiple elements into those storages, returns how many we added
     fn extend_from_iter<'a>(
@@ -53,9 +48,7 @@ impl<T: Component> Bundle for T {
         true
     }
 
-    fn prepare<'a>(
-        archetype: &'a mut Archetype,
-    ) -> Option<Self::Storages<'a>> {
+    fn prepare<'a>(archetype: &'a mut Archetype) -> Option<Self::Storages<'a>> {
         archetype.column_mut::<T>()
     }
 

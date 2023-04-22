@@ -1,21 +1,17 @@
-use std::{num::NonZeroU8, mem::size_of};
+use std::{mem::size_of, num::NonZeroU8};
 
 use crate::{
-    AlbedoMap, AttributeBuffer, BasicMaterial, Camera,
-    DefaultMaterialResources, DirectionalLight, ForwardRenderer,
-    Indirect, MaskMap, Mesh, NormalMap, PhysicallyBasedMaterial,
-    Pipelines, Renderer, SceneUniform, ShadowMapping, SkyMaterial,
-    WindowUniform,
+    AlbedoMap, AttributeBuffer, BasicMaterial, Camera, DefaultMaterialResources, DirectionalLight,
+    ForwardRenderer, Indirect, MaskMap, Mesh, NormalMap, PhysicallyBasedMaterial, Pipelines,
+    Renderer, SceneUniform, ShadowMapping, SkyMaterial, WindowUniform,
 };
 use assets::Assets;
 
-
-use ecs::{Scene};
+use ecs::Scene;
 use graphics::{
-    DrawIndexedIndirectBuffer, Graphics, Texture, TriangleBuffer,
-    Window, ActivePipeline, GpuPod, ModuleVisibility,
+    ActivePipeline, DrawIndexedIndirectBuffer, GpuPod, Graphics, ModuleVisibility, Texture,
+    TriangleBuffer, Window,
 };
-
 
 use utils::{Storage, Time};
 use world::{user, System, WindowEvent, World};
@@ -73,16 +69,10 @@ fn init(world: &mut World) {
     // Add common storages
     world.insert(Storage::<Mesh>::default());
     world.insert(Storage::<Mesh<Indirect>>::default());
-    world.insert(Storage::<
-        AttributeBuffer<crate::attributes::Position>,
-    >::default());
+    world.insert(Storage::<AttributeBuffer<crate::attributes::Position>>::default());
     world.insert(Storage::<AttributeBuffer<crate::attributes::Normal>>::default());
-    world.insert(Storage::<
-        AttributeBuffer<crate::attributes::Tangent>,
-    >::default());
-    world.insert(Storage::<
-        AttributeBuffer<crate::attributes::TexCoord>,
-    >::default());
+    world.insert(Storage::<AttributeBuffer<crate::attributes::Tangent>>::default());
+    world.insert(Storage::<AttributeBuffer<crate::attributes::TexCoord>>::default());
     world.insert(Storage::<TriangleBuffer<u32>>::default());
     world.insert(Storage::<DrawIndexedIndirectBuffer>::default());
 
@@ -107,8 +97,7 @@ fn event(world: &mut World, event: &mut WindowEvent) {
 
             // Handle resizing the depth texture
             let size = vek::Extent2::new(size.width, size.height);
-            let mut renderer =
-                world.get_mut::<ForwardRenderer>().unwrap();
+            let mut renderer = world.get_mut::<ForwardRenderer>().unwrap();
 
             // Resize the color and depth texture
             renderer.depth_texture.resize(size).unwrap();
@@ -145,11 +134,9 @@ fn render(world: &mut World) {
     let meshes = world.get::<Storage<Mesh>>().unwrap();
 
     // Needed for indirect rendering
-    let indirect_meshes =
-        world.get::<Storage<Mesh<Indirect>>>().unwrap();
+    let indirect_meshes = world.get::<Storage<Mesh<Indirect>>>().unwrap();
     let indirect_position_attribute = world
-        .get::<Storage<AttributeBuffer<crate::attributes::Position>>>(
-        )
+        .get::<Storage<AttributeBuffer<crate::attributes::Position>>>()
         .unwrap();
     let indirect_normal_attribute = world
         .get::<Storage<AttributeBuffer<crate::attributes::Normal>>>()
@@ -158,13 +145,10 @@ fn render(world: &mut World) {
         .get::<Storage<AttributeBuffer<crate::attributes::Tangent>>>()
         .unwrap();
     let indirect_tex_coords_attribute = world
-        .get::<Storage<AttributeBuffer<crate::attributes::TexCoord>>>(
-        )
+        .get::<Storage<AttributeBuffer<crate::attributes::TexCoord>>>()
         .unwrap();
-    let indexed_indirect_buffers =
-        world.get::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
-    let indirect_triangles =
-        world.get::<Storage<TriangleBuffer<u32>>>().unwrap();
+    let indexed_indirect_buffers = world.get::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
+    let indirect_triangles = world.get::<Storage<TriangleBuffer<u32>>>().unwrap();
 
     let albedo_maps = world.get::<Storage<AlbedoMap>>().unwrap();
     let normal_maps = world.get::<Storage<NormalMap>>().unwrap();
@@ -183,22 +167,17 @@ fn render(world: &mut World) {
 
     // Get the directioanl light and rotation of the light
     let directional_light = scene.entry(directional_light).unwrap();
-    let (&directional_light, &directional_light_rotation) =
-        directional_light
-            .as_query::<(&DirectionalLight, &coords::Rotation)>()
-            .unwrap();
+    let (&directional_light, &directional_light_rotation) = directional_light
+        .as_query::<(&DirectionalLight, &coords::Rotation)>()
+        .unwrap();
 
     // Update the scene uniform using the appropriate values
     renderer
         .scene_buffer
         .write(
             &[SceneUniform {
-                sun_direction: directional_light_rotation
-                    .forward()
-                    .with_w(0.0),
-                sun_color: vek::Rgba::<f32>::from(
-                    directional_light.color,
-                ),
+                sun_direction: directional_light_rotation.forward().with_w(0.0),
+                sun_color: vek::Rgba::<f32>::from(directional_light.color),
                 ..Default::default()
             }],
             0,

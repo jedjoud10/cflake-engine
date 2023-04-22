@@ -1,12 +1,13 @@
 use std::mem::size_of;
 
 use crate::{
-    attributes::Position, ActiveShadowRenderPipeline,
-    DefaultMaterialResources, Material, Mesh, MeshAttributes,
-    RenderPath, Renderer, Surface, set_index_buffer_attribute, set_vertex_buffer_attribute, SubSurface, CastShadowsMode, ShadowRenderPipeline, ActiveShadowRenderPass,
+    attributes::Position, set_index_buffer_attribute, set_vertex_buffer_attribute,
+    ActiveShadowRenderPass, ActiveShadowRenderPipeline, CastShadowsMode, DefaultMaterialResources,
+    Material, Mesh, MeshAttributes, RenderPath, Renderer, ShadowRenderPipeline, SubSurface,
+    Surface,
 };
 use ecs::Scene;
-use graphics::{GpuPod, ModuleVisibility, ActivePipeline};
+use graphics::{ActivePipeline, GpuPod, ModuleVisibility};
 use math::ExplicitVertices;
 use utils::{Handle, ThreadPool};
 use world::World;
@@ -17,8 +18,7 @@ pub fn intersects_lightspace(
     aabb: math::Aabb<f32>,
     matrix: &vek::Mat4<f32>,
 ) -> bool {
-    let corners =
-        <math::Aabb<f32> as ExplicitVertices<f32>>::points(&aabb);
+    let corners = <math::Aabb<f32> as ExplicitVertices<f32>>::points(&aabb);
 
     for input in corners.iter() {
         let vec = matrix.mul_point(*input);
@@ -57,7 +57,9 @@ pub(super) fn render_shadows<'r, M: Material>(
     let mut last: Option<Handle<Mesh<M::RenderPath>>> = None;
 
     // Keep track of the last attribute buffers
-    let mut last_positions_buffer: Option<&<M::RenderPath as RenderPath>::AttributeBuffer<crate::attributes::Position>> = None; 
+    let mut last_positions_buffer: Option<
+        &<M::RenderPath as RenderPath>::AttributeBuffer<crate::attributes::Position>,
+    > = None;
     let mut last_index_buffer: Option<&<M::RenderPath as RenderPath>::TriangleBuffer<u32>> = None;
 
     // Cull the surfaces that the shadow texture won't see
@@ -66,26 +68,23 @@ pub(super) fn render_shadows<'r, M: Material>(
             &mut threadpool,
             |(surface, renderer)| {
                 // A surface is culled *only* if all of it's sub-surface are not visible
-                surface.shadow_culled = surface.subsurfaces.iter().all(|SubSurface { mesh, material }| {
-                    // Get the mesh and it's AABB
-                    let mesh = <M::RenderPath as RenderPath>::get(
-                        defaults,
-                        &mesh,
-                    );
-                    let aabb = mesh.vertices().aabb();
+                surface.shadow_culled =
+                    surface
+                        .subsurfaces
+                        .iter()
+                        .all(|SubSurface { mesh, material }| {
+                            // Get the mesh and it's AABB
+                            let mesh = <M::RenderPath as RenderPath>::get(defaults, &mesh);
+                            let aabb = mesh.vertices().aabb();
 
-                    // If we have a valid AABB, check if the surface is visible within the frustum
-                    if let Some(aabb) = aabb {
-                        !intersects_lightspace(
-                            &lightspace,
-                            aabb,
-                            &renderer.matrix,
-                        )
-                    } else {
-                        false
-                    }
-                })                
-            }, 
+                            // If we have a valid AABB, check if the surface is visible within the frustum
+                            if let Some(aabb) = aabb {
+                                !intersects_lightspace(&lightspace, aabb, &renderer.matrix)
+                            } else {
+                                false
+                            }
+                        })
+            },
             1024,
         );
     }
@@ -101,10 +100,7 @@ pub(super) fn render_shadows<'r, M: Material>(
         // Iterate over the sub-surfaces of the surface
         for subsurface in surface.subsurfaces.iter() {
             // Get the mesh and material that correspond to this surface
-            let mesh = <M::RenderPath as RenderPath>::get(
-                defaults,
-                &subsurface.mesh,
-            );
+            let mesh = <M::RenderPath as RenderPath>::get(defaults, &subsurface.mesh);
 
             // Skip rendering if the mesh is invalid
             let attribute = mesh
@@ -122,27 +118,29 @@ pub(super) fn render_shadows<'r, M: Material>(
                     let matrix = renderer.matrix;
                     let cols = matrix.cols;
                     let bytes = GpuPod::into_bytes(&cols);
-                    constants
-                        .push(bytes, 0, ModuleVisibility::Vertex)
-                        .unwrap();
+                    constants.push(bytes, 0, ModuleVisibility::Vertex).unwrap();
                     // TODO: Implement push constant compositing so we can remove this
                     let bytes = GpuPod::into_bytes(&lightspace.cols);
                     constants
-                        .push(bytes, size_of::<vek::Mat4::<f32>>() as u32, ModuleVisibility::Vertex)
+                        .push(
+                            bytes,
+                            size_of::<vek::Mat4<f32>>() as u32,
+                            ModuleVisibility::Vertex,
+                        )
                         .unwrap();
                 })
                 .unwrap();
 
             // Set the vertex buffers and index buffers when we change models
             if last != Some(subsurface.mesh.clone()) {
-                // Set the position buffer attribute 
-                set_vertex_buffer_attribute::<
-                    Position,
-                    M::RenderPath,
-                    _,
-                    _,
-                >(
-                    MeshAttributes::POSITIONS, mesh, defaults, &mut active, &mut 0, &mut last_positions_buffer
+                // Set the position buffer attribute
+                set_vertex_buffer_attribute::<Position, M::RenderPath, _, _>(
+                    MeshAttributes::POSITIONS,
+                    mesh,
+                    defaults,
+                    &mut active,
+                    &mut 0,
+                    &mut last_positions_buffer,
                 );
 
                 // Set the index buffer

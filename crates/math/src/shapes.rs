@@ -10,10 +10,7 @@ pub use sphere::*;
 
 // TODO: Figure out if we should use the trait system or stay consistent with vek and use macros
 // currently we use macros but idk if that's a good idea
-pub trait Shape<T: Real>:
-    Movable<T> + Boundable<T> + Volume<T> + SurfaceArea<T>
-{
-}
+pub trait Shape<T: Real>: Movable<T> + Boundable<T> + Volume<T> + SurfaceArea<T> {}
 
 // Shapes that have a concrete positions
 pub trait Movable<T: Real> {

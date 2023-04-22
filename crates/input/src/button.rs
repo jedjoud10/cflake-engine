@@ -37,30 +37,22 @@ impl ButtonState {
 }
 
 // Convert a winit VirtualKeyCode to an input button
-pub(crate) fn from_winit_vkc(
-    vkc: winit::event::VirtualKeyCode,
-) -> Button {
+pub(crate) fn from_winit_vkc(vkc: winit::event::VirtualKeyCode) -> Button {
     unsafe {
-        let code = std::mem::transmute::<
-            winit::event::VirtualKeyCode,
-            u32,
-        >(vkc);
+        let code = std::mem::transmute::<winit::event::VirtualKeyCode, u32>(vkc);
         std::mem::transmute::<u32, crate::Button>(code)
     }
 }
 
 // Convert a gilrs Button to an input button
 // This is faillible since Gilrs can give us an Unknown button code
-pub(crate) fn from_gilrs_button(
-    button: gilrs::Button,
-) -> Option<Button> {
+pub(crate) fn from_gilrs_button(button: gilrs::Button) -> Option<Button> {
     if matches!(button, gilrs::Button::Unknown) {
         return None;
     }
 
     unsafe {
-        let mut code =
-            std::mem::transmute::<gilrs::Button, u16>(button) as u32;
+        let mut code = std::mem::transmute::<gilrs::Button, u16>(button) as u32;
         code += OFFSET;
         Some(std::mem::transmute::<u32, crate::Button>(code))
     }
@@ -69,18 +61,7 @@ pub(crate) fn from_gilrs_button(
 // The virtual keycodes that the window will receive (as a form of events)
 // These will also sometimes represent buttons that are pressed by gamepads
 // Stolen directly from the winit source code
-#[derive(
-    Serialize,
-    Deserialize,
-    Debug,
-    Hash,
-    Ord,
-    PartialOrd,
-    PartialEq,
-    Eq,
-    Clone,
-    Copy,
-)]
+#[derive(Serialize, Deserialize, Debug, Hash, Ord, PartialOrd, PartialEq, Eq, Clone, Copy)]
 #[repr(u32)]
 pub enum Button {
     /// The '1' key over the letters.

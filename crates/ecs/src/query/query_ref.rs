@@ -1,9 +1,6 @@
 use utils::BitSet;
 
-use crate::{
-    Always, Archetype, LayoutAccess, QueryFilter, QueryLayoutRef,
-    Scene, Wrap,
-};
+use crate::{Always, Archetype, LayoutAccess, QueryFilter, QueryLayoutRef, Scene, Wrap};
 use std::{iter::FusedIterator, marker::PhantomData};
 
 // This is a query that will be fetched from the main scene that we can use to get components out of entries with a specific layout
@@ -20,8 +17,7 @@ pub struct QueryRef<'a: 'b, 'b, 's, L: QueryLayoutRef> {
 impl<'a: 'b, 'b, 's, L: QueryLayoutRef> QueryRef<'a, 'b, 's, L> {
     // Create a new mut query from the scene for active entities
     pub fn new(scene: &'a Scene) -> Self {
-        let (mask, archetypes, _) =
-            super::archetypes::<L, Always>(scene.archetypes());
+        let (mask, archetypes, _) = super::archetypes::<L, Always>(scene.archetypes());
         Self {
             archetypes,
             bitsets: None,
@@ -33,17 +29,10 @@ impl<'a: 'b, 'b, 's, L: QueryLayoutRef> QueryRef<'a, 'b, 's, L> {
     }
 
     // Create a new mut query from the scene, but make it have a specific entry enable/disable masks
-    pub fn new_with_filter<F: QueryFilter>(
-        scene: &'a Scene,
-        _: Wrap<F>,
-    ) -> Self {
+    pub fn new_with_filter<F: QueryFilter>(scene: &'a Scene, _: Wrap<F>) -> Self {
         // Filter out the archetypes then create the bitsets
-        let (access, archetypes, cached) =
-            super::archetypes::<L, F>(scene.archetypes());
-        let bitsets = super::generate_bitset_chunks::<F>(
-            archetypes.iter().map(|a| &**a),
-            cached,
-        );
+        let (access, archetypes, cached) = super::archetypes::<L, F>(scene.archetypes());
+        let bitsets = super::generate_bitset_chunks::<F>(archetypes.iter().map(|a| &**a), cached);
 
         Self {
             archetypes,
@@ -76,31 +65,16 @@ impl<'a: 'b, 'b, 's, L: QueryLayoutRef> QueryRef<'a, 'b, 's, L> {
                 .map(Some)
                 .chain(std::iter::repeat(None));
 
-            for (archetype, bitset) in
-                self.archetypes.iter().zip(bitsets)
-            {
+            for (archetype, bitset) in self.archetypes.iter().zip(bitsets) {
                 // Send the archetype slices to multiple threads to be able to compute them
-                let ptrs = unsafe {
-                    L::ptrs_from_archetype_unchecked(archetype)
-                };
-                let slices = unsafe {
-                    L::from_raw_parts(ptrs, archetype.len())
-                };
+                let ptrs = unsafe { L::ptrs_from_archetype_unchecked(archetype) };
+                let slices = unsafe { L::from_raw_parts(ptrs, archetype.len()) };
 
                 // Should we use per entry filtering?
                 if let Some(bitset) = bitset {
-                    scope.for_each_filtered(
-                        slices,
-                        function.clone(),
-                        bitset,
-                        batch_size,
-                    );
+                    scope.for_each_filtered(slices, function.clone(), bitset, batch_size);
                 } else {
-                    scope.for_each(
-                        slices,
-                        function.clone(),
-                        batch_size,
-                    );
+                    scope.for_each(slices, function.clone(), batch_size);
                 }
             }
         });
@@ -124,10 +98,7 @@ impl<'a: 'b, 'b, 's, L: QueryLayoutRef> QueryRef<'a, 'b, 's, L> {
 
 // Calculate the number of elements there are in the archetypes, but also take in consideration
 // the bitsets (if specified)
-fn len(
-    archetypes: &[&Archetype],
-    bitsets: &Option<Vec<BitSet>>,
-) -> usize {
+fn len(archetypes: &[&Archetype], bitsets: &Option<Vec<BitSet>>) -> usize {
     if let Some(bitsets) = bitsets {
         bitsets
             .iter()
@@ -139,9 +110,7 @@ fn len(
     }
 }
 
-impl<'a: 'b, 'b, 'it, L: QueryLayoutRef> IntoIterator
-    for QueryRef<'a, 'b, 'it, L>
-{
+impl<'a: 'b, 'b, 'it, L: QueryLayoutRef> IntoIterator for QueryRef<'a, 'b, 'it, L> {
     type Item = L;
     type IntoIter = QueryRefIter<'b, L>;
 
@@ -186,11 +155,8 @@ impl<'b, 's, L: QueryLayoutRef> QueryRefIter<'b, L> {
 
         if self.index + 1 > len {
             let archetype = self.archetypes.pop()?;
-            let bitset =
-                self.bitsets.as_mut().map(|vec| vec.pop().unwrap());
-            let ptrs = unsafe {
-                L::ptrs_from_archetype_unchecked(archetype)
-            };
+            let bitset = self.bitsets.as_mut().map(|vec| vec.pop().unwrap());
+            let ptrs = unsafe { L::ptrs_from_archetype_unchecked(archetype) };
             let length = archetype.len();
             self.index = 0;
             self.chunk = Some(Chunk {
@@ -221,9 +187,7 @@ impl<'b, L: QueryLayoutRef> Iterator for QueryRefIter<'b, L> {
                 // Check for bitset
                 if let Some(bitset) = &chunk.bitset {
                     // Check the next entry that is valid (that passed the filter)
-                    if let Some(hop) =
-                        bitset.find_one_from(self.index)
-                    {
+                    if let Some(hop) = bitset.find_one_from(self.index) {
                         self.index = hop;
                         break;
                     } else {
@@ -249,12 +213,6 @@ impl<'b, L: QueryLayoutRef> Iterator for QueryRefIter<'b, L> {
     }
 }
 
-impl<'b, L: QueryLayoutRef> ExactSizeIterator
-    for QueryRefIter<'b, L>
-{
-}
+impl<'b, L: QueryLayoutRef> ExactSizeIterator for QueryRefIter<'b, L> {}
 
-impl<'b, 's, L: QueryLayoutRef> FusedIterator
-    for QueryRefIter<'b, L>
-{
-}
+impl<'b, 's, L: QueryLayoutRef> FusedIterator for QueryRefIter<'b, L> {}

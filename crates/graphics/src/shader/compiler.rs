@@ -1,10 +1,8 @@
 use crate::{
-    BindResourceType, Buffer, Extent, FunctionModule, GpuPod,
-    GpuPodInfo, Graphics, ModuleKind, ModuleVisibility,
-    PushConstantLayout, ReflectedShader, Region,
-    ShaderCompilationError, ShaderError, ShaderModule,
-    ShaderReflectionError, SpecConstant, Texel, TexelInfo, Texture,
-    VertexModule, ViewDimension, StorageAccess,
+    BindResourceType, Buffer, Extent, FunctionModule, GpuPod, GpuPodInfo, Graphics, ModuleKind,
+    ModuleVisibility, PushConstantLayout, ReflectedShader, Region, ShaderCompilationError,
+    ShaderError, ShaderModule, ShaderReflectionError, SpecConstant, StorageAccess, Texel,
+    TexelInfo, Texture, VertexModule, ViewDimension,
 };
 use ahash::{AHashMap, AHashSet};
 use assets::Assets;
@@ -18,7 +16,7 @@ use std::{
     ffi::CStr,
     marker::PhantomData,
     ops::{Bound, RangeBounds},
-    path::{PathBuf, Path},
+    path::{Path, PathBuf},
     sync::Arc,
     time::Instant,
 };
@@ -29,8 +27,7 @@ use super::create_pipeline_layout;
 
 // Type alias for snippets and resources
 pub(crate) type Snippets = BTreeMap<String, String>;
-pub(crate) type ResourceBindingTypes =
-    AHashMap<String, BindResourceType>;
+pub(crate) type ResourceBindingTypes = AHashMap<String, BindResourceType>;
 pub(crate) type MaybePushConstantLayout = Option<PushConstantLayout>;
 pub(crate) type Included = Arc<Mutex<AHashSet<String>>>;
 pub(crate) type Constants = AHashMap<u32, SpecConstant>;
@@ -69,31 +66,19 @@ impl<'a> Compiler<'a> {
     }
 
     // Set the value of a specilization constant within the shader
-    pub fn use_constant(
-        &mut self,
-        specid: u32,
-        value: impl Into<SpecConstant>,
-    ) {
+    pub fn use_constant(&mut self, specid: u32, value: impl Into<SpecConstant>) {
         self.constants.insert(specid, value.into());
     }
 
     // Include a snippet directive that will replace #includes surrounded by ""
-    pub fn use_snippet(
-        &mut self,
-        name: impl ToString,
-        value: impl ToString,
-    ) {
+    pub fn use_snippet(&mut self, name: impl ToString, value: impl ToString) {
         self.snippets.insert(name.to_string(), value.to_string());
     }
 
     // Set the value of a "#define" pre-processor macro
     // A define is different than a snippet in that you do not load it within the shader
     // It automatically gets added to the top of the shader
-    pub fn use_define(
-        &mut self,
-        name: impl ToString,
-        value: impl ToString,
-    ) {
+    pub fn use_define(&mut self, name: impl ToString, value: impl ToString) {
         self.defines.insert(name.to_string(), value.to_string());
     }
 
@@ -110,10 +95,7 @@ impl<'a> Compiler<'a> {
 
     // Convert the given GLSL code to SPIRV code, then compile said SPIRV code
     // This uses the defined resoures defined in this compiler
-    pub(crate) fn compile<M: ShaderModule>(
-        &self,
-        module: M,
-    ) -> Result<Compiled<M>, ShaderError> {
+    pub(crate) fn compile<M: ShaderModule>(&self, module: M) -> Result<Compiled<M>, ShaderError> {
         // Decompose the module into file name and source
         let (path, source) = module.into_raw_parts();
 
@@ -151,10 +133,7 @@ impl<'a> Compiler<'a> {
         names: &[&str],
         modules: &[&spirq::EntryPoint],
         visibility: &[ModuleVisibility],
-    ) -> Result<
-        (Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>),
-        ShaderError,
-    > {
+    ) -> Result<(Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>), ShaderError> {
         create_pipeline_layout(
             self.graphics,
             names,
@@ -170,16 +149,10 @@ impl<'a> Compiler<'a> {
 impl<'a> Compiler<'a> {
     // Inserts a bind resource type into the compiler resource definitions
     // Logs out a debug message if one of the resources gets overwritten
-    pub fn use_resource_type(
-        &mut self,
-        name: impl ToString,
-        resource: BindResourceType,
-    ) {
+    pub fn use_resource_type(&mut self, name: impl ToString, resource: BindResourceType) {
         let name = name.to_string();
         match self.resource_types.entry(name.clone()) {
-            std::collections::hash_map::Entry::Occupied(
-                mut occupied,
-            ) => {
+            std::collections::hash_map::Entry::Occupied(mut occupied) => {
                 log::debug!("Binding resource '{name}' was replaced");
                 occupied.insert(resource);
             }
@@ -190,43 +163,23 @@ impl<'a> Compiler<'a> {
     }
 
     // Define a uniform buffer type's inner struct type
-    pub fn use_uniform_buffer<T: GpuPod>(
-        &mut self,
-        name: impl ToString,
-    ) {
+    pub fn use_uniform_buffer<T: GpuPod>(&mut self, name: impl ToString) {
         let size = T::size();
-        self.use_resource_type(
-            name,
-            BindResourceType::UniformBuffer { size },
-        );
+        self.use_resource_type(name, BindResourceType::UniformBuffer { size });
     }
 
     // Define a storage buffer type's inner struct type
-    pub fn use_storage_buffer<T: GpuPod>(
-        &mut self,
-        name: impl ToString,
-        access: StorageAccess
-    ) {
+    pub fn use_storage_buffer<T: GpuPod>(&mut self, name: impl ToString, access: StorageAccess) {
         let size = T::size();
-        self.use_resource_type(
-            name,
-            BindResourceType::StorageBuffer { 
-                size,
-                access,
-            }
-        );
+        self.use_resource_type(name, BindResourceType::StorageBuffer { size, access });
     }
 
     // Define a uniform sampled texture's type and texel
-    pub fn use_sampled_texture<T: Texture>(
-        &mut self,
-        name: impl ToString,
-    ) {
+    pub fn use_sampled_texture<T: Texture>(&mut self, name: impl ToString) {
         let sampler_name = format!("{}_sampler", name.to_string());
         self.use_sampler::<T::T>(sampler_name);
 
-        let dimensionality =
-            <<T::Region as Region>::E as Extent>::view_dimension();
+        let dimensionality = <<T::Region as Region>::E as Extent>::view_dimension();
         let info = <T::T as Texel>::info();
         let format = info.format();
 
@@ -234,14 +187,8 @@ impl<'a> Compiler<'a> {
             name.to_string(),
             BindResourceType::SampledTexture {
                 format,
-                sample_type: super::map_texture_sample_type(
-                    &self.graphics,
-                    info,
-                ),
-                sampler_binding: super::map_sampler_binding_type(
-                    &self.graphics,
-                    info,
-                ),
+                sample_type: super::map_texture_sample_type(&self.graphics, info),
+                sampler_binding: super::map_sampler_binding_type(&self.graphics, info),
                 view_dimension: dimensionality,
             },
         );
@@ -256,22 +203,14 @@ impl<'a> Compiler<'a> {
             name.to_string(),
             BindResourceType::Sampler {
                 format: format,
-                sampler_binding: super::map_sampler_binding_type(
-                    &self.graphics,
-                    info,
-                ),
+                sampler_binding: super::map_sampler_binding_type(&self.graphics, info),
             },
         );
     }
 
     // Define a storage texture that we can read / write to
-    pub fn use_storage_texture<T: Texture>(
-        &mut self,
-        name: impl ToString,
-        access: StorageAccess
-    ) {
-        let dimensionality =
-            <<T::Region as Region>::E as Extent>::view_dimension();
+    pub fn use_storage_texture<T: Texture>(&mut self, name: impl ToString, access: StorageAccess) {
+        let dimensionality = <<T::Region as Region>::E as Extent>::view_dimension();
         let info = <T::T as Texel>::info();
         let format = info.format();
 
@@ -286,10 +225,7 @@ impl<'a> Compiler<'a> {
     }
 
     // Define a push constant range to be pushed
-    pub fn use_push_constant_layout(
-        &mut self,
-        layout: PushConstantLayout,
-    ) {
+    pub fn use_push_constant_layout(&mut self, layout: PushConstantLayout) {
         self.maybe_push_constant_layout = Some(layout);
     }
 }
@@ -306,10 +242,7 @@ fn compile(
     optimization: shaderc::OptimizationLevel,
     mut source: String,
     path: &Path,
-) -> Result<
-    (Arc<wgpu::ShaderModule>, Arc<spirq::EntryPoint>),
-    ShaderCompilationError,
-> {
+) -> Result<(Arc<wgpu::ShaderModule>, Arc<spirq::EntryPoint>), ShaderCompilationError> {
     // If the shader cache already contains the compiled shader, simply reuse it
     // TODO: Holy fuck please optimize this
     // TODO: Also change cache to LruCache or smthing like that
@@ -320,31 +253,38 @@ fn compile(
         .get(&(snippets.clone(), path.to_path_buf()))
     {
         let (raw, reflected) = value.value();
-        log::debug!(
-            "Found shader module in cache for {path:?}, using it..."
-        );
+        log::debug!("Found shader module in cache for {path:?}, using it...");
         return Ok((raw.clone(), reflected.clone()));
     } else {
         log::warn!("Did not find cached shader module for {path:?}");
     }
     let file = path.file_name().unwrap().to_str().unwrap();
-    
+
     // TODO: OPTIMIZE
     // Get version line index
-    let version_line_index = source.lines().position(|x| x.starts_with("#version")).unwrap();
+    let version_line_index = source
+        .lines()
+        .position(|x| x.starts_with("#version"))
+        .unwrap();
 
     // Convert to lines
-    let mut lines = source.lines().map(|x| x.to_string()).collect::<Vec<String>>();
+    let mut lines = source
+        .lines()
+        .map(|x| x.to_string())
+        .collect::<Vec<String>>();
 
     // Add the defines to the top of the file
     for (name, define) in defines {
-        lines.insert(version_line_index+1, format!("#define {name} {define}\n")); 
+        lines.insert(version_line_index + 1, format!("#define {name} {define}\n"));
     }
 
     // Default extensions
     let extensions = ["GL_EXT_samplerless_texture_functions"];
     for ext in extensions {
-        lines.insert(version_line_index+1, format!("#extension {ext} : require\n"));     
+        lines.insert(
+            version_line_index + 1,
+            format!("#extension {ext} : require\n"),
+        );
     }
 
     // Convert back to string
@@ -362,14 +302,9 @@ fn compile(
     let included = Included::default();
 
     // Create a callback responsible for includes
-    options.set_include_callback(
-        move |target, _type, current, depth| {
-            include(
-                current, _type, target, depth, assets, &snippets,
-                &included,
-            )
-        },
-    );
+    options.set_include_callback(move |target, _type, current, depth| {
+        include(current, _type, target, depth, assets, &snippets, &included)
+    });
 
     // Compile using ShaderC (my love)
     let artifact = graphics
@@ -393,9 +328,7 @@ fn compile(
                 let source = source
                     .lines()
                     .enumerate()
-                    .map(|(count, line)| {
-                        format!("({}): {}", count + 1, line)
-                    })
+                    .map(|(count, line)| format!("({}): {}", count + 1, line))
                     .collect::<Vec<String>>()
                     .join("\n");
 
@@ -417,10 +350,7 @@ fn compile(
 
     // Print out possible warning messages during shader compilation
     if !artifact.get_warning_messages().is_empty() {
-        log::warn!(
-            "ShaderC warning: {}",
-            artifact.get_warning_messages()
-        );
+        log::warn!("ShaderC warning: {}", artifact.get_warning_messages());
     }
 
     // Parse the spirv manually to be able to handle specialization constants
@@ -440,14 +370,12 @@ fn compile(
 
     // Compile the Wgpu shader (raw spirv passthrough)
     let wgpu = unsafe {
-        graphics.device().create_shader_module_spirv(
-            &wgpu::ShaderModuleDescriptorSpirV {
+        graphics
+            .device()
+            .create_shader_module_spirv(&wgpu::ShaderModuleDescriptorSpirV {
                 label: Some(&format!("shader-module-{path:?}")),
-                source: wgpu::util::make_spirv_raw(
-                    bytemuck::cast_slice(&binary),
-                ),
-            },
-        )
+                source: wgpu::util::make_spirv_raw(bytemuck::cast_slice(&binary)),
+            })
     };
 
     // Cache the result first
@@ -464,17 +392,10 @@ fn compile(
 }
 
 // Specialize spec constants ourselves cause there's no other way to do it (fuck)
-fn specialize_spec_constants(
-    binary: &mut [u32],
-    constants: &Constants,
-) {
+fn specialize_spec_constants(binary: &mut [u32], constants: &Constants) {
     // Converts a SpecConstant op code to it's specialized variant (Constant)
     // TODO: Type checking pls
-    fn specialize(
-        op_code_index: usize,
-        binary: &mut [u32],
-        defined: SpecConstant,
-    ) {
+    fn specialize(op_code_index: usize, binary: &mut [u32], defined: SpecConstant) {
         // Get the op code of the spec constant
         let op_code = binary[op_code_index] & 0x0000ffff;
 
@@ -536,9 +457,7 @@ fn specialize_spec_constants(
         }
 
         // For now, we only support 32 bit types
-        if spec_consts_op_codes.contains(&op)
-            && (count == 4 || count == 3)
-        {
+        if spec_consts_op_codes.contains(&op) && (count == 4 || count == 3) {
             // Get the literal value that this spec constant is defaulted to
             let id = binary[i + 2];
             let spec_id = spec_ids.get(&id).unwrap();
@@ -553,10 +472,7 @@ fn specialize_spec_constants(
 }
 
 // Load a function module and convert it to a ResolvedInclude
-fn load_function_module(
-    path: &str,
-    assets: &Assets,
-) -> Result<shaderc::ResolvedInclude, String> {
+fn load_function_module(path: &str, assets: &Assets) -> Result<shaderc::ResolvedInclude, String> {
     // Make sure the path is something we can load (.glsl file)
     let pathbuf = PathBuf::try_from(path).unwrap();
 
@@ -572,14 +488,10 @@ fn load_function_module(
 }
 
 // Load a snippet from the snippets and convert it to a ResolvedInclude
-fn load_snippet(
-    name: &str,
-    snippets: &Snippets,
-) -> Result<shaderc::ResolvedInclude, String> {
-    let snippet = snippets.get(name).ok_or(format!(
-        "Snippet {} was not defined",
-        name.to_string()
-    ))?;
+fn load_snippet(name: &str, snippets: &Snippets) -> Result<shaderc::ResolvedInclude, String> {
+    let snippet = snippets
+        .get(name)
+        .ok_or(format!("Snippet {} was not defined", name.to_string()))?;
     Ok(shaderc::ResolvedInclude {
         resolved_name: name.to_string(),
         content: snippet.clone(),
@@ -609,9 +521,7 @@ fn include(
     // Check if this file/snippet was already loaded before
     let mut locked = included.lock();
     if locked.contains(target) {
-        log::warn!(
-            "{target} was already loaded, no need to load it again"
-        );
+        log::warn!("{target} was already loaded, no need to load it again");
         return Ok(shaderc::ResolvedInclude {
             resolved_name: target.to_string(),
             content: "".to_string(),

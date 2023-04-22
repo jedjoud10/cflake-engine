@@ -7,9 +7,7 @@ mod triangles;
 mod utils;
 mod vertices;
 pub use self::utils::*;
-pub use attributes::{
-    AttributeBuffer, MeshAttribute, MeshAttributes,
-};
+pub use attributes::{AttributeBuffer, MeshAttribute, MeshAttributes};
 pub use errors::*;
 pub use mesh::*;
 pub use settings::*;

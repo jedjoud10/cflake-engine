@@ -1,11 +1,10 @@
 use std::{hash::Hash, num::NonZeroU32, sync::Arc};
 
 use crate::{
-    visibility_to_wgpu_stage, BufferValidationError, Compiled,
-    ComputeModule, ElementType, FragmentModule, Graphics, ModuleKind,
-    ModuleVisibility, PushConstantValidationError,
-    SamplerValidationError, ShaderModule, ShaderReflectionError,
-    TexelChannels, TexelInfo, TextureValidationError, VertexModule,
+    visibility_to_wgpu_stage, BufferValidationError, Compiled, ComputeModule, ElementType,
+    FragmentModule, Graphics, ModuleKind, ModuleVisibility, PushConstantValidationError,
+    SamplerValidationError, ShaderModule, ShaderReflectionError, TexelChannels, TexelInfo,
+    TextureValidationError, VertexModule,
 };
 use ahash::{AHashMap, AHashSet};
 use arrayvec::ArrayVec;
@@ -51,10 +50,7 @@ pub enum PushConstantLayout {
 
 impl PushConstantLayout {
     // Create a push constant layout for a single module or SharedVG modules
-    pub fn single(
-        size: usize,
-        visibility: ModuleVisibility,
-    ) -> Option<Self> {
+    pub fn single(size: usize, visibility: ModuleVisibility) -> Option<Self> {
         let size = NonZeroU32::new(size as u32)?;
         Some(Self::Single(size, visibility))
     }
@@ -70,9 +66,7 @@ impl PushConstantLayout {
     pub fn visibility(&self) -> ModuleVisibility {
         match self {
             PushConstantLayout::Single(_, visibility) => *visibility,
-            PushConstantLayout::SplitVertexFragment { .. } => {
-                ModuleVisibility::VertexFragment
-            }
+            PushConstantLayout::SplitVertexFragment { .. } => ModuleVisibility::VertexFragment,
         }
     }
 
@@ -80,11 +74,9 @@ impl PushConstantLayout {
     pub fn size(&self) -> NonZeroU32 {
         match self {
             PushConstantLayout::Single(x, _) => *x,
-            PushConstantLayout::SplitVertexFragment {
-                vertex,
-                fragment,
-            } => NonZeroU32::new(vertex.get() + fragment.get())
-                .unwrap(),
+            PushConstantLayout::SplitVertexFragment { vertex, fragment } => {
+                NonZeroU32::new(vertex.get() + fragment.get()).unwrap()
+            }
         }
     }
 }
@@ -137,31 +129,25 @@ struct InternalDefinitions<'a> {
 }
 
 // Convert a reflected bind entry layout to a wgpu binding type
-pub(super) fn map_binding_type(
-    value: &BindResourceLayout,
-) -> wgpu::BindingType {
+pub(super) fn map_binding_type(value: &BindResourceLayout) -> wgpu::BindingType {
     match value.resource_type {
-        BindResourceType::UniformBuffer { size } => {
-            wgpu::BindingType::Buffer {
-                ty: wgpu::BufferBindingType::Uniform,
-                has_dynamic_offset: false,
-                min_binding_size: None,
-            }
-        }
+        BindResourceType::UniformBuffer { size } => wgpu::BindingType::Buffer {
+            ty: wgpu::BufferBindingType::Uniform,
+            has_dynamic_offset: false,
+            min_binding_size: None,
+        },
 
-        BindResourceType::StorageBuffer { size, access } => {
-            wgpu::BindingType::Buffer {
-                ty: wgpu::BufferBindingType::Storage {
-                    read_only: if let StorageAccess::ReadOnly = access {
-                        true
-                    } else {
-                        false
-                    },
+        BindResourceType::StorageBuffer { size, access } => wgpu::BindingType::Buffer {
+            ty: wgpu::BufferBindingType::Storage {
+                read_only: if let StorageAccess::ReadOnly = access {
+                    true
+                } else {
+                    false
                 },
-                has_dynamic_offset: false,
-                min_binding_size: None,
-            }
-        }
+            },
+            has_dynamic_offset: false,
+            min_binding_size: None,
+        },
 
         BindResourceType::Sampler {
             sampler_binding, ..
@@ -222,17 +208,13 @@ pub(super) fn map_texture_sample_type(
         | ElementType::FloatThirtyTwo => {
             let adapter = graphics.adapter();
             let format = info.format();
-            let flags =
-                adapter.get_texture_format_features(format).flags;
+            let flags = adapter.get_texture_format_features(format).flags;
 
-            let depth =
-                matches!(info.channels(), TexelChannels::Depth);
+            let depth = matches!(info.channels(), TexelChannels::Depth);
 
             // TODO: Pretty sure this is wrong
 
-            if flags.contains(TextureFormatFeatureFlags::FILTERABLE)
-                && !depth
-            {
+            if flags.contains(TextureFormatFeatureFlags::FILTERABLE) && !depth {
                 wgpu::TextureSampleType::Float { filterable: true }
             } else {
                 wgpu::TextureSampleType::Float { filterable: false }
@@ -254,8 +236,7 @@ pub(super) fn map_sampler_binding_type(
 
     let depth = matches!(info.channels(), TexelChannels::Depth);
 
-    if flags.contains(TextureFormatFeatureFlags::FILTERABLE) && !depth
-    {
+    if flags.contains(TextureFormatFeatureFlags::FILTERABLE) && !depth {
         wgpu::SamplerBindingType::Filtering
     } else {
         wgpu::SamplerBindingType::NonFiltering
@@ -263,10 +244,7 @@ pub(super) fn map_sampler_binding_type(
 }
 
 // Convert a spirv dimension into a wgpu TextureViewDimension
-pub(super) fn map_spirv_dim(
-    dim: spirv::Dim,
-    array: bool,
-) -> wgpu::TextureViewDimension {
+pub(super) fn map_spirv_dim(dim: spirv::Dim, array: bool) -> wgpu::TextureViewDimension {
     match (dim, array) {
         (spirv::Dim::Dim1D, false) => wgpu::TextureViewDimension::D1,
         (spirv::Dim::Dim2D, true) => wgpu::TextureViewDimension::D2Array,
@@ -274,16 +252,14 @@ pub(super) fn map_spirv_dim(
         (spirv::Dim::Dim3D, false) => wgpu::TextureViewDimension::D3,
         (spirv::Dim::DimCube, true) => wgpu::TextureViewDimension::CubeArray,
         (spirv::Dim::DimCube, false) => wgpu::TextureViewDimension::Cube,
-        _ => panic!("Not supported ")
+        _ => panic!("Not supported "),
     }
 }
 
 // Convert a spirv format into a wgpu TextureFormat
-pub(super) fn map_spirv_format(
-    format: spirv::ImageFormat
-) -> wgpu::TextureFormat {
-    use wgpu::TextureFormat as T;
+pub(super) fn map_spirv_format(format: spirv::ImageFormat) -> wgpu::TextureFormat {
     use spirv::ImageFormat as F;
+    use wgpu::TextureFormat as T;
 
     match format {
         F::Rgba32f => T::Rgba32Float,
@@ -325,7 +301,7 @@ pub(super) fn map_spirv_format(
         F::Rg8ui => T::Rg8Uint,
         F::R16ui => T::R16Uint,
         F::R8ui => T::R8Uint,
-        _ => panic!("Not supported")
+        _ => panic!("Not supported"),
     }
 }
 
@@ -338,25 +314,22 @@ pub(super) fn map_spirv_scalar_type(
         spirq::ty::ScalarType::Signed(_) => wgpu::TextureSampleType::Sint,
         spirq::ty::ScalarType::Unsigned(_) => wgpu::TextureSampleType::Uint,
         spirq::ty::ScalarType::Float(_) => match format {
-            wgpu::TextureFormat::Depth16Unorm |
-            wgpu::TextureFormat::Depth24Plus |
-            wgpu::TextureFormat::Depth24PlusStencil8 |
-            wgpu::TextureFormat::Depth32Float | 
-            wgpu::TextureFormat::Depth32FloatStencil8 => {
+            wgpu::TextureFormat::Depth16Unorm
+            | wgpu::TextureFormat::Depth24Plus
+            | wgpu::TextureFormat::Depth24PlusStencil8
+            | wgpu::TextureFormat::Depth32Float
+            | wgpu::TextureFormat::Depth32FloatStencil8 => {
                 wgpu::TextureSampleType::Float { filterable: false }
-            },
-            _ => wgpu::TextureSampleType::Float { filterable: true }
+            }
+            _ => wgpu::TextureSampleType::Float { filterable: true },
         },
-        _ => panic!("Not supported")
+        _ => panic!("Not supported"),
     }
 }
 
-
 // Get the size of a spirq type
 // Returns stride if it is a dynamic array
-pub(super) fn get_spirq_type_size(
-    _type: &spirq::ty::Type
-) -> Option<usize> {
+pub(super) fn get_spirq_type_size(_type: &spirq::ty::Type) -> Option<usize> {
     use spirq::ty::Type;
 
     //dbg!(_type.nbyte());
@@ -372,7 +345,11 @@ pub(super) fn get_spirq_type_size(
             let size = _type.nbyte().unwrap();
 
             // Returns true if the last element has a valid size
-            let last = structure.members.last().map(|x| x.ty.nbyte().unwrap_or(0) > 0).unwrap_or_default();
+            let last = structure
+                .members
+                .last()
+                .map(|x| x.ty.nbyte().unwrap_or(0) > 0)
+                .unwrap_or_default();
 
             // Check if it is a dynamically sized array
             if size == 0 && structure.members.len() == 1 && !last {
@@ -388,7 +365,7 @@ pub(super) fn get_spirq_type_size(
                 // Neither dynamic or static... wtf?
                 panic!()
             }
-        }, 
+        }
         _ => None,
     }
 }
@@ -401,46 +378,41 @@ pub(super) fn create_pipeline_layout(
     visibility: &[ModuleVisibility],
     resource_binding_types: &super::ResourceBindingTypes,
     maybe_push_constant_layout: &super::MaybePushConstantLayout,
-) -> Result<
-    (Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>),
-    ShaderReflectionError,
-> {
+) -> Result<(Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>), ShaderReflectionError> {
     // Stores multiple entries per set (max number of sets = 4)
-    let mut groups: Vec<Option<AHashMap<u32, BindResourceLayout>>> =
-        (0..4).map(|_| None).collect();
+    let mut groups: Vec<Option<AHashMap<u32, BindResourceLayout>>> = (0..4).map(|_| None).collect();
 
     // Return error if the user defined a push constant that is greater than the device size
     // or if there isn't push constants for the specified module in the shaders
     if let Some(push_constant_layout) = maybe_push_constant_layout {
         // We always assume that the "visibility" array given is either [Vertex, Fragment] or [Compute]
         // Under that assumption, all we really need to check is the compute module and if it contains the proper push constant
-        let compute =
-            matches!(visibility[0], ModuleVisibility::Compute);
+        let compute = matches!(visibility[0], ModuleVisibility::Compute);
         match (push_constant_layout.visibility(), compute) {
-            (ModuleVisibility::Vertex, false) => {},
-            (ModuleVisibility::Fragment, false) => {},
-            (ModuleVisibility::VertexFragment, false) => {},
-            (ModuleVisibility::Compute, true) => {},                
-            _ => return Err(ShaderReflectionError::PushConstantValidation(
-                PushConstantValidationError::PushConstantVisibilityIntersect
-            )),
+            (ModuleVisibility::Vertex, false) => {}
+            (ModuleVisibility::Fragment, false) => {}
+            (ModuleVisibility::VertexFragment, false) => {}
+            (ModuleVisibility::Compute, true) => {}
+            _ => {
+                return Err(ShaderReflectionError::PushConstantValidation(
+                    PushConstantValidationError::PushConstantVisibilityIntersect,
+                ))
+            }
         }
 
         // Check size and make sure it's valid
         let defined = push_constant_layout.size().get();
         let max = graphics.device().limits().max_push_constant_size;
         if defined > max {
-            return Err(ShaderReflectionError::PushConstantValidation(PushConstantValidationError::PushConstantSizeTooBig(
-                defined, max
-            )));
+            return Err(ShaderReflectionError::PushConstantValidation(
+                PushConstantValidationError::PushConstantSizeTooBig(defined, max),
+            ));
         }
 
         // Get the push constant sizes as defined in the shader modules
         let mut iter = modules.iter().flat_map(|module| {
             module.vars.iter().filter_map(|x| match x {
-                spirq::Variable::PushConstant { name, ty } => {
-                    ty.nbyte().map(|x| x as u32)
-                }
+                spirq::Variable::PushConstant { name, ty } => ty.nbyte().map(|x| x as u32),
                 _ => None,
             })
         });
@@ -455,13 +427,9 @@ pub(super) fn create_pipeline_layout(
                     todo!()
                 }
             }
-            PushConstantLayout::SplitVertexFragment {
-                vertex,
-                fragment,
-            } => {
+            PushConstantLayout::SplitVertexFragment { vertex, fragment } => {
                 if first.is_some() && second.is_some() {
-                    vertex.get() == first.unwrap()
-                        && fragment.get() == second.unwrap()
+                    vertex.get() == first.unwrap() && fragment.get() == second.unwrap()
                 } else {
                     todo!()
                 }
@@ -479,13 +447,10 @@ pub(super) fn create_pipeline_layout(
         let visibility = visibility[index];
 
         // Create a hashmap that contains all the variables per group
-        let mut sets =
-            AHashMap::<u32, Vec<spirq::Variable>>::default();
+        let mut sets = AHashMap::<u32, Vec<spirq::Variable>>::default();
 
         let iter = module.vars.iter().filter_map(|variable| {
-            if let spirq::Variable::Descriptor { desc_bind, .. } =
-                variable
-            {
+            if let spirq::Variable::Descriptor { desc_bind, .. } = variable {
                 Some((desc_bind.set(), variable))
             } else {
                 None
@@ -520,11 +485,12 @@ pub(super) fn create_pipeline_layout(
 
                 // Get the merged group layout and merged group entry layouts
                 let merged_group_layout = &mut groups[set as usize];
-                let merged_group_entry_layouts = merged_group_layout
-                    .get_or_insert_with(|| Default::default());
+                let merged_group_entry_layouts =
+                    merged_group_layout.get_or_insert_with(|| Default::default());
 
                 // Make sure the resource is defined within the compiler
-                let resource = definitions.resource_binding_types
+                let resource = definitions
+                    .resource_binding_types
                     .get(&name)
                     .ok_or(ShaderReflectionError::NotDefinedInCompiler(name.clone()))?;
 
@@ -535,17 +501,14 @@ pub(super) fn create_pipeline_layout(
                 // Get the binding type for this global variable
                 let binding_type = match desc_ty {
                     // Reflect sampler type
-                    DescriptorType::Sampler() => Some(
-                        reflect_sampler(
-                            &resource,
-                        )
-                        .map_err(|error|
+                    DescriptorType::Sampler() => {
+                        Some(reflect_sampler(&resource).map_err(|error| {
                             ShaderReflectionError::SamplerValidation {
                                 resource: name.clone(),
                                 error,
                             }
-                        ),
-                    ),
+                        }))
+                    }
 
                     // Reflect sampled texture type
                     DescriptorType::SampledImage() => Some(
@@ -555,12 +518,12 @@ pub(super) fn create_pipeline_layout(
                             &resource,
                             ty.as_sampled_img().unwrap(),
                         )
-                        .map_err(|error|
+                        .map_err(|error| {
                             ShaderReflectionError::TextureValidation {
                                 resource: name.clone(),
                                 error,
                             }
-                        ),
+                        }),
                     ),
 
                     // Reflect storage texture type
@@ -572,41 +535,32 @@ pub(super) fn create_pipeline_layout(
                             access,
                             ty.as_storage_img().unwrap(),
                         )
-                        .map_err(|error|
+                        .map_err(|error| {
                             ShaderReflectionError::TextureValidation {
                                 resource: name.clone(),
                                 error,
                             }
-                        ),
+                        }),
                     ),
 
                     // Reflect uniform buffer type
-                    DescriptorType::UniformBuffer() => Some(
-                        reflect_uniform_buffer(
-                            &resource,
-                            ty,
-                        )
-                        .map_err(|error|
+                    DescriptorType::UniformBuffer() => {
+                        Some(reflect_uniform_buffer(&resource, ty).map_err(|error| {
                             ShaderReflectionError::BufferValidation {
                                 resource: name.clone(),
                                 error,
                             }
-                        ),
-                    ),
+                        }))
+                    }
 
                     // Reflect storage buffer type
                     DescriptorType::StorageBuffer(access) => Some(
-                        reflect_storage_buffer(
-                            &resource,
-                            access,
-                            ty,
-                        )
-                        .map_err(|error|
+                        reflect_storage_buffer(&resource, access, ty).map_err(|error| {
                             ShaderReflectionError::BufferValidation {
                                 resource: name.clone(),
                                 error,
                             }
-                        ),
+                        }),
                     ),
 
                     _ => None,
@@ -627,19 +581,14 @@ pub(super) fn create_pipeline_layout(
                     group: set,
                     resource_type,
                     visibility,
-                    count: (*nbind > 1).then(|| {
-                        NonZeroU32::new(*nbind - 1).unwrap()
-                    }),
+                    count: (*nbind > 1).then(|| NonZeroU32::new(*nbind - 1).unwrap()),
                 };
 
                 // Merge each entry for this group individually
                 match merged_group_entry_layouts.entry(binding) {
                     // Merge an already existing layout with the new one
-                    std::collections::hash_map::Entry::Occupied(
-                        mut occupied,
-                    ) => {
-                        let merged_bind_entry_layout =
-                            occupied.get_mut();
+                    std::collections::hash_map::Entry::Occupied(mut occupied) => {
+                        let merged_bind_entry_layout = occupied.get_mut();
                         let old = bind_entry_layout;
                         let merged = merged_bind_entry_layout;
 
@@ -652,16 +601,11 @@ pub(super) fn create_pipeline_layout(
                         }
 
                         // Merge the visibility to allow more modules to access this entry
-                        merged
-                            .visibility
-                            .try_insert(old.visibility)
-                            .unwrap();
+                        merged.visibility.try_insert(old.visibility).unwrap();
                     }
 
                     // If the spot is vacant, add the bind entry layout for the first time
-                    std::collections::hash_map::Entry::Vacant(
-                        vacant,
-                    ) => {
+                    std::collections::hash_map::Entry::Vacant(vacant) => {
                         vacant.insert(bind_entry_layout.clone());
                     }
                 }
@@ -709,15 +653,11 @@ fn internal_create_pipeline_layout(
     names: &[&str],
 ) -> (Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>) {
     // Before creating the layout, check if we already have a corresponding one in cache
-    if let Some(cached) =
-        graphics.0.cached.pipeline_layouts.get(&shader)
-    {
+    if let Some(cached) = graphics.0.cached.pipeline_layouts.get(&shader) {
         log::debug!("Found pipeline layout in cache for {names:?}, using it...");
         return (Arc::new(shader), cached.value().clone());
     } else {
-        log::warn!(
-            "Did not find cached pipeline layout for {names:?}"
-        );
+        log::warn!("Did not find cached pipeline layout for {names:?}");
     }
 
     // Fetch (and cache if necessary) the empty bind group layout
@@ -735,11 +675,7 @@ fn internal_create_pipeline_layout(
             };
 
             // Create the bind group layout and add it to the cache
-            Arc::new(
-                graphics
-                    .device()
-                    .create_bind_group_layout(&descriptor),
-            )
+            Arc::new(graphics.device().create_bind_group_layout(&descriptor))
         })
         .clone();
 
@@ -755,18 +691,17 @@ fn internal_create_pipeline_layout(
     });
 
     // Add the uncached bind group entries to the graphics cache
-    for (bind_group_index, bind_group_layout) in
-        shader.bind_group_layouts.iter().enumerate()
-    {
+    for (bind_group_index, bind_group_layout) in shader.bind_group_layouts.iter().enumerate() {
         // If the bind group is hopped over, always use the default hop bind group layout
         let Some(bind_group_layout) = bind_group_layout else {
             continue;
         };
 
         // Add the bind group to the cache if it's missing
-        if !cached.bind_group_layouts.contains_key(bind_group_layout)
-        {
-            log::warn!("Did not find cached bind group layout for set = {bind_group_index}, in {names:?}");
+        if !cached.bind_group_layouts.contains_key(bind_group_layout) {
+            log::warn!(
+                "Did not find cached bind group layout for set = {bind_group_index}, in {names:?}"
+            );
 
             // Convert each entry from this group to a WGPU BindGroupLayoutEntry
             let entries = bind_group_layout
@@ -774,9 +709,7 @@ fn internal_create_pipeline_layout(
                 .iter()
                 .map(|value| wgpu::BindGroupLayoutEntry {
                     binding: value.binding,
-                    visibility: visibility_to_wgpu_stage(
-                        &value.visibility,
-                    ),
+                    visibility: visibility_to_wgpu_stage(&value.visibility),
                     ty: map_binding_type(value),
                     count: value.count,
                 })
@@ -789,9 +722,7 @@ fn internal_create_pipeline_layout(
             };
 
             // Create the bind group layout and add it to the cache
-            let layout = graphics
-                .device()
-                .create_bind_group_layout(&descriptor);
+            let layout = graphics.device().create_bind_group_layout(&descriptor);
             let layout = Arc::new(layout);
             cached
                 .bind_group_layouts
@@ -804,12 +735,9 @@ fn internal_create_pipeline_layout(
         .bind_group_layouts
         .iter()
         .map(|bind_group_layout| {
-            bind_group_layout.as_ref().map(|bind_group_layout| {
-                cached
-                    .bind_group_layouts
-                    .get(&bind_group_layout)
-                    .unwrap()
-            })
+            bind_group_layout
+                .as_ref()
+                .map(|bind_group_layout| cached.bind_group_layouts.get(&bind_group_layout).unwrap())
         })
         .collect::<Vec<_>>();
 
@@ -825,9 +753,7 @@ fn internal_create_pipeline_layout(
         .collect::<Vec<_>>();
 
     // Convert the custom push constant range to wgpu push constant ranges
-    let push_constant_ranges = if let Some(range) =
-        shader.push_constant_layout
-    {
+    let push_constant_ranges = if let Some(range) = shader.push_constant_layout {
         match range {
             PushConstantLayout::SplitVertexFragment {
                 vertex: vertex_size,
@@ -839,16 +765,13 @@ fn internal_create_pipeline_layout(
                 },
                 wgpu::PushConstantRange {
                     stages: wgpu::ShaderStages::FRAGMENT,
-                    range: vertex_size.get()
-                        ..(fragment_size.get() + vertex_size.get()),
+                    range: vertex_size.get()..(fragment_size.get() + vertex_size.get()),
                 },
             ],
 
             PushConstantLayout::Single(size, visibility) => {
                 vec![wgpu::PushConstantRange {
-                    stages: super::visibility_to_wgpu_stage(
-                        &visibility,
-                    ),
+                    stages: super::visibility_to_wgpu_stage(&visibility),
                     range: 0..size.get(),
                 }]
             }
@@ -859,16 +782,19 @@ fn internal_create_pipeline_layout(
 
     // Some logging now
     log::debug!("Using {} bind group layout(s)", bind_group_layouts.len());
-    log::debug!("Using {} push constants range(s)", push_constant_ranges.len());
+    log::debug!(
+        "Using {} push constants range(s)",
+        push_constant_ranges.len()
+    );
 
     // Create the pipeline layout
-    let layout = graphics.device().create_pipeline_layout(
-        &wgpu::PipelineLayoutDescriptor {
+    let layout = graphics
+        .device()
+        .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: None,
             bind_group_layouts: &bind_group_layouts,
             push_constant_ranges: &push_constant_ranges,
-        },
-    );
+        });
 
     // Put it inside the graphics cache
     let layout = Arc::new(layout);
@@ -877,9 +803,7 @@ fn internal_create_pipeline_layout(
         .cached
         .pipeline_layouts
         .insert(shader.clone(), layout.clone());
-    log::debug!(
-        "Saved pipeline layout for {names:?} in graphics cache"
-    );
+    log::debug!("Saved pipeline layout for {names:?} in graphics cache");
 
     (Arc::new(shader), layout)
 }
@@ -894,11 +818,11 @@ fn reflect_uniform_buffer(
         return Err(BufferValidationError::NotUniformBuffer)  
     };
 
-    // Get the size of the type 
+    // Get the size of the type
     let shader = get_spirq_type_size(_type).unwrap();
 
     /*
-    // Make sure the sizes are multiples 
+    // Make sure the sizes are multiples
     if *compiler % shader != 0  {
         return Err(BufferValidationError::MismatchSize {
             compiler: *compiler,
@@ -921,7 +845,7 @@ fn reflect_storage_buffer(
         return Err(BufferValidationError::NotUniformBuffer)  
     };
 
-    // Get the size of the type 
+    // Get the size of the type
     let shader_size = get_spirq_type_size(_type).unwrap();
     //dbg!(shader_size);
 
@@ -961,7 +885,6 @@ fn reflect_sampler(
     Ok(resource.clone())
 }
 
-
 // Reflects a storage texture using user's shader settings
 fn reflect_storage_texture(
     name: &str,
@@ -983,16 +906,16 @@ fn reflect_storage_texture(
     if *view_dimension != map_spirv_dim(_type.dim, _type.is_array) {
         return Err(TextureValidationError::MismatchViewDimension {
             compiler: *view_dimension,
-            shader: map_spirv_dim(_type.dim, _type.is_array)
-        })
+            shader: map_spirv_dim(_type.dim, _type.is_array),
+        });
     }
 
     // Make sure the format matches up
     if *format != map_spirv_format(_type.fmt) {
         return Err(TextureValidationError::MismatchFormat {
             compiler: *format,
-            shader: map_spirv_format(_type.fmt)
-        })
+            shader: map_spirv_format(_type.fmt),
+        });
     }
 
     // Make sure the accesses match up
@@ -1005,7 +928,6 @@ fn reflect_storage_texture(
         });
     }
     */
-
 
     Ok(resource.clone())
 }
@@ -1031,18 +953,17 @@ fn reflect_sampled_texture(
     if *view_dimension != map_spirv_dim(_type.dim, _type.is_array) {
         return Err(TextureValidationError::MismatchViewDimension {
             compiler: *view_dimension,
-            shader: map_spirv_dim(_type.dim, _type.is_array)
-        })
+            shader: map_spirv_dim(_type.dim, _type.is_array),
+        });
     }
 
     // Make sure the sample type matches up
     if *sample_type != map_spirv_scalar_type(_type.scalar_ty.clone(), *format) {
         return Err(TextureValidationError::MismatchSampleType {
             compiler: *sample_type,
-            shader: map_spirv_scalar_type(_type.scalar_ty.clone(), *format)
+            shader: map_spirv_scalar_type(_type.scalar_ty.clone(), *format),
         });
     }
-
 
     Ok(resource.clone())
 }

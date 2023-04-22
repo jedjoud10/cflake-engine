@@ -22,9 +22,7 @@ pub fn threadpool(system: &mut System) {
     system
         .insert_init(|world: &mut World| {
             let settings = world.get::<UtilsSettings>().unwrap();
-            let num = settings
-                .threadpool_threads
-                .unwrap_or_else(num_cpus::get);
+            let num = settings.threadpool_threads.unwrap_or_else(num_cpus::get);
             drop(settings);
             world.insert(ThreadPool::with(num));
         })
@@ -46,10 +44,7 @@ pub fn io(system: &mut System) {
     system
         .insert_init(move |world: &mut World| {
             let settings = world.get::<UtilsSettings>().unwrap();
-            let manager = FileManager::new(
-                &settings.author_name,
-                &settings.app_name,
-            );
+            let manager = FileManager::new(&settings.author_name, &settings.app_name);
             drop(settings);
             world.insert(manager);
         })
@@ -59,27 +54,22 @@ pub fn io(system: &mut System) {
 // Add the file logger
 pub fn file_logger(system: &mut System) {
     // Get the file name
-    let file =
-        chrono::Local::now().format("%Y-%m-%d.log").to_string();
+    let file = chrono::Local::now().format("%Y-%m-%d.log").to_string();
 
     system
         .insert_init(move |world: &mut World| {
             // Get the utils settings that are added by the app
-            let mut settings =
-                world.get_mut::<UtilsSettings>().unwrap();
+            let mut settings = world.get_mut::<UtilsSettings>().unwrap();
             let receiver = settings.log_receiver.take().unwrap();
 
             // Get the file manager to get the log file
             let mut manager = world.get_mut::<FileManager>().unwrap();
-            let mut file = manager
-                .write_file(&file, true, FileType::Log)
-                .unwrap();
+            let mut file = manager.write_file(&file, true, FileType::Log).unwrap();
 
             // Create a secondary thread that will be responsible for logging these events
             std::thread::spawn(move || {
                 // This receiver will receive the logged messages from the fern dispatcher
-                for line in receiver.iter().filter(|x| !x.is_empty())
-                {
+                for line in receiver.iter().filter(|x| !x.is_empty()) {
                     write!(file, "{}", line).unwrap();
                 }
             });
@@ -104,9 +94,7 @@ pub fn time(system: &mut System) {
                 tick_count: 0,
                 last_tick_start: Instant::now(),
                 ticks_to_execute: None,
-                tick_delta: Duration::from_secs_f32(
-                    1.0 / TICKS_PER_SEC,
-                ),
+                tick_delta: Duration::from_secs_f32(1.0 / TICKS_PER_SEC),
                 tick_interpolation: 0.0,
                 tick_target_interpolation: 0.0,
                 local_tick_count: 0,
@@ -129,17 +117,14 @@ pub fn time(system: &mut System) {
             time.delta = now - old_frame_start;
 
             // Constants needed for ticks
-            const TICKS_DELTA_NS: f32 =
-                (1.0 / TICKS_PER_SEC) * 1000000000.0;
-            const TICK_DELTA: Duration =
-                Duration::from_nanos(TICKS_DELTA_NS as u64);
+            const TICKS_DELTA_NS: f32 = (1.0 / TICKS_PER_SEC) * 1000000000.0;
+            const TICK_DELTA: Duration = Duration::from_nanos(TICKS_DELTA_NS as u64);
 
             // Update the tick count and starts
             let diff = now - time.last_tick_start;
             if diff >= TICK_DELTA {
                 // Calculate how many ticks have elapsed since the last tick
-                let divided = diff.as_micros() as f32
-                    / TICK_DELTA.as_micros() as f32;
+                let divided = diff.as_micros() as f32 / TICK_DELTA.as_micros() as f32;
                 let count = divided.floor() as u32;
 
                 // Add divided tick count to accumulator
@@ -165,7 +150,7 @@ pub fn time(system: &mut System) {
             time.local_tick_count += 1;
             time.tick_interpolation = 1.0;
 
-            if time.local_tick_count == (time.ticks_to_execute().unwrap().get()-1) {
+            if time.local_tick_count == (time.ticks_to_execute().unwrap().get() - 1) {
                 time.tick_interpolation = time.tick_target_interpolation;
             }
         })

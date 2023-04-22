@@ -1,16 +1,14 @@
-
 use assets::Assets;
 
 use graphics::{
-    Buffer, BufferMode, BufferUsage, Compiler, ComputeModule, ComputeShader, DrawIndexedIndirect, GpuPod, Graphics, ModuleVisibility, PushConstantLayout, Texel,
-    TriangleBuffer, Vertex, XYZW, StorageAccess,
+    Buffer, BufferMode, BufferUsage, Compiler, ComputeModule, ComputeShader, DrawIndexedIndirect,
+    GpuPod, Graphics, ModuleVisibility, PushConstantLayout, StorageAccess, Texel, TriangleBuffer,
+    Vertex, XYZW,
 };
-use rendering::{
-    attributes, AttributeBuffer,
-};
+use rendering::{attributes, AttributeBuffer};
 use utils::{Handle, Storage};
 
-use crate::{TerrainSettings, create_counters, Vertices, Triangles};
+use crate::{create_counters, TerrainSettings, Triangles, Vertices};
 
 // Memory manager will be responsible for finding free memory and copying chunks there
 pub struct MemoryManager {
@@ -28,31 +26,30 @@ impl MemoryManager {
         graphics: &Graphics,
         vertices: &mut Storage<Vertices>,
         triangles: &mut Storage<Triangles>,
-        settings: &TerrainSettings
+        settings: &TerrainSettings,
     ) -> Self {
         let sub_allocation_chunk_indices = (0..settings.allocation_count)
-        .map(|_| {
-            Buffer::<u32>::splatted(
-                graphics,
-                settings.sub_allocation_count,
-                u32::MAX,
-                BufferMode::Dynamic,
-                BufferUsage::STORAGE | BufferUsage::WRITE | BufferUsage::READ,
-            )
-            .unwrap()
-        })
-        .collect::<Vec<_>>();
+            .map(|_| {
+                Buffer::<u32>::splatted(
+                    graphics,
+                    settings.sub_allocation_count,
+                    u32::MAX,
+                    BufferMode::Dynamic,
+                    BufferUsage::STORAGE | BufferUsage::WRITE | BufferUsage::READ,
+                )
+                .unwrap()
+            })
+            .collect::<Vec<_>>();
 
         let shared_vertex_buffers = (0..settings.allocation_count)
             .map(|_| {
-                let value =
-                    AttributeBuffer::<attributes::Position>::zeroed(
-                        graphics,
-                        settings.output_vertex_buffer_length,
-                        BufferMode::Dynamic,
-                        BufferUsage::STORAGE,
-                    )
-                    .unwrap();
+                let value = AttributeBuffer::<attributes::Position>::zeroed(
+                    graphics,
+                    settings.output_vertex_buffer_length,
+                    BufferMode::Dynamic,
+                    BufferUsage::STORAGE,
+                )
+                .unwrap();
                 vertices.insert(value)
             })
             .collect::<Vec<_>>();
@@ -85,11 +82,7 @@ impl MemoryManager {
 
         // Needed to pass in the chunk index
         compiler.use_push_constant_layout(
-            PushConstantLayout::single(
-                <u32 as GpuPod>::size(),
-                ModuleVisibility::Compute,
-            )
-            .unwrap(),
+            PushConstantLayout::single(<u32 as GpuPod>::size(), ModuleVisibility::Compute).unwrap(),
         );
 
         // Spec constants
@@ -113,11 +106,7 @@ impl MemoryManager {
 
         // Required since we must write to the right indirect buffer element
         compiler.use_push_constant_layout(
-            PushConstantLayout::single(
-                <u32 as GpuPod>::size(),
-                ModuleVisibility::Compute,
-            )
-            .unwrap(),
+            PushConstantLayout::single(<u32 as GpuPod>::size(), ModuleVisibility::Compute).unwrap(),
         );
 
         // Sizes of the temp and perm buffers
@@ -128,29 +117,21 @@ impl MemoryManager {
         // Temporary buffers
         compiler.use_storage_buffer::<<XYZW<f32> as Vertex>::Storage>(
             "temporary_vertices",
-            StorageAccess::ReadOnly
+            StorageAccess::ReadOnly,
         );
-        compiler.use_storage_buffer::<u32>(
-            "temporary_triangles",
-            StorageAccess::ReadOnly
-        );
+        compiler.use_storage_buffer::<u32>("temporary_triangles", StorageAccess::ReadOnly);
 
         // Permanent buffer allocations
-        compiler.use_storage_buffer::<DrawIndexedIndirect>(
-            "indirect", StorageAccess::WriteOnly
-        );
+        compiler.use_storage_buffer::<DrawIndexedIndirect>("indirect", StorageAccess::WriteOnly);
         compiler.use_storage_buffer::<<XYZW<f32> as Vertex>::Storage>(
             "output_vertices",
-            StorageAccess::WriteOnly
+            StorageAccess::WriteOnly,
         );
-        compiler.use_storage_buffer::<u32>(
-            "output_triangles",
-            StorageAccess::WriteOnly
-        );
+        compiler.use_storage_buffer::<u32>("output_triangles", StorageAccess::WriteOnly);
 
         // Create copy the compute shader
         let compute_copy = ComputeShader::new(module, compiler).unwrap();
-        
+
         Self {
             shared_vertex_buffers,
             shared_triangle_buffers,

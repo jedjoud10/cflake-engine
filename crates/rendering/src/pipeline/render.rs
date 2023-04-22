@@ -1,10 +1,10 @@
 use crate::{
-    set_vertex_buffer_attribute,
-    ActiveSceneRenderPass, DefaultMaterialResources, Material, Mesh, RenderPath, Renderer, SceneColor,
-    SceneDepth, Surface, set_index_buffer_attribute, SubSurface,
+    set_index_buffer_attribute, set_vertex_buffer_attribute, ActiveSceneRenderPass,
+    DefaultMaterialResources, Material, Mesh, RenderPath, Renderer, SceneColor, SceneDepth,
+    SubSurface, Surface,
 };
 use ecs::Scene;
-use graphics::{RenderPipeline, ActivePipeline};
+use graphics::{ActivePipeline, RenderPipeline};
 use utils::{Handle, Storage};
 use world::World;
 
@@ -22,15 +22,17 @@ pub(super) fn render_surfaces<'r, M: Material>(
     // Get a rasterizer for the current render pass by binding a pipeline
     let mut active = render_pass.bind_pipeline(pipeline);
     let supported = M::attributes();
-    
+
     // Get the material storage and resources for this material
     let materials = world.get::<Storage<M>>().unwrap();
     let mut resources = M::fetch(world);
-    
+
     // Set the global material bindings
-    active.set_bind_group(0, |group| {
-        M::set_global_bindings(&mut resources, group, defaults);
-    }).unwrap();
+    active
+        .set_bind_group(0, |group| {
+            M::set_global_bindings(&mut resources, group, defaults);
+        })
+        .unwrap();
 
     // Get all the entities that contain a visible surface
     let scene = world.get::<Scene>().unwrap();
@@ -44,10 +46,18 @@ pub(super) fn render_surfaces<'r, M: Material>(
     let mut last_mesh: Option<Handle<Mesh<M::RenderPath>>> = None;
 
     // Keep track of the last attribute buffers
-    let mut last_positions_buffer: Option<&<M::RenderPath as RenderPath>::AttributeBuffer<crate::attributes::Position>> = None; 
-    let mut last_normals_buffer: Option<&<M::RenderPath as RenderPath>::AttributeBuffer<crate::attributes::Normal>> = None; 
-    let mut last_tangents_buffer: Option<&<M::RenderPath as RenderPath>::AttributeBuffer<crate::attributes::Tangent>> = None; 
-    let mut last_tex_coords_buffer: Option<&<M::RenderPath as RenderPath>::AttributeBuffer<crate::attributes::TexCoord>> = None; 
+    let mut last_positions_buffer: Option<
+        &<M::RenderPath as RenderPath>::AttributeBuffer<crate::attributes::Position>,
+    > = None;
+    let mut last_normals_buffer: Option<
+        &<M::RenderPath as RenderPath>::AttributeBuffer<crate::attributes::Normal>,
+    > = None;
+    let mut last_tangents_buffer: Option<
+        &<M::RenderPath as RenderPath>::AttributeBuffer<crate::attributes::Tangent>,
+    > = None;
+    let mut last_tex_coords_buffer: Option<
+        &<M::RenderPath as RenderPath>::AttributeBuffer<crate::attributes::TexCoord>,
+    > = None;
     let mut last_index_buffer: Option<&<M::RenderPath as RenderPath>::TriangleBuffer<u32>> = None;
 
     // TODO: Sort and group material instances / meshes
@@ -65,10 +75,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
         // Iterate over the sub-surfaces of the surface
         for subsurface in surface.subsurfaces.iter() {
             // Get the mesh and material that correspond to this surface
-            let mesh = <M::RenderPath as RenderPath>::get(
-                defaults,
-                &subsurface.mesh,
-            );
+            let mesh = <M::RenderPath as RenderPath>::get(defaults, &subsurface.mesh);
 
             // Check if we changed material instances
             if last_material != Some(subsurface.material.clone()) {
@@ -77,49 +84,42 @@ pub(super) fn render_surfaces<'r, M: Material>(
                 let material = materials.get(&subsurface.material);
 
                 // Set the instance group bindings
-                active.set_bind_group(1, |group| {
-                    M::set_instance_bindings(
-                        material,
-                        &mut resources,
-                        defaults,
-                        group,
-                    );
-                }).unwrap();
+                active
+                    .set_bind_group(1, |group| {
+                        M::set_instance_bindings(material, &mut resources, defaults, group);
+                    })
+                    .unwrap();
             } else {
                 switched_material_instances = false;
             }
 
             // Skip rendering if the mesh is invalid
-            let attribute =
-                mesh.vertices().enabled().contains(M::attributes());
+            let attribute = mesh.vertices().enabled().contains(M::attributes());
             let validity = <M::RenderPath as RenderPath>::is_valid(mesh);
             if !(attribute && validity) {
                 continue;
             }
 
             // Set the surface group bindings
-            active.set_bind_group(2, |group| {
-                M::set_surface_bindings(
-                    renderer,
-                    &mut resources,
-                    defaults,
-                    group,
-                );
-            }).unwrap();
+            active
+                .set_bind_group(2, |group| {
+                    M::set_surface_bindings(renderer, &mut resources, defaults, group);
+                })
+                .unwrap();
 
             // Set the vertex buffers and index buffers when we change meshes
             if last_mesh != Some(subsurface.mesh.clone()) {
                 use crate::attributes::*;
                 let mut index = 0;
 
-                // Set the position buffer attribute 
-                set_vertex_buffer_attribute::<
-                    Position,
-                    M::RenderPath,
-                    _,
-                    _,
-                >(
-                    supported, mesh, defaults, &mut active, &mut index, &mut last_positions_buffer
+                // Set the position buffer attribute
+                set_vertex_buffer_attribute::<Position, M::RenderPath, _, _>(
+                    supported,
+                    mesh,
+                    defaults,
+                    &mut active,
+                    &mut index,
+                    &mut last_positions_buffer,
                 );
 
                 // Set the normal buffer attribute
@@ -139,7 +139,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
                     defaults,
                     &mut active,
                     &mut index,
-                    &mut last_tangents_buffer
+                    &mut last_tangents_buffer,
                 );
 
                 // Set the texture coordinate buffer attribute
@@ -149,7 +149,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
                     defaults,
                     &mut active,
                     &mut index,
-                    &mut last_tex_coords_buffer
+                    &mut last_tex_coords_buffer,
                 );
 
                 // Set the index buffer
@@ -179,11 +179,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
                 .unwrap();
 
             // Draw the mesh
-            <M::RenderPath as RenderPath>::draw(
-                mesh,
-                defaults,
-                &mut active,
-            );
+            <M::RenderPath as RenderPath>::draw(mesh, defaults, &mut active);
 
             // Add 1 to the material index when we switch instances
             if switched_material_instances {

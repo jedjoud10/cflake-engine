@@ -2,9 +2,7 @@ use graphics::Triangle;
 
 use std::ops::Neg;
 
-use super::attributes::{
-    RawNormal, RawPosition, RawTangent, RawTexCoord,
-};
+use super::attributes::{RawNormal, RawPosition, RawTangent, RawTexCoord};
 use super::MeshImportSettings;
 
 // Invert the given number if the boolean is true
@@ -36,8 +34,7 @@ pub fn apply_vec_settings(
     triangles: &mut [Triangle<u32>],
 ) {
     // Convert the translation/rotation/scale settings to a unified matrix
-    let translation: vek::Mat4<f32> =
-        vek::Mat4::translation_3d(settings.translation);
+    let translation: vek::Mat4<f32> = vek::Mat4::translation_3d(settings.translation);
     let rotation: vek::Mat4<f32> = vek::Mat4::from(settings.rotation);
     let scale: vek::Mat4<f32> = vek::Mat4::scaling_3d(settings.scale);
     let matrix = translation * rotation * scale;
@@ -46,24 +43,13 @@ pub fn apply_vec_settings(
         apply_settings_positions(positions, matrix);
     }
     if let Some(normals) = normals {
-        apply_settings_normals(
-            normals,
-            matrix,
-            settings.invert_normals,
-        );
+        apply_settings_normals(normals, matrix, settings.invert_normals);
     }
     if let Some(tangents) = tangents {
-        apply_settings_tangents(
-            tangents,
-            matrix,
-            settings.invert_tangents,
-        );
+        apply_settings_tangents(tangents, matrix, settings.invert_tangents);
     }
     if let Some(tex_coords) = tex_coords {
-        apply_settings_tex_coords(
-            tex_coords,
-            settings.invert_tex_coords,
-        );
+        apply_settings_tex_coords(tex_coords, settings.invert_tex_coords);
     }
     if settings.invert_triangle_ordering {
         invert_triangle_ordering(triangles);
@@ -71,42 +57,27 @@ pub fn apply_vec_settings(
 }
 
 // Multiply a position by a matrix
-pub fn mul_position(
-    matrix: vek::Mat4<f32>,
-    position: RawPosition,
-) -> RawPosition {
+pub fn mul_position(matrix: vek::Mat4<f32>, position: RawPosition) -> RawPosition {
     matrix.mul_point(position)
 }
 
 // Multiply a normal by a matrix
-pub fn mul_normal(
-    matrix: vek::Mat4<f32>,
-    normal: RawNormal,
-    flip: bool,
-) -> RawNormal {
+pub fn mul_normal(matrix: vek::Mat4<f32>, normal: RawNormal, flip: bool) -> RawNormal {
     let mapped = normal.map(to_f32);
     let new = inv(matrix.mul_direction(mapped), flip);
     new.map(to_i8)
 }
 
 // Multiply a tangent by a matrix
-pub fn mul_tangent(
-    matrix: vek::Mat4<f32>,
-    tangent: RawTangent,
-    flip: bool,
-) -> RawTangent {
+pub fn mul_tangent(matrix: vek::Mat4<f32>, tangent: RawTangent, flip: bool) -> RawTangent {
     let mapped = tangent.map(|f| f as f32 / 127.0);
-    let new =
-        matrix.mul_direction(inv(mapped.xyz(), flip)).map(to_i8);
+    let new = matrix.mul_direction(inv(mapped.xyz(), flip)).map(to_i8);
 
     vek::Vec4::new(new.x, new.y, new.z, to_i8(mapped.w))
 }
 
 // Update a texture coordinate by it's settings
-pub fn update_tex_coord(
-    mut tex_coord: RawTexCoord,
-    flip: vek::Vec2<bool>,
-) -> RawTexCoord {
+pub fn update_tex_coord(mut tex_coord: RawTexCoord, flip: vek::Vec2<bool>) -> RawTexCoord {
     if flip.x {
         tex_coord.x = 1.0 - tex_coord.x;
     }
@@ -119,42 +90,28 @@ pub fn update_tex_coord(
 }
 
 // Update a set of position attributes using a matrix
-pub fn apply_settings_positions(
-    positions: &mut [RawPosition],
-    matrix: vek::Mat4<f32>,
-) {
+pub fn apply_settings_positions(positions: &mut [RawPosition], matrix: vek::Mat4<f32>) {
     for position in positions {
         *position = mul_position(matrix, *position);
     }
 }
 
 // Update a set of normal attributes using a matrix and a flip rule
-pub fn apply_settings_normals(
-    normals: &mut [RawNormal],
-    matrix: vek::Mat4<f32>,
-    flip: bool,
-) {
+pub fn apply_settings_normals(normals: &mut [RawNormal], matrix: vek::Mat4<f32>, flip: bool) {
     for normal in normals {
         *normal = mul_normal(matrix, *normal, flip);
     }
 }
 
 // Update a set of tangent attributes using a matrix and a flip rule
-pub fn apply_settings_tangents(
-    tangents: &mut [RawTangent],
-    matrix: vek::Mat4<f32>,
-    flip: bool,
-) {
+pub fn apply_settings_tangents(tangents: &mut [RawTangent], matrix: vek::Mat4<f32>, flip: bool) {
     for tangent in tangents {
         *tangent = mul_tangent(matrix, *tangent, flip);
     }
 }
 
 // Update a set of texture coordinate attributes using a flip horizontal/vertical rule
-pub fn apply_settings_tex_coords(
-    tex_coords: &mut [RawTexCoord],
-    flip: vek::Vec2<bool>,
-) {
+pub fn apply_settings_tex_coords(tex_coords: &mut [RawTexCoord], flip: vek::Vec2<bool>) {
     for tex_coord in tex_coords {
         *tex_coord = update_tex_coord(*tex_coord, flip);
     }
@@ -188,8 +145,7 @@ pub fn compute_normals(
         // Create the cross product to find the normal face
         let d1 = b - a;
         let d2 = c - a;
-        let cross =
-            vek::Vec3::<f32>::cross(d1.xyz(), d2.xyz()).normalized();
+        let cross = vek::Vec3::<f32>::cross(d1.xyz(), d2.xyz()).normalized();
 
         // Add the face normal to each vertex sum
         normals[i1] += cross;
@@ -249,19 +205,12 @@ pub fn compute_tangents(
 
         fn tex_coord(&self, face: usize, vert: usize) -> [f32; 2] {
             let i = self.triangles[face][vert] as usize;
-            self.tex_coords[i]
-                .into_array()
+            self.tex_coords[i].into_array()
         }
 
-        fn set_tangent_encoded(
-            &mut self,
-            tangent: [f32; 4],
-            face: usize,
-            vert: usize,
-        ) {
+        fn set_tangent_encoded(&mut self, tangent: [f32; 4], face: usize, vert: usize) {
             let i = self.triangles[face][vert] as usize;
-            self.tangents[i] =
-                vek::Vec4::<f32>::from_slice(&tangent).map(to_i8);
+            self.tangents[i] = vek::Vec4::<f32>::from_slice(&tangent).map(to_i8);
         }
     }
 
@@ -280,9 +229,7 @@ pub fn compute_tangents(
 }
 
 // Create a new AABB from a list of vertices in 3D space
-pub fn aabb_from_points(
-    points: &[vek::Vec4<f32>],
-) -> Option<math::Aabb<f32>> {
+pub fn aabb_from_points(points: &[vek::Vec4<f32>]) -> Option<math::Aabb<f32>> {
     let points = points.iter().map(|x| x.xyz()).collect::<Vec<_>>();
     math::Aabb::from_points(&points)
 }

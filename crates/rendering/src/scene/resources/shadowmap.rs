@@ -1,14 +1,17 @@
-use std::{num::{NonZeroU32, NonZeroU8}, sync::Arc, rc::Rc};
+use std::{
+    num::{NonZeroU32, NonZeroU8},
+    rc::Rc,
+    sync::Arc,
+};
 
 use assets::Assets;
 use bytemuck::{Pod, Zeroable};
 use graphics::{
-    ActiveRenderPipeline, BufferMode, BufferUsage, CompareFunction,
-    Compiler, Depth, DepthConfig, FragmentModule, GpuPod,
-    Graphics, LoadOp, ModuleVisibility, Operation, PrimitiveConfig,
-    PushConstantLayout, RenderPass, RenderPipeline, SamplerSettings,
-    Shader, StoreOp, Texture, Texture2D, TextureMipMaps, TextureMode,
-    TextureUsage, UniformBuffer, VertexModule, WindingOrder, Face, LayeredTexture2D, Normalized, ActiveRenderPass,
+    ActiveRenderPass, ActiveRenderPipeline, BufferMode, BufferUsage, CompareFunction, Compiler,
+    Depth, DepthConfig, Face, FragmentModule, GpuPod, Graphics, LayeredTexture2D, LoadOp,
+    ModuleVisibility, Normalized, Operation, PrimitiveConfig, PushConstantLayout, RenderPass,
+    RenderPipeline, SamplerSettings, Shader, StoreOp, Texture, Texture2D, TextureMipMaps,
+    TextureMode, TextureUsage, UniformBuffer, VertexModule, WindingOrder,
 };
 use math::ExplicitVertices;
 use vek::FrustumPlanes;
@@ -20,10 +23,8 @@ pub type ShadowTexel = Depth<f32>;
 pub type ShadowMap = LayeredTexture2D<ShadowTexel>;
 pub type ShadowRenderPass = RenderPass<(), ShadowTexel>;
 pub type ShadowRenderPipeline = RenderPipeline<(), ShadowTexel>;
-pub type ActiveShadowRenderPipeline<'a, 'r, 't> =
-    ActiveRenderPipeline<'a, 'r, 't, (), ShadowTexel>;
-pub type ActiveShadowRenderPass<'r, 't> = 
-    ActiveRenderPass<'r, 't, (), ShadowTexel>;
+pub type ActiveShadowRenderPipeline<'a, 'r, 't> = ActiveRenderPipeline<'a, 'r, 't, (), ShadowTexel>;
+pub type ActiveShadowRenderPass<'r, 't> = ActiveRenderPass<'r, 't, (), ShadowTexel>;
 
 // Directional shadow mapping for the main sun light
 // The shadows must be rendered before we render the main frame
@@ -34,10 +35,10 @@ pub struct ShadowMapping {
     // Default shadow shader and pipeline
     pub pipeline: ShadowRenderPipeline,
     pub shader: Shader,
-    
+
     // Multilayered shadow map texture
     pub depth_tex: ShadowMap,
-    
+
     // Cached matrices
     pub percents: [f32; 4],
 
@@ -74,16 +75,12 @@ impl ShadowMapping {
     ) -> Self {
         // Load the vertex module for the shadowmap shader
         let vertex = assets
-            .load::<VertexModule>(
-                "engine/shaders/scene/shadow/shadow.vert",
-            )
+            .load::<VertexModule>("engine/shaders/scene/shadow/shadow.vert")
             .unwrap();
 
         // Load the fragment module for the shadowmap shader
         let fragment = assets
-            .load::<FragmentModule>(
-                "engine/shaders/scene/shadow/shadow.frag",
-            )
+            .load::<FragmentModule>("engine/shaders/scene/shadow/shadow.frag")
             .unwrap();
 
         // Create the bind layout for the shadow map shader
@@ -133,7 +130,8 @@ impl ShadowMapping {
             }],
             BufferMode::Dynamic,
             BufferUsage::WRITE,
-        ).unwrap();
+        )
+        .unwrap();
 
         // We can initialize these to zero since the first frame would update the buffer anyways
         let lightspace_buffer = UniformBuffer::<vek::Vec4<vek::Vec4<f32>>>::zeroed(
@@ -141,15 +139,13 @@ impl ShadowMapping {
             4,
             BufferMode::Dynamic,
             BufferUsage::WRITE,
-        ).unwrap();
+        )
+        .unwrap();
 
         // We can initialize these to zero since the first frame would update the buffer anyways
-        let cascade_distances = UniformBuffer::<f32>::zeroed(
-            graphics,
-            4,
-            BufferMode::Dynamic,
-            BufferUsage::WRITE,
-        ).unwrap();
+        let cascade_distances =
+            UniformBuffer::<f32>::zeroed(graphics, 4, BufferMode::Dynamic, BufferUsage::WRITE)
+                .unwrap();
 
         Self {
             render_pass,
@@ -166,23 +162,15 @@ impl ShadowMapping {
     }
 
     // Update the cascade distance percentages
-    pub fn set_cascade_distances(
-        &mut self,
-        distances: [f32; 4]
-    ) {
+    pub fn set_cascade_distances(&mut self, distances: [f32; 4]) {
         self.percents = distances;
     }
 
     // Set the shadow uniform that is stored within the shadow map
-    pub fn set_shadow_uniform(
-        &mut self,
-        strength: f32,
-        spread: f32
-    ) {
-        self.parameter_buffer.write(&[ShadowUniform {
-            strength,
-            spread,
-        }], 0).unwrap();
+    pub fn set_shadow_uniform(&mut self, strength: f32, spread: f32) {
+        self.parameter_buffer
+            .write(&[ShadowUniform { strength, spread }], 0)
+            .unwrap();
     }
 
     // Update the rotation of the sun shadows using a new rotation
@@ -199,10 +187,18 @@ impl ShadowMapping {
         i: usize,
     ) -> vek::Mat4<f32> {
         // Update the projection matrix' far and near planes
-        let near = self.percents.get(i.wrapping_sub(1)).map(|x| x * &camera_far_plane).unwrap_or(camera_near_plane);
-        let far = self.percents.get(i).map(|x| x * &camera_far_plane).unwrap_or(camera_far_plane);
+        let near = self
+            .percents
+            .get(i.wrapping_sub(1))
+            .map(|x| x * &camera_far_plane)
+            .unwrap_or(camera_near_plane);
+        let far = self
+            .percents
+            .get(i)
+            .map(|x| x * &camera_far_plane)
+            .unwrap_or(camera_far_plane);
         let m22 = far / (near - far);
-        let m23 = -(far*near) / (far-near);
+        let m23 = -(far * near) / (far - near);
         projection.cols[2][2] = m22;
         projection.cols[3][2] = m23;
 
@@ -216,7 +212,7 @@ impl ShadowMapping {
 
         // Calculate a new view matrix and set it
         let rot = vek::Mat4::from(rotation);
-        
+
         // Calculate light view matrix
         let view = vek::Mat4::<f32>::look_at_rh(
             vek::Vec3::zero(),
@@ -227,7 +223,7 @@ impl ShadowMapping {
         // Get the AABB that contains the whole corners
         let mut min = vek::Vec3::broadcast(f32::MAX);
         let mut max = vek::Vec3::broadcast(f32::MIN);
-    
+
         for point in corners {
             // Project point using view matrix
             // Note: W component should be 1 since it is not a projection matrix, only view matrix
@@ -261,15 +257,18 @@ impl ShadowMapping {
         let lightspace = projection * view;
 
         // Update the internally stored buffer
-        self.lightspace_buffer.write(&[lightspace.cols],i).unwrap();
+        self.lightspace_buffer.write(&[lightspace.cols], i).unwrap();
         self.cascade_distances.write(&[far], i).unwrap();
         lightspace
     }
 }
 
 // Create a shadow render pipeline from a shadow shader
-// This is called not only by the default shadowmap shader, but by materials that define their own shadow shader as well 
-pub(crate) fn create_shadow_render_pipeline(graphics: &Graphics, shader: &Shader) -> ShadowRenderPipeline {
+// This is called not only by the default shadowmap shader, but by materials that define their own shadow shader as well
+pub(crate) fn create_shadow_render_pipeline(
+    graphics: &Graphics,
+    shader: &Shader,
+) -> ShadowRenderPipeline {
     // Create the shadow map graphics pipeline
     let pipeline = ShadowRenderPipeline::new(
         graphics,
@@ -282,9 +281,7 @@ pub(crate) fn create_shadow_render_pipeline(graphics: &Graphics, shader: &Shader
         }),
         None,
         None,
-        crate::attributes::enabled_to_vertex_config(
-            MeshAttributes::POSITIONS,
-        ),
+        crate::attributes::enabled_to_vertex_config(MeshAttributes::POSITIONS),
         PrimitiveConfig::Triangles {
             winding_order: WindingOrder::Ccw,
             cull_face: Some(Face::Back),

@@ -56,9 +56,7 @@ impl FileManager {
     }
 
     // Create a directory in the given path if needed
-    pub fn init_directory(
-        path: impl AsRef<Path>,
-    ) -> std::io::Result<()> {
+    pub fn init_directory(path: impl AsRef<Path>) -> std::io::Result<()> {
         let path = path.as_ref();
         if !path.exists() {
             std::fs::DirBuilder::new().recursive(true).create(path)
@@ -78,11 +76,7 @@ impl FileManager {
     }
 
     // Convert a FileType variant and local path to a proper global system path
-    fn local_path_to_global(
-        &self,
-        path: impl AsRef<Path>,
-        variant: FileType,
-    ) -> PathBuf {
+    fn local_path_to_global(&self, path: impl AsRef<Path>, variant: FileType) -> PathBuf {
         let mut base = match variant {
             FileType::Config => self.dirs.config_dir.clone(),
             FileType::Data => self.dirs.state_dir.clone(),
@@ -101,11 +95,7 @@ impl FileManager {
 
     // Create a buf reader for a file
     // PS: This will automatically create the file if needed
-    pub fn read_file(
-        &self,
-        path: impl AsRef<Path>,
-        variant: FileType,
-    ) -> Option<BufReader<File>> {
+    pub fn read_file(&self, path: impl AsRef<Path>, variant: FileType) -> Option<BufReader<File>> {
         // Create the global path based on the variant
         log::debug!("Reading from file {:?}...", path.as_ref());
         let global = self.local_path_to_global(path, variant);
@@ -170,10 +160,7 @@ impl FileManager {
     }
 
     // Deserialize a file using Serde
-    pub fn deserialize_from_file<
-        'a,
-        T: serde::Deserialize<'a> + 'static,
-    >(
+    pub fn deserialize_from_file<'a, T: serde::Deserialize<'a> + 'static>(
         &'a mut self,
         path: impl AsRef<Path>,
         variant: FileType,
@@ -186,10 +173,7 @@ impl FileManager {
         self.strings.insert(TypeId::of::<T>(), string);
         let last = self.strings.get(&TypeId::of::<T>()).unwrap();
         let value = serde_json::from_str(last.as_str()).unwrap();
-        log::debug!(
-            "Deserialized data from {:?} successfully!",
-            path.as_ref()
-        );
+        log::debug!("Deserialized data from {:?} successfully!", path.as_ref());
         Some(value)
     }
 
@@ -203,10 +187,7 @@ impl FileManager {
         log::debug!("Serializing to file {:?}...", path.as_ref());
         let writer = self.write_file(&path, true, variant)?;
         serde_json::to_writer_pretty(writer, value).ok()?;
-        log::debug!(
-            "Serialized data into {:?} successfully!",
-            path.as_ref()
-        );
+        log::debug!("Serialized data into {:?} successfully!", path.as_ref());
         Some(())
     }
 }

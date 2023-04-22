@@ -1,10 +1,7 @@
-use crate::{
-    Direct, Indirect, IndirectMesh, Material, MaterialId, Mesh, RenderPath,
-};
+use crate::{Direct, Indirect, IndirectMesh, Material, MaterialId, Mesh, RenderPath};
 use ecs::Component;
 use smallvec::SmallVec;
 use utils::Handle;
-
 
 // A sub surface is a combination of a mesh and a material
 // We can store multiple sub-surfaces into a surface to create multi-material systems
@@ -35,18 +32,9 @@ pub struct Surface<M: Material> {
 
 impl<M: Material> Surface<M> {
     // Create a new visible surface from a mesh handle, material handle, and material ID
-    pub fn new(
-        mesh: Handle<Mesh<M::RenderPath>>,
-        material: Handle<M>,
-        id: MaterialId<M>,
-    ) -> Self {
+    pub fn new(mesh: Handle<Mesh<M::RenderPath>>, material: Handle<M>, id: MaterialId<M>) -> Self {
         Self {
-            subsurfaces: SmallVec::from_buf([
-                SubSurface {
-                    mesh,
-                    material,
-                }
-            ]),
+            subsurfaces: SmallVec::from_buf([SubSurface { mesh, material }]),
             visible: true,
             culled: false,
             id,

@@ -1,5 +1,5 @@
-use thiserror::Error;
 use crate::ModuleVisibility;
+use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum SetBindGroupError {
@@ -12,7 +12,9 @@ pub enum SetBindGroupError {
 
 #[derive(Error, Debug)]
 pub enum SetBindResourceError<'a> {
-    #[error("The bind resource '{name}' at bind group '{group}' was not defined in the shader layout")]
+    #[error(
+        "The bind resource '{name}' at bind group '{group}' was not defined in the shader layout"
+    )]
     ResourceNotDefined { name: &'a str, group: u32 },
 
     #[error("{0}")]
@@ -27,9 +29,7 @@ pub enum SetBindResourceError<'a> {
 
 #[derive(Error, Debug)]
 pub enum SetVertexBufferError {
-    #[error(
-        "The given range is invalid for buffer with {0} elements"
-    )]
+    #[error("The given range is invalid for buffer with {0} elements")]
     InvalidRange(usize),
 
     #[error("There isn't a vertex buffer layout for slot {0}")]
@@ -41,9 +41,7 @@ pub enum SetVertexBufferError {
 
 #[derive(Error, Debug)]
 pub enum SetIndexBufferError {
-    #[error(
-        "The given range is invalid for buffer with {0} elements"
-    )]
+    #[error("The given range is invalid for buffer with {0} elements")]
     InvalidRange(usize),
 }
 

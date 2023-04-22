@@ -1,14 +1,11 @@
-use std::{
-    marker::PhantomData, mem::ManuallyDrop, sync::Arc, time::Instant,
-};
+use std::{marker::PhantomData, mem::ManuallyDrop, sync::Arc, time::Instant};
 
 use assets::Asset;
 use smallvec::SmallVec;
 
 use crate::{
-    Extent, Graphics, ImageTexel, Sampler, SamplerSettings, Texel,
-    Texture, TextureAssetLoadError, TextureInitializationError,
-    TextureMipMaps, TextureMode, TextureUsage, Texture2D, RawTexels,
+    Extent, Graphics, ImageTexel, RawTexels, Sampler, SamplerSettings, Texel, Texture, Texture2D,
+    TextureAssetLoadError, TextureInitializationError, TextureMipMaps, TextureMode, TextureUsage,
 };
 
 // A layered 2D texture that contains multiple texels that are stored in multiple layers
@@ -59,11 +56,14 @@ impl<T: Texel> Texture for LayeredTexture2D<T> {
     }
 
     fn sampler(&self) -> Option<Sampler<Self::T>> {
-        self.sampler.as_ref().zip(self.sampling.as_ref()).map(|(sampler, settings)| Sampler {
-            sampler,
-            _phantom: PhantomData,
-            settings,
-        })
+        self.sampler
+            .as_ref()
+            .zip(self.sampling.as_ref())
+            .map(|(sampler, settings)| Sampler {
+                sampler,
+                _phantom: PhantomData,
+                settings,
+            })
     }
 
     fn graphics(&self) -> Graphics {
@@ -127,37 +127,35 @@ pub fn combine_into_layered<T: Texel + ImageTexel>(
     }
 
     // Get the (packed) texels from the textures
-    let texels = raw.iter()
+    let texels = raw
+        .iter()
         .flat_map(|raw| raw.texels().iter().cloned())
         .collect::<Vec<_>>();
 
     // Check if we must generate mip maps
-    let generate_mip_maps =
-        if let TextureMipMaps::Manual { mips: &[] } =
-            mipmaps
-        {
-            true
-        } else {
-            false
-        };
+    let generate_mip_maps = if let TextureMipMaps::Manual { mips: &[] } = mipmaps {
+        true
+    } else {
+        false
+    };
 
     let extent = (dimensions, raw.len() as u32);
-    
+
     // Generate each mip's texel data
-    let mips =
-        if generate_mip_maps {
-            Some(super::generate_mip_map::<T, (vek::Extent2<u32>, u32)>(
-            &texels,
-            extent
-        ).ok_or(TextureInitializationError::MipMapGenerationNPOT).unwrap())
-        } else {
-            None
-        };
+    let mips = if generate_mip_maps {
+        Some(
+            super::generate_mip_map::<T, (vek::Extent2<u32>, u32)>(&texels, extent)
+                .ok_or(TextureInitializationError::MipMapGenerationNPOT)
+                .unwrap(),
+        )
+    } else {
+        None
+    };
 
     // Convert the vecs to slices
-    let mips = mips.as_ref().map(|mips| {
-        mips.iter().map(|x| x.as_slice()).collect::<Vec<_>>()
-    });
+    let mips = mips
+        .as_ref()
+        .map(|mips| mips.iter().map(|x| x.as_slice()).collect::<Vec<_>>());
 
     // Overwrite the Manual mip map layers if they were empty to begin with
     let mipmaps = if generate_mip_maps {
@@ -168,13 +166,16 @@ pub fn combine_into_layered<T: Texel + ImageTexel>(
         mipmaps
     };
 
-    Some(LayeredTexture2D::from_texels(
-        graphics,
-        Some(&texels),
-        extent,
-        mode,
-        usage,
-        sampling,
-        mipmaps
-    ).unwrap())
+    Some(
+        LayeredTexture2D::from_texels(
+            graphics,
+            Some(&texels),
+            extent,
+            mode,
+            usage,
+            sampling,
+            mipmaps,
+        )
+        .unwrap(),
+    )
 }

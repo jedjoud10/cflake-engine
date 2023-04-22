@@ -1,10 +1,7 @@
-use crate::{
-    AttributeBuffer, DefaultMaterialResources, Mesh, MeshAttribute,
-};
+use crate::{AttributeBuffer, DefaultMaterialResources, Mesh, MeshAttribute};
 use graphics::{
-    ActiveRenderPipeline, ColorLayout, DepthStencilLayout,
-    DrawIndexedIndirectBuffer, GpuPod, SetIndexBufferError,
-    SetVertexBufferError, TriangleBuffer,
+    ActiveRenderPipeline, ColorLayout, DepthStencilLayout, DrawIndexedIndirectBuffer, GpuPod,
+    SetIndexBufferError, SetVertexBufferError, TriangleBuffer,
 };
 use std::ops::RangeBounds;
 use utils::Handle;
@@ -22,7 +19,11 @@ pub trait RenderPath: 'static + Send + Sync + Sized {
         + PartialEq<Self::AttributeBuffer<A>>;
 
     // Triangle buffer type used by meshes that use this render path
-    type TriangleBuffer<T: GpuPod>: 'static + Send + Sync + Sized + PartialEq<Self::TriangleBuffer<T>>;
+    type TriangleBuffer<T: GpuPod>: 'static
+        + Send
+        + Sync
+        + Sized
+        + PartialEq<Self::TriangleBuffer<T>>;
 
     // Either Option<usize> or a handle to DrawIndexedIndirectBuffer
     type Count: 'static + Send + Sync + Sized + PartialEq<Self::Count>;
@@ -37,12 +38,7 @@ pub trait RenderPath: 'static + Send + Sync + Sized {
     fn is_valid(mesh: &Mesh<Self>) -> bool;
 
     // Sets the vertex buffer of a specific mesh into the given active graphics pipeline
-    fn set_vertex_buffer<
-        'a,
-        C: ColorLayout,
-        DS: DepthStencilLayout,
-        A: MeshAttribute,
-    >(
+    fn set_vertex_buffer<'a, C: ColorLayout, DS: DepthStencilLayout, A: MeshAttribute>(
         slot: u32,
         bounds: impl RangeBounds<usize>,
         buffer: &'a Self::AttributeBuffer<A>,
@@ -99,12 +95,7 @@ impl RenderPath for Direct {
     }
 
     #[inline(always)]
-    fn set_vertex_buffer<
-        'a,
-        C: ColorLayout,
-        DS: DepthStencilLayout,
-        A: MeshAttribute,
-    >(
+    fn set_vertex_buffer<'a, C: ColorLayout, DS: DepthStencilLayout, A: MeshAttribute>(
         slot: u32,
         bounds: impl RangeBounds<usize>,
         buffer: &'a Self::AttributeBuffer<A>,
@@ -115,11 +106,7 @@ impl RenderPath for Direct {
     }
 
     #[inline(always)]
-    fn set_index_buffer<
-        'a,
-        C: ColorLayout,
-        DS: DepthStencilLayout,
-    >(
+    fn set_index_buffer<'a, C: ColorLayout, DS: DepthStencilLayout>(
         bounds: impl RangeBounds<usize>,
         buffer: &'a Self::TriangleBuffer<u32>,
         _defaults: &DefaultMaterialResources<'a>,
@@ -130,8 +117,7 @@ impl RenderPath for Direct {
 }
 
 impl RenderPath for Indirect {
-    type AttributeBuffer<A: MeshAttribute> =
-        Handle<AttributeBuffer<A>>;
+    type AttributeBuffer<A: MeshAttribute> = Handle<AttributeBuffer<A>>;
     type TriangleBuffer<T: GpuPod> = Handle<TriangleBuffer<T>>;
     type Count = (Handle<DrawIndexedIndirectBuffer>, usize);
 
@@ -155,35 +141,24 @@ impl RenderPath for Indirect {
         active: &mut ActiveRenderPipeline<'_, 'a, '_, C, DS>,
     ) {
         let handle = mesh.indirect().clone();
-        let buffer =
-            defaults.draw_indexed_indirect_buffers.get(&handle);
+        let buffer = defaults.draw_indexed_indirect_buffers.get(&handle);
         active.draw_indexed_indirect(buffer, mesh.offset());
     }
 
     #[inline(always)]
-    fn set_vertex_buffer<
-        'a,
-        C: ColorLayout,
-        DS: DepthStencilLayout,
-        A: MeshAttribute,
-    >(
+    fn set_vertex_buffer<'a, C: ColorLayout, DS: DepthStencilLayout, A: MeshAttribute>(
         slot: u32,
         bounds: impl RangeBounds<usize>,
         buffer: &Self::AttributeBuffer<A>,
         defaults: &DefaultMaterialResources<'a>,
         active: &mut ActiveRenderPipeline<'_, 'a, '_, C, DS>,
     ) -> Result<(), SetVertexBufferError> {
-        let buffer =
-            A::indirect_buffer_from_defaults(defaults, buffer);
+        let buffer = A::indirect_buffer_from_defaults(defaults, buffer);
         active.set_vertex_buffer::<A::V>(slot, buffer, bounds)
     }
 
     #[inline(always)]
-    fn set_index_buffer<
-        'a,
-        C: ColorLayout,
-        DS: DepthStencilLayout,
-    >(
+    fn set_index_buffer<'a, C: ColorLayout, DS: DepthStencilLayout>(
         bounds: impl RangeBounds<usize>,
         buffer: &'a Self::TriangleBuffer<u32>,
         defaults: &DefaultMaterialResources<'a>,

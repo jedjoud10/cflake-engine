@@ -1,9 +1,6 @@
 use std::{any::TypeId, cmp::Ordering, time::Duration};
 
-use crate::{
-    Caller, CallerId, Event, RegistrySortingError, Rule, StageError,
-    StageId, SystemId,
-};
+use crate::{Caller, CallerId, Event, RegistrySortingError, Rule, StageError, StageId, SystemId};
 use ahash::{AHashMap, AHashSet};
 
 use lazy_static::lazy_static;
@@ -129,9 +126,8 @@ impl<C: Caller> Registry<C> {
         let indices = sort(&mut self.map, self.caller)?;
 
         // We do quite a considerable amount of mental trickery and mockery who are unfortunate enough to fall victim to our dever little trap of social teasing
-        self.events.sort_by(|(a, _), (b, _)| {
-            usize::cmp(&indices[a], &indices[b])
-        });
+        self.events
+            .sort_by(|(a, _), (b, _)| usize::cmp(&indices[a], &indices[b]));
 
         log::debug!(
             "Sorted {} events for {} registry",
@@ -144,10 +140,7 @@ impl<C: Caller> Registry<C> {
             for (stage, _) in slice.iter() {
                 log::debug!("├── {}", stage.system.name);
             }
-            log::debug!(
-                "└── {}",
-                self.events.last().unwrap().0.system.name
-            );
+            log::debug!("└── {}", self.events.last().unwrap().0.system.name);
         }
 
         // 3x POUNCES ON YOU UWU YOU'RE SO WARM
@@ -263,11 +256,7 @@ fn sort(
                 // Check for a cyclic reference when constraining the stage
                 count += 1;
                 if count > CYCLIC_REFERENCE_RULES_THRESHOLD {
-                    return Err(
-                        RegistrySortingError::CyclicRuleReference(
-                            key,
-                        ),
-                    );
+                    return Err(RegistrySortingError::CyclicRuleReference(key));
                 }
             }
 
@@ -295,14 +284,9 @@ fn sort(
             // We must check if the stage referenced by "called" is even valid
             if !indices.contains_key(&key) {
                 if current_tree.contains(&key) {
-                    return Err(
-                        RegistrySortingError::CyclicReference,
-                    );
+                    return Err(RegistrySortingError::CyclicReference);
                 } else {
-                    return Err(RegistrySortingError::MissingStage(
-                        caller.unwrap(),
-                        key,
-                    ));
+                    return Err(RegistrySortingError::MissingStage(caller.unwrap(), key));
                 }
             }
 
@@ -314,15 +298,7 @@ fn sort(
     // Add the stages into the vector and start sorting them
     for key in keys {
         let mut tree = AHashSet::new();
-        calc(
-            key,
-            &mut indices,
-            &mut map,
-            &mut tree,
-            &mut vec,
-            0,
-            None,
-        )?;
+        calc(key, &mut indices, &mut map, &mut tree, &mut vec, 0, None)?;
     }
 
     Ok(indices)

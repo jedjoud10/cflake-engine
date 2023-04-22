@@ -15,10 +15,7 @@ pub trait Slice<'i> {
     fn as_ptr(&mut self) -> Self::Ptr;
     unsafe fn from_raw_parts(ptr: Self::Ptr, len: usize) -> Self;
     unsafe fn offset_ptr(ptr: Self::Ptr, offset: usize) -> Self::Ptr;
-    unsafe fn get_unchecked<'a: 'i>(
-        &'a mut self,
-        index: usize,
-    ) -> Self::Item;
+    unsafe fn get_unchecked<'a: 'i>(&'a mut self, index: usize) -> Self::Item;
 }
 
 // Slice impl for immutable slices
@@ -48,10 +45,7 @@ impl<'i, T: 'static + Sync + Send> Slice<'i> for &[T] {
         SendPtr::from(ptr.add(offset))
     }
 
-    unsafe fn get_unchecked<'a: 'i>(
-        &'a mut self,
-        index: usize,
-    ) -> Self::Item {
+    unsafe fn get_unchecked<'a: 'i>(&'a mut self, index: usize) -> Self::Item {
         <[T]>::get_unchecked(self, index)
     }
 }
@@ -85,10 +79,7 @@ impl<'i, T: 'static + Sync + Send> Slice<'i> for Option<&[T]> {
         })
     }
 
-    unsafe fn get_unchecked<'a: 'i>(
-        &'a mut self,
-        index: usize,
-    ) -> Self::Item {
+    unsafe fn get_unchecked<'a: 'i>(&'a mut self, index: usize) -> Self::Item {
         self.as_ref()
             .map(|slice| <[T]>::get_unchecked(slice, index))
     }
@@ -121,10 +112,7 @@ impl<'i, T: 'static + Sync + Send> Slice<'i> for &mut [T] {
         SendMutPtr::from(ptr.add(offset))
     }
 
-    unsafe fn get_unchecked<'a: 'i>(
-        &'a mut self,
-        index: usize,
-    ) -> Self::Item {
+    unsafe fn get_unchecked<'a: 'i>(&'a mut self, index: usize) -> Self::Item {
         <[T]>::get_unchecked_mut(self, index)
     }
 }
@@ -158,10 +146,7 @@ impl<'i, T: 'static + Sync + Send> Slice<'i> for Option<&mut [T]> {
         })
     }
 
-    unsafe fn get_unchecked<'a: 'i>(
-        &'a mut self,
-        index: usize,
-    ) -> Self::Item {
+    unsafe fn get_unchecked<'a: 'i>(&'a mut self, index: usize) -> Self::Item {
         self.as_mut()
             .map(|slice| <[T]>::get_unchecked_mut(slice, index))
     }

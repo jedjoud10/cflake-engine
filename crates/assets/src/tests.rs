@@ -1,7 +1,5 @@
 #[cfg(test)]
 mod tests {
-    
-    
 
     use crate::{asset, AssetLoadError, Assets};
 
@@ -10,10 +8,7 @@ mod tests {
         let loader = Assets::new();
         asset!(loader, "test/text.txt", "src/assets/");
         let string = loader.load::<String>("test/text.txt");
-        assert_eq!(
-            string.unwrap(),
-            "this is a test file\n1234567890"
-        );
+        assert_eq!(string.unwrap(), "this is a test file\n1234567890");
     }
 
     #[test]
@@ -35,20 +30,15 @@ mod tests {
     fn read_iter() {
         let loader = Assets::new();
         asset!(loader, "test/text.txt", "src/assets/");
-        let mut strings =
-            loader.load_from_iter::<String>(["test/text.txt"]);
+        let mut strings = loader.load_from_iter::<String>(["test/text.txt"]);
         let string = strings.pop().unwrap();
-        assert_eq!(
-            string.unwrap(),
-            "this is a test file\n1234567890"
-        );
+        assert_eq!(string.unwrap(), "this is a test file\n1234567890");
     }
 
     #[test]
     fn not_found_iter() {
         let loader = Assets::new();
-        let mut strings =
-            loader.load_from_iter::<String>(["test/text.txt"]);
+        let mut strings = loader.load_from_iter::<String>(["test/text.txt"]);
         let string = strings.pop().unwrap();
         assert!(matches!(
             string.unwrap_err(),
@@ -61,8 +51,7 @@ mod tests {
         let mut threadpool = utils::ThreadPool::default();
         let loader = Assets::new();
         asset!(loader, "test/text.txt", "src/assets/");
-        let handle = loader
-            .async_load::<String>("test/text.txt", &mut threadpool);
+        let handle = loader.async_load::<String>("test/text.txt", &mut threadpool);
         let string = loader.wait(handle).unwrap();
         assert_eq!(string, "this is a test file\n1234567890");
     }
@@ -71,8 +60,7 @@ mod tests {
     fn not_found_async() {
         let mut threadpool = utils::ThreadPool::default();
         let loader = Assets::new();
-        let handle = loader
-            .async_load::<String>("test/text.txt", &mut threadpool);
+        let handle = loader.async_load::<String>("test/text.txt", &mut threadpool);
         let string = loader.wait(handle);
         assert!(matches!(
             string.unwrap_err(),
@@ -85,10 +73,7 @@ mod tests {
         let mut threadpool = utils::ThreadPool::default();
         let loader = Assets::new();
         asset!(loader, "test/text.txt", "src/assets/");
-        let mut handles = loader.async_load_from_iter::<String>(
-            ["test/text.txt"],
-            &mut threadpool,
-        );
+        let mut handles = loader.async_load_from_iter::<String>(["test/text.txt"], &mut threadpool);
         let handle = handles.pop().unwrap();
         let mut vec = loader.wait_from_iter([handle]);
         let last = vec.pop().unwrap();
@@ -100,10 +85,7 @@ mod tests {
     fn not_found_async_iter() {
         let mut threadpool = utils::ThreadPool::default();
         let loader = Assets::new();
-        let mut handles = loader.async_load_from_iter::<String>(
-            ["test/text.txt"],
-            &mut threadpool,
-        );
+        let mut handles = loader.async_load_from_iter::<String>(["test/text.txt"], &mut threadpool);
         let handle = handles.pop().unwrap();
         let mut vec = loader.wait_from_iter([handle]);
         let string = vec.pop().unwrap();
@@ -132,19 +114,14 @@ mod tests {
                 settings: Self::Settings<'_>,
             ) -> Result<Self, Self::Err> {
                 assert_eq!(*context, 69);
-                String::deserialize(data, (), settings)
-                    .map(Contextual)
+                String::deserialize(data, (), settings).map(Contextual)
             }
         }
 
         let loader = Assets::new();
         asset!(loader, "test/text.txt", "src/assets/");
         let context = 69u32;
-        let string =
-            loader.load::<Contextual>(("test/text.txt", &context));
-        assert_eq!(
-            string.unwrap().0,
-            "this is a test file\n1234567890"
-        );
+        let string = loader.load::<Contextual>(("test/text.txt", &context));
+        assert_eq!(string.unwrap().0, "this is a test file\n1234567890");
     }
 }

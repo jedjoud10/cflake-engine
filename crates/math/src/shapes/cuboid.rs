@@ -1,6 +1,4 @@
-use crate::{
-    Boundable, Movable, ExplicitVertices, SurfaceArea, Volume,
-};
+use crate::{Boundable, ExplicitVertices, Movable, SurfaceArea, Volume};
 
 // A 3D cuboid that is defined by it's center and it's extent
 #[derive(Clone, Copy)]
@@ -14,10 +12,7 @@ pub struct Cuboid<T> {
 
 impl<T> Cuboid<T> {
     // Create a cuboid from a center and an extent
-    pub fn new(
-        center: vek::Vec3<T>,
-        extent: vek::Extent3<T>,
-    ) -> Self {
+    pub fn new(center: vek::Vec3<T>, extent: vek::Extent3<T>) -> Self {
         Self { center, extent }
     }
 
@@ -91,10 +86,8 @@ macro_rules! impl_shape_traits {
 
             // http://paulbourke.net/geometry/polygonise/
             fn points(&self) -> Self::Points {
-                let max = self.center
-                    + vek::Vec3::<$t>::from(self.extent / 2.0);
-                let min = self.center
-                    - vek::Vec3::<$t>::from(self.extent / 2.0);
+                let max = self.center + vek::Vec3::<$t>::from(self.extent / 2.0);
+                let min = self.center - vek::Vec3::<$t>::from(self.extent / 2.0);
 
                 [
                     min,

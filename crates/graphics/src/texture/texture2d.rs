@@ -1,14 +1,12 @@
-use std::{
-    marker::PhantomData, mem::ManuallyDrop, sync::Arc, time::Instant,
-};
+use std::{marker::PhantomData, mem::ManuallyDrop, sync::Arc, time::Instant};
 
 use assets::Asset;
 use smallvec::SmallVec;
 
 use crate::{
-    Extent, Graphics, ImageTexel, Sampler, SamplerSettings, Texel,
-    Texture, TextureAssetLoadError, TextureInitializationError,
-    TextureMipMaps, TextureMode, TextureUsage, TextureScale, RawTexels,
+    Extent, Graphics, ImageTexel, RawTexels, Sampler, SamplerSettings, Texel, Texture,
+    TextureAssetLoadError, TextureInitializationError, TextureMipMaps, TextureMode, TextureScale,
+    TextureUsage,
 };
 
 // A 2D texture that contains multiple texels that have their own channels
@@ -59,13 +57,16 @@ impl<T: Texel> Texture for Texture2D<T> {
     }
 
     fn sampler(&self) -> Option<Sampler<Self::T>> {
-        self.sampler.as_ref().zip(self.sampling.as_ref()).map(|(sampler, settings)| Sampler {
-            sampler,
-            _phantom: PhantomData,
-            settings,
-        })
+        self.sampler
+            .as_ref()
+            .zip(self.sampling.as_ref())
+            .map(|(sampler, settings)| Sampler {
+                sampler,
+                _phantom: PhantomData,
+                settings,
+            })
     }
-    
+
     unsafe fn from_raw_parts(
         graphics: &Graphics,
         texture: wgpu::Texture,
@@ -105,7 +106,6 @@ impl<T: Texel> Texture for Texture2D<T> {
     }
 }
 
-
 // Texture settings that we shall use when loading in a new texture
 #[derive(Clone)]
 pub struct TextureImportSettings<'m, T: ImageTexel> {
@@ -143,15 +143,11 @@ impl<T: ImageTexel> Asset for Texture2D<T> {
         settings: Self::Settings<'s>,
     ) -> Result<Self, Self::Err> {
         // Load the raw texels from the file
-        let raw = RawTexels::<T>::deserialize(
-            data,
-            (),
-            settings.scale
-        ).map_err(TextureAssetLoadError::RawTexelsError)?;
+        let raw = RawTexels::<T>::deserialize(data, (), settings.scale)
+            .map_err(TextureAssetLoadError::RawTexelsError)?;
 
         // Convert raw texels to texture
-        texture2d_from_raw(graphics, settings, raw)
-            .map_err(TextureAssetLoadError::Initialization)
+        texture2d_from_raw(graphics, settings, raw).map_err(TextureAssetLoadError::Initialization)
     }
 }
 
@@ -164,30 +160,26 @@ pub fn texture2d_from_raw<T: ImageTexel>(
     let RawTexels(texels, dimensions) = raw;
 
     // Check if we must generate mip maps
-    let generate_mip_maps =
-        if let TextureMipMaps::Manual { mips: &[] } =
-            settings.mipmaps
-        {
-            true
-        } else {
-            false
-        };
+    let generate_mip_maps = if let TextureMipMaps::Manual { mips: &[] } = settings.mipmaps {
+        true
+    } else {
+        false
+    };
 
     // Generate each mip's texel data
-    let mips =
-        if generate_mip_maps {
-            Some(super::generate_mip_map::<T, vek::Extent2<u32>>(
-            &texels,
-            dimensions
-        ).ok_or(TextureInitializationError::MipMapGenerationNPOT)?)
-        } else {
-            None
-        };
+    let mips = if generate_mip_maps {
+        Some(
+            super::generate_mip_map::<T, vek::Extent2<u32>>(&texels, dimensions)
+                .ok_or(TextureInitializationError::MipMapGenerationNPOT)?,
+        )
+    } else {
+        None
+    };
 
     // Convert the vecs to slices
-    let mips = mips.as_ref().map(|mips| {
-        mips.iter().map(|x| x.as_slice()).collect::<Vec<_>>()
-    });
+    let mips = mips
+        .as_ref()
+        .map(|mips| mips.iter().map(|x| x.as_slice()).collect::<Vec<_>>());
 
     // Overwrite the Manual mip map layers if they were empty to begin with
     let mipmaps = if generate_mip_maps {

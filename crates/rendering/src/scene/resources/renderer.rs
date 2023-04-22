@@ -1,17 +1,13 @@
-use crate::{
-    AlbedoMap, CameraBuffer, MaskMap, NormalMap, SceneBuffer,
-    TimingBuffer, WindowBuffer,
-};
+use crate::{AlbedoMap, CameraBuffer, MaskMap, NormalMap, SceneBuffer, TimingBuffer, WindowBuffer};
 
 use assets::Assets;
 
 use ecs::Entity;
 use graphics::{
-    ActiveRenderPipeline, ActiveRenderPass, BufferMode,
-    BufferUsage, Depth, GpuPod, Graphics, LoadOp, Operation,
-    RenderPass, SamplerFilter, SamplerMipMaps, SamplerSettings,
-    SamplerWrap, StoreOp, Texel, Texture, Texture2D, TextureMipMaps, TextureMode, TextureUsage,
-    UniformBuffer, RGBA,
+    ActiveRenderPass, ActiveRenderPipeline, BufferMode, BufferUsage, Depth, GpuPod, Graphics,
+    LoadOp, Operation, RenderPass, SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap,
+    StoreOp, Texel, Texture, Texture2D, TextureMipMaps, TextureMode, TextureUsage, UniformBuffer,
+    RGBA,
 };
 use utils::{Handle, Storage};
 
@@ -19,10 +15,8 @@ use utils::{Handle, Storage};
 pub type SceneColor = RGBA<f32>;
 pub type SceneDepth = Depth<f32>;
 pub type SceneRenderPass = RenderPass<SceneColor, SceneDepth>;
-pub type ActiveSceneRenderPass<'r, 't> =
-    ActiveRenderPass<'r, 't, SceneColor, SceneDepth>;
-pub type ActiveScenePipeline<'a, 'r, 't> =
-    ActiveRenderPipeline<'a, 'r, 't, SceneColor, SceneDepth>;
+pub type ActiveSceneRenderPass<'r, 't> = ActiveRenderPass<'r, 't, SceneColor, SceneDepth>;
+pub type ActiveScenePipeline<'a, 'r, 't> = ActiveRenderPipeline<'a, 'r, 't, SceneColor, SceneDepth>;
 
 // Keeps tracks of data that we use for rendering the scene
 pub struct ForwardRenderer {
@@ -53,9 +47,7 @@ pub struct ForwardRenderer {
 }
 
 // Create a new uniform buffer with default contents
-fn create_uniform_buffer<T: GpuPod + Default>(
-    graphics: &Graphics,
-) -> UniformBuffer<T> {
+fn create_uniform_buffer<T: GpuPod + Default>(graphics: &Graphics) -> UniformBuffer<T> {
     UniformBuffer::from_slice(
         graphics,
         &[T::default()],
@@ -66,10 +58,7 @@ fn create_uniform_buffer<T: GpuPod + Default>(
 }
 
 // Create a 1x1 texture 2D with the given value
-fn create_texture2d<T: Texel>(
-    graphics: &Graphics,
-    value: T::Storage,
-) -> Texture2D<T> {
+fn create_texture2d<T: Texel>(graphics: &Graphics, value: T::Storage) -> Texture2D<T> {
     Texture2D::<T>::from_texels(
         graphics,
         Some(&[value; 16]),
@@ -144,12 +133,9 @@ impl ForwardRenderer {
         let mask = vek::Vec4::new(255u8, 255, 255, 0);
 
         // Create the 1x1 default textures
-        let white =
-            albedo_maps.insert(create_texture2d(graphics, white));
-        let black =
-            albedo_maps.insert(create_texture2d(graphics, black));
-        let normal =
-            normal_maps.insert(create_texture2d(graphics, normal));
+        let white = albedo_maps.insert(create_texture2d(graphics, white));
+        let black = albedo_maps.insert(create_texture2d(graphics, black));
+        let normal = normal_maps.insert(create_texture2d(graphics, normal));
         let mask = mask_maps.insert(create_texture2d(graphics, mask));
 
         Self {

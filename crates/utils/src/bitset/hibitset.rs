@@ -23,8 +23,7 @@ impl HiBitSet {
     pub fn new() -> Self {
         let vector = (0..LAYER_COUNT)
             .map(|i| {
-                let len = (DEFAULT_BASE_CHUNK_CAPACITY as f32
-                    * usize::BITS as f32)
+                let len = (DEFAULT_BASE_CHUNK_CAPACITY as f32 * usize::BITS as f32)
                     / (usize::BITS.saturating_pow(i as u32) as f32);
                 let len = len.ceil() as usize;
                 vec![0usize; len]
@@ -45,8 +44,7 @@ impl HiBitSet {
 
     // Get the chunk and bitmask location for a specific layer
     fn coords(index: usize, layer: usize) -> (usize, usize) {
-        let threshold =
-            usize::BITS.saturating_pow(layer as u32 + 1) as usize;
+        let threshold = usize::BITS.saturating_pow(layer as u32 + 1) as usize;
         let chunk = index / threshold;
 
         let location = if layer == 0 {
@@ -106,17 +104,13 @@ impl HiBitSet {
                 *bits &= !(1 << location);
             } else {
                 // Get the parent layer index and location
-                let threshold = usize::BITS
-                    .saturating_pow((i + 2) as u32)
-                    as usize;
+                let threshold = usize::BITS.saturating_pow((i + 2) as u32) as usize;
                 let parent_chunk = index / threshold;
                 let parent_location = index % threshold;
 
                 // Calculate the start and end indices for the current layer
-                let current_start =
-                    parent_chunk * (usize::BITS as usize);
-                let current_end =
-                    parent_chunk * (usize::BITS as usize + 1);
+                let current_start = parent_chunk * (usize::BITS as usize);
+                let current_end = parent_chunk * (usize::BITS as usize + 1);
 
                 // Update the parent of the current layer
                 let current_layer = self.layer(i);

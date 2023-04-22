@@ -1,33 +1,27 @@
 use ahash::AHashMap;
 use dashmap::DashMap;
 use parking_lot::Mutex;
-use std::{hash::BuildHasherDefault, sync::Arc, path::PathBuf};
+use std::{hash::BuildHasherDefault, path::PathBuf, sync::Arc};
 use thread_local::ThreadLocal;
 use utils::Storage;
 pub use wgpu::CommandEncoder;
 use wgpu::{
-    util::StagingBelt, Adapter, Device, Instance, Maintain, Queue,
-    Sampler, Surface, SurfaceCapabilities, SurfaceConfiguration,
-    TextureView,
+    util::StagingBelt, Adapter, Device, Instance, Maintain, Queue, Sampler, Surface,
+    SurfaceCapabilities, SurfaceConfiguration, TextureView,
 };
 
 use crate::{
-    BindGroupLayout, BindResourceLayout, Id, ReflectedShader,
-    SamplerSettings, SamplerWrap, Snippets, StagingPool,
-    UniformBuffer,
+    BindGroupLayout, BindResourceLayout, Id, ReflectedShader, SamplerSettings, SamplerWrap,
+    Snippets, StagingPool, UniformBuffer,
 };
 
 // Cached graphics data
 pub(crate) struct Cached {
-    pub(crate) shaders: DashMap<
-        (Snippets, PathBuf),
-        (Arc<wgpu::ShaderModule>, Arc<spirq::EntryPoint>),
-    >,
+    pub(crate) shaders:
+        DashMap<(Snippets, PathBuf), (Arc<wgpu::ShaderModule>, Arc<spirq::EntryPoint>)>,
     pub(crate) samplers: DashMap<SamplerSettings, Arc<Sampler>>,
-    pub(crate) bind_group_layouts:
-        DashMap<BindGroupLayout, Arc<wgpu::BindGroupLayout>>,
-    pub(crate) pipeline_layouts:
-        DashMap<ReflectedShader, Arc<wgpu::PipelineLayout>>,
+    pub(crate) bind_group_layouts: DashMap<BindGroupLayout, Arc<wgpu::BindGroupLayout>>,
+    pub(crate) pipeline_layouts: DashMap<ReflectedShader, Arc<wgpu::PipelineLayout>>,
 
     // TODO: Memory leak happening cause we don't remove the bindg groups when we delete textures/buffers
     pub(crate) bind_groups: DashMap<Vec<Id>, Arc<wgpu::BindGroup>>,
@@ -122,19 +116,14 @@ impl Graphics {
         let mut locked = encoders.lock();
         *self.0.acquires.lock() += 1;
         locked.pop().unwrap_or_else(|| {
-            self.device().create_command_encoder(
-                &wgpu::CommandEncoderDescriptor { label: None },
-            )
+            self.device()
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None })
         })
     }
 
     // Submit one or multiple command encoders and possibly waits for the GPU to complete them
     // The submitted command encoders cannot be reused for new commands
-    pub fn submit_from_iter(
-        &self,
-        iter: impl IntoIterator<Item = CommandEncoder>,
-        wait: bool,
-    ) {
+    pub fn submit_from_iter(&self, iter: impl IntoIterator<Item = CommandEncoder>, wait: bool) {
         log::trace!("graphics context: submit from iter");
         let finished = iter.into_iter().map(|x| x.finish());
         let i = self.queue().submit(finished);
@@ -159,10 +148,7 @@ impl Graphics {
     }
 
     // Pushes some unfinished command encoders to be re-used by the current thread
-    pub fn reuse(
-        &self,
-        iter: impl IntoIterator<Item = CommandEncoder>,
-    ) {
+    pub fn reuse(&self, iter: impl IntoIterator<Item = CommandEncoder>) {
         log::trace!("graphics context: reuse");
         let encoders = self.0.encoders.get_or_default();
         let mut locked = encoders.lock();

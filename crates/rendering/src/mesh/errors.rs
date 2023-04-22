@@ -33,14 +33,10 @@ pub enum MeshInitializationError {
 
 #[derive(Debug, Error)]
 pub enum MeshAabbComputeError {
-    #[error(
-        "Positions attribute buffer is empty, cannot calculate AABB"
-    )]
+    #[error("Positions attribute buffer is empty, cannot calculate AABB")]
     EmptyPositionAttributeBuffer,
 
-    #[error(
-        "The position buffer cannot be read from the host (CPU): {0}"
-    )]
+    #[error("The position buffer cannot be read from the host (CPU): {0}")]
     NotHostMapped(BufferNotMappableError),
 
     #[error("{0}")]

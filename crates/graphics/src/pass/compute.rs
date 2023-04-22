@@ -1,10 +1,9 @@
 use wgpu::CommandEncoder;
 
 use crate::{
-    ActiveComputePass, ActiveRenderPass, ColorAttachments,
-    ColorLayout, ColorOperations, DepthStencilAttachment,
-    DepthStencilLayout, DepthStencilOperations, Graphics,
-    RenderPipeline, Vertex, VertexBuffer,
+    ActiveComputePass, ActiveRenderPass, ColorAttachments, ColorLayout, ColorOperations,
+    DepthStencilAttachment, DepthStencilLayout, DepthStencilOperations, Graphics, RenderPipeline,
+    Vertex, VertexBuffer,
 };
 use std::marker::PhantomData;
 

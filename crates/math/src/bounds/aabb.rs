@@ -1,6 +1,6 @@
 use num_traits::real::Real;
 
-use crate::{Boundable, Movable, ExplicitVertices, SurfaceArea, Volume};
+use crate::{Boundable, ExplicitVertices, Movable, SurfaceArea, Volume};
 
 // An axis aligned bounding box
 #[derive(PartialEq, Debug, Clone, Copy)]
@@ -20,7 +20,10 @@ impl<T> Aabb<T> {
     }
 
     // Make an AABB that represents WGPU NDC
-    pub fn ndc() -> Self where T: Real {
+    pub fn ndc() -> Self
+    where
+        T: Real,
+    {
         Self {
             min: vek::Vec3::<T>::new(-T::one(), -T::one(), T::zero()),
             max: vek::Vec3::<T>::broadcast(T::one()),
@@ -28,15 +31,18 @@ impl<T> Aabb<T> {
     }
 
     // Create an AABB from points
-    pub fn from_points(points: &[vek::Vec3<T>]) -> Option<Self> where T: Real {
+    pub fn from_points(points: &[vek::Vec3<T>]) -> Option<Self>
+    where
+        T: Real,
+    {
         if points.len() < 2 {
             return None;
         }
-    
+
         // Initial values set to their inverse (since we have multiple iterations)
         let mut min = vek::Vec3::broadcast(T::max_value());
         let mut max = vek::Vec3::broadcast(T::min_value());
-    
+
         for point in points {
             // Update the "max" bound element wise
             min.x = min.x.min(point.x);
@@ -48,7 +54,7 @@ impl<T> Aabb<T> {
             max.y = max.y.max(point.y);
             max.z = max.z.max(point.z);
         }
-    
+
         // Check if the AABB would be valid
         (min != max).then_some(Aabb { min, max })
     }
@@ -95,8 +101,7 @@ macro_rules! impl_shape_traits {
 
         impl SurfaceArea<$t> for Aabb<$t> {
             fn area(&self) -> $t {
-                let extent =
-                    vek::Extent3::<$t>::from(self.max - self.min);
+                let extent = vek::Extent3::<$t>::from(self.max - self.min);
                 let front = extent.w * extent.h;
                 let side = extent.d * extent.h;
                 let top = extent.w * extent.d;
@@ -111,25 +116,13 @@ macro_rules! impl_shape_traits {
             fn points(&self) -> Self::Points {
                 [
                     self.min,
-                    vek::Vec3::new(
-                        self.max.x, self.min.y, self.min.z,
-                    ),
-                    vek::Vec3::new(
-                        self.max.x, self.min.y, self.max.z,
-                    ),
-                    vek::Vec3::new(
-                        self.min.x, self.min.y, self.max.z,
-                    ),
-                    vek::Vec3::new(
-                        self.min.x, self.max.y, self.min.z,
-                    ),
-                    vek::Vec3::new(
-                        self.max.x, self.max.y, self.min.z,
-                    ),
+                    vek::Vec3::new(self.max.x, self.min.y, self.min.z),
+                    vek::Vec3::new(self.max.x, self.min.y, self.max.z),
+                    vek::Vec3::new(self.min.x, self.min.y, self.max.z),
+                    vek::Vec3::new(self.min.x, self.max.y, self.min.z),
+                    vek::Vec3::new(self.max.x, self.max.y, self.min.z),
                     self.max,
-                    vek::Vec3::new(
-                        self.min.x, self.max.y, self.max.z,
-                    ),
+                    vek::Vec3::new(self.min.x, self.max.y, self.max.z),
                 ]
             }
         }

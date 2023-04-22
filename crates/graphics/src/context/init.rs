@@ -1,14 +1,13 @@
 use crate::{
-    Cached, FrameRateLimit, Graphics, InternalGraphics, StagingPool,
-    Window, WindowSettings,
+    Cached, FrameRateLimit, Graphics, InternalGraphics, StagingPool, Window, WindowSettings,
 };
 
 use dashmap::DashMap;
 use nohash_hasher::NoHashHasher;
 use parking_lot::Mutex;
+use std::sync::Arc;
 use systemstat::Platform;
 use wgpu::RequestAdapterOptions;
-use std::sync::Arc;
 use winit::{
     event_loop::EventLoop,
     window::{Fullscreen, WindowBuilder},
@@ -21,9 +20,7 @@ pub(crate) unsafe fn init_context_and_window(
 ) -> (Graphics, Window) {
     // Create a winit window (but don't make it's wrapper)
     let window = Arc::new(init_window(el, &settings));
-    let size = vek::Extent2::<u32>::from(<(u32, u32)>::from(
-        window.inner_size(),
-    ));
+    let size = vek::Extent2::<u32>::from(<(u32, u32)>::from(window.inner_size()));
 
     // TODO: Try to find a pure rust alternative to SHADERC to compile glsl
     // Don't use naga since it's shit (the glsl interface at least)
@@ -37,8 +34,7 @@ pub(crate) unsafe fn init_context_and_window(
     });
 
     // Create the rendering surface
-    let surface =
-        unsafe { instance.create_surface(&window.as_ref()).unwrap() };
+    let surface = unsafe { instance.create_surface(&window.as_ref()).unwrap() };
 
     // Modified default limits are sufficient
     let mut limits = wgpu::Limits::default();
@@ -47,8 +43,8 @@ pub(crate) unsafe fn init_context_and_window(
 
     // Required device features
     let features = wgpu::Features::TEXTURE_COMPRESSION_BC
-        | wgpu::Features::STORAGE_RESOURCE_BINDING_ARRAY 
-        | wgpu::Features::BUFFER_BINDING_ARRAY 
+        | wgpu::Features::STORAGE_RESOURCE_BINDING_ARRAY
+        | wgpu::Features::BUFFER_BINDING_ARRAY
         | wgpu::Features::MULTI_DRAW_INDIRECT
         | wgpu::Features::TEXTURE_BINDING_ARRAY
         | wgpu::Features::SAMPLED_TEXTURE_AND_STORAGE_BUFFER_ARRAY_NON_UNIFORM_INDEXING
@@ -66,7 +62,7 @@ pub(crate) unsafe fn init_context_and_window(
         let system = systemstat::System::new();
         !system.on_ac_power().ok().unwrap_or(true)
     }
-    
+
     // Pick the appropriate adapter with the supported features and limits
     let (adapter, _) = instance.enumerate_adapters(backends).filter(|adapter| {
         log::debug!("Checking adapter '{}'...", adapter.get_info().name);
@@ -136,8 +132,7 @@ pub(crate) unsafe fn init_context_and_window(
 
     // Create the surface configuration
     let surface_config = wgpu::SurfaceConfiguration {
-        usage: wgpu::TextureUsages::RENDER_ATTACHMENT
-            | wgpu::TextureUsages::COPY_DST,
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_DST,
         format: surface_format,
         width: window.inner_size().width,
         height: window.inner_size().height,
@@ -184,10 +179,7 @@ pub(crate) unsafe fn init_context_and_window(
 }
 
 // Init a winit window
-fn init_window(
-    el: &EventLoop<()>,
-    window_settings: &WindowSettings,
-) -> winit::window::Window {
+fn init_window(el: &EventLoop<()>, window_settings: &WindowSettings) -> winit::window::Window {
     WindowBuilder::default()
         .with_fullscreen(
             window_settings

@@ -75,22 +75,16 @@ impl<S: Sample> Asset for AudioClip<S> {
                 // Handle decoding a singular frame
                 fn decode(
                     result: Result<minimp3::Frame, minimp3::Error>,
-                ) -> Result<
-                    Option<minimp3::Frame>,
-                    AudioClipDeserializationError,
-                > {
+                ) -> Result<Option<minimp3::Frame>, AudioClipDeserializationError> {
                     match result {
                         Ok(frame) => Ok(Some(frame)),
                         Err(minimp3::Error::Eof) => Ok(None),
-                        Err(err) => Err(
-                            AudioClipDeserializationError::MP3(err),
-                        ),
+                        Err(err) => Err(AudioClipDeserializationError::MP3(err)),
                     }
                 }
 
                 // Load the frames in, and return any errors (other than EoF)
-                while let Some(frame) = decode(decoded.next_frame())?
-                {
+                while let Some(frame) = decode(decoded.next_frame())? {
                     frames.push(frame);
                 }
 
@@ -101,13 +95,12 @@ impl<S: Sample> Asset for AudioClip<S> {
                 let format = S::format();
 
                 // Calculate the duration of this clip
-                let duration =
-                    calculate_clip_duration_secs_from_frames(
-                        frames.len(),
-                        channels,
-                        sample_rate,
-                        frames[0].data.len(),
-                    );
+                let duration = calculate_clip_duration_secs_from_frames(
+                    frames.len(),
+                    channels,
+                    sample_rate,
+                    frames[0].data.len(),
+                );
                 log::debug!(
                     "Loaded {} seconds from MP3 file {:?}",
                     duration.as_secs(),
@@ -136,10 +129,9 @@ impl<S: Sample> Asset for AudioClip<S> {
 
             // Decode a WAV file into the appropriate format
             "wav" => {
-                let mut read =
-                    BufReader::new(Cursor::new(data.bytes()));
-                let (header, bitdepth) = wav::read(&mut read)
-                    .map_err(AudioClipDeserializationError::Wav)?;
+                let mut read = BufReader::new(Cursor::new(data.bytes()));
+                let (header, bitdepth) =
+                    wav::read(&mut read).map_err(AudioClipDeserializationError::Wav)?;
 
                 // Fetch the descriptor data
                 let bitrate = header.bytes_per_second * 8;
@@ -160,12 +152,8 @@ impl<S: Sample> Asset for AudioClip<S> {
 
                 // Convert the bitdepth data into
                 let samples: Arc<[S]> = match bitdepth {
-                    wav::BitDepth::Sixteen(vec) => {
-                        S::from_i16_vec(vec).into()
-                    }
-                    wav::BitDepth::ThirtyTwoFloat(vec) => {
-                        S::from_f32_vec(vec).into()
-                    }
+                    wav::BitDepth::Sixteen(vec) => S::from_i16_vec(vec).into(),
+                    wav::BitDepth::ThirtyTwoFloat(vec) => S::from_f32_vec(vec).into(),
                     _ => panic!("BitDepth not supported"),
                 };
 
@@ -194,20 +182,14 @@ fn calculate_clip_duration_secs_from_frames(
     sample_rate: u32,
     samples_per_frame: usize,
 ) -> Duration {
-    let samples_per_frame =
-        samples_per_frame as f32 / channels as f32;
+    let samples_per_frame = samples_per_frame as f32 / channels as f32;
     let total_frames = frames as f32;
     let sample_rate = sample_rate as f32;
-    Duration::from_secs(
-        ((samples_per_frame * total_frames) / sample_rate) as u64,
-    )
+    Duration::from_secs(((samples_per_frame * total_frames) / sample_rate) as u64)
 }
 
 // Calculate the clip duration using the file size and bytes per second
-fn calculate_clip_duration_secs_from_size(
-    file_size: usize,
-    bytes_per_second: usize,
-) -> Duration {
+fn calculate_clip_duration_secs_from_size(file_size: usize, bytes_per_second: usize) -> Duration {
     let file_size = file_size as f32;
     let bytes_per_second = bytes_per_second as f32;
     Duration::from_secs((file_size / bytes_per_second) as u64)

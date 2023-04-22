@@ -18,10 +18,7 @@ impl<'a, R: Resource> Entry<'a, R> {
 
     // This will return a mutable reference to the underlying resource if it exists
     // If the resource is missing, this will call the given function and insert the resource into the world
-    pub fn or_insert_with<F: FnOnce(&World) -> R>(
-        self,
-        default: F,
-    ) -> Write<'a, R> {
+    pub fn or_insert_with<F: FnOnce(&World) -> R>(self, default: F) -> Write<'a, R> {
         if self.world.contains::<R>() {
             self.world.get_mut::<R>().unwrap()
         } else {

@@ -49,21 +49,18 @@ pub struct Normalized<T: Normalizable>(T);
 impl<T: Normalizable> AnyElement for Normalized<T> {
     type Storage = T::Storage;
 
-    const ELEMENT_TYPE: ElementType =
-        match <T as AnyElement>::ELEMENT_TYPE {
-            ElementType::Eight { signed, .. } => ElementType::Eight {
-                signed,
-                normalized: true,
-            },
-            ElementType::Sixteen { signed, .. } => {
-                ElementType::Sixteen {
-                    signed,
-                    normalized: true,
-                }
-            }
-            ElementType::Compressed(x) => ElementType::Compressed(x),
+    const ELEMENT_TYPE: ElementType = match <T as AnyElement>::ELEMENT_TYPE {
+        ElementType::Eight { signed, .. } => ElementType::Eight {
+            signed,
+            normalized: true,
+        },
+        ElementType::Sixteen { signed, .. } => ElementType::Sixteen {
+            signed,
+            normalized: true,
+        },
+        ElementType::Compressed(x) => ElementType::Compressed(x),
 
-            // Due to type safety (trait bound Normalizable), this panic will never be able to occur
-            _ => panic!(),
-        };
+        // Due to type safety (trait bound Normalizable), this panic will never be able to occur
+        _ => panic!(),
+    };
 }

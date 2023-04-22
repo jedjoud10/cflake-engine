@@ -8,8 +8,7 @@ fn init(world: &mut World, el: &EventLoop<()>) {
     let init = world.get::<WindowSettings>().unwrap().clone();
 
     // Initialize the WGPU context and create a winit Window
-    let (graphics, window) =
-        unsafe { crate::context::init_context_and_window(init, el) };
+    let (graphics, window) = unsafe { crate::context::init_context_and_window(init, el) };
 
     // Add the resources to the world
     world.insert(window);
@@ -104,8 +103,7 @@ pub fn acquire(system: &mut System) {
         .insert_update(|world: &mut World| {
             // Acquire a new texture to render to
             let mut window = world.get_mut::<Window>().unwrap();
-            let texture =
-                window.surface.get_current_texture().unwrap();
+            let texture = window.surface.get_current_texture().unwrap();
             let view = texture
                 .texture
                 .create_view(&wgpu::TextureViewDescriptor::default());

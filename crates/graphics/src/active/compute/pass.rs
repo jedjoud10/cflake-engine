@@ -1,10 +1,9 @@
 use wgpu::CommandEncoder;
 
 use crate::{
-    ActiveComputeDispatcher, ActiveRenderPipeline, BufferInfo,
-    ColorLayout, ComputeCommand, ComputeShader, DepthStencilLayout,
-    Graphics, RenderCommand, RenderPipeline, TriangleBuffer, Vertex,
-    VertexBuffer, calculate_refleced_group_bitset,
+    calculate_refleced_group_bitset, ActiveComputeDispatcher, ActiveRenderPipeline, BufferInfo,
+    ColorLayout, ComputeCommand, ComputeShader, DepthStencilLayout, Graphics, RenderCommand,
+    RenderPipeline, TriangleBuffer, Vertex, VertexBuffer,
 };
 use std::{marker::PhantomData, ops::Range, sync::Arc};
 
@@ -29,8 +28,7 @@ impl<'r> ActiveComputePass<'r> {
             let cache = &self.graphics.0.cached;
 
             // Get the empty placeholder bind group
-            let empty_bind_group =
-                cache.bind_groups.get(&Vec::new()).unwrap();
+            let empty_bind_group = cache.bind_groups.get(&Vec::new()).unwrap();
 
             // Get the bind group layouts from the reflected shader
             let reflected = &shader.reflected;
@@ -71,17 +69,11 @@ impl<'r> Drop for ActiveComputePass<'r> {
         let mut encoder = self.graphics.acquire();
 
         // We actually record the compute pass at the very end of this wrapper
-        let pass = encoder.begin_compute_pass(
-            &wgpu::ComputePassDescriptor { label: None },
-        );
+        let pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
 
         // Put the recorded compute pass commands in the actual compute pass
         let push_constants = std::mem::take(&mut self.push_constants);
-        super::record_compute_commands(
-            pass,
-            push_constants,
-            &self.commands,
-        );
+        super::record_compute_commands(pass, push_constants, &self.commands);
 
         // Submit (reuse) the given encoder
         self.graphics.reuse([encoder]);

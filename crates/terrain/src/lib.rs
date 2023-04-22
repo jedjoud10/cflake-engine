@@ -1,10 +1,10 @@
-mod util;
 mod components;
 mod material;
 mod resources;
 pub mod systems;
-pub use util::*;
+mod util;
 pub use components::*;
 pub use material::*;
 pub use resources::*;
 pub use systems::*;
+pub use util::*;

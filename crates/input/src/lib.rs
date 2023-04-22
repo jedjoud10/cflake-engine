@@ -41,10 +41,7 @@ pub struct InputUserBindings {
 impl Input {
     // Load the bindings from the user binding struct
     // If there are conflicting bindings, they will get overwritten
-    pub fn read_bindings_from_user_bindings(
-        &mut self,
-        user: InputUserBindings,
-    ) {
+    pub fn read_bindings_from_user_bindings(&mut self, user: InputUserBindings) {
         self.bindings.axis_bindings.extend(user.axis_bindings);
         self.bindings.key_bindings.extend(user.key_bindings);
     }
@@ -69,10 +66,7 @@ impl Input {
     }
 
     // Get the state of a button mapping or a key mapping
-    pub fn get_button<B: InputButtonId>(
-        &self,
-        button: B,
-    ) -> ButtonState {
+    pub fn get_button<B: InputButtonId>(&self, button: B) -> ButtonState {
         B::get(button, self)
     }
 

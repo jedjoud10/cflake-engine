@@ -1,17 +1,17 @@
 use crate::{
-    Chunk, ChunkCoords, ChunkState, ChunkViewer, Terrain,
-    TerrainMaterial, TerrainSettings, ChunkManager,
+    Chunk, ChunkCoords, ChunkManager, ChunkState, ChunkViewer, Terrain, TerrainMaterial,
+    TerrainSettings,
 };
-use ahash::{AHashSet, AHashMap};
+use ahash::{AHashMap, AHashSet};
 
 use coords::{Position, Rotation};
 use ecs::{Entity, Scene};
 
-use graphics::{ComputePass, Graphics, DrawIndexedIndirectBuffer, DrawIndexedIndirect, ActivePipeline};
-use rendering::{
-    Renderer, Surface, IndirectMesh,
+use graphics::{
+    ActivePipeline, ComputePass, DrawIndexedIndirect, DrawIndexedIndirectBuffer, Graphics,
 };
-use utils::{Time, Storage};
+use rendering::{IndirectMesh, Renderer, Surface};
+use utils::{Storage, Time};
 use world::{user, System, World};
 
 // Dynamically generate the chunks based on camera position
@@ -19,8 +19,7 @@ fn update(world: &mut World) {
     // Tries to find a chunk viewer and the terrain generator
     let terrain = world.get_mut::<Terrain>();
     let mut scene = world.get_mut::<Scene>().unwrap();
-    let viewer =
-        scene.find_mut::<(&Entity, &mut ChunkViewer, &Position, &Rotation)>();
+    let viewer = scene.find_mut::<(&Entity, &mut ChunkViewer, &Position, &Rotation)>();
 
     // If we don't have terrain, don't do shit
     let Ok(mut _terrain) = terrain else {
@@ -40,10 +39,9 @@ fn update(world: &mut World) {
 
     // Set the main viewer location and fetches the oldvalue
     let mut added = false;
-    let new = (**viewer_position
-        / vek::Vec3::broadcast(settings.size as f32))
-    .round()
-    .as_::<i32>();
+    let new = (**viewer_position / vek::Vec3::broadcast(settings.size as f32))
+        .round()
+        .as_::<i32>();
     let old = if let Some((_, old, _)) = &mut manager.viewer {
         std::mem::replace(old, new)
     } else {
@@ -51,7 +49,7 @@ fn update(world: &mut World) {
         added = true;
         new
     };
-    
+
     // Check if it moved since last frame
     if added || new != old {
         // Keep a hashset of all the chunks around the viewer
@@ -71,16 +69,11 @@ fn update(world: &mut World) {
         }
 
         // Detect the chunks that we should remove and "remove" them
-        let removed = manager
-            .chunks
-            .difference(&chunks)
-            .cloned();
+        let removed = manager.chunks.difference(&chunks).cloned();
 
         // Detect the chunks that we must generate and add them
-        let added = chunks
-            .difference(&manager.chunks)
-            .cloned();
-        
+        let added = chunks.difference(&manager.chunks).cloned();
+
         // Set the chunk state to "free" and reset the value of the indirect buffers
         for coord in removed {
             let entity = manager.entities.remove(&coord).unwrap();
@@ -88,13 +81,17 @@ fn update(world: &mut World) {
             let chunk = entry.get_mut::<Chunk>().unwrap();
             chunk.state = ChunkState::Free;
         }
-        
+
         // We won't actually create new entities, only update the old ones
-        let query = scene.query_mut::<(&mut Chunk, &mut Position, &Entity, &mut Surface<TerrainMaterial>)>()
+        let query = scene
+            .query_mut::<(
+                &mut Chunk,
+                &mut Position,
+                &Entity,
+                &mut Surface<TerrainMaterial>,
+            )>()
             .into_iter()
-            .filter(|(x, _, _, _)| 
-                x.state == ChunkState::Free
-            );
+            .filter(|(x, _, _, _)| x.state == ChunkState::Free);
 
         // Set the "dirty" state for newly added chukns
         for ((chunk, position, entity, surface), coords) in query.zip(added) {
@@ -112,7 +109,10 @@ fn update(world: &mut World) {
     // Update priority for EACH chunk, even if the viewer did not move
     for (chunk, position) in scene.query_mut::<(&mut Chunk, &Position)>() {
         chunk.priority = (1.0 / viewer_position.distance(**position).max(1.0)) * 10.0;
-        chunk.priority *= viewer_rotation.forward().dot((**position - viewer_position).normalized()) * 5.0;
+        chunk.priority *= viewer_rotation
+            .forward()
+            .dot((**position - viewer_position).normalized())
+            * 5.0;
         chunk.priority = chunk.priority.clamp(0.0f32, 1000.0f32);
     }
 }

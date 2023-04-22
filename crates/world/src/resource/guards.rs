@@ -24,10 +24,7 @@ impl<R: Resource> AsRef<R> for Read<'_, R> {
 
 impl<'a, R: Resource> Read<'a, R> {
     // Map a read guard to a mapped read shard
-    pub fn map<T: 'static>(
-        self,
-        modify: impl FnOnce(&R) -> &T,
-    ) -> ReadShard<'a, T> {
+    pub fn map<T: 'static>(self, modify: impl FnOnce(&R) -> &T) -> ReadShard<'a, T> {
         ReadShard(Ref::map(self.0, modify))
     }
 }
@@ -80,10 +77,7 @@ impl<R: Resource> AsRef<R> for Write<'_, R> {
 
 impl<'a, R: Resource> Write<'a, R> {
     // Map a write guard to a mapped write shard
-    pub fn map<T: 'static>(
-        self,
-        modify: impl FnOnce(&mut R) -> &mut T,
-    ) -> WriteShard<'a, T> {
+    pub fn map<T: 'static>(self, modify: impl FnOnce(&mut R) -> &mut T) -> WriteShard<'a, T> {
         WriteShard(RefMut::map(self.0, modify))
     }
 }

@@ -1,7 +1,6 @@
 use crate::{Asset, AssetInput, AssetLoadError, AsyncAsset};
 use ahash::AHashMap;
 use parking_lot::{Mutex, RwLock};
-use utils::ThreadPool;
 use std::{
     any::Any,
     ffi::OsStr,
@@ -12,6 +11,7 @@ use std::{
         Arc,
     },
 };
+use utils::ThreadPool;
 
 // This is a handle to a specific asset that we are currently loading in
 pub struct AsyncHandle<A: Asset> {
@@ -20,8 +20,7 @@ pub struct AsyncHandle<A: Asset> {
 }
 
 // Used for async asset loading
-type AsyncBoxedResult =
-    Result<Box<dyn Any + Send + Sync>, AssetLoadError>;
+type AsyncBoxedResult = Result<Box<dyn Any + Send + Sync>, AssetLoadError>;
 type AsyncLoadedAssets = Mutex<Vec<Option<AsyncBoxedResult>>>;
 type AsyncChannelResult = (AsyncBoxedResult, usize);
 type AsyncLoadedBytes = Arc<RwLock<AHashMap<PathBuf, Arc<[u8]>>>>;
@@ -40,9 +39,9 @@ pub struct UserAssets {
 }
 
 //pub use include_dir::{include_dir, Dir};
-pub use with_builtin_macros::*;
-pub use include_dir;
 pub use cfg_if;
+pub use include_dir;
+pub use with_builtin_macros::*;
 
 // This is the main asset manager resource that will load & cache newly loaded assets
 // This asset manager will also contain the persistent assets that are included by default into the engine executable
@@ -66,8 +65,7 @@ pub struct Assets {
 
 impl Default for Assets {
     fn default() -> Self {
-        let (sender, receiver) =
-            std::sync::mpsc::channel::<AsyncChannelResult>();
+        let (sender, receiver) = std::sync::mpsc::channel::<AsyncChannelResult>();
 
         Self {
             loaded: Default::default(),
@@ -105,11 +103,7 @@ impl Assets {
 
     // Add a "hijack" path that will overwrite the path for a specific asset
     // This allows the user to write their own assets for engine assets if they want to
-    pub fn hijack(
-        &self,
-        og: impl AsRef<Path>,
-        new: impl AsRef<Path>,
-    ) {
+    pub fn hijack(&self, og: impl AsRef<Path>, new: impl AsRef<Path>) {
         let mut write = self.hijack.write();
         let og = og.as_ref().to_path_buf();
         let new = new.as_ref().to_path_buf();
@@ -129,12 +123,9 @@ impl Assets {
             .ok_or(AssetLoadError::MissingExtension)?;
 
         // If the asset has no extensions, we shall not check
-        ((A::extensions().contains(&extension))
-            || A::extensions().is_empty())
-        .then_some(())
-        .ok_or_else(|| {
-            AssetLoadError::InvalidExtension(extension.to_owned())
-        })
+        ((A::extensions().contains(&extension)) || A::extensions().is_empty())
+            .then_some(())
+            .ok_or_else(|| AssetLoadError::InvalidExtension(extension.to_owned()))
     }
 
     // Convert a path to it's raw name and extension
@@ -160,7 +151,7 @@ impl Assets {
         // If that fails, try loading from user defined asset path
         if let Err(AssetLoadError::CachedNotFound(_)) = &loaded {
             loaded = Self::load_bytes_dynamically(bytes, hijack, owned);
-        } 
+        }
 
         // Return the (hopefully loaded) asset
         loaded
@@ -171,10 +162,7 @@ impl Assets {
         bytes: &AsyncLoadedBytes,
         path: &Path,
     ) -> Result<Arc<[u8]>, AssetLoadError> {
-        log::debug!(
-            "Loaded asset from path {:?} from cached bytes",
-            path
-        );
+        log::debug!("Loaded asset from path {:?} from cached bytes", path);
 
         bytes.read().get(path).cloned().ok_or_else(|| {
             let path = path.as_os_str().to_str().unwrap().to_owned();
@@ -188,10 +176,7 @@ impl Assets {
         hijack: AsyncHijackPaths,
         owned: PathBuf,
     ) -> Result<Arc<[u8]>, AssetLoadError> {
-        log::warn!(
-            "Loading asset bytes from path {:?} dynamically...",
-            &owned
-        );
+        log::warn!("Loading asset bytes from path {:?} dynamically...", &owned);
         let mut write = bytes.write();
 
         // Translate the path if it's defined
@@ -235,11 +220,7 @@ impl Assets {
             Self::validate::<A>(&owned)?;
 
             // Load the bytes dynamically or from cache
-            let bytes = Self::load_bytes(
-                &bytes,
-                hijack,
-                owned.clone(),
-            )?;
+            let bytes = Self::load_bytes(&bytes, hijack, owned.clone())?;
 
             // Split the path into it's name and extension
             let (name, extension) = Self::decompose_path(&owned);
@@ -256,13 +237,10 @@ impl Assets {
                 context,
                 settings,
             )
-            .map_err(|err| {
-                AssetLoadError::BoxedDeserialization(Box::new(err))
-            })?;
+            .map_err(|err| AssetLoadError::BoxedDeserialization(Box::new(err)))?;
 
             // Box the asset
-            let boxed: Box<dyn Any + Send + Sync + 'static> =
-                Box::new(asset);
+            let boxed: Box<dyn Any + Send + Sync + 'static> = Box::new(asset);
             Ok(boxed)
         };
 
@@ -290,8 +268,7 @@ impl Assets {
 
         // Load the asset bytes (either dynamically or fetch cached bytes)
         let hijack = self.hijack.clone();
-        let bytes =
-            Self::load_bytes(&self.bytes, hijack, owned)?;
+        let bytes = Self::load_bytes(&self.bytes, hijack, owned)?;
 
         // Deserialize the asset file
         A::deserialize(
@@ -305,17 +282,13 @@ impl Assets {
             context,
             settings,
         )
-        .map_err(|err| {
-            AssetLoadError::BoxedDeserialization(Box::new(err))
-        })
+        .map_err(|err| AssetLoadError::BoxedDeserialization(Box::new(err)))
     }
 
     // Load multiple assets using some explicit/default loading arguments
     pub fn load_from_iter<'str, 'ctx, 'stg, A: Asset>(
         &self,
-        inputs: impl IntoIterator<
-            Item = impl AssetInput<'str, 'ctx, 'stg, A>,
-        >,
+        inputs: impl IntoIterator<Item = impl AssetInput<'str, 'ctx, 'stg, A>>,
     ) -> Vec<Result<A, AssetLoadError>> {
         inputs
             .into_iter()
@@ -357,10 +330,7 @@ impl Assets {
 
         // Create a new task that will load this asset
         threadpool.execute(move || {
-            Self::async_load_inner::<A>(
-                owned, bytes, hijack, context, settings,
-                sender, index,
-            );
+            Self::async_load_inner::<A>(owned, bytes, hijack, context, settings, sender, index);
         });
         handle
     }
@@ -369,9 +339,7 @@ impl Assets {
     // This returns handle(s) that we can wait for and fetch later on
     pub fn async_load_from_iter<'s, A: AsyncAsset>(
         &self,
-        inputs: impl IntoIterator<
-            Item = impl AssetInput<'s, 'static, 'static, A> + Send,
-        >,
+        inputs: impl IntoIterator<Item = impl AssetInput<'s, 'static, 'static, A> + Send>,
         threadpool: &mut ThreadPool,
     ) -> Vec<AsyncHandle<A>>
     where
@@ -387,9 +355,7 @@ impl Assets {
             // Check the extension on a per file basis
             let (path, settings, context) = input.split();
             let path = Path::new(OsStr::new(path));
-            log::debug!(
-                "Asynchronously loading asset {path:?} in batch...",
-            );
+            log::debug!("Asynchronously loading asset {path:?} in batch...",);
             let owned = path.to_owned();
 
             // Clone the things that must be sent to the thread
@@ -407,10 +373,7 @@ impl Assets {
 
             // Start telling worker threads to begin loading the assets
             threadpool.execute(move || {
-                Self::async_load_inner::<A>(
-                    owned, bytes, hijack, context, settings,
-                    sender, index,
-                );
+                Self::async_load_inner::<A>(owned, bytes, hijack, context, settings, sender, index);
             });
         }
         outer
@@ -427,10 +390,7 @@ impl Assets {
     }
 
     // This will check if the asset loader finished loading a specific asset using it's handle
-    pub fn has_finished_loading<A: AsyncAsset>(
-        &self,
-        handle: &AsyncHandle<A>,
-    ) -> bool {
+    pub fn has_finished_loading<A: AsyncAsset>(&self, handle: &AsyncHandle<A>) -> bool {
         self.refresh();
         self.loaded
             .lock()
@@ -440,10 +400,7 @@ impl Assets {
     }
 
     // This will wait until the asset referenced by this handle has finished loading
-    pub fn wait<A: AsyncAsset>(
-        &self,
-        handle: AsyncHandle<A>,
-    ) -> Result<A, AssetLoadError> {
+    pub fn wait<A: AsyncAsset>(&self, handle: AsyncHandle<A>) -> Result<A, AssetLoadError> {
         // Spin lock whilst whilst waiting for an asset to load
         while !self.has_finished_loading(&handle) {
             std::hint::spin_loop();

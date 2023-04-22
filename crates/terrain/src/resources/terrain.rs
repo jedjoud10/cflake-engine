@@ -1,11 +1,13 @@
+use crate::{ChunkManager, MemoryManager, MeshGenerator, TerrainMaterial, VoxelGenerator};
 use assets::{Asset, Assets};
 use graphics::{
-    Graphics, Compiler, BindGroup, PushConstants, ActiveComputeDispatcher, RawTexels, combine_into_layered, SamplerSettings, SamplerFilter, SamplerWrap, SamplerMipMaps, TextureMipMaps, TextureMode, TextureUsage,
+    combine_into_layered, ActiveComputeDispatcher, BindGroup, Compiler, Graphics, PushConstants,
+    RawTexels, SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap, TextureMipMaps,
+    TextureMode, TextureUsage,
 };
-use rendering::{MaterialId, AlbedoTexel, NormalTexel, MaskTexel};
+use rendering::{AlbedoTexel, MaskTexel, MaterialId, NormalTexel};
 use thiserror::Error;
 use utils::Handle;
-use crate::{VoxelGenerator, MeshGenerator, MemoryManager, ChunkManager, TerrainMaterial};
 
 // Terrain generator settings that the user will need to add to configure the terrain gen
 // This will also contain computed common data like number of sub allocations and such
@@ -15,7 +17,7 @@ pub struct TerrainSettings {
 
     // Chunk render distance
     pub(crate) chunk_render_distance: usize,
-    
+
     // Mesh generation parameters
     pub(crate) blocky: bool,
     pub(crate) lowpoly: bool,
@@ -24,7 +26,7 @@ pub struct TerrainSettings {
     pub(crate) allocation_count: usize,
     pub(crate) sub_allocation_count: usize,
 
-    // Number of chunks sepcified by the render distance 
+    // Number of chunks sepcified by the render distance
     pub(crate) chunk_count: usize,
 
     // Same as chunk count, but rounded up to a multiple of allocations_count
@@ -34,14 +36,15 @@ pub struct TerrainSettings {
     // Vertices and triangles per allocation
     pub(crate) output_triangle_buffer_length: usize,
     pub(crate) output_vertex_buffer_length: usize,
-    
+
     // Vertices and triangles per sub allocation
     pub(crate) vertices_per_sub_allocation: u32,
     pub(crate) triangles_per_sub_allocation: u32,
 
     // Callbacks for custom voxel data
     pub(crate) voxel_compiler_callback: Option<Box<dyn FnOnce(&mut Compiler) + 'static>>,
-    pub(crate) voxel_set_push_constants_callback: Option<Box<dyn Fn(&mut PushConstants<ActiveComputeDispatcher>) + 'static>>,
+    pub(crate) voxel_set_push_constants_callback:
+        Option<Box<dyn Fn(&mut PushConstants<ActiveComputeDispatcher>) + 'static>>,
     pub(crate) voxel_set_group_callback: Option<Box<dyn Fn(&mut BindGroup) + 'static>>,
     pub(crate) sub_materials: Option<Vec<TerrainSubMaterial>>,
 }
@@ -67,17 +70,11 @@ impl TerrainSettings {
         allocations: usize,
         sub_allocations: usize,
         sub_materials: Option<&[TerrainSubMaterial]>,
-    ) -> Result<Self, TerrainSettingsError>  {
-        let output_vertex_buffer_length = graphics
-            .device()
-            .limits()
-            .max_storage_buffer_binding_size as usize
-            / 16;
-        let output_triangle_buffer_length = graphics
-            .device()
-            .limits()
-            .max_storage_buffer_binding_size as usize
-            / 12;
+    ) -> Result<Self, TerrainSettingsError> {
+        let output_vertex_buffer_length =
+            graphics.device().limits().max_storage_buffer_binding_size as usize / 16;
+        let output_triangle_buffer_length =
+            graphics.device().limits().max_storage_buffer_binding_size as usize / 12;
 
         // Validate resolution
         if resolution < 16 {
@@ -97,14 +94,18 @@ impl TerrainSettings {
         let chunks = (render_distance * 2 + 1).pow(3);
 
         // Do this so each allocation contains the same amount of chunks
-        let over_allocated_chunks_count = ((chunks as f32 / allocations as f32).ceil()
-            * (allocations as f32)) as usize;
+        let over_allocated_chunks_count =
+            ((chunks as f32 / allocations as f32).ceil() * (allocations as f32)) as usize;
 
         // Get number of sub-allocation chunks for two buffer types (vertices and triangles)
-        let vertex_sub_allocations_length = (output_vertex_buffer_length as f32) / sub_allocations as f32;
-        let triangle_sub_allocations_length = (output_triangle_buffer_length as f32) / sub_allocations as f32;
-        let vertices_per_sub_allocation = (vertex_sub_allocations_length.floor() as u32).next_power_of_two();
-        let triangles_per_sub_allocation = (triangle_sub_allocations_length.floor() as u32).next_power_of_two();
+        let vertex_sub_allocations_length =
+            (output_vertex_buffer_length as f32) / sub_allocations as f32;
+        let triangle_sub_allocations_length =
+            (output_triangle_buffer_length as f32) / sub_allocations as f32;
+        let vertices_per_sub_allocation =
+            (vertex_sub_allocations_length.floor() as u32).next_power_of_two();
+        let triangles_per_sub_allocation =
+            (triangle_sub_allocations_length.floor() as u32).next_power_of_two();
         let chunks_per_allocation = over_allocated_chunks_count / allocations;
 
         // Decompose the "callbacks" struct into raw options

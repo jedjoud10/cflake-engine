@@ -1,13 +1,12 @@
-use std::{cell::Cell, num::NonZeroU8, ops::DerefMut, marker::PhantomData};
+use std::{cell::Cell, marker::PhantomData, num::NonZeroU8, ops::DerefMut};
 
 use bytemuck::Zeroable;
 
 use super::{Region, Texture};
 use crate::{
-    ColorTexel, Extent, MipLevelClearError, MipLevelCopyError,
-    MipLevelReadError, MipLevelWriteError, Origin, RenderTarget,
-    Texel, TextureAsTargetError, TextureMipLevelError,
-    TextureSamplerError, TextureUsage, LayeredOrigin,
+    ColorTexel, Extent, LayeredOrigin, MipLevelClearError, MipLevelCopyError, MipLevelReadError,
+    MipLevelWriteError, Origin, RenderTarget, Texel, TextureAsTargetError, TextureMipLevelError,
+    TextureSamplerError, TextureUsage,
 };
 
 // This enum tells the texture how exactly it should create it's mipmaps
@@ -50,9 +49,7 @@ impl<T: Texel> Clone for TextureMipMaps<'_, '_, T> {
             Self::Zeroed { clamp } => Self::Zeroed {
                 clamp: clamp.clone(),
             },
-            Self::Manual { mips } => {
-                Self::Manual { mips: mips.clone() }
-            }
+            Self::Manual { mips } => Self::Manual { mips: mips.clone() },
         }
     }
 }
@@ -64,21 +61,15 @@ pub fn generate_mip_map<T: ColorTexel, E: Extent>(
     extent: E,
 ) -> Option<Vec<Vec<T::Storage>>> {
     // Convert a xyz value to an index (texel)
-    fn xyz_to_index(
-        location: vek::Vec3<usize>,
-        extent: vek::Extent3<usize>,
-    ) -> usize {
-        location.x
-            + location.y * extent.w
-            + location.z * (extent.w * extent.h)
+    fn xyz_to_index(location: vek::Vec3<usize>, extent: vek::Extent3<usize>) -> usize {
+        location.x + location.y * extent.w + location.z * (extent.w * extent.h)
     }
 
     // Create manual mip maps for this texture
     let dimension = <E as Extent>::view_dimension();
     let name = utils::pretty_type_name::<T>();
     let levels = extent.levels()?.get() as u32;
-    let mut map =
-        Vec::<Vec<T::Storage>>::with_capacity(levels as usize);
+    let mut map = Vec::<Vec<T::Storage>>::with_capacity(levels as usize);
     let mut temp = extent;
     let mut base = base.to_vec();
     log::debug!("Creating mip-data (max = {levels})for imported texture {dimension:?}, <{name}>");
@@ -88,11 +79,9 @@ pub fn generate_mip_map<T: ColorTexel, E: Extent>(
     for i in 0..(levels - 1) {
         // Pre-allocate a vector that will contain the downscaled texels
         let downscaled = extent.mip_level_dimensions(i as u8 + 1);
-        
-        let mut texels: Vec<<T as Texel>::Storage> = vec![
-            <T::Storage as Zeroable>::zeroed();
-            downscaled.area() as usize
-        ];
+
+        let mut texels: Vec<<T as Texel>::Storage> =
+            vec![<T::Storage as Zeroable>::zeroed(); downscaled.area() as usize];
 
         // Get the original and downscaled sizes
         let original = temp.decompose();
@@ -133,8 +122,7 @@ pub fn generate_mip_map<T: ColorTexel, E: Extent>(
 
                     // Get the destination texel value
                     let dst = &mut texels[xyz_to_index(
-                        vek::Vec3::new(ox, oy, oz)
-                            .as_::<usize>() / divide,
+                        vek::Vec3::new(ox, oy, oz).as_::<usize>() / divide,
                         new.as_::<usize>(),
                     )];
 
@@ -155,13 +143,14 @@ pub fn generate_mip_map<T: ColorTexel, E: Extent>(
 
 // Given the texture dimensions and the given optional sub-region,return a valid sub-region
 // Returns None if the given subregion is greater than the miup level region (so it's invalid)
-fn handle_optional_subregion<T: Texture>(texture: &T, level: u8, optional: Option<T::Region>) -> Option<T::Region> {    
+fn handle_optional_subregion<T: Texture>(
+    texture: &T,
+    level: u8,
+    optional: Option<T::Region>,
+) -> Option<T::Region> {
     // Get the region for this mip level
-    let mip_level_region = <T::Region as Region>::with_extent(
-        texture
-            .dimensions()
-            .mip_level_dimensions(level),
-    );
+    let mip_level_region =
+        <T::Region as Region>::with_extent(texture.dimensions().mip_level_dimensions(level));
 
     // Make sure the "offset" doesn't cause reads outside the texture
     if let Some(subregion) = optional {
@@ -171,7 +160,7 @@ fn handle_optional_subregion<T: Texture>(texture: &T, level: u8, optional: Optio
     }
 
     // Get the mip level subregion if the given one is None
-    return Some(optional.unwrap_or(mip_level_region))
+    return Some(optional.unwrap_or(mip_level_region));
 }
 
 // Collection of multiple immutable mip levels
@@ -186,10 +175,7 @@ impl<'a, T: Texture> MipLevelsRef<'a, T> {
     }
 
     // Borrow a mip-level from the mip collection immutably
-    pub fn level(
-        &'a self,
-        level: u8,
-    ) -> Result<MipLevelRef<'a, T>, TextureMipLevelError> {
+    pub fn level(&'a self, level: u8) -> Result<MipLevelRef<'a, T>, TextureMipLevelError> {
         let range = self.len() as u8;
         if level > range {
             Ok(MipLevelRef {
@@ -217,10 +203,7 @@ impl<'a, T: Texture> MipLevelsMut<'a, T> {
     }
 
     // Borrow a mip-level from the mip collection immutably
-    pub fn level(
-        &'a self,
-        level: u8,
-    ) -> Result<MipLevelRef<'a, T>, TextureMipLevelError> {
+    pub fn level(&'a self, level: u8) -> Result<MipLevelRef<'a, T>, TextureMipLevelError> {
         let range = self.len() as u8;
         if level > range {
             Ok(MipLevelRef {
@@ -234,10 +217,7 @@ impl<'a, T: Texture> MipLevelsMut<'a, T> {
     }
 
     // Borrow a mip-level from the mip collection mutably
-    pub fn level_mut(
-        &'a self,
-        level: u8,
-    ) -> Result<MipLevelMut<'a, T>, TextureMipLevelError> {
+    pub fn level_mut(&'a self, level: u8) -> Result<MipLevelMut<'a, T>, TextureMipLevelError> {
         let range = self.len() as u8;
         if level < range {
             Ok(MipLevelMut {
@@ -268,10 +248,13 @@ impl<'a, T: Texture> MipLevelRef<'a, T> {
     // Get a view for this mip
     pub fn view(&self) -> Option<&wgpu::TextureView> {
         crate::get_specific_view(self.texture, None, Some(self.level as u32))
-    } 
+    }
 
     // Get the view of a specific layer of the current mip
-    pub fn layer_view(&self, layer: u32) -> Option<&wgpu::TextureView> where <T::Region as Region>::O: LayeredOrigin  {
+    pub fn layer_view(&self, layer: u32) -> Option<&wgpu::TextureView>
+    where
+        <T::Region as Region>::O: LayeredOrigin,
+    {
         crate::get_specific_view(self.texture, Some(layer), Some(self.level as u32))
     }
 
@@ -324,7 +307,7 @@ impl<'a, T: Texture> MipLevelRef<'a, T> {
             dst,
             self.texture.raw(),
             self.level as u32,
-            &self.texture.graphics()
+            &self.texture.graphics(),
         );
 
         Ok(())
@@ -357,10 +340,13 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
     // Get a view for this mip
     pub fn view(&self) -> Option<&wgpu::TextureView> {
         crate::get_specific_view(self.texture, None, Some(self.level as u32))
-    } 
+    }
 
     // Get the view of a specific layer of the current mip
-    pub fn layer_view(&self, layer: u32) -> Option<&wgpu::TextureView> where <T::Region as Region>::O: LayeredOrigin {
+    pub fn layer_view(&self, layer: u32) -> Option<&wgpu::TextureView>
+    where
+        <T::Region as Region>::O: LayeredOrigin,
+    {
         crate::get_specific_view(self.texture, Some(layer), Some(self.level as u32))
     }
 
@@ -381,13 +367,11 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
 
     // Try to get a render target so we can render to this one mip level as a whole
     // Returns an Error if the texture is not renderable
-    pub fn as_render_target(
-        &mut self,
-    ) -> Result<RenderTarget<T::T>, TextureAsTargetError> {
+    pub fn as_render_target(&mut self) -> Result<RenderTarget<T::T>, TextureAsTargetError> {
         if !self.texture().usage().contains(TextureUsage::TARGET) {
             return Err(TextureAsTargetError::MissingTargetUsage);
         }
-        
+
         Ok(RenderTarget {
             _phantom: PhantomData,
             view: self.view().unwrap(),
@@ -399,11 +383,14 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
     pub fn layer_as_render_target(
         &mut self,
         layer: u32,
-    ) -> Result<RenderTarget<T::T>, TextureAsTargetError> where <T::Region as Region>::O: LayeredOrigin {
+    ) -> Result<RenderTarget<T::T>, TextureAsTargetError>
+    where
+        <T::Region as Region>::O: LayeredOrigin,
+    {
         if !self.texture().usage().contains(TextureUsage::TARGET) {
             return Err(TextureAsTargetError::MissingTargetUsage);
         }
-        
+
         Ok(RenderTarget {
             _phantom: PhantomData,
             view: self.layer_view(layer).unwrap(),
@@ -444,7 +431,7 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
             dst,
             self.texture.raw(),
             self.level as u32,
-            &self.texture.graphics()
+            &self.texture.graphics(),
         );
 
         Ok(())
@@ -465,7 +452,7 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
         if !self.texture.usage().contains(TextureUsage::WRITE) {
             return Err(MipLevelWriteError::NonWritable);
         }
- 
+
         // Get a proper subregion with the given opt subregion
         let Some(subregion) = handle_optional_subregion(
             self.texture,
@@ -496,7 +483,7 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
         dst_subregion: Option<T::Region>,
     ) -> Result<(), MipLevelCopyError> {
         let other = other.as_ref();
-        
+
         // Make sure we can use the texture as copy src
         if !other.texture.usage().contains(TextureUsage::COPY_SRC) {
             return Err(MipLevelCopyError::NonCopySrc);
@@ -506,7 +493,7 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
         if !self.texture.usage().contains(TextureUsage::COPY_DST) {
             return Err(MipLevelCopyError::NonCopyDst);
         }
-    
+
         // Get a proper subregion with the given opt subregion for dst
         let Some(dst_subregion) = handle_optional_subregion(
             self.texture,
@@ -531,15 +518,12 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
     }
 
     // Clear a region of the mip level to zero
-    pub fn clear(
-        &mut self,
-        subregion: Option<T::Region>,
-    ) -> Result<(), MipLevelClearError> {
+    pub fn clear(&mut self, subregion: Option<T::Region>) -> Result<(), MipLevelClearError> {
         // Make sure we can write to the texture
         if !self.texture.usage().contains(TextureUsage::WRITE) {
             return Err(MipLevelClearError::NonWritable);
         }
- 
+
         // Get a proper subregion with the given opt subregion
         let Some(subregion) = handle_optional_subregion(
             self.texture,
@@ -560,9 +544,7 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
     ) -> Result<(), MipLevelWriteError> {
         // Get the region for this mip level
         let mip_level_region = <T::Region as Region>::with_extent(
-            self.texture
-                .dimensions()
-                .mip_level_dimensions(self.level),
+            self.texture.dimensions().mip_level_dimensions(self.level),
         );
 
         // Get the mip level subregion if the given one is None

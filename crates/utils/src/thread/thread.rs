@@ -39,8 +39,7 @@ impl Default for ThreadPool {
 impl ThreadPool {
     // Create a new thread pool with a specific number of threads
     pub fn with(num: usize) -> Self {
-        let (task_sender, task_receiver) =
-            std::sync::mpsc::channel::<ThreadedTask>();
+        let (task_sender, task_receiver) = std::sync::mpsc::channel::<ThreadedTask>();
 
         // Create a simple threadpool
         let mut threadpool = Self {
@@ -53,13 +52,9 @@ impl ThreadPool {
         };
 
         // Spawn the worker threads
-        let joins = (0..num)
-            .map(|i| spawn(&threadpool, i))
-            .collect::<Vec<_>>();
+        let joins = (0..num).map(|i| spawn(&threadpool, i)).collect::<Vec<_>>();
         threadpool.joins = joins;
-        log::debug!(
-            "Initialized a new thread pool with {num} thread(s)"
-        );
+        log::debug!("Initialized a new thread pool with {num} thread(s)");
 
         threadpool
     }
@@ -70,34 +65,24 @@ impl ThreadPool {
     pub(crate) fn for_each_async<'a, I: for<'i> SliceTuple<'i>>(
         &'a mut self,
         mut list: I,
-        function: impl Fn(<I as SliceTuple<'_>>::ItemTuple)
-            + Send
-            + Sync
-            + 'a,
+        function: impl Fn(<I as SliceTuple<'_>>::ItemTuple) + Send + Sync + 'a,
         bitset: Option<BitSet>,
         batch_size: usize,
     ) {
         // If the slices have different lengths, we must abort
         let length = list.slice_tuple_len();
-        assert!(
-            length.is_some(),
-            "Cannot have slice with different lengths"
-        );
+        assert!(length.is_some(), "Cannot have slice with different lengths");
         let length = length.unwrap();
 
         // Create the scheduler config
         let batch_size = batch_size.max(1);
-        let num_tasks =
-            (length as f32 / batch_size as f32).ceil() as usize;
+        let num_tasks = (length as f32 / batch_size as f32).ceil() as usize;
         let remaining = length % batch_size;
         log::trace!("for_each_async: elems: {length}, batch size: {batch_size}, threads: {num_tasks}, remaining: {remaining}");
 
         // Internal function that will be wrapped within a closure and executed on the main thread / other threads
         // This will simply loop over all the elements specified by 'ptrs', 'length', and 'offset'
-        fn iterate<
-            I: for<'i> SliceTuple<'i>,
-            F: Fn(<I as SliceTuple>::ItemTuple) + Send + Sync,
-        >(
+        fn iterate<I: for<'i> SliceTuple<'i>, F: Fn(<I as SliceTuple>::ItemTuple) + Send + Sync>(
             ptrs: &mut I,
             length: usize,
             offset: usize,
@@ -109,9 +94,7 @@ impl ThreadPool {
                 let mut i = 0;
                 while i < length {
                     // Check the next entry that is valid (that passed the filter)
-                    if let Some(hop) =
-                        bitset.find_one_from(i + offset)
-                    {
+                    if let Some(hop) = bitset.find_one_from(i + offset) {
                         i = hop - offset;
                     } else {
                         return;
@@ -137,50 +120,33 @@ impl ThreadPool {
         // The bitset is going to be a shareable bitset instead
         let bitset = bitset.map(Arc::new);
 
-        let function: ArcFn<'a> =
-            Arc::new(move |entry: ThreadFuncEntry| {
-                // Optionally, the user might specify a specific bitset
-                let bitset = bitset.clone();
+        let function: ArcFn<'a> = Arc::new(move |entry: ThreadFuncEntry| {
+            // Optionally, the user might specify a specific bitset
+            let bitset = bitset.clone();
 
-                // Decompose the thread entry into it's raw components
-                let offset = entry.batch_offset;
-                let ptrs = entry.base.downcast::<I::PtrTuple>().ok();
-                let length = entry.batch_length;
-                let mut slices = ptrs
-                    .map(|ptrs| unsafe {
-                        I::from_ptrs(
-                            &ptrs,
-                            entry.batch_length,
-                            offset,
-                        )
-                    })
-                    .unwrap();
+            // Decompose the thread entry into it's raw components
+            let offset = entry.batch_offset;
+            let ptrs = entry.base.downcast::<I::PtrTuple>().ok();
+            let length = entry.batch_length;
+            let mut slices = ptrs
+                .map(|ptrs| unsafe { I::from_ptrs(&ptrs, entry.batch_length, offset) })
+                .unwrap();
 
-                // Call the internal function
-                iterate(
-                    &mut slices,
-                    length,
-                    offset,
-                    &function,
-                    bitset.as_deref(),
-                );
-            });
+            // Call the internal function
+            iterate(&mut slices, length, offset, &function, bitset.as_deref());
+        });
 
         // Convert the lifetimed arc into a static arc
-        let function: ArcFn<'static> = unsafe {
-            std::mem::transmute::<ArcFn<'a>, ArcFn<'static>>(function)
-        };
+        let function: ArcFn<'static> =
+            unsafe { std::mem::transmute::<ArcFn<'a>, ArcFn<'static>>(function) };
 
         // Run the function in mutliple threads
-        let base: Arc<dyn Any + Send + Sync> =
-            Arc::new(list.as_ptrs());
+        let base: Arc<dyn Any + Send + Sync> = Arc::new(list.as_ptrs());
         for batch_index in 0..num_tasks {
             self.append(ThreadedTask::ForEachBatch {
                 entry: ThreadFuncEntry {
                     base: base.clone(),
-                    batch_length: if batch_index == (num_tasks - 1)
-                        && remaining > 0
-                    {
+                    batch_length: if batch_index == (num_tasks - 1) && remaining > 0 {
                         remaining
                     } else {
                         batch_size
@@ -197,10 +163,7 @@ impl ThreadPool {
     pub fn for_each<'a, I: for<'i> SliceTuple<'i>>(
         &'a mut self,
         list: I,
-        function: impl Fn(<I as SliceTuple<'_>>::ItemTuple)
-            + Send
-            + Sync
-            + 'a,
+        function: impl Fn(<I as SliceTuple<'_>>::ItemTuple) + Send + Sync + 'a,
         batch_size: usize,
     ) {
         self.for_each_async(list, function, None, batch_size);
@@ -212,10 +175,7 @@ impl ThreadPool {
     pub fn for_each_filtered<'a, I: for<'i> SliceTuple<'i>>(
         &'a mut self,
         list: I,
-        function: impl Fn(<I as SliceTuple<'_>>::ItemTuple)
-            + Send
-            + Sync
-            + 'a,
+        function: impl Fn(<I as SliceTuple<'_>>::ItemTuple) + Send + Sync + 'a,
         bitset: BitSet,
         batch_size: usize,
     ) {
@@ -230,19 +190,13 @@ impl ThreadPool {
     }
 
     // Add a new task to execute in the threadpool. This task will run in the background
-    pub fn execute<F: FnOnce() + Send + 'static>(
-        &mut self,
-        function: F,
-    ) {
+    pub fn execute<F: FnOnce() + Send + 'static>(&mut self, function: F) {
         let task = ThreadedTask::Execute(Box::new(function));
         self.append(task);
     }
 
     // Create a scope that we can use to send multiple commands to the threads
-    pub fn scope<'a>(
-        &'a mut self,
-        function: impl FnOnce(&mut ThreadPoolScope<'a>),
-    ) {
+    pub fn scope<'a>(&'a mut self, function: impl FnOnce(&mut ThreadPoolScope<'a>)) {
         let mut scope = ThreadPoolScope { pool: self };
 
         function(&mut scope);
@@ -271,9 +225,7 @@ impl ThreadPool {
 
     // Wait till all the threads finished executing
     pub fn join(&self) {
-        while self.num_active_threads() > 0
-            || self.num_idling_jobs() > 0
-        {
+        while self.num_active_threads() > 0 || self.num_idling_jobs() > 0 {
             std::hint::spin_loop();
         }
     }
@@ -320,12 +272,11 @@ fn spawn(threadpool: &ThreadPool, index: usize) -> JoinHandle<()> {
 
             loop {
                 // No task, block so we shall wait
-                let task =
-                    if let Ok(task) = task_receiver.lock().recv() {
-                        task
-                    } else {
-                        break;
-                    };
+                let task = if let Ok(task) = task_receiver.lock().recv() {
+                    task
+                } else {
+                    break;
+                };
 
                 // The thread woke up, so we must fetch the highest priority task now
                 active.fetch_add(1, Ordering::Relaxed);

@@ -1,10 +1,8 @@
 use wgpu::CommandEncoder;
 
 use crate::{
-    ActiveRenderPass, ColorAttachments, ColorLayout, ColorOperations,
-    DepthStencilAttachment, DepthStencilLayout,
-    DepthStencilOperations, Graphics, RenderPipeline, Vertex,
-    VertexBuffer,
+    ActiveRenderPass, ColorAttachments, ColorLayout, ColorOperations, DepthStencilAttachment,
+    DepthStencilLayout, DepthStencilOperations, Graphics, RenderPipeline, Vertex, VertexBuffer,
 };
 use std::marker::PhantomData;
 
@@ -31,10 +29,8 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPass<C, DS> {
     ) -> Self {
         Self {
             color_layout_operations: color_operations.operations(),
-            depth_operations: depth_stencil_operations
-                .depth_operations(),
-            stencil_operations: depth_stencil_operations
-                .stencil_operations(),
+            depth_operations: depth_stencil_operations.depth_operations(),
+            stencil_operations: depth_stencil_operations.stencil_operations(),
             _phantom_color: PhantomData,
             _phantom_depth_stencil: PhantomData,
             graphics: graphics.clone(),
@@ -72,12 +68,10 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPass<C, DS> {
 
         // Get the Option that contains the RenderPassDepthStencilAttachment
         let depth_stencil_attachment =
-            depth_stencil_view.map(|view| {
-                wgpu::RenderPassDepthStencilAttachment {
-                    view,
-                    depth_ops,
-                    stencil_ops,
-                }
+            depth_stencil_view.map(|view| wgpu::RenderPassDepthStencilAttachment {
+                view,
+                depth_ops,
+                stencil_ops,
             });
 
         ActiveRenderPass {

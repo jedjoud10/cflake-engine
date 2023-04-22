@@ -1,24 +1,20 @@
-use std::{hash::{Hasher, Hash}, num::NonZeroU64};
+use std::{
+    hash::{Hash, Hasher},
+    num::NonZeroU64,
+};
 
 use bytemuck::{Pod, Zeroable};
 use nohash_hasher::NoHashHasher;
 
 // Plain old data type that can be sent to the gpu
 // This is a bit of a hack tbh since bool doesn't implement
-pub unsafe trait GpuPod:
-    bytemuck::Pod + bytemuck::Zeroable + Sync + Send + 'static
-{
+pub unsafe trait GpuPod: bytemuck::Pod + bytemuck::Zeroable + Sync + Send + 'static {
     // Convert the data type to raw bytes
     fn into_bytes(&self) -> &[u8] {
         let ptr = self as *const Self;
 
         // This is safe since the type implements bytemuck::Pod, and we are only casting one element
-        unsafe {
-            core::slice::from_raw_parts(
-                ptr as *const u8,
-                Self::size(),
-            )
-        }
+        unsafe { core::slice::from_raw_parts(ptr as *const u8, Self::size()) }
     }
 
     // Try converting raw bytes into self
@@ -57,15 +53,8 @@ pub unsafe trait GpuPod:
     }
 }
 
-unsafe impl<
-        T: Clone
-            + Copy
-            + Sync
-            + Send
-            + bytemuck::Pod
-            + bytemuck::Zeroable
-            + 'static,
-    > GpuPod for T
+unsafe impl<T: Clone + Copy + Sync + Send + bytemuck::Pod + bytemuck::Zeroable + 'static> GpuPod
+    for T
 {
 }
 

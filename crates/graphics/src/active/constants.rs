@@ -1,6 +1,7 @@
 use crate::{
-    Graphics, ModuleVisibility, PushConstantBytesError,
-    PushConstantLayout, ReflectedShader, SetPushConstantsError, ActiveRenderPipeline, ColorLayout, DepthStencilLayout, ActiveComputeDispatcher,
+    ActiveComputeDispatcher, ActiveRenderPipeline, ColorLayout, DepthStencilLayout, Graphics,
+    ModuleVisibility, PushConstantBytesError, PushConstantLayout, ReflectedShader,
+    SetPushConstantsError,
 };
 use arrayvec::ArrayVec;
 use itertools::Itertools;
@@ -46,7 +47,7 @@ pub(super) fn handle_push_constants<'b, AP: ActivePipeline>(
     let mut push_constants = PushConstants {
         data,
         layout,
-        _phantom: PhantomData
+        _phantom: PhantomData,
     };
 
     // Let the user modify the push constant
@@ -55,9 +56,10 @@ pub(super) fn handle_push_constants<'b, AP: ActivePipeline>(
     return Some(layout);
 }
 
-
 // For graphics pipelines only
-impl<C: ColorLayout, DS: DepthStencilLayout> PushConstants<'_, ActiveRenderPipeline<'_, '_, '_, C, DS>> {
+impl<C: ColorLayout, DS: DepthStencilLayout>
+    PushConstants<'_, ActiveRenderPipeline<'_, '_, '_, C, DS>>
+{
     // Push a sub-region of push constant data to be stored afterwards
     // This method variant is specifically used for graphics pipelines (since we can set both vertex AND fragment shaders)
     pub fn push(
@@ -73,32 +75,22 @@ impl<C: ColorLayout, DS: DepthStencilLayout> PushConstants<'_, ActiveRenderPipel
 
         // Make sure we won't overwrite the buffer
         if (bytes.len() + offset as usize) > self.data.len() {
-            return Err(
-                PushConstantBytesError::OffsetOrSizeIsTooLarge,
-            );
+            return Err(PushConstantBytesError::OffsetOrSizeIsTooLarge);
         }
 
         // Make sure the visibility matches up
         match (visibility, self.layout) {
-            (
-                ModuleVisibility::Vertex,
-                PushConstantLayout::SplitVertexFragment { .. },
-            ) => {}
+            (ModuleVisibility::Vertex, PushConstantLayout::SplitVertexFragment { .. }) => {}
             (
                 ModuleVisibility::Fragment,
-                PushConstantLayout::SplitVertexFragment {
-                    vertex,
-                    ..
-                },
+                PushConstantLayout::SplitVertexFragment { vertex, .. },
             ) => offset += vertex.get(),
             (a, PushConstantLayout::Single(_, b)) if a == b => {}
             _ => {
-                return Err(
-                    PushConstantBytesError::VisibilityNotValid(
-                        visibility,
-                        self.layout.visibility(),
-                    ),
-                )
+                return Err(PushConstantBytesError::VisibilityNotValid(
+                    visibility,
+                    self.layout.visibility(),
+                ))
             }
         }
 
@@ -110,16 +102,11 @@ impl<C: ColorLayout, DS: DepthStencilLayout> PushConstants<'_, ActiveRenderPipel
     }
 }
 
-
 // For compute pipelines only
 impl PushConstants<'_, ActiveComputeDispatcher<'_, '_>> {
     // Push a sub-region of push constant data to be stored afterwards
     // This method variant is specifically used for compute dispatchers
-    pub fn push(
-        &mut self,
-        bytes: &[u8],
-        mut offset: u32,
-    ) -> Result<(), PushConstantBytesError> {
+    pub fn push(&mut self, bytes: &[u8], mut offset: u32) -> Result<(), PushConstantBytesError> {
         // Make sure we have bytes to write with
         if bytes.is_empty() {
             return Err(PushConstantBytesError::NoBytes);
@@ -127,9 +114,7 @@ impl PushConstants<'_, ActiveComputeDispatcher<'_, '_>> {
 
         // Make sure we won't overwrite the buffer
         if (bytes.len() + offset as usize) > self.data.len() {
-            return Err(
-                PushConstantBytesError::OffsetOrSizeIsTooLarge,
-            );
+            return Err(PushConstantBytesError::OffsetOrSizeIsTooLarge);
         }
 
         // No need to do any checking since it's type checked anyways lul

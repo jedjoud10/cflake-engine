@@ -1,22 +1,28 @@
-use std::rc::Rc;
 use assets::Assets;
 use graphics::{
-    Compiler, ComputeModule, ComputeShader, GpuPod, Graphics, ModuleVisibility, PushConstantLayout, Texel,
-    Texture3D, Vertex, R, StorageAccess, RGBA, Normalized, RG, BindGroup, PushConstants, ActiveComputeDispatcher,
+    ActiveComputeDispatcher, BindGroup, Compiler, ComputeModule, ComputeShader, GpuPod, Graphics,
+    ModuleVisibility, Normalized, PushConstantLayout, PushConstants, StorageAccess, Texel,
+    Texture3D, Vertex, R, RG, RGBA,
 };
+use std::rc::Rc;
 
-use crate::{TerrainSettings, create_texture3d};
+use crate::{create_texture3d, TerrainSettings};
 
-// Voxel generator that will be solely used for generating voxels 
+// Voxel generator that will be solely used for generating voxels
 pub struct VoxelGenerator {
     pub(crate) compute_voxels: ComputeShader,
     pub(crate) voxels: Texture3D<RG<f32>>,
     pub(crate) set_bind_group_callback: Option<Box<dyn Fn(&mut BindGroup) + 'static>>,
-    pub(crate) set_push_constant_callback: Option<Box<dyn Fn(&mut PushConstants<ActiveComputeDispatcher>) + 'static>>
+    pub(crate) set_push_constant_callback:
+        Option<Box<dyn Fn(&mut PushConstants<ActiveComputeDispatcher>) + 'static>>,
 }
 
 impl VoxelGenerator {
-    pub(crate) fn new(assets: &Assets, graphics: &Graphics, settings: &mut TerrainSettings) -> Self {
+    pub(crate) fn new(
+        assets: &Assets,
+        graphics: &Graphics,
+        settings: &mut TerrainSettings,
+    ) -> Self {
         let module = assets
             .load::<ComputeModule>("engine/shaders/terrain/voxels.comp")
             .unwrap();
@@ -25,10 +31,7 @@ impl VoxelGenerator {
         let mut compiler = Compiler::new(assets, graphics);
 
         // Use the 3D voxels texture that we will write to
-        compiler.use_storage_texture::<Texture3D<RG<f32>>>(
-            "voxels",
-            StorageAccess::WriteOnly
-        );
+        compiler.use_storage_texture::<Texture3D<RG<f32>>>("voxels", StorageAccess::WriteOnly);
 
         // Needed by default
         compiler.use_push_constant_layout(

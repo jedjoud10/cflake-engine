@@ -3,9 +3,7 @@ use std::any::{type_name, TypeId};
 use winit::event::{DeviceEvent, WindowEvent};
 
 // Stage ID that depicts the current location and ordering of a specific event and or stage
-#[derive(
-    Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq, Debug,
-)]
+#[derive(Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq, Debug)]
 pub struct StageId {
     pub caller: CallerId,
     pub system: SystemId,
@@ -37,10 +35,7 @@ impl Ord for CallerId {
 }
 
 impl PartialOrd for CallerId {
-    fn partial_cmp(
-        &self,
-        other: &Self,
-    ) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.id.partial_cmp(&other.id)
     }
 }
@@ -65,10 +60,7 @@ impl PartialEq for SystemId {
 }
 
 impl PartialOrd for SystemId {
-    fn partial_cmp(
-        &self,
-        other: &Self,
-    ) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.id.partial_cmp(&other.id)
     }
 }
@@ -80,10 +72,7 @@ impl Ord for SystemId {
 }
 
 // Combine two types of IDS
-pub(crate) fn combine_ids(
-    system: &SystemId,
-    caller: &CallerId,
-) -> StageId {
+pub(crate) fn combine_ids(system: &SystemId, caller: &CallerId) -> StageId {
     StageId {
         caller: *caller,
         system: *system,
@@ -104,9 +93,7 @@ pub(crate) fn fetch_caller_id<C: Caller>() -> CallerId {
 }
 
 // Get the system ID of a specific system (simple generic function)
-pub(crate) fn fetch_system_id<S: FnOnce(&mut System) + 'static>(
-    _: &S,
-) -> SystemId {
+pub(crate) fn fetch_system_id<S: FnOnce(&mut System) + 'static>(_: &S) -> SystemId {
     SystemId {
         name: type_name::<S>(),
         id: TypeId::of::<S>(),
@@ -138,12 +125,8 @@ pub fn user(system: &mut System) {
     system.insert_init(|_world: &mut World| {});
     system.insert_update(|_world: &mut World| {});
     system.insert_shutdown(|_world: &mut World| {});
-    system.insert_device(
-        |_world: &mut World, _device: &DeviceEvent| {},
-    );
-    system.insert_window(
-        |_world: &mut World, _window: &mut WindowEvent| {},
-    );
+    system.insert_device(|_world: &mut World, _device: &DeviceEvent| {});
+    system.insert_window(|_world: &mut World, _window: &mut WindowEvent| {});
 }
 
 // Default post user system and default events
@@ -151,12 +134,8 @@ pub fn post_user(system: &mut System) {
     system.insert_init(|_world: &mut World| {});
     system.insert_update(|_world: &mut World| {});
     system.insert_shutdown(|_world: &mut World| {});
-    system.insert_device(
-        |_world: &mut World, _device: &DeviceEvent| {},
-    );
-    system.insert_window(
-        |_world: &mut World, _window: &mut WindowEvent| {},
-    );
+    system.insert_device(|_world: &mut World, _device: &DeviceEvent| {});
+    system.insert_window(|_world: &mut World, _window: &mut WindowEvent| {});
 }
 
 // Create the default rules for a default node

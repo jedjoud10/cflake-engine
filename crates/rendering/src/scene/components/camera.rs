@@ -1,6 +1,5 @@
-
-use ecs::{Component};
 use coords::{Position, Rotation};
+use ecs::Component;
 use math::Frustum;
 
 // A perspective camera component that will be used to render the main scene
@@ -25,16 +24,8 @@ pub fn horizontal_to_vertical(hfov: f32, ratio: f32) -> f32 {
 
 impl Camera {
     // Create a new view matrix using a position and rotation
-    pub fn view_matrix(
-        &self,
-        position: &Position,
-        rotation: &Rotation,
-    ) -> vek::Mat4<f32> {
-        vek::Mat4::<f32>::look_at_rh(
-            **position,
-            rotation.forward() + **position,
-            rotation.up(),
-        )
+    pub fn view_matrix(&self, position: &Position, rotation: &Rotation) -> vek::Mat4<f32> {
+        vek::Mat4::<f32>::look_at_rh(**position, rotation.forward() + **position, rotation.up())
     }
 
     // Create a new projection matrix using thec camera's parameters
@@ -48,11 +39,7 @@ impl Camera {
     }
 
     // Get the view frustum planes from this camera
-    pub fn frustum(
-        &self,
-        position: &Position,
-        rotation: &Rotation,
-    ) -> Frustum<f32> {
+    pub fn frustum(&self, position: &Position, rotation: &Rotation) -> Frustum<f32> {
         let view = self.view_matrix(position, rotation);
         let projection = self.projection_matrix();
         Frustum::<f32>::from_camera_matrices(projection, view)

@@ -5,15 +5,12 @@ use world::{user, System, World};
 // Initialize a load and add it to the world
 fn init(world: &mut World) {
     let loader = Assets::new();
-    
-    
 
     macro_rules! internal {
         ($assets:expr, $file:expr) => {
             asset!($assets, $file, "/src/assets/");
         };
     }
-
 
     // Load the default common shaders
     internal!(loader, "engine/shaders/common/camera.glsl");

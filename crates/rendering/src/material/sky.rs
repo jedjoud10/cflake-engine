@@ -1,14 +1,14 @@
 use crate::{
-    AlbedoMap, CameraUniform, DefaultMaterialResources, Direct,
-    Material, MeshAttributes, SceneUniform, CastShadowsMode,
+    AlbedoMap, CameraUniform, CastShadowsMode, DefaultMaterialResources, Direct, Material,
+    MeshAttributes, SceneUniform,
 };
 
 use assets::Assets;
 use graphics::{
-    BindGroup, Compiler, Face, FragmentModule, Graphics,
-    PrimitiveConfig, Shader, VertexModule, WindingOrder,
+    BindGroup, Compiler, Face, FragmentModule, Graphics, PrimitiveConfig, Shader, VertexModule,
+    WindingOrder,
 };
-use utils::{Storage};
+use utils::Storage;
 
 // A very simple sky material which uses a procedural sky system
 pub struct SkyMaterial {}
@@ -27,9 +27,7 @@ impl Material for SkyMaterial {
 
         // Load the fragment module from the assets
         let frag = assets
-            .load::<FragmentModule>(
-                "engine/shaders/scene/sky/sky.frag",
-            )
+            .load::<FragmentModule>("engine/shaders/scene/sky/sky.frag")
             .unwrap();
 
         // Define the type layouts for the UBOs

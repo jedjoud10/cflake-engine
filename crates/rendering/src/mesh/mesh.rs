@@ -1,14 +1,13 @@
 use super::attributes::*;
 use crate::mesh::attributes::{Normal, Position, Tangent, TexCoord};
 use crate::{
-    AttributeBuffer, Direct, Indirect, MeshAttribute, MeshAttributes,
-    MeshImportError, MeshImportSettings, MeshInitializationError,
-    RenderPath, TrianglesMut, TrianglesRef, VerticesMut, VerticesRef,
+    AttributeBuffer, Direct, Indirect, MeshAttribute, MeshAttributes, MeshImportError,
+    MeshImportSettings, MeshInitializationError, RenderPath, TrianglesMut, TrianglesRef,
+    VerticesMut, VerticesRef,
 };
 use assets::Asset;
 use graphics::{
-    BufferMode, BufferUsage, DrawIndexedIndirectBuffer, Graphics,
-    Triangle, TriangleBuffer,
+    BufferMode, BufferUsage, DrawIndexedIndirectBuffer, Graphics, Triangle, TriangleBuffer,
 };
 use obj::TexturedVertex;
 
@@ -39,14 +38,14 @@ pub struct Mesh<R: RenderPath = Direct> {
 
 impl<R: RenderPath> PartialEq for Mesh<R> {
     fn eq(&self, other: &Self) -> bool {
-        self.enabled == other.enabled &&
-        self.positions == other.positions &&
-        self.normals == other.normals &&
-        self.tangents == other.tangents &&
-        self.tex_coords == other.tex_coords &&
-        self.count == other.count &&
-        self.triangles == other.triangles &&
-        self.aabb == other.aabb
+        self.enabled == other.enabled
+            && self.positions == other.positions
+            && self.normals == other.normals
+            && self.tangents == other.tangents
+            && self.tex_coords == other.tex_coords
+            && self.count == other.count
+            && self.triangles == other.triangles
+            && self.aabb == other.aabb
     }
 }
 
@@ -66,36 +65,19 @@ impl Mesh<Direct> {
         triangles: &[Triangle<u32>],
     ) -> Result<Self, MeshInitializationError> {
         let positions = positions.map(|slice| {
-            AttributeBuffer::<Position>::from_slice(
-                graphics, slice, mode, usage,
-            )
-            .unwrap()
+            AttributeBuffer::<Position>::from_slice(graphics, slice, mode, usage).unwrap()
         });
         let normals = normals.map(|slice| {
-            AttributeBuffer::<Normal>::from_slice(
-                graphics, slice, mode, usage,
-            )
-            .unwrap()
+            AttributeBuffer::<Normal>::from_slice(graphics, slice, mode, usage).unwrap()
         });
         let tangents = tangents.map(|slice| {
-            AttributeBuffer::<Tangent>::from_slice(
-                graphics, slice, mode, usage,
-            )
-            .unwrap()
+            AttributeBuffer::<Tangent>::from_slice(graphics, slice, mode, usage).unwrap()
         });
         let tex_coords = tex_coords.map(|slice| {
-            AttributeBuffer::<TexCoord>::from_slice(
-                graphics, slice, mode, usage,
-            )
-            .unwrap()
+            AttributeBuffer::<TexCoord>::from_slice(graphics, slice, mode, usage).unwrap()
         });
-        let triangles = TriangleBuffer::from_slice(
-            graphics, triangles, mode, usage,
-        )
-        .unwrap();
-        Self::from_buffers(
-            positions, normals, tangents, tex_coords, triangles,
-        )
+        let triangles = TriangleBuffer::from_slice(graphics, triangles, mode, usage).unwrap();
+        Self::from_buffers(positions, normals, tangents, tex_coords, triangles)
     }
 
     // Create a new mesh from the attribute buffers
@@ -307,32 +289,32 @@ impl Asset for Mesh {
 
         // Load the .Obj mesh
         let name = data.path().file_name().unwrap().to_str().unwrap();
-        let parsed =
-            obj::load_obj::<TexturedVertex, &[u8], u32>(data.bytes())
-                .map_err(MeshImportError::ObjError)?;
-        log::debug!("Parsed mesh from file '{}', vertex count: {}, index count: {}", name, parsed.vertices.len(), parsed.indices.len());
+        let parsed = obj::load_obj::<TexturedVertex, &[u8], u32>(data.bytes())
+            .map_err(MeshImportError::ObjError)?;
+        log::debug!(
+            "Parsed mesh from file '{}', vertex count: {}, index count: {}",
+            name,
+            parsed.vertices.len(),
+            parsed.indices.len()
+        );
 
         // Create temporary slicetors containing the vertex attributes
         let capacity = parsed.vertices.len();
-        let mut positions =
-            Vec::<RawPosition>::with_capacity(capacity);
+        let mut positions = Vec::<RawPosition>::with_capacity(capacity);
         let mut normals = settings
             .use_normals
             .then(|| Vec::<RawNormal>::with_capacity(capacity));
         let mut tex_coords = settings
             .use_tex_coords
             .then(|| Vec::<RawTexCoord>::with_capacity(capacity));
-        let mut triangles =
-            Vec::<[u32; 3]>::with_capacity(parsed.indices.len() / 3);
+        let mut triangles = Vec::<[u32; 3]>::with_capacity(parsed.indices.len() / 3);
         let indices = parsed.indices;
         use vek::{Vec2, Vec3};
 
         // Convert the vertices into the separate buffer
         for vertex in parsed.vertices {
             // Read and add the position
-            positions.push(
-                vek::Vec3::from_slice(&vertex.position).with_w(0f32),
-            );
+            positions.push(vek::Vec3::from_slice(&vertex.position).with_w(0f32));
 
             // Read and add the normal
             if let Some(normals) = &mut normals {
@@ -394,10 +376,7 @@ impl Asset for Mesh {
         );
         log::debug!(
             "Loaded {} texture coordinate vertices",
-            tex_coords
-                .as_ref()
-                .map(|tc| tc.len())
-                .unwrap_or_default()
+            tex_coords.as_ref().map(|tc| tc.len()).unwrap_or_default()
         );
 
         // Generate the mesh and it's corresponding data

@@ -1,22 +1,14 @@
 use crate::{AudioClip, AudioPlayer, Sample};
-use cpal::{
-    traits::DeviceTrait, BuildStreamError, Stream, StreamConfig,
-};
+use cpal::{traits::DeviceTrait, BuildStreamError, Stream, StreamConfig};
 
 // This will be used to create the CPAL output stream
 pub trait OutputStream {
     // Create the CPAL output stream
-    fn build_output_stream(
-        &self,
-        player: &AudioPlayer,
-    ) -> Result<Stream, BuildStreamError>;
+    fn build_output_stream(&self, player: &AudioPlayer) -> Result<Stream, BuildStreamError>;
 }
 
 impl<S: Sample> OutputStream for AudioClip<S> {
-    fn build_output_stream(
-        &self,
-        player: &AudioPlayer,
-    ) -> Result<Stream, BuildStreamError> {
+    fn build_output_stream(&self, player: &AudioPlayer) -> Result<Stream, BuildStreamError> {
         let channels = self.channels();
         let sample_rate = self.sample_rate();
         let src = self.samples();

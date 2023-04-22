@@ -1,7 +1,4 @@
-use crate::{
-    Caller, CallerId, Event, Init, Registry, Rule, Shutdown,
-    SystemId, Tick, Update,
-};
+use crate::{Caller, CallerId, Event, Init, Registry, Rule, Shutdown, SystemId, Tick, Update};
 
 use log_err::LogErrResult;
 use std::marker::PhantomData;
@@ -23,10 +20,7 @@ pub struct Systems {
 impl Systems {
     // Add a system to the systems using a callback function
     // This will not add duplicate systems
-    pub fn insert<F: FnOnce(&mut System) + 'static>(
-        &mut self,
-        callback: F,
-    ) {
+    pub fn insert<F: FnOnce(&mut System) + 'static>(&mut self, callback: F) {
         // Create a system that will modify the registries
         let mut system = System {
             init: &mut self.init,
@@ -55,10 +49,7 @@ pub struct EventMut<'a, C: Caller> {
 
 impl<'a, C: Caller> EventMut<'a, C> {
     // Tell the event to execute before another system's matching event
-    pub fn before(
-        mut self,
-        other: impl FnOnce(&mut System) + 'static,
-    ) -> Self {
+    pub fn before(mut self, other: impl FnOnce(&mut System) + 'static) -> Self {
         if self.default {
             self.rules.clear();
             self.default = false;
@@ -77,10 +68,7 @@ impl<'a, C: Caller> EventMut<'a, C> {
     }
 
     // Tell the event to execute after another system's matching event
-    pub fn after(
-        mut self,
-        other: impl FnOnce(&mut System) + 'static,
-    ) -> Self {
+    pub fn after(mut self, other: impl FnOnce(&mut System) + 'static) -> Self {
         if self.default {
             self.rules.clear();
             self.default = false;
@@ -117,8 +105,7 @@ macro_rules! insert {
         let registry = &mut $self.$name;
 
         // Push the event into the registry
-        let rules =
-            registry.insert($event, $self.system).log_unwrap();
+        let rules = registry.insert($event, $self.system).log_unwrap();
 
         // Create the caller ID
         let caller = super::fetch_caller_id::<$C>();
@@ -134,34 +121,22 @@ macro_rules! insert {
 
 impl<'a> System<'a> {
     // Insert an init event and return a mut event
-    pub fn insert_init<ID>(
-        &mut self,
-        event: impl Event<Init, ID>,
-    ) -> EventMut<Init> {
+    pub fn insert_init<ID>(&mut self, event: impl Event<Init, ID>) -> EventMut<Init> {
         insert!(self, event, init, Init)
     }
 
     // Insert an update event and return a mut event
-    pub fn insert_update<ID>(
-        &mut self,
-        event: impl Event<Update, ID>,
-    ) -> EventMut<Update> {
+    pub fn insert_update<ID>(&mut self, event: impl Event<Update, ID>) -> EventMut<Update> {
         insert!(self, event, update, Update)
     }
 
     // Insert a shutdown event and return a mut event
-    pub fn insert_shutdown<ID>(
-        &mut self,
-        event: impl Event<Shutdown, ID>,
-    ) -> EventMut<Shutdown> {
+    pub fn insert_shutdown<ID>(&mut self, event: impl Event<Shutdown, ID>) -> EventMut<Shutdown> {
         insert!(self, event, shutdown, Shutdown)
     }
 
     // Insert a tick event and return a mut evnet
-    pub fn insert_tick<ID>(
-        &mut self,
-        event: impl Event<Tick, ID>,
-    ) -> EventMut<Tick> {
+    pub fn insert_tick<ID>(&mut self, event: impl Event<Tick, ID>) -> EventMut<Tick> {
         insert!(self, event, tick, Tick)
     }
 

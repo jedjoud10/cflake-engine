@@ -25,7 +25,10 @@ impl Pipelines {
         &mut self,
         graphics: &Graphics,
         assets: &Assets,
-    ) -> Result<MaterialId<M>, PipelineInitializationError> where for<'x> M::Settings<'x>: Default {
+    ) -> Result<MaterialId<M>, PipelineInitializationError>
+    where
+        for<'x> M::Settings<'x>: Default,
+    {
         self.register_with(graphics, Default::default(), assets)
     }
 
@@ -63,9 +66,7 @@ impl Pipelines {
     }
 
     // Extract the internally stored material pipelines
-    pub(crate) fn extract_pipelines(
-        &self,
-    ) -> Vec<Rc<dyn DynPipeline>> {
+    pub(crate) fn extract_pipelines(&self) -> Vec<Rc<dyn DynPipeline>> {
         self.pipelines
             .iter()
             .map(|(_key, value)| value.clone())

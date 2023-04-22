@@ -1,8 +1,8 @@
-use ecs::Scene;
-use world::{System, World, post_user};
-use coords::Position;
 use crate::Velocity;
+use coords::Position;
+use ecs::Scene;
 use utils::Time;
+use world::{post_user, System, World};
 
 // Update the Rigidbodies in the world
 fn tick(world: &mut World) {
@@ -16,7 +16,8 @@ fn tick(world: &mut World) {
 
 // Create the dynamics system
 pub fn system(system: &mut System) {
-    system.insert_tick(tick)
+    system
+        .insert_tick(tick)
         .after(post_user)
         .after(crate::systems::collisions::system);
 }

@@ -11,12 +11,12 @@ use ecs::Component;
 
 // This is a component that will be able to playback any type of audio to a specific cpal device
 // We can technically have multiple audio listenenrs in the same scene, although that would be pretty pointless
+// TODO: Fix this shit on windows it don't work
 #[derive(Component)]
 pub struct AudioPlayer {
     pub(crate) device: cpal::Device,
     pub(crate) host: cpal::Host,
-    pub(crate) supported_output_configs:
-        Vec<cpal::SupportedStreamConfigRange>,
+    pub(crate) supported_output_configs: Vec<cpal::SupportedStreamConfigRange>,
     volume: Arc<AtomicU32>,
 }
 
@@ -26,15 +26,13 @@ impl AudioPlayer {
         // Fetch the CPAL device
         let host = cpal::default_host();
         let device = host.default_output_device()?;
-        log::debug!("Using device {:?} as the default device for the audio player",
+        log::debug!(
+            "Using device {:?} as the default device for the audio player",
             device.name().unwrap()
         );
 
         // Fetch the cpal stream config and save them in a vec
-        let supported_output_configs = device
-            .supported_output_configs()
-            .ok()?
-            .collect::<Vec<_>>();
+        let supported_output_configs = device.supported_output_configs().ok()?.collect::<Vec<_>>();
 
         Some(Self {
             host,
@@ -57,10 +55,8 @@ impl AudioPlayer {
             .iter()
             .find(|config_range| {
                 let channels = config_range.channels() == channels;
-                let max =
-                    config_range.max_sample_rate().0 > sample_rate;
-                let min =
-                    config_range.min_sample_rate().0 < sample_rate;
+                let max = config_range.max_sample_rate().0 > sample_rate;
+                let min = config_range.min_sample_rate().0 < sample_rate;
                 log::debug!("Channels supported: {channels}");
                 log::debug!("Max sample rate supported: {max}");
                 log::debug!("Min sample rate supported: {min}");

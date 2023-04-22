@@ -1,8 +1,8 @@
 use wgpu::BlendState;
 
 use crate::{
-    ColorTexel, Depth, DepthElement, DepthStencil, LoadOp, Stencil,
-    StencilElement, StoreOp, Texel, TexelInfo, Texture, Texture2D,
+    ColorTexel, Depth, DepthElement, DepthStencil, LoadOp, Stencil, StencilElement, StoreOp, Texel,
+    TexelInfo, Texture, Texture2D,
 };
 
 // An attachment layout is a tuple that contains multiple color texels

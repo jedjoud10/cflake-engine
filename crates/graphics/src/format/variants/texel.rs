@@ -1,8 +1,7 @@
 use crate::{
-    AnyElement, ColorTexel, CompressionType, Depth, DepthElement,
-    ElementType, GpuPod, Normalized, Stencil, TexelChannels,
-    VertexChannels, BGRA, R, RG, RGBA, SBC4, SBC5, SBGRA, SRGBA,
-    UBC1, UBC2, UBC3, UBC4, UBC5, UBC7,
+    AnyElement, ColorTexel, CompressionType, Depth, DepthElement, ElementType, GpuPod, Normalized,
+    Stencil, TexelChannels, VertexChannels, BGRA, R, RG, RGBA, SBC4, SBC5, SBGRA, SRGBA, UBC1,
+    UBC2, UBC3, UBC4, UBC5, UBC7,
 };
 use half::f16;
 use std::{any::Any, mem::size_of, ops::Add};
@@ -44,9 +43,7 @@ pub trait Texel: 'static {
     type Base: GpuPod;
 
     // The raw vector data type that we will use to access texture memory
-    type Storage: GpuPod
-        + NumOps<Self::Storage>
-        + NumAssignOps<Self::Storage>;
+    type Storage: GpuPod + NumOps<Self::Storage> + NumAssignOps<Self::Storage>;
 
     // Get the byte size of this texel
     fn size() -> TexelSize;
@@ -111,12 +108,9 @@ macro_rules! internal_impl_texel {
             fn size() -> TexelSize {
                 // TODO: Check if this gets resolved at compile time?
                 match <$elem as AnyElement>::ELEMENT_TYPE {
-                    ElementType::Compressed(x) => {
-                        TexelSize::Compressed(x)
-                    }
+                    ElementType::Compressed(x) => TexelSize::Compressed(x),
                     _ => TexelSize::Uncompressed(
-                        size_of::<$elem>() as u32
-                            * Self::channels().count(),
+                        size_of::<$elem>() as u32 * Self::channels().count(),
                     ),
                 }
             }
@@ -131,11 +125,7 @@ macro_rules! internal_impl_texel {
 
             fn format() -> TextureFormat {
                 // TODO: Check if this gets resolved at compile time?
-                crate::pick_texture_format(
-                    Self::element(),
-                    Self::channels(),
-                )
-                .unwrap()
+                crate::pick_texture_format(Self::element(), Self::channels()).unwrap()
             }
         }
     };
@@ -145,33 +135,13 @@ macro_rules! impl_color_texels {
     ($vec:ident, $channels:expr, $storagevec: ident) => {
         internal_impl_texel!($vec, u8, $channels, $storagevec);
         internal_impl_texel!($vec, i8, $channels, $storagevec);
-        internal_impl_texel!(
-            $vec,
-            Normalized<u8>,
-            $channels,
-            $storagevec
-        );
-        internal_impl_texel!(
-            $vec,
-            Normalized<i8>,
-            $channels,
-            $storagevec
-        );
+        internal_impl_texel!($vec, Normalized<u8>, $channels, $storagevec);
+        internal_impl_texel!($vec, Normalized<i8>, $channels, $storagevec);
 
         internal_impl_texel!($vec, u16, $channels, $storagevec);
         internal_impl_texel!($vec, i16, $channels, $storagevec);
-        internal_impl_texel!(
-            $vec,
-            Normalized<u16>,
-            $channels,
-            $storagevec
-        );
-        internal_impl_texel!(
-            $vec,
-            Normalized<i16>,
-            $channels,
-            $storagevec
-        );
+        internal_impl_texel!($vec, Normalized<u16>, $channels, $storagevec);
+        internal_impl_texel!($vec, Normalized<i16>, $channels, $storagevec);
 
         internal_impl_texel!($vec, u32, $channels, $storagevec);
         internal_impl_texel!($vec, i32, $channels, $storagevec);
@@ -183,18 +153,8 @@ macro_rules! impl_color_texels {
 
 macro_rules! impl_compressed_rgba_variants {
     ($elem:ty) => {
-        internal_impl_texel!(
-            RGBA,
-            $elem,
-            TexelChannels::Four { swizzled: false },
-            Vec4
-        );
-        internal_impl_texel!(
-            SRGBA,
-            $elem,
-            TexelChannels::Srgba { swizzled: false },
-            Vec4
-        );
+        internal_impl_texel!(RGBA, $elem, TexelChannels::Four { swizzled: false }, Vec4);
+        internal_impl_texel!(SRGBA, $elem, TexelChannels::Srgba { swizzled: false }, Vec4);
     };
 }
 
@@ -209,11 +169,7 @@ macro_rules! impl_compressed_signed_unsigned_variants {
 type Scalar<T> = T;
 impl_color_texels!(R, TexelChannels::One, Scalar);
 impl_color_texels!(RG, TexelChannels::Two, Vec2);
-impl_color_texels!(
-    RGBA,
-    TexelChannels::Four { swizzled: false },
-    Vec4
-);
+impl_color_texels!(RGBA, TexelChannels::Four { swizzled: false }, Vec4);
 internal_impl_texel!(
     BGRA,
     Normalized<u8>,
@@ -272,11 +228,6 @@ impl_compressed_signed_unsigned_variants!(
 impl_compressed_rgba_variants!(Normalized<UBC7>);
 
 // Implement special depth / stencil formats
-internal_impl_texel!(
-    Depth,
-    Normalized<u16>,
-    TexelChannels::Depth,
-    Scalar
-);
+internal_impl_texel!(Depth, Normalized<u16>, TexelChannels::Depth, Scalar);
 internal_impl_texel!(Depth, f32, TexelChannels::Depth, Scalar);
 internal_impl_texel!(Stencil, u8, TexelChannels::Stencil, Scalar);

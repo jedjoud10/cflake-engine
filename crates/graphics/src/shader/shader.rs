@@ -1,7 +1,6 @@
 use crate::{
-    Compiled, Compiler, ComputeModule, FragmentModule, Graphics,
-    ReflectedShader, ShaderCompilationError, ShaderError,
-    VertexModule,
+    Compiled, Compiler, ComputeModule, FragmentModule, Graphics, ReflectedShader,
+    ShaderCompilationError, ShaderError, VertexModule,
 };
 use std::sync::Arc;
 
@@ -32,11 +31,7 @@ impl Shader {
         let names = [vertex.name(), fragment.name()];
         let modules = [vertex.reflected(), fragment.reflected()];
         let visibility = [vertex.visibility(), fragment.visibility()];
-        let (reflected, layout) = compiler.create_pipeline_layout(
-            &names,
-            &modules,
-            &visibility,
-        )?;
+        let (reflected, layout) = compiler.create_pipeline_layout(&names, &modules, &visibility)?;
 
         Ok(Self {
             vertex,
@@ -75,29 +70,23 @@ pub struct ComputeShader {
 
 impl ComputeShader {
     // Create a new compute shader from the compute module
-    pub fn new(
-        module: ComputeModule,
-        compiler: Compiler,
-    ) -> Result<Self, ShaderError> {
+    pub fn new(module: ComputeModule, compiler: Compiler) -> Result<Self, ShaderError> {
         let compiled = compiler.compile(module)?;
         let names = [compiled.name()];
         let modules = [compiled.reflected()];
         let visibility = [compiled.visibility()];
-        let (reflected, layout) = compiler.create_pipeline_layout(
-            &names,
-            &modules,
-            &visibility,
-        )?;
+        let (reflected, layout) = compiler.create_pipeline_layout(&names, &modules, &visibility)?;
 
         let pipeline =
-            compiler.graphics.device().create_compute_pipeline(
-                &wgpu::ComputePipelineDescriptor {
+            compiler
+                .graphics
+                .device()
+                .create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
                     label: None,
                     layout: Some(&layout),
                     module: compiled.module(),
                     entry_point: "main",
-                },
-            );
+                });
 
         Ok(Self {
             pipeline: Arc::new(pipeline),

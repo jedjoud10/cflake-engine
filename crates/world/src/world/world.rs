@@ -1,7 +1,4 @@
-use crate::{
-    user, Entry, Read, Resource, System, WorldBorrowError,
-    WorldBorrowMutError, Write,
-};
+use crate::{user, Entry, Read, Resource, System, WorldBorrowError, WorldBorrowMutError, Write};
 use ahash::AHashMap;
 use std::{
     any::TypeId,
@@ -10,9 +7,7 @@ use std::{
 
 // The world is a unique container for multiple resources like ECS and assets
 // Each World can be created using the builder pattern with the help of an App
-pub struct World(
-    pub(crate) AHashMap<TypeId, RefCell<Box<dyn Resource>>>,
-);
+pub struct World(pub(crate) AHashMap<TypeId, RefCell<Box<dyn Resource>>>);
 
 // This is the main world state that the user can manually update to force the engine to stop running
 #[derive(Default, Clone, Copy, PartialEq, Eq)]
@@ -32,28 +27,20 @@ impl World {
     // Insert a new resource into the world
     pub fn insert<R: Resource>(&mut self, resource: R) {
         let id = TypeId::of::<R>();
-        let returned =
-            self.0.insert(id, RefCell::new(Box::new(resource)));
+        let returned = self.0.insert(id, RefCell::new(Box::new(resource)));
         if returned.is_some() {
             let name = pretty_type_name::pretty_type_name::<R>();
-            log::warn!(
-                "Replaced resource {} since it was already present",
-                name
-            );
+            log::warn!("Replaced resource {} since it was already present", name);
         }
     }
 
     // Get an immutable reference (read guard) to a resource
-    pub fn get<R: Resource>(
-        &self,
-    ) -> Result<Read<R>, WorldBorrowError> {
+    pub fn get<R: Resource>(&self) -> Result<Read<R>, WorldBorrowError> {
         let cell = self
             .0
             .get(&TypeId::of::<R>())
             .ok_or(WorldBorrowError::NotPresent)?;
-        let borrowed = cell
-            .try_borrow()
-            .map_err(WorldBorrowError::BorrowError)?;
+        let borrowed = cell.try_borrow().map_err(WorldBorrowError::BorrowError)?;
         let borrowed = Ref::map(borrowed, |boxed| {
             boxed.as_ref().as_any().downcast_ref::<R>().unwrap()
         });
@@ -61,9 +48,7 @@ impl World {
     }
 
     // Get a mutable reference (write guard) to a resource
-    pub fn get_mut<R: Resource>(
-        &self,
-    ) -> Result<Write<R>, WorldBorrowMutError> {
+    pub fn get_mut<R: Resource>(&self) -> Result<Write<R>, WorldBorrowMutError> {
         let cell = self
             .0
             .get(&TypeId::of::<R>())

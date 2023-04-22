@@ -1,14 +1,11 @@
-use std::{
-    marker::PhantomData, mem::ManuallyDrop, sync::Arc, time::Instant,
-};
+use std::{marker::PhantomData, mem::ManuallyDrop, sync::Arc, time::Instant};
 
 use assets::Asset;
 use smallvec::SmallVec;
 
 use crate::{
-    Extent, Graphics, ImageTexel, Sampler, SamplerSettings, Texel,
-    Texture, TextureAssetLoadError, TextureInitializationError,
-    TextureMipMaps, TextureMode, TextureUsage,
+    Extent, Graphics, ImageTexel, Sampler, SamplerSettings, Texel, Texture, TextureAssetLoadError,
+    TextureInitializationError, TextureMipMaps, TextureMode, TextureUsage,
 };
 
 // A #D texture that contains multiple texels that have their own channels
@@ -53,17 +50,20 @@ impl<T: Texel> Texture for Texture3D<T> {
     fn raw(&self) -> &wgpu::Texture {
         &self.texture
     }
-    
+
     fn views(&self) -> Option<&[wgpu::TextureView]> {
         self.views.as_ref().map(|x| x.as_slice())
     }
 
     fn sampler(&self) -> Option<Sampler<Self::T>> {
-        self.sampler.as_ref().zip(self.sampling.as_ref()).map(|(sampler, settings)| Sampler {
-            sampler,
-            _phantom: PhantomData,
-            settings,
-        })
+        self.sampler
+            .as_ref()
+            .zip(self.sampling.as_ref())
+            .map(|(sampler, settings)| Sampler {
+                sampler,
+                _phantom: PhantomData,
+                settings,
+            })
     }
 
     fn graphics(&self) -> Graphics {

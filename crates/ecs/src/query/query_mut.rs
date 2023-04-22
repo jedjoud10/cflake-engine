@@ -1,9 +1,6 @@
 use utils::BitSet;
 
-use crate::{
-    Always, Archetype, LayoutAccess, Mask, QueryFilter,
-    QueryLayoutMut, Scene, Wrap,
-};
+use crate::{Always, Archetype, LayoutAccess, Mask, QueryFilter, QueryLayoutMut, Scene, Wrap};
 use std::{iter::FusedIterator, marker::PhantomData};
 
 // This is a query that will be fetched from the main scene that we can use to get components out of entries with a specific layout
@@ -19,10 +16,7 @@ pub struct QueryMut<'a: 'b, 'b, L: QueryLayoutMut> {
 impl<'a: 'b, 'b, L: QueryLayoutMut> QueryMut<'a, 'b, L> {
     // Create a new mut query from the scene
     pub fn new(scene: &'a mut Scene) -> Self {
-        let (access, archetypes, _) =
-            super::archetypes_mut::<L, Always>(
-                scene.archetypes_mut(),
-            );
+        let (access, archetypes, _) = super::archetypes_mut::<L, Always>(scene.archetypes_mut());
 
         Self {
             archetypes,
@@ -34,17 +28,10 @@ impl<'a: 'b, 'b, L: QueryLayoutMut> QueryMut<'a, 'b, L> {
     }
 
     // Create a new mut query from the scene, but make it have a specific entry enable/disable masks
-    pub fn new_with_filter<F: QueryFilter>(
-        scene: &'a mut Scene,
-        _: Wrap<F>,
-    ) -> Self {
+    pub fn new_with_filter<F: QueryFilter>(scene: &'a mut Scene, _: Wrap<F>) -> Self {
         // Filter out the archetypes then create the bitsets
-        let (access, archetypes, cached) =
-            super::archetypes_mut::<L, F>(scene.archetypes_mut());
-        let bitsets = super::generate_bitset_chunks::<F>(
-            archetypes.iter().map(|a| &**a),
-            cached,
-        );
+        let (access, archetypes, cached) = super::archetypes_mut::<L, F>(scene.archetypes_mut());
+        let bitsets = super::generate_bitset_chunks::<F>(archetypes.iter().map(|a| &**a), cached);
 
         Self {
             archetypes,
@@ -75,16 +62,10 @@ impl<'a: 'b, 'b, L: QueryLayoutMut> QueryMut<'a, 'b, L> {
                 .flatten()
                 .map(Some)
                 .chain(std::iter::repeat(None));
-            for (archetype, bitset) in
-                self.archetypes.iter_mut().zip(bitsets)
-            {
+            for (archetype, bitset) in self.archetypes.iter_mut().zip(bitsets) {
                 // Send the archetype slices to multiple threads to be able to compute them
-                let ptrs = unsafe {
-                    L::ptrs_from_mut_archetype_unchecked(archetype)
-                };
-                let slices = unsafe {
-                    L::from_raw_parts(ptrs, archetype.len())
-                };
+                let ptrs = unsafe { L::ptrs_from_mut_archetype_unchecked(archetype) };
+                let slices = unsafe { L::from_raw_parts(ptrs, archetype.len()) };
 
                 // Update all states chunks of the current archetype before iterating
                 apply_mutability_states(
@@ -95,18 +76,9 @@ impl<'a: 'b, 'b, L: QueryLayoutMut> QueryMut<'a, 'b, L> {
 
                 // Should we use per entry filtering?
                 if let Some(bitset) = bitset {
-                    scope.for_each_filtered(
-                        slices,
-                        function.clone(),
-                        bitset,
-                        batch_size,
-                    );
+                    scope.for_each_filtered(slices, function.clone(), bitset, batch_size);
                 } else {
-                    scope.for_each(
-                        slices,
-                        function.clone(),
-                        batch_size,
-                    );
+                    scope.for_each(slices, function.clone(), batch_size);
                 }
             }
         });
@@ -129,21 +101,15 @@ impl<'a: 'b, 'b, L: QueryLayoutMut> QueryMut<'a, 'b, L> {
 }
 
 // Update the mutability state column of a specific archetype based on a masks' compound unit masks
-fn apply_mutability_states(
-    archetype: &mut Archetype,
-    mutability: Mask,
-    bitset: Option<&BitSet>,
-) {
+fn apply_mutability_states(archetype: &mut Archetype, mutability: Mask, bitset: Option<&BitSet>) {
     let table = archetype.table_mut();
     for unit in mutability.units() {
         let column = table.get_mut(&unit).unwrap();
         let states = column.states_mut();
 
         if let Some(bitset) = bitset {
-            for (out_states, in_states) in states
-                .chunks_mut()
-                .iter_mut()
-                .zip(bitset.chunks().iter())
+            for (out_states, in_states) in
+                states.chunks_mut().iter_mut().zip(bitset.chunks().iter())
             {
                 out_states.modified = *in_states;
             }
@@ -157,10 +123,7 @@ fn apply_mutability_states(
 
 // Calculate the number of elements there are in the archetypes, but also take in consideration
 // the bitsets (if specified)
-fn len(
-    archetypes: &[&mut Archetype],
-    bitsets: &Option<Vec<BitSet>>,
-) -> usize {
+fn len(archetypes: &[&mut Archetype], bitsets: &Option<Vec<BitSet>>) -> usize {
     if let Some(bitsets) = bitsets {
         bitsets
             .iter()
@@ -172,21 +135,14 @@ fn len(
     }
 }
 
-impl<'a: 'b, 'b, L: QueryLayoutMut> IntoIterator
-    for QueryMut<'a, 'b, L>
-{
+impl<'a: 'b, 'b, L: QueryLayoutMut> IntoIterator for QueryMut<'a, 'b, L> {
     type Item = L;
     type IntoIter = QueryMutIter<'b, L>;
 
     fn into_iter(mut self) -> Self::IntoIter {
         for (i, archetype) in self.archetypes.iter_mut().enumerate() {
-            let bitset =
-                self.bitsets.as_ref().map(|bitset| &bitset[i]);
-            apply_mutability_states(
-                archetype,
-                archetype.mask() & self.access.unique(),
-                bitset,
-            );
+            let bitset = self.bitsets.as_ref().map(|bitset| &bitset[i]);
+            apply_mutability_states(archetype, archetype.mask() & self.access.unique(), bitset);
         }
 
         QueryMutIter {
@@ -229,11 +185,8 @@ impl<'b, L: QueryLayoutMut> QueryMutIter<'b, L> {
 
         if self.index + 1 > len {
             let archetype = self.archetypes.pop()?;
-            let bitset =
-                self.bitsets.as_mut().map(|vec| vec.pop().unwrap());
-            let ptrs = unsafe {
-                L::ptrs_from_mut_archetype_unchecked(archetype)
-            };
+            let bitset = self.bitsets.as_mut().map(|vec| vec.pop().unwrap());
+            let ptrs = unsafe { L::ptrs_from_mut_archetype_unchecked(archetype) };
             let length = archetype.len();
             self.index = 0;
             self.chunk = Some(Chunk {
@@ -264,9 +217,7 @@ impl<'b, L: QueryLayoutMut> Iterator for QueryMutIter<'b, L> {
                 // Check for bitset
                 if let Some(bitset) = &chunk.bitset {
                     // Check the next entry that is valid (that passed the filter)
-                    if let Some(hop) =
-                        bitset.find_one_from(self.index)
-                    {
+                    if let Some(hop) = bitset.find_one_from(self.index) {
                         self.index = hop;
                         break;
                     } else {
@@ -285,20 +236,13 @@ impl<'b, L: QueryLayoutMut> Iterator for QueryMutIter<'b, L> {
         // I have to do this since iterators cannot return data that they are referencing, but in this case, it is safe to do so
         self.chunk.as_mut()?;
         let ptrs = self.chunk.as_ref().unwrap().ptrs;
-        let items =
-            unsafe { L::read_mut_unchecked(ptrs, self.index) };
+        let items = unsafe { L::read_mut_unchecked(ptrs, self.index) };
         self.index += 1;
 
         Some(items)
     }
 }
 
-impl<'b, L: QueryLayoutMut> ExactSizeIterator
-    for QueryMutIter<'b, L>
-{
-}
+impl<'b, L: QueryLayoutMut> ExactSizeIterator for QueryMutIter<'b, L> {}
 
-impl<'b, 's, L: QueryLayoutMut> FusedIterator
-    for QueryMutIter<'b, L>
-{
-}
+impl<'b, 's, L: QueryLayoutMut> FusedIterator for QueryMutIter<'b, L> {}

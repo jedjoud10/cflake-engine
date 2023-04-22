@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use crate::{PushConstants, SetPushConstantsError, BindGroup, SetBindGroupError};
+use crate::{BindGroup, PushConstants, SetBindGroupError, SetPushConstantsError};
 
 // Common pipeline trait that will be implemented by ActiveComputeDispatcher and ActiveGraphicsPipeline
 pub trait ActivePipeline {
@@ -9,7 +9,7 @@ pub trait ActivePipeline {
 
     // Set push constants before rendering
     // TODO: Currently, push constants can be "composed" by calling this method multiple times with different offsets
-    // I gotta implement the same mechanic for bind groups as well in the future 
+    // I gotta implement the same mechanic for bind groups as well in the future
     fn set_push_constants(
         &mut self,
         callback: impl FnOnce(&mut PushConstants<Self>),

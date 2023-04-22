@@ -1,8 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{
-    AnyElement, Base, Normalizable, Normalized, SupportsSrgba,
-};
+use crate::{AnyElement, Base, Normalizable, Normalized, SupportsSrgba};
 use paste::paste;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -60,8 +58,7 @@ macro_rules! impl_compressed_any_element {
     ($t:ty, $storage:ty, $variant:expr) => {
         impl AnyElement for $t {
             type Storage = $storage;
-            const ELEMENT_TYPE: crate::ElementType =
-                crate::ElementType::Compressed($variant);
+            const ELEMENT_TYPE: crate::ElementType = crate::ElementType::Compressed($variant);
         }
 
         impl Normalizable for $t {}
@@ -81,26 +78,10 @@ pub struct UBC7(PhantomData<u8>);
 impl_compressed_any_element!(UBC1, u8, CompressionType::UBC1);
 impl_compressed_any_element!(UBC2, u8, CompressionType::UBC2);
 impl_compressed_any_element!(UBC3, u8, CompressionType::UBC3);
-impl_compressed_any_element!(
-    UBC4,
-    u8,
-    CompressionType::BC4 { signed: false }
-);
-impl_compressed_any_element!(
-    SBC4,
-    i8,
-    CompressionType::BC4 { signed: true }
-);
-impl_compressed_any_element!(
-    UBC5,
-    u8,
-    CompressionType::BC5 { signed: false }
-);
-impl_compressed_any_element!(
-    SBC5,
-    i8,
-    CompressionType::BC5 { signed: true }
-);
+impl_compressed_any_element!(UBC4, u8, CompressionType::BC4 { signed: false });
+impl_compressed_any_element!(SBC4, i8, CompressionType::BC4 { signed: true });
+impl_compressed_any_element!(UBC5, u8, CompressionType::BC5 { signed: false });
+impl_compressed_any_element!(SBC5, i8, CompressionType::BC5 { signed: true });
 impl_compressed_any_element!(UBC7, u8, CompressionType::UBC7);
 
 impl SupportsSrgba for Normalized<UBC1> {}

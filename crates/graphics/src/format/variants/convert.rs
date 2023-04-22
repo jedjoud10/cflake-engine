@@ -1,7 +1,6 @@
 use crate::{
-    AnyElement, Depth, DepthElement, Normalized, Stencil,
-    StencilElement, Texel, BGRA, R, RG, RGBA, SBC4, SBC5, SBGRA,
-    SRGBA, UBC1, UBC2, UBC3, UBC4, UBC5, UBC7,
+    AnyElement, Depth, DepthElement, Normalized, Stencil, StencilElement, Texel, BGRA, R, RG, RGBA,
+    SBC4, SBC5, SBGRA, SRGBA, UBC1, UBC2, UBC3, UBC4, UBC5, UBC7,
 };
 use half::f16;
 
@@ -16,8 +15,7 @@ pub trait Conversion: Texel {
     // Convert an intermediate storage type repr to a texel
     // Must return None if the conversion fails
     // Extra channels must be zeroed out
-    fn try_from_target(target: Self::Target)
-        -> Option<Self::Storage>;
+    fn try_from_target(target: Self::Target) -> Option<Self::Storage>;
 
     // Converts the color texel to the intermediate storage type
     // Extra channels must be zeroed out
@@ -25,10 +23,7 @@ pub trait Conversion: Texel {
     fn into_target(texel: Self::Storage) -> Self::Target;
 }
 
-fn map<T: Texel>(
-    rgba: vek::Vec4<f32>,
-    map: impl Fn(f32) -> T::Base,
-) -> vek::Vec4<T::Base> {
+fn map<T: Texel>(rgba: vek::Vec4<f32>, map: impl Fn(f32) -> T::Base) -> vek::Vec4<T::Base> {
     rgba.map(map)
 }
 
@@ -38,12 +33,8 @@ macro_rules! internal_impl_color_texel {
         impl Conversion for $vec<$elem> {
             type Target = vek::Vec4<f32>;
 
-            fn try_from_target(
-                rgba: vek::Vec4<f32>,
-            ) -> Option<Self::Storage> {
-                if rgba.reduce_partial_max() > $max
-                    || rgba.reduce_partial_min() < $min
-                {
+            fn try_from_target(rgba: vek::Vec4<f32>) -> Option<Self::Storage> {
+                if rgba.reduce_partial_max() > $max || rgba.reduce_partial_min() < $min {
                     return None;
                 }
 
@@ -218,9 +209,7 @@ macro_rules! impl_compressed_rgba_color_texel_variant {
 }
 
 impl_color_texels!(R, Scalar, |v: vek::Vec4<Self::Base>| v[0]);
-impl_color_texels!(RG, Vec2, |v: vek::Vec4<Self::Base>| {
-    vek::Vec2::from(v)
-});
+impl_color_texels!(RG, Vec2, |v: vek::Vec4<Self::Base>| { vek::Vec2::from(v) });
 impl_color_texels!(RGBA, Vec4, |v: vek::Vec4<Self::Base>| {
     vek::Vec4::from(v)
 });
@@ -312,9 +301,7 @@ where
 {
     type Target = f32;
 
-    fn try_from_target(
-        target: Self::Target,
-    ) -> Option<Self::Storage> {
+    fn try_from_target(target: Self::Target) -> Option<Self::Storage> {
         Some(target)
     }
 
@@ -329,13 +316,11 @@ where
 {
     type Target = f32;
 
-    fn try_from_target(
-        target: Self::Target,
-    ) -> Option<Self::Storage> {
+    fn try_from_target(target: Self::Target) -> Option<Self::Storage> {
         if target > 0.0 && target < 1.0 {
             return Some((target * u16::MAX as f32) as u16);
         } else {
-            return None
+            return None;
         }
     }
 
@@ -344,16 +329,13 @@ where
     }
 }
 
-
 impl Conversion for Stencil<u8>
 where
     Self: Texel,
 {
     type Target = u32;
 
-    fn try_from_target(
-        target: Self::Target,
-    ) -> Option<Self::Storage> {
+    fn try_from_target(target: Self::Target) -> Option<Self::Storage> {
         target.try_into().ok()
     }
 

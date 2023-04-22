@@ -2,13 +2,10 @@ use std::time::Instant;
 
 use ecs::Scene;
 use math::ExplicitVertices;
-use utils::{ThreadPool};
+use utils::ThreadPool;
 use world::World;
 
-use crate::{
-    DefaultMaterialResources, Material, RenderPath, Renderer,
-    Surface, SubSurface,
-};
+use crate::{DefaultMaterialResources, Material, RenderPath, Renderer, SubSurface, Surface};
 
 // Check if an AABB intersects all the given frustum planes
 // TODO: Use space partioning algorithms to make this faster (ex. Octree)
@@ -20,8 +17,7 @@ pub fn intersects_frustum(
     aabb: math::Aabb<f32>,
     matrix: &vek::Mat4<f32>,
 ) -> bool {
-    let corners =
-        <math::Aabb<f32> as ExplicitVertices<f32>>::points(&aabb);
+    let corners = <math::Aabb<f32> as ExplicitVertices<f32>>::points(&aabb);
     let mut out: [vek::Vec4<f32>; 8] = [vek::Vec4::zero(); 8];
 
     for (input, output) in corners.iter().zip(out.iter_mut()) {
@@ -64,25 +60,21 @@ pub(super) fn cull_surfaces<'r, M: Material>(
         &mut threadpool,
         |(surface, renderer)| {
             // A surface is culled *only* if all of it's sub-surface are not visible
-            surface.culled = surface.subsurfaces.iter().all(|SubSurface { mesh, material }| {
-                // Get the mesh and it's AABB
-                let mesh = <M::RenderPath as RenderPath>::get(
-                    defaults,
-                    &mesh,
-                );
-                let aabb = mesh.vertices().aabb();
+            surface.culled = surface
+                .subsurfaces
+                .iter()
+                .all(|SubSurface { mesh, material }| {
+                    // Get the mesh and it's AABB
+                    let mesh = <M::RenderPath as RenderPath>::get(defaults, &mesh);
+                    let aabb = mesh.vertices().aabb();
 
-                // If we have a valid AABB, check if the surface is visible within the frustum
-                if let Some(aabb) = aabb {
-                    !intersects_frustum(
-                        &defaults.camera_frustum,
-                        aabb,
-                        &renderer.matrix,
-                    )
-                } else {
-                    false
-                }
-            });
+                    // If we have a valid AABB, check if the surface is visible within the frustum
+                    if let Some(aabb) = aabb {
+                        !intersects_frustum(&defaults.camera_frustum, aabb, &renderer.matrix)
+                    } else {
+                        false
+                    }
+                });
         },
         1024,
     );

@@ -22,7 +22,9 @@ fn init(world: &mut World) {
     // Load the glTF scene into the world LMAO!!
     let context = GtlfContext::from_world(world).unwrap();
     let settings = GltfSettings::default();
-    assets.load::<GltfScene>(("user/scenes/cube1.gltf", settings, context)).unwrap();
+    assets
+        .load::<GltfScene>(("user/scenes/cube1.gltf", settings, context))
+        .unwrap();
 
     let graphics = world.get::<Graphics>().unwrap();
     let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
@@ -59,9 +61,10 @@ fn init(world: &mut World) {
     ));
 
     // Create a directional light
-    let light = DirectionalLight { color: vek::Rgb::one() * 3.6 };
-    let rotation = vek::Quaternion::rotation_x(-15.0f32.to_radians())
-        .rotated_y(45f32.to_radians());
+    let light = DirectionalLight {
+        color: vek::Rgb::one() * 3.6,
+    };
+    let rotation = vek::Quaternion::rotation_x(-15.0f32.to_radians()).rotated_y(45f32.to_radians());
     scene.insert((light, Rotation::from(rotation)));
 }
 

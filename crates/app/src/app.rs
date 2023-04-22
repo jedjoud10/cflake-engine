@@ -1,16 +1,13 @@
 use graphics::{FrameRateLimit, WindowSettings};
 use mimalloc::MiMalloc;
 
-use std::{path::PathBuf, sync::mpsc};
+use std::sync::mpsc;
 use utils::UtilsSettings;
 use winit::{
     event::{DeviceEvent, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
-use world::{
-    Event, Init, Shutdown, State, System, Systems, Tick, Update,
-    World,
-};
+use world::{Event, Init, Shutdown, State, System, Systems, Tick, Update, World};
 
 use crate::systems::gui::EventStatsDurations;
 
@@ -61,10 +58,7 @@ impl Default for App {
 
 impl App {
     // Set the window framerate limit
-    pub fn set_frame_rate_limit(
-        mut self,
-        limit: FrameRateLimit,
-    ) -> Self {
+    pub fn set_frame_rate_limit(mut self, limit: FrameRateLimit) -> Self {
         self.window.limit = limit;
         self
     }
@@ -95,79 +89,55 @@ impl App {
     }
 
     // Insert a new system into the app and register the necessary events
-    pub fn insert_system(
-        mut self,
-        callback: impl FnOnce(&mut System) + 'static,
-    ) -> Self {
+    pub fn insert_system(mut self, callback: impl FnOnce(&mut System) + 'static) -> Self {
         self.systems.insert(callback);
         self
     }
 
     // Insert a single init event
-    pub fn insert_init<ID>(
-        self,
-        init: impl Event<Init, ID> + 'static,
-    ) -> Self {
+    pub fn insert_init<ID>(self, init: impl Event<Init, ID> + 'static) -> Self {
         self.insert_system(move |system: &mut System| {
             system.insert_init(init);
         })
     }
 
     // Insert a single update event
-    pub fn insert_update<ID>(
-        self,
-        update: impl Event<Update, ID> + 'static,
-    ) -> Self {
+    pub fn insert_update<ID>(self, update: impl Event<Update, ID> + 'static) -> Self {
         self.insert_system(move |system: &mut System| {
             system.insert_update(update);
         })
     }
 
     // Insert a single shutdown event
-    pub fn insert_shutdown<ID>(
-        self,
-        shutdown: impl Event<Shutdown, ID> + 'static,
-    ) -> Self {
+    pub fn insert_shutdown<ID>(self, shutdown: impl Event<Shutdown, ID> + 'static) -> Self {
         self.insert_system(move |system: &mut System| {
             system.insert_shutdown(shutdown);
         })
     }
 
     // Insert a single tick event
-    pub fn insert_tick<ID>(
-        self,
-        tick: impl Event<Tick, ID> + 'static,
-    ) -> Self {
+    pub fn insert_tick<ID>(self, tick: impl Event<Tick, ID> + 'static) -> Self {
         self.insert_system(move |system: &mut System| {
             system.insert_tick(tick);
         })
     }
 
     // Insert a single window event
-    pub fn insert_window<ID>(
-        self,
-        event: impl Event<WindowEvent<'static>, ID> + 'static,
-    ) -> Self {
+    pub fn insert_window<ID>(self, event: impl Event<WindowEvent<'static>, ID> + 'static) -> Self {
         self.insert_system(move |system: &mut System| {
             system.insert_window(event);
         })
     }
 
     // Insert a single device event
-    pub fn insert_device<ID>(
-        self,
-        event: impl Event<DeviceEvent, ID> + 'static,
-    ) -> Self {
+    pub fn insert_device<ID>(self, event: impl Event<DeviceEvent, ID> + 'static) -> Self {
         self.insert_system(move |system: &mut System| {
             system.insert_device(event);
         })
     }
 
     // Set the logger level that can hide/show log messages
-    pub fn set_logging_level(
-        mut self,
-        level: log::LevelFilter,
-    ) -> Self {
+    pub fn set_logging_level(mut self, level: log::LevelFilter) -> Self {
         self.logging_level = level;
         self
     }
@@ -177,9 +147,7 @@ impl App {
         use fern::colors::*;
 
         // File logger with no colors. Will write into the given cache buffer
-        fn file_logger(
-            sender: mpsc::Sender<String>,
-        ) -> fern::Dispatch {
+        fn file_logger(sender: mpsc::Sender<String>) -> fern::Dispatch {
             fern::Dispatch::new()
                 .format(move |out, _, record| {
                     out.finish(format_args!(
@@ -278,7 +246,14 @@ impl App {
 
         // Update the EventStatsDurations
         let mut durations = self.world.get_mut::<EventStatsDurations>().unwrap();
-        durations.init = self.systems.init.timings().0.iter().map(|(stage, duration)| (stage.clone(), duration.as_secs_f32() * 1000.0f32)).collect();
+        durations.init = self
+            .systems
+            .init
+            .timings()
+            .0
+            .iter()
+            .map(|(stage, duration)| (stage.clone(), duration.as_secs_f32() * 1000.0f32))
+            .collect();
         durations.init_total = self.systems.init.timings().1.as_secs_f32() * 1000.0f32;
         drop(durations);
 
@@ -304,8 +279,26 @@ impl App {
 
                 if time.frame_count() % 30 == 0 {
                     let mut durations = world.get_mut::<EventStatsDurations>().unwrap();
-                    durations.update = systems.update.timings().0.iter().map(|(stage, duration)| (stage.clone(), duration.as_secs_f32() * 1000.0f32)).collect();
+                    durations.update = systems
+                        .update
+                        .timings()
+                        .0
+                        .iter()
+                        .map(|(stage, duration)| {
+                            (stage.clone(), duration.as_secs_f32() * 1000.0f32)
+                        })
+                        .collect();
                     durations.update_total = systems.update.timings().1.as_secs_f32() * 1000.0f32;
+                    durations.tick = systems
+                        .tick
+                        .timings()
+                        .0
+                        .iter()
+                        .map(|(stage, duration)| {
+                            (stage.clone(), duration.as_secs_f32() * 1000.0f32)
+                        })
+                        .collect();
+                    durations.tick_total = systems.tick.timings().1.as_secs_f32() * 1000.0f32;
                     drop(durations);
                 }
 
@@ -320,9 +313,7 @@ impl App {
                 }
 
                 // Handle app shutdown
-                if let Ok(State::Stopped) =
-                    world.get::<State>().map(|x| *x)
-                {
+                if let Ok(State::Stopped) = world.get::<State>().map(|x| *x) {
                     *cf = ControlFlow::Exit;
                 }
 
@@ -354,9 +345,7 @@ impl App {
     }
 
     // Create a loop sleeper using the given window frame rate limit
-    fn create_sleeper(
-        limit: FrameRateLimit,
-    ) -> spin_sleep::LoopHelper {
+    fn create_sleeper(limit: FrameRateLimit) -> spin_sleep::LoopHelper {
         let builder = spin_sleep::LoopHelper::builder();
         let sleeper = if let FrameRateLimit::Limited(limit) = limit {
             builder.build_with_target_rate(limit)
@@ -365,15 +354,15 @@ impl App {
         };
 
         match limit {
-            FrameRateLimit::Limited(limit) => log::debug!(
-                "Created sleeper with a target rate of {limit}"
-            ),
-            FrameRateLimit::VSync => log::debug!(
-                "Created sleeper without a target rate (VSync on)"
-            ),
-            FrameRateLimit::Unlimited => log::debug!(
-                "Created sleeper without a target rate (VSync off)"
-            ),
+            FrameRateLimit::Limited(limit) => {
+                log::debug!("Created sleeper with a target rate of {limit}")
+            }
+            FrameRateLimit::VSync => {
+                log::debug!("Created sleeper without a target rate (VSync on)")
+            }
+            FrameRateLimit::Unlimited => {
+                log::debug!("Created sleeper without a target rate (VSync off)")
+            }
         }
         sleeper
     }
@@ -384,10 +373,7 @@ impl App {
     }
 
     // Insert the required default systems
-    fn insert_default_systems(
-        mut self,
-        receiver: mpsc::Receiver<String>,
-    ) -> Self {
+    fn insert_default_systems(mut self, receiver: mpsc::Receiver<String>) -> Self {
         // Input system
         self.regsys(input::system);
 
@@ -462,9 +448,7 @@ impl App {
         self.world.insert(window_settings);
 
         // Print app / author / engine data
-        log::info!(
-            "App Name: '{app_name}', App Version: '{app_version}'"
-        );
+        log::info!("App Name: '{app_name}', App Version: '{app_version}'");
         log::info!("Engine Name: '{engine_name}', Engine Version: '{engine_version}'");
         log::info!("Author Name: '{author_name}'");
         self

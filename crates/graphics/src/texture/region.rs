@@ -25,10 +25,7 @@ pub trait Extent: Copy {
     fn is_power_of_two(&self) -> bool {
         match Self::dimension() {
             Dimension::D1 => self.width().is_power_of_two(),
-            Dimension::D2 => {
-                self.width().is_power_of_two()
-                    && self.height().is_power_of_two()
-            }
+            Dimension::D2 => self.width().is_power_of_two() && self.height().is_power_of_two(),
             Dimension::D3 => {
                 self.width().is_power_of_two()
                     && self.height().is_power_of_two()
@@ -71,7 +68,10 @@ pub trait Extent: Copy {
 
     // Depth or layers. Panics if both
     fn depth_or_layers(&self) -> u32 {
-        assert!(!(self.depth() > 1 && self.layers() > 1), "Cannot have multi-layered 3D texture");
+        assert!(
+            !(self.depth() > 1 && self.layers() > 1),
+            "Cannot have multi-layered 3D texture"
+        );
         self.depth().max(self.layers())
     }
 
@@ -229,7 +229,6 @@ impl Extent for vek::Extent3<u32> {
     }
 }
 
-
 // Implementation of extent for 2D layered texture extent
 impl Extent for (vek::Extent2<u32>, u32) {
     fn area(&self) -> u32 {
@@ -245,7 +244,7 @@ impl Extent for (vek::Extent2<u32>, u32) {
     }
 
     fn is_valid(&self) -> bool {
-        self.0 != vek::Extent2::zero() && self.1 != 0 
+        self.0 != vek::Extent2::zero() && self.1 != 0
     }
 
     fn is_larger_than(self, other: Self) -> bool {
@@ -323,7 +322,6 @@ impl Origin for vek::Vec3<u32> {
     }
 }
 
-
 // Implementation of origin for layered 2D / cubemap
 impl Origin for (vek::Vec2<u32>, u32) {
     fn x(&self) -> u32 {
@@ -347,14 +345,8 @@ impl LayeredOrigin for (vek::Vec2<u32>, u32) {}
 // Texture region trait that will be implemented for (origin, extent) tuples
 pub trait Region: Copy {
     // Regions are defined by their origin and extents
-    type O: Origin
-        + Default
-        + Copy
-        + std::fmt::Debug;
-    type E: Extent
-        + Copy
-        + PartialEq
-        + std::fmt::Debug;
+    type O: Origin + Default + Copy + std::fmt::Debug;
+    type E: Extent + Copy + PartialEq + std::fmt::Debug;
 
     // Create a texel region of one singular unit (so we can store a singular texel)
     fn unit() -> Self;
@@ -401,7 +393,7 @@ pub trait Region: Copy {
         let Some(depth) = self.extent().depth().checked_sub(self.origin().z()) else {
             return false
         };
-        
+
         return layers == 1 && width > 0 && height > 0 && depth == 1;
     }
 
@@ -447,8 +439,7 @@ impl Region for (vek::Vec2<u32>, vek::Extent2<u32>) {
     }
 
     fn is_larger_than(self, other: Self) -> bool {
-        let e =
-            other.extent() + vek::Extent2::<u32>::from(other.origin());
+        let e = other.extent() + vek::Extent2::<u32>::from(other.origin());
         self.extent().is_larger_than(e)
     }
 
@@ -495,8 +486,7 @@ impl Region for (vek::Vec3<u32>, vek::Extent3<u32>) {
     }
 
     fn is_larger_than(self, other: Self) -> bool {
-        let e =
-            other.extent() + vek::Extent3::<u32>::from(other.origin());
+        let e = other.extent() + vek::Extent3::<u32>::from(other.origin());
         self.extent().is_larger_than(e)
     }
 
@@ -554,10 +544,9 @@ impl Region for ((vek::Vec2<u32>, u32), vek::Extent2<u32>) {
     fn area(&self) -> u32 {
         let h = self.extent().h;
         let w = self.extent().w;
-        (h*w) * 6
+        (h * w) * 6
     }
 }
-
 
 // LayeredTexture2D
 impl Region for ((vek::Vec2<u32>, u32), (vek::Extent2<u32>, u32)) {
@@ -598,7 +587,7 @@ impl Region for ((vek::Vec2<u32>, u32), (vek::Extent2<u32>, u32)) {
         }
 
         let e = other.extent().0 + vek::Extent2::<u32>::from(other.origin().0);
-        self.1.0.is_larger_than(e) && self.1.1 > other.1.1
+        self.1 .0.is_larger_than(e) && self.1 .1 > other.1 .1
     }
 
     fn is_multi_layered() -> bool {

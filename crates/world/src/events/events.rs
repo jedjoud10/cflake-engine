@@ -16,9 +16,7 @@ pub trait Caller: 'static + Sized {
         'a: 'p;
     type DynFn: ?Sized + 'static;
 
-    fn call<'a, 'p>(
-        boxed: &mut Box<Self::DynFn>,
-        args: &mut Self::Args<'a, 'p>,
-    ) where
+    fn call<'a, 'p>(boxed: &mut Box<Self::DynFn>, args: &mut Self::Args<'a, 'p>)
+    where
         'a: 'p;
 }

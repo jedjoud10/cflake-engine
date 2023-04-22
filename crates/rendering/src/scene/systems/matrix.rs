@@ -1,8 +1,8 @@
-use crate::{Renderer};
+use crate::Renderer;
 
-use utils::{ThreadPool};
-use world::{post_user, System, World};
 use coords::{Position, Rotation, Scale};
+use utils::ThreadPool;
+use world::{post_user, System, World};
 
 // Update the global mesh matrices of objects that have been modified
 // This will also handle frustum culling

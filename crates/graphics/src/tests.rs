@@ -11,14 +11,8 @@ mod texels {
         assert_eq!(R::<u32>::size().as_uncompressed(), Some(4));
         assert_eq!(R::<f16>::size().as_uncompressed(), Some(2));
         assert_eq!(R::<f32>::size().as_uncompressed(), Some(4));
-        assert_eq!(
-            R::<Normalized<u8>>::size().as_uncompressed(),
-            Some(1)
-        );
-        assert_eq!(
-            R::<Normalized<u16>>::size().as_uncompressed(),
-            Some(2)
-        );
+        assert_eq!(R::<Normalized<u8>>::size().as_uncompressed(), Some(1));
+        assert_eq!(R::<Normalized<u16>>::size().as_uncompressed(), Some(2));
     }
 
     #[test]
@@ -53,57 +47,24 @@ mod texels {
 
     #[test]
     fn normalized() {
-        assert_eq!(
-            R::<Normalized<u8>>::format(),
-            TextureFormat::R8Unorm
-        );
-        assert_eq!(
-            RG::<Normalized<u8>>::format(),
-            TextureFormat::Rg8Unorm
-        );
-        assert_eq!(
-            RGBA::<Normalized<u8>>::format(),
-            TextureFormat::Rgba8Unorm
-        );
-        assert_eq!(
-            BGRA::<Normalized<u8>>::format(),
-            TextureFormat::Bgra8Unorm
-        );
+        assert_eq!(R::<Normalized<u8>>::format(), TextureFormat::R8Unorm);
+        assert_eq!(RG::<Normalized<u8>>::format(), TextureFormat::Rg8Unorm);
+        assert_eq!(RGBA::<Normalized<u8>>::format(), TextureFormat::Rgba8Unorm);
+        assert_eq!(BGRA::<Normalized<u8>>::format(), TextureFormat::Bgra8Unorm);
 
-        assert_eq!(
-            R::<Normalized<u16>>::format(),
-            TextureFormat::R16Unorm
-        );
-        assert_eq!(
-            RG::<Normalized<u16>>::format(),
-            TextureFormat::Rg16Unorm
-        );
+        assert_eq!(R::<Normalized<u16>>::format(), TextureFormat::R16Unorm);
+        assert_eq!(RG::<Normalized<u16>>::format(), TextureFormat::Rg16Unorm);
         assert_eq!(
             RGBA::<Normalized<u16>>::format(),
             TextureFormat::Rgba16Unorm
         );
 
-        assert_eq!(
-            R::<Normalized<i8>>::format(),
-            TextureFormat::R8Snorm
-        );
-        assert_eq!(
-            RG::<Normalized<i8>>::format(),
-            TextureFormat::Rg8Snorm
-        );
-        assert_eq!(
-            RGBA::<Normalized<i8>>::format(),
-            TextureFormat::Rgba8Snorm
-        );
+        assert_eq!(R::<Normalized<i8>>::format(), TextureFormat::R8Snorm);
+        assert_eq!(RG::<Normalized<i8>>::format(), TextureFormat::Rg8Snorm);
+        assert_eq!(RGBA::<Normalized<i8>>::format(), TextureFormat::Rgba8Snorm);
 
-        assert_eq!(
-            R::<Normalized<i16>>::format(),
-            TextureFormat::R16Snorm
-        );
-        assert_eq!(
-            RG::<Normalized<i16>>::format(),
-            TextureFormat::Rg16Snorm
-        );
+        assert_eq!(R::<Normalized<i16>>::format(), TextureFormat::R16Snorm);
+        assert_eq!(RG::<Normalized<i16>>::format(), TextureFormat::Rg16Snorm);
         assert_eq!(
             RGBA::<Normalized<i16>>::format(),
             TextureFormat::Rgba16Snorm
@@ -142,10 +103,7 @@ mod texels {
             Depth::<Normalized<u16>>::format(),
             TextureFormat::Depth16Unorm
         );
-        assert_eq!(
-            Depth::<f32>::format(),
-            TextureFormat::Depth32Float
-        );
+        assert_eq!(Depth::<f32>::format(), TextureFormat::Depth32Float);
         assert_eq!(Stencil::<u8>::format(), TextureFormat::Stencil8);
     }
 
@@ -193,22 +151,10 @@ mod color {
     fn convert_unsigned() {
         assert_eq!(R::<u8>::into_target(u8::MIN).x, u8::MIN as f32);
         assert_eq!(R::<u8>::into_target(u8::MAX).x, u8::MAX as f32);
-        assert_eq!(
-            R::<u16>::into_target(u16::MIN).x,
-            u16::MIN as f32
-        );
-        assert_eq!(
-            R::<u16>::into_target(u16::MAX).x,
-            u16::MAX as f32
-        );
-        assert_eq!(
-            R::<u32>::into_target(u32::MIN).x,
-            u32::MIN as f32
-        );
-        assert_eq!(
-            R::<u32>::into_target(u32::MAX).x,
-            u32::MAX as f32
-        );
+        assert_eq!(R::<u16>::into_target(u16::MIN).x, u16::MIN as f32);
+        assert_eq!(R::<u16>::into_target(u16::MAX).x, u16::MAX as f32);
+        assert_eq!(R::<u32>::into_target(u32::MIN).x, u32::MIN as f32);
+        assert_eq!(R::<u32>::into_target(u32::MAX).x, u32::MAX as f32);
 
         assert_eq!(
             RG::<u8>::into_target(vek::Vec2::broadcast(u8::MIN)).xy(),
@@ -219,23 +165,19 @@ mod color {
             vek::Vec2::broadcast(u8::MAX as f32)
         );
         assert_eq!(
-            RG::<u16>::into_target(vek::Vec2::broadcast(u16::MIN))
-                .xy(),
+            RG::<u16>::into_target(vek::Vec2::broadcast(u16::MIN)).xy(),
             vek::Vec2::broadcast(u16::MIN as f32)
         );
         assert_eq!(
-            RG::<u16>::into_target(vek::Vec2::broadcast(u16::MAX))
-                .xy(),
+            RG::<u16>::into_target(vek::Vec2::broadcast(u16::MAX)).xy(),
             vek::Vec2::broadcast(u16::MAX as f32)
         );
         assert_eq!(
-            RG::<u32>::into_target(vek::Vec2::broadcast(u32::MIN))
-                .xy(),
+            RG::<u32>::into_target(vek::Vec2::broadcast(u32::MIN)).xy(),
             vek::Vec2::broadcast(u32::MIN as f32)
         );
         assert_eq!(
-            RG::<u32>::into_target(vek::Vec2::broadcast(u32::MAX))
-                .xy(),
+            RG::<u32>::into_target(vek::Vec2::broadcast(u32::MAX)).xy(),
             vek::Vec2::broadcast(u32::MAX as f32)
         );
 
@@ -269,22 +211,10 @@ mod color {
     fn convert_signed() {
         assert_eq!(R::<i8>::into_target(i8::MIN).x, i8::MIN as f32);
         assert_eq!(R::<i8>::into_target(i8::MAX).x, i8::MAX as f32);
-        assert_eq!(
-            R::<i16>::into_target(i16::MIN).x,
-            i16::MIN as f32
-        );
-        assert_eq!(
-            R::<i16>::into_target(i16::MAX).x,
-            i16::MAX as f32
-        );
-        assert_eq!(
-            R::<i32>::into_target(i32::MIN).x,
-            i32::MIN as f32
-        );
-        assert_eq!(
-            R::<i32>::into_target(i32::MAX).x,
-            i32::MAX as f32
-        );
+        assert_eq!(R::<i16>::into_target(i16::MIN).x, i16::MIN as f32);
+        assert_eq!(R::<i16>::into_target(i16::MAX).x, i16::MAX as f32);
+        assert_eq!(R::<i32>::into_target(i32::MIN).x, i32::MIN as f32);
+        assert_eq!(R::<i32>::into_target(i32::MAX).x, i32::MAX as f32);
 
         assert_eq!(
             RG::<i8>::into_target(vek::Vec2::broadcast(i8::MIN)).xy(),
@@ -295,23 +225,19 @@ mod color {
             vek::Vec2::broadcast(i8::MAX as f32)
         );
         assert_eq!(
-            RG::<i16>::into_target(vek::Vec2::broadcast(i16::MIN))
-                .xy(),
+            RG::<i16>::into_target(vek::Vec2::broadcast(i16::MIN)).xy(),
             vek::Vec2::broadcast(i16::MIN as f32)
         );
         assert_eq!(
-            RG::<i16>::into_target(vek::Vec2::broadcast(i16::MAX))
-                .xy(),
+            RG::<i16>::into_target(vek::Vec2::broadcast(i16::MAX)).xy(),
             vek::Vec2::broadcast(i16::MAX as f32)
         );
         assert_eq!(
-            RG::<i32>::into_target(vek::Vec2::broadcast(i32::MIN))
-                .xy(),
+            RG::<i32>::into_target(vek::Vec2::broadcast(i32::MIN)).xy(),
             vek::Vec2::broadcast(i32::MIN as f32)
         );
         assert_eq!(
-            RG::<i32>::into_target(vek::Vec2::broadcast(i32::MAX))
-                .xy(),
+            RG::<i32>::into_target(vek::Vec2::broadcast(i32::MAX)).xy(),
             vek::Vec2::broadcast(i32::MAX as f32)
         );
 
@@ -343,37 +269,27 @@ mod color {
 
     #[test]
     fn convert_float() {
-        assert_eq!(
-            R::<f16>::into_target(f16::MIN).x,
-            f16::MIN.to_f32()
-        );
-        assert_eq!(
-            R::<f16>::into_target(f16::MAX).x,
-            f16::MAX.to_f32()
-        );
+        assert_eq!(R::<f16>::into_target(f16::MIN).x, f16::MIN.to_f32());
+        assert_eq!(R::<f16>::into_target(f16::MAX).x, f16::MAX.to_f32());
 
         assert_eq!(R::<f32>::into_target(f32::MIN).x, f32::MIN);
         assert_eq!(R::<f32>::into_target(f32::MAX).x, f32::MAX);
 
         assert_eq!(
-            RG::<f16>::into_target(vek::Vec2::broadcast(f16::MIN))
-                .xy(),
+            RG::<f16>::into_target(vek::Vec2::broadcast(f16::MIN)).xy(),
             vek::Vec2::broadcast(f16::MIN.to_f32())
         );
         assert_eq!(
-            RG::<f16>::into_target(vek::Vec2::broadcast(f16::MAX))
-                .xy(),
+            RG::<f16>::into_target(vek::Vec2::broadcast(f16::MAX)).xy(),
             vek::Vec2::broadcast(f16::MAX.to_f32())
         );
 
         assert_eq!(
-            RG::<f32>::into_target(vek::Vec2::broadcast(f32::MIN))
-                .xy(),
+            RG::<f32>::into_target(vek::Vec2::broadcast(f32::MIN)).xy(),
             vek::Vec2::broadcast(f32::MIN)
         );
         assert_eq!(
-            RG::<f32>::into_target(vek::Vec2::broadcast(f32::MAX))
-                .xy(),
+            RG::<f32>::into_target(vek::Vec2::broadcast(f32::MAX)).xy(),
             vek::Vec2::broadcast(f32::MAX)
         );
 
@@ -410,23 +326,14 @@ mod vertex {
 
     #[test]
     fn normals() {
-        assert_eq!(
-            XYZW::<Normalized<i8>>::format(),
-            VertexFormat::Snorm8x4,
-        );
+        assert_eq!(XYZW::<Normalized<i8>>::format(), VertexFormat::Snorm8x4,);
 
-        assert_eq!(
-            XYZW::<Normalized<i16>>::format(),
-            VertexFormat::Snorm16x4,
-        );
+        assert_eq!(XYZW::<Normalized<i16>>::format(), VertexFormat::Snorm16x4,);
     }
 
     #[test]
     fn uvs() {
-        assert_eq!(
-            XY::<Normalized<u16>>::format(),
-            VertexFormat::Unorm16x2,
-        );
+        assert_eq!(XY::<Normalized<u16>>::format(), VertexFormat::Unorm16x2,);
 
         /*
         assert_eq!(

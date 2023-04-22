@@ -14,9 +14,7 @@ pub enum BufferInitializationError {
     #[error("The given buffer mode is Resizable, but there isn't the COPY_SRC flag in the usages")]
     ResizableWithoutCopySrc,
 
-    #[error(
-        "Cannot create a buffer with no usages or without valid type"
-    )]
+    #[error("Cannot create a buffer with no usages or without valid type")]
     UnkownBufferUsageOrType,
 }
 
@@ -25,9 +23,7 @@ pub enum BufferExtendError {
     #[error("Cannot extend the buffer since self.mode isn't BufferMode::Partial or BufferMode::Resizable")]
     IllegalLengthModify,
 
-    #[error(
-        "Cannot reallocate the buffer since self.mode isn't BufferMode::Resizable"
-    )]
+    #[error("Cannot reallocate the buffer since self.mode isn't BufferMode::Resizable")]
     IllegalReallocation,
 
     #[error("The buffer cannot be written since it's BufferUsages do not contain the WRITE flag")]
@@ -54,9 +50,7 @@ pub enum BufferWriteError {
 
 #[derive(Error, Debug)]
 pub enum BufferCopyError {
-    #[error(
-        "The given source buffer does not have the COPY_SRC usage"
-    )]
+    #[error("The given source buffer does not have the COPY_SRC usage")]
     NonCopySrc,
 
     #[error("The destination buffer (self) does not have the COPY_DST usage")]
@@ -65,7 +59,9 @@ pub enum BufferCopyError {
     #[error("The given length {0} (or offset of {1}) would overflow the destination buffer of length {2}")]
     InvalidSrcOverflow(usize, usize, usize),
 
-    #[error("The given length {0} (or offset of {1}) would overflow the source buffer of length {2}")]
+    #[error(
+        "The given length {0} (or offset of {1}) would overflow the source buffer of length {2}"
+    )]
     InvalidDstOverflow(usize, usize, usize),
 }
 
@@ -80,22 +76,20 @@ pub enum BufferSplatError {
     #[error("The buffer cannot be splatted since it's BufferUsages do not contain the WRITE flag")]
     NonWritable,
 
-    #[error(
-        "The given range is invalid for buffer with {0} elements"
-    )]
+    #[error("The given range is invalid for buffer with {0} elements")]
     InvalidRange(usize),
 }
 
 #[derive(Error, Debug)]
 pub enum BufferNotMappableError {
-    #[error("The buffer cannot be mapped (read) since it's BufferUsages do not contain the WRITE flag")]
+    #[error(
+        "The buffer cannot be mapped (read) since it's BufferUsages do not contain the WRITE flag"
+    )]
     AsView,
 
     #[error("The buffer cannot be mapped (for reading AND writing) since it's BufferUsages do not contain the WRITE and READ flags")]
     AsViewMut,
 
-    #[error(
-        "The given range is invalid for buffer with {0} elements"
-    )]
+    #[error("The given range is invalid for buffer with {0} elements")]
     InvalidRange(usize),
 }

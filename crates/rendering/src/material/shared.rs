@@ -1,14 +1,12 @@
 use bytemuck::{Pod, Zeroable};
 use graphics::{
-    DrawIndexedIndirectBuffer, Normalized, Texture2D, TriangleBuffer,
-    UniformBuffer, RG, RGBA, SRGBA,
+    DrawIndexedIndirectBuffer, Normalized, Texture2D, TriangleBuffer, UniformBuffer, RG, RGBA,
+    SRGBA,
 };
 use math::Frustum;
 use utils::Storage;
 
-use crate::{
-    attributes, AttributeBuffer, IndirectMesh, Mesh,
-};
+use crate::{attributes, AttributeBuffer, IndirectMesh, Mesh};
 
 // These are the default settings that we pass to each material
 pub struct DefaultMaterialResources<'a> {
@@ -39,17 +37,12 @@ pub struct DefaultMaterialResources<'a> {
 
     // Common indirect mesh storages
     pub indirect_meshes: &'a Storage<IndirectMesh>,
-    pub indirect_positions:
-        &'a Storage<AttributeBuffer<attributes::Position>>,
-    pub indirect_normals:
-        &'a Storage<AttributeBuffer<attributes::Normal>>,
-    pub indirect_tangents:
-        &'a Storage<AttributeBuffer<attributes::Tangent>>,
-    pub indirect_tex_coords:
-        &'a Storage<AttributeBuffer<attributes::TexCoord>>,
+    pub indirect_positions: &'a Storage<AttributeBuffer<attributes::Position>>,
+    pub indirect_normals: &'a Storage<AttributeBuffer<attributes::Normal>>,
+    pub indirect_tangents: &'a Storage<AttributeBuffer<attributes::Tangent>>,
+    pub indirect_tex_coords: &'a Storage<AttributeBuffer<attributes::TexCoord>>,
     pub indirect_triangles: &'a Storage<TriangleBuffer<u32>>,
-    pub draw_indexed_indirect_buffers:
-        &'a Storage<DrawIndexedIndirectBuffer>,
+    pub draw_indexed_indirect_buffers: &'a Storage<DrawIndexedIndirectBuffer>,
 
     // Currently used indicies
     pub material_index: usize,

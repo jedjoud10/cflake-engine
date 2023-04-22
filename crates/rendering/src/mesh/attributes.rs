@@ -1,17 +1,14 @@
 use graphics::{
-    Normalized, PerVertex,
-    Vertex, VertexBuffer, VertexConfig, VertexInput, VertexInputInfo, XYZW, XY,
+    Normalized, PerVertex, Vertex, VertexBuffer, VertexConfig, VertexInput, VertexInputInfo, XY,
+    XYZW,
 };
 use paste::paste;
 use std::cell::{Ref, RefMut};
 use std::marker::PhantomData;
 use std::ops::RangeBounds;
-use utils::{Handle};
+use utils::Handle;
 
-use crate::{
-    AttributeError, DefaultMaterialResources,
-    RenderPath, VerticesMut, VerticesRef,
-};
+use crate::{AttributeError, DefaultMaterialResources, RenderPath, VerticesMut, VerticesRef};
 
 bitflags::bitflags! {
     // This specifies the buffers that the mesh uses internally
@@ -27,8 +24,7 @@ bitflags::bitflags! {
 }
 
 // This is the maximum number of active attributes that we can have inside a mesh
-pub const MAX_MESH_VERTEX_ATTRIBUTES: usize =
-    MeshAttributes::all().bits.count_ones() as usize;
+pub const MAX_MESH_VERTEX_ATTRIBUTES: usize = MeshAttributes::all().bits.count_ones() as usize;
 
 // Contains the underlying array buffer for a specific attribute
 pub type AttributeBuffer<A> = VertexBuffer<<A as MeshAttribute>::V>;
@@ -60,10 +56,7 @@ pub trait MeshAttribute: Sized {
 
     // Insert a mesh attribute vertex buffer into the vertices
     // Replaces already existing attribute buffers
-    fn insert<R: RenderPath>(
-        vertices: &mut VerticesMut<'_, R>,
-        buffer: R::AttributeBuffer<Self>,
-    );
+    fn insert<R: RenderPath>(vertices: &mut VerticesMut<'_, R>, buffer: R::AttributeBuffer<Self>);
 
     // Try to remove the mesh attribute vertex buffer from the vertices
     // This will return the removed attribute buffer if successful
@@ -79,14 +72,9 @@ pub trait MeshAttribute: Sized {
 }
 
 // Get a list of the untyped attributes from the enabled mesh attributes
-pub(crate) fn enabled_to_vertex_config(
-    attributes: MeshAttributes,
-) -> VertexConfig {
+pub(crate) fn enabled_to_vertex_config(attributes: MeshAttributes) -> VertexConfig {
     // This will push the mesh attribute's input to the vector if the bitflags contain the vertex input
-    fn push<M: MeshAttribute>(
-        attributes: MeshAttributes,
-        inputs: &mut Vec<VertexInputInfo>,
-    ) {
+    fn push<M: MeshAttribute>(attributes: MeshAttributes, inputs: &mut Vec<VertexInputInfo>) {
         if attributes.contains(M::ATTRIBUTE) {
             let input = <M::Input as VertexInput<M::V>>::info();
             inputs.push(input);
@@ -174,32 +162,8 @@ macro_rules! impl_vertex_attribute {
     };
 }
 
-impl_vertex_attribute!(
-    Position,
-    positions,
-    XYZW<f32>,
-    POSITIONS,
-    PerVertex
-);
-impl_vertex_attribute!(
-    Normal,
-    normals,
-    XYZW<Normalized<i8>>,
-    NORMALS,
-    PerVertex
-);
-impl_vertex_attribute!(
-    Tangent,
-    tangents,
-    XYZW<Normalized<i8>>,
-    TANGENTS,
-    PerVertex
-);
+impl_vertex_attribute!(Position, positions, XYZW<f32>, POSITIONS, PerVertex);
+impl_vertex_attribute!(Normal, normals, XYZW<Normalized<i8>>, NORMALS, PerVertex);
+impl_vertex_attribute!(Tangent, tangents, XYZW<Normalized<i8>>, TANGENTS, PerVertex);
 //impl_vertex_attribute!(Color, colors, XYZ<Normalized<u8>>, COLORS);
-impl_vertex_attribute!(
-    TexCoord,
-    tex_coords,
-    XY<f32>,
-    TEX_COORDS,
-    PerVertex
-);
+impl_vertex_attribute!(TexCoord, tex_coords, XY<f32>, TEX_COORDS, PerVertex);

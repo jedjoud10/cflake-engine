@@ -8,10 +8,7 @@ use std::{
     sync::Arc,
 };
 use utils::Handle;
-use wgpu::{
-    AddressMode, CompareFunction, SamplerBorderColor,
-    SamplerDescriptor,
-};
+use wgpu::{AddressMode, CompareFunction, SamplerBorderColor, SamplerDescriptor};
 
 // Wrapping mode utilized by the sampler address mode
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -105,25 +102,15 @@ pub fn convert_wrap_to_address_mode(
     wrap: &SamplerWrap,
 ) -> (AddressMode, Option<wgpu::SamplerBorderColor>) {
     match wrap {
-        SamplerWrap::ClampToEdge => {
-            (wgpu::AddressMode::ClampToEdge, None)
-        }
-        SamplerWrap::ClampToBorder(color) => {
-            (wgpu::AddressMode::ClampToBorder, Some(*color))
-        }
-        SamplerWrap::Repeat => {
-            (wgpu::AddressMode::Repeat, None)
-        }
-        SamplerWrap::MirroredRepeat => {
-            (wgpu::AddressMode::MirrorRepeat, None)
-        }
+        SamplerWrap::ClampToEdge => (wgpu::AddressMode::ClampToEdge, None),
+        SamplerWrap::ClampToBorder(color) => (wgpu::AddressMode::ClampToBorder, Some(*color)),
+        SamplerWrap::Repeat => (wgpu::AddressMode::Repeat, None),
+        SamplerWrap::MirroredRepeat => (wgpu::AddressMode::MirrorRepeat, None),
     }
 }
 
 // Convert the sampler filter to the wgpu filter mode
-pub fn convert_sampler_filter(
-    filter: SamplerFilter,
-) -> wgpu::FilterMode {
+pub fn convert_sampler_filter(filter: SamplerFilter) -> wgpu::FilterMode {
     match filter {
         SamplerFilter::Nearest => wgpu::FilterMode::Nearest,
         SamplerFilter::Linear => wgpu::FilterMode::Linear,
@@ -131,9 +118,7 @@ pub fn convert_sampler_filter(
 }
 
 // Convert the mip mapping settings to the anisotropic values used by the Wgpu sampler
-pub fn convert_mip_map_anisotropic_clamp(
-    mip_mapping: &SamplerMipMaps,
-) -> u16 {
+pub fn convert_mip_map_anisotropic_clamp(mip_mapping: &SamplerMipMaps) -> u16 {
     match mip_mapping {
         SamplerMipMaps::AutoAniso => 16,
         _ => 1,
@@ -141,9 +126,7 @@ pub fn convert_mip_map_anisotropic_clamp(
 }
 
 // Convert the mip mapping settings to the LOD clamping values
-pub fn convert_mip_map_lod_clamp(
-    mip_mapping: &SamplerMipMaps,
-) -> (f32, f32) {
+pub fn convert_mip_map_lod_clamp(mip_mapping: &SamplerMipMaps) -> (f32, f32) {
     match mip_mapping {
         SamplerMipMaps::Clamped { min_lod, max_lod }
         | SamplerMipMaps::ClampedAniso {
@@ -155,10 +138,7 @@ pub fn convert_mip_map_lod_clamp(
 
 // Tries to fetch an already existing sampler from the graphics context
 // If no sampler exist, this will create a completely new one
-pub fn get_or_insert_sampler(
-    graphics: &Graphics,
-    sampling: SamplerSettings,
-) -> Arc<wgpu::Sampler> {
+pub fn get_or_insert_sampler(graphics: &Graphics, sampling: SamplerSettings) -> Arc<wgpu::Sampler> {
     match graphics.0.cached.samplers.entry(sampling) {
         Entry::Occupied(occupied) => {
             log::debug!("Found sampler type in cache, using it...");
@@ -172,13 +152,10 @@ pub fn get_or_insert_sampler(
                 sampling.wrap,
                 sampling.mipmaps
             );
-            let (address_mode, border_color) =
-                convert_wrap_to_address_mode(&sampling.wrap);
-            let anisotropy_clamp =
-                convert_mip_map_anisotropic_clamp(&sampling.mipmaps);
+            let (address_mode, border_color) = convert_wrap_to_address_mode(&sampling.wrap);
+            let anisotropy_clamp = convert_mip_map_anisotropic_clamp(&sampling.mipmaps);
             let filter = convert_sampler_filter(sampling.filter);
-            let (lod_min_clamp, lod_max_clamp) =
-                convert_mip_map_lod_clamp(&sampling.mipmaps);
+            let (lod_min_clamp, lod_max_clamp) = convert_mip_map_lod_clamp(&sampling.mipmaps);
 
             // Sampler configuration
             let descriptor = SamplerDescriptor {
@@ -196,8 +173,7 @@ pub fn get_or_insert_sampler(
             };
 
             // Create a new sampler and cache it
-            let sampler =
-                graphics.device().create_sampler(&descriptor);
+            let sampler = graphics.device().create_sampler(&descriptor);
             let sampler = Arc::new(sampler);
             vacant.insert(sampler.clone());
             log::debug!(

@@ -65,18 +65,14 @@ impl UntypedColumn {
     }
 
     // Try to cast the internally stored component vector to Vec<T> and return it as an immutable "typed column"
-    pub fn as_<T: Component>(
-        &self,
-    ) -> Option<(&Vec<T>, &StateColumn)> {
+    pub fn as_<T: Component>(&self) -> Option<(&Vec<T>, &StateColumn)> {
         let vec = self.data.as_any().downcast_ref::<Vec<T>>()?;
         let states = &self.states;
         Some((vec, states))
     }
 
     // Try to cast the internally stored component vector to Vec<T> and return it as a mutable "typed column"
-    pub(crate) fn as_mut_<T: Component>(
-        &mut self,
-    ) -> Option<(&mut Vec<T>, &mut StateColumn)> {
+    pub(crate) fn as_mut_<T: Component>(&mut self) -> Option<(&mut Vec<T>, &mut StateColumn)> {
         let vec = self.data.as_any_mut().downcast_mut::<Vec<T>>()?;
         let states = &mut self.states;
         Some((vec, states))

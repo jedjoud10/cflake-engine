@@ -41,11 +41,7 @@ fn is_bit_enabled(bitset: usize, index: usize) -> bool {
  */
 
 // Update a value in a specific bitmask, though return the unwritten value first
-pub fn toggle_bit<T: PrimInt>(
-    bitmask: &mut T,
-    index: usize,
-    value: bool,
-) -> bool {
+pub fn toggle_bit<T: PrimInt>(bitmask: &mut T, index: usize, value: bool) -> bool {
     let copy = ((*bitmask >> index) & T::one()) == T::one();
 
     if value {
@@ -68,8 +64,7 @@ pub fn enable_in_range<T: PrimInt>(start: usize, end: usize) -> T {
     } else if start == bits {
         T::zero()
     } else {
-        ((T::one() << (start)) - T::one())
-            ^ ((T::one() << end) - T::one())
+        ((T::one() << (start)) - T::one()) ^ ((T::one() << end) - T::one())
     }
 }
 

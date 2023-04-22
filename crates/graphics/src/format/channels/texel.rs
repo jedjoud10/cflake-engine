@@ -14,9 +14,7 @@ pub struct BGRA<T: AnyElement + Swizzable>(vek::Vec4<T>);
 pub trait SupportsSrgba {}
 impl SupportsSrgba for Normalized<u8> {}
 pub struct SRGBA<T: AnyElement + SupportsSrgba>(vek::Vec4<T>);
-pub struct SBGRA<T: AnyElement + Swizzable + SupportsSrgba>(
-    vek::Vec4<T>,
-);
+pub struct SBGRA<T: AnyElement + Swizzable + SupportsSrgba>(vek::Vec4<T>);
 
 // Element used only for depth-only texels
 pub trait DepthElement: AnyElement {}

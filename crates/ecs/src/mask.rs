@@ -7,7 +7,7 @@ use std::{
 
 use nohash_hasher::{IsEnabled, NoHashHasher};
 
-use crate::{Bundle, QueryLayoutMut, QueryLayoutRef};
+use crate::Bundle;
 
 // RawBitMask bitmask value
 #[cfg(not(feature = "extended-bitmasks"))]
@@ -46,8 +46,7 @@ impl Mask {
     // Get the offset of this mask, assuming that it is a unit mask
     // Returns None if it's not a unit mask
     pub fn offset(&self) -> Option<usize> {
-        (self.count_ones() == 1)
-            .then(|| self.0.trailing_zeros() as usize)
+        (self.count_ones() == 1).then(|| self.0.trailing_zeros() as usize)
     }
 
     // Check if a mask is empty
@@ -91,12 +90,9 @@ impl Mask {
     // This will split the current mask into it's raw components that return itself when ORed together
     pub fn units(&self) -> impl Iterator<Item = Mask> {
         let raw = self.0;
-        (0..(RawBitMask::BITS as usize)).into_iter().filter_map(
-            move |i| {
-                ((raw >> i) & 1 == 1)
-                    .then(|| Mask::one() << i as usize)
-            },
-        )
+        (0..(RawBitMask::BITS as usize))
+            .into_iter()
+            .filter_map(move |i| ((raw >> i) & 1 == 1).then(|| Mask::one() << i as usize))
     }
 
     // Count the number of set bits in this mask
@@ -126,8 +122,8 @@ impl From<RawBitMask> for Mask {
 
 // NoHash hasher that works with Mask
 type NoHashMaskHasher = BuildHasherDefault<NoHashHasher<Mask>>;
-pub(crate) type MaskHashMap<E> = HashMap<Mask, E, NoHashMaskHasher>;
-pub(crate) type MaskHashSet = HashSet<Mask, NoHashMaskHasher>;
+pub type MaskHashMap<E> = HashMap<Mask, E, NoHashMaskHasher>;
+pub type MaskHashSet = HashSet<Mask, NoHashMaskHasher>;
 
 impl BitAnd for Mask {
     type Output = Self;
@@ -178,19 +174,13 @@ impl Shr<usize> for Mask {
 }
 
 impl Display for Mask {
-    fn fmt(
-        &self,
-        f: &mut std::fmt::Formatter<'_>,
-    ) -> std::fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "m{:b}", self.0)
     }
 }
 
 impl Debug for Mask {
-    fn fmt(
-        &self,
-        f: &mut std::fmt::Formatter<'_>,
-    ) -> std::fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "m{:b}", self.0)
     }
 }

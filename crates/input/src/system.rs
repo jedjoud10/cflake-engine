@@ -26,11 +26,9 @@ fn event(world: &mut World, ev: &DeviceEvent) {
             let delta = vek::Vec2::<f64>::from(*delta).as_::<f32>();
             input.axii.insert(Axis::MousePositionDeltaX, delta.x);
             input.axii.insert(Axis::MousePositionDeltaY, delta.y);
-            let x =
-                input.axii.entry(Axis::MousePositionX).or_insert(0.0);
+            let x = input.axii.entry(Axis::MousePositionX).or_insert(0.0);
             *x += delta.x;
-            let y =
-                input.axii.entry(Axis::MousePositionY).or_insert(0.0);
+            let y = input.axii.entry(Axis::MousePositionY).or_insert(0.0);
             *y += delta.y;
         }
 
@@ -38,14 +36,11 @@ fn event(world: &mut World, ev: &DeviceEvent) {
         DeviceEvent::MouseWheel { delta } => {
             let delta = match delta {
                 winit::event::MouseScrollDelta::LineDelta(_, y) => *y,
-                winit::event::MouseScrollDelta::PixelDelta(
-                    physical,
-                ) => physical.x as f32,
+                winit::event::MouseScrollDelta::PixelDelta(physical) => physical.x as f32,
             };
 
             input.axii.insert(Axis::MouseScrollDelta, delta);
-            let scroll =
-                input.axii.entry(Axis::MouseScroll).or_insert(0.0);
+            let scroll = input.axii.entry(Axis::MouseScroll).or_insert(0.0);
             *scroll += delta;
         }
 
@@ -56,14 +51,11 @@ fn event(world: &mut World, ev: &DeviceEvent) {
                 match input.keys.entry(button) {
                     Entry::Occupied(mut current) => {
                         // Check if the key is "down" (either pressed or held)
-                        let down = matches!(
-                            *current.get(),
-                            ButtonState::Pressed | ButtonState::Held
-                        );
+                        let down =
+                            matches!(*current.get(), ButtonState::Pressed | ButtonState::Held);
 
                         // If the key is pressed while it is currently down, it repeated itself, and we must ignore it
-                        if down ^ (key.state == ElementState::Pressed)
-                        {
+                        if down ^ (key.state == ElementState::Pressed) {
                             current.insert(key.state.into());
                         }
                     }
@@ -130,24 +122,16 @@ fn update(world: &mut World) {
         match event.event {
             // Button pressed event
             gilrs::EventType::ButtonPressed(button, _) => {
-                if let Some(button) = crate::from_gilrs_button(button)
-                {
-                    let state = input
-                        .keys
-                        .entry(button)
-                        .or_insert(ButtonState::Pressed);
+                if let Some(button) = crate::from_gilrs_button(button) {
+                    let state = input.keys.entry(button).or_insert(ButtonState::Pressed);
                     *state = ButtonState::Pressed;
                 }
             }
 
             // Button released event
             gilrs::EventType::ButtonReleased(button, _) => {
-                if let Some(button) = crate::from_gilrs_button(button)
-                {
-                    let state = input
-                        .keys
-                        .entry(button)
-                        .or_insert(ButtonState::Released);
+                if let Some(button) = crate::from_gilrs_button(button) {
+                    let state = input.keys.entry(button).or_insert(ButtonState::Released);
                     *state = ButtonState::Released;
                 }
             }

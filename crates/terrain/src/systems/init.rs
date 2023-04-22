@@ -1,17 +1,13 @@
 use crate::{
-    Terrain,
-    TerrainMaterial, TerrainSettings, Vertices, Triangles, VoxelGenerator, MeshGenerator, MemoryManager, ChunkManager, LayeredAlbedoMap, LayeredMaskMap, LayeredNormalMap,
+    ChunkManager, LayeredAlbedoMap, LayeredMaskMap, LayeredNormalMap, MemoryManager, MeshGenerator,
+    Terrain, TerrainMaterial, TerrainSettings, Triangles, Vertices, VoxelGenerator,
 };
 
 use assets::Assets;
 
 use ecs::Scene;
-use graphics::{
-    DrawIndexedIndirectBuffer, Graphics,
-};
-use rendering::{
-    IndirectMesh, Pipelines,
-};
+use graphics::{DrawIndexedIndirectBuffer, Graphics};
+use rendering::{IndirectMesh, Pipelines};
 use utils::{Storage, ThreadPool};
 use world::{post_user, System, World};
 
@@ -31,46 +27,32 @@ fn init(world: &mut World) {
         let mut scene = world.get_mut::<Scene>().unwrap();
         let mut pipelines = world.get_mut::<Pipelines>().unwrap();
         let mut threadpool = world.get_mut::<ThreadPool>().unwrap();
-        
+
         // Get graphics API and assets
         let graphics = world.get::<Graphics>().unwrap();
         let assets = world.get::<Assets>().unwrap();
-        
+
         // Get indirect mesh storage
-        let mut indirect_meshes =
-            world.get_mut::<Storage<IndirectMesh>>().unwrap();
-        
+        let mut indirect_meshes = world.get_mut::<Storage<IndirectMesh>>().unwrap();
+
         // Get indirect buffer storage
         let mut indirect_buffers = world
             .get_mut::<Storage<DrawIndexedIndirectBuffer>>()
             .unwrap();
-        
+
         // Get indirect vertices and triangle buffers
         let mut vertices = world.get_mut::<Storage<Vertices>>().unwrap();
         let mut triangles = world.get_mut::<Storage<Triangles>>().unwrap();
 
         // Create a voxel generator
-        let voxelizer = VoxelGenerator::new(
-            &assets,
-            &graphics,
-            &mut settings
-        );
+        let voxelizer = VoxelGenerator::new(&assets, &graphics, &mut settings);
 
         // Create a mesh generator
-        let mesher = MeshGenerator::new(
-            &assets,
-            &graphics,
-            &settings
-        );
+        let mesher = MeshGenerator::new(&assets, &graphics, &settings);
 
         // Create the memory manager
-        let memory = MemoryManager::new(
-            &assets,
-            &graphics,
-            &mut vertices,
-            &mut triangles,
-            &settings
-        );
+        let memory =
+            MemoryManager::new(&assets, &graphics, &mut vertices, &mut triangles, &settings);
 
         // Create the chunk manager
         let manager = ChunkManager::new(

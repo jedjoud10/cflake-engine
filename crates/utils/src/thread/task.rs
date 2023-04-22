@@ -2,8 +2,7 @@ use std::{any::Any, sync::Arc};
 
 // Shared arc that represents a pointer tuple
 pub(super) type BoxedPtrTuple = Arc<dyn Any + Send + Sync + 'static>;
-pub(super) type ArcFn<'b> =
-    Arc<dyn Fn(ThreadFuncEntry) + Send + Sync + 'b>;
+pub(super) type ArcFn<'b> = Arc<dyn Fn(ThreadFuncEntry) + Send + Sync + 'b>;
 
 // Data passed to each thread
 pub(super) struct ThreadFuncEntry {
@@ -13,8 +12,7 @@ pub(super) struct ThreadFuncEntry {
 }
 
 // Shared arc that represents a shared function
-pub(super) type BoxedFunction =
-    Arc<dyn Fn(ThreadFuncEntry) + Send + Sync + 'static>;
+pub(super) type BoxedFunction = Arc<dyn Fn(ThreadFuncEntry) + Send + Sync + 'static>;
 
 // Represents a single task that will be executed by multiple threads
 pub(super) enum ThreadedTask {
@@ -35,8 +33,6 @@ pub(super) fn execute(task: ThreadedTask) {
         ThreadedTask::Execute(f) => f(),
 
         // Execute the same function over and over again on the same slice, but at different indices (no overrun)
-        ThreadedTask::ForEachBatch { entry, function } => {
-            function(entry)
-        }
+        ThreadedTask::ForEachBatch { entry, function } => function(entry),
     }
 }

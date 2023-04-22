@@ -42,20 +42,19 @@ fn init(world: &mut World) {
                 normal: "user/textures/normal.jpg".to_string(),
                 mask: "user/textures/mask.jpg".to_string(),
             },
-
             TerrainSubMaterial {
                 diffuse: "user/textures/diffuse1.jpg".to_string(),
                 normal: "user/textures/normal1.jpg".to_string(),
                 mask: "user/textures/mask1.jpg".to_string(),
             },
-
             TerrainSubMaterial {
                 diffuse: "user/textures/diffuse2.jpg".to_string(),
                 normal: "user/textures/normal2.jpg".to_string(),
                 mask: "user/textures/mask2.jpg".to_string(),
             },
         ]),
-    ).unwrap();
+    )
+    .unwrap();
 
     // Drop (needed) to insert settings
     drop(graphics);
@@ -100,9 +99,10 @@ fn init(world: &mut World) {
     ));
 
     // Create a directional light
-    let light = DirectionalLight { color: vek::Rgb::one() * 3.6 };
-    let rotation = vek::Quaternion::rotation_x(-15.0f32.to_radians())
-        .rotated_y(45f32.to_radians());
+    let light = DirectionalLight {
+        color: vek::Rgb::one() * 3.6,
+    };
+    let rotation = vek::Quaternion::rotation_x(-15.0f32.to_radians()).rotated_y(45f32.to_radians());
     scene.insert((light, Rotation::from(rotation)));
 }
 

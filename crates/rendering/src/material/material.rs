@@ -1,14 +1,11 @@
 use crate::{
-    DefaultMaterialResources,
-    MeshAttributes, RenderPath, Renderer,
-    SceneColor, ActiveScenePipeline,
+    ActiveScenePipeline, DefaultMaterialResources, MeshAttributes, RenderPath, Renderer, SceneColor,
 };
 use assets::Assets;
 
 use graphics::{
-    BindGroup, BlendConfig, CompareFunction, DepthConfig, Graphics,
-    PrimitiveConfig, PushConstants, Shader, StencilConfig,
-    WindingOrder,
+    BindGroup, BlendConfig, CompareFunction, DepthConfig, Graphics, PrimitiveConfig, PushConstants,
+    Shader, StencilConfig, WindingOrder,
 };
 
 use world::World;

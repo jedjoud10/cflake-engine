@@ -1,14 +1,11 @@
-use std::{
-    marker::PhantomData, mem::ManuallyDrop, sync::Arc, time::Instant,
-};
+use std::{marker::PhantomData, mem::ManuallyDrop, sync::Arc, time::Instant};
 
 use assets::Asset;
 use smallvec::SmallVec;
 
 use crate::{
-    Extent, Graphics, ImageTexel, Sampler, SamplerSettings, Texel,
-    Texture, TextureAssetLoadError, TextureInitializationError,
-    TextureMipMaps, TextureMode, TextureUsage,
+    Extent, Graphics, ImageTexel, Sampler, SamplerSettings, Texel, Texture, TextureAssetLoadError,
+    TextureInitializationError, TextureMipMaps, TextureMode, TextureUsage,
 };
 
 // A cubemap texture that contains multiple texels that have their own channels
@@ -60,11 +57,14 @@ impl<T: Texel> Texture for CubeMap<T> {
     }
 
     fn sampler(&self) -> Option<Sampler<Self::T>> {
-        self.sampler.as_ref().zip(self.sampling.as_ref()).map(|(sampler, settings)| Sampler {
-            sampler,
-            _phantom: PhantomData,
-            settings,
-        })
+        self.sampler
+            .as_ref()
+            .zip(self.sampling.as_ref())
+            .map(|(sampler, settings)| Sampler {
+                sampler,
+                _phantom: PhantomData,
+                settings,
+            })
     }
 
     fn graphics(&self) -> Graphics {
@@ -112,7 +112,7 @@ pub enum CubeMapUnwrapMode {
     // Simply load the cubemap as an equirectangular texture, no convolution applied
     #[default]
     Equirectangular,
-    
+
     // Convolute the cubemap into an environment map that we can use for diffuse lighting
     DiffuseIrradiance,
 

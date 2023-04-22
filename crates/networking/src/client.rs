@@ -29,8 +29,7 @@ impl Client {
     // This will halt until the client sucessfully connected
     pub fn connect(address: impl ToSocketAddrs) -> Result<Self, ()> {
         // Try to connect to the server
-        let address =
-            address.to_socket_addrs().unwrap().next().unwrap();
+        let address = address.to_socket_addrs().unwrap().next().unwrap();
         log::debug!("Connecting to address {}...", address);
         let mut stream = TcpStream::connect(address).unwrap();
         log::debug!("Connected to server {} successfully", address);
@@ -64,8 +63,7 @@ impl Client {
         // TODO: User another serialization system other than this bozo
         let string = serde_json::to_string(&val).unwrap();
         let id = crate::packet::id::<T>();
-        let mut data =
-            Vec::<u8>::with_capacity(string.as_bytes().len() + 8);
+        let mut data = Vec::<u8>::with_capacity(string.as_bytes().len() + 8);
         data.extend(id.to_be_bytes());
         data.extend(string.as_bytes());
         self.stream.write(&data).unwrap();

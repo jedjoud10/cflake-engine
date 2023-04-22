@@ -86,7 +86,9 @@ pub enum MipLevelWriteError {
     #[error("The given source region would overflow the region of the mip-level")]
     InvalidRegion,
 
-    #[error("The mip-level cannot be written since the texture's TextureUsages do not contain WRITE")]
+    #[error(
+        "The mip-level cannot be written since the texture's TextureUsages do not contain WRITE"
+    )]
     NonWritable,
 }
 
@@ -95,7 +97,9 @@ pub enum MipLevelClearError {
     #[error("The given source region would overflow the region of the mip-level")]
     InvalidRegion,
 
-    #[error("The mip-level cannot be cleared since the texture's TextureUsages do not contain WRITE")]
+    #[error(
+        "The mip-level cannot be cleared since the texture's TextureUsages do not contain WRITE"
+    )]
     NonWritable,
 }
 
@@ -125,7 +129,9 @@ pub enum TextureResizeError {
     #[error("Tried resizing a texture which contains mip maps, which isn't supported *yet*")]
     MipMappingUnsupported,
 
-    #[error("Tried resizing a texture which contains multiple layers, which isn't supported *yet*")]
+    #[error(
+        "Tried resizing a texture which contains multiple layers, which isn't supported *yet*"
+    )]
     LayeredUnsupported,
 
     #[error("Tried resizing a texture above the physical device's max texture size")]
@@ -150,9 +156,13 @@ pub enum TextureAsTargetError {
     #[error("Cannot use the texture as a render target since it does not have the appropriate usage flags")]
     MissingTargetUsage,
 
-    #[error("Cannot use the texture as a render target because the texture region is layered / 3D")]
+    #[error(
+        "Cannot use the texture as a render target because the texture region is layered / 3D"
+    )]
     RegionIsNot2D,
 
-    #[error("Cannot use the whole texture as a render target since it contains multiple mip levels")]
+    #[error(
+        "Cannot use the whole texture as a render target since it contains multiple mip levels"
+    )]
     TextureMultipleMips,
 }

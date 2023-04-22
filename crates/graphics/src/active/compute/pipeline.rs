@@ -3,11 +3,10 @@ use utils::enable_in_range;
 use wgpu::CommandEncoder;
 
 use crate::{
-    visibility_to_wgpu_stage, BindGroup, Buffer, BufferInfo,
-    BufferMode, BufferUsage, ColorLayout, ComputeCommand,
-    ComputeShader, DepthStencilLayout, GpuPod, Graphics,
-    ModuleVisibility, PushConstantLayout, PushConstants,
-    SetPushConstantsError, active::pipeline::ActivePipeline, SetBindGroupError, DispatchError,
+    active::pipeline::ActivePipeline, visibility_to_wgpu_stage, BindGroup, Buffer, BufferInfo,
+    BufferMode, BufferUsage, ColorLayout, ComputeCommand, ComputeShader, DepthStencilLayout,
+    DispatchError, GpuPod, Graphics, ModuleVisibility, PushConstantLayout, PushConstants,
+    SetBindGroupError, SetPushConstantsError,
 };
 use std::{
     collections::hash_map::Entry,
@@ -33,7 +32,9 @@ impl<'a, 'r> ActiveComputeDispatcher<'a, 'r> {
     // all the necessities (bind groups, push constants) to be able to dispatch
     pub fn dispatch(&mut self, size: vek::Vec3<u32>) -> Result<(), DispatchError> {
         // Handle the missing bind groups
-        if let Err(value) = crate::validate_set(self.reflected_groups_bitflags, self.set_groups_bitflags) {
+        if let Err(value) =
+            crate::validate_set(self.reflected_groups_bitflags, self.set_groups_bitflags)
+        {
             return Err(DispatchError::MissingValidBindGroup(value));
         }
 
@@ -49,7 +50,7 @@ impl<'a, 'r> ActiveComputeDispatcher<'a, 'r> {
 
 impl<'a, 'r> ActivePipeline for ActiveComputeDispatcher<'a, 'r> {
     type Pipeline = &'r ComputeShader;
-    
+
     // Set push constants before dispatching a compute call
     fn set_push_constants(
         &mut self,
@@ -57,8 +58,7 @@ impl<'a, 'r> ActivePipeline for ActiveComputeDispatcher<'a, 'r> {
     ) -> Result<(), SetPushConstantsError> {
         // Get the push constant layout used by the shader
         // and push new bytes onto the internally stored constants
-        let copied_push_constant_global_offset =
-            self.push_constant_global_offset;
+        let copied_push_constant_global_offset = self.push_constant_global_offset;
         let Some(layout) = super::handle_push_constants(
             self.shader.reflected.clone(),
             &mut self.push_constant,
@@ -69,18 +69,12 @@ impl<'a, 'r> ActivePipeline for ActiveComputeDispatcher<'a, 'r> {
         // Create a command to set the push constant bytes
         match layout {
             // Set the push constants for the compute module
-            PushConstantLayout::Single(
-                size,
-                ModuleVisibility::Compute,
-            ) => {
-                self.commands.push(
-                    ComputeCommand::SetPushConstants {
-                        size: size.get() as usize,
-                        global_offset:
-                            copied_push_constant_global_offset,
-                        local_offset: 0,
-                    },
-                );
+            PushConstantLayout::Single(size, ModuleVisibility::Compute) => {
+                self.commands.push(ComputeCommand::SetPushConstants {
+                    size: size.get() as usize,
+                    global_offset: copied_push_constant_global_offset,
+                    local_offset: 0,
+                });
             }
 
             // Should not be possible
@@ -104,9 +98,8 @@ impl<'a, 'r> ActivePipeline for ActiveComputeDispatcher<'a, 'r> {
             binding,
             callback,
         )? {
-            self.commands.push(ComputeCommand::SetBindGroup(
-                binding, bind_group,
-            ));
+            self.commands
+                .push(ComputeCommand::SetBindGroup(binding, bind_group));
         }
 
         self.set_groups_bitflags |= 1 << binding;

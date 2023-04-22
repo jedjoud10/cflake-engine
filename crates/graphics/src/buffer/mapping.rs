@@ -1,6 +1,4 @@
-use crate::{
-    Buffer, GpuPod, StagingPool, StagingView, StagingViewWrite,
-};
+use crate::{Buffer, GpuPod, StagingPool, StagingView, StagingViewWrite};
 use parking_lot::MappedMutexGuard;
 use std::marker::PhantomData;
 use wgpu::CommandEncoder;
@@ -19,17 +17,13 @@ impl<'a, T: GpuPod, const TYPE: u32> BufferView<'a, T, TYPE> {
     }
 }
 
-impl<'a, T: GpuPod, const TYPE: u32> AsRef<[T]>
-    for BufferView<'a, T, TYPE>
-{
+impl<'a, T: GpuPod, const TYPE: u32> AsRef<[T]> for BufferView<'a, T, TYPE> {
     fn as_ref(&self) -> &[T] {
         self.as_slice()
     }
 }
 
-impl<'a, T: GpuPod, const TYPE: u32> std::ops::Deref
-    for BufferView<'a, T, TYPE>
-{
+impl<'a, T: GpuPod, const TYPE: u32> std::ops::Deref for BufferView<'a, T, TYPE> {
     type Target = [T];
 
     fn deref(&self) -> &Self::Target {
@@ -79,25 +73,19 @@ impl<'a, T: GpuPod, const TYPE: u32> BufferViewMut<'a, T, TYPE> {
     }
 }
 
-impl<'a, T: GpuPod, const TYPE: u32> AsRef<[T]>
-    for BufferViewMut<'a, T, TYPE>
-{
+impl<'a, T: GpuPod, const TYPE: u32> AsRef<[T]> for BufferViewMut<'a, T, TYPE> {
     fn as_ref(&self) -> &[T] {
         self.as_slice()
     }
 }
 
-impl<'a, T: GpuPod, const TYPE: u32> AsMut<[T]>
-    for BufferViewMut<'a, T, TYPE>
-{
+impl<'a, T: GpuPod, const TYPE: u32> AsMut<[T]> for BufferViewMut<'a, T, TYPE> {
     fn as_mut(&mut self) -> &mut [T] {
         self.as_slice_mut()
     }
 }
 
-impl<'a, T: GpuPod, const TYPE: u32> Drop
-    for BufferViewMut<'a, T, TYPE>
-{
+impl<'a, T: GpuPod, const TYPE: u32> Drop for BufferViewMut<'a, T, TYPE> {
     fn drop(&mut self) {
         match self {
             // Write the cloned data back into the buffer when we drop the view

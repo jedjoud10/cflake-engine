@@ -1,15 +1,13 @@
 use crate::{
-    AlbedoMap, CameraUniform, DefaultMaterialResources, Direct,
-    MaskMap, Material, NormalMap, Renderer, SceneUniform, ShadowMap,
-    ShadowMapping, ShadowUniform, ActiveScenePipeline,
+    ActiveScenePipeline, AlbedoMap, CameraUniform, DefaultMaterialResources, Direct, MaskMap,
+    Material, NormalMap, Renderer, SceneUniform, ShadowMap, ShadowMapping, ShadowUniform,
 };
 
 use assets::Assets;
 
 use graphics::{
-    BindGroup, Compiler, FragmentModule, GpuPod, Graphics,
-    ModuleVisibility, PushConstantLayout, PushConstants, Shader,
-    VertexModule, StorageAccess,
+    BindGroup, Compiler, FragmentModule, GpuPod, Graphics, ModuleVisibility, PushConstantLayout,
+    PushConstants, Shader, StorageAccess, VertexModule,
 };
 use utils::{Handle, Storage};
 
@@ -44,16 +42,12 @@ impl Material for PhysicallyBasedMaterial {
     fn shader(settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader {
         // Load the vertex module from the assets
         let vert = assets
-            .load::<VertexModule>(
-                "engine/shaders/scene/basic/basic.vert",
-            )
+            .load::<VertexModule>("engine/shaders/scene/basic/basic.vert")
             .unwrap();
 
         // Load the fragment module from the assets
         let frag = assets
-            .load::<FragmentModule>(
-                "engine/shaders/scene/pbr/pbr.frag",
-            )
+            .load::<FragmentModule>("engine/shaders/scene/pbr/pbr.frag")
             .unwrap();
 
         // Define the type layouts for the UBOs
@@ -113,10 +107,18 @@ impl Material for PhysicallyBasedMaterial {
             .set_uniform_buffer("shadow_parameters", &resources.3.parameter_buffer, ..)
             .unwrap();
         group
-            .set_uniform_buffer("shadow_lightspace_matrices", &resources.3.lightspace_buffer, ..)
+            .set_uniform_buffer(
+                "shadow_lightspace_matrices",
+                &resources.3.lightspace_buffer,
+                ..,
+            )
             .unwrap();
         group
-            .set_uniform_buffer("cascade_plane_distances", &resources.3.cascade_distances, ..)
+            .set_uniform_buffer(
+                "cascade_plane_distances",
+                &resources.3.cascade_distances,
+                ..,
+            )
             .unwrap();
 
         // Set the scene shadow map

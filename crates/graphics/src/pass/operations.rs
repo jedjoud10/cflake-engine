@@ -1,6 +1,6 @@
 use crate::{
-    ColorLayout, ColorTexel, Conversion, Depth, DepthElement,
-    DepthStencilLayout, Stencil, StencilElement, Texel,
+    ColorLayout, ColorTexel, Conversion, Depth, DepthElement, DepthStencilLayout, Stencil,
+    StencilElement, Texel,
 };
 
 // What we should do when loading in data from the render target
@@ -24,14 +24,10 @@ pub struct Operation<T: Texel> {
 }
 
 // Converts the Operation to a wgpu::Operations with the valid target type
-fn convert<C: Conversion>(
-    input: &Operation<C>,
-) -> wgpu::Operations<C::Target> {
+fn convert<C: Conversion>(input: &Operation<C>) -> wgpu::Operations<C::Target> {
     let load = match input.load {
         LoadOp::Load => wgpu::LoadOp::Load,
-        LoadOp::Clear(storage) => {
-            wgpu::LoadOp::Clear(C::into_target(storage))
-        }
+        LoadOp::Clear(storage) => wgpu::LoadOp::Clear(C::into_target(storage)),
     };
 
     let store = match input.store {
@@ -58,9 +54,7 @@ impl<T: ColorTexel> ColorOperations<T> for Operation<T> {
     fn operations(&self) -> Vec<wgpu::Operations<wgpu::Color>> {
         let load = match self.load {
             LoadOp::Load => wgpu::LoadOp::Load,
-            LoadOp::Clear(color) => {
-                wgpu::LoadOp::Clear(T::try_into_color(color).unwrap())
-            }
+            LoadOp::Clear(color) => wgpu::LoadOp::Clear(T::try_into_color(color).unwrap()),
         };
 
         let store = match self.store {
@@ -91,8 +85,7 @@ impl DepthStencilOperations<()> for () {
     }
 }
 
-impl<D: DepthElement> DepthStencilOperations<Depth<D>>
-    for Operation<Depth<D>>
+impl<D: DepthElement> DepthStencilOperations<Depth<D>> for Operation<Depth<D>>
 where
     Depth<D>: Texel + DepthStencilLayout + Conversion<Target = f32>,
 {
@@ -105,8 +98,7 @@ where
     }
 }
 
-impl<S: StencilElement> DepthStencilOperations<Stencil<S>>
-    for Operation<Stencil<S>>
+impl<S: StencilElement> DepthStencilOperations<Stencil<S>> for Operation<Stencil<S>>
 where
     Stencil<S>: Texel + DepthStencilLayout + Conversion<Target = u32>,
 {

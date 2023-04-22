@@ -3,7 +3,7 @@ use ahash::AHashMap;
 pub use ecs_derive::Component;
 use lazy_static::lazy_static;
 use parking_lot::{Mutex, RwLock};
-use std::any::{type_name, TypeId};
+use std::any::TypeId;
 
 // This is a certified hood classic
 pub trait Component
@@ -15,10 +15,8 @@ where
 // Registered components
 lazy_static! {
     static ref NEXT: Mutex<Mask> = Mutex::new(Mask::one());
-    static ref REGISTERED: RwLock<AHashMap<TypeId, Mask>> =
-        RwLock::new(AHashMap::new());
-    static ref NAMES: RwLock<MaskHashMap<String>> =
-        RwLock::new(MaskHashMap::default());
+    static ref REGISTERED: RwLock<AHashMap<TypeId, Mask>> = RwLock::new(AHashMap::new());
+    static ref NAMES: RwLock<MaskHashMap<String>> = RwLock::new(MaskHashMap::default());
 }
 
 // Return the registered mask of the component (or register it if needed)
@@ -41,8 +39,7 @@ pub fn mask<T: Component>() -> Mask {
         NAMES.write().insert(copy, name.clone());
         const ERR: &str = "Ran out of component bits to use!
         Use the 'extended-bitmasks' feature to add more bits in the bitmask if needed";
-        *bit =
-            RawBitMask::from(copy).checked_shl(1).expect(ERR).into();
+        *bit = RawBitMask::from(copy).checked_shl(1).expect(ERR).into();
 
         log::debug!(
             "Registered component '{name}' with bitmask 1<<{:?}",

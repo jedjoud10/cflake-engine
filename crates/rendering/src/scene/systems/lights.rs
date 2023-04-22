@@ -23,11 +23,7 @@ fn update(world: &mut World) {
         };
     } else {
         // Set the main directioanl light if we find one
-        let next = ecs.find::<(
-            &DirectionalLight,
-            &coords::Rotation,
-            &ecs::Entity,
-        )>();
+        let next = ecs.find::<(&DirectionalLight, &coords::Rotation, &ecs::Entity)>();
         if let Some((_, _, entity)) = next {
             renderer.main_directional_light = Some(*entity);
         }

@@ -10,15 +10,10 @@ pub trait QueryItemRef: Sized {
     fn access() -> LayoutAccess;
 
     // Get a pointer immutable archetypes
-    unsafe fn ptr_from_archetype_unchecked(
-        archetype: &Archetype,
-    ) -> Self::Ptr;
+    unsafe fn ptr_from_archetype_unchecked(archetype: &Archetype) -> Self::Ptr;
 
     // Convert the pointer into a slice
-    unsafe fn from_raw_parts<'s>(
-        ptr: Self::Ptr,
-        length: usize,
-    ) -> Self::Slice<'s>;
+    unsafe fn from_raw_parts<'s>(ptr: Self::Ptr, length: usize) -> Self::Slice<'s>;
 
     // Read from a raw pointer directly
     unsafe fn read_unchecked(ptr: Self::Ptr, index: usize) -> Self;
@@ -34,21 +29,13 @@ pub trait QueryItemMut: Sized {
     fn access() -> LayoutAccess;
 
     // Get a pointer from mutable archetypes
-    unsafe fn ptr_from_mut_archetype_unchecked(
-        archetype: &mut Archetype,
-    ) -> Self::Ptr;
+    unsafe fn ptr_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::Ptr;
 
     // Convert the pointer into a slice, and read from said slice
-    unsafe fn from_raw_parts<'s>(
-        ptr: Self::Ptr,
-        length: usize,
-    ) -> Self::Slice<'s>;
+    unsafe fn from_raw_parts<'s>(ptr: Self::Ptr, length: usize) -> Self::Slice<'s>;
 
     // Read from a raw pointer directly
-    unsafe fn read_mut_unchecked(
-        ptr: Self::Ptr,
-        index: usize,
-    ) -> Self;
+    unsafe fn read_mut_unchecked(ptr: Self::Ptr, index: usize) -> Self;
 }
 
 impl<T: Component> QueryItemRef for &T {
@@ -64,16 +51,11 @@ impl<T: Component> QueryItemRef for &T {
         }
     }
 
-    unsafe fn ptr_from_archetype_unchecked(
-        archetype: &Archetype,
-    ) -> Self::Ptr {
+    unsafe fn ptr_from_archetype_unchecked(archetype: &Archetype) -> Self::Ptr {
         archetype.components::<T>().unwrap().as_slice().as_ptr() as _
     }
 
-    unsafe fn from_raw_parts<'s>(
-        ptr: Self::Ptr,
-        length: usize,
-    ) -> Self::Slice<'s> {
+    unsafe fn from_raw_parts<'s>(ptr: Self::Ptr, length: usize) -> Self::Slice<'s> {
         std::slice::from_raw_parts(ptr, length)
     }
 
@@ -95,18 +77,13 @@ impl<T: Component> QueryItemRef for Option<&T> {
         }
     }
 
-    unsafe fn ptr_from_archetype_unchecked(
-        archetype: &Archetype,
-    ) -> Self::Ptr {
+    unsafe fn ptr_from_archetype_unchecked(archetype: &Archetype) -> Self::Ptr {
         archetype
             .components::<T>()
             .map(|col| col.as_slice().as_ptr() as _)
     }
 
-    unsafe fn from_raw_parts<'s>(
-        ptr: Self::Ptr,
-        length: usize,
-    ) -> Self::Slice<'s> {
+    unsafe fn from_raw_parts<'s>(ptr: Self::Ptr, length: usize) -> Self::Slice<'s> {
         ptr.map(|ptr| std::slice::from_raw_parts(ptr, length))
     }
 
@@ -128,16 +105,11 @@ impl QueryItemRef for &Entity {
         }
     }
 
-    unsafe fn ptr_from_archetype_unchecked(
-        archetype: &Archetype,
-    ) -> Self::Ptr {
+    unsafe fn ptr_from_archetype_unchecked(archetype: &Archetype) -> Self::Ptr {
         archetype.entities().as_ptr()
     }
 
-    unsafe fn from_raw_parts<'s>(
-        ptr: Self::Ptr,
-        length: usize,
-    ) -> Self::Slice<'s> {
+    unsafe fn from_raw_parts<'s>(ptr: Self::Ptr, length: usize) -> Self::Slice<'s> {
         std::slice::from_raw_parts(ptr, length)
     }
 
@@ -159,9 +131,7 @@ impl<T: Component> QueryItemMut for &T {
         }
     }
 
-    unsafe fn ptr_from_mut_archetype_unchecked(
-        archetype: &mut Archetype,
-    ) -> Self::Ptr {
+    unsafe fn ptr_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::Ptr {
         archetype
             .components_mut::<T>()
             .unwrap()
@@ -169,17 +139,11 @@ impl<T: Component> QueryItemMut for &T {
             .as_ptr() as _
     }
 
-    unsafe fn from_raw_parts<'s>(
-        ptr: Self::Ptr,
-        length: usize,
-    ) -> Self::Slice<'s> {
+    unsafe fn from_raw_parts<'s>(ptr: Self::Ptr, length: usize) -> Self::Slice<'s> {
         std::slice::from_raw_parts(ptr, length)
     }
 
-    unsafe fn read_mut_unchecked(
-        ptr: Self::Ptr,
-        index: usize,
-    ) -> Self {
+    unsafe fn read_mut_unchecked(ptr: Self::Ptr, index: usize) -> Self {
         &*ptr.add(index)
     }
 }
@@ -197,25 +161,17 @@ impl<T: Component> QueryItemMut for Option<&T> {
         }
     }
 
-    unsafe fn ptr_from_mut_archetype_unchecked(
-        archetype: &mut Archetype,
-    ) -> Self::Ptr {
+    unsafe fn ptr_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::Ptr {
         archetype
             .components_mut::<T>()
             .map(|vec| vec.as_slice().as_ptr() as _)
     }
 
-    unsafe fn from_raw_parts<'s>(
-        ptr: Self::Ptr,
-        length: usize,
-    ) -> Self::Slice<'s> {
+    unsafe fn from_raw_parts<'s>(ptr: Self::Ptr, length: usize) -> Self::Slice<'s> {
         ptr.map(|ptr| std::slice::from_raw_parts(ptr, length))
     }
 
-    unsafe fn read_mut_unchecked(
-        ptr: Self::Ptr,
-        index: usize,
-    ) -> Self {
+    unsafe fn read_mut_unchecked(ptr: Self::Ptr, index: usize) -> Self {
         ptr.map(|ptr| &*ptr.add(index))
     }
 }
@@ -233,9 +189,7 @@ impl<T: Component> QueryItemMut for &mut T {
         }
     }
 
-    unsafe fn ptr_from_mut_archetype_unchecked(
-        archetype: &mut Archetype,
-    ) -> Self::Ptr {
+    unsafe fn ptr_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::Ptr {
         archetype
             .components_mut::<T>()
             .unwrap()
@@ -243,17 +197,11 @@ impl<T: Component> QueryItemMut for &mut T {
             .as_mut_ptr() as _
     }
 
-    unsafe fn from_raw_parts<'s>(
-        ptr: Self::Ptr,
-        length: usize,
-    ) -> Self::Slice<'s> {
+    unsafe fn from_raw_parts<'s>(ptr: Self::Ptr, length: usize) -> Self::Slice<'s> {
         std::slice::from_raw_parts_mut(ptr, length)
     }
 
-    unsafe fn read_mut_unchecked(
-        ptr: Self::Ptr,
-        index: usize,
-    ) -> Self {
+    unsafe fn read_mut_unchecked(ptr: Self::Ptr, index: usize) -> Self {
         &mut *ptr.add(index)
     }
 }
@@ -271,25 +219,17 @@ impl<T: Component> QueryItemMut for Option<&mut T> {
         }
     }
 
-    unsafe fn ptr_from_mut_archetype_unchecked(
-        archetype: &mut Archetype,
-    ) -> Self::Ptr {
+    unsafe fn ptr_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::Ptr {
         archetype
             .components_mut::<T>()
             .map(|vec| vec.as_mut_slice().as_mut_ptr() as _)
     }
 
-    unsafe fn from_raw_parts<'s>(
-        ptr: Self::Ptr,
-        length: usize,
-    ) -> Self::Slice<'s> {
+    unsafe fn from_raw_parts<'s>(ptr: Self::Ptr, length: usize) -> Self::Slice<'s> {
         ptr.map(|ptr| std::slice::from_raw_parts_mut(ptr, length))
     }
 
-    unsafe fn read_mut_unchecked(
-        ptr: Self::Ptr,
-        index: usize,
-    ) -> Self {
+    unsafe fn read_mut_unchecked(ptr: Self::Ptr, index: usize) -> Self {
         ptr.map(|ptr| &mut *ptr.add(index))
     }
 }
@@ -307,23 +247,15 @@ impl QueryItemMut for &Entity {
         }
     }
 
-    unsafe fn ptr_from_mut_archetype_unchecked(
-        archetype: &mut Archetype,
-    ) -> Self::Ptr {
+    unsafe fn ptr_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::Ptr {
         archetype.entities().as_ptr()
     }
 
-    unsafe fn from_raw_parts<'s>(
-        ptr: Self::Ptr,
-        length: usize,
-    ) -> Self::Slice<'s> {
+    unsafe fn from_raw_parts<'s>(ptr: Self::Ptr, length: usize) -> Self::Slice<'s> {
         std::slice::from_raw_parts(ptr, length)
     }
 
-    unsafe fn read_mut_unchecked(
-        ptr: Self::Ptr,
-        index: usize,
-    ) -> Self {
+    unsafe fn read_mut_unchecked(ptr: Self::Ptr, index: usize) -> Self {
         &*ptr.add(index)
     }
 }

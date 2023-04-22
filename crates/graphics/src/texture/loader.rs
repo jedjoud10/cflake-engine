@@ -1,7 +1,7 @@
+use crate::{Extent, Graphics, ImageTexel, Texel};
 use assets::Asset;
 use image::ImageFormat;
 use thiserror::Error;
-use crate::{Texel, ImageTexel, Extent, Graphics};
 
 // Texture resolution scale that we can use to downsample or upsample imported textures
 pub type TextureResizeFilter = image::imageops::FilterType;
@@ -23,7 +23,7 @@ pub enum TextureScale {
 pub enum RawTexelsError {
     #[error("{0}")]
     ImageDeserialization(image::ImageError),
-    
+
     #[error("{0:?}")]
     HdrDeserialization(hdrldr::LoadError),
 }
@@ -36,12 +36,12 @@ impl<T: ImageTexel> RawTexels<T> {
     pub fn texels(&self) -> &[T::Storage] {
         &self.0
     }
-    
+
     // Get the underlying texels mutably
     pub fn texels_mut(&mut self) -> &mut [T::Storage] {
         &mut self.0
     }
-    
+
     // Get the dimensions of the raw texels
     pub fn dimensions(&self) -> vek::Extent2<u32> {
         self.1
@@ -65,7 +65,7 @@ impl<T: ImageTexel> Asset for RawTexels<T> {
         let bytes = data.bytes();
         let guessed = image::guess_format(bytes).unwrap();
 
-        // Deserialize, scale down/up, and convert to texels 
+        // Deserialize, scale down/up, and convert to texels
         let (texels, extent) = match guessed {
             // Load PNG and JPEG using image crate
             ImageFormat::Png | ImageFormat::Jpeg => {
@@ -73,12 +73,10 @@ impl<T: ImageTexel> Asset for RawTexels<T> {
                     .map_err(RawTexelsError::ImageDeserialization)?;
 
                 // Scale the texture if needed
-                if let TextureScale::Scale { scaling, filter } =
-                    settings
-                {
+                if let TextureScale::Scale { scaling, filter } = settings {
                     let nheight = ((image.height() as f32) * scaling) as u32;
                     let nwidth = ((image.width() as f32) * scaling) as u32;
-                
+
                     if nheight != 0 && nwidth != 0 {
                         image = image.resize(nwidth, nheight, filter);
                     }
@@ -108,6 +106,6 @@ impl<T: ImageTexel> Asset for RawTexels<T> {
             _ => panic!("Not supported yet"),
         };
 
-        return Ok(Self(texels, extent))
+        return Ok(Self(texels, extent));
     }
 }

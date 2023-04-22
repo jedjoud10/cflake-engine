@@ -1,16 +1,12 @@
-use ahash::AHashMap;
 use itertools::Itertools;
 use slotmap::SlotMap;
 use std::iter::once;
 use utils::Time;
-use world::{post_user, user, System, World};
+use world::{user, System, World};
 
 use crate::{
-    contains, entity::Entity, mask, Archetype, Bundle,
-    Component, EntityLinkings, EntryMut, EntryRef,
-    Mask, MaskHashMap,
-    QueryFilter, QueryLayoutMut, QueryLayoutRef, QueryMut, QueryRef,
-    UntypedVec, Wrap,
+    entity::Entity, mask, Archetype, Bundle, Component, EntityLinkings, EntryMut, EntryRef, Mask,
+    MaskHashMap, QueryFilter, QueryLayoutMut, QueryLayoutRef, QueryMut, QueryRef, UntypedVec, Wrap,
 };
 
 // Convenience type aliases
@@ -41,10 +37,7 @@ impl Default for Scene {
         empty.shrink_to_fit();
         Self {
             entities: Default::default(),
-            archetypes: ArchetypeSet::from_iter(once((
-                Mask::zero(),
-                empty,
-            ))),
+            archetypes: ArchetypeSet::from_iter(once((Mask::zero(), empty))),
             removed: Default::default(),
         }
     }
@@ -61,10 +54,7 @@ impl Scene {
     }
 
     // Spawn a batch of entities with specific components from an iterator
-    pub fn extend_from_iter<B: Bundle>(
-        &mut self,
-        iter: impl IntoIterator<Item = B>,
-    ) -> &[Entity] {
+    pub fn extend_from_iter<B: Bundle>(&mut self, iter: impl IntoIterator<Item = B>) -> &[Entity] {
         assert!(
             B::is_valid(),
             "Bundle is not valid, check the bundle for component collisions"
@@ -85,8 +75,7 @@ impl Scene {
     // Panics if the entity ID is invalid
     pub fn remove(&mut self, entity: Entity) {
         let linkings = *self.entities.get(entity).unwrap();
-        let archetype =
-            self.archetypes.get_mut(&linkings.mask).unwrap();
+        let archetype = self.archetypes.get_mut(&linkings.mask).unwrap();
         archetype.remove_from_iter(
             &mut self.entities,
             [(entity, linkings)].into_iter(),
@@ -96,10 +85,7 @@ impl Scene {
 
     // Despawn a batch of entities from an iterator
     // Panics if ANY entity ID is invalid
-    pub fn remove_from_iter(
-        &mut self,
-        iter: impl IntoIterator<Item = Entity>,
-    ) {
+    pub fn remove_from_iter(&mut self, iter: impl IntoIterator<Item = Entity>) {
         // Sort the entities by their masks (we can use unstable since the ordering of the entities does not matter)
         let mut entities = iter
             .into_iter()
@@ -111,18 +97,26 @@ impl Scene {
         let grouped = entities.iter().group_by(|(_, l)| l.mask);
 
         // Fetch the entities that correspond to each archetype
-        let iter = grouped.into_iter().collect::<Vec<_>>();
+        let iter = grouped
+            .into_iter()
+            .map(|(key, group)| (key, group.into_iter().collect::<Vec<_>>()))
+            .collect::<Vec<_>>();
 
         // Batch remove the entities per archetype
         for (mask, group) in iter {
             let archetype = self.archetypes.get_mut(&mask).unwrap();
 
-            // Remove the entities from the group
-            archetype.remove_from_iter(
-                &mut self.entities,
-                group.into_iter().cloned(),
-                &mut self.removed,
-            );
+            // If the group contains the same number of entities, just clear the archetype directly
+            if group.len() == archetype.entities().len() {
+                archetype.clear();
+            } else {
+                // Remove the entities from the archetype
+                archetype.remove_from_iter(
+                    &mut self.entities,
+                    group.into_iter().cloned(),
+                    &mut self.removed,
+                );
+            }
         }
     }
 
@@ -190,9 +184,7 @@ impl Scene {
     }
 
     // Create a new mutable query from this scene (with no filter)
-    pub fn query_mut<'a, L: QueryLayoutMut>(
-        &'a mut self,
-    ) -> QueryMut<'a, '_, L> {
+    pub fn query_mut<'a, L: QueryLayoutMut>(&'a mut self) -> QueryMut<'a, '_, L> {
         assert!(
             L::is_valid(),
             "Query layout is not valid, check the layout for component collisions"
@@ -213,9 +205,7 @@ impl Scene {
     }
 
     // Create a new immutable query from this scene (with no filter)
-    pub fn query<'a, L: QueryLayoutRef>(
-        &'a self,
-    ) -> QueryRef<'a, '_, '_, L> {
+    pub fn query<'a, L: QueryLayoutRef>(&'a self) -> QueryRef<'a, '_, '_, L> {
         QueryRef::new(self)
     }
 
@@ -234,13 +224,10 @@ impl Scene {
     }
 
     // Find the a layout mut (if it's the only one that exists in the scene)
-    pub fn find_mut<'a, L: QueryLayoutMut>(
-        &'a mut self,
-    ) -> Option<L> {
+    pub fn find_mut<'a, L: QueryLayoutMut>(&'a mut self) -> Option<L> {
         let mut iterator = self.query_mut::<L>().into_iter().fuse();
         iterator.next().xor(iterator.next())
     }
-
 }
 
 // Init event that will insert the ECS resource
@@ -269,7 +256,6 @@ fn reset_states(world: &mut World) {
         vec.clear();
     }
 }
-
 
 // The ECS system will manually insert the ECS resource and will clean it at the start of each frame
 pub fn system(system: &mut System) {

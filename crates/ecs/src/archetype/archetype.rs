@@ -1,8 +1,7 @@
 use crate::{
     entity::{Entity, EntityLinkings},
-    mask, ArchetypeSet, Bundle, Component, EntitySet, Mask,
-    MaskHashMap, QueryLayoutRef, RemovedComponents, StateColumn,
-    UntypedColumn, UntypedVec,
+    mask, ArchetypeSet, Bundle, Component, EntitySet, Mask, MaskHashMap, RemovedComponents,
+    StateColumn, UntypedColumn,
 };
 
 // The table that will be stored internally
@@ -25,10 +24,7 @@ impl Archetype {
     pub(crate) fn from_bundle<B: Bundle>() -> Self {
         let mask = B::reduce(|a, b| a | b);
 
-        log::debug!(
-            "Creating archetype from bundle of mask {:?}",
-            mask
-        );
+        log::debug!("Creating archetype from bundle of mask {:?}", mask);
 
         let defaults = B::default_vectors()
             .into_iter()
@@ -121,10 +117,9 @@ impl Archetype {
                 input.states_mut().swap_remove(index);
 
                 // Add the "removal" column in case it doesn't exist
-                let output =
-                    removed.entry(*mask).or_insert_with(|| {
-                        input.components().clone_default()
-                    });
+                let output = removed
+                    .entry(*mask)
+                    .or_insert_with(|| input.components().clone_default());
                 input
                     .components_mut()
                     .swap_remove_move(index, &mut **output);
@@ -193,30 +188,22 @@ impl Archetype {
     }
 
     // Try to get an immutable reference to an untyped column of a specific component
-    pub fn untyped_column<T: Component>(
-        &self,
-    ) -> Option<&UntypedColumn> {
+    pub fn untyped_column<T: Component>(&self) -> Option<&UntypedColumn> {
         self.table.get(&mask::<T>())
     }
 
     // Try to get a mutable reference to an untyped column of a specific component
-    pub(crate) fn untyped_column_mut<T: Component>(
-        &mut self,
-    ) -> Option<&mut UntypedColumn> {
+    pub(crate) fn untyped_column_mut<T: Component>(&mut self) -> Option<&mut UntypedColumn> {
         self.table.get_mut(&mask::<T>())
     }
 
     // Try to get an immutable reference to a typed column of a specific component
-    pub fn column<T: Component>(
-        &self,
-    ) -> Option<(&Vec<T>, &StateColumn)> {
+    pub fn column<T: Component>(&self) -> Option<(&Vec<T>, &StateColumn)> {
         self.untyped_column::<T>().map(|c| c.as_::<T>().unwrap())
     }
 
     // Try to get a mutable reference to a typed column of a specific component
-    pub(crate) fn column_mut<T: Component>(
-        &mut self,
-    ) -> Option<(&mut Vec<T>, &mut StateColumn)> {
+    pub(crate) fn column_mut<T: Component>(&mut self) -> Option<(&mut Vec<T>, &mut StateColumn)> {
         self.untyped_column_mut::<T>()
             .map(|c| c.as_mut_::<T>().unwrap())
     }
@@ -227,9 +214,7 @@ impl Archetype {
     }
 
     // Try to get a mutable reference to a data vector of a specific component
-    pub(crate) fn components_mut<T: Component>(
-        &mut self,
-    ) -> Option<&mut Vec<T>> {
+    pub(crate) fn components_mut<T: Component>(&mut self) -> Option<&mut Vec<T>> {
         self.column_mut::<T>().map(|(vec, _)| vec)
     }
 
@@ -239,9 +224,7 @@ impl Archetype {
     }
 
     // Try to get a mutable reference to the states of a specific component
-    pub(crate) fn states_mut<T: Component>(
-        &mut self,
-    ) -> Option<&mut StateColumn> {
+    pub(crate) fn states_mut<T: Component>(&mut self) -> Option<&mut StateColumn> {
         self.untyped_column_mut::<T>().map(|c| c.states_mut())
     }
 
@@ -258,11 +241,7 @@ impl Archetype {
 
 // This will get two different archetypes using their masks
 // This assumes that the archetypes exist already in the set, and that we are using different masks
-fn split(
-    set: &mut ArchetypeSet,
-    mask1: Mask,
-    mask2: Mask,
-) -> (&mut Archetype, &mut Archetype) {
+fn split(set: &mut ArchetypeSet, mask1: Mask, mask2: Mask) -> (&mut Archetype, &mut Archetype) {
     assert_ne!(mask1, mask2);
     let a1 = set.get_mut(&mask1).unwrap() as *mut Archetype;
     let a2 = set.get_mut(&mask2).unwrap() as *mut Archetype;
@@ -342,14 +321,10 @@ pub(crate) fn add_bundle<B: Bundle>(
 
     // Create the new target archetype if needed
     if !archetypes.contains_key(&new) {
-        let arch =
-            init_archetype_added_bundle::<B>(archetypes, old, new);
+        let arch = init_archetype_added_bundle::<B>(archetypes, old, new);
         archetypes.insert(new, arch);
 
-        log::debug!(
-            "Created new archetype with mask {} (added bundle)",
-            new
-        );
+        log::debug!("Created new archetype with mask {} (added bundle)", new);
     }
 
     // Get the current and target archetypes that we will modify
@@ -374,19 +349,11 @@ pub(crate) fn add_bundle<B: Bundle>(
     drop(storages);
 
     for (mask, current) in current.table.iter() {
-        log::debug!(
-            "Current Mask: {:?}, len: {}",
-            mask,
-            current.len()
-        );
+        log::debug!("Current Mask: {:?}, len: {}", mask, current.len());
     }
 
     for (mask, current) in target.table.iter() {
-        log::debug!(
-            "Target Mask: {:?}, len: {}",
-            mask,
-            current.len()
-        );
+        log::debug!("Target Mask: {:?}, len: {}", mask, current.len());
     }
 
     // Handle swap-remove logic in the current archetype
@@ -430,14 +397,10 @@ pub(crate) fn remove_bundle<B: Bundle>(
 
     // Create the new target archetype if needed
     if !archetypes.contains_key(&new) {
-        let arch =
-            init_archetype_removed_bundle::<B>(archetypes, old, new);
+        let arch = init_archetype_removed_bundle::<B>(archetypes, old, new);
         archetypes.insert(new, arch);
 
-        log::debug!(
-            "Created new archetype with mask {} (removed bundle)",
-            new
-        );
+        log::debug!("Created new archetype with mask {} (removed bundle)", new);
     }
 
     // Get the current and target archetypes that we will modify
@@ -450,19 +413,11 @@ pub(crate) fn remove_bundle<B: Bundle>(
     let index = linkings.index();
 
     for (mask, current) in current.table.iter() {
-        log::debug!(
-            "Removal Current Mask: {:?}, len: {}",
-            mask,
-            current.len()
-        );
+        log::debug!("Removal Current Mask: {:?}, len: {}", mask, current.len());
     }
 
     for (mask, current) in target.table.iter() {
-        log::debug!(
-            "Removal Target Mask: {:?}, len: {}",
-            mask,
-            current.len()
-        );
+        log::debug!("Removal Target Mask: {:?}, len: {}", mask, current.len());
     }
 
     // Move the components and states from one archetype to the other (flipped)
@@ -491,11 +446,7 @@ pub(crate) fn remove_bundle<B: Bundle>(
     }
 
     for (mask, current) in target.table.iter() {
-        log::debug!(
-            "Removal Target Mask: {:?}, len: {}",
-            mask,
-            current.len()
-        );
+        log::debug!("Removal Target Mask: {:?}, len: {}", mask, current.len());
     }
 
     // Handle swap-remove logic in the current archetype

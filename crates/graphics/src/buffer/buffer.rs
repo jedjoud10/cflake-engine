@@ -12,12 +12,10 @@ use bytemuck::{Pod, Zeroable};
 use wgpu::{util::DeviceExt, CommandEncoder, Maintain};
 
 use crate::{
-    BufferClearError, BufferCopyError, BufferExtendError, BufferInfo,
-    BufferInitializationError, BufferMode, BufferNotMappableError,
-    BufferReadError, BufferSplatError, BufferUsage, BufferView,
-    BufferViewMut, BufferWriteError, DispatchIndirect,
-    DrawIndexedIndirect, DrawIndirect, GpuPod, Graphics, StagingPool,
-    Vertex, R,
+    BufferClearError, BufferCopyError, BufferExtendError, BufferInfo, BufferInitializationError,
+    BufferMode, BufferNotMappableError, BufferReadError, BufferSplatError, BufferUsage, BufferView,
+    BufferViewMut, BufferWriteError, DispatchIndirect, DrawIndexedIndirect, DrawIndirect, GpuPod,
+    Graphics, StagingPool, Vertex, R,
 };
 
 // Bitmask from Vulkan BufferUsages
@@ -49,8 +47,7 @@ pub type UniformBuffer<T> = Buffer<T, UNIFORM>;
 
 // Indirect buffers for GPU rendering
 pub type DrawIndirectBuffer = Buffer<DrawIndirect, INDIRECT>;
-pub type DrawIndexedIndirectBuffer =
-    Buffer<DrawIndexedIndirect, INDIRECT>;
+pub type DrawIndexedIndirectBuffer = Buffer<DrawIndexedIndirect, INDIRECT>;
 pub type DispatchIndirectBuffer = Buffer<DispatchIndirect, INDIRECT>;
 
 // A buffer abstraction over a valid WGPU buffer
@@ -76,11 +73,11 @@ pub struct Buffer<T: GpuPod, const TYPE: u32 = 0> {
 // PartialEq implementation
 impl<T: GpuPod, const TYPE: u32> PartialEq for Buffer<T, TYPE> {
     fn eq(&self, other: &Self) -> bool {
-        self.buffer.global_id() == other.buffer.global_id() &&
-        self.length == other.length &&
-        self.capacity == other.capacity &&
-        self.usage == other.usage &&
-        self.mode == other.mode
+        self.buffer.global_id() == other.buffer.global_id()
+            && self.length == other.length
+            && self.capacity == other.capacity
+            && self.usage == other.usage
+            && self.mode == other.mode
     }
 }
 
@@ -100,36 +97,21 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         );
 
         // Cannot create a zero sized slice if we aren't resizable
-        if slice.is_empty() && !matches!(mode, BufferMode::Resizable)
-        {
-            return Err(
-                BufferInitializationError::EmptySliceNotResizable,
-            );
+        if slice.is_empty() && !matches!(mode, BufferMode::Resizable) {
+            return Err(BufferInitializationError::EmptySliceNotResizable);
         }
 
         // Return an error if the buffer type isn't supported
         let variant = wgpu::BufferUsages::from_bits(TYPE);
 
         // Return an error if the buffer usage flags are invalid
-        if usage.contains(BufferUsage::READ)
-            && !usage.contains(BufferUsage::COPY_SRC)
-        {
-            return Err(
-                BufferInitializationError::ReadableWithoutCopySrc,
-            );
-        } else if usage.contains(BufferUsage::WRITE)
-            && !usage.contains(BufferUsage::COPY_DST)
-        {
-            return Err(
-                BufferInitializationError::WritableWithoutCopyDst,
-            );
+        if usage.contains(BufferUsage::READ) && !usage.contains(BufferUsage::COPY_SRC) {
+            return Err(BufferInitializationError::ReadableWithoutCopySrc);
+        } else if usage.contains(BufferUsage::WRITE) && !usage.contains(BufferUsage::COPY_DST) {
+            return Err(BufferInitializationError::WritableWithoutCopyDst);
         }
-        if mode == BufferMode::Resizable
-            && !usage.contains(BufferUsage::COPY_SRC)
-        {
-            return Err(
-                BufferInitializationError::ResizableWithoutCopySrc,
-            );
+        if mode == BufferMode::Resizable && !usage.contains(BufferUsage::COPY_SRC) {
+            return Err(BufferInitializationError::ResizableWithoutCopySrc);
         }
 
         // Wgpu usages for this buffer
@@ -139,13 +121,13 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         let bytes = bytemuck::cast_slice::<T, u8>(slice);
 
         // Allocate the WGPU buffer
-        let buffer = graphics.device().create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
+        let buffer = graphics
+            .device()
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: None,
                 contents: bytes,
                 usage: wgpu_usages,
-            },
-        );
+            });
 
         // Calculate the number of elements that can fit in this one allocation
         let stride = size_of::<T>() as u64;
@@ -174,8 +156,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         usage: BufferUsage,
     ) -> Result<Self, BufferInitializationError> {
         let vec = vec![T::zeroed(); capacity];
-        let mut buffer =
-            Self::from_slice(graphics, &vec, mode, usage)?;
+        let mut buffer = Self::from_slice(graphics, &vec, mode, usage)?;
         buffer.length = 0;
         Ok(buffer)
     }
@@ -214,9 +195,7 @@ fn buffer_usages(
         variant
     } else {
         if usage.is_empty() {
-            return Err(
-                BufferInitializationError::UnkownBufferUsageOrType,
-            );
+            return Err(BufferInitializationError::UnkownBufferUsageOrType);
         } else {
             wgpu::BufferUsages::empty()
         }
@@ -334,9 +313,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         range: impl RangeBounds<usize>,
     ) -> Option<wgpu::BufferBinding> {
         // Full range, exit early
-        if range.start_bound() == Bound::Unbounded
-            && range.end_bound() == range.start_bound()
-        {
+        if range.start_bound() == Bound::Unbounded && range.end_bound() == range.start_bound() {
             return Some(self.buffer.as_entire_buffer_binding());
         }
 
@@ -363,11 +340,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
     // Read from "src" and write to the buffer instantly
     // This is a "fire and forget" command that does not stall the CPU
     // The user can do multiple write calls and expect them to be batched together
-    pub fn write(
-        &mut self,
-        src: &[T],
-        offset: usize,
-    ) -> Result<(), BufferWriteError> {
+    pub fn write(&mut self, src: &[T], offset: usize) -> Result<(), BufferWriteError> {
         // Nothing to read from
         if src.is_empty() {
             return Ok(());
@@ -380,11 +353,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
 
         // Make sure the "offset" doesn't cause writes outside the buffer
         if src.len() + offset > self.length {
-            return Err(BufferWriteError::InvalidLen(
-                src.len(),
-                offset,
-                self.len(),
-            ));
+            return Err(BufferWriteError::InvalidLen(src.len(), offset, self.len()));
         }
 
         // Use the staging pool for data writes
@@ -402,11 +371,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
 
     // Read buffer and write to "dst" instantly
     // Will stall the CPU, since this is waiting for GPU data
-    pub fn read<'a>(
-        &'a self,
-        dst: &mut [T],
-        offset: usize,
-    ) -> Result<(), BufferReadError> {
+    pub fn read<'a>(&'a self, dst: &mut [T], offset: usize) -> Result<(), BufferReadError> {
         // Nothing to write to
         if dst.is_empty() {
             return Ok(());
@@ -419,11 +384,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
 
         // Make sure the "offset" doesn't cause reads outside the buffer
         if dst.len() + offset > self.length {
-            return Err(BufferReadError::InvalidLen(
-                dst.len(),
-                offset,
-                self.len(),
-            ));
+            return Err(BufferReadError::InvalidLen(dst.len(), offset, self.len()));
         }
 
         // Use the staging pool for data reads
@@ -541,10 +502,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
     // Extend this buffer using the given slice instantly
     // This is a "fire and forget" command that does not stall the CPU
     // The user can do multiple extend_from_slice calls and expect them to be batched together
-    pub fn extend_from_slice(
-        &mut self,
-        slice: &[T],
-    ) -> Result<(), BufferExtendError> {
+    pub fn extend_from_slice(&mut self, slice: &[T]) -> Result<(), BufferExtendError> {
         if slice.is_empty() {
             return Ok(());
         }
@@ -553,9 +511,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
             return Err(BufferExtendError::IllegalLengthModify);
         }
 
-        if slice.len() + self.length > self.capacity
-            && matches!(self.mode, BufferMode::Parital)
-        {
+        if slice.len() + self.length > self.capacity && matches!(self.mode, BufferMode::Parital) {
             return Err(BufferExtendError::IllegalReallocation);
         }
 
@@ -577,14 +533,15 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
             let size = (capacity * self.stride()) as u64;
 
             // Allocate a new buffer with a higher capacity
-            let buffer = self.graphics.device().create_buffer(
-                &wgpu::BufferDescriptor {
+            let buffer = self
+                .graphics
+                .device()
+                .create_buffer(&wgpu::BufferDescriptor {
                     label: None,
                     size,
                     usage,
                     mapped_at_creation: false,
-                },
-            );
+                });
 
             // Copy the current buffer to the new one
             let mut encoder = self.graphics.acquire();
@@ -626,22 +583,16 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         }
 
         // Size and offset of the slice
-        let (start, end) =
-            self.convert_bounds_to_indices(bounds).ok_or(
-                BufferNotMappableError::InvalidRange(self.length),
-            )?;
+        let (start, end) = self
+            .convert_bounds_to_indices(bounds)
+            .ok_or(BufferNotMappableError::InvalidRange(self.length))?;
         let size = (end - start) * self.stride();
         let offset = start * self.stride();
 
         // Get the staging pool for download
         let staging = self.graphics.staging_pool();
         let data = staging
-            .map_buffer_read(
-                &self.graphics,
-                &self.buffer,
-                offset as u64,
-                size as u64,
-            )
+            .map_buffer_read(&self.graphics, &self.buffer, offset as u64, size as u64)
             .unwrap();
 
         Ok(BufferView {
@@ -662,10 +613,9 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         }
 
         // Size and offset of the slice
-        let (start, end) =
-            self.convert_bounds_to_indices(bounds).ok_or(
-                BufferNotMappableError::InvalidRange(self.length),
-            )?;
+        let (start, end) = self
+            .convert_bounds_to_indices(bounds)
+            .ok_or(BufferNotMappableError::InvalidRange(self.length))?;
         let size = (end - start) * self.stride();
         let offset = start * self.stride();
 
@@ -676,12 +626,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
             // Write only buffer view, uses QueueWriteBufferView
             let staging = self.graphics.staging_pool();
             let data = staging
-                .map_buffer_write(
-                    &self.graphics,
-                    &self.buffer,
-                    offset as u64,
-                    size as u64,
-                )
+                .map_buffer_write(&self.graphics, &self.buffer, offset as u64, size as u64)
                 .unwrap();
             Ok(BufferViewMut::Mapped {
                 buffer: PhantomData,

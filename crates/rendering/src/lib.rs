@@ -1,8 +1,8 @@
+mod gltf;
 mod material;
 mod mesh;
 mod pipeline;
 mod scene;
-mod gltf;
 pub use crate::gltf::*;
 pub use material::*;
 pub use mesh::*;

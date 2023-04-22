@@ -4,9 +4,7 @@ use half::f16;
 use paste::paste;
 
 // Base underlying type used for TextureFormat and VertexFormat
-pub trait Base:
-    Clone + Copy + Send + Sync + 'static + GpuPod
-{
+pub trait Base: Clone + Copy + Send + Sync + 'static + GpuPod {
     const ELEMENT_TYPE: ElementType;
 }
 

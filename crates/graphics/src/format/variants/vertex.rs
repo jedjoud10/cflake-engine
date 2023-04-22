@@ -1,6 +1,6 @@
 use crate::{
-    AnyElement, Depth, DepthElement, ElementType, GpuPod, Normalized,
-    Stencil, TexelChannels, VertexChannels, X, XY, XYZ, XYZW,
+    AnyElement, Depth, DepthElement, ElementType, GpuPod, Normalized, Stencil, TexelChannels,
+    VertexChannels, X, XY, XYZ, XYZW,
 };
 use half::f16;
 use std::mem::size_of;
@@ -16,9 +16,7 @@ pub trait Vertex {
     type Base: GpuPod;
 
     // The raw data type that we will use to access vertex memory
-    type Storage: GpuPod
-        + NumOps<Self::Storage>
-        + NumAssignOps<Self::Storage>;
+    type Storage: GpuPod + NumOps<Self::Storage> + NumAssignOps<Self::Storage>;
 
     // Number of bytes in total
     fn size() -> u32 {
@@ -104,11 +102,7 @@ macro_rules! internal_impl_vertex {
 
             fn format() -> VertexFormat {
                 // TODO: Check if this gets resolved at compile time?
-                crate::pick_vertex_format(
-                    Self::element(),
-                    Self::channels(),
-                )
-                .unwrap()
+                crate::pick_vertex_format(Self::element(), Self::channels()).unwrap()
             }
         }
     };
@@ -118,18 +112,8 @@ macro_rules! impl_vertex_8 {
     ($vec:ident, $channels:expr, $storagevec: ident) => {
         internal_impl_vertex!($vec, u8, $channels, $storagevec);
         internal_impl_vertex!($vec, i8, $channels, $storagevec);
-        internal_impl_vertex!(
-            $vec,
-            Normalized<u8>,
-            $channels,
-            $storagevec
-        );
-        internal_impl_vertex!(
-            $vec,
-            Normalized<i8>,
-            $channels,
-            $storagevec
-        );
+        internal_impl_vertex!($vec, Normalized<u8>, $channels, $storagevec);
+        internal_impl_vertex!($vec, Normalized<i8>, $channels, $storagevec);
     };
 }
 
@@ -137,18 +121,8 @@ macro_rules! impl_vertex_16 {
     ($vec:ident, $channels:expr, $storagevec: ident) => {
         internal_impl_vertex!($vec, u16, $channels, $storagevec);
         internal_impl_vertex!($vec, i16, $channels, $storagevec);
-        internal_impl_vertex!(
-            $vec,
-            Normalized<u16>,
-            $channels,
-            $storagevec
-        );
-        internal_impl_vertex!(
-            $vec,
-            Normalized<i16>,
-            $channels,
-            $storagevec
-        );
+        internal_impl_vertex!($vec, Normalized<u16>, $channels, $storagevec);
+        internal_impl_vertex!($vec, Normalized<i16>, $channels, $storagevec);
     };
 }
 
@@ -170,7 +144,7 @@ impl_vertex_16!(XY, VertexChannels::Two, Vec2);
 impl_vertex_32!(XY, VertexChannels::Two, Vec2);
 
 // 1 byte for 2 channels (2)
-// FIXME: Cannot have this because of VERTEX_STRIDE_ALIGNMENT 
+// FIXME: Cannot have this because of VERTEX_STRIDE_ALIGNMENT
 //impl_vertex_8!(XYZW, VertexChannels::Four, Vec4);
 
 // 4 bytes for 3 channels (12)

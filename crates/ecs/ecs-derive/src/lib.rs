@@ -7,8 +7,7 @@ pub fn derive_components(input: TokenStream) -> TokenStream {
     let DeriveInput {
         ident, generics, ..
     } = parse_macro_input!(input);
-    let (impl_generics, ty_generics, where_clause) =
-        generics.split_for_impl();
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     let output = quote! {
         // Main traits implemented
         impl #impl_generics Component for #ident #ty_generics #where_clause {

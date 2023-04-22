@@ -40,10 +40,8 @@ impl BitOr for LayoutAccess {
     fn bitor(self, rhs: Self) -> Self::Output {
         Self {
             arch_search: self.arch_search | rhs.arch_search,
-            validation_shared: self.validation_shared
-                | rhs.validation_shared,
-            validation_unique: self.validation_unique
-                | rhs.validation_unique,
+            validation_shared: self.validation_shared | rhs.validation_shared,
+            validation_unique: self.validation_unique | rhs.validation_unique,
         }
     }
 }
@@ -54,10 +52,8 @@ impl BitAnd for LayoutAccess {
     fn bitand(self, rhs: Self) -> Self::Output {
         Self {
             arch_search: self.arch_search & rhs.arch_search,
-            validation_shared: self.validation_shared
-                & rhs.validation_shared,
-            validation_unique: self.validation_unique
-                & rhs.validation_unique,
+            validation_shared: self.validation_shared & rhs.validation_shared,
+            validation_unique: self.validation_unique & rhs.validation_unique,
         }
     }
 }
@@ -68,10 +64,8 @@ impl BitXor for LayoutAccess {
     fn bitxor(self, rhs: Self) -> Self::Output {
         Self {
             arch_search: self.arch_search ^ rhs.arch_search,
-            validation_shared: self.validation_shared
-                ^ rhs.validation_shared,
-            validation_unique: self.validation_unique
-                ^ rhs.validation_unique,
+            validation_shared: self.validation_shared ^ rhs.validation_shared,
+            validation_unique: self.validation_unique ^ rhs.validation_unique,
         }
     }
 }
