@@ -19,6 +19,7 @@ impl ComputePass {
             commands: Vec::new(),
             graphics: graphics,
             push_constants: Vec::new(),
+            last_set_pipeline_id: None,
         }
     }
 }

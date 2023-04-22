@@ -11,8 +11,17 @@ use graphics::{
     WindingOrder,
 };
 
-
 use world::World;
+
+// If materials can cast shadows onto other objects
+// Also allows us to use a custom shadow shader
+pub enum CastShadowsMode {
+    Disabled,
+
+    // If you *are* going to use a custom shadow shader you should note that only the position attribute is given
+    // and other atrributes are NOT given
+    Enabled(Option<Shader>),
+}
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
 // Materials correspond to a specific WGPU render pipeline based on it's config parameters
@@ -62,9 +71,8 @@ pub trait Material: 'static + Sized + Sync + Send {
     }
 
     // Does this material support casting shadows onto other surfaces?
-    // TODO: Use custom ()
-    fn casts_shadows() -> bool {
-        true
+    fn casts_shadows() -> CastShadowsMode {
+        CastShadowsMode::Enabled(None)
     }
 
     // Should surfaces using this material use frustum culling?

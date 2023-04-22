@@ -1,5 +1,5 @@
 use graphics::{
-    ActiveGraphicsPipeline, ColorLayout, DepthStencilLayout,
+    ActiveRenderPipeline, ColorLayout, DepthStencilLayout,
 };
 
 use crate::{
@@ -19,7 +19,7 @@ pub(crate) fn set_vertex_buffer_attribute<
     supported: MeshAttributes,
     mesh: &'r Mesh<R>,
     defaults: &DefaultMaterialResources<'r>,
-    active: &mut ActiveGraphicsPipeline<'a, 'r, '_, C, DS>,
+    active: &mut ActiveRenderPipeline<'a, 'r, '_, C, DS>,
     index: &mut u32,
     last: &mut Option<&'r R::AttributeBuffer<A>>,
 ) where for<'x> &'x R::AttributeBuffer<A>: PartialEq<&'x R::AttributeBuffer<A>> {
@@ -51,7 +51,7 @@ pub(crate) fn set_index_buffer_attribute<
 >(
     mesh: &'r Mesh<R>,
     defaults: &DefaultMaterialResources<'r>,
-    active: &mut ActiveGraphicsPipeline<'a, 'r, '_, C, DS>,
+    active: &mut ActiveRenderPipeline<'a, 'r, '_, C, DS>,
     last: &mut Option<&R::TriangleBuffer<u32>>,
 ) where for<'x> &'x R::TriangleBuffer<u32>: PartialEq<&'x R::TriangleBuffer<u32>> {
     // Get the triangle buffer from the mesh

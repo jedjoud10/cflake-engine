@@ -50,7 +50,7 @@ fn update(world: &mut World) {
     // Get global indexed indirect draw buffer
     let indirect = indirects.get_mut(&manager.indexed_indirect_buffer);
 
-    // Convert "Regenerated" chunks into "Pending"
+    // Convert "Dirty" chunks into "Pending"
     let query = scene.query_mut::<(&mut Chunk, &mut Surface<TerrainMaterial>)>().into_iter();
     for (chunk, surface) in query.filter(|(c, _)| c.state == ChunkState::Dirty) {
         chunk.state = ChunkState::Pending;
@@ -84,6 +84,10 @@ fn update(world: &mut World) {
         &mut Renderer,
     )>().into_iter().collect::<Vec<_>>();
     vec.sort_by(|(a, _, _, _), (b, _, _, _)| b.priority.total_cmp(&a.priority));
+
+    if time.frame_count() % 5 == 0 {
+        return;
+    }
 
     // Iterate over the chunks that we need to generate
     for (chunk, position, surface, renderer) in vec {

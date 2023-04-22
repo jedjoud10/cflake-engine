@@ -7,7 +7,7 @@ use assets::Assets;
 
 use ecs::Entity;
 use graphics::{
-    ActiveGraphicsPipeline, ActiveRenderPass, BufferMode,
+    ActiveRenderPipeline, ActiveRenderPass, BufferMode,
     BufferUsage, Depth, GpuPod, Graphics, LoadOp, Operation,
     RenderPass, SamplerFilter, SamplerMipMaps, SamplerSettings,
     SamplerWrap, StoreOp, Texel, Texture, Texture2D, TextureMipMaps, TextureMode, TextureUsage,
@@ -22,7 +22,7 @@ pub type SceneRenderPass = RenderPass<SceneColor, SceneDepth>;
 pub type ActiveSceneRenderPass<'r, 't> =
     ActiveRenderPass<'r, 't, SceneColor, SceneDepth>;
 pub type ActiveScenePipeline<'a, 'r, 't> =
-    ActiveGraphicsPipeline<'a, 'r, 't, SceneColor, SceneDepth>;
+    ActiveRenderPipeline<'a, 'r, 't, SceneColor, SceneDepth>;
 
 // Keeps tracks of data that we use for rendering the scene
 pub struct ForwardRenderer {

@@ -54,6 +54,7 @@ fn init(world: &mut World) {
         Rotation::default(),
         Velocity::default(),
         Camera::default(),
+        CameraController::default(),
     ));
 
     // Create a directional light

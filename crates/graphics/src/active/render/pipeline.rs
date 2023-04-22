@@ -19,7 +19,7 @@ use std::{
 };
 
 // An active graphics pipeline that is bound to a render pass that we can use to render
-pub struct ActiveGraphicsPipeline<
+pub struct ActiveRenderPipeline<
     'a,
     'r,
     't,
@@ -62,7 +62,7 @@ fn convert<T: GpuPod, const TYPE: u32>(
 }
 
 impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
-    ActiveGraphicsPipeline<'a, 'r, 't, C, DS>
+    ActiveRenderPipeline<'a, 'r, 't, C, DS>
 {
     // Assign a vertex buffer to a slot with a specific range
     pub fn set_vertex_buffer<V: Vertex>(
@@ -261,7 +261,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout>
     }
 }
 
-impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout> ActivePipeline for ActiveGraphicsPipeline<'a, 'r, 't, C, DS> {
+impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout> ActivePipeline for ActiveRenderPipeline<'a, 'r, 't, C, DS> {
     type Pipeline = &'r RenderPipeline<C, DS>;
 
     // Set push constants before rendering

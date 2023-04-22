@@ -7,6 +7,7 @@ use dashmap::DashMap;
 use nohash_hasher::NoHashHasher;
 use parking_lot::Mutex;
 use systemstat::Platform;
+use wgpu::RequestAdapterOptions;
 use std::sync::Arc;
 use winit::{
     event_loop::EventLoop,
@@ -65,7 +66,7 @@ pub(crate) unsafe fn init_context_and_window(
         let system = systemstat::System::new();
         !system.on_ac_power().ok().unwrap_or(true)
     }
-
+    
     // Pick the appropriate adapter with the supported features and limits
     let (adapter, _) = instance.enumerate_adapters(backends).filter(|adapter| {
         log::debug!("Checking adapter '{}'...", adapter.get_info().name);

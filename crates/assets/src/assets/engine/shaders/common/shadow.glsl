@@ -65,7 +65,7 @@ float calculate_shadowed(
 ) {
     // TODO: FUCKING FIX SHADOWS FFS
     // AAAAAAAAAAAAAAAAAAAAAAAAAAA
-    return 0.0;
+    //return 0.0;
 
     // Taken from a comment by Octavius Ace from the same learn OpenGL website 
     vec4 res = step(cascade_plane_distances.distances, vec4(depth));
@@ -75,11 +75,11 @@ float calculate_shadowed(
     mat4 lightspace = shadow_lightspace_matrices.matrices[layer];
     
     // Transform the world coordinates to NDC coordinates 
-    float perpendicularity = 1 - abs(dot(normal, light_dir));
-    vec4 ndc = lightspace * vec4(position + normal, 1.0); 
+    float perpendicularity = pow(1 - abs(dot(normal, light_dir)), 2) * 2;
+    vec4 ndc = lightspace * vec4(position + normal * perpendicularity * 0.2, 1.0); 
     float factor = pow(1.35, layer);
-    float bias = -0.001 - (perpendicularity * 0.0003);
-    bias *= factor;
+    float bias = -0.000008;
+    //bias *= factor;
 
     // Project the world point into uv coordinates to read from
     vec3 uvs = ndc.xyz / ndc.w;
@@ -87,13 +87,12 @@ float calculate_shadowed(
     uvs.xy += 0.5;
     uvs.y = 1-uvs.y;
     float current = uvs.z;
+    
 
     // Get texture size
     uint size = uint(textureSize(shadow_map, 0).x);
-
-    // TODO: Spread size is calculated based on distance
-    float spread = 0.0004;
-
+    /*
+    float spread = 0.0009;
     float shadowed = 0.0;
     for (int x = -1; x <= 1; x++) {
         for (int y = -1; y <= 1; y++) {
@@ -101,9 +100,10 @@ float calculate_shadowed(
         }
     }
     shadowed /= 9.0;
-    return shadowed;   
+    return shadowed;  
+    */
 
-
-    //return sample_shadow_texel(layer, ivec2(uvs.xy * size), current + bias);
+    return sample_shadow_texel(layer, ivec2(uvs.xy * size), current + bias);
+    //return texelFetch(shadow_map, ivec3(ivec2(uvs.xy * size), int(layer)), 0).r;
     //return shadow_linear(shadow_map, layer, uvs.xy, current);
 }

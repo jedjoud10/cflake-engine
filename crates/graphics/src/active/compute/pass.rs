@@ -1,7 +1,7 @@
 use wgpu::CommandEncoder;
 
 use crate::{
-    ActiveComputeDispatcher, ActiveGraphicsPipeline, BufferInfo,
+    ActiveComputeDispatcher, ActiveRenderPipeline, BufferInfo,
     ColorLayout, ComputeCommand, ComputeShader, DepthStencilLayout,
     Graphics, RenderCommand, RenderPipeline, TriangleBuffer, Vertex,
     VertexBuffer, calculate_refleced_group_bitset,
@@ -13,6 +13,7 @@ pub struct ActiveComputePass<'r> {
     pub(crate) commands: Vec<ComputeCommand<'r>>,
     pub(crate) graphics: &'r Graphics,
     pub(crate) push_constants: Vec<u8>,
+    pub(crate) last_set_pipeline_id: Option<wgpu::Id<wgpu::ComputePipeline>>,
 }
 
 impl<'r> ActiveComputePass<'r> {
@@ -22,30 +23,34 @@ impl<'r> ActiveComputePass<'r> {
         &'a mut self,
         shader: &'r ComputeShader,
     ) -> ActiveComputeDispatcher<'a, 'r> {
-        self.commands.push(ComputeCommand::BindShader(&shader));
-        let cache = &self.graphics.0.cached;
+        // If this pipeline was already set before, don't bother re-setting it
+        if Some(shader.pipeline().global_id()) != self.last_set_pipeline_id {
+            self.commands.push(ComputeCommand::BindShader(&shader));
+            let cache = &self.graphics.0.cached;
 
-        // Get the empty placeholder bind group
-        let empty_bind_group =
-            cache.bind_groups.get(&Vec::new()).unwrap();
+            // Get the empty placeholder bind group
+            let empty_bind_group =
+                cache.bind_groups.get(&Vec::new()).unwrap();
 
-        // Get the bind group layouts from the reflected shader
-        let reflected = &shader.reflected;
-        let iter = reflected
-            .bind_group_layouts
-            .iter()
-            .enumerate()
-            .take(reflected.taken_bind_group_layouts);
+            // Get the bind group layouts from the reflected shader
+            let reflected = &shader.reflected;
+            let iter = reflected
+                .bind_group_layouts
+                .iter()
+                .enumerate()
+                .take(reflected.taken_bind_group_layouts);
 
-        // Set the empty bind groups for bind group layouts
-        // that have been hopped over during reflection
-        for (index, bind_group_layout) in iter {
-            if bind_group_layout.is_none() {
-                self.commands.push(ComputeCommand::SetBindGroup(
-                    index as u32,
-                    empty_bind_group.clone(),
-                ))
+            // Set the empty bind groups for bind group layouts
+            // that have been hopped over during reflection
+            for (index, bind_group_layout) in iter {
+                if bind_group_layout.is_none() {
+                    self.commands.push(ComputeCommand::SetBindGroup(
+                        index as u32,
+                        empty_bind_group.clone(),
+                    ))
+                }
             }
+            self.last_set_pipeline_id = Some(shader.pipeline().global_id());
         }
 
         ActiveComputeDispatcher {

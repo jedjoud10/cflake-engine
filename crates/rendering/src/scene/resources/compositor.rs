@@ -9,14 +9,14 @@ use crate::{SceneColor, WindowUniform, SceneDepth, CameraUniform};
 
 // This is what will write to the swapchain
 pub type FinalRenderPass = RenderPass<SwapchainFormat, ()>;
-pub type FinalGraphicsPipeline = RenderPipeline<SwapchainFormat, ()>;
+pub type FinalRenderPipeline = RenderPipeline<SwapchainFormat, ()>;
 
 // Overlays post-processing effects and multiple layers
 // This will also render out the final composed image to the window
 pub struct Compositor {
     // Display render pass, shader, and pipeline
     pub(crate) render_pass: FinalRenderPass,
-    pub(crate) pipeline: FinalGraphicsPipeline,
+    pub(crate) pipeline: FinalRenderPipeline,
 }
 
 impl Compositor {
@@ -62,7 +62,7 @@ impl Compositor {
         );
 
         // Create the display graphics pipeline
-        let pipeline = FinalGraphicsPipeline::new(
+        let pipeline = FinalRenderPipeline::new(
             graphics,
             None,
             None,

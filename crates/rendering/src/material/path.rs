@@ -2,7 +2,7 @@ use crate::{
     AttributeBuffer, DefaultMaterialResources, Mesh, MeshAttribute,
 };
 use graphics::{
-    ActiveGraphicsPipeline, ColorLayout, DepthStencilLayout,
+    ActiveRenderPipeline, ColorLayout, DepthStencilLayout,
     DrawIndexedIndirectBuffer, GpuPod, SetIndexBufferError,
     SetVertexBufferError, TriangleBuffer,
 };
@@ -47,7 +47,7 @@ pub trait RenderPath: 'static + Send + Sync + Sized {
         bounds: impl RangeBounds<usize>,
         buffer: &'a Self::AttributeBuffer<A>,
         defaults: &DefaultMaterialResources<'a>,
-        active: &mut ActiveGraphicsPipeline<'_, 'a, '_, C, DS>,
+        active: &mut ActiveRenderPipeline<'_, 'a, '_, C, DS>,
     ) -> Result<(), SetVertexBufferError>;
 
     // Sets the triangle buffer of a specific mesh into the given active graphics pipeline
@@ -55,14 +55,14 @@ pub trait RenderPath: 'static + Send + Sync + Sized {
         bounds: impl RangeBounds<usize>,
         buffer: &'a Self::TriangleBuffer<u32>,
         defaults: &DefaultMaterialResources<'a>,
-        active: &mut ActiveGraphicsPipeline<'_, 'a, '_, C, DS>,
+        active: &mut ActiveRenderPipeline<'_, 'a, '_, C, DS>,
     ) -> Result<(), SetIndexBufferError>;
 
     // Draws a mesh surface into the given active graphics pipeline
     fn draw<'a, C: ColorLayout, DS: DepthStencilLayout>(
         mesh: &'a Mesh<Self>,
         defaults: &DefaultMaterialResources<'a>,
-        active: &mut ActiveGraphicsPipeline<'_, 'a, '_, C, DS>,
+        active: &mut ActiveRenderPipeline<'_, 'a, '_, C, DS>,
     );
 }
 
@@ -92,7 +92,7 @@ impl RenderPath for Direct {
     fn draw<'a, C: ColorLayout, DS: DepthStencilLayout>(
         mesh: &'a Mesh<Self>,
         _defaults: &DefaultMaterialResources<'a>,
-        active: &mut ActiveGraphicsPipeline<'_, 'a, '_, C, DS>,
+        active: &mut ActiveRenderPipeline<'_, 'a, '_, C, DS>,
     ) {
         let indices = 0..(mesh.triangles().buffer().len() as u32 * 3);
         active.draw_indexed(indices, 0..1);
@@ -109,7 +109,7 @@ impl RenderPath for Direct {
         bounds: impl RangeBounds<usize>,
         buffer: &'a Self::AttributeBuffer<A>,
         _defaults: &DefaultMaterialResources<'a>,
-        active: &mut ActiveGraphicsPipeline<'_, 'a, '_, C, DS>,
+        active: &mut ActiveRenderPipeline<'_, 'a, '_, C, DS>,
     ) -> Result<(), SetVertexBufferError> {
         active.set_vertex_buffer::<A::V>(slot, buffer, bounds)
     }
@@ -123,7 +123,7 @@ impl RenderPath for Direct {
         bounds: impl RangeBounds<usize>,
         buffer: &'a Self::TriangleBuffer<u32>,
         _defaults: &DefaultMaterialResources<'a>,
-        active: &mut ActiveGraphicsPipeline<'_, 'a, '_, C, DS>,
+        active: &mut ActiveRenderPipeline<'_, 'a, '_, C, DS>,
     ) -> Result<(), SetIndexBufferError> {
         active.set_index_buffer(buffer, bounds)
     }
@@ -152,7 +152,7 @@ impl RenderPath for Indirect {
     fn draw<'a, C: ColorLayout, DS: DepthStencilLayout>(
         mesh: &'a Mesh<Self>,
         defaults: &DefaultMaterialResources<'a>,
-        active: &mut ActiveGraphicsPipeline<'_, 'a, '_, C, DS>,
+        active: &mut ActiveRenderPipeline<'_, 'a, '_, C, DS>,
     ) {
         let handle = mesh.indirect().clone();
         let buffer =
@@ -171,7 +171,7 @@ impl RenderPath for Indirect {
         bounds: impl RangeBounds<usize>,
         buffer: &Self::AttributeBuffer<A>,
         defaults: &DefaultMaterialResources<'a>,
-        active: &mut ActiveGraphicsPipeline<'_, 'a, '_, C, DS>,
+        active: &mut ActiveRenderPipeline<'_, 'a, '_, C, DS>,
     ) -> Result<(), SetVertexBufferError> {
         let buffer =
             A::indirect_buffer_from_defaults(defaults, buffer);
@@ -187,7 +187,7 @@ impl RenderPath for Indirect {
         bounds: impl RangeBounds<usize>,
         buffer: &'a Self::TriangleBuffer<u32>,
         defaults: &DefaultMaterialResources<'a>,
-        active: &mut ActiveGraphicsPipeline<'_, 'a, '_, C, DS>,
+        active: &mut ActiveRenderPipeline<'_, 'a, '_, C, DS>,
     ) -> Result<(), SetIndexBufferError> {
         let buffer = defaults.indirect_triangles.get(buffer);
         active.set_index_buffer(buffer, bounds)

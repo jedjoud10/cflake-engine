@@ -1,6 +1,6 @@
 use crate::{
     Graphics, ModuleVisibility, PushConstantBytesError,
-    PushConstantLayout, ReflectedShader, SetPushConstantsError, ActiveGraphicsPipeline, ColorLayout, DepthStencilLayout, ActiveComputeDispatcher,
+    PushConstantLayout, ReflectedShader, SetPushConstantsError, ActiveRenderPipeline, ColorLayout, DepthStencilLayout, ActiveComputeDispatcher,
 };
 use arrayvec::ArrayVec;
 use itertools::Itertools;
@@ -57,7 +57,7 @@ pub(super) fn handle_push_constants<'b, AP: ActivePipeline>(
 
 
 // For graphics pipelines only
-impl<C: ColorLayout, DS: DepthStencilLayout> PushConstants<'_, ActiveGraphicsPipeline<'_, '_, '_, C, DS>> {
+impl<C: ColorLayout, DS: DepthStencilLayout> PushConstants<'_, ActiveRenderPipeline<'_, '_, '_, C, DS>> {
     // Push a sub-region of push constant data to be stored afterwards
     // This method variant is specifically used for graphics pipelines (since we can set both vertex AND fragment shaders)
     pub fn push(

@@ -34,7 +34,7 @@ fn update(world: &mut World) {
     let stats = world.get::<GraphicsStats>().unwrap();
     let mut state = world.get_mut::<StatsState>().unwrap();
     let input = world.get::<Input>().unwrap();
-    let scene = world.get::<Scene>().unwrap();
+    let mut scene = world.get_mut::<Scene>().unwrap();
     let gui = world.get_mut::<Interface>().unwrap();
     let time = world.get::<Time>().unwrap();
     let durations = world.get::<EventStatsDurations>().unwrap();
@@ -188,7 +188,7 @@ fn update(world: &mut World) {
     );
 
     // General Performance
-    egui::Window::new("General Performance").anchor(egui::Align2::LEFT_TOP, egui::Vec2::ZERO).frame(frame).show(
+    egui::Window::new("General Performance").frame(frame).show(
         &gui,
         |ui| {
             let last_delta = time.delta().as_secs_f32();
@@ -289,7 +289,7 @@ fn update(world: &mut World) {
 
     // Terrain stats
     if let Ok(terrain) = world.get::<Terrain>() {
-        egui::Window::new("Terrain").anchor(egui::Align2::RIGHT_TOP, egui::Vec2::ZERO).frame(frame).show(
+        egui::Window::new("Terrain").frame(frame).show(
             &gui,
             |ui| {
                 let settings = &terrain.settings;
@@ -310,6 +310,44 @@ fn update(world: &mut World) {
                 ui.label(format!("Generated chunks count: {}", generated));
                 ui.label(format!("Visible chunks count: {}", visible));
             },
+        );
+    }
+
+    // Camera controller stats
+    if let Some(controller) = scene.find_mut::<&mut CameraController>() {
+        egui::Window::new("Camera Controller").frame(frame).show(
+            &gui,
+            |ui| {
+                ui.horizontal(|ui| {
+                    ui.label("Base Speed: ");
+                    ui.add(egui::DragValue::new(&mut controller.base_speed));
+                });
+
+                ui.horizontal(|ui| {
+                    ui.label("Boost Speed: ");
+                    ui.add(egui::DragValue::new(&mut controller.boost_speed));
+                });
+
+                ui.horizontal(|ui| {
+                    ui.label("FOV Change Key Speed: ");
+                    ui.add(egui::DragValue::new(&mut controller.fov_change_key_speed));
+                });
+
+                ui.horizontal(|ui| {
+                    ui.label("FOV Change Scroll Speed: ");
+                    ui.add(egui::DragValue::new(&mut controller.fov_change_scroll_speed));
+                });
+
+                ui.horizontal(|ui| {
+                    ui.label("Sensivity: ");
+                    ui.add(egui::DragValue::new(&mut controller.sensivity));
+                });
+
+                ui.horizontal(|ui| {
+                    ui.label("Smoothness: ");
+                    ui.add(egui::DragValue::new(&mut controller.smoothness));
+                });
+            }
         );
     }
 }

@@ -10,7 +10,7 @@ use graphics::{
     VertexConfig, VertexInput, VertexModule, Window, RGBA, XY, XYZW, ActivePipeline,
 };
 use rendering::{
-    FinalGraphicsPipeline, FinalRenderPass, WindowBuffer,
+    FinalRenderPipeline, FinalRenderPass, WindowBuffer,
     WindowUniform,
 };
 
@@ -23,7 +23,7 @@ pub(crate) struct Rasterizer {
     // Render pass and shit needed for displaying
     render_pass: FinalRenderPass,
     shader: Shader,
-    pipeline: FinalGraphicsPipeline,
+    pipeline: FinalRenderPipeline,
 
     // Vertex buffer that contains ALL of the clipped meshes
     positions: VertexBuffer<XY<f32>>,
@@ -130,7 +130,7 @@ impl Rasterizer {
         };
 
         // Create the display graphics pipeline
-        let pipeline = FinalGraphicsPipeline::new(
+        let pipeline = FinalRenderPipeline::new(
             graphics,
             None,
             None,

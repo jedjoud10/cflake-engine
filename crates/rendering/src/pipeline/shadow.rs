@@ -1,9 +1,9 @@
 use std::mem::size_of;
 
 use crate::{
-    attributes::Position, ActiveShadowGraphicsPipeline,
+    attributes::Position, ActiveShadowRenderPipeline,
     DefaultMaterialResources, Material, Mesh, MeshAttributes,
-    RenderPath, Renderer, Surface, set_index_buffer_attribute, set_vertex_buffer_attribute, SubSurface,
+    RenderPath, Renderer, Surface, set_index_buffer_attribute, set_vertex_buffer_attribute, SubSurface, CastShadowsMode, ShadowRenderPipeline, ActiveShadowRenderPass,
 };
 use ecs::Scene;
 use graphics::{GpuPod, ModuleVisibility, ActivePipeline};
@@ -36,11 +36,14 @@ pub fn intersects_lightspace(
 pub(super) fn render_shadows<'r, M: Material>(
     world: &'r World,
     defaults: &DefaultMaterialResources<'r>,
-    active: &mut ActiveShadowGraphicsPipeline<'_, 'r, '_>,
+    render_pass: &mut ActiveShadowRenderPass<'r, '_>,
+    shadow_pipeline: &'r ShadowRenderPipeline,
     lightspace: vek::Mat4<f32>,
 ) {
+    let mut active = render_pass.bind_pipeline(shadow_pipeline);
+
     // Don't do shit if we won't cast shadows
-    if !M::casts_shadows()
+    if matches!(M::casts_shadows(), CastShadowsMode::Disabled)
         || !M::attributes().contains(MeshAttributes::POSITIONS)
     {
         return;
@@ -58,8 +61,6 @@ pub(super) fn render_shadows<'r, M: Material>(
     let mut last_index_buffer: Option<&<M::RenderPath as RenderPath>::TriangleBuffer<u32>> = None;
 
     // Cull the surfaces that the shadow texture won't see
-    /*
-    // With cascaded shadow mapping this doesn't fucking work lmfao
     if M::frustum_culling() {
         scene.query_mut::<(&mut Surface<M>, &Renderer)>().for_each(
             &mut threadpool,
@@ -88,7 +89,6 @@ pub(super) fn render_shadows<'r, M: Material>(
             1024,
         );
     }
-    */
 
     // Iterate over all the surfaces of this material
     let query = scene.query::<(&Surface<M>, &Renderer)>();
@@ -142,14 +142,14 @@ pub(super) fn render_shadows<'r, M: Material>(
                     _,
                     _,
                 >(
-                    MeshAttributes::POSITIONS, mesh, defaults, active, &mut 0, &mut last_positions_buffer
+                    MeshAttributes::POSITIONS, mesh, defaults, &mut active, &mut 0, &mut last_positions_buffer
                 );
 
                 // Set the index buffer
                 set_index_buffer_attribute::<M::RenderPath, _, _>(
                     mesh,
                     defaults,
-                    active,
+                    &mut active,
                     &mut last_index_buffer,
                 );
 
@@ -158,7 +158,7 @@ pub(super) fn render_shadows<'r, M: Material>(
             }
 
             // Draw the mesh
-            <M::RenderPath as RenderPath>::draw(mesh, defaults, active);
+            <M::RenderPath as RenderPath>::draw(mesh, defaults, &mut active);
         }
     }
 }

@@ -102,6 +102,7 @@ vec3 brdf(
 	// Calculate if the pixel is shadowed
 	float depth = abs((camera.view_matrix * vec4(surface.position, 1)).z);
 	float shadowed = calculate_shadowed(surface.position, depth, surface.surface_normal, light.backward, camera.position);	
+	//return vec3(shadowed);
 
 	// Calculate diffuse and specular
 	vec3 brdf = kd * (surface.diffuse / PI) + specular(surface.f0, surface.roughness, camera.view, light.backward, surface.normal, camera.half_view) * (1-shadowed);

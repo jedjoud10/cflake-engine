@@ -30,12 +30,11 @@ fn init(world: &mut World) {
     let settings = TerrainSettings::new(
         &graphics,
         64,
-        2,
+        6,
         false,
         false,
-        2,
+        8,
         1024,
-        /*
         Some(&[
             TerrainSubMaterial {
                 diffuse: "user/textures/diffuse.jpg".to_string(),
@@ -55,7 +54,6 @@ fn init(world: &mut World) {
                 mask: "user/textures/mask2.jpg".to_string(),
             },
         ]),
-        */None
     ).unwrap();
 
     // Drop (needed) to insert settings
@@ -96,7 +94,8 @@ fn init(world: &mut World) {
         Rotation::default(),
         Velocity::default(),
         Camera::default(),
-        ChunkViewer::default()
+        ChunkViewer::default(),
+        CameraController::default(),
     ));
 
     // Create a directional light

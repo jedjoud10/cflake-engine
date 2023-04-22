@@ -1,7 +1,7 @@
 use wgpu::CommandEncoder;
 
 use crate::{
-    ActiveGraphicsPipeline, BufferInfo, ColorLayout,
+    ActiveRenderPipeline, BufferInfo, ColorLayout,
     DepthStencilLayout, Graphics, RenderCommand, RenderPipeline,
     TriangleBuffer, Vertex, VertexBuffer, calculate_refleced_group_bitset,
 };
@@ -22,6 +22,7 @@ pub struct ActiveRenderPass<
         Vec<Option<wgpu::RenderPassColorAttachment<'t>>>,
     pub(crate) depth_stencil_attachment:
         Option<wgpu::RenderPassDepthStencilAttachment<'t>>,
+    pub(crate) last_set_pipeline_id: Option<wgpu::Id<wgpu::RenderPipeline>>,
     pub(crate) _phantom: PhantomData<&'t C>,
     pub(crate) _phantom2: PhantomData<&'t DS>,
 }
@@ -34,34 +35,39 @@ impl<'r, 't, C: ColorLayout, DS: DepthStencilLayout>
     pub fn bind_pipeline<'a>(
         &'a mut self,
         pipeline: &'r RenderPipeline<C, DS>,
-    ) -> ActiveGraphicsPipeline<'a, 'r, 't, C, DS> {
-        self.commands.push(RenderCommand::BindPipeline(&pipeline));
-        let cache = &self.graphics.0.cached;
+    ) -> ActiveRenderPipeline<'a, 'r, 't, C, DS> {
+        // If this pipeline was already set before, don't bother re-setting it
+        if Some(pipeline.pipeline().global_id()) != self.last_set_pipeline_id {
+            self.commands.push(RenderCommand::BindPipeline(&pipeline));
+            let cache = &self.graphics.0.cached;
 
-        // Get the empty placeholder bind group
-        let empty_bind_group =
-            cache.bind_groups.get(&Vec::new()).unwrap();
+            // Get the empty placeholder bind group
+            let empty_bind_group =
+                cache.bind_groups.get(&Vec::new()).unwrap();
 
-        // Get the bind group layouts from the reflected shader
-        let reflected = &pipeline.shader().reflected;
-        let iter = reflected
-            .bind_group_layouts
-            .iter()
-            .enumerate()
-            .take(reflected.taken_bind_group_layouts);
+            // Get the bind group layouts from the reflected shader
+            let reflected = &pipeline.shader().reflected;
+            let iter = reflected
+                .bind_group_layouts
+                .iter()
+                .enumerate()
+                .take(reflected.taken_bind_group_layouts);
 
-        // Set the empty bind groups for bind group layouts
-        // that have been hopped over during reflection
-        for (index, bind_group_layout) in iter {
-            if bind_group_layout.is_none() {
-                self.commands.push(RenderCommand::SetBindGroup(
-                    index as u32,
-                    empty_bind_group.clone(),
-                ))
+            // Set the empty bind groups for bind group layouts
+            // that have been hopped over during reflection
+            for (index, bind_group_layout) in iter {
+                if bind_group_layout.is_none() {
+                    self.commands.push(RenderCommand::SetBindGroup(
+                        index as u32,
+                        empty_bind_group.clone(),
+                    ))
+                }
             }
+
+            self.last_set_pipeline_id = Some(pipeline.pipeline().global_id());
         }
 
-        ActiveGraphicsPipeline {
+        ActiveRenderPipeline {
             _phantom: PhantomData,
             _phantom2: PhantomData,
             pipeline: &pipeline,

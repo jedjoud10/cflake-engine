@@ -54,8 +54,8 @@ fn init(world: &mut World) {
     // Create a nice shadow map
     let shadowmap = ShadowMapping::new(
         2000f32,
-        2048,
-        [0.01, 0.02, 0.05, 0.1],
+        4096,
+        [0.003, 0.01, 0.02, 0.05],
         &graphics,
         &mut assets,
     );
@@ -242,7 +242,6 @@ fn render(world: &mut World) {
     };
     drop(scene);
 
-    /*
     // Update the shadow map lightspace matrix
     let shadowmap = &mut *_shadowmap;
     let index = (time.frame_count() as u32) % 4;
@@ -264,22 +263,20 @@ fn render(world: &mut World) {
     // Create a new active shadowmap render pass
     let mut render_pass = shadowmap.render_pass.begin((), target);
 
-    // Bind the default shadowmap graphics pipeline
-    let mut active =
-        render_pass.bind_pipeline(&shadowmap.pipeline);
+    // Get the default shadowmap render pipeline
+    let default_shadow_pipeline = &shadowmap.pipeline;
 
     // Render the shadows first (fuck you)
     for stored in pipelines.iter() {
-        stored.prerender(world, &mut default, &mut active, lightspace);
+        stored.render_shadows(world, &mut default, &mut render_pass, default_shadow_pipeline, lightspace);
     }
 
     // Send the command encoder
-    drop(active);
+    drop(default_shadow_pipeline);
     drop(render_pass);
     drop(level);
     drop(mips);
     drop(shadowmap);
-    */
 
     // Drop resources
     drop(_shadowmap);

@@ -30,6 +30,7 @@ pub mod prelude {
     pub use crate::world::*;
     pub use crate::coords::*;
     pub use crate::physics::*;
+    pub use crate::systems::camera::CameraController;
 
     // Re-exports
     pub use half::f16;

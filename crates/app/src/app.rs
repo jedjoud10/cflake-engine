@@ -12,7 +12,7 @@ use world::{
     World,
 };
 
-use crate::systems::stats::EventStatsDurations;
+use crate::systems::gui::EventStatsDurations;
 
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
@@ -440,7 +440,7 @@ impl App {
 
         // Camera system and statistics system
         self.regsys(crate::systems::camera::system);
-        self.regsys(crate::systems::stats::system);
+        self.regsys(crate::systems::gui::system);
 
         // Fetch names and versions
         let app_name = self.app_name.clone();

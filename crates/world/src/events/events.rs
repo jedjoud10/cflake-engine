@@ -1,5 +1,5 @@
 // An event is something that can be stored within a Registry and can be called
-// Events of the same type get all executed at the same time
+// Events of the same type get all executed at the same time (sequentially)
 // F: Fn(&mut World, &mut WindowEvent)
 pub trait Event<C: Caller, ID>: 'static {
     type Args<'a, 'p>
