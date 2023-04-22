@@ -78,7 +78,7 @@ impl World {
     }
 
     // Get an entry for a specific resource
-    pub fn entry<'a, R: Resource>(&'a mut self) -> Entry<'a, R> {
+    pub fn entry<R: Resource>(&mut self) -> Entry<'_, R> {
         Entry {
             world: self,
             _phantom: std::marker::PhantomData,

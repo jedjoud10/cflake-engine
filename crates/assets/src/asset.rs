@@ -72,10 +72,10 @@ pub trait Asset: Sized + 'static {
     fn extensions() -> &'static [&'static str];
 
     // Deserialize the asset with the context and settings
-    fn deserialize<'c, 's>(
+    fn deserialize(
         data: Data,
-        context: Self::Context<'c>,
-        settings: Self::Settings<'s>,
+        context: Self::Context<'_>,
+        settings: Self::Settings<'_>,
     ) -> Result<Self, Self::Err>;
 }
 
@@ -104,10 +104,10 @@ impl Asset for String {
         &["txt"]
     }
 
-    fn deserialize<'c, 's>(
+    fn deserialize(
         data: Data,
-        _: Self::Context<'c>,
-        _: Self::Settings<'s>,
+        _: Self::Context<'_>,
+        _: Self::Settings<'_>,
     ) -> Result<Self, Self::Err> {
         String::from_utf8(data.bytes().to_vec())
     }
@@ -123,10 +123,10 @@ impl Asset for Vec<u8> {
         &["bin"]
     }
 
-    fn deserialize<'c, 's>(
+    fn deserialize(
         data: Data,
-        context: Self::Context<'c>,
-        settings: Self::Settings<'s>,
+        _context: Self::Context<'_>,
+        _settings: Self::Settings<'_>,
     ) -> Result<Self, Self::Err> {
         Ok(data.bytes.to_vec())
     }

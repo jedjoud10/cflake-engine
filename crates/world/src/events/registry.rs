@@ -162,7 +162,7 @@ impl<C: Caller> Registry<C> {
         for (stage, event) in self.events.iter_mut() {
             let j = std::time::Instant::now();
             C::call(event, &mut args);
-            self.timings_per_event.push((stage.clone(), j.elapsed()));
+            self.timings_per_event.push((*stage, j.elapsed()));
         }
 
         self.timings_total = i.elapsed();

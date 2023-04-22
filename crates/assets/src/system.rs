@@ -1,12 +1,12 @@
-use crate::{asset, Assets, UserAssets};
-use std::path::PathBuf;
+use crate::{asset, Assets};
+
 use world::{user, System, World};
 
 // Initialize a load and add it to the world
 fn init(world: &mut World) {
     let loader = Assets::new();
-    use with_builtin_macros::with_builtin;
-    use with_builtin_macros::builtin_macros::include_bytes_from_root::*;
+    
+    
 
     macro_rules! internal {
         ($assets:expr, $file:expr) => {
