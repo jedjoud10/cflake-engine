@@ -115,8 +115,6 @@ fn update(world: &mut World) {
         // Needed since SN only runs for a volume 2 units smaller than a perfect cube
         let factor = (settings.size as f32 - 3.0) / (settings.size as f32);
 
-        log::info!("generating");
-
         // Set the push constants
         active
             .set_push_constants(|x| {
@@ -271,9 +269,6 @@ fn update(world: &mut World) {
         drop(active);
         drop(pass);
 
-        log::info!("done");
-
-        /*
         // Submit the work to the GPU, and fetch counters and offsets
         let _counters = mesher.counters.as_view(..).unwrap();
         let counters = _counters.to_vec();
@@ -308,8 +303,7 @@ fn update(world: &mut World) {
             chunk.ranges = None;
             surface.visible = false;
         }
-        */
-        
+
         surface.visible = true;
         chunk.state = ChunkState::Generated;
         return;

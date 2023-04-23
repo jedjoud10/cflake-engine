@@ -56,6 +56,7 @@ pub struct VertexConfig {
 pub struct VertexInputInfo {
     info: VertexInfo,
     step_mode: VertexStepMode,
+    shader_location: u32
 }
 
 impl VertexInputInfo {
@@ -67,6 +68,11 @@ impl VertexInputInfo {
     // Get the step mode of the VertexInput
     pub fn step_mode(&self) -> VertexStepMode {
         self.step_mode
+    }
+
+    // Shader location of the vertex input
+    pub fn shader_location(&self) -> u32 {
+        self.shader_location
     }
 }
 
@@ -81,11 +87,12 @@ pub trait VertexInput<V: Vertex> {
     // Get the vertex step mode
     fn step_mode() -> VertexStepMode;
 
-    // Get the combined info
-    fn info() -> VertexInputInfo {
+    // Get the combined info (using a specific shader location)
+    fn info(shader_location: u32) -> VertexInputInfo {
         VertexInputInfo {
             info: Self::vertex_info(),
             step_mode: Self::step_mode(),
+            shader_location
         }
     }
 }

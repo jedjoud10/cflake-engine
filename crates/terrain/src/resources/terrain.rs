@@ -77,8 +77,8 @@ impl TerrainSettings {
             graphics.device().limits().max_storage_buffer_binding_size as usize / 12;
 
         // Reduce these numbers blud
-        output_tex_coord_buffer_length /= 4;
-        output_triangle_buffer_length /= 6;
+        output_tex_coord_buffer_length /= 2;
+        //output_triangle_buffer_length /= 2;
 
         // Validate resolution
         if resolution < 16 {

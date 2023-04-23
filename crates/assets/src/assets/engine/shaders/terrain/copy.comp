@@ -1,5 +1,5 @@
 #version 460 core
-layout (local_size_x = 300, local_size_y = 1, local_size_z = 1) in;
+layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 
 // Spec constants for sizes
 layout (constant_id = 0) const uint size = 1;
@@ -13,7 +13,7 @@ layout(push_constant) uniform PushConstants {
 
 // Input temp vertices
 layout(std430, set = 0, binding = 1) readonly buffer TemporaryVertices {
-    vec4 data[size*size*size];
+    vec2 data[size*size*size];
 } temporary_vertices;
 
 // Input temp triangles
@@ -23,7 +23,7 @@ layout(std430, set = 0, binding = 2) readonly buffer TemporaryTriangles {
 
 // Output vertices
 layout(std430, set = 1, binding = 1) writeonly buffer OutputVertices {
-    vec4 data[output_vertices_count];
+    vec2 data[output_vertices_count];
 } output_vertices;
 
 // Output triangles

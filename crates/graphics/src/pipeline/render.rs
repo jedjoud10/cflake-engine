@@ -47,14 +47,14 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPipeline<C, DS> {
         let depth_config_enabled = DS::is_depth_enabled();
 
         // Check if the DepthStencilLayout does not contain a stencil format, return warning if appropriate
-        if !stencil_config_enabled && stencil_config.is_none() {
+        if !stencil_config_enabled && stencil_config.is_some() {
             log::warn!(
                 "Tried using stencil config for a graphics pipeline without a stencil texel"
             );
         }
 
         // Check if the DepthStencilLayout does not contain a depth format, return warning if appropriate
-        if !depth_config_enabled && depth_config.is_none() {
+        if !depth_config_enabled && depth_config.is_some() {
             log::warn!("Tried using depth config for a graphics pipeline without a depth texel");
         }
 
@@ -111,19 +111,18 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPipeline<C, DS> {
 }
 
 // Convert the given vertex config to the vertex attributes used by the vertex buffer layout
+// TODO: Implement vertex attribute compacting (AoS instead of SoA)
 fn vertex_config_to_vertex_attributes(
     vertex_config: &VertexConfig,
 ) -> Vec<Vec<wgpu::VertexAttribute>> {
-    // TODO: Implement custom shader location + shader location checking + mapping +
     vertex_config
         .inputs
         .iter()
-        .enumerate()
-        .map(|(i, input)| {
+        .map(|input| {
             vec![wgpu::VertexAttribute {
                 format: input.vertex_info().format(),
                 offset: 0,
-                shader_location: i as u32,
+                shader_location: input.shader_location() as u32,
             }]
         })
         .collect()

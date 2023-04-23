@@ -12,20 +12,16 @@ layout(push_constant) uniform PushConstants {
 #include <engine/shaders/sdf/operations.glsl>
 #include <engine/shaders/noises/fbm.glsl>
     
-// Voxel type that contains terrain surface params
-// We store everything in 
-struct Voxel {
-    float density;
-    vec3 color;
-};
-
-float smooth_floor(float x) {
-    return x - (sin(2 * 3.1415 * x) / (2 * 3.1415));
-}
-
+// A voxel is a 3D pixel in the world that can contain multiple parameters
+// Each voxel contains a "density". 
+// Density allows us to represent either full terrain or air, and everything in between
 // Main voxel function that will create the shape of the terrain
-Voxel voxel(vec3 position) {
+float voxel(vec3 position) {
     position += parameters.offset.xyz;
+    float density = position.y + (1-fbmCellular(position * 0.008 * vec3(1, 3, 1), 5, 0.3, 2.1).y) * 120;
+    return density;
+    
+    /*
     position *= 0.2;
     //float density = snoise(position * 0.03) * 50;
     float density1 = (1-fbmCellular(position * 0.01 * vec3(1, 2, 1), 10, 0.4, 2.0).y) * 20;
@@ -39,10 +35,11 @@ Voxel voxel(vec3 position) {
 
     // Create a voxel and return it
     return Voxel(density + randomized, vec3(1.0));
+    */
 
     /*
     float density = fbm(position * 0.002, 7, 0.4, 2.1).x * 140;
-    return Voxel(density + position.y, vec3(1));
+    return Voxel(density + position.y, 0);
     */
     
 
@@ -52,7 +49,7 @@ Voxel voxel(vec3 position) {
 
     //float density = opSmoothUnion(fbm(position * 0.03, 3, 0.4, 2.2) * 1 + position.y + 5, position.y, 20);
     //density -= fbmCellular(position * 0.02 + vec3(snoise(position * 0.09) * 0.13), 10, 0.4, 2.2).y * 10;
-    return Voxel(density + position.y, vec3(1));
+    return Voxel(density + position.y, 0);
     */
 
     /*
@@ -65,11 +62,17 @@ Voxel voxel(vec3 position) {
     float density = opSmoothUnion((1-fbmCellular(position * 0.005 * vec3(1, 0.2, 1), 5, 0.4, 2.1).y) * 150 - 120 + position.y, position.y, 30);
     //density = max(density, -sdSphere(position + vec3(0, 10, 0), 30));
     //density = position.y - 2.00;
-    return Voxel(density, vec3(random(parameters.global_chunk_index / 400.0)));
+    return Voxel(density, 0);
     */
 
     /*
     //TEST 1
+    
+    float smooth_floor(float x) {
+        return x - (sin(2 * 3.1415 * x) / (2 * 3.1415));
+    }
+
+
     position *= 0.5;
     vec3 col = pow(vec3(156, 63, 12) / 255.0, vec3(1.2));
     vec3 col1 = pow(vec3(168, 68, 25) / 255.0, vec3(1.2));
@@ -90,6 +93,6 @@ Voxel voxel(vec3 position) {
     d2 = opSmoothSubtraction(-d2, position.y + 100, 50);
     density += d2 - 140;
     density = opSubtraction(-density, min(snoise(position * 0.03), position.y + 30));
-    return Voxel(density, vec3(col));
+    return Voxel(density, 0);
     */
 }

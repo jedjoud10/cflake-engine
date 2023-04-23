@@ -112,9 +112,9 @@ impl Rasterizer {
         // Create the appropriate vertex config for Egui
         let vertex_config = VertexConfig {
             inputs: [
-                PerVertex::<XY<f32>>::info(),
-                PerVertex::<XY<f32>>::info(),
-                PerVertex::<XYZW<Normalized<u8>>>::info(),
+                PerVertex::<XY<f32>>::info(0),
+                PerVertex::<XY<f32>>::info(1),
+                PerVertex::<XYZW<Normalized<u8>>>::info(2),
             ]
             .to_vec(),
         };

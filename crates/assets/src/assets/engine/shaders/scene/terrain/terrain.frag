@@ -1,6 +1,6 @@
 #version 460 core
-#define lowpoly
 layout(location = 0) out vec4 frag;
+#define lowpoly
 
 // Data given by the vertex shader
 layout(location = 0) in vec3 m_position;
@@ -141,7 +141,7 @@ void main() {
 
 
 	// Compute PBR values
-	mask *= vec3(pow(mask.r, 2), 1.3, 0.4);
+	mask *= vec3(pow(mask.r + 0.2, 4), 1.3, 0.4);
 	float roughness = clamp(mask.g, 0.02, 1.0);
 	float metallic = clamp(mask.b, 0.01, 1.0);
 	float visibility = clamp(mask.r, 0.0, 1.0);

@@ -30,11 +30,11 @@ fn init(world: &mut World) {
     // Create the terrain generator's settings
     let settings = TerrainSettings::new(
         &graphics,
-        32,
-        3,
+        64,
+        5,
         false,
         false,
-        3,
+        8,
         1024,
         Some(&[
             TerrainSubMaterial {
