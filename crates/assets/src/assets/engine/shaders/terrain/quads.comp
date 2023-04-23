@@ -52,7 +52,7 @@ void add_quad(
 
 // Checks an edge and creates new triangles if needed
 void check_edge(
-    uvec3 start,
+    float density0,
     uvec3 end,
     uvec3 quad0,
     uvec3 quad1,
@@ -60,7 +60,6 @@ void check_edge(
     uvec3 quad3
 ) {
     // Get the densities of the edge
-    float density0 = imageLoad(voxels, ivec3(start)).x;
     float density1 = imageLoad(voxels, ivec3(end)).x;
 
     // Create a quad if they do
@@ -82,9 +81,12 @@ void main() {
         return;
     }
 
+    // Get the start density
+    float density0 = imageLoad(voxels, ivec3(gl_GlobalInvocationID)).x;
+
     // Check the Z axis edge
     check_edge(
-        gl_GlobalInvocationID,
+        density0,
         gl_GlobalInvocationID + uvec3(0, 0, 1),
         uvec3(0, 0, 0),
         uvec3(0, 1, 0),
@@ -94,7 +96,7 @@ void main() {
     
     // Check the X axis edge
     check_edge(
-        gl_GlobalInvocationID,
+        density0,
         gl_GlobalInvocationID + uvec3(1, 0, 0),
         uvec3(0, 0, 0),
         uvec3(0, 0, 1),
@@ -104,7 +106,7 @@ void main() {
 
     // Check the Y axis edge
     check_edge(
-        gl_GlobalInvocationID,
+        density0,
         gl_GlobalInvocationID + uvec3(0, 1, 0),
         uvec3(0, 0, 0),
         uvec3(1, 0, 0),

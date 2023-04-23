@@ -5,6 +5,7 @@ fn main() {
     App::default()
         .set_app_name("cflake engine prototype example")
         .insert_init(init)
+        //.set_logging_level(LevelFilter::Trace)
         .insert_update(update)
         .execute();
 }
@@ -17,16 +18,14 @@ fn init(world: &mut World) {
         Buffer::<i32, 0>::from_slice(&graphics, &[0, 1], BufferMode::Dynamic, BufferUsage::READ)
             .unwrap();
 
-    let instant = std::time::Instant::now();
-    let view = buffer.as_view(..).unwrap();
-    dbg!(&view.as_slice());
-    dbg!(instant.elapsed());
-
-    let instant = std::time::Instant::now();
-    let view = buffer.as_view(..).unwrap();
-    dbg!(&view.as_slice());
-    dbg!(instant.elapsed());
+    drop(graphics);
+    world.insert(buffer);
 }
 
 // Camera controller update executed every tick
-fn update(_world: &mut World) {}
+fn update(world: &mut World) {
+    let buffer = world.get::<Buffer::<i32, 0>>().unwrap();
+    buffer.async_read(.., |data| {
+        dbg!(data);
+    }).unwrap();
+}

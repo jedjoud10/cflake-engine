@@ -102,6 +102,7 @@ pub fn acquire(system: &mut System) {
     system
         .insert_update(|world: &mut World| {
             // Acquire a new texture to render to
+            let graphics = world.get::<Graphics>().unwrap();
             let mut window = world.get_mut::<Window>().unwrap();
             let texture = window.surface.get_current_texture().unwrap();
             let view = texture
@@ -112,8 +113,8 @@ pub fn acquire(system: &mut System) {
             // TODO: Cache the texture views instead?
             window.presentable_texture = Some(texture);
             window.presentable_texture_view = Some(view);
-
-            // Clear the window first, and save the command encoder
+            graphics.staging_pool().refresh();
+            log::trace!("acquire current texture");
         })
         .after(post_user);
 }
@@ -126,6 +127,7 @@ pub fn present(system: &mut System) {
             let graphics = world.get::<Graphics>().unwrap();
             graphics.submit(false);
             window.presentable_texture.take().unwrap().present();
+            log::trace!("present acquired texture");
         })
         .after(post_user)
         .after(acquire);

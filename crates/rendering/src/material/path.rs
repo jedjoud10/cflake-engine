@@ -1,7 +1,7 @@
 use crate::{AttributeBuffer, DefaultMaterialResources, Mesh, MeshAttribute};
 use graphics::{
     ActiveRenderPipeline, ColorLayout, DepthStencilLayout, DrawIndexedIndirectBuffer, GpuPod,
-    SetIndexBufferError, SetVertexBufferError, TriangleBuffer,
+    SetIndexBufferError, SetVertexBufferError, TriangleBuffer, DrawIndexedError,
 };
 use std::ops::RangeBounds;
 use utils::Handle;
@@ -59,7 +59,7 @@ pub trait RenderPath: 'static + Send + Sync + Sized {
         mesh: &'a Mesh<Self>,
         defaults: &DefaultMaterialResources<'a>,
         active: &mut ActiveRenderPipeline<'_, 'a, '_, C, DS>,
-    );
+    ) -> Result<(), DrawIndexedError>;
 }
 
 // Direct and indirect render path variants
@@ -89,9 +89,9 @@ impl RenderPath for Direct {
         mesh: &'a Mesh<Self>,
         _defaults: &DefaultMaterialResources<'a>,
         active: &mut ActiveRenderPipeline<'_, 'a, '_, C, DS>,
-    ) {
+    ) -> Result<(), DrawIndexedError> {
         let indices = 0..(mesh.triangles().buffer().len() as u32 * 3);
-        active.draw_indexed(indices, 0..1);
+        active.draw_indexed(indices, 0..1)
     }
 
     #[inline(always)]
@@ -113,6 +113,20 @@ impl RenderPath for Direct {
         active: &mut ActiveRenderPipeline<'_, 'a, '_, C, DS>,
     ) -> Result<(), SetIndexBufferError> {
         active.set_index_buffer(buffer, bounds)
+    }
+}
+
+// We can render indirect meshes either using the normal indirect path or the multi-draw indirect path
+#[derive(PartialEq, Eq)]
+pub enum IndirectMeshCount {
+    // Dispatch a SINGLE draw call
+    Single(usize),
+
+    // Dispatch a RANGE of draw calls
+    // If this is the case then culling *should* be disabled
+    Multiple {
+        offset: usize,
+        count: usize,
     }
 }
 
@@ -139,10 +153,10 @@ impl RenderPath for Indirect {
         mesh: &'a Mesh<Self>,
         defaults: &DefaultMaterialResources<'a>,
         active: &mut ActiveRenderPipeline<'_, 'a, '_, C, DS>,
-    ) {
+    ) -> Result<(), DrawIndexedError> {
         let handle = mesh.indirect().clone();
         let buffer = defaults.draw_indexed_indirect_buffers.get(&handle);
-        active.draw_indexed_indirect(buffer, mesh.offset());
+        active.draw_indexed_indirect(buffer, mesh.offset())
     }
 
     #[inline(always)]

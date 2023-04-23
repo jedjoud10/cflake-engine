@@ -338,6 +338,11 @@ fn update(world: &mut World) {
                     ui.label("Smoothness: ");
                     ui.add(egui::DragValue::new(&mut controller.smoothness));
                 });
+
+                ui.horizontal(|ui| {
+                    ui.label("Active?: ");
+                    ui.add(egui::Checkbox::new(&mut controller.active, ""));
+                });
             });
     }
 

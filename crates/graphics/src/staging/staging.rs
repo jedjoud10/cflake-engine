@@ -20,7 +20,11 @@ pub struct StagingPool {
     pub(crate) allocations: Arc<ConcVec<Buffer>>,
 
     // Keeps track of the mapping state
-    pub(crate) used: AtomicBitSet,
+    pub(crate) used: Arc<AtomicBitSet>,
+
+    // Keeps track of the buffers that we *must* unmap 
+    // Only used for ASYNC readback buffers
+    pub(crate) must_unmap: Arc<AtomicBitSet>
 }
 
 impl StagingPool {
@@ -28,7 +32,23 @@ impl StagingPool {
     pub fn new() -> Self {
         Self {
             allocations: Arc::new(ConcVec::new()),
-            used: AtomicBitSet::new(),
+            used: Arc::new(AtomicBitSet::new()),
+            must_unmap: Arc::new(AtomicBitSet::new()),
+        }
+    }
+
+    // Called at the end of every frame
+    pub(crate) fn refresh(&self) {
+        for chunk in self.must_unmap.chunks().into_iter() {
+            let mut old = chunk.swap(0, Ordering::Relaxed);
+            while old.count_ones() > 0 {
+                log::warn!("{:#b}", old);
+                let index = old.trailing_zeros() as usize;
+                log::warn!("{}", index);
+                old = old >> (index+1);
+                self.allocations[index].unmap();
+                self.used.remove(index, Ordering::Relaxed);
+            }
         }
     }
 
@@ -107,7 +127,6 @@ impl StagingPool {
 
         // Put the encoder back into the cache, and submit ALL encoders
         graphics.reuse([encoder]);
-        //graphics.poll();
         graphics.submit(false);
 
         // Map the staging buffer
@@ -116,10 +135,9 @@ impl StagingPool {
 
         // Map synchronously
         let slice = staging.slice(0..size);
-        log::trace!("map buffer read: map async called");
         slice.map_async(wgpu::MapMode::Read, move |res| tx.send(res).unwrap());
+        log::trace!("map buffer read: map async called");
         graphics.device().poll(wgpu::Maintain::Wait);
-        //graphics.device().poll(wgpu::Maintain::Poll);
 
         // Wait until the buffer is mapped, then read from the buffer
         if let Ok(Ok(_)) = rx.recv() {
@@ -133,6 +151,60 @@ impl StagingPool {
         } else {
             panic!("Could not receive read map async")
         }
+    }
+
+    // Map a target for reading only
+    // Src target must have the COPY_SRC buffer usage flag
+    // The mapping of the buffer will not occur immediately
+    pub fn map_buffer_read_async(
+        &self,
+        graphics: &Graphics,
+        buffer: &Buffer,
+        offset: u64,
+        size: u64,
+        callback: impl FnOnce(&[u8]) + Sync + Send + 'static
+    ) {
+        assert!(buffer.usage().contains(wgpu::BufferUsages::COPY_SRC));
+        
+        // Get a encoder (reused or not to perform a copy)
+        let mut encoder = graphics.acquire();
+        let (i, staging) = self.find_or_allocate(graphics, size, MapMode::Read);
+
+        // Copy to staging first
+        encoder.copy_buffer_to_buffer(buffer, offset, staging, 0, size);
+        graphics.reuse([encoder]);
+        graphics.submit(false);
+
+        // Map asynchronously
+        let slice = staging.slice(0..size);
+        let allocations = self.allocations.clone();
+        let allocations2 = allocations.clone();
+        let must_unmap = self.must_unmap.clone();
+        log::info!("start");
+        slice.map_async(wgpu::MapMode::Read, move |res| {
+            log::trace!("map buffer read: map async resolved");
+            res.unwrap();
+
+            // Fetch staging buffer from self
+            let buffer = &allocations2[i];
+
+            // Call the callback
+            let slice = buffer.slice(0..size);
+            let bytes = &*slice.get_mapped_range();
+            callback(bytes);
+
+            // We must mark this buffer as a "must unmap" buffer
+            //must_unmap.set(i, Ordering::Relaxed);
+            dbg!(i);
+        });
+
+        graphics.queue().on_submitted_work_done(move || {
+            allocations[i].unmap();            
+        });
+
+        drop(slice);
+        log::info!("end");
+        log::trace!("map buffer read async: map async called");
     }
 
     // Map a target for writing only

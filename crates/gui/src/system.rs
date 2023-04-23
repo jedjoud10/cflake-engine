@@ -16,7 +16,7 @@ fn init(world: &mut World, el: &EventLoop<()>) {
         egui: Default::default(),
         state: egui_winit::State::new(el),
         rasterizer: Rasterizer::new(&graphics, &mut assets),
-        consumes_window_events: false,
+        consumes_window_events: true,
     };
 
     // TODO: Pls remove. It's kinda getting annoying now tbh

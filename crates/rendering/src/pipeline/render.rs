@@ -179,7 +179,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
                 .unwrap();
 
             // Draw the mesh
-            <M::RenderPath as RenderPath>::draw(mesh, defaults, &mut active);
+            <M::RenderPath as RenderPath>::draw(mesh, defaults, &mut active).unwrap();
 
             // Add 1 to the material index when we switch instances
             if switched_material_instances {

@@ -299,12 +299,12 @@ fn update(world: &mut World) {
         // Update chunk range (if valid) and set visibility
         if count > 0 {
             chunk.ranges = Some(vek::Vec2::new(offset, count + offset));
+            surface.visible = true;
         } else {
             chunk.ranges = None;
             surface.visible = false;
         }
 
-        surface.visible = true;
         chunk.state = ChunkState::Generated;
         return;
     }

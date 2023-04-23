@@ -156,7 +156,7 @@ pub(super) fn render_shadows<'r, M: Material>(
             }
 
             // Draw the mesh
-            <M::RenderPath as RenderPath>::draw(mesh, defaults, &mut active);
+            <M::RenderPath as RenderPath>::draw(mesh, defaults, &mut active).unwrap();
         }
     }
 }

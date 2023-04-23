@@ -15,7 +15,7 @@ use crate::{
     BufferClearError, BufferCopyError, BufferExtendError, BufferInfo, BufferInitializationError,
     BufferMode, BufferNotMappableError, BufferReadError, BufferSplatError, BufferUsage, BufferView,
     BufferViewMut, BufferWriteError, DispatchIndirect, DrawIndexedIndirect, DrawIndirect, GpuPod,
-    Graphics, StagingPool, Vertex, R,
+    Graphics, StagingPool, Vertex, R, BufferAsyncReadError,
 };
 
 // Bitmask from Vulkan BufferUsages
@@ -406,9 +406,30 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
     pub fn async_read<'a>(
         &'a self,
         range: impl RangeBounds<usize>,
-        callback: impl FnOnce(&[T]) + Sync + Send,
-    ) {
-        todo!()
+        callback: impl FnOnce(&[T]) + Sync + Send + 'static,
+    ) -> Result<(), BufferAsyncReadError> {
+        let (start, end) = self
+            .convert_bounds_to_indices(range)
+            .ok_or(BufferAsyncReadError::InvalidRange(self.length))?;
+        let len = end - start;
+        let offset = start;
+
+        // Make sure we can read from the buffer
+        if !self.usage.contains(BufferUsage::READ) {
+            return Err(BufferAsyncReadError::NonReadable);
+        }
+
+        // Use the staging pool for data reads
+        let staging = self.graphics.staging_pool();
+        staging.map_buffer_read_async(
+            &self.graphics,
+            &self.buffer,
+            (offset * self.stride()) as u64,
+            (len * self.stride()) as u64,
+            |raw| callback(bytemuck::cast_slice(raw)),
+        );
+
+        Ok(())
     }
 
     // Clear the buffer and reset it's length

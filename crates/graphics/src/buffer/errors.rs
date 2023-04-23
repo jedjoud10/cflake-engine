@@ -39,6 +39,19 @@ pub enum BufferReadError {
     NonReadable,
 }
 
+
+#[derive(Error, Debug)]
+pub enum BufferAsyncReadError {
+    #[error("The given range is invalid for buffer with {0} elements")]
+    InvalidRange(usize),
+
+    #[error("The buffer cannot be read since it's BufferUsages do not contain the READ flag")]
+    NonReadable,
+
+    #[error("The buffer cannot be read since it's length might change (buffer mode != Dynamic)")]
+    NoDynamic,
+}
+
 #[derive(Error, Debug)]
 pub enum BufferWriteError {
     #[error("The given source slice of length {0} (or offset of {1}) would overflow the buffer of length {2}")]
