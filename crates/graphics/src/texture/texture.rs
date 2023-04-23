@@ -538,11 +538,10 @@ pub(crate) fn create_texture_views<T: Texel, E: Extent>(
     let layers = (layers > 1).then_some(layers + 1).unwrap_or(layers);
 
     log::debug!(
-        "Creating level views for texture (max = {levels}) with extent {}x{}x{}x{}",
+        "Creating level views for texture (max = {levels}) with extent {}x{}x{}",
         extent.width(),
         extent.height(),
-        extent.depth(),
-        extent.layers()
+        extent.depth_or_layers(),
     );
 
     for level in 0..levels {

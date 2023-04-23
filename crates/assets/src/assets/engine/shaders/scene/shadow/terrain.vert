@@ -11,17 +11,11 @@ layout(push_constant) uniform PushConstants {
 } constants;
 
 void main() {
-    // Convert from 4 floats into uints
-    uint packed_cell_position = floatBitsToUint(packed.x);
-    uint packed_inner_position = floatBitsToUint(packed.y);
+    // TODO: DONT READ FROM POSITION BUFFER THAT SHIT EMPTY (we moved to UVs remember)
 
-    // Positions only need 16 bits (1 byte for cell coord, 1 byte for inner vertex coord)
-    vec4 cell_position = unpackUnorm4x8(packed_cell_position) * 255;
-    vec4 inner_position = unpackSnorm4x8(packed_inner_position);
-    vec4 position = cell_position + inner_position;
 
 	// Model space -> World space -> Clip space
-    vec4 world_pos = constants.mesh * vec4(position.xyz * scaling_factor, 1);
+    vec4 world_pos = constants.mesh * vec4(vec3(0) * scaling_factor, 1);
     vec4 projected = constants.lightspace * world_pos; 
     gl_Position = projected;
 }

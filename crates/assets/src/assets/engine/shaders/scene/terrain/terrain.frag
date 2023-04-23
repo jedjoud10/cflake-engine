@@ -1,16 +1,10 @@
 #version 460 core
+#define lowpoly
 layout(location = 0) out vec4 frag;
 
 // Data given by the vertex shader
 layout(location = 0) in vec3 m_position;
 layout(location = 1) in vec3 m_normal;
-
-#ifdef lowpoly
-layout(location = 2) in flat vec3 m_color;
-#else
-layout(location = 2) in vec3 m_color;
-#endif
-
 
 // Camera, scene, and shadowmap shared objects
 #include <engine/shaders/common/camera.glsl>
@@ -144,8 +138,6 @@ void main() {
 	vec3 albedo = mix(grass, rock, blending_factor);
 	vec3 mask = vec3(1.0, 1.0, 0.0);
 	#endif
-
-	albedo *= m_color;
 
 
 	// Compute PBR values

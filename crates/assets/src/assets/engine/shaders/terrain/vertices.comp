@@ -13,7 +13,7 @@ layout(set = 0, binding = 3, r32ui) uniform uimage3D cached_indices;
 
 // Output temp vertices
 layout(std430, set = 1, binding = 0) writeonly buffer Vertices {
-    vec4 data[size*size*size];
+    vec2 data[size*size*size];
 } vertices;
 
 // Atomic counters
@@ -88,9 +88,6 @@ void main() {
     vec3 normal = vec3(0);
     #endif
 
-    // Do an average sum to get color
-    vec3 color = vec3(0);
-
     // Check each edge in the cell for intersections
     for (int edge = 0; edge < 12; edge++) {
         uvec3 start = edge_positions1[edge] + gl_GlobalInvocationID;
@@ -124,10 +121,6 @@ void main() {
             #ifndef lowpoly
             normal += mix(normal0, normal1, value);
             #endif
-            
-            // Calculate color along the end
-            color += mix(color0, color1, value);
-            count += 1;
         }
     }
 
@@ -151,19 +144,14 @@ void main() {
         #else
         uint packed_normals = 0;
         #endif
-        
-        uint packed_colors = packUnorm4x8(vec4(color / count, 0));
 
         // Convert to 4 floats to store within the texture
         float float_packed_cell_position = uintBitsToFloat(packed_cell_position);
         float float_packed_inner_position = uintBitsToFloat(packed_inner_position);
         float float_packed_normals = uintBitsToFloat(packed_normals);
-        float float_packed_colors = uintBitsToFloat(packed_colors);
-        vertices.data[index] = vec4(
+        vertices.data[index] = vec2(
             float_packed_cell_position,
-            float_packed_inner_position,
-            float_packed_normals,
-            float_packed_colors
+            float_packed_inner_position
         );
 
         imageStore(cached_indices, ivec3(gl_GlobalInvocationID+1), uvec4(index));

@@ -35,10 +35,10 @@ pub struct TerrainSettings {
 
     // Vertices and triangles per allocation
     pub(crate) output_triangle_buffer_length: usize,
-    pub(crate) output_vertex_buffer_length: usize,
+    pub(crate) output_tex_coord_buffer_length: usize,
 
     // Vertices and triangles per sub allocation
-    pub(crate) vertices_per_sub_allocation: u32,
+    pub(crate) tex_coords_per_sub_allocation: u32,
     pub(crate) triangles_per_sub_allocation: u32,
 
     // Callbacks for custom voxel data
@@ -71,10 +71,14 @@ impl TerrainSettings {
         sub_allocations: usize,
         sub_materials: Option<&[TerrainSubMaterial]>,
     ) -> Result<Self, TerrainSettingsError> {
-        let output_vertex_buffer_length =
-            graphics.device().limits().max_storage_buffer_binding_size as usize / 16;
-        let output_triangle_buffer_length =
+        let mut output_tex_coord_buffer_length =
+            graphics.device().limits().max_storage_buffer_binding_size as usize / 8;
+        let mut output_triangle_buffer_length =
             graphics.device().limits().max_storage_buffer_binding_size as usize / 12;
+
+        // Reduce these numbers blud
+        output_tex_coord_buffer_length /= 4;
+        output_triangle_buffer_length /= 6;
 
         // Validate resolution
         if resolution < 16 {
@@ -99,10 +103,10 @@ impl TerrainSettings {
 
         // Get number of sub-allocation chunks for two buffer types (vertices and triangles)
         let vertex_sub_allocations_length =
-            (output_vertex_buffer_length as f32) / sub_allocations as f32;
+            (output_tex_coord_buffer_length as f32) / sub_allocations as f32;
         let triangle_sub_allocations_length =
             (output_triangle_buffer_length as f32) / sub_allocations as f32;
-        let vertices_per_sub_allocation =
+        let tex_coords_per_sub_allocation =
             (vertex_sub_allocations_length.floor() as u32).next_power_of_two();
         let triangles_per_sub_allocation =
             (triangle_sub_allocations_length.floor() as u32).next_power_of_two();
@@ -125,8 +129,8 @@ impl TerrainSettings {
             chunk_count: chunks,
             over_allocated_chunks_count,
             output_triangle_buffer_length,
-            output_vertex_buffer_length,
-            vertices_per_sub_allocation,
+            output_tex_coord_buffer_length,
+            tex_coords_per_sub_allocation,
             triangles_per_sub_allocation,
             chunks_per_allocation,
             voxel_compiler_callback: None,

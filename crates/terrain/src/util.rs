@@ -1,13 +1,13 @@
 use graphics::{
     Buffer, BufferMode, BufferUsage, Graphics, SamplerSettings, Texel, Texture, Texture3D,
-    TextureMipMaps, TextureMode, TextureUsage, TriangleBuffer, Vertex, XYZW,
+    TextureMipMaps, TextureMode, TextureUsage, TriangleBuffer, Vertex, XYZW, XY,
 };
 use rendering::{attributes, AttributeBuffer};
 
 // Common types used througohut the crate
-pub type TempVertices = Buffer<<XYZW<f32> as Vertex>::Storage>;
+pub type TempVertices = Buffer<<XY<f32> as Vertex>::Storage>;
 pub type TempTriangles = Buffer<[u32; 3]>;
-pub type Vertices = AttributeBuffer<attributes::Position>;
+pub type Vertices = AttributeBuffer<attributes::TexCoord>;
 pub type Triangles = TriangleBuffer<u32>;
 
 // Create counters that will help us generate the vertices

@@ -83,14 +83,15 @@ impl ChunkManager {
                 ((*i as f32) / (settings.chunks_per_allocation as f32)).floor() as usize;
 
             // Get the vertex and triangle buffers that will be shared for this group
-            let vertex_buffer = &memory.shared_vertex_buffers[allocation];
+            let tex_coord_buffer = &memory.shared_tex_coord_buffers[allocation];
             let triangle_buffer = &memory.shared_triangle_buffers[allocation];
+
             // Create the indirect mesh
             let mut mesh = IndirectMesh::from_handles(
-                Some(vertex_buffer.clone()),
                 None,
                 None,
                 None,
+                Some(tex_coord_buffer.clone()),
                 triangle_buffer.clone(),
                 indexed_indirect_buffer.clone(),
                 *i,

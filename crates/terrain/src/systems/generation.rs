@@ -28,8 +28,8 @@ fn update(world: &mut World) {
     let mut indirects = world
         .get_mut::<Storage<DrawIndexedIndirectBuffer>>()
         .unwrap();
-    let mut vertices = world
-        .get_mut::<Storage<AttributeBuffer<attributes::Position>>>()
+    let mut tex_coords = world
+        .get_mut::<Storage<AttributeBuffer<attributes::TexCoord>>>()
         .unwrap();
     let mut triangles = world.get_mut::<Storage<TriangleBuffer<u32>>>().unwrap();
 
@@ -114,6 +114,8 @@ fn update(world: &mut World) {
 
         // Needed since SN only runs for a volume 2 units smaller than a perfect cube
         let factor = (settings.size as f32 - 3.0) / (settings.size as f32);
+
+        log::info!("generating");
 
         // Set the push constants
         active
@@ -228,8 +230,8 @@ fn update(world: &mut World) {
         //let dispatch = (terrain.sub_allocations as f32 / 32 as f32).ceil() as u32;
         active.dispatch(vek::Vec3::new(1, 1, 1)).unwrap();
 
-        // Get the output vertices from resource storage
-        let output_vertices = vertices.get_mut(&memory.shared_vertex_buffers[chunk.allocation]);
+        // Get the output packed tex coord from resource storage
+        let output_vertices = tex_coords.get_mut(&memory.shared_tex_coord_buffers[chunk.allocation]);
 
         // Get the output triangles from resrouce storage
         let output_triangles = triangles.get_mut(&memory.shared_triangle_buffers[chunk.allocation]);
@@ -269,6 +271,9 @@ fn update(world: &mut World) {
         drop(active);
         drop(pass);
 
+        log::info!("done");
+
+        /*
         // Submit the work to the GPU, and fetch counters and offsets
         let _counters = mesher.counters.as_view(..).unwrap();
         let counters = _counters.to_vec();
@@ -282,7 +287,7 @@ fn update(world: &mut World) {
         let triangle_indices_offset = offsets[1];
 
         // Check if we are OOM lol
-        if vertices_offset / settings.vertices_per_sub_allocation
+        if vertices_offset / settings.tex_coords_per_sub_allocation
             != triangle_indices_offset / settings.triangles_per_sub_allocation
         {
             panic!("Out of memory xD MDR");
@@ -290,21 +295,22 @@ fn update(world: &mut World) {
 
         // Calculate sub-allocation index and length
         let count = f32::max(
-            vertex_count as f32 / settings.vertices_per_sub_allocation as f32,
+            vertex_count as f32 / settings.tex_coords_per_sub_allocation as f32,
             triangle_count as f32 / settings.triangles_per_sub_allocation as f32,
         );
         let count = count.ceil() as u32;
-        let offset = vertices_offset / settings.vertices_per_sub_allocation;
+        let offset = vertices_offset / settings.tex_coords_per_sub_allocation;
 
         // Update chunk range (if valid) and set visibility
         if count > 0 {
             chunk.ranges = Some(vek::Vec2::new(offset, count + offset));
-            surface.visible = true;
         } else {
             chunk.ranges = None;
             surface.visible = false;
         }
-
+        */
+        
+        surface.visible = true;
         chunk.state = ChunkState::Generated;
         return;
     }

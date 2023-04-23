@@ -62,9 +62,13 @@ fn init(world: &mut World) {
     internal!(loader, "engine/shaders/noises/gnoise.glsl");
     internal!(loader, "engine/shaders/noises/erosion2D.glsl");
 
-    // Load the default terrain shaders
+    // Load the default generation terrain shaders
+    internal!(loader, "engine/shaders/terrain/default/voxel.glsl");
+    internal!(loader, "engine/shaders/terrain/default/shading.glsl");
+    internal!(loader, "engine/shaders/terrain/default/detail.glsl");
+    
+    // Load the default internally used terrain shaders
     internal!(loader, "engine/shaders/terrain/voxels.comp");
-    internal!(loader, "engine/shaders/terrain/default.glsl");
     internal!(loader, "engine/shaders/terrain/vertices.comp");
     internal!(loader, "engine/shaders/terrain/quads.comp");
     internal!(loader, "engine/shaders/terrain/copy.comp");
