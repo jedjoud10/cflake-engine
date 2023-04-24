@@ -351,7 +351,7 @@ fn update(world: &mut World) {
         egui::Window::new("Shadow Mapping")
             .frame(frame)
             .show(&gui, |ui| {
-                egui::Grid::new("archetypes")
+                egui::Grid::new("cascades")
                     .min_col_width(0f32)
                     .max_col_width(400f32)
                     .striped(true)
@@ -362,7 +362,24 @@ fn update(world: &mut World) {
                             ui.end_row();
                         }
                     });
+
+                ui.horizontal(|ui| {
+                    ui.label("Frustum Culling Batch Size: ");
+                    ui.add(egui::DragValue::new(&mut shadowmapping.frustum_culling_batch_size));
+                });
             });
+    }
+
+    // Rendering settings
+    if let Ok(mut renderer) = world.get_mut::<ForwardRenderer>() {
+        egui::Window::new("Forward Renderer")
+        .frame(frame)
+        .show(&gui, |ui| {
+            ui.horizontal(|ui| {
+                ui.label("Frustum Culling Batch Size: ");
+                ui.add(egui::DragValue::new(&mut renderer.frustum_culling_batch_size));
+            });
+        });
     }
 }
 

@@ -1,6 +1,5 @@
 #version 460 core
 layout(location = 0) out vec4 frag;
-#define lowpoly
 
 // Data given by the vertex shader
 layout(location = 0) in vec3 m_position;
@@ -88,17 +87,22 @@ vec3 triplanar_normal(float layer, vec3 normal) {
 #endif
 
 void main() {
-	// We do a bit of fading V2
 	/*
-	if ((1-cellular(floor(m_position) * 0.01).y) > (material.fade-1)) {
+	// We do a bit of fading
+	float fade = min(material.fade, 1);
+	if (dither(ivec2(gl_FragCoord.xy), fade)) {
 		discard;
 	}
 	*/
 
-	// We do a bit of fading
 	/*
-	float fade = min(material.fade, 1);
-	if (dither(ivec2(gl_FragCoord.xy), fade)) {
+	float effect = float(mod(floor(m_position.x), 2));
+	frag = vec4(effect);
+	return;
+	*/
+	// We do a bit of fading V2
+	/*
+	if ((1-cellular(floor(m_position) * 0.01).y) > (material.fade-1)) {
 		discard;
 	}
 	*/

@@ -77,7 +77,7 @@ void check_edge(
 
 void main() {
     // Skip chunk faces since they will return incorrect data
-    if (any(equal(gl_GlobalInvocationID, uvec3(0))) || any(equal(gl_GlobalInvocationID, uvec3(size - 2)))) {
+    if (any(equal(gl_GlobalInvocationID, uvec3(0))) || any(greaterThanEqual(gl_GlobalInvocationID, uvec3(size - 2)))) {
         return;
     }
 

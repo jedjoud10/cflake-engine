@@ -44,6 +44,7 @@ pub fn intersects_frustum(
 pub(super) fn cull_surfaces<'r, M: Material>(
     world: &'r World,
     defaults: &mut DefaultMaterialResources<'r>,
+    frustum_culling_batch_size: usize,
 ) {
     // Don't cull if there's no need
     if !M::frustum_culling() {
@@ -59,6 +60,10 @@ pub(super) fn cull_surfaces<'r, M: Material>(
     query.for_each(
         &mut threadpool,
         |(surface, renderer)| {
+            if !renderer.visible {
+                return;
+            }
+
             // A surface is culled *only* if all of it's sub-surface are not visible
             surface.culled = surface
                 .subsurfaces
@@ -76,6 +81,6 @@ pub(super) fn cull_surfaces<'r, M: Material>(
                     }
                 });
         },
-        1024,
+        frustum_culling_batch_size,
     );
 }

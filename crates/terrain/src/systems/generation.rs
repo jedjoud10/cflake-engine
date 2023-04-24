@@ -305,6 +305,7 @@ fn update(world: &mut World) {
             surface.visible = false;
         }
 
+        //surface.visible = true;
         chunk.state = ChunkState::Generated;
         return;
     }

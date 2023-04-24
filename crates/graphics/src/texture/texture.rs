@@ -640,7 +640,6 @@ pub(crate) fn write_to_level<T: Texel, R: Region>(
     // Write to the mip level of the texture
     graphics.staging_pool().write_texture(
         &graphics,
-        texture,
         image_copy_texture,
         image_data_layout,
         extent_to_extent3d(extent),

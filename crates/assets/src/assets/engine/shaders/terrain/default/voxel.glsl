@@ -11,6 +11,10 @@ layout(push_constant) uniform PushConstants {
 #include <engine/shaders/sdf/common.glsl>
 #include <engine/shaders/sdf/operations.glsl>
 #include <engine/shaders/noises/fbm.glsl>
+
+    float smooth_floor(float x) {
+        return x - (sin(2 * 3.1415 * x) / (2 * 3.1415));
+    }
     
 // A voxel is a 3D pixel in the world that can contain multiple parameters
 // Each voxel contains a "density". 
@@ -18,9 +22,12 @@ layout(push_constant) uniform PushConstants {
 // Main voxel function that will create the shape of the terrain
 float voxel(vec3 position) {
     position += parameters.offset.xyz;
-    float density = position.y + (1-fbmCellular(position * 0.008 * vec3(1, 3, 1), 5, 0.3, 2.1).y) * 120;
+    //return 1;
+    //return min(position.y, sdBox(position - vec3(0, 2, 0), vec3(1)));
+    /*
+    float density = position.y + (1-fbmCellular(position * 0.008 * vec3(1, 3, 1), 5, 0.3, 2.1).y) * 120 + snoise(position * 0.001) * 1000;
     return density;
-    
+    */
     /*
     position *= 0.2;
     //float density = snoise(position * 0.03) * 50;
@@ -65,24 +72,11 @@ float voxel(vec3 position) {
     return Voxel(density, 0);
     */
 
-    /*
     //TEST 1
     
-    float smooth_floor(float x) {
-        return x - (sin(2 * 3.1415 * x) / (2 * 3.1415));
-    }
 
 
     position *= 0.5;
-    vec3 col = pow(vec3(156, 63, 12) / 255.0, vec3(1.2));
-    vec3 col1 = pow(vec3(168, 68, 25) / 255.0, vec3(1.2));
-    //vec3 col2 = vec3(255.0, 112.0, 5.0) / 255.0;
-    vec3 col3 = pow(vec3(156, 87, 39) / 255.0, vec3(1.2));
-    float fac0 = snoise(position * 0.1 * vec3(0, 2, 0)) * 0.6 + 0.5 + random(position) * 0.2;
-    float fac1 = snoise(position * 0.1 * vec3(0.0, 1.2, 0.0)) * 0.5 + 0.5 + random(position) * 0.3;
-
-    col = mix(col, col1, fac0); 
-    col = mix(col, col3, fac1);
 
     float density = 0.0;
     float d2 = (1-fbmCellular(position * 0.008 * vec3(1, 0.1, 1), 8, 0.3, 2.1).x) * 140;
@@ -92,7 +86,6 @@ float voxel(vec3 position) {
     d2 = opSmoothUnion(d2, position.y + 140, 10);
     d2 = opSmoothSubtraction(-d2, position.y + 100, 50);
     density += d2 - 140;
-    density = opSubtraction(-density, min(snoise(position * 0.03), position.y + 30));
-    return Voxel(density, 0);
-    */
+    density = opUnion(density, sdSphere(position, 20));
+    return density;
 }

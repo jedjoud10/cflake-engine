@@ -77,7 +77,7 @@ float unmix(float a, float b, float x)
 
 void main() {
     // Required to remove the false positive
-    if (any(equal(ivec3(gl_GlobalInvocationID), ivec3(size-2)))) {
+    if (any(greaterThanEqual(ivec3(gl_GlobalInvocationID), ivec3(size-2)))) {
         return;
     }
 

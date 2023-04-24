@@ -269,7 +269,7 @@ fn render(world: &mut World) {
 
     // This will iterate over each material pipeline and draw the scene
     for stored in pipelines.iter() {
-        stored.render(world, &mut default, &mut render_pass);
+        stored.render(world, &mut default, &mut render_pass, renderer.frustum_culling_batch_size);
     }
 
     drop(render_pass);

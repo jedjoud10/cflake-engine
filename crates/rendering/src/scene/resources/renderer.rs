@@ -44,6 +44,9 @@ pub struct ForwardRenderer {
     pub black: Handle<AlbedoMap>,
     pub normal: Handle<NormalMap>,
     pub mask: Handle<MaskMap>,
+
+    // How many elements per batch should we use for frustum culling?
+    pub frustum_culling_batch_size: usize,
 }
 
 // Create a new uniform buffer with default contents
@@ -159,6 +162,7 @@ impl ForwardRenderer {
             // No default camera
             main_camera: None,
             main_directional_light: None,
+            frustum_culling_batch_size: 8192,
         }
     }
 }

@@ -306,7 +306,6 @@ impl StagingPool {
     pub fn write_texture<'a>(
         &'a self,
         graphics: &Graphics,
-        texture: &wgpu::Texture,
         image_copy_texture: wgpu::ImageCopyTexture,
         data_layout: wgpu::ImageDataLayout,
         extent: wgpu::Extent3d,

@@ -100,6 +100,7 @@ pub trait DynPipeline {
         active: &mut ActiveShadowRenderPass<'r, '_>,
         default_shadow_pipeline: &'r ShadowRenderPipeline,
         lightspace: vek::Mat4<f32>,
+        shadow_frustum_culling_batch_size: usize,
     );
 
     // Render all surfaces that use the material of this pipeline
@@ -108,6 +109,7 @@ pub trait DynPipeline {
         world: &'r World,
         default: &mut DefaultMaterialResources<'r>,
         render_pass: &mut ActiveSceneRenderPass<'r, '_>,
+        frustum_culling_batch_size: usize,
     );
 }
 
@@ -119,12 +121,13 @@ impl<M: Material> DynPipeline for Pipeline<M> {
         active: &mut ActiveShadowRenderPass<'r, '_>,
         default_shadow_pipeline: &'r ShadowRenderPipeline,
         lightspace: vek::Mat4<f32>,
+        shadow_frustum_culling_batch_size: usize,
     ) {
         let shadow_pipeline = self
             .shadow_pipeline
             .as_ref()
             .unwrap_or(default_shadow_pipeline);
-        super::render_shadows::<M>(world, default, active, shadow_pipeline, lightspace);
+        super::render_shadows::<M>(world, default, active, shadow_pipeline, lightspace, shadow_frustum_culling_batch_size);
     }
 
     fn render<'r>(
@@ -132,8 +135,9 @@ impl<M: Material> DynPipeline for Pipeline<M> {
         world: &'r World,
         default: &mut DefaultMaterialResources<'r>,
         render_pass: &mut ActiveSceneRenderPass<'r, '_>,
+        frustum_culling_batch_size: usize,
     ) {
-        super::cull_surfaces::<M>(world, default);
+        super::cull_surfaces::<M>(world, default, frustum_culling_batch_size);
 
         super::render_surfaces::<M>(world, &self.pipeline, default, render_pass);
     }
