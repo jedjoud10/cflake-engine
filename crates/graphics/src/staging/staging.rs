@@ -39,15 +39,15 @@ impl StagingPool {
 
     // Called at the end of every frame
     pub(crate) fn refresh(&self) {
-        for chunk in self.must_unmap.chunks().into_iter() {
-            let mut old = chunk.swap(0, Ordering::Relaxed);
-            while old.count_ones() > 0 {
-                log::warn!("{:#b}", old);
-                let index = old.trailing_zeros() as usize;
-                log::warn!("{}", index);
-                old = old >> (index+1);
-                self.allocations[index].unmap();
-                self.used.remove(index, Ordering::Relaxed);
+        for (offset, chunk) in self.must_unmap.chunks().into_iter().enumerate() {
+            let old = chunk.swap(0, Ordering::Relaxed);
+
+            for i in 0..(usize::BITS) {
+                if (old >> i) & 1 == 1 {
+                    let index = i as usize + (offset * usize::BITS as usize);
+                    self.allocations[index].unmap();
+                    self.used.remove(index, Ordering::Relaxed);
+                }
             }
         }
     }
@@ -180,7 +180,6 @@ impl StagingPool {
         let allocations = self.allocations.clone();
         let allocations2 = allocations.clone();
         let must_unmap = self.must_unmap.clone();
-        log::info!("start");
         slice.map_async(wgpu::MapMode::Read, move |res| {
             log::trace!("map buffer read: map async resolved");
             res.unwrap();
@@ -194,16 +193,10 @@ impl StagingPool {
             callback(bytes);
 
             // We must mark this buffer as a "must unmap" buffer
-            //must_unmap.set(i, Ordering::Relaxed);
-            dbg!(i);
-        });
-
-        graphics.queue().on_submitted_work_done(move || {
-            allocations[i].unmap();            
+            must_unmap.set(i, Ordering::Relaxed);
         });
 
         drop(slice);
-        log::info!("end");
         log::trace!("map buffer read async: map async called");
     }
 
