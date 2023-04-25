@@ -200,7 +200,7 @@ impl Asset for GltfScene {
             .map(|view| {
                 let buffer = &mapped_contents[view.buffer.value()];
                 let len = view.byte_length as usize;
-                let offset = view.byte_offset.unwrap() as usize;
+                let offset = view.byte_offset.unwrap_or_default() as usize;
                 assert!(view.byte_stride.is_none());
                 &buffer[offset..(offset + len)]
             })
@@ -492,6 +492,7 @@ impl Asset for GltfScene {
                     id: context.pipelines.get::<PhysicallyBasedMaterial>().unwrap(),
                 };
 
+                // TODO: Handle hierarchy PLEASE 
                 entities.push((
                     position,
                     rotation,

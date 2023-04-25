@@ -1,5 +1,6 @@
 #version 460 core
 layout(location = 0) out vec4 frag;
+#define lowpoly
 
 // Data given by the vertex shader
 layout(location = 0) in vec3 m_position;
@@ -95,18 +96,6 @@ void main() {
 	}
 	*/
 
-	/*
-	float effect = float(mod(floor(m_position.x), 2));
-	frag = vec4(effect);
-	return;
-	*/
-	// We do a bit of fading V2
-	/*
-	if ((1-cellular(floor(m_position) * 0.01).y) > (material.fade-1)) {
-		discard;
-	}
-	*/
-
 	// Get normals either by derivating them or getting them smoothed
 	#ifdef lowpoly
 	vec3 surface_normal = normalize(cross(dFdy(m_position), dFdx(m_position)));
@@ -135,9 +124,9 @@ void main() {
 	vec3 normal = mix(normal1, normal2, blending_factor);
 	#else
 	vec3 normal = surface_normal;
-	vec3 rock = vec3(128, 128, 128) / 255.0;
-	vec3 dirt = vec3(54, 30, 7) / 255.0;
-	vec3 grass = vec3(69, 107, 35) / 255.0;
+	vec3 rock = pow(vec3(128, 128, 128) / 255.0, vec3(2.2));
+	vec3 dirt = pow(vec3(54, 30, 7) / 255.0, vec3(2.2));
+	vec3 grass = pow(vec3(69, 107, 35) / 255.0, vec3(2.2));
 	float blending_factor = 1 - clamp((surface_normal.y - 0.90) * 40, 0, 1);
 	vec3 albedo = mix(grass, rock, blending_factor);
 	vec3 mask = vec3(1.0, 1.0, 0.0);

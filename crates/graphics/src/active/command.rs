@@ -64,6 +64,20 @@ pub(crate) enum RenderCommand<'a, C: ColorLayout, DS: DepthStencilLayout> {
         buffer: &'a DrawIndexedIndirectBuffer,
         element: usize,
     },
+
+    // Multi draw indirect command without index buffer
+    MultiDrawIndirect {
+        buffer: &'a DrawIndirectBuffer,
+        offset: usize,
+        count: usize,
+    },
+
+    // Multi draw indirect command with the current bound index buffer
+    MultiDrawIndexedIndirect {
+        buffer: &'a DrawIndexedIndirectBuffer,
+        offset: usize,
+        count: usize,
+    },
 }
 
 // Keep track of all compute commands that we call upon the compute pass
@@ -152,6 +166,16 @@ pub(crate) fn record_render_commands<'r, C: ColorLayout, DS: DepthStencilLayout>
                 let indirect_offset = element * buffer.stride();
                 render_pass.draw_indexed_indirect(buffer.raw(), indirect_offset as u64)
             }
+            
+            RenderCommand::MultiDrawIndirect { buffer, offset, count } => {
+                let indirect_offset = offset * buffer.stride();
+                render_pass.multi_draw_indirect(buffer.raw(), indirect_offset as u64, *count as u32);
+            },
+            
+            RenderCommand::MultiDrawIndexedIndirect { buffer, offset, count } => {
+                let indirect_offset = offset * buffer.stride();
+                render_pass.multi_draw_indexed_indirect(buffer.raw(), indirect_offset as u64, *count as u32);
+            },
         }
     }
 }

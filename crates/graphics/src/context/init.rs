@@ -46,6 +46,7 @@ pub(crate) unsafe fn init_context_and_window(
         | wgpu::Features::STORAGE_RESOURCE_BINDING_ARRAY
         | wgpu::Features::BUFFER_BINDING_ARRAY
         | wgpu::Features::MULTI_DRAW_INDIRECT
+        | wgpu::Features::MULTI_DRAW_INDIRECT_COUNT
         | wgpu::Features::TEXTURE_BINDING_ARRAY
         | wgpu::Features::SAMPLED_TEXTURE_AND_STORAGE_BUFFER_ARRAY_NON_UNIFORM_INDEXING
         | wgpu::Features::UNIFORM_BUFFER_AND_STORAGE_TEXTURE_ARRAY_NON_UNIFORM_INDEXING

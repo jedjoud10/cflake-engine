@@ -5,7 +5,6 @@ fn main() {
     App::default()
         .set_app_name("cflake engine prototype example")
         .insert_init(init)
-        //.set_logging_level(LevelFilter::Trace)
         .insert_update(update)
         .execute();
 }
@@ -43,9 +42,11 @@ fn update(world: &mut World) {
         ui.toggle_value(&mut test.async_read, "Test buffer readback (asynchronous)");
 
         if test.sync_read {
-            buffer.as_view(..).unwrap();
+            let values = buffer.as_view(..).unwrap();
+            let sum = (&*values).iter().sum::<i32>();
         } else if test.async_read {
             buffer.async_read(.., |data| {
+                let sum = (&*data).iter().sum::<i32>();
             }).unwrap();
         }
     });

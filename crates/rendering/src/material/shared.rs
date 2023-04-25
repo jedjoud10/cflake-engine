@@ -6,7 +6,7 @@ use graphics::{
 use math::Frustum;
 use utils::Storage;
 
-use crate::{attributes, AttributeBuffer, IndirectMesh, Mesh};
+use crate::{attributes, AttributeBuffer, IndirectMesh, Mesh, MultiDrawIndirect, MultiDrawIndirectMesh};
 
 // These are the default settings that we pass to each material
 pub struct DefaultMaterialResources<'a> {
@@ -34,9 +34,10 @@ pub struct DefaultMaterialResources<'a> {
 
     // Common direct mesh storages
     pub meshes: &'a Storage<Mesh>,
-
+    
     // Common indirect mesh storages
     pub indirect_meshes: &'a Storage<IndirectMesh>,
+    pub multi_draw_indirect_meshes: &'a Storage<MultiDrawIndirectMesh>,
     pub indirect_positions: &'a Storage<AttributeBuffer<attributes::Position>>,
     pub indirect_normals: &'a Storage<AttributeBuffer<attributes::Normal>>,
     pub indirect_tangents: &'a Storage<AttributeBuffer<attributes::Tangent>>,

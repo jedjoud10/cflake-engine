@@ -156,7 +156,6 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout> ActiveRenderPipeline<'a
     }
 
     // Draw a number of primitives using the currently bound vertex buffers and the given draw indirect buffer
-    // TODO: Validation
     pub fn draw_indirect(
         &mut self,
         buffer: &'r DrawIndirectBuffer,
@@ -185,8 +184,37 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout> ActiveRenderPipeline<'a
         Ok(())
     }
 
+    // Dispatch multiple draw calls that will draw a number of vertices using the currently bound vertex buffers
+    pub fn multi_draw_indirect(
+        &mut self,
+        buffer: &'r DrawIndirectBuffer,
+        offset: usize,
+        count: usize,
+    ) -> Result<(), DrawError> {
+        // Handle the missing bind groups
+        if let Err(value) =
+            crate::validate_set(self.reflected_groups_bitflags, self.set_groups_bitflags)
+        {
+            return Err(DrawError::MissingValidBindGroup(value));
+        }
+
+        // Check for missing vertex buffers
+        if let Err(slot) = self.validate_vertex_buffers() {
+            return Err(DrawError::MissingVertexBuffer(slot));
+        }
+
+        // Check if the element index is ok
+        if offset + count >= buffer.len() {
+            return Err(DrawError::InvalidIndirectIndex);
+        }
+
+        self.commands
+            .push(RenderCommand::MultiDrawIndirect { buffer, offset, count });
+
+        Ok(())
+    }
+
     // Draw a number of indexed primitives using the currently bound vertex buffers and index buffer
-    // TODO: Validation
     pub fn draw_indexed(
         &mut self,
         indices: Range<u32>,
@@ -216,7 +244,6 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout> ActiveRenderPipeline<'a
     }
 
     // Draw a number of indexed primitives using the currently bound vertex buffers, index buffer, and draw indexed indirect buffer
-    // TODO: Validation
     pub fn draw_indexed_indirect(
         &mut self,
         buffer: &'r DrawIndexedIndirectBuffer,
@@ -246,6 +273,41 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout> ActiveRenderPipeline<'a
 
         self.commands
             .push(RenderCommand::DrawIndexedIndirect { buffer, element });
+
+        Ok(())
+    }
+
+    // Dispatch multiple draw calls that will draw a number of indexed primitives using the currently bound vertex buffers
+    pub fn multi_draw_indexed_indirect(
+        &mut self,
+        buffer: &'r DrawIndexedIndirectBuffer,
+        offset: usize,
+        count: usize,
+    ) -> Result<(), DrawIndexedError> {
+        // Handle the missing bind groups
+        if let Err(value) =
+            crate::validate_set(self.reflected_groups_bitflags, self.set_groups_bitflags)
+        {
+            return Err(DrawIndexedError::MissingValidBindGroup(value));
+        }
+
+        // Check for missing vertex buffers
+        if let Err(slot) = self.validate_vertex_buffers() {
+            return Err(DrawIndexedError::MissingVertexBuffer(slot));
+        }
+
+        // Check for missing index buffers
+        if !self.validate_index_buffers() {
+            return Err(DrawIndexedError::MissingIndexBuffer);
+        }
+
+        // Check if the element index is ok
+        if offset + count >= buffer.len() {
+            return Err(DrawIndexedError::InvalidIndirectIndex);
+        }
+
+        self.commands
+            .push(RenderCommand::MultiDrawIndexedIndirect { buffer, offset, count });
 
         Ok(())
     }

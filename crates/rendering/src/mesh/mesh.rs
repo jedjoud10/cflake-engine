@@ -3,7 +3,7 @@ use crate::mesh::attributes::{Normal, Position, Tangent, TexCoord};
 use crate::{
     AttributeBuffer, Direct, Indirect, MeshAttribute, MeshAttributes, MeshImportError,
     MeshImportSettings, MeshInitializationError, RenderPath, TrianglesMut, TrianglesRef,
-    VerticesMut, VerticesRef,
+    VerticesMut, VerticesRef, MultiDrawIndirect, IndirectMeshArgs, MultiDrawIndirectArgs,
 };
 use assets::Asset;
 use graphics::{
@@ -25,9 +25,8 @@ pub struct Mesh<R: RenderPath = Direct> {
     tangents: Option<R::AttributeBuffer<Tangent>>,
     tex_coords: Option<R::AttributeBuffer<TexCoord>>,
 
-    // The number of vertices stored in this mesh
-    // None if the buffers contain different sizes
-    count: R::Count,
+    // Custom arguments that are defined by the render path
+    args: R::Args,
 
     // The triangle buffer
     triangles: R::TriangleBuffer<u32>,
@@ -43,13 +42,14 @@ impl<R: RenderPath> PartialEq for Mesh<R> {
             && self.normals == other.normals
             && self.tangents == other.tangents
             && self.tex_coords == other.tex_coords
-            && self.count == other.count
+            && self.args == other.args
             && self.triangles == other.triangles
             && self.aabb == other.aabb
     }
 }
 
 pub type IndirectMesh = Mesh<Indirect>;
+pub type MultiDrawIndirectMesh = Mesh<MultiDrawIndirect>;
 
 // Initialization of directly rendered meshes
 impl Mesh<Direct> {
@@ -94,7 +94,7 @@ impl Mesh<Direct> {
             normals: None,
             tangents: None,
             tex_coords: None,
-            count: Some(0),
+            args: Some(0),
             triangles,
             aabb: None,
         };
@@ -121,10 +121,8 @@ impl Mesh<Direct> {
 
         // We don't have to do shit with these since
         // they internally set the data automatically for us
-        /*
         let _ = vertices.len();
         let _ = vertices.aabb();
-        */
 
         Ok(mesh)
     }
@@ -168,7 +166,10 @@ impl Mesh<Indirect> {
             normals,
             tangents,
             tex_coords,
-            count: (indirect, offset),
+            args: IndirectMeshArgs {
+                indirect,
+                offset,
+            },
             triangles,
             aabb: None,
         }
@@ -176,12 +177,77 @@ impl Mesh<Indirect> {
 
     // Get the indexed indirect buffer handle immutably
     pub fn indirect(&self) -> &Handle<DrawIndexedIndirectBuffer> {
-        &self.count.0
+        &self.args.indirect
     }
 
     // Get the element offset within the DrawIndexedIndirectBuffer
     pub fn offset(&self) -> usize {
-        self.count.1
+        self.args.offset
+    }
+}
+
+// Initialization of multi-drawn indirect meshes
+impl Mesh<MultiDrawIndirect> {
+    // Create a new mesh from the attribute buffers' handles
+    pub fn from_handles(
+        positions: Option<Handle<AttributeBuffer<Position>>>,
+        normals: Option<Handle<AttributeBuffer<Normal>>>,
+        tangents: Option<Handle<AttributeBuffer<Tangent>>>,
+        tex_coords: Option<Handle<AttributeBuffer<TexCoord>>>,
+        triangles: Handle<TriangleBuffer<u32>>,
+        indirect: Handle<DrawIndexedIndirectBuffer>,
+        offset: usize,
+        count: usize,
+    ) -> Self {
+        // Keep track of the enabled mesh buffers
+        let mut enabled = MeshAttributes::empty();
+
+        // Inserts the MeshAttribute bitflag of the correspodning attribute if needed
+        fn insert<T: MeshAttribute>(
+            output: &mut MeshAttributes,
+            handle: &Option<Handle<AttributeBuffer<T>>>,
+        ) {
+            if handle.is_some() {
+                output.insert(T::ATTRIBUTE);
+            }
+        }
+
+        // Update the bitflags
+        insert::<Position>(&mut enabled, &positions);
+        insert::<Normal>(&mut enabled, &normals);
+        insert::<Tangent>(&mut enabled, &tangents);
+        insert::<TexCoord>(&mut enabled, &tex_coords);
+
+        // Create the mesh and return it
+        Self {
+            enabled,
+            positions,
+            normals,
+            tangents,
+            tex_coords,
+            args: MultiDrawIndirectArgs {
+                indirect,
+                offset,
+                count
+            },
+            triangles,
+            aabb: None,
+        }
+    }
+
+    // Get the indexed indirect buffer handle immutably
+    pub fn indirect(&self) -> &Handle<DrawIndexedIndirectBuffer> {
+        &self.args.indirect
+    }
+
+    // Get the element offset within the DrawIndexedIndirectBuffer
+    pub fn offset(&self) -> usize {
+        self.args.offset
+    }
+
+    // Get the number of draw calls that will be submitted by the GPU
+    pub fn count(&self) -> usize {
+        self.args.count
     }
 }
 
@@ -195,7 +261,7 @@ impl<R: RenderPath> Mesh<R> {
             normals: &self.normals,
             tangents: &self.tangents,
             tex_coords: &self.tex_coords,
-            count: &self.count,
+            count: &self.args,
             aabb: self.aabb,
         }
     }
@@ -210,7 +276,7 @@ impl<R: RenderPath> Mesh<R> {
             tex_coords: RefCell::new(&mut self.tex_coords),
             length_dirty: Cell::new(false),
             aabb_dirty: Cell::new(false),
-            count: RefCell::new(&mut self.count),
+            count: RefCell::new(&mut self.args),
             aabb: RefCell::new(&mut self.aabb),
         }
     }
@@ -235,7 +301,7 @@ impl<R: RenderPath> Mesh<R> {
                 normals: &self.normals,
                 tangents: &self.tangents,
                 tex_coords: &self.tex_coords,
-                count: &self.count,
+                count: &self.args,
                 aabb: self.aabb,
             },
         )
@@ -254,7 +320,7 @@ impl<R: RenderPath> Mesh<R> {
                 length_dirty: Cell::new(false),
                 aabb_dirty: Cell::new(false),
                 aabb: RefCell::new(&mut self.aabb),
-                count: RefCell::new(&mut self.count),
+                count: RefCell::new(&mut self.args),
             },
         )
     }
@@ -268,6 +334,11 @@ impl<R: RenderPath> Mesh<R> {
     // Override the axis aligned bounding box for this mesh
     pub fn set_aabb(&mut self, aabb: Option<math::Aabb<f32>>) {
         self.aabb = aabb;
+    }
+
+    // Get the internally stored mesh arguments immutably
+    pub fn args(&self) -> &<R as RenderPath>::Args {
+        &self.args
     }
 }
 

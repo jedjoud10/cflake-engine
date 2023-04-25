@@ -3,7 +3,7 @@ use std::{mem::size_of, num::NonZeroU8};
 use crate::{
     AlbedoMap, AttributeBuffer, BasicMaterial, Camera, DefaultMaterialResources, DirectionalLight,
     ForwardRenderer, Indirect, MaskMap, Mesh, NormalMap, PhysicallyBasedMaterial, Pipelines,
-    Renderer, SceneUniform, ShadowMapping, SkyMaterial, WindowUniform,
+    Renderer, SceneUniform, ShadowMapping, SkyMaterial, WindowUniform, MultiDrawIndirectMesh, IndirectMesh,
 };
 use assets::Assets;
 
@@ -68,7 +68,8 @@ fn init(world: &mut World) {
 
     // Add common storages
     world.insert(Storage::<Mesh>::default());
-    world.insert(Storage::<Mesh<Indirect>>::default());
+    world.insert(Storage::<IndirectMesh>::default());
+    world.insert(Storage::<MultiDrawIndirectMesh>::default());
     world.insert(Storage::<AttributeBuffer<crate::attributes::Position>>::default());
     world.insert(Storage::<AttributeBuffer<crate::attributes::Normal>>::default());
     world.insert(Storage::<AttributeBuffer<crate::attributes::Tangent>>::default());
@@ -150,6 +151,9 @@ fn render(world: &mut World) {
     let indexed_indirect_buffers = world.get::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
     let indirect_triangles = world.get::<Storage<TriangleBuffer<u32>>>().unwrap();
 
+    // Needed for multi draw indirect rendering
+    let multi_draw_indirect_meshes = world.get::<Storage<MultiDrawIndirectMesh>>().unwrap();
+
     let albedo_maps = world.get::<Storage<AlbedoMap>>().unwrap();
     let normal_maps = world.get::<Storage<NormalMap>>().unwrap();
     let mask_maps = world.get::<Storage<MaskMap>>().unwrap();
@@ -212,6 +216,7 @@ fn render(world: &mut World) {
         directional_light_rotation,
         meshes: &meshes,
         indirect_meshes: &indirect_meshes,
+        multi_draw_indirect_meshes: &multi_draw_indirect_meshes,
         indirect_positions: &indirect_position_attribute,
         indirect_normals: &indirect_normal_attribute,
         indirect_tangents: &indirect_tangents_attribute,

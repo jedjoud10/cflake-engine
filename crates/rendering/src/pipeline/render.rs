@@ -60,6 +60,11 @@ pub(super) fn render_surfaces<'r, M: Material>(
     > = None;
     let mut last_index_buffer: Option<&<M::RenderPath as RenderPath>::TriangleBuffer<u32>> = None;
 
+    // TODO: For multi draw indirect meshes, write the matrices into a temporary buffer
+    //    store matrix buffer per material pipeline depending if it's a multi draw one or not
+    //    write matrices to the matrix buffer before rendering
+    //    multi draw render the meshes
+    
     // TODO: Sort and group material instances / meshes
     // instead of [(mt1, mh1), (mt2, mh2), (mt1, mh1), (mt1, mh2)]
     // should be [(mt1, mh1), (mt1, mh1), (mt1, mh2), (mt2, mh2)]

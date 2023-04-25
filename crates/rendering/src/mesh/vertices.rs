@@ -10,7 +10,7 @@ pub struct VerticesRef<'a, R: RenderPath> {
     pub(super) normals: &'a Option<R::AttributeBuffer<Normal>>,
     pub(super) tangents: &'a Option<R::AttributeBuffer<Tangent>>,
     pub(super) tex_coords: &'a Option<R::AttributeBuffer<TexCoord>>,
-    pub(super) count: &'a R::Count,
+    pub(super) count: &'a R::Args,
     pub(super) aabb: Option<math::Aabb<f32>>,
 }
 
@@ -54,7 +54,7 @@ pub struct VerticesMut<'a, R: RenderPath> {
     pub(super) tex_coords: RefCell<&'a mut Option<R::AttributeBuffer<TexCoord>>>,
 
     // Cached parameters
-    pub(super) count: RefCell<&'a mut R::Count>,
+    pub(super) count: RefCell<&'a mut R::Args>,
     pub(super) aabb: RefCell<&'a mut Option<math::Aabb<f32>>>,
 
     // Parameters to keep track of cached data
