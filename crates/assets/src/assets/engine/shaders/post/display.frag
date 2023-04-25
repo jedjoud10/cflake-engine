@@ -9,6 +9,15 @@ layout(location = 0) out vec4 frag;
 layout(set = 1, binding = 0) uniform texture2D color_map;
 layout(set = 1, binding = 1) uniform texture2D depth_map;
 
+// Post processing settings
+layout(set = 0, binding = 1) uniform PostProcessUniform {
+    float exposure;
+	float gamma;
+	float vignette_strength;
+	float vignette_size;
+} post_processing;
+
+
 void main() {
 	// Get the scaled down coordinates
 	float x = gl_FragCoord.x / float(window.width);
@@ -19,7 +28,7 @@ void main() {
 	vec3 color = texelFetch(color_map, ivec2(gl_FragCoord.xy), 0).rgb;
 
 	// Increase exposure
-	color *= 2.0;
+	color *= post_processing.exposure;
 	color = max(color, vec3(0));
 
 	/*
@@ -31,16 +40,14 @@ void main() {
 
 	// Apply tonemapping and gamma mapping
 	//color = pow(color, vec3(1.0 / 2.2));
-	color = pow(aces(color), vec3(1.0 / 2.2));
+	color = pow(aces(color), vec3(1.0 / post_processing.gamma));
 
 	// Create a simple vignette
-	float vignette_size = 0.1;
-	float vignette_strength = 0.4;
 	vec2 uv = vec2(x, y);
 	float vignette = length(abs(uv - 0.5));
-	vignette += vignette_size;
+	vignette += post_processing.vignette_size;
 	vignette = clamp(vignette, 0, 1);
-	vignette = pow(vignette, 4.0) * clamp(vignette_strength, 0.0, 2.0);
+	vignette = pow(vignette, 4.0) * clamp(post_processing.vignette_strength, 0.0, 2.0);
 	color = mix(color, vec3(0), vignette);
 	frag = vec4(color, 0);
 }

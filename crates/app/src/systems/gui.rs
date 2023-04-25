@@ -370,9 +370,9 @@ fn update(world: &mut World) {
             });
     }
 
-    // Rendering settings
+    // Forward renderer settings
     if let Ok(mut renderer) = world.get_mut::<ForwardRenderer>() {
-        egui::Window::new("Forward Renderer")
+        egui::Window::new("Forward Rendering")
         .frame(frame)
         .show(&gui, |ui| {
             ui.horizontal(|ui| {
@@ -381,6 +381,34 @@ fn update(world: &mut World) {
             });
         });
     }
+
+    // Compositor settings
+    if let Ok(mut compositor) = world.get_mut::<Compositor>() {
+        egui::Window::new("Compositor - Post processing")
+        .frame(frame)
+        .show(&gui, |ui| {
+            ui.horizontal(|ui| {
+                ui.label("Exposure: ");
+                ui.add(egui::DragValue::new(&mut compositor.post_process.exposure));
+            });
+
+            ui.horizontal(|ui| {
+                ui.label("Gamma: ");
+                ui.add(egui::DragValue::new(&mut compositor.post_process.gamma));
+            });
+
+            ui.horizontal(|ui| {
+                ui.label("Vignette Strength: ");
+                ui.add(egui::DragValue::new(&mut compositor.post_process.vignette_strength));
+            });
+
+            ui.horizontal(|ui| {
+                ui.label("Vignette Size: ");
+                ui.add(egui::DragValue::new(&mut compositor.post_process.vignette_size));
+            });
+        });
+    }
+
 }
 
 // Statistics system

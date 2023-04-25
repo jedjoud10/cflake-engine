@@ -1,4 +1,4 @@
-use crate::{Compositor, ForwardRenderer, PostProcess};
+use crate::{Compositor, ForwardRenderer, PostProcessUniform};
 use assets::Assets;
 
 use graphics::{ActivePipeline, Graphics, Texture, Window};
@@ -12,7 +12,7 @@ fn init(world: &mut World) {
     let pp = Compositor::new(&graphics, &mut assets);
     drop(graphics);
     drop(assets);
-    world.insert(PostProcess::default());
+    world.insert(PostProcessUniform::default());
     world.insert(pp);
 }
 
@@ -20,8 +20,12 @@ fn init(world: &mut World) {
 fn update(world: &mut World) {
     let _graphics = world.get::<Graphics>().unwrap();
     let renderer = world.get::<ForwardRenderer>().unwrap();
-    let compositor = world.get::<Compositor>().unwrap();
+    let mut compositor = world.get_mut::<Compositor>().unwrap();
     let mut window = world.get_mut::<Window>().unwrap();
+
+    // Write the post process settings to the buffer
+    let value = compositor.post_process;
+    compositor.post_process_buffer.write(&[value], 0).unwrap();
 
     // Get textures, pipelines, and encoder
     let src = &renderer.color_texture;
@@ -43,6 +47,9 @@ fn update(world: &mut World) {
             group
                 .set_uniform_buffer("window", &renderer.window_buffer, ..)
                 .unwrap();
+            group
+                .set_uniform_buffer("post_processing", &compositor.post_process_buffer, ..)
+                .unwrap()
         })
         .unwrap();
 
