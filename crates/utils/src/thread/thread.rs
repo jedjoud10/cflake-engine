@@ -1,13 +1,15 @@
-use super::{ArcFn, ThreadFuncEntry, ThreadedTask};
-use crate::BitSet;
+use super::{ArcFn, ThreadFuncEntry, ThreadedTask, ThreadedExecuteTaskResult};
+use crate::{BitSet};
 use crate::{SliceTuple, ThreadPoolScope};
 
+use ahash::AHashMap;
+use crossbeam_channel::{Sender, Receiver};
 use parking_lot::Mutex;
+use std::any::TypeId;
 use std::{
     any::Any,
     sync::{
         atomic::{AtomicU32, Ordering},
-        mpsc::{Receiver, Sender},
         Arc,
     },
     thread::JoinHandle,
@@ -16,18 +18,22 @@ use std::{
 // A single threadpool that contains multiple worker threads that are ready to be executed in parallel
 pub struct ThreadPool {
     // Task sender and receiver
-    task_sender: Option<Sender<ThreadedTask>>,
-    task_receiver: Arc<Mutex<Receiver<ThreadedTask>>>,
+    pub(super) task_sender: Option<Sender<ThreadedTask>>,
+    pub(super) task_receiver: Receiver<ThreadedTask>,
+
+    // Task result sender and receiver
+    pub(crate) task_results_sender: Sender<ThreadedExecuteTaskResult>,
+    pub(crate) task_results_receiver: Receiver<ThreadedExecuteTaskResult>,
 
     // Number of tasks that are waiting to get executed
-    waiting: Arc<AtomicU32>,
+    pub(crate) waiting: Arc<AtomicU32>,
 
     // Number of active threads currently working
-    active: Arc<AtomicU32>,
-    panicked: Arc<Mutex<Option<usize>>>,
+    pub(crate) active: Arc<AtomicU32>,
+    pub(crate) panicked: Arc<Mutex<Option<usize>>>,
 
     // Join handles for the OS threads
-    joins: Vec<JoinHandle<()>>,
+    pub(crate) joins: Vec<JoinHandle<()>>,
 }
 
 impl Default for ThreadPool {
@@ -39,7 +45,8 @@ impl Default for ThreadPool {
 impl ThreadPool {
     // Create a new thread pool with a specific number of threads
     pub fn with(num: usize) -> Self {
-        let (task_sender, task_receiver) = std::sync::mpsc::channel::<ThreadedTask>();
+        let (task_sender, task_receiver) = crossbeam_channel::unbounded::<ThreadedTask>();
+        let (task_results_sender, task_results_receiver) = crossbeam_channel::unbounded::<ThreadedExecuteTaskResult>();
 
         // Create a simple threadpool
         let mut threadpool = Self {
@@ -47,8 +54,10 @@ impl ThreadPool {
             joins: Default::default(),
             waiting: Arc::new(AtomicU32::new(0)),
             task_sender: Some(task_sender),
-            task_receiver: Arc::new(Mutex::new(task_receiver)),
+            task_receiver,
             panicked: Arc::new(Mutex::new(None)),
+            task_results_sender,
+            task_results_receiver,
         };
 
         // Spawn the worker threads
@@ -190,16 +199,16 @@ impl ThreadPool {
     }
 
     // Add a new task to execute in the threadpool. This task will run in the background
-    pub fn execute<F: FnOnce() + Send + 'static>(&mut self, function: F) {
-        let task = ThreadedTask::Execute(Box::new(function));
+    pub fn execute<R: Send + 'static, F: FnOnce() -> R + Send + 'static>(&mut self, function: F) {
+        let task = ThreadedTask::Execute(Box::new(move || Box::new(function())), self.task_results_sender.clone());
         self.append(task);
     }
 
     // Create a scope that we can use to send multiple commands to the threads
     pub fn scope<'a>(&'a mut self, function: impl FnOnce(&mut ThreadPoolScope<'a>)) {
         let mut scope = ThreadPoolScope { pool: self };
-
         function(&mut scope);
+        scope.pool.join();
         drop(scope);
     }
 
@@ -229,6 +238,8 @@ impl ThreadPool {
             std::hint::spin_loop();
         }
     }
+
+    // Fetch the results 
 }
 
 impl Drop for ThreadPool {
@@ -272,7 +283,9 @@ fn spawn(threadpool: &ThreadPool, index: usize) -> JoinHandle<()> {
 
             loop {
                 // No task, block so we shall wait
-                let task = if let Ok(task) = task_receiver.lock().recv() {
+                // TODO: Please change this to a better type scheduler this is shit
+                // TODO: Pwease optimize
+                let task = if let Ok(task) = task_receiver.recv() {
                     task
                 } else {
                     break;

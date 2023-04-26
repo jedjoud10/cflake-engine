@@ -51,7 +51,7 @@ fn update(world: &mut World) {
     };
 
     // Check if it moved since last frame
-    if added /*|| new != old*/ {
+    if added || new != old {
         // Keep a hashset of all the chunks around the viewer
         let mut chunks = AHashSet::<ChunkCoords>::new();
 

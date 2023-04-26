@@ -130,6 +130,7 @@ fn render(world: &mut World) {
     let scene = world.get::<Scene>().unwrap();
     let pipelines = world.get::<Pipelines>().unwrap();
     let time = world.get::<Time>().unwrap();
+    let graphics = world.get::<Graphics>().unwrap();
 
     // Needed for direct rendering
     let meshes = world.get::<Storage<Mesh>>().unwrap();

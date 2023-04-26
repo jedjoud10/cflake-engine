@@ -94,7 +94,7 @@ impl MemoryManager {
         compiler.use_constant(2, settings.triangles_per_sub_allocation);
 
         // Create the compute shader that will find a free memory allocation
-        let compute_find = ComputeShader::new(module, compiler).unwrap();
+        let compute_find = ComputeShader::new(module, &compiler).unwrap();
 
         let module = assets
             .load::<ComputeModule>("engine/shaders/terrain/copy.comp")
@@ -133,7 +133,7 @@ impl MemoryManager {
         compiler.use_storage_buffer::<u32>("output_triangles", StorageAccess::WriteOnly);
 
         // Create copy the compute shader
-        let compute_copy = ComputeShader::new(module, compiler).unwrap();
+        let compute_copy = ComputeShader::new(module, &compiler).unwrap();
 
         Self {
             shared_tex_coord_buffers,

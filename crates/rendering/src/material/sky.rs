@@ -36,7 +36,7 @@ impl Material for SkyMaterial {
         compiler.use_uniform_buffer::<SceneUniform>("scene");
 
         // Compile the modules into a shader
-        Shader::new(vert, frag, compiler).unwrap()
+        Shader::new(vert, frag, &compiler).unwrap()
     }
 
     // Get the required mesh attributes that we need to render a surface

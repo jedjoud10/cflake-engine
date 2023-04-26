@@ -100,3 +100,14 @@ mod shapes {
         }
     }
 }
+
+#[cfg(test)]
+mod octree {
+    use crate::Octree;
+
+    #[test]
+    fn init() {
+        let octree = Octree::new(8);
+        assert_eq!(octree.size(), 256);
+    }
+}

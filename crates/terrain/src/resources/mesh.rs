@@ -70,7 +70,7 @@ impl MeshGenerator {
         }
 
         // Create the compute vertices shader
-        let compute_vertices = ComputeShader::new(module, compiler).unwrap();
+        let compute_vertices = ComputeShader::new(module, &compiler).unwrap();
 
         // Load the comput module for quads generation
         let module = assets
@@ -93,7 +93,7 @@ impl MeshGenerator {
         compiler.use_constant(0, settings.size);
 
         // Create the compute quads shader
-        let compute_quads = ComputeShader::new(module, compiler).unwrap();
+        let compute_quads = ComputeShader::new(module, &compiler).unwrap();
 
         Self {
             temp_vertices,

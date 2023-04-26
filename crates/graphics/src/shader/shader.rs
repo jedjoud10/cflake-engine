@@ -23,9 +23,8 @@ impl Shader {
     pub fn new(
         vertex: VertexModule,
         fragment: FragmentModule,
-        compiler: Compiler,
+        compiler: &Compiler,
     ) -> Result<Self, ShaderError> {
-        // TODO: Split this if needed?
         let vertex = compiler.compile(vertex)?;
         let fragment = compiler.compile(fragment)?;
         let names = [vertex.name(), fragment.name()];
@@ -70,7 +69,7 @@ pub struct ComputeShader {
 
 impl ComputeShader {
     // Create a new compute shader from the compute module
-    pub fn new(module: ComputeModule, compiler: Compiler) -> Result<Self, ShaderError> {
+    pub fn new(module: ComputeModule, compiler: &Compiler) -> Result<Self, ShaderError> {
         let compiled = compiler.compile(module)?;
         let names = [compiled.name()];
         let modules = [compiled.reflected()];
@@ -82,7 +81,10 @@ impl ComputeShader {
                 .graphics
                 .device()
                 .create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-                    label: None,
+                    label: Some(&format!(
+                        "compute-pipeline-{:?}",
+                        compiled.name()
+                    )),
                     layout: Some(&layout),
                     module: compiled.module(),
                     entry_point: "main",

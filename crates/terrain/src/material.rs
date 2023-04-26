@@ -93,7 +93,7 @@ impl Material for TerrainMaterial {
         );
 
         // Compile the modules into a shader
-        Shader::new(vert, frag, compiler).unwrap()
+        Shader::new(vert, frag, &compiler).unwrap()
     }
 
     // Terrain only needs tex coordinates (packed)

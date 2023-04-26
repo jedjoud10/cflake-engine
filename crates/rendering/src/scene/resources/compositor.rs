@@ -70,7 +70,7 @@ impl Compositor {
         compiler.use_uniform_buffer::<PostProcessUniform>("post_processing");
 
         // Combine the modules to the shader
-        let shader = Shader::new(vertex, fragment, compiler).unwrap();
+        let shader = Shader::new(vertex, fragment, &compiler).unwrap();
 
         // Create the display render pass
         let render_pass = FinalRenderPass::new(

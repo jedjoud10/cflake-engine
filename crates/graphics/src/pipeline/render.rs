@@ -111,7 +111,6 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPipeline<C, DS> {
 }
 
 // Convert the given vertex config to the vertex attributes used by the vertex buffer layout
-// TODO: Implement vertex attribute compacting (AoS instead of SoA)
 fn vertex_config_to_vertex_attributes(
     vertex_config: &VertexConfig,
 ) -> Vec<Vec<wgpu::VertexAttribute>> {

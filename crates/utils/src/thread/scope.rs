@@ -1,5 +1,5 @@
-use super::ThreadedTask;
-use crate::BitSet;
+use super::{ThreadedTask, ThreadedExecuteTaskResult};
+use crate::{BitSet};
 use crate::{SliceTuple, ThreadPool};
 
 // A threadpool scope is a helper struct that allows us to send functions to execute on other threads
@@ -11,16 +11,16 @@ pub struct ThreadPoolScope<'a> {
 impl<'a> ThreadPoolScope<'a> {
     // Add a new task to execute in the threadpool. This task will run in the background
     // All tasks that have been sent will be completed before the current scope exits
-    pub fn execute(&mut self, function: impl FnOnce() + Send + 'a) {
-        type BoxFn<'b> = Box<dyn FnOnce() + Send + 'b>;
-        let function: BoxFn<'a> = Box::new(function);
+    pub fn execute<R: Send + 'static, F: FnOnce() -> R + Send + 'a>(&mut self, function: F) {
+        type BoxFn<'b> = Box<dyn FnOnce() -> ThreadedExecuteTaskResult + Send + 'b>;
+        let function: BoxFn<'a> = Box::new(move || Box::new(function()));
 
         // Convert the lifetimed box into a static box
         let function: BoxFn<'static> =
             unsafe { std::mem::transmute::<BoxFn<'a>, BoxFn<'static>>(function) };
 
         // Execute the task
-        let task = ThreadedTask::Execute(function);
+        let task = ThreadedTask::Execute(function, self.pool.task_results_sender.clone());
         self.pool.append(task);
     }
 
@@ -46,16 +46,5 @@ impl<'a> ThreadPoolScope<'a> {
     ) {
         self.pool
             .for_each_async(list, function, Some(bitset), batch_size)
-    }
-
-    // Wait till all the threads finished executing
-    pub fn join(&mut self) {
-        self.pool.join()
-    }
-}
-
-impl<'a> Drop for ThreadPoolScope<'a> {
-    fn drop(&mut self) {
-        self.join();
     }
 }

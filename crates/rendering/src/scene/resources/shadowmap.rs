@@ -98,7 +98,7 @@ impl ShadowMapping {
         compiler.use_push_constant_layout(layout);
 
         // Combine the modules to the shader
-        let shader = Shader::new(vertex, fragment, compiler).unwrap();
+        let shader = Shader::new(vertex, fragment, &compiler).unwrap();
 
         // Create the shadow map render pass
         let render_pass = ShadowRenderPass::new(

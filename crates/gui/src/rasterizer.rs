@@ -97,7 +97,7 @@ impl Rasterizer {
         compiler.use_uniform_buffer::<WindowUniform>("window");
 
         // Compile the modules into a shader
-        let shader = Shader::new(vertex, fragment, compiler).unwrap();
+        let shader = Shader::new(vertex, fragment, &compiler).unwrap();
 
         // Create the render pass that will write to the swapchain
         let render_pass = FinalRenderPass::new(

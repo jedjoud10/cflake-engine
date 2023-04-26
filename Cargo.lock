@@ -3359,6 +3359,7 @@ dependencies = [
  "boxcar",
  "casey",
  "chrono",
+ "crossbeam-channel",
  "crossbeam-deque",
  "itertools",
  "log",

@@ -54,8 +54,8 @@ impl<'a, T: GpuPod, const TYPE: u32> BufferViewMut<'a, T, TYPE> {
     pub fn as_slice(&self) -> &[T] {
         match self {
             BufferViewMut::Mapped { data, .. } => {
-                let bytes = data.as_ref();
-                bytemuck::cast_slice(bytes)
+                // This should never be called because it would return invalid data
+                panic!();
             }
             BufferViewMut::Cloned { data, .. } => &data,
         }

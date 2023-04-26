@@ -52,7 +52,6 @@ pub type DispatchIndirectBuffer = Buffer<DispatchIndirect, INDIRECT>;
 
 // A buffer abstraction over a valid WGPU buffer
 // This also takes a constant that represents it's Wgpu target at compile time
-// TODO: Handle async read writes and async command buf submissions
 pub struct Buffer<T: GpuPod, const TYPE: u32 = 0> {
     // Raw WGPU buffer
     buffer: wgpu::Buffer,
@@ -613,8 +612,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         // Get the staging pool for download
         let staging = self.graphics.staging_pool();
         let data = staging
-            .map_buffer_read(&self.graphics, &self.buffer, offset as u64, size as u64)
-            .unwrap();
+            .map_buffer_read(&self.graphics, &self.buffer, offset as u64, size as u64);
 
         Ok(BufferView {
             buffer: &self,
@@ -625,6 +623,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
     // Try to view the buffer mutably (for writing AND reading) immediately
     // Will stall the CPU, since this is synchronous
     // If the BufferUsage is Write only, then reading from BufferViewMut might be slow / might not return buffer contents
+    // If the user tries to read an immutable slice from the BufferView then the program will panic
     pub fn as_view_mut(
         &mut self,
         bounds: impl RangeBounds<usize>,

@@ -78,7 +78,7 @@ impl Material for PhysicallyBasedMaterial {
         );
 
         // Compile the modules into a shader
-        Shader::new(vert, frag, compiler).unwrap()
+        Shader::new(vert, frag, &compiler).unwrap()
     }
 
     // Fetch the texture storages

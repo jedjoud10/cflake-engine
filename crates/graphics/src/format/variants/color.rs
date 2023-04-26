@@ -1,7 +1,6 @@
 use crate::{AnyElement, Conversion, Normalized, Texel, BGRA, R, RG, RGBA};
 
 // Color texels are texels used for color attachments
-// TODO: Figure out if there are any limits to this
 // TODO: Maybe add saturation / hue control (since this is strictly color after all)
 pub trait ColorTexel: Texel + Conversion<Target = vek::Vec4<f32>> {
     // Convert this texel to the wgpu color struct (if possible)
@@ -24,7 +23,6 @@ pub trait ColorTexel: Texel + Conversion<Target = vek::Vec4<f32>> {
     }
 
     // Divide the texel by the given factor
-    // TODO: Optimize
     fn divide(texel: Self::Storage, factor: f32) -> Self::Storage {
         let a = Self::into_target(texel) / factor;
         Self::try_from_target(a).unwrap()

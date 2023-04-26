@@ -8,7 +8,6 @@ pub trait ActivePipeline {
     type Pipeline;
 
     // Set push constants before rendering
-    // TODO: Currently, push constants can be "composed" by calling this method multiple times with different offsets
     // I gotta implement the same mechanic for bind groups as well in the future
     fn set_push_constants(
         &mut self,
