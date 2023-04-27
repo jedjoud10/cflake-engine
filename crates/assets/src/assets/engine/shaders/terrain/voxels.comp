@@ -1,7 +1,9 @@
 #version 460 core
 layout (local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
 
-// 1 byte contain the density
+// 2 byte contain the density (half precision)
+// 2 byte containing derivatives (used for normals)
+// 1 byte containing material maybe?
 layout(set=0, binding=0, rg32f) writeonly uniform image3D voxels;
 
 #include <engine/shaders/terrain/default/voxel.glsl>
@@ -11,7 +13,8 @@ void main() {
     float density = voxel(vec3(gl_GlobalInvocationID.xyz));
 
     // Clamp the density between -1 and 1
-    density = clamp(density, -1, 1);
+    //uint packed = packSnorm2x16(vec2(density, 0))
+    //density = clamp(density, -1, 1);
 
     vec4 data = vec4(density, 0, 0, 0);
 

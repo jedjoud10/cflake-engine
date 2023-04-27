@@ -50,7 +50,7 @@ void add_quad(
     triangles.data[base + (flip ? 5 : 3)] = index2;
 }
 
-// Checks an edge and creates new triangles if needed
+// Checks an edge and creates new triangles
 void check_edge(
     float density0,
     uvec3 end,
@@ -61,6 +61,7 @@ void check_edge(
 ) {
     // Get the densities of the edge
     float density1 = imageLoad(voxels, ivec3(end)).x;
+    bool dir = density1 > 0.0;
 
     // Create a quad if they do
     if ((density0 > 0.0 ^^ density1 > 0.0)) {
@@ -70,7 +71,32 @@ void check_edge(
             quad2,
             quad3,
             uvec3(end),
-            density1 > 0.0
+            dir
+        );
+    }
+}
+
+// Creates a quad specifically used for skirts
+void check_skirt_edge(
+    uvec3 end,
+    uvec3 quad0,
+    uvec3 quad1,
+    uvec3 quad2,
+    uvec3 quad3,
+    bool flip
+) {
+    // Get the densities of the edge
+    float density1 = imageLoad(voxels, ivec3(end)).x;
+
+    // Create a quad if they do
+    if (density1 < 0.0) {
+        add_quad(
+            quad0,
+            quad1,
+            quad2,
+            quad3,
+            uvec3(end),
+            flip
         );
     }
 }
@@ -78,28 +104,44 @@ void check_edge(
 void main() {
     // Skip chunk faces since they will return incorrect data
     if (any(equal(gl_GlobalInvocationID, uvec3(0))) || any(greaterThanEqual(gl_GlobalInvocationID, uvec3(size - 2)))) {
-        if (gl_GlobalInvocationID.z == 0) {
-            check_edge(
-                1,
-                gl_GlobalInvocationID + uvec3(0, 0, 1),
-                uvec3(0, 0, 0),
-                uvec3(0, 1, 0),
-                uvec3(1, 0, 0),
-                uvec3(1, 1, 0)
-            );
-        }
-
         return;
     }
-
-    /*
-    if (any(greaterThanEqual(gl_GlobalInvocationID, uvec3(size - 2)))) {
-        return;
-    }
-    */
 
     // Get the start density
     float density0 = imageLoad(voxels, ivec3(gl_GlobalInvocationID)).x;
+
+    if (gl_GlobalInvocationID.z == size - 3) {
+        check_edge(
+            density0 + 20,
+            gl_GlobalInvocationID + uvec3(0, 0, 1),
+            uvec3(0, 0, 0),
+            uvec3(0, 1, 0),
+            uvec3(1, 0, 0),
+            uvec3(1, 1, 0)
+        );
+    }
+    
+    if (gl_GlobalInvocationID.x == size - 3) {
+        check_edge(
+            density0 + 20,
+            gl_GlobalInvocationID + uvec3(1, 0, 0),
+            uvec3(0, 0, 0),
+            uvec3(0, 0, 1),
+            uvec3(0, 1, 0),
+            uvec3(0, 1, 1)
+        );
+    }
+
+    if (gl_GlobalInvocationID.y == size - 3) {
+        check_edge(
+            density0 + 20,
+            gl_GlobalInvocationID + uvec3(0, 1, 0),
+            uvec3(0, 0, 0),
+            uvec3(1, 0, 0),
+            uvec3(0, 0, 1),
+            uvec3(1, 0, 1)
+        );
+    }
 
     // Check the Z axis edge
     check_edge(
