@@ -6,7 +6,7 @@ pub type ViewDimension = wgpu::TextureViewDimension;
 pub type Dimension = wgpu::TextureDimension;
 
 // Texture dimensions traits that are simply implemented for extents
-pub trait Extent: Copy {
+pub trait Extent: Copy + Send + Sync {
     // Get the surface area of a superficial rectangle that uses these extents as it's dimensions
     fn area(&self) -> u32;
 

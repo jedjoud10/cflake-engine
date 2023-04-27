@@ -78,8 +78,25 @@ void check_edge(
 void main() {
     // Skip chunk faces since they will return incorrect data
     if (any(equal(gl_GlobalInvocationID, uvec3(0))) || any(greaterThanEqual(gl_GlobalInvocationID, uvec3(size - 2)))) {
+        if (gl_GlobalInvocationID.z == 0) {
+            check_edge(
+                1,
+                gl_GlobalInvocationID + uvec3(0, 0, 1),
+                uvec3(0, 0, 0),
+                uvec3(0, 1, 0),
+                uvec3(1, 0, 0),
+                uvec3(1, 1, 0)
+            );
+        }
+
         return;
     }
+
+    /*
+    if (any(greaterThanEqual(gl_GlobalInvocationID, uvec3(size - 2)))) {
+        return;
+    }
+    */
 
     // Get the start density
     float density0 = imageLoad(voxels, ivec3(gl_GlobalInvocationID)).x;
