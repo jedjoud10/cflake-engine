@@ -32,9 +32,9 @@ fn init(world: &mut World) {
     internal!(loader, "engine/shaders/sdf/operations.glsl");
 
     // Load the default rendering shaders
+    internal!(loader, "engine/shaders/scene/basic/basic.vert");
     internal!(loader, "engine/shaders/scene/basic/basic.frag");
     internal!(loader, "engine/shaders/scene/pbr/pbr.frag");
-    internal!(loader, "engine/shaders/scene/basic/basic.vert");
     internal!(loader, "engine/shaders/scene/shadow/shadow.frag");
     internal!(loader, "engine/shaders/scene/shadow/shadow.vert");
     internal!(loader, "engine/shaders/scene/shadow/terrain.vert");
@@ -42,6 +42,8 @@ fn init(world: &mut World) {
     internal!(loader, "engine/shaders/scene/sky/sky.vert");
     internal!(loader, "engine/shaders/scene/terrain/terrain.vert");
     internal!(loader, "engine/shaders/scene/terrain/terrain.frag");
+    internal!(loader, "engine/shaders/scene/wireframe/wireframe.vert");
+    internal!(loader, "engine/shaders/scene/wireframe/wireframe.frag");
 
     // Load the default post-rendering shaders
     internal!(loader, "engine/shaders/post/display.frag");

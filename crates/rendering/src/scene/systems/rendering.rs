@@ -3,7 +3,7 @@ use std::{mem::size_of, num::NonZeroU8};
 use crate::{
     AlbedoMap, AttributeBuffer, BasicMaterial, Camera, DefaultMaterialResources, DirectionalLight,
     ForwardRenderer, Indirect, MaskMap, Mesh, NormalMap, PhysicallyBasedMaterial, Pipelines,
-    Renderer, SceneUniform, ShadowMapping, SkyMaterial, WindowUniform, MultiDrawIndirectMesh, IndirectMesh,
+    Renderer, SceneUniform, ShadowMapping, SkyMaterial, WindowUniform, MultiDrawIndirectMesh, IndirectMesh, WireframeMaterial,
 };
 use assets::Assets;
 
@@ -81,6 +81,7 @@ fn init(world: &mut World) {
     world.insert(Storage::<BasicMaterial>::default());
     world.insert(Storage::<SkyMaterial>::default());
     world.insert(Storage::<PhysicallyBasedMaterial>::default());
+    world.insert(Storage::<WireframeMaterial>::default());
     world.insert(albedo_maps);
     world.insert(normal_maps);
     world.insert(mask_maps);

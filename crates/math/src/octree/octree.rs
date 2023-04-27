@@ -1,5 +1,7 @@
 use std::num::NonZeroUsize;
 
+use ahash::{AHashMap, AHashSet};
+
 // An octree is a tree data structure that contains multiple "nodes" that each have 8 children
 // Octrees are used for hierarchy partitionaning, terrain generation, and even collision detection
 // Octrees are the 3D variant of quadtrees and quadtrees are the 2D variant of binary trees
@@ -13,32 +15,35 @@ pub struct Octree {
 impl Octree {
     // Create an octree with a specified LOD size
     pub fn new(depth: u32) -> Self {
-        let mut octree = Self {
+        Self {
             positions: Vec::new(),
             depths: Vec::new(),
             max_depth: depth,
             children: Vec::new(),
-        };
-
-        // Add a root node to the octree
-        octree.positions.push(vek::Vec3::broadcast(-2i32.pow(depth) / 2));
-        octree.depths.push(0);
-        octree.children.push(None);
-        octree
+        }
     }
 
     // Recalculate the octree using a specific camera location
-    // This will generate/delete nodes around the camera
-    pub fn compute(&mut self, target: vek::Vec3<f32>) -> OctreeDelta {
+    pub fn compute(&mut self, target: vek::Vec3<f32>) -> Vec<Node> {
+        // Clear vectors
+        self.positions.clear();
+        self.depths.clear();
+        self.children.clear();
+
         // Keep track of the chunks we will check for
         let mut checking = vec![0usize];
+        self.depths.push(0);
+        self.positions.push(vek::Vec3::broadcast(-2i32.pow(self.max_depth) / 2));
+
+        // Keep track of the generated nodes
+        let mut nodes = Vec::<Node>::new();
 
         // Iterate over the nodes that we must evalute
         while let Some(node) = checking.pop() {
             // Get the center of the node
             let depth = self.depths[node];
             let position = self.positions[node];
-            let half = vek::Vec3::broadcast(2u32.pow(depth) / 2);
+            let half = vek::Vec3::broadcast(2u32.pow(self.max_depth - depth) / 2);
             let center = position + half.as_::<i32>();
             
             // Check if we should split the node into multiple
@@ -71,13 +76,24 @@ impl Octree {
                 // so instead of storing each child index we only need to store the "base" child index
                 self.children[node] = Some(NonZeroUsize::new(node + 1).unwrap());
             }
+
+            if depth != 0 {
+                nodes.push(Node {
+                    position,
+                    depth,
+                    index: node,
+                    children: self.children[node],
+                })
+            }
         }
 
-        todo!()
+        nodes
     }
 
     // Iterate over the octree recursively using a "check" function
-    pub fn recurse(&self, callback: impl Fn() -> bool) {
+    // TODO: Multithread this
+    pub fn recurse(&self, callback: impl Fn(Node) -> bool) {
+        todo!()
     }
 
     // Get the size of the root node of the octree
@@ -97,9 +113,8 @@ pub struct OctreeDelta {
 pub struct Node {
     position: vek::Vec3<i32>,
     depth: u32,
-    parent: usize,
     index: usize,
-    children: Option<[NonZeroUsize; 8]>
+    children: Option<NonZeroUsize>
 }
 
 impl Node {
@@ -108,18 +123,28 @@ impl Node {
         self.position
     }
     
-    // Get the node's parent node index
-    pub fn parent(&self) -> usize {
-        self.parent
-    }
-    
     // Get the current node's index
     pub fn index(&self) -> usize {
         self.index
     }
+
+    // Get the depth of the node
+    pub fn depth(&self) -> u32 {
+        self.depth
+    }
     
     // Get the node's children (if it has any)
     pub fn children(&self) -> Option<[NonZeroUsize; 8]> {
-        self.children
+        self.children.map(|x| [
+            x,
+            x.saturating_add(1),
+            x.saturating_add(2),
+            x.saturating_add(3),
+
+            x.saturating_add(4),
+            x.saturating_add(5),
+            x.saturating_add(6),
+            x.saturating_add(7),
+        ])
     }
 }
