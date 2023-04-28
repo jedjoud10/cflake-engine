@@ -16,6 +16,8 @@ use std::{
 };
 
 // A single threadpool that contains multiple worker threads that are ready to be executed in parallel
+// TODO: Should we make this global?
+// TODO: Should we actually not use a threadpool and use rayon instead?
 pub struct ThreadPool {
     // Task sender and receiver
     pub(super) task_sender: Option<Sender<ThreadedTask>>,
@@ -238,8 +240,6 @@ impl ThreadPool {
             std::hint::spin_loop();
         }
     }
-
-    // Fetch the results 
 }
 
 impl Drop for ThreadPool {

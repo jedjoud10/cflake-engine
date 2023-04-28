@@ -89,6 +89,9 @@ fn init(world: &mut World) {
     let scale = Scale::uniform(25.0);
     scene.insert((surface, renderer, scale));
 
+    let mut octree = Octree::new(8);
+    let nodes = octree.compute(vek::Vec3::zero());
+
     // ADD THE ENTITIES NOW!!
     scene.extend_from_iter((0..(25)).map(|x| {
         let renderer = Renderer::default();

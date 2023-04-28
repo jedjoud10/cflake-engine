@@ -64,36 +64,55 @@ impl Octree {
                     vek::Vec3::new(0, 1, 1),
                 ];
 
+                // Create the children nodes and add them to the octree                 
                 for children in 0..8usize {
                     let pos = (OFFSETS[children] * half).as_::<i32>() + position;
                     self.depths.push(depth + 1);
                     self.children.push(None);
                     self.positions.push(pos);
-                    checking.push(children + node + 1);
                 }
+                
+                // Add the children to the nodes that we must process
+                let base = node + 1;
+                checking.extend(base..(base + 8));
 
                 // We know we will *always* have 8 children, and we know they are tightly packed together
                 // so instead of storing each child index we only need to store the "base" child index
                 self.children[node] = Some(NonZeroUsize::new(node + 1).unwrap());
             }
 
-            if depth != 0 {
-                nodes.push(Node {
-                    position,
-                    depth,
-                    index: node,
-                    children: self.children[node],
-                })
-            }
+            nodes.push(Node {
+                position,
+                depth,
+                index: node,
+                children: self.children[node],
+            })
         }
 
         nodes
     }
 
     // Iterate over the octree recursively using a "check" function
-    // TODO: Multithread this
     pub fn recurse(&self, callback: impl Fn(Node) -> bool) {
-        todo!()
+        let mut checking = vec![0usize];
+        while let Some(index) = checking.pop() {
+            let depth = self.depths[index];
+            let position = self.positions[index];
+            let half = vek::Vec3::broadcast(2u32.pow(self.max_depth - depth) / 2);
+            let children = self.children[index].is_some();
+
+            let node = Node {
+                position,
+                depth,
+                index,
+                children: self.children[index],
+            };
+
+            if children && callback(node) {
+                let base = index + 1;
+                checking.extend(base..(base + 8));
+            }
+        }
     }
 
     // Get the size of the root node of the octree
@@ -110,6 +129,7 @@ pub struct OctreeDelta {
 
 // An octree node is an object that *might* contain 8 children (it becomes a parent)
 // If an octree node does not contain children, then it is considered a leaf node
+#[derive(PartialEq, Eq, Hash)]
 pub struct Node {
     position: vek::Vec3<i32>,
     depth: u32,
