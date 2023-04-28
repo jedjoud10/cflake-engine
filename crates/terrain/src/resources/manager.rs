@@ -9,12 +9,13 @@ use graphics::{
     GpuPod, Graphics, ImageTexel, LayeredTexture2D, RawTexels, SamplerFilter, SamplerMipMaps,
     SamplerSettings, SamplerWrap, Texel, TextureMipMaps, TextureMode, TextureUsage, Vertex,
 };
+use math::{Octree, Node};
 use rand::seq::SliceRandom;
 use rendering::{AlbedoTexel, IndirectMesh, MaterialId, Pipelines, Renderer, Surface};
 use utils::{Handle, Storage, ThreadPool};
 
 use crate::{
-    Chunk, ChunkCoords, ChunkState, LayeredAlbedoMap, LayeredMaskMap, LayeredNormalMap,
+    Chunk, ChunkState, LayeredAlbedoMap, LayeredMaskMap, LayeredNormalMap,
     MemoryManager, TerrainMaterial, TerrainSettings, TerrainSubMaterial,
 };
 
@@ -27,12 +28,12 @@ pub struct ChunkManager {
     // Buffer that contains the indexed indirect draw commands
     pub(crate) indexed_indirect_buffer: Handle<DrawIndexedIndirectBuffer>,
 
-    // HashSet of the currently visible chunk coordinates
-    pub(crate) chunks: AHashSet<ChunkCoords>,
+    // Octree used for chunk generation
+    pub(crate) octree: Octree,
+    pub(crate) entities: AHashMap<Node, Entity>,
 
-    // Hashmap for each chunk entity
-    pub(crate) entities: AHashMap<ChunkCoords, Entity>,
-    pub(crate) viewer: Option<(Entity, ChunkCoords, vek::Quaternion<f32>)>,
+    // Viewer (camera) position
+    pub(crate) viewer: Option<(Entity, vek::Vec3<f32>, vek::Quaternion<f32>)>,
 }
 
 impl ChunkManager {
@@ -55,22 +56,16 @@ impl ChunkManager {
     ) -> Self {
         // Create ONE buffer that will store the indirect arguments
         let indexed_indirect_buffer = indirect_buffers.insert(
-            DrawIndexedIndirectBuffer::splatted(
+            DrawIndexedIndirectBuffer::from_slice(
                 graphics,
-                settings.chunk_count,
-                DrawIndexedIndirect {
-                    vertex_count: 0,
-                    instance_count: 1,
-                    base_index: 0,
-                    vertex_offset: 0,
-                    base_instance: 0,
-                },
-                BufferMode::Dynamic,
+                &[],
+                BufferMode::Resizable,
                 BufferUsage::STORAGE | BufferUsage::WRITE,
             )
             .unwrap(),
         );
 
+        /*
         // Create vector of indices, and shuffle it
         let mut vector = (0..(settings.chunk_count)).into_iter().collect::<Vec<_>>();
         let mut rng = rand::thread_rng();
@@ -106,6 +101,7 @@ impl ChunkManager {
             // Insert the mesh into the storage
             indirect_meshes.insert(mesh)
         });
+        */
 
         // Create a layered texture 2D that contains the diffuse maps
         let layered_albedo_map = load_layered_texture(
@@ -152,6 +148,7 @@ impl ChunkManager {
             .register_with(graphics, &*settings, assets)
             .unwrap();
 
+        /*
         // Add the required chunk entities
         scene.extend_from_iter(vector.iter().zip(indirect_meshes).map(|(i, mesh)| {
             // Create the surface for rendering
@@ -184,15 +181,19 @@ impl ChunkManager {
             // Create the bundle
             (surface, renderer, position, chunk)
         }));
+        */
+
+        // Create an octree for LOD chunk generation
+        let octree = Octree::new(settings.max_depth, settings.size);
 
         // Create the chunk manager
         Self {
             material,
             id,
-            chunks: Default::default(),
-            entities: Default::default(),
             viewer: None,
             indexed_indirect_buffer,
+            octree,
+            entities: Default::default(),
         }
     }
 }

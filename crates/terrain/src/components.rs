@@ -1,4 +1,5 @@
 use ecs::Component;
+use math::Node;
 
 // This is what we will add onto the camera to let it dynamically generate chunks
 // The chunk viewer must always have a position component attached to it
@@ -21,9 +22,6 @@ pub enum ChunkState {
     Generated,
 }
 
-// Coordniate system for chunks
-pub type ChunkCoords = vek::Vec3<i32>;
-
 // This is a terrain chunk component that will be automatically added
 // on entities that are generated from the terrain generator
 // Each chunk has a specific state associated with it that represents what stage it's in for terrain generation
@@ -34,14 +32,14 @@ pub struct Chunk {
     pub(crate) global_index: usize,
     pub(crate) ranges: Option<vek::Vec2<u32>>,
     pub(crate) state: ChunkState,
-    pub(crate) coords: ChunkCoords,
+    pub(crate) node: Node,
     pub(crate) priority: f32,
 }
 
 impl Chunk {
-    // Get the chunk coordinates
-    pub fn coords(&self) -> ChunkCoords {
-        self.coords
+    // Corresponding octree node for this chunk
+    pub fn node(&self) -> &Node {
+        &self.node
     }
 
     // Get the current chunk state

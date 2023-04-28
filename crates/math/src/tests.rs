@@ -107,7 +107,7 @@ mod octree {
 
     #[test]
     fn init() {
-        let octree = Octree::new(8);
-        assert_eq!(octree.size(), 256);
+        let octree = Octree::new(8, 4);
+        assert_eq!(octree.size(), 1024);
     }
 }

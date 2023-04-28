@@ -25,7 +25,7 @@ Currently, cFlake engine is under heavy development (***very*** WIP), but pull r
 * ✅ = complete
 
 ## Crates
-* World: ⚠️
+* World: 🚧
 * Utils: ⚠️
 * Terrain: 🚧
 * Graphics: 🚧
@@ -34,7 +34,7 @@ Currently, cFlake engine is under heavy development (***very*** WIP), but pull r
 * Math: 🚧
 * Input: ✅
 * ECS: ✅
-* Asset loader: ✅
+* Asset loader: ⚠️
 * Audio: ❌
 * GUI (eGUI): 🚧
   

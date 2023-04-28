@@ -1,15 +1,16 @@
 use crate::{
-    Chunk, ChunkCoords, ChunkManager, ChunkState, ChunkViewer, Terrain, TerrainMaterial,
+    Chunk, ChunkManager, ChunkState, ChunkViewer, Terrain, TerrainMaterial,
     TerrainSettings,
 };
 use ahash::{AHashMap, AHashSet};
 
-use coords::{Position, Rotation};
+use coords::{Position, Rotation, Scale};
 use ecs::{Entity, Scene};
 
 use graphics::{
     ActivePipeline, ComputePass, DrawIndexedIndirect, DrawIndexedIndirectBuffer, Graphics,
 };
+use math::OctreeDelta;
 use rendering::{IndirectMesh, Renderer, Surface};
 use utils::{Storage, Time, ThreadPool};
 use world::{user, System, World};
@@ -39,9 +40,7 @@ fn update(world: &mut World) {
 
     // Set the main viewer location and fetches the oldvalue
     let mut added = false;
-    let new = (**viewer_position / vek::Vec3::broadcast(settings.size as f32))
-        .round()
-        .as_::<i32>();
+    let new = **viewer_position;
     let old = if let Some((_, old, _)) = &mut manager.viewer {
         std::mem::replace(old, new)
     } else {
@@ -52,29 +51,13 @@ fn update(world: &mut World) {
 
     // Check if it moved since last frame
     if added || new != old {
-        // Keep a hashset of all the chunks around the viewer
-        let mut chunks = AHashSet::<ChunkCoords>::new();
+        // Regenerate the octree and detect diffs
+        let OctreeDelta {
+            added,
+            removed
+        } = manager.octree.compute(new, settings.radius);
 
-        // Generate the chunks around ze player
-        let distance = settings.chunk_render_distance as i32;
-        let vertical = ((distance as f32) / 1.4).ceil() as i32;
-        for x in -distance..=distance {
-            for y in -vertical..=vertical {
-                for z in -distance..=distance {
-                    let chunk = vek::Vec3::new(x, y, z);
-                    let view = manager.viewer.unwrap().1;
-                    chunks.insert(chunk + view);
-                }
-            }
-        }
-
-        // Detect the chunks that we should remove and "remove" them
-        let removed = manager.chunks.difference(&chunks).cloned();
-
-        // Detect the chunks that we must generate and add them
-        let added = chunks.difference(&manager.chunks).cloned();
-
-        // Set the chunk state to "free" and reset the value of the indirect buffers
+        // Set the chunk state to "free" so we can reuse it
         for coord in removed {
             let entity = manager.entities.remove(&coord).unwrap();
             let mut entry = scene.entry_mut(entity).unwrap();
@@ -82,28 +65,29 @@ fn update(world: &mut World) {
             chunk.state = ChunkState::Free;
         }
 
-        // We won't actually create new entities, only update the old ones
+        // Try to re-use "free" chunks first 
         let query = scene
             .query_mut::<(
                 &mut Chunk,
                 &mut Position,
+                &mut Scale,
                 &Entity,
                 &mut Surface<TerrainMaterial>,
             )>()
             .into_iter()
-            .filter(|(x, _, _, _)| x.state == ChunkState::Free);
+            .filter(|(x, _, _, _, _)| x.state == ChunkState::Free);
 
         // Set the "dirty" state for newly added chukns
-        for ((chunk, position, entity, surface), coords) in query.zip(added) {
+        /*
+        for ((chunk, position, scale, entity, surface), node) in query.zip(added) {
             chunk.state = ChunkState::Dirty;
-            chunk.coords = coords;
+            chunk.node = node;
             surface.visible = false;
             **position = coords.as_::<f32>() * (terrain.settings.size as f32);
             chunk.priority = 0.0;
             manager.entities.insert(coords, *entity);
         }
-
-        manager.chunks = chunks;
+        */
     }
 
     // Update priority for EACH chunk, even if the viewer did not move
