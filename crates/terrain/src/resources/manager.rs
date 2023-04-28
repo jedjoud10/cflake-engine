@@ -12,7 +12,7 @@ use graphics::{
 use math::{Octree, Node};
 use rand::seq::SliceRandom;
 use rendering::{AlbedoTexel, IndirectMesh, MaterialId, Pipelines, Renderer, Surface};
-use utils::{Handle, Storage, ThreadPool};
+use utils::{Handle, Storage};
 
 use crate::{
     Chunk, ChunkState, LayeredAlbedoMap, LayeredMaskMap, LayeredNormalMap,
@@ -52,7 +52,6 @@ impl ChunkManager {
         layered_normal_maps: &mut Storage<LayeredNormalMap>,
         layered_mask_maps: &mut Storage<LayeredMaskMap>,
         pipelines: &mut Pipelines,
-        threadpool: &mut ThreadPool,
     ) -> Self {
         // Create ONE buffer that will store the indirect arguments
         let indexed_indirect_buffer = indirect_buffers.insert(
@@ -110,7 +109,6 @@ impl ChunkManager {
             &graphics,
             layered_albedo_maps,
             |x| &x.diffuse,
-            threadpool,
         );
 
         // Create a layered texture 2D that contains the normal maps
@@ -120,7 +118,6 @@ impl ChunkManager {
             &graphics,
             layered_normal_maps,
             |x| &x.normal,
-            threadpool,
         );
 
         // Create a layered texture 2D that contains the mask maps
@@ -130,7 +127,6 @@ impl ChunkManager {
             &graphics,
             layered_mask_maps,
             |x| &x.mask,
-            threadpool,
         );
 
         // Create a new material
@@ -205,7 +201,6 @@ fn load_layered_texture<T: ImageTexel>(
     graphics: &Graphics,
     storage: &mut Storage<LayeredTexture2D<T>>,
     get_name_callback: impl Fn(&TerrainSubMaterial) -> &str,
-    threadpool: &mut ThreadPool,
 ) -> Option<Handle<LayeredTexture2D<T>>> {
     let paths = settings
         .sub_materials
@@ -214,7 +209,7 @@ fn load_layered_texture<T: ImageTexel>(
         .map(|sub| get_name_callback(&sub))
         .collect::<Vec<_>>();
 
-    let loaded = assets.async_load_from_iter::<RawTexels<T>>(paths, threadpool);
+    let loaded = assets.async_load_from_iter::<RawTexels<T>>(paths);
 
     let raw = assets
         .wait_from_iter(loaded)

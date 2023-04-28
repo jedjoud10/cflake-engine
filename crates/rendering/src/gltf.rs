@@ -23,7 +23,7 @@ use graphics::{
     SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap, Texel, Texture, Texture2D,
     TextureImportSettings, TextureMipMaps, TextureMode, TextureScale, TextureUsage, R, RG, RGBA,
 };
-use utils::{Handle, Storage, ThreadPool};
+use utils::{Handle, Storage};
 use world::{Read, World, Write};
 
 // These are the context values that must be given to the GltfScene to load it
@@ -39,7 +39,6 @@ pub struct GtlfContext<'a> {
     pub normal_maps: Write<'a, Storage<NormalMap>>,
     pub mask_maps: Write<'a, Storage<MaskMap>>,
     pub pbr_materials: Write<'a, Storage<PhysicallyBasedMaterial>>,
-    pub threadpool: Write<'a, ThreadPool>,
 }
 
 impl<'a> GtlfContext<'a> {
@@ -53,7 +52,6 @@ impl<'a> GtlfContext<'a> {
         let normal_maps = world.get_mut::<Storage<NormalMap>>()?;
         let mask_maps = world.get_mut::<Storage<MaskMap>>()?;
         let pbr_materials = world.get_mut::<Storage<PhysicallyBasedMaterial>>()?;
-        let threadpool = world.get_mut::<ThreadPool>()?;
 
         Ok(Self {
             graphics,
@@ -64,7 +62,6 @@ impl<'a> GtlfContext<'a> {
             normal_maps,
             mask_maps,
             pbr_materials,
-            threadpool,
         })
     }
 }

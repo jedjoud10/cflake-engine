@@ -12,7 +12,7 @@ use graphics::{
 };
 use math::OctreeDelta;
 use rendering::{IndirectMesh, Renderer, Surface};
-use utils::{Storage, Time, ThreadPool};
+use utils::{Storage, Time};
 use world::{user, System, World};
 
 // Dynamically generate the chunks based on camera position
@@ -91,18 +91,14 @@ fn update(world: &mut World) {
     }
 
     // Update priority for EACH chunk, even if the viewer did not move
-    let mut threadpool = world.get_mut::<ThreadPool>().unwrap();
-
-    scene.query_mut::<(&mut Chunk, &Position)>().for_each(
-        &mut threadpool,
-         |(chunk, position)| {
-            chunk.priority = (1.0 / viewer_position.distance(**position).max(1.0)) * 10.0;
-            chunk.priority *= viewer_rotation
-                .forward()
-                .dot((**position - viewer_position).normalized())
-                * 5.0;
-            chunk.priority = chunk.priority.clamp(0.0f32, 1000.0f32);
-    }, 512);
+    for (chunk, position) in scene.query_mut::<(&mut Chunk, &Position)>() {
+        chunk.priority = (1.0 / viewer_position.distance(**position).max(1.0)) * 10.0;
+        chunk.priority *= viewer_rotation
+            .forward()
+            .dot((**position - viewer_position).normalized())
+            * 5.0;
+        chunk.priority = chunk.priority.clamp(0.0f32, 1000.0f32);
+    }
 }
 
 // Adds/removes the chunk entities from the world

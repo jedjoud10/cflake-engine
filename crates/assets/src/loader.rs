@@ -1,6 +1,7 @@
 use crate::{Asset, AssetInput, AssetLoadError, AsyncAsset};
 use ahash::AHashMap;
 use parking_lot::{Mutex, RwLock};
+use threadpool::ThreadPool;
 use std::{
     any::Any,
     ffi::OsStr,
@@ -11,7 +12,6 @@ use std::{
         Arc,
     },
 };
-use utils::ThreadPool;
 
 // This is a handle to a specific asset that we are currently loading in
 pub struct AsyncHandle<A: Asset> {
@@ -61,6 +61,9 @@ pub struct Assets {
     // The value might be none in the case that the bytes were not loaded
     // The path buf contains the local path of each asset
     bytes: AsyncLoadedBytes,
+
+    // Threadpool for asynchronously loading assets
+    threadpool: ThreadPool,
 }
 
 impl Default for Assets {
@@ -73,6 +76,7 @@ impl Default for Assets {
             receiver,
             sender,
             hijack: Default::default(),
+            threadpool: ThreadPool::new(4),
         }
     }
 }
@@ -303,7 +307,6 @@ impl Assets {
     pub fn async_load<'str, A: AsyncAsset>(
         &self,
         input: impl AssetInput<'str, 'static, 'static, A>,
-        threadpool: &mut ThreadPool,
     ) -> AsyncHandle<A>
     where
         A::Settings<'static>: Send + Sync,
@@ -329,7 +332,7 @@ impl Assets {
         self.loaded.lock().push(None);
 
         // Create a new task that will load this asset
-        threadpool.execute(move || {
+        self.threadpool.execute(move || {
             Self::async_load_inner::<A>(owned, bytes, hijack, context, settings, sender, index);
         });
         handle
@@ -340,7 +343,6 @@ impl Assets {
     pub fn async_load_from_iter<'s, A: AsyncAsset>(
         &self,
         inputs: impl IntoIterator<Item = impl AssetInput<'s, 'static, 'static, A> + Send>,
-        threadpool: &mut ThreadPool,
     ) -> Vec<AsyncHandle<A>>
     where
         A::Settings<'static>: Send + Sync,
@@ -372,7 +374,7 @@ impl Assets {
             loaded.push(None);
 
             // Start telling worker threads to begin loading the assets
-            threadpool.execute(move || {
+            self.threadpool.execute(move || {
                 Self::async_load_inner::<A>(owned, bytes, hijack, context, settings, sender, index);
             });
         }
