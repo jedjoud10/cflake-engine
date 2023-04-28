@@ -270,7 +270,6 @@ fn update(world: &mut World) {
             let settings = &terrain.settings;
             ui.heading("Manager settings");
             ui.label(format!("Chunk resolution: {}", settings.resolution()));
-            ui.label(format!("Chunk count: {}", settings.chunks_count()));
             ui.label(format!("Is Blocky?: {}", settings.blocky()));
             ui.label(format!("Is Low-Poly?: {}", settings.lowpoly()));
             ui.heading("Memory settings");

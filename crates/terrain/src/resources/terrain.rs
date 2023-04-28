@@ -22,16 +22,13 @@ pub struct TerrainSettings {
     pub(crate) blocky: bool,
     pub(crate) lowpoly: bool,
 
+    // Octree params
+    pub(crate) max_depth: u32,
+    pub(crate) radius: f32,
+
     // Memory managing settings
     pub(crate) allocation_count: usize,
     pub(crate) sub_allocation_count: usize,
-
-    // Number of chunks sepcified by the render distance
-    pub(crate) chunk_count: usize,
-
-    // Same as chunk count, but rounded up to a multiple of allocations_count
-    pub(crate) over_allocated_chunks_count: usize,
-    pub(crate) chunks_per_allocation: usize,
 
     // Vertices and triangles per allocation
     pub(crate) output_triangle_buffer_length: usize,
@@ -69,6 +66,8 @@ impl TerrainSettings {
         lowpoly: bool,
         allocations: usize,
         sub_allocations: usize,
+        radius: f32,
+        max_depth: u32,
         sub_materials: Option<&[TerrainSubMaterial]>,
     ) -> Result<Self, TerrainSettingsError> {
         let mut output_tex_coord_buffer_length =
@@ -94,13 +93,6 @@ impl TerrainSettings {
             return Err(TerrainSettingsError::SubAllocationCountNotPowerOfTwo);
         }
 
-        // Calculate the number of chunk meshes/indirect elements that must be created
-        let chunks = (render_distance * 2 + 1).pow(3);
-
-        // Do this so each allocation contains the same amount of chunks
-        let over_allocated_chunks_count =
-            ((chunks as f32 / allocations as f32).ceil() * (allocations as f32)) as usize;
-
         // Get number of sub-allocation chunks for two buffer types (vertices and triangles)
         let vertex_sub_allocations_length =
             (output_tex_coord_buffer_length as f32) / sub_allocations as f32;
@@ -110,7 +102,6 @@ impl TerrainSettings {
             (vertex_sub_allocations_length.floor() as u32).next_power_of_two();
         let triangles_per_sub_allocation =
             (triangle_sub_allocations_length.floor() as u32).next_power_of_two();
-        let chunks_per_allocation = over_allocated_chunks_count / allocations;
 
         // Decompose the "callbacks" struct into raw options
         /*
@@ -126,28 +117,22 @@ impl TerrainSettings {
             lowpoly,
             allocation_count: allocations,
             sub_allocation_count: sub_allocations,
-            chunk_count: chunks,
-            over_allocated_chunks_count,
             output_triangle_buffer_length,
             output_tex_coord_buffer_length,
             tex_coords_per_sub_allocation,
             triangles_per_sub_allocation,
-            chunks_per_allocation,
             voxel_compiler_callback: None,
             voxel_set_push_constants_callback: None,
             voxel_set_group_callback: None,
             sub_materials: sub_materials.map(|x| x.to_vec()),
+            max_depth,
+            radius,
         })
     }
 
     // Get the resolution of the terrain chunks
     pub fn resolution(&self) -> u32 {
         self.size
-    }
-
-    // Get the total number of chunks
-    pub fn chunks_count(&self) -> usize {
-        self.chunk_count
     }
 
     // Is the terrain blocky looking?
