@@ -3,7 +3,7 @@ use assets::Assets;
 use graphics::{
     Buffer, BufferMode, BufferUsage, Compiler, ComputeModule, ComputeShader, DrawIndexedIndirect,
     GpuPod, Graphics, ModuleVisibility, PushConstantLayout, StorageAccess, Texel, TriangleBuffer,
-    Vertex, XYZW, XY,
+    Vertex, XYZW, XY, DrawIndexedIndirectBuffer,
 };
 use rendering::{attributes, AttributeBuffer};
 use utils::{Handle, Storage};
@@ -12,8 +12,16 @@ use crate::{create_counters, TerrainSettings, Triangles, Vertices};
 
 // Memory manager will be responsible for finding free memory and copying chunks there
 pub struct MemoryManager {
+    // Buffer that contains the indexed indirect draw commands
+    pub(crate) indexed_indirect_buffer: Handle<DrawIndexedIndirectBuffer>,
+    
+    // Vectors that contains the shared buffers needed for multidraw indirect
     pub(crate) shared_tex_coord_buffers: Vec<Handle<Vertices>>,
     pub(crate) shared_triangle_buffers: Vec<Handle<Triangles>>,
+
+    // Numbers of chunks used per allocation
+    pub(crate) chunks_per_allocations: Vec<usize>,
+
     pub(crate) compute_find: ComputeShader,
     pub(crate) offsets: Buffer<u32>,
     pub(crate) sub_allocation_chunk_indices: Vec<Buffer<u32>>,
@@ -26,8 +34,20 @@ impl MemoryManager {
         graphics: &Graphics,
         vertices: &mut Storage<Vertices>,
         triangles: &mut Storage<Triangles>,
+        indirect_buffers: &mut Storage<DrawIndexedIndirectBuffer>,
         settings: &TerrainSettings,
     ) -> Self {
+        // Create ONE buffer that will store the indirect arguments
+        let indexed_indirect_buffer = indirect_buffers.insert(
+            DrawIndexedIndirectBuffer::from_slice(
+                graphics,
+                &[],
+                BufferMode::Resizable,
+                BufferUsage::STORAGE | BufferUsage::WRITE,
+            )
+            .unwrap(),
+        );
+
         // Allocate the chunk indices that will be stored per allocation
         let sub_allocation_chunk_indices = (0..settings.allocation_count)
             .map(|_| {
@@ -136,12 +156,14 @@ impl MemoryManager {
         let compute_copy = ComputeShader::new(module, &compiler).unwrap();
 
         Self {
+            indexed_indirect_buffer,
             shared_tex_coord_buffers,
             shared_triangle_buffers,
             compute_find,
             offsets: create_counters(graphics, 2, BufferUsage::READ | BufferUsage::WRITE),
             sub_allocation_chunk_indices,
             compute_copy,
+            chunks_per_allocations: vec![0; settings.allocation_count],
         }
     }
 }

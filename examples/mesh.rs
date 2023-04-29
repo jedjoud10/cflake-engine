@@ -34,7 +34,7 @@ fn init(world: &mut World) {
         ("user/textures/normal2.jpg", graphics.clone()),
     );
     let mask = assets.async_load::<MaskMap>(
-        ("user/textures/mask2.jpg", graphics.clone()),
+        ("user/textures/mask2.jpg", graphics.clone()), 
     );
 
     // Get the material id (also registers the material pipeline)

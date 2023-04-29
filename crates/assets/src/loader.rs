@@ -76,7 +76,10 @@ impl Default for Assets {
             receiver,
             sender,
             hijack: Default::default(),
-            threadpool: ThreadPool::new(4),
+            threadpool: threadpool::Builder::new()
+                .thread_name("asset-worker".to_string())
+                .num_threads(4)
+                .build(),
         }
     }
 }

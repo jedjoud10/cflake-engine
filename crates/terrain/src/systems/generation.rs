@@ -43,7 +43,7 @@ fn update(world: &mut World) {
     );
 
     // Get global indexed indirect draw buffer
-    let indirect = indirects.get_mut(&manager.indexed_indirect_buffer);
+    let indirect = indirects.get_mut(&memory.indexed_indirect_buffer);
 
     // Convert "Dirty" chunks into "Pending"
     let query = scene

@@ -374,6 +374,12 @@ impl App {
 
     // Insert the required default systems
     fn insert_default_systems(mut self, receiver: mpsc::Receiver<String>) -> Self {
+        // Create the rayon global thread pool
+        rayon::ThreadPoolBuilder::new()
+            .num_threads(0)
+            .thread_name(|i| format!("worker-thread-{i}"))
+            .build_global().unwrap();
+
         // Input system
         self.regsys(input::system);
 

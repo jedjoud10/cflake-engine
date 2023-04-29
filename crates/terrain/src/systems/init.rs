@@ -31,9 +31,6 @@ fn init(world: &mut World) {
         let graphics = world.get::<Graphics>().unwrap();
         let assets = world.get::<Assets>().unwrap();
 
-        // Get indirect mesh storage
-        let mut indirect_meshes = world.get_mut::<Storage<IndirectMesh>>().unwrap();
-
         // Get indirect buffer storage
         let mut indirect_buffers = world
             .get_mut::<Storage<DrawIndexedIndirectBuffer>>()
@@ -50,8 +47,14 @@ fn init(world: &mut World) {
         let mesher = MeshGenerator::new(&assets, &graphics, &settings);
 
         // Create the memory manager
-        let memory =
-            MemoryManager::new(&assets, &graphics, &mut vertices, &mut triangles, &settings);
+        let memory = MemoryManager::new(
+            &assets,
+            &graphics,
+            &mut vertices,
+            &mut triangles,
+            &mut indirect_buffers,
+            &settings
+        );
 
         // Create the chunk manager
         let manager = ChunkManager::new(
@@ -60,8 +63,6 @@ fn init(world: &mut World) {
             &mut settings,
             &memory,
             &mut scene,
-            &mut indirect_meshes,
-            &mut indirect_buffers,
             &mut materials,
             &mut layered_albedo_maps,
             &mut layered_normal_maps,
@@ -81,7 +82,6 @@ fn init(world: &mut World) {
         // Drop resources to be able to insert terrain into world
         drop(graphics);
         drop(assets);
-        drop(indirect_meshes);
         drop(indirect_buffers);
         drop(vertices);
         drop(triangles);
