@@ -9,7 +9,7 @@ use crate::{
 use ecs::Scene;
 use graphics::{ActivePipeline, GpuPod, ModuleVisibility};
 use math::ExplicitVertices;
-use utils::{Handle, ThreadPool};
+use utils::{Handle};
 use world::World;
 
 // Check if an AABB intersects the shadow lightspace matrix
@@ -52,7 +52,6 @@ pub(super) fn render_shadows<'r, M: Material>(
 
     // Get all the entities that contain a visible surface
     let mut scene = world.get_mut::<Scene>().unwrap();
-    let mut threadpool = world.get_mut::<ThreadPool>().unwrap();
 
     // Keep track of the last model so we don't have to rebind buffers
     let mut last: Option<Handle<Mesh<M::RenderPath>>> = None;
@@ -63,6 +62,7 @@ pub(super) fn render_shadows<'r, M: Material>(
     > = None;
     let mut last_index_buffer: Option<&<M::RenderPath as RenderPath>::TriangleBuffer<u32>> = None;
 
+    /*
     // Cull the surfaces that the shadow texture won't see
     if M::frustum_culling() {
         scene.query_mut::<(&mut Surface<M>, &Renderer)>().for_each(
@@ -89,6 +89,7 @@ pub(super) fn render_shadows<'r, M: Material>(
             shadow_frustum_culling_batch_size,
         );
     }
+    */
 
     // Iterate over all the surfaces of this material
     let query = scene.query::<(&Surface<M>, &Renderer)>();

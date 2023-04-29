@@ -74,10 +74,7 @@ pub fn generate_mip_map<T: ColorTexel, E: Extent>(
 
     // Iterate over the levels and fill them up
     // (like how ceddy weddy fills me up inside >.<)
-    let i = std::time::Instant::now();
     let map = (0..(levels - 1)).into_par_iter().map(|i| {
-        log::warn!("{:?}", std::thread::current().id());
-
         // Pre-allocate a vector that will contain the downscaled texels
         let temp = extent.mip_level_dimensions(i as u8);
         let downscaled = extent.mip_level_dimensions(i as u8 + 1);
@@ -129,7 +126,6 @@ pub fn generate_mip_map<T: ColorTexel, E: Extent>(
                     )];
 
                     // Sum to the destination
-                    //*dst += <T as Conversion>::try_from_target(vek::Vec4::one() * 0.25).unwrap();
                     *dst += texel;
                 }
             }
@@ -138,78 +134,6 @@ pub fn generate_mip_map<T: ColorTexel, E: Extent>(
         // Return the texels 
         texels
     }).collect::<Vec<_>>();
-    
-    // Iterate over the levels and fill them up
-    // (like how ceddy weddy fills me up inside >.<)
-    /*
-    let mut map = Vec::<Vec<T::Storage>>::with_capacity(levels as usize);
-    let mut temp = extent;
-    let mut base = base.to_vec();
-    for i in 0..(levels - 1) {
-        // Pre-allocate a vector that will contain the downscaled texels
-        let downscaled = extent.mip_level_dimensions(i as u8 + 1);
-
-        let mut texels: Vec<<T as Texel>::Storage> =
-            vec![<T::Storage as Zeroable>::zeroed(); downscaled.area() as usize];
-
-        // Get the original and downscaled sizes
-        let original = temp.decompose();
-        let new = downscaled.decompose();
-
-        // Division factor is either 2, 4, or 8 (based on dims)
-        let factor = match dimension {
-            wgpu::TextureViewDimension::D1 => 2,
-            wgpu::TextureViewDimension::D2 => 4,
-            wgpu::TextureViewDimension::D2Array => 4,
-            wgpu::TextureViewDimension::Cube => 4,
-            wgpu::TextureViewDimension::CubeArray => 4,
-            wgpu::TextureViewDimension::D3 => 8,
-        };
-
-        // Nous devons pas prendre une moyenne de l'axe Z si nous utilisons une ArrayTexture2D
-        let divide = match E::view_dimension() {
-            wgpu::TextureViewDimension::D1 => vek::Vec3::new(2usize, 1, 1),
-            wgpu::TextureViewDimension::D2Array => vek::Vec3::new(2, 2, 1),
-            wgpu::TextureViewDimension::D2 => vek::Vec3::new(2, 2, 1),
-            wgpu::TextureViewDimension::D3 => vek::Vec3::new(2, 2, 2),
-            wgpu::TextureViewDimension::CubeArray => todo!(),
-            wgpu::TextureViewDimension::Cube => todo!(),
-        };
-
-        // Write to the downscaled texels
-        for ox in 0..original.w {
-            for oy in 0..original.h {
-                for oz in 0..original.d {
-                    // Get the current texel value
-                    let texel = base[xyz_to_index(
-                        vek::Vec3::new(ox, oy, oz).as_::<usize>(),
-                        original.as_::<usize>(),
-                    )];
-
-                    // La division est vraiment importante pour qu'on evite un overflow
-                    let texel = T::divide(texel, factor as f32);
-
-                    // Get the destination texel value
-                    let dst = &mut texels[xyz_to_index(
-                        vek::Vec3::new(ox, oy, oz).as_::<usize>() / divide,
-                        new.as_::<usize>(),
-                    )];
-
-                    // Sum to the destination
-                    *dst += texel;
-                }
-            }
-        }
-
-        // Overwrite temp buffers
-        temp = downscaled;
-        base[..(downscaled.area() as usize)].copy_from_slice(&texels);
-        map.push(texels);
-    }
-    */
-
-    
-    dbg!(i.elapsed());
     
     Some(map)
 }

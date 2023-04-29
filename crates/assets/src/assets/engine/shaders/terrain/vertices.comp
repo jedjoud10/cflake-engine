@@ -131,14 +131,17 @@ void main() {
         }
     }
 
+    /*
     // Check if we are genearting some skirts
     bool skirts = any(lessThanEqual(gl_GlobalInvocationID, vec3(1))) || any(greaterThanEqual(gl_GlobalInvocationID, vec3(size-3)));
+    skirts = false;
 
     // Update normals and count for skirts
     if (skirts) {
         normal = calculate_normal(gl_GlobalInvocationID) * 4;
         count = 4;
     }
+    */
 
     // If we found at least one intersecting edge, add the vertex
     if (count > 0) {
@@ -156,6 +159,7 @@ void main() {
 
         // TODO: Probably a way to optimize this
         // Confine the vertices in the X skirt if needed
+        /*
         if (gl_GlobalInvocationID.x < 1 || gl_GlobalInvocationID.x == size-3) {
             final.x = 0;
         }
@@ -169,6 +173,7 @@ void main() {
         if (gl_GlobalInvocationID.z < 1 || gl_GlobalInvocationID.z == size-3) {
             final.z = 0;
         }
+        */
 
         // Positions only need 16 bits (1 byte for cell coord, 1 byte for inner vertex coord)
         uint packed_cell_position_packed_normals = packUnorm4x8(vec4(gl_GlobalInvocationID, 0) / 255);

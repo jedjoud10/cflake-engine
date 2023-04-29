@@ -42,6 +42,7 @@ impl<'a: 'b, 'b, L: QueryLayoutMut> QueryMut<'a, 'b, L> {
         }
     }
 
+    /*
     // Iterate through the query entries and execute a function for each one of them in another thread
     pub fn for_each(
         mut self,
@@ -83,6 +84,7 @@ impl<'a: 'b, 'b, L: QueryLayoutMut> QueryMut<'a, 'b, L> {
             }
         });
     }
+    */
 
     // Get the access masks that we have calculated
     pub fn layout_access(&self) -> LayoutAccess {

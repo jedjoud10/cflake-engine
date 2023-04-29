@@ -45,6 +45,7 @@ impl<'a: 'b, 'b, 's, L: QueryLayoutRef> QueryRef<'a, 'b, 's, L> {
     }
 
     // Iterate through the query entries and execute a function for each one of them in another thread
+    /*
     pub fn for_each(
         self,
         threadpool: &mut utils::ThreadPool,
@@ -79,6 +80,7 @@ impl<'a: 'b, 'b, 's, L: QueryLayoutRef> QueryRef<'a, 'b, 's, L> {
             }
         });
     }
+    */
 
     // Get the access masks that we have calculated
     pub fn layout_access(&self) -> LayoutAccess {

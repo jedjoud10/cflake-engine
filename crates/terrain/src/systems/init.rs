@@ -8,7 +8,7 @@ use assets::Assets;
 use ecs::Scene;
 use graphics::{DrawIndexedIndirectBuffer, Graphics};
 use rendering::{IndirectMesh, Pipelines};
-use utils::{Storage, ThreadPool};
+use utils::{Storage};
 use world::{post_user, System, World};
 
 // Creates the terrain if there was terrain settings present
@@ -26,14 +26,10 @@ fn init(world: &mut World) {
         let mut materials = world.get_mut::<Storage<TerrainMaterial>>().unwrap();
         let mut scene = world.get_mut::<Scene>().unwrap();
         let mut pipelines = world.get_mut::<Pipelines>().unwrap();
-        let mut threadpool = world.get_mut::<ThreadPool>().unwrap();
 
         // Get graphics API and assets
         let graphics = world.get::<Graphics>().unwrap();
         let assets = world.get::<Assets>().unwrap();
-
-        // Get indirect mesh storage
-        let mut indirect_meshes = world.get_mut::<Storage<IndirectMesh>>().unwrap();
 
         // Get indirect buffer storage
         let mut indirect_buffers = world
@@ -51,8 +47,14 @@ fn init(world: &mut World) {
         let mesher = MeshGenerator::new(&assets, &graphics, &settings);
 
         // Create the memory manager
-        let memory =
-            MemoryManager::new(&assets, &graphics, &mut vertices, &mut triangles, &settings);
+        let memory = MemoryManager::new(
+            &assets,
+            &graphics,
+            &mut vertices,
+            &mut triangles,
+            &mut indirect_buffers,
+            &settings
+        );
 
         // Create the chunk manager
         let manager = ChunkManager::new(
@@ -61,14 +63,11 @@ fn init(world: &mut World) {
             &mut settings,
             &memory,
             &mut scene,
-            &mut indirect_meshes,
-            &mut indirect_buffers,
             &mut materials,
             &mut layered_albedo_maps,
             &mut layered_normal_maps,
             &mut layered_mask_maps,
             &mut pipelines,
-            &mut threadpool,
         );
 
         // Combine all the terrain generator composites into the one terrain generator struct
@@ -83,7 +82,6 @@ fn init(world: &mut World) {
         // Drop resources to be able to insert terrain into world
         drop(graphics);
         drop(assets);
-        drop(indirect_meshes);
         drop(indirect_buffers);
         drop(vertices);
         drop(triangles);
@@ -93,7 +91,6 @@ fn init(world: &mut World) {
         drop(layered_mask_maps);
         drop(pipelines);
         drop(scene);
-        drop(threadpool);
 
         // Insert terrain
         world.insert(terrain);

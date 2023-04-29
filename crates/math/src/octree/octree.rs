@@ -169,7 +169,7 @@ pub struct OctreeDelta {
 
 // An octree node is an object that *might* contain 8 children (it becomes a parent)
 // If an octree node does not contain children, then it is considered a leaf node
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct Node {
     position: vek::Vec3<i32>,
     center: vek::Vec3<i32>,

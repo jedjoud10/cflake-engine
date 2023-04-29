@@ -374,6 +374,12 @@ impl App {
 
     // Insert the required default systems
     fn insert_default_systems(mut self, receiver: mpsc::Receiver<String>) -> Self {
+        // Create the rayon global thread pool
+        rayon::ThreadPoolBuilder::new()
+            .num_threads(0)
+            .thread_name(|i| format!("worker-thread-{i}"))
+            .build_global().unwrap();
+
         // Input system
         self.regsys(input::system);
 
@@ -387,7 +393,6 @@ impl App {
         self.regsys(world::system);
 
         // Utils systems
-        self.regsys(utils::threadpool);
         self.regsys(utils::time);
         self.regsys(utils::io);
         self.regsys(utils::file_logger);
@@ -437,7 +442,6 @@ impl App {
 
         // Insert the utils' settings
         self.world.insert(UtilsSettings {
-            threadpool_threads: None,
             author_name: author_name.clone(),
             app_name: app_name.clone(),
             log_receiver: Some(receiver),

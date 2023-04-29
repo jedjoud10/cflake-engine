@@ -36,7 +36,7 @@ impl VoxelGenerator {
         // Needed by default
         compiler.use_push_constant_layout(
             PushConstantLayout::single(
-                <vek::Vec4<f32> as GpuPod>::size() + u32::size() * 2,
+                <vek::Vec4<f32> as GpuPod>::size() + f32::size(),
                 ModuleVisibility::Compute,
             )
             .unwrap(),

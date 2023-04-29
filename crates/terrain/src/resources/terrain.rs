@@ -15,9 +15,6 @@ pub struct TerrainSettings {
     // Chunk resolution
     pub(crate) size: u32,
 
-    // Chunk render distance
-    pub(crate) chunk_render_distance: usize,
-
     // Mesh generation parameters
     pub(crate) blocky: bool,
     pub(crate) lowpoly: bool,
@@ -61,7 +58,6 @@ impl TerrainSettings {
     pub fn new(
         graphics: &Graphics,
         resolution: u32,
-        render_distance: usize,
         blocky: bool,
         lowpoly: bool,
         allocations: usize,
@@ -112,7 +108,6 @@ impl TerrainSettings {
 
         Ok(Self {
             size: resolution,
-            chunk_render_distance: render_distance,
             blocky,
             lowpoly,
             allocation_count: allocations,

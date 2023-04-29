@@ -101,6 +101,16 @@ impl Material for TerrainMaterial {
         rendering::MeshAttributes::TEX_COORDS
     }
 
+    /*
+    fn primitive_config() -> graphics::PrimitiveConfig {
+        graphics::PrimitiveConfig::Triangles {
+            winding_order: graphics::WindingOrder::Cw,
+            cull_face: None,
+            wireframe: true
+        }
+    }
+    */
+
     // Custom shadow mapper (due to packed tex coordinates)
     fn casts_shadows() -> rendering::CastShadowsMode<Self> {
         rendering::CastShadowsMode::Disabled

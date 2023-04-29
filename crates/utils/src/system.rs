@@ -5,38 +5,14 @@ use std::{
     time::{Duration, Instant},
 };
 
-use crate::{FileManager, FileType, ThreadPool, Time};
-use world::{post_user, user, System, World};
+use crate::{FileManager, FileType, Time};
+use world::{user, System, World};
 
 // Utils resources that is added to the world at the very start
 pub struct UtilsSettings {
-    pub threadpool_threads: Option<usize>,
     pub author_name: String,
     pub app_name: String,
     pub log_receiver: Option<mpsc::Receiver<String>>,
-}
-
-// Add the threadpool resource to the world
-pub fn threadpool(system: &mut System) {
-    // Main initialization event
-    system
-        .insert_init(|world: &mut World| {
-            let settings = world.get::<UtilsSettings>().unwrap();
-            let num = settings.threadpool_threads.unwrap_or_else(num_cpus::get);
-            drop(settings);
-            world.insert(ThreadPool::with(num));
-        })
-        .before(user);
-
-    // Update event that check if any of the threads panicked
-    system
-        .insert_update(|world: &mut World| {
-            let pool = world.get::<ThreadPool>().unwrap();
-            if let Some(id) = pool.check_any_panicked() {
-                panic!("WorkerThread {} panicked", id);
-            }
-        })
-        .after(post_user);
 }
 
 // Add the IO path manager

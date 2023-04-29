@@ -2,7 +2,7 @@ use std::{
     io::BufReader,
     iter::repeat,
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::Arc, f32::consts::E,
 };
 
 use crate::{
@@ -16,6 +16,7 @@ use base64::{
     engine::{GeneralPurpose, GeneralPurposeConfig},
     Engine,
 };
+use dashmap::DashMap;
 use ecs::Scene;
 use gltf::json::accessor::{ComponentType, GenericComponentType, Type};
 use graphics::{
@@ -23,7 +24,8 @@ use graphics::{
     SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap, Texel, Texture, Texture2D,
     TextureImportSettings, TextureMipMaps, TextureMode, TextureScale, TextureUsage, R, RG, RGBA,
 };
-use utils::{Handle, Storage, ThreadPool};
+use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
+use utils::{Handle, Storage};
 use world::{Read, World, Write};
 
 // These are the context values that must be given to the GltfScene to load it
@@ -39,7 +41,6 @@ pub struct GtlfContext<'a> {
     pub normal_maps: Write<'a, Storage<NormalMap>>,
     pub mask_maps: Write<'a, Storage<MaskMap>>,
     pub pbr_materials: Write<'a, Storage<PhysicallyBasedMaterial>>,
-    pub threadpool: Write<'a, ThreadPool>,
 }
 
 impl<'a> GtlfContext<'a> {
@@ -53,7 +54,6 @@ impl<'a> GtlfContext<'a> {
         let normal_maps = world.get_mut::<Storage<NormalMap>>()?;
         let mask_maps = world.get_mut::<Storage<MaskMap>>()?;
         let pbr_materials = world.get_mut::<Storage<PhysicallyBasedMaterial>>()?;
-        let threadpool = world.get_mut::<ThreadPool>()?;
 
         Ok(Self {
             graphics,
@@ -64,7 +64,6 @@ impl<'a> GtlfContext<'a> {
             normal_maps,
             mask_maps,
             pbr_materials,
-            threadpool,
         })
     }
 }
@@ -77,17 +76,12 @@ pub struct GltfSettings<'a> {
     // We can only load one scene at a time
     // If this is default, then it uses the default scene
     pub scene: Option<&'a str>,
-
-    // Should we use async asset loading to load in buffers and textures?
-    // TODO: Implement this lul
-    pub asynchronous: bool,
 }
 
 impl<'a> Default for GltfSettings<'a> {
     fn default() -> Self {
         Self {
             scene: None,
-            asynchronous: true,
             fallback: PhysicallyBasedMaterial {
                 albedo_map: None,
                 normal_map: None,
@@ -107,7 +101,6 @@ impl<'a> Default for GltfSettings<'a> {
 pub struct GltfScene;
 
 // Can load in SINGLE .gltf JSON file
-// TODO: Can load in .glb binary glTF files
 // Can load in MULTIPLE .gltf files (expects the user to have defined them as asset though)
 
 impl Asset for GltfScene {
@@ -117,7 +110,7 @@ impl Asset for GltfScene {
 
     // Gtlfs can be loaded from their binary or json formats
     fn extensions() -> &'static [&'static str] {
-        &["gltf"]
+        &["gltf", "glb"]
     }
 
     // Load up the GTLF scene
@@ -129,9 +122,27 @@ impl Asset for GltfScene {
         // Loads the GTLF file from the loaded up bytes
         let bytes = data.bytes();
         let reader = std::io::Cursor::new(bytes);
-        let gltf = gltf::Gltf::from_reader(reader)?;
-        let doc = gltf.document;
-        let json = doc.into_json();
+
+        // Second variable is the binary data in case we load from a GLB
+        let (json, bin) = match data.extension() {
+            // Load the scene from a GLTF file
+            "gltf" => {
+                let gltf = gltf::Gltf::from_reader(reader)?;
+                let doc = gltf.document;
+                (doc.into_json(), None)
+            },
+
+            // Load the scene from a GLB file
+            "glb" => {
+                let glb = gltf::Glb::from_reader(reader)?;
+                let cursor = std::io::Cursor::new(&glb.json);
+                let gltf = gltf::Gltf::from_reader(cursor)?;
+                let doc = gltf.document;
+                (doc.into_json(), glb.bin)
+            },
+
+            _ => panic!(),
+        };
 
         // Decompose the JSON document
         let gltf::json::Root {
@@ -165,27 +176,37 @@ impl Asset for GltfScene {
         let base64 = GeneralPurpose::new(&alphabet::STANDARD, GeneralPurposeConfig::default());
 
         // Map (raw) JSON buffers and store their raw byte values
+        let mut offset = 0usize; 
         let mapped_contents = buffers
             .iter()
             .map(|buffer| {
-                let string = buffer.uri.as_ref().unwrap();
-                let bytes = if string.starts_with("data:application/octet-stream;base64,") {
-                    // Data is contained within the URI itself
-                    let data = string
-                        .strip_prefix("data:application/octet-stream;base64,")
-                        .unwrap();
-
-                    // Decode the raw base64 data
-                    base64.decode(data).unwrap()
+                // Handle reading buffers from URI or raw bytes directly
+                let bytes = if let Some(uri) = buffer.uri.as_ref() {
+                    if uri.starts_with("data:application/octet-stream;base64,") {
+                        // Data is contained within the URI itself
+                        let data = uri
+                            .strip_prefix("data:application/octet-stream;base64,")
+                            .unwrap();
+    
+                        // Decode the raw base64 data
+                        base64.decode(data).unwrap()
+                    } else {
+                        // URI references a file that must be loaded
+                        let mut path = data.path().to_path_buf();
+                        path.pop();
+                        path.push(Path::new(uri));
+    
+                        // Load the file that contains the raw binary data
+                        loader.load::<Vec<u8>>(path.to_str().unwrap()).unwrap()
+                    }
                 } else {
-                    // URI references a file that must be loaded
-                    let mut path = data.path().to_path_buf();
-                    path.pop();
-                    path.push(Path::new(string));
-
-                    // Load the file that contains the raw binary data
-                    loader.load::<Vec<u8>>(path.to_str().unwrap()).unwrap()
+                    // Load the binary data oui oui
+                    let bin = bin.as_ref().unwrap();
+                    let bytes = bin[offset..(offset + buffer.byte_length as usize)].to_vec();
+                    offset += buffer.byte_length as usize;
+                    bytes
                 };
+                
 
                 // Make sure we loaded the right amount of bytes
                 assert_eq!(bytes.len(), buffer.byte_length as usize);
@@ -232,12 +253,99 @@ impl Asset for GltfScene {
             })
             .collect::<Vec<_>>();
 
+
+        // Map PBR textures first in other threads
+        let cached_albedo_maps = DashMap::<usize, AlbedoMap>::new();
+        let cached_normal_maps = DashMap::<usize, NormalMap>::new();
+        let cached_mask_maps = DashMap::<(Option<usize>, Option<usize>), MaskMap>::new();
+        let graphics = context.graphics.clone();
+        materials
+            .par_iter()
+            .for_each(|material| {
+                // Decompose into Optional indices
+                let pbr = &material.pbr_metallic_roughness;
+                let albedo_map = pbr.base_color_texture.as_ref();
+                let normal_map = material.normal_texture.as_ref();
+                let metallic_roughness_map = pbr.metallic_roughness_texture.as_ref();
+                let occlusion_map = material.occlusion_texture.as_ref();
+
+                // Create or load a cached diffuse map texture
+                if let Some(info) = albedo_map {
+                    cached_albedo_maps
+                        .entry(info.index.value())
+                        .or_insert_with(|| {
+                            let texture = &textures[info.index.value()];
+                            create_material_texture(
+                                graphics.clone(),
+                                texture,
+                                &samplers,
+                                &mapped_images,
+                            )
+                        });
+                }
+
+                // Create or load a cached normal map texture
+                if let Some(tex) = normal_map {
+                    cached_normal_maps
+                        .entry(tex.index.value())
+                        .or_insert_with(|| {
+                            let texture = &textures[tex.index.value()];
+                            create_material_texture(
+                                graphics.clone(),
+                                texture,
+                                &samplers,
+                                &mapped_images,
+                            )
+                        });
+                }
+
+                // Create or load a cached mask map texture
+                // r: ambient occlusion, g: roughness, b: metallic
+                (metallic_roughness_map.is_some() || occlusion_map.is_some()).then(|| {
+                        let metallic_roughness_map =
+                            metallic_roughness_map.map(|x| x.index.value());
+                        let occlusion_map = occlusion_map.map(|x| x.index.value());
+
+                        cached_mask_maps
+                            .entry((metallic_roughness_map, occlusion_map))
+                            .or_insert_with(|| {
+                                let metallic_roughness_map =
+                                    metallic_roughness_map.map(|x| &textures[x]);
+                                let occlusion_map = occlusion_map.map(|x| &textures[x]);
+
+                                create_material_mask_texture(
+                                    graphics.clone(),
+                                    metallic_roughness_map,
+                                    occlusion_map,
+                                    &samplers,
+                                    &mapped_images,
+                                )
+                            })
+                    });
+            });
+
+        // Convert the textures to their appropriate handles
+        let cached_albedo_maps = cached_albedo_maps
+            .into_iter()
+            .map(|(i, map)|
+                (i, context.albedo_maps.insert(map))
+            )
+            .collect::<AHashMap<usize, Handle<AlbedoMap>>>();
+        let cached_normal_maps = cached_normal_maps
+            .into_iter()
+            .map(|(i, map)|
+                (i, context.normal_maps.insert(map))
+            )
+            .collect::<AHashMap<usize, Handle<NormalMap>>>();
+        let cached_mask_maps = cached_mask_maps
+            .into_iter()
+            .map(|(i, map)|
+                (i, context.mask_maps.insert(map))
+            )
+            .collect::<AHashMap<(Option<usize>, Option<usize>), Handle<MaskMap>>>();
+
         // Map PBR materials (map textures and their samplers as well)
         // TODO: Implement multiple texture coordinates for the mesh
-        let mut cached_albedo_maps = AHashMap::<usize, Handle<AlbedoMap>>::new();
-        let mut cached_normal_maps = AHashMap::<usize, Handle<NormalMap>>::new();
-        let mut cached_mask_maps =
-            AHashMap::<(Option<usize>, Option<usize>), Handle<MaskMap>>::new();
         let mapped_materials = materials
             .iter()
             .map(|material| {
@@ -255,69 +363,11 @@ impl Asset for GltfScene {
                 let ambient_occlusion = occlusion_map.as_ref().map(|x| x.strength.0).unwrap_or(1.0);
                 let bumpiness = normal_map.as_ref().map(|x| x.scale).unwrap_or(1.0);
 
-                // Create or load a cached diffuse map texture
-                let albedo_map = albedo_map.map(|info| {
-                    cached_albedo_maps
-                        .entry(info.index.value())
-                        .or_insert_with(|| {
-                            let texture = &textures[info.index.value()];
-                            create_material_texture(
-                                context.graphics.clone(),
-                                texture,
-                                &samplers,
-                                &mapped_images,
-                                loader,
-                                &mut context.albedo_maps,
-                            )
-                        })
-                        .clone()
-                });
-
-                // Create or load a cached normal map texture
-                let normal_map = normal_map.map(|tex| {
-                    cached_normal_maps
-                        .entry(tex.index.value())
-                        .or_insert_with(|| {
-                            let texture = &textures[tex.index.value()];
-                            create_material_texture(
-                                context.graphics.clone(),
-                                texture,
-                                &samplers,
-                                &mapped_images,
-                                loader,
-                                &mut context.normal_maps,
-                            )
-                        })
-                        .clone()
-                });
-
-                // Create or load a cached mask map texture
-                // r: ambient occlusion, g: roughness, b: metallic
-                let mask_map =
-                    (metallic_roughness_map.is_some() || occlusion_map.is_some()).then(|| {
-                        let metallic_roughness_map =
-                            metallic_roughness_map.map(|x| x.index.value());
-                        let occlusion_map = occlusion_map.map(|x| x.index.value());
-
-                        cached_mask_maps
-                            .entry((metallic_roughness_map, occlusion_map))
-                            .or_insert_with(|| {
-                                let metallic_roughness_map =
-                                    metallic_roughness_map.map(|x| &textures[x]);
-                                let occlusion_map = occlusion_map.map(|x| &textures[x]);
-
-                                create_material_mask_texture(
-                                    context.graphics.clone(),
-                                    metallic_roughness_map,
-                                    occlusion_map,
-                                    &samplers,
-                                    &mapped_images,
-                                    loader,
-                                    &mut context.mask_maps,
-                                )
-                            })
-                            .clone()
-                    });
+                // Get the handles NOW!!!
+                let albedo_map = albedo_map.map(|x| cached_albedo_maps[&x.index.value()].clone());
+                let normal_map = normal_map.map(|x| cached_normal_maps[&x.index.value()].clone());
+                let mask = (metallic_roughness_map.map(|x| x.index.value()), occlusion_map.map(|x| x.index.value()));
+                let mask_map = cached_mask_maps.get(&mask).cloned();
 
                 PhysicallyBasedMaterial {
                     albedo_map,
@@ -335,11 +385,12 @@ impl Asset for GltfScene {
 
         // Map meshes and create their handles
         type CachedMeshKey = (usize, Option<usize>, Option<usize>, Option<usize>, usize);
-        let mut cached_meshes = AHashMap::<CachedMeshKey, Handle<Mesh>>::new();
+        let cached_meshes = DashMap::<CachedMeshKey, Mesh>::new();
+        let graphics = context.graphics.clone();
         let mapped_meshes = meshes
-            .iter()
+            .par_iter()
             .map(|mesh| {
-                let mut meshes = Vec::<Handle<Mesh>>::new();
+                let mut meshes = Vec::<CachedMeshKey>::new();
 
                 for primitive in mesh.primitives.iter() {
                     // Get the accessor indices for the attributes used by this mesh
@@ -360,7 +411,7 @@ impl Asset for GltfScene {
 
                     // Create a new mesh if the accessors aren't cached
                     // TODO: Implement multi-buffer per allocation support to optimize this
-                    let handle = cached_meshes
+                    cached_meshes
                         .entry(key)
                         .or_insert_with(|| {
                             let positions = create_positions_vec(&mapped_accessors[key.0]);
@@ -388,29 +439,33 @@ impl Asset for GltfScene {
                             }
 
                             // Create a new mesh for the accessors used
-                            context.meshes.insert(
-                                Mesh::from_slices(
-                                    &context.graphics,
-                                    BufferMode::Dynamic,
-                                    BufferUsage::empty(),
-                                    Some(&positions),
-                                    normals.as_deref(),
-                                    tangents.as_deref(),
-                                    tex_coords.as_deref(),
-                                    &triangles,
-                                )
-                                .unwrap(),
+                            Mesh::from_slices(
+                                &graphics.clone(),
+                                BufferMode::Dynamic,
+                                BufferUsage::empty(),
+                                Some(&positions),
+                                normals.as_deref(),
+                                tangents.as_deref(),
+                                tex_coords.as_deref(),
+                                &triangles,
                             )
-                        })
-                        .clone();
-
-                    // Add the mesh handle into the list
-                    meshes.push(handle);
+                            .unwrap()
+                        });
+                    meshes.push(key);
                 }
 
                 meshes
             })
-            .collect::<Vec<Vec<Handle<Mesh>>>>();
+            .collect::<Vec<Vec<CachedMeshKey>>>();
+
+        // Convert mapped meshes into their actual handles
+        let cached_meshes = cached_meshes
+            .into_iter()
+            .map(|(id, mesh)| (id, context.meshes.insert(mesh)))
+            .collect::<AHashMap<_, _>>();
+        let mapped_meshes = mapped_meshes.into_iter().map(|vec| {
+            vec.into_iter().map(|id| cached_meshes[&id].clone()).collect::<Vec<_>>()
+        }).collect::<Vec<_>>();
 
         // Get the scene that we will load
         let scene = settings
@@ -610,14 +665,13 @@ fn sampling(
 }
 
 // Create a texture used for a material used in the glTF scene
+// This should be executed in multiple threads for maximum efficency
 fn create_material_texture<T: Texel + ImageTexel>(
     graphics: Graphics,
     texture: &gltf::json::Texture,
     samplers: &[gltf::json::texture::Sampler],
     images: &[(&[u8], &str)],
-    loader: &assets::Assets,
-    storage: &mut Storage<Texture2D<T>>,
-) -> Handle<Texture2D<T>> {
+) -> Texture2D<T> {
     let (bytes, extension) = &images[texture.source.value()];
     let name = texture
         .name
@@ -630,7 +684,7 @@ fn create_material_texture<T: Texel + ImageTexel>(
         extension,
         Arc::from(bytes.to_vec()),
         Path::new(name),
-        Some(loader),
+        None,
     );
 
     let sampler = sampling(samplers, texture.sampler);
@@ -648,7 +702,7 @@ fn create_material_texture<T: Texel + ImageTexel>(
     )
     .unwrap();
 
-    storage.insert(texture)
+    texture
 }
 
 // r: ambient occlusion, g: roughness, b: metallic
@@ -658,9 +712,7 @@ fn create_material_mask_texture(
     occlusion: Option<&gltf::json::Texture>,
     samplers: &[gltf::json::texture::Sampler],
     images: &[(&[u8], &str)],
-    loader: &assets::Assets,
-    storage: &mut Storage<MaskMap>,
-) -> Handle<MaskMap> {
+) -> MaskMap {
     assert!(metallic_roughness.is_some() || occlusion.is_some());
 
     let sampler = match (metallic_roughness, occlusion) {
@@ -683,7 +735,7 @@ fn create_material_mask_texture(
             extension,
             Arc::from(bytes.to_vec()),
             Path::new(name),
-            Some(loader),
+            None,
         );
 
         RawTexels::<RGBA<Normalized<u8>>>::deserialize(data, (), TextureScale::Default).unwrap()
@@ -701,7 +753,7 @@ fn create_material_mask_texture(
             extension,
             Arc::from(bytes.to_vec()),
             Path::new(name),
-            Some(loader),
+            None,
         );
 
         RawTexels::<R<Normalized<u8>>>::deserialize(data, (), TextureScale::Default).unwrap()
@@ -752,5 +804,5 @@ fn create_material_mask_texture(
     )
     .unwrap();
 
-    storage.insert(texture)
+    texture
 }

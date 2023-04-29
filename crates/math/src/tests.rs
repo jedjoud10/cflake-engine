@@ -106,8 +106,14 @@ mod octree {
     use crate::Octree;
 
     #[test]
-    fn init() {
-        let octree = Octree::new(8, 4);
+    fn basic() {
+        let mut octree = Octree::new(8, 4);
         assert_eq!(octree.size(), 1024);
+
+        let delta = octree.compute(vek::Vec3::zero(), 1.0f32);
+    
+        for x in delta.added {
+            dbg!(x);
+        }
     }
 }

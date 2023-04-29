@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use crate::{Chunk, ChunkState, Terrain, TerrainMaterial};
-use coords::Position;
+use coords::{Position, Scale};
 use ecs::Scene;
 use graphics::{
     ActivePipeline, ComputePass, DrawIndexedIndirect, DrawIndexedIndirectBuffer, GpuPod, Graphics,
@@ -43,7 +43,7 @@ fn update(world: &mut World) {
     );
 
     // Get global indexed indirect draw buffer
-    let indirect = indirects.get_mut(&manager.indexed_indirect_buffer);
+    let indirect = indirects.get_mut(&memory.indexed_indirect_buffer);
 
     // Convert "Dirty" chunks into "Pending"
     let query = scene
@@ -85,14 +85,15 @@ fn update(world: &mut World) {
         .query_mut::<(
             &mut Chunk,
             &Position,
+            &Scale,
             &mut Surface<TerrainMaterial>,
             &mut Renderer,
         )>()
         .into_iter()
         .collect::<Vec<_>>();
-    vec.sort_by(|(a, _, _, _), (b, _, _, _)| a.priority.total_cmp(&b.priority));
-    vec.retain(|(chunk, _, _, _)| chunk.state == ChunkState::Pending);
-    let Some((chunk, position, surface, renderer)) = vec.pop() else {
+    vec.sort_by(|(a, _, _, _, _), (b, _, _, _, _)| a.priority.total_cmp(&b.priority));
+    vec.retain(|(chunk, _, _, _, _)| chunk.state == ChunkState::Pending);
+    let Some((chunk, position, scale, surface, renderer)) = vec.pop() else {
         return;
     };
 
@@ -113,22 +114,21 @@ fn update(world: &mut World) {
     let mut active = pass.bind_shader(&voxelizer.compute_voxels);
 
     // Needed since SN only runs for a volume 2 units smaller than a perfect cube
-    let factor = (settings.size as f32 - 3.0) / (settings.size as f32);
+    let factor = (chunk.node.size() as f32) / (settings.size as f32 - 3.0);
 
     // Set the push constants
     active
         .set_push_constants(|x| {
-            // Use offset * factor as position offset
-            let offset = position.with_w(0.0f32) * factor;
+            // WHY DO WE NEED TO MULTIPLY BY 0.5 WHY WHY WHY WHY WHY (it works tho)
+            let offset = (**position - vek::Vec3::broadcast(factor) * 0.5).with_w(0.0f32);
             let offset = GpuPod::into_bytes(&offset);
 
-            // Combine chunk index and allocation into the same vector
-            let packed = vek::Vec2::new(chunk.global_index, chunk.allocation).as_::<u32>();
-            let time = GpuPod::into_bytes(&packed);
+            // Get the scale of the chunk
+            let scale = GpuPod::into_bytes(&factor);
 
             // Push the bytes to the GPU
             x.push(offset, 0).unwrap();
-            x.push(time, offset.len() as u32).unwrap();
+            x.push(scale, offset.len() as u32).unwrap();
 
             // Call the set group callback
             if let Some(callback) = voxelizer.set_push_constant_callback.as_ref() {

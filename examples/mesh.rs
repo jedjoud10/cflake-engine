@@ -16,7 +16,6 @@ fn init(world: &mut World) {
     // Fetch the required resources from the world
     let mut assets = world.get_mut::<Assets>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
-    let mut threadpool = world.get_mut::<ThreadPool>().unwrap();
     let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
     let mut pbrs = world.get_mut::<Storage<PhysicallyBasedMaterial>>().unwrap();
     let mut skies = world.get_mut::<Storage<SkyMaterial>>().unwrap();
@@ -30,15 +29,12 @@ fn init(world: &mut World) {
     // Load in the diffuse map, normal map, and mask map textures asynchronously
     let albedo = assets.async_load::<AlbedoMap>(
         ("user/textures/diffuse2.jpg", graphics.clone()),
-        &mut threadpool,
     );
     let normal = assets.async_load::<NormalMap>(
         ("user/textures/normal2.jpg", graphics.clone()),
-        &mut threadpool,
     );
     let mask = assets.async_load::<MaskMap>(
-        ("user/textures/mask2.jpg", graphics.clone()),
-        &mut threadpool,
+        ("user/textures/mask2.jpg", graphics.clone()), 
     );
 
     // Get the material id (also registers the material pipeline)
