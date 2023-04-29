@@ -57,11 +57,12 @@ void check_edge(
     uvec3 quad0,
     uvec3 quad1,
     uvec3 quad2,
-    uvec3 quad3
+    uvec3 quad3,
+    bool flip
 ) {
     // Get the densities of the edge
     float density1 = imageLoad(voxels, ivec3(end)).x;
-    bool dir = density1 > 0.0;
+    bool dir = (density1 > 0.0) ^^ flip;
 
     // Create a quad if they do
     if ((density0 > 0.0 ^^ density1 > 0.0)) {
@@ -76,31 +77,6 @@ void check_edge(
     }
 }
 
-// Creates a quad specifically used for skirts
-void check_skirt_edge(
-    uvec3 end,
-    uvec3 quad0,
-    uvec3 quad1,
-    uvec3 quad2,
-    uvec3 quad3,
-    bool flip
-) {
-    // Get the densities of the edge
-    float density1 = imageLoad(voxels, ivec3(end)).x;
-
-    // Create a quad if they do
-    if (density1 < 0.0) {
-        add_quad(
-            quad0,
-            quad1,
-            quad2,
-            quad3,
-            uvec3(end),
-            flip
-        );
-    }
-}
-
 void main() {
     // Skip chunk faces since they will return incorrect data
     if (any(equal(gl_GlobalInvocationID, uvec3(0))) || any(greaterThanEqual(gl_GlobalInvocationID, uvec3(size - 2)))) {
@@ -111,36 +87,42 @@ void main() {
     float density0 = imageLoad(voxels, ivec3(gl_GlobalInvocationID)).x;
 
     /*
-    if (gl_GlobalInvocationID.z == size - 3) {
+    // Check skirts in the z direction
+    if (gl_GlobalInvocationID.z == size - 3 || gl_GlobalInvocationID.z == 1) {
         check_edge(
-            density0 + 20,
+            density0 + 3,
             gl_GlobalInvocationID + uvec3(0, 0, 1),
             uvec3(0, 0, 0),
             uvec3(0, 1, 0),
             uvec3(1, 0, 0),
-            uvec3(1, 1, 0)
+            uvec3(1, 1, 0),
+            gl_GlobalInvocationID.z == size - 3
         );
     }
     
-    if (gl_GlobalInvocationID.x == size - 3) {
+    // Check skirts in the X direction
+    if (gl_GlobalInvocationID.x == size - 3 || gl_GlobalInvocationID.x == 1) {
         check_edge(
-            density0 + 20,
+            density0 + 3,
             gl_GlobalInvocationID + uvec3(1, 0, 0),
             uvec3(0, 0, 0),
             uvec3(0, 0, 1),
             uvec3(0, 1, 0),
-            uvec3(0, 1, 1)
+            uvec3(0, 1, 1),
+            gl_GlobalInvocationID.x == size - 3
         );
     }
 
-    if (gl_GlobalInvocationID.y == size - 3) {
+    // Check skirts in the Y direction
+    if (gl_GlobalInvocationID.y == size - 3 || gl_GlobalInvocationID.y == 1) {
         check_edge(
-            density0 + 20,
+            density0 + 3,
             gl_GlobalInvocationID + uvec3(0, 1, 0),
             uvec3(0, 0, 0),
             uvec3(1, 0, 0),
             uvec3(0, 0, 1),
-            uvec3(1, 0, 1)
+            uvec3(1, 0, 1),
+            gl_GlobalInvocationID.y == size - 3
         );
     }
     */
@@ -152,7 +134,8 @@ void main() {
         uvec3(0, 0, 0),
         uvec3(0, 1, 0),
         uvec3(1, 0, 0),
-        uvec3(1, 1, 0)
+        uvec3(1, 1, 0),
+        false
     );
     
     // Check the X axis edge
@@ -162,7 +145,8 @@ void main() {
         uvec3(0, 0, 0),
         uvec3(0, 0, 1),
         uvec3(0, 1, 0),
-        uvec3(0, 1, 1)
+        uvec3(0, 1, 1),
+        false
     );
 
     // Check the Y axis edge
@@ -172,6 +156,7 @@ void main() {
         uvec3(0, 0, 0),
         uvec3(1, 0, 0),
         uvec3(0, 0, 1),
-        uvec3(1, 0, 1)
+        uvec3(1, 0, 1),
+        false
     );
 }

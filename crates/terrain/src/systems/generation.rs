@@ -84,16 +84,14 @@ fn update(world: &mut World) {
     let mut vec = scene
         .query_mut::<(
             &mut Chunk,
-            &Position,
-            &Scale,
             &mut Surface<TerrainMaterial>,
             &mut Renderer,
         )>()
         .into_iter()
         .collect::<Vec<_>>();
-    vec.sort_by(|(a, _, _, _, _), (b, _, _, _, _)| a.priority.total_cmp(&b.priority));
-    vec.retain(|(chunk, _, _, _, _)| chunk.state == ChunkState::Pending);
-    let Some((chunk, position, scale, surface, renderer)) = vec.pop() else {
+    vec.sort_by(|(a, _, _), (b, _, _)| a.priority.total_cmp(&b.priority));
+    vec.retain(|(chunk, _, _)| chunk.state == ChunkState::Pending);
+    let Some((chunk, surface, renderer)) = vec.pop() else {
         return;
     };
 
@@ -120,7 +118,7 @@ fn update(world: &mut World) {
     active
         .set_push_constants(|x| {
             // WHY DO WE NEED TO MULTIPLY BY 0.5 WHY WHY WHY WHY WHY (it works tho)
-            let offset = (**position - vek::Vec3::broadcast(factor) * 0.5).with_w(0.0f32);
+            let offset = (chunk.node.position().as_::<f32>() - vek::Vec3::broadcast(factor) * 0.5).with_w(0.0f32);
             let offset = GpuPod::into_bytes(&offset);
 
             // Get the scale of the chunk
@@ -305,7 +303,6 @@ fn update(world: &mut World) {
         surface.visible = false;
     }
 
-    //surface.visible = true;
     chunk.state = ChunkState::Generated;
 }
 

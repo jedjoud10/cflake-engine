@@ -101,10 +101,9 @@ impl Octree {
             new.insert(Node {
                 position,
                 depth,
-                index: node,
-                children: self.children[node],
                 center,
                 size: (2u32.pow(self.max_depth - depth) * self.node_size),
+                leaf: self.children[node].is_none(),
             });
         }
 
@@ -142,10 +141,9 @@ impl Octree {
             let node = Node {
                 position,
                 depth,
-                index,
-                children: self.children[index],
                 center,
                 size,
+                leaf: self.children[index].is_none(),
             };
 
             if children && callback(node) {
@@ -174,9 +172,8 @@ pub struct Node {
     position: vek::Vec3<i32>,
     center: vek::Vec3<i32>,
     depth: u32,
-    index: usize,
     size: u32,
-    children: Option<NonZeroUsize>
+    leaf: bool,
 }
 
 impl Node {
@@ -194,29 +191,14 @@ impl Node {
     pub fn size(&self) -> u32 {
         self.size
     }
-    
-    // Get the current node's index
-    pub fn index(&self) -> usize {
-        self.index
-    }
 
     // Get the depth of the node
     pub fn depth(&self) -> u32 {
         self.depth
     }
     
-    // Get the node's children (if it has any)
-    pub fn children(&self) -> Option<[NonZeroUsize; 8]> {
-        self.children.map(|x| [
-            x,
-            x.saturating_add(1),
-            x.saturating_add(2),
-            x.saturating_add(3),
-
-            x.saturating_add(4),
-            x.saturating_add(5),
-            x.saturating_add(6),
-            x.saturating_add(7),
-        ])
+    // Check if the node is a leaf node
+    pub fn leaf(&self) -> bool {
+        self.leaf
     }
 }

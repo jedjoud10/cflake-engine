@@ -22,7 +22,6 @@ layout(push_constant) uniform PushConstants {
 float voxel(vec3 position) {
     position *= parameters.scale;
     position += parameters.offset.xyz;
-    //return min(position.y, sdSphere(position, 128));
 
     /*
 
@@ -77,6 +76,7 @@ float voxel(vec3 position) {
     return Voxel(density, 0);
     */
 
+    /*
     //TEST 1
     
 
@@ -92,5 +92,18 @@ float voxel(vec3 position) {
     d2 = opSmoothSubtraction(-d2, position.y + 100, 50);
     density += d2 - 140;
     density = opUnion(density, sdSphere(position, 20));
+    return density;
+    */
+
+    position *= 0.2;
+
+    float density = (1-fbmCellular(position * 0.02 * vec3(1, 5.0, 1), 8, 0.5, 2.0).x) * 10;
+    float d2 = (1-fbmCellular(position * 0.008 * vec3(1, 0.1, 1), 8, 0.3, 2.1).x) * 140;
+    d2 = smooth_floor(d2 / 50) * 50;
+
+    d2 += position.y;
+    d2 = opSmoothUnion(d2, position.y + 140, 10);
+    d2 = opSmoothSubtraction(-d2, position.y + 100, 50);
+    density += d2 - 140;
     return density;
 }

@@ -61,8 +61,6 @@ fn init(world: &mut World) {
             &assets,
             &graphics,
             &mut settings,
-            &memory,
-            &mut scene,
             &mut materials,
             &mut layered_albedo_maps,
             &mut layered_normal_maps,

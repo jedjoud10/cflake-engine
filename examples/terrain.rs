@@ -36,8 +36,8 @@ fn init(world: &mut World) {
         false,
         8,
         1024,
-        5.0f32,
-        7,
+        64.0f32 * 3.0,
+        5,
         Some(&[
             TerrainSubMaterial {
                 diffuse: "user/textures/diffuse.jpg".to_string(),

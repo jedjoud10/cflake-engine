@@ -40,8 +40,6 @@ impl ChunkManager {
         assets: &Assets,
         graphics: &Graphics,
         settings: &mut TerrainSettings,
-        memory: &MemoryManager,
-        scene: &mut Scene,
         materials: &mut Storage<TerrainMaterial>,
         layered_albedo_maps: &mut Storage<LayeredAlbedoMap>,
         layered_normal_maps: &mut Storage<LayeredNormalMap>,

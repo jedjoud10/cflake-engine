@@ -51,21 +51,23 @@ fn update(world: &mut World) {
         new
     };
 
+    // Only generate if we don't have any pending chunks
+    let pending = scene
+        .query_mut::<&Chunk>()
+        .into_iter()
+        .filter(|x| x.state == ChunkState::Pending || x.state == ChunkState::Dirty)
+        .count();
+
     // Check if it moved since last frame
-    if added || new != new {
+    if added || (new != old && pending == 0) {
         // Regenerate the octree and detect diffs
         let OctreeDelta {
             mut added,
-            mut removed
+            removed
         } = manager.octree.compute(new, settings.radius);
 
         // Discard non-leaf nodes
-        dbg!(added.len());
-        dbg!(removed.len());
-        added.retain(|x| x.children().is_none());
-        removed.retain(|x| x.children().is_none());
-        dbg!(added.len());
-        dbg!(removed.len());
+        added.retain(|x| x.leaf());
 
         // Don't do shit
         if added.is_empty() && removed.is_empty() {
@@ -74,13 +76,125 @@ fn update(world: &mut World) {
 
         // Set the chunk state to "free" so we can reuse it
         for coord in removed {
-            let entity = manager.entities.remove(&coord).unwrap();
-            let mut entry = scene.entry_mut(entity).unwrap();
-            let chunk = entry.get_mut::<Chunk>().unwrap();
-            chunk.state = ChunkState::Free;
+            if let Some(entity) = manager.entities.remove(&coord) {
+                let mut entry = scene.entry_mut(entity).unwrap();
+                
+                // Set the chunk as "free" and hide it
+                let (chunk, surface) = entry.as_query_mut::<(&mut Chunk, &mut Surface<TerrainMaterial>)>().unwrap();
+                chunk.state = ChunkState::Free;
+                surface.visible = false;
+            }
         }
 
-        // Try to re-use "free" chunks first 
+        // If we don't add chunks just exit
+        if added.is_empty() {
+            return;
+        }
+
+        // Get the number of free chunks that we can reuse
+        let query_count = scene
+            .query_mut::<&Chunk>()
+            .into_iter()
+            .filter(|x| x.state == ChunkState::Free)
+            .count();
+
+        // Add extra chunks if we need them
+        let mut rng = rand::thread_rng();
+        let mut indirect_meshes = world.get_mut::<Storage<IndirectMesh>>().unwrap();
+        let mut indexed_indirect_buffers = world.get_mut::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
+        let indexed_indirect_buffer = indexed_indirect_buffers.get_mut(&memory.indexed_indirect_buffer);
+
+        // Extend the indexed indirect buffer if needed
+        if added.len() > query_count {
+            // Calculate the number of chunks that we must insert into the world
+            let chunks_to_pre_allocate = added.len() - query_count;
+
+            // Global count is the number of chunks that are currently pre-allocated
+            // So basically the number of elements within the indexed_indirect_buffer buffer 
+            let global_count = indexed_indirect_buffer.len();
+
+            // Extend the indirect draw buffer
+            indexed_indirect_buffer.extend_from_slice(&vec![
+                DrawIndexedIndirect {
+                    vertex_count: 0,
+                    instance_count: 1,
+                    base_index: 0,
+                    vertex_offset: 0,
+                    base_instance: 0,
+                };
+                chunks_to_pre_allocate
+            ]).unwrap();
+
+            // Create new chunk entities and set them as "free"
+            scene.extend_from_iter((0..chunks_to_pre_allocate).into_iter().map(|index| {
+                // Get the node that corresponds to this index
+                let node = added[index + query_count];
+    
+                // Get the allocation index for this chunk
+                let allocation = rng.gen_range(0..settings.allocation_count);
+                let local_index = memory.chunks_per_allocations[allocation];
+                let global_index = global_count + index;
+
+                // Get the vertex and triangle buffers that will be shared for this group
+                let tex_coord_buffer = &memory.shared_tex_coord_buffers[allocation];
+                let triangle_buffer = &memory.shared_triangle_buffers[allocation];
+    
+                // Create the indirect mesh
+                let mut mesh = IndirectMesh::from_handles(
+                    None,
+                    None,
+                    None,
+                    Some(tex_coord_buffer.clone()),
+                    triangle_buffer.clone(),
+                    memory.indexed_indirect_buffer.clone(),
+                    global_index,
+                );
+    
+                // Set the bounding box of the mesh beforehand
+                mesh.set_aabb(Some(math::Aabb {
+                    min: vek::Vec3::zero(),
+                    max: vek::Vec3::one() * (node.size() as f32),
+                }));
+    
+                // Insert the mesh into the storage
+                let mesh = indirect_meshes.insert(mesh);
+    
+                // Create the surface for rendering
+                let mut surface = Surface::new(
+                    mesh.clone(),
+                    manager.material.clone(),
+                    manager.id.clone()
+                );
+    
+                // Hide the surface at first
+                surface.visible = false;
+    
+                // Create a renderer an a position component
+                let mut renderer = Renderer::default();
+                renderer.instant_initialized = None;
+                let position = Position::from(node.position().as_::<f32>());
+                let scale = Scale::uniform((node.size() as f32) / (settings.size as f32));
+    
+                // Create the chunk component
+                let chunk = Chunk {
+                    state: ChunkState::Free,
+                    allocation,
+                    local_index,
+                    global_index,
+                    priority: 0.0f32,
+                    ranges: None,
+                    node,
+                };
+    
+                // Take in account this chunk within the allocation
+                memory.chunks_per_allocations[allocation] += 1;
+    
+                // Create the bundle
+                (surface, renderer, position, scale, chunk)
+            }));
+        }   
+
+        // Get all free chunks in the world and use them
         let query = scene
             .query_mut::<(
                 &mut Chunk,
@@ -93,101 +207,6 @@ fn update(world: &mut World) {
             .filter(|(x, _, _, _, _)| x.state == ChunkState::Free)
             .collect::<Vec<_>>();
 
-        // Add extra chunks if we need them
-        let mut rng = rand::thread_rng();
-        let mut indirect_meshes = world.get_mut::<Storage<IndirectMesh>>().unwrap();
-        let mut indexed_indirect_buffers = world.get_mut::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
-        let indexed_indirect_buffer = indexed_indirect_buffers.get_mut(&memory.indexed_indirect_buffer);
-
-        // Extend the indexed indirect buffer if needed
-        if added.len() > query.len() {
-            let count = added.len() - query.len();
-
-            indexed_indirect_buffer.extend_from_slice(&vec![
-                DrawIndexedIndirect {
-                    vertex_count: 0,
-                    instance_count: 1,
-                    base_index: 0,
-                    vertex_offset: 0,
-                    base_instance: 0,
-                };
-                count
-            ]).unwrap();
-
-            log::debug!("Adding {count} new chunk entities to the pool");
-        }
-
-        let mut count = 0;
-        scene.extend_from_iter((0..(added.len().saturating_sub(query.len()))).into_iter().map(|index| {
-            // Get the node that corresponds to this index
-            let node = added[index + query.len()];
-
-            // Get the allocation index for this chunk
-            let allocation = rng.gen_range(0..settings.allocation_count);
-            let local_index = memory.chunks_per_allocations[allocation];
-            let global_index = count;
-            log::warn!("manager: used allocation {allocation}");
-            log::warn!("manager: local index {local_index}");
-            log::warn!("manager: global index {global_index}");
-
-            // Get the vertex and triangle buffers that will be shared for this group
-            let tex_coord_buffer = &memory.shared_tex_coord_buffers[allocation];
-            let triangle_buffer = &memory.shared_triangle_buffers[allocation];
-
-            // Create the indirect mesh
-            let mut mesh = IndirectMesh::from_handles(
-                None,
-                None,
-                None,
-                Some(tex_coord_buffer.clone()),
-                triangle_buffer.clone(),
-                memory.indexed_indirect_buffer.clone(),
-                count,
-            );
-
-            // Set the bounding box of the mesh before hand
-            mesh.set_aabb(Some(math::Aabb {
-                min: vek::Vec3::zero(),
-                max: vek::Vec3::one() * settings.size as f32,
-            }));
-
-            // Insert the mesh into the storage
-            let mesh = indirect_meshes.insert(mesh);
-
-            // Create the surface for rendering
-            let mut surface = Surface::new(
-                mesh.clone(),
-                manager.material.clone(),
-                manager.id.clone()
-            );
-
-            // Hide the surface at first
-            surface.visible = false;
-
-            // Create a renderer an a position component
-            let mut renderer = Renderer::default();
-            renderer.instant_initialized = None;
-            let position = Position::from(node.position().as_::<f32>());
-            let scale = Scale::uniform((node.size() as f32) / (settings.size as f32));
-
-            // Create the chunk component
-            let chunk = Chunk {
-                state: ChunkState::Dirty,
-                allocation,
-                local_index,
-                global_index,
-                priority: 0.0f32,
-                ranges: None,
-                node,
-            };
-
-            count += 1;
-            memory.chunks_per_allocations[allocation] += 1;
-
-            // Create the bundle
-            (surface, renderer, position, scale, chunk)
-        }));
-
         // Set the "dirty" state for newly added chunks
         for ((chunk, position, scale, entity, surface), node) in query.into_iter().zip(added.iter()) {
             chunk.state = ChunkState::Dirty;
@@ -199,7 +218,8 @@ fn update(world: &mut World) {
             **scale = (node.size() as f32) / (settings.size as f32);
 
             // Add the entity to the internally stored entities
-            manager.entities.insert(*node, *entity);
+            let res = manager.entities.insert(*node, *entity);
+            assert!(res.is_none());
         }
     }
 
