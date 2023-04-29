@@ -1,8 +1,7 @@
 // Terrain voxel generation push constants
 layout(push_constant) uniform PushConstants {
     vec4 offset;
-    uint global_chunk_index;
-    uint allocation_index;
+    float scale;
 } parameters;
 
 // Load up some noise functions
@@ -21,7 +20,13 @@ layout(push_constant) uniform PushConstants {
 // Density allows us to represent either full terrain or air, and everything in between
 // Main voxel function that will create the shape of the terrain
 float voxel(vec3 position) {
+    position *= parameters.scale;
     position += parameters.offset.xyz;
+    //return min(position.y, sdSphere(position, 128));
+
+    /*
+
+    */
     //return 1;
     //return min(position.y, sdBox(position - vec3(0, 2, 0), vec3(1)));
     /*

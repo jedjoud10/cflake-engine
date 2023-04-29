@@ -43,7 +43,7 @@ impl MemoryManager {
                 graphics,
                 &[],
                 BufferMode::Resizable,
-                BufferUsage::STORAGE | BufferUsage::WRITE,
+                BufferUsage::STORAGE | BufferUsage::WRITE | BufferUsage::COPY_DST | BufferUsage::COPY_SRC,
             )
             .unwrap(),
         );

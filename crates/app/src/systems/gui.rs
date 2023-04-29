@@ -302,10 +302,15 @@ fn update(world: &mut World) {
     }
 
     // Camera controller settings
-    if let Some(controller) = scene.find_mut::<&mut CameraController>() {
+    if let Some((controller, rotation, position)) = scene.find_mut::<(&mut CameraController, &Rotation, &Position)>() {
         egui::Window::new("Camera Controller")
             .frame(frame)
             .show(&gui, |ui| {
+                ui.label(format!("Forward vector: {:.2}", rotation.forward()));
+                ui.label(format!("Up vector: {:.2}", rotation.up()));
+                ui.label(format!("Right vector: {:.2}", rotation.right()));
+                ui.label(format!("Position: {:.2}", **position));
+
                 ui.horizontal(|ui| {
                     ui.label("Base Speed: ");
                     ui.add(egui::DragValue::new(&mut controller.base_speed));
@@ -377,7 +382,7 @@ fn update(world: &mut World) {
             ui.horizontal(|ui| {
                 ui.label("Frustum Culling Batch Size: ");
                 ui.add(egui::DragValue::new(&mut renderer.frustum_culling_batch_size));
-            });
+            });            
         });
     }
 

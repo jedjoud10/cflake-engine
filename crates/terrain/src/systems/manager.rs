@@ -52,7 +52,7 @@ fn update(world: &mut World) {
     };
 
     // Check if it moved since last frame
-    if added || new != old {
+    if added || new != new {
         // Regenerate the octree and detect diffs
         let OctreeDelta {
             mut added,
@@ -60,8 +60,17 @@ fn update(world: &mut World) {
         } = manager.octree.compute(new, settings.radius);
 
         // Discard non-leaf nodes
+        dbg!(added.len());
+        dbg!(removed.len());
         added.retain(|x| x.children().is_none());
         removed.retain(|x| x.children().is_none());
+        dbg!(added.len());
+        dbg!(removed.len());
+
+        // Don't do shit
+        if added.is_empty() && removed.is_empty() {
+            return;
+        }
 
         // Set the chunk state to "free" so we can reuse it
         for coord in removed {
@@ -92,6 +101,8 @@ fn update(world: &mut World) {
 
         // Extend the indexed indirect buffer if needed
         if added.len() > query.len() {
+            let count = added.len() - query.len();
+
             indexed_indirect_buffer.extend_from_slice(&vec![
                 DrawIndexedIndirect {
                     vertex_count: 0,
@@ -100,8 +111,10 @@ fn update(world: &mut World) {
                     vertex_offset: 0,
                     base_instance: 0,
                 };
-                added.len() - query.len()
+                count
             ]).unwrap();
+
+            log::debug!("Adding {count} new chunk entities to the pool");
         }
 
         let mut count = 0;
@@ -113,6 +126,9 @@ fn update(world: &mut World) {
             let allocation = rng.gen_range(0..settings.allocation_count);
             let local_index = memory.chunks_per_allocations[allocation];
             let global_index = count;
+            log::warn!("manager: used allocation {allocation}");
+            log::warn!("manager: local index {local_index}");
+            log::warn!("manager: global index {global_index}");
 
             // Get the vertex and triangle buffers that will be shared for this group
             let tex_coord_buffer = &memory.shared_tex_coord_buffers[allocation];
@@ -151,15 +167,16 @@ fn update(world: &mut World) {
             // Create a renderer an a position component
             let mut renderer = Renderer::default();
             renderer.instant_initialized = None;
-            let position = Position::default();
+            let position = Position::from(node.position().as_::<f32>());
+            let scale = Scale::uniform((node.size() as f32) / (settings.size as f32));
 
             // Create the chunk component
             let chunk = Chunk {
-                state: ChunkState::Free,
+                state: ChunkState::Dirty,
                 allocation,
                 local_index,
                 global_index,
-                priority: f32::MIN,
+                priority: 0.0f32,
                 ranges: None,
                 node,
             };
@@ -168,7 +185,7 @@ fn update(world: &mut World) {
             memory.chunks_per_allocations[allocation] += 1;
 
             // Create the bundle
-            (surface, renderer, position, chunk)
+            (surface, renderer, position, scale, chunk)
         }));
 
         // Set the "dirty" state for newly added chunks
@@ -178,8 +195,8 @@ fn update(world: &mut World) {
             
             // Set node, position, and scale
             chunk.node = *node;
-            **position = node.center().as_::<f32>();
-            **scale = node.size() as f32 / 2.0f32;
+            **position = node.position().as_::<f32>();
+            **scale = (node.size() as f32) / (settings.size as f32);
 
             // Add the entity to the internally stored entities
             manager.entities.insert(*node, *entity);

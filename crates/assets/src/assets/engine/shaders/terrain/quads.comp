@@ -110,6 +110,7 @@ void main() {
     // Get the start density
     float density0 = imageLoad(voxels, ivec3(gl_GlobalInvocationID)).x;
 
+    /*
     if (gl_GlobalInvocationID.z == size - 3) {
         check_edge(
             density0 + 20,
@@ -142,6 +143,7 @@ void main() {
             uvec3(1, 0, 1)
         );
     }
+    */
 
     // Check the Z axis edge
     check_edge(
