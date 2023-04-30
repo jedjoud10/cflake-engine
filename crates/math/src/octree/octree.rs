@@ -11,13 +11,53 @@ pub struct Octree {
     node_size: u32,
     children: Vec<Option<NonZeroUsize>>,
     old_nodes: AHashSet<Node>,
+    heuristic: OctreeHeuristic,
+}
+
+// A heuristic is what we will use to check if we should split a node or not
+pub enum OctreeHeuristic {
+    // Spherical heuristic with a specific radius
+    Spheric(f32),
+
+    // Point heuristic. Same as Sphere(0.0)
+    Point,
+
+    // Cube heuristic with cube full extent size
+    Cubic(f32),
+
+    // Custom heuristic
+    Boxed(Box<dyn Fn(&vek::Vec3<f32>, &Node) -> bool>),
+}
+
+impl OctreeHeuristic {
+    // Check if we should split a node or not
+    fn check(&self, target: &vek::Vec3<f32>, node: &Node) -> bool {
+        match self {
+            OctreeHeuristic::Spheric(radius) => {
+                crate::intersect::aabb_sphere(&node.aabb(), &crate::shapes::Sphere {
+                    center: *target,
+                    radius: *radius,
+                })
+            },
+            OctreeHeuristic::Point => {
+                crate::intersect::point_aabb(target, &node.aabb())
+            },
+            OctreeHeuristic::Cubic(extent) => {
+                crate::intersect::aabb_aabb(&node.aabb(), &crate::bounds::Aabb {
+                    min: target - extent / 2.0,
+                    max: target + extent / 2.0,
+                })
+            },
+            OctreeHeuristic::Boxed(func) => func(target, node),
+        }
+    }
 }
 
 impl Octree {
     // Create an octree with a specified LOD size and node size
     // Max depth must be greater than 2
     // Node size must be greater than 1, and it must be a power of two
-    pub fn new(max_depth: u32, node_size: u32) -> Self {
+    pub fn new(max_depth: u32, node_size: u32, heuristic: OctreeHeuristic) -> Self {
         assert!(max_depth > 2);
         assert!(node_size.is_power_of_two() && node_size > 1);
 
@@ -28,11 +68,12 @@ impl Octree {
             max_depth,
             node_size,
             old_nodes: AHashSet::default(),
+            heuristic,
         }
     }
 
     // Recalculate the octree using a specific camera location
-    pub fn compute(&mut self, target: vek::Vec3<f32>, radius: f32) -> OctreeDelta {
+    pub fn compute(&mut self, target: vek::Vec3<f32>) -> OctreeDelta {
         // Clear vectors
         self.positions.clear();
         self.depths.clear();
@@ -58,12 +99,12 @@ impl Octree {
 
             // Check if we should split the node into multiple
             // TODO: Find a heuristic that limits
-            let split = crate::intersect::aabb_sphere(&crate::bounds::Aabb {
-                min: position.as_::<f32>(),
-                max: position.as_::<f32>() + half.as_::<f32>() * 2.0,
-            }, &crate::shapes::Sphere {
-                center: target,
-                radius,
+            let split = self.heuristic.check(&target, &Node {
+                position,
+                center,
+                depth,
+                size: size * 2,
+                leaf: true
             });
 
             // Add the child nodes to check (this node became a parent node)
@@ -102,7 +143,7 @@ impl Octree {
                 position,
                 depth,
                 center,
-                size: (2u32.pow(self.max_depth - depth) * self.node_size),
+                size: size * 2,
                 leaf: self.children[node].is_none(),
             });
         }
@@ -200,5 +241,13 @@ impl Node {
     // Check if the node is a leaf node
     pub fn leaf(&self) -> bool {
         self.leaf
+    }
+
+    // Get the AABB bounding box of this node
+    pub fn aabb(&self) -> crate::Aabb<f32> {
+        crate::bounds::Aabb {
+            min: self.position().as_::<f32>(),
+            max: self.position().as_::<f32>() + vek::Vec3::broadcast(self.size() as f32),
+        }
     }
 }

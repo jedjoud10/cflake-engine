@@ -36,7 +36,6 @@ fn init(world: &mut World) {
         false,
         8,
         1024,
-        64.0f32 * 3.0,
         5,
         Some(&[
             TerrainSubMaterial {

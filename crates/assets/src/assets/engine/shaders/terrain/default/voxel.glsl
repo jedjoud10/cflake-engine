@@ -95,7 +95,7 @@ float voxel(vec3 position) {
     return density;
     */
 
-    position *= 0.2;
+    position *= 0.1;
 
     float density = (1-fbmCellular(position * 0.02 * vec3(1, 5.0, 1), 8, 0.5, 2.0).x) * 10;
     float d2 = (1-fbmCellular(position * 0.008 * vec3(1, 0.1, 1), 8, 0.3, 2.1).x) * 140;

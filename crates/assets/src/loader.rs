@@ -1,7 +1,6 @@
 use crate::{Asset, AssetInput, AssetLoadError, AsyncAsset};
 use ahash::AHashMap;
 use parking_lot::{Mutex, RwLock};
-use threadpool::ThreadPool;
 use std::{
     any::Any,
     ffi::OsStr,
@@ -61,9 +60,6 @@ pub struct Assets {
     // The value might be none in the case that the bytes were not loaded
     // The path buf contains the local path of each asset
     bytes: AsyncLoadedBytes,
-
-    // Threadpool for asynchronously loading assets
-    threadpool: ThreadPool,
 }
 
 impl Default for Assets {
@@ -76,10 +72,6 @@ impl Default for Assets {
             receiver,
             sender,
             hijack: Default::default(),
-            threadpool: threadpool::Builder::new()
-                .thread_name("asset-worker".to_string())
-                .num_threads(4)
-                .build(),
         }
     }
 }
@@ -335,7 +327,7 @@ impl Assets {
         self.loaded.lock().push(None);
 
         // Create a new task that will load this asset
-        self.threadpool.execute(move || {
+        rayon::spawn(move || {
             Self::async_load_inner::<A>(owned, bytes, hijack, context, settings, sender, index);
         });
         handle
@@ -377,7 +369,7 @@ impl Assets {
             loaded.push(None);
 
             // Start telling worker threads to begin loading the assets
-            self.threadpool.execute(move || {
+            rayon::spawn(move || {
                 Self::async_load_inner::<A>(owned, bytes, hijack, context, settings, sender, index);
             });
         }

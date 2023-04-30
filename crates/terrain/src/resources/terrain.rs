@@ -21,7 +21,6 @@ pub struct TerrainSettings {
 
     // Octree params
     pub(crate) max_depth: u32,
-    pub(crate) radius: f32,
 
     // Memory managing settings
     pub(crate) allocation_count: usize,
@@ -62,7 +61,6 @@ impl TerrainSettings {
         lowpoly: bool,
         allocations: usize,
         sub_allocations: usize,
-        radius: f32,
         max_depth: u32,
         sub_materials: Option<&[TerrainSubMaterial]>,
     ) -> Result<Self, TerrainSettingsError> {
@@ -121,7 +119,6 @@ impl TerrainSettings {
             voxel_set_group_callback: None,
             sub_materials: sub_materials.map(|x| x.to_vec()),
             max_depth,
-            radius,
         })
     }
 

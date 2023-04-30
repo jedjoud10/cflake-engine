@@ -59,12 +59,12 @@ fn update(world: &mut World) {
         .count();
 
     // Check if it moved since last frame
-    if added || (new != old && pending == 0) {
+    if added || new != old {
         // Regenerate the octree and detect diffs
         let OctreeDelta {
             mut added,
             removed
-        } = manager.octree.compute(new, settings.radius);
+        } = manager.octree.compute(new);
 
         // Discard non-leaf nodes
         added.retain(|x| x.leaf());

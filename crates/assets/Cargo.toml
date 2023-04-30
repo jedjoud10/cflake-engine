@@ -14,7 +14,7 @@ log = { workspace = true }
 slotmap = "1.0.6"
 world = { path = "../world" }
 cfg-if = "1.0.0"
-threadpool = "1.8.1"
+rayon = "1.7.0"
 include_dir = "0.7.3"
 with_builtin_macros = "0.0.3"
 

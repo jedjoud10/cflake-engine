@@ -1,7 +1,7 @@
 use std::thread::Thread;
 
 use ahash::{AHashMap, AHashSet};
-use assets::Assets;
+use assets::{Assets, AsyncHandle};
 use coords::Position;
 use ecs::{Entity, Scene};
 use graphics::{
@@ -11,7 +11,7 @@ use graphics::{
 };
 use math::{Octree, Node};
 use rand::seq::SliceRandom;
-use rendering::{AlbedoTexel, IndirectMesh, MaterialId, Pipelines, Renderer, Surface};
+use rendering::{AlbedoTexel, IndirectMesh, MaterialId, Pipelines, Renderer, Surface, MaskTexel, NormalTexel};
 use utils::{Handle, Storage};
 
 use crate::{
@@ -46,32 +46,56 @@ impl ChunkManager {
         layered_mask_maps: &mut Storage<LayeredMaskMap>,
         pipelines: &mut Pipelines,
     ) -> Self {
-        // Create a layered texture 2D that contains the diffuse maps
-        let layered_albedo_map = load_layered_texture(
-            &settings,
-            &assets,
-            &graphics,
-            layered_albedo_maps,
-            |x| &x.diffuse,
-        );
+        // Textures that we will load
+        let mut layered_albedo_map: Option<LayeredAlbedoMap> = None;
+        let mut layered_normal_map: Option<LayeredNormalMap> = None;
+        let mut layered_mask_map: Option<LayeredMaskMap> = None;
 
-        // Create a layered texture 2D that contains the normal maps
-        let layered_normal_map = load_layered_texture(
-            &settings,
-            &assets,
-            &graphics,
-            layered_normal_maps,
-            |x| &x.normal,
-        );
+        // Load the raw texels asynchronously
+        let raw_albedo_texels = load_raw_texels_handles::<AlbedoTexel>(&assets, &settings, |x| &x.diffuse);
+        let raw_normal_texels = load_raw_texels_handles::<NormalTexel>(&assets, &settings, |x| &x.normal);
+        let raw_mask_texels = load_raw_texels_handles::<MaskTexel>(&assets, &settings, |x| &x.mask);
 
-        // Create a layered texture 2D that contains the mask maps
-        let layered_mask_map = load_layered_texture(
-            &settings,
-            &assets,
-            &graphics,
-            layered_mask_maps,
-            |x| &x.mask,
-        );
+        // Wait till we load ALL the raw texels
+        let raw_albedo_texels = raw_albedo_texels.map(|handles| assets.wait_from_iter(handles));
+        let raw_normal_texels = raw_normal_texels.map(|handles| assets.wait_from_iter(handles));
+        let raw_mask_texels = raw_mask_texels.map(|handles| assets.wait_from_iter(handles));
+
+        // Get rid of ze errors
+        let raw_albedo_texels = raw_albedo_texels.map(|x| x.into_iter().collect::<Result<Vec<_>, _>>().unwrap());
+        let raw_normal_texels = raw_normal_texels.map(|x| x.into_iter().collect::<Result<Vec<_>, _>>().unwrap());
+        let raw_mask_texels = raw_mask_texels.map(|x| x.into_iter().collect::<Result<Vec<_>, _>>().unwrap());
+
+        rayon::scope(|scope| {
+            // Create a layered texture 2D that contains the diffuse maps
+            scope.spawn(|_| {         
+                layered_albedo_map = load_layered_texture(
+                    &graphics,
+                    raw_albedo_texels,
+                );
+            });
+
+            // Create a layered texture 2D that contains the normal maps
+            scope.spawn(|_| { 
+                layered_normal_map = load_layered_texture(
+                    &graphics,
+                    raw_normal_texels,
+                );
+            });
+
+            // Create a layered texture 2D that contains the mask maps
+            scope.spawn(|_| { 
+                layered_mask_map = load_layered_texture(
+                    &graphics,
+                    raw_mask_texels
+                );
+            });
+        });
+
+        // After creating the textures, convert them to handles
+        let layered_albedo_map = layered_albedo_map.map(|x| layered_albedo_maps.insert(x));
+        let layered_normal_map = layered_normal_map.map(|x| layered_normal_maps.insert(x));
+        let layered_mask_map = layered_mask_map.map(|x| layered_mask_maps.insert(x)); 
 
         // Create a new material
         let material = TerrainMaterial {
@@ -88,8 +112,28 @@ impl ChunkManager {
             .register_with(graphics, &*settings, assets)
             .unwrap();
 
+        // Custom octree heuristic
+        let heuristic = math::OctreeHeuristic::Boxed(Box::new(|target, node| {
+            if node.size() == 128 {
+                // High resolution
+                math::aabb_sphere(&node.aabb(), &math::Sphere {
+                    center: *target,
+                    radius: 128.0,
+                })
+            } else if node.size() == 256 {
+                // Medium resolution
+                math::aabb_sphere(&node.aabb(), &math::Sphere {
+                    center: *target,
+                    radius: 512.0,
+                })
+            } else {
+                // Low resolution
+                true
+            }
+        }));
+
         // Create an octree for LOD chunk generation
-        let octree = Octree::new(settings.max_depth, settings.size);
+        let octree = Octree::new(settings.max_depth, settings.size, heuristic);
 
         // Create the chunk manager
         Self {
@@ -102,44 +146,35 @@ impl ChunkManager {
     }
 }
 
-// Load a 2D layered texture for the given texel type and callback (to get the name of asset files)
-fn load_layered_texture<T: ImageTexel>(
-    settings: &TerrainSettings,
+fn load_raw_texels_handles<T: ImageTexel>(
     assets: &Assets,
-    graphics: &Graphics,
-    storage: &mut Storage<LayeredTexture2D<T>>,
+    settings: &TerrainSettings,
     get_name_callback: impl Fn(&TerrainSubMaterial) -> &str,
-) -> Option<Handle<LayeredTexture2D<T>>> {
+) -> Option<Vec<AsyncHandle<RawTexels<T>>>> {
     let paths = settings
         .sub_materials
         .as_ref()?
         .iter()
         .map(|sub| get_name_callback(&sub))
         .collect::<Vec<_>>();
+    Some(assets.async_load_from_iter::<RawTexels<T>>(paths))
+}
 
-    let loaded = assets.async_load_from_iter::<RawTexels<T>>(paths);
-
-    let raw = assets
-        .wait_from_iter(loaded)
-        .into_iter()
-        .map(|x| x.unwrap())
-        .collect::<Vec<_>>();
-
-    Some(
-        storage.insert(
-            combine_into_layered(
-                graphics,
-                raw,
-                Some(SamplerSettings {
-                    filter: SamplerFilter::Linear,
-                    wrap: SamplerWrap::Repeat,
-                    mipmaps: SamplerMipMaps::Auto,
-                }),
-                TextureMipMaps::Manual { mips: &[] },
-                TextureMode::Dynamic,
-                TextureUsage::SAMPLED | TextureUsage::COPY_DST,
-            )
-            .unwrap(),
-        ),
-    )
+// Load a 2D layered texture for the given texel type and callback (to get the name of asset files)
+fn load_layered_texture<T: ImageTexel>(
+    graphics: &Graphics,
+    raw: Option<Vec<RawTexels<T>>>,
+) -> Option<LayeredTexture2D<T>> {
+    raw.map(|raw| combine_into_layered(
+        graphics,
+        raw,
+        Some(SamplerSettings {
+            filter: SamplerFilter::Linear,
+            wrap: SamplerWrap::Repeat,
+            mipmaps: SamplerMipMaps::Auto,
+        }),
+        TextureMipMaps::Manual { mips: &[] },
+        TextureMode::Dynamic,
+        TextureUsage::SAMPLED | TextureUsage::COPY_DST,
+    ).unwrap())
 }

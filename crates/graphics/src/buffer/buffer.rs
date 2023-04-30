@@ -581,6 +581,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
             // Write using the same encoder
             self.length += slice.len();
             self.write(slice, self.length - slice.len()).unwrap();
+            self.capacity = capacity;
         } else {
             // Just write into a sub-part of the buffer
             self.length += slice.len();

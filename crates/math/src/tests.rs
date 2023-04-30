@@ -103,17 +103,11 @@ mod shapes {
 
 #[cfg(test)]
 mod octree {
-    use crate::Octree;
+    use crate::{Octree, OctreeHeuristic};
 
     #[test]
     fn basic() {
-        let mut octree = Octree::new(8, 4);
+        let mut octree = Octree::new(8, 4, OctreeHeuristic::Point);
         assert_eq!(octree.size(), 1024);
-
-        let delta = octree.compute(vek::Vec3::zero(), 1.0f32);
-    
-        for x in delta.added {
-            dbg!(x);
-        }
     }
 }
