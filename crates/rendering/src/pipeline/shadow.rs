@@ -39,7 +39,6 @@ pub(super) fn render_shadows<'r, M: Material>(
     render_pass: &mut ActiveShadowRenderPass<'r, '_>,
     shadow_pipeline: &'r ShadowRenderPipeline,
     lightspace: vek::Mat4<f32>,
-    shadow_frustum_culling_batch_size: usize,
 ) {
     let mut active = render_pass.bind_pipeline(shadow_pipeline);
 

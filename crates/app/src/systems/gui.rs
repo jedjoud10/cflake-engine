@@ -366,11 +366,6 @@ fn update(world: &mut World) {
                             ui.end_row();
                         }
                     });
-
-                ui.horizontal(|ui| {
-                    ui.label("Frustum Culling Batch Size: ");
-                    ui.add(egui::DragValue::new(&mut shadowmapping.frustum_culling_batch_size));
-                });
             });
     }
 
@@ -379,10 +374,6 @@ fn update(world: &mut World) {
         egui::Window::new("Forward Rendering")
         .frame(frame)
         .show(&gui, |ui| {
-            ui.horizontal(|ui| {
-                ui.label("Frustum Culling Batch Size: ");
-                ui.add(egui::DragValue::new(&mut renderer.frustum_culling_batch_size));
-            });            
         });
     }
 

@@ -131,8 +131,8 @@ void main() {
         }
     }
 
-    // Check if we are genearting some skirts
     /*
+    // Check if we are genearting some skirts
     bool skirts = any(lessThanEqual(gl_GlobalInvocationID, vec3(1))) || any(greaterThanEqual(gl_GlobalInvocationID, vec3(size-3)));
 
     // Update normals and count for skirts

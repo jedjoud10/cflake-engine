@@ -1,5 +1,6 @@
 use crate::Renderer;
 use coords::{Position, Rotation, Scale};
+use rayon::prelude::{IntoParallelRefIterator, IntoParallelRefMutIterator, ParallelIterator, IntoParallelIterator};
 use world::{post_user, System, World};
 
 // Update the global mesh matrices of objects that have been modified
@@ -20,12 +21,14 @@ fn update(world: &mut World) {
         Option<&Rotation>,
         Option<&Scale>,
     )>(filter);
+    let iter = query.into_iter().collect::<Vec<_>>();
+    let iter = iter.into_par_iter();
 
     // Update the matrices of objects that might contain location, rotation, or scale
-    for (renderer, position, rotation, scale) in query {
+    iter.for_each(|(renderer, position, rotation, scale)| {
         let mut matrix = vek::Mat4::<f32>::identity();
         if let Some(position) = position {
-            matrix *= vek::Mat4::from(position);
+            matrix *= vek::Mat4::from(*position);
         }
 
         if let Some(rotation) = rotation {
@@ -36,7 +39,7 @@ fn update(world: &mut World) {
             matrix *= vek::Mat4::from(scale);
         }
         renderer.matrix = matrix;
-    }
+    });
 }
 
 // The matrix system will be responsible for updating the matrices of the renderer

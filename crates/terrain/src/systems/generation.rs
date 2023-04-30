@@ -112,13 +112,14 @@ fn update(world: &mut World) {
     let mut active = pass.bind_shader(&voxelizer.compute_voxels);
 
     // Needed since SN only runs for a volume 2 units smaller than a perfect cube
-    let factor = (chunk.node.size() as f32) / (settings.size as f32 - 3.0);
+    let node = chunk.node.unwrap();
+    let factor = (node.size() as f32) / (settings.size as f32 - 3.0);
 
     // Set the push constants
     active
         .set_push_constants(|x| {
             // WHY DO WE NEED TO MULTIPLY BY 0.5 WHY WHY WHY WHY WHY (it works tho)
-            let offset = (chunk.node.position().as_::<f32>() - vek::Vec3::broadcast(factor) * 0.5).with_w(0.0f32);
+            let offset = (node.position().as_::<f32>() - vek::Vec3::broadcast(factor) * 0.5).with_w(0.0f32);
             let offset = GpuPod::into_bytes(&offset);
 
             // Get the scale of the chunk

@@ -19,7 +19,7 @@ pub struct Client {
 
 impl Drop for Client {
     fn drop(&mut self) {
-        // Todo: Handle this
+        // TODO: Handle this
         //self.disconnect();
     }
 }

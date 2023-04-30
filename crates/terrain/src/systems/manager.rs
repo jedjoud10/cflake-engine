@@ -106,8 +106,8 @@ fn update(world: &mut World) {
 
         // Extend the indexed indirect buffer if needed
         if added.len() > query_count {
-            // Calculate the number of chunks that we must insert into the world
-            let chunks_to_pre_allocate = added.len() - query_count;
+            // Over-allocate so we don't need to do this as many times
+            let chunks_to_pre_allocate = ((added.len() - query_count) * 2).max(128);
 
             // Global count is the number of chunks that are currently pre-allocated
             // So basically the number of elements within the indexed_indirect_buffer buffer 
@@ -127,9 +127,6 @@ fn update(world: &mut World) {
 
             // Create new chunk entities and set them as "free"
             scene.extend_from_iter((0..chunks_to_pre_allocate).into_iter().map(|index| {
-                // Get the node that corresponds to this index
-                let node = added[index + query_count];
-    
                 // Get the allocation index for this chunk
                 let allocation = rng.gen_range(0..settings.allocation_count);
                 let local_index = memory.chunks_per_allocations[allocation];
@@ -140,7 +137,7 @@ fn update(world: &mut World) {
                 let triangle_buffer = &memory.shared_triangle_buffers[allocation];
     
                 // Create the indirect mesh
-                let mut mesh = IndirectMesh::from_handles(
+                let mesh = IndirectMesh::from_handles(
                     None,
                     None,
                     None,
@@ -149,12 +146,6 @@ fn update(world: &mut World) {
                     memory.indexed_indirect_buffer.clone(),
                     global_index,
                 );
-    
-                // Set the bounding box of the mesh beforehand
-                mesh.set_aabb(Some(math::Aabb {
-                    min: vek::Vec3::zero(),
-                    max: vek::Vec3::one() * (node.size() as f32),
-                }));
     
                 // Insert the mesh into the storage
                 let mesh = indirect_meshes.insert(mesh);
@@ -172,8 +163,8 @@ fn update(world: &mut World) {
                 // Create a renderer an a position component
                 let mut renderer = Renderer::default();
                 renderer.instant_initialized = None;
-                let position = Position::from(node.position().as_::<f32>());
-                let scale = Scale::uniform((node.size() as f32) / (settings.size as f32));
+                let position = Position::default();
+                let scale = Scale::default();
     
                 // Create the chunk component
                 let chunk = Chunk {
@@ -183,7 +174,7 @@ fn update(world: &mut World) {
                     global_index,
                     priority: 0.0f32,
                     ranges: None,
-                    node,
+                    node: None,
                 };
     
                 // Take in account this chunk within the allocation
@@ -208,14 +199,22 @@ fn update(world: &mut World) {
             .collect::<Vec<_>>();
 
         // Set the "dirty" state for newly added chunks
+        assert!(query.len() >= added.len());
         for ((chunk, position, scale, entity, surface), node) in query.into_iter().zip(added.iter()) {
             chunk.state = ChunkState::Dirty;
             surface.visible = false;
             
             // Set node, position, and scale
-            chunk.node = *node;
+            chunk.node = Some(*node);
             **position = node.position().as_::<f32>();
             **scale = (node.size() as f32) / (settings.size as f32);
+
+            // Update the bounding box of the mesh when we get it's node
+            let mesh = indirect_meshes.get_mut(&surface.subsurfaces[0].mesh);
+            mesh.set_aabb(Some(math::Aabb {
+                min: vek::Vec3::zero(),
+                max: vek::Vec3::one() * (node.size() as f32),
+            }));
 
             // Add the entity to the internally stored entities
             let res = manager.entities.insert(*node, *entity);

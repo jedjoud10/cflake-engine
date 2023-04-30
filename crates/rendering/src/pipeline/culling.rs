@@ -2,6 +2,7 @@ use std::time::Instant;
 
 use ecs::Scene;
 use math::ExplicitVertices;
+use rayon::prelude::{ParallelBridge, IntoParallelRefMutIterator, ParallelIterator, IntoParallelIterator};
 use world::World;
 
 use crate::{DefaultMaterialResources, Material, RenderPath, Renderer, SubSurface, Surface};
@@ -43,7 +44,6 @@ pub fn intersects_frustum(
 pub(super) fn cull_surfaces<'r, M: Material>(
     world: &'r World,
     defaults: &mut DefaultMaterialResources<'r>,
-    frustum_culling_batch_size: usize,
 ) {
     // Don't cull if there's no need
     if !M::frustum_culling() {
@@ -53,9 +53,11 @@ pub(super) fn cull_surfaces<'r, M: Material>(
     // Get all the entities that contain a visible surface
     let mut scene = world.get_mut::<Scene>().unwrap();
     let query = scene.query_mut::<(&mut Surface<M>, &Renderer)>();
+    let iter = query.into_iter().collect::<Vec<_>>();
+    let iter = iter.into_par_iter();
 
     // Iterate over the surfaces of this material and update their culled state
-    for (surface, renderer) in query {
+    iter.for_each(|(surface, renderer)| {
         if !renderer.visible {
             return;
         }
@@ -64,7 +66,7 @@ pub(super) fn cull_surfaces<'r, M: Material>(
         surface.culled = surface
             .subsurfaces
             .iter()
-            .all(|SubSurface { mesh, material }| {
+            .all(|SubSurface { mesh, .. }| {
                 // Get the mesh and it's AABB
                 let mesh = <M::RenderPath as RenderPath>::get(defaults, &mesh);
                 let aabb = mesh.vertices().aabb();
@@ -76,5 +78,5 @@ pub(super) fn cull_surfaces<'r, M: Material>(
                     false
                 }
             });
-    }
+    });
 }

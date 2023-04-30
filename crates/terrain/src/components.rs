@@ -32,14 +32,14 @@ pub struct Chunk {
     pub(crate) global_index: usize,
     pub(crate) ranges: Option<vek::Vec2<u32>>,
     pub(crate) state: ChunkState,
-    pub(crate) node: Node,
+    pub(crate) node: Option<Node>,
     pub(crate) priority: f32,
 }
 
 impl Chunk {
     // Corresponding octree node for this chunk
-    pub fn node(&self) -> &Node {
-        &self.node
+    pub fn node(&self) -> Option<&Node> {
+        self.node.as_ref()
     }
 
     // Get the current chunk state

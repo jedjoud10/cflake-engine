@@ -44,7 +44,6 @@ pub struct TerrainSettings {
 
 // Terrain "sub-materials" (aka layered textures) that we can load in
 // Contains the paths of the sub material textures that we will load
-// TODO: Please find a way to *not* do this
 #[derive(Clone)]
 pub struct TerrainSubMaterial {
     pub diffuse: String,
@@ -71,7 +70,7 @@ impl TerrainSettings {
 
         // Reduce these numbers blud
         output_tex_coord_buffer_length /= 2;
-        //output_triangle_buffer_length /= 2;
+        output_triangle_buffer_length /= 2;
 
         // Validate resolution
         if resolution < 16 {

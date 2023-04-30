@@ -54,9 +54,6 @@ pub struct ShadowMapping {
 
     // Contains the depth distances for each plane
     pub cascade_distances: UniformBuffer<f32>,
-
-    // How many elements per batch should we use for frustum culling?
-    pub frustum_culling_batch_size: usize,
 }
 
 // This is the uniform that is defined in the Vertex Module
@@ -161,7 +158,6 @@ impl ShadowMapping {
             depth,
             percents,
             cascade_distances,
-            frustum_culling_batch_size: 8192,
         }
     }
 

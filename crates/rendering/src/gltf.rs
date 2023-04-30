@@ -253,55 +253,74 @@ impl Asset for GltfScene {
             })
             .collect::<Vec<_>>();
 
+        // TODO: 
+        // Convert the textures to hashmaps w the settings they should be created with
+        // Create rayon scope that will take those hashmaps and convert their inner settings to act textures
 
         // Map PBR textures first in other threads
-        let cached_albedo_maps = DashMap::<usize, AlbedoMap>::new();
-        let cached_normal_maps = DashMap::<usize, NormalMap>::new();
-        let cached_mask_maps = DashMap::<(Option<usize>, Option<usize>), MaskMap>::new();
+        let cached_albedo_maps = Arc::new(DashMap::<usize, AlbedoMap>::new());
+        let cached_normal_maps = Arc::new(DashMap::<usize, NormalMap>::new());
+        let cached_mask_maps = Arc::new(DashMap::<(Option<usize>, Option<usize>), MaskMap>::new());
         let graphics = context.graphics.clone();
-        materials
-            .par_iter()
-            .for_each(|material| {
+
+        // Load the assets in other threads
+        rayon::scope(|s| {
+            for material in materials.iter() {
                 // Decompose into Optional indices
-                let pbr = &material.pbr_metallic_roughness;
-                let albedo_map = pbr.base_color_texture.as_ref();
-                let normal_map = material.normal_texture.as_ref();
-                let metallic_roughness_map = pbr.metallic_roughness_texture.as_ref();
-                let occlusion_map = material.occlusion_texture.as_ref();
+                let pbr = material.pbr_metallic_roughness.clone();
+                let albedo_map = pbr.base_color_texture.clone();
+                let normal_map = material.normal_texture.clone();
+                let metallic_roughness_map = pbr.metallic_roughness_texture.clone();
+                let occlusion_map = material.occlusion_texture.clone();
+                let textures = &textures;
+                let mapped_images = &mapped_images;
+                let samplers = &samplers;
+                let cached_albedo_maps = cached_albedo_maps.clone();
+                let cached_normal_maps = cached_normal_maps.clone();
+                let cached_mask_maps = cached_mask_maps.clone();
+
 
                 // Create or load a cached diffuse map texture
                 if let Some(info) = albedo_map {
-                    cached_albedo_maps
-                        .entry(info.index.value())
-                        .or_insert_with(|| {
-                            let texture = &textures[info.index.value()];
-                            create_material_texture(
-                                graphics.clone(),
-                                texture,
-                                &samplers,
-                                &mapped_images,
-                            )
-                        });
+                    let graphics = graphics.clone();
+                    s.spawn(move |_| {
+                        cached_albedo_maps
+                            .entry(info.index.value())
+                            .or_insert_with(|| {
+                                let texture = &textures[info.index.value()];
+                                create_material_texture(
+                                    graphics,
+                                    texture,
+                                    samplers,
+                                    mapped_images,
+                                )
+                            });
+                    });
                 }
 
                 // Create or load a cached normal map texture
                 if let Some(tex) = normal_map {
-                    cached_normal_maps
-                        .entry(tex.index.value())
-                        .or_insert_with(|| {
-                            let texture = &textures[tex.index.value()];
-                            create_material_texture(
-                                graphics.clone(),
-                                texture,
-                                &samplers,
-                                &mapped_images,
-                            )
-                        });
+                    let graphics = graphics.clone();
+                    s.spawn(move |_| {
+                        cached_normal_maps
+                            .entry(tex.index.value())
+                            .or_insert_with(|| {
+                                let texture = &textures[tex.index.value()];
+                                create_material_texture(
+                                    graphics,
+                                    texture,
+                                    samplers,
+                                    mapped_images,
+                                )
+                            });
+                    });
                 }
 
                 // Create or load a cached mask map texture
                 // r: ambient occlusion, g: roughness, b: metallic
                 (metallic_roughness_map.is_some() || occlusion_map.is_some()).then(|| {
+                    let graphics = graphics.clone();
+                    s.spawn(move |s| {
                         let metallic_roughness_map =
                             metallic_roughness_map.map(|x| x.index.value());
                         let occlusion_map = occlusion_map.map(|x| x.index.value());
@@ -314,15 +333,22 @@ impl Asset for GltfScene {
                                 let occlusion_map = occlusion_map.map(|x| &textures[x]);
 
                                 create_material_mask_texture(
-                                    graphics.clone(),
+                                    graphics,
                                     metallic_roughness_map,
                                     occlusion_map,
-                                    &samplers,
-                                    &mapped_images,
+                                    samplers,
+                                    mapped_images,
                                 )
-                            })
+                            });
                     });
-            });
+                });
+            }
+        });
+
+        // Unwraps an Arc and panics if it returns an error
+        let cached_albedo_maps = Arc::try_unwrap(cached_albedo_maps).map_err(|_| ()).unwrap();
+        let cached_normal_maps = Arc::try_unwrap(cached_normal_maps).map_err(|_| ()).unwrap();
+        let cached_mask_maps = Arc::try_unwrap(cached_mask_maps).map_err(|_| ()).unwrap();
 
         // Convert the textures to their appropriate handles
         let cached_albedo_maps = cached_albedo_maps

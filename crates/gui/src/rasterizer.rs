@@ -289,7 +289,7 @@ impl Rasterizer {
                             triangle_offset..(triangle_offset + triangles),
                         )
                         .unwrap();
-                    active.draw_indexed(0..(triangles as u32 * 3), 0..1);
+                    active.draw_indexed(0..(triangles as u32 * 3), 0..1).unwrap();
 
                     vertex_offset += verts;
                     triangle_offset += triangles;

@@ -124,8 +124,14 @@ impl ChunkManager {
                 // Medium resolution
                 math::aabb_sphere(&node.aabb(), &math::Sphere {
                     center: *target,
-                    radius: 512.0,
+                    radius: 256.0,
                 })
+            } else if node.size() == 512 {
+                // Medium resolution
+                math::aabb_sphere(&node.aabb(), &math::Sphere {
+                    center: *target,
+                    radius: 512.0,
+                }) 
             } else {
                 // Low resolution
                 true
