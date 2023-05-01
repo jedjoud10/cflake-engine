@@ -102,7 +102,7 @@ fn update(world: &mut World) {
     renderer.instant_initialized = Some(std::time::Instant::now());
 
     // Reset the current counters
-    mesher.counters.write(&[0; 2], 0).unwrap();
+    memory.counters.write(&[0; 2], 0).unwrap();
     memory.offsets.write(&[u32::MAX, u32::MAX], 0).unwrap();
 
     // Create a compute pass for both the voxel and mesh compute shaders
@@ -161,7 +161,7 @@ fn update(world: &mut World) {
                 .unwrap();
             set.set_storage_texture("cached_indices", &mut mesher.cached_indices)
                 .unwrap();
-            set.set_storage_buffer("counters", &mut mesher.counters, ..)
+            set.set_storage_buffer("counters", &mut memory.counters, ..)
                 .unwrap();
         })
         .unwrap();
@@ -183,7 +183,7 @@ fn update(world: &mut World) {
                 .unwrap();
             set.set_storage_texture("voxels", voxels)
                 .unwrap();
-            set.set_storage_buffer("counters", &mut mesher.counters, ..)
+            set.set_storage_buffer("counters", &mut memory.counters, ..)
                 .unwrap();
         })
         .unwrap();
@@ -209,7 +209,7 @@ fn update(world: &mut World) {
             .unwrap();
             set.set_storage_buffer("offsets", &mut memory.offsets, ..)
                 .unwrap();
-            set.set_storage_buffer("counters", &mut mesher.counters, ..)
+            set.set_storage_buffer("counters", &mut memory.counters, ..)
                 .unwrap();
         })
         .unwrap();
@@ -235,7 +235,7 @@ fn update(world: &mut World) {
 
     // Copy the generated vertex and tri data to the permanent buffer
     let mut active = pass.bind_shader(&memory.compute_copy);
-    active
+    active 
         .set_bind_group(0, |set| {
             set.set_storage_buffer("temporary_vertices", &mut mesher.temp_vertices, ..)
                 .unwrap();
@@ -243,7 +243,7 @@ fn update(world: &mut World) {
                 .unwrap();
             set.set_storage_buffer("offsets", &mut memory.offsets, ..)
                 .unwrap();
-            set.set_storage_buffer("counters", &mut mesher.counters, ..)
+            set.set_storage_buffer("counters", &mut memory.counters, ..)
                 .unwrap();
         })
         .unwrap();
@@ -269,7 +269,7 @@ fn update(world: &mut World) {
     drop(pass);
 
     // Submit the work to the GPU, and fetch counters and offsets
-    let _counters = mesher.counters.as_view(..).unwrap();
+    let _counters = memory.counters.as_view(..).unwrap();
     let counters = _counters.to_vec();
     let _offsets = memory.offsets.as_view(..).unwrap();
     let offsets = _offsets.to_vec();

@@ -3,7 +3,7 @@ use std::{mem::size_of, num::NonZeroU8};
 use crate::{
     AlbedoMap, AttributeBuffer, BasicMaterial, Camera, DefaultMaterialResources, DirectionalLight,
     ForwardRenderer, Indirect, MaskMap, Mesh, NormalMap, PhysicallyBasedMaterial, Pipelines,
-    Renderer, SceneUniform, ShadowMapping, SkyMaterial, WindowUniform, MultiDrawIndirectMesh, IndirectMesh, WireframeMaterial,
+    Renderer, SceneUniform, ShadowMapping, SkyMaterial, WindowUniform, MultiDrawIndirectMesh, IndirectMesh, WireframeMaterial, TimingUniform,
 };
 use assets::Assets;
 
@@ -132,6 +132,15 @@ fn render(world: &mut World) {
     let pipelines = world.get::<Pipelines>().unwrap();
     let time = world.get::<Time>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
+
+    // Store the new timing info
+    renderer.timing_buffer.write(&[
+        TimingUniform {
+            frame_count: time.frame_count().try_into().unwrap(),
+            delta_time: time.delta().as_secs_f32(),
+            time_since_startup: time.startup().elapsed().as_secs_f32(),
+        }
+    ],  0).unwrap();
 
     // Needed for direct rendering
     let meshes = world.get::<Storage<Mesh>>().unwrap();

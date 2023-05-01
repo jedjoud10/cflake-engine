@@ -98,7 +98,6 @@ impl Octree {
             let center = position + half.as_::<i32>();
 
             // Check if we should split the node into multiple
-            // TODO: Find a heuristic that limits
             let split = self.heuristic.check(&target, &Node {
                 position,
                 center,

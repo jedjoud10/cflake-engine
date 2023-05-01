@@ -75,16 +75,16 @@ pub(crate) unsafe fn init_context_and_window(
     }).map(|adapter| {
         let limits = adapter.limits();
         let info = adapter.get_info();
-        let mut social_credit_score_xi_jinping = 0i32;
+        let mut score = 0i32;
 
         // Dedicated GPU are much better, so favor them when possible
-        social_credit_score_xi_jinping += match info.device_type {
+        score += match info.device_type {
             wgpu::DeviceType::DiscreteGpu => 10000,
             _ => -10000,
         };
 
         // Give adapters with higher bind group size, texture size, and allocation size a better score 
-        social_credit_score_xi_jinping += limits.max_bind_groups as i32
+        score += limits.max_bind_groups as i32
             + limits.max_texture_dimension_1d as i32
             + limits.max_texture_dimension_2d as i32
             + limits.max_texture_dimension_3d as i32;
@@ -92,10 +92,10 @@ pub(crate) unsafe fn init_context_and_window(
 
         // If we are not connected to AC power, use integrated graphics 
         if use_integrated_gpu() {
-            social_credit_score_xi_jinping = i32::MAX;
+            score = i32::MAX;
         }
 
-        (adapter, social_credit_score_xi_jinping)
+        (adapter, score)
     }).max_by(|(_, a), (_, b)| i32::cmp(a, b))
     .expect("Did not find a suitable GPU!");
 

@@ -1,5 +1,6 @@
-use crate::{GpuPod, Graphics, StagingView, StagingViewWrite};
+use crate::{GpuPod, Graphics, StagingView, StagingViewWrite, TextureStagingView, TextureStagingViewWrite};
 use parking_lot::Mutex;
+use vek::num_integer::Integer;
 use std::{
     marker::PhantomData,
     num::{NonZeroU32, NonZeroU64},
@@ -77,7 +78,7 @@ impl StagingPool {
             let free = !self.used.get(*i, Ordering::Relaxed);
             cap && mode && free
         }).unwrap_or_else(|| {
-            log::warn!("Did not find staging buffer with the proper requirements [cap = {capacity}b, mode = {mode:?}]");
+            log::trace!("did not find staging buffer with the proper requirements [cap = {capacity}b, mode = {mode:?}]");
             
             // Scale up the capacity (so we don't have to allocate a new block anytime soon)
             let capacity = (capacity * 4).next_power_of_two();
@@ -96,7 +97,7 @@ impl StagingPool {
 
             // Create the new buffer
             let buffer = graphics.device().create_buffer(&desc);
-            log::warn!("Allocating new staging buffer [cap = {capacity}b, mode = {mode:?}]");
+            log::trace!("allocating new staging buffer [cap = {capacity}b, mode = {mode:?}]");
             let index = self.allocations.push(buffer);
             (index, &self.allocations[index])
         })
@@ -113,7 +114,7 @@ impl StagingPool {
         offset: u64,
         size: u64,
     ) -> StagingView<'a> {
-        log::trace!("map buffer read: offset: {offset}, size: {size}");
+        log::trace!("map buffer read: offset: \n{offset}\nsize: {size}");
 
         // Get a encoder (reused or not to perform a copy)
         let (i, staging) = self.find_or_allocate(graphics, size, MapMode::Read);
@@ -151,7 +152,9 @@ impl StagingPool {
         offset: u64,
         size: u64,
         callback: impl FnOnce(&[u8]) + Sync + Send + 'static
-    ) {        
+    ) {       
+        log::trace!("map buffer read sync: offset: \n{offset}\nsize: {size}");
+        
         // Get a encoder (reused or not to perform a copy)
         let (i, staging) = self.find_or_allocate(graphics, size, MapMode::Read);
         self.used.set(i, Ordering::Relaxed);
@@ -182,7 +185,7 @@ impl StagingPool {
         offset: u64,
         size: u64,
     ) -> Option<StagingViewWrite<'a>> {
-        log::trace!("map buffer write: offset: {offset}, size: {size}");
+        log::trace!("map buffer write: offset: \n{offset}\nsize: {size}");
         let size = NonZeroU64::new(size);
         let write = graphics
             .queue()
@@ -200,7 +203,7 @@ impl StagingPool {
         size: u64,
         src: &[u8],
     ) {
-        log::trace!("write buffer: offset: {offset}, size: {size}");
+        log::trace!("write buffer: offset: \n{offset}\nsize: {size}");
         graphics.queue().write_buffer(buffer, offset, src);
     }
 
@@ -214,7 +217,7 @@ impl StagingPool {
         size: u64,
         dst: &mut [u8],
     ) {
-        log::trace!("read buffer: offset: {offset}, size: {size}");
+        log::trace!("read buffer: offset: \n{offset}\nsize: {size}");
         let view = self.map_buffer_read(graphics, buffer, offset, size);
         dst.copy_from_slice(view.as_ref());
     }
@@ -226,8 +229,54 @@ impl StagingPool {
     pub fn map_texture_read<'a>(
         &'a self,
         graphics: &'a Graphics,
-        texture: &wgpu::Texture,
-    ) -> Option<StagingView<'a>> {
+        image_copy_texture: wgpu::ImageCopyTexture,
+        data_layout: wgpu::ImageDataLayout,
+        extent: wgpu::Extent3d,
+        size: u64,
+    ) -> TextureStagingView<'a> {
+        log::trace!("map texture read: \nimage copy texture: {image_copy_texture:#?}\ndata layout: {data_layout:#?}\nextent: {extent:#?}");
+
+        // Get a encoder (reused or not to perform a copy)
+        let (i, staging) = self.find_or_allocate(graphics, size, MapMode::Read);
+        self.used.set(i, Ordering::Relaxed);
+
+        // Copy to staging first
+        let mut encoder = graphics.acquire();
+        assert!(data_layout.bytes_per_row.unwrap_or_default().is_multiple_of(&256));
+        encoder.copy_texture_to_buffer(image_copy_texture, wgpu::ImageCopyBuffer {
+            buffer: staging,
+            layout: data_layout,
+        }, extent);
+        graphics.reuse([encoder]);
+        graphics.submit(false);
+
+        // Read the staging buffer
+        let view = super::read_staging_buffer_view(
+            graphics,
+            staging,
+            0,
+            size
+        );
+        
+        TextureStagingView {
+            index: i,
+            used: &self.used,
+            staging,
+            view: Some(view),
+        }
+    }
+
+    // Map a texture for asynchronous reading only
+    // Src target must have the COPY_SRC texture usage flag
+    // The mapping of the texture will not occur immediately
+    pub fn map_texture_read_async<'a>(
+        &self,
+        graphics: &Graphics,
+        image_copy_texture: wgpu::ImageCopyTexture,
+        data_layout: wgpu::ImageDataLayout,
+        extent: wgpu::Extent3d,
+        callback: impl FnOnce(&[u8]) + Sync + Send + 'static
+    ) {
         todo!()
     }
 
@@ -236,8 +285,10 @@ impl StagingPool {
     pub fn map_texture_write<'a>(
         &'a self,
         graphics: &'a Graphics,
-        texture: &'a wgpu::Texture,
-    ) -> Option<StagingViewWrite<'a>> {
+        image_copy_texture: wgpu::ImageCopyTexture,
+        data_layout: wgpu::ImageDataLayout,
+        extent: wgpu::Extent3d,
+    ) -> TextureStagingViewWrite<'a> {
         todo!()
     }
 
@@ -266,14 +317,8 @@ impl StagingPool {
         extent: wgpu::Extent3d,
         dst: &mut [u8],
     ) {
-        // Get a encoder (reused or not to perform a copy)
-        let mut encoder = graphics.acquire();
-        let (i, staging) = self.find_or_allocate(graphics, dst.len() as u64, MapMode::Read);
-
-        // Copy to staging first
-        encoder.copy_texture_to_buffer(image_copy_texture, wgpu::ImageCopyBuffer {
-            buffer: &staging,
-            layout: data_layout,
-        }, extent);
+        log::trace!("map texture read: \nimage copy texture: {image_copy_texture:#?}\ndata layout: {data_layout:#?}\nextent: {extent:#?}");
+        let view = self.map_texture_read(graphics, image_copy_texture, data_layout, extent, dst.len() as u64);
+        dst.copy_from_slice(view.as_ref());
     }
 }

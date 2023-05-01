@@ -23,7 +23,12 @@ pub struct MemoryManager {
     pub(crate) chunks_per_allocations: Vec<usize>,
 
     pub(crate) compute_find: ComputeShader,
+
+    // Used for copying memory to the permanent memory
     pub(crate) offsets: Buffer<u32>,
+    pub(crate) counters: Buffer<u32>,
+
+    // Used to keep track of what buffers will be used per sub-allocation
     pub(crate) sub_allocation_chunk_indices: Vec<Buffer<u32>>,
     pub(crate) compute_copy: ComputeShader,
 }
@@ -161,6 +166,7 @@ impl MemoryManager {
             shared_triangle_buffers,
             compute_find,
             offsets: create_counters(graphics, 2, BufferUsage::READ | BufferUsage::WRITE),
+            counters: create_counters(graphics, 2, BufferUsage::WRITE | BufferUsage::READ),
             sub_allocation_chunk_indices,
             compute_copy,
             chunks_per_allocations: vec![0; settings.allocation_count],

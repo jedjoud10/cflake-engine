@@ -207,6 +207,9 @@ fn update(world: &mut World) {
                 out_ticks_to_exec = *indeed2;
             });
 
+            let since = time.startup().elapsed().as_secs_f32();
+            ui.label(format!("Seconds since startup: {:.3}", since));
+
             let ms = out_delta * 1000.0;
             ui.label(format!("Delta (ms/f): {:.3}", ms));
 

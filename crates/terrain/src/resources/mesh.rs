@@ -14,7 +14,6 @@ pub struct MeshGenerator {
     pub(crate) compute_vertices: ComputeShader,
     pub(crate) compute_quads: ComputeShader,
     pub(crate) cached_indices: Texture3D<R<u32>>,
-    pub(crate) counters: Buffer<u32>,
 }
 
 impl MeshGenerator {
@@ -101,7 +100,6 @@ impl MeshGenerator {
             compute_vertices,
             compute_quads,
             cached_indices: create_texture3d(graphics, settings.size),
-            counters: create_counters(graphics, 2, BufferUsage::WRITE | BufferUsage::READ),
         }
     }
 }

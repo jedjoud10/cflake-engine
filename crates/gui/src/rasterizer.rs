@@ -194,10 +194,10 @@ impl Rasterizer {
         self.triangles.clear().unwrap();
 
         // Cached vectors to minimize GPU commands
-        let mut positions = Vec::<vek::Vec2<f32>>::new();
-        let mut texcoords = Vec::<vek::Vec2<f32>>::new();
-        let mut colors = Vec::<vek::Vec4<u8>>::new();
-        let mut triangles = Vec::<u32>::new();
+        let mut positions = Vec::<vek::Vec2<f32>>::with_capacity(self.positions.capacity());
+        let mut texcoords = Vec::<vek::Vec2<f32>>::with_capacity(self.texcoords.capacity());
+        let mut colors = Vec::<vek::Vec4<u8>>::with_capacity(self.colors.capacity());
+        let mut triangles = Vec::<u32>::with_capacity(self.triangles.capacity());
 
         // Convert the clipped primitives to their raw vertex representations
         // TODO: Optimize these shenanigans
@@ -233,11 +233,7 @@ impl Rasterizer {
 
         // Get the destination render target we will render to
         let dst = window.as_render_target().unwrap();
-
-        // Begin the render pass
         let mut render_pass = self.render_pass.begin(dst, ());
-
-        // Bind the graphics pipeline
         let mut active = render_pass.bind_pipeline(&self.pipeline);
 
         // Set the required shader uniforms

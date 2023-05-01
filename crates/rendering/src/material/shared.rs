@@ -68,7 +68,6 @@ pub struct CameraUniform {
 // Timing data that will be stored in a UBO
 #[derive(Clone, Copy, PartialEq, Pod, Zeroable, Default)]
 #[repr(C)]
-// TODO: IMPLEMENT
 pub struct TimingUniform {
     pub frame_count: u32,
     pub delta_time: f32,

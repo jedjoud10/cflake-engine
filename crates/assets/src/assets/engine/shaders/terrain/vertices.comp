@@ -154,7 +154,7 @@ void main() {
         #endif
 
         // Meshes are always n-3 size, so each voxel has a size of 1 / n-3
-        vec3 final = false ? vec3(0) : ((vertex / count) - vec3(0.5));
+        vec3 final = blocky ? vec3(0) : ((vertex / count) - vec3(0.5));
 
         // TODO: Probably a way to optimize this
         // Confine the vertices in the X skirt if needed

@@ -613,8 +613,6 @@ pub(crate) fn create_image_data_layout<T: Texel, E: Extent>(extent: E) -> wgpu::
 
 // Write texels to a single level of a texture
 // Assumes that the origin and extent are in mip-space
-// TODO: Test to check if this works with 3D
-// TODO: Test to check if this works with layered textures
 pub(crate) fn write_to_level<T: Texel, R: Region>(
     origin: R::O,
     extent: R::E,
