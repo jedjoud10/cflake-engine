@@ -33,7 +33,8 @@ pub struct Chunk {
     pub(crate) ranges: Option<vek::Vec2<u32>>,
     pub(crate) state: ChunkState,
     pub(crate) node: Option<Node>,
-    pub(crate) priority: f32,
+    pub(crate) generation_priority: f32,
+    pub(crate) readback_priority: f32,
 }
 
 impl Chunk {
@@ -47,7 +48,7 @@ impl Chunk {
         self.state
     }
 
-    // Force the regeneration of a specific chunk
+    // Force the regeneration of a specific chunk by setting it's state to dirty
     pub fn regenerate(&mut self) {
         self.state = ChunkState::Dirty;
     }

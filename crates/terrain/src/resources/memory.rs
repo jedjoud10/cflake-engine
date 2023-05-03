@@ -21,12 +21,11 @@ pub struct MemoryManager {
 
     // Numbers of chunks used per allocation
     pub(crate) chunks_per_allocations: Vec<usize>,
-
     pub(crate) compute_find: ComputeShader,
 
     // Used for copying memory to the permanent memory
-    pub(crate) offsets: Buffer<u32>,
-    pub(crate) counters: Buffer<u32>,
+    pub(crate) offsets: [Buffer<u32>; 2],
+    pub(crate) counters: [Buffer<u32>; 2],
 
     // Used to keep track of what buffers will be used per sub-allocation
     pub(crate) sub_allocation_chunk_indices: Vec<Buffer<u32>>,
@@ -160,13 +159,24 @@ impl MemoryManager {
         // Create copy the compute shader
         let compute_copy = ComputeShader::new(module, &compiler).unwrap();
 
+        // Create two offset buffers and counter buffers to be able to do async readback
+        let counters = [
+            create_counters(graphics, 2, BufferUsage::READ | BufferUsage::WRITE),
+            create_counters(graphics, 2, BufferUsage::READ | BufferUsage::WRITE)
+        ];
+        let offsets = [
+            create_counters(graphics, 2, BufferUsage::READ | BufferUsage::WRITE),
+            create_counters(graphics, 2, BufferUsage::READ | BufferUsage::WRITE),
+        ];
+
+
         Self {
             indexed_indirect_buffer,
             shared_tex_coord_buffers,
             shared_triangle_buffers,
             compute_find,
-            offsets: create_counters(graphics, 2, BufferUsage::READ | BufferUsage::WRITE),
-            counters: create_counters(graphics, 2, BufferUsage::WRITE | BufferUsage::READ),
+            offsets,
+            counters,
             sub_allocation_chunk_indices,
             compute_copy,
             chunks_per_allocations: vec![0; settings.allocation_count],

@@ -158,6 +158,7 @@ void main() {
 
         // TODO: Probably a way to optimize this
         // Confine the vertices in the X skirt if needed
+        /*
         if (gl_GlobalInvocationID.x < 1 || gl_GlobalInvocationID.x == size-3) {
             final.x = 0;
         }
@@ -171,6 +172,7 @@ void main() {
         if (gl_GlobalInvocationID.z < 1 || gl_GlobalInvocationID.z == size-3) {
             final.z = 0;
         }
+        */
 
         // Positions only need 16 bits (1 byte for cell coord, 1 byte for inner vertex coord)
         uint packed_cell_position_packed_normals = packUnorm4x8(vec4(gl_GlobalInvocationID, 0) / 255);

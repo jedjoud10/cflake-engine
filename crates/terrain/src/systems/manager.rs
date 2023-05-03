@@ -28,6 +28,10 @@ fn update(world: &mut World) {
         return;
     };
 
+    if !_terrain.active {
+        return;
+    }
+
     // Get the terrain chunk manager and terrain settings
     let terrain = &mut *_terrain;
     let mut manager = &mut terrain.manager;
@@ -50,13 +54,6 @@ fn update(world: &mut World) {
         added = true;
         new
     };
-
-    // Only generate if we don't have any pending chunks
-    let pending = scene
-        .query_mut::<&Chunk>()
-        .into_iter()
-        .filter(|x| x.state == ChunkState::Pending || x.state == ChunkState::Dirty)
-        .count();
 
     // Check if it moved since last frame
     if added || new != old {
@@ -172,7 +169,8 @@ fn update(world: &mut World) {
                     allocation,
                     local_index,
                     global_index,
-                    priority: 0.0f32,
+                    generation_priority: 0.0f32,
+                    readback_priority: 0.0f32,
                     ranges: None,
                     node: None,
                 };
@@ -222,14 +220,17 @@ fn update(world: &mut World) {
         }
     }
 
-    // Update priority for EACH chunk, even if the viewer did not move
     for (chunk, position) in scene.query_mut::<(&mut Chunk, &Position)>() {
-        chunk.priority = (1.0 / viewer_position.distance(**position).max(1.0)) * 10.0;
-        chunk.priority *= viewer_rotation
+        // Update generation priority for EACH chunk, even if the viewer did not move
+        chunk.generation_priority = (1.0 / viewer_position.distance(**position).max(1.0)) * 10.0;
+        chunk.generation_priority *= viewer_rotation
             .forward()
             .dot((**position - viewer_position).normalized())
             * 5.0;
-        chunk.priority = chunk.priority.clamp(0.0f32, 1000.0f32);
+            chunk.generation_priority = chunk.generation_priority.clamp(0.0f32, 1000.0f32);
+
+        // Update readback priority for each chunk *around* the user (needed for collisions)
+        chunk.readback_priority = (1.0 / viewer_position.distance(**position).max(1.0));
     }
 }
 

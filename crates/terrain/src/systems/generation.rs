@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use crate::{Chunk, ChunkState, Terrain, TerrainMaterial};
 use coords::{Position, Scale};
-use ecs::Scene;
+use ecs::{Scene, Entity};
 use graphics::{
     ActivePipeline, ComputePass, DrawIndexedIndirect, DrawIndexedIndirectBuffer, GpuPod, Graphics,
     TriangleBuffer, Vertex,
@@ -86,29 +86,29 @@ fn update(world: &mut World) {
             &mut Chunk,
             &mut Surface<TerrainMaterial>,
             &mut Renderer,
+            &Entity,
         )>()
         .into_iter()
         .collect::<Vec<_>>();
-    vec.sort_by(|(a, _, _), (b, _, _)| a.priority.total_cmp(&b.priority));
-    vec.retain(|(chunk, _, _)| chunk.state == ChunkState::Pending);
-    let Some((chunk, surface, renderer)) = vec.pop() else {
+    vec.sort_by(|(a, _, _, _), (b, _, _, _)| a.generation_priority.total_cmp(&b.generation_priority));
+    vec.retain(|(chunk, _, _, _)| chunk.state == ChunkState::Pending);
+    let Some((chunk, surface, renderer, entity)) = vec.pop() else {
+        manager.last_chunk_generated = None;
         return;
     };
 
-    // Get the voxel texture that we will write to
-    let voxels = &mut voxelizer.voxel_textures[time.frame_count() as usize % 2];
+    // NEEDED FOR ASYNC READBACK
+    let index = time.frame_count() as usize % 2;
 
-    // The renderer is initialized when the mesh get it's surface
-    renderer.instant_initialized = Some(std::time::Instant::now());
+    // Get the resources used for this chunk
+    let voxels = &mut voxelizer.voxel_textures[index];
+    let counters = &mut memory.counters[index];
+    let offsets = &mut memory.offsets[index];
+    counters.write(&[0; 2], 0).unwrap();
+    offsets.write(&[u32::MAX, u32::MAX], 0).unwrap();
 
-    // Reset the current counters
-    memory.counters.write(&[0; 2], 0).unwrap();
-    memory.offsets.write(&[u32::MAX, u32::MAX], 0).unwrap();
-
-    // Create a compute pass for both the voxel and mesh compute shaders
+    // Create a compute pass for ALL compute terrain shaders
     let mut pass = ComputePass::begin(&graphics);
-
-    // Create the voxel data and store it in the image
     let mut active = pass.bind_shader(&voxelizer.compute_voxels);
 
     // Needed since SN only runs for a volume 2 units smaller than a perfect cube
@@ -161,7 +161,7 @@ fn update(world: &mut World) {
                 .unwrap();
             set.set_storage_texture("cached_indices", &mut mesher.cached_indices)
                 .unwrap();
-            set.set_storage_buffer("counters", &mut memory.counters, ..)
+            set.set_storage_buffer("counters", counters, ..)
                 .unwrap();
         })
         .unwrap();
@@ -183,7 +183,7 @@ fn update(world: &mut World) {
                 .unwrap();
             set.set_storage_texture("voxels", voxels)
                 .unwrap();
-            set.set_storage_buffer("counters", &mut memory.counters, ..)
+            set.set_storage_buffer("counters", counters, ..)
                 .unwrap();
         })
         .unwrap();
@@ -207,9 +207,9 @@ fn update(world: &mut World) {
                 ..,
             )
             .unwrap();
-            set.set_storage_buffer("offsets", &mut memory.offsets, ..)
+            set.set_storage_buffer("offsets", offsets, ..)
                 .unwrap();
-            set.set_storage_buffer("counters", &mut memory.counters, ..)
+            set.set_storage_buffer("counters", counters, ..)
                 .unwrap();
         })
         .unwrap();
@@ -224,8 +224,8 @@ fn update(world: &mut World) {
         })
         .unwrap();
 
-    //let dispatch = (terrain.sub_allocations as f32 / 32 as f32).ceil() as u32;
-    active.dispatch(vek::Vec3::new(1, 1, 1)).unwrap();
+    let dispatch = (settings.sub_allocation_count as f32 / 32 as f32).ceil() as u32;
+    active.dispatch(vek::Vec3::new(dispatch, 1, 1)).unwrap();
 
     // Get the output packed tex coord from resource storage
     let output_vertices = tex_coords.get_mut(&memory.shared_tex_coord_buffers[chunk.allocation]);
@@ -241,9 +241,9 @@ fn update(world: &mut World) {
                 .unwrap();
             set.set_storage_buffer("temporary_triangles", &mut mesher.temp_triangles, ..)
                 .unwrap();
-            set.set_storage_buffer("offsets", &mut memory.offsets, ..)
+            set.set_storage_buffer("offsets", offsets, ..)
                 .unwrap();
-            set.set_storage_buffer("counters", &mut memory.counters, ..)
+            set.set_storage_buffer("counters", counters, ..)
                 .unwrap();
         })
         .unwrap();
@@ -267,44 +267,13 @@ fn update(world: &mut World) {
 
     drop(active);
     drop(pass);
-
-    // Submit the work to the GPU, and fetch counters and offsets
-    let _counters = memory.counters.as_view(..).unwrap();
-    let counters = _counters.to_vec();
-    let _offsets = memory.offsets.as_view(..).unwrap();
-    let offsets = _offsets.to_vec();
-
-    // Read as vertex and triangle separately
-    let vertex_count = counters[0];
-    let triangle_count = counters[1];
-    let vertices_offset = offsets[0];
-    let triangle_indices_offset = offsets[1];
-
-    // Check if we are OOM lol
-    if vertices_offset / settings.tex_coords_per_sub_allocation
-        != triangle_indices_offset / settings.triangles_per_sub_allocation
-    {
-        panic!("Out of memory xD MDR");
-    }
-
-    // Calculate sub-allocation index and length
-    let count = f32::max(
-        vertex_count as f32 / settings.tex_coords_per_sub_allocation as f32,
-        triangle_count as f32 / settings.triangles_per_sub_allocation as f32,
-    );
-    let count = count.ceil() as u32;
-    let offset = vertices_offset / settings.tex_coords_per_sub_allocation;
-
-    // Update chunk range (if valid) and set visibility
-    if count > 0 {
-        chunk.ranges = Some(vek::Vec2::new(offset, count + offset));
-        surface.visible = true;
-    } else {
-        chunk.ranges = None;
-        surface.visible = false;
-    }
-
+    
+    // Start computing this sheit on the GPU
+    graphics.submit(false);
+    surface.visible = true;
     chunk.state = ChunkState::Generated;
+    renderer.instant_initialized = Some(std::time::Instant::now());
+    manager.last_chunk_generated = Some(*entity);
 }
 
 // Generates the voxels and appropriate mesh for each of the visible chunks

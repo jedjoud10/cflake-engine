@@ -268,9 +268,9 @@ fn update(world: &mut World) {
         });
 
     // Terrain stats
-    if let Ok(terrain) = world.get::<Terrain>() {
+    if let Ok(mut terrain) = world.get_mut::<Terrain>() {
         egui::Window::new("Terrain").frame(frame).show(&gui, |ui| {
-            let settings = &terrain.settings;
+            let settings = &mut terrain.settings;
             ui.heading("Manager settings");
             ui.label(format!("Chunk resolution: {}", settings.resolution()));
             ui.label(format!("Is Blocky?: {}", settings.blocky()));
@@ -301,6 +301,11 @@ fn update(world: &mut World) {
             ui.label(format!("Pending chunks count: {}", pending));
             ui.label(format!("Generated chunks count: {}", generated));
             ui.label(format!("Visible chunks count: {}", visible));
+
+            ui.horizontal(|ui| {
+                ui.label("Active?: ");
+                ui.add(egui::Checkbox::new(&mut terrain.active, ""));
+            });
         });
     }
 

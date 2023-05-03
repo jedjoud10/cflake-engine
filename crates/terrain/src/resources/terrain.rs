@@ -175,4 +175,7 @@ pub struct Terrain {
 
     // Terrain settings
     pub settings: TerrainSettings,
+
+    // Is the terrain active?
+    pub active: bool,
 }

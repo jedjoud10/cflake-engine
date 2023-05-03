@@ -75,6 +75,7 @@ fn init(world: &mut World) {
             memory,
             manager,
             settings,
+            active: true,
         };
 
         // Drop resources to be able to insert terrain into world

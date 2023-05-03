@@ -419,7 +419,8 @@ impl App {
         self.regsys(terrain::systems::manager::system);
         self.regsys(terrain::systems::generation::system);
         self.regsys(terrain::systems::init::system);
-
+        self.regsys(terrain::systems::readback::system);
+        
         // Physics systems
         self.regsys(physics::systems::collisions::system);
         self.regsys(physics::systems::dynamics::system);

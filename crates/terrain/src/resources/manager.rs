@@ -29,6 +29,10 @@ pub struct ChunkManager {
     pub(crate) octree: Octree,
     pub(crate) entities: AHashMap<Node, Entity>,
 
+    // Keeps track of the last chunk entity (and node) that we generated (last frame)
+    // If we did not generate a chunk last frame this will be None
+    pub(crate) last_chunk_generated: Option<Entity>,
+
     // Viewer (camera) position
     pub(crate) viewer: Option<(Entity, vek::Vec3<f32>, vek::Quaternion<f32>)>,
 }
@@ -113,24 +117,25 @@ impl ChunkManager {
             .unwrap();
 
         // Custom octree heuristic
-        let heuristic = math::OctreeHeuristic::Boxed(Box::new(|target, node| {
-            if node.size() == 128 {
+        let size = settings.size;
+        let heuristic = math::OctreeHeuristic::Boxed(Box::new(move |target, node| {
+            if node.size() == size * 2 {
                 // High resolution
                 math::aabb_sphere(&node.aabb(), &math::Sphere {
                     center: *target,
-                    radius: 128.0,
+                    radius: (size as f32 * 2.0),
                 })
-            } else if node.size() == 256 {
+            } else if node.size() == size * 4 {
                 // Medium resolution
                 math::aabb_sphere(&node.aabb(), &math::Sphere {
                     center: *target,
-                    radius: 256.0,
+                    radius: size as f32 * 4.0,
                 })
-            } else if node.size() == 512 {
+            } else if node.size() == size * 8 {
                 // Medium resolution
                 math::aabb_sphere(&node.aabb(), &math::Sphere {
                     center: *target,
-                    radius: 512.0,
+                    radius: size as f32 * 8.0,
                 }) 
             } else {
                 // Low resolution
@@ -143,6 +148,7 @@ impl ChunkManager {
 
         // Create the chunk manager
         Self {
+            last_chunk_generated: None,
             material,
             id,
             viewer: None,
@@ -152,6 +158,7 @@ impl ChunkManager {
     }
 }
 
+// Load the raw texels asynchronously using our asset system
 fn load_raw_texels_handles<T: ImageTexel>(
     assets: &Assets,
     settings: &TerrainSettings,
@@ -166,7 +173,7 @@ fn load_raw_texels_handles<T: ImageTexel>(
     Some(assets.async_load_from_iter::<RawTexels<T>>(paths))
 }
 
-// Load a 2D layered texture for the given texel type and callback (to get the name of asset files)
+// Load a 2D layered texture for the given texel type and the multitude of raw texels
 fn load_layered_texture<T: ImageTexel>(
     graphics: &Graphics,
     raw: Option<Vec<RawTexels<T>>>,

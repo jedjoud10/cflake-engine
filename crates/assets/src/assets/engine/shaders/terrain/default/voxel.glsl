@@ -22,6 +22,7 @@ layout(push_constant) uniform PushConstants {
 float voxel(vec3 position) {
     position *= parameters.scale;
     position += parameters.offset.xyz;
+    return opSmoothUnion(-erosion(position.xz * 0.03, 0.10).x * 420 + position.y + 200, position.y, 40);
 
     /*
 
@@ -108,6 +109,7 @@ float voxel(vec3 position) {
     return density;
     */
 
+    /*
     position *= 0.1;
 
     float density = (1-fbmCellular(position * 0.02 * vec3(1, 5.0, 1), 8, 0.5, 2.0).x) * 10;
@@ -119,4 +121,5 @@ float voxel(vec3 position) {
     d2 = opSmoothSubtraction(-d2, position.y + 100, 50);
     density += d2 - 140;
     return density;
+    */
 }
