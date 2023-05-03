@@ -248,6 +248,8 @@ dependencies = [
  "math",
  "minimp3",
  "parking_lot",
+ "rayon",
+ "rubato 0.12.0",
  "thiserror",
  "utils",
  "vek",
@@ -1378,7 +1380,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "73088c4a5d7c9d21ee942a54611696f247c4bafc85e9261bf8c409b6857e75be"
 dependencies = [
  "byteorder",
- "rubato",
+ "rubato 0.10.1",
  "rustfft",
 ]
 
@@ -2561,6 +2563,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "realfft"
+version = "3.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "93d6b8e8f0c6d2234aa58048d7290c60bf92cd36fd2888cd8331c66ad4f2e1d2"
+dependencies = [
+ "rustfft",
+]
+
+[[package]]
 name = "redox_syscall"
 version = "0.2.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2676,7 +2687,19 @@ dependencies = [
  "num-complex 0.4.3",
  "num-integer",
  "num-traits",
- "realfft",
+ "realfft 2.0.1",
+]
+
+[[package]]
+name = "rubato"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cd70209c27d5b08f5528bdc779ea3ffb418954e28987f9f9775c6eac41003f9c"
+dependencies = [
+ "num-complex 0.4.3",
+ "num-integer",
+ "num-traits",
+ "realfft 3.2.0",
 ]
 
 [[package]]

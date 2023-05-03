@@ -1,14 +1,12 @@
 mod clip;
 mod error;
 mod player;
-mod sample;
 mod source;
 mod stream;
 mod system;
 pub use clip::*;
 pub use error::*;
 pub use player::*;
-pub use sample::*;
 pub use source::*;
 pub use stream::*;
 pub use system::*;
