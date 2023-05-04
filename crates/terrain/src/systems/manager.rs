@@ -140,7 +140,7 @@ fn update(world: &mut World) {
             ]).unwrap();
 
             // Extend the position scaling buffer
-            manager.position_scaling_buffer.extend_from_slice(&vec![vek::Vec4::zero(); chunks_to_pre_allocate]).unwrap();
+            //manager.position_scaling_buffer.extend_from_slice(&vec![vek::Vec4::zero(); chunks_to_pre_allocate]).unwrap();
 
             // Create new chunk entities and set them as "free"
             scene.extend_from_iter((0..chunks_to_pre_allocate).into_iter().map(|index| {
@@ -200,7 +200,7 @@ fn update(world: &mut World) {
 
             // Update position buffer
             let packed = (*position).with_w(**scale);
-            manager.position_scaling_buffer.write(&[packed], chunk.global_index).unwrap();
+            //manager.position_scaling_buffer.write(&[packed], chunk.global_index).unwrap();
 
             // Add the entity to the internally stored entities
             let res = manager.entities.insert(*node, *entity);
