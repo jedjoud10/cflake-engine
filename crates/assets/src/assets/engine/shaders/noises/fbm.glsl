@@ -11,7 +11,7 @@ float fbm(vec2 pos, int octaves, float persistence, float lacunarity) {
     float normalizer = 0.0;
 
     for(int i = 0; i < octaves; i++) {
-        final += snoise(pos * scale) * amplitude;
+        final += snoise(pos * scale + random2(float(i))) * amplitude;
         scale *= lacunarity;
         amplitude *= persistence;
         normalizer += pow(persistence, i);
@@ -28,7 +28,7 @@ float fbm(vec3 pos, int octaves, float persistence, float lacunarity) {
     float normalizer = 0.0;
 
     for(int i = 0; i < octaves; i++) {
-        final += snoise(pos * scale) * amplitude;
+        final += snoise(pos * scale + random3(float(i))) * amplitude;
         scale *= lacunarity;
         amplitude *= persistence;
         normalizer += pow(persistence, i);
@@ -45,7 +45,7 @@ vec2 fbmCellular(vec2 pos, int octaves, float persistence, float lacunarity) {
     float normalizer = 0.0;
 
     for(int i = 0; i < octaves; i++) {
-        final += (cellular(pos * scale)-vec2(0.5)) * amplitude;
+        final += (cellular(pos * scale + random2(float(i)))-vec2(0.5)) * amplitude;
         scale *= lacunarity;
         amplitude *= persistence;
         normalizer += pow(persistence, i);
@@ -63,7 +63,7 @@ vec2 fbmCellular(vec3 pos, int octaves, float persistence, float lacunarity) {
     float normalizer = 0.0;
 
     for(int i = 0; i < octaves; i++) {
-        final += (cellular(pos * scale)-vec2(0.5)) * amplitude;
+        final += (cellular(pos * scale + random3(float(i)))-vec2(0.5)) * amplitude;
         scale *= lacunarity;
         amplitude *= persistence;
         normalizer += pow(persistence, i);

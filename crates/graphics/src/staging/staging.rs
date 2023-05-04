@@ -151,7 +151,7 @@ impl StagingPool {
         buffer: &Buffer,
         offset: u64,
         size: u64,
-        callback: impl FnOnce(&[u8]) + Sync + Send + 'static
+        callback: impl FnOnce(&[u8]) + Send + 'static
     ) {       
         log::trace!("map buffer read sync: offset: \n{offset}\nsize: {size}");
         

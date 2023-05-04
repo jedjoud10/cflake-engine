@@ -321,16 +321,106 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
 
         // Calculate byte offset and size (if needed)
         let offset = (start * self.stride()) as u64;
-        let size = (end != self.len()).then(|| {
-            let size = (start * self.stride()) as u64;
-            NonZeroU64::new(size).unwrap()
-        });
+        let size = if end != self.len() {
+            let size = ((end - start) * self.stride()) as u64;
+            Some(NonZeroU64::new(size)?)
+        } else {
+            None
+        };
 
         Some(wgpu::BufferBinding {
             buffer: &self.buffer,
             offset,
             size,
         })
+    }
+}
+
+// Owning buffer methods (they don't take a range)
+impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
+    // Clear the buffer and reset it's length
+    // This doesn't enqueue a GPU command
+    pub fn clear(&mut self) -> Result<(), BufferClearError> {
+        if matches!(self.mode, BufferMode::Dynamic) {
+            return Err(BufferClearError::IllegalLengthModify);
+        }
+
+        self.length = 0;
+        Ok(())
+    }
+
+    // Extend this buffer using the given slice instantly
+    // This is a "fire and forget" command that does not stall the CPU
+    // The user can do multiple extend_from_slice calls and expect them to be batched together
+    pub fn extend_from_slice(&mut self, slice: &[T]) -> Result<(), BufferExtendError> {
+        if slice.is_empty() {
+            return Ok(());
+        }
+
+        if matches!(self.mode, BufferMode::Dynamic) {
+            return Err(BufferExtendError::IllegalLengthModify);
+        }
+
+        if slice.len() + self.length > self.capacity && matches!(self.mode, BufferMode::Parital) {
+            return Err(BufferExtendError::IllegalReallocation);
+        }
+
+        if !self.usage.contains(BufferUsage::WRITE) {
+            return Err(BufferExtendError::NonWritable);
+        }
+
+        // We know this is valid before hand
+        let variant = wgpu::BufferUsages::from_bits(TYPE).unwrap();
+
+        // Wgpu usages for primary buffer
+        let usage = buffer_usages(Some(variant), self.usage).unwrap();
+
+        // Check if we need to allocate a new buffer
+        if slice.len() + self.length > self.capacity {
+            // Calculate a new capacity and new length
+            let capacity = self.capacity + slice.len();
+            let capacity = (capacity * 2).next_power_of_two();
+            let size = (capacity * self.stride()) as u64;
+
+            // Allocate a new buffer with a higher capacity
+            let buffer = self
+                .graphics
+                .device()
+                .create_buffer(&wgpu::BufferDescriptor {
+                    label: None,
+                    size,
+                    usage,
+                    mapped_at_creation: false,
+                });
+
+            // Copy the current buffer to the new one
+            let mut encoder = self.graphics.acquire();
+            encoder.copy_buffer_to_buffer(
+                &self.buffer,
+                0,
+                &buffer,
+                0,
+                (self.length * self.stride()) as u64,
+            );
+            self.graphics.reuse([encoder]);
+
+            // Swap them out, and drop the last buffer
+            let old = std::mem::replace(&mut self.buffer, buffer);
+            drop(old);
+
+            // Write using the same encoder
+            self.length += slice.len();
+            self.write(slice, self.length - slice.len()).unwrap();
+            self.capacity = capacity;
+        } else {
+            // Just write into a sub-part of the buffer
+            self.length += slice.len();
+
+            // Write using the same encoder
+            self.write(slice, self.length - slice.len()).unwrap();
+        }
+
+        Ok(())
     }
 }
 
@@ -405,7 +495,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
     pub fn async_read<'a>(
         &'a self,
         range: impl RangeBounds<usize>,
-        callback: impl FnOnce(&[T]) + Sync + Send + 'static,
+        callback: impl FnOnce(&[T]) + Send + 'static,
     ) -> Result<(), BufferAsyncReadError> {
         let (start, end) = self
             .convert_bounds_to_indices(range)
@@ -428,17 +518,6 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
             |raw| callback(bytemuck::cast_slice(raw)),
         );
 
-        Ok(())
-    }
-
-    // Clear the buffer and reset it's length
-    // This doesn't enqueue a GPU command
-    pub fn clear(&mut self) -> Result<(), BufferClearError> {
-        if matches!(self.mode, BufferMode::Dynamic) {
-            return Err(BufferClearError::IllegalLengthModify);
-        }
-
-        self.length = 0;
         Ok(())
     }
 
@@ -516,80 +595,6 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
             copy_size,
         );
         self.graphics.reuse([encoder]);
-        Ok(())
-    }
-
-    // Extend this buffer using the given slice instantly
-    // This is a "fire and forget" command that does not stall the CPU
-    // The user can do multiple extend_from_slice calls and expect them to be batched together
-    pub fn extend_from_slice(&mut self, slice: &[T]) -> Result<(), BufferExtendError> {
-        if slice.is_empty() {
-            return Ok(());
-        }
-
-        if matches!(self.mode, BufferMode::Dynamic) {
-            return Err(BufferExtendError::IllegalLengthModify);
-        }
-
-        if slice.len() + self.length > self.capacity && matches!(self.mode, BufferMode::Parital) {
-            return Err(BufferExtendError::IllegalReallocation);
-        }
-
-        if !self.usage.contains(BufferUsage::WRITE) {
-            return Err(BufferExtendError::NonWritable);
-        }
-
-        // We know this is valid before hand
-        let variant = wgpu::BufferUsages::from_bits(TYPE).unwrap();
-
-        // Wgpu usages for primary buffer
-        let usage = buffer_usages(Some(variant), self.usage).unwrap();
-
-        // Check if we need to allocate a new buffer
-        if slice.len() + self.length > self.capacity {
-            // Calculate a new capacity and new length
-            let capacity = self.capacity + slice.len();
-            let capacity = (capacity * 2).next_power_of_two();
-            let size = (capacity * self.stride()) as u64;
-
-            // Allocate a new buffer with a higher capacity
-            let buffer = self
-                .graphics
-                .device()
-                .create_buffer(&wgpu::BufferDescriptor {
-                    label: None,
-                    size,
-                    usage,
-                    mapped_at_creation: false,
-                });
-
-            // Copy the current buffer to the new one
-            let mut encoder = self.graphics.acquire();
-            encoder.copy_buffer_to_buffer(
-                &self.buffer,
-                0,
-                &buffer,
-                0,
-                (self.length * self.stride()) as u64,
-            );
-            self.graphics.reuse([encoder]);
-
-            // Swap them out, and drop the last buffer
-            let old = std::mem::replace(&mut self.buffer, buffer);
-            drop(old);
-
-            // Write using the same encoder
-            self.length += slice.len();
-            self.write(slice, self.length - slice.len()).unwrap();
-            self.capacity = capacity;
-        } else {
-            // Just write into a sub-part of the buffer
-            self.length += slice.len();
-
-            // Write using the same encoder
-            self.write(slice, self.length - slice.len()).unwrap();
-        }
-
         Ok(())
     }
 

@@ -66,8 +66,23 @@ fn update(world: &mut World) {
         // Discard non-leaf nodes
         added.retain(|x| x.leaf());
 
+        manager.children_count.clear();
+        for node in manager.octree.nodes() {
+            if let Some(base) = node.children() {
+                let base = base.get();
+                let count = &manager.octree.nodes()[base..(base+8)];
+                
+                manager.children_count.insert(*node, (0, count.into_iter().filter(|x| x.leaf()).count()));
+            }
+        }
+
         // Don't do shit
         if added.is_empty() && removed.is_empty() {
+            return;
+        }
+
+        // If we don't add chunks just exit
+        if added.is_empty() {
             return;
         }
 
@@ -81,11 +96,6 @@ fn update(world: &mut World) {
                 chunk.state = ChunkState::Free;
                 surface.visible = false;
             }
-        }
-
-        // If we don't add chunks just exit
-        if added.is_empty() {
-            return;
         }
 
         // Get the number of free chunks that we can reuse

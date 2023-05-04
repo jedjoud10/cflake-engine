@@ -29,6 +29,9 @@ pub struct ChunkManager {
     pub(crate) octree: Octree,
     pub(crate) entities: AHashMap<Node, Entity>,
 
+    // Keep track of the number of generated and target children each parent has
+    pub(crate) children_count: AHashMap<Node, (usize, usize)>,
+
     // Keeps track of the last chunk entity (and node) that we generated (last frame)
     // If we did not generate a chunk last frame this will be None
     pub(crate) last_chunk_generated: Option<Entity>,
@@ -123,19 +126,19 @@ impl ChunkManager {
                 // High resolution
                 math::aabb_sphere(&node.aabb(), &math::Sphere {
                     center: *target,
-                    radius: (size as f32 * 2.0),
+                    radius: (size as f32 * 1.0),
                 })
             } else if node.size() == size * 4 {
                 // Medium resolution
                 math::aabb_sphere(&node.aabb(), &math::Sphere {
                     center: *target,
-                    radius: size as f32 * 4.0,
+                    radius: size as f32 * 2.0,
                 })
             } else if node.size() == size * 8 {
                 // Medium resolution
                 math::aabb_sphere(&node.aabb(), &math::Sphere {
                     center: *target,
-                    radius: size as f32 * 8.0,
+                    radius: size as f32 * 4.0,
                 }) 
             } else {
                 // Low resolution
@@ -154,6 +157,7 @@ impl ChunkManager {
             viewer: None,
             octree,
             entities: Default::default(),
+            children_count: Default::default(),
         }
     }
 }

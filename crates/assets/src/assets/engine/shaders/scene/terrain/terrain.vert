@@ -18,7 +18,8 @@ layout(push_constant) uniform PushConstants {
 
 // Data to give to the fragment shader
 layout(location = 0) out vec3 m_position;
-layout(location = 1) out vec3 m_normal;
+layout(location = 1) out vec3 m_local_position;
+layout(location = 2) out vec3 m_normal;
 
 void main() {
     // Convert from 4 floats into uints 
@@ -34,6 +35,7 @@ void main() {
     vec4 cell_position = unpackUnorm4x8(packed_cell_position_packed_normals) * 255;
     vec4 inner_position = unpackSnorm4x8(packed_inner_position_packed_normals);
     vec4 position = cell_position + inner_position;
+    m_local_position = position.xyz;
 
 	// Model space -> World space -> Clip space
     vec4 world_pos = mesh.matrix * vec4(position.xyz * scaling_factor, 1);

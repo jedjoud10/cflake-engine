@@ -22,7 +22,7 @@ layout(push_constant) uniform PushConstants {
 float voxel(vec3 position) {
     position *= parameters.scale;
     position += parameters.offset.xyz;
-    return opSmoothUnion(-erosion(position.xz * 0.03, 0.10).x * 420 + position.y + 200, position.y, 40);
+    return opSmoothUnion((1-fbmCellular(position * 0.002, 7, 0.4, 2.3).y) * 1050 + position.y, position.y + 800, 10);
 
     /*
 

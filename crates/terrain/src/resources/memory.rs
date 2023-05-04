@@ -1,5 +1,8 @@
+use std::sync::mpsc::{Receiver, Sender, SyncSender};
+
 use assets::Assets;
 
+use ecs::Entity;
 use graphics::{
     Buffer, BufferMode, BufferUsage, Compiler, ComputeModule, ComputeShader, DrawIndexedIndirect,
     GpuPod, Graphics, ModuleVisibility, PushConstantLayout, StorageAccess, Texel, TriangleBuffer,
@@ -30,6 +33,12 @@ pub struct MemoryManager {
     // Used to keep track of what buffers will be used per sub-allocation
     pub(crate) sub_allocation_chunk_indices: Vec<Buffer<u32>>,
     pub(crate) compute_copy: ComputeShader,
+
+    // Channel to receive the asyncrhnoously readback data
+    pub(crate) readback_count_receiver: Receiver<(Entity, vek::Vec2<u32>)>,
+    pub(crate) readback_count_sender: Sender<(Entity, vek::Vec2<u32>)>,
+    pub(crate) readback_offset_receiver: Receiver<(Entity, vek::Vec2<u32>)>,
+    pub(crate) readback_offset_sender: Sender<(Entity, vek::Vec2<u32>)>,
 }
 
 impl MemoryManager {
@@ -169,17 +178,24 @@ impl MemoryManager {
             create_counters(graphics, 2, BufferUsage::READ | BufferUsage::WRITE),
         ];
 
+        // Transmitter and receiver to send/receive async data
+        let (offset_sender, offset_receiver) = std::sync::mpsc::channel::<(Entity, vek::Vec2<u32>)>();
+        let (counter_sender, counter_receiver) = std::sync::mpsc::channel::<(Entity, vek::Vec2<u32>)>();
 
         Self {
             indexed_indirect_buffer,
             shared_tex_coord_buffers,
             shared_triangle_buffers,
             compute_find,
-            offsets,
-            counters,
             sub_allocation_chunk_indices,
             compute_copy,
             chunks_per_allocations: vec![0; settings.allocation_count],
+            readback_count_receiver: counter_receiver,
+            readback_count_sender: counter_sender,
+            readback_offset_receiver: offset_receiver,
+            readback_offset_sender: offset_sender,
+            offsets,
+            counters,
         }
     }
 }

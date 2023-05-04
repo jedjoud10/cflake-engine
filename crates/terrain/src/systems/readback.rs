@@ -26,59 +26,59 @@ fn update(world: &mut World) {
     };
 
     let mut scene = world.get_mut::<Scene>().unwrap();
-    let mut entry = scene.entry_mut(entity).unwrap();
-    let (chunk, surface) = entry.as_query_mut::<(&mut Chunk, &mut Surface<TerrainMaterial>)>().unwrap();
-
     let index = 1 - (time.frame_count() as usize % 2);
     let counters = &memory.counters[index];
     let offsets = &memory.offsets[index];
-    let voxels = &voxelizer.voxel_textures[index];
+    let offset_sender = memory.readback_offset_sender.clone();
+    let count_sender = memory.readback_count_sender.clone();
 
     // Readback the counters asynchronously
-    counters.async_read(.., |counters| {
-        let vertex_count = counters[0];
-        let triangle_count = counters[1];    
+    counters.async_read(.., move |counters| {
+        let _ = count_sender.send((entity, vek::Vec2::from_slice(counters)));
     }).unwrap();
 
     // Readback the offsets asynchronously
     let tex_coords_per_sub_allocation = settings.tex_coords_per_sub_allocation;
     let triangles_per_sub_allocation = settings.triangles_per_sub_allocation;
     offsets.async_read(.., move |offsets| {
-        let vertices_offset = offsets[0];
-        let triangle_indices_offset = offsets[1];
+        let _ = offset_sender.send((entity, vek::Vec2::from_slice(offsets)));
+    }).unwrap();
+
+    // Handle the chunk that was readback the frame before
+    let offset = memory.readback_offset_receiver.try_recv();
+    let count = memory.readback_count_receiver.try_recv();
+    if let (Ok((e1, offset)), Ok((e2, count))) = (offset, count) {
+        assert_eq!(e1, e2);
+
+        // Fetch the appropriate chunk
+        let mut entry = scene.entry_mut(e1).unwrap();
+        let (chunk, surface) = entry.as_query_mut::<(&mut Chunk, &mut Surface<TerrainMaterial>)>().unwrap();    
 
         // Check if we are OOM lol
-        if vertices_offset / tex_coords_per_sub_allocation
-            != triangle_indices_offset / triangles_per_sub_allocation
+        if offset.x / tex_coords_per_sub_allocation
+            != offset.y / triangles_per_sub_allocation
         {
             panic!("Out of memory xD MDR");
         }
-    }).unwrap();
 
-    /*
+        // Calculate sub-allocation index and length
+        let count = f32::max(
+            count.x as f32 / settings.tex_coords_per_sub_allocation as f32,
+            count.y as f32 / settings.triangles_per_sub_allocation as f32,
+        );
+        let count = count.ceil() as u32;
+        let offset = offset.x / settings.tex_coords_per_sub_allocation;
 
-    // Read as vertex and triangle separately
-
-
-
-
-    // Calculate sub-allocation index and length
-    let count = f32::max(
-        vertex_count as f32 / settings.tex_coords_per_sub_allocation as f32,
-        triangle_count as f32 / settings.triangles_per_sub_allocation as f32,
-    );
-    let count = count.ceil() as u32;
-    let offset = vertices_offset / settings.tex_coords_per_sub_allocation;
-
-    // Update chunk range (if valid) and set visibility
-    if count > 0 {
-        chunk.ranges = Some(vek::Vec2::new(offset, count + offset));
-        surface.visible = true;
-    } else {
-        chunk.ranges = None;
-        surface.visible = false;
+        // Update chunk range (if valid) and set visibility
+        if count > 0 {
+            chunk.ranges = Some(vek::Vec2::new(offset, count + offset));
+            surface.visible = true;
+        } else {
+            chunk.ranges = None;
+            surface.visible = false;
+        }
     }
-    */
+    
 }
 
 // Generates the voxels and appropriate mesh for each of the visible chunks

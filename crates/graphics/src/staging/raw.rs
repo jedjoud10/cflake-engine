@@ -85,7 +85,7 @@ pub(super) fn async_read_staging_buffer(
     index: usize,
     offset: u64,
     size: u64,
-    callback: impl FnOnce(&[u8]) + Sync + Send + 'static,
+    callback: impl FnOnce(&[u8]) + Send + 'static,
 ) {
     // Map asynchronously
     let slice = allocations[index].slice(offset..size);

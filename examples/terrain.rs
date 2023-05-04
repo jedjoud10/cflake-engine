@@ -43,7 +43,7 @@ fn init(world: &mut World) {
         false,
         8,
         1024,
-        7,
+        6,
         Some(&[
             TerrainSubMaterial {
                 diffuse: "user/textures/diffuse3.jpg".to_string(),
@@ -101,7 +101,10 @@ fn init(world: &mut World) {
         Position::default(),
         Rotation::default(),
         Velocity::default(),
-        Camera::default(),
+        Camera {
+            near: 5.0,
+            ..Default::default()
+        },
         ChunkViewer::default(),
         CameraController::default(),
     ));

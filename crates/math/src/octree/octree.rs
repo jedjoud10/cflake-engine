@@ -1,15 +1,13 @@
-use std::num::NonZeroUsize;
+use std::{num::NonZeroUsize, hash::Hash, mem::MaybeUninit};
 use ahash::{AHashSet};
 
 // An octree is a tree data structure that contains multiple "nodes" that each have 8 children
 // Octrees are used for hierarchy partitionaning, terrain generation, and even collision detection
 // Octrees are the 3D variant of quadtrees and quadtrees are the 2D variant of binary trees
 pub struct Octree {  
-    positions: Vec<vek::Vec3<i32>>,
-    depths: Vec<u32>,
     max_depth: u32,
     node_size: u32,
-    children: Vec<Option<NonZeroUsize>>,
+    nodes: Vec<Node>,
     old_nodes: AHashSet<Node>,
     heuristic: OctreeHeuristic,
 }
@@ -62,11 +60,9 @@ impl Octree {
         assert!(node_size.is_power_of_two() && node_size > 1);
 
         Self {
-            positions: Vec::new(),
-            depths: Vec::new(),
-            children: Vec::new(),
             max_depth,
             node_size,
+            nodes: Vec::default(),
             old_nodes: AHashSet::default(),
             heuristic,
         }
@@ -74,40 +70,30 @@ impl Octree {
 
     // Recalculate the octree using a specific camera location
     pub fn compute(&mut self, target: vek::Vec3<f32>) -> OctreeDelta {
-        // Clear vectors
-        self.positions.clear();
-        self.depths.clear();
-        self.children.clear();
-
-        // Needed for diff
-        let mut new = AHashSet::<Node>::new();
-
+        self.nodes.clear();
+        
         // Keep track of the chunks we will check for
         let mut checking = vec![0usize];
-        self.depths.push(0);
-        self.children.push(None);
-        self.positions.push(vek::Vec3::broadcast((-2i32.pow(self.max_depth) * self.node_size as i32) / 2));
+        self.nodes.push(Node {
+            index: 0,
+            position: vek::Vec3::broadcast((-2i32.pow(self.max_depth) * self.node_size as i32) / 2),
+            center: vek::Vec3::zero(),
+            depth: 0,
+            size: (2u32.pow(self.max_depth) * self.node_size) / 2,
+            children: None,
+        });
 
         // Iterate over the nodes that we must evalute
         while let Some(node) = checking.pop() {
             // Get the center of the node
-            let depth = self.depths[node];
-            let position = self.positions[node];
-            let size = (2u32.pow(self.max_depth - depth) * self.node_size) / 2;
-            let half = vek::Vec3::broadcast(size);
-            let center = position + half.as_::<i32>();
+            let base = self.nodes.len();
+            let node = &mut self.nodes[node];
 
             // Check if we should split the node into multiple
-            let split = self.heuristic.check(&target, &Node {
-                position,
-                center,
-                depth,
-                size: size * 2,
-                leaf: true
-            });
+            let split = self.heuristic.check(&target, &*node);
 
             // Add the child nodes to check (this node became a parent node)
-            if split && depth < self.max_depth {
+            let children = if split && node.depth < self.max_depth {
                 // Position offsets for children nodes
                 const OFFSETS: [vek::Vec3<u32>; 8] = [
                     vek::Vec3::new(0, 0, 0),
@@ -121,31 +107,44 @@ impl Octree {
                 ];
 
                 // Add the children to the nodes that we must process
-                let base = self.positions.len();
                 checking.extend(base..(base + 8));
 
-                // Create the children nodes and add them to the octree                 
-                for children in 0..8usize {
-                    let pos = (OFFSETS[children] * half).as_::<i32>() + position;
-                    self.depths.push(depth + 1);
-                    self.children.push(None);
-                    self.positions.push(pos);
-                }
+                // Create the children nodes and add them to the octree       
+                let size = (2u32.pow(self.max_depth - node.depth) * self.node_size) / 2;
+                let half = vek::Vec3::broadcast(size);
+                let position = node.position;
+                let depth = node.depth;
+
+                let children = (0..8usize).into_iter().map(move |children| {
+                    let position = (OFFSETS[children] * half).as_::<i32>() + position;
+                
+                    Node {
+                        index: children + base,
+                        position,
+                        center: position + (half.as_::<i32>() / 2),
+                        depth: depth + 1,
+                        size,
+                        children: None,
+                    }
+                });
 
                 // We know we will *always* have 8 children, and we know they are tightly packed together
                 // so instead of storing each child index we only need to store the "base" child index
-                self.children[node] = Some(NonZeroUsize::new(base).unwrap());
-            }
+                node.children = Some(NonZeroUsize::new(base).unwrap());
+                Some(children)
+            } else {
+                None
+            };
 
-            // Add a node to the new octree nodes
-            new.insert(Node {
-                position,
-                depth,
-                center,
-                size: size * 2,
-                leaf: self.children[node].is_none(),
-            });
+            drop(node);
+            
+            if let Some(children) = children {
+                self.nodes.extend(children);
+            }
         }
+
+        // Convert vector into hashset
+        let new = self.nodes.iter().cloned().collect::<AHashSet<_>>();
 
         let previous = std::mem::take(&mut self.old_nodes);
         let current = new;
@@ -169,33 +168,17 @@ impl Octree {
 
     // Iterate over the octree recursively using a "check" function
     pub fn recurse(&self, callback: impl Fn(Node) -> bool) {
-        let mut checking = vec![0usize];
-        while let Some(index) = checking.pop() {
-            let depth = self.depths[index];
-            let position = self.positions[index];
-            let size = (2u32.pow(self.max_depth - depth) * self.node_size) / 2;
-            let half = vek::Vec3::broadcast(size);
-            let center = position + half.as_::<i32>();
-            let children = self.children[index].is_some();
-
-            let node = Node {
-                position,
-                depth,
-                center,
-                size,
-                leaf: self.children[index].is_none(),
-            };
-
-            if children && callback(node) {
-                let base = index + 1;
-                checking.extend(base..(base + 8));
-            }
-        }
+        todo!()
     }
 
     // Get the size of the root node of the octree
     pub fn size(&self) -> u64 {
         2u64.pow(self.max_depth) * self.node_size as u64
+    }
+
+    // Get the internally stored nodes
+    pub fn nodes(&self) -> &[Node] {
+        &self.nodes
     } 
 }
 
@@ -207,13 +190,27 @@ pub struct OctreeDelta {
 
 // An octree node is an object that *might* contain 8 children (it becomes a parent)
 // If an octree node does not contain children, then it is considered a leaf node
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[derive(Clone, Copy, Eq, Debug)]
 pub struct Node {
+    index: usize,
     position: vek::Vec3<i32>,
     center: vek::Vec3<i32>,
     depth: u32,
     size: u32,
-    leaf: bool,
+    children: Option<NonZeroUsize>,
+}
+
+impl PartialEq for Node {
+    fn eq(&self, other: &Self) -> bool {
+        self.center == other.center && self.children.is_some() == other.children.is_some()
+    }
+}
+
+impl Hash for Node {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.center.hash(state);
+        self.children.is_some().hash(state);
+    }
 }
 
 impl Node {
@@ -239,7 +236,12 @@ impl Node {
     
     // Check if the node is a leaf node
     pub fn leaf(&self) -> bool {
-        self.leaf
+        self.children.is_none()
+    }
+
+    // Get the child base index
+    pub fn children(&self) -> Option<NonZeroUsize> {
+        self.children
     }
 
     // Get the AABB bounding box of this node
