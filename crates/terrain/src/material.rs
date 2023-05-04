@@ -1,6 +1,6 @@
 use rendering::{
     ActiveScenePipeline, AlbedoTexel, CameraUniform, DefaultMaterialResources, Indirect, MaskTexel,
-    Material, NormalTexel, Renderer, SceneUniform, ShadowMap, ShadowMapping, ShadowUniform,
+    Material, NormalTexel, Renderer, SceneUniform, ShadowMap, ShadowMapping, ShadowUniform, MultiDrawIndirect,
 };
 
 use assets::Assets;
@@ -12,7 +12,7 @@ use graphics::{
 };
 use utils::{Handle, Storage, Time};
 
-use crate::TerrainSettings;
+use crate::{TerrainSettings, Terrain};
 
 // Type aliases for layered textures
 pub type LayeredAlbedoMap = LayeredTexture2D<AlbedoTexel>;
@@ -22,12 +22,8 @@ pub type LayeredMaskMap = LayeredTexture2D<MaskTexel>;
 // Terrain shader that contains physically based lighting, but suited for terrain rendering
 // Contains multiple Layered2D textures for each PBR parameters
 // Currently, there is no blending that is occuring between different terrain sub-materials
-pub struct TerrainMaterial {
-    // These will be None when the user did not specify any submaterials
-    pub layered_albedo_map: Option<Handle<LayeredAlbedoMap>>,
-    pub layered_normal_map: Option<Handle<LayeredNormalMap>>,
-    pub layered_mask_map: Option<Handle<LayeredMaskMap>>,
-}
+// The actual terrain material data is stored within the terrain because there can only be ONE terrain material per world
+pub struct TerrainMaterial;
 
 impl Material for TerrainMaterial {
     type Resources<'w> = (
@@ -35,10 +31,13 @@ impl Material for TerrainMaterial {
         world::Read<'w, Storage<LayeredNormalMap>>,
         world::Read<'w, Storage<LayeredMaskMap>>,
         world::Read<'w, ShadowMapping>,
+        world::Read<'w, Terrain>,
         world::Read<'w, Time>,
     );
 
     type Settings<'s> = &'s TerrainSettings;
+
+    type RenderPath = MultiDrawIndirect;
 
     // Load the terrain material shaders and compile them
     fn shader(settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader {
@@ -83,17 +82,11 @@ impl Material for TerrainMaterial {
             compiler.use_define("lowpoly", "");
         }
 
-        // Define the push ranges used by push constants
-        compiler.use_push_constant_layout(
-            PushConstantLayout::split(
-                <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size(),
-                <vek::Rgba<f32> as GpuPod>::size() + f32::size(),
-            )
-            .unwrap(),
-        );
+        // Multi-draw indirect youpieee
+        compiler.use_storage_buffer::<vek::Vec4<vek::Vec4<f32>>>("position_scale_buffer", StorageAccess::ReadOnly);
 
         // Compile the modules into a shader
-        Shader::new(vert, frag, compiler).unwrap()
+        Shader::new(vert, frag, &compiler).unwrap()
     }
 
     // Terrain only needs tex coordinates (packed)
@@ -145,8 +138,9 @@ impl Material for TerrainMaterial {
         let normal_maps = world.get::<Storage<LayeredNormalMap>>().unwrap();
         let mask_maps = world.get::<Storage<LayeredMaskMap>>().unwrap();
         let shadow = world.get::<ShadowMapping>().unwrap();
-        let time = world.get::<Time>().unwrap();
-        (albedo_maps, normal_maps, mask_maps, shadow, time)
+        let time: world::Read<Time> = world.get::<Time>().unwrap();
+        let terrain = world.get::<Terrain>().unwrap();
+        (albedo_maps, normal_maps, mask_maps, shadow, terrain, time)
     }
 
     // Set the static bindings that will never change
@@ -155,6 +149,16 @@ impl Material for TerrainMaterial {
         group: &mut BindGroup<'r>,
         default: &DefaultMaterialResources<'r>,
     ) {
+        let (
+            albedo_maps,
+            normal_maps,
+            mask_maps,
+            shadow,
+            terrain,
+            time
+        ) = resources;
+
+
         // Set the required common buffers
         group
             .set_uniform_buffer("camera", default.camera_buffer, ..)
@@ -163,88 +167,72 @@ impl Material for TerrainMaterial {
             .set_uniform_buffer("scene", default.scene_buffer, ..)
             .unwrap();
         group
-            .set_uniform_buffer("shadow_parameters", &resources.3.parameter_buffer, ..)
+            .set_uniform_buffer("shadow_parameters", &shadow.parameter_buffer, ..)
             .unwrap();
         group
             .set_uniform_buffer(
                 "shadow_lightspace_matrices",
-                &resources.3.lightspace_buffer,
+                &shadow.lightspace_buffer,
                 ..,
             )
             .unwrap();
         group
             .set_uniform_buffer(
                 "cascade_plane_distances",
-                &resources.3.cascade_distances,
+                &shadow.cascade_distances,
                 ..,
             )
             .unwrap();
 
         // Set the scene shadow map
         group
-            .set_sampled_texture("shadow_map", &resources.3.depth_tex)
+            .set_sampled_texture("shadow_map", &shadow.depth_tex)
             .unwrap();
-    }
-
-    // Set the instance bindings that will change per material
-    fn set_instance_bindings<'r, 'w>(
-        &self,
-        resources: &'r mut Self::Resources<'w>,
-        default: &DefaultMaterialResources<'r>,
-        group: &mut BindGroup<'r>,
-    ) {
-        let (albedo_maps, normal_maps, mask_maps, _, _) = resources;
 
         if let (Some(albedo), Some(normal), Some(mask)) = (
-            &self.layered_albedo_map,
-            &self.layered_normal_map,
-            &self.layered_mask_map,
-        ) {
-            // Get the layered textures, without any fallback
-            let albedo_map = albedo_maps.get(&albedo);
-            let normal_map = normal_maps.get(&normal);
-            let mask_map = mask_maps.get(&mask);
-
-            // Set the material textures
-            group
-                .set_sampled_texture("layered_albedo_map", albedo_map)
-                .unwrap();
-            group
-                .set_sampled_texture("layered_normal_map", normal_map)
-                .unwrap();
-            group
-                .set_sampled_texture("layered_mask_map", mask_map)
-                .unwrap();
-        }
+                &terrain.manager.layered_albedo_map,
+                &terrain.manager.layered_normal_map,
+                &terrain.manager.layered_mask_map,
+            ) {
+                // Get the layered textures, without any fallback
+                let albedo_map = albedo_maps.get(&albedo);
+                let normal_map = normal_maps.get(&normal);
+                let mask_map = mask_maps.get(&mask);
+    
+                // Set the material textures
+                group
+                    .set_sampled_texture("layered_albedo_map", albedo_map)
+                    .unwrap();
+                group
+                    .set_sampled_texture("layered_normal_map", normal_map)
+                    .unwrap();
+                group
+                    .set_sampled_texture("layered_mask_map", mask_map)
+                    .unwrap();
+            }
     }
 
-    // Set the surface push constants
-    fn set_push_constants<'r, 'w>(
-        &self,
-        renderer: &Renderer,
+    fn set_surface_bindings<'r, 'w>(
+        _renderer: &Renderer,
         resources: &'r mut Self::Resources<'w>,
-        _default: &DefaultMaterialResources<'r>,
-        constants: &mut PushConstants<ActiveScenePipeline>,
+        _default: &mut DefaultMaterialResources<'w>,
+        group: &mut BindGroup<'r>,
     ) {
-        // Send the raw vertex bytes to the GPU
-        let matrix = renderer.matrix;
-        let cols = matrix.cols;
-        let bytes = GpuPod::into_bytes(&cols);
-        constants.push(bytes, 0, ModuleVisibility::Vertex).unwrap();
+        let (
+            albedo_maps,
+            normal_maps,
+            mask_maps,
+            shadow,
+            terrain,
+            time
+        ) = resources;
 
-        // Calculate "fade" effect
-        let duration = resources
-            .4
-            .frame_start()
-            .saturating_duration_since(renderer.instant_initialized.unwrap());
-        let fade = duration.as_secs_f32().clamp(0.0, 10.0);
-
-        // Upload the fade effect to GPU
-        let bytes2 = GpuPod::into_bytes(&fade);
-        constants
-            .push(bytes2, 0, ModuleVisibility::Fragment)
-            .unwrap();
+        // Set the storage buffer that contains ALL the matrices
+        let index = 
+        group.set_storage_buffer(
+            "position_scale_buffer",
+            &terrain.manager.position_scaling_buffers[index],
+            ..
+        ).unwrap();    
     }
-
-    type RenderPath = Indirect;
 }

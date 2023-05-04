@@ -1,13 +1,11 @@
 use crate::Renderer;
-
 use coords::{Position, Rotation, Scale};
-use utils::ThreadPool;
+use rayon::prelude::{IntoParallelRefIterator, IntoParallelRefMutIterator, ParallelIterator, IntoParallelIterator};
 use world::{post_user, System, World};
 
 // Update the global mesh matrices of objects that have been modified
 // This will also handle frustum culling
 fn update(world: &mut World) {
-    let mut threadpool = world.get_mut::<ThreadPool>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
     use ecs::*;
 
@@ -23,27 +21,25 @@ fn update(world: &mut World) {
         Option<&Rotation>,
         Option<&Scale>,
     )>(filter);
+    let iter = query.into_iter().collect::<Vec<_>>();
+    let iter = iter.into_par_iter();
 
     // Update the matrices of objects that might contain location, rotation, or scale
-    query.for_each(
-        &mut threadpool,
-        |(renderer, position, rotation, scale)| {
-            let mut matrix = vek::Mat4::<f32>::identity();
-            if let Some(position) = position {
-                matrix *= vek::Mat4::from(position);
-            }
+    iter.for_each(|(renderer, position, rotation, scale)| {
+        let mut matrix = vek::Mat4::<f32>::identity();
+        if let Some(position) = position {
+            matrix *= vek::Mat4::from(*position);
+        }
 
-            if let Some(rotation) = rotation {
-                matrix *= vek::Mat4::from(rotation);
-            }
+        if let Some(rotation) = rotation {
+            matrix *= vek::Mat4::from(rotation);
+        }
 
-            if let Some(scale) = scale {
-                matrix *= vek::Mat4::from(scale);
-            }
-            renderer.matrix = matrix;
-        },
-        1024,
-    );
+        if let Some(scale) = scale {
+            matrix *= vek::Mat4::from(scale);
+        }
+        renderer.matrix = matrix;
+    });
 }
 
 // The matrix system will be responsible for updating the matrices of the renderer

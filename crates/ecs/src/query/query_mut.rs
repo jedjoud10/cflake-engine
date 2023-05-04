@@ -41,49 +41,7 @@ impl<'a: 'b, 'b, L: QueryLayoutMut> QueryMut<'a, 'b, L> {
             _phantom3: PhantomData,
         }
     }
-
-    // Iterate through the query entries and execute a function for each one of them in another thread
-    pub fn for_each(
-        mut self,
-        threadpool: &mut utils::ThreadPool,
-        function: impl Fn(<<L as QueryLayoutMut>::SliceTuple<'_> as utils::SliceTuple<'_>>::ItemTuple)
-            + Send
-            + Sync
-            + Clone,
-        batch_size: usize,
-    ) where
-        for<'st, 's> L::SliceTuple<'st>: utils::SliceTuple<'s>,
-    {
-        threadpool.scope(|scope| {
-            // Convert the optional bitset vector to an iterator that returns None if it is None
-            let bitsets = self
-                .bitsets
-                .into_iter()
-                .flatten()
-                .map(Some)
-                .chain(std::iter::repeat(None));
-            for (archetype, bitset) in self.archetypes.iter_mut().zip(bitsets) {
-                // Send the archetype slices to multiple threads to be able to compute them
-                let ptrs = unsafe { L::ptrs_from_mut_archetype_unchecked(archetype) };
-                let slices = unsafe { L::from_raw_parts(ptrs, archetype.len()) };
-
-                // Update all states chunks of the current archetype before iterating
-                apply_mutability_states(
-                    archetype,
-                    archetype.mask() & self.access.unique(),
-                    bitset.as_ref(),
-                );
-
-                // Should we use per entry filtering?
-                if let Some(bitset) = bitset {
-                    scope.for_each_filtered(slices, function.clone(), bitset, batch_size);
-                } else {
-                    scope.for_each(slices, function.clone(), batch_size);
-                }
-            }
-        });
-    }
-
+    
     // Get the access masks that we have calculated
     pub fn layout_access(&self) -> LayoutAccess {
         self.access

@@ -11,7 +11,7 @@ use crate::{create_texture3d, TerrainSettings};
 // Voxel generator that will be solely used for generating voxels
 pub struct VoxelGenerator {
     pub(crate) compute_voxels: ComputeShader,
-    pub(crate) voxels: Texture3D<RG<f32>>,
+    pub(crate) voxel_textures: [Texture3D<RG<f32>>; 2],
     pub(crate) set_bind_group_callback: Option<Box<dyn Fn(&mut BindGroup) + 'static>>,
     pub(crate) set_push_constant_callback:
         Option<Box<dyn Fn(&mut PushConstants<ActiveComputeDispatcher>) + 'static>>,
@@ -36,7 +36,7 @@ impl VoxelGenerator {
         // Needed by default
         compiler.use_push_constant_layout(
             PushConstantLayout::single(
-                <vek::Vec4<f32> as GpuPod>::size() + u32::size() * 2,
+                <vek::Vec4<f32> as GpuPod>::size() + f32::size(),
                 ModuleVisibility::Compute,
             )
             .unwrap(),
@@ -52,11 +52,17 @@ impl VoxelGenerator {
         }
 
         // Compile the compute shader
-        let compute_voxels = ComputeShader::new(module, compiler).unwrap();
+        let compute_voxels = ComputeShader::new(module, &compiler).unwrap();
+
+        // Create two textures that will be swapped out every other frame
+        let voxel_textures = [
+            create_texture3d(graphics, settings.size),
+            create_texture3d(graphics, settings.size),
+        ];
 
         Self {
             compute_voxels,
-            voxels: create_texture3d(graphics, settings.size),
+            voxel_textures,
             set_bind_group_callback,
             set_push_constant_callback,
         }

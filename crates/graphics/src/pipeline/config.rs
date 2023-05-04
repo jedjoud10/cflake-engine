@@ -77,7 +77,6 @@ impl VertexInputInfo {
 }
 
 // Vertex input defines the vertex layout for a single buffer
-// TODO: Implement vertex interlacing
 pub trait VertexInput<V: Vertex> {
     // Get the vertex info of the input
     fn vertex_info() -> VertexInfo {

@@ -1,8 +1,7 @@
 // Terrain voxel generation push constants
 layout(push_constant) uniform PushConstants {
     vec4 offset;
-    uint global_chunk_index;
-    uint allocation_index;
+    float scale;
 } parameters;
 
 // Load up some noise functions
@@ -21,7 +20,13 @@ layout(push_constant) uniform PushConstants {
 // Density allows us to represent either full terrain or air, and everything in between
 // Main voxel function that will create the shape of the terrain
 float voxel(vec3 position) {
+    position *= parameters.scale;
     position += parameters.offset.xyz;
+    return opSmoothUnion((1-fbmCellular(position * 0.002, 7, 0.4, 2.3).y) * 1050 + position.y, position.y + 800, 10);
+
+    /*
+
+    */
     //return 1;
     //return min(position.y, sdBox(position - vec3(0, 2, 0), vec3(1)));
     /*
@@ -66,12 +71,13 @@ float voxel(vec3 position) {
     */
     
     /*
-    float density = opSmoothUnion((1-fbmCellular(position * 0.005 * vec3(1, 0.2, 1), 5, 0.4, 2.1).y) * 150 - 120 + position.y, position.y, 30);
-    //density = max(density, -sdSphere(position + vec3(0, 10, 0), 30));
-    //density = position.y - 2.00;
-    return Voxel(density, 0);
+    float first = (1-fbmCellular(position * 0.004 * vec3(1, 4, 1), 7, 0.6, 1.8).x) * 100.0 - 50;
+    float second = -erosion(position.xz * 0.04, 0.1).x * 140;
+    float density = position.y + mix(first, second, clamp((snoise(position * 0.001)) * 0.5 + 0.5, 0, 1));
+    return density;
     */
 
+    /*
     //TEST 1
     
 
@@ -88,4 +94,32 @@ float voxel(vec3 position) {
     density += d2 - 140;
     density = opUnion(density, sdSphere(position, 20));
     return density;
+
+    /*
+    position *= 0.1;
+
+    float density = (1-fbmCellular(position * 0.02 * vec3(1, 5.0, 1), 8, 0.5, 2.0).x) * 10;
+    float d2 = (1-fbmCellular(position * 0.008 * vec3(1, 0.1, 1), 8, 0.3, 2.1).x) * 140;
+    d2 = smooth_floor(d2 / 50) * 50;
+
+    d2 += position.y;
+    d2 = opSmoothUnion(d2, position.y + 140, 10);
+    d2 = opSmoothSubtraction(-d2, position.y + 100, 50);
+    density += d2 - 140;
+    return density;
+    */
+
+    /*
+    position *= 0.1;
+
+    float density = (1-fbmCellular(position * 0.02 * vec3(1, 5.0, 1), 8, 0.5, 2.0).x) * 10;
+    float d2 = (1-fbmCellular(position * 0.008 * vec3(1, 0.1, 1), 8, 0.3, 2.1).x) * 140;
+    d2 = smooth_floor(d2 / 50) * 50;
+
+    d2 += position.y;
+    d2 = opSmoothUnion(d2, position.y + 140, 10);
+    d2 = opSmoothSubtraction(-d2, position.y + 100, 50);
+    density += d2 - 140;
+    return density;
+    */
 }

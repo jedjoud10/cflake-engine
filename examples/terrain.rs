@@ -5,7 +5,9 @@ fn main() {
     App::default()
         .set_app_name("cflake engine terrain example")
         .set_window_fullscreen(true)
+        //.set_frame_rate_limit(FrameRateLimit::VSync)
         //.set_frame_rate_limit(FrameRateLimit::Limited(120))
+        //.set_logging_level(LevelFilter::Trace)
         .insert_init(init)
         .insert_update(update)
         .execute();
@@ -26,28 +28,34 @@ fn init(world: &mut World) {
     asset!(assets, "user/textures/diffuse2.jpg", "/examples/assets/");
     asset!(assets, "user/textures/normal2.jpg", "/examples/assets/");
     asset!(assets, "user/textures/mask2.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/diffuse3.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/normal3.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/mask3.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/diffuse4.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/normal4.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/mask4.jpg", "/examples/assets/");
 
     // Create the terrain generator's settings
     let settings = TerrainSettings::new(
         &graphics,
         64,
-        5,
         false,
         false,
         8,
         1024,
+        6,
         None,
         /*
         Some(&[
             TerrainSubMaterial {
-                diffuse: "user/textures/diffuse.jpg".to_string(),
-                normal: "user/textures/normal.jpg".to_string(),
-                mask: "user/textures/mask.jpg".to_string(),
+                diffuse: "user/textures/diffuse3.jpg".to_string(),
+                normal: "user/textures/normal3.jpg".to_string(),
+                mask: "user/textures/mask3.jpg".to_string(),
             },
             TerrainSubMaterial {
-                diffuse: "user/textures/diffuse1.jpg".to_string(),
-                normal: "user/textures/normal1.jpg".to_string(),
-                mask: "user/textures/mask1.jpg".to_string(),
+                diffuse: "user/textures/diffuse4.jpg".to_string(),
+                normal: "user/textures/normal4.jpg".to_string(),
+                mask: "user/textures/mask4.jpg".to_string(),
             },
             TerrainSubMaterial {
                 diffuse: "user/textures/diffuse2.jpg".to_string(),
@@ -96,7 +104,10 @@ fn init(world: &mut World) {
         Position::default(),
         Rotation::default(),
         Velocity::default(),
-        Camera::default(),
+        Camera {
+            near: 5.0,
+            ..Default::default()
+        },
         ChunkViewer::default(),
         CameraController::default(),
     ));
@@ -118,13 +129,11 @@ fn update(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
 
     // Rotation the light
-    /*
     if let Some((rotation, _)) =
         scene.find_mut::<(&mut Rotation, &DirectionalLight)>()
     {
         rotation.rotate_y(-0.1 * time.delta().as_secs_f32());
     }
-    */
 
     // Exit the game when the user pressed Escape
     if input.get_button(Button::Escape).pressed() {

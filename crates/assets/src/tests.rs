@@ -1,6 +1,5 @@
 #[cfg(test)]
 mod tests {
-
     use crate::{asset, AssetLoadError, Assets};
 
     #[test]
@@ -48,19 +47,17 @@ mod tests {
 
     #[test]
     fn read_async() {
-        let mut threadpool = utils::ThreadPool::default();
         let loader = Assets::new();
         asset!(loader, "test/text.txt", "src/assets/");
-        let handle = loader.async_load::<String>("test/text.txt", &mut threadpool);
+        let handle = loader.async_load::<String>("test/text.txt");
         let string = loader.wait(handle).unwrap();
         assert_eq!(string, "this is a test file\n1234567890");
     }
 
     #[test]
     fn not_found_async() {
-        let mut threadpool = utils::ThreadPool::default();
         let loader = Assets::new();
-        let handle = loader.async_load::<String>("test/text.txt", &mut threadpool);
+        let handle = loader.async_load::<String>("test/text.txt");
         let string = loader.wait(handle);
         assert!(matches!(
             string.unwrap_err(),
@@ -70,10 +67,9 @@ mod tests {
 
     #[test]
     fn read_async_iter() {
-        let mut threadpool = utils::ThreadPool::default();
         let loader = Assets::new();
         asset!(loader, "test/text.txt", "src/assets/");
-        let mut handles = loader.async_load_from_iter::<String>(["test/text.txt"], &mut threadpool);
+        let mut handles = loader.async_load_from_iter::<String>(["test/text.txt"]);
         let handle = handles.pop().unwrap();
         let mut vec = loader.wait_from_iter([handle]);
         let last = vec.pop().unwrap();
@@ -83,9 +79,8 @@ mod tests {
 
     #[test]
     fn not_found_async_iter() {
-        let mut threadpool = utils::ThreadPool::default();
         let loader = Assets::new();
-        let mut handles = loader.async_load_from_iter::<String>(["test/text.txt"], &mut threadpool);
+        let mut handles = loader.async_load_from_iter::<String>(["test/text.txt"]);
         let handle = handles.pop().unwrap();
         let mut vec = loader.wait_from_iter([handle]);
         let string = vec.pop().unwrap();

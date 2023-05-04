@@ -193,7 +193,6 @@ mod tests {
     #[test]
     fn threaded() {
         let mut scene = Scene::default();
-        let mut threadpool = utils::ThreadPool::with(16);
 
         scene
             .extend_from_iter(
@@ -201,6 +200,8 @@ mod tests {
             )
             .to_vec();
 
+        todo!();
+        /*
         scene.query_mut::<(&mut Ammo, &mut Health)>().for_each(
             &mut threadpool,
             |(ammo, health)| {
@@ -209,6 +210,7 @@ mod tests {
             },
             512,
         );
+        */
 
         for (ammo, health) in scene.query_mut::<(&Ammo, &Health)>() {
             assert_eq!(ammo.0, 200);
@@ -236,8 +238,8 @@ mod tests {
             health.0 += 100;
         }
 
-        let mut threadpool = utils::ThreadPool::default();
         let query = manager.query_mut::<(&Name, &mut Health)>();
+        /*
         query.for_each(
             &mut threadpool,
             |(_, health)| {
@@ -245,6 +247,8 @@ mod tests {
             },
             32,
         );
+        */
+        todo!();
 
         assert_eq!(manager.query_mut::<&Health>().len(), 4096);
         for health in manager.query_mut::<&Health>() {
@@ -289,8 +293,8 @@ mod tests {
             health.0 += 100;
         }
 
-        let mut threadpool = utils::ThreadPool::default();
         let query = manager.query_mut::<(&Name, &mut Health, Option<&Ammo>)>();
+        /*
         query.for_each(
             &mut threadpool,
             |(_, health, ammo)| {
@@ -299,6 +303,8 @@ mod tests {
             },
             32,
         );
+        */
+        todo!();
 
         for health in manager.query_mut::<&Health>() {
             assert_eq!(health.0, 200)

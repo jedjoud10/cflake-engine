@@ -1,26 +1,25 @@
-use crate::{AudioClipDeserializationError, Sample};
+use crate::{AudioClipDeserializationError};
 use assets::Asset;
+use rayon::slice::ParallelSlice;
 use std::{
     io::{BufReader, Cursor},
-    marker::PhantomData,
     sync::Arc,
     time::Duration,
 };
 
 // This is an audio clip that we can import from an mp3/wav file
 // Audio clips must be clonable since we should be able to clone them to reuse them instead of loading new ones every time
+// Audio clips always use f32 as their base sample format typ
 #[derive(Clone)]
-pub struct AudioClip<S: Sample> {
-    _phantom: PhantomData<S>,
-    samples: Arc<[S]>,
+pub struct AudioClip {
+    samples: Arc<[f32]>,
     bitrate: u32,
     sample_rate: u32,
     channels: u16,
-    format: cpal::SampleFormat,
     duration: Duration,
 }
 
-impl<S: Sample> AudioClip<S> {
+impl AudioClip {
     // Get the bitrate of the audio samples in kb/s
     pub fn bitrate(&self) -> u32 {
         self.bitrate
@@ -36,23 +35,21 @@ impl<S: Sample> AudioClip<S> {
         self.channels
     }
 
-    // Get the audio samples format used by CPAL
-    pub fn format(&self) -> cpal::SampleFormat {
-        self.format
-    }
-
     // Get the duration of the audio clip
     pub fn duration(&self) -> Duration {
         self.duration
     }
 
     // Get access to the internally stored samples
-    pub fn samples(&self) -> Arc<[S]> {
+    // Multi-channel samples are stored like this:
+    // 000000 111111 222222 333333
+    // where each number represents the channel it's used for
+    pub fn samples(&self) -> Arc<[f32]> {
         self.samples.clone()
     }
 }
 
-impl<S: Sample> Asset for AudioClip<S> {
+impl Asset for AudioClip {
     type Context<'ctx> = ();
     type Settings<'stg> = ();
     type Err = AudioClipDeserializationError;
@@ -66,7 +63,7 @@ impl<S: Sample> Asset for AudioClip<S> {
         _: Self::Context<'c>,
         _: Self::Settings<'s>,
     ) -> Result<Self, Self::Err> {
-        let this = match data.extension() {
+        match data.extension() {
             // Decode an MP3 file into the appropriate format
             "mp3" => {
                 let mut decoded = minimp3::Decoder::new(data.bytes());
@@ -92,7 +89,6 @@ impl<S: Sample> Asset for AudioClip<S> {
                 let bitrate = frames[0].bitrate as u32;
                 let sample_rate = frames[0].sample_rate as u32;
                 let channels = frames[0].channels as u16;
-                let format = S::format();
 
                 // Calculate the duration of this clip
                 let duration = calculate_clip_duration_secs_from_frames(
@@ -111,20 +107,16 @@ impl<S: Sample> Asset for AudioClip<S> {
                 let samples = frames
                     .into_iter()
                     .flat_map(|frame| frame.data.into_iter())
-                    .collect::<Vec<i16>>();
+                    .map(|x| cpal::Sample::to_f32(&x))
+                    .collect::<Vec<f32>>();
 
-                // Convert the samples to the appropriate Arc
-                let samples = Arc::from(S::from_i16_vec(samples));
-
-                Self {
-                    _phantom: PhantomData,
-                    samples,
+                Ok(Self {
+                    samples: samples.into(),
                     bitrate,
                     sample_rate,
                     channels,
-                    format,
                     duration,
-                }
+                })
             }
 
             // Decode a WAV file into the appropriate format
@@ -137,7 +129,6 @@ impl<S: Sample> Asset for AudioClip<S> {
                 let bitrate = header.bytes_per_second * 8;
                 let sample_rate = header.sampling_rate;
                 let channels = header.channel_count;
-                let format = S::format();
 
                 // Calculate the duration of the audio clip
                 let duration = calculate_clip_duration_secs_from_size(
@@ -151,26 +142,22 @@ impl<S: Sample> Asset for AudioClip<S> {
                 );
 
                 // Convert the bitdepth data into
-                let samples: Arc<[S]> = match bitdepth {
-                    wav::BitDepth::Sixteen(vec) => S::from_i16_vec(vec).into(),
-                    wav::BitDepth::ThirtyTwoFloat(vec) => S::from_f32_vec(vec).into(),
-                    _ => panic!("BitDepth not supported"),
+                let samples = match bitdepth {
+                    wav::BitDepth::Sixteen(vec) => vec.into_iter().map(|x| cpal::Sample::to_f32(&x)).collect::<Vec<f32>>(),
+                    wav::BitDepth::ThirtyTwoFloat(vec) => vec,
+                    _ => return Err(AudioClipDeserializationError::BitDepthNotSupported),
                 };
 
-                Self {
-                    _phantom: PhantomData,
-                    samples,
+                Ok(Self {
+                    samples: samples.into(),
                     bitrate,
                     sample_rate,
                     channels,
-                    format,
                     duration,
-                }
+                })
             }
             _ => panic!(),
-        };
-
-        Ok(this)
+        }
     }
 }
 

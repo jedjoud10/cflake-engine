@@ -38,7 +38,10 @@ pub trait RenderPath: 'static + Send + Sync + Sized {
     ) -> &'a Mesh<Self>;
 
     // Checks if a mesh is valid for rendering
-    fn is_valid(mesh: &Mesh<Self>) -> bool;
+    fn is_valid(
+        defaults: &DefaultMaterialResources,
+        mesh: &Mesh<Self>,
+    ) -> bool;
 
     // Sets the vertex buffer of a specific mesh into the given active graphics pipeline
     fn set_vertex_buffer<'a, C: ColorLayout, DS: DepthStencilLayout, A: MeshAttribute>(
@@ -84,7 +87,10 @@ impl RenderPath for Direct {
     }
 
     #[inline(always)]
-    fn is_valid(mesh: &Mesh<Self>) -> bool {
+    fn is_valid(
+        defaults: &DefaultMaterialResources,
+        mesh: &Mesh<Self>,
+    ) -> bool {
         mesh.vertices().len().is_some()
     }
 
@@ -150,7 +156,10 @@ impl RenderPath for Indirect {
     }
 
     #[inline(always)]
-    fn is_valid(_: &Mesh<Self>) -> bool {
+    fn is_valid(
+        _defaults: &DefaultMaterialResources,
+        _mesh: &Mesh<Self>,
+    ) -> bool {
         true
     }
 
@@ -204,8 +213,12 @@ impl RenderPath for MultiDrawIndirect {
     }
 
     #[inline(always)]
-    fn is_valid(_: &Mesh<Self>) -> bool {
-        true
+    fn is_valid(
+        defaults: &DefaultMaterialResources,
+        mesh: &Mesh<Self>,
+    ) -> bool {
+        let buffer = defaults.draw_indexed_indirect_buffers.get(mesh.indirect());
+        buffer.len() >= (mesh.offset() + mesh.count())
     }
 
     #[inline(always)]
@@ -216,7 +229,7 @@ impl RenderPath for MultiDrawIndirect {
     ) -> Result<(), DrawIndexedError> {
         let handle = mesh.indirect().clone();
         let buffer = defaults.draw_indexed_indirect_buffers.get(&handle);
-        todo!()
+        active.multi_draw_indexed_indirect(buffer, mesh.offset(), mesh.count())
     }
 
     #[inline(always)]

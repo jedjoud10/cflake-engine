@@ -1,20 +1,21 @@
 use std::thread::Thread;
 
 use ahash::{AHashMap, AHashSet};
-use assets::Assets;
+use assets::{Assets, AsyncHandle};
 use coords::Position;
 use ecs::{Entity, Scene};
 use graphics::{
     combine_into_layered, BufferMode, BufferUsage, DrawIndexedIndirect, DrawIndexedIndirectBuffer,
     GpuPod, Graphics, ImageTexel, LayeredTexture2D, RawTexels, SamplerFilter, SamplerMipMaps,
-    SamplerSettings, SamplerWrap, Texel, TextureMipMaps, TextureMode, TextureUsage, Vertex,
+    SamplerSettings, SamplerWrap, Texel, TextureMipMaps, TextureMode, TextureUsage, Vertex, Buffer,
 };
+use math::{Octree, Node};
 use rand::seq::SliceRandom;
-use rendering::{AlbedoTexel, IndirectMesh, MaterialId, Pipelines, Renderer, Surface};
-use utils::{Handle, Storage, ThreadPool};
+use rendering::{AlbedoTexel, IndirectMesh, MaterialId, Pipelines, Renderer, Surface, MaskTexel, NormalTexel, MultiDrawIndirectMesh, SubSurface};
+use utils::{Handle, Storage};
 
 use crate::{
-    Chunk, ChunkCoords, ChunkState, LayeredAlbedoMap, LayeredMaskMap, LayeredNormalMap,
+    Chunk, ChunkState, LayeredAlbedoMap, LayeredMaskMap, LayeredNormalMap,
     MemoryManager, TerrainMaterial, TerrainSettings, TerrainSubMaterial,
 };
 
@@ -24,15 +25,30 @@ pub struct ChunkManager {
     pub(crate) material: Handle<TerrainMaterial>,
     pub(crate) id: MaterialId<TerrainMaterial>,
 
-    // Buffer that contains the indexed indirect draw commands
-    pub(crate) indexed_indirect_buffer: Handle<DrawIndexedIndirectBuffer>,
+    // Material sub-material handles
+    pub(crate) layered_albedo_map: Option<Handle<LayeredAlbedoMap>>,
+    pub(crate) layered_normal_map: Option<Handle<LayeredNormalMap>>,
+    pub(crate) layered_mask_map: Option<Handle<LayeredMaskMap>>,
 
-    // HashSet of the currently visible chunk coordinates
-    pub(crate) chunks: AHashSet<ChunkCoords>,
+    // Octree used for chunk generation
+    pub(crate) octree: Octree,
+    pub(crate) entities: AHashMap<Node, Entity>,
 
-    // Hashmap for each chunk entity
-    pub(crate) entities: AHashMap<ChunkCoords, Entity>,
-    pub(crate) viewer: Option<(Entity, ChunkCoords, vek::Quaternion<f32>)>,
+    // Keep track of the number of generated and target children each parent has
+    pub(crate) children_count: AHashMap<Node, (usize, usize)>,
+
+    // Keeps track of the last chunk entity (and node) that we generated (last frame)
+    // If we did not generate a chunk last frame this will be None
+    pub(crate) last_chunk_generated: Option<Entity>,
+
+    // Single entity that contains multiple meshes that represent the terrain
+    pub(crate) global_draw_entity: Entity,
+
+    // Buffer to store the position and scale of each chunk
+    pub(crate) position_scaling_buffers: Vec<Buffer<vek::Vec4<f32>>>,
+
+    // Viewer (camera) position
+    pub(crate) viewer: Option<(Entity, vek::Vec3<f32>, vek::Quaternion<f32>)>,
 }
 
 impl ChunkManager {
@@ -41,201 +57,185 @@ impl ChunkManager {
     pub(crate) fn new(
         assets: &Assets,
         graphics: &Graphics,
-        settings: &mut TerrainSettings,
         memory: &MemoryManager,
         scene: &mut Scene,
-        indirect_meshes: &mut Storage<IndirectMesh>,
-        indirect_buffers: &mut Storage<DrawIndexedIndirectBuffer>,
+        settings: &mut TerrainSettings,
         materials: &mut Storage<TerrainMaterial>,
         layered_albedo_maps: &mut Storage<LayeredAlbedoMap>,
         layered_normal_maps: &mut Storage<LayeredNormalMap>,
         layered_mask_maps: &mut Storage<LayeredMaskMap>,
         pipelines: &mut Pipelines,
-        threadpool: &mut ThreadPool,
     ) -> Self {
-        // Create ONE buffer that will store the indirect arguments
-        let indexed_indirect_buffer = indirect_buffers.insert(
-            DrawIndexedIndirectBuffer::splatted(
-                graphics,
-                settings.chunk_count,
-                DrawIndexedIndirect {
-                    vertex_count: 0,
-                    instance_count: 1,
-                    base_index: 0,
-                    vertex_offset: 0,
-                    base_instance: 0,
-                },
-                BufferMode::Dynamic,
-                BufferUsage::STORAGE | BufferUsage::WRITE,
-            )
-            .unwrap(),
-        );
+        // Textures that we will load
+        let mut layered_albedo_map: Option<LayeredAlbedoMap> = None;
+        let mut layered_normal_map: Option<LayeredNormalMap> = None;
+        let mut layered_mask_map: Option<LayeredMaskMap> = None;
 
-        // Create vector of indices, and shuffle it
-        let mut vector = (0..(settings.chunk_count)).into_iter().collect::<Vec<_>>();
-        let mut rng = rand::thread_rng();
-        vector.shuffle(&mut rng);
+        // Load the raw texels asynchronously
+        let raw_albedo_texels = load_raw_texels_handles::<AlbedoTexel>(&assets, &settings, |x| &x.diffuse);
+        let raw_normal_texels = load_raw_texels_handles::<NormalTexel>(&assets, &settings, |x| &x.normal);
+        let raw_mask_texels = load_raw_texels_handles::<MaskTexel>(&assets, &settings, |x| &x.mask);
 
-        // Create the indirect meshes and fetch their handles, but keep it as an iterator
-        let indirect_meshes = vector.iter().map(|i| {
-            // Get the allocation index for this chunk
-            let allocation =
-                ((*i as f32) / (settings.chunks_per_allocation as f32)).floor() as usize;
+        // Wait till we load ALL the raw texels
+        let raw_albedo_texels = raw_albedo_texels.map(|handles| assets.wait_from_iter(handles));
+        let raw_normal_texels = raw_normal_texels.map(|handles| assets.wait_from_iter(handles));
+        let raw_mask_texels = raw_mask_texels.map(|handles| assets.wait_from_iter(handles));
 
-            // Get the vertex and triangle buffers that will be shared for this group
-            let tex_coord_buffer = &memory.shared_tex_coord_buffers[allocation];
-            let triangle_buffer = &memory.shared_triangle_buffers[allocation];
+        // Get rid of ze errors
+        let raw_albedo_texels = raw_albedo_texels.map(|x| x.into_iter().collect::<Result<Vec<_>, _>>().unwrap());
+        let raw_normal_texels = raw_normal_texels.map(|x| x.into_iter().collect::<Result<Vec<_>, _>>().unwrap());
+        let raw_mask_texels = raw_mask_texels.map(|x| x.into_iter().collect::<Result<Vec<_>, _>>().unwrap());
 
-            // Create the indirect mesh
-            let mut mesh = IndirectMesh::from_handles(
-                None,
-                None,
-                None,
-                Some(tex_coord_buffer.clone()),
-                triangle_buffer.clone(),
-                indexed_indirect_buffer.clone(),
-                *i,
-            );
+        rayon::scope(|scope| {
+            // Create a layered texture 2D that contains the diffuse maps
+            scope.spawn(|_| {         
+                layered_albedo_map = load_layered_texture(
+                    &graphics,
+                    raw_albedo_texels,
+                );
+            });
 
-            // Set the bounding box of the mesh before hand
-            mesh.set_aabb(Some(math::Aabb {
-                min: vek::Vec3::zero(),
-                max: vek::Vec3::one() * settings.size as f32,
-            }));
+            // Create a layered texture 2D that contains the normal maps
+            scope.spawn(|_| { 
+                layered_normal_map = load_layered_texture(
+                    &graphics,
+                    raw_normal_texels,
+                );
+            });
 
-            // Insert the mesh into the storage
-            indirect_meshes.insert(mesh)
+            // Create a layered texture 2D that contains the mask maps
+            scope.spawn(|_| { 
+                layered_mask_map = load_layered_texture(
+                    &graphics,
+                    raw_mask_texels
+                );
+            });
         });
 
-        // Create a layered texture 2D that contains the diffuse maps
-        let layered_albedo_map = load_layered_texture(
-            &settings,
-            &assets,
-            &graphics,
-            layered_albedo_maps,
-            |x| &x.diffuse,
-            threadpool,
-        );
-
-        // Create a layered texture 2D that contains the normal maps
-        let layered_normal_map = load_layered_texture(
-            &settings,
-            &assets,
-            &graphics,
-            layered_normal_maps,
-            |x| &x.normal,
-            threadpool,
-        );
-
-        // Create a layered texture 2D that contains the mask maps
-        let layered_mask_map = load_layered_texture(
-            &settings,
-            &assets,
-            &graphics,
-            layered_mask_maps,
-            |x| &x.mask,
-            threadpool,
-        );
-
-        // Create a new material
-        let material = TerrainMaterial {
-            layered_albedo_map,
-            layered_normal_map,
-            layered_mask_map,
-        };
+        // After creating the textures, convert them to handles
+        let layered_albedo_map = layered_albedo_map.map(|x| layered_albedo_maps.insert(x));
+        let layered_normal_map = layered_normal_map.map(|x| layered_normal_maps.insert(x));
+        let layered_mask_map = layered_mask_map.map(|x| layered_mask_maps.insert(x)); 
 
         // Initial value for the terrain material
+        let material = TerrainMaterial;
         let material = materials.insert(material);
 
         // Material Id
         let id = pipelines
             .register_with(graphics, &*settings, assets)
             .unwrap();
+        
+        // Convert the newly created meshes to multiple sub-surfaces
+        let subsurfaces = memory.allocation_meshes.iter().map(|mesh| SubSurface {
+            mesh: mesh.clone(),
+            material: material.clone(),
+        });
 
-        // Add the required chunk entities
-        scene.extend_from_iter(vector.iter().zip(indirect_meshes).map(|(i, mesh)| {
-            // Create the surface for rendering
-            let mut surface = Surface::new(mesh.clone(), material.clone(), id.clone());
+        // Create one whole "terrain" surface
+        let surface = Surface {
+            subsurfaces: subsurfaces.collect(),
+            visible: true,
+            culled: false,
+            shadow_caster: true,
+            shadow_receiver: true,
+            shadow_culled: false,
+            id: id.clone(),
+        };
 
-            // Hide the surface at first
-            surface.visible = false;
+        // Create the global terrain renderer entity
+        let global_draw_entity = scene.insert((Renderer::default(), surface));
 
-            // Create a renderer an a position component
-            let mut renderer = Renderer::default();
-            renderer.instant_initialized = None;
-            let position = Position::default();
-
-            // Indices *should* be shuffled now
-            let allocation = i / settings.chunks_per_allocation;
-            let local_index = i % settings.chunks_per_allocation;
-            let global_index = *i;
-
-            // Create the chunk component
-            let chunk = Chunk {
-                state: ChunkState::Free,
-                coords: ChunkCoords::zero(),
-                allocation,
-                local_index,
-                global_index,
-                priority: f32::MIN,
-                ranges: None,
-            };
-
-            // Create the bundle
-            (surface, renderer, position, chunk)
+        // Custom octree heuristic
+        let size = settings.size;
+        let heuristic = math::OctreeHeuristic::Boxed(Box::new(move |target, node| {
+            if node.size() == size * 2 {
+                // High resolution
+                math::aabb_sphere(&node.aabb(), &math::Sphere {
+                    center: *target,
+                    radius: (size as f32 * 1.0),
+                })
+            } else if node.size() == size * 4 {
+                // Medium resolution
+                math::aabb_sphere(&node.aabb(), &math::Sphere {
+                    center: *target,
+                    radius: size as f32 * 2.0,
+                })
+            } else if node.size() == size * 8 {
+                // Medium resolution
+                math::aabb_sphere(&node.aabb(), &math::Sphere {
+                    center: *target,
+                    radius: size as f32 * 4.0,
+                }) 
+            } else {
+                // Low resolution
+                true
+            }
         }));
+
+        // Create an octree for LOD chunk generation
+        let octree = Octree::new(settings.max_depth, settings.size, heuristic);
+
+        let position_scaling_buffers = (0..settings.allocation_count).into_iter().map(|_| create_position_scaling_buffer(graphics)).collect::<Vec<_>>();
 
         // Create the chunk manager
         Self {
+            last_chunk_generated: None,
             material,
             id,
-            chunks: Default::default(),
-            entities: Default::default(),
             viewer: None,
-            indexed_indirect_buffer,
+            octree,
+            entities: Default::default(),
+            children_count: Default::default(),
+            global_draw_entity,
+            position_scaling_buffers,
+            layered_albedo_map,
+            layered_normal_map,
+            layered_mask_map,
         }
     }
 }
 
-// Load a 2D layered texture for the given texel type and callback (to get the name of asset files)
-fn load_layered_texture<T: ImageTexel>(
-    settings: &TerrainSettings,
+// Create the buffer that will store the positions and scaling
+fn create_position_scaling_buffer(graphics: &Graphics) -> Buffer<vek::Vec4<f32>> {
+    Buffer::from_slice(
+        graphics,
+        &[],
+        BufferMode::Resizable,
+        BufferUsage::COPY_SRC | BufferUsage::COPY_DST | BufferUsage::WRITE | BufferUsage::STORAGE
+    ).unwrap()
+}
+
+// Load the raw texels asynchronously using our asset system
+fn load_raw_texels_handles<T: ImageTexel>(
     assets: &Assets,
-    graphics: &Graphics,
-    storage: &mut Storage<LayeredTexture2D<T>>,
+    settings: &TerrainSettings,
     get_name_callback: impl Fn(&TerrainSubMaterial) -> &str,
-    threadpool: &mut ThreadPool,
-) -> Option<Handle<LayeredTexture2D<T>>> {
+) -> Option<Vec<AsyncHandle<RawTexels<T>>>> {
     let paths = settings
         .sub_materials
         .as_ref()?
         .iter()
         .map(|sub| get_name_callback(&sub))
         .collect::<Vec<_>>();
+    Some(assets.async_load_from_iter::<RawTexels<T>>(paths))
+}
 
-    let loaded = assets.async_load_from_iter::<RawTexels<T>>(paths, threadpool);
-
-    let raw = assets
-        .wait_from_iter(loaded)
-        .into_iter()
-        .map(|x| x.unwrap())
-        .collect::<Vec<_>>();
-
-    Some(
-        storage.insert(
-            combine_into_layered(
-                graphics,
-                raw,
-                Some(SamplerSettings {
-                    filter: SamplerFilter::Linear,
-                    wrap: SamplerWrap::Repeat,
-                    mipmaps: SamplerMipMaps::Auto,
-                }),
-                TextureMipMaps::Manual { mips: &[] },
-                TextureMode::Dynamic,
-                TextureUsage::SAMPLED | TextureUsage::COPY_DST,
-            )
-            .unwrap(),
-        ),
-    )
+// Load a 2D layered texture for the given texel type and the multitude of raw texels
+fn load_layered_texture<T: ImageTexel>(
+    graphics: &Graphics,
+    raw: Option<Vec<RawTexels<T>>>,
+) -> Option<LayeredTexture2D<T>> {
+    raw.map(|raw| combine_into_layered(
+        graphics,
+        raw,
+        Some(SamplerSettings {
+            filter: SamplerFilter::Linear,
+            wrap: SamplerWrap::Repeat,
+            mipmaps: SamplerMipMaps::Auto,
+        }),
+        TextureMipMaps::Manual { mips: &[] },
+        TextureMode::Dynamic,
+        TextureUsage::SAMPLED | TextureUsage::COPY_DST,
+    ).unwrap())
 }

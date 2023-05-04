@@ -245,9 +245,21 @@ impl Mesh<MultiDrawIndirect> {
         self.args.offset
     }
 
+    // Get the element offset within the DrawIndexedIndirectBuffer mutably
+    // If offset + count is greater than the number of elements contained within the indexed indirect buffer the program will panic
+    pub fn offset_mut(&mut self) -> &mut usize {
+        &mut self.args.offset
+    }
+
     // Get the number of draw calls that will be submitted by the GPU
     pub fn count(&self) -> usize {
         self.args.count
+    }
+
+    // Get the number od draw calls that will be submitted by the GPU mutably
+    // If offset + count is greater than the number of elements contained within the indexed indirect buffer the program will panic
+    pub fn count_mut(&mut self) -> &mut usize {
+        &mut self.args.count
     }
 }
 

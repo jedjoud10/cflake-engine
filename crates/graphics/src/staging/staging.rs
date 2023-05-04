@@ -1,5 +1,6 @@
-use crate::{GpuPod, Graphics, StagingView, StagingViewWrite};
+use crate::{GpuPod, Graphics, StagingView, StagingViewWrite, TextureStagingView, TextureStagingViewWrite};
 use parking_lot::Mutex;
+use vek::num_integer::Integer;
 use std::{
     marker::PhantomData,
     num::{NonZeroU32, NonZeroU64},
@@ -14,7 +15,9 @@ use wgpu::{
 
 // Helper struct that will temporarily store mapped buffers so we can have
 // StagingView / StagingViewMut that we can read and write from
-// This will re-use unmapped buffers to avoid many many buffer creations
+// This will re-use unmapped buffers to avoid many buffer creations
+// Allows us to map and read/write buffers and textures
+// TODO: Make it submit the current recorder only when it was written to recently
 pub struct StagingPool {
     // Keeps track of mapping buffers
     pub(crate) allocations: Arc<ConcVec<Buffer>>,
@@ -54,7 +57,7 @@ impl StagingPool {
 
     // Tries to find a free buffer that we can use
     // Might allocate more buffers than needed based on capacity
-    fn find_or_allocate(
+    pub(crate) fn find_or_allocate(
         &self,
         graphics: &Graphics,
         capacity: u64,
@@ -66,7 +69,7 @@ impl StagingPool {
 
         // Try to find a free buffer
         // If that's not possible, simply create a new one
-        let (i, buffer) = self.allocations.iter().enumerate().find(|(i, buffer)| {
+        self.allocations.iter().enumerate().find(|(i, buffer)| {
             let cap = buffer.size() >= capacity;
             let mode = match mode {
                 MapMode::Read => buffer.usage().contains(read),
@@ -75,11 +78,11 @@ impl StagingPool {
             let free = !self.used.get(*i, Ordering::Relaxed);
             cap && mode && free
         }).unwrap_or_else(|| {
-            log::warn!("Did not find staging buffer with the proper requirements [cap = {capacity}b, mode = {mode:?}]");
+            log::trace!("did not find staging buffer with the proper requirements [cap = {capacity}b, mode = {mode:?}]");
             
             // Scale up the capacity (so we don't have to allocate a new block anytime soon)
             let capacity = (capacity * 4).next_power_of_two();
-            let capacity = capacity.max(256);
+            let capacity = capacity.max(256).min(graphics.device().limits().max_buffer_size);
 
             // Create the buffer descriptor for a new buffer
             let desc = wgpu::BufferDescriptor {
@@ -94,66 +97,52 @@ impl StagingPool {
 
             // Create the new buffer
             let buffer = graphics.device().create_buffer(&desc);
-            log::warn!("Allocating new staging buffer [cap = {capacity}b, mode = {mode:?}]");
+            log::trace!("allocating new staging buffer [cap = {capacity}b, mode = {mode:?}]");
             let index = self.allocations.push(buffer);
             (index, &self.allocations[index])
-        });
-
-        // Also add the "used" buffer state to the state tracker since we will use the buffer
-        self.used.set(i, Ordering::Relaxed);
-        (i, buffer)
+        })
     }
 }
 
 impl StagingPool {
-    // Map a target for reading only (maps an intermediate staging buffer)
-    // Src target must have the COPY_SRC buffer usage flag
+    // Map a buffer for reading only (maps an intermediate staging buffer)
+    // Src buffer must have the COPY_SRC buffer usage flag
     pub fn map_buffer_read<'a>(
         &'a self,
         graphics: &'a Graphics,
         buffer: &Buffer,
         offset: u64,
         size: u64,
-    ) -> Option<StagingView<'a>> {
-        assert!(buffer.usage().contains(wgpu::BufferUsages::COPY_SRC));
-        log::trace!("map buffer read: offset: {offset}, size: {size}");
+    ) -> StagingView<'a> {
+        log::trace!("map buffer read: offset: \n{offset}\nsize: {size}");
 
         // Get a encoder (reused or not to perform a copy)
-        let mut encoder = graphics.acquire();
         let (i, staging) = self.find_or_allocate(graphics, size, MapMode::Read);
-
+        self.used.set(i, Ordering::Relaxed);
+        
         // Copy to staging first
+        let mut encoder = graphics.acquire();
         encoder.copy_buffer_to_buffer(buffer, offset, staging, 0, size);
-
-        // Put the encoder back into the cache, and submit ALL encoders
         graphics.reuse([encoder]);
         graphics.submit(false);
 
-        // Map the staging buffer
-        type MapResult = Result<(), wgpu::BufferAsyncError>;
-        let (tx, rx) = std::sync::mpsc::channel::<MapResult>();
+        // Read the staging buffer
+        let view = super::read_staging_buffer_view(
+            graphics,
+            staging,
+            0,
+            size
+        );
 
-        // Map synchronously
-        let slice = staging.slice(0..size);
-        slice.map_async(wgpu::MapMode::Read, move |res| tx.send(res).unwrap());
-        log::trace!("map buffer read: map async called");
-        graphics.device().poll(wgpu::Maintain::Wait);
-
-        // Wait until the buffer is mapped, then read from the buffer
-        if let Ok(Ok(_)) = rx.recv() {
-            log::trace!("map buffer read: map async resolved, rx received");
-            return Some(StagingView {
-                index: i,
-                used: &&self.used,
-                staging,
-                view: Some(slice.get_mapped_range()),
-            });
-        } else {
-            panic!("Could not receive read map async")
+        StagingView {
+            index: i,
+            used: &self.used,
+            staging,
+            view: Some(view),
         }
     }
 
-    // Map a target for reading only
+    // Map a buffer for asynchronous reading only
     // Src target must have the COPY_SRC buffer usage flag
     // The mapping of the buffer will not occur immediately
     pub fn map_buffer_read_async(
@@ -162,42 +151,29 @@ impl StagingPool {
         buffer: &Buffer,
         offset: u64,
         size: u64,
-        callback: impl FnOnce(&[u8]) + Sync + Send + 'static
-    ) {
-        assert!(buffer.usage().contains(wgpu::BufferUsages::COPY_SRC));
+        callback: impl FnOnce(&[u8]) + Send + 'static
+    ) {       
+        log::trace!("map buffer read sync: offset: \n{offset}\nsize: {size}");
         
         // Get a encoder (reused or not to perform a copy)
-        let mut encoder = graphics.acquire();
         let (i, staging) = self.find_or_allocate(graphics, size, MapMode::Read);
-
+        self.used.set(i, Ordering::Relaxed);
+        
         // Copy to staging first
+        let mut encoder = graphics.acquire();
         encoder.copy_buffer_to_buffer(buffer, offset, staging, 0, size);
         graphics.reuse([encoder]);
         graphics.submit(false);
 
-        // Map asynchronously
-        let slice = staging.slice(0..size);
-        let allocations = self.allocations.clone();
-        let allocations2 = allocations.clone();
-        let must_unmap = self.must_unmap.clone();
-        slice.map_async(wgpu::MapMode::Read, move |res| {
-            log::trace!("map buffer read: map async resolved");
-            res.unwrap();
-
-            // Fetch staging buffer from self
-            let buffer = &allocations2[i];
-
-            // Call the callback
-            let slice = buffer.slice(0..size);
-            let bytes = &*slice.get_mapped_range();
-            callback(bytes);
-
-            // We must mark this buffer as a "must unmap" buffer
-            must_unmap.set(i, Ordering::Relaxed);
-        });
-
-        drop(slice);
-        log::trace!("map buffer read async: map async called");
+        // Read the staging buffer asynchronously
+        super::async_read_staging_buffer(
+            self.allocations.clone(),
+            self.must_unmap.clone(),
+            i,
+            0,
+            size,
+            callback
+        );    
     }
 
     // Map a target for writing only
@@ -209,7 +185,7 @@ impl StagingPool {
         offset: u64,
         size: u64,
     ) -> Option<StagingViewWrite<'a>> {
-        log::trace!("map buffer write: offset: {offset}, size: {size}");
+        log::trace!("map buffer write: offset: \n{offset}\nsize: {size}");
         let size = NonZeroU64::new(size);
         let write = graphics
             .queue()
@@ -227,14 +203,12 @@ impl StagingPool {
         size: u64,
         src: &[u8],
     ) {
-        debug_assert_eq!(size as usize, src.len());
-        log::trace!("write buffer: offset: {offset}, size: {size}");
+        log::trace!("write buffer: offset: \n{offset}\nsize: {size}");
         graphics.queue().write_buffer(buffer, offset, src);
     }
 
     // Reads the given buffer into the destination buffer
     // Will stall the CPU, since this is waiting for GPU data
-    // TODO: Make it submit the current recorder only when it was written to recently
     pub fn read_buffer<'a>(
         &'a self,
         graphics: &'a Graphics,
@@ -243,40 +217,9 @@ impl StagingPool {
         size: u64,
         dst: &mut [u8],
     ) {
-        assert_eq!(size as usize, dst.len());
-        assert!(buffer.usage().contains(wgpu::BufferUsages::COPY_SRC));
-        log::trace!("read buffer: offset: {offset}, size: {size}");
-
-        // Get a encoder (reused or not to perform a copy)
-        let mut encoder = graphics.acquire();
-        let (i, staging) = self.find_or_allocate(graphics, size, MapMode::Read);
-
-        // Copy to staging first
-        encoder.copy_buffer_to_buffer(buffer, offset, staging, 0, size);
-
-        // Put the encoder back into the cache, and submit ALL encoders
-        graphics.reuse([encoder]);
-        graphics.submit(false);
-
-        // Map the staging buffer
-        type MapResult = Result<(), wgpu::BufferAsyncError>;
-        let (tx, rx) = std::sync::mpsc::channel::<MapResult>();
-
-        // Map synchronously
-        let slice = staging.slice(0..size);
-        slice.map_async(wgpu::MapMode::Read, move |res| tx.send(res).unwrap());
-        graphics.device().poll(wgpu::Maintain::Poll);
-
-        // Wait until the buffer is mapped, then read from the buffer
-        if let Ok(Ok(_)) = rx.recv() {
-            dst.copy_from_slice(&slice.get_mapped_range());
-            staging.unmap();
-        } else {
-            panic!("Could not receive read map async")
-        }
-
-        // Reset the state of the staging buffer
-        self.used.remove(i, Ordering::Relaxed);
+        log::trace!("read buffer: offset: \n{offset}\nsize: {size}");
+        let view = self.map_buffer_read(graphics, buffer, offset, size);
+        dst.copy_from_slice(view.as_ref());
     }
 }
 
@@ -286,8 +229,54 @@ impl StagingPool {
     pub fn map_texture_read<'a>(
         &'a self,
         graphics: &'a Graphics,
-        texture: &wgpu::Texture,
-    ) -> Option<StagingView<'a>> {
+        image_copy_texture: wgpu::ImageCopyTexture,
+        data_layout: wgpu::ImageDataLayout,
+        extent: wgpu::Extent3d,
+        size: u64,
+    ) -> TextureStagingView<'a> {
+        log::trace!("map texture read: \nimage copy texture: {image_copy_texture:#?}\ndata layout: {data_layout:#?}\nextent: {extent:#?}");
+
+        // Get a encoder (reused or not to perform a copy)
+        let (i, staging) = self.find_or_allocate(graphics, size, MapMode::Read);
+        self.used.set(i, Ordering::Relaxed);
+
+        // Copy to staging first
+        let mut encoder = graphics.acquire();
+        assert!(data_layout.bytes_per_row.unwrap_or_default().is_multiple_of(&256));
+        encoder.copy_texture_to_buffer(image_copy_texture, wgpu::ImageCopyBuffer {
+            buffer: staging,
+            layout: data_layout,
+        }, extent);
+        graphics.reuse([encoder]);
+        graphics.submit(false);
+
+        // Read the staging buffer
+        let view = super::read_staging_buffer_view(
+            graphics,
+            staging,
+            0,
+            size
+        );
+        
+        TextureStagingView {
+            index: i,
+            used: &self.used,
+            staging,
+            view: Some(view),
+        }
+    }
+
+    // Map a texture for asynchronous reading only
+    // Src target must have the COPY_SRC texture usage flag
+    // The mapping of the texture will not occur immediately
+    pub fn map_texture_read_async<'a>(
+        &self,
+        graphics: &Graphics,
+        image_copy_texture: wgpu::ImageCopyTexture,
+        data_layout: wgpu::ImageDataLayout,
+        extent: wgpu::Extent3d,
+        callback: impl FnOnce(&[u8]) + Sync + Send + 'static
+    ) {
         todo!()
     }
 
@@ -296,8 +285,10 @@ impl StagingPool {
     pub fn map_texture_write<'a>(
         &'a self,
         graphics: &'a Graphics,
-        texture: &'a wgpu::Texture,
-    ) -> Option<StagingViewWrite<'a>> {
+        image_copy_texture: wgpu::ImageCopyTexture,
+        data_layout: wgpu::ImageDataLayout,
+        extent: wgpu::Extent3d,
+    ) -> TextureStagingViewWrite<'a> {
         todo!()
     }
 
@@ -318,12 +309,16 @@ impl StagingPool {
 
     // Reads the given buffer into the destination buffer
     // Will stall the CPU, since this is waiting for GPU data
-    // TODO: Make it submit the current recorder only when it was written to recently
     pub fn read_texture<'a>(
         &'a self,
         graphics: &'a Graphics,
-        texture: &wgpu::Texture,
+        image_copy_texture: wgpu::ImageCopyTexture,
+        data_layout: wgpu::ImageDataLayout,
+        extent: wgpu::Extent3d,
         dst: &mut [u8],
     ) {
+        log::trace!("map texture read: \nimage copy texture: {image_copy_texture:#?}\ndata layout: {data_layout:#?}\nextent: {extent:#?}");
+        let view = self.map_texture_read(graphics, image_copy_texture, data_layout, extent, dst.len() as u64);
+        dst.copy_from_slice(view.as_ref());
     }
 }

@@ -100,3 +100,14 @@ mod shapes {
         }
     }
 }
+
+#[cfg(test)]
+mod octree {
+    use crate::{Octree, OctreeHeuristic};
+
+    #[test]
+    fn basic() {
+        let mut octree = Octree::new(8, 4, OctreeHeuristic::Point);
+        assert_eq!(octree.size(), 1024);
+    }
+}

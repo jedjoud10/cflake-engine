@@ -3,7 +3,7 @@ use std::collections::hash_map::Entry;
 use crate::{Axis, ButtonState, Input};
 use gilrs::PowerInfo;
 use winit::event::{DeviceEvent, ElementState};
-use world::{post_user, user, System, World};
+use world::{post_user, user, System, World, WindowEvent};
 
 // Init event (called once at the start of program)
 fn init(world: &mut World) {
@@ -16,8 +16,38 @@ fn init(world: &mut World) {
     });
 }
 
+// Winit window event since it seems that DeviceEvent::Key is broken on other machines
+// TODO: Report bug
+fn window_event(world: &mut World, ev: &mut WindowEvent) {
+    let mut input = world.get_mut::<Input>().unwrap();
+
+    match ev {
+        WindowEvent::KeyboardInput { input: key, .. } => {
+            if let Some(keycode) = key.virtual_keycode {
+                let button = crate::from_winit_vkc(keycode);
+                match input.keys.entry(button) {
+                    Entry::Occupied(mut current) => {
+                        // Check if the key is "down" (either pressed or held)
+                        let down =
+                            matches!(*current.get(), ButtonState::Pressed | ButtonState::Held);
+
+                        // If the key is pressed while it is currently down, it repeated itself, and we must ignore it
+                        if down ^ (key.state == ElementState::Pressed) {
+                            current.insert(key.state.into());
+                        }
+                    }
+                    Entry::Vacant(v) => {
+                        v.insert(key.state.into());
+                    }
+                }
+            }
+        },
+        _ => {}
+    }
+}
+
 // Winit device event (called by handler when needed)
-fn event(world: &mut World, ev: &DeviceEvent) {
+fn device_event(world: &mut World, ev: &DeviceEvent) {
     let mut input = world.get_mut::<Input>().unwrap();
 
     match ev {
@@ -42,28 +72,6 @@ fn event(world: &mut World, ev: &DeviceEvent) {
             input.axii.insert(Axis::MouseScrollDelta, delta);
             let scroll = input.axii.entry(Axis::MouseScroll).or_insert(0.0);
             *scroll += delta;
-        }
-
-        // Update keyboard key states
-        DeviceEvent::Key(key) => {
-            if let Some(keycode) = key.virtual_keycode {
-                let button = crate::from_winit_vkc(keycode);
-                match input.keys.entry(button) {
-                    Entry::Occupied(mut current) => {
-                        // Check if the key is "down" (either pressed or held)
-                        let down =
-                            matches!(*current.get(), ButtonState::Pressed | ButtonState::Held);
-
-                        // If the key is pressed while it is currently down, it repeated itself, and we must ignore it
-                        if down ^ (key.state == ElementState::Pressed) {
-                            current.insert(key.state.into());
-                        }
-                    }
-                    Entry::Vacant(v) => {
-                        v.insert(key.state.into());
-                    }
-                }
-            }
         }
 
         _ => {}
@@ -158,6 +166,7 @@ fn update(world: &mut World) {
 // This system will automatically insert the input resource and update it each frame using the window events
 pub fn system(system: &mut System) {
     system.insert_init(init).before(user);
-    system.insert_device(event).before(user);
+    system.insert_device(device_event).before(user);
+    system.insert_window(window_event).before(user);
     system.insert_update(update).after(post_user);
 }

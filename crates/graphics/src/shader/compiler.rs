@@ -394,7 +394,6 @@ fn compile(
 // Specialize spec constants ourselves cause there's no other way to do it (fuck)
 fn specialize_spec_constants(binary: &mut [u32], constants: &Constants) {
     // Converts a SpecConstant op code to it's specialized variant (Constant)
-    // TODO: Type checking pls
     fn specialize(op_code_index: usize, binary: &mut [u32], defined: SpecConstant) {
         // Get the op code of the spec constant
         let op_code = binary[op_code_index] & 0x0000ffff;

@@ -5,7 +5,7 @@ fn main() {
     App::default()
         .set_app_name("cflake engine mesh example")
         .set_window_fullscreen(true)
-        .set_frame_rate_limit(FrameRateLimit::VSync)
+        //.set_frame_rate_limit(FrameRateLimit::VSync)
         .insert_init(init)
         .insert_update(update)
         .execute();
@@ -17,13 +17,13 @@ fn init(world: &mut World) {
     let assets = world.get::<Assets>().unwrap();
 
     // Setup the assets that will be loaded
-    asset!(assets, "user/scenes/cube1.gltf", "/examples/assets/");
+    asset!(assets, "user/scenes/untitled.glb", "/examples/assets/");
 
     // Load the glTF scene into the world LMAO!!
     let context = GtlfContext::from_world(world).unwrap();
     let settings = GltfSettings::default();
     assets
-        .load::<GltfScene>(("user/scenes/cube1.gltf", settings, context))
+        .load::<GltfScene>(("user/scenes/untitled.glb", settings, context))
         .unwrap();
 
     let graphics = world.get::<Graphics>().unwrap();

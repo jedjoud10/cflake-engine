@@ -145,6 +145,14 @@ pub(super) fn create_bind_group<'b>(
     Ok(Some(bind_group))
 }
 
+// Blud thinks he's a good coder 🤣
+pub trait StorageResource {
+    type Res;
+    type Borrowed;
+    fn into(borrowed: Self::Borrowed) -> Self::Res;
+}
+
+// FIXME: Why do set_storage_* methods not take in a mutable value??
 impl<'a> BindGroup<'a> {
     // Get the entry layout for a specific resource in this bind group
     // Returns None if there is no matching entry layout

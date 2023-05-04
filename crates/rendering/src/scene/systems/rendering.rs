@@ -3,7 +3,7 @@ use std::{mem::size_of, num::NonZeroU8};
 use crate::{
     AlbedoMap, AttributeBuffer, BasicMaterial, Camera, DefaultMaterialResources, DirectionalLight,
     ForwardRenderer, Indirect, MaskMap, Mesh, NormalMap, PhysicallyBasedMaterial, Pipelines,
-    Renderer, SceneUniform, ShadowMapping, SkyMaterial, WindowUniform, MultiDrawIndirectMesh, IndirectMesh,
+    Renderer, SceneUniform, ShadowMapping, SkyMaterial, WindowUniform, MultiDrawIndirectMesh, IndirectMesh, WireframeMaterial, TimingUniform,
 };
 use assets::Assets;
 
@@ -81,6 +81,7 @@ fn init(world: &mut World) {
     world.insert(Storage::<BasicMaterial>::default());
     world.insert(Storage::<SkyMaterial>::default());
     world.insert(Storage::<PhysicallyBasedMaterial>::default());
+    world.insert(Storage::<WireframeMaterial>::default());
     world.insert(albedo_maps);
     world.insert(normal_maps);
     world.insert(mask_maps);
@@ -130,6 +131,16 @@ fn render(world: &mut World) {
     let scene = world.get::<Scene>().unwrap();
     let pipelines = world.get::<Pipelines>().unwrap();
     let time = world.get::<Time>().unwrap();
+    let graphics = world.get::<Graphics>().unwrap();
+
+    // Store the new timing info
+    renderer.timing_buffer.write(&[
+        TimingUniform {
+            frame_count: time.frame_count().try_into().unwrap(),
+            delta_time: time.delta().as_secs_f32(),
+            time_since_startup: time.startup().elapsed().as_secs_f32(),
+        }
+    ],  0).unwrap();
 
     // Needed for direct rendering
     let meshes = world.get::<Storage<Mesh>>().unwrap();
@@ -274,7 +285,7 @@ fn render(world: &mut World) {
 
     // This will iterate over each material pipeline and draw the scene
     for stored in pipelines.iter() {
-        stored.render(world, &mut default, &mut render_pass, renderer.frustum_culling_batch_size);
+        stored.render(world, &mut default, &mut render_pass);
     }
 
     drop(render_pass);

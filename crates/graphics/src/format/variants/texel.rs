@@ -106,7 +106,6 @@ macro_rules! internal_impl_texel {
             type Storage = $storagevec<Self::Base>;
 
             fn size() -> TexelSize {
-                // TODO: Check if this gets resolved at compile time?
                 match <$elem as AnyElement>::ELEMENT_TYPE {
                     ElementType::Compressed(x) => TexelSize::Compressed(x),
                     _ => TexelSize::Uncompressed(
@@ -124,7 +123,6 @@ macro_rules! internal_impl_texel {
             }
 
             fn format() -> TextureFormat {
-                // TODO: Check if this gets resolved at compile time?
                 crate::pick_texture_format(Self::element(), Self::channels()).unwrap()
             }
         }

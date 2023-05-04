@@ -12,8 +12,10 @@ world = { path = "../world" }
 math = { path = "../math" }
 ecs = { path = "../ecs" }
 cpal = "0.14.0"
+rubato = "0.12.0"
 hrtf = "0.8.0"
 wav = "1.0.0"
+rayon = "1.7.0"
 minimp3 = "0.5.1"
 vek = { workspace = true }
 log = { workspace = true }

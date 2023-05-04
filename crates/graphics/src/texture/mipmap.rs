@@ -1,12 +1,13 @@
 use std::{cell::Cell, marker::PhantomData, num::NonZeroU8, ops::DerefMut};
 
 use bytemuck::Zeroable;
+use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
 use super::{Region, Texture};
 use crate::{
     ColorTexel, Extent, LayeredOrigin, MipLevelClearError, MipLevelCopyError, MipLevelReadError,
     MipLevelWriteError, Origin, RenderTarget, Texel, TextureAsTargetError, TextureMipLevelError,
-    TextureSamplerError, TextureUsage,
+    TextureSamplerError, TextureUsage, Conversion,
 };
 
 // This enum tells the texture how exactly it should create it's mipmaps
@@ -69,15 +70,13 @@ pub fn generate_mip_map<T: ColorTexel, E: Extent>(
     let dimension = <E as Extent>::view_dimension();
     let name = utils::pretty_type_name::<T>();
     let levels = extent.levels()?.get() as u32;
-    let mut map = Vec::<Vec<T::Storage>>::with_capacity(levels as usize);
-    let mut temp = extent;
-    let mut base = base.to_vec();
     log::debug!("Creating mip-data (max = {levels})for imported texture {dimension:?}, <{name}>");
 
     // Iterate over the levels and fill them up
     // (like how ceddy weddy fills me up inside >.<)
-    for i in 0..(levels - 1) {
+    let map = (0..(levels - 1)).into_par_iter().map(|i| {
         // Pre-allocate a vector that will contain the downscaled texels
+        let temp = extent.mip_level_dimensions(i as u8);
         let downscaled = extent.mip_level_dimensions(i as u8 + 1);
 
         let mut texels: Vec<<T as Texel>::Storage> =
@@ -113,8 +112,8 @@ pub fn generate_mip_map<T: ColorTexel, E: Extent>(
                 for oz in 0..original.d {
                     // Get the current texel value
                     let texel = base[xyz_to_index(
-                        vek::Vec3::new(ox, oy, oz).as_::<usize>(),
-                        original.as_::<usize>(),
+                        vek::Vec3::new(ox, oy, oz).as_::<usize>() * divide.map(|x| x.pow(i)),
+                        extent.decompose().as_::<usize>(),
                     )];
 
                     // La division est vraiment importante pour qu'on evite un overflow
@@ -131,13 +130,11 @@ pub fn generate_mip_map<T: ColorTexel, E: Extent>(
                 }
             }
         }
-
-        // Overwrite temp buffers
-        temp = downscaled;
-        base[..(downscaled.area() as usize)].copy_from_slice(&texels);
-        map.push(texels);
-    }
-
+        
+        // Return the texels 
+        texels
+    }).collect::<Vec<_>>();
+    
     Some(map)
 }
 

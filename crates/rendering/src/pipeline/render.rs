@@ -98,10 +98,14 @@ pub(super) fn render_surfaces<'r, M: Material>(
                 switched_material_instances = false;
             }
 
-            // Skip rendering if the mesh is invalid
-            let attribute = mesh.vertices().enabled().contains(M::attributes());
-            let validity = <M::RenderPath as RenderPath>::is_valid(mesh);
-            if !(attribute && validity) {
+            // If a mesh is missing attributes just skip
+            if !mesh.vertices().enabled().contains(M::attributes()) {
+                continue;
+            }
+
+            // If a mesh isn't valid we have a problem, not so big but still a problem
+            if !<M::RenderPath as RenderPath>::is_valid(&defaults, mesh) {
+                log::warn!("Mesh invalid! Check buffers or indexed indirect count/offset (normal render pipe)");
                 continue;
             }
 

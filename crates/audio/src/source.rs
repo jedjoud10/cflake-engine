@@ -1,15 +1,15 @@
 use std::sync::Arc;
-
-use crate::OutputStream;
 use cpal::traits::StreamTrait;
 use ecs::Component;
+
+use crate::AudioClip;
 
 // An audio source is a component that produces sound
 // Each audio source is a CPAL stream that will be played
 #[derive(Component)]
 pub struct AudioSource {
-    // Audio stream we have to create
-    pub(crate) builder: Arc<dyn OutputStream>,
+    // Audio clipthat we will play
+    pub(crate) clip: AudioClip,
 
     // These two fields get validated whenever we start playing the audio stream
     pub(crate) stream: Option<cpal::Stream>,
@@ -20,9 +20,9 @@ pub struct AudioSource {
 
 impl AudioSource {
     // Create a new audio source to play, and automatically play it on start
-    pub fn new<S: OutputStream + 'static>(builder: S) -> Self {
+    pub fn new(clip: AudioClip) -> Self {
         Self {
-            builder: Arc::new(builder),
+            clip,
             stream: None,
             playing: true,
         }

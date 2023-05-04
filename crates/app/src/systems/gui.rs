@@ -207,6 +207,9 @@ fn update(world: &mut World) {
                 out_ticks_to_exec = *indeed2;
             });
 
+            let since = time.startup().elapsed().as_secs_f32();
+            ui.label(format!("Seconds since startup: {:.3}", since));
+
             let ms = out_delta * 1000.0;
             ui.label(format!("Delta (ms/f): {:.3}", ms));
 
@@ -265,12 +268,11 @@ fn update(world: &mut World) {
         });
 
     // Terrain stats
-    if let Ok(terrain) = world.get::<Terrain>() {
+    if let Ok(mut terrain) = world.get_mut::<Terrain>() {
         egui::Window::new("Terrain").frame(frame).show(&gui, |ui| {
-            let settings = &terrain.settings;
+            let settings = &mut terrain.settings;
             ui.heading("Manager settings");
             ui.label(format!("Chunk resolution: {}", settings.resolution()));
-            ui.label(format!("Chunk count: {}", settings.chunks_count()));
             ui.label(format!("Is Blocky?: {}", settings.blocky()));
             ui.label(format!("Is Low-Poly?: {}", settings.lowpoly()));
             ui.heading("Memory settings");
@@ -299,14 +301,24 @@ fn update(world: &mut World) {
             ui.label(format!("Pending chunks count: {}", pending));
             ui.label(format!("Generated chunks count: {}", generated));
             ui.label(format!("Visible chunks count: {}", visible));
+
+            ui.horizontal(|ui| {
+                ui.label("Active?: ");
+                ui.add(egui::Checkbox::new(&mut terrain.active, ""));
+            });
         });
     }
 
     // Camera controller settings
-    if let Some(controller) = scene.find_mut::<&mut CameraController>() {
+    if let Some((controller, rotation, position)) = scene.find_mut::<(&mut CameraController, &Rotation, &Position)>() {
         egui::Window::new("Camera Controller")
             .frame(frame)
             .show(&gui, |ui| {
+                ui.label(format!("Forward vector: {:.2}", rotation.forward()));
+                ui.label(format!("Up vector: {:.2}", rotation.up()));
+                ui.label(format!("Right vector: {:.2}", rotation.right()));
+                ui.label(format!("Position: {:.2}", **position));
+
                 ui.horizontal(|ui| {
                     ui.label("Base Speed: ");
                     ui.add(egui::DragValue::new(&mut controller.base_speed));
@@ -362,11 +374,6 @@ fn update(world: &mut World) {
                             ui.end_row();
                         }
                     });
-
-                ui.horizontal(|ui| {
-                    ui.label("Frustum Culling Batch Size: ");
-                    ui.add(egui::DragValue::new(&mut shadowmapping.frustum_culling_batch_size));
-                });
             });
     }
 
@@ -375,10 +382,6 @@ fn update(world: &mut World) {
         egui::Window::new("Forward Rendering")
         .frame(frame)
         .show(&gui, |ui| {
-            ui.horizontal(|ui| {
-                ui.label("Frustum Culling Batch Size: ");
-                ui.add(egui::DragValue::new(&mut renderer.frustum_culling_batch_size));
-            });
         });
     }
 

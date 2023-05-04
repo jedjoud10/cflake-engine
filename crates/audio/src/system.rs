@@ -16,10 +16,16 @@ fn update(world: &mut World) {
         player.unwrap()
     };
 
-    // Iterate through all the audio sources that have been changed
-    for source in scene.query_mut::<&mut AudioSource>() {
+    // Iterate through all the audio sources that have been changed or added
+    let filter = ecs::added::<AudioSource>() | ecs::modified::<AudioSource>();
+    for source in scene.query_mut_with::<&mut AudioSource>(filter) {
         if source.stream.is_none() && source.playing {
-            let stream = source.builder.build_output_stream(player).unwrap();
+            let stream = super::build_clip_output_stream(
+                &source.clip,
+                player
+            );
+            let stream = stream.unwrap();
+            cpal::traits::StreamTrait::play(&stream).unwrap();
             source.stream = Some(stream);
         }
     }

@@ -15,12 +15,15 @@ fn init(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
     scene.insert(AudioPlayer::new().unwrap());
 
+    asset!(assets, "user/audio/bruh.wav", "/examples/assets/");
+    asset!(assets, "user/audio/nicolas.mp3", "/examples/assets/");
+
     // Load the clips from their relative paths
     let clip1 = assets
-        .load::<AudioClip<i16>>("user/audio/bruh.wav")
+        .load::<AudioClip>("user/audio/bruh.wav")
         .unwrap();
     let clip2 = assets
-        .load::<AudioClip<i16>>("user/audio/nicolas.mp3")
+        .load::<AudioClip>("user/audio/nicolas.mp3")
         .unwrap();
 
     // Play both clips at the same time

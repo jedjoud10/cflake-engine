@@ -1,10 +1,10 @@
 #version 460 core
 layout(location = 0) out vec4 frag;
-#define lowpoly
 
 // Data given by the vertex shader
 layout(location = 0) in vec3 m_position;
-layout(location = 1) in vec3 m_normal;
+layout(location = 1) in vec3 m_local_position;
+layout(location = 2) in vec3 m_normal;
 
 // Camera, scene, and shadowmap shared objects
 #include <engine/shaders/common/camera.glsl>
@@ -17,23 +17,18 @@ layout(location = 1) in vec3 m_normal;
 #include <engine/shaders/math/dither.glsl>
 #include <engine/shaders/math/triplanar.glsl>
 
-// Push constants for the material data
-layout(push_constant) uniform PushConstants {
-	layout(offset = 64) float fade;
-} material;
-
 #ifdef submaterials
 // Albedo / diffuse map texture array
-layout(set = 1, binding = 0) uniform texture2DArray layered_albedo_map;
-layout(set = 1, binding = 1) uniform sampler layered_albedo_map_sampler;
+layout(set = 0, binding = 7) uniform texture2DArray layered_albedo_map;
+layout(set = 0, binding = 8) uniform sampler layered_albedo_map_sampler;
 
 // Normal map texture array
-layout(set = 1, binding = 2) uniform texture2DArray layered_normal_map;
-layout(set = 1, binding = 3) uniform sampler layered_normal_map_sampler;
+layout(set = 0, binding = 9) uniform texture2DArray layered_normal_map;
+layout(set = 0, binding = 10) uniform sampler layered_normal_map_sampler;
 
 // Mask map texture array
-layout(set = 1, binding = 4) uniform texture2DArray layered_mask_map;
-layout(set = 1, binding = 5) uniform sampler layered_mask_map_sampler;
+layout(set = 0, binding = 11) uniform texture2DArray layered_mask_map;
+layout(set = 0, binding = 12) uniform sampler layered_mask_map_sampler;
 
 // Triplanar mapping offset and UV scale
 const float offset = 0.0;
@@ -88,8 +83,8 @@ vec3 triplanar_normal(float layer, vec3 normal) {
 #endif
 
 void main() {
-	/*
 	// We do a bit of fading
+	/*
 	float fade = min(material.fade, 1);
 	if (dither(ivec2(gl_FragCoord.xy), fade)) {
 		discard;
@@ -107,7 +102,6 @@ void main() {
 	// We can handle up to 16 materials if we use 1 byte per channel
 	// so 4 channels per f32, and 4 f32 per splatmap texture
 	// there's probably a way to fit even *more* textures into there too
-
 	#ifdef submaterials
 	vec3 albedo1 = triplanar_albedo(float(0), surface_normal);
 	vec3 mask1 = triplanar_mask(float(0), surface_normal);
@@ -118,7 +112,7 @@ void main() {
 	vec3 normal2 = triplanar_normal(float(1), surface_normal);
 
 	float blending_factor = 1 - clamp((surface_normal.y - 0.7) * 6, 0, 1);
-
+	
 	vec3 albedo = mix(albedo1, albedo2, blending_factor);
 	vec3 mask = mix(mask1, mask2, blending_factor);
 	vec3 normal = mix(normal1, normal2, blending_factor);
@@ -131,8 +125,7 @@ void main() {
 	vec3 albedo = mix(grass, rock, blending_factor);
 	vec3 mask = vec3(1.0, 1.0, 0.0);
 	#endif
-
-
+	
 	// Compute PBR values
 	mask *= vec3(pow(mask.r + 0.2, 4), 1.3, 0.4);
 	float roughness = clamp(mask.g, 0.02, 1.0);
