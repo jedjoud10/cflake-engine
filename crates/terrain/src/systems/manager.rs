@@ -99,9 +99,9 @@ fn update(world: &mut World) {
                 let mut entry = scene.entry_mut(entity).unwrap();
                 
                 // Set the chunk as "free" and hide it
-                let (chunk, surface) = entry.as_query_mut::<(&mut Chunk, &mut Surface<TerrainMaterial>)>().unwrap();
+                let chunk = entry.as_query_mut::<&mut Chunk>().unwrap();
                 chunk.state = ChunkState::Free;
-                surface.visible = false;
+                //surface.visible = false;
             }
         }
 

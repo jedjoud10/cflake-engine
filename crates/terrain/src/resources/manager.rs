@@ -45,7 +45,7 @@ pub struct ChunkManager {
     pub(crate) global_draw_entity: Entity,
 
     // Buffer to store the position and scale of each chunk
-    pub(crate) position_scaling_buffer: Buffer<vek::Vec4<f32>>,
+    pub(crate) position_scaling_buffers: Vec<Buffer<vek::Vec4<f32>>>,
 
     // Viewer (camera) position
     pub(crate) viewer: Option<(Entity, vek::Vec3<f32>, vek::Quaternion<f32>)>,
@@ -176,6 +176,8 @@ impl ChunkManager {
         // Create an octree for LOD chunk generation
         let octree = Octree::new(settings.max_depth, settings.size, heuristic);
 
+        let position_scaling_buffers = (0..settings.allocation_count).into_iter().map(|_| create_position_scaling_buffer(graphics)).collect::<Vec<_>>();
+
         // Create the chunk manager
         Self {
             last_chunk_generated: None,
@@ -186,7 +188,7 @@ impl ChunkManager {
             entities: Default::default(),
             children_count: Default::default(),
             global_draw_entity,
-            position_scaling_buffer: create_position_scaling_buffer(graphics),
+            position_scaling_buffers,
             layered_albedo_map,
             layered_normal_map,
             layered_mask_map,

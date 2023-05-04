@@ -188,13 +188,6 @@ impl Material for TerrainMaterial {
         group
             .set_sampled_texture("shadow_map", &shadow.depth_tex)
             .unwrap();
-                    
-        // Set the storage buffer that contains ALL the matrices
-        group.set_storage_buffer(
-            "position_scale_buffer",
-            &terrain.manager.position_scaling_buffer,
-            ..
-        ).unwrap();
 
         if let (Some(albedo), Some(normal), Some(mask)) = (
                 &terrain.manager.layered_albedo_map,
@@ -217,5 +210,29 @@ impl Material for TerrainMaterial {
                     .set_sampled_texture("layered_mask_map", mask_map)
                     .unwrap();
             }
+    }
+
+    fn set_surface_bindings<'r, 'w>(
+        _renderer: &Renderer,
+        resources: &'r mut Self::Resources<'w>,
+        _default: &mut DefaultMaterialResources<'w>,
+        group: &mut BindGroup<'r>,
+    ) {
+        let (
+            albedo_maps,
+            normal_maps,
+            mask_maps,
+            shadow,
+            terrain,
+            time
+        ) = resources;
+
+        // Set the storage buffer that contains ALL the matrices
+        let index = 
+        group.set_storage_buffer(
+            "position_scale_buffer",
+            &terrain.manager.position_scaling_buffers[index],
+            ..
+        ).unwrap();    
     }
 }
