@@ -218,6 +218,7 @@ impl Material for TerrainMaterial {
         _default: &mut DefaultMaterialResources<'w>,
         group: &mut BindGroup<'r>,
     ) {
+        /*
         let (
             albedo_maps,
             normal_maps,
@@ -233,6 +234,7 @@ impl Material for TerrainMaterial {
             "position_scale_buffer",
             &terrain.manager.position_scaling_buffers[index],
             ..
-        ).unwrap();    
+        ).unwrap();   
+        */ 
     }
 }
