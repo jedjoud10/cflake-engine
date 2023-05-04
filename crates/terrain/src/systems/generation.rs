@@ -47,11 +47,11 @@ fn update(world: &mut World) {
 
     // Convert "Dirty" chunks into "Pending"
     let query = scene
-        .query_mut::<(&mut Chunk, &mut Surface<TerrainMaterial>)>()
+        .query_mut::<&mut Chunk>()
         .into_iter();
-    for (chunk, surface) in query.filter(|(c, _)| c.state == ChunkState::Dirty) {
+    for chunk in query.filter(|c| c.state == ChunkState::Dirty) {
         chunk.state = ChunkState::Pending;
-        surface.visible = false;
+        
 
         // Write to the indices the updated ranges if needed
         if let Some(range) = chunk.ranges {
@@ -84,15 +84,13 @@ fn update(world: &mut World) {
     let mut vec = scene
         .query_mut::<(
             &mut Chunk,
-            &mut Surface<TerrainMaterial>,
-            &mut Renderer,
             &Entity,
         )>()
         .into_iter()
         .collect::<Vec<_>>();
-    vec.sort_by(|(a, _, _, _), (b, _, _, _)| a.generation_priority.total_cmp(&b.generation_priority));
-    vec.retain(|(chunk, _, _, _)| chunk.state == ChunkState::Pending);
-    let Some((chunk, surface, renderer, entity)) = vec.pop() else {
+    vec.sort_by(|(a, _), (b, _)| a.generation_priority.total_cmp(&b.generation_priority));
+    vec.retain(|(chunk, _)| chunk.state == ChunkState::Pending);
+    let Some((chunk, entity)) = vec.pop() else {
         manager.last_chunk_generated = None;
         return;
     };
@@ -270,9 +268,7 @@ fn update(world: &mut World) {
     
     // Start computing this sheit on the GPU
     graphics.submit(false);
-    surface.visible = true;
     chunk.state = ChunkState::Generated;
-    renderer.instant_initialized = Some(std::time::Instant::now());
     manager.last_chunk_generated = Some(*entity);
 }
 

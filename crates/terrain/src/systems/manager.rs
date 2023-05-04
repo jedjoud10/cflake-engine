@@ -12,7 +12,7 @@ use graphics::{
 };
 use math::OctreeDelta;
 use rand::Rng;
-use rendering::{IndirectMesh, Renderer, Surface};
+use rendering::{IndirectMesh, Renderer, Surface, MultiDrawIndirectMesh};
 use utils::{Storage, Time};
 use world::{user, System, World};
 
@@ -35,7 +35,7 @@ fn update(world: &mut World) {
     // Get the terrain chunk manager and terrain settings
     let terrain = &mut *_terrain;
     let mut manager = &mut terrain.manager;
-    let mut memory = &mut terrain.memory;
+    let memory = &mut terrain.memory;
     let settings = &terrain.settings;
 
     // If we don't have a chunk viewer, don't do shit
@@ -66,6 +66,7 @@ fn update(world: &mut World) {
         // Discard non-leaf nodes
         added.retain(|x| x.leaf());
 
+        /*
         manager.children_count.clear();
         for node in manager.octree.nodes() {
             if let Some(base) = node.children() {
@@ -75,6 +76,7 @@ fn update(world: &mut World) {
                 manager.children_count.insert(*node, (0, count.into_iter().filter(|x| x.leaf()).count()));
             }
         }
+        */
 
         // Don't do shit
         if added.is_empty() && removed.is_empty() {
@@ -85,6 +87,11 @@ fn update(world: &mut World) {
         if added.is_empty() {
             return;
         }
+
+        // TODO:
+        // Gpu frustum octree culling
+        // Gpu visibility check filter
+        // Gpu occlusion culling maybe?
 
         // Set the chunk state to "free" so we can reuse it
         for coord in removed {
@@ -107,7 +114,7 @@ fn update(world: &mut World) {
 
         // Add extra chunks if we need them
         let mut rng = rand::thread_rng();
-        let mut indirect_meshes = world.get_mut::<Storage<IndirectMesh>>().unwrap();
+        let mut multi_draw_indirect_meshes = world.get_mut::<Storage<MultiDrawIndirectMesh>>().unwrap();
         let mut indexed_indirect_buffers = world.get_mut::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
         let indexed_indirect_buffer = indexed_indirect_buffers.get_mut(&memory.indexed_indirect_buffer);
 
@@ -132,47 +139,22 @@ fn update(world: &mut World) {
                 chunks_to_pre_allocate
             ]).unwrap();
 
+            // Extend the position scaling buffer
+            manager.position_scaling_buffer.extend_from_slice(&vec![vek::Vec4::zero(); chunks_to_pre_allocate]).unwrap();
+
             // Create new chunk entities and set them as "free"
             scene.extend_from_iter((0..chunks_to_pre_allocate).into_iter().map(|index| {
                 // Get the allocation index for this chunk
                 let allocation = rng.gen_range(0..settings.allocation_count);
                 let local_index = memory.chunks_per_allocations[allocation];
                 let global_index = global_count + index;
-
-                // Get the vertex and triangle buffers that will be shared for this group
-                let tex_coord_buffer = &memory.shared_tex_coord_buffers[allocation];
-                let triangle_buffer = &memory.shared_triangle_buffers[allocation];
-    
-                // Create the indirect mesh
-                let mesh = IndirectMesh::from_handles(
-                    None,
-                    None,
-                    None,
-                    Some(tex_coord_buffer.clone()),
-                    triangle_buffer.clone(),
-                    memory.indexed_indirect_buffer.clone(),
-                    global_index,
-                );
-    
-                // Insert the mesh into the storage
-                let mesh = indirect_meshes.insert(mesh);
-    
-                // Create the surface for rendering
-                let mut surface = Surface::new(
-                    mesh.clone(),
-                    manager.material.clone(),
-                    manager.id.clone()
-                );
-    
-                // Hide the surface at first
-                surface.visible = false;
-    
-                // Create a renderer an a position component
-                let mut renderer = Renderer::default();
-                renderer.instant_initialized = None;
                 let position = Position::default();
                 let scale = Scale::default();
-    
+
+                // New entity is used by the allocation
+                let mesh = multi_draw_indirect_meshes.get_mut(&memory.allocation_meshes[allocation]);
+                *mesh.count_mut() += 1;
+
                 // Create the chunk component
                 let chunk = Chunk {
                     state: ChunkState::Free,
@@ -189,7 +171,7 @@ fn update(world: &mut World) {
                 memory.chunks_per_allocations[allocation] += 1;
     
                 // Create the bundle
-                (surface, renderer, position, scale, chunk)
+                (position, scale, chunk)
             }));
         }   
 
@@ -200,29 +182,25 @@ fn update(world: &mut World) {
                 &mut Position,
                 &mut Scale,
                 &Entity,
-                &mut Surface<TerrainMaterial>,
             )>()
             .into_iter()
-            .filter(|(x, _, _, _, _)| x.state == ChunkState::Free)
+            .filter(|(x, _, _, _)| x.state == ChunkState::Free)
             .collect::<Vec<_>>();
 
         // Set the "dirty" state for newly added chunks
         assert!(query.len() >= added.len());
-        for ((chunk, position, scale, entity, surface), node) in query.into_iter().zip(added.iter()) {
+        for ((chunk, position, scale, entity), node) in query.into_iter().zip(added.iter()) {
             chunk.state = ChunkState::Dirty;
-            surface.visible = false;
+            //surface.visible = false;
             
             // Set node, position, and scale
             chunk.node = Some(*node);
             **position = node.position().as_::<f32>();
             **scale = (node.size() as f32) / (settings.size as f32);
 
-            // Update the bounding box of the mesh when we get it's node
-            let mesh = indirect_meshes.get_mut(&surface.subsurfaces[0].mesh);
-            mesh.set_aabb(Some(math::Aabb {
-                min: vek::Vec3::zero(),
-                max: vek::Vec3::one() * (node.size() as f32),
-            }));
+            // Update position buffer
+            let packed = (*position).with_w(**scale);
+            manager.position_scaling_buffer.write(&[packed], chunk.global_index).unwrap();
 
             // Add the entity to the internally stored entities
             let res = manager.entities.insert(*node, *entity);

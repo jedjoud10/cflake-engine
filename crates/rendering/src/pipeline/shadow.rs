@@ -103,13 +103,14 @@ pub(super) fn render_shadows<'r, M: Material>(
             // Get the mesh and material that correspond to this surface
             let mesh = <M::RenderPath as RenderPath>::get(defaults, &subsurface.mesh);
 
-            // Skip rendering if the mesh is invalid
-            let attribute = mesh
-                .vertices()
-                .enabled()
-                .contains(MeshAttributes::POSITIONS);
-            let validity = <M::RenderPath as RenderPath>::is_valid(mesh);
-            if !(attribute && validity) {
+            // If a mesh is missing attributes just skip
+            if !mesh.vertices().enabled().contains(MeshAttributes::POSITIONS) {
+                continue;
+            }
+
+            // If a mesh isn't valid we have a problem, not so big but still a problem
+            if !<M::RenderPath as RenderPath>::is_valid(&defaults, mesh) {
+                log::warn!("Mesh invalid! Check buffers or indexed indirect count/offset (shadow render pipe)");
                 continue;
             }
 

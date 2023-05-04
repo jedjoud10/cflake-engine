@@ -7,7 +7,7 @@ use assets::Assets;
 
 use ecs::Scene;
 use graphics::{DrawIndexedIndirectBuffer, Graphics};
-use rendering::{IndirectMesh, Pipelines};
+use rendering::{IndirectMesh, Pipelines, MultiDrawIndirectMesh};
 use utils::{Storage};
 use world::{post_user, System, World};
 
@@ -25,6 +25,7 @@ fn init(world: &mut World) {
         let mut layered_mask_maps = world.get_mut::<Storage<LayeredMaskMap>>().unwrap();
         let mut materials = world.get_mut::<Storage<TerrainMaterial>>().unwrap();
         let mut scene = world.get_mut::<Scene>().unwrap();
+        let mut multi_draw_indirect_meshes = world.get_mut::<Storage<MultiDrawIndirectMesh>>().unwrap();
         let mut pipelines = world.get_mut::<Pipelines>().unwrap();
 
         // Get graphics API and assets
@@ -32,7 +33,7 @@ fn init(world: &mut World) {
         let assets = world.get::<Assets>().unwrap();
 
         // Get indirect buffer storage
-        let mut indirect_buffers = world
+        let mut indexed_indirect_buffers = world
             .get_mut::<Storage<DrawIndexedIndirectBuffer>>()
             .unwrap();
 
@@ -52,7 +53,8 @@ fn init(world: &mut World) {
             &graphics,
             &mut vertices,
             &mut triangles,
-            &mut indirect_buffers,
+            &mut indexed_indirect_buffers,
+            &mut multi_draw_indirect_meshes,
             &settings
         );
 
@@ -60,6 +62,8 @@ fn init(world: &mut World) {
         let manager = ChunkManager::new(
             &assets,
             &graphics,
+            &memory,
+            &mut scene,
             &mut settings,
             &mut materials,
             &mut layered_albedo_maps,
@@ -81,7 +85,8 @@ fn init(world: &mut World) {
         // Drop resources to be able to insert terrain into world
         drop(graphics);
         drop(assets);
-        drop(indirect_buffers);
+        drop(indexed_indirect_buffers);
+        drop(multi_draw_indirect_meshes);
         drop(vertices);
         drop(triangles);
         drop(materials);

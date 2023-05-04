@@ -11,15 +11,15 @@ layout(location = 3) in vec2 packed;
 #include <engine/shaders/noises/noise3D.glsl>
 #include <engine/shaders/math/packer.glsl>
 
-// Push constants for the mesh matrix
-layout(push_constant) uniform PushConstants {
-    mat4 matrix;
-} mesh;
-
 // Data to give to the fragment shader
 layout(location = 0) out vec3 m_position;
 layout(location = 1) out vec3 m_local_position;
 layout(location = 2) out vec3 m_normal;
+
+// Contains position and scale value
+layout(std430, set = 0, binding = 2) readonly buffer PositionScaleBuffer {
+    vec4 data[];
+} position_scale_buffer;
 
 void main() {
     // Convert from 4 floats into uints 
@@ -38,7 +38,8 @@ void main() {
     m_local_position = position.xyz;
 
 	// Model space -> World space -> Clip space
-    vec4 world_pos = mesh.matrix * vec4(position.xyz * scaling_factor, 1);
+    vec4 position_scale = position_scale_buffer.data[gl_DrawID];
+    vec4 world_pos = vec4(position.xyz * position_scale.w + position_scale.xyz, 1);
     vec4 projected = (camera.projection * camera.view) * world_pos; 
     gl_Position = projected;
 

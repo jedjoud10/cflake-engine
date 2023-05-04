@@ -7,11 +7,11 @@ use ecs::{Entity, Scene};
 use graphics::{
     combine_into_layered, BufferMode, BufferUsage, DrawIndexedIndirect, DrawIndexedIndirectBuffer,
     GpuPod, Graphics, ImageTexel, LayeredTexture2D, RawTexels, SamplerFilter, SamplerMipMaps,
-    SamplerSettings, SamplerWrap, Texel, TextureMipMaps, TextureMode, TextureUsage, Vertex,
+    SamplerSettings, SamplerWrap, Texel, TextureMipMaps, TextureMode, TextureUsage, Vertex, Buffer,
 };
 use math::{Octree, Node};
 use rand::seq::SliceRandom;
-use rendering::{AlbedoTexel, IndirectMesh, MaterialId, Pipelines, Renderer, Surface, MaskTexel, NormalTexel};
+use rendering::{AlbedoTexel, IndirectMesh, MaterialId, Pipelines, Renderer, Surface, MaskTexel, NormalTexel, MultiDrawIndirectMesh, SubSurface};
 use utils::{Handle, Storage};
 
 use crate::{
@@ -25,6 +25,11 @@ pub struct ChunkManager {
     pub(crate) material: Handle<TerrainMaterial>,
     pub(crate) id: MaterialId<TerrainMaterial>,
 
+    // Material sub-material handles
+    pub(crate) layered_albedo_map: Option<Handle<LayeredAlbedoMap>>,
+    pub(crate) layered_normal_map: Option<Handle<LayeredNormalMap>>,
+    pub(crate) layered_mask_map: Option<Handle<LayeredMaskMap>>,
+
     // Octree used for chunk generation
     pub(crate) octree: Octree,
     pub(crate) entities: AHashMap<Node, Entity>,
@@ -36,6 +41,12 @@ pub struct ChunkManager {
     // If we did not generate a chunk last frame this will be None
     pub(crate) last_chunk_generated: Option<Entity>,
 
+    // Single entity that contains multiple meshes that represent the terrain
+    pub(crate) global_draw_entity: Entity,
+
+    // Buffer to store the position and scale of each chunk
+    pub(crate) position_scaling_buffer: Buffer<vek::Vec4<f32>>,
+
     // Viewer (camera) position
     pub(crate) viewer: Option<(Entity, vek::Vec3<f32>, vek::Quaternion<f32>)>,
 }
@@ -46,6 +57,8 @@ impl ChunkManager {
     pub(crate) fn new(
         assets: &Assets,
         graphics: &Graphics,
+        memory: &MemoryManager,
+        scene: &mut Scene,
         settings: &mut TerrainSettings,
         materials: &mut Storage<TerrainMaterial>,
         layered_albedo_maps: &mut Storage<LayeredAlbedoMap>,
@@ -104,20 +117,34 @@ impl ChunkManager {
         let layered_normal_map = layered_normal_map.map(|x| layered_normal_maps.insert(x));
         let layered_mask_map = layered_mask_map.map(|x| layered_mask_maps.insert(x)); 
 
-        // Create a new material
-        let material = TerrainMaterial {
-            layered_albedo_map,
-            layered_normal_map,
-            layered_mask_map,
-        };
-
         // Initial value for the terrain material
+        let material = TerrainMaterial;
         let material = materials.insert(material);
 
         // Material Id
         let id = pipelines
             .register_with(graphics, &*settings, assets)
             .unwrap();
+        
+        // Convert the newly created meshes to multiple sub-surfaces
+        let subsurfaces = memory.allocation_meshes.iter().map(|mesh| SubSurface {
+            mesh: mesh.clone(),
+            material: material.clone(),
+        });
+
+        // Create one whole "terrain" surface
+        let surface = Surface {
+            subsurfaces: subsurfaces.collect(),
+            visible: true,
+            culled: false,
+            shadow_caster: true,
+            shadow_receiver: true,
+            shadow_culled: false,
+            id: id.clone(),
+        };
+
+        // Create the global terrain renderer entity
+        let global_draw_entity = scene.insert((Renderer::default(), surface));
 
         // Custom octree heuristic
         let size = settings.size;
@@ -158,8 +185,23 @@ impl ChunkManager {
             octree,
             entities: Default::default(),
             children_count: Default::default(),
+            global_draw_entity,
+            position_scaling_buffer: create_position_scaling_buffer(graphics),
+            layered_albedo_map,
+            layered_normal_map,
+            layered_mask_map,
         }
     }
+}
+
+// Create the buffer that will store the positions and scaling
+fn create_position_scaling_buffer(graphics: &Graphics) -> Buffer<vek::Vec4<f32>> {
+    Buffer::from_slice(
+        graphics,
+        &[],
+        BufferMode::Resizable,
+        BufferUsage::COPY_SRC | BufferUsage::COPY_DST | BufferUsage::WRITE | BufferUsage::STORAGE
+    ).unwrap()
 }
 
 // Load the raw texels asynchronously using our asset system

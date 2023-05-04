@@ -17,23 +17,18 @@ layout(location = 2) in vec3 m_normal;
 #include <engine/shaders/math/dither.glsl>
 #include <engine/shaders/math/triplanar.glsl>
 
-// Push constants for the material data
-layout(push_constant) uniform PushConstants {
-	layout(offset = 64) float fade;
-} material;
-
 #ifdef submaterials
 // Albedo / diffuse map texture array
-layout(set = 1, binding = 0) uniform texture2DArray layered_albedo_map;
-layout(set = 1, binding = 1) uniform sampler layered_albedo_map_sampler;
+layout(set = 0, binding = 7) uniform texture2DArray layered_albedo_map;
+layout(set = 0, binding = 8) uniform sampler layered_albedo_map_sampler;
 
 // Normal map texture array
-layout(set = 1, binding = 2) uniform texture2DArray layered_normal_map;
-layout(set = 1, binding = 3) uniform sampler layered_normal_map_sampler;
+layout(set = 0, binding = 9) uniform texture2DArray layered_normal_map;
+layout(set = 0, binding = 10) uniform sampler layered_normal_map_sampler;
 
 // Mask map texture array
-layout(set = 1, binding = 4) uniform texture2DArray layered_mask_map;
-layout(set = 1, binding = 5) uniform sampler layered_mask_map_sampler;
+layout(set = 0, binding = 11) uniform texture2DArray layered_mask_map;
+layout(set = 0, binding = 12) uniform sampler layered_mask_map_sampler;
 
 // Triplanar mapping offset and UV scale
 const float offset = 0.0;

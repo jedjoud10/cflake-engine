@@ -8,7 +8,7 @@ use graphics::{
     GpuPod, Graphics, ModuleVisibility, PushConstantLayout, StorageAccess, Texel, TriangleBuffer,
     Vertex, XYZW, XY, DrawIndexedIndirectBuffer,
 };
-use rendering::{attributes, AttributeBuffer};
+use rendering::{attributes, AttributeBuffer, MultiDrawIndirectMesh};
 use utils::{Handle, Storage};
 
 use crate::{create_counters, TerrainSettings, Triangles, Vertices};
@@ -34,6 +34,9 @@ pub struct MemoryManager {
     pub(crate) sub_allocation_chunk_indices: Vec<Buffer<u32>>,
     pub(crate) compute_copy: ComputeShader,
 
+    // Keeps track of the mesh handles that are shared per allocation
+    pub(crate) allocation_meshes: Vec<Handle<MultiDrawIndirectMesh>>,
+
     // Channel to receive the asyncrhnoously readback data
     pub(crate) readback_count_receiver: Receiver<(Entity, vek::Vec2<u32>)>,
     pub(crate) readback_count_sender: Sender<(Entity, vek::Vec2<u32>)>,
@@ -47,11 +50,12 @@ impl MemoryManager {
         graphics: &Graphics,
         vertices: &mut Storage<Vertices>,
         triangles: &mut Storage<Triangles>,
-        indirect_buffers: &mut Storage<DrawIndexedIndirectBuffer>,
+        indexed_indirect_buffers: &mut Storage<DrawIndexedIndirectBuffer>,
+        multi_draw_indirect_meshes: &mut Storage<MultiDrawIndirectMesh>,
         settings: &TerrainSettings,
     ) -> Self {
         // Create ONE buffer that will store the indirect arguments
-        let indexed_indirect_buffer = indirect_buffers.insert(
+        let indexed_indirect_buffer = indexed_indirect_buffers.insert(
             DrawIndexedIndirectBuffer::from_slice(
                 graphics,
                 &[],
@@ -182,6 +186,24 @@ impl MemoryManager {
         let (offset_sender, offset_receiver) = std::sync::mpsc::channel::<(Entity, vek::Vec2<u32>)>();
         let (counter_sender, counter_receiver) = std::sync::mpsc::channel::<(Entity, vek::Vec2<u32>)>();
 
+        // Generate multiple multi-draw indirect meshes that will be used by the global terrain renderer
+        let allocation_meshes = (0..settings.allocation_count).into_iter().map(|allocation| {
+            let tex_coords = shared_tex_coord_buffers[allocation].clone();
+            let triangles = shared_triangle_buffers[allocation].clone();
+            let indirect = indexed_indirect_buffer.clone();
+        
+            multi_draw_indirect_meshes.insert(MultiDrawIndirectMesh::from_handles(
+                None,
+                None,
+                None,
+                Some(tex_coords.clone()),
+                triangles.clone(),
+                indirect.clone(),
+                0,
+                0
+            ))
+        }).collect::<Vec<_>>();
+
         Self {
             indexed_indirect_buffer,
             shared_tex_coord_buffers,
@@ -196,6 +218,7 @@ impl MemoryManager {
             readback_offset_sender: offset_sender,
             offsets,
             counters,
+            allocation_meshes,
         }
     }
 }

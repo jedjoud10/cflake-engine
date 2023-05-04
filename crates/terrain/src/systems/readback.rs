@@ -13,6 +13,7 @@ fn update(world: &mut World) {
         return;
     };
     
+    // Decompose the terrain into its subresources
     let (manager, voxelizer, mesher, memory, settings) = (
         &terrain.manager,
         &terrain.voxelizer,
@@ -21,6 +22,7 @@ fn update(world: &mut World) {
         &terrain.settings,
     );
 
+    // If we did not generate a chunk last frame do nothing
     let Some(entity) = manager.last_chunk_generated else {
         return;
     };
@@ -52,7 +54,7 @@ fn update(world: &mut World) {
 
         // Fetch the appropriate chunk
         let mut entry = scene.entry_mut(e1).unwrap();
-        let (chunk, surface) = entry.as_query_mut::<(&mut Chunk, &mut Surface<TerrainMaterial>)>().unwrap();    
+        let chunk = entry.get_mut::<Chunk>().unwrap();    
 
         // Check if we are OOM lol
         if offset.x / tex_coords_per_sub_allocation
@@ -72,10 +74,8 @@ fn update(world: &mut World) {
         // Update chunk range (if valid) and set visibility
         if count > 0 {
             chunk.ranges = Some(vek::Vec2::new(offset, count + offset));
-            surface.visible = true;
         } else {
             chunk.ranges = None;
-            surface.visible = false;
         }
     }
     
