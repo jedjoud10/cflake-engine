@@ -39,7 +39,7 @@ void main() {
 
 	// Model space -> World space -> Clip space
     vec4 position_scale = position_scale_buffer.data[gl_DrawID];
-    vec4 world_pos = vec4(position.xyz * position_scale.w + position_scale.xyz, 1);
+    vec4 world_pos = vec4(((position.xyz * scaling_factor) * position_scale.w + position_scale.xyz), 1);
     vec4 projected = (camera.projection * camera.view) * world_pos; 
     gl_Position = projected;
 

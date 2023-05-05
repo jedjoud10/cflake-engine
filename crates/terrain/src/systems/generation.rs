@@ -225,7 +225,7 @@ fn update(world: &mut World) {
         })
         .unwrap();
 
-    let dispatch = (settings.sub_allocation_count as f32 / 32 as f32).ceil() as u32;
+    let dispatch = (settings.sub_allocation_count as f32 / (32.0 * 32.0)).ceil() as u32;
     active.dispatch(vek::Vec3::new(dispatch, 1, 1)).unwrap();
 
     // Get the output packed tex coord from resource storage

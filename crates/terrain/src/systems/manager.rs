@@ -11,7 +11,7 @@ use graphics::{
     ActivePipeline, ComputePass, DrawIndexedIndirect, DrawIndexedIndirectBuffer, Graphics,
 };
 use math::OctreeDelta;
-use rand::Rng;
+use rand::{Rng, seq::SliceRandom};
 use rendering::{IndirectMesh, Renderer, Surface, MultiDrawIndirectMesh};
 use utils::{Storage, Time};
 use world::{user, System, World};
@@ -126,8 +126,8 @@ fn update(world: &mut World) {
             let chunks_to_pre_allocate = settings.allocation_count * (chunks_to_pre_allocate as f32 / settings.allocation_count as f32).ceil() as usize; 
             let chunks_to_pre_allocate_per_allocation = chunks_to_pre_allocate / settings.allocation_count;
 
-
-            for allocation in (0..terrain.settings.allocation_count) {
+            // Add the same amounts of chunks per allocation
+            for allocation in 0..terrain.settings.allocation_count {
                 let extra  = chunks_to_pre_allocate_per_allocation;
                 let indexed_indirect_buffer_handle = &memory.indexed_indirect_buffers[allocation];
                 let indexed_indirect_buffer = indexed_indirect_buffers.get_mut(indexed_indirect_buffer_handle);
@@ -149,8 +149,7 @@ fn update(world: &mut World) {
                 position_scaling_buffers.extend_from_slice(&vec![vek::Vec4::zero(); extra]).unwrap();
 
                 // Create new chunk entities and set them as "free"
-                // TODO: Randomly order the entities
-                scene.extend_from_iter((0..extra).into_iter().map(|index| {
+                let mut entities = (0..extra).into_iter().map(|_| {
                     let local_index = memory.chunks_per_allocations[allocation];
                     let position = Position::default();
                     let scale = Scale::default();
@@ -175,7 +174,11 @@ fn update(world: &mut World) {
                 
                     // Create the bundle
                     (position, scale, chunk)
-                }));
+                }).collect::<Vec<_>>();
+
+                // Randomly order the entities to reduce the chances of an OOM error
+                entities.shuffle(&mut rng);
+                scene.extend_from_iter(entities);
             }
         }   
 
@@ -195,7 +198,6 @@ fn update(world: &mut World) {
         assert!(query.len() >= added.len());
         for ((chunk, position, scale, entity), node) in query.into_iter().zip(added.iter()) {
             chunk.state = ChunkState::Dirty;
-            //surface.visible = false;
             
             // Set node, position, and scale
             chunk.node = Some(*node);
@@ -204,7 +206,8 @@ fn update(world: &mut World) {
 
             // Update position buffer
             let packed = (*position).with_w(**scale);
-            //manager.position_scaling_buffer.write(&[packed], chunk.global_index).unwrap();
+            let buffer = &mut manager.position_scaling_buffers[chunk.allocation];
+            buffer.write(&[packed], chunk.local_index).unwrap();
 
             // Add the entity to the internally stored entities
             let res = manager.entities.insert(*node, *entity);

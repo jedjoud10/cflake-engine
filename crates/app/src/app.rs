@@ -198,7 +198,7 @@ impl App {
             .warn(Color::Yellow)
             .error(Color::Red);
 
-        // Level filter for wgpu and company
+        // Level filter for wgpu and subdependencies
         let wgpu_filter = if self.logging_level == log::LevelFilter::Trace {
             log::LevelFilter::Debug
         } else {
@@ -209,6 +209,7 @@ impl App {
             .level_for("wgpu", wgpu_filter)
             .level_for("wgpu_core", wgpu_filter)
             .level_for("wgpu_hal", wgpu_filter)
+            .level_for("wgpu_core", wgpu_filter)
             .level(self.logging_level)
             .chain(console_logger(colors_level, colors_line))
             .chain(file_logger(sender))
