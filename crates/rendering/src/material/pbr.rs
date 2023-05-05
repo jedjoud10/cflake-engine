@@ -168,6 +168,7 @@ impl Material for PhysicallyBasedMaterial {
         renderer: &Renderer,
         _resources: &'r mut Self::Resources<'w>,
         _default: &DefaultMaterialResources<'r>,
+        _query: &Self::Query<'w>,
         constants: &mut PushConstants<ActiveScenePipeline>,
     ) {
         // Send the raw vertex bytes to the GPU

@@ -46,6 +46,7 @@ void main() {
 	vec3 bumps = texture(sampler2D(normal_map, normal_map_sampler), uv).rgb * 2.0 - 1.0;
     vec3 mask = texture(sampler2D(mask_map, mask_map_sampler), uv).rgb;
     mask *= vec3(pow(mask.r, material.ambient_occlusion + 5), material.roughness, material.metallic);
+	bumps.z = -sqrt(1 - (bumps.x*bumps.x + bumps.y*bumps.y));
 	bumps.xy *= material.bumpiness;
 	bumps.y = -bumps.y;
 

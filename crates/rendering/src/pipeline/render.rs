@@ -36,7 +36,15 @@ pub(super) fn render_surfaces<'r, M: Material>(
 
     // Get all the entities that contain a visible surface
     let scene = world.get::<Scene>().unwrap();
-    let query = scene.query::<(&Surface<M>, &Renderer)>();
+    let filter = ecs::contains::<M::Query<'r>>();
+    let query = scene.query_with::<(&Surface<M>, &Renderer)>(filter);
+
+    // Get custom user components
+    let filter = ecs::contains::<(&Surface<M>, &Renderer)>();
+    let user = scene.query_with::<M::Query<'r>>(filter);
+
+    // Due to the filters, these MUST have the same length
+    debug_assert_eq!(query.len(), user.len());
 
     // Keep track of the last material
     let mut last_material: Option<Handle<M>> = None;
@@ -67,7 +75,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
     // Materials should have priority over meshes since they require you to set more shit
 
     // Iterate over all the surface of this material
-    for (surface, renderer) in query {
+    for ((surface, renderer), user) in query.into_iter().zip(user) {
         // Handle non visible surfaces, renderers, and culled surfaces
         if surface.culled || !surface.visible || !renderer.visible {
             continue;
@@ -108,7 +116,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
             // Set the surface group bindings
             active
                 .set_bind_group(2, |group| {
-                    M::set_surface_bindings(renderer, &mut resources, defaults, group);
+                    M::set_surface_bindings(renderer, &mut resources, defaults, &user, group);
                 })
                 .unwrap();
 
@@ -178,6 +186,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
                         renderer,
                         &mut resources,
                         defaults,
+                        &user,
                         push_constants,
                     );
                 })

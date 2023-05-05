@@ -3,6 +3,7 @@ use crate::{
 };
 use assets::Assets;
 
+use ecs::QueryLayoutRef;
 use graphics::{
     BindGroup, BlendConfig, CompareFunction, DepthConfig, Graphics, PrimitiveConfig, PushConstants,
     Shader, StencilConfig, WindingOrder,
@@ -103,6 +104,7 @@ pub trait Material: 'static + Sized + Sync + Send {
         _renderer: &Renderer,
         _resources: &'r mut Self::Resources<'w>,
         _default: &mut DefaultMaterialResources<'w>,
+        _query: &Self::Query<'w>,
         _group: &mut BindGroup<'r>,
     ) {
     }
@@ -113,6 +115,7 @@ pub trait Material: 'static + Sized + Sync + Send {
         _renderer: &Renderer,
         _resources: &'r mut Self::Resources<'w>,
         _default: &DefaultMaterialResources<'r>,
+        _query: &Self::Query<'w>,
         _push_constants: &mut PushConstants<ActiveScenePipeline>,
     ) {
     }

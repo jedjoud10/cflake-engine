@@ -17,7 +17,7 @@ fn update(world: &mut World) {
     };
 
     // Iterate through all the audio sources that have been changed or added
-    let filter = ecs::added::<AudioSource>() | ecs::modified::<AudioSource>();
+    let filter = ecs::added::<&AudioSource>() | ecs::modified::<&AudioSource>();
     for source in scene.query_mut_with::<&mut AudioSource>(filter) {
         if source.stream.is_none() && source.playing {
             let stream = super::build_clip_output_stream(

@@ -33,6 +33,7 @@ impl Material for TerrainMaterial {
         world::Read<'w, ShadowMapping>,
         world::Read<'w, Terrain>,
         world::Read<'w, Time>,
+        usize,
     );
 
     type Settings<'s> = &'s TerrainSettings;
@@ -140,7 +141,7 @@ impl Material for TerrainMaterial {
         let shadow = world.get::<ShadowMapping>().unwrap();
         let time: world::Read<Time> = world.get::<Time>().unwrap();
         let terrain = world.get::<Terrain>().unwrap();
-        (albedo_maps, normal_maps, mask_maps, shadow, terrain, time)
+        (albedo_maps, normal_maps, mask_maps, shadow, terrain, time, 0)
     }
 
     // Set the static bindings that will never change
@@ -155,9 +156,9 @@ impl Material for TerrainMaterial {
             mask_maps,
             shadow,
             terrain,
-            time
+            time,
+            _
         ) = resources;
-
 
         // Set the required common buffers
         group
@@ -212,11 +213,32 @@ impl Material for TerrainMaterial {
             }
     }
 
+    // Set the surface bindings that only contain the allocation data
+    // This will be executed only 7-8 times per frame since we have few big allocations/subsurfaces
     fn set_surface_bindings<'r, 'w>(
         _renderer: &Renderer,
         resources: &'r mut Self::Resources<'w>,
         _default: &mut DefaultMaterialResources<'w>,
+        _query: &Self::Query<'w>,
         group: &mut BindGroup<'r>,
     ) {
+        let (
+            albedo_maps,
+            normal_maps,
+            mask_maps,
+            shadow,
+            terrain,
+            time,
+            i,
+        ) = resources;
+
+        // Set the storage buffer that contains ALL the matrices
+        group.set_storage_buffer(
+            "position_scale_buffer",
+            &terrain.manager.position_scaling_buffers[*i],
+            ..
+        ).unwrap();   
+
+        resources.6 += 1;
     }
 }

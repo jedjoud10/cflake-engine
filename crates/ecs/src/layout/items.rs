@@ -131,7 +131,7 @@ impl QueryItemRef for &() {
         }
     }
 
-    unsafe fn ptr_from_archetype_unchecked(archetype: &Archetype) -> Self::Ptr {
+    unsafe fn ptr_from_archetype_unchecked(_archetype: &Archetype) -> Self::Ptr {
         // I AM HARDWARE
         // I WILL OUTLIVE YOU
         // I WILL OUTLIVE YOUR SOFTWARE

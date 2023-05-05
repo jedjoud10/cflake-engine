@@ -10,10 +10,10 @@ fn update(world: &mut World) {
     use ecs::*;
 
     // Filter the objects that have changed only
-    let f1 = modified::<Position>();
-    let f2 = modified::<Rotation>();
-    let f3 = modified::<Scale>();
-    let f4 = added::<Renderer>();
+    let f1 = modified::<&Position>();
+    let f2 = modified::<&Rotation>();
+    let f3 = modified::<&Scale>();
+    let f4 = added::<&Renderer>();
     let filter = f1 | f2 | f3 | f4;
     let query = scene.query_mut_with::<(
         &mut Renderer,

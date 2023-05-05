@@ -87,7 +87,7 @@ fn update(world: &mut World) {
     let window = world.get::<Window>().unwrap();
 
     // If the user *just* added a camera, then hide the UI
-    if !scene.query_with::<&CameraController>(ecs::added::<CameraController>()).is_empty() && time.frame_count() == 1 {
+    if !scene.query_with::<&CameraController>(ecs::added::<&CameraController>()).is_empty() && time.frame_count() == 1 {
         hide_ui(&window, &mut gui);
     }
 

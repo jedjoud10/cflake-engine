@@ -38,15 +38,11 @@ impl<'a> EntryMut<'a> {
 
     // Get an immutable reference to the entity's archetype
     pub fn archetype(&self) -> &Archetype {
-        dbg!(self.linkings().mask());
-        dbg!(self.archetypes.keys());
         self.archetypes.get(&self.linkings().mask()).unwrap()
     }
 
     // Get a mutable reference to the entity's archetype
     pub fn archetype_mut(&mut self) -> &mut Archetype {
-        dbg!(self.linkings().mask());
-        dbg!(self.archetypes.keys());
         self.archetypes.get_mut(&self.linkings().mask()).unwrap()
     }
 

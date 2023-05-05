@@ -25,7 +25,7 @@ fn update(world: &mut World) {
 
     // Check for any new SyncedEntities
     let scene = world.get_mut::<Scene>().unwrap();
-    let filter = added::<SyncedEntity>();
+    let filter = added::<&SyncedEntity>();
     let added = scene.query_with::<(&SyncedEntity, &Entity)>(filter);
 
     // If we're the server, we must send a "SpawnEntity" command to the respective clients

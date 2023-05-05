@@ -122,8 +122,8 @@ impl From<RawBitMask> for Mask {
 
 // NoHash hasher that works with Mask
 type NoHashMaskHasher = BuildHasherDefault<NoHashHasher<Mask>>;
-pub type MaskHashMap<E> = HashMap<Mask, E>;
-pub type MaskHashSet = HashSet<Mask>;
+pub type MaskHashMap<E> = HashMap<Mask, E, NoHashMaskHasher>;
+pub type MaskHashSet = HashSet<Mask, NoHashMaskHasher>;
 
 impl BitAnd for Mask {
     type Output = Self;

@@ -17,7 +17,7 @@ layout(location = 1) out vec3 m_local_position;
 layout(location = 2) out vec3 m_normal;
 
 // Contains position and scale value
-layout(std430, set = 0, binding = 2) readonly buffer PositionScaleBuffer {
+layout(std430, set = 2, binding = 0) readonly buffer PositionScaleBuffer {
     vec4 data[];
 } position_scale_buffer;
 
