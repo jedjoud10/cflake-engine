@@ -15,8 +15,8 @@ use crate::{create_counters, TerrainSettings, Triangles, Vertices};
 
 // Memory manager will be responsible for finding free memory and copying chunks there
 pub struct MemoryManager {
-    // Buffer that contains the indexed indirect draw commands
-    pub(crate) indexed_indirect_buffer: Handle<DrawIndexedIndirectBuffer>,
+    // Buffers that contains the indexed indirect draw commands
+    pub(crate) indexed_indirect_buffers: Vec<Handle<DrawIndexedIndirectBuffer>>,
     
     // Vectors that contains the shared buffers needed for multidraw indirect
     pub(crate) shared_tex_coord_buffers: Vec<Handle<Vertices>>,
@@ -55,15 +55,14 @@ impl MemoryManager {
         settings: &TerrainSettings,
     ) -> Self {
         // Create ONE buffer that will store the indirect arguments
-        let indexed_indirect_buffer = indexed_indirect_buffers.insert(
-            DrawIndexedIndirectBuffer::from_slice(
+        let indexed_indirect_buffers = (0..settings.allocation_count).into_iter().map(|_| {
+            indexed_indirect_buffers.insert(DrawIndexedIndirectBuffer::from_slice(
                 graphics,
                 &[],
                 BufferMode::Resizable,
                 BufferUsage::STORAGE | BufferUsage::WRITE | BufferUsage::COPY_DST | BufferUsage::COPY_SRC,
-            )
-            .unwrap(),
-        );
+            ).unwrap())
+        }).collect::<Vec<_>>();
 
         // Allocate the chunk indices that will be stored per allocation
         let sub_allocation_chunk_indices = (0..settings.allocation_count)
@@ -190,7 +189,6 @@ impl MemoryManager {
         let allocation_meshes = (0..settings.allocation_count).into_iter().map(|allocation| {
             let tex_coords = shared_tex_coord_buffers[allocation].clone();
             let triangles = shared_triangle_buffers[allocation].clone();
-            let indirect = indexed_indirect_buffer.clone();
         
             multi_draw_indirect_meshes.insert(MultiDrawIndirectMesh::from_handles(
                 None,
@@ -198,14 +196,14 @@ impl MemoryManager {
                 None,
                 Some(tex_coords.clone()),
                 triangles.clone(),
-                indirect.clone(),
+                indexed_indirect_buffers[allocation].clone(),
                 0,
                 0
             ))
         }).collect::<Vec<_>>();
 
         Self {
-            indexed_indirect_buffer,
+            indexed_indirect_buffers,
             shared_tex_coord_buffers,
             shared_triangle_buffers,
             compute_find,

@@ -27,6 +27,7 @@ pub trait Material: 'static + Sized + Sync + Send {
     type Resources<'w>: 'w;
     type RenderPath: RenderPath;
     type Settings<'s>;
+    type Query<'a>: ecs::QueryLayoutRef;
 
     // Create a shader for this material
     fn shader(settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader;

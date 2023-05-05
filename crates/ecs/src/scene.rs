@@ -62,6 +62,8 @@ impl Scene {
 
         // Try to get the archetype, and create a default one if it does not exist
         let mask = B::reduce(|a, b| a | b);
+        dbg!("insert archetype");
+        dbg!(mask);
         let archetype = self
             .archetypes
             .entry(mask)

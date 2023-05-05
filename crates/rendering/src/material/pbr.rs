@@ -38,6 +38,8 @@ impl Material for PhysicallyBasedMaterial {
 
     type Settings<'s> = ();
 
+    type Query<'a> = &'a ();
+
     // Load the respective PBR shader modules and compile them
     fn shader(settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader {
         // Load the vertex module from the assets

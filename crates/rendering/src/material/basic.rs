@@ -32,6 +32,7 @@ impl Material for BasicMaterial {
 
     type RenderPath = Direct;
     type Settings<'s> = ();
+    type Query<'a> = &'a ();
 
     // Load the respective Basic shader modules and compile them
     fn shader(_settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader {

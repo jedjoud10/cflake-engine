@@ -42,9 +42,6 @@ fn update(world: &mut World) {
         &mut terrain.settings,
     );
 
-    // Get global indexed indirect draw buffer
-    let indirect = indirects.get_mut(&memory.indexed_indirect_buffer);
-
     // Convert "Dirty" chunks into "Pending"
     let query = scene
         .query_mut::<&mut Chunk>()
@@ -63,6 +60,9 @@ fn update(world: &mut World) {
             }
         }
 
+        // Get allocation-local indexed indirect draw buffer
+        let indirect = indirects.get_mut(&memory.indexed_indirect_buffers[chunk.allocation]);
+
         // Update indirect buffer
         indirect
             .write(
@@ -73,7 +73,7 @@ fn update(world: &mut World) {
                     vertex_offset: 0,
                     base_instance: 0,
                 }],
-                chunk.global_index,
+                chunk.local_index,
             )
             .unwrap();
 
@@ -108,6 +108,9 @@ fn update(world: &mut World) {
     // Create a compute pass for ALL compute terrain shaders
     let mut pass = ComputePass::begin(&graphics);
     let mut active = pass.bind_shader(&voxelizer.compute_voxels);
+
+    // Get the indexed indirect draw buffer used by the chunk's allocation
+    let indirect = indirects.get_mut(&memory.indexed_indirect_buffers[chunk.allocation]);
 
     // Needed since SN only runs for a volume 2 units smaller than a perfect cube
     let node = chunk.node.unwrap();
@@ -256,7 +259,7 @@ fn update(world: &mut World) {
         .unwrap();
     active
         .set_push_constants(|x| {
-            let index = chunk.global_index as u32;
+            let index = chunk.local_index as u32;
             let index = GpuPod::into_bytes(&index);
             x.push(index, 0).unwrap();
         })

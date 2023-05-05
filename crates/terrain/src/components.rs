@@ -29,7 +29,6 @@ pub enum ChunkState {
 pub struct Chunk {
     pub(crate) allocation: usize,
     pub(crate) local_index: usize,
-    pub(crate) global_index: usize,
     pub(crate) ranges: Option<vek::Vec2<u32>>,
     pub(crate) state: ChunkState,
     pub(crate) node: Option<Node>,

@@ -116,63 +116,67 @@ fn update(world: &mut World) {
         let mut rng = rand::thread_rng();
         let mut multi_draw_indirect_meshes = world.get_mut::<Storage<MultiDrawIndirectMesh>>().unwrap();
         let mut indexed_indirect_buffers = world.get_mut::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
-        let indexed_indirect_buffer = indexed_indirect_buffers.get_mut(&memory.indexed_indirect_buffer);
 
         // Extend the indexed indirect buffer if needed
         if added.len() > query_count {
             // Over-allocate so we don't need to do this as many times
             let chunks_to_pre_allocate = ((added.len() - query_count) * 2).max(128);
 
-            // Global count is the number of chunks that are currently pre-allocated
-            // So basically the number of elements within the indexed_indirect_buffer buffer 
-            let global_count = indexed_indirect_buffer.len();
+            // The number of chunks must fit the alloc count perfectly
+            let chunks_to_pre_allocate = settings.allocation_count * (chunks_to_pre_allocate as f32 / settings.allocation_count as f32).ceil() as usize; 
+            let chunks_to_pre_allocate_per_allocation = chunks_to_pre_allocate / settings.allocation_count;
 
-            // Extend the indirect draw buffer
-            indexed_indirect_buffer.extend_from_slice(&vec![
-                DrawIndexedIndirect {
-                    vertex_count: 0,
-                    instance_count: 1,
-                    base_index: 0,
-                    vertex_offset: 0,
-                    base_instance: 0,
-                };
-                chunks_to_pre_allocate
-            ]).unwrap();
 
-            // Extend the position scaling buffer
-            //manager.position_scaling_buffer.extend_from_slice(&vec![vek::Vec4::zero(); chunks_to_pre_allocate]).unwrap();
+            for allocation in (0..terrain.settings.allocation_count) {
+                let extra  = chunks_to_pre_allocate_per_allocation;
+                let indexed_indirect_buffer_handle = &memory.indexed_indirect_buffers[allocation];
+                let indexed_indirect_buffer = indexed_indirect_buffers.get_mut(indexed_indirect_buffer_handle);
+                let position_scaling_buffers = &mut manager.position_scaling_buffers[allocation];
 
-            // Create new chunk entities and set them as "free"
-            scene.extend_from_iter((0..chunks_to_pre_allocate).into_iter().map(|index| {
-                // Get the allocation index for this chunk
-                let allocation = rng.gen_range(0..settings.allocation_count);
-                let local_index = memory.chunks_per_allocations[allocation];
-                let global_index = global_count + index;
-                let position = Position::default();
-                let scale = Scale::default();
+                // Extend the indirect draw buffer
+                indexed_indirect_buffer.extend_from_slice(&vec![
+                    DrawIndexedIndirect {
+                        vertex_count: 0,
+                        instance_count: 1,
+                        base_index: 0,
+                        vertex_offset: 0,
+                        base_instance: 0,
+                    };
+                    extra
+                ]).unwrap();
 
-                // New entity is used by the allocation
-                let mesh = multi_draw_indirect_meshes.get_mut(&memory.allocation_meshes[allocation]);
-                *mesh.count_mut() += 1;
+                // Extend the position scaling buffer
+                position_scaling_buffers.extend_from_slice(&vec![vek::Vec4::zero(); extra]).unwrap();
 
-                // Create the chunk component
-                let chunk = Chunk {
-                    state: ChunkState::Free,
-                    allocation,
-                    local_index,
-                    global_index,
-                    generation_priority: 0.0f32,
-                    readback_priority: 0.0f32,
-                    ranges: None,
-                    node: None,
-                };
-    
-                // Take in account this chunk within the allocation
-                memory.chunks_per_allocations[allocation] += 1;
-    
-                // Create the bundle
-                (position, scale, chunk)
-            }));
+                // Create new chunk entities and set them as "free"
+                // TODO: Randomly order the entities
+                scene.extend_from_iter((0..extra).into_iter().map(|index| {
+                    let local_index = memory.chunks_per_allocations[allocation];
+                    let position = Position::default();
+                    let scale = Scale::default();
+
+                    // New entity is used by the allocation
+                    let mesh = multi_draw_indirect_meshes.get_mut(&memory.allocation_meshes[allocation]);
+                    *mesh.count_mut() += 1;
+
+                    // Create the chunk component
+                    let chunk = Chunk {
+                        state: ChunkState::Free,
+                        allocation,
+                        local_index,
+                        generation_priority: 0.0f32,
+                        readback_priority: 0.0f32,
+                        ranges: None,
+                        node: None,
+                    };
+                
+                    // Take in account this chunk within the allocation
+                    memory.chunks_per_allocations[allocation] += 1;
+                
+                    // Create the bundle
+                    (position, scale, chunk)
+                }));
+            }
         }   
 
         // Get all free chunks in the world and use them

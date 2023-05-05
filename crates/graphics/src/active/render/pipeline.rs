@@ -302,7 +302,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout> ActiveRenderPipeline<'a
         }
 
         // Check if the element index is ok
-        if offset + count >= buffer.len() {
+        if offset + count > buffer.len() {
             return Err(DrawIndexedError::InvalidIndirectIndex);
         }
 

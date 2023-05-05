@@ -36,7 +36,7 @@ impl Material for TerrainMaterial {
     );
 
     type Settings<'s> = &'s TerrainSettings;
-
+    type Query<'a> = &'a ();
     type RenderPath = MultiDrawIndirect;
 
     // Load the terrain material shaders and compile them
@@ -218,23 +218,5 @@ impl Material for TerrainMaterial {
         _default: &mut DefaultMaterialResources<'w>,
         group: &mut BindGroup<'r>,
     ) {
-        /*
-        let (
-            albedo_maps,
-            normal_maps,
-            mask_maps,
-            shadow,
-            terrain,
-            time
-        ) = resources;
-
-        // Set the storage buffer that contains ALL the matrices
-        let index = 
-        group.set_storage_buffer(
-            "position_scale_buffer",
-            &terrain.manager.position_scaling_buffers[index],
-            ..
-        ).unwrap();   
-        */ 
     }
 }

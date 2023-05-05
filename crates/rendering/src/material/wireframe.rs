@@ -18,6 +18,7 @@ impl Material for WireframeMaterial {
     type Resources<'w> = ();
     type RenderPath = Direct;
     type Settings<'s> = ();
+    type Query<'a> = &'a ();
 
     // Load the respective Wireframe shader modules and compile them
     fn shader(_settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader {

@@ -76,6 +76,7 @@ impl Archetype {
                 mask: self.mask,
                 index: old_len + i,
             };
+            dbg!(self.mask);
             let entity = entities.insert(linkings);
             self.entities.push(entity);
         }

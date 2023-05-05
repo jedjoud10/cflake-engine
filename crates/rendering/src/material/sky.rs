@@ -17,6 +17,7 @@ impl Material for SkyMaterial {
     type Resources<'w> = world::Read<'w, Storage<AlbedoMap>>;
     type RenderPath = Direct;
     type Settings<'s> = ();
+    type Query<'a> = &'a ();
 
     // Load the respective Sky shader modules and compile them
     fn shader(settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader {
