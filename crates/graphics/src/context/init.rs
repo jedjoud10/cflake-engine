@@ -62,6 +62,7 @@ pub(crate) unsafe fn init_context_and_window(
     fn use_integrated_gpu() -> bool {
         let system = systemstat::System::new();
 
+        // Simple check in case we want to disable integrated GPU
         if std::env::var("CFLAKE_DISCARD_INTEGRATED").is_ok() {
             return false;
         }

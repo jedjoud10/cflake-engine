@@ -14,7 +14,7 @@ layout(push_constant) uniform PushConstants {
     // Bit 4 = End X
     // Bit 5 = End Y
     // Bit 6 = End Z
-    uint direction_bitflags;
+    uint skirts_direction_bitflags;
 } meshing;
 
 #include <engine/shaders/math/packer.glsl>
@@ -156,20 +156,30 @@ void main() {
         // Meshes are always n-3 size, so each voxel has a size of 1 / n-3
         vec3 final = blocky ? vec3(0) : ((vertex / count) - vec3(0.5));
 
+        // Decompose the bitflags into booleans
+        uint bits = meshing.skirts_direction_bitflags;
+        bool start_x = (bits & 1) == 1;
+        bool start_y = (bits & 2) == 1;
+        bool start_z = (bits & 4) == 1;
+        bool end_x = (bits & 8) == 1;
+        bool end_y = (bits & 16) == 1;
+        bool end_z = (bits & 32) == 1;
+
+
         // TODO: Probably a way to optimize this
         // Confine the vertices in the X skirt if needed
         /*
-        if (gl_GlobalInvocationID.x < 1 || gl_GlobalInvocationID.x == size-3) {
+        if ((gl_GlobalInvocationID.x < 1 && start_x) || (gl_GlobalInvocationID.x == size-3 && end_x)) {
             final.x = 0;
         }
 
         // Confine the vertices in the Y skirt if needed
-        if (gl_GlobalInvocationID.y < 1 || gl_GlobalInvocationID.y == size-3) {
+        if ((gl_GlobalInvocationID.y < 1 && start_y) || (gl_GlobalInvocationID.y == size-3 && end_y)) {
             final.y = 0;
         }
 
         // Confine the vertices in the Z skirt if needed
-        if (gl_GlobalInvocationID.z < 1 || gl_GlobalInvocationID.z == size-3) {
+        if ((gl_GlobalInvocationID.z < 1 && start_z) || (gl_GlobalInvocationID.z == size-3 && end_z)) {
             final.z = 0;
         }
         */

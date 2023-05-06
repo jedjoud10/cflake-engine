@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, atomic::{AtomicU32, Ordering}};
 
 use crate::{AudioClip, AudioPlayer};
 use cpal::{traits::DeviceTrait, BuildStreamError, Stream, StreamConfig};
@@ -132,9 +132,10 @@ pub(super) fn build_clip_output_stream(
     };
 
     // Create the raw CPAL stream
-    build_output_raw_stream::<f32>(
+    build_output_raw_stream(
         config,
         &player.device,
+        player.volume.clone(),
         Box::new(move |dst, frame| {
             if frame >= src.len() {
                 dst.fill(0.0f32);
@@ -147,10 +148,11 @@ pub(super) fn build_clip_output_stream(
 
 // This function will take in a stream config and a device and it will create the CPAL stream for us
 // We can also pass it a callback function that gets called whenever we need to write some data into it
-pub(super) fn build_output_raw_stream<S: cpal::Sample + Send + Sync + 'static>(
+pub(super) fn build_output_raw_stream(
     config: StreamConfig,
     device: &cpal::Device,
-    callback: Box<dyn Fn(&mut [S], usize) + Send + Sync>,
+    volume: Arc<AtomicU32>,
+    callback: Box<dyn Fn(&mut [f32], usize) + Send + Sync>,
 ) -> Result<Stream, BuildStreamError> {
     let channels = config.channels as usize;
     let mut index = 0;
@@ -159,10 +161,20 @@ pub(super) fn build_output_raw_stream<S: cpal::Sample + Send + Sync + 'static>(
     
     device.build_output_stream(
         &config,
-        move |dst: &mut [S], _: &cpal::OutputCallbackInfo| {    
+        move |dst: &mut [f32], _: &cpal::OutputCallbackInfo| {    
+            // Using the callback write into the stream
             for frame in dst.chunks_mut(channels) {
                 callback(frame, index);
                 index += channels;
+            }
+
+            // Read the volume values from the player
+            let value = volume.load(Ordering::Relaxed);
+            let volume = f32::from_ne_bytes(value.to_ne_bytes());
+
+            // Affect the audio clip using the volume
+            for sample in dst {
+                *sample *= volume;
             }
         },
         move |err| {

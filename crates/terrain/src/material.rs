@@ -239,6 +239,7 @@ impl Material for TerrainMaterial {
             ..
         ).unwrap();   
 
+        // Since the ordering of entities within an archetype is always deterministic we can do this without worrying
         resources.6 += 1;
     }
 }
