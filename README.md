@@ -96,7 +96,8 @@ You can define a "Context" and "Settings" that can be used to customize how each
 
 For now, these are the types of assets that are loadable/deseriazable by default and their respective extensions.
 * Texture2D: .png, .jpg
-* glTF scene: .gltf
+* glTF scene: .gltf, .glb
+* 3D mesh: .obj
 * AudioClip: .wav, .mp3
 * Vertex Shader: .vert
 * Fragment Shader: .frag
