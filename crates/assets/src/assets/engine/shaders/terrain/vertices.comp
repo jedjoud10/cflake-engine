@@ -165,23 +165,20 @@ void main() {
         bool end_y = (bits & 16) == 1;
         bool end_z = (bits & 32) == 1;
 
-        start_x = true;
-        start_y = true;
-        start_z = true;
-        end_x = true;
-        end_y = true;
-        end_z = true;
+        start_x = false;
+        start_y = false;
+        start_z = false;
+        end_x = false;
+        end_y = false;
+        end_z = false;
 
 
         // TODO: Probably a way to optimize this
         // Confine the vertices in the X skirt if needed
-        /*
         if ((gl_GlobalInvocationID.x < 1 && start_x)  || (gl_GlobalInvocationID.x == size-3 && end_x) ) {
             final.x = 0;
         }
-        */
 
-        /*
         // Confine the vertices in the Y skirt if needed
         if ((gl_GlobalInvocationID.y < 1 && start_y) || (gl_GlobalInvocationID.y == size-3 && end_y)) {
             final.y = 0;
@@ -191,7 +188,6 @@ void main() {
         if ((gl_GlobalInvocationID.z < 1 && start_z) || (gl_GlobalInvocationID.z == size-3 && end_z)) {
             final.z = 0;
         }
-        */
 
         // Positions only need 16 bits (1 byte for cell coord, 1 byte for inner vertex coord)
         uint packed_cell_position_packed_normals = packUnorm4x8(vec4(gl_GlobalInvocationID, 0) / 255);

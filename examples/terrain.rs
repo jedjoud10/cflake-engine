@@ -34,33 +34,34 @@ fn init(world: &mut World) {
     asset!(assets, "user/textures/diffuse4.jpg", "/examples/assets/");
     asset!(assets, "user/textures/normal4.jpg", "/examples/assets/");
     asset!(assets, "user/textures/mask4.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/diffuse5.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/normal5.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/mask5.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/diffuse6.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/normal6.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/mask6.jpg", "/examples/assets/");
 
     // Create the terrain generator's settings
     let settings = TerrainSettings::new(
         &graphics,
         64,
         false,
-        false,
+        true,
         2,
         1024,
         6,
-        None,
+        None
         /*
         Some(&[
             TerrainSubMaterial {
-                diffuse: "user/textures/diffuse.jpg".to_string(),
-                normal: "user/textures/normal.jpg".to_string(),
-                mask: "user/textures/mask.jpg".to_string(),
+                diffuse: "user/textures/diffuse6.jpg".to_string(),
+                normal: "user/textures/normal6.jpg".to_string(),
+                mask: "user/textures/mask6.jpg".to_string(),
             },
             TerrainSubMaterial {
-                diffuse: "user/textures/diffuse4.jpg".to_string(),
-                normal: "user/textures/normal4.jpg".to_string(),
-                mask: "user/textures/mask4.jpg".to_string(),
-            },
-            TerrainSubMaterial {
-                diffuse: "user/textures/diffuse2.jpg".to_string(),
-                normal: "user/textures/normal2.jpg".to_string(),
-                mask: "user/textures/mask2.jpg".to_string(),
+                diffuse: "user/textures/diffuse5.jpg".to_string(),
+                normal: "user/textures/normal5.jpg".to_string(),
+                mask: "user/textures/mask5.jpg".to_string(),
             },
         ]),
         */

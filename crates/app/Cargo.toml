@@ -24,7 +24,6 @@ audio = { path = "../audio" }
 utils = { path = "../utils" }
 terrain = { path = "../terrain" }
 coords = { path = "../coords" }
-hierarchy = { path = "../hierarchy" }
 physics = { path = "../physics" }
 fern = { version = "0.6.1", features = ["colored"] }
 chrono = "0.4.23"

@@ -1,6 +1,6 @@
 #version 460 core
+
 layout(location = 0) out vec4 frag;
-#define lowpoly;
 
 // Data given by the vertex shader
 layout(location = 0) in vec3 m_position;

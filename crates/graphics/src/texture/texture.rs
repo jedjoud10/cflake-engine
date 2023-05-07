@@ -19,7 +19,7 @@ use crate::{
 // A texture is an abstraction over Vulkan images to allow us to access/modify them with ease
 // A texture is a container of multiple texels (like pixels, but for textures) that are stored on the GPU
 // This trait is implemented for all variants of textures (1D, 2D, 3D, Layered2D, CubeMap)
-pub trait Texture: Sized {
+pub trait Texture: Sized + 'static {
     // Texel region (position + extent)
     type Region: Region;
 

@@ -125,7 +125,6 @@ dependencies = [
  "graphics",
  "gui",
  "half",
- "hierarchy",
  "input",
  "lazy_static",
  "log",
@@ -1368,10 +1367,6 @@ checksum = "ee512640fe35acbfb4bb779db6f0d80704c2cacfa2e39b601ef3e3f47d1ae4c7"
 dependencies = [
  "libc",
 ]
-
-[[package]]
-name = "hierarchy"
-version = "0.1.0"
 
 [[package]]
 name = "hrtf"

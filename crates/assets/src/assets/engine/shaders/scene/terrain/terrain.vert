@@ -42,7 +42,7 @@ void main() {
     vec4 world_pos = vec4(((position.xyz * scaling_factor) * position_scale.w + position_scale.xyz), 1);
     vec4 projected = (camera.projection * camera.view) * world_pos; 
     gl_Position = projected;
-
+    
     // Set the output variables
     m_position = world_pos.xyz;
     m_normal = -normals.xyz;

@@ -128,6 +128,24 @@ struct InternalDefinitions<'a> {
     maybe_push_constant_layout: &'a super::MaybePushConstantLayout,
 }
 
+pub(crate) const UNIFORM_BUFFER_STRINGIFIED_NAME: &'static str = "Uniform Buffer";
+pub(crate) const STORAGE_BUFFER_STRINGIFIED_NAME: &'static str = "Storage Buffer";
+pub(crate) const SAMPLED_TEXTURE_STRINGIFIED_NAME: &'static str = "Sampled Texture";
+pub(crate) const STORAGE_TEXTURE_STRINGIFIED_NAME: &'static str = "Storage Texture";
+pub(crate) const SAMPLER_STRINGIFIED_NAME: &'static str = "Sampler";
+
+
+// Convert an bind resource type enum into a variant name
+pub(crate) fn stringify_bind_resource_type(val: &BindResourceType) -> &'static str {
+    match val {
+        BindResourceType::UniformBuffer { .. } => UNIFORM_BUFFER_STRINGIFIED_NAME,
+        BindResourceType::StorageBuffer { .. } => STORAGE_BUFFER_STRINGIFIED_NAME,
+        BindResourceType::Sampler { .. } => SAMPLER_STRINGIFIED_NAME,
+        BindResourceType::SampledTexture { .. } => SAMPLED_TEXTURE_STRINGIFIED_NAME,
+        BindResourceType::StorageTexture { .. } => STORAGE_TEXTURE_STRINGIFIED_NAME,
+    }
+}
+
 // Convert a reflected bind entry layout to a wgpu binding type
 pub(super) fn map_binding_type(value: &BindResourceLayout) -> wgpu::BindingType {
     match value.resource_type {

@@ -102,6 +102,8 @@ fn update(world: &mut World) {
     let voxels = &mut voxelizer.voxel_textures[index];
     let counters = &mut memory.counters[index];
     let offsets = &mut memory.offsets[index];
+    let indices = &mut mesher.cached_indices;
+    let suballocations = &mut memory.sub_allocation_chunk_indices[chunk.allocation];
     counters.write(&[0; 2], 0).unwrap();
     offsets.write(&[u32::MAX, u32::MAX], 0).unwrap();
 
@@ -140,7 +142,7 @@ fn update(world: &mut World) {
     // One global bind group for voxel generation
     active
         .set_bind_group(0, |set| {
-            set.set_storage_texture("voxels", voxels)
+            set.set_storage_texture_mut("voxels", voxels)
                 .unwrap();
 
             // Call the set group callback
@@ -160,15 +162,15 @@ fn update(world: &mut World) {
         .set_bind_group(0, |set| {
             set.set_storage_texture("voxels", voxels)
                 .unwrap();
-            set.set_storage_texture("cached_indices", &mut mesher.cached_indices)
+            set.set_storage_texture_mut("cached_indices", indices)
                 .unwrap();
-            set.set_storage_buffer("counters", counters, ..)
+            set.set_storage_buffer_mut("counters", counters, ..)
                 .unwrap();
         })
         .unwrap();
     active
         .set_bind_group(1, |set| {
-            set.set_storage_buffer("vertices", &mut mesher.temp_vertices, ..)
+            set.set_storage_buffer_mut("vertices", &mut mesher.temp_vertices, ..)
                 .unwrap();
         })
         .unwrap();
@@ -180,17 +182,17 @@ fn update(world: &mut World) {
     let mut active = pass.bind_shader(&mesher.compute_quads);
     active
         .set_bind_group(0, |set| {
-            set.set_storage_texture("cached_indices", &mut mesher.cached_indices)
+            set.set_storage_texture("cached_indices", indices)
                 .unwrap();
             set.set_storage_texture("voxels", voxels)
                 .unwrap();
-            set.set_storage_buffer("counters", counters, ..)
+            set.set_storage_buffer_mut("counters", counters, ..)
                 .unwrap();
         })
         .unwrap();
     active
         .set_bind_group(1, |set| {
-            set.set_storage_buffer("triangles", &mut mesher.temp_triangles, ..)
+            set.set_storage_buffer_mut("triangles", &mut mesher.temp_triangles, ..)
                 .unwrap();
         })
         .unwrap();
@@ -202,13 +204,13 @@ fn update(world: &mut World) {
     let mut active = pass.bind_shader(&memory.compute_find);
     active
         .set_bind_group(0, |set| {
-            set.set_storage_buffer(
+            set.set_storage_buffer_mut(
                 "indices",
-                &mut memory.sub_allocation_chunk_indices[chunk.allocation],
+                suballocations,
                 ..,
             )
             .unwrap();
-            set.set_storage_buffer("offsets", offsets, ..)
+            set.set_storage_buffer_mut("offsets", offsets, ..)
                 .unwrap();
             set.set_storage_buffer("counters", counters, ..)
                 .unwrap();
@@ -238,9 +240,9 @@ fn update(world: &mut World) {
     let mut active = pass.bind_shader(&memory.compute_copy);
     active 
         .set_bind_group(0, |set| {
-            set.set_storage_buffer("temporary_vertices", &mut mesher.temp_vertices, ..)
+            set.set_storage_buffer("temporary_vertices", &mesher.temp_vertices, ..)
                 .unwrap();
-            set.set_storage_buffer("temporary_triangles", &mut mesher.temp_triangles, ..)
+            set.set_storage_buffer("temporary_triangles", &mesher.temp_triangles, ..)
                 .unwrap();
             set.set_storage_buffer("offsets", offsets, ..)
                 .unwrap();
@@ -250,11 +252,11 @@ fn update(world: &mut World) {
         .unwrap();
     active
         .set_bind_group(1, |set| {
-            set.set_storage_buffer("output_vertices", output_vertices, ..)
+            set.set_storage_buffer_mut("output_vertices", output_vertices, ..)
                 .unwrap();
-            set.set_storage_buffer("output_triangles", output_triangles, ..)
+            set.set_storage_buffer_mut("output_triangles", output_triangles, ..)
                 .unwrap();
-            set.set_storage_buffer("indirect", indirect, ..).unwrap();
+            set.set_storage_buffer_mut("indirect", indirect, ..).unwrap();
         })
         .unwrap();
     active

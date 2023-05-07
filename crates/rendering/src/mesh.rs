@@ -1,6 +1,5 @@
 pub mod attributes;
 mod errors;
-mod indirect;
 mod mesh;
 pub mod settings;
 mod triangles;
