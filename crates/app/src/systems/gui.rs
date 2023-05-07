@@ -436,17 +436,17 @@ fn update(world: &mut World) {
         .show(&gui, |ui| {
             ui.horizontal(|ui| {
                 ui.label("Exposure: ");
-                ui.add(egui::DragValue::new(&mut compositor.post_process.exposure));
+                ui.add(egui::Slider::new(&mut compositor.post_process.exposure, 0.001..=5.0));
             });
 
             ui.horizontal(|ui| {
                 ui.label("Gamma: ");
-                ui.add(egui::DragValue::new(&mut compositor.post_process.gamma));
+                ui.add(egui::Slider::new(&mut compositor.post_process.gamma, 0.01..=3.0));
             });
 
             ui.horizontal(|ui| {
                 ui.label("Vignette Strength: ");
-                ui.add(egui::DragValue::new(&mut compositor.post_process.vignette_strength));
+                ui.add(egui::Slider::new(&mut compositor.post_process.vignette_strength, 0.0..=1.0));
             });
 
             ui.horizontal(|ui| {
@@ -471,7 +471,7 @@ fn update(world: &mut World) {
 
             ui.horizontal(|ui| {
                 ui.label("Tonemapping Strength: ");
-                ui.add(egui::DragValue::new(&mut compositor.post_process.tonemapping_strength));
+                ui.add(egui::Slider::new(&mut compositor.post_process.tonemapping_strength, 0.0..=1.0));
             });
 
             compositor.post_process.tonemapping_mode = selected.into_index();

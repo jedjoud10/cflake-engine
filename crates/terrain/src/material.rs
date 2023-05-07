@@ -97,7 +97,6 @@ impl Material for TerrainMaterial {
 
     // Custom shadow mapper (due to packed tex coordinates)
     fn casts_shadows() -> rendering::CastShadowsMode<Self> {
-        // TODO: Make this work with the pos scale buffer
         let callback: Box<dyn FnOnce(&Self::Settings<'_>, &Graphics, &Assets) -> Shader> =
             Box::new(|settings, graphics, assets| {
                 // Load the modified vertex module for the shadowmap shader

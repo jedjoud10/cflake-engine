@@ -1,0 +1,39 @@
+#version 460 core
+layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+// Visibility of each chunk
+layout(std430, set = 0, binding = 0) readonly buffer VisiblityBuffer {
+    uint data[];
+} visiblity;
+
+struct IndexedIndirectDrawArgs {
+    uint vertex_count;
+    uint instance_count;
+    uint base_index;
+    int vertex_offset;
+    uint base_instance;
+};
+
+// Input position and scale of each chunk
+layout(std430, set = 0, binding = 1) readonly buffer VisiblityBuffer {
+    vec4 data[];
+} input_position_scale;
+
+// Position and scale of each chunk
+layout(std430, set = 0, binding = 1) writeonly buffer VisiblityBuffer {
+    vec4 data[];
+} output_position_scale;
+
+// Input indirect drawing buffer
+layout(std430, set = 0, binding = 1) readonly buffer IndirectBuffer {
+    IndexedIndirectDrawArgs data[];
+} input_indirect;
+
+// Output indirect drawing buffer
+layout(std430, set = 0, binding = 2) writeonly buffer IndirectBuffer {
+    IndexedIndirectDrawArgs data[];
+} output_indirect;
+
+void main() {
+
+}

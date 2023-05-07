@@ -44,6 +44,8 @@ fn init(world: &mut World) {
         2,
         1024,
         6,
+        None,
+        /*
         Some(&[
             TerrainSubMaterial {
                 diffuse: "user/textures/diffuse.jpg".to_string(),
@@ -61,6 +63,7 @@ fn init(world: &mut World) {
                 mask: "user/textures/mask2.jpg".to_string(),
             },
         ]),
+        */
     )
     .unwrap();
 
@@ -101,10 +104,7 @@ fn init(world: &mut World) {
         Position::default(),
         Rotation::default(),
         Velocity::default(),
-        Camera {
-            near: 5.0,
-            ..Default::default()
-        },
+        Camera::default(),
         ChunkViewer::default(),
         CameraController::default(),
     ));
@@ -126,11 +126,13 @@ fn update(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
 
     // Rotation the light
+    /*
     if let Some((rotation, _)) =
         scene.find_mut::<(&mut Rotation, &DirectionalLight)>()
     {
         rotation.rotate_y(-0.1 * time.delta().as_secs_f32());
     }
+    */
 
     // Exit the game when the user pressed Escape
     if input.get_button(Button::Escape).pressed() {

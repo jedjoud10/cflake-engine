@@ -84,14 +84,6 @@ vec3 triplanar_normal(float layer, vec3 normal) {
 #endif
 
 void main() {
-	// We do a bit of fading
-	/*
-	float fade = min(material.fade, 1);
-	if (dither(ivec2(gl_FragCoord.xy), fade)) {
-		discard;
-	}
-	*/
-
 	// Get normals either by derivating them or getting them smoothed
 	#ifdef lowpoly
 	vec3 surface_normal = normalize(cross(dFdy(m_position), dFdx(m_position)));
@@ -122,9 +114,8 @@ void main() {
 	vec3 dirt = pow(vec3(54, 30, 7) / 255.0, vec3(2.2));
 	vec3 grass = pow(vec3(69, 107, 35) / 255.0, vec3(2.2));
 	float blending_factor = 1 - clamp((surface_normal.y - 0.90) * 40, 0, 1);
-	blending_factor = blending_factor > 0.5 ? 1.0 : 0.0;
 	vec3 albedo = mix(grass, rock, blending_factor);
-	vec3 mask = vec3(1.0, 1.0, 0.0);
+	vec3 mask = vec3(1.0, 0.9, 0.0);
 	#endif
 	
 	// Compute PBR values

@@ -75,7 +75,7 @@ impl Default for PostProcessUniform {
             gamma: 2.2,
             vignette_strength: 0.4,
             vignette_size: 0.1,
-            tonemapping_mode: 0,
+            tonemapping_mode: 2,
             tonemapping_strength: 1.0,
         }
     }

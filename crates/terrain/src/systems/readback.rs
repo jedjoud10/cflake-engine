@@ -40,7 +40,7 @@ fn update(world: &mut World) {
     }).unwrap();
 
     // Readback the offsets asynchronously
-    let tex_coords_per_sub_allocation = settings.vertices_per_sub_allocation;
+    let vertices_per_sub_allocation = settings.vertices_per_sub_allocation;
     let triangles_per_sub_allocation = settings.triangles_per_sub_allocation;
     offsets.async_read(.., move |offsets| {
         let _ = offset_sender.send((entity, vek::Vec2::from_slice(offsets)));
@@ -57,7 +57,7 @@ fn update(world: &mut World) {
         let chunk = entry.get_mut::<Chunk>().unwrap();    
 
         // Check if we are OOM lol
-        if offset.x / tex_coords_per_sub_allocation
+        if offset.x / vertices_per_sub_allocation
             != offset.y / triangles_per_sub_allocation
         {
             panic!("Out of memory xD MDR");

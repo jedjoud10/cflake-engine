@@ -74,7 +74,6 @@ impl Server {
 
     // Called each networking tick to update the server
     pub(crate) fn tick(&mut self) {
-        /*
         // Detect newly connected clients
         if let Ok((stream, address)) = self.listener.accept() {
             self.handle_client_connection(stream, address);
@@ -108,7 +107,6 @@ impl Server {
         for client in disconnected {
             self.handle_client_disconnection(client);
         }
-        */
     }
 }
 
