@@ -1,7 +1,7 @@
 use std::{mem::size_of, num::NonZeroU8};
 
 use crate::{
-    AlbedoMap, AttributeBuffer, BasicMaterial, Camera, DefaultMaterialResources, DirectionalLight,
+    AlbedoMap, AttributeBuffer, Camera, DefaultMaterialResources, DirectionalLight,
     ForwardRenderer, Indirect, MaskMap, Mesh, NormalMap, PhysicallyBasedMaterial, Pipelines,
     Renderer, SceneUniform, ShadowMapping, SkyMaterial, WindowUniform, MultiDrawIndirectMesh, IndirectMesh, WireframeMaterial, TimingUniform,
 };
@@ -37,9 +37,6 @@ fn init(world: &mut World) {
 
     // Pre-initialize the pipeline with the material types
     let mut pipelines = Pipelines::new();
-    pipelines
-        .register::<BasicMaterial>(&graphics, &assets)
-        .unwrap();
     pipelines
         .register::<SkyMaterial>(&graphics, &assets)
         .unwrap();
@@ -78,7 +75,6 @@ fn init(world: &mut World) {
     world.insert(Storage::<DrawIndexedIndirectBuffer>::default());
 
     // Add the storages that contain the materials and their resources
-    world.insert(Storage::<BasicMaterial>::default());
     world.insert(Storage::<SkyMaterial>::default());
     world.insert(Storage::<PhysicallyBasedMaterial>::default());
     world.insert(Storage::<WireframeMaterial>::default());
@@ -250,6 +246,7 @@ fn render(world: &mut World) {
         camera.far,
         index as usize
     );
+
     let mips = shadowmap.depth_tex.mips_mut();
     let mut level = mips.level_mut(0).unwrap();
 

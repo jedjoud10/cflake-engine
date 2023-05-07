@@ -1,3 +1,5 @@
+use gui::egui::Widget;
+
 use crate::prelude::*;
 
 // Simple type to check if stats are enabled or not
@@ -307,6 +309,48 @@ fn update(world: &mut World) {
                 ui.add(egui::Checkbox::new(&mut terrain.active, ""));
             });
         });
+
+        egui::Window::new("Terrain Memory").frame(frame).show(&gui, |ui| {
+            let settings = &mut terrain.settings;
+            egui::Grid::new("allocations")
+                .min_col_width(0f32)
+                .max_col_width(400f32)
+                .striped(true)
+                .show(ui, |ui| {
+                    let allocs = settings.allocation_count();
+                    let mut bitsets = vec![BitSet::new(); allocs];
+                    let chunks = scene.query::<&Chunk>();
+
+                    for chunk in chunks {
+                        if let Some(vek::Vec2 { x, y }) = chunk.ranges() {
+                            let bit_set = &mut bitsets[chunk.allocation()];
+                            for i in 0..(y-x) {
+                                bit_set.set(i as usize + x as usize);
+                            }
+                        }
+                    }
+
+                    let sub_allocation = settings.sub_allocation_count(); 
+
+                    for allocation in 0..allocs {
+                        ui.horizontal(|ui| {
+                            ui.style_mut().spacing.item_spacing.x = 0.0;
+
+                            for x in 0..128 {
+                                let mut color = 0.0f32;
+                                let div = sub_allocation / 128;
+                                for sub in 0..(sub_allocation / 128) {
+                                    color += if bitsets[allocation].get(sub + x * div) { 1.0 } else { 0.0 };
+                                }
+
+                                let color = egui::Color32::from_gray(((color / div as f32) * 255.0) as u8);
+                                egui::Button::new("").small().rounding(0.0).fill(color).ui(ui);
+                            }
+                        });
+                        ui.end_row();
+                    }
+                });
+        });
     }
 
     // Camera controller settings
@@ -320,12 +364,12 @@ fn update(world: &mut World) {
                 ui.label(format!("Position: {:.2}", **position));
 
                 ui.horizontal(|ui| {
-                    ui.label("Base Speed: ");
+                    ui.label("Base Speed (m/s): ");
                     ui.add(egui::DragValue::new(&mut controller.base_speed));
                 });
 
                 ui.horizontal(|ui| {
-                    ui.label("Boost Speed: ");
+                    ui.label("Boost Speed (m/s): ");
                     ui.add(egui::DragValue::new(&mut controller.boost_speed));
                 });
 
@@ -409,6 +453,28 @@ fn update(world: &mut World) {
                 ui.label("Vignette Size: ");
                 ui.add(egui::DragValue::new(&mut compositor.post_process.vignette_size));
             });
+
+            let mut selected = Tonemapping::from_index(compositor.post_process.tonemapping_mode);
+        
+            ui.horizontal(|ui| {
+                ui.label("Tonemapping Mode: ");
+            
+                egui::ComboBox::from_label("")
+                    .selected_text(format!("{:?}", selected))
+                    .show_ui(ui, |ui| {
+                        ui.selectable_value(&mut selected, Tonemapping::Reinhard, "Reinhard");
+                        ui.selectable_value(&mut selected, Tonemapping::ReinhardJodie, "ReinhardJodie");
+                        ui.selectable_value(&mut selected, Tonemapping::ACES, "ACES");
+                        ui.selectable_value(&mut selected, Tonemapping::Clamp, "Clamp");
+                });
+            });
+
+            ui.horizontal(|ui| {
+                ui.label("Tonemapping Strength: ");
+                ui.add(egui::DragValue::new(&mut compositor.post_process.tonemapping_strength));
+            });
+
+            compositor.post_process.tonemapping_mode = selected.into_index();
         });
     }
 

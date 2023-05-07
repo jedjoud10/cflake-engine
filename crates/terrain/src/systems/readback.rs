@@ -40,7 +40,7 @@ fn update(world: &mut World) {
     }).unwrap();
 
     // Readback the offsets asynchronously
-    let tex_coords_per_sub_allocation = settings.tex_coords_per_sub_allocation;
+    let tex_coords_per_sub_allocation = settings.vertices_per_sub_allocation;
     let triangles_per_sub_allocation = settings.triangles_per_sub_allocation;
     offsets.async_read(.., move |offsets| {
         let _ = offset_sender.send((entity, vek::Vec2::from_slice(offsets)));
@@ -65,11 +65,11 @@ fn update(world: &mut World) {
 
         // Calculate sub-allocation index and length
         let count = f32::max(
-            count.x as f32 / settings.tex_coords_per_sub_allocation as f32,
+            count.x as f32 / settings.vertices_per_sub_allocation as f32,
             count.y as f32 / settings.triangles_per_sub_allocation as f32,
         );
         let count = count.ceil() as u32;
-        let offset = offset.x / settings.tex_coords_per_sub_allocation;
+        let offset = offset.x / settings.vertices_per_sub_allocation;
 
         // Update chunk range (if valid) and set visibility
         if count > 0 {

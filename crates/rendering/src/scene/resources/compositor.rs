@@ -11,6 +11,46 @@ use crate::{CameraUniform, SceneColor, SceneDepth, WindowUniform};
 pub type FinalRenderPass = RenderPass<SwapchainFormat, ()>;
 pub type FinalRenderPipeline = RenderPipeline<SwapchainFormat, ()>;
 
+// What tonemapping filter we should use
+#[derive(Clone, Copy, PartialEq, Debug)]
+#[repr(u32)]
+pub enum Tonemapping {
+    // Reinhard tonemapping
+    Reinhard,
+
+    // Reinhard variant from shadertoy made by user "Jodie"
+    ReinhardJodie,
+
+    // ACES filmic curve
+    ACES,
+
+    // Clamps the HDR color values to LDR
+    Clamp,
+}
+
+impl Tonemapping {
+    // Get a tonemap enum variant from raw discriminant index
+    pub fn from_index(disc: u32) -> Self {
+        match disc {
+            0 => Self::Reinhard,
+            1 => Self::ReinhardJodie,
+            2 => Self::ACES,
+            3 => Self::Clamp,
+            _ => panic!()
+        }
+    }
+    
+    // Get a tonemap discriminant index from enum variant
+    pub fn into_index(&self) -> u32 {
+        match self {
+            Self::Reinhard => 0,
+            Self::ReinhardJodie => 1,
+            Self::ACES => 2,
+            Self::Clamp => 3,
+        }
+    }
+}
+
 // Container for post-processing parameters
 #[derive(Clone, Copy, PartialEq, Pod, Zeroable)]
 #[repr(C)]
@@ -22,6 +62,10 @@ pub struct PostProcessUniform {
     // Vignette parameters
     pub vignette_strength: f32,
     pub vignette_size: f32,
+
+    // Tonemapping parameters
+    pub tonemapping_mode: u32,
+    pub tonemapping_strength: f32,
 }
 
 impl Default for PostProcessUniform {
@@ -31,6 +75,8 @@ impl Default for PostProcessUniform {
             gamma: 2.2,
             vignette_strength: 0.4,
             vignette_size: 0.1,
+            tonemapping_mode: 0,
+            tonemapping_strength: 1.0,
         }
     }
 }

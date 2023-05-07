@@ -5,7 +5,7 @@ fn main() {
     App::default()
         .set_app_name("cflake engine terrain example")
         .set_window_fullscreen(true)
-        .set_frame_rate_limit(FrameRateLimit::VSync)
+        //.set_frame_rate_limit(FrameRateLimit::VSync)
         //set_frame_rate_limit(FrameRateLimit::Limited(120))
         //.set_logging_level(LevelFilter::Trace)
         .insert_init(init)
@@ -41,16 +41,14 @@ fn init(world: &mut World) {
         64,
         false,
         false,
-        8,
+        2,
         1024,
         6,
-        None,
-        /*
         Some(&[
             TerrainSubMaterial {
-                diffuse: "user/textures/diffuse3.jpg".to_string(),
-                normal: "user/textures/normal3.jpg".to_string(),
-                mask: "user/textures/mask3.jpg".to_string(),
+                diffuse: "user/textures/diffuse.jpg".to_string(),
+                normal: "user/textures/normal.jpg".to_string(),
+                mask: "user/textures/mask.jpg".to_string(),
             },
             TerrainSubMaterial {
                 diffuse: "user/textures/diffuse4.jpg".to_string(),
@@ -63,7 +61,6 @@ fn init(world: &mut World) {
                 mask: "user/textures/mask2.jpg".to_string(),
             },
         ]),
-        */
     )
     .unwrap();
 
@@ -95,7 +92,7 @@ fn init(world: &mut World) {
     let mesh = meshes.insert(mesh);
 
     // Create the new sky entity components
-    let surface = Surface::new(mesh, material, id);
+    let surface = Surface::new(mesh.clone(), material, id);
     let renderer = Renderer::default();
     scene.insert((surface, renderer));
 

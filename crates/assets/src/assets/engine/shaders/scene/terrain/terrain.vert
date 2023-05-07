@@ -4,7 +4,7 @@
 layout (constant_id = 0) const float scaling_factor = 1.0;
 
 // Main attribute set vertex attributes
-layout(location = 3) in vec2 packed;
+layout(location = 0) in vec4 packed;
 
 // Camera bind group buffer (creates a 'camera' object)
 #include <engine/shaders/common/camera.glsl>

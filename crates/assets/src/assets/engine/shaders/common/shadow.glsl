@@ -63,8 +63,6 @@ float calculate_shadowed(
     vec3 light_dir,
     vec3 camera
 ) {
-    // TODO: FUCKING FIX SHADOWS FFS
-    // AAAAAAAAAAAAAAAAAAAAAAAAAAA
     return 0.0;
 
     // Taken from a comment by Octavius Ace from the same learn OpenGL website 
@@ -87,10 +85,12 @@ float calculate_shadowed(
     uvs.xy += 0.5;
     uvs.y = 1-uvs.y;
     float current = uvs.z;
-    
 
     // Get texture size
     uint size = uint(textureSize(shadow_map, 0).x);
+    return shadow_linear(layer, uvs.xy, size, current + bias);
+    
+    /*
     float spread = 0.0003;
     float shadowed = 0.0;
     for (int x = -2; x <= 2; x++) {
@@ -100,6 +100,7 @@ float calculate_shadowed(
     }
     shadowed /= 25.0;
     return shadowed;  
+    */
     
 
     //return sample_shadow_texel(layer, ivec2(uvs.xy * size), current + bias);

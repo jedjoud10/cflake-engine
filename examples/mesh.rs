@@ -31,7 +31,7 @@ fn init(world: &mut World) {
         ("user/textures/diffuse2.jpg", graphics.clone()),
     );
     let normal = assets.async_load::<NormalMap>(
-        ("user/textures/normal2.jpg", graphics.clone()),
+        ("engine/textures/scene/bumps.jpg", graphics.clone()),
     );
     let mask = assets.async_load::<MaskMap>(
         ("user/textures/mask2.jpg", graphics.clone()), 

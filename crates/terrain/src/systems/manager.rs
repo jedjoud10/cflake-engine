@@ -126,6 +126,9 @@ fn update(world: &mut World) {
             let chunks_to_pre_allocate = settings.allocation_count * (chunks_to_pre_allocate as f32 / settings.allocation_count as f32).ceil() as usize; 
             let chunks_to_pre_allocate_per_allocation = chunks_to_pre_allocate / settings.allocation_count;
 
+            // Keep track of the entities we will add
+            let mut entities: Vec<(Position, Scale, Chunk)> = Vec::new(); 
+
             // Add the same amounts of chunks per allocation
             for allocation in 0..terrain.settings.allocation_count {
                 let extra  = chunks_to_pre_allocate_per_allocation;
@@ -149,7 +152,7 @@ fn update(world: &mut World) {
                 position_scaling_buffers.extend_from_slice(&vec![vek::Vec4::zero(); extra]).unwrap();
 
                 // Create new chunk entities and set them as "free"
-                let mut entities = (0..extra).into_iter().map(|_| {
+                entities.extend((0..extra).into_iter().map(|_| {
                     let local_index = memory.chunks_per_allocations[allocation];
                     let position = Position::default();
                     let scale = Scale::default();
@@ -174,12 +177,12 @@ fn update(world: &mut World) {
                 
                     // Create the bundle
                     (position, scale, chunk)
-                }).collect::<Vec<_>>();
-
-                // Randomly order the entities to reduce the chances of an OOM error
-                entities.shuffle(&mut rng);
-                scene.extend_from_iter(entities);
+                }));
             }
+        
+            // Randomly order the entities to reduce the chances of an OOM error
+            entities.shuffle(&mut rng);
+            scene.extend_from_iter(entities);
         }   
 
         // Get all free chunks in the world and use them

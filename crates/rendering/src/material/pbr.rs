@@ -44,7 +44,7 @@ impl Material for PhysicallyBasedMaterial {
     fn shader(settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader {
         // Load the vertex module from the assets
         let vert = assets
-            .load::<VertexModule>("engine/shaders/scene/basic/basic.vert")
+            .load::<VertexModule>("engine/shaders/scene/pbr/pbr.vert")
             .unwrap();
 
         // Load the fragment module from the assets

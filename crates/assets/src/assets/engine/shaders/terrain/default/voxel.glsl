@@ -111,8 +111,8 @@ float voxel(vec3 position) {
 
     position *= 0.1;
 
-    float density = (1-fbmCellular(position * 0.02 * vec3(1, 5.0, 1), 8, 0.5, 2.0).x) * 10;
-    float d2 = (1-fbmCellular(position * 0.008 * vec3(1, 0.1, 1), 8, 0.3, 2.1).x) * 140;
+    float density = (1-fbmCellular(position.xy * 0.02 * vec2(1, 1), 2, 0.5, 2.0).x) * 10;
+    float d2 = (1-fbmCellular(position.xz * 0.008 * vec2(1, 1), 2, 0.3, 2.1).x) * 140;
     d2 = smooth_floor(d2 / 50) * 50;
 
     d2 += position.y;

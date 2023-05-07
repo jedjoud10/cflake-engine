@@ -27,7 +27,7 @@ layout(set = 0, binding = 3, r32ui) uniform uimage3D cached_indices;
 
 // Output temp vertices
 layout(std430, set = 1, binding = 0) writeonly buffer Vertices {
-    vec2 data[size*size*size];
+    vec4 data[size*size*size];
 } vertices;
 
 // Atomic counters
@@ -136,7 +136,7 @@ void main() {
     bool skirts = any(lessThanEqual(gl_GlobalInvocationID, vec3(1))) || any(greaterThanEqual(gl_GlobalInvocationID, vec3(size-3)));
 
     // Update normals and count for skirts
-    if (skirts) {
+    if (skirts && imageLoad(voxels, ivec3(gl_GlobalInvocationID)).x < 0.0) {
         normal = calculate_normal(gl_GlobalInvocationID) * 4;
         count = 4;
     }
@@ -165,14 +165,23 @@ void main() {
         bool end_y = (bits & 16) == 1;
         bool end_z = (bits & 32) == 1;
 
+        start_x = true;
+        start_y = true;
+        start_z = true;
+        end_x = true;
+        end_y = true;
+        end_z = true;
+
 
         // TODO: Probably a way to optimize this
         // Confine the vertices in the X skirt if needed
         /*
-        if ((gl_GlobalInvocationID.x < 1 && start_x) || (gl_GlobalInvocationID.x == size-3 && end_x)) {
+        if ((gl_GlobalInvocationID.x < 1 && start_x)  || (gl_GlobalInvocationID.x == size-3 && end_x) ) {
             final.x = 0;
         }
+        */
 
+        /*
         // Confine the vertices in the Y skirt if needed
         if ((gl_GlobalInvocationID.y < 1 && start_y) || (gl_GlobalInvocationID.y == size-3 && end_y)) {
             final.y = 0;
@@ -195,9 +204,10 @@ void main() {
         float float_packed_inner_position_packed_normals = uintBitsToFloat(packed_inner_position_packed_normals);
 
         // Store the packed positions and normals
-        vertices.data[index] = vec2(
+        vertices.data[index] = vec4(
             float_packed_cell_position_packed_normals,
-            float_packed_inner_position_packed_normals
+            float_packed_inner_position_packed_normals,
+            0, 0
         );
 
         imageStore(cached_indices, ivec3(gl_GlobalInvocationID + 1), uvec4(index));

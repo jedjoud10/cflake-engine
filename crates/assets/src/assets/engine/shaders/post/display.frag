@@ -15,6 +15,8 @@ layout(set = 0, binding = 1) uniform PostProcessUniform {
 	float gamma;
 	float vignette_strength;
 	float vignette_size;
+	uint tonemapping_mode;
+	float tonemapping_strength;
 } post_processing;
 
 
@@ -38,9 +40,35 @@ void main() {
 	color += fog * (non_linear_depth > 0.99999 ? 0.0 : 1.0);
 	*/
 
-	// Apply tonemapping and gamma mapping
-	//color = pow(color, vec3(1.0 / 2.2));
-	color = pow(aces(color), vec3(1.0 / post_processing.gamma));
+	// Apply tonemapping based on settings
+	vec3 tonemapped = color;
+
+	/*
+	Reinhard,
+	ReinhardJodie,
+	ACES,
+	Clamp,
+	*/
+
+	// Handle tonemapping mode
+	switch(post_processing.tonemapping_mode) {
+		case 0:
+			tonemapped = reinhard(color);
+			break;
+		case 1:
+			tonemapped = reinhard_jodie(color);
+			break;
+		case 2:
+			tonemapped = aces(color);
+			break;
+		case 3:
+			tonemapped = min(color, vec3(1));
+			break;
+	}
+	
+	// Apply gamma correction
+	tonemapped = mix(color, tonemapped, post_processing.tonemapping_strength);
+	color = pow(tonemapped, vec3(1.0 / post_processing.gamma));
 
 	// Create a simple vignette
 	vec2 uv = vec2(x, y);

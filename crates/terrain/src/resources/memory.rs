@@ -19,7 +19,7 @@ pub struct MemoryManager {
     pub(crate) indexed_indirect_buffers: Vec<Handle<DrawIndexedIndirectBuffer>>,
     
     // Vectors that contains the shared buffers needed for multidraw indirect
-    pub(crate) shared_tex_coord_buffers: Vec<Handle<Vertices>>,
+    pub(crate) shared_positions_buffers: Vec<Handle<Vertices>>,
     pub(crate) shared_triangle_buffers: Vec<Handle<Triangles>>,
 
     // Numbers of chunks used per allocation
@@ -72,16 +72,16 @@ impl MemoryManager {
                     settings.sub_allocation_count,
                     u32::MAX,
                     BufferMode::Dynamic,
-                    BufferUsage::STORAGE | BufferUsage::WRITE | BufferUsage::READ,
+                    BufferUsage::STORAGE | BufferUsage::WRITE,
                 )
                 .unwrap()
             })
             .collect::<Vec<_>>();
 
-        // Allocate the required texture coordinate (packed data) buffers
-        let shared_tex_coord_buffers = (0..settings.allocation_count)
+        // Allocate the required packed data buffers
+        let shared_positions_buffers = (0..settings.allocation_count)
             .map(|_| {
-                let value = AttributeBuffer::<attributes::TexCoord>::zeroed(
+                let value = AttributeBuffer::<attributes::Position>::zeroed(
                     graphics,
                     settings.output_tex_coord_buffer_length,
                     BufferMode::Dynamic,
@@ -126,7 +126,7 @@ impl MemoryManager {
 
         // Spec constants
         compiler.use_constant(0, settings.sub_allocation_count as u32);
-        compiler.use_constant(1, settings.tex_coords_per_sub_allocation);
+        compiler.use_constant(1, settings.vertices_per_sub_allocation);
         compiler.use_constant(2, settings.triangles_per_sub_allocation);
 
         // Create the compute shader that will find a free memory allocation
@@ -187,14 +187,14 @@ impl MemoryManager {
 
         // Generate multiple multi-draw indirect meshes that will be used by the global terrain renderer
         let allocation_meshes = (0..settings.allocation_count).into_iter().map(|allocation| {
-            let tex_coords = shared_tex_coord_buffers[allocation].clone();
+            let positions = shared_positions_buffers[allocation].clone();
             let triangles = shared_triangle_buffers[allocation].clone();
         
             multi_draw_indirect_meshes.insert(MultiDrawIndirectMesh::from_handles(
+                Some(positions.clone()),
                 None,
                 None,
                 None,
-                Some(tex_coords.clone()),
                 triangles.clone(),
                 indexed_indirect_buffers[allocation].clone(),
                 0,
@@ -204,7 +204,7 @@ impl MemoryManager {
 
         Self {
             indexed_indirect_buffers,
-            shared_tex_coord_buffers,
+            shared_positions_buffers,
             shared_triangle_buffers,
             compute_find,
             sub_allocation_chunk_indices,

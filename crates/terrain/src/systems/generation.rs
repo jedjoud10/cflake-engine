@@ -28,8 +28,8 @@ fn update(world: &mut World) {
     let mut indirects = world
         .get_mut::<Storage<DrawIndexedIndirectBuffer>>()
         .unwrap();
-    let mut tex_coords = world
-        .get_mut::<Storage<AttributeBuffer<attributes::TexCoord>>>()
+    let mut positions = world
+        .get_mut::<Storage<AttributeBuffer<attributes::Position>>>()
         .unwrap();
     let mut triangles = world.get_mut::<Storage<TriangleBuffer<u32>>>().unwrap();
 
@@ -229,7 +229,7 @@ fn update(world: &mut World) {
     active.dispatch(vek::Vec3::new(dispatch, 1, 1)).unwrap();
 
     // Get the output packed tex coord from resource storage
-    let output_vertices = tex_coords.get_mut(&memory.shared_tex_coord_buffers[chunk.allocation]);
+    let output_vertices = positions.get_mut(&memory.shared_positions_buffers[chunk.allocation]);
 
     // Get the output triangles from resrouce storage
     let output_triangles = triangles.get_mut(&memory.shared_triangle_buffers[chunk.allocation]);

@@ -1,4 +1,3 @@
-mod basic;
 mod material;
 mod path;
 mod pbr;
@@ -6,7 +5,6 @@ mod shared;
 mod sky;
 mod wireframe;
 pub use wireframe::*;
-pub use basic::*;
 pub use material::*;
 pub use path::*;
 pub use pbr::*;

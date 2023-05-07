@@ -92,13 +92,12 @@ impl Material for TerrainMaterial {
 
     // Terrain only needs tex coordinates (packed)
     fn attributes() -> rendering::MeshAttributes {
-        rendering::MeshAttributes::TEX_COORDS
+        rendering::MeshAttributes::POSITIONS
     }
 
     // Custom shadow mapper (due to packed tex coordinates)
     fn casts_shadows() -> rendering::CastShadowsMode<Self> {
-        rendering::CastShadowsMode::Disabled
-        /*
+        // TODO: Make this work with the pos scale buffer
         let callback: Box<dyn FnOnce(&Self::Settings<'_>, &Graphics, &Assets) -> Shader> =
             Box::new(|settings, graphics, assets| {
                 // Load the modified vertex module for the shadowmap shader
@@ -126,11 +125,10 @@ impl Material for TerrainMaterial {
                 compiler.use_push_constant_layout(layout);
 
                 // Combine the modules to the shader
-                Shader::new(vertex, fragment, compiler).unwrap()
+                Shader::new(vertex, fragment, &compiler).unwrap()
             });
 
         rendering::CastShadowsMode::Enabled(Some(callback))
-        */
     }
 
     // Fetch the texture storages
