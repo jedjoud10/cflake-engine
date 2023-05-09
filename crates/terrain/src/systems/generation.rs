@@ -60,6 +60,16 @@ fn update(world: &mut World) {
             }
         }
 
+        // Update indirect buffer
+        let indirect = &memory.culled_indexed_indirect_buffer;
+        let indirect = indirects.get_mut(&indirect);
+        indirect
+        .write(
+            &[crate::DEFAUlT_DRAW_INDEXED_INDIRECT],
+            chunk.global_index,
+        )
+        .unwrap();
+
         chunk.ranges = None;
     }
 

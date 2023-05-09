@@ -138,6 +138,14 @@ fn render(world: &mut World) {
         }
     ],  0).unwrap();
 
+    // Reset the stats
+    renderer.drawn_unique_material_count = 0;
+    renderer.material_instances_count = 0;
+    renderer.rendered_direct_vertices_drawn = 0;
+    renderer.rendered_direct_triangles_drawn = 0;
+    renderer.culled_sub_surfaces = 0;
+    renderer.rendered_sub_surfaces = 0;
+
     // Needed for direct rendering
     let meshes = world.get::<Storage<Mesh>>().unwrap();
 
@@ -213,8 +221,6 @@ fn render(world: &mut World) {
         black: &albedo_maps[&renderer.black],
         normal: &normal_maps[&renderer.normal],
         mask: &mask_maps[&renderer.mask],
-        material_index: 0,
-        draw_call_index: 0,
         camera,
         camera_position,
         camera_rotation,
@@ -230,6 +236,12 @@ fn render(world: &mut World) {
         indirect_tex_coords: &indirect_tex_coords_attribute,
         indirect_triangles: &indirect_triangles,
         draw_indexed_indirect_buffers: &indexed_indirect_buffers,
+        drawn_unique_material_count: &mut renderer.drawn_unique_material_count,
+        material_instances_count: &mut renderer.material_instances_count,
+        rendered_direct_vertices_drawn: &mut renderer.rendered_direct_vertices_drawn,
+        rendered_direct_triangles_drawn: &mut renderer.rendered_direct_triangles_drawn,
+        culled_sub_surfaces: &mut renderer.culled_sub_surfaces,
+        rendered_sub_surfaces: &mut renderer.rendered_sub_surfaces,
     };
     drop(scene);
 

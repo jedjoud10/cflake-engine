@@ -45,9 +45,12 @@ pub struct DefaultMaterialResources<'a> {
     pub indirect_triangles: &'a Storage<TriangleBuffer<u32>>,
     pub draw_indexed_indirect_buffers: &'a Storage<DrawIndexedIndirectBuffer>,
 
-    // Currently used indicies
-    pub material_index: usize,
-    pub draw_call_index: usize,
+    pub drawn_unique_material_count: &'a mut u32,
+    pub material_instances_count: &'a mut u32,
+    pub rendered_direct_vertices_drawn: &'a mut u64,
+    pub rendered_direct_triangles_drawn: &'a mut u64,
+    pub culled_sub_surfaces: &'a mut u64,
+    pub rendered_sub_surfaces: &'a mut u64,
 }
 
 // Camera data that will be stored in a UBO

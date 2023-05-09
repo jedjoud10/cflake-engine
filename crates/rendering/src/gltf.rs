@@ -248,8 +248,11 @@ impl Asset for GltfScene {
                 assert!(accessor.sparse.is_none());
                 let offset = accessor.byte_offset as usize;
                 let _type = accessor.type_.as_ref().unwrap();
+                let min = accessor.min.as_ref();
+                let max = accessor.max.as_ref();
+
                 let generic_component_type = accessor.component_type.as_ref().unwrap();
-                (&view[offset..], (_type, &generic_component_type.0))
+                (&view[offset..], (_type, &generic_component_type.0), (min, max))
             })
             .collect::<Vec<_>>();
 
@@ -440,7 +443,8 @@ impl Asset for GltfScene {
                     cached_meshes
                         .entry(key)
                         .or_insert_with(|| {
-                            let positions = create_positions_vec(&mapped_accessors[key.0]);
+                            // Create buffers and AABB
+                            let (positions, aabb) = create_positions_vec(&mapped_accessors[key.0]);
                             let normals = key
                                 .1
                                 .map(|index| create_normals_vec(&mapped_accessors[index]));
@@ -465,7 +469,7 @@ impl Asset for GltfScene {
                             }
 
                             // Create a new mesh for the accessors used
-                            Mesh::from_slices(
+                            let mut mesh = Mesh::from_slices(
                                 &graphics.clone(),
                                 BufferMode::Dynamic,
                                 BufferUsage::empty(),
@@ -475,7 +479,11 @@ impl Asset for GltfScene {
                                 tex_coords.as_deref(),
                                 &triangles,
                             )
-                            .unwrap()
+                            .unwrap();
+
+                            // Either disable or enable the AABB
+                            mesh.set_aabb(aabb);
+                            mesh
                         });
                     meshes.push(key);
                 }
@@ -591,22 +599,63 @@ impl Asset for GltfScene {
     }
 }
 
-type Value<'a, 'b> = &'a (&'b [u8], (&'b Type, &'b ComponentType));
+type MinMax<'b> = (Option<&'b gltf::json::Value>, Option<&'b gltf::json::Value>);
 
-// Create the position vertices required by all meshes
-fn create_positions_vec(value: Value) -> Vec<vek::Vec4<f32>> {
-    let (bytes, (_type, _component)) = value;
+type Value<'a, 'b> = &'a (&'b [u8], (&'b Type, &'b ComponentType), MinMax<'b>);
+
+// Create the position vertices required by all meshes and also create an AABB
+fn create_positions_vec(value: Value) -> (Vec<vek::Vec4<f32>>, Option<math::Aabb<f32>>) {
+    let (bytes, (_type, _component), (min, max)) = value;
     assert_eq!(**_type, Type::Vec3);
     assert_eq!(**_component, ComponentType::F32);
     let data: &[vek::Vec3<f32>] = bytemuck::cast_slice(bytes);
-    data.into_iter()
+
+    // Create the positions vector
+    let vec = data.into_iter()
         .map(|vec3| vec3.with_w(0.0))
-        .collect::<Vec<vek::Vec4<f32>>>()
+        .collect::<Vec<vek::Vec4<f32>>>();
+
+    // Create the AABB using the position min and max given by the JSON
+    let aabb: Option<math::Aabb<f32>> = if let (Some(min), Some(max)) = (min, max) {
+        match (min, max) {
+            (gltf::json::Value::Array(min),
+            gltf::json::Value::Array(max)) => {
+                assert_eq!(min.len(), 3);
+                assert_eq!(max.len(), 3);
+
+                fn deserialize_vec3_array(vec: &Vec<gltf::json::Value>) -> vek::Vec3<f32> {
+                    let slice: &[gltf::json::Value; 3] = vec.as_slice().try_into().unwrap();
+                    
+                    let slice = slice.clone().map(|value| {
+                        match value {
+                            gltf::json::Value::Number(number) => number.as_f64().unwrap() as f32,
+                            _ => panic!()
+                        }
+                    });
+
+                    vek::Vec3::from_slice(&slice)
+                }
+
+                let min = deserialize_vec3_array(min);
+                let max = deserialize_vec3_array(max);
+
+                Some(math::Aabb::<f32> {
+                    min,
+                    max,
+                })
+            },
+            _ => None
+        }
+    } else {
+        None
+    };
+
+    (vec, aabb)
 }
 
 // Create the normal coordinates required by the PBR material
 fn create_normals_vec(value: Value) -> Vec<vek::Vec4<i8>> {
-    let (bytes, (_type, _component)) = value;
+    let (bytes, (_type, _component), _) = value;
     assert_eq!(**_type, Type::Vec3);
     assert_eq!(**_component, ComponentType::F32);
     let data: &[vek::Vec3<f32>] = bytemuck::cast_slice(bytes);
@@ -617,7 +666,7 @@ fn create_normals_vec(value: Value) -> Vec<vek::Vec4<i8>> {
 
 // Create the UV coordinates required by the PBR material
 fn create_tex_coords_vec(value: Value) -> Vec<vek::Vec2<f32>> {
-    let (bytes, (_type, _component)) = value;
+    let (bytes, (_type, _component), _) = value;
     assert_eq!(**_type, Type::Vec2);
     assert_eq!(**_component, ComponentType::F32);
     let data: &[vek::Vec2<f32>] = bytemuck::cast_slice(bytes);
@@ -626,7 +675,7 @@ fn create_tex_coords_vec(value: Value) -> Vec<vek::Vec2<f32>> {
 
 // Create the tangents (if supplied) required by the PBR material
 fn create_tangents_vec(value: Value) -> Vec<vek::Vec4<i8>> {
-    let (bytes, (_type, _component)) = value;
+    let (bytes, (_type, _component), _) = value;
     assert_eq!(**_type, Type::Vec4);
     assert_eq!(**_component, ComponentType::F32);
     let data: &[vek::Vec4<f32>] = bytemuck::cast_slice(bytes);
@@ -637,7 +686,7 @@ fn create_tangents_vec(value: Value) -> Vec<vek::Vec4<i8>> {
 
 // Convert raw bytes to a triangle index buffer
 fn create_triangles_vec(value: Value) -> Vec<[u32; 3]> {
-    let (bytes, (_type, _component)) = value;
+    let (bytes, (_type, _component), _) = value;
     assert_eq!(**_type, Type::Scalar);
 
     match _component {

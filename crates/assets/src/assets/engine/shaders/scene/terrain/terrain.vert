@@ -52,6 +52,7 @@ void main() {
     //uint index = indirection.data[gl_DrawID + chunks_per_allocation];
     uint index = gl_DrawID + mesh.chunks_per_allocation * mesh.allocation;
     vec4 position_scale = position_scale_buffer.data[index];
+    //vec4 position_scale = vec4(0, 0, 0, 1);
     vec4 world_pos = vec4(((position.xyz * scaling_factor) * position_scale.w + position_scale.xyz), 1);
     vec4 projected = (camera.projection * camera.view) * world_pos; 
     gl_Position = projected;

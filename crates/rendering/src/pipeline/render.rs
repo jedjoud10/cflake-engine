@@ -15,10 +15,6 @@ pub(super) fn render_surfaces<'r, M: Material>(
     defaults: &mut DefaultMaterialResources<'r>,
     render_pass: &mut ActiveSceneRenderPass<'r, '_>,
 ) {
-    // Reset the material resources for this new material type
-    defaults.material_index = 0;
-    defaults.draw_call_index = 0;
-
     // Get a rasterizer for the current render pass by binding a pipeline
     let mut active = render_pass.bind_pipeline(pipeline);
     let supported = M::attributes();
@@ -75,6 +71,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
     // Materials should have priority over meshes since they require you to set more shit
 
     // Iterate over all the surface of this material
+    let mut rendered = false;
     for ((surface, renderer), user) in query.into_iter().zip(user) {
         // Handle non visible surfaces, renderers, and culled surfaces
         if surface.culled || !surface.visible || !renderer.visible {
@@ -197,8 +194,21 @@ pub(super) fn render_surfaces<'r, M: Material>(
 
             // Add 1 to the material index when we switch instances
             if switched_material_instances {
-                defaults.material_index += 1;
+                *defaults.material_instances_count += 1;
             }
+
+            // Keep track of statistics
+            rendered = true;
+            *defaults.rendered_sub_surfaces += 1;
+
+            // These values won't get added it if's a invalid or indirect mesh
+            *defaults.rendered_direct_triangles_drawn += <<M as Material>::RenderPath as RenderPath>::triangle_count(mesh).unwrap_or_default() as u64;
+            *defaults.rendered_direct_vertices_drawn += <<M as Material>::RenderPath as RenderPath>::vertex_count(mesh).unwrap_or_default() as u64;
         }
+    }
+
+    // I hate this
+    if rendered {
+        *defaults.drawn_unique_material_count += 1;
     }
 }

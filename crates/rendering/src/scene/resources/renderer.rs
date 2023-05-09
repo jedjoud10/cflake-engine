@@ -44,6 +44,14 @@ pub struct ForwardRenderer {
     pub black: Handle<AlbedoMap>,
     pub normal: Handle<NormalMap>,
     pub mask: Handle<MaskMap>,
+
+    // Stats about shit drawn this frame
+    pub drawn_unique_material_count: u32,
+    pub material_instances_count: u32,
+    pub rendered_direct_vertices_drawn: u64,
+    pub rendered_direct_triangles_drawn: u64,
+    pub culled_sub_surfaces: u64,
+    pub rendered_sub_surfaces: u64,
 }
 
 // Create a new uniform buffer with default contents
@@ -159,6 +167,14 @@ impl ForwardRenderer {
             // No default camera
             main_camera: None,
             main_directional_light: None,
+
+            // Statistics
+            drawn_unique_material_count: 0,
+            material_instances_count: 0,
+            rendered_direct_vertices_drawn: 0,
+            rendered_direct_triangles_drawn: 0,
+            culled_sub_surfaces: 0,
+            rendered_sub_surfaces: 0,
         }
     }
 }

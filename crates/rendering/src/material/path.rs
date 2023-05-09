@@ -43,6 +43,14 @@ pub trait RenderPath: 'static + Send + Sync + Sized {
         mesh: &Mesh<Self>,
     ) -> bool;
 
+    // Get the number of vertices of a mesh
+    // Return none if Indirect 
+    fn vertex_count(mesh: &Mesh<Self>) -> Option<usize>;
+
+    // Get the number of triangles of a mesh
+    // Return none if Indirect 
+    fn triangle_count(mesh: &Mesh<Self>) -> Option<usize>;
+
     // Sets the vertex buffer of a specific mesh into the given active graphics pipeline
     fn set_vertex_buffer<'a, C: ColorLayout, DS: DepthStencilLayout, A: MeshAttribute>(
         slot: u32,
@@ -95,13 +103,13 @@ impl RenderPath for Direct {
     }
 
     #[inline(always)]
-    fn draw<'a, C: ColorLayout, DS: DepthStencilLayout>(
-        mesh: &'a Mesh<Self>,
-        _defaults: &DefaultMaterialResources<'a>,
-        active: &mut ActiveRenderPipeline<'_, 'a, '_, C, DS>,
-    ) -> Result<(), DrawIndexedError> {
-        let indices = 0..(mesh.triangles().buffer().len() as u32 * 3);
-        active.draw_indexed(indices, 0..1)
+    fn vertex_count(mesh: &Mesh<Self>) -> Option<usize> {
+        Some(mesh.vertices().len().unwrap_or_default())
+    }
+
+    #[inline(always)]
+    fn triangle_count(mesh: &Mesh<Self>) -> Option<usize> {
+        Some(mesh.triangles().buffer().len())
     }
 
     #[inline(always)]
@@ -123,6 +131,16 @@ impl RenderPath for Direct {
         active: &mut ActiveRenderPipeline<'_, 'a, '_, C, DS>,
     ) -> Result<(), SetIndexBufferError> {
         active.set_index_buffer(buffer, bounds)
+    }
+
+    #[inline(always)]
+    fn draw<'a, C: ColorLayout, DS: DepthStencilLayout>(
+        mesh: &'a Mesh<Self>,
+        _defaults: &DefaultMaterialResources<'a>,
+        active: &mut ActiveRenderPipeline<'_, 'a, '_, C, DS>,
+    ) -> Result<(), DrawIndexedError> {
+        let indices = 0..(mesh.triangles().buffer().len() as u32 * 3);
+        active.draw_indexed(indices, 0..1)
     }
 }
 
@@ -161,6 +179,16 @@ impl RenderPath for Indirect {
         _mesh: &Mesh<Self>,
     ) -> bool {
         true
+    }
+
+    #[inline(always)]
+    fn vertex_count(mesh: &Mesh<Self>) -> Option<usize> {
+        None
+    }
+
+    #[inline(always)]
+    fn triangle_count(mesh: &Mesh<Self>) -> Option<usize> {
+        None
     }
 
     #[inline(always)]
@@ -222,14 +250,13 @@ impl RenderPath for MultiDrawIndirect {
     }
 
     #[inline(always)]
-    fn draw<'a, C: ColorLayout, DS: DepthStencilLayout>(
-        mesh: &'a Mesh<Self>,
-        defaults: &DefaultMaterialResources<'a>,
-        active: &mut ActiveRenderPipeline<'_, 'a, '_, C, DS>,
-    ) -> Result<(), DrawIndexedError> {
-        let handle = mesh.indirect().clone();
-        let buffer = defaults.draw_indexed_indirect_buffers.get(&handle);
-        active.multi_draw_indexed_indirect(buffer, mesh.offset(), mesh.count())
+    fn vertex_count(mesh: &Mesh<Self>) -> Option<usize> {
+        None
+    }
+
+    #[inline(always)]
+    fn triangle_count(mesh: &Mesh<Self>) -> Option<usize> {
+        None
     }
 
     #[inline(always)]
@@ -253,5 +280,16 @@ impl RenderPath for MultiDrawIndirect {
     ) -> Result<(), SetIndexBufferError> {
         let buffer = defaults.indirect_triangles.get(buffer);
         active.set_index_buffer(buffer, bounds)
+    }
+
+    #[inline(always)]
+    fn draw<'a, C: ColorLayout, DS: DepthStencilLayout>(
+        mesh: &'a Mesh<Self>,
+        defaults: &DefaultMaterialResources<'a>,
+        active: &mut ActiveRenderPipeline<'_, 'a, '_, C, DS>,
+    ) -> Result<(), DrawIndexedError> {
+        let handle = mesh.indirect().clone();
+        let buffer = defaults.draw_indexed_indirect_buffers.get(&handle);
+        active.multi_draw_indexed_indirect(buffer, mesh.offset(), mesh.count())
     }
 }

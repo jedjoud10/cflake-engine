@@ -121,7 +121,7 @@ fn update(world: &mut World) {
         if added.len() > query_count {
             // Over-allocate so we don't need to do this as many times
             let chunks_to_allocate_per_allocation = ((added.len() - query_count) * 2).max(128);
-            let pre_chunks_per_allocations = memory.chunks_per_allocation;
+            let pre_chunks_per_allocation = memory.chunks_per_allocation;
             memory.chunks_per_allocation += chunks_to_allocate_per_allocation; 
             let chunks_to_allocate = chunks_to_allocate_per_allocation * settings.allocation_count;
 
@@ -151,16 +151,14 @@ fn update(world: &mut World) {
             memory.local_index_to_global_buffer.extend((0..chunks_to_allocate).into_iter().map(|_| u32::MAX)).unwrap();
 
             // Add the same amounts of chunks per allocation
-            let mut global_index = pre_chunks_per_allocations * memory.chunks_per_allocation;
             for allocation in 0..terrain.settings.allocation_count {      
                 // Create new chunk entities and set them as "free"
                 entities.extend((0..chunks_to_allocate_per_allocation).into_iter().map(|i| {
                     let position = Position::default();
                     let scale = Scale::default();
 
-                    // New entity is used by the allocation
-                    let mesh = multi_draw_indirect_meshes.get_mut(&memory.allocation_meshes[allocation]);
-                    *mesh.count_mut() += 1;
+                    let local_index = pre_chunks_per_allocation + i;
+                    let global_index = local_index + memory.chunks_per_allocation * allocation;
 
                     // Create the chunk component
                     let chunk = Chunk {
@@ -174,11 +172,16 @@ fn update(world: &mut World) {
                     };
 
                     log::info!("{global_index}");
-                    global_index += 1;
                 
                     // Create the bundle
                     (position, scale, chunk)
                 }));
+
+                // New entities are used by the allocation
+                let offset = memory.chunks_per_allocation * allocation;
+                let mesh = multi_draw_indirect_meshes.get_mut(&memory.allocation_meshes[allocation]);
+                *mesh.count_mut() += chunks_to_allocate_per_allocation;
+                *mesh.offset_mut() = offset;
             }
         
             // Randomly order the entities to reduce the chances of an OOM error
