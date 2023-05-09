@@ -7,7 +7,7 @@ use graphics::{
     ActiveRenderPass, ActiveRenderPipeline, BufferMode, BufferUsage, Depth, GpuPod, Graphics,
     LoadOp, Operation, RenderPass, SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap,
     StoreOp, Texel, Texture, Texture2D, TextureMipMaps, TextureMode, TextureUsage, UniformBuffer,
-    RGBA,
+    RGBA, CubeMap,
 };
 use utils::{Handle, Storage};
 
@@ -15,6 +15,7 @@ use utils::{Handle, Storage};
 pub type SceneColor = RGBA<f32>;
 pub type SceneDepth = Depth<f32>;
 pub type SceneRenderPass = RenderPass<SceneColor, SceneDepth>;
+pub type EnvironmentMap = CubeMap<RGBA<f32>>;
 pub type ActiveSceneRenderPass<'r, 't> = ActiveRenderPass<'r, 't, SceneColor, SceneDepth>;
 pub type ActiveScenePipeline<'a, 'r, 't> = ActiveRenderPipeline<'a, 'r, 't, SceneColor, SceneDepth>;
 
@@ -38,6 +39,9 @@ pub struct ForwardRenderer {
     pub timing_buffer: TimingBuffer,
     pub scene_buffer: SceneBuffer,
     pub window_buffer: WindowBuffer,
+
+    // Environment map
+    pub environment: EnvironmentMap,
 
     // Default textures that will be shared with each material
     pub white: Handle<AlbedoMap>,
@@ -65,12 +69,26 @@ fn create_uniform_buffer<T: GpuPod + Default>(graphics: &Graphics) -> UniformBuf
     .unwrap()
 }
 
-// Create a 1x1 texture 2D with the given value
+// Create a 4x4 texture 2D with the given value
 fn create_texture2d<T: Texel>(graphics: &Graphics, value: T::Storage) -> Texture2D<T> {
     Texture2D::<T>::from_texels(
         graphics,
         Some(&[value; 16]),
         vek::Extent2::broadcast(4),
+        TextureMode::Dynamic,
+        TextureUsage::SAMPLED | TextureUsage::COPY_DST,
+        Some(SamplerSettings::default()),
+        TextureMipMaps::Disabled,
+    )
+    .unwrap()
+}
+
+// Create a cubemap with a specific resolution
+fn create_cubemap<T: Texel>(graphics: &Graphics, value: T::Storage, resolution: usize) -> CubeMap<T> {
+    CubeMap::<T>::from_texels(
+        graphics,
+        Some(&vec![value; resolution*resolution*6]),
+        vek::Extent2::broadcast(resolution as u32),
         TextureMode::Dynamic,
         TextureUsage::SAMPLED | TextureUsage::COPY_DST,
         Some(SamplerSettings::default()),
@@ -163,6 +181,9 @@ impl ForwardRenderer {
             black,
             normal,
             mask,
+
+            // Create the environment map
+            environment: create_cubemap(graphics, vek::Vec4::zero(), 512),
 
             // No default camera
             main_camera: None,

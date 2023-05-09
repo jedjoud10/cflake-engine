@@ -170,8 +170,6 @@ fn update(world: &mut World) {
                         ranges: None,
                         node: None,
                     };
-
-                    log::info!("{global_index}");
                 
                     // Create the bundle
                     (position, scale, chunk)

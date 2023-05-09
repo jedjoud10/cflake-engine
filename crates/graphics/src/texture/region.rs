@@ -378,23 +378,14 @@ pub trait Region: Copy {
 
     // Check if we can use a texture mip level (with specific region of Self) as a render target directly
     fn can_render_to_mip(&self) -> bool {
-        let Some(layers) = self.extent().layers().checked_sub(self.origin().layer()) else {
+        let layer_check = self.extent().layers().checked_sub(self.origin().layer());
+        let depth_check = self.extent().depth().checked_sub(self.origin().z());
+        
+        let (Some(layers), Some(depth)) = (layer_check, depth_check) else {
             return false
         };
 
-        let Some(width) = self.extent().width().checked_sub(self.origin().x()) else {
-            return false
-        };
-
-        let Some(height) = self.extent().height().checked_sub(self.origin().y()) else {
-            return false
-        };
-
-        let Some(depth) = self.extent().depth().checked_sub(self.origin().z()) else {
-            return false
-        };
-
-        return layers == 1 && width > 0 && height > 0 && depth == 1;
+        return layers == 1 && depth == 1;
     }
 
     // Calculate the surface area of the region
