@@ -60,23 +60,6 @@ fn update(world: &mut World) {
             }
         }
 
-        // Get allocation-local indexed indirect draw buffer
-        let indirect = indirects.get_mut(&memory.indexed_indirect_buffers[chunk.allocation]);
-
-        // Update indirect buffer
-        indirect
-            .write(
-                &[DrawIndexedIndirect {
-                    vertex_count: 0,
-                    instance_count: 1,
-                    base_index: 0,
-                    vertex_offset: 0,
-                    base_instance: 0,
-                }],
-                chunk.local_index,
-            )
-            .unwrap();
-
         chunk.ranges = None;
     }
 
@@ -104,15 +87,17 @@ fn update(world: &mut World) {
     let offsets = &mut memory.offsets[index];
     let indices = &mut mesher.cached_indices;
     let suballocations = &mut memory.sub_allocation_chunk_indices[chunk.allocation];
+    let indirect = &memory.culled_indexed_indirect_buffer;
+    let indirect = indirects.get_mut(&indirect);
+
+    // Reset required values
     counters.write(&[0; 2], 0).unwrap();
     offsets.write(&[u32::MAX, u32::MAX], 0).unwrap();
+    indirect.write(&[crate::util::DEFAUlT_DRAW_INDEXED_INDIRECT], chunk.global_index).unwrap();
 
     // Create a compute pass for ALL compute terrain shaders
     let mut pass = ComputePass::begin(&graphics);
     let mut active = pass.bind_shader(&voxelizer.compute_voxels);
-
-    // Get the indexed indirect draw buffer used by the chunk's allocation
-    let indirect = indirects.get_mut(&memory.indexed_indirect_buffers[chunk.allocation]);
 
     // Needed since SN only runs for a volume 2 units smaller than a perfect cube
     let node = chunk.node.unwrap();
@@ -128,9 +113,14 @@ fn update(world: &mut World) {
             // Get the scale of the chunk
             let scale = GpuPod::into_bytes(&factor);
 
+            // Calculate quality index
+            let _quality = 4 - ((settings.max_depth - node.depth()).min(4));
+            let quality = GpuPod::into_bytes(&_quality);
+
             // Push the bytes to the GPU
             x.push(offset, 0).unwrap();
             x.push(scale, offset.len() as u32).unwrap();
+            x.push(quality, scale.len() as u32 + offset.len() as u32).unwrap();
 
             // Call the set group callback
             if let Some(callback) = voxelizer.set_push_constant_callback.as_ref() {
@@ -220,7 +210,7 @@ fn update(world: &mut World) {
     // Get the local chunk index for the current allocation
     active
         .set_push_constants(|x| {
-            let index = chunk.local_index;
+            let index = chunk.global_index;
             let index = index as u32;
             let bytes = GpuPod::into_bytes(&(index));
             x.push(bytes, 0).unwrap();
@@ -261,7 +251,7 @@ fn update(world: &mut World) {
         .unwrap();
     active
         .set_push_constants(|x| {
-            let index = chunk.local_index as u32;
+            let index = chunk.global_index as u32;
             let index = GpuPod::into_bytes(&index);
             x.push(index, 0).unwrap();
         })

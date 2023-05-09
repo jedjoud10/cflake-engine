@@ -16,10 +16,21 @@ layout(location = 0) out vec3 m_position;
 layout(location = 1) out vec3 m_local_position;
 layout(location = 2) out vec3 m_normal;
 
+layout(push_constant) uniform PushConstants {
+    uint allocation;
+    uint chunks_per_allocation;
+} mesh;
+
 // Contains position and scale value
-layout(std430, set = 2, binding = 0) readonly buffer PositionScaleBuffer {
+layout(std430, set = 0, binding = 15) readonly buffer PositionScaleBuffer {
     vec4 data[];
 } position_scale_buffer;
+
+/*
+layout(std430, set = 0, binding = 16) readonly buffer LocalToGlobalBuffer {
+    uint data[];
+} indirection;
+*/
 
 void main() {
     // Convert from 4 floats into uints 
@@ -38,7 +49,9 @@ void main() {
     m_local_position = position.xyz;
 
 	// Model space -> World space -> Clip space
-    vec4 position_scale = position_scale_buffer.data[gl_DrawID];
+    //uint index = indirection.data[gl_DrawID + chunks_per_allocation];
+    uint index = gl_DrawID + mesh.chunks_per_allocation * mesh.allocation;
+    vec4 position_scale = position_scale_buffer.data[index];
     vec4 world_pos = vec4(((position.xyz * scaling_factor) * position_scale.w + position_scale.xyz), 1);
     vec4 projected = (camera.projection * camera.view) * world_pos; 
     gl_Position = projected;

@@ -28,7 +28,9 @@ pub enum ChunkState {
 #[derive(Component)]
 pub struct Chunk {
     pub(crate) allocation: usize,
-    pub(crate) local_index: usize,
+
+    // Global index is used for indexed indirect draw buffer and position/scale 
+    pub(crate) global_index: usize,
     pub(crate) ranges: Option<vek::Vec2<u32>>,
     pub(crate) state: ChunkState,
     pub(crate) node: Option<Node>,

@@ -437,17 +437,17 @@ pub(super) fn create_pipeline_layout(
         let (first, second) = (iter.next(), iter.next());
 
         // Validate the push constants and check if they were defined properly in the shader
-        match push_constant_layout {
+        let valid = match push_constant_layout {
             PushConstantLayout::Single(size, _) => {
                 if second.is_none() {
-                    size.get() == first.unwrap()
+                    Some(size.get()) == first
                 } else {
                     todo!()
                 }
             }
             PushConstantLayout::SplitVertexFragment { vertex, fragment } => {
                 if first.is_some() && second.is_some() {
-                    vertex.get() == first.unwrap() && fragment.get() == second.unwrap()
+                    Some(vertex.get()) == first && Some(fragment.get()) == second
                 } else {
                     todo!()
                 }

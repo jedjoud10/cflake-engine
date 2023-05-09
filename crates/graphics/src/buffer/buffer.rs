@@ -349,6 +349,13 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         Ok(())
     }
 
+    // Extend this buffer using the given iterator    
+    pub fn extend(&mut self, iter: impl IntoIterator<Item = T>) -> Result<(), BufferExtendError> {
+        // Shitty but works
+        let vec = iter.into_iter().collect::<Vec<_>>();
+        self.extend_from_slice(&vec)
+    }
+
     // Extend this buffer using the given slice instantly
     // This is a "fire and forget" command that does not stall the CPU
     // The user can do multiple extend_from_slice calls and expect them to be batched together

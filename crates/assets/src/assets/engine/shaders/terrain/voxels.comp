@@ -12,13 +12,14 @@ layout(set=0, binding=0, rg32f) writeonly uniform image3D voxels;
 layout(push_constant) uniform PushConstants {
     vec4 offset;
     float scale;
+    uint quality;
 } parameters;
 
 void main() {
     // Calculate the voxel at that specific point
     vec3 position = vec3(gl_GlobalInvocationID.xyz) * parameters.scale;
     position += parameters.offset.xyz;
-    float density = voxel(position);
+    float density = voxel(position, parameters.quality);
     vec4 data = vec4(density, 0, 0, 0);
 
     // Writes the data to the voxels texture

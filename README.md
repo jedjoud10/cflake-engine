@@ -4,8 +4,8 @@
 # cFlake Engine
 
 
-cFlake Engine, in it's current state, is a free and open-source Rust game engine that I have created with the help of certain friends and mates.
-Currently, cFlake engine is under heavy development (***very*** WIP), but pull requests are heavily appreciated (pls help me I am becoming insane)
+cFlake Engine is a free and open-source Rust game engine that I have been working on for the past 2 years as a personal project.
+Currently, cFlake engine is under heavy development (***very*** WIP) and is still in it's early stages, but pull requests are heavily appreciated (pls help me I am becoming insane)
 
 # Main features of cFlake:
 * 6 World Event Variants, Systems, and Resources all accessible within the **World** struct
@@ -13,9 +13,9 @@ Currently, cFlake engine is under heavy development (***very*** WIP), but pull r
 * Archetypal multithreaded ECS built to be used in conjunction with the World Events and Systems
 * Custom Graphics API built on top of WGPU
 * GPU Voxel generation and Octree Terrain (disabled temporarily)
-* Asynchronous asset loader and utility thread pool
+* Asynchronous asset loader using Rayon threads
 * Input handling with gamepad support (gilrs) and keybinding serialization / deserialization
-* Custom sound support through CPAL and directional audio through HRTF (TODO)
+* Custom sound support through CPAL (kinda works)
 
 # State of each crate:
 ## Legend
@@ -35,8 +35,8 @@ Currently, cFlake engine is under heavy development (***very*** WIP), but pull r
 * Input: ✅
 * ECS: ✅
 * Asset loader: ⚠️
-* Audio: ❌
-* GUI (eGUI): 🚧
+* Audio: 🚧
+* GUI (eGUI): ⚠️
   
 # Main links
 * [YouTube Development Channel](https://www.youtube.com/channel/UCaeZjQFw4QIi5vdfonAmsvA)
@@ -85,14 +85,14 @@ This is where things get tricky however, and this is where my implementation of 
 To actually handle modifying data related to components, one must use a scene ``Query`` that would iterate over all the given components of the given ``Bundle`` tuple type. These ``Queries`` are not related in any way to the ``Systems``, and they could be accessed as long as you have a mutable or immutable reference to the ``Scene`` resource (depending on what type of query you wish to use)
 
 # Graphics (story time)
-At the moment, cFlake uses a custom built graphics API abstraction that wraps over WGPU and ShaderC. This however, was a recent change (~4 months in the making) due to limitations with the original backend (OpenGL) the engine. I had realized that OpenGL was not going to scale well with all the new multi-threaded features that I've implemented like a multithreaded asset loader and multithreaded ECS system. After tinkering with Vulkan (raw Vulkan, Vulkano), I decided to not use it (even after I pathetically tried to implement it, which took me 2-3 months), I decided to use Wgpu, since I simply could not cope with the manual state tracking of Vulkan. 
+At the moment, cFlake uses a custom built graphics API abstraction that wraps over WGPU and ShaderC. This however, was a recent change (~4 months in the making) due to limitations with the original backend (OpenGL) the engine. I had realized that OpenGL was not going to scale well with all the new multi-threaded features that I've implemented like a multithreaded asset loader and multithreaded ECS system. After tinkering with Vulkan (raw Vulkan, Vulkano), I decided to not use it (even after I pathetically tried to implement it, which took me 2-3 months), I decided to use Wgpu, since I simply could not cope with the manual state tracking of Vulkan. Nonetheless, the new graphics API allows us to create objects (like textures/buffers/shaders) in other threads. THis allows us to load texture/mesh assets asynchronously. 
 
 # Asset Managment
 Currently, there are a few way to load in external assets (and to ship them) within your binary to be able to make your published executables more portable. There is a an ``Assets`` resource that is automatically added to the world that allows you to load and deserialize assets from the file system or pre-defined persistent assets. 
 
 In this engine, assets are defined as structs that can be deserialized and loaded from raw binary data (that is most probably file binary data). You can customize how assets are loaded in within the engine using the ``Asset`` trait, and you can implement it on any structure that can be deserialized from a raw stream of bytes. 
 
-You can define a "Context" and "Settings" that can be used to customize how each asset is loaded. Asset deserialization *must* be faillible, and due to that restriction, I made it so you *must* define an ``Error`` type that gets returned whenever asset conversion fails. There is also asnychronous asset loading supported within the engine, and this is implemented using the ``AsyncAsset`` trait that gets automatically gets implemented for ``Asset``s that are Sync + Send and have their Settings + Context be Sync and Send.
+You can define a "Context" and "Settings" that can be used to customize how each asset is loaded. Asset deserialization *must* be faillible, and due to that restriction, I made it so you *must* define an ``Error`` type that gets returned whenever asset conversion fails. There is also asnychronous asset loading supported within the engine, and this is implemented using the ``AsyncAsset`` trait that gets automatically gets implemented for ``Asset``s that are Sync + Send and have their Settings + Context be Sync and Send. So assets can be automatically loaded as asynchronous assets if they fit those requirements.
 
 For now, these are the types of assets that are loadable/deseriazable by default and their respective extensions.
 * Texture2D: .png, .jpg

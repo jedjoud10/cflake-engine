@@ -75,6 +75,12 @@ impl Material for TerrainMaterial {
         // Define the types for the user textures
         compiler.use_sampled_texture::<ShadowMap>("shadow_map");
 
+        // Contains the allocation index that is stored per sub-surface
+        compiler.use_push_constant_layout(PushConstantLayout::single(
+            u32::size() * 2,
+            ModuleVisibility::Vertex,
+        ).unwrap());
+
         // Set the scaling factor for the vertex positions
         compiler.use_constant(0, (settings.size as f32) / (settings.size as f32 - 3.0));
 
@@ -97,37 +103,7 @@ impl Material for TerrainMaterial {
 
     // Custom shadow mapper (due to packed tex coordinates)
     fn casts_shadows() -> rendering::CastShadowsMode<Self> {
-        let callback: Box<dyn FnOnce(&Self::Settings<'_>, &Graphics, &Assets) -> Shader> =
-            Box::new(|settings, graphics, assets| {
-                // Load the modified vertex module for the shadowmap shader
-                let vertex = assets
-                    .load::<VertexModule>("engine/shaders/scene/shadow/terrain.vert")
-                    .unwrap();
-
-                // Load the fragment module for the shadowmap shader
-                let fragment = assets
-                    .load::<FragmentModule>("engine/shaders/scene/shadow/shadow.frag")
-                    .unwrap();
-
-                // Create the bind layout for the shadow map shader
-                let mut compiler = Compiler::new(assets, graphics);
-
-                // Set the scaling factor for the vertex positions
-                compiler.use_constant(0, (settings.size as f32) / (settings.size as f32 - 3.0));
-
-                // Contains the mesh matrix and the lightspace uniforms
-                let layout = PushConstantLayout::single(
-                    <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size() * 2,
-                    ModuleVisibility::Vertex,
-                )
-                .unwrap();
-                compiler.use_push_constant_layout(layout);
-
-                // Combine the modules to the shader
-                Shader::new(vertex, fragment, &compiler).unwrap()
-            });
-
-        rendering::CastShadowsMode::Enabled(Some(callback))
+        rendering::CastShadowsMode::Disabled
     }
 
     // Fetch the texture storages
@@ -187,6 +163,7 @@ impl Material for TerrainMaterial {
             .set_sampled_texture("shadow_map", &shadow.depth_tex)
             .unwrap();
 
+        // Set the sub-material textures
         if let (Some(albedo), Some(normal), Some(mask)) = (
                 &terrain.manager.layered_albedo_map,
                 &terrain.manager.layered_normal_map,
@@ -208,35 +185,35 @@ impl Material for TerrainMaterial {
                     .set_sampled_texture("layered_mask_map", mask_map)
                     .unwrap();
             }
-    }
 
-    // Set the surface bindings that only contain the allocation data
-    // This will be executed only 7-8 times per frame since we have few big allocations/subsurfaces
-    fn set_surface_bindings<'r, 'w>(
-        _renderer: &Renderer,
-        resources: &'r mut Self::Resources<'w>,
-        _default: &mut DefaultMaterialResources<'w>,
-        _query: &Self::Query<'w>,
-        group: &mut BindGroup<'r>,
-    ) {
-        let (
-            albedo_maps,
-            normal_maps,
-            mask_maps,
-            shadow,
-            terrain,
-            time,
-            i,
-        ) = resources;
 
         // Set the storage buffer that contains ALL the matrices
         group.set_storage_buffer(
             "position_scale_buffer",
-            &terrain.manager.position_scaling_buffers[*i],
+            &terrain.manager.position_scaling_buffer,
             ..
         ).unwrap();   
+    }
+
+    // Set the surface bindings that only contain the allocation data
+    // This will be executed only 2-8 times per frame since we have few big allocations/subsurfaces
+    fn set_push_constants<'r, 'w>(
+        &self,
+        _renderer: &Renderer,
+        resources: &'r mut Self::Resources<'w>,
+        _default: &DefaultMaterialResources<'r>,
+        _query: &Self::Query<'w>,
+        push_constants: &mut PushConstants<ActiveScenePipeline>,
+    ) {
+        // Set the count for the number of chunks per allocations (constant per allocation)
+        let chunks_per_allocation = resources.4.memory.chunks_per_allocation as u32;
+        let bytes = GpuPod::into_bytes(&chunks_per_allocation);
+        push_constants.push(bytes, 0, ModuleVisibility::Vertex).unwrap();
 
         // Since the ordering of entities within an archetype is always deterministic we can do this without worrying
+        let index = resources.6 as u32; 
+        let bytes = GpuPod::into_bytes(&index);
+        push_constants.push(bytes, 4, ModuleVisibility::Vertex).unwrap();
         resources.6 += 1;
     }
 }

@@ -9,12 +9,16 @@
 // Each voxel contains a "density". 
 // Density allows us to represent either full terrain or air, and everything in between
 // Main voxel function that will create the shape of the terrain
-float voxel(vec3 position) {
-    return snoise(position * 0.01 + vec3(snoise(position * 0.04) * 0.02)) * 30 + position.y;
+// quality: Integer between 0-4, 4 being best quality and 0 being worse
+float voxel(vec3 position, uint quality) {
+    float octaves_mult = float(quality) / 4.0;
+    float density1 = snoise(position * 0.01 + vec3(snoise(position * 0.04) * 0.08)) * 20 + position.y;
+    float density2 = (1 - fbmCellular(position * 0.005, int(8.0 * octaves_mult), 0.5, 2.5).y) * 120 + position.y; 
+    return mix(density1, density2, clamp(position.y + 200, 0, 1));
 }
 
 // Post-process voxel step that gets executed after we generate the main voxel texture
-void post(vec3 position, inout vec3 normal) {
+void post(vec3 position, inout vec3 normal, int lod) {
 }
 
 // Terrain detail are basically props that we can generate on top of the terrain at close distances

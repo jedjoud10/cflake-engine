@@ -16,7 +16,7 @@ use utils::{Handle, Storage};
 
 use crate::{
     Chunk, ChunkState, LayeredAlbedoMap, LayeredMaskMap, LayeredNormalMap,
-    MemoryManager, TerrainMaterial, TerrainSettings, TerrainSubMaterial,
+    MemoryManager, TerrainMaterial, TerrainSettings, TerrainSubMaterial, create_empty_buffer,
 };
 
 // Chunk manager will store a handle to the terrain material and shit needed for rendering the chunks
@@ -45,7 +45,15 @@ pub struct ChunkManager {
     pub(crate) global_draw_entity: Entity,
 
     // Buffer to store the position and scale of each chunk
-    pub(crate) position_scaling_buffers: Vec<Buffer<vek::Vec4<f32>>>,
+    pub(crate) position_scaling_buffer: Buffer<vek::Vec4<f32>>,
+
+    // Buffer to store the visibility of each chunk
+    // This is a bitwise buffer, so each element actually represents the visibility of 32 chunks at a time
+    pub(crate) visibility_buffer: Buffer<u32>,
+
+    // Temporary buffer that will store the visibility of each chunk as a bitwise 32 bit uint
+    // Updated everytime the manager needs it to update
+    pub(crate) visibility: Vec<u32>,
 
     // Viewer (camera) position
     pub(crate) viewer: Option<(Entity, vek::Vec3<f32>, vek::Quaternion<f32>)>,
@@ -176,8 +184,6 @@ impl ChunkManager {
         // Create an octree for LOD chunk generation
         let octree = Octree::new(settings.max_depth, settings.size, heuristic);
 
-        let position_scaling_buffers = (0..settings.allocation_count).into_iter().map(|_| create_position_scaling_buffer(graphics)).collect::<Vec<_>>();
-
         // Create the chunk manager
         Self {
             last_chunk_generated: None,
@@ -188,22 +194,14 @@ impl ChunkManager {
             entities: Default::default(),
             children_count: Default::default(),
             global_draw_entity,
-            position_scaling_buffers,
+            position_scaling_buffer: create_empty_buffer(graphics),
+            visibility_buffer: create_empty_buffer(graphics),
             layered_albedo_map,
             layered_normal_map,
             layered_mask_map,
+            visibility: Vec::new(),
         }
     }
-}
-
-// Create the buffer that will store the positions and scaling
-fn create_position_scaling_buffer(graphics: &Graphics) -> Buffer<vek::Vec4<f32>> {
-    Buffer::from_slice(
-        graphics,
-        &[],
-        BufferMode::Resizable,
-        BufferUsage::COPY_SRC | BufferUsage::COPY_DST | BufferUsage::WRITE | BufferUsage::STORAGE
-    ).unwrap()
 }
 
 // Load the raw texels asynchronously using our asset system

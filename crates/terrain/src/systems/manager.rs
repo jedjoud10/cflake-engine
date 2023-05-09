@@ -88,12 +88,8 @@ fn update(world: &mut World) {
             return;
         }
 
-        // TODO:
-        // Gpu frustum octree culling
-        // Gpu visibility check filter
-        // Gpu occlusion culling maybe?
-
         // Set the chunk state to "free" so we can reuse it
+        let visibilities = &mut manager.visibility; 
         for coord in removed {
             if let Some(entity) = manager.entities.remove(&coord) {
                 let mut entry = scene.entry_mut(entity).unwrap();
@@ -101,6 +97,10 @@ fn update(world: &mut World) {
                 // Set the chunk as "free" and hide it
                 let chunk = entry.as_query_mut::<&mut Chunk>().unwrap();
                 chunk.state = ChunkState::Free;
+
+                // Hide the chunk using the temporary visibility vector
+                
+
                 //surface.visible = false;
             }
         }
@@ -120,40 +120,41 @@ fn update(world: &mut World) {
         // Extend the indexed indirect buffer if needed
         if added.len() > query_count {
             // Over-allocate so we don't need to do this as many times
-            let chunks_to_pre_allocate = ((added.len() - query_count) * 2).max(128);
-
-            // The number of chunks must fit the alloc count perfectly
-            let chunks_to_pre_allocate = settings.allocation_count * (chunks_to_pre_allocate as f32 / settings.allocation_count as f32).ceil() as usize; 
-            let chunks_to_pre_allocate_per_allocation = chunks_to_pre_allocate / settings.allocation_count;
+            let chunks_to_allocate_per_allocation = ((added.len() - query_count) * 2).max(128);
+            let pre_chunks_per_allocations = memory.chunks_per_allocation;
+            memory.chunks_per_allocation += chunks_to_allocate_per_allocation; 
+            let chunks_to_allocate = chunks_to_allocate_per_allocation * settings.allocation_count;
 
             // Keep track of the entities we will add
             let mut entities: Vec<(Position, Scale, Chunk)> = Vec::new(); 
+            
+            // Extend the generated indirect draw buffer
+            memory.generated_indexed_indirect_buffer.extend_from_slice(&vec![
+                crate::util::DEFAUlT_DRAW_INDEXED_INDIRECT;
+                chunks_to_allocate
+            ]).unwrap();
+
+            // Extend the culled indirect draw buffer
+            let culled_indexed_indirect_buffer = indexed_indirect_buffers.get_mut(&memory.culled_indexed_indirect_buffer);
+            culled_indexed_indirect_buffer.extend_from_slice(&vec![
+                crate::util::DEFAUlT_DRAW_INDEXED_INDIRECT;
+                chunks_to_allocate
+            ]).unwrap();
+
+            
+            // Extend the position scaling buffer
+            manager.position_scaling_buffer.extend_from_slice(&vec![vek::Vec4::zero(); chunks_to_allocate]).unwrap();
+
+            // Extend the visibility vector and buffer
+            manager.visibility_buffer.extend_from_slice(&vec![0; chunks_to_allocate]).unwrap();
+            manager.visibility.extend((0..chunks_to_allocate).into_iter().map(|_| 0));
+            memory.local_index_to_global_buffer.extend((0..chunks_to_allocate).into_iter().map(|_| u32::MAX)).unwrap();
 
             // Add the same amounts of chunks per allocation
-            for allocation in 0..terrain.settings.allocation_count {
-                let extra  = chunks_to_pre_allocate_per_allocation;
-                let indexed_indirect_buffer_handle = &memory.indexed_indirect_buffers[allocation];
-                let indexed_indirect_buffer = indexed_indirect_buffers.get_mut(indexed_indirect_buffer_handle);
-                let position_scaling_buffers = &mut manager.position_scaling_buffers[allocation];
-
-                // Extend the indirect draw buffer
-                indexed_indirect_buffer.extend_from_slice(&vec![
-                    DrawIndexedIndirect {
-                        vertex_count: 0,
-                        instance_count: 1,
-                        base_index: 0,
-                        vertex_offset: 0,
-                        base_instance: 0,
-                    };
-                    extra
-                ]).unwrap();
-
-                // Extend the position scaling buffer
-                position_scaling_buffers.extend_from_slice(&vec![vek::Vec4::zero(); extra]).unwrap();
-
+            let mut global_index = pre_chunks_per_allocations * memory.chunks_per_allocation;
+            for allocation in 0..terrain.settings.allocation_count {      
                 // Create new chunk entities and set them as "free"
-                entities.extend((0..extra).into_iter().map(|_| {
-                    let local_index = memory.chunks_per_allocations[allocation];
+                entities.extend((0..chunks_to_allocate_per_allocation).into_iter().map(|i| {
                     let position = Position::default();
                     let scale = Scale::default();
 
@@ -165,15 +166,15 @@ fn update(world: &mut World) {
                     let chunk = Chunk {
                         state: ChunkState::Free,
                         allocation,
-                        local_index,
+                        global_index: global_index, 
                         generation_priority: 0.0f32,
                         readback_priority: 0.0f32,
                         ranges: None,
                         node: None,
                     };
-                
-                    // Take in account this chunk within the allocation
-                    memory.chunks_per_allocations[allocation] += 1;
+
+                    log::info!("{global_index}");
+                    global_index += 1;
                 
                     // Create the bundle
                     (position, scale, chunk)
@@ -209,8 +210,8 @@ fn update(world: &mut World) {
 
             // Update position buffer
             let packed = (*position).with_w(**scale);
-            let buffer = &mut manager.position_scaling_buffers[chunk.allocation];
-            buffer.write(&[packed], chunk.local_index).unwrap();
+            let buffer = &mut manager.position_scaling_buffer;
+            buffer.write(&[packed], chunk.global_index).unwrap();
 
             // Add the entity to the internally stored entities
             let res = manager.entities.insert(*node, *entity);
@@ -228,7 +229,7 @@ fn update(world: &mut World) {
             chunk.generation_priority = chunk.generation_priority.clamp(0.0f32, 1000.0f32);
 
         // Update readback priority for each chunk *around* the user (needed for collisions)
-        chunk.readback_priority = (1.0 / viewer_position.distance(**position).max(1.0));
+        chunk.readback_priority = 1.0 / viewer_position.distance(**position).max(1.0);
     }
 }
 
