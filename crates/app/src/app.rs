@@ -199,10 +199,10 @@ impl App {
             .error(Color::Red);
 
         // Level filter for wgpu and subdependencies
-        let wgpu_filter = if self.logging_level == log::LevelFilter::Trace {
-            log::LevelFilter::Debug
-        } else {
-            log::LevelFilter::Warn
+        let wgpu_filter = match self.logging_level {
+            log::LevelFilter::Off => log::LevelFilter::Off,
+            log::LevelFilter::Trace => log::LevelFilter::Debug,
+            _ => log::LevelFilter::Warn
         };
 
         fern::Dispatch::new()

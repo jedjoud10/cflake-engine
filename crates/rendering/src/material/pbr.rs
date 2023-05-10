@@ -1,6 +1,6 @@
 use crate::{
     ActiveScenePipeline, AlbedoMap, CameraUniform, DefaultMaterialResources, Direct, MaskMap,
-    Material, NormalMap, Renderer, SceneUniform, ShadowMap, ShadowMapping, ShadowUniform,
+    Material, NormalMap, Renderer, SceneUniform, ShadowMap, ShadowMapping, ShadowUniform, EnvironmentMap,
 };
 
 use assets::Assets;
@@ -64,6 +64,9 @@ impl Material for PhysicallyBasedMaterial {
         compiler.use_uniform_buffer::<vek::Vec4<vek::Vec4<f32>>>("shadow_lightspace_matrices");
         compiler.use_uniform_buffer::<f32>("cascade_plane_distances");
 
+        // Environment map parameters
+        compiler.use_sampled_texture::<EnvironmentMap>("environment_map");
+
         // Define the types for the user textures
         compiler.use_sampled_texture::<ShadowMap>("shadow_map");
         compiler.use_sampled_texture::<AlbedoMap>("albedo_map");
@@ -126,6 +129,11 @@ impl Material for PhysicallyBasedMaterial {
         // Set the scene shadow map
         group
             .set_sampled_texture("shadow_map", &resources.3.depth_tex)
+            .unwrap();
+
+        // Set the scene environment map
+        group
+            .set_sampled_texture("environment_map", default.environment_map)
             .unwrap();
     }
 

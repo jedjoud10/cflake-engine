@@ -21,35 +21,6 @@ pub trait Extent: Copy + Send + Sync {
         self.reduce_min() > 0
     }
 
-    // Check if the extent is a power of 2 extent
-    fn is_power_of_two(&self) -> bool {
-        match Self::dimension() {
-            Dimension::D1 => self.width().is_power_of_two(),
-            Dimension::D2 => self.width().is_power_of_two() && self.height().is_power_of_two(),
-            Dimension::D3 => {
-                self.width().is_power_of_two()
-                    && self.height().is_power_of_two()
-                    && self.depth().is_power_of_two()
-            }
-        }
-    }
-
-    // Caclulate the number of mipmap levels that a texture can have
-    // Returns None if the extent is a NPOT extent
-    // Returns 1 if the texture only has one mip
-    fn levels(&self) -> Option<NonZeroU8> {
-        if !self.is_power_of_two() {
-            return None;
-        }
-
-        let cur = self.reduce_min() as f32;
-        let num = cur.log2().floor();
-        Some(
-            NonZeroU8::new(u8::try_from(num as u8 + 1).unwrap())
-                .unwrap_or(NonZeroU8::new(1).unwrap()),
-        )
-    }
-
     // Calculate the dimensions of a mip map level using it's index
     // Level equal to 0 meaning that it will return the base extent
     fn mip_level_dimensions(self, level: u8) -> Self;
@@ -63,20 +34,8 @@ pub trait Extent: Copy + Send + Sync {
     // Get the height of the extent
     fn height(&self) -> u32;
 
-    // Get the depth of the extent
-    fn depth(&self) -> u32;
-
-    // Depth or layers. Panics if both
-    fn depth_or_layers(&self) -> u32 {
-        assert!(
-            !(self.depth() > 1 && self.layers() > 1),
-            "Cannot have multi-layered 3D texture"
-        );
-        self.depth().max(self.layers())
-    }
-
-    // Get the number of layers in the extent
-    fn layers(&self) -> u32;
+    // Depth or layers of this extent
+    fn depth_or_layers(&self) -> u32;
 
     // Create a new extent by cloning a value for all axii
     fn broadcast(val: u32) -> Self;
@@ -87,21 +46,6 @@ pub trait Extent: Copy + Send + Sync {
     // Convert the extent to Extent3D
     fn decompose(&self) -> vek::Extent3<u32> {
         vek::Extent3::new(self.width(), self.height(), self.depth_or_layers())
-    }
-
-    // Get the view dimensions of the extent (1, 2, 3, or layered / cube maps)
-    fn view_dimension() -> ViewDimension;
-
-    // Get the dimensionality of the underlying texels (1, 2, 3)
-    fn dimension() -> Dimension {
-        match Self::view_dimension() {
-            ViewDimension::D1 => Dimension::D1,
-            ViewDimension::D2 => Dimension::D2,
-            ViewDimension::D2Array => Dimension::D2,
-            ViewDimension::Cube => Dimension::D2,
-            ViewDimension::CubeArray => Dimension::D2,
-            ViewDimension::D3 => Dimension::D3,
-        }
     }
 }
 
@@ -149,11 +93,7 @@ impl Extent for vek::Extent2<u32> {
         self.h
     }
 
-    fn depth(&self) -> u32 {
-        1
-    }
-
-    fn layers(&self) -> u32 {
+    fn depth_or_layers(&self) -> u32 {
         1
     }
 
@@ -163,10 +103,6 @@ impl Extent for vek::Extent2<u32> {
 
     fn new(w: u32, h: u32, _: u32) -> Self {
         vek::Extent2::new(w, h)
-    }
-
-    fn view_dimension() -> ViewDimension {
-        ViewDimension::D2
     }
 
     fn mip_level_dimensions(self, level: u8) -> Self {
@@ -204,12 +140,8 @@ impl Extent for vek::Extent3<u32> {
         self.h
     }
 
-    fn depth(&self) -> u32 {
+    fn depth_or_layers(&self) -> u32 {
         self.d
-    }
-
-    fn layers(&self) -> u32 {
-        1
     }
 
     fn broadcast(val: u32) -> Self {
@@ -220,10 +152,6 @@ impl Extent for vek::Extent3<u32> {
         vek::Extent3::new(w, h, d)
     }
 
-    fn view_dimension() -> ViewDimension {
-        ViewDimension::D3
-    }
-
     fn mip_level_dimensions(self, level: u8) -> Self {
         self / 2u32.pow(level as u32)
     }
@@ -232,7 +160,7 @@ impl Extent for vek::Extent3<u32> {
 // Implementation of extent for 2D layered texture extent
 impl Extent for (vek::Extent2<u32>, u32) {
     fn area(&self) -> u32 {
-        self.0.as_::<u32>().product() * self.1
+        self.0.as_::<u32>().product()
     }
 
     fn reduce_max(&self) -> u32 {
@@ -259,11 +187,7 @@ impl Extent for (vek::Extent2<u32>, u32) {
         self.0.h
     }
 
-    fn depth(&self) -> u32 {
-        1
-    }
-
-    fn layers(&self) -> u32 {
+    fn depth_or_layers(&self) -> u32 {
         self.1
     }
 
@@ -273,10 +197,6 @@ impl Extent for (vek::Extent2<u32>, u32) {
 
     fn new(w: u32, h: u32, d: u32) -> Self {
         (vek::Extent2::new(w, h), d)
-    }
-
-    fn view_dimension() -> ViewDimension {
-        ViewDimension::D2Array
     }
 
     fn mip_level_dimensions(self, level: u8) -> Self {
@@ -363,14 +283,31 @@ pub trait Region: Copy {
     // Set the region's extent
     fn set_extent(&mut self, extent: Self::E);
 
-    // Create a region with a default origin using an extent
-    fn with_extent(extent: Self::E) -> Self;
-
     // Create a region with it's raw components
     fn from_raw_parts(origin: Self::O, extent: Self::E) -> Self;
 
+    // Create a region with a zeroed out origin and specific extent
+    fn from_extent(extent: Self::E) -> Self {
+        Self::from_raw_parts(<Self::O as Default>::default(), extent)
+    }
+
     // Is this region a multi-layer region (cubemap / layered texture)
     fn is_multi_layered() -> bool;
+
+    // Get the number of layers of an extent
+    fn layers(extent: Self::E) -> u32;
+
+    // TODO: kill me
+    fn depth_or_layers(extent: Self::E) -> u32 {
+        match Self::view_dimension() {
+            wgpu::TextureViewDimension::D1 => 1,
+            wgpu::TextureViewDimension::D2 => 1,
+            wgpu::TextureViewDimension::D2Array => extent.depth_or_layers(),
+            wgpu::TextureViewDimension::Cube => 6,
+            wgpu::TextureViewDimension::CubeArray => 6 * extent.depth_or_layers(),
+            wgpu::TextureViewDimension::D3 => extent.depth_or_layers(),
+        }
+    }
 
     // Check if this region is larger than another region
     // Aka if the "other" region fits within self
@@ -378,6 +315,18 @@ pub trait Region: Copy {
 
     // Check if we can use a texture mip level (with specific region of Self) as a render target directly
     fn can_render_to_mip(&self) -> bool {
+        // works for now ig
+        Self::depth_or_layers(self.extent()) == 1
+        /*
+        let depth_or_layers = self.extent().depth_or_layers();
+
+        match Self::view_dimension() {
+            wgpu::TextureViewDimension::D2Array => todo!(),
+            wgpu::TextureViewDimension::Cube => todo!(),
+            wgpu::TextureViewDimension::CubeArray => todo!(),
+            wgpu::TextureViewDimension::D3 => todo!(),
+        }
+
         let layer_check = self.extent().layers().checked_sub(self.origin().layer());
         let depth_check = self.extent().depth().checked_sub(self.origin().z());
         
@@ -386,10 +335,55 @@ pub trait Region: Copy {
         };
 
         return layers == 1 && depth == 1;
+        */
     }
 
-    // Calculate the surface area of the region
-    fn area(&self) -> u32;
+    // Check if the extent is a power of 2 extent
+    fn is_power_of_two(extent: Self::E) -> bool {
+        match Self::dimension() {
+            Dimension::D1 => extent.width().is_power_of_two(),
+            Dimension::D2 => extent.width().is_power_of_two() && extent.height().is_power_of_two(),
+            Dimension::D3 => {
+                extent.width().is_power_of_two()
+                    && extent.height().is_power_of_two()
+                    && extent.depth_or_layers().is_power_of_two()
+            }
+        }
+    }
+
+    // Caclulate the number of mipmap levels that a texture can have
+    // Returns None if the extent is a NPOT extent
+    // Returns 1 if the texture only has one mip
+    fn levels(extent: Self::E) -> Option<NonZeroU8> {
+        if !Self::is_power_of_two(extent) {
+            return None;
+        }
+
+        let cur = extent.reduce_min() as f32;
+        let num = cur.log2().floor();
+        Some(
+            NonZeroU8::new(u8::try_from(num as u8 + 1).unwrap())
+                .unwrap_or(NonZeroU8::new(1).unwrap()),
+        )
+    }
+
+    // Calculate the number of texels inside a region
+    fn volume(&self) -> u32;
+
+    // Get the view dimensions of the extent (1, 2, 3, or layered / cube maps)
+    fn view_dimension() -> ViewDimension;
+
+    // Get the dimensionality of the underlying texels (1, 2, 3)
+    fn dimension() -> Dimension {
+        match Self::view_dimension() {
+            ViewDimension::D1 => Dimension::D1,
+            ViewDimension::D2 => Dimension::D2,
+            ViewDimension::D2Array => Dimension::D2,
+            ViewDimension::Cube => Dimension::D2,
+            ViewDimension::CubeArray => Dimension::D2,
+            ViewDimension::D3 => Dimension::D3,
+        }
+    }
 }
 
 // Texture2D
@@ -417,10 +411,6 @@ impl Region for (vek::Vec2<u32>, vek::Extent2<u32>) {
         self.1 = extent;
     }
 
-    fn with_extent(extent: Self::E) -> Self {
-        (Default::default(), extent)
-    }
-
     fn from_raw_parts(origin: Self::O, extent: Self::E) -> Self {
         (origin, extent)
     }
@@ -434,8 +424,16 @@ impl Region for (vek::Vec2<u32>, vek::Extent2<u32>) {
         self.extent().is_larger_than(e)
     }
 
-    fn area(&self) -> u32 {
+    fn volume(&self) -> u32 {
         self.extent().area()
+    }
+
+    fn view_dimension() -> ViewDimension {
+        ViewDimension::D2
+    }
+
+    fn layers(extent: Self::E) -> u32 {
+        1
     }
 }
 
@@ -464,10 +462,6 @@ impl Region for (vek::Vec3<u32>, vek::Extent3<u32>) {
         self.1 = extent;
     }
 
-    fn with_extent(extent: Self::E) -> Self {
-        (Default::default(), extent)
-    }
-
     fn from_raw_parts(origin: Self::O, extent: Self::E) -> Self {
         (origin, extent)
     }
@@ -481,8 +475,16 @@ impl Region for (vek::Vec3<u32>, vek::Extent3<u32>) {
         self.extent().is_larger_than(e)
     }
 
-    fn area(&self) -> u32 {
+    fn volume(&self) -> u32 {
         self.extent().area()
+    }
+
+    fn view_dimension() -> ViewDimension {
+        ViewDimension::D3
+    }
+
+    fn layers(extent: Self::E) -> u32 {
+        1
     }
 }
 
@@ -511,10 +513,6 @@ impl Region for ((vek::Vec2<u32>, u32), vek::Extent2<u32>) {
         self.1 = extent;
     }
 
-    fn with_extent(extent: Self::E) -> Self {
-        (Default::default(), extent)
-    }
-
     fn from_raw_parts(origin: Self::O, extent: Self::E) -> Self {
         (origin, extent)
     }
@@ -532,10 +530,16 @@ impl Region for ((vek::Vec2<u32>, u32), vek::Extent2<u32>) {
         true
     }
 
-    fn area(&self) -> u32 {
-        let h = self.extent().h;
-        let w = self.extent().w;
-        (h * w) * 6
+    fn volume(&self) -> u32 {
+        self.extent().area() * 6
+    }
+
+    fn view_dimension() -> ViewDimension {
+        ViewDimension::Cube
+    }
+
+    fn layers(extent: Self::E) -> u32 {
+        6
     }
 }
 
@@ -564,10 +568,6 @@ impl Region for ((vek::Vec2<u32>, u32), (vek::Extent2<u32>, u32)) {
         self.1 = extent;
     }
 
-    fn with_extent(extent: Self::E) -> Self {
-        (Default::default(), extent)
-    }
-
     fn from_raw_parts(origin: Self::O, extent: Self::E) -> Self {
         (origin, extent)
     }
@@ -578,14 +578,22 @@ impl Region for ((vek::Vec2<u32>, u32), (vek::Extent2<u32>, u32)) {
         }
 
         let e = other.extent().0 + vek::Extent2::<u32>::from(other.origin().0);
-        self.1 .0.is_larger_than(e) && self.1 .1 > other.1 .1
+        self.1.0.is_larger_than(e) && self.1.1 > other.1.1
     }
 
     fn is_multi_layered() -> bool {
         true
     }
 
-    fn area(&self) -> u32 {
+    fn volume(&self) -> u32 {
         self.extent().0.area() * self.extent().1
+    }
+
+    fn view_dimension() -> ViewDimension {
+        ViewDimension::D2Array
+    }
+
+    fn layers(extent: Self::E) -> u32 {
+        extent.depth_or_layers()
     }
 }

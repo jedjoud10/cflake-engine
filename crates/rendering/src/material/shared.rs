@@ -6,7 +6,7 @@ use graphics::{
 use math::Frustum;
 use utils::Storage;
 
-use crate::{attributes, AttributeBuffer, IndirectMesh, Mesh, MultiDrawIndirect, MultiDrawIndirectMesh};
+use crate::{attributes, AttributeBuffer, IndirectMesh, Mesh, MultiDrawIndirect, MultiDrawIndirectMesh, EnvironmentMap};
 
 // These are the default settings that we pass to each material
 pub struct DefaultMaterialResources<'a> {
@@ -31,6 +31,9 @@ pub struct DefaultMaterialResources<'a> {
     pub black: &'a AlbedoMap,
     pub normal: &'a NormalMap,
     pub mask: &'a MaskMap,
+
+    // Envinronment maps
+    pub environment_map: &'a EnvironmentMap,
 
     // Common direct mesh storages
     pub meshes: &'a Storage<Mesh>,

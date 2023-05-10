@@ -1,6 +1,6 @@
 use crate::{
     AlbedoMap, CameraUniform, CastShadowsMode, DefaultMaterialResources, Direct, Material,
-    MeshAttributes, SceneUniform,
+    MeshAttributes, SceneUniform, EnvironmentMap,
 };
 
 use assets::Assets;
@@ -35,6 +35,7 @@ impl Material for SkyMaterial {
         let mut compiler = Compiler::new(assets, graphics);
         compiler.use_uniform_buffer::<CameraUniform>("camera");
         compiler.use_uniform_buffer::<SceneUniform>("scene");
+        compiler.use_sampled_texture::<EnvironmentMap>("environment_map");
 
         // Compile the modules into a shader
         Shader::new(vert, frag, &compiler).unwrap()
@@ -81,6 +82,9 @@ impl Material for SkyMaterial {
             .unwrap();
         group
             .set_uniform_buffer("scene", default.scene_buffer, ..)
+            .unwrap();
+        group
+            .set_sampled_texture("environment_map", default.environment_map)
             .unwrap();
     }
 }

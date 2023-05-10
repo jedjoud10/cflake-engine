@@ -1,6 +1,6 @@
 use rendering::{
     ActiveScenePipeline, AlbedoTexel, CameraUniform, DefaultMaterialResources, Indirect, MaskTexel,
-    Material, NormalTexel, Renderer, SceneUniform, ShadowMap, ShadowMapping, ShadowUniform, MultiDrawIndirect,
+    Material, NormalTexel, Renderer, SceneUniform, ShadowMap, ShadowMapping, ShadowUniform, MultiDrawIndirect, EnvironmentMap,
 };
 
 use assets::Assets;
@@ -72,12 +72,15 @@ impl Material for TerrainMaterial {
         compiler.use_uniform_buffer::<vek::Vec4<vek::Vec4<f32>>>("shadow_lightspace_matrices");
         compiler.use_uniform_buffer::<f32>("cascade_plane_distances");
 
+        // Environment map parameters
+        compiler.use_sampled_texture::<EnvironmentMap>("environment_map");
+
         // Define the types for the user textures
         compiler.use_sampled_texture::<ShadowMap>("shadow_map");
 
         // Contains the allocation index that is stored per sub-surface
         compiler.use_push_constant_layout(PushConstantLayout::single(
-            u32::size() * 2,
+            u32::size(),
             ModuleVisibility::Vertex,
         ).unwrap());
 
@@ -157,6 +160,9 @@ impl Material for TerrainMaterial {
                 ..,
             )
             .unwrap();
+        group
+            .set_sampled_texture("environment_map", default.environment_map)
+            .unwrap();
 
         // Set the scene shadow map
         group
@@ -207,13 +213,12 @@ impl Material for TerrainMaterial {
     ) {
         // Set the count for the number of chunks per allocations (constant per allocation)
         let chunks_per_allocation = resources.4.memory.chunks_per_allocation as u32;
-        let bytes = GpuPod::into_bytes(&chunks_per_allocation);
+        let allocation_index = resources.6 as u32;
+        let offset =  chunks_per_allocation * allocation_index;
+        let bytes = GpuPod::into_bytes(&offset);
         push_constants.push(bytes, 0, ModuleVisibility::Vertex).unwrap();
-
+        
         // Since the ordering of entities within an archetype is always deterministic we can do this without worrying
-        let index = resources.6 as u32; 
-        let bytes = GpuPod::into_bytes(&index);
-        push_constants.push(bytes, 4, ModuleVisibility::Vertex).unwrap();
         resources.6 += 1;
     }
 }

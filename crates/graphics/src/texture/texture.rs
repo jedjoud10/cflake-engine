@@ -42,7 +42,7 @@ pub trait Texture: Sized + 'static {
 
         // Make sure the number of texels matches up with the dimensions
         if let Some(texels) = texels {
-            if extent.area() as usize != texels.len() {
+            if <Self::Region as Region>::from_extent(extent).volume() as usize != texels.len() {
                 return Err(TextureInitializationError::TexelDimensionsMismatch {
                     count: texels.len(),
                     w: extent.width(),
@@ -53,9 +53,8 @@ pub trait Texture: Sized + 'static {
         }
 
         // Get the image type using the dimensionality
-        let view_dimensions = <<Self::Region as Region>::E as Extent>::view_dimension();
-        let dimension = <<Self::Region as Region>::E as Extent>::dimension();
-        let extent_3d = extent_to_extent3d(extent);
+        let dimension = <Self::Region as Region>::dimension();
+        let extent_3d = extent_to_extent3d::<Self::Region>(extent);
 
         // If the extent contains a 0 in any axii, it's invalid
         if !extent.is_valid() {
@@ -63,7 +62,7 @@ pub trait Texture: Sized + 'static {
         }
 
         // If the extent is greater than the physical limits, it's invalid
-        if !size_within_limits(&graphics, extent) {
+        if !size_within_limits::<Self::Region>(&graphics, extent) {
             return Err(TextureInitializationError::ExtentLimit);
         }
 
@@ -92,7 +91,7 @@ pub trait Texture: Sized + 'static {
         }
 
         // Get the number of mip levels for this texture
-        let levels = mip_levels(&mipmaps, extent)?;
+        let levels = mip_levels::<Self::T, Self::Region>(&mipmaps, extent)?;
 
         // Config for the Wgpu texture
         let descriptor = TextureDescriptor {
@@ -175,13 +174,14 @@ pub trait Texture: Sized + 'static {
 
         // Create the texture views when deemed necessary
         let views = needs_views.then(|| {
-            create_texture_views::<Self::T, <Self::Region as Region>::E>(
+            let layers = <Self::Region as Region>::layers(extent);
+
+            create_texture_views::<Self::T, Self::Region>(
                 &texture,
                 format,
-                view_dimensions,
                 extent,
                 levels,
-                extent.layers(),
+                layers,
             )
         });
 
@@ -194,7 +194,7 @@ pub trait Texture: Sized + 'static {
 
     // Get the texture's region (origin state is default)
     fn region(&self) -> Self::Region {
-        Self::Region::with_extent(self.dimensions())
+        Self::Region::from_extent(self.dimensions())
     }
 
     // Checks if we can access a region of the texture
@@ -225,7 +225,7 @@ pub trait Texture: Sized + 'static {
 
     // Get the number of layers currently stored within the texture
     fn layers(&self) -> u32 {
-        self.dimensions().layers()
+        <Self::Region as Region>::layers(self.dimensions())
     }
 
     // Get the whole Texture view (if there is one)
@@ -299,7 +299,7 @@ pub trait Texture: Sized + 'static {
             return Err(TextureAsTargetError::TextureMultipleMips);
         }
 
-        if self.dimensions().depth() > 1 {
+        if self.dimensions().depth_or_layers() > 1 {
             return Err(TextureAsTargetError::RegionIsNot2D);
         }
 
@@ -326,7 +326,7 @@ pub trait Texture: Sized + 'static {
             return Err(TextureResizeError::InvalidExtent);
         }
 
-        if !size_within_limits(&graphics, extent) {
+        if !size_within_limits::<Self::Region>(&graphics, extent) {
             return Err(TextureResizeError::ExtentLimit);
         }
 
@@ -340,20 +340,20 @@ pub trait Texture: Sized + 'static {
         }
 
         // Fetch dimensions, name, and texel format
-        let view_dimensions = <<Self::Region as Region>::E as Extent>::view_dimension();
-        let dimension = <<Self::Region as Region>::E as Extent>::dimension();
+        let view_dimensions = <Self::Region as Region>::view_dimension();
+        let dimension = <Self::Region as Region>::dimension();
         let name = utils::pretty_type_name::<Self::T>();
         let format = <Self::T>::format();
         log::debug!(
             "Resizing texture, {dimension:?}, <{name}>, {}x{}x{}",
             extent.width(),
             extent.height(),
-            extent.depth()
+            extent.depth_or_layers()
         );
 
         // Config for the Wgpu texture
         let descriptor = TextureDescriptor {
-            size: extent_to_extent3d(extent),
+            size: extent_to_extent3d::<Self::Region>(extent),
             mip_level_count: 1,
             sample_count: 1,
             dimension,
@@ -421,7 +421,7 @@ pub(crate) fn get_specific_view<T: Texture>(
     layer: Option<u32>,
     level: Option<u32>,
 ) -> Option<&wgpu::TextureView> {
-    let max_layers = texture.dimensions().layers();
+    let max_layers = texture.layers();
     let max_levels = texture.levels();
 
     // Return if the layer index is invalid
@@ -461,15 +461,14 @@ pub(crate) fn get_specific_view<T: Texture>(
 }
 
 // Get the number of mip levels that the texture should use
-pub(crate) fn mip_levels<T: Texel, E: Extent>(
+pub(crate) fn mip_levels<T: Texel, R: Region>(
     mipmaps: &TextureMipMaps<T>,
-    extent: E,
+    extent: R::E,
 ) -> Result<u32, TextureInitializationError> {
     let max_mip_levels = if matches!(mipmaps, TextureMipMaps::Disabled) {
         1u8 as u32
     } else {
-        let max = extent
-            .levels()
+        let max = R::levels(extent)
             .ok_or(TextureInitializationError::MipMapGenerationNPOT)?;
 
         // If we are using compression, we must make sure the lowest level is at least the block size
@@ -524,11 +523,10 @@ pub(crate) fn mip_levels<T: Texel, E: Extent>(
 // second mip, all layers
 // second mip, first layer
 // second mip, second  layer
-pub(crate) fn create_texture_views<T: Texel, E: Extent>(
+pub(crate) fn create_texture_views<T: Texel, R: Region>(
     texture: &wgpu::Texture,
     format: wgpu::TextureFormat,
-    view_dimensions: wgpu::TextureViewDimension,
-    extent: E,
+    extent: R::E,
     levels: u32,
     layers: u32,
 ) -> Vec<wgpu::TextureView> {
@@ -553,10 +551,13 @@ pub(crate) fn create_texture_views<T: Texel, E: Extent>(
             let layer = (layer > 0).then(|| layer - 1);
 
             // Modify the dimension view based on the current layer
-            let dimension = match (layer, E::view_dimension()) {
+            let dimension = match (layer, R::view_dimension()) {
                 (Some(_), wgpu::TextureViewDimension::D2Array) => wgpu::TextureViewDimension::D2,
                 (Some(_), wgpu::TextureViewDimension::CubeArray) => {
                     wgpu::TextureViewDimension::Cube
+                }
+                (Some(_), wgpu::TextureViewDimension::Cube) => {
+                    wgpu::TextureViewDimension::D2
                 }
                 (None, x) => x,
                 _ => panic!("Not supported"),
@@ -584,7 +585,7 @@ pub(crate) fn create_texture_views<T: Texel, E: Extent>(
 
 // Create an image data layout based on the extent and texel type
 // This should support compression textures too, though I haven't tested all cases yet
-pub(crate) fn create_image_data_layout<T: Texel, E: Extent>(extent: E) -> wgpu::ImageDataLayout {
+pub(crate) fn create_image_data_layout<T: Texel, R: Region>(extent: R::E) -> wgpu::ImageDataLayout {
     let size = T::size();
 
     // Bytes per row change if we are using compressed textures
@@ -599,8 +600,10 @@ pub(crate) fn create_image_data_layout<T: Texel, E: Extent>(extent: E) -> wgpu::
     wgpu::ImageDataLayout {
         offset: 0,
         bytes_per_row,
-        rows_per_image: match (E::dimension(), E::view_dimension()) {
+        rows_per_image: match (R::dimension(), R::view_dimension()) {
             (wgpu::TextureDimension::D3, wgpu::TextureViewDimension::D3) => Some(extent.width()),
+
+            (wgpu::TextureDimension::D2, wgpu::TextureViewDimension::Cube) => Some(extent.width()),
 
             (wgpu::TextureDimension::D2, wgpu::TextureViewDimension::D2Array) => {
                 Some(extent.width())
@@ -622,7 +625,7 @@ pub(crate) fn write_to_level<T: Texel, R: Region>(
     graphics: &Graphics,
 ) {
     // This should handle compression types too
-    let image_data_layout = create_image_data_layout::<T, <R as Region>::E>(extent);
+    let image_data_layout = create_image_data_layout::<T, R>(extent);
 
     // Convert the texels to bytes
     let bytes = bytemuck::cast_slice::<T::Storage, u8>(texels);
@@ -640,7 +643,7 @@ pub(crate) fn write_to_level<T: Texel, R: Region>(
         &graphics,
         image_copy_texture,
         image_data_layout,
-        extent_to_extent3d(extent),
+        extent_to_extent3d::<R>(extent),
         bytes,
     );
 }
@@ -659,15 +662,15 @@ pub(crate) fn read_from_level<T: Texel, R: Region>(
 }
 
 // Check if the given extent is valid within device limits
-fn size_within_limits<E: Extent>(graphics: &Graphics, extent: E) -> bool {
+fn size_within_limits<R: Region>(graphics: &Graphics, extent: R::E) -> bool {
     // Create the max possible texture size from device limits
     let limits = graphics.device().limits();
-    let max = match E::dimension() {
+    let max = match R::dimension() {
         wgpu::TextureDimension::D1 => limits.max_texture_dimension_1d,
         wgpu::TextureDimension::D2 => limits.max_texture_dimension_2d,
         wgpu::TextureDimension::D3 => limits.max_texture_dimension_3d,
     };
-    let max = E::broadcast(max);
+    let max = <R::E as Extent>::broadcast(max);
 
     // Check if the new texture size is physically possible
     max.is_larger_than(extent)
@@ -683,11 +686,11 @@ pub(crate) fn origin_to_origin3d<O: Origin>(origin: O) -> wgpu::Origin3d {
 }
 
 // Convert the given extent to an Extent3D
-pub(crate) fn extent_to_extent3d<E: Extent>(dimensions: E) -> wgpu::Extent3d {
+pub(crate) fn extent_to_extent3d<R: Region>(dimensions: R::E) -> wgpu::Extent3d {
     wgpu::Extent3d {
         width: dimensions.width(),
         height: dimensions.height(),
-        depth_or_array_layers: dimensions.depth_or_layers(),
+        depth_or_array_layers: R::depth_or_layers(dimensions),
     }
 }
 

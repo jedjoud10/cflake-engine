@@ -13,6 +13,7 @@ void main() {
 	
 	// Get background sky color based on elevation
 	vec3 albedo = calculate_sky_color(normal, scene.sun_direction.xyz);
+	//vec3 albedo = texture(samplerCube(environment_map, environment_map_sampler), normal).rgb;
 
 	// Create a procedural sun with the scene params
 	float sun = dot(normal, -scene.sun_direction.xyz);

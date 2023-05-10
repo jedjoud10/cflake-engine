@@ -66,7 +66,7 @@ fn update(world: &mut World) {
         // Discard non-leaf nodes
         added.retain(|x| x.leaf());
 
-        /*
+        // Used to make sure we only make the nodes visible all at once
         manager.children_count.clear();
         for node in manager.octree.nodes() {
             if let Some(base) = node.children() {
@@ -76,7 +76,6 @@ fn update(world: &mut World) {
                 manager.children_count.insert(*node, (0, count.into_iter().filter(|x| x.leaf()).count()));
             }
         }
-        */
 
         // Don't do shit
         if added.is_empty() && removed.is_empty() {

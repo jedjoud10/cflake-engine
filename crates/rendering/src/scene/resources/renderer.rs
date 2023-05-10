@@ -7,7 +7,7 @@ use graphics::{
     ActiveRenderPass, ActiveRenderPipeline, BufferMode, BufferUsage, Depth, GpuPod, Graphics,
     LoadOp, Operation, RenderPass, SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap,
     StoreOp, Texel, Texture, Texture2D, TextureMipMaps, TextureMode, TextureUsage, UniformBuffer,
-    RGBA, CubeMap,
+    RGBA, CubeMap, ImageTexel,
 };
 use utils::{Handle, Storage};
 
@@ -41,7 +41,7 @@ pub struct ForwardRenderer {
     pub window_buffer: WindowBuffer,
 
     // Environment map
-    pub environment: EnvironmentMap,
+    pub environment_map: EnvironmentMap,
 
     // Default textures that will be shared with each material
     pub white: Handle<AlbedoMap>,
@@ -84,10 +84,19 @@ fn create_texture2d<T: Texel>(graphics: &Graphics, value: T::Storage) -> Texture
 }
 
 // Create a cubemap with a specific resolution
-fn create_cubemap<T: Texel>(graphics: &Graphics, value: T::Storage, resolution: usize) -> CubeMap<T> {
+fn create_cubemap<T: Texel + ImageTexel>(graphics: &Graphics, value: T::Storage, resolution: usize) -> CubeMap<T> {
+    let texels = (0..(resolution*resolution*6)).into_iter().map(|i| {
+        if i % 2 == 0 { 
+            T::try_from_target(vek::Vec4::one()).unwrap()
+        } else {
+            T::try_from_target(vek::Vec4::zero()).unwrap()
+        }
+    }).collect::<Vec<T::Storage>>();
+
+
     CubeMap::<T>::from_texels(
         graphics,
-        Some(&vec![value; resolution*resolution*6]),
+        Some(&texels),
         vek::Extent2::broadcast(resolution as u32),
         TextureMode::Dynamic,
         TextureUsage::SAMPLED | TextureUsage::COPY_DST,
@@ -143,7 +152,8 @@ impl ForwardRenderer {
         let render_pass = SceneRenderPass::new(
             graphics,
             Operation {
-                load: LoadOp::Clear(vek::Vec4::broadcast(0f32)),
+                //load: LoadOp::Clear(vek::Vec4::broadcast(0f32)),
+                load: LoadOp::Load,
                 store: StoreOp::Store,
             },
             Operation {
@@ -183,7 +193,7 @@ impl ForwardRenderer {
             mask,
 
             // Create the environment map
-            environment: create_cubemap(graphics, vek::Vec4::zero(), 512),
+            environment_map: create_cubemap(graphics, vek::Vec4::zero(), 512),
 
             // No default camera
             main_camera: None,

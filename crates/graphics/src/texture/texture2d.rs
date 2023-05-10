@@ -169,7 +169,7 @@ pub fn texture2d_from_raw<T: ImageTexel>(
     // Generate each mip's texel data
     let mips = if generate_mip_maps {
         Some(
-            super::generate_mip_map::<T, vek::Extent2<u32>>(&texels, dimensions)
+            super::generate_mip_map::<T, (vek::Vec2<u32>, vek::Extent2<u32>)>(&texels, dimensions)
                 .ok_or(TextureInitializationError::MipMapGenerationNPOT)?,
         )
     } else {
