@@ -72,11 +72,15 @@ fn update(world: &mut World) {
         let offset = offset.x / settings.vertices_per_sub_allocation;
 
         // Update chunk range (if valid) and set visibility
-        if count > 0 {
+        let visibility = count > 0;
+        if visibility {
             chunk.ranges = Some(vek::Vec2::new(offset, count + offset));
         } else {
             chunk.ranges = None;
         }
+
+        
+        // Show the chunk using the temporary visibility vector
     }
     
 }

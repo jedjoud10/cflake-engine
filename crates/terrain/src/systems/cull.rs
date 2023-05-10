@@ -21,7 +21,8 @@ fn update(world: &mut World) {
         &terrain.settings,
     );
 
-    // Clear output indexed indirect buffers
+    // Start render pass for the culling algorithm
+
     // Create compute pass that will cull the indexed indirect buffers
     // Run the culling compute shader with the data from the camera
 }

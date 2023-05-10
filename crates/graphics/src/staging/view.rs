@@ -1,10 +1,10 @@
 use crate::{Graphics, Texture, Buffer, GpuPod};
-use std::{marker::PhantomData, sync::atomic::Ordering};
+use std::{marker::PhantomData, sync::atomic::{Ordering, AtomicUsize}};
 use utils::AtomicBitSet;
 
 pub struct StagingView<'a> {
     pub(super) index: usize,
-    pub(super) used: &'a AtomicBitSet,
+    pub(super) used: &'a AtomicBitSet::<AtomicUsize>,
     pub(super) staging: &'a wgpu::Buffer,
     pub(super) view: Option<wgpu::BufferView<'a>>,
 }
@@ -37,7 +37,7 @@ impl<'a> AsMut<[u8]> for StagingViewWrite<'a> {
 // Used for mappable texture reads
 pub struct TextureStagingView<'a> {
     pub(super) index: usize,
-    pub(super) used: &'a AtomicBitSet,
+    pub(super) used: &'a AtomicBitSet::<AtomicUsize>,
     pub(super) staging: &'a wgpu::Buffer,
     pub(super) view: Option<wgpu::BufferView<'a>>,
 }
@@ -62,7 +62,7 @@ pub struct TextureStagingViewWrite<'a> {
     pub(super) index: usize,
     pub(super) graphics: &'a Graphics,
     pub(super) encoder: Option<wgpu::CommandEncoder>,
-    pub(super) used: &'a AtomicBitSet,
+    pub(super) used: &'a AtomicBitSet::<AtomicUsize>,
     pub(super) staging: &'a wgpu::Buffer,
     pub(crate) image_copy_buffer: Option<wgpu::ImageCopyBuffer<'a>>,
     pub(crate) image_copy_texture: Option<wgpu::ImageCopyTexture<'a>>,

@@ -98,9 +98,9 @@ fn update(world: &mut World) {
                 chunk.state = ChunkState::Free;
 
                 // Hide the chunk using the temporary visibility vector
-                
-
-                //surface.visible = false;
+                let elem = &mut visibilities[chunk.global_index / 32];
+                let index = chunk.global_index % 32;
+                *elem = *elem & (1 << index); 
             }
         }
 
@@ -212,7 +212,7 @@ fn update(world: &mut World) {
             let packed = (*position).with_w(**scale);
             let buffer = &mut manager.position_scaling_buffer;
             buffer.write(&[packed], chunk.global_index).unwrap();
-
+            
             // Add the entity to the internally stored entities
             let res = manager.entities.insert(*node, *entity);
             assert!(res.is_none());

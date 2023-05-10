@@ -1,11 +1,16 @@
+use atomic_traits::Atomic;
+use atomic_traits::Bitwise;
 use itertools::Itertools;
+use num_traits::PrimInt;
 use parking_lot::MappedRwLockReadGuard;
 use parking_lot::MappedRwLockWriteGuard;
 use parking_lot::RwLock;
 use parking_lot::RwLockReadGuard;
 use parking_lot::RwLockWriteGuard;
+use std::fmt::Binary;
 use std::fmt::Debug;
 use std::fmt::Display;
+use std::mem::size_of;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
@@ -13,28 +18,51 @@ use std::sync::atomic::Ordering;
 // Simple atomic bitset that allocates using usize chunks
 // This bitset contains a specific number of elements per chunk that we can share in multiple threads
 #[derive(Default)]
-pub struct AtomicBitSet(RwLock<Vec<AtomicUsize>>, AtomicBool);
+pub struct AtomicBitSet<T: Bitwise>(RwLock<Vec<T>>, AtomicBool) where <T as Atomic>::Type: PrimInt;
 
-impl AtomicBitSet {
+
+fn zero<T: Atomic>() -> <T as Atomic>::Type where T::Type: PrimInt {
+    <<T as Atomic>::Type as num_traits::identities::Zero>::zero()
+}
+
+fn one<T: Atomic>() -> <T as Atomic>::Type where T::Type: PrimInt {
+    <<T as Atomic>::Type as num_traits::identities::One>::one()
+}
+
+fn min<T: Atomic>() -> <T as Atomic>::Type where T::Type: PrimInt {
+    <<T as Atomic>::Type as num_traits::Bounded>::min_value()
+}
+
+fn max<T: Atomic>() -> <T as Atomic>::Type where T::Type: PrimInt {
+    <<T as Atomic>::Type as num_traits::Bounded>::max_value()
+}
+
+impl<T: Bitwise> AtomicBitSet<T> where  <T as Atomic>::Type: PrimInt {
     // Create a new empty bit set
     pub fn new() -> Self {
         Self(RwLock::new(Vec::default()), AtomicBool::new(false))
     }
 
     // Create a bitset from an iterator of chunks
-    pub fn from_chunks_iter(iter: impl Iterator<Item = usize>) -> Self {
+    pub fn from_chunks_iter(iter: impl Iterator<Item = <T as Atomic>::Type>) -> Self {
         Self(
-            RwLock::new(iter.map(AtomicUsize::new).collect()),
+            RwLock::new(iter.map(T::new).collect()),
             AtomicBool::new(false),
         )
+    }
+
+    // Get the bit-size of the primitive
+    pub fn bitsize() -> usize {
+        size_of::<<T as Atomic>::Type>() * 8
     }
 
     // Create a bitset from an iterator of booleans
     pub fn from_iter(iter: impl Iterator<Item = bool>) -> Self {
         let chunks = iter.chunks(usize::BITS as usize);
+
         let chunks = chunks
             .into_iter()
-            .map(|chunk| chunk.fold(0, |accum, bit| accum << 1 | (bit as usize)));
+            .map(|chunk| chunk.fold(zero::<T>(), |accum, bit| accum << 1 | (if bit { one::<T>() } else { zero::<T>() })));
         Self::from_chunks_iter(chunks)
     }
 
@@ -45,12 +73,12 @@ impl AtomicBitSet {
     }
 
     // Get an immutable reference to the stored chunks
-    pub fn chunks(&self) -> MappedRwLockReadGuard<[AtomicUsize]> {
+    pub fn chunks(&self) -> MappedRwLockReadGuard<[T]> {
         RwLockReadGuard::map(self.0.read(), |s| s.as_slice())
     }
 
     // Get a mutable reference to the stored chunks
-    pub fn chunks_mut(&self) -> MappedRwLockWriteGuard<[AtomicUsize]> {
+    pub fn chunks_mut(&self) -> MappedRwLockWriteGuard<[T]> {
         RwLockWriteGuard::map(self.0.write(), |s| s.as_mut_slice())
     }
 
@@ -69,25 +97,25 @@ impl AtomicBitSet {
         let len = self.0.read().len();
         if chunk >= len {
             let splat = if self.1.load(Ordering::Relaxed) {
-                usize::MAX
+                max::<T>()
             } else {
-                usize::MIN
+                min::<T>()
             };
             let num = chunk - len;
             self.0
                 .write()
-                .extend((0..(num + 1)).map(|_| AtomicUsize::new(splat)));
+                .extend((0..(num + 1)).map(|_| T::new(splat)));
         }
 
         // Set the bit value specified in the chunk
         let chunk = &self.0.read()[chunk];
-        chunk.fetch_or(1usize << location, order);
+        chunk.fetch_or(one::<T>() << location, order);
     }
 
     // Set the whole bitset to a single value
     pub fn splat(&self, value: bool, order: Ordering) {
         for chunk in &*self.chunks() {
-            chunk.store(if value { usize::MAX } else { usize::MIN }, order);
+            chunk.store(if value { max::<T>() } else { min::<T>() }, order);
         }
 
         // We must store the value of the splat because we might allocate new chunks
@@ -98,7 +126,7 @@ impl AtomicBitSet {
     pub fn remove(&self, index: usize, order: Ordering) {
         let (chunk, location) = Self::coords(index);
         let chunk = &self.0.read()[chunk];
-        chunk.fetch_and(!(1usize << location), order);
+        chunk.fetch_and(!(one::<T>() << location), order);
     }
 
     // Get a bit value from the bitset
@@ -108,7 +136,7 @@ impl AtomicBitSet {
         self.0
             .read()
             .get(chunk)
-            .map(|chunk| (chunk.load(order) >> location) & 1 == 1)
+            .map(|chunk| (chunk.load(order) >> location) & one::<T>() == one::<T>())
             .unwrap_or_default()
     }
 
@@ -139,12 +167,12 @@ impl AtomicBitSet {
             .enumerate()
             .skip(start_chunk)
             .map(|(i, chunk)| (i, chunk.load(order)))
-            .filter(|(_, chunk)| *chunk != 0)
+            .filter(|(_, chunk)| *chunk != zero::<T>())
             .filter_map(|(i, chunk)| {
                 let offset = i * usize::BITS as usize;
                 let result = if i == start_chunk {
                     // Starting chunk, take start_location in consideration
-                    let inverted = !((1 << start_location) - 1);
+                    let inverted = !((one::<T>() << start_location) - one::<T>());
                     (chunk & inverted).trailing_zeros() as usize + offset
                 } else {
                     // Dont care, start at 0 as index
@@ -165,12 +193,12 @@ impl AtomicBitSet {
             .enumerate()
             .skip(start_chunk)
             .map(|(i, chunk)| (i, chunk.load(order)))
-            .filter(|(_, chunk)| *chunk != 0)
+            .filter(|(_, chunk)| *chunk != zero::<T>())
             .filter_map(|(i, chunk)| {
                 let offset = i * usize::BITS as usize;
                 let result = if i == start_chunk {
                     // Starting chunk, take start_location in consideration
-                    let inverted = (1 << start_location) - 1;
+                    let inverted = (one::<T>() << start_location) - one::<T>();
                     (chunk | inverted).trailing_ones() as usize + offset
                 } else {
                     // Dont care, start at 0 as index
@@ -183,7 +211,7 @@ impl AtomicBitSet {
     }
 }
 
-impl Display for AtomicBitSet {
+impl<T: Bitwise> Display for AtomicBitSet<T> where <T as Atomic>::Type: Debug + PrimInt + Binary {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for chunk in &*self.chunks() {
             write!(f, "{:b}", chunk.load(Ordering::Relaxed))?;
@@ -193,7 +221,7 @@ impl Display for AtomicBitSet {
     }
 }
 
-impl Debug for AtomicBitSet {
+impl<T: Bitwise> Debug for AtomicBitSet<T> where <T as Atomic>::Type: Debug + PrimInt + Binary {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Display::fmt(self, f)
     }

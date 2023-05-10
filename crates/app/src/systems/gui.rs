@@ -318,7 +318,7 @@ fn update(world: &mut World) {
                 .striped(true)
                 .show(ui, |ui| {
                     let allocs = settings.allocation_count();
-                    let mut bitsets = vec![BitSet::new(); allocs];
+                    let mut bitsets = vec![BitSet::<usize>::new(); allocs];
                     let chunks = scene.query::<&Chunk>();
 
                     for chunk in chunks {

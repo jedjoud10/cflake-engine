@@ -271,6 +271,13 @@ fn update(world: &mut World) {
     drop(active);
     drop(pass);
     
+    // Show the chunk using the temporary visibility vector
+    /*
+    let elem = &mut visibilities[chunk.global_index / 32];
+    let index = chunk.global_index % 32;
+    *elem = *elem | (1 << index); 
+    */
+    
     // Start computing this sheit on the GPU
     graphics.submit(false);
     chunk.state = ChunkState::Generated;
