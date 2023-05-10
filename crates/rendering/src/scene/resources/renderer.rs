@@ -40,8 +40,8 @@ pub struct ForwardRenderer {
     pub scene_buffer: SceneBuffer,
     pub window_buffer: WindowBuffer,
 
-    // Environment map
-    pub environment_map: EnvironmentMap,
+    // Double buffered environment map
+    pub environment_map: [EnvironmentMap; 2],
 
     // Default textures that will be shared with each material
     pub white: Handle<AlbedoMap>,
@@ -85,21 +85,12 @@ fn create_texture2d<T: Texel>(graphics: &Graphics, value: T::Storage) -> Texture
 
 // Create a cubemap with a specific resolution
 fn create_cubemap<T: Texel + ImageTexel>(graphics: &Graphics, value: T::Storage, resolution: usize) -> CubeMap<T> {
-    let texels = (0..(resolution*resolution*6)).into_iter().map(|i| {
-        if i % 2 == 0 { 
-            T::try_from_target(vek::Vec4::one()).unwrap()
-        } else {
-            T::try_from_target(vek::Vec4::zero()).unwrap()
-        }
-    }).collect::<Vec<T::Storage>>();
-
-
     CubeMap::<T>::from_texels(
         graphics,
-        Some(&texels),
+        Some(&vec![value; resolution*resolution*6]),
         vek::Extent2::broadcast(resolution as u32),
         TextureMode::Dynamic,
-        TextureUsage::SAMPLED | TextureUsage::COPY_DST,
+        TextureUsage::SAMPLED | TextureUsage::TARGET | TextureUsage::COPY_DST,
         Some(SamplerSettings::default()),
         TextureMipMaps::Disabled,
     )
@@ -193,7 +184,10 @@ impl ForwardRenderer {
             mask,
 
             // Create the environment map
-            environment_map: create_cubemap(graphics, vek::Vec4::zero(), 512),
+            environment_map: [
+                create_cubemap(graphics, vek::Vec4::zero(), 512),
+                create_cubemap(graphics, vek::Vec4::zero(), 512),
+            ],
 
             // No default camera
             main_camera: None,

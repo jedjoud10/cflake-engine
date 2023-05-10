@@ -25,12 +25,6 @@ layout(std430, set = 0, binding = 15) readonly buffer PositionScaleBuffer {
     vec4 data[];
 } position_scale_buffer;
 
-/*
-layout(std430, set = 0, binding = 16) readonly buffer LocalToGlobalBuffer {
-    uint data[];
-} indirection;
-*/
-
 void main() {
     // Convert from 4 floats into uints 
     uint packed_cell_position_packed_normals = floatBitsToUint(packed.x);

@@ -227,7 +227,7 @@ fn render(world: &mut World) {
         black: &albedo_maps[&renderer.black],
         normal: &normal_maps[&renderer.normal],
         mask: &mask_maps[&renderer.mask],
-        environment_map: &renderer.environment_map,
+        environment_map: &renderer.environment_map[0],
         meshes: &meshes,
         indirect_meshes: &indirect_meshes,
         multi_draw_indirect_meshes: &multi_draw_indirect_meshes,

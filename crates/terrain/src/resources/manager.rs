@@ -46,6 +46,7 @@ pub struct ChunkManager {
 
     // Buffer to store the position and scale of each chunk
     pub(crate) position_scaling_buffer: Buffer<vek::Vec4<f32>>,
+    pub(crate) culled_position_scaling_buffer: Buffer<vek::Vec4<f32>>,
 
     // Buffer to store the visibility of each chunk
     // This is a bitwise buffer, so each element actually represents the visibility of 32 chunks at a time
@@ -195,6 +196,7 @@ impl ChunkManager {
             children_count: Default::default(),
             global_draw_entity,
             position_scaling_buffer: create_empty_buffer(graphics),
+            culled_position_scaling_buffer: create_empty_buffer(graphics),
             visibility_buffer: create_empty_buffer(graphics),
             layered_albedo_map,
             layered_normal_map,

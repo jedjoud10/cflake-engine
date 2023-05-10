@@ -139,10 +139,10 @@ fn update(world: &mut World) {
                 crate::util::DEFAUlT_DRAW_INDEXED_INDIRECT;
                 chunks_to_allocate
             ]).unwrap();
-
             
             // Extend the position scaling buffer
             manager.position_scaling_buffer.extend_from_slice(&vec![vek::Vec4::zero(); chunks_to_allocate]).unwrap();
+            manager.culled_position_scaling_buffer.extend_from_slice(&vec![vek::Vec4::zero(); chunks_to_allocate]).unwrap();
 
             // Extend the visibility vector and buffer
             manager.visibility_buffer.extend_from_slice(&vec![0; chunks_to_allocate]).unwrap();
