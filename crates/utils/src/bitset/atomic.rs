@@ -191,7 +191,7 @@ impl<T: Bitwise> AtomicBitSet<T> where  <T as Atomic>::Type: PrimInt {
                     chunk.trailing_zeros() as usize + offset
                 };
 
-                (result != (offset + 64)).then_some(result)
+                (result != (offset + Self::bitsize())).then_some(result)
             })
             .next()
     }
@@ -217,7 +217,7 @@ impl<T: Bitwise> AtomicBitSet<T> where  <T as Atomic>::Type: PrimInt {
                     chunk.trailing_ones() as usize + offset
                 };
 
-                (result != (offset + 64)).then_some(result)
+                (result != (offset + Self::bitsize())).then_some(result)
             })
             .next()
     }

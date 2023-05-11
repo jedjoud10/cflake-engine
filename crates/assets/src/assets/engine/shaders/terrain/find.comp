@@ -113,7 +113,7 @@ void main() {
 
     // After finding the right block, we can write to it
     for (uint i = chosen_sub_allocation_index; i < (chosen_sub_allocation_index + chosen_sub_allocation_count); i++) {
-        indices.data[i] = push_constants.allocation_local_chunk_index;
+        indices.data[i] = 1;
     }
 
     // Offsets that we will write eventually

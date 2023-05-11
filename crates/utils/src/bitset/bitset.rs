@@ -77,7 +77,7 @@ impl<T: PrimInt> BitSet<T> {
 
         // Set the bit value specified in the chunk
         let chunk = &mut self.0[chunk];
-        *chunk = *chunk | T::one() << location;
+        *chunk = *chunk | (T::one() << location);
     }
 
     // Set the whole bitset to a single value
@@ -146,7 +146,7 @@ impl<T: PrimInt> BitSet<T> {
                     chunk.trailing_zeros() as usize + offset
                 };
 
-                (result != (offset + 64)).then_some(result)
+                (result != (offset + Self::bitsize())).then_some(result)
             })
             .next()
     }
@@ -171,7 +171,7 @@ impl<T: PrimInt> BitSet<T> {
                     chunk.trailing_ones() as usize + offset
                 };
 
-                (result != (offset + 64)).then_some(result)
+                (result != (offset + Self::bitsize())).then_some(result)
             })
             .next()
     }
