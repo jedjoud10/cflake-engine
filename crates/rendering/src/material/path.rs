@@ -96,7 +96,7 @@ impl RenderPath for Direct {
 
     #[inline(always)]
     fn is_valid(
-        defaults: &DefaultMaterialResources,
+        _defaults: &DefaultMaterialResources,
         mesh: &Mesh<Self>,
     ) -> bool {
         mesh.vertices().len().is_some()
@@ -182,12 +182,12 @@ impl RenderPath for Indirect {
     }
 
     #[inline(always)]
-    fn vertex_count(mesh: &Mesh<Self>) -> Option<usize> {
+    fn vertex_count(_mesh: &Mesh<Self>) -> Option<usize> {
         None
     }
 
     #[inline(always)]
-    fn triangle_count(mesh: &Mesh<Self>) -> Option<usize> {
+    fn triangle_count(_mesh: &Mesh<Self>) -> Option<usize> {
         None
     }
 
@@ -250,12 +250,12 @@ impl RenderPath for MultiDrawIndirect {
     }
 
     #[inline(always)]
-    fn vertex_count(mesh: &Mesh<Self>) -> Option<usize> {
+    fn vertex_count(_mesh: &Mesh<Self>) -> Option<usize> {
         None
     }
 
     #[inline(always)]
-    fn triangle_count(mesh: &Mesh<Self>) -> Option<usize> {
+    fn triangle_count(_mesh: &Mesh<Self>) -> Option<usize> {
         None
     }
 

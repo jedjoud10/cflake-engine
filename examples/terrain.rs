@@ -47,7 +47,7 @@ fn init(world: &mut World) {
         64,
         false,
         true,
-        2,
+        1,
         1024,
         6,
         None

@@ -14,8 +14,10 @@ fn update(world: &mut World) {
     };
     
     // Decompose the terrain into its subresources
+    let mut _terrain = terrain;
+    let terrain = &mut *_terrain;
     let (manager, voxelizer, mesher, memory, settings) = (
-        &terrain.manager,
+        &mut terrain.manager,
         &terrain.voxelizer,
         &terrain.mesher,
         &terrain.memory,
@@ -23,7 +25,7 @@ fn update(world: &mut World) {
     );
 
     // If we did not generate a chunk last frame do nothing
-    let Some(entity) = manager.last_chunk_generated else {
+    let Some(entity) = manager.last_chunk_generated.take() else {
         return;
     };
 
@@ -34,17 +36,26 @@ fn update(world: &mut World) {
     let offset_sender = memory.readback_offset_sender.clone();
     let count_sender = memory.readback_count_sender.clone();
 
+    let mut dst = [0; 2];
+    counters.read(&mut dst, 0).unwrap();
+    count_sender.send((entity, vek::Vec2::from_slice(&dst))).unwrap();
+
+    let mut dst = [0; 2];
+    offsets.read(&mut dst, 0).unwrap();
+    offset_sender.send((entity, vek::Vec2::from_slice(&dst))).unwrap();
+
+    /*
     // Readback the counters asynchronously
     counters.async_read(.., move |counters| {
         let _ = count_sender.send((entity, vek::Vec2::from_slice(counters)));
     }).unwrap();
 
     // Readback the offsets asynchronously
-    let vertices_per_sub_allocation = settings.vertices_per_sub_allocation;
-    let triangles_per_sub_allocation = settings.triangles_per_sub_allocation;
+
     offsets.async_read(.., move |offsets| {
         let _ = offset_sender.send((entity, vek::Vec2::from_slice(offsets)));
     }).unwrap();
+    */
 
     // Handle the chunk that was readback the frame before
     let offset = memory.readback_offset_receiver.try_recv();
@@ -57,6 +68,8 @@ fn update(world: &mut World) {
         let chunk = entry.get_mut::<Chunk>().unwrap();    
 
         // Check if we are OOM lol
+        let vertices_per_sub_allocation = settings.vertices_per_sub_allocation;
+        let triangles_per_sub_allocation = settings.triangles_per_sub_allocation;
         if offset.x / vertices_per_sub_allocation
             != offset.y / triangles_per_sub_allocation
         {
@@ -78,6 +91,8 @@ fn update(world: &mut World) {
         } else {
             chunk.ranges = None;
         }
+
+        manager.last_chunk_generated = None;
 
         
         // Show the chunk using the temporary visibility vector

@@ -98,6 +98,16 @@ fn update(world: &mut World) {
 
                 // Hide the chunk using the temporary visibility vector
                 //manager.visibilities.remove(chunk.global_index);
+
+                let handle = &memory.culled_indexed_indirect_buffer;
+                let mut kys = world.get_mut::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
+                let indirect = kys.get_mut(&handle);
+                indirect
+                    .write(
+                        &[crate::DEFAULT_DRAW_INDEXED_INDIRECT],
+                        chunk.global_index,
+                    )
+                    .unwrap();
             }
         }
 

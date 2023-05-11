@@ -42,6 +42,10 @@ fn update(world: &mut World) {
         &mut terrain.settings,
     );
 
+    if manager.last_chunk_generated.is_some() {
+        return;
+    }
+
     // Convert "Dirty" chunks into "Pending"
     let query = scene
         .query_mut::<&mut Chunk>()
@@ -84,7 +88,7 @@ fn update(world: &mut World) {
     vec.sort_by(|(a, _), (b, _)| a.generation_priority.total_cmp(&b.generation_priority));
     vec.retain(|(chunk, _)| chunk.state == ChunkState::Pending);
     let Some((chunk, entity)) = vec.pop() else {
-        manager.last_chunk_generated = None;
+        //manager.last_chunk_generated = None;
         return;
     };
 

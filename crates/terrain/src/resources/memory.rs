@@ -36,7 +36,7 @@ pub struct MemoryManager {
     pub(crate) counters: [Buffer<u32>; 2],
 
     // Used to keep track of what buffers will be used per sub-allocation
-    pub(crate) sub_allocation_chunk_indices: Vec<Buffer<u32>>,
+    pub sub_allocation_chunk_indices: Vec<Buffer<u32>>,
     pub(crate) compute_copy: ComputeShader,
 
     // Keeps track of the mesh handles that are shared per allocation
@@ -78,7 +78,7 @@ impl MemoryManager {
                     settings.sub_allocation_count,
                     u32::MAX,
                     BufferMode::Dynamic,
-                    BufferUsage::STORAGE | BufferUsage::WRITE,
+                    BufferUsage::STORAGE | BufferUsage::WRITE | BufferUsage::READ,
                 )
                 .unwrap()
             })
