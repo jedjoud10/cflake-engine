@@ -12,7 +12,6 @@ use std::fmt::Debug;
 use std::fmt::Display;
 use std::mem::size_of;
 use std::sync::atomic::AtomicBool;
-use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 
 // Simple atomic bitset that allocates using usize chunks
@@ -64,7 +63,7 @@ impl<T: Bitwise> AtomicBitSet<T> where  <T as Atomic>::Type: PrimInt {
 
     // Create a bitset from an iterator of booleans
     pub fn from_iter(iter: impl Iterator<Item = bool>) -> Self {
-        let chunks = iter.chunks(usize::BITS as usize);
+        let chunks = iter.chunks(Self::bitsize());
 
         let chunks = chunks
             .into_iter()
@@ -90,8 +89,8 @@ impl<T: Bitwise> AtomicBitSet<T> where  <T as Atomic>::Type: PrimInt {
 
     // Get the chunk and bitmask location for a specific chunk
     fn coords(index: usize) -> (usize, usize) {
-        let chunk = index / (usize::BITS as usize);
-        let location = index % (usize::BITS as usize);
+        let chunk = index / (Self::bitsize());
+        let location = index % (Self::bitsize());
         (chunk, location)
     }
 
@@ -181,7 +180,7 @@ impl<T: Bitwise> AtomicBitSet<T> where  <T as Atomic>::Type: PrimInt {
             .map(|(i, chunk)| (i, chunk.load(order)))
             .filter(|(_, chunk)| *chunk != zero::<T>())
             .filter_map(|(i, chunk)| {
-                let offset = i * usize::BITS as usize;
+                let offset = i * Self::bitsize();
                 let result = if i == start_chunk {
                     // Starting chunk, take start_location in consideration
                     let inverted = !((one::<T>() << start_location) - one::<T>());
@@ -207,7 +206,7 @@ impl<T: Bitwise> AtomicBitSet<T> where  <T as Atomic>::Type: PrimInt {
             .map(|(i, chunk)| (i, chunk.load(order)))
             .filter(|(_, chunk)| *chunk != zero::<T>())
             .filter_map(|(i, chunk)| {
-                let offset = i * usize::BITS as usize;
+                let offset = i * Self::bitsize();
                 let result = if i == start_chunk {
                     // Starting chunk, take start_location in consideration
                     let inverted = (one::<T>() << start_location) - one::<T>();

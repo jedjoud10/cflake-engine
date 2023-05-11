@@ -61,16 +61,14 @@ fn update(world: &mut World) {
         }
 
         // Update indirect buffer
-        /*
         let indirect = &memory.culled_indexed_indirect_buffer;
         let indirect = indirects.get_mut(&indirect);
         indirect
             .write(
-                &[crate::DEFAUlT_DRAW_INDEXED_INDIRECT],
+                &[crate::DEFAULT_DRAW_INDEXED_INDIRECT],
                 chunk.global_index,
             )
             .unwrap();
-        */
 
         chunk.ranges = None;
     }
@@ -104,7 +102,7 @@ fn update(world: &mut World) {
 
     // Reset required values
     counters.write(&[0; 2], 0).unwrap();
-    offsets.write(&[u32::MAX, u32::MAX], 0).unwrap();
+    offsets.write(&[u32::MAX; 2], 0).unwrap();
     indirect.write(&[crate::util::DEFAULT_DRAW_INDEXED_INDIRECT], chunk.global_index).unwrap();
 
     // Create a compute pass for ALL compute terrain shaders
@@ -274,7 +272,7 @@ fn update(world: &mut World) {
     drop(pass);
     
     // Show the chunk using the temporary visibility vector
-    manager.visibilities.set(chunk.global_index);
+    //manager.visibilities.set(chunk.global_index);
     
     // Start computing this sheit on the GPU
     graphics.submit(false);

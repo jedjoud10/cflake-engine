@@ -336,7 +336,6 @@ fn update(world: &mut World) {
                         ui.horizontal(|ui| {
                             ui.style_mut().spacing.item_spacing.x = 0.0;
 
-                            /*
                             for x in 0..128 {
                                 let mut color = 0.0f32;
                                 let div = sub_allocation / 128;
@@ -345,13 +344,6 @@ fn update(world: &mut World) {
                                 }
 
                                 let color = egui::Color32::from_gray(((color / div as f32) * 255.0) as u8);
-                                egui::Button::new("").small().rounding(0.0).fill(color).ui(ui);
-                            }
-                            */
-
-                            for x in 0..128 {
-                                let color = if bitsets[allocation].get(x) { 1.0 } else { 0.0 };;
-                                let color = egui::Color32::from_gray((color * 255.0) as u8);
                                 egui::Button::new("").small().rounding(0.0).fill(color).ui(ui);
                             }
                         });

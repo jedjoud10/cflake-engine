@@ -97,7 +97,7 @@ fn update(world: &mut World) {
                 chunk.state = ChunkState::Free;
 
                 // Hide the chunk using the temporary visibility vector
-                manager.visibilities.remove(chunk.global_index);
+                //manager.visibilities.remove(chunk.global_index);
             }
         }
 
@@ -118,6 +118,7 @@ fn update(world: &mut World) {
             // Over-allocate so we don't need to do this as many times
             let chunks_to_allocate_per_allocation = ((added.len() - query_count) * 2).max(128);
             let pre_chunks_per_allocation = memory.chunks_per_allocation;
+            let pre_chunks = pre_chunks_per_allocation * settings.allocation_count;
             memory.chunks_per_allocation += chunks_to_allocate_per_allocation; 
             let chunks_to_allocate = chunks_to_allocate_per_allocation * settings.allocation_count;
 
@@ -143,18 +144,16 @@ fn update(world: &mut World) {
 
             // Extend the visibility vector and buffer
             manager.visibility_buffer.extend_from_slice(&vec![0; chunks_to_allocate]).unwrap();
-            manager.visibilities.reserve(chunks_to_allocate);
+            //manager.visibilities.reserve(chunks_to_allocate);
             memory.local_index_to_global_buffer.extend((0..chunks_to_allocate).into_iter().map(|_| u32::MAX)).unwrap();
 
             // Add the same amounts of chunks per allocation
-            for allocation in 0..terrain.settings.allocation_count {      
+            let mut global_index = pre_chunks;
+            for allocation in 0..settings.allocation_count {      
                 // Create new chunk entities and set them as "free"
                 entities.extend((0..chunks_to_allocate_per_allocation).into_iter().map(|i| {
                     let position = Position::default();
                     let scale = Scale::default();
-
-                    let local_index = pre_chunks_per_allocation + i;
-                    let global_index = local_index + memory.chunks_per_allocation * allocation;
 
                     // Create the chunk component
                     let chunk = Chunk {
@@ -166,6 +165,8 @@ fn update(world: &mut World) {
                         ranges: None,
                         node: None,
                     };
+
+                    global_index += 1;
                 
                     // Create the bundle
                     (position, scale, chunk)
