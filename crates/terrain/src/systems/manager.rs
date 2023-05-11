@@ -88,7 +88,6 @@ fn update(world: &mut World) {
         }
 
         // Set the chunk state to "free" so we can reuse it
-        let visibilities = &mut manager.visibility; 
         for coord in removed {
             if let Some(entity) = manager.entities.remove(&coord) {
                 let mut entry = scene.entry_mut(entity).unwrap();
@@ -98,9 +97,7 @@ fn update(world: &mut World) {
                 chunk.state = ChunkState::Free;
 
                 // Hide the chunk using the temporary visibility vector
-                let elem = &mut visibilities[chunk.global_index / 32];
-                let index = chunk.global_index % 32;
-                *elem = *elem & (1 << index); 
+                manager.visibilities.remove(chunk.global_index);
             }
         }
 
@@ -129,14 +126,14 @@ fn update(world: &mut World) {
             
             // Extend the generated indirect draw buffer
             memory.generated_indexed_indirect_buffer.extend_from_slice(&vec![
-                crate::util::DEFAUlT_DRAW_INDEXED_INDIRECT;
+                crate::util::DEFAULT_DRAW_INDEXED_INDIRECT;
                 chunks_to_allocate
             ]).unwrap();
 
             // Extend the culled indirect draw buffer
             let culled_indexed_indirect_buffer = indexed_indirect_buffers.get_mut(&memory.culled_indexed_indirect_buffer);
             culled_indexed_indirect_buffer.extend_from_slice(&vec![
-                crate::util::DEFAUlT_DRAW_INDEXED_INDIRECT;
+                crate::util::DEFAULT_DRAW_INDEXED_INDIRECT;
                 chunks_to_allocate
             ]).unwrap();
             
@@ -146,7 +143,7 @@ fn update(world: &mut World) {
 
             // Extend the visibility vector and buffer
             manager.visibility_buffer.extend_from_slice(&vec![0; chunks_to_allocate]).unwrap();
-            manager.visibility.extend((0..chunks_to_allocate).into_iter().map(|_| 0));
+            manager.visibilities.reserve(chunks_to_allocate);
             memory.local_index_to_global_buffer.extend((0..chunks_to_allocate).into_iter().map(|_| u32::MAX)).unwrap();
 
             // Add the same amounts of chunks per allocation

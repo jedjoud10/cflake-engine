@@ -354,7 +354,7 @@ fn update(world: &mut World) {
     }
 
     // Camera controller settings
-    if let Some((controller, rotation, position)) = scene.find_mut::<(&mut CameraController, &Rotation, &Position)>() {
+    if let Some((controller, rotation, position, velocity)) = scene.find_mut::<(&mut CameraController, &Rotation, &Position, &Velocity)>() {
         egui::Window::new("Camera Controller")
             .frame(frame)
             .show(&gui, |ui| {
@@ -362,6 +362,7 @@ fn update(world: &mut World) {
                 ui.label(format!("Up vector: {:.2}", rotation.up()));
                 ui.label(format!("Right vector: {:.2}", rotation.right()));
                 ui.label(format!("Position: {:.2}", **position));
+                ui.label(format!("Velocity: {:.2}", **velocity));
 
                 ui.horizontal(|ui| {
                     ui.label("Base Speed (m/s): ");

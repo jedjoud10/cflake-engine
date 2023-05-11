@@ -43,6 +43,12 @@ impl<T: Bitwise> AtomicBitSet<T> where  <T as Atomic>::Type: PrimInt {
         Self(RwLock::new(Vec::default()), AtomicBool::new(false))
     }
 
+    // Create a bit set with some pre-allocated chunks
+    pub fn with_capacity(elements: usize) -> Self {
+        let chunk = (elements as f32 / Self::bitsize() as f32).ceil() as usize;
+        Self(RwLock::new(Vec::with_capacity(chunk)), AtomicBool::new(false))
+    }
+
     // Create a bitset from an iterator of chunks
     pub fn from_chunks_iter(iter: impl Iterator<Item = <T as Atomic>::Type>) -> Self {
         Self(
@@ -127,6 +133,12 @@ impl<T: Bitwise> AtomicBitSet<T> where  <T as Atomic>::Type: PrimInt {
         let (chunk, location) = Self::coords(index);
         let chunk = &self.0.read()[chunk];
         chunk.fetch_and(!(one::<T>() << location), order);
+    }
+
+    // Pre-allocate a specific amount of elements
+    pub fn reserve(&mut self, elements: usize) {
+        let additional = (elements as f32 / Self::bitsize() as f32).ceil() as usize;
+        self.0.write().reserve(additional);
     }
 
     // Get a bit value from the bitset

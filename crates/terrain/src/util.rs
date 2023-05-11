@@ -11,7 +11,7 @@ pub type Vertices = AttributeBuffer<attributes::Position>;
 pub type Triangles = TriangleBuffer<u32>;
 
 // Default value for the indexed indirect
-pub(crate) const DEFAUlT_DRAW_INDEXED_INDIRECT: DrawIndexedIndirect = DrawIndexedIndirect {
+pub(crate) const DEFAULT_DRAW_INDEXED_INDIRECT: DrawIndexedIndirect = DrawIndexedIndirect {
     vertex_count: 0,
     instance_count: 1,
     base_index: 0,

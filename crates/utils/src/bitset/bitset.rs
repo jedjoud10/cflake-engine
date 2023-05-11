@@ -16,6 +16,12 @@ impl<T: PrimInt> BitSet<T> {
         Self(Vec::default(), false)
     }
 
+    // Create a bit set with some pre-allocated chunks
+    pub fn with_capacity(elements: usize) -> Self {
+        let chunks = (elements as f32 / Self::bitsize() as f32).ceil() as usize;
+        Self(Vec::with_capacity(chunks), false)
+    }
+
     // Create a bitset from an iterator of chunks
     pub fn from_chunks_iter(iter: impl Iterator<Item = T>) -> Self {
         Self(iter.collect(), false)
@@ -89,6 +95,12 @@ impl<T: PrimInt> BitSet<T> {
         let (chunk, location) = Self::coords(index);
         let chunk = &mut self.0[chunk];
         *chunk = *chunk & !(T::one() << location);
+    }
+
+    // Pre-allocate a specific amount of elements
+    pub fn reserve(&mut self, elements: usize) {
+        let additional = (elements as f32 / Self::bitsize() as f32).ceil() as usize;
+        self.0.reserve(additional);
     }
 
     // Get a bit value from the bitset

@@ -12,7 +12,7 @@ use graphics::{
 use math::{Octree, Node};
 use rand::seq::SliceRandom;
 use rendering::{AlbedoTexel, IndirectMesh, MaterialId, Pipelines, Renderer, Surface, MaskTexel, NormalTexel, MultiDrawIndirectMesh, SubSurface};
-use utils::{Handle, Storage};
+use utils::{Handle, Storage, BitSet};
 
 use crate::{
     Chunk, ChunkState, LayeredAlbedoMap, LayeredMaskMap, LayeredNormalMap,
@@ -54,7 +54,7 @@ pub struct ChunkManager {
 
     // Temporary buffer that will store the visibility of each chunk as a bitwise 32 bit uint
     // Updated everytime the manager needs it to update
-    pub(crate) visibility: Vec<u32>,
+    pub(crate) visibilities: BitSet<u32>,
 
     // Viewer (camera) position
     pub(crate) viewer: Option<(Entity, vek::Vec3<f32>, vek::Quaternion<f32>)>,
@@ -201,7 +201,7 @@ impl ChunkManager {
             layered_albedo_map,
             layered_normal_map,
             layered_mask_map,
-            visibility: Vec::new(),
+            visibilities: BitSet::new(),
         }
     }
 }
