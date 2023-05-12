@@ -42,10 +42,6 @@ fn update(world: &mut World) {
         &mut terrain.settings,
     );
 
-    if manager.last_chunk_generated.is_some() {
-        return;
-    }
-
     // Convert "Dirty" chunks into "Pending"
     let query = scene
         .query_mut::<&mut Chunk>()
@@ -53,7 +49,6 @@ fn update(world: &mut World) {
     for chunk in query.filter(|c| c.state == ChunkState::Dirty) {
         chunk.state = ChunkState::Pending;
         
-
         // Write to the indices the updated ranges if needed
         if let Some(range) = chunk.ranges {
             if range.y > range.x {
@@ -88,7 +83,7 @@ fn update(world: &mut World) {
     vec.sort_by(|(a, _), (b, _)| a.generation_priority.total_cmp(&b.generation_priority));
     vec.retain(|(chunk, _)| chunk.state == ChunkState::Pending);
     let Some((chunk, entity)) = vec.pop() else {
-        //manager.last_chunk_generated = None;
+        manager.last_chunk_generated = None;
         return;
     };
 
@@ -276,7 +271,7 @@ fn update(world: &mut World) {
     drop(pass);
     
     // Show the chunk using the temporary visibility vector
-    //manager.visibilities.set(chunk.global_index);
+    manager.visibilities.set(chunk.global_index);
     
     // Start computing this sheit on the GPU
     graphics.submit(false);

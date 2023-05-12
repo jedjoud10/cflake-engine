@@ -82,12 +82,11 @@ void main() {
         if (!within_free && free) {
             temp_sub_allocation_index = i;
             temp_sub_allocation_count = 0;
-            within_free = true;
-        } else if (within_free && free) {
+        }
+
+        // We stayed within a free allocation
+        if (within_free && free) {
             temp_sub_allocation_count += 1;
-            within_free = true;
-        } else {
-            within_free = false;
         }
         
         // If this is a possible candidate for a memory alloc offset, then use it
@@ -96,6 +95,9 @@ void main() {
             invocation_local_chosen_sub_alloction_index = temp_sub_allocation_index;
             break;
         }
+
+        // Update to take delta
+        within_free = free;
     }
 
     memoryBarrier();

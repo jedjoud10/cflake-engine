@@ -17,7 +17,7 @@ fn update(world: &mut World) {
     let mut _terrain = terrain;
     let terrain = &mut *_terrain;
     let (manager, voxelizer, mesher, memory, settings) = (
-        &mut terrain.manager,
+        &terrain.manager,
         &terrain.voxelizer,
         &terrain.mesher,
         &terrain.memory,
@@ -25,7 +25,7 @@ fn update(world: &mut World) {
     );
 
     // If we did not generate a chunk last frame do nothing
-    let Some(entity) = manager.last_chunk_generated.take() else {
+    let Some(entity) = manager.last_chunk_generated else {
         return;
     };
 
@@ -36,26 +36,15 @@ fn update(world: &mut World) {
     let offset_sender = memory.readback_offset_sender.clone();
     let count_sender = memory.readback_count_sender.clone();
 
-    let mut dst = [0; 2];
-    counters.read(&mut dst, 0).unwrap();
-    count_sender.send((entity, vek::Vec2::from_slice(&dst))).unwrap();
-
-    let mut dst = [0; 2];
-    offsets.read(&mut dst, 0).unwrap();
-    offset_sender.send((entity, vek::Vec2::from_slice(&dst))).unwrap();
-
-    /*
     // Readback the counters asynchronously
     counters.async_read(.., move |counters| {
         let _ = count_sender.send((entity, vek::Vec2::from_slice(counters)));
     }).unwrap();
 
     // Readback the offsets asynchronously
-
     offsets.async_read(.., move |offsets| {
         let _ = offset_sender.send((entity, vek::Vec2::from_slice(offsets)));
     }).unwrap();
-    */
 
     // Handle the chunk that was readback the frame before
     let offset = memory.readback_offset_receiver.try_recv();
@@ -85,16 +74,12 @@ fn update(world: &mut World) {
         let offset = offset.x / settings.vertices_per_sub_allocation;
 
         // Update chunk range (if valid) and set visibility
-        let visibility = count > 0;
-        if visibility {
+        if count > 0 {
             chunk.ranges = Some(vek::Vec2::new(offset, count + offset));
         } else {
             chunk.ranges = None;
         }
-
-        manager.last_chunk_generated = None;
-
-        
+       
         // Show the chunk using the temporary visibility vector
     }
     
@@ -106,5 +91,6 @@ pub fn system(system: &mut System) {
         .insert_update(update)
         .before(crate::systems::manager::system)
         .before(crate::systems::generation::system)
+        .after(utils::time)
         .before(rendering::systems::rendering::system);
 }
