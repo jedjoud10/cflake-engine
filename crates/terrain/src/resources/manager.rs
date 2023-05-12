@@ -54,7 +54,7 @@ pub struct ChunkManager {
 
     // Temporary buffer that will store the visibility of each chunk as a bitwise 32 bit uint
     // Updated everytime the manager needs it to update
-    pub(crate) visibilities: BitSet<u32>,
+    pub(crate) visibility_bitset: BitSet<u32>,
 
     // Viewer (camera) position
     pub(crate) viewer: Option<(Entity, vek::Vec3<f32>, vek::Quaternion<f32>)>,
@@ -201,7 +201,7 @@ impl ChunkManager {
             layered_albedo_map,
             layered_normal_map,
             layered_mask_map,
-            visibilities: BitSet::new(),
+            visibility_bitset: BitSet::new(),
         }
     }
 }

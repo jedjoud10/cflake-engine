@@ -97,7 +97,7 @@ fn update(world: &mut World) {
                 chunk.state = ChunkState::Free;
 
                 // Hide the chunk using the temporary visibility vector
-                //manager.visibilities.remove(chunk.global_index);
+                manager.visibility_bitset.remove(chunk.global_index);
 
                 let handle = &memory.culled_indexed_indirect_buffer;
                 let mut kys = world.get_mut::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
@@ -154,9 +154,8 @@ fn update(world: &mut World) {
 
             // Extend the visibility vector and buffer
             manager.visibility_buffer.extend_from_slice(&vec![0; chunks_to_allocate]).unwrap();
-            //manager.visibilities.reserve(chunks_to_allocate);
-            memory.local_index_to_global_buffer.extend((0..chunks_to_allocate).into_iter().map(|_| u32::MAX)).unwrap();
-
+            manager.visibility_bitset.reserve(chunks_to_allocate);
+            
             // Add the same amounts of chunks per allocation
             let mut global_index = pre_chunks;
             for allocation in 0..settings.allocation_count {      

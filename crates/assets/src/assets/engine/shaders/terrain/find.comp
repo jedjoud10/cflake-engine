@@ -10,11 +10,6 @@ layout (constant_id = 2) const uint triangles_per_sub_allocation = 1;
 const uint sub_allocation_groups = sub_allocations / 32;
 const uint sub_allocations_per_sub_allocation_group = 32;
 
-// Contains the alloc-local chunk index
-layout(push_constant) uniform PushConstants {
-    uint allocation_local_chunk_index;
-} push_constants;
-
 // Sub allocation chunk indices
 layout(std430, set = 0, binding = 0) buffer SubAllocationChunkIndices {
     uint[sub_allocations] data;
@@ -81,13 +76,15 @@ void main() {
         // We just moved into a free allocation
         if (!within_free && free) {
             temp_sub_allocation_index = i;
-            temp_sub_allocation_count = 0;
+            temp_sub_allocation_count = 1;
+            free = true;
+        } else if (within_free && free) {
+            temp_sub_allocation_count += 1;
+            free = true;
         }
 
         // We stayed within a free allocation
-        if (within_free && free) {
-            temp_sub_allocation_count += 1;
-        }
+        
         
         // If this is a possible candidate for a memory alloc offset, then use it
         if (within_free && temp_sub_allocation_count >= chosen_sub_allocation_count) {
@@ -113,7 +110,7 @@ void main() {
 
     // After finding the right block, we can write to it
     for (uint i = chosen_sub_allocation_index; i < (chosen_sub_allocation_index + chosen_sub_allocation_count); i++) {
-        indices.data[i] = push_constants.allocation_local_chunk_index;
+        indices.data[i] = 1;
     }
 
     // Offsets that we will write eventually

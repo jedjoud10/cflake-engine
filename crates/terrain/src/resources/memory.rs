@@ -29,8 +29,6 @@ pub struct MemoryManager {
     pub(crate) chunks_per_allocation: usize,
     pub(crate) compute_find: ComputeShader,
 
-    pub(crate) local_index_to_global_buffer: Buffer<u32>,
-
     // Used for copying memory to the permanent memory
     pub(crate) offsets: [Buffer<u32>; 2],
     pub(crate) counters: [Buffer<u32>; 2],
@@ -66,9 +64,6 @@ impl MemoryManager {
         let culled_indexed_indirect_buffer: Handle<DrawIndexedIndirectBuffer> = indexed_indirect_buffers.insert(
             crate::create_empty_buffer(graphics)
         );
-
-        // Indirection buffer that will convert local space indices to global space indices
-        let local_index_to_global_buffer: Buffer<u32> = crate::create_empty_buffer(graphics);
 
         // Allocate the chunk indices that will be stored per allocation
         let sub_allocation_chunk_indices = (0..settings.allocation_count)
@@ -124,11 +119,6 @@ impl MemoryManager {
         compiler.use_storage_buffer::<u32>("counters", StorageAccess::ReadOnly);
         compiler.use_storage_buffer::<u32>("offsets", StorageAccess::ReadWrite);
         compiler.use_storage_buffer::<u32>("indices", StorageAccess::ReadWrite);
-
-        // Needed to pass in the chunk index
-        compiler.use_push_constant_layout(
-            PushConstantLayout::single(<u32 as GpuPod>::size(), ModuleVisibility::Compute).unwrap(),
-        );
 
         // Spec constants
         compiler.use_constant(0, settings.sub_allocation_count as u32);
@@ -224,7 +214,6 @@ impl MemoryManager {
             allocation_meshes,
             generated_indexed_indirect_buffer,
             culled_indexed_indirect_buffer,
-            local_index_to_global_buffer,
         }
     }
 }

@@ -216,16 +216,6 @@ fn update(world: &mut World) {
         })
         .unwrap();
 
-    // Get the local chunk index for the current allocation
-    active
-        .set_push_constants(|x| {
-            let index = chunk.global_index;
-            let index = index as u32;
-            let bytes = GpuPod::into_bytes(&(index));
-            x.push(bytes, 0).unwrap();
-        })
-        .unwrap();
-
     let dispatch = (settings.sub_allocation_count as f32 / (32.0 * 32.0)).ceil() as u32;
     active.dispatch(vek::Vec3::new(dispatch, 1, 1)).unwrap();
 
@@ -271,7 +261,7 @@ fn update(world: &mut World) {
     drop(pass);
     
     // Show the chunk using the temporary visibility vector
-    manager.visibilities.set(chunk.global_index);
+    manager.visibility_bitset.set(chunk.global_index);
     
     // Start computing this sheit on the GPU
     graphics.submit(false);
