@@ -42,7 +42,7 @@ pub trait Texture: Sized + 'static {
 
         // Make sure the number of texels matches up with the dimensions
         if let Some(texels) = texels {
-            if <Self::Region as Region>::from_extent(extent).volume() as usize != texels.len() {
+            if <Self::Region as Region>::volume(extent) as usize != texels.len() {
                 return Err(TextureInitializationError::TexelDimensionsMismatch {
                     count: texels.len(),
                     w: extent.width(),

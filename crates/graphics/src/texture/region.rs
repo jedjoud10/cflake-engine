@@ -7,9 +7,6 @@ pub type Dimension = wgpu::TextureDimension;
 
 // Texture dimensions traits that are simply implemented for extents
 pub trait Extent: Copy + Send + Sync {
-    // Get the surface area of a superficial rectangle that uses these extents as it's dimensions
-    fn area(&self) -> u32;
-
     // Get the max element from these dimensions
     fn reduce_max(&self) -> u32;
 
@@ -69,10 +66,6 @@ pub trait LayeredOrigin: Copy + Default + Origin {}
 
 // Implementation of extent for 2D extent
 impl Extent for vek::Extent2<u32> {
-    fn area(&self) -> u32 {
-        self.product()
-    }
-
     fn reduce_max(&self) -> u32 {
         vek::Extent2::reduce_max(*self)
     }
@@ -112,10 +105,6 @@ impl Extent for vek::Extent2<u32> {
 
 // Implementation of extent for 3D extent
 impl Extent for vek::Extent3<u32> {
-    fn area(&self) -> u32 {
-        self.as_::<u32>().product()
-    }
-
     fn reduce_max(&self) -> u32 {
         vek::Extent3::reduce_max(*self)
     }
@@ -159,10 +148,6 @@ impl Extent for vek::Extent3<u32> {
 
 // Implementation of extent for 2D layered texture extent
 impl Extent for (vek::Extent2<u32>, u32) {
-    fn area(&self) -> u32 {
-        self.0.as_::<u32>().product()
-    }
-
     fn reduce_max(&self) -> u32 {
         vek::Extent2::new(self.0.w, self.0.h).reduce_max()
     }
@@ -292,7 +277,13 @@ pub trait Region: Copy {
     }
 
     // Is this region a multi-layer region (cubemap / layered texture)
-    fn is_multi_layered() -> bool;
+    fn is_multi_layered() -> bool {
+        match Self::view_dimension() {
+            wgpu::TextureViewDimension::D2Array
+            | wgpu::TextureViewDimension::CubeArray => true,
+            _ => false
+        }
+    }
 
     // Get the number of layers of an extent
     fn layers(extent: Self::E) -> u32;
@@ -367,8 +358,8 @@ pub trait Region: Copy {
         )
     }
 
-    // Calculate the number of texels inside a region
-    fn volume(&self) -> u32;
+    // Calculate the number of texels inside a region (extent)
+    fn volume(extent: Self::E) -> u32;
 
     // Get the view dimensions of the extent (1, 2, 3, or layered / cube maps)
     fn view_dimension() -> ViewDimension;
@@ -415,17 +406,13 @@ impl Region for (vek::Vec2<u32>, vek::Extent2<u32>) {
         (origin, extent)
     }
 
-    fn is_multi_layered() -> bool {
-        false
-    }
-
     fn is_larger_than(self, other: Self) -> bool {
         let e = other.extent() + vek::Extent2::<u32>::from(other.origin());
         self.extent().is_larger_than(e)
     }
 
-    fn volume(&self) -> u32 {
-        self.extent().area()
+    fn volume(extent: Self::E) -> u32 {
+        extent.product()
     }
 
     fn view_dimension() -> ViewDimension {
@@ -466,17 +453,13 @@ impl Region for (vek::Vec3<u32>, vek::Extent3<u32>) {
         (origin, extent)
     }
 
-    fn is_multi_layered() -> bool {
-        false
-    }
-
     fn is_larger_than(self, other: Self) -> bool {
         let e = other.extent() + vek::Extent3::<u32>::from(other.origin());
         self.extent().is_larger_than(e)
     }
 
-    fn volume(&self) -> u32 {
-        self.extent().area()
+    fn volume(extent: Self::E) -> u32 {
+        extent.product()
     }
 
     fn view_dimension() -> ViewDimension {
@@ -526,12 +509,9 @@ impl Region for ((vek::Vec2<u32>, u32), vek::Extent2<u32>) {
         self.extent().is_larger_than(e)
     }
 
-    fn is_multi_layered() -> bool {
-        true
-    }
-
-    fn volume(&self) -> u32 {
-        self.extent().area() * 6
+    fn volume(extent: Self::E) -> u32 {
+        // The extent is 2D, so this is basically just the area
+        extent.product() * 6
     }
 
     fn view_dimension() -> ViewDimension {
@@ -581,12 +561,8 @@ impl Region for ((vek::Vec2<u32>, u32), (vek::Extent2<u32>, u32)) {
         self.1.0.is_larger_than(e) && self.1.1 > other.1.1
     }
 
-    fn is_multi_layered() -> bool {
-        true
-    }
-
-    fn volume(&self) -> u32 {
-        self.extent().0.area() * self.extent().1
+    fn volume(extent: Self::E) -> u32 {
+        extent.0.product() * extent.1
     }
 
     fn view_dimension() -> ViewDimension {

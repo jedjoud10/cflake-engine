@@ -70,7 +70,7 @@ pub fn generate_mip_map<T: ColorTexel, R: Region>(
     let dimension = <R as Region>::view_dimension();
     let name = utils::pretty_type_name::<T>();
     let levels = R::levels(extent)?.get() as u32;
-    log::debug!("Creating mip-data (max = {levels})for imported texture {dimension:?}, <{name}>");
+    log::debug!("Creating mip-data (max = {levels}) for imported texture {dimension:?}, <{name}>");
 
     // Iterate over the levels and fill them up
     // (like how ceddy weddy fills me up inside >.<)
@@ -80,7 +80,7 @@ pub fn generate_mip_map<T: ColorTexel, R: Region>(
         let downscaled = extent.mip_level_dimensions(i as u8 + 1);
 
         let mut texels: Vec<<T as Texel>::Storage> =
-            vec![<T::Storage as Zeroable>::zeroed(); downscaled.area() as usize];
+            vec![<T::Storage as Zeroable>::zeroed(); R::volume(downscaled) as usize];
 
         // Get the original and downscaled sizes
         let original = temp.decompose();
@@ -546,7 +546,7 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
 
         // Get the mip level subregion if the given one is None
         let region = subregion.unwrap_or(mip_level_region);
-        let volume = region.volume() as usize;
+        let volume = <T::Region as Region>::volume(region.extent()) as usize;
         let texels = vec![val; volume];
         self.write(&texels, subregion)
     }

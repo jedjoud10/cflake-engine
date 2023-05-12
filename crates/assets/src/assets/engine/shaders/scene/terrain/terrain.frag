@@ -96,18 +96,9 @@ void main() {
 	// so 4 channels per f32, and 4 f32 per splatmap texture
 	// there's probably a way to fit even *more* textures into there too
 	#ifdef submaterials
-	vec3 albedo1 = triplanar_albedo(float(0), surface_normal);
-	vec3 mask1 = triplanar_mask(float(0), surface_normal);
-	vec3 normal1 = triplanar_normal(float(0), surface_normal);
-
-	vec3 albedo2 = triplanar_albedo(float(1), surface_normal);
-	vec3 mask2 = triplanar_mask(float(1), surface_normal);
-	vec3 normal2 = triplanar_normal(float(1), surface_normal);
-
-	float blending_factor = 1 - clamp((surface_normal.y - 0.7) * 6, 0, 1);	
-	vec3 albedo = mix(albedo1, albedo2, blending_factor);
-	vec3 mask = mix(mask1, mask2, blending_factor);
-	vec3 normal = mix(normal1, normal2, blending_factor);
+	vec3 albedo = triplanar_albedo(float(0), surface_normal);
+	vec3 mask = triplanar_mask(float(0), surface_normal);
+	vec3 normal = triplanar_normal(float(0), surface_normal);
 	#else
 	vec3 normal = surface_normal;
 	vec3 rock = pow(vec3(128, 128, 128) / 255.0, vec3(2.2));

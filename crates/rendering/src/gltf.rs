@@ -91,6 +91,7 @@ impl<'a> Default for GltfSettings<'a> {
                 metallic: 0.0,
                 ambient_occlusion: 0.0,
                 tint: vek::Rgb::one(),
+                scale: vek::Extent2::one(),
             },
         }
     }
@@ -407,6 +408,7 @@ impl Asset for GltfScene {
                     metallic,
                     ambient_occlusion,
                     tint,
+                    scale: vek::Extent2::one(),
                 }
             })
             .map(|material| context.pbr_materials.insert(material))

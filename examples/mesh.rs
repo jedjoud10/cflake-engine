@@ -28,10 +28,10 @@ fn init(world: &mut World) {
 
     // Load in the diffuse map, normal map, and mask map textures asynchronously
     let albedo = assets.async_load::<AlbedoMap>(
-        ("user/textures/diffuse2.jpg", graphics.clone()),
+        ("user/textures/diffuse2.jpg", graphics.clone(), ),
     );
     let normal = assets.async_load::<NormalMap>(
-        ("engine/textures/scene/bumps.jpg", graphics.clone()),
+        ("user/textures/normal2.jpg", graphics.clone()),
     );
     let mask = assets.async_load::<MaskMap>(
         ("user/textures/mask2.jpg", graphics.clone()), 
@@ -72,11 +72,12 @@ fn init(world: &mut World) {
         albedo_map: Some(diffuse),
         normal_map: Some(normal),
         mask_map: Some(mask),
-        bumpiness: 0.4,
+        bumpiness: 1.0,
         roughness: 1.0,
         metallic: 1.0,
-        ambient_occlusion: 5.0,
+        ambient_occlusion: 3.0,
         tint: vek::Rgb::white(),
+        scale: vek::Extent2::one(),
     });
 
     // Create a simple floor and add the entity

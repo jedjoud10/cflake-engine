@@ -22,6 +22,7 @@ layout(push_constant) uniform PushConstants {
     layout(offset = 72) float ambient_occlusion;
     layout(offset = 76) float roughness;
 	layout(offset = 80) vec4 tint;
+	layout(offset = 96) vec2 scale;
 } material;
 
 // Albedo / diffuse map
@@ -37,9 +38,9 @@ layout(set = 1, binding = 4) uniform texture2D mask_map;
 layout(set = 1, binding = 5) uniform sampler mask_map_sampler;
 
 void main() {
-	// Flip the Y coordinate (dunno why bruv)
+	// Certified moment
 	vec2 uv = m_tex_coord;
-	//uv.y = 1 - m_tex_coord.y;
+	uv *= material.scale;
 
 	// Fetch the albedo color, normal map value, and mask values
 	vec3 albedo = texture(sampler2D(albedo_map, albedo_map_sampler), uv).rgb * material.tint.rgb;

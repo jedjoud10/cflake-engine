@@ -229,11 +229,7 @@ fn load_layered_texture<T: ImageTexel>(
     raw.map(|raw| combine_into_layered(
         graphics,
         raw,
-        Some(SamplerSettings {
-            filter: SamplerFilter::Linear,
-            wrap: SamplerWrap::Repeat,
-            mipmaps: SamplerMipMaps::Auto,
-        }),
+        Some(SamplerSettings::default()),
         TextureMipMaps::Manual { mips: &[] },
         TextureMode::Dynamic,
         TextureUsage::SAMPLED | TextureUsage::COPY_DST,
