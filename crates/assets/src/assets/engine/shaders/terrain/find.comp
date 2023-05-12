@@ -76,15 +76,13 @@ void main() {
         // We just moved into a free allocation
         if (!within_free && free) {
             temp_sub_allocation_index = i;
-            temp_sub_allocation_count = 1;
-            free = true;
-        } else if (within_free && free) {
-            temp_sub_allocation_count += 1;
-            free = true;
+            temp_sub_allocation_count = 0;
         }
 
         // We stayed within a free allocation
-        
+        if (within_free && free) {
+            temp_sub_allocation_count += 1;
+        }
         
         // If this is a possible candidate for a memory alloc offset, then use it
         if (within_free && temp_sub_allocation_count >= chosen_sub_allocation_count) {
