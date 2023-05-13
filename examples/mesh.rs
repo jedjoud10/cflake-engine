@@ -145,7 +145,7 @@ fn update(world: &mut World) {
     }
 
     // Exit the game when the user pressed Escape
-    if input.get_button(Button::Escape).pressed() {
+    if input.get_button(KeyboardButton::Escape).pressed() {
         *state = State::Stopped;
     }
 }

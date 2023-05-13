@@ -23,7 +23,7 @@ fn init(world: &mut World) {
     world.insert(StatsState(false));
     world.insert(EventStatsDurations::default());
     let mut input = world.get_mut::<Input>().unwrap();
-    input.bind_button("toggle-stats", Button::P);
+    input.bind_button("toggle-stats", KeyboardButton::P);
 }
 
 // Render some debug statistical EGUI windows

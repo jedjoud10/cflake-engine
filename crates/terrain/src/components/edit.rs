@@ -22,6 +22,12 @@ pub enum EditShape {
 
 // A terrain edit can be created by spawning in an entity that contains the components with optional location/rotation/scale components
 pub struct Edit {
+    // How the edit will affect the terrain
     pub mode: EditMode,
+
+    // The shape of the terrain edit
     pub shape: EditShape,
+
+    // Custom color if we wish to override the color of the terrain
+    pub color: Option<vek::Rgb<f32>>,
 }

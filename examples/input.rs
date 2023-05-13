@@ -12,8 +12,8 @@ fn main() {
 // Map some input buttons
 fn init(world: &mut World) {
     let mut input = world.get_mut::<Input>().unwrap();
-    input.bind_button("forward", Button::GamePadDPadUp);
-    input.bind_button("backward", Button::GamePadDPadDown);
+    input.bind_button("forward", GamepadButton::DPadUp);
+    input.bind_button("backward", GamepadButton::DPadDown);
 }
 
 // Read from the mappings
@@ -30,7 +30,7 @@ fn update(world: &mut World) {
         println!("Going backward!");
     }
 
-    if input.get_axis(Axis::MousePositionDeltaX) != 0.0 {
-        println!("{}", input.get_axis(Axis::MousePositionDeltaX));
+    if input.get_axis(MouseAxis::DeltaX) != 0.0 {
+        println!("{}", input.get_axis(MouseAxis::DeltaX));
     }
 }

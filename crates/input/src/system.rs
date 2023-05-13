@@ -1,6 +1,6 @@
 use std::collections::hash_map::Entry;
 
-use crate::{Axis, ButtonState, Input};
+use crate::{Axis, ButtonState, Input, MouseAxis, Button};
 use gilrs::PowerInfo;
 use winit::event::{DeviceEvent, ElementState};
 use world::{post_user, user, System, World, WindowEvent};
@@ -22,10 +22,10 @@ fn window_event(world: &mut World, ev: &mut WindowEvent) {
     let mut input = world.get_mut::<Input>().unwrap();
 
     match ev {
+        // Handles keyboard keys
         WindowEvent::KeyboardInput { input: key, .. } => {
             if let Some(keycode) = key.virtual_keycode {
-                let button = crate::from_winit_vkc(keycode);
-                match input.keys.entry(button) {
+                match input.keys.entry(Button::Keyboard(keycode)) {
                     Entry::Occupied(mut current) => {
                         // Check if the key is "down" (either pressed or held)
                         let down =
@@ -42,6 +42,11 @@ fn window_event(world: &mut World, ev: &mut WindowEvent) {
                 }
             }
         },
+
+        // Handles mouse buttons
+        WindowEvent::MouseInput { state, button, .. } => {
+        }
+
         _ => {}
     }
 }
@@ -54,11 +59,11 @@ fn device_event(world: &mut World, ev: &DeviceEvent) {
         // Update mouse position delta and summed  pos
         DeviceEvent::MouseMotion { delta } => {
             let delta = vek::Vec2::<f64>::from(*delta).as_::<f32>();
-            input.axii.insert(Axis::MousePositionDeltaX, delta.x);
-            input.axii.insert(Axis::MousePositionDeltaY, delta.y);
-            let x = input.axii.entry(Axis::MousePositionX).or_insert(0.0);
+            input.axii.insert(Axis::Mouse(MouseAxis::DeltaX), delta.x);
+            input.axii.insert(Axis::Mouse(MouseAxis::DeltaY), delta.y);
+            let x = input.axii.entry(Axis::Mouse(MouseAxis::PositionX)).or_insert(0.0);
             *x += delta.x;
-            let y = input.axii.entry(Axis::MousePositionY).or_insert(0.0);
+            let y = input.axii.entry(Axis::Mouse(MouseAxis::PositionY)).or_insert(0.0);
             *y += delta.y;
         }
 
@@ -69,8 +74,8 @@ fn device_event(world: &mut World, ev: &DeviceEvent) {
                 winit::event::MouseScrollDelta::PixelDelta(physical) => physical.x as f32,
             };
 
-            input.axii.insert(Axis::MouseScrollDelta, delta);
-            let scroll = input.axii.entry(Axis::MouseScroll).or_insert(0.0);
+            input.axii.insert(Axis::Mouse(MouseAxis::ScrollDelta), delta);
+            let scroll = input.axii.entry(Axis::Mouse(MouseAxis::Scroll)).or_insert(0.0);
             *scroll += delta;
         }
 
@@ -94,7 +99,7 @@ fn update(world: &mut World) {
     }
 
     // Reset the mouse scroll delta (since winit doesn't reset it for us)
-    if let Some(data) = input.axii.get_mut(&Axis::MouseScrollDelta) {
+    if let Some(data) = input.axii.get_mut(&Axis::Mouse(MouseAxis::ScrollDelta)) {
         *data = 0f32;
     }
 
@@ -129,26 +134,20 @@ fn update(world: &mut World) {
 
         match event.event {
             // Button pressed event
-            gilrs::EventType::ButtonPressed(button, _) => {
-                if let Some(button) = crate::from_gilrs_button(button) {
-                    let state = input.keys.entry(button).or_insert(ButtonState::Pressed);
-                    *state = ButtonState::Pressed;
-                }
+            gilrs::EventType::ButtonPressed(button, _) => if button != gilrs::Button::Unknown {
+                let state = input.keys.entry(Button::Gamepad(button)).or_insert(ButtonState::Pressed);
+                *state = ButtonState::Pressed;
             }
 
             // Button released event
-            gilrs::EventType::ButtonReleased(button, _) => {
-                if let Some(button) = crate::from_gilrs_button(button) {
-                    let state = input.keys.entry(button).or_insert(ButtonState::Released);
-                    *state = ButtonState::Released;
-                }
+            gilrs::EventType::ButtonReleased(button, _) => if button != gilrs::Button::Unknown {
+                let state = input.keys.entry(Button::Gamepad(button)).or_insert(ButtonState::Released);
+                *state = ButtonState::Released;
             }
 
             // Axis changed event
-            gilrs::EventType::AxisChanged(axis, value, _) => {
-                if let Some(axis) = crate::from_gilrs_axis(axis) {
-                    input.axii.insert(axis, value);
-                }
+            gilrs::EventType::AxisChanged(axis, value, _) => if axis != gilrs::Axis::Unknown {
+                input.axii.insert(Axis::Gamepad(axis), value);
             }
 
             // Add the main gamepad controller
