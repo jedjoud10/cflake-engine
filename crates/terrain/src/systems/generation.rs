@@ -89,8 +89,7 @@ fn update(world: &mut World) {
     let offsets = &mut memory.offsets[index];
     let indices = &mut mesher.cached_indices;
     let suballocations = &mut memory.sub_allocation_chunk_indices[chunk.allocation];
-    let indirect = &memory.culled_indexed_indirect_buffer;
-    let indirect = indirects.get_mut(&indirect);
+    let indirect = &mut memory.generated_indexed_indirect_buffer;
 
     // Reset required values
     counters.write(&[0; 2], 0).unwrap();

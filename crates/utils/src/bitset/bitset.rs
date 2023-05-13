@@ -8,23 +8,23 @@ use std::mem::size_of;
 // Simple bitset that allocates using usize chunks
 // This bitset contains a specific number of elements per chunk
 #[derive(Default, Clone)]
-pub struct BitSet<T: PrimInt>(Vec<T>, bool);
+pub struct BitSet<T: PrimInt>(Vec<T>);
 
 impl<T: PrimInt> BitSet<T> {
     // Create a new empty bit set
     pub fn new() -> Self {
-        Self(Vec::default(), false)
+        Self(Vec::default())
     }
 
     // Create a bit set with some pre-allocated chunks
     pub fn with_capacity(elements: usize) -> Self {
         let chunks = (elements as f32 / Self::bitsize() as f32).ceil() as usize;
-        Self(Vec::with_capacity(chunks), false)
+        Self(Vec::with_capacity(chunks))
     }
 
     // Create a bitset from an iterator of chunks
     pub fn from_chunks_iter(iter: impl Iterator<Item = T>) -> Self {
-        Self(iter.collect(), false)
+        Self(iter.collect())
     }
 
     // Get the bit-size of the primitive
@@ -39,12 +39,6 @@ impl<T: PrimInt> BitSet<T> {
             .into_iter()
             .map(|chunk| chunk.fold(T::zero(), |accum, bit| accum << 1 | (if bit { T::one() } else { T::zero() })));
         Self::from_chunks_iter(chunks)
-    }
-
-    // Create a bitset using a specific function and the number of elements
-    pub fn from_pattern(callback: impl FnMut(usize) -> bool, count: usize) -> Self {
-        let iter = (0..count).map(callback);
-        Self::from_iter(iter)
     }
 
     // Get an immutable reference to the stored chunks
@@ -64,30 +58,27 @@ impl<T: PrimInt> BitSet<T> {
         (chunk, location)
     }
 
+    // Extend the inner chunks with a specific count
+    fn extend(&mut self, count: usize) {
+        if count > 0 {
+            let splat = T::min_value();
+            self.0
+                .extend((0..(count)).map(|_| splat));
+        }
+    }
+
     // Set a bit value in the bitset
     pub fn set(&mut self, index: usize) {
         let (chunk, location) = Self::coords(index);
 
         // Extend the layer if needed (this bitset is dynamic)
         if chunk >= self.0.len() {
-            let splat = if self.1 { T::max_value() } else { T::min_value() };
-            let num = chunk - self.0.len();
-            self.0.extend(std::iter::repeat(splat).take(num + 1));
+            self.extend((chunk - self.0.len()) + 1);
         }
 
         // Set the bit value specified in the chunk
         let chunk = &mut self.0[chunk];
         *chunk = *chunk | (T::one() << location);
-    }
-
-    // Set the whole bitset to a single value
-    pub fn splat(&mut self, value: bool) {
-        for chunk in self.0.iter_mut() {
-            *chunk = if value { T::max_value() } else { T::min_value() };
-        }
-
-        // We must store the value of the splat because we might allocate new chunks
-        self.1 = value;
     }
 
     // Remove a bit value from the bitset
@@ -100,7 +91,7 @@ impl<T: PrimInt> BitSet<T> {
     // Pre-allocate a specific amount of elements
     pub fn reserve(&mut self, elements: usize) {
         let additional = (elements as f32 / Self::bitsize() as f32).ceil() as usize;
-        self.0.reserve(additional);
+        self.extend(additional);
     }
 
     // Get a bit value from the bitset

@@ -99,10 +99,6 @@ impl Material for TerrainMaterial {
         Shader::new(vert, frag, &compiler).unwrap()
     }
 
-    fn primitive_config() -> PrimitiveConfig {
-        PrimitiveConfig::Lines { width: 2.0 }
-    }
-
     // Terrain only needs tex coordinates (packed)
     fn attributes() -> rendering::MeshAttributes {
         rendering::MeshAttributes::POSITIONS
@@ -111,6 +107,11 @@ impl Material for TerrainMaterial {
     // Custom shadow mapper (due to packed tex coordinates)
     fn casts_shadows() -> rendering::CastShadowsMode<Self> {
         rendering::CastShadowsMode::Disabled
+    }
+
+    // Disable frustum culling since we do that on the GPU
+    fn frustum_culling() -> bool {
+        false
     }
 
     // Fetch the texture storages

@@ -1,4 +1,4 @@
-use crate::{ChunkManager, MemoryManager, MeshGenerator, TerrainMaterial, VoxelGenerator};
+use crate::{ChunkManager, MemoryManager, MeshGenerator, TerrainMaterial, VoxelGenerator, ChunkCuller};
 use assets::{Asset, Assets};
 use graphics::{
     combine_into_layered, ActiveComputeDispatcher, BindGroup, Compiler, Graphics, PushConstants,
@@ -169,6 +169,7 @@ pub struct Terrain {
     pub voxelizer: VoxelGenerator,
     pub mesher: MeshGenerator,
     pub memory: MemoryManager,
+    pub culler: ChunkCuller,
 
     // Chunk manager and rendering
     pub manager: ChunkManager,

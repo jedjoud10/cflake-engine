@@ -1,4 +1,5 @@
 use ecs::Scene;
+use graphics::{ComputePass, Graphics};
 use rendering::Surface;
 use utils::Time;
 use world::{System, World};
@@ -13,17 +14,17 @@ fn update(world: &mut World) {
     };
     
     // Decompose the terrain into its subresources
-    let (manager, voxelizer, mesher, memory, settings) = (
+    let (manager, memory, culler) = (
         &terrain.manager,
-        &terrain.voxelizer,
-        &terrain.mesher,
         &terrain.memory,
-        &terrain.settings,
+        &terrain.culler,
     );
 
-    // Start render pass for the culling algorithm
-
     // Create compute pass that will cull the indexed indirect buffers
+    let graphics = world.get::<Graphics>().unwrap();
+    let mut pass = ComputePass::begin(&graphics);
+    //let mut active = pass.bind_shader(culler.compute_cull);
+
     // Run the culling compute shader with the data from the camera
 }
 

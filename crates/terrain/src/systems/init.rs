@@ -1,6 +1,6 @@
 use crate::{
     ChunkManager, LayeredAlbedoMap, LayeredMaskMap, LayeredNormalMap, MemoryManager, MeshGenerator,
-    Terrain, TerrainMaterial, TerrainSettings, Triangles, Vertices, VoxelGenerator,
+    Terrain, TerrainMaterial, TerrainSettings, Triangles, Vertices, VoxelGenerator, ChunkCuller,
 };
 
 use assets::Assets;
@@ -47,6 +47,9 @@ fn init(world: &mut World) {
         // Create a mesh generator
         let mesher = MeshGenerator::new(&assets, &graphics, &settings);
 
+        // Create the chunk culler
+        let culler = ChunkCuller::new(&assets, &graphics, &settings);
+
         // Create the memory manager
         let memory = MemoryManager::new(
             &assets,
@@ -80,6 +83,7 @@ fn init(world: &mut World) {
             manager,
             settings,
             active: true,
+            culler,
         };
 
         // Drop resources to be able to insert terrain into world
