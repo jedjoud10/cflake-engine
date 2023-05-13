@@ -7,7 +7,6 @@ const float density = 0.7;
 
 const vec3 skyColor = vec3(0.39, 0.57, 1.0); //Make sure one of the conponents is never 0.0
 
-
 float greatCircleDist(vec2 p, vec2 lp)
 {
     float phi_1 = p.y;

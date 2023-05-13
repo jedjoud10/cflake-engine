@@ -18,7 +18,6 @@ fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
     let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
     let mut pbrs = world.get_mut::<Storage<PhysicallyBasedMaterial>>().unwrap();
-    let mut skies = world.get_mut::<Storage<SkyMaterial>>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
     let mut pipelines = world.get_mut::<Pipelines>().unwrap();
 
@@ -94,25 +93,6 @@ fn init(world: &mut World) {
         let surface = Surface::new(sphere.clone(), material.clone(), id.clone());
         (surface, renderer, position)
     }));
-
-    // Get the material id (also registers the material pipeline)
-    let id = pipelines
-        .register::<SkyMaterial>(&graphics, &mut assets)
-        .unwrap();
-
-    // Create a new material instance
-    let material = skies.insert(SkyMaterial {});
-
-    // Load the renderable mesh
-    let mesh = assets
-        .load::<Mesh>(("engine/meshes/sphere.obj", graphics.clone()))
-        .unwrap();
-    let mesh = meshes.insert(mesh);
-
-    // Create the new sky entity components
-    let surface = Surface::new(mesh, material, id);
-    let renderer = Renderer::default();
-    scene.insert((surface, renderer));
 
     // Create a movable camera
     scene.insert((

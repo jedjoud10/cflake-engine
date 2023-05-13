@@ -11,7 +11,8 @@ use graphics::{
 use utils::Storage;
 
 // A very simple sky material which uses a procedural sky system
-pub struct SkyMaterial {}
+// This is private since the user will NEVER create a sky entity and at it manually (it's added automatically)
+pub(crate) struct SkyMaterial {}
 
 impl Material for SkyMaterial {
     type Resources<'w> = world::Read<'w, Storage<AlbedoMap>>;

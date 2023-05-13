@@ -3,14 +3,14 @@ use std::{mem::size_of, num::NonZeroU8};
 use crate::{
     AlbedoMap, AttributeBuffer, Camera, DefaultMaterialResources, DirectionalLight,
     ForwardRenderer, Indirect, MaskMap, Mesh, NormalMap, PhysicallyBasedMaterial, Pipelines,
-    Renderer, SceneUniform, ShadowMapping, SkyMaterial, WindowUniform, MultiDrawIndirectMesh, IndirectMesh, WireframeMaterial, TimingUniform,
+    Renderer, SceneUniform, ShadowMapping, SkyMaterial, WindowUniform, MultiDrawIndirectMesh, IndirectMesh, WireframeMaterial, TimingUniform, MultiDrawIndirectCountMesh, Environment, Surface,
 };
 use assets::Assets;
 
 use ecs::Scene;
 use graphics::{
     ActivePipeline, DrawIndexedIndirectBuffer, GpuPod, Graphics, ModuleVisibility, Texture,
-    TriangleBuffer, Window,
+    TriangleBuffer, Window, DrawCountIndirectBuffer,
 };
 
 use utils::{Storage, Time};
@@ -24,12 +24,14 @@ fn init(world: &mut World) {
     let mut albedo_maps = Storage::<AlbedoMap>::default();
     let mut normal_maps = Storage::<NormalMap>::default();
     let mut mask_maps = Storage::<MaskMap>::default();
+    let mut meshes = Storage::<Mesh>::default();
 
     // Create the scene renderer, pipeline manager
     let renderer = ForwardRenderer::new(
         &graphics,
         &assets,
         window.size(),
+        &mut meshes,
         &mut albedo_maps,
         &mut normal_maps,
         &mut mask_maps,
@@ -63,16 +65,22 @@ fn init(world: &mut World) {
     world.insert(pipelines);
     world.insert(shadowmap);
 
-    // Add common storages
-    world.insert(Storage::<Mesh>::default());
+    // Add mesh storages
+    world.insert(meshes);
     world.insert(Storage::<IndirectMesh>::default());
     world.insert(Storage::<MultiDrawIndirectMesh>::default());
+    world.insert(Storage::<MultiDrawIndirectCountMesh>::default());
+    
+    // Add common indirect attributes
     world.insert(Storage::<AttributeBuffer<crate::attributes::Position>>::default());
     world.insert(Storage::<AttributeBuffer<crate::attributes::Normal>>::default());
     world.insert(Storage::<AttributeBuffer<crate::attributes::Tangent>>::default());
     world.insert(Storage::<AttributeBuffer<crate::attributes::TexCoord>>::default());
     world.insert(Storage::<TriangleBuffer<u32>>::default());
+
+    // Add draw indexed indirect buffers 
     world.insert(Storage::<DrawIndexedIndirectBuffer>::default());
+    world.insert(Storage::<DrawCountIndirectBuffer>::default());
 
     // Add the storages that contain the materials and their resources
     world.insert(Storage::<SkyMaterial>::default());
@@ -128,6 +136,7 @@ fn render(world: &mut World) {
     let pipelines = world.get::<Pipelines>().unwrap();
     let time = world.get::<Time>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
+    let environment = world.get::<Environment>().unwrap();
 
     // Store the new timing info
     renderer.timing_buffer.write(&[
@@ -168,6 +177,8 @@ fn render(world: &mut World) {
 
     // Needed for multi draw indirect rendering
     let multi_draw_indirect_meshes = world.get::<Storage<MultiDrawIndirectMesh>>().unwrap();
+    let multi_draw_indirect_count_meshes = world.get::<Storage<MultiDrawIndirectCountMesh>>().unwrap();
+    let draw_count_indirect_buffer = world.get::<Storage<DrawCountIndirectBuffer>>().unwrap();
 
     let albedo_maps = world.get::<Storage<AlbedoMap>>().unwrap();
     let normal_maps = world.get::<Storage<NormalMap>>().unwrap();
@@ -211,6 +222,7 @@ fn render(world: &mut World) {
     let camera_view = camera.view_matrix(&camera_position, &camera_rotation);
     let camera_projection = camera.projection_matrix();
     let camera_frustum = math::Frustum::<f32>::from_camera_matrices(camera_projection, camera_view);
+    let index = (time.frame_count() % 2) as usize;
 
     // Create the shared material resources
     let mut default = DefaultMaterialResources {
@@ -227,10 +239,12 @@ fn render(world: &mut World) {
         black: &albedo_maps[&renderer.black],
         normal: &normal_maps[&renderer.normal],
         mask: &mask_maps[&renderer.mask],
-        environment_map: &renderer.environment_map[0],
+        environment_map: &environment.environment_map[index],
         meshes: &meshes,
         indirect_meshes: &indirect_meshes,
         multi_draw_indirect_meshes: &multi_draw_indirect_meshes,
+        multi_draw_indirect_count_meshes: &multi_draw_indirect_count_meshes,
+        draw_count_indirect_buffer: &draw_count_indirect_buffer,
         indirect_positions: &indirect_position_attribute,
         indirect_normals: &indirect_normal_attribute,
         indirect_tangents: &indirect_tangents_attribute,
@@ -243,6 +257,7 @@ fn render(world: &mut World) {
         rendered_direct_triangles_drawn: &mut renderer.rendered_direct_triangles_drawn,
         culled_sub_surfaces: &mut renderer.culled_sub_surfaces,
         rendered_sub_surfaces: &mut renderer.rendered_sub_surfaces,
+
     };
     drop(scene);
 

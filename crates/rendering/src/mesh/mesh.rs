@@ -3,11 +3,11 @@ use crate::mesh::attributes::{Normal, Position, Tangent, TexCoord};
 use crate::{
     AttributeBuffer, Direct, Indirect, MeshAttribute, MeshAttributes, MeshImportError,
     MeshImportSettings, MeshInitializationError, RenderPath, TrianglesMut, TrianglesRef,
-    VerticesMut, VerticesRef, MultiDrawIndirect, IndirectMeshArgs, MultiDrawIndirectArgs,
+    VerticesMut, VerticesRef, MultiDrawIndirect, IndirectMeshArgs, MultiDrawIndirectArgs, MultiDrawIndirectCount, MultiDrawIndirectCountArgs,
 };
 use assets::Asset;
 use graphics::{
-    BufferMode, BufferUsage, DrawIndexedIndirectBuffer, Graphics, Triangle, TriangleBuffer,
+    BufferMode, BufferUsage, DrawIndexedIndirectBuffer, Graphics, Triangle, TriangleBuffer, DrawCountIndirectBuffer,
 };
 use obj::TexturedVertex;
 
@@ -50,6 +50,7 @@ impl<R: RenderPath> PartialEq for Mesh<R> {
 
 pub type IndirectMesh = Mesh<Indirect>;
 pub type MultiDrawIndirectMesh = Mesh<MultiDrawIndirect>;
+pub type MultiDrawIndirectCountMesh = Mesh<MultiDrawIndirectCount>;
 
 // Initialization of directly rendered meshes
 impl Mesh<Direct> {
@@ -260,6 +261,89 @@ impl Mesh<MultiDrawIndirect> {
     // If offset + count is greater than the number of elements contained within the indexed indirect buffer the program will panic
     pub fn count_mut(&mut self) -> &mut usize {
         &mut self.args.count
+    }
+}
+
+
+// Initialization of multi-drawn indirect count meshes
+impl Mesh<MultiDrawIndirectCount> {
+    // Create a new mesh from the attribute buffers' handles
+    pub fn from_handles(
+        positions: Option<Handle<AttributeBuffer<Position>>>,
+        normals: Option<Handle<AttributeBuffer<Normal>>>,
+        tangents: Option<Handle<AttributeBuffer<Tangent>>>,
+        tex_coords: Option<Handle<AttributeBuffer<TexCoord>>>,
+        triangles: Handle<TriangleBuffer<u32>>,
+        indirect: Handle<DrawIndexedIndirectBuffer>,
+        indirect_offset: usize,
+        count: Handle<DrawCountIndirectBuffer>,
+        count_offset: usize,
+    ) -> Self {
+        // Keep track of the enabled mesh buffers
+        let mut enabled = MeshAttributes::empty();
+
+        // Inserts the MeshAttribute bitflag of the correspodning attribute if needed
+        fn insert<T: MeshAttribute>(
+            output: &mut MeshAttributes,
+            handle: &Option<Handle<AttributeBuffer<T>>>,
+        ) {
+            if handle.is_some() {
+                output.insert(T::ATTRIBUTE);
+            }
+        }
+
+        // Update the bitflags
+        insert::<Position>(&mut enabled, &positions);
+        insert::<Normal>(&mut enabled, &normals);
+        insert::<Tangent>(&mut enabled, &tangents);
+        insert::<TexCoord>(&mut enabled, &tex_coords);
+
+        // Create the mesh and return it
+        Self {
+            enabled,
+            positions,
+            normals,
+            tangents,
+            tex_coords,
+            args: MultiDrawIndirectCountArgs {
+                indirect,
+                count,
+                indirect_offset,
+                count_offset,
+            },
+            triangles,
+            aabb: None,
+        }
+    }
+
+    // Get the indexed indirect buffer handle immutably
+    pub fn indirect(&self) -> &Handle<DrawIndexedIndirectBuffer> {
+        &self.args.indirect
+    }
+
+    // Get the element offset within the DrawIndexedIndirectBuffer
+    pub fn indirect_offset(&self) -> usize {
+        self.args.indirect_offset
+    }
+
+    // Get the element offset within the DrawIndexedIndirectBuffer mutably
+    pub fn indirect_offset_mut(&mut self) -> &mut usize {
+        &mut self.args.indirect_offset
+    }
+
+    // Get the buffer that contains the number of draw calls that will be submitted by the GPU
+    pub fn count(&self) -> &Handle<DrawCountIndirectBuffer> {
+        &self.args.count
+    }
+
+    // Get the element offset within the DrawCountIndirectBuffer
+    pub fn count_offset(&self) -> usize {
+        self.args.count_offset
+    }
+
+    // Get the element offset within the DrawCountIndirectBuffer mutably
+    pub fn count_offset_mut(&mut self) -> &mut usize {
+        &mut self.args.count_offset
     }
 }
 

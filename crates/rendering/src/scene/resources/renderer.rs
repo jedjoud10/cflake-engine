@@ -1,4 +1,4 @@
-use crate::{AlbedoMap, CameraBuffer, MaskMap, NormalMap, SceneBuffer, TimingBuffer, WindowBuffer};
+use crate::{AlbedoMap, CameraBuffer, MaskMap, NormalMap, SceneBuffer, TimingBuffer, WindowBuffer, Mesh};
 
 use assets::Assets;
 
@@ -7,7 +7,7 @@ use graphics::{
     ActiveRenderPass, ActiveRenderPipeline, BufferMode, BufferUsage, Depth, GpuPod, Graphics,
     LoadOp, Operation, RenderPass, SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap,
     StoreOp, Texel, Texture, Texture2D, TextureMipMaps, TextureMode, TextureUsage, UniformBuffer,
-    RGBA, CubeMap, ImageTexel,
+    RGBA, CubeMap, ImageTexel, Shader, RenderPipeline,
 };
 use utils::{Handle, Storage};
 
@@ -15,7 +15,6 @@ use utils::{Handle, Storage};
 pub type SceneColor = RGBA<f32>;
 pub type SceneDepth = Depth<f32>;
 pub type SceneRenderPass = RenderPass<SceneColor, SceneDepth>;
-pub type EnvironmentMap = CubeMap<RGBA<f32>>;
 pub type ActiveSceneRenderPass<'r, 't> = ActiveRenderPass<'r, 't, SceneColor, SceneDepth>;
 pub type ActiveScenePipeline<'a, 'r, 't> = ActiveRenderPipeline<'a, 'r, 't, SceneColor, SceneDepth>;
 
@@ -40,14 +39,17 @@ pub struct ForwardRenderer {
     pub scene_buffer: SceneBuffer,
     pub window_buffer: WindowBuffer,
 
-    // Double buffered environment map
-    pub environment_map: [EnvironmentMap; 2],
-
     // Default textures that will be shared with each material
     pub white: Handle<AlbedoMap>,
     pub black: Handle<AlbedoMap>,
     pub normal: Handle<NormalMap>,
     pub mask: Handle<MaskMap>,
+
+    // Load the common models
+    pub cube: Handle<Mesh>,
+    pub icosphere: Handle<Mesh>,
+    pub plane: Handle<Mesh>,
+    pub sphere: Handle<Mesh>,
 
     // Stats about shit drawn this frame
     pub drawn_unique_material_count: u32,
@@ -83,26 +85,21 @@ fn create_texture2d<T: Texel>(graphics: &Graphics, value: T::Storage) -> Texture
     .unwrap()
 }
 
-// Create a cubemap with a specific resolution
-fn create_cubemap<T: Texel + ImageTexel>(graphics: &Graphics, value: T::Storage, resolution: usize) -> CubeMap<T> {
-    CubeMap::<T>::from_texels(
-        graphics,
-        Some(&vec![value; resolution*resolution*6]),
-        vek::Extent2::broadcast(resolution as u32),
-        TextureMode::Dynamic,
-        TextureUsage::SAMPLED | TextureUsage::TARGET | TextureUsage::COPY_DST,
-        Some(SamplerSettings::default()),
-        TextureMipMaps::Disabled,
-    )
-    .unwrap()
+// Load a engine default mesh
+fn load_mesh(path: &str, assets: &Assets, graphics: &Graphics, storage: &mut Storage<Mesh>) -> Handle<Mesh> {
+    let mesh = assets
+        .load::<Mesh>((path, graphics.clone()))
+        .unwrap();
+    storage.insert(mesh)
 }
 
 impl ForwardRenderer {
     // Create a new scene render pass and the forward renderer
     pub(crate) fn new(
         graphics: &Graphics,
-        _assets: &Assets,
+        assets: &Assets,
         extent: vek::Extent2<u32>,
+        meshes: &mut Storage<Mesh>,
         albedo_maps: &mut Storage<AlbedoMap>,
         normal_maps: &mut Storage<NormalMap>,
         mask_maps: &mut Storage<MaskMap>,
@@ -165,6 +162,12 @@ impl ForwardRenderer {
         let normal = normal_maps.insert(create_texture2d(graphics, normal));
         let mask = mask_maps.insert(create_texture2d(graphics, mask));
 
+        // Load the default meshes
+        let cube = load_mesh("engine/meshes/cube.obj", &assets, &graphics, meshes);
+        let icosphere = load_mesh("engine/meshes/icosphere.obj", &assets, &graphics, meshes);
+        let plane = load_mesh("engine/meshes/plane.obj", &assets, &graphics, meshes);
+        let sphere = load_mesh("engine/meshes/sphere.obj", &assets, &graphics, meshes);
+
         Self {
             // Render pass, color texture, and depth texture
             render_pass,
@@ -183,12 +186,6 @@ impl ForwardRenderer {
             normal,
             mask,
 
-            // Create the environment map
-            environment_map: [
-                create_cubemap(graphics, vek::Vec4::zero(), 512),
-                create_cubemap(graphics, vek::Vec4::zero(), 512),
-            ],
-
             // No default camera
             main_camera: None,
             main_directional_light: None,
@@ -200,6 +197,12 @@ impl ForwardRenderer {
             rendered_direct_triangles_drawn: 0,
             culled_sub_surfaces: 0,
             rendered_sub_surfaces: 0,
+
+            // Load the default meshes
+            cube,
+            icosphere,
+            plane,
+            sphere,
         }
     }
 }

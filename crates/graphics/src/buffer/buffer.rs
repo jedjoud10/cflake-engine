@@ -49,6 +49,7 @@ pub type UniformBuffer<T> = Buffer<T, UNIFORM>;
 pub type DrawIndirectBuffer = Buffer<DrawIndirect, INDIRECT>;
 pub type DrawIndexedIndirectBuffer = Buffer<DrawIndexedIndirect, INDIRECT>;
 pub type DispatchIndirectBuffer = Buffer<DispatchIndirect, INDIRECT>;
+pub type DrawCountIndirectBuffer = Buffer<u32, INDIRECT>;
 
 // A buffer abstraction over a valid WGPU buffer
 // This also takes a constant that represents it's Wgpu target at compile time

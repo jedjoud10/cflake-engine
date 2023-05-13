@@ -415,6 +415,7 @@ impl App {
         self.regsys(rendering::systems::matrix::system);
         self.regsys(rendering::systems::rendering::system);
         self.regsys(rendering::systems::lights::system);
+        self.regsys(rendering::systems::environment::system);
 
         // Terrain systems
         self.regsys(terrain::systems::manager::system);
