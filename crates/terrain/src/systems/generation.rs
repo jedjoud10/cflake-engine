@@ -44,9 +44,9 @@ fn update(world: &mut World) {
 
     // Convert "Dirty" chunks into "Pending", and clears the old memory used by those chunks
     let query = scene
-        .query_mut::<(&mut Chunk)>()
+        .query_mut::<&mut Chunk>()
         .into_iter();
-    for (chunk) in query.filter(|c| c.state == ChunkState::Dirty).take(4) {
+    for chunk in query.filter(|c| c.state == ChunkState::Dirty) {
         chunk.state = ChunkState::Pending;
         
         // Write to the indices the updated ranges if needed
