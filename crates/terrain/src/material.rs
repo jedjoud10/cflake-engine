@@ -99,6 +99,10 @@ impl Material for TerrainMaterial {
         Shader::new(vert, frag, &compiler).unwrap()
     }
 
+    fn primitive_config() -> PrimitiveConfig {
+        PrimitiveConfig::Lines { width: 2.0 }
+    }
+
     // Terrain only needs tex coordinates (packed)
     fn attributes() -> rendering::MeshAttributes {
         rendering::MeshAttributes::POSITIONS

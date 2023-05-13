@@ -77,6 +77,7 @@ void main() {
         if (!within_free && free) {
             temp_sub_allocation_index = i;
             temp_sub_allocation_count = 0;
+            within_free = true;
         }
 
         // We stayed within a free allocation

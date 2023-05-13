@@ -42,11 +42,11 @@ fn update(world: &mut World) {
         &mut terrain.settings,
     );
 
-    // Convert "Dirty" chunks into "Pending"
+    // Convert "Dirty" chunks into "Pending", and clears the old memory used by those chunks
     let query = scene
-        .query_mut::<&mut Chunk>()
+        .query_mut::<(&mut Chunk)>()
         .into_iter();
-    for chunk in query.filter(|c| c.state == ChunkState::Dirty) {
+    for (chunk) in query.filter(|c| c.state == ChunkState::Dirty).take(4) {
         chunk.state = ChunkState::Pending;
         
         // Write to the indices the updated ranges if needed
@@ -59,16 +59,7 @@ fn update(world: &mut World) {
             }
         }
 
-        // Update indirect buffer
-        let indirect = &memory.culled_indexed_indirect_buffer;
-        let indirect = indirects.get_mut(&indirect);
-        indirect
-            .write(
-                &[crate::DEFAULT_DRAW_INDEXED_INDIRECT],
-                chunk.global_index,
-            )
-            .unwrap();
-
+        // Remove the chunk CPU range
         chunk.ranges = None;
     }
 
@@ -76,13 +67,15 @@ fn update(world: &mut World) {
     let mut vec = scene
         .query_mut::<(
             &mut Chunk,
+            &Position,
+            &Scale,
             &Entity,
         )>()
         .into_iter()
         .collect::<Vec<_>>();
-    vec.sort_by(|(a, _), (b, _)| a.generation_priority.total_cmp(&b.generation_priority));
-    vec.retain(|(chunk, _)| chunk.state == ChunkState::Pending);
-    let Some((chunk, entity)) = vec.pop() else {
+    vec.sort_by(|(a, _, _, _), (b, _, _, _)| a.generation_priority.total_cmp(&b.generation_priority));
+    vec.retain(|(chunk, _, _, _)| chunk.state == ChunkState::Pending);
+    let Some((chunk, position, scale, entity)) = vec.pop() else {
         manager.last_chunk_generated = None;
         return;
     };
@@ -103,6 +96,11 @@ fn update(world: &mut World) {
     counters.write(&[0; 2], 0).unwrap();
     offsets.write(&[u32::MAX; 2], 0).unwrap();
     indirect.write(&[crate::util::DEFAULT_DRAW_INDEXED_INDIRECT], chunk.global_index).unwrap();
+
+    // Update position buffer
+    let packed = (*position).with_w(**scale);
+    let buffer = &mut manager.position_scaling_buffer;
+    buffer.write(&[packed], chunk.global_index).unwrap();
 
     // Create a compute pass for ALL compute terrain shaders
     let mut pass = ComputePass::begin(&graphics);

@@ -98,16 +98,6 @@ fn update(world: &mut World) {
 
                 // Hide the chunk using the temporary visibility vector
                 manager.visibility_bitset.remove(chunk.global_index);
-
-                let handle = &memory.culled_indexed_indirect_buffer;
-                let mut kys = world.get_mut::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
-                let indirect = kys.get_mut(&handle);
-                indirect
-                    .write(
-                        &[crate::DEFAULT_DRAW_INDEXED_INDIRECT],
-                        chunk.global_index,
-                    )
-                    .unwrap();
             }
         }
 
@@ -157,7 +147,6 @@ fn update(world: &mut World) {
             manager.visibility_bitset.reserve(chunks_to_allocate);
             
             // Add the same amounts of chunks per allocation
-            let mut global_index = pre_chunks;
             for allocation in 0..settings.allocation_count {      
                 // Create new chunk entities and set them as "free"
                 entities.extend((0..chunks_to_allocate_per_allocation).into_iter().map(|i| {
@@ -168,14 +157,12 @@ fn update(world: &mut World) {
                     let chunk = Chunk {
                         state: ChunkState::Free,
                         allocation,
-                        global_index: global_index, 
+                        global_index: allocation * chunks_to_allocate_per_allocation + i + pre_chunks, 
                         generation_priority: 0.0f32,
                         readback_priority: 0.0f32,
                         ranges: None,
                         node: None,
                     };
-
-                    global_index += 1;
                 
                     // Create the bundle
                     (position, scale, chunk)
@@ -214,11 +201,6 @@ fn update(world: &mut World) {
             chunk.node = Some(*node);
             **position = node.position().as_::<f32>();
             **scale = (node.size() as f32) / (settings.size as f32);
-
-            // Update position buffer
-            let packed = (*position).with_w(**scale);
-            let buffer = &mut manager.position_scaling_buffer;
-            buffer.write(&[packed], chunk.global_index).unwrap();
             
             // Add the entity to the internally stored entities
             let res = manager.entities.insert(*node, *entity);

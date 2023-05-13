@@ -162,19 +162,19 @@ impl ChunkManager {
                 // High resolution
                 math::aabb_sphere(&node.aabb(), &math::Sphere {
                     center: *target,
-                    radius: (size as f32 * 1.0),
+                    radius: (size as f32 * 2.0),
                 })
             } else if node.size() == size * 4 {
                 // Medium resolution
                 math::aabb_sphere(&node.aabb(), &math::Sphere {
                     center: *target,
-                    radius: size as f32 * 2.0,
+                    radius: size as f32 * 4.0,
                 })
             } else if node.size() == size * 8 {
                 // Medium resolution
                 math::aabb_sphere(&node.aabb(), &math::Sphere {
                     center: *target,
-                    radius: size as f32 * 4.0,
+                    radius: size as f32 * 8.0,
                 }) 
             } else {
                 // Low resolution
