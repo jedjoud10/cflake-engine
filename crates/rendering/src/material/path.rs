@@ -168,6 +168,7 @@ pub struct MultiDrawIndirectCountArgs {
     pub count: Handle<DrawCountIndirectBuffer>,
     pub indirect_offset: usize,
     pub count_offset: usize,
+    pub max_count: usize,
 }
 
 
@@ -322,7 +323,14 @@ impl RenderPath for MultiDrawIndirectCount {
         defaults: &DefaultMaterialResources,
         mesh: &Mesh<Self>,
     ) -> bool {
-        true
+        let indirect = defaults.draw_indexed_indirect_buffers.get(mesh.indirect());
+        let count = defaults.draw_count_indirect_buffer.get(mesh.count());
+        let indirect_offset = mesh.indirect_offset();
+        let count_offset = mesh.count_offset();
+        let max_count = mesh.max_count();
+        let indirect = indirect.len() >= (indirect_offset + max_count);
+        let count = count.len() > count_offset;
+        indirect && count
     }
 
     #[inline(always)]
@@ -368,6 +376,6 @@ impl RenderPath for MultiDrawIndirectCount {
         let count = mesh.count().clone();
         let indirect = defaults.draw_indexed_indirect_buffers.get(&indirect);
         let count = defaults.draw_count_indirect_buffer.get(&count);
-        todo!()
+        active.multi_draw_indexed_indirect_count(indirect, mesh.indirect_offset(), count, mesh.count_offset(), mesh.max_count())
     }
 }

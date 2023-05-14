@@ -78,12 +78,6 @@ impl Material for TerrainMaterial {
         // Define the types for the user textures
         compiler.use_sampled_texture::<ShadowMap>("shadow_map");
 
-        // Contains the allocation index that is stored per sub-surface
-        compiler.use_push_constant_layout(PushConstantLayout::single(
-            u32::size(),
-            ModuleVisibility::Vertex,
-        ).unwrap());
-
         // Set the scaling factor for the vertex positions
         compiler.use_constant(0, (settings.size as f32) / (settings.size as f32 - 3.0));
 
@@ -196,15 +190,27 @@ impl Material for TerrainMaterial {
                     .set_sampled_texture("layered_mask_map", mask_map)
                     .unwrap();
             }
+    }
 
+    // Set the per-surface bindings for the material
+    // Since the terrain mesh only contains "allocation" count of sub-surfaces, this will be executed for each allocation
+    fn set_surface_bindings<'r, 'w>(
+        _renderer: &Renderer,
+        resources: &'r mut Self::Resources<'w>,
+        _default: &mut DefaultMaterialResources<'w>,
+        _query: &Self::Query<'w>,
+        group: &mut BindGroup<'r>,
+    ) {
+        let (.., terrain, _, index) = resources;
 
         // Set the storage buffer that contains ALL the matrices
-        /*
         group.set_storage_buffer(
             "position_scale_buffer",
-            &terrain.manager.position_scaling_buffer,
+            &terrain.memory.culled_position_scaling_buffers[*index],
             ..
         ).unwrap();   
-        */
+
+        // Increment the index (aka the allocation index)
+        *index += 1;
     }
 }

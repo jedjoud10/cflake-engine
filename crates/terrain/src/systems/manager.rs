@@ -12,7 +12,7 @@ use graphics::{
 };
 use math::OctreeDelta;
 use rand::{Rng, seq::SliceRandom};
-use rendering::{IndirectMesh, Renderer, Surface, MultiDrawIndirectMesh};
+use rendering::{IndirectMesh, Renderer, Surface, MultiDrawIndirectMesh, MultiDrawIndirectCountMesh};
 use utils::{Storage, Time};
 use world::{user, System, World};
 
@@ -110,7 +110,7 @@ fn update(world: &mut World) {
 
         // Add extra chunks if we need them
         let mut rng = rand::thread_rng();
-        let mut multi_draw_indirect_meshes = world.get_mut::<Storage<MultiDrawIndirectMesh>>().unwrap();
+        let mut multi_draw_indirect_count_meshes = world.get_mut::<Storage<MultiDrawIndirectCountMesh>>().unwrap();
         let mut indexed_indirect_buffers = world.get_mut::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
 
         // Extend the indexed indirect buffer if needed
@@ -146,18 +146,22 @@ fn update(world: &mut World) {
                 ]).unwrap();
                 
                 // Extend the position scaling buffer
-                memory.position_scaling_buffers[allocation].extend_from_slice(&vec![vek::Vec4::zero(); count]).unwrap();
+                memory.generated_position_scaling_buffers[allocation].extend_from_slice(&vec![vek::Vec4::zero(); count]).unwrap();
                 memory.culled_position_scaling_buffers[allocation].extend_from_slice(&vec![vek::Vec4::zero(); count]).unwrap();
 
                 // Extend the visibility vector and buffer
                 memory.visibility_buffers[allocation].extend_from_slice(&vec![0; count]).unwrap();
                 memory.visibility_bitsets[allocation].reserve(count);
 
+                // Increase the max count of the mesh that corresponds to this allocation
+                let handle = &memory.allocation_meshes[allocation];
+                *multi_draw_indirect_count_meshes.get_mut(&handle).max_count_mut() += count;
+
                 // Create new chunk entities and set them as "free"
                 entities.extend((0..count).into_iter().map(|i| {
                     let position = Position::default();
                     let scale = Scale::default();
-
+                    
                     // Create the chunk component
                     let chunk = Chunk {
                         state: ChunkState::Free,

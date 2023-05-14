@@ -20,6 +20,7 @@ pub struct MemoryManager {
 
     // ...and the ones that have been culled by the culling compute shader
     pub(crate) culled_indexed_indirect_buffers: Vec<Handle<DrawIndexedIndirectBuffer>>,
+    pub(crate) culled_count_buffer: Handle<DrawCountIndirectBuffer>,
     
     // Vectors that contains the shared buffers needed for multidraw indirect
     pub(crate) shared_positions_buffers: Vec<Handle<Vertices>>,
@@ -37,7 +38,7 @@ pub struct MemoryManager {
     pub(crate) compute_copy: ComputeShader,
 
     // Buffer to store the position and scale of each chunk
-    pub(crate) position_scaling_buffers: Vec<Buffer<vek::Vec4<f32>>>,
+    pub(crate) generated_position_scaling_buffers: Vec<Buffer<vek::Vec4<f32>>>,
     pub(crate) culled_position_scaling_buffers: Vec<Buffer<vek::Vec4<f32>>>,
 
     // Buffer to store the visibility of each chunk
@@ -69,26 +70,39 @@ impl MemoryManager {
         multi_draw_indirect_count_meshes: &mut Storage<MultiDrawIndirectCountMesh>,
         settings: &TerrainSettings,
     ) -> Self {
-        // Create one buffer that contains the generated indexed indirect elements
-        let generated_indexed_indirect_buffers: Vec<DrawIndexedIndirectBuffer> = (0..settings.allocation_count).into_iter().map(|_| {
-            crate::create_empty_buffer(graphics)
-        }).collect::<Vec<_>>();
+        // Create an empty buffer of a specific type N amounts of time
+        fn create_empty_buffer_count<T: GpuPod, const TYPE: u32>(graphics: &Graphics, count: usize) -> Vec<Buffer<T, TYPE>> {
+            (0..count).into_iter().map(|_| {
+                crate::create_empty_buffer(graphics)
+            }).collect::<Vec<_>>()
+        }
+
+        // Create multiple buffers for N allocations
+        let generated_indexed_indirect_buffers = create_empty_buffer_count(&graphics, settings.allocation_count);
 
         // And another one that contains the culled indexed indirect elements
-        let culled_indexed_indirect_buffers: Vec<Handle<DrawIndexedIndirectBuffer>> = (0..settings.allocation_count).into_iter().map(|_| {
+        let culled_indexed_indirect_buffers = (0..settings.allocation_count).into_iter().map(|_| {
             indexed_indirect_buffers.insert(
                 crate::create_empty_buffer(graphics)
             )
         }).collect::<Vec<_>>();
 
-        // ... and another one that contains the culled counts (for all allocation)
-        let culled_count_buffers: Handle<DrawCountIndirectBuffer> = draw_count_indirect_buffers.insert(DrawCountIndirectBuffer::splatted(
+        // One that contains the culled counts (for all allocation)
+        let culled_count_buffer = draw_count_indirect_buffers.insert(DrawCountIndirectBuffer::splatted(
             graphics,
             settings.allocation_count,
-            0,
+            1360,
             BufferMode::Dynamic,
-            BufferUsage::WRITE,
+            BufferUsage::WRITE | BufferUsage::STORAGE,
         ).unwrap());
+
+        // Visibility bitset and GPU buffers
+        let visibility_bitsets = (0..settings.allocation_count).into_iter().map(|_| BitSet::new()).collect();
+        let visibility_buffers = create_empty_buffer_count(&graphics, settings.allocation_count);
+
+        // Generated and culled positions and scalings
+        let culled_position_scaling_buffers = create_empty_buffer_count(&graphics, settings.allocation_count);
+        let generated_position_scaling_buffers = create_empty_buffer_count(&graphics, settings.allocation_count);
 
         // Allocate the chunk indices that will be stored per allocation
         let sub_allocation_chunk_indices = (0..settings.allocation_count)
@@ -219,11 +233,12 @@ impl MemoryManager {
                 triangles.clone(),
                 culled_indexed_indirect_buffers[allocation].clone(),
                 0,
-                culled_count_buffers.clone(),
+                culled_count_buffer.clone(),
                 allocation,
+                0,
             ))
-        }).collect::<Vec<_>>();
-
+        }).collect::<Vec<_>>();        
+        
         Self {
             shared_positions_buffers,
             shared_triangle_buffers,
@@ -237,12 +252,13 @@ impl MemoryManager {
             offsets,
             counters,
             allocation_meshes,
-            generated_indexed_indirect_buffers: todo!(),
-            culled_indexed_indirect_buffers: todo!(),
-            position_scaling_buffers: todo!(),
-            culled_position_scaling_buffers: todo!(),
-            visibility_buffers: todo!(),
-            visibility_bitsets: todo!(),
+            generated_indexed_indirect_buffers,
+            culled_indexed_indirect_buffers,
+            generated_position_scaling_buffers,
+            culled_position_scaling_buffers,
+            visibility_buffers,
+            visibility_bitsets,
+            culled_count_buffer,
         }
     }
 }

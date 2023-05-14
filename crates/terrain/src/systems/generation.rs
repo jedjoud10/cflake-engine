@@ -94,7 +94,7 @@ fn update(world: &mut World) {
     // Update alloc-local indirect draw args
     let indirect = &memory.culled_indexed_indirect_buffers[chunk.allocation];
     let indirect = indirects.get_mut(indirect);
-    indirect.write(&[crate::util::DEFAULT_DRAW_INDEXED_INDIRECT], chunk.local_index).unwrap();
+    //indirect.write(&[crate::util::DEFAULT_DRAW_INDEXED_INDIRECT], chunk.local_index).unwrap();
 
     // Reset required values
     counters.write(&[0; 2], 0).unwrap();

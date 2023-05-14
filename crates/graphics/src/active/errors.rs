@@ -113,6 +113,9 @@ pub enum DrawError {
 
     #[error("Given indirect buffer element index overruns the given indirect buffer")]
     InvalidIndirectIndex,
+
+    #[error("Given indirect count buffer element index overruns the given indirect count buffer")]
+    InvalidIndirectCountIndex,
 }
 
 #[derive(Error, Debug)]
@@ -128,4 +131,7 @@ pub enum DrawIndexedError {
 
     #[error("Given indirect buffer element index overruns the given indirect buffer")]
     InvalidIndirectIndex,
+
+    #[error("Given indirect count buffer element index overruns the given indirect count buffer")]
+    InvalidIndirectCountIndex,
 }

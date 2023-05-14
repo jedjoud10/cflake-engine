@@ -278,6 +278,7 @@ impl Mesh<MultiDrawIndirectCount> {
         indirect_offset: usize,
         count: Handle<DrawCountIndirectBuffer>,
         count_offset: usize,
+        max_count: usize,
     ) -> Self {
         // Keep track of the enabled mesh buffers
         let mut enabled = MeshAttributes::empty();
@@ -310,6 +311,7 @@ impl Mesh<MultiDrawIndirectCount> {
                 count,
                 indirect_offset,
                 count_offset,
+                max_count,
             },
             triangles,
             aabb: None,
@@ -344,6 +346,16 @@ impl Mesh<MultiDrawIndirectCount> {
     // Get the element offset within the DrawCountIndirectBuffer mutably
     pub fn count_offset_mut(&mut self) -> &mut usize {
         &mut self.args.count_offset
+    }
+
+    // Get the maximum number of draw calls that can be submitted immutably
+    pub fn max_count(&self) -> usize {
+        self.args.max_count
+    }
+    
+    // Get the maximum number of draw calls that can be submitted mutably
+    pub fn max_count_mut(&mut self) -> &mut usize {
+        &mut self.args.max_count
     }
 }
 
