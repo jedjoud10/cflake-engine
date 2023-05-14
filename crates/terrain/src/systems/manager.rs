@@ -97,7 +97,7 @@ fn update(world: &mut World) {
                 chunk.state = ChunkState::Free;
 
                 // Hide the chunk using the temporary visibility vector
-                manager.visibility_bitset.remove(chunk.global_index);
+                memory.visibility_bitsets[chunk.allocation].remove(chunk.local_index);
             }
         }
 
@@ -116,40 +116,45 @@ fn update(world: &mut World) {
         // Extend the indexed indirect buffer if needed
         if added.len() > query_count {
             // Over-allocate so we don't need to do this as many times
-            let chunks_to_allocate_per_allocation = ((added.len() - query_count) * 2).max(128);
-            let pre_chunks_per_allocation = memory.chunks_per_allocation;
-            let pre_chunks = pre_chunks_per_allocation * settings.allocation_count;
-            memory.chunks_per_allocation += chunks_to_allocate_per_allocation; 
-            let chunks_to_allocate = chunks_to_allocate_per_allocation * settings.allocation_count;
+            let count = ((added.len() - query_count) * 2).max(128);
 
             // Keep track of the entities we will add
             let mut entities: Vec<(Position, Scale, Chunk)> = Vec::new(); 
-            
-            // Extend the generated indirect draw buffer
-            memory.generated_indexed_indirect_buffer.extend_from_slice(&vec![
-                crate::util::DEFAULT_DRAW_INDEXED_INDIRECT;
-                chunks_to_allocate
-            ]).unwrap();
 
-            // Extend the culled indirect draw buffer
-            let culled_indexed_indirect_buffer = indexed_indirect_buffers.get_mut(&memory.culled_indexed_indirect_buffer);
-            culled_indexed_indirect_buffer.extend_from_slice(&vec![
-                crate::util::DEFAULT_DRAW_INDEXED_INDIRECT;
-                chunks_to_allocate
-            ]).unwrap();
-            
-            // Extend the position scaling buffer
-            manager.position_scaling_buffer.extend_from_slice(&vec![vek::Vec4::zero(); chunks_to_allocate]).unwrap();
-            manager.culled_position_scaling_buffer.extend_from_slice(&vec![vek::Vec4::zero(); chunks_to_allocate]).unwrap();
-
-            // Extend the visibility vector and buffer
-            manager.visibility_buffer.extend_from_slice(&vec![0; chunks_to_allocate]).unwrap();
-            manager.visibility_bitset.reserve(chunks_to_allocate);
+            // Keep track of the old number of chunks
+            let old = scene
+                .query_mut::<&Chunk>()
+                .into_iter()
+                .count();
+            let old_per_allocation = old / settings.allocation_count;
             
             // Add the same amounts of chunks per allocation
-            for allocation in 0..settings.allocation_count {      
+            let mut global_index = old;
+            for allocation in 0..settings.allocation_count { 
+                // Extend the generated indirect draw buffer
+                memory.generated_indexed_indirect_buffers[allocation].extend_from_slice(&vec![
+                    crate::util::DEFAULT_DRAW_INDEXED_INDIRECT;
+                    count
+                ]).unwrap();
+
+                // Extend the culled indirect draw buffer
+                let handle = &memory.culled_indexed_indirect_buffers[allocation];
+                let culled_indexed_indirect_buffer = indexed_indirect_buffers.get_mut(handle);
+                culled_indexed_indirect_buffer.extend_from_slice(&vec![
+                    crate::util::DEFAULT_DRAW_INDEXED_INDIRECT;
+                    count
+                ]).unwrap();
+                
+                // Extend the position scaling buffer
+                memory.position_scaling_buffers[allocation].extend_from_slice(&vec![vek::Vec4::zero(); count]).unwrap();
+                memory.culled_position_scaling_buffers[allocation].extend_from_slice(&vec![vek::Vec4::zero(); count]).unwrap();
+
+                // Extend the visibility vector and buffer
+                memory.visibility_buffers[allocation].extend_from_slice(&vec![0; count]).unwrap();
+                memory.visibility_bitsets[allocation].reserve(count);
+
                 // Create new chunk entities and set them as "free"
-                entities.extend((0..chunks_to_allocate_per_allocation).into_iter().map(|i| {
+                entities.extend((0..count).into_iter().map(|i| {
                     let position = Position::default();
                     let scale = Scale::default();
 
@@ -157,22 +162,18 @@ fn update(world: &mut World) {
                     let chunk = Chunk {
                         state: ChunkState::Free,
                         allocation,
-                        global_index: allocation * chunks_to_allocate_per_allocation + i + pre_chunks, 
+                        global_index: global_index, 
+                        local_index: old_per_allocation + i,
                         generation_priority: 0.0f32,
                         readback_priority: 0.0f32,
                         ranges: None,
                         node: None,
                     };
+                    global_index += 1;
                 
                     // Create the bundle
                     (position, scale, chunk)
                 }));
-
-                // New entities are used by the allocation
-                let offset = memory.chunks_per_allocation * allocation;
-                let mesh = multi_draw_indirect_meshes.get_mut(&memory.allocation_meshes[allocation]);
-                *mesh.count_mut() += chunks_to_allocate_per_allocation;
-                *mesh.offset_mut() = offset;
             }
         
             // Randomly order the entities to reduce the chances of an OOM error

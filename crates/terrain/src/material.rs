@@ -1,6 +1,6 @@
 use rendering::{
     ActiveScenePipeline, AlbedoTexel, CameraUniform, DefaultMaterialResources, Indirect, MaskTexel,
-    Material, NormalTexel, Renderer, SceneUniform, ShadowMap, ShadowMapping, ShadowUniform, MultiDrawIndirect, EnvironmentMap,
+    Material, NormalTexel, Renderer, SceneUniform, ShadowMap, ShadowMapping, ShadowUniform, MultiDrawIndirect, EnvironmentMap, MultiDrawIndirectCount,
 };
 
 use assets::Assets;
@@ -38,7 +38,7 @@ impl Material for TerrainMaterial {
 
     type Settings<'s> = &'s TerrainSettings;
     type Query<'a> = &'a ();
-    type RenderPath = MultiDrawIndirect;
+    type RenderPath = MultiDrawIndirectCount;
 
     // Load the terrain material shaders and compile them
     fn shader(settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader {
@@ -199,31 +199,12 @@ impl Material for TerrainMaterial {
 
 
         // Set the storage buffer that contains ALL the matrices
+        /*
         group.set_storage_buffer(
             "position_scale_buffer",
             &terrain.manager.position_scaling_buffer,
             ..
         ).unwrap();   
-    }
-
-    // Set the surface bindings that only contain the allocation data
-    // This will be executed only 2-8 times per frame since we have few big allocations/subsurfaces
-    fn set_push_constants<'r, 'w>(
-        &self,
-        _renderer: &Renderer,
-        resources: &'r mut Self::Resources<'w>,
-        _default: &DefaultMaterialResources<'r>,
-        _query: &Self::Query<'w>,
-        push_constants: &mut PushConstants<ActiveScenePipeline>,
-    ) {
-        // Set the count for the number of chunks per allocations (constant per allocation)
-        let chunks_per_allocation = resources.4.memory.chunks_per_allocation as u32;
-        let allocation_index = resources.6 as u32;
-        let offset =  chunks_per_allocation * allocation_index;
-        let bytes = GpuPod::into_bytes(&offset);
-        push_constants.push(bytes, 0, ModuleVisibility::Vertex).unwrap();
-        
-        // Since the ordering of entities within an archetype is always deterministic we can do this without worrying
-        resources.6 += 1;
+        */
     }
 }

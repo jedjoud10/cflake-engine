@@ -44,18 +44,6 @@ pub struct ChunkManager {
     // Single entity that contains multiple meshes that represent the terrain
     pub(crate) global_draw_entity: Entity,
 
-    // Buffer to store the position and scale of each chunk
-    pub(crate) position_scaling_buffer: Buffer<vek::Vec4<f32>>,
-    pub(crate) culled_position_scaling_buffer: Buffer<vek::Vec4<f32>>,
-
-    // Buffer to store the visibility of each chunk
-    // This is a bitwise buffer, so each element actually represents the visibility of 32 chunks at a time
-    pub(crate) visibility_buffer: Buffer<u32>,
-
-    // Temporary buffer that will store the visibility of each chunk as a bitwise 32 bit uint
-    // Updated everytime the manager needs it to update
-    pub(crate) visibility_bitset: BitSet<u32>,
-
     // Viewer (camera) position
     pub(crate) viewer: Option<(Entity, vek::Vec3<f32>, vek::Quaternion<f32>)>,
 }
@@ -195,13 +183,9 @@ impl ChunkManager {
             entities: Default::default(),
             children_count: Default::default(),
             global_draw_entity,
-            position_scaling_buffer: create_empty_buffer(graphics),
-            culled_position_scaling_buffer: create_empty_buffer(graphics),
-            visibility_buffer: create_empty_buffer(graphics),
             layered_albedo_map,
             layered_normal_map,
             layered_mask_map,
-            visibility_bitset: BitSet::new(),
         }
     }
 }

@@ -140,8 +140,7 @@ impl ForwardRenderer {
         let render_pass = SceneRenderPass::new(
             graphics,
             Operation {
-                //load: LoadOp::Clear(vek::Vec4::broadcast(0f32)),
-                load: LoadOp::Load,
+                load: LoadOp::Clear(vek::Vec4::broadcast(0f32)),
                 store: StoreOp::Store,
             },
             Operation {

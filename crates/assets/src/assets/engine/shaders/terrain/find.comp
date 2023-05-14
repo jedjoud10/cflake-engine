@@ -49,7 +49,10 @@ void main() {
     uint triangles = counters.triangles;
 
     // Doesn't really matter since we can calculate it anyways 
-    uint chosen_sub_allocation_count = int(max(ceil(float(vertices) / float(vertices_per_sub_allocation)), ceil(float(triangles) / float(triangles_per_sub_allocation))));
+    uint vertex_sub_allocation_count = uint(ceil(float(vertices) / float(vertices_per_sub_allocation)));
+    uint triangle_sub_allocation_count = uint(ceil(float(triangles) / float(triangles_per_sub_allocation)));
+    uint chosen_sub_allocation_count = uint(max(vertex_sub_allocation_count, triangle_sub_allocation_count));
+    uint reason = vertex_sub_allocation_count > triangle_sub_allocation_count ? 2 : 1; 
 
     // Temp values for now 
     uint temp_sub_allocation_index = 0;
@@ -109,7 +112,7 @@ void main() {
 
     // After finding the right block, we can write to it
     for (uint i = chosen_sub_allocation_index; i < (chosen_sub_allocation_index + chosen_sub_allocation_count); i++) {
-        indices.data[i] = 1;
+        indices.data[i] = reason;
     }
 
     // Offsets that we will write eventually

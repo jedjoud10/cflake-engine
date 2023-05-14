@@ -89,17 +89,21 @@ fn update(world: &mut World) {
     let offsets = &mut memory.offsets[index];
     let indices = &mut mesher.cached_indices;
     let suballocations = &mut memory.sub_allocation_chunk_indices[chunk.allocation];
-    let indirect = &mut memory.generated_indexed_indirect_buffer;
+    //let indirect = &mut memory.generated_indexed_indirect_buffer;
+
+    // Update alloc-local indirect draw args
+    let indirect = &memory.culled_indexed_indirect_buffers[chunk.allocation];
+    let indirect = indirects.get_mut(indirect);
+    indirect.write(&[crate::util::DEFAULT_DRAW_INDEXED_INDIRECT], chunk.local_index).unwrap();
 
     // Reset required values
     counters.write(&[0; 2], 0).unwrap();
     offsets.write(&[u32::MAX; 2], 0).unwrap();
-    indirect.write(&[crate::util::DEFAULT_DRAW_INDEXED_INDIRECT], chunk.global_index).unwrap();
 
-    // Update position buffer
+    // Update alloc-local position buffer
     let packed = (*position).with_w(**scale);
-    let buffer = &mut manager.position_scaling_buffer;
-    buffer.write(&[packed], chunk.global_index).unwrap();
+    let buffer = &mut memory.culled_position_scaling_buffers[chunk.allocation];
+    buffer.write(&[packed], chunk.local_index).unwrap();
 
     // Create a compute pass for ALL compute terrain shaders
     let mut pass = ComputePass::begin(&graphics);
@@ -258,7 +262,7 @@ fn update(world: &mut World) {
     drop(pass);
     
     // Show the chunk using the temporary visibility vector
-    manager.visibility_bitset.set(chunk.global_index);
+    memory.visibility_bitsets[chunk.allocation].set(chunk.local_index);
     
     // Start computing this sheit on the GPU
     graphics.submit(false);

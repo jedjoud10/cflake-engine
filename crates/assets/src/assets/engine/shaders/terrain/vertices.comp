@@ -146,13 +146,6 @@ void main() {
     if (count > 0) {
         uint index = atomicAdd(counters.vertices, 1);
 
-        #ifndef lowpoly
-        // Stored in the first 16 bits
-        uint packed_normals = cube_16(normalize(normal / count));
-        #else
-        uint packed_normals = 0;
-        #endif
-
         // Meshes are always n-3 size, so each voxel has a size of 1 / n-3
         vec3 final = blocky ? vec3(0) : ((vertex / count) - vec3(0.5));
 
@@ -189,21 +182,27 @@ void main() {
             final.z = 0;
         }
 
-        // Positions only need 16 bits (1 byte for cell coord, 1 byte for inner vertex coord)
-        uint packed_cell_position_packed_normals = packUnorm4x8(vec4(gl_GlobalInvocationID, 0) / 255);
-        uint packed_inner_position_packed_normals = packSnorm4x8(vec4(final, 0));
-        packed_cell_position_packed_normals = packed_cell_position_packed_normals | ((packed_normals & 0xFF00) >> 8) << 24;
-        packed_inner_position_packed_normals = packed_inner_position_packed_normals | (packed_normals & 0xFF) << 24;
+        // Positions only need 32 bits each (4 byte for cell coord, 4 byte for inner vertex coord)
+        uint packed_cell_position = packUnorm4x8(vec4(gl_GlobalInvocationID, 0) / 255);
+        uint packed_inner_position = packSnorm4x8(vec4(final, 0));
+
+        #ifndef lowpoly
+        // Pack normals to 3 bytes only
+        uint packed_normals = packSnorm4x8(vec4(normalize(normal / count), 0));
+        #else
+        uint packed_normals = 0;
+        #endif
 
         // Convert to 4 floats to store within the texture
-        float float_packed_cell_position_packed_normals = uintBitsToFloat(packed_cell_position_packed_normals);
-        float float_packed_inner_position_packed_normals = uintBitsToFloat(packed_inner_position_packed_normals);
+        float float_packed_cell_position = uintBitsToFloat(packed_cell_position);
+        float float_packed_inner_position = uintBitsToFloat(packed_inner_position);
+        float float_packed_normals = uintBitsToFloat(packed_normals);
 
         // Store the packed positions and normals
         vertices.data[index] = vec4(
-            float_packed_cell_position_packed_normals,
-            float_packed_inner_position_packed_normals,
-            0, 0
+            float_packed_cell_position,
+            float_packed_inner_position,
+            float_packed_normals, 0
         );
 
         imageStore(cached_indices, ivec3(gl_GlobalInvocationID + 1), uvec4(index));

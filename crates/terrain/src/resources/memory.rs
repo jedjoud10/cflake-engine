@@ -6,27 +6,26 @@ use ecs::Entity;
 use graphics::{
     Buffer, BufferMode, BufferUsage, Compiler, ComputeModule, ComputeShader, DrawIndexedIndirect,
     GpuPod, Graphics, ModuleVisibility, PushConstantLayout, StorageAccess, Texel, TriangleBuffer,
-    Vertex, XYZW, XY, DrawIndexedIndirectBuffer,
+    Vertex, XYZW, XY, DrawIndexedIndirectBuffer, DrawCountIndirectBuffer,
 };
-use rendering::{attributes, AttributeBuffer, MultiDrawIndirectMesh};
-use utils::{Handle, Storage};
+use rendering::{attributes, AttributeBuffer, MultiDrawIndirectMesh, MultiDrawIndirectCountMesh};
+use utils::{Handle, Storage, BitSet};
 
 use crate::{create_counters, TerrainSettings, Triangles, Vertices};
 
 // Memory manager will be responsible for finding free memory and copying chunks there
 pub struct MemoryManager {
     // Two buffers that contain the generated indexed indirect buffers (from the compute shaders)
-    pub(crate) generated_indexed_indirect_buffer: DrawIndexedIndirectBuffer,
+    pub(crate) generated_indexed_indirect_buffers: Vec<DrawIndexedIndirectBuffer>,
 
     // ...and the ones that have been culled by the culling compute shader
-    pub(crate) culled_indexed_indirect_buffer: Handle<DrawIndexedIndirectBuffer>,
+    pub(crate) culled_indexed_indirect_buffers: Vec<Handle<DrawIndexedIndirectBuffer>>,
     
     // Vectors that contains the shared buffers needed for multidraw indirect
     pub(crate) shared_positions_buffers: Vec<Handle<Vertices>>,
     pub(crate) shared_triangle_buffers: Vec<Handle<Triangles>>,
 
-    // Number of chunks per allocation (the same for ALL allocations)
-    pub(crate) chunks_per_allocation: usize,
+    // Will find us a free memory range
     pub(crate) compute_find: ComputeShader,
 
     // Used for copying memory to the permanent memory
@@ -37,8 +36,20 @@ pub struct MemoryManager {
     pub sub_allocation_chunk_indices: Vec<Buffer<u32>>,
     pub(crate) compute_copy: ComputeShader,
 
+    // Buffer to store the position and scale of each chunk
+    pub(crate) position_scaling_buffers: Vec<Buffer<vek::Vec4<f32>>>,
+    pub(crate) culled_position_scaling_buffers: Vec<Buffer<vek::Vec4<f32>>>,
+
+    // Buffer to store the visibility of each chunk
+    // This is a bitwise buffer, so each element actually represents the visibility of 32 chunks at a time
+    pub(crate) visibility_buffers: Vec<Buffer<u32>>,
+
+    // Temporary buffer that will store the visibility of each chunk as a bitwise 32 bit uint
+    // Updated everytime the manager needs it to update
+    pub(crate) visibility_bitsets: Vec<BitSet<u32>>,
+
     // Keeps track of the mesh handles that are shared per allocation
-    pub(crate) allocation_meshes: Vec<Handle<MultiDrawIndirectMesh>>,
+    pub(crate) allocation_meshes: Vec<Handle<MultiDrawIndirectCountMesh>>,
 
     // Channel to receive the asyncrhnoously readback data
     pub(crate) readback_count_receiver: Receiver<(Entity, vek::Vec2<u32>)>,
@@ -54,16 +65,30 @@ impl MemoryManager {
         vertices: &mut Storage<Vertices>,
         triangles: &mut Storage<Triangles>,
         indexed_indirect_buffers: &mut Storage<DrawIndexedIndirectBuffer>,
-        multi_draw_indirect_meshes: &mut Storage<MultiDrawIndirectMesh>,
+        draw_count_indirect_buffers: &mut Storage<DrawCountIndirectBuffer>,
+        multi_draw_indirect_count_meshes: &mut Storage<MultiDrawIndirectCountMesh>,
         settings: &TerrainSettings,
     ) -> Self {
         // Create one buffer that contains the generated indexed indirect elements
-        let generated_indexed_indirect_buffer: DrawIndexedIndirectBuffer = crate::create_empty_buffer(graphics);
+        let generated_indexed_indirect_buffers: Vec<DrawIndexedIndirectBuffer> = (0..settings.allocation_count).into_iter().map(|_| {
+            crate::create_empty_buffer(graphics)
+        }).collect::<Vec<_>>();
 
         // And another one that contains the culled indexed indirect elements
-        let culled_indexed_indirect_buffer: Handle<DrawIndexedIndirectBuffer> = indexed_indirect_buffers.insert(
-            crate::create_empty_buffer(graphics)
-        );
+        let culled_indexed_indirect_buffers: Vec<Handle<DrawIndexedIndirectBuffer>> = (0..settings.allocation_count).into_iter().map(|_| {
+            indexed_indirect_buffers.insert(
+                crate::create_empty_buffer(graphics)
+            )
+        }).collect::<Vec<_>>();
+
+        // ... and another one that contains the culled counts (for all allocation)
+        let culled_count_buffers: Handle<DrawCountIndirectBuffer> = draw_count_indirect_buffers.insert(DrawCountIndirectBuffer::splatted(
+            graphics,
+            settings.allocation_count,
+            0,
+            BufferMode::Dynamic,
+            BufferUsage::WRITE,
+        ).unwrap());
 
         // Allocate the chunk indices that will be stored per allocation
         let sub_allocation_chunk_indices = (0..settings.allocation_count)
@@ -186,15 +211,16 @@ impl MemoryManager {
             let positions = shared_positions_buffers[allocation].clone();
             let triangles = shared_triangle_buffers[allocation].clone();
         
-            multi_draw_indirect_meshes.insert(MultiDrawIndirectMesh::from_handles(
+            multi_draw_indirect_count_meshes.insert(MultiDrawIndirectCountMesh::from_handles(
                 Some(positions.clone()),
                 None,
                 None,
                 None,
                 triangles.clone(),
-                culled_indexed_indirect_buffer.clone(),
+                culled_indexed_indirect_buffers[allocation].clone(),
                 0,
-                0
+                culled_count_buffers.clone(),
+                allocation,
             ))
         }).collect::<Vec<_>>();
 
@@ -204,7 +230,6 @@ impl MemoryManager {
             compute_find,
             sub_allocation_chunk_indices,
             compute_copy,
-            chunks_per_allocation: 0,
             readback_count_receiver: counter_receiver,
             readback_count_sender: counter_sender,
             readback_offset_receiver: offset_receiver,
@@ -212,8 +237,12 @@ impl MemoryManager {
             offsets,
             counters,
             allocation_meshes,
-            generated_indexed_indirect_buffer,
-            culled_indexed_indirect_buffer,
+            generated_indexed_indirect_buffers: todo!(),
+            culled_indexed_indirect_buffers: todo!(),
+            position_scaling_buffers: todo!(),
+            culled_position_scaling_buffers: todo!(),
+            visibility_buffers: todo!(),
+            visibility_bitsets: todo!(),
         }
     }
 }

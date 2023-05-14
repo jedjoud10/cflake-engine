@@ -432,6 +432,60 @@ fn update(world: &mut World) {
                         }
                     });
             });
+
+            ui.collapsing("Alloc Reason (GPU)", |ui| {
+                ui.label("Green = Vertices");
+                ui.label("Red = Triangles");
+
+                egui::Grid::new("reason")
+                    .min_col_width(0f32)
+                    .max_col_width(400f32)
+                    .striped(true)
+                    .show(ui, |ui| {
+                        let allocs = settings.allocation_count();
+                        let sub_allocation = settings.sub_allocation_count(); 
+                
+                    
+
+                        for allocation in 0..allocs {
+                            ui.horizontal(|ui| {
+                                ui.style_mut().spacing.item_spacing.x = 0.0;                           
+                            
+                                for x in 0..128 {
+                                    let mut color = 0.0f32;
+                                    let div = sub_allocation / 128;
+                                    let mut c = 0;
+                                    for sub in 0..(sub_allocation / 128) {
+                                        let reason = allocations[allocation][sub + x * div];
+                                        
+                                        if reason == 1 {
+                                            color -= 1.0;
+                                            c += 1;
+                                        } else if reason == 2 {
+                                            color += 1.0;
+                                            c += 1;
+                                        }
+                                    }
+                                    
+                                    let color = if c > 0 {
+                                        let mix = (color / c as f32) * 0.5 + 0.5;
+                                        let red = vek::Rgba::red();
+                                        let green = vek::Rgba::green();
+                                        let color = vek::Rgba::<f32>::lerp(red, green, mix);
+                                        let color = color.map(|x| (x * 255.0) as u8);
+                                        egui::Color32::from_rgb(color.r, color.g, color.b)
+                                    } else {
+                                        egui::Color32::WHITE
+                                    };
+
+                                    egui::Button::new("").small().rounding(0.0).fill(color).ui(ui);
+                                }
+                                ui.end_row();
+                            });
+                            ui.end_row();
+                        }
+                    });
+            });
         });
     }
 
