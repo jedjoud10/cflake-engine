@@ -1,6 +1,6 @@
 use crate::{
     ActiveScenePipeline, AlbedoMap, CameraUniform, DefaultMaterialResources, Direct, MaskMap,
-    Material, NormalMap, Renderer, SceneUniform, ShadowMap, ShadowMapping, ShadowUniform,
+    Material, NormalMap, Renderer, SceneUniform, ShadowMap, ShadowMapping, ShadowUniform, EnvironmentMap,
 };
 
 use assets::Assets;
@@ -23,6 +23,7 @@ pub struct PhysicallyBasedMaterial {
     pub roughness: f32,
     pub metallic: f32,
     pub ambient_occlusion: f32,
+    pub scale: vek::Extent2<f32>,
     pub tint: vek::Rgb<f32>,
 }
 
@@ -64,6 +65,9 @@ impl Material for PhysicallyBasedMaterial {
         compiler.use_uniform_buffer::<vek::Vec4<vek::Vec4<f32>>>("shadow_lightspace_matrices");
         compiler.use_uniform_buffer::<f32>("cascade_plane_distances");
 
+        // Environment map parameters
+        compiler.use_sampled_texture::<EnvironmentMap>("environment_map");
+
         // Define the types for the user textures
         compiler.use_sampled_texture::<ShadowMap>("shadow_map");
         compiler.use_sampled_texture::<AlbedoMap>("albedo_map");
@@ -74,7 +78,7 @@ impl Material for PhysicallyBasedMaterial {
         compiler.use_push_constant_layout(
             PushConstantLayout::split(
                 <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size(),
-                <vek::Rgba<f32> as GpuPod>::size() * 2,
+                <vek::Rgba<f32> as GpuPod>::size() * 2 + <vek::Extent2<f32> as GpuPod>::size(),
             )
             .unwrap(),
         );
@@ -126,6 +130,11 @@ impl Material for PhysicallyBasedMaterial {
         // Set the scene shadow map
         group
             .set_sampled_texture("shadow_map", &resources.3.depth_tex)
+            .unwrap();
+
+        // Set the scene environment map
+        group
+            .set_sampled_texture("environment_map", default.environment_map)
             .unwrap();
     }
 
@@ -187,13 +196,21 @@ impl Material for PhysicallyBasedMaterial {
 
         // Send the raw fragment bytes to the GPU
         let bytes = GpuPod::into_bytes(&vector);
-        let offset = bytes.len();
         constants
             .push(bytes, 0, ModuleVisibility::Fragment)
             .unwrap();
+        let mut offset = bytes.len();
 
+        // Send the bytes containing tint of the object 
         let vector = vek::Rgba::<f32>::from(self.tint);
         let bytes = GpuPod::into_bytes(&vector);
+        constants
+            .push(bytes, offset as u32, ModuleVisibility::Fragment)
+            .unwrap();
+        offset += bytes.len();
+
+        // Send the bytes containing the UV scale of the textures to be sampled
+        let bytes = GpuPod::into_bytes(&self.scale);
         constants
             .push(bytes, offset as u32, ModuleVisibility::Fragment)
             .unwrap();

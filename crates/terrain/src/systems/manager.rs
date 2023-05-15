@@ -12,7 +12,7 @@ use graphics::{
 };
 use math::OctreeDelta;
 use rand::{Rng, seq::SliceRandom};
-use rendering::{IndirectMesh, Renderer, Surface, MultiDrawIndirectMesh};
+use rendering::{IndirectMesh, Renderer, Surface, MultiDrawIndirectMesh, MultiDrawIndirectCountMesh};
 use utils::{Storage, Time};
 use world::{user, System, World};
 
@@ -21,6 +21,7 @@ fn update(world: &mut World) {
     // Tries to find a chunk viewer and the terrain generator
     let terrain = world.get_mut::<Terrain>();
     let mut scene = world.get_mut::<Scene>().unwrap();
+    let time = world.get::<Time>().unwrap();
     let viewer = scene.find_mut::<(&Entity, &mut ChunkViewer, &Position, &Rotation)>();
 
     // If we don't have terrain, don't do shit
@@ -55,28 +56,35 @@ fn update(world: &mut World) {
         new
     };
 
+    // Makes sure that we don't generate when we're not done
+    // The only incovenience we get with this approach is that terrain takes a bit more time to update when we're moving very fast
+    // Skil issue tbh
+    let count = scene.query_mut::<&mut Chunk>().into_iter()
+        .filter(|c| c.state == ChunkState::Pending || c.state == ChunkState::Dirty)
+        .count();
+
     // Check if it moved since last frame
-    if added || new != old {
+    if (added || new != old) && count == 0 {
         // Regenerate the octree and detect diffs
         let OctreeDelta {
             mut added,
             removed
         } = manager.octree.compute(new);
 
+        // Keep track of new parents
+        for node in added.iter().filter(|x| x.children().is_some()) {
+            manager.children_count.insert(node.center(), (Vec::new(), 0, false));
+        }
+
+        // And the nodes that we will generate for them
+        for node in added.iter().filter(|x| x.leaf()) {
+            let parent = &manager.octree.nodes()[node.parent().unwrap()];
+            let (_, target, _) = manager.children_count.get_mut(&parent.center()).unwrap();
+            *target += 1; 
+        }
+
         // Discard non-leaf nodes
         added.retain(|x| x.leaf());
-
-        /*
-        manager.children_count.clear();
-        for node in manager.octree.nodes() {
-            if let Some(base) = node.children() {
-                let base = base.get();
-                let count = &manager.octree.nodes()[base..(base+8)];
-                
-                manager.children_count.insert(*node, (0, count.into_iter().filter(|x| x.leaf()).count()));
-            }
-        }
-        */
 
         // Don't do shit
         if added.is_empty() && removed.is_empty() {
@@ -88,20 +96,19 @@ fn update(world: &mut World) {
             return;
         }
 
-        // TODO:
-        // Gpu frustum octree culling
-        // Gpu visibility check filter
-        // Gpu occlusion culling maybe?
-
-        // Set the chunk state to "free" so we can reuse it
+        // Set the chunk state to "removed" so we can hide it when it's children all generated
         for coord in removed {
+            // Leaf node (which is now a parent node) was removed
             if let Some(entity) = manager.entities.remove(&coord) {
                 let mut entry = scene.entry_mut(entity).unwrap();
-                
-                // Set the chunk as "free" and hide it
-                let chunk = entry.as_query_mut::<&mut Chunk>().unwrap();
-                chunk.state = ChunkState::Free;
-                //surface.visible = false;
+                let chunk = entry.get_mut::<Chunk>().unwrap();
+                chunk.state = ChunkState::Removed;
+                assert_eq!(chunk.node, Some(coord));
+            }
+
+            // If it's a parent node that was removed then update
+            if let Some((_, _, removed)) = manager.children_count.get_mut(&coord.center()) {
+                *removed = true;
             }
         }
 
@@ -114,66 +121,67 @@ fn update(world: &mut World) {
 
         // Add extra chunks if we need them
         let mut rng = rand::thread_rng();
-        let mut multi_draw_indirect_meshes = world.get_mut::<Storage<MultiDrawIndirectMesh>>().unwrap();
+        let mut multi_draw_indirect_count_meshes = world.get_mut::<Storage<MultiDrawIndirectCountMesh>>().unwrap();
         let mut indexed_indirect_buffers = world.get_mut::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
 
         // Extend the indexed indirect buffer if needed
         if added.len() > query_count {
             // Over-allocate so we don't need to do this as many times
-            let chunks_to_pre_allocate = ((added.len() - query_count) * 2).max(128);
-
-            // The number of chunks must fit the alloc count perfectly
-            let chunks_to_pre_allocate = settings.allocation_count * (chunks_to_pre_allocate as f32 / settings.allocation_count as f32).ceil() as usize; 
-            let chunks_to_pre_allocate_per_allocation = chunks_to_pre_allocate / settings.allocation_count;
+            let count = ((added.len() - query_count) * 2).max(128);
 
             // Keep track of the entities we will add
             let mut entities: Vec<(Position, Scale, Chunk)> = Vec::new(); 
 
-            // Add the same amounts of chunks per allocation
-            for allocation in 0..terrain.settings.allocation_count {
-                let extra  = chunks_to_pre_allocate_per_allocation;
-                let indexed_indirect_buffer_handle = &memory.indexed_indirect_buffers[allocation];
-                let indexed_indirect_buffer = indexed_indirect_buffers.get_mut(indexed_indirect_buffer_handle);
-                let position_scaling_buffers = &mut manager.position_scaling_buffers[allocation];
+            // Keep track of the old number of chunks
+            let old = manager.chunks_per_allocation;
+            let old_per_allocation = old / settings.allocation_count;
 
-                // Extend the indirect draw buffer
-                indexed_indirect_buffer.extend_from_slice(&vec![
-                    DrawIndexedIndirect {
-                        vertex_count: 0,
-                        instance_count: 1,
-                        base_index: 0,
-                        vertex_offset: 0,
-                        base_instance: 0,
-                    };
-                    extra
+            // Add the same amounts of chunks per allocation
+            let mut global_index = old;
+            for allocation in 0..settings.allocation_count { 
+                // Extend the generated indirect draw buffer
+                memory.generated_indexed_indirect_buffers[allocation].extend_from_slice(&vec![
+                    crate::util::DEFAULT_DRAW_INDEXED_INDIRECT;
+                    count
                 ]).unwrap();
 
+                // Extend the culled indirect draw buffer
+                let handle = &memory.culled_indexed_indirect_buffers[allocation];
+                let culled_indexed_indirect_buffer = indexed_indirect_buffers.get_mut(handle);
+                culled_indexed_indirect_buffer.extend_from_slice(&vec![
+                    crate::util::DEFAULT_DRAW_INDEXED_INDIRECT;
+                    count
+                ]).unwrap();
+                
                 // Extend the position scaling buffer
-                position_scaling_buffers.extend_from_slice(&vec![vek::Vec4::zero(); extra]).unwrap();
+                memory.generated_position_scaling_buffers[allocation].extend_from_slice(&vec![vek::Vec4::zero(); count]).unwrap();
+                memory.culled_position_scaling_buffers[allocation].extend_from_slice(&vec![vek::Vec4::zero(); count]).unwrap();
+
+                // Extend the visibility vector and buffer
+                memory.visibility_buffers[allocation].extend_from_slice(&vec![0; count]).unwrap();
+                memory.visibility_bitsets[allocation].reserve(count);
+
+                // Increase the max count of the mesh that corresponds to this allocation
+                let handle = &memory.allocation_meshes[allocation];
+                *multi_draw_indirect_count_meshes.get_mut(&handle).max_count_mut() += count;
 
                 // Create new chunk entities and set them as "free"
-                entities.extend((0..extra).into_iter().map(|_| {
-                    let local_index = memory.chunks_per_allocations[allocation];
+                entities.extend((0..count).into_iter().map(|i| {
                     let position = Position::default();
                     let scale = Scale::default();
-
-                    // New entity is used by the allocation
-                    let mesh = multi_draw_indirect_meshes.get_mut(&memory.allocation_meshes[allocation]);
-                    *mesh.count_mut() += 1;
-
+                    
                     // Create the chunk component
                     let chunk = Chunk {
                         state: ChunkState::Free,
                         allocation,
-                        local_index,
+                        global_index: global_index, 
+                        local_index: old_per_allocation + i,
                         generation_priority: 0.0f32,
                         readback_priority: 0.0f32,
                         ranges: None,
                         node: None,
                     };
-                
-                    // Take in account this chunk within the allocation
-                    memory.chunks_per_allocations[allocation] += 1;
+                    global_index += 1;
                 
                     // Create the bundle
                     (position, scale, chunk)
@@ -183,6 +191,7 @@ fn update(world: &mut World) {
             // Randomly order the entities to reduce the chances of an OOM error
             entities.shuffle(&mut rng);
             scene.extend_from_iter(entities);
+            manager.chunks_per_allocation += count;
         }   
 
         // Get all free chunks in the world and use them
@@ -206,14 +215,10 @@ fn update(world: &mut World) {
             chunk.node = Some(*node);
             **position = node.position().as_::<f32>();
             **scale = (node.size() as f32) / (settings.size as f32);
-
-            // Update position buffer
-            let packed = (*position).with_w(**scale);
-            let buffer = &mut manager.position_scaling_buffers[chunk.allocation];
-            buffer.write(&[packed], chunk.local_index).unwrap();
-
+            
             // Add the entity to the internally stored entities
             let res = manager.entities.insert(*node, *entity);
+            memory.visibility_bitsets[chunk.allocation].remove(chunk.local_index);
             assert!(res.is_none());
         }
     }
@@ -228,7 +233,7 @@ fn update(world: &mut World) {
             chunk.generation_priority = chunk.generation_priority.clamp(0.0f32, 1000.0f32);
 
         // Update readback priority for each chunk *around* the user (needed for collisions)
-        chunk.readback_priority = (1.0 / viewer_position.distance(**position).max(1.0));
+        chunk.readback_priority = 1.0 / viewer_position.distance(**position).max(1.0);
     }
 }
 

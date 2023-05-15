@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::{time::Instant};
 
 use crate::{Chunk, ChunkState, Terrain, TerrainMaterial};
 use coords::{Position, Scale};
@@ -42,14 +42,13 @@ fn update(world: &mut World) {
         &mut terrain.settings,
     );
 
-    // Convert "Dirty" chunks into "Pending"
+    // Convert "Dirty" chunks into "Pending", and clears the old memory used by those chunks
     let query = scene
         .query_mut::<&mut Chunk>()
         .into_iter();
     for chunk in query.filter(|c| c.state == ChunkState::Dirty) {
         chunk.state = ChunkState::Pending;
         
-
         // Write to the indices the updated ranges if needed
         if let Some(range) = chunk.ranges {
             if range.y > range.x {
@@ -60,23 +59,7 @@ fn update(world: &mut World) {
             }
         }
 
-        // Get allocation-local indexed indirect draw buffer
-        let indirect = indirects.get_mut(&memory.indexed_indirect_buffers[chunk.allocation]);
-
-        // Update indirect buffer
-        indirect
-            .write(
-                &[DrawIndexedIndirect {
-                    vertex_count: 0,
-                    instance_count: 1,
-                    base_index: 0,
-                    vertex_offset: 0,
-                    base_instance: 0,
-                }],
-                chunk.local_index,
-            )
-            .unwrap();
-
+        // Remove the chunk CPU range
         chunk.ranges = None;
     }
 
@@ -84,13 +67,15 @@ fn update(world: &mut World) {
     let mut vec = scene
         .query_mut::<(
             &mut Chunk,
+            &Position,
+            &Scale,
             &Entity,
         )>()
         .into_iter()
         .collect::<Vec<_>>();
-    vec.sort_by(|(a, _), (b, _)| a.generation_priority.total_cmp(&b.generation_priority));
-    vec.retain(|(chunk, _)| chunk.state == ChunkState::Pending);
-    let Some((chunk, entity)) = vec.pop() else {
+    vec.sort_by(|(a, _, _, _), (b, _, _, _)| a.generation_priority.total_cmp(&b.generation_priority));
+    vec.retain(|(chunk, _, _, _)| chunk.state == ChunkState::Pending);
+    let Some((chunk, position, scale, entity)) = vec.pop() else {
         manager.last_chunk_generated = None;
         return;
     };
@@ -104,15 +89,23 @@ fn update(world: &mut World) {
     let offsets = &mut memory.offsets[index];
     let indices = &mut mesher.cached_indices;
     let suballocations = &mut memory.sub_allocation_chunk_indices[chunk.allocation];
+    let indirect = &mut memory.generated_indexed_indirect_buffers[chunk.allocation];
+
+    // Update alloc-local indirect draw args
+    indirect.write(&[crate::util::DEFAULT_DRAW_INDEXED_INDIRECT], chunk.local_index).unwrap();
+
+    // Reset required values
     counters.write(&[0; 2], 0).unwrap();
-    offsets.write(&[u32::MAX, u32::MAX], 0).unwrap();
+    offsets.write(&[u32::MAX; 2], 0).unwrap();
+
+    // Update alloc-local position buffer
+    let packed = (*position).with_w(**scale);
+    let buffer = &mut memory.generated_position_scaling_buffers[chunk.allocation];
+    buffer.write(&[packed], chunk.local_index).unwrap();
 
     // Create a compute pass for ALL compute terrain shaders
     let mut pass = ComputePass::begin(&graphics);
     let mut active = pass.bind_shader(&voxelizer.compute_voxels);
-
-    // Get the indexed indirect draw buffer used by the chunk's allocation
-    let indirect = indirects.get_mut(&memory.indexed_indirect_buffers[chunk.allocation]);
 
     // Needed since SN only runs for a volume 2 units smaller than a perfect cube
     let node = chunk.node.unwrap();
@@ -128,9 +121,14 @@ fn update(world: &mut World) {
             // Get the scale of the chunk
             let scale = GpuPod::into_bytes(&factor);
 
+            // Calculate quality index
+            let _quality = 4 - ((settings.max_depth - node.depth()).min(4));
+            let quality = GpuPod::into_bytes(&_quality);
+
             // Push the bytes to the GPU
             x.push(offset, 0).unwrap();
             x.push(scale, offset.len() as u32).unwrap();
+            x.push(quality, scale.len() as u32 + offset.len() as u32).unwrap();
 
             // Call the set group callback
             if let Some(callback) = voxelizer.set_push_constant_callback.as_ref() {
@@ -217,16 +215,6 @@ fn update(world: &mut World) {
         })
         .unwrap();
 
-    // Get the local chunk index for the current allocation
-    active
-        .set_push_constants(|x| {
-            let index = chunk.local_index;
-            let index = index as u32;
-            let bytes = GpuPod::into_bytes(&(index));
-            x.push(bytes, 0).unwrap();
-        })
-        .unwrap();
-
     let dispatch = (settings.sub_allocation_count as f32 / (32.0 * 32.0)).ceil() as u32;
     active.dispatch(vek::Vec3::new(dispatch, 1, 1)).unwrap();
 
@@ -275,6 +263,23 @@ fn update(world: &mut World) {
     graphics.submit(false);
     chunk.state = ChunkState::Generated;
     manager.last_chunk_generated = Some(*entity);
+
+    // Updates the "generated" count of our parent node if any
+    if let Some(parent) = manager.octree.nodes().get(node.parent().unwrap()) {
+        // Makes sure we are the proper child of the parent node
+        let base = parent.children().unwrap().get();
+        assert!((base + 8) > node.index() && node.index() >= base);
+
+        // We must always have a parent
+        let (generated, target, removed) = manager.children_count.get_mut(&parent.center()).unwrap();
+            
+        if !*removed {
+            // If we're not generating a chunk that will "replace" the parent node then just show it blud
+            memory.visibility_bitsets[chunk.allocation].set(chunk.local_index);   
+        }
+
+        generated.push(*chunk);
+    }
 }
 
 // Generates the voxels and appropriate mesh for each of the visible chunks

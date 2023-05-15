@@ -179,7 +179,7 @@ impl<'a> Compiler<'a> {
         let sampler_name = format!("{}_sampler", name.to_string());
         self.use_sampler::<T::T>(sampler_name);
 
-        let dimensionality = <<T::Region as Region>::E as Extent>::view_dimension();
+        let dimensionality = <T::Region as Region>::view_dimension();
         let info = <T::T as Texel>::info();
         let format = info.format();
 
@@ -210,7 +210,7 @@ impl<'a> Compiler<'a> {
 
     // Define a storage texture that we can read / write to
     pub fn use_storage_texture<T: Texture>(&mut self, name: impl ToString, access: StorageAccess) {
-        let dimensionality = <<T::Region as Region>::E as Extent>::view_dimension();
+        let dimensionality = <T::Region as Region>::view_dimension();
         let info = <T::T as Texel>::info();
         let format = info.format();
 
@@ -295,6 +295,9 @@ fn compile(
     //options.set_generate_debug_info();
     //options.set_target_spirv(shaderc::SpirvVersion::V1_0);
     options.set_optimization_level(optimization);
+    
+    // TODO: 2 lazy to implement
+    //options.set_auto_bind_uniforms(true);
     options.set_invert_y(false);
 
     // Keeps track of what files/snippets where included

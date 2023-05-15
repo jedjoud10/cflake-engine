@@ -76,6 +76,7 @@ impl Octree {
         let mut checking = vec![0usize];
         self.nodes.push(Node {
             index: 0,
+            parent: usize::MAX,
             position: vek::Vec3::broadcast((-2i32.pow(self.max_depth) * self.node_size as i32) / 2),
             center: vek::Vec3::zero(),
             depth: 0,
@@ -88,6 +89,7 @@ impl Octree {
             // Get the center of the node
             let base = self.nodes.len();
             let node = &mut self.nodes[node];
+            let index = node.index;
 
             // Check if we should split the node into multiple
             let split = self.heuristic.check(&target, &*node);
@@ -119,6 +121,7 @@ impl Octree {
                     let position = (OFFSETS[children] * half).as_::<i32>() + position;
                 
                     Node {
+                        parent: index,
                         index: children + base,
                         position,
                         center: position + (half.as_::<i32>() / 2),
@@ -192,6 +195,7 @@ pub struct OctreeDelta {
 // If an octree node does not contain children, then it is considered a leaf node
 #[derive(Clone, Copy, Eq, Debug)]
 pub struct Node {
+    parent: usize,
     index: usize,
     position: vek::Vec3<i32>,
     center: vek::Vec3<i32>,
@@ -242,6 +246,17 @@ impl Node {
     // Get the child base index
     pub fn children(&self) -> Option<NonZeroUsize> {
         self.children
+    }
+
+    // Get the parent node index
+    // Returns none if this is the root node
+    pub fn parent(&self) -> Option<usize> {
+        (self.parent != usize::MAX).then_some(self.parent)
+    }
+
+    // Get the node index of self
+    pub fn index(&self) -> usize {
+        self.index
     }
 
     // Get the AABB bounding box of this node

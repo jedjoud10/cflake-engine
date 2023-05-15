@@ -12,11 +12,11 @@ use graphics::{
 use math::{Octree, Node};
 use rand::seq::SliceRandom;
 use rendering::{AlbedoTexel, IndirectMesh, MaterialId, Pipelines, Renderer, Surface, MaskTexel, NormalTexel, MultiDrawIndirectMesh, SubSurface};
-use utils::{Handle, Storage};
+use utils::{Handle, Storage, BitSet};
 
 use crate::{
     Chunk, ChunkState, LayeredAlbedoMap, LayeredMaskMap, LayeredNormalMap,
-    MemoryManager, TerrainMaterial, TerrainSettings, TerrainSubMaterial,
+    MemoryManager, TerrainMaterial, TerrainSettings, TerrainSubMaterial, create_empty_buffer,
 };
 
 // Chunk manager will store a handle to the terrain material and shit needed for rendering the chunks
@@ -35,7 +35,7 @@ pub struct ChunkManager {
     pub(crate) entities: AHashMap<Node, Entity>,
 
     // Keep track of the number of generated and target children each parent has
-    pub(crate) children_count: AHashMap<Node, (usize, usize)>,
+    pub(crate) children_count: AHashMap<vek::Vec3<i32>, (Vec<Chunk>, usize, bool)>,
 
     // Keeps track of the last chunk entity (and node) that we generated (last frame)
     // If we did not generate a chunk last frame this will be None
@@ -43,9 +43,7 @@ pub struct ChunkManager {
 
     // Single entity that contains multiple meshes that represent the terrain
     pub(crate) global_draw_entity: Entity,
-
-    // Buffer to store the position and scale of each chunk
-    pub(crate) position_scaling_buffers: Vec<Buffer<vek::Vec4<f32>>>,
+    pub(crate) chunks_per_allocation: usize,
 
     // Viewer (camera) position
     pub(crate) viewer: Option<(Entity, vek::Vec3<f32>, vek::Quaternion<f32>)>,
@@ -153,19 +151,19 @@ impl ChunkManager {
                 // High resolution
                 math::aabb_sphere(&node.aabb(), &math::Sphere {
                     center: *target,
-                    radius: (size as f32 * 1.0),
+                    radius: (size as f32 * 2.0),
                 })
             } else if node.size() == size * 4 {
                 // Medium resolution
                 math::aabb_sphere(&node.aabb(), &math::Sphere {
                     center: *target,
-                    radius: size as f32 * 2.0,
+                    radius: size as f32 * 4.0,
                 })
             } else if node.size() == size * 8 {
                 // Medium resolution
                 math::aabb_sphere(&node.aabb(), &math::Sphere {
                     center: *target,
-                    radius: size as f32 * 4.0,
+                    radius: size as f32 * 8.0,
                 }) 
             } else {
                 // Low resolution
@@ -175,8 +173,6 @@ impl ChunkManager {
 
         // Create an octree for LOD chunk generation
         let octree = Octree::new(settings.max_depth, settings.size, heuristic);
-
-        let position_scaling_buffers = (0..settings.allocation_count).into_iter().map(|_| create_position_scaling_buffer(graphics)).collect::<Vec<_>>();
 
         // Create the chunk manager
         Self {
@@ -188,22 +184,12 @@ impl ChunkManager {
             entities: Default::default(),
             children_count: Default::default(),
             global_draw_entity,
-            position_scaling_buffers,
             layered_albedo_map,
             layered_normal_map,
             layered_mask_map,
+            chunks_per_allocation: 0,
         }
     }
-}
-
-// Create the buffer that will store the positions and scaling
-fn create_position_scaling_buffer(graphics: &Graphics) -> Buffer<vek::Vec4<f32>> {
-    Buffer::from_slice(
-        graphics,
-        &[],
-        BufferMode::Resizable,
-        BufferUsage::COPY_SRC | BufferUsage::COPY_DST | BufferUsage::WRITE | BufferUsage::STORAGE
-    ).unwrap()
 }
 
 // Load the raw texels asynchronously using our asset system
@@ -229,11 +215,7 @@ fn load_layered_texture<T: ImageTexel>(
     raw.map(|raw| combine_into_layered(
         graphics,
         raw,
-        Some(SamplerSettings {
-            filter: SamplerFilter::Linear,
-            wrap: SamplerWrap::Repeat,
-            mipmaps: SamplerMipMaps::Auto,
-        }),
+        Some(SamplerSettings::default()),
         TextureMipMaps::Manual { mips: &[] },
         TextureMode::Dynamic,
         TextureUsage::SAMPLED | TextureUsage::COPY_DST,

@@ -108,13 +108,13 @@ pub(super) fn archetypes<L: QueryLayoutRef, F: QueryFilter>(
 pub(super) fn generate_bitset_chunks<'a, F: QueryFilter>(
     archetypes: impl Iterator<Item = &'a Archetype>,
     cached: F::Cached,
-) -> Vec<BitSet> {
+) -> Vec<BitSet::<usize>> {
     // Filter the entries by chunks of 64 entries at a time
     let iterator = archetypes.map(|archetype| {
         let columns = F::cache_columns(cached, archetype);
         let chunks = archetype.entities().len() as f32 / usize::BITS as f32;
         let chunks = chunks.ceil() as usize;
-        BitSet::from_chunks_iter(
+        BitSet::<usize>::from_chunks_iter(
             (0..chunks)
                 .into_iter()
                 .map(move |i| F::evaluate_chunk(&columns, i).into_inner()),

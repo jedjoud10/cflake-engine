@@ -199,10 +199,10 @@ impl App {
             .error(Color::Red);
 
         // Level filter for wgpu and subdependencies
-        let wgpu_filter = if self.logging_level == log::LevelFilter::Trace {
-            log::LevelFilter::Debug
-        } else {
-            log::LevelFilter::Warn
+        let wgpu_filter = match self.logging_level {
+            log::LevelFilter::Off => log::LevelFilter::Off,
+            log::LevelFilter::Trace => log::LevelFilter::Debug,
+            _ => log::LevelFilter::Warn
         };
 
         fern::Dispatch::new()
@@ -415,12 +415,14 @@ impl App {
         self.regsys(rendering::systems::matrix::system);
         self.regsys(rendering::systems::rendering::system);
         self.regsys(rendering::systems::lights::system);
+        self.regsys(rendering::systems::environment::system);
 
         // Terrain systems
         self.regsys(terrain::systems::manager::system);
         self.regsys(terrain::systems::generation::system);
         self.regsys(terrain::systems::init::system);
         self.regsys(terrain::systems::readback::system);
+        self.regsys(terrain::systems::cull::system);
         
         // Physics systems
         self.regsys(physics::systems::collisions::system);

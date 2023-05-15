@@ -1,6 +1,6 @@
 use rendering::{
     ActiveScenePipeline, AlbedoTexel, CameraUniform, DefaultMaterialResources, Indirect, MaskTexel,
-    Material, NormalTexel, Renderer, SceneUniform, ShadowMap, ShadowMapping, ShadowUniform, MultiDrawIndirect,
+    Material, NormalTexel, Renderer, SceneUniform, ShadowMap, ShadowMapping, ShadowUniform, MultiDrawIndirect, EnvironmentMap, MultiDrawIndirectCount,
 };
 
 use assets::Assets;
@@ -38,7 +38,7 @@ impl Material for TerrainMaterial {
 
     type Settings<'s> = &'s TerrainSettings;
     type Query<'a> = &'a ();
-    type RenderPath = MultiDrawIndirect;
+    type RenderPath = MultiDrawIndirectCount;
 
     // Load the terrain material shaders and compile them
     fn shader(settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader {
@@ -72,6 +72,9 @@ impl Material for TerrainMaterial {
         compiler.use_uniform_buffer::<vek::Vec4<vek::Vec4<f32>>>("shadow_lightspace_matrices");
         compiler.use_uniform_buffer::<f32>("cascade_plane_distances");
 
+        // Environment map parameters
+        compiler.use_sampled_texture::<EnvironmentMap>("environment_map");
+
         // Define the types for the user textures
         compiler.use_sampled_texture::<ShadowMap>("shadow_map");
 
@@ -97,37 +100,12 @@ impl Material for TerrainMaterial {
 
     // Custom shadow mapper (due to packed tex coordinates)
     fn casts_shadows() -> rendering::CastShadowsMode<Self> {
-        let callback: Box<dyn FnOnce(&Self::Settings<'_>, &Graphics, &Assets) -> Shader> =
-            Box::new(|settings, graphics, assets| {
-                // Load the modified vertex module for the shadowmap shader
-                let vertex = assets
-                    .load::<VertexModule>("engine/shaders/scene/shadow/terrain.vert")
-                    .unwrap();
+        rendering::CastShadowsMode::Disabled
+    }
 
-                // Load the fragment module for the shadowmap shader
-                let fragment = assets
-                    .load::<FragmentModule>("engine/shaders/scene/shadow/shadow.frag")
-                    .unwrap();
-
-                // Create the bind layout for the shadow map shader
-                let mut compiler = Compiler::new(assets, graphics);
-
-                // Set the scaling factor for the vertex positions
-                compiler.use_constant(0, (settings.size as f32) / (settings.size as f32 - 3.0));
-
-                // Contains the mesh matrix and the lightspace uniforms
-                let layout = PushConstantLayout::single(
-                    <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size() * 2,
-                    ModuleVisibility::Vertex,
-                )
-                .unwrap();
-                compiler.use_push_constant_layout(layout);
-
-                // Combine the modules to the shader
-                Shader::new(vertex, fragment, &compiler).unwrap()
-            });
-
-        rendering::CastShadowsMode::Enabled(Some(callback))
+    // Disable frustum culling since we do that on the GPU
+    fn frustum_culling() -> bool {
+        false
     }
 
     // Fetch the texture storages
@@ -181,12 +159,16 @@ impl Material for TerrainMaterial {
                 ..,
             )
             .unwrap();
+        group
+            .set_sampled_texture("environment_map", default.environment_map)
+            .unwrap();
 
         // Set the scene shadow map
         group
             .set_sampled_texture("shadow_map", &shadow.depth_tex)
             .unwrap();
 
+        // Set the sub-material textures
         if let (Some(albedo), Some(normal), Some(mask)) = (
                 &terrain.manager.layered_albedo_map,
                 &terrain.manager.layered_normal_map,
@@ -210,8 +192,8 @@ impl Material for TerrainMaterial {
             }
     }
 
-    // Set the surface bindings that only contain the allocation data
-    // This will be executed only 7-8 times per frame since we have few big allocations/subsurfaces
+    // Set the per-surface bindings for the material
+    // Since the terrain mesh only contains "allocation" count of sub-surfaces, this will be executed for each allocation
     fn set_surface_bindings<'r, 'w>(
         _renderer: &Renderer,
         resources: &'r mut Self::Resources<'w>,
@@ -219,24 +201,16 @@ impl Material for TerrainMaterial {
         _query: &Self::Query<'w>,
         group: &mut BindGroup<'r>,
     ) {
-        let (
-            albedo_maps,
-            normal_maps,
-            mask_maps,
-            shadow,
-            terrain,
-            time,
-            i,
-        ) = resources;
+        let (.., terrain, _, index) = resources;
 
         // Set the storage buffer that contains ALL the matrices
         group.set_storage_buffer(
             "position_scale_buffer",
-            &terrain.manager.position_scaling_buffers[*i],
+            &terrain.memory.culled_position_scaling_buffers[*index],
             ..
         ).unwrap();   
 
-        // Since the ordering of entities within an archetype is always deterministic we can do this without worrying
-        resources.6 += 1;
+        // Increment the index (aka the allocation index)
+        *index += 1;
     }
 }

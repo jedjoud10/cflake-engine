@@ -25,33 +25,9 @@ fn init(world: &mut World) {
     assets
         .load::<GltfScene>(("user/scenes/untitled.glb", settings, context))
         .unwrap();
-
-    let graphics = world.get::<Graphics>().unwrap();
-    let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
-    let mut skies = world.get_mut::<Storage<SkyMaterial>>().unwrap();
-    let mut scene = world.get_mut::<Scene>().unwrap();
-    let mut pipelines = world.get_mut::<Pipelines>().unwrap();
-
-    // Get the material id (also registers the material pipeline)
-    let id = pipelines
-        .register::<SkyMaterial>(&graphics, &assets)
-        .unwrap();
-
-    // Create a new material instance
-    let material = skies.insert(SkyMaterial {});
-
-    // Load the renderable mesh
-    let mesh = assets
-        .load::<Mesh>(("engine/meshes/sphere.obj", graphics.clone()))
-        .unwrap();
-    let mesh = meshes.insert(mesh);
-
-    // Create the new sky entity components
-    let surface = Surface::new(mesh, material, id);
-    let renderer = Renderer::default();
-    scene.insert((surface, renderer));
-
+    
     // Create a movable camera
+    let mut scene = world.get_mut::<Scene>().unwrap();
     scene.insert((
         Position::default(),
         Rotation::default(),
@@ -86,7 +62,7 @@ fn update(world: &mut World) {
     */
 
     // Exit the game when the user pressed Escape
-    if input.get_button(Button::Escape).pressed() {
+    if input.get_button(KeyboardButton::Escape).pressed() {
         *state = State::Stopped;
     }
 }

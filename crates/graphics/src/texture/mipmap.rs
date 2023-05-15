@@ -57,9 +57,9 @@ impl<T: Texel> Clone for TextureMipMaps<'_, '_, T> {
 
 // Calculate mip levels based on the given color data and size
 // Returns None if the texture isn't a power of two texture
-pub fn generate_mip_map<T: ColorTexel, E: Extent>(
+pub fn generate_mip_map<T: ColorTexel, R: Region>(
     base: &[T::Storage],
-    extent: E,
+    extent: R::E,
 ) -> Option<Vec<Vec<T::Storage>>> {
     // Convert a xyz value to an index (texel)
     fn xyz_to_index(location: vek::Vec3<usize>, extent: vek::Extent3<usize>) -> usize {
@@ -67,10 +67,10 @@ pub fn generate_mip_map<T: ColorTexel, E: Extent>(
     }
 
     // Create manual mip maps for this texture
-    let dimension = <E as Extent>::view_dimension();
+    let dimension = <R as Region>::view_dimension();
     let name = utils::pretty_type_name::<T>();
-    let levels = extent.levels()?.get() as u32;
-    log::debug!("Creating mip-data (max = {levels})for imported texture {dimension:?}, <{name}>");
+    let levels = R::levels(extent)?.get() as u32;
+    log::debug!("Creating mip-data (max = {levels}) for imported texture {dimension:?}, <{name}>");
 
     // Iterate over the levels and fill them up
     // (like how ceddy weddy fills me up inside >.<)
@@ -80,7 +80,7 @@ pub fn generate_mip_map<T: ColorTexel, E: Extent>(
         let downscaled = extent.mip_level_dimensions(i as u8 + 1);
 
         let mut texels: Vec<<T as Texel>::Storage> =
-            vec![<T::Storage as Zeroable>::zeroed(); downscaled.area() as usize];
+            vec![<T::Storage as Zeroable>::zeroed(); R::volume(downscaled) as usize];
 
         // Get the original and downscaled sizes
         let original = temp.decompose();
@@ -97,7 +97,7 @@ pub fn generate_mip_map<T: ColorTexel, E: Extent>(
         };
 
         // Nous devons pas prendre une moyenne de l'axe Z si nous utilisons une ArrayTexture2D
-        let divide = match E::view_dimension() {
+        let divide = match R::view_dimension() {
             wgpu::TextureViewDimension::D1 => vek::Vec3::new(2usize, 1, 1),
             wgpu::TextureViewDimension::D2Array => vek::Vec3::new(2, 2, 1),
             wgpu::TextureViewDimension::D2 => vek::Vec3::new(2, 2, 1),
@@ -147,7 +147,7 @@ fn handle_optional_subregion<T: Texture>(
 ) -> Option<T::Region> {
     // Get the region for this mip level
     let mip_level_region =
-        <T::Region as Region>::with_extent(texture.dimensions().mip_level_dimensions(level));
+        <T::Region as Region>::from_extent(texture.dimensions().mip_level_dimensions(level));
 
     // Make sure the "offset" doesn't cause reads outside the texture
     if let Some(subregion) = optional {
@@ -267,7 +267,7 @@ impl<'a, T: Texture> MipLevelRef<'a, T> {
 
     // Get the mip level's region
     pub fn region(&self) -> T::Region {
-        T::Region::with_extent(self.dimensions())
+        T::Region::from_extent(self.dimensions())
     }
 }
 
@@ -359,7 +359,7 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
 
     // Get the mip level's region
     pub fn region(&self) -> T::Region {
-        T::Region::with_extent(self.dimensions())
+        T::Region::from_extent(self.dimensions())
     }
 
     // Try to get a render target so we can render to this one mip level as a whole
@@ -540,14 +540,14 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
         val: <T::T as Texel>::Storage,
     ) -> Result<(), MipLevelWriteError> {
         // Get the region for this mip level
-        let mip_level_region = <T::Region as Region>::with_extent(
+        let mip_level_region = <T::Region as Region>::from_extent(
             self.texture.dimensions().mip_level_dimensions(self.level),
         );
 
         // Get the mip level subregion if the given one is None
         let region = subregion.unwrap_or(mip_level_region);
-        let area = region.area() as usize;
-        let texels = vec![val; area];
+        let volume = <T::Region as Region>::volume(region.extent()) as usize;
+        let texels = vec![val; volume];
         self.write(&texels, subregion)
     }
 }

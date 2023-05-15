@@ -346,7 +346,7 @@ mod vertex {
 
 #[cfg(test)]
 mod region {
-    use crate::Extent;
+    use crate::Region;
 
     #[test]
     fn levels() {
@@ -354,8 +354,10 @@ mod region {
             vek::Extent2::broadcast(x)
         }
 
+        type Region2D = (vek::Vec2<u32>, vek::Extent2<u32>);
+
         fn levels(x: u32) -> u32 {
-            broadcast(x).levels().unwrap().get() as u32
+            Region2D::levels(broadcast(x)).unwrap().get() as u32
         }
 
         assert_eq!(levels(1), 1);

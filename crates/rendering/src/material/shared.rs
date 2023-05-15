@@ -1,12 +1,12 @@
 use bytemuck::{Pod, Zeroable};
 use graphics::{
     DrawIndexedIndirectBuffer, Normalized, Texture2D, TriangleBuffer, UniformBuffer, RG, RGBA,
-    SRGBA,
+    SRGBA, DrawCountIndirectBuffer,
 };
 use math::Frustum;
 use utils::Storage;
 
-use crate::{attributes, AttributeBuffer, IndirectMesh, Mesh, MultiDrawIndirect, MultiDrawIndirectMesh};
+use crate::{attributes, AttributeBuffer, IndirectMesh, Mesh, MultiDrawIndirect, MultiDrawIndirectMesh, EnvironmentMap, MultiDrawIndirectCountMesh};
 
 // These are the default settings that we pass to each material
 pub struct DefaultMaterialResources<'a> {
@@ -32,22 +32,33 @@ pub struct DefaultMaterialResources<'a> {
     pub normal: &'a NormalMap,
     pub mask: &'a MaskMap,
 
+    // Envinronment maps
+    pub environment_map: &'a EnvironmentMap,
+
     // Common direct mesh storages
     pub meshes: &'a Storage<Mesh>,
     
     // Common indirect mesh storages
     pub indirect_meshes: &'a Storage<IndirectMesh>,
     pub multi_draw_indirect_meshes: &'a Storage<MultiDrawIndirectMesh>,
+    pub multi_draw_indirect_count_meshes: &'a Storage<MultiDrawIndirectCountMesh>,
+
+    // Common indirect attribute storages
     pub indirect_positions: &'a Storage<AttributeBuffer<attributes::Position>>,
     pub indirect_normals: &'a Storage<AttributeBuffer<attributes::Normal>>,
     pub indirect_tangents: &'a Storage<AttributeBuffer<attributes::Tangent>>,
     pub indirect_tex_coords: &'a Storage<AttributeBuffer<attributes::TexCoord>>,
     pub indirect_triangles: &'a Storage<TriangleBuffer<u32>>,
+    
     pub draw_indexed_indirect_buffers: &'a Storage<DrawIndexedIndirectBuffer>,
+    pub draw_count_indirect_buffer: &'a Storage<DrawCountIndirectBuffer>,
 
-    // Currently used indicies
-    pub material_index: usize,
-    pub draw_call_index: usize,
+    pub drawn_unique_material_count: &'a mut u32,
+    pub material_instances_count: &'a mut u32,
+    pub rendered_direct_vertices_drawn: &'a mut u64,
+    pub rendered_direct_triangles_drawn: &'a mut u64,
+    pub culled_sub_surfaces: &'a mut u64,
+    pub rendered_sub_surfaces: &'a mut u64,
 }
 
 // Camera data that will be stored in a UBO

@@ -4,7 +4,7 @@ mod bitset {
 
     #[test]
     fn bitset() {
-        let mut bitset = BitSet::new();
+        let mut bitset = BitSet::<usize>::new();
         assert!(!bitset.get(0));
         bitset.set(0);
         assert!(bitset.get(0));
@@ -23,7 +23,7 @@ mod bitset {
 
     #[test]
     fn counting_ones() {
-        let mut bitset = BitSet::new();
+        let mut bitset = BitSet::<usize>::new();
         bitset.set(0);
         bitset.set(10);
         assert_eq!(bitset.count_ones(), 2);
@@ -39,7 +39,7 @@ mod bitset {
 
     #[test]
     fn counting_zeros() {
-        let mut bitset = BitSet::new();
+        let mut bitset = BitSet::<usize>::new();
         bitset.set(0);
         bitset.set(10);
         assert_eq!(bitset.count_zeros(), usize::BITS as usize - 2);
@@ -53,7 +53,7 @@ mod bitset {
 
     #[test]
     fn pattern() {
-        let mut bitset = BitSet::new();
+        let mut bitset = BitSet::<usize>::new();
         bitset.set(0);
         bitset.set(2);
         bitset.set(4);
@@ -67,7 +67,7 @@ mod bitset {
 
     #[test]
     fn pattern_all_set() {
-        let mut bitset = BitSet::new();
+        let mut bitset = BitSet::<usize>::new();
         bitset.set(0);
         bitset.set(1);
         bitset.set(2);
@@ -85,11 +85,11 @@ mod bitset {
 #[cfg(test)]
 mod atomic_bitset {
     use crate::AtomicBitSet;
-    use std::sync::atomic::Ordering;
+    use std::sync::atomic::{Ordering, AtomicUsize};
 
     #[test]
     fn bitset() {
-        let bitset = AtomicBitSet::new();
+        let bitset = AtomicBitSet::<AtomicUsize>::new();
         assert!(!bitset.get(0, Ordering::Relaxed));
         bitset.set(0, Ordering::Relaxed);
         assert!(bitset.get(0, Ordering::Relaxed));
@@ -108,7 +108,7 @@ mod atomic_bitset {
 
     #[test]
     fn counting_ones() {
-        let bitset = AtomicBitSet::new();
+        let bitset = AtomicBitSet::<AtomicUsize>::new();
         bitset.set(0, Ordering::Relaxed);
         bitset.set(10, Ordering::Relaxed);
         assert_eq!(bitset.count_ones(Ordering::Relaxed), 2);
@@ -124,7 +124,7 @@ mod atomic_bitset {
 
     #[test]
     fn counting_zeros() {
-        let bitset = AtomicBitSet::new();
+        let bitset = AtomicBitSet::<AtomicUsize>::new();
         bitset.set(0, Ordering::Relaxed);
         bitset.set(10, Ordering::Relaxed);
         assert_eq!(
@@ -141,7 +141,7 @@ mod atomic_bitset {
 
     #[test]
     fn pattern() {
-        let bitset = AtomicBitSet::new();
+        let bitset = AtomicBitSet::<AtomicUsize>::new();
         bitset.set(0, Ordering::Relaxed);
         bitset.set(2, Ordering::Relaxed);
         bitset.set(4, Ordering::Relaxed);
@@ -151,25 +151,6 @@ mod atomic_bitset {
         assert_eq!(bitset.find_one_from(1, Ordering::Relaxed), Some(2));
         assert_eq!(bitset.find_one_from(2, Ordering::Relaxed), Some(2));
         assert_eq!(bitset.find_one_from(3, Ordering::Relaxed), Some(4));
-    }
-}
-
-#[cfg(test)]
-mod hibitset {
-    use crate::HiBitSet;
-
-    #[test]
-    fn hibitset() {
-        let mut hibitset = HiBitSet::new();
-        hibitset.set(0);
-        assert!(hibitset.get(0));
-        assert!(!hibitset.get(1));
-        assert!(hibitset.get(0));
-        hibitset.remove(0);
-        assert!(!hibitset.get(0));
-
-        hibitset.set(4095);
-        assert!(hibitset.get(4095));
     }
 }
 

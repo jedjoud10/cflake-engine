@@ -18,7 +18,6 @@ fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
     let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
     let mut pbrs = world.get_mut::<Storage<PhysicallyBasedMaterial>>().unwrap();
-    let mut skies = world.get_mut::<Storage<SkyMaterial>>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
     let mut pipelines = world.get_mut::<Pipelines>().unwrap();
 
@@ -28,10 +27,10 @@ fn init(world: &mut World) {
 
     // Load in the diffuse map, normal map, and mask map textures asynchronously
     let albedo = assets.async_load::<AlbedoMap>(
-        ("user/textures/diffuse2.jpg", graphics.clone()),
+        ("user/textures/diffuse2.jpg", graphics.clone(), ),
     );
     let normal = assets.async_load::<NormalMap>(
-        ("engine/textures/scene/bumps.jpg", graphics.clone()),
+        ("user/textures/normal2.jpg", graphics.clone()),
     );
     let mask = assets.async_load::<MaskMap>(
         ("user/textures/mask2.jpg", graphics.clone()), 
@@ -72,11 +71,12 @@ fn init(world: &mut World) {
         albedo_map: Some(diffuse),
         normal_map: Some(normal),
         mask_map: Some(mask),
-        bumpiness: 0.4,
+        bumpiness: 1.0,
         roughness: 1.0,
         metallic: 1.0,
-        ambient_occlusion: 5.0,
+        ambient_occlusion: 3.0,
         tint: vek::Rgb::white(),
+        scale: vek::Extent2::one(),
     });
 
     // Create a simple floor and add the entity
@@ -93,25 +93,6 @@ fn init(world: &mut World) {
         let surface = Surface::new(sphere.clone(), material.clone(), id.clone());
         (surface, renderer, position)
     }));
-
-    // Get the material id (also registers the material pipeline)
-    let id = pipelines
-        .register::<SkyMaterial>(&graphics, &mut assets)
-        .unwrap();
-
-    // Create a new material instance
-    let material = skies.insert(SkyMaterial {});
-
-    // Load the renderable mesh
-    let mesh = assets
-        .load::<Mesh>(("engine/meshes/sphere.obj", graphics.clone()))
-        .unwrap();
-    let mesh = meshes.insert(mesh);
-
-    // Create the new sky entity components
-    let surface = Surface::new(mesh, material, id);
-    let renderer = Renderer::default();
-    scene.insert((surface, renderer));
 
     // Create a movable camera
     scene.insert((
@@ -144,7 +125,7 @@ fn update(world: &mut World) {
     }
 
     // Exit the game when the user pressed Escape
-    if input.get_button(Button::Escape).pressed() {
+    if input.get_button(KeyboardButton::Escape).pressed() {
         *state = State::Stopped;
     }
 }

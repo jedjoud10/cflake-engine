@@ -7,7 +7,7 @@ use math::Node;
 pub struct ChunkViewer;
 
 // State of the indirect mesh of each chunk
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum ChunkState {
     // Only used as an internal state for removing/adding chunks
     Free,
@@ -20,15 +20,20 @@ pub enum ChunkState {
 
     // The chunk's mesh has been generated successfully
     Generated,
+
+    Removed,
 }
 
 // This is a terrain chunk component that will be automatically added
 // on entities that are generated from the terrain generator
 // Each chunk has a specific state associated with it that represents what stage it's in for terrain generation
-#[derive(Component)]
+#[derive(Component, Clone, Copy, Debug)]
 pub struct Chunk {
     pub(crate) allocation: usize,
+
+    pub(crate) global_index: usize,
     pub(crate) local_index: usize,
+
     pub(crate) ranges: Option<vek::Vec2<u32>>,
     pub(crate) state: ChunkState,
     pub(crate) node: Option<Node>,

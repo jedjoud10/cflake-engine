@@ -1,53 +1,70 @@
 use itertools::Itertools;
+use num_traits::PrimInt;
+use std::fmt::Binary;
 use std::fmt::Debug;
 use std::fmt::Display;
+use std::mem::size_of;
 
 // Simple bitset that allocates using usize chunks
 // This bitset contains a specific number of elements per chunk
 #[derive(Default, Clone)]
-pub struct BitSet(Vec<usize>, bool);
+pub struct BitSet<T: PrimInt>(Vec<T>);
 
-impl BitSet {
+impl<T: PrimInt> BitSet<T> {
     // Create a new empty bit set
     pub fn new() -> Self {
-        Self(Vec::default(), false)
+        Self(Vec::default())
+    }
+
+    // Create a bit set with some pre-allocated chunks
+    pub fn with_capacity(elements: usize) -> Self {
+        let chunks = (elements as f32 / Self::bitsize() as f32).ceil() as usize;
+        Self(Vec::with_capacity(chunks))
     }
 
     // Create a bitset from an iterator of chunks
-    pub fn from_chunks_iter(iter: impl Iterator<Item = usize>) -> Self {
-        Self(iter.collect(), false)
+    pub fn from_chunks_iter(iter: impl Iterator<Item = T>) -> Self {
+        Self(iter.collect())
+    }
+
+    // Get the bit-size of the primitive
+    pub fn bitsize() -> usize {
+        size_of::<T>() * 8
     }
 
     // Create a bitset from an iterator of booleans
     pub fn from_iter(iter: impl Iterator<Item = bool>) -> Self {
-        let chunks = iter.chunks(usize::BITS as usize);
+        let chunks = iter.chunks(Self::bitsize());
         let chunks = chunks
             .into_iter()
-            .map(|chunk| chunk.fold(0, |accum, bit| accum << 1 | (bit as usize)));
+            .map(|chunk| chunk.fold(T::zero(), |accum, bit| accum << 1 | (if bit { T::one() } else { T::zero() })));
         Self::from_chunks_iter(chunks)
     }
 
-    // Create a bitset using a specific function and the number of elements
-    pub fn from_pattern(callback: impl FnMut(usize) -> bool, count: usize) -> Self {
-        let iter = (0..count).map(callback);
-        Self::from_iter(iter)
-    }
-
     // Get an immutable reference to the stored chunks
-    pub fn chunks(&self) -> &[usize] {
+    pub fn chunks(&self) -> &[T] {
         self.0.as_slice()
     }
 
     // Get a mutable reference to the stored chunks
-    pub fn chunks_mut(&mut self) -> &mut [usize] {
+    pub fn chunks_mut(&mut self) -> &mut [T] {
         self.0.as_mut_slice()
     }
 
     // Get the chunk and bitmask location for a specific chunk
     fn coords(index: usize) -> (usize, usize) {
-        let chunk = index / (usize::BITS as usize);
-        let location = index % (usize::BITS as usize);
+        let chunk = index / (Self::bitsize());
+        let location = index % (Self::bitsize());
         (chunk, location)
+    }
+
+    // Extend the inner chunks with a specific count
+    fn extend(&mut self, count: usize) {
+        if count > 0 {
+            let splat = T::min_value();
+            self.0
+                .extend((0..(count)).map(|_| splat));
+        }
     }
 
     // Set a bit value in the bitset
@@ -56,31 +73,25 @@ impl BitSet {
 
         // Extend the layer if needed (this bitset is dynamic)
         if chunk >= self.0.len() {
-            let splat = if self.1 { usize::MAX } else { usize::MIN };
-            let num = chunk - self.0.len();
-            self.0.extend(std::iter::repeat(splat).take(num + 1));
+            self.extend((chunk - self.0.len()) + 1);
         }
 
         // Set the bit value specified in the chunk
         let chunk = &mut self.0[chunk];
-        *chunk |= 1usize << location;
-    }
-
-    // Set the whole bitset to a single value
-    pub fn splat(&mut self, value: bool) {
-        for chunk in self.0.iter_mut() {
-            *chunk = if value { usize::MAX } else { usize::MIN };
-        }
-
-        // We must store the value of the splat because we might allocate new chunks
-        self.1 = value;
+        *chunk = *chunk | (T::one() << location);
     }
 
     // Remove a bit value from the bitset
     pub fn remove(&mut self, index: usize) {
         let (chunk, location) = Self::coords(index);
         let chunk = &mut self.0[chunk];
-        *chunk &= !(1usize << location);
+        *chunk = *chunk & !(T::one() << location);
+    }
+
+    // Pre-allocate a specific amount of elements
+    pub fn reserve(&mut self, elements: usize) {
+        let additional = (elements as f32 / Self::bitsize() as f32).ceil() as usize;
+        self.extend(additional);
     }
 
     // Get a bit value from the bitset
@@ -89,7 +100,7 @@ impl BitSet {
 
         self.0
             .get(chunk)
-            .map(|chunk| (chunk >> location) & 1 == 1)
+            .map(|chunk| (*chunk >> location) & T::one() == T::one())
             .unwrap_or_default()
     }
 
@@ -114,19 +125,19 @@ impl BitSet {
             .iter()
             .enumerate()
             .skip(start_chunk)
-            .filter(|(_, chunk)| **chunk != 0)
+            .filter(|(_, chunk)| **chunk != T::zero())
             .filter_map(|(i, &chunk)| {
-                let offset = i * usize::BITS as usize;
+                let offset = i * Self::bitsize();
                 let result = if i == start_chunk {
                     // Starting chunk, take start_location in consideration
-                    let inverted = !((1 << start_location) - 1);
+                    let inverted = !((T::one() << start_location) - T::one());
                     (chunk & inverted).trailing_zeros() as usize + offset
                 } else {
                     // Dont care, start at 0 as index
                     chunk.trailing_zeros() as usize + offset
                 };
 
-                (result != (offset + 64)).then_some(result)
+                (result != (offset + Self::bitsize())).then_some(result)
             })
             .next()
     }
@@ -139,25 +150,25 @@ impl BitSet {
             .iter()
             .enumerate()
             .skip(start_chunk)
-            .filter(|(_, chunk)| **chunk != 0)
+            .filter(|(_, chunk)| **chunk != T::zero())
             .filter_map(|(i, &chunk)| {
-                let offset = i * usize::BITS as usize;
+                let offset = i * Self::bitsize();
                 let result = if i == start_chunk {
                     // Starting chunk, take start_location in consideration
-                    let inverted = (1 << start_location) - 1;
+                    let inverted = (T::one() << start_location) - T::one();
                     (chunk | inverted).trailing_ones() as usize + offset
                 } else {
                     // Dont care, start at 0 as index
                     chunk.trailing_ones() as usize + offset
                 };
 
-                (result != (offset + 64)).then_some(result)
+                (result != (offset + Self::bitsize())).then_some(result)
             })
             .next()
     }
 }
 
-impl Display for BitSet {
+impl<T: PrimInt + Binary> Display for BitSet<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for chunk in self.0.iter() {
             write!(f, "{:b}", *chunk)?;
@@ -167,7 +178,7 @@ impl Display for BitSet {
     }
 }
 
-impl Debug for BitSet {
+impl<T: PrimInt + Binary> Debug for BitSet<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Display::fmt(self, f)
     }

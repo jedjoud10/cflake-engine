@@ -430,29 +430,37 @@ pub(super) fn create_pipeline_layout(
         // Get the push constant sizes as defined in the shader modules
         let mut iter = modules.iter().flat_map(|module| {
             module.vars.iter().filter_map(|x| match x {
-                spirq::Variable::PushConstant { name, ty } => ty.nbyte().map(|x| x as u32),
+                spirq::Variable::PushConstant { ty, .. } => ty.nbyte().map(|x| x as u32),
                 _ => None,
             })
         });
         let (first, second) = (iter.next(), iter.next());
 
         // Validate the push constants and check if they were defined properly in the shader
-        match push_constant_layout {
+        let valid = match push_constant_layout {
             PushConstantLayout::Single(size, _) => {
                 if second.is_none() {
-                    size.get() == first.unwrap()
+                    Some(size.get()) == first
                 } else {
                     todo!()
                 }
             }
             PushConstantLayout::SplitVertexFragment { vertex, fragment } => {
-                if first.is_some() && second.is_some() {
-                    vertex.get() == first.unwrap() && fragment.get() == second.unwrap()
+                if let (Some(first), Some(second)) = (first, second) {
+                    // Assumes the vertex and fragment push constants are tightly packed together
+                    vertex.get() == first && fragment.get() == (second - first)
                 } else {
                     todo!()
                 }
             }
         };
+
+        // Return error if not defined
+        if !valid  {
+            return Err(ShaderReflectionError::PushConstantValidation(
+                PushConstantValidationError::PushConstantNotDefinedOrDiffSized
+            ));
+        }
     }
 
     let definitions = InternalDefinitions {

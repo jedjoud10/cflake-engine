@@ -19,7 +19,7 @@ macro_rules! internal_impl_single_image_texel {
                 Some(image.chunks(4).map($closure).collect())
             }
 
-            fn hdr_image_to_texels(image: hdrldr::Image) -> Option<Vec<Self::Storage>> {
+            fn hdr_image_to_texels(_: hdrldr::Image) -> Option<Vec<Self::Storage>> {
                 None
             }
         }
@@ -33,6 +33,7 @@ macro_rules! impl_image_texel {
         internal_impl_single_image_texel!($t, u16, into_rgba16, $closure);
         internal_impl_single_image_texel!($t, Normalized<u8>, into_rgba8, $closure);
         internal_impl_single_image_texel!($t, Normalized<u16>, into_rgba16, $closure);
+        internal_impl_single_image_texel!($t, f32, into_rgba32f, $closure);
     };
 }
 

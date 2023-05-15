@@ -10,11 +10,6 @@ layout (constant_id = 2) const uint triangles_per_sub_allocation = 1;
 const uint sub_allocation_groups = sub_allocations / 32;
 const uint sub_allocations_per_sub_allocation_group = 32;
 
-// Contains the alloc-local chunk index
-layout(push_constant) uniform PushConstants {
-    uint allocation_local_chunk_index;
-} push_constants;
-
 // Sub allocation chunk indices
 layout(std430, set = 0, binding = 0) buffer SubAllocationChunkIndices {
     uint[sub_allocations] data;
@@ -54,7 +49,10 @@ void main() {
     uint triangles = counters.triangles;
 
     // Doesn't really matter since we can calculate it anyways 
-    uint chosen_sub_allocation_count = int(max(ceil(float(vertices) / float(vertices_per_sub_allocation)), ceil(float(triangles) / float(triangles_per_sub_allocation))));
+    uint vertex_sub_allocation_count = uint(ceil(float(vertices) / float(vertices_per_sub_allocation)));
+    uint triangle_sub_allocation_count = uint(ceil(float(triangles) / float(triangles_per_sub_allocation)));
+    uint chosen_sub_allocation_count = uint(max(vertex_sub_allocation_count, triangle_sub_allocation_count));
+    uint reason = vertex_sub_allocation_count > triangle_sub_allocation_count ? 2 : 1; 
 
     // Temp values for now 
     uint temp_sub_allocation_index = 0;
@@ -82,6 +80,7 @@ void main() {
         if (!within_free && free) {
             temp_sub_allocation_index = i;
             temp_sub_allocation_count = 0;
+            within_free = true;
         }
 
         // We stayed within a free allocation
@@ -113,7 +112,7 @@ void main() {
 
     // After finding the right block, we can write to it
     for (uint i = chosen_sub_allocation_index; i < (chosen_sub_allocation_index + chosen_sub_allocation_count); i++) {
-        indices.data[i] = push_constants.allocation_local_chunk_index;
+        indices.data[i] = reason;
     }
 
     // Offsets that we will write eventually

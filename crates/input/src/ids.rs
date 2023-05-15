@@ -5,9 +5,10 @@ pub trait InputButtonId {
     fn get(self, input: &Input) -> ButtonState;
 }
 
-impl InputButtonId for Button {
+impl<T: Into<Button>> InputButtonId for T {
     fn get(self, input: &Input) -> ButtonState {
-        input.keys.get(&self).cloned().unwrap_or(ButtonState::None)
+        let converted = self.into();
+        input.keys.get(&converted).cloned().unwrap_or(ButtonState::None)
     }
 }
 
@@ -27,9 +28,10 @@ pub trait InputAxisId {
     fn get(self, input: &Input) -> f32;
 }
 
-impl InputAxisId for Axis {
+impl<T: Into<Axis>> InputAxisId for T {
     fn get(self, input: &Input) -> f32 {
-        input.axii.get(&self).cloned().unwrap_or_default()
+        let converted = self.into();
+        input.axii.get(&converted).cloned().unwrap_or_default()
     }
 }
 
