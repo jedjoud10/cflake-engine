@@ -112,4 +112,5 @@ pub enum ShaderReflectionError {
 
     #[error("The shader defined resource {0} is not defined in the Compiler")]
     NotDefinedInCompiler(String),
+    
 }

@@ -43,10 +43,11 @@ fn init(world: &mut World) {
     internal!(loader, "engine/shaders/scene/terrain/terrain.frag");
     internal!(loader, "engine/shaders/scene/wireframe/wireframe.vert");
     internal!(loader, "engine/shaders/scene/wireframe/wireframe.frag");
-    internal!(loader, "engine/shaders/scene/environment/environment.vert");
-    internal!(loader, "engine/shaders/scene/environment/environment.frag");
-    internal!(loader, "engine/shaders/scene/environment/diffuse.frag");
-    internal!(loader, "engine/shaders/scene/environment/specular.frag");
+    
+    // Load the default environment compute shaders
+    internal!(loader, "engine/shaders/scene/environment/environment.comp");
+    internal!(loader, "engine/shaders/scene/environment/diffuse.comp");
+    internal!(loader, "engine/shaders/scene/environment/specular.comp");
 
     // Load the default post-rendering shaders
     internal!(loader, "engine/shaders/post/display.frag");

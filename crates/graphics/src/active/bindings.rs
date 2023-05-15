@@ -128,6 +128,8 @@ pub(super) fn create_bind_group<'b>(
                 return Err(SetBindGroupError::MissingResource(index));
             }
 
+            log::trace!("create bind group entries: {:?}", entries);
+
             // Create a bind group descriptor of the entries
             let desc = wgpu::BindGroupDescriptor {
                 label: None,
@@ -145,33 +147,26 @@ pub(super) fn create_bind_group<'b>(
     Ok(Some(bind_group))
 }
 
-// Blud thinks he's a good coder 🤣
-pub trait StorageResource<'a> {
-    type Inner;
-    const MUTABLE: bool;
+/*
 
-    fn killme(&'a self) -> Self::Inner;
+pub trait IntoBufferSlice<'a, const TYPE: u32>: 'a {
+    type T: GpuPod;
+    fn into(self) -> &'a Buffer<Self::T, TYPE>;
 }
 
-impl<'a, T: Texture> StorageResource<'a> for &'a T {
-    type Inner = &'a T;
-    const MUTABLE: bool = false;
+impl<'a, T: GpuPod, const TYPE: u32> IntoStorageBufferRef<'a, TYPE> for &'a Buffer<T, TYPE> {
+    type T = T;
 
-    fn killme(&'a self) -> Self::Inner {
+    fn into(self) -> &'a Buffer<Self::T, TYPE> {
         todo!()
     }
 }
+*/
 
-impl<'a, T: Texture> StorageResource<'a> for &mut T {
-    type Inner = &'a T;
-    const MUTABLE: bool = false;
-
-    fn killme(&'a self) -> Self::Inner {
-        todo!()
-    }
-}
-
-// FIXME: Why do set_storage_* methods not take in a mutable value??
+// TODO: Please find a way to:
+//a) remove the required binding range when setting buffers
+//b) pass in OPTIOANL binding range when setting buffers
+//c) use a specific layer/level of a texture when setting textures
 impl<'a> BindGroup<'a> {
     // Get the entry layout for a specific resource in this bind group
     // Returns None if there is no matching entry layout

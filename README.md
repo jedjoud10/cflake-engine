@@ -12,10 +12,10 @@ Currently, cFlake engine is under heavy development (***very*** WIP) and is stil
 * Deterministic event sorting through multiple stages 
 * Archetypal multithreaded ECS built to be used in conjunction with the World Events and Systems
 * Custom Graphics API built on top of WGPU
-* GPU Voxel generation and Octree Terrain (disabled temporarily)
+* GPU Voxel Generation and Octree Terrain
 * Asynchronous asset loader using Rayon threads
 * Input handling with gamepad support (gilrs) and keybinding serialization / deserialization
-* Custom sound support through CPAL (kinda works)
+* Custom sound support through CPAL
 
 # State of each crate:
 ## Legend
@@ -25,16 +25,17 @@ Currently, cFlake engine is under heavy development (***very*** WIP) and is stil
 * ✅ = complete
 
 ## Crates
-* World: 🚧
+* World: ✅
 * Utils: ⚠️
 * Terrain: 🚧
 * Graphics: 🚧
 * Rendering: 🚧
 * Networking: ❌
+* Physics: ❌
 * Math: 🚧
 * Input: ✅
 * ECS: ✅
-* Asset loader: ⚠️
+* Asset loader: ✅
 * Audio: 🚧
 * GUI (eGUI): ⚠️
   
@@ -103,6 +104,8 @@ For now, these are the types of assets that are loadable/deseriazable by default
 * Compute Shader: .comp
 * Raw GLSL (only for includes): .glsl
 * Raw UTF8 text: .txt
+
+
 
 # Thanks to:
 * Lionel Stanway (MoldyToeMan)

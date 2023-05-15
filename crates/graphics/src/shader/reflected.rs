@@ -747,6 +747,8 @@ fn internal_create_pipeline_layout(
                 entries: &entries,
             };
 
+            log::trace!("create bind group layout entries: {:?}", entries);
+
             // Create the bind group layout and add it to the cache
             let layout = graphics.device().create_bind_group_layout(&descriptor);
             let layout = Arc::new(layout);

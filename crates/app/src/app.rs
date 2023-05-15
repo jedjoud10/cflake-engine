@@ -1,4 +1,5 @@
 use graphics::{FrameRateLimit, WindowSettings};
+use log::LevelFilter;
 use mimalloc::MiMalloc;
 
 use std::sync::mpsc;
@@ -181,6 +182,11 @@ impl App {
                     thread_name = std::thread::current().name().unwrap_or("none"),
                 ));
             }).chain(std::io::stdout())
+        }
+
+        // Override logging level with environment variable
+        if std::env::var("CFLAKE_LOGGING_TRACE").is_ok() {
+            self.logging_level = LevelFilter::Trace;
         }
 
         // Color config for the line color

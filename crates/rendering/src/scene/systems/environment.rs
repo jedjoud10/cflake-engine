@@ -1,10 +1,10 @@
 use assets::Assets;
 use ecs::Scene;
-use graphics::Graphics;
+use graphics::{Graphics, ComputePass, ActivePipeline, Texture};
 use utils::Storage;
-use world::{World, System, user};
+use world::{World, System, user, post_user};
 
-use crate::{SkyMaterial, ForwardRenderer, Pipelines, Surface, Renderer, Environment};
+use crate::{SkyMaterial, ForwardRenderer, Pipelines, Surface, Renderer, Environment, EnvironmentMap, TempEnvironmentMap};
 
 // Add the envinronment resource into the world and the sky entity
 fn init(world: &mut World) {
@@ -46,6 +46,27 @@ fn init(world: &mut World) {
 // Render a single face of the environment map each frame
 // Swap the envmap index when done
 fn render(world: &mut World) {
+    // TODO: Pls fix texture mip level layer shit (it shit)
+    /*
+    let mut _environment = world.get_mut::<Environment>().unwrap();
+    let environment = &mut *_environment;
+    let graphics = world.get::<Graphics>().unwrap();
+    let mut pass = ComputePass::begin(&graphics);
+    let mut active = pass.bind_shader(&environment.shader);
+    let cubemap = &mut environment.temp;
+    active.set_bind_group(0, |group| {
+        group.set_storage_texture_mut("enviro", cubemap).unwrap()
+    }).unwrap();
+    active.dispatch(vek::Vec3::one()).unwrap();
+
+    graphics.submit(false);
+    let map = &mut environment.environment_map[0];
+    let mips = &cubemap.mips();
+    let input = mips.level(0).unwrap();
+    let mips_mut = &map.mips_mut();
+    let mut level = mips_mut.level_mut(0).unwrap();
+    level.copy_subregion_from::<TempEnvironmentMap>(input, None, None).unwrap();
+    */
 }
 
 // The environment system is responsible for creatin the HDRi environment map to use for specular and diffuse IBL
@@ -55,4 +76,8 @@ pub fn system(system: &mut System) {
         .after(assets::system)
         .after(graphics::common)
         .after(crate::systems::rendering::system);
+
+    system.insert_update(render)
+        .before(user)
+        .before(crate::systems::rendering::system);
 }

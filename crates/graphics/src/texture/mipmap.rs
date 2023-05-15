@@ -473,14 +473,12 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
     }
 
     // Copy a sub-region from another level into this level
-    pub fn copy_subregion_from(
+    pub fn copy_subregion_from<O: Texture<T = T::T>>(
         &mut self,
-        other: impl AsRef<MipLevelRef<'a, T>>,
-        src_subregion: Option<T::Region>,
+        other: MipLevelRef<'a, O>,
+        src_subregion: Option<O::Region>,
         dst_subregion: Option<T::Region>,
     ) -> Result<(), MipLevelCopyError> {
-        let other = other.as_ref();
-
         // Make sure we can use the texture as copy src
         if !other.texture.usage().contains(TextureUsage::COPY_SRC) {
             return Err(MipLevelCopyError::NonCopySrc);
@@ -507,6 +505,30 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
             src_subregion
         ) else {
             return Err(MipLevelCopyError::InvalidDstRegion);
+        };
+
+        // Make sure that the layers are compatible
+        match (<O::Region as Region>::view_dimension(), <T::Region as Region>::view_dimension()) {
+            // Copy from 2D array to self
+            (wgpu::TextureViewDimension::D2Array, wgpu::TextureViewDimension::Cube) if other.texture.layers() == 6 => {
+
+            },
+            //(wgpu::TextureViewDimension::D2Array, wgpu::TextureViewDimension::CubeArray) => todo!(),
+            
+            // Copy from Cube to self
+            (wgpu::TextureViewDimension::Cube, wgpu::TextureViewDimension::D2Array) if self.texture.layers() == 6 => {
+
+            },
+            //(wgpu::TextureViewDimension::Cube, wgpu::TextureViewDimension::CubeArray) => todo!(),
+
+            /*
+            // Copy from CubeArray to self
+            (wgpu::TextureViewDimension::CubeArray, wgpu::TextureViewDimension::D2Array) => todo!(),
+            (wgpu::TextureViewDimension::CubeArray, wgpu::TextureViewDimension::Cube) => todo!(),
+            */
+            
+            (x, y) if x == y => (),
+            _ => return Err(MipLevelCopyError::IncompatibleMultiLayerTextures)
         };
 
         todo!();

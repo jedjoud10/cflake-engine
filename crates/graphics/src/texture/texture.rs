@@ -661,6 +661,16 @@ pub(crate) fn read_from_level<T: Texel, R: Region>(
     todo!()
 }
 
+// Copy a sub-region from another level into this level
+// The texture can have different regions, but the same type
+pub fn copy_subregion_from<'a, T: Texture, O: Texture<T = T::T>>(
+    write: impl AsMut<MipLevelMut<'a, T>>,
+    read: impl AsRef<MipLevelRef<'a, O>>,
+    src_subregion: Option<O::Region>,
+    dst_subregion: Option<T::Region>,
+) {
+}
+
 // Check if the given extent is valid within device limits
 fn size_within_limits<R: Region>(graphics: &Graphics, extent: R::E) -> bool {
     // Create the max possible texture size from device limits
