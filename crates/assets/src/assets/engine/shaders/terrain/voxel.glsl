@@ -15,7 +15,8 @@
     }
 
 float voxel(vec3 position, uint quality) {
-    return position.y + (1-fbmCellular(position * 0.002 * vec3(1, 0.1, 1), 8, 0.3, 2.1).x) * 140;
+    //return snoise(position * 0.02) * 20 + position.y;
+    return position.y + (1-fbmCellular(position * 0.002 * vec3(1, 0.1, 1), 8, 0.3, 2.1).x) * 440;
     /*
     position *= 0.1;
 

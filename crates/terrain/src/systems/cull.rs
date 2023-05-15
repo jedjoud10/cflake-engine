@@ -36,8 +36,6 @@ fn update(world: &mut World) {
         .filter_map(|c| c.node.map(|x| (x, c)))
         .filter(|(_, c)| c.state == ChunkState::Removed);
     for (node, chunk) in query {
-        chunk.state = ChunkState::Free;
-        /*
         // Node splits into 8 children chunks and those get generated (leaf node turns into parent, +8, -1)
         if let Some((generated, target, _)) = manager.children_count.get(&node.center()).cloned() {
             if generated.len() == target {
@@ -56,7 +54,6 @@ fn update(world: &mut World) {
             //memory.visibility_bitsets[chunk.allocation].remove(chunk.local_index);
             //chunk.state = ChunkState::Free;
         }
-        */
     }
     
     // Create compute pass that will cull the indexed indirect buffers
