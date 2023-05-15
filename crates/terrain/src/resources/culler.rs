@@ -22,7 +22,7 @@ impl ChunkCuller {
         
         compiler.use_push_constant_layout(
             PushConstantLayout::single(
-                u32::size(),
+                u32::size() * 2,
                 ModuleVisibility::Compute,
             )
             .unwrap(),

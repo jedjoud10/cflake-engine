@@ -4,6 +4,7 @@ layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 // Contains the allocation index
 layout(push_constant) uniform PushConstants {
     uint allocation_index;
+    uint chunks_per_allocation;
 } push_constants;
 
 // Visibility of each chunk as a bitset (so each elem contains the visibility of 32 chunks at a time)
@@ -45,23 +46,22 @@ layout(std430, set = 1, binding = 3) writeonly buffer OutputIndirectBuffer {
 } output_indirect;
 
 void main() {
+    // Skip or else it causes chunks to disappear randomly 
+    if (gl_GlobalInvocationID.x >= push_constants.chunks_per_allocation) {
+        return;
+    }
+
     // Get the input data
-    uint index = atomicAdd(count.data[push_constants.allocation_index], 1);
-    /*
     IndexedIndirectDrawArgs input_indirect_element = input_indirect.data[gl_GlobalInvocationID.x];
     vec4 input_position_scale_element = input_position_scale.data[gl_GlobalInvocationID.x];
-    output_position_scale.data[index] = input_position_scale_element;
-    output_indirect.data[index] = input_indirect_element;
-    */
 
-
-    /*
     // If the chunk is not visible or if it's empty, skip
     uint chunk = gl_GlobalInvocationID.x / 32;
     uint local = gl_GlobalInvocationID.x % 32;
-    bool visible = ((visibility.data[chunk] >> local) & 1) == 1;
+    bool visible = ((visibility.data[chunk] >> local) & 1) == 0;
     if (input_indirect_element.vertex_count == 0 || !visible) {
-
+        uint index = atomicAdd(count.data[push_constants.allocation_index], 1);
+        output_position_scale.data[index] = input_position_scale_element;
+        output_indirect.data[index] = input_indirect_element;
     }
-    */
 }

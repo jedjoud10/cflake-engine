@@ -35,7 +35,7 @@ pub struct ChunkManager {
     pub(crate) entities: AHashMap<Node, Entity>,
 
     // Keep track of the number of generated and target children each parent has
-    pub(crate) children_count: AHashMap<Node, (usize, usize)>,
+    pub(crate) children_count: AHashMap<vek::Vec3<i32>, (Vec<Chunk>, usize, bool)>,
 
     // Keeps track of the last chunk entity (and node) that we generated (last frame)
     // If we did not generate a chunk last frame this will be None
@@ -43,6 +43,7 @@ pub struct ChunkManager {
 
     // Single entity that contains multiple meshes that represent the terrain
     pub(crate) global_draw_entity: Entity,
+    pub(crate) chunks_per_allocation: usize,
 
     // Viewer (camera) position
     pub(crate) viewer: Option<(Entity, vek::Vec3<f32>, vek::Quaternion<f32>)>,
@@ -186,6 +187,7 @@ impl ChunkManager {
             layered_albedo_map,
             layered_normal_map,
             layered_mask_map,
+            chunks_per_allocation: 0,
         }
     }
 }

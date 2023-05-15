@@ -57,7 +57,7 @@ fn update(world: &mut World) {
         // Check if we are OOM lol
         let vertices_per_sub_allocation = settings.vertices_per_sub_allocation;
         let triangles_per_sub_allocation = settings.triangles_per_sub_allocation;
-        if offset.x / vertices_per_sub_allocation == u32::MAX {
+        if offset.x >= (u32::MAX - vertices_per_sub_allocation + 1) || offset.y >= (u32::MAX - triangles_per_sub_allocation + 1) {
             panic!("Out of memory xD MDR");
         }
 

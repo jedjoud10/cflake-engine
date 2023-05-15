@@ -21,6 +21,7 @@ fn update(world: &mut World) {
     // Tries to find a chunk viewer and the terrain generator
     let terrain = world.get_mut::<Terrain>();
     let mut scene = world.get_mut::<Scene>().unwrap();
+    let time = world.get::<Time>().unwrap();
     let viewer = scene.find_mut::<(&Entity, &mut ChunkViewer, &Position, &Rotation)>();
 
     // If we don't have terrain, don't do shit
@@ -55,27 +56,35 @@ fn update(world: &mut World) {
         new
     };
 
+    // Makes sure that we don't generate when we're not done
+    // The only incovenience we get with this approach is that terrain takes a bit more time to update when we're moving very fast
+    // Skil issue tbh
+    let count = scene.query_mut::<&mut Chunk>().into_iter()
+        .filter(|c| c.state == ChunkState::Pending || c.state == ChunkState::Dirty)
+        .count();
+
     // Check if it moved since last frame
-    if added || new != old {
+    if (added || new != old) && count == 0 {
         // Regenerate the octree and detect diffs
         let OctreeDelta {
             mut added,
             removed
         } = manager.octree.compute(new);
 
+        // Keep track of new parents
+        for node in added.iter().filter(|x| x.children().is_some()) {
+            manager.children_count.insert(node.center(), (Vec::new(), 0, false));
+        }
+
+        // And the nodes that we will generate for them
+        for node in added.iter().filter(|x| x.leaf()) {
+            let parent = &manager.octree.nodes()[node.parent().unwrap()];
+            let (_, target, _) = manager.children_count.get_mut(&parent.center()).unwrap();
+            *target += 1; 
+        }
+
         // Discard non-leaf nodes
         added.retain(|x| x.leaf());
-
-        // Used to make sure we only make the nodes visible all at once
-        manager.children_count.clear();
-        for node in manager.octree.nodes() {
-            if let Some(base) = node.children() {
-                let base = base.get();
-                let count = &manager.octree.nodes()[base..(base+8)];
-                
-                manager.children_count.insert(*node, (0, count.into_iter().filter(|x| x.leaf()).count()));
-            }
-        }
 
         // Don't do shit
         if added.is_empty() && removed.is_empty() {
@@ -87,17 +96,19 @@ fn update(world: &mut World) {
             return;
         }
 
-        // Set the chunk state to "free" so we can reuse it
+        // Set the chunk state to "removed" so we can hide it when it's children all generated
         for coord in removed {
+            // Leaf node (which is now a parent node) was removed
             if let Some(entity) = manager.entities.remove(&coord) {
                 let mut entry = scene.entry_mut(entity).unwrap();
-                
-                // Set the chunk as "free" and hide it
-                let chunk = entry.as_query_mut::<&mut Chunk>().unwrap();
-                chunk.state = ChunkState::Free;
+                let chunk = entry.get_mut::<Chunk>().unwrap();
+                chunk.state = ChunkState::Removed;
+                assert_eq!(chunk.node, Some(coord));
+            }
 
-                // Hide the chunk using the temporary visibility vector
-                memory.visibility_bitsets[chunk.allocation].remove(chunk.local_index);
+            // If it's a parent node that was removed then update
+            if let Some((_, _, removed)) = manager.children_count.get_mut(&coord.center()) {
+                *removed = true;
             }
         }
 
@@ -122,12 +133,9 @@ fn update(world: &mut World) {
             let mut entities: Vec<(Position, Scale, Chunk)> = Vec::new(); 
 
             // Keep track of the old number of chunks
-            let old = scene
-                .query_mut::<&Chunk>()
-                .into_iter()
-                .count();
+            let old = manager.chunks_per_allocation;
             let old_per_allocation = old / settings.allocation_count;
-            
+
             // Add the same amounts of chunks per allocation
             let mut global_index = old;
             for allocation in 0..settings.allocation_count { 
@@ -183,6 +191,7 @@ fn update(world: &mut World) {
             // Randomly order the entities to reduce the chances of an OOM error
             entities.shuffle(&mut rng);
             scene.extend_from_iter(entities);
+            manager.chunks_per_allocation += count;
         }   
 
         // Get all free chunks in the world and use them
@@ -209,6 +218,7 @@ fn update(world: &mut World) {
             
             // Add the entity to the internally stored entities
             let res = manager.entities.insert(*node, *entity);
+            memory.visibility_bitsets[chunk.allocation].remove(chunk.local_index);
             assert!(res.is_none());
         }
     }

@@ -15,6 +15,8 @@
     }
 
 float voxel(vec3 position, uint quality) {
+    return position.y + (1-fbmCellular(position * 0.002 * vec3(1, 0.1, 1), 8, 0.3, 2.1).x) * 140;
+    /*
     position *= 0.1;
 
     float density = 0.0;
@@ -27,6 +29,7 @@ float voxel(vec3 position, uint quality) {
     density += d2 - 140;
     density = opUnion(density, sdSphere(position, 20));
     return density;
+    */
 
 }
 

@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::{time::Instant};
 
 use crate::{Chunk, ChunkState, Terrain, TerrainMaterial};
 use coords::{Position, Scale};
@@ -89,12 +89,10 @@ fn update(world: &mut World) {
     let offsets = &mut memory.offsets[index];
     let indices = &mut mesher.cached_indices;
     let suballocations = &mut memory.sub_allocation_chunk_indices[chunk.allocation];
-    //let indirect = &mut memory.generated_indexed_indirect_buffer;
+    let indirect = &mut memory.generated_indexed_indirect_buffers[chunk.allocation];
 
     // Update alloc-local indirect draw args
-    let indirect = &memory.culled_indexed_indirect_buffers[chunk.allocation];
-    let indirect = indirects.get_mut(indirect);
-    //indirect.write(&[crate::util::DEFAULT_DRAW_INDEXED_INDIRECT], chunk.local_index).unwrap();
+    indirect.write(&[crate::util::DEFAULT_DRAW_INDEXED_INDIRECT], chunk.local_index).unwrap();
 
     // Reset required values
     counters.write(&[0; 2], 0).unwrap();
@@ -102,7 +100,7 @@ fn update(world: &mut World) {
 
     // Update alloc-local position buffer
     let packed = (*position).with_w(**scale);
-    let buffer = &mut memory.culled_position_scaling_buffers[chunk.allocation];
+    let buffer = &mut memory.generated_position_scaling_buffers[chunk.allocation];
     buffer.write(&[packed], chunk.local_index).unwrap();
 
     // Create a compute pass for ALL compute terrain shaders
@@ -251,7 +249,7 @@ fn update(world: &mut World) {
         .unwrap();
     active
         .set_push_constants(|x| {
-            let index = chunk.global_index as u32;
+            let index = chunk.local_index as u32;
             let index = GpuPod::into_bytes(&index);
             x.push(index, 0).unwrap();
         })
@@ -261,13 +259,27 @@ fn update(world: &mut World) {
     drop(active);
     drop(pass);
     
-    // Show the chunk using the temporary visibility vector
-    memory.visibility_bitsets[chunk.allocation].set(chunk.local_index);
-    
     // Start computing this sheit on the GPU
     graphics.submit(false);
     chunk.state = ChunkState::Generated;
     manager.last_chunk_generated = Some(*entity);
+
+    // Updates the "generated" count of our parent node if any
+    if let Some(parent) = manager.octree.nodes().get(node.parent().unwrap()) {
+        // Makes sure we are the proper child of the parent node
+        let base = parent.children().unwrap().get();
+        assert!((base + 8) > node.index() && node.index() >= base);
+
+        // We must always have a parent
+        let (generated, target, removed) = manager.children_count.get_mut(&parent.center()).unwrap();
+            
+        if !*removed {
+            // If we're not generating a chunk that will "replace" the parent node then just show it blud
+            memory.visibility_bitsets[chunk.allocation].set(chunk.local_index);   
+        }
+
+        generated.push(*chunk);
+    }
 }
 
 // Generates the voxels and appropriate mesh for each of the visible chunks
