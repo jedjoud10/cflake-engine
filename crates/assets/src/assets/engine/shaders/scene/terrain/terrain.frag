@@ -6,6 +6,7 @@ layout(location = 0) out vec4 frag;
 layout(location = 0) in vec3 m_position;
 layout(location = 1) in vec3 m_local_position;
 layout(location = 2) in vec3 m_normal;
+layout(location = 3) in float lod;
 
 // Camera, scene, and shadowmap shared objects
 #include <engine/shaders/common/camera.glsl>
@@ -126,5 +127,5 @@ void main() {
 	vec3 color = brdf(surface, camera, sun);
 
 	// Calculate diffuse lighting
-	frag = vec4(color, 0.0);
+	frag = vec4(color * (lod * 0.1), 0.0);
 }

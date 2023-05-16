@@ -16,7 +16,7 @@ fn update(world: &mut World) {
     // Decompose the terrain into its subresources
     let terrain = &mut *_terrain;
     let (manager, memory, culler) = (
-        &terrain.manager,
+        &mut terrain.manager,
         &mut terrain.memory,
         &terrain.culler,
     );
@@ -28,34 +28,55 @@ fn update(world: &mut World) {
     let chunks = memory.visibility_bitsets[allocation].chunks();
     memory.visibility_buffers[allocation].write(chunks, 0).unwrap();
 
-    // 2 ways a node can be generated
+
+    let mut scene = world.get_mut::<Scene>().unwrap();
+    // Back-propagate the count if needed
+    for node in manager.octree.nodes() {
+        if node.children().is_none() {
+            continue;
+        }
+
+        // contains 8 nodes, backpropagate to parent if possible
+        let mut ambatakum = false;
+        if let Some((count, entities)) = manager.counting.get_mut(&node.center()) {
+            if *count == 8 {
+                *count = u32::MAX;
+                ambatakum = true;
+            }
+        }
+
+        // backpropagation
+        if ambatakum {
+            let bruh = manager.counting.get(&node.center()).unwrap().clone();
+            let parent = node.parent().map(|x| manager.octree.nodes()[x].center());
+            if let Some((count, entities)) = parent.map(|x| manager.counting.get_mut(&x)).flatten() {
+                *count += 1;
+                entities.extend(bruh.1);
+            } else {
+                // if no parent it means we are either the root node or this is the last parent node in the sub tree that we must generate
+                for x in bruh.1.iter() {
+                    let entry = scene.entry(*x).unwrap();
+                    let chunk = entry.get::<Chunk>().unwrap(); 
+                    memory.visibility_bitsets[chunk.allocation].set(chunk.local_index);   
+                }
+            }
+        }
+    }
+
+    /*
+    if scene.query::<&Chunk>().into_iter().filter(|x| x.state = ChunkState::Removed).count() == 0 {
+    }
+    */
 
     // Hide the parent nodes that had their children generated
-    let mut scene = world.get_mut::<Scene>().unwrap();
     let query = scene.query_mut::<&mut Chunk>().into_iter()
         .filter_map(|c| c.node.map(|x| (x, c)))
         .filter(|(_, c)| c.state == ChunkState::Removed);
     for (node, chunk) in query {
-        // Node splits into 8 children chunks and those get generated (leaf node turns into parent, +8, -1)
-        if let Some((generated, target, _)) = manager.children_count.get(&node.center()).cloned() {
-            if generated.len() == target {
-                // Hide the parent node
-                memory.visibility_bitsets[chunk.allocation].remove(chunk.local_index);
-
-                // Show the children nodes
-                for i in generated {
-                    memory.visibility_bitsets[i.allocation].set(i.local_index);
-                }
-
-                chunk.state = ChunkState::Free;
-            }               
-        } else {
-            // 8 children chunks merge into a big node (parent node turns into leaf, +1, -7)
-            //memory.visibility_bitsets[chunk.allocation].remove(chunk.local_index);
-            //chunk.state = ChunkState::Free;
-        }
+        memory.visibility_bitsets[chunk.allocation].remove(chunk.local_index);
+        chunk.state = ChunkState::Free;
     }
-    
+
     // Create compute pass that will cull the indexed indirect buffers
     let mut draw_count_indirect_buffers = world.get_mut::<Storage<DrawCountIndirectBuffer>>().unwrap();
     let mut indexed_indirect_buffers = world.get_mut::<Storage<DrawIndexedIndirectBuffer>>().unwrap();

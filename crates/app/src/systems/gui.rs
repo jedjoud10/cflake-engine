@@ -294,15 +294,10 @@ fn update(world: &mut World) {
                 .into_iter()
                 .filter(|c| c.state() == ChunkState::Generated)
                 .count();
-            let visible = scene
-                .query::<(&Chunk, &Surface<TerrainMaterial>)>()
-                .into_iter()
-                .filter(|(_, s)| s.visible)
-                .count();
             ui.heading("Real-time stats");
             ui.label(format!("Pending chunks count: {}", pending));
             ui.label(format!("Generated chunks count: {}", generated));
-            ui.label(format!("Visible chunks count: {}", visible));
+            ui.label(format!("Pending readbacks: {}", terrain.manager.pending_readbacks));
 
             ui.horizontal(|ui| {
                 ui.label("Active?: ");
@@ -313,7 +308,7 @@ fn update(world: &mut World) {
         let mut _terrain = terrain;
         let terrain = &mut *_terrain;
 
-        egui::Window::new("Terrain Memory").frame(frame).show(&gui, |ui| {
+        egui::Window::new("Terrain Memory").frame(frame).default_open(false).show(&gui, |ui| {
             let settings = &mut terrain.settings;
             let memory = &mut terrain.memory;
 

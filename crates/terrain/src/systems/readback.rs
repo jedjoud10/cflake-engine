@@ -20,7 +20,7 @@ fn update(world: &mut World) {
         &mut terrain.manager,
         &terrain.voxelizer,
         &terrain.mesher,
-        &terrain.memory,
+        &mut terrain.memory,
         &terrain.settings,
     );
 
@@ -74,8 +74,27 @@ fn update(world: &mut World) {
         } else {
             chunk.ranges = None;
         }
-    }
-    
+
+        // Updates the "generated" count of our parent node if any
+        let node = chunk.node.unwrap();
+        if let Some(parent) = manager.octree.nodes().get(node.parent().unwrap()) {
+            // Makes sure we are the proper child of the parent node
+            let base = parent.children().unwrap().get();
+            assert!((base + 8) > node.index() && node.index() >= base);
+
+            // Don't show the chunks by default, wait until their parent allow us to 
+            if let Some((count, entities)) = manager.counting.get_mut(&parent.center()) {
+                *count += 1;
+                entities.push(e1);
+            } else {
+                // If we don't have a parent then this chunk is a leaf node of a previous parent node
+                // so we must wait till the node generates to be able to get rid of the children
+                memory.visibility_bitsets[chunk.allocation].set(chunk.local_index);   
+            }
+        }
+
+        manager.pending_readbacks -= 1;
+    }    
 }
 
 // Generates the voxels and appropriate mesh for each of the visible chunks

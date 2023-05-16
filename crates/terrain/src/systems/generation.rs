@@ -263,23 +263,7 @@ fn update(world: &mut World) {
     graphics.submit(false);
     chunk.state = ChunkState::Generated;
     manager.last_chunk_generated = Some(*entity);
-
-    // Updates the "generated" count of our parent node if any
-    if let Some(parent) = manager.octree.nodes().get(node.parent().unwrap()) {
-        // Makes sure we are the proper child of the parent node
-        let base = parent.children().unwrap().get();
-        assert!((base + 8) > node.index() && node.index() >= base);
-
-        // We must always have a parent
-        let (generated, target, removed) = manager.children_count.get_mut(&parent.center()).unwrap();
-            
-        if !*removed {
-            // If we're not generating a chunk that will "replace" the parent node then just show it blud
-            memory.visibility_bitsets[chunk.allocation].set(chunk.local_index);   
-        }
-
-        generated.push(*chunk);
-    }
+    manager.pending_readbacks += 1;
 }
 
 // Generates the voxels and appropriate mesh for each of the visible chunks

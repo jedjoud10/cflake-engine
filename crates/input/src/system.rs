@@ -19,32 +19,37 @@ fn init(world: &mut World) {
 // Winit window event since it seems that DeviceEvent::Key is broken on other machines
 // TODO: Report bug
 fn window_event(world: &mut World, ev: &mut WindowEvent) {
+    fn handle_button_input(input: &mut Input, key: Button, state: ElementState) {
+        match input.keys.entry(key) {
+            Entry::Occupied(mut current) => {
+                // Check if the key is "down" (either pressed or held)
+                let down =
+                    matches!(*current.get(), ButtonState::Pressed | ButtonState::Held);
+
+                // If the key is pressed while it is currently down, it repeated itself, and we must ignore it
+                if down ^ (state == ElementState::Pressed) {
+                    current.insert(state.into());
+                }
+            }
+            Entry::Vacant(v) => {
+                v.insert(state.into());
+            }
+        }
+    }
+
     let mut input = world.get_mut::<Input>().unwrap();
 
     match ev {
         // Handles keyboard keys
         WindowEvent::KeyboardInput { input: key, .. } => {
             if let Some(keycode) = key.virtual_keycode {
-                match input.keys.entry(Button::Keyboard(keycode)) {
-                    Entry::Occupied(mut current) => {
-                        // Check if the key is "down" (either pressed or held)
-                        let down =
-                            matches!(*current.get(), ButtonState::Pressed | ButtonState::Held);
-
-                        // If the key is pressed while it is currently down, it repeated itself, and we must ignore it
-                        if down ^ (key.state == ElementState::Pressed) {
-                            current.insert(key.state.into());
-                        }
-                    }
-                    Entry::Vacant(v) => {
-                        v.insert(key.state.into());
-                    }
-                }
+                handle_button_input(&mut input, Button::Keyboard(keycode), key.state);
             }
         },
 
         // Handles mouse buttons
         WindowEvent::MouseInput { state, button, .. } => {
+            handle_button_input(&mut input, Button::Mouse(*button), *state);
         }
 
         _ => {}

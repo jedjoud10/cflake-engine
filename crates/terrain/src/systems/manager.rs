@@ -45,11 +45,11 @@ fn update(world: &mut World) {
         return;
     };
 
-    // Set the main viewer location and fetches the oldvalue
+    // Fetch the old chunk viewer position value
     let mut added = false;
     let new = **viewer_position;
     let old = if let Some((_, old, _)) = &mut manager.viewer {
-        std::mem::replace(old, new)
+        *old
     } else {
         manager.viewer = Some((*entity, new, **viewer_rotation));
         added = true;
@@ -64,23 +64,23 @@ fn update(world: &mut World) {
         .count();
 
     // Check if it moved since last frame
-    if (added || new != old) && count == 0 {
+    if (added || new != old) && count == 0 && manager.pending_readbacks == 0 {
+        // Update the old chunk viewer position value
+        if let Some((_, val, _)) = manager.viewer.as_mut() {
+            *val = new;
+        }
+
         // Regenerate the octree and detect diffs
         let OctreeDelta {
             mut added,
             removed
         } = manager.octree.compute(new);
 
-        // Keep track of new parents
-        for node in added.iter().filter(|x| x.children().is_some()) {
-            manager.children_count.insert(node.center(), (Vec::new(), 0, false));
-        }
-
-        // And the nodes that we will generate for them
-        for node in added.iter().filter(|x| x.leaf()) {
-            let parent = &manager.octree.nodes()[node.parent().unwrap()];
-            let (_, target, _) = manager.children_count.get_mut(&parent.center()).unwrap();
-            *target += 1; 
+        // Parent nodes that were newly added
+        manager.counting.clear();
+        manager.deleted.clear();
+        for parent in added.iter().filter(|x| x.children().is_some()) {
+            manager.counting.insert(parent.center(), (0, Vec::new()));
         }
 
         // Discard non-leaf nodes
@@ -96,6 +96,15 @@ fn update(world: &mut World) {
             return;
         }
 
+        /*
+        for chunk in scene.query_mut::<&mut Chunk>() {
+            if chunk.state == ChunkState::Removed {
+                chunk.state = ChunkState::Free;
+                memory.visibility_bitsets[chunk.allocation].remove(chunk.local_index);   
+            }
+        }
+        */
+
         // Set the chunk state to "removed" so we can hide it when it's children all generated
         for coord in removed {
             // Leaf node (which is now a parent node) was removed
@@ -104,11 +113,6 @@ fn update(world: &mut World) {
                 let chunk = entry.get_mut::<Chunk>().unwrap();
                 chunk.state = ChunkState::Removed;
                 assert_eq!(chunk.node, Some(coord));
-            }
-
-            // If it's a parent node that was removed then update
-            if let Some((_, _, removed)) = manager.children_count.get_mut(&coord.center()) {
-                *removed = true;
             }
         }
 

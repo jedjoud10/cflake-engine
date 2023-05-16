@@ -30,7 +30,8 @@ fn update(world: &mut World) {
         println!("Going backward!");
     }
 
-    if input.get_axis(MouseAxis::DeltaX) != 0.0 {
-        println!("{}", input.get_axis(MouseAxis::DeltaX));
+    // Check if the user pressed the right mouse button
+    if input.get_button(MouseButton::Right).pressed() {
+        println!("Right mouse button was pressed");
     }
 }

@@ -29,7 +29,7 @@ impl Default for CameraController {
         Self {
             sensivity: 1.0,
             base_speed: 20.0,
-            boost_speed: 120.0,
+            boost_speed: 300.0,
             fov_change_scroll_speed: 200.0,
             fov_change_key_speed: 50.0,
             smoothness: 0.2,
