@@ -52,6 +52,10 @@ pub struct MemoryManager {
     // Keeps track of the mesh handles that are shared per allocation
     pub(crate) allocation_meshes: Vec<Handle<MultiDrawIndirectCountMesh>>,
 
+    // Keeps track of the offset/counter async data of each chunk
+    pub(crate) readback_offsets: Vec<(Entity, vek::Vec2<u32>)>,
+    pub(crate) readback_counters: Vec<(Entity, vek::Vec2<u32>)>,    
+
     // Channel to receive the asyncrhnoously readback data
     pub(crate) readback_count_receiver: Receiver<(Entity, vek::Vec2<u32>)>,
     pub(crate) readback_count_sender: Sender<(Entity, vek::Vec2<u32>)>,
@@ -259,6 +263,8 @@ impl MemoryManager {
             visibility_buffers,
             visibility_bitsets,
             culled_count_buffer,
+            readback_offsets: Vec::new(),
+            readback_counters: Vec::new(),
         }
     }
 }

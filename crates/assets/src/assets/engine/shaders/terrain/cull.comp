@@ -58,8 +58,8 @@ void main() {
     // If the chunk is not visible or if it's empty, skip
     uint chunk = gl_GlobalInvocationID.x / 32;
     uint local = gl_GlobalInvocationID.x % 32;
-    bool visible = ((visibility.data[chunk] >> local) & 1) == 0;
-    if (input_indirect_element.vertex_count == 0 || !visible) {
+    bool visible = ((visibility.data[chunk] >> local) & 1) == 1;
+    if (input_indirect_element.vertex_count > 0 && visible) {
         uint index = atomicAdd(count.data[push_constants.allocation_index], 1);
         output_position_scale.data[index] = input_position_scale_element;
         output_indirect.data[index] = input_indirect_element;

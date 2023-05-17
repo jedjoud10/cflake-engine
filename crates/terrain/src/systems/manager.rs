@@ -60,14 +60,19 @@ fn update(world: &mut World) {
     // The only incovenience we get with this approach is that terrain takes a bit more time to update when we're moving very fast
     // Skil issue tbh
     let count = scene.query_mut::<&mut Chunk>().into_iter()
-        .filter(|c| c.state == ChunkState::Pending || c.state == ChunkState::Dirty)
+        .filter(|c| c.state == ChunkState::Pending || c.state == ChunkState::Dirty || c.state == ChunkState::PendingReadbackStart || c.state == ChunkState::PendingReadbackData)
         .count();
 
     // Check if it moved since last frame
-    if (added || new != old) && count == 0 && manager.pending_readbacks == 0 {
+    if (added || new != old) && count == 0 {
         // Update the old chunk viewer position value
         if let Some((_, val, _)) = manager.viewer.as_mut() {
             *val = new;
+        }
+
+        manager.old_hashmap_nodes.clear();
+        for node in manager.octree.nodes() {
+            manager.old_hashmap_nodes.insert(node.center(), *node);
         }
 
         // Regenerate the octree and detect diffs
@@ -76,11 +81,11 @@ fn update(world: &mut World) {
             removed
         } = manager.octree.compute(new);
 
-        // Parent nodes that were newly added
+        // If a children node was generated, then the parent node must've also been generated
         manager.counting.clear();
-        manager.deleted.clear();
         for parent in added.iter().filter(|x| x.children().is_some()) {
-            manager.counting.insert(parent.center(), (0, Vec::new()));
+            let old = manager.counting.insert(parent.center(), (0, Vec::new()));
+            assert!(old.is_none());
         }
 
         // Discard non-leaf nodes
@@ -96,23 +101,14 @@ fn update(world: &mut World) {
             return;
         }
 
-        /*
-        for chunk in scene.query_mut::<&mut Chunk>() {
-            if chunk.state == ChunkState::Removed {
-                chunk.state = ChunkState::Free;
-                memory.visibility_bitsets[chunk.allocation].remove(chunk.local_index);   
-            }
-        }
-        */
-
         // Set the chunk state to "removed" so we can hide it when it's children all generated
-        for coord in removed {
-            // Leaf node (which is now a parent node) was removed
-            if let Some(entity) = manager.entities.remove(&coord) {
+        for node in removed {
+            if let Some(entity) = manager.entities.remove(&node) {
                 let mut entry = scene.entry_mut(entity).unwrap();
                 let chunk = entry.get_mut::<Chunk>().unwrap();
                 chunk.state = ChunkState::Removed;
-                assert_eq!(chunk.node, Some(coord));
+                assert_eq!(chunk.node, Some(node));
+
             }
         }
 

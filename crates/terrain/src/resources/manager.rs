@@ -34,16 +34,9 @@ pub struct ChunkManager {
     pub(crate) octree: Octree,
     pub(crate) entities: AHashMap<Node, Entity>,
 
-    // Keeps track of the last chunk entity (and node) that we generated (last frame)
-    // If we did not generate a chunk last frame this will be None
-    pub(crate) last_chunk_generated: Option<Entity>,
-    pub pending_readbacks: usize,
-
     // Keeps track of finished nodes (even contains parent nodes and back-propagation)
-    pub(crate) finished_nodes: AHashMap<Node, bool>,
     pub(crate) counting: AHashMap<vek::Vec3<i32>, (u32, Vec<Entity>)>,
-
-    pub(crate) deleted: AHashSet<vek::Vec3<i32>>,
+    pub(crate) old_hashmap_nodes: AHashMap<vek::Vec3<i32>, Node>,
 
     // Single entity that contains multiple meshes that represent the terrain
     pub(crate) global_draw_entity: Entity,
@@ -180,20 +173,17 @@ impl ChunkManager {
 
         // Create the chunk manager
         Self {
-            last_chunk_generated: None,
             material,
             id,
             viewer: None,
             octree,
             entities: Default::default(),
+            old_hashmap_nodes: Default::default(),
             global_draw_entity,
             layered_albedo_map,
             layered_normal_map,
             layered_mask_map,
             chunks_per_allocation: 0,
-            pending_readbacks: 0,
-            finished_nodes: Default::default(),
-            deleted: Default::default(),
             counting: Default::default(),
         }
     }

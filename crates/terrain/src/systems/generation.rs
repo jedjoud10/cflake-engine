@@ -76,9 +76,20 @@ fn update(world: &mut World) {
     vec.sort_by(|(a, _, _, _), (b, _, _, _)| a.generation_priority.total_cmp(&b.generation_priority));
     vec.retain(|(chunk, _, _, _)| chunk.state == ChunkState::Pending);
     let Some((chunk, position, scale, entity)) = vec.pop() else {
-        manager.last_chunk_generated = None;
         return;
     };
+
+    let last_chunk_generated = scene
+        .query_mut::<(&Chunk, &Entity)>()
+        .into_iter()
+        .filter(|(chunk, _)| chunk.state == ChunkState::PendingReadbackStart)
+        .map(|(_, entity)| *entity)
+        .count();
+
+    // I FUCKING TOLD YOU NOT TO GENERATE MORE THAN ONE YOU FUCKING DUMB FUCK
+    if last_chunk_generated > 1 {
+        return;
+    }
 
     // NEEDED FOR ASYNC READBACK
     let index = time.frame_count() as usize % 2;
@@ -261,9 +272,10 @@ fn update(world: &mut World) {
     
     // Start computing this sheit on the GPU
     graphics.submit(false);
-    chunk.state = ChunkState::Generated;
-    manager.last_chunk_generated = Some(*entity);
-    manager.pending_readbacks += 1;
+
+    // Only one chunk must have this state enabled
+    // The terrain will fucking kill itself if there's more than one chunk with this state
+    chunk.state = ChunkState::PendingReadbackStart;
 }
 
 // Generates the voxels and appropriate mesh for each of the visible chunks

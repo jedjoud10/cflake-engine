@@ -20,61 +20,62 @@ fn update(world: &mut World) {
         &mut terrain.memory,
         &terrain.culler,
     );
-    
-    let time = world.get::<Time>().unwrap();
-    let allocation = (time.frame_count() as usize) % 2;
 
-    // I AM OOPDATINGG AAAAAAAAAAAA
-    let chunks = memory.visibility_bitsets[allocation].chunks();
-    memory.visibility_buffers[allocation].write(chunks, 0).unwrap();
-
-
-    let mut scene = world.get_mut::<Scene>().unwrap();
     // Back-propagate the count if needed
+    let mut scene = world.get_mut::<Scene>().unwrap();
     for node in manager.octree.nodes() {
+        // We only care about parent nodes
         if node.children().is_none() {
             continue;
         }
 
-        // contains 8 nodes, backpropagate to parent if possible
-        let mut ambatakum = false;
-        if let Some((count, entities)) = manager.counting.get_mut(&node.center()) {
+        // Check if we should backpropagate to the parent node of this parent node
+        let mut backpropagate = false;
+        if let Some((count, e)) = manager.counting.get_mut(&node.center()) {
             if *count == 8 {
-                *count = u32::MAX;
-                ambatakum = true;
+                backpropagate = true;
             }
         }
 
-        // backpropagation
-        if ambatakum {
-            let bruh = manager.counting.get(&node.center()).unwrap().clone();
+        // If we have a parent node, update it
+        if backpropagate {
+            let this = manager.counting.get(&node.center()).unwrap().clone();
             let parent = node.parent().map(|x| manager.octree.nodes()[x].center());
+
             if let Some((count, entities)) = parent.map(|x| manager.counting.get_mut(&x)).flatten() {
+                // The parent got a new child done generating (this)
                 *count += 1;
-                entities.extend(bruh.1);
+                entities.extend(this.1);
             } else {
-                // if no parent it means we are either the root node or this is the last parent node in the sub tree that we must generate
-                for x in bruh.1.iter() {
+                // If we don't have a parent it means we are either the root node or this is the last parent node in the sub tree that we must generate
+                for x in this.1.iter() {
                     let entry = scene.entry(*x).unwrap();
                     let chunk = entry.get::<Chunk>().unwrap(); 
                     memory.visibility_bitsets[chunk.allocation].set(chunk.local_index);   
                 }
             }
+            
+            // Delete "this" node since it was already handled
+            manager.counting.remove(&node.center()).unwrap();
         }
     }
 
-    /*
-    if scene.query::<&Chunk>().into_iter().filter(|x| x.state = ChunkState::Removed).count() == 0 {
-    }
-    */
+    // I AM OOPDATINGG AAAAAAAAAAAA
+    let time = world.get::<Time>().unwrap();
+    let allocation = (time.frame_count() as usize) % 2;
+    let chunks = memory.visibility_bitsets[allocation].chunks();
+    memory.visibility_buffers[allocation].write(chunks, 0).unwrap();
 
     // Hide the parent nodes that had their children generated
     let query = scene.query_mut::<&mut Chunk>().into_iter()
         .filter_map(|c| c.node.map(|x| (x, c)))
         .filter(|(_, c)| c.state == ChunkState::Removed);
     for (node, chunk) in query {
-        memory.visibility_bitsets[chunk.allocation].remove(chunk.local_index);
-        chunk.state = ChunkState::Free;
+        // If we are a parent node then wait till we are done generating our children to remove us
+        if !manager.counting.contains_key(&node.center()) {
+            memory.visibility_bitsets[chunk.allocation].remove(chunk.local_index);
+            chunk.state = ChunkState::Free;
+        }
     }
 
     // Create compute pass that will cull the indexed indirect buffers
@@ -129,5 +130,6 @@ pub fn system(system: &mut System) {
         .insert_update(update)
         .after(crate::systems::manager::system)
         .after(crate::systems::generation::system)
+        .after(crate::systems::readback::system)
         .before(rendering::systems::rendering::system);
 }

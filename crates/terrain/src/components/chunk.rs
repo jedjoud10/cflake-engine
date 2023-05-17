@@ -18,8 +18,14 @@ pub enum ChunkState {
     // The chunk is waiting for the compute shader to generate it's mesh
     Pending,
 
+    // The chunk is waiting for the readback
+    PendingReadbackStart,
+
+    // God damnit I fucking hate this shit
+    PendingReadbackData,
+
     // The chunk's mesh has been generated successfully
-    Generated,
+    Generated { empty: bool },
 
     Removed,
 }

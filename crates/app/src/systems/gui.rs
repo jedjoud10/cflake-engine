@@ -292,12 +292,17 @@ fn update(world: &mut World) {
             let generated = scene
                 .query::<&Chunk>()
                 .into_iter()
-                .filter(|c| c.state() == ChunkState::Generated)
+                .filter(|c| matches!(c.state(), ChunkState::Generated { .. }))
+                .count();
+            let pending_readback = scene
+                .query::<&Chunk>()
+                .into_iter()
+                .filter(|c| matches!(c.state(), ChunkState::PendingReadbackStart))
                 .count();
             ui.heading("Real-time stats");
             ui.label(format!("Pending chunks count: {}", pending));
             ui.label(format!("Generated chunks count: {}", generated));
-            ui.label(format!("Pending readbacks: {}", terrain.manager.pending_readbacks));
+            ui.label(format!("Pending readbacks: {}", pending_readback));
 
             ui.horizontal(|ui| {
                 ui.label("Active?: ");

@@ -8,7 +8,7 @@ cFlake Engine is a free and open-source Rust game engine that I have been workin
 Currently, cFlake engine is under heavy development (***very*** WIP) and is still in it's early stages, but pull requests are heavily appreciated (pls help me I am becoming insane)
 
 # Main features of cFlake:
-* 6 World Event Variants, Systems, and Resources all accessible within the **World** struct
+* 7 World Event Variants, Systems, and Resources all accessible within the **World** struct
 * Deterministic event sorting through multiple stages 
 * Archetypal multithreaded ECS built to be used in conjunction with the World Events and Systems
 * Custom Graphics API built on top of WGPU
@@ -80,10 +80,24 @@ Entities can be created and destroyed using the ``Scene`` resource that is autom
 ## Components
 Components are what actually store the data for a specified entity. Components are all stored within an ``Archetype``, which is a deisng/optimization that certain ECS implementation use for faster iteration speeds at the cost for slower insertion / removal speeds. Components can be inserted into the scene using the ``Scene::insert()`` function, which takes in a ``Bundle`` parameter that contains a tuple of different components. Components can also be removed from entities using ``EntryMut``, which is a mutable access to an entity's components directly.
 
-## Systems
-This is where things get tricky however, and this is where my implementation of ECS starts to differ from the pure ECS implementation. In this engine, ``System``s are just containers that store multiple ``Event``s, and these events get fired off whenever something interesting happens, like the start of a frame or during engine initialization. 
+To actually handle modifying data related to components, one must use a scene ``Query`` that would iterate over all the given components of the given ``Bundle`` tuple type. They could be accessed as long as you have a mutable or immutable reference to the ``Scene`` resource (depending on what type of query you wish to use)
 
-To actually handle modifying data related to components, one must use a scene ``Query`` that would iterate over all the given components of the given ``Bundle`` tuple type. These ``Queries`` are not related in any way to the ``Systems``, and they could be accessed as long as you have a mutable or immutable reference to the ``Scene`` resource (depending on what type of query you wish to use)
+## Systems
+This is where things get tricky however, and this is where my implementation of ECS starts to differ from the pure ECS implementation. In this engine, ``System``s are just containers that store multiple ``Event``s, and these events get fired off whenever something interesting happens, like the start of a frame or during engine initialization. For now, we have 7 types of events and they go as follow:
+
+1) We have the ``Init`` events that get fired off at the very start of the application during initialization of the world. This even can be used to add static objects to the world that will live for the lifetime of the game
+
+2) ``Update`` and ``Tick`` events occur right after the other (in batch) during the execution of the program. The ``Update`` events get executed for each frame that gets displayed, and the ``Tick`` systems execute exactly 120 times per second. There is a field on the ``Time`` resource that allows you to see how many ticks will be executed and how many ticks have currently been executed in total
+
+3) ``DeviceEvent`` and ``WindowEvent`` and events simply passed from Winit. Their ordering is dependant on how Winit handles them (I think)
+
+4) ``Shutdown`` events occur at the very end of the program when the user closes the application normally
+
+The ordering between the different types of app flow systems goes as follows:
+  Initialization: Init systems 
+  Running: Update systems, then Tick systems
+  End: Shutdown systems
+ 
 
 # Graphics (story time)
 At the moment, cFlake uses a custom built graphics API abstraction that wraps over WGPU and ShaderC. This however, was a recent change (~4 months in the making) due to limitations with the original backend (OpenGL) the engine. I had realized that OpenGL was not going to scale well with all the new multi-threaded features that I've implemented like a multithreaded asset loader and multithreaded ECS system. After tinkering with Vulkan (raw Vulkan, Vulkano), I decided to not use it (even after I pathetically tried to implement it, which took me 2-3 months), I decided to use Wgpu, since I simply could not cope with the manual state tracking of Vulkan. Nonetheless, the new graphics API allows us to create objects (like textures/buffers/shaders) in other threads. THis allows us to load texture/mesh assets asynchronously. 
@@ -105,7 +119,8 @@ For now, these are the types of assets that are loadable/deseriazable by default
 * Raw GLSL (only for includes): .glsl
 * Raw UTF8 text: .txt
 
-
+# Input Management
+Input is currently being handled using a custom wrapper around ``gilrs`` and ``Winit's Events``. You can "bind" or "map" a keyboard button or mouse click to a specific binding and then check each frame if it had been pressed, released, or been held (which means the user did not let go of it since last frame). Currently the ``Input`` resource cannot be used within ``Tick`` events since it relies on frame to frame data, and ``Tick`` events can execute each multiple times per frame or none at all.
 
 # Thanks to:
 * Lionel Stanway (MoldyToeMan)
