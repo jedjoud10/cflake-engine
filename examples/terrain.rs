@@ -6,7 +6,7 @@ fn main() {
         .set_app_name("cflake engine terrain example")
         .set_window_fullscreen(true)
         //.set_frame_rate_limit(FrameRateLimit::VSync)
-        //.set_frame_rate_limit(FrameRateLimit::Limited(120))
+        //set_frame_rate_limit(FrameRateLimit::Limited(120))
         //.set_logging_level(LevelFilter::Trace)
         .insert_init(init)
         .insert_update(update)
@@ -34,6 +34,12 @@ fn init(world: &mut World) {
     asset!(assets, "user/textures/diffuse4.jpg", "/examples/assets/");
     asset!(assets, "user/textures/normal4.jpg", "/examples/assets/");
     asset!(assets, "user/textures/mask4.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/diffuse5.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/normal5.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/mask5.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/diffuse6.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/normal6.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/mask6.jpg", "/examples/assets/");
 
     // Create the terrain generator's settings
     let settings = TerrainSettings::new(
@@ -41,26 +47,21 @@ fn init(world: &mut World) {
         64,
         false,
         false,
-        8,
+        2,
         1024,
         6,
         None,
         /*
         Some(&[
             TerrainSubMaterial {
-                diffuse: "user/textures/diffuse3.jpg".to_string(),
-                normal: "user/textures/normal3.jpg".to_string(),
-                mask: "user/textures/mask3.jpg".to_string(),
+                diffuse: "user/textures/diffuse6.jpg".to_string(),
+                normal: "user/textures/normal6.jpg".to_string(),
+                mask: "user/textures/mask6.jpg".to_string(),
             },
             TerrainSubMaterial {
-                diffuse: "user/textures/diffuse4.jpg".to_string(),
-                normal: "user/textures/normal4.jpg".to_string(),
-                mask: "user/textures/mask4.jpg".to_string(),
-            },
-            TerrainSubMaterial {
-                diffuse: "user/textures/diffuse2.jpg".to_string(),
-                normal: "user/textures/normal2.jpg".to_string(),
-                mask: "user/textures/mask2.jpg".to_string(),
+                diffuse: "user/textures/diffuse5.jpg".to_string(),
+                normal: "user/textures/normal5.jpg".to_string(),
+                mask: "user/textures/mask5.jpg".to_string(),
             },
         ]),
         */
@@ -72,42 +73,13 @@ fn init(world: &mut World) {
     drop(assets);
     world.insert(settings);
 
-    // Fetch the required resources from the world
-    let assets = world.get::<Assets>().unwrap();
-    let graphics = world.get::<Graphics>().unwrap();
-    let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
-    let mut skies = world.get_mut::<Storage<SkyMaterial>>().unwrap();
-    let mut scene = world.get_mut::<Scene>().unwrap();
-    let mut pipelines = world.get_mut::<Pipelines>().unwrap();
-
-    // Get the material id (also registers the material pipeline)
-    let id = pipelines
-        .register::<SkyMaterial>(&graphics, &assets)
-        .unwrap();
-
-    // Create a new material instance
-    let material = skies.insert(SkyMaterial {});
-
-    // Load the renderable mesh
-    let mesh = assets
-        .load::<Mesh>(("engine/meshes/sphere.obj", graphics.clone()))
-        .unwrap();
-    let mesh = meshes.insert(mesh);
-
-    // Create the new sky entity components
-    let surface = Surface::new(mesh, material, id);
-    let renderer = Renderer::default();
-    scene.insert((surface, renderer));
-
     // Create a movable camera
+    let mut scene = world.get_mut::<Scene>().unwrap();
     scene.insert((
         Position::default(),
         Rotation::default(),
         Velocity::default(),
-        Camera {
-            near: 5.0,
-            ..Default::default()
-        },
+        Camera::default(),
         ChunkViewer::default(),
         CameraController::default(),
     ));
@@ -129,14 +101,16 @@ fn update(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
 
     // Rotation the light
+    /*
     if let Some((rotation, _)) =
         scene.find_mut::<(&mut Rotation, &DirectionalLight)>()
     {
         rotation.rotate_y(-0.1 * time.delta().as_secs_f32());
     }
+    */
 
     // Exit the game when the user pressed Escape
-    if input.get_button(Button::Escape).pressed() {
+    if input.get_button(KeyboardButton::Escape).pressed() {
         *state = State::Stopped;
     }
 }

@@ -3,7 +3,7 @@ use math::Scalar;
 use ecs::Component;
 use std::{
     fmt::Debug,
-    ops::{Deref, DerefMut},
+    ops::{Deref, DerefMut}, marker::PhantomData,
 };
 
 // Our target is the raw rotation (either 3D or 2D)
@@ -11,10 +11,9 @@ type Target = math::RawRotation;
 
 #[derive(Default, Clone, Copy, PartialEq, Component)]
 #[repr(transparent)]
-pub struct Rotation(Target);
+pub struct Rotation<T: 'static>(Target, PhantomData<T>);
 
-#[cfg(not(feature = "two-dim"))]
-impl Rotation {
+impl<T> Rotation<T> {
     // Create a new rotation based on the RAW quaternion components (stored in an array)
     pub fn new_xyzw_array(array: [Scalar; 4]) -> Self {
         Self::new_xyzw(array[0], array[1], array[2], array[3])
@@ -23,7 +22,7 @@ impl Rotation {
     // Creates a new rotation based on the RAW quaternion components
     // Only use this if you know what you are doing
     pub fn new_xyzw(x: Scalar, y: Scalar, z: Scalar, w: Scalar) -> Self {
-        Self(Target::from_xyzw(x, y, z, w))
+        Self(Target::from_xyzw(x, y, z, w), PhantomData)
     }
 
     // Calculate the forward vector (-Z)
@@ -43,17 +42,17 @@ impl Rotation {
 
     // Construct a rotation using an X rotation (radians)
     pub fn rotation_x(angle_radians: Scalar) -> Self {
-        Self(vek::Quaternion::rotation_x(angle_radians))
+        Self(vek::Quaternion::rotation_x(angle_radians), PhantomData)
     }
 
     // Construct a rotation using a Y rotation (radians)
     pub fn rotation_y(angle_radians: Scalar) -> Self {
-        Self(vek::Quaternion::rotation_y(angle_radians))
+        Self(vek::Quaternion::rotation_y(angle_radians), PhantomData)
     }
 
     // Construct a rotation using a Z rotation (radians)
     pub fn rotation_z(angle_radians: Scalar) -> Self {
-        Self(vek::Quaternion::rotation_z(angle_radians))
+        Self(vek::Quaternion::rotation_z(angle_radians), PhantomData)
     }
 
     // Construct a rotation that is looking directly down (forward => (0, -1, 0))
@@ -76,70 +75,20 @@ impl Rotation {
     }
 }
 
-#[cfg(feature = "two-dim")]
-impl Rotation {
-    // Calculate the forward vector (-Z)
-    pub fn forward(&self) -> vek::Vec2<Scalar> {
-        vek::Mat3::from(self).mul_point(-vek::Vec2::unit_x())
-    }
-
-    // Calculate the up vector (+Y)
-    pub fn up(&self) -> vek::Vec2<Scalar> {
-        vek::Mat3::from(self).mul_point(vek::Vec2::unit_y())
-    }
-
-    // Construct a 2D rotation using an angle (radians)
-    pub fn from_angle(angle_radians: Scalar) -> Self {
-        Self(angle_radians)
-    }
-
-    // Construct a rotation that is looking directly down (forward => (0, -1))
-    pub fn looking_down() -> Self {
-        let scalar: Scalar = 90.0;
-        Self::from_angle(scalar)
-    }
-
-    // Construct a rotation that is looking directly up (forward => (0, 1))
-    pub fn looking_up() -> Self {
-        let scalar: Scalar = -90.0;
-        Self::from_angle(scalar)
-    }
-
-    // Construct a rotation that is looking directly left (forward => (-1, 0))
-    // TODO: Test
-    pub fn looking_left() -> Self {
-        Self::from_angle(-180.to_radians())
-    }
-
-    // Construct a rotation that is looking directly right (forward => (1, 0))
-    // TODO: Test
-    pub fn looking_right() -> Self {
-        let scalar: Scalar = 0.0;
-        Self::from_angle(scalar)
-    }
-
-    // Mix two rotation together using a lerp value
-    pub fn mix(self, other: Self, t: Scalar) -> Self {
-        let a = self.0;
-        let b = self.1;
-        a * t + (b * (1.0 - t))
-    }
-}
-
-impl Debug for Rotation {
+impl<T> Debug for Rotation<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Debug::fmt(&self.0, f)
     }
 }
 
 #[cfg(feature = "two-dim")]
-impl Display for Rotation {
+impl<T> Display for Rotation<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Display::fmt(&self.0, f)
     }
 }
 
-impl Deref for Rotation {
+impl<T> Deref for Rotation<T> {
     type Target = Target;
 
     fn deref(&self) -> &Self::Target {
@@ -147,56 +96,56 @@ impl Deref for Rotation {
     }
 }
 
-impl DerefMut for Rotation {
+impl<T> DerefMut for Rotation<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
-impl AsRef<Target> for Rotation {
+impl<T> AsRef<Target> for Rotation<T> {
     fn as_ref(&self) -> &Target {
         &self.0
     }
 }
 
-impl AsMut<Target> for Rotation {
+impl<T> AsMut<Target> for Rotation<T> {
     fn as_mut(&mut self) -> &mut Target {
         &mut self.0
     }
 }
 
-impl From<Rotation> for Target {
-    fn from(value: Rotation) -> Self {
+impl<T> From<Rotation<T>> for Target {
+    fn from(value: Rotation<T>) -> Self {
         value.0
     }
 }
 
-impl From<&Rotation> for Target {
-    fn from(value: &Rotation) -> Self {
+impl<T> From<&Rotation<T>> for Target {
+    fn from(value: &Rotation<T>) -> Self {
         value.0
     }
 }
 
-impl From<Target> for Rotation {
+impl<T> From<Target> for Rotation<T> {
     fn from(q: Target) -> Self {
-        Self(q)
+        Self(q, PhantomData)
     }
 }
 
-impl From<&Target> for Rotation {
+impl<T> From<&Target> for Rotation<T> {
     fn from(q: &Target) -> Self {
-        Self(*q)
+        Self(*q, PhantomData)
     }
 }
 
-impl From<Rotation> for math::RawMatrix {
-    fn from(value: Rotation) -> Self {
+impl<T> From<Rotation<T>> for math::RawMatrix {
+    fn from(value: Rotation<T>) -> Self {
         value.0.into()
     }
 }
 
-impl From<&Rotation> for math::RawMatrix {
-    fn from(value: &Rotation) -> Self {
+impl<T> From<&Rotation<T>> for math::RawMatrix {
+    fn from(value: &Rotation<T>) -> Self {
         value.0.into()
     }
 }

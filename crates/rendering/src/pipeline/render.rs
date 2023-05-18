@@ -15,10 +15,6 @@ pub(super) fn render_surfaces<'r, M: Material>(
     defaults: &mut DefaultMaterialResources<'r>,
     render_pass: &mut ActiveSceneRenderPass<'r, '_>,
 ) {
-    // Reset the material resources for this new material type
-    defaults.material_index = 0;
-    defaults.draw_call_index = 0;
-
     // Get a rasterizer for the current render pass by binding a pipeline
     let mut active = render_pass.bind_pipeline(pipeline);
     let supported = M::attributes();
@@ -36,7 +32,15 @@ pub(super) fn render_surfaces<'r, M: Material>(
 
     // Get all the entities that contain a visible surface
     let scene = world.get::<Scene>().unwrap();
-    let query = scene.query::<(&Surface<M>, &Renderer)>();
+    let filter = ecs::contains::<M::Query<'r>>();
+    let query = scene.query_with::<(&Surface<M>, &Renderer)>(filter);
+
+    // Get custom user components
+    let filter = ecs::contains::<(&Surface<M>, &Renderer)>();
+    let user = scene.query_with::<M::Query<'r>>(filter);
+
+    // Due to the filters, these MUST have the same length
+    debug_assert_eq!(query.len(), user.len());
 
     // Keep track of the last material
     let mut last_material: Option<Handle<M>> = None;
@@ -60,10 +64,6 @@ pub(super) fn render_surfaces<'r, M: Material>(
     > = None;
     let mut last_index_buffer: Option<&<M::RenderPath as RenderPath>::TriangleBuffer<u32>> = None;
 
-    // TODO: For multi draw indirect meshes, write the matrices into a temporary buffer
-    //    store matrix buffer per material pipeline depending if it's a multi draw one or not
-    //    write matrices to the matrix buffer before rendering
-    //    multi draw render the meshes
     
     // TODO: Sort and group material instances / meshes
     // instead of [(mt1, mh1), (mt2, mh2), (mt1, mh1), (mt1, mh2)]
@@ -71,7 +71,8 @@ pub(super) fn render_surfaces<'r, M: Material>(
     // Materials should have priority over meshes since they require you to set more shit
 
     // Iterate over all the surface of this material
-    for (surface, renderer) in query {
+    let mut rendered = false;
+    for ((surface, renderer), user) in query.into_iter().zip(user) {
         // Handle non visible surfaces, renderers, and culled surfaces
         if surface.culled || !surface.visible || !renderer.visible {
             continue;
@@ -112,7 +113,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
             // Set the surface group bindings
             active
                 .set_bind_group(2, |group| {
-                    M::set_surface_bindings(renderer, &mut resources, defaults, group);
+                    M::set_surface_bindings(renderer, &mut resources, defaults, &user, group);
                 })
                 .unwrap();
 
@@ -182,6 +183,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
                         renderer,
                         &mut resources,
                         defaults,
+                        &user,
                         push_constants,
                     );
                 })
@@ -192,8 +194,21 @@ pub(super) fn render_surfaces<'r, M: Material>(
 
             // Add 1 to the material index when we switch instances
             if switched_material_instances {
-                defaults.material_index += 1;
+                *defaults.material_instances_count += 1;
             }
+
+            // Keep track of statistics
+            rendered = true;
+            *defaults.rendered_sub_surfaces += 1;
+
+            // These values won't get added it if's a invalid or indirect mesh
+            *defaults.rendered_direct_triangles_drawn += <<M as Material>::RenderPath as RenderPath>::triangle_count(mesh).unwrap_or_default() as u64;
+            *defaults.rendered_direct_vertices_drawn += <<M as Material>::RenderPath as RenderPath>::vertex_count(mesh).unwrap_or_default() as u64;
         }
+    }
+
+    // I hate this
+    if rendered {
+        *defaults.drawn_unique_material_count += 1;
     }
 }

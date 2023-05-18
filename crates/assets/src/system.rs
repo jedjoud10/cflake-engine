@@ -32,8 +32,7 @@ fn init(world: &mut World) {
     internal!(loader, "engine/shaders/sdf/operations.glsl");
 
     // Load the default rendering shaders
-    internal!(loader, "engine/shaders/scene/basic/basic.vert");
-    internal!(loader, "engine/shaders/scene/basic/basic.frag");
+    internal!(loader, "engine/shaders/scene/pbr/pbr.vert");
     internal!(loader, "engine/shaders/scene/pbr/pbr.frag");
     internal!(loader, "engine/shaders/scene/shadow/shadow.frag");
     internal!(loader, "engine/shaders/scene/shadow/shadow.vert");
@@ -44,6 +43,11 @@ fn init(world: &mut World) {
     internal!(loader, "engine/shaders/scene/terrain/terrain.frag");
     internal!(loader, "engine/shaders/scene/wireframe/wireframe.vert");
     internal!(loader, "engine/shaders/scene/wireframe/wireframe.frag");
+    
+    // Load the default environment compute shaders
+    internal!(loader, "engine/shaders/scene/environment/environment.comp");
+    internal!(loader, "engine/shaders/scene/environment/diffuse.comp");
+    internal!(loader, "engine/shaders/scene/environment/specular.comp");
 
     // Load the default post-rendering shaders
     internal!(loader, "engine/shaders/post/display.frag");
@@ -66,11 +70,10 @@ fn init(world: &mut World) {
     internal!(loader, "engine/shaders/noises/erosion2D.glsl");
 
     // Load the default generation terrain shaders
-    internal!(loader, "engine/shaders/terrain/default/voxel.glsl");
-    internal!(loader, "engine/shaders/terrain/default/shading.glsl");
-    internal!(loader, "engine/shaders/terrain/default/detail.glsl");
+    internal!(loader, "engine/shaders/terrain/voxel.glsl");
     
     // Load the default internally used terrain shaders
+    internal!(loader, "engine/shaders/terrain/cull.comp");
     internal!(loader, "engine/shaders/terrain/voxels.comp");
     internal!(loader, "engine/shaders/terrain/vertices.comp");
     internal!(loader, "engine/shaders/terrain/quads.comp");

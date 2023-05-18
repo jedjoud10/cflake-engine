@@ -122,6 +122,9 @@ pub enum MipLevelCopyError {
 
     #[error("The given texture level cannot be copied if it is a multisampled or depth texture")]
     CannotUseSubregion,
+
+    #[error("Todo")]
+    IncompatibleMultiLayerTextures
 }
 
 #[derive(Error, Debug)]

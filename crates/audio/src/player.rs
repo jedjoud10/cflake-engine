@@ -17,7 +17,7 @@ pub struct AudioPlayer {
     pub(crate) device: cpal::Device,
     pub(crate) host: cpal::Host,
     pub(crate) supported_output_configs: Vec<cpal::SupportedStreamConfigRange>,
-    volume: Arc<AtomicU32>,
+    pub(crate) volume: Arc<AtomicU32>,
 }
 
 impl AudioPlayer {
@@ -49,7 +49,7 @@ impl AudioPlayer {
         Some(Self {
             host,
             device,
-            volume: Arc::new(AtomicU32::new(u32::MAX)),
+            volume: Arc::new(AtomicU32::new(u32::from_ne_bytes(1.0f32.to_ne_bytes()))),
             supported_output_configs: supported_output_configs.into(),
         })
     }

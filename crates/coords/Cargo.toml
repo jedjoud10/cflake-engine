@@ -9,6 +9,3 @@ edition = "2021"
 math = { path = "../math" }
 ecs = { path = "../ecs" }
 vek = { workspace = true }
-
-[features]
-two-dim = ["math/two-dim"]

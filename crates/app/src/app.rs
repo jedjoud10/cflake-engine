@@ -1,4 +1,5 @@
 use graphics::{FrameRateLimit, WindowSettings};
+use log::LevelFilter;
 use mimalloc::MiMalloc;
 
 use std::sync::mpsc;
@@ -183,6 +184,11 @@ impl App {
             }).chain(std::io::stdout())
         }
 
+        // Override logging level with environment variable
+        if std::env::var("CFLAKE_LOGGING_TRACE").is_ok() {
+            self.logging_level = LevelFilter::Trace;
+        }
+
         // Color config for the line color
         let colors_line = ColoredLevelConfig::new()
             .error(Color::Red)
@@ -198,17 +204,18 @@ impl App {
             .warn(Color::Yellow)
             .error(Color::Red);
 
-        // Level filter for wgpu and company
-        let wgpu_filter = if self.logging_level == log::LevelFilter::Trace {
-            log::LevelFilter::Debug
-        } else {
-            log::LevelFilter::Warn
+        // Level filter for wgpu and subdependencies
+        let wgpu_filter = match self.logging_level {
+            log::LevelFilter::Off => log::LevelFilter::Off,
+            log::LevelFilter::Trace => log::LevelFilter::Debug,
+            _ => log::LevelFilter::Warn
         };
 
         fern::Dispatch::new()
             .level_for("wgpu", wgpu_filter)
             .level_for("wgpu_core", wgpu_filter)
             .level_for("wgpu_hal", wgpu_filter)
+            .level_for("wgpu_core", wgpu_filter)
             .level(self.logging_level)
             .chain(console_logger(colors_level, colors_line))
             .chain(file_logger(sender))
@@ -414,12 +421,15 @@ impl App {
         self.regsys(rendering::systems::matrix::system);
         self.regsys(rendering::systems::rendering::system);
         self.regsys(rendering::systems::lights::system);
+        self.regsys(rendering::systems::environment::system);
 
         // Terrain systems
         self.regsys(terrain::systems::manager::system);
         self.regsys(terrain::systems::generation::system);
         self.regsys(terrain::systems::init::system);
         self.regsys(terrain::systems::readback::system);
+        self.regsys(terrain::systems::readback::system2);
+        self.regsys(terrain::systems::cull::system);
         
         // Physics systems
         self.regsys(physics::systems::collisions::system);

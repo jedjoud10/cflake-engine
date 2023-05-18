@@ -8,7 +8,7 @@ use crate::{
     DrawIndexedIndirectBuffer, DrawIndirectBuffer, GpuPod, Graphics, ModuleKind, ModuleVisibility,
     PushConstantLayout, PushConstants, RenderCommand, RenderPipeline, SetBindGroupError,
     SetIndexBufferError, SetPushConstantsError, SetVertexBufferError, TriangleBuffer,
-    UniformBuffer, Vertex, VertexBuffer,
+    UniformBuffer, Vertex, VertexBuffer, DrawCountIndirectBuffer,
 };
 use std::{
     collections::hash_map::Entry,
@@ -174,7 +174,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout> ActiveRenderPipeline<'a
         }
 
         // Check if the element index is ok
-        if element >= buffer.len() {
+        if buffer.len() <= element {
             return Err(DrawError::InvalidIndirectIndex);
         }
 
@@ -191,6 +191,10 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout> ActiveRenderPipeline<'a
         offset: usize,
         count: usize,
     ) -> Result<(), DrawError> {
+        if count == 0 {
+            return Ok(())
+        }
+
         // Handle the missing bind groups
         if let Err(value) =
             crate::validate_set(self.reflected_groups_bitflags, self.set_groups_bitflags)
@@ -204,12 +208,53 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout> ActiveRenderPipeline<'a
         }
 
         // Check if the element index is ok
-        if offset + count >= buffer.len() {
+        if buffer.len() < offset + count {
             return Err(DrawError::InvalidIndirectIndex);
         }
 
         self.commands
             .push(RenderCommand::MultiDrawIndirect { buffer, offset, count });
+
+        Ok(())
+    }
+
+    // Dispatch multiple draw calls that will draw a number of vertices using the currently bound vertex buffers using a specific count buffer
+    pub fn multi_draw_indirect_count(
+        &mut self,
+        buffer: &'r DrawIndirectBuffer,
+        indirect_offset: usize,
+        count: &'r DrawCountIndirectBuffer,
+        count_offset: usize,
+        max_count: usize,
+    ) -> Result<(), DrawError> {
+        if max_count == 0 {
+            return Ok(())
+        }
+
+        // Handle the missing bind groups
+        if let Err(value) =
+            crate::validate_set(self.reflected_groups_bitflags, self.set_groups_bitflags)
+        {
+            return Err(DrawError::MissingValidBindGroup(value));
+        }
+
+        // Check for missing vertex buffers
+        if let Err(slot) = self.validate_vertex_buffers() {
+            return Err(DrawError::MissingVertexBuffer(slot));
+        }
+
+        // Check if the indirect element index is ok even in the max count scenario
+        if buffer.len() < indirect_offset + max_count  {
+            return Err(DrawError::InvalidIndirectIndex);
+        }
+
+        // Check if the indirect count element index is ok
+        if count.len() <= count_offset  {
+            return Err(DrawError::InvalidIndirectCountIndex);
+        }
+
+        self.commands
+            .push(RenderCommand::MultiDrawIndirectCount { buffer, indirect_offset, count, count_offset, max_count: max_count as u32 });
 
         Ok(())
     }
@@ -267,7 +312,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout> ActiveRenderPipeline<'a
         }
 
         // Check if the element index is ok
-        if element >= buffer.len() {
+        if buffer.len() <= element {
             return Err(DrawIndexedError::InvalidIndirectIndex);
         }
 
@@ -284,6 +329,10 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout> ActiveRenderPipeline<'a
         offset: usize,
         count: usize,
     ) -> Result<(), DrawIndexedError> {
+        if count == 0 {
+            return Ok(())
+        }
+
         // Handle the missing bind groups
         if let Err(value) =
             crate::validate_set(self.reflected_groups_bitflags, self.set_groups_bitflags)
@@ -302,12 +351,58 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout> ActiveRenderPipeline<'a
         }
 
         // Check if the element index is ok
-        if offset + count >= buffer.len() {
+        if buffer.len() < (offset + count) {
             return Err(DrawIndexedError::InvalidIndirectIndex);
         }
 
         self.commands
             .push(RenderCommand::MultiDrawIndexedIndirect { buffer, offset, count });
+
+        Ok(())
+    }
+
+    // Dispatch multiple draw calls that will draw a number of indexed primitives using the currently bound vertex buffers using a specific count buffer
+    pub fn multi_draw_indexed_indirect_count(
+        &mut self,
+        buffer: &'r DrawIndexedIndirectBuffer,
+        indirect_offset: usize,
+        count: &'r DrawCountIndirectBuffer,
+        count_offset: usize,
+        max_count: usize,
+    ) -> Result<(), DrawIndexedError> {
+        if max_count == 0 {
+            return Ok(());
+        }
+
+        // Handle the missing bind groups
+        if let Err(value) =
+            crate::validate_set(self.reflected_groups_bitflags, self.set_groups_bitflags)
+        {
+            return Err(DrawIndexedError::MissingValidBindGroup(value));
+        }
+
+        // Check for missing vertex buffers
+        if let Err(slot) = self.validate_vertex_buffers() {
+            return Err(DrawIndexedError::MissingVertexBuffer(slot));
+        }
+
+        // Check for missing index buffers
+        if !self.validate_index_buffers() {
+            return Err(DrawIndexedError::MissingIndexBuffer);
+        }
+
+        // Check if the indirect element index is ok even in the max count scenario
+        if buffer.len() < indirect_offset + max_count  {
+            return Err(DrawIndexedError::InvalidIndirectIndex);
+        }
+
+        // Check if the indirect count element index is ok
+        if count.len() <= count_offset  {
+            return Err(DrawIndexedError::InvalidIndirectCountIndex);
+        }
+
+        self.commands
+            .push(RenderCommand::MultiDrawIndexedIndirectCount { buffer, indirect_offset, count, count_offset, max_count: max_count as u32 });
 
         Ok(())
     }

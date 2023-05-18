@@ -5,7 +5,7 @@ use std::{
     marker::PhantomData,
     num::{NonZeroU32, NonZeroU64},
     ops::DerefMut,
-    sync::{atomic::Ordering, Arc},
+    sync::{atomic::{Ordering, AtomicUsize}, Arc},
 };
 use utils::{AtomicBitSet, ConcVec};
 use wgpu::{
@@ -23,11 +23,11 @@ pub struct StagingPool {
     pub(crate) allocations: Arc<ConcVec<Buffer>>,
 
     // Keeps track of the mapping state
-    pub(crate) used: Arc<AtomicBitSet>,
+    pub(crate) used: Arc<AtomicBitSet::<AtomicUsize>>,
 
     // Keeps track of the buffers that we *must* unmap 
     // Only used for ASYNC readback buffers
-    pub(crate) must_unmap: Arc<AtomicBitSet>
+    pub(crate) must_unmap: Arc<AtomicBitSet::<AtomicUsize>>
 }
 
 impl StagingPool {

@@ -3,7 +3,7 @@ use math::Scalar;
 use ecs::Component;
 use std::{
     fmt::{Debug, Display},
-    ops::{Deref, DerefMut},
+    ops::{Deref, DerefMut}, marker::PhantomData,
 };
 
 // Our target is the raw point (either 3D or 2D)
@@ -11,28 +11,27 @@ type Target = math::RawPoint;
 
 #[derive(Default, Clone, Copy, PartialEq, Component)]
 #[repr(transparent)]
-pub struct Position(Target);
+pub struct Position<T: 'static>(Target, PhantomData<T>);
 
-#[cfg(not(feature = "two-dim"))]
-impl Position {
+impl<T> Position<T> {
     // Construct a position at the given X unit position
     pub fn at_x(x: Scalar) -> Self {
-        Self(vek::Vec3::new(x, 0.0, 0.0))
+        Self(vek::Vec3::new(x, 0.0, 0.0), PhantomData)
     }
 
     // Construct a position at the given Y unit position
     pub fn at_y(y: Scalar) -> Self {
-        Self(vek::Vec3::new(0.0, y, 0.0))
+        Self(vek::Vec3::new(0.0, y, 0.0), PhantomData)
     }
 
     // Construct a position at the given Z unit position
     pub fn at_z(z: Scalar) -> Self {
-        Self(vek::Vec3::new(0.0, 0.0, z))
+        Self(vek::Vec3::new(0.0, 0.0, z), PhantomData)
     }
 
     // Construct a position at the given X, Y, Z position
     pub fn at_xyz(x: Scalar, y: Scalar, z: Scalar) -> Self {
-        Self((x, y, z).into())
+        Self((x, y, z).into(), PhantomData)
     }
 
     // Construct a position at the given X, Y, Z position (stored in an array)
@@ -41,37 +40,19 @@ impl Position {
     }
 }
 
-#[cfg(feature = "two-dim")]
-impl Position {
-    // Construct a position at the given X unit position
-    pub fn at_x(x: Scalar) -> Self {
-        Self(vek::Vec2::new(x, 0.0))
-    }
-
-    // Construct a position at the given Y unit position
-    pub fn at_y(y: Scalar) -> Self {
-        Self(vek::Vec2::new(0.0, y))
-    }
-
-    // Construct a position at the given X, Y position
-    pub fn at_xy(x: Scalar, y: Scalar) -> Self {
-        Self((x, y).into())
-    }
-}
-
-impl Debug for Position {
+impl<T> Debug for Position<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Debug::fmt(&self.0, f)
     }
 }
 
-impl Display for Position {
+impl<T> Display for Position<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Display::fmt(&self.0, f)
     }
 }
 
-impl Deref for Position {
+impl<T> Deref for Position<T> {
     type Target = Target;
 
     fn deref(&self) -> &Self::Target {
@@ -79,64 +60,56 @@ impl Deref for Position {
     }
 }
 
-impl DerefMut for Position {
+impl<T> DerefMut for Position<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
-impl AsRef<Target> for Position {
+impl<T> AsRef<Target> for Position<T> {
     fn as_ref(&self) -> &Target {
         &self.0
     }
 }
 
-impl AsMut<Target> for Position {
+impl<T> AsMut<Target> for Position<T> {
     fn as_mut(&mut self) -> &mut Target {
         &mut self.0
     }
 }
 
-impl From<Position> for Target {
-    fn from(value: Position) -> Self {
+impl<T> From<Position<T>> for Target {
+    fn from(value: Position<T>) -> Self {
         value.0
     }
 }
 
-impl From<&Position> for Target {
-    fn from(value: &Position) -> Self {
+impl<T> From<&Position<T>> for Target {
+    fn from(value: &Position<T>) -> Self {
         value.0
     }
 }
 
-impl From<Target> for Position {
+impl<T> From<Target> for Position<T> {
     fn from(value: Target) -> Self {
-        Self(value)
+        Self(value, PhantomData)
     }
 }
 
-impl From<&Target> for Position {
+impl<T> From<&Target> for Position<T> {
     fn from(value: &Target) -> Self {
-        Self(*value)
+        Self(*value, PhantomData)
     }
 }
 
-impl From<Position> for math::RawMatrix {
-    fn from(value: Position) -> Self {
-        #[cfg(not(feature = "two-dim"))]
+impl<T> From<Position<T>> for math::RawMatrix {
+    fn from(value: Position<T>) -> Self {
         return vek::Mat4::translation_3d(value.0);
-
-        #[cfg(feature = "two-dim")]
-        return vek::Mat3::translation_2d(value.0);
     }
 }
 
-impl From<&Position> for vek::Mat4<Scalar> {
-    fn from(value: &Position) -> Self {
-        #[cfg(not(feature = "two-dim"))]
+impl<T> From<&Position<T>> for vek::Mat4<Scalar> {
+    fn from(value: &Position<T>) -> Self {
         return vek::Mat4::translation_3d(value.0);
-
-        #[cfg(feature = "two-dim")]
-        return vek::Mat3::translation_2d(value.0);
     }
 }

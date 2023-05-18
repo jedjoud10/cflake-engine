@@ -61,6 +61,12 @@ pub(crate) unsafe fn init_context_and_window(
     // Checks if we should use integrated graphics
     fn use_integrated_gpu() -> bool {
         let system = systemstat::System::new();
+
+        // Simple check in case we want to disable integrated GPU
+        if std::env::var("CFLAKE_DISCARD_INTEGRATED").is_ok() {
+            return false;
+        }
+
         !system.on_ac_power().ok().unwrap_or(true)
     }
 
@@ -82,13 +88,6 @@ pub(crate) unsafe fn init_context_and_window(
             wgpu::DeviceType::DiscreteGpu => 10000,
             _ => -10000,
         };
-
-        // Give adapters with higher bind group size, texture size, and allocation size a better score 
-        score += limits.max_bind_groups as i32
-            + limits.max_texture_dimension_1d as i32
-            + limits.max_texture_dimension_2d as i32
-            + limits.max_texture_dimension_3d as i32;
-
 
         // If we are not connected to AC power, use integrated graphics 
         if use_integrated_gpu() {

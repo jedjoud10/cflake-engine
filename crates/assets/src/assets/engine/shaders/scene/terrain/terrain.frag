@@ -1,10 +1,12 @@
 #version 460 core
+
 layout(location = 0) out vec4 frag;
 
 // Data given by the vertex shader
 layout(location = 0) in vec3 m_position;
 layout(location = 1) in vec3 m_local_position;
 layout(location = 2) in vec3 m_normal;
+layout(location = 3) in float lod;
 
 // Camera, scene, and shadowmap shared objects
 #include <engine/shaders/common/camera.glsl>
@@ -19,16 +21,16 @@ layout(location = 2) in vec3 m_normal;
 
 #ifdef submaterials
 // Albedo / diffuse map texture array
-layout(set = 0, binding = 7) uniform texture2DArray layered_albedo_map;
-layout(set = 0, binding = 8) uniform sampler layered_albedo_map_sampler;
+layout(set = 0, binding = 8) uniform texture2DArray layered_albedo_map;
+layout(set = 0, binding = 9) uniform sampler layered_albedo_map_sampler;
 
 // Normal map texture array
-layout(set = 0, binding = 9) uniform texture2DArray layered_normal_map;
-layout(set = 0, binding = 10) uniform sampler layered_normal_map_sampler;
+layout(set = 0, binding = 10) uniform texture2DArray layered_normal_map;
+layout(set = 0, binding = 11) uniform sampler layered_normal_map_sampler;
 
 // Mask map texture array
-layout(set = 0, binding = 11) uniform texture2DArray layered_mask_map;
-layout(set = 0, binding = 12) uniform sampler layered_mask_map_sampler;
+layout(set = 0, binding = 12) uniform texture2DArray layered_mask_map;
+layout(set = 0, binding = 13) uniform sampler layered_mask_map_sampler;
 
 // Triplanar mapping offset and UV scale
 const float offset = 0.0;
@@ -83,14 +85,6 @@ vec3 triplanar_normal(float layer, vec3 normal) {
 #endif
 
 void main() {
-	// We do a bit of fading
-	/*
-	float fade = min(material.fade, 1);
-	if (dither(ivec2(gl_FragCoord.xy), fade)) {
-		discard;
-	}
-	*/
-
 	// Get normals either by derivating them or getting them smoothed
 	#ifdef lowpoly
 	vec3 surface_normal = normalize(cross(dFdy(m_position), dFdx(m_position)));
@@ -103,19 +97,9 @@ void main() {
 	// so 4 channels per f32, and 4 f32 per splatmap texture
 	// there's probably a way to fit even *more* textures into there too
 	#ifdef submaterials
-	vec3 albedo1 = triplanar_albedo(float(0), surface_normal);
-	vec3 mask1 = triplanar_mask(float(0), surface_normal);
-	vec3 normal1 = triplanar_normal(float(0), surface_normal);
-
-	vec3 albedo2 = triplanar_albedo(float(1), surface_normal);
-	vec3 mask2 = triplanar_mask(float(1), surface_normal);
-	vec3 normal2 = triplanar_normal(float(1), surface_normal);
-
-	float blending_factor = 1 - clamp((surface_normal.y - 0.7) * 6, 0, 1);
-	
-	vec3 albedo = mix(albedo1, albedo2, blending_factor);
-	vec3 mask = mix(mask1, mask2, blending_factor);
-	vec3 normal = mix(normal1, normal2, blending_factor);
+	vec3 albedo = triplanar_albedo(float(0), surface_normal);
+	vec3 mask = triplanar_mask(float(0), surface_normal);
+	vec3 normal = triplanar_normal(float(0), surface_normal);
 	#else
 	vec3 normal = surface_normal;
 	vec3 rock = pow(vec3(128, 128, 128) / 255.0, vec3(2.2));
@@ -123,7 +107,7 @@ void main() {
 	vec3 grass = pow(vec3(69, 107, 35) / 255.0, vec3(2.2));
 	float blending_factor = 1 - clamp((surface_normal.y - 0.90) * 40, 0, 1);
 	vec3 albedo = mix(grass, rock, blending_factor);
-	vec3 mask = vec3(1.0, 1.0, 0.0);
+	vec3 mask = vec3(1.0, 0.9, 0.0);
 	#endif
 	
 	// Compute PBR values
@@ -143,5 +127,5 @@ void main() {
 	vec3 color = brdf(surface, camera, sun);
 
 	// Calculate diffuse lighting
-	frag = vec4(color, 0.0);
+	frag = vec4(color * (lod * 0.1), 0.0);
 }

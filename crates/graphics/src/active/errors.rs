@@ -25,6 +25,13 @@ pub enum SetBindResourceError<'a> {
 
     #[error("{0}")]
     SetBuffer(SetBufferError),
+
+    #[error("The shader resource {name} is defined as a {reflected_type} in the shader, but tried to set it as a {set_type}")]
+    ResourceTypeMismatch {
+        name: &'a str,
+        reflected_type: &'static str,
+        set_type: &'static str,
+    }
 }
 
 #[derive(Error, Debug)]
@@ -55,6 +62,9 @@ pub enum SetTextureError {
 
     #[error("The given storage texture does not contain the STORAGE usage")]
     MissingStorageUsage,
+
+    #[error("Texture is defined as storage RW/Write in the shader, but the given texture is immutable")]
+    MutabilityMissing,
 }
 
 #[derive(Error, Debug)]
@@ -67,6 +77,9 @@ pub enum SetBufferError {
 
     #[error("The given storage buffer does not contain the STORAGE usage")]
     MissingStorageUsage,
+
+    #[error("Buffer is defined as storage RW/Write in the shader, but the given buffer is immutable")]
+    MutabilityMissing,
 }
 
 #[derive(Error, Debug)]
@@ -100,6 +113,9 @@ pub enum DrawError {
 
     #[error("Given indirect buffer element index overruns the given indirect buffer")]
     InvalidIndirectIndex,
+
+    #[error("Given indirect count buffer element index overruns the given indirect count buffer")]
+    InvalidIndirectCountIndex,
 }
 
 #[derive(Error, Debug)]
@@ -115,4 +131,7 @@ pub enum DrawIndexedError {
 
     #[error("Given indirect buffer element index overruns the given indirect buffer")]
     InvalidIndirectIndex,
+
+    #[error("Given indirect count buffer element index overruns the given indirect count buffer")]
+    InvalidIndirectCountIndex,
 }

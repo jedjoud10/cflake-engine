@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::{time::Instant};
 
 use crate::{Chunk, ChunkState, Terrain, TerrainMaterial};
 use coords::{Position, Scale};
@@ -28,8 +28,8 @@ fn update(world: &mut World) {
     let mut indirects = world
         .get_mut::<Storage<DrawIndexedIndirectBuffer>>()
         .unwrap();
-    let mut tex_coords = world
-        .get_mut::<Storage<AttributeBuffer<attributes::TexCoord>>>()
+    let mut positions = world
+        .get_mut::<Storage<AttributeBuffer<attributes::Position>>>()
         .unwrap();
     let mut triangles = world.get_mut::<Storage<TriangleBuffer<u32>>>().unwrap();
 
@@ -42,17 +42,13 @@ fn update(world: &mut World) {
         &mut terrain.settings,
     );
 
-    // Get global indexed indirect draw buffer
-    let indirect = indirects.get_mut(&memory.indexed_indirect_buffer);
-
-    // Convert "Dirty" chunks into "Pending"
+    // Convert "Dirty" chunks into "Pending", and clears the old memory used by those chunks
     let query = scene
         .query_mut::<&mut Chunk>()
         .into_iter();
     for chunk in query.filter(|c| c.state == ChunkState::Dirty) {
         chunk.state = ChunkState::Pending;
         
-
         // Write to the indices the updated ranges if needed
         if let Some(range) = chunk.ranges {
             if range.y > range.x {
@@ -63,20 +59,7 @@ fn update(world: &mut World) {
             }
         }
 
-        // Update indirect buffer
-        indirect
-            .write(
-                &[DrawIndexedIndirect {
-                    vertex_count: 0,
-                    instance_count: 1,
-                    base_index: 0,
-                    vertex_offset: 0,
-                    base_instance: 0,
-                }],
-                chunk.global_index,
-            )
-            .unwrap();
-
+        // Remove the chunk CPU range
         chunk.ranges = None;
     }
 
@@ -84,16 +67,29 @@ fn update(world: &mut World) {
     let mut vec = scene
         .query_mut::<(
             &mut Chunk,
+            &Position,
+            &Scale,
             &Entity,
         )>()
         .into_iter()
         .collect::<Vec<_>>();
-    vec.sort_by(|(a, _), (b, _)| a.generation_priority.total_cmp(&b.generation_priority));
-    vec.retain(|(chunk, _)| chunk.state == ChunkState::Pending);
-    let Some((chunk, entity)) = vec.pop() else {
-        manager.last_chunk_generated = None;
+    vec.sort_by(|(a, _, _, _), (b, _, _, _)| a.generation_priority.total_cmp(&b.generation_priority));
+    vec.retain(|(chunk, _, _, _)| chunk.state == ChunkState::Pending);
+    let Some((chunk, position, scale, entity)) = vec.pop() else {
         return;
     };
+
+    let last_chunk_generated = scene
+        .query_mut::<(&Chunk, &Entity)>()
+        .into_iter()
+        .filter(|(chunk, _)| chunk.state == ChunkState::PendingReadbackStart)
+        .map(|(_, entity)| *entity)
+        .count();
+
+    // I FUCKING TOLD YOU NOT TO GENERATE MORE THAN ONE YOU FUCKING DUMB FUCK
+    if last_chunk_generated > 1 {
+        return;
+    }
 
     // NEEDED FOR ASYNC READBACK
     let index = time.frame_count() as usize % 2;
@@ -102,8 +98,21 @@ fn update(world: &mut World) {
     let voxels = &mut voxelizer.voxel_textures[index];
     let counters = &mut memory.counters[index];
     let offsets = &mut memory.offsets[index];
+    let indices = &mut mesher.cached_indices;
+    let suballocations = &mut memory.sub_allocation_chunk_indices[chunk.allocation];
+    let indirect = &mut memory.generated_indexed_indirect_buffers[chunk.allocation];
+
+    // Update alloc-local indirect draw args
+    indirect.write(&[crate::util::DEFAULT_DRAW_INDEXED_INDIRECT], chunk.local_index).unwrap();
+
+    // Reset required values
     counters.write(&[0; 2], 0).unwrap();
-    offsets.write(&[u32::MAX, u32::MAX], 0).unwrap();
+    offsets.write(&[u32::MAX; 2], 0).unwrap();
+
+    // Update alloc-local position buffer
+    let packed = (*position).with_w(**scale);
+    let buffer = &mut memory.generated_position_scaling_buffers[chunk.allocation];
+    buffer.write(&[packed], chunk.local_index).unwrap();
 
     // Create a compute pass for ALL compute terrain shaders
     let mut pass = ComputePass::begin(&graphics);
@@ -123,9 +132,14 @@ fn update(world: &mut World) {
             // Get the scale of the chunk
             let scale = GpuPod::into_bytes(&factor);
 
+            // Calculate quality index
+            let _quality = 4 - ((settings.max_depth - node.depth()).min(4));
+            let quality = GpuPod::into_bytes(&_quality);
+
             // Push the bytes to the GPU
             x.push(offset, 0).unwrap();
             x.push(scale, offset.len() as u32).unwrap();
+            x.push(quality, scale.len() as u32 + offset.len() as u32).unwrap();
 
             // Call the set group callback
             if let Some(callback) = voxelizer.set_push_constant_callback.as_ref() {
@@ -137,7 +151,7 @@ fn update(world: &mut World) {
     // One global bind group for voxel generation
     active
         .set_bind_group(0, |set| {
-            set.set_storage_texture("voxels", voxels)
+            set.set_storage_texture_mut("voxels", voxels)
                 .unwrap();
 
             // Call the set group callback
@@ -157,15 +171,15 @@ fn update(world: &mut World) {
         .set_bind_group(0, |set| {
             set.set_storage_texture("voxels", voxels)
                 .unwrap();
-            set.set_storage_texture("cached_indices", &mut mesher.cached_indices)
+            set.set_storage_texture_mut("cached_indices", indices)
                 .unwrap();
-            set.set_storage_buffer("counters", counters, ..)
+            set.set_storage_buffer_mut("counters", counters, ..)
                 .unwrap();
         })
         .unwrap();
     active
         .set_bind_group(1, |set| {
-            set.set_storage_buffer("vertices", &mut mesher.temp_vertices, ..)
+            set.set_storage_buffer_mut("vertices", &mut mesher.temp_vertices, ..)
                 .unwrap();
         })
         .unwrap();
@@ -177,17 +191,17 @@ fn update(world: &mut World) {
     let mut active = pass.bind_shader(&mesher.compute_quads);
     active
         .set_bind_group(0, |set| {
-            set.set_storage_texture("cached_indices", &mut mesher.cached_indices)
+            set.set_storage_texture("cached_indices", indices)
                 .unwrap();
             set.set_storage_texture("voxels", voxels)
                 .unwrap();
-            set.set_storage_buffer("counters", counters, ..)
+            set.set_storage_buffer_mut("counters", counters, ..)
                 .unwrap();
         })
         .unwrap();
     active
         .set_bind_group(1, |set| {
-            set.set_storage_buffer("triangles", &mut mesher.temp_triangles, ..)
+            set.set_storage_buffer_mut("triangles", &mut mesher.temp_triangles, ..)
                 .unwrap();
         })
         .unwrap();
@@ -199,34 +213,24 @@ fn update(world: &mut World) {
     let mut active = pass.bind_shader(&memory.compute_find);
     active
         .set_bind_group(0, |set| {
-            set.set_storage_buffer(
+            set.set_storage_buffer_mut(
                 "indices",
-                &mut memory.sub_allocation_chunk_indices[chunk.allocation],
+                suballocations,
                 ..,
             )
             .unwrap();
-            set.set_storage_buffer("offsets", offsets, ..)
+            set.set_storage_buffer_mut("offsets", offsets, ..)
                 .unwrap();
             set.set_storage_buffer("counters", counters, ..)
                 .unwrap();
         })
         .unwrap();
 
-    // Get the local chunk index for the current allocation
-    active
-        .set_push_constants(|x| {
-            let index = chunk.local_index;
-            let index = index as u32;
-            let bytes = GpuPod::into_bytes(&(index));
-            x.push(bytes, 0).unwrap();
-        })
-        .unwrap();
-
-    let dispatch = (settings.sub_allocation_count as f32 / 32 as f32).ceil() as u32;
+    let dispatch = (settings.sub_allocation_count as f32 / (32.0 * 32.0)).ceil() as u32;
     active.dispatch(vek::Vec3::new(dispatch, 1, 1)).unwrap();
 
     // Get the output packed tex coord from resource storage
-    let output_vertices = tex_coords.get_mut(&memory.shared_tex_coord_buffers[chunk.allocation]);
+    let output_vertices = positions.get_mut(&memory.shared_positions_buffers[chunk.allocation]);
 
     // Get the output triangles from resrouce storage
     let output_triangles = triangles.get_mut(&memory.shared_triangle_buffers[chunk.allocation]);
@@ -235,9 +239,9 @@ fn update(world: &mut World) {
     let mut active = pass.bind_shader(&memory.compute_copy);
     active 
         .set_bind_group(0, |set| {
-            set.set_storage_buffer("temporary_vertices", &mut mesher.temp_vertices, ..)
+            set.set_storage_buffer("temporary_vertices", &mesher.temp_vertices, ..)
                 .unwrap();
-            set.set_storage_buffer("temporary_triangles", &mut mesher.temp_triangles, ..)
+            set.set_storage_buffer("temporary_triangles", &mesher.temp_triangles, ..)
                 .unwrap();
             set.set_storage_buffer("offsets", offsets, ..)
                 .unwrap();
@@ -247,16 +251,16 @@ fn update(world: &mut World) {
         .unwrap();
     active
         .set_bind_group(1, |set| {
-            set.set_storage_buffer("output_vertices", output_vertices, ..)
+            set.set_storage_buffer_mut("output_vertices", output_vertices, ..)
                 .unwrap();
-            set.set_storage_buffer("output_triangles", output_triangles, ..)
+            set.set_storage_buffer_mut("output_triangles", output_triangles, ..)
                 .unwrap();
-            set.set_storage_buffer("indirect", indirect, ..).unwrap();
+            set.set_storage_buffer_mut("indirect", indirect, ..).unwrap();
         })
         .unwrap();
     active
         .set_push_constants(|x| {
-            let index = chunk.global_index as u32;
+            let index = chunk.local_index as u32;
             let index = GpuPod::into_bytes(&index);
             x.push(index, 0).unwrap();
         })
@@ -268,8 +272,10 @@ fn update(world: &mut World) {
     
     // Start computing this sheit on the GPU
     graphics.submit(false);
-    chunk.state = ChunkState::Generated;
-    manager.last_chunk_generated = Some(*entity);
+
+    // Only one chunk must have this state enabled
+    // The terrain will fucking kill itself if there's more than one chunk with this state
+    chunk.state = ChunkState::PendingReadbackStart;
 }
 
 // Generates the voxels and appropriate mesh for each of the visible chunks

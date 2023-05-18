@@ -1,0 +1,76 @@
+#version 460 core
+layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+// Contains the allocation index
+layout(push_constant) uniform PushConstants {
+    uint allocation_index;
+    uint chunks_per_allocation;
+} push_constants;
+
+// Camera values
+#include <engine/shaders/common/camera.glsl>
+
+// Visibility of each chunk as a bitset (so each elem contains the visibility of 32 chunks at a time)
+layout(std430, set = 0, binding = 1) readonly buffer VisiblityBuffer {
+    uint data[];
+} visibility;
+
+// Output indirect drawing count buffer
+layout(std430, set = 0, binding = 2) buffer IndirectCountBuffer {
+    uint data[];
+} count;
+
+struct IndexedIndirectDrawArgs {
+    uint vertex_count;
+    uint instance_count;
+    uint base_index;
+    int vertex_offset;
+    uint base_instance;
+};
+
+// Input position and scale of each chunk
+layout(std430, set = 1, binding = 0) readonly buffer InputPositionScaleBuffer {
+    vec4 data[];
+} input_position_scale;
+
+// Position and scale of each chunk
+layout(std430, set = 1, binding = 1) writeonly buffer OutputPositionScaleBuffer {
+    vec4 data[];
+} output_position_scale;
+
+// Input indirect drawing buffer
+layout(std430, set = 1, binding = 2) readonly buffer InputIndirectBuffer {
+    IndexedIndirectDrawArgs data[];
+} input_indirect;
+
+// Output indirect drawing buffer
+layout(std430, set = 1, binding = 3) writeonly buffer OutputIndirectBuffer {
+    IndexedIndirectDrawArgs data[];
+} output_indirect;
+
+void main() {
+    // Skip or else it causes chunks to disappear randomly 
+    if (gl_GlobalInvocationID.x >= push_constants.chunks_per_allocation) {
+        return;
+    }
+
+    // Get the input data
+    IndexedIndirectDrawArgs input_indirect_element = input_indirect.data[gl_GlobalInvocationID.x];
+    vec4 input_position_scale_element = input_position_scale.data[gl_GlobalInvocationID.x];
+
+    // If the chunk is not visible or if it's empty, skip
+    uint chunk = gl_GlobalInvocationID.x / 32;
+    uint local = gl_GlobalInvocationID.x % 32;
+    bool visible = ((visibility.data[chunk] >> local) & 1) == 1;
+
+    // Frustum based culling (TESTING)
+    vec3 chunk_position = input_position_scale_element.xyz;
+    vec3 camera_position = camera.position.xyz;
+
+    
+    if (input_indirect_element.vertex_count > 0 && visible) {
+        uint index = atomicAdd(count.data[push_constants.allocation_index], 1);
+        output_position_scale.data[index] = input_position_scale_element;
+        output_indirect.data[index] = input_indirect_element;
+    }
+}

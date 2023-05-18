@@ -118,6 +118,36 @@ impl QueryItemRef for &Entity {
     }
 }
 
+impl QueryItemRef for &() {
+    type Slice<'s> = &'s [()];
+    type Ptr = *const ();
+    type Owned = ();
+
+    fn access() -> LayoutAccess {
+        LayoutAccess {
+            arch_search: Mask::zero(),
+            validation_shared: Mask::zero(),
+            validation_unique: Mask::zero(),
+        }
+    }
+
+    unsafe fn ptr_from_archetype_unchecked(_archetype: &Archetype) -> Self::Ptr {
+        // I AM HARDWARE
+        // I WILL OUTLIVE YOU
+        // I WILL OUTLIVE YOUR SOFTWARE
+        // THERE IS NO DEATH
+        std::ptr::NonNull::<()>::dangling().as_ptr()
+    }
+
+    unsafe fn from_raw_parts<'s>(ptr: Self::Ptr, length: usize) -> Self::Slice<'s> {
+        std::slice::from_raw_parts(ptr, length)
+    }
+
+    unsafe fn read_unchecked(ptr: Self::Ptr, index: usize) -> Self {
+        &*ptr.add(index)
+    }
+}
+
 impl<T: Component> QueryItemMut for &T {
     type Slice<'s> = &'s [T];
     type Ptr = *const T;

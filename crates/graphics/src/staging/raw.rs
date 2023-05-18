@@ -1,4 +1,4 @@
-use std::sync::{Arc, atomic::Ordering};
+use std::sync::{Arc, atomic::{Ordering, AtomicUsize}};
 
 use utils::{ConcVec, AtomicBitSet};
 
@@ -81,7 +81,7 @@ pub(super) fn write_staging_buffer(
 // This takes in self because we need to know the allocations count and shit
 pub(super) fn async_read_staging_buffer(
     allocations: Arc<ConcVec<wgpu::Buffer>>,
-    must_unmap: Arc<AtomicBitSet>,
+    must_unmap: Arc<AtomicBitSet::<AtomicUsize>>,
     index: usize,
     offset: u64,
     size: u64,

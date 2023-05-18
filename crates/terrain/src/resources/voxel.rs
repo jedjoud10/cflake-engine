@@ -8,6 +8,10 @@ use std::rc::Rc;
 
 use crate::{create_texture3d, TerrainSettings};
 
+// The voxel texture will contain all the data that will be serialized and stored/sent over the network
+// This is the layout for each texel within said voxel texture
+// Bytes 0..2: 16 bit floating-point density
+
 // Voxel generator that will be solely used for generating voxels
 pub struct VoxelGenerator {
     pub(crate) compute_voxels: ComputeShader,
@@ -36,7 +40,7 @@ impl VoxelGenerator {
         // Needed by default
         compiler.use_push_constant_layout(
             PushConstantLayout::single(
-                <vek::Vec4<f32> as GpuPod>::size() + f32::size(),
+                <vek::Vec4<f32> as GpuPod>::size() + f32::size() + u32::size(),
                 ModuleVisibility::Compute,
             )
             .unwrap(),

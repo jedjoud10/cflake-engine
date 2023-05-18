@@ -128,6 +128,24 @@ struct InternalDefinitions<'a> {
     maybe_push_constant_layout: &'a super::MaybePushConstantLayout,
 }
 
+pub(crate) const UNIFORM_BUFFER_STRINGIFIED_NAME: &'static str = "Uniform Buffer";
+pub(crate) const STORAGE_BUFFER_STRINGIFIED_NAME: &'static str = "Storage Buffer";
+pub(crate) const SAMPLED_TEXTURE_STRINGIFIED_NAME: &'static str = "Sampled Texture";
+pub(crate) const STORAGE_TEXTURE_STRINGIFIED_NAME: &'static str = "Storage Texture";
+pub(crate) const SAMPLER_STRINGIFIED_NAME: &'static str = "Sampler";
+
+
+// Convert an bind resource type enum into a variant name
+pub(crate) fn stringify_bind_resource_type(val: &BindResourceType) -> &'static str {
+    match val {
+        BindResourceType::UniformBuffer { .. } => UNIFORM_BUFFER_STRINGIFIED_NAME,
+        BindResourceType::StorageBuffer { .. } => STORAGE_BUFFER_STRINGIFIED_NAME,
+        BindResourceType::Sampler { .. } => SAMPLER_STRINGIFIED_NAME,
+        BindResourceType::SampledTexture { .. } => SAMPLED_TEXTURE_STRINGIFIED_NAME,
+        BindResourceType::StorageTexture { .. } => STORAGE_TEXTURE_STRINGIFIED_NAME,
+    }
+}
+
 // Convert a reflected bind entry layout to a wgpu binding type
 pub(super) fn map_binding_type(value: &BindResourceLayout) -> wgpu::BindingType {
     match value.resource_type {
@@ -412,29 +430,37 @@ pub(super) fn create_pipeline_layout(
         // Get the push constant sizes as defined in the shader modules
         let mut iter = modules.iter().flat_map(|module| {
             module.vars.iter().filter_map(|x| match x {
-                spirq::Variable::PushConstant { name, ty } => ty.nbyte().map(|x| x as u32),
+                spirq::Variable::PushConstant { ty, .. } => ty.nbyte().map(|x| x as u32),
                 _ => None,
             })
         });
         let (first, second) = (iter.next(), iter.next());
 
         // Validate the push constants and check if they were defined properly in the shader
-        match push_constant_layout {
+        let valid = match push_constant_layout {
             PushConstantLayout::Single(size, _) => {
                 if second.is_none() {
-                    size.get() == first.unwrap()
+                    Some(size.get()) == first
                 } else {
                     todo!()
                 }
             }
             PushConstantLayout::SplitVertexFragment { vertex, fragment } => {
-                if first.is_some() && second.is_some() {
-                    vertex.get() == first.unwrap() && fragment.get() == second.unwrap()
+                if let (Some(first), Some(second)) = (first, second) {
+                    // Assumes the vertex and fragment push constants are tightly packed together
+                    vertex.get() == first && fragment.get() == (second - first)
                 } else {
                     todo!()
                 }
             }
         };
+
+        // Return error if not defined
+        if !valid  {
+            return Err(ShaderReflectionError::PushConstantValidation(
+                PushConstantValidationError::PushConstantNotDefinedOrDiffSized
+            ));
+        }
     }
 
     let definitions = InternalDefinitions {
@@ -720,6 +746,8 @@ fn internal_create_pipeline_layout(
                 label: None,
                 entries: &entries,
             };
+
+            log::trace!("create bind group layout entries: {:?}", entries);
 
             // Create the bind group layout and add it to the cache
             let layout = graphics.device().create_bind_group_layout(&descriptor);

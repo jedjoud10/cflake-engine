@@ -61,8 +61,8 @@ pub(super) fn render_shadows<'r, M: Material>(
     > = None;
     let mut last_index_buffer: Option<&<M::RenderPath as RenderPath>::TriangleBuffer<u32>> = None;
 
-    /*
     // Cull the surfaces that the shadow texture won't see
+    /*
     if M::frustum_culling() {
         scene.query_mut::<(&mut Surface<M>, &Renderer)>().for_each(
             &mut threadpool,

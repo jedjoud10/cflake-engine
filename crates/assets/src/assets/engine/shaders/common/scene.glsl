@@ -12,3 +12,7 @@ layout(set = 0, binding = 1) uniform SceneUniform {
     float sun_circle_size;
     float sun_circle_fade;
 } scene;
+
+// Environment texture map
+layout(set = 0, binding = 69) uniform textureCube environment_map;
+layout(set = 0, binding = 70) uniform sampler environment_map_sampler;

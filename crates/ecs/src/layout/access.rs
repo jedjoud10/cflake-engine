@@ -1,4 +1,4 @@
-use crate::Mask;
+use crate::{Mask, QueryLayoutMut, QueryLayoutRef};
 use std::ops::{BitAnd, BitOr, BitXor};
 
 // Layout access that contain the shared access mask and unique access mask
@@ -31,6 +31,16 @@ impl LayoutAccess {
     // Get both validation masks (bitwise or)
     pub fn both_validation_masks(&self) -> Mask {
         self.validation_shared | self.validation_unique
+    }
+
+    // Create a layout access mask from a layout ref
+    pub fn from_layout_ref<L: QueryLayoutRef>() -> Self {
+        L::reduce(|a, b| a | b)
+    }
+
+    // Create a layout access mask from a query layout mut
+    pub fn from_layout_mut<L: QueryLayoutMut>() -> Self {
+        L::reduce(|a, b| a | b)
     }
 }
 

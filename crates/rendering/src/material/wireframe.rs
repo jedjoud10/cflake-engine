@@ -18,6 +18,7 @@ impl Material for WireframeMaterial {
     type Resources<'w> = ();
     type RenderPath = Direct;
     type Settings<'s> = ();
+    type Query<'a> = &'a ();
 
     // Load the respective Wireframe shader modules and compile them
     fn shader(_settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader {
@@ -86,6 +87,7 @@ impl Material for WireframeMaterial {
         renderer: &Renderer,
         _resources: &'r mut Self::Resources<'w>,
         _default: &DefaultMaterialResources<'r>,
+        _query: &Self::Query<'w>,
         constants: &mut PushConstants<ActiveScenePipeline>,
     ) {
         // Send the raw vertex bytes to the GPU

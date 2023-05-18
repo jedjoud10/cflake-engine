@@ -1,7 +1,7 @@
 use crate::{AttributeBuffer, DefaultMaterialResources, Mesh, MeshAttribute};
 use graphics::{
     ActiveRenderPipeline, ColorLayout, DepthStencilLayout, DrawIndexedIndirectBuffer, GpuPod,
-    SetIndexBufferError, SetVertexBufferError, TriangleBuffer, DrawIndexedError,
+    SetIndexBufferError, SetVertexBufferError, TriangleBuffer, DrawIndexedError, DrawCountIndirectBuffer,
 };
 use std::ops::RangeBounds;
 use utils::Handle;
@@ -43,6 +43,14 @@ pub trait RenderPath: 'static + Send + Sync + Sized {
         mesh: &Mesh<Self>,
     ) -> bool;
 
+    // Get the number of vertices of a mesh
+    // Return none if Indirect 
+    fn vertex_count(mesh: &Mesh<Self>) -> Option<usize>;
+
+    // Get the number of triangles of a mesh
+    // Return none if Indirect 
+    fn triangle_count(mesh: &Mesh<Self>) -> Option<usize>;
+
     // Sets the vertex buffer of a specific mesh into the given active graphics pipeline
     fn set_vertex_buffer<'a, C: ColorLayout, DS: DepthStencilLayout, A: MeshAttribute>(
         slot: u32,
@@ -72,6 +80,7 @@ pub trait RenderPath: 'static + Send + Sync + Sized {
 pub struct Direct;
 pub struct Indirect;
 pub struct MultiDrawIndirect;
+pub struct MultiDrawIndirectCount;
 
 impl RenderPath for Direct {
     type AttributeBuffer<A: MeshAttribute> = AttributeBuffer<A>;
@@ -88,20 +97,20 @@ impl RenderPath for Direct {
 
     #[inline(always)]
     fn is_valid(
-        defaults: &DefaultMaterialResources,
+        _defaults: &DefaultMaterialResources,
         mesh: &Mesh<Self>,
     ) -> bool {
         mesh.vertices().len().is_some()
     }
 
     #[inline(always)]
-    fn draw<'a, C: ColorLayout, DS: DepthStencilLayout>(
-        mesh: &'a Mesh<Self>,
-        _defaults: &DefaultMaterialResources<'a>,
-        active: &mut ActiveRenderPipeline<'_, 'a, '_, C, DS>,
-    ) -> Result<(), DrawIndexedError> {
-        let indices = 0..(mesh.triangles().buffer().len() as u32 * 3);
-        active.draw_indexed(indices, 0..1)
+    fn vertex_count(mesh: &Mesh<Self>) -> Option<usize> {
+        Some(mesh.vertices().len().unwrap_or_default())
+    }
+
+    #[inline(always)]
+    fn triangle_count(mesh: &Mesh<Self>) -> Option<usize> {
+        Some(mesh.triangles().buffer().len())
     }
 
     #[inline(always)]
@@ -124,6 +133,16 @@ impl RenderPath for Direct {
     ) -> Result<(), SetIndexBufferError> {
         active.set_index_buffer(buffer, bounds)
     }
+
+    #[inline(always)]
+    fn draw<'a, C: ColorLayout, DS: DepthStencilLayout>(
+        mesh: &'a Mesh<Self>,
+        _defaults: &DefaultMaterialResources<'a>,
+        active: &mut ActiveRenderPipeline<'_, 'a, '_, C, DS>,
+    ) -> Result<(), DrawIndexedError> {
+        let indices = 0..(mesh.triangles().buffer().len() as u32 * 3);
+        active.draw_indexed(indices, 0..1)
+    }
 }
 
 // Used for Indirect meshes that can fetch their draw count and vertex count offset directly from the GPU
@@ -139,6 +158,17 @@ pub struct MultiDrawIndirectArgs {
     pub indirect: Handle<DrawIndexedIndirectBuffer>,
     pub offset: usize,
     pub count: usize,
+}
+
+// Used for MultiDrawIndirect meshes that can dispatch multiple GPU draw calls on the GPU using a single multi draw call
+// based on the data stored within a secondary "count" buffer
+#[derive(PartialEq, Eq)]
+pub struct MultiDrawIndirectCountArgs {
+    pub indirect: Handle<DrawIndexedIndirectBuffer>,
+    pub count: Handle<DrawCountIndirectBuffer>,
+    pub indirect_offset: usize,
+    pub count_offset: usize,
+    pub max_count: usize,
 }
 
 
@@ -161,6 +191,16 @@ impl RenderPath for Indirect {
         _mesh: &Mesh<Self>,
     ) -> bool {
         true
+    }
+
+    #[inline(always)]
+    fn vertex_count(_mesh: &Mesh<Self>) -> Option<usize> {
+        None
+    }
+
+    #[inline(always)]
+    fn triangle_count(_mesh: &Mesh<Self>) -> Option<usize> {
+        None
     }
 
     #[inline(always)]
@@ -198,7 +238,6 @@ impl RenderPath for Indirect {
     }
 }
 
-
 impl RenderPath for MultiDrawIndirect {
     type AttributeBuffer<A: MeshAttribute> = Handle<AttributeBuffer<A>>;
     type TriangleBuffer<T: GpuPod> = Handle<TriangleBuffer<T>>;
@@ -222,14 +261,13 @@ impl RenderPath for MultiDrawIndirect {
     }
 
     #[inline(always)]
-    fn draw<'a, C: ColorLayout, DS: DepthStencilLayout>(
-        mesh: &'a Mesh<Self>,
-        defaults: &DefaultMaterialResources<'a>,
-        active: &mut ActiveRenderPipeline<'_, 'a, '_, C, DS>,
-    ) -> Result<(), DrawIndexedError> {
-        let handle = mesh.indirect().clone();
-        let buffer = defaults.draw_indexed_indirect_buffers.get(&handle);
-        active.multi_draw_indexed_indirect(buffer, mesh.offset(), mesh.count())
+    fn vertex_count(_mesh: &Mesh<Self>) -> Option<usize> {
+        None
+    }
+
+    #[inline(always)]
+    fn triangle_count(_mesh: &Mesh<Self>) -> Option<usize> {
+        None
     }
 
     #[inline(always)]
@@ -253,5 +291,91 @@ impl RenderPath for MultiDrawIndirect {
     ) -> Result<(), SetIndexBufferError> {
         let buffer = defaults.indirect_triangles.get(buffer);
         active.set_index_buffer(buffer, bounds)
+    }
+
+    #[inline(always)]
+    fn draw<'a, C: ColorLayout, DS: DepthStencilLayout>(
+        mesh: &'a Mesh<Self>,
+        defaults: &DefaultMaterialResources<'a>,
+        active: &mut ActiveRenderPipeline<'_, 'a, '_, C, DS>,
+    ) -> Result<(), DrawIndexedError> {
+        let handle = mesh.indirect().clone();
+        let buffer = defaults.draw_indexed_indirect_buffers.get(&handle);
+        active.multi_draw_indexed_indirect(buffer, mesh.offset(), mesh.count())
+    }
+}
+
+impl RenderPath for MultiDrawIndirectCount {
+    type AttributeBuffer<A: MeshAttribute> = Handle<AttributeBuffer<A>>;
+    type TriangleBuffer<T: GpuPod> = Handle<TriangleBuffer<T>>;
+    type Args = MultiDrawIndirectCountArgs;
+
+    #[inline(always)]
+    fn get<'a>(
+        defaults: &DefaultMaterialResources<'a>,
+        handle: &Handle<Mesh<Self>>,
+    ) -> &'a Mesh<Self> {
+        defaults.multi_draw_indirect_count_meshes.get(handle)
+    }
+
+    #[inline(always)]
+    fn is_valid(
+        defaults: &DefaultMaterialResources,
+        mesh: &Mesh<Self>,
+    ) -> bool {
+        let indirect = defaults.draw_indexed_indirect_buffers.get(mesh.indirect());
+        let count = defaults.draw_count_indirect_buffer.get(mesh.count());
+        let indirect_offset = mesh.indirect_offset();
+        let count_offset = mesh.count_offset();
+        let max_count = mesh.max_count();
+        let indirect = indirect.len() >= (indirect_offset + max_count);
+        let count = count.len() > count_offset;
+        indirect && count
+    }
+
+    #[inline(always)]
+    fn vertex_count(_mesh: &Mesh<Self>) -> Option<usize> {
+        None
+    }
+
+    #[inline(always)]
+    fn triangle_count(_mesh: &Mesh<Self>) -> Option<usize> {
+        None
+    }
+
+    #[inline(always)]
+    fn set_vertex_buffer<'a, C: ColorLayout, DS: DepthStencilLayout, A: MeshAttribute>(
+        slot: u32,
+        bounds: impl RangeBounds<usize>,
+        buffer: &Self::AttributeBuffer<A>,
+        defaults: &DefaultMaterialResources<'a>,
+        active: &mut ActiveRenderPipeline<'_, 'a, '_, C, DS>,
+    ) -> Result<(), SetVertexBufferError> {
+        let buffer = A::indirect_buffer_from_defaults(defaults, buffer);
+        active.set_vertex_buffer::<A::V>(slot, buffer, bounds)
+    }
+
+    #[inline(always)]
+    fn set_index_buffer<'a, C: ColorLayout, DS: DepthStencilLayout>(
+        bounds: impl RangeBounds<usize>,
+        buffer: &'a Self::TriangleBuffer<u32>,
+        defaults: &DefaultMaterialResources<'a>,
+        active: &mut ActiveRenderPipeline<'_, 'a, '_, C, DS>,
+    ) -> Result<(), SetIndexBufferError> {
+        let buffer = defaults.indirect_triangles.get(buffer);
+        active.set_index_buffer(buffer, bounds)
+    }
+
+    #[inline(always)]
+    fn draw<'a, C: ColorLayout, DS: DepthStencilLayout>(
+        mesh: &'a Mesh<Self>,
+        defaults: &DefaultMaterialResources<'a>,
+        active: &mut ActiveRenderPipeline<'_, 'a, '_, C, DS>,
+    ) -> Result<(), DrawIndexedError> {
+        let indirect = mesh.indirect().clone();
+        let count = mesh.count().clone();
+        let indirect = defaults.draw_indexed_indirect_buffers.get(&indirect);
+        let count = defaults.draw_count_indirect_buffer.get(&count);
+        active.multi_draw_indexed_indirect_count(indirect, mesh.indirect_offset(), count, mesh.count_offset(), mesh.max_count())
     }
 }

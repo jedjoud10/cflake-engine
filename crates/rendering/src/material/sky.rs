@@ -1,6 +1,6 @@
 use crate::{
     AlbedoMap, CameraUniform, CastShadowsMode, DefaultMaterialResources, Direct, Material,
-    MeshAttributes, SceneUniform,
+    MeshAttributes, SceneUniform, EnvironmentMap,
 };
 
 use assets::Assets;
@@ -11,12 +11,14 @@ use graphics::{
 use utils::Storage;
 
 // A very simple sky material which uses a procedural sky system
-pub struct SkyMaterial {}
+// This is private since the user will NEVER create a sky entity and at it manually (it's added automatically)
+pub(crate) struct SkyMaterial {}
 
 impl Material for SkyMaterial {
     type Resources<'w> = world::Read<'w, Storage<AlbedoMap>>;
     type RenderPath = Direct;
     type Settings<'s> = ();
+    type Query<'a> = &'a ();
 
     // Load the respective Sky shader modules and compile them
     fn shader(settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader {
@@ -34,6 +36,7 @@ impl Material for SkyMaterial {
         let mut compiler = Compiler::new(assets, graphics);
         compiler.use_uniform_buffer::<CameraUniform>("camera");
         compiler.use_uniform_buffer::<SceneUniform>("scene");
+        compiler.use_sampled_texture::<EnvironmentMap>("environment_map");
 
         // Compile the modules into a shader
         Shader::new(vert, frag, &compiler).unwrap()
@@ -80,6 +83,9 @@ impl Material for SkyMaterial {
             .unwrap();
         group
             .set_uniform_buffer("scene", default.scene_buffer, ..)
+            .unwrap();
+        group
+            .set_sampled_texture("environment_map", default.environment_map)
             .unwrap();
     }
 }

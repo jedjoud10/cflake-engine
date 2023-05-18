@@ -16,9 +16,16 @@ vec3 aces(vec3 x) {
 }
 
 // randomly found here https://www.shadertoy.com/view/Ml2cWG
-vec3 jodieReinhardTonemap(vec3 c){
+vec3 reinhard_jodie(vec3 c){
     float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
     vec3 tc = c / (c + 1.0);
 
     return mix(c / (l + 1.0), tc, tc);
+}
+
+// Basic Reinhard tonemapping
+// https://64.github.io/tonemapping/
+vec3 reinhard(vec3 v)
+{
+    return v / (1.0f + v);
 }

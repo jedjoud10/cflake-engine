@@ -40,7 +40,7 @@ pub enum SamplerFilter {
 pub enum SamplerMipMaps {
     // Sampler will fetch it's required data from the texture (aniso disabled)
     Auto,
-
+    
     // Sampler will fetch it's required data from the texture with anisotropy
     #[default]
     AutoAniso,
@@ -120,7 +120,8 @@ pub fn convert_sampler_filter(filter: SamplerFilter) -> wgpu::FilterMode {
 // Convert the mip mapping settings to the anisotropic values used by the Wgpu sampler
 pub fn convert_mip_map_anisotropic_clamp(mip_mapping: &SamplerMipMaps) -> u16 {
     match mip_mapping {
-        SamplerMipMaps::AutoAniso => 16,
+        SamplerMipMaps::AutoAniso => 4,
+        SamplerMipMaps::ClampedAniso { aniso_samples, .. } => aniso_samples.get() as u16,
         _ => 1,
     }
 }

@@ -29,7 +29,7 @@ impl Default for CameraController {
         Self {
             sensivity: 1.0,
             base_speed: 20.0,
-            boost_speed: 120.0,
+            boost_speed: 300.0,
             fov_change_scroll_speed: 200.0,
             fov_change_key_speed: 50.0,
             smoothness: 0.2,
@@ -42,19 +42,19 @@ impl Default for CameraController {
 fn init(world: &mut World) {
     // Bind inputs to be used by the camera tick event
     let mut input = world.get_mut::<Input>().unwrap();
-    input.bind_button("forward", Button::W);
-    input.bind_button("backward", Button::S);
-    input.bind_button("up", Button::Space);
-    input.bind_button("down", Button::LControl);
-    input.bind_button("left", Button::A);
-    input.bind_button("right", Button::D);
-    input.bind_button("lshift", Button::LShift);
-    input.bind_button("reset", Button::R);
-    input.bind_button("zoom-in", Button::Z);
-    input.bind_button("zoom-out", Button::X);
-    input.bind_button("show-cursor", Button::H);
-    input.bind_axis("x rotation", Axis::MousePositionX);
-    input.bind_axis("y rotation", Axis::MousePositionY);
+    input.bind_button("forward", KeyboardButton::W);
+    input.bind_button("backward", KeyboardButton::S);
+    input.bind_button("up", KeyboardButton::Space);
+    input.bind_button("down", KeyboardButton::LControl);
+    input.bind_button("left", KeyboardButton::A);
+    input.bind_button("right", KeyboardButton::D);
+    input.bind_button("lshift", KeyboardButton::LShift);
+    input.bind_button("reset", KeyboardButton::R);
+    input.bind_button("zoom-in", KeyboardButton::Z);
+    input.bind_button("zoom-out", KeyboardButton::X);
+    input.bind_button("show-cursor", KeyboardButton::H);
+    input.bind_axis("x rotation", MouseAxis::PositionX);
+    input.bind_axis("y rotation", MouseAxis::PositionY);
 }
 
 // Hide the cursor and give control to the camera
@@ -87,7 +87,7 @@ fn update(world: &mut World) {
     let window = world.get::<Window>().unwrap();
 
     // If the user *just* added a camera, then hide the UI
-    if !scene.query_with::<&CameraController>(ecs::added::<CameraController>()).is_empty() && time.frame_count() == 1 {
+    if !scene.query_with::<&CameraController>(ecs::added::<&CameraController>()).is_empty() && time.frame_count() == 1 {
         hide_ui(&window, &mut gui);
     }
 
@@ -179,7 +179,7 @@ fn update(world: &mut World) {
     **output = vek::Vec3::lerp(**output, velocity, (factor * 2.0).clamped01());
 
     // The scroll wheel OR the X and Z buttons will change the camera FOV
-    let mut delta = input.get_axis(Axis::MouseScrollDelta) * fov_change_scroll_speed;
+    let mut delta = input.get_axis(MouseAxis::ScrollDelta) * fov_change_scroll_speed;
 
     // Update based on buttons instead
     if input.get_button("zoom-in").held() {

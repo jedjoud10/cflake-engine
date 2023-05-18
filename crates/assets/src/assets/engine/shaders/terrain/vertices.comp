@@ -14,7 +14,7 @@ layout(push_constant) uniform PushConstants {
     // Bit 4 = End X
     // Bit 5 = End Y
     // Bit 6 = End Z
-    uint direction_bitflags;
+    uint skirts_direction_bitflags;
 } meshing;
 
 #include <engine/shaders/math/packer.glsl>
@@ -27,7 +27,7 @@ layout(set = 0, binding = 3, r32ui) uniform uimage3D cached_indices;
 
 // Output temp vertices
 layout(std430, set = 1, binding = 0) writeonly buffer Vertices {
-    vec2 data[size*size*size];
+    vec4 data[size*size*size];
 } vertices;
 
 // Atomic counters
@@ -136,7 +136,7 @@ void main() {
     bool skirts = any(lessThanEqual(gl_GlobalInvocationID, vec3(1))) || any(greaterThanEqual(gl_GlobalInvocationID, vec3(size-3)));
 
     // Update normals and count for skirts
-    if (skirts) {
+    if (skirts && imageLoad(voxels, ivec3(gl_GlobalInvocationID)).x < 0.0) {
         normal = calculate_normal(gl_GlobalInvocationID) * 4;
         count = 4;
     }
@@ -146,48 +146,63 @@ void main() {
     if (count > 0) {
         uint index = atomicAdd(counters.vertices, 1);
 
-        #ifndef lowpoly
-        // Stored in the first 16 bits
-        uint packed_normals = cube_16(normalize(normal / count));
-        #else
-        uint packed_normals = 0;
-        #endif
-
         // Meshes are always n-3 size, so each voxel has a size of 1 / n-3
         vec3 final = blocky ? vec3(0) : ((vertex / count) - vec3(0.5));
 
+        // Decompose the bitflags into booleans
+        uint bits = meshing.skirts_direction_bitflags;
+        bool start_x = (bits & 1) == 1;
+        bool start_y = (bits & 2) == 1;
+        bool start_z = (bits & 4) == 1;
+        bool end_x = (bits & 8) == 1;
+        bool end_y = (bits & 16) == 1;
+        bool end_z = (bits & 32) == 1;
+
+        start_x = false;
+        start_y = false;
+        start_z = false;
+        end_x = false;
+        end_y = false;
+        end_z = false;
+
+
         // TODO: Probably a way to optimize this
         // Confine the vertices in the X skirt if needed
-        /*
-        if (gl_GlobalInvocationID.x < 1 || gl_GlobalInvocationID.x == size-3) {
+        if ((gl_GlobalInvocationID.x < 1 && start_x)  || (gl_GlobalInvocationID.x == size-3 && end_x) ) {
             final.x = 0;
         }
 
         // Confine the vertices in the Y skirt if needed
-        if (gl_GlobalInvocationID.y < 1 || gl_GlobalInvocationID.y == size-3) {
+        if ((gl_GlobalInvocationID.y < 1 && start_y) || (gl_GlobalInvocationID.y == size-3 && end_y)) {
             final.y = 0;
         }
 
         // Confine the vertices in the Z skirt if needed
-        if (gl_GlobalInvocationID.z < 1 || gl_GlobalInvocationID.z == size-3) {
+        if ((gl_GlobalInvocationID.z < 1 && start_z) || (gl_GlobalInvocationID.z == size-3 && end_z)) {
             final.z = 0;
         }
-        */
 
-        // Positions only need 16 bits (1 byte for cell coord, 1 byte for inner vertex coord)
-        uint packed_cell_position_packed_normals = packUnorm4x8(vec4(gl_GlobalInvocationID, 0) / 255);
-        uint packed_inner_position_packed_normals = packSnorm4x8(vec4(final, 0));
-        packed_cell_position_packed_normals = packed_cell_position_packed_normals | ((packed_normals & 0xFF00) >> 8) << 24;
-        packed_inner_position_packed_normals = packed_inner_position_packed_normals | (packed_normals & 0xFF) << 24;
+        // Positions only need 32 bits each (4 byte for cell coord, 4 byte for inner vertex coord)
+        uint packed_cell_position = packUnorm4x8(vec4(gl_GlobalInvocationID, 0) / 255);
+        uint packed_inner_position = packSnorm4x8(vec4(final, 0));
+
+        #ifndef lowpoly
+        // Pack normals to 3 bytes only
+        uint packed_normals = packSnorm4x8(vec4(normalize(normal / count), 0));
+        #else
+        uint packed_normals = 0;
+        #endif
 
         // Convert to 4 floats to store within the texture
-        float float_packed_cell_position_packed_normals = uintBitsToFloat(packed_cell_position_packed_normals);
-        float float_packed_inner_position_packed_normals = uintBitsToFloat(packed_inner_position_packed_normals);
+        float float_packed_cell_position = uintBitsToFloat(packed_cell_position);
+        float float_packed_inner_position = uintBitsToFloat(packed_inner_position);
+        float float_packed_normals = uintBitsToFloat(packed_normals);
 
         // Store the packed positions and normals
-        vertices.data[index] = vec2(
-            float_packed_cell_position_packed_normals,
-            float_packed_inner_position_packed_normals
+        vertices.data[index] = vec4(
+            float_packed_cell_position,
+            float_packed_inner_position,
+            float_packed_normals, 0
         );
 
         imageStore(cached_indices, ivec3(gl_GlobalInvocationID + 1), uvec4(index));

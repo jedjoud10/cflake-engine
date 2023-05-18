@@ -3,6 +3,7 @@ use crate::{
 };
 use assets::Assets;
 
+use ecs::QueryLayoutRef;
 use graphics::{
     BindGroup, BlendConfig, CompareFunction, DepthConfig, Graphics, PrimitiveConfig, PushConstants,
     Shader, StencilConfig, WindingOrder,
@@ -17,6 +18,7 @@ pub enum CastShadowsMode<M: Material> {
 
     // If you *are* going to use a custom shadow shader you should note that only the position attribute is given
     // and other atrributes are NOT given
+    // TODO: Find a way to let the user customize the shadow shader to their heart's extent
     Enabled(Option<Box<dyn FnOnce(&M::Settings<'_>, &Graphics, &Assets) -> Shader>>),
 }
 
@@ -27,6 +29,7 @@ pub trait Material: 'static + Sized + Sync + Send {
     type Resources<'w>: 'w;
     type RenderPath: RenderPath;
     type Settings<'s>;
+    type Query<'a>: ecs::QueryLayoutRef;
 
     // Create a shader for this material
     fn shader(settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader;
@@ -102,6 +105,7 @@ pub trait Material: 'static + Sized + Sync + Send {
         _renderer: &Renderer,
         _resources: &'r mut Self::Resources<'w>,
         _default: &mut DefaultMaterialResources<'w>,
+        _query: &Self::Query<'w>,
         _group: &mut BindGroup<'r>,
     ) {
     }
@@ -112,6 +116,7 @@ pub trait Material: 'static + Sized + Sync + Send {
         _renderer: &Renderer,
         _resources: &'r mut Self::Resources<'w>,
         _default: &DefaultMaterialResources<'r>,
+        _query: &Self::Query<'w>,
         _push_constants: &mut PushConstants<ActiveScenePipeline>,
     ) {
     }

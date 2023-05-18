@@ -5,13 +5,13 @@ use std::{
 };
 use uuid::Uuid;
 
-use crate::Packet;
+use crate::{Packet, PacketSendError};
 
 // A client resource that can be added to the world (as a NetworkedSession)
 // Clients can be created when we connect to a specific IP address (Server)
 pub struct Client {
     // Identifier
-    uuid: Uuid,
+    uuid: Option<Uuid>,
 
     // Networking
     stream: TcpStream,
@@ -19,8 +19,7 @@ pub struct Client {
 
 impl Drop for Client {
     fn drop(&mut self) {
-        // TODO: Handle this
-        //self.disconnect();
+        self.disconnect();
     }
 }
 
@@ -41,36 +40,38 @@ impl Client {
         stream.set_nonblocking(false).unwrap();
         log::debug!("Received UUID {}", uuid);
 
-        Ok(Self { uuid, stream })
+        Ok(Self { uuid: Some(uuid), stream })
     }
 
     // Disconnect the client from the server
-    pub fn disconnect(self) {}
+    pub fn disconnect(&mut self) {}
 
-    // Get the client's identifier
-    pub fn uuid(&self) -> Uuid {
+    // Get the client's identifier (if it's still connected that is)
+    pub fn uuid(&self) -> Option<Uuid> {
         self.uuid
     }
-
-    // Called each networking tick to update the client
-    pub(crate) fn tick(&mut self) {}
 }
 
 // Data transmission
 impl Client {
     // Send a message of a specific type to the server
-    pub fn send<T: Packet>(&mut self, val: T) {
+    pub fn send<T: Packet>(&mut self, val: T) -> Result<(), PacketSendError> {
         // TODO: User another serialization system other than this bozo
-        let string = serde_json::to_string(&val).unwrap();
+        let string = serde_json::to_string(&val).map_err(|err| PacketSendError::SerializationError(err))?;
         let id = crate::packet::id::<T>();
         let mut data = Vec::<u8>::with_capacity(string.as_bytes().len() + 8);
         data.extend(id.to_be_bytes());
         data.extend(string.as_bytes());
-        self.stream.write(&data).unwrap();
+        self.stream.write(&data).map_err(|err| PacketSendError::SocketError(err)).map(|_| ())
     }
 
-    // Receive messages of a specific type from the server
-    pub fn receive<T: Packet>(&mut self) -> &[T] {
+    // Send a message of a specific type to all the clients
+    pub fn broadcast<T: Packet>(&mut self, _val: T) {
+        todo!()
+    }
+    
+    // Receive messages of a specific type from the clients
+    pub fn receive<T: Packet>(&mut self) -> Vec<(T, Uuid)> {
         todo!()
     }
 }

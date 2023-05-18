@@ -13,7 +13,7 @@ layout(push_constant) uniform PushConstants {
 
 // Input temp vertices
 layout(std430, set = 0, binding = 1) readonly buffer TemporaryVertices {
-    vec2 data[size*size*size];
+    vec4 data[size*size*size];
 } temporary_vertices;
 
 // Input temp triangles
@@ -23,7 +23,7 @@ layout(std430, set = 0, binding = 2) readonly buffer TemporaryTriangles {
 
 // Output vertices
 layout(std430, set = 1, binding = 1) writeonly buffer OutputVertices {
-    vec2 data[output_vertices_count];
+    vec4 data[output_vertices_count];
 } output_vertices;
 
 // Output triangles

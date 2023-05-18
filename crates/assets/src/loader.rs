@@ -40,7 +40,7 @@ pub struct UserAssets {
 //pub use include_dir::{include_dir, Dir};
 pub use cfg_if;
 pub use include_dir;
-pub use with_builtin_macros::*;
+pub use with_builtin_macros;
 
 // This is the main asset manager resource that will load & cache newly loaded assets
 // This asset manager will also contain the persistent assets that are included by default into the engine executable
@@ -182,12 +182,12 @@ impl Assets {
         let read = hijack.read();
         let owned = read.get(&owned).unwrap_or(&owned);
 
-        // Get the path of the asset (make it absolute if needed)
+        // Get the path of the asset
         let path = if owned.is_absolute() {
             owned.clone()
         } else {
-            dbg!(&owned);
-            todo!()
+            let path = owned.as_os_str().to_str().unwrap().to_owned();
+            return Err(AssetLoadError::CachedNotFound(path))
         };
 
         // Load the asset dynamically

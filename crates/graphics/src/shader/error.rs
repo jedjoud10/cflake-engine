@@ -82,6 +82,9 @@ pub enum PushConstantValidationError {
 
     #[error("The defined push constant ranges cannot be merged since there is a visibility intersection")]
     PushConstantVisibilityIntersect,
+
+    #[error("The defined compiler push constant are not defined in the shader or they have a different size requirement")]
+    PushConstantNotDefinedOrDiffSized,
 }
 
 #[derive(Error, Debug)]
@@ -109,4 +112,5 @@ pub enum ShaderReflectionError {
 
     #[error("The shader defined resource {0} is not defined in the Compiler")]
     NotDefinedInCompiler(String),
+    
 }

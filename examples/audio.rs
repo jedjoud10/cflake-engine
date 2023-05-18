@@ -5,6 +5,7 @@ fn main() {
     App::default()
         .set_app_name("cflake engine audio example")
         .insert_init(init)
+        .insert_update(update)
         .execute();
 }
 
@@ -29,4 +30,12 @@ fn init(world: &mut World) {
     // Play both clips at the same time
     scene.insert(AudioSource::new(clip1));
     scene.insert(AudioSource::new(clip2));
+}
+
+// Changes the volume of the audio player based on sin
+fn update(world: &mut World) {
+    let mut scene = world.get_mut::<Scene>().unwrap();
+    let mut player = scene.find_mut::<&mut AudioPlayer>().unwrap();
+    let time = world.get::<Time>().unwrap();
+    player.set_volume((time.elapsed().as_secs_f32().sin() + 1.0) / 2.0);
 }

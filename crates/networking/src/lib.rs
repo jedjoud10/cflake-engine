@@ -4,6 +4,8 @@ mod packet;
 mod server;
 mod session;
 mod system;
+mod errors;
+pub use errors::*;
 pub use client::*;
 pub use components::*;
 pub use packet::*;

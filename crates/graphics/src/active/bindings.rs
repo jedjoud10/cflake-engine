@@ -128,6 +128,8 @@ pub(super) fn create_bind_group<'b>(
                 return Err(SetBindGroupError::MissingResource(index));
             }
 
+            log::trace!("create bind group entries: {:?}", entries);
+
             // Create a bind group descriptor of the entries
             let desc = wgpu::BindGroupDescriptor {
                 label: None,
@@ -145,14 +147,26 @@ pub(super) fn create_bind_group<'b>(
     Ok(Some(bind_group))
 }
 
-// Blud thinks he's a good coder 🤣
-pub trait StorageResource {
-    type Res;
-    type Borrowed;
-    fn into(borrowed: Self::Borrowed) -> Self::Res;
+/*
+
+pub trait IntoBufferSlice<'a, const TYPE: u32>: 'a {
+    type T: GpuPod;
+    fn into(self) -> &'a Buffer<Self::T, TYPE>;
 }
 
-// FIXME: Why do set_storage_* methods not take in a mutable value??
+impl<'a, T: GpuPod, const TYPE: u32> IntoStorageBufferRef<'a, TYPE> for &'a Buffer<T, TYPE> {
+    type T = T;
+
+    fn into(self) -> &'a Buffer<Self::T, TYPE> {
+        todo!()
+    }
+}
+*/
+
+// TODO: Please find a way to:
+//a) remove the required binding range when setting buffers
+//b) pass in OPTIOANL binding range when setting buffers
+//c) use a specific layer/level of a texture when setting textures
 impl<'a> BindGroup<'a> {
     // Get the entry layout for a specific resource in this bind group
     // Returns None if there is no matching entry layout
@@ -174,6 +188,105 @@ impl<'a> BindGroup<'a> {
             .find(|x| x.name == name)
             .ok_or(SetBindResourceError::ResourceNotDefined { name, group: index })
     }
+    
+    // Internally used for setting the storage buffer
+    fn internal_set_storage_buffer<'s, T: GpuPod, const TYPE: u32>(
+        &mut self,
+        rw: bool,
+        buffer: &'a Buffer<T, TYPE>,
+        name: &'s str,
+        bounds: impl RangeBounds<usize>
+    ) -> Result<(), SetBindResourceError<'s>> {
+        // Make sure it's a storage buffer
+        if !buffer.usage().contains(BufferUsage::STORAGE) {
+            return Err(SetBindResourceError::SetBuffer(
+                SetBufferError::MissingStorageUsage,
+            ));
+        }
+
+        // Get the binding entry layout for the given buffer
+        let entry = Self::find_entry_layout(self.index, &self.reflected, name)?;
+
+        // Make sure type and RW mode matches up
+        match entry.resource_type {
+            crate::BindResourceType::StorageBuffer { access, .. } => {
+                match (access, rw) {
+                    (spirq::AccessType::WriteOnly, false) | (spirq::AccessType::ReadWrite, false) => return Err(SetBindResourceError::SetBuffer(
+                        SetBufferError::MutabilityMissing
+                    )),
+                    _ => {}
+                }
+            },
+            _ => return Err(SetBindResourceError::ResourceTypeMismatch {
+                name,
+                reflected_type: crate::STORAGE_BUFFER_STRINGIFIED_NAME,
+                set_type: crate::stringify_bind_resource_type(&entry.resource_type)
+            })
+        }
+
+        // Get the buffer binding bounds
+        let binding =
+            buffer
+                .convert_bounds_to_binding(bounds)
+                .ok_or(SetBindResourceError::SetBuffer(
+                    SetBufferError::InvalidRange(buffer.len()),
+                ))?;
+
+        // Get values needed for the bind entry
+        let id = buffer.raw().global_id();
+        let resource = wgpu::BindingResource::Buffer(binding);
+
+        // Save the bind entry for later
+        self.resources.push(resource);
+        self.ids.push(Id::new(id, IdVariant::Buffer));
+        self.slots.push(entry.binding);
+        Ok(())
+    }
+
+    // Internally used for setting the storage texture
+    fn internal_set_storage_texture<'s, T: Texture>(
+        &mut self,
+        rw: bool,
+        texture: &'a T,
+        name: &'s str
+    ) -> Result<(), SetBindResourceError<'s>> {
+        // Make sure it's a sampled texture
+        if !texture.usage().contains(TextureUsage::STORAGE) {
+            return Err(SetBindResourceError::SetTexture(
+                SetTextureError::MissingStorageUsage,
+            ));
+        }
+
+        // Get the binding entry layout for the given texture
+        let entry = Self::find_entry_layout(self.index, &self.reflected, name)?;
+
+        // Make sure type and RW mode matches up
+        match entry.resource_type {
+            crate::BindResourceType::StorageTexture { access, .. } => {
+                match (access, rw) {
+                    (spirq::AccessType::WriteOnly, false) | (spirq::AccessType::ReadWrite, false) => return Err(SetBindResourceError::SetTexture(
+                        SetTextureError::MutabilityMissing
+                    )),
+                    _ => {}
+                }
+            },
+            _ => return Err(SetBindResourceError::ResourceTypeMismatch {
+                name,
+                reflected_type: crate::STORAGE_TEXTURE_STRINGIFIED_NAME,
+                set_type: crate::stringify_bind_resource_type(&entry.resource_type)
+            })
+        }
+
+        // Get values needed for the bind entry
+        let id = texture.raw().global_id();
+        let resource = wgpu::BindingResource::TextureView(texture.view().unwrap());
+
+        // Save the bind entry for later
+        self.resources.push(resource);
+        self.ids.push(Id::new(id, IdVariant::Texture));
+        self.slots.push(entry.binding);
+        Ok(())
+    }
 
     // Set a texture that can be sampled inside shaders using it's sampler
     pub fn set_sampled_texture<'s, T: Texture>(
@@ -190,10 +303,20 @@ impl<'a> BindGroup<'a> {
 
         // Try setting a sampler appropriate for this texture
         let sampler = format!("{name}_sampler");
-        self.set_sampler(&sampler, texture.sampler().unwrap());
+        let _ = self.set_sampler(&sampler, texture.sampler().unwrap());
 
         // Get the binding entry layout for the given texture
         let entry = Self::find_entry_layout(self.index, &self.reflected, name)?;
+
+        // Make sure type matches up
+        match entry.resource_type {
+            crate::BindResourceType::SampledTexture { .. } => {},
+            _ => return Err(SetBindResourceError::ResourceTypeMismatch {
+                name,
+                reflected_type: crate::SAMPLED_TEXTURE_STRINGIFIED_NAME,
+                set_type: crate::stringify_bind_resource_type(&entry.resource_type)
+            })
+        }
 
         // Get values needed for the bind entry
         let id = texture.raw().global_id();
@@ -206,31 +329,22 @@ impl<'a> BindGroup<'a> {
         Ok(())
     }
 
-    // Set a storage texture that we can write / read from / to
+    // Set a storage texture that can read from only
     pub fn set_storage_texture<'s, T: Texture>(
         &mut self,
         name: &'s str,
         texture: &'a T,
     ) -> Result<(), SetBindResourceError<'s>> {
-        // Make sure it's a sampled texture
-        if !texture.usage().contains(TextureUsage::STORAGE) {
-            return Err(SetBindResourceError::SetTexture(
-                SetTextureError::MissingStorageUsage,
-            ));
-        }
+        self.internal_set_storage_texture(false, texture, name)
+    }
 
-        // Get the binding entry layout for the given texture
-        let entry = Self::find_entry_layout(self.index, &self.reflected, name)?;
-
-        // Get values needed for the bind entry
-        let id = texture.raw().global_id();
-        let resource = wgpu::BindingResource::TextureView(texture.view().unwrap());
-
-        // Save the bind entry for later
-        self.resources.push(resource);
-        self.ids.push(Id::new(id, IdVariant::Texture));
-        self.slots.push(entry.binding);
-        Ok(())
+    // Set a storage texture for reading AND writing
+    pub fn set_storage_texture_mut<'s, T: Texture>(
+        &mut self,
+        name: &'s str,
+        texture: &'a mut T,
+    ) -> Result<(), SetBindResourceError<'s>> {
+        self.internal_set_storage_texture(true, texture, name)
     }
 
     // Set a texture sampler so we can sample textures within the shader
@@ -241,6 +355,16 @@ impl<'a> BindGroup<'a> {
     ) -> Result<(), SetBindResourceError<'s>> {
         // Get the binding entry layout for the given sampler
         let entry = Self::find_entry_layout(self.index, &self.reflected, name)?;
+
+        // Make sure type matches up
+        match entry.resource_type {
+            crate::BindResourceType::Sampler { .. } => {},
+            _ => return Err(SetBindResourceError::ResourceTypeMismatch {
+                name,
+                reflected_type: crate::SAMPLER_STRINGIFIED_NAME,
+                set_type: crate::stringify_bind_resource_type(&entry.resource_type)
+            })
+        }
 
         // Get values needed for the bind entry
         let id = sampler.raw().global_id();
@@ -264,6 +388,16 @@ impl<'a> BindGroup<'a> {
         // Get the binding entry layout for the given buffer
         let entry = Self::find_entry_layout(self.index, &self.reflected, name)?;
 
+        // Make sure type matches up
+        match entry.resource_type {
+            crate::BindResourceType::UniformBuffer { .. } => {},
+            _ => return Err(SetBindResourceError::ResourceTypeMismatch {
+                name,
+                reflected_type: crate::UNIFORM_BUFFER_STRINGIFIED_NAME,
+                set_type: crate::stringify_bind_resource_type(&entry.resource_type)
+            })
+        }
+
         // Get the buffer binding bounds
         let binding =
             buffer
@@ -283,39 +417,23 @@ impl<'a> BindGroup<'a> {
         Ok(())
     }
 
-    // Set a storage buffer that we can write / read from / to
+    // Set a storage buffer that we can read from only
     pub fn set_storage_buffer<'s, T: GpuPod, const TYPE: u32>(
         &mut self,
         name: &'s str,
         buffer: &'a Buffer<T, TYPE>,
         bounds: impl RangeBounds<usize>,
     ) -> Result<(), SetBindResourceError<'s>> {
-        // Make sure it's a storage buffer
-        if !buffer.usage().contains(BufferUsage::STORAGE) {
-            return Err(SetBindResourceError::SetBuffer(
-                SetBufferError::MissingStorageUsage,
-            ));
-        }
+        self.internal_set_storage_buffer(false, buffer, name, bounds)
+    }
 
-        // Get the binding entry layout for the given buffer
-        let entry = Self::find_entry_layout(self.index, &self.reflected, name)?;
-
-        // Get the buffer binding bounds
-        let binding =
-            buffer
-                .convert_bounds_to_binding(bounds)
-                .ok_or(SetBindResourceError::SetBuffer(
-                    SetBufferError::InvalidRange(buffer.len()),
-                ))?;
-
-        // Get values needed for the bind entry
-        let id = buffer.raw().global_id();
-        let resource = wgpu::BindingResource::Buffer(binding);
-
-        // Save the bind entry for later
-        self.resources.push(resource);
-        self.ids.push(Id::new(id, IdVariant::Buffer));
-        self.slots.push(entry.binding);
-        Ok(())
+    // Set a storage buffer for reading AND writing
+    pub fn set_storage_buffer_mut<'s, T: GpuPod, const TYPE: u32>(
+        &mut self,
+        name: &'s str,
+        buffer: &'a mut Buffer<T, TYPE>,
+        bounds: impl RangeBounds<usize>,
+    ) -> Result<(), SetBindResourceError<'s>> {
+        self.internal_set_storage_buffer(true, buffer, name, bounds)
     }
 }

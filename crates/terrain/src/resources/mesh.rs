@@ -53,7 +53,7 @@ impl MeshGenerator {
             .use_storage_texture::<Texture3D<R<u32>>>("cached_indices", StorageAccess::WriteOnly);
 
         // Set storage buffers and counters
-        compiler.use_storage_buffer::<<XY<f32> as Vertex>::Storage>(
+        compiler.use_storage_buffer::<<XYZW<f32> as Vertex>::Storage>(
             "vertices",
             StorageAccess::WriteOnly,
         );

@@ -49,6 +49,7 @@ pub type UniformBuffer<T> = Buffer<T, UNIFORM>;
 pub type DrawIndirectBuffer = Buffer<DrawIndirect, INDIRECT>;
 pub type DrawIndexedIndirectBuffer = Buffer<DrawIndexedIndirect, INDIRECT>;
 pub type DispatchIndirectBuffer = Buffer<DispatchIndirect, INDIRECT>;
+pub type DrawCountIndirectBuffer = Buffer<u32, INDIRECT>;
 
 // A buffer abstraction over a valid WGPU buffer
 // This also takes a constant that represents it's Wgpu target at compile time
@@ -347,6 +348,13 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
 
         self.length = 0;
         Ok(())
+    }
+
+    // Extend this buffer using the given iterator    
+    pub fn extend(&mut self, iter: impl IntoIterator<Item = T>) -> Result<(), BufferExtendError> {
+        // Shitty but works
+        let vec = iter.into_iter().collect::<Vec<_>>();
+        self.extend_from_slice(&vec)
     }
 
     // Extend this buffer using the given slice instantly

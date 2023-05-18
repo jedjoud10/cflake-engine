@@ -84,8 +84,8 @@ impl Server {
 
         // Handle client read connections
         for (uuid, client) in self.clients.iter_mut() {
-            let mut buf = [0u8; 512];
-            if let Ok(len) = client.stream.read(&mut buf) {
+            let mut buf = Vec::new();
+            if let Ok(len) = client.stream.read_to_end(&mut buf) {
                 // Check if the client got disconnected
                 if len == 0 {
                     disconnected.push(*uuid);
@@ -113,17 +113,19 @@ impl Server {
 // Data transmission
 impl Server {
     // Send a message of a specific type to a specific client
-    pub fn message<T>(&mut self, _client: Uuid, _val: T) {
+    pub fn message<T: Packet>(&mut self, _client: Uuid, _val: T) {
         todo!()
     }
 
     // Send a message of a specific type to all the clients
-    pub fn broadcast<T>(&mut self, _val: T) {
+    pub fn broadcast<T: Packet>(&mut self, _val: T) {
         todo!()
     }
 
     // Receive messages of a specific type from the clients
     pub fn receive<T: Packet>(&mut self) -> Vec<(T, Uuid)> {
+        todo!()
+        /*
         let mut output = Vec::new();
         let hash = crate::id::<T>();
         for (uuid, client) in self.clients.iter_mut() {
@@ -139,5 +141,6 @@ impl Server {
             output.extend(drain);
         }
         output
+        */
     }
 }
