@@ -36,7 +36,7 @@ pub struct ChunkManager {
 
     // Keeps track of finished nodes (even contains parent nodes and back-propagation)
     pub(crate) counting: AHashMap<vek::Vec3<i32>, (u32, Vec<Entity>)>,
-    pub(crate) old_hashmap_nodes: AHashMap<vek::Vec3<i32>, Node>,
+    pub(crate) parent_node_children_generated: AHashMap<vek::Vec3<i32>, bool>, 
 
     // Single entity that contains multiple meshes that represent the terrain
     pub(crate) global_draw_entity: Entity,
@@ -178,13 +178,13 @@ impl ChunkManager {
             viewer: None,
             octree,
             entities: Default::default(),
-            old_hashmap_nodes: Default::default(),
             global_draw_entity,
             layered_albedo_map,
             layered_normal_map,
             layered_mask_map,
             chunks_per_allocation: 0,
             counting: Default::default(),
+            parent_node_children_generated: Default::default(),
         }
     }
 }

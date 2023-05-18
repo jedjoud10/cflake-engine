@@ -1,5 +1,6 @@
 use assets::Assets;
 use graphics::{Graphics, ComputeShader, ComputeModule, Compiler, ModuleVisibility, PushConstantLayout, GpuPod, StorageAccess, DrawIndexedIndirect};
+use rendering::CameraUniform;
 use crate::TerrainSettings;
 
 // Chunk culler will be responsible for culling invisible / culled (GPU frustum culled) chunks that are not visible
@@ -30,6 +31,7 @@ impl ChunkCuller {
 
         compiler.use_storage_buffer::<u32>("visibility", StorageAccess::ReadOnly);
         compiler.use_storage_buffer::<u32>("count", StorageAccess::ReadWrite);
+        compiler.use_uniform_buffer::<CameraUniform>("camera");
         compiler.use_storage_buffer::<vek::Vec4<f32>>("input_position_scale", StorageAccess::ReadOnly);
         compiler.use_storage_buffer::<vek::Vec4<f32>>("output_position_scale", StorageAccess::WriteOnly);
         compiler.use_storage_buffer::<DrawIndexedIndirect>("input_indirect", StorageAccess::ReadOnly);

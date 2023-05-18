@@ -144,6 +144,11 @@ fn readback_end_update(world: &mut World) {
             // so we must wait till the node generates to be able to get rid of the children
             memory.visibility_bitsets[chunk.allocation].set(chunk.local_index);
         }
+
+        if let Some(node) = manager.parent_node_children_generated.get_mut(&parent.center()) {
+            log::info!("ambatakum");
+            *node = true;
+        }
     }
 }
 

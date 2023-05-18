@@ -1,6 +1,6 @@
 use ecs::Scene;
 use graphics::{ComputePass, Graphics, ActivePipeline, GpuPod, DrawCountIndirectBuffer, DrawIndexedIndirectBuffer};
-use rendering::Surface;
+use rendering::{Surface, ForwardRenderer};
 use utils::{Time, Storage};
 use world::{System, World};
 
@@ -33,6 +33,7 @@ fn update(world: &mut World) {
         let mut backpropagate = false;
         if let Some((count, e)) = manager.counting.get_mut(&node.center()) {
             if *count == 8 {
+                *count = u32::MAX;
                 backpropagate = true;
             }
         }
@@ -54,9 +55,6 @@ fn update(world: &mut World) {
                     memory.visibility_bitsets[chunk.allocation].set(chunk.local_index);   
                 }
             }
-            
-            // Delete "this" node since it was already handled
-            manager.counting.remove(&node.center()).unwrap();
         }
     }
 
@@ -71,11 +69,21 @@ fn update(world: &mut World) {
         .filter_map(|c| c.node.map(|x| (x, c)))
         .filter(|(_, c)| c.state == ChunkState::Removed);
     for (node, chunk) in query {
+        /*
         // If we are a parent node then wait till we are done generating our children to remove us
-        if !manager.counting.contains_key(&node.center()) {
+        let parent_node_children_generated = manager.counting.get(&node.center()).map(|(x, _)| *x == u32::MAX).unwrap_or_default();
+        
+        // If we are children nodes and we are waiting till our parent node finishes generating
+        let parent = &manager.octree.nodes()[node.parent().unwrap()];
+        let children_node_parent_generated = manager.parent_node_children_generated.get(&parent.center()).cloned();
+        */
+        
+        // Remove the chunk from the world
+        // parent_node_children_generated || children_node_parent_generated
+        if true {
             memory.visibility_bitsets[chunk.allocation].remove(chunk.local_index);
             chunk.state = ChunkState::Free;
-        }
+        } 
     }
 
     // Create compute pass that will cull the indexed indirect buffers
@@ -88,12 +96,16 @@ fn update(world: &mut World) {
     let mut pass = ComputePass::begin(&graphics);
     let mut active = pass.bind_shader(&culler.compute_cull);
 
+    let renderer = world.get::<ForwardRenderer>().unwrap();
+    let camera = &renderer.camera_buffer;
+
     culled_count_buffer.write(&[0], allocation).unwrap();
 
-    // Set the bind resources for bind group 0
+    // Set the bind resources for bind group 0 (containgin static and camera parameters)
     active.set_bind_group(0, |group| {
         group.set_storage_buffer("visibility", &memory.visibility_buffers[allocation], ..).unwrap();
         group.set_storage_buffer_mut("count", culled_count_buffer, ..).unwrap();
+        group.set_uniform_buffer("camera", camera, ..).unwrap();
     }).unwrap();
     
     // Set the bind resources for bind group 1
@@ -115,8 +127,8 @@ fn update(world: &mut World) {
         pc.push(GpuPod::into_bytes(&chunks_per_allocation), bytes.len() as u32).unwrap();
     }).unwrap();
 
-    // TODO: Run the culling compute shader with the data from the camera
-    active.dispatch(vek::Vec3::new(128, 1, 1)).unwrap();
+    let count = (manager.chunks_per_allocation as f32 / 256.0).ceil() as u32;
+    active.dispatch(vek::Vec3::new(count, 1, 1)).unwrap();
 
     drop(active);
     drop(pass);

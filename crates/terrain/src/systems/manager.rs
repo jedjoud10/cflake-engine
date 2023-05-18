@@ -60,19 +60,17 @@ fn update(world: &mut World) {
     // The only incovenience we get with this approach is that terrain takes a bit more time to update when we're moving very fast
     // Skil issue tbh
     let count = scene.query_mut::<&mut Chunk>().into_iter()
-        .filter(|c| c.state == ChunkState::Pending || c.state == ChunkState::Dirty || c.state == ChunkState::PendingReadbackStart || c.state == ChunkState::PendingReadbackData)
+        .filter(|c| c.state == ChunkState::Pending || c.state == ChunkState::Dirty || c.state == ChunkState::PendingReadbackStart || c.state == ChunkState::PendingReadbackData || c.state == ChunkState::Removed)
         .count();
 
     // Check if it moved since last frame
     if (added || new != old) && count == 0 {
+        let befores = manager.octree.nodes().into_iter().map(|x| (x.center(), x)).collect::<AHashMap<_, _>>();
+        let before_ambatakum = manager.octree.nodes().to_vec();
+
         // Update the old chunk viewer position value
         if let Some((_, val, _)) = manager.viewer.as_mut() {
             *val = new;
-        }
-
-        manager.old_hashmap_nodes.clear();
-        for node in manager.octree.nodes() {
-            manager.old_hashmap_nodes.insert(node.center(), *node);
         }
 
         // Regenerate the octree and detect diffs
@@ -86,6 +84,11 @@ fn update(world: &mut World) {
         for parent in added.iter().filter(|x| x.children().is_some()) {
             let old = manager.counting.insert(parent.center(), (0, Vec::new()));
             assert!(old.is_none());
+        }
+
+        for x in added.iter() { 
+            let old = manager.parent_node_children_generated.insert(x.center(), false);
+            //assert!(old.is_none())
         }
 
         // Discard non-leaf nodes
@@ -108,8 +111,9 @@ fn update(world: &mut World) {
                 let chunk = entry.get_mut::<Chunk>().unwrap();
                 chunk.state = ChunkState::Removed;
                 assert_eq!(chunk.node, Some(node));
-
             }
+            
+            manager.parent_node_children_generated.remove(&node.center());
         }
 
         // Get the number of free chunks that we can reuse
