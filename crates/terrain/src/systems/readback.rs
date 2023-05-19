@@ -54,10 +54,6 @@ fn readback_begin_update(world: &mut World) {
     let count = memory.readback_count_receiver.try_iter();
     memory.readback_offsets.extend(offset);
     memory.readback_counters.extend(count);
-
-    // Sort by entity ID and fetch the last one
-    memory.readback_offsets.sort_by(|(a, _), (b, _)| Entity::cmp(&b, &a));
-    memory.readback_counters.sort_by(|(a, _), (b, _)| Entity::cmp(&b, &a));
 }
 
 // At the end of the frame, right before culling
@@ -79,10 +75,11 @@ fn readback_end_update(world: &mut World) {
         &mut terrain.memory,
         &terrain.settings,
     );
-
-    // TODO: Convert the vecs to hashmaps so we can use entities with the same entity ID
-
     
+    // Sort by entity ID and fetch the last one
+    memory.readback_offsets.sort_by(|(a, _), (b, _)| Entity::cmp(&b, &a));
+    memory.readback_counters.sort_by(|(a, _), (b, _)| Entity::cmp(&b, &a));
+
     // Fetch the last one (to check if they are the same)
     let offset = memory.readback_offsets.last();
     let count = memory.readback_counters.last();
@@ -93,6 +90,9 @@ fn readback_end_update(world: &mut World) {
             log::error!("Mismatched entity");
             return;
         }
+    } else if offset.is_some() ^ count.is_some() {
+        log::error!("Missing data");
+        return;
     }
 
     let offset = memory.readback_offsets.pop();
@@ -119,35 +119,18 @@ fn readback_end_update(world: &mut World) {
         let offset = offset.x / vertices_per_sub_allocation;
 
         // Update chunk range (if valid) and set visibility
-        let filled = count > 0;
-        chunk.state = ChunkState::Generated { empty: !filled };
-        if filled {            
+        let valid = count > 0;
+        chunk.state = ChunkState::Generated { empty: !valid };
+        if valid {            
             chunk.ranges = Some(vek::Vec2::new(offset, count + offset));
         } else {
             chunk.ranges = None;
         }
 
-        // Updates the "generated" count of our parent node if any
-        let node = chunk.node.unwrap();
-        let parent = manager.octree.nodes().get(node.parent().unwrap()).unwrap();
-
-        // Makes sure we are the proper child of the parent node
-        let base = parent.children().unwrap().get();
-        assert!((base + 8) > node.index() && node.index() >= base);
-
-        // Don't show the chunks by default, wait until their parent allow us to 
-        if let Some((count, entities)) = manager.counting.get_mut(&parent.center()) {
-            *count += 1;
-            entities.push(e1);
-        } else {
-            // If we don't have a parent then this chunk is a leaf node of a previous parent node
-            // so we must wait till the node generates to be able to get rid of the children
+        if valid {
             memory.visibility_bitsets[chunk.allocation].set(chunk.local_index);
-        }
-
-        if let Some(node) = manager.parent_node_children_generated.get_mut(&parent.center()) {
-            log::info!("ambatakum");
-            *node = true;
+        } else {
+            memory.visibility_bitsets[chunk.allocation].remove(chunk.local_index);    
         }
     }
 }

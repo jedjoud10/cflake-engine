@@ -56,18 +56,13 @@ fn update(world: &mut World) {
         new
     };
 
-    // Makes sure that we don't generate when we're not done
-    // The only incovenience we get with this approach is that terrain takes a bit more time to update when we're moving very fast
-    // Skil issue tbh
+    // Makes sure that we don't generate when we're not done removing/generating old chunks
     let count = scene.query_mut::<&mut Chunk>().into_iter()
-        .filter(|c| c.state == ChunkState::Pending || c.state == ChunkState::Dirty || c.state == ChunkState::PendingReadbackStart || c.state == ChunkState::PendingReadbackData || c.state == ChunkState::Removed)
+        .filter(|c| !c.state.finished())
         .count();
 
     // Check if it moved since last frame
     if (added || new != old) && count == 0 {
-        let befores = manager.octree.nodes().into_iter().map(|x| (x.center(), x)).collect::<AHashMap<_, _>>();
-        let before_ambatakum = manager.octree.nodes().to_vec();
-
         // Update the old chunk viewer position value
         if let Some((_, val, _)) = manager.viewer.as_mut() {
             *val = new;
@@ -78,18 +73,6 @@ fn update(world: &mut World) {
             mut added,
             removed
         } = manager.octree.compute(new);
-
-        // If a children node was generated, then the parent node must've also been generated
-        manager.counting.clear();
-        for parent in added.iter().filter(|x| x.children().is_some()) {
-            let old = manager.counting.insert(parent.center(), (0, Vec::new()));
-            assert!(old.is_none());
-        }
-
-        for x in added.iter() { 
-            let old = manager.parent_node_children_generated.insert(x.center(), false);
-            //assert!(old.is_none())
-        }
 
         // Discard non-leaf nodes
         added.retain(|x| x.leaf());
@@ -109,11 +92,12 @@ fn update(world: &mut World) {
             if let Some(entity) = manager.entities.remove(&node) {
                 let mut entry = scene.entry_mut(entity).unwrap();
                 let chunk = entry.get_mut::<Chunk>().unwrap();
-                chunk.state = ChunkState::Removed;
+                chunk.state = ChunkState::PendingRemoval;
+                
+                // Blud thinks he can make a proper octree implementation 🤣🤣
                 assert_eq!(chunk.node, Some(node));
+                chunk.node = Some(node);
             }
-            
-            manager.parent_node_children_generated.remove(&node.center());
         }
 
         // Get the number of free chunks that we can reuse
@@ -178,7 +162,6 @@ fn update(world: &mut World) {
                     let chunk = Chunk {
                         state: ChunkState::Free,
                         allocation,
-                        global_index: global_index, 
                         local_index: old_per_allocation + i,
                         generation_priority: 0.0f32,
                         readback_priority: 0.0f32,

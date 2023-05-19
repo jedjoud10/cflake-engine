@@ -3132,6 +3132,7 @@ dependencies = [
  "coords",
  "ecs",
  "graphics",
+ "input",
  "itertools",
  "log",
  "math",

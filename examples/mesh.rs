@@ -16,7 +16,6 @@ fn init(world: &mut World) {
     // Fetch the required resources from the world
     let mut assets = world.get_mut::<Assets>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
-    let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
     let mut pbrs = world.get_mut::<Storage<PhysicallyBasedMaterial>>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
     let mut pipelines = world.get_mut::<Pipelines>().unwrap();
@@ -41,17 +40,10 @@ fn init(world: &mut World) {
         .register::<PhysicallyBasedMaterial>(&graphics, &mut assets)
         .unwrap();
 
-    // Load a plane mesh
-    let plane = assets
-        .load::<Mesh>(("engine/meshes/plane.obj", graphics.clone()))
-        .unwrap();
-    let plane = meshes.insert(plane);
-
-    // Load a sphere mesh
-    let sphere = assets
-        .load::<Mesh>(("engine/meshes/sphere.obj", graphics.clone()))
-        .unwrap();
-    let sphere = meshes.insert(sphere);
+    // Get the default meshes from the forward renderer
+    let renderer = world.get::<ForwardRenderer>().unwrap();
+    let plane = renderer.plane.clone();
+    let sphere = renderer.sphere.clone();
 
     // Fetch the loaded textures
     let diffuse = assets.wait(albedo).unwrap();

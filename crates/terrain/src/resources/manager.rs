@@ -34,10 +34,6 @@ pub struct ChunkManager {
     pub(crate) octree: Octree,
     pub(crate) entities: AHashMap<Node, Entity>,
 
-    // Keeps track of finished nodes (even contains parent nodes and back-propagation)
-    pub(crate) counting: AHashMap<vek::Vec3<i32>, (u32, Vec<Entity>)>,
-    pub(crate) parent_node_children_generated: AHashMap<vek::Vec3<i32>, bool>, 
-
     // Single entity that contains multiple meshes that represent the terrain
     pub(crate) global_draw_entity: Entity,
     pub(crate) chunks_per_allocation: usize,
@@ -148,19 +144,19 @@ impl ChunkManager {
                 // High resolution
                 math::aabb_sphere(&node.aabb(), &math::Sphere {
                     center: *target,
-                    radius: (size as f32 * 2.0),
+                    radius: (size as f32 * 1.0),
                 })
             } else if node.size() == size * 4 {
                 // Medium resolution
                 math::aabb_sphere(&node.aabb(), &math::Sphere {
                     center: *target,
-                    radius: size as f32 * 4.0,
+                    radius: size as f32 * 2.0,
                 })
             } else if node.size() == size * 8 {
                 // Medium resolution
                 math::aabb_sphere(&node.aabb(), &math::Sphere {
                     center: *target,
-                    radius: size as f32 * 8.0,
+                    radius: size as f32 * 3.0,
                 }) 
             } else {
                 // Low resolution
@@ -183,8 +179,6 @@ impl ChunkManager {
             layered_normal_map,
             layered_mask_map,
             chunks_per_allocation: 0,
-            counting: Default::default(),
-            parent_node_children_generated: Default::default(),
         }
     }
 }

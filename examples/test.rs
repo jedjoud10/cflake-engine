@@ -13,23 +13,9 @@ struct TestResource {
 }
 
 fn init(world: &mut World) {
-    // asset loader
-    let mut loader = world.get_mut::<Assets>().unwrap();
-    
-    // graphics context or API
-    let graphics = world.get::<Graphics>().unwrap();
-
-    // scene
     let mut scene = world.get_mut::<Scene>().unwrap();
 
-    // loads the diffuse texture
-    asset!(loader, "user/textures/diffuse2.jpg", "/examples/assets/");
-
-    let albedo = 
-        loader.load::<AlbedoMap>(("user/textures/diffuse2.jpg", graphics.clone()))
-        .unwrap();
-
-    // Create a movable camera
+    // create camera entity
     scene.insert((
         Position::default(),
         Rotation::default(),
@@ -37,4 +23,39 @@ fn init(world: &mut World) {
         Camera::default(),
         CameraController::default(),
     ));
+
+    // create sun source light
+    scene.insert((DirectionalLight {
+        color: vek::Rgb::one(),
+    }, Rotation::rotation_x(-15.0f32.to_radians())));
+    
+    // fetch resources from world
+    let mut assets = world.get_mut::<Assets>().unwrap();
+    let graphics = world.get::<Graphics>().unwrap();
+    let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
+    let mut pbrs = world.get_mut::<Storage<PhysicallyBasedMaterial>>().unwrap();
+    let mut pipelines = world.get_mut::<Pipelines>().unwrap();
+    let forward_renderer = world.get::<ForwardRenderer>().unwrap();
+
+    // register the PBR material to use it
+    let id = pipelines.register::<PhysicallyBasedMaterial>(&graphics, &mut assets).unwrap();
+
+    // load a sphere mesh
+    let sphere: Handle<Mesh> = forward_renderer.sphere.clone();
+
+    // create a PBR material
+    let material = pbrs.insert(PhysicallyBasedMaterial {
+        albedo_map: None,
+        normal_map: None,
+        mask_map: None,
+        bumpiness: 1.0,
+        roughness: 1.0,
+        metallic: 1.0,
+        ambient_occlusion: 3.0,
+        tint: vek::Rgb::white(),
+        scale: vek::Extent2::one(),
+    });
+    
+    let surface = Surface::new(sphere, material, id);
+    scene.insert((surface, Renderer::default()));
 }

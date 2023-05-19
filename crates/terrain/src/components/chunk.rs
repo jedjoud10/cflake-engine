@@ -27,7 +27,24 @@ pub enum ChunkState {
     // The chunk's mesh has been generated successfully
     Generated { empty: bool },
 
-    Removed,
+    // The chunk needs to be removed
+    PendingRemoval,
+}
+
+impl ChunkState {
+    pub(crate) fn finished(&self) -> bool {
+        match self {
+            ChunkState::Generated { .. } | ChunkState::Free => true,
+            _ => false,
+        }
+    }
+
+    pub(crate) fn pending(&self) -> bool {
+        match self {
+            ChunkState::Dirty | ChunkState::Pending | ChunkState::PendingReadbackStart | ChunkState::PendingReadbackData => true,
+            _ => false,
+        }
+    }
 }
 
 // This is a terrain chunk component that will be automatically added
@@ -36,10 +53,7 @@ pub enum ChunkState {
 #[derive(Component, Clone, Copy, Debug)]
 pub struct Chunk {
     pub(crate) allocation: usize,
-
-    pub(crate) global_index: usize,
     pub(crate) local_index: usize,
-
     pub(crate) ranges: Option<vek::Vec2<u32>>,
     pub(crate) state: ChunkState,
     pub(crate) node: Option<Node>,

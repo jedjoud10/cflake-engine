@@ -9,6 +9,7 @@ layout(push_constant) uniform PushConstants {
 
 // Camera values
 #include <engine/shaders/common/camera.glsl>
+#include <engine/shaders/noises/noise3D.glsl>
 
 // Visibility of each chunk as a bitset (so each elem contains the visibility of 32 chunks at a time)
 layout(std430, set = 0, binding = 1) readonly buffer VisiblityBuffer {
@@ -63,10 +64,9 @@ void main() {
     uint local = gl_GlobalInvocationID.x % 32;
     bool visible = ((visibility.data[chunk] >> local) & 1) == 1;
 
-    // Frustum based culling (TESTING)
+    // Frustum based culling
     vec3 chunk_position = input_position_scale_element.xyz;
-    vec3 camera_position = camera.position.xyz;
-
+    vec3 chunk_extent = vec3(input_position_scale_element.w);
     
     if (input_indirect_element.vertex_count > 0 && visible) {
         uint index = atomicAdd(count.data[push_constants.allocation_index], 1);

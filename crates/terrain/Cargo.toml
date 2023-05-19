@@ -14,6 +14,7 @@ coords = { path = "../coords" }
 graphics = { path = "../graphics" }
 rendering = { path = "../rendering" }
 assets = { path = "../assets" }
+input = { path = "../input" }
 rand = "0.8.5"
 rayon = "1.7.0"
 itertools = "0.10.5"

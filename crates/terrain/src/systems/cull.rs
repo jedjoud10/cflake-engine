@@ -1,5 +1,6 @@
 use ecs::Scene;
 use graphics::{ComputePass, Graphics, ActivePipeline, GpuPod, DrawCountIndirectBuffer, DrawIndexedIndirectBuffer};
+use input::{KeyboardButton, Input};
 use rendering::{Surface, ForwardRenderer};
 use utils::{Time, Storage};
 use world::{System, World};
@@ -21,70 +22,29 @@ fn update(world: &mut World) {
         &terrain.culler,
     );
 
-    // Back-propagate the count if needed
     let mut scene = world.get_mut::<Scene>().unwrap();
-    for node in manager.octree.nodes() {
-        // We only care about parent nodes
-        if node.children().is_none() {
-            continue;
-        }
+    
+    // Remove the nodes when we have finished generating all the requred ones
+    let count = scene.query_mut::<&mut Chunk>().into_iter()
+        .filter(|c| c.state.pending())
+        .count();
 
-        // Check if we should backpropagate to the parent node of this parent node
-        let mut backpropagate = false;
-        if let Some((count, e)) = manager.counting.get_mut(&node.center()) {
-            if *count == 8 {
-                *count = u32::MAX;
-                backpropagate = true;
-            }
-        }
-
-        // If we have a parent node, update it
-        if backpropagate {
-            let this = manager.counting.get(&node.center()).unwrap().clone();
-            let parent = node.parent().map(|x| manager.octree.nodes()[x].center());
-
-            if let Some((count, entities)) = parent.map(|x| manager.counting.get_mut(&x)).flatten() {
-                // The parent got a new child done generating (this)
-                *count += 1;
-                entities.extend(this.1);
-            } else {
-                // If we don't have a parent it means we are either the root node or this is the last parent node in the sub tree that we must generate
-                for x in this.1.iter() {
-                    let entry = scene.entry(*x).unwrap();
-                    let chunk = entry.get::<Chunk>().unwrap(); 
-                    memory.visibility_bitsets[chunk.allocation].set(chunk.local_index);   
-                }
-            }
+    // Remove the chunks when we are done generating other ones
+    if count == 0 {
+        let query = scene.query_mut::<&mut Chunk>().into_iter()
+            .filter(|c| c.state == ChunkState::PendingRemoval);
+        for chunk in query {
+            memory.visibility_bitsets[chunk.allocation].remove(chunk.local_index);
+            chunk.state = ChunkState::Free;
+            chunk.node = None;
         }
     }
 
     // I AM OOPDATINGG AAAAAAAAAAAA
     let time = world.get::<Time>().unwrap();
-    let allocation = (time.frame_count() as usize) % 2;
+    let allocation = (time.frame_count() as usize) % terrain.settings.allocation_count;
     let chunks = memory.visibility_bitsets[allocation].chunks();
     memory.visibility_buffers[allocation].write(chunks, 0).unwrap();
-
-    // Hide the parent nodes that had their children generated
-    let query = scene.query_mut::<&mut Chunk>().into_iter()
-        .filter_map(|c| c.node.map(|x| (x, c)))
-        .filter(|(_, c)| c.state == ChunkState::Removed);
-    for (node, chunk) in query {
-        /*
-        // If we are a parent node then wait till we are done generating our children to remove us
-        let parent_node_children_generated = manager.counting.get(&node.center()).map(|(x, _)| *x == u32::MAX).unwrap_or_default();
-        
-        // If we are children nodes and we are waiting till our parent node finishes generating
-        let parent = &manager.octree.nodes()[node.parent().unwrap()];
-        let children_node_parent_generated = manager.parent_node_children_generated.get(&parent.center()).cloned();
-        */
-        
-        // Remove the chunk from the world
-        // parent_node_children_generated || children_node_parent_generated
-        if true {
-            memory.visibility_bitsets[chunk.allocation].remove(chunk.local_index);
-            chunk.state = ChunkState::Free;
-        } 
-    }
 
     // Create compute pass that will cull the indexed indirect buffers
     let mut draw_count_indirect_buffers = world.get_mut::<Storage<DrawCountIndirectBuffer>>().unwrap();

@@ -297,12 +297,18 @@ fn update(world: &mut World) {
             let pending_readback = scene
                 .query::<&Chunk>()
                 .into_iter()
-                .filter(|c| matches!(c.state(), ChunkState::PendingReadbackStart))
+                .filter(|c| matches!(c.state(), ChunkState::PendingReadbackStart) | matches!(c.state(), ChunkState::PendingReadbackData))
+                .count();
+            let removal = scene
+                .query::<&Chunk>()
+                .into_iter()
+                .filter(|c| matches!(c.state(), ChunkState::PendingRemoval))
                 .count();
             ui.heading("Real-time stats");
             ui.label(format!("Pending chunks count: {}", pending));
             ui.label(format!("Generated chunks count: {}", generated));
             ui.label(format!("Pending readbacks: {}", pending_readback));
+            ui.label(format!("Pending removals: {}", removal));
 
             ui.horizontal(|ui| {
                 ui.label("Active?: ");
