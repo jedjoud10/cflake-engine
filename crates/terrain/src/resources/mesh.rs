@@ -1,8 +1,10 @@
+use std::num::NonZeroU32;
+
 use assets::Assets;
 
 use graphics::{
     Buffer, BufferMode, BufferUsage, Compiler, ComputeModule, ComputeShader, GpuPod, Graphics,
-    Normalized, StorageAccess, Texel, Texture3D, Vertex, R, RG, RGBA, XYZW, XY,
+    Normalized, StorageAccess, Texel, Texture3D, Vertex, R, RG, RGBA, XYZW, XY, ModuleVisibility,
 };
 
 use crate::{create_counters, create_texture3d, TempTriangles, TempVertices, TerrainSettings};
@@ -44,6 +46,8 @@ impl MeshGenerator {
             .load::<ComputeModule>("engine/shaders/terrain/vertices.comp")
             .unwrap();
         let mut compiler = Compiler::new(assets, graphics);
+
+        compiler.use_push_constant_layout(graphics::PushConstantLayout::single(u32::size() + f32::size(), ModuleVisibility::Compute).unwrap());
 
         // Set the voxels texture that we will sample
         compiler.use_storage_texture::<Texture3D<RG<f32>>>("voxels", StorageAccess::ReadOnly);

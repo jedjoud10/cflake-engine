@@ -35,19 +35,21 @@ void add_quad(
     uint index1 = uint(imageLoad(cached_indices, ivec3(quad1+offset)).x);
     uint index2 = uint(imageLoad(cached_indices, ivec3(quad2+offset)).x);
     uint index3 = uint(imageLoad(cached_indices, ivec3(quad3+offset)).x);
+   
+    if ((index0 | index1 | index2 | index3) != uint(-1)) {
+        // Add the triangles
+        uint base = atomicAdd(counters.triangles, 6);
 
-    // Add the triangles
-    uint base = atomicAdd(counters.triangles, 6);
-    
-    // First triangle
-    triangles.data[base + (flip ? 0 : 2)] = index2;
-    triangles.data[base+1] = index1;
-    triangles.data[base + (flip ? 2 : 0)] = index0;
+        // First triangle
+        triangles.data[base + (flip ? 0 : 2)] = index2;
+        triangles.data[base+1] = index1;
+        triangles.data[base + (flip ? 2 : 0)] = index0;
 
-    // Second triangle
-    triangles.data[base + (flip ? 3 : 5)] = index3;
-    triangles.data[base + 4] = index1;
-    triangles.data[base + (flip ? 5 : 3)] = index2;
+        // Second triangle
+        triangles.data[base + (flip ? 3 : 5)] = index3;
+        triangles.data[base + 4] = index1;
+        triangles.data[base + (flip ? 5 : 3)] = index2;
+    }
 }
 
 // Checks an edge and creates new triangles
@@ -87,25 +89,22 @@ void main() {
     float density0 = imageLoad(voxels, ivec3(gl_GlobalInvocationID)).x;
 
     // Check skirts in the z direction
-    /*
     if (gl_GlobalInvocationID.z == 1 || gl_GlobalInvocationID.z == size - 3) {
         check_edge(
-            density0 + 3,
+            9999999.0,
             gl_GlobalInvocationID + uvec3(0, 0, 1),
             uvec3(0, 0, 0),
             uvec3(0, 1, 0),
             uvec3(1, 0, 0),
             uvec3(1, 1, 0),
-            gl_GlobalInvocationID.z == size - 3
+            false
         );
     }
-    */
 
-    /*
     // Check skirts in the X direction
     if (gl_GlobalInvocationID.x == size - 3 || gl_GlobalInvocationID.x == 1) {
         check_edge(
-            density0 + 3,
+            9999999.0,
             gl_GlobalInvocationID + uvec3(1, 0, 0),
             uvec3(0, 0, 0),
             uvec3(0, 0, 1),
@@ -118,7 +117,7 @@ void main() {
     // Check skirts in the Y direction
     if (gl_GlobalInvocationID.y == size - 3 || gl_GlobalInvocationID.y == 1) {
         check_edge(
-            density0 + 3,
+            9999999.0,
             gl_GlobalInvocationID + uvec3(0, 1, 0),
             uvec3(0, 0, 0),
             uvec3(1, 0, 0),
@@ -127,7 +126,6 @@ void main() {
             gl_GlobalInvocationID.y == size - 3
         );
     }
-    */
 
     // Check the Z axis edge
     check_edge(

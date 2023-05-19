@@ -5,7 +5,7 @@ use coords::{Position, Scale};
 use ecs::{Scene, Entity};
 use graphics::{
     ActivePipeline, ComputePass, DrawIndexedIndirect, DrawIndexedIndirectBuffer, GpuPod, Graphics,
-    TriangleBuffer, Vertex,
+    TriangleBuffer, Vertex, Texture,
 };
 use rendering::{attributes, AttributeBuffer, IndirectMesh, Renderer, Surface};
 use utils::{Storage, Time};
@@ -107,6 +107,8 @@ fn update(world: &mut World) {
 
     // Reset required values
     counters.write(&[0; 2], 0).unwrap();
+    let mips = indices.mips_mut();
+    mips.level_mut(0).unwrap().splat(None, u32::MAX).unwrap();
     offsets.write(&[u32::MAX; 2], 0).unwrap();
 
     // Update alloc-local position buffer
@@ -183,6 +185,15 @@ fn update(world: &mut World) {
                 .unwrap();
         })
         .unwrap();
+    active.set_push_constants(|pc| {
+        let bitfield = 0u32;
+        let bytes = GpuPod::into_bytes(&bitfield);
+        pc.push(bytes, 0).unwrap();
+
+        let skirts_threshold = 0.0f32;
+        let bytes1 = GpuPod::into_bytes(&skirts_threshold);
+        pc.push(bytes1, bytes.len() as u32).unwrap();
+    }).unwrap();
     active
         .dispatch(vek::Vec3::broadcast(settings.size / 4))
         .unwrap();

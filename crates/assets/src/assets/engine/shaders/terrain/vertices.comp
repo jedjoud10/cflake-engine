@@ -15,6 +15,8 @@ layout(push_constant) uniform PushConstants {
     // Bit 5 = End Y
     // Bit 6 = End Z
     uint skirts_direction_bitflags;
+
+    float threshold;
 } meshing;
 
 #include <engine/shaders/math/packer.glsl>
@@ -131,16 +133,34 @@ void main() {
         }
     }
 
-    /*
-    // Check if we are genearting some skirts
-    bool skirts = any(lessThanEqual(gl_GlobalInvocationID, vec3(1))) || any(greaterThanEqual(gl_GlobalInvocationID, vec3(size-3)));
+    // Decompose the bitflags into booleans
+    uint bits = meshing.skirts_direction_bitflags;
+    bool start_x = (bits & 1) == 1;
+    bool start_y = (bits & 2) == 1;
+    bool start_z = (bits & 4) == 1;
+    bool end_x = (bits & 8) == 1;
+    bool end_y = (bits & 16) == 1;
+    bool end_z = (bits & 32) == 1;
 
+    start_x = false;
+    start_y = false;
+    start_z = false;
+    end_x = false;
+    end_y = false;
+    end_z = false;
+
+    // Check if we are genearting some skirts
+    bool skirts = 
+        ((gl_GlobalInvocationID.x <= 1 && start_x) || (gl_GlobalInvocationID.x >= size-3 && end_x)) || 
+        ((gl_GlobalInvocationID.y <= 1 && start_y) || (gl_GlobalInvocationID.y >= size-3 && end_y)) || 
+        ((gl_GlobalInvocationID.z <= 1 && start_z) || (gl_GlobalInvocationID.z >= size-3 && end_z));
+    
     // Update normals and count for skirts
-    if (skirts && imageLoad(voxels, ivec3(gl_GlobalInvocationID)).x < 0.0) {
+    float comp = imageLoad(voxels, ivec3(gl_GlobalInvocationID)).x;
+    if (skirts && comp < 0.0 && comp > -100.0) {
         normal = calculate_normal(gl_GlobalInvocationID) * 4;
         count = 4;
     }
-    */
 
     // If we found at least one intersecting edge, add the vertex
     if (count > 0) {
@@ -148,23 +168,6 @@ void main() {
 
         // Meshes are always n-3 size, so each voxel has a size of 1 / n-3
         vec3 final = blocky ? vec3(0) : ((vertex / count) - vec3(0.5));
-
-        // Decompose the bitflags into booleans
-        uint bits = meshing.skirts_direction_bitflags;
-        bool start_x = (bits & 1) == 1;
-        bool start_y = (bits & 2) == 1;
-        bool start_z = (bits & 4) == 1;
-        bool end_x = (bits & 8) == 1;
-        bool end_y = (bits & 16) == 1;
-        bool end_z = (bits & 32) == 1;
-
-        start_x = false;
-        start_y = false;
-        start_z = false;
-        end_x = false;
-        end_y = false;
-        end_z = false;
-
 
         // TODO: Probably a way to optimize this
         // Confine the vertices in the X skirt if needed

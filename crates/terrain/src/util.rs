@@ -47,7 +47,7 @@ pub(crate) fn create_texture3d<T: Texel>(graphics: &Graphics, size: u32) -> Text
         None,
         vek::Extent3::broadcast(size),
         TextureMode::Dynamic,
-        TextureUsage::STORAGE,
+        TextureUsage::STORAGE | TextureUsage::WRITE,
         None,
         TextureMipMaps::Disabled,
     )
