@@ -142,22 +142,21 @@ void main() {
     bool end_y = (bits & 16) == 1;
     bool end_z = (bits & 32) == 1;
 
-    start_x = false;
-    start_y = false;
-    start_z = false;
-    end_x = false;
-    end_y = false;
-    end_z = false;
+    start_x = true;
+    start_y = true;
+    start_z = true;
+    end_x = true;
+    end_y = true;
+    end_z = true;
 
     // Check if we are genearting some skirts
-    bool skirts = 
-        ((gl_GlobalInvocationID.x <= 1 && start_x) || (gl_GlobalInvocationID.x >= size-3 && end_x)) || 
-        ((gl_GlobalInvocationID.y <= 1 && start_y) || (gl_GlobalInvocationID.y >= size-3 && end_y)) || 
-        ((gl_GlobalInvocationID.z <= 1 && start_z) || (gl_GlobalInvocationID.z >= size-3 && end_z));
-    
+    bool skirts = (gl_GlobalInvocationID.x == 1 && start_x) || (gl_GlobalInvocationID.x == size - 4 && end_x) ||
+        ((gl_GlobalInvocationID.y == 1 && start_y) || (gl_GlobalInvocationID.y == size - 4 && end_y)) || 
+        ((gl_GlobalInvocationID.z == 1 && start_z) || (gl_GlobalInvocationID.z == size - 4 && end_z));
+        
     // Update normals and count for skirts
     float comp = imageLoad(voxels, ivec3(gl_GlobalInvocationID)).x;
-    if (skirts && comp < 0.0 && comp > -100.0) {
+    if (skirts && comp < 0 && comp > -10.0) {
         normal = calculate_normal(gl_GlobalInvocationID) * 4;
         count = 4;
     }
@@ -169,20 +168,16 @@ void main() {
         // Meshes are always n-3 size, so each voxel has a size of 1 / n-3
         vec3 final = blocky ? vec3(0) : ((vertex / count) - vec3(0.5));
 
-        // TODO: Probably a way to optimize this
-        // Confine the vertices in the X skirt if needed
-        if ((gl_GlobalInvocationID.x < 1 && start_x)  || (gl_GlobalInvocationID.x == size-3 && end_x) ) {
-            final.x = 0;
+        if ((gl_GlobalInvocationID.x <= 1 && start_x) || (gl_GlobalInvocationID.x == size - 4 && end_x)) {
+            final.x = 0.0;
         }
 
-        // Confine the vertices in the Y skirt if needed
-        if ((gl_GlobalInvocationID.y < 1 && start_y) || (gl_GlobalInvocationID.y == size-3 && end_y)) {
-            final.y = 0;
+        if ((gl_GlobalInvocationID.y <= 1 && start_y) || (gl_GlobalInvocationID.y == size - 4 && end_y)) {
+            final.y = 0.0;
         }
 
-        // Confine the vertices in the Z skirt if needed
-        if ((gl_GlobalInvocationID.z < 1 && start_z) || (gl_GlobalInvocationID.z == size-3 && end_z)) {
-            final.z = 0;
+        if ((gl_GlobalInvocationID.z <= 1 && start_z) || (gl_GlobalInvocationID.z == size - 4 && end_z)) {
+            final.z = 0.0;
         }
 
         // Positions only need 32 bits each (4 byte for cell coord, 4 byte for inner vertex coord)
