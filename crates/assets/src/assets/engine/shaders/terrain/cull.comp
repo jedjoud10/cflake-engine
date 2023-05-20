@@ -64,9 +64,10 @@ void main() {
     uint local = gl_GlobalInvocationID.x % 32;
     bool visible = ((visibility.data[chunk] >> local) & 1) == 1;
 
-    // Frustum based culling
+    // TODO: Frustum based culling
     vec3 chunk_position = input_position_scale_element.xyz;
     vec3 chunk_extent = vec3(input_position_scale_element.w);
+    vec3 camera_position = camera.position.xyz;
     
     if (input_indirect_element.vertex_count > 0 && visible) {
         uint index = atomicAdd(count.data[push_constants.allocation_index], 1);

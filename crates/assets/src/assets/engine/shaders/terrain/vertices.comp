@@ -157,7 +157,9 @@ void main() {
     // Update normals and count for skirts
     float comp = imageLoad(voxels, ivec3(gl_GlobalInvocationID)).x;
     if (skirts && comp < 0 && comp > -10.0 * (meshing.threshold * 10 + 1.0)) {
+        #ifndef lowpoly
         normal = calculate_normal(gl_GlobalInvocationID) * 4;
+        #endif
         count = 4;
     }
 

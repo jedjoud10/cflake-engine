@@ -43,6 +43,9 @@ fn init(world: &mut World) {
         .register::<SkyMaterial>(&graphics, &assets)
         .unwrap();
     pipelines
+        .register::<WireframeMaterial>(&graphics, &assets)
+        .unwrap();
+    pipelines
         .register::<PhysicallyBasedMaterial>(&graphics, &assets)
         .unwrap();
 

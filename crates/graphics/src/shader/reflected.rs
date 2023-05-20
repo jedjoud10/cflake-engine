@@ -397,6 +397,25 @@ pub(super) fn create_pipeline_layout(
     resource_binding_types: &super::ResourceBindingTypes,
     maybe_push_constant_layout: &super::MaybePushConstantLayout,
 ) -> Result<(Arc<ReflectedShader>, Arc<wgpu::PipelineLayout>), ShaderReflectionError> {
+    // Make sure the local workgroup size limit is respected in case of a compute shader
+    if visibility[0] == ModuleVisibility::Compute {
+        let adapter = graphics.adapter();
+        let limit = adapter.limits().max_compute_invocations_per_workgroup;
+        let module = modules[0];
+        let consts = &module.exec_modes;
+        let first = &consts[0];
+        assert!(first.exec_mode == spirv::ExecutionMode::LocalSize);
+        assert!(first.operands.len() == 3);
+        let mul = (0..3).into_iter().map(|i| first.operands[i].value.to_u32()).product::<u32>();
+
+        if mul >= limit {
+            return Err(ShaderReflectionError::ComputeShaderLocalWorkgroupSizeLimit {
+                shader: mul,
+                limit
+            })
+        }
+    }
+
     // Stores multiple entries per set (max number of sets = 4)
     let mut groups: Vec<Option<AHashMap<u32, BindResourceLayout>>> = (0..4).map(|_| None).collect();
 

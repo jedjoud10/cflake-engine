@@ -15,23 +15,8 @@
     }
 
 float voxel(vec3 position, float quality) {
-    //return position.y - 15;
-    //return position.y + (1-fbmCellular(position * 0.002 * vec3(1, 0.1, 1), 8, 0.3, 2.1).x) * 440;
-    return position.y + snoise(position * 0.01) * 20;
-    /*
-    position *= 0.1;
-
-    float density = 0.0;
-    float d2 = (1-fbmCellular(position * 0.008 * vec3(1, 0.1, 1), 8, 0.3, 2.1).x) * 140;
-    d2 = smooth_floor(d2 / 50) * 50;
-
-    d2 += position.y;
-    d2 = opSmoothUnion(d2, position.y + 140, 10);
-    d2 = opSmoothSubtraction(-d2, position.y + 100, 50);
-    density += d2 - 140;
-    density = opUnion(density, sdSphere(position, 20));
-    return density;
-    */
+    float density = position.y + (1-fbmCellular(position * 0.002 * vec3(1, 0.1, 1), uint(8.0 * quality), 0.3, 2.1).x) * 440;
+    return density; 
 
 }
 

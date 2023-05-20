@@ -232,7 +232,11 @@ impl Rasterizer {
             .unwrap();
 
         // Get the destination render target we will render to
-        let dst = window.as_render_target().unwrap();
+        let Ok(dst) = window.as_render_target() else {
+            return;
+        };
+
+        // Begin the render pass and bing the GUI pipeline
         let mut render_pass = self.render_pass.begin(dst, ());
         let mut active = render_pass.bind_pipeline(&self.pipeline);
 

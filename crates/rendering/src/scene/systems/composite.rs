@@ -30,12 +30,13 @@ fn update(world: &mut World) {
     // Get textures, pipelines, and encoder
     let src = &renderer.color_texture;
     let depth = &renderer.depth_texture;
-    let dst = window.as_render_target().unwrap();
 
-    // Begin the render pass
+    let Ok(dst) = window.as_render_target() else {
+        return;
+    };
+
+    // Begin the render pass and bind the composite shader
     let mut render_pass = compositor.render_pass.begin(dst, ());
-
-    // Bind the graphics pipeline
     let mut active = render_pass.bind_pipeline(&compositor.pipeline);
 
     // Set the shared UBOs first (bind group 0)

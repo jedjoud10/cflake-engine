@@ -104,3 +104,9 @@ impl<T: Texel> Texture for Texture3D<T> {
         self.dimensions = dimensions;
     }
 }
+
+impl<T: Texel> Drop for Texture3D<T> {
+    fn drop(&mut self) {
+        self.uncache();
+    }
+}

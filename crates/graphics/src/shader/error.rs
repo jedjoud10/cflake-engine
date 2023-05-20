@@ -112,5 +112,10 @@ pub enum ShaderReflectionError {
 
     #[error("The shader defined resource {0} is not defined in the Compiler")]
     NotDefinedInCompiler(String),
-    
+
+    #[error("The compute shader's local workgroup total size is {shader}, whilst the device limit is {limit}")]
+    ComputeShaderLocalWorkgroupSizeLimit {
+        shader: u32,
+        limit: u32
+    },
 }

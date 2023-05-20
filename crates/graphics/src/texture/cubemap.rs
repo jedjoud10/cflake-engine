@@ -106,6 +106,12 @@ impl<T: Texel> Texture for CubeMap<T> {
     }
 }
 
+impl<T: Texel> Drop for CubeMap<T> {
+    fn drop(&mut self) {
+        self.uncache();
+    }
+}
+
 // Convolution / unwrapping mode that we can use to load in cubemaps from equirectangular textures
 #[derive(Default, Clone, Copy, PartialEq)]
 pub enum CubeMapUnwrapMode {

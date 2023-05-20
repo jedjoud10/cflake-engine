@@ -104,17 +104,23 @@ pub fn acquire(system: &mut System) {
             // Acquire a new texture to render to
             let graphics = world.get::<Graphics>().unwrap();
             let mut window = world.get_mut::<Window>().unwrap();
-            let texture = window.surface.get_current_texture().unwrap();
-            let view = texture
-                .texture
-                .create_view(&wgpu::TextureViewDescriptor::default());
 
-            // Set the Window's texture view
-            // TODO: Cache the texture views instead?
-            window.presentable_texture = Some(texture);
-            window.presentable_texture_view = Some(view);
+            if let Ok(texture) = window.surface.get_current_texture() {
+                let view = texture
+                    .texture
+                    .create_view(&wgpu::TextureViewDescriptor::default());
+
+                // Set the Window's texture view
+                log::trace!("acquire current texture");
+                window.presentable_texture = Some(texture);
+                window.presentable_texture_view = Some(view);
+            } else {
+                window.presentable_texture = None;
+                window.presentable_texture_view = None;
+            }
+
             graphics.staging_pool().refresh();
-            log::trace!("acquire current texture");
+            
         })
         .after(post_user);
 }
@@ -126,8 +132,14 @@ pub fn present(system: &mut System) {
             let mut window = world.get_mut::<Window>().unwrap();
             let graphics = world.get::<Graphics>().unwrap();
             graphics.submit(false);
-            window.presentable_texture.take().unwrap().present();
-            log::trace!("present acquired texture");
+
+            if let Some(texture) = window.presentable_texture.take() {
+                texture.present();
+                log::trace!("present acquired texture");
+            } else {
+                log::trace!("could not present acquired texture")
+            }
+            
         })
         .after(post_user)
         .after(acquire);

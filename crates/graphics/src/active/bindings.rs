@@ -278,12 +278,10 @@ impl<'a> BindGroup<'a> {
         }
 
         // Get values needed for the bind entry
-        let id = texture.raw().global_id();
-        let resource = wgpu::BindingResource::TextureView(texture.view().unwrap());
-
-        // Save the bind entry for later
-        self.resources.push(resource);
-        self.ids.push(Id::new(id, IdVariant::Texture));
+        let view = texture.view().unwrap();
+        self.resources.push(wgpu::BindingResource::TextureView(view));
+        let id = view.global_id();
+        self.ids.push(Id::new(id, IdVariant::TextureView));
         self.slots.push(entry.binding);
         Ok(())
     }
@@ -318,13 +316,12 @@ impl<'a> BindGroup<'a> {
             })
         }
 
-        // Get values needed for the bind entry
-        let id = texture.raw().global_id();
-        let resource = wgpu::BindingResource::TextureView(texture.view().unwrap());
-
+        
         // Save the bind entry for later
-        self.resources.push(resource);
-        self.ids.push(Id::new(id, IdVariant::Texture));
+        let view = texture.view().unwrap();
+        self.resources.push(wgpu::BindingResource::TextureView(view));
+        let id = view.global_id();
+        self.ids.push(Id::new(id, IdVariant::TextureView));
         self.slots.push(entry.binding);
         Ok(())
     }

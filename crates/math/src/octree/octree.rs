@@ -170,9 +170,35 @@ impl Octree {
     }
 
     // Iterate over the octree recursively using a "check" function
-    pub fn recurse(&self, callback: impl Fn(Node) -> bool) {
-        todo!()
+    // The "check" function will be executed for PARENT nodes (so leaf nodes will not call it back)
+    pub fn recurse(&self, mut callback: impl FnMut(&Node) -> bool) {
+        if !self.nodes.is_empty() {
+            return;
+        }
+        
+        let mut checking = vec![0usize];
+
+        while let Some(i) = checking.pop() {
+            let node = &self.nodes[i];
+            
+            if let Some(base) = node.children() {
+                let recurse = callback(&node);
+
+                if recurse {
+                    let base = base.get();
+                    for x in 0..8 {
+                        let child = &self.nodes[x + base];
+                        checking.push(x + base);
+                    }    
+                }
+            }
+        }
     }
+
+    // Get the neighbors of a node in a specific direction
+    pub fn peek_neighbors(&self, index: usize) {
+        
+    } 
 
     // Get the size of the root node of the octree
     pub fn size(&self) -> u64 {

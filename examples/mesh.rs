@@ -37,7 +37,7 @@ fn init(world: &mut World) {
 
     // Get the material id (also registers the material pipeline)
     let id = pipelines
-        .register::<PhysicallyBasedMaterial>(&graphics, &mut assets)
+        .get::<PhysicallyBasedMaterial>()
         .unwrap();
 
     // Get the default meshes from the forward renderer

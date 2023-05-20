@@ -377,6 +377,9 @@ pub trait Texture: Sized + 'static {
             ..Default::default()
         };
 
+
+        self.uncache();
+
         // Create an texture view of the whole texture
         let view = texture.create_view(&view_descriptor);
         assert_eq!(self.views().map(|x| x.len()).unwrap_or(1), 1);
@@ -403,6 +406,17 @@ pub trait Texture: Sized + 'static {
         usage: TextureUsage,
         mode: TextureMode,
     ) -> Self;
+
+    // Frees the texture from the cached shader data (called when dropped)
+    // If the texture is still used this will practically do nothing (it will remove bind group and regenerate it)
+    fn uncache(&self) {
+        if let Some(views) = self.views() {
+            for view in views {
+                let id = crate::Id::new(view.global_id(), crate::IdVariant::TextureView);
+                self.graphics().drop_resource(id);
+            }
+        }
+    }
 
     // Called when the user resizes the texture
     // Should not be called manually.

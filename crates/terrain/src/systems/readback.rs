@@ -127,6 +127,7 @@ fn readback_end_update(world: &mut World) {
             chunk.ranges = None;
         }
 
+        // Set visibility if the chunk is actually visible
         if valid {
             memory.visibility_bitsets[chunk.allocation].set(chunk.local_index);
         } else {

@@ -105,6 +105,12 @@ impl<T: Texel> Texture for LayeredTexture2D<T> {
     }
 }
 
+impl<T: Texel> Drop for LayeredTexture2D<T> {
+    fn drop(&mut self) {
+        self.uncache();
+    }
+}
+
 // Combine multiple raw texels into a single LayeredTexture2D texture
 // Returns None if the textures don't have the same size or if we can't read them
 pub fn combine_into_layered<T: Texel + ImageTexel>(

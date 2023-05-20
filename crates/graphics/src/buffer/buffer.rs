@@ -70,6 +70,13 @@ pub struct Buffer<T: GpuPod, const TYPE: u32 = 0> {
     graphics: Graphics,
 }
 
+impl<T: GpuPod, const TYPE: u32> Drop for Buffer<T, TYPE> {
+    fn drop(&mut self) {
+        let id = crate::Id::new(self.buffer.global_id(), crate::IdVariant::Buffer);
+        self.graphics.drop_resource(id);
+    }
+}
+
 // PartialEq implementation
 impl<T: GpuPod, const TYPE: u32> PartialEq for Buffer<T, TYPE> {
     fn eq(&self, other: &Self) -> bool {
@@ -414,6 +421,8 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
 
             // Swap them out, and drop the last buffer
             let old = std::mem::replace(&mut self.buffer, buffer);
+            let old_id = crate::Id::new(old.global_id(), crate::IdVariant::Buffer);
+            self.graphics.drop_resource(old_id);
             drop(old);
 
             // Write using the same encoder

@@ -106,6 +106,12 @@ impl<T: Texel> Texture for Texture2D<T> {
     }
 }
 
+impl<T: Texel> Drop for Texture2D<T> {
+    fn drop(&mut self) {
+        self.uncache();
+    }
+}
+
 // Texture settings that we shall use when loading in a new texture
 #[derive(Clone)]
 pub struct TextureImportSettings<'m, T: ImageTexel> {

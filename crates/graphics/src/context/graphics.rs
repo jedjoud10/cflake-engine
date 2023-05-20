@@ -15,7 +15,7 @@ use crate::{
     Snippets, StagingPool, UniformBuffer,
 };
 
-// Cached graphics data
+// Cached graphics data that can be reused
 pub(crate) struct Cached {
     pub(crate) shaders:
         DashMap<(Snippets, PathBuf), (Arc<wgpu::ShaderModule>, Arc<spirq::EntryPoint>)>,
@@ -143,15 +143,26 @@ impl Graphics {
         self.submit_from_iter(locked.drain(..), wait);
     }
 
-    pub fn poll(&self) {
-        self.device().poll(wgpu::MaintainBase::Poll);
-    }
-
     // Pushes some unfinished command encoders to be re-used by the current thread
     pub fn reuse(&self, iter: impl IntoIterator<Item = CommandEncoder>) {
         log::trace!("graphics context: reuse");
         let encoders = self.0.encoders.get_or_default();
         let mut locked = encoders.lock();
         locked.extend(iter);
+    }
+
+    // Called internally when we drop a resource to free it from the cached bind groups
+    pub(crate) fn drop_resource(&self, id: Id) {
+        let mut keys_to_remove = Vec::<Vec<Id>>::default();
+
+        for pair in self.0.cached.bind_groups.iter() {
+            if pair.key().contains(&id) {
+                keys_to_remove.push(pair.key().to_vec());
+            }
+        }
+
+        for keys in keys_to_remove {
+            self.0.cached.bind_groups.remove(&keys);
+        }
     }
 }
