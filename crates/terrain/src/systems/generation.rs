@@ -122,7 +122,7 @@ fn update(world: &mut World) {
 
     // Needed since SN only runs for a volume 2 units smaller than a perfect cube
     let node = chunk.node.unwrap();
-    let factor = (node.size() as f32) / (settings.size as f32 - 3.0);
+    let factor = (node.size() as f32) / (settings.size as f32 - 4.0);
 
     // Set the push constants
     active
@@ -134,8 +134,8 @@ fn update(world: &mut World) {
             // Get the scale of the chunk
             let scale = GpuPod::into_bytes(&factor);
 
-            // Calculate quality index
-            let _quality = 4 - ((settings.max_depth - node.depth()).min(4));
+            // Calculate quality floating point value
+            let _quality = (node.depth()) as f32 / (settings.max_depth as f32);
             let quality = GpuPod::into_bytes(&_quality);
 
             // Push the bytes to the GPU
@@ -190,9 +190,11 @@ fn update(world: &mut World) {
         let bytes = GpuPod::into_bytes(&bitfield);
         pc.push(bytes, 0).unwrap();
 
-        let skirts_threshold = 0.0f32;
-        let bytes1 = GpuPod::into_bytes(&skirts_threshold);
-        pc.push(bytes1, bytes.len() as u32).unwrap();
+        
+        // Calculate skirts threshold floating point value
+        let _skirts_threshold = (settings.max_depth - node.depth()) as f32 / (settings.max_depth as f32);
+        let skirts_threshold = GpuPod::into_bytes(&_skirts_threshold);
+        pc.push(skirts_threshold, bytes.len() as u32).unwrap();
     }).unwrap();
     active
         .dispatch(vek::Vec3::broadcast(settings.size / 4))

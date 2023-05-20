@@ -50,8 +50,6 @@ fn init(world: &mut World) {
         4,
         1024,
         6,
-        None,
-        /*
         Some(&[
             TerrainSubMaterial {
                 diffuse: "user/textures/diffuse6.jpg".to_string(),
@@ -64,7 +62,6 @@ fn init(world: &mut World) {
                 mask: "user/textures/mask5.jpg".to_string(),
             },
         ]),
-        */
     )
     .unwrap();
 

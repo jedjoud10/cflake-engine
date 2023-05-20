@@ -12,7 +12,7 @@ layout(set=0, binding=0, rg32f) writeonly uniform image3D voxels;
 layout(push_constant) uniform PushConstants {
     vec4 offset;
     float scale;
-    uint quality;
+    float quality;
 } parameters;
 
 void main() {

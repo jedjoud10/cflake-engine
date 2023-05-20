@@ -86,16 +86,11 @@ void check_edge(
 }
 
 void main() {
-    // Skip chunk faces since they will return incorrect data
-    if (any(lessThanEqual(gl_GlobalInvocationID, uvec3(0))) || any(greaterThanEqual(gl_GlobalInvocationID, uvec3(size - 3)))) {
-        return;
-    }
-
     // Get the start density
     float density0 = imageLoad(voxels, ivec3(gl_GlobalInvocationID)).x;
 
     // Check skirts in the X direction
-    if (gl_GlobalInvocationID.x == 1 || gl_GlobalInvocationID.x == size - 4) {
+    if (gl_GlobalInvocationID.x == 0 || gl_GlobalInvocationID.x == size - 4) {
         check_edge(
             9999999.0,
             gl_GlobalInvocationID + uvec3(1, 0, 0),
@@ -109,7 +104,7 @@ void main() {
     }
 
     // Check skirts in the Y direction
-    if (gl_GlobalInvocationID.y == 1 || gl_GlobalInvocationID.y == size - 4) {
+    if (gl_GlobalInvocationID.y == 0 || gl_GlobalInvocationID.y == size - 4) {
         check_edge(
             9999999.0,
             gl_GlobalInvocationID + uvec3(0, 1, 0),
@@ -123,7 +118,7 @@ void main() {
     }
 
     // Check skirts in the Z direction
-    if (gl_GlobalInvocationID.z == 1 || gl_GlobalInvocationID.z == size - 4) {
+    if (gl_GlobalInvocationID.z == 0 || gl_GlobalInvocationID.z == size - 4) {
         check_edge(
             9999999.0,
             gl_GlobalInvocationID + uvec3(0, 0, 1),
@@ -136,10 +131,10 @@ void main() {
         );
     }
 
-    bool edge = any(lessThanEqual(gl_GlobalInvocationID, vec3(1))) || any(greaterThanEqual(gl_GlobalInvocationID, vec3(size-3)));
+    bool edge = any(greaterThanEqual(gl_GlobalInvocationID, vec3(size - 3)));
 
-    // Check the X axis edge
     if (!edge) {
+        // Check the X axis edge
         check_edge(
             density0,
             gl_GlobalInvocationID + uvec3(1, 0, 0),
@@ -150,11 +145,8 @@ void main() {
             false,
             false
         );
-    }
 
-
-    // Check the Y axis edge
-    if (!edge) {
+        // Check the Y axis edge
         check_edge(
             density0,
             gl_GlobalInvocationID + uvec3(0, 1, 0),
@@ -165,10 +157,8 @@ void main() {
             false,
             false
         );
-    }
 
-    // Check the Z axis edge
-    if (!edge) {
+        // Check the Z axis edge
         check_edge(
             density0,
             gl_GlobalInvocationID + uvec3(0, 0, 1),

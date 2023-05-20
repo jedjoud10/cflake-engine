@@ -79,7 +79,7 @@ impl Material for TerrainMaterial {
         compiler.use_sampled_texture::<ShadowMap>("shadow_map");
 
         // Set the scaling factor for the vertex positions
-        compiler.use_constant(0, (settings.size as f32) / (settings.size as f32 - 3.0));
+        compiler.use_constant(0, (settings.size as f32) / (settings.size as f32 - 4.0));
 
         // Define the "lowpoly" macro
         if settings.lowpoly {

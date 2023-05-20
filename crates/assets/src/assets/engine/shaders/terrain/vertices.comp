@@ -150,13 +150,13 @@ void main() {
     end_z = true;
 
     // Check if we are genearting some skirts
-    bool skirts = (gl_GlobalInvocationID.x == 1 && start_x) || (gl_GlobalInvocationID.x == size - 4 && end_x) ||
-        ((gl_GlobalInvocationID.y == 1 && start_y) || (gl_GlobalInvocationID.y == size - 4 && end_y)) || 
-        ((gl_GlobalInvocationID.z == 1 && start_z) || (gl_GlobalInvocationID.z == size - 4 && end_z));
+    bool skirts = ((gl_GlobalInvocationID.x == 0 && start_x) || (gl_GlobalInvocationID.x == size - 4 && end_x)) ||
+        ((gl_GlobalInvocationID.y == 0 && start_y) || (gl_GlobalInvocationID.y == size - 4 && end_y)) || 
+        ((gl_GlobalInvocationID.z == 0 && start_z) || (gl_GlobalInvocationID.z == size - 4 && end_z));
         
     // Update normals and count for skirts
     float comp = imageLoad(voxels, ivec3(gl_GlobalInvocationID)).x;
-    if (skirts && comp < 0 && comp > -10.0) {
+    if (skirts && comp < 0 && comp > -10.0 * (meshing.threshold * 10 + 1.0)) {
         normal = calculate_normal(gl_GlobalInvocationID) * 4;
         count = 4;
     }
@@ -168,15 +168,15 @@ void main() {
         // Meshes are always n-3 size, so each voxel has a size of 1 / n-3
         vec3 final = blocky ? vec3(0) : ((vertex / count) - vec3(0.5));
 
-        if ((gl_GlobalInvocationID.x <= 1 && start_x) || (gl_GlobalInvocationID.x == size - 4 && end_x)) {
+        if ((gl_GlobalInvocationID.x == 0 && start_x) || (gl_GlobalInvocationID.x == size - 4 && end_x)) {
             final.x = 0.0;
         }
-
-        if ((gl_GlobalInvocationID.y <= 1 && start_y) || (gl_GlobalInvocationID.y == size - 4 && end_y)) {
+        
+        if ((gl_GlobalInvocationID.y == 0 && start_y) || (gl_GlobalInvocationID.y == size - 4 && end_y)) {
             final.y = 0.0;
         }
 
-        if ((gl_GlobalInvocationID.z <= 1 && start_z) || (gl_GlobalInvocationID.z == size - 4 && end_z)) {
+        if ((gl_GlobalInvocationID.z == 0 && start_z) || (gl_GlobalInvocationID.z == size - 4 && end_z)) {
             final.z = 0.0;
         }
 

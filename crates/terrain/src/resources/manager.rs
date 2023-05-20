@@ -156,7 +156,7 @@ impl ChunkManager {
                 // Medium resolution
                 math::aabb_sphere(&node.aabb(), &math::Sphere {
                     center: *target,
-                    radius: size as f32 * 3.0,
+                    radius: size as f32 * 4.0,
                 }) 
             } else {
                 // Low resolution
@@ -206,7 +206,11 @@ fn load_layered_texture<T: ImageTexel>(
     raw.map(|raw| combine_into_layered(
         graphics,
         raw,
-        Some(SamplerSettings::default()),
+        Some(SamplerSettings {
+            filter: SamplerFilter::Linear,
+            wrap: SamplerWrap::Repeat,
+            mipmaps: SamplerMipMaps::Auto,
+        }),
         TextureMipMaps::Manual { mips: &[] },
         TextureMode::Dynamic,
         TextureUsage::SAMPLED | TextureUsage::COPY_DST,

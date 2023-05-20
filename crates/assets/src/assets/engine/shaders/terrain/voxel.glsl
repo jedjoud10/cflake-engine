@@ -14,8 +14,8 @@
         return x - (sin(2 * 3.1415 * x) / (2 * 3.1415));
     }
 
-float voxel(vec3 position, uint quality) {
-    //return position.y;
+float voxel(vec3 position, float quality) {
+    //return position.y - 15;
     //return position.y + (1-fbmCellular(position * 0.002 * vec3(1, 0.1, 1), 8, 0.3, 2.1).x) * 440;
     return position.y + snoise(position * 0.01) * 20;
     /*
