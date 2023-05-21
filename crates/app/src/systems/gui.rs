@@ -267,6 +267,20 @@ fn update(world: &mut World) {
                         ui.end_row();
                     }
                 });
+
+            ui.heading("Prefabs Table");
+
+            egui::Grid::new("prefabs")
+                .min_col_width(0f32)
+                .max_col_width(400f32)
+                .striped(true)
+                .show(ui, |ui| {
+                    for (name, (_, mask)) in scene.prefabs() {
+                        ui.label(format!("Name: {name}"));
+                        ui.label(format!("Mask: {mask}"));
+                        ui.end_row();
+                    }
+                });
         });
 
     // Terrain stats

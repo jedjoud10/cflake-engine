@@ -68,7 +68,7 @@ fn update(world: &mut World) {
 ``` 
 
 # Scene Architecture & Design
-**cFlake engine** uses an ECS (Entity, Component, System) architecture. This architecture is mostly used by new and modern game engines to be able to easily use of highly parallel code that can benefit from multithreading. The same goes for cFlake engine. The ECS architectures is split into 3 main parts, **Entities**, **Components**, and **Systems**.
+**cFlake engine** uses an ECS (Entity, Component, System) architecture. This architecture is mostly used by new and modern game engines to be able to easily use of highly parallel code that can benefit from multithreading. The same goes for cFlake engine. The ECS architectures is split into 3 (and a half) main parts, **Entities**, **Components**, **Prefabs**, and **Systems**.
 
 ## Entities
 Entities could be though of as a simple handle to some underlying data stored within the world scene. Entities by themselves do not store any data, and they can be represented using a u64 integer handle. 
@@ -81,6 +81,9 @@ Entities can be created and destroyed using the ``Scene`` resource that is autom
 Components are what actually store the data for a specified entity. Components are all stored within an ``Archetype``, which is a deisng/optimization that certain ECS implementation use for faster iteration speeds at the cost for slower insertion / removal speeds. Components can be inserted into the scene using the ``Scene::insert()`` function, which takes in a ``Bundle`` parameter that contains a tuple of different components. Components can also be removed from entities using ``EntryMut``, which is a mutable access to an entity's components directly.
 
 To actually handle modifying data related to components, one must use a scene ``Query`` that would iterate over all the given components of the given ``Bundle`` tuple type. They could be accessed as long as you have a mutable or immutable reference to the ``Scene`` resource (depending on what type of query you wish to use)
+
+## Prefabs
+Prefabs are basically pre-bundled components that can be instantiated any time into the world. You can take any ``Bundle`` and store it within the ``Scene`` as a prefab with a specific name ID that identifies it. So whenever you want to instantiate it you just need to call ``scene.instantiate(name)`` where ``name`` is the name of the prefab you wish to instantiate. This method will return you an ``Option<EntryMut>`` because it might fail. You can take the ``EntryMut`` and modify the newly instantiated entity's components with it
 
 ## Systems
 This is where things get tricky however, and this is where my implementation of ECS starts to differ from the pure ECS implementation. In this engine, ``System``s are just containers that store multiple ``Event``s, and these events get fired off whenever something interesting happens, like the start of a frame or during engine initialization. For now, we have 7 types of events and they go as follow:
@@ -108,6 +111,8 @@ Currently, there are a few way to load in external assets (and to ship them) wit
 In this engine, assets are defined as structs that can be deserialized and loaded from raw binary data (that is most probably file binary data). You can customize how assets are loaded in within the engine using the ``Asset`` trait, and you can implement it on any structure that can be deserialized from a raw stream of bytes. 
 
 You can define a "Context" and "Settings" that can be used to customize how each asset is loaded. Asset deserialization *must* be faillible, and due to that restriction, I made it so you *must* define an ``Error`` type that gets returned whenever asset conversion fails. There is also asnychronous asset loading supported within the engine, and this is implemented using the ``AsyncAsset`` trait that gets automatically gets implemented for ``Asset``s that are Sync + Send and have their Settings + Context be Sync and Send. So assets can be automatically loaded as asynchronous assets if they fit those requirements.
+
+The project can also be built using the "pack-assets" feature which will force to store the assets data bytes directly into the executable for shipping. A better solution to this would be to do proper asset packing to save space and compile time. 
 
 For now, these are the types of assets that are loadable/deseriazable by default and their respective extensions.
 * Texture2D: .png, .jpg

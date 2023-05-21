@@ -63,23 +63,56 @@ pub(crate) fn create_texture3d<T: Texel>(graphics: &Graphics, size: u32) -> Text
 // Bit 5 = End Y
 // Bit 6 = End Z
 pub(crate) fn find_skirts_direction(node: Node, octree: &Octree) -> u32 {
+    /*
     let mut skirts = 0u32;
     let nodes = octree.nodes();
 
-    /*
     let mut current = &node;
     for direction in 0..6u32 {
         // Check if the node is in the proper direction relative to parent
-        loop {
-            let index = node.index();
-            let parent = node.parent().unwrap();
+        'inner: loop {
+            if current.depth() == 0 {
+                return 0;
+            }
+
+            let index = current.index();
+            let parent = current.parent().unwrap();
             let sibling_base = nodes[parent].children().unwrap().get(); 
             let local_index_relative_to_parent = index - sibling_base;
             let offset = math::CHILDREN_OFFSETS[local_index_relative_to_parent];
-        }
 
+            // This "val" needs to either be 0 or 1 depending of div
+            let idxdir = (direction as usize) % 3;
+            let div = direction / 3;
+            let val = offset[idxdir];
+
+            // If div = 0, (start X, start Y, start Z), then val must also be 0
+            // If div = 1, (end X, end Y, end Z), then val must also be 1
+            let correct = val == div;
+
+            if correct {
+                // Find neighbor where all values other 
+                let sibling_index = math::CHILDREN_OFFSETS.iter().position(|other| {
+                    let mut cpy = *other;
+                    cpy[idxdir] = offset[idxdir];
+                    cpy != offset
+                }).unwrap();
+
+                // We found neighbor
+                //let neighbor = nodes[sibling_base + sibling_index];
+
+                skirts = u32::MAX;
+
+                break 'inner;
+            } else {
+                // If we're not in the right direction, move up the tree
+                current = &nodes[parent];
+            }
+        }
     }
-    */
 
     skirts
+    */
+
+    u32::MAX
 }

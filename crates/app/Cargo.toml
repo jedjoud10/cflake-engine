@@ -35,8 +35,6 @@ vek = { workspace = true }
 ahash = { workspace = true }
 
 [features]
-# TODO: Figure out how to handle this
-#two-dim = ["rendering/two-dim", "math/two-dim", "coords/two-dim", "hierarchy/two-dim", "physics/two-dim"]
 extended-tuples = ["ecs/extended-tuples", "utils/extended-tuples", "graphics/extended-tuples"]
 extended-bitmasks = ["ecs/extended-bitmasks"]
 headless = ["graphics/headless"]

@@ -139,24 +139,25 @@ impl ChunkManager {
 
         // Custom octree heuristic
         let size = settings.size;
+        let lod_multiplier = settings.lod_multiplier;
         let heuristic = math::OctreeHeuristic::Boxed(Box::new(move |target, node| {
             if node.size() == size * 2 {
                 // High resolution
                 math::aabb_sphere(&node.aabb(), &math::Sphere {
                     center: *target,
-                    radius: (size as f32 * 1.0),
+                    radius: (size as f32 * 1.0 * lod_multiplier),
                 })
             } else if node.size() == size * 4 {
                 // Medium resolution
                 math::aabb_sphere(&node.aabb(), &math::Sphere {
                     center: *target,
-                    radius: size as f32 * 2.0,
+                    radius: size as f32 * 2.0 * lod_multiplier,
                 })
             } else if node.size() == size * 8 {
                 // Medium resolution
                 math::aabb_sphere(&node.aabb(), &math::Sphere {
                     center: *target,
-                    radius: size as f32 * 4.0,
+                    radius: size as f32 * 4.0 * lod_multiplier,
                 }) 
             } else {
                 // Low resolution

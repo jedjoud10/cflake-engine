@@ -317,6 +317,8 @@ fn render(world: &mut World) {
     }
 
     drop(render_pass);
+
+    graphics.submit(false);
 }
 
 // The rendering system will be resposible for iterating through the entities and rendering them to the backbuffer texture

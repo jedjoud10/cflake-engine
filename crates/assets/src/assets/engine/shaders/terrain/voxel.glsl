@@ -14,7 +14,8 @@ float smooth_floor(float x) {
 }
 
 float voxel(vec3 position, float quality) {
-    float density = smooth_floor(position.y / 100) * 100 + (1-fbmCellular(position * 0.002 * vec3(1, 0.1, 1), uint(8.0 * quality), 0.3, 2.1).x) * 440;
+    position *= 0.5;
+    float density = smooth_floor(position.y / 100) * 100 + (1-fbmCellular(position * 0.002 * vec3(1, 0.1, 1), uint(10.0 * quality), 0.3, 2.1).x) * 440;
     return density; 
 }
 

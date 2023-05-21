@@ -120,6 +120,7 @@ void main() {
 	#endif
 	
 	// Compute PBR values
+	albedo *= (lod * 0.1);
 	mask *= vec3(pow(mask.r + 0.2, 4), 1.3, 0.4);
 	float roughness = clamp(mask.g, 0.02, 1.0);
 	float metallic = clamp(mask.b, 0.01, 1.0);

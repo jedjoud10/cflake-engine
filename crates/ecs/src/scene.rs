@@ -1,7 +1,7 @@
 use ahash::AHashMap;
 use itertools::Itertools;
 use slotmap::SlotMap;
-use std::{iter::once, any::Any};
+use std::{iter::once};
 use utils::Time;
 use world::{user, System, World};
 
@@ -178,6 +178,11 @@ impl Scene {
 
         let boxed: Box<dyn PrefabBundle> = Box::new(bundle);
         self.prefabs.insert(name, (boxed, mask));
+    }
+
+    // Get the internally stored prefab hashmap
+    pub fn prefabs(&self) -> &AHashMap<PrefabId, (Box<dyn PrefabBundle>, Mask)> {
+        &self.prefabs
     }
 
     // Check if an entity is stored within the scene

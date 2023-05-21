@@ -21,6 +21,7 @@ pub struct TerrainSettings {
 
     // Octree params
     pub(crate) max_depth: u32,
+    pub(crate) lod_multiplier: f32, 
 
     // Memory managing settings
     pub(crate) allocation_count: usize,
@@ -61,6 +62,7 @@ impl TerrainSettings {
         allocations: usize,
         sub_allocations: usize,
         max_depth: u32,
+        lod_multiplier: f32,
         sub_materials: Option<&[TerrainSubMaterial]>,
     ) -> Result<Self, TerrainSettingsError> {
         let mut output_vertex_buffer_length =
@@ -118,6 +120,7 @@ impl TerrainSettings {
             voxel_set_group_callback: None,
             sub_materials: sub_materials.map(|x| x.to_vec()),
             max_depth,
+            lod_multiplier,
         })
     }
 

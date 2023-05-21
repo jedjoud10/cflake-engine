@@ -1,6 +1,5 @@
 use crate::{
-    registry::{self},
-    Archetype, ArchetypeSet, Component, LayoutAccess, Mask, QueryLayoutMut, QueryLayoutRef,
+    Archetype, ArchetypeSet, LayoutAccess, Mask, QueryLayoutMut, QueryLayoutRef,
     StateColumn,
 };
 use std::marker::PhantomData;

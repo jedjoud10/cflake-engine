@@ -14,11 +14,11 @@ fn main() {
 // Creates a movable camera, and sky entity
 fn init(world: &mut World) {
     // Fetch the required resources from the world
-    let mut assets = world.get_mut::<Assets>().unwrap();
+    let assets = world.get::<Assets>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
     let mut pbrs = world.get_mut::<Storage<PhysicallyBasedMaterial>>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
-    let mut pipelines = world.get_mut::<Pipelines>().unwrap();
+    let pipelines = world.get::<Pipelines>().unwrap();
 
     asset!(assets, "user/textures/diffuse2.jpg", "/examples/assets/");
     asset!(assets, "user/textures/normal2.jpg", "/examples/assets/");

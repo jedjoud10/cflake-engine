@@ -126,8 +126,8 @@ pub(crate) unsafe fn init_context_and_window(
     // Pick the appropriate present mode
     let present_mode = match settings.limit {
         FrameRateLimit::VSync => wgpu::PresentMode::AutoVsync,
-        FrameRateLimit::Limited(_) => wgpu::PresentMode::AutoNoVsync,
-        FrameRateLimit::Unlimited => wgpu::PresentMode::AutoNoVsync,
+        FrameRateLimit::Limited(_) => wgpu::PresentMode::Immediate,
+        FrameRateLimit::Unlimited => wgpu::PresentMode::Immediate,
     };
 
     // Create the surface configuration
