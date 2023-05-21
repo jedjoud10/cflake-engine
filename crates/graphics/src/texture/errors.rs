@@ -124,7 +124,7 @@ pub enum MipLevelCopyError {
     CannotUseSubregion,
 
     #[error("Todo")]
-    IncompatibleMultiLayerTextures
+    IncompatibleMultiLayerTextures,
 }
 
 #[derive(Error, Debug)]

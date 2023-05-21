@@ -39,7 +39,6 @@ pub enum BufferReadError {
     NonReadable,
 }
 
-
 #[derive(Error, Debug)]
 pub enum BufferAsyncReadError {
     #[error("The given range is invalid for buffer with {0} elements")]

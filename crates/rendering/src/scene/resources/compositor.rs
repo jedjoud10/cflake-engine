@@ -1,8 +1,9 @@
 use assets::Assets;
-use bytemuck::{Zeroable, Pod};
+use bytemuck::{Pod, Zeroable};
 use graphics::{
-    Compiler, FragmentModule, Graphics, LoadOp, Operation, PrimitiveConfig, RenderPass,
-    RenderPipeline, Shader, StoreOp, SwapchainFormat, Texture2D, VertexConfig, VertexModule, UniformBuffer, BufferMode, BufferUsage,
+    BufferMode, BufferUsage, Compiler, FragmentModule, Graphics, LoadOp, Operation,
+    PrimitiveConfig, RenderPass, RenderPipeline, Shader, StoreOp, SwapchainFormat, Texture2D,
+    UniformBuffer, VertexConfig, VertexModule,
 };
 
 use crate::{CameraUniform, SceneColor, SceneDepth, WindowUniform};
@@ -36,10 +37,10 @@ impl Tonemapping {
             1 => Self::ReinhardJodie,
             2 => Self::ACES,
             3 => Self::Clamp,
-            _ => panic!()
+            _ => panic!(),
         }
     }
-    
+
     // Get a tonemap discriminant index from enum variant
     pub fn into_index(&self) -> u32 {
         match self {
@@ -80,7 +81,6 @@ impl Default for PostProcessUniform {
         }
     }
 }
-
 
 // Overlays post-processing effects and multiple layers
 // This will also render out the final composed image to the window
@@ -145,12 +145,13 @@ impl Compositor {
         .unwrap();
 
         // Create a uniform buffer that will contain post processing parameters
-        let post_process_buffer =  UniformBuffer::from_slice(
+        let post_process_buffer = UniformBuffer::from_slice(
             &graphics,
             &[PostProcessUniform::default()],
             BufferMode::Dynamic,
             BufferUsage::WRITE,
-        ).unwrap();
+        )
+        .unwrap();
 
         Self {
             render_pass,

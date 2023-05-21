@@ -17,7 +17,7 @@ pub enum EditMode {
 // Shape origin is added to the edit entity transformation
 pub enum EditShape {
     Cuboid(math::shapes::Cuboid<f32>),
-    Sphere(math::shapes::Sphere<f32>)
+    Sphere(math::shapes::Sphere<f32>),
 }
 
 // A terrain edit can be created by spawning in an entity that contains the components with optional location/rotation/scale components

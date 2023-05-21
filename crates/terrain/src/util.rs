@@ -1,6 +1,7 @@
 use graphics::{
-    Buffer, BufferMode, BufferUsage, Graphics, SamplerSettings, Texel, Texture, Texture3D,
-    TextureMipMaps, TextureMode, TextureUsage, TriangleBuffer, Vertex, XYZW, XY, GpuPod, DrawIndexedIndirect,
+    Buffer, BufferMode, BufferUsage, DrawIndexedIndirect, GpuPod, Graphics, SamplerSettings, Texel,
+    Texture, Texture3D, TextureMipMaps, TextureMode, TextureUsage, TriangleBuffer, Vertex, XY,
+    XYZW,
 };
 use math::{Node, Octree};
 use rendering::{attributes, AttributeBuffer};
@@ -21,7 +22,11 @@ pub(crate) const DEFAULT_DRAW_INDEXED_INDIRECT: DrawIndexedIndirect = DrawIndexe
 };
 
 // Create counters that will help us generate the vertices
-pub(crate) fn create_counters(graphics: &Graphics, count: usize, extra: BufferUsage) -> Buffer<u32> {
+pub(crate) fn create_counters(
+    graphics: &Graphics,
+    count: usize,
+    extra: BufferUsage,
+) -> Buffer<u32> {
     Buffer::zeroed(
         graphics,
         count,
@@ -32,13 +37,16 @@ pub(crate) fn create_counters(graphics: &Graphics, count: usize, extra: BufferUs
 }
 
 // Create an empty buffer that can be written to, copied from/to, and used as storage
-pub(crate) fn create_empty_buffer<T: GpuPod, const TYPE: u32>(graphics: &Graphics) -> Buffer<T, TYPE> {
+pub(crate) fn create_empty_buffer<T: GpuPod, const TYPE: u32>(
+    graphics: &Graphics,
+) -> Buffer<T, TYPE> {
     Buffer::from_slice(
         graphics,
         &[],
         BufferMode::Resizable,
-        BufferUsage::COPY_SRC | BufferUsage::COPY_DST | BufferUsage::WRITE | BufferUsage::STORAGE
-    ).unwrap()
+        BufferUsage::COPY_SRC | BufferUsage::COPY_DST | BufferUsage::WRITE | BufferUsage::STORAGE,
+    )
+    .unwrap()
 }
 
 // Create a 3D storage texture with null contents with the specified size
@@ -77,7 +85,7 @@ pub(crate) fn find_skirts_direction(node: Node, octree: &Octree) -> u32 {
 
             let index = current.index();
             let parent = current.parent().unwrap();
-            let sibling_base = nodes[parent].children().unwrap().get(); 
+            let sibling_base = nodes[parent].children().unwrap().get();
             let local_index_relative_to_parent = index - sibling_base;
             let offset = math::CHILDREN_OFFSETS[local_index_relative_to_parent];
 
@@ -91,7 +99,7 @@ pub(crate) fn find_skirts_direction(node: Node, octree: &Octree) -> u32 {
             let correct = val == div;
 
             if correct {
-                // Find neighbor where all values other 
+                // Find neighbor where all values other
                 let sibling_index = math::CHILDREN_OFFSETS.iter().position(|other| {
                     let mut cpy = *other;
                     cpy[idxdir] = offset[idxdir];

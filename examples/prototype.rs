@@ -10,13 +10,11 @@ fn main() {
 }
 
 // Executed at the start
-fn init(world: &mut World) {
-}
+fn init(world: &mut World) {}
 
 // Camera controller update executed every tick
 fn update(world: &mut World) {
     let gui = world.get_mut::<Interface>().unwrap();
- 
-    egui::Window::new("Prototyping").show(&gui, |ui| {
-    });
+
+    egui::Window::new("Prototyping").show(&gui, |ui| {});
 }

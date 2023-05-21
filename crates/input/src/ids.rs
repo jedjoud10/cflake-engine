@@ -8,7 +8,11 @@ pub trait InputButtonId {
 impl<T: Into<Button>> InputButtonId for T {
     fn get(self, input: &Input) -> ButtonState {
         let converted = self.into();
-        input.keys.get(&converted).cloned().unwrap_or(ButtonState::None)
+        input
+            .keys
+            .get(&converted)
+            .cloned()
+            .unwrap_or(ButtonState::None)
     }
 }
 

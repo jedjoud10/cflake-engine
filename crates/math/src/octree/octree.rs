@@ -1,10 +1,10 @@
-use std::{num::NonZeroUsize, hash::Hash, mem::MaybeUninit};
-use ahash::{AHashSet};
+use ahash::AHashSet;
+use std::{hash::Hash, mem::MaybeUninit, num::NonZeroUsize};
 
 // An octree is a tree data structure that contains multiple "nodes" that each have 8 children
 // Octrees are used for hierarchy partitionaning, terrain generation, and even collision detection
 // Octrees are the 3D variant of quadtrees and quadtrees are the 2D variant of binary trees
-pub struct Octree {  
+pub struct Octree {
     max_depth: u32,
     node_size: u32,
     nodes: Vec<Node>,
@@ -30,23 +30,22 @@ pub enum OctreeHeuristic {
 impl OctreeHeuristic {
     // Check if we should split a node or not
     fn check(&self, target: &vek::Vec3<f32>, node: &Node) -> bool {
-
         match self {
-            OctreeHeuristic::Spheric(radius) => {
-                crate::intersect::aabb_sphere(&node.aabb(), &crate::shapes::Sphere {
+            OctreeHeuristic::Spheric(radius) => crate::intersect::aabb_sphere(
+                &node.aabb(),
+                &crate::shapes::Sphere {
                     center: *target,
                     radius: *radius,
-                })
-            },
-            OctreeHeuristic::Point => {
-                crate::intersect::point_aabb(target, &node.aabb())
-            },
-            OctreeHeuristic::Cubic(extent) => {
-                crate::intersect::aabb_aabb(&node.aabb(), &crate::bounds::Aabb {
+                },
+            ),
+            OctreeHeuristic::Point => crate::intersect::point_aabb(target, &node.aabb()),
+            OctreeHeuristic::Cubic(extent) => crate::intersect::aabb_aabb(
+                &node.aabb(),
+                &crate::bounds::Aabb {
                     min: target - extent / 2.0,
                     max: target + extent / 2.0,
-                })
-            },
+                },
+            ),
             OctreeHeuristic::Boxed(func) => func(target, node),
         }
     }
@@ -84,7 +83,7 @@ impl Octree {
     // Recalculate the octree using a specific camera location
     pub fn compute(&mut self, target: vek::Vec3<f32>) -> OctreeDelta {
         self.nodes.clear();
-        
+
         // Keep track of the chunks we will check for
         let mut checking = vec![0usize];
         self.nodes.push(Node {
@@ -112,7 +111,7 @@ impl Octree {
                 // Add the children to the nodes that we must process
                 checking.extend(base..(base + 8));
 
-                // Create the children nodes and add them to the octree       
+                // Create the children nodes and add them to the octree
                 let size = (2u32.pow(self.max_depth - node.depth) * self.node_size) / 2;
                 let half = vek::Vec3::broadcast(size);
                 let position = node.position;
@@ -120,7 +119,7 @@ impl Octree {
 
                 let children = (0..8usize).into_iter().map(move |children| {
                     let position = (CHILDREN_OFFSETS[children] * half).as_::<i32>() + position;
-                
+
                     Node {
                         parent: index,
                         index: children + base,
@@ -141,7 +140,7 @@ impl Octree {
             };
 
             drop(node);
-            
+
             if let Some(children) = children {
                 self.nodes.extend(children);
             }
@@ -154,20 +153,11 @@ impl Octree {
         let current = new;
 
         // And check for differences
-        let removed = previous
-            .difference(&current)
-            .cloned()
-            .collect::<Vec<_>>();
-        let added = current
-            .difference(&previous)
-            .cloned()
-            .collect::<Vec<_>>();
+        let removed = previous.difference(&current).cloned().collect::<Vec<_>>();
+        let added = current.difference(&previous).cloned().collect::<Vec<_>>();
         self.old_nodes = current;
 
-        OctreeDelta {
-            added,
-            removed
-        }
+        OctreeDelta { added, removed }
     }
 
     // Iterate over the octree recursively using a "check" function
@@ -176,12 +166,12 @@ impl Octree {
         if !self.nodes.is_empty() {
             return;
         }
-        
+
         let mut checking = vec![0usize];
 
         while let Some(i) = checking.pop() {
             let node = &self.nodes[i];
-            
+
             if let Some(base) = node.children() {
                 let recurse = callback(&node);
 
@@ -189,7 +179,7 @@ impl Octree {
                     let base = base.get();
                     for x in 0..8 {
                         checking.push(x + base);
-                    }    
+                    }
                 }
             }
         }
@@ -203,13 +193,13 @@ impl Octree {
     // Get the internally stored nodes
     pub fn nodes(&self) -> &[Node] {
         &self.nodes
-    } 
+    }
 }
 
 // Octree deltas contain the added / removed chunk nodes
 pub struct OctreeDelta {
     pub added: Vec<Node>,
-    pub removed: Vec<Node>
+    pub removed: Vec<Node>,
 }
 
 // An octree node is an object that *might* contain 8 children (it becomes a parent)
@@ -258,7 +248,7 @@ impl Node {
     pub fn depth(&self) -> u32 {
         self.depth
     }
-    
+
     // Check if the node is a leaf node
     pub fn leaf(&self) -> bool {
         self.children.is_none()

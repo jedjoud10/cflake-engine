@@ -12,8 +12,6 @@ fn tick(world: &mut World) {
     let Ok(mut session) = world.get_mut::<NetworkedSession>() else {
         return;
     };
-
-    
 }
 
 // This system will automatically insert the input resource and update it each tick

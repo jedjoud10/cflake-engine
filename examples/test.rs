@@ -25,10 +25,13 @@ fn init(world: &mut World) {
     ));
 
     // create sun source light
-    scene.insert((DirectionalLight {
-        color: vek::Rgb::one(),
-    }, Rotation::rotation_x(-15.0f32.to_radians())));
-    
+    scene.insert((
+        DirectionalLight {
+            color: vek::Rgb::one(),
+        },
+        Rotation::rotation_x(-15.0f32.to_radians()),
+    ));
+
     // fetch resources from world
     let mut assets = world.get_mut::<Assets>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
@@ -38,7 +41,9 @@ fn init(world: &mut World) {
     let forward_renderer = world.get::<ForwardRenderer>().unwrap();
 
     // register the PBR material to use it
-    let id = pipelines.register::<PhysicallyBasedMaterial>(&graphics, &mut assets).unwrap();
+    let id = pipelines
+        .register::<PhysicallyBasedMaterial>(&graphics, &mut assets)
+        .unwrap();
 
     // load a sphere mesh
     let sphere: Handle<Mesh> = forward_renderer.sphere.clone();
@@ -55,7 +60,7 @@ fn init(world: &mut World) {
         tint: vek::Rgb::white(),
         scale: vek::Extent2::one(),
     });
-    
+
     let surface = Surface::new(sphere, material, id);
     scene.insert((surface, Renderer::default()));
 }

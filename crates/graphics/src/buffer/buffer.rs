@@ -12,10 +12,10 @@ use bytemuck::{Pod, Zeroable};
 use wgpu::{util::DeviceExt, CommandEncoder, Maintain};
 
 use crate::{
-    BufferClearError, BufferCopyError, BufferExtendError, BufferInfo, BufferInitializationError,
-    BufferMode, BufferNotMappableError, BufferReadError, BufferSplatError, BufferUsage, BufferView,
-    BufferViewMut, BufferWriteError, DispatchIndirect, DrawIndexedIndirect, DrawIndirect, GpuPod,
-    Graphics, StagingPool, Vertex, R, BufferAsyncReadError,
+    BufferAsyncReadError, BufferClearError, BufferCopyError, BufferExtendError, BufferInfo,
+    BufferInitializationError, BufferMode, BufferNotMappableError, BufferReadError,
+    BufferSplatError, BufferUsage, BufferView, BufferViewMut, BufferWriteError, DispatchIndirect,
+    DrawIndexedIndirect, DrawIndirect, GpuPod, Graphics, StagingPool, Vertex, R,
 };
 
 // Bitmask from Vulkan BufferUsages
@@ -357,7 +357,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         Ok(())
     }
 
-    // Extend this buffer using the given iterator    
+    // Extend this buffer using the given iterator
     pub fn extend(&mut self, iter: impl IntoIterator<Item = T>) -> Result<(), BufferExtendError> {
         // Shitty but works
         let vec = iter.into_iter().collect::<Vec<_>>();
@@ -634,8 +634,8 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
 
         // Get the staging pool for download
         let staging = self.graphics.staging_pool();
-        let data = staging
-            .map_buffer_read(&self.graphics, &self.buffer, offset as u64, size as u64);
+        let data =
+            staging.map_buffer_read(&self.graphics, &self.buffer, offset as u64, size as u64);
 
         Ok(BufferView {
             buffer: &self,

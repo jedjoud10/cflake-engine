@@ -1,6 +1,9 @@
-use std::sync::{Arc, atomic::{Ordering, AtomicUsize}};
+use std::sync::{
+    atomic::{AtomicUsize, Ordering},
+    Arc,
+};
 
-use utils::{ConcVec, AtomicBitSet};
+use utils::{AtomicBitSet, ConcVec};
 
 use crate::Graphics;
 
@@ -27,7 +30,7 @@ pub(super) fn read_staging_buffer_view<'a>(
         slice.get_mapped_range()
     } else {
         panic!("could not map buffer for reading")
-    } 
+    }
 }
 
 // Create a StagingViewMut for a specific staging buffer
@@ -35,7 +38,7 @@ pub(super) fn write_staging_buffer_view_mut<'a>(
     graphics: &Graphics,
     buffer: &'a wgpu::Buffer,
     offset: u64,
-    size: u64
+    size: u64,
 ) -> wgpu::BufferViewMut<'a> {
     // Map the staging buffer
     type MapResult = Result<(), wgpu::BufferAsyncError>;
@@ -53,7 +56,7 @@ pub(super) fn write_staging_buffer_view_mut<'a>(
         slice.get_mapped_range_mut()
     } else {
         panic!("could not map buffer for reading")
-    } 
+    }
 }
 
 // Synchronously read the data from a staging buffer and write it to DST
@@ -81,7 +84,7 @@ pub(super) fn write_staging_buffer(
 // This takes in self because we need to know the allocations count and shit
 pub(super) fn async_read_staging_buffer(
     allocations: Arc<ConcVec<wgpu::Buffer>>,
-    must_unmap: Arc<AtomicBitSet::<AtomicUsize>>,
+    must_unmap: Arc<AtomicBitSet<AtomicUsize>>,
     index: usize,
     offset: u64,
     size: u64,

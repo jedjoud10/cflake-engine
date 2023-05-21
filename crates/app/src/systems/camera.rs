@@ -87,7 +87,11 @@ fn update(world: &mut World) {
     let window = world.get::<Window>().unwrap();
 
     // If the user *just* added a camera, then hide the UI
-    if !scene.query_with::<&CameraController>(ecs::added::<&CameraController>()).is_empty() && time.frame_count() == 1 {
+    if !scene
+        .query_with::<&CameraController>(ecs::added::<&CameraController>())
+        .is_empty()
+        && time.frame_count() == 1
+    {
         hide_ui(&window, &mut gui);
     }
 
@@ -123,7 +127,7 @@ fn update(world: &mut World) {
     let right = rotation.right();
     let up = rotation.up();
     let mut velocity = vek::Vec3::<f32>::default();
-    
+
     // Controller is no longer active if the ui is enabled
     if input.get_button("show-cursor").pressed() {
         show_ui(&window, &mut gui);

@@ -2,7 +2,9 @@ use std::time::Instant;
 
 use ecs::Scene;
 use math::ExplicitVertices;
-use rayon::prelude::{ParallelBridge, IntoParallelRefMutIterator, ParallelIterator, IntoParallelIterator};
+use rayon::prelude::{
+    IntoParallelIterator, IntoParallelRefMutIterator, ParallelBridge, ParallelIterator,
+};
 use world::World;
 
 use crate::{DefaultMaterialResources, Material, RenderPath, Renderer, SubSurface, Surface};
@@ -63,20 +65,17 @@ pub(super) fn cull_surfaces<'r, M: Material>(
         }
 
         // A surface is culled *only* if all of it's sub-surface are not visible
-        surface.culled = surface
-            .subsurfaces
-            .iter()
-            .all(|SubSurface { mesh, .. }| {
-                // Get the mesh and it's AABB
-                let mesh = <M::RenderPath as RenderPath>::get(defaults, &mesh);
-                let aabb = mesh.vertices().aabb();
+        surface.culled = surface.subsurfaces.iter().all(|SubSurface { mesh, .. }| {
+            // Get the mesh and it's AABB
+            let mesh = <M::RenderPath as RenderPath>::get(defaults, &mesh);
+            let aabb = mesh.vertices().aabb();
 
-                // If we have a valid AABB, check if the surface is visible within the frustum
-                if let Some(aabb) = aabb {
-                    !intersects_frustum(&defaults.camera_frustum, aabb, &renderer.matrix)
-                } else {
-                    false
-                }
-            });
+            // If we have a valid AABB, check if the surface is visible within the frustum
+            if let Some(aabb) = aabb {
+                !intersects_frustum(&defaults.camera_frustum, aabb, &renderer.matrix)
+            } else {
+                false
+            }
+        });
     });
 }

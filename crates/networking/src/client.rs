@@ -40,7 +40,10 @@ impl Client {
         stream.set_nonblocking(false).unwrap();
         log::debug!("Received UUID {}", uuid);
 
-        Ok(Self { uuid: Some(uuid), stream })
+        Ok(Self {
+            uuid: Some(uuid),
+            stream,
+        })
     }
 
     // Disconnect the client from the server
@@ -57,19 +60,23 @@ impl Client {
     // Send a message of a specific type to the server
     pub fn send<T: Packet>(&mut self, val: T) -> Result<(), PacketSendError> {
         // TODO: User another serialization system other than this bozo
-        let string = serde_json::to_string(&val).map_err(|err| PacketSendError::SerializationError(err))?;
+        let string =
+            serde_json::to_string(&val).map_err(|err| PacketSendError::SerializationError(err))?;
         let id = crate::packet::id::<T>();
         let mut data = Vec::<u8>::with_capacity(string.as_bytes().len() + 8);
         data.extend(id.to_be_bytes());
         data.extend(string.as_bytes());
-        self.stream.write(&data).map_err(|err| PacketSendError::SocketError(err)).map(|_| ())
+        self.stream
+            .write(&data)
+            .map_err(|err| PacketSendError::SocketError(err))
+            .map(|_| ())
     }
 
     // Send a message of a specific type to all the clients
     pub fn broadcast<T: Packet>(&mut self, _val: T) {
         todo!()
     }
-    
+
     // Receive messages of a specific type from the clients
     pub fn receive<T: Packet>(&mut self) -> Vec<(T, Uuid)> {
         todo!()

@@ -3,7 +3,8 @@ use math::Scalar;
 use ecs::Component;
 use std::{
     fmt::Debug,
-    ops::{Deref, DerefMut}, marker::PhantomData,
+    marker::PhantomData,
+    ops::{Deref, DerefMut},
 };
 
 // Our target is the raw rotation (either 3D or 2D)

@@ -1,10 +1,13 @@
 use assets::Assets;
 use ecs::Scene;
-use graphics::{Graphics, ComputePass, ActivePipeline, Texture};
+use graphics::{ActivePipeline, ComputePass, Graphics, Texture};
 use utils::Storage;
-use world::{World, System, user, post_user};
+use world::{post_user, user, System, World};
 
-use crate::{SkyMaterial, ForwardRenderer, Pipelines, Surface, Renderer, Environment, EnvironmentMap, TempEnvironmentMap};
+use crate::{
+    Environment, EnvironmentMap, ForwardRenderer, Pipelines, Renderer, SkyMaterial, Surface,
+    TempEnvironmentMap,
+};
 
 // Add the envinronment resource into the world and the sky entity
 fn init(world: &mut World) {
@@ -27,7 +30,7 @@ fn init(world: &mut World) {
     let surface = Surface::new(mesh, material, id);
     let renderer = Renderer::default();
     scene.insert((surface, renderer));
-    
+
     // Create the environment resource that contains the cubemaps
     let environment = Environment::new(&graphics, &assets);
 
@@ -71,13 +74,15 @@ fn render(world: &mut World) {
 
 // The environment system is responsible for creatin the HDRi environment map to use for specular and diffuse IBL
 pub fn system(system: &mut System) {
-    system.insert_init(init)
+    system
+        .insert_init(init)
         .before(user)
         .after(assets::system)
         .after(graphics::common)
         .after(crate::systems::rendering::system);
 
-    system.insert_update(render)
+    system
+        .insert_update(render)
         .before(user)
         .before(crate::systems::rendering::system);
 }

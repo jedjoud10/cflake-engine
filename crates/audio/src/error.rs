@@ -10,5 +10,5 @@ pub enum AudioClipDeserializationError {
     Wav(std::io::Error),
 
     #[error("The given bit-depth ofthe audio clip is not supported")]
-    BitDepthNotSupported
+    BitDepthNotSupported,
 }

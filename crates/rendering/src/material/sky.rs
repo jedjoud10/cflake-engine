@@ -1,6 +1,6 @@
 use crate::{
-    AlbedoMap, CameraUniform, CastShadowsMode, DefaultMaterialResources, Direct, Material,
-    MeshAttributes, SceneUniform, EnvironmentMap,
+    AlbedoMap, CameraUniform, CastShadowsMode, DefaultMaterialResources, Direct, EnvironmentMap,
+    Material, MeshAttributes, SceneUniform,
 };
 
 use assets::Assets;

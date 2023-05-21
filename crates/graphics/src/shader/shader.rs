@@ -81,10 +81,7 @@ impl ComputeShader {
                 .graphics
                 .device()
                 .create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-                    label: Some(&format!(
-                        "compute-pipeline-{:?}",
-                        compiled.name()
-                    )),
+                    label: Some(&format!("compute-pipeline-{:?}", compiled.name())),
                     layout: Some(&layout),
                     module: compiled.module(),
                     entry_point: "main",

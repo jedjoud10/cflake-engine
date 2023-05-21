@@ -1,14 +1,23 @@
 use assets::Assets;
-use graphics::{Graphics, RenderPass, RGBA, RenderPipeline, Shader, CubeMap, Texel, ImageTexel, TextureMode, TextureUsage, TextureMipMaps, SamplerSettings, Texture, Operation, LoadOp, StoreOp, FragmentModule, VertexModule, Compiler, ComputeShader, ComputeModule, StorageAccess, Texture2D, LayeredTexture2D};
+use graphics::{
+    Compiler, ComputeModule, ComputeShader, CubeMap, FragmentModule, Graphics, ImageTexel,
+    LayeredTexture2D, LoadOp, Operation, RenderPass, RenderPipeline, SamplerSettings, Shader,
+    StorageAccess, StoreOp, Texel, Texture, Texture2D, TextureMipMaps, TextureMode, TextureUsage,
+    VertexModule, RGBA,
+};
 
 pub type EnvironmentMap = CubeMap<RGBA<f32>>;
 pub type TempEnvironmentMap = LayeredTexture2D<RGBA<f32>>;
 
 // Create a cubemap with a specific resolution
-fn create_cubemap<T: Texel + ImageTexel>(graphics: &Graphics, value: T::Storage, resolution: usize) -> CubeMap<T> {
+fn create_cubemap<T: Texel + ImageTexel>(
+    graphics: &Graphics,
+    value: T::Storage,
+    resolution: usize,
+) -> CubeMap<T> {
     CubeMap::<T>::from_texels(
         graphics,
-        Some(&vec![value; resolution*resolution*6]),
+        Some(&vec![value; resolution * resolution * 6]),
         vek::Extent2::broadcast(resolution as u32),
         TextureMode::Dynamic,
         TextureUsage::SAMPLED | TextureUsage::TARGET | TextureUsage::COPY_DST,
@@ -19,10 +28,14 @@ fn create_cubemap<T: Texel + ImageTexel>(graphics: &Graphics, value: T::Storage,
 }
 
 // Create a "fake" cubemap (just a layered texture 2D) with a specific resolution
-fn create_temp_cubemap<T: Texel + ImageTexel>(graphics: &Graphics, value: T::Storage, resolution: usize) -> LayeredTexture2D<T> {
+fn create_temp_cubemap<T: Texel + ImageTexel>(
+    graphics: &Graphics,
+    value: T::Storage,
+    resolution: usize,
+) -> LayeredTexture2D<T> {
     LayeredTexture2D::<T>::from_texels(
         graphics,
-        Some(&vec![value; resolution*resolution*6]),
+        Some(&vec![value; resolution * resolution * 6]),
         (vek::Extent2::broadcast(resolution as u32), 6),
         TextureMode::Dynamic,
         TextureUsage::SAMPLED | TextureUsage::STORAGE | TextureUsage::COPY_DST,
@@ -50,10 +63,7 @@ pub struct Environment {
 
 impl Environment {
     // Create a new scene environment render passes and cubemaps
-    pub(crate) fn new(
-        graphics: &Graphics,
-        assets: &Assets,
-    ) -> Self { 
+    pub(crate) fn new(graphics: &Graphics, assets: &Assets) -> Self {
         // Load the environment compute shader
         let compute = assets
             .load::<ComputeModule>("engine/shaders/scene/environment/environment.comp")
@@ -83,11 +93,11 @@ impl Environment {
         Self {
             environment_map: [
                 create_cubemap(graphics, vek::Vec4::zero(), 128),
-                create_cubemap(graphics, vek::Vec4::zero(), 128)
+                create_cubemap(graphics, vek::Vec4::zero(), 128),
             ],
-            
+
             temp: create_temp_cubemap(graphics, vek::Vec4::zero(), 128),
-        
+
             shader,
             views,
             projection,

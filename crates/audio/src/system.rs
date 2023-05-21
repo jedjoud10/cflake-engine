@@ -20,10 +20,7 @@ fn update(world: &mut World) {
     let filter = ecs::added::<&AudioSource>() | ecs::modified::<&AudioSource>();
     for source in scene.query_mut_with::<&mut AudioSource>(filter) {
         if source.stream.is_none() && source.playing {
-            let stream = super::build_clip_output_stream(
-                &source.clip,
-                player
-            );
+            let stream = super::build_clip_output_stream(&source.clip, player);
             let stream = stream.unwrap();
             cpal::traits::StreamTrait::play(&stream).unwrap();
             source.stream = Some(stream);

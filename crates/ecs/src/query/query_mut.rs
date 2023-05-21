@@ -8,7 +8,7 @@ use std::{iter::FusedIterator, marker::PhantomData};
 pub struct QueryMut<'a: 'b, 'b, L: QueryLayoutMut> {
     pub(crate) archetypes: Vec<&'a mut Archetype>,
     access: LayoutAccess,
-    bitsets: Option<Vec<BitSet::<usize>>>,
+    bitsets: Option<Vec<BitSet<usize>>>,
     _phantom1: PhantomData<&'b ()>,
     _phantom3: PhantomData<L>,
 }
@@ -41,7 +41,7 @@ impl<'a: 'b, 'b, L: QueryLayoutMut> QueryMut<'a, 'b, L> {
             _phantom3: PhantomData,
         }
     }
-    
+
     // Get the access masks that we have calculated
     pub fn layout_access(&self) -> LayoutAccess {
         self.access
@@ -59,7 +59,11 @@ impl<'a: 'b, 'b, L: QueryLayoutMut> QueryMut<'a, 'b, L> {
 }
 
 // Update the mutability state column of a specific archetype based on a masks' compound unit masks
-fn apply_mutability_states(archetype: &mut Archetype, mutability: Mask, bitset: Option<&BitSet::<usize>>) {
+fn apply_mutability_states(
+    archetype: &mut Archetype,
+    mutability: Mask,
+    bitset: Option<&BitSet<usize>>,
+) {
     let table = archetype.table_mut();
     for unit in mutability.units() {
         let column = table.get_mut(&unit).unwrap();
@@ -81,7 +85,7 @@ fn apply_mutability_states(archetype: &mut Archetype, mutability: Mask, bitset: 
 
 // Calculate the number of elements there are in the archetypes, but also take in consideration
 // the bitsets (if specified)
-fn len(archetypes: &[&mut Archetype], bitsets: &Option<Vec<BitSet::<usize>>>) -> usize {
+fn len(archetypes: &[&mut Archetype], bitsets: &Option<Vec<BitSet<usize>>>) -> usize {
     if let Some(bitsets) = bitsets {
         bitsets
             .iter()
@@ -115,7 +119,7 @@ impl<'a: 'b, 'b, L: QueryLayoutMut> IntoIterator for QueryMut<'a, 'b, L> {
 
 // Currently loaded chunk in the mutable query iterator
 struct Chunk<L: QueryLayoutMut> {
-    bitset: Option<BitSet::<usize>>,
+    bitset: Option<BitSet<usize>>,
     ptrs: L::PtrTuple,
     length: usize,
 }
@@ -124,7 +128,7 @@ struct Chunk<L: QueryLayoutMut> {
 pub struct QueryMutIter<'b, L: QueryLayoutMut> {
     // Inputs from the query
     archetypes: Vec<&'b mut Archetype>,
-    bitsets: Option<Vec<BitSet::<usize>>>,
+    bitsets: Option<Vec<BitSet<usize>>>,
 
     // Unique to the iterator
     chunk: Option<Chunk<L>>,

@@ -4,7 +4,7 @@ use thiserror::Error;
 pub enum PacketSendError {
     #[error("{0}")]
     SerializationError(serde_json::Error),
-    
+
     #[error("{0}")]
     SocketError(std::io::Error),
 }

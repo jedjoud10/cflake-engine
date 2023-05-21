@@ -1,6 +1,7 @@
 use crate::{
-    ActiveScenePipeline, AlbedoMap, CameraUniform, DefaultMaterialResources, Direct, MaskMap,
-    Material, NormalMap, Renderer, SceneUniform, ShadowMap, ShadowMapping, ShadowUniform, EnvironmentMap,
+    ActiveScenePipeline, AlbedoMap, CameraUniform, DefaultMaterialResources, Direct,
+    EnvironmentMap, MaskMap, Material, NormalMap, Renderer, SceneUniform, ShadowMap, ShadowMapping,
+    ShadowUniform,
 };
 
 use assets::Assets;
@@ -201,7 +202,7 @@ impl Material for PhysicallyBasedMaterial {
             .unwrap();
         let mut offset = bytes.len();
 
-        // Send the bytes containing tint of the object 
+        // Send the bytes containing tint of the object
         let vector = vek::Rgba::<f32>::from(self.tint);
         let bytes = GpuPod::into_bytes(&vector);
         constants

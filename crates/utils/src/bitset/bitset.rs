@@ -35,9 +35,11 @@ impl<T: PrimInt> BitSet<T> {
     // Create a bitset from an iterator of booleans
     pub fn from_iter(iter: impl Iterator<Item = bool>) -> Self {
         let chunks = iter.chunks(Self::bitsize());
-        let chunks = chunks
-            .into_iter()
-            .map(|chunk| chunk.fold(T::zero(), |accum, bit| accum << 1 | (if bit { T::one() } else { T::zero() })));
+        let chunks = chunks.into_iter().map(|chunk| {
+            chunk.fold(T::zero(), |accum, bit| {
+                accum << 1 | (if bit { T::one() } else { T::zero() })
+            })
+        });
         Self::from_chunks_iter(chunks)
     }
 
@@ -62,8 +64,7 @@ impl<T: PrimInt> BitSet<T> {
     fn extend(&mut self, count: usize) {
         if count > 0 {
             let splat = T::min_value();
-            self.0
-                .extend((0..(count)).map(|_| splat));
+            self.0.extend((0..(count)).map(|_| splat));
         }
     }
 

@@ -1,4 +1,4 @@
-use crate::{AudioClipDeserializationError};
+use crate::AudioClipDeserializationError;
 use assets::Asset;
 use rayon::slice::ParallelSlice;
 use std::{
@@ -143,7 +143,10 @@ impl Asset for AudioClip {
 
                 // Convert the bitdepth data into
                 let samples = match bitdepth {
-                    wav::BitDepth::Sixteen(vec) => vec.into_iter().map(|x| cpal::Sample::to_f32(&x)).collect::<Vec<f32>>(),
+                    wav::BitDepth::Sixteen(vec) => vec
+                        .into_iter()
+                        .map(|x| cpal::Sample::to_f32(&x))
+                        .collect::<Vec<f32>>(),
                     wav::BitDepth::ThirtyTwoFloat(vec) => vec,
                     _ => return Err(AudioClipDeserializationError::BitDepthNotSupported),
                 };

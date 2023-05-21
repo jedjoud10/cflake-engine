@@ -8,7 +8,7 @@ use std::{iter::FusedIterator, marker::PhantomData};
 pub struct QueryRef<'a: 'b, 'b, 's, L: QueryLayoutRef> {
     archetypes: Vec<&'a Archetype>,
     access: LayoutAccess,
-    bitsets: Option<Vec<BitSet::<usize>>>,
+    bitsets: Option<Vec<BitSet<usize>>>,
     _phantom1: PhantomData<&'b ()>,
     _phantom2: PhantomData<&'s ()>,
     _phantom3: PhantomData<L>,
@@ -62,7 +62,7 @@ impl<'a: 'b, 'b, 's, L: QueryLayoutRef> QueryRef<'a, 'b, 's, L> {
 
 // Calculate the number of elements there are in the archetypes, but also take in consideration
 // the bitsets (if specified)
-fn len(archetypes: &[&Archetype], bitsets: &Option<Vec<BitSet::<usize>>>) -> usize {
+fn len(archetypes: &[&Archetype], bitsets: &Option<Vec<BitSet<usize>>>) -> usize {
     if let Some(bitsets) = bitsets {
         bitsets
             .iter()
@@ -92,7 +92,7 @@ impl<'a: 'b, 'b, 'it, L: QueryLayoutRef> IntoIterator for QueryRef<'a, 'b, 'it, 
 // Currently loaded chunk in the immutable query iterator
 struct Chunk<L: QueryLayoutRef> {
     ptrs: L::PtrTuple,
-    bitset: Option<BitSet::<usize>>,
+    bitset: Option<BitSet<usize>>,
     length: usize,
 }
 
@@ -100,7 +100,7 @@ struct Chunk<L: QueryLayoutRef> {
 pub struct QueryRefIter<'b, L: QueryLayoutRef> {
     // Inputs from the query
     archetypes: Vec<&'b Archetype>,
-    bitsets: Option<Vec<BitSet::<usize>>>,
+    bitsets: Option<Vec<BitSet<usize>>>,
 
     // Unique to the iterator
     chunk: Option<Chunk<L>>,

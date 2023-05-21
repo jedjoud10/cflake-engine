@@ -25,20 +25,12 @@ fn init(world: &mut World) {
     asset!(assets, "user/textures/mask2.jpg", "/examples/assets/");
 
     // Load in the diffuse map, normal map, and mask map textures asynchronously
-    let albedo = assets.async_load::<AlbedoMap>(
-        ("user/textures/diffuse2.jpg", graphics.clone(), ),
-    );
-    let normal = assets.async_load::<NormalMap>(
-        ("user/textures/normal2.jpg", graphics.clone()),
-    );
-    let mask = assets.async_load::<MaskMap>(
-        ("user/textures/mask2.jpg", graphics.clone()), 
-    );
+    let albedo = assets.async_load::<AlbedoMap>(("user/textures/diffuse2.jpg", graphics.clone()));
+    let normal = assets.async_load::<NormalMap>(("user/textures/normal2.jpg", graphics.clone()));
+    let mask = assets.async_load::<MaskMap>(("user/textures/mask2.jpg", graphics.clone()));
 
     // Get the material id (also registers the material pipeline)
-    let id = pipelines
-        .get::<PhysicallyBasedMaterial>()
-        .unwrap();
+    let id = pipelines.get::<PhysicallyBasedMaterial>().unwrap();
 
     // Get the default meshes from the forward renderer
     let renderer = world.get::<ForwardRenderer>().unwrap();

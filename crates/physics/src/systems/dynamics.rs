@@ -16,8 +16,6 @@ fn update(world: &mut World) {
 
 // Create the dynamics system
 pub fn system(system: &mut System) {
-    system
-        .insert_update(update)
-        .after(post_user);
-        //.after(crate::systems::collisions::system);
+    system.insert_update(update).after(post_user);
+    //.after(crate::systems::collisions::system);
 }

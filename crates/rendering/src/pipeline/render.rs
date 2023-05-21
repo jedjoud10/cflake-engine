@@ -64,7 +64,6 @@ pub(super) fn render_surfaces<'r, M: Material>(
     > = None;
     let mut last_index_buffer: Option<&<M::RenderPath as RenderPath>::TriangleBuffer<u32>> = None;
 
-    
     // TODO: Sort and group material instances / meshes
     // instead of [(mt1, mh1), (mt2, mh2), (mt1, mh1), (mt1, mh2)]
     // should be [(mt1, mh1), (mt1, mh1), (mt1, mh2), (mt2, mh2)]
@@ -202,8 +201,12 @@ pub(super) fn render_surfaces<'r, M: Material>(
             *defaults.rendered_sub_surfaces += 1;
 
             // These values won't get added it if's a invalid or indirect mesh
-            *defaults.rendered_direct_triangles_drawn += <<M as Material>::RenderPath as RenderPath>::triangle_count(mesh).unwrap_or_default() as u64;
-            *defaults.rendered_direct_vertices_drawn += <<M as Material>::RenderPath as RenderPath>::vertex_count(mesh).unwrap_or_default() as u64;
+            *defaults.rendered_direct_triangles_drawn +=
+                <<M as Material>::RenderPath as RenderPath>::triangle_count(mesh)
+                    .unwrap_or_default() as u64;
+            *defaults.rendered_direct_vertices_drawn +=
+                <<M as Material>::RenderPath as RenderPath>::vertex_count(mesh).unwrap_or_default()
+                    as u64;
         }
     }
 

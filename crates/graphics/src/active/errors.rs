@@ -31,7 +31,7 @@ pub enum SetBindResourceError<'a> {
         name: &'a str,
         reflected_type: &'static str,
         set_type: &'static str,
-    }
+    },
 }
 
 #[derive(Error, Debug)]
@@ -63,7 +63,9 @@ pub enum SetTextureError {
     #[error("The given storage texture does not contain the STORAGE usage")]
     MissingStorageUsage,
 
-    #[error("Texture is defined as storage RW/Write in the shader, but the given texture is immutable")]
+    #[error(
+        "Texture is defined as storage RW/Write in the shader, but the given texture is immutable"
+    )]
     MutabilityMissing,
 }
 
@@ -78,7 +80,9 @@ pub enum SetBufferError {
     #[error("The given storage buffer does not contain the STORAGE usage")]
     MissingStorageUsage,
 
-    #[error("Buffer is defined as storage RW/Write in the shader, but the given buffer is immutable")]
+    #[error(
+        "Buffer is defined as storage RW/Write in the shader, but the given buffer is immutable"
+    )]
     MutabilityMissing,
 }
 

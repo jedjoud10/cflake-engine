@@ -150,9 +150,11 @@ pub fn combine_into_layered<T: Texel + ImageTexel>(
     // Generate each mip's texel data
     let mips = if generate_mip_maps {
         Some(
-            super::generate_mip_map::<T, ((vek::Vec2<u32>, u32), (vek::Extent2<u32>, u32))>(&texels, extent)
-                .ok_or(TextureInitializationError::MipMapGenerationNPOT)
-                .unwrap(),
+            super::generate_mip_map::<T, ((vek::Vec2<u32>, u32), (vek::Extent2<u32>, u32))>(
+                &texels, extent,
+            )
+            .ok_or(TextureInitializationError::MipMapGenerationNPOT)
+            .unwrap(),
         )
     } else {
         None

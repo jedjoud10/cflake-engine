@@ -12,7 +12,10 @@ pub struct SubSurface<M: Material> {
 
 impl<M: Material> Clone for SubSurface<M> {
     fn clone(&self) -> Self {
-        Self { mesh: self.mesh.clone(), material: self.material.clone() }
+        Self {
+            mesh: self.mesh.clone(),
+            material: self.material.clone(),
+        }
     }
 }
 
@@ -45,7 +48,7 @@ impl<M: Material> Clone for Surface<M> {
             shadow_caster: self.shadow_caster.clone(),
             shadow_receiver: self.shadow_receiver.clone(),
             shadow_culled: self.shadow_culled.clone(),
-            id: self.id.clone()
+            id: self.id.clone(),
         }
     }
 }

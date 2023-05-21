@@ -1,13 +1,18 @@
-use crate::{GpuPod, Graphics, StagingView, StagingViewWrite, TextureStagingView, TextureStagingViewWrite};
+use crate::{
+    GpuPod, Graphics, StagingView, StagingViewWrite, TextureStagingView, TextureStagingViewWrite,
+};
 use parking_lot::Mutex;
-use vek::num_integer::Integer;
 use std::{
     marker::PhantomData,
     num::{NonZeroU32, NonZeroU64},
     ops::DerefMut,
-    sync::{atomic::{Ordering, AtomicUsize}, Arc},
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    },
 };
 use utils::{AtomicBitSet, ConcVec};
+use vek::num_integer::Integer;
 use wgpu::{
     Buffer, CommandEncoder, Extent3d, ImageDataLayout, Maintain, MapMode, Origin3d, Texture,
     TextureAspect,
@@ -23,11 +28,11 @@ pub struct StagingPool {
     pub(crate) allocations: Arc<ConcVec<Buffer>>,
 
     // Keeps track of the mapping state
-    pub(crate) used: Arc<AtomicBitSet::<AtomicUsize>>,
+    pub(crate) used: Arc<AtomicBitSet<AtomicUsize>>,
 
-    // Keeps track of the buffers that we *must* unmap 
+    // Keeps track of the buffers that we *must* unmap
     // Only used for ASYNC readback buffers
-    pub(crate) must_unmap: Arc<AtomicBitSet::<AtomicUsize>>
+    pub(crate) must_unmap: Arc<AtomicBitSet<AtomicUsize>>,
 }
 
 impl StagingPool {
@@ -119,7 +124,7 @@ impl StagingPool {
         // Get a encoder (reused or not to perform a copy)
         let (i, staging) = self.find_or_allocate(graphics, size, MapMode::Read);
         self.used.set(i, Ordering::Relaxed);
-        
+
         // Copy to staging first
         let mut encoder = graphics.acquire();
         encoder.copy_buffer_to_buffer(buffer, offset, staging, 0, size);
@@ -127,12 +132,7 @@ impl StagingPool {
         graphics.submit(false);
 
         // Read the staging buffer
-        let view = super::read_staging_buffer_view(
-            graphics,
-            staging,
-            0,
-            size
-        );
+        let view = super::read_staging_buffer_view(graphics, staging, 0, size);
 
         StagingView {
             index: i,
@@ -151,14 +151,14 @@ impl StagingPool {
         buffer: &Buffer,
         offset: u64,
         size: u64,
-        callback: impl FnOnce(&[u8]) + Send + 'static
-    ) {       
+        callback: impl FnOnce(&[u8]) + Send + 'static,
+    ) {
         log::trace!("map buffer read sync: offset: \n{offset}\nsize: {size}");
-        
+
         // Get a encoder (reused or not to perform a copy)
         let (i, staging) = self.find_or_allocate(graphics, size, MapMode::Read);
         self.used.set(i, Ordering::Relaxed);
-        
+
         // Copy to staging first
         let mut encoder = graphics.acquire();
         encoder.copy_buffer_to_buffer(buffer, offset, staging, 0, size);
@@ -172,8 +172,8 @@ impl StagingPool {
             i,
             0,
             size,
-            callback
-        );    
+            callback,
+        );
     }
 
     // Map a target for writing only
@@ -242,22 +242,24 @@ impl StagingPool {
 
         // Copy to staging first
         let mut encoder = graphics.acquire();
-        assert!(data_layout.bytes_per_row.unwrap_or_default().is_multiple_of(&256));
-        encoder.copy_texture_to_buffer(image_copy_texture, wgpu::ImageCopyBuffer {
-            buffer: staging,
-            layout: data_layout,
-        }, extent);
+        assert!(data_layout
+            .bytes_per_row
+            .unwrap_or_default()
+            .is_multiple_of(&256));
+        encoder.copy_texture_to_buffer(
+            image_copy_texture,
+            wgpu::ImageCopyBuffer {
+                buffer: staging,
+                layout: data_layout,
+            },
+            extent,
+        );
         graphics.reuse([encoder]);
         graphics.submit(false);
 
         // Read the staging buffer
-        let view = super::read_staging_buffer_view(
-            graphics,
-            staging,
-            0,
-            size
-        );
-        
+        let view = super::read_staging_buffer_view(graphics, staging, 0, size);
+
         TextureStagingView {
             index: i,
             used: &self.used,
@@ -275,7 +277,7 @@ impl StagingPool {
         image_copy_texture: wgpu::ImageCopyTexture,
         data_layout: wgpu::ImageDataLayout,
         extent: wgpu::Extent3d,
-        callback: impl FnOnce(&[u8]) + Sync + Send + 'static
+        callback: impl FnOnce(&[u8]) + Sync + Send + 'static,
     ) {
         todo!()
     }
@@ -318,7 +320,13 @@ impl StagingPool {
         dst: &mut [u8],
     ) {
         log::trace!("map texture read: \nimage copy texture: {image_copy_texture:#?}\ndata layout: {data_layout:#?}\nextent: {extent:#?}");
-        let view = self.map_texture_read(graphics, image_copy_texture, data_layout, extent, dst.len() as u64);
+        let view = self.map_texture_read(
+            graphics,
+            image_copy_texture,
+            data_layout,
+            extent,
+            dst.len() as u64,
+        );
         dst.copy_from_slice(view.as_ref());
     }
 }

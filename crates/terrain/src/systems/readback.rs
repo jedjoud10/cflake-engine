@@ -1,9 +1,9 @@
-use ecs::{Scene, Entity};
+use ecs::{Entity, Scene};
 use rendering::Surface;
 use utils::Time;
 use world::{System, World};
 
-use crate::{Terrain, Chunk, TerrainMaterial, ChunkState};
+use crate::{Chunk, ChunkState, Terrain, TerrainMaterial};
 
 // Begins the async readback of range data at the start of the frame
 fn readback_begin_update(world: &mut World) {
@@ -12,7 +12,7 @@ fn readback_begin_update(world: &mut World) {
     let Ok(mut terrain) = world.get_mut::<Terrain>() else {
         return;
     };
-    
+
     // Decompose the terrain into its subresources
     let mut _terrain = terrain;
     let terrain = &mut *_terrain;
@@ -37,16 +37,20 @@ fn readback_begin_update(world: &mut World) {
         let offsets = &memory.offsets[index];
         let offset_sender = memory.readback_offset_sender.clone();
         let count_sender = memory.readback_count_sender.clone();
-    
+
         // Readback the counters asynchronously
-        counters.async_read(.., move |counters| {
-            let _ = count_sender.send((entity, vek::Vec2::from_slice(counters)));
-        }).unwrap();
-    
+        counters
+            .async_read(.., move |counters| {
+                let _ = count_sender.send((entity, vek::Vec2::from_slice(counters)));
+            })
+            .unwrap();
+
         // Readback the offsets asynchronously
-        offsets.async_read(.., move |offsets| {
-            let _ = offset_sender.send((entity, vek::Vec2::from_slice(offsets)));
-        }).unwrap();
+        offsets
+            .async_read(.., move |offsets| {
+                let _ = offset_sender.send((entity, vek::Vec2::from_slice(offsets)));
+            })
+            .unwrap();
     };
 
     // Fetch multiple at the same time if needed and cache them
@@ -64,7 +68,7 @@ fn readback_end_update(world: &mut World) {
     let Ok(mut terrain) = world.get_mut::<Terrain>() else {
         return;
     };
-    
+
     // Decompose the terrain into its subresources
     let mut _terrain = terrain;
     let terrain = &mut *_terrain;
@@ -75,10 +79,14 @@ fn readback_end_update(world: &mut World) {
         &mut terrain.memory,
         &terrain.settings,
     );
-    
+
     // Sort by entity ID and fetch the last one
-    memory.readback_offsets.sort_by(|(a, _), (b, _)| Entity::cmp(&b, &a));
-    memory.readback_counters.sort_by(|(a, _), (b, _)| Entity::cmp(&b, &a));
+    memory
+        .readback_offsets
+        .sort_by(|(a, _), (b, _)| Entity::cmp(&b, &a));
+    memory
+        .readback_counters
+        .sort_by(|(a, _), (b, _)| Entity::cmp(&b, &a));
 
     // Fetch the last one (to check if they are the same)
     let offset = memory.readback_offsets.last();
@@ -102,12 +110,14 @@ fn readback_end_update(world: &mut World) {
 
         // Fetch the appropriate chunk
         let mut entry = scene.entry_mut(e1).unwrap();
-        let chunk = entry.get_mut::<Chunk>().unwrap();    
+        let chunk = entry.get_mut::<Chunk>().unwrap();
 
         // Check if we are OOM lol
         let vertices_per_sub_allocation = settings.vertices_per_sub_allocation;
         let triangles_per_sub_allocation = settings.triangles_per_sub_allocation;
-        if offset.x >= (u32::MAX - vertices_per_sub_allocation + 1) || offset.y >= (u32::MAX - triangles_per_sub_allocation + 1) {
+        if offset.x >= (u32::MAX - vertices_per_sub_allocation + 1)
+            || offset.y >= (u32::MAX - triangles_per_sub_allocation + 1)
+        {
             panic!("Out of memory xD MDR");
         }
 
@@ -115,13 +125,14 @@ fn readback_end_update(world: &mut World) {
         let count = f32::max(
             count.x as f32 / vertices_per_sub_allocation as f32,
             count.y as f32 / triangles_per_sub_allocation as f32,
-        ).ceil() as u32;
+        )
+        .ceil() as u32;
         let offset = offset.x / vertices_per_sub_allocation;
 
         // Update chunk range (if valid) and set visibility
         let valid = count > 0;
         chunk.state = ChunkState::Generated { empty: !valid };
-        if valid {            
+        if valid {
             chunk.ranges = Some(vek::Vec2::new(offset, count + offset));
         } else {
             chunk.ranges = None;
@@ -131,7 +142,7 @@ fn readback_end_update(world: &mut World) {
         if valid {
             memory.visibility_bitsets[chunk.allocation].set(chunk.local_index);
         } else {
-            memory.visibility_bitsets[chunk.allocation].remove(chunk.local_index);    
+            memory.visibility_bitsets[chunk.allocation].remove(chunk.local_index);
         }
     }
 }
@@ -145,7 +156,6 @@ pub fn system(system: &mut System) {
         .after(utils::time)
         .before(rendering::systems::rendering::system);
 }
-
 
 // Generates the voxels and appropriate mesh for each of the visible chunks
 pub fn system2(system: &mut System) {

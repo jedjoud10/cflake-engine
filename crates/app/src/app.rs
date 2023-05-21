@@ -208,7 +208,7 @@ impl App {
         let wgpu_filter = match self.logging_level {
             log::LevelFilter::Off => log::LevelFilter::Off,
             log::LevelFilter::Trace => log::LevelFilter::Debug,
-            _ => log::LevelFilter::Warn
+            _ => log::LevelFilter::Warn,
         };
 
         fern::Dispatch::new()
@@ -385,7 +385,8 @@ impl App {
         rayon::ThreadPoolBuilder::new()
             .num_threads(0)
             .thread_name(|i| format!("worker-thread-{i}"))
-            .build_global().unwrap();
+            .build_global()
+            .unwrap();
 
         // Input system
         self.regsys(input::system);
@@ -430,7 +431,7 @@ impl App {
         self.regsys(terrain::systems::readback::system);
         self.regsys(terrain::systems::readback::system2);
         self.regsys(terrain::systems::cull::system);
-        
+
         // Physics systems
         self.regsys(physics::systems::collisions::system);
         self.regsys(physics::systems::dynamics::system);

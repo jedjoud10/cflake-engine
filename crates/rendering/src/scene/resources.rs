@@ -1,10 +1,10 @@
 mod compositor;
+mod environment;
 mod pipelines;
 mod renderer;
 mod shadowmap;
-mod environment;
-pub use environment::*;
 pub use compositor::*;
+pub use environment::*;
 pub use pipelines::*;
 pub use renderer::*;
 pub use shadowmap::*;

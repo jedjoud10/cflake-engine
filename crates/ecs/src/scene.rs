@@ -1,13 +1,14 @@
 use ahash::AHashMap;
 use itertools::Itertools;
 use slotmap::SlotMap;
-use std::{iter::once};
+use std::iter::once;
 use utils::Time;
 use world::{user, System, World};
 
 use crate::{
     entity::Entity, mask, Archetype, Bundle, Component, EntityLinkings, EntryMut, EntryRef, Mask,
-    MaskHashMap, QueryFilter, QueryLayoutMut, QueryLayoutRef, QueryMut, QueryRef, UntypedVec, Wrap, PrefabBundle,
+    MaskHashMap, PrefabBundle, QueryFilter, QueryLayoutMut, QueryLayoutRef, QueryMut, QueryRef,
+    UntypedVec, Wrap,
 };
 
 // Convenience type aliases
@@ -157,11 +158,8 @@ impl Scene {
     // Instantiate a prefab using it's prefab name and return a mutable entry
     pub fn instantiate(&mut self, name: PrefabId) -> Option<EntryMut> {
         let (boxed, mask) = self.prefabs.get(name)?;
-        
-        let archetype = self
-            .archetypes
-            .get_mut(mask)
-            .unwrap();
+
+        let archetype = self.archetypes.get_mut(mask).unwrap();
 
         let entity = archetype.instantiate_prefab(&mut self.entities, boxed);
         self.entry_mut(entity)
@@ -171,8 +169,7 @@ impl Scene {
     pub fn prefabify<B: Bundle + Clone>(&mut self, name: PrefabId, bundle: B) {
         // Try to get the archetype, and create a default one if it does not exist
         let mask = B::reduce(|a, b| a | b);
-        self
-            .archetypes
+        self.archetypes
             .entry(mask)
             .or_insert_with(|| Archetype::from_bundle::<B>());
 

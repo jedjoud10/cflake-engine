@@ -31,7 +31,7 @@ mod tests {
 
         let entity = manager.insert(Name("Basic"));
         let mut entry = manager.entry_mut(entity).unwrap();
-        
+
         assert_eq!(entry.get_mut::<Name>(), Some(&mut Name("Basic")));
         assert!(entry.get_mut::<Ammo>().is_none());
 
@@ -160,7 +160,7 @@ mod tests {
         assert_eq!(query.len(), 228);
     }
 
-    
+
 
     #[test]
     fn moving_batch() {

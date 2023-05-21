@@ -1,6 +1,7 @@
 use rendering::{
-    ActiveScenePipeline, AlbedoTexel, CameraUniform, DefaultMaterialResources, Indirect, MaskTexel,
-    Material, NormalTexel, Renderer, SceneUniform, ShadowMap, ShadowMapping, ShadowUniform, MultiDrawIndirect, EnvironmentMap, MultiDrawIndirectCount,
+    ActiveScenePipeline, AlbedoTexel, CameraUniform, DefaultMaterialResources, EnvironmentMap,
+    Indirect, MaskTexel, Material, MultiDrawIndirect, MultiDrawIndirectCount, NormalTexel,
+    Renderer, SceneUniform, ShadowMap, ShadowMapping, ShadowUniform,
 };
 
 use assets::Assets;
@@ -12,7 +13,7 @@ use graphics::{
 };
 use utils::{Handle, Storage, Time};
 
-use crate::{TerrainSettings, Terrain};
+use crate::{Terrain, TerrainSettings};
 
 // Type aliases for layered textures
 pub type LayeredAlbedoMap = LayeredTexture2D<AlbedoTexel>;
@@ -87,7 +88,10 @@ impl Material for TerrainMaterial {
         }
 
         // Multi-draw indirect youpieee
-        compiler.use_storage_buffer::<vek::Vec4<vek::Vec4<f32>>>("position_scale_buffer", StorageAccess::ReadOnly);
+        compiler.use_storage_buffer::<vek::Vec4<vek::Vec4<f32>>>(
+            "position_scale_buffer",
+            StorageAccess::ReadOnly,
+        );
 
         // Compile the modules into a shader
         Shader::new(vert, frag, &compiler).unwrap()
@@ -116,7 +120,15 @@ impl Material for TerrainMaterial {
         let shadow = world.get::<ShadowMapping>().unwrap();
         let time: world::Read<Time> = world.get::<Time>().unwrap();
         let terrain = world.get::<Terrain>().unwrap();
-        (albedo_maps, normal_maps, mask_maps, shadow, terrain, time, 0)
+        (
+            albedo_maps,
+            normal_maps,
+            mask_maps,
+            shadow,
+            terrain,
+            time,
+            0,
+        )
     }
 
     // Set the static bindings that will never change
@@ -125,15 +137,7 @@ impl Material for TerrainMaterial {
         group: &mut BindGroup<'r>,
         default: &DefaultMaterialResources<'r>,
     ) {
-        let (
-            albedo_maps,
-            normal_maps,
-            mask_maps,
-            shadow,
-            terrain,
-            time,
-            _
-        ) = resources;
+        let (albedo_maps, normal_maps, mask_maps, shadow, terrain, time, _) = resources;
 
         // Set the required common buffers
         group
@@ -146,18 +150,10 @@ impl Material for TerrainMaterial {
             .set_uniform_buffer("shadow_parameters", &shadow.parameter_buffer, ..)
             .unwrap();
         group
-            .set_uniform_buffer(
-                "shadow_lightspace_matrices",
-                &shadow.lightspace_buffer,
-                ..,
-            )
+            .set_uniform_buffer("shadow_lightspace_matrices", &shadow.lightspace_buffer, ..)
             .unwrap();
         group
-            .set_uniform_buffer(
-                "cascade_plane_distances",
-                &shadow.cascade_distances,
-                ..,
-            )
+            .set_uniform_buffer("cascade_plane_distances", &shadow.cascade_distances, ..)
             .unwrap();
         group
             .set_sampled_texture("environment_map", default.environment_map)
@@ -170,26 +166,26 @@ impl Material for TerrainMaterial {
 
         // Set the sub-material textures
         if let (Some(albedo), Some(normal), Some(mask)) = (
-                &terrain.manager.layered_albedo_map,
-                &terrain.manager.layered_normal_map,
-                &terrain.manager.layered_mask_map,
-            ) {
-                // Get the layered textures, without any fallback
-                let albedo_map = albedo_maps.get(&albedo);
-                let normal_map = normal_maps.get(&normal);
-                let mask_map = mask_maps.get(&mask);
-    
-                // Set the material textures
-                group
-                    .set_sampled_texture("layered_albedo_map", albedo_map)
-                    .unwrap();
-                group
-                    .set_sampled_texture("layered_normal_map", normal_map)
-                    .unwrap();
-                group
-                    .set_sampled_texture("layered_mask_map", mask_map)
-                    .unwrap();
-            }
+            &terrain.manager.layered_albedo_map,
+            &terrain.manager.layered_normal_map,
+            &terrain.manager.layered_mask_map,
+        ) {
+            // Get the layered textures, without any fallback
+            let albedo_map = albedo_maps.get(&albedo);
+            let normal_map = normal_maps.get(&normal);
+            let mask_map = mask_maps.get(&mask);
+
+            // Set the material textures
+            group
+                .set_sampled_texture("layered_albedo_map", albedo_map)
+                .unwrap();
+            group
+                .set_sampled_texture("layered_normal_map", normal_map)
+                .unwrap();
+            group
+                .set_sampled_texture("layered_mask_map", mask_map)
+                .unwrap();
+        }
     }
 
     // Set the per-surface bindings for the material
@@ -204,11 +200,13 @@ impl Material for TerrainMaterial {
         let (.., terrain, _, index) = resources;
 
         // Set the storage buffer that contains ALL the matrices
-        group.set_storage_buffer(
-            "position_scale_buffer",
-            &terrain.memory.culled_position_scaling_buffers[*index],
-            ..
-        ).unwrap();   
+        group
+            .set_storage_buffer(
+                "position_scale_buffer",
+                &terrain.memory.culled_position_scaling_buffers[*index],
+                ..,
+            )
+            .unwrap();
 
         // Increment the index (aka the allocation index)
         *index += 1;

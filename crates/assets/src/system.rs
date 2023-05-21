@@ -43,7 +43,7 @@ fn init(world: &mut World) {
     internal!(loader, "engine/shaders/scene/terrain/terrain.frag");
     internal!(loader, "engine/shaders/scene/wireframe/wireframe.vert");
     internal!(loader, "engine/shaders/scene/wireframe/wireframe.frag");
-    
+
     // Load the default environment compute shaders
     internal!(loader, "engine/shaders/scene/environment/environment.comp");
     internal!(loader, "engine/shaders/scene/environment/diffuse.comp");
@@ -71,7 +71,7 @@ fn init(world: &mut World) {
 
     // Load the default generation terrain shaders
     internal!(loader, "engine/shaders/terrain/voxel.glsl");
-    
+
     // Load the default internally used terrain shaders
     internal!(loader, "engine/shaders/terrain/cull.comp");
     internal!(loader, "engine/shaders/terrain/voxels.comp");

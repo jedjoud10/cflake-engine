@@ -1,14 +1,14 @@
 use crate::{
-    ChunkManager, LayeredAlbedoMap, LayeredMaskMap, LayeredNormalMap, MemoryManager, MeshGenerator,
-    Terrain, TerrainMaterial, TerrainSettings, Triangles, Vertices, VoxelGenerator, ChunkCuller,
+    ChunkCuller, ChunkManager, LayeredAlbedoMap, LayeredMaskMap, LayeredNormalMap, MemoryManager,
+    MeshGenerator, Terrain, TerrainMaterial, TerrainSettings, Triangles, Vertices, VoxelGenerator,
 };
 
 use assets::Assets;
 
 use ecs::Scene;
-use graphics::{DrawIndexedIndirectBuffer, Graphics, DrawCountIndirectBuffer};
-use rendering::{IndirectMesh, Pipelines, MultiDrawIndirectMesh, MultiDrawIndirectCountMesh};
-use utils::{Storage};
+use graphics::{DrawCountIndirectBuffer, DrawIndexedIndirectBuffer, Graphics};
+use rendering::{IndirectMesh, MultiDrawIndirectCountMesh, MultiDrawIndirectMesh, Pipelines};
+use utils::Storage;
 use world::{post_user, System, World};
 
 // Creates the terrain if there was terrain settings present
@@ -25,8 +25,11 @@ fn init(world: &mut World) {
         let mut layered_mask_maps = world.get_mut::<Storage<LayeredMaskMap>>().unwrap();
         let mut materials = world.get_mut::<Storage<TerrainMaterial>>().unwrap();
         let mut scene = world.get_mut::<Scene>().unwrap();
-        let mut multi_draw_indirect_count_meshes = world.get_mut::<Storage<MultiDrawIndirectCountMesh>>().unwrap();
-        let mut draw_count_indirect_buffers = world.get_mut::<Storage<DrawCountIndirectBuffer>>().unwrap();
+        let mut multi_draw_indirect_count_meshes = world
+            .get_mut::<Storage<MultiDrawIndirectCountMesh>>()
+            .unwrap();
+        let mut draw_count_indirect_buffers =
+            world.get_mut::<Storage<DrawCountIndirectBuffer>>().unwrap();
         let mut pipelines = world.get_mut::<Pipelines>().unwrap();
 
         // Get graphics API and assets
@@ -60,7 +63,7 @@ fn init(world: &mut World) {
             &mut indexed_indirect_buffers,
             &mut draw_count_indirect_buffers,
             &mut multi_draw_indirect_count_meshes,
-            &settings
+            &settings,
         );
 
         // Create the chunk manager

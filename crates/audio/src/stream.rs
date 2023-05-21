@@ -1,8 +1,11 @@
-use std::sync::{Arc, atomic::{AtomicU32, Ordering}};
+use std::sync::{
+    atomic::{AtomicU32, Ordering},
+    Arc,
+};
 
 use crate::{AudioClip, AudioPlayer};
 use cpal::{traits::DeviceTrait, BuildStreamError, Stream, StreamConfig};
-use rayon::prelude::{IntoParallelRefMutIterator, ParallelIterator, IndexedParallelIterator};
+use rayon::prelude::{IndexedParallelIterator, IntoParallelRefMutIterator, ParallelIterator};
 
 // De-interleave some samples from one each other
 fn deinterleave(input: &[f32], channels: usize) -> Vec<Vec<f32>> {
@@ -12,11 +15,14 @@ fn deinterleave(input: &[f32], channels: usize) -> Vec<Vec<f32>> {
         .collect::<Vec<_>>();
 
     // I can already smell my CPU smoking (TODO: OPTIMIZE)
-    output.par_iter_mut().enumerate().for_each(|(channel, output)| {
-        output.par_iter_mut().enumerate().for_each(|(i, sample)| {
-            *sample = input[i * channels + channel];
-        })
-    });
+    output
+        .par_iter_mut()
+        .enumerate()
+        .for_each(|(channel, output)| {
+            output.par_iter_mut().enumerate().for_each(|(i, sample)| {
+                *sample = input[i * channels + channel];
+            })
+        });
 
     output
 }
@@ -26,7 +32,7 @@ fn interleave<B: AsRef<[f32]> + Sync>(input: &[B], channels: usize) -> Vec<f32> 
     let mut output = vec![0.0f32; input[0].as_ref().len() * channels];
 
     output.par_iter_mut().enumerate().for_each(|(i, sample)| {
-        *sample = input[i % channels].as_ref()[i / channels]; 
+        *sample = input[i % channels].as_ref()[i / channels];
     });
 
     output
@@ -38,7 +44,7 @@ fn mono_to_stereo(mono: &[f32]) -> Vec<f32> {
     let mut output = vec![0.0f32; mono.len() * 2];
 
     output.par_iter_mut().enumerate().for_each(|(i, sample)| {
-        *sample = mono[i/2]; 
+        *sample = mono[i / 2];
     });
 
     output
@@ -50,7 +56,7 @@ fn stereo_to_mono(stereo: &[f32]) -> Vec<f32> {
     let mut output = vec![0.0f32; stereo.len() / 2];
 
     output.par_iter_mut().enumerate().for_each(|(i, sample)| {
-        *sample = (stereo[i*2] + stereo[i*2 + 1]) / 2.0;
+        *sample = (stereo[i * 2] + stereo[i * 2 + 1]) / 2.0;
     });
 
     output
@@ -59,14 +65,17 @@ fn stereo_to_mono(stereo: &[f32]) -> Vec<f32> {
 // Create a CPAL output stream for a specific audio clip
 pub(super) fn build_clip_output_stream(
     clip: &AudioClip,
-    player: &AudioPlayer
+    player: &AudioPlayer,
 ) -> Result<Stream, BuildStreamError> {
     let channels = clip.channels();
     let sample_rate = clip.sample_rate();
 
-    log::debug!("Looking for audio stream config for sample rate = {sample_rate} with {channels} channels");
+    log::debug!(
+        "Looking for audio stream config for sample rate = {sample_rate} with {channels} channels"
+    );
 
-    let mut supported_configs = player.supported_output_configs
+    let mut supported_configs = player
+        .supported_output_configs
         .iter()
         .cloned()
         .filter(move |config_range| {
@@ -78,7 +87,7 @@ pub(super) fn build_clip_output_stream(
             log::debug!("Min sample rate supported: {min}");
             channels & max & min
         })
-        .map(move|p| {
+        .map(move |p| {
             p.clone()
                 .with_sample_rate(cpal::SampleRate(sample_rate))
                 .config()
@@ -88,15 +97,19 @@ pub(super) fn build_clip_output_stream(
     let (config, src) = match supported_configs.next() {
         // Pick the first cxonfig available
         Some(config) => (config, clip.samples()),
-        
+
         // Resample the audio clip samples
         None => {
-            let configs = player.supported_output_configs[0].clone().with_max_sample_rate();
-            
+            let configs = player.supported_output_configs[0]
+                .clone()
+                .with_max_sample_rate();
+
             // Either we have missing channels
             let src = if configs.channels() != channels {
                 todo!()
-            } else { clip.samples().clone() };
+            } else {
+                clip.samples().clone()
+            };
 
             // or we have the wrong number of samples
             let src = if configs.sample_rate().0 != sample_rate {
@@ -109,26 +122,25 @@ pub(super) fn build_clip_output_stream(
                     configs.sample_rate().0 as usize,
                     chunk_size_in,
                     sub_chunks,
-                    channels as usize
-                ).unwrap();
+                    channels as usize,
+                )
+                .unwrap();
 
                 // De-interleave the data
                 let wave_in = deinterleave(&clip.samples(), channels as usize);
 
                 // Change the sample rate
-                let output = rubato::Resampler::process(
-                    &mut resampler,
-                    &wave_in,
-                    None
-                ).unwrap();
+                let output = rubato::Resampler::process(&mut resampler, &wave_in, None).unwrap();
 
                 // Re-interleave the data
                 let interleaved = interleave(&output, channels as usize);
                 Arc::from(interleaved)
-            } else { src.clone() };
+            } else {
+                src.clone()
+            };
 
             (configs.config(), src)
-        },
+        }
     };
 
     // Create the raw CPAL stream
@@ -143,7 +155,7 @@ pub(super) fn build_clip_output_stream(
 
             dst.copy_from_slice(&src[frame..][..dst.len()]);
         }),
-    )    
+    )
 }
 
 // This function will take in a stream config and a device and it will create the CPAL stream for us
@@ -158,10 +170,10 @@ pub(super) fn build_output_raw_stream(
     let mut index = 0;
 
     log::debug!("Building CPAL audio stream...");
-    
+
     device.build_output_stream(
         &config,
-        move |dst: &mut [f32], _: &cpal::OutputCallbackInfo| {    
+        move |dst: &mut [f32], _: &cpal::OutputCallbackInfo| {
             // Using the callback write into the stream
             for frame in dst.chunks_mut(channels) {
                 callback(frame, index);

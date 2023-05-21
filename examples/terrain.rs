@@ -90,9 +90,7 @@ fn init(world: &mut World) {
     });
 
     let pipelines = world.get::<Pipelines>().unwrap();
-    let id = pipelines
-        .get::<PhysicallyBasedMaterial>()
-        .unwrap();
+    let id = pipelines.get::<PhysicallyBasedMaterial>().unwrap();
     let renderer = world.get::<ForwardRenderer>().unwrap();
     let sphere = renderer.sphere.clone();
     let renderer = Renderer::default();
@@ -110,9 +108,7 @@ fn update(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
 
     // Rotation the light
-    if let Some((rotation, _)) =
-        scene.find_mut::<(&mut Rotation, &DirectionalLight)>()
-    {
+    if let Some((rotation, _)) = scene.find_mut::<(&mut Rotation, &DirectionalLight)>() {
         rotation.rotate_y(-0.1 * time.delta().as_secs_f32());
     }
 

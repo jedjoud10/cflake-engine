@@ -279,9 +279,8 @@ pub trait Region: Copy {
     // Is this region a multi-layer region (cubemap / layered texture)
     fn is_multi_layered() -> bool {
         match Self::view_dimension() {
-            wgpu::TextureViewDimension::D2Array
-            | wgpu::TextureViewDimension::CubeArray => true,
-            _ => false
+            wgpu::TextureViewDimension::D2Array | wgpu::TextureViewDimension::CubeArray => true,
+            _ => false,
         }
     }
 
@@ -320,7 +319,7 @@ pub trait Region: Copy {
 
         let layer_check = self.extent().layers().checked_sub(self.origin().layer());
         let depth_check = self.extent().depth().checked_sub(self.origin().z());
-        
+
         let (Some(layers), Some(depth)) = (layer_check, depth_check) else {
             return false
         };
@@ -558,7 +557,7 @@ impl Region for ((vek::Vec2<u32>, u32), (vek::Extent2<u32>, u32)) {
         }
 
         let e = other.extent().0 + vek::Extent2::<u32>::from(other.origin().0);
-        self.1.0.is_larger_than(e) && self.1.1 > other.1.1
+        self.1 .0.is_larger_than(e) && self.1 .1 > other.1 .1
     }
 
     fn volume(extent: Self::E) -> u32 {

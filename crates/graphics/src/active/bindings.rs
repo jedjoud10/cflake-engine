@@ -188,14 +188,14 @@ impl<'a> BindGroup<'a> {
             .find(|x| x.name == name)
             .ok_or(SetBindResourceError::ResourceNotDefined { name, group: index })
     }
-    
+
     // Internally used for setting the storage buffer
     fn internal_set_storage_buffer<'s, T: GpuPod, const TYPE: u32>(
         &mut self,
         rw: bool,
         buffer: &'a Buffer<T, TYPE>,
         name: &'s str,
-        bounds: impl RangeBounds<usize>
+        bounds: impl RangeBounds<usize>,
     ) -> Result<(), SetBindResourceError<'s>> {
         // Make sure it's a storage buffer
         if !buffer.usage().contains(BufferUsage::STORAGE) {
@@ -209,19 +209,21 @@ impl<'a> BindGroup<'a> {
 
         // Make sure type and RW mode matches up
         match entry.resource_type {
-            crate::BindResourceType::StorageBuffer { access, .. } => {
-                match (access, rw) {
-                    (spirq::AccessType::WriteOnly, false) | (spirq::AccessType::ReadWrite, false) => return Err(SetBindResourceError::SetBuffer(
-                        SetBufferError::MutabilityMissing
-                    )),
-                    _ => {}
+            crate::BindResourceType::StorageBuffer { access, .. } => match (access, rw) {
+                (spirq::AccessType::WriteOnly, false) | (spirq::AccessType::ReadWrite, false) => {
+                    return Err(SetBindResourceError::SetBuffer(
+                        SetBufferError::MutabilityMissing,
+                    ))
                 }
+                _ => {}
             },
-            _ => return Err(SetBindResourceError::ResourceTypeMismatch {
-                name,
-                reflected_type: crate::STORAGE_BUFFER_STRINGIFIED_NAME,
-                set_type: crate::stringify_bind_resource_type(&entry.resource_type)
-            })
+            _ => {
+                return Err(SetBindResourceError::ResourceTypeMismatch {
+                    name,
+                    reflected_type: crate::STORAGE_BUFFER_STRINGIFIED_NAME,
+                    set_type: crate::stringify_bind_resource_type(&entry.resource_type),
+                })
+            }
         }
 
         // Get the buffer binding bounds
@@ -248,7 +250,7 @@ impl<'a> BindGroup<'a> {
         &mut self,
         rw: bool,
         texture: &'a T,
-        name: &'s str
+        name: &'s str,
     ) -> Result<(), SetBindResourceError<'s>> {
         // Make sure it's a sampled texture
         if !texture.usage().contains(TextureUsage::STORAGE) {
@@ -262,24 +264,27 @@ impl<'a> BindGroup<'a> {
 
         // Make sure type and RW mode matches up
         match entry.resource_type {
-            crate::BindResourceType::StorageTexture { access, .. } => {
-                match (access, rw) {
-                    (spirq::AccessType::WriteOnly, false) | (spirq::AccessType::ReadWrite, false) => return Err(SetBindResourceError::SetTexture(
-                        SetTextureError::MutabilityMissing
-                    )),
-                    _ => {}
+            crate::BindResourceType::StorageTexture { access, .. } => match (access, rw) {
+                (spirq::AccessType::WriteOnly, false) | (spirq::AccessType::ReadWrite, false) => {
+                    return Err(SetBindResourceError::SetTexture(
+                        SetTextureError::MutabilityMissing,
+                    ))
                 }
+                _ => {}
             },
-            _ => return Err(SetBindResourceError::ResourceTypeMismatch {
-                name,
-                reflected_type: crate::STORAGE_TEXTURE_STRINGIFIED_NAME,
-                set_type: crate::stringify_bind_resource_type(&entry.resource_type)
-            })
+            _ => {
+                return Err(SetBindResourceError::ResourceTypeMismatch {
+                    name,
+                    reflected_type: crate::STORAGE_TEXTURE_STRINGIFIED_NAME,
+                    set_type: crate::stringify_bind_resource_type(&entry.resource_type),
+                })
+            }
         }
 
         // Get values needed for the bind entry
         let view = texture.view().unwrap();
-        self.resources.push(wgpu::BindingResource::TextureView(view));
+        self.resources
+            .push(wgpu::BindingResource::TextureView(view));
         let id = view.global_id();
         self.ids.push(Id::new(id, IdVariant::TextureView));
         self.slots.push(entry.binding);
@@ -308,18 +313,20 @@ impl<'a> BindGroup<'a> {
 
         // Make sure type matches up
         match entry.resource_type {
-            crate::BindResourceType::SampledTexture { .. } => {},
-            _ => return Err(SetBindResourceError::ResourceTypeMismatch {
-                name,
-                reflected_type: crate::SAMPLED_TEXTURE_STRINGIFIED_NAME,
-                set_type: crate::stringify_bind_resource_type(&entry.resource_type)
-            })
+            crate::BindResourceType::SampledTexture { .. } => {}
+            _ => {
+                return Err(SetBindResourceError::ResourceTypeMismatch {
+                    name,
+                    reflected_type: crate::SAMPLED_TEXTURE_STRINGIFIED_NAME,
+                    set_type: crate::stringify_bind_resource_type(&entry.resource_type),
+                })
+            }
         }
 
-        
         // Save the bind entry for later
         let view = texture.view().unwrap();
-        self.resources.push(wgpu::BindingResource::TextureView(view));
+        self.resources
+            .push(wgpu::BindingResource::TextureView(view));
         let id = view.global_id();
         self.ids.push(Id::new(id, IdVariant::TextureView));
         self.slots.push(entry.binding);
@@ -355,12 +362,14 @@ impl<'a> BindGroup<'a> {
 
         // Make sure type matches up
         match entry.resource_type {
-            crate::BindResourceType::Sampler { .. } => {},
-            _ => return Err(SetBindResourceError::ResourceTypeMismatch {
-                name,
-                reflected_type: crate::SAMPLER_STRINGIFIED_NAME,
-                set_type: crate::stringify_bind_resource_type(&entry.resource_type)
-            })
+            crate::BindResourceType::Sampler { .. } => {}
+            _ => {
+                return Err(SetBindResourceError::ResourceTypeMismatch {
+                    name,
+                    reflected_type: crate::SAMPLER_STRINGIFIED_NAME,
+                    set_type: crate::stringify_bind_resource_type(&entry.resource_type),
+                })
+            }
         }
 
         // Get values needed for the bind entry
@@ -387,12 +396,14 @@ impl<'a> BindGroup<'a> {
 
         // Make sure type matches up
         match entry.resource_type {
-            crate::BindResourceType::UniformBuffer { .. } => {},
-            _ => return Err(SetBindResourceError::ResourceTypeMismatch {
-                name,
-                reflected_type: crate::UNIFORM_BUFFER_STRINGIFIED_NAME,
-                set_type: crate::stringify_bind_resource_type(&entry.resource_type)
-            })
+            crate::BindResourceType::UniformBuffer { .. } => {}
+            _ => {
+                return Err(SetBindResourceError::ResourceTypeMismatch {
+                    name,
+                    reflected_type: crate::UNIFORM_BUFFER_STRINGIFIED_NAME,
+                    set_type: crate::stringify_bind_resource_type(&entry.resource_type),
+                })
+            }
         }
 
         // Get the buffer binding bounds

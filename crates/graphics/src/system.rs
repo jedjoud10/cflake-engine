@@ -120,7 +120,6 @@ pub fn acquire(system: &mut System) {
             }
 
             graphics.staging_pool().refresh();
-            
         })
         .after(post_user);
 }
@@ -139,7 +138,6 @@ pub fn present(system: &mut System) {
             } else {
                 log::trace!("could not present acquired texture")
             }
-            
         })
         .after(post_user)
         .after(acquire);

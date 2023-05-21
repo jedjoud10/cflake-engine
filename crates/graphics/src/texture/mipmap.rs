@@ -5,9 +5,9 @@ use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
 use super::{Region, Texture};
 use crate::{
-    ColorTexel, Extent, LayeredOrigin, MipLevelClearError, MipLevelCopyError, MipLevelReadError,
-    MipLevelWriteError, Origin, RenderTarget, Texel, TextureAsTargetError, TextureMipLevelError,
-    TextureSamplerError, TextureUsage, Conversion,
+    ColorTexel, Conversion, Extent, LayeredOrigin, MipLevelClearError, MipLevelCopyError,
+    MipLevelReadError, MipLevelWriteError, Origin, RenderTarget, Texel, TextureAsTargetError,
+    TextureMipLevelError, TextureSamplerError, TextureUsage,
 };
 
 // This enum tells the texture how exactly it should create it's mipmaps
@@ -74,67 +74,70 @@ pub fn generate_mip_map<T: ColorTexel, R: Region>(
 
     // Iterate over the levels and fill them up
     // (like how ceddy weddy fills me up inside >.<)
-    let map = (0..(levels - 1)).into_par_iter().map(|i| {
-        // Pre-allocate a vector that will contain the downscaled texels
-        let temp = extent.mip_level_dimensions(i as u8);
-        let downscaled = extent.mip_level_dimensions(i as u8 + 1);
+    let map = (0..(levels - 1))
+        .into_par_iter()
+        .map(|i| {
+            // Pre-allocate a vector that will contain the downscaled texels
+            let temp = extent.mip_level_dimensions(i as u8);
+            let downscaled = extent.mip_level_dimensions(i as u8 + 1);
 
-        let mut texels: Vec<<T as Texel>::Storage> =
-            vec![<T::Storage as Zeroable>::zeroed(); R::volume(downscaled) as usize];
+            let mut texels: Vec<<T as Texel>::Storage> =
+                vec![<T::Storage as Zeroable>::zeroed(); R::volume(downscaled) as usize];
 
-        // Get the original and downscaled sizes
-        let original = temp.decompose();
-        let new = downscaled.decompose();
+            // Get the original and downscaled sizes
+            let original = temp.decompose();
+            let new = downscaled.decompose();
 
-        // Division factor is either 2, 4, or 8 (based on dims)
-        let factor = match dimension {
-            wgpu::TextureViewDimension::D1 => 2,
-            wgpu::TextureViewDimension::D2 => 4,
-            wgpu::TextureViewDimension::D2Array => 4,
-            wgpu::TextureViewDimension::Cube => 4,
-            wgpu::TextureViewDimension::CubeArray => 4,
-            wgpu::TextureViewDimension::D3 => 8,
-        };
+            // Division factor is either 2, 4, or 8 (based on dims)
+            let factor = match dimension {
+                wgpu::TextureViewDimension::D1 => 2,
+                wgpu::TextureViewDimension::D2 => 4,
+                wgpu::TextureViewDimension::D2Array => 4,
+                wgpu::TextureViewDimension::Cube => 4,
+                wgpu::TextureViewDimension::CubeArray => 4,
+                wgpu::TextureViewDimension::D3 => 8,
+            };
 
-        // Nous devons pas prendre une moyenne de l'axe Z si nous utilisons une ArrayTexture2D
-        let divide = match R::view_dimension() {
-            wgpu::TextureViewDimension::D1 => vek::Vec3::new(2usize, 1, 1),
-            wgpu::TextureViewDimension::D2Array => vek::Vec3::new(2, 2, 1),
-            wgpu::TextureViewDimension::D2 => vek::Vec3::new(2, 2, 1),
-            wgpu::TextureViewDimension::D3 => vek::Vec3::new(2, 2, 2),
-            wgpu::TextureViewDimension::CubeArray => todo!(),
-            wgpu::TextureViewDimension::Cube => todo!(),
-        };
+            // Nous devons pas prendre une moyenne de l'axe Z si nous utilisons une ArrayTexture2D
+            let divide = match R::view_dimension() {
+                wgpu::TextureViewDimension::D1 => vek::Vec3::new(2usize, 1, 1),
+                wgpu::TextureViewDimension::D2Array => vek::Vec3::new(2, 2, 1),
+                wgpu::TextureViewDimension::D2 => vek::Vec3::new(2, 2, 1),
+                wgpu::TextureViewDimension::D3 => vek::Vec3::new(2, 2, 2),
+                wgpu::TextureViewDimension::CubeArray => todo!(),
+                wgpu::TextureViewDimension::Cube => todo!(),
+            };
 
-        // Write to the downscaled texels
-        for ox in 0..original.w {
-            for oy in 0..original.h {
-                for oz in 0..original.d {
-                    // Get the current texel value
-                    let texel = base[xyz_to_index(
-                        vek::Vec3::new(ox, oy, oz).as_::<usize>() * divide.map(|x| x.pow(i)),
-                        extent.decompose().as_::<usize>(),
-                    )];
+            // Write to the downscaled texels
+            for ox in 0..original.w {
+                for oy in 0..original.h {
+                    for oz in 0..original.d {
+                        // Get the current texel value
+                        let texel = base[xyz_to_index(
+                            vek::Vec3::new(ox, oy, oz).as_::<usize>() * divide.map(|x| x.pow(i)),
+                            extent.decompose().as_::<usize>(),
+                        )];
 
-                    // La division est vraiment importante pour qu'on evite un overflow
-                    let texel = T::divide(texel, factor as f32);
+                        // La division est vraiment importante pour qu'on evite un overflow
+                        let texel = T::divide(texel, factor as f32);
 
-                    // Get the destination texel value
-                    let dst = &mut texels[xyz_to_index(
-                        vek::Vec3::new(ox, oy, oz).as_::<usize>() / divide,
-                        new.as_::<usize>(),
-                    )];
+                        // Get the destination texel value
+                        let dst = &mut texels[xyz_to_index(
+                            vek::Vec3::new(ox, oy, oz).as_::<usize>() / divide,
+                            new.as_::<usize>(),
+                        )];
 
-                    // Sum to the destination
-                    *dst += texel;
+                        // Sum to the destination
+                        *dst += texel;
+                    }
                 }
             }
-        }
-        
-        // Return the texels 
-        texels
-    }).collect::<Vec<_>>();
-    
+
+            // Return the texels
+            texels
+        })
+        .collect::<Vec<_>>();
+
     Some(map)
 }
 
@@ -508,17 +511,18 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
         };
 
         // Make sure that the layers are compatible
-        match (<O::Region as Region>::view_dimension(), <T::Region as Region>::view_dimension()) {
+        match (
+            <O::Region as Region>::view_dimension(),
+            <T::Region as Region>::view_dimension(),
+        ) {
             // Copy from 2D array to self
-            (wgpu::TextureViewDimension::D2Array, wgpu::TextureViewDimension::Cube) if other.texture.layers() == 6 => {
-
-            },
+            (wgpu::TextureViewDimension::D2Array, wgpu::TextureViewDimension::Cube)
+                if other.texture.layers() == 6 => {}
             //(wgpu::TextureViewDimension::D2Array, wgpu::TextureViewDimension::CubeArray) => todo!(),
-            
-            // Copy from Cube to self
-            (wgpu::TextureViewDimension::Cube, wgpu::TextureViewDimension::D2Array) if self.texture.layers() == 6 => {
 
-            },
+            // Copy from Cube to self
+            (wgpu::TextureViewDimension::Cube, wgpu::TextureViewDimension::D2Array)
+                if self.texture.layers() == 6 => {}
             //(wgpu::TextureViewDimension::Cube, wgpu::TextureViewDimension::CubeArray) => todo!(),
 
             /*
@@ -526,9 +530,8 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
             (wgpu::TextureViewDimension::CubeArray, wgpu::TextureViewDimension::D2Array) => todo!(),
             (wgpu::TextureViewDimension::CubeArray, wgpu::TextureViewDimension::Cube) => todo!(),
             */
-            
             (x, y) if x == y => (),
-            _ => return Err(MipLevelCopyError::IncompatibleMultiLayerTextures)
+            _ => return Err(MipLevelCopyError::IncompatibleMultiLayerTextures),
         };
 
         todo!();

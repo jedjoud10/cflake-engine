@@ -85,7 +85,7 @@ mod bitset {
 #[cfg(test)]
 mod atomic_bitset {
     use crate::AtomicBitSet;
-    use std::sync::atomic::{Ordering, AtomicUsize};
+    use std::sync::atomic::{AtomicUsize, Ordering};
 
     #[test]
     fn bitset() {

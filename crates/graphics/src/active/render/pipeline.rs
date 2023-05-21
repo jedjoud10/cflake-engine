@@ -4,11 +4,11 @@ use wgpu::CommandEncoder;
 
 use crate::{
     active::pipeline::ActivePipeline, visibility_to_wgpu_stage, BindGroup, Buffer, BufferInfo,
-    BufferMode, BufferUsage, ColorLayout, DepthStencilLayout, DrawError, DrawIndexedError,
-    DrawIndexedIndirectBuffer, DrawIndirectBuffer, GpuPod, Graphics, ModuleKind, ModuleVisibility,
-    PushConstantLayout, PushConstants, RenderCommand, RenderPipeline, SetBindGroupError,
-    SetIndexBufferError, SetPushConstantsError, SetVertexBufferError, TriangleBuffer,
-    UniformBuffer, Vertex, VertexBuffer, DrawCountIndirectBuffer,
+    BufferMode, BufferUsage, ColorLayout, DepthStencilLayout, DrawCountIndirectBuffer, DrawError,
+    DrawIndexedError, DrawIndexedIndirectBuffer, DrawIndirectBuffer, GpuPod, Graphics, ModuleKind,
+    ModuleVisibility, PushConstantLayout, PushConstants, RenderCommand, RenderPipeline,
+    SetBindGroupError, SetIndexBufferError, SetPushConstantsError, SetVertexBufferError,
+    TriangleBuffer, UniformBuffer, Vertex, VertexBuffer,
 };
 use std::{
     collections::hash_map::Entry,
@@ -192,7 +192,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout> ActiveRenderPipeline<'a
         count: usize,
     ) -> Result<(), DrawError> {
         if count == 0 {
-            return Ok(())
+            return Ok(());
         }
 
         // Handle the missing bind groups
@@ -212,8 +212,11 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout> ActiveRenderPipeline<'a
             return Err(DrawError::InvalidIndirectIndex);
         }
 
-        self.commands
-            .push(RenderCommand::MultiDrawIndirect { buffer, offset, count });
+        self.commands.push(RenderCommand::MultiDrawIndirect {
+            buffer,
+            offset,
+            count,
+        });
 
         Ok(())
     }
@@ -228,7 +231,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout> ActiveRenderPipeline<'a
         max_count: usize,
     ) -> Result<(), DrawError> {
         if max_count == 0 {
-            return Ok(())
+            return Ok(());
         }
 
         // Handle the missing bind groups
@@ -244,17 +247,22 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout> ActiveRenderPipeline<'a
         }
 
         // Check if the indirect element index is ok even in the max count scenario
-        if buffer.len() < indirect_offset + max_count  {
+        if buffer.len() < indirect_offset + max_count {
             return Err(DrawError::InvalidIndirectIndex);
         }
 
         // Check if the indirect count element index is ok
-        if count.len() <= count_offset  {
+        if count.len() <= count_offset {
             return Err(DrawError::InvalidIndirectCountIndex);
         }
 
-        self.commands
-            .push(RenderCommand::MultiDrawIndirectCount { buffer, indirect_offset, count, count_offset, max_count: max_count as u32 });
+        self.commands.push(RenderCommand::MultiDrawIndirectCount {
+            buffer,
+            indirect_offset,
+            count,
+            count_offset,
+            max_count: max_count as u32,
+        });
 
         Ok(())
     }
@@ -330,7 +338,7 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout> ActiveRenderPipeline<'a
         count: usize,
     ) -> Result<(), DrawIndexedError> {
         if count == 0 {
-            return Ok(())
+            return Ok(());
         }
 
         // Handle the missing bind groups
@@ -355,8 +363,11 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout> ActiveRenderPipeline<'a
             return Err(DrawIndexedError::InvalidIndirectIndex);
         }
 
-        self.commands
-            .push(RenderCommand::MultiDrawIndexedIndirect { buffer, offset, count });
+        self.commands.push(RenderCommand::MultiDrawIndexedIndirect {
+            buffer,
+            offset,
+            count,
+        });
 
         Ok(())
     }
@@ -392,17 +403,23 @@ impl<'a, 'r, 't, C: ColorLayout, DS: DepthStencilLayout> ActiveRenderPipeline<'a
         }
 
         // Check if the indirect element index is ok even in the max count scenario
-        if buffer.len() < indirect_offset + max_count  {
+        if buffer.len() < indirect_offset + max_count {
             return Err(DrawIndexedError::InvalidIndirectIndex);
         }
 
         // Check if the indirect count element index is ok
-        if count.len() <= count_offset  {
+        if count.len() <= count_offset {
             return Err(DrawIndexedError::InvalidIndirectCountIndex);
         }
 
         self.commands
-            .push(RenderCommand::MultiDrawIndexedIndirectCount { buffer, indirect_offset, count, count_offset, max_count: max_count as u32 });
+            .push(RenderCommand::MultiDrawIndexedIndirectCount {
+                buffer,
+                indirect_offset,
+                count,
+                count_offset,
+                max_count: max_count as u32,
+            });
 
         Ok(())
     }

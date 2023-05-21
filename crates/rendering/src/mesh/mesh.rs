@@ -1,13 +1,15 @@
 use super::attributes::*;
 use crate::mesh::attributes::{Normal, Position, Tangent, TexCoord};
 use crate::{
-    AttributeBuffer, Direct, Indirect, MeshAttribute, MeshAttributes, MeshImportError,
-    MeshImportSettings, MeshInitializationError, RenderPath, TrianglesMut, TrianglesRef,
-    VerticesMut, VerticesRef, MultiDrawIndirect, IndirectMeshArgs, MultiDrawIndirectArgs, MultiDrawIndirectCount, MultiDrawIndirectCountArgs,
+    AttributeBuffer, Direct, Indirect, IndirectMeshArgs, MeshAttribute, MeshAttributes,
+    MeshImportError, MeshImportSettings, MeshInitializationError, MultiDrawIndirect,
+    MultiDrawIndirectArgs, MultiDrawIndirectCount, MultiDrawIndirectCountArgs, RenderPath,
+    TrianglesMut, TrianglesRef, VerticesMut, VerticesRef,
 };
 use assets::Asset;
 use graphics::{
-    BufferMode, BufferUsage, DrawIndexedIndirectBuffer, Graphics, Triangle, TriangleBuffer, DrawCountIndirectBuffer,
+    BufferMode, BufferUsage, DrawCountIndirectBuffer, DrawIndexedIndirectBuffer, Graphics,
+    Triangle, TriangleBuffer,
 };
 use obj::TexturedVertex;
 
@@ -167,10 +169,7 @@ impl Mesh<Indirect> {
             normals,
             tangents,
             tex_coords,
-            args: IndirectMeshArgs {
-                indirect,
-                offset,
-            },
+            args: IndirectMeshArgs { indirect, offset },
             triangles,
             aabb: None,
         }
@@ -229,7 +228,7 @@ impl Mesh<MultiDrawIndirect> {
             args: MultiDrawIndirectArgs {
                 indirect,
                 offset,
-                count
+                count,
             },
             triangles,
             aabb: None,
@@ -263,7 +262,6 @@ impl Mesh<MultiDrawIndirect> {
         &mut self.args.count
     }
 }
-
 
 // Initialization of multi-drawn indirect count meshes
 impl Mesh<MultiDrawIndirectCount> {
@@ -352,7 +350,7 @@ impl Mesh<MultiDrawIndirectCount> {
     pub fn max_count(&self) -> usize {
         self.args.max_count
     }
-    
+
     // Get the maximum number of draw calls that can be submitted mutably
     pub fn max_count_mut(&mut self) -> &mut usize {
         &mut self.args.max_count

@@ -1,11 +1,11 @@
-use std::{time::Instant};
+use std::time::Instant;
 
 use crate::{Chunk, ChunkState, Terrain, TerrainMaterial};
 use coords::{Position, Scale};
-use ecs::{Scene, Entity};
+use ecs::{Entity, Scene};
 use graphics::{
     ActivePipeline, ComputePass, DrawIndexedIndirect, DrawIndexedIndirectBuffer, GpuPod, Graphics,
-    TriangleBuffer, Vertex, Texture,
+    Texture, TriangleBuffer, Vertex,
 };
 use rendering::{attributes, AttributeBuffer, IndirectMesh, Renderer, Surface};
 use utils::{Storage, Time};
@@ -40,12 +40,10 @@ fn update(world: &mut World) {
     );
 
     // Convert "Dirty" chunks into "Pending", and clears the old memory used by those chunks
-    let query = scene
-        .query_mut::<&mut Chunk>()
-        .into_iter();
+    let query = scene.query_mut::<&mut Chunk>().into_iter();
     for chunk in query.filter(|c| c.state == ChunkState::Dirty) {
         chunk.state = ChunkState::Pending;
-        
+
         // Write to the indices the updated ranges if needed
         if let Some(range) = chunk.ranges {
             if range.y > range.x {
@@ -62,15 +60,12 @@ fn update(world: &mut World) {
 
     // Find the chunk with the highest priority
     let mut vec = scene
-        .query_mut::<(
-            &mut Chunk,
-            &Position,
-            &Scale,
-            &Entity,
-        )>()
+        .query_mut::<(&mut Chunk, &Position, &Scale, &Entity)>()
         .into_iter()
         .collect::<Vec<_>>();
-    vec.sort_by(|(a, _, _, _), (b, _, _, _)| a.generation_priority.total_cmp(&b.generation_priority));
+    vec.sort_by(|(a, _, _, _), (b, _, _, _)| {
+        a.generation_priority.total_cmp(&b.generation_priority)
+    });
     vec.retain(|(chunk, _, _, _)| chunk.state == ChunkState::Pending);
     let Some((chunk, position, scale, entity)) = vec.pop() else {
         return;
@@ -100,7 +95,12 @@ fn update(world: &mut World) {
     let indirect = &mut memory.generated_indexed_indirect_buffers[chunk.allocation];
 
     // Update alloc-local indirect draw args
-    indirect.write(&[crate::util::DEFAULT_DRAW_INDEXED_INDIRECT], chunk.local_index).unwrap();
+    indirect
+        .write(
+            &[crate::util::DEFAULT_DRAW_INDEXED_INDIRECT],
+            chunk.local_index,
+        )
+        .unwrap();
 
     // Reset required values
     counters.write(&[0; 2], 0).unwrap();
@@ -111,7 +111,7 @@ fn update(world: &mut World) {
     // Update alloc-local position buffer
     let packed = (*position).with_w(**scale);
     let buffer = &mut memory.generated_position_scaling_buffers[chunk.allocation];
-    buffer.write(&[packed], chunk.local_index).unwrap(); 
+    buffer.write(&[packed], chunk.local_index).unwrap();
 
     // Create a compute pass for ALL compute terrain shaders
     let mut pass = ComputePass::begin(&graphics);
@@ -128,7 +128,8 @@ fn update(world: &mut World) {
     active
         .set_push_constants(|x| {
             // WHY DO WE NEED TO MULTIPLY BY 0.5 WHY WHY WHY WHY WHY (it works tho)
-            let offset = (node.position().as_::<f32>() - vek::Vec3::broadcast(factor) * 0.5).with_w(0.0f32);
+            let offset =
+                (node.position().as_::<f32>() - vek::Vec3::broadcast(factor) * 0.5).with_w(0.0f32);
             let offset = GpuPod::into_bytes(&offset);
 
             // Get the scale of the chunk
@@ -141,7 +142,8 @@ fn update(world: &mut World) {
             // Push the bytes to the GPU
             x.push(offset, 0).unwrap();
             x.push(scale, offset.len() as u32).unwrap();
-            x.push(quality, scale.len() as u32 + offset.len() as u32).unwrap();
+            x.push(quality, scale.len() as u32 + offset.len() as u32)
+                .unwrap();
 
             // Call the set group callback
             if let Some(callback) = voxelizer.set_push_constant_callback.as_ref() {
@@ -153,8 +155,7 @@ fn update(world: &mut World) {
     // One global bind group for voxel generation
     active
         .set_bind_group(0, |set| {
-            set.set_storage_texture_mut("voxels", voxels)
-                .unwrap();
+            set.set_storage_texture_mut("voxels", voxels).unwrap();
 
             // Call the set group callback
             if let Some(callback) = voxelizer.set_bind_group_callback.as_ref() {
@@ -171,8 +172,7 @@ fn update(world: &mut World) {
 
     active
         .set_bind_group(0, |set| {
-            set.set_storage_texture("voxels", voxels)
-                .unwrap();
+            set.set_storage_texture("voxels", voxels).unwrap();
             set.set_storage_texture_mut("cached_indices", indices)
                 .unwrap();
             set.set_storage_buffer_mut("counters", counters, ..)
@@ -185,16 +185,19 @@ fn update(world: &mut World) {
                 .unwrap();
         })
         .unwrap();
-    active.set_push_constants(|pc| {
-        // Use the skirts direction bitfield to limit the number of skirts
-        let bytes = GpuPod::into_bytes(&skirts_directions);
-        pc.push(bytes, 0).unwrap();
-        
-        // Calculate skirts threshold floating point value
-        let _skirts_threshold = (settings.max_depth - node.depth()) as f32 / (settings.max_depth as f32);
-        let skirts_threshold = GpuPod::into_bytes(&_skirts_threshold);
-        pc.push(skirts_threshold, bytes.len() as u32).unwrap();
-    }).unwrap();
+    active
+        .set_push_constants(|pc| {
+            // Use the skirts direction bitfield to limit the number of skirts
+            let bytes = GpuPod::into_bytes(&skirts_directions);
+            pc.push(bytes, 0).unwrap();
+
+            // Calculate skirts threshold floating point value
+            let _skirts_threshold =
+                (settings.max_depth - node.depth()) as f32 / (settings.max_depth as f32);
+            let skirts_threshold = GpuPod::into_bytes(&_skirts_threshold);
+            pc.push(skirts_threshold, bytes.len() as u32).unwrap();
+        })
+        .unwrap();
     active
         .dispatch(vek::Vec3::broadcast(settings.size / 4))
         .unwrap();
@@ -203,10 +206,8 @@ fn update(world: &mut World) {
     let mut active = pass.bind_shader(&mesher.compute_quads);
     active
         .set_bind_group(0, |set| {
-            set.set_storage_texture("cached_indices", indices)
-                .unwrap();
-            set.set_storage_texture("voxels", voxels)
-                .unwrap();
+            set.set_storage_texture("cached_indices", indices).unwrap();
+            set.set_storage_texture("voxels", voxels).unwrap();
             set.set_storage_buffer_mut("counters", counters, ..)
                 .unwrap();
         })
@@ -225,16 +226,10 @@ fn update(world: &mut World) {
     let mut active = pass.bind_shader(&memory.compute_find);
     active
         .set_bind_group(0, |set| {
-            set.set_storage_buffer_mut(
-                "indices",
-                suballocations,
-                ..,
-            )
-            .unwrap();
-            set.set_storage_buffer_mut("offsets", offsets, ..)
+            set.set_storage_buffer_mut("indices", suballocations, ..)
                 .unwrap();
-            set.set_storage_buffer("counters", counters, ..)
-                .unwrap();
+            set.set_storage_buffer_mut("offsets", offsets, ..).unwrap();
+            set.set_storage_buffer("counters", counters, ..).unwrap();
         })
         .unwrap();
 
@@ -249,16 +244,14 @@ fn update(world: &mut World) {
 
     // Copy the generated vertex and tri data to the permanent buffer
     let mut active = pass.bind_shader(&memory.compute_copy);
-    active 
+    active
         .set_bind_group(0, |set| {
             set.set_storage_buffer("temporary_vertices", &mesher.temp_vertices, ..)
                 .unwrap();
             set.set_storage_buffer("temporary_triangles", &mesher.temp_triangles, ..)
                 .unwrap();
-            set.set_storage_buffer("offsets", offsets, ..)
-                .unwrap();
-            set.set_storage_buffer("counters", counters, ..)
-                .unwrap();
+            set.set_storage_buffer("offsets", offsets, ..).unwrap();
+            set.set_storage_buffer("counters", counters, ..).unwrap();
         })
         .unwrap();
     active
@@ -267,7 +260,8 @@ fn update(world: &mut World) {
                 .unwrap();
             set.set_storage_buffer_mut("output_triangles", output_triangles, ..)
                 .unwrap();
-            set.set_storage_buffer_mut("indirect", indirect, ..).unwrap();
+            set.set_storage_buffer_mut("indirect", indirect, ..)
+                .unwrap();
         })
         .unwrap();
     active
@@ -281,7 +275,7 @@ fn update(world: &mut World) {
 
     drop(active);
     drop(pass);
-    
+
     // Start computing this sheit on the GPU
     graphics.submit(false);
 

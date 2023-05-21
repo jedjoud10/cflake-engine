@@ -1,6 +1,5 @@
 use crate::{
-    Archetype, ArchetypeSet, LayoutAccess, Mask, QueryLayoutMut, QueryLayoutRef,
-    StateColumn,
+    Archetype, ArchetypeSet, LayoutAccess, Mask, QueryLayoutMut, QueryLayoutRef, StateColumn,
 };
 use std::marker::PhantomData;
 use utils::BitSet;
@@ -107,7 +106,7 @@ pub(super) fn archetypes<L: QueryLayoutRef, F: QueryFilter>(
 pub(super) fn generate_bitset_chunks<'a, F: QueryFilter>(
     archetypes: impl Iterator<Item = &'a Archetype>,
     cached: F::Cached,
-) -> Vec<BitSet::<usize>> {
+) -> Vec<BitSet<usize>> {
     // Filter the entries by chunks of 64 entries at a time
     let iterator = archetypes.map(|archetype| {
         let columns = F::cache_columns(cached, archetype);
@@ -162,9 +161,10 @@ impl<L: QueryLayoutRef> QueryFilter for Added<L> {
     }
 
     fn cache_columns(cached: Self::Cached, archetype: &Archetype) -> Self::Columns<'_> {
-        cached.units().map(|unit| {
-            archetype.table().get(&unit).map(|col| col.states())
-        }).collect::<Vec<_>>()
+        cached
+            .units()
+            .map(|unit| archetype.table().get(&unit).map(|col| col.states()))
+            .collect::<Vec<_>>()
     }
 
     fn evaluate_chunk(columns: &Self::Columns<'_>, index: usize) -> ChunkEval {
@@ -173,7 +173,10 @@ impl<L: QueryLayoutRef> QueryFilter for Added<L> {
         ChunkEval::Evaluated(
             columns
                 .iter()
-                .map(|c| c.map(|c| c.get_chunk(index).unwrap().added).unwrap_or_default())
+                .map(|c| {
+                    c.map(|c| c.get_chunk(index).unwrap().added)
+                        .unwrap_or_default()
+                })
                 .reduce(|a, b| a & b)
                 .unwrap_or_default(),
         )
@@ -193,9 +196,10 @@ impl<L: QueryLayoutRef> QueryFilter for Modified<L> {
     }
 
     fn cache_columns(cached: Self::Cached, archetype: &Archetype) -> Self::Columns<'_> {
-        cached.units().map(|unit| {
-            archetype.table().get(&unit).map(|col| col.states())
-        }).collect::<Vec<_>>()
+        cached
+            .units()
+            .map(|unit| archetype.table().get(&unit).map(|col| col.states()))
+            .collect::<Vec<_>>()
     }
 
     fn evaluate_chunk(columns: &Self::Columns<'_>, index: usize) -> ChunkEval {
@@ -204,7 +208,10 @@ impl<L: QueryLayoutRef> QueryFilter for Modified<L> {
         ChunkEval::Evaluated(
             columns
                 .iter()
-                .map(|c| c.map(|c| c.get_chunk(index).unwrap().modified).unwrap_or_default())
+                .map(|c| {
+                    c.map(|c| c.get_chunk(index).unwrap().modified)
+                        .unwrap_or_default()
+                })
                 .reduce(|a, b| a & b)
                 .unwrap_or_default(),
         )

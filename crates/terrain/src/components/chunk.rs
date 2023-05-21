@@ -41,7 +41,10 @@ impl ChunkState {
 
     pub(crate) fn pending(&self) -> bool {
         match self {
-            ChunkState::Dirty | ChunkState::Pending | ChunkState::PendingReadbackStart | ChunkState::PendingReadbackData => true,
+            ChunkState::Dirty
+            | ChunkState::Pending
+            | ChunkState::PendingReadbackStart
+            | ChunkState::PendingReadbackData => true,
             _ => false,
         }
     }

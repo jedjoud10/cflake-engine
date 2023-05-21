@@ -1,7 +1,7 @@
 use crate::{
     entity::{Entity, EntityLinkings},
-    mask, ArchetypeSet, Bundle, Component, EntitySet, Mask, MaskHashMap, RemovedComponents,
-    StateColumn, UntypedColumn, PrefabBundle,
+    mask, ArchetypeSet, Bundle, Component, EntitySet, Mask, MaskHashMap, PrefabBundle,
+    RemovedComponents, StateColumn, UntypedColumn,
 };
 
 // The table that will be stored internally
@@ -52,7 +52,7 @@ impl Archetype {
         prefab: &Box<dyn PrefabBundle>,
     ) -> Entity {
         let index = self.entities.len();
-        
+
         let linkings = EntityLinkings {
             mask: self.mask,
             index,
@@ -61,12 +61,9 @@ impl Archetype {
         self.entities.push(entity);
 
         prefab.prefabify(self).unwrap();
-        
-        log::debug!(
-            "Extended archetype {} with instantiated prefab",
-            self.mask,
-        );
-    
+
+        log::debug!("Extended archetype {} with instantiated prefab", self.mask,);
+
         self.entities[index]
     }
 

@@ -1,6 +1,8 @@
 use crate::Renderer;
 use coords::{Position, Rotation, Scale};
-use rayon::prelude::{IntoParallelRefIterator, IntoParallelRefMutIterator, ParallelIterator, IntoParallelIterator};
+use rayon::prelude::{
+    IntoParallelIterator, IntoParallelRefIterator, IntoParallelRefMutIterator, ParallelIterator,
+};
 use world::{post_user, System, World};
 
 // Update the global mesh matrices of objects that have been modified

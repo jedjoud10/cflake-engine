@@ -32,18 +32,19 @@ impl AudioPlayer {
         );
 
         // Fetch the cpal stream config and save them in a vec
-        let supported_output_configs = device
-            .supported_output_configs()
-            .ok()?
-            .collect::<Vec<_>>();
+        let supported_output_configs = device.supported_output_configs().ok()?.collect::<Vec<_>>();
 
         // Can't have shit in Ohio
         if supported_output_configs.is_empty() {
             panic!("No supported output configs!");
         }
-        
+
         for x in supported_output_configs.iter() {
-            log::debug!("Min sample rate: {}, max sample rate: {}", x.min_sample_rate().0, x.max_sample_rate().0);
+            log::debug!(
+                "Min sample rate: {}, max sample rate: {}",
+                x.min_sample_rate().0,
+                x.max_sample_rate().0
+            );
         }
 
         Some(Self {
@@ -53,7 +54,7 @@ impl AudioPlayer {
             supported_output_configs: supported_output_configs.into(),
         })
     }
-    
+
     // Set the volume of the audio player as a percentage
     pub fn set_volume(&mut self, volume: f32) {
         let value = u32::from_ne_bytes(volume.to_ne_bytes());

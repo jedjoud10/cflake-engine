@@ -4,10 +4,15 @@ use crate::{mask, Archetype, Component, Mask, MaskHashMap, StateFlags, UntypedVe
 // This will also handle the synchronization between the states/component columns whenever we add bundles
 pub trait Bundle: 'static {
     // Get a combined  mask by running a lambda on each mask
-    fn reduce(lambda: impl FnMut(Mask, Mask) -> Mask) -> Mask where Self: Sized;
+    fn reduce(lambda: impl FnMut(Mask, Mask) -> Mask) -> Mask
+    where
+        Self: Sized;
 
     // Checks if this bundle is valid
-    fn is_valid() -> bool where Self: Sized {
+    fn is_valid() -> bool
+    where
+        Self: Sized,
+    {
         let mut count = 1;
         let mask = Self::reduce(|a, b| {
             count += 1;
@@ -21,26 +26,24 @@ pub trait Bundle: 'static {
     fn extend_from_iter<'a>(
         archetype: &'a mut Archetype,
         iter: impl IntoIterator<Item = Self>,
-    ) -> Option<usize> where Self: Sized;
+    ) -> Option<usize>
+    where
+        Self: Sized;
 
     // Get the default untyped component vectors for this bundle
-    fn default_vectors() -> MaskHashMap<Box<dyn UntypedVec>> where Self: Sized;
+    fn default_vectors() -> MaskHashMap<Box<dyn UntypedVec>>
+    where
+        Self: Sized;
 }
 
 // Bundles can be boxed and cloned (this is why this is not defined as Sized) so we can use them as a base for our prefabs
 pub trait PrefabBundle: 'static + Bundle {
     // Clone the prefab bundle and add it to the archetype
-    fn prefabify<'a>(
-        &self,
-        archetype: &'a mut Archetype,
-    ) -> Option<()>;
+    fn prefabify<'a>(&self, archetype: &'a mut Archetype) -> Option<()>;
 }
 
 impl<B: Clone + Bundle> PrefabBundle for B {
-    fn prefabify<'a>(
-        &self,
-        archetype: &'a mut Archetype,
-    ) -> Option<()> {
+    fn prefabify<'a>(&self, archetype: &'a mut Archetype) -> Option<()> {
         B::extend_from_iter(archetype, [self.clone()]).map(|_| ())
     }
 }

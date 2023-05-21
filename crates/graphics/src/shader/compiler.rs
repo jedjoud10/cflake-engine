@@ -295,7 +295,7 @@ fn compile(
     //options.set_generate_debug_info();
     //options.set_target_spirv(shaderc::SpirvVersion::V1_0);
     options.set_optimization_level(optimization);
-    
+
     // TODO: 2 lazy to implement
     //options.set_auto_bind_uniforms(true);
     options.set_invert_y(false);

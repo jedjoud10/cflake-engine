@@ -4,12 +4,12 @@ use assets::Assets;
 
 use ecs::Entity;
 use graphics::{
-    Buffer, BufferMode, BufferUsage, Compiler, ComputeModule, ComputeShader, DrawIndexedIndirect,
-    GpuPod, Graphics, ModuleVisibility, PushConstantLayout, StorageAccess, Texel, TriangleBuffer,
-    Vertex, XYZW, XY, DrawIndexedIndirectBuffer, DrawCountIndirectBuffer,
+    Buffer, BufferMode, BufferUsage, Compiler, ComputeModule, ComputeShader,
+    DrawCountIndirectBuffer, DrawIndexedIndirect, DrawIndexedIndirectBuffer, GpuPod, Graphics,
+    ModuleVisibility, PushConstantLayout, StorageAccess, Texel, TriangleBuffer, Vertex, XY, XYZW,
 };
-use rendering::{attributes, AttributeBuffer, MultiDrawIndirectMesh, MultiDrawIndirectCountMesh};
-use utils::{Handle, Storage, BitSet};
+use rendering::{attributes, AttributeBuffer, MultiDrawIndirectCountMesh, MultiDrawIndirectMesh};
+use utils::{BitSet, Handle, Storage};
 
 use crate::{create_counters, TerrainSettings, Triangles, Vertices};
 
@@ -21,7 +21,7 @@ pub struct MemoryManager {
     // ...and the ones that have been culled by the culling compute shader
     pub(crate) culled_indexed_indirect_buffers: Vec<Handle<DrawIndexedIndirectBuffer>>,
     pub(crate) culled_count_buffer: Handle<DrawCountIndirectBuffer>,
-    
+
     // Vectors that contains the shared buffers needed for multidraw indirect
     pub(crate) shared_positions_buffers: Vec<Handle<Vertices>>,
     pub(crate) shared_triangle_buffers: Vec<Handle<Triangles>>,
@@ -54,7 +54,7 @@ pub struct MemoryManager {
 
     // Keeps track of the offset/counter async data of each chunk
     pub(crate) readback_offsets: Vec<(Entity, vek::Vec2<u32>)>,
-    pub(crate) readback_counters: Vec<(Entity, vek::Vec2<u32>)>,    
+    pub(crate) readback_counters: Vec<(Entity, vek::Vec2<u32>)>,
 
     // Channel to receive the asyncrhnoously readback data
     pub(crate) readback_count_receiver: Receiver<(Entity, vek::Vec2<u32>)>,
@@ -75,38 +75,50 @@ impl MemoryManager {
         settings: &TerrainSettings,
     ) -> Self {
         // Create an empty buffer of a specific type N amounts of time
-        fn create_empty_buffer_count<T: GpuPod, const TYPE: u32>(graphics: &Graphics, count: usize) -> Vec<Buffer<T, TYPE>> {
-            (0..count).into_iter().map(|_| {
-                crate::create_empty_buffer(graphics)
-            }).collect::<Vec<_>>()
+        fn create_empty_buffer_count<T: GpuPod, const TYPE: u32>(
+            graphics: &Graphics,
+            count: usize,
+        ) -> Vec<Buffer<T, TYPE>> {
+            (0..count)
+                .into_iter()
+                .map(|_| crate::create_empty_buffer(graphics))
+                .collect::<Vec<_>>()
         }
 
         // Create multiple buffers for N allocations
-        let generated_indexed_indirect_buffers = create_empty_buffer_count(&graphics, settings.allocation_count);
+        let generated_indexed_indirect_buffers =
+            create_empty_buffer_count(&graphics, settings.allocation_count);
 
         // And another one that contains the culled indexed indirect elements
-        let culled_indexed_indirect_buffers = (0..settings.allocation_count).into_iter().map(|_| {
-            indexed_indirect_buffers.insert(
-                crate::create_empty_buffer(graphics)
-            )
-        }).collect::<Vec<_>>();
+        let culled_indexed_indirect_buffers = (0..settings.allocation_count)
+            .into_iter()
+            .map(|_| indexed_indirect_buffers.insert(crate::create_empty_buffer(graphics)))
+            .collect::<Vec<_>>();
 
         // One that contains the culled counts (for all allocation)
-        let culled_count_buffer = draw_count_indirect_buffers.insert(DrawCountIndirectBuffer::splatted(
-            graphics,
-            settings.allocation_count,
-            1360,
-            BufferMode::Dynamic,
-            BufferUsage::WRITE | BufferUsage::STORAGE,
-        ).unwrap());
+        let culled_count_buffer = draw_count_indirect_buffers.insert(
+            DrawCountIndirectBuffer::splatted(
+                graphics,
+                settings.allocation_count,
+                1360,
+                BufferMode::Dynamic,
+                BufferUsage::WRITE | BufferUsage::STORAGE,
+            )
+            .unwrap(),
+        );
 
         // Visibility bitset and GPU buffers
-        let visibility_bitsets = (0..settings.allocation_count).into_iter().map(|_| BitSet::new()).collect();
+        let visibility_bitsets = (0..settings.allocation_count)
+            .into_iter()
+            .map(|_| BitSet::new())
+            .collect();
         let visibility_buffers = create_empty_buffer_count(&graphics, settings.allocation_count);
 
         // Generated and culled positions and scalings
-        let culled_position_scaling_buffers = create_empty_buffer_count(&graphics, settings.allocation_count);
-        let generated_position_scaling_buffers = create_empty_buffer_count(&graphics, settings.allocation_count);
+        let culled_position_scaling_buffers =
+            create_empty_buffer_count(&graphics, settings.allocation_count);
+        let generated_position_scaling_buffers =
+            create_empty_buffer_count(&graphics, settings.allocation_count);
 
         // Allocate the chunk indices that will be stored per allocation
         let sub_allocation_chunk_indices = (0..settings.allocation_count)
@@ -213,7 +225,7 @@ impl MemoryManager {
         // Create two offset buffers and counter buffers to be able to do async readback
         let counters = [
             create_counters(graphics, 2, BufferUsage::READ | BufferUsage::WRITE),
-            create_counters(graphics, 2, BufferUsage::READ | BufferUsage::WRITE)
+            create_counters(graphics, 2, BufferUsage::READ | BufferUsage::WRITE),
         ];
         let offsets = [
             create_counters(graphics, 2, BufferUsage::READ | BufferUsage::WRITE),
@@ -221,28 +233,33 @@ impl MemoryManager {
         ];
 
         // Transmitter and receiver to send/receive async data
-        let (offset_sender, offset_receiver) = std::sync::mpsc::channel::<(Entity, vek::Vec2<u32>)>();
-        let (counter_sender, counter_receiver) = std::sync::mpsc::channel::<(Entity, vek::Vec2<u32>)>();
+        let (offset_sender, offset_receiver) =
+            std::sync::mpsc::channel::<(Entity, vek::Vec2<u32>)>();
+        let (counter_sender, counter_receiver) =
+            std::sync::mpsc::channel::<(Entity, vek::Vec2<u32>)>();
 
         // Generate multiple multi-draw indirect meshes that will be used by the global terrain renderer
-        let allocation_meshes = (0..settings.allocation_count).into_iter().map(|allocation| {
-            let positions = shared_positions_buffers[allocation].clone();
-            let triangles = shared_triangle_buffers[allocation].clone();
-        
-            multi_draw_indirect_count_meshes.insert(MultiDrawIndirectCountMesh::from_handles(
-                Some(positions.clone()),
-                None,
-                None,
-                None,
-                triangles.clone(),
-                culled_indexed_indirect_buffers[allocation].clone(),
-                0,
-                culled_count_buffer.clone(),
-                allocation,
-                0,
-            ))
-        }).collect::<Vec<_>>();        
-        
+        let allocation_meshes = (0..settings.allocation_count)
+            .into_iter()
+            .map(|allocation| {
+                let positions = shared_positions_buffers[allocation].clone();
+                let triangles = shared_triangle_buffers[allocation].clone();
+
+                multi_draw_indirect_count_meshes.insert(MultiDrawIndirectCountMesh::from_handles(
+                    Some(positions.clone()),
+                    None,
+                    None,
+                    None,
+                    triangles.clone(),
+                    culled_indexed_indirect_buffers[allocation].clone(),
+                    0,
+                    culled_count_buffer.clone(),
+                    allocation,
+                    0,
+                ))
+            })
+            .collect::<Vec<_>>();
+
         Self {
             shared_positions_buffers,
             shared_triangle_buffers,

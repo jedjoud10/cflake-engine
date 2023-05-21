@@ -5,18 +5,22 @@ use assets::{Assets, AsyncHandle};
 use coords::Position;
 use ecs::{Entity, Scene};
 use graphics::{
-    combine_into_layered, BufferMode, BufferUsage, DrawIndexedIndirect, DrawIndexedIndirectBuffer,
-    GpuPod, Graphics, ImageTexel, LayeredTexture2D, RawTexels, SamplerFilter, SamplerMipMaps,
-    SamplerSettings, SamplerWrap, Texel, TextureMipMaps, TextureMode, TextureUsage, Vertex, Buffer,
+    combine_into_layered, Buffer, BufferMode, BufferUsage, DrawIndexedIndirect,
+    DrawIndexedIndirectBuffer, GpuPod, Graphics, ImageTexel, LayeredTexture2D, RawTexels,
+    SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap, Texel, TextureMipMaps,
+    TextureMode, TextureUsage, Vertex,
 };
-use math::{Octree, Node};
+use math::{Node, Octree};
 use rand::seq::SliceRandom;
-use rendering::{AlbedoTexel, IndirectMesh, MaterialId, Pipelines, Renderer, Surface, MaskTexel, NormalTexel, MultiDrawIndirectMesh, SubSurface};
-use utils::{Handle, Storage, BitSet};
+use rendering::{
+    AlbedoTexel, IndirectMesh, MaskTexel, MaterialId, MultiDrawIndirectMesh, NormalTexel,
+    Pipelines, Renderer, SubSurface, Surface,
+};
+use utils::{BitSet, Handle, Storage};
 
 use crate::{
-    Chunk, ChunkState, LayeredAlbedoMap, LayeredMaskMap, LayeredNormalMap,
-    MemoryManager, TerrainMaterial, TerrainSettings, TerrainSubMaterial, create_empty_buffer,
+    create_empty_buffer, Chunk, ChunkState, LayeredAlbedoMap, LayeredMaskMap, LayeredNormalMap,
+    MemoryManager, TerrainMaterial, TerrainSettings, TerrainSubMaterial,
 };
 
 // Chunk manager will store a handle to the terrain material and shit needed for rendering the chunks
@@ -63,8 +67,10 @@ impl ChunkManager {
         let mut layered_mask_map: Option<LayeredMaskMap> = None;
 
         // Load the raw texels asynchronously
-        let raw_albedo_texels = load_raw_texels_handles::<AlbedoTexel>(&assets, &settings, |x| &x.diffuse);
-        let raw_normal_texels = load_raw_texels_handles::<NormalTexel>(&assets, &settings, |x| &x.normal);
+        let raw_albedo_texels =
+            load_raw_texels_handles::<AlbedoTexel>(&assets, &settings, |x| &x.diffuse);
+        let raw_normal_texels =
+            load_raw_texels_handles::<NormalTexel>(&assets, &settings, |x| &x.normal);
         let raw_mask_texels = load_raw_texels_handles::<MaskTexel>(&assets, &settings, |x| &x.mask);
 
         // Wait till we load ALL the raw texels
@@ -73,40 +79,34 @@ impl ChunkManager {
         let raw_mask_texels = raw_mask_texels.map(|handles| assets.wait_from_iter(handles));
 
         // Get rid of ze errors
-        let raw_albedo_texels = raw_albedo_texels.map(|x| x.into_iter().collect::<Result<Vec<_>, _>>().unwrap());
-        let raw_normal_texels = raw_normal_texels.map(|x| x.into_iter().collect::<Result<Vec<_>, _>>().unwrap());
-        let raw_mask_texels = raw_mask_texels.map(|x| x.into_iter().collect::<Result<Vec<_>, _>>().unwrap());
+        let raw_albedo_texels =
+            raw_albedo_texels.map(|x| x.into_iter().collect::<Result<Vec<_>, _>>().unwrap());
+        let raw_normal_texels =
+            raw_normal_texels.map(|x| x.into_iter().collect::<Result<Vec<_>, _>>().unwrap());
+        let raw_mask_texels =
+            raw_mask_texels.map(|x| x.into_iter().collect::<Result<Vec<_>, _>>().unwrap());
 
         rayon::scope(|scope| {
             // Create a layered texture 2D that contains the diffuse maps
-            scope.spawn(|_| {         
-                layered_albedo_map = load_layered_texture(
-                    &graphics,
-                    raw_albedo_texels,
-                );
+            scope.spawn(|_| {
+                layered_albedo_map = load_layered_texture(&graphics, raw_albedo_texels);
             });
 
             // Create a layered texture 2D that contains the normal maps
-            scope.spawn(|_| { 
-                layered_normal_map = load_layered_texture(
-                    &graphics,
-                    raw_normal_texels,
-                );
+            scope.spawn(|_| {
+                layered_normal_map = load_layered_texture(&graphics, raw_normal_texels);
             });
 
             // Create a layered texture 2D that contains the mask maps
-            scope.spawn(|_| { 
-                layered_mask_map = load_layered_texture(
-                    &graphics,
-                    raw_mask_texels
-                );
+            scope.spawn(|_| {
+                layered_mask_map = load_layered_texture(&graphics, raw_mask_texels);
             });
         });
 
         // After creating the textures, convert them to handles
         let layered_albedo_map = layered_albedo_map.map(|x| layered_albedo_maps.insert(x));
         let layered_normal_map = layered_normal_map.map(|x| layered_normal_maps.insert(x));
-        let layered_mask_map = layered_mask_map.map(|x| layered_mask_maps.insert(x)); 
+        let layered_mask_map = layered_mask_map.map(|x| layered_mask_maps.insert(x));
 
         // Initial value for the terrain material
         let material = TerrainMaterial;
@@ -116,7 +116,7 @@ impl ChunkManager {
         let id = pipelines
             .register_with(graphics, &*settings, assets)
             .unwrap();
-        
+
         // Convert the newly created meshes to multiple sub-surfaces
         let subsurfaces = memory.allocation_meshes.iter().map(|mesh| SubSurface {
             mesh: mesh.clone(),
@@ -143,22 +143,31 @@ impl ChunkManager {
         let heuristic = math::OctreeHeuristic::Boxed(Box::new(move |target, node| {
             if node.size() == size * 2 {
                 // High resolution
-                math::aabb_sphere(&node.aabb(), &math::Sphere {
-                    center: *target,
-                    radius: (size as f32 * 1.0 * lod_multiplier),
-                })
+                math::aabb_sphere(
+                    &node.aabb(),
+                    &math::Sphere {
+                        center: *target,
+                        radius: (size as f32 * 1.0 * lod_multiplier),
+                    },
+                )
             } else if node.size() == size * 4 {
                 // Medium resolution
-                math::aabb_sphere(&node.aabb(), &math::Sphere {
-                    center: *target,
-                    radius: size as f32 * 2.0 * lod_multiplier,
-                })
+                math::aabb_sphere(
+                    &node.aabb(),
+                    &math::Sphere {
+                        center: *target,
+                        radius: size as f32 * 2.0 * lod_multiplier,
+                    },
+                )
             } else if node.size() == size * 8 {
                 // Medium resolution
-                math::aabb_sphere(&node.aabb(), &math::Sphere {
-                    center: *target,
-                    radius: size as f32 * 4.0 * lod_multiplier,
-                }) 
+                math::aabb_sphere(
+                    &node.aabb(),
+                    &math::Sphere {
+                        center: *target,
+                        radius: size as f32 * 4.0 * lod_multiplier,
+                    },
+                )
             } else {
                 // Low resolution
                 true
@@ -204,16 +213,19 @@ fn load_layered_texture<T: ImageTexel>(
     graphics: &Graphics,
     raw: Option<Vec<RawTexels<T>>>,
 ) -> Option<LayeredTexture2D<T>> {
-    raw.map(|raw| combine_into_layered(
-        graphics,
-        raw,
-        Some(SamplerSettings {
-            filter: SamplerFilter::Linear,
-            wrap: SamplerWrap::Repeat,
-            mipmaps: SamplerMipMaps::Auto,
-        }),
-        TextureMipMaps::Manual { mips: &[] },
-        TextureMode::Dynamic,
-        TextureUsage::SAMPLED | TextureUsage::COPY_DST,
-    ).unwrap())
+    raw.map(|raw| {
+        combine_into_layered(
+            graphics,
+            raw,
+            Some(SamplerSettings {
+                filter: SamplerFilter::Linear,
+                wrap: SamplerWrap::Repeat,
+                mipmaps: SamplerMipMaps::Auto,
+            }),
+            TextureMipMaps::Manual { mips: &[] },
+            TextureMode::Dynamic,
+            TextureUsage::SAMPLED | TextureUsage::COPY_DST,
+        )
+        .unwrap()
+    })
 }

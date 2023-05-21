@@ -16,29 +16,46 @@ use std::sync::atomic::Ordering;
 // Simple atomic bitset that allocates using usize chunks
 // This bitset contains a specific number of elements per chunk that we can share in multiple threads
 #[derive(Default)]
-pub struct AtomicBitSet<T: Bitwise>(RwLock<Vec<T>>) where <T as Atomic>::Type: PrimInt;
+pub struct AtomicBitSet<T: Bitwise>(RwLock<Vec<T>>)
+where
+    <T as Atomic>::Type: PrimInt;
 
 // Gets the value that represents 0 for the specific integer
-fn zero<T: Atomic>() -> <T as Atomic>::Type where T::Type: PrimInt {
+fn zero<T: Atomic>() -> <T as Atomic>::Type
+where
+    T::Type: PrimInt,
+{
     <<T as Atomic>::Type as num_traits::identities::Zero>::zero()
 }
 
 // Gets the value that represents 1 for the specific integer
-fn one<T: Atomic>() -> <T as Atomic>::Type where T::Type: PrimInt {
+fn one<T: Atomic>() -> <T as Atomic>::Type
+where
+    T::Type: PrimInt,
+{
     <<T as Atomic>::Type as num_traits::identities::One>::one()
 }
 
 // Gets the value that represents the smallest number possible for the specific interger
-fn min<T: Atomic>() -> <T as Atomic>::Type where T::Type: PrimInt {
+fn min<T: Atomic>() -> <T as Atomic>::Type
+where
+    T::Type: PrimInt,
+{
     <<T as Atomic>::Type as num_traits::Bounded>::min_value()
 }
 
 // Gets the value that represents the largest number possible for the specific interger
-fn max<T: Atomic>() -> <T as Atomic>::Type where T::Type: PrimInt {
+fn max<T: Atomic>() -> <T as Atomic>::Type
+where
+    T::Type: PrimInt,
+{
     <<T as Atomic>::Type as num_traits::Bounded>::max_value()
 }
 
-impl<T: Bitwise> AtomicBitSet<T> where  <T as Atomic>::Type: PrimInt {
+impl<T: Bitwise> AtomicBitSet<T>
+where
+    <T as Atomic>::Type: PrimInt,
+{
     // Create a new empty bit set
     pub fn new() -> Self {
         Self(RwLock::new(Vec::default()))
@@ -52,9 +69,7 @@ impl<T: Bitwise> AtomicBitSet<T> where  <T as Atomic>::Type: PrimInt {
 
     // Create a bitset from an iterator of chunks
     pub fn from_chunks_iter(iter: impl Iterator<Item = <T as Atomic>::Type>) -> Self {
-        Self(
-            RwLock::new(iter.map(T::new).collect()),
-        )
+        Self(RwLock::new(iter.map(T::new).collect()))
     }
 
     // Get the bit-size of the primitive
@@ -66,9 +81,11 @@ impl<T: Bitwise> AtomicBitSet<T> where  <T as Atomic>::Type: PrimInt {
     pub fn from_iter(iter: impl Iterator<Item = bool>) -> Self {
         let chunks = iter.chunks(Self::bitsize());
 
-        let chunks = chunks
-            .into_iter()
-            .map(|chunk| chunk.fold(zero::<T>(), |accum, bit| accum << 1 | (if bit { one::<T>() } else { zero::<T>() })));
+        let chunks = chunks.into_iter().map(|chunk| {
+            chunk.fold(zero::<T>(), |accum, bit| {
+                accum << 1 | (if bit { one::<T>() } else { zero::<T>() })
+            })
+        });
         Self::from_chunks_iter(chunks)
     }
 
@@ -88,9 +105,7 @@ impl<T: Bitwise> AtomicBitSet<T> where  <T as Atomic>::Type: PrimInt {
     fn extend(&self, count: usize) {
         if count > 0 {
             let splat = min::<T>();
-            self.0
-                .write()
-                .extend((0..(count)).map(|_| T::new(splat)));
+            self.0.write().extend((0..(count)).map(|_| T::new(splat)));
         }
     }
 
@@ -125,7 +140,7 @@ impl<T: Bitwise> AtomicBitSet<T> where  <T as Atomic>::Type: PrimInt {
                 atomic.fetch_and(inv, order);
             }
         }
-        
+
         // Extend to make sure we have enough
         let len = self.0.read().len();
         if end_chunk >= len {
@@ -244,7 +259,10 @@ impl<T: Bitwise> AtomicBitSet<T> where  <T as Atomic>::Type: PrimInt {
     }
 }
 
-impl<T: Bitwise> Display for AtomicBitSet<T> where <T as Atomic>::Type: Debug + PrimInt + Binary {
+impl<T: Bitwise> Display for AtomicBitSet<T>
+where
+    <T as Atomic>::Type: Debug + PrimInt + Binary,
+{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for chunk in &*self.chunks() {
             write!(f, "{:b}", chunk.load(Ordering::Relaxed))?;
@@ -254,7 +272,10 @@ impl<T: Bitwise> Display for AtomicBitSet<T> where <T as Atomic>::Type: Debug + 
     }
 }
 
-impl<T: Bitwise> Debug for AtomicBitSet<T> where <T as Atomic>::Type: Debug + PrimInt + Binary {
+impl<T: Bitwise> Debug for AtomicBitSet<T>
+where
+    <T as Atomic>::Type: Debug + PrimInt + Binary,
+{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Display::fmt(self, f)
     }

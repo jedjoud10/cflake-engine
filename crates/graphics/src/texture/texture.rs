@@ -176,13 +176,7 @@ pub trait Texture: Sized + 'static {
         let views = needs_views.then(|| {
             let layers = <Self::Region as Region>::layers(extent);
 
-            create_texture_views::<Self::T, Self::Region>(
-                &texture,
-                format,
-                extent,
-                levels,
-                layers,
-            )
+            create_texture_views::<Self::T, Self::Region>(&texture, format, extent, levels, layers)
         });
 
         Ok(unsafe {
@@ -377,7 +371,6 @@ pub trait Texture: Sized + 'static {
             ..Default::default()
         };
 
-
         self.uncache();
 
         // Create an texture view of the whole texture
@@ -482,8 +475,7 @@ pub(crate) fn mip_levels<T: Texel, R: Region>(
     let max_mip_levels = if matches!(mipmaps, TextureMipMaps::Disabled) {
         1u8 as u32
     } else {
-        let max = R::levels(extent)
-            .ok_or(TextureInitializationError::MipMapGenerationNPOT)?;
+        let max = R::levels(extent).ok_or(TextureInitializationError::MipMapGenerationNPOT)?;
 
         // If we are using compression, we must make sure the lowest level is at least the block size
         match T::size() {
@@ -570,9 +562,7 @@ pub(crate) fn create_texture_views<T: Texel, R: Region>(
                 (Some(_), wgpu::TextureViewDimension::CubeArray) => {
                     wgpu::TextureViewDimension::Cube
                 }
-                (Some(_), wgpu::TextureViewDimension::Cube) => {
-                    wgpu::TextureViewDimension::D2
-                }
+                (Some(_), wgpu::TextureViewDimension::Cube) => wgpu::TextureViewDimension::D2,
                 (None, x) => x,
                 _ => panic!("Not supported"),
             };

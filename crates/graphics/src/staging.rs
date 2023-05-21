@@ -1,6 +1,6 @@
-mod view;
-mod staging;
 mod raw;
+mod staging;
+mod view;
 pub use raw::*;
-pub use view::*;
 pub use staging::*;
+pub use view::*;

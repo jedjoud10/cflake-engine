@@ -1,7 +1,8 @@
 use crate::{AttributeBuffer, DefaultMaterialResources, Mesh, MeshAttribute};
 use graphics::{
-    ActiveRenderPipeline, ColorLayout, DepthStencilLayout, DrawIndexedIndirectBuffer, GpuPod,
-    SetIndexBufferError, SetVertexBufferError, TriangleBuffer, DrawIndexedError, DrawCountIndirectBuffer,
+    ActiveRenderPipeline, ColorLayout, DepthStencilLayout, DrawCountIndirectBuffer,
+    DrawIndexedError, DrawIndexedIndirectBuffer, GpuPod, SetIndexBufferError, SetVertexBufferError,
+    TriangleBuffer,
 };
 use std::ops::RangeBounds;
 use utils::Handle;
@@ -38,17 +39,14 @@ pub trait RenderPath: 'static + Send + Sync + Sized {
     ) -> &'a Mesh<Self>;
 
     // Checks if a mesh is valid for rendering
-    fn is_valid(
-        defaults: &DefaultMaterialResources,
-        mesh: &Mesh<Self>,
-    ) -> bool;
+    fn is_valid(defaults: &DefaultMaterialResources, mesh: &Mesh<Self>) -> bool;
 
     // Get the number of vertices of a mesh
-    // Return none if Indirect 
+    // Return none if Indirect
     fn vertex_count(mesh: &Mesh<Self>) -> Option<usize>;
 
     // Get the number of triangles of a mesh
-    // Return none if Indirect 
+    // Return none if Indirect
     fn triangle_count(mesh: &Mesh<Self>) -> Option<usize>;
 
     // Sets the vertex buffer of a specific mesh into the given active graphics pipeline
@@ -96,10 +94,7 @@ impl RenderPath for Direct {
     }
 
     #[inline(always)]
-    fn is_valid(
-        _defaults: &DefaultMaterialResources,
-        mesh: &Mesh<Self>,
-    ) -> bool {
+    fn is_valid(_defaults: &DefaultMaterialResources, mesh: &Mesh<Self>) -> bool {
         mesh.vertices().len().is_some()
     }
 
@@ -171,7 +166,6 @@ pub struct MultiDrawIndirectCountArgs {
     pub max_count: usize,
 }
 
-
 impl RenderPath for Indirect {
     type AttributeBuffer<A: MeshAttribute> = Handle<AttributeBuffer<A>>;
     type TriangleBuffer<T: GpuPod> = Handle<TriangleBuffer<T>>;
@@ -186,10 +180,7 @@ impl RenderPath for Indirect {
     }
 
     #[inline(always)]
-    fn is_valid(
-        _defaults: &DefaultMaterialResources,
-        _mesh: &Mesh<Self>,
-    ) -> bool {
+    fn is_valid(_defaults: &DefaultMaterialResources, _mesh: &Mesh<Self>) -> bool {
         true
     }
 
@@ -252,10 +243,7 @@ impl RenderPath for MultiDrawIndirect {
     }
 
     #[inline(always)]
-    fn is_valid(
-        defaults: &DefaultMaterialResources,
-        mesh: &Mesh<Self>,
-    ) -> bool {
+    fn is_valid(defaults: &DefaultMaterialResources, mesh: &Mesh<Self>) -> bool {
         let buffer = defaults.draw_indexed_indirect_buffers.get(mesh.indirect());
         buffer.len() >= (mesh.offset() + mesh.count())
     }
@@ -319,10 +307,7 @@ impl RenderPath for MultiDrawIndirectCount {
     }
 
     #[inline(always)]
-    fn is_valid(
-        defaults: &DefaultMaterialResources,
-        mesh: &Mesh<Self>,
-    ) -> bool {
+    fn is_valid(defaults: &DefaultMaterialResources, mesh: &Mesh<Self>) -> bool {
         let indirect = defaults.draw_indexed_indirect_buffers.get(mesh.indirect());
         let count = defaults.draw_count_indirect_buffer.get(mesh.count());
         let indirect_offset = mesh.indirect_offset();
@@ -376,6 +361,12 @@ impl RenderPath for MultiDrawIndirectCount {
         let count = mesh.count().clone();
         let indirect = defaults.draw_indexed_indirect_buffers.get(&indirect);
         let count = defaults.draw_count_indirect_buffer.get(&count);
-        active.multi_draw_indexed_indirect_count(indirect, mesh.indirect_offset(), count, mesh.count_offset(), mesh.max_count())
+        active.multi_draw_indexed_indirect_count(
+            indirect,
+            mesh.indirect_offset(),
+            count,
+            mesh.count_offset(),
+            mesh.max_count(),
+        )
     }
 }

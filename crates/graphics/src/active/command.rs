@@ -1,6 +1,6 @@
 use crate::{
-    BufferInfo, ColorLayout, ComputeShader, DepthStencilLayout, DrawIndexedIndirectBuffer,
-    DrawIndirectBuffer, RenderPipeline, TriangleBuffer, UniformBuffer, DrawCountIndirectBuffer,
+    BufferInfo, ColorLayout, ComputeShader, DepthStencilLayout, DrawCountIndirectBuffer,
+    DrawIndexedIndirectBuffer, DrawIndirectBuffer, RenderPipeline, TriangleBuffer, UniformBuffer,
 };
 use std::{
     ops::{Bound, Range},
@@ -184,18 +184,40 @@ pub(crate) fn record_render_commands<'r, C: ColorLayout, DS: DepthStencilLayout>
                 let indirect_offset = element * buffer.stride();
                 render_pass.draw_indexed_indirect(buffer.raw(), indirect_offset as u64)
             }
-            
-            RenderCommand::MultiDrawIndirect { buffer, offset, count } => {
+
+            RenderCommand::MultiDrawIndirect {
+                buffer,
+                offset,
+                count,
+            } => {
                 let indirect_offset = offset * buffer.stride();
-                render_pass.multi_draw_indirect(buffer.raw(), indirect_offset as u64, *count as u32);
-            },
-            
-            RenderCommand::MultiDrawIndexedIndirect { buffer, offset, count } => {
+                render_pass.multi_draw_indirect(
+                    buffer.raw(),
+                    indirect_offset as u64,
+                    *count as u32,
+                );
+            }
+
+            RenderCommand::MultiDrawIndexedIndirect {
+                buffer,
+                offset,
+                count,
+            } => {
                 let indirect_offset = offset * buffer.stride();
-                render_pass.multi_draw_indexed_indirect(buffer.raw(), indirect_offset as u64, *count as u32);
-            },
-            
-            RenderCommand::MultiDrawIndirectCount { buffer, indirect_offset, count, count_offset, max_count } => {
+                render_pass.multi_draw_indexed_indirect(
+                    buffer.raw(),
+                    indirect_offset as u64,
+                    *count as u32,
+                );
+            }
+
+            RenderCommand::MultiDrawIndirectCount {
+                buffer,
+                indirect_offset,
+                count,
+                count_offset,
+                max_count,
+            } => {
                 let indirect_offset = indirect_offset * buffer.stride();
                 let count_offset = count_offset * count.stride();
                 render_pass.multi_draw_indirect_count(
@@ -205,9 +227,15 @@ pub(crate) fn record_render_commands<'r, C: ColorLayout, DS: DepthStencilLayout>
                     count_offset as u64,
                     *max_count,
                 );
-            },
-            
-            RenderCommand::MultiDrawIndexedIndirectCount { buffer, indirect_offset, count, count_offset, max_count } => {
+            }
+
+            RenderCommand::MultiDrawIndexedIndirectCount {
+                buffer,
+                indirect_offset,
+                count,
+                count_offset,
+                max_count,
+            } => {
                 let indirect_offset = indirect_offset * buffer.stride();
                 let count_offset = count_offset * count.stride();
                 render_pass.multi_draw_indexed_indirect_count(
@@ -217,7 +245,7 @@ pub(crate) fn record_render_commands<'r, C: ColorLayout, DS: DepthStencilLayout>
                     count_offset as u64,
                     *max_count,
                 );
-            },
+            }
         }
     }
 }

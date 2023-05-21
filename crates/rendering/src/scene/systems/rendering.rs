@@ -1,16 +1,17 @@
 use std::{mem::size_of, num::NonZeroU8};
 
 use crate::{
-    AlbedoMap, AttributeBuffer, Camera, DefaultMaterialResources, DirectionalLight,
-    ForwardRenderer, Indirect, MaskMap, Mesh, NormalMap, PhysicallyBasedMaterial, Pipelines,
-    Renderer, SceneUniform, ShadowMapping, SkyMaterial, WindowUniform, MultiDrawIndirectMesh, IndirectMesh, WireframeMaterial, TimingUniform, MultiDrawIndirectCountMesh, Environment, Surface,
+    AlbedoMap, AttributeBuffer, Camera, DefaultMaterialResources, DirectionalLight, Environment,
+    ForwardRenderer, Indirect, IndirectMesh, MaskMap, Mesh, MultiDrawIndirectCountMesh,
+    MultiDrawIndirectMesh, NormalMap, PhysicallyBasedMaterial, Pipelines, Renderer, SceneUniform,
+    ShadowMapping, SkyMaterial, Surface, TimingUniform, WindowUniform, WireframeMaterial,
 };
 use assets::Assets;
 
 use ecs::Scene;
 use graphics::{
-    ActivePipeline, DrawIndexedIndirectBuffer, GpuPod, Graphics, ModuleVisibility, Texture,
-    TriangleBuffer, Window, DrawCountIndirectBuffer,
+    ActivePipeline, DrawCountIndirectBuffer, DrawIndexedIndirectBuffer, GpuPod, Graphics,
+    ModuleVisibility, Texture, TriangleBuffer, Window,
 };
 
 use utils::{Storage, Time};
@@ -73,7 +74,7 @@ fn init(world: &mut World) {
     world.insert(Storage::<IndirectMesh>::default());
     world.insert(Storage::<MultiDrawIndirectMesh>::default());
     world.insert(Storage::<MultiDrawIndirectCountMesh>::default());
-    
+
     // Add common indirect attributes
     world.insert(Storage::<AttributeBuffer<crate::attributes::Position>>::default());
     world.insert(Storage::<AttributeBuffer<crate::attributes::Normal>>::default());
@@ -81,7 +82,7 @@ fn init(world: &mut World) {
     world.insert(Storage::<AttributeBuffer<crate::attributes::TexCoord>>::default());
     world.insert(Storage::<TriangleBuffer<u32>>::default());
 
-    // Add draw indexed indirect buffers 
+    // Add draw indexed indirect buffers
     world.insert(Storage::<DrawIndexedIndirectBuffer>::default());
     world.insert(Storage::<DrawCountIndirectBuffer>::default());
 
@@ -142,13 +143,17 @@ fn render(world: &mut World) {
     let environment = world.get::<Environment>().unwrap();
 
     // Store the new timing info
-    renderer.timing_buffer.write(&[
-        TimingUniform {
-            frame_count: time.frame_count().try_into().unwrap(),
-            delta_time: time.delta().as_secs_f32(),
-            time_since_startup: time.startup().elapsed().as_secs_f32(),
-        }
-    ],  0).unwrap();
+    renderer
+        .timing_buffer
+        .write(
+            &[TimingUniform {
+                frame_count: time.frame_count().try_into().unwrap(),
+                delta_time: time.delta().as_secs_f32(),
+                time_since_startup: time.startup().elapsed().as_secs_f32(),
+            }],
+            0,
+        )
+        .unwrap();
 
     // Reset the stats
     renderer.drawn_unique_material_count = 0;
@@ -180,7 +185,8 @@ fn render(world: &mut World) {
 
     // Needed for multi draw indirect rendering
     let multi_draw_indirect_meshes = world.get::<Storage<MultiDrawIndirectMesh>>().unwrap();
-    let multi_draw_indirect_count_meshes = world.get::<Storage<MultiDrawIndirectCountMesh>>().unwrap();
+    let multi_draw_indirect_count_meshes =
+        world.get::<Storage<MultiDrawIndirectCountMesh>>().unwrap();
     let draw_count_indirect_buffer = world.get::<Storage<DrawCountIndirectBuffer>>().unwrap();
 
     let albedo_maps = world.get::<Storage<AlbedoMap>>().unwrap();
@@ -260,7 +266,6 @@ fn render(world: &mut World) {
         rendered_direct_triangles_drawn: &mut renderer.rendered_direct_triangles_drawn,
         culled_sub_surfaces: &mut renderer.culled_sub_surfaces,
         rendered_sub_surfaces: &mut renderer.rendered_sub_surfaces,
-
     };
     drop(scene);
 

@@ -25,7 +25,7 @@ fn init(world: &mut World) {
     assets
         .load::<GltfScene>(("user/scenes/untitled.glb", settings, context))
         .unwrap();
-    
+
     // Create a movable camera
     let mut scene = world.get_mut::<Scene>().unwrap();
     scene.insert((

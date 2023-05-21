@@ -1,13 +1,15 @@
-use crate::{AlbedoMap, CameraBuffer, MaskMap, NormalMap, SceneBuffer, TimingBuffer, WindowBuffer, Mesh};
+use crate::{
+    AlbedoMap, CameraBuffer, MaskMap, Mesh, NormalMap, SceneBuffer, TimingBuffer, WindowBuffer,
+};
 
 use assets::Assets;
 
 use ecs::Entity;
 use graphics::{
-    ActiveRenderPass, ActiveRenderPipeline, BufferMode, BufferUsage, Depth, GpuPod, Graphics,
-    LoadOp, Operation, RenderPass, SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap,
-    StoreOp, Texel, Texture, Texture2D, TextureMipMaps, TextureMode, TextureUsage, UniformBuffer,
-    RGBA, CubeMap, ImageTexel, Shader, RenderPipeline,
+    ActiveRenderPass, ActiveRenderPipeline, BufferMode, BufferUsage, CubeMap, Depth, GpuPod,
+    Graphics, ImageTexel, LoadOp, Operation, RenderPass, RenderPipeline, SamplerFilter,
+    SamplerMipMaps, SamplerSettings, SamplerWrap, Shader, StoreOp, Texel, Texture, Texture2D,
+    TextureMipMaps, TextureMode, TextureUsage, UniformBuffer, RGBA,
 };
 use utils::{Handle, Storage};
 
@@ -86,10 +88,13 @@ fn create_texture2d<T: Texel>(graphics: &Graphics, value: T::Storage) -> Texture
 }
 
 // Load a engine default mesh
-fn load_mesh(path: &str, assets: &Assets, graphics: &Graphics, storage: &mut Storage<Mesh>) -> Handle<Mesh> {
-    let mesh = assets
-        .load::<Mesh>((path, graphics.clone()))
-        .unwrap();
+fn load_mesh(
+    path: &str,
+    assets: &Assets,
+    graphics: &Graphics,
+    storage: &mut Storage<Mesh>,
+) -> Handle<Mesh> {
+    let mesh = assets.load::<Mesh>((path, graphics.clone())).unwrap();
     storage.insert(mesh)
 }
 

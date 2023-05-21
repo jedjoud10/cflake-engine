@@ -9,7 +9,7 @@ use crate::{
 use ecs::Scene;
 use graphics::{ActivePipeline, GpuPod, ModuleVisibility};
 use math::ExplicitVertices;
-use utils::{Handle};
+use utils::Handle;
 use world::World;
 
 // Check if an AABB intersects the shadow lightspace matrix
@@ -104,7 +104,11 @@ pub(super) fn render_shadows<'r, M: Material>(
             let mesh = <M::RenderPath as RenderPath>::get(defaults, &subsurface.mesh);
 
             // If a mesh is missing attributes just skip
-            if !mesh.vertices().enabled().contains(MeshAttributes::POSITIONS) {
+            if !mesh
+                .vertices()
+                .enabled()
+                .contains(MeshAttributes::POSITIONS)
+            {
                 continue;
             }
 

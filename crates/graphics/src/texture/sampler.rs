@@ -40,7 +40,7 @@ pub enum SamplerFilter {
 pub enum SamplerMipMaps {
     // Sampler will fetch it's required data from the texture (aniso disabled)
     Auto,
-    
+
     // Sampler will fetch it's required data from the texture with anisotropy
     #[default]
     AutoAniso,

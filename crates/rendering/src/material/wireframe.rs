@@ -42,7 +42,7 @@ impl Material for WireframeMaterial {
         compiler.use_push_constant_layout(
             PushConstantLayout::single(
                 <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size(),
-                ModuleVisibility::Vertex
+                ModuleVisibility::Vertex,
             )
             .unwrap(),
         );
@@ -61,7 +61,7 @@ impl Material for WireframeMaterial {
         graphics::PrimitiveConfig::Triangles {
             winding_order: graphics::WindingOrder::Cw,
             cull_face: None,
-            wireframe: true
+            wireframe: true,
         }
     }
 

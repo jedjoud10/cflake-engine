@@ -1,8 +1,9 @@
 use std::{
+    f32::consts::E,
     io::BufReader,
     iter::repeat,
     path::{Path, PathBuf},
-    sync::Arc, f32::consts::E,
+    sync::Arc,
 };
 
 use crate::{
@@ -131,7 +132,7 @@ impl Asset for GltfScene {
                 let gltf = gltf::Gltf::from_reader(reader)?;
                 let doc = gltf.document;
                 (doc.into_json(), None)
-            },
+            }
 
             // Load the scene from a GLB file
             "glb" => {
@@ -140,7 +141,7 @@ impl Asset for GltfScene {
                 let gltf = gltf::Gltf::from_reader(cursor)?;
                 let doc = gltf.document;
                 (doc.into_json(), glb.bin)
-            },
+            }
 
             _ => panic!(),
         };
@@ -177,7 +178,7 @@ impl Asset for GltfScene {
         let base64 = GeneralPurpose::new(&alphabet::STANDARD, GeneralPurposeConfig::default());
 
         // Map (raw) JSON buffers and store their raw byte values
-        let mut offset = 0usize; 
+        let mut offset = 0usize;
         let mapped_contents = buffers
             .iter()
             .map(|buffer| {
@@ -188,7 +189,7 @@ impl Asset for GltfScene {
                         let data = uri
                             .strip_prefix("data:application/octet-stream;base64,")
                             .unwrap();
-    
+
                         // Decode the raw base64 data
                         base64.decode(data).unwrap()
                     } else {
@@ -196,7 +197,7 @@ impl Asset for GltfScene {
                         let mut path = data.path().to_path_buf();
                         path.pop();
                         path.push(Path::new(uri));
-    
+
                         // Load the file that contains the raw binary data
                         loader.load::<Vec<u8>>(path.to_str().unwrap()).unwrap()
                     }
@@ -207,7 +208,6 @@ impl Asset for GltfScene {
                     offset += buffer.byte_length as usize;
                     bytes
                 };
-                
 
                 // Make sure we loaded the right amount of bytes
                 assert_eq!(bytes.len(), buffer.byte_length as usize);
@@ -253,11 +253,15 @@ impl Asset for GltfScene {
                 let max = accessor.max.as_ref();
 
                 let generic_component_type = accessor.component_type.as_ref().unwrap();
-                (&view[offset..], (_type, &generic_component_type.0), (min, max))
+                (
+                    &view[offset..],
+                    (_type, &generic_component_type.0),
+                    (min, max),
+                )
             })
             .collect::<Vec<_>>();
 
-        // TODO: 
+        // TODO:
         // Convert the textures to hashmaps w the settings they should be created with
         // Create rayon scope that will take those hashmaps and convert their inner settings to act textures
 
@@ -283,7 +287,6 @@ impl Asset for GltfScene {
                 let cached_normal_maps = cached_normal_maps.clone();
                 let cached_mask_maps = cached_mask_maps.clone();
 
-
                 // Create or load a cached diffuse map texture
                 if let Some(info) = albedo_map {
                     let graphics = graphics.clone();
@@ -292,12 +295,7 @@ impl Asset for GltfScene {
                             .entry(info.index.value())
                             .or_insert_with(|| {
                                 let texture = &textures[info.index.value()];
-                                create_material_texture(
-                                    graphics,
-                                    texture,
-                                    samplers,
-                                    mapped_images,
-                                )
+                                create_material_texture(graphics, texture, samplers, mapped_images)
                             });
                     });
                 }
@@ -310,12 +308,7 @@ impl Asset for GltfScene {
                             .entry(tex.index.value())
                             .or_insert_with(|| {
                                 let texture = &textures[tex.index.value()];
-                                create_material_texture(
-                                    graphics,
-                                    texture,
-                                    samplers,
-                                    mapped_images,
-                                )
+                                create_material_texture(graphics, texture, samplers, mapped_images)
                             });
                     });
                 }
@@ -357,21 +350,15 @@ impl Asset for GltfScene {
         // Convert the textures to their appropriate handles
         let cached_albedo_maps = cached_albedo_maps
             .into_iter()
-            .map(|(i, map)|
-                (i, context.albedo_maps.insert(map))
-            )
+            .map(|(i, map)| (i, context.albedo_maps.insert(map)))
             .collect::<AHashMap<usize, Handle<AlbedoMap>>>();
         let cached_normal_maps = cached_normal_maps
             .into_iter()
-            .map(|(i, map)|
-                (i, context.normal_maps.insert(map))
-            )
+            .map(|(i, map)| (i, context.normal_maps.insert(map)))
             .collect::<AHashMap<usize, Handle<NormalMap>>>();
         let cached_mask_maps = cached_mask_maps
             .into_iter()
-            .map(|(i, map)|
-                (i, context.mask_maps.insert(map))
-            )
+            .map(|(i, map)| (i, context.mask_maps.insert(map)))
             .collect::<AHashMap<(Option<usize>, Option<usize>), Handle<MaskMap>>>();
 
         // Map PBR materials (map textures and their samplers as well)
@@ -396,7 +383,10 @@ impl Asset for GltfScene {
                 // Get the handles NOW!!!
                 let albedo_map = albedo_map.map(|x| cached_albedo_maps[&x.index.value()].clone());
                 let normal_map = normal_map.map(|x| cached_normal_maps[&x.index.value()].clone());
-                let mask = (metallic_roughness_map.map(|x| x.index.value()), occlusion_map.map(|x| x.index.value()));
+                let mask = (
+                    metallic_roughness_map.map(|x| x.index.value()),
+                    occlusion_map.map(|x| x.index.value()),
+                );
                 let mask_map = cached_mask_maps.get(&mask).cloned();
 
                 PhysicallyBasedMaterial {
@@ -442,51 +432,49 @@ impl Asset for GltfScene {
 
                     // Create a new mesh if the accessors aren't cached
                     // TODO: Implement multi-buffer per allocation support to optimize this
-                    cached_meshes
-                        .entry(key)
-                        .or_insert_with(|| {
-                            // Create buffers and AABB
-                            let (positions, aabb) = create_positions_vec(&mapped_accessors[key.0]);
-                            let normals = key
-                                .1
-                                .map(|index| create_normals_vec(&mapped_accessors[index]));
-                            let mut tangents = key
-                                .2
-                                .map(|index| create_tangents_vec(&mapped_accessors[index]));
-                            let tex_coords = key
-                                .3
-                                .map(|index| create_tex_coords_vec(&mapped_accessors[index]));
-                            let triangles = create_triangles_vec(&mapped_accessors[key.4]);
+                    cached_meshes.entry(key).or_insert_with(|| {
+                        // Create buffers and AABB
+                        let (positions, aabb) = create_positions_vec(&mapped_accessors[key.0]);
+                        let normals = key
+                            .1
+                            .map(|index| create_normals_vec(&mapped_accessors[index]));
+                        let mut tangents = key
+                            .2
+                            .map(|index| create_tangents_vec(&mapped_accessors[index]));
+                        let tex_coords = key
+                            .3
+                            .map(|index| create_tex_coords_vec(&mapped_accessors[index]));
+                        let triangles = create_triangles_vec(&mapped_accessors[key.4]);
 
-                            // Optionally generate the tangents
-                            if let (Some(normals), Some(tex_coords)) =
-                                (normals.as_ref(), tex_coords.as_ref())
-                            {
-                                tangents = Some(
-                                    super::compute_tangents(
-                                        &positions, normals, tex_coords, &triangles,
-                                    )
-                                    .unwrap(),
-                                );
-                            }
+                        // Optionally generate the tangents
+                        if let (Some(normals), Some(tex_coords)) =
+                            (normals.as_ref(), tex_coords.as_ref())
+                        {
+                            tangents = Some(
+                                super::compute_tangents(
+                                    &positions, normals, tex_coords, &triangles,
+                                )
+                                .unwrap(),
+                            );
+                        }
 
-                            // Create a new mesh for the accessors used
-                            let mut mesh = Mesh::from_slices(
-                                &graphics.clone(),
-                                BufferMode::Dynamic,
-                                BufferUsage::empty(),
-                                Some(&positions),
-                                normals.as_deref(),
-                                tangents.as_deref(),
-                                tex_coords.as_deref(),
-                                &triangles,
-                            )
-                            .unwrap();
+                        // Create a new mesh for the accessors used
+                        let mut mesh = Mesh::from_slices(
+                            &graphics.clone(),
+                            BufferMode::Dynamic,
+                            BufferUsage::empty(),
+                            Some(&positions),
+                            normals.as_deref(),
+                            tangents.as_deref(),
+                            tex_coords.as_deref(),
+                            &triangles,
+                        )
+                        .unwrap();
 
-                            // Either disable or enable the AABB
-                            mesh.set_aabb(aabb);
-                            mesh
-                        });
+                        // Either disable or enable the AABB
+                        mesh.set_aabb(aabb);
+                        mesh
+                    });
                     meshes.push(key);
                 }
 
@@ -499,9 +487,14 @@ impl Asset for GltfScene {
             .into_iter()
             .map(|(id, mesh)| (id, context.meshes.insert(mesh)))
             .collect::<AHashMap<_, _>>();
-        let mapped_meshes = mapped_meshes.into_iter().map(|vec| {
-            vec.into_iter().map(|id| cached_meshes[&id].clone()).collect::<Vec<_>>()
-        }).collect::<Vec<_>>();
+        let mapped_meshes = mapped_meshes
+            .into_iter()
+            .map(|vec| {
+                vec.into_iter()
+                    .map(|id| cached_meshes[&id].clone())
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>();
 
         // Get the scene that we will load
         let scene = settings
@@ -583,7 +576,7 @@ impl Asset for GltfScene {
                     id: context.pipelines.get::<PhysicallyBasedMaterial>().unwrap(),
                 };
 
-                // TODO: Handle hierarchy PLEASE 
+                // TODO: Handle hierarchy PLEASE
                 entities.push((
                     position,
                     rotation,
@@ -613,26 +606,24 @@ fn create_positions_vec(value: Value) -> (Vec<vek::Vec4<f32>>, Option<math::Aabb
     let data: &[vek::Vec3<f32>] = bytemuck::cast_slice(bytes);
 
     // Create the positions vector
-    let vec = data.into_iter()
+    let vec = data
+        .into_iter()
         .map(|vec3| vec3.with_w(0.0))
         .collect::<Vec<vek::Vec4<f32>>>();
 
     // Create the AABB using the position min and max given by the JSON
     let aabb: Option<math::Aabb<f32>> = if let (Some(min), Some(max)) = (min, max) {
         match (min, max) {
-            (gltf::json::Value::Array(min),
-            gltf::json::Value::Array(max)) => {
+            (gltf::json::Value::Array(min), gltf::json::Value::Array(max)) => {
                 assert_eq!(min.len(), 3);
                 assert_eq!(max.len(), 3);
 
                 fn deserialize_vec3_array(vec: &Vec<gltf::json::Value>) -> vek::Vec3<f32> {
                     let slice: &[gltf::json::Value; 3] = vec.as_slice().try_into().unwrap();
-                    
-                    let slice = slice.clone().map(|value| {
-                        match value {
-                            gltf::json::Value::Number(number) => number.as_f64().unwrap() as f32,
-                            _ => panic!()
-                        }
+
+                    let slice = slice.clone().map(|value| match value {
+                        gltf::json::Value::Number(number) => number.as_f64().unwrap() as f32,
+                        _ => panic!(),
                     });
 
                     vek::Vec3::from_slice(&slice)
@@ -641,12 +632,9 @@ fn create_positions_vec(value: Value) -> (Vec<vek::Vec4<f32>>, Option<math::Aabb
                 let min = deserialize_vec3_array(min);
                 let max = deserialize_vec3_array(max);
 
-                Some(math::Aabb::<f32> {
-                    min,
-                    max,
-                })
-            },
-            _ => None
+                Some(math::Aabb::<f32> { min, max })
+            }
+            _ => None,
         }
     } else {
         None

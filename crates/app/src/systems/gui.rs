@@ -311,7 +311,10 @@ fn update(world: &mut World) {
             let pending_readback = scene
                 .query::<&Chunk>()
                 .into_iter()
-                .filter(|c| matches!(c.state(), ChunkState::PendingReadbackStart) | matches!(c.state(), ChunkState::PendingReadbackData))
+                .filter(|c| {
+                    matches!(c.state(), ChunkState::PendingReadbackStart)
+                        | matches!(c.state(), ChunkState::PendingReadbackData)
+                })
                 .count();
             let removal = scene
                 .query::<&Chunk>()
@@ -333,184 +336,219 @@ fn update(world: &mut World) {
         let mut _terrain = terrain;
         let terrain = &mut *_terrain;
 
-        egui::Window::new("Terrain Memory").frame(frame).default_open(false).show(&gui, |ui| {
-            let settings = &mut terrain.settings;
-            let memory = &mut terrain.memory;
+        egui::Window::new("Terrain Memory")
+            .frame(frame)
+            .default_open(false)
+            .show(&gui, |ui| {
+                let settings = &mut terrain.settings;
+                let memory = &mut terrain.memory;
 
-            let allocs = settings.allocation_count();
-            let mut bitsets = vec![BitSet::<usize>::new(); allocs];
-            let chunks = scene.query::<&Chunk>();
+                let allocs = settings.allocation_count();
+                let mut bitsets = vec![BitSet::<usize>::new(); allocs];
+                let chunks = scene.query::<&Chunk>();
 
-            for chunk in chunks {
-                if let Some(vek::Vec2 { x, y }) = chunk.ranges() {
-                    let bit_set = &mut bitsets[chunk.allocation()];
-                    for i in 0..(y-x) {
-                        bit_set.set(i as usize + x as usize);
+                for chunk in chunks {
+                    if let Some(vek::Vec2 { x, y }) = chunk.ranges() {
+                        let bit_set = &mut bitsets[chunk.allocation()];
+                        for i in 0..(y - x) {
+                            bit_set.set(i as usize + x as usize);
+                        }
                     }
                 }
-            }
 
-            let allocations = memory.sub_allocation_chunk_indices.iter().map(|buffer| {
-                let mut dst = vec![0u32; buffer.len()];
-                buffer.read(&mut dst, 0).unwrap();
-                dst
-            }).collect::<Vec<_>>();
+                let allocations = memory
+                    .sub_allocation_chunk_indices
+                    .iter()
+                    .map(|buffer| {
+                        let mut dst = vec![0u32; buffer.len()];
+                        buffer.read(&mut dst, 0).unwrap();
+                        dst
+                    })
+                    .collect::<Vec<_>>();
 
-            ui.collapsing("CPU representation of GPU memory", |ui| {
-                egui::Grid::new("allocations")
-                    .min_col_width(0f32)
-                    .max_col_width(400f32)
-                    .striped(true)
-                    .show(ui, |ui| {
-                        
-                    
-                        let sub_allocation = settings.sub_allocation_count(); 
-                    
-                        for allocation in 0..allocs {
-                            ui.horizontal(|ui| {
-                                ui.style_mut().spacing.item_spacing.x = 0.0;
-                            
-                                for x in 0..128 {
-                                    let mut color = 0.0f32;
-                                    let div = sub_allocation / 128;
-                                    for sub in 0..(sub_allocation / 128) {
-                                        color += if bitsets[allocation].get(sub + x * div) { 1.0 } else { 0.0 };
-                                    }
-                                
-                                    let color = egui::Color32::from_gray(((color / div as f32) * 255.0) as u8);
-                                    egui::Button::new("").small().rounding(0.0).fill(color).ui(ui);
-                                }
-                            });
-                            ui.end_row();
-                        }
-                    });
-            });
-            
-                    
-            ui.collapsing("Actual GPU memory", |ui| {
-                egui::Grid::new("allocations")
-                    .min_col_width(0f32)
-                    .max_col_width(400f32)
-                    .striped(true)
-                    .show(ui, |ui| {
-                        let allocs = settings.allocation_count();
-                        let sub_allocation = settings.sub_allocation_count(); 
-                
-                    
+                ui.collapsing("CPU representation of GPU memory", |ui| {
+                    egui::Grid::new("allocations")
+                        .min_col_width(0f32)
+                        .max_col_width(400f32)
+                        .striped(true)
+                        .show(ui, |ui| {
+                            let sub_allocation = settings.sub_allocation_count();
 
-                        for allocation in 0..allocs {
-                            ui.horizontal(|ui| {
-                                ui.style_mut().spacing.item_spacing.x = 0.0;                           
-                            
-                                for x in 0..128 {
-                                    let mut color = 0.0f32;
-                                    let div = sub_allocation / 128;
-                                    for sub in 0..(sub_allocation / 128) {
-                                        color += if allocations[allocation][sub + x * div] != u32::MAX { 1.0 } else { 0.0 };
-                                    }
-                                
-                                    let color = egui::Color32::from_gray(((color / div as f32) * 255.0) as u8);
-                                    egui::Button::new("").small().rounding(0.0).fill(color).ui(ui);
-                                }
-                                ui.end_row();
-                            });
-                            ui.end_row();
-                        }
-                    });
-            });
+                            for allocation in 0..allocs {
+                                ui.horizontal(|ui| {
+                                    ui.style_mut().spacing.item_spacing.x = 0.0;
 
-            ui.collapsing("Error Difference (CPU, GPU)", |ui| {
-                egui::Grid::new("allocations")
-                    .min_col_width(0f32)
-                    .max_col_width(400f32)
-                    .striped(true)
-                    .show(ui, |ui| {
-                        let allocs = settings.allocation_count();
-                        let sub_allocation = settings.sub_allocation_count(); 
-                
-                    
-
-                        for allocation in 0..allocs {
-                            ui.horizontal(|ui| {
-                                ui.style_mut().spacing.item_spacing.x = 0.0;                           
-                            
-                                for x in 0..128 {
-                                    let mut color = 0.0f32;
-                                    let div = sub_allocation / 128;
-                                    for sub in 0..(sub_allocation / 128) {
-                                        let gpu = allocations[allocation][sub + x * div] != u32::MAX;
-                                        let cpu = bitsets[allocation].get(sub + x * div);
-                                        color += if gpu ^ cpu { 1.0 } else { 0.0 };
-                                    }
-                                
-                                    let color = egui::Color32::from_rgb(((color / div as f32) * 255.0) as u8, 0, 0);
-                                    egui::Button::new("").small().rounding(0.0).fill(color).ui(ui);
-                                }
-                                ui.end_row();
-                            });
-                            ui.end_row();
-                        }
-                    });
-            });
-
-            ui.collapsing("Alloc Reason (GPU)", |ui| {
-                ui.label("Green = Vertices");
-                ui.label("Red = Triangles");
-
-                egui::Grid::new("reason")
-                    .min_col_width(0f32)
-                    .max_col_width(400f32)
-                    .striped(true)
-                    .show(ui, |ui| {
-                        let allocs = settings.allocation_count();
-                        let sub_allocation = settings.sub_allocation_count(); 
-                
-                    
-
-                        for allocation in 0..allocs {
-                            ui.horizontal(|ui| {
-                                ui.style_mut().spacing.item_spacing.x = 0.0;                           
-                            
-                                for x in 0..128 {
-                                    let mut color = 0.0f32;
-                                    let div = sub_allocation / 128;
-                                    let mut c = 0;
-                                    for sub in 0..(sub_allocation / 128) {
-                                        let reason = allocations[allocation][sub + x * div];
-                                        
-                                        if reason == 1 {
-                                            color -= 1.0;
-                                            c += 1;
-                                        } else if reason == 2 {
-                                            color += 1.0;
-                                            c += 1;
+                                    for x in 0..128 {
+                                        let mut color = 0.0f32;
+                                        let div = sub_allocation / 128;
+                                        for sub in 0..(sub_allocation / 128) {
+                                            color += if bitsets[allocation].get(sub + x * div) {
+                                                1.0
+                                            } else {
+                                                0.0
+                                            };
                                         }
-                                    }
-                                    
-                                    let color = if c > 0 {
-                                        let mix = (color / c as f32) * 0.5 + 0.5;
-                                        let red = vek::Rgba::red();
-                                        let green = vek::Rgba::green();
-                                        let color = vek::Rgba::<f32>::lerp(red, green, mix);
-                                        let color = color.map(|x| (x * 255.0) as u8);
-                                        egui::Color32::from_rgb(color.r, color.g, color.b)
-                                    } else {
-                                        egui::Color32::WHITE
-                                    };
 
-                                    egui::Button::new("").small().rounding(0.0).fill(color).ui(ui);
-                                }
+                                        let color = egui::Color32::from_gray(
+                                            ((color / div as f32) * 255.0) as u8,
+                                        );
+                                        egui::Button::new("")
+                                            .small()
+                                            .rounding(0.0)
+                                            .fill(color)
+                                            .ui(ui);
+                                    }
+                                });
                                 ui.end_row();
-                            });
-                            ui.end_row();
-                        }
-                    });
+                            }
+                        });
+                });
+
+                ui.collapsing("Actual GPU memory", |ui| {
+                    egui::Grid::new("allocations")
+                        .min_col_width(0f32)
+                        .max_col_width(400f32)
+                        .striped(true)
+                        .show(ui, |ui| {
+                            let allocs = settings.allocation_count();
+                            let sub_allocation = settings.sub_allocation_count();
+
+                            for allocation in 0..allocs {
+                                ui.horizontal(|ui| {
+                                    ui.style_mut().spacing.item_spacing.x = 0.0;
+
+                                    for x in 0..128 {
+                                        let mut color = 0.0f32;
+                                        let div = sub_allocation / 128;
+                                        for sub in 0..(sub_allocation / 128) {
+                                            color += if allocations[allocation][sub + x * div]
+                                                != u32::MAX
+                                            {
+                                                1.0
+                                            } else {
+                                                0.0
+                                            };
+                                        }
+
+                                        let color = egui::Color32::from_gray(
+                                            ((color / div as f32) * 255.0) as u8,
+                                        );
+                                        egui::Button::new("")
+                                            .small()
+                                            .rounding(0.0)
+                                            .fill(color)
+                                            .ui(ui);
+                                    }
+                                    ui.end_row();
+                                });
+                                ui.end_row();
+                            }
+                        });
+                });
+
+                ui.collapsing("Error Difference (CPU, GPU)", |ui| {
+                    egui::Grid::new("allocations")
+                        .min_col_width(0f32)
+                        .max_col_width(400f32)
+                        .striped(true)
+                        .show(ui, |ui| {
+                            let allocs = settings.allocation_count();
+                            let sub_allocation = settings.sub_allocation_count();
+
+                            for allocation in 0..allocs {
+                                ui.horizontal(|ui| {
+                                    ui.style_mut().spacing.item_spacing.x = 0.0;
+
+                                    for x in 0..128 {
+                                        let mut color = 0.0f32;
+                                        let div = sub_allocation / 128;
+                                        for sub in 0..(sub_allocation / 128) {
+                                            let gpu =
+                                                allocations[allocation][sub + x * div] != u32::MAX;
+                                            let cpu = bitsets[allocation].get(sub + x * div);
+                                            color += if gpu ^ cpu { 1.0 } else { 0.0 };
+                                        }
+
+                                        let color = egui::Color32::from_rgb(
+                                            ((color / div as f32) * 255.0) as u8,
+                                            0,
+                                            0,
+                                        );
+                                        egui::Button::new("")
+                                            .small()
+                                            .rounding(0.0)
+                                            .fill(color)
+                                            .ui(ui);
+                                    }
+                                    ui.end_row();
+                                });
+                                ui.end_row();
+                            }
+                        });
+                });
+
+                ui.collapsing("Alloc Reason (GPU)", |ui| {
+                    ui.label("Green = Vertices");
+                    ui.label("Red = Triangles");
+
+                    egui::Grid::new("reason")
+                        .min_col_width(0f32)
+                        .max_col_width(400f32)
+                        .striped(true)
+                        .show(ui, |ui| {
+                            let allocs = settings.allocation_count();
+                            let sub_allocation = settings.sub_allocation_count();
+
+                            for allocation in 0..allocs {
+                                ui.horizontal(|ui| {
+                                    ui.style_mut().spacing.item_spacing.x = 0.0;
+
+                                    for x in 0..128 {
+                                        let mut color = 0.0f32;
+                                        let div = sub_allocation / 128;
+                                        let mut c = 0;
+                                        for sub in 0..(sub_allocation / 128) {
+                                            let reason = allocations[allocation][sub + x * div];
+
+                                            if reason == 1 {
+                                                color -= 1.0;
+                                                c += 1;
+                                            } else if reason == 2 {
+                                                color += 1.0;
+                                                c += 1;
+                                            }
+                                        }
+
+                                        let color = if c > 0 {
+                                            let mix = (color / c as f32) * 0.5 + 0.5;
+                                            let red = vek::Rgba::red();
+                                            let green = vek::Rgba::green();
+                                            let color = vek::Rgba::<f32>::lerp(red, green, mix);
+                                            let color = color.map(|x| (x * 255.0) as u8);
+                                            egui::Color32::from_rgb(color.r, color.g, color.b)
+                                        } else {
+                                            egui::Color32::WHITE
+                                        };
+
+                                        egui::Button::new("")
+                                            .small()
+                                            .rounding(0.0)
+                                            .fill(color)
+                                            .ui(ui);
+                                    }
+                                    ui.end_row();
+                                });
+                                ui.end_row();
+                            }
+                        });
+                });
             });
-        });
     }
 
     // Camera controller settings
-    if let Some((controller, rotation, position, velocity)) = scene.find_mut::<(&mut CameraController, &Rotation, &Position, &Velocity)>() {
+    if let Some((controller, rotation, position, velocity)) =
+        scene.find_mut::<(&mut CameraController, &Rotation, &Position, &Velocity)>()
+    {
         egui::Window::new("Camera Controller")
             .frame(frame)
             .show(&gui, |ui| {
@@ -581,65 +619,98 @@ fn update(world: &mut World) {
     // Forward renderer settings
     if let Ok(renderer) = world.get_mut::<ForwardRenderer>() {
         egui::Window::new("Forward Rendering")
-        .frame(frame)
-        .show(&gui, |ui| {
-            ui.label(format!("Unique material count: {}", renderer.drawn_unique_material_count));
-            ui.label(format!("Drawn material instances: {}", renderer.material_instances_count));
-            ui.label(format!("Drawn sub-surfaces: {}", renderer.rendered_sub_surfaces));
-            ui.label(format!("Vertices draw count: {}k", renderer.rendered_direct_vertices_drawn / 1000));
-            ui.label(format!("Triangles draw count: {}k", renderer.rendered_direct_triangles_drawn / 1000));
-        });
+            .frame(frame)
+            .show(&gui, |ui| {
+                ui.label(format!(
+                    "Unique material count: {}",
+                    renderer.drawn_unique_material_count
+                ));
+                ui.label(format!(
+                    "Drawn material instances: {}",
+                    renderer.material_instances_count
+                ));
+                ui.label(format!(
+                    "Drawn sub-surfaces: {}",
+                    renderer.rendered_sub_surfaces
+                ));
+                ui.label(format!(
+                    "Vertices draw count: {}k",
+                    renderer.rendered_direct_vertices_drawn / 1000
+                ));
+                ui.label(format!(
+                    "Triangles draw count: {}k",
+                    renderer.rendered_direct_triangles_drawn / 1000
+                ));
+            });
     }
 
     // Compositor settings
     if let Ok(mut compositor) = world.get_mut::<Compositor>() {
         egui::Window::new("Compositor - Post processing")
-        .frame(frame)
-        .show(&gui, |ui| {
-            ui.horizontal(|ui| {
-                ui.label("Exposure: ");
-                ui.add(egui::Slider::new(&mut compositor.post_process.exposure, 0.001..=5.0));
-            });
-
-            ui.horizontal(|ui| {
-                ui.label("Gamma: ");
-                ui.add(egui::Slider::new(&mut compositor.post_process.gamma, 0.01..=3.0));
-            });
-
-            ui.horizontal(|ui| {
-                ui.label("Vignette Strength: ");
-                ui.add(egui::Slider::new(&mut compositor.post_process.vignette_strength, 0.0..=1.0));
-            });
-
-            ui.horizontal(|ui| {
-                ui.label("Vignette Size: ");
-                ui.add(egui::DragValue::new(&mut compositor.post_process.vignette_size));
-            });
-
-            let mut selected = Tonemapping::from_index(compositor.post_process.tonemapping_mode);
-        
-            ui.horizontal(|ui| {
-                ui.label("Tonemapping Mode: ");
-            
-                egui::ComboBox::from_label("")
-                    .selected_text(format!("{:?}", selected))
-                    .show_ui(ui, |ui| {
-                        ui.selectable_value(&mut selected, Tonemapping::Reinhard, "Reinhard");
-                        ui.selectable_value(&mut selected, Tonemapping::ReinhardJodie, "ReinhardJodie");
-                        ui.selectable_value(&mut selected, Tonemapping::ACES, "ACES");
-                        ui.selectable_value(&mut selected, Tonemapping::Clamp, "Clamp");
+            .frame(frame)
+            .show(&gui, |ui| {
+                ui.horizontal(|ui| {
+                    ui.label("Exposure: ");
+                    ui.add(egui::Slider::new(
+                        &mut compositor.post_process.exposure,
+                        0.001..=5.0,
+                    ));
                 });
-            });
 
-            ui.horizontal(|ui| {
-                ui.label("Tonemapping Strength: ");
-                ui.add(egui::Slider::new(&mut compositor.post_process.tonemapping_strength, 0.0..=1.0));
-            });
+                ui.horizontal(|ui| {
+                    ui.label("Gamma: ");
+                    ui.add(egui::Slider::new(
+                        &mut compositor.post_process.gamma,
+                        0.01..=3.0,
+                    ));
+                });
 
-            compositor.post_process.tonemapping_mode = selected.into_index();
-        });
+                ui.horizontal(|ui| {
+                    ui.label("Vignette Strength: ");
+                    ui.add(egui::Slider::new(
+                        &mut compositor.post_process.vignette_strength,
+                        0.0..=1.0,
+                    ));
+                });
+
+                ui.horizontal(|ui| {
+                    ui.label("Vignette Size: ");
+                    ui.add(egui::DragValue::new(
+                        &mut compositor.post_process.vignette_size,
+                    ));
+                });
+
+                let mut selected =
+                    Tonemapping::from_index(compositor.post_process.tonemapping_mode);
+
+                ui.horizontal(|ui| {
+                    ui.label("Tonemapping Mode: ");
+
+                    egui::ComboBox::from_label("")
+                        .selected_text(format!("{:?}", selected))
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(&mut selected, Tonemapping::Reinhard, "Reinhard");
+                            ui.selectable_value(
+                                &mut selected,
+                                Tonemapping::ReinhardJodie,
+                                "ReinhardJodie",
+                            );
+                            ui.selectable_value(&mut selected, Tonemapping::ACES, "ACES");
+                            ui.selectable_value(&mut selected, Tonemapping::Clamp, "Clamp");
+                        });
+                });
+
+                ui.horizontal(|ui| {
+                    ui.label("Tonemapping Strength: ");
+                    ui.add(egui::Slider::new(
+                        &mut compositor.post_process.tonemapping_strength,
+                        0.0..=1.0,
+                    ));
+                });
+
+                compositor.post_process.tonemapping_mode = selected.into_index();
+            });
     }
-
 }
 
 // Statistics system

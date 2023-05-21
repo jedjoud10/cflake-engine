@@ -134,7 +134,6 @@ pub(crate) const SAMPLED_TEXTURE_STRINGIFIED_NAME: &'static str = "Sampled Textu
 pub(crate) const STORAGE_TEXTURE_STRINGIFIED_NAME: &'static str = "Storage Texture";
 pub(crate) const SAMPLER_STRINGIFIED_NAME: &'static str = "Sampler";
 
-
 // Convert an bind resource type enum into a variant name
 pub(crate) fn stringify_bind_resource_type(val: &BindResourceType) -> &'static str {
     match val {
@@ -406,13 +405,15 @@ pub(super) fn create_pipeline_layout(
         let first = &consts[0];
         assert!(first.exec_mode == spirv::ExecutionMode::LocalSize);
         assert!(first.operands.len() == 3);
-        let mul = (0..3).into_iter().map(|i| first.operands[i].value.to_u32()).product::<u32>();
+        let mul = (0..3)
+            .into_iter()
+            .map(|i| first.operands[i].value.to_u32())
+            .product::<u32>();
 
         if mul >= limit {
-            return Err(ShaderReflectionError::ComputeShaderLocalWorkgroupSizeLimit {
-                shader: mul,
-                limit
-            })
+            return Err(
+                ShaderReflectionError::ComputeShaderLocalWorkgroupSizeLimit { shader: mul, limit },
+            );
         }
     }
 
@@ -475,9 +476,9 @@ pub(super) fn create_pipeline_layout(
         };
 
         // Return error if not defined
-        if !valid  {
+        if !valid {
             return Err(ShaderReflectionError::PushConstantValidation(
-                PushConstantValidationError::PushConstantNotDefinedOrDiffSized
+                PushConstantValidationError::PushConstantNotDefinedOrDiffSized,
             ));
         }
     }

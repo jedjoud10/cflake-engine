@@ -56,7 +56,7 @@ pub struct VertexConfig {
 pub struct VertexInputInfo {
     info: VertexInfo,
     step_mode: VertexStepMode,
-    shader_location: u32
+    shader_location: u32,
 }
 
 impl VertexInputInfo {
@@ -91,7 +91,7 @@ pub trait VertexInput<V: Vertex> {
         VertexInputInfo {
             info: Self::vertex_info(),
             step_mode: Self::step_mode(),
-            shader_location
+            shader_location,
         }
     }
 }

@@ -187,7 +187,7 @@ impl Assets {
             owned.clone()
         } else {
             let path = owned.as_os_str().to_str().unwrap().to_owned();
-            return Err(AssetLoadError::CachedNotFound(path))
+            return Err(AssetLoadError::CachedNotFound(path));
         };
 
         // Load the asset dynamically

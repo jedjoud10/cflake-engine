@@ -1,4 +1,6 @@
-use crate::{ChunkManager, MemoryManager, MeshGenerator, TerrainMaterial, VoxelGenerator, ChunkCuller};
+use crate::{
+    ChunkCuller, ChunkManager, MemoryManager, MeshGenerator, TerrainMaterial, VoxelGenerator,
+};
 use assets::{Asset, Assets};
 use graphics::{
     combine_into_layered, ActiveComputeDispatcher, BindGroup, Compiler, Graphics, PushConstants,
@@ -21,7 +23,7 @@ pub struct TerrainSettings {
 
     // Octree params
     pub(crate) max_depth: u32,
-    pub(crate) lod_multiplier: f32, 
+    pub(crate) lod_multiplier: f32,
 
     // Memory managing settings
     pub(crate) allocation_count: usize,
