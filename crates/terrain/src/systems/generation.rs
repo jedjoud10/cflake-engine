@@ -25,9 +25,6 @@ fn update(world: &mut World) {
     // Get the required resources from the world
     let terrain = &mut *_terrain;
     let mut scene = world.get_mut::<Scene>().unwrap();
-    let mut indirects = world
-        .get_mut::<Storage<DrawIndexedIndirectBuffer>>()
-        .unwrap();
     let mut positions = world
         .get_mut::<Storage<AttributeBuffer<attributes::Position>>>()
         .unwrap();
@@ -114,7 +111,7 @@ fn update(world: &mut World) {
     // Update alloc-local position buffer
     let packed = (*position).with_w(**scale);
     let buffer = &mut memory.generated_position_scaling_buffers[chunk.allocation];
-    buffer.write(&[packed], chunk.local_index).unwrap();
+    buffer.write(&[packed], chunk.local_index).unwrap(); 
 
     // Create a compute pass for ALL compute terrain shaders
     let mut pass = ComputePass::begin(&graphics);
@@ -123,6 +120,9 @@ fn update(world: &mut World) {
     // Needed since SN only runs for a volume 2 units smaller than a perfect cube
     let node = chunk.node.unwrap();
     let factor = (node.size() as f32) / (settings.size as f32 - 4.0);
+
+    // Check if the node has neighbors with different sizes in each direction (bitfield)
+    let skirts_directions = crate::find_skirts_direction(node, &manager.octree);
 
     // Set the push constants
     active
@@ -186,10 +186,9 @@ fn update(world: &mut World) {
         })
         .unwrap();
     active.set_push_constants(|pc| {
-        let bitfield = 0u32;
-        let bytes = GpuPod::into_bytes(&bitfield);
+        // Use the skirts direction bitfield to limit the number of skirts
+        let bytes = GpuPod::into_bytes(&skirts_directions);
         pc.push(bytes, 0).unwrap();
-
         
         // Calculate skirts threshold floating point value
         let _skirts_threshold = (settings.max_depth - node.depth()) as f32 / (settings.max_depth as f32);

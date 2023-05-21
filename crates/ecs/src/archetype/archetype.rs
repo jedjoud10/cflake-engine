@@ -1,7 +1,7 @@
 use crate::{
     entity::{Entity, EntityLinkings},
     mask, ArchetypeSet, Bundle, Component, EntitySet, Mask, MaskHashMap, RemovedComponents,
-    StateColumn, UntypedColumn,
+    StateColumn, UntypedColumn, PrefabBundle,
 };
 
 // The table that will be stored internally
@@ -46,6 +46,30 @@ impl Archetype {
         }
     }
 
+    pub(crate) fn instantiate_prefab(
+        &mut self,
+        entities: &mut EntitySet,
+        prefab: &Box<dyn PrefabBundle>,
+    ) -> Entity {
+        let index = self.entities.len();
+        
+        let linkings = EntityLinkings {
+            mask: self.mask,
+            index,
+        };
+        let entity = entities.insert(linkings);
+        self.entities.push(entity);
+
+        prefab.prefabify(self).unwrap();
+        
+        log::debug!(
+            "Extended archetype {} with instantiated prefab",
+            self.mask,
+        );
+    
+        self.entities[index]
+    }
+
     // Add multiple entities into the archetype with their corresponding owned components
     // The layout mask for "B" must be equal to the layout mask that this archetype contains
     // This will also add the entities to the entity set
@@ -66,9 +90,7 @@ impl Archetype {
         let old_len = self.entities.len();
 
         // Add the components first (so we know how many entities we need to add)
-        let mut storages = B::prepare(self).unwrap();
-        let additional = B::extend_from_iter(&mut storages, iter);
-        drop(storages);
+        let additional = B::extend_from_iter(self, iter).unwrap();
 
         // Allocate the entities then add them as well
         for i in 0..additional {
@@ -344,9 +366,7 @@ pub(crate) fn add_bundle<B: Bundle>(
     }
 
     // Add the extra components to the archetype
-    let mut storages = B::prepare(target).unwrap();
-    B::extend_from_iter(&mut storages, [bundle]);
-    drop(storages);
+    B::extend_from_iter(target, [bundle]).unwrap();
 
     for (mask, current) in current.table.iter() {
         log::debug!("Current Mask: {:?}, len: {}", mask, current.len());

@@ -10,6 +10,12 @@ pub struct SubSurface<M: Material> {
     pub material: Handle<M>,
 }
 
+impl<M: Material> Clone for SubSurface<M> {
+    fn clone(&self) -> Self {
+        Self { mesh: self.mesh.clone(), material: self.material.clone() }
+    }
+}
+
 // A surface is a combination of multiple subsurfaces to create a whole "mesh cluster" that a material can render
 // A renderable entity can have multiple surfaces that each have their own different material type
 #[derive(Component)]
@@ -28,6 +34,20 @@ pub struct Surface<M: Material> {
 
     // Needed to force the user to initialize the material
     pub id: MaterialId<M>,
+}
+
+impl<M: Material> Clone for Surface<M> {
+    fn clone(&self) -> Self {
+        Self {
+            subsurfaces: self.subsurfaces.clone(),
+            visible: self.visible.clone(),
+            culled: self.culled.clone(),
+            shadow_caster: self.shadow_caster.clone(),
+            shadow_receiver: self.shadow_receiver.clone(),
+            shadow_culled: self.shadow_culled.clone(),
+            id: self.id.clone()
+        }
+    }
 }
 
 impl<M: Material> Surface<M> {

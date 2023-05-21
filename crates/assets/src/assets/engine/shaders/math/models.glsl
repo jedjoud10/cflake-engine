@@ -108,7 +108,7 @@ vec3 brdf(
 	// Calculate diffuse and specular
 	vec3 brdf = kd * (surface.diffuse / PI) + specular(surface.f0, surface.roughness, camera.view, light.backward, surface.normal, camera.half_view) * (1-shadowed);
 	vec3 lighting = vec3(max(dot(light.backward, surface.normal), 0.0)) * (1-shadowed);
-	lighting += 0.3 * surface.visibility + ambient * 0.2;
+	lighting += 0.1 * surface.visibility + ambient * 0.05;
 	// TODO: IBL
 
 	brdf = brdf * light.color * lighting;

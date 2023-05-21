@@ -1,18 +1,20 @@
+use ahash::AHashMap;
 use itertools::Itertools;
 use slotmap::SlotMap;
-use std::iter::once;
+use std::{iter::once, any::Any};
 use utils::Time;
 use world::{user, System, World};
 
 use crate::{
     entity::Entity, mask, Archetype, Bundle, Component, EntityLinkings, EntryMut, EntryRef, Mask,
-    MaskHashMap, QueryFilter, QueryLayoutMut, QueryLayoutRef, QueryMut, QueryRef, UntypedVec, Wrap,
+    MaskHashMap, QueryFilter, QueryLayoutMut, QueryLayoutRef, QueryMut, QueryRef, UntypedVec, Wrap, PrefabBundle,
 };
 
 // Convenience type aliases
 pub(crate) type EntitySet = SlotMap<Entity, EntityLinkings>;
 pub(crate) type ArchetypeSet = MaskHashMap<Archetype>;
 pub(crate) type RemovedComponents = MaskHashMap<Box<dyn UntypedVec>>;
+pub type PrefabId = &'static str;
 
 // The scene is what will contain the multiple ECS entities and archetypes
 pub struct Scene {
@@ -29,6 +31,9 @@ pub struct Scene {
     // These components get added here whenever we destroy entities or unlink components from them
     // Stored as Box<Vec<T>> where T: Component
     pub(crate) removed: RemovedComponents,
+
+    // These contain the boxed bundles that can be used for prefab generation
+    pub(crate) prefabs: AHashMap<PrefabId, (Box<dyn PrefabBundle>, Mask)>,
 }
 
 impl Default for Scene {
@@ -39,6 +44,7 @@ impl Default for Scene {
             entities: Default::default(),
             archetypes: ArchetypeSet::from_iter(once((Mask::zero(), empty))),
             removed: Default::default(),
+            prefabs: AHashMap::default(),
         }
     }
 }
@@ -146,6 +152,32 @@ impl Scene {
                     .as_mut_slice()
             })
             .unwrap_or(&mut [])
+    }
+
+    // Instantiate a prefab using it's prefab name and return a mutable entry
+    pub fn instantiate(&mut self, name: PrefabId) -> Option<EntryMut> {
+        let (boxed, mask) = self.prefabs.get(name)?;
+        
+        let archetype = self
+            .archetypes
+            .get_mut(mask)
+            .unwrap();
+
+        let entity = archetype.instantiate_prefab(&mut self.entities, boxed);
+        self.entry_mut(entity)
+    }
+
+    // Add a new bundle as a prefab so we can clone it multiple times
+    pub fn prefabify<B: Bundle + Clone>(&mut self, name: PrefabId, bundle: B) {
+        // Try to get the archetype, and create a default one if it does not exist
+        let mask = B::reduce(|a, b| a | b);
+        self
+            .archetypes
+            .entry(mask)
+            .or_insert_with(|| Archetype::from_bundle::<B>());
+
+        let boxed: Box<dyn PrefabBundle> = Box::new(bundle);
+        self.prefabs.insert(name, (boxed, mask));
     }
 
     // Check if an entity is stored within the scene

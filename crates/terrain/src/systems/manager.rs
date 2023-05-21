@@ -12,6 +12,7 @@ use graphics::{
 };
 use math::OctreeDelta;
 use rand::{Rng, seq::SliceRandom};
+use rayon::prelude::{ParallelBridge, ParallelIterator, IntoParallelIterator};
 use rendering::{IndirectMesh, Renderer, Surface, MultiDrawIndirectMesh, MultiDrawIndirectCountMesh};
 use utils::{Storage, Time};
 use world::{user, System, World};
@@ -206,21 +207,20 @@ fn update(world: &mut World) {
             // Add the entity to the internally stored entities
             let res = manager.entities.insert(*node, *entity);
             memory.visibility_bitsets[chunk.allocation].remove(chunk.local_index);
+
+            // Update generation priority for EACH chunk, even if the viewer did not move
+            chunk.generation_priority = (1.0 / viewer_position.distance(**position).max(1.0)) * 10.0;
+            chunk.generation_priority *= viewer_rotation
+                .forward()
+                .dot((**position - viewer_position).normalized())
+                * 5.0;
+                chunk.generation_priority = chunk.generation_priority.clamp(0.0f32, 1000.0f32);
+
+            // Update readback priority for each chunk *around* the user (needed for collisions)
+            chunk.readback_priority = 1.0 / viewer_position.distance(**position).max(1.0);
+
             assert!(res.is_none());
         }
-    }
-
-    for (chunk, position) in scene.query_mut::<(&mut Chunk, &Position)>() {
-        // Update generation priority for EACH chunk, even if the viewer did not move
-        chunk.generation_priority = (1.0 / viewer_position.distance(**position).max(1.0)) * 10.0;
-        chunk.generation_priority *= viewer_rotation
-            .forward()
-            .dot((**position - viewer_position).normalized())
-            * 5.0;
-            chunk.generation_priority = chunk.generation_priority.clamp(0.0f32, 1000.0f32);
-
-        // Update readback priority for each chunk *around* the user (needed for collisions)
-        chunk.readback_priority = 1.0 / viewer_position.distance(**position).max(1.0);
     }
 }
 

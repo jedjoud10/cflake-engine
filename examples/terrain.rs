@@ -49,17 +49,17 @@ fn init(world: &mut World) {
         false,
         4,
         1024,
-        6,
+        7,
         Some(&[
-            TerrainSubMaterial {
-                diffuse: "user/textures/diffuse6.jpg".to_string(),
-                normal: "user/textures/normal6.jpg".to_string(),
-                mask: "user/textures/mask6.jpg".to_string(),
-            },
             TerrainSubMaterial {
                 diffuse: "user/textures/diffuse5.jpg".to_string(),
                 normal: "user/textures/normal5.jpg".to_string(),
                 mask: "user/textures/mask5.jpg".to_string(),
+            },
+            TerrainSubMaterial {
+                diffuse: "user/textures/diffuse1.jpg".to_string(),
+                normal: "user/textures/normal1.jpg".to_string(),
+                mask: "user/textures/mask1.jpg".to_string(),
             },
         ]),
     )

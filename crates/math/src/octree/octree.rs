@@ -30,6 +30,7 @@ pub enum OctreeHeuristic {
 impl OctreeHeuristic {
     // Check if we should split a node or not
     fn check(&self, target: &vek::Vec3<f32>, node: &Node) -> bool {
+
         match self {
             OctreeHeuristic::Spheric(radius) => {
                 crate::intersect::aabb_sphere(&node.aabb(), &crate::shapes::Sphere {
@@ -50,6 +51,18 @@ impl OctreeHeuristic {
         }
     }
 }
+
+// Position offsets for children nodes
+pub const CHILDREN_OFFSETS: [vek::Vec3<u32>; 8] = [
+    vek::Vec3::new(0, 0, 0),
+    vek::Vec3::new(1, 0, 0),
+    vek::Vec3::new(1, 0, 1),
+    vek::Vec3::new(0, 0, 1),
+    vek::Vec3::new(0, 1, 0),
+    vek::Vec3::new(1, 1, 0),
+    vek::Vec3::new(1, 1, 1),
+    vek::Vec3::new(0, 1, 1),
+];
 
 impl Octree {
     // Create an octree with a specified LOD size and node size
@@ -96,18 +109,6 @@ impl Octree {
 
             // Add the child nodes to check (this node became a parent node)
             let children = if split && node.depth < self.max_depth {
-                // Position offsets for children nodes
-                const OFFSETS: [vek::Vec3<u32>; 8] = [
-                    vek::Vec3::new(0, 0, 0),
-                    vek::Vec3::new(1, 0, 0),
-                    vek::Vec3::new(1, 0, 1),
-                    vek::Vec3::new(0, 0, 1),
-                    vek::Vec3::new(0, 1, 0),
-                    vek::Vec3::new(1, 1, 0),
-                    vek::Vec3::new(1, 1, 1),
-                    vek::Vec3::new(0, 1, 1),
-                ];
-
                 // Add the children to the nodes that we must process
                 checking.extend(base..(base + 8));
 
@@ -118,7 +119,7 @@ impl Octree {
                 let depth = node.depth;
 
                 let children = (0..8usize).into_iter().map(move |children| {
-                    let position = (OFFSETS[children] * half).as_::<i32>() + position;
+                    let position = (CHILDREN_OFFSETS[children] * half).as_::<i32>() + position;
                 
                     Node {
                         parent: index,
@@ -187,18 +188,12 @@ impl Octree {
                 if recurse {
                     let base = base.get();
                     for x in 0..8 {
-                        let child = &self.nodes[x + base];
                         checking.push(x + base);
                     }    
                 }
             }
         }
     }
-
-    // Get the neighbors of a node in a specific direction
-    pub fn peek_neighbors(&self, index: usize) {
-        
-    } 
 
     // Get the size of the root node of the octree
     pub fn size(&self) -> u64 {

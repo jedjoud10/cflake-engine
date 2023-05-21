@@ -4,6 +4,7 @@ use crate::{Archetype, Bundle, Component, EntityLinkings, QueryLayoutRef, Scene}
 // Immutable entity entries allow the user to be able to read and get some data about a specific entity
 // This data can represent the archetype of the entity or even an immutable reference to a component
 pub struct EntryRef<'a> {
+    entity: Entity,
     archetype: &'a Archetype,
     linkings: EntityLinkings,
 }
@@ -17,7 +18,13 @@ impl<'a> EntryRef<'a> {
         Some(Self {
             archetype,
             linkings,
+            entity,
         })
+    }
+
+    // Get the entity handle
+    pub fn entity(&self) -> Entity {
+        self.entity
     }
 
     // Get the entity linkings of the current entity

@@ -77,14 +77,18 @@ fn init(world: &mut World) {
     let scale = Scale::uniform(25.0);
     scene.insert((surface, renderer, scale));
 
-    // ADD THE ENTITIES NOW!!
-    scene.extend_from_iter((0..(25)).map(|x| {
-        let renderer = Renderer::default();
-        let position = Position::at_xyz((x / 5) as f32 * 4.0, 1.0, (x % 5) as f32 * 4.0);
+    // Create a prefab that contains the renderer, customized surface, and default position
+    let renderer = Renderer::default();
+    let position = Position::default();
+    let surface = Surface::new(sphere.clone(), material.clone(), id.clone());
+    scene.prefabify("sphere", (renderer, position, surface));
 
-        let surface = Surface::new(sphere.clone(), material.clone(), id.clone());
-        (surface, renderer, position)
-    }));
+    // ADD THE ENTITIES NOW!!
+    for x in 0..25 {
+        let mut entry = scene.instantiate("sphere").unwrap();
+        let position = entry.get_mut::<Position>().unwrap();
+        *position = Position::at_xyz((x / 5) as f32 * 4.0, 1.0, (x % 5) as f32 * 4.0);
+    }
 
     // Create a movable camera
     scene.insert((

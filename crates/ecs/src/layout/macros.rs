@@ -9,14 +9,15 @@ use seq_macro::seq;
 macro_rules! tuple_impls {
     ( $( $name:ident )+, $max:tt ) => {
         impl<$($name: Component),+> Bundle for ($($name,)+) {
-            type Storages<'a> = ($((&'a mut Vec<$name>, &'a mut StateColumn)),+);
-
             fn reduce(mut lambda: impl FnMut(Mask, Mask) -> Mask) -> Mask {
                 let masks = [$(mask::<$name>()),+];
                 masks[..].into_iter().cloned().reduce(|a, b| lambda(a, b)).unwrap()
             }
 
-            fn prepare<'a>(archetype: &'a mut Archetype) -> Option<Self::Storages<'a>> {
+            fn extend_from_iter<'a>(
+                archetype: &'a mut Archetype,
+                iter: impl IntoIterator<Item = Self>
+            ) -> Option<usize> {
                 assert!(Self::is_valid());
                 seq!(N in 0..$max {
                     #[allow(non_snake_case)]
@@ -31,15 +32,10 @@ macro_rules! tuple_impls {
                     let states_C~N = unsafe { &mut *states_ptr_C~N };
                 });
 
-                Some(($((
+                let mut storages = ($((
                     paste! { [<components_ $name>] }, paste! { [<states_ $name>] }
-                )),+,))
-            }
+                )),+,);
 
-            fn extend_from_iter<'a>(
-                storages: &mut Self::Storages<'a>,
-                iter: impl IntoIterator<Item = Self>
-            ) -> usize {
                 let mut additional = 0;
 
                 seq!(N in 0..$max {
@@ -61,8 +57,7 @@ macro_rules! tuple_impls {
                     assert_eq!(column~N.0.len(), column~N.1.len());
                 });
 
-
-                additional
+                Some(additional)
             }
 
             fn default_vectors() -> MaskHashMap<Box<dyn UntypedVec>> {

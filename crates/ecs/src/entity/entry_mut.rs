@@ -31,6 +31,11 @@ impl<'a> EntryMut<'a> {
         })
     }
 
+    // Get the entity handle
+    pub fn entity(&self) -> Entity {
+        self.entity
+    }
+
     // Get the entity linkings of the current entity
     pub fn linkings(&self) -> EntityLinkings {
         self.linkings

@@ -9,15 +9,13 @@
 // Each voxel contains a "density". 
 // Density allows us to represent either full terrain or air, and everything in between
 // Main voxel function that will create the shape of the terrain
-// quality: Integer between 0-4, 4 being best quality and 0 being worse
-    float smooth_floor(float x) {
-        return x - (sin(2 * 3.1415 * x) / (2 * 3.1415));
-    }
+float smooth_floor(float x) {
+    return x - (sin(2 * 3.1415 * x) / (2 * 3.1415));
+}
 
 float voxel(vec3 position, float quality) {
-    float density = position.y + (1-fbmCellular(position * 0.002 * vec3(1, 0.1, 1), uint(8.0 * quality), 0.3, 2.1).x) * 440;
+    float density = smooth_floor(position.y / 100) * 100 + (1-fbmCellular(position * 0.002 * vec3(1, 0.1, 1), uint(8.0 * quality), 0.3, 2.1).x) * 440;
     return density; 
-
 }
 
 // Post-process voxel step that gets executed after we generate the main voxel texture
