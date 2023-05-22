@@ -22,8 +22,6 @@ pub(crate) struct Cached {
     pub(crate) samplers: DashMap<SamplerSettings, Arc<Sampler>>,
     pub(crate) bind_group_layouts: DashMap<BindGroupLayout, Arc<wgpu::BindGroupLayout>>,
     pub(crate) pipeline_layouts: DashMap<ReflectedShader, Arc<wgpu::PipelineLayout>>,
-
-    // TODO: Memory leak happening cause we don't remove the bindg groups when we delete textures/buffers
     pub(crate) bind_groups: DashMap<Vec<Id>, Arc<wgpu::BindGroup>>,
 }
 
@@ -152,7 +150,7 @@ impl Graphics {
     }
 
     // Called internally when we drop a resource to free it from the cached bind groups
-    pub(crate) fn drop_resource(&self, id: Id) {
+    pub(crate) fn drop_cached_bind_group_resource(&self, id: Id) {
         let mut keys_to_remove = Vec::<Vec<Id>>::default();
 
         for pair in self.0.cached.bind_groups.iter() {
@@ -163,6 +161,36 @@ impl Graphics {
 
         for keys in keys_to_remove {
             self.0.cached.bind_groups.remove(&keys);
+        }
+    }
+
+    // Called internally when we drop a render shader or compute shader pipeline layout (and it's corresponding shared bind group layouts)
+    // TODO: Should we even remove the bind group layouts in the first place??
+    pub(crate) fn drop_cached_pipeline_layout(&self, reflected: &ReflectedShader) {
+        let cached = &self.0.cached;
+
+        let mut remove_pipeline_layout = false;
+        if let Some(get) = self.0.cached.pipeline_layouts.get(&reflected) {
+            if Arc::strong_count(&get) == 1 {
+                remove_pipeline_layout = true;
+            }
+        }
+        
+        if remove_pipeline_layout {
+            let bind_group_layouts = reflected.bind_group_layouts.iter().filter_map(|x| x.as_ref());
+
+            for bind_group_layout in bind_group_layouts {
+                let remove_bind_group_layout = cached.bind_group_layouts
+                    .get(bind_group_layout)
+                    .map(|x| Arc::strong_count(x.value()) == 1)
+                    .unwrap_or_default();
+    
+                if remove_bind_group_layout {
+                    cached.bind_group_layouts.remove(bind_group_layout).unwrap();
+                }
+            }
+
+            self.0.cached.pipeline_layouts.remove(&reflected);
         }
     }
 }

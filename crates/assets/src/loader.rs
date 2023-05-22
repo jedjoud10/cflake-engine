@@ -9,7 +9,7 @@ use std::{
     sync::{
         mpsc::{Receiver, Sender},
         Arc,
-    },
+    }, str::FromStr,
 };
 
 // This is a handle to a specific asset that we are currently loading in
@@ -108,6 +108,36 @@ impl Assets {
         let new = new.as_ref().to_path_buf();
         write.insert(og, new);
     }
+
+    // Uncache the bytes of an already cached asset
+    // Can be used to handle hot reloading during runtime
+    pub fn uncache(&self, path: &str) -> Option<()> {
+        let path = self.path(path)?;
+        let mut bytes = self.bytes.write();
+        bytes.remove(&path);
+        Some(())
+    }
+
+    // If we created this loader using packed assets, return true
+    // If the loader loads in assets at runtime, returns fale
+    pub fn packed(&self) -> bool {
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "pack-assets")] {
+                true
+            } else {
+                false
+            }
+        }
+    }
+
+    // Get the global path of the file that is used by an asset
+    // Returns None if the loader contains packed assets
+    pub fn path(&self, asset: &str) -> Option<PathBuf> {
+        let owned = PathBuf::from_str(asset).ok()?;
+        let read = self.hijack.read();
+        let owned = read.get(&owned).unwrap_or(&owned);
+        owned.is_absolute().then(|| owned.clone())
+    }
 }
 
 // Helper functions
@@ -161,9 +191,8 @@ impl Assets {
         bytes: &AsyncLoadedBytes,
         path: &Path,
     ) -> Result<Arc<[u8]>, AssetLoadError> {
-        log::debug!("Loaded asset from path {:?} from cached bytes", path);
-
         bytes.read().get(path).cloned().ok_or_else(|| {
+            log::debug!("Loaded asset from path {:?} from cached bytes", path);
             let path = path.as_os_str().to_str().unwrap().to_owned();
             AssetLoadError::CachedNotFound(path)
         })

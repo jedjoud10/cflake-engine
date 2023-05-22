@@ -1,5 +1,5 @@
 use crate::{
-    ActiveSceneRenderPass, ActiveShadowRenderPass, CastShadowsMode,
+    ActiveSceneRenderPass, ActiveShadowRenderPass,
     DefaultMaterialResources, Material, SceneColor, SceneDepth, ShadowRenderPipeline,
 };
 
@@ -24,7 +24,7 @@ impl<M: Material> Clone for MaterialId<M> {
 // entities that correspond to a specific material type.
 pub struct Pipeline<M: Material> {
     pipeline: RenderPipeline<SceneColor, SceneDepth>,
-    shadow_pipeline: Option<ShadowRenderPipeline>,
+    //shadow_pipeline: Option<ShadowRenderPipeline>,
     shader: Shader,
     _phantom: PhantomData<M>,
 }
@@ -64,18 +64,20 @@ impl<M: Material> Pipeline<M> {
         )?;
 
         // Create a customized shadow render pipeline if requested
+        /*
         let shadow_pipeline = if let CastShadowsMode::Enabled(Some(callback)) = M::casts_shadows() {
             let shader = callback(&settings, graphics, assets);
             Some(crate::create_shadow_render_pipeline(graphics, &shader))
         } else {
             None
         };
+        */
 
         Ok(Self {
             pipeline,
             shader,
             _phantom: PhantomData,
-            shadow_pipeline,
+            //shadow_pipeline,
         })
     }
 
@@ -120,11 +122,14 @@ impl<M: Material> DynPipeline for Pipeline<M> {
         default_shadow_pipeline: &'r ShadowRenderPipeline,
         lightspace: vek::Mat4<f32>,
     ) {
+        /*
+        
         let shadow_pipeline = self
             .shadow_pipeline
             .as_ref()
             .unwrap_or(default_shadow_pipeline);
         super::render_shadows::<M>(world, default, active, shadow_pipeline, lightspace);
+        */
     }
 
     fn render<'r>(

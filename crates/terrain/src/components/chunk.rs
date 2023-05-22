@@ -77,7 +77,9 @@ impl Chunk {
 
     // Force the regeneration of a specific chunk by setting it's state to dirty
     pub fn regenerate(&mut self) {
-        self.state = ChunkState::Dirty;
+        if let ChunkState::Generated { empty } = self.state {
+            self.state = ChunkState::Dirty
+        } 
     }
 
     // Get the allocation used by this chunk

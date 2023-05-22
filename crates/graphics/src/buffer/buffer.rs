@@ -73,7 +73,7 @@ pub struct Buffer<T: GpuPod, const TYPE: u32 = 0> {
 impl<T: GpuPod, const TYPE: u32> Drop for Buffer<T, TYPE> {
     fn drop(&mut self) {
         let id = crate::Id::new(self.buffer.global_id(), crate::IdVariant::Buffer);
-        self.graphics.drop_resource(id);
+        self.graphics.drop_cached_bind_group_resource(id);
     }
 }
 
@@ -422,7 +422,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
             // Swap them out, and drop the last buffer
             let old = std::mem::replace(&mut self.buffer, buffer);
             let old_id = crate::Id::new(old.global_id(), crate::IdVariant::Buffer);
-            self.graphics.drop_resource(old_id);
+            self.graphics.drop_cached_bind_group_resource(old_id);
             drop(old);
 
             // Write using the same encoder

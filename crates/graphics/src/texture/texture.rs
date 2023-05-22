@@ -406,7 +406,7 @@ pub trait Texture: Sized + 'static {
         if let Some(views) = self.views() {
             for view in views {
                 let id = crate::Id::new(view.global_id(), crate::IdVariant::TextureView);
-                self.graphics().drop_resource(id);
+                self.graphics().drop_cached_bind_group_resource(id);
             }
         }
     }

@@ -1,5 +1,5 @@
 use crate::{
-    ActiveScenePipeline, DefaultMaterialResources, MeshAttributes, RenderPath, Renderer, SceneColor,
+    ActiveScenePipeline, DefaultMaterialResources, MeshAttributes, RenderPath, Renderer, SceneColor, Direct,
 };
 use assets::Assets;
 
@@ -11,25 +11,23 @@ use graphics::{
 
 use world::World;
 
-// If materials can cast shadows onto other objects
-// Also allows us to use a custom shadow shader
-pub enum CastShadowsMode<M: Material> {
-    Disabled,
-
-    // If you *are* going to use a custom shadow shader you should note that only the position attribute is given
-    // and other atrributes are NOT given
-    // TODO: Find a way to let the user customize the shadow shader to their heart's extent
-    Enabled(Option<Box<dyn FnOnce(&M::Settings<'_>, &Graphics, &Assets) -> Shader>>),
-}
-
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
 // Materials correspond to a specific WGPU render pipeline based on it's config parameters
 pub trait Material: 'static + Sized + Sync + Send {
-    // The resources that we need to fetch from the world to set the descriptor sets
+    // The resources that we need to fetch from the world to set the bind groups
     type Resources<'w>: 'w;
+
+    // The renderpath to take to render this material
     type RenderPath: RenderPath;
+
+    // Shader compilation settings
     type Settings<'s>;
+
+    // Custom entity query that could be optionally fetched from each entity
     type Query<'a>: ecs::QueryLayoutRef;
+
+    // The shadow casting shader that we will use to cast shadows onto other surfaces and onto our own surfaces
+    //type ShadowCastingMaterial: ShadowCastingMaterial;
 
     // Create a shader for this material
     fn shader(settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader;
@@ -71,8 +69,9 @@ pub trait Material: 'static + Sized + Sync + Send {
     }
 
     // Does this material support casting shadows onto other surfaces?
-    fn casts_shadows() -> CastShadowsMode<Self> {
-        CastShadowsMode::Enabled(None)
+    // If this is set to true then this material will use the respective ShadowCastingMaterial
+    fn casts_shadows() -> bool {
+        true
     }
 
     // Should surfaces using this material use frustum culling?
@@ -121,3 +120,78 @@ pub trait Material: 'static + Sized + Sync + Send {
     ) {
     }
 }
+
+/*
+// Default disabled shadow casting material
+pub trait ShadowCastingMaterial: 'static + Sized + Sync + Send {
+    // The resources that we need to fetch from the world to set the bind groups
+    type Resources<'w>: 'w;
+    
+    // The renderpath to take to render this material
+    type RenderPath: RenderPath;
+
+    // Shader compilation settings
+    type Settings<'s>;
+
+    // Custom entity query that could be optionally fetched from each entity
+    type Query<'a>: ecs::QueryLayoutRef;
+
+    // Create a shader for this shadow caster material
+    fn shader(settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Option<Shader>;
+
+    // Fetch the required resources from the world
+    fn fetch(world: &World) -> Self::Resources<'_>;
+
+    // Set the static bindings
+    fn set_global_bindings<'r>(
+        _resources: &'r mut Self::Resources<'_>,
+        _group: &mut BindGroup<'r>,
+        _default: &DefaultMaterialResources<'r>,
+    ) {
+    }
+
+    // Set the per instance bindings
+    fn set_instance_bindings<'r>(
+        _resources: &'r mut Self::Resources<'_>,
+        _default: &DefaultMaterialResources<'r>,
+        _group: &mut BindGroup<'r>,
+    ) {
+    }
+
+    // Set the per surface bindings
+    fn set_surface_bindings<'r, 'w>(
+        _renderer: &Renderer,
+        _resources: &'r mut Self::Resources<'w>,
+        _default: &mut DefaultMaterialResources<'w>,
+        _query: &Self::Query<'w>,
+        _group: &mut BindGroup<'r>,
+    ) {
+    }
+
+    // Set the required push constants
+    fn set_push_constants<'r, 'w>(
+        _renderer: &Renderer,
+        _resources: &'r mut Self::Resources<'w>,
+        _default: &DefaultMaterialResources<'r>,
+        _query: &Self::Query<'w>,
+        _push_constants: &mut PushConstants<ActiveScenePipeline>,
+        _lightspace: vek::Mat4<f32>,
+    ) {
+    }
+}
+
+impl ShadowCastingMaterial for () {
+    type Resources<'w> = ();
+    type RenderPath = Direct;
+    type Settings<'s> = ();
+    type Query<'a> = &'a ();
+
+    fn shader(settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Option<Shader> {
+        None
+    }
+
+    fn fetch(world: &World) -> Self::Resources<'_> {
+        unreachable!()
+    }
+}
+*/

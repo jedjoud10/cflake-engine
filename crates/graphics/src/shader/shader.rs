@@ -16,6 +16,7 @@ pub struct Shader {
     // WGPU layout and reflected layout of the shader
     pub(crate) layout: Arc<wgpu::PipelineLayout>,
     pub(crate) reflected: Arc<ReflectedShader>,
+    graphics: Graphics,
 }
 
 impl Shader {
@@ -37,6 +38,7 @@ impl Shader {
             fragment,
             layout,
             reflected,
+            graphics: compiler.graphics.clone(),
         })
     }
 
@@ -56,6 +58,12 @@ impl Shader {
     }
 }
 
+impl Drop for Shader {
+    fn drop(&mut self) {
+        self.graphics.drop_cached_pipeline_layout(&self.reflected)
+    }
+}
+
 // A compute shader used for general computing work
 // This is used for compute work, and nothing else.
 // Shaders are clonable since they can be shared between multiple graphics pipelines
@@ -65,6 +73,13 @@ pub struct ComputeShader {
     pub(crate) layout: Arc<wgpu::PipelineLayout>,
     pub(crate) reflected: Arc<ReflectedShader>,
     pub(crate) pipeline: Arc<wgpu::ComputePipeline>,
+    graphics: Graphics,
+}
+
+impl Drop for ComputeShader {
+    fn drop(&mut self) {
+        self.graphics.drop_cached_pipeline_layout(&self.reflected)
+    }
 }
 
 impl ComputeShader {
@@ -92,6 +107,7 @@ impl ComputeShader {
             compiled,
             layout,
             reflected,
+            graphics: compiler.graphics.clone(),
         })
     }
 
@@ -103,6 +119,10 @@ impl ComputeShader {
     // Get the underlying reflected shader
     pub fn reflected(&self) -> &ReflectedShader {
         &self.reflected
+    }
+
+    pub fn uncache(&self) {
+        self.graphics.drop_cached_pipeline_layout(&self.reflected)
     }
 
     // Get the underlying compute pipeline

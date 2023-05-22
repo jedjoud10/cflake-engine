@@ -18,7 +18,7 @@ impl Material for WireframeMaterial {
     type RenderPath = Direct;
     type Settings<'s> = ();
     type Query<'a> = &'a ();
-
+    
     // Load the respective Wireframe shader modules and compile them
     fn shader(_settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader {
         // Load the vertex module from the assets
@@ -55,6 +55,11 @@ impl Material for WireframeMaterial {
         crate::MeshAttributes::POSITIONS
     }
 
+    // Wireframe meshes don't cast a shadow 
+    fn casts_shadows() -> bool {
+        false
+    }
+
     // Activate the wireframe mode
     fn primitive_config() -> graphics::PrimitiveConfig {
         graphics::PrimitiveConfig::Triangles {
@@ -65,9 +70,7 @@ impl Material for WireframeMaterial {
     }
 
     // Fetch the texture storages
-    fn fetch(_world: &world::World) -> Self::Resources<'_> {
-        
-    }
+    fn fetch(_world: &world::World) -> Self::Resources<'_> { }
 
     // Set the static bindings that will never change
     fn set_global_bindings<'r>(

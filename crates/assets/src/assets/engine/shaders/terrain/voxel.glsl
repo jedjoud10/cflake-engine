@@ -10,12 +10,12 @@
 // Density allows us to represent either full terrain or air, and everything in between
 // Main voxel function that will create the shape of the terrain
 float smooth_floor(float x) {
-    return x - (sin(2 * 3.1415 * x) / (2 * 3.1415));
+    return x - (sin(2 * 3.1415 * x) / (2 * 1.1415));
 }
 
 float voxel(vec3 position, float quality) {
-    return fbm(position * 0.0003, 8, 0.5, 2.0) * 400 + position.y;
-    //position *= 0.5;
+    //return position.y;
+    return min(fbm(position * 0.001, 8, 0.5, 2.0) * 400 + position.y, snoise(position * 0.004) * 200 + position.y);
     //float density = smooth_floor(position.y / 100) * 100 + (1-fbmCellular(position * 0.002 * vec3(1, 0.1, 1), uint(10.0 * quality), 0.3, 2.1).x) * 440;
     //return opSmoothUnion(density - 440, position.y, 200); 
 }

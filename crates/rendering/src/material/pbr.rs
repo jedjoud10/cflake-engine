@@ -37,9 +37,7 @@ impl Material for PhysicallyBasedMaterial {
     );
 
     type RenderPath = Direct;
-
     type Settings<'s> = ();
-
     type Query<'a> = &'a ();
 
     // Load the respective PBR shader modules and compile them

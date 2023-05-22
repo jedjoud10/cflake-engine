@@ -1,5 +1,5 @@
 use crate::{
-    AlbedoMap, CameraUniform, CastShadowsMode, DefaultMaterialResources, Direct, EnvironmentMap,
+    AlbedoMap, CameraUniform, DefaultMaterialResources, Direct, EnvironmentMap,
     Material, MeshAttributes, SceneUniform,
 };
 
@@ -48,8 +48,8 @@ impl Material for SkyMaterial {
     }
 
     // The sky does NOT cast shadows
-    fn casts_shadows() -> CastShadowsMode<Self> {
-        CastShadowsMode::Disabled
+    fn casts_shadows() -> bool {
+        false
     }
 
     // The sky does NOT use frustum culling

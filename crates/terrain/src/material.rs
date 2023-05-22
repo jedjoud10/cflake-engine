@@ -94,14 +94,14 @@ impl Material for TerrainMaterial {
         Shader::new(vert, frag, &compiler).unwrap()
     }
 
-    // Terrain only needs tex coordinates (packed)
+    // Terrain only needs packed positions
     fn attributes() -> rendering::MeshAttributes {
         rendering::MeshAttributes::POSITIONS
     }
 
-    // Custom shadow mapper (due to packed tex coordinates)
-    fn casts_shadows() -> rendering::CastShadowsMode<Self> {
-        rendering::CastShadowsMode::Disabled
+    // Custom shadow mapper (due to packed positions and indirect rendering)
+    fn casts_shadows() -> bool {
+        false
     }
 
     // TEMP: Enable wireframe

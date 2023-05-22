@@ -1,11 +1,12 @@
 
 
 use crate::{Chunk, ChunkState, Terrain};
+use assets::Assets;
 use coords::{Position, Scale};
 use ecs::{Entity, Scene};
 use graphics::{
     ActivePipeline, ComputePass, GpuPod, Graphics,
-    Texture, TriangleBuffer, Vertex,
+    Texture, TriangleBuffer, Vertex, ComputeModule, ComputeShader,
 };
 use rendering::{attributes, AttributeBuffer};
 use utils::{Storage, Time};
@@ -56,6 +57,8 @@ fn update(world: &mut World) {
 
         // Remove the chunk CPU range
         chunk.ranges = None;
+
+        //memory.visibility_bitsets[chunk.allocation].remove(chunk.local_index);
     }
 
     // Find the chunk with the highest priority
@@ -68,6 +71,32 @@ fn update(world: &mut World) {
     });
     vec.retain(|(chunk, _, _, _)| chunk.state == ChunkState::Pending);
     let Some((chunk, position, scale, _entity)) = vec.pop() else {
+        // We have no chunks to generate, check if we should hot reload now blud
+        if let Some((rx, _)) = voxelizer.hot_reload.as_ref() {
+            if rx.try_recv().is_ok() {
+                rx.try_iter().count();
+                let assets = world.get::<Assets>().unwrap();
+                let graphics = world.get::<Graphics>().unwrap();
+                voxelizer.compute_voxels.uncache();
+                assets.uncache("engine/shaders/terrain/voxel.glsl").unwrap();
+                let module = assets
+                    .load::<ComputeModule>("engine/shaders/terrain/voxels.comp")
+                    .unwrap();
+                let compiler = crate::create_compute_voxels_compiler(&assets, &graphics);
+                let compute_voxels = ComputeShader::new(module, &compiler).unwrap();
+                voxelizer.compute_voxels = compute_voxels;
+
+                // Force the regeneration of all chunks
+                let query = scene
+                    .query_mut::<&mut Chunk>()
+                    .into_iter()
+                    .filter(|x| matches!(x.state, ChunkState::Generated { empty }));
+                for x in query {
+                    x.regenerate();
+                }
+            }
+        }
+
         return;
     };
 

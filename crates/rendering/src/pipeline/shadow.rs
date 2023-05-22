@@ -2,7 +2,7 @@ use std::mem::size_of;
 
 use crate::{
     attributes::Position, set_index_buffer_attribute, set_vertex_buffer_attribute,
-    ActiveShadowRenderPass, CastShadowsMode, DefaultMaterialResources,
+    ActiveShadowRenderPass, DefaultMaterialResources,
     Material, Mesh, MeshAttributes, RenderPath, Renderer, ShadowRenderPipeline,
     Surface,
 };
@@ -40,11 +40,11 @@ pub(super) fn render_shadows<'r, M: Material>(
     shadow_pipeline: &'r ShadowRenderPipeline,
     lightspace: vek::Mat4<f32>,
 ) {
+    /*
     let mut active = render_pass.bind_pipeline(shadow_pipeline);
 
     // Don't do shit if we won't cast shadows
-    if matches!(M::casts_shadows(), CastShadowsMode::Disabled)
-        || !M::attributes().contains(MeshAttributes::POSITIONS)
+    if !M::casts_shadows() || !M::attributes().contains(MeshAttributes::POSITIONS)
     {
         return;
     }
@@ -118,24 +118,19 @@ pub(super) fn render_shadows<'r, M: Material>(
                 continue;
             }
 
-            // Set the mesh matrix push constant
+            // Set the push constant ranges right before rendering (in the hot loop!)
             active
-                .set_push_constants(|constants| {
-                    let matrix = renderer.matrix;
-                    let cols = matrix.cols;
-                    let bytes = GpuPod::into_bytes(&cols);
-                    constants.push(bytes, 0, ModuleVisibility::Vertex).unwrap();
-                    // TODO: Implement push constant compositing so we can remove this
-                    let bytes = GpuPod::into_bytes(&lightspace.cols);
-                    constants
-                        .push(
-                            bytes,
-                            size_of::<vek::Mat4<f32>>() as u32,
-                            ModuleVisibility::Vertex,
-                        )
-                        .unwrap();
-                })
-                .unwrap();
+            .set_push_constants(|push_constants| {
+                <M::ShadowCastingMaterial as ShadowCastingMaterial>::set_push_constants(
+                    renderer,
+                    &mut resources,
+                    defaults,
+                    &user,
+                    push_constants,
+                    lightspace
+                );
+            })
+            .unwrap();
 
             // Set the vertex buffers and index buffers when we change models
             if last != Some(subsurface.mesh.clone()) {
@@ -165,4 +160,5 @@ pub(super) fn render_shadows<'r, M: Material>(
             <M::RenderPath as RenderPath>::draw(mesh, defaults, &mut active).unwrap();
         }
     }
+    */
 }
