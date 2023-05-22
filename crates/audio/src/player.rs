@@ -5,7 +5,6 @@ use std::sync::{
 
 use cpal::{
     traits::{DeviceTrait, HostTrait},
-    StreamConfig,
 };
 use ecs::Component;
 
@@ -51,7 +50,7 @@ impl AudioPlayer {
             host,
             device,
             volume: Arc::new(AtomicU32::new(u32::from_ne_bytes(1.0f32.to_ne_bytes()))),
-            supported_output_configs: supported_output_configs.into(),
+            supported_output_configs,
         })
     }
 

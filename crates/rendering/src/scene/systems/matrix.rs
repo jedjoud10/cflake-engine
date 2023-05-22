@@ -1,7 +1,7 @@
 use crate::Renderer;
 use coords::{Position, Rotation, Scale};
 use rayon::prelude::{
-    IntoParallelIterator, IntoParallelRefIterator, IntoParallelRefMutIterator, ParallelIterator,
+    IntoParallelIterator, ParallelIterator,
 };
 use world::{post_user, System, World};
 

@@ -7,7 +7,7 @@ use assets::Assets;
 
 use ecs::Scene;
 use graphics::{DrawCountIndirectBuffer, DrawIndexedIndirectBuffer, Graphics};
-use rendering::{IndirectMesh, MultiDrawIndirectCountMesh, MultiDrawIndirectMesh, Pipelines};
+use rendering::{MultiDrawIndirectCountMesh, Pipelines};
 use utils::Storage;
 use world::{post_user, System, World};
 

@@ -1,16 +1,12 @@
-use std::{
-    num::{NonZeroU32, NonZeroU8},
-    rc::Rc,
-    sync::Arc,
-};
+
 
 use assets::Assets;
 use bytemuck::{Pod, Zeroable};
 use graphics::{
     ActiveRenderPass, ActiveRenderPipeline, BufferMode, BufferUsage, CompareFunction, Compiler,
     Depth, DepthConfig, Face, FragmentModule, GpuPod, Graphics, LayeredTexture2D, LoadOp,
-    ModuleVisibility, Normalized, Operation, PrimitiveConfig, PushConstantLayout, RenderPass,
-    RenderPipeline, SamplerSettings, Shader, StoreOp, Texture, Texture2D, TextureMipMaps,
+    ModuleVisibility, Operation, PrimitiveConfig, PushConstantLayout, RenderPass,
+    RenderPipeline, SamplerSettings, Shader, StoreOp, Texture, TextureMipMaps,
     TextureMode, TextureUsage, UniformBuffer, VertexModule, WindingOrder,
 };
 use math::ExplicitVertices;
@@ -181,7 +177,7 @@ impl ShadowMapping {
         rotation: vek::Quaternion<f32>,
         view: vek::Mat4<f32>,
         mut projection: vek::Mat4<f32>,
-        camera: vek::Vec3<f32>,
+        _camera: vek::Vec3<f32>,
         camera_near_plane: f32,
         camera_far_plane: f32,
         i: usize,
@@ -270,7 +266,8 @@ pub(crate) fn create_shadow_render_pipeline(
     shader: &Shader,
 ) -> ShadowRenderPipeline {
     // Create the shadow map graphics pipeline
-    let pipeline = ShadowRenderPipeline::new(
+    
+    ShadowRenderPipeline::new(
         graphics,
         Some(DepthConfig {
             compare: CompareFunction::LessEqual,
@@ -289,6 +286,5 @@ pub(crate) fn create_shadow_render_pipeline(
         },
         shader,
     )
-    .unwrap();
-    pipeline
+    .unwrap()
 }

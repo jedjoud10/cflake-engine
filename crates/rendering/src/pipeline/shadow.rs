@@ -2,8 +2,8 @@ use std::mem::size_of;
 
 use crate::{
     attributes::Position, set_index_buffer_attribute, set_vertex_buffer_attribute,
-    ActiveShadowRenderPass, ActiveShadowRenderPipeline, CastShadowsMode, DefaultMaterialResources,
-    Material, Mesh, MeshAttributes, RenderPath, Renderer, ShadowRenderPipeline, SubSurface,
+    ActiveShadowRenderPass, CastShadowsMode, DefaultMaterialResources,
+    Material, Mesh, MeshAttributes, RenderPath, Renderer, ShadowRenderPipeline,
     Surface,
 };
 use ecs::Scene;
@@ -29,7 +29,7 @@ pub fn intersects_lightspace(
         }
     }
 
-    return false;
+    false
 }
 
 // Render all the visible surfaces of a specific material type
@@ -50,7 +50,7 @@ pub(super) fn render_shadows<'r, M: Material>(
     }
 
     // Get all the entities that contain a visible surface
-    let mut scene = world.get_mut::<Scene>().unwrap();
+    let scene = world.get_mut::<Scene>().unwrap();
 
     // Keep track of the last model so we don't have to rebind buffers
     let mut last: Option<Handle<Mesh<M::RenderPath>>> = None;
@@ -113,7 +113,7 @@ pub(super) fn render_shadows<'r, M: Material>(
             }
 
             // If a mesh isn't valid we have a problem, not so big but still a problem
-            if !<M::RenderPath as RenderPath>::is_valid(&defaults, mesh) {
+            if !<M::RenderPath as RenderPath>::is_valid(defaults, mesh) {
                 log::warn!("Mesh invalid! Check buffers or indexed indirect count/offset (shadow render pipe)");
                 continue;
             }

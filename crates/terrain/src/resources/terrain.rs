@@ -1,15 +1,13 @@
 use crate::{
-    ChunkCuller, ChunkManager, MemoryManager, MeshGenerator, TerrainMaterial, VoxelGenerator,
+    ChunkCuller, ChunkManager, MemoryManager, MeshGenerator, VoxelGenerator,
 };
-use assets::{Asset, Assets};
+
 use graphics::{
-    combine_into_layered, ActiveComputeDispatcher, BindGroup, Compiler, Graphics, PushConstants,
-    RawTexels, SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap, TextureMipMaps,
-    TextureMode, TextureUsage,
+    ActiveComputeDispatcher, BindGroup, Compiler, Graphics, PushConstants,
 };
-use rendering::{AlbedoTexel, MaskTexel, MaterialId, NormalTexel};
+
 use thiserror::Error;
-use utils::Handle;
+
 
 // Terrain generator settings that the user will need to add to configure the terrain gen
 // This will also contain computed common data like number of sub allocations and such

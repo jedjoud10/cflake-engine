@@ -1,16 +1,13 @@
 use std::{
-    f32::consts::E,
-    io::BufReader,
-    iter::repeat,
-    path::{Path, PathBuf},
+    path::{Path},
     sync::Arc,
 };
 
 use crate::{
-    attributes::RawPosition, AlbedoMap, MaskMap, Mesh, NormalMap, PhysicallyBasedMaterial,
+    AlbedoMap, MaskMap, Mesh, NormalMap, PhysicallyBasedMaterial,
     Pipelines, SubSurface, Surface,
 };
-use ahash::{AHashMap, AHashSet};
+use ahash::{AHashMap};
 use assets::{Asset, Data};
 use base64::{
     alphabet,
@@ -19,11 +16,11 @@ use base64::{
 };
 use dashmap::DashMap;
 use ecs::Scene;
-use gltf::json::accessor::{ComponentType, GenericComponentType, Type};
+use gltf::json::accessor::{ComponentType, Type};
 use graphics::{
     texture2d_from_raw, BufferMode, BufferUsage, Graphics, ImageTexel, Normalized, RawTexels,
     SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap, Texel, Texture, Texture2D,
-    TextureImportSettings, TextureMipMaps, TextureMode, TextureScale, TextureUsage, R, RG, RGBA,
+    TextureImportSettings, TextureMipMaps, TextureMode, TextureScale, TextureUsage, R, RGBA,
 };
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use utils::{Handle, Storage};
@@ -116,10 +113,10 @@ impl Asset for GltfScene {
     }
 
     // Load up the GTLF scene
-    fn deserialize<'c, 's>(
+    fn deserialize(
         data: assets::Data,
-        mut context: Self::Context<'c>,
-        settings: Self::Settings<'s>,
+        mut context: Self::Context<'_>,
+        settings: Self::Settings<'_>,
     ) -> Result<Self, Self::Err> {
         // Loads the GTLF file from the loaded up bytes
         let bytes = data.bytes();
@@ -152,8 +149,8 @@ impl Asset for GltfScene {
             buffers,
             buffer_views,
             scene,
-            extensions,
-            cameras,
+            
+            
             images,
             materials,
             meshes,
@@ -317,7 +314,7 @@ impl Asset for GltfScene {
                 // r: ambient occlusion, g: roughness, b: metallic
                 (metallic_roughness_map.is_some() || occlusion_map.is_some()).then(|| {
                     let graphics = graphics.clone();
-                    s.spawn(move |s| {
+                    s.spawn(move |_s| {
                         let metallic_roughness_map =
                             metallic_roughness_map.map(|x| x.index.value());
                         let occlusion_map = occlusion_map.map(|x| x.index.value());
@@ -530,7 +527,7 @@ impl Asset for GltfScene {
             // Convert translation, rotation, and scale to proper components
             let position = node
                 .translation
-                .map(|slice| coords::Position::at_xyz_array(slice))
+                .map(coords::Position::at_xyz_array)
                 .unwrap_or_default();
             let rotation = node
                 .rotation
@@ -607,7 +604,7 @@ fn create_positions_vec(value: Value) -> (Vec<vek::Vec4<f32>>, Option<math::Aabb
 
     // Create the positions vector
     let vec = data
-        .into_iter()
+        .iter()
         .map(|vec3| vec3.with_w(0.0))
         .collect::<Vec<vek::Vec4<f32>>>();
 
@@ -649,7 +646,7 @@ fn create_normals_vec(value: Value) -> Vec<vek::Vec4<i8>> {
     assert_eq!(**_type, Type::Vec3);
     assert_eq!(**_component, ComponentType::F32);
     let data: &[vek::Vec3<f32>] = bytemuck::cast_slice(bytes);
-    data.into_iter()
+    data.iter()
         .map(|vec3| (vec3.with_w(1.0) * 127.0).as_::<i8>())
         .collect::<Vec<vek::Vec4<i8>>>()
 }
@@ -669,7 +666,7 @@ fn create_tangents_vec(value: Value) -> Vec<vek::Vec4<i8>> {
     assert_eq!(**_type, Type::Vec4);
     assert_eq!(**_component, ComponentType::F32);
     let data: &[vek::Vec4<f32>] = bytemuck::cast_slice(bytes);
-    data.into_iter()
+    data.iter()
         .map(|vec4| (vec4 * 127.0).as_::<i8>())
         .collect::<Vec<vek::Vec4<i8>>>()
 }
@@ -683,7 +680,6 @@ fn create_triangles_vec(value: Value) -> Vec<[u32; 3]> {
         ComponentType::U16 => {
             let data: &[u16] = bytemuck::cast_slice(bytes);
             data.chunks_exact(3)
-                .into_iter()
                 .map(|x| [x[0] as u32, x[1] as u32, x[2] as u32])
                 .collect()
         }
@@ -739,9 +735,7 @@ fn create_material_texture<T: Texel + ImageTexel>(
 ) -> Texture2D<T> {
     let (bytes, extension) = &images[texture.source.value()];
     let name = texture
-        .name
-        .as_ref()
-        .map(|x| &**x)
+        .name.as_deref()
         .unwrap_or("Untitled Texture");
 
     let data = Data::new(
@@ -754,7 +748,9 @@ fn create_material_texture<T: Texel + ImageTexel>(
 
     let sampler = sampling(samplers, texture.sampler);
 
-    let texture = Texture2D::<T>::deserialize(
+    
+
+    Texture2D::<T>::deserialize(
         data,
         graphics,
         TextureImportSettings {
@@ -765,9 +761,7 @@ fn create_material_texture<T: Texel + ImageTexel>(
             mipmaps: TextureMipMaps::Manual { mips: &[] },
         },
     )
-    .unwrap();
-
-    texture
+    .unwrap()
 }
 
 // r: ambient occlusion, g: roughness, b: metallic
@@ -790,9 +784,7 @@ fn create_material_mask_texture(
 
     let metallic_roughness = metallic_roughness.map(|((bytes, extension), texture)| {
         let name = texture
-            .name
-            .as_ref()
-            .map(|x| &**x)
+            .name.as_deref()
             .unwrap_or("Untitled Texture");
 
         let data = Data::new(
@@ -808,9 +800,7 @@ fn create_material_mask_texture(
 
     let occlusion = occlusion.map(|((bytes, extension), texture)| {
         let name = texture
-            .name
-            .as_ref()
-            .map(|x| &**x)
+            .name.as_deref()
             .unwrap_or("Untitled Texture");
 
         let data = Data::new(
@@ -856,7 +846,9 @@ fn create_material_mask_texture(
 
     let raw = RawTexels(data, extent.unwrap());
 
-    let texture = texture2d_from_raw(
+    
+
+    texture2d_from_raw(
         graphics,
         TextureImportSettings {
             sampling: Some(sampler),
@@ -867,7 +859,5 @@ fn create_material_mask_texture(
         },
         raw,
     )
-    .unwrap();
-
-    texture
+    .unwrap()
 }

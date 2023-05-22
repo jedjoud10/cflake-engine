@@ -35,7 +35,7 @@ fn init(world: &mut World) {
         4,
         1024,
         7,
-        0.4f32,
+        0.5f32,
         Some(&[
             TerrainSubMaterial {
                 diffuse: "user/textures/diffuse5.jpg".to_string(),
@@ -71,7 +71,7 @@ fn init(world: &mut World) {
     let light = DirectionalLight {
         color: vek::Rgb::one() * 3.6,
     };
-    let rotation = vek::Quaternion::rotation_x(-15.0f32.to_radians()).rotated_y(45f32.to_radians());
+    let rotation = vek::Quaternion::rotation_x(-90.0f32.to_radians()).rotated_y(45f32.to_radians());
     scene.insert((light, Rotation::from(rotation)));
 
     let mut pbrs = world.get_mut::<Storage<PhysicallyBasedMaterial>>().unwrap();
@@ -95,7 +95,7 @@ fn init(world: &mut World) {
     let sphere = renderer.sphere.clone();
     let renderer = Renderer::default();
     let position = Position::default();
-    let surface = Surface::new(sphere.clone(), material.clone(), id.clone());
+    let surface = Surface::new(sphere, material, id);
     scene.prefabify("sphere", (renderer, position, surface));
 }
 
@@ -107,10 +107,12 @@ fn update(world: &mut World) {
     let input = world.get::<Input>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
 
+    /*
     // Rotation the light
     if let Some((rotation, _)) = scene.find_mut::<(&mut Rotation, &DirectionalLight)>() {
         rotation.rotate_y(-0.1 * time.delta().as_secs_f32());
     }
+    */
 
     // Exit the game when the user pressed Escape
     if input.get_button(KeyboardButton::Escape).pressed() {

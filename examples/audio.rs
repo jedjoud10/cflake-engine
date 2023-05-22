@@ -31,7 +31,7 @@ fn init(world: &mut World) {
 // Changes the volume of the audio player based on sin
 fn update(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
-    let mut player = scene.find_mut::<&mut AudioPlayer>().unwrap();
+    let player = scene.find_mut::<&mut AudioPlayer>().unwrap();
     let time = world.get::<Time>().unwrap();
     player.set_volume((time.elapsed().as_secs_f32().sin() + 1.0) / 2.0);
 }

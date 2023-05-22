@@ -69,7 +69,7 @@ pub fn point_aabb<T>(point: &vek::Vec3<T>, aabb: &Aabb<T>) -> bool
 where
     T: PartialOrd,
 {
-    aabb.min.partial_cmple(point).reduce_and() && aabb.max.partial_cmpgt(point).reduce_and()
+    aabb.min.partial_cmple(point).reduce_and() && aabb.max.partial_cmpge(point).reduce_and()
 }
 
 // Check if an AABB is intersecting a sphere

@@ -105,12 +105,12 @@ impl<T> From<&Target> for Position<T> {
 
 impl<T> From<Position<T>> for math::RawMatrix {
     fn from(value: Position<T>) -> Self {
-        return vek::Mat4::translation_3d(value.0);
+        vek::Mat4::translation_3d(value.0)
     }
 }
 
 impl<T> From<&Position<T>> for vek::Mat4<Scalar> {
     fn from(value: &Position<T>) -> Self {
-        return vek::Mat4::translation_3d(value.0);
+        vek::Mat4::translation_3d(value.0)
     }
 }

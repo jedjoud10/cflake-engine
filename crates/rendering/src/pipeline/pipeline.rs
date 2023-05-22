@@ -1,5 +1,5 @@
 use crate::{
-    ActiveSceneRenderPass, ActiveShadowRenderPass, ActiveShadowRenderPipeline, CastShadowsMode,
+    ActiveSceneRenderPass, ActiveShadowRenderPass, CastShadowsMode,
     DefaultMaterialResources, Material, SceneColor, SceneDepth, ShadowRenderPipeline,
 };
 

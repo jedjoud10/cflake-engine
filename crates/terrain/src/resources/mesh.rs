@@ -1,13 +1,13 @@
-use std::num::NonZeroU32;
+
 
 use assets::Assets;
 
 use graphics::{
     Buffer, BufferMode, BufferUsage, Compiler, ComputeModule, ComputeShader, GpuPod, Graphics,
-    ModuleVisibility, Normalized, StorageAccess, Texel, Texture3D, Vertex, R, RG, RGBA, XY, XYZW,
+    ModuleVisibility, StorageAccess, Texel, Texture3D, Vertex, R, RG, XY, XYZW,
 };
 
-use crate::{create_counters, create_texture3d, TempTriangles, TempVertices, TerrainSettings};
+use crate::{create_texture3d, TempTriangles, TempVertices, TerrainSettings};
 
 // Mesh generator that will be solely used to generate the mesh from voxels
 pub struct MeshGenerator {

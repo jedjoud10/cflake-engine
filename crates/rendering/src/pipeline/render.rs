@@ -1,7 +1,6 @@
 use crate::{
     set_index_buffer_attribute, set_vertex_buffer_attribute, ActiveSceneRenderPass,
-    DefaultMaterialResources, Material, Mesh, RenderPath, Renderer, SceneColor, SceneDepth,
-    SubSurface, Surface,
+    DefaultMaterialResources, Material, Mesh, RenderPath, Renderer, SceneColor, SceneDepth, Surface,
 };
 use ecs::Scene;
 use graphics::{ActivePipeline, RenderPipeline};
@@ -104,7 +103,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
             }
 
             // If a mesh isn't valid we have a problem, not so big but still a problem
-            if !<M::RenderPath as RenderPath>::is_valid(&defaults, mesh) {
+            if !<M::RenderPath as RenderPath>::is_valid(defaults, mesh) {
                 log::warn!("Mesh invalid! Check buffers or indexed indirect count/offset (normal render pipe)");
                 continue;
             }

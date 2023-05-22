@@ -1,17 +1,14 @@
 use rendering::{
-    ActiveScenePipeline, AlbedoTexel, CameraUniform, DefaultMaterialResources, EnvironmentMap,
-    Indirect, MaskTexel, Material, MultiDrawIndirect, MultiDrawIndirectCount, NormalTexel,
+    AlbedoTexel, CameraUniform, DefaultMaterialResources, EnvironmentMap, MaskTexel, Material, MultiDrawIndirectCount, NormalTexel,
     Renderer, SceneUniform, ShadowMap, ShadowMapping, ShadowUniform,
 };
 
 use assets::Assets;
 
 use graphics::{
-    BindGroup, Compiler, FragmentModule, GpuPod, Graphics, LayeredTexture2D, ModuleVisibility,
-    PrimitiveConfig, PushConstantLayout, PushConstants, Shader, StorageAccess, VertexModule,
-    WindingOrder,
+    BindGroup, Compiler, FragmentModule, GpuPod, Graphics, LayeredTexture2D, Shader, StorageAccess, VertexModule, PrimitiveConfig, WindingOrder,
 };
-use utils::{Handle, Storage, Time};
+use utils::{Storage, Time};
 
 use crate::{Terrain, TerrainSettings};
 
@@ -107,13 +104,22 @@ impl Material for TerrainMaterial {
         rendering::CastShadowsMode::Disabled
     }
 
+    // TEMP: Enable wireframe
+    fn primitive_config() -> PrimitiveConfig {
+        PrimitiveConfig::Triangles {
+            winding_order: WindingOrder::Cw,
+            cull_face: Some(graphics::Face::Front),
+            wireframe: false,
+        }
+    }
+
     // Disable frustum culling since we do that on the GPU
     fn frustum_culling() -> bool {
         false
     }
 
     // Fetch the texture storages
-    fn fetch<'w>(world: &'w world::World) -> Self::Resources<'w> {
+    fn fetch(world: &world::World) -> Self::Resources<'_> {
         let albedo_maps = world.get::<Storage<LayeredAlbedoMap>>().unwrap();
         let normal_maps = world.get::<Storage<LayeredNormalMap>>().unwrap();
         let mask_maps = world.get::<Storage<LayeredMaskMap>>().unwrap();
@@ -132,12 +138,12 @@ impl Material for TerrainMaterial {
     }
 
     // Set the static bindings that will never change
-    fn set_global_bindings<'r, 'w>(
-        resources: &'r mut Self::Resources<'w>,
+    fn set_global_bindings<'r>(
+        resources: &'r mut Self::Resources<'_>,
         group: &mut BindGroup<'r>,
         default: &DefaultMaterialResources<'r>,
     ) {
-        let (albedo_maps, normal_maps, mask_maps, shadow, terrain, time, _) = resources;
+        let (albedo_maps, normal_maps, mask_maps, shadow, terrain, _time, _) = resources;
 
         // Set the required common buffers
         group
@@ -171,9 +177,9 @@ impl Material for TerrainMaterial {
             &terrain.manager.layered_mask_map,
         ) {
             // Get the layered textures, without any fallback
-            let albedo_map = albedo_maps.get(&albedo);
-            let normal_map = normal_maps.get(&normal);
-            let mask_map = mask_maps.get(&mask);
+            let albedo_map = albedo_maps.get(albedo);
+            let normal_map = normal_maps.get(normal);
+            let mask_map = mask_maps.get(mask);
 
             // Set the material textures
             group

@@ -10,7 +10,6 @@ use rayon::prelude::{IndexedParallelIterator, IntoParallelRefMutIterator, Parall
 // De-interleave some samples from one each other
 fn deinterleave(input: &[f32], channels: usize) -> Vec<Vec<f32>> {
     let mut output = (0..channels)
-        .into_iter()
         .map(|_| vec![0.0f32; input.len() / channels])
         .collect::<Vec<_>>();
 
@@ -88,7 +87,7 @@ pub(super) fn build_clip_output_stream(
             channels & max & min
         })
         .map(move |p| {
-            p.clone()
+            p
                 .with_sample_rate(cpal::SampleRate(sample_rate))
                 .config()
         });
@@ -108,7 +107,7 @@ pub(super) fn build_clip_output_stream(
             let src = if configs.channels() != channels {
                 todo!()
             } else {
-                clip.samples().clone()
+                clip.samples()
             };
 
             // or we have the wrong number of samples
@@ -136,7 +135,7 @@ pub(super) fn build_clip_output_stream(
                 let interleaved = interleave(&output, channels as usize);
                 Arc::from(interleaved)
             } else {
-                src.clone()
+                src
             };
 
             (configs.config(), src)

@@ -1,4 +1,4 @@
-use crate::{Direct, Indirect, IndirectMesh, Material, MaterialId, Mesh, RenderPath};
+use crate::{Material, MaterialId, Mesh};
 use ecs::Component;
 use smallvec::SmallVec;
 use utils::Handle;
@@ -43,11 +43,11 @@ impl<M: Material> Clone for Surface<M> {
     fn clone(&self) -> Self {
         Self {
             subsurfaces: self.subsurfaces.clone(),
-            visible: self.visible.clone(),
-            culled: self.culled.clone(),
-            shadow_caster: self.shadow_caster.clone(),
-            shadow_receiver: self.shadow_receiver.clone(),
-            shadow_culled: self.shadow_culled.clone(),
+            visible: self.visible,
+            culled: self.culled,
+            shadow_caster: self.shadow_caster,
+            shadow_receiver: self.shadow_receiver,
+            shadow_culled: self.shadow_culled,
             id: self.id.clone(),
         }
     }

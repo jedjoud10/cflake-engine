@@ -259,7 +259,7 @@ impl App {
             .timings()
             .0
             .iter()
-            .map(|(stage, duration)| (stage.clone(), duration.as_secs_f32() * 1000.0f32))
+            .map(|(stage, duration)| (*stage, duration.as_secs_f32() * 1000.0f32))
             .collect();
         durations.init_total = self.systems.init.timings().1.as_secs_f32() * 1000.0f32;
         drop(durations);
@@ -292,7 +292,7 @@ impl App {
                         .0
                         .iter()
                         .map(|(stage, duration)| {
-                            (stage.clone(), duration.as_secs_f32() * 1000.0f32)
+                            (*stage, duration.as_secs_f32() * 1000.0f32)
                         })
                         .collect();
                     durations.update_total = systems.update.timings().1.as_secs_f32() * 1000.0f32;
@@ -302,7 +302,7 @@ impl App {
                         .0
                         .iter()
                         .map(|(stage, duration)| {
-                            (stage.clone(), duration.as_secs_f32() * 1000.0f32)
+                            (*stage, duration.as_secs_f32() * 1000.0f32)
                         })
                         .collect();
                     durations.tick_total = systems.tick.timings().1.as_secs_f32() * 1000.0f32;

@@ -1,22 +1,22 @@
 use ecs::{Entity, Scene};
-use rendering::Surface;
+
 use utils::Time;
 use world::{System, World};
 
-use crate::{Chunk, ChunkState, Terrain, TerrainMaterial};
+use crate::{Chunk, ChunkState, Terrain};
 
 // Begins the async readback of range data at the start of the frame
 fn readback_begin_update(world: &mut World) {
     let time = world.get::<Time>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
-    let Ok(mut terrain) = world.get_mut::<Terrain>() else {
+    let Ok(terrain) = world.get_mut::<Terrain>() else {
         return;
     };
 
     // Decompose the terrain into its subresources
     let mut _terrain = terrain;
     let terrain = &mut *_terrain;
-    let (manager, voxelizer, mesher, memory, settings) = (
+    let (_manager, _voxelizer, _mesher, memory, _settings) = (
         &mut terrain.manager,
         &terrain.voxelizer,
         &terrain.mesher,
@@ -27,9 +27,7 @@ fn readback_begin_update(world: &mut World) {
     // Start doing an async readback for the chunk of last frame
     let last_chunk_generated = scene
         .query_mut::<(&mut Chunk, &Entity)>()
-        .into_iter()
-        .filter(|(chunk, _)| chunk.state == ChunkState::PendingReadbackStart)
-        .next();
+        .into_iter().find(|(chunk, _)| chunk.state == ChunkState::PendingReadbackStart);
     if let Some((chunk, &entity)) = last_chunk_generated {
         chunk.state = ChunkState::PendingReadbackData;
         let index = 1 - (time.frame_count() as usize % 2);
@@ -65,14 +63,14 @@ fn readback_begin_update(world: &mut World) {
 // The data isn't necessarily a single frame delayed, it could be 2 frames or even 3 frames delayed
 fn readback_end_update(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
-    let Ok(mut terrain) = world.get_mut::<Terrain>() else {
+    let Ok(terrain) = world.get_mut::<Terrain>() else {
         return;
     };
 
     // Decompose the terrain into its subresources
     let mut _terrain = terrain;
     let terrain = &mut *_terrain;
-    let (manager, voxelizer, mesher, memory, settings) = (
+    let (_manager, _voxelizer, _mesher, memory, settings) = (
         &mut terrain.manager,
         &terrain.voxelizer,
         &terrain.mesher,
@@ -83,10 +81,10 @@ fn readback_end_update(world: &mut World) {
     // Sort by entity ID and fetch the last one
     memory
         .readback_offsets
-        .sort_by(|(a, _), (b, _)| Entity::cmp(&b, &a));
+        .sort_by(|(a, _), (b, _)| Entity::cmp(b, a));
     memory
         .readback_counters
-        .sort_by(|(a, _), (b, _)| Entity::cmp(&b, &a));
+        .sort_by(|(a, _), (b, _)| Entity::cmp(b, a));
 
     // Fetch the last one (to check if they are the same)
     let offset = memory.readback_offsets.last();

@@ -3,10 +3,10 @@ use atomic_traits::Bitwise;
 use itertools::Itertools;
 use num_traits::PrimInt;
 use parking_lot::MappedRwLockReadGuard;
-use parking_lot::MappedRwLockWriteGuard;
+
 use parking_lot::RwLock;
 use parking_lot::RwLockReadGuard;
-use parking_lot::RwLockWriteGuard;
+
 use std::fmt::Binary;
 use std::fmt::Debug;
 use std::fmt::Display;

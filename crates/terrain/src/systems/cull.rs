@@ -3,12 +3,12 @@ use graphics::{
     ActivePipeline, ComputePass, DrawCountIndirectBuffer, DrawIndexedIndirectBuffer, GpuPod,
     Graphics,
 };
-use input::{Input, KeyboardButton};
-use rendering::{ForwardRenderer, Surface};
+
+use rendering::{ForwardRenderer};
 use utils::{Storage, Time};
 use world::{System, World};
 
-use crate::{Chunk, ChunkState, Terrain, TerrainMaterial};
+use crate::{Chunk, ChunkState, Terrain};
 
 // This will iterate over the generated indexed indirect buffers and cull the chunks that are not visible
 // The culling will be based on frustum culling and simple visiblity (flag) culling
@@ -44,7 +44,7 @@ fn update(world: &mut World) {
     }
 
     // I AM OOPDATINGG AAAAAAAAAAAA
-    let time = world.get::<Time>().unwrap();
+    let _time = world.get::<Time>().unwrap();
 
     let graphics = world.get::<Graphics>().unwrap();
     let mut pass = ComputePass::begin(&graphics);

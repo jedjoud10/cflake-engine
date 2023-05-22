@@ -35,7 +35,7 @@ fn init(world: &mut World) {
     // fetch resources from world
     let mut assets = world.get_mut::<Assets>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
-    let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
+    let _meshes = world.get_mut::<Storage<Mesh>>().unwrap();
     let mut pbrs = world.get_mut::<Storage<PhysicallyBasedMaterial>>().unwrap();
     let mut pipelines = world.get_mut::<Pipelines>().unwrap();
     let forward_renderer = world.get::<ForwardRenderer>().unwrap();

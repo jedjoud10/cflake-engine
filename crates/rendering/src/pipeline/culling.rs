@@ -1,9 +1,9 @@
-use std::time::Instant;
+
 
 use ecs::Scene;
 use math::ExplicitVertices;
 use rayon::prelude::{
-    IntoParallelIterator, IntoParallelRefMutIterator, ParallelBridge, ParallelIterator,
+    IntoParallelIterator, ParallelIterator,
 };
 use world::World;
 
@@ -67,7 +67,7 @@ pub(super) fn cull_surfaces<'r, M: Material>(
         // A surface is culled *only* if all of it's sub-surface are not visible
         surface.culled = surface.subsurfaces.iter().all(|SubSurface { mesh, .. }| {
             // Get the mesh and it's AABB
-            let mesh = <M::RenderPath as RenderPath>::get(defaults, &mesh);
+            let mesh = <M::RenderPath as RenderPath>::get(defaults, mesh);
             let aabb = mesh.vertices().aabb();
 
             // If we have a valid AABB, check if the surface is visible within the frustum

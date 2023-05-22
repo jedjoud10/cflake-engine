@@ -1,5 +1,5 @@
 use ahash::AHashSet;
-use std::{hash::Hash, mem::MaybeUninit, num::NonZeroUsize};
+use std::{hash::Hash, num::NonZeroUsize};
 
 // An octree is a tree data structure that contains multiple "nodes" that each have 8 children
 // Octrees are used for hierarchy partitionaning, terrain generation, and even collision detection
@@ -89,10 +89,10 @@ impl Octree {
         self.nodes.push(Node {
             index: 0,
             parent: usize::MAX,
-            position: vek::Vec3::broadcast((-2i32.pow(self.max_depth) * self.node_size as i32) / 2),
+            position: vek::Vec3::broadcast((-(2i32.pow(self.max_depth)) * self.node_size as i32) / 2),
             center: vek::Vec3::zero(),
             depth: 0,
-            size: (2u32.pow(self.max_depth) * self.node_size) / 2,
+            size: (2u32.pow(self.max_depth) * self.node_size),
             children: None,
         });
 
@@ -117,7 +117,7 @@ impl Octree {
                 let position = node.position;
                 let depth = node.depth;
 
-                let children = (0..8usize).into_iter().map(move |children| {
+                let children = (0..8usize).map(move |children| {
                     let position = (CHILDREN_OFFSETS[children] * half).as_::<i32>() + position;
 
                     Node {
@@ -173,7 +173,7 @@ impl Octree {
             let node = &self.nodes[i];
 
             if let Some(base) = node.children() {
-                let recurse = callback(&node);
+                let recurse = callback(node);
 
                 if recurse {
                     let base = base.get();

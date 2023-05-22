@@ -1,12 +1,11 @@
 use assets::Assets;
 use ecs::Scene;
-use graphics::{ActivePipeline, ComputePass, Graphics, Texture};
+use graphics::{Graphics};
 use utils::Storage;
-use world::{post_user, user, System, World};
+use world::{user, System, World};
 
 use crate::{
-    Environment, EnvironmentMap, ForwardRenderer, Pipelines, Renderer, SkyMaterial, Surface,
-    TempEnvironmentMap,
+    Environment, ForwardRenderer, Pipelines, Renderer, SkyMaterial, Surface,
 };
 
 // Add the envinronment resource into the world and the sky entity
@@ -48,7 +47,7 @@ fn init(world: &mut World) {
 
 // Render a single face of the environment map each frame
 // Swap the envmap index when done
-fn render(world: &mut World) {
+fn render(_world: &mut World) {
     // TODO: Pls fix texture mip level layer shit (it shit)
     /*
     let mut _environment = world.get_mut::<Environment>().unwrap();

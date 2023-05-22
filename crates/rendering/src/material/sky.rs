@@ -21,7 +21,7 @@ impl Material for SkyMaterial {
     type Query<'a> = &'a ();
 
     // Load the respective Sky shader modules and compile them
-    fn shader(settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader {
+    fn shader(_settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader {
         // Load the vertex module from the assets
         let vert = assets
             .load::<VertexModule>("engine/shaders/scene/sky/sky.vert")
@@ -67,14 +67,14 @@ impl Material for SkyMaterial {
     }
 
     // Fetch the texture storages
-    fn fetch<'w>(world: &'w world::World) -> Self::Resources<'w> {
+    fn fetch(world: &world::World) -> Self::Resources<'_> {
         let albedo_maps = world.get::<Storage<AlbedoMap>>().unwrap();
         albedo_maps
     }
 
     // Set the static bindings that will never change
-    fn set_global_bindings<'r, 'w>(
-        _resources: &'r mut Self::Resources<'w>,
+    fn set_global_bindings<'r>(
+        _resources: &'r mut Self::Resources<'_>,
         group: &mut BindGroup<'r>,
         default: &DefaultMaterialResources<'r>,
     ) {

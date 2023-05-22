@@ -1,19 +1,19 @@
 use crate::{
-    Chunk, ChunkManager, ChunkState, ChunkViewer, Terrain, TerrainMaterial, TerrainSettings,
+    Chunk, ChunkState, ChunkViewer, Terrain,
 };
-use ahash::{AHashMap, AHashSet};
+
 
 use coords::{Position, Rotation, Scale};
 use ecs::{Entity, Scene};
 
 use graphics::{
-    ActivePipeline, ComputePass, DrawIndexedIndirect, DrawIndexedIndirectBuffer, Graphics,
+    DrawIndexedIndirectBuffer,
 };
 use math::OctreeDelta;
-use rand::{seq::SliceRandom, Rng};
-use rayon::prelude::{IntoParallelIterator, ParallelBridge, ParallelIterator};
+use rand::{seq::SliceRandom};
+use rayon::prelude::{ParallelIterator};
 use rendering::{
-    IndirectMesh, MultiDrawIndirectCountMesh, MultiDrawIndirectMesh, Renderer, Surface,
+    MultiDrawIndirectCountMesh,
 };
 use utils::{Storage, Time};
 use world::{user, System, World};
@@ -23,7 +23,7 @@ fn update(world: &mut World) {
     // Tries to find a chunk viewer and the terrain generator
     let terrain = world.get_mut::<Terrain>();
     let mut scene = world.get_mut::<Scene>().unwrap();
-    let time = world.get::<Time>().unwrap();
+    let _time = world.get::<Time>().unwrap();
     let viewer = scene.find_mut::<(&Entity, &mut ChunkViewer, &Position, &Rotation)>();
 
     // If we don't have terrain, don't do shit
@@ -161,11 +161,11 @@ fn update(world: &mut World) {
                 // Increase the max count of the mesh that corresponds to this allocation
                 let handle = &memory.allocation_meshes[allocation];
                 *multi_draw_indirect_count_meshes
-                    .get_mut(&handle)
+                    .get_mut(handle)
                     .max_count_mut() += count;
 
                 // Create new chunk entities and set them as "free"
-                entities.extend((0..count).into_iter().map(|i| {
+                entities.extend((0..count).map(|i| {
                     let position = Position::default();
                     let scale = Scale::default();
 

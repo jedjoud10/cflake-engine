@@ -1,7 +1,7 @@
 use world::{System, World};
 
 // Handle collision detection every tick
-fn tick(world: &mut World) {}
+fn tick(_world: &mut World) {}
 
 // Create the collision system
 pub fn system(system: &mut System) {

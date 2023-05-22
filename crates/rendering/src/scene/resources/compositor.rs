@@ -146,7 +146,7 @@ impl Compositor {
 
         // Create a uniform buffer that will contain post processing parameters
         let post_process_buffer = UniformBuffer::from_slice(
-            &graphics,
+            graphics,
             &[PostProcessUniform::default()],
             BufferMode::Dynamic,
             BufferUsage::WRITE,

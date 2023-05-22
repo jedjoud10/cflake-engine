@@ -1,4 +1,4 @@
-use cflake_engine::assets::include_dir;
+
 use cflake_engine::prelude::*;
 
 // Mesh example game window
@@ -72,7 +72,7 @@ fn init(world: &mut World) {
     // Create a prefab that contains the renderer, customized surface, and default position
     let renderer = Renderer::default();
     let position = Position::default();
-    let surface = Surface::new(sphere.clone(), material.clone(), id.clone());
+    let surface = Surface::new(sphere, material, id);
     scene.prefabify("sphere", (renderer, position, surface));
 
     // ADD THE ENTITIES NOW!!

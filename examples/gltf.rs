@@ -48,9 +48,9 @@ fn init(world: &mut World) {
 fn update(world: &mut World) {
     let time = world.get::<Time>().unwrap();
     let mut state = world.get_mut::<State>().unwrap();
-    let time = &*time;
+    let _time = &*time;
     let input = world.get::<Input>().unwrap();
-    let mut scene = world.get_mut::<Scene>().unwrap();
+    let _scene = world.get_mut::<Scene>().unwrap();
 
     // Rotation the light
     /*

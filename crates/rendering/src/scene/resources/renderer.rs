@@ -6,9 +6,9 @@ use assets::Assets;
 
 use ecs::Entity;
 use graphics::{
-    ActiveRenderPass, ActiveRenderPipeline, BufferMode, BufferUsage, CubeMap, Depth, GpuPod,
-    Graphics, ImageTexel, LoadOp, Operation, RenderPass, RenderPipeline, SamplerFilter,
-    SamplerMipMaps, SamplerSettings, SamplerWrap, Shader, StoreOp, Texel, Texture, Texture2D,
+    ActiveRenderPass, ActiveRenderPipeline, BufferMode, BufferUsage, Depth, GpuPod,
+    Graphics, LoadOp, Operation, RenderPass, SamplerFilter,
+    SamplerMipMaps, SamplerSettings, SamplerWrap, StoreOp, Texel, Texture, Texture2D,
     TextureMipMaps, TextureMode, TextureUsage, UniformBuffer, RGBA,
 };
 use utils::{Handle, Storage};
@@ -167,10 +167,10 @@ impl ForwardRenderer {
         let mask = mask_maps.insert(create_texture2d(graphics, mask));
 
         // Load the default meshes
-        let cube = load_mesh("engine/meshes/cube.obj", &assets, &graphics, meshes);
-        let icosphere = load_mesh("engine/meshes/icosphere.obj", &assets, &graphics, meshes);
-        let plane = load_mesh("engine/meshes/plane.obj", &assets, &graphics, meshes);
-        let sphere = load_mesh("engine/meshes/sphere.obj", &assets, &graphics, meshes);
+        let cube = load_mesh("engine/meshes/cube.obj", assets, graphics, meshes);
+        let icosphere = load_mesh("engine/meshes/icosphere.obj", assets, graphics, meshes);
+        let plane = load_mesh("engine/meshes/plane.obj", assets, graphics, meshes);
+        let sphere = load_mesh("engine/meshes/sphere.obj", assets, graphics, meshes);
 
         Self {
             // Render pass, color texture, and depth texture

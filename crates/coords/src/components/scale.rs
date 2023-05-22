@@ -94,12 +94,12 @@ impl<T> From<&Target> for Scale<T> {
 
 impl<T> From<Scale<T>> for math::RawMatrix {
     fn from(value: Scale<T>) -> Self {
-        return vek::Mat4::scaling_3d(vek::Vec3::broadcast(value.0));
+        vek::Mat4::scaling_3d(vek::Vec3::broadcast(value.0))
     }
 }
 
 impl<T> From<&Scale<T>> for math::RawMatrix {
     fn from(value: &Scale<T>) -> Self {
-        return vek::Mat4::scaling_3d(vek::Vec3::broadcast(value.0));
+        vek::Mat4::scaling_3d(vek::Vec3::broadcast(value.0))
     }
 }

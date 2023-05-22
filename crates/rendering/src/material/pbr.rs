@@ -8,7 +8,7 @@ use assets::Assets;
 
 use graphics::{
     BindGroup, Compiler, FragmentModule, GpuPod, Graphics, ModuleVisibility, PushConstantLayout,
-    PushConstants, Shader, StorageAccess, VertexModule,
+    PushConstants, Shader, VertexModule,
 };
 use utils::{Handle, Storage};
 
@@ -43,7 +43,7 @@ impl Material for PhysicallyBasedMaterial {
     type Query<'a> = &'a ();
 
     // Load the respective PBR shader modules and compile them
-    fn shader(settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader {
+    fn shader(_settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader {
         // Load the vertex module from the assets
         let vert = assets
             .load::<VertexModule>("engine/shaders/scene/pbr/pbr.vert")
@@ -89,7 +89,7 @@ impl Material for PhysicallyBasedMaterial {
     }
 
     // Fetch the texture storages
-    fn fetch<'w>(world: &'w world::World) -> Self::Resources<'w> {
+    fn fetch(world: &world::World) -> Self::Resources<'_> {
         let albedo_maps = world.get::<Storage<AlbedoMap>>().unwrap();
         let normal_maps = world.get::<Storage<NormalMap>>().unwrap();
         let mask_maps = world.get::<Storage<MaskMap>>().unwrap();
@@ -98,8 +98,8 @@ impl Material for PhysicallyBasedMaterial {
     }
 
     // Set the static bindings that will never change
-    fn set_global_bindings<'r, 'w>(
-        resources: &'r mut Self::Resources<'w>,
+    fn set_global_bindings<'r>(
+        resources: &'r mut Self::Resources<'_>,
         group: &mut BindGroup<'r>,
         default: &DefaultMaterialResources<'r>,
     ) {
@@ -140,9 +140,9 @@ impl Material for PhysicallyBasedMaterial {
     }
 
     // Set the instance bindings that will change per material
-    fn set_instance_bindings<'r, 'w>(
+    fn set_instance_bindings<'r>(
         &self,
-        resources: &'r mut Self::Resources<'w>,
+        resources: &'r mut Self::Resources<'_>,
         default: &DefaultMaterialResources<'r>,
         group: &mut BindGroup<'r>,
     ) {

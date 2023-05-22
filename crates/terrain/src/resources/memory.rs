@@ -1,4 +1,4 @@
-use std::sync::mpsc::{Receiver, Sender, SyncSender};
+use std::sync::mpsc::{Receiver, Sender};
 
 use assets::Assets;
 
@@ -6,9 +6,9 @@ use ecs::Entity;
 use graphics::{
     Buffer, BufferMode, BufferUsage, Compiler, ComputeModule, ComputeShader,
     DrawCountIndirectBuffer, DrawIndexedIndirect, DrawIndexedIndirectBuffer, GpuPod, Graphics,
-    ModuleVisibility, PushConstantLayout, StorageAccess, Texel, TriangleBuffer, Vertex, XY, XYZW,
+    ModuleVisibility, PushConstantLayout, StorageAccess, Texel, TriangleBuffer, Vertex, XY,
 };
-use rendering::{attributes, AttributeBuffer, MultiDrawIndirectCountMesh, MultiDrawIndirectMesh};
+use rendering::{attributes, AttributeBuffer, MultiDrawIndirectCountMesh};
 use utils::{BitSet, Handle, Storage};
 
 use crate::{create_counters, TerrainSettings, Triangles, Vertices};
@@ -80,18 +80,16 @@ impl MemoryManager {
             count: usize,
         ) -> Vec<Buffer<T, TYPE>> {
             (0..count)
-                .into_iter()
                 .map(|_| crate::create_empty_buffer(graphics))
                 .collect::<Vec<_>>()
         }
 
         // Create multiple buffers for N allocations
         let generated_indexed_indirect_buffers =
-            create_empty_buffer_count(&graphics, settings.allocation_count);
+            create_empty_buffer_count(graphics, settings.allocation_count);
 
         // And another one that contains the culled indexed indirect elements
         let culled_indexed_indirect_buffers = (0..settings.allocation_count)
-            .into_iter()
             .map(|_| indexed_indirect_buffers.insert(crate::create_empty_buffer(graphics)))
             .collect::<Vec<_>>();
 
@@ -109,16 +107,15 @@ impl MemoryManager {
 
         // Visibility bitset and GPU buffers
         let visibility_bitsets = (0..settings.allocation_count)
-            .into_iter()
             .map(|_| BitSet::new())
             .collect();
-        let visibility_buffers = create_empty_buffer_count(&graphics, settings.allocation_count);
+        let visibility_buffers = create_empty_buffer_count(graphics, settings.allocation_count);
 
         // Generated and culled positions and scalings
         let culled_position_scaling_buffers =
-            create_empty_buffer_count(&graphics, settings.allocation_count);
+            create_empty_buffer_count(graphics, settings.allocation_count);
         let generated_position_scaling_buffers =
-            create_empty_buffer_count(&graphics, settings.allocation_count);
+            create_empty_buffer_count(graphics, settings.allocation_count);
 
         // Allocate the chunk indices that will be stored per allocation
         let sub_allocation_chunk_indices = (0..settings.allocation_count)
@@ -240,17 +237,16 @@ impl MemoryManager {
 
         // Generate multiple multi-draw indirect meshes that will be used by the global terrain renderer
         let allocation_meshes = (0..settings.allocation_count)
-            .into_iter()
             .map(|allocation| {
                 let positions = shared_positions_buffers[allocation].clone();
                 let triangles = shared_triangle_buffers[allocation].clone();
 
                 multi_draw_indirect_count_meshes.insert(MultiDrawIndirectCountMesh::from_handles(
-                    Some(positions.clone()),
+                    Some(positions),
                     None,
                     None,
                     None,
-                    triangles.clone(),
+                    triangles,
                     culled_indexed_indirect_buffers[allocation].clone(),
                     0,
                     culled_count_buffer.clone(),

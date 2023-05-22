@@ -1,13 +1,13 @@
-use std::time::Instant;
 
-use crate::{Chunk, ChunkState, Terrain, TerrainMaterial};
+
+use crate::{Chunk, ChunkState, Terrain};
 use coords::{Position, Scale};
 use ecs::{Entity, Scene};
 use graphics::{
-    ActivePipeline, ComputePass, DrawIndexedIndirect, DrawIndexedIndirectBuffer, GpuPod, Graphics,
+    ActivePipeline, ComputePass, GpuPod, Graphics,
     Texture, TriangleBuffer, Vertex,
 };
-use rendering::{attributes, AttributeBuffer, IndirectMesh, Renderer, Surface};
+use rendering::{attributes, AttributeBuffer};
 use utils::{Storage, Time};
 use world::{System, World};
 
@@ -67,7 +67,7 @@ fn update(world: &mut World) {
         a.generation_priority.total_cmp(&b.generation_priority)
     });
     vec.retain(|(chunk, _, _, _)| chunk.state == ChunkState::Pending);
-    let Some((chunk, position, scale, entity)) = vec.pop() else {
+    let Some((chunk, position, scale, _entity)) = vec.pop() else {
         return;
     };
 

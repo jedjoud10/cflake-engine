@@ -1,17 +1,16 @@
-use std::{mem::size_of, num::NonZeroU8};
+
 
 use crate::{
     AlbedoMap, AttributeBuffer, Camera, DefaultMaterialResources, DirectionalLight, Environment,
     ForwardRenderer, Indirect, IndirectMesh, MaskMap, Mesh, MultiDrawIndirectCountMesh,
-    MultiDrawIndirectMesh, NormalMap, PhysicallyBasedMaterial, Pipelines, Renderer, SceneUniform,
-    ShadowMapping, SkyMaterial, Surface, TimingUniform, WindowUniform, WireframeMaterial,
+    MultiDrawIndirectMesh, NormalMap, PhysicallyBasedMaterial, Pipelines, SceneUniform,
+    ShadowMapping, SkyMaterial, TimingUniform, WindowUniform, WireframeMaterial,
 };
 use assets::Assets;
 
 use ecs::Scene;
 use graphics::{
-    ActivePipeline, DrawCountIndirectBuffer, DrawIndexedIndirectBuffer, GpuPod, Graphics,
-    ModuleVisibility, Texture, TriangleBuffer, Window,
+    DrawCountIndirectBuffer, DrawIndexedIndirectBuffer, GpuPod, Graphics, Texture, TriangleBuffer, Window,
 };
 
 use utils::{Storage, Time};

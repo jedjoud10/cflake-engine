@@ -13,7 +13,7 @@ pub struct ChunkCuller {
 }
 
 impl ChunkCuller {
-    pub(crate) fn new(assets: &Assets, graphics: &Graphics, settings: &TerrainSettings) -> Self {
+    pub(crate) fn new(assets: &Assets, graphics: &Graphics, _settings: &TerrainSettings) -> Self {
         let module = assets
             .load::<ComputeModule>("engine/shaders/terrain/cull.comp")
             .unwrap();

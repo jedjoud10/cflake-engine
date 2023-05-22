@@ -7,7 +7,7 @@ use math::Frustum;
 use utils::Storage;
 
 use crate::{
-    attributes, AttributeBuffer, EnvironmentMap, IndirectMesh, Mesh, MultiDrawIndirect,
+    attributes, AttributeBuffer, EnvironmentMap, IndirectMesh, Mesh,
     MultiDrawIndirectCountMesh, MultiDrawIndirectMesh,
 };
 

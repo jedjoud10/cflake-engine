@@ -61,14 +61,14 @@ impl Client {
     pub fn send<T: Packet>(&mut self, val: T) -> Result<(), PacketSendError> {
         // TODO: User another serialization system other than this bozo
         let string =
-            serde_json::to_string(&val).map_err(|err| PacketSendError::SerializationError(err))?;
+            serde_json::to_string(&val).map_err(PacketSendError::SerializationError)?;
         let id = crate::packet::id::<T>();
         let mut data = Vec::<u8>::with_capacity(string.as_bytes().len() + 8);
         data.extend(id.to_be_bytes());
         data.extend(string.as_bytes());
         self.stream
             .write(&data)
-            .map_err(|err| PacketSendError::SocketError(err))
+            .map_err(PacketSendError::SocketError)
             .map(|_| ())
     }
 

@@ -1,6 +1,6 @@
 use crate::AudioClipDeserializationError;
 use assets::Asset;
-use rayon::slice::ParallelSlice;
+
 use std::{
     io::{BufReader, Cursor},
     sync::Arc,
@@ -58,10 +58,10 @@ impl Asset for AudioClip {
         &["mp3", "wav"]
     }
 
-    fn deserialize<'c, 's>(
+    fn deserialize(
         data: assets::Data,
-        _: Self::Context<'c>,
-        _: Self::Settings<'s>,
+        _: Self::Context<'_>,
+        _: Self::Settings<'_>,
     ) -> Result<Self, Self::Err> {
         match data.extension() {
             // Decode an MP3 file into the appropriate format

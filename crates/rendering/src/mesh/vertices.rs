@@ -148,7 +148,7 @@ impl<'a> VerticesMut<'a, Direct> {
             // Fetch the position attribute buffer
             let attribute = self
                 .attribute::<Position>()
-                .map_err(|x| MeshAabbComputeError::AttributeBuffer(x))?;
+                .map_err(MeshAabbComputeError::AttributeBuffer)?;
 
             // Create a view into the buffer (if possible)
             let view = attribute

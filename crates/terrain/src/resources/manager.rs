@@ -1,25 +1,24 @@
-use std::thread::Thread;
 
-use ahash::{AHashMap, AHashSet};
+
+use ahash::{AHashMap};
 use assets::{Assets, AsyncHandle};
-use coords::Position;
+
 use ecs::{Entity, Scene};
 use graphics::{
-    combine_into_layered, Buffer, BufferMode, BufferUsage, DrawIndexedIndirect,
-    DrawIndexedIndirectBuffer, GpuPod, Graphics, ImageTexel, LayeredTexture2D, RawTexels,
+    combine_into_layered, GpuPod, Graphics, ImageTexel, LayeredTexture2D, RawTexels,
     SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap, Texel, TextureMipMaps,
     TextureMode, TextureUsage, Vertex,
 };
 use math::{Node, Octree};
-use rand::seq::SliceRandom;
+
 use rendering::{
-    AlbedoTexel, IndirectMesh, MaskTexel, MaterialId, MultiDrawIndirectMesh, NormalTexel,
+    AlbedoTexel, MaskTexel, MaterialId, NormalTexel,
     Pipelines, Renderer, SubSurface, Surface,
 };
-use utils::{BitSet, Handle, Storage};
+use utils::{Handle, Storage};
 
 use crate::{
-    create_empty_buffer, Chunk, ChunkState, LayeredAlbedoMap, LayeredMaskMap, LayeredNormalMap,
+    LayeredAlbedoMap, LayeredMaskMap, LayeredNormalMap,
     MemoryManager, TerrainMaterial, TerrainSettings, TerrainSubMaterial,
 };
 
@@ -68,10 +67,10 @@ impl ChunkManager {
 
         // Load the raw texels asynchronously
         let raw_albedo_texels =
-            load_raw_texels_handles::<AlbedoTexel>(&assets, &settings, |x| &x.diffuse);
+            load_raw_texels_handles::<AlbedoTexel>(assets, settings, |x| &x.diffuse);
         let raw_normal_texels =
-            load_raw_texels_handles::<NormalTexel>(&assets, &settings, |x| &x.normal);
-        let raw_mask_texels = load_raw_texels_handles::<MaskTexel>(&assets, &settings, |x| &x.mask);
+            load_raw_texels_handles::<NormalTexel>(assets, settings, |x| &x.normal);
+        let raw_mask_texels = load_raw_texels_handles::<MaskTexel>(assets, settings, |x| &x.mask);
 
         // Wait till we load ALL the raw texels
         let raw_albedo_texels = raw_albedo_texels.map(|handles| assets.wait_from_iter(handles));
@@ -89,17 +88,17 @@ impl ChunkManager {
         rayon::scope(|scope| {
             // Create a layered texture 2D that contains the diffuse maps
             scope.spawn(|_| {
-                layered_albedo_map = load_layered_texture(&graphics, raw_albedo_texels);
+                layered_albedo_map = load_layered_texture(graphics, raw_albedo_texels);
             });
 
             // Create a layered texture 2D that contains the normal maps
             scope.spawn(|_| {
-                layered_normal_map = load_layered_texture(&graphics, raw_normal_texels);
+                layered_normal_map = load_layered_texture(graphics, raw_normal_texels);
             });
 
             // Create a layered texture 2D that contains the mask maps
             scope.spawn(|_| {
-                layered_mask_map = load_layered_texture(&graphics, raw_mask_texels);
+                layered_mask_map = load_layered_texture(graphics, raw_mask_texels);
             });
         });
 
@@ -141,37 +140,15 @@ impl ChunkManager {
         let size = settings.size;
         let lod_multiplier = settings.lod_multiplier;
         let heuristic = math::OctreeHeuristic::Boxed(Box::new(move |target, node| {
-            if node.size() == size * 2 {
-                // High resolution
-                math::aabb_sphere(
-                    &node.aabb(),
-                    &math::Sphere {
-                        center: *target,
-                        radius: (size as f32 * 1.0 * lod_multiplier),
-                    },
-                )
-            } else if node.size() == size * 4 {
-                // Medium resolution
-                math::aabb_sphere(
-                    &node.aabb(),
-                    &math::Sphere {
-                        center: *target,
-                        radius: size as f32 * 2.0 * lod_multiplier,
-                    },
-                )
-            } else if node.size() == size * 8 {
-                // Medium resolution
-                math::aabb_sphere(
-                    &node.aabb(),
-                    &math::Sphere {
-                        center: *target,
-                        radius: size as f32 * 4.0 * lod_multiplier,
-                    },
-                )
-            } else {
-                // Low resolution
-                true
-            }
+            let div = (node.size() / size).next_power_of_two();
+
+            math::aabb_sphere(
+                &node.aabb(),
+                &math::Sphere {
+                    center: *target,
+                    radius: (size as f32 * div as f32 * lod_multiplier * 0.5),
+                },
+            ) || node.depth() <= 2
         }));
 
         // Create an octree for LOD chunk generation
@@ -203,7 +180,7 @@ fn load_raw_texels_handles<T: ImageTexel>(
         .sub_materials
         .as_ref()?
         .iter()
-        .map(|sub| get_name_callback(&sub))
+        .map(get_name_callback)
         .collect::<Vec<_>>();
     Some(assets.async_load_from_iter::<RawTexels<T>>(paths))
 }

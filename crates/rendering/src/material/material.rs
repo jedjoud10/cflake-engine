@@ -3,7 +3,7 @@ use crate::{
 };
 use assets::Assets;
 
-use ecs::QueryLayoutRef;
+
 use graphics::{
     BindGroup, BlendConfig, CompareFunction, DepthConfig, Graphics, PrimitiveConfig, PushConstants,
     Shader, StencilConfig, WindingOrder,
@@ -81,20 +81,20 @@ pub trait Material: 'static + Sized + Sync + Send {
     }
 
     // Fetch the required resources from the world
-    fn fetch<'w>(world: &'w World) -> Self::Resources<'w>;
+    fn fetch(world: &World) -> Self::Resources<'_>;
 
     // Set the static bindings
-    fn set_global_bindings<'r, 'w>(
-        _resources: &'r mut Self::Resources<'w>,
+    fn set_global_bindings<'r>(
+        _resources: &'r mut Self::Resources<'_>,
         _group: &mut BindGroup<'r>,
         _default: &DefaultMaterialResources<'r>,
     ) {
     }
 
     // Set the per instance bindings
-    fn set_instance_bindings<'r, 'w>(
+    fn set_instance_bindings<'r>(
         &self,
-        _resources: &'r mut Self::Resources<'w>,
+        _resources: &'r mut Self::Resources<'_>,
         _default: &DefaultMaterialResources<'r>,
         _group: &mut BindGroup<'r>,
     ) {

@@ -1,7 +1,7 @@
-use ecs::{added, Entity, Scene};
+
 use world::{post_user, user, System, World};
 
-use crate::{NetworkedSession, SyncedEntity};
+use crate::{NetworkedSession};
 
 // Add networking related resources and update settings
 fn init(_world: &mut World) {}
@@ -9,7 +9,7 @@ fn init(_world: &mut World) {}
 // Handle sending / receiving packets and ECS entities
 fn tick(world: &mut World) {
     // Try to get the networked session, and return early if it doesn't exist
-    let Ok(mut session) = world.get_mut::<NetworkedSession>() else {
+    let Ok(_session) = world.get_mut::<NetworkedSession>() else {
         return;
     };
 }

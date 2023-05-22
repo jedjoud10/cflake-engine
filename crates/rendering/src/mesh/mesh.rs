@@ -360,7 +360,7 @@ impl Mesh<MultiDrawIndirectCount> {
 // Helper functions
 impl<R: RenderPath> Mesh<R> {
     // Get a reference to the vertices immutably
-    pub fn vertices<'a>(&'a self) -> VerticesRef<'a, R> {
+    pub fn vertices(&self) -> VerticesRef<'_, R> {
         VerticesRef {
             enabled: self.enabled,
             positions: &self.positions,
@@ -457,10 +457,10 @@ impl Asset for Mesh {
         &["obj"]
     }
 
-    fn deserialize<'c, 's>(
+    fn deserialize(
         data: assets::Data,
-        context: Self::Context<'c>,
-        settings: Self::Settings<'s>,
+        context: Self::Context<'_>,
+        settings: Self::Settings<'_>,
     ) -> Result<Self, Self::Err> {
         let graphics = context;
 

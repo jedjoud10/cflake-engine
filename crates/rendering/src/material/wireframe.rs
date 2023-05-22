@@ -1,15 +1,14 @@
 use crate::{
-    ActiveScenePipeline, AlbedoMap, CameraUniform, DefaultMaterialResources, Direct, Material,
-    NormalMap, Renderer, SceneUniform, ShadowMap, ShadowMapping, ShadowUniform,
+    ActiveScenePipeline, CameraUniform, DefaultMaterialResources, Direct, Material, Renderer,
 };
 
 use assets::Assets;
 
 use graphics::{
     BindGroup, Compiler, FragmentModule, GpuPod, Graphics, ModuleVisibility, PushConstantLayout,
-    PushConstants, Shader, StorageAccess, VertexModule,
+    PushConstants, Shader, VertexModule,
 };
-use utils::{Handle, Storage};
+
 
 // OVerly simplistic wireframe material
 pub struct WireframeMaterial;
@@ -66,13 +65,13 @@ impl Material for WireframeMaterial {
     }
 
     // Fetch the texture storages
-    fn fetch<'w>(world: &'w world::World) -> Self::Resources<'w> {
-        ()
+    fn fetch(_world: &world::World) -> Self::Resources<'_> {
+        
     }
 
     // Set the static bindings that will never change
-    fn set_global_bindings<'r, 'w>(
-        _resources: &'r mut Self::Resources<'w>,
+    fn set_global_bindings<'r>(
+        _resources: &'r mut Self::Resources<'_>,
         group: &mut BindGroup<'r>,
         default: &DefaultMaterialResources<'r>,
     ) {
