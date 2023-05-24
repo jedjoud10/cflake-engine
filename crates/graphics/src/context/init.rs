@@ -157,6 +157,7 @@ pub(crate) unsafe fn init_context_and_window(
             pipeline_layouts: Default::default(),
             bind_groups: Default::default(),
             bind_group_layouts: Default::default(),
+            spirvs: Default::default(),
         },
         acquires: Default::default(),
         submissions: Default::default(),

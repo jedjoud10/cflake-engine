@@ -18,7 +18,7 @@ use std::{
     ops::{Bound, RangeBounds},
     path::{Path, PathBuf},
     sync::Arc,
-    time::Instant,
+    time::Instant, hash::{Hash, Hasher},
 };
 use thiserror::Error;
 use vek::serde::__private::de;
@@ -26,12 +26,14 @@ use vek::serde::__private::de;
 use super::create_pipeline_layout;
 
 // Type alias for snippets and resources
-pub(crate) type Snippets = BTreeMap<String, String>;
+pub(crate) type Snippets = AHashMap<String, String>;
 pub(crate) type ResourceBindingTypes = AHashMap<String, BindResourceType>;
 pub(crate) type MaybePushConstantLayout = Option<PushConstantLayout>;
 pub(crate) type Included = Arc<Mutex<AHashSet<String>>>;
 pub(crate) type Constants = AHashMap<u32, SpecConstant>;
 pub(crate) type Defines = AHashMap<String, String>;
+pub(crate) type CachedShaderKey = u32;
+pub(crate) type CachedSpirvKey = u32;
 pub type OptimizationLevel = shaderc::OptimizationLevel;
 
 // This is a compiler that will take GLSL code and create a WGPU module
@@ -120,10 +122,12 @@ impl<'a> Compiler<'a> {
 
         Ok(Compiled {
             raw,
+            snippets: self.snippets.clone(),
             path: path.into(),
             _phantom: PhantomData,
             graphics: self.graphics.clone(),
             reflected,
+            checksum: 0,
         })
     }
 
@@ -243,9 +247,8 @@ fn compile(
     mut source: String,
     path: &Path,
 ) -> Result<(Arc<wgpu::ShaderModule>, Arc<spirq::EntryPoint>), ShaderCompilationError> {
+    /*
     // If the shader cache already contains the compiled shader, simply reuse it
-    // TODO: Holy fuck please optimize this
-    // TODO: Also change cache to LruCache or smthing like that
     if let Some(value) = graphics
         .0
         .cached
@@ -258,6 +261,8 @@ fn compile(
     } else {
         log::warn!("Did not find cached shader module for {path:?}");
     }
+    */
+
     let file = path.file_name().unwrap().to_str().unwrap();
 
     // TODO: OPTIMIZE
@@ -371,6 +376,9 @@ fn compile(
     assert!(reflect.len() == 1);
     let reflect = reflect.pop().unwrap();
 
+    // Calculate checksum of the SPIRV binary artifact
+    //let checksum = crc32fast::hash(artifact.as_binary_u8());
+
     // Compile the Wgpu shader (raw spirv passthrough)
     let wgpu = unsafe {
         graphics
@@ -381,13 +389,15 @@ fn compile(
             })
     };
 
-    // Cache the result first
+    // Cache the results of the shader compilation
     let raw = Arc::new(wgpu);
     let reflected = Arc::new(reflect);
+    /*
     graphics.0.cached.shaders.insert(
-        (snippets.clone(), path.to_path_buf()),
+        checksum,
         (raw.clone(), reflected.clone()),
     );
+    */
     log::debug!("Saved shader module for {file} in graphics cache");
 
     // Return the compiled wgpu module and the reflected mdule
@@ -523,7 +533,7 @@ fn include(
     // Check if this file/snippet was already loaded before
     let mut locked = included.lock();
     if locked.contains(target) {
-        log::warn!("{target} was already loaded, no need to load it again");
+        log::debug!("{target} was already loaded, no need to load it again");
         return Ok(shaderc::ResolvedInclude {
             resolved_name: target.to_string(),
             content: "".to_string(),
@@ -550,6 +560,8 @@ pub struct Compiled<M: ShaderModule> {
     // Wgpu module and spirv reflected module
     raw: Arc<wgpu::ShaderModule>,
     reflected: Arc<spirq::EntryPoint>,
+    checksum: u32,
+    snippets: Snippets,
 
     // Helpers
     path: Arc<Path>,
@@ -562,11 +574,25 @@ pub struct Compiled<M: ShaderModule> {
 impl<M: ShaderModule> Clone for Compiled<M> {
     fn clone(&self) -> Self {
         Self {
+            snippets: self.snippets.clone(),
             raw: self.raw.clone(),
             path: self.path.clone(),
             _phantom: self._phantom.clone(),
             graphics: self.graphics.clone(),
             reflected: self.reflected.clone(),
+            checksum: self.checksum,
+        }
+    }
+}
+
+impl<M: ShaderModule> Drop for Compiled<M> {
+    fn drop(&mut self) {
+        if Arc::strong_count(&self.raw) == 2 {
+            /*
+            let path = self.path.as_ref();
+            let path = PathBuf::from(path);
+            assert!(self.graphics.drop_cached_shader_module(self.checksum));
+            */
         }
     }
 }

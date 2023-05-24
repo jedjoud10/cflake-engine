@@ -12,13 +12,15 @@ use wgpu::{
 
 use crate::{
     BindGroupLayout, BindResourceLayout, Id, ReflectedShader, SamplerSettings, SamplerWrap,
-    Snippets, StagingPool, UniformBuffer,
+    Snippets, StagingPool, UniformBuffer, Defines, CachedSpirvKey, CachedShaderKey,
 };
 
 // Cached graphics data that can be reused
 pub(crate) struct Cached {
+    pub(crate) spirvs: 
+        DashMap<CachedSpirvKey, Arc<[u32]>>,
     pub(crate) shaders:
-        DashMap<(Snippets, PathBuf), (Arc<wgpu::ShaderModule>, Arc<spirq::EntryPoint>)>,
+        DashMap<CachedShaderKey, (Arc<wgpu::ShaderModule>, Arc<spirq::EntryPoint>)>,
     pub(crate) samplers: DashMap<SamplerSettings, Arc<Sampler>>,
     pub(crate) bind_group_layouts: DashMap<BindGroupLayout, Arc<wgpu::BindGroupLayout>>,
     pub(crate) pipeline_layouts: DashMap<ReflectedShader, Arc<wgpu::PipelineLayout>>,
@@ -166,31 +168,32 @@ impl Graphics {
 
     // Called internally when we drop a render shader or compute shader pipeline layout (and it's corresponding shared bind group layouts)
     // TODO: Should we even remove the bind group layouts in the first place??
-    pub(crate) fn drop_cached_pipeline_layout(&self, reflected: &ReflectedShader) {
+    pub(crate) fn drop_cached_pipeline_layout(&self, reflected: &ReflectedShader) -> bool {
         let cached = &self.0.cached;
-
-        let mut remove_pipeline_layout = false;
-        if let Some(get) = self.0.cached.pipeline_layouts.get(&reflected) {
-            if Arc::strong_count(&get) == 1 {
-                remove_pipeline_layout = true;
-            }
-        }
         
-        if remove_pipeline_layout {
-            let bind_group_layouts = reflected.bind_group_layouts.iter().filter_map(|x| x.as_ref());
+        let bind_group_layouts = reflected.bind_group_layouts.iter().filter_map(|x| x.as_ref());
 
-            for bind_group_layout in bind_group_layouts {
-                let remove_bind_group_layout = cached.bind_group_layouts
-                    .get(bind_group_layout)
-                    .map(|x| Arc::strong_count(x.value()) == 1)
-                    .unwrap_or_default();
-    
-                if remove_bind_group_layout {
-                    cached.bind_group_layouts.remove(bind_group_layout).unwrap();
-                }
+        for bind_group_layout in bind_group_layouts {
+            let remove_bind_group_layout = cached.bind_group_layouts
+                .get(bind_group_layout)
+                .map(|x| Arc::strong_count(x.value()) == 1)
+                .unwrap_or_default();
+
+            if remove_bind_group_layout {
+                cached.bind_group_layouts.remove(bind_group_layout).unwrap();
             }
-
-            self.0.cached.pipeline_layouts.remove(&reflected);
         }
+
+        self.0.cached.pipeline_layouts.remove(&reflected).is_some()
     }
+
+    pub(crate) fn drop_cached_shader_module(&self, key: CachedShaderKey) -> bool {
+        let cached = &self.0.cached;
+        cached.shaders.remove(&key).is_some()
+    }
+
+    pub(crate) fn drop_cached_spirv(&self, key: CachedSpirvKey) -> bool {
+        let cached = &self.0.cached;
+        cached.spirvs.remove(&key).is_some()
+    } 
 }

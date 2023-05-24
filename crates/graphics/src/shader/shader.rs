@@ -19,6 +19,14 @@ pub struct Shader {
     graphics: Graphics,
 }
 
+impl Drop for Shader {
+    fn drop(&mut self) {
+        if Arc::strong_count(&self.reflected) == 2 {
+            //self.graphics.drop_cached_pipeline_layout(&self.reflected);
+        }
+    }
+}
+
 impl Shader {
     // Create a new shader from the vertex and fragment source modules
     pub fn new(
@@ -58,12 +66,6 @@ impl Shader {
     }
 }
 
-impl Drop for Shader {
-    fn drop(&mut self) {
-        self.graphics.drop_cached_pipeline_layout(&self.reflected)
-    }
-}
-
 // A compute shader used for general computing work
 // This is used for compute work, and nothing else.
 // Shaders are clonable since they can be shared between multiple graphics pipelines
@@ -78,7 +80,9 @@ pub struct ComputeShader {
 
 impl Drop for ComputeShader {
     fn drop(&mut self) {
-        self.graphics.drop_cached_pipeline_layout(&self.reflected)
+        if Arc::strong_count(&self.reflected) == 2 {
+            //self.graphics.drop_cached_pipeline_layout(&self.reflected);
+        }
     }
 }
 
@@ -119,10 +123,6 @@ impl ComputeShader {
     // Get the underlying reflected shader
     pub fn reflected(&self) -> &ReflectedShader {
         &self.reflected
-    }
-
-    pub fn uncache(&self) {
-        self.graphics.drop_cached_pipeline_layout(&self.reflected)
     }
 
     // Get the underlying compute pipeline

@@ -14,14 +14,12 @@ float smooth_floor(float x) {
 }
 
 float voxel(vec3 position, float quality) {
-    //return position.y;
-    return min(fbm(position * 0.001, 8, 0.5, 2.0) * 400 + position.y, snoise(position * 0.004) * 200 + position.y);
-    //float density = smooth_floor(position.y / 100) * 100 + (1-fbmCellular(position * 0.002 * vec3(1, 0.1, 1), uint(10.0 * quality), 0.3, 2.1).x) * 440;
-    //return opSmoothUnion(density - 440, position.y, 200); 
+    float density1 = fbm(position * 0.000, 8, 0.4, 2.2) * 300 + position.y;
+    return density1;
 }
 
 // Post-process voxel step that gets executed after we generate the main voxel texture
-void post(vec3 position, inout vec3 normal, int lod) {
+void post(vec3 position, inout vec3 normal, inout float quality) {
 }
 
 // Terrain detail are basically props that we can generate on top of the terrain at close distances

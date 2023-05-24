@@ -112,9 +112,10 @@ impl Assets {
     // Uncache the bytes of an already cached asset
     // Can be used to handle hot reloading during runtime
     pub fn uncache(&self, path: &str) -> Option<()> {
-        let path = self.path(path)?;
+        let path = Path::new(path);
         let mut bytes = self.bytes.write();
-        bytes.remove(&path);
+        bytes.remove(path)?;
+        log::debug!("Un-cached the bytes of asset {:?}", path);
         Some(())
     }
 
@@ -191,11 +192,13 @@ impl Assets {
         bytes: &AsyncLoadedBytes,
         path: &Path,
     ) -> Result<Arc<[u8]>, AssetLoadError> {
-        bytes.read().get(path).cloned().ok_or_else(|| {
+        if let Some(bytes) = bytes.read().get(path).cloned() {
             log::debug!("Loaded asset from path {:?} from cached bytes", path);
+            Ok(bytes.clone())
+        } else {
             let path = path.as_os_str().to_str().unwrap().to_owned();
-            AssetLoadError::CachedNotFound(path)
-        })
+            Err(AssetLoadError::CachedNotFound(path))
+        }
     }
 
     // Load the bytes for an asset dynamically and store them within self
@@ -204,6 +207,7 @@ impl Assets {
         hijack: AsyncHijackPaths,
         owned: PathBuf,
     ) -> Result<Arc<[u8]>, AssetLoadError> {
+        let og = owned.clone();
         log::warn!("Loading asset bytes from path {:?} dynamically...", &owned);
         let mut write = bytes.write();
 
@@ -224,7 +228,7 @@ impl Assets {
 
         // Add the asset bytes into the cache
         let arc: Arc<[u8]> = Arc::from(bytes);
-        write.insert(owned.clone(), arc.clone());
+        write.insert(og, arc.clone());
         log::debug!(
             "Successfully loaded dynamic asset bytes from path {:?}",
             &owned

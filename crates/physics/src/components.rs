@@ -1,8 +1,15 @@
 mod angular_velocity;
-mod force;
-mod mass;
 mod velocity;
-pub use angular_velocity::*;
-pub use force::*;
-pub use mass::*;
-pub use velocity::*;
+mod rigid_body;
+mod colliders;
+pub use colliders::*;
+pub use rigid_body::*;
+
+// Global coordinates
+pub type Velocity = velocity::Velocity<coords::Global>;
+pub type AngularVelocity = angular_velocity::AngularVelocity<coords::Global>;
+
+// Local coordinates
+pub type LocalVelocity = velocity::Velocity<coords::Local>;
+pub type LocalAngularVelocity = angular_velocity::AngularVelocity<coords::Local>;
+

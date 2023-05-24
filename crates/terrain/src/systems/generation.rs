@@ -58,7 +58,7 @@ fn update(world: &mut World) {
         // Remove the chunk CPU range
         chunk.ranges = None;
 
-        //memory.visibility_bitsets[chunk.allocation].remove(chunk.local_index);
+        memory.visibility_bitsets[chunk.allocation].remove(chunk.local_index);
     }
 
     // Find the chunk with the highest priority
@@ -77,8 +77,11 @@ fn update(world: &mut World) {
                 rx.try_iter().count();
                 let assets = world.get::<Assets>().unwrap();
                 let graphics = world.get::<Graphics>().unwrap();
-                voxelizer.compute_voxels.uncache();
+                
+                // Uncache the old shader so we can force hot reloading
                 assets.uncache("engine/shaders/terrain/voxel.glsl").unwrap();
+                
+                // Re-load the compute shader and compile it again
                 let module = assets
                     .load::<ComputeModule>("engine/shaders/terrain/voxels.comp")
                     .unwrap();

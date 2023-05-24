@@ -9,9 +9,10 @@ edition = "2021"
 world = { path = "../world" }
 math = { path = "../math" }
 ecs = { path = "../ecs" }
+rendering = { path = "../rendering" }
+graphics = { path = "../graphics" }
 coords = { path = "../coords" }
 utils = { path = "../utils" }
 vek = { workspace = true }
-
-[features]
-two-dim = ["math/two-dim"]
+rapier3d = "0.17.2"
+rayon = "1.7.0"

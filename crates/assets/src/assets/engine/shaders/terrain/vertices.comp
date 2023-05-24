@@ -172,16 +172,22 @@ void main() {
         // Meshes are always n-3 size, so each voxel has a size of 1 / n-3
         vec3 final = blocky ? vec3(0) : ((vertex / count) - vec3(0.5));
 
-        if ((gl_GlobalInvocationID.x == 0 && start_x) || (gl_GlobalInvocationID.x == size - 4 && end_x)) {
+        if ((gl_GlobalInvocationID.x == 0 && start_x)) {
             final.x = 0.0;
+        } else if (gl_GlobalInvocationID.x == size - 4 && end_x) {
+            final.x = 0.1;
         }
         
-        if ((gl_GlobalInvocationID.y == 0 && start_y) || (gl_GlobalInvocationID.y == size - 4 && end_y)) {
+        if ((gl_GlobalInvocationID.y == 0 && start_y)) {
             final.y = 0.0;
+        } else if (gl_GlobalInvocationID.y == size - 4 && end_y) {
+            final.y = 0.1;
         }
 
-        if ((gl_GlobalInvocationID.z == 0 && start_z) || (gl_GlobalInvocationID.z == size - 4 && end_z)) {
+        if ((gl_GlobalInvocationID.z == 0 && start_z)) {
             final.z = 0.0;
+        } else if (gl_GlobalInvocationID.z == size - 4 && end_z) {
+            final.z = 0.1;
         }
 
         // Positions only need 32 bits each (4 byte for cell coord, 4 byte for inner vertex coord)
