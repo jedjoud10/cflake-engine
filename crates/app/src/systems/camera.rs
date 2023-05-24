@@ -206,6 +206,9 @@ fn update(world: &mut World) {
             * vek::Quaternion::rotation_x(-pos_y * sensivity * 0.0007),
         (factor * 5.0).clamped01(),
     );
+
+    // FIXME: Remove this when Rapier Kinematic bodies are implemented
+    **position += velocity * time.delta().as_secs_f32();
 }
 
 // Default camera system innit

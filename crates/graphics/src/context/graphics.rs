@@ -18,7 +18,7 @@ use crate::{
 // Cached graphics data that can be reused
 pub(crate) struct Cached {
     pub(crate) spirvs: 
-        DashMap<CachedSpirvKey, Arc<[u32]>>,
+        DashMap<CachedSpirvKey, Vec<u32>>,
     pub(crate) shaders:
         DashMap<CachedShaderKey, (Arc<wgpu::ShaderModule>, Arc<spirq::EntryPoint>)>,
     pub(crate) samplers: DashMap<SamplerSettings, Arc<Sampler>>,

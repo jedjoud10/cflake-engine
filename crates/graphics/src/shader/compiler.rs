@@ -12,7 +12,7 @@ use snailquote::unescape;
 use std::{
     any::TypeId,
     borrow::Cow,
-    collections::BTreeMap,
+    collections::{BTreeMap, HashMap},
     ffi::CStr,
     marker::PhantomData,
     ops::{Bound, RangeBounds},
@@ -25,15 +25,22 @@ use vek::serde::__private::de;
 
 use super::create_pipeline_layout;
 
+// Reason why these are BTreeMaps is because we need to be able to hash them
+pub(crate) type Snippets = BTreeMap<String, String>;
+pub(crate) type Defines = BTreeMap<String, String>;
+pub(crate) type Constants = BTreeMap<u32, SpecConstant>;
+
 // Type alias for snippets and resources
-pub(crate) type Snippets = AHashMap<String, String>;
 pub(crate) type ResourceBindingTypes = AHashMap<String, BindResourceType>;
 pub(crate) type MaybePushConstantLayout = Option<PushConstantLayout>;
 pub(crate) type Included = Arc<Mutex<AHashSet<String>>>;
-pub(crate) type Constants = AHashMap<u32, SpecConstant>;
-pub(crate) type Defines = AHashMap<String, String>;
-pub(crate) type CachedShaderKey = u32;
-pub(crate) type CachedSpirvKey = u32;
+
+// Contains the source code of the file and defines used
+pub(crate) type CachedSpirvKey = (String, Defines, Snippets);
+
+// FIXME: This is also supposed to take in the value of the spec-constants but since they contain a variant that stores a f32 they can't be hashed
+pub(crate) type CachedShaderKey = (String, Defines, Snippets);
+
 pub type OptimizationLevel = shaderc::OptimizationLevel;
 
 // This is a compiler that will take GLSL code and create a WGPU module
@@ -47,7 +54,6 @@ pub struct Compiler<'a> {
     pub(crate) defines: Defines,
     pub(crate) resource_types: ResourceBindingTypes,
     pub(crate) maybe_push_constant_layout: MaybePushConstantLayout,
-    optimization: shaderc::OptimizationLevel,
 }
 
 impl<'a> Compiler<'a> {
@@ -61,9 +67,6 @@ impl<'a> Compiler<'a> {
             resource_types: Default::default(),
             maybe_push_constant_layout: Default::default(),
             defines: Default::default(),
-
-            // TODO: Fix vulkan erors
-            optimization: shaderc::OptimizationLevel::Zero,
         }
     }
 
@@ -84,17 +87,6 @@ impl<'a> Compiler<'a> {
         self.defines.insert(name.to_string(), value.to_string());
     }
 
-    /*
-    // TODO: Fix vulkan erors. More specifically, spirq doesn't detect bind groups and shaderc output is kinda odd
-    // Set the optimization level used by the ShaderC compiler
-    pub fn use_optimization_level(
-        &mut self,
-        level: shaderc::OptimizationLevel,
-    ) {
-        self.optimization = level;
-    }
-    */
-
     // Convert the given GLSL code to SPIRV code, then compile said SPIRV code
     // This uses the defined resoures defined in this compiler
     pub(crate) fn compile<M: ShaderModule>(&self, module: M) -> Result<Compiled<M>, ShaderError> {
@@ -110,7 +102,6 @@ impl<'a> Compiler<'a> {
             &self.snippets,
             &self.constants,
             &self.defines,
-            self.optimization,
             source,
             &path,
         )
@@ -243,10 +234,12 @@ fn compile(
     snippets: &Snippets,
     constants: &Constants,
     defines: &Defines,
-    optimization: shaderc::OptimizationLevel,
     mut source: String,
     path: &Path,
 ) -> Result<(Arc<wgpu::ShaderModule>, Arc<spirq::EntryPoint>), ShaderCompilationError> {
+    // Check if the shader module was already compiled and WGPU created it
+    let key = (source.clone(), defines.clone(), snippets.clone());
+
     /*
     // If the shader cache already contains the compiled shader, simply reuse it
     if let Some(value) = graphics
@@ -263,27 +256,95 @@ fn compile(
     }
     */
 
-    let file = path.file_name().unwrap().to_str().unwrap();
+    // Compile SPIRV if it was not in cache already
+    let key = (source.clone(), defines.clone(), snippets.clone());
+    let cached = graphics.0.cached.spirvs.get(&key);
+    let spirv = if cached.is_none() {
+        Some(compile_spirv(
+            path,
+            source,
+            defines,
+            snippets,
+            assets,
+            graphics,
+            kind
+        )?)
+    } else {
+        None
+    };
 
-    // TODO: OPTIMIZE
-    // Get version line index
+    // Fetch cached SPIRV binary if it was already compiled
+    let mut spirv = spirv.as_ref().map(|x| x.as_binary()).unwrap_or_else(|| &cached.as_ref().unwrap()).to_vec();
+    let before = spirv.clone();
+
+    // Cache the SPIRV into the shader cache if needed
+    if cached.is_none() {
+        graphics.0.cached.spirvs.insert(key, spirv.clone());
+    }
+
+    // Parse the spirv manually to be able to handle specialization constants
+    specialize_spec_constants(&mut spirv, &constants);
+
+    // Setup basic config spirq option
+    let mut reflect = spirq::ReflectConfig::new()
+        .spv(before)
+        .combine_img_samplers(false)
+        .ref_all_rscs(true)
+        .gen_unique_names(false)
+        .reflect()
+        .unwrap();
+    assert!(reflect.len() == 1);
+    let reflect = reflect.pop().unwrap();
+
+    // Compile the Wgpu shader (raw spirv passthrough)
+    let wgpu = unsafe {
+        graphics
+            .device()
+            .create_shader_module_spirv(&wgpu::ShaderModuleDescriptorSpirV {
+                label: Some(&format!("shader-module-{path:?}")),
+                source: wgpu::util::make_spirv_raw(bytemuck::cast_slice(&spirv)),
+            })
+    };
+
+    // Cache the results of the shader compilation
+    let raw = Arc::new(wgpu);
+    let reflected = Arc::new(reflect);
+    /*
+    graphics.0.cached.shaders.insert(
+        checksum,
+        (raw.clone(), reflected.clone()),
+    );
+    */
+    //log::debug!("Saved shader module for {file} in graphics cache");
+
+    // Return the compiled wgpu module and the reflected mdule
+    Ok((raw, reflected))
+}
+
+// Force the compilation of SPIRV code
+// Only gets executed if the SPIRV was not cached in the shader cache
+fn compile_spirv(
+    path: &Path,
+    source: String,
+    defines: &Defines,
+    snippets: &Snippets,
+    assets: &Assets,
+    graphics: &Graphics,
+    kind: &ModuleKind
+) -> Result<shaderc::CompilationArtifact, ShaderCompilationError> {
+    let file = path.file_name().unwrap().to_str().unwrap();
     let version_line_index = source
         .lines()
         .position(|x| x.starts_with("#version"))
         .unwrap();
-
-    // Convert to lines
     let mut lines = source
         .lines()
         .map(|x| x.to_string())
         .collect::<Vec<String>>();
-
-    // Add the defines to the top of the file
     for (name, define) in defines {
         lines.insert(version_line_index + 1, format!("#define {name} {define}\n"));
     }
 
-    // Default extensions
     let extensions = ["GL_EXT_samplerless_texture_functions"];
     for ext in extensions {
         lines.insert(
@@ -291,30 +352,16 @@ fn compile(
             format!("#extension {ext} : require\n"),
         );
     }
-
-    // Convert back to string
     let source = lines.join("\n");
-
-    // Custom ShaderC compiler options
+    
     let mut options = shaderc::CompileOptions::new().unwrap();
-    //options.set_generate_debug_info();
-    //options.set_target_spirv(shaderc::SpirvVersion::V1_0);
-    options.set_optimization_level(optimization);
-
-    // TODO: 2 lazy to implement
-    //options.set_auto_bind_uniforms(true);
     options.set_invert_y(false);
-
-    // Keeps track of what files/snippets where included
-    // TODO: File bug report cause I'm pretty sure it's supposed to *not* add duplicate includes
+    
     let included = Included::default();
-
-    // Create a callback responsible for includes
     options.set_include_callback(move |target, _type, current, depth| {
         include(current, _type, target, depth, assets, &snippets, &included)
     });
-
-    // Compile using ShaderC (my love)
+    
     let artifact = graphics
         .0
         .shaderc
@@ -330,9 +377,7 @@ fn compile(
             Some(&options),
         )
         .map_err(|error| match error {
-            // ShaderC compilation error, so print out the message to the error log
             shaderc::Error::CompilationError(_, value) => {
-                // Get the source code for this stage, and identify each line with it's line out
                 let source = source
                     .lines()
                     .enumerate()
@@ -340,13 +385,9 @@ fn compile(
                     .collect::<Vec<String>>()
                     .join("\n");
 
-                // Simple message containing the file that contains the error
                 log::error!("Failed compilation of shader '{file}'");
-
-                // Print a preview of the file with counted lines
                 log::error!("Source code: \n\n{source}\n\n");
 
-                // Print the error message
                 for line in value.lines() {
                     log::error!("{}", line);
                 }
@@ -355,53 +396,10 @@ fn compile(
             }
             _ => todo!(),
         })?;
-
-    // Print out possible warning messages during shader compilation
     if !artifact.get_warning_messages().is_empty() {
         log::warn!("ShaderC warning: {}", artifact.get_warning_messages());
     }
-
-    // Parse the spirv manually to be able to handle specialization constants
-    let mut binary = artifact.as_binary().to_vec();
-    specialize_spec_constants(&mut binary, &constants);
-
-    // Setup basic config spirq option
-    let mut reflect = spirq::ReflectConfig::new()
-        .spv(artifact.as_binary().to_vec())
-        .combine_img_samplers(false)
-        .ref_all_rscs(true)
-        .gen_unique_names(false)
-        .reflect()
-        .unwrap();
-    assert!(reflect.len() == 1);
-    let reflect = reflect.pop().unwrap();
-
-    // Calculate checksum of the SPIRV binary artifact
-    //let checksum = crc32fast::hash(artifact.as_binary_u8());
-
-    // Compile the Wgpu shader (raw spirv passthrough)
-    let wgpu = unsafe {
-        graphics
-            .device()
-            .create_shader_module_spirv(&wgpu::ShaderModuleDescriptorSpirV {
-                label: Some(&format!("shader-module-{path:?}")),
-                source: wgpu::util::make_spirv_raw(bytemuck::cast_slice(&binary)),
-            })
-    };
-
-    // Cache the results of the shader compilation
-    let raw = Arc::new(wgpu);
-    let reflected = Arc::new(reflect);
-    /*
-    graphics.0.cached.shaders.insert(
-        checksum,
-        (raw.clone(), reflected.clone()),
-    );
-    */
-    log::debug!("Saved shader module for {file} in graphics cache");
-
-    // Return the compiled wgpu module and the reflected mdule
-    Ok((raw, reflected))
+    Ok(artifact)
 }
 
 // Specialize spec constants ourselves cause there's no other way to do it (fuck)
@@ -477,7 +475,6 @@ fn specialize_spec_constants(binary: &mut [u32], constants: &Constants) {
             // Get the value specified by the user
             if let Some(value) = constants.get(spec_id) {
                 specialize(i, binary, *value);
-            } else {
             }
         }
     }

@@ -227,11 +227,11 @@ pub trait Texture: Sized + 'static {
         get_specific_view(self, None, None)
     }
 
-    // Get the internally stored views
-    // Starts with the base (whole) texture view, then iterates over the mip levels
+    // Get the internally stored cached views
     fn views(&self) -> Option<&[wgpu::TextureView]>;
 
-    // Get the view of a specific layer of the whole texture (if enabled and if there is one)
+    // Get the view of a specific layer of the whole texture
+    // This creates a new view if the specific view did not exist before
     fn layer_view(&self, layer: u32) -> Option<&wgpu::TextureView>
     where
         <Self::Region as Region>::O: LayeredOrigin,

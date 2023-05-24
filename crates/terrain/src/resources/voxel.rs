@@ -7,21 +7,12 @@ use graphics::{
     Texture3D, Vertex, RG,
 };
 use notify::Watcher;
-
-
 use crate::{create_texture3d, TerrainSettings};
-
-// The voxel texture will contain all the data that will be serialized and stored/sent over the network
-// This is the layout for each texel within said voxel texture
-// Bytes 0..2: 16 bit floating-point density
 
 // Voxel generator that will be solely used for generating voxels
 pub struct VoxelGenerator {
     pub(crate) compute_voxels: ComputeShader,
     pub(crate) voxel_textures: [Texture3D<RG<f32>>; 2],
-    pub(crate) set_bind_group_callback: Option<Box<dyn Fn(&mut BindGroup) + 'static>>,
-    pub(crate) set_push_constant_callback:
-        Option<Box<dyn Fn(&mut PushConstants<ActiveComputeDispatcher>) + 'static>>,
     pub(crate) hot_reload: Option<(Receiver<()>, JoinHandle<()>)>,
 }
 
@@ -34,19 +25,8 @@ impl VoxelGenerator {
         let module = assets
             .load::<ComputeModule>("engine/shaders/terrain/voxels.comp")
             .unwrap();
-        let mut compiler = create_compute_voxels_compiler(assets, graphics);
+        let compiler = create_compute_voxels_compiler(assets, graphics);
         let compute_voxels = ComputeShader::new(module, &compiler).unwrap();
-
-        /*
-        let compiler_callback = settings.voxel_compiler_callback.take();
-        let set_bind_group_callback = settings.voxel_set_group_callback.take();
-        let set_push_constant_callback = settings.voxel_set_push_constants_callback.take();
-
-        // Call the compiler callback
-        if let Some(callback) = compiler_callback {
-            (callback)(&mut compiler);
-        }
-        */
 
         // Create two textures that will be swapped out every other frame
         let voxel_textures = [
@@ -80,8 +60,6 @@ impl VoxelGenerator {
         Self {
             compute_voxels,
             voxel_textures,
-            set_bind_group_callback: None,
-            set_push_constant_callback: None,
             hot_reload,
         }
     }

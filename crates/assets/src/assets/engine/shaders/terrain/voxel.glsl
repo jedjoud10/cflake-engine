@@ -4,34 +4,9 @@
 #include <engine/shaders/sdf/common.glsl>
 #include <engine/shaders/sdf/operations.glsl>
 #include <engine/shaders/noises/fbm.glsl>
-    
-// A voxel is a 3D pixel in the world that can contain multiple parameters
-// Each voxel contains a "density". 
-// Density allows us to represent either full terrain or air, and everything in between
+
 // Main voxel function that will create the shape of the terrain
-float smooth_floor(float x) {
-    return x - (sin(2 * 3.1415 * x) / (2 * 1.1415));
-}
-
-float voxel(vec3 position, float quality) {
-    float density1 = fbm(position * 0.000, 8, 0.4, 2.2) * 300 + position.y;
-    return density1;
-}
-
-// Post-process voxel step that gets executed after we generate the main voxel texture
-void post(vec3 position, inout vec3 normal, inout float quality) {
-}
-
-// Terrain detail are basically props that we can generate on top of the terrain at close distances
-struct Detail {
-    vec3 offset;
-    vec3 rotation;
-    float scale;
-    uint type;
-    bool spawn;
-};
-
-// Checks if we should generate a detail at a specific vertex point
-Detail detail(vec3 position, vec3 normal) {
-    return Detail(vec3(0), vec3(0), 1.0, 0, false);
+float voxel(vec3 position) {
+    vec2 density1 = fbmCellular(position * 0.005 * vec3(1, 2, 1), 1, 0.4, 2.2) * 460;
+    return (300 - density1.x) + position.y;
 }

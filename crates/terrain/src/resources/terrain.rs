@@ -36,10 +36,6 @@ pub struct TerrainSettings {
     pub(crate) triangles_per_sub_allocation: u32,
 
     // Callbacks for custom voxel data
-    pub(crate) voxel_compiler_callback: Option<Box<dyn FnOnce(&mut Compiler) + 'static>>,
-    pub(crate) voxel_set_push_constants_callback:
-        Option<Box<dyn Fn(&mut PushConstants<ActiveComputeDispatcher>) + 'static>>,
-    pub(crate) voxel_set_group_callback: Option<Box<dyn Fn(&mut BindGroup) + 'static>>,
     pub(crate) sub_materials: Option<Vec<TerrainSubMaterial>>,
 }
 
@@ -98,13 +94,6 @@ impl TerrainSettings {
         let triangles_per_sub_allocation =
             (triangle_sub_allocations_length.floor() as u32).next_power_of_two();
 
-        // Decompose the "callbacks" struct into raw options
-        /*
-        let (vpc, vspc, vsgc) = callbacks.map(|c| {
-            (Some(Box::new(c.compiler)), Some(Box::new(c.set_group_callback)), Some(Box::new(c.set_push_constants)))
-        }).unwrap_or_default();
-        */
-
         Ok(Self {
             size: resolution,
             blocky,
@@ -115,9 +104,6 @@ impl TerrainSettings {
             output_tex_coord_buffer_length: output_vertex_buffer_length,
             vertices_per_sub_allocation,
             triangles_per_sub_allocation,
-            voxel_compiler_callback: None,
-            voxel_set_push_constants_callback: None,
-            voxel_set_group_callback: None,
             sub_materials: sub_materials.map(|x| x.to_vec()),
             max_depth,
             lod_multiplier,

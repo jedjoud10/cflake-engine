@@ -176,11 +176,6 @@ fn update(world: &mut World) {
             x.push(scale, offset.len() as u32).unwrap();
             x.push(quality, scale.len() as u32 + offset.len() as u32)
                 .unwrap();
-
-            // Call the set group callback
-            if let Some(callback) = voxelizer.set_push_constant_callback.as_ref() {
-                (callback)(x);
-            }
         })
         .unwrap();
 
@@ -188,11 +183,6 @@ fn update(world: &mut World) {
     active
         .set_bind_group(0, |set| {
             set.set_storage_texture_mut("voxels", voxels).unwrap();
-
-            // Call the set group callback
-            if let Some(callback) = voxelizer.set_bind_group_callback.as_ref() {
-                (callback)(set);
-            }
         })
         .unwrap();
     active

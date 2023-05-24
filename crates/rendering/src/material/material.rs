@@ -120,7 +120,6 @@ pub trait Material: 'static + Sized + Sync + Send {
     ) {
     }
 }
-
 /*
 // Default disabled shadow casting material
 pub trait ShadowCastingMaterial: 'static + Sized + Sync + Send {

@@ -1,4 +1,5 @@
 #version 460 core
+//#define lowpoly
 
 layout(location = 0) out vec4 frag;
 
