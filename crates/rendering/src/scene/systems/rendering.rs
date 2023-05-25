@@ -3,7 +3,7 @@
 use crate::{
     AlbedoMap, AttributeBuffer, Camera, DefaultMaterialResources, DirectionalLight, Environment,
     ForwardRenderer, Indirect, IndirectMesh, MaskMap, Mesh, MultiDrawIndirectCountMesh,
-    MultiDrawIndirectMesh, NormalMap, PhysicallyBasedMaterial, Pipelines, SceneUniform,
+    MultiDrawIndirectMesh, NormalMap, PbrMaterial, Pipelines, SceneUniform,
     ShadowMapping, SkyMaterial, TimingUniform, WindowUniform, WireframeMaterial,
 };
 use assets::Assets;
@@ -46,7 +46,7 @@ fn init(world: &mut World) {
         .register::<WireframeMaterial>(&graphics, &assets)
         .unwrap();
     pipelines
-        .register::<PhysicallyBasedMaterial>(&graphics, &assets)
+        .register::<PbrMaterial>(&graphics, &assets)
         .unwrap();
 
     // Create a nice shadow map
@@ -87,7 +87,7 @@ fn init(world: &mut World) {
 
     // Add the storages that contain the materials and their resources
     world.insert(Storage::<SkyMaterial>::default());
-    world.insert(Storage::<PhysicallyBasedMaterial>::default());
+    world.insert(Storage::<PbrMaterial>::default());
     world.insert(Storage::<WireframeMaterial>::default());
     world.insert(albedo_maps);
     world.insert(normal_maps);

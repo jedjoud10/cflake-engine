@@ -13,7 +13,7 @@ pub struct Physics {
 }
 
 impl Physics {
-    fn new() -> Self {
+    pub(crate) fn new() -> Self {
         let gravity = vector![0.0, -9.81, 0.0];
         let mut rigid_body_set = RigidBodySet::new();
         let mut collider_set = ColliderSet::new();    

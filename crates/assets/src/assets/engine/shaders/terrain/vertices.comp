@@ -135,21 +135,13 @@ void main() {
 
     // Decompose the bitflags into booleans
     uint bits = meshing.skirts_direction_bitflags;
+    bits = 0;
     bool start_x = (bits & 1) == 1;
     bool start_y = (bits & 2) == 2;
     bool start_z = (bits & 4) == 4;
     bool end_x = (bits & 8) == 8;
     bool end_y = (bits & 16) == 16;
     bool end_z = (bits & 32) == 32;
-
-    /*
-    start_x = true;
-    start_y = true;
-    start_z = true;
-    end_x = true;
-    end_y = true;
-    end_z = true;
-    */
 
     // Check if we are genearting some skirts
     bool skirts = ((gl_GlobalInvocationID.x == 0 && start_x) || (gl_GlobalInvocationID.x == size - 4 && end_x)) ||

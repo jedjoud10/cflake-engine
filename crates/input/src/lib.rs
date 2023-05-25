@@ -9,7 +9,7 @@ pub use system::*;
 
 use ahash::AHashMap;
 use serde::*;
-use std::borrow::Cow;
+use std::{borrow::Cow, collections::BTreeMap};
 
 // This keyboard struct will be responsible for all key events and state handling for the keyboard
 pub struct Input {
@@ -29,13 +29,23 @@ pub struct Input {
 
 // User input bindings are basically
 #[derive(Default, Clone, Serialize, Deserialize)]
-// TODO: Sort by string name
+#[serde(bound(deserialize = "'de: 'static"))]
 pub struct InputUserBindings {
     // "forward_key_bind" -> Key::W
-    pub(crate) key_bindings: AHashMap<Cow<'static, str>, Button>,
+    #[serde(serialize_with = "order")]
+    pub(crate) key_bindings: AHashMap<&'static str, Button>,
 
     // "camera rotation" -> Axis:MousePositionX,
-    pub(crate) axis_bindings: AHashMap<Cow<'static, str>, Axis>,
+    #[serde(serialize_with = "order")]
+    pub(crate) axis_bindings: AHashMap<&'static str, Axis>,
+}
+
+fn order<S, V: Serialize>(value: &AHashMap<&'static str, V>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let ordered: BTreeMap<_, _> = value.iter().collect();
+    ordered.serialize(serializer)
 }
 
 impl Input {
@@ -55,7 +65,7 @@ impl Input {
     pub fn bind_button(&mut self, name: &'static str, key: impl Into<Button>) {
         let key = key.into();
         log::debug!("Binding button/key {key:?} to '{name}'");
-        self.bindings.key_bindings.insert(Cow::Borrowed(name), key);
+        self.bindings.key_bindings.insert(name, key);
     }
 
     // Create a new axis binding using a name and a unique axis
@@ -64,7 +74,7 @@ impl Input {
         log::debug!("Binding axis {axis:?} to '{name}'");
         self.bindings
             .axis_bindings
-            .insert(Cow::Borrowed(name), axis);
+            .insert(name, axis);
     }
 
     // Get the state of a button mapping or a key mapping

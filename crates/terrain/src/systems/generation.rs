@@ -79,7 +79,7 @@ fn update(world: &mut World) {
                 let graphics = world.get::<Graphics>().unwrap();
                 
                 // Uncache the old shader so we can force hot reloading
-                assets.uncache("engine/shaders/terrain/voxel.glsl").unwrap();
+                assets.uncache("engine/shaders/terrain/voxel.glsl");
                 
                 // Re-load the compute shader and compile it again
                 let module = assets

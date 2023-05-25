@@ -92,8 +92,8 @@ vec3 brdf(
 ) {
 	// Calculate kS and kD
 	// TODO: Fix this shit it's fucked
-	//vec3 ks = fresnel(surface.f0, camera.half_view, camera.view);
-	vec3 ks = vec3(0);
+	vec3 ks = fresnel(surface.f0, camera.half_view, camera.view);
+	//vec3 ks = vec3(0);
 	vec3 kd = (1 - ks) * (1 - surface.metallic);
 
 	// Calculate ambient sky color
@@ -112,6 +112,6 @@ vec3 brdf(
 	// TODO: IBL
 
 	brdf = brdf * light.color * lighting;
-	brdf += fresnelRoughness(surface.f0, camera.view, surface.normal, surface.roughness) * 0.40;
+	//brdf += fresnelRoughness(surface.f0, camera.view, surface.normal, surface.roughness) * 0.40;
 	return brdf;
 }

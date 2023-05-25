@@ -1,9 +1,17 @@
+use coords::Position;
+use ecs::Scene;
 use rapier3d::prelude::*;
-use world::{post_user, System, World};
+use utils::Time;
+use world::{post_user, System, World, user};
+use crate::{Physics, Velocity};
 
-use crate::Physics;
+// Creates the physics resource and add it into the world
+fn init(world: &mut World) {
+    let physics = Physics::new();
+    world.insert(physics);
+}
 
-
+// Step through the physics simulation
 fn update(world: &mut World) {
     let mut physics = world.get_mut::<Physics>().unwrap();
 
@@ -42,11 +50,7 @@ fn update(world: &mut World) {
 
 // Create the main physics system that will be responsible for simulating physics using rapier 
 pub fn system(system: &mut System) {
-    /*
+    system.insert_init(init).before(user);
     system.insert_update(update)
-        .after(post_user)
-        .before(graphics::present)
-        .before(rendering::systems::rendering::system)
-        .before(rendering::systems::matrix::system);
-    */
+        .after(post_user);
 }

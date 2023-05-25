@@ -27,6 +27,7 @@ fn init(world: &mut World) {
         },
         "config.json",
         FileType::Config,
+        SerdeFormat::JSON,
     )
     .unwrap();
 }

@@ -72,7 +72,6 @@ pub fn time(system: &mut System) {
                 ticks_to_execute: None,
                 tick_delta: Duration::from_secs_f32(1.0 / TICKS_PER_SEC),
                 tick_interpolation: 0.0,
-                tick_target_interpolation: 0.0,
                 local_tick_count: 0,
             });
         })
@@ -105,13 +104,12 @@ pub fn time(system: &mut System) {
 
                 // Add divided tick count to accumulator
                 time.last_tick_start = now;
-                time.tick_count += count as u128;
                 time.local_tick_count = 0;
                 time.ticks_to_execute = NonZeroU32::new(count);
 
                 // Might have a non-whole remainder left in the accumulator
                 let remainder = divided - count as f32;
-                time.tick_target_interpolation = remainder;
+                time.tick_interpolation = remainder / count as f32;
             } else {
                 time.ticks_to_execute = None;
             }
@@ -124,11 +122,6 @@ pub fn time(system: &mut System) {
             let mut time = world.get_mut::<Time>().unwrap();
             time.tick_count += 1;
             time.local_tick_count += 1;
-            time.tick_interpolation = 1.0;
-
-            if time.local_tick_count == (time.ticks_to_execute().unwrap().get() - 1) {
-                time.tick_interpolation = time.tick_target_interpolation;
-            }
         })
         .before(user);
 }

@@ -38,22 +38,6 @@ pub trait Material: 'static + Sized + Sync + Send {
         MeshAttributes::all()
     }
 
-    // Get the depth config for this material
-    fn depth_config() -> Option<DepthConfig> {
-        Some(DepthConfig {
-            compare: CompareFunction::Less,
-            write_enabled: true,
-            depth_bias_constant: 0,
-            depth_bias_slope_scale: 0.0,
-            depth_bias_clamp: 0.0,
-        })
-    }
-
-    // Get the stencil testing for this material
-    fn stencil_config() -> Option<StencilConfig> {
-        None
-    }
-
     // Get the rasterizer config for this materil
     fn primitive_config() -> PrimitiveConfig {
         PrimitiveConfig::Triangles {
@@ -61,11 +45,6 @@ pub trait Material: 'static + Sized + Sync + Send {
             cull_face: Some(graphics::Face::Front),
             wireframe: false,
         }
-    }
-
-    // Get the blend config for this material
-    fn blend_config() -> Option<BlendConfig<SceneColor>> {
-        None
     }
 
     // Does this material support casting shadows onto other surfaces?

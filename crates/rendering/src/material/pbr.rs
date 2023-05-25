@@ -13,7 +13,7 @@ use graphics::{
 use utils::{Handle, Storage};
 
 // A PBR shader that will try to fake how real light works in the real world
-pub struct PhysicallyBasedMaterial {
+pub struct PbrMaterial {
     // Textures used by the PBR workflow material
     pub albedo_map: Option<Handle<AlbedoMap>>,
     pub normal_map: Option<Handle<NormalMap>>,
@@ -28,7 +28,7 @@ pub struct PhysicallyBasedMaterial {
     pub tint: vek::Rgb<f32>,
 }
 
-impl Material for PhysicallyBasedMaterial {
+impl Material for PbrMaterial {
     type Resources<'w> = (
         world::Read<'w, Storage<AlbedoMap>>,
         world::Read<'w, Storage<NormalMap>>,
