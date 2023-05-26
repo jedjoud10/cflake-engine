@@ -2470,13 +2470,16 @@ dependencies = [
 name = "physics"
 version = "0.1.0"
 dependencies = [
+ "ahash 0.7.6",
  "coords",
  "ecs",
  "graphics",
+ "log",
  "math",
  "rapier3d",
  "rayon",
  "rendering",
+ "thiserror",
  "utils",
  "vek",
  "world",

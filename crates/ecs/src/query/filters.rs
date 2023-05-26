@@ -178,7 +178,7 @@ impl<L: QueryLayoutRef> QueryFilter for Added<L> {
                         .unwrap_or_default()
                 })
                 .reduce(|a, b| a & b)
-                .unwrap_or_default(),
+                .unwrap_or_default()
         )
     }
 }
@@ -213,7 +213,7 @@ impl<L: QueryLayoutRef> QueryFilter for Modified<L> {
                         .unwrap_or_default()
                 })
                 .reduce(|a, b| a & b)
-                .unwrap_or_default(),
+                .unwrap_or_default()
         )
     }
 }

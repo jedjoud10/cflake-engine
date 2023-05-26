@@ -87,7 +87,7 @@ impl Archetype {
         let old_len = self.entities.len();
 
         // Add the components first (so we know how many entities we need to add)
-        let additional = B::extend_from_iter(self, iter).unwrap();
+        let additional = B::extend_from_iter(self, false, iter).unwrap();
 
         // Allocate the entities then add them as well
         for i in 0..additional {
@@ -363,7 +363,7 @@ pub(crate) fn add_bundle<B: Bundle>(
     }
 
     // Add the extra components to the archetype
-    B::extend_from_iter(target, [bundle]).unwrap();
+    B::extend_from_iter(target, true, [bundle]).unwrap();
 
     for (mask, current) in current.table.iter() {
         log::debug!("Current Mask: {:?}, len: {}", mask, current.len());
@@ -448,7 +448,7 @@ pub(crate) fn remove_bundle<B: Bundle>(
             .swap_remove_move(index, output.states_mut());
     }
 
-    // Dissociate the bunle intop it's raw components
+    // Dissociate the bundle into it's raw components
     for (mask, input) in current
         .table
         .iter_mut()

@@ -23,8 +23,10 @@ pub trait Bundle: 'static {
 
     // Push multiple elements into an archetype, returns how many we added
     // Returns None if the bundle mask does not match with the archetype mask
+    // If moved is true, don't set the newly added components as "added" or "modified"
     fn extend_from_iter<'a>(
         archetype: &'a mut Archetype,
+        moved: bool,
         iter: impl IntoIterator<Item = Self>,
     ) -> Option<usize>
     where
@@ -44,7 +46,7 @@ pub trait PrefabBundle: 'static + Bundle {
 
 impl<B: Clone + Bundle> PrefabBundle for B {
     fn prefabify<'a>(&self, archetype: &'a mut Archetype) -> Option<()> {
-        B::extend_from_iter(archetype, [self.clone()]).map(|_| ())
+        B::extend_from_iter(archetype, false, [self.clone()]).map(|_| ())
     }
 }
 
@@ -63,6 +65,7 @@ impl<T: Component> Bundle for T {
 
     fn extend_from_iter<'a>(
         archetype: &'a mut Archetype,
+        moved: bool,
         iter: impl IntoIterator<Item = Self>,
     ) -> Option<usize> {
         let (components, states) = archetype.column_mut::<T>()?;
@@ -76,8 +79,8 @@ impl<T: Component> Bundle for T {
         states.extend_with_flags(
             additional,
             StateFlags {
-                added: true,
-                modified: true,
+                added: !moved,
+                modified: !moved,
             },
         );
 

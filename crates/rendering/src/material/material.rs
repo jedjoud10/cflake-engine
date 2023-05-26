@@ -14,20 +14,10 @@ use world::World;
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
 // Materials correspond to a specific WGPU render pipeline based on it's config parameters
 pub trait Material: 'static + Sized + Sync + Send {
-    // The resources that we need to fetch from the world to set the bind groups
     type Resources<'w>: 'w;
-
-    // The renderpath to take to render this material
     type RenderPath: RenderPath;
-
-    // Shader compilation settings
     type Settings<'s>;
-
-    // Custom entity query that could be optionally fetched from each entity
     type Query<'a>: ecs::QueryLayoutRef;
-
-    // The shadow casting shader that we will use to cast shadows onto other surfaces and onto our own surfaces
-    //type ShadowCastingMaterial: ShadowCastingMaterial;
 
     // Create a shader for this material
     fn shader(settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader;
@@ -48,7 +38,6 @@ pub trait Material: 'static + Sized + Sync + Send {
     }
 
     // Does this material support casting shadows onto other surfaces?
-    // If this is set to true then this material will use the respective ShadowCastingMaterial
     fn casts_shadows() -> bool {
         true
     }

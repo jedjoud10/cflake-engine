@@ -16,6 +16,7 @@ macro_rules! tuple_impls {
 
             fn extend_from_iter<'a>(
                 archetype: &'a mut Archetype,
+                moved: bool,
                 iter: impl IntoIterator<Item = Self>
             ) -> Option<usize> {
                 assert!(Self::is_valid());
@@ -51,8 +52,8 @@ macro_rules! tuple_impls {
 
                 seq!(N in 0..$max {
                     column~N.1.extend_with_flags(additional, StateFlags {
-                        added: true,
-                        modified: true,
+                        added: !moved,
+                        modified: !moved,
                     });
                     assert_eq!(column~N.0.len(), column~N.1.len());
                 });

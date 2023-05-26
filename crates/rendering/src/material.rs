@@ -1,12 +1,10 @@
 mod material;
 mod path;
-mod pbr;
+mod common;
+mod pass;
 mod shared;
-mod sky;
-mod wireframe;
+pub use shared::*;
+pub use common::*;
+pub use pass::*;
 pub use material::*;
 pub use path::*;
-pub use pbr::*;
-pub use shared::*;
-pub use sky::*;
-pub use wireframe::*;

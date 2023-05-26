@@ -1,6 +1,5 @@
 // Turn the 0-1 depth value to the zNear - zFar range
-float linearize_depth(float d,float zNear,float zFar)
-{
+float linearize_depth(float d,float zNear,float zFar) {
 	d = 2.0 * d - 1.0;
     return zNear * zFar / (zFar + d * (zNear - zFar));
 }
@@ -25,7 +24,6 @@ vec3 reinhard_jodie(vec3 c){
 
 // Basic Reinhard tonemapping
 // https://64.github.io/tonemapping/
-vec3 reinhard(vec3 v)
-{
+vec3 reinhard(vec3 v) {
     return v / (1.0f + v);
 }

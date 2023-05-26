@@ -55,7 +55,7 @@ pub fn file_logger(system: &mut System) {
 }
 
 // Number of ticks that should execute per second
-const TICKS_PER_SEC: f32 = 240.0f32;
+const TICKS_PER_SEC: f32 = 60.0f32;
 
 // Add the Time manager
 pub fn time(system: &mut System) {
@@ -71,7 +71,6 @@ pub fn time(system: &mut System) {
                 last_tick_start: Instant::now(),
                 ticks_to_execute: None,
                 tick_delta: Duration::from_secs_f32(1.0 / TICKS_PER_SEC),
-                tick_interpolation: 0.0,
                 local_tick_count: 0,
             });
         })
@@ -109,7 +108,6 @@ pub fn time(system: &mut System) {
 
                 // Might have a non-whole remainder left in the accumulator
                 let remainder = divided - count as f32;
-                time.tick_interpolation = remainder / count as f32;
             } else {
                 time.ticks_to_execute = None;
             }

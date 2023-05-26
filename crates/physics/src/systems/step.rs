@@ -12,19 +12,19 @@ fn init(world: &mut World) {
 }
 
 // Step through the physics simulation
-fn update(world: &mut World) {
+fn tick(world: &mut World) {
     let mut physics = world.get_mut::<Physics>().unwrap();
 
     let Physics {
-        rigid_body_set,
-        collider_set,
+        bodies,
+        colliders,
         integration_parameters,
         physics_pipeline,
-        island_manager,
+        islands,
         broad_phase,
         narrow_phase,
-        impulse_joint_set,
-        multibody_joint_set,
+        impulse_joints,
+        multibody_joints,
         ccd_solver,
     } = &mut *physics;
 
@@ -33,24 +33,30 @@ fn update(world: &mut World) {
     physics_pipeline.step(
         &gravity,
         &integration_parameters,
-        island_manager,
+        islands,
         broad_phase,
         narrow_phase,
-        rigid_body_set,
-        collider_set,
-        impulse_joint_set,
-        multibody_joint_set,
+        bodies,
+        colliders,
+        impulse_joints,
+        multibody_joints,
         ccd_solver,
         None,
         &(),
         &(),
-      );
+    );
+
+    /*
+    for x in physics.bodies.iter() {
+        println!("{}", x.1.translation().y);
+    }
+    */
 }
 
 
-// Create the main physics system that will be responsible for simulating physics using rapier 
+// Create the main physics system that will be responsible for stepping through the Rapier simulation
 pub fn system(system: &mut System) {
     system.insert_init(init).before(user);
-    system.insert_update(update)
+    system.insert_update(tick)
         .after(post_user);
 }

@@ -25,6 +25,18 @@ impl<T: 'static> PartialEq for Weak<T> {
 
 impl<T: 'static> Eq for Weak<T> {}
 
+impl<T: 'static> PartialOrd for Weak<T> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.key.partial_cmp(&other.key)
+    }
+}
+
+impl<T: 'static> Ord for Weak<T> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.key.cmp(&other.key)
+    }
+}
+
 impl<T: 'static> Weak<T> {
     // Check if the owned value is still alive in the corresponding storage
     pub fn valid(&self) -> bool {
