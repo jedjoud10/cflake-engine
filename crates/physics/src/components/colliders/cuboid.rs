@@ -30,8 +30,8 @@ impl CuboidCollider {
             half_extent,
             mass,
             handle: None,
-            friction: 0.2,
-            restitution: 0.2,
+            friction,
+            restitution,
         }
     }
 }

@@ -61,7 +61,6 @@ fn init(world: &mut World) {
     scene.insert((
         Position::default(),
         Rotation::default(),
-        Velocity::default(),
         Camera::default(),
         ChunkViewer::default(),
         CameraController::default(),

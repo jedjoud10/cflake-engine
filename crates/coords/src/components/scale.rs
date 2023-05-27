@@ -5,12 +5,9 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-// Our target is the scalar (uniform scale)
-type Target = math::Scalar;
-
 #[derive(Clone, Copy, PartialEq, Component)]
 #[repr(transparent)]
-pub struct Scale<T: 'static>(Target, PhantomData<T>);
+pub struct Scale<T: 'static>(f32, PhantomData<T>);
 
 impl<T> Default for Scale<T> {
     fn default() -> Self {
@@ -20,7 +17,7 @@ impl<T> Default for Scale<T> {
 
 impl<T> Scale<T> {
     // Construct a uniform scale with the given value
-    pub fn uniform(scale: math::Scalar) -> Self {
+    pub fn uniform(scale: f32) -> Self {
         Self(scale, PhantomData)
     }
 
@@ -43,62 +40,62 @@ impl<T> Display for Scale<T> {
 }
 
 impl<T> Deref for Scale<T> {
-    type Target = Target;
+    type Target = f32;
 
-    fn deref(&self) -> &Self::Target {
+    fn deref(&self) -> &f32 {
         &self.0
     }
 }
 
 impl<T> DerefMut for Scale<T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
+    fn deref_mut(&mut self) -> &mut f32 {
         &mut self.0
     }
 }
 
-impl<T> AsRef<Target> for Scale<T> {
-    fn as_ref(&self) -> &Target {
+impl<T> AsRef<f32> for Scale<T> {
+    fn as_ref(&self) -> &f32 {
         &self.0
     }
 }
 
-impl<T> AsMut<Target> for Scale<T> {
-    fn as_mut(&mut self) -> &mut Target {
+impl<T> AsMut<f32> for Scale<T> {
+    fn as_mut(&mut self) -> &mut f32 {
         &mut self.0
     }
 }
 
-impl<T> From<Scale<T>> for Target {
+impl<T> From<Scale<T>> for f32 {
     fn from(value: Scale<T>) -> Self {
         value.0
     }
 }
 
-impl<T> From<&Scale<T>> for Target {
+impl<T> From<&Scale<T>> for f32 {
     fn from(value: &Scale<T>) -> Self {
         value.0
     }
 }
 
-impl<T> From<Target> for Scale<T> {
-    fn from(value: Target) -> Self {
+impl<T> From<f32> for Scale<T> {
+    fn from(value: f32) -> Self {
         Self(value, PhantomData)
     }
 }
 
-impl<T> From<&Target> for Scale<T> {
-    fn from(value: &Target) -> Self {
+impl<T> From<&f32> for Scale<T> {
+    fn from(value: &f32) -> Self {
         Self(*value, PhantomData)
     }
 }
 
-impl<T> From<Scale<T>> for math::RawMatrix {
+impl<T> From<Scale<T>> for vek::Mat4<f32> {
     fn from(value: Scale<T>) -> Self {
         vek::Mat4::scaling_3d(vek::Vec3::broadcast(value.0))
     }
 }
 
-impl<T> From<&Scale<T>> for math::RawMatrix {
+impl<T> From<&Scale<T>> for vek::Mat4<f32> {
     fn from(value: &Scale<T>) -> Self {
         vek::Mat4::scaling_3d(vek::Vec3::broadcast(value.0))
     }

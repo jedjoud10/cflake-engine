@@ -1,7 +1,7 @@
 use coords::{Position, Rotation};
 use ecs::{Scene, added, modified};
 use world::{System, World, post_user};
-use crate::{RigidBody, Physics, SphereCollider, CuboidCollider};
+use crate::{RigidBody, Physics, SphereCollider, CuboidCollider, AngularVelocity, Velocity};
 
 // This will spawn in the required rapier counter-part of the components
 fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) {
@@ -106,12 +106,20 @@ fn pre_step_despawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene
 
 // This will synchronize the rapier counter-part to the data of the components
 fn pre_step_sync_rapier_to_comps(physics: &mut Physics, scene: &mut Scene) {
+    // Filter for the rigidbody query
+    let filter = modified::<&RigidBody>() |
+        modified::<&Position>() |
+        modified::<&Rotation>() |
+        modified::<&AngularVelocity>() |
+        modified::<&Velocity>();
+
     // Synchronize the RigidBody components 
-    let filter = modified::<&RigidBody>() | modified::<&Position>() | modified::<&Rotation>();
-    for (rigid_body, position, rotation) in scene.query_with::<(&RigidBody, &Position, &Rotation)>(filter) {
+    for (rigid_body, position, rotation, velocity, angular_velocity) in scene.query_with::<(&RigidBody, &Position, &Rotation, &Velocity, &AngularVelocity)>(filter) {
         if let Some(handle) = rigid_body.handle {
             let rb = physics.bodies.get_mut(handle).unwrap();
             rb.set_position(crate::trans_rot_to_isometry(**position, **rotation), false);
+            rb.set_linvel(crate::vek_vec_to_na_vec(**velocity), false);
+            rb.set_angvel(crate::vek_vec_to_na_vec(**angular_velocity), false);
         }
     }
 
@@ -144,13 +152,17 @@ fn pre_step_sync_rapier_to_comps(physics: &mut Physics, scene: &mut Scene) {
 
 // This will synchronize the component data to the newly computed rapier data
 fn post_step_sync_comps_to_rapier(physics: &mut Physics, scene: &mut Scene) {
-    for (rigid_body, position, rotation) in scene.query_mut::<(&mut RigidBody, &mut Position, &mut Rotation)>() {
+    for (rigid_body, position, rotation, velocity, angular_velocity) in scene.query_mut::<(&mut RigidBody, &mut Position, &mut Rotation, &mut Velocity, &mut AngularVelocity)>() {
         if let Some(handle) = rigid_body.handle {
             if rigid_body._type.is_dynamic() {
                 let rb = physics.bodies.get_mut(handle).unwrap();
                 let (new_position, new_rotation) = crate::isometry_to_trans_rot(&rb.position());
+                let new_velocity = crate::na_vec_to_vek_vec(*rb.linvel());
+                let new_angular_velocity = crate::na_vec_to_vek_vec(*rb.angvel());
                 **position = new_position;
                 **rotation = new_rotation;
+                **velocity = new_velocity;
+                **angular_velocity = new_angular_velocity;
             }
         }
     }

@@ -30,21 +30,23 @@ fn tick(world: &mut World) {
 
     let gravity = vector![0.0, -9.81, 0.0];
 
-    physics_pipeline.step(
-        &gravity,
-        &integration_parameters,
-        islands,
-        broad_phase,
-        narrow_phase,
-        bodies,
-        colliders,
-        impulse_joints,
-        multibody_joints,
-        ccd_solver,
-        None,
-        &(),
-        &(),
-    );
+    for x in 0..2 {
+        physics_pipeline.step(
+            &gravity,
+            &integration_parameters,
+            islands,
+            broad_phase,
+            narrow_phase,
+            bodies,
+            colliders,
+            impulse_joints,
+            multibody_joints,
+            ccd_solver,
+            None,
+            &(),
+            &(),
+        );
+    }
 }
 
 

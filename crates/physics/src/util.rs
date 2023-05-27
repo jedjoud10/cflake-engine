@@ -20,6 +20,16 @@ pub(crate) fn vec_to_trans(vec: vek::Vec3<f32>) -> rapier3d::na::Translation3<f3
     rapier3d::na::Translation3::<f32>::new(vec.x, vec.y, vec.z)
 }
 
+// Convert a vec3 into a vector 
+pub(crate) fn vek_vec_to_na_vec(vec: vek::Vec3<f32>) -> rapier3d::na::Vector3<f32> {
+    rapier3d::na::Vector3::<f32>::new(vec.x, vec.y, vec.z)
+}
+
+// Convert a vector into a vec3 
+pub(crate) fn na_vec_to_vek_vec(vec: rapier3d::na::Vector3<f32>) -> vek::Vec3<f32> {
+    vek::Vec3::<f32>::new(vec.x, vec.y, vec.z)
+}
+
 // Convert a quaternion into a rotation
 pub(crate) fn quat_to_rot(quat: vek::Quaternion<f32>) -> rapier3d::na::UnitQuaternion<f32> {
     rapier3d::na::UnitQuaternion::<f32>::from_quaternion(rapier3d::na::Quaternion::new(quat.x, quat.y, quat.z, quat.w))
