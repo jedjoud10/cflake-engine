@@ -45,18 +45,13 @@ fn tick(world: &mut World) {
         &(),
         &(),
     );
-
-    /*
-    for x in physics.bodies.iter() {
-        println!("{}", x.1.translation().y);
-    }
-    */
 }
 
 
 // Create the main physics system that will be responsible for stepping through the Rapier simulation
 pub fn system(system: &mut System) {
     system.insert_init(init).before(user);
-    system.insert_update(tick)
-        .after(post_user);
+    system.insert_tick(tick)
+        .after(post_user)
+        .before(ecs::post_frame_or_tick);
 }

@@ -55,7 +55,7 @@ pub fn file_logger(system: &mut System) {
 }
 
 // Number of ticks that should execute per second
-const TICKS_PER_SEC: f32 = 60.0f32;
+pub const TICKS_PER_SEC: f32 = 120.0f32;
 
 // Add the Time manager
 pub fn time(system: &mut System) {
@@ -106,7 +106,7 @@ pub fn time(system: &mut System) {
                 time.local_tick_count = 0;
                 time.ticks_to_execute = NonZeroU32::new(count);
 
-                // Might have a non-whole remainder left in the accumulator
+                // Might have a non-whole remainder left in the accumulator, so use it to interpolate towards the next frame
                 let remainder = divided - count as f32;
             } else {
                 time.ticks_to_execute = None;

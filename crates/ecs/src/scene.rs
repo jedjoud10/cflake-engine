@@ -1,9 +1,9 @@
 use ahash::AHashMap;
 use itertools::Itertools;
 use slotmap::SlotMap;
-use std::iter::once;
+use std::{iter::once, cell::Cell};
 use utils::Time;
-use world::{user, System, World};
+use world::{user, System, World, post_user};
 
 use crate::{
     entity::Entity, mask, Archetype, Bundle, Component, EntityLinkings, EntryMut, EntryRef, Mask,
@@ -35,6 +35,8 @@ pub struct Scene {
 
     // These contain the boxed bundles that can be used for prefab generation
     pub(crate) prefabs: AHashMap<PrefabId, (Box<dyn PrefabBundle>, Mask)>,
+
+    pub(crate) ticked: bool,
 }
 
 impl Default for Scene {
@@ -46,6 +48,7 @@ impl Default for Scene {
             archetypes: ArchetypeSet::from_iter(once((Mask::zero(), empty))),
             removed: Default::default(),
             prefabs: AHashMap::default(),
+            ticked: false
         }
     }
 }
@@ -235,7 +238,7 @@ impl Scene {
             L::is_valid(),
             "Query layout is not valid, check the layout for component collisions"
         );
-        QueryMut::new_with_filter(self, filter)
+        QueryMut::new_with_filter(self, filter, self.ticked)
     }
 
     // Create a new immutable query from this scene (with no filter)
@@ -248,7 +251,7 @@ impl Scene {
         &'a self,
         filter: Wrap<impl QueryFilter>,
     ) -> QueryRef<'a, '_, '_, L> {
-        QueryRef::new_with_filter(self, filter)
+        QueryRef::new_with_filter(self, filter, self.ticked)
     }
 
     // Find the a layout ref (if it's the only one that exists in the scene)
@@ -269,30 +272,55 @@ fn init(world: &mut World) {
     world.insert(Scene::default());
 }
 
-// Reset the archetypes
-fn reset_states(world: &mut World) {
-    // Don't reset states if it's the first frame
-    let time = world.get::<Time>().unwrap();
-    if time.frame_count() <= 1 {
-        return;
-    }
-
-    // Clear all the archetype states that were set last frame
+// At the end of each frame reset the delta states
+fn reset_delta_frame_states_end(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
     for (_, archetype) in scene.archetypes_mut() {
         for (_, column) in archetype.table_mut().iter_mut() {
-            column.states_mut().reset();
+            column.delta_frame_states_mut().reset();
         }
     }
 
-    // Get rid of the removed components after one frame
     for (_, vec) in scene.removed.iter_mut() {
         vec.clear();
     }
 }
 
-// The ECS system will manually insert the ECS resource and will clean it at the start of each frame
-pub fn system(system: &mut System) {
+// At the end of each tick reset the tick states
+fn reset_delta_tick_states_end(world: &mut World) {
+    let mut scene = world.get_mut::<Scene>().unwrap();
+    for (_, archetype) in scene.archetypes_mut() {
+        for (_, column) in archetype.table_mut().iter_mut() {
+            column.delta_tick_states_mut().reset();
+        }
+    }
+}
+
+// Called at the start of every frame to set ticked to false
+fn set_ticked_true(world: &mut World) {
+    let mut scene = world.get_mut::<Scene>().unwrap();
+    scene.ticked = true;
+}
+
+// Called at the start of every tick to set ticked to true
+fn set_ticked_false(world: &mut World) {
+    let mut scene = world.get_mut::<Scene>().unwrap();
+    scene.ticked = false;
+}
+
+// Only used for init
+pub fn common(system: &mut System) {
     system.insert_init(init).before(user);
-    system.insert_update(reset_states).before(user);
+}
+
+// Executes shit at the start of every frame
+pub fn pre_frame_or_tick(system: &mut System) {
+    system.insert_tick(set_ticked_true).before(user).after(utils::time);
+    system.insert_update(set_ticked_false).before(user).after(utils::time);
+}
+
+// Executes shit at the end of each frame 
+pub fn post_frame_or_tick(system: &mut System) {
+    system.insert_update(reset_delta_frame_states_end).after(post_user).after(utils::time);
+    system.insert_tick(reset_delta_tick_states_end).after(post_user).after(utils::time);
 }

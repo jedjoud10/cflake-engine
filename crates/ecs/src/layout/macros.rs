@@ -22,19 +22,23 @@ macro_rules! tuple_impls {
                 assert!(Self::is_valid());
                 seq!(N in 0..$max {
                     #[allow(non_snake_case)]
-                    let (components_C~N, states_C~N) = archetype.column_mut::<C~N>()?;
+                    let (components_C~N, delta_frame_states_C~N, delta_tick_states_C~N) = archetype.column_mut::<C~N>()?;
                     #[allow(non_snake_case)]
                     let components_ptr_C~N = components_C~N as *mut Vec::<C~N>;
                     #[allow(non_snake_case)]
-                    let states_ptr_C~N = states_C~N as *mut StateColumn;
+                    let delta_frame_states_ptr_C~N = delta_frame_states_C~N as *mut StateColumn;
+                    #[allow(non_snake_case)]
+                    let delta_tick_states_ptr_C~N = delta_tick_states_C~N as *mut StateColumn;
                     #[allow(non_snake_case)]
                     let components_C~N = unsafe { &mut *components_ptr_C~N };
                     #[allow(non_snake_case)]
-                    let states_C~N = unsafe { &mut *states_ptr_C~N };
+                    let delta_frame_states_C~N = unsafe { &mut *delta_frame_states_ptr_C~N };
+                    #[allow(non_snake_case)]
+                    let delta_tick_states_C~N = unsafe { &mut *delta_tick_states_ptr_C~N };
                 });
 
                 let mut storages = ($((
-                    paste! { [<components_ $name>] }, paste! { [<states_ $name>] }
+                    paste! { [<components_ $name>] }, paste! { [<delta_frame_states_ $name>] }, paste! { [<delta_tick_states_ $name>] }
                 )),+,);
 
                 let mut additional = 0;
@@ -55,7 +59,12 @@ macro_rules! tuple_impls {
                         added: !moved,
                         modified: !moved,
                     });
+                    column~N.2.extend_with_flags(additional, StateFlags {
+                        added: !moved,
+                        modified: !moved,
+                    });
                     assert_eq!(column~N.0.len(), column~N.1.len());
+                    assert_eq!(column~N.0.len(), column~N.2.len());
                 });
 
                 Some(additional)

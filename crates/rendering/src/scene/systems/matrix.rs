@@ -51,5 +51,6 @@ pub fn system(system: &mut System) {
     system
         .insert_update(update)
         .before(super::rendering::system)
+        .before(ecs::post_frame_or_tick)
         .after(post_user);
 }

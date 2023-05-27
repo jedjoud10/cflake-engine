@@ -395,7 +395,9 @@ impl App {
         self.regsys(assets::system);
 
         // Scene systems
-        self.regsys(ecs::system);
+        self.regsys(ecs::post_frame_or_tick);
+        self.regsys(ecs::pre_frame_or_tick);
+        self.regsys(ecs::common);
 
         // World system
         self.regsys(world::system);

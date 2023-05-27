@@ -1,14 +1,14 @@
 use coords::{Position, Rotation};
 use ecs::{Scene, added, modified};
 use world::{System, World, post_user};
-use crate::{RigidBody, Physics, SphereCollider};
+use crate::{RigidBody, Physics, SphereCollider, CuboidCollider};
 
 // This will spawn in the required rapier counter-part of the components
 fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) {
     // Spawn in the RigidBody components
     let filter = added::<&RigidBody>();
     for rigid_body in scene.query_mut_with::<&mut RigidBody>(filter) {
-        let Some(handle) = rigid_body.handle else {
+        if rigid_body.handle.is_some() {
             continue;
         };
 
@@ -25,20 +25,29 @@ fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) 
             continue;
         };
 
-        let collider = rapier3d::geometry::ColliderBuilder::ball(0.5)
-            .mass(10.0)
-            .friction(0.2)
-            .restitution(0.7)
+        let collider = rapier3d::geometry::ColliderBuilder::ball(collider.radius)
+            .mass(collider.mass)
+            .friction(collider.friction)
+            .restitution(collider.restitution)
             .density(collider.mass)
             .build();
         physics.colliders.insert_with_parent(collider, handle, &mut physics.bodies);
     }
 
     // Spawn in the Cuboid collider components
-    
+    let filter = added::<&CuboidCollider>();
+    for (collider, rigid_body) in scene.query_mut_with::<(&mut CuboidCollider, &RigidBody)>(filter) {
+        let Some(handle) = rigid_body.handle else {
+            continue;
+        };
 
-    // TODO: Spawn in the Mesh collider components
-
+        let collider = rapier3d::geometry::ColliderBuilder::cuboid(collider.half_extent.w, collider.half_extent.h, collider.half_extent.d)
+            .mass(collider.mass)
+            .friction(collider.friction)
+            .restitution(collider.restitution)
+            .build();
+        physics.colliders.insert_with_parent(collider, handle, &mut physics.bodies);
+    }
 }
 
 // This will de-spawn the required rapier counter-part of the components
@@ -70,13 +79,35 @@ fn pre_step_despawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene
         }
     }
 
-    // TODO: Destroy removed Sphere colliders
+    // Destroy removed Sphere Collider components
+    for removed_sphere_colliders in scene.removed_mut::<SphereCollider>() {
+        if let Some(handle) = removed_sphere_colliders.handle {
+            colliders.remove(
+                handle,
+                islands,
+                bodies,
+                true,
+            );
+        }
+    }
+
+    // Destroy removed Cuboid Collider components
+    for removed_cuboid_colliders in scene.removed_mut::<CuboidCollider>() {
+        if let Some(handle) = removed_cuboid_colliders.handle {
+            colliders.remove(
+                handle,
+                islands,
+                bodies,
+                true,
+            );
+        }
+    }
 }
 
 // This will synchronize the rapier counter-part to the data of the components
 fn pre_step_sync_rapier_to_comps(physics: &mut Physics, scene: &mut Scene) {
     // Synchronize the RigidBody components 
-    let filter = modified::<&RigidBody>();
+    let filter = modified::<&RigidBody>() | modified::<&Position>() | modified::<&Rotation>();
     for (rigid_body, position, rotation) in scene.query_with::<(&RigidBody, &Position, &Rotation)>(filter) {
         if let Some(handle) = rigid_body.handle {
             let rb = physics.bodies.get_mut(handle).unwrap();
@@ -84,17 +115,43 @@ fn pre_step_sync_rapier_to_comps(physics: &mut Physics, scene: &mut Scene) {
         }
     }
 
-    // TODO: Synchronize the Sphere Collider components
+    // Synchronize the Sphere Collider components
+    let filter = modified::<&SphereCollider>();
+    for sphere_collider in scene.query_with::<&SphereCollider>(filter) {
+        if let Some(handle) = sphere_collider.handle {
+            let collider = physics.colliders.get_mut(handle).unwrap();
+            let ball = collider.shape_mut().as_ball_mut().unwrap();
+            ball.radius = sphere_collider.radius;
+            collider.set_friction(sphere_collider.friction);
+            collider.set_restitution(sphere_collider.restitution);
+        }
+    }
+
+    // Synchronize the Cuboid Collider components
+    let filter = modified::<&CuboidCollider>();
+    for cuboid_collider in scene.query_with::<&CuboidCollider>(filter) {
+        if let Some(handle) = cuboid_collider.handle {
+            let collider = physics.colliders.get_mut(handle).unwrap();
+            let ball = collider.shape_mut().as_cuboid_mut().unwrap();
+            ball.half_extents.x = cuboid_collider.half_extent.w;
+            ball.half_extents.y = cuboid_collider.half_extent.h;
+            ball.half_extents.z = cuboid_collider.half_extent.d;
+            collider.set_friction(cuboid_collider.friction);
+            collider.set_restitution(cuboid_collider.restitution);
+        }
+    }
 }
 
 // This will synchronize the component data to the newly computed rapier data
 fn post_step_sync_comps_to_rapier(physics: &mut Physics, scene: &mut Scene) {
     for (rigid_body, position, rotation) in scene.query_mut::<(&mut RigidBody, &mut Position, &mut Rotation)>() {
         if let Some(handle) = rigid_body.handle {
-            let rb = physics.bodies.get_mut(handle).unwrap();
-            let (new_position, new_rotation) = crate::isometry_to_trans_rot(&rb.position());
-            **position = new_position;
-            **rotation = new_rotation;
+            if rigid_body._type.is_dynamic() {
+                let rb = physics.bodies.get_mut(handle).unwrap();
+                let (new_position, new_rotation) = crate::isometry_to_trans_rot(&rb.position());
+                **position = new_position;
+                **rotation = new_rotation;
+            }
         }
     }
 }
@@ -118,14 +175,15 @@ fn post_step_tick_sync(world: &mut World) {
 
 // Will be responsible for syncing rapier <-> scene entities before stepping
 pub fn pre_step_sync(system: &mut System) {
-    system.insert_update(pre_step_tick_sync)
+    system.insert_tick(pre_step_tick_sync)
         .before(crate::systems::step::system)
         .after(post_user);
 }
 
 // Will be responsible for syncing rapier <-> scene entities after stepping
 pub fn post_step_sync(system: &mut System) {
-    system.insert_update(post_step_tick_sync).after(crate::systems::step::system)
+    system.insert_tick(post_step_tick_sync)
+        .after(crate::systems::step::system)
         .after(post_user)
         .after(pre_step_sync);
 }

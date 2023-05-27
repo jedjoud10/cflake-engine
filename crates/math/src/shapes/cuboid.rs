@@ -6,24 +6,24 @@ pub struct Cuboid<T> {
     // Center of the cuboid
     pub center: vek::Vec3<T>,
 
-    // Full extent of the cubeoid
-    pub extent: vek::Extent3<T>,
+    // Half extent of the cubeoid
+    pub half_extent: vek::Extent3<T>,
 }
 
 impl<T> Cuboid<T> {
-    // Create a cuboid from a center and an extent
-    pub fn new(center: vek::Vec3<T>, extent: vek::Extent3<T>) -> Self {
-        Self { center, extent }
+    // Create a cuboid from a center and and half-extent
+    pub fn new(center: vek::Vec3<T>, half_extent: vek::Extent3<T>) -> Self {
+        Self { center, half_extent }
     }
 
-    // Create a cube from a center and an extent
-    pub fn cube(center: vek::Vec3<T>, extent: T) -> Self
+    // Create a cube from a center and half-extent
+    pub fn cube(center: vek::Vec3<T>, half_extent: T) -> Self
     where
         T: Copy,
     {
         Self {
             center,
-            extent: vek::Extent3::broadcast(extent),
+            half_extent: vek::Extent3::broadcast(half_extent),
         }
     }
 }
@@ -34,7 +34,7 @@ macro_rules! impl_shape_traits {
             fn from(aabb: crate::Aabb<$t>) -> Self {
                 Self {
                     center: (aabb.max + aabb.min) / 2.0,
-                    extent: vek::Extent3::from(aabb.max - aabb.min),
+                    half_extent: vek::Extent3::from(aabb.max - aabb.min) / 2.0,
                 }
             }
         }
@@ -52,31 +52,32 @@ macro_rules! impl_shape_traits {
         impl Boundable<$t> for Cuboid<$t> {
             fn bounds(&self) -> crate::Aabb<$t> {
                 crate::Aabb::<$t> {
-                    min: self.center - self.extent / 2.0,
-                    max: self.center + self.extent / 2.0,
+                    min: self.center - self.half_extent,
+                    max: self.center + self.half_extent,
                 }
             }
 
             fn scale_by(&mut self, scale: $t) {
-                self.extent *= scale;
+                self.half_extent *= scale;
             }
 
             fn expand_by(&mut self, expand_units: $t) {
-                self.extent += vek::Extent3::broadcast(expand_units);
+                self.half_extent += vek::Extent3::broadcast(expand_units / 2.0);
             }
         }
 
         impl Volume<$t> for Cuboid<$t> {
             fn volume(&self) -> $t {
-                self.extent.product()
+                (self.half_extent * 2.0).product()
             }
         }
 
         impl SurfaceArea<$t> for Cuboid<$t> {
             fn area(&self) -> $t {
-                let front = self.extent.w * self.extent.h;
-                let side = self.extent.d * self.extent.h;
-                let top = self.extent.w * self.extent.d;
+                let extent = self.half_extent * 2.0;
+                let front = extent.w * extent.h;
+                let side = extent.d * extent.h;
+                let top = extent.w * extent.d;
                 front * 2.0 + side * 2.0 + top * 2.0
             }
         }
@@ -86,8 +87,8 @@ macro_rules! impl_shape_traits {
 
             // http://paulbourke.net/geometry/polygonise/
             fn points(&self) -> Self::Points {
-                let max = self.center + vek::Vec3::<$t>::from(self.extent / 2.0);
-                let min = self.center - vek::Vec3::<$t>::from(self.extent / 2.0);
+                let max = self.center + vek::Vec3::<$t>::from(self.half_extent);
+                let min = self.center - vek::Vec3::<$t>::from(self.half_extent);
 
                 [
                     min,

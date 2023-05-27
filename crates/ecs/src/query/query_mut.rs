@@ -15,7 +15,7 @@ pub struct QueryMut<'a: 'b, 'b, L: QueryLayoutMut> {
 
 impl<'a: 'b, 'b, L: QueryLayoutMut> QueryMut<'a, 'b, L> {
     // Create a new mut query from the scene
-    pub fn new(scene: &'a mut Scene) -> Self {
+    pub(crate) fn new(scene: &'a mut Scene) -> Self {
         let (access, archetypes, _) = super::archetypes_mut::<L, Always>(scene.archetypes_mut());
 
         Self {
@@ -28,10 +28,10 @@ impl<'a: 'b, 'b, L: QueryLayoutMut> QueryMut<'a, 'b, L> {
     }
 
     // Create a new mut query from the scene, but make it have a specific entry enable/disable masks
-    pub fn new_with_filter<F: QueryFilter>(scene: &'a mut Scene, _: Wrap<F>) -> Self {
+    pub(crate) fn new_with_filter<F: QueryFilter>(scene: &'a mut Scene, _: Wrap<F>, ticked: bool) -> Self {
         // Filter out the archetypes then create the bitsets
         let (access, archetypes, cached) = super::archetypes_mut::<L, F>(scene.archetypes_mut());
-        let bitsets = super::generate_bitset_chunks::<F>(archetypes.iter().map(|a| &**a), cached);
+        let bitsets = super::generate_bitset_chunks::<F>(archetypes.iter().map(|a| &**a), cached, ticked);
 
         Self {
             archetypes,
@@ -63,11 +63,12 @@ fn apply_mutability_states(
     archetype: &mut Archetype,
     mutability: Mask,
     bitset: Option<&BitSet<usize>>,
+    ticked: bool,
 ) {
     let table = archetype.table_mut();
     for unit in mutability.units() {
         let column = table.get_mut(&unit).unwrap();
-        let states = column.states_mut();
+        let states = crate::get_either_states_mut(column, ticked);
 
         if let Some(bitset) = bitset {
             for (out_states, in_states) in
@@ -104,7 +105,8 @@ impl<'a: 'b, 'b, L: QueryLayoutMut> IntoIterator for QueryMut<'a, 'b, L> {
     fn into_iter(mut self) -> Self::IntoIter {
         for (i, archetype) in self.archetypes.iter_mut().enumerate() {
             let bitset = self.bitsets.as_ref().map(|bitset| &bitset[i]);
-            apply_mutability_states(archetype, archetype.mask() & self.access.unique(), bitset);
+            apply_mutability_states(archetype, archetype.mask() & self.access.unique(), bitset, false);
+            apply_mutability_states(archetype, archetype.mask() & self.access.unique(), bitset, true);
         }
 
         QueryMutIter {

@@ -20,7 +20,7 @@ impl Physics {
 
 
         let mut integration_parameters = IntegrationParameters::default();        
-        integration_parameters.set_inv_dt(400.0);
+        integration_parameters.set_inv_dt(utils::TICKS_PER_SEC);
         
         let mut physics_pipeline = PhysicsPipeline::new();
         let mut island_manager = IslandManager::new();
