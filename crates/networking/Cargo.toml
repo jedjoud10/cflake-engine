@@ -10,7 +10,7 @@ world = { path = "../world" }
 ecs = { path = "../ecs" }
 uuid = { version = "1.2.2", features = ["v4"] }
 serde = "1.0.145"
-serde_json = "1.0.85"
+ciborium = "0.2.1"
 
 log = { workspace = true }
 thiserror = { workspace = true }

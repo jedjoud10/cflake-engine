@@ -51,13 +51,13 @@ fn init(world: &mut World) {
 
     // Create a new material instance
     let material = pbrs.insert(PbrMaterial {
-        albedo_map: Some(diffuse),
+        albedo_map: None,
         normal_map: Some(normal),
         mask_map: Some(mask),
         bumpiness_factor: 0.5,
         roughness_factor: 1.0,
         metallic_factor: 1.0,
-        ambient_occlusion_factor: 2.0,
+        ambient_occlusion_factor: 3.0,
         tint: vek::Rgb::white(),
         scale: vek::Extent2::one(),
     });

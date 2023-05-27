@@ -18,16 +18,15 @@ struct ClientRepr {
 // A server resource that can be added to the world (as a NetworkedSession)
 // Servers are created by hosting one using the "host" method
 pub struct Server {
-    // Networking
     listener: TcpListener,
-
-    // Connected clients
     clients: HashMap<Uuid, ClientRepr>,
+    max: Option<u32>,
 }
 
 impl Server {
     // Host a new server and let other users join the server
-    pub fn host(port: u16) -> Result<Self, ()> {
+    // Optionally define the maximum number of clients that can connect to the server
+    pub fn host(port: u16, max: Option<u32>) -> Result<Self, ()> {
         // Setup server addresses and ports
         let loopback = Ipv4Addr::new(127, 0, 0, 1);
         let socket = SocketAddrV4::new(loopback, port);
@@ -40,6 +39,7 @@ impl Server {
         Ok(Self {
             listener,
             clients: Default::default(),
+            max,
         })
     }
 
@@ -113,34 +113,17 @@ impl Server {
 // Data transmission
 impl Server {
     // Send a message of a specific type to a specific client
-    pub fn message<T: Packet>(&mut self, _client: Uuid, _val: T) {
+    pub fn message<T: Packet>(&mut self, client: Uuid, val: T) {
         todo!()
     }
 
     // Send a message of a specific type to all the clients
-    pub fn broadcast<T: Packet>(&mut self, _val: T) {
+    pub fn broadcast<T: Packet>(&mut self, val: T) {
         todo!()
     }
 
     // Receive messages of a specific type from the clients
     pub fn receive<T: Packet>(&mut self) -> Vec<(T, Uuid)> {
         todo!()
-        /*
-        let mut output = Vec::new();
-        let hash = crate::id::<T>();
-        for (uuid, client) in self.clients.iter_mut() {
-            let drain = client
-                .data
-                .entry(hash)
-                .or_default()
-                .drain(..)
-                .filter_map(|x| {
-                    let deserialized = serde_json::from_str::<T>(&x);
-                    deserialized.map(|x| (x, *uuid)).ok()
-                });
-            output.extend(drain);
-        }
-        output
-        */
     }
 }

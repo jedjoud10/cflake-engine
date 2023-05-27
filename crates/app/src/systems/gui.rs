@@ -220,6 +220,8 @@ fn update(world: &mut World) {
 
             let ticks = out_ticks_to_exec;
             ui.label(format!("Ticks to execute: {:.3}", ticks));
+
+            ui.label(format!("Tick-rate: {:.3} t/s", utils::TICKS_PER_SEC))
         });
 
     // ECS Stats

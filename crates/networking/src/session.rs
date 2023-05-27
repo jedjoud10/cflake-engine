@@ -13,8 +13,8 @@ pub enum NetworkedSession {
 
 impl NetworkedSession {
     // Host a new networked session as a server
-    pub fn host(port: u16) -> Result<Self, ()> {
-        Server::host(port).map(NetworkedSession::Server)
+    pub fn host(port: u16, max: Option<u32>) -> Result<Self, ()> {
+        Server::host(port, max).map(NetworkedSession::Server)
     }
 
     // Connect to a server as a client
