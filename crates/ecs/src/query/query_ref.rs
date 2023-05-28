@@ -1,3 +1,4 @@
+use rayon::prelude::ParallelIterator;
 use utils::BitSet;
 
 use crate::{Always, Archetype, LayoutAccess, QueryFilter, QueryLayoutRef, Scene, Wrap};
@@ -178,5 +179,4 @@ impl<'b, L: QueryLayoutRef> Iterator for QueryRefIter<'b, L> {
 }
 
 impl<'b, L: QueryLayoutRef> ExactSizeIterator for QueryRefIter<'b, L> {}
-
 impl<'b, 's, L: QueryLayoutRef> FusedIterator for QueryRefIter<'b, L> {}

@@ -69,7 +69,7 @@ impl<'a> EntryMut<'a> {
     // Get a mutable reference to a linked component
     pub fn get_mut<T: Component>(&mut self) -> Option<&mut T> {
         let index = self.linkings.index;
-        let states = self.archetype_mut().delta_tick_states_mut::<T>()?;
+        let states = self.archetype_mut().delta_frame_states_mut::<T>()?;
         states.update(index, |flags| flags.modified = true);
         let states = self.archetype_mut().delta_tick_states_mut::<T>()?;
         states.update(index, |flags| flags.modified = true);

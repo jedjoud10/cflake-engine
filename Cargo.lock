@@ -900,6 +900,7 @@ dependencies = [
  "nohash-hasher",
  "parking_lot",
  "paste",
+ "rayon",
  "seq-macro",
  "slotmap",
  "smallvec",
