@@ -4,14 +4,14 @@ use coords::{Position, Rotation};
 use ecs::{Scene, added, modified, Entity};
 use world::{System, World, post_user, user};
 use crate::{RigidBody, Physics, SphereCollider, CuboidCollider, AngularVelocity, Velocity};
-use crate::{CurrentTickedVelocity, CurrentTickedAngularVelocity, NextTickedVelocity, NextTickedAngularVelocity};
+use crate::{LastTickedVelocity, LastTickedAngularVelocity, CurrentTickedVelocity, CurrentTickedAngularVelocity};
 use coords::{LastTickedPosition, LastTickedRotation, CurrentTickedPosition, CurrentTickedRotation};
 
 // This will spawn in the required rapier counter-part of the components
 fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) {
     // Spawn in the RigidBody components (and keep track of the new entities)
     let filter = added::<&RigidBody>();
-    let mut entities = Vec::<Entity>::new();
+    let mut interpolated_entities = Vec::<Entity>::new();
     for (entity, rigid_body) in scene.query_mut_with::<(&Entity, &mut RigidBody)>(filter) {
         if rigid_body.handle.is_some() {
             continue;
@@ -22,8 +22,8 @@ fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) 
         let handle = physics.bodies.insert(rb);
         rigid_body.handle = Some(handle);
 
-        if _type == RigidBodyType::Dynamic {
-            entities.push(*entity);
+        if _type == RigidBodyType::Dynamic && rigid_body.interpolated {
+            interpolated_entities.push(*entity);
         }
     }
 
@@ -59,20 +59,26 @@ fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) 
     }
 
     // Automatically add the ticked coord components
-    for entity in entities {
+    for entity in interpolated_entities {
         let mut entry = scene.entry_mut(entity).unwrap();
-        let interpolated = entry.contains::<(Position, Rotation, Velocity, AngularVelocity)>();
+        
+        let query = entry.as_query::<(&Position, &Rotation, &Velocity, &AngularVelocity)>();
 
-        if interpolated {
+        if let Some((
+            position,
+            rotation,
+            velocity,
+            angular_velocity
+        )) = query {
             entry.insert((
-                LastTickedPosition::default(),
-                LastTickedRotation::default(),
-                CurrentTickedVelocity::default(),
-                CurrentTickedAngularVelocity::default(),
-                CurrentTickedPosition::default(),
-                CurrentTickedRotation::default(),
-                NextTickedVelocity::default(),
-                NextTickedAngularVelocity::default(),
+                LastTickedPosition::from(**position),
+                LastTickedRotation::from(**rotation),
+                LastTickedVelocity::from(**velocity),
+                LastTickedAngularVelocity::from(**angular_velocity),
+                CurrentTickedPosition::from(**position),
+                CurrentTickedRotation::from(**rotation),
+                CurrentTickedVelocity::from(**velocity),
+                CurrentTickedAngularVelocity::from(**angular_velocity),
             )).unwrap();
         }
     }
@@ -142,7 +148,6 @@ fn pre_step_sync_rapier_to_comps(physics: &mut Physics, scene: &mut Scene) {
         modified::<&Velocity>();
 
     // Synchronize the RigidBody components 
-    /*
     let query = scene.query::<(&RigidBody, &Position, &Rotation, &Velocity, &AngularVelocity)>();
     for (rigid_body, position, rotation, velocity, angular_velocity) in query {
         if let Some(handle) = rigid_body.handle {
@@ -152,7 +157,6 @@ fn pre_step_sync_rapier_to_comps(physics: &mut Physics, scene: &mut Scene) {
             rb.set_angvel(crate::vek_vec_to_na_vec(**angular_velocity), false);
         }
     }
-    */
 
     // Synchronize the Sphere Collider components
     let filter = modified::<&SphereCollider>();
@@ -206,12 +210,12 @@ fn tick(world: &mut World) {
             &mut RigidBody,
             &mut LastTickedPosition,
             &mut LastTickedRotation,
-            &mut CurrentTickedVelocity,
-            &mut CurrentTickedAngularVelocity,
+            &mut LastTickedVelocity,
+            &mut LastTickedAngularVelocity,
             &CurrentTickedPosition,
             &CurrentTickedRotation,
-            &NextTickedVelocity,
-            &NextTickedAngularVelocity,
+            &CurrentTickedVelocity,
+            &CurrentTickedAngularVelocity,
         )>();
     
         for (
@@ -265,10 +269,11 @@ fn tick(world: &mut World) {
         &(),
     );
 
-    set_sub_tick_coords_type::<coords::CurrentTick>(scene, bodies);
+    set_sub_tick_coords_type::<coords::CurrentTick>(scene, bodies, true);
+    set_sub_tick_coords_type::<coords::FrameToFrame>(scene, bodies, false);
 }
 
-fn set_sub_tick_coords_type<TimeFrame: 'static>(scene: &mut Scene, bodies: &mut RigidBodySet) {
+fn set_sub_tick_coords_type<TimeFrame: 'static>(scene: &mut Scene, bodies: &mut RigidBodySet, interpolated: bool) {
     let query = scene.query_mut::<(
         &mut RigidBody,
         &mut coords::UnmarkedPosition<coords::Global<TimeFrame>>,
@@ -284,7 +289,7 @@ fn set_sub_tick_coords_type<TimeFrame: 'static>(scene: &mut Scene, bodies: &mut 
         angular_velocity
     ) in query {
         if let Some(handle) = rigid_body.handle {
-            if rigid_body._type.is_dynamic() {
+            if rigid_body._type.is_dynamic() && (rigid_body.interpolated == interpolated) {
                 let rb = bodies.get_mut(handle).unwrap();
                 let (new_position, new_rotation) = crate::isometry_to_trans_rot(&rb.position());
                 let new_velocity = crate::na_vec_to_vek_vec(*rb.linvel());
@@ -303,18 +308,17 @@ fn update(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
     let time = world.get::<Time>().unwrap();
     let t = time.tick_interpolation();
-    //let t = 0.0;
 
     let query = scene.query_mut::<(
         &mut RigidBody,
         &LastTickedPosition,
         &LastTickedRotation,
-        &CurrentTickedVelocity,
-        &CurrentTickedAngularVelocity,
+        &LastTickedVelocity,
+        &LastTickedAngularVelocity,
         &CurrentTickedPosition,
         &CurrentTickedRotation,
-        &NextTickedVelocity,
-        &NextTickedAngularVelocity,
+        &CurrentTickedVelocity,
+        &CurrentTickedAngularVelocity,
         &mut Position,
         &mut Rotation,
         &mut Velocity,
@@ -336,7 +340,7 @@ fn update(world: &mut World) {
         current_velocity,
         current_angular_velocity
     ) in query {
-        if rigid_body._type.is_dynamic() {
+        if rigid_body._type.is_dynamic() && rigid_body.interpolated {
             **current_position = vek::Lerp::lerp(**last_position, **next_position, t);
             **current_rotation = vek::Slerp::slerp(**last_rotation, **next_rotation, t);
             **current_velocity = vek::Lerp::lerp(**last_velocity, **next_velocity, t);

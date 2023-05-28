@@ -7,6 +7,7 @@ fn main() {
         .set_app_name("cflake engine physics example")
         .insert_init(init)
         .insert_update(update)
+        .set_window_fullscreen(true)
         .execute();
 }
 // Creates a movable camera, and sky entity
@@ -51,13 +52,13 @@ fn init(world: &mut World) {
 
     // Create a new material instance
     let material = pbrs.insert(PbrMaterial {
-        albedo_map: None,
+        albedo_map: Some(diffuse),
         normal_map: Some(normal),
         mask_map: Some(mask),
         bumpiness_factor: 0.5,
         roughness_factor: 1.0,
         metallic_factor: 1.0,
-        ambient_occlusion_factor: 3.0,
+        ambient_occlusion_factor: 2.0,
         tint: vek::Rgb::white(),
         scale: vek::Extent2::one(),
     });
@@ -66,7 +67,7 @@ fn init(world: &mut World) {
     let surface = Surface::new(plane, material.clone(), id.clone());
     let renderer = Renderer::default();
     let scale = Scale::uniform(25.0);
-    let rigidbody = RigidBody::new(RigidBodyType::Fixed);
+    let rigidbody = RigidBody::new(RigidBodyType::Fixed, true);
     let collider = CuboidCollider::new(vek::Extent3::new(25.0, 0.1, 25.0), 1.0, 0.2, 0.2);
     scene.insert((surface, renderer, scale, rigidbody, collider));
 
@@ -75,7 +76,7 @@ fn init(world: &mut World) {
     let position = Position::default();
     let rotation = Rotation::default();
     let surface = Surface::new(sphere, material.clone(), id.clone());
-    let rigidbody = RigidBody::new(RigidBodyType::Dynamic);
+    let rigidbody = RigidBody::new(RigidBodyType::Dynamic, true);
     let velocity = Velocity::default();
     let angular_velocity = AngularVelocity::default();
     let collider = SphereCollider::new(1.0, 1.0, 0.2, 0.99);
@@ -86,7 +87,7 @@ fn init(world: &mut World) {
     let position = Position::default();
     let rotation = Rotation::default();
     let surface = Surface::new(cube, material, id);
-    let rigidbody = RigidBody::new(RigidBodyType::Dynamic);
+    let rigidbody = RigidBody::new(RigidBodyType::Dynamic, false);
     let velocity = Velocity::default();
     let angular_velocity = AngularVelocity::default();
     let collider = CuboidCollider::new(vek::Extent3::broadcast(1.0), 10.0, 0.2, 0.2);
@@ -101,15 +102,15 @@ fn init(world: &mut World) {
         AngularVelocity::default(),
         Camera::default(),
         CameraController::default(),
-        RigidBody::new(RigidBodyType::KinematicPositionBased),
+        RigidBody::new(RigidBodyType::KinematicPositionBased, false),
         collider,
     ));
 
     // Create a directional light
     let light = DirectionalLight {
-        color: vek::Rgb::one() * 3.6,
+        color: vek::Rgb::one() * 4.6,
     };
-    let rotation = vek::Quaternion::rotation_x(-15.0f32.to_radians()).rotated_y(45f32.to_radians());
+    let rotation = vek::Quaternion::rotation_x(-45.0f32.to_radians()).rotated_y(45f32.to_radians());
     scene.insert((light, Rotation::from(rotation)));
 }
 
