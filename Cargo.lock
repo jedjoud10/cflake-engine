@@ -1311,6 +1311,7 @@ dependencies = [
  "paste",
  "pollster",
  "rayon",
+ "seq-macro",
  "shaderc",
  "smallvec",
  "snailquote",

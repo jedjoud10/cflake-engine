@@ -7,9 +7,9 @@ use std::{
 
 #[derive(Default, Clone, Copy, PartialEq, Component)]
 #[repr(transparent)]
-pub struct Rotation<T: 'static>(vek::Quaternion::<f32>, PhantomData<T>);
+pub struct Rotation<Space: 'static>(vek::Quaternion::<f32>, PhantomData<Space>);
 
-impl<T> Rotation<T> {
+impl<Space> Rotation<Space> {
     // Create a new rotation based on the RAW quaternion components (stored in an array)
     pub fn new_xyzw_array(array: [f32; 4]) -> Self {
         Self::new_xyzw(array[0], array[1], array[2], array[3])
@@ -71,13 +71,13 @@ impl<T> Rotation<T> {
     }
 }
 
-impl<T> Debug for Rotation<T> {
+impl<Space> Debug for Rotation<Space> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Debug::fmt(&self.0, f)
     }
 }
 
-impl<T> Deref for Rotation<T> {
+impl<Space> Deref for Rotation<Space> {
     type Target = vek::Quaternion::<f32>;
 
     fn deref(&self) -> &vek::Quaternion::<f32> {
@@ -85,68 +85,68 @@ impl<T> Deref for Rotation<T> {
     }
 }
 
-impl<T> DerefMut for Rotation<T> {
+impl<Space> DerefMut for Rotation<Space> {
     fn deref_mut(&mut self) -> &mut vek::Quaternion::<f32> {
         &mut self.0
     }
 }
 
-impl<T> AsRef<vek::Quaternion::<f32>> for Rotation<T> {
+impl<Space> AsRef<vek::Quaternion::<f32>> for Rotation<Space> {
     fn as_ref(&self) -> &vek::Quaternion::<f32> {
         &self.0
     }
 }
 
-impl<T> AsMut<vek::Quaternion::<f32>> for Rotation<T> {
+impl<Space> AsMut<vek::Quaternion::<f32>> for Rotation<Space> {
     fn as_mut(&mut self) -> &mut vek::Quaternion::<f32> {
         &mut self.0
     }
 }
 
-impl<T> From<Rotation<T>> for vek::Quaternion::<f32> {
-    fn from(value: Rotation<T>) -> Self {
+impl<Space> From<Rotation<Space>> for vek::Quaternion::<f32> {
+    fn from(value: Rotation<Space>) -> Self {
         value.0
     }
 }
 
-impl<T> From<&Rotation<T>> for vek::Quaternion::<f32> {
-    fn from(value: &Rotation<T>) -> Self {
+impl<Space> From<&Rotation<Space>> for vek::Quaternion::<f32> {
+    fn from(value: &Rotation<Space>) -> Self {
         value.0
     }
 }
 
-impl<T> From<vek::Quaternion::<f32>> for Rotation<T> {
+impl<Space> From<vek::Quaternion::<f32>> for Rotation<Space> {
     fn from(q: vek::Quaternion::<f32>) -> Self {
         Self(q, PhantomData)
     }
 }
 
-impl<T> From<&vek::Quaternion::<f32>> for Rotation<T> {
+impl<Space> From<&vek::Quaternion::<f32>> for Rotation<Space> {
     fn from(q: &vek::Quaternion::<f32>) -> Self {
         Self(*q, PhantomData)
     }
 }
 
-impl<T> From<Rotation<T>> for vek::Mat4<f32> {
-    fn from(value: Rotation<T>) -> Self {
+impl<Space> From<Rotation<Space>> for vek::Mat4<f32> {
+    fn from(value: Rotation<Space>) -> Self {
         value.0.into()
     }
 }
 
-impl<T> From<&Rotation<T>> for vek::Mat4<f32> {
-    fn from(value: &Rotation<T>) -> Self {
+impl<Space> From<&Rotation<Space>> for vek::Mat4<f32> {
+    fn from(value: &Rotation<Space>) -> Self {
         value.0.into()
     }
 }
 
-impl<T> From<Rotation<T>> for vek::Mat3<f32> {
-    fn from(value: Rotation<T>) -> Self {
+impl<Space> From<Rotation<Space>> for vek::Mat3<f32> {
+    fn from(value: Rotation<Space>) -> Self {
         value.0.into()
     }
 }
 
-impl<T> From<&Rotation<T>> for vek::Mat3<f32> {
-    fn from(value: &Rotation<T>) -> Self {
+impl<Space> From<&Rotation<Space>> for vek::Mat3<f32> {
+    fn from(value: &Rotation<Space>) -> Self {
         value.0.into()
     }
 }

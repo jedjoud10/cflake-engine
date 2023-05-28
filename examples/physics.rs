@@ -78,7 +78,7 @@ fn init(world: &mut World) {
     let rigidbody = RigidBody::new(RigidBodyType::Dynamic);
     let velocity = Velocity::default();
     let angular_velocity = AngularVelocity::default();
-    let collider = SphereCollider::new(1.0, 100.0, 0.2, 0.99);
+    let collider = SphereCollider::new(1.0, 1.0, 0.2, 0.99);
     scene.prefabify("sphere", (renderer, position, rotation, surface, rigidbody, collider, velocity, angular_velocity));
 
     // Create a prefab that contains the cube entity and it's components
@@ -93,7 +93,7 @@ fn init(world: &mut World) {
     scene.prefabify("cube", (renderer, position, rotation, surface, rigidbody, collider, velocity, angular_velocity));
 
     // Create a movable camera
-    let collider = SphereCollider::new(1.4, 10.0, 1.0, 0.0);
+    let collider = SphereCollider::new(1.4, 1.0, 1.0, 0.0);
     scene.insert((
         Position::default(),
         Rotation::default(),

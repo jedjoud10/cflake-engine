@@ -5,9 +5,9 @@ use std::{
 };
 #[derive(Default, Clone, Copy, PartialEq, Component)]
 #[repr(transparent)]
-pub struct Velocity<T: 'static>(vek::Vec3<f32>, PhantomData<T>);
+pub struct Velocity<Space: 'static>(vek::Vec3<f32>, PhantomData<Space>);
 
-impl<T: 'static> Velocity<T> {
+impl<Space: 'static> Velocity<Space> {
     // Construct a velocity with the given X unit velocity
     pub fn with_x(x: f32) -> Self {
         Self(vek::Vec3::new(x, 0.0, 0.0), PhantomData)
@@ -29,19 +29,19 @@ impl<T: 'static> Velocity<T> {
     }
 }
 
-impl<T: 'static> Debug for Velocity<T> {
+impl<Space: 'static> Debug for Velocity<Space> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Debug::fmt(&self.0, f)
     }
 }
 
-impl<T: 'static> Display for Velocity<T> {
+impl<Space: 'static> Display for Velocity<Space> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Display::fmt(&self.0, f)
     }
 }
 
-impl<T: 'static> Deref for Velocity<T> {
+impl<Space: 'static> Deref for Velocity<Space> {
     type Target = vek::Vec3<f32>;
 
     fn deref(&self) -> &Self::Target {
@@ -49,43 +49,43 @@ impl<T: 'static> Deref for Velocity<T> {
     }
 }
 
-impl<T: 'static> DerefMut for Velocity<T> {
+impl<Space: 'static> DerefMut for Velocity<Space> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
-impl<T: 'static> AsRef<vek::Vec3<f32>> for Velocity<T> {
+impl<Space: 'static> AsRef<vek::Vec3<f32>> for Velocity<Space> {
     fn as_ref(&self) -> &vek::Vec3<f32> {
         &self.0
     }
 }
 
-impl<T: 'static> AsMut<vek::Vec3<f32>> for Velocity<T> {
+impl<Space: 'static> AsMut<vek::Vec3<f32>> for Velocity<Space> {
     fn as_mut(&mut self) -> &mut vek::Vec3<f32> {
         &mut self.0
     }
 }
 
-impl<T: 'static> From<Velocity<T>> for vek::Vec3<f32> {
-    fn from(value: Velocity<T>) -> Self {
+impl<Space: 'static> From<Velocity<Space>> for vek::Vec3<f32> {
+    fn from(value: Velocity<Space>) -> Self {
         value.0
     }
 }
 
-impl<T: 'static> From<&Velocity<T>> for vek::Vec3<f32> {
-    fn from(value: &Velocity<T>) -> Self {
+impl<Space: 'static> From<&Velocity<Space>> for vek::Vec3<f32> {
+    fn from(value: &Velocity<Space>) -> Self {
         value.0
     }
 }
 
-impl<T: 'static> From<vek::Vec3<f32>> for Velocity<T> {
+impl<Space: 'static> From<vek::Vec3<f32>> for Velocity<Space> {
     fn from(value: vek::Vec3<f32>) -> Self {
         Self(value, PhantomData)
     }
 }
 
-impl<T: 'static> From<&vek::Vec3<f32>> for Velocity<T> {
+impl<Space: 'static> From<&vek::Vec3<f32>> for Velocity<Space> {
     fn from(value: &vek::Vec3<f32>) -> Self {
         Self(*value, PhantomData)
     }

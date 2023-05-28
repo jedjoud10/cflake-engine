@@ -7,9 +7,9 @@ use std::{
 
 #[derive(Default, Clone, Copy, PartialEq, Component)]
 #[repr(transparent)]
-pub struct Position<T: 'static>(vek::Vec3<f32>, PhantomData<T>);
+pub struct Position<Space: 'static>(vek::Vec3<f32>, PhantomData<Space>);
 
-impl<T> Position<T> {
+impl<Space> Position<Space> {
     // Construct a position at the given X unit position
     pub fn at_x(x: f32) -> Self {
         Self(vek::Vec3::new(x, 0.0, 0.0), PhantomData)
@@ -36,19 +36,19 @@ impl<T> Position<T> {
     }
 }
 
-impl<T> Debug for Position<T> {
+impl<Space> Debug for Position<Space> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Debug::fmt(&self.0, f)
     }
 }
 
-impl<T> Display for Position<T> {
+impl<Space> Display for Position<Space> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Display::fmt(&self.0, f)
     }
 }
 
-impl<T> Deref for Position<T> {
+impl<Space> Deref for Position<Space> {
     type Target = vek::Vec3<f32>;
 
     fn deref(&self) -> &Self::Target {
@@ -56,56 +56,56 @@ impl<T> Deref for Position<T> {
     }
 }
 
-impl<T> DerefMut for Position<T> {
+impl<Space> DerefMut for Position<Space> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
-impl<T> AsRef<vek::Vec3<f32>> for Position<T> {
+impl<Space> AsRef<vek::Vec3<f32>> for Position<Space> {
     fn as_ref(&self) -> &vek::Vec3<f32> {
         &self.0
     }
 }
 
-impl<T> AsMut<vek::Vec3<f32>> for Position<T> {
+impl<Space> AsMut<vek::Vec3<f32>> for Position<Space> {
     fn as_mut(&mut self) -> &mut vek::Vec3<f32> {
         &mut self.0
     }
 }
 
-impl<T> From<Position<T>> for vek::Vec3<f32> {
-    fn from(value: Position<T>) -> Self {
+impl<Space> From<Position<Space>> for vek::Vec3<f32> {
+    fn from(value: Position<Space>) -> Self {
         value.0
     }
 }
 
-impl<T> From<&Position<T>> for vek::Vec3<f32> {
-    fn from(value: &Position<T>) -> Self {
+impl<Space> From<&Position<Space>> for vek::Vec3<f32> {
+    fn from(value: &Position<Space>) -> Self {
         value.0
     }
 }
 
-impl<T> From<vek::Vec3<f32>> for Position<T> {
+impl<Space> From<vek::Vec3<f32>> for Position<Space> {
     fn from(value: vek::Vec3<f32>) -> Self {
         Self(value, PhantomData)
     }
 }
 
-impl<T> From<&vek::Vec3<f32>> for Position<T> {
+impl<Space> From<&vek::Vec3<f32>> for Position<Space> {
     fn from(value: &vek::Vec3<f32>) -> Self {
         Self(*value, PhantomData)
     }
 }
 
-impl<T> From<Position<T>> for vek::Mat4<f32> {
-    fn from(value: Position<T>) -> Self {
+impl<Space> From<Position<Space>> for vek::Mat4<f32> {
+    fn from(value: Position<Space>) -> Self {
         vek::Mat4::translation_3d(value.0)
     }
 }
 
-impl<T> From<&Position<T>> for vek::Mat4<f32> {
-    fn from(value: &Position<T>) -> Self {
+impl<Space> From<&Position<Space>> for vek::Mat4<f32> {
+    fn from(value: &Position<Space>) -> Self {
         vek::Mat4::translation_3d(value.0)
     }
 }

@@ -71,6 +71,7 @@ pub struct GraphicsStats {
     pub bind_groups: usize,
     pub command_buffers: usize,
     pub render_pipelines: usize,
+    pub compute_pipelines: usize,
     pub buffers: usize,
     pub textures: usize,
     pub texture_views: usize,

@@ -32,7 +32,7 @@ pub(crate) fn na_vec_to_vek_vec(vec: rapier3d::na::Vector3<f32>) -> vek::Vec3<f3
 
 // Convert a quaternion into a rotation
 pub(crate) fn quat_to_rot(quat: vek::Quaternion<f32>) -> rapier3d::na::UnitQuaternion<f32> {
-    rapier3d::na::UnitQuaternion::<f32>::from_quaternion(rapier3d::na::Quaternion::new(quat.x, quat.y, quat.z, quat.w))
+    rapier3d::na::UnitQuaternion::<f32>::from_quaternion(rapier3d::na::Quaternion::new(quat.w, quat.x, quat.y, quat.z))
 }
 
 // Convert an isometry into a translation and rotation

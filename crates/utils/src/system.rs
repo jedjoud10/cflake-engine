@@ -55,7 +55,8 @@ pub fn file_logger(system: &mut System) {
 }
 
 // Number of ticks that should execute per second
-pub const TICKS_PER_SEC: f32 = 120.0f32;
+pub const TICKS_PER_SEC: f32 = 16.0f32;
+pub const TICK_DELTA: f32 = 1.0 / TICKS_PER_SEC;
 
 // Add the Time manager
 pub fn time(system: &mut System) {
@@ -70,8 +71,10 @@ pub fn time(system: &mut System) {
                 tick_count: 0,
                 last_tick_start: Instant::now(),
                 ticks_to_execute: None,
-                tick_delta: Duration::from_secs_f32(1.0 / TICKS_PER_SEC),
+                tick_delta: Duration::from_secs_f32(TICK_DELTA),
                 local_tick_count: 0,
+                tick_interpolation: 0.0,
+                accumulator: 0.0,
             });
         })
         .before(user);
@@ -90,26 +93,25 @@ pub fn time(system: &mut System) {
             // Calculate delta (using old frame start)
             time.delta = now - old_frame_start;
 
-            // Constants needed for ticks
-            const TICKS_DELTA_NS: f32 = (1.0 / TICKS_PER_SEC) * 1000000000.0;
-            const TICK_DELTA: Duration = Duration::from_nanos(TICKS_DELTA_NS as u64);
-
+            // https://gafferongames.com/post/fix_your_timestep/
+            time.accumulator += time.delta.as_secs_f32();
+            
             // Update the tick count and starts
             let diff = now - time.last_tick_start;
-            if diff >= TICK_DELTA {
+            if time.accumulator >= TICK_DELTA {
                 // Calculate how many ticks have elapsed since the last tick
-                let divided = diff.as_micros() as f32 / TICK_DELTA.as_micros() as f32;
+                let divided = diff.as_secs_f32() as f32 / TICK_DELTA;
                 let count = divided.floor() as u32;
 
                 // Add divided tick count to accumulator
                 time.last_tick_start = now;
                 time.local_tick_count = 0;
                 time.ticks_to_execute = NonZeroU32::new(count);
-
-                // Might have a non-whole remainder left in the accumulator, so use it to interpolate towards the next frame
-                let remainder = divided - count as f32;
+                time.accumulator -= divided * TICK_DELTA;
+                time.tick_interpolation = 0.0;
             } else {
                 time.ticks_to_execute = None;
+                time.tick_interpolation = time.accumulator / TICK_DELTA;
             }
         })
         .before(user);

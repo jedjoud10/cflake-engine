@@ -170,6 +170,12 @@ tuple_impls! { C0 C1 C2 C3 C4, 5 }
 tuple_impls! { C0 C1 C2 C3 C4 C5, 6 }
 tuple_impls! { C0 C1 C2 C3 C4 C5 C6, 7 }
 tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7, 8 }
+tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8, 9 }
+tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9, 10 }
+tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10, 11 }
+tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10 C11, 12 }
+tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10 C11 C12, 13 }
+tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10 C11 C12 C13, 14 }
 
 #[cfg(feature = "extended-tuples")]
 mod extend {
@@ -179,14 +185,11 @@ mod extend {
     };
     use casey::lower;
     use seq_macro::seq;
-    tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8, 9 }
-    tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9, 10 }
-    tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10, 11 }
-    tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10 C11, 12 }
-    tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10 C11 C12, 13 }
-    tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10 C11 C12 C13, 14 }
     tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10 C11 C12 C13 C14, 15 }
     tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10 C11 C12 C13 C14 C15, 16 }
+    tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10 C11 C12 C13 C14 C15 C16, 17 }
+    tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10 C11 C12 C13 C14 C15 C16 C17, 18 }
+    tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10 C11 C12 C13 C14 C15 C16 C17 C18, 19 }
 }
 
 #[cfg(feature = "extended-tuples")]

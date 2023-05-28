@@ -435,9 +435,7 @@ impl App {
         self.regsys(terrain::systems::cull::system);
 
         // Physics systems
-        self.regsys(physics::systems::step::system);
-        self.regsys(physics::systems::sync::pre_step_sync);
-        self.regsys(physics::systems::sync::post_step_sync);
+        self.regsys(physics::system);
 
         // Gui system + stats update event
         self.regsys(gui::common);

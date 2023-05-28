@@ -7,15 +7,15 @@ use std::{
 
 #[derive(Clone, Copy, PartialEq, Component)]
 #[repr(transparent)]
-pub struct Scale<T: 'static>(f32, PhantomData<T>);
+pub struct Scale<Space: 'static>(f32, PhantomData<Space>);
 
-impl<T> Default for Scale<T> {
+impl<Space> Default for Scale<Space> {
     fn default() -> Self {
         Self::unit()
     }
 }
 
-impl<T> Scale<T> {
+impl<Space> Scale<Space> {
     // Construct a uniform scale with the given value
     pub fn uniform(scale: f32) -> Self {
         Self(scale, PhantomData)
@@ -27,19 +27,19 @@ impl<T> Scale<T> {
     }
 }
 
-impl<T> Debug for Scale<T> {
+impl<Space> Debug for Scale<Space> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Debug::fmt(&self.0, f)
     }
 }
 
-impl<T> Display for Scale<T> {
+impl<Space> Display for Scale<Space> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Display::fmt(&self.0, f)
     }
 }
 
-impl<T> Deref for Scale<T> {
+impl<Space> Deref for Scale<Space> {
     type Target = f32;
 
     fn deref(&self) -> &f32 {
@@ -47,56 +47,56 @@ impl<T> Deref for Scale<T> {
     }
 }
 
-impl<T> DerefMut for Scale<T> {
+impl<Space> DerefMut for Scale<Space> {
     fn deref_mut(&mut self) -> &mut f32 {
         &mut self.0
     }
 }
 
-impl<T> AsRef<f32> for Scale<T> {
+impl<Space> AsRef<f32> for Scale<Space> {
     fn as_ref(&self) -> &f32 {
         &self.0
     }
 }
 
-impl<T> AsMut<f32> for Scale<T> {
+impl<Space> AsMut<f32> for Scale<Space> {
     fn as_mut(&mut self) -> &mut f32 {
         &mut self.0
     }
 }
 
-impl<T> From<Scale<T>> for f32 {
-    fn from(value: Scale<T>) -> Self {
+impl<Space> From<Scale<Space>> for f32 {
+    fn from(value: Scale<Space>) -> Self {
         value.0
     }
 }
 
-impl<T> From<&Scale<T>> for f32 {
-    fn from(value: &Scale<T>) -> Self {
+impl<Space> From<&Scale<Space>> for f32 {
+    fn from(value: &Scale<Space>) -> Self {
         value.0
     }
 }
 
-impl<T> From<f32> for Scale<T> {
+impl<Space> From<f32> for Scale<Space> {
     fn from(value: f32) -> Self {
         Self(value, PhantomData)
     }
 }
 
-impl<T> From<&f32> for Scale<T> {
+impl<Space> From<&f32> for Scale<Space> {
     fn from(value: &f32) -> Self {
         Self(*value, PhantomData)
     }
 }
 
-impl<T> From<Scale<T>> for vek::Mat4<f32> {
-    fn from(value: Scale<T>) -> Self {
+impl<Space> From<Scale<Space>> for vek::Mat4<f32> {
+    fn from(value: Scale<Space>) -> Self {
         vek::Mat4::scaling_3d(vek::Vec3::broadcast(value.0))
     }
 }
 
-impl<T> From<&Scale<T>> for vek::Mat4<f32> {
-    fn from(value: &Scale<T>) -> Self {
+impl<Space> From<&Scale<Space>> for vek::Mat4<f32> {
+    fn from(value: &Scale<Space>) -> Self {
         vek::Mat4::scaling_3d(vek::Vec3::broadcast(value.0))
     }
 }
