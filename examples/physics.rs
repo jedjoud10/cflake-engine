@@ -132,11 +132,13 @@ fn update(world: &mut World) {
     if input.get_button(MouseButton::Right).pressed() {
         let mut entry = scene.instantiate("sphere").unwrap();
         **entry.get_mut::<Position>().unwrap() = position;
+        **entry.get_mut::<Velocity>().unwrap() = rotation.forward() * 15.0;
     }
 
     // Create a new box in front of the camera when we press the left mouse button
     if input.get_button(MouseButton::Left).pressed() {
         let mut entry = scene.instantiate("cube").unwrap();
         **entry.get_mut::<Position>().unwrap() = position;
+        **entry.get_mut::<Velocity>().unwrap() = rotation.forward() * 15.0;
     }
 }

@@ -7,6 +7,7 @@ pub use rapier3d::prelude::RigidBodyType;
 pub struct RigidBody {
     pub _type: RigidBodyType,
     pub(crate) interpolated: bool,
+    pub(crate) sleeping: bool,
     pub(crate) handle: Option<rapier3d::dynamics::RigidBodyHandle>,
 }
 
@@ -14,6 +15,7 @@ impl Clone for RigidBody {
     fn clone(&self) -> Self {
         Self {
             _type: self._type.clone(),
+            sleeping: false,
             handle: None,
             interpolated: self.interpolated,
         }
@@ -26,7 +28,13 @@ impl RigidBody {
         Self { 
             _type,
             interpolated,
-            handle: None
+            handle: None,
+            sleeping: false,
         }
+    }
+
+    // Check if the RigidBody is currently sleeping
+    pub fn is_sleeping(&self) -> bool {
+        self.sleeping
     }
 }

@@ -31,7 +31,7 @@ Currently, cFlake engine is under heavy development (***very*** WIP) and is stil
 * Graphics: 🚧
 * Rendering: 🚧
 * Networking: ❌
-* Physics: ❌
+* Physics: 🚧
 * Math: 🚧
 * Input: ✅
 * ECS: ✅
@@ -90,7 +90,7 @@ This is where things get tricky however, and this is where my implementation of 
 
 1) We have the ``Init`` events that get fired off at the very start of the application during initialization of the world. This even can be used to add static objects to the world that will live for the lifetime of the game
 
-2) ``Tick`` and ``Update`` events occur right after the other (in batch) during the execution of the program. The ``Update`` events get executed for each frame that gets displayed, and the ``Tick`` systems execute exactly 120 times per second. There is a field on the ``Time`` resource that allows you to see how many ticks will be executed and how many ticks have currently been executed in total
+2) ``Tick`` and ``Update`` events occur right after the other (in batch) during the execution of the program. The ``Update`` events get executed for each frame that gets displayed, and the ``Tick`` systems execute exactly N times per second (idk what number it should be at the moment, either 32 or 64). There is a field on the ``Time`` resource that allows you to see how many ticks will be executed and how many ticks have currently been executed in total
 
 3) ``DeviceEvent`` and ``WindowEvent`` and events simply passed from Winit. Their ordering is dependant on how Winit handles them (I think)
 
@@ -126,7 +126,7 @@ For now, these are the types of assets that are loadable/deseriazable by default
 * Raw UTF8 text: .txt
 
 # Input Management
-Input is currently being handled using a custom wrapper around ``gilrs`` and ``Winit's Events``. You can "bind" or "map" a keyboard button or mouse click to a specific binding and then check each frame if it had been pressed, released, or been held (which means the user did not let go of it since last frame).
+Input is currently being handled using a custom wrapper around ``gilrs`` and ``Winit's Events``. You can "bind" or "map" a keyboard button or mouse click to a specific binding and then check each frame if it had been pressed, released, or been held (which means the user did not let go of it since last frame). The ``Input`` resource cannot be used within ``Tick`` events since it relies on frame to frame data, and ``Tick`` events can execute each multiple times per frame or none at all. If you wish to run frame-rate indepedent logic using the tick system you must fetch the inputs using a separate update system and save those inputs persistently, either using entities or resources, then fetch them in your tick method to apply them.
 
 # Thanks to:
 * Lionel Stanway (MoldyToeMan)

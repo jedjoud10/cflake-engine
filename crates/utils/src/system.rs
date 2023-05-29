@@ -55,7 +55,7 @@ pub fn file_logger(system: &mut System) {
 }
 
 // Number of ticks that should execute per second
-pub const TICKS_PER_SEC: f32 = 32.0f32;
+pub const TICKS_PER_SEC: f32 = 16.0f32;
 pub const TICK_DELTA: f32 = 1.0 / TICKS_PER_SEC;
 
 // Add the Time manager

@@ -3,7 +3,7 @@ use utils::Time;
 use coords::{Position, Rotation};
 use ecs::{Scene, added, modified, Entity};
 use world::{System, World, post_user, user};
-use crate::{RigidBody, Physics, SphereCollider, CuboidCollider, AngularVelocity, Velocity};
+use crate::{RigidBody, Physics, SphereCollider, CuboidCollider, AngularVelocity, Velocity, MeshCollider};
 use crate::{LastTickedVelocity, LastTickedAngularVelocity, CurrentTickedVelocity, CurrentTickedAngularVelocity};
 use coords::{LastTickedPosition, LastTickedRotation, CurrentTickedPosition, CurrentTickedRotation};
 
@@ -51,6 +51,28 @@ fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) 
         };
 
         let collider = rapier3d::geometry::ColliderBuilder::cuboid(collider.half_extent.w, collider.half_extent.h, collider.half_extent.d)
+            .mass(collider.mass)
+            .friction(collider.friction)
+            .restitution(collider.restitution)
+            .build();
+        physics.colliders.insert_with_parent(collider, handle, &mut physics.bodies);
+    }
+
+    // Spawn in the Mesh collider components
+    let filter = added::<&MeshCollider>();
+    for (collider, rigid_body) in scene.query_mut_with::<(&mut MeshCollider, &RigidBody)>(filter) {
+        let Some(handle) = rigid_body.handle else {
+            continue;
+        };
+
+        let (vertices, triangles) = match collider.inner.take().unwrap() {
+            crate::InnerMeshCollider::ExplicitOwned { vertices, triangles } => {
+                let vertices: Vec<rapier3d::na::Point3<f32>> = vertices.into_iter().map(|x| crate::vek_vec_to_na_point(x)).collect::<_>();
+                (vertices, triangles)
+            },
+        };
+
+        let collider = rapier3d::geometry::ColliderBuilder::trimesh(vertices, triangles)
             .mass(collider.mass)
             .friction(collider.friction)
             .restitution(collider.restitution)
@@ -140,14 +162,6 @@ fn pre_step_despawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene
 
 // This will synchronize the rapier counter-part to the data of the components
 fn pre_step_sync_rapier_to_comps(physics: &mut Physics, scene: &mut Scene) {
-    // Filter for the rigidbody query
-    let filter = modified::<&RigidBody>() |
-        modified::<&Position>() |
-        modified::<&Rotation>() |
-        modified::<&AngularVelocity>() |
-        modified::<&Velocity>();
-
-    // Synchronize the RigidBody components 
     let query = scene.query::<(&RigidBody, &Position, &Rotation, &Velocity, &AngularVelocity)>();
     for (rigid_body, position, rotation, velocity, angular_velocity) in query {
         if let Some(handle) = rigid_body.handle {
@@ -238,69 +252,53 @@ fn tick(world: &mut World) {
         }
     }
 
-    let Physics {
-        bodies,
-        colliders,
-        integration_parameters,
-        physics_pipeline,
-        islands,
-        broad_phase,
-        narrow_phase,
-        impulse_joints,
-        multibody_joints,
-        ccd_solver,
-    } = &mut *physics;
+    // Step through the physics simulation each tick
+    physics.step();
 
-    let gravity = vector![0.0, -9.81, 0.0];
 
-    physics_pipeline.step(
-        &gravity,
-        &integration_parameters,
-        islands,
-        broad_phase,
-        narrow_phase,
-        bodies,
-        colliders,
-        impulse_joints,
-        multibody_joints,
-        ccd_solver,
-        None,
-        &(),
-        &(),
-    );
-
-    set_sub_tick_coords_type::<coords::CurrentTick>(scene, bodies, true);
-    set_sub_tick_coords_type::<coords::FrameToFrame>(scene, bodies, false);
-}
-
-fn set_sub_tick_coords_type<TimeFrame: 'static>(scene: &mut Scene, bodies: &mut RigidBodySet, interpolated: bool) {
-    let query = scene.query_mut::<(
-        &mut RigidBody,
-        &mut coords::UnmarkedPosition<coords::Global<TimeFrame>>,
-        &mut coords::UnmarkedRotation<coords::Global<TimeFrame>>,
-        &mut crate::UnmarkedVelocity<coords::Global<TimeFrame>>,
-        &mut crate::UnmarkedAngularVelocity<coords::Global<TimeFrame>>
-    )>();
-    for (
-        rigid_body,
-        position,
-        rotation,
-        velocity,
-        angular_velocity
-    ) in query {
-        if let Some(handle) = rigid_body.handle {
-            if rigid_body._type.is_dynamic() && (rigid_body.interpolated == interpolated) {
-                let rb = bodies.get_mut(handle).unwrap();
-                let (new_position, new_rotation) = crate::isometry_to_trans_rot(&rb.position());
-                let new_velocity = crate::na_vec_to_vek_vec(*rb.linvel());
-                let new_angular_velocity = crate::na_vec_to_vek_vec(*rb.angvel());
-                **position = new_position;
-                **rotation = new_rotation;
-                **velocity = new_velocity;
-                **angular_velocity = new_angular_velocity;
+    fn set_sub_tick_coords_type<TimeFrame: 'static>(scene: &mut Scene, bodies: &mut RigidBodySet, interpolated: bool) {
+        let query = scene.query_mut::<(
+            &mut RigidBody,
+            &mut coords::UnmarkedPosition<coords::Global<TimeFrame>>,
+            &mut coords::UnmarkedRotation<coords::Global<TimeFrame>>,
+            &mut crate::UnmarkedVelocity<coords::Global<TimeFrame>>,
+            &mut crate::UnmarkedAngularVelocity<coords::Global<TimeFrame>>
+        )>();
+        for (
+            rigid_body,
+            position,
+            rotation,
+            velocity,
+            angular_velocity
+        ) in query {
+            if let Some(handle) = rigid_body.handle {
+                if rigid_body._type.is_dynamic() && (rigid_body.interpolated == interpolated) {
+                    let rb = bodies.get_mut(handle).unwrap();
+                    let (new_position, new_rotation) = crate::isometry_to_trans_rot(&rb.position());
+                    let new_velocity = crate::na_vec_to_vek_vec(*rb.linvel());
+                    let new_angular_velocity = crate::na_vec_to_vek_vec(*rb.angvel());
+                    **position = new_position;
+                    **rotation = new_rotation;
+                    **velocity = new_velocity;
+                    **angular_velocity = new_angular_velocity;
+                }
             }
         }
     }
+
+    // Update sleeping state
+    for rigid_body in scene.query_mut::<&mut RigidBody>() {
+        if let Some(handle) = rigid_body.handle {
+            if rigid_body._type.is_dynamic() {
+                let rb = physics.bodies.get_mut(handle).unwrap();
+                rigid_body.sleeping = rb.is_sleeping();
+            }
+        }
+    }
+
+    // Update current tick coordinates and frame to frame coords (if interpolation is disabled)
+    set_sub_tick_coords_type::<coords::CurrentTick>(scene, &mut physics.bodies, true);
+    set_sub_tick_coords_type::<coords::FrameToFrame>(scene, &mut physics.bodies, false);
 }
 
 // Sub tick interpolation for rigidbodies

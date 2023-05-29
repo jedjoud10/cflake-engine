@@ -25,6 +25,11 @@ pub(crate) fn vek_vec_to_na_vec(vec: vek::Vec3<f32>) -> rapier3d::na::Vector3<f3
     rapier3d::na::Vector3::<f32>::new(vec.x, vec.y, vec.z)
 }
 
+// Convert a vec3 into a point
+pub(crate) fn vek_vec_to_na_point(vec: vek::Vec3<f32>) -> rapier3d::na::Point3<f32> {
+    rapier3d::na::Point3::<f32>::new(vec.x, vec.y, vec.z)
+}
+
 // Convert a vector into a vec3 
 pub(crate) fn na_vec_to_vek_vec(vec: rapier3d::na::Vector3<f32>) -> vek::Vec3<f32> {
     vek::Vec3::<f32>::new(vec.x, vec.y, vec.z)

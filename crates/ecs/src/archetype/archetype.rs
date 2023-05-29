@@ -377,11 +377,11 @@ pub(crate) fn add_bundle<B: Bundle>(
     B::extend_from_iter(target, true, [bundle]).unwrap();
 
     for (mask, current) in current.table.iter() {
-        log::debug!("Current Mask: {:?}, len: {}", mask, current.len());
+        log::trace!("Current Mask: {:?}, len: {}", mask, current.len());
     }
 
     for (mask, current) in target.table.iter() {
-        log::debug!("Target Mask: {:?}, len: {}", mask, current.len());
+        log::trace!("Target Mask: {:?}, len: {}", mask, current.len());
     }
 
     // Handle swap-remove logic in the current archetype
@@ -441,11 +441,11 @@ pub(crate) fn remove_bundle<B: Bundle>(
     let index = linkings.index();
 
     for (mask, current) in current.table.iter() {
-        log::debug!("Removal Current Mask: {:?}, len: {}", mask, current.len());
+        log::trace!("Removal Current Mask: {:?}, len: {}", mask, current.len());
     }
 
     for (mask, current) in target.table.iter() {
-        log::debug!("Removal Target Mask: {:?}, len: {}", mask, current.len());
+        log::trace!("Removal Target Mask: {:?}, len: {}", mask, current.len());
     }
 
     // Move the components and states from one archetype to the other (flipped)
@@ -478,7 +478,7 @@ pub(crate) fn remove_bundle<B: Bundle>(
     }
 
     for (mask, current) in target.table.iter() {
-        log::debug!("Removal Target Mask: {:?}, len: {}", mask, current.len());
+        log::trace!("Removal Target Mask: {:?}, len: {}", mask, current.len());
     }
 
     // Handle swap-remove logic in the current archetype

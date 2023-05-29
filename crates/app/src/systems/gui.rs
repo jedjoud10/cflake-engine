@@ -726,6 +726,28 @@ fn update(world: &mut World) {
                 compositor.post_process.tonemapping_mode = selected.into_index();
             });
     }
+
+    // Physics stats
+    if let Ok(physics) = world.get::<Physics>() {
+        let rigidbodies = scene.query::<&RigidBody>();
+        let max = rigidbodies.len();
+        let sleeping = rigidbodies.into_iter().filter(|x| x.is_sleeping()).count();
+
+        egui::Window::new("Rapier3D Physics")
+            .frame(frame)
+            .collapsible(true)
+            .default_open(false)
+            .show(&gui, |ui| {
+                ui.label(format!(
+                    "Total number of rigid-bodies: {}",
+                    max
+                ));
+                ui.label(format!(
+                    "Number of sleeping rigid-bodies: {}",
+                    sleeping
+                ));
+            });
+    }
 }
 
 // Statistics system

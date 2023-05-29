@@ -14,7 +14,6 @@ pub struct Physics {
 
 impl Physics {
     pub(crate) fn new() -> Self {
-        let gravity = vector![0.0, -9.81, 0.0];
         let mut rigid_body_set = RigidBodySet::new();
         let mut collider_set = ColliderSet::new();    
 
@@ -44,5 +43,38 @@ impl Physics {
             multibody_joints: multibody_joint_set,
             ccd_solver,
         }
+    }
+
+    pub(crate) fn step(&mut self) {
+        let Physics {
+            bodies,
+            colliders,
+            integration_parameters,
+            physics_pipeline,
+            islands,
+            broad_phase,
+            narrow_phase,
+            impulse_joints,
+            multibody_joints,
+            ccd_solver,
+        } = self;
+    
+        let gravity = vector![0.0, -9.81, 0.0];
+    
+        physics_pipeline.step(
+            &gravity,
+            &integration_parameters,
+            islands,
+            broad_phase,
+            narrow_phase,
+            bodies,
+            colliders,
+            impulse_joints,
+            multibody_joints,
+            ccd_solver,
+            None,
+            &(),
+            &(),
+        );
     }
 }
