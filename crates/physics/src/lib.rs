@@ -3,4 +3,6 @@ mod resource;
 mod util;
 pub use components::*;
 pub use resource::*;
-pub mod system;
+mod system;
+pub use system::*;
+pub use util::*;

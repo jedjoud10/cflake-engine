@@ -124,7 +124,7 @@ dependencies = [
  "fern",
  "graphics",
  "gui",
- "half",
+ "half 2.2.1",
  "input",
  "lazy_static",
  "log",
@@ -514,6 +514,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "ciborium"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "effd91f6c78e5a4ace8a5d3c0b6bfaec9e2baaef55f3efc00e45fb2e477ee926"
+dependencies = [
+ "ciborium-io",
+ "ciborium-ll",
+ "serde",
+]
+
+[[package]]
+name = "ciborium-io"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cdf919175532b369853f5d5e20b26b43112613fd6fe7aee757e35f7a44642656"
+
+[[package]]
+name = "ciborium-ll"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "defaa24ecc093c77630e6c15e17c51f5e187bf35ee514f4e2d67baaa96dae22b"
+dependencies = [
+ "ciborium-io",
+ "half 1.8.2",
+]
+
+[[package]]
 name = "clang-sys"
 version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -873,6 +900,7 @@ dependencies = [
  "nohash-hasher",
  "parking_lot",
  "paste",
+ "rayon",
  "seq-macro",
  "slotmap",
  "smallvec",
@@ -963,7 +991,7 @@ checksum = "bdd2162b720141a91a054640662d3edce3d50a944a50ffca5313cd951abb35b4"
 dependencies = [
  "bit_field",
  "flume",
- "half",
+ "half 2.2.1",
  "lebe",
  "miniz_oxide 0.6.2",
  "rayon-core",
@@ -1269,7 +1297,7 @@ dependencies = [
  "bytemuck",
  "crc32fast",
  "dashmap",
- "half",
+ "half 2.2.1",
  "hdrldr",
  "image",
  "itertools",
@@ -1283,6 +1311,7 @@ dependencies = [
  "paste",
  "pollster",
  "rayon",
+ "seq-macro",
  "shaderc",
  "smallvec",
  "snailquote",
@@ -1313,6 +1342,12 @@ dependencies = [
  "vek",
  "world",
 ]
+
+[[package]]
+name = "half"
+version = "1.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eabb4a44450da02c90444cf74558da904edde8fb4e9035a9a6a4e15445af0bd7"
 
 [[package]]
 name = "half"
@@ -1787,7 +1822,7 @@ version = "0.0.1"
 dependencies = [
  "ahash 0.7.6",
  "arrayvec",
- "half",
+ "half 2.2.1",
  "itertools",
  "num-traits",
  "slotmap",
@@ -2061,10 +2096,10 @@ name = "networking"
 version = "0.1.0"
 dependencies = [
  "ahash 0.7.6",
+ "ciborium",
  "ecs",
  "log",
  "serde",
- "serde_json",
  "thiserror",
  "uuid",
  "vek",
@@ -2470,13 +2505,16 @@ dependencies = [
 name = "physics"
 version = "0.1.0"
 dependencies = [
+ "ahash 0.7.6",
  "coords",
  "ecs",
  "graphics",
+ "log",
  "math",
  "rapier3d",
  "rayon",
  "rendering",
+ "thiserror",
  "utils",
  "vek",
  "world",

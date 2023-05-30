@@ -19,6 +19,7 @@ use crate::{
 };
 
 // FIXME: Is this really worth it? All of this just so we can remove the "range" parameter?
+// FIXME: If we do remove this it's a big bonus since we stay consistent with how the new texture API fetching will work
 /*
 // Operations that we can do on specfic buffer slices/buffers
 pub trait RangedBufferOps<T: GpuPod, const TYPE: u32> {

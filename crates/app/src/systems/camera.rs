@@ -181,6 +181,7 @@ fn update(world: &mut World) {
     // Smooth velocity calculation
     let factor = (time.delta().as_secs_f32() * (1.0 / smoothness)).clamped01();
     **output = vek::Vec3::lerp(**output, velocity, (factor * 2.0).clamped01());
+    **position += **output * time.delta().as_secs_f32();
 
     // The scroll wheel OR the X and Z buttons will change the camera FOV
     let mut delta = input.get_axis(MouseAxis::ScrollDelta) * fov_change_scroll_speed;
@@ -207,8 +208,6 @@ fn update(world: &mut World) {
         (factor * 5.0).clamped01(),
     );
 
-    // FIXME: Remove this when Rapier Kinematic bodies are implemented
-    **position += velocity * time.delta().as_secs_f32();
 }
 
 // Default camera system innit

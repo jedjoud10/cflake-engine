@@ -36,27 +36,27 @@ fn init(world: &mut World) {
     let mut assets = world.get_mut::<Assets>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
     let _meshes = world.get_mut::<Storage<Mesh>>().unwrap();
-    let mut pbrs = world.get_mut::<Storage<PhysicallyBasedMaterial>>().unwrap();
+    let mut pbrs = world.get_mut::<Storage<PbrMaterial>>().unwrap();
     let mut pipelines = world.get_mut::<Pipelines>().unwrap();
     let forward_renderer = world.get::<ForwardRenderer>().unwrap();
 
     // register the PBR material to use it
     let id = pipelines
-        .register::<PhysicallyBasedMaterial>(&graphics, &mut assets)
+        .register::<PbrMaterial>(&graphics, &mut assets)
         .unwrap();
 
     // load a sphere mesh
     let sphere: Handle<Mesh> = forward_renderer.sphere.clone();
 
     // create a PBR material
-    let material = pbrs.insert(PhysicallyBasedMaterial {
+    let material = pbrs.insert(PbrMaterial {
         albedo_map: None,
         normal_map: None,
         mask_map: None,
-        bumpiness: 1.0,
-        roughness: 1.0,
-        metallic: 1.0,
-        ambient_occlusion: 3.0,
+        bumpiness_factor: 1.0,
+        roughness_factor: 1.0,
+        metallic_factor: 1.0,
+        ambient_occlusion_factor: 3.0,
         tint: vek::Rgb::white(),
         scale: vek::Extent2::one(),
     });

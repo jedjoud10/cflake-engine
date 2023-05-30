@@ -11,7 +11,7 @@ fn main() {
 
 // Start hosting a new server
 fn init(world: &mut World) {
-    world.insert(NetworkedSession::host(8080).unwrap());
+    world.insert(NetworkedSession::host(8080, None).unwrap());
 }
 
 // Receive the packets coming from the clients

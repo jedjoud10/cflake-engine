@@ -66,6 +66,7 @@ fn update(world: &mut World) {
         bind_groups,
         command_buffers,
         render_pipelines,
+        compute_pipelines,
         buffers,
         textures,
         texture_views,
@@ -96,6 +97,8 @@ fn update(world: &mut World) {
     egui::Window::new("Time taken per Event")
         .anchor(egui::Align2::RIGHT_BOTTOM, egui::Vec2::ZERO)
         .frame(frame)
+        .collapsible(true)
+        .default_open(false)
         .show(&gui, |ui| {
             ui.heading("Initialization Events Registry");
 
@@ -180,7 +183,8 @@ fn update(world: &mut World) {
             ui.label(format!("Bind Group Layouts: {}", bind_group_layouts));
             ui.label(format!("Bind Groups: {}", bind_groups));
             ui.label(format!("Command Buffers: {}", command_buffers));
-            ui.label(format!("Graphic Pipelines: {}", render_pipelines));
+            ui.label(format!("Render Pipelines: {}", render_pipelines));
+            ui.label(format!("Compute Pipelines: {}", compute_pipelines));
             ui.label(format!("Buffers: {}", buffers));
             ui.label(format!("Textures: {}", textures));
             ui.label(format!("Texture Views: {}", texture_views));
@@ -220,12 +224,16 @@ fn update(world: &mut World) {
 
             let ticks = out_ticks_to_exec;
             ui.label(format!("Ticks to execute: {:.3}", ticks));
+
+            ui.label(format!("Tick-rate: {:.3} t/s", utils::TICKS_PER_SEC))
         });
 
     // ECS Stats
     egui::Window::new("Entity Components")
         .anchor(egui::Align2::LEFT_BOTTOM, egui::Vec2::ZERO)
         .frame(frame)
+        .collapsible(true)
+        .default_open(false)
         .show(&gui, |ui| {
             ui.label(format!("Entities: {}", scene.entities().len()));
 
@@ -239,48 +247,49 @@ fn update(world: &mut World) {
             let ratio = scene.entities().len() as f32 / scene.archetypes().len() as f32;
             ui.label(format!("E/A Ratio: {:.1}", ratio));
 
-            ui.heading("Registered Components Table");
+            ui.collapsing("Registered Components Table", |ui| {
+                egui::Grid::new("components")
+                    .min_col_width(0f32)
+                    .max_col_width(400f32)
+                    .striped(true)
+                    .show(ui, |ui| {
+                        for count in 0..ecs::count() {
+                            let mask = ecs::Mask::one() << count;
+                            ui.label(format!("Mask: 1 << {count}",));
+                            ui.label(format!("Name: {}", ecs::name(mask).unwrap()));
+                            ui.end_row();
+                        }
+                    });
+            });
 
-            egui::Grid::new("components")
-                .min_col_width(0f32)
-                .max_col_width(400f32)
-                .striped(true)
-                .show(ui, |ui| {
-                    for count in 0..ecs::count() {
-                        let mask = ecs::Mask::one() << count;
-                        ui.label(format!("Mask: 1 << {count}",));
-                        ui.label(format!("Name: {}", ecs::name(mask).unwrap()));
-                        ui.end_row();
-                    }
-                });
+            ui.collapsing("Archetypes Table", |ui| {
+                egui::Grid::new("archetypes")
+                    .min_col_width(0f32)
+                    .max_col_width(400f32)
+                    .striped(true)
+                    .show(ui, |ui| {
+                        for (mask, archetype) in scene.archetypes().iter() {
+                            ui.label(format!("Mask: {mask}"));
+                            ui.label(format!("Entities: {}", archetype.entities().len()));
+                            ui.end_row();
+                        }
+                    });
+            });
+            
 
-            ui.heading("Archetypes Table");
-
-            egui::Grid::new("archetypes")
-                .min_col_width(0f32)
-                .max_col_width(400f32)
-                .striped(true)
-                .show(ui, |ui| {
-                    for (mask, archetype) in scene.archetypes().iter() {
-                        ui.label(format!("Mask: {mask}"));
-                        ui.label(format!("Entities: {}", archetype.entities().len()));
-                        ui.end_row();
-                    }
-                });
-
-            ui.heading("Prefabs Table");
-
-            egui::Grid::new("prefabs")
-                .min_col_width(0f32)
-                .max_col_width(400f32)
-                .striped(true)
-                .show(ui, |ui| {
-                    for (name, (_, mask)) in scene.prefabs() {
-                        ui.label(format!("Name: {name}"));
-                        ui.label(format!("Mask: {mask}"));
-                        ui.end_row();
-                    }
-                });
+            ui.collapsing("Prefabs Table", |ui| {
+                egui::Grid::new("prefabs")
+                    .min_col_width(0f32)
+                    .max_col_width(400f32)
+                    .striped(true)
+                    .show(ui, |ui| {
+                        for (name, (_, mask)) in scene.prefabs() {
+                            ui.label(format!("Name: {name}"));
+                            ui.label(format!("Mask: {mask}"));
+                            ui.end_row();
+                        }
+                    });
+            });
         });
 
     // Terrain stats
@@ -601,6 +610,8 @@ fn update(world: &mut World) {
     if let Ok(mut shadowmapping) = world.get_mut::<ShadowMapping>() {
         egui::Window::new("Shadow Mapping")
             .frame(frame)
+            .collapsible(true)
+            .default_open(false)
             .show(&gui, |ui| {
                 egui::Grid::new("cascades")
                     .min_col_width(0f32)
@@ -620,6 +631,8 @@ fn update(world: &mut World) {
     if let Ok(renderer) = world.get_mut::<ForwardRenderer>() {
         egui::Window::new("Forward Rendering")
             .frame(frame)
+            .collapsible(true)
+            .default_open(false)
             .show(&gui, |ui| {
                 ui.label(format!(
                     "Unique material count: {}",
@@ -648,6 +661,8 @@ fn update(world: &mut World) {
     if let Ok(mut compositor) = world.get_mut::<Compositor>() {
         egui::Window::new("Compositor - Post processing")
             .frame(frame)
+            .collapsible(true)
+            .default_open(false)
             .show(&gui, |ui| {
                 ui.horizontal(|ui| {
                     ui.label("Exposure: ");
@@ -709,6 +724,28 @@ fn update(world: &mut World) {
                 });
 
                 compositor.post_process.tonemapping_mode = selected.into_index();
+            });
+    }
+
+    // Physics stats
+    if let Ok(physics) = world.get::<Physics>() {
+        let rigidbodies = scene.query::<&RigidBody>();
+        let max = rigidbodies.len();
+        let sleeping = rigidbodies.into_iter().filter(|x| x.is_sleeping()).count();
+
+        egui::Window::new("Rapier3D Physics")
+            .frame(frame)
+            .collapsible(true)
+            .default_open(false)
+            .show(&gui, |ui| {
+                ui.label(format!(
+                    "Total number of rigid-bodies: {}",
+                    max
+                ));
+                ui.label(format!(
+                    "Number of sleeping rigid-bodies: {}",
+                    sleeping
+                ));
             });
     }
 }

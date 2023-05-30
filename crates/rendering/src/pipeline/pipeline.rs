@@ -43,20 +43,20 @@ impl<M: Material> Pipeline<M> {
         // Fetch the correct vertex config based on the material
         let vertex_config = crate::attributes::enabled_to_vertex_config(M::attributes());
 
-        // We must always have a depth config
-        let depth_config = M::depth_config().unwrap_or(DepthConfig {
-            compare: CompareFunction::Always,
+        // Default depth config for ALL materials
+        let depth_config = DepthConfig {
+            compare: CompareFunction::Less,
             write_enabled: true,
             depth_bias_constant: 0,
             depth_bias_slope_scale: 0.0,
-            depth_bias_clamp: 0.0,
-        });
-
+            depth_bias_clamp: 0.0
+        };
+        
         // Create the graphics pipeline
         let pipeline = RenderPipeline::new(
             graphics,
             Some(depth_config),
-            M::stencil_config(),
+            None,
             None,
             vertex_config,
             M::primitive_config(),

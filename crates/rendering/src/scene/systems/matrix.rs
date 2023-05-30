@@ -12,11 +12,13 @@ fn update(world: &mut World) {
     use ecs::*;
 
     // Filter the objects that have changed only
-    let f1 = modified::<&Position>();
-    let f2 = modified::<&Rotation>();
-    let f3 = modified::<&Scale>();
+    let f1 = (modified::<&Position>() | !contains::<&Position>());
+    let f2 = (modified::<&Rotation>() | !contains::<&Rotation>());
+    let f3 = (modified::<&Scale>() | !contains::<&Scale>());
     let f4 = added::<&Renderer>();
     let filter = f1 | f2 | f3 | f4;
+
+    // FIXME: Fix filter uwu
     let query = scene.query_mut_with::<(
         &mut Renderer,
         Option<&Position>,
@@ -49,5 +51,6 @@ pub fn system(system: &mut System) {
     system
         .insert_update(update)
         .before(super::rendering::system)
+        .before(ecs::post_frame_or_tick)
         .after(post_user);
 }

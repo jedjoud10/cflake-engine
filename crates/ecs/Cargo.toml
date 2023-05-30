@@ -13,6 +13,7 @@ slotmap = "1.0.6"
 nohash-hasher = "0.2.0"
 tinyvec = "1.5.1"
 itertools = "0.10.3"
+rayon = "1.7.0"
 smallvec = "1.8.0"
 ecs-derive = { path = "./ecs-derive"  }
 seq-macro = "0.3.0"

@@ -16,7 +16,7 @@ fn init(world: &mut World) {
     // Fetch the required resources from the world
     let assets = world.get::<Assets>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
-    let mut pbrs = world.get_mut::<Storage<PhysicallyBasedMaterial>>().unwrap();
+    let mut pbrs = world.get_mut::<Storage<PbrMaterial>>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
     let pipelines = world.get::<Pipelines>().unwrap();
 
@@ -30,7 +30,7 @@ fn init(world: &mut World) {
     let mask = assets.async_load::<MaskMap>(("user/textures/mask2.jpg", graphics.clone()));
 
     // Get the material id (also registers the material pipeline)
-    let id = pipelines.get::<PhysicallyBasedMaterial>().unwrap();
+    let id = pipelines.get::<PbrMaterial>().unwrap();
 
     // Get the default meshes from the forward renderer
     let renderer = world.get::<ForwardRenderer>().unwrap();
@@ -51,14 +51,14 @@ fn init(world: &mut World) {
     let mask = mask_maps.insert(mask);
 
     // Create a new material instance
-    let material = pbrs.insert(PhysicallyBasedMaterial {
+    let material = pbrs.insert(PbrMaterial {
         albedo_map: Some(diffuse),
         normal_map: Some(normal),
         mask_map: Some(mask),
-        bumpiness: 1.0,
-        roughness: 1.0,
-        metallic: 1.0,
-        ambient_occlusion: 3.0,
+        bumpiness_factor: 1.0,
+        roughness_factor: 1.0,
+        metallic_factor: 1.0,
+        ambient_occlusion_factor: 3.0,
         tint: vek::Rgb::white(),
         scale: vek::Extent2::one(),
     });

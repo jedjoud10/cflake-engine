@@ -55,7 +55,8 @@ pub fn file_logger(system: &mut System) {
 }
 
 // Number of ticks that should execute per second
-const TICKS_PER_SEC: f32 = 240.0f32;
+pub const TICKS_PER_SEC: f32 = 16.0f32;
+pub const TICK_DELTA: f32 = 1.0 / TICKS_PER_SEC;
 
 // Add the Time manager
 pub fn time(system: &mut System) {
@@ -70,10 +71,10 @@ pub fn time(system: &mut System) {
                 tick_count: 0,
                 last_tick_start: Instant::now(),
                 ticks_to_execute: None,
-                tick_delta: Duration::from_secs_f32(1.0 / TICKS_PER_SEC),
-                tick_interpolation: 0.0,
-                tick_target_interpolation: 0.0,
+                tick_delta: Duration::from_secs_f32(TICK_DELTA),
                 local_tick_count: 0,
+                tick_interpolation: 0.0,
+                accumulator: 0.0,
             });
         })
         .before(user);
@@ -92,29 +93,28 @@ pub fn time(system: &mut System) {
             // Calculate delta (using old frame start)
             time.delta = now - old_frame_start;
 
-            // Constants needed for ticks
-            const TICKS_DELTA_NS: f32 = (1.0 / TICKS_PER_SEC) * 1000000000.0;
-            const TICK_DELTA: Duration = Duration::from_nanos(TICKS_DELTA_NS as u64);
+            // https://gafferongames.com/post/fix_your_timestep/
+            time.accumulator += time.delta.as_secs_f32();
+            time.tick_interpolation = time.accumulator / TICK_DELTA;
 
-            // Update the tick count and starts
-            let diff = now - time.last_tick_start;
-            if diff >= TICK_DELTA {
-                // Calculate how many ticks have elapsed since the last tick
-                let divided = diff.as_micros() as f32 / TICK_DELTA.as_micros() as f32;
-                let count = divided.floor() as u32;
-
-                // Add divided tick count to accumulator
-                time.last_tick_start = now;
-                time.tick_count += count as u128;
+            let mut enabled = false;
+            while time.accumulator > TICK_DELTA {
                 time.local_tick_count = 0;
-                time.ticks_to_execute = NonZeroU32::new(count);
+                enabled = true;
 
-                // Might have a non-whole remainder left in the accumulator
-                let remainder = divided - count as f32;
-                time.tick_target_interpolation = remainder;
-            } else {
+                if let Some(count) = time.ticks_to_execute.as_mut() {
+                    *count = NonZeroU32::new(count.get() + 1).unwrap(); 
+                } else {
+                    time.ticks_to_execute = Some(NonZeroU32::new(1).unwrap());
+                }
+
+                time.accumulator -= TICK_DELTA;
+                time.tick_interpolation = 1.0;
+            } 
+            
+            if !enabled {
                 time.ticks_to_execute = None;
-            }
+            } 
         })
         .before(user);
 
@@ -124,10 +124,11 @@ pub fn time(system: &mut System) {
             let mut time = world.get_mut::<Time>().unwrap();
             time.tick_count += 1;
             time.local_tick_count += 1;
-            time.tick_interpolation = 1.0;
 
-            if time.local_tick_count == (time.ticks_to_execute().unwrap().get() - 1) {
-                time.tick_interpolation = time.tick_target_interpolation;
+            // Limit the number of ticks to execute to not cause a spiral of death effect
+            if time.local_tick_count() > 32 {
+                log::warn!("Too many ticks to execute! Spiral of death effect is occuring");
+                return;
             }
         })
         .before(user);

@@ -11,10 +11,7 @@ pub type Table = MaskHashMap<UntypedColumn>;
 // Archetypes are used in archetypal ECSs to improve iteration and insertion/removal performance
 pub struct Archetype {
     mask: Mask,
-
     table: Table,
-
-    // Entities that have the same mask as the archetype's mask
     entities: Vec<Entity>,
 }
 
@@ -87,7 +84,7 @@ impl Archetype {
         let old_len = self.entities.len();
 
         // Add the components first (so we know how many entities we need to add)
-        let additional = B::extend_from_iter(self, iter).unwrap();
+        let additional = B::extend_from_iter(self, false, iter).unwrap();
 
         // Allocate the entities then add them as well
         for i in 0..additional {
@@ -133,7 +130,8 @@ impl Archetype {
 
             // Remove the components and decompose them
             for (mask, input) in self.table_mut() {
-                input.states_mut().swap_remove(index);
+                input.delta_tick_states_mut().swap_remove(index);
+                input.delta_frame_states_mut().swap_remove(index);
 
                 // Add the "removal" column in case it doesn't exist
                 let output = removed
@@ -217,34 +215,44 @@ impl Archetype {
     }
 
     // Try to get an immutable reference to a typed column of a specific component
-    pub fn column<T: Component>(&self) -> Option<(&Vec<T>, &StateColumn)> {
+    pub fn column<T: Component>(&self) -> Option<(&Vec<T>, &StateColumn, &StateColumn)> {
         self.untyped_column::<T>().map(|c| c.as_::<T>().unwrap())
     }
 
     // Try to get a mutable reference to a typed column of a specific component
-    pub(crate) fn column_mut<T: Component>(&mut self) -> Option<(&mut Vec<T>, &mut StateColumn)> {
+    pub(crate) fn column_mut<T: Component>(&mut self) -> Option<(&mut Vec<T>, &mut StateColumn, &mut StateColumn)> {
         self.untyped_column_mut::<T>()
             .map(|c| c.as_mut_::<T>().unwrap())
     }
 
     // Try to get an immutable reference to the data vector of a specific component
     pub fn components<T: Component>(&self) -> Option<&Vec<T>> {
-        self.column::<T>().map(|(vec, _)| vec)
+        self.column::<T>().map(|(vec, _, _)| vec)
     }
 
     // Try to get a mutable reference to a data vector of a specific component
     pub(crate) fn components_mut<T: Component>(&mut self) -> Option<&mut Vec<T>> {
-        self.column_mut::<T>().map(|(vec, _)| vec)
+        self.column_mut::<T>().map(|(vec, _,  _)| vec)
     }
 
-    // Try to get an immutable reference to the states of a specific component
-    pub fn states<T: Component>(&self) -> Option<&StateColumn> {
-        self.untyped_column::<T>().map(|c| c.states())
+    // Get an immutable reference to the per-frame states
+    pub fn delta_frame_states<T: Component>(&self) -> Option<&StateColumn> {
+        self.untyped_column::<T>().map(|c| c.delta_frame_states())
     }
 
-    // Try to get a mutable reference to the states of a specific component
-    pub(crate) fn states_mut<T: Component>(&mut self) -> Option<&mut StateColumn> {
-        self.untyped_column_mut::<T>().map(|c| c.states_mut())
+    // Get a mutable reference to the per-frame states
+    pub(crate) fn delta_frame_states_mut<T: Component>(&mut self) -> Option<&mut StateColumn> {
+        self.untyped_column_mut::<T>().map(|c| c.delta_frame_states_mut())
+    }
+
+    // Get an immutable reference to the per-tick states
+    pub fn delta_tick_states<T: Component>(&self) -> Option<&StateColumn> {
+        self.untyped_column::<T>().map(|c| c.delta_tick_states())
+    }
+
+    // Get a mutable reference to the per-tick states
+    pub(crate) fn delta_tick_states_mut<T: Component>(&mut self) -> Option<&mut StateColumn> {
+        self.untyped_column_mut::<T>().map(|c| c.delta_tick_states_mut())
     }
 
     // Get the internal table immutably
@@ -358,19 +366,22 @@ pub(crate) fn add_bundle<B: Bundle>(
             .components_mut()
             .swap_remove_move(index, output.components_mut());
         input
-            .states_mut()
-            .swap_remove_move(index, output.states_mut());
+            .delta_frame_states_mut()
+            .swap_remove_move(index, output.delta_frame_states_mut());
+        input
+            .delta_tick_states_mut()
+            .swap_remove_move(index, output.delta_tick_states_mut());
     }
 
     // Add the extra components to the archetype
-    B::extend_from_iter(target, [bundle]).unwrap();
+    B::extend_from_iter(target, true, [bundle]).unwrap();
 
     for (mask, current) in current.table.iter() {
-        log::debug!("Current Mask: {:?}, len: {}", mask, current.len());
+        log::trace!("Current Mask: {:?}, len: {}", mask, current.len());
     }
 
     for (mask, current) in target.table.iter() {
-        log::debug!("Target Mask: {:?}, len: {}", mask, current.len());
+        log::trace!("Target Mask: {:?}, len: {}", mask, current.len());
     }
 
     // Handle swap-remove logic in the current archetype
@@ -430,11 +441,11 @@ pub(crate) fn remove_bundle<B: Bundle>(
     let index = linkings.index();
 
     for (mask, current) in current.table.iter() {
-        log::debug!("Removal Current Mask: {:?}, len: {}", mask, current.len());
+        log::trace!("Removal Current Mask: {:?}, len: {}", mask, current.len());
     }
 
     for (mask, current) in target.table.iter() {
-        log::debug!("Removal Target Mask: {:?}, len: {}", mask, current.len());
+        log::trace!("Removal Target Mask: {:?}, len: {}", mask, current.len());
     }
 
     // Move the components and states from one archetype to the other (flipped)
@@ -444,11 +455,14 @@ pub(crate) fn remove_bundle<B: Bundle>(
             .components_mut()
             .swap_remove_move(index, output.components_mut());
         input
-            .states_mut()
-            .swap_remove_move(index, output.states_mut());
+            .delta_frame_states_mut()
+            .swap_remove_move(index, output.delta_frame_states_mut());
+        input
+            .delta_tick_states_mut()
+            .swap_remove_move(index, output.delta_tick_states_mut());
     }
 
-    // Dissociate the bunle intop it's raw components
+    // Dissociate the bundle into it's raw components
     for (mask, input) in current
         .table
         .iter_mut()
@@ -459,11 +473,12 @@ pub(crate) fn remove_bundle<B: Bundle>(
             .or_insert_with(|| input.components().clone_default());
         let data = &mut **entry;
         input.components_mut().swap_remove_move(index, data);
-        input.states_mut().swap_remove(index);
+        input.delta_frame_states_mut().swap_remove(index);
+        input.delta_tick_states_mut().swap_remove(index);
     }
 
     for (mask, current) in target.table.iter() {
-        log::debug!("Removal Target Mask: {:?}, len: {}", mask, current.len());
+        log::trace!("Removal Target Mask: {:?}, len: {}", mask, current.len());
     }
 
     // Handle swap-remove logic in the current archetype

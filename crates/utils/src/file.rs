@@ -15,8 +15,8 @@ pub struct FileManager {
     // App directories that contain the current app data
     dirs: AppDirs,
 
-    // Contains all the strings that contain Deserialized data (because serde's a bit weird)
-    strings: AHashMap<TypeId, String>,
+    // Contains all the vectors that contain Deserialized data
+    deserialized: AHashMap<(TypeId, PathBuf), Vec<u8>>,
 }
 
 // The type of file that we will read / write
@@ -28,6 +28,16 @@ pub enum FileType {
     Data,
     Cache,
     Log,
+}
+
+// How exactly we should serialize/deserialize the dat 
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub enum SerdeFormat {
+    // Serde will use the JSON formatter to read/write the file
+    JSON,
+
+    // Serde will use the Rusty Object Notation formatter to read/write the file
+    RON,
 }
 
 impl FileManager {
@@ -51,7 +61,7 @@ impl FileManager {
 
         Self {
             dirs,
-            strings: Default::default(),
+            deserialized: Default::default(),
         }
     }
 
@@ -159,34 +169,75 @@ impl FileManager {
         Some(file)
     }
 
-    // Deserialize a file using Serde
+    // Internally used to deserialize a stream of bytes using a specific format
+    fn inner_deserialize_bytes<'a, T: serde::Deserialize<'a> + 'static>(
+        bytes: &'a [u8],
+        format: SerdeFormat,
+    ) -> Option<T> {
+        match format {
+            SerdeFormat::JSON => {
+                let string = core::str::from_utf8(bytes).ok()?;
+                let value = serde_json::from_str::<T>(string).ok()?;
+                Some(value)
+            },
+            SerdeFormat::RON => ron::de::from_bytes(bytes).ok(),
+        }
+    }
+
+    // Internally used to serialize a stream of bytes using a specific format
+    fn inner_serialize_bytes<W: std::io::Write, T: serde::Serialize>(
+        value: &T,
+        writer: W,
+        format: SerdeFormat,
+    ) -> Option<()> {
+        match format {
+            SerdeFormat::JSON => {
+                serde_json::to_writer_pretty(writer, value).ok()?;
+                Some(())
+            },
+            SerdeFormat::RON => {
+                ron::ser::to_writer_pretty(writer, value, ron::ser::PrettyConfig::default()).ok()?;
+                Some(())
+            },
+        }
+    }
+
+    // Deserialize a file using Serde and a specific format
     pub fn deserialize_from_file<'a, T: serde::Deserialize<'a> + 'static>(
         &'a mut self,
         path: impl AsRef<Path>,
         variant: FileType,
+        format: SerdeFormat,
     ) -> Option<T> {
         // Read the file into a string and then add it internally
         log::debug!("Deserializing to file {:?}...", path.as_ref());
         let mut reader = self.read_file(&path, variant)?;
-        let mut string = String::new();
-        reader.read_to_string(&mut string).ok()?;
-        self.strings.insert(TypeId::of::<T>(), string);
-        let last = self.strings.get(&TypeId::of::<T>()).unwrap();
-        let value = serde_json::from_str(last.as_str()).unwrap();
+        let mut buf = Vec::<u8>::new(); 
+        reader.read_to_end(&mut buf).unwrap();
+
+        let key = (TypeId::of::<T>(), path.as_ref().to_path_buf());
+        let cloned = key.clone();
+        self.deserialized.insert(key, buf);
+        let last = self.deserialized.get(&cloned).unwrap();
+
+        let value = Self::inner_deserialize_bytes::<T>(&last, format)?;
         log::debug!("Deserialized data from {:?} successfully!", path.as_ref());
         Some(value)
     }
 
-    // Serialize a struct into a file using Serde
+    // Serialize a struct into a file using Serde and a specific format
     pub fn serialize_into_file<T: serde::Serialize>(
         &mut self,
         value: &T,
         path: impl AsRef<Path>,
         variant: FileType,
+        format: SerdeFormat,
     ) -> Option<()> {
         log::debug!("Serializing to file {:?}...", path.as_ref());
+        
         let writer = self.write_file(&path, true, variant)?;
-        serde_json::to_writer_pretty(writer, value).ok()?;
+        Self::inner_serialize_bytes(value, writer, format)?;
+
         log::debug!("Serialized data into {:?} successfully!", path.as_ref());
         Some(())
     }

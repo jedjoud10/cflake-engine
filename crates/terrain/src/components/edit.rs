@@ -31,3 +31,8 @@ pub struct Edit {
     // Custom color if we wish to override the color of the terrain
     pub color: Option<vek::Rgb<f32>>,
 }
+
+// Rust representation of the GLSL packed edit struct
+#[repr(C)]
+pub struct PackedEdit {
+}

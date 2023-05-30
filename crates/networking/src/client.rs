@@ -57,28 +57,19 @@ impl Client {
 
 // Data transmission
 impl Client {
-    // Send a message of a specific type to the server
-    pub fn send<T: Packet>(&mut self, val: T) -> Result<(), PacketSendError> {
-        // TODO: User another serialization system other than this bozo
-        let string =
-            serde_json::to_string(&val).map_err(PacketSendError::SerializationError)?;
-        let id = crate::packet::id::<T>();
-        let mut data = Vec::<u8>::with_capacity(string.as_bytes().len() + 8);
-        data.extend(id.to_be_bytes());
-        data.extend(string.as_bytes());
-        self.stream
-            .write(&data)
-            .map_err(PacketSendError::SocketError)
-            .map(|_| ())
-    }
-
-    // Send a message of a specific type to all the clients
-    pub fn broadcast<T: Packet>(&mut self, _val: T) {
+    // Send a message of a specific type to a specific client
+    // This will send the message to the server and relay it to the client
+    pub fn message<T: Packet>(&mut self, client: Uuid, val: T) {
         todo!()
     }
 
-    // Receive messages of a specific type from the clients
-    pub fn receive<T: Packet>(&mut self) -> Vec<(T, Uuid)> {
+    // Send a message of a specific type to the server
+    pub fn send<T: Packet>(&mut self, val: T) -> Result<(), PacketSendError> {
+        todo!()
+    }
+
+    // Receive messages of a specific type from the clients (or server)
+    pub fn receive<T: Packet>(&mut self) -> Vec<T> {
         todo!()
     }
 }

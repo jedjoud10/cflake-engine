@@ -19,6 +19,18 @@ impl<T: 'static> PartialEq for Handle<T> {
     }
 }
 
+impl<T: 'static> PartialOrd for Handle<T> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.key.partial_cmp(&other.key)
+    }
+}
+
+impl<T: 'static> Ord for Handle<T> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.key.cmp(&other.key)
+    }
+}
+
 impl<T: 'static> Eq for Handle<T> {}
 
 impl<T: 'static> Handle<T> {

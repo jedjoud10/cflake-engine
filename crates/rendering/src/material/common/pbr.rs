@@ -13,22 +13,22 @@ use graphics::{
 use utils::{Handle, Storage};
 
 // A PBR shader that will try to fake how real light works in the real world
-pub struct PhysicallyBasedMaterial {
+pub struct PbrMaterial {
     // Textures used by the PBR workflow material
     pub albedo_map: Option<Handle<AlbedoMap>>,
     pub normal_map: Option<Handle<NormalMap>>,
     pub mask_map: Option<Handle<MaskMap>>,
 
     // PBR Parameters
-    pub bumpiness: f32,
-    pub roughness: f32,
-    pub metallic: f32,
-    pub ambient_occlusion: f32,
+    pub bumpiness_factor: f32,
+    pub roughness_factor: f32,
+    pub metallic_factor: f32,
+    pub ambient_occlusion_factor: f32,
     pub scale: vek::Extent2<f32>,
     pub tint: vek::Rgb<f32>,
 }
 
-impl Material for PhysicallyBasedMaterial {
+impl Material for PbrMaterial {
     type Resources<'w> = (
         world::Read<'w, Storage<AlbedoMap>>,
         world::Read<'w, Storage<NormalMap>>,
@@ -187,10 +187,10 @@ impl Material for PhysicallyBasedMaterial {
 
         // Convert the material parameters into a vec4
         let vector = vek::Vec4::new(
-            self.bumpiness,
-            self.metallic,
-            self.ambient_occlusion,
-            self.roughness,
+            self.bumpiness_factor,
+            self.metallic_factor,
+            self.ambient_occlusion_factor,
+            self.roughness_factor,
         );
 
         // Send the raw fragment bytes to the GPU

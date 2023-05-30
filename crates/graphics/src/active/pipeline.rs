@@ -2,7 +2,7 @@ use std::error::Error;
 
 use crate::{BindGroup, PushConstants, SetBindGroupError, SetPushConstantsError};
 
-// Common pipeline trait that will be implemented by ActiveComputeDispatcher and ActiveGraphicsPipeline
+// Common pipeline trait that will be implemented by ActiveComputeDispatcher and ActiveRenderPipeline
 pub trait ActivePipeline {
     // Underlying type of the pipeline
     type Pipeline;

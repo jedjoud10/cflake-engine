@@ -1,19 +1,27 @@
-use crate::{
-    ActiveScenePipeline, DefaultMaterialResources, MeshAttributes, RenderPath, Renderer, SceneColor, Direct,
-};
 use assets::Assets;
-
-
-use graphics::{
-    BindGroup, BlendConfig, CompareFunction, DepthConfig, Graphics, PrimitiveConfig, PushConstants,
-    Shader, StencilConfig, WindingOrder,
-};
-
+use graphics::{ColorLayout, DepthStencilLayout, RenderPass, BindGroup, Graphics, Shader, PrimitiveConfig, WindingOrder, PushConstants, ActiveRenderPipeline, ActivePipeline};
 use world::World;
+use crate::{RenderPath, DefaultMaterialResources, SceneColor, SceneDepth, MeshAttributes, Renderer};
 
-// A material is what defines the physical properties of surfaces whenever we draw them onto the screen
-// Materials correspond to a specific WGPU render pipeline based on it's config parameters
-pub trait Material: 'static + Sized + Sync + Send {
+// Render pass that will render the scene
+pub struct SceneRenderPass;
+
+// Render pass that will render the shadows of the scene from the light POV
+pub struct SceneShadowPass;
+
+// Generalized render pass from within the rendering system
+// This will be implemented for the RenderPass and ShadowPass structs
+trait Pass {
+    // Render-pass color and depth/stencil layouts
+    type ColorLayout: ColorLayout;
+    type DepthStencilLayout: DepthStencilLayout;
+
+    type RenderPipeline;
+    type ActiveRenderPipeline: ActivePipeline;
+}
+
+// A render pipeline is what the user will want to implement for to customize rendering
+trait Pipeline<P: Pass> {
     type Resources<'w>: 'w;
     type RenderPath: RenderPath;
     type Settings<'s>;
@@ -35,16 +43,6 @@ pub trait Material: 'static + Sized + Sync + Send {
             cull_face: Some(graphics::Face::Front),
             wireframe: false,
         }
-    }
-
-    // Does this material support casting shadows onto other surfaces?
-    fn casts_shadows() -> bool {
-        true
-    }
-
-    // Should surfaces using this material use frustum culling?
-    fn frustum_culling() -> bool {
-        true
     }
 
     // Fetch the required resources from the world
@@ -84,7 +82,7 @@ pub trait Material: 'static + Sized + Sync + Send {
         _resources: &'r mut Self::Resources<'w>,
         _default: &DefaultMaterialResources<'r>,
         _query: &Self::Query<'w>,
-        _push_constants: &mut PushConstants<ActiveScenePipeline>,
+        _push_constants: &mut PushConstants<P::ActiveRenderPipeline>,
     ) {
     }
 }

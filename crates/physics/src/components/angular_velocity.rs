@@ -1,4 +1,3 @@
-use math::Scalar;
 use vek::Quaternion;
 
 use ecs::Component;
@@ -7,94 +6,65 @@ use std::{
     ops::{Deref, DerefMut}, marker::PhantomData,
 };
 
-// Our target is the raw rotation (either 3D or 2D)
-type Target = math::RawRotation;
-
 #[derive(Default, Clone, Copy, PartialEq, Component)]
 #[repr(transparent)]
-pub struct AngularVelocity<T: 'static>(Target, PhantomData<T>);
+pub struct AngularVelocity<Space: 'static>(vek::Vec3<f32>, PhantomData<Space>);
 
-impl<T: 'static> AngularVelocity<T> {
-    /// Construct an angular rotation using an X rotation (radians)
-    pub fn angular_rotation_x(angle_radians: Scalar) -> Self {
-        Self(vek::Quaternion::rotation_x(angle_radians), PhantomData)
-    }
-
-    /// Construct an angular rotation using a Y rotation (radians)
-    pub fn angular_rotation_y(angle_radians: Scalar) -> Self {
-        Self(vek::Quaternion::rotation_y(angle_radians), PhantomData)
-    }
-
-    /// Construct an angular rotation using a Z rotation (radians)
-    pub fn angular_rotation_z(angle_radians: Scalar) -> Self {
-        Self(vek::Quaternion::rotation_z(angle_radians), PhantomData)
-    }
+impl<Space: 'static> AngularVelocity<Space> {
 }
 
-impl<T: 'static> Debug for AngularVelocity<T> {
+impl<Space: 'static> Debug for AngularVelocity<Space> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Debug::fmt(&self.0, f)
     }
 }
 
-impl<T: 'static> Deref for AngularVelocity<T> {
-    type Target = Target;
+impl<Space: 'static> Deref for AngularVelocity<Space> {
+    type Target = vek::Vec3<f32>;
 
-    fn deref(&self) -> &Self::Target {
+    fn deref(&self) -> &vek::Vec3<f32> {
         &self.0
     }
 }
 
-impl<T: 'static> DerefMut for AngularVelocity<T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
+impl<Space: 'static> DerefMut for AngularVelocity<Space> {
+    fn deref_mut(&mut self) -> &mut vek::Vec3<f32> {
         &mut self.0
     }
 }
 
-impl<T: 'static> AsRef<Target> for AngularVelocity<T> {
-    fn as_ref(&self) -> &Target {
+impl<Space: 'static> AsRef<vek::Vec3<f32>> for AngularVelocity<Space> {
+    fn as_ref(&self) -> &vek::Vec3<f32> {
         &self.0
     }
 }
 
-impl<T: 'static> AsMut<Target> for AngularVelocity<T> {
-    fn as_mut(&mut self) -> &mut Target {
+impl<Space: 'static> AsMut<vek::Vec3<f32>> for AngularVelocity<Space> {
+    fn as_mut(&mut self) -> &mut vek::Vec3<f32> {
         &mut self.0
     }
 }
 
-impl<T: 'static> From<AngularVelocity<T>> for Target {
-    fn from(value: AngularVelocity<T>) -> Self {
+impl<Space: 'static> From<AngularVelocity<Space>> for vek::Vec3<f32> {
+    fn from(value: AngularVelocity<Space>) -> Self {
         value.0
     }
 }
 
-impl<T: 'static> From<&AngularVelocity<T>> for Target {
-    fn from(value: &AngularVelocity<T>) -> Self {
+impl<Space: 'static> From<&AngularVelocity<Space>> for vek::Vec3<f32> {
+    fn from(value: &AngularVelocity<Space>) -> Self {
         value.0
     }
 }
 
-impl<T: 'static> From<Target> for AngularVelocity<T> {
-    fn from(q: Target) -> Self {
+impl<Space: 'static> From<vek::Vec3<f32>> for AngularVelocity<Space> {
+    fn from(q: vek::Vec3<f32>) -> Self {
         Self(q, PhantomData)
     }
 }
 
-impl<T: 'static> From<&Target> for AngularVelocity<T> {
-    fn from(q: &Target) -> Self {
+impl<Space: 'static> From<&vek::Vec3<f32>> for AngularVelocity<Space> {
+    fn from(q: &vek::Vec3<f32>) -> Self {
         Self(*q, PhantomData)
-    }
-}
-
-impl<T: 'static> From<AngularVelocity<T>> for math::RawMatrix {
-    fn from(value: AngularVelocity<T>) -> Self {
-        value.0.into()
-    }
-}
-
-impl<T: 'static> From<&AngularVelocity<T>> for math::RawMatrix {
-    fn from(value: &AngularVelocity<T>) -> Self {
-        value.0.into()
     }
 }

@@ -112,6 +112,6 @@ vec3 brdf(
 	// TODO: IBL
 
 	brdf = brdf * light.color * lighting;
-	brdf += fresnelRoughness(surface.f0, camera.view, surface.normal, surface.roughness) * 0.40;
+	//brdf += fresnelRoughness(surface.f0, camera.view, surface.normal, surface.roughness) * 0.40;
 	return brdf;
 }

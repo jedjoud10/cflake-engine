@@ -7,46 +7,46 @@ mod shapes {
 
         #[test]
         fn volume() {
-            let cuboid = Cuboid::cube(Vec3::zero(), 1.0f32);
+            let cuboid = Cuboid::cube(Vec3::zero(), 0.5f32);
             assert_eq!(cuboid.volume(), 1.0f32);
-            let cuboid = Cuboid::cube(Vec3::zero(), 2.0f32);
+            let cuboid = Cuboid::cube(Vec3::zero(), 1.0f32);
             assert_eq!(cuboid.volume(), 8.0f32);
         }
 
         #[test]
         fn surface_area() {
-            let cuboid = Cuboid::cube(Vec3::zero(), 1.0f32);
+            let cuboid = Cuboid::cube(Vec3::zero(), 0.5f32);
             assert_eq!(cuboid.area(), 6.0f32);
-            let cuboid = Cuboid::cube(Vec3::zero(), 2.0f32);
+            let cuboid = Cuboid::cube(Vec3::zero(), 1.0f32);
             assert_eq!(cuboid.area(), 24.0f32);
         }
 
         #[test]
         fn bounds() {
-            let mut cuboid = Cuboid::cube(Vec3::zero(), 1.0);
+            let mut cuboid = Cuboid::cube(Vec3::zero(), 0.5);
             let aabb: Aabb<f32> = cuboid.bounds();
             assert_eq!(aabb.min, Vec3::broadcast(-0.5f32));
             assert_eq!(aabb.max, Vec3::broadcast(0.5f32));
             cuboid.expand_by(1.0);
             let aabb: Aabb<f32> = cuboid.bounds();
-            assert_eq!(cuboid.extent, Extent3::broadcast(2.0f32));
+            assert_eq!(cuboid.half_extent, Extent3::broadcast(2.0f32));
             assert_eq!(aabb.min, Vec3::broadcast(-1f32));
             assert_eq!(aabb.max, Vec3::broadcast(1f32));
 
-            let mut cuboid = Cuboid::cube(Vec3::zero(), 2.0);
+            let mut cuboid = Cuboid::cube(Vec3::zero(), 1.0);
             let aabb: Aabb<f32> = cuboid.bounds();
             assert_eq!(aabb.min, Vec3::broadcast(-1f32));
             assert_eq!(aabb.max, Vec3::broadcast(1f32));
             cuboid.expand_by(1.0);
             let aabb: Aabb<f32> = cuboid.bounds();
-            assert_eq!(cuboid.extent, Extent3::broadcast(3.0f32));
+            assert_eq!(cuboid.half_extent, Extent3::broadcast(3.0f32));
             assert_eq!(aabb.min, Vec3::broadcast(-1.5f32));
             assert_eq!(aabb.max, Vec3::broadcast(1.5f32));
         }
 
         #[test]
         fn center() {
-            let mut cuboid = Cuboid::cube(Vec3::zero(), 1.0);
+            let mut cuboid = Cuboid::cube(Vec3::zero(), 0.5);
             assert_eq!(cuboid.center(), Vec3::zero());
 
             cuboid.set_center(Vec3::one());

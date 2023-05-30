@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    AlbedoMap, MaskMap, Mesh, NormalMap, PhysicallyBasedMaterial,
+    AlbedoMap, MaskMap, Mesh, NormalMap, PbrMaterial,
     Pipelines, SubSurface, Surface,
 };
 use ahash::{AHashMap};
@@ -38,7 +38,7 @@ pub struct GtlfContext<'a> {
     pub albedo_maps: Write<'a, Storage<AlbedoMap>>,
     pub normal_maps: Write<'a, Storage<NormalMap>>,
     pub mask_maps: Write<'a, Storage<MaskMap>>,
-    pub pbr_materials: Write<'a, Storage<PhysicallyBasedMaterial>>,
+    pub pbr_materials: Write<'a, Storage<PbrMaterial>>,
 }
 
 impl<'a> GtlfContext<'a> {
@@ -51,7 +51,7 @@ impl<'a> GtlfContext<'a> {
         let albedo_maps = world.get_mut::<Storage<AlbedoMap>>()?;
         let normal_maps = world.get_mut::<Storage<NormalMap>>()?;
         let mask_maps = world.get_mut::<Storage<MaskMap>>()?;
-        let pbr_materials = world.get_mut::<Storage<PhysicallyBasedMaterial>>()?;
+        let pbr_materials = world.get_mut::<Storage<PbrMaterial>>()?;
 
         Ok(Self {
             graphics,
@@ -69,7 +69,7 @@ impl<'a> GtlfContext<'a> {
 // These are the settings that must be given to the gltf importer so it can deserialize the scene
 pub struct GltfSettings<'a> {
     // Default material that we should use when we don't have a material applied to objects
-    pub fallback: PhysicallyBasedMaterial,
+    pub fallback: PbrMaterial,
 
     // We can only load one scene at a time
     // If this is default, then it uses the default scene
@@ -80,14 +80,14 @@ impl<'a> Default for GltfSettings<'a> {
     fn default() -> Self {
         Self {
             scene: None,
-            fallback: PhysicallyBasedMaterial {
+            fallback: PbrMaterial {
                 albedo_map: None,
                 normal_map: None,
                 mask_map: None,
-                bumpiness: 1.0,
-                roughness: 0.5,
-                metallic: 0.0,
-                ambient_occlusion: 0.0,
+                bumpiness_factor: 1.0,
+                roughness_factor: 0.5,
+                metallic_factor: 0.0,
+                ambient_occlusion_factor: 0.0,
                 tint: vek::Rgb::one(),
                 scale: vek::Extent2::one(),
             },
@@ -386,20 +386,20 @@ impl Asset for GltfScene {
                 );
                 let mask_map = cached_mask_maps.get(&mask).cloned();
 
-                PhysicallyBasedMaterial {
+                PbrMaterial {
                     albedo_map,
                     normal_map,
                     mask_map,
-                    bumpiness,
-                    roughness,
-                    metallic,
-                    ambient_occlusion,
+                    bumpiness_factor: bumpiness,
+                    roughness_factor: roughness,
+                    metallic_factor: metallic,
+                    ambient_occlusion_factor: ambient_occlusion,
                     tint,
                     scale: vek::Extent2::one(),
                 }
             })
             .map(|material| context.pbr_materials.insert(material))
-            .collect::<Vec<Handle<PhysicallyBasedMaterial>>>();
+            .collect::<Vec<Handle<PbrMaterial>>>();
 
         // Map meshes and create their handles
         type CachedMeshKey = (usize, Option<usize>, Option<usize>, Option<usize>, usize);
@@ -513,7 +513,7 @@ impl Asset for GltfScene {
             coords::Position,
             coords::Rotation,
             coords::Scale,
-            Surface<PhysicallyBasedMaterial>,
+            Surface<PbrMaterial>,
             crate::Renderer,
         )> = Vec::new();
 
@@ -546,7 +546,7 @@ impl Asset for GltfScene {
                 let meshes = &mapped_meshes[mesh_index.value()];
 
                 // Sub-Surfaces that we must render
-                let mut subsurfaces = Vec::<SubSurface<PhysicallyBasedMaterial>>::new();
+                let mut subsurfaces = Vec::<SubSurface<PbrMaterial>>::new();
 
                 // Create the sub-surfaces of the entity (mesh)
                 for (submesh_index, primitive) in mesh.primitives.iter().enumerate() {
@@ -570,7 +570,7 @@ impl Asset for GltfScene {
                     shadow_caster: true,
                     shadow_receiver: true,
                     shadow_culled: false,
-                    id: context.pipelines.get::<PhysicallyBasedMaterial>().unwrap(),
+                    id: context.pipelines.get::<PbrMaterial>().unwrap(),
                 };
 
                 // TODO: Handle hierarchy PLEASE

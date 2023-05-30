@@ -278,6 +278,16 @@ impl App {
             winit::event::Event::MainEventsCleared => {
                 sleeper.loop_start();
 
+                // Make sure we execute the tick event only 60 times per second
+                let time = world.get::<utils::Time>().unwrap();
+                let ticks_to_execute = time.ticks_to_execute();
+                drop(time);
+                if let Some(count) = ticks_to_execute {
+                    for _ in 0..count.get() {
+                        systems.tick.execute(&mut world);
+                    }
+                }
+
                 // Execute the update event
                 systems.update.execute(&mut world);
 
@@ -307,16 +317,6 @@ impl App {
                         .collect();
                     durations.tick_total = systems.tick.timings().1.as_secs_f32() * 1000.0f32;
                     drop(durations);
-                }
-
-                // Make sure we execute the tick event only 120 times per second
-                if let Some(count) = time.ticks_to_execute() {
-                    drop(time);
-
-                    // Execute the tick events
-                    for _ in 0..count.get() {
-                        systems.tick.execute(&mut world);
-                    }
                 }
 
                 // Handle app shutdown
@@ -395,7 +395,9 @@ impl App {
         self.regsys(assets::system);
 
         // Scene systems
-        self.regsys(ecs::system);
+        self.regsys(ecs::post_frame_or_tick);
+        self.regsys(ecs::pre_frame_or_tick);
+        self.regsys(ecs::common);
 
         // World system
         self.regsys(world::system);
@@ -433,7 +435,7 @@ impl App {
         self.regsys(terrain::systems::cull::system);
 
         // Physics systems
-        self.regsys(physics::system::system);
+        self.regsys(physics::system);
 
         // Gui system + stats update event
         self.regsys(gui::common);

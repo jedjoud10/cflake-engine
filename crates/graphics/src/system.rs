@@ -43,6 +43,7 @@ fn update(world: &mut World) {
         bind_groups: vulkan.bind_groups.num_occupied,
         command_buffers: vulkan.command_buffers.num_occupied,
         render_pipelines: vulkan.render_pipelines.num_occupied,
+        compute_pipelines: vulkan.compute_pipelines.num_occupied,
         buffers: vulkan.buffers.num_occupied,
         textures: vulkan.textures.num_occupied,
         texture_views: vulkan.texture_views.num_occupied,

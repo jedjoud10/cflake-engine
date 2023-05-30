@@ -16,8 +16,8 @@ pub struct Time {
     pub(crate) local_tick_count: u32,
     pub(crate) last_tick_start: Instant,
     pub(crate) tick_delta: Duration,
-    pub(crate) tick_target_interpolation: f32,
     pub(crate) tick_interpolation: f32,
+    pub(crate) accumulator: f32,
     pub(crate) ticks_to_execute: Option<NonZeroU32>,
 }
 
@@ -52,12 +52,17 @@ impl Time {
         self.tick_count
     }
 
+    // Get the local tick count
+    pub fn local_tick_count(&self) -> u32 {
+        self.local_tick_count
+    }
+
     // Get the elapsed time between this tick and the last tick
     pub fn tick_delta(&self) -> Duration {
         self.tick_delta
     }
 
-    // Tick interpolation factor (between 0 and 1) for tick interpolation
+    // Represents how far we are from the last tick to the next tick (range of 0 - 1)
     pub fn tick_interpolation(&self) -> f32 {
         self.tick_interpolation
     }

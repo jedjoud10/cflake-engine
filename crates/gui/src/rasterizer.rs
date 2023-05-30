@@ -200,7 +200,6 @@ impl Rasterizer {
         let mut triangles = Vec::<u32>::with_capacity(self.triangles.capacity());
 
         // Convert the clipped primitives to their raw vertex representations
-        // TODO: Optimize these shenanigans
         for primitive in primitives.iter() {
             match &primitive.primitive {
                 egui::epaint::Primitive::Mesh(mesh) => {
@@ -208,12 +207,7 @@ impl Rasterizer {
                     for vertex in mesh.vertices.iter() {
                         let pos = vek::Vec2::new(vertex.pos.x, vertex.pos.y);
                         let uvs = vek::Vec2::new(vertex.uv.x, vertex.uv.y);
-                        let color = vek::Vec4::new(
-                            vertex.color.r(),
-                            vertex.color.g(),
-                            vertex.color.b(),
-                            vertex.color.a(),
-                        );
+                        let color = vek::Vec4::from_slice(&vertex.color.to_array());
                         positions.push(pos);
                         texcoords.push(uvs);
                         colors.push(color);

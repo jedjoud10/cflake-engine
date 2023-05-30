@@ -71,26 +71,26 @@ fn init(world: &mut World) {
     let light = DirectionalLight {
         color: vek::Rgb::one() * 3.6,
     };
-    let rotation = vek::Quaternion::rotation_x(-90.0f32.to_radians()).rotated_y(45f32.to_radians());
+    let rotation = vek::Quaternion::rotation_x(-20.0f32.to_radians()).rotated_y(45f32.to_radians());
     scene.insert((light, Rotation::from(rotation)));
 
-    let mut pbrs = world.get_mut::<Storage<PhysicallyBasedMaterial>>().unwrap();
+    let mut pbrs = world.get_mut::<Storage<PbrMaterial>>().unwrap();
 
     // Create a new material instance
-    let material = pbrs.insert(PhysicallyBasedMaterial {
+    let material = pbrs.insert(PbrMaterial {
         albedo_map: None,
         normal_map: None,
         mask_map: None,
-        bumpiness: 1.0,
-        roughness: 1.0,
-        metallic: 1.0,
-        ambient_occlusion: 3.0,
+        bumpiness_factor: 1.0,
+        roughness_factor: 1.0,
+        metallic_factor: 1.0,
+        ambient_occlusion_factor: 3.0,
         tint: vek::Rgb::white(),
         scale: vek::Extent2::one(),
     });
 
     let pipelines = world.get::<Pipelines>().unwrap();
-    let id = pipelines.get::<PhysicallyBasedMaterial>().unwrap();
+    let id = pipelines.get::<PbrMaterial>().unwrap();
     let renderer = world.get::<ForwardRenderer>().unwrap();
     let sphere = renderer.sphere.clone();
     let renderer = Renderer::default();
@@ -107,12 +107,10 @@ fn update(world: &mut World) {
     let input = world.get::<Input>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
 
-    /*
     // Rotation the light
     if let Some((rotation, _)) = scene.find_mut::<(&mut Rotation, &DirectionalLight)>() {
         rotation.rotate_y(-0.1 * time.delta().as_secs_f32());
     }
-    */
 
     // Exit the game when the user pressed Escape
     if input.get_button(KeyboardButton::Escape).pressed() {
