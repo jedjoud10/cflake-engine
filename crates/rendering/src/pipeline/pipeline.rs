@@ -1,6 +1,6 @@
 use crate::{
     ActiveSceneRenderPass, ActiveShadowRenderPass,
-    DefaultMaterialResources, Material, SceneColor, SceneDepth, ShadowRenderPipeline,
+    DefaultMaterialResources, Material, SceneColorLayout, SceneDepth, ShadowRenderPipeline,
 };
 
 use assets::Assets;
@@ -23,7 +23,7 @@ impl<M: Material> Clone for MaterialId<M> {
 // A material pipeline will be responsible for rendering surface and
 // entities that correspond to a specific material type.
 pub struct Pipeline<M: Material> {
-    pipeline: RenderPipeline<SceneColor, SceneDepth>,
+    pipeline: RenderPipeline<SceneColorLayout, SceneDepth>,
     //shadow_pipeline: Option<ShadowRenderPipeline>,
     shader: Shader,
     _phantom: PhantomData<M>,

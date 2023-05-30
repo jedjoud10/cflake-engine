@@ -1,6 +1,6 @@
 use crate::{
     set_index_buffer_attribute, set_vertex_buffer_attribute, ActiveSceneRenderPass,
-    DefaultMaterialResources, Material, Mesh, RenderPath, Renderer, SceneColor, SceneDepth, Surface,
+    DefaultMaterialResources, Material, Mesh, RenderPath, Renderer, SceneColorLayout, SceneDepth, Surface,
 };
 use ecs::Scene;
 use graphics::{ActivePipeline, RenderPipeline};
@@ -10,7 +10,7 @@ use world::World;
 // Render all the visible surfaces of a specific material type
 pub(super) fn render_surfaces<'r, M: Material>(
     world: &'r World,
-    pipeline: &'r RenderPipeline<SceneColor, SceneDepth>,
+    pipeline: &'r RenderPipeline<SceneColorLayout, SceneDepth>,
     defaults: &mut DefaultMaterialResources<'r>,
     render_pass: &mut ActiveSceneRenderPass<'r, '_>,
 ) {

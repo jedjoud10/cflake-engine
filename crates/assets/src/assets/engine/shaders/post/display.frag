@@ -1,3 +1,4 @@
+/*
 #version 460 core
 layout(location = 0) out vec4 frag;
 
@@ -79,3 +80,4 @@ void main() {
 	color = mix(color, vec3(0), vignette);
 	frag = vec4(color, 0);
 }
+*/

@@ -91,7 +91,7 @@ fn init(world: &mut World) {
 
     let pipelines = world.get::<Pipelines>().unwrap();
     let id = pipelines.get::<PbrMaterial>().unwrap();
-    let renderer = world.get::<ForwardRenderer>().unwrap();
+    let renderer = world.get::<DeferredRenderer>().unwrap();
     let sphere = renderer.sphere.clone();
     let renderer = Renderer::default();
     let position = Position::default();

@@ -6,7 +6,7 @@ use graphics::{
     UniformBuffer, VertexConfig, VertexModule,
 };
 
-use crate::{CameraUniform, SceneColor, SceneDepth, WindowUniform};
+use crate::{CameraUniform, SceneColorLayout, WindowUniform};
 
 // This is what will write to the swapchain
 pub type FinalRenderPass = RenderPass<SwapchainFormat, ()>;
@@ -97,6 +97,7 @@ pub struct Compositor {
 impl Compositor {
     // Create a new compositor that will mix and match multiple screen textures
     pub(crate) fn new(graphics: &Graphics, assets: &mut Assets) -> Self {
+        /*
         // Load the vertex module for the display shader
         let vertex = assets
             .load::<VertexModule>("engine/shaders/post/display.vert")
@@ -109,7 +110,7 @@ impl Compositor {
 
         // Create the bind layout for the compositor shader
         let mut compiler = Compiler::new(assets, graphics);
-        compiler.use_sampled_texture::<Texture2D<SceneColor>>("color_map");
+        compiler.use_sampled_texture::<Texture2D<SceneColorLayout>>("color_map");
         compiler.use_sampled_texture::<Texture2D<SceneDepth>>("depth_map");
         compiler.use_uniform_buffer::<CameraUniform>("camera");
         compiler.use_uniform_buffer::<WindowUniform>("window");
@@ -159,5 +160,8 @@ impl Compositor {
             post_process: PostProcessUniform::default(),
             post_process_buffer,
         }
+        */
+
+        todo!()
     }
 }

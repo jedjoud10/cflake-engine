@@ -1,4 +1,4 @@
-use crate::{Compositor, ForwardRenderer, PostProcessUniform};
+use crate::{Compositor, DeferredRenderer, PostProcessUniform};
 use assets::Assets;
 
 use graphics::{ActivePipeline, Graphics, Texture, Window};
@@ -19,7 +19,7 @@ fn init(world: &mut World) {
 // Displays the rendered scene texture to the actual window texture (post-processing pass)
 fn update(world: &mut World) {
     let _graphics = world.get::<Graphics>().unwrap();
-    let renderer = world.get::<ForwardRenderer>().unwrap();
+    let renderer = world.get::<DeferredRenderer>().unwrap();
     let mut compositor = world.get_mut::<Compositor>().unwrap();
     let mut window = world.get_mut::<Window>().unwrap();
 

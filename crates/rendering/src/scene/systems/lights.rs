@@ -1,4 +1,4 @@
-use crate::{DirectionalLight, ForwardRenderer};
+use crate::{DirectionalLight, DeferredRenderer};
 
 use ecs::Scene;
 use graphics::{Graphics, Window};
@@ -9,7 +9,7 @@ use world::{System, World};
 fn update(world: &mut World) {
     let mut ecs = world.get_mut::<Scene>().unwrap();
     let _graphics = world.get::<Graphics>().unwrap();
-    let mut renderer = world.get_mut::<ForwardRenderer>().unwrap();
+    let mut renderer = world.get_mut::<DeferredRenderer>().unwrap();
     let _window = world.get::<Window>().unwrap();
 
     // Fetch the main directioanl light from the scene renderer

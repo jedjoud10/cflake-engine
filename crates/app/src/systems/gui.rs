@@ -628,7 +628,7 @@ fn update(world: &mut World) {
     }
 
     // Forward renderer settings
-    if let Ok(renderer) = world.get_mut::<ForwardRenderer>() {
+    if let Ok(renderer) = world.get_mut::<DeferredRenderer>() {
         egui::Window::new("Forward Rendering")
             .frame(frame)
             .collapsible(true)

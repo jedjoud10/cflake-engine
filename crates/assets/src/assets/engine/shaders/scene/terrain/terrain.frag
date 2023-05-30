@@ -1,3 +1,4 @@
+/*
 #version 460 core
 //#define lowpoly
 
@@ -140,3 +141,4 @@ void main() {
 	// Calculate diffuse lighting
 	frag = vec4(color, 0.0);
 }
+*/

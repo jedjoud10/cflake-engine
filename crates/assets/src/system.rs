@@ -12,20 +12,11 @@ fn init(world: &mut World) {
         };
     }
 
-    // Load the default common shaders
-    internal!(loader, "engine/shaders/common/camera.glsl");
-    internal!(loader, "engine/shaders/common/scene.glsl");
-    internal!(loader, "engine/shaders/common/timing.glsl");
-    internal!(loader, "engine/shaders/common/shadow.glsl");
-    internal!(loader, "engine/shaders/common/window.glsl");
-    internal!(loader, "engine/shaders/common/sky.glsl");
-
     // Load the default math shaders
-    internal!(loader, "engine/shaders/math/models.glsl");
-    internal!(loader, "engine/shaders/math/conversions.glsl");
-    internal!(loader, "engine/shaders/math/dither.glsl");
-    internal!(loader, "engine/shaders/math/triplanar.glsl");
-    internal!(loader, "engine/shaders/math/packer.glsl");
+    internal!(loader, "engine/shaders/common/conversions.glsl");
+    internal!(loader, "engine/shaders/common/dither.glsl");
+    internal!(loader, "engine/shaders/common/packer.glsl");
+    internal!(loader, "engine/shaders/common/quad.vert");
 
     // Load the default SDF shaders
     internal!(loader, "engine/shaders/sdf/common.glsl");
@@ -34,6 +25,8 @@ fn init(world: &mut World) {
     // Load the default rendering shaders
     internal!(loader, "engine/shaders/scene/pbr/pbr.vert");
     internal!(loader, "engine/shaders/scene/pbr/pbr.frag");
+    /*
+    TODO
     internal!(loader, "engine/shaders/scene/shadow/shadow.frag");
     internal!(loader, "engine/shaders/scene/shadow/shadow.vert");
     internal!(loader, "engine/shaders/scene/shadow/terrain.vert");
@@ -43,15 +36,22 @@ fn init(world: &mut World) {
     internal!(loader, "engine/shaders/scene/terrain/terrain.frag");
     internal!(loader, "engine/shaders/scene/wireframe/wireframe.vert");
     internal!(loader, "engine/shaders/scene/wireframe/wireframe.frag");
+    */
+
+    // Load the deferred renderer shader
+    internal!(loader, "engine/shaders/deferred/lighting.frag");
 
     // Load the default environment compute shaders
+    internal!(loader, "engine/shaders/scene/environment/sky.glsl");
+    /*
+    TODO
     internal!(loader, "engine/shaders/scene/environment/environment.comp");
     internal!(loader, "engine/shaders/scene/environment/diffuse.comp");
     internal!(loader, "engine/shaders/scene/environment/specular.comp");
+    */
 
     // Load the default post-rendering shaders
     internal!(loader, "engine/shaders/post/display.frag");
-    internal!(loader, "engine/shaders/post/display.vert");
     internal!(loader, "engine/shaders/post/gui.vert");
     internal!(loader, "engine/shaders/post/gui.frag");
 

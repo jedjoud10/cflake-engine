@@ -1,4 +1,4 @@
-use crate::{Camera, CameraUniform, ForwardRenderer};
+use crate::{Camera, CameraUniform, DeferredRenderer};
 
 use coords::{Position, Rotation};
 use ecs::Scene;
@@ -9,7 +9,7 @@ use world::{System, World};
 // Update event that will set/update the main perspective camera
 fn update(world: &mut World) {
     let mut ecs = world.get_mut::<Scene>().unwrap();
-    let mut renderer = world.get_mut::<ForwardRenderer>().unwrap();
+    let mut renderer = world.get_mut::<DeferredRenderer>().unwrap();
     let window = world.get::<Window>().unwrap();
 
     // Fetch the main perspective camera from the scene renderer

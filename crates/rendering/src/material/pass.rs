@@ -1,7 +1,7 @@
 use assets::Assets;
 use graphics::{ColorLayout, DepthStencilLayout, RenderPass, BindGroup, Graphics, Shader, PrimitiveConfig, WindingOrder, PushConstants, ActiveRenderPipeline, ActivePipeline};
 use world::World;
-use crate::{RenderPath, DefaultMaterialResources, SceneColor, SceneDepth, MeshAttributes, Renderer};
+use crate::{RenderPath, DefaultMaterialResources, SceneColorLayout, SceneDepth, MeshAttributes, Renderer};
 
 // Render pass that will render the scene
 pub struct SceneRenderPass;

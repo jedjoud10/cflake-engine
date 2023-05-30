@@ -4,7 +4,7 @@ use graphics::{
     Graphics,
 };
 
-use rendering::{ForwardRenderer};
+use rendering::{DeferredRenderer};
 use utils::{Storage, Time};
 use world::{System, World};
 
@@ -66,7 +66,7 @@ fn update(world: &mut World) {
         let output_indirect =
             indexed_indirect_buffers.get_mut(&memory.culled_indexed_indirect_buffers[allocation]);
 
-        let renderer = world.get::<ForwardRenderer>().unwrap();
+        let renderer = world.get::<DeferredRenderer>().unwrap();
         let camera = &renderer.camera_buffer;
 
         culled_count_buffer.write(&[0], allocation).unwrap();

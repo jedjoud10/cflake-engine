@@ -2,7 +2,7 @@
 
 use crate::{
     AlbedoMap, AttributeBuffer, Camera, DefaultMaterialResources, DirectionalLight, Environment,
-    ForwardRenderer, Indirect, IndirectMesh, MaskMap, Mesh, MultiDrawIndirectCountMesh,
+    DeferredRenderer, Indirect, IndirectMesh, MaskMap, Mesh, MultiDrawIndirectCountMesh,
     MultiDrawIndirectMesh, NormalMap, PbrMaterial, Pipelines, SceneUniform,
     ShadowMapping, SkyMaterial, TimingUniform, WindowUniform, WireframeMaterial,
 };
@@ -27,7 +27,7 @@ fn init(world: &mut World) {
     let mut meshes = Storage::<Mesh>::default();
 
     // Create the scene renderer, pipeline manager
-    let renderer = ForwardRenderer::new(
+    let renderer = DeferredRenderer::new(
         &graphics,
         &assets,
         window.size(),
@@ -106,7 +106,7 @@ fn event(world: &mut World, event: &mut WindowEvent) {
 
             // Handle resizing the depth texture
             let size = vek::Extent2::new(size.width, size.height);
-            let mut renderer = world.get_mut::<ForwardRenderer>().unwrap();
+            let mut renderer = world.get_mut::<DeferredRenderer>().unwrap();
 
             // Resize the color and depth texture
             renderer.depth_texture.resize(size).unwrap();
@@ -132,7 +132,7 @@ fn event(world: &mut World, event: &mut WindowEvent) {
 // Clear the window and render the entities to the texture
 fn render(world: &mut World) {
     // Fetch the resources that we will use for rendering the scene
-    let mut renderer = world.get_mut::<ForwardRenderer>().unwrap();
+    let mut renderer = world.get_mut::<DeferredRenderer>().unwrap();
     let mut _shadowmap = world.get_mut::<ShadowMapping>().unwrap();
     let renderer = &mut *renderer;
     let scene = world.get::<Scene>().unwrap();
@@ -313,7 +313,7 @@ fn render(world: &mut World) {
     // Begin the scene color render pass
     let color = renderer.color_texture.as_render_target().unwrap();
     let depth = renderer.depth_texture.as_render_target().unwrap();
-    let mut render_pass = renderer.render_pass.begin(color, depth);
+    let mut render_pass = renderer.deferred_render_pass.begin(color, depth);
 
     // This will iterate over each material pipeline and draw the scene
     for stored in pipelines.iter() {

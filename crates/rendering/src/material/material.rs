@@ -1,5 +1,5 @@
 use crate::{
-    ActiveScenePipeline, DefaultMaterialResources, MeshAttributes, RenderPath, Renderer, SceneColor, Direct,
+    ActiveScenePipeline, DefaultMaterialResources, MeshAttributes, RenderPath, Renderer, SceneColorLayout, Direct,
 };
 use assets::Assets;
 
