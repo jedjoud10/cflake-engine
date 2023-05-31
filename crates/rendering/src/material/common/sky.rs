@@ -1,6 +1,6 @@
 use crate::{
     AlbedoMap, CameraUniform, DefaultMaterialResources, Direct, EnvironmentMap,
-    Material, MeshAttributes, SceneUniform,
+    Material, MeshAttributes, SceneUniform, Pass,
 };
 
 use assets::Assets;
@@ -21,7 +21,7 @@ impl Material for SkyMaterial {
     type Query<'a> = &'a ();
 
     // Load the respective Sky shader modules and compile them
-    fn shader(_settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader {
+    fn shader<P: Pass>(_settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Option<Shader> {
         // Load the vertex module from the assets
         let vert = assets
             .load::<VertexModule>("engine/shaders/scene/sky/sky.vert")
@@ -39,17 +39,12 @@ impl Material for SkyMaterial {
         compiler.use_sampled_texture::<EnvironmentMap>("environment_map");
 
         // Compile the modules into a shader
-        Shader::new(vert, frag, &compiler).unwrap()
+        Some(Shader::new(vert, frag, &compiler).unwrap())
     }
 
     // Get the required mesh attributes that we need to render a surface
-    fn attributes() -> MeshAttributes {
+    fn attributes<P: Pass>() -> MeshAttributes {
         MeshAttributes::POSITIONS
-    }
-
-    // The sky does NOT cast shadows
-    fn casts_shadows() -> bool {
-        false
     }
 
     // The sky does NOT use frustum culling
@@ -67,13 +62,13 @@ impl Material for SkyMaterial {
     }
 
     // Fetch the texture storages
-    fn fetch(world: &world::World) -> Self::Resources<'_> {
+    fn fetch<P: Pass>(world: &world::World) -> Self::Resources<'_> {
         let albedo_maps = world.get::<Storage<AlbedoMap>>().unwrap();
         albedo_maps
     }
 
     // Set the static bindings that will never change
-    fn set_global_bindings<'r>(
+    fn set_global_bindings<'r, P: Pass>(
         _resources: &'r mut Self::Resources<'_>,
         group: &mut BindGroup<'r>,
         default: &DefaultMaterialResources<'r>,
@@ -81,11 +76,13 @@ impl Material for SkyMaterial {
         group
             .set_uniform_buffer("camera", default.camera_buffer, ..)
             .unwrap();
+        /*
         group
             .set_uniform_buffer("scene", default.scene_buffer, ..)
             .unwrap();
         group
             .set_sampled_texture("environment_map", default.environment_map)
             .unwrap();
+        */
     }
 }

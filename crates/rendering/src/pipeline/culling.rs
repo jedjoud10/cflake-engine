@@ -6,8 +6,28 @@ use rayon::prelude::{
     IntoParallelIterator, ParallelIterator,
 };
 use world::World;
-
 use crate::{DefaultMaterialResources, Material, RenderPath, Renderer, SubSurface, Surface};
+
+// Check if an AABB intersects the shadow lightspace matrix
+// TODO: Reimplement shadow culling
+pub fn intersects_lightspace(
+    lightspace: &vek::Mat4<f32>,
+    aabb: math::Aabb<f32>,
+    matrix: &vek::Mat4<f32>,
+) -> bool {
+    let corners = <math::Aabb<f32> as ExplicitVertices<f32>>::points(&aabb);
+
+    for input in corners.iter() {
+        let vec = matrix.mul_point(*input);
+        let uv = lightspace.mul_point(vec);
+
+        if uv.x.abs() < 1.0 && uv.y.abs() < 1.0 {
+            return true;
+        }
+    }
+
+    false
+}
 
 // Check if an AABB intersects all the given frustum planes
 // TODO: Use space partioning algorithms to make this faster (ex. Octree)

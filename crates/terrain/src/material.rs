@@ -1,6 +1,6 @@
 use rendering::{
     AlbedoTexel, CameraUniform, DefaultMaterialResources, EnvironmentMap, MaskTexel, Material, MultiDrawIndirectCount, NormalTexel,
-    Renderer, SceneUniform, ShadowMap, ShadowMapping, ShadowUniform,
+    Renderer, SceneUniform, ShadowMap, ShadowMapping, ShadowUniform, Pass,
 };
 
 use assets::Assets;
@@ -39,7 +39,9 @@ impl Material for TerrainMaterial {
     type RenderPath = MultiDrawIndirectCount;
 
     // Load the terrain material shaders and compile them
-    fn shader(settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader {
+    fn shader<P: Pass>(settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Option<Shader> {
+        todo!()
+        /*
         // Load the vertex module from the assets
         let vert = assets
             .load::<VertexModule>("engine/shaders/scene/terrain/terrain.vert")
@@ -92,18 +94,13 @@ impl Material for TerrainMaterial {
 
         // Compile the modules into a shader
         Shader::new(vert, frag, &compiler).unwrap()
+        */
     }
 
     // Terrain only needs packed positions
-    fn attributes() -> rendering::MeshAttributes {
+    fn attributes<P: Pass>() -> rendering::MeshAttributes {
         rendering::MeshAttributes::POSITIONS
     }
-
-    // Custom shadow mapper (due to packed positions and indirect rendering)
-    fn casts_shadows() -> bool {
-        false
-    }
-
     // TEMP: Enable wireframe
     fn primitive_config() -> PrimitiveConfig {
         PrimitiveConfig::Triangles {
@@ -119,7 +116,7 @@ impl Material for TerrainMaterial {
     }
 
     // Fetch the texture storages
-    fn fetch(world: &world::World) -> Self::Resources<'_> {
+    fn fetch<P: Pass>(world: &world::World) -> Self::Resources<'_> {
         let albedo_maps = world.get::<Storage<LayeredAlbedoMap>>().unwrap();
         let normal_maps = world.get::<Storage<LayeredNormalMap>>().unwrap();
         let mask_maps = world.get::<Storage<LayeredMaskMap>>().unwrap();
@@ -138,7 +135,7 @@ impl Material for TerrainMaterial {
     }
 
     // Set the static bindings that will never change
-    fn set_global_bindings<'r>(
+    fn set_global_bindings<'r, P: Pass>(
         resources: &'r mut Self::Resources<'_>,
         group: &mut BindGroup<'r>,
         default: &DefaultMaterialResources<'r>,
@@ -196,7 +193,7 @@ impl Material for TerrainMaterial {
 
     // Set the per-surface bindings for the material
     // Since the terrain mesh only contains "allocation" count of sub-surfaces, this will be executed for each allocation
-    fn set_surface_bindings<'r, 'w>(
+    fn set_surface_bindings<'r, 'w, P: Pass>(
         _renderer: &Renderer,
         resources: &'r mut Self::Resources<'w>,
         _default: &mut DefaultMaterialResources<'w>,

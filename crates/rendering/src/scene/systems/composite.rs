@@ -7,6 +7,7 @@ use world::{user, System, World};
 
 // Inserts the compositor render pass
 fn init(world: &mut World) {
+    /*
     let graphics = world.get::<Graphics>().unwrap();
     let mut assets = world.get_mut::<Assets>().unwrap();
     let pp = Compositor::new(&graphics, &mut assets);
@@ -14,10 +15,12 @@ fn init(world: &mut World) {
     drop(assets);
     world.insert(PostProcessUniform::default());
     world.insert(pp);
+    */
 }
 
 // Displays the rendered scene texture to the actual window texture (post-processing pass)
 fn update(world: &mut World) {
+    /*
     let _graphics = world.get::<Graphics>().unwrap();
     let renderer = world.get::<DeferredRenderer>().unwrap();
     let mut compositor = world.get_mut::<Compositor>().unwrap();
@@ -64,6 +67,7 @@ fn update(world: &mut World) {
 
     // Draw 6 vertices (2 tris)
     active.draw(0..6, 0..1).unwrap();
+    */
 }
 
 // The display system will be responsible for displaying the renderered scene textures to the scene

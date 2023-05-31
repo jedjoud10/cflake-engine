@@ -1,4 +1,4 @@
-use crate::{ColorTexel, Texel, TexelInfo, ColorLayout, BlendState, ColorOperations, Operation, LoadOp, StoreOp};
+use crate::{ColorTexel, Texel, TexelInfo, ColorLayout, BlendState, ColorOperations, Operation, LoadOp, StoreOp, ColorAttachments, RenderTarget};
 use seq_macro::seq;
 
 macro_rules! impl_color_layout {
@@ -35,6 +35,19 @@ macro_rules! impl_color_layout {
                     };
 
                     vec.push(wgpu::Operations { load, store });
+                });
+
+                vec
+            }
+        }
+
+        impl<'a, $($name: ColorTexel),+> ColorAttachments<'a, ($($name,)+)> for ($(RenderTarget<'a, $name>,)+) {
+            fn views(&self) -> Vec<&'a wgpu::TextureView> {
+                let mut vec = Vec::<&'a wgpu::TextureView>::with_capacity($max);
+
+                seq!(N in 0..$max {
+                    let val = &self.N;
+                    vec.push(val.view());
                 });
 
                 vec

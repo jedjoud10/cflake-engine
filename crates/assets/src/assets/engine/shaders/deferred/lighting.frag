@@ -1,18 +1,8 @@
 #version 460 core
 layout(location = 0) out vec4 frag;
 
-// Camera, scene, and shadowmap shared objects
-layout(set = 0, binding = 0) uniform CameraUniform {
-    // Projection & view matrix
-    mat4 projection;
-    mat4 view;
+/*
 
-    // Position of the camera and it's directions
-    vec4 position;
-    vec4 forward;
-    vec4 right;
-    vec4 up;
-} camera;
 
 // UBO that contains the current scene information
 layout(set = 0, binding = 1) uniform SceneUniform {
@@ -175,12 +165,6 @@ vec3 fresnel(vec3 f0, vec3 h, vec3 v) {
 	float cosTheta = max(dot(h, v), 0.0);
     return f0 + (1.0 - f0) * pow (1.0 - cosTheta, 5.0);
 }
-/*
-vec3 fresnel(vec3 f0, vec3 v, vec3 h) {
-	float cosTheta = clamp(1.0 - max(dot(v, h), 0), 0, 1);
-	return f0 + (1.0 - f0) * pow(cosTheta, 5.0);
-}
-*/
 
 // Fresnel function with roughness
 vec3 fresnelRoughness(vec3 f0, vec3 v, vec3 x, float roughness) {
@@ -254,6 +238,7 @@ vec3 brdf(
 	//brdf += fresnelRoughness(surface.f0, camera.view, surface.normal, surface.roughness) * 0.40;
 	return brdf;
 }
+*/
 
 void main() {
 	frag = vec4(1);

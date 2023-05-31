@@ -39,16 +39,19 @@ fn init(world: &mut World) {
 
     // Pre-initialize the pipeline with the material types
     let mut pipelines = Pipelines::new();
+    /*
     pipelines
         .register::<SkyMaterial>(&graphics, &assets)
         .unwrap();
     pipelines
         .register::<WireframeMaterial>(&graphics, &assets)
         .unwrap();
+    */
     pipelines
         .register::<PbrMaterial>(&graphics, &assets)
         .unwrap();
 
+    /*
     // Create a nice shadow map
     let shadowmap = ShadowMapping::new(
         2000f32,
@@ -57,6 +60,7 @@ fn init(world: &mut World) {
         &graphics,
         &mut assets,
     );
+    */
 
     // Drop fetched resources
     drop(graphics);
@@ -66,7 +70,7 @@ fn init(world: &mut World) {
     // Add composites and basic storages
     world.insert(renderer);
     world.insert(pipelines);
-    world.insert(shadowmap);
+    //world.insert(shadowmap);
 
     // Add mesh storages
     world.insert(meshes);
@@ -104,13 +108,13 @@ fn event(world: &mut World, event: &mut WindowEvent) {
                 return;
             }
 
-            // Handle resizing the depth texture
+            // Resize the G-Buffer textures and Depth texture
             let size = vek::Extent2::new(size.width, size.height);
             let mut renderer = world.get_mut::<DeferredRenderer>().unwrap();
-
-            // Resize the color and depth texture
+            renderer.gbuffer_albedo_texture.resize(size).unwrap();
+            renderer.gbuffer_mask_texture.resize(size).unwrap();
+            renderer.gbuffer_normal_texture.resize(size).unwrap();
             renderer.depth_texture.resize(size).unwrap();
-            renderer.color_texture.resize(size).unwrap();
 
             // Update the uniform
             renderer
@@ -133,7 +137,7 @@ fn event(world: &mut World, event: &mut WindowEvent) {
 fn render(world: &mut World) {
     // Fetch the resources that we will use for rendering the scene
     let mut renderer = world.get_mut::<DeferredRenderer>().unwrap();
-    let mut _shadowmap = world.get_mut::<ShadowMapping>().unwrap();
+    //let mut _shadowmap = world.get_mut::<ShadowMapping>().unwrap();
     let renderer = &mut *renderer;
     let scene = world.get::<Scene>().unwrap();
     let pipelines = world.get::<Pipelines>().unwrap();
@@ -268,52 +272,13 @@ fn render(world: &mut World) {
     };
     drop(scene);
 
-    /*
-    // Update the shadow map lightspace matrix
-    let shadowmap = &mut *_shadowmap;
-    let index = (time.frame_count() as u32) % 4;
-    let lightspace = shadowmap.update(
-        *directional_light_rotation,
-        camera_view,
-        camera_projection,
-        *camera_position,
-        camera.near,
-        camera.far,
-        index as usize
-    );
-
-    let mips = shadowmap.depth_tex.mips_mut();
-    let mut level = mips.level_mut(0).unwrap();
-
-    // Use layer as render target
-    let target = level.layer_as_render_target(index).unwrap();
-
-    // Create a new active shadowmap render pass
-    let mut render_pass = shadowmap.render_pass.begin((), target);
-
-    // Get the default shadowmap render pipeline
-    let default_shadow_pipeline = &shadowmap.pipeline;
-
-    // Render the shadows first (fuck you)
-    for stored in pipelines.iter() {
-        stored.render_shadows(world, &mut default, &mut render_pass, default_shadow_pipeline, lightspace);
-    }
-
-    // Send the command encoder
-    drop(default_shadow_pipeline);
-    drop(render_pass);
-    drop(level);
-    drop(mips);
-    drop(shadowmap);
-    */
-
-    // Drop resources
-    drop(_shadowmap);
-
     // Begin the scene color render pass
-    let color = renderer.color_texture.as_render_target().unwrap();
+    let gbuffer_albedo = renderer.gbuffer_albedo_texture.as_render_target().unwrap();
+    let gbuffer_normal = renderer.gbuffer_normal_texture.as_render_target().unwrap();
+    let gbuffer_mask = renderer.gbuffer_mask_texture.as_render_target().unwrap();
+    let gbuffer = (gbuffer_albedo, gbuffer_normal, gbuffer_mask);
     let depth = renderer.depth_texture.as_render_target().unwrap();
-    let mut render_pass = renderer.deferred_render_pass.begin(color, depth);
+    let mut render_pass = renderer.deferred_render_pass.begin(gbuffer, depth);
 
     // This will iterate over each material pipeline and draw the scene
     for stored in pipelines.iter() {

@@ -1,31 +1,93 @@
 use crate::{
-    set_index_buffer_attribute, set_vertex_buffer_attribute, ActiveSceneRenderPass,
-    DefaultMaterialResources, Material, Mesh, RenderPath, Renderer, SceneColorLayout, SceneDepth, Surface,
+    DefaultMaterialResources, Material, Mesh, RenderPath, Renderer, SceneColorLayout, SceneDepthLayout, Surface, MeshAttribute, MeshAttributes, Pass,
 };
 use ecs::Scene;
-use graphics::{ActivePipeline, RenderPipeline};
+use graphics::{ActivePipeline, RenderPipeline, ColorLayout, DepthStencilLayout, ActiveRenderPipeline, ActiveRenderPass};
+use math::ExplicitVertices;
 use utils::{Handle, Storage};
 use world::World;
 
-// Render all the visible surfaces of a specific material type
-pub(super) fn render_surfaces<'r, M: Material>(
+// Set a mesh binding vertex buffer to the current render pass
+pub(crate) fn set_vertex_buffer_attribute<
+    'a,
+    'r,
+    A: MeshAttribute,
+    R: RenderPath,
+    C: ColorLayout,
+    DS: DepthStencilLayout,
+>(
+    supported: MeshAttributes,
+    mesh: &'r Mesh<R>,
+    defaults: &DefaultMaterialResources<'r>,
+    active: &mut ActiveRenderPipeline<'a, 'r, '_, C, DS>,
+    index: &mut u32,
+    last: &mut Option<&'r R::AttributeBuffer<A>>,
+) where
+    for<'x> &'x R::AttributeBuffer<A>: PartialEq<&'x R::AttributeBuffer<A>>,
+{
+    // If the material doesn't support the attribute, no need to set it
+    if !supported.contains(A::ATTRIBUTE) {
+        return;
+    }
+
+    // Check if the mesh contains the attribute, and if it does, render it
+    if let Ok(buffer) = mesh.vertices().attribute::<A>() {
+        // Only set the buffer if necessary
+        if *last != Some(buffer) {
+            R::set_vertex_buffer(*index, .., buffer, defaults, active).unwrap();
+            *last = Some(buffer);
+        }
+
+        *index += 1;
+    }
+}
+
+// Set a mesh triangle buffer to the current render pass
+pub(crate) fn set_index_buffer_attribute<
+    'a,
+    'r,
+    R: RenderPath,
+    C: ColorLayout,
+    DS: DepthStencilLayout,
+>(
+    mesh: &'r Mesh<R>,
+    defaults: &DefaultMaterialResources<'r>,
+    active: &mut ActiveRenderPipeline<'a, 'r, '_, C, DS>,
+    last: &mut Option<&R::TriangleBuffer<u32>>,
+) where
+    for<'x> &'x R::TriangleBuffer<u32>: PartialEq<&'x R::TriangleBuffer<u32>>,
+{
+    // Get the triangle buffer from the mesh
+    let triangles = mesh.triangles();
+    let buffer = triangles.buffer();
+
+    // Only set the triangles if necessary
+    if *last != Some(buffer) {
+        R::set_index_buffer(.., buffer, defaults, active).unwrap();
+    }
+}
+
+
+// Render all the visible surfaces of a specific material type using a specific pass
+// This allows us to re-use the code for deferred pass and shadow pass albeit at a small overhead
+pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
     world: &'r World,
-    pipeline: &'r RenderPipeline<SceneColorLayout, SceneDepth>,
+    pipeline: &'r RenderPipeline<P::C, P::DS>,
     defaults: &mut DefaultMaterialResources<'r>,
-    render_pass: &mut ActiveSceneRenderPass<'r, '_>,
+    render_pass: &mut ActiveRenderPass<'r, '_, P::C, P::DS>,
 ) {
     // Get a rasterizer for the current render pass by binding a pipeline
     let mut active = render_pass.bind_pipeline(pipeline);
-    let supported = M::attributes();
+    let supported = M::attributes::<P>();
 
     // Get the material storage and resources for this material
     let materials = world.get::<Storage<M>>().unwrap();
-    let mut resources = M::fetch(world);
+    let mut resources = M::fetch::<P>(world);
 
     // Set the global material bindings
     active
         .set_bind_group(0, |group| {
-            M::set_global_bindings(&mut resources, group, defaults);
+            M::set_global_bindings::<P>(&mut resources, group, defaults);
         })
         .unwrap();
 
@@ -104,7 +166,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
             // Set the instance group bindings
             active
                 .set_bind_group(1, |group| {
-                    M::set_instance_bindings(material, &mut resources, defaults, group);
+                    M::set_instance_bindings::<P>(material, &mut resources, defaults, group);
                 })
                 .unwrap();
         } else {
@@ -112,7 +174,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
         }
 
         // If a mesh is missing attributes just skip
-        if !mesh.vertices().enabled().contains(M::attributes()) {
+        if !mesh.vertices().enabled().contains(supported) {
             continue;
         }
 
@@ -125,7 +187,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
         // Set the surface group bindings
         active
             .set_bind_group(2, |group| {
-                M::set_surface_bindings(renderer, &mut resources, defaults, &user, group);
+                M::set_surface_bindings::<P>(renderer, &mut resources, defaults, &user, group);
             })
             .unwrap();
 
@@ -190,7 +252,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
         active
             .set_push_constants(|push_constants| {
                 let material = materials.get(&subsurface.material);
-                M::set_push_constants(
+                M::set_push_constants::<P>(
                     material,
                     renderer,
                     &mut resources,

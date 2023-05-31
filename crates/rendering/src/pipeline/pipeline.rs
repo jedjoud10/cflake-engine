@@ -1,11 +1,11 @@
 use crate::{
-    ActiveSceneRenderPass, ActiveShadowRenderPass,
-    DefaultMaterialResources, Material, SceneColorLayout, SceneDepth, ShadowRenderPipeline,
+    ActiveShadowRenderPass,
+    DefaultMaterialResources, Material, SceneColorLayout, SceneDepthLayout, ShadowRenderPipeline, DeferredPass,
 };
 
 use assets::Assets;
 use graphics::{
-    CompareFunction, DepthConfig, Graphics, PipelineInitializationError, RenderPipeline, Shader,
+    CompareFunction, DepthConfig, Graphics, PipelineInitializationError, RenderPipeline, Shader, ActiveRenderPass,
 };
 use std::marker::PhantomData;
 
@@ -22,9 +22,9 @@ impl<M: Material> Clone for MaterialId<M> {
 
 // A material pipeline will be responsible for rendering surface and
 // entities that correspond to a specific material type.
+// TODO: Reimplemt shadows
 pub struct Pipeline<M: Material> {
-    pipeline: RenderPipeline<SceneColorLayout, SceneDepth>,
-    //shadow_pipeline: Option<ShadowRenderPipeline>,
+    pipeline: RenderPipeline<SceneColorLayout, SceneDepthLayout>,
     shader: Shader,
     _phantom: PhantomData<M>,
 }
@@ -38,10 +38,10 @@ impl<M: Material> Pipeline<M> {
         assets: &Assets,
     ) -> Result<Self, PipelineInitializationError> {
         // Load the material's shader
-        let shader = M::shader(&settings, graphics, assets);
+        let shader = M::shader::<DeferredPass>(&settings, graphics, assets).unwrap();
 
         // Fetch the correct vertex config based on the material
-        let vertex_config = crate::attributes::enabled_to_vertex_config(M::attributes());
+        let vertex_config = crate::attributes::enabled_to_vertex_config(M::attributes::<DeferredPass>());
 
         // Default depth config for ALL materials
         let depth_config = DepthConfig {
@@ -63,21 +63,10 @@ impl<M: Material> Pipeline<M> {
             &shader,
         )?;
 
-        // Create a customized shadow render pipeline if requested
-        /*
-        let shadow_pipeline = if let CastShadowsMode::Enabled(Some(callback)) = M::casts_shadows() {
-            let shader = callback(&settings, graphics, assets);
-            Some(crate::create_shadow_render_pipeline(graphics, &shader))
-        } else {
-            None
-        };
-        */
-
         Ok(Self {
             pipeline,
             shader,
             _phantom: PhantomData,
-            //shadow_pipeline,
         })
     }
 
@@ -94,52 +83,23 @@ impl<M: Material> Pipeline<M> {
 
 // This trait will be implemented for Pipeline<T> to allow for dynamic dispatch
 pub trait DynPipeline {
-    // Executed before we call the "render" event in batch
-    fn render_shadows<'r>(
-        &'r self,
-        world: &'r World,
-        default: &DefaultMaterialResources<'r>,
-        active: &mut ActiveShadowRenderPass<'r, '_>,
-        default_shadow_pipeline: &'r ShadowRenderPipeline,
-        lightspace: vek::Mat4<f32>,
-    );
-
     // Render all surfaces that use the material of this pipeline
     fn render<'r>(
         &'r self,
         world: &'r World,
         default: &mut DefaultMaterialResources<'r>,
-        render_pass: &mut ActiveSceneRenderPass<'r, '_>,
+        render_pass: &mut ActiveRenderPass::<'r, '_, SceneColorLayout, SceneDepthLayout>,
     );
 }
 
 impl<M: Material> DynPipeline for Pipeline<M> {
-    fn render_shadows<'r>(
-        &'r self,
-        world: &'r World,
-        default: &DefaultMaterialResources<'r>,
-        active: &mut ActiveShadowRenderPass<'r, '_>,
-        default_shadow_pipeline: &'r ShadowRenderPipeline,
-        lightspace: vek::Mat4<f32>,
-    ) {
-        /*
-        
-        let shadow_pipeline = self
-            .shadow_pipeline
-            .as_ref()
-            .unwrap_or(default_shadow_pipeline);
-        super::render_shadows::<M>(world, default, active, shadow_pipeline, lightspace);
-        */
-    }
-
     fn render<'r>(
         &'r self,
         world: &'r World,
         default: &mut DefaultMaterialResources<'r>,
-        render_pass: &mut ActiveSceneRenderPass<'r, '_>,
+        render_pass: &mut ActiveRenderPass::<'r, '_, SceneColorLayout, SceneDepthLayout>,
     ) {
         super::cull_surfaces::<M>(world, default);
-
-        super::render_surfaces::<M>(world, &self.pipeline, default, render_pass);
+        super::render_surfaces::<DeferredPass, M>(world, &self.pipeline, default, render_pass);
     }
 }
