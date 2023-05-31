@@ -1874,6 +1874,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "meshopt-rs"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c3e1e0ce77ff0b408e7d8a822cc5181997309a3825b4e9bfe0b6a04fd9c92f05"
+
+[[package]]
 name = "metal"
 version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2819,6 +2825,7 @@ dependencies = [
  "graphics",
  "log",
  "math",
+ "meshopt-rs",
  "mikktspace",
  "obj-rs",
  "parking_lot",

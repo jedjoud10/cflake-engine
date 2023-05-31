@@ -73,7 +73,6 @@ fn load_lighting_pipeline(graphics: &Graphics, shader: Shader) -> RenderPipeline
 
 // What tonemapping filter we should use
 #[derive(Clone, Copy, PartialEq, Debug)]
-#[repr(u32)]
 pub enum Tonemapping {
     // Reinhard tonemapping
     Reinhard,
@@ -86,6 +85,25 @@ pub enum Tonemapping {
 
     // Clamps the HDR color values to LDR
     Clamp,
+}
+
+// How we should debug G-Buffer data
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum DebugGBuffer {
+    // World Space position
+    Position,
+
+    // Albedo Color
+    Albedo,
+
+    // World Space Normals 
+    Normal,
+
+    // Mask map (ao, roughness, metallic)
+    Mask,
+
+    // Disabled G-Buffer
+    None,
 }
 
 impl Tonemapping {
@@ -111,6 +129,31 @@ impl Tonemapping {
     }
 }
 
+impl DebugGBuffer {
+    // Get a debug g-buffer enum variant from raw discriminant index
+    pub fn from_index(disc: u32) -> Self {
+        match disc {
+            0 => Self::Position,
+            1 => Self::Albedo,
+            2 => Self::Normal,
+            3 => Self::Mask,
+            u32::MAX => Self::None,
+            _ => panic!()
+        }
+    }
+
+    // Get a tonemap discriminant index from enum variant
+    pub fn into_index(&self) -> u32 {
+        match self {
+            Self::Position => 0,
+            Self::Albedo => 1,
+            Self::Normal => 2,
+            Self::Mask => 3,
+            Self::None => u32::MAX,
+        }
+    }
+}
+
 // Container for post-processing parameters
 #[derive(Clone, Copy, PartialEq, Pod, Zeroable)]
 #[repr(C)]
@@ -126,6 +169,9 @@ pub struct PostProcessUniform {
     // Tonemapping parameters
     pub tonemapping_mode: u32,
     pub tonemapping_strength: f32,
+
+    // Debug G-Buffer data
+    pub debug_gbuffer: u32,
 }
 
 impl Default for PostProcessUniform {
@@ -137,6 +183,7 @@ impl Default for PostProcessUniform {
             vignette_size: 0.1,
             tonemapping_mode: 2,
             tonemapping_strength: 1.0,
+            debug_gbuffer: u32::MAX
         }
     }
 }

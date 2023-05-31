@@ -17,8 +17,6 @@ fn update(world: &mut World) {
     let f3 = (modified::<&Scale>() | !contains::<&Scale>());
     let f4 = added::<&Renderer>();
     let filter = f1 | f2 | f3 | f4;
-
-    // FIXME: Fix filter uwu
     let query = scene.query_mut_with::<(
         &mut Renderer,
         Option<&Position>,

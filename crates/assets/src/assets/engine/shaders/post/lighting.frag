@@ -33,6 +33,7 @@ layout(set = 0, binding = 3) uniform PostProcessUniform {
 	float vignette_size;
 	uint tonemapping_mode;
 	float tonemapping_strength;
+    uint gbuffer_debug;
 } post_processing;
 
 /*
@@ -256,11 +257,12 @@ vec3 brdf(
 
 	// TODO: IBL
 	brdf = brdf * light.color * lighting;
-	//brdf += fresnelRoughness(surface.f0, camera.view, surface.normal, surface.roughness) * 0.40;
+	brdf += fresnelRoughness(surface.f0, camera.view, surface.normal, surface.roughness) * 0.40;
 	return brdf;
 }
 
 void main() {
+    // Fetch G-Buffer values
 	vec3 position = texelFetch(gbuffer_position_map, ivec2(gl_FragCoord.xy), 0).rgb;
 	vec3 albedo = texelFetch(gbuffer_albedo_map, ivec2(gl_FragCoord.xy), 0).rgb;
     vec3 normal = texelFetch(gbuffer_normal_map, ivec2(gl_FragCoord.xy), 0).rgb;
@@ -306,6 +308,26 @@ void main() {
 		case 3:
 			tonemapped = min(color, vec3(1));
 			break;
+	}
+
+    // Optional G-Buffer debug
+    switch(post_processing.gbuffer_debug) {
+		case 0:
+            color = position;
+			tonemapped = position;
+			break;
+		case 1:
+			color = albedo;
+			tonemapped = albedo;
+            break;
+		case 2:
+			color = max(normal, vec3(0));
+			tonemapped = max(normal, vec3(0));
+            break;
+		case 3:
+			color = mask;
+			tonemapped = mask;
+            break;
 	}
 	
 	// Apply gamma correction

@@ -695,23 +695,41 @@ fn update(world: &mut World) {
                     ));
                 });
 
-                let mut selected =
+                let mut selected_tonemapping =
                     Tonemapping::from_index(compositor.post_process.tonemapping_mode);
 
                 ui.horizontal(|ui| {
                     ui.label("Tonemapping Mode: ");
 
-                    egui::ComboBox::from_label("")
-                        .selected_text(format!("{:?}", selected))
+                    egui::ComboBox::from_label("tonemapping-mode")
+                        .selected_text(format!("{:?}", selected_tonemapping))
                         .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut selected, Tonemapping::Reinhard, "Reinhard");
+                            ui.selectable_value(&mut selected_tonemapping, Tonemapping::Reinhard, "Reinhard");
                             ui.selectable_value(
-                                &mut selected,
+                                &mut selected_tonemapping,
                                 Tonemapping::ReinhardJodie,
                                 "ReinhardJodie",
                             );
-                            ui.selectable_value(&mut selected, Tonemapping::ACES, "ACES");
-                            ui.selectable_value(&mut selected, Tonemapping::Clamp, "Clamp");
+                            ui.selectable_value(&mut selected_tonemapping, Tonemapping::ACES, "ACES");
+                            ui.selectable_value(&mut selected_tonemapping, Tonemapping::Clamp, "Clamp");
+                        });
+                });
+
+                
+                let mut selected_debug_gbuffer =
+                    DebugGBuffer::from_index(compositor.post_process.debug_gbuffer);
+
+                ui.horizontal(|ui| {
+                    ui.label("G-Buffer Debug Mode: ");
+
+                    egui::ComboBox::from_label("gbuffer-debug-mode")
+                        .selected_text(format!("{:?}", selected_debug_gbuffer))
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(&mut selected_debug_gbuffer, DebugGBuffer::None, "None");
+                            ui.selectable_value(&mut selected_debug_gbuffer, DebugGBuffer::Position, "Position");
+                            ui.selectable_value(&mut selected_debug_gbuffer, DebugGBuffer::Albedo, "Albedo");
+                            ui.selectable_value(&mut selected_debug_gbuffer, DebugGBuffer::Normal, "Normal");
+                            ui.selectable_value(&mut selected_debug_gbuffer, DebugGBuffer::Mask, "Mask");
                         });
                 });
 
@@ -723,7 +741,8 @@ fn update(world: &mut World) {
                     ));
                 });
 
-                compositor.post_process.tonemapping_mode = selected.into_index();
+                compositor.post_process.tonemapping_mode = selected_tonemapping.into_index();
+                compositor.post_process.debug_gbuffer = selected_debug_gbuffer.into_index();
             });
     }
 
