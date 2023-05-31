@@ -141,6 +141,7 @@ fn render(world: &mut World) {
     let renderer = &mut *renderer;
     let scene = world.get::<Scene>().unwrap();
     let pipelines = world.get::<Pipelines>().unwrap();
+    let mut window = world.get_mut::<Window>().unwrap();
     let time = world.get::<Time>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
     let environment = world.get::<Environment>().unwrap();
@@ -204,6 +205,11 @@ fn render(world: &mut World) {
 
     // Skip if we don't have a light to draw with
     let Some(directional_light)  = renderer.main_directional_light else {
+        return;
+    };
+
+    
+    let Ok(dst) = window.as_render_target() else {
         return;
     };
 
@@ -272,11 +278,13 @@ fn render(world: &mut World) {
     };
     drop(scene);
 
+
     // Begin the scene color render pass
+    let gbuffer_position = renderer.gbuffer_position_texture  .as_render_target().unwrap();
     let gbuffer_albedo = renderer.gbuffer_albedo_texture.as_render_target().unwrap();
     let gbuffer_normal = renderer.gbuffer_normal_texture.as_render_target().unwrap();
     let gbuffer_mask = renderer.gbuffer_mask_texture.as_render_target().unwrap();
-    let gbuffer = (gbuffer_albedo, gbuffer_normal, gbuffer_mask);
+    let gbuffer = (gbuffer_position, gbuffer_albedo, gbuffer_normal, gbuffer_mask);
     let depth = renderer.depth_texture.as_render_target().unwrap();
     let mut render_pass = renderer.deferred_render_pass.begin(gbuffer, depth);
 

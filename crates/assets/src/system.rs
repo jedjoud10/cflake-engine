@@ -54,9 +54,11 @@ fn init(world: &mut World) {
     */
 
     // Load the default post-rendering shaders
-    internal!(loader, "engine/shaders/post/display.frag");
-    internal!(loader, "engine/shaders/post/gui.vert");
-    internal!(loader, "engine/shaders/post/gui.frag");
+    internal!(loader, "engine/shaders/post/lighting.frag");
+
+    // Load the eGUI GUI shaders
+    internal!(loader, "engine/shaders/gui/gui.vert");
+    internal!(loader, "engine/shaders/gui/gui.frag");
 
     // Load the default noise shaders
     internal!(loader, "engine/shaders/noises/cellular2D.glsl");

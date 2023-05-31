@@ -9,12 +9,12 @@ use graphics::{
     ActiveRenderPass, ActiveRenderPipeline, BufferMode, BufferUsage, Depth, GpuPod,
     Graphics, LoadOp, Operation, RenderPass, SamplerFilter,
     SamplerMipMaps, SamplerSettings, SamplerWrap, StoreOp, Texel, Texture, Texture2D,
-    TextureMipMaps, TextureMode, TextureUsage, UniformBuffer, RGBA, BGRA, SwapchainFormat, RenderPipeline, VertexModule, FragmentModule, Compiler, Shader, VertexConfig, PrimitiveConfig,
+    TextureMipMaps, TextureMode, TextureUsage, UniformBuffer, RGBA, BGRA, SwapchainFormat, RenderPipeline, VertexModule, FragmentModule, Compiler, Shader, VertexConfig, PrimitiveConfig, Normalized,
 };
 use utils::{Handle, Storage};
 
 // Renderpass that will render the scene
-pub type SceneColorLayout = (RGBA<f32>, RGBA<f32>, RGBA<f32>);
+pub type SceneColorLayout = (RGBA<f32>, RGBA<Normalized<u8>>, RGBA<Normalized<i8>>, RGBA<Normalized<u8>>);
 pub type SceneDepthLayout = Depth<f32>;
 
 // Keeps tracks of data that we use for rendering the scene
@@ -24,14 +24,11 @@ pub struct DeferredRenderer {
     pub(crate) deferred_render_pass: RenderPass<SceneColorLayout, SceneDepthLayout>,
 
     // G-Buffer and Depth Texture
-    pub(crate) gbuffer_albedo_texture: Texture2D<RGBA<f32>>,
-    pub(crate) gbuffer_normal_texture: Texture2D<RGBA<f32>>,
-    pub(crate) gbuffer_mask_texture: Texture2D<RGBA<f32>>,
+    pub(crate) gbuffer_position_texture: Texture2D<RGBA<f32>>,
+    pub(crate) gbuffer_albedo_texture: Texture2D<RGBA<Normalized<u8>>>,
+    pub(crate) gbuffer_normal_texture: Texture2D<RGBA<Normalized<i8>>>,
+    pub(crate) gbuffer_mask_texture: Texture2D<RGBA<Normalized<u8>>>,
     pub(crate) depth_texture: Texture2D<SceneDepthLayout>,
-
-    // Contains shader and render pass that will execute the lighting pass
-    pub(crate) lighting_render_pass: RenderPass<SwapchainFormat, ()>,
-    pub(crate) lighting_pipeline: RenderPipeline<SwapchainFormat, ()>,
 
     // Main camera entity that we use to render the scene
     pub main_camera: Option<Entity>,
@@ -109,7 +106,6 @@ fn create_gbuffer_texture<T: Texel>(graphics: &Graphics, extent: vek::Extent2<u3
     .unwrap()
 }
 
-
 // Load a engine default mesh
 fn load_mesh(
     path: &str,
@@ -119,23 +115,6 @@ fn load_mesh(
 ) -> Handle<Mesh> {
     let mesh = assets.load::<Mesh>((path, graphics.clone())).unwrap();
     storage.insert(mesh)
-}
-
-// Load the deferred shader
-fn load_lighting_shader(assets: &Assets, graphics: &Graphics) -> Shader {
-    // Load the vertex module for the deferred shader
-    let vertex = assets
-        .load::<VertexModule>("engine/shaders/common/quad.vert")
-        .unwrap();
-
-    // Load the fragment module for the deferred shader
-    let fragment = assets
-        .load::<FragmentModule>("engine/shaders/deferred/lighting.frag")
-        .unwrap();
-
-    // Create the bind layout for the compositor shader
-    let mut compiler = Compiler::new(assets, graphics);
-    Shader::new(vertex, fragment, &compiler).unwrap()
 }
 
 impl DeferredRenderer {
@@ -150,9 +129,10 @@ impl DeferredRenderer {
         mask_maps: &mut Storage<MaskMap>,
     ) -> Self {
         // Create the G-Buffer textures and depth texture
-        let gbuffer_albedo_texture = create_gbuffer_texture::<RGBA<f32>>(graphics, extent);
-        let gbuffer_normal_texture = create_gbuffer_texture::<RGBA<f32>>(graphics, extent);
-        let gbuffer_mask_texture = create_gbuffer_texture::<RGBA<f32>>(graphics, extent);
+        let gbuffer_position_texture = create_gbuffer_texture::<RGBA<f32>>(graphics, extent);
+        let gbuffer_albedo_texture = create_gbuffer_texture::<RGBA<Normalized<u8>>>(graphics, extent);
+        let gbuffer_normal_texture = create_gbuffer_texture::<RGBA<Normalized<i8>>>(graphics, extent);
+        let gbuffer_mask_texture = create_gbuffer_texture::<RGBA<Normalized<u8>>>(graphics, extent);
         let depth_texture = create_gbuffer_texture::<Depth<f32>>(graphics, extent);
 
         // Tuple that contains the clear operations of the G-Buffer textures
@@ -161,11 +141,15 @@ impl DeferredRenderer {
                 load: LoadOp::Clear(vek::Vec4::zero()),
                 store: StoreOp::Store,
             },
-            Operation::<RGBA<f32>> {
+            Operation::<RGBA<Normalized<u8>>> {
                 load: LoadOp::Clear(vek::Vec4::zero()),
                 store: StoreOp::Store,
             },
-            Operation::<RGBA<f32>> {
+            Operation::<RGBA<Normalized<i8>>> {
+                load: LoadOp::Clear(vek::Vec4::zero()),
+                store: StoreOp::Store,
+            },
+            Operation::<RGBA<Normalized<u8>>> {
                 load: LoadOp::Clear(vek::Vec4::zero()),
                 store: StoreOp::Store,
             },
@@ -202,36 +186,11 @@ impl DeferredRenderer {
         let plane = load_mesh("engine/meshes/plane.obj", assets, graphics, meshes);
         let sphere = load_mesh("engine/meshes/sphere.obj", assets, graphics, meshes);
 
-        // Load deferred shader and deferred render pass
-        let lighting = load_lighting_shader(assets, graphics);
-        let lighting_render_pass = RenderPass::<SwapchainFormat, ()>::new(
-            graphics,
-            Operation::<SwapchainFormat> {
-                load: LoadOp::Clear(vek::Vec4::zero()),
-                store: StoreOp::Store,
-            },
-            (),
-        );
-
-        // Create the display graphics pipeline
-        let lighting_pipeline = RenderPipeline::<SwapchainFormat, ()>::new(
-            graphics,
-            None,
-            None,
-            None,
-            VertexConfig::default(),
-            PrimitiveConfig::Triangles {
-                winding_order: graphics::WindingOrder::Ccw,
-                cull_face: None,
-                wireframe: false,
-            },
-            &lighting,
-        )
-        .unwrap();
-
         Self {
             // Render pass, G-Buffer textures, and depth texture
             deferred_render_pass: render_pass,
+            gbuffer_position_texture,
+            
             gbuffer_albedo_texture,
             gbuffer_normal_texture,
             gbuffer_mask_texture,
@@ -249,9 +208,6 @@ impl DeferredRenderer {
             normal,
             mask,
 
-            // Actual shading shader
-            lighting_render_pass,
-            lighting_pipeline,
 
             // No default camera
             main_camera: None,

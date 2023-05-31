@@ -1,11 +1,17 @@
 #version 460 core
 layout(location = 0) out vec4 frag;
 
-/*
 
+// Fetch the G-Buffer data
+layout(set = 1, binding = 0) uniform texture2D gbuffer_position_map;
+layout(set = 1, binding = 1) uniform texture2D gbuffer_albedo_map;
+layout(set = 1, binding = 2) uniform texture2D gbuffer_normal_map;
+layout(set = 1, binding = 3) uniform texture2D gbuffer_mask_map;
 
 // UBO that contains the current scene information
-layout(set = 0, binding = 1) uniform SceneUniform {
+#include <engine/shaders/common/conversions.glsl>
+#include <engine/shaders/common/camera.glsl>
+layout(set = 0, binding = 2) uniform SceneUniform {
     // Sun related parameters
     vec4 sun_direction;
     vec4 sun_color;
@@ -19,10 +25,23 @@ layout(set = 0, binding = 1) uniform SceneUniform {
     float sun_circle_fade;
 } scene;
 
+// Post processing settings
+layout(set = 0, binding = 3) uniform PostProcessUniform {
+    float exposure;
+	float gamma;
+	float vignette_strength;
+	float vignette_size;
+	uint tonemapping_mode;
+	float tonemapping_strength;
+} post_processing;
+
+/*
 // Environment texture map
 layout(set = 0, binding = 2) uniform textureCube environment_map;
 layout(set = 0, binding = 3) uniform sampler environment_map_sampler;
+*/
 
+/*
 // UBO set globally at the start of the frame
 layout(set = 0, binding = 4) uniform ShadowUniform {
     float strength;
@@ -42,20 +61,6 @@ layout(set = 0, binding = 6) uniform ShadowPlaneDistances {
 // Shadow-map texture map
 layout(set = 0, binding = 7) uniform texture2DArray shadow_map;
 
-// UBO that contains the current monitor/window information
-layout(set = 0, binding = 8) uniform WindowUniform {
-    // Dimensions of the window
-    uint width;
-    uint height;
-} window;
-
-// Fetch the G-Buffer data
-layout(set = 1, binding = 0) uniform texture2D gbuffer_albedo;
-layout(set = 1, binding = 1) uniform texture2D gbuffer_normal;
-layout(set = 1, binding = 2) uniform texture2D gbuffer_mask;
-
-// Depth map automatically generated when rasterizing the scene
-layout(set = 1, binding = 3) uniform texture2D depth_map;
 
 // Sample a single shadow texel at the specified pixel coords
 float sample_shadow_texel(
@@ -125,6 +130,21 @@ float calculate_shadowed(
     uint size = uint(textureSize(shadow_map, 0).x);
     return shadow_linear(layer, uvs.xy, size, current + bias);
 }
+
+*/
+
+// UBO that contains the current monitor/window information
+layout(set = 0, binding = 8) uniform WindowUniform {
+    // Dimensions of the window
+    uint width;
+    uint height;
+} window;
+
+/*
+// Depth map automatically generated when rasterizing the scene
+layout(set = 1, binding = 3) uniform texture2D depth_map;
+*/
+
 
 #define PI 3.1415926538
 
@@ -225,7 +245,8 @@ vec3 brdf(
 
 	// Calculate if the pixel is shadowed
 	float depth = abs((camera.view_matrix * vec4(surface.position, 1)).z);
-	float shadowed = calculate_shadowed(surface.position, depth, surface.surface_normal, light.backward, camera.position);	
+	float shadowed = 0;
+    //float shadowed = calculate_shadowed(surface.position, depth, surface.surface_normal, light.backward, camera.position);	
 	//return vec3(shadowed);
 
 	// Calculate diffuse and specular
@@ -238,8 +259,57 @@ vec3 brdf(
 	//brdf += fresnelRoughness(surface.f0, camera.view, surface.normal, surface.roughness) * 0.40;
 	return brdf;
 }
-*/
 
 void main() {
-	frag = vec4(1);
+	vec3 position = texelFetch(gbuffer_position_map, ivec2(gl_FragCoord.xy), 0).rgb;
+	vec3 albedo = texelFetch(gbuffer_albedo_map, ivec2(gl_FragCoord.xy), 0).rgb;
+    vec3 normal = texelFetch(gbuffer_normal_map, ivec2(gl_FragCoord.xy), 0).rgb;
+    vec3 mask = texelFetch(gbuffer_mask_map, ivec2(gl_FragCoord.xy), 0).rgb;
+
+    float roughness = clamp(mask.g, 0.02, 1.0);
+	float metallic = clamp(mask.b, 0.01, 1.0);
+	float visibility = clamp(mask.r, 0.0, 1.0);
+	vec3 f0 = mix(vec3(0.04), albedo, metallic);
+
+	// Create the data structs
+	SunData sun = SunData(-scene.sun_direction.xyz, scene.sun_color.rgb);
+	SurfaceData surface = SurfaceData(albedo, normalize(normal), normal, position, roughness, metallic, visibility, f0);
+	vec3 view = normalize(camera.position.xyz - position);
+	CameraData camera = CameraData(view, normalize(view - scene.sun_direction.xyz), camera.position.xyz, camera.view, camera.projection);
+
+	// Check if the fragment is shadowed
+	vec3 color = brdf(surface, camera, sun);
+    
+    // Increase exposure
+	color *= post_processing.exposure;
+	color = max(color, vec3(0));
+	vec3 tonemapped = color;
+
+	/*
+	Reinhard,
+	ReinhardJodie,
+	ACES,
+	Clamp,
+	*/
+
+	// Handle tonemapping mode
+	switch(post_processing.tonemapping_mode) {
+		case 0:
+			tonemapped = reinhard(color);
+			break;
+		case 1:
+			tonemapped = reinhard_jodie(color);
+			break;
+		case 2:
+			tonemapped = aces(color);
+			break;
+		case 3:
+			tonemapped = min(color, vec3(1));
+			break;
+	}
+	
+	// Apply gamma correction
+	tonemapped = mix(color, tonemapped, post_processing.tonemapping_strength);
+	color = pow(tonemapped, vec3(1.0 / post_processing.gamma));
+	frag = vec4(color, 0);
 }
