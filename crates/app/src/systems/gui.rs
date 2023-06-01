@@ -340,6 +340,12 @@ fn update(world: &mut World) {
                 ui.label("Active?: ");
                 ui.add(egui::Checkbox::new(&mut terrain.active, ""));
             });
+
+            ui.horizontal(|ui| {
+                ui.label("LOD Multiplier Control: ");
+                let mut value = terrain.manager.lod_multiplier.borrow_mut();
+                ui.add(egui::Slider::new(&mut *value, 0.1f32..=1.5f32));
+            });
         });
 
         let mut _terrain = terrain;
@@ -629,7 +635,7 @@ fn update(world: &mut World) {
 
     // Forward renderer settings
     if let Ok(renderer) = world.get_mut::<DeferredRenderer>() {
-        egui::Window::new("Forward Rendering")
+        egui::Window::new("Deferred Rendering")
             .frame(frame)
             .collapsible(true)
             .default_open(false)

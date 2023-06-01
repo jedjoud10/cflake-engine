@@ -28,7 +28,6 @@ impl Material for TerrainMaterial {
         world::Read<'w, Storage<LayeredAlbedoMap>>,
         world::Read<'w, Storage<LayeredNormalMap>>,
         world::Read<'w, Storage<LayeredMaskMap>>,
-        world::Read<'w, ShadowMapping>,
         world::Read<'w, Terrain>,
         world::Read<'w, Time>,
         usize,
@@ -40,8 +39,6 @@ impl Material for TerrainMaterial {
 
     // Load the terrain material shaders and compile them
     fn shader<P: Pass>(settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Option<Shader> {
-        todo!()
-        /*
         // Load the vertex module from the assets
         let vert = assets
             .load::<VertexModule>("engine/shaders/scene/terrain/terrain.vert")
@@ -57,8 +54,7 @@ impl Material for TerrainMaterial {
 
         // Set the UBO types that we will use
         compiler.use_uniform_buffer::<CameraUniform>("camera");
-        compiler.use_uniform_buffer::<SceneUniform>("scene");
-
+        
         // Define the types for the user textures
         if settings.sub_materials.is_some() {
             compiler.use_define("submaterials", "");
@@ -66,17 +62,6 @@ impl Material for TerrainMaterial {
             compiler.use_sampled_texture::<LayeredNormalMap>("layered_normal_map");
             compiler.use_sampled_texture::<LayeredMaskMap>("layered_mask_map");
         }
-
-        // Shadow parameters
-        compiler.use_uniform_buffer::<ShadowUniform>("shadow_parameters");
-        compiler.use_uniform_buffer::<vek::Vec4<vek::Vec4<f32>>>("shadow_lightspace_matrices");
-        compiler.use_uniform_buffer::<f32>("cascade_plane_distances");
-
-        // Environment map parameters
-        compiler.use_sampled_texture::<EnvironmentMap>("environment_map");
-
-        // Define the types for the user textures
-        compiler.use_sampled_texture::<ShadowMap>("shadow_map");
 
         // Set the scaling factor for the vertex positions
         compiler.use_constant(0, (settings.size as f32) / (settings.size as f32 - 4.0));
@@ -93,8 +78,7 @@ impl Material for TerrainMaterial {
         );
 
         // Compile the modules into a shader
-        Shader::new(vert, frag, &compiler).unwrap()
-        */
+        Some(Shader::new(vert, frag, &compiler).unwrap())
     }
 
     // Terrain only needs packed positions
@@ -120,14 +104,12 @@ impl Material for TerrainMaterial {
         let albedo_maps = world.get::<Storage<LayeredAlbedoMap>>().unwrap();
         let normal_maps = world.get::<Storage<LayeredNormalMap>>().unwrap();
         let mask_maps = world.get::<Storage<LayeredMaskMap>>().unwrap();
-        let shadow = world.get::<ShadowMapping>().unwrap();
         let time: world::Read<Time> = world.get::<Time>().unwrap();
         let terrain = world.get::<Terrain>().unwrap();
         (
             albedo_maps,
             normal_maps,
             mask_maps,
-            shadow,
             terrain,
             time,
             0,
@@ -140,31 +122,11 @@ impl Material for TerrainMaterial {
         group: &mut BindGroup<'r>,
         default: &DefaultMaterialResources<'r>,
     ) {
-        let (albedo_maps, normal_maps, mask_maps, shadow, terrain, _time, _) = resources;
+        let (albedo_maps, normal_maps, mask_maps, terrain, _time, _) = resources;
 
         // Set the required common buffers
         group
             .set_uniform_buffer("camera", default.camera_buffer, ..)
-            .unwrap();
-        group
-            .set_uniform_buffer("scene", default.scene_buffer, ..)
-            .unwrap();
-        group
-            .set_uniform_buffer("shadow_parameters", &shadow.parameter_buffer, ..)
-            .unwrap();
-        group
-            .set_uniform_buffer("shadow_lightspace_matrices", &shadow.lightspace_buffer, ..)
-            .unwrap();
-        group
-            .set_uniform_buffer("cascade_plane_distances", &shadow.cascade_distances, ..)
-            .unwrap();
-        group
-            .set_sampled_texture("environment_map", default.environment_map)
-            .unwrap();
-
-        // Set the scene shadow map
-        group
-            .set_sampled_texture("shadow_map", &shadow.depth_tex)
             .unwrap();
 
         // Set the sub-material textures

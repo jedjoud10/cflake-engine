@@ -7,6 +7,7 @@ use crate::{
     TrianglesMut, TrianglesRef, VerticesMut, VerticesRef,
 };
 use assets::Asset;
+use bytemuck::{Pod, Zeroable};
 use graphics::{
     BufferMode, BufferUsage, DrawCountIndirectBuffer, DrawIndexedIndirectBuffer, Graphics,
     Triangle, TriangleBuffer,
@@ -484,8 +485,8 @@ impl Asset for Mesh {
         let mut tex_coords = settings
             .use_tex_coords
             .then(|| Vec::<RawTexCoord>::with_capacity(capacity));
-        let mut triangles = Vec::<[u32; 3]>::with_capacity(parsed.indices.len() / 3);
-        let indices = parsed.indices;
+        let mut indices = parsed.indices;
+        let triangles = bytemuck::cast_slice_mut(&mut indices);
         use vek::{Vec2, Vec3};
 
         // Convert the vertices into the separate buffer
@@ -505,11 +506,6 @@ impl Asset for Mesh {
                 let read = Vec2::from_slice(&vertex.texture);
                 tex_coords.push(read);
             }
-        }
-
-        // Convert the indices to triangles
-        for triangle in indices.chunks_exact(3) {
-            triangles.push(triangle.try_into().unwrap());
         }
 
         // Optionally generate the tangents
@@ -536,8 +532,41 @@ impl Asset for Mesh {
             &mut normals,
             &mut tangents,
             &mut tex_coords,
-            &mut triangles,
+            triangles,
         );
+
+        // Optimize mesh if we need to
+        {
+            #[derive(Pod, Zeroable, Copy, Clone)]
+            #[repr(C)]
+            struct PosWrapper(vek::Vec4<f32>);
+            impl meshopt::DecodePosition for PosWrapper {
+                fn decode_position(&self) -> [f32; 3] {
+                    [self.0.x, self.0.y, self.0.z]
+                }
+            } 
+            let positions = positions.as_mut().unwrap();
+            let vertex_count = positions.len();
+            let indices: &mut [u32] = bytemuck::cast_slice_mut(triangles);
+            let vertices = bytemuck::cast_slice_mut::<vek::Vec4<f32>, PosWrapper>(*positions);
+
+            if settings.optimize_vertex_cache {
+                // Oopsies!! This is supposed to take a mutable slice!! I LOVE POTENTIAL UB!!!
+                meshopt::optimize_vertex_cache_in_place(&indices, vertex_count);
+
+                if settings.optimize_overdraw {
+                    meshopt::optimize_overdraw_in_place_decoder(indices, vertices, 1.05f32);
+                }
+            }
+
+            //let out = meshopt::simplify_sloppy_decoder(indices, vertices, 1000);
+
+            if settings.optimize_vertex_fetch {
+                //meshopt::optimize_vertex_fetch_in_place(indices, vertices);
+            }
+        }
+
+        
 
         log::debug!(
             "Loaded {} position vertices",

@@ -9,7 +9,7 @@ layout(location = 0) in vec4 packed;
 // Camera bind group buffer (creates a 'camera' object)
 #include <engine/shaders/common/camera.glsl>
 #include <engine/shaders/noises/noise3D.glsl>
-#include <engine/shaders/math/packer.glsl>
+#include <engine/shaders/common/packer.glsl>
 
 // Data to give to the fragment shader
 layout(location = 0) out vec3 m_position;

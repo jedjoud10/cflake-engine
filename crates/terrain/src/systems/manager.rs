@@ -50,13 +50,10 @@ fn update(world: &mut World) {
     // Fetch the old chunk viewer position value
     let mut added = false;
     let new = **viewer_position;
-    let old = if let Some((_, old, _)) = &mut manager.viewer {
-        *old
-    } else {
+    if manager.viewer.is_none() {
         manager.viewer = Some((*entity, new, **viewer_rotation));
         added = true;
-        new
-    };
+    }
 
     // Makes sure that we don't generate when we're not done removing/generating old chunks
     let count = scene
@@ -66,7 +63,7 @@ fn update(world: &mut World) {
         .count();
 
     // Check if it moved since last frame
-    if (added || new != old) && count == 0 {
+    if added || count == 0 {
         // Update the old chunk viewer position value
         if let Some((_, val, _)) = manager.viewer.as_mut() {
             *val = new;
@@ -80,11 +77,6 @@ fn update(world: &mut World) {
 
         // Don't do shit
         if added.is_empty() && removed.is_empty() {
-            return;
-        }
-
-        // If we don't add chunks just exit
-        if added.is_empty() {
             return;
         }
 

@@ -7,5 +7,5 @@
 
 // Main voxel function that will create the shape of the terrain
 float voxel(vec3 position) {
-    return position.y + snoise(position * 0.006) * 300;
+    return (1 - fbmCellular(position * 0.002, int(7.0), 0.5, 2.1).y) * 300 + position.y;
 }

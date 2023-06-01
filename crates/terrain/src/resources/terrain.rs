@@ -1,3 +1,5 @@
+use std::{rc::Rc, cell::RefCell};
+
 use crate::{
     ChunkCuller, ChunkManager, MemoryManager, MeshGenerator, VoxelGenerator,
 };
@@ -21,7 +23,7 @@ pub struct TerrainSettings {
 
     // Octree params
     pub(crate) max_depth: u32,
-    pub(crate) lod_multiplier: f32,
+    pub(crate) lod_multiplier: Rc<RefCell<f32>>,
 
     // Memory managing settings
     pub(crate) allocation_count: usize,
@@ -106,7 +108,7 @@ impl TerrainSettings {
             triangles_per_sub_allocation,
             sub_materials: sub_materials.map(|x| x.to_vec()),
             max_depth,
-            lod_multiplier,
+            lod_multiplier: Rc::new(RefCell::new(lod_multiplier)),
         })
     }
 

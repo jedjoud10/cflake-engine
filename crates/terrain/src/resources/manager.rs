@@ -1,5 +1,7 @@
 
 
+use std::{cell::RefCell, rc::Rc};
+
 use ahash::{AHashMap};
 use assets::{Assets, AsyncHandle};
 
@@ -35,6 +37,7 @@ pub struct ChunkManager {
 
     // Octree used for chunk generation
     pub(crate) octree: Octree,
+    pub lod_multiplier: Rc<RefCell<f32>>,
     pub(crate) entities: AHashMap<Node, Entity>,
 
     // Single entity that contains multiple meshes that represent the terrain
@@ -138,7 +141,7 @@ impl ChunkManager {
 
         // Custom octree heuristic
         let size = settings.size;
-        let lod_multiplier = settings.lod_multiplier;
+        let lod_multiplier = settings.lod_multiplier.clone();
         let heuristic = math::OctreeHeuristic::Boxed(Box::new(move |target, node| {
             let div = (node.size() / size).next_power_of_two();
 
@@ -146,7 +149,7 @@ impl ChunkManager {
                 &node.aabb(),
                 &math::Sphere {
                     center: *target,
-                    radius: (size as f32 * div as f32 * lod_multiplier * 0.5),
+                    radius: (size as f32 * div as f32 * *lod_multiplier.borrow() * 0.5),
                 },
             ) || node.depth() <= 2
         }));
@@ -166,6 +169,7 @@ impl ChunkManager {
             layered_normal_map,
             layered_mask_map,
             chunks_per_allocation: 0,
+            lod_multiplier: settings.lod_multiplier.clone(),
         }
     }
 }
