@@ -16,6 +16,7 @@ layout(location = 0) out vec3 m_position;
 layout(location = 1) out vec3 m_local_position;
 layout(location = 2) out vec3 m_normal;
 layout(location = 3) out float lod;
+layout(location = 4) out flat uint skirts; 
 
 // Contains position and scale value
 layout(std430, set = 2, binding = 0) readonly buffer PositionScaleBuffer {
@@ -41,6 +42,8 @@ void main() {
     vec4 projected = (camera.projection * camera.view) * world_pos; 
     gl_Position = projected;
     lod = position_scale.w;
+
+    skirts = floatBitsToUint(packed.w);
     
     // Set the output variables
     m_position = world_pos.xyz;

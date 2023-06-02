@@ -5,7 +5,6 @@ fn main() {
     App::default()
         .set_app_name("cflake engine terrain example")
         .set_window_fullscreen(true)
-        //.set_frame_rate_limit(FrameRateLimit::VSync)
         //set_frame_rate_limit(FrameRateLimit::Limited(120))
         //.set_logging_level(LevelFilter::Trace)
         .insert_init(init)
@@ -36,6 +35,7 @@ fn init(world: &mut World) {
         1024,
         7,
         0.5f32,
+        0.0f32,
         Some(&[
             TerrainSubMaterial {
                 diffuse: "user/textures/diffuse5.jpg".to_string(),

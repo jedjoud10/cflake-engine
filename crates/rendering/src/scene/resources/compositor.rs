@@ -3,7 +3,7 @@ use bytemuck::{Pod, Zeroable};
 use graphics::{
     BufferMode, BufferUsage, Compiler, FragmentModule, Graphics, LoadOp, Operation,
     PrimitiveConfig, RenderPass, RenderPipeline, Shader, StoreOp, SwapchainFormat, Texture2D,
-    UniformBuffer, VertexConfig, VertexModule, RGBA, Normalized,
+    UniformBuffer, VertexConfig, VertexModule, RGBA, Normalized, R, Depth,
 };
 
 use crate::{CameraUniform, SceneColorLayout, WindowUniform, SceneUniform};
@@ -30,6 +30,7 @@ fn load_lighting_shader(assets: &Assets, graphics: &Graphics) -> Shader {
     compiler.use_sampled_texture::<Texture2D<RGBA<Normalized<u8>>>>("gbuffer_albedo_map");
     compiler.use_sampled_texture::<Texture2D<RGBA<Normalized<i8>>>>("gbuffer_normal_map");
     compiler.use_sampled_texture::<Texture2D<RGBA<Normalized<u8>>>>("gbuffer_mask_map");
+    compiler.use_sampled_texture::<Texture2D<Depth<f32>>>("depth_map");
 
     compiler.use_uniform_buffer::<CameraUniform>("camera");
     compiler.use_uniform_buffer::<SceneUniform>("scene");

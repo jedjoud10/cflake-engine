@@ -7,10 +7,12 @@ layout(set = 1, binding = 0) uniform texture2D gbuffer_position_map;
 layout(set = 1, binding = 1) uniform texture2D gbuffer_albedo_map;
 layout(set = 1, binding = 2) uniform texture2D gbuffer_normal_map;
 layout(set = 1, binding = 3) uniform texture2D gbuffer_mask_map;
+layout(set = 1, binding = 4) uniform texture2D depth_map;
 
 // UBO that contains the current scene information
 #include <engine/shaders/common/conversions.glsl>
 #include <engine/shaders/common/camera.glsl>
+#include <engine/shaders/scene/environment/sky.glsl>
 layout(set = 0, binding = 2) uniform SceneUniform {
     // Sun related parameters
     vec4 sun_direction;
@@ -141,12 +143,6 @@ layout(set = 0, binding = 8) uniform WindowUniform {
     uint height;
 } window;
 
-/*
-// Depth map automatically generated when rasterizing the scene
-layout(set = 1, binding = 3) uniform texture2D depth_map;
-*/
-
-
 #define PI 3.1415926538
 
 // Literally the whole implementation is stolen from
@@ -238,11 +234,12 @@ vec3 brdf(
 	//vec3 ks = fresnel(surface.f0, camera.half_view, camera.view);
 	vec3 ks = vec3(0);
 	vec3 kd = (1 - ks) * (1 - surface.metallic);
+	kd = vec3(1);
 
 	// Calculate ambient sky color
 	//vec3 ambient = texture(samplerCube(environment_map, environment_map_sampler), surface.normal).rgb;
-	//vec3 ambient = calculate_sky_color(surface.normal, -light.backward);
-	vec3 ambient = vec3(0);
+	vec3 ambient = calculate_sky_color(surface.normal, -light.backward);
+	//vec3 ambient = vec3(0);
 
 	// Calculate if the pixel is shadowed
 	float depth = abs((camera.view_matrix * vec4(surface.position, 1)).z);
@@ -250,14 +247,13 @@ vec3 brdf(
     //float shadowed = calculate_shadowed(surface.position, depth, surface.surface_normal, light.backward, camera.position);	
 	//return vec3(shadowed);
 
-	// Calculate diffuse and specular
+	// TODO: This is wrong for some reason?
 	vec3 brdf = kd * (surface.diffuse / PI) + specular(surface.f0, surface.roughness, camera.view, light.backward, surface.normal, camera.half_view) * (1-shadowed);
 	vec3 lighting = vec3(max(dot(light.backward, surface.normal), 0.0)) * (1-shadowed);
-	lighting += 0.1 * surface.visibility + ambient * 0.05;
+	lighting += (0.3 + ambient * 0.5) * surface.visibility;
 
 	// TODO: IBL
-	brdf = brdf * light.color * lighting;
-	brdf += fresnelRoughness(surface.f0, camera.view, surface.normal, surface.roughness) * 0.40;
+	brdf = brdf * lighting * light.color;
 	return brdf;
 }
 
@@ -267,6 +263,7 @@ void main() {
 	vec3 albedo = texelFetch(gbuffer_albedo_map, ivec2(gl_FragCoord.xy), 0).rgb;
     vec3 normal = texelFetch(gbuffer_normal_map, ivec2(gl_FragCoord.xy), 0).rgb;
     vec3 mask = texelFetch(gbuffer_mask_map, ivec2(gl_FragCoord.xy), 0).rgb;
+	float non_linear_depth = texelFetch(depth_map, ivec2(gl_FragCoord.xy), 0).r;
 
     float roughness = clamp(mask.g, 0.02, 1.0);
 	float metallic = clamp(mask.b, 0.01, 1.0);

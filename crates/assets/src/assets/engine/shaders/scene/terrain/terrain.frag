@@ -1,5 +1,4 @@
 #version 460 core
-#define lowpoly
 
 // G-Buffer data write
 layout(location = 0) out vec4 gbuffer_position;
@@ -12,6 +11,7 @@ layout(location = 0) in vec3 m_position;
 layout(location = 1) in vec3 m_local_position;
 layout(location = 2) in vec3 m_normal;
 layout(location = 3) in float lod;
+layout(location = 4) in flat uint skirts; 
 
 #ifdef submaterials
 // Albedo / diffuse map texture array
@@ -28,8 +28,8 @@ layout(set = 0, binding = 13) uniform sampler layered_mask_map_sampler;
 
 // Triplanar mapping offset and UV scale
 const float offset = 0.0;
-const vec2 scale = vec2(0.05) * vec2(-1, 1); 
-const float normal_strength = 0.5;
+const vec2 scale = vec2(0.02) * vec2(-1, 1); 
+const float normal_strength = 1.0;
 
 // Get the blending offset to be used internally in the triplanar texture
 vec3 get_blend(vec3 normal) {
@@ -93,11 +93,9 @@ void main() {
 	vec3 albedo1 = triplanar_albedo(float(0), surface_normal);
 	vec3 mask1 = triplanar_mask(float(0), surface_normal);
 	vec3 normal1 = triplanar_normal(float(0), surface_normal);
-
 	vec3 albedo2 = triplanar_albedo(float(1), surface_normal);
 	vec3 mask2 = triplanar_mask(float(1), surface_normal);
 	vec3 normal2 = triplanar_normal(float(1), surface_normal);
-
 	float blending_factor = 1 - clamp((surface_normal.y - 0.8) * 8, 0, 1);	
 	vec3 albedo = mix(albedo1, albedo2, blending_factor);
 	vec3 mask = mix(mask1, mask2, blending_factor);
@@ -113,7 +111,16 @@ void main() {
 	#endif
 
 	gbuffer_position = vec4(m_position, 0);
-	gbuffer_albedo = vec4(albedo, 0);
+	gbuffer_albedo = vec4(albedo * (1 - float(skirts)), 0);
+	mask *= vec3(pow(mask.r, 1.2), 3.0, 0.3);
 	gbuffer_normal = vec4(normal, 0);
 	gbuffer_mask = vec4(mask, 0);
+	
+
+	/*
+	gbuffer_position = vec4(m_position, 0);
+	gbuffer_albedo = vec4(float(skirts));
+	gbuffer_normal = vec4(m_normal, 0);
+	gbuffer_mask = vec4(0, 0.9, 0.0, 0);
+	*/
 }

@@ -145,7 +145,7 @@ void main() {
         
     // Update normals and count for skirts
     float comp = imageLoad(voxels, ivec3(gl_GlobalInvocationID)).x;
-    if (skirts && comp < 0 && comp > -13.0 * (meshing.threshold * 10 + 1.0)) {
+    if (skirts && comp < 0 && comp > -3.0 * (meshing.threshold * 30 + 1.0)) {
         normal = calculate_normal(gl_GlobalInvocationID) * 4;
         count = 4;
     }
@@ -187,11 +187,14 @@ void main() {
         float float_packed_inner_position = uintBitsToFloat(packed_inner_position);
         float float_packed_normals = uintBitsToFloat(packed_normals);
 
+        // Keep a bool as track if we're skirts or not
+        float packed_skirts = uintBitsToFloat(skirts ? 1 : 0);
+
         // Store the packed positions and normals
         vertices.data[index] = vec4(
             float_packed_cell_position,
             float_packed_inner_position,
-            float_packed_normals, 0
+            float_packed_normals, packed_skirts
         );
 
         imageStore(cached_indices, ivec3(gl_GlobalInvocationID + 1), uvec4(index));

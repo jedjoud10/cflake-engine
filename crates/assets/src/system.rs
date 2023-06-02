@@ -43,7 +43,7 @@ fn init(world: &mut World) {
     */
 
     // Load the deferred renderer shader
-    internal!(loader, "engine/shaders/deferred/lighting.frag");
+    internal!(loader, "engine/shaders/post/lighting.frag");
 
     // Load the default environment compute shaders
     internal!(loader, "engine/shaders/scene/environment/sky.glsl");

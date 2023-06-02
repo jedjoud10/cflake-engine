@@ -341,223 +341,28 @@ fn update(world: &mut World) {
                 ui.add(egui::Checkbox::new(&mut terrain.active, ""));
             });
 
+            egui::Grid::new("lod-multipliers")
+                .min_col_width(0f32)
+                .max_col_width(400f32)
+                .striped(true)
+                .show(ui, |ui| {
+                    let mut values = terrain.manager.lod_multipliers.borrow_mut();
+
+                    for value in values.iter_mut() {
+                        ui.horizontal(|ui| {
+                            ui.label("Multiplier: ");
+                            ui.add(egui::DragValue::new(value));
+                        });
+                        ui.end_row();
+                    }
+                });
+
             ui.horizontal(|ui| {
-                ui.label("LOD Multiplier Control: ");
-                let mut value = terrain.manager.lod_multiplier.borrow_mut();
-                ui.add(egui::Slider::new(&mut *value, 0.1f32..=1.5f32));
+                ui.label("LOD Minimum Distance Control: ");
+                let mut value = terrain.manager.min_lod_distance.borrow_mut();
+                ui.add(egui::Slider::new(&mut *value, 0.1f32..=1024f32));
             });
         });
-
-        let mut _terrain = terrain;
-        let terrain = &mut *_terrain;
-
-        egui::Window::new("Terrain Memory")
-            .frame(frame)
-            .default_open(false)
-            .show(&gui, |ui| {
-                let settings = &mut terrain.settings;
-                let memory = &mut terrain.memory;
-
-                let allocs = settings.allocation_count();
-                let mut bitsets = vec![BitSet::<usize>::new(); allocs];
-                let chunks = scene.query::<&Chunk>();
-
-                for chunk in chunks {
-                    if let Some(vek::Vec2 { x, y }) = chunk.ranges() {
-                        let bit_set = &mut bitsets[chunk.allocation()];
-                        for i in 0..(y - x) {
-                            bit_set.set(i as usize + x as usize);
-                        }
-                    }
-                }
-
-                let allocations = memory
-                    .sub_allocation_chunk_indices
-                    .iter()
-                    .map(|buffer| {
-                        let mut dst = vec![0u32; buffer.len()];
-                        buffer.read(&mut dst, 0).unwrap();
-                        dst
-                    })
-                    .collect::<Vec<_>>();
-
-                ui.collapsing("CPU representation of GPU memory", |ui| {
-                    egui::Grid::new("allocations")
-                        .min_col_width(0f32)
-                        .max_col_width(400f32)
-                        .striped(true)
-                        .show(ui, |ui| {
-                            let sub_allocation = settings.sub_allocation_count();
-
-                            for allocation in 0..allocs {
-                                ui.horizontal(|ui| {
-                                    ui.style_mut().spacing.item_spacing.x = 0.0;
-
-                                    for x in 0..128 {
-                                        let mut color = 0.0f32;
-                                        let div = sub_allocation / 128;
-                                        for sub in 0..(sub_allocation / 128) {
-                                            color += if bitsets[allocation].get(sub + x * div) {
-                                                1.0
-                                            } else {
-                                                0.0
-                                            };
-                                        }
-
-                                        let color = egui::Color32::from_gray(
-                                            ((color / div as f32) * 255.0) as u8,
-                                        );
-                                        egui::Button::new("")
-                                            .small()
-                                            .rounding(0.0)
-                                            .fill(color)
-                                            .ui(ui);
-                                    }
-                                });
-                                ui.end_row();
-                            }
-                        });
-                });
-
-                ui.collapsing("Actual GPU memory", |ui| {
-                    egui::Grid::new("allocations")
-                        .min_col_width(0f32)
-                        .max_col_width(400f32)
-                        .striped(true)
-                        .show(ui, |ui| {
-                            let allocs = settings.allocation_count();
-                            let sub_allocation = settings.sub_allocation_count();
-
-                            for allocation in 0..allocs {
-                                ui.horizontal(|ui| {
-                                    ui.style_mut().spacing.item_spacing.x = 0.0;
-
-                                    for x in 0..128 {
-                                        let mut color = 0.0f32;
-                                        let div = sub_allocation / 128;
-                                        for sub in 0..(sub_allocation / 128) {
-                                            color += if allocations[allocation][sub + x * div]
-                                                != u32::MAX
-                                            {
-                                                1.0
-                                            } else {
-                                                0.0
-                                            };
-                                        }
-
-                                        let color = egui::Color32::from_gray(
-                                            ((color / div as f32) * 255.0) as u8,
-                                        );
-                                        egui::Button::new("")
-                                            .small()
-                                            .rounding(0.0)
-                                            .fill(color)
-                                            .ui(ui);
-                                    }
-                                    ui.end_row();
-                                });
-                                ui.end_row();
-                            }
-                        });
-                });
-
-                ui.collapsing("Error Difference (CPU, GPU)", |ui| {
-                    egui::Grid::new("allocations")
-                        .min_col_width(0f32)
-                        .max_col_width(400f32)
-                        .striped(true)
-                        .show(ui, |ui| {
-                            let allocs = settings.allocation_count();
-                            let sub_allocation = settings.sub_allocation_count();
-
-                            for allocation in 0..allocs {
-                                ui.horizontal(|ui| {
-                                    ui.style_mut().spacing.item_spacing.x = 0.0;
-
-                                    for x in 0..128 {
-                                        let mut color = 0.0f32;
-                                        let div = sub_allocation / 128;
-                                        for sub in 0..(sub_allocation / 128) {
-                                            let gpu =
-                                                allocations[allocation][sub + x * div] != u32::MAX;
-                                            let cpu = bitsets[allocation].get(sub + x * div);
-                                            color += if gpu ^ cpu { 1.0 } else { 0.0 };
-                                        }
-
-                                        let color = egui::Color32::from_rgb(
-                                            ((color / div as f32) * 255.0) as u8,
-                                            0,
-                                            0,
-                                        );
-                                        egui::Button::new("")
-                                            .small()
-                                            .rounding(0.0)
-                                            .fill(color)
-                                            .ui(ui);
-                                    }
-                                    ui.end_row();
-                                });
-                                ui.end_row();
-                            }
-                        });
-                });
-
-                ui.collapsing("Alloc Reason (GPU)", |ui| {
-                    ui.label("Green = Vertices");
-                    ui.label("Red = Triangles");
-
-                    egui::Grid::new("reason")
-                        .min_col_width(0f32)
-                        .max_col_width(400f32)
-                        .striped(true)
-                        .show(ui, |ui| {
-                            let allocs = settings.allocation_count();
-                            let sub_allocation = settings.sub_allocation_count();
-
-                            for allocation in 0..allocs {
-                                ui.horizontal(|ui| {
-                                    ui.style_mut().spacing.item_spacing.x = 0.0;
-
-                                    for x in 0..128 {
-                                        let mut color = 0.0f32;
-                                        let div = sub_allocation / 128;
-                                        let mut c = 0;
-                                        for sub in 0..(sub_allocation / 128) {
-                                            let reason = allocations[allocation][sub + x * div];
-
-                                            if reason == 1 {
-                                                color -= 1.0;
-                                                c += 1;
-                                            } else if reason == 2 {
-                                                color += 1.0;
-                                                c += 1;
-                                            }
-                                        }
-
-                                        let color = if c > 0 {
-                                            let mix = (color / c as f32) * 0.5 + 0.5;
-                                            let red = vek::Rgba::red();
-                                            let green = vek::Rgba::green();
-                                            let color = vek::Rgba::<f32>::lerp(red, green, mix);
-                                            let color = color.map(|x| (x * 255.0) as u8);
-                                            egui::Color32::from_rgb(color.r, color.g, color.b)
-                                        } else {
-                                            egui::Color32::WHITE
-                                        };
-
-                                        egui::Button::new("")
-                                            .small()
-                                            .rounding(0.0)
-                                            .fill(color)
-                                            .ui(ui);
-                                    }
-                                    ui.end_row();
-                                });
-                                ui.end_row();
-                            }
-                        });
-                });
-            });
     }
 
     // Camera controller settings
@@ -625,7 +430,7 @@ fn update(world: &mut World) {
                     .striped(true)
                     .show(ui, |ui| {
                         for (i, value) in shadowmapping.percents.iter_mut().enumerate() {
-                            ui.label(format!("Cascase: {i}"));
+                            ui.label(format!("Cascade: {i}"));
                             ui.add(egui::DragValue::new(value).max_decimals(6));
                             ui.end_row();
                         }
@@ -753,7 +558,7 @@ fn update(world: &mut World) {
     }
 
     // Physics stats
-    if let Ok(physics) = world.get::<Physics>() {
+    if let Ok(mut physics) = world.get_mut::<Physics>() {
         let rigidbodies = scene.query::<&RigidBody>();
         let max = rigidbodies.len();
         let sleeping = rigidbodies.into_iter().filter(|x| x.is_sleeping()).count();
@@ -767,6 +572,7 @@ fn update(world: &mut World) {
                     "Total number of rigid-bodies: {}",
                     max
                 ));
+                
                 ui.label(format!(
                     "Number of sleeping rigid-bodies: {}",
                     sleeping

@@ -37,7 +37,8 @@ pub struct ChunkManager {
 
     // Octree used for chunk generation
     pub(crate) octree: Octree,
-    pub lod_multiplier: Rc<RefCell<f32>>,
+    pub lod_multipliers: Rc<RefCell<Vec<f32>>>,
+    pub min_lod_distance: Rc<RefCell<f32>>,
     pub(crate) entities: AHashMap<Node, Entity>,
 
     // Single entity that contains multiple meshes that represent the terrain
@@ -141,17 +142,25 @@ impl ChunkManager {
 
         // Custom octree heuristic
         let size = settings.size;
-        let lod_multiplier = settings.lod_multiplier.clone();
+        let lod_multiplier = settings.lod_multipliers.clone();
+        let min_lod_distance = settings.min_lod_distance.clone();
         let heuristic = math::OctreeHeuristic::Boxed(Box::new(move |target, node| {
             let div = (node.size() / size).next_power_of_two();
+
+            let multiplier = lod_multiplier.borrow()[node.depth() as usize];
 
             math::aabb_sphere(
                 &node.aabb(),
                 &math::Sphere {
                     center: *target,
-                    radius: (size as f32 * div as f32 * *lod_multiplier.borrow() * 0.5),
+                    radius: (size as f32 * div as f32 * multiplier * 0.5),
                 },
-            ) || node.depth() <= 2
+            ) || math::aabb_sphere(
+                &node.aabb(),
+                &math::Sphere {
+                center: *target,
+                radius: *min_lod_distance.borrow(),
+            })
         }));
 
         // Create an octree for LOD chunk generation
@@ -169,7 +178,8 @@ impl ChunkManager {
             layered_normal_map,
             layered_mask_map,
             chunks_per_allocation: 0,
-            lod_multiplier: settings.lod_multiplier.clone(),
+            min_lod_distance: settings.min_lod_distance.clone(),
+            lod_multipliers: settings.lod_multipliers.clone(),
         }
     }
 }

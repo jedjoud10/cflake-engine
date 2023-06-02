@@ -535,38 +535,18 @@ impl Asset for Mesh {
             triangles,
         );
 
-        // Optimize mesh if we need to
-        {
-            #[derive(Pod, Zeroable, Copy, Clone)]
-            #[repr(C)]
-            struct PosWrapper(vek::Vec4<f32>);
-            impl meshopt::DecodePosition for PosWrapper {
-                fn decode_position(&self) -> [f32; 3] {
-                    [self.0.x, self.0.y, self.0.z]
-                }
-            } 
-            let positions = positions.as_mut().unwrap();
-            let vertex_count = positions.len();
-            let indices: &mut [u32] = bytemuck::cast_slice_mut(triangles);
-            let vertices = bytemuck::cast_slice_mut::<vek::Vec4<f32>, PosWrapper>(*positions);
-
-            if settings.optimize_vertex_cache {
-                // Oopsies!! This is supposed to take a mutable slice!! I LOVE POTENTIAL UB!!!
-                meshopt::optimize_vertex_cache_in_place(&indices, vertex_count);
-
-                if settings.optimize_overdraw {
-                    meshopt::optimize_overdraw_in_place_decoder(indices, vertices, 1.05f32);
-                }
-            }
-
-            //let out = meshopt::simplify_sloppy_decoder(indices, vertices, 1000);
-
-            if settings.optimize_vertex_fetch {
-                //meshopt::optimize_vertex_fetch_in_place(indices, vertices);
-            }
-        }
-
-        
+        // Optimize the mesh after we load it
+        let triangles = bytemuck::cast_slice_mut(&mut indices);
+        super::optimize(
+            settings.optimize_vertex_cache,
+            settings.optimize_vertex_fetch,
+            settings.optimize_overdraw,
+            &mut positions,
+            &mut normals,
+            &mut tangents,
+            &mut tex_coords,
+            triangles,
+        );
 
         log::debug!(
             "Loaded {} position vertices",
