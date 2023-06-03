@@ -136,7 +136,7 @@ impl MemoryManager {
             .map(|_| {
                 let value = AttributeBuffer::<attributes::Position>::zeroed(
                     graphics,
-                    settings.output_tex_coord_buffer_length,
+                    settings.output_vertex_buffer_length,
                     BufferMode::Dynamic,
                     BufferUsage::STORAGE,
                 )
@@ -198,7 +198,7 @@ impl MemoryManager {
 
         // Sizes of the temp and perm buffers
         compiler.use_constant(0, settings.size);
-        compiler.use_constant(1, settings.output_tex_coord_buffer_length as u32);
+        compiler.use_constant(1, settings.output_vertex_buffer_length as u32);
         compiler.use_constant(2, settings.output_triangle_buffer_length as u32);
 
         // Temporary buffers

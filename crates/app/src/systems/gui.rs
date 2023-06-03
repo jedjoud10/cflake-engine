@@ -435,6 +435,44 @@ fn update(world: &mut World) {
                             ui.end_row();
                         }
                     });
+
+                ui.heading("Shadow Parameters");
+
+                ui.horizontal(|ui| {
+                    ui.label("Strengh: ");
+                    let value = &mut shadowmapping.parameters.strength;
+                    ui.add(egui::Slider::new(value, 0.05f32..=1f32));
+                });
+
+                ui.horizontal(|ui| {
+                    ui.label("Spread: ");
+                    let value = &mut shadowmapping.parameters.spread;
+                    ui.add(egui::Slider::new(value, 0.05f32..=1f32));
+                });
+
+                ui.horizontal(|ui| {
+                    ui.label("Base Bias: ");
+                    let value = &mut shadowmapping.parameters.base_bias;
+                    ui.add(egui::Slider::new(value, -0.001f32..=0.001f32));
+                });
+
+                ui.horizontal(|ui| {
+                    ui.label("Bias Bias: ");
+                    let value = &mut shadowmapping.parameters.bias_bias;
+                    ui.add(egui::Slider::new(value, -0.001f32..=0.001f32));
+                });
+
+                ui.horizontal(|ui| {
+                    ui.label("Bias Factor Base: ");
+                    let value = &mut shadowmapping.parameters.bias_factor_base;
+                    ui.add(egui::Slider::new(value, 0.1f32..=3.0f32));
+                });
+
+                ui.horizontal(|ui| {
+                    ui.label("Normal Offset: ");
+                    let value = &mut shadowmapping.parameters.normal_offset;
+                    ui.add(egui::Slider::new(value, -2.0f32..=2.0f32));
+                });
             });
     }
 

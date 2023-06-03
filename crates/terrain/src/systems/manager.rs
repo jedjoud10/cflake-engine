@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use crate::{
     Chunk, ChunkState, ChunkViewer, Terrain,
 };
@@ -51,7 +53,7 @@ fn update(world: &mut World) {
     let mut added = false;
     let new = **viewer_position;
     if manager.viewer.is_none() {
-        manager.viewer = Some((*entity, new, **viewer_rotation));
+        manager.viewer = Some((*entity, new, **viewer_rotation, Instant::now()));
         added = true;
     }
 
@@ -65,7 +67,11 @@ fn update(world: &mut World) {
     // Check if it moved since last frame
     if added || count == 0 {
         // Update the old chunk viewer position value
-        if let Some((_, val, _)) = manager.viewer.as_mut() {
+        if let Some((_, val, _, last)) = manager.viewer.as_mut() {
+            if *val != new {
+                *last = Instant::now();
+            }
+            
             *val = new;
         }
 

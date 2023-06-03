@@ -6,11 +6,11 @@ use rendering::{
 use assets::Assets;
 
 use graphics::{
-    BindGroup, Compiler, FragmentModule, GpuPod, Graphics, LayeredTexture2D, Shader, StorageAccess, VertexModule, PrimitiveConfig, WindingOrder, PushConstantLayout, ModuleVisibility,
+    BindGroup, Compiler, FragmentModule, GpuPod, Graphics, LayeredTexture2D, Shader, StorageAccess, VertexModule, PrimitiveConfig, WindingOrder, PushConstantLayout, ModuleVisibility, XY, Vertex, DrawIndexedIndirect, DrawIndexedIndirectBuffer,
 };
 use utils::{Storage, Time};
 
-use crate::{Terrain, TerrainSettings};
+use crate::{Terrain, TerrainSettings, Vertices, Triangles};
 
 // Type aliases for layered textures
 pub type LayeredAlbedoMap = LayeredTexture2D<AlbedoTexel>;
@@ -29,7 +29,9 @@ impl Material for TerrainMaterial {
         world::Read<'w, Storage<LayeredNormalMap>>,
         world::Read<'w, Storage<LayeredMaskMap>>,
         world::Read<'w, Terrain>,
-        world::Read<'w, Time>,
+        world::Read<'w, Storage<Vertices>>,
+        world::Read<'w, Storage<Triangles>>,
+        world::Read<'w, Storage<DrawIndexedIndirectBuffer>>,
         usize,
     );
 
@@ -76,8 +78,17 @@ impl Material for TerrainMaterial {
                 // Multi-draw indirect youpieee
                 compiler.use_storage_buffer::<vek::Vec4<vek::Vec4<f32>>>(
                     "position_scale_buffer",
-                StorageAccess::ReadOnly,
+                  StorageAccess::ReadOnly,
                 );
+
+                compiler.use_storage_buffer::<<XY<f32> as Vertex>::Storage>(
+                    "input_vertices",
+                    StorageAccess::ReadOnly,
+                );
+                compiler.use_storage_buffer::<u32>("input_triangles", StorageAccess::ReadOnly);
+                compiler.use_storage_buffer::<DrawIndexedIndirect>("indirect", StorageAccess::ReadOnly);
+                compiler.use_constant(1, settings.output_vertex_buffer_length as u32);
+                compiler.use_constant(2, settings.output_triangle_buffer_length as u32);
 
                 // Compile the modules into a shader
                 Some(Shader::new(vert, frag, &compiler).unwrap())
@@ -134,14 +145,18 @@ impl Material for TerrainMaterial {
         let albedo_maps = world.get::<Storage<LayeredAlbedoMap>>().unwrap();
         let normal_maps = world.get::<Storage<LayeredNormalMap>>().unwrap();
         let mask_maps = world.get::<Storage<LayeredMaskMap>>().unwrap();
-        let time: world::Read<Time> = world.get::<Time>().unwrap();
+        let vertices = world.get::<Storage<Vertices>>().unwrap();
+        let triangles = world.get::<Storage<Triangles>>().unwrap();
+        let indirect = world.get::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
         let terrain = world.get::<Terrain>().unwrap();
         (
             albedo_maps,
             normal_maps,
             mask_maps,
             terrain,
-            time,
+            vertices,
+            triangles,
+            indirect,
             0,
         )
     }
@@ -152,7 +167,11 @@ impl Material for TerrainMaterial {
         group: &mut BindGroup<'r>,
         default: &DefaultMaterialResources<'r>,
     ) {
-        let (albedo_maps, normal_maps, mask_maps, terrain, _time, _) = resources;
+        let (albedo_maps,
+            normal_maps,
+            mask_maps,
+            terrain,
+            ..) = resources;
 
         // Set the sub-material textures
         if P::is_deferred_pass() {
@@ -194,7 +213,7 @@ impl Material for TerrainMaterial {
         _query: &Self::Query<'w>,
         group: &mut BindGroup<'r>,
     ) {
-        let (.., terrain, _, index) = resources;
+        let (.., terrain, vertices, triangles, indirect, index) = resources;
 
         // Set the storage buffer that contains ALL the matrices
         group
@@ -204,6 +223,37 @@ impl Material for TerrainMaterial {
                 ..,
             )
             .unwrap();
+
+        // Pass vertex and triangles as storage buffers
+        if P::is_deferred_pass() {
+            let triangles = triangles.get(&terrain.memory.shared_triangle_buffers[*index]);
+            let vertices = vertices.get(&terrain.memory.shared_positions_buffers[*index]);
+            let indirect = indirect.get(&terrain.memory.culled_indexed_indirect_buffers[*index]);
+            
+            group
+                .set_storage_buffer(
+                    "input_triangles",
+                    &triangles,
+                    ..,
+                )
+                .unwrap();
+
+            group
+                .set_storage_buffer(
+                    "input_vertices",
+                    &vertices,
+                    ..,
+                )
+                .unwrap();
+
+            group
+                .set_storage_buffer(
+                    "indirect",
+                    &indirect,
+                    ..,
+                )
+                .unwrap();
+        }
 
         // Increment the index (aka the allocation index)
         *index += 1;

@@ -6,7 +6,7 @@
 #include <engine/shaders/noises/fbm.glsl>
 
 // Main voxel function that will create the shape of the terrain
-float voxel(vec3 position) {
-    float first = (1 - fbmCellular(position * 0.002, int(2.0), 0.5, 2.1).y) * 600 + position.y;
+float voxel(vec3 position, out uint material) {
+    float first = (1 - fbmCellular(position * 0.001, int(4.0), 0.5, 2.1).y) * 1000 + position.y;
     return first;
 }

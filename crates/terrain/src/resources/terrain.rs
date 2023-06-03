@@ -32,7 +32,7 @@ pub struct TerrainSettings {
 
     // Vertices and triangles per allocation
     pub(crate) output_triangle_buffer_length: usize,
-    pub(crate) output_tex_coord_buffer_length: usize,
+    pub(crate) output_vertex_buffer_length: usize,
 
     // Vertices and triangles per sub allocation
     pub(crate) vertices_per_sub_allocation: u32,
@@ -98,6 +98,8 @@ impl TerrainSettings {
         let triangles_per_sub_allocation =
             (triangle_sub_allocations_length.floor() as u32).next_power_of_two();
 
+        let lod_multipliers = vec![1f32, 1.1, 1.3, 0.9, 0.9, 1.2, 0.2, 0.0];
+
         Ok(Self {
             size: resolution,
             blocky,
@@ -105,13 +107,13 @@ impl TerrainSettings {
             allocation_count: allocations,
             sub_allocation_count: sub_allocations,
             output_triangle_buffer_length,
-            output_tex_coord_buffer_length: output_vertex_buffer_length,
+            output_vertex_buffer_length,
             vertices_per_sub_allocation,
             triangles_per_sub_allocation,
             sub_materials: sub_materials.map(|x| x.to_vec()),
             max_depth,
             min_lod_distance: Rc::new(RefCell::new(min_lod_distance)),
-            lod_multipliers: Rc::new(RefCell::new(vec![lod_multiplier; max_depth as usize + 1])),
+            lod_multipliers: Rc::new(RefCell::new(lod_multipliers)),
         })
     }
 

@@ -283,6 +283,7 @@ fn render(world: &mut World) {
     // Update the shadow map lightspace matrix
     let shadowmap = &mut *_shadowmap;
     let index = (time.frame_count() as u32) % 4;
+    let index = 0;
     default.lightspace = Some(shadowmap.update(
         *directional_light_rotation,
         camera_view,

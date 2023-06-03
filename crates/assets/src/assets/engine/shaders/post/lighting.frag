@@ -48,6 +48,10 @@ layout(set = 0, binding = 3) uniform sampler environment_map_sampler;
 layout(set = 0, binding = 4) uniform ShadowUniform {
     float strength;
     float spread;
+	float base_bias;
+	float bias_bias;
+	float bias_factor_base;
+	float normal_offset;
 } shadow_parameters;
 
 // Contains all the lightspace matrices for each cascade
@@ -107,18 +111,18 @@ float calculate_shadowed(
     // Taken from a comment by Octavius Ace from the same learn OpenGL website 
     vec4 res = step(cascade_plane_distances.distances, vec4(depth));
     uint layer = uint(res.x + res.y + res.z + res.w);
-    //uint layer = 0;
+    layer = 0;
 
     // Get the proper lightspace matrix that we will use
     mat4 lightspace = shadow_lightspace_matrices.matrices[layer];
     
     // Transform the world coordinates to NDC coordinates 
     float perpendicularity = pow(1 - abs(dot(normal, light_dir)), 2) * 2;
-    vec4 ndc = lightspace * vec4(position + normal * perpendicularity * 0.08, 1.0); 
-    float factor = pow(1.55, layer*4);
-    float bias = -0.0002;
+    vec4 ndc = lightspace * vec4(position + normal * perpendicularity * shadow_parameters.normal_offset, 1.0); 
+    float factor = pow(shadow_parameters.bias_factor_base, layer*4);
+    float bias = shadow_parameters.base_bias;
     bias *= factor;
-	bias -= 0.0002;
+	bias -= shadow_parameters.bias_bias;
 
     // Project the world point into uv coordinates to read from
     vec3 uvs = ndc.xyz / ndc.w;
@@ -129,7 +133,16 @@ float calculate_shadowed(
 
     // Get texture size
     uint size = uint(textureSize(shadow_map, 0).x);
-    return sample_shadow_texel(layer, ivec2(uvs.xy * size), current + bias);
+	float shadowed = 0.0;
+
+	for (int x = -1; x <= 1; x++) {
+		for (int y = -1; y <= 1; y++) {
+			vec2 offset = vec2(x, y) / size;
+			shadowed += shadow_linear(layer, uvs.xy + shadow_parameters.spread * offset * 2.0, size, current + bias);
+		}
+	}
+
+    return (shadowed / 9) * shadow_parameters.strength;
 }
 
 // UBO that contains the current monitor/window information
@@ -244,12 +257,13 @@ vec3 brdf(
 	// TODO: This is wrong for some reason?
 	vec3 brdf = kd * (surface.diffuse / PI) + specular(surface.f0, surface.roughness, camera.view, light.backward, surface.normal, camera.half_view) * (1-shadowed);
 	vec3 lighting = vec3(max(dot(light.backward, surface.normal), 0.0)) * (1-shadowed);
-	lighting += (0.1 + ambient * 0.3) * surface.visibility;
+	lighting += (0.01 + ambient * 0.1) * surface.visibility;
 
 	// TODO: IBL
 	brdf = brdf * lighting * light.color;
 	return brdf;
 }
+
 
 void main() {
     // Fetch G-Buffer values
@@ -260,6 +274,7 @@ void main() {
     vec3 normal = texelFetch(gbuffer_normal_map, ivec2(gl_FragCoord.xy), 0).rgb;
     vec3 mask = texelFetch(gbuffer_mask_map, ivec2(gl_FragCoord.xy), 0).rgb;
 	float non_linear_depth = texelFetch(depth_map, ivec2(gl_FragCoord.xy), 0).r;
+	vec3 surface_normal = normalize(cross(dFdy(position), dFdx(position)));
 
 	// Get the scaled down coordinates
 	float x = gl_FragCoord.x / float(window.width);
@@ -269,6 +284,7 @@ void main() {
 	vec2 coords = vec2(x, y);
 
 	vec3 color = vec3(0);
+
 	if (alpha == 1.0) {
 		float roughness = clamp(mask.g, 0.02, 1.0);
 		float metallic = clamp(mask.b, 0.01, 1.0);
@@ -277,19 +293,20 @@ void main() {
 
 		// Create the data structs
 		SunData sun = SunData(-scene.sun_direction.xyz, scene.sun_color.rgb);
-		SurfaceData surface = SurfaceData(albedo, normalize(normal), normal, position, roughness, metallic, visibility, f0);
+		SurfaceData surface = SurfaceData(albedo, normalize(normal), surface_normal, position, roughness, metallic, visibility, f0);
 		vec3 view = normalize(camera.position.xyz - position);
 		CameraData camera = CameraData(view, normalize(view - scene.sun_direction.xyz), camera.position.xyz, camera.view, camera.projection);
 
 		// Check if the fragment is shadowed
 		color = brdf(surface, camera, sun);
 	} else {
-		/*
-		TODO: Fix this
-		vec3 test = normalize(vec3(x * 2 - 1, y * 2 - 1, 1));
-		vec3 new = (inverse(camera.projection) * vec4(test, 0)).xyz;
-		color = max(new, vec3(0));
-		*/
+		// Note: This took me too much fucking time to figure out 
+		vec3 dir = vec3(x * 2 - 1, -(y * 2 - 1), 1.0);
+		dir = (inverse(camera.projection) * vec4(dir, 0)).xyz;
+		dir.z = -1;
+		dir = (inverse(camera.view) * vec4(dir, 0)).xyz;
+		dir = normalize(dir);
+		color = calculate_sky_color(dir, scene.sun_direction.xyz);
 	}
     
     

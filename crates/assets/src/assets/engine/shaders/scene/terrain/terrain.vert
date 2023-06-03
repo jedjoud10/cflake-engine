@@ -8,15 +8,12 @@ layout(location = 0) in vec4 packed;
 
 // Camera bind group buffer (creates a 'camera' object)
 #include <engine/shaders/common/camera.glsl>
-#include <engine/shaders/noises/noise3D.glsl>
-#include <engine/shaders/common/packer.glsl>
 
 // Data to give to the fragment shader
 layout(location = 0) out vec3 m_position;
 layout(location = 1) out vec3 m_local_position;
 layout(location = 2) out vec3 m_normal;
-layout(location = 3) out float lod;
-layout(location = 4) out flat uint skirts; 
+layout(location = 3) out flat uint draw; 
 
 // Contains position and scale value
 layout(std430, set = 2, binding = 0) readonly buffer PositionScaleBuffer {
@@ -38,12 +35,10 @@ void main() {
 
 	// Model space -> World space -> Clip space
     vec4 position_scale = position_scale_buffer.data[gl_DrawID];
+    draw = gl_DrawID;
     vec4 world_pos = vec4(((position.xyz * scaling_factor) * position_scale.w + position_scale.xyz), 1);
     vec4 projected = (camera.projection * camera.view) * world_pos; 
     gl_Position = projected;
-    lod = position_scale.w;
-
-    skirts = floatBitsToUint(packed.w);
     
     // Set the output variables
     m_position = world_pos.xyz;

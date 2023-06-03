@@ -35,6 +35,7 @@ pub struct ShadowMapping {
     pub depth: f32,
 
     // Contains shadow parameters
+    pub parameters: ShadowUniform,
     pub parameter_buffer: UniformBuffer<ShadowUniform>,
 
     // Contains the light space shadow matrices
@@ -50,6 +51,10 @@ pub struct ShadowMapping {
 pub struct ShadowUniform {
     pub strength: f32,
     pub spread: f32,
+    pub base_bias: f32,
+	pub bias_bias: f32,
+	pub bias_factor_base: f32,
+	pub normal_offset: f32,
 }
 
 impl ShadowMapping {
@@ -83,13 +88,19 @@ impl ShadowMapping {
         )
         .unwrap();
 
+        let parameters = ShadowUniform {
+            strength: 1.0,
+            spread: 0.01,
+            base_bias: -0.0002,
+            bias_bias: 0.0006,
+            bias_factor_base: 1.55,
+            normal_offset: 0.09,
+        };
+
         // Create a buffer that will contain shadow parameters
         let parameter_buffer = UniformBuffer::from_slice(
             graphics,
-            &[ShadowUniform {
-                strength: 1.0,
-                spread: 0.01,
-            }],
+            &[parameters],
             BufferMode::Dynamic,
             BufferUsage::WRITE,
         )
@@ -118,19 +129,8 @@ impl ShadowMapping {
             depth,
             percents,
             cascade_distances,
+            parameters,
         }
-    }
-
-    // Update the cascade distance percentages
-    pub fn set_cascade_distances(&mut self, distances: [f32; 4]) {
-        self.percents = distances;
-    }
-
-    // Set the shadow uniform that is stored within the shadow map
-    pub fn set_shadow_uniform(&mut self, strength: f32, spread: f32) {
-        self.parameter_buffer
-            .write(&[ShadowUniform { strength, spread }], 0)
-            .unwrap();
     }
 
     // Update the rotation of the sun shadows using a new rotation
@@ -146,6 +146,7 @@ impl ShadowMapping {
         camera_far_plane: f32,
         i: usize,
     ) -> vek::Mat4<f32> {
+        /*
         // Update the projection matrix' far and near planes
         let near = self
             .percents
@@ -219,6 +220,36 @@ impl ShadowMapping {
         // Update the internally stored buffer
         self.lightspace_buffer.write(&[lightspace.cols], i).unwrap();
         self.cascade_distances.write(&[far], i).unwrap();
+        lightspace
+        */
+
+        let frustum = FrustumPlanes::<f32> {
+            left: -200.0,
+            right: 200.0,
+            bottom: -200.0,
+            top: 200.0,
+            near: -self.depth,
+            far: self.depth,
+        };
+
+        
+        // Calculate a new view matrix and set it
+        let rot = vek::Mat4::from(rotation);
+
+        // Calculate light view matrix
+        let view = vek::Mat4::<f32>::look_at_rh(
+            vek::Vec3::zero(),
+            rot.mul_point(-vek::Vec3::unit_z()),
+            rot.mul_point(-vek::Vec3::unit_y()),
+        );
+
+        // Create the projection matrix (orthographic)
+        let projection = vek::Mat4::orthographic_rh_zo(frustum);
+
+        // Calculate light skin rizz (real) (I have gone insane)
+        let lightspace = projection * view;
+        self.lightspace_buffer.write(&[lightspace.cols], i).unwrap();
+        self.parameter_buffer.write(&[self.parameters], 0).unwrap();
         lightspace
     }
 }

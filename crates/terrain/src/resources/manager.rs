@@ -1,6 +1,6 @@
 
 
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, rc::Rc, time::Instant};
 
 use ahash::{AHashMap};
 use assets::{Assets, AsyncHandle};
@@ -45,8 +45,8 @@ pub struct ChunkManager {
     pub(crate) global_draw_entity: Entity,
     pub(crate) chunks_per_allocation: usize,
 
-    // Viewer (camera) position
-    pub(crate) viewer: Option<(Entity, vek::Vec3<f32>, vek::Quaternion<f32>)>,
+    // Viewer (camera) position and last instant when it moved
+    pub(crate) viewer: Option<(Entity, vek::Vec3<f32>, vek::Quaternion<f32>, Instant)>,
 }
 
 impl ChunkManager {
