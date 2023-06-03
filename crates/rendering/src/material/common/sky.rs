@@ -22,6 +22,10 @@ impl Material for SkyMaterial {
 
     // Load the respective Sky shader modules and compile them
     fn shader<P: Pass>(_settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Option<Shader> {
+        if P::is_shadow_pass() {
+            return None
+        }
+
         // Load the vertex module from the assets
         let vert = assets
             .load::<VertexModule>("engine/shaders/scene/sky/sky.vert")

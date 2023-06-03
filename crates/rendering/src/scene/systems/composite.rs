@@ -1,4 +1,4 @@
-use crate::{Compositor, DeferredRenderer, PostProcessUniform};
+use crate::{Compositor, DeferredRenderer, PostProcessUniform, ShadowMap, ShadowMapping};
 use assets::Assets;
 
 use graphics::{ActivePipeline, Graphics, Texture, Window};
@@ -22,6 +22,7 @@ fn update(world: &mut World) {
     let renderer = world.get::<DeferredRenderer>().unwrap();
     let mut compositor = world.get_mut::<Compositor>().unwrap();
     let mut window = world.get_mut::<Window>().unwrap();
+    let shadow = world.get::<ShadowMapping>().unwrap();
 
     // Write the post process settings to the buffer
     let value = compositor.post_process;
@@ -58,7 +59,19 @@ fn update(world: &mut World) {
                 .unwrap();
             group
                 .set_uniform_buffer("post_processing", &compositor.post_process_buffer, ..)
-                .unwrap()
+                .unwrap();
+            group
+                .set_uniform_buffer("shadow_parameters", &shadow.parameter_buffer, ..)
+                .unwrap();
+            group
+                .set_uniform_buffer("shadow_lightspace_matrices", &shadow.lightspace_buffer, ..)
+                .unwrap();
+            group
+                .set_uniform_buffer("cascade_plane_distances", &shadow.cascade_distances, ..)
+                .unwrap();
+            group
+                .set_sampled_texture("shadow_map", &shadow.depth_tex)
+                .unwrap();
         })
         .unwrap();
 

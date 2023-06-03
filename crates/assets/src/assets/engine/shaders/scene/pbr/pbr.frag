@@ -63,7 +63,7 @@ void main() {
 
 	// Set the G-buffer values
 	gbuffer_position = vec4(m_position, 0);
-	gbuffer_albedo = vec4(albedo, 0);
+	gbuffer_albedo = vec4(albedo, 1);
 	gbuffer_normal = vec4(normal, 0);
 	gbuffer_mask = vec4(mask, 0);
 }

@@ -41,38 +41,59 @@ impl Material for PbrMaterial {
 
     // Load the respective PBR shader modules and compile them
     fn shader<P: Pass>(_settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Option<Shader> {
-        // Load the vertex module from the assets
-        let vert = assets
-            .load::<VertexModule>("engine/shaders/scene/pbr/pbr.vert")
-            .unwrap();
+        match P::pass_type() {
+            crate::PassType::Deferred => {
+                // Load the vertex module from the assets
+                let vert = assets
+                    .load::<VertexModule>("engine/shaders/scene/pbr/pbr.vert")
+                    .unwrap();
 
-        // Load the fragment module from the assets
-        let frag = assets
-            .load::<FragmentModule>("engine/shaders/scene/pbr/pbr.frag")
-            .unwrap();
+                // Load the fragment module from the assets
+                let frag = assets
+                    .load::<FragmentModule>("engine/shaders/scene/pbr/pbr.frag")
+                    .unwrap();
 
-        // Define the type layouts for the UBOs
-        let mut compiler = Compiler::new(assets, graphics);
+                // Define the type layouts for the UBOs
+                let mut compiler = Compiler::new(assets, graphics);
 
-        // Set the UBO types that we will use
-        compiler.use_uniform_buffer::<CameraUniform>("camera");
+                // Set the UBO types that we will use
+                compiler.use_uniform_buffer::<CameraUniform>("camera");
 
-        // Define the types for the user textures
-        compiler.use_sampled_texture::<AlbedoMap>("albedo_map");
-        compiler.use_sampled_texture::<NormalMap>("normal_map");
-        compiler.use_sampled_texture::<MaskMap>("mask_map");
+                // Define the types for the user textures
+                compiler.use_sampled_texture::<AlbedoMap>("albedo_map");
+                compiler.use_sampled_texture::<NormalMap>("normal_map");
+                compiler.use_sampled_texture::<MaskMap>("mask_map");
 
-        // Define the push ranges used by push constants
-        compiler.use_push_constant_layout(
-            PushConstantLayout::split(
-                <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size(),
-                <vek::Rgba<f32> as GpuPod>::size() * 2 + <vek::Extent2<f32> as GpuPod>::size(),
-            )
-            .unwrap(),
-        );
+                // Define the push ranges used by push constants
+                compiler.use_push_constant_layout(
+                    PushConstantLayout::split(
+                        <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size(),
+                        <vek::Rgba<f32> as GpuPod>::size() * 2 + <vek::Extent2<f32> as GpuPod>::size(),
+                    )
+                    .unwrap(),
+                );
+            
+                // Compile the modules into a shader
+                Some(Shader::new(vert, frag, &compiler).unwrap())
+            },
+            crate::PassType::Shadow => {
+                let vert = assets
+                    .load::<VertexModule>("engine/shaders/scene/pbr/shadow.vert")
+                    .unwrap();
+                let frag = assets
+                    .load::<FragmentModule>("engine/shaders/common/empty.frag")
+                    .unwrap();
 
-        // Compile the modules into a shader
-        Some(Shader::new(vert, frag, &compiler).unwrap())
+                let mut compiler = Compiler::new(assets, graphics);
+                let layout = PushConstantLayout::vertex(<vek::Vec4<vek::Vec4<f32>> as GpuPod>::size() * 2).unwrap();
+                compiler.use_push_constant_layout(layout);
+            
+                // Compile the modules into a shader
+                Some(Shader::new(vert, frag, &compiler).unwrap())
+            },
+        }
+
+        
     }
 
     // Fetch the texture storages
@@ -101,6 +122,11 @@ impl Material for PbrMaterial {
         default: &DefaultMaterialResources<'r>,
         group: &mut BindGroup<'r>,
     ) {
+        // Only required for the deferred pass
+        if !P::is_deferred_pass() {
+            return;
+        }
+
         let (albedo_maps, normal_maps, mask_maps) = resources;
 
         // Get the albedo texture, and fallback to a white one
@@ -141,6 +167,19 @@ impl Material for PbrMaterial {
         let cols = matrix.cols;
         let bytes = GpuPod::into_bytes(&cols);
         constants.push(bytes, 0, ModuleVisibility::Vertex).unwrap();
+
+        // Set the shadow lightspace matrix
+        if P::is_shadow_pass() {
+            let lightspace = _default.lightspace.unwrap();
+            let offset = bytes.len();
+            let bytes = GpuPod::into_bytes(&lightspace.cols);
+            constants.push(bytes, offset as u32, ModuleVisibility::Vertex).unwrap();
+        }
+
+        // The rest is fragment data for the deferred pass
+        if !P::is_deferred_pass() {
+            return;
+        }
 
         // Convert the material parameters into a vec4
         let vector = vek::Vec4::new(

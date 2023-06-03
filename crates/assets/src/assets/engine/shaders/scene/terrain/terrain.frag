@@ -111,7 +111,7 @@ void main() {
 	#endif
 
 	gbuffer_position = vec4(m_position, 0);
-	gbuffer_albedo = vec4(albedo * (1 - float(skirts)), 0);
+	gbuffer_albedo = vec4(albedo, 1);
 	mask *= vec3(pow(mask.r, 1.2), 3.0, 0.3);
 	gbuffer_normal = vec4(normal, 0);
 	gbuffer_mask = vec4(mask, 0);

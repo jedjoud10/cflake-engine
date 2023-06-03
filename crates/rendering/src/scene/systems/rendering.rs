@@ -51,16 +51,14 @@ fn init(world: &mut World) {
         .register::<PbrMaterial>(&graphics, &assets)
         .unwrap();
 
-    /*
     // Create a nice shadow map
     let shadowmap = ShadowMapping::new(
         2000f32,
-        2048,
-        [0.003, 0.01, 0.02, 0.05],
+        4096,
+        [0.1, 0.25, 0.5, 1.0],
         &graphics,
         &mut assets,
     );
-    */
 
     // Drop fetched resources
     drop(graphics);
@@ -70,7 +68,7 @@ fn init(world: &mut World) {
     // Add composites and basic storages
     world.insert(renderer);
     world.insert(pipelines);
-    //world.insert(shadowmap);
+    world.insert(shadowmap);
 
     // Add mesh storages
     world.insert(meshes);
@@ -137,7 +135,7 @@ fn event(world: &mut World, event: &mut WindowEvent) {
 fn render(world: &mut World) {
     // Fetch the resources that we will use for rendering the scene
     let mut renderer = world.get_mut::<DeferredRenderer>().unwrap();
-    //let mut _shadowmap = world.get_mut::<ShadowMapping>().unwrap();
+    let mut _shadowmap = world.get_mut::<ShadowMapping>().unwrap();
     let renderer = &mut *renderer;
     let scene = world.get::<Scene>().unwrap();
     let pipelines = world.get::<Pipelines>().unwrap();
@@ -269,15 +267,52 @@ fn render(world: &mut World) {
         indirect_tex_coords: &indirect_tex_coords_attribute,
         indirect_triangles: &indirect_triangles,
         draw_indexed_indirect_buffers: &indexed_indirect_buffers,
+        lightspace: None,
+
+        /*
         drawn_unique_material_count: &mut renderer.drawn_unique_material_count,
         material_instances_count: &mut renderer.material_instances_count,
         rendered_direct_vertices_drawn: &mut renderer.rendered_direct_vertices_drawn,
         rendered_direct_triangles_drawn: &mut renderer.rendered_direct_triangles_drawn,
         culled_sub_surfaces: &mut renderer.culled_sub_surfaces,
         rendered_sub_surfaces: &mut renderer.rendered_sub_surfaces,
+        */
     };
     drop(scene);
 
+    // Update the shadow map lightspace matrix
+    let shadowmap = &mut *_shadowmap;
+    let index = (time.frame_count() as u32) % 4;
+    default.lightspace = Some(shadowmap.update(
+        *directional_light_rotation,
+        camera_view,
+        camera_projection,
+        *camera_position,
+        camera.near,
+        camera.far,
+        index as usize
+    ));
+
+    let mips = shadowmap.depth_tex.mips_mut();
+    let mut level = mips.level_mut(0).unwrap();
+
+    // Use layer as render target
+    let target = level.layer_as_render_target(index).unwrap();
+
+    // Create a new active shadowmap render pass
+    let mut render_pass = shadowmap.render_pass.begin((), target);
+
+    // Render the shadows first (fuck you)
+    for stored in pipelines.iter() {
+        stored.render_shadow(world, &mut default, &mut render_pass);
+    }
+
+    // Send the command encoder
+    drop(render_pass);
+    drop(level);
+    drop(mips);
+    drop(shadowmap);
+    drop(_shadowmap);
 
     // Begin the scene color render pass
     let gbuffer_position = renderer.gbuffer_position_texture  .as_render_target().unwrap();
@@ -289,6 +324,7 @@ fn render(world: &mut World) {
     let mut render_pass = renderer.deferred_render_pass.begin(gbuffer, depth);
 
     // This will iterate over each material pipeline and draw the scene
+    default.lightspace = None;
     for stored in pipelines.iter() {
         stored.render(world, &mut default, &mut render_pass);
     }

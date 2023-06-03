@@ -73,7 +73,7 @@ pub(crate) fn set_index_buffer_attribute<
 pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
     world: &'r World,
     pipeline: &'r RenderPipeline<P::C, P::DS>,
-    defaults: &mut DefaultMaterialResources<'r>,
+    defaults: &DefaultMaterialResources<'r>,
     render_pass: &mut ActiveRenderPass<'r, '_, P::C, P::DS>,
 ) {
     // Get a rasterizer for the current render pass by binding a pipeline

@@ -15,18 +15,14 @@ use vek::FrustumPlanes;
 use crate::MeshAttributes;
 
 // This is what will write to the depth texture
-pub type ShadowTexel = Depth<f32>;
-pub type ShadowMap = LayeredTexture2D<ShadowTexel>;
-pub type ShadowRenderPass = RenderPass<(), ShadowTexel>;
-pub type ShadowRenderPipeline = RenderPipeline<(), ShadowTexel>;
-pub type ActiveShadowRenderPipeline<'a, 'r, 't> = ActiveRenderPipeline<'a, 'r, 't, (), ShadowTexel>;
-pub type ActiveShadowRenderPass<'r, 't> = ActiveRenderPass<'r, 't, (), ShadowTexel>;
+pub type ShadowDepthLayout = Depth<f32>;
+pub type ShadowMap = LayeredTexture2D<ShadowDepthLayout>;
 
 // Directional shadow mapping for the main sun light
 // The shadows must be rendered before we render the main frame
 pub struct ShadowMapping {
     // Everything required to render to the depth texture
-    pub render_pass: ShadowRenderPass,
+    pub render_pass: RenderPass<(), ShadowDepthLayout>,
 
     // Multilayered shadow map texture
     pub depth_tex: ShadowMap,
@@ -66,7 +62,7 @@ impl ShadowMapping {
         assets: &mut Assets,
     ) -> Self {
         // Create the shadow map render pass
-        let render_pass = ShadowRenderPass::new(
+        let render_pass = RenderPass::<(), ShadowDepthLayout>::new(
             graphics,
             (),
             Operation {
@@ -225,35 +221,4 @@ impl ShadowMapping {
         self.cascade_distances.write(&[far], i).unwrap();
         lightspace
     }
-}
-
-// Create a shadow render pipeline from a shadow shader
-// This is called not only by the default shadowmap shader, but by materials that define their own shadow shader as well
-pub(crate) fn create_shadow_render_pipeline(
-    graphics: &Graphics,
-    shader: &Shader,
-    attributes: MeshAttributes,
-) -> ShadowRenderPipeline {
-    // Create the shadow map graphics pipeline
-    
-    ShadowRenderPipeline::new(
-        graphics,
-        Some(DepthConfig {
-            compare: CompareFunction::LessEqual,
-            write_enabled: true,
-            depth_bias_constant: 0,
-            depth_bias_slope_scale: 0.0,
-            depth_bias_clamp: 0.0,
-        }),
-        None,
-        None,
-        crate::attributes::enabled_to_vertex_config(attributes),
-        PrimitiveConfig::Triangles {
-            winding_order: WindingOrder::Ccw,
-            cull_face: Some(Face::Back),
-            wireframe: false,
-        },
-        shader,
-    )
-    .unwrap()
 }

@@ -55,6 +55,22 @@ impl PushConstantLayout {
         Some(Self::Single(size, visibility))
     }
 
+    // Create a push constant layout for a vertex module
+    pub fn vertex(size: usize) -> Option<Self> {
+        Self::single(size, ModuleVisibility::Vertex)
+    } 
+
+    // Create a push constant layout for a fragment module
+    pub fn fragment(size: usize) -> Option<Self> {
+        Self::single(size, ModuleVisibility::Fragment)
+    } 
+
+    // Create a push constant layout for a compute module
+    pub fn compute(size: usize) -> Option<Self> {
+        Self::single(size, ModuleVisibility::Compute)
+    }     
+
+
     // Create a push constant layout for split vertex / fragment modules
     pub fn split(vertex: usize, fragment: usize) -> Option<Self> {
         let vertex = NonZeroU32::new(vertex as u32)?;

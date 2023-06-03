@@ -67,7 +67,7 @@ pub trait Material: 'static + Sized + Sync + Send {
     fn set_surface_bindings<'r, 'w, P: Pass>(
         _renderer: &Renderer,
         _resources: &'r mut Self::Resources<'w>,
-        _default: &mut DefaultMaterialResources<'w>,
+        _default: &DefaultMaterialResources<'w>,
         _query: &Self::Query<'w>,
         _group: &mut BindGroup<'r>,
     ) {

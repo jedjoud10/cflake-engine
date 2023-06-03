@@ -431,7 +431,7 @@ fn update(world: &mut World) {
                     .show(ui, |ui| {
                         for (i, value) in shadowmapping.percents.iter_mut().enumerate() {
                             ui.label(format!("Cascade: {i}"));
-                            ui.add(egui::DragValue::new(value).max_decimals(6));
+                            ui.add(egui::Slider::new(value, 0.0..=1.0).max_decimals(6));
                             ui.end_row();
                         }
                     });

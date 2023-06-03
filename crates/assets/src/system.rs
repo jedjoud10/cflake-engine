@@ -12,18 +12,17 @@ fn init(world: &mut World) {
         };
     }
 
-    // Load the default math shaders
+
     internal!(loader, "engine/shaders/common/conversions.glsl");
     internal!(loader, "engine/shaders/common/dither.glsl");
     internal!(loader, "engine/shaders/common/packer.glsl");
     internal!(loader, "engine/shaders/common/quad.vert");
     internal!(loader, "engine/shaders/common/camera.glsl");
+    internal!(loader, "engine/shaders/common/empty.frag");
 
-    // Load the default SDF shaders
     internal!(loader, "engine/shaders/sdf/common.glsl");
     internal!(loader, "engine/shaders/sdf/operations.glsl");
 
-    // Load the default rendering shaders
     internal!(loader, "engine/shaders/scene/pbr/pbr.vert");
     internal!(loader, "engine/shaders/scene/pbr/pbr.frag");
 
@@ -32,10 +31,11 @@ fn init(world: &mut World) {
 
     internal!(loader, "engine/shaders/scene/terrain/terrain.vert");
     internal!(loader, "engine/shaders/scene/terrain/terrain.frag");
+
+    internal!(loader, "engine/shaders/scene/terrain/shadow.vert");
+    internal!(loader, "engine/shaders/scene/pbr/shadow.vert");
     /*
     TODO
-    internal!(loader, "engine/shaders/scene/shadow/shadow.frag");
-    internal!(loader, "engine/shaders/scene/shadow/shadow.vert");
     internal!(loader, "engine/shaders/scene/shadow/terrain.vert");
 
     internal!(loader, "engine/shaders/scene/wireframe/wireframe.vert");

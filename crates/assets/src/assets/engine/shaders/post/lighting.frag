@@ -44,7 +44,6 @@ layout(set = 0, binding = 2) uniform textureCube environment_map;
 layout(set = 0, binding = 3) uniform sampler environment_map_sampler;
 */
 
-/*
 // UBO set globally at the start of the frame
 layout(set = 0, binding = 4) uniform ShadowUniform {
     float strength;
@@ -63,7 +62,6 @@ layout(set = 0, binding = 6) uniform ShadowPlaneDistances {
 
 // Shadow-map texture map
 layout(set = 0, binding = 7) uniform texture2DArray shadow_map;
-
 
 // Sample a single shadow texel at the specified pixel coords
 float sample_shadow_texel(
@@ -106,21 +104,21 @@ float calculate_shadowed(
     vec3 light_dir,
     vec3 camera
 ) {
-    return 0.0;
-
     // Taken from a comment by Octavius Ace from the same learn OpenGL website 
     vec4 res = step(cascade_plane_distances.distances, vec4(depth));
     uint layer = uint(res.x + res.y + res.z + res.w);
-    
+    //uint layer = 0;
+
     // Get the proper lightspace matrix that we will use
     mat4 lightspace = shadow_lightspace_matrices.matrices[layer];
     
     // Transform the world coordinates to NDC coordinates 
     float perpendicularity = pow(1 - abs(dot(normal, light_dir)), 2) * 2;
     vec4 ndc = lightspace * vec4(position + normal * perpendicularity * 0.08, 1.0); 
-    float factor = pow(1.35, layer*4);
-    float bias = -0.00002;
+    float factor = pow(1.55, layer*4);
+    float bias = -0.0002;
     bias *= factor;
+	bias -= 0.0002;
 
     // Project the world point into uv coordinates to read from
     vec3 uvs = ndc.xyz / ndc.w;
@@ -131,10 +129,8 @@ float calculate_shadowed(
 
     // Get texture size
     uint size = uint(textureSize(shadow_map, 0).x);
-    return shadow_linear(layer, uvs.xy, size, current + bias);
+    return sample_shadow_texel(layer, ivec2(uvs.xy * size), current + bias);
 }
-
-*/
 
 // UBO that contains the current monitor/window information
 layout(set = 0, binding = 8) uniform WindowUniform {
@@ -243,14 +239,12 @@ vec3 brdf(
 
 	// Calculate if the pixel is shadowed
 	float depth = abs((camera.view_matrix * vec4(surface.position, 1)).z);
-	float shadowed = 0;
-    //float shadowed = calculate_shadowed(surface.position, depth, surface.surface_normal, light.backward, camera.position);	
-	//return vec3(shadowed);
+    float shadowed = calculate_shadowed(surface.position, depth, surface.surface_normal, light.backward, camera.position);	
 
 	// TODO: This is wrong for some reason?
 	vec3 brdf = kd * (surface.diffuse / PI) + specular(surface.f0, surface.roughness, camera.view, light.backward, surface.normal, camera.half_view) * (1-shadowed);
 	vec3 lighting = vec3(max(dot(light.backward, surface.normal), 0.0)) * (1-shadowed);
-	lighting += (0.3 + ambient * 0.5) * surface.visibility;
+	lighting += (0.1 + ambient * 0.3) * surface.visibility;
 
 	// TODO: IBL
 	brdf = brdf * lighting * light.color;
@@ -260,24 +254,44 @@ vec3 brdf(
 void main() {
     // Fetch G-Buffer values
 	vec3 position = texelFetch(gbuffer_position_map, ivec2(gl_FragCoord.xy), 0).rgb;
-	vec3 albedo = texelFetch(gbuffer_albedo_map, ivec2(gl_FragCoord.xy), 0).rgb;
+	vec4 albedo_alpha = texelFetch(gbuffer_albedo_map, ivec2(gl_FragCoord.xy), 0);
+	vec3 albedo = albedo_alpha.rgb;
+	float alpha = albedo_alpha.a;
     vec3 normal = texelFetch(gbuffer_normal_map, ivec2(gl_FragCoord.xy), 0).rgb;
     vec3 mask = texelFetch(gbuffer_mask_map, ivec2(gl_FragCoord.xy), 0).rgb;
 	float non_linear_depth = texelFetch(depth_map, ivec2(gl_FragCoord.xy), 0).r;
 
-    float roughness = clamp(mask.g, 0.02, 1.0);
-	float metallic = clamp(mask.b, 0.01, 1.0);
-	float visibility = clamp(mask.r, 0.0, 1.0);
-	vec3 f0 = mix(vec3(0.04), albedo, metallic);
+	// Get the scaled down coordinates
+	float x = gl_FragCoord.x / float(window.width);
+	float y = gl_FragCoord.y / float(window.height);
 
-	// Create the data structs
-	SunData sun = SunData(-scene.sun_direction.xyz, scene.sun_color.rgb);
-	SurfaceData surface = SurfaceData(albedo, normalize(normal), normal, position, roughness, metallic, visibility, f0);
-	vec3 view = normalize(camera.position.xyz - position);
-	CameraData camera = CameraData(view, normalize(view - scene.sun_direction.xyz), camera.position.xyz, camera.view, camera.projection);
+	// Fetch the color data
+	vec2 coords = vec2(x, y);
 
-	// Check if the fragment is shadowed
-	vec3 color = brdf(surface, camera, sun);
+	vec3 color = vec3(0);
+	if (alpha == 1.0) {
+		float roughness = clamp(mask.g, 0.02, 1.0);
+		float metallic = clamp(mask.b, 0.01, 1.0);
+		float visibility = clamp(mask.r, 0.0, 1.0);
+		vec3 f0 = mix(vec3(0.04), albedo, metallic);
+
+		// Create the data structs
+		SunData sun = SunData(-scene.sun_direction.xyz, scene.sun_color.rgb);
+		SurfaceData surface = SurfaceData(albedo, normalize(normal), normal, position, roughness, metallic, visibility, f0);
+		vec3 view = normalize(camera.position.xyz - position);
+		CameraData camera = CameraData(view, normalize(view - scene.sun_direction.xyz), camera.position.xyz, camera.view, camera.projection);
+
+		// Check if the fragment is shadowed
+		color = brdf(surface, camera, sun);
+	} else {
+		/*
+		TODO: Fix this
+		vec3 test = normalize(vec3(x * 2 - 1, y * 2 - 1, 1));
+		vec3 new = (inverse(camera.projection) * vec4(test, 0)).xyz;
+		color = max(new, vec3(0));
+		*/
+	}
+    
     
     // Increase exposure
 	color *= post_processing.exposure;
@@ -330,5 +344,14 @@ void main() {
 	// Apply gamma correction
 	tonemapped = mix(color, tonemapped, post_processing.tonemapping_strength);
 	color = pow(tonemapped, vec3(1.0 / post_processing.gamma));
+
+	// Create a simple vignette
+	vec2 uv = vec2(x, y);
+	float vignette = length(abs(uv - 0.5));
+	vignette += post_processing.vignette_size;
+	vignette = clamp(vignette, 0, 1);
+	vignette = pow(vignette, 4.0) * clamp(post_processing.vignette_strength, 0.0, 2.0);
+	color = mix(color, vec3(0), vignette);
+
 	frag = vec4(color, 0);
 }

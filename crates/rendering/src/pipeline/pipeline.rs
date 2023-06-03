@@ -1,11 +1,10 @@
 use crate::{
-    ActiveShadowRenderPass,
-    DefaultMaterialResources, Material, SceneColorLayout, SceneDepthLayout, ShadowRenderPipeline, DeferredPass, Pass,
+    DefaultMaterialResources, Material, SceneColorLayout, SceneDepthLayout, DeferredPass, Pass, ShadowDepthLayout, ShadowPass, MeshAttributes,
 };
 
 use assets::Assets;
 use graphics::{
-    CompareFunction, DepthConfig, Graphics, PipelineInitializationError, RenderPipeline, Shader, ActiveRenderPass,
+    CompareFunction, DepthConfig, Graphics, PipelineInitializationError, RenderPipeline, Shader, ActiveRenderPass, PrimitiveConfig, WindingOrder, Face,
 };
 use std::marker::PhantomData;
 
@@ -22,12 +21,64 @@ impl<M: Material> Clone for MaterialId<M> {
 
 // A material pipeline will be responsible for rendering surface and
 // entities that correspond to a specific material type.
-// TODO: Reimplemt shadows
 pub struct Pipeline<M: Material> {
+    // Base deferred render pass
     pipeline: RenderPipeline<SceneColorLayout, SceneDepthLayout>,
     shader: Shader,
+
+    // Shadow render pass
+    shadow_pipeline: Option<RenderPipeline<(), ShadowDepthLayout>>,
+    shadow_shader: Option<Shader>,
+
     _phantom: PhantomData<M>,
 }
+
+// Default depth config for ALL materials
+pub(crate) const DEPTH_CONFIG: DepthConfig = DepthConfig {
+    compare: CompareFunction::Less,
+    write_enabled: true,
+    depth_bias_constant: 0,
+    depth_bias_slope_scale: 0.0,
+    depth_bias_clamp: 0.0
+};
+
+// Create a shadow render pipeline from a shadow shader
+// This is called not only by the default shadowmap shader, but by materials that define their own shadow shader as well
+pub(crate) fn create_shadow_render_pipeline(
+    graphics: &Graphics,
+    shader: &Shader,
+    attributes: MeshAttributes,
+) -> Result<RenderPipeline<(), ShadowDepthLayout>, PipelineInitializationError> {    
+    RenderPipeline::<(), ShadowDepthLayout>::new(
+        graphics,
+        Some(DEPTH_CONFIG),
+        None,
+        None,
+        crate::attributes::enabled_to_vertex_config(attributes),
+        PrimitiveConfig::Triangles {
+            winding_order: WindingOrder::Ccw,
+            cull_face: Some(Face::Back),
+            wireframe: false,
+        },
+        shader,
+    )
+}
+
+fn create_deferred_render_pipeline<M: Material>(
+    graphics: &Graphics,
+    shader: &Shader
+) -> Result<RenderPipeline<SceneColorLayout, SceneDepthLayout>, PipelineInitializationError> {
+    RenderPipeline::new(
+        graphics,
+        Some(DEPTH_CONFIG),
+        None,
+        None,
+        crate::attributes::enabled_to_vertex_config(M::attributes::<DeferredPass>()),
+        M::primitive_config(),
+        shader,
+    )
+}
+
 
 impl<M: Material> Pipeline<M> {
     // Create a new material pipeline for the given material
@@ -37,36 +88,20 @@ impl<M: Material> Pipeline<M> {
         graphics: &Graphics,
         assets: &Assets,
     ) -> Result<Self, PipelineInitializationError> {
-        // Load the material's shader
         let shader = M::shader::<DeferredPass>(&settings, graphics, assets).unwrap();
+        let pipeline = create_deferred_render_pipeline::<M>(graphics, &shader)?;
 
-        // Fetch the correct vertex config based on the material
-        let vertex_config = crate::attributes::enabled_to_vertex_config(M::attributes::<DeferredPass>());
-
-        // Default depth config for ALL materials
-        let depth_config = DepthConfig {
-            compare: CompareFunction::Less,
-            write_enabled: true,
-            depth_bias_constant: 0,
-            depth_bias_slope_scale: 0.0,
-            depth_bias_clamp: 0.0
-        };
-        
-        // Create the graphics pipeline
-        let pipeline = RenderPipeline::new(
-            graphics,
-            Some(depth_config),
-            None,
-            None,
-            vertex_config,
-            M::primitive_config(),
-            &shader,
-        )?;
+        let shadow_shader = M::shader::<ShadowPass>(&settings, graphics, assets);
+        let shadow_attributes = M::attributes::<ShadowPass>();
+        let shadow_pipeline = shadow_shader.as_ref().map(|x| create_shadow_render_pipeline(graphics, x, shadow_attributes));
+        let shadow_pipeline = if let Some(pp) = shadow_pipeline { Some(pp?) } else { None };
 
         Ok(Self {
             pipeline,
             shader,
             _phantom: PhantomData,
+            shadow_pipeline,
+            shadow_shader,
         })
     }
 
@@ -81,20 +116,21 @@ impl<M: Material> Pipeline<M> {
     }
 }
 
+
 // This trait will be implemented for Pipeline<T> to allow for dynamic dispatch
 pub trait DynPipeline {
     // Cull all surfaces before we render the scene
     fn cull<'r>(
         &'r self,
         world: &'r World,
-        default: &mut DefaultMaterialResources<'r>,
+        default: &DefaultMaterialResources<'r>,
     );
 
     // Render all surfaces using the main pass
     fn render<'r>(
         &'r self,
         world: &'r World,
-        default: &mut DefaultMaterialResources<'r>,
+        default: &DefaultMaterialResources<'r>,
         render_pass: &mut ActiveRenderPass::<'r, '_, SceneColorLayout, SceneDepthLayout>,
     );
 
@@ -102,8 +138,8 @@ pub trait DynPipeline {
     fn render_shadow<'r>(
         &'r self,
         world: &'r World,
-        default: &mut DefaultMaterialResources<'r>,
-        render_pass: &mut ActiveRenderPass::<'r, '_, SceneColorLayout, SceneDepthLayout>,
+        default: &DefaultMaterialResources<'r>,
+        render_pass: &mut ActiveRenderPass::<'r, '_, (), ShadowDepthLayout>,
     );
 }
 
@@ -111,7 +147,7 @@ impl<M: Material> DynPipeline for Pipeline<M> {
     fn cull<'r>(
         &'r self,
         world: &'r World,
-        default: &mut DefaultMaterialResources<'r>,
+        default: &DefaultMaterialResources<'r>,
     ) {
         super::cull_surfaces::<M>(world, default);
     }
@@ -119,7 +155,7 @@ impl<M: Material> DynPipeline for Pipeline<M> {
     fn render<'r>(
         &'r self,
         world: &'r World,
-        default: &mut DefaultMaterialResources<'r>,
+        default: &DefaultMaterialResources<'r>,
         render_pass: &mut ActiveRenderPass::<'r, '_, SceneColorLayout, SceneDepthLayout>,
     ) {
         super::render_surfaces::<DeferredPass, M>(world, &self.pipeline, default, render_pass);
@@ -128,9 +164,11 @@ impl<M: Material> DynPipeline for Pipeline<M> {
     fn render_shadow<'r>(
         &'r self,
         world: &'r World,
-        default: &mut DefaultMaterialResources<'r>,
-        render_pass: &mut ActiveRenderPass::<'r, '_, SceneColorLayout, SceneDepthLayout>,
+        default: &DefaultMaterialResources<'r>,
+        render_pass: &mut ActiveRenderPass::<'r, '_, (), ShadowDepthLayout>,
     ) {
-        super::render_surfaces::<DeferredPass, M>(world, &self.pipeline, default, render_pass);
+        if let Some(pipeline) = self.shadow_pipeline.as_ref() {
+            super::render_surfaces::<ShadowPass, M>(world, pipeline, default, render_pass);
+        }
     }
 }

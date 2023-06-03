@@ -65,7 +65,7 @@ pub fn intersects_frustum(
 // Update the "culled" paramter of each surface
 pub(super) fn cull_surfaces<'r, M: Material>(
     world: &'r World,
-    defaults: &mut DefaultMaterialResources<'r>,
+    defaults: &DefaultMaterialResources<'r>,
 ) {
     // Don't cull if there's no need
     if !M::frustum_culling() {
