@@ -21,9 +21,33 @@ fn init(world: &mut World) {
     asset!(assets, "user/textures/diffuse1.jpg", "/examples/assets/");
     asset!(assets, "user/textures/normal1.jpg", "/examples/assets/");
     asset!(assets, "user/textures/mask1.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/diffuse2.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/normal2.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/mask2.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/diffuse3.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/normal3.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/mask3.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/diffuse4.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/normal4.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/mask4.jpg", "/examples/assets/");
     asset!(assets, "user/textures/diffuse5.jpg", "/examples/assets/");
     asset!(assets, "user/textures/normal5.jpg", "/examples/assets/");
     asset!(assets, "user/textures/mask5.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/diffuse6.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/normal6.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/mask6.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/diffuse7.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/normal7.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/mask7.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/diffuse8.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/normal8.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/mask8.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/diffuse9.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/normal9.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/mask9.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/diffuse10.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/normal10.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/mask10.jpg", "/examples/assets/");
 
     // Create the terrain generator's settings
     let settings = TerrainSettings::new(
@@ -38,14 +62,54 @@ fn init(world: &mut World) {
         0.0f32,
         Some(&[
             TerrainSubMaterial {
+                diffuse: "user/textures/diffuse1.jpg".to_string(),
+                normal: "user/textures/normal1.jpg".to_string(),
+                mask: "user/textures/mask1.jpg".to_string(),
+            },
+            TerrainSubMaterial {
+                diffuse: "user/textures/diffuse2.jpg".to_string(),
+                normal: "user/textures/normal2.jpg".to_string(),
+                mask: "user/textures/mask2.jpg".to_string(),
+            },
+            TerrainSubMaterial {
+                diffuse: "user/textures/diffuse3.jpg".to_string(),
+                normal: "user/textures/normal3.jpg".to_string(),
+                mask: "user/textures/mask3.jpg".to_string(),
+            },
+            TerrainSubMaterial {
+                diffuse: "user/textures/diffuse4.jpg".to_string(),
+                normal: "user/textures/normal4.jpg".to_string(),
+                mask: "user/textures/mask4.jpg".to_string(),
+            },
+            TerrainSubMaterial {
                 diffuse: "user/textures/diffuse5.jpg".to_string(),
                 normal: "user/textures/normal5.jpg".to_string(),
                 mask: "user/textures/mask5.jpg".to_string(),
             },
             TerrainSubMaterial {
-                diffuse: "user/textures/diffuse1.jpg".to_string(),
-                normal: "user/textures/normal1.jpg".to_string(),
-                mask: "user/textures/mask1.jpg".to_string(),
+                diffuse: "user/textures/diffuse6.jpg".to_string(),
+                normal: "user/textures/normal6.jpg".to_string(),
+                mask: "user/textures/mask6.jpg".to_string(),
+            },
+            TerrainSubMaterial {
+                diffuse: "user/textures/diffuse7.jpg".to_string(),
+                normal: "user/textures/normal7.jpg".to_string(),
+                mask: "user/textures/mask7.jpg".to_string(),
+            },
+            TerrainSubMaterial {
+                diffuse: "user/textures/diffuse8.jpg".to_string(),
+                normal: "user/textures/normal8.jpg".to_string(),
+                mask: "user/textures/mask8.jpg".to_string(),
+            },
+            TerrainSubMaterial {
+                diffuse: "user/textures/diffuse9.jpg".to_string(),
+                normal: "user/textures/normal9.jpg".to_string(),
+                mask: "user/textures/mask9.jpg".to_string(),
+            },
+            TerrainSubMaterial {
+                diffuse: "user/textures/diffuse10.jpg".to_string(),
+                normal: "user/textures/normal10.jpg".to_string(),
+                mask: "user/textures/mask10.jpg".to_string(),
             },
         ]),
     )

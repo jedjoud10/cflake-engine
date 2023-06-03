@@ -279,7 +279,7 @@ fn compile(
 
     // Cache the SPIRV into the shader cache if needed
     if cached.is_none() {
-        graphics.0.cached.spirvs.insert(key, spirv.clone());
+        //graphics.0.cached.spirvs.insert(key, spirv.clone());
     }
 
     // Parse the spirv manually to be able to handle specialization constants

@@ -24,7 +24,7 @@ void main() {
     float density = voxel(position, material);
     //density = clamp(density, -1, 1);
 
-    float packed = uintBitsToFloat(packUnorm4x8(vec4(material)));
+    float packed = uintBitsToFloat(packUnorm4x8(vec4(float(material) / 255.0)));
     vec4 data = vec4(density, packed, 0, 0);
 
     // Writes the data to the voxels texture
