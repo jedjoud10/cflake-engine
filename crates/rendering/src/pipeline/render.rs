@@ -105,7 +105,6 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
 
     // Keep track of the last material
     let mut last_material: Option<Handle<M>> = None;
-    let mut switched_material_instances;
 
     // Keep track of the last model
     let mut last_mesh: Option<Handle<Mesh<M::RenderPath>>> = None;
@@ -152,14 +151,12 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
     });
 
     // Iterate over all the surface of this material
-    let mut rendered = false;
     for ((subsurface, renderer), user) in values {
         // Get the mesh and material that correspond to this surface
         let mesh = <M::RenderPath as RenderPath>::get(defaults, &subsurface.mesh);
 
         // Check if we changed material instances
         if last_material != Some(subsurface.material.clone()) {
-            switched_material_instances = true;
             last_material = Some(subsurface.material.clone());
             let material = materials.get(&subsurface.material);
 
@@ -169,8 +166,6 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
                     M::set_instance_bindings::<P>(material, &mut resources, defaults, group);
                 })
                 .unwrap();
-        } else {
-            switched_material_instances = false;
         }
 
         // If a mesh is missing attributes just skip
@@ -265,27 +260,5 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
 
         // Draw the mesh
         <M::RenderPath as RenderPath>::draw(mesh, defaults, &mut active).unwrap();
-
-        // Add 1 to the material index when we switch instances
-        if switched_material_instances {
-            *defaults.material_instances_count += 1;
-        }
-
-        // Keep track of statistics
-        rendered = true;
-        *defaults.rendered_sub_surfaces += 1;
-
-        // These values won't get added it if's a invalid or indirect mesh
-        *defaults.rendered_direct_triangles_drawn +=
-            <<M as Material>::RenderPath as RenderPath>::triangle_count(mesh)
-                .unwrap_or_default() as u64;
-        *defaults.rendered_direct_vertices_drawn +=
-            <<M as Material>::RenderPath as RenderPath>::vertex_count(mesh).unwrap_or_default()
-                as u64;
-    }
-
-    // I hate this
-    if rendered {
-        *defaults.drawn_unique_material_count += 1;
     }
 }

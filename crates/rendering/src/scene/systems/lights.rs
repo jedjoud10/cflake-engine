@@ -3,7 +3,7 @@ use crate::{DirectionalLight, DeferredRenderer};
 use ecs::Scene;
 use graphics::{Graphics, Window};
 
-use world::{System, World};
+use world::{System, World, post_user};
 
 // Update event that will set/update the main directional light
 fn update(world: &mut World) {
@@ -34,5 +34,6 @@ fn update(world: &mut World) {
 pub fn system(system: &mut System) {
     system
         .insert_update(update)
-        .before(super::rendering::system);
+        .before(super::rendering::system)
+        .after(post_user);
 }

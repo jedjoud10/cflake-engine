@@ -1,6 +1,6 @@
 use crate::{
     ActiveShadowRenderPass,
-    DefaultMaterialResources, Material, SceneColorLayout, SceneDepthLayout, ShadowRenderPipeline, DeferredPass,
+    DefaultMaterialResources, Material, SceneColorLayout, SceneDepthLayout, ShadowRenderPipeline, DeferredPass, Pass,
 };
 
 use assets::Assets;
@@ -83,8 +83,23 @@ impl<M: Material> Pipeline<M> {
 
 // This trait will be implemented for Pipeline<T> to allow for dynamic dispatch
 pub trait DynPipeline {
-    // Render all surfaces that use the material of this pipeline
+    // Cull all surfaces before we render the scene
+    fn cull<'r>(
+        &'r self,
+        world: &'r World,
+        default: &mut DefaultMaterialResources<'r>,
+    );
+
+    // Render all surfaces using the main pass
     fn render<'r>(
+        &'r self,
+        world: &'r World,
+        default: &mut DefaultMaterialResources<'r>,
+        render_pass: &mut ActiveRenderPass::<'r, '_, SceneColorLayout, SceneDepthLayout>,
+    );
+
+    // Render all surfaces using the shadow pass
+    fn render_shadow<'r>(
         &'r self,
         world: &'r World,
         default: &mut DefaultMaterialResources<'r>,
@@ -93,13 +108,29 @@ pub trait DynPipeline {
 }
 
 impl<M: Material> DynPipeline for Pipeline<M> {
+    fn cull<'r>(
+        &'r self,
+        world: &'r World,
+        default: &mut DefaultMaterialResources<'r>,
+    ) {
+        super::cull_surfaces::<M>(world, default);
+    }
+
     fn render<'r>(
         &'r self,
         world: &'r World,
         default: &mut DefaultMaterialResources<'r>,
         render_pass: &mut ActiveRenderPass::<'r, '_, SceneColorLayout, SceneDepthLayout>,
     ) {
-        super::cull_surfaces::<M>(world, default);
+        super::render_surfaces::<DeferredPass, M>(world, &self.pipeline, default, render_pass);
+    }
+
+    fn render_shadow<'r>(
+        &'r self,
+        world: &'r World,
+        default: &mut DefaultMaterialResources<'r>,
+        render_pass: &mut ActiveRenderPass::<'r, '_, SceneColorLayout, SceneDepthLayout>,
+    ) {
         super::render_surfaces::<DeferredPass, M>(world, &self.pipeline, default, render_pass);
     }
 }

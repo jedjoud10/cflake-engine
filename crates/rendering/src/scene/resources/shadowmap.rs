@@ -28,10 +28,6 @@ pub struct ShadowMapping {
     // Everything required to render to the depth texture
     pub render_pass: ShadowRenderPass,
 
-    // Default shadow shader and pipeline
-    pub pipeline: ShadowRenderPipeline,
-    pub shader: Shader,
-
     // Multilayered shadow map texture
     pub depth_tex: ShadowMap,
 
@@ -69,30 +65,6 @@ impl ShadowMapping {
         graphics: &Graphics,
         assets: &mut Assets,
     ) -> Self {
-        // Load the vertex module for the shadowmap shader
-        let vertex = assets
-            .load::<VertexModule>("engine/shaders/scene/shadow/shadow.vert")
-            .unwrap();
-
-        // Load the fragment module for the shadowmap shader
-        let fragment = assets
-            .load::<FragmentModule>("engine/shaders/scene/shadow/shadow.frag")
-            .unwrap();
-
-        // Create the bind layout for the shadow map shader
-        let mut compiler = Compiler::new(assets, graphics);
-
-        // Contains the mesh matrix and the lightspace uniforms
-        let layout = PushConstantLayout::single(
-            <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size() * 2,
-            ModuleVisibility::Vertex,
-        )
-        .unwrap();
-        compiler.use_push_constant_layout(layout);
-
-        // Combine the modules to the shader
-        let shader = Shader::new(vertex, fragment, &compiler).unwrap();
-
         // Create the shadow map render pass
         let render_pass = ShadowRenderPass::new(
             graphics,
@@ -102,8 +74,6 @@ impl ShadowMapping {
                 store: StoreOp::Store,
             },
         );
-
-        let pipeline = create_shadow_render_pipeline(graphics, &shader);
 
         // Create the depth textures that we will render to
         let depth_tex = ShadowMap::from_texels(
@@ -145,8 +115,6 @@ impl ShadowMapping {
 
         Self {
             render_pass,
-            pipeline,
-            shader,
             depth_tex,
             resolution,
             parameter_buffer,
@@ -264,6 +232,7 @@ impl ShadowMapping {
 pub(crate) fn create_shadow_render_pipeline(
     graphics: &Graphics,
     shader: &Shader,
+    attributes: MeshAttributes,
 ) -> ShadowRenderPipeline {
     // Create the shadow map graphics pipeline
     
@@ -278,7 +247,7 @@ pub(crate) fn create_shadow_render_pipeline(
         }),
         None,
         None,
-        crate::attributes::enabled_to_vertex_config(MeshAttributes::POSITIONS),
+        crate::attributes::enabled_to_vertex_config(attributes),
         PrimitiveConfig::Triangles {
             winding_order: WindingOrder::Ccw,
             cull_face: Some(Face::Back),

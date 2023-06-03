@@ -29,10 +29,40 @@ pub struct Edit {
     pub shape: EditShape,
 
     // Custom color if we wish to override the color of the terrain
-    pub color: Option<vek::Rgb<f32>>,
+    pub color: Option<vek::Rgb<u8>>,
 }
 
 // Rust representation of the GLSL packed edit struct
 #[repr(C)]
 pub struct PackedEdit {
+    mode: u32,
+    smoothing: f32,
+    shape: u32,
+    color: vek::Vec4<u8>,
+    center: vek::Vec4<f32>,
+    extra: vek::Vec4<f32>,
+}
+
+// Convert a normal edit to a packet edit
+pub(crate) fn pack(edit: Edit) -> PackedEdit {
+    let (mode, smoothing) = match edit.mode {
+        EditMode::Addition => (1, 0.0),
+        EditMode::AdditionSmoothed(x) => (2, x),
+        EditMode::Subtraction => (3, 0.0),
+        EditMode::SubtractionSmoothed(x) => (4, x),
+    };
+
+    let (shape, center, extra) = match edit.shape {
+        EditShape::Cuboid(cuboid) => (1, cuboid.center.with_w(0.0), vek::Vec3::<f32>::from(cuboid.half_extent).with_w(0.0)),
+        EditShape::Sphere(sphere) => (2, sphere.center.with_w(0.0), vek::Vec4::new(sphere.radius, 0.0, 0.0, 0.0)),
+    };
+
+    PackedEdit {
+        mode,
+        smoothing,
+        shape,
+        color: vek::Vec4::one(),
+        center,
+        extra
+    }
 }

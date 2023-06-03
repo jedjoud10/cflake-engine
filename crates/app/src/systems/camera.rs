@@ -32,7 +32,7 @@ impl Default for CameraController {
             boost_speed: 300.0,
             fov_change_scroll_speed: 200.0,
             fov_change_key_speed: 50.0,
-            smoothness: 0.2,
+            smoothness: 0.0,
             active: true,
         }
     }
