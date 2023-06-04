@@ -93,7 +93,7 @@ fn update(world: &mut World) {
                 let query = scene
                     .query_mut::<&mut Chunk>()
                     .into_iter()
-                    .filter(|x| matches!(x.state, ChunkState::Generated { empty }));
+                    .filter(|x| matches!(x.state, ChunkState::Generated { .. }));
                 for x in query {
                     x.regenerate();
                 }

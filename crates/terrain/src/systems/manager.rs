@@ -173,7 +173,7 @@ fn update(world: &mut World) {
                         allocation,
                         local_index: old_per_allocation + i,
                         generation_priority: 0.0f32,
-                        readback_priority: 0.0f32,
+                        readback_priority: None,
                         ranges: None,
                         node: None,
                     };
@@ -221,7 +221,9 @@ fn update(world: &mut World) {
             chunk.generation_priority = chunk.generation_priority.clamp(0.0f32, 1000.0f32);
 
             // Update readback priority for each chunk *around* the user (needed for collisions)
-            chunk.readback_priority = 1.0 / viewer_position.distance(**position).max(1.0);
+            if node.size() == settings.size {
+                chunk.readback_priority = Some(1.0 / viewer_position.distance(**position).max(1.0));
+            }
 
             assert!(res.is_none());
         }

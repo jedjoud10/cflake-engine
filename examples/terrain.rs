@@ -66,6 +66,7 @@ fn init(world: &mut World) {
                 normal: "user/textures/normal1.jpg".to_string(),
                 mask: "user/textures/mask1.jpg".to_string(),
             },
+            /*
             TerrainSubMaterial {
                 diffuse: "user/textures/diffuse2.jpg".to_string(),
                 normal: "user/textures/normal2.jpg".to_string(),
@@ -111,6 +112,7 @@ fn init(world: &mut World) {
                 normal: "user/textures/normal10.jpg".to_string(),
                 mask: "user/textures/mask10.jpg".to_string(),
             },
+            */
         ]),
     )
     .unwrap();

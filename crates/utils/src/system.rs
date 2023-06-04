@@ -96,6 +96,8 @@ pub fn time(system: &mut System) {
             // https://gafferongames.com/post/fix_your_timestep/
             time.accumulator += time.delta.as_secs_f32();
             time.tick_interpolation = time.accumulator / TICK_DELTA;
+            
+            // LIMIT TICKS WHEN WE HAVE SPIRAL OF DEATH
 
             let mut enabled = false;
             while time.accumulator > TICK_DELTA {
@@ -105,9 +107,9 @@ pub fn time(system: &mut System) {
                 if let Some(count) = time.ticks_to_execute.as_mut() {
                     let mut new = count.get() + 1;
 
-                    if new > 32 {
+                    if new > 16 {
                         log::warn!("Too many ticks to execute! Spiral of death effect is occuring");
-                        new = 32;
+                        new = 1;
                     }
 
                     *count = NonZeroU32::new(new).unwrap(); 
