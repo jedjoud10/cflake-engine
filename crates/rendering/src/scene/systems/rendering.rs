@@ -54,8 +54,8 @@ fn init(world: &mut World) {
     // Create a nice shadow map
     let shadowmap = ShadowMapping::new(
         2000f32,
-        4096,
-        [0.1, 0.25, 0.5, 1.0],
+        2048,
+        [0.005, 0.01, 0.02, 0.1],
         &graphics,
         &mut assets,
     );
@@ -281,38 +281,36 @@ fn render(world: &mut World) {
     drop(scene);
 
     // Update the shadow map lightspace matrix
-    let shadowmap = &mut *_shadowmap;
-    let index = (time.frame_count() as u32) % 4;
-    let index = 0;
-    default.lightspace = Some(shadowmap.update(
-        *directional_light_rotation,
-        camera_view,
-        camera_projection,
-        *camera_position,
-        camera.near,
-        camera.far,
-        index as usize
-    ));
-
-    let mips = shadowmap.depth_tex.mips_mut();
-    let mut level = mips.level_mut(0).unwrap();
-
-    // Use layer as render target
-    let target = level.layer_as_render_target(index).unwrap();
-
-    // Create a new active shadowmap render pass
-    let mut render_pass = shadowmap.render_pass.begin((), target);
-
-    // Render the shadows first (fuck you)
-    for stored in pipelines.iter() {
-        stored.render_shadow(world, &mut default, &mut render_pass);
+    for index in 0..4 {
+        let shadowmap = &mut *_shadowmap;
+        default.lightspace = Some(shadowmap.update(
+            *directional_light_rotation,
+            camera_view,
+            *camera_position,
+            camera_projection,
+            *camera_position,
+            camera.near,
+            camera.far,
+            index
+        ));
+    
+        let mips = shadowmap.depth_tex.mips_mut();
+        let mut level = mips.level_mut(0).unwrap();
+    
+        // Use layer as render target
+        let target = level.layer_as_render_target(index as u32).unwrap();
+    
+        // Create a new active shadowmap render pass
+        let mut render_pass = shadowmap.render_pass.begin((), target);
+    
+        // Render the shadows first (fuck you)
+        for stored in pipelines.iter() {
+            stored.render_shadow(world, &mut default, &mut render_pass);
+        }
+    
+        drop(render_pass);
+        graphics.submit(false);
     }
-
-    // Send the command encoder
-    drop(render_pass);
-    drop(level);
-    drop(mips);
-    drop(shadowmap);
     drop(_shadowmap);
 
     // Begin the scene color render pass

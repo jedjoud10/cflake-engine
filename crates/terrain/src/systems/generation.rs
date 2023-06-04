@@ -86,17 +86,24 @@ fn update(world: &mut World) {
                     .load::<ComputeModule>("engine/shaders/terrain/voxels.comp")
                     .unwrap();
                 let compiler = crate::create_compute_voxels_compiler(&assets, &graphics);
-                let compute_voxels = ComputeShader::new(module, &compiler).unwrap();
-                voxelizer.compute_voxels = compute_voxels;
+                match ComputeShader::new(module, &compiler) {
+                    Ok(shader) => {
+                        voxelizer.compute_voxels = shader;
 
-                // Force the regeneration of all chunks
-                let query = scene
-                    .query_mut::<&mut Chunk>()
-                    .into_iter()
-                    .filter(|x| matches!(x.state, ChunkState::Generated { .. }));
-                for x in query {
-                    x.regenerate();
+                        // Force the regeneration of all chunks
+                        let query = scene
+                            .query_mut::<&mut Chunk>()
+                            .into_iter()
+                            .filter(|x| matches!(x.state, ChunkState::Generated { .. }));
+                        for x in query {
+                            x.regenerate();
+                        }
+                    },
+                    Err(error) => {
+                        log::error!("Voxel Shader Error: {:?}", error);
+                    },
                 }
+                
             }
         }
 

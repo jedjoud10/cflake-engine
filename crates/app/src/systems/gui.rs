@@ -578,6 +578,7 @@ fn update(world: &mut World) {
                             ui.selectable_value(&mut selected_debug_gbuffer, DebugGBuffer::Position, "Position");
                             ui.selectable_value(&mut selected_debug_gbuffer, DebugGBuffer::Albedo, "Albedo");
                             ui.selectable_value(&mut selected_debug_gbuffer, DebugGBuffer::Normal, "Normal");
+                            ui.selectable_value(&mut selected_debug_gbuffer, DebugGBuffer::ReconstructedNormal, "Reconstructed Normal");
                             ui.selectable_value(&mut selected_debug_gbuffer, DebugGBuffer::Mask, "Mask");
                         });
                 });

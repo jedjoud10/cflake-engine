@@ -105,6 +105,9 @@ pub enum DebugGBuffer {
     // World Space Normals 
     Normal,
 
+    // World Space Normals reconstructed using position
+    ReconstructedNormal,
+
     // Mask map (ao, roughness, metallic)
     Mask,
 
@@ -142,7 +145,8 @@ impl DebugGBuffer {
             0 => Self::Position,
             1 => Self::Albedo,
             2 => Self::Normal,
-            3 => Self::Mask,
+            3 => Self::ReconstructedNormal,
+            4 => Self::Mask,
             u32::MAX => Self::None,
             _ => panic!()
         }
@@ -154,7 +158,8 @@ impl DebugGBuffer {
             Self::Position => 0,
             Self::Albedo => 1,
             Self::Normal => 2,
-            Self::Mask => 3,
+            Self::ReconstructedNormal => 3,
+            Self::Mask => 4,
             Self::None => u32::MAX,
         }
     }

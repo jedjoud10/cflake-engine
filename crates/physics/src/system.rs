@@ -1,9 +1,9 @@
 use rapier3d::prelude::*;
-use utils::Time;
+use utils::{Time, Storage};
 use coords::{Position, Rotation};
 use ecs::{Scene, added, modified, Entity};
 use world::{System, World, post_user, user};
-use crate::{RigidBody, Physics, SphereCollider, CuboidCollider, AngularVelocity, Velocity, MeshCollider};
+use crate::{RigidBody, Physics, SphereCollider, CuboidCollider, AngularVelocity, Velocity, MeshCollider, PhysicsSurface, CapsuleCollider};
 use crate::{LastTickedVelocity, LastTickedAngularVelocity, CurrentTickedVelocity, CurrentTickedAngularVelocity};
 use coords::{LastTickedPosition, LastTickedRotation, CurrentTickedPosition, CurrentTickedRotation};
 
@@ -36,9 +36,6 @@ fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) 
 
         let collider = rapier3d::geometry::ColliderBuilder::ball(collider.radius)
             .mass(collider.mass)
-            .friction(collider.friction)
-            .restitution(collider.restitution)
-            .density(collider.mass)
             .build();
         physics.colliders.insert_with_parent(collider, handle, &mut physics.bodies);
     }
@@ -52,8 +49,19 @@ fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) 
 
         let collider = rapier3d::geometry::ColliderBuilder::cuboid(collider.half_extent.w, collider.half_extent.h, collider.half_extent.d)
             .mass(collider.mass)
-            .friction(collider.friction)
-            .restitution(collider.restitution)
+            .build();
+        physics.colliders.insert_with_parent(collider, handle, &mut physics.bodies);
+    }
+
+    // Spawn in the Capsule collider components
+    let filter = added::<&CapsuleCollider>();
+    for (collider, rigid_body) in scene.query_mut_with::<(&mut CapsuleCollider, &RigidBody)>(filter) {
+        let Some(handle) = rigid_body.handle else {
+            continue;
+        };
+
+        let collider = rapier3d::geometry::ColliderBuilder::capsule_y(collider.height / 2.0, collider.radius)
+            .mass(collider.mass)
             .build();
         physics.colliders.insert_with_parent(collider, handle, &mut physics.bodies);
     }
@@ -74,8 +82,6 @@ fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) 
 
         let collider = rapier3d::geometry::ColliderBuilder::trimesh(vertices, triangles)
             .mass(collider.mass)
-            .friction(collider.friction)
-            .restitution(collider.restitution)
             .build();
         physics.colliders.insert_with_parent(collider, handle, &mut physics.bodies);
     }
@@ -161,7 +167,7 @@ fn pre_step_despawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene
 }
 
 // This will synchronize the rapier counter-part to the data of the components
-fn pre_step_sync_rapier_to_comps(physics: &mut Physics, scene: &mut Scene) {
+fn pre_step_sync_rapier_to_comps(physics: &mut Physics, scene: &mut Scene, surfaces: &Storage<PhysicsSurface>) {
     let query = scene.query::<(&RigidBody, &Position, &Rotation, &Velocity, &AngularVelocity)>();
     for (rigid_body, position, rotation, velocity, angular_velocity) in query {
         if let Some(handle) = rigid_body.handle {
@@ -179,8 +185,10 @@ fn pre_step_sync_rapier_to_comps(physics: &mut Physics, scene: &mut Scene) {
             let collider = physics.colliders.get_mut(handle).unwrap();
             let ball = collider.shape_mut().as_ball_mut().unwrap();
             ball.radius = sphere_collider.radius;
-            collider.set_friction(sphere_collider.friction);
-            collider.set_restitution(sphere_collider.restitution);
+
+            let physics_surface = sphere_collider.material.as_ref().map(|x| surfaces[x]).unwrap_or_default();
+            collider.set_friction(physics_surface.friction);
+            collider.set_restitution(physics_surface.restitution);
         }
     }
 
@@ -189,12 +197,30 @@ fn pre_step_sync_rapier_to_comps(physics: &mut Physics, scene: &mut Scene) {
     for cuboid_collider in scene.query_with::<&CuboidCollider>(filter) {
         if let Some(handle) = cuboid_collider.handle {
             let collider = physics.colliders.get_mut(handle).unwrap();
-            let ball = collider.shape_mut().as_cuboid_mut().unwrap();
-            ball.half_extents.x = cuboid_collider.half_extent.w;
-            ball.half_extents.y = cuboid_collider.half_extent.h;
-            ball.half_extents.z = cuboid_collider.half_extent.d;
-            collider.set_friction(cuboid_collider.friction);
-            collider.set_restitution(cuboid_collider.restitution);
+            let cuboid = collider.shape_mut().as_cuboid_mut().unwrap();
+            cuboid.half_extents.x = cuboid_collider.half_extent.w;
+            cuboid.half_extents.y = cuboid_collider.half_extent.h;
+            cuboid.half_extents.z = cuboid_collider.half_extent.d;
+
+            let physics_surface = cuboid_collider.material.as_ref().map(|x| surfaces[x]).unwrap_or_default();
+            collider.set_friction(physics_surface.friction);
+            collider.set_restitution(physics_surface.restitution);
+        }
+    }
+
+    // Synchronize the Capsule Collider components
+    let filter: ecs::Wrap<ecs::Modified<&CapsuleCollider>> = modified::<&CapsuleCollider>();
+    for capsule_collider in scene.query_with::<&CapsuleCollider>(filter) {
+        if let Some(handle) = capsule_collider.handle {
+            let collider = physics.colliders.get_mut(handle).unwrap();
+            let capsule = collider.shape_mut().as_capsule_mut().unwrap();
+            capsule.segment.a = crate::util::vek_vec_to_na_point(vek::Vec3::unit_y() * (-capsule_collider.height / 2.0));
+            capsule.segment.b = crate::util::vek_vec_to_na_point(vek::Vec3::unit_y() * (capsule_collider.height / 2.0));
+            capsule.radius = capsule_collider.radius;
+
+            let physics_surface = capsule_collider.material.as_ref().map(|x| surfaces[x]).unwrap_or_default();
+            collider.set_friction(physics_surface.friction);
+            collider.set_restitution(physics_surface.restitution);
         }
     }
 }
@@ -203,12 +229,14 @@ fn pre_step_sync_rapier_to_comps(physics: &mut Physics, scene: &mut Scene) {
 fn init(world: &mut World) {
     let physics = Physics::new();
     world.insert(physics);
+    world.insert(Storage::<PhysicsSurface>::default());
 }
 
 // Step through the physics simulation
 fn tick(world: &mut World) {
     let mut _physics = world.get_mut::<Physics>().unwrap();
     let mut _scene = world.get_mut::<Scene>().unwrap();
+    let surfaces = world.get::<Storage<PhysicsSurface>>().unwrap();
     let time = world.get::<Time>().unwrap();
     let physics = &mut *_physics;
     let scene = &mut * _scene;
@@ -216,7 +244,7 @@ fn tick(world: &mut World) {
     // Executed before the physics step
     pre_step_spawn_rapier_counterparts(physics, scene);
     pre_step_despawn_rapier_counterparts(physics, scene);
-    pre_step_sync_rapier_to_comps(physics, scene);
+    pre_step_sync_rapier_to_comps(physics, scene, &surfaces);
 
     // Swap next tick with current tick
     if time.tick_count() > 0 {

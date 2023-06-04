@@ -46,7 +46,7 @@ layout(set = 0, binding = 13) uniform sampler layered_mask_map_sampler;
 
 // Triplanar mapping offset and UV scale
 const float offset = 0.0;
-const vec2 scale = vec2(0.05) * vec2(-1, -1); 
+const vec2 scale = vec2(0.01) * vec2(-1, -1); 
 const float normal_strength = 0.8;
 
 // Get the blending offset to be used internally in the triplanar texture
@@ -167,12 +167,8 @@ void main() {
 		normal = normalize(n0 * w0 + n1 * w1 + n2 * w2);
 	}
 
-
-
 	gbuffer_position = vec4(m_position, 0);
 	gbuffer_albedo = vec4(albedo, 1);
-	gbuffer_albedo = vec4(1);
-	mask *= vec3(pow(mask.r, 1.2), 3.0, 0.3);
 	gbuffer_normal = vec4(normal, 0);
-	gbuffer_mask = vec4(mask, 0);
+	gbuffer_mask = vec4(mask * vec3(1, 10, 0), 0);
 }

@@ -90,11 +90,11 @@ impl ShadowMapping {
 
         let parameters = ShadowUniform {
             strength: 1.0,
-            spread: 0.55,
-            base_bias: 0.00055,
-            bias_bias: 0.00060,
-            bias_factor_base: 1.55,
-            normal_offset: 0.0,
+            spread: 0.47,
+            base_bias: -0.0001,
+            bias_bias: 0.0,
+            bias_factor_base: 1.50,
+            normal_offset: 0.2,
         };
 
         // Create a buffer that will contain shadow parameters
@@ -140,6 +140,7 @@ impl ShadowMapping {
         &mut self,
         rotation: vek::Quaternion<f32>,
         view: vek::Mat4<f32>,
+        position: vek::Vec3<f32>,
         mut projection: vek::Mat4<f32>,
         _camera: vek::Vec3<f32>,
         camera_near_plane: f32,
@@ -220,14 +221,16 @@ impl ShadowMapping {
         // Update the internally stored buffer
         self.lightspace_buffer.write(&[lightspace.cols], i).unwrap();
         self.cascade_distances.write(&[far], i).unwrap();
+        self.parameter_buffer.write(&[self.parameters], 0).unwrap();
         lightspace
         */
 
+        let percent = self.percents[i];
         let frustum = FrustumPlanes::<f32> {
-            left: -200.0,
-            right: 200.0,
-            bottom: -200.0,
-            top: 200.0,
+            left: -8000.0 * percent,
+            right: 8000.0 * percent,
+            bottom: -8000.0 * percent,
+            top: 8000.0 * percent,
             near: -self.depth,
             far: self.depth,
         };
@@ -247,7 +250,7 @@ impl ShadowMapping {
         let projection = vek::Mat4::orthographic_rh_zo(frustum);
 
         // Calculate light skin rizz (real) (I have gone insane)
-        let lightspace = projection * view;
+        let lightspace = projection * view * vek::Mat4::translation_3d(-position);
         self.lightspace_buffer.write(&[lightspace.cols], i).unwrap();
         self.parameter_buffer.write(&[self.parameters], 0).unwrap();
         lightspace

@@ -20,6 +20,8 @@ impl Physics {
 
         let mut integration_parameters = IntegrationParameters::default();        
         integration_parameters.set_inv_dt(utils::TICKS_PER_SEC);
+        //integration_parameters.allowed_linear_error = 0.0001;
+        //integration_parameters.max_penetration_correction = 0.001;
         
         let mut physics_pipeline = PhysicsPipeline::new();
         let mut island_manager = IslandManager::new();

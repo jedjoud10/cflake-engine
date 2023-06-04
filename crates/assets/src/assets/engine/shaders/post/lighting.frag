@@ -108,16 +108,31 @@ float calculate_shadowed(
     vec3 light_dir,
     vec3 camera
 ) {
+	/*
     // Taken from a comment by Octavius Ace from the same learn OpenGL website 
     vec4 res = step(cascade_plane_distances.distances, vec4(depth));
     uint layer = uint(res.x + res.y + res.z + res.w);
     layer = 0;
+	*/
 
     // Get the proper lightspace matrix that we will use
-    mat4 lightspace = shadow_lightspace_matrices.matrices[layer];
+	uint layer = 0;
+
+	for(int i = 0; i < 4; i++) {
+		layer = i;
+		mat4 lightspace = shadow_lightspace_matrices.matrices[i];
+		vec4 ndc = lightspace * vec4(position, 1.0); 
+		if (ndc.x > -1 && ndc.x < 1 && ndc.y > -1 && ndc.y < 1) {
+			break;
+		} else if (i == 3) {
+			return 0.0;
+		} 
+	}
     
+
     // Transform the world coordinates to NDC coordinates 
     float perpendicularity = pow(1 - abs(dot(normal, light_dir)), 2) * 2;
+	mat4 lightspace = shadow_lightspace_matrices.matrices[layer];
     vec4 ndc = lightspace * vec4(position + normal * perpendicularity * shadow_parameters.normal_offset, 1.0); 
     float factor = pow(shadow_parameters.bias_factor_base, layer*4);
     float bias = shadow_parameters.base_bias;
@@ -261,6 +276,7 @@ vec3 brdf(
 
 	// TODO: IBL
 	brdf = brdf * lighting * light.color;
+	brdf += fresnelRoughness(surface.f0, camera.view, surface.normal, surface.roughness) * 0.40;
 	return brdf;
 }
 
@@ -275,6 +291,25 @@ void main() {
     vec3 mask = texelFetch(gbuffer_mask_map, ivec2(gl_FragCoord.xy), 0).rgb;
 	float non_linear_depth = texelFetch(depth_map, ivec2(gl_FragCoord.xy), 0).r;
 	vec3 surface_normal = normalize(cross(dFdy(position), dFdx(position)));
+	
+    // Optional G-Buffer debug
+    switch(post_processing.gbuffer_debug) {
+		case 0:
+            frag = vec4(position, 0);
+			return;
+		case 1:
+			frag = vec4(albedo, 0);
+            return;
+		case 2:
+			frag = vec4(max(normal, vec3(0)), 0);
+            return;
+		case 3:
+			frag = vec4(max(surface_normal, vec3(0)), 0);
+            return;
+		case 4:
+			frag = vec4(mask, 0);
+	        return;
+	}
 
 	// Get the scaled down coordinates
 	float x = gl_FragCoord.x / float(window.width);
@@ -336,26 +371,6 @@ void main() {
 		case 3:
 			tonemapped = min(color, vec3(1));
 			break;
-	}
-
-    // Optional G-Buffer debug
-    switch(post_processing.gbuffer_debug) {
-		case 0:
-            color = position;
-			tonemapped = position;
-			break;
-		case 1:
-			color = albedo;
-			tonemapped = albedo;
-            break;
-		case 2:
-			color = max(normal, vec3(0));
-			tonemapped = max(normal, vec3(0));
-            break;
-		case 3:
-			color = mask;
-			tonemapped = mask;
-            break;
 	}
 	
 	// Apply gamma correction

@@ -14,7 +14,7 @@ use graphics::{
 use utils::{Handle, Storage};
 
 // Renderpass that will render the scene
-pub type SceneColorLayout = (RGBA<f32>, RGBA<Normalized<u8>>, RGBA<Normalized<i8>>, RGBA<Normalized<u8>>);
+pub type SceneColorLayout = (RGBA<f32>, RGBA<Normalized<u8>>, RGBA<Normalized<i16>>, RGBA<Normalized<u8>>);
 pub type SceneDepthLayout = Depth<f32>;
 
 // Keeps tracks of data that we use for rendering the scene
@@ -26,7 +26,7 @@ pub struct DeferredRenderer {
     // G-Buffer and Depth Texture
     pub(crate) gbuffer_position_texture: Texture2D<RGBA<f32>>,
     pub(crate) gbuffer_albedo_texture: Texture2D<RGBA<Normalized<u8>>>,
-    pub(crate) gbuffer_normal_texture: Texture2D<RGBA<Normalized<i8>>>,
+    pub(crate) gbuffer_normal_texture: Texture2D<RGBA<Normalized<i16>>>,
     pub(crate) gbuffer_mask_texture: Texture2D<RGBA<Normalized<u8>>>,
     pub(crate) depth_texture: Texture2D<SceneDepthLayout>,
 
@@ -131,7 +131,7 @@ impl DeferredRenderer {
         // Create the G-Buffer textures and depth texture
         let gbuffer_position_texture = create_gbuffer_texture::<RGBA<f32>>(graphics, extent);
         let gbuffer_albedo_texture = create_gbuffer_texture::<RGBA<Normalized<u8>>>(graphics, extent);
-        let gbuffer_normal_texture = create_gbuffer_texture::<RGBA<Normalized<i8>>>(graphics, extent);
+        let gbuffer_normal_texture = create_gbuffer_texture::<RGBA<Normalized<i16>>>(graphics, extent);
         let gbuffer_mask_texture = create_gbuffer_texture::<RGBA<Normalized<u8>>>(graphics, extent);
         let depth_texture = create_gbuffer_texture::<Depth<f32>>(graphics, extent);
 
@@ -145,7 +145,7 @@ impl DeferredRenderer {
                 load: LoadOp::Clear(vek::Vec4::zero()),
                 store: StoreOp::Store,
             },
-            Operation::<RGBA<Normalized<i8>>> {
+            Operation::<RGBA<Normalized<i16>>> {
                 load: LoadOp::Clear(vek::Vec4::zero()),
                 store: StoreOp::Store,
             },
