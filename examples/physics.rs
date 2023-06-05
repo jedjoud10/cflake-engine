@@ -19,14 +19,14 @@ fn init(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
     let pipelines = world.get::<Pipelines>().unwrap();
 
-    asset!(assets, "user/textures/diffuse.jpg", "/examples/assets/");
-    asset!(assets, "user/textures/normal.jpg", "/examples/assets/");
-    asset!(assets, "user/textures/mask.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/diffuse1.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/normal1.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/mask1.jpg", "/examples/assets/");
 
     // Load in the diffuse map, normal map, and mask map textures asynchronously
-    let albedo = assets.async_load::<AlbedoMap>(("user/textures/diffuse.jpg", graphics.clone()));
-    let normal = assets.async_load::<NormalMap>(("user/textures/normal.jpg", graphics.clone()));
-    let mask = assets.async_load::<MaskMap>(("user/textures/mask.jpg", graphics.clone()));
+    let albedo = assets.async_load::<AlbedoMap>(("user/textures/diffuse1.jpg", graphics.clone()));
+    let normal = assets.async_load::<NormalMap>(("user/textures/normal1.jpg", graphics.clone()));
+    let mask = assets.async_load::<MaskMap>(("user/textures/mask1.jpg", graphics.clone()));
 
     // Get the material id (also registers the material pipeline)
     let id = pipelines.get::<PbrMaterial>().unwrap();
@@ -58,7 +58,7 @@ fn init(world: &mut World) {
         bumpiness_factor: 0.9,
         roughness_factor: 1.0,
         metallic_factor: 1.0,
-        ambient_occlusion_factor: 2.0,
+        ambient_occlusion_factor: 4.0,
         tint: vek::Rgb::white(),
         scale: vek::Extent2::one(),
     });

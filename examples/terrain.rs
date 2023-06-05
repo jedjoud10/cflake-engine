@@ -36,7 +36,7 @@ fn init(world: &mut World) {
         false,
         4,
         1024,
-        7,
+        6,
         0.5f32,
         0.0f32,
         Some(&[
@@ -70,7 +70,11 @@ fn init(world: &mut World) {
         Position::default(),
         Rotation::default(),
         Velocity::default(),
-        Camera::default(),
+        Camera {
+            near: 0.3,
+            far: 4000.0,
+            ..Default::default()
+        },
         ChunkViewer::default(),
         CameraController::default(),
     ));

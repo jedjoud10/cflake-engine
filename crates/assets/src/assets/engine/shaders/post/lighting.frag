@@ -255,11 +255,9 @@ vec3 brdf(
 ) {
 	// Calculate kS and kD
 	// TODO: Fix this shit it's fucked
-	//vec3 ks = fresnel(surface.f0, camera.half_view, camera.view);
-	vec3 ks = vec3(0);
+	vec3 ks = fresnel(surface.f0, camera.half_view, camera.view);
 	vec3 kd = (1 - ks) * (1 - surface.metallic);
-	kd = vec3(1);
-
+	
 	// Calculate ambient sky color
 	//vec3 ambient = texture(samplerCube(environment_map, environment_map_sampler), surface.normal).rgb;
 	vec3 ambient = calculate_sky_color(surface.normal, -light.backward);
@@ -272,7 +270,7 @@ vec3 brdf(
 	// TODO: This is wrong for some reason?
 	vec3 brdf = kd * (surface.diffuse / PI) + specular(surface.f0, surface.roughness, camera.view, light.backward, surface.normal, camera.half_view) * (1-shadowed);
 	vec3 lighting = vec3(max(dot(light.backward, surface.normal), 0.0)) * (1-shadowed);
-	lighting += (0.05 + ambient * 0.12) * surface.visibility;
+	lighting += (0.05 + ambient * 0.32) * surface.visibility;
 
 	// TODO: IBL
 	brdf = brdf * lighting * light.color;

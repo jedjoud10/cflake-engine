@@ -399,6 +399,9 @@ impl App {
         self.regsys(ecs::pre_frame_or_tick);
         self.regsys(ecs::common);
 
+        // Hierarchy system
+        self.regsys(coords::hierarchy);
+
         // World system
         self.regsys(world::system);
 

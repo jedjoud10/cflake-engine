@@ -166,6 +166,8 @@ pub fn invert_triangle_ordering(triangles: &mut [Triangle<u32>]) {
 }
 
 // Calculate the vertex normals procedurally and return them as a vector
+// This assumes that the mesh is indexed and that vertices are properly shared
+// Can also be used for flat-shaded or low-poly meshes but really inefficient, you should use a custom shader instead
 pub fn compute_normals(
     positions: &[RawPosition],
     triangles: &[Triangle<u32>],

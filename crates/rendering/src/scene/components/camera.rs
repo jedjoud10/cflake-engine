@@ -51,8 +51,8 @@ impl Default for Camera {
         Self {
             hfov: 120.0,
             aspect_ratio: 16.0 / 9.0,
-            near: 1.0,
-            far: 10000.0,
+            near: 0.03,
+            far: 1000.0,
         }
     }
 }

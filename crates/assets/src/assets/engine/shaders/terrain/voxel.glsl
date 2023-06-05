@@ -15,7 +15,7 @@ float voxel(vec3 position, out uint material) {
     float biome2 = test.x * -1200 + position.y;
     float up = abs(test.y) + abs(test.z);
     uint material2 = 0;
-    if (up < 0.4) {
+    if (up < 0.68) {
         material2 = 1;
     } else if (up < 0.8) {
         material2 = 2;
@@ -24,11 +24,11 @@ float voxel(vec3 position, out uint material) {
     }
 
     uint material3 = 2;
-    float rocky = (1 - fbmCellular(position * 0.01 * vec3(1.3, 3, 1), 3, 2.4, 0.5).x) * 220 + position.y - 700;
+    float rocky = (1 - fbmCellular(position * 0.01 * vec3(0.3, 1, 0.1), 4, 2.7, 0.6).x) * 640 + position.y - 700 - fbmCellular(position * 0.01, 4, 2.0, 0.5).x * 200;
 
     float density = mix(biome2, rocky, blend);
 
-    if (blend < 0.5 + snoise(position * 0.005) * 0.4) {
+    if (blend < 0.5 + snoise(position * 0.003) * 0.1) {
         material = material2;
     } else {
         material = material3;

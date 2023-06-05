@@ -4,7 +4,7 @@ use crate::{
     AlbedoMap, AttributeBuffer, Camera, DefaultMaterialResources, DirectionalLight, Environment,
     DeferredRenderer, Indirect, IndirectMesh, MaskMap, Mesh, MultiDrawIndirectCountMesh,
     MultiDrawIndirectMesh, NormalMap, PbrMaterial, Pipelines, SceneUniform,
-    ShadowMapping, SkyMaterial, TimingUniform, WindowUniform, WireframeMaterial,
+    ShadowMapping, TimingUniform, WindowUniform, WireframeMaterial,
 };
 use assets::Assets;
 
@@ -40,9 +40,6 @@ fn init(world: &mut World) {
     // Pre-initialize the pipeline with the material types
     let mut pipelines = Pipelines::new();
     /*
-    pipelines
-        .register::<SkyMaterial>(&graphics, &assets)
-        .unwrap();
     pipelines
         .register::<WireframeMaterial>(&graphics, &assets)
         .unwrap();
@@ -88,7 +85,6 @@ fn init(world: &mut World) {
     world.insert(Storage::<DrawCountIndirectBuffer>::default());
 
     // Add the storages that contain the materials and their resources
-    world.insert(Storage::<SkyMaterial>::default());
     world.insert(Storage::<PbrMaterial>::default());
     world.insert(Storage::<WireframeMaterial>::default());
     world.insert(albedo_maps);

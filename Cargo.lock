@@ -621,6 +621,7 @@ dependencies = [
  "ecs",
  "math",
  "vek",
+ "world",
 ]
 
 [[package]]
