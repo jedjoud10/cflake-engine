@@ -4,7 +4,7 @@ use graphics::{
     Graphics,
 };
 
-use rendering::{DeferredRenderer};
+use rendering::{DeferredRenderer, ShadowMap, ShadowMapping};
 use utils::{Storage, Time};
 use world::{System, World};
 

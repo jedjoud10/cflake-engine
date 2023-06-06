@@ -126,11 +126,17 @@ impl Material for TerrainMaterial {
     fn attributes<P: Pass>() -> rendering::MeshAttributes {
         rendering::MeshAttributes::POSITIONS
     }
-    // TEMP: Enable wireframe
-    fn primitive_config() -> PrimitiveConfig {
+
+    // Disable face culling for shadow
+    fn primitive_config<P: Pass>() -> PrimitiveConfig {
+        let cull_face = match P::pass_type() {
+            rendering::PassType::Deferred => Some(graphics::Face::Front),
+            rendering::PassType::Shadow => None,
+        };
+
         PrimitiveConfig::Triangles {
             winding_order: WindingOrder::Cw,
-            cull_face: Some(graphics::Face::Front),
+            cull_face,
             wireframe: false,
         }
     }

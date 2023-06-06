@@ -92,7 +92,7 @@ void main() {
     // Check skirts in the X direction
     if (gl_GlobalInvocationID.x == 0 || gl_GlobalInvocationID.x == size - 4) {
         check_edge(
-            9999999.0,
+            -9999999.0,
             gl_GlobalInvocationID + uvec3(1, 0, 0),
             uvec3(0, 0, 0),
             uvec3(0, 0, 1),
@@ -106,7 +106,7 @@ void main() {
     // Check skirts in the Y direction
     if (gl_GlobalInvocationID.y == 0 || gl_GlobalInvocationID.y == size - 4) {
         check_edge(
-            9999999.0,
+            -9999999.0,
             gl_GlobalInvocationID + uvec3(0, 1, 0),
             uvec3(0, 0, 0),
             uvec3(1, 0, 0),
@@ -120,7 +120,7 @@ void main() {
     // Check skirts in the Z direction
     if (gl_GlobalInvocationID.z == 0 || gl_GlobalInvocationID.z == size - 4) {
         check_edge(
-            9999999.0,
+            -9999999.0,
             gl_GlobalInvocationID + uvec3(0, 0, 1),
             uvec3(0, 0, 0),
             uvec3(0, 1, 0),

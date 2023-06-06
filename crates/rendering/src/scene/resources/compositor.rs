@@ -39,7 +39,6 @@ fn load_lighting_shader(assets: &Assets, graphics: &Graphics) -> Shader {
 
     compiler.use_uniform_buffer::<ShadowUniform>("shadow_parameters");
     compiler.use_uniform_buffer::<vek::Vec4<vek::Vec4<f32>>>("shadow_lightspace_matrices");
-    compiler.use_uniform_buffer::<f32>("cascade_plane_distances");
     compiler.use_sampled_texture::<ShadowMap>("shadow_map");
     
     Shader::new(vertex, fragment, &compiler).unwrap()
@@ -188,7 +187,7 @@ pub struct PostProcessUniform {
 impl Default for PostProcessUniform {
     fn default() -> Self {
         Self {
-            exposure: 2.0,
+            exposure: 1.0,
             gamma: 2.2,
             vignette_strength: 0.4,
             vignette_size: 0.1,

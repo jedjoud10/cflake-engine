@@ -59,11 +59,6 @@ layout(set = 0, binding = 5) uniform ShadowLightSpaceMatrices {
     mat4 matrices[4];
 } shadow_lightspace_matrices;
 
-// Contains all the cascade plane distances
-layout(set = 0, binding = 6) uniform ShadowPlaneDistances {
-    vec4 distances;
-} cascade_plane_distances;
-
 // Shadow-map texture map
 layout(set = 0, binding = 7) uniform texture2DArray shadow_map;
 
@@ -108,13 +103,6 @@ float calculate_shadowed(
     vec3 light_dir,
     vec3 camera
 ) {
-	/*
-    // Taken from a comment by Octavius Ace from the same learn OpenGL website 
-    vec4 res = step(cascade_plane_distances.distances, vec4(depth));
-    uint layer = uint(res.x + res.y + res.z + res.w);
-    layer = 0;
-	*/
-
     // Get the proper lightspace matrix that we will use
 	uint layer = 0;
 
@@ -149,15 +137,18 @@ float calculate_shadowed(
     // Get texture size
     uint size = uint(textureSize(shadow_map, 0).x);
 	float shadowed = 0.0;
+	shadowed += shadow_linear(layer, uvs.xy /* + shadow_parameters.spread * offset * 2.0 */, size, current + bias);
 
+	/*
 	for (int x = -1; x <= 1; x++) {
 		for (int y = -1; y <= 1; y++) {
 			vec2 offset = vec2(x, y) / size;
 			shadowed += shadow_linear(layer, uvs.xy + shadow_parameters.spread * offset * 2.0, size, current + bias);
 		}
 	}
+	*/
 
-    return (shadowed / 9) * shadow_parameters.strength;
+    return (shadowed) * shadow_parameters.strength;
 }
 
 // UBO that contains the current monitor/window information
@@ -273,7 +264,7 @@ vec3 brdf(
 
 	// TODO: IBL
 	brdf = brdf * lighting * light.color;
-	brdf += (0.05 + ambient * 0.05) * surface.visibility;
+	brdf += (0.1 + ambient * 0.3) * surface.diffuse * 0.6;
 	//brdf += fresnelRoughness(surface.f0, camera.view, surface.normal, surface.roughness) * 0.02;
 	return brdf;
 }
@@ -370,7 +361,7 @@ void main() {
 			tonemapped = reinhard_jodie(color);
 			break;
 		case 2:
-			tonemapped = aces(color);
+			tonemapped = alu(color);
 			break;
 		case 3:
 			tonemapped = min(color, vec3(1));

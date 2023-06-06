@@ -3,6 +3,7 @@ use assets::Assets;
 
 use graphics::{ActivePipeline, Graphics, Texture, Window};
 
+use utils::Time;
 use world::{user, System, World};
 
 // Inserts the compositor render pass
@@ -18,11 +19,11 @@ fn init(world: &mut World) {
 
 // Displays the rendered scene texture to the actual window texture (post-processing pass)
 fn update(world: &mut World) {
-    let _graphics = world.get::<Graphics>().unwrap();
     let renderer = world.get::<DeferredRenderer>().unwrap();
     let mut compositor = world.get_mut::<Compositor>().unwrap();
     let mut window = world.get_mut::<Window>().unwrap();
     let shadow = world.get::<ShadowMapping>().unwrap();
+    let time = world.get::<Time>().unwrap();
 
     // Write the post process settings to the buffer
     let value = compositor.post_process;
@@ -45,6 +46,8 @@ fn update(world: &mut World) {
     let mut render_pass = compositor.lighting_render_pass.begin(dst, ());
     let mut active = render_pass.bind_pipeline(&compositor.lighting_pipeline);
 
+    let index = (((time.frame_count() as usize % 8) as f32) / 8.0).round() as usize;
+
     // Set the shared UBOs first (bind group 0)
     active
         .set_bind_group(0, |group| {
@@ -65,9 +68,6 @@ fn update(world: &mut World) {
                 .unwrap();
             group
                 .set_uniform_buffer("shadow_lightspace_matrices", &shadow.lightspace_buffer, ..)
-                .unwrap();
-            group
-                .set_uniform_buffer("cascade_plane_distances", &shadow.cascade_distances, ..)
                 .unwrap();
             group
                 .set_sampled_texture("shadow_map", &shadow.depth_tex)

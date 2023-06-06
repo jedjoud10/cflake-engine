@@ -60,7 +60,7 @@ impl Material for WireframeMaterial {
     }
 
     // Activate the wireframe mode
-    fn primitive_config() -> graphics::PrimitiveConfig {
+    fn primitive_config<P: Pass>() -> graphics::PrimitiveConfig {
         graphics::PrimitiveConfig::Triangles {
             winding_order: graphics::WindingOrder::Cw,
             cull_face: None,

@@ -1,5 +1,5 @@
 use crate::{
-    AlbedoMap, CameraBuffer, MaskMap, Mesh, NormalMap, SceneBuffer, TimingBuffer, WindowBuffer,
+    AlbedoMap, CameraBuffer, MaskMap, Mesh, NormalMap, SceneBuffer, TimingBuffer, WindowBuffer, create_texture2d, create_uniform_buffer,
 };
 
 use assets::Assets;
@@ -16,6 +16,35 @@ use utils::{Handle, Storage};
 // Renderpass that will render the scene
 pub type SceneColorLayout = (RGBA<f32>, RGBA<Normalized<u8>>, RGBA<Normalized<i16>>, RGBA<Normalized<u8>>);
 pub type SceneDepthLayout = Depth<f32>;
+
+// Create a texture that we will use for the G-Buffer
+pub(crate) fn create_gbuffer_texture<T: Texel>(graphics: &Graphics, extent: vek::Extent2<u32>) -> Texture2D<T> {
+    Texture2D::<T>::from_texels(
+        graphics,
+        None,
+        extent,
+        TextureMode::Resizable,
+        TextureUsage::TARGET | TextureUsage::SAMPLED,
+        Some(SamplerSettings {
+            filter: SamplerFilter::Linear,
+            wrap: SamplerWrap::Repeat,
+            mipmaps: SamplerMipMaps::Auto,
+        }),
+        TextureMipMaps::Disabled,
+    )
+    .unwrap()
+}
+
+// Load a engine default mesh
+pub(crate) fn load_mesh(
+    path: &str,
+    assets: &Assets,
+    graphics: &Graphics,
+    storage: &mut Storage<Mesh>,
+) -> Handle<Mesh> {
+    let mesh = assets.load::<Mesh>((path, graphics.clone())).unwrap();
+    storage.insert(mesh)
+}
 
 // Keeps tracks of data that we use for rendering the scene
 // This will contain the G-Buffer and Depth Texture that we will use for deferred lighting 
@@ -61,60 +90,6 @@ pub struct DeferredRenderer {
     pub rendered_direct_triangles_drawn: u64,
     pub culled_sub_surfaces: u64,
     pub rendered_sub_surfaces: u64,
-}
-
-// Create a new uniform buffer with default contents
-fn create_uniform_buffer<T: GpuPod + Default>(graphics: &Graphics) -> UniformBuffer<T> {
-    UniformBuffer::from_slice(
-        graphics,
-        &[T::default()],
-        BufferMode::Dynamic,
-        BufferUsage::WRITE | BufferUsage::READ,
-    )
-    .unwrap()
-}
-
-// Create a 4x4 texture 2D with the given value
-fn create_texture2d<T: Texel>(graphics: &Graphics, value: T::Storage) -> Texture2D<T> {
-    Texture2D::<T>::from_texels(
-        graphics,
-        Some(&[value; 16]),
-        vek::Extent2::broadcast(4),
-        TextureMode::Dynamic,
-        TextureUsage::SAMPLED | TextureUsage::COPY_DST,
-        Some(SamplerSettings::default()),
-        TextureMipMaps::Disabled,
-    )
-    .unwrap()
-}
-
-// Create a texture that we will use for the G-Buffer
-fn create_gbuffer_texture<T: Texel>(graphics: &Graphics, extent: vek::Extent2<u32>) -> Texture2D<T> {
-    Texture2D::<T>::from_texels(
-        graphics,
-        None,
-        extent,
-        TextureMode::Resizable,
-        TextureUsage::TARGET | TextureUsage::SAMPLED,
-        Some(SamplerSettings {
-            filter: SamplerFilter::Linear,
-            wrap: SamplerWrap::Repeat,
-            mipmaps: SamplerMipMaps::Auto,
-        }),
-        TextureMipMaps::Disabled,
-    )
-    .unwrap()
-}
-
-// Load a engine default mesh
-fn load_mesh(
-    path: &str,
-    assets: &Assets,
-    graphics: &Graphics,
-    storage: &mut Storage<Mesh>,
-) -> Handle<Mesh> {
-    let mesh = assets.load::<Mesh>((path, graphics.clone())).unwrap();
-    storage.insert(mesh)
 }
 
 impl DeferredRenderer {
@@ -197,10 +172,10 @@ impl DeferredRenderer {
             depth_texture,
 
             // Create the common material buffers
-            camera_buffer: create_uniform_buffer(graphics),
-            timing_buffer: create_uniform_buffer(graphics),
-            scene_buffer: create_uniform_buffer(graphics),
-            window_buffer: create_uniform_buffer(graphics),
+            camera_buffer: create_uniform_buffer::<_, 1>(graphics, BufferUsage::WRITE),
+            timing_buffer: create_uniform_buffer::<_, 1>(graphics, BufferUsage::WRITE),
+            scene_buffer: create_uniform_buffer::<_, 1>(graphics, BufferUsage::WRITE),
+            window_buffer: create_uniform_buffer::<_, 1>(graphics, BufferUsage::WRITE),
 
             // Use the handles of the default textures
             white,

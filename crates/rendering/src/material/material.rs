@@ -30,7 +30,7 @@ pub trait Material: 'static + Sized + Sync + Send {
     }
 
     // Get the rasterizer config for this materil
-    fn primitive_config() -> PrimitiveConfig {
+    fn primitive_config<P: Pass>() -> PrimitiveConfig {
         PrimitiveConfig::Triangles {
             winding_order: WindingOrder::Cw,
             cull_face: Some(graphics::Face::Front),

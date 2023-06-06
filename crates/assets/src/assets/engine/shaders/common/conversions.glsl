@@ -14,7 +14,15 @@ vec3 aces(vec3 x) {
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
 }
 
-// randomly found here https://www.shadertoy.com/view/Ml2cWG
+// ALU tonemapping
+// https://www.shadertoy.com/view/tlfXRB
+vec3 alu(vec3 x) {
+    vec3 c = max(vec3(0.0), x - 0.004);
+    return (c * (c * 6.2 + 0.5)) / (c * (c * 6.2 + 1.7) + 0.06);
+}
+
+// randomly found here
+// https://www.shadertoy.com/view/Ml2cWG
 vec3 reinhard_jodie(vec3 c){
     float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
     vec3 tc = c / (c + 1.0);

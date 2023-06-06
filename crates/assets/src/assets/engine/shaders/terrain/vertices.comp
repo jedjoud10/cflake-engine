@@ -77,9 +77,9 @@ vec3 calculate_normal(uvec3 position) {
     float density2 = imageLoad(voxels, ivec3(position) + ivec3(0, 1, 0)).x;
     float density3 = imageLoad(voxels, ivec3(position) + ivec3(0, 0, 1)).x;
     return vec3(
-        density0 - density1,
-        density0 - density2,
-        density0 - density3
+        density1 - density0,
+        density2 - density0,
+        density3 - density0
     );
 }
 
@@ -131,7 +131,6 @@ void main() {
 
     // Decompose the bitflags into booleans
     uint bits = meshing.skirts_direction_bitflags;
-    bits = 0;
     bool start_x = (bits & 1) == 1;
     bool start_y = (bits & 2) == 2;
     bool start_z = (bits & 4) == 4;
@@ -147,7 +146,7 @@ void main() {
     // Update normals and count for skirts
     vec4 current = imageLoad(voxels, ivec3(gl_GlobalInvocationID)); 
     float comp = current.x;
-    if (skirts && comp < 0 && comp > -3.0 * (meshing.threshold * 70.0 + 1.0)) {
+    if (skirts && comp > 0 && comp < 1.0 * (meshing.threshold * 70.0 + 1.0)) {
         normal = calculate_normal(gl_GlobalInvocationID) * 4;
         count = 4;
     }

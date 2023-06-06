@@ -4,7 +4,7 @@ use crate::{
     AlbedoMap, AttributeBuffer, Camera, DefaultMaterialResources, DirectionalLight, Environment,
     DeferredRenderer, Indirect, IndirectMesh, MaskMap, Mesh, MultiDrawIndirectCountMesh,
     MultiDrawIndirectMesh, NormalMap, PbrMaterial, Pipelines, SceneUniform,
-    ShadowMapping, TimingUniform, WindowUniform, WireframeMaterial,
+    ShadowMapping, TimingUniform, WindowUniform, WireframeMaterial, DynPipeline,
 };
 use assets::Assets;
 
@@ -51,10 +51,10 @@ fn init(world: &mut World) {
     // Create a nice shadow map
     let shadowmap = ShadowMapping::new(
         2000f32,
-        4096,
-        [0.01, 0.02, 0.04, 0.1],
+        1024,
+        [0.1, 0.25, 0.5, 1.0],
+        500.0,
         &graphics,
-        &mut assets,
     );
 
     // Drop fetched resources
@@ -135,7 +135,6 @@ fn render(world: &mut World) {
     let renderer = &mut *renderer;
     let scene = world.get::<Scene>().unwrap();
     let pipelines = world.get::<Pipelines>().unwrap();
-    let mut window = world.get_mut::<Window>().unwrap();
     let time = world.get::<Time>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
     let environment = world.get::<Environment>().unwrap();
@@ -199,11 +198,6 @@ fn render(world: &mut World) {
 
     // Skip if we don't have a light to draw with
     let Some(directional_light)  = renderer.main_directional_light else {
-        return;
-    };
-
-    
-    let Ok(dst) = window.as_render_target() else {
         return;
     };
 
@@ -276,35 +270,42 @@ fn render(world: &mut World) {
     };
     drop(scene);
 
-    // Update the shadow map lightspace matrix
-    for index in 0..4 {
-        let shadowmap = &mut *_shadowmap;
+    // Render into a single cascade of the shadow map    
+    fn render_shadows_pipelines(
+        shadowmap: &mut ShadowMapping,
+        default: &mut DefaultMaterialResources,
+        directional_light_rotation: coords::Rotation,
+        camera_position: coords::Position,
+        index: usize,
+        pipelines: &Vec<std::rc::Rc<dyn DynPipeline>>,
+        world: &World
+    ) {
         default.lightspace = Some(shadowmap.update(
             *directional_light_rotation,
-            camera_view,
             *camera_position,
-            camera_projection,
-            *camera_position,
-            camera.near,
-            camera.far,
-            index
+            index,
         ));
-    
+
         let mips = shadowmap.depth_tex.mips_mut();
         let mut level = mips.level_mut(0).unwrap();
-    
+
         // Use layer as render target
         let target = level.layer_as_render_target(index as u32).unwrap();
-    
+
         // Create a new active shadowmap render pass
         let mut render_pass = shadowmap.render_pass.begin((), target);
-    
+
         // Render the shadows first (fuck you)
         for stored in pipelines.iter() {
-            stored.render_shadow(world, &mut default, &mut render_pass);
+            stored.render_shadow(world, default, &mut render_pass);
         }
-    
+
         drop(render_pass);
+    }
+
+    // Render to the shadow map cascades
+    for index in 0..4 {
+        render_shadows_pipelines(&mut _shadowmap, &mut default, directional_light_rotation, camera_position, index, &pipelines, world);
     }
     drop(_shadowmap);
 

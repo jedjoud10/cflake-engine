@@ -57,7 +57,6 @@ fn update(world: &mut World) {
 
         // Remove the chunk CPU range
         chunk.ranges = None;
-
         memory.visibility_bitsets[chunk.allocation].remove(chunk.local_index);
     }
 

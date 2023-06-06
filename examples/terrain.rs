@@ -5,7 +5,7 @@ fn main() {
     App::default()
         .set_app_name("cflake engine terrain example")
         .set_window_fullscreen(true)
-        //set_frame_rate_limit(FrameRateLimit::Limited(120))
+        //.set_frame_rate_limit(FrameRateLimit::Limited(120))
         //.set_logging_level(LevelFilter::Trace)
         .insert_init(init)
         .insert_update(update)
@@ -79,7 +79,7 @@ fn init(world: &mut World) {
 
     // Create a directional light
     let light = DirectionalLight {
-        color: vek::Rgb::one() * 12.6,
+        color: vek::Rgb::one() * 10.0,
     };
     let rotation = vek::Quaternion::rotation_x(-20.0f32.to_radians()).rotated_y(45f32.to_radians());
     scene.insert((light, Rotation::from(rotation)));
@@ -94,7 +94,7 @@ fn init(world: &mut World) {
         bumpiness_factor: 1.0,
         roughness_factor: 1.0,
         metallic_factor: 1.0,
-        ambient_occlusion_factor: 3.0,
+        ambient_occlusion_factor: 1.0,
         tint: vek::Rgb::white(),
         scale: vek::Extent2::one(),
     });

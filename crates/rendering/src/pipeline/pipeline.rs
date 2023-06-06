@@ -42,43 +42,21 @@ pub(crate) const DEPTH_CONFIG: DepthConfig = DepthConfig {
     depth_bias_clamp: 0.0
 };
 
-// Create a shadow render pipeline from a shadow shader
-// This is called not only by the default shadowmap shader, but by materials that define their own shadow shader as well
-pub(crate) fn create_shadow_render_pipeline(
+// Create a render pipeline for a specific pass for a specific material
+pub(crate) fn create_pass_pipeline<M: Material, P: Pass>(
     graphics: &Graphics,
     shader: &Shader,
-    attributes: MeshAttributes,
-) -> Result<RenderPipeline<(), ShadowDepthLayout>, PipelineInitializationError> {    
-    RenderPipeline::<(), ShadowDepthLayout>::new(
+) -> Result<RenderPipeline<P::C, P::DS>, PipelineInitializationError> {
+    RenderPipeline::<P::C, P::DS>::new(
         graphics,
         Some(DEPTH_CONFIG),
         None,
         None,
-        crate::attributes::enabled_to_vertex_config(attributes),
-        PrimitiveConfig::Triangles {
-            winding_order: WindingOrder::Ccw,
-            cull_face: Some(Face::Back),
-            wireframe: false,
-        },
+        crate::attributes::enabled_to_vertex_config(M::attributes::<P>()),
+        M::primitive_config::<P>(),
         shader,
     )
 }
-
-fn create_deferred_render_pipeline<M: Material>(
-    graphics: &Graphics,
-    shader: &Shader
-) -> Result<RenderPipeline<SceneColorLayout, SceneDepthLayout>, PipelineInitializationError> {
-    RenderPipeline::new(
-        graphics,
-        Some(DEPTH_CONFIG),
-        None,
-        None,
-        crate::attributes::enabled_to_vertex_config(M::attributes::<DeferredPass>()),
-        M::primitive_config(),
-        shader,
-    )
-}
-
 
 impl<M: Material> Pipeline<M> {
     // Create a new material pipeline for the given material
@@ -89,11 +67,10 @@ impl<M: Material> Pipeline<M> {
         assets: &Assets,
     ) -> Result<Self, PipelineInitializationError> {
         let shader = M::shader::<DeferredPass>(&settings, graphics, assets).unwrap();
-        let pipeline = create_deferred_render_pipeline::<M>(graphics, &shader)?;
+        let pipeline = create_pass_pipeline::<M, DeferredPass>(graphics, &shader)?;
 
         let shadow_shader = M::shader::<ShadowPass>(&settings, graphics, assets);
-        let shadow_attributes = M::attributes::<ShadowPass>();
-        let shadow_pipeline = shadow_shader.as_ref().map(|x| create_shadow_render_pipeline(graphics, x, shadow_attributes));
+        let shadow_pipeline = shadow_shader.as_ref().map(|shader| create_pass_pipeline::<M, ShadowPass>(graphics, shader));
         let shadow_pipeline = if let Some(pp) = shadow_pipeline { Some(pp?) } else { None };
 
         Ok(Self {

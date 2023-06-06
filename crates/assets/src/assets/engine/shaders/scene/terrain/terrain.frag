@@ -1,5 +1,5 @@
 #version 460 core
-#define lowpoly
+//#define lowpoly
 
 // G-Buffer data write
 layout(location = 0) out vec4 gbuffer_position;
@@ -47,8 +47,8 @@ layout(set = 0, binding = 13) uniform sampler layered_mask_map_sampler;
 
 // Triplanar mapping offset and UV scale
 const float offset = 0.0;
-const vec2 scale = vec2(0.01) * vec2(-1, -1); 
-const float normal_strength = 0.8;
+const vec2 scale = vec2(0.03) * vec2(-1, -1); 
+const float normal_strength = 1.0;
 
 // Get the blending offset to be used internally in the triplanar texture
 vec3 get_blend(vec3 normal) {
@@ -171,6 +171,6 @@ void main() {
 	gbuffer_position = vec4(m_position, 0);
 	gbuffer_albedo = vec4(albedo, 1);
 	gbuffer_normal = vec4(normal, 0);
-	gbuffer_normal = vec4(surface_normal, 0);
+	//gbuffer_normal = vec4(surface_normal, 0);
 	gbuffer_mask = vec4(mask * vec3(1, 10, 0), 0);
 }
