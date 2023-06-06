@@ -99,10 +99,8 @@ fn readback_end_update(world: &mut World) {
     // Decompose the terrain into its subresources
     let mut _terrain = terrain;
     let terrain = &mut *_terrain;
-    let (_manager, _voxelizer, _mesher, memory, settings) = (
+    let (manager, memory, settings) = (
         &mut terrain.manager,
-        &terrain.voxelizer,
-        &terrain.mesher,
         &mut terrain.memory,
         &terrain.settings,
     );
@@ -167,9 +165,7 @@ fn readback_end_update(world: &mut World) {
 
         // Set visibility if the chunk is actually visible
         if valid {
-            memory.visibility_bitsets[chunk.allocation].set(chunk.local_index);
-        } else {
-            memory.visibility_bitsets[chunk.allocation].remove(chunk.local_index);
+            manager.new_visibilities.push((chunk.allocation, chunk.local_index));
         }
     }
 

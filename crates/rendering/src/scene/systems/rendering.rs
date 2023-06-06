@@ -51,8 +51,8 @@ fn init(world: &mut World) {
     // Create a nice shadow map
     let shadowmap = ShadowMapping::new(
         2000f32,
-        2048,
-        [0.005, 0.01, 0.02, 0.1],
+        4096,
+        [0.01, 0.02, 0.04, 0.1],
         &graphics,
         &mut assets,
     );
@@ -305,7 +305,6 @@ fn render(world: &mut World) {
         }
     
         drop(render_pass);
-        graphics.submit(false);
     }
     drop(_shadowmap);
 

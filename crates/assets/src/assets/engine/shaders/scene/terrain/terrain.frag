@@ -1,4 +1,5 @@
 #version 460 core
+#define lowpoly
 
 // G-Buffer data write
 layout(location = 0) out vec4 gbuffer_position;
@@ -170,5 +171,6 @@ void main() {
 	gbuffer_position = vec4(m_position, 0);
 	gbuffer_albedo = vec4(albedo, 1);
 	gbuffer_normal = vec4(normal, 0);
+	gbuffer_normal = vec4(surface_normal, 0);
 	gbuffer_mask = vec4(mask * vec3(1, 10, 0), 0);
 }

@@ -36,9 +36,7 @@ fn init(world: &mut World) {
         false,
         4,
         1024,
-        6,
-        0.5f32,
-        0.0f32,
+        7,
         Some(&[
             TerrainSubMaterial {
                 diffuse: "user/textures/diffuse1.jpg".to_string(),
@@ -72,7 +70,7 @@ fn init(world: &mut World) {
         Velocity::default(),
         Camera {
             near: 0.3,
-            far: 4000.0,
+            far: 9000.0,
             ..Default::default()
         },
         ChunkViewer::default(),
@@ -81,7 +79,7 @@ fn init(world: &mut World) {
 
     // Create a directional light
     let light = DirectionalLight {
-        color: vek::Rgb::one() * 3.6,
+        color: vek::Rgb::one() * 12.6,
     };
     let rotation = vek::Quaternion::rotation_x(-20.0f32.to_radians()).rotated_y(45f32.to_radians());
     scene.insert((light, Rotation::from(rotation)));

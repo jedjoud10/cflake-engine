@@ -6,6 +6,7 @@
 #include <engine/shaders/noises/fbm.glsl>
 
 // Main voxel function that will create the shape of the terrain
+// Negative values represent terrain, positive values represent air
 float voxel(vec3 position, out uint material) {
     float biome1 = fbm(position.xz * 0.02, 3, 2.0, 0.4) * 5 + position.y;
     vec3 test = erosion(position.xz * 0.002, 0.2);
@@ -24,15 +25,15 @@ float voxel(vec3 position, out uint material) {
     }
 
     uint material3 = 2;
-    float rocky = (1 - fbmCellular(position * 0.01 * vec3(0.3, 1, 0.1), 4, 2.7, 0.6).x) * 640 + position.y - 700 - fbmCellular(position * 0.01, 4, 2.0, 0.5).x * 200;
-
+    float rocky = position.y + fbmCellular(position * 0.001, 4, 0.8, 3.0).y * -60 + 10;
+    rocky = opSmoothUnion(rocky, position.y - 40, 10);
     float density = mix(biome2, rocky, blend);
 
-    if (blend < 0.5 + snoise(position * 0.003) * 0.1) {
+    if (blend < 0.5 - cellular(position * 0.008).x * 0.1) {
         material = material2;
     } else {
         material = material3;
     }
     
-    return density;
+    return -density;
 }

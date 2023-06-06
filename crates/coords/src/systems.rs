@@ -27,6 +27,10 @@ pub trait HierarchyManager: private::HierarchyManagerInternal {
         child: Entity,
         parent: Entity,
     ) -> Option<()> {
+        if child == parent {
+            return None;
+        }
+
         // Check if the child entity is not already linked to a parent entity
         let entry = self.entry(child)?;
         if entry.get::<Child>().is_some() {
@@ -177,7 +181,7 @@ fn update_hierarchy(world: &mut World) {
                 // Update the global rotation based on the parent rotation
                 let global_rot =
                     if let Some(((global, local), parent)) = rot {
-                        **global = **local * *parent;
+                        **global = *parent * **local;
                         Some(*global)
                     } else {
                         None

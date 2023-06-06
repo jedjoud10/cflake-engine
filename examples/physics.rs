@@ -50,25 +50,38 @@ fn init(world: &mut World) {
     let normal = normal_maps.insert(normal);
     let mask = mask_maps.insert(mask);
 
-    // Create a new material instance
+    // Create a new material instance for the gound
+    let ground = pbrs.insert(PbrMaterial {
+        albedo_map: Some(diffuse.clone()),
+        normal_map: Some(normal.clone()),
+        mask_map: Some(mask.clone()),
+        bumpiness_factor: 0.9,
+        roughness_factor: 1.0,
+        metallic_factor: 1.0,
+        ambient_occlusion_factor: 1.0,
+        tint: vek::Rgb::white(),
+        scale: vek::Extent2::one() * 25.0,
+    });
+
+    // Create a new material instance for the cubes and spheres
     let material = pbrs.insert(PbrMaterial {
-        albedo_map: Some(diffuse),
+        albedo_map: None,
         normal_map: Some(normal),
         mask_map: Some(mask),
         bumpiness_factor: 0.9,
         roughness_factor: 1.0,
         metallic_factor: 1.0,
-        ambient_occlusion_factor: 4.0,
+        ambient_occlusion_factor: 1.0,
         tint: vek::Rgb::white(),
         scale: vek::Extent2::one(),
     });
 
     // Create a simple floor and add the entity
-    let surface = Surface::new(plane, material.clone(), id.clone());
+    let surface = Surface::new(plane, ground.clone(), id.clone());
     let renderer = Renderer::default();
-    let scale = Scale::uniform(25.0);
+    let scale = Scale::uniform(50.0);
     let rigidbody = RigidBody::new(RigidBodyType::Fixed, true);
-    let collider = CuboidCollider::new(vek::Extent3::new(25.0, 0.03, 25.0), 1.0, None);
+    let collider = CuboidCollider::new(vek::Extent3::new(50.0, 0.03, 50.0), 1.0, None);
     scene.insert((surface, renderer, scale, rigidbody, collider));
 
     // Create a prefab that contains the sphere entity and it's components

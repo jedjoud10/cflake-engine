@@ -23,8 +23,6 @@ pub struct TerrainSettings {
 
     // Octree params
     pub(crate) max_depth: u32,
-    pub(crate) lod_multipliers: Rc<RefCell<Vec<f32>>>,
-    pub(crate) min_lod_distance: Rc<RefCell<f32>>,
 
     // Memory managing settings
     pub(crate) allocation_count: usize,
@@ -61,8 +59,6 @@ impl TerrainSettings {
         allocations: usize,
         sub_allocations: usize,
         max_depth: u32,
-        lod_multiplier: f32,
-        min_lod_distance: f32,
         sub_materials: Option<&[TerrainSubMaterial]>,
     ) -> Result<Self, TerrainSettingsError> {
         let mut output_vertex_buffer_length =
@@ -98,8 +94,6 @@ impl TerrainSettings {
         let triangles_per_sub_allocation =
             (triangle_sub_allocations_length.floor() as u32).next_power_of_two();
 
-        let lod_multipliers = vec![1f32, 1.1, 1.3, 0.9, 0.9, 1.2, 0.2, 0.0];
-
         Ok(Self {
             size: resolution,
             blocky,
@@ -112,8 +106,6 @@ impl TerrainSettings {
             triangles_per_sub_allocation,
             sub_materials: sub_materials.map(|x| x.to_vec()),
             max_depth,
-            min_lod_distance: Rc::new(RefCell::new(min_lod_distance)),
-            lod_multipliers: Rc::new(RefCell::new(lod_multipliers)),
         })
     }
 

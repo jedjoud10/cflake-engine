@@ -41,10 +41,11 @@ fn update(world: &mut World) {
             chunk.state = ChunkState::Free;
             chunk.node = None;
         }
-    }
 
-    // I AM OOPDATINGG AAAAAAAAAAAA
-    let _time = world.get::<Time>().unwrap();
+        for (allocation, local_index) in manager.new_visibilities.drain(..) {
+            memory.visibility_bitsets[allocation].set(local_index);
+        }
+    }
 
     let graphics = world.get::<Graphics>().unwrap();
     let mut pass = ComputePass::begin(&graphics);

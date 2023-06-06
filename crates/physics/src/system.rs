@@ -225,6 +225,23 @@ fn pre_step_sync_rapier_to_comps(physics: &mut Physics, scene: &mut Scene, surfa
     }
 }
 
+// Checks all the character controllers in the world and updates them
+fn post_step_update_character_controllers(physics: &mut Physics, scene: &mut Scene) {
+    for (rigidbody, cuboid, sphere, capsule)
+
+    let ecm = self.controller.move_shape(
+        physics.integration_parameters.dt,
+        &physics.bodies,
+        &physics.colliders,
+        todo!(),
+        todo!(),
+        todo!(),
+        todo!(),
+        todo!(),
+        |collision| { /* Handle or collect the collision in this closure. */ }
+    );
+}
+
 // Creates the physics resource and add it into the world
 fn init(world: &mut World) {
     let physics = Physics::new();
@@ -282,6 +299,9 @@ fn tick(world: &mut World) {
 
     // Step through the physics simulation each tick
     physics.step();
+
+    // Update character controller rigid-bodies
+    post_step_update_character_controllers(physics, scene);
 
 
     fn set_sub_tick_coords_type<TimeFrame: 'static>(scene: &mut Scene, bodies: &mut RigidBodySet, interpolated: bool) {

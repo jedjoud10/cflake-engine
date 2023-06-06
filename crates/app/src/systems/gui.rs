@@ -357,11 +357,6 @@ fn update(world: &mut World) {
                     }
                 });
 
-            ui.horizontal(|ui| {
-                ui.label("LOD Minimum Distance Control: ");
-                let mut value = terrain.manager.min_lod_distance.borrow_mut();
-                ui.add(egui::Slider::new(&mut *value, 0.1f32..=1024f32));
-            });
         });
     }
 

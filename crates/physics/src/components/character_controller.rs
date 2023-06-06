@@ -6,6 +6,7 @@ use crate::Physics;
 #[derive(Component)]
 pub struct CharacterController {
     controller: rapier3d::control::KinematicCharacterController,
+    
 }
 
 impl CharacterController {
@@ -26,17 +27,8 @@ impl CharacterController {
         }
     }
 
-    fn update(&mut self, physics: &mut Physics) {
-        let ecm = self.controller.move_shape(
-            physics.integration_parameters.dt,
-            &physics.bodies,
-            &physics.colliders,
-            todo!(),
-            todo!(),
-            todo!(),
-            todo!(),
-            todo!(),
-            |collision| { /* Handle or collect the collision in this closure. */ }
-        );
+    // Move the character controller in a specific direction
+    pub fn translate(&mut self,) {
+
     }
 }

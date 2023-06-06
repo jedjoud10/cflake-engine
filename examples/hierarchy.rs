@@ -21,6 +21,7 @@ fn init(world: &mut World) {
     let renderer = world.get::<DeferredRenderer>().unwrap();
     let cube = renderer.cube.clone();
 
+    // Create a default material
     let material = pbrs.insert(PbrMaterial {
         albedo_map: None,
         normal_map: None,
@@ -28,11 +29,12 @@ fn init(world: &mut World) {
         bumpiness_factor: 0.9,
         roughness_factor: 1.0,
         metallic_factor: 1.0,
-        ambient_occlusion_factor: 4.0,
+        ambient_occlusion_factor:14.0,
         tint: vek::Rgb::white(),
         scale: vek::Extent2::one(),
     });
 
+    // Create a parent entity that will contain multiple children
     let surface = Surface::new(cube.clone(), material.clone(), id.clone());
     let renderer = Renderer::default();
     let parent = scene.insert((
@@ -42,9 +44,10 @@ fn init(world: &mut World) {
         Rotation::default(),
     ));
     
+    // Create a child entity that we will attach to the parent entity
     let surface = Surface::new(cube.clone(), material.clone(), id.clone());
     let renderer = Renderer::default();
-    let child = scene.insert((
+    let child1 = scene.insert((
         surface,
         renderer,
         RelativePosition::at_y(5.0),
@@ -52,8 +55,23 @@ fn init(world: &mut World) {
         Position::default(),
         Rotation::default(),
     ));
-    scene.attach(child, parent).unwrap();
+    scene.attach(child1, parent).unwrap();
 
+    let surface = Surface::new(cube.clone(), material.clone(), id.clone());
+    let renderer = Renderer::default();
+
+    /*
+    // TODO: Pwease fix
+    let child2 = scene.insert((
+        surface,
+        renderer,
+        RelativePosition::at_y(5.0),
+        RelativeRotation::default(),
+        Position::default(),
+        Rotation::default(),
+    ));
+    scene.attach(child2, child1).unwrap();
+    */
 
     scene.insert((
         Position::default(),
@@ -73,9 +91,15 @@ fn init(world: &mut World) {
 fn update(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
     let mut time = world.get::<Time>().unwrap();
-    let (parent, rotation) = scene.find_mut::<(&Parent, &mut Rotation)>().unwrap();
-    rotation.rotate_x(-0.3 * time.delta().as_secs_f32());
 
-    let (child, rotation) = scene.find_mut::<(&Child, &mut RelativeRotation)>().unwrap();
-    //rotation.rotate_x(-0.3 * time.delta().as_secs_f32());
+    for (_, rotation, relative_rotation) in scene.query_mut::<(&Parent, &mut Rotation, Option<&mut RelativeRotation>)>() {
+        if let Some(relative_rotation) = relative_rotation {
+            relative_rotation.rotate_x(-0.3 * time.delta().as_secs_f32());
+        } else {
+            rotation.rotate_x(-0.3 * time.delta().as_secs_f32());
+        }
+    }
+
+    //let (child, rotation) = scene.find_mut::<(&Child, &mut RelativeRotation)>().unwrap();
+    //rotation.rotate_y(-0.3 * time.delta().as_secs_f32());
 }

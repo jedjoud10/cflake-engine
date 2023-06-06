@@ -270,11 +270,11 @@ vec3 brdf(
 	// TODO: This is wrong for some reason?
 	vec3 brdf = kd * (surface.diffuse / PI) + specular(surface.f0, surface.roughness, camera.view, light.backward, surface.normal, camera.half_view) * (1-shadowed);
 	vec3 lighting = vec3(max(dot(light.backward, surface.normal), 0.0)) * (1-shadowed);
-	lighting += (0.05 + ambient * 0.32) * surface.visibility;
 
 	// TODO: IBL
 	brdf = brdf * lighting * light.color;
-	brdf += fresnelRoughness(surface.f0, camera.view, surface.normal, surface.roughness) * 0.40;
+	brdf += (0.05 + ambient * 0.05) * surface.visibility;
+	//brdf += fresnelRoughness(surface.f0, camera.view, surface.normal, surface.roughness) * 0.02;
 	return brdf;
 }
 
@@ -340,6 +340,12 @@ void main() {
 		dir = (inverse(camera.view) * vec4(dir, 0)).xyz;
 		dir = normalize(dir);
 		color = calculate_sky_color(dir, scene.sun_direction.xyz);
+
+		// Create a procedural sun with the scene params
+		float sun = dot(dir, -scene.sun_direction.xyz);
+		float out_sun = pow(max(sun * 0.3, 0), 3) * 3;
+		out_sun += pow(clamp(sun - 0.9968, 0, 1.0) * 250, 4) * 16;
+		color += vec3(out_sun);
 	}
     
     

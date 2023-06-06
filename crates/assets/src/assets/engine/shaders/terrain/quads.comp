@@ -65,7 +65,7 @@ void check_edge(
 ) {
     // Get the densities of the edge
     float density1 = imageLoad(voxels, ivec3(end)).x;
-    bool dir = density1 > 0.0;
+    bool dir = density1 < 0.0;
 
     // TODO: Optimize w bitwise coed
     if (force) {
@@ -73,7 +73,7 @@ void check_edge(
     }
 
     // Create a quad if they do
-    if ((density0 > 0.0 ^^ density1 > 0.0)) {
+    if ((density0 < 0.0 ^^ density1 < 0.0)) {
         add_quad(
             quad0,
             quad1,
