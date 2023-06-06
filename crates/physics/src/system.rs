@@ -227,6 +227,7 @@ fn pre_step_sync_rapier_to_comps(physics: &mut Physics, scene: &mut Scene, surfa
 
 // Checks all the character controllers in the world and updates them
 fn post_step_update_character_controllers(physics: &mut Physics, scene: &mut Scene) {
+    /*
     for (rigidbody, cuboid, sphere, capsule)
 
     let ecm = self.controller.move_shape(
@@ -240,6 +241,7 @@ fn post_step_update_character_controllers(physics: &mut Physics, scene: &mut Sce
         todo!(),
         |collision| { /* Handle or collect the collision in this closure. */ }
     );
+    */
 }
 
 // Creates the physics resource and add it into the world

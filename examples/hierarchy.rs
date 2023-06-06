@@ -13,7 +13,6 @@ fn main() {
 
 // Creates a movable camera, and sky entity
 fn init(world: &mut World) {
-    let graphics = world.get::<Graphics>().unwrap();
     let mut pbrs = world.get_mut::<Storage<PbrMaterial>>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
     let pipelines = world.get::<Pipelines>().unwrap();
@@ -57,22 +56,20 @@ fn init(world: &mut World) {
     ));
     scene.attach(child1, parent).unwrap();
 
+    // Create another childr entity that we will attach to the other child
     let surface = Surface::new(cube.clone(), material.clone(), id.clone());
     let renderer = Renderer::default();
-
-    /*
-    // TODO: Pwease fix
     let child2 = scene.insert((
         surface,
         renderer,
-        RelativePosition::at_y(5.0),
+        RelativePosition::at_y(10.0),
         RelativeRotation::default(),
         Position::default(),
         Rotation::default(),
     ));
     scene.attach(child2, child1).unwrap();
-    */
 
+    // Create the main camera
     scene.insert((
         Position::default(),
         Rotation::default(),
@@ -81,6 +78,7 @@ fn init(world: &mut World) {
         CameraController::default(),
     ));
 
+    // Create the main light source
     let light = DirectionalLight {
         color: vek::Rgb::one() * 4.6,
     };
@@ -88,6 +86,7 @@ fn init(world: &mut World) {
     scene.insert((light, Rotation::from(rotation)));
 }
 
+// Update the local and global rotations of the children and parent
 fn update(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
     let mut time = world.get::<Time>().unwrap();
@@ -96,10 +95,7 @@ fn update(world: &mut World) {
         if let Some(relative_rotation) = relative_rotation {
             relative_rotation.rotate_x(-0.3 * time.delta().as_secs_f32());
         } else {
-            rotation.rotate_x(-0.3 * time.delta().as_secs_f32());
+            rotation.rotate_x(0.15 * time.delta().as_secs_f32());
         }
     }
-
-    //let (child, rotation) = scene.find_mut::<(&Child, &mut RelativeRotation)>().unwrap();
-    //rotation.rotate_y(-0.3 * time.delta().as_secs_f32());
 }

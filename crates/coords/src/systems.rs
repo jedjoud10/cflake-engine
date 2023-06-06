@@ -121,6 +121,85 @@ fn update_hierarchy(world: &mut World) {
         );
     }
 
+    /*
+    loop {
+        let mut current = transforms.keys().into_iter().cloned().collect::<Vec<_>>();
+
+        let drained = std::mem::take(&mut current);
+        for entity in drained {
+            let entry = scene.entry_mut(entity).unwrap();
+
+            if let Some(parent) = entry.get::<Parent>() {
+                let children = &parent.children;
+                current.extend(children);
+            }
+
+            let Some(child) = entry.get::<Child>() else {
+                continue;
+            };
+
+            if let Some(parent_transform) = transforms.get(&child.parent)
+            {
+
+                let (parent_position, parent_rotation, parent_scale) =
+                    parent_transform;
+
+                // Zip the required elements
+                let pos =
+                    global_pos.zip(local_pos).zip(*parent_position);
+                let rot =
+                    global_rot.zip(local_rot).zip(*parent_rotation);
+                let scl =
+                    global_scl.zip(local_scale).zip(*parent_scale);
+
+                // Update the global position based on the parent position (and parent rotation)
+                let global_pos =
+                    if let Some(((global, local), parent)) = pos {
+                        if let Some(parent_rotation) = parent_rotation
+                        {
+                            **global =
+                                vek::Mat4::from(parent_rotation)
+                                    .mul_point(**local + *parent);
+                        } else {
+                            **global = **local + *parent;
+                        }
+
+                        Some(*global)
+                    } else {
+                        None
+                    };
+
+                // Update the global rotation based on the parent rotation
+                let global_rot =
+                    if let Some(((global, local), parent)) = rot {
+                        **global = *parent * **local;
+                        Some(*global)
+                    } else {
+                        None
+                    };
+
+                // Update the global scale based on the parent scale
+                let global_scl =
+                    if let Some(((global, local), parent)) = scl {
+                        **global = **local * *parent;
+                        Some(*global)
+                    } else {
+                        None
+                    };
+
+                // Act as if the child we just updated is a parent itself
+                transforms.insert(
+                    *entity,
+                    (global_pos, global_rot, global_scl),
+                );
+            } else {
+                // We must repeat this for another pass it seems
+                recurse = true;
+            }
+        }
+    }
+    */
+
     // Iterate recursively until all the entities finished updating their locations
     let mut recurse = true;
     while recurse {
@@ -168,7 +247,7 @@ fn update_hierarchy(world: &mut World) {
                         {
                             **global =
                                 vek::Mat4::from(parent_rotation)
-                                    .mul_point(**local + *parent);
+                                    .mul_point(**local) + parent;
                         } else {
                             **global = **local + *parent;
                         }
