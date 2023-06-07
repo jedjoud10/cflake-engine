@@ -431,17 +431,17 @@ impl Asset for GltfScene {
                     // TODO: Implement multi-buffer per allocation support to optimize this
                     cached_meshes.entry(key).or_insert_with(|| {
                         // Create buffers and AABB
-                        let (positions, aabb) = create_positions_vec(&mapped_accessors[key.0]);
-                        let normals = key
+                        let (mut positions, aabb) = create_positions_vec(&mapped_accessors[key.0]);
+                        let mut normals = key
                             .1
                             .map(|index| create_normals_vec(&mapped_accessors[index]));
                         let mut tangents = key
                             .2
                             .map(|index| create_tangents_vec(&mapped_accessors[index]));
-                        let tex_coords = key
+                        let mut tex_coords = key
                             .3
                             .map(|index| create_tex_coords_vec(&mapped_accessors[index]));
-                        let triangles = create_triangles_vec(&mapped_accessors[key.4]);
+                        let mut triangles = create_triangles_vec(&mapped_accessors[key.4]);
 
                         // Optionally generate the tangents
                         if let (Some(normals), Some(tex_coords)) =
@@ -454,6 +454,23 @@ impl Asset for GltfScene {
                                 .unwrap(),
                             );
                         }
+
+                        let mut temp_positions = Some(positions.as_mut_slice());
+                        let mut temp_normals = normals.as_mut().map(|x| x.as_mut_slice());
+                        let mut temp_tangents = tangents.as_mut().map(|x| x.as_mut_slice());
+                        let mut temp_tex_coords = tex_coords.as_mut().map(|x| x.as_mut_slice());
+
+                        // Optimize the mesh after we load it
+                        super::optimize(
+                            true,
+                            true,
+                            true,
+                            &mut temp_positions,
+                            &mut temp_normals,
+                            &mut temp_tangents,
+                            &mut temp_tex_coords,
+                            &mut triangles,
+                        );
 
                         // Create a new mesh for the accessors used
                         let mut mesh = Mesh::from_slices(

@@ -2,9 +2,9 @@
 
 use crate::{
     AlbedoMap, AttributeBuffer, Camera, DefaultMaterialResources, DirectionalLight, Environment,
-    ForwardRenderer, Indirect, IndirectMesh, MaskMap, Mesh, MultiDrawIndirectCountMesh,
+    DeferredRenderer, Indirect, IndirectMesh, MaskMap, Mesh, MultiDrawIndirectCountMesh,
     MultiDrawIndirectMesh, NormalMap, PbrMaterial, Pipelines, SceneUniform,
-    ShadowMapping, SkyMaterial, TimingUniform, WindowUniform, WireframeMaterial,
+    ShadowMapping, TimingUniform, WindowUniform, WireframeMaterial, DynPipeline,
 };
 use assets::Assets;
 
@@ -27,7 +27,7 @@ fn init(world: &mut World) {
     let mut meshes = Storage::<Mesh>::default();
 
     // Create the scene renderer, pipeline manager
-    let renderer = ForwardRenderer::new(
+    let renderer = DeferredRenderer::new(
         &graphics,
         &assets,
         window.size(),
@@ -39,12 +39,11 @@ fn init(world: &mut World) {
 
     // Pre-initialize the pipeline with the material types
     let mut pipelines = Pipelines::new();
-    pipelines
-        .register::<SkyMaterial>(&graphics, &assets)
-        .unwrap();
+    /*
     pipelines
         .register::<WireframeMaterial>(&graphics, &assets)
         .unwrap();
+    */
     pipelines
         .register::<PbrMaterial>(&graphics, &assets)
         .unwrap();
@@ -53,9 +52,9 @@ fn init(world: &mut World) {
     let shadowmap = ShadowMapping::new(
         2000f32,
         2048,
-        [0.003, 0.01, 0.02, 0.05],
+        [0.02, 0.08, 0.50, 0.9],
+        3000.0,
         &graphics,
-        &mut assets,
     );
 
     // Drop fetched resources
@@ -86,7 +85,6 @@ fn init(world: &mut World) {
     world.insert(Storage::<DrawCountIndirectBuffer>::default());
 
     // Add the storages that contain the materials and their resources
-    world.insert(Storage::<SkyMaterial>::default());
     world.insert(Storage::<PbrMaterial>::default());
     world.insert(Storage::<WireframeMaterial>::default());
     world.insert(albedo_maps);
@@ -104,13 +102,13 @@ fn event(world: &mut World, event: &mut WindowEvent) {
                 return;
             }
 
-            // Handle resizing the depth texture
+            // Resize the G-Buffer textures and Depth texture
             let size = vek::Extent2::new(size.width, size.height);
-            let mut renderer = world.get_mut::<ForwardRenderer>().unwrap();
-
-            // Resize the color and depth texture
+            let mut renderer = world.get_mut::<DeferredRenderer>().unwrap();
+            renderer.gbuffer_albedo_texture.resize(size).unwrap();
+            renderer.gbuffer_mask_texture.resize(size).unwrap();
+            renderer.gbuffer_normal_texture.resize(size).unwrap();
             renderer.depth_texture.resize(size).unwrap();
-            renderer.color_texture.resize(size).unwrap();
 
             // Update the uniform
             renderer
@@ -132,7 +130,7 @@ fn event(world: &mut World, event: &mut WindowEvent) {
 // Clear the window and render the entities to the texture
 fn render(world: &mut World) {
     // Fetch the resources that we will use for rendering the scene
-    let mut renderer = world.get_mut::<ForwardRenderer>().unwrap();
+    let mut renderer = world.get_mut::<DeferredRenderer>().unwrap();
     let mut _shadowmap = world.get_mut::<ShadowMapping>().unwrap();
     let renderer = &mut *renderer;
     let scene = world.get::<Scene>().unwrap();
@@ -259,63 +257,70 @@ fn render(world: &mut World) {
         indirect_tex_coords: &indirect_tex_coords_attribute,
         indirect_triangles: &indirect_triangles,
         draw_indexed_indirect_buffers: &indexed_indirect_buffers,
+        lightspace: None,
+
+        /*
         drawn_unique_material_count: &mut renderer.drawn_unique_material_count,
         material_instances_count: &mut renderer.material_instances_count,
         rendered_direct_vertices_drawn: &mut renderer.rendered_direct_vertices_drawn,
         rendered_direct_triangles_drawn: &mut renderer.rendered_direct_triangles_drawn,
         culled_sub_surfaces: &mut renderer.culled_sub_surfaces,
         rendered_sub_surfaces: &mut renderer.rendered_sub_surfaces,
+        */
     };
     drop(scene);
 
-    /*
-    // Update the shadow map lightspace matrix
-    let shadowmap = &mut *_shadowmap;
-    let index = (time.frame_count() as u32) % 4;
-    let lightspace = shadowmap.update(
-        *directional_light_rotation,
-        camera_view,
-        camera_projection,
-        *camera_position,
-        camera.near,
-        camera.far,
-        index as usize
-    );
+    // Render into a single cascade of the shadow map    
+    fn render_shadows_pipelines(
+        shadowmap: &mut ShadowMapping,
+        default: &mut DefaultMaterialResources,
+        directional_light_rotation: coords::Rotation,
+        camera_position: coords::Position,
+        index: usize,
+        pipelines: &Vec<std::rc::Rc<dyn DynPipeline>>,
+        world: &World
+    ) {
+        default.lightspace = Some(shadowmap.update(
+            *directional_light_rotation,
+            *camera_position,
+            index,
+        ));
 
-    let mips = shadowmap.depth_tex.mips_mut();
-    let mut level = mips.level_mut(0).unwrap();
+        let mips = shadowmap.depth_tex.mips_mut();
+        let mut level = mips.level_mut(0).unwrap();
 
-    // Use layer as render target
-    let target = level.layer_as_render_target(index).unwrap();
+        // Use layer as render target
+        let target = level.layer_as_render_target(index as u32).unwrap();
 
-    // Create a new active shadowmap render pass
-    let mut render_pass = shadowmap.render_pass.begin((), target);
+        // Create a new active shadowmap render pass
+        let mut render_pass = shadowmap.render_pass.begin((), target);
 
-    // Get the default shadowmap render pipeline
-    let default_shadow_pipeline = &shadowmap.pipeline;
+        // Render the shadows first (fuck you)
+        for stored in pipelines.iter() {
+            stored.render_shadow(world, default, &mut render_pass);
+        }
 
-    // Render the shadows first (fuck you)
-    for stored in pipelines.iter() {
-        stored.render_shadows(world, &mut default, &mut render_pass, default_shadow_pipeline, lightspace);
+        drop(render_pass);
     }
 
-    // Send the command encoder
-    drop(default_shadow_pipeline);
-    drop(render_pass);
-    drop(level);
-    drop(mips);
-    drop(shadowmap);
-    */
-
-    // Drop resources
+    // Render to the shadow map cascades
+    let index = time.frame_count() as usize % 4;
+    render_shadows_pipelines(&mut _shadowmap, &mut default, directional_light_rotation, camera_position, index, &pipelines, world);
+    for index in 0..4 {
+    }
     drop(_shadowmap);
 
     // Begin the scene color render pass
-    let color = renderer.color_texture.as_render_target().unwrap();
+    let gbuffer_position = renderer.gbuffer_position_texture  .as_render_target().unwrap();
+    let gbuffer_albedo = renderer.gbuffer_albedo_texture.as_render_target().unwrap();
+    let gbuffer_normal = renderer.gbuffer_normal_texture.as_render_target().unwrap();
+    let gbuffer_mask = renderer.gbuffer_mask_texture.as_render_target().unwrap();
+    let gbuffer = (gbuffer_position, gbuffer_albedo, gbuffer_normal, gbuffer_mask);
     let depth = renderer.depth_texture.as_render_target().unwrap();
-    let mut render_pass = renderer.render_pass.begin(color, depth);
+    let mut render_pass = renderer.deferred_render_pass.begin(gbuffer, depth);
 
     // This will iterate over each material pipeline and draw the scene
+    default.lightspace = None;
     for stored in pipelines.iter() {
         stored.render(world, &mut default, &mut render_pass);
     }

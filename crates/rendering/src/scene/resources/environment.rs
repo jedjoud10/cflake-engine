@@ -53,7 +53,7 @@ pub struct Environment {
     pub(crate) temp: TempEnvironmentMap,
 
     // Compute shader that will create the envinronment map
-    pub(crate) shader: ComputeShader,
+    //pub(crate) shader: ComputeShader,
 
     // Projection and view matrices
     views: [vek::Mat4<f32>; 6],
@@ -63,6 +63,7 @@ pub struct Environment {
 impl Environment {
     // Create a new scene environment render passes and cubemaps
     pub(crate) fn new(graphics: &Graphics, assets: &Assets) -> Self {
+        /*
         // Load the environment compute shader
         let compute = assets
             .load::<ComputeModule>("engine/shaders/scene/environment/environment.comp")
@@ -72,6 +73,7 @@ impl Environment {
         let mut compiler = Compiler::new(assets, graphics);
         compiler.use_storage_texture::<TempEnvironmentMap>("enviro", StorageAccess::WriteOnly);
         let shader = ComputeShader::new(compute, &compiler).unwrap();
+        */
 
         // Convert the eqilateral texture to a cubemap texture
         let projection =
@@ -97,7 +99,7 @@ impl Environment {
 
             temp: create_temp_cubemap(graphics, vek::Vec4::zero(), 128),
 
-            shader,
+            //shader,
             views,
             projection,
         }

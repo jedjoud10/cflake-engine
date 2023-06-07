@@ -2,6 +2,8 @@ mod angular_velocity;
 mod velocity;
 mod rigid_body;
 mod colliders;
+mod character_controller;
+pub use character_controller::*;
 pub use colliders::*;
 pub use rigid_body::*;
 

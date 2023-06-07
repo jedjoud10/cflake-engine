@@ -19,20 +19,20 @@ fn init(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
     let pipelines = world.get::<Pipelines>().unwrap();
 
-    asset!(assets, "user/textures/diffuse4.jpg", "/examples/assets/");
-    asset!(assets, "user/textures/normal4.jpg", "/examples/assets/");
-    asset!(assets, "user/textures/mask4.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/diffuse1.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/normal1.jpg", "/examples/assets/");
+    asset!(assets, "user/textures/mask1.jpg", "/examples/assets/");
 
     // Load in the diffuse map, normal map, and mask map textures asynchronously
-    let albedo = assets.async_load::<AlbedoMap>(("user/textures/diffuse4.jpg", graphics.clone()));
-    let normal = assets.async_load::<NormalMap>(("user/textures/normal4.jpg", graphics.clone()));
-    let mask = assets.async_load::<MaskMap>(("user/textures/mask4.jpg", graphics.clone()));
+    let albedo = assets.async_load::<AlbedoMap>(("user/textures/diffuse1.jpg", graphics.clone()));
+    let normal = assets.async_load::<NormalMap>(("user/textures/normal1.jpg", graphics.clone()));
+    let mask = assets.async_load::<MaskMap>(("user/textures/mask1.jpg", graphics.clone()));
 
     // Get the material id (also registers the material pipeline)
     let id = pipelines.get::<PbrMaterial>().unwrap();
 
     // Get the default meshes from the forward renderer
-    let renderer = world.get::<ForwardRenderer>().unwrap();
+    let renderer = world.get::<DeferredRenderer>().unwrap();
     let plane = renderer.plane.clone();
     let sphere = renderer.sphere.clone();
     let cube = renderer.cube.clone();
@@ -50,25 +50,38 @@ fn init(world: &mut World) {
     let normal = normal_maps.insert(normal);
     let mask = mask_maps.insert(mask);
 
-    // Create a new material instance
-    let material = pbrs.insert(PbrMaterial {
-        albedo_map: Some(diffuse),
-        normal_map: Some(normal),
-        mask_map: Some(mask),
-        bumpiness_factor: 0.5,
+    // Create a new material instance for the gound
+    let ground = pbrs.insert(PbrMaterial {
+        albedo_map: Some(diffuse.clone()),
+        normal_map: Some(normal.clone()),
+        mask_map: Some(mask.clone()),
+        bumpiness_factor: 0.9,
         roughness_factor: 1.0,
         metallic_factor: 1.0,
-        ambient_occlusion_factor: 2.0,
+        ambient_occlusion_factor: 1.0,
+        tint: vek::Rgb::white(),
+        scale: vek::Extent2::one() * 25.0,
+    });
+
+    // Create a new material instance for the cubes and spheres
+    let material = pbrs.insert(PbrMaterial {
+        albedo_map: None,
+        normal_map: Some(normal),
+        mask_map: Some(mask),
+        bumpiness_factor: 0.9,
+        roughness_factor: 1.0,
+        metallic_factor: 1.0,
+        ambient_occlusion_factor: 1.0,
         tint: vek::Rgb::white(),
         scale: vek::Extent2::one(),
     });
 
     // Create a simple floor and add the entity
-    let surface = Surface::new(plane, material.clone(), id.clone());
+    let surface = Surface::new(plane, ground.clone(), id.clone());
     let renderer = Renderer::default();
-    let scale = Scale::uniform(25.0);
+    let scale = Scale::uniform(50.0);
     let rigidbody = RigidBody::new(RigidBodyType::Fixed, true);
-    let collider = CuboidCollider::new(vek::Extent3::new(25.0, 0.1, 25.0), 1.0, 0.2, 0.2);
+    let collider = CuboidCollider::new(vek::Extent3::new(50.0, 0.03, 50.0), 1.0, None);
     scene.insert((surface, renderer, scale, rigidbody, collider));
 
     // Create a prefab that contains the sphere entity and it's components
@@ -79,7 +92,7 @@ fn init(world: &mut World) {
     let rigidbody = RigidBody::new(RigidBodyType::Dynamic, true);
     let velocity = Velocity::default();
     let angular_velocity = AngularVelocity::default();
-    let collider = SphereCollider::new(1.0, 1.0, 0.2, 0.99);
+    let collider = SphereCollider::new(1.0, 1.0, None);
     scene.prefabify("sphere", (renderer, position, rotation, surface, rigidbody, collider, velocity, angular_velocity));
 
     // Create a prefab that contains the cube entity and it's components
@@ -87,14 +100,14 @@ fn init(world: &mut World) {
     let position = Position::default();
     let rotation = Rotation::default();
     let surface = Surface::new(cube, material, id);
-    let rigidbody = RigidBody::new(RigidBodyType::Dynamic, false);
+    let rigidbody = RigidBody::new(RigidBodyType::Dynamic, true);
     let velocity = Velocity::default();
     let angular_velocity = AngularVelocity::default();
-    let collider = CuboidCollider::new(vek::Extent3::broadcast(1.0), 10.0, 0.2, 0.2);
+    let collider = CuboidCollider::new(vek::Extent3::broadcast(1.0), 10.0, None);
     scene.prefabify("cube", (renderer, position, rotation, surface, rigidbody, collider, velocity, angular_velocity));
 
     // Create a movable camera
-    let collider = SphereCollider::new(1.4, 1.0, 1.0, 0.0);
+    let collider = SphereCollider::new(2.0, 1.0, None);
     scene.insert((
         Position::default(),
         Rotation::default(),

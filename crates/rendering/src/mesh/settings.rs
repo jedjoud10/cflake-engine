@@ -24,6 +24,11 @@ pub struct MeshImportSettings {
     pub translation: vek::Vec3<f32>,
     pub rotation: vek::Quaternion<f32>,
     pub scale: vek::Vec3<f32>,
+
+    // Custom mesh optimization
+    pub optimize_overdraw: bool,
+    pub optimize_vertex_cache: bool,
+    pub optimize_vertex_fetch: bool,
 }
 
 impl Default for MeshImportSettings {
@@ -41,6 +46,9 @@ impl Default for MeshImportSettings {
             translation: vek::Vec3::zero(),
             rotation: vek::Quaternion::identity(),
             scale: vek::Vec3::one(),
+            optimize_overdraw: true,
+            optimize_vertex_cache: true,
+            optimize_vertex_fetch: true,
         }
     }
 }

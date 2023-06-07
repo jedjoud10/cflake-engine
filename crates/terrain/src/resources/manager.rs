@@ -1,5 +1,7 @@
 
 
+use std::{cell::RefCell, rc::Rc, time::Instant};
+
 use ahash::{AHashMap};
 use assets::{Assets, AsyncHandle};
 
@@ -35,13 +37,16 @@ pub struct ChunkManager {
 
     // Octree used for chunk generation
     pub(crate) octree: Octree,
+    pub lod_multipliers: Rc<RefCell<Vec<f32>>>,
+
     pub(crate) entities: AHashMap<Node, Entity>,
 
     // Single entity that contains multiple meshes that represent the terrain
     pub(crate) global_draw_entity: Entity,
     pub(crate) chunks_per_allocation: usize,
+    pub(crate) new_visibilities: Vec<(usize, usize)>,
 
-    // Viewer (camera) position
+    // Viewer (camera) position and last instant when it moved
     pub(crate) viewer: Option<(Entity, vek::Vec3<f32>, vek::Quaternion<f32>)>,
 }
 
@@ -138,17 +143,20 @@ impl ChunkManager {
 
         // Custom octree heuristic
         let size = settings.size;
-        let lod_multiplier = settings.lod_multiplier;
+        let lod_multiplier = Rc::new(RefCell::new(vec![1f32, 1.1, 1.3, 0.9, 0.9, 1.2, 0.2, 0.0]));
+        let lod_multiplier_cloned = lod_multiplier.clone();
         let heuristic = math::OctreeHeuristic::Boxed(Box::new(move |target, node| {
             let div = (node.size() / size).next_power_of_two();
+
+            let multiplier = lod_multiplier.borrow()[node.depth() as usize];
 
             math::aabb_sphere(
                 &node.aabb(),
                 &math::Sphere {
                     center: *target,
-                    radius: (size as f32 * div as f32 * lod_multiplier * 0.5),
+                    radius: (size as f32 * div as f32 * multiplier * 0.5),
                 },
-            ) || node.depth() <= 2
+            )
         }));
 
         // Create an octree for LOD chunk generation
@@ -165,7 +173,9 @@ impl ChunkManager {
             layered_albedo_map,
             layered_normal_map,
             layered_mask_map,
+            new_visibilities: Default::default(),
             chunks_per_allocation: 0,
+            lod_multipliers: lod_multiplier_cloned,
         }
     }
 }

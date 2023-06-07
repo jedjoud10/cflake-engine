@@ -1,3 +1,4 @@
+// Camera, scene, and shadowmap shared objects
 layout(set = 0, binding = 0) uniform CameraUniform {
     // Projection & view matrix
     mat4 projection;

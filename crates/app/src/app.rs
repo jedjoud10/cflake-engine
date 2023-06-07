@@ -274,6 +274,22 @@ impl App {
 
         // We must now start the game engine (start the winit event loop)
         el.run(move |event, _, cf| match event {
+            // Call the window events
+            winit::event::Event::WindowEvent {
+                window_id: _,
+                mut event,
+            } => {
+                systems.window.execute((&mut world, &mut event));
+            }
+
+            // Call the device events
+            winit::event::Event::DeviceEvent {
+                device_id: _,
+                event,
+            } => {
+                systems.device.execute((&mut world, &event));
+            }
+
             // Call the update events
             winit::event::Event::MainEventsCleared => {
                 sleeper.loop_start();
@@ -331,22 +347,6 @@ impl App {
             winit::event::Event::LoopDestroyed => {
                 systems.shutdown.execute(&mut world);
             }
-
-            // Call the window events
-            winit::event::Event::WindowEvent {
-                window_id: _,
-                mut event,
-            } => {
-                systems.window.execute((&mut world, &mut event));
-            }
-
-            // Call the device events
-            winit::event::Event::DeviceEvent {
-                device_id: _,
-                event,
-            } => {
-                systems.device.execute((&mut world, &event));
-            }
             _ => {}
         });
     }
@@ -398,6 +398,9 @@ impl App {
         self.regsys(ecs::post_frame_or_tick);
         self.regsys(ecs::pre_frame_or_tick);
         self.regsys(ecs::common);
+
+        // Hierarchy system
+        self.regsys(coords::hierarchy);
 
         // World system
         self.regsys(world::system);

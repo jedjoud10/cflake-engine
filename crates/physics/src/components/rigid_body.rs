@@ -37,4 +37,28 @@ impl RigidBody {
     pub fn is_sleeping(&self) -> bool {
         self.sleeping
     }
+
+    // Apply an impulse on the rigid-body
+    pub fn apply_impulse(&mut self, impulse: vek::Vec3<f32>) {
+    }
+
+    // Apply a torque impulse on the rigid-body
+    pub fn apply_torque_impulse(&mut self, impulse: vek::Vec3<f32>) {
+    }
+
+    // Apply an impulse at a specific point on the rigid-body
+    pub fn apply_impulse_at_point(&mut self, impulse: vek::Vec3<f32>, point: vek::Vec3<f32>) {
+    }
+
+    // Add a force to the rigid-body
+    pub fn add_force(&mut self, force: vek::Vec3<f32>) {
+    }
+
+    // Add a torque force on the rigid-body
+    pub fn add_torque(&mut self, torque: vek::Vec3<f32>) {
+    }
+
+    // Apply a force at a specific point on the rigid-body
+    pub fn add_force_at_point(&mut self, force: vek::Vec3<f32>, point: vek::Vec3<f32>) {
+    }
 }

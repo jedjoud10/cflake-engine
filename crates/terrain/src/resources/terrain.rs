@@ -1,3 +1,5 @@
+use std::{rc::Rc, cell::RefCell, cmp::min};
+
 use crate::{
     ChunkCuller, ChunkManager, MemoryManager, MeshGenerator, VoxelGenerator,
 };
@@ -21,7 +23,6 @@ pub struct TerrainSettings {
 
     // Octree params
     pub(crate) max_depth: u32,
-    pub(crate) lod_multiplier: f32,
 
     // Memory managing settings
     pub(crate) allocation_count: usize,
@@ -29,7 +30,7 @@ pub struct TerrainSettings {
 
     // Vertices and triangles per allocation
     pub(crate) output_triangle_buffer_length: usize,
-    pub(crate) output_tex_coord_buffer_length: usize,
+    pub(crate) output_vertex_buffer_length: usize,
 
     // Vertices and triangles per sub allocation
     pub(crate) vertices_per_sub_allocation: u32,
@@ -58,7 +59,6 @@ impl TerrainSettings {
         allocations: usize,
         sub_allocations: usize,
         max_depth: u32,
-        lod_multiplier: f32,
         sub_materials: Option<&[TerrainSubMaterial]>,
     ) -> Result<Self, TerrainSettingsError> {
         let mut output_vertex_buffer_length =
@@ -101,12 +101,11 @@ impl TerrainSettings {
             allocation_count: allocations,
             sub_allocation_count: sub_allocations,
             output_triangle_buffer_length,
-            output_tex_coord_buffer_length: output_vertex_buffer_length,
+            output_vertex_buffer_length,
             vertices_per_sub_allocation,
             triangles_per_sub_allocation,
             sub_materials: sub_materials.map(|x| x.to_vec()),
             max_depth,
-            lod_multiplier,
         })
     }
 

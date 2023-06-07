@@ -1,3 +1,5 @@
+use std::time::{Instant, Duration};
+
 use crate::{
     Chunk, ChunkState, ChunkViewer, Terrain,
 };
@@ -23,7 +25,7 @@ fn update(world: &mut World) {
     // Tries to find a chunk viewer and the terrain generator
     let terrain = world.get_mut::<Terrain>();
     let mut scene = world.get_mut::<Scene>().unwrap();
-    let _time = world.get::<Time>().unwrap();
+    let time = world.get::<Time>().unwrap();
     let viewer = scene.find_mut::<(&Entity, &mut ChunkViewer, &Position, &Rotation)>();
 
     // If we don't have terrain, don't do shit
@@ -50,13 +52,10 @@ fn update(world: &mut World) {
     // Fetch the old chunk viewer position value
     let mut added = false;
     let new = **viewer_position;
-    let old = if let Some((_, old, _)) = &mut manager.viewer {
-        *old
-    } else {
+    if manager.viewer.is_none() {
         manager.viewer = Some((*entity, new, **viewer_rotation));
         added = true;
-        new
-    };
+    }
 
     // Makes sure that we don't generate when we're not done removing/generating old chunks
     let count = scene
@@ -66,7 +65,7 @@ fn update(world: &mut World) {
         .count();
 
     // Check if it moved since last frame
-    if (added || new != old) && count == 0 {
+    if added || count == 0 {
         // Update the old chunk viewer position value
         if let Some((_, val, _)) = manager.viewer.as_mut() {
             *val = new;
@@ -80,11 +79,6 @@ fn update(world: &mut World) {
 
         // Don't do shit
         if added.is_empty() && removed.is_empty() {
-            return;
-        }
-
-        // If we don't add chunks just exit
-        if added.is_empty() {
             return;
         }
 
@@ -175,7 +169,7 @@ fn update(world: &mut World) {
                         allocation,
                         local_index: old_per_allocation + i,
                         generation_priority: 0.0f32,
-                        readback_priority: 0.0f32,
+                        readback_priority: None,
                         ranges: None,
                         node: None,
                     };
@@ -223,7 +217,9 @@ fn update(world: &mut World) {
             chunk.generation_priority = chunk.generation_priority.clamp(0.0f32, 1000.0f32);
 
             // Update readback priority for each chunk *around* the user (needed for collisions)
-            chunk.readback_priority = 1.0 / viewer_position.distance(**position).max(1.0);
+            if node.size() == settings.size {
+                chunk.readback_priority = Some(1.0 / viewer_position.distance(**position).max(1.0));
+            }
 
             assert!(res.is_none());
         }

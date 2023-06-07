@@ -1,5 +1,5 @@
 use crate::{
-    AlbedoMap, CameraBuffer, MaskMap, Mesh, NormalMap, SceneBuffer, TimingBuffer, WindowBuffer,
+    AlbedoMap, CameraBuffer, MaskMap, Mesh, NormalMap, SceneBuffer, TimingBuffer, WindowBuffer, create_texture2d, create_uniform_buffer,
 };
 
 use assets::Assets;
@@ -9,25 +9,55 @@ use graphics::{
     ActiveRenderPass, ActiveRenderPipeline, BufferMode, BufferUsage, Depth, GpuPod,
     Graphics, LoadOp, Operation, RenderPass, SamplerFilter,
     SamplerMipMaps, SamplerSettings, SamplerWrap, StoreOp, Texel, Texture, Texture2D,
-    TextureMipMaps, TextureMode, TextureUsage, UniformBuffer, RGBA,
+    TextureMipMaps, TextureMode, TextureUsage, UniformBuffer, RGBA, BGRA, SwapchainFormat, RenderPipeline, VertexModule, FragmentModule, Compiler, Shader, VertexConfig, PrimitiveConfig, Normalized,
 };
 use utils::{Handle, Storage};
 
 // Renderpass that will render the scene
-pub type SceneColor = RGBA<f32>;
-pub type SceneDepth = Depth<f32>;
-pub type SceneRenderPass = RenderPass<SceneColor, SceneDepth>;
-pub type ActiveSceneRenderPass<'r, 't> = ActiveRenderPass<'r, 't, SceneColor, SceneDepth>;
-pub type ActiveScenePipeline<'a, 'r, 't> = ActiveRenderPipeline<'a, 'r, 't, SceneColor, SceneDepth>;
+pub type SceneColorLayout = (RGBA<f32>, RGBA<Normalized<u8>>, RGBA<Normalized<i16>>, RGBA<Normalized<u8>>);
+pub type SceneDepthLayout = Depth<f32>;
+
+// Create a texture that we will use for the G-Buffer
+pub(crate) fn create_gbuffer_texture<T: Texel>(graphics: &Graphics, extent: vek::Extent2<u32>) -> Texture2D<T> {
+    Texture2D::<T>::from_texels(
+        graphics,
+        None,
+        extent,
+        TextureMode::Resizable,
+        TextureUsage::TARGET | TextureUsage::SAMPLED,
+        Some(SamplerSettings {
+            filter: SamplerFilter::Linear,
+            wrap: SamplerWrap::Repeat,
+            mipmaps: SamplerMipMaps::Auto,
+        }),
+        TextureMipMaps::Disabled,
+    )
+    .unwrap()
+}
+
+// Load a engine default mesh
+pub(crate) fn load_mesh(
+    path: &str,
+    assets: &Assets,
+    graphics: &Graphics,
+    storage: &mut Storage<Mesh>,
+) -> Handle<Mesh> {
+    let mesh = assets.load::<Mesh>((path, graphics.clone())).unwrap();
+    storage.insert(mesh)
+}
 
 // Keeps tracks of data that we use for rendering the scene
-pub struct ForwardRenderer {
-    // Main render pass that we will use to render to the swapchain
-    pub(crate) render_pass: SceneRenderPass,
+// This will contain the G-Buffer and Depth Texture that we will use for deferred lighting 
+pub struct DeferredRenderer {
+    // Main deferred render pass that we will use to render to the swapchain
+    pub(crate) deferred_render_pass: RenderPass<SceneColorLayout, SceneDepthLayout>,
 
-    // Since we use post processing, we will write to a texture instead
-    pub(crate) color_texture: Texture2D<SceneColor>,
-    pub(crate) depth_texture: Texture2D<SceneDepth>,
+    // G-Buffer and Depth Texture
+    pub(crate) gbuffer_position_texture: Texture2D<RGBA<f32>>,
+    pub(crate) gbuffer_albedo_texture: Texture2D<RGBA<Normalized<u8>>>,
+    pub(crate) gbuffer_normal_texture: Texture2D<RGBA<Normalized<i16>>>,
+    pub(crate) gbuffer_mask_texture: Texture2D<RGBA<Normalized<u8>>>,
+    pub(crate) depth_texture: Texture2D<SceneDepthLayout>,
 
     // Main camera entity that we use to render the scene
     pub main_camera: Option<Entity>,
@@ -62,43 +92,7 @@ pub struct ForwardRenderer {
     pub rendered_sub_surfaces: u64,
 }
 
-// Create a new uniform buffer with default contents
-fn create_uniform_buffer<T: GpuPod + Default>(graphics: &Graphics) -> UniformBuffer<T> {
-    UniformBuffer::from_slice(
-        graphics,
-        &[T::default()],
-        BufferMode::Dynamic,
-        BufferUsage::WRITE | BufferUsage::READ,
-    )
-    .unwrap()
-}
-
-// Create a 4x4 texture 2D with the given value
-fn create_texture2d<T: Texel>(graphics: &Graphics, value: T::Storage) -> Texture2D<T> {
-    Texture2D::<T>::from_texels(
-        graphics,
-        Some(&[value; 16]),
-        vek::Extent2::broadcast(4),
-        TextureMode::Dynamic,
-        TextureUsage::SAMPLED | TextureUsage::COPY_DST,
-        Some(SamplerSettings::default()),
-        TextureMipMaps::Disabled,
-    )
-    .unwrap()
-}
-
-// Load a engine default mesh
-fn load_mesh(
-    path: &str,
-    assets: &Assets,
-    graphics: &Graphics,
-    storage: &mut Storage<Mesh>,
-) -> Handle<Mesh> {
-    let mesh = assets.load::<Mesh>((path, graphics.clone())).unwrap();
-    storage.insert(mesh)
-}
-
-impl ForwardRenderer {
+impl DeferredRenderer {
     // Create a new scene render pass and the forward renderer
     pub(crate) fn new(
         graphics: &Graphics,
@@ -109,49 +103,44 @@ impl ForwardRenderer {
         normal_maps: &mut Storage<NormalMap>,
         mask_maps: &mut Storage<MaskMap>,
     ) -> Self {
-        // Create the render pass color texture
-        let color_texture = Texture2D::<RGBA<f32>>::from_texels(
-            graphics,
-            None,
-            extent,
-            TextureMode::Resizable,
-            TextureUsage::TARGET | TextureUsage::SAMPLED,
-            Some(SamplerSettings {
-                filter: SamplerFilter::Linear,
-                wrap: SamplerWrap::Repeat,
-                mipmaps: SamplerMipMaps::Auto,
-            }),
-            TextureMipMaps::Disabled,
-        )
-        .unwrap();
+        // Create the G-Buffer textures and depth texture
+        let gbuffer_position_texture = create_gbuffer_texture::<RGBA<f32>>(graphics, extent);
+        let gbuffer_albedo_texture = create_gbuffer_texture::<RGBA<Normalized<u8>>>(graphics, extent);
+        let gbuffer_normal_texture = create_gbuffer_texture::<RGBA<Normalized<i16>>>(graphics, extent);
+        let gbuffer_mask_texture = create_gbuffer_texture::<RGBA<Normalized<u8>>>(graphics, extent);
+        let depth_texture = create_gbuffer_texture::<Depth<f32>>(graphics, extent);
 
-        // Create the render pass depth texture
-        let depth_texture = Texture2D::<Depth<f32>>::from_texels(
-            graphics,
-            None,
-            extent,
-            TextureMode::Resizable,
-            TextureUsage::TARGET | TextureUsage::SAMPLED,
-            Some(SamplerSettings {
-                filter: SamplerFilter::Linear,
-                wrap: SamplerWrap::Repeat,
-                mipmaps: SamplerMipMaps::Auto,
-            }),
-            TextureMipMaps::Disabled,
-        )
-        .unwrap();
-
-        // Create the forward shading scene pass
-        let render_pass = SceneRenderPass::new(
-            graphics,
-            Operation {
-                load: LoadOp::Clear(vek::Vec4::broadcast(0f32)),
+        // Tuple that contains the clear operations of the G-Buffer textures
+        let color_operations = (
+            Operation::<RGBA<f32>> {
+                load: LoadOp::Clear(vek::Vec4::zero()),
                 store: StoreOp::Store,
             },
-            Operation {
-                load: LoadOp::Clear(1.0),
+            Operation::<RGBA<Normalized<u8>>> {
+                load: LoadOp::Clear(vek::Vec4::zero()),
                 store: StoreOp::Store,
             },
+            Operation::<RGBA<Normalized<i16>>> {
+                load: LoadOp::Clear(vek::Vec4::zero()),
+                store: StoreOp::Store,
+            },
+            Operation::<RGBA<Normalized<u8>>> {
+                load: LoadOp::Clear(vek::Vec4::zero()),
+                store: StoreOp::Store,
+            },
+        );
+        
+        // Clear operation of the depth texture
+        let depth_stencil_operations = Operation {
+            load: LoadOp::Clear(1.0),
+            store: StoreOp::Store,
+        };
+
+        // Create the deferred scene pass that will write to the G-Buffer
+        let render_pass = RenderPass::<SceneColorLayout, SceneDepthLayout>::new(
+            graphics,
+            color_operations,
+            depth_stencil_operations,
         );
 
         // Create the default 1x1 textures colors
@@ -173,22 +162,27 @@ impl ForwardRenderer {
         let sphere = load_mesh("engine/meshes/sphere.obj", assets, graphics, meshes);
 
         Self {
-            // Render pass, color texture, and depth texture
-            render_pass,
-            color_texture,
+            // Render pass, G-Buffer textures, and depth texture
+            deferred_render_pass: render_pass,
+            gbuffer_position_texture,
+            
+            gbuffer_albedo_texture,
+            gbuffer_normal_texture,
+            gbuffer_mask_texture,
             depth_texture,
 
             // Create the common material buffers
-            camera_buffer: create_uniform_buffer(graphics),
-            timing_buffer: create_uniform_buffer(graphics),
-            scene_buffer: create_uniform_buffer(graphics),
-            window_buffer: create_uniform_buffer(graphics),
+            camera_buffer: create_uniform_buffer::<_, 1>(graphics, BufferUsage::WRITE),
+            timing_buffer: create_uniform_buffer::<_, 1>(graphics, BufferUsage::WRITE),
+            scene_buffer: create_uniform_buffer::<_, 1>(graphics, BufferUsage::WRITE),
+            window_buffer: create_uniform_buffer::<_, 1>(graphics, BufferUsage::WRITE),
 
             // Use the handles of the default textures
             white,
             black,
             normal,
             mask,
+
 
             // No default camera
             main_camera: None,

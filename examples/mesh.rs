@@ -33,7 +33,7 @@ fn init(world: &mut World) {
     let id = pipelines.get::<PbrMaterial>().unwrap();
 
     // Get the default meshes from the forward renderer
-    let renderer = world.get::<ForwardRenderer>().unwrap();
+    let renderer = world.get::<DeferredRenderer>().unwrap();
     let plane = renderer.plane.clone();
     let sphere = renderer.sphere.clone();
 

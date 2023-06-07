@@ -1,26 +1,38 @@
 #version 460 core
 //#define lowpoly
 
-layout(location = 0) out vec4 frag;
+// G-Buffer data write
+layout(location = 0) out vec4 gbuffer_position;
+layout(location = 1) out vec4 gbuffer_albedo;
+layout(location = 2) out vec4 gbuffer_normal;
+layout(location = 3) out vec4 gbuffer_mask;
 
 // Data given by the vertex shader
 layout(location = 0) in vec3 m_position;
 layout(location = 1) in vec3 m_local_position;
 layout(location = 2) in vec3 m_normal;
-layout(location = 3) in float lod;
+layout(location = 3) in flat uint draw; 
 
-// Camera, scene, and shadowmap shared objects
-#include <engine/shaders/common/camera.glsl>
-#include <engine/shaders/common/scene.glsl>
-#include <engine/shaders/common/shadow.glsl>
-#include <engine/shaders/noises/noise3D.glsl>
-#include <engine/shaders/noises/fbm.glsl>
-#include <engine/shaders/common/sky.glsl>
-#include <engine/shaders/math/models.glsl>
-#include <engine/shaders/math/dither.glsl>
-#include <engine/shaders/math/triplanar.glsl>
+// Used to calculate barycentric coordinates
+layout (constant_id = 1) const uint input_vertices_count = 1;
+layout (constant_id = 2) const uint input_triangles_count = 1;
+layout(std430, set = 2, binding = 1) readonly buffer InputVertices {
+    vec4 data[input_vertices_count];
+} input_vertices;
+layout(std430, set = 2, binding = 2) readonly buffer InputTriangles {
+    uint data[input_triangles_count];
+} input_triangles;
+struct IndexedIndirectDrawArgs {
+    uint vertex_count;
+    uint instance_count;
+    uint base_index;
+    int vertex_offset;
+    uint base_instance;
+};
+layout(std430, set = 2, binding = 3) readonly buffer IndirectBuffer {
+    IndexedIndirectDrawArgs data[];
+} indirect;
 
-#ifdef submaterials
 // Albedo / diffuse map texture array
 layout(set = 0, binding = 8) uniform texture2DArray layered_albedo_map;
 layout(set = 0, binding = 9) uniform sampler layered_albedo_map_sampler;
@@ -35,8 +47,8 @@ layout(set = 0, binding = 13) uniform sampler layered_mask_map_sampler;
 
 // Triplanar mapping offset and UV scale
 const float offset = 0.0;
-const vec2 scale = vec2(0.05) * vec2(-1, 1); 
-const float normal_strength = 0.5;
+const vec2 scale = vec2(0.12) * vec2(-1, -1); 
+const float normal_strength = 1.0;
 
 // Get the blending offset to be used internally in the triplanar texture
 vec3 get_blend(vec3 normal) {
@@ -83,60 +95,82 @@ vec3 triplanar_normal(float layer, vec3 normal) {
 	vec3 normal_final = normalize(normalx.zyx + normaly.xzy + normalz.xyz);
 	return normal_final;
 }
-#endif
+
+// Fetch the position (and material index) of a specific vertex that makes the current rasterized triangle
+vec4 fetch_vertex_position_and_material(uint vertex) {
+	uint base = indirect.data[draw].base_index;
+	uint vertex_offset = indirect.data[draw].vertex_offset;
+	uint index = input_triangles.data[gl_PrimitiveID * 3 + base + vertex];
+	vec4 packed = input_vertices.data[index + vertex_offset];
+    uint packed_cell_position = floatBitsToUint(packed.x);
+    uint packed_inner_position = floatBitsToUint(packed.y);
+	vec4 cell_position = unpackUnorm4x8(packed_cell_position) * 255;
+    vec4 inner_position = unpackSnorm4x8(packed_inner_position);
+    return vec4((cell_position + inner_position).xyz, packed.w);
+}
 
 void main() {
-	// Get normals either by derivating them or getting them smoothed
 	#ifdef lowpoly
 	vec3 surface_normal = normalize(cross(dFdy(m_position), dFdx(m_position)));
 	#else
 	vec3 surface_normal = normalize(m_normal);
 	#endif
 
-	// TODO: Splatmap shenanigans
-	// We can handle up to 16 materials if we use 1 byte per channel
-	// so 4 channels per f32, and 4 f32 per splatmap texture
-	// there's probably a way to fit even *more* textures into there too
-	#ifdef submaterials
-	vec3 albedo1 = triplanar_albedo(float(0), surface_normal);
-	vec3 mask1 = triplanar_mask(float(0), surface_normal);
-	vec3 normal1 = triplanar_normal(float(0), surface_normal);
+	vec4 v0 = fetch_vertex_position_and_material(0);
+	vec4 v1 = fetch_vertex_position_and_material(1);
+	vec4 v2 = fetch_vertex_position_and_material(2);
+	float i0 = unpackUnorm4x8(floatBitsToUint(v0.w)).x * 255.0;
+	float i1 = unpackUnorm4x8(floatBitsToUint(v1.w)).x * 255.0;
+	float i2 = unpackUnorm4x8(floatBitsToUint(v2.w)).x * 255.0;
 
-	vec3 albedo2 = triplanar_albedo(float(1), surface_normal);
-	vec3 mask2 = triplanar_mask(float(1), surface_normal);
-	vec3 normal2 = triplanar_normal(float(1), surface_normal);
+	vec3 albedo = vec3(0);
+	vec3 mask = vec3(0);
+	vec3 normal = vec3(0);
 
-	float blending_factor = 1 - clamp((surface_normal.y - 0.8) * 8, 0, 1);	
-	vec3 albedo = mix(albedo1, albedo2, blending_factor);
-	vec3 mask = mix(mask1, mask2, blending_factor);
-	vec3 normal = mix(normal1, normal2, blending_factor);
-	#else
-	vec3 normal = surface_normal;
-	vec3 rock = pow(vec3(128, 128, 128) / 255.0, vec3(2.2));
-	vec3 dirt = pow(vec3(54, 30, 7) / 255.0, vec3(2.2));
-	vec3 grass = pow(vec3(69, 107, 35) / 255.0, vec3(2.2));
-	float blending_factor = 1 - clamp((surface_normal.y - 0.90) * 40, 0, 1);
-	vec3 albedo = mix(grass, rock, blending_factor);
-	vec3 mask = vec3(1.0, 0.9, 0.0);
-	#endif
-	
-	// Compute PBR values
-	//albedo *= (lod * 0.1);
-	mask *= vec3(pow(mask.r + 0.2, 4), 1.3, 0.4);
-	float roughness = clamp(mask.g, 0.02, 1.0);
-	float metallic = clamp(mask.b, 0.01, 1.0);
-	float visibility = clamp(mask.r, 0.0, 1.0);
-	vec3 f0 = mix(vec3(0.04), albedo, metallic);
+	if ((i0 == i1) && (i2 == i1)) {
+		albedo = triplanar_albedo(i0, surface_normal);
+		mask = triplanar_mask(i0, surface_normal);
+		normal = triplanar_normal(i0, surface_normal);
+	} else {
+		vec3 a0 = triplanar_albedo(i0, surface_normal);
+		vec3 m0 = triplanar_mask(i0, surface_normal);
+		vec3 n0 = triplanar_normal(i0, surface_normal);
 
-	// Create the data structs
-	SunData sun = SunData(-scene.sun_direction.xyz, scene.sun_color.rgb);
-	SurfaceData surface = SurfaceData(albedo, normalize(normal), surface_normal, m_position, roughness, metallic, visibility, f0);
-	vec3 view = normalize(camera.position.xyz - m_position);
-	CameraData camera = CameraData(view, normalize(view - scene.sun_direction.xyz), camera.position.xyz, camera.view, camera.projection);
+		vec3 a1 = triplanar_albedo(i1, surface_normal);
+		vec3 m1 = triplanar_mask(i1, surface_normal);
+		vec3 n1 = triplanar_normal(i1, surface_normal);
 
-	// Check if the fragment is shadowed
-	vec3 color = brdf(surface, camera, sun);
+		vec3 a2 = triplanar_albedo(i2, surface_normal);
+		vec3 m2 = triplanar_mask(i2, surface_normal);
+		vec3 n2 = triplanar_normal(i2, surface_normal);
 
-	// Calculate diffuse lighting
-	frag = vec4(color, 0.0);
+		// https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
+		// TODO: Optimize?
+		vec3 vect0 = v1.xyz - v0.xyz;
+		vec3 vect1 = v2.xyz - v0.xyz;
+		vec3 vect2 = m_local_position - v0.xyz;
+		float d00 = dot(vect0, vect0);
+		float d01 = dot(vect0, vect1);
+		float d11 = dot(vect1, vect1);
+		float d20 = dot(vect2, vect0);
+		float d21 = dot(vect2, vect1);
+		float denom = d00 * d11 - d01 * d01;
+		float v = (d11 * d20 - d01 * d21) / denom;
+		float w = (d00 * d21 - d01 * d20) / denom;
+		float u = 1.0f - v - w;
+
+		float w0 = u;
+		float w1 = v;
+		float w2 = w;
+
+		albedo = a0 * w0 + a1 * w1 + a2 * w2;
+		mask = m0 * w0 + m1 * w1 + m2 * w2;
+		normal = normalize(n0 * w0 + n1 * w1 + n2 * w2);
+	}
+
+	gbuffer_position = vec4(m_position, 0);
+	gbuffer_albedo = vec4(albedo, 1);
+	gbuffer_normal = vec4(normal, 0);
+	//gbuffer_normal = vec4(surface_normal, 0);
+	gbuffer_mask = vec4(mask * vec3(1, 10, 0), 0);
 }

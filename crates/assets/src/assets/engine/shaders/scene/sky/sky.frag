@@ -1,13 +1,12 @@
 #version 460 core
 layout(location = 0) out vec4 frag;
 
-#include <engine/shaders/common/scene.glsl>
-#include <engine/shaders/common/sky.glsl>
-
 // Data given by the vertex shader
 layout(location = 0) in vec3 m_position;
 
 void main() {
+	frag = vec4(0);
+	/*
 	// Calculate elevation
 	vec3 normal = normalize(m_position);
 	
@@ -22,4 +21,5 @@ void main() {
 
 	// Calculate sky color based on sun
 	frag = vec4(albedo + vec3(out_sun), 1.0);
+	*/
 }

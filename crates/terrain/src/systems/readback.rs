@@ -24,7 +24,7 @@ fn readback_begin_update(world: &mut World) {
         &terrain.settings,
     );
 
-    // Start doing an async readback for the chunk of last frame
+    // Start doing a counter and offset async readback for the chunk of last frame
     let last_chunk_generated = scene
         .query_mut::<(&mut Chunk, &Entity)>()
         .into_iter().find(|(chunk, _)| chunk.state == ChunkState::PendingReadbackStart);
@@ -56,6 +56,35 @@ fn readback_begin_update(world: &mut World) {
     let count = memory.readback_count_receiver.try_iter();
     memory.readback_offsets.extend(offset);
     memory.readback_counters.extend(count);
+
+    /*
+    // Start doing a mesh async readback for the chunk of last frame
+    let last_chunk_generated = scene
+        .query_mut::<(&mut Chunk, &Entity)>()
+        .into_iter().find(|(chunk, _)| chunk.state == ChunkState::Generated { empty: false, readback: Some(false) });
+    if let Some((chunk, &entity)) = last_chunk_generated {
+        chunk.state = ChunkState::PendingReadbackData;
+        let index = 1 - (time.frame_count() as usize % 2);
+        let counters = &memory.counters[index];
+        let offsets = &memory.offsets[index];
+        let offset_sender = memory.readback_offset_sender.clone();
+        let count_sender = memory.readback_count_sender.clone();
+
+        // Readback the counters asynchronously
+        counters
+            .async_read(.., move |counters| {
+                let _ = count_sender.send((entity, vek::Vec2::from_slice(counters)));
+            })
+            .unwrap();
+
+        // Readback the offsets asynchronously
+        offsets
+            .async_read(.., move |offsets| {
+                let _ = offset_sender.send((entity, vek::Vec2::from_slice(offsets)));
+            })
+            .unwrap();
+    };
+    */
 }
 
 // At the end of the frame, right before culling
@@ -70,10 +99,8 @@ fn readback_end_update(world: &mut World) {
     // Decompose the terrain into its subresources
     let mut _terrain = terrain;
     let terrain = &mut *_terrain;
-    let (_manager, _voxelizer, _mesher, memory, settings) = (
+    let (manager, memory, settings) = (
         &mut terrain.manager,
-        &terrain.voxelizer,
-        &terrain.mesher,
         &mut terrain.memory,
         &terrain.settings,
     );
@@ -129,7 +156,7 @@ fn readback_end_update(world: &mut World) {
 
         // Update chunk range (if valid) and set visibility
         let valid = count > 0;
-        chunk.state = ChunkState::Generated { empty: !valid };
+        chunk.state = ChunkState::Generated { empty: !valid, readback: None };
         if valid {
             chunk.ranges = Some(vek::Vec2::new(offset, count + offset));
         } else {
@@ -138,9 +165,27 @@ fn readback_end_update(world: &mut World) {
 
         // Set visibility if the chunk is actually visible
         if valid {
-            memory.visibility_bitsets[chunk.allocation].set(chunk.local_index);
-        } else {
-            memory.visibility_bitsets[chunk.allocation].remove(chunk.local_index);
+            manager.new_visibilities.push((chunk.allocation, chunk.local_index));
+        }
+    }
+
+    // Get the chunk with the highest readback priority
+    let mut vec = scene
+        .query_mut::<(&mut Chunk, &Entity)>()
+        .into_iter()
+        .filter(|(c, _)| c.readback_priority.is_some())
+        .filter(|(c, _)| matches!(c.state, ChunkState::Generated { .. }))
+        .collect::<Vec<_>>();
+    vec.sort_by(|(a, _), (b, _)| {
+        a.readback_priority.unwrap().total_cmp(&b.readback_priority.unwrap())
+    });
+
+    // Submit a new async read request to read the vertex and triangle data back to the CPU
+    if let Some((chunk, _)) = vec.pop() {
+        //memory.visibility_bitsets[chunk.allocation].set(chunk.local_index);
+        chunk.readback_priority = None;
+        if let ChunkState::Generated { readback, .. } = &mut chunk.state {
+            *readback = Some(false);
         }
     }
 }

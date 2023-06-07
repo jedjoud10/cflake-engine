@@ -56,12 +56,17 @@ pub struct DefaultMaterialResources<'a> {
     pub draw_indexed_indirect_buffers: &'a Storage<DrawIndexedIndirectBuffer>,
     pub draw_count_indirect_buffer: &'a Storage<DrawCountIndirectBuffer>,
 
+    // Lightspace matrix for shadows
+    pub lightspace: Option<vek::Mat4<f32>>,
+
+    /*
     pub drawn_unique_material_count: &'a mut u32,
     pub material_instances_count: &'a mut u32,
     pub rendered_direct_vertices_drawn: &'a mut u64,
     pub rendered_direct_triangles_drawn: &'a mut u64,
     pub culled_sub_surfaces: &'a mut u64,
     pub rendered_sub_surfaces: &'a mut u64,
+    */
 }
 
 // Camera data that will be stored in a UBO

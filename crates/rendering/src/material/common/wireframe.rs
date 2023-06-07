@@ -1,12 +1,12 @@
 use crate::{
-    ActiveScenePipeline, CameraUniform, DefaultMaterialResources, Direct, Material, Renderer,
+    CameraUniform, DefaultMaterialResources, Direct, Material, Renderer, Pass,
 };
 
 use assets::Assets;
 
 use graphics::{
     BindGroup, Compiler, FragmentModule, GpuPod, Graphics, ModuleVisibility, PushConstantLayout,
-    PushConstants, Shader, VertexModule,
+    PushConstants, Shader, VertexModule, ActiveRenderPipeline,
 };
 
 
@@ -20,7 +20,11 @@ impl Material for WireframeMaterial {
     type Query<'a> = &'a ();
     
     // Load the respective Wireframe shader modules and compile them
-    fn shader(_settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader {
+    fn shader<P: Pass>(_settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Option<Shader> {
+        if P::is_shadow_pass() {
+            return None
+        }
+
         // Load the vertex module from the assets
         let vert = assets
             .load::<VertexModule>("engine/shaders/scene/wireframe/wireframe.vert")
@@ -47,21 +51,16 @@ impl Material for WireframeMaterial {
         );
 
         // Compile the modules into a shader
-        Shader::new(vert, frag, &compiler).unwrap()
+        Some(Shader::new(vert, frag, &compiler).unwrap())
     }
 
     // Only the positions are required for wireframe meshes
-    fn attributes() -> crate::MeshAttributes {
+    fn attributes<P: Pass>() -> crate::MeshAttributes {
         crate::MeshAttributes::POSITIONS
     }
 
-    // Wireframe meshes don't cast a shadow 
-    fn casts_shadows() -> bool {
-        false
-    }
-
     // Activate the wireframe mode
-    fn primitive_config() -> graphics::PrimitiveConfig {
+    fn primitive_config<P: Pass>() -> graphics::PrimitiveConfig {
         graphics::PrimitiveConfig::Triangles {
             winding_order: graphics::WindingOrder::Cw,
             cull_face: None,
@@ -70,10 +69,10 @@ impl Material for WireframeMaterial {
     }
 
     // Fetch the texture storages
-    fn fetch(_world: &world::World) -> Self::Resources<'_> { }
+    fn fetch<P: Pass>(_world: &world::World) -> Self::Resources<'_> { }
 
     // Set the static bindings that will never change
-    fn set_global_bindings<'r>(
+    fn set_global_bindings<'r, P: Pass>(
         _resources: &'r mut Self::Resources<'_>,
         group: &mut BindGroup<'r>,
         default: &DefaultMaterialResources<'r>,
@@ -84,13 +83,13 @@ impl Material for WireframeMaterial {
     }
 
     // Set the surface push constants
-    fn set_push_constants<'r, 'w>(
+    fn set_push_constants<'r, 'w, P: Pass>(
         &self,
         renderer: &Renderer,
         _resources: &'r mut Self::Resources<'w>,
         _default: &DefaultMaterialResources<'r>,
         _query: &Self::Query<'w>,
-        constants: &mut PushConstants<ActiveScenePipeline>,
+        constants: &mut PushConstants<ActiveRenderPipeline<P::C, P::DS>>,
     ) {
         // Send the raw vertex bytes to the GPU
         let matrix = renderer.matrix;

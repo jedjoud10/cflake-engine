@@ -68,8 +68,11 @@ void main() {
     vec3 chunk_position = input_position_scale_element.xyz;
     vec3 chunk_extent = vec3(input_position_scale_element.w);
     vec3 camera_position = camera.position.xyz;
-    
-    if (input_indirect_element.vertex_count > 0 && visible) {
+    vec3 view = normalize(camera_position - chunk_position);
+    //bool culled = dot(view, camera.forward.xyz) > -0.0;
+    bool culled = false;
+
+    if (input_indirect_element.vertex_count > 0 && visible && !culled) {
         uint index = atomicAdd(count.data[push_constants.allocation_index], 1);
         output_position_scale.data[index] = input_position_scale_element;
         output_indirect.data[index] = input_indirect_element;

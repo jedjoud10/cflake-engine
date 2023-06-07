@@ -38,7 +38,7 @@ fn init(world: &mut World) {
     let _meshes = world.get_mut::<Storage<Mesh>>().unwrap();
     let mut pbrs = world.get_mut::<Storage<PbrMaterial>>().unwrap();
     let mut pipelines = world.get_mut::<Pipelines>().unwrap();
-    let forward_renderer = world.get::<ForwardRenderer>().unwrap();
+    let forward_renderer = world.get::<DeferredRenderer>().unwrap();
 
     // register the PBR material to use it
     let id = pipelines

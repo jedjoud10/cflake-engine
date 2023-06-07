@@ -25,7 +25,7 @@ pub enum ChunkState {
     PendingReadbackData,
 
     // The chunk's mesh has been generated successfully
-    Generated { empty: bool },
+    Generated { empty: bool, readback: Option<bool>, },
 
     // The chunk needs to be removed
     PendingRemoval,
@@ -61,7 +61,7 @@ pub struct Chunk {
     pub(crate) state: ChunkState,
     pub(crate) node: Option<Node>,
     pub(crate) generation_priority: f32,
-    pub(crate) readback_priority: f32,
+    pub(crate) readback_priority: Option<f32>,
 }
 
 impl Chunk {
@@ -77,7 +77,7 @@ impl Chunk {
 
     // Force the regeneration of a specific chunk by setting it's state to dirty
     pub fn regenerate(&mut self) {
-        if let ChunkState::Generated { empty } = self.state {
+        if let ChunkState::Generated { empty, .. } = self.state {
             self.state = ChunkState::Dirty
         } 
     }

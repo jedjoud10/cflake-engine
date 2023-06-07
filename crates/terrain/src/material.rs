@@ -1,16 +1,16 @@
 use rendering::{
     AlbedoTexel, CameraUniform, DefaultMaterialResources, EnvironmentMap, MaskTexel, Material, MultiDrawIndirectCount, NormalTexel,
-    Renderer, SceneUniform, ShadowMap, ShadowMapping, ShadowUniform,
+    Renderer, SceneUniform, ShadowMap, ShadowMapping, ShadowUniform, Pass,
 };
 
 use assets::Assets;
 
 use graphics::{
-    BindGroup, Compiler, FragmentModule, GpuPod, Graphics, LayeredTexture2D, Shader, StorageAccess, VertexModule, PrimitiveConfig, WindingOrder,
+    BindGroup, Compiler, FragmentModule, GpuPod, Graphics, LayeredTexture2D, Shader, StorageAccess, VertexModule, PrimitiveConfig, WindingOrder, PushConstantLayout, ModuleVisibility, XY, Vertex, DrawIndexedIndirect, DrawIndexedIndirectBuffer,
 };
 use utils::{Storage, Time};
 
-use crate::{Terrain, TerrainSettings};
+use crate::{Terrain, TerrainSettings, Vertices, Triangles};
 
 // Type aliases for layered textures
 pub type LayeredAlbedoMap = LayeredTexture2D<AlbedoTexel>;
@@ -28,9 +28,10 @@ impl Material for TerrainMaterial {
         world::Read<'w, Storage<LayeredAlbedoMap>>,
         world::Read<'w, Storage<LayeredNormalMap>>,
         world::Read<'w, Storage<LayeredMaskMap>>,
-        world::Read<'w, ShadowMapping>,
         world::Read<'w, Terrain>,
-        world::Read<'w, Time>,
+        world::Read<'w, Storage<Vertices>>,
+        world::Read<'w, Storage<Triangles>>,
+        world::Read<'w, Storage<DrawIndexedIndirectBuffer>>,
         usize,
     );
 
@@ -39,78 +40,91 @@ impl Material for TerrainMaterial {
     type RenderPath = MultiDrawIndirectCount;
 
     // Load the terrain material shaders and compile them
-    fn shader(settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader {
-        // Load the vertex module from the assets
-        let vert = assets
-            .load::<VertexModule>("engine/shaders/scene/terrain/terrain.vert")
-            .unwrap();
+    fn shader<P: Pass>(settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Option<Shader> {
+        match P::pass_type() {
+            rendering::PassType::Deferred => {
+                // Load the vertex module from the assets
+                let vert = assets
+                 .load::<VertexModule>("engine/shaders/scene/terrain/terrain.vert")
+                 .unwrap();
 
-        // Load the fragment module from the assets
-        let frag = assets
-            .load::<FragmentModule>("engine/shaders/scene/terrain/terrain.frag")
-            .unwrap();
+                // Load the fragment module from the assets
+                let frag = assets
+                 .load::<FragmentModule>("engine/shaders/scene/terrain/terrain.frag")
+                 .unwrap();
 
-        // Define the type layouts for the UBOs
-        let mut compiler = Compiler::new(assets, graphics);
+                // Define the type layouts for the UBOs
+                let mut compiler = Compiler::new(assets, graphics);
 
-        // Set the UBO types that we will use
-        compiler.use_uniform_buffer::<CameraUniform>("camera");
-        compiler.use_uniform_buffer::<SceneUniform>("scene");
+                // Set the UBO types that we will use
+                compiler.use_uniform_buffer::<CameraUniform>("camera");
 
-        // Define the types for the user textures
-        if settings.sub_materials.is_some() {
-            compiler.use_define("submaterials", "");
-            compiler.use_sampled_texture::<LayeredAlbedoMap>("layered_albedo_map");
-            compiler.use_sampled_texture::<LayeredNormalMap>("layered_normal_map");
-            compiler.use_sampled_texture::<LayeredMaskMap>("layered_mask_map");
+                // Define the types for the user textures
+                if settings.sub_materials.is_some() {
+                    compiler.use_define("submaterials", "");
+                    compiler.use_sampled_texture::<LayeredAlbedoMap>("layered_albedo_map");
+                    compiler.use_sampled_texture::<LayeredNormalMap>("layered_normal_map");
+                    compiler.use_sampled_texture::<LayeredMaskMap>("layered_mask_map");
+                }
+
+                // Set the scaling factor for the vertex positions
+                compiler.use_constant(0, (settings.size as f32) / (settings.size as f32 - 4.0));
+
+                // Define the "lowpoly" macro
+                if settings.lowpoly {
+                    compiler.use_define("lowpoly", "");
+                }
+
+                // Multi-draw indirect youpieee
+                compiler.use_storage_buffer::<vek::Vec4<vek::Vec4<f32>>>(
+                    "position_scale_buffer",
+                  StorageAccess::ReadOnly,
+                );
+
+                compiler.use_storage_buffer::<<XY<f32> as Vertex>::Storage>(
+                    "input_vertices",
+                    StorageAccess::ReadOnly,
+                );
+                compiler.use_storage_buffer::<u32>("input_triangles", StorageAccess::ReadOnly);
+                compiler.use_storage_buffer::<DrawIndexedIndirect>("indirect", StorageAccess::ReadOnly);
+                compiler.use_constant(1, settings.output_vertex_buffer_length as u32);
+                compiler.use_constant(2, settings.output_triangle_buffer_length as u32);
+
+                // Compile the modules into a shader
+                Some(Shader::new(vert, frag, &compiler).unwrap())
+            },
+            rendering::PassType::Shadow => {
+                let vert = assets
+                    .load::<VertexModule>("engine/shaders/scene/terrain/shadow.vert")
+                    .unwrap();
+                let frag = assets
+                    .load::<FragmentModule>("engine/shaders/common/empty.frag")
+                    .unwrap();
+
+                
+                // Define the type layouts for the UBOs
+                let mut compiler = Compiler::new(assets, graphics);
+                
+                compiler.use_constant(0, (settings.size as f32) / (settings.size as f32 - 4.0));
+                let layout = PushConstantLayout::vertex(<vek::Vec4<vek::Vec4<f32>> as GpuPod>::size()).unwrap();
+                compiler.use_push_constant_layout(layout);
+                compiler.use_storage_buffer::<vek::Vec4<vek::Vec4<f32>>>(
+                    "position_scale_buffer",
+                    StorageAccess::ReadOnly,
+                );
+
+                // Compile the modules into a shader
+                Some(Shader::new(vert, frag, &compiler).unwrap())
+            },
         }
 
-        // Shadow parameters
-        compiler.use_uniform_buffer::<ShadowUniform>("shadow_parameters");
-        compiler.use_uniform_buffer::<vek::Vec4<vek::Vec4<f32>>>("shadow_lightspace_matrices");
-        compiler.use_uniform_buffer::<f32>("cascade_plane_distances");
+       
 
-        // Environment map parameters
-        compiler.use_sampled_texture::<EnvironmentMap>("environment_map");
-
-        // Define the types for the user textures
-        compiler.use_sampled_texture::<ShadowMap>("shadow_map");
-
-        // Set the scaling factor for the vertex positions
-        compiler.use_constant(0, (settings.size as f32) / (settings.size as f32 - 4.0));
-
-        // Define the "lowpoly" macro
-        if settings.lowpoly {
-            compiler.use_define("lowpoly", "");
-        }
-
-        // Multi-draw indirect youpieee
-        compiler.use_storage_buffer::<vek::Vec4<vek::Vec4<f32>>>(
-            "position_scale_buffer",
-            StorageAccess::ReadOnly,
-        );
-
-        // Compile the modules into a shader
-        Shader::new(vert, frag, &compiler).unwrap()
     }
 
     // Terrain only needs packed positions
-    fn attributes() -> rendering::MeshAttributes {
+    fn attributes<P: Pass>() -> rendering::MeshAttributes {
         rendering::MeshAttributes::POSITIONS
-    }
-
-    // Custom shadow mapper (due to packed positions and indirect rendering)
-    fn casts_shadows() -> bool {
-        false
-    }
-
-    // TEMP: Enable wireframe
-    fn primitive_config() -> PrimitiveConfig {
-        PrimitiveConfig::Triangles {
-            winding_order: WindingOrder::Cw,
-            cull_face: Some(graphics::Face::Front),
-            wireframe: false,
-        }
     }
 
     // Disable frustum culling since we do that on the GPU
@@ -119,91 +133,79 @@ impl Material for TerrainMaterial {
     }
 
     // Fetch the texture storages
-    fn fetch(world: &world::World) -> Self::Resources<'_> {
+    fn fetch<P: Pass>(world: &world::World) -> Self::Resources<'_> {
         let albedo_maps = world.get::<Storage<LayeredAlbedoMap>>().unwrap();
         let normal_maps = world.get::<Storage<LayeredNormalMap>>().unwrap();
         let mask_maps = world.get::<Storage<LayeredMaskMap>>().unwrap();
-        let shadow = world.get::<ShadowMapping>().unwrap();
-        let time: world::Read<Time> = world.get::<Time>().unwrap();
+        let vertices = world.get::<Storage<Vertices>>().unwrap();
+        let triangles = world.get::<Storage<Triangles>>().unwrap();
+        let indirect = world.get::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
         let terrain = world.get::<Terrain>().unwrap();
         (
             albedo_maps,
             normal_maps,
             mask_maps,
-            shadow,
             terrain,
-            time,
+            vertices,
+            triangles,
+            indirect,
             0,
         )
     }
 
     // Set the static bindings that will never change
-    fn set_global_bindings<'r>(
+    fn set_global_bindings<'r, P: Pass>(
         resources: &'r mut Self::Resources<'_>,
         group: &mut BindGroup<'r>,
         default: &DefaultMaterialResources<'r>,
     ) {
-        let (albedo_maps, normal_maps, mask_maps, shadow, terrain, _time, _) = resources;
-
-        // Set the required common buffers
-        group
-            .set_uniform_buffer("camera", default.camera_buffer, ..)
-            .unwrap();
-        group
-            .set_uniform_buffer("scene", default.scene_buffer, ..)
-            .unwrap();
-        group
-            .set_uniform_buffer("shadow_parameters", &shadow.parameter_buffer, ..)
-            .unwrap();
-        group
-            .set_uniform_buffer("shadow_lightspace_matrices", &shadow.lightspace_buffer, ..)
-            .unwrap();
-        group
-            .set_uniform_buffer("cascade_plane_distances", &shadow.cascade_distances, ..)
-            .unwrap();
-        group
-            .set_sampled_texture("environment_map", default.environment_map)
-            .unwrap();
-
-        // Set the scene shadow map
-        group
-            .set_sampled_texture("shadow_map", &shadow.depth_tex)
-            .unwrap();
+        let (albedo_maps,
+            normal_maps,
+            mask_maps,
+            terrain,
+            ..) = resources;
 
         // Set the sub-material textures
-        if let (Some(albedo), Some(normal), Some(mask)) = (
-            &terrain.manager.layered_albedo_map,
-            &terrain.manager.layered_normal_map,
-            &terrain.manager.layered_mask_map,
-        ) {
-            // Get the layered textures, without any fallback
-            let albedo_map = albedo_maps.get(albedo);
-            let normal_map = normal_maps.get(normal);
-            let mask_map = mask_maps.get(mask);
+        if P::is_deferred_pass() {
+            // Set the required common buffers
+            group
+                .set_uniform_buffer("camera", default.camera_buffer, ..)
+                .unwrap();
 
-            // Set the material textures
-            group
-                .set_sampled_texture("layered_albedo_map", albedo_map)
-                .unwrap();
-            group
-                .set_sampled_texture("layered_normal_map", normal_map)
-                .unwrap();
-            group
-                .set_sampled_texture("layered_mask_map", mask_map)
-                .unwrap();
+            if let (Some(albedo), Some(normal), Some(mask)) = (
+                &terrain.manager.layered_albedo_map,
+                &terrain.manager.layered_normal_map,
+                &terrain.manager.layered_mask_map,
+            ) {
+                // Get the layered textures, without any fallback
+                let albedo_map = albedo_maps.get(albedo);
+                let normal_map = normal_maps.get(normal);
+                let mask_map = mask_maps.get(mask);
+
+                // Set the material textures
+                group
+                    .set_sampled_texture("layered_albedo_map", albedo_map)
+                    .unwrap();
+                group
+                    .set_sampled_texture("layered_normal_map", normal_map)
+                    .unwrap();
+                group
+                    .set_sampled_texture("layered_mask_map", mask_map)
+                    .unwrap();
+            }
         }
     }
 
     // Set the per-surface bindings for the material
     // Since the terrain mesh only contains "allocation" count of sub-surfaces, this will be executed for each allocation
-    fn set_surface_bindings<'r, 'w>(
+    fn set_surface_bindings<'r, 'w, P: Pass>(
         _renderer: &Renderer,
         resources: &'r mut Self::Resources<'w>,
-        _default: &mut DefaultMaterialResources<'w>,
+        _default: &DefaultMaterialResources<'w>,
         _query: &Self::Query<'w>,
         group: &mut BindGroup<'r>,
     ) {
-        let (.., terrain, _, index) = resources;
+        let (.., terrain, vertices, triangles, indirect, index) = resources;
 
         // Set the storage buffer that contains ALL the matrices
         group
@@ -214,7 +216,54 @@ impl Material for TerrainMaterial {
             )
             .unwrap();
 
+        // Pass vertex and triangles as storage buffers
+        if P::is_deferred_pass() {
+            let triangles = triangles.get(&terrain.memory.shared_triangle_buffers[*index]);
+            let vertices = vertices.get(&terrain.memory.shared_positions_buffers[*index]);
+            let indirect = indirect.get(&terrain.memory.culled_indexed_indirect_buffers[*index]);
+            
+            group
+                .set_storage_buffer(
+                    "input_triangles",
+                    &triangles,
+                    ..,
+                )
+                .unwrap();
+
+            group
+                .set_storage_buffer(
+                    "input_vertices",
+                    &vertices,
+                    ..,
+                )
+                .unwrap();
+
+            group
+                .set_storage_buffer(
+                    "indirect",
+                    &indirect,
+                    ..,
+                )
+                .unwrap();
+        }
+
         // Increment the index (aka the allocation index)
         *index += 1;
+    }
+
+    // Only used for setting the shadow lightspace matrix
+    fn set_push_constants<'r, 'w, P: Pass>(
+        &self,
+        _renderer: &Renderer,
+        _resources: &'r mut Self::Resources<'w>,
+        _default: &DefaultMaterialResources<'r>,
+        _query: &Self::Query<'w>,
+        constants: &mut graphics::PushConstants<graphics::ActiveRenderPipeline<P::C, P::DS>>,
+    ) {
+        if P::is_shadow_pass() {
+            let lightspace = _default.lightspace.unwrap();
+            let bytes = GpuPod::into_bytes(&lightspace.cols);
+            constants.push(bytes, 0, ModuleVisibility::Vertex).unwrap();
+        }
     }
 }

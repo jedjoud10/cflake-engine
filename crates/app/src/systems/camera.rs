@@ -32,7 +32,7 @@ impl Default for CameraController {
             boost_speed: 300.0,
             fov_change_scroll_speed: 200.0,
             fov_change_key_speed: 50.0,
-            smoothness: 0.2,
+            smoothness: 0.0,
             active: true,
         }
     }
@@ -52,7 +52,7 @@ fn init(world: &mut World) {
     input.bind_button("reset", KeyboardButton::R);
     input.bind_button("zoom-in", KeyboardButton::Z);
     input.bind_button("zoom-out", KeyboardButton::X);
-    input.bind_button("show-cursor", KeyboardButton::H);
+    input.bind_button("toggle-controller", KeyboardButton::H);
     input.bind_axis("x rotation", MouseAxis::PositionX);
     input.bind_axis("y rotation", MouseAxis::PositionY);
 }
@@ -85,15 +85,6 @@ fn update(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
     let mut gui = world.get_mut::<Interface>().unwrap();
     let window = world.get::<Window>().unwrap();
-
-    // If the user *just* added a camera, then hide the UI
-    if !scene
-        .query_with::<&CameraController>(ecs::added::<&CameraController>())
-        .is_empty()
-        && time.frame_count() == 1
-    {
-        hide_ui(&window, &mut gui);
-    }
 
     let camera = scene.find_mut::<(
         &mut Camera,
@@ -128,15 +119,15 @@ fn update(world: &mut World) {
     let up = rotation.up();
     let mut velocity = vek::Vec3::<f32>::default();
 
-    // Controller is no longer active if the ui is enabled
-    if input.get_button("show-cursor").pressed() {
-        show_ui(&window, &mut gui);
-        controller.active = false;
+    // Toggle the active state of the controller
+    if input.get_button("toggle-controller").pressed() {
+        controller.active = !controller.active;
     }
 
     // If it isn't then exit early
     if !controller.active {
         **output = vek::Vec3::zero();
+        show_ui(&window, &mut gui);
         return;
     } else {
         hide_ui(&window, &mut gui);
