@@ -468,6 +468,12 @@ fn update(world: &mut World) {
                     let value = &mut shadowmapping.parameters.normal_offset;
                     ui.add(egui::Slider::new(value, -2.0f32..=2.0f32));
                 });
+
+                ui.horizontal(|ui| {
+                    ui.label("Max Distance: ");
+                    let value = &mut shadowmapping.distance;
+                    ui.add(egui::DragValue::new(value));
+                });
             });
     }
 
@@ -555,6 +561,7 @@ fn update(world: &mut World) {
                                 "ReinhardJodie",
                             );
                             ui.selectable_value(&mut selected_tonemapping, Tonemapping::ACES, "ACES");
+                            ui.selectable_value(&mut selected_tonemapping, Tonemapping::ALU, "ALU");
                             ui.selectable_value(&mut selected_tonemapping, Tonemapping::Clamp, "Clamp");
                         });
                 });

@@ -127,20 +127,6 @@ impl Material for TerrainMaterial {
         rendering::MeshAttributes::POSITIONS
     }
 
-    // Disable face culling for shadow
-    fn primitive_config<P: Pass>() -> PrimitiveConfig {
-        let cull_face = match P::pass_type() {
-            rendering::PassType::Deferred => Some(graphics::Face::Front),
-            rendering::PassType::Shadow => None,
-        };
-
-        PrimitiveConfig::Triangles {
-            winding_order: WindingOrder::Cw,
-            cull_face,
-            wireframe: false,
-        }
-    }
-
     // Disable frustum culling since we do that on the GPU
     fn frustum_culling() -> bool {
         false

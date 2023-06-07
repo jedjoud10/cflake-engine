@@ -85,6 +85,9 @@ pub enum Tonemapping {
     // Reinhard variant from shadertoy made by user "Jodie"
     ReinhardJodie,
 
+    // ALU filmic curve
+    ALU,
+
     // ACES filmic curve
     ACES,
 
@@ -121,7 +124,8 @@ impl Tonemapping {
             0 => Self::Reinhard,
             1 => Self::ReinhardJodie,
             2 => Self::ACES,
-            3 => Self::Clamp,
+            3 => Self::ALU,
+            4 => Self::Clamp,
             _ => panic!(),
         }
     }
@@ -132,7 +136,8 @@ impl Tonemapping {
             Self::Reinhard => 0,
             Self::ReinhardJodie => 1,
             Self::ACES => 2,
-            Self::Clamp => 3,
+            Self::ALU => 3,
+            Self::Clamp => 4,
         }
     }
 }

@@ -182,7 +182,7 @@ fn readback_end_update(world: &mut World) {
 
     // Submit a new async read request to read the vertex and triangle data back to the CPU
     if let Some((chunk, _)) = vec.pop() {
-        memory.visibility_bitsets[chunk.allocation].set(chunk.local_index);
+        //memory.visibility_bitsets[chunk.allocation].set(chunk.local_index);
         chunk.readback_priority = None;
         if let ChunkState::Generated { readback, .. } = &mut chunk.state {
             *readback = Some(false);

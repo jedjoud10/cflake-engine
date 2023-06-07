@@ -47,7 +47,7 @@ layout(set = 0, binding = 13) uniform sampler layered_mask_map_sampler;
 
 // Triplanar mapping offset and UV scale
 const float offset = 0.0;
-const vec2 scale = vec2(0.03) * vec2(-1, -1); 
+const vec2 scale = vec2(0.12) * vec2(-1, -1); 
 const float normal_strength = 1.0;
 
 // Get the blending offset to be used internally in the triplanar texture

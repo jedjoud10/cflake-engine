@@ -51,9 +51,9 @@ fn init(world: &mut World) {
     // Create a nice shadow map
     let shadowmap = ShadowMapping::new(
         2000f32,
-        1024,
-        [0.1, 0.25, 0.5, 1.0],
-        500.0,
+        2048,
+        [0.02, 0.08, 0.50, 0.9],
+        3000.0,
         &graphics,
     );
 
@@ -304,8 +304,9 @@ fn render(world: &mut World) {
     }
 
     // Render to the shadow map cascades
+    let index = time.frame_count() as usize % 4;
+    render_shadows_pipelines(&mut _shadowmap, &mut default, directional_light_rotation, camera_position, index, &pipelines, world);
     for index in 0..4 {
-        render_shadows_pipelines(&mut _shadowmap, &mut default, directional_light_rotation, camera_position, index, &pipelines, world);
     }
     drop(_shadowmap);
 

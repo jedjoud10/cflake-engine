@@ -96,10 +96,10 @@ impl ShadowMapping {
         // Default shadow parameters
         let parameters = ShadowUniform {
             strength: 1.0,
-            spread: 0.47,
-            base_bias: -0.0001,
+            spread: 0.3,
+            base_bias: -0.0006,
             bias_bias: 0.0,
-            bias_factor_base: 1.50,
+            bias_factor_base: 1.30,
             normal_offset: 0.0,
         };
 

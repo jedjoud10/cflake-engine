@@ -98,7 +98,7 @@ impl MemoryManager {
             DrawCountIndirectBuffer::splatted(
                 graphics,
                 settings.allocation_count,
-                1360,
+                0,
                 BufferMode::Dynamic,
                 BufferUsage::WRITE | BufferUsage::STORAGE,
             )

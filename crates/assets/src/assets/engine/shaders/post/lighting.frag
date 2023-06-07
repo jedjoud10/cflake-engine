@@ -12,6 +12,7 @@ layout(set = 1, binding = 4) uniform texture2D depth_map;
 // UBO that contains the current scene information
 #include <engine/shaders/common/conversions.glsl>
 #include <engine/shaders/common/camera.glsl>
+#include <engine/shaders/noises/common.glsl>
 #include <engine/shaders/scene/environment/sky.glsl>
 layout(set = 0, binding = 2) uniform SceneUniform {
     // Sun related parameters
@@ -137,18 +138,33 @@ float calculate_shadowed(
     // Get texture size
     uint size = uint(textureSize(shadow_map, 0).x);
 	float shadowed = 0.0;
-	shadowed += shadow_linear(layer, uvs.xy /* + shadow_parameters.spread * offset * 2.0 */, size, current + bias);
+	
+	// Stratified poisson disk from http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-16-shadow-mapping/
+	vec2 poisson_disk[16] = vec2[]( 
+	   vec2( -0.94201624, -0.39906216 ), 
+	   vec2( 0.94558609, -0.76890725 ), 
+	   vec2( -0.094184101, -0.92938870 ), 
+	   vec2( 0.34495938, 0.29387760 ), 
+	   vec2( -0.91588581, 0.45771432 ), 
+	   vec2( -0.81544232, -0.87912464 ), 
+	   vec2( -0.38277543, 0.27676845 ), 
+	   vec2( 0.97484398, 0.75648379 ), 
+	   vec2( 0.44323325, -0.97511554 ), 
+	   vec2( 0.53742981, -0.47373420 ), 
+	   vec2( -0.26496911, -0.41893023 ), 
+	   vec2( 0.79197514, 0.19090188 ), 
+	   vec2( -0.24188840, 0.99706507 ), 
+	   vec2( -0.81409955, 0.91437590 ), 
+	   vec2( 0.19984126, 0.78641367 ), 
+	   vec2( 0.14383161, -0.14100790 ) 
+	);
 
-	/*
-	for (int x = -1; x <= 1; x++) {
-		for (int y = -1; y <= 1; y++) {
-			vec2 offset = vec2(x, y) / size;
-			shadowed += shadow_linear(layer, uvs.xy + shadow_parameters.spread * offset * 2.0, size, current + bias);
-		}
+	for (int i = 0; i < 4; i++) {
+		int index = int(16.0*random(vec4(floor(position * 1000.0), i)))%16;
+		shadowed += shadow_linear(layer, uvs.xy + shadow_parameters.spread * 2.0 * poisson_disk[index] * 0.001, size, current + bias);
 	}
-	*/
-
-    return (shadowed) * shadow_parameters.strength;
+	
+    return (shadowed / 4) * shadow_parameters.strength;
 }
 
 // UBO that contains the current monitor/window information
@@ -264,8 +280,8 @@ vec3 brdf(
 
 	// TODO: IBL
 	brdf = brdf * lighting * light.color;
-	brdf += (0.1 + ambient * 0.3) * surface.diffuse * 0.6;
-	//brdf += fresnelRoughness(surface.f0, camera.view, surface.normal, surface.roughness) * 0.02;
+	brdf += (0.3 + ambient * 0.1) * surface.diffuse * 0.4;
+	//brdf += pow(fresnel(surface.f0, camera.view, surface.normal) * 0.4, vec3(2));
 	return brdf;
 }
 
@@ -361,9 +377,12 @@ void main() {
 			tonemapped = reinhard_jodie(color);
 			break;
 		case 2:
-			tonemapped = alu(color);
+			tonemapped = aces(color);
 			break;
 		case 3:
+			tonemapped = alu(color);
+			break;
+		case 4:
 			tonemapped = min(color, vec3(1));
 			break;
 	}
