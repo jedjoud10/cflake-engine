@@ -26,9 +26,7 @@ fn init(world: &mut World) {
 
     // create sun source light
     scene.insert((
-        DirectionalLight {
-            color: vek::Rgb::one(),
-        },
+        DirectionalLight::default(),
         Rotation::rotation_x(-15.0f32.to_radians()),
     ));
 

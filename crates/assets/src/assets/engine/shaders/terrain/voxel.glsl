@@ -25,7 +25,7 @@ float voxel(vec3 position, out uint material) {
     }
 
     uint material3 = 2;
-    float rocky = position.y + fbmCellular(position * 0.0012, 4, 0.7, 3.0).y * -90 + 10;
+    float rocky = position.y + fbmCellular(position * 0.001, 4, 0.7, 3.0).y * -90 + 10;
     rocky = opSmoothUnion(rocky, position.y - 40, 10);
     float density = mix(biome2, rocky, blend);
 

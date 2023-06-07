@@ -213,7 +213,7 @@ fn render(world: &mut World) {
         .write(
             &[SceneUniform {
                 sun_direction: directional_light_rotation.forward().with_w(0.0),
-                sun_color: vek::Rgba::<f32>::from(directional_light.color),
+                sun_color: vek::Rgba::<f32>::from(directional_light.color.map(|x| x as f32 / 255.0) * directional_light.intensity),
                 ..Default::default()
             }],
             0,
@@ -306,8 +306,6 @@ fn render(world: &mut World) {
     // Render to the shadow map cascades
     let index = time.frame_count() as usize % 4;
     render_shadows_pipelines(&mut _shadowmap, &mut default, directional_light_rotation, camera_position, index, &pipelines, world);
-    for index in 0..4 {
-    }
     drop(_shadowmap);
 
     // Begin the scene color render pass

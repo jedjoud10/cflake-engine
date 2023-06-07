@@ -1,6 +1,6 @@
 
 
-use std::{cell::RefCell, rc::Rc, time::Instant};
+use std::{cell::RefCell, rc::Rc, time::Instant, num::NonZeroU8};
 
 use ahash::{AHashMap};
 use assets::{Assets, AsyncHandle};
@@ -9,7 +9,7 @@ use ecs::{Entity, Scene};
 use graphics::{
     combine_into_layered, GpuPod, Graphics, ImageTexel, LayeredTexture2D, RawTexels,
     SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap, Texel, TextureMipMaps,
-    TextureMode, TextureUsage, Vertex,
+    TextureMode, TextureUsage, Vertex, SamplerBorderColor,
 };
 use math::{Node, Octree};
 
@@ -204,11 +204,7 @@ fn load_layered_texture<T: ImageTexel>(
         combine_into_layered(
             graphics,
             raw,
-            Some(SamplerSettings {
-                filter: SamplerFilter::Linear,
-                wrap: SamplerWrap::Repeat,
-                mipmaps: SamplerMipMaps::Auto,
-            }),
+            Some(SamplerSettings::default()),
             TextureMipMaps::Manual { mips: &[] },
             TextureMode::Dynamic,
             TextureUsage::SAMPLED | TextureUsage::COPY_DST,

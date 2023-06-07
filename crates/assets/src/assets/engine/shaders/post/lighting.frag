@@ -1,7 +1,6 @@
 #version 460 core
 layout(location = 0) out vec4 frag;
 
-
 // Fetch the G-Buffer data
 layout(set = 1, binding = 0) uniform texture2D gbuffer_position_map;
 layout(set = 1, binding = 1) uniform texture2D gbuffer_albedo_map;
@@ -60,8 +59,9 @@ layout(set = 0, binding = 5) uniform ShadowLightSpaceMatrices {
     mat4 matrices[4];
 } shadow_lightspace_matrices;
 
-// Shadow-map texture map
+// Shadow-map texture map and its sampler
 layout(set = 0, binding = 7) uniform texture2DArray shadow_map;
+//layout(set = 0, binding = 8) uniform sampler shadow_map_samler;
 
 // Sample a single shadow texel at the specified pixel coords
 float sample_shadow_texel(
@@ -138,7 +138,15 @@ float calculate_shadowed(
     // Get texture size
     uint size = uint(textureSize(shadow_map, 0).x);
 	float shadowed = 0.0;
-	
+
+	for (int x = -2; x <= 2; x++) {
+		for (int y = -2; y <= 2; y++) {
+			vec2 offset = vec2(x, y) / 2.0;
+			shadowed += shadow_linear(layer, uvs.xy + shadow_parameters.spread * offset * 0.001, size, current + bias);
+		}	
+	}
+
+	/*
 	// Stratified poisson disk from http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-16-shadow-mapping/
 	vec2 poisson_disk[16] = vec2[]( 
 	   vec2( -0.94201624, -0.39906216 ), 
@@ -159,16 +167,19 @@ float calculate_shadowed(
 	   vec2( 0.14383161, -0.14100790 ) 
 	);
 
-	for (int i = 0; i < 4; i++) {
-		int index = int(16.0*random(vec4(floor(position * 1000.0), i)))%16;
-		shadowed += shadow_linear(layer, uvs.xy + shadow_parameters.spread * 2.0 * poisson_disk[index] * 0.001, size, current + bias);
+	for (int i = 0; i < 16; i++) {
+		//int index = int(16.0*random(vec4(floor(position * 1000.0), i)))%16;
+		//vec2 offset = poisson_disk[index];
+		vec2 offset = random2(vec3(gl_FragCoord.xy, i));
+		shadowed += shadow_linear(layer, uvs.xy + shadow_parameters.spread * offset * 0.001, size, current + bias);
 	}
+	*/
 	
-    return (shadowed / 4) * shadow_parameters.strength;
+    return (shadowed / 25) * shadow_parameters.strength;
 }
 
 // UBO that contains the current monitor/window information
-layout(set = 0, binding = 8) uniform WindowUniform {
+layout(set = 0, binding = 9) uniform WindowUniform {
     // Dimensions of the window
     uint width;
     uint height;
@@ -280,7 +291,7 @@ vec3 brdf(
 
 	// TODO: IBL
 	brdf = brdf * lighting * light.color;
-	brdf += (0.3 + ambient * 0.1) * surface.diffuse * 0.4;
+	//brdf += (0.3 + ambient * 0.1) * surface.diffuse * 0.4;
 	//brdf += pow(fresnel(surface.f0, camera.view, surface.normal) * 0.4, vec3(2));
 	return brdf;
 }
@@ -329,6 +340,8 @@ void main() {
 		float roughness = clamp(mask.g, 0.02, 1.0);
 		float metallic = clamp(mask.b, 0.01, 1.0);
 		float visibility = clamp(mask.r, 0.0, 1.0);
+		//roughness = 0.05;
+		//metallic = 1.0;
 		vec3 f0 = mix(vec3(0.04), albedo, metallic);
 
 		// Create the data structs

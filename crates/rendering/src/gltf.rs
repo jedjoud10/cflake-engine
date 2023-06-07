@@ -729,17 +729,9 @@ fn sampling(
                 }))
                 .unwrap_or(SamplerFilter::Linear);
 
-            SamplerSettings {
-                filter,
-                wrap: SamplerWrap::MirroredRepeat,
-                mipmaps: SamplerMipMaps::Auto,
-            }
+            todo!()
         })
-        .unwrap_or(SamplerSettings {
-            filter: SamplerFilter::Linear,
-            wrap: SamplerWrap::MirroredRepeat,
-            mipmaps: SamplerMipMaps::Auto,
-        })
+        .unwrap_or(todo!())
 }
 
 // Create a texture used for a material used in the glTF scene

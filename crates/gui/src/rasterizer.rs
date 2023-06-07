@@ -68,9 +68,12 @@ fn create_rf32_texture(
         TextureMode::Dynamic,
         TextureUsage::SAMPLED | TextureUsage::COPY_DST,
         Some(SamplerSettings {
-            filter: SamplerFilter::Linear,
-            wrap: SamplerWrap::ClampToEdge,
             mipmaps: SamplerMipMaps::Auto,
+            mag_filter: SamplerFilter::Linear,
+            min_filter: SamplerFilter::Linear,
+            wraps_u: SamplerWrap::ClampToEdge,
+            wraps_v: SamplerWrap::ClampToEdge,
+            ..Default::default()
         }),
         TextureMipMaps::Disabled,
     )
