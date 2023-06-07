@@ -27,7 +27,10 @@ fn create_depth_texture(graphics: &Graphics, resolution: u32) -> LayeredTexture2
         (vek::Extent2::broadcast(resolution), 4),
         TextureMode::Dynamic,
         TextureUsage::TARGET | TextureUsage::SAMPLED,
-        Some(SamplerSettings::default()),
+        Some(SamplerSettings {
+            comparison: Some(CompareFunction::GreaterEqual),
+            ..Default::default()
+        }),
         TextureMipMaps::Disabled,
     )
     .unwrap()

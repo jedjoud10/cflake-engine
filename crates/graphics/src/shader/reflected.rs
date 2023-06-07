@@ -250,7 +250,7 @@ pub(super) fn map_texture_sample_type(
             if flags.contains(TextureFormatFeatureFlags::FILTERABLE) && !depth {
                 wgpu::TextureSampleType::Float { filterable: true }
             } else {
-                wgpu::TextureSampleType::Float { filterable: false }
+                wgpu::TextureSampleType::Depth
             }
         }
 
@@ -271,6 +271,8 @@ pub(super) fn map_sampler_binding_type(
 
     if flags.contains(TextureFormatFeatureFlags::FILTERABLE) && !depth {
         wgpu::SamplerBindingType::Filtering
+    } else if depth {
+        wgpu::SamplerBindingType::Comparison
     } else {
         wgpu::SamplerBindingType::NonFiltering
     }
@@ -352,7 +354,7 @@ pub(super) fn map_spirv_scalar_type(
             | wgpu::TextureFormat::Depth24PlusStencil8
             | wgpu::TextureFormat::Depth32Float
             | wgpu::TextureFormat::Depth32FloatStencil8 => {
-                wgpu::TextureSampleType::Float { filterable: false }
+                wgpu::TextureSampleType::Depth
             }
             _ => wgpu::TextureSampleType::Float { filterable: true },
         },
@@ -555,10 +557,6 @@ pub(super) fn create_pipeline_layout(
                     .resource_binding_types
                     .get(&name)
                     .ok_or(ShaderReflectionError::NotDefinedInCompiler(name.clone()))?;
-
-                //dbg!(&name);
-                //dbg!(ty);
-                //dbg!(desc_ty);
 
                 // Get the binding type for this global variable
                 let binding_type = match desc_ty {

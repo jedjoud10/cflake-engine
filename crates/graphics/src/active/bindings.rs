@@ -147,22 +147,6 @@ pub(super) fn create_bind_group<'b>(
     Ok(Some(bind_group))
 }
 
-/*
-
-pub trait IntoBufferSlice<'a, const TYPE: u32>: 'a {
-    type T: GpuPod;
-    fn into(self) -> &'a Buffer<Self::T, TYPE>;
-}
-
-impl<'a, T: GpuPod, const TYPE: u32> IntoStorageBufferRef<'a, TYPE> for &'a Buffer<T, TYPE> {
-    type T = T;
-
-    fn into(self) -> &'a Buffer<Self::T, TYPE> {
-        todo!()
-    }
-}
-*/
-
 // TODO: Please find a way to:
 //a) remove the required binding range when setting buffers
 //b) pass in OPTIOANL binding range when setting buffers

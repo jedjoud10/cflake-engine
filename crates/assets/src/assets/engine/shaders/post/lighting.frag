@@ -61,17 +61,7 @@ layout(set = 0, binding = 5) uniform ShadowLightSpaceMatrices {
 
 // Shadow-map texture map and its sampler
 layout(set = 0, binding = 7) uniform texture2DArray shadow_map;
-//layout(set = 0, binding = 8) uniform sampler shadow_map_samler;
-
-// Sample a single shadow texel at the specified pixel coords
-float sample_shadow_texel(
-    uint layer,
-    ivec2 pixel,
-    float compare
-) {
-    float closest = texelFetch(shadow_map, ivec3(pixel, int(layer)), 0).r;
-    return (compare > closest) ? 1.0 : 0.0;
-}
+layout(set = 0, binding = 8) uniform sampler shadow_map_sampler;
 
 // Calculate a linearly interpolated shadow value
 float shadow_linear(
@@ -80,20 +70,7 @@ float shadow_linear(
     uint size,
     float compare
 ) {
-    // Get a quad that contains the binary values
-    ivec2 pixel = ivec2(uvs.xy * size);
-    float uv0 = sample_shadow_texel(layer, pixel, compare);
-    float uv1 = sample_shadow_texel(layer, pixel + ivec2(1, 0), compare);
-    float uv2 = sample_shadow_texel(layer, pixel + ivec2(0, 1), compare);
-    float uv3 = sample_shadow_texel(layer, pixel + ivec2(1, 1), compare);
-
-    // Interpolate results in the x axis
-    vec2 frac = fract(uvs * vec2(size));
-    float bottom = mix(uv0, uv1, frac.x);
-    float top = mix(uv2, uv3, frac.x);
-
-    // Interpolate results in the y axis
-    return mix(bottom, top, frac.y);
+	return texture(sampler2DArrayShadow(shadow_map, shadow_map_sampler), vec4(uvs, layer, compare)).r;
 }
 
 // Check if a pixel is obscured by the shadow map

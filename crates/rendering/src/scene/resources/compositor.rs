@@ -3,7 +3,7 @@ use bytemuck::{Pod, Zeroable};
 use graphics::{
     BufferMode, BufferUsage, Compiler, FragmentModule, Graphics, LoadOp, Operation,
     PrimitiveConfig, RenderPass, RenderPipeline, Shader, StoreOp, SwapchainFormat, Texture2D,
-    UniformBuffer, VertexConfig, VertexModule, RGBA, Normalized, R, Depth,
+    UniformBuffer, VertexConfig, VertexModule, RGBA, Normalized, R, Depth, Texture,
 };
 
 use crate::{CameraUniform, SceneColorLayout, WindowUniform, SceneUniform, ShadowUniform, ShadowMap};
@@ -40,6 +40,7 @@ fn load_lighting_shader(assets: &Assets, graphics: &Graphics) -> Shader {
     compiler.use_uniform_buffer::<ShadowUniform>("shadow_parameters");
     compiler.use_uniform_buffer::<vek::Vec4<vek::Vec4<f32>>>("shadow_lightspace_matrices");
     compiler.use_sampled_texture::<ShadowMap>("shadow_map");
+    compiler.use_sampler::<<ShadowMap as Texture>::T>("shadow_map_sampler");
     
     Shader::new(vertex, fragment, &compiler).unwrap()
 }
