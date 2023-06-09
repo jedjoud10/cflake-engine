@@ -62,9 +62,9 @@ impl Material for TerrainMaterial {
                 // Define the types for the user textures
                 if settings.sub_materials.is_some() {
                     compiler.use_define("submaterials", "");
-                    compiler.use_sampled_texture::<LayeredAlbedoMap>("layered_albedo_map");
-                    compiler.use_sampled_texture::<LayeredNormalMap>("layered_normal_map");
-                    compiler.use_sampled_texture::<LayeredMaskMap>("layered_mask_map");
+                    compiler.use_sampled_texture::<LayeredAlbedoMap>("layered_albedo_map", false);
+                    compiler.use_sampled_texture::<LayeredNormalMap>("layered_normal_map", false);
+                    compiler.use_sampled_texture::<LayeredMaskMap>("layered_mask_map", false);
                 }
 
                 // Set the scaling factor for the vertex positions

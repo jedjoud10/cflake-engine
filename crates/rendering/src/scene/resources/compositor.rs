@@ -26,11 +26,11 @@ fn load_lighting_shader(assets: &Assets, graphics: &Graphics) -> Shader {
 
     // Create the bind layout for the compositor shader
     let mut compiler = Compiler::new(assets, graphics);
-    compiler.use_sampled_texture::<Texture2D<RGBA<f32>>>("gbuffer_position_map");
-    compiler.use_sampled_texture::<Texture2D<RGBA<Normalized<u8>>>>("gbuffer_albedo_map");
-    compiler.use_sampled_texture::<Texture2D<RGBA<Normalized<i8>>>>("gbuffer_normal_map");
-    compiler.use_sampled_texture::<Texture2D<RGBA<Normalized<u8>>>>("gbuffer_mask_map");
-    compiler.use_sampled_texture::<Texture2D<Depth<f32>>>("depth_map");
+    compiler.use_sampled_texture::<Texture2D<RGBA<f32>>>("gbuffer_position_map", false);
+    compiler.use_sampled_texture::<Texture2D<RGBA<Normalized<u8>>>>("gbuffer_albedo_map", false);
+    compiler.use_sampled_texture::<Texture2D<RGBA<Normalized<i8>>>>("gbuffer_normal_map", false);
+    compiler.use_sampled_texture::<Texture2D<RGBA<Normalized<u8>>>>("gbuffer_mask_map", false);
+    compiler.use_sampled_texture::<Texture2D<Depth<f32>>>("depth_map", false);
 
     compiler.use_uniform_buffer::<CameraUniform>("camera");
     compiler.use_uniform_buffer::<SceneUniform>("scene");
@@ -39,8 +39,7 @@ fn load_lighting_shader(assets: &Assets, graphics: &Graphics) -> Shader {
 
     compiler.use_uniform_buffer::<ShadowUniform>("shadow_parameters");
     compiler.use_uniform_buffer::<vek::Vec4<vek::Vec4<f32>>>("shadow_lightspace_matrices");
-    compiler.use_sampled_texture::<ShadowMap>("shadow_map");
-    compiler.use_sampler::<<ShadowMap as Texture>::T>("shadow_map_sampler");
+    compiler.use_sampled_texture::<ShadowMap>("shadow_map", true);
     
     Shader::new(vertex, fragment, &compiler).unwrap()
 }
@@ -188,6 +187,13 @@ pub struct PostProcessUniform {
 
     // Debug G-Buffer data
     pub debug_gbuffer: u32,
+
+    _padding: f32,
+
+    // 3 way color correction
+    pub cc_gain: vek::Vec4<f32>,
+    pub cc_lift: vek::Vec4<f32>,
+    pub cc_gamma: vek::Vec4<f32>,
 }
 
 impl Default for PostProcessUniform {
@@ -199,7 +205,11 @@ impl Default for PostProcessUniform {
             vignette_size: 0.1,
             tonemapping_mode: 2,
             tonemapping_strength: 1.0,
-            debug_gbuffer: u32::MAX
+            debug_gbuffer: u32::MAX,
+            _padding: 0.0,
+            cc_gain: vek::Vec4::zero(),
+            cc_lift: vek::Vec4::zero(),
+            cc_gamma: vek::Vec4::zero()
         }
     }
 }

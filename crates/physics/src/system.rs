@@ -168,13 +168,41 @@ fn pre_step_despawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene
 
 // This will synchronize the rapier counter-part to the data of the components
 fn pre_step_sync_rapier_to_comps(physics: &mut Physics, scene: &mut Scene, surfaces: &Storage<PhysicsSurface>) {
-    let query = scene.query::<(&RigidBody, &Position, &Rotation, &Velocity, &AngularVelocity)>();
+    let query = scene.query_mut::<(&mut RigidBody, &Position, &Rotation, &Velocity, &AngularVelocity)>();
     for (rigid_body, position, rotation, velocity, angular_velocity) in query {
         if let Some(handle) = rigid_body.handle {
             let rb = physics.bodies.get_mut(handle).unwrap();
             rb.set_position(crate::trans_rot_to_isometry(**position, **rotation), false);
             rb.set_linvel(crate::vek_vec_to_na_vec(**velocity), false);
             rb.set_angvel(crate::vek_vec_to_na_vec(**angular_velocity), false);
+
+            for force in rigid_body.forces.drain(..) {
+                rb.add_force(crate::vek_vec_to_na_vec(force), true);
+            }
+
+            for torque in rigid_body.torques.drain(..) {
+                rb.add_torque(crate::vek_vec_to_na_vec(torque), true);
+            }
+
+            for (force, point) in rigid_body.forces_at_points.drain(..) {
+                let force = crate::vek_vec_to_na_vec(force);
+                let point = crate::vek_vec_to_na_point(point);
+                rb.add_force_at_point(force, point, true);
+            }
+
+            for impulse in rigid_body.impulses.drain(..) {
+                rb.apply_impulse(crate::vek_vec_to_na_vec(impulse), true);
+            }
+
+            for torque_impulse in rigid_body.torque_impulses.drain(..) {
+                rb.apply_torque_impulse(crate::vek_vec_to_na_vec(torque_impulse), true);
+            }
+
+            for (impulse, point) in rigid_body.impulses_at_points.drain(..) {
+                let impulse = crate::vek_vec_to_na_vec(impulse);
+                let point = crate::vek_vec_to_na_point(point);
+                rb.apply_impulse_at_point(impulse, point, true);
+            }
         }
     }
 
@@ -227,21 +255,6 @@ fn pre_step_sync_rapier_to_comps(physics: &mut Physics, scene: &mut Scene, surfa
 
 // Checks all the character controllers in the world and updates them
 fn post_step_update_character_controllers(physics: &mut Physics, scene: &mut Scene) {
-    /*
-    for (rigidbody, cuboid, sphere, capsule)
-
-    let ecm = self.controller.move_shape(
-        physics.integration_parameters.dt,
-        &physics.bodies,
-        &physics.colliders,
-        todo!(),
-        todo!(),
-        todo!(),
-        todo!(),
-        todo!(),
-        |collision| { /* Handle or collect the collision in this closure. */ }
-    );
-    */
 }
 
 // Creates the physics resource and add it into the world

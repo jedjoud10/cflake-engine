@@ -36,6 +36,8 @@ pub struct TerrainSettings {
     pub(crate) vertices_per_sub_allocation: u32,
     pub(crate) triangles_per_sub_allocation: u32,
 
+    pub(crate) quality: f32,
+
     // Callbacks for custom voxel data
     pub(crate) sub_materials: Option<Vec<TerrainSubMaterial>>,
 }
@@ -59,6 +61,7 @@ impl TerrainSettings {
         allocations: usize,
         sub_allocations: usize,
         max_depth: u32,
+        quality: f32,
         sub_materials: Option<&[TerrainSubMaterial]>,
     ) -> Result<Self, TerrainSettingsError> {
         let mut output_vertex_buffer_length =
@@ -106,6 +109,7 @@ impl TerrainSettings {
             triangles_per_sub_allocation,
             sub_materials: sub_materials.map(|x| x.to_vec()),
             max_depth,
+            quality,
         })
     }
 

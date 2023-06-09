@@ -51,9 +51,9 @@ pub struct SamplerSettings {
     pub mag_filter: SamplerFilter,
     pub min_filter: SamplerFilter,
     pub mip_filter: SamplerFilter,
-    pub wraps_u: SamplerWrap,
-    pub wraps_v: SamplerWrap,
-    pub wraps_w: SamplerWrap,
+    pub wrap_u: SamplerWrap,
+    pub wrap_v: SamplerWrap,
+    pub wrap_w: SamplerWrap,
     pub border: SamplerBorderColor,
     pub mipmaps: SamplerMipMaps,
     pub comparison: SamplerComparison
@@ -68,9 +68,9 @@ impl Default for SamplerSettings {
             mag_filter: SamplerFilter::Linear,
             min_filter: SamplerFilter::Linear,
             mip_filter: SamplerFilter::Linear,
-            wraps_u: SamplerWrap::Repeat,
-            wraps_v: SamplerWrap::Repeat,
-            wraps_w: SamplerWrap::Repeat,
+            wrap_u: SamplerWrap::Repeat,
+            wrap_v: SamplerWrap::Repeat,
+            wrap_w: SamplerWrap::Repeat,
         }
     }
 }
@@ -106,17 +106,17 @@ impl<'a, T: Texel> Sampler<'a, T> {
 
     // Get the wrap mode used for the X direction
     pub fn wrap_u(&self) -> SamplerWrap {
-        self.settings.wraps_u
+        self.settings.wrap_u
     }
     
     // Get the wrap mode used for the Y direction
     pub fn wrap_v(&self) -> SamplerWrap {
-        self.settings.wraps_v
+        self.settings.wrap_v
     }
     
     // Get the wrap mode used for the z direction
     pub fn wrap_w(&self) -> SamplerWrap {
-        self.settings.wraps_w
+        self.settings.wrap_w
     }
     
     // Get the sampler border color (if fetching from border color is used within the wraps)
@@ -165,9 +165,9 @@ pub fn get_or_insert_sampler(graphics: &Graphics, sampling: SamplerSettings) -> 
 
             // Sampler configuration
             let descriptor = SamplerDescriptor {
-                address_mode_u: sampling.wraps_u,
-                address_mode_v: sampling.wraps_v,
-                address_mode_w: sampling.wraps_w,
+                address_mode_u: sampling.wrap_u,
+                address_mode_v: sampling.wrap_v,
+                address_mode_w: sampling.wrap_w,
                 mag_filter: sampling.mag_filter,
                 min_filter: sampling.min_filter,
                 mipmap_filter: sampling.mip_filter,

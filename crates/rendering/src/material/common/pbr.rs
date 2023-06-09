@@ -60,9 +60,9 @@ impl Material for PbrMaterial {
                 compiler.use_uniform_buffer::<CameraUniform>("camera");
 
                 // Define the types for the user textures
-                compiler.use_sampled_texture::<AlbedoMap>("albedo_map");
-                compiler.use_sampled_texture::<NormalMap>("normal_map");
-                compiler.use_sampled_texture::<MaskMap>("mask_map");
+                compiler.use_sampled_texture::<AlbedoMap>("albedo_map", false);
+                compiler.use_sampled_texture::<NormalMap>("normal_map", false);
+                compiler.use_sampled_texture::<MaskMap>("mask_map", false);
 
                 // Define the push ranges used by push constants
                 compiler.use_push_constant_layout(

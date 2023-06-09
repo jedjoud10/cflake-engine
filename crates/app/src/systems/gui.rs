@@ -464,12 +464,6 @@ fn update(world: &mut World) {
                 });
 
                 ui.horizontal(|ui| {
-                    ui.label("Normal Offset: ");
-                    let value = &mut shadowmapping.parameters.normal_offset;
-                    ui.add(egui::Slider::new(value, -2.0f32..=2.0f32));
-                });
-
-                ui.horizontal(|ui| {
                     ui.label("Max Distance: ");
                     let value = &mut shadowmapping.distance;
                     ui.add(egui::DragValue::new(value));
@@ -592,6 +586,24 @@ fn update(world: &mut World) {
                         0.0..=1.0,
                     ));
                 });
+
+                fn pick_vec4_color(text: &str, ui: &mut egui::Ui, vec: &mut vek::Vec4<f32>) {
+                    let mut rgba = egui::Rgba::from_rgb(vec.x, vec.y, vec.z);
+
+                    ui.horizontal(|ui| {
+                        ui.label(text);
+                        egui::color_picker::color_edit_button_rgba(ui, &mut rgba, egui::color_picker::Alpha::Opaque);
+                    });
+
+                    vec.x = rgba.r();
+                    vec.y = rgba.g();
+                    vec.z = rgba.b();
+                }                
+
+                pick_vec4_color("Color Correction Gain: ", ui, &mut compositor.post_process.cc_gain);
+                pick_vec4_color("Color Correction Lift: ", ui, &mut compositor.post_process.cc_lift);
+                pick_vec4_color("Color Correction Gamma: ", ui, &mut compositor.post_process.cc_gamma);
+
 
                 compositor.post_process.tonemapping_mode = selected_tonemapping.into_index();
                 compositor.post_process.debug_gbuffer = selected_debug_gbuffer.into_index();

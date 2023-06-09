@@ -71,8 +71,8 @@ fn create_rf32_texture(
             mipmaps: SamplerMipMaps::Auto,
             mag_filter: SamplerFilter::Linear,
             min_filter: SamplerFilter::Linear,
-            wraps_u: SamplerWrap::ClampToEdge,
-            wraps_v: SamplerWrap::ClampToEdge,
+            wrap_u: SamplerWrap::ClampToEdge,
+            wrap_v: SamplerWrap::ClampToEdge,
             ..Default::default()
         }),
         TextureMipMaps::Disabled,
@@ -93,7 +93,7 @@ impl Rasterizer {
 
         // Create the bind layout for the GUI shader
         let mut compiler = Compiler::new(assets, graphics);
-        compiler.use_sampled_texture::<FontMap>("font");
+        compiler.use_sampled_texture::<FontMap>("font", false);
         compiler.use_uniform_buffer::<WindowUniform>("window");
         let shader = Shader::new(vertex, fragment, &compiler).unwrap();
 

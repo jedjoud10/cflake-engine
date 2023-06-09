@@ -140,15 +140,28 @@ impl ChunkManager {
 
         // Create the global terrain renderer entity
         let global_draw_entity = scene.insert((Renderer::default(), surface));
+        
+        // Generate the lod multipliers programatically based on the quality setting
+        let splits = [0.0f32, 0.3, 0.7, 1.0];
+        let percents = [0.2f32, 0.4, 0.7, 1.2];
+        let max = settings.max_depth as f32;
+        let mut lod = (0..settings.max_depth).into_iter().map(|x| {
+            let percent = x as f32 / max;
+
+            let i = splits.iter().enumerate().filter(|(_, &rel)| percent >= rel).map(|(i, _)| i).max().unwrap();
+
+            percents[i] * settings.quality.clamp(0.1, 10.0)
+        }).collect::<Vec<f32>>();
+        lod.insert(0, 1.0);
 
         // Custom octree heuristic
         let size = settings.size;
-        let lod_multiplier = Rc::new(RefCell::new(vec![1f32, 1.1, 1.3, 0.9, 0.9, 1.2, 0.2, 0.0]));
-        let lod_multiplier_cloned = lod_multiplier.clone();
+        let lod = Rc::new(RefCell::new(lod));
+        let lod_cloned = lod.clone();
         let heuristic = math::OctreeHeuristic::Boxed(Box::new(move |target, node| {
             let div = (node.size() / size).next_power_of_two();
 
-            let multiplier = lod_multiplier.borrow()[node.depth() as usize];
+            let multiplier = lod.borrow()[node.depth() as usize];
 
             math::aabb_sphere(
                 &node.aabb(),
@@ -175,7 +188,7 @@ impl ChunkManager {
             layered_mask_map,
             new_visibilities: Default::default(),
             chunks_per_allocation: 0,
-            lod_multipliers: lod_multiplier_cloned,
+            lod_multipliers: lod_cloned,
         }
     }
 }

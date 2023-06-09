@@ -713,25 +713,47 @@ fn sampling(
     samplers: &[gltf::json::texture::Sampler],
     sampler: Option<gltf::json::Index<gltf::json::texture::Sampler>>,
 ) -> SamplerSettings {
+
     sampler
         .map(|index| {
             let sampler = &samplers[index.value()];
 
-            let filter = sampler
-                .mag_filter
-                .map(|x| match x.unwrap() {
-                    gltf::texture::MagFilter::Nearest => SamplerFilter::Nearest,
-                    gltf::texture::MagFilter::Linear => SamplerFilter::Linear,
-                })
-                .or(sampler.min_filter.map(|x| match x.unwrap() {
-                    gltf::texture::MinFilter::Nearest => SamplerFilter::Nearest,
-                    _ => SamplerFilter::Linear,
-                }))
-                .unwrap_or(SamplerFilter::Linear);
+            let mag_filter = sampler.mag_filter.map(|x| match x.unwrap() {
+                gltf::texture::MagFilter::Nearest => SamplerFilter::Nearest,
+                gltf::texture::MagFilter::Linear => SamplerFilter::Linear,
+            }).unwrap_or(SamplerFilter::Linear);
 
-            todo!()
+            let (min_filter, mip_filter) = sampler.min_filter.map(|x| match x.unwrap() {
+                gltf::texture::MinFilter::Nearest => (SamplerFilter::Nearest, SamplerFilter::Nearest),
+                gltf::texture::MinFilter::Linear => (SamplerFilter::Linear, SamplerFilter::Nearest),
+                
+                gltf::texture::MinFilter::NearestMipmapNearest => (SamplerFilter::Nearest, SamplerFilter::Nearest),
+                gltf::texture::MinFilter::LinearMipmapNearest => (SamplerFilter::Linear, SamplerFilter::Nearest),
+                gltf::texture::MinFilter::NearestMipmapLinear => (SamplerFilter::Nearest, SamplerFilter::Linear),
+                gltf::texture::MinFilter::LinearMipmapLinear => (SamplerFilter::Linear, SamplerFilter::Linear),
+            }).unwrap_or((SamplerFilter::Linear, SamplerFilter::Linear));
+
+            let wrap_u = map_wrapping_mode(sampler.wrap_s.unwrap());
+            let wrap_v = map_wrapping_mode(sampler.wrap_t.unwrap());
+
+            SamplerSettings {
+                mag_filter,
+                min_filter,
+                mip_filter,
+                wrap_u,
+                wrap_v,
+                ..Default::default()
+            }
         })
-        .unwrap_or(todo!())
+        .unwrap_or(SamplerSettings::default())
+}
+
+fn map_wrapping_mode(wrap: gltf::json::texture::WrappingMode) -> SamplerWrap {
+    match wrap {
+        gltf::texture::WrappingMode::ClampToEdge => SamplerWrap::ClampToEdge,
+        gltf::texture::WrappingMode::MirroredRepeat => SamplerWrap::MirrorRepeat,
+        gltf::texture::WrappingMode::Repeat => SamplerWrap::Repeat,
+    }
 }
 
 // Create a texture used for a material used in the glTF scene

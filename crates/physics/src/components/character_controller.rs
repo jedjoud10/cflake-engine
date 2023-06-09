@@ -6,7 +6,7 @@ use crate::Physics;
 #[derive(Component)]
 pub struct CharacterController {
     controller: rapier3d::control::KinematicCharacterController,
-    
+    desired: vek::Vec3<f32>,
 }
 
 impl CharacterController {
@@ -24,11 +24,13 @@ impl CharacterController {
 
         Self {
             controller,
+            desired: vek::Vec3::zero()
         }
     }
 
     // Move the character controller in a specific direction
-    pub fn translate(&mut self,) {
-
+    // Gravity will automatically be applied onto this direction
+    pub fn set_desired_translation(&mut self, translation: vek::Vec3<f32>,) {
+        self.desired = translation;
     }
 }

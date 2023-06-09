@@ -8,7 +8,7 @@ use graphics::{
     Depth, DepthConfig, Face, FragmentModule, GpuPod, Graphics, LayeredTexture2D, LoadOp,
     ModuleVisibility, Operation, PrimitiveConfig, PushConstantLayout, RenderPass,
     RenderPipeline, SamplerSettings, Shader, StoreOp, Texture, TextureMipMaps,
-    TextureMode, TextureUsage, UniformBuffer, VertexModule, WindingOrder, Buffer,
+    TextureMode, TextureUsage, UniformBuffer, VertexModule, WindingOrder, Buffer, SamplerWrap,
 };
 use math::ExplicitVertices;
 use vek::FrustumPlanes;
@@ -29,6 +29,8 @@ fn create_depth_texture(graphics: &Graphics, resolution: u32) -> LayeredTexture2
         TextureUsage::TARGET | TextureUsage::SAMPLED,
         Some(SamplerSettings {
             comparison: Some(CompareFunction::GreaterEqual),
+            wrap_u: SamplerWrap::ClampToEdge,
+            wrap_v: SamplerWrap::ClampToEdge,
             ..Default::default()
         }),
         TextureMipMaps::Disabled,
@@ -72,7 +74,6 @@ pub struct ShadowUniform {
     pub base_bias: f32,
 	pub bias_bias: f32,
 	pub bias_factor_base: f32,
-	pub normal_offset: f32,
 }
 
 impl ShadowMapping {
@@ -103,7 +104,6 @@ impl ShadowMapping {
             base_bias: -0.0002,
             bias_bias: 0.0,
             bias_factor_base: 1.30,
-            normal_offset: 0.0,
         };
 
         // Create a buffer that will contain shadow parameters

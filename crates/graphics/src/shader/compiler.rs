@@ -170,9 +170,9 @@ impl<'a> Compiler<'a> {
     }
 
     // Define a uniform sampled texture's type and texel
-    pub fn use_sampled_texture<T: Texture>(&mut self, name: impl ToString) {
+    pub fn use_sampled_texture<T: Texture>(&mut self, name: impl ToString, comparison: bool) {
         let sampler_name = format!("{}_sampler", name.to_string());
-        self.use_sampler::<T::T>(sampler_name);
+        self.use_sampler::<T::T>(sampler_name, comparison);
 
         let dimensionality = <T::Region as Region>::view_dimension();
         let info = <T::T as Texel>::info();
@@ -182,15 +182,16 @@ impl<'a> Compiler<'a> {
             name.to_string(),
             BindResourceType::SampledTexture {
                 format,
-                sample_type: super::map_texture_sample_type(&self.graphics, info),
-                sampler_binding: super::map_sampler_binding_type(&self.graphics, info),
+                sample_type: super::map_texture_sample_type(&self.graphics, info, comparison),
+                sampler_binding: super::map_sampler_binding_type(&self.graphics, info, comparison),
                 view_dimension: dimensionality,
+                comparison,
             },
         );
     }
 
     // Define a uniform sampler's type and texel
-    pub fn use_sampler<T: Texel>(&mut self, name: impl ToString) {
+    pub fn use_sampler<T: Texel>(&mut self, name: impl ToString, comparison: bool) {
         let info = <T as Texel>::info();
         let format = info.format();
 
@@ -198,7 +199,7 @@ impl<'a> Compiler<'a> {
             name.to_string(),
             BindResourceType::Sampler {
                 format: format,
-                sampler_binding: super::map_sampler_binding_type(&self.graphics, info),
+                sampler_binding: super::map_sampler_binding_type(&self.graphics, info, comparison),
             },
         );
     }

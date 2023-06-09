@@ -36,6 +36,10 @@ layout(set = 0, binding = 3) uniform PostProcessUniform {
 	uint tonemapping_mode;
 	float tonemapping_strength;
     uint gbuffer_debug;
+	float _padding;
+	vec4 cc_gain;
+	vec4 cc_lift;
+	vec4 cc_gamma;
 } post_processing;
 
 /*
@@ -51,7 +55,6 @@ layout(set = 0, binding = 4) uniform ShadowUniform {
 	float base_bias;
 	float bias_bias;
 	float bias_factor_base;
-	float normal_offset;
 } shadow_parameters;
 
 // Contains all the lightspace matrices for each cascade
@@ -97,9 +100,8 @@ float calculate_shadowed(
     
 
     // Transform the world coordinates to NDC coordinates 
-    float perpendicularity = pow(1 - abs(dot(normal, light_dir)), 2) * 2;
 	mat4 lightspace = shadow_lightspace_matrices.matrices[layer];
-    vec4 ndc = lightspace * vec4(position + normal * perpendicularity * shadow_parameters.normal_offset, 1.0); 
+    vec4 ndc = lightspace * vec4(position, 1.0); 
     float factor = pow(shadow_parameters.bias_factor_base, layer*4);
     float bias = shadow_parameters.base_bias;
     bias *= factor;
@@ -116,8 +118,8 @@ float calculate_shadowed(
     uint size = uint(textureSize(shadow_map, 0).x);
 	float shadowed = 0.0;
 
-	for (int x = -2; x <= 2; x++) {
-		for (int y = -2; y <= 2; y++) {
+	for (int x = -4; x <= 4; x++) {
+		for (int y = -4; y <= 4; y++) {
 			vec2 offset = vec2(x, y) / 2.0;
 			shadowed += shadow_linear(layer, uvs.xy + shadow_parameters.spread * offset * 0.001, size, current + bias);
 		}	
@@ -152,7 +154,7 @@ float calculate_shadowed(
 	}
 	*/
 	
-    return (shadowed / 25) * shadow_parameters.strength;
+    return (shadowed / 81) * shadow_parameters.strength;
 }
 
 // UBO that contains the current monitor/window information
@@ -249,7 +251,6 @@ vec3 brdf(
 	SunData light
 ) {
 	// Calculate kS and kD
-	// TODO: Fix this shit it's fucked
 	vec3 ks = fresnel(surface.f0, camera.half_view, camera.view);
 	vec3 kd = (1 - ks) * (1 - surface.metallic);
 	
@@ -268,8 +269,8 @@ vec3 brdf(
 
 	// TODO: IBL
 	brdf = brdf * lighting * light.color;
-	//brdf += (0.3 + ambient * 0.1) * surface.diffuse * 0.4;
-	//brdf += pow(fresnel(surface.f0, camera.view, surface.normal) * 0.4, vec3(2));
+	brdf += (0.2 + ambient * 0.2) * surface.diffuse * 0.4;
+	brdf += pow(fresnel(surface.f0, camera.view, surface.normal) * 0.4, vec3(2)) * 0.2;
 	return brdf;
 }
 
@@ -355,6 +356,7 @@ void main() {
 	Reinhard,
 	ReinhardJodie,
 	ACES,
+	ALU,
 	Clamp,
 	*/
 
@@ -379,6 +381,7 @@ void main() {
 	
 	// Apply gamma correction
 	tonemapped = mix(color, tonemapped, post_processing.tonemapping_strength);
+	tonemapped = pow(max(vec3(0.0), tonemapped * (1.0 + post_processing.cc_gain.rgb - post_processing.cc_lift.rgb) + post_processing.cc_lift.rgb), max(vec3(0.0), 1.0 - post_processing.cc_gamma.rgb));
 	color = pow(tonemapped, vec3(1.0 / post_processing.gamma));
 
 	// Create a simple vignette

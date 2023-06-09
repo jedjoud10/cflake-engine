@@ -127,6 +127,7 @@ pub enum BindResourceType {
         sample_type: wgpu::TextureSampleType,
         sampler_binding: wgpu::SamplerBindingType,
         view_dimension: wgpu::TextureViewDimension,
+        comparison: bool,
     },
 
     // A storage texture
@@ -216,6 +217,7 @@ pub(super) fn map_binding_type(value: &BindResourceLayout) -> wgpu::BindingType 
 pub(super) fn map_texture_sample_type(
     graphics: &Graphics,
     info: TexelInfo,
+    comparison: bool,
 ) -> wgpu::TextureSampleType {
     match info.element() {
         ElementType::Eight {
@@ -245,12 +247,14 @@ pub(super) fn map_texture_sample_type(
 
             let depth = matches!(info.channels(), TexelChannels::Depth);
 
-            // TODO: Pretty sure this is wrong
-
-            if flags.contains(TextureFormatFeatureFlags::FILTERABLE) && !depth {
-                wgpu::TextureSampleType::Float { filterable: true }
+            if depth {
+                if comparison {
+                    wgpu::TextureSampleType::Depth
+                } else {
+                    wgpu::TextureSampleType::Float { filterable: false }
+                }
             } else {
-                wgpu::TextureSampleType::Depth
+                wgpu::TextureSampleType::Float { filterable: flags.contains(TextureFormatFeatureFlags::FILTERABLE) } 
             }
         }
 
@@ -262,6 +266,7 @@ pub(super) fn map_texture_sample_type(
 pub(super) fn map_sampler_binding_type(
     graphics: &Graphics,
     info: TexelInfo,
+    comparison: bool,
 ) -> wgpu::SamplerBindingType {
     let adapter = graphics.adapter();
     let format = info.format();
@@ -269,12 +274,14 @@ pub(super) fn map_sampler_binding_type(
 
     let depth = matches!(info.channels(), TexelChannels::Depth);
 
-    if flags.contains(TextureFormatFeatureFlags::FILTERABLE) && !depth {
-        wgpu::SamplerBindingType::Filtering
-    } else if depth {
+    if depth && comparison {
         wgpu::SamplerBindingType::Comparison
     } else {
-        wgpu::SamplerBindingType::NonFiltering
+        if flags.contains(TextureFormatFeatureFlags::FILTERABLE) {
+            wgpu::SamplerBindingType::Filtering
+        } else {
+            wgpu::SamplerBindingType::NonFiltering
+        }
     }
 }
 
@@ -342,8 +349,10 @@ pub(super) fn map_spirv_format(format: spirv::ImageFormat) -> wgpu::TextureForma
 
 // Convert a spirq scalar type into a wgpu sample type
 pub(super) fn map_spirv_scalar_type(
+    graphics: &Graphics,
     scalar_type: spirq::ty::ScalarType,
     format: wgpu::TextureFormat,
+    comparison: bool,
 ) -> wgpu::TextureSampleType {
     match scalar_type {
         spirq::ty::ScalarType::Signed(_) => wgpu::TextureSampleType::Sint,
@@ -354,9 +363,18 @@ pub(super) fn map_spirv_scalar_type(
             | wgpu::TextureFormat::Depth24PlusStencil8
             | wgpu::TextureFormat::Depth32Float
             | wgpu::TextureFormat::Depth32FloatStencil8 => {
-                wgpu::TextureSampleType::Depth
+                if comparison {
+                    wgpu::TextureSampleType::Depth
+                } else {
+                    wgpu::TextureSampleType::Float { filterable: false }
+                }
             }
-            _ => wgpu::TextureSampleType::Float { filterable: true },
+            _ => {
+                let adapter = graphics.adapter();
+                let flags = adapter.get_texture_format_features(format).flags;
+                let filterable = flags.contains(TextureFormatFeatureFlags::FILTERABLE);
+                wgpu::TextureSampleType::Float { filterable }
+            },
         },
         _ => panic!("Not supported"),
     }
@@ -1007,6 +1025,7 @@ fn reflect_sampled_texture(
         sampler_binding,
         view_dimension,
         format,
+        comparison,
     } = resource else {
         return Err(TextureValidationError::NotSampledTexture)  
     };
@@ -1020,10 +1039,10 @@ fn reflect_sampled_texture(
     }
 
     // Make sure the sample type matches up
-    if *sample_type != map_spirv_scalar_type(_type.scalar_ty.clone(), *format) {
+    if *sample_type != map_spirv_scalar_type(graphics, _type.scalar_ty.clone(), *format, *comparison) {
         return Err(TextureValidationError::MismatchSampleType {
             compiler: *sample_type,
-            shader: map_spirv_scalar_type(_type.scalar_ty.clone(), *format),
+            shader: map_spirv_scalar_type(graphics, _type.scalar_ty.clone(), *format, *comparison),
         });
     }
 
