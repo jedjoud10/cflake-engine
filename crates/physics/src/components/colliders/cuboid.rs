@@ -10,6 +10,7 @@ pub struct CuboidCollider {
     pub half_extent: vek::Extent3<f32>,
     pub mass: f32,
     pub material: Option<Handle<PhysicsSurface>>,
+    pub(crate) sensor: bool,
     pub(crate) handle: Option<rapier3d::geometry::ColliderHandle>,
 }
 
@@ -19,6 +20,7 @@ impl Clone for CuboidCollider {
             half_extent: self.half_extent,
             mass: self.mass,
             handle: None,
+            sensor: self.sensor,
             material: self.material.clone()
         }
     }
@@ -26,11 +28,12 @@ impl Clone for CuboidCollider {
 
 impl CuboidCollider {
     // Create a new cuboid collider with a specific half-extent and mass
-    pub fn new(half_extent: vek::Extent3<f32>, mass: f32, material: Option<Handle<PhysicsSurface>>,) -> Self {
+    pub fn new(half_extent: vek::Extent3<f32>, mass: f32, sensor: bool, material: Option<Handle<PhysicsSurface>>,) -> Self {
         Self {
             half_extent,
             mass,
             material,
+            sensor,
             handle: None,
         }
     }

@@ -43,3 +43,10 @@ impl Default for TextureUsage {
         Self::READ | Self::COPY_DST | Self::SAMPLED
     }
 }
+
+// The view that we should create for the texture
+// These will be given to the texture as an array to allow many views to be created
+pub struct TextureView {
+    pub mips: std::ops::Range<usize>,
+    pub layers: Option<std::ops::Range<usize>>,
+}

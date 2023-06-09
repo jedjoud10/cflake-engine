@@ -5,7 +5,7 @@ use crate::{
 };
 
 use graphics::{
-    ActiveComputeDispatcher, BindGroup, Compiler, Graphics, PushConstants,
+    ActiveComputeDispatcher, BindGroup, Compiler, Graphics, PushConstants, TextureImportSettings,
 };
 
 use thiserror::Error;
@@ -35,7 +35,8 @@ pub struct TerrainSettings {
     // Vertices and triangles per sub allocation
     pub(crate) vertices_per_sub_allocation: u32,
     pub(crate) triangles_per_sub_allocation: u32,
-
+    
+    // Quality settings
     pub(crate) quality: f32,
 
     // Callbacks for custom voxel data

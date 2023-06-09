@@ -36,6 +36,7 @@ fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) 
 
         let collider = rapier3d::geometry::ColliderBuilder::ball(collider.radius)
             .mass(collider.mass)
+            .sensor(collider.sensor)
             .build();
         physics.colliders.insert_with_parent(collider, handle, &mut physics.bodies);
     }
@@ -49,6 +50,7 @@ fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) 
 
         let collider = rapier3d::geometry::ColliderBuilder::cuboid(collider.half_extent.w, collider.half_extent.h, collider.half_extent.d)
             .mass(collider.mass)
+            .sensor(collider.sensor)
             .build();
         physics.colliders.insert_with_parent(collider, handle, &mut physics.bodies);
     }
@@ -62,6 +64,7 @@ fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) 
 
         let collider = rapier3d::geometry::ColliderBuilder::capsule_y(collider.height / 2.0, collider.radius)
             .mass(collider.mass)
+            .sensor(collider.sensor)
             .build();
         physics.colliders.insert_with_parent(collider, handle, &mut physics.bodies);
     }
@@ -82,6 +85,7 @@ fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) 
 
         let collider = rapier3d::geometry::ColliderBuilder::trimesh(vertices, triangles)
             .mass(collider.mass)
+            .sensor(collider.sensor)
             .build();
         physics.colliders.insert_with_parent(collider, handle, &mut physics.bodies);
     }

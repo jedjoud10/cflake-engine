@@ -9,6 +9,7 @@ pub struct SphereCollider {
     pub radius: f32,
     pub mass: f32,
     pub material: Option<Handle<PhysicsSurface>>,
+    pub(crate) sensor: bool,
     pub(crate) handle: Option<rapier3d::geometry::ColliderHandle>,
 }
 
@@ -18,6 +19,7 @@ impl Clone for SphereCollider {
             radius: self.radius.clone(),
             mass: self.mass.clone(),
             material: self.material.clone(),
+            sensor: self.sensor,
             handle: None,
         }
     }
@@ -25,10 +27,11 @@ impl Clone for SphereCollider {
 
 impl SphereCollider {
     // Create a new sphere collider with a specific radius and mass
-    pub fn new(radius: f32, mass: f32, material: Option<Handle<PhysicsSurface>>) -> Self {
+    pub fn new(radius: f32, mass: f32, sensor: bool, material: Option<Handle<PhysicsSurface>>) -> Self {
         Self {
             radius,
             mass,
+            sensor,
             handle: None,
             material,
         }

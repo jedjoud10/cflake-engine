@@ -158,10 +158,16 @@ pub fn get_or_insert_sampler(graphics: &Graphics, sampling: SamplerSettings) -> 
             occupied.get().clone()
         }
         Entry::Vacant(vacant) => {            
-            let anisotropy_clamp = convert_mip_map_anisotropic_clamp(&sampling.mipmaps);
+            let mut anisotropy_clamp = convert_mip_map_anisotropic_clamp(&sampling.mipmaps);
             let (lod_min_clamp, lod_max_clamp) = convert_mip_map_lod_clamp(&sampling.mipmaps);
             let compare = sampling.comparison;
             let border_color = Some(sampling.border);
+
+            if !matches!(sampling.mag_filter, SamplerFilter::Linear) ||
+                !matches!(sampling.min_filter, SamplerFilter::Linear) || 
+                !matches!(sampling.mip_filter, SamplerFilter::Linear) {
+                anisotropy_clamp = 1;
+            }
 
             // Sampler configuration
             let descriptor = SamplerDescriptor {

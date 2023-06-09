@@ -10,6 +10,7 @@ pub struct CapsuleCollider {
     pub height: f32,
     pub mass: f32,
     pub material: Option<Handle<PhysicsSurface>>,
+    pub(crate) sensor: bool,
     pub(crate) handle: Option<rapier3d::geometry::ColliderHandle>,
 }
 
@@ -19,6 +20,7 @@ impl Clone for CapsuleCollider {
             radius: self.radius,
             height: self.height,
             mass: self.mass,
+            sensor: self.sensor,
             material: self.material.clone(),
             handle: None,
         }
@@ -26,12 +28,13 @@ impl Clone for CapsuleCollider {
 } 
 
 impl CapsuleCollider {
-    pub fn new(radius: f32, height: f32, mass: f32, material: Option<Handle<PhysicsSurface>>) -> Self {
+    pub fn new(radius: f32, height: f32, mass: f32, sensor: bool, material: Option<Handle<PhysicsSurface>>) -> Self {
         Self {
             radius,
             height,
             mass,
             material,
+            sensor,
             handle: None,
         }
     }
