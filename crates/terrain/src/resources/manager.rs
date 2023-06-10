@@ -9,7 +9,7 @@ use ecs::{Entity, Scene};
 use graphics::{
     combine_into_layered, GpuPod, Graphics, ImageTexel, LayeredTexture2D, RawTexels,
     SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap, Texel, TextureMipMaps,
-    TextureMode, TextureUsage, Vertex, SamplerBorderColor,
+    TextureMode, TextureUsage, Vertex, SamplerBorderColor, TextureScale, TextureResizeFilter,
 };
 use math::{Node, Octree};
 
@@ -198,13 +198,15 @@ fn load_raw_texels_handles<T: ImageTexel>(
     settings: &TerrainSettings,
     get_name_callback: impl Fn(&TerrainSubMaterial) -> &str,
 ) -> Option<Vec<AsyncHandle<RawTexels<T>>>> {
-    let paths = settings
+    let scale = TextureScale::Scale { scaling: 0.25 * 0.25, filter: TextureResizeFilter::Gaussian };
+    let inputs = settings
         .sub_materials
         .as_ref()?
         .iter()
         .map(get_name_callback)
+        .map(|n| (n, scale, ()))
         .collect::<Vec<_>>();
-    Some(assets.async_load_from_iter::<RawTexels<T>>(paths))
+    Some(assets.async_load_from_iter::<RawTexels<T>>(inputs))
 }
 
 // Load a 2D layered texture for the given texel type and the multitude of raw texels
@@ -218,6 +220,9 @@ fn load_layered_texture<T: ImageTexel>(
             raw,
             Some(SamplerSettings {
                 mipmaps: SamplerMipMaps::AutoAniso,
+                min_filter: SamplerFilter::Nearest,
+                mag_filter: SamplerFilter::Nearest,
+                mip_filter: SamplerFilter::Nearest,
                 ..Default::default()
             }),
             TextureMipMaps::Manual { mips: &[] },

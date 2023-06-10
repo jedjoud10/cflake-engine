@@ -1,16 +1,17 @@
 
 use cflake_engine::prelude::*;
 
-// Physics example game window
+// Player example game window
 fn main() {
     App::default()
-        .set_app_name("cflake engine physics example")
+        .set_app_name("cflake engine player example")
         .insert_init(init)
         .insert_update(update)
         .set_window_fullscreen(true)
         .execute();
 }
-// Creates a movable camera, and sky entity
+
+// Creates a movable player
 fn init(world: &mut World) {
     // Fetch the required resources from the world
     let assets = world.get::<Assets>().unwrap();
@@ -18,6 +19,13 @@ fn init(world: &mut World) {
     let mut pbrs = world.get_mut::<Storage<PbrMaterial>>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
     let pipelines = world.get::<Pipelines>().unwrap();
+    let mut input = world.get_mut::<Input>().unwrap();
+
+    // Button mappings for the player controller
+    input.bind_button("forward", KeyboardButton::W);
+    input.bind_button("backward", KeyboardButton::S);
+    input.bind_button("left", KeyboardButton::A);
+    input.bind_button("right", KeyboardButton::D);
 
     asset!(assets, "user/textures/diffuse2.jpg", "/examples/assets/");
     asset!(assets, "user/textures/normal2.jpg", "/examples/assets/");
@@ -34,7 +42,6 @@ fn init(world: &mut World) {
     // Get the default meshes from the forward renderer
     let renderer = world.get::<DeferredRenderer>().unwrap();
     let plane = renderer.plane.clone();
-    let sphere = renderer.sphere.clone();
     let cube = renderer.cube.clone();
 
     // Fetch the loaded textures
@@ -52,9 +59,9 @@ fn init(world: &mut World) {
 
     // Create a new material instance for the gound
     let ground = pbrs.insert(PbrMaterial {
-        albedo_map: Some(diffuse.clone()),
-        normal_map: Some(normal.clone()),
-        mask_map: Some(mask.clone()),
+        albedo_map: Some(diffuse),
+        normal_map: Some(normal),
+        mask_map: Some(mask),
         bumpiness_factor: 0.9,
         roughness_factor: 1.0,
         metallic_factor: 1.0,
@@ -63,61 +70,41 @@ fn init(world: &mut World) {
         scale: vek::Extent2::one() * 25.0,
     });
 
-    // Create a new material instance for the cubes and spheres
-    let material = pbrs.insert(PbrMaterial {
-        albedo_map: None,
-        normal_map: Some(normal),
-        mask_map: Some(mask),
-        bumpiness_factor: 0.9,
-        roughness_factor: 1.0,
-        metallic_factor: 1.0,
-        ambient_occlusion_factor: 1.0,
-        tint: vek::Rgb::white(),
-        scale: vek::Extent2::one(),
-    });
-
     // Create a simple floor and add the entity
     let surface = Surface::new(plane, ground.clone(), id.clone());
     let renderer = Renderer::default();
     let scale = Scale::uniform(50.0);
     let rigidbody = RigidBody::new(RigidBodyType::Fixed, true);
-    let collider = CuboidCollider::new(vek::Extent3::new(50.0, 0.03, 50.0), 1.0, false, None);
+    let collider = CuboidCollider::new(vek::Extent3::new(50.0, 0.1, 50.0), 1.0, false, None);
     scene.insert((surface, renderer, scale, rigidbody, collider));
 
-    // Create a prefab that contains the sphere entity and it's components
+    // Player renderer
+    let surface = Surface::new(cube, ground.clone(), id.clone());
     let renderer = Renderer::default();
-    let position = Position::default();
-    let rotation = Rotation::default();
-    let surface = Surface::new(sphere, material.clone(), id.clone());
-    let rigidbody = RigidBody::new(RigidBodyType::Dynamic, true);
-    let velocity = Velocity::default();
-    let angular_velocity = AngularVelocity::default();
-    let collider = SphereCollider::new(1.0, 1.0, false, None);
-    scene.prefabify("sphere", (renderer, position, rotation, surface, rigidbody, collider, velocity, angular_velocity));
 
-    // Create a prefab that contains the cube entity and it's components
-    let renderer = Renderer::default();
-    let position = Position::default();
-    let rotation = Rotation::default();
-    let surface = Surface::new(cube, material, id);
-    let rigidbody = RigidBody::new(RigidBodyType::Dynamic, true);
-    let velocity = Velocity::default();
-    let angular_velocity = AngularVelocity::default();
-    let collider = CuboidCollider::new(vek::Extent3::broadcast(1.0), 10.0, false, None);
-    scene.prefabify("cube", (renderer, position, rotation, surface, rigidbody, collider, velocity, angular_velocity));
-
-    // Create a movable camera
-    let collider = SphereCollider::new(2.0, 1.0, false, None);
-    scene.insert((
+    // Create a camera entity
+    let child = scene.insert((
+        LocalPosition::at_y(1.70),
         Position::default(),
         Rotation::default(),
+        LocalRotation::default(),
+        Camera::default(),
+        surface, renderer
+    ));
+
+    // Create a player entity
+    let parent = scene.insert((
+        Position::at_y(20.0),
         Velocity::default(),
         AngularVelocity::default(),
-        Camera::default(),
-        CameraController::default(),
-        RigidBody::new(RigidBodyType::KinematicPositionBased, false),
-        collider,
+        CharacterController::new(0.02),
+        CapsuleCollider::new(0.5, 1.7, 10.0, false, None),
+        RigidBody::new(RigidBodyType::KinematicVelocityBased, false),
+        Rotation::default(),
     ));
+
+    // Attach the camera to the player
+    scene.attach(child, parent).unwrap();
 
     // Create a directional light
     let light = DirectionalLight::default();
@@ -136,20 +123,23 @@ fn update(world: &mut World) {
         *state = State::Stopped;
     }
 
-    let (_, position, rotation) = scene.find::<(&Camera, &Position, &Rotation)>().unwrap();
-    let position = rotation.forward() * 3.0 + **position;
-
-    // Create a new sphere in front of the camera when we press the right mouse button
-    if input.get_button(MouseButton::Right).pressed() {
-        let mut entry = scene.instantiate("sphere").unwrap();
-        **entry.get_mut::<Position>().unwrap() = position;
-        **entry.get_mut::<Velocity>().unwrap() = rotation.forward() * 15.0;
+    // Get the player character controller
+    let cr = scene.find_mut::<&mut CharacterController>().unwrap();
+    let mut velocity = vek::Vec3::zero();
+    
+    // Update the velocity in the forward and backward directions
+    if input.get_button("forward").held() {
+        velocity += vek::Vec3::unit_z();
+    } else if input.get_button("backward").held() {
+        velocity += -vek::Vec3::unit_z();
     }
 
-    // Create a new box in front of the camera when we press the left mouse button
-    if input.get_button(MouseButton::Left).pressed() {
-        let mut entry = scene.instantiate("cube").unwrap();
-        **entry.get_mut::<Position>().unwrap() = position;
-        **entry.get_mut::<Velocity>().unwrap() = rotation.forward() * 15.0;
+    // Update the velocity in the left and right directions
+    if input.get_button("left").held() {
+        velocity += -vek::Vec3::unit_x();
+    } else if input.get_button("right").held() {
+        velocity += vek::Vec3::unit_x();
     }
+
+    cr.set_desired_translation(velocity * 100.0);
 }

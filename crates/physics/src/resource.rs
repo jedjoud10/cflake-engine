@@ -10,6 +10,8 @@ pub struct Physics {
     pub(crate) impulse_joints: ImpulseJointSet,
     pub(crate) multibody_joints: MultibodyJointSet,
     pub(crate) ccd_solver: CCDSolver,
+    pub(crate) query: QueryPipeline,
+    pub(crate) gravity: vek::Vec3<f32>,
 }
 
 impl Physics {
@@ -30,6 +32,7 @@ impl Physics {
         let mut impulse_joint_set = ImpulseJointSet::new();
         let mut multibody_joint_set = MultibodyJointSet::new();
         let mut ccd_solver = CCDSolver::new();
+        let mut query = QueryPipeline::new();
         let physics_hooks = ();
         let event_handler = ();
 
@@ -44,6 +47,8 @@ impl Physics {
             impulse_joints: impulse_joint_set,
             multibody_joints: multibody_joint_set,
             ccd_solver,
+            query,
+            gravity: vek::Vec3::new(0.0, -9.81, 0.0),
         }
     }
 
@@ -59,9 +64,10 @@ impl Physics {
             impulse_joints,
             multibody_joints,
             ccd_solver,
+            query,
+            gravity
         } = self;
-    
-        let gravity = vector![0.0, -9.81, 0.0];
+        let gravity = crate::util::vek_vec_to_na_vec(*gravity);
     
         physics_pipeline.step(
             &gravity,
@@ -74,7 +80,7 @@ impl Physics {
             impulse_joints,
             multibody_joints,
             ccd_solver,
-            None,
+            Some(&mut self.query),
             &(),
             &(),
         );

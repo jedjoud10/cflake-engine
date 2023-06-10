@@ -49,8 +49,8 @@ fn init(world: &mut World) {
     let child1 = scene.insert((
         surface,
         renderer,
-        RelativePosition::at_y(5.0),
-        RelativeRotation::default(),
+        LocalPosition::at_y(5.0),
+        LocalRotation::default(),
         Position::default(),
         Rotation::default(),
     ));
@@ -62,8 +62,8 @@ fn init(world: &mut World) {
     let child2 = scene.insert((
         surface,
         renderer,
-        RelativePosition::at_y(10.0),
-        RelativeRotation::default(),
+        LocalPosition::at_y(10.0),
+        LocalRotation::default(),
         Position::default(),
         Rotation::default(),
     ));
@@ -89,7 +89,7 @@ fn update(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
     let mut time = world.get::<Time>().unwrap();
 
-    for (_, rotation, relative_rotation) in scene.query_mut::<(&Parent, &mut Rotation, Option<&mut RelativeRotation>)>() {
+    for (_, rotation, relative_rotation) in scene.query_mut::<(&Parent, &mut Rotation, Option<&mut LocalRotation>)>() {
         if let Some(relative_rotation) = relative_rotation {
             relative_rotation.rotate_x(-0.3 * time.delta().as_secs_f32());
         } else {

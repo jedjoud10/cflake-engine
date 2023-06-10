@@ -3,7 +3,7 @@ use utils::{Time, Storage};
 use coords::{Position, Rotation};
 use ecs::{Scene, added, modified, Entity};
 use world::{System, World, post_user, user};
-use crate::{RigidBody, Physics, SphereCollider, CuboidCollider, AngularVelocity, Velocity, MeshCollider, PhysicsSurface, CapsuleCollider};
+use crate::{RigidBody, Physics, SphereCollider, CuboidCollider, AngularVelocity, Velocity, MeshCollider, PhysicsSurface, CapsuleCollider, CharacterController, util};
 use crate::{LastTickedVelocity, LastTickedAngularVelocity, CurrentTickedVelocity, CurrentTickedAngularVelocity};
 use coords::{LastTickedPosition, LastTickedRotation, CurrentTickedPosition, CurrentTickedRotation};
 
@@ -22,51 +22,55 @@ fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) 
         let handle = physics.bodies.insert(rb);
         rigid_body.handle = Some(handle);
 
-        if _type == RigidBodyType::Dynamic && rigid_body.interpolated {
+
+        if !_type.is_fixed() && rigid_body.interpolated {
             interpolated_entities.push(*entity);
         }
     }
 
     // Spawn in the Sphere collider components
     let filter = added::<&SphereCollider>();
-    for (collider, rigid_body) in scene.query_mut_with::<(&mut SphereCollider, &RigidBody)>(filter) {
+    for (sphere_collider, rigid_body) in scene.query_mut_with::<(&mut SphereCollider, &RigidBody)>(filter) {
         let Some(handle) = rigid_body.handle else {
             continue;
         };
 
-        let collider = rapier3d::geometry::ColliderBuilder::ball(collider.radius)
-            .mass(collider.mass)
-            .sensor(collider.sensor)
+        let collider = rapier3d::geometry::ColliderBuilder::ball(sphere_collider.radius)
+            .mass(sphere_collider.mass)
+            .sensor(sphere_collider.sensor)
             .build();
-        physics.colliders.insert_with_parent(collider, handle, &mut physics.bodies);
+        let handle = physics.colliders.insert_with_parent(collider, handle, &mut physics.bodies);
+        sphere_collider.handle = Some(handle);
     }
 
     // Spawn in the Cuboid collider components
     let filter = added::<&CuboidCollider>();
-    for (collider, rigid_body) in scene.query_mut_with::<(&mut CuboidCollider, &RigidBody)>(filter) {
+    for (cuboid_collider, rigid_body) in scene.query_mut_with::<(&mut CuboidCollider, &RigidBody)>(filter) {
         let Some(handle) = rigid_body.handle else {
             continue;
         };
 
-        let collider = rapier3d::geometry::ColliderBuilder::cuboid(collider.half_extent.w, collider.half_extent.h, collider.half_extent.d)
-            .mass(collider.mass)
-            .sensor(collider.sensor)
+        let collider = rapier3d::geometry::ColliderBuilder::cuboid(cuboid_collider.half_extent.w, cuboid_collider.half_extent.h, cuboid_collider.half_extent.d)
+            .mass(cuboid_collider.mass)
+            .sensor(cuboid_collider.sensor)
             .build();
-        physics.colliders.insert_with_parent(collider, handle, &mut physics.bodies);
+        let handle = physics.colliders.insert_with_parent(collider, handle, &mut physics.bodies);
+        cuboid_collider.handle = Some(handle);
     }
 
     // Spawn in the Capsule collider components
     let filter = added::<&CapsuleCollider>();
-    for (collider, rigid_body) in scene.query_mut_with::<(&mut CapsuleCollider, &RigidBody)>(filter) {
+    for (capsule_collider, rigid_body) in scene.query_mut_with::<(&mut CapsuleCollider, &RigidBody)>(filter) {
         let Some(handle) = rigid_body.handle else {
             continue;
         };
 
-        let collider = rapier3d::geometry::ColliderBuilder::capsule_y(collider.height / 2.0, collider.radius)
-            .mass(collider.mass)
-            .sensor(collider.sensor)
+        let collider = rapier3d::geometry::ColliderBuilder::capsule_y(capsule_collider.height / 2.0, capsule_collider.radius)
+            .mass(capsule_collider.mass)
+            .sensor(capsule_collider.sensor)
             .build();
-        physics.colliders.insert_with_parent(collider, handle, &mut physics.bodies);
+        let handle = physics.colliders.insert_with_parent(collider, handle, &mut physics.bodies);
+        capsule_collider.handle = Some(handle);
     }
 
     // Spawn in the Mesh collider components
@@ -121,14 +125,10 @@ fn pre_step_despawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene
     let Physics {
         bodies,
         colliders,
-        integration_parameters,
-        physics_pipeline,
         islands,
-        broad_phase,
-        narrow_phase,
         impulse_joints,
         multibody_joints,
-        ccd_solver,
+        ..
     } = &mut *physics;
 
     // Destroy removed RigidBody components
@@ -146,8 +146,8 @@ fn pre_step_despawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene
     }
 
     // Destroy removed Sphere Collider components
-    for removed_sphere_colliders in scene.removed_mut::<SphereCollider>() {
-        if let Some(handle) = removed_sphere_colliders.handle {
+    for removed_sphere_collider in scene.removed_mut::<SphereCollider>() {
+        if let Some(handle) = removed_sphere_collider.handle {
             colliders.remove(
                 handle,
                 islands,
@@ -158,8 +158,20 @@ fn pre_step_despawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene
     }
 
     // Destroy removed Cuboid Collider components
-    for removed_cuboid_colliders in scene.removed_mut::<CuboidCollider>() {
-        if let Some(handle) = removed_cuboid_colliders.handle {
+    for removed_cuboid_collider in scene.removed_mut::<CuboidCollider>() {
+        if let Some(handle) = removed_cuboid_collider.handle {
+            colliders.remove(
+                handle,
+                islands,
+                bodies,
+                true,
+            );
+        }
+    }
+
+    // Destroy removed Capsule Collider components
+    for removed_capsule_collider in scene.removed_mut::<CapsuleCollider>() {
+        if let Some(handle) = removed_capsule_collider.handle {
             colliders.remove(
                 handle,
                 islands,
@@ -176,6 +188,11 @@ fn pre_step_sync_rapier_to_comps(physics: &mut Physics, scene: &mut Scene, surfa
     for (rigid_body, position, rotation, velocity, angular_velocity) in query {
         if let Some(handle) = rigid_body.handle {
             let rb = physics.bodies.get_mut(handle).unwrap();
+
+            if rigid_body._type.is_fixed() {
+                continue;
+            }
+
             rb.set_position(crate::trans_rot_to_isometry(**position, **rotation), false);
             rb.set_linvel(crate::vek_vec_to_na_vec(**velocity), false);
             rb.set_angvel(crate::vek_vec_to_na_vec(**angular_velocity), false);
@@ -246,8 +263,8 @@ fn pre_step_sync_rapier_to_comps(physics: &mut Physics, scene: &mut Scene, surfa
         if let Some(handle) = capsule_collider.handle {
             let collider = physics.colliders.get_mut(handle).unwrap();
             let capsule = collider.shape_mut().as_capsule_mut().unwrap();
-            capsule.segment.a = crate::util::vek_vec_to_na_point(vek::Vec3::unit_y() * (-capsule_collider.height / 2.0));
-            capsule.segment.b = crate::util::vek_vec_to_na_point(vek::Vec3::unit_y() * (capsule_collider.height / 2.0));
+            capsule.segment.a = util::vek_vec_to_na_point(vek::Vec3::unit_y() * (-capsule_collider.height / 2.0));
+            capsule.segment.b = util::vek_vec_to_na_point(vek::Vec3::unit_y() * (capsule_collider.height / 2.0));
             capsule.radius = capsule_collider.radius;
 
             let physics_surface = capsule_collider.material.as_ref().map(|x| surfaces[x]).unwrap_or_default();
@@ -259,6 +276,58 @@ fn pre_step_sync_rapier_to_comps(physics: &mut Physics, scene: &mut Scene, surfa
 
 // Checks all the character controllers in the world and updates them
 fn post_step_update_character_controllers(physics: &mut Physics, scene: &mut Scene) {
+    for (cc, capsule, position, rotation, rb, velocity,) in scene.query_mut::<(
+        &mut CharacterController,
+        &CapsuleCollider,
+        &Position,
+        &Rotation,
+        &mut RigidBody,
+        &mut Velocity,
+    )>() {
+        // FIX THIUS SHIT ITS SO FUCKING BROKEN
+        todo!();
+        
+        let a = util::vek_vec_to_na_point(vek::Vec3::unit_y() * (-capsule.height / 2.0));
+        let b = util::vek_vec_to_na_point(vek::Vec3::unit_y() * (capsule.height / 2.0));
+        let radius = capsule.radius;
+        let shape = rapier3d::geometry::Capsule::new(a, b, radius);
+        let dt = physics.integration_parameters.dt;
+
+        //cc.controller.up = rapier3d::na::UnitVector3::new_normalize(util::vek_vec_to_na_vec(-physics.gravity));
+        let res = cc.controller.move_shape(
+            dt,
+            &physics.bodies,
+            &physics.colliders,
+            &physics.query,
+            &shape,
+            &util::trans_rot_to_isometry(**position, **rotation),
+            util::vek_vec_to_na_vec(cc.desired + physics.gravity),
+            QueryFilter::new().exclude_rigid_body(rb.handle.unwrap()),
+            |e| {}
+        );
+
+        let translation = util::na_vec_to_vek_vec(res.translation);
+        //dbg!(translation);
+        let rb = physics.bodies.get_mut(rb.handle.unwrap()).unwrap();
+        //rb.set_next_kinematic_translation(res.translation);
+        //rb.set_next_kinematic_translation(util::vek_vec_to_na_vec(cc.desired + physics.gravity) * dt);
+        rb.set_linvel(res.translation, true);
+        //**velocity += translation * dt;
+        //dbg!(velocity);
+
+        /*
+        cc.controller.solve_character_collision_impulses(
+            dt,
+            &mut physics.bodies,
+            &physics.colliders,
+            &physics.query,
+            &shape,
+            10.0,
+            &collisions,
+            filter,
+        );
+        */
+    }
 }
 
 // Creates the physics resource and add it into the world
@@ -307,7 +376,7 @@ fn tick(world: &mut World) {
             next_velocity,
             next_angular_velocity,
         ) in query {
-            if rigid_body._type.is_dynamic() {
+            if !rigid_body._type.is_fixed() {
                 **last_position = **next_position;
                 **last_rotation = **next_rotation;
                 **last_velocity = **next_velocity;
@@ -316,12 +385,11 @@ fn tick(world: &mut World) {
         }
     }
 
-    // Step through the physics simulation each tick
-    physics.step();
-
     // Update character controller rigid-bodies
     post_step_update_character_controllers(physics, scene);
-
+    
+    // Step through the physics simulation each tick
+    physics.step();
 
     fn set_sub_tick_coords_type<TimeFrame: 'static>(scene: &mut Scene, bodies: &mut RigidBodySet, interpolated: bool) {
         let query = scene.query_mut::<(
@@ -339,7 +407,7 @@ fn tick(world: &mut World) {
             angular_velocity
         ) in query {
             if let Some(handle) = rigid_body.handle {
-                if rigid_body._type.is_dynamic() && (rigid_body.interpolated == interpolated) {
+                if !rigid_body._type.is_fixed() && (rigid_body.interpolated == interpolated) {
                     let rb = bodies.get_mut(handle).unwrap();
                     let (new_position, new_rotation) = crate::isometry_to_trans_rot(&rb.position());
                     let new_velocity = crate::na_vec_to_vek_vec(*rb.linvel());
@@ -357,7 +425,7 @@ fn tick(world: &mut World) {
     // Update sleeping state
     for rigid_body in scene.query_mut::<&mut RigidBody>() {
         if let Some(handle) = rigid_body.handle {
-            if rigid_body._type.is_dynamic() {
+            if !rigid_body._type.is_fixed() {
                 let rb = physics.bodies.get_mut(handle).unwrap();
                 rigid_body.sleeping = rb.is_sleeping();
             }
@@ -406,7 +474,7 @@ fn update(world: &mut World) {
         current_velocity,
         current_angular_velocity
     ) in query {
-        if rigid_body._type.is_dynamic() && rigid_body.interpolated {
+        if !rigid_body._type.is_fixed() && rigid_body.interpolated {
             **current_position = vek::Lerp::lerp(**last_position, **next_position, t);
             **current_rotation = vek::Slerp::slerp(**last_rotation, **next_rotation, t);
             **current_velocity = vek::Lerp::lerp(**last_velocity, **next_velocity, t);

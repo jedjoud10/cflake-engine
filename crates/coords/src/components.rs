@@ -27,12 +27,12 @@ pub struct CurrentTick;
 pub struct Global<TimeFrame>(PhantomData<TimeFrame>);
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Relative<TimeFrame>(PhantomData<TimeFrame>);
+pub struct Local<TimeFrame>(PhantomData<TimeFrame>);
 
 // Local coordinates updated frame to frame
-pub type RelativePosition = position::Position<Relative<FrameToFrame>>;
-pub type RelativeRotation = rotation::Rotation<Relative<FrameToFrame>>;
-pub type RelativeScale = scale::Scale<Relative<FrameToFrame>>;
+pub type LocalPosition = position::Position<Local<FrameToFrame>>;
+pub type LocalRotation = rotation::Rotation<Local<FrameToFrame>>;
+pub type LocalScale = scale::Scale<Local<FrameToFrame>>;
 
 // Global coordinates updated frame to frame
 pub type Position = position::Position<Global<FrameToFrame>>;

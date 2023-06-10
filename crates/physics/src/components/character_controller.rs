@@ -5,15 +5,15 @@ use crate::Physics;
 // A character controller component that can be added onto a kinematic body to simulate character physics
 #[derive(Component)]
 pub struct CharacterController {
-    controller: rapier3d::control::KinematicCharacterController,
-    desired: vek::Vec3<f32>,
+    pub(crate) controller: rapier3d::control::KinematicCharacterController,
+    pub(crate) desired: vek::Vec3<f32>,
 }
 
 impl CharacterController {
     // Create a new character controller
-    pub fn new(up: vek::Vec3<f32>, offset: f32,) -> Self {
+    pub fn new(offset: f32) -> Self {
         let controller = rapier3d::control::KinematicCharacterController {
-            up: rapier3d::na::UnitVector3::new_normalize(crate::vek_vec_to_na_vec(up)),
+            up: rapier3d::na::UnitVector3::new_normalize(crate::vek_vec_to_na_vec(vek::Vec3::unit_y())),
             offset: rapier3d::control::CharacterLength::Absolute(offset),
             slide: false,
             autostep: None,
@@ -21,6 +21,8 @@ impl CharacterController {
             min_slope_slide_angle: 25.0f32.to_radians(),
             snap_to_ground: None,
         };
+
+        let controller = Default::default();
 
         Self {
             controller,

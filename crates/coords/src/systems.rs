@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use ecs::{Entity, EntryMut, EntryRef, Scene, contains};
 use world::{System, post_user, World};
 
-use crate::{Parent, Child, RelativePosition, RelativeRotation, RelativeScale, Position, Rotation, Scale};
+use crate::{Parent, Child, LocalPosition, LocalRotation, LocalScale, Position, Rotation, Scale};
 
 mod private {
     use ecs::{Entity, EntryMut, EntryRef};
@@ -75,9 +75,9 @@ pub trait HierarchyManager: private::HierarchyManagerInternal {
         assert!(entry.remove::<Child>());
 
         // Remove the "local" components that we added automatically
-        entry.remove::<RelativePosition>();
-        entry.remove::<RelativeRotation>();
-        entry.remove::<RelativeScale>();
+        entry.remove::<LocalPosition>();
+        entry.remove::<LocalRotation>();
+        entry.remove::<LocalScale>();
 
         Some(())
     }
@@ -218,9 +218,9 @@ fn update_hierarchy(world: &mut World) {
         ) in scene.query_mut::<(
             &Entity,
             &Child,
-            Option<&RelativePosition>,
-            Option<&RelativeRotation>,
-            Option<&RelativeScale>,
+            Option<&LocalPosition>,
+            Option<&LocalRotation>,
+            Option<&LocalScale>,
             Option<&mut Position>,
             Option<&mut Rotation>,
             Option<&mut Scale>,
