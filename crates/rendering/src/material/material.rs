@@ -40,7 +40,7 @@ pub trait Material: 'static + Sized + Sync + Send {
 
     // Should surfaces using this material use culling?
     fn cull<P: Pass>() -> bool {
-        false
+        true
     }
 
     // Fetch the required resources from the world

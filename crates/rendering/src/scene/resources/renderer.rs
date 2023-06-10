@@ -1,5 +1,5 @@
 use crate::{
-    AlbedoMap, CameraBuffer, MaskMap, Mesh, NormalMap, SceneBuffer, TimingBuffer, WindowBuffer, create_texture2d, create_uniform_buffer,
+    AlbedoMap, CameraBuffer, MaskMap, Mesh, NormalMap, SceneBuffer, TimingBuffer, WindowBuffer, create_texture2d, create_uniform_buffer, PassStats,
 };
 
 use assets::Assets;
@@ -89,13 +89,9 @@ pub struct DeferredRenderer {
     pub plane: Handle<Mesh>,
     pub sphere: Handle<Mesh>,
 
-    // Stats about shit drawn this frame
-    pub drawn_unique_material_count: u32,
-    pub material_instances_count: u32,
-    pub rendered_direct_vertices_drawn: u64,
-    pub rendered_direct_triangles_drawn: u64,
-    pub culled_sub_surfaces: u64,
-    pub rendered_sub_surfaces: u64,
+    // Stats for the deferred and shadow pass
+    pub deferred_pass_stats: PassStats,
+    pub shadow_pass_stats: PassStats,
 }
 
 impl DeferredRenderer {
@@ -195,12 +191,8 @@ impl DeferredRenderer {
             main_directional_light: None,
 
             // Statistics
-            drawn_unique_material_count: 0,
-            material_instances_count: 0,
-            rendered_direct_vertices_drawn: 0,
-            rendered_direct_triangles_drawn: 0,
-            culled_sub_surfaces: 0,
-            rendered_sub_surfaces: 0,
+            deferred_pass_stats: Default::default(),
+            shadow_pass_stats: Default::default(),
 
             // Load the default meshes
             cube,

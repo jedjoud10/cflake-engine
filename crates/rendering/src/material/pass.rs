@@ -15,6 +15,17 @@ pub enum PassType {
     Deferred, Shadow
 }
 
+
+// Stats about objects and surfaces drawn for any given pass
+#[derive(Default, Clone, Copy)]
+pub struct PassStats {
+    pub material_instances_count: usize,
+    pub rendered_direct_vertices_drawn: u64,
+    pub rendered_direct_triangles_drawn: u64,
+    pub culled_sub_surfaces: usize,
+    pub rendered_sub_surfaces: usize,
+}
+
 // Generalized render pass from within the rendering system
 // This will be implemented for the DeferredPass and ShadowPass structs
 pub trait Pass {
@@ -83,6 +94,6 @@ impl Pass for ShadowPass {
     }
 
     fn is_surface_visible<M: Material>(surface: &Surface<M>, renderer: &Renderer) -> bool {
-        surface.visible && renderer.visible
+        !surface.shadow_culled && surface.visible && renderer.visible
     }
 }

@@ -348,6 +348,7 @@ fn tick(world: &mut World) {
                     **rotation = new_rotation;
                     **velocity = new_velocity;
                     **angular_velocity = new_angular_velocity;
+                    rigid_body.sleeping = rb.is_sleeping();
                 }
             }
         }

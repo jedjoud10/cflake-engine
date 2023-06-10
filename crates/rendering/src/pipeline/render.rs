@@ -1,5 +1,5 @@
 use crate::{
-    DefaultMaterialResources, Material, Mesh, RenderPath, Renderer, SceneColorLayout, SceneDepthLayout, Surface, MeshAttribute, MeshAttributes, Pass,
+    DefaultMaterialResources, Material, Mesh, RenderPath, Renderer, SceneColorLayout, SceneDepthLayout, Surface, MeshAttribute, MeshAttributes, Pass, PassStats,
 };
 use ecs::Scene;
 use graphics::{ActivePipeline, RenderPipeline, ColorLayout, DepthStencilLayout, ActiveRenderPipeline, ActiveRenderPass};
@@ -74,6 +74,7 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
     world: &'r World,
     pipeline: &'r RenderPipeline<P::C, P::DS>,
     defaults: &DefaultMaterialResources<'r>,
+    stats: &mut PassStats,
     render_pass: &mut ActiveRenderPass<'r, '_, P::C, P::DS>,
 ) {
     // Get a rasterizer for the current render pass by binding a pipeline
@@ -126,13 +127,18 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
 
     // Convert to sub-surfaces and discard invisible / culled surfaces
     let iter = query.into_iter().zip(user);
+    let max = iter.len();
     let iter = iter.filter(|((surface, renderer), _)| P::is_surface_visible(surface, renderer));
     let subsurfaces = iter.collect::<Vec<_>>();
+    let culled = subsurfaces.len();
     let subsurfaces = subsurfaces
         .iter()
         .flat_map(|((surface, renderer), user)| 
             surface.subsurfaces.iter().map(move |x| ((x, renderer), user))
         );
+
+    // Set the number of culled surfaces
+    stats.culled_sub_surfaces = max - culled;
 
     // Sort and group material instances / meshes
     // instead of [(mt1, mh1), (mt2, mh2), (mt1, mh1), (mt1, mh2)]
@@ -166,6 +172,7 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
                     M::set_instance_bindings::<P>(material, &mut resources, defaults, group);
                 })
                 .unwrap();
+            stats.material_instances_count += 1;
         }
 
         // If a mesh is missing attributes just skip
@@ -260,5 +267,14 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
 
         // Draw the mesh
         <M::RenderPath as RenderPath>::draw(mesh, defaults, &mut active).unwrap();
+        
+        // These values won't get added it if's a invalid or indirect mesh
+        stats.rendered_sub_surfaces += 1;
+        stats.rendered_direct_triangles_drawn +=
+            <<M as Material>::RenderPath as RenderPath>::triangle_count(mesh)
+                .unwrap_or_default() as u64;
+        stats.rendered_direct_vertices_drawn +=
+            <<M as Material>::RenderPath as RenderPath>::vertex_count(mesh).unwrap_or_default()
+                as u64;
     }
 }

@@ -473,31 +473,38 @@ fn update(world: &mut World) {
 
     // Forward renderer settings
     if let Ok(renderer) = world.get_mut::<DeferredRenderer>() {
+        fn show_pass_stats(ui: &mut egui::Ui, stats: PassStats) {
+            ui.label(format!(
+                "Drawn material instances: {}",
+                stats.material_instances_count
+            ));
+            ui.label(format!(
+                "Drawn sub-surfaces: {}",
+                stats.rendered_sub_surfaces
+            ));
+            ui.label(format!(
+                "Culled sub-surfaces: {}",
+                stats.culled_sub_surfaces
+            ));
+            ui.label(format!(
+                "Vertices draw count: {}k",
+                stats.rendered_direct_vertices_drawn / 1000
+            ));
+            ui.label(format!(
+                "Triangles draw count: {}k",
+                stats.rendered_direct_triangles_drawn / 1000
+            ));
+        }
+
         egui::Window::new("Deferred Rendering")
             .frame(frame)
             .collapsible(true)
             .default_open(false)
             .show(&gui, |ui| {
-                ui.label(format!(
-                    "Unique material count: {}",
-                    renderer.drawn_unique_material_count
-                ));
-                ui.label(format!(
-                    "Drawn material instances: {}",
-                    renderer.material_instances_count
-                ));
-                ui.label(format!(
-                    "Drawn sub-surfaces: {}",
-                    renderer.rendered_sub_surfaces
-                ));
-                ui.label(format!(
-                    "Vertices draw count: {}k",
-                    renderer.rendered_direct_vertices_drawn / 1000
-                ));
-                ui.label(format!(
-                    "Triangles draw count: {}k",
-                    renderer.rendered_direct_triangles_drawn / 1000
-                ));
+                ui.heading("Deferred Pass:");
+                show_pass_stats(ui, renderer.deferred_pass_stats);
+                ui.heading("Shadow Pass:");
+                show_pass_stats(ui, renderer.shadow_pass_stats);
             });
     }
 

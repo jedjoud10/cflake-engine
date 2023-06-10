@@ -84,7 +84,7 @@ pub(super) fn cull_surfaces<'r, P: Pass, M: Material>(
         }
 
         // A surface is culled *only* if all of it's sub-surface are not visible
-        surface.culled = surface.subsurfaces.iter().all(|SubSurface { mesh, .. }| {
+        P::set_cull_state(surface, surface.subsurfaces.iter().all(|SubSurface { mesh, .. }| {
             // Get the mesh and it's AABB
             let mesh = <M::RenderPath as RenderPath>::get(defaults, mesh);
             let aabb = mesh.vertices().aabb();
@@ -95,6 +95,6 @@ pub(super) fn cull_surfaces<'r, P: Pass, M: Material>(
             } else {
                 false
             }
-        });
+        }));
     });
 }

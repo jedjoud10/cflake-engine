@@ -4,7 +4,7 @@ use crate::{
     AlbedoMap, AttributeBuffer, Camera, DefaultMaterialResources, DirectionalLight, Environment,
     DeferredRenderer, Indirect, IndirectMesh, MaskMap, Mesh, MultiDrawIndirectCountMesh,
     MultiDrawIndirectMesh, NormalMap, PbrMaterial, Pipelines, SceneUniform,
-    ShadowMapping, TimingUniform, WindowUniform, WireframeMaterial, DynPipeline,
+    ShadowMapping, TimingUniform, WindowUniform, WireframeMaterial, DynPipeline, PassStats,
 };
 use assets::Assets;
 
@@ -152,12 +152,8 @@ fn render(world: &mut World) {
         .unwrap();
 
     // Reset the stats
-    renderer.drawn_unique_material_count = 0;
-    renderer.material_instances_count = 0;
-    renderer.rendered_direct_vertices_drawn = 0;
-    renderer.rendered_direct_triangles_drawn = 0;
-    renderer.culled_sub_surfaces = 0;
-    renderer.rendered_sub_surfaces = 0;
+    renderer.deferred_pass_stats = Default::default();
+    renderer.shadow_pass_stats = Default::default();
 
     // Needed for direct rendering
     let meshes = world.get::<Storage<Mesh>>().unwrap();
@@ -257,15 +253,6 @@ fn render(world: &mut World) {
         indirect_triangles: &indirect_triangles,
         draw_indexed_indirect_buffers: &indexed_indirect_buffers,
         lightspace: None,
-
-        /*
-        drawn_unique_material_count: &mut renderer.drawn_unique_material_count,
-        material_instances_count: &mut renderer.material_instances_count,
-        rendered_direct_vertices_drawn: &mut renderer.rendered_direct_vertices_drawn,
-        rendered_direct_triangles_drawn: &mut renderer.rendered_direct_triangles_drawn,
-        culled_sub_surfaces: &mut renderer.culled_sub_surfaces,
-        rendered_sub_surfaces: &mut renderer.rendered_sub_surfaces,
-        */
     };
     drop(scene);
 
@@ -275,6 +262,7 @@ fn render(world: &mut World) {
         default: &mut DefaultMaterialResources,
         directional_light_rotation: coords::Rotation,
         camera_position: coords::Position,
+        stats: &mut PassStats,
         index: usize,
         pipelines: &Vec<std::rc::Rc<dyn DynPipeline>>,
         world: &World
@@ -296,7 +284,7 @@ fn render(world: &mut World) {
 
         // Render the shadows first (fuck you)
         for stored in pipelines.iter() {
-            stored.render_shadow(world, default, &mut render_pass);
+            stored.render_shadow(world, default, stats, &mut render_pass);
         }
 
         drop(render_pass);
@@ -304,7 +292,7 @@ fn render(world: &mut World) {
 
     // Render to the shadow map cascades
     let i = time.frame_count() as usize % 4;
-    render_shadows_pipelines(&mut _shadowmap, &mut default, directional_light_rotation, camera_position, i, &pipelines, world);
+    render_shadows_pipelines(&mut _shadowmap, &mut default, directional_light_rotation, camera_position, &mut renderer.shadow_pass_stats, i, &pipelines, world);
     for i in 0..4 {
     }
     graphics.submit(false);
@@ -322,7 +310,7 @@ fn render(world: &mut World) {
     // This will iterate over each material pipeline and draw the scene
     default.lightspace = None;
     for stored in pipelines.iter() {
-        stored.render(world, &mut default, &mut render_pass);
+        stored.render(world, &mut default, &mut renderer.deferred_pass_stats, &mut render_pass);
     }
 
     drop(render_pass);

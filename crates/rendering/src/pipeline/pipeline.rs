@@ -1,5 +1,5 @@
 use crate::{
-    DefaultMaterialResources, Material, SceneColorLayout, SceneDepthLayout, DeferredPass, Pass, ShadowDepthLayout, ShadowPass, MeshAttributes,
+    DefaultMaterialResources, Material, SceneColorLayout, SceneDepthLayout, DeferredPass, Pass, ShadowDepthLayout, ShadowPass, MeshAttributes, PassStats,
 };
 
 use assets::Assets;
@@ -101,6 +101,7 @@ pub trait DynPipeline {
         &'r self,
         world: &'r World,
         default: &DefaultMaterialResources<'r>,
+        stats: &mut PassStats,
         render_pass: &mut ActiveRenderPass::<'r, '_, SceneColorLayout, SceneDepthLayout>,
     );
 
@@ -109,6 +110,7 @@ pub trait DynPipeline {
         &'r self,
         world: &'r World,
         default: &DefaultMaterialResources<'r>,
+        stats: &mut PassStats,
         render_pass: &mut ActiveRenderPass::<'r, '_, (), ShadowDepthLayout>,
     );
 }
@@ -118,21 +120,23 @@ impl<M: Material> DynPipeline for Pipeline<M> {
         &'r self,
         world: &'r World,
         default: &DefaultMaterialResources<'r>,
+        stats: &mut PassStats,
         render_pass: &mut ActiveRenderPass::<'r, '_, SceneColorLayout, SceneDepthLayout>,
     ) {
         super::cull_surfaces::<DeferredPass, M>(world, default);
-        super::render_surfaces::<DeferredPass, M>(world, &self.pipeline, default, render_pass);
+        super::render_surfaces::<DeferredPass, M>(world, &self.pipeline, default, stats, render_pass);
     }
 
     fn render_shadow<'r>(
         &'r self,
         world: &'r World,
         default: &DefaultMaterialResources<'r>,
+        stats: &mut PassStats,
         render_pass: &mut ActiveRenderPass::<'r, '_, (), ShadowDepthLayout>,
     ) {
         if let Some(pipeline) = self.shadow_pipeline.as_ref() {
             super::cull_surfaces::<ShadowPass, M>(world, default);
-            super::render_surfaces::<ShadowPass, M>(world, pipeline, default, render_pass);
+            super::render_surfaces::<ShadowPass, M>(world, pipeline, default, stats, render_pass);
         }
     }
 }
