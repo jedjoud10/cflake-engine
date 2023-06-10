@@ -1,7 +1,8 @@
 use assets::Assets;
 use graphics::{ColorLayout, DepthStencilLayout, RenderPass, BindGroup, Graphics, Shader, PrimitiveConfig, WindingOrder, PushConstants, ActiveRenderPipeline, ActivePipeline, Depth, RenderPipeline};
+use math::ExplicitVertices;
 use world::World;
-use crate::{RenderPath, DefaultMaterialResources, SceneColorLayout, MeshAttributes, Renderer, SceneDepthLayout};
+use crate::{RenderPath, DefaultMaterialResources, SceneColorLayout, MeshAttributes, Renderer, SceneDepthLayout, Surface, Material, SubSurface, ShadowDepthLayout};
 
 // Render pass that will render the scene
 pub struct DeferredPass;
@@ -31,6 +32,15 @@ pub trait Pass {
         matches!(Self::pass_type(), PassType::Shadow)
     }
 
+    // Set the cull state of a specific surface
+    fn set_cull_state<M: Material>(surface: &mut Surface<M>, culled: bool);
+
+    // Cull a specific surface when rendering the objects of this pass
+    fn cull(defaults: &DefaultMaterialResources, aabb: math::Aabb<f32>, mesh: &vek::Mat4<f32>) -> bool;
+
+    // Check if a surface should be visible
+    fn is_surface_visible<M: Material>(surface: &Surface<M>, renderer: &Renderer) -> bool;
+
     // Get the pass type
     fn pass_type() -> PassType; 
 }
@@ -42,13 +52,37 @@ impl Pass for DeferredPass {
     fn pass_type() -> PassType {
         PassType::Deferred
     }
+
+    fn set_cull_state<M: Material>(surface: &mut Surface<M>, culled: bool) {
+        surface.culled = culled;
+    }
+
+    fn cull(defaults: &DefaultMaterialResources, aabb: math::Aabb<f32>, mesh: &vek::Mat4<f32>) -> bool {
+        !crate::pipeline::intersects_frustum(&defaults.camera_frustum, aabb, mesh)
+    }
+
+    fn is_surface_visible<M: Material>(surface: &Surface<M>, renderer: &Renderer) -> bool {
+        !surface.culled && surface.visible && renderer.visible
+    }
 }
 
 impl Pass for ShadowPass {
     type C = ();
-    type DS = Depth<f32>;
+    type DS = ShadowDepthLayout;
 
     fn pass_type() -> PassType {
         PassType::Shadow
+    }
+
+    fn set_cull_state<M: Material>(surface: &mut Surface<M>, culled: bool) {
+        surface.shadow_culled = culled;
+    }
+
+    fn cull(defaults: &DefaultMaterialResources, aabb: math::Aabb<f32>, mesh: &vek::Mat4<f32>) -> bool {
+        !crate::pipeline::intersects_lightspace(defaults.lightspace.as_ref().unwrap(), aabb, mesh)
+    }
+
+    fn is_surface_visible<M: Material>(surface: &Surface<M>, renderer: &Renderer) -> bool {
+        surface.visible && renderer.visible
     }
 }

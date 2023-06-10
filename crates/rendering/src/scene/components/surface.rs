@@ -32,7 +32,6 @@ pub struct Surface<M: Material> {
 
     // Shadow parameters
     pub shadow_caster: bool,
-    pub shadow_receiver: bool,
     pub shadow_culled: bool,
 
     // Needed to force the user to initialize the material
@@ -46,7 +45,6 @@ impl<M: Material> Clone for Surface<M> {
             visible: self.visible,
             culled: self.culled,
             shadow_caster: self.shadow_caster,
-            shadow_receiver: self.shadow_receiver,
             shadow_culled: self.shadow_culled,
             id: self.id.clone(),
         }
@@ -62,7 +60,6 @@ impl<M: Material> Surface<M> {
             culled: false,
             id,
             shadow_caster: true,
-            shadow_receiver: true,
             shadow_culled: false,
         }
     }

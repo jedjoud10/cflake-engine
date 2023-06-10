@@ -128,7 +128,7 @@ impl Material for TerrainMaterial {
     }
 
     // Disable frustum culling since we do that on the GPU
-    fn frustum_culling() -> bool {
+    fn cull<P: Pass>() -> bool {
         false
     }
 

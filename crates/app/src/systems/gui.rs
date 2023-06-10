@@ -426,7 +426,7 @@ fn update(world: &mut World) {
                     .show(ui, |ui| {
                         for (i, value) in shadowmapping.percents.iter_mut().enumerate() {
                             ui.label(format!("Cascade: {i}"));
-                            ui.add(egui::Slider::new(value, 0.0..=1.0).max_decimals(6));
+                            ui.add(egui::Slider::new(value, 0.0..=1.0).max_decimals(6).trailing_fill(true));
                             ui.end_row();
                         }
                     });
@@ -436,31 +436,31 @@ fn update(world: &mut World) {
                 ui.horizontal(|ui| {
                     ui.label("Strengh: ");
                     let value = &mut shadowmapping.parameters.strength;
-                    ui.add(egui::Slider::new(value, 0.05f32..=1f32));
+                    ui.add(egui::Slider::new(value, 0.05f32..=1f32).trailing_fill(true));
                 });
 
                 ui.horizontal(|ui| {
                     ui.label("Spread: ");
                     let value = &mut shadowmapping.parameters.spread;
-                    ui.add(egui::Slider::new(value, 0.05f32..=1f32));
+                    ui.add(egui::Slider::new(value, 0.05f32..=1f32).trailing_fill(true));
                 });
 
                 ui.horizontal(|ui| {
                     ui.label("Base Bias: ");
                     let value = &mut shadowmapping.parameters.base_bias;
-                    ui.add(egui::Slider::new(value, -0.001f32..=0.001f32));
+                    ui.add(egui::Slider::new(value, -0.001f32..=0.001f32).trailing_fill(true));
                 });
 
                 ui.horizontal(|ui| {
                     ui.label("Bias Bias: ");
                     let value = &mut shadowmapping.parameters.bias_bias;
-                    ui.add(egui::Slider::new(value, -0.001f32..=0.001f32));
+                    ui.add(egui::Slider::new(value, -0.001f32..=0.001f32).trailing_fill(true));
                 });
 
                 ui.horizontal(|ui| {
                     ui.label("Bias Factor Base: ");
                     let value = &mut shadowmapping.parameters.bias_factor_base;
-                    ui.add(egui::Slider::new(value, 0.1f32..=3.0f32));
+                    ui.add(egui::Slider::new(value, 0.1f32..=3.0f32).trailing_fill(true));
                 });
 
                 ui.horizontal(|ui| {
@@ -513,7 +513,7 @@ fn update(world: &mut World) {
                     ui.add(egui::Slider::new(
                         &mut compositor.post_process.exposure,
                         0.001..=5.0,
-                    ));
+                    ).trailing_fill(true));
                 });
 
                 ui.horizontal(|ui| {
@@ -521,7 +521,7 @@ fn update(world: &mut World) {
                     ui.add(egui::Slider::new(
                         &mut compositor.post_process.gamma,
                         0.01..=3.0,
-                    ));
+                    ).trailing_fill(true));
                 });
 
                 ui.horizontal(|ui| {
@@ -529,7 +529,7 @@ fn update(world: &mut World) {
                     ui.add(egui::Slider::new(
                         &mut compositor.post_process.vignette_strength,
                         0.0..=1.0,
-                    ));
+                    ).trailing_fill(true));
                 });
 
                 ui.horizontal(|ui| {
@@ -584,7 +584,7 @@ fn update(world: &mut World) {
                     ui.add(egui::Slider::new(
                         &mut compositor.post_process.tonemapping_strength,
                         0.0..=1.0,
-                    ));
+                    ).trailing_fill(true));
                 });
 
                 fn pick_vec4_color(text: &str, ui: &mut egui::Ui, vec: &mut vek::Vec4<f32>) {

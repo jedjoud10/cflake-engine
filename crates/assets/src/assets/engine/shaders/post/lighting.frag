@@ -54,7 +54,13 @@ layout(set = 0, binding = 4) uniform ShadowUniform {
     float spread;
 	float base_bias;
 	float bias_bias;
+
 	float bias_factor_base;
+	float max_distance;
+	float _padding1;
+	float _padding2;
+
+	vec4 distances;
 } shadow_parameters;
 
 // Contains all the lightspace matrices for each cascade
@@ -84,20 +90,9 @@ float calculate_shadowed(
     vec3 light_dir,
     vec3 camera
 ) {
-    // Get the proper lightspace matrix that we will use
-	uint layer = 0;
-
-	for(int i = 0; i < 4; i++) {
-		layer = i;
-		mat4 lightspace = shadow_lightspace_matrices.matrices[i];
-		vec4 ndc = lightspace * vec4(position, 1.0); 
-		if (ndc.x > -1 && ndc.x < 1 && ndc.y > -1 && ndc.y < 1) {
-			break;
-		} else if (i == 3) {
-			return 0.0;
-		} 
-	}
-    
+	// Taken from a comment by Octavius Ace from the same learn OpenGL website 
+    vec4 res = step(shadow_parameters.distances, vec4(distance(position, camera)));
+    uint layer = uint(res.x + res.y + res.z + res.w);    
 
     // Transform the world coordinates to NDC coordinates 
 	mat4 lightspace = shadow_lightspace_matrices.matrices[layer];
@@ -118,14 +113,6 @@ float calculate_shadowed(
     uint size = uint(textureSize(shadow_map, 0).x);
 	float shadowed = 0.0;
 
-	for (int x = -4; x <= 4; x++) {
-		for (int y = -4; y <= 4; y++) {
-			vec2 offset = vec2(x, y) / 2.0;
-			shadowed += shadow_linear(layer, uvs.xy + shadow_parameters.spread * offset * 0.001, size, current + bias);
-		}	
-	}
-
-	/*
 	// Stratified poisson disk from http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-16-shadow-mapping/
 	vec2 poisson_disk[16] = vec2[]( 
 	   vec2( -0.94201624, -0.39906216 ), 
@@ -146,15 +133,13 @@ float calculate_shadowed(
 	   vec2( 0.14383161, -0.14100790 ) 
 	);
 
-	for (int i = 0; i < 16; i++) {
-		//int index = int(16.0*random(vec4(floor(position * 1000.0), i)))%16;
-		//vec2 offset = poisson_disk[index];
-		vec2 offset = random2(vec3(gl_FragCoord.xy, i));
-		shadowed += shadow_linear(layer, uvs.xy + shadow_parameters.spread * offset * 0.001, size, current + bias);
+	for (int i = 0; i < 4; i++) {
+		int index = int(16.0*random(vec4(floor(position * 1000.0), i)))%16;
+		vec2 offset = poisson_disk[index];
+		shadowed += shadow_linear(layer, uvs.xy + shadow_parameters.spread * offset * 0.005, size, current + bias);
 	}
-	*/
 	
-    return (shadowed / 81) * shadow_parameters.strength;
+    return (shadowed / 4) * shadow_parameters.strength;
 }
 
 // UBO that contains the current monitor/window information

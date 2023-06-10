@@ -585,7 +585,6 @@ impl Asset for GltfScene {
                     visible: true,
                     culled: false,
                     shadow_caster: true,
-                    shadow_receiver: true,
                     shadow_culled: false,
                     id: context.pipelines.get::<PbrMaterial>().unwrap(),
                 };

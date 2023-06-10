@@ -8,12 +8,6 @@
 // Main voxel function that will create the shape of the terrain
 // Negative values represent terrain, positive values represent air
 float voxel(vec3 position, out uint material) {
-    float rocky = position.y + fbmCellular(position * 0.001, 4, 0.7, 2.6).y * -120 + 10;
-    rocky = opSmoothUnion(rocky, position.y - 40, 10);
-    material = 1;
-    return -rocky * 3.0;
-
-    /*
     float biome1 = fbm(position.xz * 0.02, 3, 2.0, 0.4) * 5 + position.y;
     vec3 test = erosion(position.xz * 0.002, 0.2);
 
@@ -42,5 +36,4 @@ float voxel(vec3 position, out uint material) {
     }
     
     return -density;
-    */
 }

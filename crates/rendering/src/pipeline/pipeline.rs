@@ -96,13 +96,6 @@ impl<M: Material> Pipeline<M> {
 
 // This trait will be implemented for Pipeline<T> to allow for dynamic dispatch
 pub trait DynPipeline {
-    // Cull all surfaces before we render the scene
-    fn cull<'r>(
-        &'r self,
-        world: &'r World,
-        default: &DefaultMaterialResources<'r>,
-    );
-
     // Render all surfaces using the main pass
     fn render<'r>(
         &'r self,
@@ -121,20 +114,13 @@ pub trait DynPipeline {
 }
 
 impl<M: Material> DynPipeline for Pipeline<M> {
-    fn cull<'r>(
-        &'r self,
-        world: &'r World,
-        default: &DefaultMaterialResources<'r>,
-    ) {
-        super::cull_surfaces::<M>(world, default);
-    }
-
     fn render<'r>(
         &'r self,
         world: &'r World,
         default: &DefaultMaterialResources<'r>,
         render_pass: &mut ActiveRenderPass::<'r, '_, SceneColorLayout, SceneDepthLayout>,
     ) {
+        super::cull_surfaces::<DeferredPass, M>(world, default);
         super::render_surfaces::<DeferredPass, M>(world, &self.pipeline, default, render_pass);
     }
 
@@ -145,6 +131,7 @@ impl<M: Material> DynPipeline for Pipeline<M> {
         render_pass: &mut ActiveRenderPass::<'r, '_, (), ShadowDepthLayout>,
     ) {
         if let Some(pipeline) = self.shadow_pipeline.as_ref() {
+            super::cull_surfaces::<ShadowPass, M>(world, default);
             super::render_surfaces::<ShadowPass, M>(world, pipeline, default, render_pass);
         }
     }

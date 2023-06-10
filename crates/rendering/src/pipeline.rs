@@ -1,6 +1,6 @@
 mod culling;
 mod pipeline;
 mod render;
-use culling::cull_surfaces;
+pub use culling::*;
 pub use pipeline::*;
-use render::render_surfaces;
+pub use render::*;

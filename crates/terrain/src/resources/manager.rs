@@ -133,7 +133,6 @@ impl ChunkManager {
             visible: true,
             culled: false,
             shadow_caster: true,
-            shadow_receiver: true,
             shadow_culled: false,
             id: id.clone(),
         };
@@ -217,7 +216,10 @@ fn load_layered_texture<T: ImageTexel>(
         combine_into_layered(
             graphics,
             raw,
-            Some(SamplerSettings::default()),
+            Some(SamplerSettings {
+                mipmaps: SamplerMipMaps::Auto,
+                ..Default::default()
+            }),
             TextureMipMaps::Manual { mips: &[] },
             TextureMode::Dynamic,
             TextureUsage::SAMPLED | TextureUsage::COPY_DST,

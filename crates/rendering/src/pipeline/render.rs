@@ -126,7 +126,7 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
 
     // Convert to sub-surfaces and discard invisible / culled surfaces
     let iter = query.into_iter().zip(user);
-    let iter = iter.filter(|((surface, renderer), _)| !surface.culled && surface.visible && renderer.visible);
+    let iter = iter.filter(|((surface, renderer), _)| P::is_surface_visible(surface, renderer));
     let subsurfaces = iter.collect::<Vec<_>>();
     let subsurfaces = subsurfaces
         .iter()
