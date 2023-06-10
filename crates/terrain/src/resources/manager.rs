@@ -217,7 +217,7 @@ fn load_layered_texture<T: ImageTexel>(
             graphics,
             raw,
             Some(SamplerSettings {
-                mipmaps: SamplerMipMaps::Auto,
+                mipmaps: SamplerMipMaps::AutoAniso,
                 ..Default::default()
             }),
             TextureMipMaps::Manual { mips: &[] },

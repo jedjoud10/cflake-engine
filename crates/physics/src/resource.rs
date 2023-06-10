@@ -19,7 +19,7 @@ impl Physics {
 
 
         let mut integration_parameters = IntegrationParameters::default();        
-        integration_parameters.set_inv_dt(utils::TICKS_PER_SEC);
+        integration_parameters.set_inv_dt(utils::TICKS_PER_SEC as f32);
         //integration_parameters.allowed_linear_error = 0.0001;
         //integration_parameters.max_penetration_correction = 0.001;
         

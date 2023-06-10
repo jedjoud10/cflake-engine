@@ -55,8 +55,8 @@ pub fn file_logger(system: &mut System) {
 }
 
 // Number of ticks that should execute per second
-pub const TICKS_PER_SEC: f32 = 32.0f32;
-pub const TICK_DELTA: f32 = 1.0 / TICKS_PER_SEC;
+pub const TICKS_PER_SEC: u32 = 64;
+pub const TICK_DELTA: f32 = 1.0 / (TICKS_PER_SEC as f32);
 
 // Add the Time manager
 pub fn time(system: &mut System) {
@@ -106,10 +106,13 @@ pub fn time(system: &mut System) {
 
                 if let Some(count) = time.ticks_to_execute.as_mut() {
                     let mut new = count.get() + 1;
+                    const MIN_FPS: u32 = 16;
+                    const MAX_TICKS_BEFORE_SLOWDOWN: u32 = (TICKS_PER_SEC as u32) / MIN_FPS;
+                    const MAX_TICKS_DURING_SLOWDOWN: u32 = MAX_TICKS_BEFORE_SLOWDOWN / 4;
 
-                    if new > 16 {
+                    if new > MAX_TICKS_BEFORE_SLOWDOWN {
                         log::warn!("Too many ticks to execute! Spiral of death effect is occuring");
-                        new = 1;
+                        new = MAX_TICKS_DURING_SLOWDOWN;
                     }
 
                     *count = NonZeroU32::new(new).unwrap(); 

@@ -85,13 +85,6 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
     let materials = world.get::<Storage<M>>().unwrap();
     let mut resources = M::fetch::<P>(world);
 
-    // Set the global material bindings
-    active
-        .set_bind_group(0, |group| {
-            M::set_global_bindings::<P>(&mut resources, group, defaults);
-        })
-        .unwrap();
-
     // Get all the entities that contain a visible surface
     let scene = world.get::<Scene>().unwrap();
     let filter = ecs::contains::<M::Query<'r>>();
@@ -130,7 +123,7 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
     let max = iter.len();
     let iter = iter.filter(|((surface, renderer), _)| P::is_surface_visible(surface, renderer));
     let subsurfaces = iter.collect::<Vec<_>>();
-    let culled = subsurfaces.len();
+    let visible = subsurfaces.len();
     let subsurfaces = subsurfaces
         .iter()
         .flat_map(|((surface, renderer), user)| 
@@ -138,7 +131,19 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
         );
 
     // Set the number of culled surfaces
-    stats.culled_sub_surfaces = max - culled;
+    stats.culled_sub_surfaces = max - visible;
+
+    // Blud don't need to rendering nothing
+    if visible == 0 {
+        return;
+    }
+
+    // Set the global material bindings
+    active
+    .set_bind_group(0, |group| {
+        M::set_global_bindings::<P>(&mut resources, group, defaults);
+    })
+    .unwrap();
 
     // Sort and group material instances / meshes
     // instead of [(mt1, mh1), (mt2, mh2), (mt1, mh1), (mt1, mh2)]
