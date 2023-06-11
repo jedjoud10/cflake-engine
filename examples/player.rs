@@ -7,13 +7,26 @@ fn main() {
         .set_app_name("cflake engine player example")
         .insert_init(init)
         .insert_update(update)
+        .insert_tick(tick)
         .set_window_fullscreen(true)
         .execute();
+}
+
+// Keeps track of state between update and tick events
+#[derive(Default)]
+struct PlayerInputs {
+    forward: bool,
+    backward: bool,
+    left: bool,
+    right: bool,
+    rotation_x: f32,
+    rotation_y: f32,
 }
 
 // Creates a movable player
 fn init(world: &mut World) {
     // Fetch the required resources from the world
+    world.insert(PlayerInputs::default());
     let assets = world.get::<Assets>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
     let mut pbrs = world.get_mut::<Storage<PbrMaterial>>().unwrap();
@@ -26,6 +39,8 @@ fn init(world: &mut World) {
     input.bind_button("backward", KeyboardButton::S);
     input.bind_button("left", KeyboardButton::A);
     input.bind_button("right", KeyboardButton::D);
+    input.bind_axis("x rotation", MouseAxis::PositionX);
+    input.bind_axis("y rotation", MouseAxis::PositionY);
 
     asset!(assets, "user/textures/diffuse2.jpg", "/examples/assets/");
     asset!(assets, "user/textures/normal2.jpg", "/examples/assets/");
@@ -43,6 +58,7 @@ fn init(world: &mut World) {
     let renderer = world.get::<DeferredRenderer>().unwrap();
     let plane = renderer.plane.clone();
     let cube = renderer.cube.clone();
+    let sphere = renderer.sphere.clone();
 
     // Fetch the loaded textures
     let diffuse = assets.wait(albedo).unwrap();
@@ -58,7 +74,7 @@ fn init(world: &mut World) {
     let mask = mask_maps.insert(mask);
 
     // Create a new material instance for the gound
-    let ground = pbrs.insert(PbrMaterial {
+    let material = pbrs.insert(PbrMaterial {
         albedo_map: Some(diffuse),
         normal_map: Some(normal),
         mask_map: Some(mask),
@@ -71,15 +87,15 @@ fn init(world: &mut World) {
     });
 
     // Create a simple floor and add the entity
-    let surface = Surface::new(plane, ground.clone(), id.clone());
+    let surface = Surface::new(plane, material.clone(), id.clone());
     let renderer = Renderer::default();
     let scale = Scale::uniform(50.0);
-    let rigidbody = RigidBody::new(RigidBodyType::Fixed, true);
+    let rigidbody = RigidBody::new(RigidBodyType::Fixed, true, LockedAxes::empty());
     let collider = CuboidCollider::new(vek::Extent3::new(50.0, 0.1, 50.0), 1.0, false, None);
     scene.insert((surface, renderer, scale, rigidbody, collider));
 
     // Player renderer
-    let surface = Surface::new(cube, ground.clone(), id.clone());
+    let surface = Surface::new(cube.clone(), material.clone(), id.clone());
     let renderer = Renderer::default();
 
     // Create a camera entity
@@ -97,14 +113,36 @@ fn init(world: &mut World) {
         Position::at_y(20.0),
         Velocity::default(),
         AngularVelocity::default(),
-        CharacterController::new(0.02),
-        CapsuleCollider::new(0.5, 1.7, 10.0, false, None),
-        RigidBody::new(RigidBodyType::KinematicVelocityBased, false),
+        CharacterController::default(),
+        CapsuleCollider::new(0.5, 1.7, 1.0, false, None),
+        RigidBody::new(RigidBodyType::Dynamic, true, LockedAxes::ROTATION_LOCKED),
         Rotation::default(),
     ));
 
     // Attach the camera to the player
     scene.attach(child, parent).unwrap();
+
+    // Create a prefab that contains the sphere entity and it's components
+    let renderer = Renderer::default();
+    let position = Position::default();
+    let rotation = Rotation::default();
+    let surface = Surface::new(sphere, material.clone(), id.clone());
+    let rigidbody = RigidBody::new(RigidBodyType::Dynamic, true, LockedAxes::empty());
+    let velocity = Velocity::default();
+    let angular_velocity = AngularVelocity::default();
+    let collider = SphereCollider::new(1.0, 10.0, false, None);
+    scene.prefabify("sphere", (renderer, position, rotation, surface, rigidbody, collider, velocity, angular_velocity));
+
+    // Create a prefab that contains the cube entity and it's components
+    let renderer = Renderer::default();
+    let position = Position::default();
+    let rotation = Rotation::default();
+    let surface = Surface::new(cube, material, id);
+    let rigidbody = RigidBody::new(RigidBodyType::Dynamic, true, LockedAxes::empty());
+    let velocity = Velocity::default();
+    let angular_velocity = AngularVelocity::default();
+    let collider = CuboidCollider::new(vek::Extent3::broadcast(1.0), 10.0, false, None);
+    scene.prefabify("cube", (renderer, position, rotation, surface, rigidbody, collider, velocity, angular_velocity));
 
     // Create a directional light
     let light = DirectionalLight::default();
@@ -112,34 +150,86 @@ fn init(world: &mut World) {
     scene.insert((light, Rotation::from(rotation)));
 }
 
-// Allows the user to place a sphere or cube when they left or right click
+// Update the PlayerInputs resource
 fn update(world: &mut World) {
     let mut state = world.get_mut::<State>().unwrap();
     let input = world.get::<Input>().unwrap();
-    let mut scene = world.get_mut::<Scene>().unwrap();
+    let mut player = world.get_mut::<PlayerInputs>().unwrap();
 
     // Exit the game when the user pressed Escape
     if input.get_button(KeyboardButton::Escape).pressed() {
         *state = State::Stopped;
     }
-
-    // Get the player character controller
-    let cr = scene.find_mut::<&mut CharacterController>().unwrap();
-    let mut velocity = vek::Vec3::zero();
     
     // Update the velocity in the forward and backward directions
-    if input.get_button("forward").held() {
-        velocity += vek::Vec3::unit_z();
-    } else if input.get_button("backward").held() {
-        velocity += -vek::Vec3::unit_z();
+    player.forward = input.get_button("forward").held();
+    player.backward = input.get_button("backward").held();
+    player.left = input.get_button("left").held();
+    player.right = input.get_button("right").held();
+    player.rotation_x = input.get_axis("x rotation");
+    player.rotation_y = input.get_axis("y rotation");
+
+    let mut scene = world.get_mut::<Scene>().unwrap();
+    let (_, position, rotation) = scene.find::<(&Camera, &Position, &Rotation)>().unwrap();
+    let position = rotation.forward() * 10.0 + **position;
+
+    // Create a new sphere in front of the camera when we press the right mouse button
+    if input.get_button(MouseButton::Right).pressed() {
+        let mut entry = scene.instantiate("sphere").unwrap();
+        **entry.get_mut::<Position>().unwrap() = position;
+        **entry.get_mut::<Velocity>().unwrap() = rotation.forward() * 15.0;
     }
 
-    // Update the velocity in the left and right directions
-    if input.get_button("left").held() {
-        velocity += -vek::Vec3::unit_x();
-    } else if input.get_button("right").held() {
-        velocity += vek::Vec3::unit_x();
+    // Create a new box in front of the camera when we press the left mouse button
+    if input.get_button(MouseButton::Left).pressed() {
+        let mut entry = scene.instantiate("cube").unwrap();
+        **entry.get_mut::<Position>().unwrap() = position;
+        **entry.get_mut::<Velocity>().unwrap() = rotation.forward() * 15.0;
+    }
+}
+
+// Set the required player controller force
+fn tick(world: &mut World) {
+    let mut scene = world.get_mut::<Scene>().unwrap();
+    let inputs = world.get::<PlayerInputs>().unwrap();
+
+    // Local velocity
+    let mut velocity = vek::Vec3::<f32>::zero();
+    
+    // Move the character forward and backward
+    velocity.z = if inputs.forward {
+        -1.0
+    } else if inputs.backward {
+        1.0
+    } else {
+        0.0
+    };
+
+    // Move the character left and right
+    velocity.x = if inputs.left {
+        -1.0
+    } else if inputs.right {
+        1.0
+    } else {
+        0.0
+    };
+
+    // Set the player rotation
+    if let Some((_, rotation)) = scene.find_mut::<(&CharacterController, &mut Rotation)>() {
+        **rotation = Quaternion::rotation_y(-inputs.rotation_x * 0.001);
+    };
+
+    // Set the camera rotation
+    if let Some((_, rotation)) = scene.find_mut::<(&Camera, &mut LocalRotation)>() {
+        **rotation = Quaternion::rotation_x(-inputs.rotation_y * 0.001);
+    };
+
+    // Set the global player velocity
+    let (cc, rotation) = scene.find_mut::<(&mut CharacterController, &Rotation)>().unwrap();
+    if let Some(vel) = (vek::Mat4::from(rotation).mul_direction(velocity)).try_normalized() {
+        cc.velocity = vel * 15.0;
+    } else {
+        cc.velocity = vek::Vec3::zero();
     }
 
-    cr.set_desired_translation(velocity * 100.0);
 }

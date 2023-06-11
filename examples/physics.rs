@@ -80,7 +80,7 @@ fn init(world: &mut World) {
     let surface = Surface::new(plane, ground.clone(), id.clone());
     let renderer = Renderer::default();
     let scale = Scale::uniform(50.0);
-    let rigidbody = RigidBody::new(RigidBodyType::Fixed, true);
+    let rigidbody = RigidBody::new(RigidBodyType::Fixed, true, LockedAxes::empty());
     let collider = CuboidCollider::new(vek::Extent3::new(50.0, 0.03, 50.0), 1.0, false, None);
     scene.insert((surface, renderer, scale, rigidbody, collider));
 
@@ -89,7 +89,7 @@ fn init(world: &mut World) {
     let position = Position::default();
     let rotation = Rotation::default();
     let surface = Surface::new(sphere, material.clone(), id.clone());
-    let rigidbody = RigidBody::new(RigidBodyType::Dynamic, true);
+    let rigidbody = RigidBody::new(RigidBodyType::Dynamic, true, LockedAxes::empty());
     let velocity = Velocity::default();
     let angular_velocity = AngularVelocity::default();
     let collider = SphereCollider::new(1.0, 1.0, false, None);
@@ -100,7 +100,7 @@ fn init(world: &mut World) {
     let position = Position::default();
     let rotation = Rotation::default();
     let surface = Surface::new(cube, material, id);
-    let rigidbody = RigidBody::new(RigidBodyType::Dynamic, true);
+    let rigidbody = RigidBody::new(RigidBodyType::Dynamic, true, LockedAxes::empty());
     let velocity = Velocity::default();
     let angular_velocity = AngularVelocity::default();
     let collider = CuboidCollider::new(vek::Extent3::broadcast(1.0), 10.0, false, None);
@@ -115,7 +115,7 @@ fn init(world: &mut World) {
         AngularVelocity::default(),
         Camera::default(),
         CameraController::default(),
-        RigidBody::new(RigidBodyType::KinematicPositionBased, false),
+        RigidBody::new(RigidBodyType::KinematicPositionBased, false, LockedAxes::empty()),
         collider,
     ));
 

@@ -5,34 +5,22 @@ use crate::Physics;
 // A character controller component that can be added onto a kinematic body to simulate character physics
 #[derive(Component)]
 pub struct CharacterController {
-    pub(crate) controller: rapier3d::control::KinematicCharacterController,
-    pub(crate) desired: vek::Vec3<f32>,
+    pub velocity: vek::Vec3<f32>,
+    pub air_control: f32,
+    pub ground_control: f32,
+    pub(crate) grounded: bool, 
+}
+
+impl Default for CharacterController {
+    fn default() -> Self {
+        Self {
+            velocity: vek::Vec3::zero(),
+            air_control: 0.7,
+            ground_control: 1.0,
+            grounded: false,
+        }
+    }
 }
 
 impl CharacterController {
-    // Create a new character controller
-    pub fn new(offset: f32) -> Self {
-        let controller = rapier3d::control::KinematicCharacterController {
-            up: rapier3d::na::UnitVector3::new_normalize(crate::vek_vec_to_na_vec(vek::Vec3::unit_y())),
-            offset: rapier3d::control::CharacterLength::Absolute(offset),
-            slide: false,
-            autostep: None,
-            max_slope_climb_angle: 45.0f32.to_radians(),
-            min_slope_slide_angle: 25.0f32.to_radians(),
-            snap_to_ground: None,
-        };
-
-        let controller = Default::default();
-
-        Self {
-            controller,
-            desired: vek::Vec3::zero()
-        }
-    }
-
-    // Move the character controller in a specific direction
-    // Gravity will automatically be applied onto this direction
-    pub fn set_desired_translation(&mut self, translation: vek::Vec3<f32>,) {
-        self.desired = translation;
-    }
 }

@@ -18,7 +18,7 @@ fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) 
         };
 
         let _type = rigid_body._type;
-        let rb = rapier3d::dynamics::RigidBodyBuilder::new(_type).build();
+        let rb = rapier3d::dynamics::RigidBodyBuilder::new(_type).locked_axes(rigid_body.locked).build();
         let handle = physics.bodies.insert(rb);
         rigid_body.handle = Some(handle);
 
@@ -193,6 +193,9 @@ fn pre_step_sync_rapier_to_comps(physics: &mut Physics, scene: &mut Scene, surfa
                 continue;
             }
 
+            rb.reset_forces(false);
+            rb.reset_torques(false);
+
             rb.set_position(crate::trans_rot_to_isometry(**position, **rotation), false);
             rb.set_linvel(crate::vek_vec_to_na_vec(**velocity), false);
             rb.set_angvel(crate::vek_vec_to_na_vec(**angular_velocity), false);
@@ -284,49 +287,8 @@ fn post_step_update_character_controllers(physics: &mut Physics, scene: &mut Sce
         &mut RigidBody,
         &mut Velocity,
     )>() {
-        // FIX THIUS SHIT ITS SO FUCKING BROKEN
-        todo!();
-        
-        let a = util::vek_vec_to_na_point(vek::Vec3::unit_y() * (-capsule.height / 2.0));
-        let b = util::vek_vec_to_na_point(vek::Vec3::unit_y() * (capsule.height / 2.0));
-        let radius = capsule.radius;
-        let shape = rapier3d::geometry::Capsule::new(a, b, radius);
-        let dt = physics.integration_parameters.dt;
-
-        //cc.controller.up = rapier3d::na::UnitVector3::new_normalize(util::vek_vec_to_na_vec(-physics.gravity));
-        let res = cc.controller.move_shape(
-            dt,
-            &physics.bodies,
-            &physics.colliders,
-            &physics.query,
-            &shape,
-            &util::trans_rot_to_isometry(**position, **rotation),
-            util::vek_vec_to_na_vec(cc.desired + physics.gravity),
-            QueryFilter::new().exclude_rigid_body(rb.handle.unwrap()),
-            |e| {}
-        );
-
-        let translation = util::na_vec_to_vek_vec(res.translation);
-        //dbg!(translation);
-        let rb = physics.bodies.get_mut(rb.handle.unwrap()).unwrap();
-        //rb.set_next_kinematic_translation(res.translation);
-        //rb.set_next_kinematic_translation(util::vek_vec_to_na_vec(cc.desired + physics.gravity) * dt);
-        rb.set_linvel(res.translation, true);
-        //**velocity += translation * dt;
-        //dbg!(velocity);
-
-        /*
-        cc.controller.solve_character_collision_impulses(
-            dt,
-            &mut physics.bodies,
-            &physics.colliders,
-            &physics.query,
-            &shape,
-            10.0,
-            &collisions,
-            filter,
-        );
-        */
+        velocity.x = cc.velocity.x;
+        velocity.z = cc.velocity.z;
     }
 }
 
@@ -349,6 +311,10 @@ fn tick(world: &mut World) {
     // Executed before the physics step
     pre_step_spawn_rapier_counterparts(physics, scene);
     pre_step_despawn_rapier_counterparts(physics, scene);
+
+    // Update character controller rigid-bodies
+    post_step_update_character_controllers(physics, scene);
+
     pre_step_sync_rapier_to_comps(physics, scene, &surfaces);
 
     // Swap next tick with current tick
@@ -384,9 +350,6 @@ fn tick(world: &mut World) {
             }
         }
     }
-
-    // Update character controller rigid-bodies
-    post_step_update_character_controllers(physics, scene);
     
     // Step through the physics simulation each tick
     physics.step();
