@@ -37,7 +37,7 @@ fn init(world: &mut World) {
         4,
         1024,
         8,
-        3.0,
+        1.5,
         Some(&[
             TerrainSubMaterial {
                 diffuse: "user/textures/diffuse1.jpg".to_string(),
@@ -118,7 +118,7 @@ fn update(world: &mut World) {
 
     // Rotation the light
     if let Some((rotation, _)) = scene.find_mut::<(&mut Rotation, &DirectionalLight)>() {
-        rotation.rotate_y(-0.03 * time.delta().as_secs_f32());
+        **rotation = Quaternion::rotation_x(((time.elapsed().as_secs_f32() * 0.1).sin() * 80.0 - 90.0).to_radians());
     }
 
     // Exit the game when the user pressed Escape

@@ -19,6 +19,7 @@ struct PlayerInputs {
     backward: bool,
     left: bool,
     right: bool,
+    jump: bool,
     rotation_x: f32,
     rotation_y: f32,
 }
@@ -39,6 +40,7 @@ fn init(world: &mut World) {
     input.bind_button("backward", KeyboardButton::S);
     input.bind_button("left", KeyboardButton::A);
     input.bind_button("right", KeyboardButton::D);
+    input.bind_button("jump", KeyboardButton::Space);
     input.bind_axis("x rotation", MouseAxis::PositionX);
     input.bind_axis("y rotation", MouseAxis::PositionY);
 
@@ -93,6 +95,12 @@ fn init(world: &mut World) {
     let rigidbody = RigidBody::new(RigidBodyType::Fixed, true, LockedAxes::empty());
     let collider = CuboidCollider::new(vek::Extent3::new(50.0, 0.1, 50.0), 1.0, false, None);
     scene.insert((surface, renderer, scale, rigidbody, collider));
+
+    let surface = Surface::new(cube.clone(), material.clone(), id.clone());
+    let renderer = Renderer::default();
+    let rigidbody = RigidBody::new(RigidBodyType::Fixed, true, LockedAxes::empty());
+    let collider = CuboidCollider::new(vek::Extent3::broadcast(1.0), 1.0, false, None);
+    scene.insert((surface, renderer, rigidbody, collider));
 
     // Player renderer
     let surface = Surface::new(cube.clone(), material.clone(), id.clone());
@@ -168,6 +176,7 @@ fn update(world: &mut World) {
     player.right = input.get_button("right").held();
     player.rotation_x = input.get_axis("x rotation");
     player.rotation_y = input.get_axis("y rotation");
+    player.jump |= input.get_button("jump").pressed();
 
     let mut scene = world.get_mut::<Scene>().unwrap();
     let (_, position, rotation) = scene.find::<(&Camera, &Position, &Rotation)>().unwrap();
@@ -191,7 +200,7 @@ fn update(world: &mut World) {
 // Set the required player controller force
 fn tick(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
-    let inputs = world.get::<PlayerInputs>().unwrap();
+    let mut inputs = world.get_mut::<PlayerInputs>().unwrap();
 
     // Local velocity
     let mut velocity = vek::Vec3::<f32>::zero();
@@ -226,10 +235,17 @@ fn tick(world: &mut World) {
 
     // Set the global player velocity
     let (cc, rotation) = scene.find_mut::<(&mut CharacterController, &Rotation)>().unwrap();
+
+    // Handle jumping
+    if std::mem::take(&mut inputs.jump) {
+        cc.jump();
+    }
+
+    // Handle movement
     if let Some(vel) = (vek::Mat4::from(rotation).mul_direction(velocity)).try_normalized() {
-        cc.velocity = vel * 15.0;
+        cc.direction = vel;
     } else {
-        cc.velocity = vek::Vec3::zero();
+        cc.direction = vek::Vec3::zero();
     }
 
 }

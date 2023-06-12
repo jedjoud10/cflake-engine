@@ -149,7 +149,7 @@ impl ChunkManager {
 
             let i = splits.iter().enumerate().filter(|(_, &rel)| percent >= rel).map(|(i, _)| i).max().unwrap();
 
-            percents[i] * settings.quality.clamp(0.1, 10.0)
+            percents[i] * settings.quality.clamp(0.6, 5.0)
         }).collect::<Vec<f32>>();
         lod.insert(0, 1.0);
 
@@ -198,7 +198,7 @@ fn load_raw_texels_handles<T: ImageTexel>(
     settings: &TerrainSettings,
     get_name_callback: impl Fn(&TerrainSubMaterial) -> &str,
 ) -> Option<Vec<AsyncHandle<RawTexels<T>>>> {
-    let scale = TextureScale::Scale { scaling: 0.25 * 0.25, filter: TextureResizeFilter::Gaussian };
+    let scale = TextureScale::Scale { scaling: 0.25 * 0.25 * 0.5, filter: TextureResizeFilter::Gaussian };
     let inputs = settings
         .sub_materials
         .as_ref()?

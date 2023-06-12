@@ -16,7 +16,7 @@ use vek::FrustumPlanes;
 use crate::{MeshAttributes, create_uniform_buffer};
 
 // This is what will write to the depth texture
-pub type ShadowDepthLayout = Depth<Normalized<u16>>;
+pub type ShadowDepthLayout = Depth<f32>;
 pub type ShadowMap = LayeredTexture2D<ShadowDepthLayout>;
 
 // Create a cascaded depth texture with 4 layers
@@ -92,7 +92,7 @@ impl ShadowMapping {
             graphics,
             (),
             Operation {
-                load: LoadOp::Clear(u16::MAX),
+                load: LoadOp::Clear(f32::MAX),
                 store: StoreOp::Store,
             },
         );
@@ -151,8 +151,8 @@ impl ShadowMapping {
             right: val,
             bottom: -val,
             top: val,
-            near: -2000.0,
-            far: 2000.0,
+            near: -5000.0,
+            far: 5000.0,
         };
         
         // Calculate a new view matrix and set it

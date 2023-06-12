@@ -188,6 +188,7 @@ fn pre_step_sync_rapier_to_comps(physics: &mut Physics, scene: &mut Scene, surfa
     for (rigid_body, position, rotation, velocity, angular_velocity) in query {
         if let Some(handle) = rigid_body.handle {
             let rb = physics.bodies.get_mut(handle).unwrap();
+            rb.set_position(crate::trans_rot_to_isometry(**position, **rotation), false);
 
             if rigid_body._type.is_fixed() {
                 continue;
@@ -196,7 +197,6 @@ fn pre_step_sync_rapier_to_comps(physics: &mut Physics, scene: &mut Scene, surfa
             rb.reset_forces(false);
             rb.reset_torques(false);
 
-            rb.set_position(crate::trans_rot_to_isometry(**position, **rotation), false);
             rb.set_linvel(crate::vek_vec_to_na_vec(**velocity), false);
             rb.set_angvel(crate::vek_vec_to_na_vec(**angular_velocity), false);
 
@@ -279,16 +279,25 @@ fn pre_step_sync_rapier_to_comps(physics: &mut Physics, scene: &mut Scene, surfa
 
 // Checks all the character controllers in the world and updates them
 fn post_step_update_character_controllers(physics: &mut Physics, scene: &mut Scene) {
-    for (cc, capsule, position, rotation, rb, velocity,) in scene.query_mut::<(
+    for (cc, position, rotation, rb, velocity,) in scene.query_mut::<(
         &mut CharacterController,
-        &CapsuleCollider,
         &Position,
         &Rotation,
         &mut RigidBody,
         &mut Velocity,
     )>() {
-        velocity.x = cc.velocity.x;
-        velocity.z = cc.velocity.z;
+        let direction = cc.direction.try_normalized().unwrap_or_default();
+        
+        // Current velocity and wished velocity
+        let current = vek::Vec2::new(velocity.x, velocity.z);
+        let wished = vek::Vec2::new(direction.x, direction.z) * cc.max_speed;
+        let force = (wished - current) * cc.acceleration;
+        rb.apply_force(vek::Vec3::new(force.x, 0.0, force.y));
+
+        // Make the character controller jump if needed
+        if std::mem::take(&mut cc.jumping) {
+            rb.apply_impulse(vek::Vec3::unit_y() * cc.jump_force);
+        }
     }
 }
 
