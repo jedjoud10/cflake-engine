@@ -1,11 +1,19 @@
 // literally copy pasted from https://www.shadertoy.com/view/llffzM
+// and from https://www.shadertoy.com/view/Ml2cWG
+
 const float pi = 3.14159265359;
+const float invPi = 1.0 / pi;
 
 const float zenithOffset = 0.0;
-const float multiScatterPhase = 0.1;
+const float multiScatterPhase = 0.2;
 const float density = 0.6;
 
-const vec3 skyColor = vec3(0.39, 0.57, 1.0); //Make sure one of the conponents is never 0.0
+const float anisotropicIntensity = 0.2; //Higher numbers result in more anisotropic scattering
+
+const vec3 skyColor = vec3(0.39, 0.57, 1.0) * (1.0 + anisotropicIntensity); //Make sure one of the conponents is never 0.0
+
+#define smooth(x) x*x*(3.0-2.0*x)
+#define zenithDensity(x) density / pow(max(x - zenithOffset, 0.35e-2), 0.75)
 
 float greatCircleDist(vec2 p, vec2 lp)
 {
@@ -13,12 +21,6 @@ float greatCircleDist(vec2 p, vec2 lp)
     float phi_2 = lp.y;
     float delta_lambda = p.x-lp.x;
     return acos(sin(phi_1)*sin(phi_2) + cos(phi_1)*cos(phi_2)*cos(delta_lambda));
-}
-
-float  zenithDensity(float x)
-{
-    
-    return density / pow(max(x - zenithOffset, 0.35e-2), 0.75);
 }
 
 vec3 getSkyAbsorption(vec3 x, float y){
@@ -34,7 +36,6 @@ float getSunPoint(vec2 p, vec2 lp){
 	return smoothstep(0.03, 0.026, dist) * 50.0;
 }
 
-
 float getRayleigMultiplier(vec2 p, vec2 lp)
 {
     float dist = greatCircleDist(p, lp)/pi*5.;
@@ -48,9 +49,7 @@ float getMie(vec2 p, vec2 lp){
 	return disk*disk*(3.0 - 2.0 * disk) * 2.0 * pi;
 }
 
-vec3 getAtmosphericScattering(vec2 p, vec2 lp)
-{
-    
+vec3 getAtmosphericScattering(vec2 p, vec2 lp){		
 	float zenith = zenithDensity(p.y);
 	float sunPointDistMult =  clamp(length(max(lp.y + multiScatterPhase - zenithOffset, 0.0)), 0.0, 1.0);
 	
@@ -60,14 +59,13 @@ vec3 getAtmosphericScattering(vec2 p, vec2 lp)
     vec3 sunAbsorption = getSkyAbsorption(skyColor, zenithDensity(lp.y + multiScatterPhase));
 	vec3 sky = skyColor * zenith * rayleighMult;
 	vec3 sun = getSunPoint(p, lp) * absorption;
-	sun = vec3(0);
-    vec3 mie = getMie(p, lp) * sunAbsorption;
-
-	vec3 totalSky = mix(sky * absorption, sky / (sky + 0.5), 0.0);
-    totalSky += mie;
-    //totalSky *= sunAbsorption * 0.5 + 0.5 * length(sunAbsorption);
+	vec3 mie = getMie(p, lp) * sunAbsorption;
 	
-	return sky * absorption;
+	vec3 totalSky = mix(sky * absorption, sky / (sky + 0.5), sunPointDistMult);
+//         totalSky += sun + mie;
+	     totalSky *= sunAbsorption * 0.5 + 0.5 * length(sunAbsorption);
+
+    return totalSky;
 }
 
 vec2 screen2world(vec2 pos)
@@ -106,8 +104,8 @@ vec3 calculate_sky_color(
     const vec3 orange = pow(vec3(247.0, 134.0, 64.0) / 255.0, vec3(2.2));
 
     // Do some color mapping (day color)
-    vec3 day_color = mix(light_blue, dark_blue, max(up, 0.2));
-
+    vec3 day_color = mix(light_blue, dark_blue, max(up, 0.0));
+    
     // Do some color mapping (sunset color)
     vec3 sunset_color = mix(orange, dark_blue, max(up, 0.2));
 

@@ -1,4 +1,7 @@
 use rapier3d::prelude::*;
+
+// Main physics resource that contains all the Rapier3D data structures
+// that are needed to simulate the physics engine
 pub struct Physics {
     pub(crate) bodies: RigidBodySet,
     pub(crate) colliders: ColliderSet,
@@ -80,7 +83,7 @@ impl Physics {
             impulse_joints,
             multibody_joints,
             ccd_solver,
-            Some(&mut self.query),
+            Some(query),
             &(),
             &(),
         );

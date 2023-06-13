@@ -156,10 +156,22 @@ fn init(world: &mut World) {
     let light = DirectionalLight::default();
     let rotation = vek::Quaternion::rotation_x(-45.0f32.to_radians()).rotated_y(45f32.to_radians());
     scene.insert((light, Rotation::from(rotation)));
+
 }
 
 // Update the PlayerInputs resource
 fn update(world: &mut World) {
+    // Confine the user's mouse
+    let mut ui = world.get_mut::<Interface>().unwrap();
+    let window = world.get::<Window>().unwrap();
+    window
+        .raw()
+        .set_cursor_grab(winit::window::CursorGrabMode::Confined)
+        .unwrap();
+    window.raw().set_cursor_visible(false);
+    ui.consumes_window_events = true;
+
+    // Fetch the user input state
     let mut state = world.get_mut::<State>().unwrap();
     let input = world.get::<Input>().unwrap();
     let mut player = world.get_mut::<PlayerInputs>().unwrap();

@@ -71,7 +71,7 @@ pub(crate) fn create_texture3d<T: Texel>(graphics: &Graphics, size: u32) -> Text
 // Bit 6 = End Z
 // TODO: URGENT PLEASE FIX
 pub(crate) fn find_skirts_direction(_node: Node, _octree: &Octree) -> u32 {
-    return 0;
+    return u32::MAX;
     /*
     let mut skirts = 0u32;
     let nodes = octree.nodes();

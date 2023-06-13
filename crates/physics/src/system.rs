@@ -18,7 +18,10 @@ fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) 
         };
 
         let _type = rigid_body._type;
-        let rb = rapier3d::dynamics::RigidBodyBuilder::new(_type).locked_axes(rigid_body.locked).build();
+        let rb = rapier3d::dynamics::RigidBodyBuilder::new(_type)
+            .user_data(entity.to_raw() as u128)
+            .locked_axes(rigid_body.locked)
+            .build();
         let handle = physics.bodies.insert(rb);
         rigid_body.handle = Some(handle);
 
@@ -30,7 +33,7 @@ fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) 
 
     // Spawn in the Sphere collider components
     let filter = added::<&SphereCollider>();
-    for (sphere_collider, rigid_body) in scene.query_mut_with::<(&mut SphereCollider, &RigidBody)>(filter) {
+    for (entity, sphere_collider, rigid_body) in scene.query_mut_with::<(&Entity, &mut SphereCollider, &RigidBody)>(filter) {
         let Some(handle) = rigid_body.handle else {
             continue;
         };
@@ -38,6 +41,7 @@ fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) 
         let collider = rapier3d::geometry::ColliderBuilder::ball(sphere_collider.radius)
             .mass(sphere_collider.mass)
             .sensor(sphere_collider.sensor)
+            .user_data(entity.to_raw() as u128)
             .build();
         let handle = physics.colliders.insert_with_parent(collider, handle, &mut physics.bodies);
         sphere_collider.handle = Some(handle);
@@ -45,7 +49,7 @@ fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) 
 
     // Spawn in the Cuboid collider components
     let filter = added::<&CuboidCollider>();
-    for (cuboid_collider, rigid_body) in scene.query_mut_with::<(&mut CuboidCollider, &RigidBody)>(filter) {
+    for (entity, cuboid_collider, rigid_body) in scene.query_mut_with::<(&Entity, &mut CuboidCollider, &RigidBody)>(filter) {
         let Some(handle) = rigid_body.handle else {
             continue;
         };
@@ -53,6 +57,7 @@ fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) 
         let collider = rapier3d::geometry::ColliderBuilder::cuboid(cuboid_collider.half_extent.w, cuboid_collider.half_extent.h, cuboid_collider.half_extent.d)
             .mass(cuboid_collider.mass)
             .sensor(cuboid_collider.sensor)
+            .user_data(entity.to_raw() as u128)
             .build();
         let handle = physics.colliders.insert_with_parent(collider, handle, &mut physics.bodies);
         cuboid_collider.handle = Some(handle);
@@ -60,7 +65,7 @@ fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) 
 
     // Spawn in the Capsule collider components
     let filter = added::<&CapsuleCollider>();
-    for (capsule_collider, rigid_body) in scene.query_mut_with::<(&mut CapsuleCollider, &RigidBody)>(filter) {
+    for (entity, capsule_collider, rigid_body) in scene.query_mut_with::<(&Entity, &mut CapsuleCollider, &RigidBody)>(filter) {
         let Some(handle) = rigid_body.handle else {
             continue;
         };
@@ -68,6 +73,7 @@ fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) 
         let collider = rapier3d::geometry::ColliderBuilder::capsule_y(capsule_collider.height / 2.0, capsule_collider.radius)
             .mass(capsule_collider.mass)
             .sensor(capsule_collider.sensor)
+            .user_data(entity.to_raw() as u128)
             .build();
         let handle = physics.colliders.insert_with_parent(collider, handle, &mut physics.bodies);
         capsule_collider.handle = Some(handle);
@@ -75,7 +81,7 @@ fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) 
 
     // Spawn in the Mesh collider components
     let filter = added::<&MeshCollider>();
-    for (collider, rigid_body) in scene.query_mut_with::<(&mut MeshCollider, &RigidBody)>(filter) {
+    for (entity, collider, rigid_body) in scene.query_mut_with::<(&Entity, &mut MeshCollider, &RigidBody)>(filter) {
         let Some(handle) = rigid_body.handle else {
             continue;
         };
@@ -90,6 +96,7 @@ fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) 
         let collider = rapier3d::geometry::ColliderBuilder::trimesh(vertices, triangles)
             .mass(collider.mass)
             .sensor(collider.sensor)
+            .user_data(entity.to_raw() as u128)
             .build();
         physics.colliders.insert_with_parent(collider, handle, &mut physics.bodies);
     }

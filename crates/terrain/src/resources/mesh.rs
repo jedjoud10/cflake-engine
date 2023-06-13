@@ -27,7 +27,7 @@ impl MeshGenerator {
             graphics,
             (settings.size as usize).pow(3),
             BufferMode::Dynamic,
-            BufferUsage::STORAGE,
+            BufferUsage::STORAGE | BufferUsage::READ,
         )
         .unwrap();
 
@@ -37,7 +37,7 @@ impl MeshGenerator {
             graphics,
             (settings.size as usize - 1).pow(3) * 2,
             BufferMode::Dynamic,
-            BufferUsage::STORAGE,
+            BufferUsage::STORAGE | BufferUsage::READ,
         )
         .unwrap();
 

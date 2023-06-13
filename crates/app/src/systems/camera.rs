@@ -98,7 +98,6 @@ fn update(world: &mut World) {
     let (camera, output, position, rotation, controller) = if let Some(camera) = camera {
         camera
     } else {
-        show_ui(&window, &mut gui);
         return;
     };
 

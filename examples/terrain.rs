@@ -33,11 +33,12 @@ fn init(world: &mut World) {
         &graphics,
         64,
         false,
-        false,
+        true,
+        true,
         4,
         1024,
         8,
-        1.5,
+        2.0,
         Some(&[
             TerrainSubMaterial {
                 diffuse: "user/textures/diffuse1.jpg".to_string(),

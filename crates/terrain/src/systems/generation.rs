@@ -121,13 +121,11 @@ fn update(world: &mut World) {
         return;
     }
 
-    // NEEDED FOR ASYNC READBACK
-    let index = time.frame_count() as usize % 2;
 
     // Get the resources used for this chunk
-    let voxels = &mut voxelizer.voxel_textures[index];
-    let counters = &mut memory.counters[index];
-    let offsets = &mut memory.offsets[index];
+    let voxels = &mut voxelizer.voxel_textures;
+    let counters = &mut memory.counters;
+    let offsets = &mut memory.offsets;
     let indices = &mut mesher.cached_indices;
     let suballocations = &mut memory.sub_allocation_chunk_indices[chunk.allocation];
     let indirect = &mut memory.generated_indexed_indirect_buffers[chunk.allocation];

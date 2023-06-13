@@ -50,9 +50,9 @@ fn init(world: &mut World) {
 
     // Create a nice shadow map
     let shadowmap = ShadowMapping::new(
-        2048,
+        4096,
         [0.10, 0.25, 0.50, 1.0],
-        300.0,
+        1000.0,
         &graphics,
     );
 

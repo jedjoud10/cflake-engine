@@ -26,17 +26,12 @@ fn init(world: &mut World) {
     internal!(loader, "engine/shaders/scene/pbr/pbr.vert");
     internal!(loader, "engine/shaders/scene/pbr/pbr.frag");
 
-    internal!(loader, "engine/shaders/scene/sky/sky.frag");
-    internal!(loader, "engine/shaders/scene/sky/sky.vert");
-
     internal!(loader, "engine/shaders/scene/terrain/terrain.vert");
     internal!(loader, "engine/shaders/scene/terrain/terrain.frag");
 
     internal!(loader, "engine/shaders/scene/terrain/shadow.vert");
     internal!(loader, "engine/shaders/scene/pbr/shadow.vert");
     /*
-    TODO
-    internal!(loader, "engine/shaders/scene/shadow/terrain.vert");
 
     internal!(loader, "engine/shaders/scene/wireframe/wireframe.vert");
     internal!(loader, "engine/shaders/scene/wireframe/wireframe.frag");

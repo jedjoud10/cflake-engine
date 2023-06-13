@@ -254,8 +254,9 @@ vec3 brdf(
 
 	// TODO: IBL
 	brdf = brdf * lighting * light.color;
-	brdf += (0.2 + ambient * 0.2) * surface.diffuse * 0.4;
-	brdf += pow(fresnel(surface.f0, camera.view, surface.normal) * 0.4, vec3(2)) * 0.2;
+
+
+	
 	return brdf;
 }
 
@@ -306,7 +307,7 @@ void main() {
 		vec3 f0 = mix(vec3(0.04), albedo, metallic);
 
 		// Create the data structs
-		SunData sun = SunData(-scene.sun_direction.xyz, scene.sun_color.rgb);
+		SunData sun = SunData(-scene.sun_direction.xyz, scene.sun_color.rgb * 0.8);
 		SurfaceData surface = SurfaceData(albedo, normalize(normal), surface_normal, position, roughness, metallic, visibility, f0);
 		vec3 view = normalize(camera.position.xyz - position);
 		CameraData camera = CameraData(view, normalize(view - scene.sun_direction.xyz), camera.position.xyz, camera.view, camera.projection);
@@ -326,7 +327,7 @@ void main() {
 		float sun = dot(dir, -scene.sun_direction.xyz);
 		float out_sun = pow(max(sun * 0.3, 0), 3) * 3;
 		out_sun += pow(clamp(sun - 0.9968, 0, 1.0) * 250, 4) * 16;
-		color += vec3(out_sun);
+		//color += vec3(out_sun);
 	}
     
     

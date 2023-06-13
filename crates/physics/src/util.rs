@@ -14,6 +14,8 @@ impl Default for PhysicsSurface {
     }
 }
 
+
+
 // Convert a translation into a vec3
 pub(crate) fn trans_to_vec(trans: rapier3d::na::Translation3<f32>) -> vek::Vec3<f32> {
     vek::Vec3::new(trans.x, trans.y, trans.z)

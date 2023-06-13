@@ -20,6 +20,7 @@ pub struct TerrainSettings {
     // Mesh generation parameters
     pub(crate) blocky: bool,
     pub(crate) lowpoly: bool,
+    pub(crate) collisions: bool,
 
     // Octree params
     pub(crate) max_depth: u32,
@@ -58,6 +59,7 @@ impl TerrainSettings {
         graphics: &Graphics,
         resolution: u32,
         blocky: bool,
+        collisions: bool,
         lowpoly: bool,
         allocations: usize,
         sub_allocations: usize,
@@ -111,6 +113,7 @@ impl TerrainSettings {
             sub_materials: sub_materials.map(|x| x.to_vec()),
             max_depth,
             quality,
+            collisions,
         })
     }
 

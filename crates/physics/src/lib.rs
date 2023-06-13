@@ -1,6 +1,8 @@
 mod components;
 mod resource;
 mod util;
+mod query;
+pub use query::*;
 pub use components::*;
 pub use resource::*;
 mod system;

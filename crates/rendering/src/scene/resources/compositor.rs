@@ -199,7 +199,7 @@ pub struct PostProcessUniform {
 impl Default for PostProcessUniform {
     fn default() -> Self {
         Self {
-            exposure: 1.0,
+            exposure: 2.0,
             gamma: 2.2,
             vignette_strength: 0.4,
             vignette_size: 0.1,

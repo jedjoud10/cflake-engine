@@ -146,7 +146,7 @@ void main() {
     // Update normals and count for skirts
     vec4 current = imageLoad(voxels, ivec3(gl_GlobalInvocationID)); 
     float comp = current.x;
-    if (skirts && comp > 0 && comp < 1.0 * (meshing.threshold * 70.0 + 1.0)) {
+    if (skirts && comp > 0 && comp < 1.0 * (pow(meshing.threshold, 2.0) * 470.0 + 1.0)) {
         normal = calculate_normal(gl_GlobalInvocationID) * 4;
         count = 4;
     }
@@ -157,24 +157,6 @@ void main() {
 
         // Meshes are always n-3 size, so each voxel has a size of 1 / n-3
         vec3 final = blocky ? vec3(0) : ((vertex / count) - vec3(0.5));
-
-        if ((gl_GlobalInvocationID.x == 0 && start_x)) {
-            final.x = 0.0;
-        } else if (gl_GlobalInvocationID.x == size - 4 && end_x) {
-            final.x = 0.1;
-        }
-        
-        if ((gl_GlobalInvocationID.y == 0 && start_y)) {
-            final.y = 0.0;
-        } else if (gl_GlobalInvocationID.y == size - 4 && end_y) {
-            final.y = 0.1;
-        }
-
-        if ((gl_GlobalInvocationID.z == 0 && start_z)) {
-            final.z = 0.0;
-        } else if (gl_GlobalInvocationID.z == size - 4 && end_z) {
-            final.z = 0.1;
-        }
 
         // Positions only need 32 bits each (4 byte for cell coord, 4 byte for inner vertex coord)
         uint packed_cell_position = packUnorm4x8(vec4(gl_GlobalInvocationID, 0) / 255);
