@@ -1,11 +1,11 @@
 use std::{ops::RangeBounds, marker::PhantomData, cell::RefCell};
 use utils::BitSet;
 
-use crate::{TextureViewDimension, Texture, Region, Extent, ViewReadError, Texel, ViewWriteError, ViewCopyError, ViewClearError};
+use crate::{TextureViewDimension, Texture, Region, Extent, ViewReadError, Texel, ViewWriteError, ViewCopyError, ViewClearError, RenderTarget, ViewAsTargetError, TextureUsage};
 
 // The view settings that we should create for the texture
 // These will be given to the texture as an array to allow many views to be created
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct TextureViewSettings {
     pub base_mip_level: u32,
     pub mip_level_count: Option<u32>,
@@ -49,51 +49,13 @@ fn handle_optional_subregion<T: Texture>(
     return Some(optional.unwrap_or(mip_level_region));
 }
 
-
-// Collection of multiple immutable views
-pub struct TextureViewsRef<'a, T: Texture> {
-    views: &'a [(wgpu::TextureView, TextureViewSettings)],
-    texture: &'a T,
-}
-
 // Singular texture view that might contain multiple layers / mips
 pub struct TextureViewRef<'a, T: Texture> {
     pub(crate) texture: &'a T,
-    pub(crate) view: &'a (wgpu::TextureView, TextureViewSettings),
+    pub(crate) view: &'a wgpu::TextureView,
 }
 
-impl<'a, T: Texture> TextureViewsRef<'a, T> {
-    // Get a specific view using a mip level range, layer range, and target dimension
-    pub fn get(
-        &self,
-        mip_range: impl std::ops::RangeBounds<usize>,
-        layer_range: impl std::ops::RangeBounds<usize>,
-        dimension: TextureViewDimension,
-    ) -> Option<TextureViewRef<'a, T>> {
-        todo!()
-    }
-}
-
-impl<'a, T: Texture> TextureViewRef<'a, T> {
-    // Get the underlying texture
-    pub fn texture(&self) -> &T {
-        self.texture
-    }
-
-    // Get the underlying wgpu view
-    pub fn raw(&self) -> &wgpu::TextureView {
-        &self.view.0
-    }
-
-    // Get the view's dimensions
-    pub fn dimensions(&self) -> <T::Region as Region>::E {
-        todo!()
-    }
-
-    // Get the view's region
-    pub fn region(&self) -> T::Region {
-        todo!()
-    }
+/*
 
     // Read some pixels from the mip level region to the given destination
     pub fn read(
@@ -277,33 +239,61 @@ impl<'a, T: Texture> TextureViewRef<'a, T> {
         let texels = vec![val; volume];
         self.write(&texels, subregion)
     }
-}
+ */
 
-// Collection of multiple mutable views
-pub struct TextureViewsMut<'a, T: Texture> {
-    _phantom: PhantomData<&'a mut T>,
+impl<'a, T: Texture> TextureViewRef<'a, T> {
+    // Get the underlying texture
+    pub fn texture(&self) -> &T {
+        self.texture
+    }
+
+    // Get the underlying wgpu view
+    pub fn raw(&self) -> &wgpu::TextureView {
+        &self.view
+    }
+
+    // Get the view's dimensions
+    pub fn dimensions(&self) -> <T::Region as Region>::E {
+        todo!()
+    }
+
+    // Get the view's region
+    pub fn region(&self) -> T::Region {
+        todo!()
+    }
 }
 
 // Singular mutable texture view that might contain multiple layers / mips
 pub struct TextureViewMut<'a, T: Texture> {
     pub(crate) texture: &'a T,
-    pub(crate) view: &'a (wgpu::TextureView, TextureViewSettings),
-    _phantom: PhantomData<&'a mut T>,
-}
-
-impl<'a, T: Texture> TextureViewsMut<'a, T> {
-    // Get a specific view using a mip level range, layer range, and target dimension
-    pub fn get_mut(
-        &mut self,
-        mip_range: impl std::ops::RangeBounds<usize>,
-        layer_range: impl std::ops::RangeBounds<usize>,
-        dimension: TextureViewDimension,
-    ) -> Option<TextureViewMut<'a, T>> {
-        todo!()
-    }
+    pub(crate) view: &'a wgpu::TextureView,
 }
 
 impl<'a, T: Texture> TextureViewMut<'a, T> {
+    // Try to use the texture view as a renderable target.
+    // This will fail if the texture isn't supported as render target 
+    // or if the view's dimensions don't correspond to a 2D image
+    fn as_render_target(&mut self) -> Result<RenderTarget<T::T>, ViewAsTargetError> {
+        if !self.texture.usage().contains(TextureUsage::TARGET) {
+            return Err(ViewAsTargetError::MissingTargetUsage);
+        }
+
+        /*
+        TODO: This shit
+        if self.levels() > 1 {
+            return Err(ViewAsTargetError::ViewMultipleMips);
+        }
+
+        if !self.region().can_render_to_mip() {
+            return Err(ViewAsTargetError::RegionIsNot2D);
+        }
+        */
+
+        Ok(RenderTarget {
+            _phantom: PhantomData,
+            view: &self.view,
+        })
+    }
 }
 
 /*

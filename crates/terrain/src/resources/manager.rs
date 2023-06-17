@@ -9,7 +9,7 @@ use ecs::{Entity, Scene};
 use graphics::{
     combine_into_layered, GpuPod, Graphics, ImageTexel, LayeredTexture2D, RawTexels,
     SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap, Texel, TextureMipMaps,
-    TextureMode, TextureUsage, Vertex, SamplerBorderColor, TextureScale, TextureResizeFilter,
+    TextureUsage, Vertex, SamplerBorderColor, TextureScale, TextureResizeFilter,
 };
 use math::{Node, Octree};
 
@@ -214,6 +214,8 @@ fn load_layered_texture<T: ImageTexel>(
     graphics: &Graphics,
     raw: Option<Vec<RawTexels<T>>>,
 ) -> Option<LayeredTexture2D<T>> {
+    todo!()
+    /*
     raw.map(|raw| {
         combine_into_layered(
             graphics,
@@ -231,4 +233,5 @@ fn load_layered_texture<T: ImageTexel>(
         )
         .unwrap()
     })
+    */
 }

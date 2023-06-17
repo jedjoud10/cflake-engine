@@ -104,15 +104,24 @@ fn event(world: &mut World, event: &mut WindowEvent) {
             // Resize the G-Buffer textures and Depth texture
             let size = vek::Extent2::new(size.width, size.height);
             let mut renderer = world.get_mut::<DeferredRenderer>().unwrap();
+
+            // Skip resizing if it's the same size as before
+            if renderer.window_size == size {
+                return;
+            }
+
             let _graphics = world.get::<Graphics>().unwrap();
             let graphics = &*_graphics;
 
+            // Create new textures with the new size
+            renderer.window_size = size;
             let new_gbuffer_position_texture = create_gbuffer_texture::<RGBA<f32>>(graphics, size);
             let new_gbuffer_albedo_texture = create_gbuffer_texture::<RGBA<Normalized<u8>>>(graphics, size);
             let new_gbuffer_normal_texture = create_gbuffer_texture::<RGBA<Normalized<i16>>>(graphics, size);
             let new_gbuffer_mask_texture = create_gbuffer_texture::<RGBA<Normalized<u8>>>(graphics, size);
             let new_depth_texture = create_gbuffer_texture::<Depth<f32>>(graphics, size);
 
+            // Set the new as the old textures
             renderer.gbuffer_position_texture = new_gbuffer_position_texture;
             renderer.gbuffer_albedo_texture = new_gbuffer_albedo_texture;
             renderer.gbuffer_normal_texture = new_gbuffer_normal_texture;

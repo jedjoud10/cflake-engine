@@ -9,7 +9,7 @@ use graphics::{
     ActiveRenderPass, ActiveRenderPipeline, BufferMode, BufferUsage, Depth, GpuPod,
     Graphics, LoadOp, Operation, RenderPass, SamplerFilter,
     SamplerMipMaps, SamplerSettings, SamplerWrap, StoreOp, Texel, Texture, Texture2D,
-    TextureMipMaps, TextureMode, TextureUsage, UniformBuffer, RGBA, BGRA, SwapchainFormat, RenderPipeline, VertexModule, FragmentModule, Compiler, Shader, VertexConfig, PrimitiveConfig, Normalized,
+    TextureMipMaps, TextureUsage, UniformBuffer, RGBA, BGRA, SwapchainFormat, RenderPipeline, VertexModule, FragmentModule, Compiler, Shader, VertexConfig, PrimitiveConfig, Normalized, TextureViewSettings,
 };
 use utils::{Handle, Storage};
 
@@ -30,8 +30,8 @@ pub(crate) fn create_texture2d<T: Texel>(graphics: &Graphics, value: T::Storage)
         graphics,
         Some(&[value; 16]),
         vek::Extent2::broadcast(4),
-        TextureMode::Dynamic,
         TextureUsage::SAMPLED | TextureUsage::COPY_DST,
+        &[TextureViewSettings::whole::<<Texture2D<T> as Texture>::Region>()],
         Some(SamplerSettings::default()),
         TextureMipMaps::Disabled,
     )

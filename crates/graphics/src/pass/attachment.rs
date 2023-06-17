@@ -24,17 +24,6 @@ impl<'a> DepthStencilAttachment<'a, ()> for () {
     }
 }
 
-// Trait implemented for types that can be converted to render targets
-pub trait AsRenderTarget<'a, T: Texel> {
-    type Error: std::error::Error;
-
-    // Get the inner texture view (if valid)
-    fn try_get_view(&self) -> Result<wgpu::TextureView, Self::Error>;
-
-    // Try to convert self into a render target
-    fn as_render_target(&self) -> Result<RenderTarget<'a, T>, Self::Error>;
-}
-
 // A render target that can be used inside a renderpass (attachment)
 pub struct RenderTarget<'a, T: Texel> {
     pub(crate) _phantom: PhantomData<T>,

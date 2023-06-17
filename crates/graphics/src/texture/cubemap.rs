@@ -14,7 +14,7 @@ use crate::{
 pub struct CubeMap<T: Texel> {
     // Raw WGPU
     texture: wgpu::Texture,
-    views: Vec<(wgpu::TextureView, TextureViewSettings)>,
+    views: Vec<wgpu::TextureView>,
 
     // Main texture settings
     dimensions: vek::Extent2<u32>,
@@ -47,7 +47,7 @@ impl<T: Texel> Texture for CubeMap<T> {
         &self.texture
     }
 
-    fn raw_views(&self) -> &[(wgpu::TextureView, TextureViewSettings)] {
+    fn raw_views(&self) -> &[wgpu::TextureView] {
         &self.views
     }
 
@@ -69,7 +69,7 @@ impl<T: Texel> Texture for CubeMap<T> {
     unsafe fn from_raw_parts(
         graphics: &Graphics,
         texture: wgpu::Texture,
-        views: Vec<(wgpu::TextureView, TextureViewSettings)>,
+        views: Vec<wgpu::TextureView>,
         sampler: Option<Arc<wgpu::Sampler>>,
         sampling: Option<SamplerSettings>,
         dimensions: vek::Extent2<u32>,

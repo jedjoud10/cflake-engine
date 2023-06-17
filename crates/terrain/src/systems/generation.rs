@@ -14,6 +14,7 @@ use world::{System, World};
 
 // Look in the world for any chunks that need their mesh generated and generate it
 fn update(world: &mut World) {
+    /*
     let graphics = world.get::<Graphics>().unwrap();
     let time = world.get::<Time>().unwrap();
     let _terrain = world.get_mut::<Terrain>();
@@ -308,6 +309,7 @@ fn update(world: &mut World) {
     // Only one chunk must have this state enabled
     // The terrain will fucking kill itself if there's more than one chunk with this state
     chunk.state = ChunkState::PendingReadbackStart;
+    */
 }
 
 // Generates the voxels and appropriate mesh for each of the visible chunks

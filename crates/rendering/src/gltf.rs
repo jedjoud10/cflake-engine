@@ -20,7 +20,7 @@ use gltf::json::accessor::{ComponentType, Type};
 use graphics::{
     texture2d_from_raw, BufferMode, BufferUsage, Graphics, ImageTexel, Normalized, RawTexels,
     SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap, Texel, Texture, Texture2D,
-    TextureImportSettings, TextureMipMaps, TextureMode, TextureScale, TextureUsage, R, RGBA,
+    TextureImportSettings, TextureMipMaps, TextureScale, TextureUsage, R, RGBA, TextureViewSettings,
 };
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use utils::{Handle, Storage};
@@ -473,21 +473,18 @@ impl Asset for GltfScene {
                         );
 
                         // Create a new mesh for the accessors used
-                        let mut mesh = Mesh::from_slices(
+                        Mesh::from_slices(
                             &graphics.clone(),
                             BufferMode::Dynamic,
-                            BufferUsage::empty(),
+                            BufferUsage::COPY_DST,
                             Some(&positions),
                             normals.as_deref(),
                             tangents.as_deref(),
                             tex_coords.as_deref(),
                             &triangles,
+                            aabb,
                         )
-                        .unwrap();
-
-                        // Either disable or enable the AABB
-                        mesh.set_aabb(aabb);
-                        mesh
+                        .unwrap()
                     });
                     meshes.push(key);
                 }
@@ -785,7 +782,7 @@ fn create_material_texture<T: Texel + ImageTexel>(
         graphics,
         TextureImportSettings {
             sampling: Some(sampler),
-            mode: TextureMode::Dynamic,
+            views: &[TextureViewSettings::whole::<<Texture2D<T> as Texture>::Region>()],
             usage: TextureUsage::SAMPLED | TextureUsage::COPY_DST,
             scale: TextureScale::Default,
             mipmaps: TextureMipMaps::Manual { mips: &[] },
@@ -876,13 +873,11 @@ fn create_material_mask_texture(
 
     let raw = RawTexels(data, extent.unwrap());
 
-    
-
     texture2d_from_raw(
         graphics,
         TextureImportSettings {
             sampling: Some(sampler),
-            mode: TextureMode::Dynamic,
+            views: &[TextureViewSettings::whole::<<MaskMap as Texture>::Region>()],
             usage: TextureUsage::SAMPLED | TextureUsage::COPY_DST,
             scale: TextureScale::Default,
             mipmaps: TextureMipMaps::Manual { mips: &[] },

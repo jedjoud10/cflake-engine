@@ -57,9 +57,6 @@ pub enum SetPushConstantsError {}
 
 #[derive(Error, Debug)]
 pub enum SetTextureError {
-    #[error("The texture is missing the \"whole\" view to use it as a whole")]
-    WholeViewMissing,
-
     #[error("The given sampled texture does not contain the SAMPLE usage")]
     MissingSampleUsage,
 

@@ -149,35 +149,39 @@ pub(super) fn create_bind_group<'b>(
 
 // Trait implemented for textures and their immutable views
 pub trait AsRefTextureView<'a, T: Texture>: 'a {
-    fn as_ref_view(self) -> Option<TextureViewRef<'a, T>>;
+    fn as_ref_view(self) -> TextureViewRef<'a, T>;
 }
 
 impl<'a, T: Texture> AsRefTextureView<'a, T> for &'a T {
-    fn as_ref_view(self) -> Option<TextureViewRef<'a, T>> {
-        self.views().get(.., .., <T::Region as Region>::view_dimension())
+    fn as_ref_view(self) -> TextureViewRef<'a, T> {
+        // We can assume that the view at index = 0 is the whole texture view
+        // since the user is *forced* to set the first view as a whole texture view on init
+        self.view(0).unwrap()
     }
 }
 
 impl<'a, T: Texture> AsRefTextureView<'a, T> for TextureViewRef<'a, T> {
-    fn as_ref_view(self) -> Option<TextureViewRef<'a, T>> {
-        Some(self)
+    fn as_ref_view(self) -> TextureViewRef<'a, T> {
+        self
     }
 }
 
 // Trait implemented for textures and their mutable views
 pub trait AsMutTextureView<'a, T: Texture>: 'a {
-    fn as_mut_view(self) -> Option<TextureViewMut<'a, T>>;
+    fn as_mut_view(self) -> TextureViewMut<'a, T>;
 }
 
 impl<'a, T: Texture> AsMutTextureView<'a, T> for &'a mut T {
-    fn as_mut_view(self) -> Option<TextureViewMut<'a, T>> {
-        self.views_mut().get_mut(.., .., <T::Region as Region>::view_dimension())
+    fn as_mut_view(self) -> TextureViewMut<'a, T> {
+        // We can assume that the view at index = 0 is the whole texture view
+        // since the user is *forced* to set the first view as a whole texture view on init
+        self.view_mut(0).unwrap()
     }
 }
 
 impl<'a, T: Texture> AsMutTextureView<'a, T> for TextureViewMut<'a, T> {
-    fn as_mut_view(self) -> Option<TextureViewMut<'a, T>> {
-        Some(self)
+    fn as_mut_view(self) -> TextureViewMut<'a, T> {
+        self
     }
 }
 
@@ -309,13 +313,13 @@ impl<'a> BindGroup<'a> {
     }
 
     // Set a texture that can be sampled inside shaders using it's sampler
-    pub fn set_sampled_texture_view<'s, T: Texture>(
+    pub fn set_sampled_texture<'s, T: Texture>(
         &mut self,
         name: &'s str,
         as_ref_view: impl AsRefTextureView<'a, T>,
     ) -> Result<(), SetBindResourceError<'s>> {
-        let val = as_ref_view.as_ref_view().ok_or(SetBindResourceError::SetTexture(SetTextureError::WholeViewMissing))?;
-        let (texture, view) = (val.texture, &val.view.0);
+        let val = as_ref_view.as_ref_view();
+        let (texture, view) = (val.texture, &val.view);
 
         // Make sure it's a sampled texture
         if !texture.usage().contains(TextureUsage::SAMPLED) {
@@ -354,10 +358,8 @@ impl<'a> BindGroup<'a> {
         name: &'s str,
         as_ref_view: impl AsRefTextureView<'a, T>,
     ) -> Result<(), SetBindResourceError<'s>> {
-        let view = as_ref_view
-            .as_ref_view()
-            .ok_or(SetBindResourceError::SetTexture(SetTextureError::WholeViewMissing))?;
-        self.internal_set_storage_texture(false, name, view.texture, &view.view.0)
+        let view = as_ref_view.as_ref_view();
+        self.internal_set_storage_texture(false, name, view.texture, &view.view)
     }
 
     // Set a storage texture for reading AND writing
@@ -366,10 +368,8 @@ impl<'a> BindGroup<'a> {
         name: &'s str,
         as_mut_view: impl AsMutTextureView<'a, T>,
     ) -> Result<(), SetBindResourceError<'s>> {
-        let view = as_mut_view
-            .as_mut_view()
-            .ok_or(SetBindResourceError::SetTexture(SetTextureError::WholeViewMissing))?;
-        self.internal_set_storage_texture(true, name, view.texture, &view.view.0)
+        let view = as_mut_view.as_mut_view();
+        self.internal_set_storage_texture(true, name, view.texture, &view.view)
     }
 
     // Set a texture sampler so we can sample textures within the shader

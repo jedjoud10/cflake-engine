@@ -6,14 +6,15 @@ use std::{
     sync::Arc, ops::{RangeBounds, Bound},
 };
 
+use itertools::Itertools;
 use smallvec::SmallVec;
 use wgpu::{SamplerDescriptor, TextureDescriptor, TextureViewDescriptor};
 
 use crate::{
     Extent, GpuPod, Graphics, LayeredOrigin,
     Origin, Region, RenderTarget, Sampler, SamplerSettings, SamplerWrap, Texel, TexelSize,
-    TextureAsTargetError, TextureInitializationError, TextureMipLevelError, TextureMipMaps,
-    TextureResizeError, TextureSamplerError, TextureUsage, TextureViewDimension, TextureViewSettings, TextureViewsRef, TextureViewsMut, TextureViewMut, TextureViewRef,
+    ViewAsTargetError, TextureInitializationError, TextureMipLevelError, TextureMipMaps,
+    TextureSamplerError, TextureUsage, TextureViewDimension, TextureViewSettings, TextureViewMut, TextureViewRef,
 };
 
 // A texture is an abstraction over Vulkan images to allow us to access/modify them with ease
@@ -167,16 +168,11 @@ pub trait Texture: Sized + 'static {
             _ => {}
         }
 
-        // Check if we need texture views
-        let needs_views = usage.contains(TextureUsage::SAMPLED)
-            | usage.contains(TextureUsage::STORAGE)
-            | usage.contains(TextureUsage::TARGET);
+        // TODO: Force the user to set the first view as a whole texture view if it is a SAMPLED or TARGET texture
 
-        // Create the texture views when deemed necessary
-        let views = needs_views.then(|| {
-            let layers = <Self::Region as Region>::layers(extent);
-            create_texture_views::<Self::T, Self::Region>(&texture, format, extent, levels, layers, views)
-        }).unwrap_or_else(|| Ok(Vec::new()))?;
+        // Create the texture views that the user set up
+        let layers = <Self::Region as Region>::depth_or_layers(extent);
+        let views = create_texture_views::<Self::T, Self::Region>(&texture, format, extent, views)?;
 
         Ok(unsafe {
             Self::from_raw_parts(
@@ -205,7 +201,7 @@ pub trait Texture: Sized + 'static {
     fn raw(&self) -> &wgpu::Texture;
 
     // Get the underlying WGPU views immutably
-    fn raw_views(&self) -> &[(wgpu::TextureView, TextureViewSettings)];
+    fn raw_views(&self) -> &[wgpu::TextureView];
 
     // Get the sampler associated with this texture
     // Returns none if the texture cannot be sampled
@@ -216,20 +212,48 @@ pub trait Texture: Sized + 'static {
         self.raw().mip_level_count()
     }
 
-    // Get the number of layers currently stored within the texture
-    fn layers(&self) -> u32 {
-        <Self::Region as Region>::layers(self.dimensions())
+    // Get the number of layers (3D depth or layers) currently stored within the texture
+    fn depth_or_layers(&self) -> u32 {
+        <Self::Region as Region>::depth_or_layers(self.dimensions())
     }
 
-    // Get the views of the texture immutably
-    fn views(&self) -> TextureViewsRef<Self> {
-        todo!()
+    // Get a single immutable view of the texture
+    fn view(&self, index: usize) -> Option<TextureViewRef<Self>> {
+        self.raw_views().get(index).map(|view| TextureViewRef {
+            texture: self,
+            view: view
+        })
+    }
+    
+    // Get a single mutable view of the texture
+    fn view_mut(&mut self, index: usize) -> Option<TextureViewMut<Self>> {
+        self.raw_views().get(index).map(|view| TextureViewMut {
+            texture: self,
+            view: view
+        })
+    }
+    
+    // Try to use the whole texture as a renderable target. This will fail if the texture isn't supported as render target
+    // or if it's dimensions don't correspond to a 2D image
+    fn as_render_target(&mut self) -> Result<RenderTarget<Self::T>, ViewAsTargetError> {
+        if !self.usage().contains(TextureUsage::TARGET) {
+            return Err(ViewAsTargetError::MissingTargetUsage);
+        }
+
+        if self.levels() > 1 {
+            return Err(ViewAsTargetError::ViewMultipleMips);
+        }
+
+        if !self.region().can_render_to_mip() {
+            return Err(ViewAsTargetError::RegionIsNot2D);
+        }
+
+        Ok(RenderTarget {
+            _phantom: PhantomData,
+            view: self.view(0).unwrap().view,
+        })
     }
 
-    // Get the views of the texture mutably
-    fn views_mut(&mut self) -> TextureViewsMut<Self> {
-        todo!()
-    }
 
     // Get the stored graphics context
     fn graphics(&self) -> Graphics;
@@ -240,7 +264,7 @@ pub trait Texture: Sized + 'static {
     unsafe fn from_raw_parts(
         graphics: &Graphics,
         texture: wgpu::Texture,
-        views: Vec<(wgpu::TextureView, TextureViewSettings)>,
+        views: Vec<wgpu::TextureView>,
         sampler: Option<Arc<wgpu::Sampler>>,
         sampling: Option<SamplerSettings>,
         dimensions: <Self::Region as Region>::E,
@@ -317,23 +341,29 @@ fn create_texture_views<T: Texel, R: Region>(
     texture: &wgpu::Texture,
     format: wgpu::TextureFormat,
     extent: R::E,
-    levels: u32,
-    layers: u32,
     views: &[TextureViewSettings],
-) -> Result<Vec<(wgpu::TextureView, TextureViewSettings)>, TextureInitializationError> {
+) -> Result<Vec<wgpu::TextureView>, TextureInitializationError> {
     log::debug!(
-        "Creating level views for texture (max = {levels}) with extent {}x{}x{}",
+        "Creating level views for texture with extent {}x{}x{}",
         extent.width(),
         extent.height(),
         extent.depth_or_layers(),
     );
 
+    let views = views.into_iter().unique();
     let aspect = texture_aspect::<T>();
-    let mut views = Vec::<(wgpu::TextureView, TextureViewSettings)>::new();
-
-    todo!();
-
-    Ok(views)
+    Ok(views.map(|setting| {
+        texture.create_view(&wgpu::TextureViewDescriptor {
+            label: None,
+            format: Some(format),
+            dimension: Some(setting.dimension),
+            aspect,
+            base_mip_level: setting.base_mip_level,
+            mip_level_count: setting.mip_level_count,
+            base_array_layer: setting.base_array_layer,
+            array_layer_count: setting.array_layer_count,
+        })
+    }).collect::<Vec<_>>())
 }
 
 // Create an image data layout based on the extent and texel type

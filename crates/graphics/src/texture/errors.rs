@@ -128,31 +128,11 @@ pub enum ViewCopyError {
 }
 
 #[derive(Error, Debug)]
-pub enum TextureResizeError {
-    #[error("Tried resizing a texture which contains mip maps, which isn't supported *yet*")]
-    MipMappingUnsupported,
-
-    #[error(
-        "Tried resizing a texture which contains multiple layers, which isn't supported *yet*"
-    )]
-    LayeredUnsupported,
-
-    #[error("Tried resizing a texture above the physical device's max texture size")]
-    ExtentLimit,
-
-    #[error("Tried resizing a texture with extent of 0 in any axii")]
-    InvalidExtent,
-
-    #[error("Tried resizing a texture, but texture mode isn't TextureMode::Resizable")]
-    NotResizable,
-}
-
-#[derive(Error, Debug)]
 #[error("Cannot create a sampler for texture since it does not have the approperiate usage flags")]
 pub struct TextureSamplerError;
 
 #[derive(Error, Debug)]
-pub enum TextureAsTargetError {
+pub enum ViewAsTargetError {
     #[error("The given source region would overflow the region of the mip-level")]
     InvalidRegion,
 
@@ -167,5 +147,5 @@ pub enum TextureAsTargetError {
     #[error(
         "Cannot use the whole texture as a render target since it contains multiple mip levels"
     )]
-    TextureMultipleMips,
+    ViewMultipleMips,
 }

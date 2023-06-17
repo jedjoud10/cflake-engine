@@ -6,7 +6,7 @@ use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 use super::{Region, Texture};
 use crate::{
     ColorTexel, Conversion, Extent, LayeredOrigin, ViewClearError, ViewCopyError,
-    ViewReadError, ViewWriteError, Origin, RenderTarget, Texel, TextureAsTargetError,
+    ViewReadError, ViewWriteError, Origin, RenderTarget, Texel, ViewAsTargetError,
     TextureMipLevelError, TextureSamplerError, TextureUsage,
 };
 

@@ -10,7 +10,7 @@ use assets::Asset;
 use bytemuck::{Pod, Zeroable};
 use graphics::{
     BufferMode, BufferUsage, DrawCountIndirectBuffer, DrawIndexedIndirectBuffer, Graphics,
-    Triangle, TriangleBuffer,
+    Triangle, TriangleBuffer, Vertex, BufferInitializationError,
 };
 use obj::TexturedVertex;
 
@@ -70,20 +70,26 @@ impl Mesh<Direct> {
         aabb: Option<math::Aabb<f32>>,
     ) -> Result<Self, MeshInitializationError> {
         let positions = positions.map(|slice| {
-            AttributeBuffer::<Position>::from_slice(graphics, slice, mode, usage).unwrap()
+            AttributeBuffer::<Position>::from_slice(graphics, slice, mode, usage)
         });
         let normals = normals.map(|slice| {
-            AttributeBuffer::<Normal>::from_slice(graphics, slice, mode, usage).unwrap()
+            AttributeBuffer::<Normal>::from_slice(graphics, slice, mode, usage)
         });
         let tangents = tangents.map(|slice| {
-            AttributeBuffer::<Tangent>::from_slice(graphics, slice, mode, usage).unwrap()
+            AttributeBuffer::<Tangent>::from_slice(graphics, slice, mode, usage)
         });
         let tex_coords = tex_coords.map(|slice| {
-            AttributeBuffer::<TexCoord>::from_slice(graphics, slice, mode, usage).unwrap()
+            AttributeBuffer::<TexCoord>::from_slice(graphics, slice, mode, usage)
         });
-        let triangles = TriangleBuffer::from_slice(graphics, triangles, mode, usage).unwrap();
+        let triangles = Some(TriangleBuffer::from_slice(graphics, triangles, mode, usage));
 
-        Self::from_buffers(positions, normals, tangents, tex_coords, triangles, aabb)
+        let positions = positions.transpose().map_err(MeshInitializationError::AttributeBufferInitialization)?;
+        let normals = normals.transpose().map_err(MeshInitializationError::AttributeBufferInitialization)?;
+        let tangents = tangents.transpose().map_err(MeshInitializationError::AttributeBufferInitialization)?;
+        let tex_coords = tex_coords.transpose().map_err(MeshInitializationError::AttributeBufferInitialization)?;
+        let triangles = triangles.transpose().map_err(MeshInitializationError::TriangleBufferInitialization)?;
+
+        Self::from_buffers(positions, normals, tangents, tex_coords, triangles.unwrap(), aabb)
     }
 
     // Create a new mesh from the attribute buffers

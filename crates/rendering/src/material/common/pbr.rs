@@ -153,9 +153,9 @@ impl Material for PbrMaterial {
             .map_or(default.mask, |h| mask_maps.get(h));
 
         // Set the material textures
-        group.set_sampled_texture_view("albedo_map", albedo_map).unwrap();
-        group.set_sampled_texture_view("normal_map", normal_map).unwrap();
-        group.set_sampled_texture_view("mask_map", mask_map).unwrap();
+        group.set_sampled_texture("albedo_map", albedo_map).unwrap();
+        group.set_sampled_texture("normal_map", normal_map).unwrap();
+        group.set_sampled_texture("mask_map", mask_map).unwrap();
 
         // Set the material samplers
         group.set_sampler("albedo_map_sampler", albedo_map.sampler().unwrap()).unwrap();

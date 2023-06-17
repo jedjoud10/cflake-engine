@@ -64,6 +64,7 @@ pub struct DeferredRenderer {
     pub(crate) gbuffer_normal_texture: Texture2D<RGBA<Normalized<i16>>>,
     pub(crate) gbuffer_mask_texture: Texture2D<RGBA<Normalized<u8>>>,
     pub(crate) depth_texture: Texture2D<SceneDepthLayout>,
+    pub(crate) window_size: vek::Extent2<u32>,
 
     // Main camera entity that we use to render the scene
     pub main_camera: Option<Entity>,
@@ -172,6 +173,7 @@ impl DeferredRenderer {
             gbuffer_normal_texture,
             gbuffer_mask_texture,
             depth_texture,
+            window_size: extent,
 
             // Create the common material buffers
             camera_buffer: create_uniform_buffer::<_, 1>(graphics, BufferUsage::WRITE),

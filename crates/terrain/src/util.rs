@@ -1,6 +1,6 @@
 use graphics::{
     Buffer, BufferMode, BufferUsage, DrawIndexedIndirect, GpuPod, Graphics, Texel,
-    Texture, Texture3D, TextureMipMaps, TextureMode, TextureUsage, TriangleBuffer, Vertex, XY,
+    Texture, Texture3D, TextureMipMaps, TextureUsage, TriangleBuffer, Vertex, XY, TextureViewSettings,
 };
 use math::{Node, Octree};
 use rendering::{attributes, AttributeBuffer};
@@ -54,8 +54,8 @@ pub(crate) fn create_texture3d<T: Texel>(graphics: &Graphics, size: u32) -> Text
         graphics,
         None,
         vek::Extent3::broadcast(size),
-        TextureMode::Dynamic,
         TextureUsage::STORAGE | TextureUsage::WRITE,
+        &[TextureViewSettings::whole::<<Texture3D<T> as Texture>::Region>()],
         None,
         TextureMipMaps::Disabled,
     )

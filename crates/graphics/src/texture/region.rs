@@ -284,10 +284,7 @@ pub trait Region: Copy {
         }
     }
 
-    // Get the number of layers of an extent
-    fn layers(extent: Self::E) -> u32;
-
-    // TODO: kill me
+    // 3D depth is implemented as layers so we have to do this
     fn depth_or_layers(extent: Self::E) -> u32 {
         match Self::view_dimension() {
             wgpu::TextureViewDimension::D1 => 1,
@@ -417,10 +414,6 @@ impl Region for (vek::Vec2<u32>, vek::Extent2<u32>) {
     fn view_dimension() -> TextureViewDimension {
         TextureViewDimension::D2
     }
-
-    fn layers(extent: Self::E) -> u32 {
-        1
-    }
 }
 
 // Texture3D
@@ -463,10 +456,6 @@ impl Region for (vek::Vec3<u32>, vek::Extent3<u32>) {
 
     fn view_dimension() -> TextureViewDimension {
         TextureViewDimension::D3
-    }
-
-    fn layers(extent: Self::E) -> u32 {
-        1
     }
 }
 
@@ -516,10 +505,6 @@ impl Region for ((vek::Vec2<u32>, u32), vek::Extent2<u32>) {
     fn view_dimension() -> TextureViewDimension {
         TextureViewDimension::Cube
     }
-
-    fn layers(extent: Self::E) -> u32 {
-        6
-    }
 }
 
 // LayeredTexture2D
@@ -566,9 +551,5 @@ impl Region for ((vek::Vec2<u32>, u32), (vek::Extent2<u32>, u32)) {
 
     fn view_dimension() -> TextureViewDimension {
         TextureViewDimension::D2Array
-    }
-
-    fn layers(extent: Self::E) -> u32 {
-        extent.depth_or_layers()
     }
 }

@@ -37,6 +37,7 @@ fn create_depth_texture(graphics: &Graphics, resolution: u32) -> LayeredTexture2
         (vek::Extent2::broadcast(resolution), 4),
         TextureUsage::TARGET | TextureUsage::SAMPLED,
         &[
+            TextureViewSettings::whole::<<ShadowMap as Texture>::Region>(),
             create_view_settings(0),
             create_view_settings(1),
             create_view_settings(2),

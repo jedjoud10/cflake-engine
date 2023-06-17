@@ -4,7 +4,7 @@ use graphics::{
     ActivePipeline, BlendComponent, BlendFactor, BlendOperation, BlendState, BufferMode,
     BufferUsage, Compiler, FragmentModule, Graphics, LoadOp, Normalized, Operation,
     PerVertex, PrimitiveConfig, SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap,
-    Shader, StoreOp, Texture, Texture2D, TextureMipMaps, TextureMode, TextureUsage, TriangleBuffer,
+    Shader, StoreOp, Texture, Texture2D, TextureMipMaps, TextureUsage, TriangleBuffer,
     VertexBuffer, VertexConfig, VertexInput, VertexModule, Window, RGBA, XY, XYZW, TextureViewSettings,
 };
 use rendering::{FinalRenderPass, FinalRenderPipeline, WindowBuffer, WindowUniform};
@@ -94,6 +94,7 @@ impl Rasterizer {
         // Create the bind layout for the GUI shader
         let mut compiler = Compiler::new(assets, graphics);
         compiler.use_sampled_texture::<FontMap>("font", false);
+        compiler.use_sampler::<FontTexel>("font_sampler", false);
         compiler.use_uniform_buffer::<WindowUniform>("window");
         let shader = Shader::new(vertex, fragment, &compiler).unwrap();
 
@@ -237,7 +238,8 @@ impl Rasterizer {
                 group
                     .set_uniform_buffer("window", window_buffer, ..)
                     .unwrap();
-                group.set_sampled_texture_view("font", texture).unwrap();
+                group.set_sampled_texture("font", texture).unwrap();
+                group.set_sampler("font_sampler", texture.sampler().unwrap()).unwrap();
             })
             .unwrap();
 
