@@ -273,7 +273,7 @@ impl<'a, T: Texture> TextureViewMut<'a, T> {
     // Try to use the texture view as a renderable target.
     // This will fail if the texture isn't supported as render target 
     // or if the view's dimensions don't correspond to a 2D image
-    fn as_render_target(&mut self) -> Result<RenderTarget<T::T>, ViewAsTargetError> {
+    pub fn as_render_target(&mut self) -> Result<RenderTarget<T::T>, ViewAsTargetError> {
         if !self.texture.usage().contains(TextureUsage::TARGET) {
             return Err(ViewAsTargetError::MissingTargetUsage);
         }

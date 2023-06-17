@@ -160,9 +160,26 @@ impl<'a, T: Texture> AsRefTextureView<'a, T> for &'a T {
     }
 }
 
+impl<'a, T: Texture> AsRefTextureView<'a, T> for &'a mut T {
+    fn as_ref_view(self) -> TextureViewRef<'a, T> {
+        // We can assume that the view at index = 0 is the whole texture view
+        // since the user is *forced* to set the first view as a whole texture view on init
+        self.view(0).unwrap()
+    }
+}
+
 impl<'a, T: Texture> AsRefTextureView<'a, T> for TextureViewRef<'a, T> {
     fn as_ref_view(self) -> TextureViewRef<'a, T> {
         self
+    }
+}
+
+impl<'a, T: Texture> AsRefTextureView<'a, T> for TextureViewMut<'a, T> {
+    fn as_ref_view(self) -> TextureViewRef<'a, T> {
+        TextureViewRef {
+            texture: self.texture,
+            view: self.view,
+        }
     }
 }
 

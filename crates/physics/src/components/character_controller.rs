@@ -11,8 +11,8 @@ pub struct CharacterController {
     pub air_control: f32,
     pub ground_control: f32,
     pub jump_force: f32,
-    pub(crate) grounded: bool, 
-    pub(crate) jumping: bool,
+    pub grounded: bool, 
+    pub jumping: bool,
 }
 
 impl Default for CharacterController {

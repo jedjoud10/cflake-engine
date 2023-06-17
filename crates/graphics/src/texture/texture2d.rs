@@ -109,7 +109,7 @@ impl<T: ImageTexel> Default for TextureImportSettings<'_, T> {
         Self {
             sampling: Some(SamplerSettings::default()),
             scale: TextureScale::Default,
-            usage: TextureUsage::SAMPLED,
+            usage: TextureUsage::SAMPLED | TextureUsage::COPY_DST,
             mipmaps: TextureMipMaps::Manual { mips: &[] },
             views: &[TextureViewSettings {
                 base_mip_level: 0,

@@ -14,7 +14,6 @@ use world::{System, World};
 
 // Look in the world for any chunks that need their mesh generated and generate it
 fn update(world: &mut World) {
-    /*
     let graphics = world.get::<Graphics>().unwrap();
     let time = world.get::<Time>().unwrap();
     let _terrain = world.get_mut::<Terrain>();
@@ -124,10 +123,8 @@ fn update(world: &mut World) {
 
 
     // Get the resources used for this chunk
-    let voxels = &mut voxelizer.voxel_textures;
     let counters = &mut memory.counters;
     let offsets = &mut memory.offsets;
-    let indices = &mut mesher.cached_indices;
     let suballocations = &mut memory.sub_allocation_chunk_indices[chunk.allocation];
     let indirect = &mut memory.generated_indexed_indirect_buffers[chunk.allocation];
 
@@ -141,8 +138,12 @@ fn update(world: &mut World) {
 
     // Reset required values
     counters.write(&[0; 2], 0).unwrap();
+    
+    /*
+    TODO: Fix this for skirst again
     let mips = indices.mips_mut();
     mips.level_mut(0).unwrap().splat(None, u32::MAX).unwrap();
+    */
     offsets.write(&[u32::MAX; 2], 0).unwrap();
 
     // Update alloc-local position buffer
@@ -187,7 +188,7 @@ fn update(world: &mut World) {
     // One global bind group for voxel generation
     active
         .set_bind_group(0, |set| {
-            set.set_storage_texture_mut("voxels", voxels).unwrap();
+            set.set_storage_texture_mut("voxels", &mut voxelizer.voxel_textures).unwrap();
         })
         .unwrap();
     active
@@ -199,8 +200,8 @@ fn update(world: &mut World) {
 
     active
         .set_bind_group(0, |set| {
-            set.set_storage_texture("voxels", voxels).unwrap();
-            set.set_storage_texture_mut("cached_indices", indices)
+            set.set_storage_texture("voxels", &voxelizer.voxel_textures).unwrap();
+            set.set_storage_texture_mut("cached_indices", &mut mesher.cached_indices)
                 .unwrap();
             set.set_storage_buffer_mut("counters", counters, ..)
                 .unwrap();
@@ -233,8 +234,8 @@ fn update(world: &mut World) {
     let mut active = pass.bind_shader(&mesher.compute_quads);
     active
         .set_bind_group(0, |set| {
-            set.set_storage_texture("cached_indices", indices).unwrap();
-            set.set_storage_texture("voxels", voxels).unwrap();
+            set.set_storage_texture("cached_indices", &mesher.cached_indices).unwrap();
+            set.set_storage_texture("voxels", &voxelizer.voxel_textures).unwrap();
             set.set_storage_buffer_mut("counters", counters, ..)
                 .unwrap();
         })
@@ -309,7 +310,6 @@ fn update(world: &mut World) {
     // Only one chunk must have this state enabled
     // The terrain will fucking kill itself if there's more than one chunk with this state
     chunk.state = ChunkState::PendingReadbackStart;
-    */
 }
 
 // Generates the voxels and appropriate mesh for each of the visible chunks

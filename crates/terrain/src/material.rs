@@ -6,7 +6,7 @@ use rendering::{
 use assets::Assets;
 
 use graphics::{
-    BindGroup, Compiler, FragmentModule, GpuPod, Graphics, LayeredTexture2D, Shader, StorageAccess, VertexModule, PrimitiveConfig, WindingOrder, PushConstantLayout, ModuleVisibility, XY, Vertex, DrawIndexedIndirect, DrawIndexedIndirectBuffer,
+    BindGroup, Compiler, FragmentModule, GpuPod, Graphics, LayeredTexture2D, Shader, StorageAccess, VertexModule, PrimitiveConfig, WindingOrder, PushConstantLayout, ModuleVisibility, XY, Vertex, DrawIndexedIndirect, DrawIndexedIndirectBuffer, Texture,
 };
 use utils::{Storage, Time};
 
@@ -65,6 +65,9 @@ impl Material for TerrainMaterial {
                     compiler.use_sampled_texture::<LayeredAlbedoMap>("layered_albedo_map", false);
                     compiler.use_sampled_texture::<LayeredNormalMap>("layered_normal_map", false);
                     compiler.use_sampled_texture::<LayeredMaskMap>("layered_mask_map", false);
+                    compiler.use_sampler::<AlbedoTexel>("layered_albedo_map_sampler", false);
+                    compiler.use_sampler::<NormalTexel>("layered_normal_map_sampler", false);
+                    compiler.use_sampler::<MaskTexel>("layered_mask_map_sampler", false);
                 }
 
                 // Set the scaling factor for the vertex positions
@@ -191,6 +194,17 @@ impl Material for TerrainMaterial {
                     .unwrap();
                 group
                     .set_sampled_texture("layered_mask_map", mask_map)
+                    .unwrap();
+
+                // Set the material texture samplers
+                group
+                    .set_sampler("layered_albedo_map_sampler", albedo_map.sampler().unwrap())
+                    .unwrap();
+                group
+                    .set_sampler("layered_normal_map_sampler", normal_map.sampler().unwrap())
+                    .unwrap();
+                group
+                    .set_sampler("layered_mask_map_sampler", mask_map.sampler().unwrap())
                     .unwrap();
             }
         }
