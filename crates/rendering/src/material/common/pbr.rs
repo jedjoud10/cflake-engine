@@ -8,7 +8,7 @@ use assets::Assets;
 
 use graphics::{
     BindGroup, Compiler, FragmentModule, GpuPod, Graphics, ModuleVisibility, PushConstantLayout,
-    PushConstants, Shader, VertexModule, ActiveRenderPipeline,
+    PushConstants, Shader, VertexModule, ActiveRenderPipeline, Texture,
 };
 use utils::{Handle, Storage};
 
@@ -63,6 +63,11 @@ impl Material for PbrMaterial {
                 compiler.use_sampled_texture::<AlbedoMap>("albedo_map", false);
                 compiler.use_sampled_texture::<NormalMap>("normal_map", false);
                 compiler.use_sampled_texture::<MaskMap>("mask_map", false);
+
+                // Define the types of the user samplers
+                compiler.use_sampler::<<AlbedoMap as Texture>::T>("albedo_map_sampler", false);
+                compiler.use_sampler::<<NormalMap as Texture>::T>("normal_map_sampler", false);
+                compiler.use_sampler::<<MaskMap as Texture>::T>("mask_map_sampler", false);
 
                 // Define the push ranges used by push constants
                 compiler.use_push_constant_layout(
@@ -148,9 +153,14 @@ impl Material for PbrMaterial {
             .map_or(default.mask, |h| mask_maps.get(h));
 
         // Set the material textures
-        group.set_sampled_texture("albedo_map", albedo_map).unwrap();
-        group.set_sampled_texture("normal_map", normal_map).unwrap();
-        group.set_sampled_texture("mask_map", mask_map).unwrap();
+        group.set_sampled_texture_view("albedo_map", albedo_map).unwrap();
+        group.set_sampled_texture_view("normal_map", normal_map).unwrap();
+        group.set_sampled_texture_view("mask_map", mask_map).unwrap();
+
+        // Set the material samplers
+        group.set_sampler("albedo_map_sampler", albedo_map.sampler().unwrap()).unwrap();
+        group.set_sampler("normal_map_sampler", normal_map.sampler().unwrap()).unwrap();
+        group.set_sampler("mask_map_sampler", mask_map.sampler().unwrap()).unwrap();
     }
 
     // Set the surface push constants

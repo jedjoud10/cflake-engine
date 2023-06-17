@@ -35,7 +35,7 @@ impl Default for MeshImportSettings {
     fn default() -> Self {
         Self {
             buffer_mode: BufferMode::default(),
-            buffer_usage: BufferUsage::default(),
+            buffer_usage: BufferUsage::empty(),
             use_normals: true,
             use_tangents: true,
             use_tex_coords: true,

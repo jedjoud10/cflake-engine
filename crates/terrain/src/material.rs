@@ -184,13 +184,13 @@ impl Material for TerrainMaterial {
 
                 // Set the material textures
                 group
-                    .set_sampled_texture("layered_albedo_map", albedo_map)
+                    .set_sampled_texture_view("layered_albedo_map", albedo_map)
                     .unwrap();
                 group
-                    .set_sampled_texture("layered_normal_map", normal_map)
+                    .set_sampled_texture_view("layered_normal_map", normal_map)
                     .unwrap();
                 group
-                    .set_sampled_texture("layered_mask_map", mask_map)
+                    .set_sampled_texture_view("layered_mask_map", mask_map)
                     .unwrap();
             }
         }

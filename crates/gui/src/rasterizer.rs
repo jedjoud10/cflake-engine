@@ -5,14 +5,14 @@ use graphics::{
     BufferUsage, Compiler, FragmentModule, Graphics, LoadOp, Normalized, Operation,
     PerVertex, PrimitiveConfig, SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap,
     Shader, StoreOp, Texture, Texture2D, TextureMipMaps, TextureMode, TextureUsage, TriangleBuffer,
-    VertexBuffer, VertexConfig, VertexInput, VertexModule, Window, RGBA, XY, XYZW,
+    VertexBuffer, VertexConfig, VertexInput, VertexModule, Window, RGBA, XY, XYZW, TextureViewSettings,
 };
 use rendering::{FinalRenderPass, FinalRenderPipeline, WindowBuffer, WindowUniform};
 
 // Font texel type and font map
 type FontTexel = RGBA<Normalized<u8>>;
 type FontMap = Texture2D<FontTexel>;
-
+type FontMapRegion = <FontMap as Texture>::Region;
 // A global rasterizer that will draw the Egui elements onto the screen
 pub(crate) struct Rasterizer {
     // Render pass and shit needed for displaying
@@ -65,8 +65,8 @@ fn create_rf32_texture(
         graphics,
         Some(&texels),
         extent,
-        TextureMode::Dynamic,
         TextureUsage::SAMPLED | TextureUsage::COPY_DST,
+        &[TextureViewSettings::whole::<FontMapRegion>()],
         Some(SamplerSettings {
             mipmaps: SamplerMipMaps::Auto,
             mag_filter: SamplerFilter::Linear,
@@ -218,9 +218,8 @@ impl Rasterizer {
         self.positions.extend_from_slice(&positions).unwrap();
         self.texcoords.extend_from_slice(&texcoords).unwrap();
         self.colors.extend_from_slice(&colors).unwrap();
-        self.triangles
-            .extend_from_slice(bytemuck::cast_slice(&triangles))
-            .unwrap();
+        let triangles = bytemuck::cast_slice(&triangles);
+        self.triangles.extend_from_slice(triangles).unwrap();
 
         // Get the destination render target we will render to
         let Ok(dst) = window.as_render_target() else {
@@ -238,7 +237,7 @@ impl Rasterizer {
                 group
                     .set_uniform_buffer("window", window_buffer, ..)
                     .unwrap();
-                group.set_sampled_texture("font", texture).unwrap();
+                group.set_sampled_texture_view("font", texture).unwrap();
             })
             .unwrap();
 

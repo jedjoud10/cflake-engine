@@ -4,13 +4,13 @@ use crate::{
     AlbedoMap, AttributeBuffer, Camera, DefaultMaterialResources, DirectionalLight, Environment,
     DeferredRenderer, Indirect, IndirectMesh, MaskMap, Mesh, MultiDrawIndirectCountMesh,
     MultiDrawIndirectMesh, NormalMap, PbrMaterial, Pipelines, SceneUniform,
-    ShadowMapping, TimingUniform, WindowUniform, WireframeMaterial, DynPipeline, PassStats,
+    ShadowMapping, TimingUniform, WindowUniform, WireframeMaterial, DynPipeline, PassStats, create_gbuffer_texture,
 };
 use assets::Assets;
 
 use ecs::Scene;
 use graphics::{
-    DrawCountIndirectBuffer, DrawIndexedIndirectBuffer, GpuPod, Graphics, Texture, TriangleBuffer, Window,
+    DrawCountIndirectBuffer, DrawIndexedIndirectBuffer, GpuPod, Graphics, Texture, TriangleBuffer, Window, RGBA, Normalized, Depth, TextureViewDimension,
 };
 
 use utils::{Storage, Time};
@@ -104,10 +104,20 @@ fn event(world: &mut World, event: &mut WindowEvent) {
             // Resize the G-Buffer textures and Depth texture
             let size = vek::Extent2::new(size.width, size.height);
             let mut renderer = world.get_mut::<DeferredRenderer>().unwrap();
-            renderer.gbuffer_albedo_texture.resize(size).unwrap();
-            renderer.gbuffer_mask_texture.resize(size).unwrap();
-            renderer.gbuffer_normal_texture.resize(size).unwrap();
-            renderer.depth_texture.resize(size).unwrap();
+            let _graphics = world.get::<Graphics>().unwrap();
+            let graphics = &*_graphics;
+
+            let new_gbuffer_position_texture = create_gbuffer_texture::<RGBA<f32>>(graphics, size);
+            let new_gbuffer_albedo_texture = create_gbuffer_texture::<RGBA<Normalized<u8>>>(graphics, size);
+            let new_gbuffer_normal_texture = create_gbuffer_texture::<RGBA<Normalized<i16>>>(graphics, size);
+            let new_gbuffer_mask_texture = create_gbuffer_texture::<RGBA<Normalized<u8>>>(graphics, size);
+            let new_depth_texture = create_gbuffer_texture::<Depth<f32>>(graphics, size);
+
+            renderer.gbuffer_position_texture = new_gbuffer_position_texture;
+            renderer.gbuffer_albedo_texture = new_gbuffer_albedo_texture;
+            renderer.gbuffer_normal_texture = new_gbuffer_normal_texture;
+            renderer.gbuffer_mask_texture = new_gbuffer_mask_texture;
+            renderer.depth_texture = new_depth_texture;
 
             // Update the uniform
             renderer
@@ -240,7 +250,6 @@ fn render(world: &mut World) {
         black: &albedo_maps[&renderer.black],
         normal: &normal_maps[&renderer.normal],
         mask: &mask_maps[&renderer.mask],
-        environment_map: &environment.environment_map[index],
         meshes: &meshes,
         indirect_meshes: &indirect_meshes,
         multi_draw_indirect_meshes: &multi_draw_indirect_meshes,
@@ -273,11 +282,11 @@ fn render(world: &mut World) {
             index,
         ));
 
-        let mips = shadowmap.depth_tex.mips_mut();
-        let mut level = mips.level_mut(0).unwrap();
+        /*
+        let views = shadowmap.depth_tex.views_mut();
 
-        // Use layer as render target
-        let target = level.layer_as_render_target(index as u32).unwrap();
+        let mut view = views.get_mut(.., index..(index+1), TextureViewDimension::D2).unwrap();
+        let target = view.as_render_target().unwrap();
 
         // Create a new active shadowmap render pass
         let mut render_pass = shadowmap.render_pass.begin((), target);
@@ -286,10 +295,12 @@ fn render(world: &mut World) {
         for stored in pipelines.iter() {
             stored.render_shadow(world, default, stats, &mut render_pass);
         }
-
+        
         drop(render_pass);
+        */
     }
 
+    /*
     // Render to the shadow map cascades
     let i = time.frame_count() as usize % 4;
     render_shadows_pipelines(&mut _shadowmap, &mut default, directional_light_rotation, camera_position, &mut renderer.shadow_pass_stats, i, &pipelines, world);
@@ -297,9 +308,10 @@ fn render(world: &mut World) {
     }
     graphics.submit(false);
     drop(_shadowmap);
+    */
 
     // Begin the scene color render pass
-    let gbuffer_position = renderer.gbuffer_position_texture  .as_render_target().unwrap();
+    let gbuffer_position = renderer.gbuffer_position_texture.as_render_target().unwrap();
     let gbuffer_albedo = renderer.gbuffer_albedo_texture.as_render_target().unwrap();
     let gbuffer_normal = renderer.gbuffer_normal_texture.as_render_target().unwrap();
     let gbuffer_mask = renderer.gbuffer_mask_texture.as_render_target().unwrap();

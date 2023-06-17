@@ -67,6 +67,7 @@ impl Mesh<Direct> {
         tangents: Option<&[RawTangent]>,
         tex_coords: Option<&[RawTexCoord]>,
         triangles: &[Triangle<u32>],
+        aabb: Option<math::Aabb<f32>>,
     ) -> Result<Self, MeshInitializationError> {
         let positions = positions.map(|slice| {
             AttributeBuffer::<Position>::from_slice(graphics, slice, mode, usage).unwrap()
@@ -81,7 +82,8 @@ impl Mesh<Direct> {
             AttributeBuffer::<TexCoord>::from_slice(graphics, slice, mode, usage).unwrap()
         });
         let triangles = TriangleBuffer::from_slice(graphics, triangles, mode, usage).unwrap();
-        Self::from_buffers(positions, normals, tangents, tex_coords, triangles)
+
+        Self::from_buffers(positions, normals, tangents, tex_coords, triangles, aabb)
     }
 
     // Create a new mesh from the attribute buffers
@@ -91,6 +93,7 @@ impl Mesh<Direct> {
         tangents: Option<AttributeBuffer<Tangent>>,
         tex_coords: Option<AttributeBuffer<TexCoord>>,
         triangles: TriangleBuffer<u32>,
+        aabb: Option<math::Aabb<f32>>,
     ) -> Result<Self, MeshInitializationError> {
         let mut mesh = Self {
             enabled: MeshAttributes::empty(),
@@ -100,7 +103,7 @@ impl Mesh<Direct> {
             tex_coords: None,
             args: Some(0),
             triangles,
-            aabb: None,
+            aabb,
         };
 
         // "Set"s a buffer, basically insert it if it's Some and removing it if it's None
@@ -126,7 +129,6 @@ impl Mesh<Direct> {
         // We don't have to do shit with these since
         // they internally set the data automatically for us
         let _ = vertices.len();
-        let _ = vertices.aabb();
 
         Ok(mesh)
     }
@@ -565,6 +567,9 @@ impl Asset for Mesh {
             tex_coords.as_ref().map(|tc| tc.len()).unwrap_or_default()
         );
 
+        // Create an AABB for this mesh
+        let aabb = crate::aabb_from_points(positions.as_ref().unwrap());
+
         // Generate the mesh and it's corresponding data
         Mesh::from_slices(
             &graphics,
@@ -575,6 +580,7 @@ impl Asset for Mesh {
             tangents.as_deref(),
             tex_coords.as_deref(),
             &triangles,
+            aabb
         )
         .map_err(MeshImportError::Initialization)
     }

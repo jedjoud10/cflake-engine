@@ -1,7 +1,7 @@
 use crate::{
     BindResourceLayout, Buffer, BufferUsage, GpuPod, Graphics, Id, IdVariant, ReflectedShader,
     Sampler, SetBindGroupError, SetBindResourceError, SetBufferError, SetTextureError, Shader,
-    Texel, Texture, TextureUsage, UniformBuffer,
+    Texel, Texture, TextureUsage, UniformBuffer, TextureViewMut, TextureViewRef, Region,
 };
 use ahash::AHashMap;
 use std::{marker::PhantomData, ops::RangeBounds, sync::Arc};
@@ -147,10 +147,43 @@ pub(super) fn create_bind_group<'b>(
     Ok(Some(bind_group))
 }
 
+// Trait implemented for textures and their immutable views
+pub trait AsRefTextureView<'a, T: Texture>: 'a {
+    fn as_ref_view(self) -> Option<TextureViewRef<'a, T>>;
+}
+
+impl<'a, T: Texture> AsRefTextureView<'a, T> for &'a T {
+    fn as_ref_view(self) -> Option<TextureViewRef<'a, T>> {
+        self.views().get(.., .., <T::Region as Region>::view_dimension())
+    }
+}
+
+impl<'a, T: Texture> AsRefTextureView<'a, T> for TextureViewRef<'a, T> {
+    fn as_ref_view(self) -> Option<TextureViewRef<'a, T>> {
+        Some(self)
+    }
+}
+
+// Trait implemented for textures and their mutable views
+pub trait AsMutTextureView<'a, T: Texture>: 'a {
+    fn as_mut_view(self) -> Option<TextureViewMut<'a, T>>;
+}
+
+impl<'a, T: Texture> AsMutTextureView<'a, T> for &'a mut T {
+    fn as_mut_view(self) -> Option<TextureViewMut<'a, T>> {
+        self.views_mut().get_mut(.., .., <T::Region as Region>::view_dimension())
+    }
+}
+
+impl<'a, T: Texture> AsMutTextureView<'a, T> for TextureViewMut<'a, T> {
+    fn as_mut_view(self) -> Option<TextureViewMut<'a, T>> {
+        Some(self)
+    }
+}
+
 // TODO: Please find a way to:
 //a) remove the required binding range when setting buffers
 //b) pass in OPTIOANL binding range when setting buffers
-//c) use a specific layer/level of a texture when setting textures
 impl<'a> BindGroup<'a> {
     // Get the entry layout for a specific resource in this bind group
     // Returns None if there is no matching entry layout
@@ -233,8 +266,9 @@ impl<'a> BindGroup<'a> {
     fn internal_set_storage_texture<'s, T: Texture>(
         &mut self,
         rw: bool,
-        texture: &'a T,
         name: &'s str,
+        texture: &'a T,
+        view: &'a wgpu::TextureView,
     ) -> Result<(), SetBindResourceError<'s>> {
         // Make sure it's a sampled texture
         if !texture.usage().contains(TextureUsage::STORAGE) {
@@ -266,7 +300,6 @@ impl<'a> BindGroup<'a> {
         }
 
         // Get values needed for the bind entry
-        let view = texture.view().unwrap();
         self.resources
             .push(wgpu::BindingResource::TextureView(view));
         let id = view.global_id();
@@ -276,21 +309,20 @@ impl<'a> BindGroup<'a> {
     }
 
     // Set a texture that can be sampled inside shaders using it's sampler
-    pub fn set_sampled_texture<'s, T: Texture>(
+    pub fn set_sampled_texture_view<'s, T: Texture>(
         &mut self,
         name: &'s str,
-        texture: &'a T,
+        as_ref_view: impl AsRefTextureView<'a, T>,
     ) -> Result<(), SetBindResourceError<'s>> {
+        let val = as_ref_view.as_ref_view().ok_or(SetBindResourceError::SetTexture(SetTextureError::WholeViewMissing))?;
+        let (texture, view) = (val.texture, &val.view.0);
+
         // Make sure it's a sampled texture
         if !texture.usage().contains(TextureUsage::SAMPLED) {
             return Err(SetBindResourceError::SetTexture(
                 SetTextureError::MissingSampleUsage,
             ));
         }
-
-        // Try setting a sampler appropriate for this texture
-        let sampler = format!("{name}_sampler");
-        let _ = self.set_sampler(&sampler, texture.sampler().unwrap());
 
         // Get the binding entry layout for the given texture
         let entry = Self::find_entry_layout(self.index, &self.reflected, name)?;
@@ -308,7 +340,6 @@ impl<'a> BindGroup<'a> {
         }
 
         // Save the bind entry for later
-        let view = texture.view().unwrap();
         self.resources
             .push(wgpu::BindingResource::TextureView(view));
         let id = view.global_id();
@@ -321,18 +352,24 @@ impl<'a> BindGroup<'a> {
     pub fn set_storage_texture<'s, T: Texture>(
         &mut self,
         name: &'s str,
-        texture: &'a T,
+        as_ref_view: impl AsRefTextureView<'a, T>,
     ) -> Result<(), SetBindResourceError<'s>> {
-        self.internal_set_storage_texture(false, texture, name)
+        let view = as_ref_view
+            .as_ref_view()
+            .ok_or(SetBindResourceError::SetTexture(SetTextureError::WholeViewMissing))?;
+        self.internal_set_storage_texture(false, name, view.texture, &view.view.0)
     }
 
     // Set a storage texture for reading AND writing
     pub fn set_storage_texture_mut<'s, T: Texture>(
         &mut self,
         name: &'s str,
-        texture: &'a mut T,
+        as_mut_view: impl AsMutTextureView<'a, T>,
     ) -> Result<(), SetBindResourceError<'s>> {
-        self.internal_set_storage_texture(true, texture, name)
+        let view = as_mut_view
+            .as_mut_view()
+            .ok_or(SetBindResourceError::SetTexture(SetTextureError::WholeViewMissing))?;
+        self.internal_set_storage_texture(true, name, view.texture, &view.view.0)
     }
 
     // Set a texture sampler so we can sample textures within the shader

@@ -5,7 +5,7 @@ use smallvec::SmallVec;
 
 use crate::{
     Extent, Graphics, ImageTexel, Sampler, SamplerSettings, Texel, Texture, TextureAssetLoadError,
-    TextureInitializationError, TextureMipMaps, TextureMode, TextureUsage,
+    TextureInitializationError, TextureMipMaps, TextureUsage, TextureViewSettings,
 };
 
 // A #D texture that contains multiple texels that have their own channels
@@ -13,14 +13,13 @@ use crate::{
 pub struct Texture3D<T: Texel> {
     // Raw WGPU
     texture: wgpu::Texture,
-    views: Option<Vec<wgpu::TextureView>>,
+    views: Vec<(wgpu::TextureView, TextureViewSettings)>,
 
     // Main texture settings
     dimensions: vek::Extent3<u32>,
 
     // Permissions
     usage: TextureUsage,
-    mode: TextureMode,
     _phantom: PhantomData<T>,
 
     // Shader Sampler
@@ -39,10 +38,6 @@ impl<T: Texel> Texture for Texture3D<T> {
         self.dimensions
     }
 
-    fn mode(&self) -> TextureMode {
-        self.mode
-    }
-
     fn usage(&self) -> TextureUsage {
         self.usage
     }
@@ -51,8 +46,8 @@ impl<T: Texel> Texture for Texture3D<T> {
         &self.texture
     }
 
-    fn views(&self) -> Option<&[wgpu::TextureView]> {
-        self.views.as_ref().map(|x| x.as_slice())
+    fn raw_views(&self) -> &[(wgpu::TextureView, TextureViewSettings)] {
+        &self.views
     }
 
     fn sampler(&self) -> Option<Sampler<Self::T>> {
@@ -73,35 +68,22 @@ impl<T: Texel> Texture for Texture3D<T> {
     unsafe fn from_raw_parts(
         graphics: &Graphics,
         texture: wgpu::Texture,
-        views: Option<Vec<wgpu::TextureView>>,
+        views: Vec<(wgpu::TextureView, TextureViewSettings)>,
         sampler: Option<Arc<wgpu::Sampler>>,
         sampling: Option<SamplerSettings>,
         dimensions: vek::Extent3<u32>,
         usage: TextureUsage,
-        mode: TextureMode,
     ) -> Self {
         Self {
             texture,
             views,
             dimensions,
             usage,
-            mode,
             _phantom: PhantomData,
             graphics: graphics.clone(),
             sampler,
             sampling,
         }
-    }
-
-    unsafe fn replace_raw_parts(
-        &mut self,
-        texture: wgpu::Texture,
-        views: Option<Vec<wgpu::TextureView>>,
-        dimensions: vek::Extent3<u32>,
-    ) {
-        self.texture = texture;
-        self.views = views;
-        self.dimensions = dimensions;
     }
 }
 

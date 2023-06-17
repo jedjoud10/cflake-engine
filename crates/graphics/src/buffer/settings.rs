@@ -31,11 +31,9 @@ bitflags::bitflags! {
         // The buffer can be used to send data to the GPU
         // Example: Non-readable vertex buffers
         const WRITE = 16 | Self::COPY_DST.bits;
-    }
-}
 
-impl Default for BufferUsage {
-    fn default() -> Self {
-        Self::READ | Self::COPY_DST
+        // TODO: Remove buffer mode in favor of this
+        //const SPARSELY_SIZED = 32;
+        //const RESIZABLE = 64 | Self::SPARSELY_SIZED.bits;
     }
 }

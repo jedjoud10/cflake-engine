@@ -9,7 +9,7 @@ use graphics::{
     ActiveRenderPass, ActiveRenderPipeline, BufferMode, BufferUsage, Depth, GpuPod,
     Graphics, LoadOp, Operation, RenderPass, SamplerFilter,
     SamplerMipMaps, SamplerSettings, SamplerWrap, StoreOp, Texel, Texture, Texture2D,
-    TextureMipMaps, TextureMode, TextureUsage, UniformBuffer, RGBA, BGRA, SwapchainFormat, RenderPipeline, VertexModule, FragmentModule, Compiler, Shader, VertexConfig, PrimitiveConfig, Normalized, SamplerBorderColor,
+    TextureMipMaps, TextureUsage, UniformBuffer, RGBA, BGRA, SwapchainFormat, RenderPipeline, VertexModule, FragmentModule, Compiler, Shader, VertexConfig, PrimitiveConfig, Normalized, SamplerBorderColor, TextureViewSettings, Region,
 };
 use utils::{Handle, Storage};
 
@@ -23,8 +23,8 @@ pub(crate) fn create_gbuffer_texture<T: Texel>(graphics: &Graphics, extent: vek:
         graphics,
         None,
         extent,
-        TextureMode::Resizable,
         TextureUsage::TARGET | TextureUsage::SAMPLED,
+        &[TextureViewSettings::whole::<<Texture2D<T> as Texture>::Region>()],
         Some(SamplerSettings {
             mipmaps: SamplerMipMaps::Auto,
             comparison: None,

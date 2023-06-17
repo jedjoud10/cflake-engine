@@ -2,8 +2,8 @@ use std::{num::NonZeroU8, ops::Add};
 
 use crate::Graphics;
 
-pub type ViewDimension = wgpu::TextureViewDimension;
-pub type Dimension = wgpu::TextureDimension;
+pub use wgpu::TextureViewDimension;
+pub use wgpu::TextureDimension;
 
 // Texture dimensions traits that are simply implemented for extents
 pub trait Extent: Copy + Send + Sync {
@@ -331,9 +331,9 @@ pub trait Region: Copy {
     // Check if the extent is a power of 2 extent
     fn is_power_of_two(extent: Self::E) -> bool {
         match Self::dimension() {
-            Dimension::D1 => extent.width().is_power_of_two(),
-            Dimension::D2 => extent.width().is_power_of_two() && extent.height().is_power_of_two(),
-            Dimension::D3 => {
+            TextureDimension::D1 => extent.width().is_power_of_two(),
+            TextureDimension::D2 => extent.width().is_power_of_two() && extent.height().is_power_of_two(),
+            TextureDimension::D3 => {
                 extent.width().is_power_of_two()
                     && extent.height().is_power_of_two()
                     && extent.depth_or_layers().is_power_of_two()
@@ -361,17 +361,17 @@ pub trait Region: Copy {
     fn volume(extent: Self::E) -> u32;
 
     // Get the view dimensions of the extent (1, 2, 3, or layered / cube maps)
-    fn view_dimension() -> ViewDimension;
+    fn view_dimension() -> TextureViewDimension;
 
     // Get the dimensionality of the underlying texels (1, 2, 3)
-    fn dimension() -> Dimension {
+    fn dimension() -> TextureDimension {
         match Self::view_dimension() {
-            ViewDimension::D1 => Dimension::D1,
-            ViewDimension::D2 => Dimension::D2,
-            ViewDimension::D2Array => Dimension::D2,
-            ViewDimension::Cube => Dimension::D2,
-            ViewDimension::CubeArray => Dimension::D2,
-            ViewDimension::D3 => Dimension::D3,
+            TextureViewDimension::D1 => TextureDimension::D1,
+            TextureViewDimension::D2 => TextureDimension::D2,
+            TextureViewDimension::D2Array => TextureDimension::D2,
+            TextureViewDimension::Cube => TextureDimension::D2,
+            TextureViewDimension::CubeArray => TextureDimension::D2,
+            TextureViewDimension::D3 => TextureDimension::D3,
         }
     }
 }
@@ -414,8 +414,8 @@ impl Region for (vek::Vec2<u32>, vek::Extent2<u32>) {
         extent.product()
     }
 
-    fn view_dimension() -> ViewDimension {
-        ViewDimension::D2
+    fn view_dimension() -> TextureViewDimension {
+        TextureViewDimension::D2
     }
 
     fn layers(extent: Self::E) -> u32 {
@@ -461,8 +461,8 @@ impl Region for (vek::Vec3<u32>, vek::Extent3<u32>) {
         extent.product()
     }
 
-    fn view_dimension() -> ViewDimension {
-        ViewDimension::D3
+    fn view_dimension() -> TextureViewDimension {
+        TextureViewDimension::D3
     }
 
     fn layers(extent: Self::E) -> u32 {
@@ -513,8 +513,8 @@ impl Region for ((vek::Vec2<u32>, u32), vek::Extent2<u32>) {
         extent.product() * 6
     }
 
-    fn view_dimension() -> ViewDimension {
-        ViewDimension::Cube
+    fn view_dimension() -> TextureViewDimension {
+        TextureViewDimension::Cube
     }
 
     fn layers(extent: Self::E) -> u32 {
@@ -564,8 +564,8 @@ impl Region for ((vek::Vec2<u32>, u32), (vek::Extent2<u32>, u32)) {
         extent.0.product() * extent.1
     }
 
-    fn view_dimension() -> ViewDimension {
-        ViewDimension::D2Array
+    fn view_dimension() -> TextureViewDimension {
+        TextureViewDimension::D2Array
     }
 
     fn layers(extent: Self::E) -> u32 {

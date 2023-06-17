@@ -5,7 +5,7 @@ use smallvec::SmallVec;
 
 use crate::{
     Extent, Graphics, ImageTexel, Sampler, SamplerSettings, Texel, Texture, TextureAssetLoadError,
-    TextureInitializationError, TextureMipMaps, TextureMode, TextureUsage,
+    TextureInitializationError, TextureMipMaps, TextureUsage, TextureViewSettings,
 };
 
 // A cubemap texture that contains multiple texels that have their own channels
@@ -14,14 +14,13 @@ use crate::{
 pub struct CubeMap<T: Texel> {
     // Raw WGPU
     texture: wgpu::Texture,
-    views: Option<Vec<wgpu::TextureView>>,
+    views: Vec<(wgpu::TextureView, TextureViewSettings)>,
 
     // Main texture settings
     dimensions: vek::Extent2<u32>,
 
     // Permissions
     usage: TextureUsage,
-    mode: TextureMode,
     _phantom: PhantomData<T>,
 
     // Shader Sampler
@@ -40,10 +39,6 @@ impl<T: Texel> Texture for CubeMap<T> {
         self.dimensions
     }
 
-    fn mode(&self) -> TextureMode {
-        self.mode
-    }
-
     fn usage(&self) -> TextureUsage {
         self.usage
     }
@@ -52,8 +47,8 @@ impl<T: Texel> Texture for CubeMap<T> {
         &self.texture
     }
 
-    fn views(&self) -> Option<&[wgpu::TextureView]> {
-        self.views.as_ref().map(|x| x.as_slice())
+    fn raw_views(&self) -> &[(wgpu::TextureView, TextureViewSettings)] {
+        &self.views
     }
 
     fn sampler(&self) -> Option<Sampler<Self::T>> {
@@ -74,35 +69,22 @@ impl<T: Texel> Texture for CubeMap<T> {
     unsafe fn from_raw_parts(
         graphics: &Graphics,
         texture: wgpu::Texture,
-        views: Option<Vec<wgpu::TextureView>>,
+        views: Vec<(wgpu::TextureView, TextureViewSettings)>,
         sampler: Option<Arc<wgpu::Sampler>>,
         sampling: Option<SamplerSettings>,
         dimensions: vek::Extent2<u32>,
         usage: TextureUsage,
-        mode: TextureMode,
     ) -> Self {
         Self {
             texture,
             views,
             dimensions,
             usage,
-            mode,
             _phantom: PhantomData,
             graphics: graphics.clone(),
             sampler,
             sampling,
         }
-    }
-
-    unsafe fn replace_raw_parts(
-        &mut self,
-        texture: wgpu::Texture,
-        views: Option<Vec<wgpu::TextureView>>,
-        dimensions: <Self::Region as crate::Region>::E,
-    ) {
-        self.texture = texture;
-        self.views = views;
-        self.dimensions = dimensions;
     }
 }
 
@@ -131,7 +113,6 @@ pub enum CubeMapUnwrapMode {
 #[derive(Clone)]
 pub struct CubeMapImportSettings<'m, T: Texel> {
     pub sampling: SamplerSettings,
-    pub mode: TextureMode,
     pub usage: TextureUsage,
     pub unwrap: CubeMapUnwrapMode,
     pub mipmaps: TextureMipMaps<'m, 'm, T>,
@@ -141,7 +122,6 @@ impl<T: Texel> Default for CubeMapImportSettings<'_, T> {
     fn default() -> Self {
         Self {
             sampling: SamplerSettings::default(),
-            mode: TextureMode::default(),
             usage: TextureUsage::default(),
             unwrap: CubeMapUnwrapMode::default(),
             mipmaps: TextureMipMaps::Manual { mips: &[] },
@@ -155,7 +135,7 @@ impl<T: ImageTexel> Asset for CubeMap<T> {
     type Err = TextureAssetLoadError;
 
     fn extensions() -> &'static [&'static str] {
-        &["png", "jpg", "jpeg", ".hdr"]
+        &["png", "jpg", "jpeg", "hdr"]
     }
 
     fn deserialize<'c, 's>(

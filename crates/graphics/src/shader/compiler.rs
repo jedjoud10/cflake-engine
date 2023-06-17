@@ -2,7 +2,7 @@ use crate::{
     BindResourceType, Buffer, Extent, FunctionModule, GpuPod, GpuPodInfo, Graphics, ModuleKind,
     ModuleVisibility, PushConstantLayout, ReflectedShader, Region, ShaderCompilationError,
     ShaderError, ShaderModule, ShaderReflectionError, SpecConstant, StorageAccess, Texel,
-    TexelInfo, Texture, VertexModule, ViewDimension,
+    TexelInfo, Texture, VertexModule, TextureViewDimension,
 };
 use ahash::{AHashMap, AHashSet};
 use assets::Assets;
@@ -171,9 +171,6 @@ impl<'a> Compiler<'a> {
 
     // Define a uniform sampled texture's type and texel
     pub fn use_sampled_texture<T: Texture>(&mut self, name: impl ToString, comparison: bool) {
-        let sampler_name = format!("{}_sampler", name.to_string());
-        self.use_sampler::<T::T>(sampler_name, comparison);
-
         let dimensionality = <T::Region as Region>::view_dimension();
         let info = <T::T as Texel>::info();
         let format = info.format();

@@ -73,7 +73,7 @@ pub enum TextureAssetLoadError {
 }
 
 #[derive(Error, Debug)]
-pub enum MipLevelReadError {
+pub enum ViewReadError {
     #[error("The given source region would overflow the region of the mip-level")]
     InvalidRegion,
 
@@ -82,7 +82,7 @@ pub enum MipLevelReadError {
 }
 
 #[derive(Error, Debug)]
-pub enum MipLevelWriteError {
+pub enum ViewWriteError {
     #[error("The given source region would overflow the region of the mip-level")]
     InvalidRegion,
 
@@ -93,7 +93,7 @@ pub enum MipLevelWriteError {
 }
 
 #[derive(Error, Debug)]
-pub enum MipLevelClearError {
+pub enum ViewClearError {
     #[error("The given source region would overflow the region of the mip-level")]
     InvalidRegion,
 
@@ -104,7 +104,7 @@ pub enum MipLevelClearError {
 }
 
 #[derive(Error, Debug)]
-pub enum MipLevelCopyError {
+pub enum ViewCopyError {
     #[error("The given source region would overflow the region of the mip-level")]
     InvalidSrcRegion,
 

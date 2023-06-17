@@ -1,14 +1,3 @@
-// Some settings that tell us how exactly we should create the texture
-#[derive(Default, Clone, Copy, PartialEq, Eq, Hash, Debug)]
-pub enum TextureMode {
-    // Dynamic textures can be modified throughout their lifetime, but they cannot be resized
-    Dynamic,
-
-    // Resizable textures are just dynamic textures that we can resize
-    #[default]
-    Resizable,
-}
-
 bitflags::bitflags! {
     // How exactly are we going to use the texture?
     pub struct TextureUsage: u8 {
@@ -42,11 +31,4 @@ impl Default for TextureUsage {
     fn default() -> Self {
         Self::READ | Self::COPY_DST | Self::SAMPLED
     }
-}
-
-// The view that we should create for the texture
-// These will be given to the texture as an array to allow many views to be created
-pub struct TextureView {
-    pub mips: std::ops::Range<usize>,
-    pub layers: Option<std::ops::Range<usize>>,
 }

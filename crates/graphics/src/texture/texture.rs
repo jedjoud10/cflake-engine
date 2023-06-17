@@ -3,17 +3,17 @@ use std::{
     marker::PhantomData,
     mem::transmute,
     num::{NonZeroU32, NonZeroU8},
-    sync::Arc,
+    sync::Arc, ops::{RangeBounds, Bound},
 };
 
 use smallvec::SmallVec;
 use wgpu::{SamplerDescriptor, TextureDescriptor, TextureViewDescriptor};
 
 use crate::{
-    Extent, GpuPod, Graphics, LayeredOrigin, MipLevelMut, MipLevelRef, MipLevelsMut, MipLevelsRef,
+    Extent, GpuPod, Graphics, LayeredOrigin,
     Origin, Region, RenderTarget, Sampler, SamplerSettings, SamplerWrap, Texel, TexelSize,
     TextureAsTargetError, TextureInitializationError, TextureMipLevelError, TextureMipMaps,
-    TextureMode, TextureResizeError, TextureSamplerError, TextureUsage, ViewDimension,
+    TextureResizeError, TextureSamplerError, TextureUsage, TextureViewDimension, TextureViewSettings, TextureViewsRef, TextureViewsMut, TextureViewMut, TextureViewRef,
 };
 
 // A texture is an abstraction over Vulkan images to allow us to access/modify them with ease
@@ -33,8 +33,8 @@ pub trait Texture: Sized + 'static {
         graphics: &Graphics,
         texels: Option<&[<Self::T as Texel>::Storage]>,
         extent: <Self::Region as Region>::E,
-        mode: TextureMode,
         usage: TextureUsage,
+        views: &[TextureViewSettings],
         sampling: Option<SamplerSettings>,
         mipmaps: TextureMipMaps<Self::T>,
     ) -> Result<Self, TextureInitializationError> {
@@ -175,13 +175,12 @@ pub trait Texture: Sized + 'static {
         // Create the texture views when deemed necessary
         let views = needs_views.then(|| {
             let layers = <Self::Region as Region>::layers(extent);
-
-            create_texture_views::<Self::T, Self::Region>(&texture, format, extent, levels, layers)
-        });
+            create_texture_views::<Self::T, Self::Region>(&texture, format, extent, levels, layers, views)
+        }).unwrap_or_else(|| Ok(Vec::new()))?;
 
         Ok(unsafe {
             Self::from_raw_parts(
-                graphics, texture, views, sampler, sampling, extent, usage, mode,
+                graphics, texture, views, sampler, sampling, extent, usage,
             )
         })
     }
@@ -199,14 +198,14 @@ pub trait Texture: Sized + 'static {
     // Get the texture's dimensions
     fn dimensions(&self) -> <Self::Region as Region>::E;
 
-    // Get the texture's mode
-    fn mode(&self) -> TextureMode;
-
     // Get the texture's usage
     fn usage(&self) -> TextureUsage;
 
     // Get the underlying WGPU Texture immutably
     fn raw(&self) -> &wgpu::Texture;
+
+    // Get the underlying WGPU views immutably
+    fn raw_views(&self) -> &[(wgpu::TextureView, TextureViewSettings)];
 
     // Get the sampler associated with this texture
     // Returns none if the texture cannot be sampled
@@ -222,165 +221,14 @@ pub trait Texture: Sized + 'static {
         <Self::Region as Region>::layers(self.dimensions())
     }
 
-    // Get the whole Texture view (if there is one)
-    fn view(&self) -> Option<&wgpu::TextureView> {
-        get_specific_view(self, None, None)
+    // Get the views of the texture immutably
+    fn views(&self) -> TextureViewsRef<Self> {
+        todo!()
     }
 
-    // Get the internally stored cached views
-    fn views(&self) -> Option<&[wgpu::TextureView]>;
-
-    // Get the view of a specific layer of the whole texture
-    // This creates a new view if the specific view did not exist before
-    fn layer_view(&self, layer: u32) -> Option<&wgpu::TextureView>
-    where
-        <Self::Region as Region>::O: LayeredOrigin,
-    {
-        get_specific_view(self, Some(layer), None)
-    }
-
-    // Get the mip levels of the texture immutably
-    // Doesn't include the "whole" texture view
-    fn mips(&self) -> MipLevelsRef<Self> {
-        MipLevelsRef { texture: self }
-    }
-
-    // Get the mip levels of the texture mutably
-    // Doesn't include the "whole" texture view
-    fn mips_mut(&mut self) -> MipLevelsMut<Self> {
-        MipLevelsMut {
-            texture: self,
-            mutated: Cell::new(0),
-            borrowed: Cell::new(0),
-        }
-    }
-
-    // Try to use the whole texture as a renderable target. This will fail if the texture isn't supported as render target
-    // or if it's dimensions don't correspond to a 2D image
-    fn as_render_target(&mut self) -> Result<RenderTarget<Self::T>, TextureAsTargetError> {
-        if !self.usage().contains(TextureUsage::TARGET) {
-            return Err(TextureAsTargetError::MissingTargetUsage);
-        }
-
-        if self.mips().len() > 1 {
-            return Err(TextureAsTargetError::TextureMultipleMips);
-        }
-
-        if !self.region().can_render_to_mip() {
-            return Err(TextureAsTargetError::RegionIsNot2D);
-        }
-
-        Ok(RenderTarget {
-            _phantom: PhantomData,
-            view: self.view().unwrap(),
-        })
-    }
-
-    // Uses a specific layer of a texture as a renderable target. This will fail if the texture isn't supported as render target
-    // or if it's dimensions don't correspond to a 2D image
-    fn layer_as_render_target(
-        &mut self,
-        layer: u32,
-    ) -> Result<RenderTarget<Self::T>, TextureAsTargetError>
-    where
-        <Self::Region as Region>::O: LayeredOrigin,
-    {
-        if !self.usage().contains(TextureUsage::TARGET) {
-            return Err(TextureAsTargetError::MissingTargetUsage);
-        }
-
-        if self.mips().len() > 1 {
-            return Err(TextureAsTargetError::TextureMultipleMips);
-        }
-
-        if self.dimensions().depth_or_layers() > 1 {
-            return Err(TextureAsTargetError::RegionIsNot2D);
-        }
-
-        Ok(RenderTarget {
-            _phantom: PhantomData,
-            view: self.layer_view(layer).unwrap(),
-        })
-    }
-
-    // Tries to resize the texture to a new size, whilst clearing the contents
-    // Mipmapping currently not supported and multi-layer texture currently not supported
-    fn resize(&mut self, extent: <Self::Region as Region>::E) -> Result<(), TextureResizeError> {
-        let graphics = self.graphics();
-
-        if self.levels() > 1 {
-            return Err(TextureResizeError::MipMappingUnsupported);
-        }
-
-        if <Self::Region as Region>::is_multi_layered() {
-            return Err(TextureResizeError::LayeredUnsupported);
-        }
-
-        if !extent.is_valid() {
-            return Err(TextureResizeError::InvalidExtent);
-        }
-
-        if !size_within_limits::<Self::Region>(&graphics, extent) {
-            return Err(TextureResizeError::ExtentLimit);
-        }
-
-        if self.mode() != TextureMode::Resizable {
-            return Err(TextureResizeError::NotResizable);
-        }
-
-        // Same size; not going to resize
-        if extent == self.dimensions() {
-            return Ok(());
-        }
-
-        // Fetch dimensions, name, and texel format
-        let view_dimensions = <Self::Region as Region>::view_dimension();
-        let dimension = <Self::Region as Region>::dimension();
-        let name = utils::pretty_type_name::<Self::T>();
-        let format = <Self::T>::format();
-        log::debug!(
-            "Resizing texture, {dimension:?}, <{name}>, {}x{}x{}",
-            extent.width(),
-            extent.height(),
-            extent.depth_or_layers()
-        );
-
-        // Config for the Wgpu texture
-        let descriptor = TextureDescriptor {
-            size: extent_to_extent3d::<Self::Region>(extent),
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension,
-            format,
-            usage: texture_usages(self.usage()),
-            label: None,
-            view_formats: &[],
-        };
-
-        // Create a new texture
-        let texture = graphics.device().create_texture(&descriptor);
-
-        // Get color texture aspect for the texture view and ImageCopyTexture
-        let aspect = texture_aspect::<Self::T>();
-
-        // Create the texture's texture view descriptor
-        let view_descriptor = TextureViewDescriptor {
-            format: Some(format),
-            dimension: Some(view_dimensions),
-            aspect,
-            ..Default::default()
-        };
-
-        self.uncache();
-
-        // Create an texture view of the whole texture
-        let view = texture.create_view(&view_descriptor);
-        assert_eq!(self.views().map(|x| x.len()).unwrap_or(1), 1);
-        unsafe {
-            self.replace_raw_parts(texture, Some(vec![view]), extent);
-        }
-
-        Ok(())
+    // Get the views of the texture mutably
+    fn views_mut(&mut self) -> TextureViewsMut<Self> {
+        todo!()
     }
 
     // Get the stored graphics context
@@ -392,79 +240,25 @@ pub trait Texture: Sized + 'static {
     unsafe fn from_raw_parts(
         graphics: &Graphics,
         texture: wgpu::Texture,
-        views: Option<Vec<wgpu::TextureView>>,
+        views: Vec<(wgpu::TextureView, TextureViewSettings)>,
         sampler: Option<Arc<wgpu::Sampler>>,
         sampling: Option<SamplerSettings>,
         dimensions: <Self::Region as Region>::E,
         usage: TextureUsage,
-        mode: TextureMode,
     ) -> Self;
 
     // Frees the texture from the cached shader data (called when dropped)
     // If the texture is still used this will practically do nothing (it will remove bind group and regenerate it)
     fn uncache(&self) {
+        /*
         if let Some(views) = self.views() {
             for view in views {
                 let id = crate::Id::new(view.global_id(), crate::IdVariant::TextureView);
                 self.graphics().drop_cached_bind_group_resource(id);
             }
         }
+        */
     }
-
-    // Called when the user resizes the texture
-    // Should not be called manually.
-    unsafe fn replace_raw_parts(
-        &mut self,
-        texture: wgpu::Texture,
-        views: Option<Vec<wgpu::TextureView>>,
-        dimensions: <Self::Region as Region>::E,
-    );
-}
-
-// Get the view of a specific mip level and specific layer
-// If either params are None, means that we must get the view that corrresponds to "all" layers/mips
-pub(crate) fn get_specific_view<T: Texture>(
-    texture: &T,
-    layer: Option<u32>,
-    level: Option<u32>,
-) -> Option<&wgpu::TextureView> {
-    let max_layers = texture.layers();
-    let max_levels = texture.levels();
-
-    // Return if the layer index is invalid
-    if let Some(layer) = layer {
-        if layer >= max_layers {
-            return None;
-        }
-    }
-
-    // Return if the level index is invalid
-    if let Some(level) = level {
-        if level >= max_levels {
-            return None;
-        }
-    }
-
-    // all mips, all layers
-    // all mips, first layer
-    // all mips, second layer
-    // first mip, all layers
-    // first mip, first layer
-    // first mip, second layer
-    // second mip, all layers
-    // second mip, first layer
-    // second mip, second  layer
-    let views = texture.views()?;
-    let offset = layer
-        .map(|x| x + (max_layers - 1).min(1))
-        .unwrap_or_default();
-    let base = level
-        .map(|x| x + (max_levels - 1).min(1))
-        .unwrap_or_default();
-
-    let index = base * max_layers + offset;
-    let index = index as usize;
-    views.get(index)
 }
 
 // Get the number of mip levels that the texture should use
@@ -517,30 +311,16 @@ pub(crate) fn mip_levels<T: Texel, R: Region>(
 }
 
 // Creates the textures views for the base texture and it's corresponding mips
-// This will also handles layered textures and layered mip mapped textures
-// In the case of layered texture, this will have the following format
-// TODO: Implement some sort of setting to know what views we actually need
-// all mips, all layers
-// all mips, first layer
-// all mips, second layer
-// first mip, all layers
-// first mip, first layer
-// first mip, second layer
-// second mip, all layers
-// second mip, first layer
-// second mip, second  layer
-pub(crate) fn create_texture_views<T: Texel, R: Region>(
+// The texture mip/layer ranges for each view are specified in the TextureView struct
+// This also handles validation for us automatically
+fn create_texture_views<T: Texel, R: Region>(
     texture: &wgpu::Texture,
     format: wgpu::TextureFormat,
     extent: R::E,
     levels: u32,
     layers: u32,
-) -> Vec<wgpu::TextureView> {
-    let aspect = texture_aspect::<T>();
-    let mut views = Vec::new();
-    let levels = (levels > 1).then_some(levels + 1).unwrap_or(levels);
-    let layers = (layers > 1).then_some(layers + 1).unwrap_or(layers);
-
+    views: &[TextureViewSettings],
+) -> Result<Vec<(wgpu::TextureView, TextureViewSettings)>, TextureInitializationError> {
     log::debug!(
         "Creating level views for texture (max = {levels}) with extent {}x{}x{}",
         extent.width(),
@@ -548,43 +328,12 @@ pub(crate) fn create_texture_views<T: Texel, R: Region>(
         extent.depth_or_layers(),
     );
 
-    for level in 0..levels {
-        // Check if we should create a view with all mips
-        let level = (level > 0).then(|| level - 1);
+    let aspect = texture_aspect::<T>();
+    let mut views = Vec::<(wgpu::TextureView, TextureViewSettings)>::new();
 
-        for layer in 0..layers {
-            // Check if we should create a view with all layers
-            let layer = (layer > 0).then(|| layer - 1);
+    todo!();
 
-            // Modify the dimension view based on the current layer
-            let dimension = match (layer, R::view_dimension()) {
-                (Some(_), wgpu::TextureViewDimension::D2Array) => wgpu::TextureViewDimension::D2,
-                (Some(_), wgpu::TextureViewDimension::CubeArray) => {
-                    wgpu::TextureViewDimension::Cube
-                }
-                (Some(_), wgpu::TextureViewDimension::Cube) => wgpu::TextureViewDimension::D2,
-                (None, x) => x,
-                _ => panic!("Not supported"),
-            };
-
-            // Create the texture's texture view descriptor
-            let desc = TextureViewDescriptor {
-                format: Some(format),
-                dimension: Some(dimension),
-                aspect,
-                base_mip_level: level.unwrap_or_default(),
-                mip_level_count: level.map(|_| 1),
-                base_array_layer: layer.unwrap_or_default(),
-                array_layer_count: layer.map(|_| 1),
-                ..Default::default()
-            };
-
-            // Create an texture view of the whole texture
-            views.push(texture.create_view(&desc));
-        }
-    }
-
-    views
+    Ok(views)
 }
 
 // Create an image data layout based on the extent and texel type
@@ -668,8 +417,8 @@ pub(crate) fn read_from_level<T: Texel, R: Region>(
 // Copy a sub-region from another level into this level
 // The texture can have different regions, but the same type
 pub fn copy_subregion_from<'a, T: Texture, O: Texture<T = T::T>>(
-    write: impl AsMut<MipLevelMut<'a, T>>,
-    read: impl AsRef<MipLevelRef<'a, O>>,
+    write: impl AsMut<TextureViewMut<'a, T>>,
+    read: impl AsRef<TextureViewRef<'a, O>>,
     src_subregion: Option<O::Region>,
     dst_subregion: Option<T::Region>,
 ) {

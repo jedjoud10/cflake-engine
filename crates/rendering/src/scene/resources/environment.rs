@@ -2,12 +2,13 @@ use assets::Assets;
 use graphics::{
     Compiler, ComputeModule, ComputeShader, CubeMap, Graphics, ImageTexel,
     LayeredTexture2D, SamplerSettings,
-    StorageAccess, Texel, Texture, TextureMipMaps, TextureMode, TextureUsage, RGBA,
+    StorageAccess, Texel, Texture, TextureMipMaps, TextureUsage, RGBA,
 };
 
 pub type EnvironmentMap = CubeMap<RGBA<f32>>;
 pub type TempEnvironmentMap = LayeredTexture2D<RGBA<f32>>;
 
+/*
 // Create a cubemap with a specific resolution
 fn create_cubemap<T: Texel + ImageTexel>(
     graphics: &Graphics,
@@ -18,7 +19,6 @@ fn create_cubemap<T: Texel + ImageTexel>(
         graphics,
         Some(&vec![value; resolution * resolution * 6]),
         vek::Extent2::broadcast(resolution as u32),
-        TextureMode::Dynamic,
         TextureUsage::SAMPLED | TextureUsage::TARGET | TextureUsage::COPY_DST,
         Some(SamplerSettings::default()),
         TextureMipMaps::Disabled,
@@ -36,21 +36,23 @@ fn create_temp_cubemap<T: Texel + ImageTexel>(
         graphics,
         Some(&vec![value; resolution * resolution * 6]),
         (vek::Extent2::broadcast(resolution as u32), 6),
-        TextureMode::Dynamic,
         TextureUsage::SAMPLED | TextureUsage::STORAGE | TextureUsage::COPY_DST,
         Some(SamplerSettings::default()),
         TextureMipMaps::Disabled,
     )
     .unwrap()
 }
+*/
 
 // Environment maps that contains the diffuse, specular, and ambient cubemaps
 // This also contains some settings on how we should create the procedural environment sky
 pub struct Environment {
+    /*
     // Double buffered environment map
     pub environment_map: [EnvironmentMap; 2],
 
     pub(crate) temp: TempEnvironmentMap,
+    */
 
     // Compute shader that will create the envinronment map
     //pub(crate) shader: ComputeShader,
@@ -92,12 +94,14 @@ impl Environment {
         ];
 
         Self {
+            /*
             environment_map: [
                 create_cubemap(graphics, vek::Vec4::zero(), 128),
                 create_cubemap(graphics, vek::Vec4::zero(), 128),
             ],
 
             temp: create_temp_cubemap(graphics, vek::Vec4::zero(), 128),
+            */
 
             //shader,
             views,

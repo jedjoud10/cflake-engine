@@ -70,7 +70,7 @@ fn update(world: &mut World) {
                 .set_uniform_buffer("shadow_lightspace_matrices", &shadow.lightspace_buffer, ..)
                 .unwrap();
             group
-                .set_sampled_texture("shadow_map", &shadow.depth_tex)
+                .set_sampled_texture_view("shadow_map", &shadow.depth_tex)
                 .unwrap();
         })
         .unwrap();
@@ -78,11 +78,11 @@ fn update(world: &mut World) {
     // Set the maps that we will sample
     active
         .set_bind_group(1, |group| {
-            group.set_sampled_texture("gbuffer_position_map", gbuffer_position_map).unwrap();
-            group.set_sampled_texture("gbuffer_albedo_map", gbuffer_albedo_map).unwrap();
-            group.set_sampled_texture("gbuffer_normal_map", gbuffer_normal_map).unwrap();
-            group.set_sampled_texture("gbuffer_mask_map", gbuffer_mask_map).unwrap();
-            group.set_sampled_texture("depth_map", depth_map).unwrap();
+            group.set_sampled_texture_view("gbuffer_position_map", gbuffer_position_map).unwrap();
+            group.set_sampled_texture_view("gbuffer_albedo_map", gbuffer_albedo_map).unwrap();
+            group.set_sampled_texture_view("gbuffer_normal_map", gbuffer_normal_map).unwrap();
+            group.set_sampled_texture_view("gbuffer_mask_map", gbuffer_mask_map).unwrap();
+            group.set_sampled_texture_view("depth_map", depth_map).unwrap();
         })
         .unwrap();
 

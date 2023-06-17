@@ -8,7 +8,7 @@ use graphics::{
     Depth, DepthConfig, Face, FragmentModule, GpuPod, Graphics, LayeredTexture2D, LoadOp,
     ModuleVisibility, Operation, PrimitiveConfig, PushConstantLayout, RenderPass,
     RenderPipeline, SamplerSettings, Shader, StoreOp, Texture, TextureMipMaps,
-    TextureMode, TextureUsage, UniformBuffer, VertexModule, WindingOrder, Buffer, SamplerWrap, Normalized,
+    TextureUsage, UniformBuffer, VertexModule, WindingOrder, Buffer, SamplerWrap, Normalized, TextureViewSettings, TextureViewDimension,
 };
 use math::ExplicitVertices;
 use vek::FrustumPlanes;
@@ -21,12 +21,27 @@ pub type ShadowMap = LayeredTexture2D<ShadowDepthLayout>;
 
 // Create a cascaded depth texture with 4 layers
 fn create_depth_texture(graphics: &Graphics, resolution: u32) -> LayeredTexture2D<ShadowDepthLayout> {
+    fn create_view_settings(layer: u32) -> TextureViewSettings {
+        TextureViewSettings {
+            base_mip_level: 0,
+            mip_level_count: None,
+            base_array_layer: layer,
+            array_layer_count: Some(1),
+            dimension: TextureViewDimension::D2,
+        }
+    }
+
     ShadowMap::from_texels(
         graphics,
         None,
         (vek::Extent2::broadcast(resolution), 4),
-        TextureMode::Dynamic,
         TextureUsage::TARGET | TextureUsage::SAMPLED,
+        &[
+            create_view_settings(0),
+            create_view_settings(1),
+            create_view_settings(2),
+            create_view_settings(3),
+        ],
         Some(SamplerSettings {
             comparison: Some(CompareFunction::GreaterEqual),
             wrap_u: SamplerWrap::ClampToEdge,
