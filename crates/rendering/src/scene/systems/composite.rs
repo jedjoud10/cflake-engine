@@ -1,4 +1,4 @@
-use crate::{Compositor, DeferredRenderer, PostProcessUniform, ShadowMap, ShadowMapping};
+use crate::{Compositor, DeferredRenderer, PostProcessUniform, ShadowMap, ShadowMapping, Environment};
 use assets::Assets;
 
 use graphics::{ActivePipeline, Graphics, Texture, Window};
@@ -22,6 +22,7 @@ fn update(world: &mut World) {
     let renderer = world.get::<DeferredRenderer>().unwrap();
     let mut compositor = world.get_mut::<Compositor>().unwrap();
     let mut window = world.get_mut::<Window>().unwrap();
+    let environment = world.get::<Environment>().unwrap();
     let shadow = world.get::<ShadowMapping>().unwrap();
     let time = world.get::<Time>().unwrap();
 
@@ -35,8 +36,6 @@ fn update(world: &mut World) {
     let gbuffer_normal_map = &renderer.gbuffer_normal_texture;
     let gbuffer_mask_map = &renderer.gbuffer_mask_texture;
     let depth_map = &renderer.depth_texture;
-
-    //let depth = &renderer.depth_texture;
 
     let Ok(dst) = window.as_render_target() else {
         return;
@@ -72,6 +71,12 @@ fn update(world: &mut World) {
                 .unwrap();
             group
                 .set_sampler("shadow_map_sampler", shadow.depth_tex.sampler().unwrap())
+                .unwrap();
+            group
+                .set_sampled_texture("environment_map", &environment.environment_map[0])
+                .unwrap();
+            group
+                .set_sampler("environment_map_sampler", environment.environment_map[0].sampler().unwrap())
                 .unwrap();
         })
         .unwrap();

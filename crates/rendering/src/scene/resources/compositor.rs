@@ -6,7 +6,7 @@ use graphics::{
     UniformBuffer, VertexConfig, VertexModule, RGBA, Normalized, R, Depth, Texture,
 };
 
-use crate::{CameraUniform, SceneColorLayout, WindowUniform, SceneUniform, ShadowUniform, ShadowMap, ShadowDepthLayout};
+use crate::{CameraUniform, SceneColorLayout, WindowUniform, SceneUniform, ShadowUniform, ShadowMap, ShadowDepthLayout, EnvironmentMap};
 
 // This is what will write to the swapchain
 pub type FinalRenderPass = RenderPass<SwapchainFormat, ()>;
@@ -36,6 +36,9 @@ fn load_lighting_shader(assets: &Assets, graphics: &Graphics) -> Shader {
     compiler.use_uniform_buffer::<SceneUniform>("scene");
     compiler.use_uniform_buffer::<PostProcessUniform>("post_processing");
     compiler.use_uniform_buffer::<WindowUniform>("window");
+
+    compiler.use_sampled_texture::<EnvironmentMap>("environment_map", false);
+    compiler.use_sampler::<RGBA<f32>>("environment_map_sampler", false);
 
     compiler.use_uniform_buffer::<ShadowUniform>("shadow_parameters");
     compiler.use_uniform_buffer::<vek::Vec4<vek::Vec4<f32>>>("shadow_lightspace_matrices");

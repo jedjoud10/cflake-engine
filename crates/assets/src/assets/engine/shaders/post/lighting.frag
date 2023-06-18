@@ -12,7 +12,6 @@ layout(set = 1, binding = 4) uniform texture2D depth_map;
 #include <engine/shaders/common/conversions.glsl>
 #include <engine/shaders/common/camera.glsl>
 #include <engine/shaders/noises/common.glsl>
-#include <engine/shaders/scene/environment/sky.glsl>
 layout(set = 0, binding = 2) uniform SceneUniform {
     // Sun related parameters
     vec4 sun_direction;
@@ -42,14 +41,12 @@ layout(set = 0, binding = 3) uniform PostProcessUniform {
 	vec4 cc_gamma;
 } post_processing;
 
-/*
 // Environment texture map
-layout(set = 0, binding = 2) uniform textureCube environment_map;
-layout(set = 0, binding = 3) uniform sampler environment_map_sampler;
-*/
+layout(set = 0, binding = 4) uniform textureCube environment_map;
+layout(set = 0, binding = 5) uniform sampler environment_map_sampler;
 
 // UBO set globally at the start of the frame
-layout(set = 0, binding = 4) uniform ShadowUniform {
+layout(set = 0, binding = 6) uniform ShadowUniform {
     float strength;
     float spread;
 	float base_bias;
@@ -64,13 +61,13 @@ layout(set = 0, binding = 4) uniform ShadowUniform {
 } shadow_parameters;
 
 // Contains all the lightspace matrices for each cascade
-layout(set = 0, binding = 5) uniform ShadowLightSpaceMatrices {
+layout(set = 0, binding = 7) uniform ShadowLightSpaceMatrices {
     mat4 matrices[4];
 } shadow_lightspace_matrices;
 
 // Shadow-map texture map and its sampler
-layout(set = 0, binding = 7) uniform texture2DArray shadow_map;
-layout(set = 0, binding = 8) uniform sampler shadow_map_sampler;
+layout(set = 0, binding = 8) uniform texture2DArray shadow_map;
+layout(set = 0, binding = 9) uniform sampler shadow_map_sampler;
 
 // Calculate a linearly interpolated shadow value
 float shadow_linear(
@@ -133,17 +130,17 @@ float calculate_shadowed(
 	   vec2( 0.14383161, -0.14100790 ) 
 	);
 
-	for (int i = 0; i < 4; i++) {
+	for (int i = 0; i < 2; i++) {
 		int index = int(16.0*random(vec4(floor(position * 1000.0), i)))%16;
 		vec2 offset = poisson_disk[index];
 		shadowed += shadow_linear(layer, uvs.xy + shadow_parameters.spread * offset * 0.005, size, current + bias);
 	}
-	
-    return (shadowed / 4) * shadow_parameters.strength;
+
+    return (shadowed / 2) * shadow_parameters.strength;
 }
 
 // UBO that contains the current monitor/window information
-layout(set = 0, binding = 9) uniform WindowUniform {
+layout(set = 0, binding = 10) uniform WindowUniform {
     // Dimensions of the window
     uint width;
     uint height;
@@ -197,9 +194,9 @@ vec3 fresnelRoughness(vec3 f0, vec3 v, vec3 x, float roughness) {
 
 // Cook-torrence model for specular
 vec3 specular(vec3 f0, float roughness, vec3 v, vec3 l, vec3 n, vec3 h) {
-	vec3 num = ndf(roughness, n, h) * gsf(roughness, n, v, l) * fresnel(f0, v, h);
-	float denom = 4 * max(dot(v, n), 0.0) * max(dot(l, n), 0.0) + 0.01;
-	return num / denom;
+	vec3 num = ndf(roughness, n, h) * gsf(roughness, n, v, l) * fresnel(f0, h, v);
+	float denom = 4 * max(dot(v, n), 0.0) * max(dot(l, n), 0.0) + 0.0001;
+	return num;
 }
 
 // Sun data struct
@@ -237,24 +234,19 @@ vec3 brdf(
 ) {
 	// Calculate kS and kD
 	vec3 ks = fresnel(surface.f0, camera.half_view, camera.view);
-	vec3 kd = (1 - ks) * (1 - surface.metallic);
+	vec3 kd = (1 - ks);
 	
-	// Calculate ambient sky color
-	//vec3 ambient = texture(samplerCube(environment_map, environment_map_sampler), surface.normal).rgb;
-	vec3 ambient = calculate_sky_color(surface.normal, -light.backward);
-	//vec3 ambient = vec3(0);
-
 	// Calculate if the pixel is shadowed
 	float depth = abs((camera.view_matrix * vec4(surface.position, 1)).z);
     float shadowed = calculate_shadowed(surface.position, depth, surface.surface_normal, light.backward, camera.position);	
+	//float shadowed = 0.0;
 
 	// TODO: This is wrong for some reason?
-	vec3 brdf = kd * (surface.diffuse / PI) + specular(surface.f0, surface.roughness, camera.view, light.backward, surface.normal, camera.half_view) * (1-shadowed);
-	vec3 lighting = vec3(max(dot(light.backward, surface.normal), 0.0)) * (1-shadowed);
+	vec3 brdf = kd * (surface.diffuse / PI) + specular(surface.f0, surface.roughness, camera.view, light.backward, surface.normal, camera.half_view);
+	vec3 lighting = vec3(max(dot(light.backward, surface.normal), 0.0)) * (1 - shadowed);
 
 	// TODO: IBL
-	brdf = brdf * lighting * light.color;
-	brdf += (0.2 + ambient * 0.2) * surface.diffuse * 0.1;
+	brdf = surface.diffuse * lighting * light.color + surface.diffuse * 0.2 * pow(surface.visibility, 2);
 
 	
 	return brdf;
@@ -327,12 +319,17 @@ void main() {
 		dir.z = -1;
 		dir = (inverse(camera.view) * vec4(dir, 0)).xyz;
 		dir = normalize(dir);
+
+		color = texture(samplerCube(environment_map, environment_map_sampler), dir).xyz;
+
+		/*
 		color = calculate_sky_color(dir, scene.sun_direction.xyz);
 
 		// Create a procedural sun with the scene params
 		float sun = dot(dir, -scene.sun_direction.xyz);
 		float out_sun = pow(max(sun * 0.3, 0), 3) * 3;
 		out_sun += pow(clamp(sun - 0.9968, 0, 1.0) * 250, 4) * 16;
+		*/
 		//color += vec3(out_sun);
 	}
     

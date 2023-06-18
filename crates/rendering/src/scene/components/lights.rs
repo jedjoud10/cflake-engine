@@ -33,3 +33,13 @@ pub struct PointLight {
     // RGB8 color of the light
     pub color: vek::Rgb<u8>,
 }
+
+impl Default for PointLight {
+    fn default() -> Self {
+        Self {
+            intensity: 4.0,
+            color: vek::Rgb::broadcast(255),
+            radius: 10.0,
+        }
+    }
+}

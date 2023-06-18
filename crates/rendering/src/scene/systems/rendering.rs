@@ -271,6 +271,7 @@ fn render(world: &mut World) {
         indirect_triangles: &indirect_triangles,
         draw_indexed_indirect_buffers: &indexed_indirect_buffers,
         lightspace: None,
+        environment_map: &environment.environment_map[0],
     };
     drop(scene);
 
@@ -291,10 +292,7 @@ fn render(world: &mut World) {
             index,
         ));
 
-        /*
-        let views = shadowmap.depth_tex.views_mut();
-
-        let mut view = views.get_mut(.., index..(index+1), TextureViewDimension::D2).unwrap();
+        let mut view = shadowmap.depth_tex.view_mut(1 + index).unwrap();
         let target = view.as_render_target().unwrap();
 
         // Create a new active shadowmap render pass
@@ -306,18 +304,13 @@ fn render(world: &mut World) {
         }
         
         drop(render_pass);
-        */
     }
 
-    /*
     // Render to the shadow map cascades
     let i = time.frame_count() as usize % 4;
     render_shadows_pipelines(&mut _shadowmap, &mut default, directional_light_rotation, camera_position, &mut renderer.shadow_pass_stats, i, &pipelines, world);
-    for i in 0..4 {
-    }
     graphics.submit(false);
     drop(_shadowmap);
-    */
 
     // Begin the scene color render pass
     let gbuffer_position = renderer.gbuffer_position_texture.as_render_target().unwrap();

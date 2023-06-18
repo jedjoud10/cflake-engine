@@ -42,9 +42,9 @@ fn init(world: &mut World) {
 
     // Load the default environment compute shaders
     internal!(loader, "engine/shaders/scene/environment/sky.glsl");
+    internal!(loader, "engine/shaders/scene/environment/environment.comp");
     /*
     TODO
-    internal!(loader, "engine/shaders/scene/environment/environment.comp");
     internal!(loader, "engine/shaders/scene/environment/diffuse.comp");
     internal!(loader, "engine/shaders/scene/environment/specular.comp");
     */

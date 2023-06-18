@@ -35,6 +35,9 @@ pub struct DefaultMaterialResources<'a> {
     pub normal: &'a NormalMap,
     pub mask: &'a MaskMap,
 
+    // Envinronment maps
+    pub environment_map: &'a EnvironmentMap,
+
     // Common direct mesh storages
     pub meshes: &'a Storage<Mesh>,
 

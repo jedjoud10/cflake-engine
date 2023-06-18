@@ -316,7 +316,12 @@ impl<'a, T: Texture> TextureViewMut<'a, T> {
 
     // Get the view's dimensions (returns none if we are accessing multiple mips)
     pub fn dimensions(&self) -> Option<<T::Region as Region>::E> {
-        (self.levels() == 1).then(|| self.texture.dimensions().mip_level_dimensions(self.settings.base_mip_level))
+        (self.levels() == 1).then(|| {
+            let dims = self.texture.dimensions().mip_level_dimensions(self.settings.base_mip_level);
+            let (x, y, _) = dims.decompose().into_tuple();
+            let z = self.layers();
+            <<T::Region as Region>::E as Extent>::new(x, y, z)
+        })
     }
 
     // Get the view's region (returns none if we are accessing multiple mips)
@@ -378,7 +383,7 @@ impl<'a, T: Texture> TextureViewMut<'a, T> {
             return Err(ViewAsTargetError::ViewMultipleMips);
         }
 
-        if self.dimensions().unwrap().layers() > 1 {
+        if self.layers() > 1 {
             return Err(ViewAsTargetError::RegionIsNot2D);
         }
 

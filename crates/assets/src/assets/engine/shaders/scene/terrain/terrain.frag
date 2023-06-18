@@ -114,13 +114,14 @@ void main() {
 	#else
 	vec3 surface_normal = normalize(m_normal);
 	#endif
-
+	
 	/*
 	gbuffer_position = vec4(m_position, 0);
 	gbuffer_albedo = vec4(1);
 	gbuffer_normal = vec4(surface_normal, 0);
-	gbuffer_mask = vec4(vec3(1, 1, 1), 0);
+	gbuffer_mask = vec4(vec3(1, 0.8, 0), 0);
 	*/
+	
 
 	vec4 v0 = fetch_vertex_position_and_material(0);
 	vec4 v1 = fetch_vertex_position_and_material(1);
@@ -177,5 +178,5 @@ void main() {
 	gbuffer_position = vec4(m_position, 0);
 	gbuffer_albedo = vec4(albedo, 1);
 	gbuffer_normal = vec4(normal, 0);
-	gbuffer_mask = vec4(mask * vec3(10, 1, 0), 0);
+	gbuffer_mask = vec4(mask, 0);
 }

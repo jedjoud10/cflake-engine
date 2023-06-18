@@ -1,71 +1,57 @@
+use std::mem::size_of;
+
 use assets::Assets;
 use graphics::{
     Compiler, ComputeModule, ComputeShader, CubeMap, Graphics, ImageTexel,
     LayeredTexture2D, SamplerSettings,
-    StorageAccess, Texel, Texture, TextureMipMaps, TextureUsage, RGBA,
+    StorageAccess, Texel, Texture, TextureMipMaps, TextureUsage, RGBA, TextureViewSettings, TextureViewDimension, UniformBuffer, BufferMode, BufferUsage, ModuleVisibility,
 };
 
 pub type EnvironmentMap = CubeMap<RGBA<f32>>;
-pub type TempEnvironmentMap = LayeredTexture2D<RGBA<f32>>;
 
-/*
 // Create a cubemap with a specific resolution
 fn create_cubemap<T: Texel + ImageTexel>(
     graphics: &Graphics,
-    value: T::Storage,
-    resolution: usize,
+    resolution: u32,
 ) -> CubeMap<T> {
     CubeMap::<T>::from_texels(
         graphics,
-        Some(&vec![value; resolution * resolution * 6]),
-        vek::Extent2::broadcast(resolution as u32),
-        TextureUsage::SAMPLED | TextureUsage::TARGET | TextureUsage::COPY_DST,
+        None,
+        vek::Extent2::broadcast(resolution),
+        TextureUsage::SAMPLED | TextureUsage::STORAGE,
+        &[
+            TextureViewSettings::whole::<<CubeMap<T> as Texture>::Region>(),
+            TextureViewSettings {
+                base_mip_level: 0,
+                mip_level_count: None,
+                base_array_layer: 0,
+                array_layer_count: None,
+                dimension: TextureViewDimension::D2Array,
+            }
+        ],
         Some(SamplerSettings::default()),
         TextureMipMaps::Disabled,
     )
     .unwrap()
 }
-
-// Create a "fake" cubemap (just a layered texture 2D) with a specific resolution
-fn create_temp_cubemap<T: Texel + ImageTexel>(
-    graphics: &Graphics,
-    value: T::Storage,
-    resolution: usize,
-) -> LayeredTexture2D<T> {
-    LayeredTexture2D::<T>::from_texels(
-        graphics,
-        Some(&vec![value; resolution * resolution * 6]),
-        (vek::Extent2::broadcast(resolution as u32), 6),
-        TextureUsage::SAMPLED | TextureUsage::STORAGE | TextureUsage::COPY_DST,
-        Some(SamplerSettings::default()),
-        TextureMipMaps::Disabled,
-    )
-    .unwrap()
-}
-*/
 
 // Environment maps that contains the diffuse, specular, and ambient cubemaps
 // This also contains some settings on how we should create the procedural environment sky
 pub struct Environment {
-    /*
     // Double buffered environment map
     pub environment_map: [EnvironmentMap; 2],
-
-    pub(crate) temp: TempEnvironmentMap,
-    */
+    pub(crate) resolution: u32,
 
     // Compute shader that will create the envinronment map
-    //pub(crate) shader: ComputeShader,
+    pub(crate) shader: ComputeShader,
 
-    // Projection and view matrices
-    views: [vek::Mat4<f32>; 6],
-    projection: vek::Mat4<f32>,
+    // Buffer containing the projection and view matrices
+    pub(crate) matrices: UniformBuffer<vek::Vec4<vek::Vec4<f32>>>,
 }
 
 impl Environment {
     // Create a new scene environment render passes and cubemaps
-    pub(crate) fn new(graphics: &Graphics, assets: &Assets) -> Self {
-        /*
+    pub(crate) fn new(graphics: &Graphics, assets: &Assets, resolution: u32) -> Self {
         // Load the environment compute shader
         let compute = assets
             .load::<ComputeModule>("engine/shaders/scene/environment/environment.comp")
@@ -73,9 +59,11 @@ impl Environment {
 
         // Create the bind layout for the compute shader
         let mut compiler = Compiler::new(assets, graphics);
-        compiler.use_storage_texture::<TempEnvironmentMap>("enviro", StorageAccess::WriteOnly);
+        compiler.use_uniform_buffer::<vek::Vec4<vek::Vec4<f32>>>("matrices");
+        compiler.use_constant(0, resolution);
+        compiler.use_storage_texture::<LayeredTexture2D<RGBA<f32>>>("enviro", StorageAccess::WriteOnly);
+        compiler.use_push_constant_layout(graphics::PushConstantLayout::single(size_of::<f32>() * 4, ModuleVisibility::Compute).unwrap());
         let shader = ComputeShader::new(compute, &compiler).unwrap();
-        */
 
         // Convert the eqilateral texture to a cubemap texture
         let projection =
@@ -85,27 +73,35 @@ impl Environment {
 
         // View matrices for the 6 different faces
         let views: [Mat4<f32>; 6] = [
-            Mat4::look_at_rh(Vec3::zero(), Vec3::unit_x(), -Vec3::unit_y()), // Right
             Mat4::look_at_rh(Vec3::zero(), -Vec3::unit_x(), -Vec3::unit_y()), // Left
+            Mat4::look_at_rh(Vec3::zero(), Vec3::unit_x(), -Vec3::unit_y()), // Right
             Mat4::look_at_rh(Vec3::zero(), Vec3::unit_y(), Vec3::unit_z()),  // Top
             Mat4::look_at_rh(Vec3::zero(), -Vec3::unit_y(), -Vec3::unit_z()), // Bottom
             Mat4::look_at_rh(Vec3::zero(), Vec3::unit_z(), -Vec3::unit_y()), // Back
             Mat4::look_at_rh(Vec3::zero(), -Vec3::unit_z(), -Vec3::unit_y()), // Front
         ];
 
+        // Multiply both matrices
+        let matrices = views.map(|x| (projection * x).cols);
+
+        // Create the uniform buffer that contains the matrices
+        let matrices = UniformBuffer::<vek::Vec4<vek::Vec4<f32>>>::from_slice(
+            graphics,
+            &matrices,
+            BufferMode::Dynamic,
+            BufferUsage::empty()
+        ).unwrap();
+
         Self {
-            /*
+            resolution, 
             environment_map: [
-                create_cubemap(graphics, vek::Vec4::zero(), 128),
-                create_cubemap(graphics, vek::Vec4::zero(), 128),
+                create_cubemap(graphics, resolution),
+                create_cubemap(graphics, resolution),
             ],
 
-            temp: create_temp_cubemap(graphics, vek::Vec4::zero(), 128),
-            */
+            matrices,
 
-            //shader,
-            views,
-            projection,
+            shader,
         }
     }
 }

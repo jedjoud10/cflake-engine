@@ -16,13 +16,13 @@ fn init(world: &mut World) {
     let assets = world.get::<Assets>().unwrap();
 
     // Setup the assets that will be loaded
-    asset!(assets, "user/scenes/material.glb", "/examples/assets/");
+    asset!(assets, "user/scenes/untitled3.glb", "/examples/assets/");
 
     // Load the glTF scene into the world LMAO!!
     let context = GtlfContext::from_world(world).unwrap();
     let settings = GltfSettings::default();
     assets
-        .load::<GltfScene>(("user/scenes/material.glb", settings, context))
+        .load::<GltfScene>(("user/scenes/untitled3.glb", settings, context))
         .unwrap();
 
     // Create a movable camera

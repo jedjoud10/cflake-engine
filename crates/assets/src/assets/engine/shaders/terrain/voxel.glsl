@@ -12,9 +12,9 @@ float voxel(vec3 position, out uint material) {
     float density = 0.0;
 
     if (material == 0) {
-        density = snoise(position * 0.01) * 40.0;
+        density = fbm(position.xz * 0.003, 4, 0.5, 2.5) * 40.0;
     } else if (material == 1) {
-        density = cellular(position * 0.01).x * 40.0;    
+        density = clamp(cellular(position * 0.01).x * 20 - 10, 0, 1) * 20.0;    
     } else if (material == 2) {    
     }
 
