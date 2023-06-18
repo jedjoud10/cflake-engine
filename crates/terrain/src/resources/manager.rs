@@ -142,14 +142,14 @@ impl ChunkManager {
         
         // Generate the lod multipliers programatically based on the quality setting
         let splits = [0.0f32, 0.3, 0.7, 1.0];
-        let percents = [0.2f32, 0.4, 0.7, 1.2];
+        let percents = [0.2f32, 0.5, 0.8, 1.0];
         let max = settings.max_depth as f32;
         let mut lod = (0..settings.max_depth).into_iter().map(|x| {
             let percent = x as f32 / max;
 
             let i = splits.iter().enumerate().filter(|(_, &rel)| percent >= rel).map(|(i, _)| i).max().unwrap();
 
-            percents[i] * settings.quality.clamp(0.6, 5.0)
+            percents[i] * settings.quality.clamp(0.5, 2.0)
         }).collect::<Vec<f32>>();
         lod.insert(0, 1.0);
 
@@ -161,12 +161,13 @@ impl ChunkManager {
             let div = (node.size() / size).next_power_of_two();
 
             let multiplier = lod.borrow()[node.depth() as usize];
+            let half_extent = size as f32 * div as f32 * multiplier * 0.5;
 
-            math::aabb_sphere(
+            math::aabb_aabb(
                 &node.aabb(),
-                &math::Sphere {
-                    center: *target,
-                    radius: (size as f32 * div as f32 * multiplier * 0.5),
+                &math::Aabb {
+                    min: vek::Vec3::broadcast(-half_extent) + *target,
+                    max: vek::Vec3::broadcast(half_extent) + *target,
                 },
             )
         }));

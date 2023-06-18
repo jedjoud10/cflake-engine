@@ -122,8 +122,8 @@ fn init(world: &mut World) {
         Velocity::default(),
         AngularVelocity::default(),
         CharacterController {
-            max_speed: 10.0,
-            acceleration: 10.0,
+            max_speed: 15.0,
+            acceleration: 30.0,
             direction: Default::default(),
             air_control: 0.7,
             ground_control: 1.0,

@@ -9,7 +9,7 @@ layout(location = 3) out vec4 gbuffer_mask;
 // Data given by the vertex shader
 layout(location = 0) in vec3 m_position;
 layout(location = 1) in vec3 m_local_position;
-layout(location = 2) in flat vec3 m_normal;
+layout(location = 2) in vec3 m_normal;
 layout(location = 3) in flat uint draw; 
 
 // Used to calculate barycentric coordinates
@@ -110,18 +110,17 @@ vec4 fetch_vertex_position_and_material(uint vertex) {
 
 void main() {
 	#ifdef lowpoly
-	//vec3 surface_normal = normalize(m_normal);
-	vec3 surface_normal = normalize(cross(dFdy(m_position), dFdx(m_position)));
+	vec3 surface_normal = normalize(m_normal);
 	#else
 	vec3 surface_normal = normalize(m_normal);
 	#endif
 
+	/*
 	gbuffer_position = vec4(m_position, 0);
 	gbuffer_albedo = vec4(1);
 	gbuffer_normal = vec4(surface_normal, 0);
 	gbuffer_mask = vec4(vec3(1, 1, 1), 0);
-
-	/*
+	*/
 
 	vec4 v0 = fetch_vertex_position_and_material(0);
 	vec4 v1 = fetch_vertex_position_and_material(1);
@@ -179,5 +178,4 @@ void main() {
 	gbuffer_albedo = vec4(albedo, 1);
 	gbuffer_normal = vec4(normal, 0);
 	gbuffer_mask = vec4(mask * vec3(10, 1, 0), 0);
-	*/
 }

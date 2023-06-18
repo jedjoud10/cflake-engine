@@ -338,6 +338,7 @@ impl Asset for GltfScene {
                 });
             }
         });
+        log::debug!("Mapping of {} glTF materials", materials.len());
 
         // Unwraps an Arc and panics if it returns an error
         let cached_albedo_maps = Arc::try_unwrap(cached_albedo_maps).map_err(|_| ()).unwrap();
@@ -598,7 +599,16 @@ impl Asset for GltfScene {
         }
 
         // Add the entities into the world
+        let count = entities.len();
         context.scene.extend_from_iter(entities);
+
+        log::debug!("Loaded {} entities into the world", count);
+        log::debug!("Loaded {} unique meshes into the world", meshes.len());
+        log::debug!("Loaded {} unique material instances into the world", mapped_materials.len());
+        log::debug!("Loaded {} albedo maps into the world", cached_albedo_maps.len());
+        log::debug!("Loaded {} normal maps into the world", cached_normal_maps.len());
+        log::debug!("Loaded {} mask maps into the world", cached_mask_maps.len());
+
 
         Ok(GltfScene)
     }

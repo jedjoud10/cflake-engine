@@ -254,7 +254,7 @@ vec3 brdf(
 
 	// TODO: IBL
 	brdf = brdf * lighting * light.color;
-
+	brdf += (0.2 + ambient * 0.2) * surface.diffuse * 0.2;
 
 	
 	return brdf;

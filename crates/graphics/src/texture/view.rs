@@ -27,26 +27,199 @@ impl TextureViewSettings {
     }
 }
 
-// Given the texture dimensions and the given optional sub-region,return a valid sub-region
-// Returns None if the given subregion is greater than the miup level region (so it's invalid)
-fn handle_optional_subregion<T: Texture>(
+pub fn read<T: Texture>(
     texture: &T,
-    level: u8,
-    optional: Option<T::Region>,
-) -> Option<T::Region> {
-    // Get the region for this mip level
-    let mip_level_region =
-        <T::Region as Region>::from_extent(texture.dimensions().mip_level_dimensions(level));
-
-    // Make sure the "offset" doesn't cause reads outside the texture
-    if let Some(subregion) = optional {
-        if mip_level_region.is_larger_than(subregion) {
-            return None;
-        }
+    view: &wgpu::TextureView,
+    whole: T::Region,
+    subregion: Option<T::Region>,
+    dst: &mut [<T::T as Texel>::Storage],
+) -> Result<(), ViewReadError> {
+    /*
+    // Nothing to write to
+    if dst.is_empty() {
+        return Ok(());
     }
 
-    // Get the mip level subregion if the given one is None
-    return Some(optional.unwrap_or(mip_level_region));
+    // Make sure we can read from the texture
+    if !self.texture.usage().contains(TextureUsage::READ) {
+        return Err(MipLevelReadError::NonReadable);
+    }
+
+    // Get a proper subregion with the given opt subregion
+    let Some(subregion) = handle_optional_subregion(
+        self.texture,
+        self.level,
+        subregion
+    ) else {
+        return Err(MipLevelReadError::InvalidRegion);
+    };
+
+    // Read from the mip level and from the specified sub-region
+    super::read_from_level::<T::T, T::Region>(
+        subregion.origin(),
+        subregion.extent(),
+        dst,
+        self.texture.raw(),
+        self.level as u32,
+        &self.texture.graphics(),
+    );
+
+    Ok(())
+     */
+
+    todo!()
+}
+
+pub fn write<T: Texture>(
+    texture: &T,
+    view: &wgpu::TextureView,
+    whole: T::Region,
+    subregion: Option<T::Region>,
+    src: &[<T::T as Texel>::Storage],
+) -> Result<(), ViewWriteError> {
+    /*
+    // Nothing to write to
+    if src.is_empty() {
+        return Ok(());
+    }
+
+    // Make sure we can write to the texture
+    if !self.texture.usage().contains(TextureUsage::WRITE) {
+        return Err(MipLevelWriteError::NonWritable);
+    }
+
+    // Get a proper subregion with the given opt subregion
+    let Some(subregion) = handle_optional_subregion(
+        self.texture,
+        self.level,
+        subregion
+    ) else {
+        return Err(MipLevelWriteError::InvalidRegion);
+    };
+
+    // Write to the mip level level and into the specified sub-region
+    crate::write_to_level::<T::T, T::Region>(
+        subregion.origin(),
+        subregion.extent(),
+        src,
+        &self.texture.raw(),
+        self.level as u32,
+        &self.texture.graphics(),
+    );
+
+    Ok(())
+    */
+    todo!()
+}
+
+pub fn copy_subregion_from<T: Texture, O: Texture<T = T::T>>(
+    src: &O,
+    dst: &T,
+    src_view: &wgpu::TextureView,
+    src_whole: O::Region,
+    dst_view: &wgpu::TextureView,
+    dst_whole: T::Region,
+    src_subregion: Option<O::Region>,
+    dst_subregion: Option<T::Region>,
+) -> Result<(), ViewCopyError> {
+    todo!()
+    /*
+    // Make sure we can use the texture as copy src
+    if !other.texture.usage().contains(TextureUsage::COPY_SRC) {
+        return Err(ViewCopyError::NonCopySrc);
+    }
+
+    // Make sure we can use the texture as copy dst
+    if !self.texture.usage().contains(TextureUsage::COPY_DST) {
+        return Err(ViewCopyError::NonCopyDst);
+    }
+
+    // Get a proper subregion with the given opt subregion for dst
+    let Some(dst_subregion) = handle_optional_subregion(
+        self.texture,
+        self.level,
+        dst_subregion
+    ) else {
+        return Err(ViewCopyError::InvalidSrcRegion);
+    };
+
+    // Get a proper subregion with the given opt subregion for src
+    let Some(src_subregion) = handle_optional_subregion(
+        other.texture,
+        other.level,
+        src_subregion
+    ) else {
+        return Err(ViewCopyError::InvalidDstRegion);
+    };
+
+    // Make sure that the layers are compatible
+    match (
+        <O::Region as Region>::view_dimension(),
+        <T::Region as Region>::view_dimension(),
+    ) {
+        // Copy from 2D array to self
+        (wgpu::TextureViewDimension::D2Array, wgpu::TextureViewDimension::Cube)
+            if other.texture.layers() == 6 => {}
+        //(wgpu::TextureViewDimension::D2Array, wgpu::TextureViewDimension::CubeArray) => todo!(),
+
+        // Copy from Cube to self
+        (wgpu::TextureViewDimension::Cube, wgpu::TextureViewDimension::D2Array)
+            if self.texture.layers() == 6 => {}
+        //(wgpu::TextureViewDimension::Cube, wgpu::TextureViewDimension::CubeArray) => todo!(),
+
+        /*
+        // Copy from CubeArray to self
+        (wgpu::TextureViewDimension::CubeArray, wgpu::TextureViewDimension::D2Array) => todo!(),
+        (wgpu::TextureViewDimension::CubeArray, wgpu::TextureViewDimension::Cube) => todo!(),
+        */
+        (x, y) if x == y => (),
+        _ => return Err(ViewCopyError::IncompatibleMultiLayerTextures),
+    };
+
+    todo!();
+
+    Ok(())
+    */
+}
+
+pub fn clear<T: Texture>(
+    texture: &T,
+    view: &wgpu::TextureView,
+    whole: T::Region,
+    subregion: Option<T::Region>,
+) -> Result<(), ViewClearError> {
+    todo!()
+    /*
+    // Make sure we can write to the texture
+    if texture.usage().contains(TextureUsage::WRITE) {
+        return Err(ViewClearError::NonWritable);
+    }
+
+    // Get a proper subregion with the given opt subregion
+    let Some(subregion) = handle_optional_subregion(
+        texture,
+        self.level,
+        subregion
+    ) else {
+        return Err(ViewClearError::InvalidRegion);
+    };
+
+    todo!()
+    */
+}
+
+pub fn splat<T: Texture>(
+    texture: &T,
+    view: &wgpu::TextureView,
+    whole: T::Region,
+    subregion: Option<T::Region>,
+    val: <T::T as Texel>::Storage,
+) -> Result<(), ViewWriteError> {
+    let region = subregion.unwrap_or(whole);
+    let volume = <T::Region as Region>::volume(region.extent()) as usize;
+    let texels = vec![val; volume];
+    //self.write(&texels, subregion)
+    Ok(())
 }
 
 // Singular texture view that might contain multiple layers / mips
@@ -54,192 +227,6 @@ pub struct TextureViewRef<'a, T: Texture> {
     pub(crate) texture: &'a T,
     pub(crate) view: &'a wgpu::TextureView,
 }
-
-/*
-
-    // Read some pixels from the mip level region to the given destination
-    pub fn read(
-        &self,
-        dst: &mut [<T::T as Texel>::Storage],
-        subregion: Option<T::Region>,
-    ) -> Result<(), ViewReadError> {
-        /*
-        // Nothing to write to
-        if dst.is_empty() {
-            return Ok(());
-        }
-
-        // Make sure we can read from the texture
-        if !self.texture.usage().contains(TextureUsage::READ) {
-            return Err(MipLevelReadError::NonReadable);
-        }
-
-        // Get a proper subregion with the given opt subregion
-        let Some(subregion) = handle_optional_subregion(
-            self.texture,
-            self.level,
-            subregion
-        ) else {
-            return Err(MipLevelReadError::InvalidRegion);
-        };
-
-        // Read from the mip level and from the specified sub-region
-        super::read_from_level::<T::T, T::Region>(
-            subregion.origin(),
-            subregion.extent(),
-            dst,
-            self.texture.raw(),
-            self.level as u32,
-            &self.texture.graphics(),
-        );
-
-        Ok(())
-         */
-
-        todo!()
-    }
-
-    // Write some pixels to the mip level region from the given source
-    pub fn write(
-        &mut self,
-        src: &[<T::T as Texel>::Storage],
-        subregion: Option<T::Region>,
-    ) -> Result<(), ViewWriteError> {
-        /*
-        // Nothing to write to
-        if src.is_empty() {
-            return Ok(());
-        }
-
-        // Make sure we can write to the texture
-        if !self.texture.usage().contains(TextureUsage::WRITE) {
-            return Err(MipLevelWriteError::NonWritable);
-        }
-
-        // Get a proper subregion with the given opt subregion
-        let Some(subregion) = handle_optional_subregion(
-            self.texture,
-            self.level,
-            subregion
-        ) else {
-            return Err(MipLevelWriteError::InvalidRegion);
-        };
-
-        // Write to the mip level level and into the specified sub-region
-        crate::write_to_level::<T::T, T::Region>(
-            subregion.origin(),
-            subregion.extent(),
-            src,
-            &self.texture.raw(),
-            self.level as u32,
-            &self.texture.graphics(),
-        );
-
-        Ok(())
-        */
-        todo!()
-    }
-
-    // Copy a sub-region from another level into this level
-    pub fn copy_subregion_from<O: Texture<T = T::T>>(
-        &mut self,
-        other: TextureViewRef<'a, O>,
-        src_subregion: Option<O::Region>,
-        dst_subregion: Option<T::Region>,
-    ) -> Result<(), ViewCopyError> {
-        todo!()
-        /*
-        // Make sure we can use the texture as copy src
-        if !other.texture.usage().contains(TextureUsage::COPY_SRC) {
-            return Err(ViewCopyError::NonCopySrc);
-        }
-
-        // Make sure we can use the texture as copy dst
-        if !self.texture.usage().contains(TextureUsage::COPY_DST) {
-            return Err(ViewCopyError::NonCopyDst);
-        }
-
-        // Get a proper subregion with the given opt subregion for dst
-        let Some(dst_subregion) = handle_optional_subregion(
-            self.texture,
-            self.level,
-            dst_subregion
-        ) else {
-            return Err(ViewCopyError::InvalidSrcRegion);
-        };
-
-        // Get a proper subregion with the given opt subregion for src
-        let Some(src_subregion) = handle_optional_subregion(
-            other.texture,
-            other.level,
-            src_subregion
-        ) else {
-            return Err(ViewCopyError::InvalidDstRegion);
-        };
-
-        // Make sure that the layers are compatible
-        match (
-            <O::Region as Region>::view_dimension(),
-            <T::Region as Region>::view_dimension(),
-        ) {
-            // Copy from 2D array to self
-            (wgpu::TextureViewDimension::D2Array, wgpu::TextureViewDimension::Cube)
-                if other.texture.layers() == 6 => {}
-            //(wgpu::TextureViewDimension::D2Array, wgpu::TextureViewDimension::CubeArray) => todo!(),
-
-            // Copy from Cube to self
-            (wgpu::TextureViewDimension::Cube, wgpu::TextureViewDimension::D2Array)
-                if self.texture.layers() == 6 => {}
-            //(wgpu::TextureViewDimension::Cube, wgpu::TextureViewDimension::CubeArray) => todo!(),
-
-            /*
-            // Copy from CubeArray to self
-            (wgpu::TextureViewDimension::CubeArray, wgpu::TextureViewDimension::D2Array) => todo!(),
-            (wgpu::TextureViewDimension::CubeArray, wgpu::TextureViewDimension::Cube) => todo!(),
-            */
-            (x, y) if x == y => (),
-            _ => return Err(ViewCopyError::IncompatibleMultiLayerTextures),
-        };
-
-        todo!();
-
-        Ok(())
-        */
-    }
-
-    // Clear a region of the mip level to zero
-    pub fn clear(&mut self, subregion: Option<T::Region>) -> Result<(), ViewClearError> {
-        /*
-        // Make sure we can write to the texture
-        if !self.texture.usage().contains(TextureUsage::WRITE) {
-            return Err(ViewClearError::NonWritable);
-        }
-
-        // Get a proper subregion with the given opt subregion
-        let Some(subregion) = handle_optional_subregion(
-            self.texture,
-            self.level,
-            subregion
-        ) else {
-            return Err(ViewClearError::InvalidRegion);
-        };
-        */
-
-        todo!()
-    }
-
-    // Fill the view region with a repeating value specified by "val"
-    pub fn splat(
-        &mut self,
-        subregion: Option<T::Region>,
-        val: <T::T as Texel>::Storage,
-    ) -> Result<(), ViewWriteError> {
-        let region = subregion.unwrap_or(self.region());
-        let volume = <T::Region as Region>::volume(region.extent()) as usize;
-        let texels = vec![val; volume];
-        self.write(&texels, subregion)
-    }
- */
 
 impl<'a, T: Texture> TextureViewRef<'a, T> {
     // Get the underlying texture

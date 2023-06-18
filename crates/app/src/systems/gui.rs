@@ -475,8 +475,12 @@ fn update(world: &mut World) {
     if let Ok(renderer) = world.get_mut::<DeferredRenderer>() {
         fn show_pass_stats(ui: &mut egui::Ui, stats: PassStats) {
             ui.label(format!(
-                "Drawn material instances: {}",
-                stats.material_instances_count
+                "Material Instance Swaps: {}",
+                stats.material_instance_swap
+            ));
+            ui.label(format!(
+                "Mesh Instance Swaps: {}",
+                stats.mesh_instance_swap
             ));
             ui.label(format!(
                 "Drawn sub-surfaces: {}",

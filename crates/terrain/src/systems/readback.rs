@@ -81,6 +81,7 @@ fn readback_begin_update(world: &mut World) {
             let triangles_sender = memory.readback_triangles_sender.clone();
             let vertices_sender = memory.readback_vertices_sender.clone();
     
+            /*
             // Readback the vertices asynchronously
             triangles
                 .async_read(.., move |triangles| {
@@ -94,6 +95,7 @@ fn readback_begin_update(world: &mut World) {
                     let _ = vertices_sender.send((entity, vertices.to_vec()));
                 })
                 .unwrap();
+            */
         }
     };
 }

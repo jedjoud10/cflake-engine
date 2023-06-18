@@ -19,7 +19,8 @@ pub enum PassType {
 // Stats about objects and surfaces drawn for any given pass
 #[derive(Default, Clone, Copy)]
 pub struct PassStats {
-    pub material_instances_count: usize,
+    pub material_instance_swap: usize,
+    pub mesh_instance_swap: usize,
     pub rendered_direct_vertices_drawn: u64,
     pub rendered_direct_triangles_drawn: u64,
     pub culled_sub_surfaces: usize,

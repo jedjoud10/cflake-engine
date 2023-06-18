@@ -138,12 +138,9 @@ fn update(world: &mut World) {
 
     // Reset required values
     counters.write(&[0; 2], 0).unwrap();
-    
-    /*
-    TODO: Fix this for skirst again
-    let mips = indices.mips_mut();
-    mips.level_mut(0).unwrap().splat(None, u32::MAX).unwrap();
-    */
+    //let view = mesher.cached_indices.view_mut(0).unwrap();
+    //todo!();
+    //view.splat(None, u32::MAX).unwrap();
     offsets.write(&[u32::MAX; 2], 0).unwrap();
 
     // Update alloc-local position buffer

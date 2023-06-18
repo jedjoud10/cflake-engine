@@ -140,10 +140,10 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
 
     // Set the global material bindings
     active
-    .set_bind_group(0, |group| {
-        M::set_global_bindings::<P>(&mut resources, group, defaults);
-    })
-    .unwrap();
+        .set_bind_group(0, |group| {
+            M::set_global_bindings::<P>(&mut resources, group, defaults);
+        })
+        .unwrap();
 
     // Sort and group material instances / meshes
     // instead of [(mt1, mh1), (mt2, mh2), (mt1, mh1), (mt1, mh2)]
@@ -158,7 +158,7 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
 
         let mesh_ordering = mesh1.cmp(&mesh2);
         let material_ordering = mat1.cmp(&mat2);
-        mesh_ordering.then(material_ordering)
+        material_ordering.then(mesh_ordering)
     });
 
     // Iterate over all the surface of this material
@@ -177,7 +177,7 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
                     M::set_instance_bindings::<P>(material, &mut resources, defaults, group);
                 })
                 .unwrap();
-            stats.material_instances_count += 1;
+            stats.material_instance_swap += 1;
         }
 
         // If a mesh is missing attributes just skip
@@ -253,6 +253,7 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
 
             // Set the mesh handle
             last_mesh = Some(subsurface.mesh.clone());
+            stats.mesh_instance_swap += 1;
         }
 
         // Set the push constant ranges right before rendering (in the hot loop!)
