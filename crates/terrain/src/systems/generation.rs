@@ -121,7 +121,6 @@ fn update(world: &mut World) {
         return;
     }
 
-
     // Get the resources used for this chunk
     let counters = &mut memory.counters;
     let offsets = &mut memory.offsets;
@@ -138,9 +137,8 @@ fn update(world: &mut World) {
 
     // Reset required values
     counters.write(&[0; 2], 0).unwrap();
-    //let view = mesher.cached_indices.view_mut(0).unwrap();
-    //todo!();
-    //view.splat(None, u32::MAX).unwrap();
+    let mut view = mesher.cached_indices.view_mut(0).unwrap();
+    view.splat(None, u32::MAX).unwrap();
     offsets.write(&[u32::MAX; 2], 0).unwrap();
 
     // Update alloc-local position buffer

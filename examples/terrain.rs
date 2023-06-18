@@ -12,6 +12,17 @@ fn main() {
         .execute();
 }
 
+/*
+// Voxel graph that we will generate
+fn graph(x: &dyn VoxelNode<f32>, y: &dyn VoxelNode<f32>, z: &dyn VoxelNode<f32>) {
+    use cflake_engine::terrain::graph::*;
+    let noise = snoise((x, y));
+    let value = noise - y;
+    
+    VoxelGraph::new([value])
+}
+*/
+
 // Creates a movable camera, sky entity, and procedural terrain
 fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();

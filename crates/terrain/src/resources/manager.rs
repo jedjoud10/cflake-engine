@@ -199,7 +199,7 @@ fn load_raw_texels_handles<T: ImageTexel>(
     settings: &TerrainSettings,
     get_name_callback: impl Fn(&TerrainSubMaterial) -> &str,
 ) -> Option<Vec<AsyncHandle<RawTexels<T>>>> {
-    let scale = TextureScale::Scale { scaling: 0.25 * 0.25 * 0.5, filter: TextureResizeFilter::Gaussian };
+    let scale = TextureScale::Default;
     let inputs = settings
         .sub_materials
         .as_ref()?
@@ -221,9 +221,9 @@ fn load_layered_texture<T: ImageTexel>(
             raw,
             Some(SamplerSettings {
                 mipmaps: SamplerMipMaps::AutoAniso,
-                min_filter: SamplerFilter::Nearest,
-                mag_filter: SamplerFilter::Nearest,
-                mip_filter: SamplerFilter::Nearest,
+                min_filter: SamplerFilter::Linear,
+                mag_filter: SamplerFilter::Linear,
+                mip_filter: SamplerFilter::Linear,
                 ..Default::default()
             }),
             TextureMipMaps::Manual { mips: &[] },

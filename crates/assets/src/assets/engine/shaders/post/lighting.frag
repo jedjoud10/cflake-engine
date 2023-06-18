@@ -254,7 +254,7 @@ vec3 brdf(
 
 	// TODO: IBL
 	brdf = brdf * lighting * light.color;
-	brdf += (0.2 + ambient * 0.2) * surface.diffuse * 0.2;
+	brdf += (0.2 + ambient * 0.2) * surface.diffuse * 0.1;
 
 	
 	return brdf;
@@ -278,7 +278,7 @@ void main() {
             frag = vec4(position, 0);
 			return;
 		case 1:
-			frag = vec4(albedo, 0);
+			frag = vec4(pow(albedo, vec3(1.0 / 2.2)), 0);
             return;
 		case 2:
 			frag = vec4(max(normal, vec3(0)), 0);
@@ -287,7 +287,13 @@ void main() {
 			frag = vec4(max(surface_normal, vec3(0)), 0);
             return;
 		case 4:
-			frag = vec4(mask, 0);
+			frag = vec4(mask.r);
+	        return;
+		case 5:
+			frag = vec4(mask.g);
+	        return;
+		case 6:
+			frag = vec4(mask.b);
 	        return;
 	}
 

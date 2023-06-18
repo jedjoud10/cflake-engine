@@ -586,7 +586,9 @@ fn update(world: &mut World) {
                             ui.selectable_value(&mut selected_debug_gbuffer, DebugGBuffer::Albedo, "Albedo");
                             ui.selectable_value(&mut selected_debug_gbuffer, DebugGBuffer::Normal, "Normal");
                             ui.selectable_value(&mut selected_debug_gbuffer, DebugGBuffer::ReconstructedNormal, "Reconstructed Normal");
-                            ui.selectable_value(&mut selected_debug_gbuffer, DebugGBuffer::Mask, "Mask");
+                            ui.selectable_value(&mut selected_debug_gbuffer, DebugGBuffer::AmbientOcclusionMask, "AO Mask");
+                            ui.selectable_value(&mut selected_debug_gbuffer, DebugGBuffer::RoughnessMask, "Roughness Mask");
+                            ui.selectable_value(&mut selected_debug_gbuffer, DebugGBuffer::MetallicMask, "Metallic Mask");
                         });
                 });
 

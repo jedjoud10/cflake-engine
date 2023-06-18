@@ -27,10 +27,28 @@ impl TextureViewSettings {
     }
 }
 
+// Given the whole region of a view and an optional subregion return a valid region
+fn handle_optional_subregion<R: Region>(
+    whole: R,
+    optional: Option<R>,
+) -> Option<R> {
+    // Make sure the "offset" doesn't cause reads outside the texture
+    if let Some(subregion) = optional {
+        if whole.is_larger_than(subregion) {
+            return None;
+        }
+    }
+
+    // Get the mip level subregion if the given one is None
+    return Some(optional.unwrap_or(whole));
+}
+
+
 pub fn read<T: Texture>(
     texture: &T,
     view: &wgpu::TextureView,
-    whole: T::Region,
+    settings: &TextureViewSettings,
+    whole: Option<T::Region>,
     subregion: Option<T::Region>,
     dst: &mut [<T::T as Texel>::Storage],
 ) -> Result<(), ViewReadError> {
@@ -73,51 +91,55 @@ pub fn read<T: Texture>(
 pub fn write<T: Texture>(
     texture: &T,
     view: &wgpu::TextureView,
-    whole: T::Region,
+    settings: &TextureViewSettings,
+    whole: Option<T::Region>,
     subregion: Option<T::Region>,
     src: &[<T::T as Texel>::Storage],
 ) -> Result<(), ViewWriteError> {
-    /*
     // Nothing to write to
     if src.is_empty() {
         return Ok(());
     }
 
     // Make sure we can write to the texture
-    if !self.texture.usage().contains(TextureUsage::WRITE) {
-        return Err(MipLevelWriteError::NonWritable);
+    if !texture.usage().contains(TextureUsage::WRITE) {
+        return Err(ViewWriteError::NonWritable);
+    }
+
+    // Cannot write to multiple levels at once
+    if settings.mip_level_count.unwrap_or(texture.levels()) != 1 {
+        return Err(ViewWriteError::MultipleMipLevels);
     }
 
     // Get a proper subregion with the given opt subregion
     let Some(subregion) = handle_optional_subregion(
-        self.texture,
-        self.level,
-        subregion
+        whole.unwrap(),
+        subregion,
     ) else {
-        return Err(MipLevelWriteError::InvalidRegion);
+        return Err(ViewWriteError::InvalidRegion);
     };
 
-    // Write to the mip level level and into the specified sub-region
+    // Write to the view and into the specified subregion
     crate::write_to_level::<T::T, T::Region>(
         subregion.origin(),
         subregion.extent(),
         src,
-        &self.texture.raw(),
-        self.level as u32,
-        &self.texture.graphics(),
+        texture.raw(),
+        settings.base_mip_level,
+        &texture.graphics(),
     );
 
     Ok(())
-    */
-    todo!()
 }
 
 pub fn copy_subregion_from<T: Texture, O: Texture<T = T::T>>(
     src: &O,
     dst: &T,
     src_view: &wgpu::TextureView,
+    src_settings: &TextureViewSettings,
     src_whole: O::Region,
     dst_view: &wgpu::TextureView,
+    dst_settings: &TextureViewSettings,
     dst_whole: T::Region,
     src_subregion: Option<O::Region>,
     dst_subregion: Option<T::Region>,
@@ -185,6 +207,7 @@ pub fn copy_subregion_from<T: Texture, O: Texture<T = T::T>>(
 pub fn clear<T: Texture>(
     texture: &T,
     view: &wgpu::TextureView,
+    settings: &TextureViewSettings,
     whole: T::Region,
     subregion: Option<T::Region>,
 ) -> Result<(), ViewClearError> {
@@ -211,21 +234,34 @@ pub fn clear<T: Texture>(
 pub fn splat<T: Texture>(
     texture: &T,
     view: &wgpu::TextureView,
-    whole: T::Region,
+    settings: &TextureViewSettings,
+    whole: Option<T::Region>,
     subregion: Option<T::Region>,
     val: <T::T as Texel>::Storage,
 ) -> Result<(), ViewWriteError> {
-    let region = subregion.unwrap_or(whole);
-    let volume = <T::Region as Region>::volume(region.extent()) as usize;
+    let volume = if let Some(whole) = whole {
+        let region = subregion.unwrap_or(whole);
+        <T::Region as Region>::volume(region.extent()) as usize
+    } else {
+        0
+    };
+
     let texels = vec![val; volume];
-    //self.write(&texels, subregion)
-    Ok(())
+    write(
+        texture,
+        view,
+        settings,
+        whole,
+        subregion,
+        &texels
+    )
 }
 
 // Singular texture view that might contain multiple layers / mips
 pub struct TextureViewRef<'a, T: Texture> {
     pub(crate) texture: &'a T,
     pub(crate) view: &'a wgpu::TextureView,
+    pub(crate) settings: &'a TextureViewSettings,
 }
 
 impl<'a, T: Texture> TextureViewRef<'a, T> {
@@ -239,14 +275,24 @@ impl<'a, T: Texture> TextureViewRef<'a, T> {
         &self.view
     }
 
-    // Get the view's dimensions
-    pub fn dimensions(&self) -> <T::Region as Region>::E {
-        todo!()
+    // Get the view's dimensions (returns none if we are accessing multiple mips)
+    pub fn dimensions(&self) -> Option<<T::Region as Region>::E> {
+        (self.levels() == 1).then(|| self.texture.dimensions().mip_level_dimensions(self.settings.base_mip_level))
     }
 
-    // Get the view's region
-    pub fn region(&self) -> T::Region {
-        todo!()
+    // Get the view's region (returns none if we are accessing multiple mips)
+    pub fn region(&self) -> Option<T::Region> {
+        self.dimensions().map(|d| <T::Region as Region>::from_extent(d))
+    }
+
+    // Get the number of visible levels in this view
+    pub fn levels(&self) -> u32 {
+        self.settings.mip_level_count.unwrap_or(self.texture.levels())
+    }
+
+    // Get the number of visible layers in this view
+    pub fn layers(&self) -> u32 {
+        self.settings.array_layer_count.unwrap_or(self.texture.layers())
     }
 }
 
@@ -254,9 +300,72 @@ impl<'a, T: Texture> TextureViewRef<'a, T> {
 pub struct TextureViewMut<'a, T: Texture> {
     pub(crate) texture: &'a T,
     pub(crate) view: &'a wgpu::TextureView,
+    pub(crate) settings: &'a TextureViewSettings,
 }
 
 impl<'a, T: Texture> TextureViewMut<'a, T> {
+    // Get the underlying texture
+    pub fn texture(&self) -> &T {
+        self.texture
+    }
+
+    // Get the underlying wgpu view
+    pub fn raw(&self) -> &wgpu::TextureView {
+        &self.view
+    }
+
+    // Get the view's dimensions (returns none if we are accessing multiple mips)
+    pub fn dimensions(&self) -> Option<<T::Region as Region>::E> {
+        (self.levels() == 1).then(|| self.texture.dimensions().mip_level_dimensions(self.settings.base_mip_level))
+    }
+
+    // Get the view's region (returns none if we are accessing multiple mips)
+    pub fn region(&self) -> Option<T::Region> {
+        self.dimensions().map(|d| <T::Region as Region>::from_extent(d))
+    }
+
+    // Get the number of visible levels in this view
+    pub fn levels(&self) -> u32 {
+        self.settings.mip_level_count.unwrap_or(self.texture.levels())
+    }
+
+    // Get the number of visible layers in this view
+    pub fn layers(&self) -> u32 {
+        self.settings.array_layer_count.unwrap_or(self.texture.layers())
+    }
+
+    // Write some texels to the texture view
+    pub fn write(
+        &mut self,
+        subregion: Option<T::Region>,
+        src: &[<T::T as Texel>::Storage],
+    ) -> Result<(), ViewWriteError> {
+        write(
+            self.texture,
+            self.view,
+            self.settings,
+            self.region(),
+            subregion,
+            src,
+        )
+    }
+    
+    // Fill the view region with a repeating value specified by "val"
+    pub fn splat(
+        &mut self,
+        subregion: Option<T::Region>,
+        val: <T::T as Texel>::Storage,
+    ) -> Result<(), ViewWriteError> {
+        splat(
+            self.texture,
+            self.view,
+            self.settings,
+            self.region(),
+            subregion,
+            val,
+        )
+    }
+
     // Try to use the texture view as a renderable target.
     // This will fail if the texture isn't supported as render target 
     // or if the view's dimensions don't correspond to a 2D image
@@ -265,16 +374,13 @@ impl<'a, T: Texture> TextureViewMut<'a, T> {
             return Err(ViewAsTargetError::MissingTargetUsage);
         }
 
-        /*
-        TODO: This shit
         if self.levels() > 1 {
             return Err(ViewAsTargetError::ViewMultipleMips);
         }
 
-        if !self.region().can_render_to_mip() {
+        if self.dimensions().unwrap().layers() > 1 {
             return Err(ViewAsTargetError::RegionIsNot2D);
         }
-        */
 
         Ok(RenderTarget {
             _phantom: PhantomData,
@@ -282,61 +388,3 @@ impl<'a, T: Texture> TextureViewMut<'a, T> {
         })
     }
 }
-
-/*
-
-// A mutable mip level that we can use to write to the texture
-pub struct MipLevelMut<'a, T: Texture> {
-    pub(crate) texture: &'a T,
-    pub(crate) level: u8,
-    pub(super) mutated: &'a Cell<u32>,
-}
-
-// Helper methods
-impl<'a, T: Texture> MipLevelMut<'a, T> {
-    
-    // Try to get a render target so we can render to this one mip level as a whole
-    // Returns an Error if the texture is not renderable
-    pub fn as_render_target(&mut self) -> Result<RenderTarget<T::T>, TextureAsTargetError> {
-        if !self.texture().usage().contains(TextureUsage::TARGET) {
-            return Err(TextureAsTargetError::MissingTargetUsage);
-        }
-
-        Ok(RenderTarget {
-            _phantom: PhantomData,
-            view: self.view().unwrap(),
-        })
-    }
-
-    // Try to get a render target so we can render to a specific layer of this mip level
-    // Returns an Error if the texture is not renderable or if the layer specified is invalid
-    pub fn layer_as_render_target(
-        &mut self,
-        layer: u32,
-    ) -> Result<RenderTarget<T::T>, TextureAsTargetError>
-    where
-        <T::Region as Region>::O: LayeredOrigin,
-    {
-        if !self.texture().usage().contains(TextureUsage::TARGET) {
-            return Err(TextureAsTargetError::MissingTargetUsage);
-        }
-
-        Ok(RenderTarget {
-            _phantom: PhantomData,
-            view: self.layer_view(layer).unwrap(),
-        })
-    }
-}
-
-impl<'a, T: Texture> MipLevelMut<'a, T> {
-
-    
-}
-
-impl<'a, T: Texture> Drop for MipLevelMut<'a, T> {
-    fn drop(&mut self) {
-        let copied = self.mutated.get();
-        self.mutated.set(copied & !(1u32 << self.level));
-    }
-}
-*/

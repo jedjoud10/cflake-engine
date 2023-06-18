@@ -48,7 +48,7 @@ pub trait Texture: Sized + 'static {
                     count: texels.len(),
                     w: extent.width(),
                     h: extent.height(),
-                    d: extent.depth_or_layers(),
+                    d: extent.layers(),
                 });
             }
         }
@@ -113,7 +113,7 @@ pub trait Texture: Sized + 'static {
             "Creating texture, {dimension:?}, <{name}>, {}x{}x{}",
             extent.width(),
             extent.height(),
-            extent.depth_or_layers(),
+            extent.layers(),
         );
 
         // Fetch a new sampler for the given sampling settings (if needed)
@@ -141,7 +141,7 @@ pub trait Texture: Sized + 'static {
                     mips.len(),
                     extent.width(),
                     extent.height(),
-                    extent.depth_or_layers()
+                    extent.layers()
                 );
 
                 // Manual mip map generation
@@ -152,7 +152,7 @@ pub trait Texture: Sized + 'static {
                     .map(|(x, y)| (x + 1, y));
                 for (i, texels) in iter {
                     // Downscale the texture extent by two
-                    let downscaled_extent = extent.mip_level_dimensions(i as u8);
+                    let downscaled_extent = extent.mip_level_dimensions(i as u32);
 
                     // Write bytes to the level
                     write_to_level::<Self::T, Self::Region>(
@@ -171,7 +171,7 @@ pub trait Texture: Sized + 'static {
         // TODO: Force the user to set the first view as a whole texture view if it is a SAMPLED or TARGET texture
 
         // Create the texture views that the user set up
-        let layers = <Self::Region as Region>::depth_or_layers(extent);
+        let layers = <Self::Region as Region>::layers(extent);
         let views = create_texture_views::<Self::T, Self::Region>(&texture, format, extent, views)?;
 
         Ok(unsafe {
@@ -201,7 +201,7 @@ pub trait Texture: Sized + 'static {
     fn raw(&self) -> &wgpu::Texture;
 
     // Get the underlying WGPU views immutably
-    fn raw_views(&self) -> &[wgpu::TextureView];
+    fn raw_views(&self) -> &[(wgpu::TextureView, TextureViewSettings)];
 
     // Get the sampler associated with this texture
     // Returns none if the texture cannot be sampled
@@ -213,23 +213,25 @@ pub trait Texture: Sized + 'static {
     }
 
     // Get the number of layers (3D depth or layers) currently stored within the texture
-    fn depth_or_layers(&self) -> u32 {
-        <Self::Region as Region>::depth_or_layers(self.dimensions())
+    fn layers(&self) -> u32 {
+        <Self::Region as Region>::layers(self.dimensions())
     }
 
     // Get a single immutable view of the texture
     fn view(&self, index: usize) -> Option<TextureViewRef<Self>> {
-        self.raw_views().get(index).map(|view| TextureViewRef {
+        self.raw_views().get(index).map(|(view, settings)| TextureViewRef {
             texture: self,
-            view: view
+            view,
+            settings
         })
     }
     
     // Get a single mutable view of the texture
     fn view_mut(&mut self, index: usize) -> Option<TextureViewMut<Self>> {
-        self.raw_views().get(index).map(|view| TextureViewMut {
+        self.raw_views().get(index).map(|(view, settings)| TextureViewMut {
             texture: self,
-            view: view
+            view,
+            settings
         })
     }
     
@@ -244,7 +246,7 @@ pub trait Texture: Sized + 'static {
             return Err(ViewAsTargetError::ViewMultipleMips);
         }
 
-        if !self.region().can_render_to_mip() {
+        if self.region().extent().layers() > 1 {
             return Err(ViewAsTargetError::RegionIsNot2D);
         }
 
@@ -264,7 +266,7 @@ pub trait Texture: Sized + 'static {
     unsafe fn from_raw_parts(
         graphics: &Graphics,
         texture: wgpu::Texture,
-        views: Vec<wgpu::TextureView>,
+        views: Vec<(wgpu::TextureView, TextureViewSettings)>,
         sampler: Option<Arc<wgpu::Sampler>>,
         sampling: Option<SamplerSettings>,
         dimensions: <Self::Region as Region>::E,
@@ -328,7 +330,7 @@ pub(crate) fn mip_levels<T: Texel, R: Region>(
         "Calculated {levels} mip levels for texture with extent {}x{}x{}",
         extent.width(),
         extent.height(),
-        extent.depth_or_layers(),
+        extent.layers(),
     );
 
     Ok(levels)
@@ -342,18 +344,18 @@ fn create_texture_views<T: Texel, R: Region>(
     format: wgpu::TextureFormat,
     extent: R::E,
     views: &[TextureViewSettings],
-) -> Result<Vec<wgpu::TextureView>, TextureInitializationError> {
+) -> Result<Vec<(wgpu::TextureView, TextureViewSettings)>, TextureInitializationError> {
     log::debug!(
         "Creating level views for texture with extent {}x{}x{}",
         extent.width(),
         extent.height(),
-        extent.depth_or_layers(),
+        extent.layers(),
     );
 
     let views = views.into_iter().unique();
     let aspect = texture_aspect::<T>();
     Ok(views.map(|setting| {
-        texture.create_view(&wgpu::TextureViewDescriptor {
+        (texture.create_view(&wgpu::TextureViewDescriptor {
             label: None,
             format: Some(format),
             dimension: Some(setting.dimension),
@@ -362,7 +364,7 @@ fn create_texture_views<T: Texel, R: Region>(
             mip_level_count: setting.mip_level_count,
             base_array_layer: setting.base_array_layer,
             array_layer_count: setting.array_layer_count,
-        })
+        }), *setting)
     }).collect::<Vec<_>>())
 }
 
@@ -483,7 +485,7 @@ pub(crate) fn extent_to_extent3d<R: Region>(dimensions: R::E) -> wgpu::Extent3d 
     wgpu::Extent3d {
         width: dimensions.width(),
         height: dimensions.height(),
-        depth_or_array_layers: R::depth_or_layers(dimensions),
+        depth_or_array_layers: R::layers(dimensions),
     }
 }
 

@@ -78,8 +78,8 @@ pub fn generate_mip_map<T: ColorTexel, R: Region>(
         .into_par_iter()
         .map(|i| {
             // Pre-allocate a vector that will contain the downscaled texels
-            let temp = extent.mip_level_dimensions(i as u8);
-            let downscaled = extent.mip_level_dimensions(i as u8 + 1);
+            let temp = extent.mip_level_dimensions(i);
+            let downscaled = extent.mip_level_dimensions(i + 1);
 
             let mut texels: Vec<<T as Texel>::Storage> =
                 vec![<T::Storage as Zeroable>::zeroed(); R::volume(downscaled) as usize];

@@ -1,1 +1,0 @@
-// A voxel graph that consists of multiple voxel nodes

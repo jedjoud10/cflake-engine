@@ -14,7 +14,7 @@ use crate::{
 pub struct Texture2D<T: Texel> {
     // Raw WGPU
     texture: wgpu::Texture,
-    views: Vec<wgpu::TextureView>,
+    views: Vec<(wgpu::TextureView, TextureViewSettings)>,
 
     // Main texture settings
     dimensions: vek::Extent2<u32>,
@@ -47,7 +47,7 @@ impl<T: Texel> Texture for Texture2D<T> {
         &self.texture
     }
 
-    fn raw_views(&self) -> &[wgpu::TextureView] {
+    fn raw_views(&self) -> &[(wgpu::TextureView, TextureViewSettings)] {
         &self.views
     }
 
@@ -65,7 +65,7 @@ impl<T: Texel> Texture for Texture2D<T> {
     unsafe fn from_raw_parts(
         graphics: &Graphics,
         texture: wgpu::Texture,
-        views: Vec<wgpu::TextureView>,
+        views: Vec<(wgpu::TextureView, TextureViewSettings)>,
         sampler: Option<Arc<wgpu::Sampler>>,
         sampling: Option<SamplerSettings>,
         dimensions: vek::Extent2<u32>,

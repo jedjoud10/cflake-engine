@@ -179,6 +179,7 @@ impl<'a, T: Texture> AsRefTextureView<'a, T> for TextureViewMut<'a, T> {
         TextureViewRef {
             texture: self.texture,
             view: self.view,
+            settings: self.settings,
         }
     }
 }
