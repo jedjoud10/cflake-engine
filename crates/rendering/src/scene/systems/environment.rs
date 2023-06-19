@@ -33,12 +33,6 @@ fn render(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
     let renderer = world.get::<DeferredRenderer>().unwrap();
     let scene = world.get::<Scene>().unwrap();
-    let mut pass = ComputePass::begin(&graphics);
-    let mut active = pass.bind_shader(&environment.shader);
-    let cubemap = &mut environment.environment_map[0];
-    let resolution = environment.resolution;
-    let view = cubemap.view_mut(1).unwrap();
-    let matrices = &environment.matrices;
 
     // Skip if we don't have a light to draw with
     let Some(directional_light)  = renderer.main_directional_light else {
@@ -52,6 +46,17 @@ fn render(world: &mut World) {
         .unwrap();
     let rotation = directional_light_rotation.forward();
 
+    // Create a new compute shader pass
+    let mut pass = ComputePass::begin(&graphics);
+
+    // Get the base environment map to set its view
+    let cubemap = &mut environment.environment_map;
+    let view = cubemap.view_mut(1).unwrap();
+    
+    // Generate the base environment map
+    let resolution = environment.resolution;
+    let matrices = &environment.matrices;
+    let mut active = pass.bind_shader(&environment.environment_shader);
     active.set_bind_group(0, |group| {
         group.set_uniform_buffer("matrices", matrices, ..).unwrap();
         group.set_storage_texture_mut("enviro", view).unwrap();
@@ -60,7 +65,22 @@ fn render(world: &mut World) {
         let bytes = rotation.into_bytes();
         pc.push(bytes, 0).unwrap();
     }).unwrap();
-    active.dispatch(vek::Vec3::new(resolution / 32, environment.resolution / 32, 6)).unwrap();
+    active.dispatch(vek::Vec3::new(resolution / 32, resolution / 32, 6)).unwrap();
+
+    // Generate the diffuse IBL map
+    let resolution = environment.resolution / 16;
+    let src_cubemap = &environment.environment_map;
+    let dst_cubemap = &mut environment.diffuse_ibl_map;
+    let view = dst_cubemap.view_mut(1).unwrap();
+    let mut active = pass.bind_shader(&environment.ibl_diffuse_convolution_shader);
+    active.set_bind_group(0, |group| {
+        group.set_uniform_buffer("matrices", matrices, ..).unwrap();
+        group.set_sampled_texture("enviro", src_cubemap).unwrap();
+        group.set_sampler("enviro_sampler", src_cubemap.sampler().unwrap()).unwrap();
+        group.set_storage_texture_mut("diffuse", view).unwrap();
+    }).unwrap();
+    active.dispatch(vek::Vec3::new(resolution / 32, resolution / 32, 6)).unwrap();
+
     graphics.submit(false);
 }
 

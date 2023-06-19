@@ -39,11 +39,6 @@ fn init(world: &mut World) {
 
     // Pre-initialize the pipeline with the material types
     let mut pipelines = Pipelines::new();
-    /*
-    pipelines
-        .register::<WireframeMaterial>(&graphics, &assets)
-        .unwrap();
-    */
     pipelines
         .register::<PbrMaterial>(&graphics, &assets)
         .unwrap();
@@ -51,7 +46,7 @@ fn init(world: &mut World) {
     // Create a nice shadow map
     let shadowmap = ShadowMapping::new(
         4096,
-        [0.10, 0.25, 0.50, 1.0],
+        [0.02, 0.10, 0.50, 1.0],
         1000.0,
         &graphics,
     );
@@ -271,7 +266,7 @@ fn render(world: &mut World) {
         indirect_triangles: &indirect_triangles,
         draw_indexed_indirect_buffers: &indexed_indirect_buffers,
         lightspace: None,
-        environment_map: &environment.environment_map[0],
+        environment_map: &environment.environment_map,
     };
     drop(scene);
 

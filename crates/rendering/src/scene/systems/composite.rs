@@ -73,10 +73,16 @@ fn update(world: &mut World) {
                 .set_sampler("shadow_map_sampler", shadow.depth_tex.sampler().unwrap())
                 .unwrap();
             group
-                .set_sampled_texture("environment_map", &environment.environment_map[0])
+                .set_sampled_texture("environment_map", &environment.environment_map)
                 .unwrap();
             group
-                .set_sampler("environment_map_sampler", environment.environment_map[0].sampler().unwrap())
+                .set_sampler("environment_map_sampler", environment.environment_map.sampler().unwrap())
+                .unwrap();
+            group
+                .set_sampled_texture("ibl_diffuse_map", &environment.diffuse_ibl_map)
+                .unwrap();
+            group
+                .set_sampler("ibl_diffuse_map_sampler", environment.diffuse_ibl_map.sampler().unwrap())
                 .unwrap();
         })
         .unwrap();

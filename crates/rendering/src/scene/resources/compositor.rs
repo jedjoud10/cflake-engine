@@ -40,6 +40,9 @@ fn load_lighting_shader(assets: &Assets, graphics: &Graphics) -> Shader {
     compiler.use_sampled_texture::<EnvironmentMap>("environment_map", false);
     compiler.use_sampler::<RGBA<f32>>("environment_map_sampler", false);
 
+    compiler.use_sampled_texture::<EnvironmentMap>("ibl_diffuse_map", false);
+    compiler.use_sampler::<RGBA<f32>>("ibl_diffuse_map_sampler", false);
+
     compiler.use_uniform_buffer::<ShadowUniform>("shadow_parameters");
     compiler.use_uniform_buffer::<vek::Vec4<vek::Vec4<f32>>>("shadow_lightspace_matrices");
     compiler.use_sampled_texture::<ShadowMap>("shadow_map", true);

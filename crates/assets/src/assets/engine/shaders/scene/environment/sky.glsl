@@ -8,7 +8,7 @@ const float zenithOffset = 0.0;
 const float multiScatterPhase = 0.2;
 const float density = 0.6;
 
-const float anisotropicIntensity = 0.2; //Higher numbers result in more anisotropic scattering
+const float anisotropicIntensity = 0.0; //Higher numbers result in more anisotropic scattering
 
 const vec3 skyColor = vec3(0.39, 0.57, 1.0) * (1.0 + anisotropicIntensity); //Make sure one of the conponents is never 0.0
 

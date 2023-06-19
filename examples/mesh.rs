@@ -99,16 +99,9 @@ fn init(world: &mut World) {
 
 // Updates the light direction and quites from the engine
 fn update(world: &mut World) {
-    let time = world.get::<Time>().unwrap();
     let mut state = world.get_mut::<State>().unwrap();
-    let time = &*time;
     let input = world.get::<Input>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
-
-    // Rotation the light
-    if let Some((rotation, _)) = scene.find_mut::<(&mut Rotation, &DirectionalLight)>() {
-        rotation.rotate_y(-0.1 * time.delta().as_secs_f32());
-    }
 
     // Exit the game when the user pressed Escape
     if input.get_button(KeyboardButton::Escape).pressed() {

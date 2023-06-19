@@ -45,11 +45,11 @@ fn init(world: &mut World) {
         64,
         false,
         true,
-        true,
+        false,
         4,
         1024,
-        8,
-        1.0,
+        7,
+        1.3,
         Some(&[
             TerrainSubMaterial {
                 diffuse: "user/textures/diffuse1.jpg".to_string(),
@@ -122,16 +122,9 @@ fn init(world: &mut World) {
 
 // Updates the light direction and quites from the engine
 fn update(world: &mut World) {
-    let time = world.get::<Time>().unwrap();
     let mut state = world.get_mut::<State>().unwrap();
-    let time = &*time;
     let input = world.get::<Input>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
-
-    // Rotation the light
-    if let Some((rotation, _)) = scene.find_mut::<(&mut Rotation, &DirectionalLight)>() {
-        **rotation = Quaternion::rotation_x(((time.elapsed().as_secs_f32() * 0.1).sin() * 80.0 - 90.0).to_radians());
-    }
 
     // Exit the game when the user pressed Escape
     if input.get_button(KeyboardButton::Escape).pressed() {

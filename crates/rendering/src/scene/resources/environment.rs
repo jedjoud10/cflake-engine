@@ -38,14 +38,11 @@ fn create_cubemap<T: Texel + ImageTexel>(
 // Environment maps that contains the diffuse, specular, and ambient cubemaps
 // This also contains some settings on how we should create the procedural environment sky
 pub struct Environment {
-    // Double buffered environment map
-    pub environment_map: [EnvironmentMap; 2],
+    pub(crate) environment_map: EnvironmentMap,
+    pub(crate) diffuse_ibl_map: EnvironmentMap, 
     pub(crate) resolution: u32,
-
-    // Compute shader that will create the envinronment map
-    pub(crate) shader: ComputeShader,
-
-    // Buffer containing the projection and view matrices
+    pub(crate) environment_shader: ComputeShader,
+    pub(crate) ibl_diffuse_convolution_shader: ComputeShader,
     pub(crate) matrices: UniformBuffer<vek::Vec4<vek::Vec4<f32>>>,
 }
 
@@ -63,7 +60,21 @@ impl Environment {
         compiler.use_constant(0, resolution);
         compiler.use_storage_texture::<LayeredTexture2D<RGBA<f32>>>("enviro", StorageAccess::WriteOnly);
         compiler.use_push_constant_layout(graphics::PushConstantLayout::single(size_of::<f32>() * 4, ModuleVisibility::Compute).unwrap());
-        let shader = ComputeShader::new(compute, &compiler).unwrap();
+        let environment_shader = ComputeShader::new(compute, &compiler).unwrap();
+
+        // Load the diffuse IBL convolution shader
+        let compute = assets
+            .load::<ComputeModule>("engine/shaders/scene/environment/diffuse.comp")
+            .unwrap();
+
+        // Create the bind layout for the compute shader
+        let mut compiler = Compiler::new(assets, graphics);
+        compiler.use_uniform_buffer::<vek::Vec4<vek::Vec4<f32>>>("matrices");
+        compiler.use_constant(0, resolution / 16);
+        compiler.use_storage_texture::<LayeredTexture2D<RGBA<f32>>>("diffuse", StorageAccess::WriteOnly);
+        compiler.use_sampled_texture::<EnvironmentMap>("enviro", false);
+        compiler.use_sampler::<RGBA<f32>>("enviro_sampler", false);
+        let ibl_diffuse_convolution_shader = ComputeShader::new(compute, &compiler).unwrap();
 
         // Convert the eqilateral texture to a cubemap texture
         let projection =
@@ -94,14 +105,13 @@ impl Environment {
 
         Self {
             resolution, 
-            environment_map: [
-                create_cubemap(graphics, resolution),
-                create_cubemap(graphics, resolution),
-            ],
+            environment_map: create_cubemap(graphics, resolution),
 
             matrices,
 
-            shader,
+            environment_shader,
+            diffuse_ibl_map: create_cubemap(graphics, resolution / 16),
+            ibl_diffuse_convolution_shader,
         }
     }
 }

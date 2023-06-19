@@ -45,8 +45,12 @@ layout(set = 0, binding = 3) uniform PostProcessUniform {
 layout(set = 0, binding = 4) uniform textureCube environment_map;
 layout(set = 0, binding = 5) uniform sampler environment_map_sampler;
 
+// Diffuse IBL map
+layout(set = 0, binding = 6) uniform textureCube ibl_diffuse_map;
+layout(set = 0, binding = 7) uniform sampler ibl_diffuse_map_sampler;
+
 // UBO set globally at the start of the frame
-layout(set = 0, binding = 6) uniform ShadowUniform {
+layout(set = 0, binding = 8) uniform ShadowUniform {
     float strength;
     float spread;
 	float base_bias;
@@ -61,13 +65,20 @@ layout(set = 0, binding = 6) uniform ShadowUniform {
 } shadow_parameters;
 
 // Contains all the lightspace matrices for each cascade
-layout(set = 0, binding = 7) uniform ShadowLightSpaceMatrices {
+layout(set = 0, binding = 9) uniform ShadowLightSpaceMatrices {
     mat4 matrices[4];
 } shadow_lightspace_matrices;
 
 // Shadow-map texture map and its sampler
-layout(set = 0, binding = 8) uniform texture2DArray shadow_map;
-layout(set = 0, binding = 9) uniform sampler shadow_map_sampler;
+layout(set = 0, binding = 10) uniform texture2DArray shadow_map;
+layout(set = 0, binding = 11) uniform sampler shadow_map_sampler;
+
+// UBO that contains the current monitor/window information
+layout(set = 0, binding = 12) uniform WindowUniform {
+    // Dimensions of the window
+    uint width;
+    uint height;
+} window;
 
 // Calculate a linearly interpolated shadow value
 float shadow_linear(
@@ -130,21 +141,14 @@ float calculate_shadowed(
 	   vec2( 0.14383161, -0.14100790 ) 
 	);
 
-	for (int i = 0; i < 2; i++) {
-		int index = int(16.0*random(vec4(floor(position * 1000.0), i)))%16;
-		vec2 offset = poisson_disk[index];
-		shadowed += shadow_linear(layer, uvs.xy + shadow_parameters.spread * offset * 0.005, size, current + bias);
+	for (int i = 0; i < 4; i++) {
+		//int index = int(16.0*random(vec4(floor(position * 1000.0), i)))%16;
+		vec2 offset = poisson_disk[i*2];
+		shadowed += shadow_linear(layer, uvs.xy + shadow_parameters.spread * offset * 0.004, size, current + bias);
 	}
 
-    return (shadowed / 2) * shadow_parameters.strength;
+    return (shadowed / 4) * shadow_parameters.strength;
 }
-
-// UBO that contains the current monitor/window information
-layout(set = 0, binding = 10) uniform WindowUniform {
-    // Dimensions of the window
-    uint width;
-    uint height;
-} window;
 
 #define PI 3.1415926538
 
@@ -244,12 +248,13 @@ vec3 brdf(
 	// TODO: This is wrong for some reason?
 	vec3 brdf = kd * (surface.diffuse / PI) + specular(surface.f0, surface.roughness, camera.view, light.backward, surface.normal, camera.half_view);
 	vec3 lighting = vec3(max(dot(light.backward, surface.normal), 0.0)) * (1 - shadowed);
+	brdf = surface.diffuse * lighting * light.color;
 
-	// TODO: IBL
-	brdf = surface.diffuse * lighting * light.color + surface.diffuse * 0.2 * pow(surface.visibility, 2);
-
+	// Diffuse Irradiance IBL
+	vec3 irradiance = texture(samplerCube(ibl_diffuse_map, ibl_diffuse_map_sampler), surface.normal).xyz;
+	vec3 ambient = kd * irradiance * surface.diffuse * surface.visibility; 
 	
-	return brdf;
+	return brdf + ambient;
 }
 
 
@@ -321,16 +326,13 @@ void main() {
 		dir = normalize(dir);
 
 		color = texture(samplerCube(environment_map, environment_map_sampler), dir).xyz;
-
-		/*
-		color = calculate_sky_color(dir, scene.sun_direction.xyz);
+		//color = texture(samplerCube(ibl_diffuse_map, ibl_diffuse_map_sampler), dir).xyz;
 
 		// Create a procedural sun with the scene params
 		float sun = dot(dir, -scene.sun_direction.xyz);
 		float out_sun = pow(max(sun * 0.3, 0), 3) * 3;
 		out_sun += pow(clamp(sun - 0.9968, 0, 1.0) * 250, 4) * 16;
-		*/
-		//color += vec3(out_sun);
+		color += vec3(out_sun);
 	}
     
     
