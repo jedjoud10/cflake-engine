@@ -187,7 +187,7 @@ fn update(world: &mut World) {
         })
         .unwrap();
     active
-        .dispatch(vek::Vec3::broadcast(settings.size / 4))
+        .dispatch(vek::Vec3::broadcast(settings.size / 8))
         .unwrap();
 
     // Execute the vertex generation shader first
@@ -222,7 +222,7 @@ fn update(world: &mut World) {
         })
         .unwrap();
     active
-        .dispatch(vek::Vec3::broadcast(settings.size / 4))
+        .dispatch(vek::Vec3::broadcast(settings.size / 8))
         .unwrap();
 
     // Execute the quad generation shader second
@@ -242,7 +242,7 @@ fn update(world: &mut World) {
         })
         .unwrap();
     active
-        .dispatch(vek::Vec3::broadcast(settings.size / 4))
+        .dispatch(vek::Vec3::broadcast(settings.size / 8))
         .unwrap();
 
     // Run a compute shader that will iterate over the ranges and find a free one
@@ -256,7 +256,7 @@ fn update(world: &mut World) {
         })
         .unwrap();
 
-    let dispatch = (settings.sub_allocation_count as f32 / (32.0 * 32.0)).ceil() as u32;
+    let dispatch = (settings.sub_allocation_count as f32 / (32.0 * 64.0)).ceil() as u32;
     active.dispatch(vek::Vec3::new(dispatch, 1, 1)).unwrap();
 
     // Get the output packed tex coord from resource storage

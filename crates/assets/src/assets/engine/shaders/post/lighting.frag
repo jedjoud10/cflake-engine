@@ -252,7 +252,7 @@ vec3 brdf(
 
 	// Diffuse Irradiance IBL
 	vec3 irradiance = texture(samplerCube(ibl_diffuse_map, ibl_diffuse_map_sampler), surface.normal).xyz;
-	vec3 ambient = kd * irradiance * surface.diffuse * surface.visibility; 
+	vec3 ambient = irradiance * pow(surface.diffuse, vec3(1 / 2.2)) * surface.visibility; 
 	
 	return brdf + ambient;
 }

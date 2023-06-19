@@ -302,10 +302,12 @@ fn render(world: &mut World) {
     }
 
     // Render to the shadow map cascades
-    let i = time.frame_count() as usize % 4;
-    render_shadows_pipelines(&mut _shadowmap, &mut default, directional_light_rotation, camera_position, &mut renderer.shadow_pass_stats, i, &pipelines, world);
-    graphics.submit(false);
-    drop(_shadowmap);
+    if _shadowmap.distance > 0.0 {
+        let i = time.frame_count() as usize % 4;
+        render_shadows_pipelines(&mut _shadowmap, &mut default, directional_light_rotation, camera_position, &mut renderer.shadow_pass_stats, i, &pipelines, world);
+        graphics.submit(false);
+        drop(_shadowmap);
+    }
 
     // Begin the scene color render pass
     let gbuffer_position = renderer.gbuffer_position_texture.as_render_target().unwrap();

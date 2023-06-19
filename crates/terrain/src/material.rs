@@ -60,7 +60,7 @@ impl Material for TerrainMaterial {
                 compiler.use_uniform_buffer::<CameraUniform>("camera");
 
                 // Define the types for the user textures
-                if settings.sub_materials.is_some() {
+                if settings.sub_materials_settings.is_some() {
                     compiler.use_define("submaterials", "");
                     compiler.use_sampled_texture::<LayeredAlbedoMap>("layered_albedo_map", false);
                     compiler.use_sampled_texture::<LayeredNormalMap>("layered_normal_map", false);

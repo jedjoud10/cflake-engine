@@ -9,7 +9,7 @@ use ecs::{Entity, Scene};
 use graphics::{
     combine_into_layered, GpuPod, Graphics, ImageTexel, LayeredTexture2D, RawTexels,
     SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap, Texel, TextureMipMaps,
-    TextureUsage, Vertex, SamplerBorderColor, TextureScale, TextureResizeFilter, TextureViewSettings, Texture,
+    TextureUsage, Vertex, SamplerBorderColor, TextureScale, FilterType, TextureViewSettings, Texture,
 };
 use math::{Node, Octree};
 
@@ -93,17 +93,17 @@ impl ChunkManager {
         rayon::scope(|scope| {
             // Create a layered texture 2D that contains the diffuse maps
             scope.spawn(|_| {
-                layered_albedo_map = load_layered_texture(graphics, raw_albedo_texels);
+                layered_albedo_map = load_layered_texture(&settings, graphics, raw_albedo_texels);
             });
 
             // Create a layered texture 2D that contains the normal maps
             scope.spawn(|_| {
-                layered_normal_map = load_layered_texture(graphics, raw_normal_texels);
+                layered_normal_map = load_layered_texture(&settings, graphics, raw_normal_texels);
             });
 
             // Create a layered texture 2D that contains the mask maps
             scope.spawn(|_| {
-                layered_mask_map = load_layered_texture(graphics, raw_mask_texels);
+                layered_mask_map = load_layered_texture(&settings, graphics, raw_mask_texels);
             });
         });
 
@@ -199,10 +199,10 @@ fn load_raw_texels_handles<T: ImageTexel>(
     settings: &TerrainSettings,
     get_name_callback: impl Fn(&TerrainSubMaterial) -> &str,
 ) -> Option<Vec<AsyncHandle<RawTexels<T>>>> {
-    let scale = TextureScale::Default;
-    let inputs = settings
-        .sub_materials
-        .as_ref()?
+    let sub_material_settings = settings.sub_materials_settings.as_ref()?;
+    let scale = sub_material_settings.scale;
+    let inputs = sub_material_settings
+        .materials
         .iter()
         .map(get_name_callback)
         .map(|n| (n, scale, ()))
@@ -212,20 +212,16 @@ fn load_raw_texels_handles<T: ImageTexel>(
 
 // Load a 2D layered texture for the given texel type and the multitude of raw texels
 fn load_layered_texture<T: ImageTexel>(
+    settings: &TerrainSettings,
     graphics: &Graphics,
     raw: Option<Vec<RawTexels<T>>>,
 ) -> Option<LayeredTexture2D<T>> {
+    let sampler = settings.sub_materials_settings.as_ref()?.sampler;
     raw.map(|raw| {
         combine_into_layered(
             graphics,
             raw,
-            Some(SamplerSettings {
-                mipmaps: SamplerMipMaps::AutoAniso,
-                min_filter: SamplerFilter::Linear,
-                mag_filter: SamplerFilter::Linear,
-                mip_filter: SamplerFilter::Linear,
-                ..Default::default()
-            }),
+            Some(sampler),
             TextureMipMaps::Manual { mips: &[] },
             &[TextureViewSettings::whole::<<LayeredTexture2D<T> as Texture>::Region>()],
             TextureUsage::SAMPLED | TextureUsage::COPY_DST,

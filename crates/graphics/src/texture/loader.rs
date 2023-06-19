@@ -2,9 +2,9 @@ use crate::{Extent, Graphics, ImageTexel, Texel};
 use assets::Asset;
 use image::ImageFormat;
 use thiserror::Error;
+pub use image::imageops::FilterType;
 
 // Texture resolution scale that we can use to downsample or upsample imported textures
-pub type TextureResizeFilter = image::imageops::FilterType;
 #[derive(Default, Copy, Clone, PartialEq)]
 pub enum TextureScale {
     // This will not affect the texture scale
@@ -14,7 +14,7 @@ pub enum TextureScale {
     // This will scale the texture size with the "scaling" parameter
     Scale {
         scaling: f32,
-        filter: TextureResizeFilter,
+        filter: FilterType,
     },
 }
 

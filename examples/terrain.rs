@@ -5,7 +5,7 @@ fn main() {
     App::default()
         .set_app_name("cflake engine terrain example")
         .set_window_fullscreen(true)
-        //.set_frame_rate_limit(FrameRateLimit::Limited(120))
+        .set_frame_rate_limit(FrameRateLimit::Limited(120))
         //.set_logging_level(LevelFilter::Trace)
         .insert_init(init)
         .insert_update(update)
@@ -39,18 +39,9 @@ fn init(world: &mut World) {
     asset!(assets, "user/textures/normal3.jpg", "/examples/assets/");
     asset!(assets, "user/textures/mask3.jpg", "/examples/assets/");
 
-    // Create the terrain generator's settings
-    let settings = TerrainSettings::new(
-        &graphics,
-        64,
-        false,
-        true,
-        false,
-        4,
-        1024,
-        7,
-        1.3,
-        Some(&[
+    // Create the terrain sub material settings
+    let settings = TerrainSubMaterialsSettings {
+        materials: [
             TerrainSubMaterial {
                 diffuse: "user/textures/diffuse1.jpg".to_string(),
                 normal: "user/textures/normal1.jpg".to_string(),
@@ -66,7 +57,23 @@ fn init(world: &mut World) {
                 normal: "user/textures/normal3.jpg".to_string(),
                 mask: "user/textures/mask3.jpg".to_string(),
             },
-        ]),
+        ].to_vec(),
+        scale: TextureScale::default(),
+        sampler: SamplerSettings::default(),
+    };
+
+    // Create the terrain generator's settings
+    let settings = TerrainSettings::new(
+        &graphics,
+        64,
+        false,
+        true,
+        true,
+        4,
+        1024,
+        8,
+        0.5,
+        Some(settings),
     )
     .unwrap();
 

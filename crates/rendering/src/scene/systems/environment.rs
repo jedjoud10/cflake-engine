@@ -79,7 +79,7 @@ fn render(world: &mut World) {
         group.set_sampler("enviro_sampler", src_cubemap.sampler().unwrap()).unwrap();
         group.set_storage_texture_mut("diffuse", view).unwrap();
     }).unwrap();
-    active.dispatch(vek::Vec3::new(resolution / 32, resolution / 32, 6)).unwrap();
+    active.dispatch(vek::Vec3::new(resolution / 16, resolution / 16, 6)).unwrap();
 
     graphics.submit(false);
 }

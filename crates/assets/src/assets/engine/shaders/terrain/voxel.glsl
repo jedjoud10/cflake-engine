@@ -8,11 +8,6 @@
 // Main voxel function that will create the shape of the terrain
 // Negative values represent terrain, positive values represent air
 float voxel(vec3 position, out uint material) {
-    material = uint((snoise(position * 0.001) * 0.5 + 0.5) * 3);
-    float density = snoise(position.xz * 0.01) * 20;
-
-    return -position.y + density;
-    /*
     float biome1 = fbm(position.xz * 0.02, 3, 2.0, 0.5) * 1 + position.y;
     float blend = clamp(snoise(position.xz * 0.0002) * 0.5 + 0.5, 0, 1);
     blend = clamp((blend - 0.5) * 1 + 0.5, 0, 1);
@@ -30,6 +25,5 @@ float voxel(vec3 position, out uint material) {
         material = material3;
     }
     
-    return -density;
-    */
+    return max(-density, -sdSphere(position, 10));
 }

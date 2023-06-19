@@ -446,7 +446,7 @@ pub(super) fn create_pipeline_layout(
             .map(|i| first.operands[i].value.to_u32())
             .product::<u32>();
 
-        if mul >= limit {
+        if mul > limit {
             return Err(
                 ShaderReflectionError::ComputeShaderLocalWorkgroupSizeLimit { shader: mul, limit },
             );

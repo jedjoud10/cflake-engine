@@ -5,7 +5,7 @@ use crate::{
 };
 
 use graphics::{
-    ActiveComputeDispatcher, BindGroup, Compiler, Graphics, PushConstants, TextureImportSettings,
+    ActiveComputeDispatcher, BindGroup, Compiler, Graphics, PushConstants, TextureImportSettings, TextureScale, SamplerSettings,
 };
 
 use thiserror::Error;
@@ -40,8 +40,7 @@ pub struct TerrainSettings {
     // Quality settings
     pub(crate) quality: f32,
 
-    // Callbacks for custom voxel data
-    pub(crate) sub_materials: Option<Vec<TerrainSubMaterial>>,
+    pub(crate) sub_materials_settings: Option<TerrainSubMaterialsSettings>,
 }
 
 // Terrain "sub-materials" (aka layered textures) that we can load in
@@ -51,6 +50,13 @@ pub struct TerrainSubMaterial {
     pub diffuse: String,
     pub normal: String,
     pub mask: String,
+}
+
+// Settings that contain sub material data
+pub struct TerrainSubMaterialsSettings {
+    pub materials: Vec<TerrainSubMaterial>,
+    pub scale: TextureScale,
+    pub sampler: SamplerSettings,
 }
 
 impl TerrainSettings {
@@ -65,7 +71,7 @@ impl TerrainSettings {
         sub_allocations: usize,
         max_depth: u32,
         quality: f32,
-        sub_materials: Option<&[TerrainSubMaterial]>,
+        sub_materials_settings: Option<TerrainSubMaterialsSettings>,
     ) -> Result<Self, TerrainSettingsError> {
         let mut output_vertex_buffer_length =
             graphics.device().limits().max_storage_buffer_binding_size as usize / 32;
@@ -79,7 +85,7 @@ impl TerrainSettings {
         // Validate resolution
         if resolution < 16 {
             return Err(TerrainSettingsError::ChunkSizeTooSmall);
-        } else if resolution >= 128 {
+        } else if resolution > 128 {
             return Err(TerrainSettingsError::ChunkSizeTooBig);
         } else if !resolution.is_power_of_two() {
             return Err(TerrainSettingsError::ChunkSizeNotPowerOfTwo);
@@ -110,7 +116,7 @@ impl TerrainSettings {
             output_vertex_buffer_length,
             vertices_per_sub_allocation,
             triangles_per_sub_allocation,
-            sub_materials: sub_materials.map(|x| x.to_vec()),
+            sub_materials_settings,
             max_depth,
             quality,
             collisions,
