@@ -5,8 +5,7 @@ fn main() {
     App::default()
         .set_app_name("cflake engine terrain example")
         .set_window_fullscreen(true)
-        .set_frame_rate_limit(FrameRateLimit::Limited(120))
-        //.set_logging_level(LevelFilter::Trace)
+        .set_logging_level(LevelFilter::Error)
         .insert_init(init)
         .insert_update(update)
         .execute();
@@ -68,7 +67,7 @@ fn init(world: &mut World) {
         64,
         false,
         true,
-        true,
+        false,
         4,
         1024,
         8,
@@ -111,7 +110,7 @@ fn init(world: &mut World) {
         mask_map: None,
         bumpiness_factor: 1.0,
         roughness_factor: 1.0,
-        metallic_factor: 1.0,
+        metallic_factor: 0.0,
         ambient_occlusion_factor: 1.0,
         tint: vek::Rgb::white(),
         scale: vek::Extent2::one(),

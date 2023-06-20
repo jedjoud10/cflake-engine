@@ -448,19 +448,19 @@ fn update(world: &mut World) {
                 ui.horizontal(|ui| {
                     ui.label("Base Bias: ");
                     let value = &mut shadowmapping.parameters.base_bias;
-                    ui.add(egui::Slider::new(value, -0.001f32..=0.001f32).trailing_fill(true));
+                    ui.add(egui::Slider::new(value, -0.0005f32..=0.0005f32).trailing_fill(true));
                 });
 
                 ui.horizontal(|ui| {
                     ui.label("Bias Bias: ");
                     let value = &mut shadowmapping.parameters.bias_bias;
-                    ui.add(egui::Slider::new(value, -0.001f32..=0.001f32).trailing_fill(true));
+                    ui.add(egui::Slider::new(value, -0.0005f32..=0.0005f32).trailing_fill(true));
                 });
 
                 ui.horizontal(|ui| {
                     ui.label("Bias Factor Base: ");
                     let value = &mut shadowmapping.parameters.bias_factor_base;
-                    ui.add(egui::Slider::new(value, 0.1f32..=3.0f32).trailing_fill(true));
+                    ui.add(egui::Slider::new(value, 1.0f32..=1.2f32).trailing_fill(true));
                 });
 
                 ui.horizontal(|ui| {

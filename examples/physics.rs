@@ -8,6 +8,7 @@ fn main() {
         .insert_init(init)
         .insert_update(update)
         .set_window_fullscreen(true)
+        .set_frame_rate_limit(FrameRateLimit::VSync)
         .execute();
 }
 // Creates a movable camera, and sky entity

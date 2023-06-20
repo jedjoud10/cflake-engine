@@ -10,7 +10,6 @@ use crate::{
 
 // A cubemap texture that contains multiple texels that have their own channels
 // A cubemap contains 6 base layer, that represent each side of the cube
-// TODO: TEST
 pub struct CubeMap<T: Texel> {
     // Raw WGPU
     texture: wgpu::Texture,
