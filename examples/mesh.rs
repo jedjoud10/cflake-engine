@@ -11,7 +11,7 @@ fn main() {
         .execute();
 }
 
-// Creates a movable camera, and sky entity
+// Creates a movable camera
 fn init(world: &mut World) {
     // Fetch the required resources from the world
     let assets = world.get::<Assets>().unwrap();

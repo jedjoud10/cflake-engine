@@ -81,7 +81,6 @@ fn update(world: &mut World) {
                 group
                     .set_storage_buffer_mut("count", culled_count_buffer, ..)
                     .unwrap();
-                group.set_uniform_buffer("camera", camera, ..).unwrap();
             })
             .unwrap();
 

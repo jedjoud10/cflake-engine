@@ -6,7 +6,7 @@ layout(set = 1, binding = 0) uniform texture2D gbuffer_position_map;
 layout(set = 1, binding = 1) uniform texture2D gbuffer_albedo_map;
 layout(set = 1, binding = 2) uniform texture2D gbuffer_normal_map;
 layout(set = 1, binding = 3) uniform texture2D gbuffer_mask_map;
-layout(set = 1, binding = 4) uniform texture2D depth_map;
+//layout(set = 1, binding = 4) uniform texture2D depth_map;
 
 // UBO that contains the current scene information
 #include <engine/shaders/common/conversions.glsl>
@@ -266,8 +266,13 @@ void main() {
 	float alpha = albedo_alpha.a;
     vec3 normal = texelFetch(gbuffer_normal_map, ivec2(gl_FragCoord.xy), 0).rgb;
     vec3 mask = texelFetch(gbuffer_mask_map, ivec2(gl_FragCoord.xy), 0).rgb;
-	float non_linear_depth = texelFetch(depth_map, ivec2(gl_FragCoord.xy), 0).r;
 	vec3 surface_normal = normalize(cross(dFdy(position), dFdx(position)));
+	
+	// Fetch depth ngl
+	/*
+	float non_linear_depth = texelFetch(depth_map, ivec2(gl_FragCoord.xy), 0).r;
+	float linear_depth = linearize_depth(non_linear_depth, camera.near_far_vfov_.x, camera.near_far_vfov_.y);
+	*/
 	
     // Optional G-Buffer debug
     switch(post_processing.gbuffer_debug) {
@@ -334,6 +339,9 @@ void main() {
 		out_sun += pow(clamp(sun - 0.9968, 0, 1.0) * 250, 4) * 16;
 		color += vec3(out_sun);
 	}
+
+	// Add fog
+	//color = mix(color, vec3(1), clamp(linear_depth / 1000.0, 0, 1));
     
     
     // Increase exposure
@@ -380,6 +388,5 @@ void main() {
 	vignette = clamp(vignette, 0, 1);
 	vignette = pow(vignette, 4.0) * clamp(post_processing.vignette_strength, 0.0, 2.0);
 	color = mix(color, vec3(0), vignette);
-
 	frag = vec4(color, 0);
 }

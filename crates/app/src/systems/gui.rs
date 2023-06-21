@@ -471,7 +471,7 @@ fn update(world: &mut World) {
             });
     }
 
-    // Forward renderer settings
+    // Renderer settings
     if let Ok(renderer) = world.get_mut::<DeferredRenderer>() {
         fn show_pass_stats(ui: &mut egui::Ui, stats: PassStats) {
             ui.label(format!(
@@ -500,7 +500,7 @@ fn update(world: &mut World) {
             ));
         }
 
-        egui::Window::new("Deferred Rendering")
+        egui::Window::new("Rendering")
             .frame(frame)
             .collapsible(true)
             .default_open(false)
@@ -509,6 +509,15 @@ fn update(world: &mut World) {
                 show_pass_stats(ui, renderer.deferred_pass_stats);
                 ui.heading("Shadow Pass:");
                 show_pass_stats(ui, renderer.shadow_pass_stats);
+            });
+
+        egui::Window::new("Light")
+            .frame(frame)
+            .collapsible(true)
+            .default_open(false)
+            .show(&gui, |ui| {
+                if let Some((rotation, light)) = scene.find_mut::<(&mut Rotation, &mut DirectionalLight)>() {
+                }
             });
     }
 

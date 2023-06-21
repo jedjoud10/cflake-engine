@@ -354,6 +354,8 @@ fn compile_spirv(
     
     let mut options = shaderc::CompileOptions::new().unwrap();
     options.set_invert_y(false);
+    options.set_generate_debug_info();
+    options.set_optimization_level(shaderc::OptimizationLevel::Performance);
     
     let included = Included::default();
     options.set_include_callback(move |target, _type, current, depth| {

@@ -26,7 +26,6 @@ impl ChunkCuller {
 
         compiler.use_storage_buffer::<u32>("visibility", StorageAccess::ReadOnly);
         compiler.use_storage_buffer::<u32>("count", StorageAccess::ReadWrite);
-        compiler.use_uniform_buffer::<CameraUniform>("camera");
         compiler
             .use_storage_buffer::<vek::Vec4<f32>>("input_position_scale", StorageAccess::ReadOnly);
         compiler.use_storage_buffer::<vek::Vec4<f32>>(

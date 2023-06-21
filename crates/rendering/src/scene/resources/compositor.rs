@@ -30,7 +30,7 @@ fn load_lighting_shader(assets: &Assets, graphics: &Graphics) -> Shader {
     compiler.use_sampled_texture::<Texture2D<RGBA<Normalized<u8>>>>("gbuffer_albedo_map", false);
     compiler.use_sampled_texture::<Texture2D<RGBA<Normalized<i8>>>>("gbuffer_normal_map", false);
     compiler.use_sampled_texture::<Texture2D<RGBA<Normalized<u8>>>>("gbuffer_mask_map", false);
-    compiler.use_sampled_texture::<Texture2D<Depth<f32>>>("depth_map", false);
+    //compiler.use_sampled_texture::<Texture2D<Depth<f32>>>("depth_map", false);
 
     compiler.use_uniform_buffer::<CameraUniform>("camera");
     compiler.use_uniform_buffer::<SceneUniform>("scene");

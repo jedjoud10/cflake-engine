@@ -94,7 +94,7 @@ fn update(world: &mut World) {
             group.set_sampled_texture("gbuffer_albedo_map", gbuffer_albedo_map).unwrap();
             group.set_sampled_texture("gbuffer_normal_map", gbuffer_normal_map).unwrap();
             group.set_sampled_texture("gbuffer_mask_map", gbuffer_mask_map).unwrap();
-            group.set_sampled_texture("depth_map", depth_map).unwrap();
+            //group.set_sampled_texture("depth_map", depth_map).unwrap();
         })
         .unwrap();
 

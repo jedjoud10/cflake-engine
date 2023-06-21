@@ -5,12 +5,28 @@ fn main() {
     App::default()
         .set_app_name("cflake engine prototype example")
         .insert_init(init)
+        .set_window_fullscreen(true)
         .insert_update(update)
         .execute();
 }
+// Creates a movable camera, and sky entity
+fn init(world: &mut World) {
+    let mut scene = world.get_mut::<Scene>().unwrap();
 
-// Executed at the start
-fn init(_world: &mut World) {}
+    // Create a movable camera
+    scene.insert((
+        Position::default(),
+        Rotation::default(),
+        Velocity::default(),
+        Camera::default(),
+        CameraController::default(),
+    ));
+
+    // Create a directional light
+    let light = DirectionalLight::default();
+    let rotation = vek::Quaternion::rotation_x(-15.0f32.to_radians()).rotated_y(45f32.to_radians());
+    scene.insert((light, Rotation::from(rotation)));
+}
 
 // Camera controller update executed every tick
 fn update(world: &mut World) {
