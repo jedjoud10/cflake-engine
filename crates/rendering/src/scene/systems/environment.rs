@@ -1,7 +1,7 @@
 use assets::Assets;
 use ecs::Scene;
 use graphics::{Graphics, ComputePass, ActivePipeline, Texture, GpuPod};
-use utils::Storage;
+use utils::{Storage, Time};
 use world::{user, System, World};
 
 use crate::{
@@ -33,11 +33,16 @@ fn render(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
     let renderer = world.get::<DeferredRenderer>().unwrap();
     let scene = world.get::<Scene>().unwrap();
+    let time = world.get::<Time>().unwrap();
 
     // Skip if we don't have a light to draw with
     let Some(directional_light)  = renderer.main_directional_light else {
         return;
     };
+
+    let index = time.frame_count() as usize % 6;
+    let matrix = environment.matrices[index].cols;
+    let matrix = matrix.into_bytes();
 
     // Get the directioanl light and rotation of the light
     let directional_light = scene.entry(directional_light).unwrap();
@@ -51,35 +56,42 @@ fn render(world: &mut World) {
 
     // Get the base environment map to set its view
     let cubemap = &mut environment.environment_map;
-    let view = cubemap.view_mut(1).unwrap();
+    let view = cubemap.view_mut(1 + index).unwrap();
     
     // Generate the base environment map
     let resolution = environment.resolution;
     let matrices = &environment.matrices;
     let mut active = pass.bind_shader(&environment.environment_shader);
     active.set_bind_group(0, |group| {
-        group.set_uniform_buffer("matrices", matrices, ..).unwrap();
         group.set_storage_texture_mut("enviro", view).unwrap();
     }).unwrap();
     active.set_push_constants(|pc| {
+        // Set the sun direction
         let bytes = rotation.into_bytes();
+        let offset = bytes.len();
         pc.push(bytes, 0).unwrap();
+        
+        // Set the proj/view matrix
+        pc.push(matrix, 64).unwrap();
+
     }).unwrap();
-    active.dispatch(vek::Vec3::new(resolution / 32, resolution / 32, 6)).unwrap();
+    active.dispatch(vek::Vec3::new(resolution / 32, resolution / 32, 1)).unwrap();
 
     // Generate the diffuse IBL map
     let resolution = environment.resolution / 16;
     let src_cubemap = &environment.environment_map;
     let dst_cubemap = &mut environment.diffuse_ibl_map;
-    let view = dst_cubemap.view_mut(1).unwrap();
+    let view = dst_cubemap.view_mut(1 + index).unwrap();
     let mut active = pass.bind_shader(&environment.ibl_diffuse_convolution_shader);
     active.set_bind_group(0, |group| {
-        group.set_uniform_buffer("matrices", matrices, ..).unwrap();
         group.set_sampled_texture("enviro", src_cubemap).unwrap();
         group.set_sampler("enviro_sampler", src_cubemap.sampler().unwrap()).unwrap();
         group.set_storage_texture_mut("diffuse", view).unwrap();
     }).unwrap();
-    active.dispatch(vek::Vec3::new(resolution / 16, resolution / 16, 6)).unwrap();
+    active.set_push_constants(|pc| {
+        pc.push(matrix, 0).unwrap();
+    }).unwrap();
+    active.dispatch(vek::Vec3::new(resolution / 16, resolution / 16, 1)).unwrap();
 
     graphics.submit(false);
 }

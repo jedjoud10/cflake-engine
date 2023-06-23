@@ -57,11 +57,6 @@ void main() {
 		normalize(-m_normal));
 	vec3 normal = normalize(tbn * normalize(bumps));
 
-	// Clamp PBR values
-	float roughness = clamp(mask.g, 0.01, 1.0);
-	float metallic = clamp(mask.b, 0.01, 1.0);
-	float visibility = clamp(mask.r, 0.0, 1.0);
-
 	// Set the G-buffer values
 	gbuffer_position = vec4(m_position, 0);
 	gbuffer_albedo = vec4(albedo, 1);

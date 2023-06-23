@@ -52,6 +52,7 @@ pub struct Compiler<'a> {
     pub(crate) snippets: Snippets,
     pub(crate) constants: Constants,
     pub(crate) defines: Defines,
+    pub(crate) optimize: bool,
     pub(crate) resource_types: ResourceBindingTypes,
     pub(crate) maybe_push_constant_layout: MaybePushConstantLayout,
 }
@@ -67,6 +68,7 @@ impl<'a> Compiler<'a> {
             resource_types: Default::default(),
             maybe_push_constant_layout: Default::default(),
             defines: Default::default(),
+            optimize: false,
         }
     }
 
@@ -87,6 +89,11 @@ impl<'a> Compiler<'a> {
         self.defines.insert(name.to_string(), value.to_string());
     }
 
+    // Toggle shader-c optimization level
+    pub fn toggle_optimization(&mut self, optimize: bool) {
+        self.optimize = optimize;
+    }
+
     // Convert the given GLSL code to SPIRV code, then compile said SPIRV code
     // This uses the defined resoures defined in this compiler
     pub(crate) fn compile<M: ShaderModule>(&self, module: M) -> Result<Compiled<M>, ShaderError> {
@@ -104,6 +111,7 @@ impl<'a> Compiler<'a> {
             &self.defines,
             source,
             &path,
+            self.optimize,
         )
         .map_err(ShaderError::Compilation)?;
         log::debug!(
@@ -234,6 +242,7 @@ fn compile(
     defines: &Defines,
     mut source: String,
     path: &Path,
+    optimize: bool,
 ) -> Result<(Arc<wgpu::ShaderModule>, Arc<spirq::EntryPoint>), ShaderCompilationError> {
     // Check if the shader module was already compiled and WGPU created it
     let key = (source.clone(), defines.clone(), snippets.clone());
@@ -265,7 +274,8 @@ fn compile(
             snippets,
             assets,
             graphics,
-            kind
+            kind,
+            optimize,
         )?)
     } else {
         None
@@ -328,7 +338,8 @@ fn compile_spirv(
     snippets: &Snippets,
     assets: &Assets,
     graphics: &Graphics,
-    kind: &ModuleKind
+    kind: &ModuleKind,
+    optimization: bool,
 ) -> Result<shaderc::CompilationArtifact, ShaderCompilationError> {
     let file = path.file_name().unwrap().to_str().unwrap();
     let version_line_index = source
@@ -354,8 +365,11 @@ fn compile_spirv(
     
     let mut options = shaderc::CompileOptions::new().unwrap();
     options.set_invert_y(false);
-    options.set_generate_debug_info();
-    options.set_optimization_level(shaderc::OptimizationLevel::Performance);
+
+    if optimization {
+        options.set_generate_debug_info();
+        options.set_optimization_level(shaderc::OptimizationLevel::Performance);
+    }
     
     let included = Included::default();
     options.set_include_callback(move |target, _type, current, depth| {

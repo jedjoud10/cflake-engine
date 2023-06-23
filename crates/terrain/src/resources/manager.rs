@@ -149,7 +149,8 @@ impl ChunkManager {
 
             let i = splits.iter().enumerate().filter(|(_, &rel)| percent >= rel).map(|(i, _)| i).max().unwrap();
 
-            percents[i] * settings.quality.clamp(0.5, 3.0)
+            //percents[i] * settings.quality.clamp(0.5, 3.0)
+            1.0
         }).collect::<Vec<f32>>();
         lod.insert(0, 1.0);
 

@@ -16,13 +16,13 @@ fn init(world: &mut World) {
     let assets = world.get::<Assets>().unwrap();
 
     // Setup the assets that will be loaded
-    asset!(assets, "user/scenes/untitled3.glb", "/examples/assets/");
+    asset!(assets, "user/scenes/example.glb", "/examples/assets/");
 
     // Load the glTF scene into the world LMAO!!
     let context = GtlfContext::from_world(world).unwrap();
     let settings = GltfSettings::default();
     assets
-        .load::<GltfScene>(("user/scenes/untitled3.glb", settings, context))
+        .load::<GltfScene>(("user/scenes/example.glb", settings, context))
         .unwrap();
 
     // Create a movable camera
@@ -51,7 +51,7 @@ fn update(world: &mut World) {
 
     // Rotation the light
     if let Some((rotation, light)) = scene.find_mut::<(&mut Rotation, &mut DirectionalLight)>() {
-        let value = (time.elapsed().as_secs_f32() * 0.1).sin();
+        let value = (time.elapsed().as_secs_f32() * 0.03).sin();
         **rotation = Quaternion::rotation_x((value * 90.0 - 90.0).to_radians());
         let noon = vek::Rgb::new(255.0f32, 231.0, 204.0);
         let sunrise = vek::Rgb::new(255.0f32, 151.0, 33.0);

@@ -4,7 +4,7 @@ use assets::Assets;
 use graphics::{
     Compiler, ComputeModule, ComputeShader, CubeMap, Graphics, ImageTexel,
     LayeredTexture2D, SamplerSettings,
-    StorageAccess, Texel, Texture, TextureMipMaps, TextureUsage, RGBA, TextureViewSettings, TextureViewDimension, UniformBuffer, BufferMode, BufferUsage, ModuleVisibility,
+    StorageAccess, Texel, Texture, TextureMipMaps, TextureUsage, RGBA, TextureViewSettings, TextureViewDimension, UniformBuffer, BufferMode, BufferUsage, ModuleVisibility, Texture2D, SamplerWrap,
 };
 
 pub type EnvironmentMap = CubeMap<RGBA<f32>>;
@@ -14,6 +14,16 @@ fn create_cubemap<T: Texel + ImageTexel>(
     graphics: &Graphics,
     resolution: u32,
 ) -> CubeMap<T> {
+    fn create_view_settings(layer: u32) -> TextureViewSettings {
+        TextureViewSettings {
+            base_mip_level: 0,
+            mip_level_count: None,
+            base_array_layer: layer,
+            array_layer_count: Some(1),
+            dimension: TextureViewDimension::D2,
+        }
+    }
+
     CubeMap::<T>::from_texels(
         graphics,
         None,
@@ -21,6 +31,12 @@ fn create_cubemap<T: Texel + ImageTexel>(
         TextureUsage::SAMPLED | TextureUsage::STORAGE,
         &[
             TextureViewSettings::whole::<<CubeMap<T> as Texture>::Region>(),
+            create_view_settings(0),
+            create_view_settings(1),
+            create_view_settings(2),
+            create_view_settings(3),
+            create_view_settings(4),
+            create_view_settings(5),
             TextureViewSettings {
                 base_mip_level: 0,
                 mip_level_count: None,
@@ -29,7 +45,12 @@ fn create_cubemap<T: Texel + ImageTexel>(
                 dimension: TextureViewDimension::D2Array,
             }
         ],
-        Some(SamplerSettings::default()),
+        Some(SamplerSettings {
+            wrap_u: SamplerWrap::ClampToEdge,
+            wrap_v: SamplerWrap::ClampToEdge,
+            wrap_w: SamplerWrap::ClampToEdge,
+            ..Default::default()
+        }),
         TextureMipMaps::Disabled,
     )
     .unwrap()
@@ -43,7 +64,7 @@ pub struct Environment {
     pub(crate) resolution: u32,
     pub(crate) environment_shader: ComputeShader,
     pub(crate) ibl_diffuse_convolution_shader: ComputeShader,
-    pub(crate) matrices: UniformBuffer<vek::Vec4<vek::Vec4<f32>>>,
+    pub(crate) matrices: [vek::Mat4<f32>; 6],
 }
 
 impl Environment {
@@ -56,10 +77,9 @@ impl Environment {
 
         // Create the bind layout for the compute shader
         let mut compiler = Compiler::new(assets, graphics);
-        compiler.use_uniform_buffer::<vek::Vec4<vek::Vec4<f32>>>("matrices");
         compiler.use_constant(0, resolution);
-        compiler.use_storage_texture::<LayeredTexture2D<RGBA<f32>>>("enviro", StorageAccess::WriteOnly);
-        compiler.use_push_constant_layout(graphics::PushConstantLayout::single(size_of::<f32>() * 4, ModuleVisibility::Compute).unwrap());
+        compiler.use_storage_texture::<Texture2D<RGBA<f32>>>("enviro", StorageAccess::WriteOnly);
+        compiler.use_push_constant_layout(graphics::PushConstantLayout::single(size_of::<f32>() * 4 * 4 + size_of::<f32>() * 4 * 4, ModuleVisibility::Compute).unwrap());
         let environment_shader = ComputeShader::new(compute, &compiler).unwrap();
 
         // Load the diffuse IBL convolution shader
@@ -69,11 +89,11 @@ impl Environment {
 
         // Create the bind layout for the compute shader
         let mut compiler = Compiler::new(assets, graphics);
-        compiler.use_uniform_buffer::<vek::Vec4<vek::Vec4<f32>>>("matrices");
         compiler.use_constant(0, resolution / 16);
-        compiler.use_storage_texture::<LayeredTexture2D<RGBA<f32>>>("diffuse", StorageAccess::WriteOnly);
+        compiler.use_storage_texture::<Texture2D<RGBA<f32>>>("diffuse", StorageAccess::WriteOnly);
         compiler.use_sampled_texture::<EnvironmentMap>("enviro", false);
         compiler.use_sampler::<RGBA<f32>>("enviro_sampler", false);
+        compiler.use_push_constant_layout(graphics::PushConstantLayout::single(size_of::<f32>() * 4 * 4, ModuleVisibility::Compute).unwrap());
         let ibl_diffuse_convolution_shader = ComputeShader::new(compute, &compiler).unwrap();
 
         // Convert the eqilateral texture to a cubemap texture
@@ -93,15 +113,7 @@ impl Environment {
         ];
 
         // Multiply both matrices
-        let matrices = views.map(|x| (projection * x).cols);
-
-        // Create the uniform buffer that contains the matrices
-        let matrices = UniformBuffer::<vek::Vec4<vek::Vec4<f32>>>::from_slice(
-            graphics,
-            &matrices,
-            BufferMode::Dynamic,
-            BufferUsage::empty()
-        ).unwrap();
+        let matrices = views.map(|x| (projection * x));
 
         Self {
             resolution, 

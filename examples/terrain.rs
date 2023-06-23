@@ -13,12 +13,9 @@ fn main() {
 
 /*
 // Voxel graph that we will generate
-fn graph(x: &dyn VoxelNode<f32>, y: &dyn VoxelNode<f32>, z: &dyn VoxelNode<f32>) {
+fn graph(x: VoxelNode<f32>, y: VoxelNode<f32>, z: VoxelNode<f32>) -> VoxelNode<f32> {
     use cflake_engine::terrain::graph::*;
-    let noise = snoise((x, y));
-    let value = noise - y;
-    
-    VoxelGraph::new([value])
+    let added: VoxelNode<f32> = x + y - y;
 }
 */
 
@@ -67,14 +64,14 @@ fn init(world: &mut World) {
     // Create the terrain generator's settings
     let settings = TerrainSettings::new(
         &graphics,
-        64,
+        128,
         false,
         true,
         false,
-        4,
-        1024,
         8,
-        0.8,
+        1024,
+        6,
+        1.0,
         Some(settings),
     )
     .unwrap();

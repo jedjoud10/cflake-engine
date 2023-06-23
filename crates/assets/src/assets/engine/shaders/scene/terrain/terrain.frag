@@ -1,5 +1,7 @@
 #version 460 core
 
+#include <engine/shaders/noises/common.glsl>
+
 // G-Buffer data write
 layout(location = 0) out vec4 gbuffer_position;
 layout(location = 1) out vec4 gbuffer_albedo;
@@ -53,7 +55,7 @@ layout(set = 0, binding = 13) uniform sampler layered_mask_map_sampler;
 // Triplanar mapping offset and UV scale
 const float offset = 0.0;
 const vec2 scale = vec2(0.01) * vec2(-1, -1); 
-const float normal_strength = 1.3;
+const float normal_strength = 0.8;
 
 // Get the blending offset to be used internally in the triplanar texture
 vec3 get_blend(vec3 normal) {
@@ -120,14 +122,16 @@ void main() {
 	#else
 	vec3 surface_normal = normalize(m_normal);
 	#endif
-	
+
 	/*
 	gbuffer_position = vec4(m_position, 0);
-	gbuffer_albedo = vec4(1);
+	vec3 test_albedo = vec3(any(lessThan(m_local_position.xz, vec2(1))) ? 0.0 : 1.0);
+	gbuffer_albedo = vec4(test_albedo, 1);
 	gbuffer_normal = vec4(surface_normal, 0);
 	gbuffer_mask = vec4(vec3(1, 0.8, 0), 0);
+	return;
 	*/
-	
+
 	vec4 v0 = fetch_vertex_position_and_material(0);
 	vec4 v1 = fetch_vertex_position_and_material(1);
 	vec4 v2 = fetch_vertex_position_and_material(2);

@@ -121,7 +121,7 @@ impl ShadowMapping {
             spread: 0.15,
             base_bias: -0.00010,
             bias_bias: 0.0,
-            bias_factor_base: 1.00,
+            bias_factor_base: 1.165,
             _padding1: 0.0,
             _padding2: 0.0,
             max_distance: distance,

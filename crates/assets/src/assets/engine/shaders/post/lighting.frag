@@ -238,7 +238,7 @@ vec3 brdf(
 ) {
 	// Calculate kS and kD
 	vec3 ks = fresnel(surface.f0, camera.half_view, camera.view);
-	vec3 kd = (1 - ks);
+	vec3 kd = (1 - ks) * (1 - surface.metallic);
 	
 	// Calculate if the pixel is shadowed
 	float depth = abs((camera.view_matrix * vec4(surface.position, 1)).z);
@@ -246,14 +246,14 @@ vec3 brdf(
 	//float shadowed = 0.0;
 
 	// TODO: This is wrong for some reason?
-	vec3 brdf = kd * (surface.diffuse / PI) + specular(surface.f0, surface.roughness, camera.view, light.backward, surface.normal, camera.half_view);
+	// + specular(surface.f0, surface.roughness, camera.view, light.backward, surface.normal, camera.half_view)
+	vec3 brdf = kd * (surface.diffuse / PI);
 	vec3 lighting = vec3(max(dot(light.backward, surface.normal), 0.0)) * (1 - shadowed);
-	brdf = surface.diffuse * lighting * light.color;
+	brdf *= lighting * light.color;
 
 	// Diffuse Irradiance IBL
 	vec3 irradiance = texture(samplerCube(ibl_diffuse_map, ibl_diffuse_map_sampler), surface.normal).xyz;
-	vec3 ambient = irradiance * pow(surface.diffuse, vec3(1 / 2.2)) * surface.visibility; 
-	
+	vec3 ambient = irradiance * surface.diffuse * surface.visibility;
 	return brdf + ambient;
 }
 
@@ -315,7 +315,7 @@ void main() {
 		vec3 f0 = mix(vec3(0.04), albedo, metallic);
 
 		// Create the data structs
-		SunData sun = SunData(-scene.sun_direction.xyz, scene.sun_color.rgb * 0.8);
+		SunData sun = SunData(-scene.sun_direction.xyz, scene.sun_color.rgb);
 		SurfaceData surface = SurfaceData(albedo, normalize(normal), surface_normal, position, roughness, metallic, visibility, f0);
 		vec3 view = normalize(camera.position.xyz - position);
 		CameraData camera = CameraData(view, normalize(view - scene.sun_direction.xyz), camera.position.xyz, camera.view, camera.projection);

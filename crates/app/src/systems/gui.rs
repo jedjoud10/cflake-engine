@@ -347,8 +347,9 @@ fn update(world: &mut World) {
                 .striped(true)
                 .show(ui, |ui| {
                     let mut values = terrain.manager.lod_multipliers.borrow_mut();
+                    let len = values.len() - 1;
 
-                    for value in values.iter_mut() {
+                    for value in values.iter_mut().take(len) {
                         ui.horizontal(|ui| {
                             ui.label("Multiplier: ");
                             ui.add(egui::DragValue::new(value));
@@ -511,6 +512,7 @@ fn update(world: &mut World) {
                 show_pass_stats(ui, renderer.shadow_pass_stats);
             });
 
+        /*
         egui::Window::new("Light")
             .frame(frame)
             .collapsible(true)
@@ -519,6 +521,7 @@ fn update(world: &mut World) {
                 if let Some((rotation, light)) = scene.find_mut::<(&mut Rotation, &mut DirectionalLight)>() {
                 }
             });
+        */
     }
 
     // Compositor settings

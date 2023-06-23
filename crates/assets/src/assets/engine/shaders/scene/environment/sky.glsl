@@ -88,11 +88,12 @@ vec3 calculate_sky_color(
     vec3 normal,
     vec3 sun
 ) {
-    //TODO: Implement cube map and diffuse IBL to re-enable this
     vec2 test_normal = sample_spherical_map(normal);
     vec2 test_sun = sample_spherical_map(-sun);
     return pow(getAtmosphericScattering(screen2world(test_normal), screen2world(test_sun)) * 0.4, vec3(2.2));
+    
 
+    /*
     // Get up component of vector and remap to 0 - 1 range
     float up = normal.y * 0.5 + 0.5;
 
@@ -111,10 +112,6 @@ vec3 calculate_sky_color(
     float time_of_day = min(max(-sun.y, 0), 0.25) * 4;
     vec3 color = mix(day_color, vec3(0.001), 1-time_of_day);
 
-    // Create a procedural sun with the scene params
-	float sun_value = dot(normal, -sun);
-	sun_value = pow(max(sun_value, 0), 1300) * 30;
-    color += vec3(sun_value);
-
     return color;
+    */
 }

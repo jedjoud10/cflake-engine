@@ -8,7 +8,6 @@ fn main() {
         .insert_init(init)
         .insert_update(update)
         .set_window_fullscreen(true)
-        .set_frame_rate_limit(FrameRateLimit::VSync)
         .execute();
 }
 // Creates a movable camera, and sky entity
@@ -56,7 +55,7 @@ fn init(world: &mut World) {
         albedo_map: Some(diffuse.clone()),
         normal_map: Some(normal.clone()),
         mask_map: Some(mask.clone()),
-        bumpiness_factor: 0.9,
+        bumpiness_factor: 0.5,
         roughness_factor: 1.0,
         metallic_factor: 1.0,
         ambient_occlusion_factor: 1.0,

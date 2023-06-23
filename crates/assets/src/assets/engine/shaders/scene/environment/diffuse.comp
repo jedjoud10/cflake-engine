@@ -6,11 +6,11 @@ layout (constant_id = 0) const uint cubemap_resolution = 1;
 
 layout(set = 0, binding = 0) uniform textureCube enviro;
 layout(set = 0, binding = 1) uniform sampler enviro_sampler;
-layout(set = 0, binding = 2, rgba32f) writeonly uniform image2DArray diffuse;
+layout(set = 0, binding = 2, rgba32f) writeonly uniform image2D diffuse;
 
-layout(set = 0, binding = 3) uniform Matrices {
-    mat4 data[6];
-} matrices;
+layout(push_constant) uniform PushConstants {
+    mat4 matrix;
+} parameters;
 
 void main() {
     // Convert coordinates to -1 - 1 coordinates
@@ -19,7 +19,7 @@ void main() {
     ndc.xy = ndc.xy * 2 - 1;
 
     // Convert the NDC coordinate to a world space normal 
-    mat4 matrix = matrices.data[gl_GlobalInvocationID.z];
+    mat4 matrix = parameters.matrix;
     vec3 normal = normalize((matrix * vec4(ndc, 0)).xyz);
 
     // Create the resulting variables
@@ -29,7 +29,7 @@ void main() {
     up = normalize(cross(normal, right));
 
     // Used for convolution
-    float sample_delta = 0.255;
+    float sample_delta = 0.125;
     float samples = 0.0;
     const float PI = 3.14159265359;
 
@@ -50,5 +50,5 @@ void main() {
     // Return the irradiance diffuse lighting
     vec3 color = PI * irradiance * (1.0 / samples);
 
-    imageStore(diffuse, ivec3(gl_GlobalInvocationID.xyz), vec4(color, 1));
+    imageStore(diffuse, ivec2(gl_GlobalInvocationID.xy), vec4(color, 1));
 }

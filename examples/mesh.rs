@@ -52,9 +52,9 @@ fn init(world: &mut World) {
 
     // Create a new material instance
     let material = pbrs.insert(PbrMaterial {
-        albedo_map: Some(diffuse),
-        normal_map: Some(normal),
-        mask_map: Some(mask),
+        albedo_map: None,
+        normal_map: None,
+        mask_map: None,
         bumpiness_factor: 1.0,
         roughness_factor: 1.0,
         metallic_factor: 1.0,

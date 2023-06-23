@@ -76,6 +76,7 @@ fn update(world: &mut World) {
 
         // Discard non-leaf nodes
         added.retain(|x| x.leaf());
+        //added.retain(|x| x.size() == settings.size);
 
         // Don't do shit
         if added.is_empty() && removed.is_empty() {
