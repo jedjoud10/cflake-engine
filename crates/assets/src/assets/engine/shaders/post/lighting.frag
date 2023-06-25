@@ -2,11 +2,12 @@
 layout(location = 0) out vec4 frag;
 
 // Fetch the G-Buffer data
-layout(set = 1, binding = 0) uniform texture2D gbuffer_position_map;
-layout(set = 1, binding = 1) uniform texture2D gbuffer_albedo_map;
-layout(set = 1, binding = 2) uniform texture2D gbuffer_normal_map;
-layout(set = 1, binding = 3) uniform texture2D gbuffer_mask_map;
-//layout(set = 1, binding = 4) uniform texture2D depth_map;
+layout(set = 1, binding = 1) uniform texture2D gbuffer_position_map;
+layout(set = 1, binding = 2) uniform texture2D gbuffer_albedo_map;
+layout(set = 1, binding = 3) uniform texture2D gbuffer_normal_map;
+layout(set = 1, binding = 4) uniform texture2D gbuffer_mask_map;
+
+//layout(set = 1, binding = 5) uniform texture2D depth_map;
 
 // UBO that contains the current scene information
 #include <engine/shaders/common/conversions.glsl>
@@ -141,13 +142,14 @@ float calculate_shadowed(
 	   vec2( 0.14383161, -0.14100790 ) 
 	);
 
-	for (int i = 0; i < 4; i++) {
-		//int index = int(16.0*random(vec4(floor(position * 1000.0), i)))%16;
-		vec2 offset = poisson_disk[i*2];
+	for (int i = 0; i < 16; i++) {
+		//int index = i * 2;
+		int index = int(16.0*random(vec4(floor(position * 1000.0), i)))%16;
+		vec2 offset = poisson_disk[index];
 		shadowed += shadow_linear(layer, uvs.xy + shadow_parameters.spread * offset * 0.004, size, current + bias);
 	}
 
-    return (shadowed / 4) * shadow_parameters.strength;
+    return (shadowed / 16) * shadow_parameters.strength;
 }
 
 #define PI 3.1415926538
@@ -237,7 +239,7 @@ vec3 brdf(
 	SunData light
 ) {
 	// Calculate kS and kD
-	vec3 ks = fresnel(surface.f0, camera.half_view, camera.view);
+	vec3 ks = fresnelRoughness(surface.f0, camera.half_view, camera.view, surface.roughness);
 	vec3 kd = (1 - ks) * (1 - surface.metallic);
 	
 	// Calculate if the pixel is shadowed
@@ -245,16 +247,15 @@ vec3 brdf(
     float shadowed = calculate_shadowed(surface.position, depth, surface.surface_normal, light.backward, camera.position);	
 	//float shadowed = 0.0;
 
-	// TODO: This is wrong for some reason?
-	// + specular(surface.f0, surface.roughness, camera.view, light.backward, surface.normal, camera.half_view)
-	vec3 brdf = kd * (surface.diffuse / PI);
+	vec3 specular = specular(surface.f0, surface.roughness, camera.view, light.backward, surface.normal, camera.half_view);
+	vec3 brdf = kd * (surface.diffuse) + specular;
 	vec3 lighting = vec3(max(dot(light.backward, surface.normal), 0.0)) * (1 - shadowed);
 	brdf *= lighting * light.color;
 
 	// Diffuse Irradiance IBL
 	vec3 irradiance = texture(samplerCube(ibl_diffuse_map, ibl_diffuse_map_sampler), surface.normal).xyz;
-	vec3 ambient = irradiance * surface.diffuse * surface.visibility;
-	return brdf + ambient;
+	vec3 ambient = irradiance * surface.diffuse * kd;
+	return brdf + ambient * 1.5;
 }
 
 

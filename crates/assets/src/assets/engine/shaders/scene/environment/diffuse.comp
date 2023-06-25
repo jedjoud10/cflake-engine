@@ -28,10 +28,16 @@ void main() {
     vec3 right = normalize(cross(up, normal));
     up = normalize(cross(normal, right));
 
+    // Fix that one pixel on the Y+ cubemap plane
+    if (normal == vec3(0, 1, 0)) {
+        up = vec3(0, 0, 1);
+        right = vec3(1, 0, 0);
+    }
+
     // Used for convolution
+    const float PI = 3.14159265359;
     float sample_delta = 0.125;
     float samples = 0.0;
-    const float PI = 3.14159265359;
 
     // Loop through a sphere using specific delta steps
     for(float phi = 0.0; phi < 2.0 * PI; phi += sample_delta) {

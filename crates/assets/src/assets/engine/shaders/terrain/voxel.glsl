@@ -25,11 +25,12 @@ vec2 rotate(vec2 v, float a) {
 // Main voxel function that will create the shape of the terrain
 // Negative values represent terrain, positive values represent air
 float voxel(vec3 position, out uint material) {
-    position *= 4.2;
+    //position *= 3.0;
 
     // Blend between the two biomes
     float blend = clamp(snoise(position.xz * 0.0001) * 0.5 + 0.5, 0, 1);
-    blend = smoothstep(0.0, 1.0, clamp((blend - 0.5) * 2 + 0.5 - cellular(position.xz * 0.008).x * 0.1, 0, 1));
+    blend = smoothstep(0.0, 1.0, clamp((blend - 0.5) * 6 + 0.5, 0, 1));
+    blend = 1.0;
        
     // Sand/Dune biome
     float biome1 = 0;
@@ -51,7 +52,7 @@ float voxel(vec3 position, out uint material) {
     uint material3 = 1;
 
     if (blend != 0.0) {
-        rocky = position.y - fbmCellular(position.xz * 0.001, 8, 0.4, 1.85).x * 930 - 50;
+        rocky = position.y - fbmCellular(position.xz * 0.001, 8, 0.5, 1.85).x * 930 - 50;
         rocky = opSmoothUnion(position.y, rocky, 400);
         //rocky += smooth_floor(position.y / 50) * 200;
     }

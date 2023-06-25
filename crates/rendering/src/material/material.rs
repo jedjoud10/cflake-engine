@@ -1,5 +1,5 @@
 use crate::{
-    DefaultMaterialResources, MeshAttributes, RenderPath, Renderer, SceneColorLayout, Direct, Pass,
+    DefaultMaterialResources, MeshAttributes, RenderPath, Renderer, SceneColorLayout, Direct, Pass, SubSurface,
 };
 use assets::Assets;
 
@@ -18,6 +18,14 @@ pub trait Material: 'static + Sized + Sync + Send {
     type RenderPath: RenderPath;
     type Settings<'s>;
     type Query<'a>: ecs::QueryLayoutRef;
+
+    // Checks if a material can be rendered with the given render path
+    // If not, this will return a warning when trying to render a mesh
+    fn is_render_path_supported<RP: RenderPath>(settings: &Self::Settings<'_>) -> bool { false }
+
+    // Checks if a material can be used for rendering for a specific pass
+    // If not, this will not call the following "shader()" method to setup shader
+    fn is_pass_supported<P: Pass>(settings: &Self::Settings<'_>) -> bool { false }
 
     // Create a shader for this material for a specific pass
     // You can return "None" to disable rendering for that specific pass

@@ -64,13 +64,13 @@ fn init(world: &mut World) {
     // Create the terrain generator's settings
     let settings = TerrainSettings::new(
         &graphics,
-        128,
+        64,
         false,
         true,
         false,
-        8,
+        4,
         1024,
-        6,
+        8,
         1.0,
         Some(settings),
     )
@@ -97,7 +97,7 @@ fn init(world: &mut World) {
     ));
 
     // Create a directional light
-    let light = DirectionalLight::default();
+    let light = DirectionalLight { intensity: 1.2, color: vek::Rgb::broadcast(255)  };
     let rotation = vek::Quaternion::rotation_x(-20.0f32.to_radians()).rotated_y(45f32.to_radians());
     scene.insert((light, Rotation::from(rotation)));
 
@@ -134,16 +134,14 @@ fn update(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
 
     // Rotation the light
-    /*
     if let Some((rotation, light)) = scene.find_mut::<(&mut Rotation, &mut DirectionalLight)>() {
         let value = (time.elapsed().as_secs_f32() * 0.1).sin();
-        **rotation = Quaternion::rotation_x((value * 90.0 - 90.0).to_radians());
-        let noon = vek::Rgb::new(255.0f32, 231.0, 204.0);
-        let sunrise = vek::Rgb::new(255.0f32, 151.0, 33.0);
-        let interpolated = vek::Lerp::lerp(noon, sunrise, value.abs());
+        **rotation = Quaternion::rotation_x((value * 70.0 - 90.0).to_radians());
+        let noon = vek::Rgb::new(255.0f32, 250.0, 240.0);
+        let sunrise = vek::Rgb::new(255.0f32, 179.0, 92.0);
+        let interpolated = vek::Lerp::lerp(noon, sunrise, value.abs().powf(5.0));
         light.color = interpolated.map(|x| x as u8);
     }
-    */
 
     // Exit the game when the user pressed Escape
     if input.get_button(KeyboardButton::Escape).pressed() {

@@ -1,7 +1,7 @@
 use crate::{
     AlbedoMap, CameraUniform, DefaultMaterialResources, Direct,
     EnvironmentMap, MaskMap, Material, NormalMap, Renderer, SceneUniform, ShadowMap, ShadowMapping,
-    ShadowUniform, Pass,
+    ShadowUniform, Pass, SubSurface,
 };
 
 use assets::Assets;
@@ -32,7 +32,7 @@ impl Material for PbrMaterial {
     type Resources<'w> = (
         world::Read<'w, Storage<AlbedoMap>>,
         world::Read<'w, Storage<NormalMap>>,
-        world::Read<'w, Storage<MaskMap>>,
+        world::Read<'w, Storage<MaskMap>>
     );
 
     type RenderPath = Direct;
@@ -167,7 +167,7 @@ impl Material for PbrMaterial {
     fn set_push_constants<'r, 'w, P: Pass>(
         &self,
         renderer: &Renderer,
-        _resources: &'r mut Self::Resources<'w>,
+        resources: &'r mut Self::Resources<'w>,
         _default: &DefaultMaterialResources<'r>,
         _query: &Self::Query<'w>,
         constants: &mut PushConstants<ActiveRenderPipeline<P::C, P::DS>>,
@@ -219,5 +219,6 @@ impl Material for PbrMaterial {
         constants
             .push(bytes, offset as u32, ModuleVisibility::Fragment)
             .unwrap();
+        offset += bytes.len();
     }
 }

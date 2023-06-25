@@ -26,6 +26,8 @@ fn load_lighting_shader(assets: &Assets, graphics: &Graphics) -> Shader {
 
     // Create the bind layout for the compositor shader
     let mut compiler = Compiler::new(assets, graphics);
+
+    // Gbuffer textures and depth map
     compiler.use_sampled_texture::<Texture2D<RGBA<f32>>>("gbuffer_position_map", false);
     compiler.use_sampled_texture::<Texture2D<RGBA<Normalized<u8>>>>("gbuffer_albedo_map", false);
     compiler.use_sampled_texture::<Texture2D<RGBA<Normalized<i8>>>>("gbuffer_normal_map", false);
@@ -216,7 +218,7 @@ pub struct PostProcessUniform {
 impl Default for PostProcessUniform {
     fn default() -> Self {
         Self {
-            exposure: 2.0,
+            exposure: 1.0,
             gamma: 2.2,
             vignette_strength: 0.4,
             vignette_size: 0.1,

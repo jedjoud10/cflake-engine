@@ -4,7 +4,7 @@ use crate::{
     AlbedoMap, AttributeBuffer, Camera, DefaultMaterialResources, DirectionalLight, Environment,
     DeferredRenderer, Indirect, IndirectMesh, MaskMap, Mesh, MultiDrawIndirectCountMesh,
     MultiDrawIndirectMesh, NormalMap, PbrMaterial, Pipelines, SceneUniform,
-    ShadowMapping, TimingUniform, WindowUniform, WireframeMaterial, DynPipeline, PassStats, create_gbuffer_texture,
+    ShadowMapping, TimingUniform, WindowUniform, DynPipeline, PassStats, create_gbuffer_texture,
 };
 use assets::Assets;
 
@@ -14,7 +14,7 @@ use graphics::{
 };
 
 use utils::{Storage, Time};
-use world::{user, System, WindowEvent, World};
+use world::{user, System, WindowEvent, World, post_user};
 
 // Add the scene resources and setup for rendering
 fn init(world: &mut World) {
@@ -80,7 +80,6 @@ fn init(world: &mut World) {
 
     // Add the storages that contain the materials and their resources
     world.insert(Storage::<PbrMaterial>::default());
-    world.insert(Storage::<WireframeMaterial>::default());
     world.insert(albedo_maps);
     world.insert(normal_maps);
     world.insert(mask_maps);
@@ -338,6 +337,7 @@ pub fn system(system: &mut System) {
         .after(graphics::common);
     system
         .insert_update(render)
+        .after(post_user)
         .after(graphics::acquire)
         .before(graphics::present);
     system
