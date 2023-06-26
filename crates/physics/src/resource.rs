@@ -1,4 +1,7 @@
 use rapier3d::prelude::*;
+
+// Main physics resource that contains all the Rapier3D data structures
+// that are needed to simulate the physics engine
 pub struct Physics {
     pub(crate) bodies: RigidBodySet,
     pub(crate) colliders: ColliderSet,
@@ -10,6 +13,8 @@ pub struct Physics {
     pub(crate) impulse_joints: ImpulseJointSet,
     pub(crate) multibody_joints: MultibodyJointSet,
     pub(crate) ccd_solver: CCDSolver,
+    pub(crate) query: QueryPipeline,
+    pub(crate) gravity: vek::Vec3<f32>,
 }
 
 impl Physics {
@@ -19,7 +24,9 @@ impl Physics {
 
 
         let mut integration_parameters = IntegrationParameters::default();        
-        integration_parameters.set_inv_dt(utils::TICKS_PER_SEC);
+        integration_parameters.set_inv_dt(utils::TICKS_PER_SEC as f32);
+        //integration_parameters.allowed_linear_error = 0.0001;
+        //integration_parameters.max_penetration_correction = 0.001;
         
         let mut physics_pipeline = PhysicsPipeline::new();
         let mut island_manager = IslandManager::new();
@@ -28,6 +35,7 @@ impl Physics {
         let mut impulse_joint_set = ImpulseJointSet::new();
         let mut multibody_joint_set = MultibodyJointSet::new();
         let mut ccd_solver = CCDSolver::new();
+        let mut query = QueryPipeline::new();
         let physics_hooks = ();
         let event_handler = ();
 
@@ -42,6 +50,8 @@ impl Physics {
             impulse_joints: impulse_joint_set,
             multibody_joints: multibody_joint_set,
             ccd_solver,
+            query,
+            gravity: vek::Vec3::new(0.0, -9.81, 0.0),
         }
     }
 
@@ -57,9 +67,10 @@ impl Physics {
             impulse_joints,
             multibody_joints,
             ccd_solver,
+            query,
+            gravity
         } = self;
-    
-        let gravity = vector![0.0, -9.81, 0.0];
+        let gravity = crate::util::vek_vec_to_na_vec(*gravity);
     
         physics_pipeline.step(
             &gravity,
@@ -72,7 +83,7 @@ impl Physics {
             impulse_joints,
             multibody_joints,
             ccd_solver,
-            None,
+            Some(query),
             &(),
             &(),
         );

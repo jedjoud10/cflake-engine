@@ -1,15 +1,15 @@
-use crate::{Camera, CameraUniform, ForwardRenderer};
+use crate::{Camera, CameraUniform, DeferredRenderer};
 
 use coords::{Position, Rotation};
 use ecs::Scene;
 use graphics::Window;
 
-use world::{System, World};
+use world::{System, World, post_user};
 
 // Update event that will set/update the main perspective camera
 fn update(world: &mut World) {
     let mut ecs = world.get_mut::<Scene>().unwrap();
-    let mut renderer = world.get_mut::<ForwardRenderer>().unwrap();
+    let mut renderer = world.get_mut::<DeferredRenderer>().unwrap();
     let window = world.get::<Window>().unwrap();
 
     // Fetch the main perspective camera from the scene renderer
@@ -43,6 +43,7 @@ fn update(world: &mut World) {
             forward: rotation.forward().with_w(0.0),
             right: rotation.right().with_w(0.0),
             up: rotation.up().with_w(0.0),
+            near_far_hfov_: vek::Vec4::new(camera.near, camera.far, camera.hfov, 0.0),
         };
 
         // Fill the camera UBO with the proper data
@@ -60,5 +61,6 @@ fn update(world: &mut World) {
 pub fn system(system: &mut System) {
     system
         .insert_update(update)
-        .before(super::rendering::system);
+        .before(super::rendering::system)
+        .after(post_user);
 }

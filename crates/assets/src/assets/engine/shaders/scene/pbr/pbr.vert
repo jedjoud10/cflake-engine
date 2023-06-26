@@ -35,5 +35,5 @@ void main() {
 
     // Calculate world space bitangent
 	vec3 bitangent = cross(normalize(m_normal), normalize(tangent.xyz)) * tangent.w;
-	m_bitangent = (mesh.matrix * vec4(bitangent, 0.0)).xyz;    
+	m_bitangent = (mesh.matrix * vec4(bitangent, 0.0)).xyz;
 }

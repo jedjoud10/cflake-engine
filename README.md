@@ -128,11 +128,23 @@ For now, these are the types of assets that are loadable/deseriazable by default
 # Input Management
 Input is currently being handled using a custom wrapper around ``gilrs`` and ``Winit's Events``. You can "bind" or "map" a keyboard button or mouse click to a specific binding and then check each frame if it had been pressed, released, or been held (which means the user did not let go of it since last frame). The ``Input`` resource cannot be used within ``Tick`` events since it relies on frame to frame data, and ``Tick`` events can execute each multiple times per frame or none at all. If you wish to run frame-rate indepedent logic using the tick system you must fetch the inputs using a separate update system and save those inputs persistently, either using entities or resources, then fetch them in your tick method to apply them.
 
+# Examples Controls
+Move Camera: WASD,
+Move Camera Up: Space,
+Move Camera Down: Left Control,
+Increase Camera Base Speed: Left Shift,
+Reset Camera Location: R,
+Zoom in / Zoom out: Z, X (respectively)
+Toggle Camera Controller: H,
+Camera Rotation: Mouse Up/Down/Left/Right
+Toggle UI: P
+
 # Thanks to:
 * Lionel Stanway (MoldyToeMan)
 * Logan McLennan (PigSteel)
 * Dimev (Skythedragon)
 * Poly Haven for their awesome textures and models (used in examples folder)
+
 # LICENSE
 Dual-Licensed under
  * Apache License, Version 2.0

@@ -1,9 +1,11 @@
+use std::{rc::Rc, cell::RefCell, cmp::min};
+
 use crate::{
     ChunkCuller, ChunkManager, MemoryManager, MeshGenerator, VoxelGenerator,
 };
 
 use graphics::{
-    ActiveComputeDispatcher, BindGroup, Compiler, Graphics, PushConstants,
+    ActiveComputeDispatcher, BindGroup, Compiler, Graphics, PushConstants, TextureImportSettings, TextureScale, SamplerSettings,
 };
 
 use thiserror::Error;
@@ -18,10 +20,10 @@ pub struct TerrainSettings {
     // Mesh generation parameters
     pub(crate) blocky: bool,
     pub(crate) lowpoly: bool,
+    pub(crate) collisions: bool,
 
     // Octree params
     pub(crate) max_depth: u32,
-    pub(crate) lod_multiplier: f32,
 
     // Memory managing settings
     pub(crate) allocation_count: usize,
@@ -29,14 +31,16 @@ pub struct TerrainSettings {
 
     // Vertices and triangles per allocation
     pub(crate) output_triangle_buffer_length: usize,
-    pub(crate) output_tex_coord_buffer_length: usize,
+    pub(crate) output_vertex_buffer_length: usize,
 
     // Vertices and triangles per sub allocation
     pub(crate) vertices_per_sub_allocation: u32,
     pub(crate) triangles_per_sub_allocation: u32,
+    
+    // Quality settings
+    pub(crate) quality: f32,
 
-    // Callbacks for custom voxel data
-    pub(crate) sub_materials: Option<Vec<TerrainSubMaterial>>,
+    pub(crate) sub_materials_settings: Option<TerrainSubMaterialsSettings>,
 }
 
 // Terrain "sub-materials" (aka layered textures) that we can load in
@@ -48,18 +52,26 @@ pub struct TerrainSubMaterial {
     pub mask: String,
 }
 
+// Settings that contain sub material data
+pub struct TerrainSubMaterialsSettings {
+    pub materials: Vec<TerrainSubMaterial>,
+    pub scale: TextureScale,
+    pub sampler: SamplerSettings,
+}
+
 impl TerrainSettings {
     // Create some new terrain settings for terrain generation
     pub fn new(
         graphics: &Graphics,
         resolution: u32,
         blocky: bool,
+        collisions: bool,
         lowpoly: bool,
         allocations: usize,
         sub_allocations: usize,
         max_depth: u32,
-        lod_multiplier: f32,
-        sub_materials: Option<&[TerrainSubMaterial]>,
+        quality: f32,
+        sub_materials_settings: Option<TerrainSubMaterialsSettings>,
     ) -> Result<Self, TerrainSettingsError> {
         let mut output_vertex_buffer_length =
             graphics.device().limits().max_storage_buffer_binding_size as usize / 32;
@@ -73,7 +85,7 @@ impl TerrainSettings {
         // Validate resolution
         if resolution < 16 {
             return Err(TerrainSettingsError::ChunkSizeTooSmall);
-        } else if resolution >= 128 {
+        } else if resolution > 128 {
             return Err(TerrainSettingsError::ChunkSizeTooBig);
         } else if !resolution.is_power_of_two() {
             return Err(TerrainSettingsError::ChunkSizeNotPowerOfTwo);
@@ -101,12 +113,13 @@ impl TerrainSettings {
             allocation_count: allocations,
             sub_allocation_count: sub_allocations,
             output_triangle_buffer_length,
-            output_tex_coord_buffer_length: output_vertex_buffer_length,
+            output_vertex_buffer_length,
             vertices_per_sub_allocation,
             triangles_per_sub_allocation,
-            sub_materials: sub_materials.map(|x| x.to_vec()),
+            sub_materials_settings,
             max_depth,
-            lod_multiplier,
+            quality,
+            collisions,
         })
     }
 

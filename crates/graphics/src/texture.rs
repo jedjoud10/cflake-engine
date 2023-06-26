@@ -9,6 +9,8 @@ mod settings;
 mod texture;
 mod texture2d;
 mod texture3d;
+mod view;
+pub use view::*;
 pub use cubemap::*;
 pub use errors::*;
 pub use layered2d::*;

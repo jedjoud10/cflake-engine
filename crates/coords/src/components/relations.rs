@@ -1,4 +1,4 @@
-use crate::{Component, Entity};
+use ecs::{Component, Entity};
 
 // A child component added onto entities that are linked to a parent entity
 #[derive(Component)]
@@ -21,4 +21,13 @@ impl Child {
 
 // Parent component added onto entities that have multiple children
 #[derive(Component)]
-pub struct Parent;
+pub struct Parent {
+    pub(crate) children: Vec<Entity>,
+}
+
+impl Parent {
+    // Get the children entities of this parent component
+    pub fn children(&self) -> &[Entity] {
+        &self.children
+    }
+}

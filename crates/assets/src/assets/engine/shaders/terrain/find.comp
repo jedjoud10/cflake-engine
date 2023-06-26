@@ -1,14 +1,14 @@
 #version 460 core
-layout (local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
+layout (local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
 
 // Spec constants for sizes
 layout (constant_id = 0) const uint sub_allocations = 1;
 layout (constant_id = 1) const uint vertices_per_sub_allocation = 1;
 layout (constant_id = 2) const uint triangles_per_sub_allocation = 1;
 
-// Each group consists of 32 sub allocations
-const uint sub_allocation_groups = sub_allocations / 32;
-const uint sub_allocations_per_sub_allocation_group = 32;
+// Each group consists of 128 sub allocations
+const uint sub_allocation_groups = sub_allocations / 128;
+const uint sub_allocations_per_sub_allocation_group = 128;
 
 // Sub allocation chunk indices
 layout(std430, set = 0, binding = 0) buffer SubAllocationChunkIndices {

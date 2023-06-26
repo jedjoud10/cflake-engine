@@ -1,6 +1,6 @@
 use graphics::{
     Buffer, BufferMode, BufferUsage, DrawIndexedIndirect, GpuPod, Graphics, Texel,
-    Texture, Texture3D, TextureMipMaps, TextureMode, TextureUsage, TriangleBuffer, Vertex, XY,
+    Texture, Texture3D, TextureMipMaps, TextureUsage, TriangleBuffer, Vertex, XY, TextureViewSettings,
 };
 use math::{Node, Octree};
 use rendering::{attributes, AttributeBuffer};
@@ -54,8 +54,8 @@ pub(crate) fn create_texture3d<T: Texel>(graphics: &Graphics, size: u32) -> Text
         graphics,
         None,
         vek::Extent3::broadcast(size),
-        TextureMode::Dynamic,
         TextureUsage::STORAGE | TextureUsage::WRITE,
+        &[TextureViewSettings::whole::<<Texture3D<T> as Texture>::Region>()],
         None,
         TextureMipMaps::Disabled,
     )
@@ -69,7 +69,10 @@ pub(crate) fn create_texture3d<T: Texel>(graphics: &Graphics, size: u32) -> Text
 // Bit 4 = End X
 // Bit 5 = End Y
 // Bit 6 = End Z
+// TODO: URGENT PLEASE FIX
 pub(crate) fn find_skirts_direction(_node: Node, _octree: &Octree) -> u32 {
+    return 0;
+    //return u32::MAX;
     /*
     let mut skirts = 0u32;
     let nodes = octree.nodes();
@@ -120,6 +123,4 @@ pub(crate) fn find_skirts_direction(_node: Node, _octree: &Octree) -> u32 {
 
     skirts
     */
-
-    u32::MAX
 }

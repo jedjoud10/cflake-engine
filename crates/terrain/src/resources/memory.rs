@@ -1,5 +1,6 @@
 use std::sync::mpsc::{Receiver, Sender};
 
+use ahash::AHashMap;
 use assets::Assets;
 
 use ecs::Entity;
@@ -30,8 +31,8 @@ pub struct MemoryManager {
     pub(crate) compute_find: ComputeShader,
 
     // Used for copying memory to the permanent memory
-    pub(crate) offsets: [Buffer<u32>; 2],
-    pub(crate) counters: [Buffer<u32>; 2],
+    pub(crate) offsets: Buffer<u32>,
+    pub(crate) counters: Buffer<u32>,
 
     // Used to keep track of what buffers will be used per sub-allocation
     pub sub_allocation_chunk_indices: Vec<Buffer<u32>>,
@@ -53,14 +54,22 @@ pub struct MemoryManager {
     pub(crate) allocation_meshes: Vec<Handle<MultiDrawIndirectCountMesh>>,
 
     // Keeps track of the offset/counter async data of each chunk
-    pub(crate) readback_offsets: Vec<(Entity, vek::Vec2<u32>)>,
-    pub(crate) readback_counters: Vec<(Entity, vek::Vec2<u32>)>,
+    pub(crate) readback_offsets_and_counters: AHashMap<Entity, (Option<vek::Vec2<u32>>, Option<vek::Vec2<u32>>)>,
 
-    // Channel to receive the asyncrhnoously readback data
+    // Keeps track of the vertices/triangles async data of nearby chunks
+    pub(crate) readback_vertices_and_triangles: AHashMap<Entity, (Option<Vec<vek::Vec2<f32>>>, Option<Vec<[u32; 3]>>)>,
+
+    // Channel to receive the asynchronous readback data (counter + offset)
     pub(crate) readback_count_receiver: Receiver<(Entity, vek::Vec2<u32>)>,
     pub(crate) readback_count_sender: Sender<(Entity, vek::Vec2<u32>)>,
     pub(crate) readback_offset_receiver: Receiver<(Entity, vek::Vec2<u32>)>,
     pub(crate) readback_offset_sender: Sender<(Entity, vek::Vec2<u32>)>,
+
+    // Channels to receive the asynchronous readback data (mesh verts + mesh tris)
+    pub(crate) readback_vertices_receiver: Receiver<(Entity, Vec<vek::Vec2<f32>>)>,
+    pub(crate) readback_vertices_sender: Sender<(Entity, Vec<vek::Vec2<f32>>)>,
+    pub(crate) readback_triangles_receiver: Receiver<(Entity, Vec<[u32; 3]>)>,
+    pub(crate) readback_triangles_sender: Sender<(Entity, Vec<[u32; 3]>)>,
 }
 
 impl MemoryManager {
@@ -98,7 +107,7 @@ impl MemoryManager {
             DrawCountIndirectBuffer::splatted(
                 graphics,
                 settings.allocation_count,
-                1360,
+                0,
                 BufferMode::Dynamic,
                 BufferUsage::WRITE | BufferUsage::STORAGE,
             )
@@ -136,7 +145,7 @@ impl MemoryManager {
             .map(|_| {
                 let value = AttributeBuffer::<attributes::Position>::zeroed(
                     graphics,
-                    settings.output_tex_coord_buffer_length,
+                    settings.output_vertex_buffer_length,
                     BufferMode::Dynamic,
                     BufferUsage::STORAGE,
                 )
@@ -198,7 +207,7 @@ impl MemoryManager {
 
         // Sizes of the temp and perm buffers
         compiler.use_constant(0, settings.size);
-        compiler.use_constant(1, settings.output_tex_coord_buffer_length as u32);
+        compiler.use_constant(1, settings.output_vertex_buffer_length as u32);
         compiler.use_constant(2, settings.output_triangle_buffer_length as u32);
 
         // Temporary buffers
@@ -219,21 +228,19 @@ impl MemoryManager {
         // Create copy the compute shader
         let compute_copy = ComputeShader::new(module, &compiler).unwrap();
 
-        // Create two offset buffers and counter buffers to be able to do async readback
-        let counters = [
-            create_counters(graphics, 2, BufferUsage::READ | BufferUsage::WRITE),
-            create_counters(graphics, 2, BufferUsage::READ | BufferUsage::WRITE),
-        ];
-        let offsets = [
-            create_counters(graphics, 2, BufferUsage::READ | BufferUsage::WRITE),
-            create_counters(graphics, 2, BufferUsage::READ | BufferUsage::WRITE),
-        ];
+        // Create an offset buffer and counters buffer that will be used to copy temp memory to permanent memory
+        let counters = create_counters(graphics, 2, BufferUsage::READ | BufferUsage::WRITE);
+        let offsets = create_counters(graphics, 2, BufferUsage::READ | BufferUsage::WRITE);
 
         // Transmitter and receiver to send/receive async data
-        let (offset_sender, offset_receiver) =
+        let (readback_offset_sender, readback_offset_receiver) =
             std::sync::mpsc::channel::<(Entity, vek::Vec2<u32>)>();
-        let (counter_sender, counter_receiver) =
+        let (readback_count_sender, readback_count_receiver) =
             std::sync::mpsc::channel::<(Entity, vek::Vec2<u32>)>();
+        let (readback_vertices_sender, readback_vertices_receiver) =
+            std::sync::mpsc::channel::<(Entity, Vec<vek::Vec2<f32>>)>();
+        let (readback_triangles_sender, readback_triangles_receiver) =
+            std::sync::mpsc::channel::<(Entity, Vec<[u32; 3]>)>();
 
         // Generate multiple multi-draw indirect meshes that will be used by the global terrain renderer
         let allocation_meshes = (0..settings.allocation_count)
@@ -262,10 +269,10 @@ impl MemoryManager {
             compute_find,
             sub_allocation_chunk_indices,
             compute_copy,
-            readback_count_receiver: counter_receiver,
-            readback_count_sender: counter_sender,
-            readback_offset_receiver: offset_receiver,
-            readback_offset_sender: offset_sender,
+            readback_count_receiver,
+            readback_count_sender,
+            readback_offset_receiver,
+            readback_offset_sender,
             offsets,
             counters,
             allocation_meshes,
@@ -276,8 +283,12 @@ impl MemoryManager {
             visibility_buffers,
             visibility_bitsets,
             culled_count_buffer,
-            readback_offsets: Vec::new(),
-            readback_counters: Vec::new(),
+            readback_offsets_and_counters: AHashMap::new(),
+            readback_vertices_and_triangles: AHashMap::new(),
+            readback_vertices_receiver,
+            readback_vertices_sender,
+            readback_triangles_receiver,
+            readback_triangles_sender,
         }
     }
 }

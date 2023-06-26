@@ -1,4 +1,6 @@
 use ecs::Component;
+use utils::Handle;
+use crate::PhysicsSurface;
 
 // Sphere colliders represent perfect spheres in 3D space
 // The position of the sphere will be fetched from it's Position component
@@ -6,8 +8,8 @@ use ecs::Component;
 pub struct SphereCollider {
     pub radius: f32,
     pub mass: f32,
-    pub friction: f32,
-    pub restitution: f32,
+    pub material: Option<Handle<PhysicsSurface>>,
+    pub(crate) sensor: bool,
     pub(crate) handle: Option<rapier3d::geometry::ColliderHandle>,
 }
 
@@ -16,22 +18,22 @@ impl Clone for SphereCollider {
         Self {
             radius: self.radius.clone(),
             mass: self.mass.clone(),
+            material: self.material.clone(),
+            sensor: self.sensor,
             handle: None,
-            friction: self.friction,
-            restitution: self.restitution,
         }
     }
 } 
 
 impl SphereCollider {
     // Create a new sphere collider with a specific radius and mass
-    pub fn new(radius: f32, mass: f32, friction: f32, restitution: f32,) -> Self {
+    pub fn new(radius: f32, mass: f32, sensor: bool, material: Option<Handle<PhysicsSurface>>) -> Self {
         Self {
             radius,
             mass,
+            sensor,
             handle: None,
-            friction,
-            restitution,
+            material,
         }
     }
 }

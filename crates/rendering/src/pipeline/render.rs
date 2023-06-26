@@ -1,33 +1,89 @@
 use crate::{
-    set_index_buffer_attribute, set_vertex_buffer_attribute, ActiveSceneRenderPass,
-    DefaultMaterialResources, Material, Mesh, RenderPath, Renderer, SceneColor, SceneDepth, Surface,
+    DefaultMaterialResources, Material, Mesh, RenderPath, Renderer, SceneColorLayout, SceneDepthLayout, Surface, MeshAttribute, MeshAttributes, Pass, PassStats,
 };
 use ecs::Scene;
-use graphics::{ActivePipeline, RenderPipeline};
+use graphics::{ActivePipeline, RenderPipeline, ColorLayout, DepthStencilLayout, ActiveRenderPipeline, ActiveRenderPass};
+use math::ExplicitVertices;
 use utils::{Handle, Storage};
 use world::World;
 
-// Render all the visible surfaces of a specific material type
-pub(super) fn render_surfaces<'r, M: Material>(
+// Set a mesh binding vertex buffer to the current render pass
+pub(crate) fn set_vertex_buffer_attribute<
+    'a,
+    'r,
+    A: MeshAttribute,
+    R: RenderPath,
+    C: ColorLayout,
+    DS: DepthStencilLayout,
+>(
+    supported: MeshAttributes,
+    mesh: &'r Mesh<R>,
+    defaults: &DefaultMaterialResources<'r>,
+    active: &mut ActiveRenderPipeline<'a, 'r, '_, C, DS>,
+    index: &mut u32,
+    last: &mut Option<&'r R::AttributeBuffer<A>>,
+) where
+    for<'x> &'x R::AttributeBuffer<A>: PartialEq<&'x R::AttributeBuffer<A>>,
+{
+    // If the material doesn't support the attribute, no need to set it
+    if !supported.contains(A::ATTRIBUTE) {
+        return;
+    }
+
+    // Check if the mesh contains the attribute, and if it does, render it
+    if let Ok(buffer) = mesh.vertices().attribute::<A>() {
+        // Only set the buffer if necessary
+        if *last != Some(buffer) {
+            R::set_vertex_buffer(*index, .., buffer, defaults, active).unwrap();
+            *last = Some(buffer);
+        }
+
+        *index += 1;
+    }
+}
+
+// Set a mesh triangle buffer to the current render pass
+pub(crate) fn set_index_buffer_attribute<
+    'a,
+    'r,
+    R: RenderPath,
+    C: ColorLayout,
+    DS: DepthStencilLayout,
+>(
+    mesh: &'r Mesh<R>,
+    defaults: &DefaultMaterialResources<'r>,
+    active: &mut ActiveRenderPipeline<'a, 'r, '_, C, DS>,
+    last: &mut Option<&R::TriangleBuffer<u32>>,
+) where
+    for<'x> &'x R::TriangleBuffer<u32>: PartialEq<&'x R::TriangleBuffer<u32>>,
+{
+    // Get the triangle buffer from the mesh
+    let triangles = mesh.triangles();
+    let buffer = triangles.buffer();
+
+    // Only set the triangles if necessary
+    if *last != Some(buffer) {
+        R::set_index_buffer(.., buffer, defaults, active).unwrap();
+    }
+}
+
+
+// Render all the visible surfaces of a specific material type using a specific pass
+// This allows us to re-use the code for deferred pass and shadow pass albeit at a small overhead
+pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
     world: &'r World,
-    pipeline: &'r RenderPipeline<SceneColor, SceneDepth>,
-    defaults: &mut DefaultMaterialResources<'r>,
-    render_pass: &mut ActiveSceneRenderPass<'r, '_>,
+    pipeline: &'r RenderPipeline<P::C, P::DS>,
+    defaults: &DefaultMaterialResources<'r>,
+    stats: &mut PassStats,
+    render_pass: &mut ActiveRenderPass<'r, '_, P::C, P::DS>,
 ) {
     // Get a rasterizer for the current render pass by binding a pipeline
     let mut active = render_pass.bind_pipeline(pipeline);
-    let supported = M::attributes();
+    let supported = M::attributes::<P>();
 
     // Get the material storage and resources for this material
     let materials = world.get::<Storage<M>>().unwrap();
-    let mut resources = M::fetch(world);
-
-    // Set the global material bindings
-    active
-        .set_bind_group(0, |group| {
-            M::set_global_bindings(&mut resources, group, defaults);
-        })
-        .unwrap();
+    let mut resources = M::fetch::<P>(world);
 
     // Get all the entities that contain a visible surface
     let scene = world.get::<Scene>().unwrap();
@@ -43,7 +99,6 @@ pub(super) fn render_surfaces<'r, M: Material>(
 
     // Keep track of the last material
     let mut last_material: Option<Handle<M>> = None;
-    let mut switched_material_instances;
 
     // Keep track of the last model
     let mut last_mesh: Option<Handle<Mesh<M::RenderPath>>> = None;
@@ -65,13 +120,30 @@ pub(super) fn render_surfaces<'r, M: Material>(
 
     // Convert to sub-surfaces and discard invisible / culled surfaces
     let iter = query.into_iter().zip(user);
-    let iter = iter.filter(|((surface, renderer), _)| !surface.culled && surface.visible && renderer.visible);
+    let max = iter.len();
+    let iter = iter.filter(|((surface, renderer), _)| P::is_surface_visible(surface, renderer));
     let subsurfaces = iter.collect::<Vec<_>>();
+    let visible = subsurfaces.len();
     let subsurfaces = subsurfaces
         .iter()
         .flat_map(|((surface, renderer), user)| 
             surface.subsurfaces.iter().map(move |x| ((x, renderer), user))
         );
+
+    // Set the number of culled surfaces
+    stats.culled_sub_surfaces = max - visible;
+
+    // Blud don't need to rendering nothing
+    if visible == 0 {
+        return;
+    }
+
+    // Set the global material bindings
+    active
+        .set_bind_group(0, |group| {
+            M::set_global_bindings::<P>(&mut resources, group, defaults);
+        })
+        .unwrap();
 
     // Sort and group material instances / meshes
     // instead of [(mt1, mh1), (mt2, mh2), (mt1, mh1), (mt1, mh2)]
@@ -86,33 +158,30 @@ pub(super) fn render_surfaces<'r, M: Material>(
 
         let mesh_ordering = mesh1.cmp(&mesh2);
         let material_ordering = mat1.cmp(&mat2);
-        mesh_ordering.then(material_ordering)
+        material_ordering.then(mesh_ordering)
     });
 
     // Iterate over all the surface of this material
-    let mut rendered = false;
     for ((subsurface, renderer), user) in values {
         // Get the mesh and material that correspond to this surface
         let mesh = <M::RenderPath as RenderPath>::get(defaults, &subsurface.mesh);
 
         // Check if we changed material instances
         if last_material != Some(subsurface.material.clone()) {
-            switched_material_instances = true;
             last_material = Some(subsurface.material.clone());
             let material = materials.get(&subsurface.material);
 
             // Set the instance group bindings
             active
                 .set_bind_group(1, |group| {
-                    M::set_instance_bindings(material, &mut resources, defaults, group);
+                    M::set_instance_bindings::<P>(material, &mut resources, defaults, group);
                 })
                 .unwrap();
-        } else {
-            switched_material_instances = false;
+            stats.material_instance_swap += 1;
         }
 
         // If a mesh is missing attributes just skip
-        if !mesh.vertices().enabled().contains(M::attributes()) {
+        if !mesh.vertices().enabled().contains(supported) {
             continue;
         }
 
@@ -125,7 +194,7 @@ pub(super) fn render_surfaces<'r, M: Material>(
         // Set the surface group bindings
         active
             .set_bind_group(2, |group| {
-                M::set_surface_bindings(renderer, &mut resources, defaults, &user, group);
+                M::set_surface_bindings::<P>(renderer, &mut resources, defaults, &user, group);
             })
             .unwrap();
 
@@ -184,13 +253,14 @@ pub(super) fn render_surfaces<'r, M: Material>(
 
             // Set the mesh handle
             last_mesh = Some(subsurface.mesh.clone());
+            stats.mesh_instance_swap += 1;
         }
 
         // Set the push constant ranges right before rendering (in the hot loop!)
         active
             .set_push_constants(|push_constants| {
                 let material = materials.get(&subsurface.material);
-                M::set_push_constants(
+                M::set_push_constants::<P>(
                     material,
                     renderer,
                     &mut resources,
@@ -203,27 +273,14 @@ pub(super) fn render_surfaces<'r, M: Material>(
 
         // Draw the mesh
         <M::RenderPath as RenderPath>::draw(mesh, defaults, &mut active).unwrap();
-
-        // Add 1 to the material index when we switch instances
-        if switched_material_instances {
-            *defaults.material_instances_count += 1;
-        }
-
-        // Keep track of statistics
-        rendered = true;
-        *defaults.rendered_sub_surfaces += 1;
-
+        
         // These values won't get added it if's a invalid or indirect mesh
-        *defaults.rendered_direct_triangles_drawn +=
+        stats.rendered_sub_surfaces += 1;
+        stats.rendered_direct_triangles_drawn +=
             <<M as Material>::RenderPath as RenderPath>::triangle_count(mesh)
                 .unwrap_or_default() as u64;
-        *defaults.rendered_direct_vertices_drawn +=
+        stats.rendered_direct_vertices_drawn +=
             <<M as Material>::RenderPath as RenderPath>::vertex_count(mesh).unwrap_or_default()
                 as u64;
-    }
-
-    // I hate this
-    if rendered {
-        *defaults.drawn_unique_material_count += 1;
     }
 }

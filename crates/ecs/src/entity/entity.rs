@@ -1,7 +1,19 @@
 use crate::Mask;
-use slotmap::new_key_type;
+use slotmap::{new_key_type, KeyData};
 new_key_type! {
     pub struct Entity;
+}
+
+impl Entity {
+    // Convert the entity handle to a raw u64
+    pub fn to_raw(self) -> u64 {
+        self.0.as_ffi()
+    }
+
+    // Convert a raw u64 to an entity handle
+    pub fn from_raw(raw: u64) -> Self {
+        Self(KeyData::from_ffi(raw))
+    }
 }
 
 // Entity linking data that we will use to link entities to their specified components

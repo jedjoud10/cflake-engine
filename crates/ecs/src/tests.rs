@@ -86,8 +86,8 @@ mod tests {
 
     #[test]
     fn mask() {
-        let mask1 = Mask::from(0b0100u32);
-        let mask2 = Mask::from(0b1111u32);
+        let mask1 = Mask::from(0b0100u64);
+        let mask2 = Mask::from(0b1111u64);
         assert!(mask2.contains(mask1));
     }
 

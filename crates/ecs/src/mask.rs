@@ -11,9 +11,9 @@ use crate::Bundle;
 
 // RawBitMask bitmask value
 #[cfg(not(feature = "extended-bitmasks"))]
-pub type RawBitMask = u32;
-#[cfg(feature = "extended-bitmasks")]
 pub type RawBitMask = u64;
+#[cfg(feature = "extended-bitmasks")]
+pub type RawBitMask = u128;
 
 // A mask is a simple 64 bit integer that tells us what components are enabled / disabled from within an entity
 // The ECS registry system uses masks to annotate each different type that might be a component, so in total

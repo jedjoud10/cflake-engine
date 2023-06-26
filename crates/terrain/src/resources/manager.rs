@@ -1,5 +1,7 @@
 
 
+use std::{cell::RefCell, rc::Rc, time::Instant, num::NonZeroU8};
+
 use ahash::{AHashMap};
 use assets::{Assets, AsyncHandle};
 
@@ -7,7 +9,7 @@ use ecs::{Entity, Scene};
 use graphics::{
     combine_into_layered, GpuPod, Graphics, ImageTexel, LayeredTexture2D, RawTexels,
     SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap, Texel, TextureMipMaps,
-    TextureMode, TextureUsage, Vertex,
+    TextureUsage, Vertex, SamplerBorderColor, TextureScale, FilterType, TextureViewSettings, Texture,
 };
 use math::{Node, Octree};
 
@@ -35,13 +37,16 @@ pub struct ChunkManager {
 
     // Octree used for chunk generation
     pub(crate) octree: Octree,
+    pub lod_multipliers: Rc<RefCell<Vec<f32>>>,
+
     pub(crate) entities: AHashMap<Node, Entity>,
 
     // Single entity that contains multiple meshes that represent the terrain
     pub(crate) global_draw_entity: Entity,
     pub(crate) chunks_per_allocation: usize,
+    pub(crate) new_visibilities: Vec<(usize, usize)>,
 
-    // Viewer (camera) position
+    // Viewer (camera) position and last instant when it moved
     pub(crate) viewer: Option<(Entity, vek::Vec3<f32>, vek::Quaternion<f32>)>,
 }
 
@@ -88,17 +93,17 @@ impl ChunkManager {
         rayon::scope(|scope| {
             // Create a layered texture 2D that contains the diffuse maps
             scope.spawn(|_| {
-                layered_albedo_map = load_layered_texture(graphics, raw_albedo_texels);
+                layered_albedo_map = load_layered_texture(&settings, graphics, raw_albedo_texels);
             });
 
             // Create a layered texture 2D that contains the normal maps
             scope.spawn(|_| {
-                layered_normal_map = load_layered_texture(graphics, raw_normal_texels);
+                layered_normal_map = load_layered_texture(&settings, graphics, raw_normal_texels);
             });
 
             // Create a layered texture 2D that contains the mask maps
             scope.spawn(|_| {
-                layered_mask_map = load_layered_texture(graphics, raw_mask_texels);
+                layered_mask_map = load_layered_texture(&settings, graphics, raw_mask_texels);
             });
         });
 
@@ -128,27 +133,44 @@ impl ChunkManager {
             visible: true,
             culled: false,
             shadow_caster: true,
-            shadow_receiver: true,
             shadow_culled: false,
             id: id.clone(),
         };
 
         // Create the global terrain renderer entity
         let global_draw_entity = scene.insert((Renderer::default(), surface));
+        
+        // Generate the lod multipliers programatically based on the quality setting
+        let splits = [0.0f32, 0.3, 0.7, 1.0];
+        let percents = [1.0f32, 1.2, 1.3, 1.0];
+        let max = settings.max_depth as f32;
+        let mut lod = (0..settings.max_depth).into_iter().map(|x| {
+            let percent = x as f32 / max;
+
+            let i = splits.iter().enumerate().filter(|(_, &rel)| percent >= rel).map(|(i, _)| i).max().unwrap();
+
+            //percents[i] * settings.quality.clamp(0.5, 3.0)
+            1.0
+        }).collect::<Vec<f32>>();
+        lod.insert(0, 1.0);
 
         // Custom octree heuristic
         let size = settings.size;
-        let lod_multiplier = settings.lod_multiplier;
+        let lod = Rc::new(RefCell::new(lod));
+        let lod_cloned = lod.clone();
         let heuristic = math::OctreeHeuristic::Boxed(Box::new(move |target, node| {
             let div = (node.size() / size).next_power_of_two();
 
-            math::aabb_sphere(
+            let multiplier = lod.borrow()[node.depth() as usize];
+            let half_extent = size as f32 * div as f32 * multiplier * 0.5;
+
+            math::aabb_aabb(
                 &node.aabb(),
-                &math::Sphere {
-                    center: *target,
-                    radius: (size as f32 * div as f32 * lod_multiplier * 0.5),
+                &math::Aabb {
+                    min: vek::Vec3::broadcast(-half_extent) + *target,
+                    max: vek::Vec3::broadcast(half_extent) + *target,
                 },
-            ) || node.depth() <= 2
+            )
         }));
 
         // Create an octree for LOD chunk generation
@@ -165,7 +187,9 @@ impl ChunkManager {
             layered_albedo_map,
             layered_normal_map,
             layered_mask_map,
+            new_visibilities: Default::default(),
             chunks_per_allocation: 0,
+            lod_multipliers: lod_cloned,
         }
     }
 }
@@ -176,31 +200,31 @@ fn load_raw_texels_handles<T: ImageTexel>(
     settings: &TerrainSettings,
     get_name_callback: impl Fn(&TerrainSubMaterial) -> &str,
 ) -> Option<Vec<AsyncHandle<RawTexels<T>>>> {
-    let paths = settings
-        .sub_materials
-        .as_ref()?
+    let sub_material_settings = settings.sub_materials_settings.as_ref()?;
+    let scale = sub_material_settings.scale;
+    let inputs = sub_material_settings
+        .materials
         .iter()
         .map(get_name_callback)
+        .map(|n| (n, scale, ()))
         .collect::<Vec<_>>();
-    Some(assets.async_load_from_iter::<RawTexels<T>>(paths))
+    Some(assets.async_load_from_iter::<RawTexels<T>>(inputs))
 }
 
 // Load a 2D layered texture for the given texel type and the multitude of raw texels
 fn load_layered_texture<T: ImageTexel>(
+    settings: &TerrainSettings,
     graphics: &Graphics,
     raw: Option<Vec<RawTexels<T>>>,
 ) -> Option<LayeredTexture2D<T>> {
+    let sampler = settings.sub_materials_settings.as_ref()?.sampler;
     raw.map(|raw| {
         combine_into_layered(
             graphics,
             raw,
-            Some(SamplerSettings {
-                filter: SamplerFilter::Linear,
-                wrap: SamplerWrap::Repeat,
-                mipmaps: SamplerMipMaps::Auto,
-            }),
+            Some(sampler),
             TextureMipMaps::Manual { mips: &[] },
-            TextureMode::Dynamic,
+            &[TextureViewSettings::whole::<<LayeredTexture2D<T> as Texture>::Region>()],
             TextureUsage::SAMPLED | TextureUsage::COPY_DST,
         )
         .unwrap()

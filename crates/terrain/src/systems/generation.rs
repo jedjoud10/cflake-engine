@@ -57,7 +57,6 @@ fn update(world: &mut World) {
 
         // Remove the chunk CPU range
         chunk.ranges = None;
-
         memory.visibility_bitsets[chunk.allocation].remove(chunk.local_index);
     }
 
@@ -86,17 +85,24 @@ fn update(world: &mut World) {
                     .load::<ComputeModule>("engine/shaders/terrain/voxels.comp")
                     .unwrap();
                 let compiler = crate::create_compute_voxels_compiler(&assets, &graphics);
-                let compute_voxels = ComputeShader::new(module, &compiler).unwrap();
-                voxelizer.compute_voxels = compute_voxels;
+                match ComputeShader::new(module, &compiler) {
+                    Ok(shader) => {
+                        voxelizer.compute_voxels = shader;
 
-                // Force the regeneration of all chunks
-                let query = scene
-                    .query_mut::<&mut Chunk>()
-                    .into_iter()
-                    .filter(|x| matches!(x.state, ChunkState::Generated { empty }));
-                for x in query {
-                    x.regenerate();
+                        // Force the regeneration of all chunks
+                        let query = scene
+                            .query_mut::<&mut Chunk>()
+                            .into_iter()
+                            .filter(|x| matches!(x.state, ChunkState::Generated { .. }));
+                        for x in query {
+                            x.regenerate();
+                        }
+                    },
+                    Err(error) => {
+                        log::error!("Voxel Shader Error: {:?}", error);
+                    },
                 }
+                
             }
         }
 
@@ -115,14 +121,9 @@ fn update(world: &mut World) {
         return;
     }
 
-    // NEEDED FOR ASYNC READBACK
-    let index = time.frame_count() as usize % 2;
-
     // Get the resources used for this chunk
-    let voxels = &mut voxelizer.voxel_textures[index];
-    let counters = &mut memory.counters[index];
-    let offsets = &mut memory.offsets[index];
-    let indices = &mut mesher.cached_indices;
+    let counters = &mut memory.counters;
+    let offsets = &mut memory.offsets;
     let suballocations = &mut memory.sub_allocation_chunk_indices[chunk.allocation];
     let indirect = &mut memory.generated_indexed_indirect_buffers[chunk.allocation];
 
@@ -136,8 +137,8 @@ fn update(world: &mut World) {
 
     // Reset required values
     counters.write(&[0; 2], 0).unwrap();
-    let mips = indices.mips_mut();
-    mips.level_mut(0).unwrap().splat(None, u32::MAX).unwrap();
+    let mut view = mesher.cached_indices.view_mut(0).unwrap();
+    view.splat(None, u32::MAX).unwrap();
     offsets.write(&[u32::MAX; 2], 0).unwrap();
 
     // Update alloc-local position buffer
@@ -182,11 +183,11 @@ fn update(world: &mut World) {
     // One global bind group for voxel generation
     active
         .set_bind_group(0, |set| {
-            set.set_storage_texture_mut("voxels", voxels).unwrap();
+            set.set_storage_texture_mut("voxels", &mut voxelizer.voxel_textures).unwrap();
         })
         .unwrap();
     active
-        .dispatch(vek::Vec3::broadcast(settings.size / 4))
+        .dispatch(vek::Vec3::broadcast(settings.size / 8))
         .unwrap();
 
     // Execute the vertex generation shader first
@@ -194,8 +195,8 @@ fn update(world: &mut World) {
 
     active
         .set_bind_group(0, |set| {
-            set.set_storage_texture("voxels", voxels).unwrap();
-            set.set_storage_texture_mut("cached_indices", indices)
+            set.set_storage_texture("voxels", &voxelizer.voxel_textures).unwrap();
+            set.set_storage_texture_mut("cached_indices", &mut mesher.cached_indices)
                 .unwrap();
             set.set_storage_buffer_mut("counters", counters, ..)
                 .unwrap();
@@ -221,15 +222,15 @@ fn update(world: &mut World) {
         })
         .unwrap();
     active
-        .dispatch(vek::Vec3::broadcast(settings.size / 4))
+        .dispatch(vek::Vec3::broadcast(settings.size / 8))
         .unwrap();
 
     // Execute the quad generation shader second
     let mut active = pass.bind_shader(&mesher.compute_quads);
     active
         .set_bind_group(0, |set| {
-            set.set_storage_texture("cached_indices", indices).unwrap();
-            set.set_storage_texture("voxels", voxels).unwrap();
+            set.set_storage_texture("cached_indices", &mesher.cached_indices).unwrap();
+            set.set_storage_texture("voxels", &voxelizer.voxel_textures).unwrap();
             set.set_storage_buffer_mut("counters", counters, ..)
                 .unwrap();
         })
@@ -241,7 +242,7 @@ fn update(world: &mut World) {
         })
         .unwrap();
     active
-        .dispatch(vek::Vec3::broadcast(settings.size / 4))
+        .dispatch(vek::Vec3::broadcast(settings.size / 8))
         .unwrap();
 
     // Run a compute shader that will iterate over the ranges and find a free one
@@ -255,7 +256,7 @@ fn update(world: &mut World) {
         })
         .unwrap();
 
-    let dispatch = (settings.sub_allocation_count as f32 / (32.0 * 32.0)).ceil() as u32;
+    let dispatch = (settings.sub_allocation_count as f32 / (32.0 * 64.0)).ceil() as u32;
     active.dispatch(vek::Vec3::new(dispatch, 1, 1)).unwrap();
 
     // Get the output packed tex coord from resource storage

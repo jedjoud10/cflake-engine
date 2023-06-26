@@ -1,10 +1,10 @@
 mod material;
 mod path;
-mod common;
+mod pbr;
 mod pass;
 mod shared;
 pub use shared::*;
-pub use common::*;
+pub use pbr::*;
 pub use pass::*;
 pub use material::*;
 pub use path::*;

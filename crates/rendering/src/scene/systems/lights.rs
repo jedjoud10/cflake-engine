@@ -1,15 +1,15 @@
-use crate::{DirectionalLight, ForwardRenderer};
+use crate::{DirectionalLight, DeferredRenderer};
 
 use ecs::Scene;
 use graphics::{Graphics, Window};
 
-use world::{System, World};
+use world::{System, World, post_user};
 
 // Update event that will set/update the main directional light
 fn update(world: &mut World) {
     let mut ecs = world.get_mut::<Scene>().unwrap();
     let _graphics = world.get::<Graphics>().unwrap();
-    let mut renderer = world.get_mut::<ForwardRenderer>().unwrap();
+    let mut renderer = world.get_mut::<DeferredRenderer>().unwrap();
     let _window = world.get::<Window>().unwrap();
 
     // Fetch the main directioanl light from the scene renderer
@@ -34,5 +34,6 @@ fn update(world: &mut World) {
 pub fn system(system: &mut System) {
     system
         .insert_update(update)
-        .before(super::rendering::system);
+        .before(super::rendering::system)
+        .after(post_user);
 }

@@ -1,3 +1,4 @@
+use bytemuck::{Pod, Zeroable};
 use graphics::Triangle;
 
 use std::ops::Neg;
@@ -53,6 +54,46 @@ pub fn apply_vec_settings(
     }
     if settings.invert_triangle_ordering {
         invert_triangle_ordering(triangles);
+    }
+}
+
+
+pub fn optimize(
+    optimize_vertex_cache: bool,
+    optimize_vertex_fetch: bool,
+    optimize_overdraw: bool,
+    positions: &mut Option<&mut [RawPosition]>,
+    normals: &mut Option<&mut [RawNormal]>,
+    tangents: &mut Option<&mut [RawTangent]>,
+    tex_coords: &mut Option<&mut [RawTexCoord]>,
+    triangles: &mut [Triangle<u32>],
+) {
+    #[derive(Pod, Zeroable, Copy, Clone)]
+    #[repr(C)]
+    struct PosWrapper(vek::Vec4<f32>);
+    impl meshopt::DecodePosition for PosWrapper {
+        fn decode_position(&self) -> [f32; 3] {
+            [self.0.x, self.0.y, self.0.z]
+        }
+    } 
+    let positions = positions.as_mut().unwrap();
+    let vertex_count = positions.len();
+    let indices: &mut [u32] = bytemuck::cast_slice_mut(triangles);
+    let vertices = bytemuck::cast_slice_mut::<vek::Vec4<f32>, PosWrapper>(*positions);
+
+    if optimize_vertex_cache {
+        // Oopsies!! This is supposed to take a mutable slice!! I LOVE POTENTIAL UB!!!
+        meshopt::optimize_vertex_cache_in_place(&indices, vertex_count);
+
+        if optimize_overdraw {
+            meshopt::optimize_overdraw_in_place_decoder(indices, vertices, 1.05f32);
+        }
+    }
+
+    //let out = meshopt::simplify_sloppy_decoder(indices, vertices, 1000);
+
+    if optimize_vertex_fetch {
+        //meshopt::optimize_vertex_fetch_in_place(indices, vertices);
     }
 }
 
@@ -125,6 +166,8 @@ pub fn invert_triangle_ordering(triangles: &mut [Triangle<u32>]) {
 }
 
 // Calculate the vertex normals procedurally and return them as a vector
+// This assumes that the mesh is indexed and that vertices are properly shared
+// Can also be used for flat-shaded or low-poly meshes but really inefficient, you should use a custom shader instead
 pub fn compute_normals(
     positions: &[RawPosition],
     triangles: &[Triangle<u32>],

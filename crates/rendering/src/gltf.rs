@@ -20,7 +20,7 @@ use gltf::json::accessor::{ComponentType, Type};
 use graphics::{
     texture2d_from_raw, BufferMode, BufferUsage, Graphics, ImageTexel, Normalized, RawTexels,
     SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap, Texel, Texture, Texture2D,
-    TextureImportSettings, TextureMipMaps, TextureMode, TextureScale, TextureUsage, R, RGBA,
+    TextureImportSettings, TextureMipMaps, TextureScale, TextureUsage, R, RGBA, TextureViewSettings,
 };
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use utils::{Handle, Storage};
@@ -338,6 +338,7 @@ impl Asset for GltfScene {
                 });
             }
         });
+        log::debug!("Mapping of {} glTF materials", materials.len());
 
         // Unwraps an Arc and panics if it returns an error
         let cached_albedo_maps = Arc::try_unwrap(cached_albedo_maps).map_err(|_| ()).unwrap();
@@ -431,17 +432,17 @@ impl Asset for GltfScene {
                     // TODO: Implement multi-buffer per allocation support to optimize this
                     cached_meshes.entry(key).or_insert_with(|| {
                         // Create buffers and AABB
-                        let (positions, aabb) = create_positions_vec(&mapped_accessors[key.0]);
-                        let normals = key
+                        let (mut positions, aabb) = create_positions_vec(&mapped_accessors[key.0]);
+                        let mut normals = key
                             .1
                             .map(|index| create_normals_vec(&mapped_accessors[index]));
                         let mut tangents = key
                             .2
                             .map(|index| create_tangents_vec(&mapped_accessors[index]));
-                        let tex_coords = key
+                        let mut tex_coords = key
                             .3
                             .map(|index| create_tex_coords_vec(&mapped_accessors[index]));
-                        let triangles = create_triangles_vec(&mapped_accessors[key.4]);
+                        let mut triangles = create_triangles_vec(&mapped_accessors[key.4]);
 
                         // Optionally generate the tangents
                         if let (Some(normals), Some(tex_coords)) =
@@ -455,22 +456,36 @@ impl Asset for GltfScene {
                             );
                         }
 
+                        let mut temp_positions = Some(positions.as_mut_slice());
+                        let mut temp_normals = normals.as_mut().map(|x| x.as_mut_slice());
+                        let mut temp_tangents = tangents.as_mut().map(|x| x.as_mut_slice());
+                        let mut temp_tex_coords = tex_coords.as_mut().map(|x| x.as_mut_slice());
+
+                        // Optimize the mesh after we load it
+                        super::optimize(
+                            true,
+                            true,
+                            true,
+                            &mut temp_positions,
+                            &mut temp_normals,
+                            &mut temp_tangents,
+                            &mut temp_tex_coords,
+                            &mut triangles,
+                        );
+
                         // Create a new mesh for the accessors used
-                        let mut mesh = Mesh::from_slices(
+                        Mesh::from_slices(
                             &graphics.clone(),
                             BufferMode::Dynamic,
-                            BufferUsage::empty(),
+                            BufferUsage::COPY_DST,
                             Some(&positions),
                             normals.as_deref(),
                             tangents.as_deref(),
                             tex_coords.as_deref(),
                             &triangles,
+                            aabb,
                         )
-                        .unwrap();
-
-                        // Either disable or enable the AABB
-                        mesh.set_aabb(aabb);
-                        mesh
+                        .unwrap()
                     });
                     meshes.push(key);
                 }
@@ -568,7 +583,6 @@ impl Asset for GltfScene {
                     visible: true,
                     culled: false,
                     shadow_caster: true,
-                    shadow_receiver: true,
                     shadow_culled: false,
                     id: context.pipelines.get::<PbrMaterial>().unwrap(),
                 };
@@ -585,7 +599,16 @@ impl Asset for GltfScene {
         }
 
         // Add the entities into the world
+        let count = entities.len();
         context.scene.extend_from_iter(entities);
+
+        log::debug!("Loaded {} entities into the world", count);
+        log::debug!("Loaded {} unique meshes into the world", meshes.len());
+        log::debug!("Loaded {} unique material instances into the world", mapped_materials.len());
+        log::debug!("Loaded {} albedo maps into the world", cached_albedo_maps.len());
+        log::debug!("Loaded {} normal maps into the world", cached_normal_maps.len());
+        log::debug!("Loaded {} mask maps into the world", cached_mask_maps.len());
+
 
         Ok(GltfScene)
     }
@@ -696,33 +719,47 @@ fn sampling(
     samplers: &[gltf::json::texture::Sampler],
     sampler: Option<gltf::json::Index<gltf::json::texture::Sampler>>,
 ) -> SamplerSettings {
+
     sampler
         .map(|index| {
             let sampler = &samplers[index.value()];
 
-            let filter = sampler
-                .mag_filter
-                .map(|x| match x.unwrap() {
-                    gltf::texture::MagFilter::Nearest => SamplerFilter::Nearest,
-                    gltf::texture::MagFilter::Linear => SamplerFilter::Linear,
-                })
-                .or(sampler.min_filter.map(|x| match x.unwrap() {
-                    gltf::texture::MinFilter::Nearest => SamplerFilter::Nearest,
-                    _ => SamplerFilter::Linear,
-                }))
-                .unwrap_or(SamplerFilter::Linear);
+            let mag_filter = sampler.mag_filter.map(|x| match x.unwrap() {
+                gltf::texture::MagFilter::Nearest => SamplerFilter::Nearest,
+                gltf::texture::MagFilter::Linear => SamplerFilter::Linear,
+            }).unwrap_or(SamplerFilter::Linear);
+
+            let (min_filter, mip_filter) = sampler.min_filter.map(|x| match x.unwrap() {
+                gltf::texture::MinFilter::Nearest => (SamplerFilter::Nearest, SamplerFilter::Nearest),
+                gltf::texture::MinFilter::Linear => (SamplerFilter::Linear, SamplerFilter::Nearest),
+                
+                gltf::texture::MinFilter::NearestMipmapNearest => (SamplerFilter::Nearest, SamplerFilter::Nearest),
+                gltf::texture::MinFilter::LinearMipmapNearest => (SamplerFilter::Linear, SamplerFilter::Nearest),
+                gltf::texture::MinFilter::NearestMipmapLinear => (SamplerFilter::Nearest, SamplerFilter::Linear),
+                gltf::texture::MinFilter::LinearMipmapLinear => (SamplerFilter::Linear, SamplerFilter::Linear),
+            }).unwrap_or((SamplerFilter::Linear, SamplerFilter::Linear));
+
+            let wrap_u = map_wrapping_mode(sampler.wrap_s.unwrap());
+            let wrap_v = map_wrapping_mode(sampler.wrap_t.unwrap());
 
             SamplerSettings {
-                filter,
-                wrap: SamplerWrap::MirroredRepeat,
-                mipmaps: SamplerMipMaps::Auto,
+                mag_filter,
+                min_filter,
+                mip_filter,
+                wrap_u,
+                wrap_v,
+                ..Default::default()
             }
         })
-        .unwrap_or(SamplerSettings {
-            filter: SamplerFilter::Linear,
-            wrap: SamplerWrap::MirroredRepeat,
-            mipmaps: SamplerMipMaps::Auto,
-        })
+        .unwrap_or(SamplerSettings::default())
+}
+
+fn map_wrapping_mode(wrap: gltf::json::texture::WrappingMode) -> SamplerWrap {
+    match wrap {
+        gltf::texture::WrappingMode::ClampToEdge => SamplerWrap::ClampToEdge,
+        gltf::texture::WrappingMode::MirroredRepeat => SamplerWrap::MirrorRepeat,
+        gltf::texture::WrappingMode::Repeat => SamplerWrap::Repeat,
+    }
 }
 
 // Create a texture used for a material used in the glTF scene
@@ -755,7 +792,7 @@ fn create_material_texture<T: Texel + ImageTexel>(
         graphics,
         TextureImportSettings {
             sampling: Some(sampler),
-            mode: TextureMode::Dynamic,
+            views: &[TextureViewSettings::whole::<<Texture2D<T> as Texture>::Region>()],
             usage: TextureUsage::SAMPLED | TextureUsage::COPY_DST,
             scale: TextureScale::Default,
             mipmaps: TextureMipMaps::Manual { mips: &[] },
@@ -846,13 +883,11 @@ fn create_material_mask_texture(
 
     let raw = RawTexels(data, extent.unwrap());
 
-    
-
     texture2d_from_raw(
         graphics,
         TextureImportSettings {
             sampling: Some(sampler),
-            mode: TextureMode::Dynamic,
+            views: &[TextureViewSettings::whole::<<MaskMap as Texture>::Region>()],
             usage: TextureUsage::SAMPLED | TextureUsage::COPY_DST,
             scale: TextureScale::Default,
             mipmaps: TextureMipMaps::Manual { mips: &[] },

@@ -8,14 +8,13 @@ layout(location = 0) in vec4 packed;
 
 // Camera bind group buffer (creates a 'camera' object)
 #include <engine/shaders/common/camera.glsl>
-#include <engine/shaders/noises/noise3D.glsl>
-#include <engine/shaders/math/packer.glsl>
 
 // Data to give to the fragment shader
 layout(location = 0) out vec3 m_position;
 layout(location = 1) out vec3 m_local_position;
 layout(location = 2) out vec3 m_normal;
-layout(location = 3) out float lod;
+layout(location = 3) out flat uint draw; 
+layout(location = 4) out vec3 m_color; 
 
 // Contains position and scale value
 layout(std430, set = 2, binding = 0) readonly buffer PositionScaleBuffer {
@@ -27,6 +26,7 @@ void main() {
     uint packed_cell_position = floatBitsToUint(packed.x);
     uint packed_inner_position = floatBitsToUint(packed.y);
     uint packed_normals = floatBitsToUint(packed.z);
+    uint packed_extras = floatBitsToUint(packed.w);
 
     // Positions only need 16 bits (1 byte for cell coord, 1 byte for inner vertex coord)
     vec4 cell_position = unpackUnorm4x8(packed_cell_position) * 255;
@@ -34,15 +34,19 @@ void main() {
     vec4 position = cell_position + inner_position;
     m_local_position = position.xyz;
     vec4 normals = unpackSnorm4x8(packed_normals);
+    vec4 extras = unpackUnorm4x8(packed_extras);
+    vec3 color = extras.xyz;
+    uint material = uint(extras.w * 255.0);
 
 	// Model space -> World space -> Clip space
     vec4 position_scale = position_scale_buffer.data[gl_DrawID];
+    draw = gl_DrawID;
     vec4 world_pos = vec4(((position.xyz * scaling_factor) * position_scale.w + position_scale.xyz), 1);
     vec4 projected = (camera.projection * camera.view) * world_pos; 
     gl_Position = projected;
-    lod = position_scale.w;
     
     // Set the output variables
     m_position = world_pos.xyz;
     m_normal = -normals.xyz;
+    m_color = color;
 }

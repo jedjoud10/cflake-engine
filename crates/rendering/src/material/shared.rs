@@ -56,12 +56,8 @@ pub struct DefaultMaterialResources<'a> {
     pub draw_indexed_indirect_buffers: &'a Storage<DrawIndexedIndirectBuffer>,
     pub draw_count_indirect_buffer: &'a Storage<DrawCountIndirectBuffer>,
 
-    pub drawn_unique_material_count: &'a mut u32,
-    pub material_instances_count: &'a mut u32,
-    pub rendered_direct_vertices_drawn: &'a mut u64,
-    pub rendered_direct_triangles_drawn: &'a mut u64,
-    pub culled_sub_surfaces: &'a mut u64,
-    pub rendered_sub_surfaces: &'a mut u64,
+    // Lightspace matrix for shadows
+    pub lightspace: Option<vek::Mat4<f32>>,
 }
 
 // Camera data that will be stored in a UBO
@@ -77,6 +73,9 @@ pub struct CameraUniform {
     pub forward: vek::Vec4<f32>,
     pub right: vek::Vec4<f32>,
     pub up: vek::Vec4<f32>,
+
+    // Near, far, vertical FOV, horizontal FOV
+    pub near_far_hfov_: vek::Vec4<f32>
 }
 
 // Timing data that will be stored in a UBO

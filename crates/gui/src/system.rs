@@ -2,7 +2,7 @@ use crate::{Interface, Rasterizer};
 use assets::Assets;
 use egui_winit::winit::event_loop::EventLoop;
 use graphics::{Graphics, Window};
-use rendering::ForwardRenderer;
+use rendering::DeferredRenderer;
 use world::{post_user, user, System, WindowEvent, World};
 
 // Insert the required Egui resources and the render pass
@@ -51,7 +51,7 @@ fn begin(world: &mut World) {
 fn finish(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
     let mut interface = world.get_mut::<Interface>().unwrap();
-    let renderer = world.get::<ForwardRenderer>().unwrap();
+    let renderer = world.get::<DeferredRenderer>().unwrap();
     let interface = &mut *interface;
     let mut window = world.get_mut::<Window>().unwrap();
     let mut assets = world.get_mut::<Assets>().unwrap();

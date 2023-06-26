@@ -5,8 +5,8 @@ use smallvec::SmallVec;
 
 use crate::{
     Extent, Graphics, ImageTexel, RawTexels, Sampler, SamplerSettings, Texel, Texture,
-    TextureAssetLoadError, TextureInitializationError, TextureMipMaps, TextureMode, TextureScale,
-    TextureUsage,
+    TextureAssetLoadError, TextureInitializationError, TextureMipMaps, TextureScale,
+    TextureUsage, TextureViewSettings, TextureViewDimension,
 };
 
 // A 2D texture that contains multiple texels that have their own channels
@@ -14,14 +14,13 @@ use crate::{
 pub struct Texture2D<T: Texel> {
     // Raw WGPU
     texture: wgpu::Texture,
-    views: Option<Vec<wgpu::TextureView>>,
+    views: Vec<(wgpu::TextureView, TextureViewSettings)>,
 
     // Main texture settings
     dimensions: vek::Extent2<u32>,
 
     // Permissions
     usage: TextureUsage,
-    mode: TextureMode,
     _phantom: PhantomData<T>,
 
     // Shader Sampler
@@ -40,10 +39,6 @@ impl<T: Texel> Texture for Texture2D<T> {
         self.dimensions
     }
 
-    fn mode(&self) -> TextureMode {
-        self.mode
-    }
-
     fn usage(&self) -> TextureUsage {
         self.usage
     }
@@ -52,8 +47,8 @@ impl<T: Texel> Texture for Texture2D<T> {
         &self.texture
     }
 
-    fn views(&self) -> Option<&[wgpu::TextureView]> {
-        self.views.as_ref().map(|x| x.as_slice())
+    fn raw_views(&self) -> &[(wgpu::TextureView, TextureViewSettings)] {
+        &self.views
     }
 
     fn sampler(&self) -> Option<Sampler<Self::T>> {
@@ -70,35 +65,22 @@ impl<T: Texel> Texture for Texture2D<T> {
     unsafe fn from_raw_parts(
         graphics: &Graphics,
         texture: wgpu::Texture,
-        views: Option<Vec<wgpu::TextureView>>,
+        views: Vec<(wgpu::TextureView, TextureViewSettings)>,
         sampler: Option<Arc<wgpu::Sampler>>,
         sampling: Option<SamplerSettings>,
         dimensions: vek::Extent2<u32>,
         usage: TextureUsage,
-        mode: TextureMode,
     ) -> Self {
         Self {
             texture,
             views,
             dimensions,
             usage,
-            mode,
             _phantom: PhantomData,
             graphics: graphics.clone(),
             sampler,
             sampling,
         }
-    }
-
-    unsafe fn replace_raw_parts(
-        &mut self,
-        texture: wgpu::Texture,
-        views: Option<Vec<wgpu::TextureView>>,
-        dimensions: vek::Extent2<u32>,
-    ) {
-        self.texture = texture;
-        self.views = views;
-        self.dimensions = dimensions;
     }
 
     fn graphics(&self) -> Graphics {
@@ -114,22 +96,28 @@ impl<T: Texel> Drop for Texture2D<T> {
 
 // Texture settings that we shall use when loading in a new texture
 #[derive(Clone)]
-pub struct TextureImportSettings<'m, T: ImageTexel> {
+pub struct TextureImportSettings<'s, T: ImageTexel> {
     pub sampling: Option<SamplerSettings>,
-    pub mode: TextureMode,
     pub usage: TextureUsage,
     pub scale: TextureScale,
-    pub mipmaps: TextureMipMaps<'m, 'm, T>,
+    pub views: &'s [TextureViewSettings],
+    pub mipmaps: TextureMipMaps<'s, 's, T>,
 }
 
 impl<T: ImageTexel> Default for TextureImportSettings<'_, T> {
     fn default() -> Self {
         Self {
             sampling: Some(SamplerSettings::default()),
-            mode: TextureMode::default(),
             scale: TextureScale::Default,
-            usage: TextureUsage::default(),
+            usage: TextureUsage::SAMPLED | TextureUsage::COPY_DST,
             mipmaps: TextureMipMaps::Manual { mips: &[] },
+            views: &[TextureViewSettings {
+                base_mip_level: 0,
+                mip_level_count: None,
+                base_array_layer: 0,
+                array_layer_count: None,
+                dimension: TextureViewDimension::D2,
+            }],
         }
     }
 }
@@ -201,8 +189,8 @@ pub fn texture2d_from_raw<T: ImageTexel>(
         &graphics,
         Some(&texels),
         dimensions,
-        settings.mode,
         settings.usage,
+        settings.views,
         settings.sampling,
         mipmaps,
     )

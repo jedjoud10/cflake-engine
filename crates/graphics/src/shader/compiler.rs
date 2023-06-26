@@ -2,7 +2,7 @@ use crate::{
     BindResourceType, Buffer, Extent, FunctionModule, GpuPod, GpuPodInfo, Graphics, ModuleKind,
     ModuleVisibility, PushConstantLayout, ReflectedShader, Region, ShaderCompilationError,
     ShaderError, ShaderModule, ShaderReflectionError, SpecConstant, StorageAccess, Texel,
-    TexelInfo, Texture, VertexModule, ViewDimension,
+    TexelInfo, Texture, VertexModule, TextureViewDimension,
 };
 use ahash::{AHashMap, AHashSet};
 use assets::Assets;
@@ -52,6 +52,7 @@ pub struct Compiler<'a> {
     pub(crate) snippets: Snippets,
     pub(crate) constants: Constants,
     pub(crate) defines: Defines,
+    pub(crate) optimize: bool,
     pub(crate) resource_types: ResourceBindingTypes,
     pub(crate) maybe_push_constant_layout: MaybePushConstantLayout,
 }
@@ -67,6 +68,7 @@ impl<'a> Compiler<'a> {
             resource_types: Default::default(),
             maybe_push_constant_layout: Default::default(),
             defines: Default::default(),
+            optimize: false,
         }
     }
 
@@ -87,6 +89,11 @@ impl<'a> Compiler<'a> {
         self.defines.insert(name.to_string(), value.to_string());
     }
 
+    // Toggle shader-c optimization level
+    pub fn toggle_optimization(&mut self, optimize: bool) {
+        self.optimize = optimize;
+    }
+
     // Convert the given GLSL code to SPIRV code, then compile said SPIRV code
     // This uses the defined resoures defined in this compiler
     pub(crate) fn compile<M: ShaderModule>(&self, module: M) -> Result<Compiled<M>, ShaderError> {
@@ -104,6 +111,7 @@ impl<'a> Compiler<'a> {
             &self.defines,
             source,
             &path,
+            self.optimize,
         )
         .map_err(ShaderError::Compilation)?;
         log::debug!(
@@ -170,10 +178,7 @@ impl<'a> Compiler<'a> {
     }
 
     // Define a uniform sampled texture's type and texel
-    pub fn use_sampled_texture<T: Texture>(&mut self, name: impl ToString) {
-        let sampler_name = format!("{}_sampler", name.to_string());
-        self.use_sampler::<T::T>(sampler_name);
-
+    pub fn use_sampled_texture<T: Texture>(&mut self, name: impl ToString, comparison: bool) {
         let dimensionality = <T::Region as Region>::view_dimension();
         let info = <T::T as Texel>::info();
         let format = info.format();
@@ -182,15 +187,16 @@ impl<'a> Compiler<'a> {
             name.to_string(),
             BindResourceType::SampledTexture {
                 format,
-                sample_type: super::map_texture_sample_type(&self.graphics, info),
-                sampler_binding: super::map_sampler_binding_type(&self.graphics, info),
+                sample_type: super::map_texture_sample_type(&self.graphics, info, comparison),
+                sampler_binding: super::map_sampler_binding_type(&self.graphics, info, comparison),
                 view_dimension: dimensionality,
+                comparison,
             },
         );
     }
 
     // Define a uniform sampler's type and texel
-    pub fn use_sampler<T: Texel>(&mut self, name: impl ToString) {
+    pub fn use_sampler<T: Texel>(&mut self, name: impl ToString, comparison: bool) {
         let info = <T as Texel>::info();
         let format = info.format();
 
@@ -198,7 +204,7 @@ impl<'a> Compiler<'a> {
             name.to_string(),
             BindResourceType::Sampler {
                 format: format,
-                sampler_binding: super::map_sampler_binding_type(&self.graphics, info),
+                sampler_binding: super::map_sampler_binding_type(&self.graphics, info, comparison),
             },
         );
     }
@@ -236,6 +242,7 @@ fn compile(
     defines: &Defines,
     mut source: String,
     path: &Path,
+    optimize: bool,
 ) -> Result<(Arc<wgpu::ShaderModule>, Arc<spirq::EntryPoint>), ShaderCompilationError> {
     // Check if the shader module was already compiled and WGPU created it
     let key = (source.clone(), defines.clone(), snippets.clone());
@@ -267,7 +274,8 @@ fn compile(
             snippets,
             assets,
             graphics,
-            kind
+            kind,
+            optimize,
         )?)
     } else {
         None
@@ -279,7 +287,7 @@ fn compile(
 
     // Cache the SPIRV into the shader cache if needed
     if cached.is_none() {
-        graphics.0.cached.spirvs.insert(key, spirv.clone());
+        //graphics.0.cached.spirvs.insert(key, spirv.clone());
     }
 
     // Parse the spirv manually to be able to handle specialization constants
@@ -330,7 +338,8 @@ fn compile_spirv(
     snippets: &Snippets,
     assets: &Assets,
     graphics: &Graphics,
-    kind: &ModuleKind
+    kind: &ModuleKind,
+    optimization: bool,
 ) -> Result<shaderc::CompilationArtifact, ShaderCompilationError> {
     let file = path.file_name().unwrap().to_str().unwrap();
     let version_line_index = source
@@ -356,6 +365,11 @@ fn compile_spirv(
     
     let mut options = shaderc::CompileOptions::new().unwrap();
     options.set_invert_y(false);
+
+    if optimization {
+        options.set_generate_debug_info();
+        options.set_optimization_level(shaderc::OptimizationLevel::Performance);
+    }
     
     let included = Included::default();
     options.set_include_callback(move |target, _type, current, depth| {

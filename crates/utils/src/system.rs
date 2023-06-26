@@ -55,8 +55,8 @@ pub fn file_logger(system: &mut System) {
 }
 
 // Number of ticks that should execute per second
-pub const TICKS_PER_SEC: f32 = 16.0f32;
-pub const TICK_DELTA: f32 = 1.0 / TICKS_PER_SEC;
+pub const TICKS_PER_SEC: u32 = 64;
+pub const TICK_DELTA: f32 = 1.0 / (TICKS_PER_SEC as f32);
 
 // Add the Time manager
 pub fn time(system: &mut System) {
@@ -97,24 +97,32 @@ pub fn time(system: &mut System) {
             time.accumulator += time.delta.as_secs_f32();
             time.tick_interpolation = time.accumulator / TICK_DELTA;
 
-            let mut enabled = false;
             while time.accumulator > TICK_DELTA {
                 time.local_tick_count = 0;
-                enabled = true;
 
+                // Add one to ticks to execute
                 if let Some(count) = time.ticks_to_execute.as_mut() {
-                    *count = NonZeroU32::new(count.get() + 1).unwrap(); 
+                    *count = count.checked_add(1).unwrap();
                 } else {
                     time.ticks_to_execute = Some(NonZeroU32::new(1).unwrap());
                 }
 
+                // Decrease delta and reset interpolations
                 time.accumulator -= TICK_DELTA;
                 time.tick_interpolation = 1.0;
             } 
-            
-            if !enabled {
-                time.ticks_to_execute = None;
-            } 
+
+            // LIMIT TICKS WHEN WE HAVE SPIRAL OF DEATH
+            if let Some(count) = time.ticks_to_execute.as_mut() {
+                const MIN_FPS: u32 = 32;
+                const MAX_TICKS_BEFORE_SLOWDOWN: u32 = (TICKS_PER_SEC as u32) / MIN_FPS;
+                const MAX_TICKS_DURING_SLOWDOWN: u32 = 1;
+
+                if count.get() > MAX_TICKS_BEFORE_SLOWDOWN {
+                    log::warn!("Too many ticks to execute! Spiral of death effect is occuring");
+                    *count = NonZeroU32::new(MAX_TICKS_DURING_SLOWDOWN).unwrap();
+                }
+            }
         })
         .before(user);
 
@@ -124,12 +132,7 @@ pub fn time(system: &mut System) {
             let mut time = world.get_mut::<Time>().unwrap();
             time.tick_count += 1;
             time.local_tick_count += 1;
-
-            // Limit the number of ticks to execute to not cause a spiral of death effect
-            if time.local_tick_count() > 32 {
-                log::warn!("Too many ticks to execute! Spiral of death effect is occuring");
-                return;
-            }
+            time.ticks_to_execute = None;
         })
         .before(user);
 }

@@ -122,7 +122,7 @@ pub fn acquire(system: &mut System) {
 
             graphics.staging_pool().refresh();
         })
-        .after(post_user);
+        .before(user);
 }
 
 // Present system will present the currently acquired texture to the monitor

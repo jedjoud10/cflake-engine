@@ -12,7 +12,7 @@ use crate::{create_texture3d, TerrainSettings};
 // Voxel generator that will be solely used for generating voxels
 pub struct VoxelGenerator {
     pub(crate) compute_voxels: ComputeShader,
-    pub(crate) voxel_textures: [Texture3D<RG<f32>>; 2],
+    pub(crate) voxel_textures: Texture3D<RG<f32>>,
     pub(crate) hot_reload: Option<(Receiver<()>, JoinHandle<()>)>,
 }
 
@@ -28,11 +28,8 @@ impl VoxelGenerator {
         let compiler = create_compute_voxels_compiler(assets, graphics);
         let compute_voxels = ComputeShader::new(module, &compiler).unwrap();
 
-        // Create two textures that will be swapped out every other frame
-        let voxel_textures = [
-            create_texture3d(graphics, settings.size),
-            create_texture3d(graphics, settings.size),
-        ];
+        // Create the main voxel texture
+        let voxel_textures = create_texture3d(graphics, settings.size);
 
         // Create a watcher that will watch the voxels compute shader file for any changes
         let hot_reload = if !assets.packed() {

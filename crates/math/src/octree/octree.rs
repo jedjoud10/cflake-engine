@@ -80,8 +80,8 @@ impl Octree {
         }
     }
 
-    // Recalculate the octree using a specific camera location
-    pub fn compute(&mut self, target: vek::Vec3<f32>) -> OctreeDelta {
+    // Recalculate the octree using multiple targets
+    pub fn compute(&mut self, targets: &[vek::Vec3<f32>]) -> OctreeDelta {
         self.nodes.clear();
 
         // Keep track of the chunks we will check for
@@ -104,7 +104,7 @@ impl Octree {
             let index = node.index;
 
             // Check if we should split the node into multiple
-            let split = self.heuristic.check(&target, &*node);
+            let split = targets.iter().any(|target| self.heuristic.check(target, &*node));
 
             // Add the child nodes to check (this node became a parent node)
             let children = if split && node.depth < self.max_depth {

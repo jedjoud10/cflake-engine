@@ -26,9 +26,7 @@ fn init(world: &mut World) {
 
     // create sun source light
     scene.insert((
-        DirectionalLight {
-            color: vek::Rgb::one(),
-        },
+        DirectionalLight::default(),
         Rotation::rotation_x(-15.0f32.to_radians()),
     ));
 
@@ -38,7 +36,7 @@ fn init(world: &mut World) {
     let _meshes = world.get_mut::<Storage<Mesh>>().unwrap();
     let mut pbrs = world.get_mut::<Storage<PbrMaterial>>().unwrap();
     let mut pipelines = world.get_mut::<Pipelines>().unwrap();
-    let forward_renderer = world.get::<ForwardRenderer>().unwrap();
+    let forward_renderer = world.get::<DeferredRenderer>().unwrap();
 
     // register the PBR material to use it
     let id = pipelines

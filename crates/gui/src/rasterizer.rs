@@ -2,22 +2,21 @@ use assets::Assets;
 use egui::{ClippedPrimitive, ImageData, TextureId, TexturesDelta};
 use graphics::{
     ActivePipeline, BlendComponent, BlendFactor, BlendOperation, BlendState, BufferMode,
-    BufferUsage, Compiler, FragmentModule, GpuPod, Graphics, LoadOp, Normalized, Operation,
+    BufferUsage, Compiler, FragmentModule, Graphics, LoadOp, Normalized, Operation,
     PerVertex, PrimitiveConfig, SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap,
-    Shader, StoreOp, Texture, Texture2D, TextureMipMaps, TextureMode, TextureUsage, TriangleBuffer,
-    VertexBuffer, VertexConfig, VertexInput, VertexModule, Window, RGBA, XY, XYZW,
+    Shader, StoreOp, Texture, Texture2D, TextureMipMaps, TextureUsage, TriangleBuffer,
+    VertexBuffer, VertexConfig, VertexInput, VertexModule, Window, RGBA, XY, XYZW, TextureViewSettings,
 };
 use rendering::{FinalRenderPass, FinalRenderPipeline, WindowBuffer, WindowUniform};
 
 // Font texel type and font map
 type FontTexel = RGBA<Normalized<u8>>;
 type FontMap = Texture2D<FontTexel>;
-
+type FontMapRegion = <FontMap as Texture>::Region;
 // A global rasterizer that will draw the Egui elements onto the screen
 pub(crate) struct Rasterizer {
     // Render pass and shit needed for displaying
     render_pass: FinalRenderPass,
-    shader: Shader,
     pipeline: FinalRenderPipeline,
 
     // Vertex buffer that contains ALL of the clipped meshes
@@ -66,12 +65,15 @@ fn create_rf32_texture(
         graphics,
         Some(&texels),
         extent,
-        TextureMode::Dynamic,
         TextureUsage::SAMPLED | TextureUsage::COPY_DST,
+        &[TextureViewSettings::whole::<FontMapRegion>()],
         Some(SamplerSettings {
-            filter: SamplerFilter::Linear,
-            wrap: SamplerWrap::ClampToEdge,
             mipmaps: SamplerMipMaps::Auto,
+            mag_filter: SamplerFilter::Linear,
+            min_filter: SamplerFilter::Linear,
+            wrap_u: SamplerWrap::ClampToEdge,
+            wrap_v: SamplerWrap::ClampToEdge,
+            ..Default::default()
         }),
         TextureMipMaps::Disabled,
     )
@@ -81,22 +83,19 @@ fn create_rf32_texture(
 impl Rasterizer {
     // Create a new rasterizer using an asset loader and a WGPU context
     pub(super) fn new(graphics: &Graphics, assets: &mut Assets) -> Self {
-        // Load the vertex module for the display shader
         let vertex = assets
-            .load::<VertexModule>("engine/shaders/post/gui.vert")
+            .load::<VertexModule>("engine/shaders/gui/gui.vert")
             .unwrap();
 
-        // Load the fragment module for the display shader
         let fragment = assets
-            .load::<FragmentModule>("engine/shaders/post/gui.frag")
+            .load::<FragmentModule>("engine/shaders/gui/gui.frag")
             .unwrap();
 
         // Create the bind layout for the GUI shader
         let mut compiler = Compiler::new(assets, graphics);
-        compiler.use_sampled_texture::<FontMap>("font");
+        compiler.use_sampled_texture::<FontMap>("font", false);
+        compiler.use_sampler::<FontTexel>("font_sampler", false);
         compiler.use_uniform_buffer::<WindowUniform>("window");
-
-        // Compile the modules into a shader
         let shader = Shader::new(vertex, fragment, &compiler).unwrap();
 
         // Create the render pass that will write to the swapchain
@@ -148,7 +147,6 @@ impl Rasterizer {
 
         Self {
             render_pass,
-            shader,
             pipeline,
             positions: create_vertex_buffer::<XY<f32>>(graphics),
             texcoords: create_vertex_buffer::<XY<f32>>(graphics),
@@ -221,9 +219,8 @@ impl Rasterizer {
         self.positions.extend_from_slice(&positions).unwrap();
         self.texcoords.extend_from_slice(&texcoords).unwrap();
         self.colors.extend_from_slice(&colors).unwrap();
-        self.triangles
-            .extend_from_slice(bytemuck::cast_slice(&triangles))
-            .unwrap();
+        let triangles = bytemuck::cast_slice(&triangles);
+        self.triangles.extend_from_slice(triangles).unwrap();
 
         // Get the destination render target we will render to
         let Ok(dst) = window.as_render_target() else {
@@ -242,6 +239,7 @@ impl Rasterizer {
                     .set_uniform_buffer("window", window_buffer, ..)
                     .unwrap();
                 group.set_sampled_texture("font", texture).unwrap();
+                group.set_sampler("font_sampler", texture.sampler().unwrap()).unwrap();
             })
             .unwrap();
 

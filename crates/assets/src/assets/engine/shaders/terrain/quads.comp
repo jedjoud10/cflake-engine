@@ -1,5 +1,5 @@
 #version 460 core
-layout (local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
 // Spec constants for size
 layout (constant_id = 0) const uint size = 1;
@@ -65,7 +65,7 @@ void check_edge(
 ) {
     // Get the densities of the edge
     float density1 = imageLoad(voxels, ivec3(end)).x;
-    bool dir = density1 > 0.0;
+    bool dir = density1 < 0.0;
 
     // TODO: Optimize w bitwise coed
     if (force) {
@@ -73,7 +73,7 @@ void check_edge(
     }
 
     // Create a quad if they do
-    if ((density0 > 0.0 ^^ density1 > 0.0)) {
+    if ((density0 < 0.0 ^^ density1 < 0.0)) {
         add_quad(
             quad0,
             quad1,
@@ -89,10 +89,11 @@ void main() {
     // Get the start density
     float density0 = imageLoad(voxels, ivec3(gl_GlobalInvocationID)).x;
 
+    /*
     // Check skirts in the X direction
     if (gl_GlobalInvocationID.x == 0 || gl_GlobalInvocationID.x == size - 4) {
         check_edge(
-            9999999.0,
+            -9999999.0,
             gl_GlobalInvocationID + uvec3(1, 0, 0),
             uvec3(0, 0, 0),
             uvec3(0, 0, 1),
@@ -106,7 +107,7 @@ void main() {
     // Check skirts in the Y direction
     if (gl_GlobalInvocationID.y == 0 || gl_GlobalInvocationID.y == size - 4) {
         check_edge(
-            9999999.0,
+            -9999999.0,
             gl_GlobalInvocationID + uvec3(0, 1, 0),
             uvec3(0, 0, 0),
             uvec3(1, 0, 0),
@@ -120,7 +121,7 @@ void main() {
     // Check skirts in the Z direction
     if (gl_GlobalInvocationID.z == 0 || gl_GlobalInvocationID.z == size - 4) {
         check_edge(
-            9999999.0,
+            -9999999.0,
             gl_GlobalInvocationID + uvec3(0, 0, 1),
             uvec3(0, 0, 0),
             uvec3(0, 1, 0),
@@ -130,6 +131,7 @@ void main() {
             gl_GlobalInvocationID.z == size - 4
         );
     }
+    */
 
     bool edge = any(greaterThanEqual(gl_GlobalInvocationID, vec3(size - 3)));
 

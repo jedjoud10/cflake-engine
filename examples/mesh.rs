@@ -11,7 +11,7 @@ fn main() {
         .execute();
 }
 
-// Creates a movable camera, and sky entity
+// Creates a movable camera
 fn init(world: &mut World) {
     // Fetch the required resources from the world
     let assets = world.get::<Assets>().unwrap();
@@ -33,7 +33,7 @@ fn init(world: &mut World) {
     let id = pipelines.get::<PbrMaterial>().unwrap();
 
     // Get the default meshes from the forward renderer
-    let renderer = world.get::<ForwardRenderer>().unwrap();
+    let renderer = world.get::<DeferredRenderer>().unwrap();
     let plane = renderer.plane.clone();
     let sphere = renderer.sphere.clone();
 
@@ -52,9 +52,9 @@ fn init(world: &mut World) {
 
     // Create a new material instance
     let material = pbrs.insert(PbrMaterial {
-        albedo_map: Some(diffuse),
-        normal_map: Some(normal),
-        mask_map: Some(mask),
+        albedo_map: None,
+        normal_map: None,
+        mask_map: None,
         bumpiness_factor: 1.0,
         roughness_factor: 1.0,
         metallic_factor: 1.0,
@@ -92,25 +92,16 @@ fn init(world: &mut World) {
     ));
 
     // Create a directional light
-    let light = DirectionalLight {
-        color: vek::Rgb::one() * 3.6,
-    };
+    let light = DirectionalLight::default();
     let rotation = vek::Quaternion::rotation_x(-15.0f32.to_radians()).rotated_y(45f32.to_radians());
     scene.insert((light, Rotation::from(rotation)));
 }
 
 // Updates the light direction and quites from the engine
 fn update(world: &mut World) {
-    let time = world.get::<Time>().unwrap();
     let mut state = world.get_mut::<State>().unwrap();
-    let time = &*time;
     let input = world.get::<Input>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
-
-    // Rotation the light
-    if let Some((rotation, _)) = scene.find_mut::<(&mut Rotation, &DirectionalLight)>() {
-        rotation.rotate_y(-0.1 * time.delta().as_secs_f32());
-    }
 
     // Exit the game when the user pressed Escape
     if input.get_button(KeyboardButton::Escape).pressed() {

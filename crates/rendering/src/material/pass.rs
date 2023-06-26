@@ -1,88 +1,100 @@
 use assets::Assets;
-use graphics::{ColorLayout, DepthStencilLayout, RenderPass, BindGroup, Graphics, Shader, PrimitiveConfig, WindingOrder, PushConstants, ActiveRenderPipeline, ActivePipeline};
+use graphics::{ColorLayout, DepthStencilLayout, RenderPass, BindGroup, Graphics, Shader, PrimitiveConfig, WindingOrder, PushConstants, ActiveRenderPipeline, ActivePipeline, Depth, RenderPipeline};
+use math::ExplicitVertices;
 use world::World;
-use crate::{RenderPath, DefaultMaterialResources, SceneColor, SceneDepth, MeshAttributes, Renderer};
+use crate::{RenderPath, DefaultMaterialResources, SceneColorLayout, MeshAttributes, Renderer, SceneDepthLayout, Surface, Material, SubSurface, ShadowDepthLayout};
 
 // Render pass that will render the scene
-pub struct SceneRenderPass;
+pub struct DeferredPass;
 
 // Render pass that will render the shadows of the scene from the light POV
-pub struct SceneShadowPass;
+pub struct ShadowPass;
 
-// Generalized render pass from within the rendering system
-// This will be implemented for the RenderPass and ShadowPass structs
-trait Pass {
-    // Render-pass color and depth/stencil layouts
-    type ColorLayout: ColorLayout;
-    type DepthStencilLayout: DepthStencilLayout;
-
-    type RenderPipeline;
-    type ActiveRenderPipeline: ActivePipeline;
+// Type of render pass
+pub enum PassType {
+    Deferred, Shadow
 }
 
-// A render pipeline is what the user will want to implement for to customize rendering
-trait Pipeline<P: Pass> {
-    type Resources<'w>: 'w;
-    type RenderPath: RenderPath;
-    type Settings<'s>;
-    type Query<'a>: ecs::QueryLayoutRef;
 
-    // Create a shader for this material
-    fn shader(settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Shader;
+// Stats about objects and surfaces drawn for any given pass
+#[derive(Default, Clone, Copy)]
+pub struct PassStats {
+    pub material_instance_swap: usize,
+    pub mesh_instance_swap: usize,
+    pub rendered_direct_vertices_drawn: u64,
+    pub rendered_direct_triangles_drawn: u64,
+    pub culled_sub_surfaces: usize,
+    pub rendered_sub_surfaces: usize,
+}
 
-    // Get the required mesh attributes that we need to render a surface
-    // If a surface does not support these attributes, it will not be rendered
-    fn attributes() -> MeshAttributes {
-        MeshAttributes::all()
+// Generalized render pass from within the rendering system
+// This will be implemented for the DeferredPass and ShadowPass structs
+pub trait Pass {
+    // Render-pass color and depth/stencil layouts
+    type C: ColorLayout;
+    type DS: DepthStencilLayout;
+
+    // Check if the pass is the deferred pass
+    fn is_deferred_pass() -> bool {
+        matches!(Self::pass_type(), PassType::Deferred)
     }
 
-    // Get the rasterizer config for this materil
-    fn primitive_config() -> PrimitiveConfig {
-        PrimitiveConfig::Triangles {
-            winding_order: WindingOrder::Cw,
-            cull_face: Some(graphics::Face::Front),
-            wireframe: false,
-        }
+    // Check if the pass is the shadow pass
+    fn is_shadow_pass() -> bool {
+        matches!(Self::pass_type(), PassType::Shadow)
     }
 
-    // Fetch the required resources from the world
-    fn fetch(world: &World) -> Self::Resources<'_>;
+    // Set the cull state of a specific surface
+    fn set_cull_state<M: Material>(surface: &mut Surface<M>, culled: bool);
 
-    // Set the static bindings
-    fn set_global_bindings<'r>(
-        _resources: &'r mut Self::Resources<'_>,
-        _group: &mut BindGroup<'r>,
-        _default: &DefaultMaterialResources<'r>,
-    ) {
+    // Cull a specific surface when rendering the objects of this pass
+    fn cull(defaults: &DefaultMaterialResources, aabb: math::Aabb<f32>, mesh: &vek::Mat4<f32>) -> bool;
+
+    // Check if a surface should be visible
+    fn is_surface_visible<M: Material>(surface: &Surface<M>, renderer: &Renderer) -> bool;
+
+    // Get the pass type
+    fn pass_type() -> PassType; 
+}
+
+impl Pass for DeferredPass {
+    type C = SceneColorLayout;
+    type DS = SceneDepthLayout;
+
+    fn pass_type() -> PassType {
+        PassType::Deferred
     }
 
-    // Set the per instance bindings
-    fn set_instance_bindings<'r>(
-        &self,
-        _resources: &'r mut Self::Resources<'_>,
-        _default: &DefaultMaterialResources<'r>,
-        _group: &mut BindGroup<'r>,
-    ) {
+    fn set_cull_state<M: Material>(surface: &mut Surface<M>, culled: bool) {
+        surface.culled = culled;
     }
 
-    // Set the per surface bindings
-    fn set_surface_bindings<'r, 'w>(
-        _renderer: &Renderer,
-        _resources: &'r mut Self::Resources<'w>,
-        _default: &mut DefaultMaterialResources<'w>,
-        _query: &Self::Query<'w>,
-        _group: &mut BindGroup<'r>,
-    ) {
+    fn cull(defaults: &DefaultMaterialResources, aabb: math::Aabb<f32>, mesh: &vek::Mat4<f32>) -> bool {
+        !crate::pipeline::intersects_frustum(&defaults.camera_frustum, aabb, mesh)
     }
 
-    // Set the required push constants
-    fn set_push_constants<'r, 'w>(
-        &self,
-        _renderer: &Renderer,
-        _resources: &'r mut Self::Resources<'w>,
-        _default: &DefaultMaterialResources<'r>,
-        _query: &Self::Query<'w>,
-        _push_constants: &mut PushConstants<P::ActiveRenderPipeline>,
-    ) {
+    fn is_surface_visible<M: Material>(surface: &Surface<M>, renderer: &Renderer) -> bool {
+        !surface.culled && surface.visible && renderer.visible
+    }
+}
+
+impl Pass for ShadowPass {
+    type C = ();
+    type DS = ShadowDepthLayout;
+
+    fn pass_type() -> PassType {
+        PassType::Shadow
+    }
+
+    fn set_cull_state<M: Material>(surface: &mut Surface<M>, culled: bool) {
+        surface.shadow_culled = culled;
+    }
+
+    fn cull(defaults: &DefaultMaterialResources, aabb: math::Aabb<f32>, mesh: &vek::Mat4<f32>) -> bool {
+        !crate::pipeline::intersects_lightspace(defaults.lightspace.as_ref().unwrap(), aabb, mesh)
+    }
+
+    fn is_surface_visible<M: Material>(surface: &Surface<M>, renderer: &Renderer) -> bool {
+        !surface.shadow_culled && surface.visible && renderer.visible
     }
 }

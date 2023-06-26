@@ -1,5 +1,5 @@
 use crate::Handle;
-use slotmap::DefaultKey;
+use slotmap::{DefaultKey, Key};
 use std::{
     marker::PhantomData,
     sync::{atomic::Ordering, Arc},
@@ -63,6 +63,11 @@ impl<T: 'static> Weak<T> {
             .get(self.key)
             .unwrap()
             .load(Ordering::Relaxed)
+    }
+
+    // Get the raw key FFI for this weak handle
+    pub fn as_raw(&self) -> u64 {
+        slotmap::KeyData::as_ffi(self.key.data())
     }
 
     // Overwrite the current reference counted value directly

@@ -7,9 +7,10 @@ use crate::{
     TrianglesMut, TrianglesRef, VerticesMut, VerticesRef,
 };
 use assets::Asset;
+use bytemuck::{Pod, Zeroable};
 use graphics::{
     BufferMode, BufferUsage, DrawCountIndirectBuffer, DrawIndexedIndirectBuffer, Graphics,
-    Triangle, TriangleBuffer,
+    Triangle, TriangleBuffer, Vertex, BufferInitializationError,
 };
 use obj::TexturedVertex;
 
@@ -66,21 +67,29 @@ impl Mesh<Direct> {
         tangents: Option<&[RawTangent]>,
         tex_coords: Option<&[RawTexCoord]>,
         triangles: &[Triangle<u32>],
+        aabb: Option<math::Aabb<f32>>,
     ) -> Result<Self, MeshInitializationError> {
         let positions = positions.map(|slice| {
-            AttributeBuffer::<Position>::from_slice(graphics, slice, mode, usage).unwrap()
+            AttributeBuffer::<Position>::from_slice(graphics, slice, mode, usage)
         });
         let normals = normals.map(|slice| {
-            AttributeBuffer::<Normal>::from_slice(graphics, slice, mode, usage).unwrap()
+            AttributeBuffer::<Normal>::from_slice(graphics, slice, mode, usage)
         });
         let tangents = tangents.map(|slice| {
-            AttributeBuffer::<Tangent>::from_slice(graphics, slice, mode, usage).unwrap()
+            AttributeBuffer::<Tangent>::from_slice(graphics, slice, mode, usage)
         });
         let tex_coords = tex_coords.map(|slice| {
-            AttributeBuffer::<TexCoord>::from_slice(graphics, slice, mode, usage).unwrap()
+            AttributeBuffer::<TexCoord>::from_slice(graphics, slice, mode, usage)
         });
-        let triangles = TriangleBuffer::from_slice(graphics, triangles, mode, usage).unwrap();
-        Self::from_buffers(positions, normals, tangents, tex_coords, triangles)
+        let triangles = Some(TriangleBuffer::from_slice(graphics, triangles, mode, usage));
+
+        let positions = positions.transpose().map_err(MeshInitializationError::AttributeBufferInitialization)?;
+        let normals = normals.transpose().map_err(MeshInitializationError::AttributeBufferInitialization)?;
+        let tangents = tangents.transpose().map_err(MeshInitializationError::AttributeBufferInitialization)?;
+        let tex_coords = tex_coords.transpose().map_err(MeshInitializationError::AttributeBufferInitialization)?;
+        let triangles = triangles.transpose().map_err(MeshInitializationError::TriangleBufferInitialization)?;
+
+        Self::from_buffers(positions, normals, tangents, tex_coords, triangles.unwrap(), aabb)
     }
 
     // Create a new mesh from the attribute buffers
@@ -90,6 +99,7 @@ impl Mesh<Direct> {
         tangents: Option<AttributeBuffer<Tangent>>,
         tex_coords: Option<AttributeBuffer<TexCoord>>,
         triangles: TriangleBuffer<u32>,
+        aabb: Option<math::Aabb<f32>>,
     ) -> Result<Self, MeshInitializationError> {
         let mut mesh = Self {
             enabled: MeshAttributes::empty(),
@@ -99,7 +109,7 @@ impl Mesh<Direct> {
             tex_coords: None,
             args: Some(0),
             triangles,
-            aabb: None,
+            aabb,
         };
 
         // "Set"s a buffer, basically insert it if it's Some and removing it if it's None
@@ -125,7 +135,6 @@ impl Mesh<Direct> {
         // We don't have to do shit with these since
         // they internally set the data automatically for us
         let _ = vertices.len();
-        let _ = vertices.aabb();
 
         Ok(mesh)
     }
@@ -484,8 +493,8 @@ impl Asset for Mesh {
         let mut tex_coords = settings
             .use_tex_coords
             .then(|| Vec::<RawTexCoord>::with_capacity(capacity));
-        let mut triangles = Vec::<[u32; 3]>::with_capacity(parsed.indices.len() / 3);
-        let indices = parsed.indices;
+        let mut indices = parsed.indices;
+        let triangles = bytemuck::cast_slice_mut(&mut indices);
         use vek::{Vec2, Vec3};
 
         // Convert the vertices into the separate buffer
@@ -505,11 +514,6 @@ impl Asset for Mesh {
                 let read = Vec2::from_slice(&vertex.texture);
                 tex_coords.push(read);
             }
-        }
-
-        // Convert the indices to triangles
-        for triangle in indices.chunks_exact(3) {
-            triangles.push(triangle.try_into().unwrap());
         }
 
         // Optionally generate the tangents
@@ -536,7 +540,20 @@ impl Asset for Mesh {
             &mut normals,
             &mut tangents,
             &mut tex_coords,
-            &mut triangles,
+            triangles,
+        );
+
+        // Optimize the mesh after we load it
+        let triangles = bytemuck::cast_slice_mut(&mut indices);
+        super::optimize(
+            settings.optimize_vertex_cache,
+            settings.optimize_vertex_fetch,
+            settings.optimize_overdraw,
+            &mut positions,
+            &mut normals,
+            &mut tangents,
+            &mut tex_coords,
+            triangles,
         );
 
         log::debug!(
@@ -556,6 +573,9 @@ impl Asset for Mesh {
             tex_coords.as_ref().map(|tc| tc.len()).unwrap_or_default()
         );
 
+        // Create an AABB for this mesh
+        let aabb = crate::aabb_from_points(positions.as_ref().unwrap());
+
         // Generate the mesh and it's corresponding data
         Mesh::from_slices(
             &graphics,
@@ -566,6 +586,7 @@ impl Asset for Mesh {
             tangents.as_deref(),
             tex_coords.as_deref(),
             &triangles,
+            aabb
         )
         .map_err(MeshImportError::Initialization)
     }

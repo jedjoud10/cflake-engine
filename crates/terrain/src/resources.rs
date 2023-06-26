@@ -4,6 +4,8 @@ mod memory;
 mod mesh;
 mod terrain;
 mod voxel;
+mod editing;
+pub use editing::*;
 pub use culler::*;
 pub use manager::*;
 pub use memory::*;

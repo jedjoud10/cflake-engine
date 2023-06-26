@@ -1,3 +1,21 @@
+// Physics surface material that contains firction and restitution parameters
+#[derive(Clone, Copy)]
+pub struct PhysicsSurface {
+    pub friction: f32,
+    pub restitution: f32,
+}
+
+impl Default for PhysicsSurface {
+    fn default() -> Self {
+        Self {
+            friction: 0.4,
+            restitution: 0.2
+        }
+    }
+}
+
+
+
 // Convert a translation into a vec3
 pub(crate) fn trans_to_vec(trans: rapier3d::na::Translation3<f32>) -> vek::Vec3<f32> {
     vek::Vec3::new(trans.x, trans.y, trans.z)
@@ -13,7 +31,6 @@ pub(crate) fn rot_to_quat(rot: rapier3d::na::UnitQuaternion<f32>) -> vek::Quater
         w: rot.w,
     }
 }
-
 
 // Convert a vec3 into a translation
 pub(crate) fn vec_to_trans(vec: vek::Vec3<f32>) -> rapier3d::na::Translation3<f32> {

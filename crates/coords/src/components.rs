@@ -3,7 +3,9 @@ use std::marker::PhantomData;
 mod position;
 mod rotation;
 mod scale;
+mod relations;
 
+pub use relations::*;
 pub use position::Position as UnmarkedPosition;
 pub use rotation::Rotation as UnmarkedRotation;
 pub use scale::Scale as UnmarkedScale;
@@ -26,6 +28,11 @@ pub struct Global<TimeFrame>(PhantomData<TimeFrame>);
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Local<TimeFrame>(PhantomData<TimeFrame>);
+
+// Local coordinates updated frame to frame
+pub type LocalPosition = position::Position<Local<FrameToFrame>>;
+pub type LocalRotation = rotation::Rotation<Local<FrameToFrame>>;
+pub type LocalScale = scale::Scale<Local<FrameToFrame>>;
 
 // Global coordinates updated frame to frame
 pub type Position = position::Position<Global<FrameToFrame>>;

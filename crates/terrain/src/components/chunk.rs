@@ -6,6 +6,14 @@ use math::Node;
 #[derive(Default, Component)]
 pub struct ChunkViewer;
 
+// State of the mesh that we are reading back to the CPU for collisions
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum MeshReadbackState {
+    PendingReadbackStart,
+    PendingReadbackData,
+    Complete,
+}
+
 // State of the indirect mesh of each chunk
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum ChunkState {
@@ -18,14 +26,17 @@ pub enum ChunkState {
     // The chunk is waiting for the compute shader to generate it's mesh
     Pending,
 
-    // The chunk is waiting for the readback
+    // The chunk is waiting for the readback to begin
     PendingReadbackStart,
 
-    // God damnit I fucking hate this shit
+    // The chunk is waiting for the readback to complete
     PendingReadbackData,
 
     // The chunk's mesh has been generated successfully
-    Generated { empty: bool },
+    Generated {
+        empty: bool,
+        mesh_readback_state: Option<MeshReadbackState>,
+    },
 
     // The chunk needs to be removed
     PendingRemoval,
@@ -61,7 +72,7 @@ pub struct Chunk {
     pub(crate) state: ChunkState,
     pub(crate) node: Option<Node>,
     pub(crate) generation_priority: f32,
-    pub(crate) readback_priority: f32,
+    pub(crate) readback_priority: Option<f32>,
 }
 
 impl Chunk {
@@ -77,7 +88,7 @@ impl Chunk {
 
     // Force the regeneration of a specific chunk by setting it's state to dirty
     pub fn regenerate(&mut self) {
-        if let ChunkState::Generated { empty } = self.state {
+        if let ChunkState::Generated { empty, .. } = self.state {
             self.state = ChunkState::Dirty
         } 
     }

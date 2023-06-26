@@ -1,9 +1,29 @@
 #version 460 core
-layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+#include <engine/shaders/scene/environment/sky.glsl>
 
-layout(set = 0, binding = 0, rgba32f) writeonly uniform image2DArray enviro;
+layout (local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
+
+layout (constant_id = 0) const uint cubemap_resolution = 1;
+
+layout(set = 0, binding = 0, rgba32f) writeonly uniform image2D enviro;
+
+layout(push_constant) uniform PushConstants {
+    layout(offset = 0) vec4 sun_direction;
+    layout(offset = 64) mat4 matrix;
+} parameters;
 
 void main() {
-	vec4 data = vec4(1);
-	//imageStore(enviro, ivec3(gl_GlobalInvocationID.xyz), data);
+    // Convert coordinates to -1 - 1 coordinates
+    vec2 coords = vec2(gl_GlobalInvocationID.xy);
+    vec3 ndc = vec3(coords.x / cubemap_resolution, coords.y / cubemap_resolution, 1);
+    ndc.xy = ndc.xy * 2 - 1;
+
+    // Convert the NDC coordinate to a world space normal 
+    mat4 matrix = parameters.matrix;
+    vec3 normal = normalize((matrix * vec4(ndc, 0)).xyz);
+
+    // Calculate sky color based on normal
+    vec3 color = calculate_sky_color(normal, parameters.sun_direction.xyz);
+
+    imageStore(enviro, ivec2(gl_GlobalInvocationID.xy), vec4(color, 1));
 }

@@ -29,6 +29,9 @@ pub enum AttributeError {
 pub enum MeshInitializationError {
     #[error("{0}")]
     AttributeBufferInitialization(BufferInitializationError),
+
+    #[error("{0}")]
+    TriangleBufferInitialization(BufferInitializationError),
 }
 
 #[derive(Debug, Error)]

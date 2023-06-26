@@ -5,7 +5,6 @@ fn main() {
     App::default()
         .set_app_name("cflake engine mesh example")
         .set_window_fullscreen(true)
-        //.set_frame_rate_limit(FrameRateLimit::VSync)
         .insert_init(init)
         .insert_update(update)
         .execute();
@@ -17,13 +16,13 @@ fn init(world: &mut World) {
     let assets = world.get::<Assets>().unwrap();
 
     // Setup the assets that will be loaded
-    asset!(assets, "user/scenes/untitled.glb", "/examples/assets/");
+    asset!(assets, "user/scenes/example.glb", "/examples/assets/");
 
     // Load the glTF scene into the world LMAO!!
     let context = GtlfContext::from_world(world).unwrap();
     let settings = GltfSettings::default();
     assets
-        .load::<GltfScene>(("user/scenes/untitled.glb", settings, context))
+        .load::<GltfScene>(("user/scenes/example.glb", settings, context))
         .unwrap();
 
     // Create a movable camera
@@ -37,10 +36,8 @@ fn init(world: &mut World) {
     ));
 
     // Create a directional light
-    let light = DirectionalLight {
-        color: vek::Rgb::one() * 3.6,
-    };
-    let rotation = vek::Quaternion::rotation_x(-15.0f32.to_radians()).rotated_y(45f32.to_radians());
+    let light = DirectionalLight { intensity: 1.0, color: vek::Rgb::broadcast(255)  };
+    let rotation = vek::Quaternion::rotation_x(-40.0f32.to_radians()).rotated_y(45f32.to_radians());
     scene.insert((light, Rotation::from(rotation)));
 }
 
@@ -48,18 +45,19 @@ fn init(world: &mut World) {
 fn update(world: &mut World) {
     let time = world.get::<Time>().unwrap();
     let mut state = world.get_mut::<State>().unwrap();
-    let _time = &*time;
+    let time = &*time;
     let input = world.get::<Input>().unwrap();
-    let _scene = world.get_mut::<Scene>().unwrap();
+    let mut scene = world.get_mut::<Scene>().unwrap();
 
     // Rotation the light
-    /*
-    if let Some((rotation, _)) =
-        scene.find_mut::<(&mut Rotation, &DirectionalLight)>()
-    {
-        rotation.rotate_y(-0.1 * time.delta().as_secs_f32());
+    if let Some((rotation, light)) = scene.find_mut::<(&mut Rotation, &mut DirectionalLight)>() {
+        let value = (time.elapsed().as_secs_f32() * 0.03).sin();
+        **rotation = Quaternion::rotation_x((value * 90.0 - 90.0).to_radians());
+        let noon = vek::Rgb::new(255.0f32, 231.0, 204.0);
+        let sunrise = vek::Rgb::new(255.0f32, 151.0, 33.0);
+        let interpolated = vek::Lerp::lerp(noon, sunrise, value.abs());
+        light.color = interpolated.map(|x| x as u8);
     }
-    */
 
     // Exit the game when the user pressed Escape
     if input.get_button(KeyboardButton::Escape).pressed() {
