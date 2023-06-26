@@ -72,7 +72,7 @@ fn update(world: &mut World) {
         }
 
         // Regenerate the octree and detect diffs
-        let OctreeDelta { mut added, removed } = manager.octree.compute(new);
+        let OctreeDelta { mut added, removed } = manager.octree.compute(&[new]);
 
         // Discard non-leaf nodes
         added.retain(|x| x.leaf());
@@ -188,11 +188,17 @@ fn update(world: &mut World) {
         }
 
         // Get all free chunks in the world and use them
-        let query = scene
+        let mut query = scene
             .query_mut::<(&mut Chunk, &mut Position, &mut Scale, &Entity)>()
             .into_iter()
             .filter(|(x, _, _, _)| x.state == ChunkState::Free)
             .collect::<Vec<_>>();
+
+        // Sort all nodes from closest to furthest
+        //added.sort_by_key(|node| node.position().as_::<f32>().distance(new) as i32);
+
+        // Sort all chunks from closest to furthest
+        //query.sort_by_key(|(_, p, _, _)| p.distance(new) as i32);
 
         // Set the "dirty" state for newly added chunks
         assert!(query.len() >= added.len());

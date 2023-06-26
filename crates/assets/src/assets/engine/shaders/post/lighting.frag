@@ -336,8 +336,8 @@ void main() {
 
 		// Create a procedural sun with the scene params
 		float sun = dot(dir, -scene.sun_direction.xyz);
-		float out_sun = pow(max(sun * 0.3, 0), 3) * 3;
-		out_sun += pow(clamp(sun - 0.9968, 0, 1.0) * 250, 4) * 16;
+		float out_sun = pow(max(sun * 0.3, 0), 3) * 1;
+		out_sun += clamp(sun - 0.99912, 0, 1.0) * 1200;
 		color += vec3(out_sun);
 	}
 

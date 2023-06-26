@@ -1,4 +1,5 @@
 #version 460 core
+#define lowpoly
 
 // G-Buffer data write
 layout(location = 0) out vec4 gbuffer_position;
@@ -17,6 +18,12 @@ layout(location = 2) in vec3 m_normal;
 #endif
 
 layout(location = 3) in flat uint draw; 
+
+#ifdef lowpoly
+layout(location = 4) in flat vec3 m_color;
+#else
+layout(location = 4) in vec3 m_color;
+#endif
 
 // Used to calculate barycentric coordinates
 layout (constant_id = 1) const uint input_vertices_count = 1;
@@ -102,7 +109,7 @@ vec3 triplanar_normal(float layer, vec3 normal) {
 }
 
 // Fetch the position (and material index) of a specific vertex that makes the current rasterized triangle
-vec4 fetch_vertex_position_and_material(uint vertex) {
+vec4 fetch_vertex_position_and_extra(uint vertex) {
 	uint base = indirect.data[draw].base_index;
 	uint vertex_offset = indirect.data[draw].vertex_offset;
 	uint index = input_triangles.data[gl_PrimitiveID * 3 + base + vertex];
@@ -116,31 +123,38 @@ vec4 fetch_vertex_position_and_material(uint vertex) {
 
 void main() {
 	#ifdef lowpoly
-	//vec3 surface_normal = normalize(cross(dFdy(m_position), dFdx(m_position)));
-	vec3 surface_normal = normalize(m_normal);
+	vec3 surface_normal = normalize(cross(dFdy(m_position), dFdx(m_position)));
+	//vec3 surface_normal = normalize(m_normal);
 	#else
 	vec3 surface_normal = normalize(m_normal);
 	#endif
 
 	gbuffer_position = vec4(m_position, 0);
-	vec3 test_albedo = vec3(clamp(surface_normal.y, 0, 1)); 
-	gbuffer_albedo = vec4(test_albedo, 1);
+	gbuffer_albedo = vec4(m_color, 1);
 	gbuffer_normal = vec4(surface_normal, 0);
-	gbuffer_mask = vec4(1, 1.0, 0, 0);
+	gbuffer_mask = vec4(1, 1, 0, 0);
+
+	vec4 v0 = fetch_vertex_position_and_extra(0);
+	vec4 v1 = fetch_vertex_position_and_extra(1);
+	vec4 v2 = fetch_vertex_position_and_extra(2);
+	float i0 = unpackUnorm4x8(floatBitsToUint(v0.w)).w * 255.0;
+	float i1 = unpackUnorm4x8(floatBitsToUint(v1.w)).w * 255.0;
+	float i2 = unpackUnorm4x8(floatBitsToUint(v2.w)).w * 255.0;
 	
+	vec3 c0 = unpackUnorm4x8(floatBitsToUint(v0.w)).xyz;
+	vec3 c1 = unpackUnorm4x8(floatBitsToUint(v1.w)).xyz;
+	vec3 c2 = unpackUnorm4x8(floatBitsToUint(v2.w)).xyz;
+
+	vec3 albedo = (c0 + c1 + c2) * 0.3333;
+	vec3 mask = vec3(1, 1, 0);
+	vec3 normal = surface_normal;
+
+	gbuffer_position = vec4(m_position, 0);
+	gbuffer_albedo = vec4(albedo, 1);
+	gbuffer_normal = vec4(normal, 0);
+	gbuffer_mask = vec4(mask * vec3(1, 3, 1), 0);
 
 	/*
-	vec4 v0 = fetch_vertex_position_and_material(0);
-	vec4 v1 = fetch_vertex_position_and_material(1);
-	vec4 v2 = fetch_vertex_position_and_material(2);
-	float i0 = unpackUnorm4x8(floatBitsToUint(v0.w)).x * 255.0;
-	float i1 = unpackUnorm4x8(floatBitsToUint(v1.w)).x * 255.0;
-	float i2 = unpackUnorm4x8(floatBitsToUint(v2.w)).x * 255.0;
-
-	vec3 albedo = vec3(0);
-	vec3 mask = vec3(0);
-	vec3 normal = vec3(0);
-
 	if ((i0 == i1) && (i2 == i1)) {
 		albedo = triplanar_albedo(i0, surface_normal);
 		mask = triplanar_mask(i0, surface_normal);
@@ -183,8 +197,8 @@ void main() {
 	}
 
 	gbuffer_position = vec4(m_position, 0);
-	gbuffer_albedo = vec4(albedo, 1);
+	gbuffer_albedo = vec4(albedo * m_color, 1);
 	gbuffer_normal = vec4(normal, 0);
-	gbuffer_mask = vec4(mask, 0);
+	gbuffer_mask = vec4(mask * vec3(1, 3, 1), 0);
 	*/
 }

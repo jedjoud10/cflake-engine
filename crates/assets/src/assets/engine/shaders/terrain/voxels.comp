@@ -23,15 +23,17 @@ void main() {
     vec3 position = vec3(gl_GlobalInvocationID.xyz) * parameters.scale;
     position += parameters.offset.xyz;
 
+    // Input params that we will mutate
     vec3 color = vec3(0);
-    vec3 mask = vec3(0);
     uint material = 0;
 
-    float density = voxel(position, material);
-    //density = clamp(density, -1, 1);
+    // Execute the voxel function and return a density
+    float density = voxel(position, color, material);
 
-    float packed = uintBitsToFloat(packUnorm4x8(vec4(float(material) / 255.0)));
-    vec4 data = vec4(density, packed, 0, 0);
+    // Pack color, density, and material
+    vec4 packed_color_and_material = vec4(color, float(material) / 255.0);
+    float float_packed_color_and_material = uintBitsToFloat(packUnorm4x8(packed_color_and_material));
+    vec4 data = vec4(density, float_packed_color_and_material, 0, 0);
 
     // Writes the data to the voxels texture
     imageStore(voxels, ivec3(gl_GlobalInvocationID.xyz), data);

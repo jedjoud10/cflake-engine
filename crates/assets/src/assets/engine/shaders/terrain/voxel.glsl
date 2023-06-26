@@ -24,16 +24,16 @@ vec2 rotate(vec2 v, float a) {
 
 // Main voxel function that will create the shape of the terrain
 // Negative values represent terrain, positive values represent air
-float voxel(vec3 position, out uint material) {
-    //position *= 3.0;
+float voxel(vec3 position, out vec3 color, out uint material) {
+    position *= 1.;
 
     // Blend between the two biomes
     float blend = clamp(snoise(position.xz * 0.0001) * 0.5 + 0.5, 0, 1);
     blend = smoothstep(0.0, 1.0, clamp((blend - 0.5) * 6 + 0.5, 0, 1));
-    blend = 1.0;
        
     // Sand/Dune biome
     float biome1 = 0;
+    vec3 color1 = vec3(0);
     uint material2 = 2;
 
     if (blend != 1.0) {
@@ -43,21 +43,26 @@ float voxel(vec3 position, out uint material) {
         biome1 = (1 - spikey) * snoise(position.xz * 0.001 + vec2(snoise(position.xz * 0.0002)) * vec2(1.3, 0.2)) * 60;
         biome1 += (1 - spikey) * sin(dot(position.xz, vec2(1, 1)) * 0.01 - 1.202) * 30;
         biome1 += (1 - spikey) * cos(dot(position.xz, vec2(0.2, 2)) * 0.001 + 1.2) * 45;
-        biome1 += spikey * pow(abs(snoise(rotated * vec2(3.3, 0.6) * 0.001)), 1.1) * 64;
+        float spikey2 = pow(abs(snoise(rotated * vec2(2.3, 0.7) * 0.0013 + vec2(snoise(position * 0.0012)) * 0.2)), 1.2);
+        biome1 += spikey * spikey2 * 20;
         biome1 += position.y;
+        color1 = (vec3(1 - spikey2) * 0.3 + 0.5 + snoise(position * 0.1) * 0.1) * pow(vec3(255, 188, 133) / 255.0, vec3(2.2));
     }
 
     // Rocky biome
     float rocky = 0.0;
+    vec3 color2 = vec3(0);
     uint material3 = 1;
 
     if (blend != 0.0) {
-        rocky = position.y - fbmCellular(position.xz * 0.001, 8, 0.5, 1.85).x * 930 - 50;
+        rocky = position.y - fbmCellular(position.xz * 0.001, 8, 0.5, 1.95).x * 930 - 50;
         rocky = opSmoothUnion(position.y, rocky, 400);
-        //rocky += smooth_floor(position.y / 50) * 200;
+        color2 = (snoise(position * vec3(0, 10, 0) * 0.004) * 0.4 + 0.4) * pow(vec3(100.0) / 255.0, vec3(2.2));
+        rocky += smooth_floor(position.y / 50) * 20;
     }
 
     float density = mix(biome1, rocky, blend);
+    color = mix(color1, color2, blend);
 
     if (blend < 0.5) {
         material = material2;
@@ -65,5 +70,5 @@ float voxel(vec3 position, out uint material) {
         material = material3;
     }
     
-    return -density;
+    return opIntersection(-density, opUnion(-sdBox(position, vec3(1000)), sdSphere(position, 1200)));
 }

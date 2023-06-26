@@ -14,6 +14,7 @@ layout(location = 0) out vec3 m_position;
 layout(location = 1) out vec3 m_local_position;
 layout(location = 2) out vec3 m_normal;
 layout(location = 3) out flat uint draw; 
+layout(location = 4) out vec3 m_color; 
 
 // Contains position and scale value
 layout(std430, set = 2, binding = 0) readonly buffer PositionScaleBuffer {
@@ -25,6 +26,7 @@ void main() {
     uint packed_cell_position = floatBitsToUint(packed.x);
     uint packed_inner_position = floatBitsToUint(packed.y);
     uint packed_normals = floatBitsToUint(packed.z);
+    uint packed_extras = floatBitsToUint(packed.w);
 
     // Positions only need 16 bits (1 byte for cell coord, 1 byte for inner vertex coord)
     vec4 cell_position = unpackUnorm4x8(packed_cell_position) * 255;
@@ -32,6 +34,9 @@ void main() {
     vec4 position = cell_position + inner_position;
     m_local_position = position.xyz;
     vec4 normals = unpackSnorm4x8(packed_normals);
+    vec4 extras = unpackUnorm4x8(packed_extras);
+    vec3 color = extras.xyz;
+    uint material = uint(extras.w * 255.0);
 
 	// Model space -> World space -> Clip space
     vec4 position_scale = position_scale_buffer.data[gl_DrawID];
@@ -43,4 +48,5 @@ void main() {
     // Set the output variables
     m_position = world_pos.xyz;
     m_normal = -normals.xyz;
+    m_color = color;
 }

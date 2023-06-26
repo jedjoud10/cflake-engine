@@ -136,7 +136,7 @@ fn update(world: &mut World) {
     // Rotation the light
     if let Some((rotation, light)) = scene.find_mut::<(&mut Rotation, &mut DirectionalLight)>() {
         let value = (time.elapsed().as_secs_f32() * 0.1).sin();
-        **rotation = Quaternion::rotation_x((value * 70.0 - 90.0).to_radians());
+        **rotation = Quaternion::rotation_x((value * 85.0 - 90.0).to_radians());
         let noon = vek::Rgb::new(255.0f32, 250.0, 240.0);
         let sunrise = vek::Rgb::new(255.0f32, 179.0, 92.0);
         let interpolated = vek::Lerp::lerp(noon, sunrise, value.abs().powf(5.0));
