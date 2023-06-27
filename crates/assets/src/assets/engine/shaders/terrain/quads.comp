@@ -89,7 +89,6 @@ void main() {
     // Get the start density
     float density0 = imageLoad(voxels, ivec3(gl_GlobalInvocationID)).x;
 
-    /*
     // Check skirts in the X direction
     if (gl_GlobalInvocationID.x == 0 || gl_GlobalInvocationID.x == size - 4) {
         check_edge(
@@ -131,7 +130,6 @@ void main() {
             gl_GlobalInvocationID.z == size - 4
         );
     }
-    */
 
     bool edge = any(greaterThanEqual(gl_GlobalInvocationID, vec3(size - 3)));
 

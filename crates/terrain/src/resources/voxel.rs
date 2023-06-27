@@ -29,7 +29,7 @@ impl VoxelGenerator {
         let compute_voxels = ComputeShader::new(module, &compiler).unwrap();
 
         // Create the main voxel texture
-        let voxel_textures = create_texture3d(graphics, settings.size);
+        let voxel_textures = create_texture3d(graphics, settings.mesher.size);
 
         // Create a watcher that will watch the voxels compute shader file for any changes
         let hot_reload = if !assets.packed() {

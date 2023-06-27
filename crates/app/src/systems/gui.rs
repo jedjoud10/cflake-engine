@@ -296,17 +296,6 @@ fn update(world: &mut World) {
     if let Ok(mut terrain) = world.get_mut::<Terrain>() {
         egui::Window::new("Terrain").frame(frame).show(&gui, |ui| {
             let settings = &mut terrain.settings;
-            ui.heading("Manager settings");
-            ui.label(format!("Chunk resolution: {}", settings.resolution()));
-            ui.label(format!("Is Blocky?: {}", settings.blocky()));
-            ui.label(format!("Is Low-Poly?: {}", settings.lowpoly()));
-            ui.heading("Memory settings");
-            ui.label(format!("Allocation count: {}", settings.allocation_count()));
-            ui.label(format!(
-                "Sub-allocation count: {}",
-                settings.sub_allocation_count()
-            ));
-
             let pending = scene
                 .query::<&Chunk>()
                 .into_iter()
@@ -628,7 +617,14 @@ fn update(world: &mut World) {
                 pick_vec4_color("Color Correction Gain: ", ui, &mut compositor.post_process.cc_gain);
                 pick_vec4_color("Color Correction Lift: ", ui, &mut compositor.post_process.cc_lift);
                 pick_vec4_color("Color Correction Gamma: ", ui, &mut compositor.post_process.cc_gamma);
-
+                
+                ui.horizontal(|ui| {
+                    ui.label("Color Temperatue (K): ");
+                    ui.add(egui::Slider::new(
+                        &mut compositor.post_process.cc_wb_temperature,
+                        1000f32..=12000f32,
+                    ).trailing_fill(true));
+                });
 
                 compositor.post_process.tonemapping_mode = selected_tonemapping.into_index();
                 compositor.post_process.debug_gbuffer = selected_debug_gbuffer.into_index();

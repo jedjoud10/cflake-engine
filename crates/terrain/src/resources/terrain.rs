@@ -10,38 +10,20 @@ use graphics::{
 
 use thiserror::Error;
 
-
-// Terrain generator settings that the user will need to add to configure the terrain gen
-// This will also contain computed common data like number of sub allocations and such
-pub struct TerrainSettings {
-    // Chunk resolution
-    pub(crate) size: u32,
-
-    // Mesh generation parameters
-    pub(crate) blocky: bool,
-    pub(crate) lowpoly: bool,
-    pub(crate) collisions: bool,
-
-    // Octree params
-    pub(crate) max_depth: u32,
-
-    // Memory managing settings
-    pub(crate) allocation_count: usize,
-    pub(crate) sub_allocation_count: usize,
-
-    // Vertices and triangles per allocation
-    pub(crate) output_triangle_buffer_length: usize,
-    pub(crate) output_vertex_buffer_length: usize,
-
-    // Vertices and triangles per sub allocation
-    pub(crate) vertices_per_sub_allocation: u32,
-    pub(crate) triangles_per_sub_allocation: u32,
-    
-    // Quality settings
-    pub(crate) quality: f32,
-
-    pub(crate) sub_materials_settings: Option<TerrainSubMaterialsSettings>,
+// Settings needed for terrain mesh generation
+pub struct TerrainMeshSettings {
+    pub size: u32,
+    pub collisions: bool,
+    pub max_octree_depth: u32,
+    pub quality: f32,
 }
+
+// Settings needed for terrain memory management
+pub struct TerrainMemorySettings {
+    pub allocation_count: usize,
+    pub sub_allocation_count: usize,
+}
+
 
 // Terrain "sub-materials" (aka layered textures) that we can load in
 // Contains the paths of the sub material textures that we will load
@@ -59,30 +41,32 @@ pub struct TerrainSubMaterialsSettings {
     pub sampler: SamplerSettings,
 }
 
+// Settings needed for terrain rendering
+pub struct TerrainRenderingSettings {
+    pub flat_normals: bool,
+    pub derived_normals: bool,
+    pub flat_colors: bool,
+    pub blocky: bool,
+    pub submaterials: Option<TerrainSubMaterialsSettings>,
+}
+
+// Terrain generator settings that the user will need to add to configure the terrain gen
+// This will also contain computed common data like number of sub allocations and such
+pub struct TerrainSettings {
+    pub(crate) mesher: TerrainMeshSettings,
+    pub(crate) memory: TerrainMemorySettings,
+    pub(crate) rendering: TerrainRenderingSettings,
+}
+
 impl TerrainSettings {
     // Create some new terrain settings for terrain generation
     pub fn new(
-        graphics: &Graphics,
-        resolution: u32,
-        blocky: bool,
-        collisions: bool,
-        lowpoly: bool,
-        allocations: usize,
-        sub_allocations: usize,
-        max_depth: u32,
-        quality: f32,
-        sub_materials_settings: Option<TerrainSubMaterialsSettings>,
+        mesher: TerrainMeshSettings,
+        memory: TerrainMemorySettings,
+        rendering: TerrainRenderingSettings,
     ) -> Result<Self, TerrainSettingsError> {
-        let mut output_vertex_buffer_length =
-            graphics.device().limits().max_storage_buffer_binding_size as usize / 32;
-        let mut output_triangle_buffer_length =
-            graphics.device().limits().max_storage_buffer_binding_size as usize / 12;
-
-        // Reduce these numbers blud
-        output_vertex_buffer_length /= 2;
-        output_triangle_buffer_length /= 2;
-
         // Validate resolution
+        let resolution = mesher.size;
         if resolution < 16 {
             return Err(TerrainSettingsError::ChunkSizeTooSmall);
         } else if resolution > 128 {
@@ -92,60 +76,15 @@ impl TerrainSettings {
         }
 
         // Validate sub-allocations count
-        if !sub_allocations.is_power_of_two() {
+        if !memory.sub_allocation_count.is_power_of_two() {
             return Err(TerrainSettingsError::SubAllocationCountNotPowerOfTwo);
         }
 
-        // Get number of sub-allocation chunks for two buffer types (vertices and triangles)
-        let vertex_sub_allocations_length =
-            (output_vertex_buffer_length as f32) / sub_allocations as f32;
-        let triangle_sub_allocations_length =
-            (output_triangle_buffer_length as f32) / sub_allocations as f32;
-        let vertices_per_sub_allocation =
-            (vertex_sub_allocations_length.floor() as u32).next_power_of_two();
-        let triangles_per_sub_allocation =
-            (triangle_sub_allocations_length.floor() as u32).next_power_of_two();
-
         Ok(Self {
-            size: resolution,
-            blocky,
-            lowpoly,
-            allocation_count: allocations,
-            sub_allocation_count: sub_allocations,
-            output_triangle_buffer_length,
-            output_vertex_buffer_length,
-            vertices_per_sub_allocation,
-            triangles_per_sub_allocation,
-            sub_materials_settings,
-            max_depth,
-            quality,
-            collisions,
+            mesher,
+            memory,
+            rendering,
         })
-    }
-
-    // Get the resolution of the terrain chunks
-    pub fn resolution(&self) -> u32 {
-        self.size
-    }
-
-    // Is the terrain blocky looking?
-    pub fn blocky(&self) -> bool {
-        self.blocky
-    }
-
-    // Is the terrain low-poly looking?
-    pub fn lowpoly(&self) -> bool {
-        self.lowpoly
-    }
-
-    // Number of allocations used for vertices and indices
-    pub fn allocation_count(&self) -> usize {
-        self.allocation_count
-    }
-
-    // Number of sub allocations used
-    pub fn sub_allocation_count(&self) -> usize {
-        self.sub_allocation_count
     }
 }
 

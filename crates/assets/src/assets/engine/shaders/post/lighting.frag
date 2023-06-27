@@ -36,7 +36,7 @@ layout(set = 0, binding = 3) uniform PostProcessUniform {
 	uint tonemapping_mode;
 	float tonemapping_strength;
     uint gbuffer_debug;
-	float _padding;
+	float cc_wb_temperature;
 	vec4 cc_gain;
 	vec4 cc_lift;
 	vec4 cc_gamma;
@@ -123,7 +123,7 @@ float calculate_shadowed(
 	float shadowed = 0.0;
 
 	// Stratified poisson disk from http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-16-shadow-mapping/
-	vec2 poisson_disk[16] = vec2[]( 
+	const vec2 poisson_disk[16] = vec2[]( 
 	   vec2( -0.94201624, -0.39906216 ), 
 	   vec2( 0.94558609, -0.76890725 ), 
 	   vec2( -0.094184101, -0.92938870 ), 
@@ -143,10 +143,9 @@ float calculate_shadowed(
 	);
 
 	for (int i = 0; i < 16; i++) {
-		//int index = i * 2;
-		int index = int(16.0*random(vec4(floor(position * 1000.0), i)))%16;
-		vec2 offset = poisson_disk[index];
-		shadowed += shadow_linear(layer, uvs.xy + shadow_parameters.spread * offset * 0.004, size, current + bias);
+		vec2 offset = poisson_disk[i] * shadow_parameters.spread;
+		float weight = 1.0 / length(offset);
+		shadowed += shadow_linear(layer, uvs.xy + offset * 0.004 /* * weight */, size, current + bias);
 	}
 
     return (shadowed / 16) * shadow_parameters.strength;
@@ -238,6 +237,8 @@ vec3 brdf(
 	CameraData camera,
 	SunData light
 ) {
+	//return vec3(clamp(dot(surface.normal, light.backward), 0, 1));
+
 	// Calculate kS and kD
 	vec3 ks = fresnelRoughness(surface.f0, camera.half_view, camera.view, surface.roughness);
 	vec3 kd = (1 - ks) * (1 - surface.metallic);
@@ -258,6 +259,15 @@ vec3 brdf(
 	return brdf + ambient * 1.5;
 }
 
+// https://gamedev.stackexchange.com/questions/92015/optimized-linear-to-srgb-glsl
+// Converts a color from linear light gamma to sRGB gamma
+vec3 from_linear(vec3 linearRGB)
+{
+    bvec3 cutoff = lessThan(linearRGB, vec3(0.0031308));
+    vec3 higher = vec3(1.055)*pow(linearRGB, vec3(1.0/2.4)) - vec3(0.055);
+    vec3 lower = linearRGB * vec3(12.92);
+    return mix(higher, lower, cutoff);
+}
 
 void main() {
     // Fetch G-Buffer values
@@ -348,7 +358,18 @@ void main() {
     // Increase exposure
 	color *= post_processing.exposure;
 	color = max(color, vec3(0));
+
+	// Color grading
+	color = pow(max(vec3(0.0), color * (1.0 + post_processing.cc_gain.rgb - post_processing.cc_lift.rgb) + post_processing.cc_lift.rgb), max(vec3(0.0), 1.0 - post_processing.cc_gamma.rgb));
 	vec3 tonemapped = color;
+
+	/*      vec3 outColor = mix(inColor, inColor * colorTemperatureToRGB(temperature), temperatureStrength); 
+#ifdef WithQuickAndDirtyLuminancePreservation        
+      outColor *= mix(1.0, dot(inColor, vec3(0.2126, 0.7152, 0.0722)) / max(dot(outColor, vec3(0.2126, 0.7152, 0.0722)), 1e-5), LuminancePreservationFactor);  
+#endif
+      fragColor = vec4(outColor, 1.0);
+	*/
+
 
 	/*
 	Reinhard,
@@ -377,10 +398,10 @@ void main() {
 			break;
 	}
 	
-	// Apply gamma correction
+	// Apply tonemapping and gamma correction
 	tonemapped = mix(color, tonemapped, post_processing.tonemapping_strength);
-	tonemapped = pow(max(vec3(0.0), tonemapped * (1.0 + post_processing.cc_gain.rgb - post_processing.cc_lift.rgb) + post_processing.cc_lift.rgb), max(vec3(0.0), 1.0 - post_processing.cc_gamma.rgb));
-	color = pow(tonemapped, vec3(1.0 / post_processing.gamma));
+	color = from_linear(tonemapped);
+	//color = pow(tonemapped, vec3(1.0 / post_processing.gamma));
 
 	// Create a simple vignette
 	vec2 uv = vec2(x, y);

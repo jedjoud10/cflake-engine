@@ -35,46 +35,56 @@ fn init(world: &mut World) {
     asset!(assets, "user/textures/normal3.jpg", "/examples/assets/");
     asset!(assets, "user/textures/mask3.jpg", "/examples/assets/");
 
-    // Create the terrain sub material settings
-    let settings = TerrainSubMaterialsSettings {
-        materials: [
-            TerrainSubMaterial {
-                diffuse: "user/textures/diffuse1.jpg".to_string(),
-                normal: "user/textures/normal1.jpg".to_string(),
-                mask: "user/textures/mask1.jpg".to_string(),
+    // Terrain mesher/octree settings
+    let mesher = TerrainMeshSettings {
+        size: 64,
+        collisions: true,
+        max_octree_depth: 8,
+        quality: 1.0,
+    };
+
+    // Terrain memory settings
+    let memory = TerrainMemorySettings {
+        allocation_count: 4,
+        sub_allocation_count: 1024,
+    };
+
+    // Terrain rendering settings
+    let rendering = TerrainRenderingSettings {
+        blocky: false,
+        flat_normals: false,
+        derived_normals: true,
+        flat_colors: true,
+        submaterials: Some(TerrainSubMaterialsSettings {
+            materials: [
+                TerrainSubMaterial {
+                    diffuse: "user/textures/diffuse1.jpg".to_string(),
+                    normal: "user/textures/normal1.jpg".to_string(),
+                    mask: "user/textures/mask1.jpg".to_string(),
+                },
+                TerrainSubMaterial {
+                    diffuse: "user/textures/diffuse2.jpg".to_string(),
+                    normal: "user/textures/normal2.jpg".to_string(),
+                    mask: "user/textures/mask2.jpg".to_string(),
+                },
+                TerrainSubMaterial {
+                    diffuse: "user/textures/diffuse3.jpg".to_string(),
+                    normal: "user/textures/normal3.jpg".to_string(),
+                    mask: "user/textures/mask3.jpg".to_string(),
+                },
+            ].to_vec(),
+            scale: TextureScale::default(),
+            sampler: SamplerSettings {
+                mipmaps: SamplerMipMaps::Auto,
+                ..Default::default()
             },
-            TerrainSubMaterial {
-                diffuse: "user/textures/diffuse2.jpg".to_string(),
-                normal: "user/textures/normal2.jpg".to_string(),
-                mask: "user/textures/mask2.jpg".to_string(),
-            },
-            TerrainSubMaterial {
-                diffuse: "user/textures/diffuse3.jpg".to_string(),
-                normal: "user/textures/normal3.jpg".to_string(),
-                mask: "user/textures/mask3.jpg".to_string(),
-            },
-        ].to_vec(),
-        scale: TextureScale::default(),
-        sampler: SamplerSettings {
-            mipmaps: SamplerMipMaps::Auto,
-            ..Default::default()
-        },
+        }),
     };
 
     // Create the terrain generator's settings
     let settings = TerrainSettings::new(
-        &graphics,
-        64,
-        false,
-        true,
-        false,
-        4,
-        1024,
-        8,
-        1.0,
-        Some(settings),
-    )
-    .unwrap();
+        mesher, memory, rendering
+    ).unwrap();
 
     // Drop (needed) to insert settings
     drop(graphics);
@@ -97,7 +107,7 @@ fn init(world: &mut World) {
     ));
 
     // Create a directional light
-    let light = DirectionalLight { intensity: 1.2, color: vek::Rgb::broadcast(255)  };
+    let light = DirectionalLight { intensity: 1.5, color: vek::Rgb::broadcast(255)  };
     let rotation = vek::Quaternion::rotation_x(-20.0f32.to_radians()).rotated_y(45f32.to_radians());
     scene.insert((light, Rotation::from(rotation)));
 
@@ -119,11 +129,11 @@ fn init(world: &mut World) {
     let pipelines = world.get::<Pipelines>().unwrap();
     let id = pipelines.get::<PbrMaterial>().unwrap();
     let renderer = world.get::<DeferredRenderer>().unwrap();
-    let sphere = renderer.sphere.clone();
+    let cube = renderer.cube.clone();
     let renderer = Renderer::default();
     let position = Position::default();
-    let surface = Surface::new(sphere, material, id);
-    scene.prefabify("sphere", (renderer, position, surface));
+    let surface = Surface::new(cube, material, id);
+    scene.prefabify("cube", (renderer, position, surface));
 }
 
 // Updates the light direction and quites from the engine
@@ -148,10 +158,10 @@ fn update(world: &mut World) {
         *state = State::Stopped;
     }
 
-    // Create a new sphere in front of the camera when we press the right mouse button
+    // Create a new cube in front of the camera when we press the right mouse button
     if input.get_button(MouseButton::Right).pressed() {
         let (_, position, rotation) = scene.find::<(&Camera, &Position, &Rotation)>().unwrap();
-        let mut entry = scene.instantiate("sphere").unwrap();
+        let mut entry = scene.instantiate("cube").unwrap();
         **entry.get_mut::<Position>().unwrap() = rotation.forward() * 3.0 + **position;
     }
 }

@@ -126,6 +126,9 @@ fn update(world: &mut World) {
     let offsets = &mut memory.offsets;
     let suballocations = &mut memory.sub_allocation_chunk_indices[chunk.allocation];
     let indirect = &mut memory.generated_indexed_indirect_buffers[chunk.allocation];
+    let size = settings.mesher.size;
+    let max_depth = settings.mesher.max_octree_depth;
+    let sub_allocation_count = settings.memory.sub_allocation_count;
 
     // Update alloc-local indirect draw args
     indirect
@@ -152,10 +155,10 @@ fn update(world: &mut World) {
 
     // Needed since SN only runs for a volume 2 units smaller than a perfect cube
     let node = chunk.node.unwrap();
-    let factor = (node.size() as f32) / (settings.size as f32 - 4.0);
+    let factor = (node.size() as f32) / (size as f32 - 4.0);
 
     // Check if the node has neighbors with different sizes in each direction (bitfield)
-    let skirts_directions = crate::find_skirts_direction(node, &manager.octree);
+    let skirts_directions = crate::find_skirts_direction(&node, &manager.octree);
 
     // Set the push constants
     active
@@ -169,7 +172,7 @@ fn update(world: &mut World) {
             let scale = GpuPod::into_bytes(&factor);
 
             // Calculate quality floating point value
-            let _quality = (node.depth()) as f32 / (settings.max_depth as f32);
+            let _quality = (node.depth()) as f32 / (max_depth as f32);
             let quality = GpuPod::into_bytes(&_quality);
 
             // Push the bytes to the GPU
@@ -187,7 +190,7 @@ fn update(world: &mut World) {
         })
         .unwrap();
     active
-        .dispatch(vek::Vec3::broadcast(settings.size / 8))
+        .dispatch(vek::Vec3::broadcast(size / 8))
         .unwrap();
 
     // Execute the vertex generation shader first
@@ -216,13 +219,13 @@ fn update(world: &mut World) {
 
             // Calculate skirts threshold floating point value
             let _skirts_threshold =
-                (settings.max_depth - node.depth()) as f32 / (settings.max_depth as f32);
+                (max_depth - node.depth()) as f32 / (max_depth as f32);
             let skirts_threshold = GpuPod::into_bytes(&_skirts_threshold);
             pc.push(skirts_threshold, bytes.len() as u32).unwrap();
         })
         .unwrap();
     active
-        .dispatch(vek::Vec3::broadcast(settings.size / 8))
+        .dispatch(vek::Vec3::broadcast(size / 8))
         .unwrap();
 
     // Execute the quad generation shader second
@@ -242,7 +245,7 @@ fn update(world: &mut World) {
         })
         .unwrap();
     active
-        .dispatch(vek::Vec3::broadcast(settings.size / 8))
+        .dispatch(vek::Vec3::broadcast(size / 8))
         .unwrap();
 
     // Run a compute shader that will iterate over the ranges and find a free one
@@ -256,7 +259,7 @@ fn update(world: &mut World) {
         })
         .unwrap();
 
-    let dispatch = (settings.sub_allocation_count as f32 / (32.0 * 64.0)).ceil() as u32;
+    let dispatch = (sub_allocation_count as f32 / (32.0 * 64.0)).ceil() as u32;
     active.dispatch(vek::Vec3::new(dispatch, 1, 1)).unwrap();
 
     // Get the output packed tex coord from resource storage

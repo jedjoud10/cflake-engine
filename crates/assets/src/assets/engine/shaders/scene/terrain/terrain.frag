@@ -1,5 +1,4 @@
 #version 460 core
-#define lowpoly
 
 // G-Buffer data write
 layout(location = 0) out vec4 gbuffer_position;
@@ -11,7 +10,7 @@ layout(location = 3) out vec4 gbuffer_mask;
 layout(location = 0) in vec3 m_position;
 layout(location = 1) in vec3 m_local_position;
 
-#ifdef lowpoly
+#ifdef flatnormals
 layout(location = 2) in flat vec3 m_normal;
 #else
 layout(location = 2) in vec3 m_normal;
@@ -19,7 +18,7 @@ layout(location = 2) in vec3 m_normal;
 
 layout(location = 3) in flat uint draw; 
 
-#ifdef lowpoly
+#ifdef flatcolors
 layout(location = 4) in flat vec3 m_color;
 #else
 layout(location = 4) in vec3 m_color;
@@ -122,9 +121,8 @@ vec4 fetch_vertex_position_and_extra(uint vertex) {
 }
 
 void main() {
-	#ifdef lowpoly
+	#ifdef derivednormals
 	vec3 surface_normal = normalize(cross(dFdy(m_position), dFdx(m_position)));
-	//vec3 surface_normal = normalize(m_normal);
 	#else
 	vec3 surface_normal = normalize(m_normal);
 	#endif
@@ -133,7 +131,9 @@ void main() {
 	gbuffer_albedo = vec4(m_color, 1);
 	gbuffer_normal = vec4(surface_normal, 0);
 	gbuffer_mask = vec4(1, 1, 0, 0);
+	
 
+	/*
 	vec4 v0 = fetch_vertex_position_and_extra(0);
 	vec4 v1 = fetch_vertex_position_and_extra(1);
 	vec4 v2 = fetch_vertex_position_and_extra(2);
@@ -153,6 +153,7 @@ void main() {
 	gbuffer_albedo = vec4(albedo, 1);
 	gbuffer_normal = vec4(normal, 0);
 	gbuffer_mask = vec4(mask * vec3(1, 3, 1), 0);
+	*/
 
 	/*
 	if ((i0 == i1) && (i2 == i1)) {

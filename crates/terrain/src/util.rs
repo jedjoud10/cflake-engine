@@ -8,8 +8,8 @@ use rendering::{attributes, AttributeBuffer};
 // Common types used througohut the crate
 pub type TempVertices = Buffer<<XY<f32> as Vertex>::Storage>;
 pub type TempTriangles = Buffer<[u32; 3]>;
-pub type Vertices = AttributeBuffer<attributes::Position>;
-pub type Triangles = TriangleBuffer<u32>;
+pub type PermVertices = AttributeBuffer<attributes::Position>;
+pub type PermTriangles = TriangleBuffer<u32>;
 
 // Default value for the indexed indirect
 pub(crate) const DEFAULT_DRAW_INDEXED_INDIRECT: DrawIndexedIndirect = DrawIndexedIndirect {
@@ -70,7 +70,7 @@ pub(crate) fn create_texture3d<T: Texel>(graphics: &Graphics, size: u32) -> Text
 // Bit 5 = End Y
 // Bit 6 = End Z
 // TODO: URGENT PLEASE FIX
-pub(crate) fn find_skirts_direction(_node: Node, _octree: &Octree) -> u32 {
+pub(crate) fn find_skirts_direction(_node: &Node, _octree: &Octree) -> u32 {
     return 0;
     //return u32::MAX;
     /*

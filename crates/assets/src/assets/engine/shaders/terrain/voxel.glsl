@@ -9,12 +9,6 @@ float smooth_floor(float x) {
     return x - (sin(2 * 3.1415 * x) / (2 * 3.1415));
 }
 
-float smooth_floor2(float x, float n) {
-    return (pow(x, n) - pow((1 - x), n)) * 0.5;
-}
-
-
-
 vec2 rotate(vec2 v, float a) {
 	float s = sin(a);
 	float c = cos(a);
@@ -25,7 +19,7 @@ vec2 rotate(vec2 v, float a) {
 // Main voxel function that will create the shape of the terrain
 // Negative values represent terrain, positive values represent air
 float voxel(vec3 position, out vec3 color, out uint material) {
-    position *= 1.;
+    position *= 0.8;
 
     // Blend between the two biomes
     float blend = clamp(snoise(position.xz * 0.0001) * 0.5 + 0.5, 0, 1);
@@ -44,7 +38,7 @@ float voxel(vec3 position, out vec3 color, out uint material) {
         biome1 += (1 - spikey) * sin(dot(position.xz, vec2(1, 1)) * 0.01 - 1.202) * 30;
         biome1 += (1 - spikey) * cos(dot(position.xz, vec2(0.2, 2)) * 0.001 + 1.2) * 45;
         float spikey2 = pow(abs(snoise(rotated * vec2(2.3, 0.7) * 0.0013 + vec2(snoise(position * 0.0012)) * 0.2)), 1.2);
-        biome1 += spikey * spikey2 * 20;
+        biome1 += spikey * spikey2 * 140;
         biome1 += position.y;
         color1 = (vec3(1 - spikey2) * 0.3 + 0.5 + snoise(position * 0.1) * 0.1) * pow(vec3(255, 188, 133) / 255.0, vec3(2.2));
     }
@@ -55,10 +49,13 @@ float voxel(vec3 position, out vec3 color, out uint material) {
     uint material3 = 1;
 
     if (blend != 0.0) {
-        rocky = position.y - fbmCellular(position.xz * 0.001, 8, 0.5, 1.95).x * 930 - 50;
+        vec3 offseting = vec3(snoise(position * 0.001) * 0.1);
+        rocky = -fbmCellular(position * 0.001 * vec3(1, 1.2, 1), 7, 0.5, 1.95).y * 330 - 50;
+        rocky += fbmCellular(position.xz * 0.01, 2, 0.5, 1.95).x * 10;
         rocky = opSmoothUnion(position.y, rocky, 400);
         color2 = (snoise(position * vec3(0, 10, 0) * 0.004) * 0.4 + 0.4) * pow(vec3(100.0) / 255.0, vec3(2.2));
-        rocky += smooth_floor(position.y / 50) * 20;
+        //rocky += position.y;
+        rocky += smooth_floor(position.y / 200) * 200;
     }
 
     float density = mix(biome1, rocky, blend);
@@ -70,5 +67,6 @@ float voxel(vec3 position, out vec3 color, out uint material) {
         material = material3;
     }
     
-    return opIntersection(-density, opUnion(-sdBox(position, vec3(1000)), sdSphere(position, 1200)));
+    // , opUnion(-sdBox(position, vec3(1000)), sdSphere(position, 1200)))
+    return -density;
 }

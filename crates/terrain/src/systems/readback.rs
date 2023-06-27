@@ -132,8 +132,8 @@ fn readback_end_update(world: &mut World) {
     let chunk = entry.get_mut::<Chunk>().unwrap();
 
     // Check if we are OOM lol
-    let vertices_per_sub_allocation = settings.vertices_per_sub_allocation;
-    let triangles_per_sub_allocation = settings.triangles_per_sub_allocation;
+    let vertices_per_sub_allocation = memory.vertices_per_sub_allocation;
+    let triangles_per_sub_allocation = memory.triangles_per_sub_allocation;
     if offset.x >= (u32::MAX - vertices_per_sub_allocation + 1)
         || offset.y >= (u32::MAX - triangles_per_sub_allocation + 1)
     {
@@ -165,7 +165,7 @@ fn readback_end_update(world: &mut World) {
     // Set visibility if the chunk is actually visible
     if valid {
         manager.new_visibilities.push((chunk.allocation, chunk.local_index));
-        memory.visibility_bitsets[chunk.allocation].set(chunk.local_index);
+        //memory.visibility_bitsets[chunk.allocation].set(chunk.local_index);
     }
 }
 

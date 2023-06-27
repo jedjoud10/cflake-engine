@@ -1,6 +1,6 @@
 use crate::{
     ChunkCuller, ChunkManager, LayeredAlbedoMap, LayeredMaskMap, LayeredNormalMap, MemoryManager,
-    MeshGenerator, Terrain, TerrainMaterial, TerrainSettings, Triangles, Vertices, VoxelGenerator,
+    MeshGenerator, Terrain, TerrainMaterial, TerrainSettings, PermTriangles, PermVertices, VoxelGenerator,
 };
 
 use assets::Assets;
@@ -42,8 +42,8 @@ fn init(world: &mut World) {
             .unwrap();
 
         // Get indirect vertices and triangle buffers
-        let mut vertices = world.get_mut::<Storage<Vertices>>().unwrap();
-        let mut triangles = world.get_mut::<Storage<Triangles>>().unwrap();
+        let mut vertices = world.get_mut::<Storage<PermVertices>>().unwrap();
+        let mut triangles = world.get_mut::<Storage<PermTriangles>>().unwrap();
 
         // Create a voxel generator
         let voxelizer = VoxelGenerator::new(&assets, &graphics, &mut settings);

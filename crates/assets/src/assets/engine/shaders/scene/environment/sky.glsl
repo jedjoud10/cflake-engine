@@ -91,7 +91,6 @@ vec3 calculate_sky_color(
     vec2 test_normal = sample_spherical_map(normal);
     vec2 test_sun = sample_spherical_map(-sun);
     vec3 color = getAtmosphericScattering(screen2world(test_normal), screen2world(test_sun)) * 0.4;
-    //color = mix(color, vec3(0), clamp(-normal.y, 0, 1));
     return pow(color, vec3(2.2));
     
 

@@ -36,8 +36,7 @@ void main() {
     vec4 normals = unpackSnorm4x8(packed_normals);
     vec4 extras = unpackUnorm4x8(packed_extras);
     vec3 color = extras.xyz;
-    uint material = uint(extras.w * 255.0);
-
+    
 	// Model space -> World space -> Clip space
     vec4 position_scale = position_scale_buffer.data[gl_DrawID];
     draw = gl_DrawID;

@@ -123,7 +123,7 @@ mod octree {
         let mut octree = Octree::new(8, 4, OctreeHeuristic::Point);
         assert_eq!(octree.size(), 1024);
 
-        octree.compute(vek::Vec3::zero());
+        octree.compute(&[vek::Vec3::zero()]);
 
         let node = &octree.nodes()[0];
         assert_eq!(node.index(), 0);

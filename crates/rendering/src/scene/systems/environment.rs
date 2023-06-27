@@ -60,7 +60,6 @@ fn render(world: &mut World) {
     
     // Generate the base environment map
     let resolution = environment.resolution;
-    let matrices = &environment.matrices;
     let mut active = pass.bind_shader(&environment.environment_shader);
     active.set_bind_group(0, |group| {
         group.set_storage_texture_mut("enviro", view).unwrap();
@@ -68,7 +67,6 @@ fn render(world: &mut World) {
     active.set_push_constants(|pc| {
         // Set the sun direction
         let bytes = rotation.into_bytes();
-        let offset = bytes.len();
         pc.push(bytes, 0).unwrap();
         
         // Set the proj/view matrix
@@ -77,21 +75,24 @@ fn render(world: &mut World) {
     }).unwrap();
     active.dispatch(vek::Vec3::new(resolution / 32, resolution / 32, 1)).unwrap();
 
-    // Generate the diffuse IBL map
-    let resolution = environment.resolution / 16;
-    let src_cubemap = &environment.environment_map;
-    let dst_cubemap = &mut environment.diffuse_ibl_map;
-    let view = dst_cubemap.view_mut(1 + index).unwrap();
-    let mut active = pass.bind_shader(&environment.ibl_diffuse_convolution_shader);
-    active.set_bind_group(0, |group| {
-        group.set_sampled_texture("enviro", src_cubemap).unwrap();
-        group.set_sampler("enviro_sampler", src_cubemap.sampler().unwrap()).unwrap();
-        group.set_storage_texture_mut("diffuse", view).unwrap();
-    }).unwrap();
-    active.set_push_constants(|pc| {
-        pc.push(matrix, 0).unwrap();
-    }).unwrap();
-    active.dispatch(vek::Vec3::new(resolution / 16, resolution / 16, 1)).unwrap();
+    // Generate the diffuse IBL map (not every frame though)
+    // TODO: Smooth interpolation using next sun dir
+    if time.frame_count() as usize % 12 >= 6 {
+        let resolution = environment.resolution / 16;
+        let src_cubemap = &environment.environment_map;
+        let dst_cubemap = &mut environment.diffuse_ibl_map;
+        let view = dst_cubemap.view_mut(1 + index).unwrap();
+        let mut active = pass.bind_shader(&environment.ibl_diffuse_convolution_shader);
+        active.set_bind_group(0, |group| {
+            group.set_sampled_texture("enviro", src_cubemap).unwrap();
+            group.set_sampler("enviro_sampler", src_cubemap.sampler().unwrap()).unwrap();
+            group.set_storage_texture_mut("diffuse", view).unwrap();
+        }).unwrap();
+        active.set_push_constants(|pc| {
+            pc.push(matrix, 0).unwrap();
+        }).unwrap();
+        active.dispatch(vek::Vec3::new(resolution / 16, resolution / 16, 1)).unwrap();
+    }
 
     graphics.submit(false);
 }

@@ -118,7 +118,7 @@ impl ChunkManager {
 
         // Material Id
         let id = pipelines
-            .register_with(graphics, &*settings, assets)
+            .register_with(graphics, (&*settings, memory), assets)
             .unwrap();
 
         // Convert the newly created meshes to multiple sub-surfaces
@@ -143,8 +143,8 @@ impl ChunkManager {
         // Generate the lod multipliers programatically based on the quality setting
         let splits = [0.0f32, 0.3, 0.7, 1.0];
         let percents = [1.0f32, 1.2, 1.3, 1.0];
-        let max = settings.max_depth as f32;
-        let mut lod = (0..settings.max_depth).into_iter().map(|x| {
+        let max = settings.mesher.max_octree_depth as f32;
+        let mut lod = (0..settings.mesher.max_octree_depth).into_iter().map(|x| {
             let percent = x as f32 / max;
 
             let i = splits.iter().enumerate().filter(|(_, &rel)| percent >= rel).map(|(i, _)| i).max().unwrap();
@@ -155,7 +155,7 @@ impl ChunkManager {
         lod.insert(0, 1.0);
 
         // Custom octree heuristic
-        let size = settings.size;
+        let size = settings.mesher.size;
         let lod = Rc::new(RefCell::new(lod));
         let lod_cloned = lod.clone();
         let heuristic = math::OctreeHeuristic::Boxed(Box::new(move |target, node| {
@@ -174,7 +174,7 @@ impl ChunkManager {
         }));
 
         // Create an octree for LOD chunk generation
-        let octree = Octree::new(settings.max_depth, settings.size, heuristic);
+        let octree = Octree::new(settings.mesher.max_octree_depth, settings.mesher.size , heuristic);
 
         // Create the chunk manager
         Self {
@@ -200,7 +200,7 @@ fn load_raw_texels_handles<T: ImageTexel>(
     settings: &TerrainSettings,
     get_name_callback: impl Fn(&TerrainSubMaterial) -> &str,
 ) -> Option<Vec<AsyncHandle<RawTexels<T>>>> {
-    let sub_material_settings = settings.sub_materials_settings.as_ref()?;
+    let sub_material_settings = settings.rendering.submaterials.as_ref()?;
     let scale = sub_material_settings.scale;
     let inputs = sub_material_settings
         .materials
@@ -217,7 +217,7 @@ fn load_layered_texture<T: ImageTexel>(
     graphics: &Graphics,
     raw: Option<Vec<RawTexels<T>>>,
 ) -> Option<LayeredTexture2D<T>> {
-    let sampler = settings.sub_materials_settings.as_ref()?.sampler;
+    let sampler = settings.rendering.submaterials.as_ref()?.sampler;
     raw.map(|raw| {
         combine_into_layered(
             graphics,

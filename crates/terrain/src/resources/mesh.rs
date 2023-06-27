@@ -25,7 +25,7 @@ impl MeshGenerator {
         // Note: These should be able to handle a complex mesh in the worst case scenario
         let temp_vertices = Buffer::<<XY<f32> as Vertex>::Storage>::zeroed(
             graphics,
-            (settings.size as usize).pow(3),
+            (settings.mesher.size as usize).pow(3),
             BufferMode::Dynamic,
             BufferUsage::STORAGE | BufferUsage::READ,
         )
@@ -35,7 +35,7 @@ impl MeshGenerator {
         // Note: These should be able to handle a complex mesh in the worst case scenario
         let temp_triangles = Buffer::<[u32; 3]>::zeroed(
             graphics,
-            (settings.size as usize - 1).pow(3) * 2,
+            (settings.mesher.size as usize - 1).pow(3) * 2,
             BufferMode::Dynamic,
             BufferUsage::STORAGE | BufferUsage::READ,
         )
@@ -70,13 +70,8 @@ impl MeshGenerator {
         compiler.use_storage_buffer::<[u32; 2]>("counters", StorageAccess::ReadWrite);
 
         // Set vertex generation parameters (constants)
-        compiler.use_constant(0, settings.size);
-        compiler.use_constant(1, settings.blocky);
-
-        // Define the "lowpoly" macro
-        if settings.lowpoly {
-            compiler.use_define("lowpoly", "");
-        }
+        compiler.use_constant(0, settings.mesher.size);
+        compiler.use_constant(1, settings.rendering.blocky);
 
         // Create the compute vertices shader
         let compute_vertices = ComputeShader::new(module, &compiler).unwrap();
@@ -99,7 +94,7 @@ impl MeshGenerator {
         compiler.use_storage_buffer::<u32>("triangles", StorageAccess::WriteOnly);
 
         // Set size constants
-        compiler.use_constant(0, settings.size);
+        compiler.use_constant(0, settings.mesher.size);
 
         // Create the compute quads shader
         let compute_quads = ComputeShader::new(module, &compiler).unwrap();
@@ -109,7 +104,7 @@ impl MeshGenerator {
             temp_triangles,
             compute_vertices,
             compute_quads,
-            cached_indices: create_texture3d(graphics, settings.size),
+            cached_indices: create_texture3d(graphics, settings.mesher.size),
         }
     }
 }

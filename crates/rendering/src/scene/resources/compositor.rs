@@ -207,7 +207,8 @@ pub struct PostProcessUniform {
     // Debug G-Buffer data
     pub debug_gbuffer: u32,
 
-    _padding: f32,
+    // Temperature color correction
+    pub cc_wb_temperature: f32,
 
     // 3 way color correction
     pub cc_gain: vek::Vec4<f32>,
@@ -218,14 +219,14 @@ pub struct PostProcessUniform {
 impl Default for PostProcessUniform {
     fn default() -> Self {
         Self {
-            exposure: 1.0,
+            exposure: 1.5,
             gamma: 2.2,
             vignette_strength: 0.4,
             vignette_size: 0.1,
             tonemapping_mode: 2,
             tonemapping_strength: 1.0,
             debug_gbuffer: u32::MAX,
-            _padding: 0.0,
+            cc_wb_temperature: 6550.0,
             cc_gain: vek::Vec4::zero(),
             cc_lift: vek::Vec4::zero(),
             cc_gamma: vek::Vec4::zero()

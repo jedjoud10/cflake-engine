@@ -122,11 +122,11 @@ fn update(world: &mut World) {
 
             // Keep track of the old number of chunks
             let old = manager.chunks_per_allocation;
-            let old_per_allocation = old / settings.allocation_count;
+            let old_per_allocation = old / settings.memory.allocation_count;
 
             // Add the same amounts of chunks per allocation
             let mut global_index = old;
-            for allocation in 0..settings.allocation_count {
+            for allocation in 0..settings.memory.allocation_count {
                 // Extend the generated indirect draw buffer
                 memory.generated_indexed_indirect_buffers[allocation]
                     .extend_from_slice(&vec![crate::util::DEFAULT_DRAW_INDEXED_INDIRECT; count])
@@ -208,7 +208,7 @@ fn update(world: &mut World) {
             // Set node, position, and scale
             chunk.node = Some(*node);
             **position = node.position().as_::<f32>();
-            **scale = (node.size() as f32) / (settings.size as f32);
+            **scale = (node.size() as f32) / (settings.mesher.size as f32);
 
             // Add the entity to the internally stored entities
             let res = manager.entities.insert(*node, *entity);
@@ -224,7 +224,7 @@ fn update(world: &mut World) {
             chunk.generation_priority = chunk.generation_priority.clamp(0.0f32, 1000.0f32);
 
             // Update readback priority for each chunk *around* the user (needed for collisions)
-            if node.size() == settings.size {
+            if node.size() == settings.mesher.size {
                 chunk.readback_priority = Some(1.0 / viewer_position.distance(**position).max(1.0));
             }
 

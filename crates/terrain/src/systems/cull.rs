@@ -51,7 +51,7 @@ fn update(world: &mut World) {
     let mut pass = ComputePass::begin(&graphics);
     let mut active = pass.bind_shader(&culler.compute_cull);
 
-    for allocation in 0..terrain.settings.allocation_count {
+    for allocation in 0..terrain.settings.memory.allocation_count {
         let chunks = memory.visibility_bitsets[allocation].chunks();
         memory.visibility_buffers[allocation]
             .write(chunks, 0)
